@@ -1,0 +1,165 @@
+:root {
+  --mall-pink: #ff4f9a;
+  --mall-teal: #2ec4b6;
+  --mall-yellow: #ffd23f;
+  --ink: #1d1626;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #111;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  user-select: none;
+}
+
+canvas {
+  display: block;
+}
+
+/* ---------- HUD ---------- */
+
+.hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.hud.dimmed {
+  opacity: 0;
+}
+
+.crosshair {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.55);
+}
+
+.sprint {
+  position: absolute;
+  left: 50%;
+  bottom: 48px;
+  width: 240px;
+  height: 10px;
+  margin-left: -120px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.45);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25);
+  overflow: hidden;
+  transition: opacity 0.4s;
+}
+.sprint.full {
+  opacity: 0.25;
+}
+.sprint-fill {
+  width: 100%;
+  height: 100%;
+  transform-origin: left center;
+  background: linear-gradient(90deg, var(--mall-teal), var(--mall-yellow));
+}
+.sprint.exhausted .sprint-fill {
+  background: #e63946;
+}
+
+/* ---------- Start / pause overlay ---------- */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: radial-gradient(circle at 50% 40%, rgba(46, 196, 182, 0.25), rgba(17, 10, 24, 0.82) 70%);
+  cursor: pointer;
+}
+.overlay.hidden {
+  display: none;
+}
+
+.card {
+  max-width: 460px;
+  width: 100%;
+  text-align: center;
+  color: #fff;
+  padding: 32px 28px 24px;
+  border-radius: 18px;
+  background: var(--ink);
+  border: 3px solid var(--mall-pink);
+  box-shadow: 8px 8px 0 var(--mall-teal);
+}
+
+.kicker {
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--mall-teal);
+}
+
+.card h1 {
+  margin: 8px 0 10px;
+  font-family: 'Bungee', Impact, 'Arial Black', sans-serif;
+  font-size: 56px;
+  line-height: 0.95;
+  color: var(--mall-yellow);
+  text-shadow: 4px 4px 0 var(--mall-pink);
+  text-transform: uppercase;
+}
+
+.tagline {
+  margin: 0 0 22px;
+  color: #d9d2e3;
+}
+
+.play {
+  font: inherit;
+  font-family: 'Bungee', Impact, 'Arial Black', sans-serif;
+  font-size: 18px;
+  padding: 12px 26px;
+  border: none;
+  border-radius: 999px;
+  background: var(--mall-pink);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #b3236a;
+}
+.play:hover {
+  filter: brightness(1.08);
+}
+
+.controls {
+  list-style: none;
+  padding: 0;
+  margin: 22px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 14px;
+  font-size: 14px;
+  color: #c8c0d4;
+}
+
+kbd {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 5px;
+  background: #362b45;
+  border-bottom: 2px solid #0e0a14;
+  color: #fff;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.debug-hint {
+  margin: 16px 0 0;
+  font-size: 12px;
+  color: #8f86a0;
+}
