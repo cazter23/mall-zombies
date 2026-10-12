@@ -13,6 +13,9 @@ export const debug = {
   // Build the open movement test range (src/world/testArena.js). Press T to teleport there and back.
   testArena: true,
 
+  // Press Z to spawn a Shopper zombie, X to remove all zombies. Temporary until waves (step 4).
+  zombieKeys: true,
+
   // Practice dummies in the test range (only exist when testArena is on).
   dummies: {
     respawnSeconds: 2.5, // how long a "killed" dummy stays down before popping back up

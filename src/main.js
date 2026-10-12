@@ -1,6 +1,6 @@
 // =============================================================================
 // MALL ZOMBIES: entry point
-// Wires together the renderer, world, player, weapon, effects, input, HUD, and the fixed-step loop.
+// Wires together the renderer, world, player, weapon, zombies, effects, input, HUD, and the fixed-step loop.
 // =============================================================================
 
 import './style.css';
@@ -19,6 +19,7 @@ import { createEffects } from './fx/effects.js';
 import { createViewmodel } from './weapons/viewmodel.js';
 import { createPlayerGun } from './weapons/playerGun.js';
 import { createPlayerBody } from './player/body.js';
+import { createZombieManager } from './zombies/zombieManager.js';
 
 // --- Renderer, scene, camera ---------------------------------------------------
 
@@ -77,6 +78,16 @@ const gun = createPlayerGun({
   hud,
 });
 
+const zombies = createZombieManager({
+  scene,
+  colliders: world.colliders,
+  player,
+  shootables,
+  effects,
+  spawnPoints: world.markers.spawnPoints,
+  getRound: () => 1, // no waves yet (step 4)
+});
+
 // The game only runs while the mouse is locked; Esc pauses.
 const game = {
   forceRun: false, // debug: run without pointer lock (used by automated tests)
@@ -106,8 +117,12 @@ function update(dt) {
     player.teleport(arena.contains(player.position) ? world.playerSpawn : arena.playerSpawn);
   }
 
+  if (debug.zombieKeys && input.consumePress('KeyZ')) zombies.spawn('shopper');
+  if (debug.zombieKeys && input.consumePress('KeyX')) zombies.clear();
+
   player.update(dt);
   gun.update(dt); // after the player moves, so shots come from this tick's eye position
+  zombies.update(dt);
   world.update(dt);
   if (arena) arena.update(dt);
   input.endTick();
@@ -129,6 +144,7 @@ function render(alpha, frameTime) {
   if (game.running) player.applyLook(dx, dy);
   player.syncCamera(alpha);
   body.update(game.running ? frameTime : 0, player, alpha);
+  zombies.render(game.running ? frameTime : 0, alpha);
   if (game.running) effects.update(frameTime);
   viewmodel.update(game.running ? frameTime : 0, camera, gun.weapon, aimAmount);
 
@@ -156,5 +172,5 @@ startLoop({
 });
 
 if (debug.exposeToWindow) {
-  window.__mall = { THREE, scene, camera, renderer, world, arena, player, stats, input, game, hud, gun, effects, viewmodel, shootables, body };
+  window.__mall = { THREE, scene, camera, renderer, world, arena, player, stats, input, game, hud, gun, effects, viewmodel, shootables, body, zombies };
 }

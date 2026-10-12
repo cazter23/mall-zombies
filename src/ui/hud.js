@@ -79,6 +79,7 @@ export function createHud() {
       </ul>
       ${debug.allowShutterToggle ? '<p class="debug-hint">Debug: <kbd>O</kbd> opens the shutter</p>' : ''}
       ${debug.testArena ? '<p class="debug-hint">Debug: <kbd>T</kbd> teleports to the movement test range</p>' : ''}
+      ${debug.zombieKeys ? '<p class="debug-hint">Debug: <kbd>Z</kbd> spawns a zombie, <kbd>X</kbd> clears them</p>' : ''}
     </div>
   `;
   const kicker = overlay.querySelector('.kicker');

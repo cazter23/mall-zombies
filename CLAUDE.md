@@ -23,7 +23,7 @@ does not run the game, so also try changes in `npm run dev`).
 
 ## Rules for working on this project
 - Game logic runs on a fixed 60Hz timestep; rendering is decoupled (render gets `alpha` to interpolate).
-- Every tunable number lives in `src/config/` (`feel.js`, `economy.js`, `weapons.js`, `debug.js`), never hardcoded in logic.
+- Every tunable number lives in `src/config/` (`feel.js`, `economy.js`, `weapons.js`, `zombies.js`, `debug.js`), never hardcoded in logic.
 - All player stats live in one stats object (`src/player/stats.js`) so perks, wardrobe and a
   future skill tree modify it in one place. Systems read stats, not config, at runtime.
 - Death is handled in one function (`onPlayerDeath`) so a downed/revive system can be added later.
@@ -49,7 +49,10 @@ src/
                         (zombieHealthForRound, zombieCountForRound, spawnDelayForRound, maxAliveForRound)
     weapons.js          Per-weapon stats (damage, headshot mult, mag, reserve, fire interval, reload, kick,
                         spread cone, ADS time/zoom/gun offset, colors) + weaponStatDefaults for stats
-    debug.js            showMarkers, allowShutterToggle (O key), testArena (T key), dummies, exposeToWindow
+    zombies.js          zombieTypes (per-type speed, size, hitboxes, timings, colors, splatter), zombieCrowd
+                        (separation, contact gap, spawn dust, min spawn distance), zombieNav (grid settings)
+    debug.js            showMarkers, allowShutterToggle (O key), testArena (T key), zombieKeys (Z spawn /
+                        X clear), dummies, exposeToWindow
   core/
     loop.js             startLoop(): fixed-timestep accumulator, calls update(dt) and render(alpha, frameTime)
     input.js            Input class: held keys, one-shot presses (consumePress/endTick), mouse delta, pointer lock
@@ -74,6 +77,17 @@ src/
     viewmodel.js        First-person staple gun model in its own scene + own fixed-FOV camera (drawn after the
                         world with depth cleared); hands + forearms attached to the gun (left hand fetches a staple
                         strip on reload); slides to center in ADS; kick + reload animations; muzzle pos
+  zombies/
+    navigation.js       createNavigation(): flow field on a 0.5m ground-floor grid built from colliders (floor =
+                        box top at y~0; obstacles padded by zombie radius). Dijkstra from the player every 0.2s;
+                        rebuilds when colliders.length changes (shutter). directionTo() walks straight if the
+                        line is clear, else follows the field with look-ahead. distanceToTarget() for spawning
+    zombie.js           Zombie class (shootable): states spawning -> chasing -> dead; path + crowd separation +
+                        arrive braking; moves with moveAndCollide; hitboxes follow it; flinch; onDeath callback
+    zombieModel.js      Blocky shopper model (random outfit, maybe a shopping bag) + code animation: shamble,
+                        flinch/flash, rise from floor, tip over and sink
+    zombieManager.js    createZombieManager(): spawn (reachable spawn points >= minSpawnDistance away), update,
+                        keep the player out of zombies, death splatter, shootables bookkeeping, clear()
   fx/
     effects.js          Tracers (pooled) + particle bursts (one InstancedMesh): splat() and puff()
   world/
@@ -95,7 +109,7 @@ src/
 ## How the pieces connect
 - `main.js` owns the loop. `update(dt)` (60Hz): if not running (pointer unlocked) it freezes the
   player and clears input; otherwise handles debug keys, `player.update(dt)`, `gun.update(dt)` (after the player so
-  shots use this tick's eye), `world.update(dt)`, `arena.update(dt)`, `input.endTick()`.
+  shots use this tick's eye), `zombies.update(dt)`, `world.update(dt)`, `arena.update(dt)`, `input.endTick()`.
   `render(alpha, frameTime)`: applies mouse look, interpolates the camera, updates effects + viewmodel, updates the
   HUD, then draws two passes: the world, then (after `clearDepth`) the viewmodel scene. `renderer.autoClear` is false.
 - Input: mouse buttons are tracked like keys as `Mouse0`/`Mouse1`/`Mouse2`, only while pointer-locked.
@@ -154,6 +168,13 @@ transition, spread x0.08, 20% zoom, gun centered with sight just below the cross
 Player look: last mall employee (red polo, khakis, white sneakers). Hands/forearms on the gun; legs and lower
 torso visible when looking down, animated for walk/crouch/slide/air. The body sits `body.backOffset` behind
 the camera so you look past the belly; only the lower torso is drawn (a full chest fills the screen).
+
+Step 3 in progress. Done (part 1): Shopper zombies that rise out of the floor at reachable spawn markers,
+path to the player with a flow field (around pillars/benches/planters, through the doorway once the shutter
+is open), keep spacing in a crowd, stop at arm's length, block the player, and can be shot (150 HP round 1:
+4 body / 2 head) with green/purple splatter, then fall over and sink. Spawned with debug Z (X clears); round
+is fixed at 1. Next (part 2): wind-up attack (40 dmg, 3 hits to die), health regen (3s delay, ~2s to full),
+hurt vignette, onPlayerDeath(), run stats, results screen with Play again.
 
 ## Planned build order
 1. Walkable mall (done)
