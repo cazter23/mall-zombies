@@ -4,6 +4,7 @@
 // sometimes clutching a shopping bag. Faces -Z like the player. All animation
 // is done in code from the zombie's state each rendered frame:
 //   shamble (legs swing, arms bob, torso sways, head lolls), flinch when hit,
+//   raise arms overhead (wind-up), slam them down (swing), ease back (recovery),
 //   rise out of the floor when spawning, tip over and sink when killed.
 // =============================================================================
 
@@ -135,6 +136,29 @@ export function createZombieModel(type) {
       arms[0].rotation.z = 0.05;
       arms[1].rotation.z = -0.05;
       neck.rotation.set(0.12, 0, Math.sin(walkPhase * 0.5) * 0.18); // lolling head
+
+      // Attack: arms rise overhead and the body leans back (the telegraph), then they slam down.
+      const atk = type.attack;
+      let armPose = null; // overrides the shamble arm angle when set
+      if (zombie.state === 'windup') {
+        const t = ease(Math.min(1, zombie.stateTime / atk.windupSeconds));
+        armPose = arms[0].rotation.x + (atk.armsRaisedRadians - arms[0].rotation.x) * t;
+        upper.rotation.x += 0.2 * t;
+        neck.rotation.x -= 0.25 * t;
+      } else if (zombie.state === 'swing') {
+        const t = ease(Math.min(1, zombie.stateTime / atk.swingSeconds));
+        armPose = atk.armsRaisedRadians + (atk.armsSlammedRadians - atk.armsRaisedRadians) * t;
+        upper.rotation.x += 0.2 - 0.55 * t;
+      } else if (zombie.state === 'chasing' && zombie.attackCooldown > 0) {
+        // Recovery: arms ease back up from the slam during the first part of the cooldown.
+        const r = Math.max(0, (zombie.attackCooldown / atk.recoverSeconds - 0.6) / 0.4); // 1 -> 0
+        armPose = arms[0].rotation.x + (atk.armsSlammedRadians - arms[0].rotation.x) * r;
+        upper.rotation.x -= 0.35 * r;
+      }
+      if (armPose !== null) {
+        arms[0].rotation.x = armPose;
+        arms[1].rotation.x = armPose;
+      }
 
       // Flinch: jolt the upper body and head back when shot, and flash white.
       const flinch = type.flinchSeconds > 0 ? zombie.flinchTimer / type.flinchSeconds : 0;

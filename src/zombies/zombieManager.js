@@ -23,13 +23,27 @@ const UP = new THREE.Vector3(0, 1, 0);
  * @param effects      fx (splatter, dust)
  * @param spawnPoints  map markers: [{ name, zone, position }]
  * @param getRound     () => current round number (for health scaling)
+ * @param canAttack    () => false once the player is dead
+ * @param onPlayerHit  (damage, zombie) => apply a landed zombie hit to the player
+ * @param onKill       optional (zombie) => called when a zombie dies (run stats, later points)
  */
-export function createZombieManager({ scene, colliders, player, shootables, effects, spawnPoints, getRound }) {
+export function createZombieManager({
+  scene,
+  colliders,
+  player,
+  shootables,
+  effects,
+  spawnPoints,
+  getRound,
+  canAttack,
+  onPlayerHit,
+  onKill = null,
+}) {
   // Every zombie type shares one grid for now; sized for the shopper.
   const base = zombieTypes.shopper;
   const nav = createNavigation(colliders, { radius: base.radius, height: base.height });
   const zombies = [];
-  const ctx = { nav, player, colliders, zombies };
+  const ctx = { nav, player, colliders, zombies, canAttack: true, onPlayerHit };
   const scratch = new THREE.Vector3();
 
   // Prefer spawn points the player can be reached from, not right on top of them.
@@ -51,6 +65,7 @@ export function createZombieManager({ scene, colliders, player, shootables, effe
     scratch.copy(zombie.position);
     scratch.y += zombie.type.hitbox.bodyTop * 0.75;
     effects.splat(scratch, UP, zombie.type.splatColors, zombie.type.deathSplatCount);
+    if (onKill) onKill(zombie);
   }
 
   // Push the player out of any zombie they're overlapping, so zombies are solid to walk into.
@@ -113,6 +128,7 @@ export function createZombieManager({ scene, colliders, player, shootables, effe
     // Fixed-tick update.
     update(dt) {
       nav.update(dt, player.position);
+      ctx.canAttack = canAttack();
       for (const z of zombies) z.update(dt, ctx);
       keepPlayerOutOfZombies();
 

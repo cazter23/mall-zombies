@@ -12,6 +12,8 @@ export function createPlayerStats() {
   return {
     maxHealth: feel.player.maxHealth,
     health: feel.player.maxHealth,
+    regenDelay: feel.health.regenDelay, // seconds after a hit before health regenerates
+    regenRate: feel.health.regenRate, // health per second while regenerating
 
     walkSpeed: feel.movement.walkSpeed,
     sprintSpeed: feel.movement.sprintSpeed,
@@ -29,6 +31,7 @@ export function createPlayerStats() {
     adsMoveSpeed: feel.ads.moveSpeedMultiplier, // walk speed multiplier while aiming
 
     damageMultiplier: weaponStatDefaults.damageMultiplier,
+    meleeDamageMultiplier: weaponStatDefaults.meleeDamageMultiplier,
     reloadSpeed: weaponStatDefaults.reloadSpeed,
   };
 }

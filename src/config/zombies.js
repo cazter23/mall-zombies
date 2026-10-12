@@ -25,6 +25,19 @@ export const zombieTypes = {
       headTop: 1.78,
     },
 
+    // Attack: wind up (telegraph), swing, then a short recovery before the next one.
+    // The hit only lands if the player is STILL in reach and in front when the arms come down.
+    attack: {
+      range: 1.1, // meters, center to center (they stop walking at ~0.8)
+      windupSeconds: 0.45, // arms raised overhead: the warning (shorter = harder to dodge)
+      swingSeconds: 0.15, // arms slam down; damage is checked at the start of the swing
+      recoverSeconds: 0.8, // no new attack for this long afterwards (it keeps following you)
+      damage: 40, // 3 hits from full health (Black Ops 3 style)
+      hitHalfAngleDegrees: 60, // player must be within this angle of where the zombie faces
+      armsRaisedRadians: 2.3, // arm angle at the top of the wind-up (0 = straight forward)
+      armsSlammedRadians: -0.7, // arm angle at the bottom of the swing
+    },
+
     // Timings
     spawnSeconds: 1.0, // rising up out of the floor
     flinchSeconds: 0.15, // recoil when shot

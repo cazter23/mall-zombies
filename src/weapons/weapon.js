@@ -37,6 +37,20 @@ export class Weapon {
     this.reloadTimer = this.reloadDuration;
   }
 
+  // Abandon a reload in progress (no ammo is lost; it just has to start again).
+  cancelReload() {
+    this.reloadTimer = 0;
+  }
+
+  // Full ammo and no timers, for a new run.
+  reset() {
+    this.magazine = this.def.magazineSize;
+    this.reserve = this.def.startingReserve;
+    this.cooldown = 0;
+    this.fireRequest = 0;
+    this.reloadTimer = 0;
+  }
+
   finishReload() {
     const needed = this.def.magazineSize - this.magazine;
     const loaded = Math.min(needed, this.reserve);

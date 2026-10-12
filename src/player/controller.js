@@ -56,6 +56,16 @@ export class PlayerController {
     this.chainPressTimer = 0; // > 0 right after C is pressed mid-slide (C a hair before Space)
     this.chainGraceTimer = 0; // > 0 right after landing from a momentum jump (C a hair late)
 
+    // Melee lunge: a short forced dash toward a target (set by weapons/melee.js).
+    this.lungeTimer = 0;
+    this.lungeVX = 0;
+    this.lungeVZ = 0;
+
+    // Sprint effects (visual only): 0..1 blend toward "sprinting", step phase, bob strength.
+    this.sprintAmount = 0;
+    this.bobPhase = 0;
+    this.bobStrength = 0; // meters of head bob right now
+
     camera.rotation.order = 'YXZ'; // yaw first, then pitch: standard FPS camera
     this.respawn();
   }
@@ -82,6 +92,16 @@ export class PlayerController {
     this.slideChainQueued = false;
     this.chainPressTimer = 0;
     this.chainGraceTimer = 0;
+    this.lungeTimer = 0;
+    this.sprintMeter = this.stats.sprintDuration;
+    this.sprintExhausted = false;
+  }
+
+  // Dash in direction (dirX, dirZ) at `speed` for `seconds`, overriding normal movement.
+  lunge(dirX, dirZ, speed, seconds) {
+    this.lungeVX = dirX * speed;
+    this.lungeVZ = dirZ * speed;
+    this.lungeTimer = seconds;
   }
 
   // 0..1, for the HUD health bar
@@ -164,8 +184,17 @@ export class PlayerController {
     // --- Stance: crouch / slide / stand ---
     this.updateStance(dt, wishX, wishZ);
 
-    // --- Accelerate toward the target velocity (a slide overrides this) ---
-    if (this.stance === 'slide') {
+    // --- Accelerate toward the target velocity (a slide or melee lunge overrides this) ---
+    if (this.lungeTimer > 0) {
+      this.lungeTimer -= dt;
+      this.velocity.x = this.lungeVX;
+      this.velocity.z = this.lungeVZ;
+      if (this.lungeTimer <= 0) {
+        // Bleed most of the lunge speed so you don't skate past the target.
+        this.velocity.x *= feel.melee.lungeEndSpeedKeep;
+        this.velocity.z *= feel.melee.lungeEndSpeedKeep;
+      }
+    } else if (this.stance === 'slide') {
       // Fast at first, then drops off toward endSpeed. Direction is locked at slide start.
       const t = 1 - this.slideTimer / stats.slideDuration;
       const speed = feel.slide.endSpeed + (stats.slideSpeed - feel.slide.endSpeed) * (1 - t * t);
@@ -227,6 +256,17 @@ export class PlayerController {
     );
     this.grounded = result.grounded;
     this.timeSinceGrounded = this.grounded ? 0 : this.timeSinceGrounded + dt;
+
+    // --- Sprint effects (visual only): blend, footstep phase, head bob strength ---
+    const fx = feel.sprintFx;
+    const blend = Math.min(1, fx.blendSpeed * dt);
+    this.sprintAmount += ((this.isSprinting ? 1 : 0) - this.sprintAmount) * blend;
+    const onFeet = this.grounded && this.stance !== 'slide';
+    const speed = Math.hypot(this.velocity.x, this.velocity.z);
+    if (onFeet) this.bobPhase += ((speed * dt) / fx.bobStride) * Math.PI * 2;
+    const walkFactor = Math.min(1, speed / stats.walkSpeed);
+    const targetBob = onFeet ? walkFactor * fx.walkBobHeight + this.sprintAmount * fx.sprintBobHeight : 0;
+    this.bobStrength += (targetBob - this.bobStrength) * blend;
 
     // Safety net: if we ever fall out of the world, put the player back.
     if (this.position.y < -20) this.respawn();
@@ -352,6 +392,10 @@ export class PlayerController {
   syncCamera(alpha) {
     this.camera.position.lerpVectors(this.prevPosition, this.position, alpha);
     this.camera.position.y += this.prevEyeHeight + (this.eyeHeight - this.prevEyeHeight) * alpha;
-    this.camera.rotation.set(this.pitch + this.viewKick, this.yaw, 0);
+    // Head bob: dips on each footstep (twice per cycle), with a slight roll while sprinting.
+    // Visual only: shots still come from the true eye position.
+    this.camera.position.y -= Math.abs(Math.sin(this.bobPhase)) * this.bobStrength;
+    const roll = Math.sin(this.bobPhase) * this.sprintAmount * feel.sprintFx.sprintBobRollDegrees * DEG_TO_RAD;
+    this.camera.rotation.set(this.pitch + this.viewKick, this.yaw, roll);
   }
 }

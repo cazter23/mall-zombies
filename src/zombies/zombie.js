@@ -7,8 +7,10 @@
 // States:
 //   spawning -> rises out of the floor (can already be shot)
 //   chasing  -> follows the flow field toward the player, stops at arm's length
+//   windup   -> in reach: stands still with arms raised (the telegraph)
+//   swing    -> arms slam down; the player is hit only if still in reach and in front
+//   (back to chasing, with a short recovery before it may attack again)
 //   dead     -> tips over, lies there, sinks away, then `removed` is set
-// (Attacking comes in the second half of step 3.)
 // =============================================================================
 
 import * as THREE from 'three';
@@ -36,7 +38,9 @@ export class Zombie {
     this.state = 'spawning';
     this.stateTime = 0;
     this.flinchTimer = 0;
+    this.attackCooldown = 0; // seconds until it may start another attack
     this.killedByHeadshot = false;
+    this.killedByMelee = false;
     this.removed = false; // set once the corpse has sunk away; the manager then deletes it
     this.onDeath = null; // optional callback(zombie), set by the manager
 
@@ -66,12 +70,13 @@ export class Zombie {
 
   // --- Shootable ---------------------------------------------------------------
 
-  takeHit({ damage, part }) {
+  takeHit({ damage, part, melee = false }) {
     if (!this.isAlive) return { killed: false };
     this.health -= damage;
-    this.flinchTimer = this.type.flinchSeconds;
+    this.flinchTimer = this.type.flinchSeconds; // flinches, but an attack already winding up still comes
     if (this.health > 0) return { killed: false };
-    this.killedByHeadshot = part === 'head';
+    this.killedByHeadshot = part === 'head' && !melee;
+    this.killedByMelee = melee;
     this.die();
     return { killed: true };
   }
@@ -99,18 +104,39 @@ export class Zombie {
 
   // --- Tick ----------------------------------------------------------------------
 
-  /** ctx: { nav, player, colliders, zombies } */
+  /**
+   * ctx: { nav, player, colliders, zombies,
+   *        canAttack: boolean (false once the player is dead),
+   *        onPlayerHit(damage, zombie) }
+   */
   update(dt, ctx) {
     this.prevPosition.copy(this.position);
     this.prevYaw = this.yaw;
     this.stateTime += dt;
     this.flinchTimer = Math.max(0, this.flinchTimer - dt);
+    this.attackCooldown = Math.max(0, this.attackCooldown - dt);
+    const attack = this.type.attack;
 
     if (this.state === 'spawning') {
       this.faceToward(ctx.player.position, dt);
       if (this.stateTime >= this.type.spawnSeconds) this.setState('chasing');
     } else if (this.state === 'chasing') {
       this.chase(dt, ctx);
+      if (ctx.canAttack && this.attackCooldown <= 0 && this.distanceTo(ctx.player) <= attack.range) {
+        this.setState('windup');
+      }
+    } else if (this.state === 'windup') {
+      this.holdStill(dt, ctx);
+      if (this.stateTime >= attack.windupSeconds) {
+        this.setState('swing');
+        if (ctx.canAttack && this.canHit(ctx.player)) ctx.onPlayerHit(attack.damage, this);
+      }
+    } else if (this.state === 'swing') {
+      this.holdStill(dt, ctx);
+      if (this.stateTime >= attack.swingSeconds) {
+        this.setState('chasing');
+        this.attackCooldown = attack.recoverSeconds;
+      }
     } else if (this.state === 'dead') {
       const t = this.type;
       if (this.stateTime >= t.fallSeconds + t.corpseSeconds + t.sinkSeconds) this.removed = true;
@@ -178,6 +204,35 @@ export class Zombie {
     // 5) Face the way we're walking; face the player when close or standing still.
     if (distToPlayer < contact * 2 || this.horizontalSpeed < 0.2) this.faceToward(player.position, dt);
     else this.faceDirection(this.velocity.x, this.velocity.z, dt);
+  }
+
+  distanceTo(player) {
+    return Math.hypot(player.position.x - this.position.x, player.position.z - this.position.z);
+  }
+
+  // Is the player still in reach, roughly in front, and at a height the arms can reach?
+  canHit(player) {
+    const attack = this.type.attack;
+    const dx = player.position.x - this.position.x;
+    const dz = player.position.z - this.position.z;
+    const d = Math.hypot(dx, dz);
+    if (d > attack.range) return false;
+    const top = this.position.y + this.type.height;
+    if (player.position.y > top || player.position.y + player.height < this.position.y) return false;
+    if (d < 1e-4) return true;
+    const facing = (-Math.sin(this.yaw) * dx - Math.cos(this.yaw) * dz) / d; // cos(angle off-center)
+    return facing >= Math.cos((attack.hitHalfAngleDegrees * Math.PI) / 180);
+  }
+
+  // Wind-up / swing: stop walking (but keep gravity and collision) and keep turning to face the player.
+  holdStill(dt, { player, colliders }) {
+    const type = this.type;
+    const slow = Math.max(0, 1 - type.acceleration * dt);
+    this.velocity.x *= slow;
+    this.velocity.z *= slow;
+    this.velocity.y = Math.max(this.velocity.y - feel.movement.gravity * dt, -feel.movement.maxFallSpeed);
+    moveAndCollide(this.position, this.velocity, dt, type.radius, type.height, colliders, feel.movement.stepTolerance);
+    this.faceToward(player.position, dt);
   }
 
   faceToward(point, dt) {

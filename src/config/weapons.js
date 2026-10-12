@@ -52,8 +52,29 @@ export const weapons = {
   },
 };
 
+// The melee weapon: a box cutter from the employee's pocket (COD knife equivalent).
+export const melee = {
+  boxCutter: {
+    id: 'boxCutter',
+    name: 'Box Cutter',
+    damage: 150, // one-hits a round-1 zombie, 2 hits rounds 2-3, then falls off (like COD)
+    range: 1.8, // meters from the eye to the target's nearest point
+    hitHalfAngleDegrees: 40, // how far off-center a target can be (wider than the crosshair: forgiving)
+    swingSeconds: 0.5, // whole swing; the gun can't fire during it
+    hitAtSeconds: 0.15, // when in the swing the hit lands
+    lungeRange: 3.0, // a target this close (but out of reach) makes you lurch at it
+    lungeSpeed: 9, // m/s during the lunge
+    lungeMaxSeconds: 0.2,
+    lungeStopFraction: 0.6, // the lunge stops when the target is this fraction of `range` away
+    impactJoltDegrees: 1.5, // view jolt when the slash connects
+    splatCount: 30, // big splatter on a hit
+    colors: { handle: 0xffd23f, blade: 0xdfe6ee, grip: 0x2b2b2b },
+  },
+};
+
 // Defaults for the player-side weapon multipliers in the stats object.
 export const weaponStatDefaults = {
-  damageMultiplier: 1, // all weapon damage is multiplied by this
+  damageMultiplier: 1, // all gun damage is multiplied by this
+  meleeDamageMultiplier: 1, // box cutter damage is multiplied by this
   reloadSpeed: 1, // reload time is divided by this (2 = twice as fast)
 };

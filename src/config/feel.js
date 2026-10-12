@@ -14,7 +14,21 @@ export const feel = {
     height: 1.8, // meters, feet to top of head (used for collision)
     eyeHeight: 1.6, // camera height above the feet
     radius: 0.35, // collision radius
-    maxHealth: 100, // not used until zombies can hit you
+    maxHealth: 100, // a Shopper hits for 40, so 3 hits from full
+  },
+
+  // Health regen and the red "you're hurt" screen edges
+  health: {
+    regenDelay: 3, // seconds without being hit before health starts coming back
+    regenRate: 50, // health per second while regenerating (empty -> full in ~2s)
+    hitFlashSeconds: 0.4, // red flash on the screen edges when hit
+    hitFlashOpacity: 0.65,
+    hitJoltDegrees: 2.5, // the view jolts down this much when hit
+    hurtMaxOpacity: 0.45, // how red the edges get from ordinary damage (above the low-health line)
+    lowHealthFraction: 0.4, // below this: "one more hit and you're down" mode
+    lowHealthOpacity: 0.95, // in that mode the edges glow this strongly at the peak of each pulse...
+    pulseAmount: 0.55, // ...and dim by this fraction at the low point, so it clearly throbs
+    pulseSpeed: 7, // radians per second (about a heartbeat)
   },
 
   movement: {
@@ -70,6 +84,38 @@ export const feel = {
     sensitivityFollowsZoom: true, // mouse turns slower when zoomed in, so aim feels the same
   },
 
+  // Making sprinting obvious: head bob, the gun's running pose, and cartoon speed lines.
+  sprintFx: {
+    blendSpeed: 8, // how fast the effects fade in/out when you start/stop sprinting (per second)
+    bobStride: 5.2, // meters per full bob cycle (two footsteps): ~3 steps/s at sprint speed
+    walkBobHeight: 0.006, // a barely-there bob when walking...
+    sprintBobHeight: 0.035, // ...and a clear one when sprinting
+    sprintBobRollDegrees: 0.6, // slight side-to-side tilt with each step while sprinting
+    gunDrop: 0.06, // the gun lowers this much (meters) in the running pose...
+    gunRight: 0.035, // ...shifts right...
+    gunBack: 0.03, // ...and pulls back toward you
+    gunPitchDegrees: 22, // muzzle tips down
+    gunYawDegrees: 28, // and turns inward across the body
+    gunRollDegrees: 18,
+    gunBobSide: 0.008, // the gun sways left-right once per two steps...
+    gunBobUp: 0.005, // ...and dips slightly on each step
+    speedLinesOpacity: 0.16, // faint streaks at the very edges of the screen at full sprint
+  },
+
+  // Dying: the view tips over onto the floor, then the results screen appears.
+  death: {
+    cameraSeconds: 1.2, // how long the fall-over takes
+    cameraHeight: 0.35, // camera height above the feet when lying on the floor
+    rollRadians: 1.25, // how far the view rolls onto its side
+    endPitch: 0.2, // looking slightly up from the floor at the end
+    resultsDelay: 1.6, // seconds after death before the results screen shows
+  },
+
+  melee: {
+    key: 'KeyV', // tap to slash with the box cutter (COD's default melee key on PC)
+    lungeEndSpeedKeep: 0.3, // fraction of lunge speed kept when it ends (so you don't skate past)
+  },
+
   camera: {
     fov: 75,
     near: 0.05,
@@ -92,6 +138,17 @@ export const feel = {
     reloadDrop: 0.12, // meters the gun drops during a reload
     reloadRollDegrees: 20, // how far the gun rolls sideways during a reload
     reloadHandDrop: 0.2, // meters the left hand drops away to grab a new staple strip
+    // Box cutter slash (left hand: backhand from upper left to lower right). Camera-space meters.
+    melee: {
+      enterFrom: { x: -0.3, y: -0.4, z: -0.34 }, // hand comes up from the bottom left...
+      slashFrom: { x: -0.17, y: 0.05, z: -0.45 }, // ...to the top left...
+      slashTo: { x: 0.2, y: -0.15, z: -0.43 }, // ...slashes across to the bottom right...
+      exitTo: { x: 0.26, y: -0.5, z: -0.34 }, // ...and drops out of view.
+      slashStart: 0.22, // fraction of the swing when the slash begins
+      slashEnd: 0.42, // fraction when it ends (the hit lands in between)
+      gunDrop: 0.14, // meters the staple gun drops out of the way
+      gunTiltDegrees: 25,
+    },
   },
 
   // The player's own body: arms on the gun, legs/torso visible when looking down.

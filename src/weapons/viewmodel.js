@@ -8,6 +8,8 @@
 // blow the gun up. While aiming it slides to the center, sight on the crosshair.
 // The player's hands and forearms are attached to the gun, so they follow kick,
 // ADS and reload automatically; the left hand also fetches a new staple strip.
+// For a melee swing, the gun drops aside and a separate left arm holding a box
+// cutter slashes across the screen.
 // =============================================================================
 
 import * as THREE from 'three';
@@ -95,7 +97,41 @@ function buildArms(gun, gunColors) {
   return { leftArm, strip };
 }
 
-export function createViewmodel(weaponDef) {
+/** Left forearm + hand holding a little yellow box cutter, pointing -Z. Hidden until a melee swing. */
+function buildMeleeArm(meleeColors) {
+  const c = feel.body.colors;
+  const arm = new THREE.Group();
+  const V = (x, y, z) => new THREE.Vector3(x, y, z);
+  const add = (mesh) => (arm.add(mesh), mesh);
+
+  // Forearm runs back and down-left from the hand, out the bottom-left of the screen.
+  const hand = add(makeBoxMesh(c.skin));
+  hand.scale.set(0.06, 0.06, 0.08);
+  const forearm = add(makeBoxMesh(c.skin));
+  placeLimb(forearm, V(0, -0.01, 0.03), V(-0.07, -0.24, 0.22), 0.056, 0.052);
+  const sleeve = add(makeBoxMesh(c.shirt));
+  placeLimb(sleeve, V(-0.07, -0.24, 0.22), V(-0.1, -0.36, 0.3), 0.09, 0.09);
+
+  // Box cutter angled up and forward out of the fist (pointing straight ahead it would be
+  // seen end-on and vanish): yellow body, dark slider, silver blade.
+  const cutter = new THREE.Group();
+  cutter.rotation.x = 1.0;
+  arm.add(cutter);
+  const part = (color, sx, sy, sz, y, z) => {
+    const mesh = makeBoxMesh(color);
+    mesh.scale.set(sx, sy, sz);
+    mesh.position.set(0, y, z);
+    cutter.add(mesh);
+  };
+  part(meleeColors.handle, 0.034, 0.03, 0.13, 0.012, -0.07);
+  part(meleeColors.grip, 0.014, 0.01, 0.035, 0.031, -0.05);
+  part(meleeColors.blade, 0.006, 0.03, 0.06, 0.008, -0.165);
+
+  arm.visible = false;
+  return arm;
+}
+
+export function createViewmodel(weaponDef, meleeDef) {
   const scene = new THREE.Scene();
   scene.add(new THREE.HemisphereLight(0xfff6e6, 0x4a3f55, 1.6));
 
@@ -112,6 +148,8 @@ export function createViewmodel(weaponDef) {
   const { gun, muzzle } = buildStapleGun(weaponDef.viewmodel);
   holder.add(gun);
   const { leftArm, strip } = buildArms(gun, weaponDef.viewmodel);
+  const meleeArm = buildMeleeArm(meleeDef.colors);
+  rig.add(meleeArm);
 
   const vm = feel.viewmodel;
   const ads = weaponDef.ads.offset;
@@ -129,7 +167,9 @@ export function createViewmodel(weaponDef) {
 
     // Call every rendered frame, after the world camera has been placed.
     // `aimAmount` is 0 (hip) .. 1 (fully aimed down sights).
-    update(frameTime, worldCamera, weapon, aimAmount) {
+    // `meleeProgress` is 0..1 through a box cutter swing, or null.
+    // `sprintAmount` 0..1 blends in the running pose; `bobPhase` is the player's footstep phase.
+    update(frameTime, worldCamera, weapon, aimAmount, meleeProgress = null, sprintAmount = 0, bobPhase = 0) {
       rig.position.copy(worldCamera.position);
       rig.quaternion.copy(worldCamera.quaternion);
       camera.position.copy(worldCamera.position);
@@ -164,6 +204,41 @@ export function createViewmodel(weaponDef) {
         lerp(vm.aimYawDegrees, 0) * DEG_TO_RAD,
         dip * vm.reloadRollDegrees * DEG_TO_RAD,
       );
+
+      // Sprinting: lower the gun and turn it across the body, swinging with each step.
+      const s = sprintAmount * (1 - aimAmount);
+      if (s > 0.001) {
+        const fx = feel.sprintFx;
+        holder.position.x += s * (fx.gunRight + Math.sin(bobPhase) * fx.gunBobSide);
+        holder.position.y -= s * (fx.gunDrop + Math.abs(Math.cos(bobPhase)) * fx.gunBobUp);
+        holder.position.z += s * fx.gunBack;
+        holder.rotation.x -= s * fx.gunPitchDegrees * DEG_TO_RAD;
+        holder.rotation.y += s * fx.gunYawDegrees * DEG_TO_RAD;
+        holder.rotation.z += s * fx.gunRollDegrees * DEG_TO_RAD;
+      }
+
+      // Melee: drop the gun aside, swap the left hand for the box cutter arm and slash.
+      const mel = vm.melee;
+      meleeArm.visible = meleeProgress !== null;
+      leftArm.visible = meleeProgress === null;
+      if (meleeProgress !== null) {
+        const p = meleeProgress;
+        const out = Math.sin(p * Math.PI); // gun drops out and comes back
+        holder.position.y -= out * mel.gunDrop;
+        holder.rotation.z -= out * mel.gunTiltDegrees * DEG_TO_RAD;
+        // Path: enterFrom -> slashFrom -> slashTo -> exitTo
+        let a;
+        let b;
+        let t;
+        if (p < mel.slashStart) [a, b, t] = [mel.enterFrom, mel.slashFrom, p / mel.slashStart];
+        else if (p < mel.slashEnd)
+          [a, b, t] = [mel.slashFrom, mel.slashTo, (p - mel.slashStart) / (mel.slashEnd - mel.slashStart)];
+        else [a, b, t] = [mel.slashTo, mel.exitTo, (p - mel.slashEnd) / (1 - mel.slashEnd)];
+        const e = t * t * (3 - 2 * t);
+        meleeArm.position.set(a.x + (b.x - a.x) * e, a.y + (b.y - a.y) * e, a.z + (b.z - a.z) * e);
+        // Blade angled along the slash (down and to the right), turning through it.
+        meleeArm.rotation.set(0.15, 0.3 - 0.6 * Math.min(1, p / mel.slashEnd), -0.5);
+      }
     },
 
     // World-space position of the gun's muzzle (where tracers start).

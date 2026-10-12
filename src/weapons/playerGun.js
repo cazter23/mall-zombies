@@ -14,7 +14,7 @@ import { createAim } from './aim.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 
-export function createPlayerGun({ def, stats, player, input, colliders, shootables, effects, viewmodel, hud }) {
+export function createPlayerGun({ def, stats, player, input, colliders, shootables, effects, viewmodel, hud, onShot = null }) {
   const weapon = new Weapon(def, stats);
   const aim = createAim({ def, input, player });
   const origin = new THREE.Vector3();
@@ -42,6 +42,7 @@ export function createPlayerGun({ def, stats, player, input, colliders, shootabl
     } else if (shot.distance < def.range) {
       effects.puff(shot.point, shot.normal); // hit a wall or prop
     }
+    if (onShot) onShot(shot);
     return shot;
   }
 
@@ -50,14 +51,22 @@ export function createPlayerGun({ def, stats, player, input, colliders, shootabl
     aim,
     lastShot: null, // most recent shot result (handy for debugging)
 
-    // Fixed-tick update.
-    update(dt) {
+    // Fixed-tick update. `blocked` (e.g. mid melee swing): no firing or reloading this tick.
+    update(dt, blocked = false) {
       aim.update(dt); // ADS + spread first, so this tick's shot uses them
+      const trigger = input.consumePress('Mouse0');
+      const reload = input.consumePress('KeyR');
       const result = weapon.update(dt, {
-        triggerPressed: input.consumePress('Mouse0'),
-        reloadPressed: input.consumePress('KeyR'),
+        triggerPressed: trigger && !blocked,
+        reloadPressed: reload && !blocked,
       });
       if (result === 'fire') this.lastShot = fire();
+    },
+
+    // Full ammo, for a new run.
+    reset() {
+      weapon.reset();
+      this.lastShot = null;
     },
   };
 }

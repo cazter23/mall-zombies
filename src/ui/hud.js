@@ -16,6 +16,16 @@ function el(tag, className) {
 export function createHud() {
   const hud = el('div', 'hud');
 
+  // Red glow around the screen edges when hurt (under everything else in the HUD).
+  const hurt = el('div', 'hurt');
+  hud.append(hurt);
+  let lastHurt = -1;
+
+  // Cartoon speed lines at the screen edges while sprinting.
+  const speedLines = el('div', 'speed-lines');
+  hud.append(speedLines);
+  let lastSpeed = -1;
+
   // Crosshair: four lines around a gap that shows the current spread cone,
   // plus a precise dot that fades in while aiming down sights.
   const crosshair = el('div', 'crosshair');
@@ -75,6 +85,7 @@ export function createHud() {
         <li><kbd>Mouse</kbd> look</li>
         <li><kbd>Click</kbd> shoot</li>
         <li><kbd>R</kbd> reload</li>
+        <li><kbd>V</kbd> box cutter</li>
         <li><kbd>Esc</kbd> pause</li>
       </ul>
       ${debug.allowShutterToggle ? '<p class="debug-hint">Debug: <kbd>O</kbd> opens the shutter</p>' : ''}
@@ -85,7 +96,22 @@ export function createHud() {
   const kicker = overlay.querySelector('.kicker');
   const playButton = overlay.querySelector('.play');
 
-  document.body.append(hud, overlay);
+  // Results screen, shown when you die.
+  const results = el('div', 'overlay results hidden');
+  results.innerHTML = `
+    <div class="card">
+      <div class="kicker">Attention shoppers</div>
+      <h1>Clocked<br />Out</h1>
+      <p class="tagline">Cleanup on aisle you.</p>
+      <dl class="results-stats"></dl>
+      <button class="play" type="button">Play again</button>
+    </div>
+  `;
+  const resultsStats = results.querySelector('.results-stats');
+  let playAgainHandler = null;
+  results.querySelector('.play').addEventListener('click', () => playAgainHandler && playAgainHandler());
+
+  document.body.append(hud, overlay, results);
 
   let startHandler = null;
   overlay.addEventListener('click', () => startHandler && startHandler());
@@ -101,14 +127,47 @@ export function createHud() {
       startHandler = fn;
     },
 
-    setPaused(paused) {
+    // `restart`: show the "back to work" wording instead of "paused" (after Play again).
+    setPaused(paused, { restart = false } = {}) {
       overlay.classList.toggle('hidden', !paused);
       hud.classList.toggle('dimmed', paused);
       if (!paused) hasStarted = true;
-      if (paused && hasStarted) {
+      if (paused && restart) {
+        kicker.textContent = 'Back to work';
+        playButton.textContent = 'Click to play';
+      } else if (paused && hasStarted) {
         kicker.textContent = 'Paused';
         playButton.textContent = 'Click to resume';
       }
+    },
+
+    // Dead: hide the combat HUD (crosshair, ammo, prompts).
+    setDead(dead) {
+      hud.classList.toggle('dead', dead);
+    },
+
+    onPlayAgain(fn) {
+      playAgainHandler = fn;
+    },
+
+    // { timeAlive (s), round, kills, headshotKills, meleeKills, accuracy (0..1) }
+    showResults(r) {
+      const minutes = Math.floor(r.timeAlive / 60);
+      const seconds = String(Math.floor(r.timeAlive % 60)).padStart(2, '0');
+      const rows = [
+        ['Time survived', `${minutes}:${seconds}`],
+        ['Round', r.round],
+        ['Zombies killed', r.kills],
+        ['Headshot kills', r.headshotKills],
+        ['Box cutter kills', r.meleeKills],
+        ['Accuracy', `${Math.round(r.accuracy * 100)}%`],
+      ];
+      resultsStats.innerHTML = rows.map(([label, value]) => `<dt>${label}</dt><dd>${value}</dd>`).join('');
+      results.classList.remove('hidden');
+    },
+
+    hideResults() {
+      results.classList.add('hidden');
     },
 
     // Called every frame; only touches the DOM when something changed.
@@ -134,6 +193,23 @@ export function createHud() {
         crosshairDot.style.opacity = String(aim);
         lastAim = aim;
       }
+    },
+
+    // 0..1 opacity of the sprint speed lines.
+    setSpeedLines(opacity) {
+      const rounded = Math.round(opacity * 50) / 50;
+      if (rounded === lastSpeed) return;
+      speedLines.style.opacity = String(rounded);
+      speedLines.classList.toggle('active', rounded > 0);
+      lastSpeed = rounded;
+    },
+
+    // 0..1 strength of the red hurt edges.
+    setHurt(strength) {
+      const rounded = Math.round(strength * 100) / 100;
+      if (rounded === lastHurt) return;
+      hurt.style.opacity = String(rounded);
+      lastHurt = rounded;
     },
 
     // A shot connected. Headshots get a bigger yellow marker; kills get a red one.
