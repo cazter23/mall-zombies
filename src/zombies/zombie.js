@@ -23,7 +23,8 @@ const ease = (t) => t * t * (3 - 2 * t);
 const desired = { x: 0, z: 0 };
 
 export class Zombie {
-  constructor({ type, health, position, yaw }) {
+  // `speed`: this zombie's gait speed in m/s (defaults to the type's base walk).
+  constructor({ type, health, position, yaw, speed = type.speed }) {
     this.type = type;
     this.maxHealth = health;
     this.health = health;
@@ -33,7 +34,7 @@ export class Zombie {
     this.velocity = new THREE.Vector3();
     this.yaw = yaw;
     this.prevYaw = yaw;
-    this.speed = type.speed * (1 + (Math.random() * 2 - 1) * type.speedVariation);
+    this.speed = speed * (1 + (Math.random() * 2 - 1) * type.speedVariation);
 
     this.state = 'spawning';
     this.stateTime = 0;

@@ -7,7 +7,7 @@
 // =============================================================================
 
 import * as THREE from 'three';
-import { debug } from '../config/debug.js';
+import { debug } from '../../config/debug.js';
 
 const COLORS = {
   skin: 0xeadcc6, // mannequin beige

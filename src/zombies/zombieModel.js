@@ -124,13 +124,16 @@ export function createZombieModel(type) {
 
       const type = zombie.type;
       const moveAmount = Math.min(1.3, zombie.horizontalSpeed / type.speed);
-      walkPhase += ((zombie.horizontalSpeed * frameTime) / S.strideLength) * Math.PI * 2;
+      // Joggers and runners take longer strides (so legs don't blur) and lean forward more.
+      const gaitScale = Math.max(1, zombie.speed / type.speed);
+      const runLean = Math.min(1, (gaitScale - 1) / 1.3) * Math.min(1, zombie.horizontalSpeed / zombie.speed);
+      walkPhase += ((zombie.horizontalSpeed * frameTime) / (S.strideLength * Math.sqrt(gaitScale))) * Math.PI * 2;
       const swing = Math.sin(walkPhase);
 
       // Shamble
       legs[0].rotation.x = swing * 0.5 * moveAmount;
       legs[1].rotation.x = -swing * 0.5 * moveAmount;
-      upper.rotation.set(-0.15, 0, Math.sin(walkPhase) * 0.07); // hunched forward, swaying
+      upper.rotation.set(-0.15 - 0.3 * runLean, 0, Math.sin(walkPhase) * 0.07); // hunched forward, swaying
       arms[0].rotation.x = -0.1 + Math.sin(walkPhase + 0.6) * 0.12 * moveAmount;
       arms[1].rotation.x = -0.1 + Math.sin(walkPhase + 2.2) * 0.12 * moveAmount;
       arms[0].rotation.z = 0.05;

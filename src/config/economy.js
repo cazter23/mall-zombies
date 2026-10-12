@@ -1,7 +1,7 @@
 // =============================================================================
 // ECONOMY CONFIG
-// Points, prices, and wave scaling. Step 1: data only. Nothing reads this yet;
-// later steps (shooting, zombies, waves, doors) will.
+// Points, prices, round timing and wave scaling. Read by game/wallet.js,
+// game/rounds.js, the zombie manager, and buyable things (doors, wall buys).
 // =============================================================================
 
 export const economy = {
@@ -22,6 +22,19 @@ export const economy = {
   // Door / shutter prices
   doors: {
     startShutter: 500,
+  },
+
+  // Wall-buy weapon prices. Buying a weapon you already own refills its ammo for `ammo`.
+  wallBuys: {
+    priceGun: { weapon: 500, ammo: 250 },
+    nailGun: { weapon: 1000, ammo: 500 },
+  },
+
+  // Round pacing
+  rounds: {
+    firstRoundDelay: 3, // seconds after the game starts before round 1's zombies begin spawning
+    roundStartDelay: 2, // seconds after a round is announced before its zombies begin spawning
+    breakSeconds: 10, // break between rounds (after the last zombie of a round dies)
   },
 
   waves: {

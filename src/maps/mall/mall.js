@@ -1,7 +1,10 @@
 // =============================================================================
-// MALL MAP (step 1: start room + main concourse)
+// MALL MAP: start room + main concourse
 // Everything is built from boxes with flat colors. Each solid box also becomes
-// an axis-aligned collider (THREE.Box3) in `colliders`.
+// an axis-aligned collider (THREE.Box3) in the shared `colliders` list.
+// Returns the map interface described in maps/index.js.
+//
+// Zones: startRoom (open at the start) and concourse (opened by the shutter door).
 //
 // Layout, in meters (+Y is up):
 //   - Main concourse runs along X:  x -20..20, z -6..6, 6m ceiling
@@ -10,10 +13,11 @@
 // =============================================================================
 
 import * as THREE from 'three';
-import { makeTileTexture, makeSignTexture, makeShutterTexture } from './textures.js';
-import { createShutter } from './shutter.js';
-import { debug } from '../config/debug.js';
-import { economy } from '../config/economy.js';
+import { makeTileTexture, makeSignTexture, makeShutterTexture } from '../../world/textures.js';
+import { createShutter } from '../../world/shutter.js';
+import { createDoor } from '../../world/door.js';
+import { debug } from '../../config/debug.js';
+import { economy } from '../../config/economy.js';
 
 export const LAYOUT = {
   concourse: { minX: -20, maxX: 20, minZ: -6, maxZ: 6, height: 6 },
@@ -41,13 +45,18 @@ const COLORS = {
   lightPanel: 0xfffbea,
 };
 
-export function buildMall(scene) {
+export function buildMall(scene, colliders) {
   const group = new THREE.Group();
   group.name = 'mall';
   scene.add(group);
 
-  const colliders = [];
   const materials = new Map();
+
+  // Zones: areas the player unlocks by buying doors. Zombies only spawn in open zones.
+  const zones = {
+    startRoom: { label: 'Start Room', open: true },
+    concourse: { label: 'Concourse', open: false },
+  };
 
   // --- Small helpers -------------------------------------------------------
 
@@ -156,9 +165,17 @@ export function buildMall(scene) {
     height: D.height,
     material: shutterMaterial,
     colliders,
-    cost: economy.doors.startShutter,
   });
   group.add(shutter.mesh);
+  const shutterDoor = createDoor({
+    id: 'startShutter',
+    label: 'Security Shutter',
+    price: economy.doors.startShutter,
+    opensZone: 'concourse',
+    zones,
+    barrier: shutter,
+    position: new THREE.Vector3(0, 1.5, C.maxZ + T / 2), // middle of the doorway
+  });
 
   // --- Shop fronts along the concourse (decorative, not enterable) ----------
 
@@ -298,22 +315,23 @@ export function buildMall(scene) {
 
   // --- Lighting --------------------------------------------------------------
 
-  scene.add(new THREE.HemisphereLight(0xfff6e6, 0xd8cdb8, 1.5));
+  // All lights live in the map's group, so unloading the map removes them too.
+  group.add(new THREE.HemisphereLight(0xfff6e6, 0xd8cdb8, 1.5));
 
   const sun = new THREE.DirectionalLight(0xffffff, 0.9);
   sun.position.set(6, 20, 8);
-  scene.add(sun);
+  group.add(sun);
 
   for (const x of [-12, 0, 12]) {
     const lamp = new THREE.PointLight(0xfff0d0, 22, 0, 2);
     lamp.position.set(x, C.height - 0.8, 0);
-    scene.add(lamp);
+    group.add(lamp);
   }
   const roomLamp = new THREE.PointLight(0xffe2b0, 8, 0, 2);
   roomLamp.position.set(0, R.height - 0.5, 10);
-  scene.add(roomLamp);
+  group.add(roomLamp);
 
-  // --- Invisible markers for later steps -------------------------------------
+  // --- Spawn points and wall-buy spots (invisible markers) -------------------
 
   const markers = {
     // Where zombies will appear
@@ -325,17 +343,20 @@ export function buildMall(scene) {
       { name: 'spawn_concourse_playTimeToys', zone: 'concourse', position: new THREE.Vector3(-15, 0, 5.2) },
       { name: 'spawn_concourse_byteMe', zone: 'concourse', position: new THREE.Vector3(15, 0, 5.2) },
     ],
-    // Where weapons will be bought off the wall. `normal` points out of the wall.
+    // Where weapons are bought off the wall. `normal` points out of the wall; `weapon` is a
+    // config/weapons.js id. Prices live in economy.js.
     wallBuys: [
-      { name: 'wallbuy_startRoom', zone: 'startRoom', position: new THREE.Vector3(R.maxX - 0.02, 1.5, 10), normal: new THREE.Vector3(-1, 0, 0) },
-      { name: 'wallbuy_concourse', zone: 'concourse', position: new THREE.Vector3(-5, 1.5, C.minZ + 0.02), normal: new THREE.Vector3(0, 0, 1) },
+      // Cheap full-auto pistol in the going-out-of-business store
+      { name: 'wallbuy_startRoom', zone: 'startRoom', weapon: 'priceGun', position: new THREE.Vector3(R.maxX - 0.02, 1.5, 10), normal: new THREE.Vector3(-1, 0, 0) },
+      // The first real upgrade, on the wall just outside Nuts & Bolts hardware
+      { name: 'wallbuy_concourse', zone: 'concourse', weapon: 'nailGun', position: new THREE.Vector3(7.7, 1.5, C.minZ + 0.02), normal: new THREE.Vector3(0, 0, 1) },
     ],
   };
 
   const markerGroup = new THREE.Group();
   markerGroup.name = 'markers';
   markerGroup.visible = debug.showMarkers;
-  scene.add(markerGroup);
+  group.add(markerGroup);
 
   const spawnMarkerMaterial = new THREE.MeshBasicMaterial({ color: 0xff3355, transparent: true, opacity: 0.5 });
   for (const s of markers.spawnPoints) {
@@ -356,14 +377,24 @@ export function buildMall(scene) {
   // Player start: middle of the start room, facing the shutter (-Z)
   const playerSpawn = { position: new THREE.Vector3(0, 0, 12), yaw: 0 };
 
+  const doors = [shutterDoor];
+
   return {
+    id: 'mall',
     group,
-    colliders,
-    shutter,
-    markers,
+    zones,
+    doors,
+    spawnPoints: markers.spawnPoints,
+    wallBuys: markers.wallBuys,
     playerSpawn,
     update(dt) {
-      shutter.update(dt);
+      for (const door of doors) door.update(dt);
+    },
+    reset() {
+      for (const door of doors) door.reset();
+    },
+    dispose() {
+      group.removeFromParent();
     },
   };
 }

@@ -348,6 +348,102 @@ kbd {
   white-space: nowrap;
 }
 
+/* ---------- Points (bottom-right, above the ammo) ---------- */
+
+.points {
+  position: absolute;
+  right: 24px;
+  bottom: 96px;
+  text-align: right;
+}
+.points-value {
+  font-family: 'Bungee', Impact, 'Arial Black', sans-serif;
+  font-size: 26px;
+  color: var(--mall-yellow);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
+}
+.points-pop {
+  position: absolute;
+  bottom: 30px;
+  font-family: 'Bungee', Impact, 'Arial Black', sans-serif;
+  font-size: 16px;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, 0.7);
+  white-space: nowrap;
+  animation: points-float 0.9s ease-out forwards;
+}
+.points-pop.gain {
+  color: #ffffff;
+}
+.points-pop.spend {
+  color: #ff5a5a;
+}
+@keyframes points-float {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-46px);
+  }
+}
+
+/* ---------- Round counter (top-left) and round banner ---------- */
+
+.round-counter {
+  position: absolute;
+  left: 26px;
+  top: 14px;
+  font-family: 'Bungee', Impact, 'Arial Black', sans-serif;
+  font-size: 64px;
+  line-height: 1;
+  color: var(--mall-yellow);
+  text-shadow: 3px 3px 0 var(--mall-pink), 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+.round-counter.flashing {
+  animation: round-flash 0.7s steps(1) infinite;
+}
+@keyframes round-flash {
+  50% {
+    opacity: 0.15;
+  }
+}
+.round-banner {
+  position: absolute;
+  left: 50%;
+  top: 22%;
+  transform: translateX(-50%);
+  font-family: 'Bungee', Impact, 'Arial Black', sans-serif;
+  font-size: 54px;
+  color: var(--mall-yellow);
+  text-shadow: 4px 4px 0 var(--mall-pink), 0 6px 16px rgba(0, 0, 0, 0.5);
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+}
+.round-banner.show {
+  animation: round-banner 2.8s ease-out forwards;
+}
+@keyframes round-banner {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scale(1.4);
+  }
+  12% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+  75% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.95);
+  }
+}
+
 /* ---------- Ammo counter (bottom-right) ---------- */
 
 .ammo {

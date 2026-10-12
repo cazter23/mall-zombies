@@ -9,8 +9,20 @@ export const zombieTypes = {
   // Round-1 zombie: a slow, shambling shopper.
   shopper: {
     id: 'shopper',
-    speed: 2.0, // m/s, a shamble: 40% of the player's walking speed (5)
+    speed: 2.0, // m/s, a shamble: 40% of the player's walking speed (5). The base ("walk") gait.
     speedVariation: 0.15, // each zombie gets +/- this fraction so a crowd doesn't move in lockstep
+
+    // Later rounds bring faster zombies (COD-style). Each zombie picks a gait when it spawns, using
+    // the chances from the last row whose `fromRound` has been reached. Player walks 5, sprints 8.
+    gaits: { walk: 2.0, jog: 3.4, run: 4.6 }, // m/s
+    gaitsByRound: [
+      { fromRound: 1, walk: 1 },
+      { fromRound: 3, walk: 0.7, jog: 0.3 },
+      { fromRound: 5, walk: 0.35, jog: 0.65 },
+      { fromRound: 7, walk: 0.15, jog: 0.55, run: 0.3 },
+      { fromRound: 10, jog: 0.4, run: 0.6 },
+      { fromRound: 13, jog: 0.15, run: 0.85 },
+    ],
     acceleration: 8, // m/s^2
     turnSpeed: 7, // radians per second it can turn to face where it's going
     radius: 0.32, // collision radius

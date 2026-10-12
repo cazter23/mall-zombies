@@ -1,7 +1,8 @@
 // =============================================================================
 // HUD + START OVERLAY
 // Plain HTML on top of the canvas: crosshair + hit marker, health and stamina
-// bars, ammo counter, reload prompt, and the click-to-play / paused screen.
+// bars, ammo counter, points (+ pop-ups), round counter and banner, reload
+// prompt, and the click-to-play / paused / results screens.
 // =============================================================================
 
 import { debug } from '../config/debug.js';
@@ -46,6 +47,20 @@ export function createHud() {
   // Small prompt under the crosshair ("Reload", "No ammo").
   const prompt = el('div', 'prompt');
   hud.append(prompt);
+
+  // Bottom-right, above the ammo: points, with "+60" pop-ups floating up from it.
+  const points = el('div', 'points');
+  const pointsValue = el('div', 'points-value');
+  points.append(pointsValue);
+  hud.append(points);
+  let lastPoints = null;
+
+  // Top-left: the round number (flashes during the break between rounds).
+  const roundCounter = el('div', 'round-counter');
+  hud.append(roundCounter);
+  // Middle of the screen: "ROUND 3" announcement when a round starts.
+  const roundBanner = el('div', 'round-banner');
+  hud.append(roundBanner);
 
   // Bottom-right: ammo counter.
   const ammo = el('div', 'ammo');
@@ -93,6 +108,7 @@ export function createHud() {
       ${debug.allowShutterToggle ? '<p class="debug-hint">Debug: <kbd>O</kbd> opens the shutter</p>' : ''}
       ${debug.testArena ? '<p class="debug-hint">Debug: <kbd>T</kbd> teleports to the movement test range</p>' : ''}
       ${debug.zombieKeys ? '<p class="debug-hint">Debug: <kbd>Z</kbd> spawns a zombie, <kbd>X</kbd> clears them</p>' : ''}
+      ${debug.cheatKeys ? '<p class="debug-hint">Debug: <kbd>N</kbd> next round, <kbd>P</kbd> +5000 points</p>' : ''}
     </div>
   `;
   const kicker = overlay.querySelector('.kicker');
@@ -154,12 +170,47 @@ export function createHud() {
     },
 
     // { timeAlive (s), round, kills, headshotKills, meleeKills, accuracy (0..1) }
+    // --- Points ---
+    setPoints(value) {
+      if (value === lastPoints) return;
+      pointsValue.textContent = value.toLocaleString('en-US');
+      lastPoints = value;
+    },
+
+    // A "+60" (or "-500") that floats up from the points counter and fades out.
+    pointsPopup(amount) {
+      if (amount === 0) return;
+      const pop = el('div', `points-pop ${amount > 0 ? 'gain' : 'spend'}`);
+      pop.textContent = `${amount > 0 ? '+' : '-'}${Math.abs(amount)}`;
+      pop.style.right = `${Math.round(Math.random() * 40)}px`; // a little scatter so pop-ups don't stack
+      points.append(pop);
+      pop.addEventListener('animationend', () => pop.remove());
+    },
+
+    // --- Rounds ---
+    setRound(n) {
+      roundCounter.textContent = n > 0 ? String(n) : '';
+    },
+
+    showRoundBanner(n) {
+      roundBanner.textContent = `Round ${n}`;
+      roundBanner.classList.remove('show');
+      void roundBanner.offsetWidth; // restart the animation
+      roundBanner.classList.add('show');
+    },
+
+    // The counter blinks during the break between rounds.
+    setRoundFlashing(flashing) {
+      roundCounter.classList.toggle('flashing', flashing);
+    },
+
     showResults(r) {
       const minutes = Math.floor(r.timeAlive / 60);
       const seconds = String(Math.floor(r.timeAlive % 60)).padStart(2, '0');
       const rows = [
         ['Time survived', `${minutes}:${seconds}`],
-        ['Round', r.round],
+        ['Round reached', r.round],
+        ['Points earned', r.pointsEarned.toLocaleString('en-US')],
         ['Zombies killed', r.kills],
         ['Headshot kills', r.headshotKills],
         ['Box cutter kills', r.meleeKills],

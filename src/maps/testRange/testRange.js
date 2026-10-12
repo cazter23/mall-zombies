@@ -1,7 +1,8 @@
 // =============================================================================
-// MOVEMENT TEST RANGE (debug only)
-// A big open area far from the mall for trying out movement. Only built when
-// debug.testArena is on; press T in-game to teleport between it and the mall.
+// MOVEMENT TEST RANGE (debug add-on, not a real map)
+// A big open area far from the playable map for trying out movement and
+// shooting. Only built when debug.testArena is on; press T in-game to teleport
+// between it and the map. Adds its solid boxes to the shared collider list.
 //
 // Layout, in meters, relative to the arena center (player spawns at the south
 // edge facing north, -Z):
@@ -13,9 +14,9 @@
 // =============================================================================
 
 import * as THREE from 'three';
-import { makeTileTexture, makeSignTexture } from './textures.js';
+import { makeTileTexture, makeSignTexture } from '../../world/textures.js';
 import { createDummy } from './dummy.js';
-import { zombieHealthForRound } from '../config/economy.js';
+import { zombieHealthForRound } from '../../config/economy.js';
 
 export const ARENA = {
   center: { x: 0, z: -100 }, // far south of the mall, out of sight behind its walls
@@ -39,7 +40,7 @@ const COLORS = {
   platform: 0x4caf50,
 };
 
-export function buildTestArena(scene, colliders) {
+export function buildTestRange(scene, colliders) {
   const group = new THREE.Group();
   group.name = 'testArena';
   scene.add(group);
@@ -175,10 +176,11 @@ export function buildTestArena(scene, colliders) {
   label('SHOOTING RANGE', 0, 2.9, 17.6, 4, 0.8);
 
   // --- Lighting ------------------------------------------------------------------
-  // The mall's hemisphere/directional lights already reach here; add a little fill.
+  // Its own lights (it must not depend on the map's).
+  group.add(new THREE.HemisphereLight(0xfff6e6, 0xb8c2cc, 0.9));
   const fill = new THREE.PointLight(0xffffff, 60, 0, 1.5);
   fill.position.set(cx, 12, cz);
-  scene.add(fill);
+  group.add(fill);
 
   return {
     group,

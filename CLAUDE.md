@@ -50,7 +50,7 @@ src/
                         placement/animation/fov (+ box cutter slash path), hit effects, crosshair min gap,
                         body (colors + leg/pose tuning), health (regen, hurt edges), death camera, sprintFx,
                         melee lunge end
-    economy.js          Points, payouts, kill values, door prices, wave scaling + helper functions
+    economy.js          Points, payouts, kill values, door + wall-buy prices, round timing, wave scaling + helpers
                         (zombieHealthForRound, zombieCountForRound, spawnDelayForRound, maxAliveForRound)
     weapons.js          Per-weapon stats (damage, headshot mult, mag, reserve, fire interval, reload, kick,
                         spread cone, ADS time/zoom/gun offset, colors), `melee.boxCutter` (damage, reach,
@@ -60,8 +60,8 @@ src/
     controls.js         bindings (action -> keyboard/mouse + Pad* codes), buttonLabels (prompts per device),
                         gamepad (deadzones, look speed/curve, turn ramp, triggers, click-to-sprint release),
                         aimAssist (strength dial, range/cone, slowdown, rotational, ADS snap)
-    debug.js            showMarkers, allowShutterToggle (O key), testArena (T key), zombieKeys (Z spawn /
-                        X clear), dummies, exposeToWindow
+    debug.js            showMarkers, allowShutterToggle (O key: doors free), testArena (T key), zombieKeys
+                        (Z spawn / X clear), cheatKeys (N next round / P +5000 points), dummies, exposeToWindow
   core/
     loop.js             startLoop(): fixed-timestep accumulator, calls update(dt) and render(alpha, frameTime)
     input.js            Input class: held keys/buttons, one-shot presses, actions (actionDown/consumeAction/
@@ -118,18 +118,26 @@ src/
                         Options canAttack(), onPlayerHit(damage), onKill(zombie)
   game/
     runStats.js         createRunStats(): time alive, kills, headshot/melee kills, shots fired/hit, accuracy
+    wallet.js           createWallet(): points (start 500), earn/spend/canAfford, totalEarned, onChange cb (HUD
+                        pop-ups). pointsForHit(): COD payouts (+10 hit; kill value +40 head / +70 melee; zombies only)
+    rounds.js           createRounds(): idle -> active (spawn quota at spawnDelay, capped by maxAlive) -> break
+                        (10s) -> next round. start() on first play, skipRound() (debug), reset()
+  maps/
+    index.js            Map registry + loadMap(id, scene, colliders) + THE MAP INTERFACE (id, group, zones, doors,
+                        spawnPoints, wallBuys, playerSpawn, update, reset, dispose). New map = new folder + 1 line
+    mall/mall.js        buildMall(scene, colliders): the mall. Zones startRoom (open) / concourse; shutter door
+                        (500) opens the concourse; wall buys priceGun (start room) + nailGun (outside Nuts & Bolts).
+                        All meshes, lights and debug markers live in its group. Exports LAYOUT
+    testRange/          Debug add-on (not a map): testRange.js buildTestRange(scene, colliders) with own lights,
+                        dummy.js practice mannequins (shootables)
   fx/
     effects.js          Tracers (pooled) + particle bursts (one InstancedMesh): splat() and puff()
-  world/
-    map.js              buildMall(scene): all geometry, colliders, lights, signs, spawn/wall-buy markers,
-                        player spawn. Exports LAYOUT. Returns { group, colliders, shutter, markers, playerSpawn, update }
+  world/                Shared building blocks for maps
+    door.js             createDoor(): buyable barrier (price, opensZone) wrapping a shutter; open/reset/toggle
     collision.js        moveAndCollide(): horizontal push-out then vertical landing/ceiling vs. Box3 list;
                         hasHeadroom(): can the player stand up here?
-    shutter.js          createShutter(): roll-up door with its own Box3 collider (open/close/toggle/update)
+    shutter.js          createShutter(): roll-up barrier with its own Box3 collider (open/close/toggle/update)
     textures.js         Procedural canvas textures (floor tile, shop sign, shutter). No image files.
-    testArena.js        Debug-only movement test range (buildTestArena). Not part of the real game.
-    dummy.js            createDummy(): practice mannequin (shootable) with head/body hitboxes, health bar,
-                        tips over when killed and pops back up. Test range only.
   ui/
     hud.js              createHud(): 4-line crosshair whose gap = spread cone (dot in ADS) + hit marker (white body, big yellow head, red kill),
                         bottom-left health (white) + stamina (green) bars, bottom-right ammo counter,
@@ -141,7 +149,12 @@ src/
 - `main.js` owns the loop. `update(dt)` (60Hz): if `game.over` (dead) only zombies/health/death timer run (checked
   first: the mouse is released on death); if not running (pointer unlocked) it freezes the player; otherwise debug
   keys, `player.update`, `melee.update`, `gun.update(dt, melee.isBusy)` (after the player so shots use this tick's
-  eye), `zombies.update`, `health.update`, `world.update`, `arena.update`, `input.endTick()`.
+  eye), `zombies.update`, `rounds.update` (paused while in the test range), `health.update`, `map.update`,
+  `arena.update`, `input.endTick()`. `rounds.start()` happens the first tick the game actually runs.
+- Map: `main.js` does `loadMap('mall', scene, colliders)` and only uses the map interface (maps/index.js).
+  The zombie manager gets `map.spawnPoints` + `isZoneOpen`, so zombies only spawn in opened zones.
+- Points: gun and melee call `onHit({ target, killed, headshot, melee })` -> `wallet.earn(pointsForHit(...))`.
+  HUD: points above the ammo with +N pop-ups, round number top-left (blinks in the break), "ROUND N" banner.
 - Death flow: `onPlayerDeath()` sets `game.over`, hides the combat HUD, releases the mouse. Render then runs the
   death camera (drop + roll) and skips the gun pass; after `feel.death.resultsDelay` the results screen shows.
   Play again -> `resetRun()` (zombies, health, run stats, ammo, melee, player position, shutter) -> re-lock.
@@ -162,25 +175,28 @@ src/
   `main.js` keeps a `shootables` array (test-range dummies now; zombies should be pushed into it). A collider
   Box3 with `ignoreShots = true` blocks walking but not bullets.
 - The game only runs while the pointer is locked; Esc pauses and shows the overlay.
-- Collision: world is a flat array `world.colliders` of `THREE.Box3`. `box(..., {collide})` in `map.js`
+- Collision: one shared flat array `colliders` of `THREE.Box3` (created in main, filled by the map and the
+  test range). `box(..., {collide})` in `mall.js`
   makes a mesh and (optionally) a collider; some visuals use `collide:false` with a separate hand-sized
   `addCollider` (pillars, benches). Shutter adds/removes its own collider from the same array.
   Player is a cylinder (radius, height, feet position). Boxes whose top is within `stepTolerance`
   of the feet count as floor, not walls.
 - Coordinates: meters, +Y up. Camera looks down -Z at yaw 0.
-- Markers (invisible; shown if `debug.showMarkers`): `world.markers.spawnPoints` (6: 2 start-room vents,
-  4 concourse shopfronts) and `world.markers.wallBuys` (2, with an outward `normal`).
+- Markers (invisible; shown if `debug.showMarkers`): `map.spawnPoints` (6: 2 start-room vents, 4 concourse
+  shopfronts, each tagged with its zone) and `map.wallBuys` (2, with an outward `normal` and a `weapon` id).
 
 ## Map (current)
 - Main concourse: x -20..20, z -6..6, 6m ceiling. Four decorative shopfronts (Good Sports, Nuts & Bolts,
   Play Time Toys, Byte Me Electronics), pillars, benches, planters, ceiling lights.
 - Start room: x -5..5, z 6..16 (north of concourse), 4m ceiling, checkout counter, shelf, crates, boarded vents.
-- 4m doorway at z=6 blocked by a security shutter (cost 500 in economy.js). Debug: press **O** to toggle.
+- 4m doorway at z=6 blocked by a security shutter door (500 in economy.js) that opens the concourse zone.
+  Debug: press **O** to toggle doors for free.
+- Wall-buy spots: start room east wall (5, 1.5, 10) = Price Gun; concourse south wall (7.7, 1.5, -6) = Nail Gun.
 - Player spawns at (0, 0, 12) facing the shutter.
 
 ## Movement test range (debug only)
 - Built when `debug.testArena` is true; press **T** in-game to teleport between the mall and the range
-  (`player.teleport({ position, yaw })`). Its colliders go into the same `world.colliders` list.
+  (`player.teleport({ position, yaw })`). Its colliders go into the same shared `colliders` list.
 - 60x60m open floor centered at (0, -100), far south of the mall, 2m border walls, 1m floor tiles.
 - Shooting range: 5 practice dummies (3 at local z=17 near spawn, 2 at (+-9, 0)) with round-1 zombie health.
 - Contents: runway with a line every 5m; slide bars + an 8m low tunnel (underside 1.2m: crouch fits,
@@ -228,6 +244,13 @@ X reload, RB/R3 box cutter, Start pause/resume. Prompts follow the last device. 
 chest-targeted): slowdown 60% hip / 50% ADS, rotational 15% hip / 25% ADS (only with stick input, full strength
 except the outer 30% of the zone), ADS snap 40% within 5 deg (0.6s cooldown); master dial
 `controls.aimAssist.strength`. Tested with a simulated controller; feel still needs real-hardware tuning.
+
+Step 4 in progress. Done: part A (map package + zones + doors, see maps/index.js) and part B (rounds and
+points): round 1 starts on first play (3s delay), zombies spawn from open zones at the economy pace, the round
+ends when all are dead, 10s break, next round. Zombie HP scales per round; Shoppers pick walk/jog/run gaits
+(2.0/3.4/4.6 m/s) from `zombieTypes.shopper.gaitsByRound` (all walkers in rounds 1-2, runners from round 7).
+COD payouts; results show round reached + points earned. Next: part C (hold F / X to buy: the shutter first),
+part D (two weapon slots, Price Gun 500 full-auto pistol in the start room, Nail Gun 1000 in the concourse).
 
 ## Planned build order
 1. Walkable mall (done)

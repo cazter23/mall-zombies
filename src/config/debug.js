@@ -10,11 +10,14 @@ export const debug = {
   // Press O to open/close the start-room shutter. Temporary until buying doors exists.
   allowShutterToggle: true,
 
-  // Build the open movement test range (src/world/testArena.js). Press T to teleport there and back.
+  // Build the open movement test range (src/maps/testRange/). Press T to teleport there and back.
   testArena: true,
 
-  // Press Z to spawn a Shopper zombie, X to remove all zombies. Temporary until waves (step 4).
+  // Press Z to spawn an extra Shopper zombie, X to remove all zombies.
   zombieKeys: true,
+
+  // Press N to end the current round and start the next one, P for +5000 points.
+  cheatKeys: true,
 
   // Practice dummies in the test range (only exist when testArena is on).
   dummies: {

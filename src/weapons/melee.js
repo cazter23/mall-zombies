@@ -14,7 +14,7 @@ import { castShot } from './hitscan.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 
-export function createMelee({ def, stats, player, input, weapon, shootables, colliders, effects, hud }) {
+export function createMelee({ def, stats, player, input, weapon, shootables, colliders, effects, hud, onHit = null }) {
   let timer = -1; // seconds into the current swing; -1 = not swinging
   let hasHit = false;
 
@@ -89,6 +89,7 @@ export function createMelee({ def, stats, player, input, weapon, shootables, col
     normal.subVectors(eye, found.point).setY(0).normalize(); // splatter flies back toward the player
     effects.splat(found.point, normal, found.target.splatColors, def.splatCount);
     hud.showHitMarker({ headshot: false, killed });
+    if (onHit) onHit({ target: found.target, killed, headshot: false, melee: true });
     player.addViewKick(-def.impactJoltDegrees * DEG_TO_RAD);
     return { target: found.target, killed };
   }

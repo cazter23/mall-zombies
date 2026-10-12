@@ -11,8 +11,8 @@ import { startLoop } from './core/loop.js';
 import { Input } from './core/input.js';
 import { createGamepad } from './core/gamepad.js';
 import { buttonLabels } from './config/controls.js';
-import { buildMall } from './world/map.js';
-import { buildTestArena } from './world/testArena.js';
+import { loadMap } from './maps/index.js';
+import { buildTestRange } from './maps/testRange/testRange.js';
 import { createPlayerStats } from './player/stats.js';
 import { PlayerController } from './player/controller.js';
 import { createHud } from './ui/hud.js';
@@ -26,6 +26,8 @@ import { createPlayerBody } from './player/body.js';
 import { createZombieManager } from './zombies/zombieManager.js';
 import { createPlayerHealth } from './player/health.js';
 import { createRunStats } from './game/runStats.js';
+import { createWallet, pointsForHit } from './game/wallet.js';
+import { createRounds } from './game/rounds.js';
 
 // --- Renderer, scene, camera ---------------------------------------------------
 
@@ -53,9 +55,12 @@ window.addEventListener('resize', () => {
 
 // --- Game objects --------------------------------------------------------------
 
-const world = buildMall(scene);
-// Debug-only open area for testing movement; shares the mall's collider list.
-const arena = debug.testArena ? buildTestArena(scene, world.colliders) : null;
+// One shared list of solid boxes: the map, debug add-ons and doors all write into it;
+// the player, zombies and bullets all read it.
+const colliders = [];
+const map = loadMap('mall', scene, colliders);
+// Debug-only open area for testing movement and shooting (press T).
+const arena = debug.testArena ? buildTestRange(scene, colliders) : null;
 const input = new Input(renderer.domElement);
 const gamepad = createGamepad(input); // feeds controller buttons/sticks into `input`
 const stats = createPlayerStats();
@@ -63,28 +68,32 @@ const player = new PlayerController({
   camera,
   input,
   stats,
-  colliders: world.colliders,
-  spawn: world.playerSpawn,
+  colliders,
+  spawn: map.playerSpawn,
 });
 const hud = createHud();
+// Points. Every gain/spend shows a "+60" / "-500" pop-up by the counter.
+const wallet = createWallet({ onChange: (amount) => hud.pointsPopup(amount) });
+const payForHit = (hit) => wallet.earn(pointsForHit(hit)); // +10 per hit, kill value + bonuses on kills
 const body = createPlayerBody(scene); // legs + torso you see when looking down
 
 // Everything the player can shoot. Practice dummies for now; zombies will join this list.
 const shootables = [...(arena ? arena.shootables : [])];
 const effects = createEffects(scene);
 const viewmodel = createViewmodel(weapons.stapleGun, meleeWeapons.boxCutter);
-const aimAssist = createAimAssist({ player, input, shootables, colliders: world.colliders });
+const aimAssist = createAimAssist({ player, input, shootables, colliders });
 const gun = createPlayerGun({
   def: weapons.stapleGun,
   stats,
   player,
   input,
-  colliders: world.colliders,
+  colliders,
   shootables,
   effects,
   viewmodel,
   hud,
   onShot: (shot) => runStats.recordShot(shot),
+  onHit: payForHit,
   aimAssist,
 });
 const melee = createMelee({
@@ -94,9 +103,10 @@ const melee = createMelee({
   input,
   weapon: gun.weapon,
   shootables,
-  colliders: world.colliders,
+  colliders,
   effects,
   hud,
+  onHit: payForHit,
 });
 
 // The game runs while the mouse is locked (Esc pauses) or while playing on a controller
@@ -118,7 +128,8 @@ function buttonLabel(action) {
 
 const DEG_TO_RAD = Math.PI / 180;
 const runStats = createRunStats();
-const getRound = () => 1; // no waves yet (step 4)
+let rounds = null; // created below, once the zombie manager exists
+const getRound = () => Math.max(1, rounds ? rounds.round : 1);
 const death = { timer: 0, resultsShown: false };
 
 // THE single place the player dies. A downed/revive system would hook in here later
@@ -138,7 +149,8 @@ function showResults() {
   death.resultsShown = true;
   hud.showResults({
     timeAlive: runStats.timeAlive,
-    round: getRound(),
+    round: rounds.round,
+    pointsEarned: wallet.totalEarned,
     kills: runStats.kills,
     headshotKills: runStats.headshotKills,
     meleeKills: runStats.meleeKills,
@@ -154,8 +166,12 @@ function resetRun() {
   gun.reset();
   melee.reset();
   aimAssist.reset();
-  player.teleport(world.playerSpawn);
-  world.shutter.close();
+  wallet.reset();
+  rounds.reset();
+  hud.setRound(0);
+  hud.setRoundFlashing(false);
+  player.teleport(map.playerSpawn);
+  map.reset(); // doors closed, zones locked
   game.over = false;
   death.timer = 0;
   death.resultsShown = false;
@@ -167,11 +183,12 @@ const health = createPlayerHealth({ stats, onDeath: onPlayerDeath });
 
 const zombies = createZombieManager({
   scene,
-  colliders: world.colliders,
+  colliders,
   player,
   shootables,
   effects,
-  spawnPoints: world.markers.spawnPoints,
+  spawnPoints: map.spawnPoints,
+  isZoneOpen: (zone) => map.zones[zone].open,
   getRound,
   canAttack: () => !health.isDead,
   onPlayerHit: (damage) => {
@@ -179,6 +196,16 @@ const zombies = createZombieManager({
     player.addViewKick(-feel.health.hitJoltDegrees * DEG_TO_RAD); // jolt the view down
   },
   onKill: (zombie) => runStats.recordKill(zombie),
+});
+
+rounds = createRounds({
+  zombies,
+  onRoundStart: (n) => {
+    hud.setRound(n);
+    hud.showRoundBanner(n);
+    hud.setRoundFlashing(false);
+  },
+  onRoundEnd: () => hud.setRoundFlashing(true), // counter blinks during the break
 });
 
 hud.onStart(() => input.requestLock());
@@ -237,24 +264,29 @@ function update(dt) {
   }
 
   runStats.timeAlive += dt;
+  if (!rounds.started) rounds.start(); // round 1 begins the first time the game actually runs
 
   if (debug.allowShutterToggle && input.consumePress('KeyO')) {
-    world.shutter.toggle();
+    for (const door of map.doors) door.toggle(); // debug: open/close doors for free
   }
 
   if (arena && input.consumePress('KeyT')) {
-    player.teleport(arena.contains(player.position) ? world.playerSpawn : arena.playerSpawn);
+    player.teleport(arena.contains(player.position) ? map.playerSpawn : arena.playerSpawn);
   }
 
   if (debug.zombieKeys && input.consumePress('KeyZ')) zombies.spawn('shopper');
   if (debug.zombieKeys && input.consumePress('KeyX')) zombies.clear();
+  if (debug.cheatKeys && input.consumePress('KeyN')) rounds.skipRound();
+  if (debug.cheatKeys && input.consumePress('KeyP')) wallet.earn(5000);
 
   player.update(dt);
   melee.update(dt);
   gun.update(dt, melee.isBusy); // after the player moves, so shots come from this tick's eye position
   zombies.update(dt);
+  // Rounds pause while you're off in the debug test range (zombies can't reach you there).
+  if (!(arena && arena.contains(player.position))) rounds.update(dt);
   health.update(dt);
-  world.update(dt);
+  map.update(dt);
   if (arena) arena.update(dt);
   input.endTick();
 }
@@ -305,6 +337,7 @@ function render(alpha, frameTime) {
   hud.setSpeedLines(game.over ? 0 : player.sprintAmount * feel.sprintFx.speedLinesOpacity);
   hud.setSprint(player.sprintFraction, player.sprintExhausted, player.isSprinting);
   hud.setAmmo(gun.weapon, buttonLabel('reload'));
+  hud.setPoints(wallet.points);
 
   // Pass 1: the world. Pass 2: the gun, with depth cleared so it never clips into walls.
   renderer.clear();
@@ -336,7 +369,7 @@ startLoop({
 });
 
 if (debug.exposeToWindow) {
-  window.__mall = { THREE, scene, camera, renderer, world, arena, player, stats, input, game, hud, gun, effects, viewmodel, shootables, body, zombies, health, melee, runStats, death, resetRun, gamepad, aimAssist };
+  window.__mall = { THREE, scene, camera, renderer, map, world: map, colliders, arena, player, stats, input, game, hud, gun, effects, viewmodel, shootables, body, zombies, health, melee, runStats, death, resetRun, gamepad, aimAssist, wallet, rounds };
   // Advance the real game loop by `ticks` fixed steps and draw one frame. For automated
   // testing when the browser isn't animating (e.g. a hidden tab). Pair with game.forceRun.
   window.__mall.step = (ticks = 1) => {

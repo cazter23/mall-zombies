@@ -1,13 +1,13 @@
 // =============================================================================
 // SECURITY SHUTTER
-// A roll-up door that blocks a doorway until opened. Later steps will open it
-// by spending points (see `cost`); for now debug key O toggles it.
+// A roll-up door that blocks a doorway until opened. It's just the physical
+// barrier: price and zones are handled by world/door.js, which wraps it.
 // =============================================================================
 
 import * as THREE from 'three';
 import { feel } from '../config/feel.js';
 
-export function createShutter({ name, minX, maxX, minZ, maxZ, height, material, colliders, cost }) {
+export function createShutter({ name, minX, maxX, minZ, maxZ, height, material, colliders }) {
   const width = maxX - minX;
   const depth = maxZ - minZ;
 
@@ -15,7 +15,7 @@ export function createShutter({ name, minX, maxX, minZ, maxZ, height, material, 
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth * 0.5), material);
   mesh.name = name;
   mesh.position.set((minX + maxX) / 2, height / 2, (minZ + maxZ) / 2);
-  mesh.userData = { kind: 'shutter', id: name, cost };
+  mesh.userData = { kind: 'shutter', id: name };
 
   // The collider covers the full doorway thickness so the player can't wedge into it.
   const collider = new THREE.Box3(new THREE.Vector3(minX, 0, minZ), new THREE.Vector3(maxX, height, maxZ));
@@ -35,7 +35,6 @@ export function createShutter({ name, minX, maxX, minZ, maxZ, height, material, 
   return {
     name,
     mesh,
-    cost,
     get state() {
       return state;
     },

@@ -22,6 +22,7 @@ const UP = new THREE.Vector3(0, 1, 0);
  * @param shootables   shared list the gun shoots at; zombies are added/removed here
  * @param effects      fx (splatter, dust)
  * @param spawnPoints  map markers: [{ name, zone, position }]
+ * @param isZoneOpen   (zoneId) => boolean; zombies only spawn in zones the player has opened
  * @param getRound     () => current round number (for health scaling)
  * @param canAttack    () => false once the player is dead
  * @param onPlayerHit  (damage, zombie) => apply a landed zombie hit to the player
@@ -34,6 +35,7 @@ export function createZombieManager({
   shootables,
   effects,
   spawnPoints,
+  isZoneOpen = () => true,
   getRound,
   canAttack,
   onPlayerHit,
@@ -46,10 +48,12 @@ export function createZombieManager({
   const ctx = { nav, player, colliders, zombies, canAttack: true, onPlayerHit };
   const scratch = new THREE.Vector3();
 
-  // Prefer spawn points the player can be reached from, not right on top of them.
+  // Only spawn points in open zones; prefer ones the player can be reached from, not right on top of them.
   function pickSpawnPoint() {
-    const reachable = spawnPoints.filter((s) => nav.distanceToTarget(s.position.x, s.position.z) < Infinity);
-    if (reachable.length === 0) return spawnPoints[Math.floor(Math.random() * spawnPoints.length)];
+    const open = spawnPoints.filter((s) => isZoneOpen(s.zone));
+    const pool = open.length > 0 ? open : spawnPoints;
+    const reachable = pool.filter((s) => nav.distanceToTarget(s.position.x, s.position.z) < Infinity);
+    if (reachable.length === 0) return pool[Math.floor(Math.random() * pool.length)];
     const farEnough = reachable.filter(
       (s) => s.position.distanceTo(player.position) >= zombieCrowd.minSpawnDistance,
     );
@@ -58,6 +62,20 @@ export function createZombieManager({
     return reachable.reduce((a, b) =>
       a.position.distanceTo(player.position) > b.position.distanceTo(player.position) ? a : b,
     );
+  }
+
+  // Walk / jog / run, picked by chance from the round's row in type.gaitsByRound.
+  function pickGaitSpeed(type, round) {
+    if (!type.gaitsByRound) return type.speed;
+    let row = type.gaitsByRound[0];
+    for (const r of type.gaitsByRound) if (round >= r.fromRound) row = r;
+    let roll = Math.random();
+    for (const gait of Object.keys(type.gaits)) {
+      const chance = row[gait] ?? 0;
+      if (roll < chance) return type.gaits[gait];
+      roll -= chance;
+    }
+    return type.speed;
   }
 
   function onZombieDeath(zombie) {
@@ -103,7 +121,9 @@ export function createZombieManager({
       const position = at ? at.clone() : pickSpawnPoint().position.clone();
       position.y = 0;
       const yaw = Math.atan2(-(player.position.x - position.x), -(player.position.z - position.z));
-      const zombie = new Zombie({ type, health: zombieHealthForRound(getRound()), position, yaw });
+      const round = getRound();
+      const speed = pickGaitSpeed(type, round);
+      const zombie = new Zombie({ type, health: zombieHealthForRound(round), position, yaw, speed });
       zombie.onDeath = onZombieDeath;
       scene.add(zombie.model.root);
       zombies.push(zombie);

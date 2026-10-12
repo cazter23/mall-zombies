@@ -25,6 +25,7 @@ export function createPlayerGun({
   viewmodel,
   hud,
   onShot = null,
+  onHit = null, // ({ target, killed, headshot, melee }) after any hit on a shootable (points)
   aimAssist = null, // optional (weapons/aimAssist.js): controller aim help, applied before each shot
 }) {
   const weapon = new Weapon(def, stats);
@@ -51,6 +52,7 @@ export function createPlayerGun({
       const count = headshot ? feel.effects.headshotSplatCount : feel.effects.splatCount;
       effects.splat(shot.point, shot.normal, shot.target.splatColors, count);
       hud.showHitMarker({ headshot, killed });
+      if (onHit) onHit({ target: shot.target, killed, headshot, melee: false });
     } else if (shot.distance < def.range) {
       effects.puff(shot.point, shot.normal); // hit a wall or prop
     }
