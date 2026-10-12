@@ -10,6 +10,9 @@ export const debug = {
   // Press O to open/close the start-room shutter. Temporary until buying doors exists.
   allowShutterToggle: true,
 
+  // Build the open movement test range (src/world/testArena.js). Press T to teleport there and back.
+  testArena: true,
+
   // Expose game objects as window.__mall for poking at in the browser console.
   exposeToWindow: true,
 };

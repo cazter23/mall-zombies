@@ -59,6 +59,20 @@ function pushOutHorizontal(pos, radius, height, colliders, stepTolerance) {
 }
 
 /**
+ * Is there room to stand up? True if nothing solid sits in the extra space between
+ * the crouched height and the standing height above the player's feet.
+ * `margin` shrinks the radius so a wall merely touching the player doesn't count.
+ */
+export function hasHeadroom(pos, radius, crouchHeight, standHeight, colliders, margin) {
+  const r = radius - margin;
+  for (const box of colliders) {
+    if (box.max.y <= pos.y + crouchHeight || box.min.y >= pos.y + standHeight) continue;
+    if (distSqToBoxXZ(pos.x, pos.z, box) < r * r) return false;
+  }
+  return true;
+}
+
+/**
  * Moves the player by velocity * dt and resolves collisions.
  * Mutates `pos` and `vel`. Returns { grounded }.
  */

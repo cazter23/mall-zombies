@@ -42,25 +42,28 @@ src/
                         update(dt) + render(alpha); exposes window.__mall when debug.exposeToWindow
   style.css             HUD, crosshair, sprint bar, start/pause overlay
   config/
-    feel.js             Movement, sprint, look, camera, player size, sim tick rate, shutter speed
+    feel.js             Movement, sprint, crouch, slide, look, camera, player size, sim tick rate, shutter speed
     economy.js          Points, payouts, kill values, door prices, wave scaling + helper functions
                         (zombieHealthForRound, zombieCountForRound, spawnDelayForRound, maxAliveForRound)
-    debug.js            showMarkers, allowShutterToggle (O key), exposeToWindow
+    debug.js            showMarkers, allowShutterToggle (O key), testArena (T key), exposeToWindow
   core/
     loop.js             startLoop(): fixed-timestep accumulator, calls update(dt) and render(alpha, frameTime)
     input.js            Input class: held keys, one-shot presses (consumePress/endTick), mouse delta, pointer lock
   player/
-    controller.js       PlayerController: WASD, jump (buffer + coyote time), sprint meter, gravity,
-                        mouse look (applied per render frame), camera interpolation
-    stats.js            createPlayerStats(): the single stats object (health, speeds, jump, sprint)
+    controller.js       PlayerController: WASD, jump (buffer + coyote time), sprint meter, crouch/slide
+                        (stance: stand|crouch|slide), gravity, mouse look (per render frame), camera interpolation
+    stats.js            createPlayerStats(): the single stats object (health, speeds, jump, sprint, crouch/slide)
   world/
     map.js              buildMall(scene): all geometry, colliders, lights, signs, spawn/wall-buy markers,
                         player spawn. Exports LAYOUT. Returns { group, colliders, shutter, markers, playerSpawn, update }
-    collision.js        moveAndCollide(): horizontal push-out then vertical landing/ceiling vs. Box3 list
+    collision.js        moveAndCollide(): horizontal push-out then vertical landing/ceiling vs. Box3 list;
+                        hasHeadroom(): can the player stand up here?
     shutter.js          createShutter(): roll-up door with its own Box3 collider (open/close/toggle/update)
     textures.js         Procedural canvas textures (floor tile, shop sign, shutter). No image files.
+    testArena.js        Debug-only movement test range (buildTestArena). Not part of the real game.
   ui/
-    hud.js              createHud(): crosshair, sprint bar, click-to-play/paused overlay (plain DOM)
+    hud.js              createHud(): crosshair, bottom-left health (white) + stamina (green) bars,
+                        click-to-play/paused overlay (plain DOM)
 ```
 
 ## How the pieces connect
@@ -84,9 +87,25 @@ src/
 - 4m doorway at z=6 blocked by a security shutter (cost 500 in economy.js). Debug: press **O** to toggle.
 - Player spawns at (0, 0, 12) facing the shutter.
 
+## Movement test range (debug only)
+- Built when `debug.testArena` is true; press **T** in-game to teleport between the mall and the range
+  (`player.teleport({ position, yaw })`). Its colliders go into the same `world.colliders` list.
+- 60x60m open floor centered at (0, -100), far south of the mall, 2m border walls, 1m floor tiles.
+- Contents: runway with a line every 5m; slide bars + an 8m low tunnel (underside 1.2m: crouch fits,
+  standing doesn't); pillars; stairs (0.5m steps) to a 2m platform; jump boxes 0.3-1.2m (1.2 is
+  deliberately unreachable); 0.6m platforms with 2/3/4/5m gaps for sprint-jumps.
+- Turn `debug.testArena` off before shipping. Don't build game features into it.
+
 ## Current state
 Build step 1 is done: start room + concourse, security shutter, pointer-lock look, WASD, jump,
 limited sprint meter, wall/obstacle collision, config files, invisible spawn/wall-buy markers.
+Added after step 1: crouch (hold C) and slide (tap C while sprinting). Slide locks direction, starts
+fast and decays over ~0.9s, has a 1s cooldown, can be jumped out of, and drops into a crouch that stands
+up when C is released and there's headroom. Landing/chain slides: jump while sprinting or sliding (or slide off a
+ledge) and press C, and a slide starts on landing, skipping the cooldown and sprint requirement. C counts if
+tapped in the air, held through landing, pressed up to `slide.chainPressBefore` before the jump, or up to
+`slide.chainPressAfterLanding` after landing. Airborne movement never slows you below your current speed
+(steering only), so slide-jumps keep their momentum. Crouch/slide tuning is in `feel.crouch` / `feel.slide`.
 Nothing yet reads `economy.js` (data only), `stats.health`/`maxHealth` are unused, and there are
 no weapons, zombies, waves, points or death handling.
 

@@ -18,10 +18,16 @@ export function createHud() {
   const crosshair = el('div', 'crosshair');
   hud.append(crosshair);
 
+  // Bottom-left: health bar on top, stamina (sprint) bar underneath.
+  const vitals = el('div', 'vitals');
+  const health = el('div', 'health');
+  const healthFill = el('div', 'health-fill');
+  health.append(healthFill);
   const sprint = el('div', 'sprint');
   const sprintFill = el('div', 'sprint-fill');
   sprint.append(sprintFill);
-  hud.append(sprint);
+  vitals.append(health, sprint);
+  hud.append(vitals);
 
   const overlay = el('div', 'overlay');
   overlay.innerHTML = `
@@ -34,10 +40,12 @@ export function createHud() {
         <li><kbd>WASD</kbd> move</li>
         <li><kbd>Space</kbd> jump</li>
         <li><kbd>Shift</kbd> sprint</li>
+        <li><kbd>C</kbd> crouch (hold) / slide (tap while sprinting)</li>
         <li><kbd>Mouse</kbd> look</li>
         <li><kbd>Esc</kbd> pause</li>
       </ul>
       ${debug.allowShutterToggle ? '<p class="debug-hint">Debug: <kbd>O</kbd> opens the shutter</p>' : ''}
+      ${debug.testArena ? '<p class="debug-hint">Debug: <kbd>T</kbd> teleports to the movement test range</p>' : ''}
     </div>
   `;
   const kicker = overlay.querySelector('.kicker');
@@ -49,6 +57,7 @@ export function createHud() {
   overlay.addEventListener('click', () => startHandler && startHandler());
 
   let hasStarted = false;
+  let lastHealth = -1;
   let lastFraction = -1;
   let lastExhausted = null;
   let lastFull = null;
@@ -69,6 +78,14 @@ export function createHud() {
     },
 
     // Called every frame; only touches the DOM when something changed.
+    setHealth(fraction) {
+      const rounded = Math.round(Math.max(0, Math.min(1, fraction)) * 200) / 200;
+      if (rounded !== lastHealth) {
+        healthFill.style.transform = `scaleX(${rounded})`;
+        lastHealth = rounded;
+      }
+    },
+
     setSprint(fraction, exhausted, active) {
       const rounded = Math.round(fraction * 200) / 200;
       if (rounded !== lastFraction) {

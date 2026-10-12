@@ -38,6 +38,25 @@ export const feel = {
     requiresForward: true, // like COD: you can only sprint while holding forward
   },
 
+  crouch: {
+    height: 1.1, // collision height while crouched or sliding (standing is player.height)
+    eyeHeight: 0.95, // camera height above the feet while crouched
+    speed: 2.5, // m/s walking while crouched
+    eyeTransitionSpeed: 6, // m/s the camera moves up/down when changing stance
+    headroomMargin: 0.01, // shrinks the standing-up check so a wall beside you never blocks it
+  },
+
+  slide: {
+    startSpeed: 10.5, // m/s at the start of a slide (sprint is 8)
+    endSpeed: 3, // m/s at the end; stays fast early, then drops off
+    duration: 0.9, // seconds; the slide ends on its own
+    cooldown: 1, // seconds after a slide ends before you can slide again
+    eyeHeight: 0.7, // camera height above the feet while sliding (lower than a crouch)
+    // Landing slides (jump while sprinting or sliding, press C, slide on landing). Timing windows:
+    chainPressBefore: 0.15, // seconds: C pressed this long before jumping out of a slide still counts
+    chainPressAfterLanding: 0.2, // seconds: C pressed this long after landing still counts
+  },
+
   look: {
     mouseSensitivity: 0.0022, // radians per pixel of mouse movement
     maxPitchDegrees: 89, // how far you can look up/down

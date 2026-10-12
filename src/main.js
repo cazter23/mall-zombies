@@ -10,6 +10,7 @@ import { debug } from './config/debug.js';
 import { startLoop } from './core/loop.js';
 import { Input } from './core/input.js';
 import { buildMall } from './world/map.js';
+import { buildTestArena } from './world/testArena.js';
 import { createPlayerStats } from './player/stats.js';
 import { PlayerController } from './player/controller.js';
 import { createHud } from './ui/hud.js';
@@ -40,6 +41,8 @@ window.addEventListener('resize', () => {
 // --- Game objects --------------------------------------------------------------
 
 const world = buildMall(scene);
+// Debug-only open area for testing movement; shares the mall's collider list.
+const arena = debug.testArena ? buildTestArena(scene, world.colliders) : null;
 const input = new Input(renderer.domElement);
 const stats = createPlayerStats();
 const player = new PlayerController({
@@ -76,6 +79,10 @@ function update(dt) {
     world.shutter.toggle();
   }
 
+  if (arena && input.consumePress('KeyT')) {
+    player.teleport(arena.contains(player.position) ? world.playerSpawn : arena.playerSpawn);
+  }
+
   player.update(dt);
   world.update(dt);
   input.endTick();
@@ -85,6 +92,7 @@ function render(alpha) {
   const { dx, dy } = input.consumeMouse();
   if (game.running) player.applyLook(dx, dy);
   player.syncCamera(alpha);
+  hud.setHealth(player.healthFraction);
   hud.setSprint(player.sprintFraction, player.sprintExhausted, player.isSprinting);
   renderer.render(scene, camera);
 }
@@ -97,5 +105,5 @@ startLoop({
 });
 
 if (debug.exposeToWindow) {
-  window.__mall = { THREE, scene, camera, renderer, world, player, stats, input, game, hud };
+  window.__mall = { THREE, scene, camera, renderer, world, arena, player, stats, input, game, hud };
 }
