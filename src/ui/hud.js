@@ -16,8 +16,16 @@ function el(tag, className) {
 export function createHud() {
   const hud = el('div', 'hud');
 
+  // Crosshair: four lines around a gap that shows the current spread cone,
+  // plus a precise dot that fades in while aiming down sights.
   const crosshair = el('div', 'crosshair');
+  const crosshairLines = el('div', 'ch-lines');
+  for (const side of ['top', 'bottom', 'left', 'right']) crosshairLines.append(el('span', `ch-line ch-${side}`));
+  const crosshairDot = el('div', 'ch-dot');
+  crosshair.append(crosshairLines, crosshairDot);
   hud.append(crosshair);
+  let lastGap = -1;
+  let lastAim = -1;
 
   // Hit marker: four little ticks around the crosshair that flash on a hit.
   const hitMarker = el('div', 'hitmarker');
@@ -108,6 +116,22 @@ export function createHud() {
       if (rounded !== lastHealth) {
         healthFill.style.transform = `scaleX(${rounded})`;
         lastHealth = rounded;
+      }
+    },
+
+    // gapPx: distance from screen center to the inner end of each line (the spread cone's edge).
+    // aimAmount: 0 = hip (lines), 1 = fully aimed (dot only).
+    setCrosshair(gapPx, aimAmount) {
+      const gap = Math.round(Math.max(feel.effects.crosshairMinGap, gapPx) * 2) / 2;
+      if (gap !== lastGap) {
+        crosshair.style.setProperty('--gap', `${gap}px`);
+        lastGap = gap;
+      }
+      const aim = Math.round(aimAmount * 50) / 50;
+      if (aim !== lastAim) {
+        crosshairLines.style.opacity = String(1 - aim);
+        crosshairDot.style.opacity = String(aim);
+        lastAim = aim;
       }
     },
 

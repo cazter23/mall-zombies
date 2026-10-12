@@ -88,6 +88,11 @@ export class Input {
     return true;
   }
 
+  // True if the key was pressed this tick, WITHOUT consuming it (other systems can still see it).
+  wasPressed(code) {
+    return this.pressed.has(code);
+  }
+
   // Called after every game tick so a press is only seen by one tick.
   endTick() {
     this.pressed.clear();

@@ -20,6 +20,27 @@ export const weapons = {
     range: 100, // meters
     viewKickDegrees: 1.2, // camera kicks up this much per shot, then recovers
 
+    // Hip-fire spread: shots land at a random spot inside a cone around the crosshair.
+    // All values are the cone's half-angle in degrees. The crosshair gap shows the real cone.
+    spread: {
+      base: 0.8, // standing still, not firing
+      moving: 2.0, // added at full walking speed (scales with speed; sprint/slide speeds add more)
+      maxMovingFactor: 1.6, // cap on the speed scaling (so a fast slide doesn't go wild)
+      airborne: 3.0, // added while in the air
+      perShot: 0.8, // "bloom" added by each shot
+      maxBloom: 3.0, // cap on bloom from rapid firing
+      bloomRecovery: 5, // degrees of bloom lost per second
+      smoothing: 10, // how quickly movement/air spread grows and shrinks (higher = snappier)
+      adsMultiplier: 0.08, // aiming down sights multiplies all spread by this
+    },
+
+    // Aim down sights
+    ads: {
+      seconds: 0.18, // time to go fully in or out of ADS
+      fovMultiplier: 0.8, // camera FOV while fully aimed (0.8 = 20% zoom)
+      offset: { x: 0, y: -0.08, z: -0.38 }, // gun position while aiming: centered, sight tip just below the crosshair
+    },
+
     // Visuals
     tracerColor: 0xe8eef5, // silver staple streak
     viewmodel: {

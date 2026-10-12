@@ -3,7 +3,9 @@
 // The first-person gun you see in the lower-right of the screen. It lives in
 // its own little scene that is drawn AFTER the world with the depth buffer
 // cleared, so the gun never pokes through walls. A "rig" copies the camera's
-// position and rotation every frame; the gun hangs off the rig.
+// position and rotation every frame; the gun hangs off the rig. The gun has its
+// own camera with a fixed FOV, so ADS zoom narrows the world view but doesn't
+// blow the gun up. While aiming it slides to the center, sight on the crosshair.
 // =============================================================================
 
 import * as THREE from 'three';
@@ -62,20 +64,30 @@ export function createViewmodel(weaponDef) {
   holder.add(gun);
 
   const vm = feel.viewmodel;
+  const ads = weaponDef.ads.offset;
   let kickTimer = 0; // counts down from kickReturnSeconds after each shot
+  const camera = new THREE.PerspectiveCamera(vm.fov, 1, 0.01, 10);
 
   return {
     scene,
+    camera, // render the viewmodel scene with this, not the world camera
 
     // Call when a shot fires.
     kick() {
       kickTimer = vm.kickReturnSeconds;
     },
 
-    // Call every rendered frame, after the camera has been placed.
-    update(frameTime, camera, weapon) {
-      rig.position.copy(camera.position);
-      rig.quaternion.copy(camera.quaternion);
+    // Call every rendered frame, after the world camera has been placed.
+    // `aimAmount` is 0 (hip) .. 1 (fully aimed down sights).
+    update(frameTime, worldCamera, weapon, aimAmount) {
+      rig.position.copy(worldCamera.position);
+      rig.quaternion.copy(worldCamera.quaternion);
+      camera.position.copy(worldCamera.position);
+      camera.quaternion.copy(worldCamera.quaternion);
+      if (camera.aspect !== worldCamera.aspect) {
+        camera.aspect = worldCamera.aspect;
+        camera.updateProjectionMatrix();
+      }
 
       kickTimer = Math.max(0, kickTimer - frameTime);
       const k = kickTimer / vm.kickReturnSeconds; // 1 right after firing -> 0 when settled
@@ -85,14 +97,16 @@ export function createViewmodel(weaponDef) {
       const progress = weapon.reloadProgress;
       const dip = progress === null ? 0 : Math.sin(progress * Math.PI);
 
+      // Resting spot slides from the hip offset to the centered ADS offset.
+      const lerp = (a, b) => a + (b - a) * aimAmount;
       holder.position.set(
-        vm.offset.x,
-        vm.offset.y - dip * vm.reloadDrop,
-        vm.offset.z + kick * vm.kickBack,
+        lerp(vm.offset.x, ads.x),
+        lerp(vm.offset.y, ads.y) - dip * vm.reloadDrop,
+        lerp(vm.offset.z, ads.z) + kick * vm.kickBack,
       );
       holder.rotation.set(
         kick * vm.kickRotateDegrees * DEG_TO_RAD - dip * vm.reloadDipDegrees * DEG_TO_RAD,
-        vm.aimYawDegrees * DEG_TO_RAD,
+        lerp(vm.aimYawDegrees, 0) * DEG_TO_RAD,
         dip * vm.reloadRollDegrees * DEG_TO_RAD,
       );
     },

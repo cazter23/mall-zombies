@@ -64,6 +64,12 @@ export const feel = {
     kickRecovery: 10, // how fast weapon view kick settles back (higher = faster, per second)
   },
 
+  ads: {
+    key: 'Mouse2', // hold to aim. Any input code works, e.g. 'Mouse2' (right mouse) or 'KeyQ'
+    moveSpeedMultiplier: 0.75, // walking speed while fully aimed (goes into the stats object)
+    sensitivityFollowsZoom: true, // mouse turns slower when zoomed in, so aim feels the same
+  },
+
   camera: {
     fov: 75,
     near: 0.05,
@@ -77,7 +83,8 @@ export const feel = {
   // First-person weapon model (drawn on top of the world so it never clips into walls)
   viewmodel: {
     offset: { x: 0.19, y: -0.15, z: -0.46 }, // meters from the camera: right, down, forward
-    aimYawDegrees: 6, // gun angles slightly in toward the crosshair
+    aimYawDegrees: 6, // gun angles slightly in toward the crosshair (straightens out in ADS)
+    fov: 75, // the gun is drawn with its own fixed FOV so ADS zoom doesn't enlarge it
     kickBack: 0.06, // meters the gun jolts back when firing
     kickRotateDegrees: 9, // degrees the muzzle flips up when firing
     kickReturnSeconds: 0.12, // how long the gun takes to settle after a shot
@@ -101,6 +108,7 @@ export const feel = {
     puffSpeed: 1.5, // m/s
     puffColor: 0xb8b0a4, // dusty grey
     hitMarkerSeconds: 0.18, // how long the crosshair hit marker shows
+    crosshairMinGap: 4, // pixels: the crosshair lines never get closer to the center than this
     lowAmmoThreshold: 3, // magazine count at which the ammo counter turns red
   },
 };

@@ -25,6 +25,10 @@ export class PlayerController {
     this.yaw = 0; // left/right look (radians)
     this.pitch = 0; // up/down look (radians)
     this.viewKick = 0; // extra upward pitch from weapon recoil; settles back to 0 (radians)
+    // Set by the weapon each tick (see weapons/aim.js): aiming blocks sprint and slows walking.
+    this.isAiming = false;
+    this.aimAmount = 0; // 0 = hip, 1 = fully aimed
+    this.lookScale = 1; // mouse sensitivity multiplier (lower while zoomed in)
 
     this.grounded = false;
     this.timeSinceGrounded = 0;
@@ -94,8 +98,9 @@ export class PlayerController {
   applyLook(dx, dy) {
     const look = feel.look;
     const invert = look.invertY ? -1 : 1;
-    this.yaw -= dx * look.mouseSensitivity;
-    this.pitch -= dy * look.mouseSensitivity * invert;
+    const sensitivity = look.mouseSensitivity * this.lookScale;
+    this.yaw -= dx * sensitivity;
+    this.pitch -= dy * sensitivity * invert;
     const maxPitch = look.maxPitchDegrees * DEG_TO_RAD;
     this.pitch = Math.max(-maxPitch, Math.min(maxPitch, this.pitch));
   }
@@ -146,11 +151,12 @@ export class PlayerController {
       wishZ /= wishLength;
     }
 
-    // --- Sprint meter (only while standing: crouching or sliding cancels a sprint) ---
+    // --- Sprint meter (only while standing and not aiming: crouch, slide or ADS cancels a sprint) ---
     const shiftHeld = input.isDown('ShiftLeft') || input.isDown('ShiftRight');
     const wantsSprint =
       shiftHeld &&
       this.stance === 'stand' &&
+      !this.isAiming &&
       wishLength > 0 &&
       (!feel.sprint.requiresForward || forwardInput > 0);
     this.updateSprint(dt, wantsSprint);
@@ -168,6 +174,7 @@ export class PlayerController {
     } else {
       let targetSpeed = this.isSprinting ? stats.sprintSpeed : stats.walkSpeed;
       if (this.stance === 'crouch') targetSpeed = stats.crouchSpeed;
+      targetSpeed *= 1 + (stats.adsMoveSpeed - 1) * this.aimAmount; // slower while aiming
       // In the air you keep your momentum: you can steer, but holding a direction never slows
       // you down (otherwise a slide-jump bleeds speed mid-air). Letting go of keys still does.
       if (!this.grounded) {

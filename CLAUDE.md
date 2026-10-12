@@ -42,12 +42,13 @@ src/
                         update(dt) + render(alpha); exposes window.__mall when debug.exposeToWindow
   style.css             HUD (crosshair, hit marker, health/stamina bars, ammo, prompt), start/pause overlay
   config/
-    feel.js             Movement, sprint, crouch, slide, look (+ view kick recovery), camera, player size,
-                        sim tick rate, shutter speed, viewmodel placement/animation, hit effects
+    feel.js             Movement, sprint, crouch, slide, look (+ view kick recovery), ADS (key, move speed,
+                        sensitivity), camera, player size, sim tick rate, shutter speed, viewmodel
+                        placement/animation/fov, hit effects, crosshair min gap
     economy.js          Points, payouts, kill values, door prices, wave scaling + helper functions
                         (zombieHealthForRound, zombieCountForRound, spawnDelayForRound, maxAliveForRound)
     weapons.js          Per-weapon stats (damage, headshot mult, mag, reserve, fire interval, reload, kick,
-                        colors) + weaponStatDefaults for the stats object
+                        spread cone, ADS time/zoom/gun offset, colors) + weaponStatDefaults for stats
     debug.js            showMarkers, allowShutterToggle (O key), testArena (T key), dummies, exposeToWindow
   core/
     loop.js             startLoop(): fixed-timestep accumulator, calls update(dt) and render(alpha, frameTime)
@@ -56,16 +57,19 @@ src/
     controller.js       PlayerController: WASD, jump (buffer + coyote time), sprint meter, crouch/slide
                         (stance: stand|crouch|slide), gravity, mouse look (per render frame), camera interpolation
     stats.js            createPlayerStats(): the single stats object (health, speeds, jump, sprint, crouch/slide,
-                        damageMultiplier, reloadSpeed)
+                        adsMoveSpeed, damageMultiplier, reloadSpeed)
   weapons/
     weapon.js           Weapon class: ammo, fire cooldown + click buffer, reload. Pure state; update() returns
                         'fire' | 'empty' | null
+    aim.js              createAim(): ADS state (eased 0..1, blocks sprint, sprint cancels it) and hip-fire
+                        spread (base + moving + airborne, smoothed, + per-shot bloom; x adsMultiplier).
+                        applySpread() picks a random direction inside the cone
     hitscan.js          castShot(): one ray vs world colliders and shootables' hitboxes; defines the
                         "shootable" interface (hitboxes, isAlive, takeHit, splatColors)
-    playerGun.js        createPlayerGun(): glue. Reads Mouse0/KeyR, fires hitscan, applies damage
+    playerGun.js        createPlayerGun(): glue. Updates aim, reads Mouse0/KeyR, fires hitscan inside the spread cone, applies damage
                         (headshot x mult x stats.damageMultiplier), recoil, tracer, splatter, hit marker
-    viewmodel.js        First-person staple gun model in its own scene (drawn after the world with depth
-                        cleared); kick + reload animations; muzzle position for tracers
+    viewmodel.js        First-person staple gun model in its own scene + own fixed-FOV camera (drawn after the
+                        world with depth cleared); slides to center in ADS; kick + reload animations; muzzle pos
   fx/
     effects.js          Tracers (pooled) + particle bursts (one InstancedMesh): splat() and puff()
   world/
@@ -79,7 +83,7 @@ src/
     dummy.js            createDummy(): practice mannequin (shootable) with head/body hitboxes, health bar,
                         tips over when killed and pops back up. Test range only.
   ui/
-    hud.js              createHud(): crosshair + hit marker (white body, big yellow head, red kill),
+    hud.js              createHud(): 4-line crosshair whose gap = spread cone (dot in ADS) + hit marker (white body, big yellow head, red kill),
                         bottom-left health (white) + stamina (green) bars, bottom-right ammo counter,
                         reload prompt under the crosshair, click-to-play/paused overlay (plain DOM)
 ```
@@ -91,7 +95,11 @@ src/
   `render(alpha, frameTime)`: applies mouse look, interpolates the camera, updates effects + viewmodel, updates the
   HUD, then draws two passes: the world, then (after `clearDepth`) the viewmodel scene. `renderer.autoClear` is false.
 - Input: mouse buttons are tracked like keys as `Mouse0`/`Mouse1`/`Mouse2`, only while pointer-locked.
-- Shooting: `player.getAim()` gives eye + direction including view kick, so shots land exactly on the crosshair.
+- Shooting: `player.getAim()` gives eye + direction including view kick; `aim.applySpread()` then randomizes it
+  inside the spread cone. The crosshair gap is computed in `main.js` render from `aim.spreadDegrees` and the
+  current camera FOV (gap px = tan(spread) / tan(fov/2) * screenHeight/2), so every shot lands inside the lines.
+- ADS: `aim` sets `player.isAiming` / `player.aimAmount` each tick (blocks sprint, scales walk speed by
+  `stats.adsMoveSpeed`). Render zooms `camera.fov` by `def.ads.fovMultiplier` and sets `player.lookScale`.
   `main.js` keeps a `shootables` array (test-range dummies now; zombies should be pushed into it). A collider
   Box3 with `ignoreShots = true` blocks walking but not bullets.
 - The game only runs while the pointer is locked; Esc pauses and shows the overlay.
@@ -137,6 +145,8 @@ Build step 2 is done: staple gun (hitscan, semi-auto, 40 dmg, 3x headshots, 12/6
 dry-click to reload, view kick), first-person model, silver tracer, confetti splatter, wall puffs, hit markers,
 ammo HUD, practice dummies in the test range. Only `zombieHealthForRound` from `economy.js` is used so far;
 `stats.health` never changes, and there are no zombies, waves, points or death handling.
+Added after step 2: hip-fire spread with a dynamic 4-line crosshair, and ADS (hold right mouse): 0.18s eased
+transition, spread x0.08, 20% zoom, gun centered with sight just below the crosshair, 75% walk speed.
 
 ## Planned build order
 1. Walkable mall (done)

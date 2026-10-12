@@ -111,12 +111,28 @@ function update(dt) {
   input.endTick();
 }
 
+const DEG_TO_RAD = Math.PI / 180;
+
 function render(alpha, frameTime) {
+  // ADS zoom: narrow the world camera's FOV, and slow the mouse to match if configured.
+  const aimAmount = gun.aim.renderAmount(alpha);
+  const fov = feel.camera.fov * (1 + (gun.weapon.def.ads.fovMultiplier - 1) * aimAmount);
+  if (camera.fov !== fov) {
+    camera.fov = fov;
+    camera.updateProjectionMatrix();
+  }
+  player.lookScale = feel.ads.sensitivityFollowsZoom ? fov / feel.camera.fov : 1;
+
   const { dx, dy } = input.consumeMouse();
   if (game.running) player.applyLook(dx, dy);
   player.syncCamera(alpha);
   if (game.running) effects.update(frameTime);
-  viewmodel.update(game.running ? frameTime : 0, camera, gun.weapon);
+  viewmodel.update(game.running ? frameTime : 0, camera, gun.weapon, aimAmount);
+
+  // Crosshair gap in pixels = where the spread cone's edge lands on screen at the current FOV.
+  const halfSpread = gun.aim.spreadDegrees * DEG_TO_RAD;
+  const gapPx = (Math.tan(halfSpread) / Math.tan((fov * DEG_TO_RAD) / 2)) * (window.innerHeight / 2);
+  hud.setCrosshair(gapPx, aimAmount);
 
   hud.setHealth(player.healthFraction);
   hud.setSprint(player.sprintFraction, player.sprintExhausted, player.isSprinting);
@@ -126,7 +142,7 @@ function render(alpha, frameTime) {
   renderer.clear();
   renderer.render(scene, camera);
   renderer.clearDepth();
-  renderer.render(viewmodel.scene, camera);
+  renderer.render(viewmodel.scene, viewmodel.camera);
 }
 
 startLoop({

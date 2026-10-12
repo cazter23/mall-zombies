@@ -26,6 +26,8 @@ export function createPlayerStats() {
     sprintRefillDelay: feel.sprint.refillDelay,
     sprintRefillRate: feel.sprint.refillRate,
 
+    adsMoveSpeed: feel.ads.moveSpeedMultiplier, // walk speed multiplier while aiming
+
     damageMultiplier: weaponStatDefaults.damageMultiplier,
     reloadSpeed: weaponStatDefaults.reloadSpeed,
   };
