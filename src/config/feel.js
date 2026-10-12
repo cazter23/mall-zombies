@@ -49,7 +49,8 @@ export const feel = {
     refillDelay: 1, // seconds after you stop sprinting before the meter refills
     refillRate: 1.25, // seconds of sprint regained per second (empty -> full in ~3.2s)
     minToStart: 0.5, // after fully draining, the meter must refill this much before you can sprint again
-    requiresForward: true, // like COD: you can only sprint while holding forward
+    requiresForward: true, // like COD: you can only sprint while holding forward...
+    minForwardInput: 0.5, // ...at least this much (matters for a controller stick; keys are 1)
   },
 
   crouch: {
@@ -79,7 +80,7 @@ export const feel = {
   },
 
   ads: {
-    key: 'Mouse2', // hold to aim. Any input code works, e.g. 'Mouse2' (right mouse) or 'KeyQ'
+    // (the aim button itself is in config/controls.js -> bindings.aim)
     moveSpeedMultiplier: 0.75, // walking speed while fully aimed (goes into the stats object)
     sensitivityFollowsZoom: true, // mouse turns slower when zoomed in, so aim feels the same
   },
@@ -112,7 +113,7 @@ export const feel = {
   },
 
   melee: {
-    key: 'KeyV', // tap to slash with the box cutter (COD's default melee key on PC)
+    // (the melee button is in config/controls.js -> bindings.melee)
     lungeEndSpeedKeep: 0.3, // fraction of lunge speed kept when it ends (so you don't skate past)
   },
 

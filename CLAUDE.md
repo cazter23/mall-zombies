@@ -23,7 +23,8 @@ does not run the game, so also try changes in `npm run dev`).
 
 ## Rules for working on this project
 - Game logic runs on a fixed 60Hz timestep; rendering is decoupled (render gets `alpha` to interpolate).
-- Every tunable number lives in `src/config/` (`feel.js`, `economy.js`, `weapons.js`, `zombies.js`, `debug.js`), never hardcoded in logic.
+- Every tunable number lives in `src/config/` (`feel.js`, `economy.js`, `weapons.js`, `zombies.js`, `controls.js`,
+  `debug.js`), never hardcoded in logic.
 - All player stats live in one stats object (`src/player/stats.js`) so perks, wardrobe and a
   future skill tree modify it in one place. Systems read stats, not config, at runtime.
 - Death is handled in one function (`onPlayerDeath` in `main.js`) so a downed/revive system can be added
@@ -31,7 +32,9 @@ does not run the game, so also try changes in `npm run dev`).
 - Keep code modular, readable and commented. Prefer small, reviewable changes.
 - Build in small steps. Do only the step the user asks for. Test it, then tell them how to try it.
 - After changes, run `npm run build` to check for errors.
-- Use `KeyboardEvent.code` for keys (layout independent). Add held/pressed checks via `core/input.js`.
+- Gameplay reads ACTIONS, never raw keys: `input.actionDown/consumeAction/actionPressed('jump')` and
+  `input.moveAxis()`. Bindings (keyboard `KeyboardEvent.code` + controller `Pad*` codes) live in
+  `config/controls.js`. Raw codes are only used for debug keys in `main.js`.
 
 ## Folder structure
 ```
@@ -42,10 +45,11 @@ src/
                         update(dt) + render(alpha); exposes window.__mall when debug.exposeToWindow
   style.css             HUD (crosshair, hit marker, health/stamina bars, ammo, prompt), start/pause overlay
   config/
-    feel.js             Movement, sprint, crouch, slide, look (+ view kick recovery), ADS (key, move speed,
+    feel.js             Movement, sprint, crouch, slide, look (+ view kick recovery), ADS (move speed,
                         sensitivity), camera, player size, sim tick rate, shutter speed, viewmodel
                         placement/animation/fov (+ box cutter slash path), hit effects, crosshair min gap,
-                        body (colors + leg/pose tuning), health (regen, hurt edges), death camera, melee key
+                        body (colors + leg/pose tuning), health (regen, hurt edges), death camera, sprintFx,
+                        melee lunge end
     economy.js          Points, payouts, kill values, door prices, wave scaling + helper functions
                         (zombieHealthForRound, zombieCountForRound, spawnDelayForRound, maxAliveForRound)
     weapons.js          Per-weapon stats (damage, headshot mult, mag, reserve, fire interval, reload, kick,
@@ -53,11 +57,19 @@ src/
                         cone, swing timing, lunge), weaponStatDefaults for stats
     zombies.js          zombieTypes (per-type speed, size, hitboxes, attack, timings, colors, splatter), zombieCrowd
                         (separation, contact gap, spawn dust, min spawn distance), zombieNav (grid settings)
+    controls.js         bindings (action -> keyboard/mouse + Pad* codes), buttonLabels (prompts per device),
+                        gamepad (deadzones, look speed/curve, turn ramp, triggers, click-to-sprint release),
+                        aimAssist (strength dial, range/cone, slowdown, rotational, ADS snap)
     debug.js            showMarkers, allowShutterToggle (O key), testArena (T key), zombieKeys (Z spawn /
                         X clear), dummies, exposeToWindow
   core/
     loop.js             startLoop(): fixed-timestep accumulator, calls update(dt) and render(alpha, frameTime)
-    input.js            Input class: held keys, one-shot presses (consumePress/endTick), mouse delta, pointer lock
+    input.js            Input class: held keys/buttons, one-shot presses, actions (actionDown/consumeAction/
+                        actionPressed), moveAxis() (WASD + left stick), padMove/padLook, `device`
+                        ('keyboard' | 'gamepad', last used), mouse delta, pointer lock
+    gamepad.js          createGamepad(input): polls the first controller each tick (standard layout), writes
+                        Pad* held/pressed codes + sticks (radial deadzones, look response curve) into input,
+                        click-to-sprint latch (PadSprint), Xbox/PlayStation detection, lookRate() w/ turn ramp
   player/
     controller.js       PlayerController: WASD, jump (buffer + coyote time), sprint meter, crouch/slide
                         (stance: stand|crouch|slide), gravity, mouse look (per render frame), camera interpolation
@@ -75,6 +87,10 @@ src/
     aim.js              createAim(): ADS state (eased 0..1, blocks sprint, sprint cancels it) and hip-fire
                         spread (base + moving + airborne, smoothed, + per-shot bloom; x adsMultiplier).
                         applySpread() picks a random direction inside the cone
+    aimAssist.js        createAimAssist(): controller-only (input.device). Picks the visible target nearest the
+                        crosshair (sticky), aims at its chest. Slowdown multiplier (read per frame for stick
+                        look), rotational follow of the target's angular motion while a stick is in use, and
+                        a 40% ADS snap within 5 deg with a cooldown. Runs inside playerGun.update after aim
     hitscan.js          castShot(): one ray vs world colliders and shootables' hitboxes; defines the
                         "shootable" interface (hitboxes, isAlive, takeHit, splatColors)
     melee.js            createMelee(): box cutter. V = swing; lunges at a target 1.08-3m away; hit at 0.15s on the
@@ -134,6 +150,10 @@ src/
   `render(alpha, frameTime)`: applies mouse look, interpolates the camera, updates effects + viewmodel, updates the
   HUD, then draws two passes: the world, then (after `clearDepth`) the viewmodel scene. `renderer.autoClear` is false.
 - Input: mouse buttons are tracked like keys as `Mouse0`/`Mouse1`/`Mouse2`, only while pointer-locked.
+  Controller buttons are `PadA`.. codes written by `gamepad.poll()` (first thing in `update`).
+- Controller flow: `game.running` = pointer locked OR `game.padPlaying` OR forceRun. `handleControllerMenus()`
+  in main: A/Start starts or resumes (no pointer lock needed), Start pauses, A on the results screen plays
+  again. Stick look is applied per frame in render (`player.applyStickLook`) x `aimAssist.slowdown`.
 - Shooting: `player.getAim()` gives eye + direction including view kick; `aim.applySpread()` then randomizes it
   inside the spread cone. The crosshair gap is computed in `main.js` render from `aim.spreadDegrees` and the
   current camera FOV (gap px = tan(spread) / tan(fov/2) * screenHeight/2), so every shot lands inside the lines.
@@ -201,6 +221,13 @@ Play again resets the run. Spawning is still debug Z (X clears); round is fixed 
 Sprint feedback (`feel.sprintFx`): head bob + slight roll (camera only, aim unaffected), the gun drops into a
 running pose and swings with steps, and white/dark speed lines streak at the screen edges. Driven by
 `player.sprintAmount` (0..1, smoothed) and `player.bobPhase`. Low health (<40%) = strong throbbing red edges.
+
+Controller support + aim assist: Xbox/PlayStation via the Gamepad API. LS move (analog walk speed, click =
+latched sprint), RS look (200/140 deg/s, curve 2, turn ramp to +80%), LT aim, RT fire, A jump, B crouch/slide,
+X reload, RB/R3 box cutter, Start pause/resume. Prompts follow the last device. Aim assist (controller only,
+chest-targeted): slowdown 60% hip / 50% ADS, rotational 15% hip / 25% ADS (only with stick input, full strength
+except the outer 30% of the zone), ADS snap 40% within 5 deg (0.6s cooldown); master dial
+`controls.aimAssist.strength`. Tested with a simulated controller; feel still needs real-hardware tuning.
 
 ## Planned build order
 1. Walkable mall (done)

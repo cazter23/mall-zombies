@@ -9,6 +9,8 @@ import { feel } from './config/feel.js';
 import { debug } from './config/debug.js';
 import { startLoop } from './core/loop.js';
 import { Input } from './core/input.js';
+import { createGamepad } from './core/gamepad.js';
+import { buttonLabels } from './config/controls.js';
 import { buildMall } from './world/map.js';
 import { buildTestArena } from './world/testArena.js';
 import { createPlayerStats } from './player/stats.js';
@@ -19,6 +21,7 @@ import { createEffects } from './fx/effects.js';
 import { createViewmodel } from './weapons/viewmodel.js';
 import { createPlayerGun } from './weapons/playerGun.js';
 import { createMelee } from './weapons/melee.js';
+import { createAimAssist } from './weapons/aimAssist.js';
 import { createPlayerBody } from './player/body.js';
 import { createZombieManager } from './zombies/zombieManager.js';
 import { createPlayerHealth } from './player/health.js';
@@ -54,6 +57,7 @@ const world = buildMall(scene);
 // Debug-only open area for testing movement; shares the mall's collider list.
 const arena = debug.testArena ? buildTestArena(scene, world.colliders) : null;
 const input = new Input(renderer.domElement);
+const gamepad = createGamepad(input); // feeds controller buttons/sticks into `input`
 const stats = createPlayerStats();
 const player = new PlayerController({
   camera,
@@ -69,6 +73,7 @@ const body = createPlayerBody(scene); // legs + torso you see when looking down
 const shootables = [...(arena ? arena.shootables : [])];
 const effects = createEffects(scene);
 const viewmodel = createViewmodel(weapons.stapleGun, meleeWeapons.boxCutter);
+const aimAssist = createAimAssist({ player, input, shootables, colliders: world.colliders });
 const gun = createPlayerGun({
   def: weapons.stapleGun,
   stats,
@@ -80,6 +85,7 @@ const gun = createPlayerGun({
   viewmodel,
   hud,
   onShot: (shot) => runStats.recordShot(shot),
+  aimAssist,
 });
 const melee = createMelee({
   def: meleeWeapons.boxCutter,
@@ -93,14 +99,22 @@ const melee = createMelee({
   hud,
 });
 
-// The game only runs while the mouse is locked; Esc pauses.
+// The game runs while the mouse is locked (Esc pauses) or while playing on a controller
+// (Start pauses). A controller doesn't need the mouse locked.
 const game = {
   forceRun: false, // debug: run without pointer lock (used by automated tests)
   over: false, // true once the player has died
+  padPlaying: false, // started/resumed with a controller
   get running() {
-    return input.locked || this.forceRun;
+    return input.locked || this.padPlaying || this.forceRun;
   },
 };
+
+// Button name for prompts on whichever device was used last ("R" vs "X" vs "□").
+function buttonLabel(action) {
+  const device = input.device === 'gamepad' ? gamepad.type : 'keyboard';
+  return buttonLabels[device][action];
+}
 
 const DEG_TO_RAD = Math.PI / 180;
 const runStats = createRunStats();
@@ -114,6 +128,7 @@ function onPlayerDeath() {
   death.timer = 0;
   death.resultsShown = false;
   hud.setDead(true);
+  game.padPlaying = false;
   // Free the mouse now, so it's usable by the time the results screen appears
   // (browsers refuse to re-lock the pointer for about a second after it's released).
   if (document.pointerLockElement) document.exitPointerLock();
@@ -138,6 +153,7 @@ function resetRun() {
   runStats.reset();
   gun.reset();
   melee.reset();
+  aimAssist.reset();
   player.teleport(world.playerSpawn);
   world.shutter.close();
   game.over = false;
@@ -167,7 +183,8 @@ const zombies = createZombieManager({
 
 hud.onStart(() => input.requestLock());
 input.onLockChange((locked) => {
-  if (!game.over) hud.setPaused(!locked); // when dead, the results screen is in charge
+  if (locked) game.padPlaying = false; // the mouse took over
+  if (!game.over) hud.setPaused(!game.running); // when dead, the results screen is in charge
 });
 hud.setPaused(true);
 hud.onPlayAgain(() => {
@@ -178,7 +195,30 @@ hud.onPlayAgain(() => {
 
 // --- Loop ------------------------------------------------------------------------
 
+// Controller menus: A/Start starts or resumes, Start pauses, A on the results screen plays again.
+function handleControllerMenus() {
+  if (game.over) {
+    if (death.resultsShown && input.consumeAction('confirm')) {
+      resetRun();
+      game.padPlaying = true;
+      hud.setPaused(false);
+    }
+  } else if (!game.running) {
+    if (input.consumeAction('confirm')) {
+      game.padPlaying = true;
+      hud.setPaused(false);
+    }
+  } else if (input.consumeAction('pause')) {
+    game.padPlaying = false;
+    if (document.pointerLockElement) document.exitPointerLock();
+    hud.setPaused(true);
+  }
+}
+
 function update(dt) {
+  gamepad.poll();
+  handleControllerMenus();
+
   // Dead: the world keeps going (zombies wander to the body), the player doesn't.
   // Checked before the pause check, because the mouse is released on death.
   if (game.over) {
@@ -219,6 +259,8 @@ function update(dt) {
   input.endTick();
 }
 
+const stickRate = { yaw: 0, pitch: 0 };
+
 function render(alpha, frameTime) {
   // ADS zoom: narrow the world camera's FOV, and slow the mouse to match if configured.
   const aimAmount = gun.aim.renderAmount(alpha);
@@ -230,7 +272,13 @@ function render(alpha, frameTime) {
   player.lookScale = feel.ads.sensitivityFollowsZoom ? fov / feel.camera.fov : 1;
 
   const { dx, dy } = input.consumeMouse();
-  if (game.running) player.applyLook(dx, dy);
+  if (game.running) {
+    player.applyLook(dx, dy);
+    // Controller look, slowed by aim assist when the crosshair is on a zombie.
+    gamepad.lookRate(frameTime, stickRate);
+    const slow = aimAssist.slowdown;
+    player.applyStickLook(stickRate.yaw * frameTime * slow, stickRate.pitch * frameTime * slow);
+  }
   player.syncCamera(alpha);
   if (game.over) applyDeathCamera(alpha);
   body.root.visible = !game.over;
@@ -256,7 +304,7 @@ function render(alpha, frameTime) {
   hud.setHurt(health.overlay);
   hud.setSpeedLines(game.over ? 0 : player.sprintAmount * feel.sprintFx.speedLinesOpacity);
   hud.setSprint(player.sprintFraction, player.sprintExhausted, player.isSprinting);
-  hud.setAmmo(gun.weapon);
+  hud.setAmmo(gun.weapon, buttonLabel('reload'));
 
   // Pass 1: the world. Pass 2: the gun, with depth cleared so it never clips into walls.
   renderer.clear();
@@ -288,7 +336,7 @@ startLoop({
 });
 
 if (debug.exposeToWindow) {
-  window.__mall = { THREE, scene, camera, renderer, world, arena, player, stats, input, game, hud, gun, effects, viewmodel, shootables, body, zombies, health, melee, runStats, death, resetRun };
+  window.__mall = { THREE, scene, camera, renderer, world, arena, player, stats, input, game, hud, gun, effects, viewmodel, shootables, body, zombies, health, melee, runStats, death, resetRun, gamepad, aimAssist };
   // Advance the real game loop by `ticks` fixed steps and draw one frame. For automated
   // testing when the browser isn't animating (e.g. a hidden tab). Pair with game.forceRun.
   window.__mall.step = (ticks = 1) => {

@@ -283,6 +283,13 @@ kbd {
   font-weight: 700;
 }
 
+.pad-hint {
+  margin: 14px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #a79fb8;
+}
+
 .debug-hint {
   margin: 16px 0 0;
   font-size: 12px;

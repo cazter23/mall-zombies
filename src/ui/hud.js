@@ -88,6 +88,8 @@ export function createHud() {
         <li><kbd>V</kbd> box cutter</li>
         <li><kbd>Esc</kbd> pause</li>
       </ul>
+      <p class="pad-hint">Controller? Press <kbd>A</kbd> / <kbd>✕</kbd> or <kbd>Start</kbd> to play.
+        LS move (click to sprint) · RS look · LT aim · RT shoot · A jump · B crouch/slide · X reload · RB knife</p>
       ${debug.allowShutterToggle ? '<p class="debug-hint">Debug: <kbd>O</kbd> opens the shutter</p>' : ''}
       ${debug.testArena ? '<p class="debug-hint">Debug: <kbd>T</kbd> teleports to the movement test range</p>' : ''}
       ${debug.zombieKeys ? '<p class="debug-hint">Debug: <kbd>Z</kbd> spawns a zombie, <kbd>X</kbd> clears them</p>' : ''}
@@ -105,6 +107,7 @@ export function createHud() {
       <p class="tagline">Cleanup on aisle you.</p>
       <dl class="results-stats"></dl>
       <button class="play" type="button">Play again</button>
+      <p class="pad-hint">or press <kbd>A</kbd> / <kbd>✕</kbd> on a controller</p>
     </div>
   `;
   const resultsStats = results.querySelector('.results-stats');
@@ -224,8 +227,9 @@ export function createHud() {
     },
 
     // Called every frame with the held weapon; only touches the DOM when something changed.
-    setAmmo(weapon) {
-      const key = `${weapon.magazine}|${weapon.reserve}|${weapon.isReloading}`;
+    // `reloadLabel`: the reload button for the device in use ("R", "X", "□").
+    setAmmo(weapon, reloadLabel = 'R') {
+      const key = `${weapon.magazine}|${weapon.reserve}|${weapon.isReloading}|${reloadLabel}`;
       if (key === lastAmmoKey) return;
       lastAmmoKey = key;
       ammoMag.textContent = weapon.magazine;
@@ -236,7 +240,7 @@ export function createHud() {
       let text = '';
       if (weapon.isReloading) text = 'Reloading...';
       else if (weapon.magazine === 0 && weapon.reserve === 0) text = 'No ammo';
-      else if (weapon.magazine === 0) text = 'Press R to reload';
+      else if (weapon.magazine === 0) text = `Press ${reloadLabel} to reload`;
       prompt.textContent = text;
     },
 

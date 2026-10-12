@@ -121,7 +121,19 @@ export class PlayerController {
     const sensitivity = look.mouseSensitivity * this.lookScale;
     this.yaw -= dx * sensitivity;
     this.pitch -= dy * sensitivity * invert;
-    const maxPitch = look.maxPitchDegrees * DEG_TO_RAD;
+    this.clampPitch();
+  }
+
+  // Controller look, applied every rendered frame: yaw/pitch changes in radians
+  // (+yaw = turn right, +pitch = look up). Scaled like the mouse by ADS zoom.
+  applyStickLook(yawDelta, pitchDelta) {
+    this.yaw -= yawDelta * this.lookScale;
+    this.pitch += pitchDelta * this.lookScale;
+    this.clampPitch();
+  }
+
+  clampPitch() {
+    const maxPitch = feel.look.maxPitchDegrees * DEG_TO_RAD;
     this.pitch = Math.max(-maxPitch, Math.min(maxPitch, this.pitch));
   }
 
@@ -157,8 +169,10 @@ export class PlayerController {
     this.viewKick *= Math.max(0, 1 - feel.look.kickRecovery * dt);
 
     // --- Which way does the player want to go? (relative to where they look) ---
-    const forwardInput = (input.isDown('KeyW') ? 1 : 0) - (input.isDown('KeyS') ? 1 : 0);
-    const rightInput = (input.isDown('KeyD') ? 1 : 0) - (input.isDown('KeyA') ? 1 : 0);
+    // WASD and the left stick combined; a partly pushed stick walks slower.
+    const move = input.moveAxis();
+    const forwardInput = move.y;
+    const rightInput = move.x;
 
     // Camera looks down -Z at yaw 0.  forward = (-sin, 0, -cos), right = (cos, 0, -sin)
     const sin = Math.sin(this.yaw);
@@ -166,19 +180,19 @@ export class PlayerController {
     let wishX = -sin * forwardInput + cos * rightInput;
     let wishZ = -cos * forwardInput - sin * rightInput;
     const wishLength = Math.hypot(wishX, wishZ);
+    const moveStrength = Math.min(1, wishLength); // 1 for keys, 0..1 for a stick
     if (wishLength > 0) {
       wishX /= wishLength;
       wishZ /= wishLength;
     }
 
     // --- Sprint meter (only while standing and not aiming: crouch, slide or ADS cancels a sprint) ---
-    const shiftHeld = input.isDown('ShiftLeft') || input.isDown('ShiftRight');
     const wantsSprint =
-      shiftHeld &&
+      input.actionDown('sprint') &&
       this.stance === 'stand' &&
       !this.isAiming &&
       wishLength > 0 &&
-      (!feel.sprint.requiresForward || forwardInput > 0);
+      (!feel.sprint.requiresForward || forwardInput >= feel.sprint.minForwardInput);
     this.updateSprint(dt, wantsSprint);
 
     // --- Stance: crouch / slide / stand ---
@@ -204,6 +218,7 @@ export class PlayerController {
       let targetSpeed = this.isSprinting ? stats.sprintSpeed : stats.walkSpeed;
       if (this.stance === 'crouch') targetSpeed = stats.crouchSpeed;
       targetSpeed *= 1 + (stats.adsMoveSpeed - 1) * this.aimAmount; // slower while aiming
+      if (!this.isSprinting) targetSpeed *= moveStrength; // half-pushed stick = slower walk
       // In the air you keep your momentum: you can steer, but holding a direction never slows
       // you down (otherwise a slide-jump bleeds speed mid-air). Letting go of keys still does.
       if (!this.grounded) {
@@ -223,7 +238,7 @@ export class PlayerController {
     }
 
     // --- Jump (with a small buffer and coyote time so it feels forgiving) ---
-    if (input.consumePress('Space')) this.jumpBuffer = m.jumpBufferTime;
+    if (input.consumeAction('jump')) this.jumpBuffer = m.jumpBufferTime;
     else this.jumpBuffer = Math.max(0, this.jumpBuffer - dt);
 
     const canJump = this.grounded || this.timeSinceGrounded < m.coyoteTime;
@@ -276,8 +291,8 @@ export class PlayerController {
   updateStance(dt, wishX, wishZ) {
     const input = this.input;
     const stats = this.stats;
-    const cPressed = input.consumePress('KeyC');
-    const cHeld = input.isDown('KeyC');
+    const cPressed = input.consumeAction('crouch');
+    const cHeld = input.actionDown('crouch');
 
     this.slideCooldownTimer = Math.max(0, this.slideCooldownTimer - dt);
     this.chainPressTimer = Math.max(0, this.chainPressTimer - dt);

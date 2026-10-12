@@ -2,7 +2,12 @@
 // INPUT
 // Tracks held keys, one-shot key presses, mouse movement, and pointer lock.
 // Uses KeyboardEvent.code (physical key position), so WASD works on any layout.
+// Controller buttons arrive here too (as 'PadA' etc., from core/gamepad.js), and
+// gameplay asks for ACTIONS ("jump", "fire") mapped in config/controls.js, so
+// keyboard/mouse and controller work through the same calls.
 // =============================================================================
+
+import { bindings } from '../config/controls.js';
 
 // Keys whose default browser behaviour (scrolling, etc.) we block while playing.
 const GAME_KEYS = new Set(['Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'ShiftLeft', 'ShiftRight', 'KeyC', 'KeyR', 'KeyV']);
@@ -20,10 +25,17 @@ export class Input {
     this.locked = false;
     this.lockListeners = [];
 
+    // Controller sticks (filled in by core/gamepad.js): x = right, y = forward / up, -1..1.
+    this.padMove = { x: 0, y: 0 };
+    this.padLook = { x: 0, y: 0 };
+    // Last device used: 'keyboard' (keyboard + mouse) or 'gamepad'. Drives prompts and aim assist.
+    this.device = 'keyboard';
+
     window.addEventListener('keydown', (e) => {
       if (this.locked && GAME_KEYS.has(e.code)) e.preventDefault();
       if (!e.repeat) this.pressed.add(e.code);
       this.held.add(e.code);
+      this.device = 'keyboard';
     });
 
     window.addEventListener('keyup', (e) => {
@@ -37,6 +49,7 @@ export class Input {
       const code = `Mouse${e.button}`;
       this.pressed.add(code);
       this.held.add(code);
+      this.device = 'keyboard';
     });
     document.addEventListener('mouseup', (e) => {
       this.held.delete(`Mouse${e.button}`);
@@ -53,6 +66,7 @@ export class Input {
       if (Math.abs(e.movementX) > MAX_MOUSE_DELTA || Math.abs(e.movementY) > MAX_MOUSE_DELTA) return;
       this.mouseDX += e.movementX;
       this.mouseDY += e.movementY;
+      if (Math.abs(e.movementX) + Math.abs(e.movementY) > 2) this.device = 'keyboard';
     });
 
     document.addEventListener('pointerlockchange', () => {
@@ -91,6 +105,40 @@ export class Input {
   // True if the key was pressed this tick, WITHOUT consuming it (other systems can still see it).
   wasPressed(code) {
     return this.pressed.has(code);
+  }
+
+  // --- Actions (see config/controls.js) ---
+
+  // Is any key/button bound to this action held?
+  actionDown(action) {
+    for (const code of bindings[action]) if (this.held.has(code)) return true;
+    return false;
+  }
+
+  // Was it pressed this tick? Consumes the press (for every code bound to the action).
+  consumeAction(action) {
+    let hit = false;
+    for (const code of bindings[action]) if (this.pressed.delete(code)) hit = true;
+    return hit;
+  }
+
+  // Was it pressed this tick? Does NOT consume, so other systems still see it.
+  actionPressed(action) {
+    for (const code of bindings[action]) if (this.pressed.has(code)) return true;
+    return false;
+  }
+
+  // Movement intent, combining WASD and the left stick: x = right, y = forward.
+  // Length is at most 1 (a half-pushed stick gives about half).
+  moveAxis() {
+    let x = (this.actionDown('right') ? 1 : 0) - (this.actionDown('left') ? 1 : 0) + this.padMove.x;
+    let y = (this.actionDown('forward') ? 1 : 0) - (this.actionDown('back') ? 1 : 0) + this.padMove.y;
+    const length = Math.hypot(x, y);
+    if (length > 1) {
+      x /= length;
+      y /= length;
+    }
+    return { x, y };
   }
 
   // Called after every game tick so a press is only seen by one tick.

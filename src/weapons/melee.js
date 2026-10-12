@@ -10,7 +10,6 @@
 // =============================================================================
 
 import * as THREE from 'three';
-import { feel } from '../config/feel.js';
 import { castShot } from './hitscan.js';
 
 const DEG_TO_RAD = Math.PI / 180;
@@ -107,7 +106,7 @@ export function createMelee({ def, stats, player, input, weapon, shootables, col
     },
 
     update(dt) {
-      const pressed = input.consumePress(feel.melee.key); // always consumed, so presses don't queue up
+      const pressed = input.consumeAction('melee'); // always consumed, so presses don't queue up
       if (timer < 0) {
         if (pressed) startSwing();
         return;

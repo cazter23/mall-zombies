@@ -14,7 +14,19 @@ import { createAim } from './aim.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 
-export function createPlayerGun({ def, stats, player, input, colliders, shootables, effects, viewmodel, hud, onShot = null }) {
+export function createPlayerGun({
+  def,
+  stats,
+  player,
+  input,
+  colliders,
+  shootables,
+  effects,
+  viewmodel,
+  hud,
+  onShot = null,
+  aimAssist = null, // optional (weapons/aimAssist.js): controller aim help, applied before each shot
+}) {
   const weapon = new Weapon(def, stats);
   const aim = createAim({ def, input, player });
   const origin = new THREE.Vector3();
@@ -54,8 +66,9 @@ export function createPlayerGun({ def, stats, player, input, colliders, shootabl
     // Fixed-tick update. `blocked` (e.g. mid melee swing): no firing or reloading this tick.
     update(dt, blocked = false) {
       aim.update(dt); // ADS + spread first, so this tick's shot uses them
-      const trigger = input.consumePress('Mouse0');
-      const reload = input.consumePress('KeyR');
+      if (aimAssist) aimAssist.update(dt, aim); // then controller aim assist nudges the view
+      const trigger = input.consumeAction('fire');
+      const reload = input.consumeAction('reload');
       const result = weapon.update(dt, {
         triggerPressed: trigger && !blocked,
         reloadPressed: reload && !blocked,

@@ -4,7 +4,7 @@
 //
 // Spread is a cone around the crosshair (half-angle in degrees). It grows when
 // moving, airborne or firing quickly, and recovers smoothly when you stop.
-// ADS (hold feel.ads.key) eases in/out over def.ads.seconds, shrinks spread,
+// ADS (hold the 'aim' action) eases in/out over def.ads.seconds, shrinks spread,
 // zooms the camera, slows walking and blocks sprinting. Pressing sprint while
 // aiming cancels ADS until the aim key is pressed again (the COD way).
 // =============================================================================
@@ -33,6 +33,7 @@ export function createAim({ def, input, player }) {
   return {
     // True while the aim key is held (and not cancelled by sprinting).
     isAiming: false,
+    justStartedAiming: false, // true on the tick ADS begins
 
     // Eased ADS amount (0..1) for gameplay this tick.
     get amount() {
@@ -51,14 +52,14 @@ export function createAim({ def, input, player }) {
 
     update(dt) {
       // --- ADS ---
-      const key = feel.ads.key;
-      const held = input.isDown(key);
-      if (input.consumePress(key) || !held) cancelledBySprint = false; // a fresh press re-enables aiming
-      const sprintPressed =
-        (input.wasPressed('ShiftLeft') || input.wasPressed('ShiftRight')) && input.isDown('KeyW');
+      const held = input.actionDown('aim');
+      if (input.consumeAction('aim') || !held) cancelledBySprint = false; // a fresh press re-enables aiming
+      const sprintPressed = input.actionPressed('sprint') && input.moveAxis().y > 0;
       if (held && sprintPressed) cancelledBySprint = true;
 
+      const wasAiming = this.isAiming;
       this.isAiming = held && !cancelledBySprint;
+      this.justStartedAiming = this.isAiming && !wasAiming; // for aim assist's ADS snap
       prevAmount = amount;
       amount += ((this.isAiming ? 1 : -1) * dt) / def.ads.seconds;
       amount = Math.max(0, Math.min(1, amount));
