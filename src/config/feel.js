@@ -91,6 +91,39 @@ export const feel = {
     reloadDipDegrees: 40, // how far the gun tilts down during a reload
     reloadDrop: 0.12, // meters the gun drops during a reload
     reloadRollDegrees: 20, // how far the gun rolls sideways during a reload
+    reloadHandDrop: 0.2, // meters the left hand drops away to grab a new staple strip
+  },
+
+  // The player's own body: arms on the gun, legs/torso visible when looking down.
+  // Look: last mall employee standing. Red polo, khakis, white sneakers.
+  body: {
+    colors: {
+      skin: 0xe0ac7e,
+      shirt: 0xc8102e, // red polo
+      pants: 0xc3a57a, // khaki
+      shoes: 0xf2f2f2, // white sneakers
+      soles: 0x8a8a8a,
+      belt: 0x4a3426, // brown belt
+    },
+    // Hip height for each stance. In between, it follows the camera height smoothly.
+    hipHeight: { stand: 0.92, crouch: 0.5, slide: 0.3 },
+    hipWidth: 0.1, // each leg's distance from the center line
+    thighLength: 0.46,
+    shinLength: 0.44,
+    ankleHeight: 0.08,
+    torsoHeight: 0.12, // only the lower torso (belly + shirt hem) is drawn; a full chest would fill the screen
+    waistWidth: 0.3, // slim, flat waist: a wide deep box reads as a big gut from above
+    waistDepth: 0.15,
+    backOffset: 0.36, // torso and hips sit this far behind the camera, so looking down you see past the belly
+    feetForward: 0.16, // feet rest this far in front of the hips
+    strideLength: 1.4, // meters traveled per full walk cycle (both steps)
+    stepSwing: 0.28, // how far each foot swings forward/back at walking speed
+    stepLift: 0.12, // how high feet lift while walking
+    slideFrontFoot: 0.75, // how far the leading foot reaches forward in a slide
+    slideBackFoot: 0.62, // the other foot: less far forward, splayed out to the side
+    slideSplay: 0.25, // how far the second foot splays sideways
+    airTuck: 0.25, // how far feet pull up while airborne
+    blendSpeed: 10, // how fast the legs switch between walk/slide/air poses (per second)
   },
 
   // Hit effects (cartoon splatter, tracers, hit markers)

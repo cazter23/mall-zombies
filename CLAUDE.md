@@ -44,7 +44,7 @@ src/
   config/
     feel.js             Movement, sprint, crouch, slide, look (+ view kick recovery), ADS (key, move speed,
                         sensitivity), camera, player size, sim tick rate, shutter speed, viewmodel
-                        placement/animation/fov, hit effects, crosshair min gap
+                        placement/animation/fov, hit effects, crosshair min gap, body (colors + leg/pose tuning)
     economy.js          Points, payouts, kill values, door prices, wave scaling + helper functions
                         (zombieHealthForRound, zombieCountForRound, spawnDelayForRound, maxAliveForRound)
     weapons.js          Per-weapon stats (damage, headshot mult, mag, reserve, fire interval, reload, kick,
@@ -58,6 +58,9 @@ src/
                         (stance: stand|crouch|slide), gravity, mouse look (per render frame), camera interpolation
     stats.js            createPlayerStats(): the single stats object (health, speeds, jump, sprint, crouch/slide,
                         adsMoveSpeed, damageMultiplier, reloadSpeed)
+    body.js             createPlayerBody(): first-person legs + lower torso in the world scene (visual only).
+                        Hip height follows eye height; feet posed for walk cycle / slide (V) / air tuck, knees
+                        solved with two-bone IK. Exports placeLimb()/makeBoxMesh() (also used for the arms)
   weapons/
     weapon.js           Weapon class: ammo, fire cooldown + click buffer, reload. Pure state; update() returns
                         'fire' | 'empty' | null
@@ -69,7 +72,8 @@ src/
     playerGun.js        createPlayerGun(): glue. Updates aim, reads Mouse0/KeyR, fires hitscan inside the spread cone, applies damage
                         (headshot x mult x stats.damageMultiplier), recoil, tracer, splatter, hit marker
     viewmodel.js        First-person staple gun model in its own scene + own fixed-FOV camera (drawn after the
-                        world with depth cleared); slides to center in ADS; kick + reload animations; muzzle pos
+                        world with depth cleared); hands + forearms attached to the gun (left hand fetches a staple
+                        strip on reload); slides to center in ADS; kick + reload animations; muzzle pos
   fx/
     effects.js          Tracers (pooled) + particle bursts (one InstancedMesh): splat() and puff()
   world/
@@ -147,6 +151,9 @@ ammo HUD, practice dummies in the test range. Only `zombieHealthForRound` from `
 `stats.health` never changes, and there are no zombies, waves, points or death handling.
 Added after step 2: hip-fire spread with a dynamic 4-line crosshair, and ADS (hold right mouse): 0.18s eased
 transition, spread x0.08, 20% zoom, gun centered with sight just below the crosshair, 75% walk speed.
+Player look: last mall employee (red polo, khakis, white sneakers). Hands/forearms on the gun; legs and lower
+torso visible when looking down, animated for walk/crouch/slide/air. The body sits `body.backOffset` behind
+the camera so you look past the belly; only the lower torso is drawn (a full chest fills the screen).
 
 ## Planned build order
 1. Walkable mall (done)

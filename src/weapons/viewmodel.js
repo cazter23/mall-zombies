@@ -6,10 +6,13 @@
 // position and rotation every frame; the gun hangs off the rig. The gun has its
 // own camera with a fixed FOV, so ADS zoom narrows the world view but doesn't
 // blow the gun up. While aiming it slides to the center, sight on the crosshair.
+// The player's hands and forearms are attached to the gun, so they follow kick,
+// ADS and reload automatically; the left hand also fetches a new staple strip.
 // =============================================================================
 
 import * as THREE from 'three';
 import { feel } from '../config/feel.js';
+import { placeLimb, makeBoxMesh } from '../player/body.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 
@@ -46,6 +49,52 @@ function buildStapleGun(colors) {
   return { gun, muzzle };
 }
 
+/**
+ * Hands and forearms holding the gun, in the gun's own coordinates.
+ * Right hand wraps the grip; left hand braces the left side of the body.
+ * Returns the left arm group (animated during reloads) and the strip it carries.
+ */
+function buildArms(gun, gunColors) {
+  const c = feel.body.colors;
+  const V = (x, y, z) => new THREE.Vector3(x, y, z);
+
+  function limb(color, a, b, width, depth, parent) {
+    const mesh = makeBoxMesh(color);
+    placeLimb(mesh, a, b, width, depth);
+    parent.add(mesh);
+    return mesh;
+  }
+  function block(color, w, h, d, x, y, z, parent) {
+    const mesh = makeBoxMesh(color);
+    mesh.scale.set(w, h, d);
+    mesh.position.set(x, y, z);
+    parent.add(mesh);
+    return mesh;
+  }
+
+  // Right arm: hand around the grip, forearm running back and down out of view, red polo sleeve.
+  const rightHand = block(c.skin, 0.062, 0.085, 0.075, 0.004, -0.1, 0.026, gun);
+  rightHand.rotation.x = 0.3; // matches the grip's angle
+  block(c.skin, 0.02, 0.025, 0.05, -0.03, -0.055, -0.005, gun); // thumb over the top of the grip
+  limb(c.skin, V(0.01, -0.13, 0.05), V(0.07, -0.38, 0.17), 0.058, 0.054, gun);
+  limb(c.shirt, V(0.07, -0.38, 0.17), V(0.09, -0.5, 0.23), 0.09, 0.09, gun);
+
+  // Left arm: palm flat on the left side, fingers curled under, forearm back-left. Grouped so
+  // it can let go of the gun during a reload.
+  const leftArm = new THREE.Group();
+  gun.add(leftArm);
+  block(c.skin, 0.028, 0.07, 0.1, -0.042, -0.012, -0.07, leftArm); // palm
+  block(c.skin, 0.07, 0.024, 0.085, -0.012, -0.05, -0.07, leftArm); // fingers under the body
+  limb(c.skin, V(-0.05, -0.045, -0.04), V(-0.24, -0.3, 0.06), 0.056, 0.052, leftArm);
+  limb(c.shirt, V(-0.24, -0.3, 0.06), V(-0.32, -0.4, 0.1), 0.09, 0.09, leftArm);
+
+  // A fresh strip of staples, only visible in the left hand mid-reload.
+  const strip = block(gunColors.metalColor, 0.03, 0.014, 0.12, -0.03, -0.07, -0.07, leftArm);
+  strip.visible = false;
+
+  return { leftArm, strip };
+}
+
 export function createViewmodel(weaponDef) {
   const scene = new THREE.Scene();
   scene.add(new THREE.HemisphereLight(0xfff6e6, 0x4a3f55, 1.6));
@@ -62,6 +111,7 @@ export function createViewmodel(weaponDef) {
   rig.add(holder);
   const { gun, muzzle } = buildStapleGun(weaponDef.viewmodel);
   holder.add(gun);
+  const { leftArm, strip } = buildArms(gun, weaponDef.viewmodel);
 
   const vm = feel.viewmodel;
   const ads = weaponDef.ads.offset;
@@ -96,6 +146,11 @@ export function createViewmodel(weaponDef) {
       // Reload: dip and roll down, then come back up (a smooth hump over the reload).
       const progress = weapon.reloadProgress;
       const dip = progress === null ? 0 : Math.sin(progress * Math.PI);
+
+      // Left hand during a reload: drops away, comes back holding a strip, slaps it in.
+      const handOut = progress === null ? 0 : Math.sin(Math.min(1, progress / 0.75) * Math.PI);
+      leftArm.position.set(-0.05 * handOut, -vm.reloadHandDrop * handOut, 0.1 * handOut);
+      strip.visible = progress !== null && progress > 0.3 && progress < 0.72;
 
       // Resting spot slides from the hip offset to the centered ADS offset.
       const lerp = (a, b) => a + (b - a) * aimAmount;

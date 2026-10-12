@@ -18,6 +18,7 @@ import { weapons } from './config/weapons.js';
 import { createEffects } from './fx/effects.js';
 import { createViewmodel } from './weapons/viewmodel.js';
 import { createPlayerGun } from './weapons/playerGun.js';
+import { createPlayerBody } from './player/body.js';
 
 // --- Renderer, scene, camera ---------------------------------------------------
 
@@ -58,6 +59,7 @@ const player = new PlayerController({
   spawn: world.playerSpawn,
 });
 const hud = createHud();
+const body = createPlayerBody(scene); // legs + torso you see when looking down
 
 // Everything the player can shoot. Practice dummies for now; zombies will join this list.
 const shootables = [...(arena ? arena.shootables : [])];
@@ -126,6 +128,7 @@ function render(alpha, frameTime) {
   const { dx, dy } = input.consumeMouse();
   if (game.running) player.applyLook(dx, dy);
   player.syncCamera(alpha);
+  body.update(game.running ? frameTime : 0, player, alpha);
   if (game.running) effects.update(frameTime);
   viewmodel.update(game.running ? frameTime : 0, camera, gun.weapon, aimAmount);
 
@@ -153,5 +156,5 @@ startLoop({
 });
 
 if (debug.exposeToWindow) {
-  window.__mall = { THREE, scene, camera, renderer, world, arena, player, stats, input, game, hud, gun, effects, viewmodel, shootables };
+  window.__mall = { THREE, scene, camera, renderer, world, arena, player, stats, input, game, hud, gun, effects, viewmodel, shootables, body };
 }
