@@ -10,7 +10,7 @@ export const weapons = {
   stapleGun: {
     id: 'stapleGun',
     name: 'Staple Gun',
-    damage: 40, // per body hit. Round-1 zombie (150 HP): 4 body shots or 2 headshots
+    damage: 30, // per body hit. Round-1 zombie (150 HP): 5 body shots or 2 headshots (30 x 3 = 90)
     headshotMultiplier: 3,
     magazineSize: 12,
     startingReserve: 60, // spare staples you start with

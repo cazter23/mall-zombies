@@ -56,7 +56,8 @@ src/
                         spread cone, ADS time/zoom/gun offset, colors), `melee.boxCutter` (damage, reach,
                         cone, swing timing, lunge), weaponStatDefaults for stats
     zombies.js          zombieTypes (per-type speed, size, hitboxes, attack, timings, colors, splatter), zombieCrowd
-                        (spacing, lanes, queueing, surround rings, contact gap, spawn dust, min spawn distance),
+                        (spacing, lanes, queueing, surround rings + sector/still-wrap/circling, contact gap,
+                        spawn dust, min spawn distance),
                         zombieNav (grid, soft wall clearance + wall penalty)
     controls.js         bindings (action -> keyboard/mouse + Pad* codes), buttonLabels (prompts per device),
                         gamepad (deadzones, look speed/curve, turn ramp, triggers, click-to-sprint release),
@@ -115,21 +116,26 @@ src/
                         attackCooldown) / dead. Steering: goal = its surround slot (if assigned) else the route
                         along its own lane; spacing push (quadratic, capped); queueing (slow + sidestep around a
                         zombie ahead); arrive braking; faces where it's trying to go. Personal laneOffset,
-                        lookAhead, sideBias. Keeps chasing (slower) during windup/swing
+                        lookAhead, sideBias. During windup/swing it heads straight at the player (not its slot). circleAroundPlayer(): if
+                        the player's body is in the way partway to its slot, it walks round them (not the last stretch)
     zombieModel.js      Blocky shopper model (random outfit, maybe a shopping bag) + code animation: shamble,
                         arms-overhead wind-up, slam, recovery, flinch/flash, rise from floor, tip over and sink
     zombieManager.js    createZombieManager(): spawn (reachable spawn points >= minSpawnDistance away), update
                         (assign surround slots -> zombie updates -> resolve zombie overlaps -> keep the player out
                         of zombies), death splatter, shootables bookkeeping, clear(). Surround slots: rings around
                         the player (inner at arm's length), innermost ring fills first, zombies keep their slot.
+                        A zombie only takes slots within surroundSectorDegrees (50) of its own side of the player,
+                        so a horde chasing you stays behind you; after you stand still for wrapAfterStillSeconds
+                        the sector widens to the full circle over wrapSeconds and they surround you.
                         Crowd shoves never move anyone into a wall (overlapsSolid); a pinned player pushes the
                         zombie back instead. Options canAttack(), onPlayerHit(damage), onKill(zombie)
   game/
     runStats.js         createRunStats(): time alive, kills, headshot/melee kills, shots fired/hit, accuracy
     wallet.js           createWallet(): points (start 500), earn/spend/canAfford, totalEarned, onChange cb (HUD
                         pop-ups). pointsForHit(): COD payouts (+10 hit; kill value +40 head / +70 melee; zombies only)
-    rounds.js           createRounds(): idle -> active (spawn quota at spawnDelay, capped by maxAlive) -> break
-                        (10s) -> next round. start() on first play, skipRound() (debug), reset()
+    rounds.js           createRounds(): announce(n, delay) flips the round number (and fires onRoundStart) the
+                        moment the last zombie dies, then 'break' (6s, inBreak) -> 'active' (spawn quota at
+                        spawnDelay, capped by maxAlive). start() on first play, skipRound() (debug), reset()
   maps/
     index.js            Map registry + loadMap(id, scene, colliders) + THE MAP INTERFACE (id, group, zones, doors,
                         spawnPoints, wallBuys, playerSpawn, update, reset, dispose). New map = new folder + 1 line
@@ -224,7 +230,7 @@ tapped in the air, held through landing, pressed up to `slide.chainPressBefore` 
 (steering only), so slide-jumps keep their momentum. Crouch/slide tuning is in `feel.crouch` / `feel.slide`.
 HUD: white health bar above green stamina bar, bottom-left.
 
-Build step 2 is done: staple gun (hitscan, semi-auto, 40 dmg, 3x headshots, 12/60 ammo, 1.5s reload, R or
+Build step 2 is done: staple gun (hitscan, semi-auto, 40 dmg (now 30), 3x headshots, 12/60 ammo, 1.5s reload, R or
 dry-click to reload, view kick), first-person model, silver tracer, confetti splatter, wall puffs, hit markers,
 ammo HUD, practice dummies in the test range. Only `zombieHealthForRound` from `economy.js` is used so far;
 `stats.health` never changes, and there are no zombies, waves, points or death handling.
@@ -236,11 +242,15 @@ the camera so you look past the belly; only the lower torso is drawn (a full che
 
 Build step 3 is done. Shopper zombies (2.0 m/s) rise out of the floor at reachable spawn markers, path to the
 player with a flow field (around pillars/benches/planters, through the doorway once the shutter is open), keep
-spacing in a crowd, stop at arm's length, block the player, and can be shot (150 HP round 1: 4 body / 2 head)
-with green/purple splatter, then fall over and sink. Attacks: start within 1.0m; arms-overhead wind-up (0.45s in round 1,
--0.02s per round, min 0.3s from round 9; `zombie.windupSeconds`) while still coming at you at 80% speed and
-turning fast (attack.turnSpeed 12), then a swing that hits for 40 if you're within 1.4m and in front (3 hits =
-dead), 0.8s recovery. Player moves slower backwards (70%) and sideways (85%), stats.backpedalSpeed/strafeSpeed,
+spacing in a crowd, stop at arm's length, block the player, and can be shot (150 HP round 1: 5 body / 2 head
+with the staple gun, now 30 dmg) with green/purple splatter, then fall over and sink. Attacks (COD-style, swing
+on the way in): start within 1.5m with no wall between (low stuff like counters doesn't block; `wallBetween`), no
+braking first; arms-overhead wind-up (0.35s in round 1, shrinking to 0.3s by round 9; `zombie.windupSeconds`)
+while stepping straight at you at full speed and turning fast (attack.turnSpeed 12), then a swing that hits for
+40 if you're within 1.7m (a bit past the 1.5m start range = the lunge) and in front (3 hits = dead); 0.8s recovery
+after a hit, only 0.3s after a miss (no free reset by stepping back). Standing still, strafing or walking up to
+one = hit; backing off or jump-backing from a walker only works if you leave the instant its arms go up (or
+earlier), never vs a jogger up close; a quick sprint-away (~0.1s reaction) still works. Player moves slower backwards (70%) and sideways (85%), stats.backpedalSpeed/strafeSpeed,
 so retreating while shooting costs you; sprinting away still escapes if you react fast. Health regens after 3s at
 50/s; red screen edges grow with damage, pulse below 40%, flash on hits. Box cutter (V): 150 dmg, lunge, cancels
 reload. Death: camera tips over, "Clocked Out" results (time, round, kills, headshot/box cutter kills, accuracy),
@@ -263,9 +273,13 @@ push you out of the map). Attack difficulty unchanged (same dodge-test results).
 
 Step 4 in progress. Done: part A (map package + zones + doors, see maps/index.js) and part B (rounds and
 points): round 1 starts on first play (3s delay), zombies spawn from open zones at the economy pace, the round
-ends when all are dead, 10s break, next round. Zombie HP scales per round; Shoppers pick walk/jog/run gaits
+ends when all are dead, short break, next round. Zombie HP scales per round; Shoppers pick walk/jog/run gaits
 (2.0/3.4/4.6 m/s) from `zombieTypes.shopper.gaitsByRound` (all walkers in rounds 1-2, runners from round 7).
-COD payouts; results show round reached + points earned. Next: part C (hold F / X to buy: the shutter first),
+COD payouts; results show round reached + points earned.
+BO2-inspired tuning (after part B): wind-up 0.35s -> 0.3s; round number flips the instant the last zombie dies,
+6s break, then zombies trickle in (early rounds slower: `spawnDelay.earlyRounds` 3.0/2.6/2.2/1.9s, max alive
+5/6/9/12 in rounds 1-4); staple gun 30 dmg; a horde chasing you stays on its own side (behind you) and only
+wraps all the way round when you stand still. Next: part C (hold F / X to buy: the shutter first),
 part D (two weapon slots, Price Gun 500 full-auto pistol in the start room, Nail Gun 1000 in the concourse).
 
 ## Planned build order

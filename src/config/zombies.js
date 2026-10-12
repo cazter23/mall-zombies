@@ -41,17 +41,25 @@ export const zombieTypes = {
     // The hit only lands if the player is STILL in reach and in front when the arms come down.
     // Zombies keep shuffling after you during the wind-up, so just walking away doesn't dodge it.
     attack: {
-      startRange: 1.0, // they start an attack once this close (center to center; they stop at ~0.8)...
-      range: 1.4, // ...and the swing still connects out to here, so a quick step back isn't a free dodge
-      moveSpeedFraction: 0.8, // walking speed (x their gait speed) during the wind-up and swing
+      startRange: 1.5, // they start an attack this close (center to center; they stop at ~0.8), still walking
+      //                  in at full speed: COD-style, they swing on the way in instead of stopping first...
+      range: 1.7, // ...and the swing connects out to here (a bit past startRange: they lunge into it, so a
+      //             quick hop or step back right as the arms go up isn't a free dodge), so a little step back isn't a free dodge
+      moveSpeedFraction: 1.0, // walking speed (x their gait speed) during the wind-up and swing: they keep
+      //                         stepping straight at you (not to their crowd spot) until they're in your face
+      closeInBrakeDistance: 0.15, // ...only braking in the last this-many meters before touching you
+      missRecoverSeconds: 0.3, // after a swing that MISSED they try again this soon (no free reset by stepping back)
       turnSpeed: 12, // radians/second they can turn to keep facing you mid-attack (normal turning: turnSpeed)
-      windupSeconds: 0.45, // arms raised overhead: the warning in round 1 (shorter = harder to dodge)...
-      windupShrinkPerRound: 0.02, // ...getting this much shorter each round after that...
+      windupSeconds: 0.35, // arms raised overhead: the warning in round 1. Short (BO2-style): if a zombie
+      //                      reaches you, you're getting hit; the escape is not letting it reach you...
+      windupShrinkPerRound: 0.00625, // ...getting this much shorter each round after that...
       minWindupSeconds: 0.3, // ...down to this (reached at round 9)
       swingSeconds: 0.15, // arms slam down; damage is checked at the start of the swing
-      recoverSeconds: 0.8, // no new attack for this long afterwards (it keeps following you)
+      recoverSeconds: 0.8, // no new attack for this long after a HIT (it keeps following you)
       damage: 40, // 3 hits from full health (Black Ops 3 style)
       hitHalfAngleDegrees: 60, // player must be within this angle of where the zombie faces
+      reachHeight: 1.3, // meters above its feet the arms reach from (a wall in the way blocks the attack;
+      //                   anything lower, like a bench or counter, doesn't)
       armsRaisedRadians: 2.3, // arm angle at the top of the wind-up (0 = straight forward)
       armsSlammedRadians: -0.7, // arm angle at the bottom of the swing
     },
@@ -108,6 +116,18 @@ export const zombieCrowd = {
   surroundRings: 3, // inner ring at arm's length, then rings every ringSpacing further out
   surroundRingSpacing: 0.75,
   surroundSlotSpacing: 0.76, // meters between neighbors on a ring (a bit more than shoulder width)
+  circleMargin: 0.2, // a zombie whose slot is on your far side circles around you this far outside arm's reach
+  circleLastStretch: 0.85, // ...unless you're only "in the way" in the last 15% of its path to the slot
+  circleLastStretchMeters: 0.6, // ...or it's already this close to the slot
+  // While you keep moving, a zombie may only take a spot on the side it came from (within this
+  // angle of its own direction from you), so a horde chasing you from one side stays a dense horde
+  // behind you (BO2-style). Zombies from different directions still surround you.
+  surroundSectorDegrees: 50,
+  // Stand still (slower than playerStillSpeed m/s) for wrapAfterStillSeconds and they start
+  // wrapping around you, reaching the full circle over wrapSeconds.
+  playerStillSpeed: 0.6,
+  wrapAfterStillSeconds: 1.0,
+  wrapSeconds: 1.5,
 
   contactGap: 0.12, // zombies stop this far from the player's body instead of overlapping it
   arriveDistance: 0.5, // they start slowing down this far before reaching the player (or their slot)

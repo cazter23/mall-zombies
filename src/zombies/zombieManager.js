@@ -166,10 +166,20 @@ export function createZombieManager({
   // (with a clear line to them) each claim one, so a crowd fans out around you instead of
   // queueing behind each other. A zombie keeps its slot while it stays free and valid.
   const slotPoint = { x: 0, z: 0 };
-  function assignSurroundSlots() {
+  const wrapAngle = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+  let playerStillTime = 0; // seconds the player has been (nearly) standing still
+
+  function assignSurroundSlots(dt) {
     const crowd = zombieCrowd;
     const p = player.position;
     const contact = base.radius + feel.player.radius + crowd.contactGap;
+
+    // How far around the player a zombie may go: only its own side while the player keeps moving,
+    // widening to the full circle once they've stood still for a moment.
+    const playerSpeed = Math.hypot(player.velocity.x, player.velocity.z);
+    playerStillTime = playerSpeed < crowd.playerStillSpeed ? playerStillTime + dt : 0;
+    const wrap = Math.max(0, Math.min(1, (playerStillTime - crowd.wrapAfterStillSeconds) / crowd.wrapSeconds));
+    const sector = (crowd.surroundSectorDegrees + (180 - crowd.surroundSectorDegrees) * wrap) * (Math.PI / 180);
 
     // Build this tick's valid slots (walkable, and no wall between the player and the slot).
     const slots = new Map(); // key -> { x, z, ring }
@@ -183,7 +193,7 @@ export function createZombieManager({
         slotPoint.z = p.z + Math.sin(angle) * radius;
         if (!nav.isWalkableAt(slotPoint.x, slotPoint.z)) continue;
         if (!nav.clearLine(p.x, p.z, slotPoint.x, slotPoint.z)) continue;
-        slots.set(ring * 1000 + k, { x: slotPoint.x, z: slotPoint.z, ring });
+        slots.set(ring * 1000 + k, { x: slotPoint.x, z: slotPoint.z, ring, angle });
       }
     }
 
@@ -200,26 +210,25 @@ export function createZombieManager({
     candidates.sort((a, b) => a.d - b.d);
 
     const taken = new Set();
-    // Innermost ring that still has a free slot (inner rings fill first, so zombies close in).
-    const innermostFreeRing = () => {
-      let ring = Infinity;
-      for (const [k, s] of slots) if (!taken.has(k) && s.ring < ring) ring = s.ring;
-      return ring;
-    };
     for (const { z } of candidates) {
-      const freeRing = innermostFreeRing();
+      // Only slots on my side of the player (the sector widens when the player stands still).
+      const bearing = Math.atan2(z.position.z - p.z, z.position.x - p.x);
+      const onMySide = (s) => Math.abs(wrapAngle(s.angle - bearing)) <= sector;
+      // Innermost ring with a free slot on my side (inner rings fill first, so zombies close in).
+      let freeRing = Infinity;
+      for (const [k, s] of slots) if (!taken.has(k) && s.ring < freeRing && onMySide(s)) freeRing = s.ring;
       if (freeRing === Infinity) {
         z.slotKey = null;
-        continue; // all slots taken: just follow the route with spacing
+        continue; // nothing free on my side: follow the route with spacing (bunching up behind)
       }
-      // Keep my slot if it's still there, nobody nearer took it, and there's no free spot further in.
+      // Keep my slot if it's still there, on my side, nobody nearer took it, and nothing's free further in.
       const prev = z.slotKey !== null ? slots.get(z.slotKey) : null;
-      let key = prev && !taken.has(z.slotKey) && prev.ring <= freeRing ? z.slotKey : null;
+      let key = prev && !taken.has(z.slotKey) && onMySide(prev) && prev.ring <= freeRing ? z.slotKey : null;
       if (key === null) {
-        // Otherwise the free slot on the innermost free ring that's closest to me.
+        // Otherwise the free slot on that ring, on my side, closest to me.
         let best = Infinity;
         for (const [k, s] of slots) {
-          if (taken.has(k) || s.ring !== freeRing) continue;
+          if (taken.has(k) || s.ring !== freeRing || !onMySide(s)) continue;
           const d = Math.hypot(s.x - z.position.x, s.z - z.position.z);
           if (d < best) {
             best = d;
@@ -281,7 +290,7 @@ export function createZombieManager({
     update(dt) {
       nav.update(dt, player.position);
       ctx.canAttack = canAttack();
-      assignSurroundSlots();
+      assignSurroundSlots(dt);
       for (const z of zombies) z.update(dt, ctx);
       resolveZombieOverlaps();
       keepPlayerOutOfZombies();

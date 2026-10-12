@@ -33,8 +33,9 @@ export const economy = {
   // Round pacing
   rounds: {
     firstRoundDelay: 3, // seconds after the game starts before round 1's zombies begin spawning
-    roundStartDelay: 2, // seconds after a round is announced before its zombies begin spawning
-    breakSeconds: 10, // break between rounds (after the last zombie of a round dies)
+    // When a round's last zombie dies, the next round number goes up immediately, then this
+    // short break, then its zombies start trickling in.
+    breakSeconds: 6,
   },
 
   waves: {
@@ -42,12 +43,14 @@ export const economy = {
     health: { roundOne: 150, perRoundIncrease: 100, linearUntilRound: 9, multiplierAfter: 1.1 },
     // Zombie count: round(6 + 2.5 * (round - 1))
     count: { base: 6, perRound: 2.5 },
-    // Spawn delay: max(0.5, 2.0 * 0.95^(round - 1)) seconds
-    spawnDelay: { base: 2.0, decayPerRound: 0.95, minimum: 0.5 },
+    // Spawn delay: a slow trickle in the first rounds (earlyRounds, seconds, for rounds 1, 2, 3, 4),
+    // then max(0.5, 2.0 * 0.95^(round - 1)) seconds from round 5 on.
+    spawnDelay: { earlyRounds: [3.0, 2.6, 2.2, 1.9], base: 2.0, decayPerRound: 0.95, minimum: 0.5 },
     // Max zombies alive at once. Each entry applies from that round onward.
     maxAlive: [
-      { fromRound: 1, max: 8 },
-      { fromRound: 3, max: 10 },
+      { fromRound: 1, max: 5 },
+      { fromRound: 2, max: 6 },
+      { fromRound: 3, max: 9 },
       { fromRound: 4, max: 12 },
       { fromRound: 6, max: 14 },
       { fromRound: 8, max: 16 },
@@ -74,6 +77,7 @@ export function zombieCountForRound(round) {
 
 export function spawnDelayForRound(round) {
   const s = economy.waves.spawnDelay;
+  if (round <= s.earlyRounds.length) return s.earlyRounds[round - 1];
   return Math.max(s.minimum, s.base * Math.pow(s.decayPerRound, round - 1));
 }
 

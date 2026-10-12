@@ -4,7 +4,8 @@
 //   active -> zombies spawn one at a time (count, pace and max-alive from
 //             economy.js) until the round's quota is out; when every zombie
 //             is dead the round is over
-//   break  -> a short pause, then the next round is announced and starts
+//   break  -> the round number goes up IMMEDIATELY (banner + counter), a short
+//             pause (BO2-style), then the new round's zombies start trickling in
 // Zombie health and gait mix scale with the round (see the zombie manager).
 // =============================================================================
 
@@ -17,10 +18,10 @@ import {
 
 /**
  * @param zombies       zombie manager (spawn, aliveCount, clear)
- * @param onRoundStart  (round) => void   e.g. show the "ROUND 3" banner
- * @param onRoundEnd    (round) => void   e.g. flash the round counter
+ * @param onRoundStart  (round) => void   the round number just went up: show the "ROUND 3" banner
+ *                                        (happens at the START of the break before that round)
  */
-export function createRounds({ zombies, onRoundStart = null, onRoundEnd = null }) {
+export function createRounds({ zombies, onRoundStart = null }) {
   const cfg = economy.rounds;
   let started = false;
   let round = 0;
@@ -29,11 +30,17 @@ export function createRounds({ zombies, onRoundStart = null, onRoundEnd = null }
   let spawnTimer = 0;
   let breakTimer = 0;
 
-  function begin(n, delay) {
+  // Announce round n now; its zombies start spawning after `delay` seconds.
+  function announce(n, delay) {
     round = n;
-    state = 'active';
     toSpawn = zombieCountForRound(n);
-    spawnTimer = delay;
+    if (delay > 0) {
+      state = 'break';
+      breakTimer = delay;
+    } else {
+      state = 'active';
+    }
+    spawnTimer = 0;
     if (onRoundStart) onRoundStart(n);
   }
 
@@ -51,11 +58,16 @@ export function createRounds({ zombies, onRoundStart = null, onRoundEnd = null }
       return toSpawn;
     },
 
+    // True during the pause before a round's zombies arrive (the HUD blinks the counter).
+    get inBreak() {
+      return state === 'break';
+    },
+
     // Kick off round 1 (call when the player first starts playing).
     start() {
       if (started) return;
       started = true;
-      begin(1, cfg.firstRoundDelay);
+      announce(1, cfg.firstRoundDelay);
     },
 
     update(dt) {
@@ -66,22 +78,22 @@ export function createRounds({ zombies, onRoundStart = null, onRoundEnd = null }
           toSpawn -= 1;
           spawnTimer = spawnDelayForRound(round);
         }
-        if (toSpawn === 0 && zombies.aliveCount === 0) {
-          state = 'break';
-          breakTimer = cfg.breakSeconds;
-          if (onRoundEnd) onRoundEnd(round);
-        }
+        // Round over: the next round number goes up right away, then the short break.
+        if (toSpawn === 0 && zombies.aliveCount === 0) announce(round + 1, cfg.breakSeconds);
       } else if (state === 'break') {
         breakTimer -= dt;
-        if (breakTimer <= 0) begin(round + 1, cfg.roundStartDelay);
+        if (breakTimer <= 0) {
+          state = 'active';
+          spawnTimer = 0; // the first zombie of the round comes right as the break ends
+        }
       }
     },
 
-    // Debug: end the current round right now and start the next one.
+    // Debug: end the current round right now and jump straight into the next one (no break).
     skipRound() {
       if (!started) return this.start();
       zombies.clear();
-      begin(round + 1, cfg.roundStartDelay);
+      announce(round + 1, 0);
     },
 
     // New run: back to "not started" (round 1 begins when play starts).

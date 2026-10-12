@@ -203,9 +203,7 @@ rounds = createRounds({
   onRoundStart: (n) => {
     hud.setRound(n);
     hud.showRoundBanner(n);
-    hud.setRoundFlashing(false);
   },
-  onRoundEnd: () => hud.setRoundFlashing(true), // counter blinks during the break
 });
 
 hud.onStart(() => input.requestLock());
@@ -338,6 +336,7 @@ function render(alpha, frameTime) {
   hud.setSprint(player.sprintFraction, player.sprintExhausted, player.isSprinting);
   hud.setAmmo(gun.weapon, buttonLabel('reload'));
   hud.setPoints(wallet.points);
+  hud.setRoundFlashing(rounds.inBreak && rounds.round > 1); // counter blinks in the break between rounds
 
   // Pass 1: the world. Pass 2: the gun, with depth cleared so it never clips into walls.
   renderer.clear();

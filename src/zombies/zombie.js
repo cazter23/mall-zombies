@@ -8,9 +8,10 @@
 //   spawning -> rises out of the floor (can already be shot)
 //   chasing  -> follows the flow field toward the player (along its own lane), then near the
 //               player walks to its own surround slot (assigned by the manager), stops there
-//   windup   -> in reach: arms raised (the telegraph) while still shuffling after the player
+//   windup   -> nearly in reach (no wall between): arms raised (the telegraph) while still
+//               stepping straight at the player at full speed
 //   swing    -> arms slam down; the player is hit only if still in reach and in front
-//   (back to chasing, with a short recovery before it may attack again)
+//   (back to chasing, with a recovery before it may attack again: long after a hit, short after a miss)
 //   dead     -> tips over, lies there, sinks away, then `removed` is set
 // =============================================================================
 
@@ -23,6 +24,8 @@ import { createZombieModel } from './zombieModel.js';
 const ease = (t) => t * t * (3 - 2 * t);
 const clamp01 = (v) => Math.max(0, Math.min(1, v));
 const desired = { x: 0, z: 0 };
+const reachRay = new THREE.Ray();
+const reachHit = new THREE.Vector3();
 
 export class Zombie {
   // `speed`: this zombie's gait speed in m/s (defaults to the type's base walk).
@@ -56,6 +59,7 @@ export class Zombie {
     this.lookAhead = crowd.lookAheadMin + Math.floor(Math.random() * (crowd.lookAheadMax - crowd.lookAheadMin + 1));
     this.sideBias = Math.random() < 0.5 ? -1 : 1;
     // Surround slot near the player, assigned each tick by the manager: { x, z } or null.
+    this.swingHit = false; // did the last swing connect? (decides the recovery time)
     this.slot = null;
     this.slotKey = null;
     this.onDeath = null; // optional callback(zombie), set by the manager
@@ -138,20 +142,24 @@ export class Zombie {
       if (this.stateTime >= this.type.spawnSeconds) this.setState('chasing');
     } else if (this.state === 'chasing') {
       this.chase(dt, ctx);
-      if (ctx.canAttack && this.attackCooldown <= 0 && this.distanceTo(ctx.player) <= attack.startRange) {
+      // Starts swinging on the way in (no stopping first), unless a wall is in the way.
+      if (ctx.canAttack && this.attackCooldown <= 0 && this.inReach(ctx.player, attack.startRange) &&
+          !this.wallBetween(ctx.player, ctx.colliders)) {
         this.setState('windup');
       }
     } else if (this.state === 'windup') {
       this.chase(dt, ctx, attack.moveSpeedFraction, true);
       if (this.stateTime >= this.windupSeconds) {
         this.setState('swing');
-        if (ctx.canAttack && this.canHit(ctx.player)) ctx.onPlayerHit(attack.damage, this);
+        this.swingHit = ctx.canAttack && this.canHit(ctx.player) && !this.wallBetween(ctx.player, ctx.colliders);
+        if (this.swingHit) ctx.onPlayerHit(attack.damage, this);
       }
     } else if (this.state === 'swing') {
       this.chase(dt, ctx, attack.moveSpeedFraction, true);
       if (this.stateTime >= attack.swingSeconds) {
         this.setState('chasing');
-        this.attackCooldown = attack.recoverSeconds;
+        // A miss gets retried almost straight away, so stepping back isn't a free reset.
+        this.attackCooldown = this.swingHit ? attack.recoverSeconds : attack.missRecoverSeconds;
       }
     } else if (this.state === 'dead') {
       const t = this.type;
@@ -171,13 +179,21 @@ export class Zombie {
     const distToPlayer = Math.hypot(dx, dz);
     const contact = type.radius + feel.player.radius + crowd.contactGap;
 
-    // 1) Where to go: my surround slot near the player if I have one; otherwise the route to the
-    //    player, along my own lane (which fades out as I get close).
+    // 1) Where to go: mid-attack, straight at the player (braking only just before touching them);
+    //    else my surround slot near the player if I have one; otherwise the route to the player,
+    //    along my own lane (which fades out as I get close).
     desired.x = 0;
     desired.z = 0;
     let hasPath = false;
     let arrive = 0;
-    if (this.slot) {
+    if (facePlayer) {
+      if (distToPlayer > 1e-4) {
+        desired.x = dx / distToPlayer;
+        desired.z = dz / distToPlayer;
+        hasPath = true;
+      }
+      arrive = clamp01((distToPlayer - contact) / type.attack.closeInBrakeDistance);
+    } else if (this.slot) {
       const sx = this.slot.x - this.position.x;
       const sz = this.slot.z - this.position.z;
       const toSlot = Math.hypot(sx, sz);
@@ -185,6 +201,7 @@ export class Zombie {
         desired.x = sx / toSlot;
         desired.z = sz / toSlot;
         hasPath = true;
+        this.circleAroundPlayer(player, contact, sx, sz, toSlot);
       }
       arrive = clamp01(toSlot / crowd.arriveDistance);
     } else if (distToPlayer > contact) {
@@ -278,19 +295,73 @@ export class Zombie {
     else this.faceDirection(desired.x, desired.z, dt);
   }
 
+  // If the straight line to my slot passes through the player's body (slot on their far side),
+  // walk around them instead: sideways around the circle toward the slot, keeping my distance.
+  // Overwrites `desired` only when needed.
+  circleAroundPlayer(player, contact, sx, sz, toSlot) {
+    const px = player.position.x - this.position.x; // me -> player
+    const pz = player.position.z - this.position.z;
+    const t = clamp01((px * sx + pz * sz) / (toSlot * toSlot)); // closest point on my path to the player
+    const gap = Math.hypot(px - sx * t, pz - sz * t);
+    // Only when the player is in the way PARTWAY along the path (the slot is round their far
+    // side). The last stretch into a slot never counts: inner-ring slots sit at arm's length.
+    const lastStretch = t > zombieCrowd.circleLastStretch || toSlot < zombieCrowd.circleLastStretchMeters;
+    if (lastStretch || gap >= contact + zombieCrowd.circleMargin) return; // the way is clear
+    const r = Math.hypot(px, pz);
+    if (r < 1e-4) return;
+    const ox = -px / r; // player -> me (outward)
+    const oz = -pz / r;
+    // Go round the side the slot is on (cross product of player->me and player->slot).
+    const slx = this.slot.x - player.position.x;
+    const slz = this.slot.z - player.position.z;
+    const side = ox * slz - oz * slx >= 0 ? 1 : -1;
+    // Tangent around the player, plus a pull outward/inward to hold a ring just outside arm's reach.
+    const keepRadius = contact + zombieCrowd.circleMargin;
+    let dx = -oz * side + ox * (keepRadius - r);
+    let dz = ox * side + oz * (keepRadius - r);
+    const len = Math.hypot(dx, dz);
+    desired.x = dx / len;
+    desired.z = dz / len;
+  }
+
   distanceTo(player) {
     return Math.hypot(player.position.x - this.position.x, player.position.z - this.position.z);
+  }
+
+  // Is the player within `range` (flat distance) and at a height the arms can reach?
+  inReach(player, range) {
+    if (this.distanceTo(player) > range) return false;
+    const top = this.position.y + this.type.height;
+    return player.position.y <= top && player.position.y + player.height >= this.position.y;
+  }
+
+  // Is a wall (or pillar, shutter...) between my reaching arms and the player's chest? Low things
+  // like benches and counters don't count: the arms reach over them.
+  wallBetween(player, colliders) {
+    const reachY = this.position.y + this.type.attack.reachHeight;
+    reachRay.origin.set(this.position.x, reachY, this.position.z);
+    reachRay.direction.set(
+      player.position.x - this.position.x,
+      player.position.y + player.height * 0.6 - reachY,
+      player.position.z - this.position.z,
+    );
+    const d = reachRay.direction.length();
+    if (d < 1e-4) return false;
+    reachRay.direction.divideScalar(d);
+    for (const box of colliders) {
+      if (box.ignoreShots || box.containsPoint(reachRay.origin)) continue;
+      if (reachRay.intersectBox(box, reachHit) && reachHit.distanceTo(reachRay.origin) < d) return true;
+    }
+    return false;
   }
 
   // Is the player still in reach, roughly in front, and at a height the arms can reach?
   canHit(player) {
     const attack = this.type.attack;
+    if (!this.inReach(player, attack.range)) return false;
     const dx = player.position.x - this.position.x;
     const dz = player.position.z - this.position.z;
     const d = Math.hypot(dx, dz);
-    if (d > attack.range) return false;
-    const top = this.position.y + this.type.height;
-    if (player.position.y > top || player.position.y + player.height < this.position.y) return false;
     if (d < 1e-4) return true;
     const facing = (-Math.sin(this.yaw) * dx - Math.cos(this.yaw) * dz) / d; // cos(angle off-center)
     return facing >= Math.cos((attack.hitHalfAngleDegrees * Math.PI) / 180);
