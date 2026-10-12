@@ -32,8 +32,10 @@ export const feel = {
   },
 
   movement: {
-    walkSpeed: 5, // m/s
+    walkSpeed: 5, // m/s (forwards)
     sprintSpeed: 8, // m/s
+    backpedalMultiplier: 0.7, // walking backwards is slower (COD-style): retreating while shooting costs you
+    strafeMultiplier: 0.85, // so is walking sideways; diagonals blend between
     groundAcceleration: 60, // m/s^2: how quickly you reach full speed on the ground
     airAcceleration: 15, // m/s^2: less control while airborne
     jumpVelocity: 6.5, // m/s upward; with gravity 20 the jump peaks at ~1.05m (clears benches)

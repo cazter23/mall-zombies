@@ -181,6 +181,17 @@ export class PlayerController {
     let wishZ = -cos * forwardInput - sin * rightInput;
     const wishLength = Math.hypot(wishX, wishZ);
     const moveStrength = Math.min(1, wishLength); // 1 for keys, 0..1 for a stick
+    // Direction penalty: full speed forwards, slower sideways and slower still backwards.
+    // Weighted by how much of the movement is in each direction (diagonals blend).
+    const inputLength = Math.hypot(forwardInput, rightInput);
+    let directionSpeed = 1;
+    if (inputLength > 1e-6) {
+      const f = forwardInput / inputLength;
+      const r = rightInput / inputLength;
+      const fwd = Math.max(0, f);
+      const back = Math.max(0, -f);
+      directionSpeed = fwd * fwd + back * back * stats.backpedalSpeed + r * r * stats.strafeSpeed;
+    }
     if (wishLength > 0) {
       wishX /= wishLength;
       wishZ /= wishLength;
@@ -218,7 +229,7 @@ export class PlayerController {
       let targetSpeed = this.isSprinting ? stats.sprintSpeed : stats.walkSpeed;
       if (this.stance === 'crouch') targetSpeed = stats.crouchSpeed;
       targetSpeed *= 1 + (stats.adsMoveSpeed - 1) * this.aimAmount; // slower while aiming
-      if (!this.isSprinting) targetSpeed *= moveStrength; // half-pushed stick = slower walk
+      if (!this.isSprinting) targetSpeed *= moveStrength * directionSpeed; // stick tilt, backpedal/strafe
       // In the air you keep your momentum: you can steer, but holding a direction never slows
       // you down (otherwise a slide-jump bleeds speed mid-air). Letting go of keys still does.
       if (!this.grounded) {

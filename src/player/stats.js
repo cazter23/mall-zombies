@@ -29,6 +29,8 @@ export function createPlayerStats() {
     sprintRefillRate: feel.sprint.refillRate,
 
     adsMoveSpeed: feel.ads.moveSpeedMultiplier, // walk speed multiplier while aiming
+    backpedalSpeed: feel.movement.backpedalMultiplier, // walk speed multiplier going backwards
+    strafeSpeed: feel.movement.strafeMultiplier, // walk speed multiplier going sideways
 
     damageMultiplier: weaponStatDefaults.damageMultiplier,
     meleeDamageMultiplier: weaponStatDefaults.meleeDamageMultiplier,

@@ -123,7 +123,7 @@ export function createZombieManager({
       const yaw = Math.atan2(-(player.position.x - position.x), -(player.position.z - position.z));
       const round = getRound();
       const speed = pickGaitSpeed(type, round);
-      const zombie = new Zombie({ type, health: zombieHealthForRound(round), position, yaw, speed });
+      const zombie = new Zombie({ type, health: zombieHealthForRound(round), position, yaw, speed, round });
       zombie.onDeath = onZombieDeath;
       scene.add(zombie.model.root);
       zombies.push(zombie);

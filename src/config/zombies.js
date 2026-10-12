@@ -39,9 +39,15 @@ export const zombieTypes = {
 
     // Attack: wind up (telegraph), swing, then a short recovery before the next one.
     // The hit only lands if the player is STILL in reach and in front when the arms come down.
+    // Zombies keep shuffling after you during the wind-up, so just walking away doesn't dodge it.
     attack: {
-      range: 1.1, // meters, center to center (they stop walking at ~0.8)
-      windupSeconds: 0.45, // arms raised overhead: the warning (shorter = harder to dodge)
+      startRange: 1.0, // they start an attack once this close (center to center; they stop at ~0.8)...
+      range: 1.4, // ...and the swing still connects out to here, so a quick step back isn't a free dodge
+      moveSpeedFraction: 0.8, // walking speed (x their gait speed) during the wind-up and swing
+      turnSpeed: 12, // radians/second they can turn to keep facing you mid-attack (normal turning: turnSpeed)
+      windupSeconds: 0.45, // arms raised overhead: the warning in round 1 (shorter = harder to dodge)...
+      windupShrinkPerRound: 0.02, // ...getting this much shorter each round after that...
+      minWindupSeconds: 0.3, // ...down to this (reached at round 9)
       swingSeconds: 0.15, // arms slam down; damage is checked at the start of the swing
       recoverSeconds: 0.8, // no new attack for this long afterwards (it keeps following you)
       damage: 40, // 3 hits from full health (Black Ops 3 style)

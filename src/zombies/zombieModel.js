@@ -144,7 +144,7 @@ export function createZombieModel(type) {
       const atk = type.attack;
       let armPose = null; // overrides the shamble arm angle when set
       if (zombie.state === 'windup') {
-        const t = ease(Math.min(1, zombie.stateTime / atk.windupSeconds));
+        const t = ease(Math.min(1, zombie.stateTime / zombie.windupSeconds));
         armPose = arms[0].rotation.x + (atk.armsRaisedRadians - arms[0].rotation.x) * t;
         upper.rotation.x += 0.2 * t;
         neck.rotation.x -= 0.25 * t;

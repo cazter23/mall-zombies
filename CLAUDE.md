@@ -110,7 +110,7 @@ src/
                         line is clear, else follows the field with look-ahead. distanceToTarget() for spawning
     zombie.js           Zombie class (shootable): states spawning -> chasing -> windup -> swing -> chasing (with
                         attackCooldown) / dead; path + crowd separation + arrive braking; moveAndCollide;
-                        hitboxes follow it; the swing hits only if the player is still in reach and in front
+                        keeps chasing (slower) during windup/swing; hit needs player within range + in front
     zombieModel.js      Blocky shopper model (random outfit, maybe a shopping bag) + code animation: shamble,
                         arms-overhead wind-up, slam, recovery, flinch/flash, rise from floor, tip over and sink
     zombieManager.js    createZombieManager(): spawn (reachable spawn points >= minSpawnDistance away), update,
@@ -229,8 +229,11 @@ the camera so you look past the belly; only the lower torso is drawn (a full che
 Build step 3 is done. Shopper zombies (2.0 m/s) rise out of the floor at reachable spawn markers, path to the
 player with a flow field (around pillars/benches/planters, through the doorway once the shutter is open), keep
 spacing in a crowd, stop at arm's length, block the player, and can be shot (150 HP round 1: 4 body / 2 head)
-with green/purple splatter, then fall over and sink. Attacks: 0.45s arms-overhead wind-up, then a swing that hits
-for 40 only if you're still within 1.1m and in front (3 hits = dead), 0.8s recovery. Health regens after 3s at
+with green/purple splatter, then fall over and sink. Attacks: start within 1.0m; arms-overhead wind-up (0.45s in round 1,
+-0.02s per round, min 0.3s from round 9; `zombie.windupSeconds`) while still coming at you at 80% speed and
+turning fast (attack.turnSpeed 12), then a swing that hits for 40 if you're within 1.4m and in front (3 hits =
+dead), 0.8s recovery. Player moves slower backwards (70%) and sideways (85%), stats.backpedalSpeed/strafeSpeed,
+so retreating while shooting costs you; sprinting away still escapes if you react fast. Health regens after 3s at
 50/s; red screen edges grow with damage, pulse below 40%, flash on hits. Box cutter (V): 150 dmg, lunge, cancels
 reload. Death: camera tips over, "Clocked Out" results (time, round, kills, headshot/box cutter kills, accuracy),
 Play again resets the run. Spawning is still debug Z (X clears); round is fixed at 1 until waves (step 4).
