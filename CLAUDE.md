@@ -56,7 +56,8 @@ src/
                         spread cone, ADS time/zoom/gun offset, colors), `melee.boxCutter` (damage, reach,
                         cone, swing timing, lunge), weaponStatDefaults for stats
     zombies.js          zombieTypes (per-type speed, size, hitboxes, attack, timings, colors, splatter), zombieCrowd
-                        (separation, contact gap, spawn dust, min spawn distance), zombieNav (grid settings)
+                        (spacing, lanes, queueing, surround rings, contact gap, spawn dust, min spawn distance),
+                        zombieNav (grid, soft wall clearance + wall penalty)
     controls.js         bindings (action -> keyboard/mouse + Pad* codes), buttonLabels (prompts per device),
                         gamepad (deadzones, look speed/curve, turn ramp, triggers, click-to-sprint release),
                         aimAssist (strength dial, range/cone, slowdown, rotational, ADS snap)
@@ -105,17 +106,24 @@ src/
                         box cutter arm slashes across while the gun drops aside (meleeProgress)
   zombies/
     navigation.js       createNavigation(): flow field on a 0.5m ground-floor grid built from colliders (floor =
-                        box top at y~0; obstacles padded by zombie radius). Dijkstra from the player every 0.2s;
-                        rebuilds when colliders.length changes (shutter). directionTo() walks straight if the
-                        line is clear, else follows the field with look-ahead. distanceToTarget() for spawning
+                        box top at y~0; obstacles padded by zombie radius; cells within extraClearance cost extra
+                        so routes stay off walls but narrow gaps still connect). Dijkstra from the player every
+                        0.2s; rebuilds when colliders.length changes (shutter). directionTo(from, target, out,
+                        { laneOffset, laneFade, lookAhead }) walks straight if the line is clear, else follows the
+                        field; each zombie's own lane offset shifts its aim sideways. Also clearLine(), isWalkableAt()
     zombie.js           Zombie class (shootable): states spawning -> chasing -> windup -> swing -> chasing (with
-                        attackCooldown) / dead; path + crowd separation + arrive braking; moveAndCollide;
-                        keeps chasing (slower) during windup/swing; hit needs player within range + in front
+                        attackCooldown) / dead. Steering: goal = its surround slot (if assigned) else the route
+                        along its own lane; spacing push (quadratic, capped); queueing (slow + sidestep around a
+                        zombie ahead); arrive braking; faces where it's trying to go. Personal laneOffset,
+                        lookAhead, sideBias. Keeps chasing (slower) during windup/swing
     zombieModel.js      Blocky shopper model (random outfit, maybe a shopping bag) + code animation: shamble,
                         arms-overhead wind-up, slam, recovery, flinch/flash, rise from floor, tip over and sink
-    zombieManager.js    createZombieManager(): spawn (reachable spawn points >= minSpawnDistance away), update,
-                        keep the player out of zombies, death splatter, shootables bookkeeping, clear().
-                        Options canAttack(), onPlayerHit(damage), onKill(zombie)
+    zombieManager.js    createZombieManager(): spawn (reachable spawn points >= minSpawnDistance away), update
+                        (assign surround slots -> zombie updates -> resolve zombie overlaps -> keep the player out
+                        of zombies), death splatter, shootables bookkeeping, clear(). Surround slots: rings around
+                        the player (inner at arm's length), innermost ring fills first, zombies keep their slot.
+                        Crowd shoves never move anyone into a wall (overlapsSolid); a pinned player pushes the
+                        zombie back instead. Options canAttack(), onPlayerHit(damage), onKill(zombie)
   game/
     runStats.js         createRunStats(): time alive, kills, headshot/melee kills, shots fired/hit, accuracy
     wallet.js           createWallet(): points (start 500), earn/spend/canAfford, totalEarned, onChange cb (HUD
@@ -135,7 +143,7 @@ src/
   world/                Shared building blocks for maps
     door.js             createDoor(): buyable barrier (price, opensZone) wrapping a shutter; open/reset/toggle
     collision.js        moveAndCollide(): horizontal push-out then vertical landing/ceiling vs. Box3 list;
-                        hasHeadroom(): can the player stand up here?
+                        hasHeadroom(): can the player stand up here? overlapsSolid(): would a body overlap a wall?
     shutter.js          createShutter(): roll-up barrier with its own Box3 collider (open/close/toggle/update)
     textures.js         Procedural canvas textures (floor tile, shop sign, shutter). No image files.
   ui/
@@ -247,6 +255,11 @@ X reload, RB/R3 box cutter, Start pause/resume. Prompts follow the last device. 
 chest-targeted): slowdown 60% hip / 50% ADS, rotational 15% hip / 25% ADS (only with stick input, full strength
 except the outer 30% of the zone), ADS snap 40% within 5 deg (0.6s cooldown); master dial
 `controls.aimAssist.strength`. Tested with a simulated controller; feel still needs real-hardware tuning.
+
+Crowd behaviour (fixed chains/stacking/identical paths): measured with a 12-zombie horde through the doorway,
+overlap time 53% -> 0%, conga lines 68% -> ~20%, doorway crossing spots 2 -> 8-12, zombies surround the player in
+rings (several at arm's length all around), and a crowd can no longer shove the player through a wall (it used to
+push you out of the map). Attack difficulty unchanged (same dodge-test results).
 
 Step 4 in progress. Done: part A (map package + zones + doors, see maps/index.js) and part B (rounds and
 points): round 1 starts on first play (3s delay), zombies spawn from open zones at the economy pace, the round

@@ -32,6 +32,7 @@ export function createNavigation(colliders, agent) {
   let cols = 0;
   let rows = 0;
   let walkable = new Uint8Array(0);
+  let nearWall = new Uint8Array(0); // 1 = walkable cell touching a blocked one (costs extra to walk)
   let dist = new Float32Array(0);
   let builtForColliderCount = -1;
   let refreshTimer = 0;
@@ -58,6 +59,7 @@ export function createNavigation(colliders, agent) {
     cols = Math.ceil((maxX - minX) / cs);
     rows = Math.ceil((maxZ - minZ) / cs);
     walkable = new Uint8Array(cols * rows);
+    nearWall = new Uint8Array(cols * rows);
     dist = new Float32Array(cols * rows);
     hasField = false;
 
@@ -68,11 +70,20 @@ export function createNavigation(colliders, agent) {
       forCellsIn(box.min.x, box.min.z, box.max.x, box.max.z, (i) => (walkable[i] = 1));
     }
     // Pass 2: anything solid between ankle and head height blocks, grown by the zombie's radius
-    // so a zombie walking a cell's center never scrapes a wall.
-    for (const box of colliders) {
-      if (box.max.y <= floorTol || box.min.y >= agent.height) continue;
+    // so a zombie walking a cell's center never scrapes it.
+    const solid = colliders.filter((box) => box.max.y > floorTol && box.min.y < agent.height);
+    for (const box of solid) {
       const r = agent.radius;
       forCellsIn(box.min.x - r, box.min.z - r, box.max.x + r, box.max.z + r, (i) => (walkable[i] = 0));
+    }
+    // Pass 3: cells within a little extra clearance of something solid stay walkable but cost
+    // extra (Dijkstra), so routes keep off walls and doorframes where there's room, yet narrow
+    // gaps (e.g. between crates and a wall) still connect.
+    for (const box of solid) {
+      const r = agent.radius + zombieNav.extraClearance;
+      forCellsIn(box.min.x - r, box.min.z - r, box.max.x + r, box.max.z + r, (i) => {
+        if (walkable[i]) nearWall[i] = 1;
+      });
     }
   }
 
@@ -168,7 +179,7 @@ export function createNavigation(colliders, agent) {
         if (!walkable[ni]) continue;
         // No cutting corners diagonally past a blocked cell.
         if (dc !== 0 && dr !== 0 && (!walkable[r * cols + nc] || !walkable[nr * cols + c])) continue;
-        const nd = d + cost;
+        const nd = d + cost * (1 + zombieNav.wallPenalty * nearWall[ni]);
         if (nd < dist[ni]) {
           dist[ni] = nd;
           heapPush(ni);
@@ -251,12 +262,21 @@ export function createNavigation(colliders, agent) {
     /**
      * Which way should something at `from` walk to reach `target`? Writes a unit
      * direction (x, z) into `out` and returns true, or returns false if there is no path.
+     * opts.laneOffset: meters to walk to the side of the shared route (each zombie its own);
+     * opts.laneFade:   0..1 how much of that offset to use (fades out near the player);
+     * opts.lookAhead:  how many cells down the route to look (each zombie its own).
      */
-    directionTo(from, target, out) {
+    directionTo(from, target, out, { laneOffset = 0, laneFade = 1, lookAhead = 6 } = {}) {
       if (!hasField) return false;
+      const offset = laneOffset * laneFade;
 
-      // In the open: walk straight at the player.
+      // In the open: walk at the player, but along this zombie's own lane (so a crowd fans out).
       if (clearLine(from.x, from.z, target.x, target.z)) {
+        if (offset !== 0 && setDir(out, target.x - from.x, target.z - from.z)) {
+          const lx = target.x - out.z * offset;
+          const lz = target.z + out.x * offset;
+          if (isWalkableAt(lx, lz) && clearLine(from.x, from.z, lx, lz)) return setDir(out, lx - from.x, lz - from.z);
+        }
         return setDir(out, target.x - from.x, target.z - from.z);
       }
 
@@ -265,7 +285,7 @@ export function createNavigation(colliders, agent) {
       let i = bestCellNear(from.x, from.z);
       if (i < 0 || dist[i] === Infinity) return false;
       let aim = i;
-      for (let step = 0; step < zombieNav.lookAheadCells; step++) {
+      for (let step = 0; step < lookAhead; step++) {
         const c = i % cols;
         const r = (i - c) / cols;
         let next = -1;
@@ -287,10 +307,22 @@ export function createNavigation(colliders, agent) {
         const nz = centerZ(Math.floor(i / cols));
         if (step === 0 || clearLine(from.x, from.z, nx, nz)) aim = i;
       }
-      return setDir(out, centerX(aim % cols) - from.x, centerZ(Math.floor(aim / cols)) - from.z);
+      const ax = centerX(aim % cols);
+      const az = centerZ(Math.floor(aim / cols));
+      if (!setDir(out, ax - from.x, az - from.z)) return false;
+
+      // Shift the aim point sideways into this zombie's lane (full, then half) if there's room.
+      for (const f of [1, 0.5]) {
+        if (offset === 0) break;
+        const lx = ax - out.z * offset * f;
+        const lz = az + out.x * offset * f;
+        if (isWalkableAt(lx, lz) && clearLine(from.x, from.z, lx, lz)) return setDir(out, lx - from.x, lz - from.z);
+      }
+      return true;
     },
 
     isWalkableAt,
+    clearLine,
   };
 }
 

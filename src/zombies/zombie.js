@@ -6,7 +6,8 @@
 //
 // States:
 //   spawning -> rises out of the floor (can already be shot)
-//   chasing  -> follows the flow field toward the player, stops at arm's length
+//   chasing  -> follows the flow field toward the player (along its own lane), then near the
+//               player walks to its own surround slot (assigned by the manager), stops there
 //   windup   -> in reach: arms raised (the telegraph) while still shuffling after the player
 //   swing    -> arms slam down; the player is hit only if still in reach and in front
 //   (back to chasing, with a short recovery before it may attack again)
@@ -20,6 +21,7 @@ import { moveAndCollide } from '../world/collision.js';
 import { createZombieModel } from './zombieModel.js';
 
 const ease = (t) => t * t * (3 - 2 * t);
+const clamp01 = (v) => Math.max(0, Math.min(1, v));
 const desired = { x: 0, z: 0 };
 
 export class Zombie {
@@ -46,6 +48,16 @@ export class Zombie {
     this.killedByHeadshot = false;
     this.killedByMelee = false;
     this.removed = false; // set once the corpse has sunk away; the manager then deletes it
+
+    // Crowd personality, so a horde doesn't move as one: its own lane beside the shared route,
+    // how far down the route it looks, and which side it prefers to step around others.
+    const crowd = zombieCrowd;
+    this.laneOffset = (Math.random() * 2 - 1) * crowd.laneMaxOffset;
+    this.lookAhead = crowd.lookAheadMin + Math.floor(Math.random() * (crowd.lookAheadMax - crowd.lookAheadMin + 1));
+    this.sideBias = Math.random() < 0.5 ? -1 : 1;
+    // Surround slot near the player, assigned each tick by the manager: { x, z } or null.
+    this.slot = null;
+    this.slotKey = null;
     this.onDeath = null; // optional callback(zombie), set by the manager
 
     // Shootable interface
@@ -149,49 +161,101 @@ export class Zombie {
     if (this.isAlive) this.updateHitboxes();
   }
 
-  // Follow the path to the player. `speedScale` slows it (e.g. mid-attack); `facePlayer` keeps it
-  // turned toward the player instead of the way it's walking.
+  // Move toward the player. `speedScale` slows the walking part (e.g. mid-attack); `facePlayer`
+  // keeps it turned toward the player (locked on while attacking).
   chase(dt, { nav, player, colliders, zombies }, speedScale = 1, facePlayer = false) {
     const type = this.type;
+    const crowd = zombieCrowd;
     const dx = player.position.x - this.position.x;
     const dz = player.position.z - this.position.z;
     const distToPlayer = Math.hypot(dx, dz);
-    const contact = type.radius + feel.player.radius + zombieCrowd.contactGap;
+    const contact = type.radius + feel.player.radius + crowd.contactGap;
 
-    // 1) Where the path says to go (straight at the player when there's a clear line).
+    // 1) Where to go: my surround slot near the player if I have one; otherwise the route to the
+    //    player, along my own lane (which fades out as I get close).
     desired.x = 0;
     desired.z = 0;
     let hasPath = false;
-    if (distToPlayer > contact) hasPath = nav.directionTo(this.position, player.position, desired);
+    let arrive = 0;
+    if (this.slot) {
+      const sx = this.slot.x - this.position.x;
+      const sz = this.slot.z - this.position.z;
+      const toSlot = Math.hypot(sx, sz);
+      if (toSlot > 0.05) {
+        desired.x = sx / toSlot;
+        desired.z = sz / toSlot;
+        hasPath = true;
+      }
+      arrive = clamp01(toSlot / crowd.arriveDistance);
+    } else if (distToPlayer > contact) {
+      const laneFade = clamp01((distToPlayer - crowd.surroundRadius) / crowd.laneFadeDistance);
+      hasPath = nav.directionTo(this.position, player.position, desired, {
+        laneOffset: this.laneOffset,
+        laneFade,
+        lookAhead: this.lookAhead,
+      });
+      arrive = clamp01((distToPlayer - contact) / crowd.arriveDistance);
+    }
+    // Never walk on into the player's body, whatever the slot says.
+    if (hasPath && distToPlayer <= contact && desired.x * dx + desired.z * dz > 0) arrive = 0;
 
-    // 2) Crowd separation: push away from zombies that are too close.
+    // 2) Spacing: push away from nearby zombies, much harder the closer they are.
     let pushX = 0;
     let pushZ = 0;
-    const sepR = zombieCrowd.separationRadius;
+    const sepR = crowd.separationRadius;
     for (const other of zombies) {
       if (other === this || !other.isAlive) continue;
       const ox = this.position.x - other.position.x;
       const oz = this.position.z - other.position.z;
       const d = Math.hypot(ox, oz);
       if (d >= sepR || d < 1e-4) continue;
-      const strength = 1 - d / sepR;
-      pushX += (ox / d) * strength;
-      pushZ += (oz / d) * strength;
+      const w = Math.min(3, ((sepR - d) / (sepR - crowd.minSpacing)) ** 2);
+      pushX += (ox / d) * w;
+      pushZ += (oz / d) * w;
     }
 
-    // 3) Combine into a target velocity. Ease off when arriving, so they stop at arm's
-    //    length instead of bumping into the player. Never faster than their walking speed.
-    const s = zombieCrowd.separationStrength;
-    const arrive = Math.max(0, Math.min(1, (distToPlayer - contact) / zombieCrowd.arriveDistance));
-    let tx = (hasPath ? desired.x * arrive : 0) + pushX * s;
-    let tz = (hasPath ? desired.z * arrive : 0) + pushZ * s;
-    const len = Math.hypot(tx, tz);
-    if (len > 1) {
-      tx /= len;
-      tz /= len;
+    // 3) Queueing: if another zombie is close ahead on my way, slow down and step around it
+    //    (to the side it isn't on) instead of shoving into its back.
+    let walk = 1;
+    let sideX = 0;
+    let sideZ = 0;
+    if (hasPath) {
+      const coneCos = Math.cos((crowd.queueConeDegrees * Math.PI) / 180);
+      let blocker = null;
+      let blockerD = Infinity;
+      for (const other of zombies) {
+        if (other === this || !other.isAlive) continue;
+        const ox = other.position.x - this.position.x;
+        const oz = other.position.z - this.position.z;
+        const d = Math.hypot(ox, oz);
+        if (d >= crowd.queueDistance || d < 1e-4 || d >= blockerD) continue;
+        if ((ox * desired.x + oz * desired.z) / d < coneCos) continue; // not ahead of me
+        blocker = other;
+        blockerD = d;
+      }
+      if (blocker) {
+        const closeness = clamp01((crowd.queueDistance - blockerD) / (crowd.queueDistance - crowd.minSpacing));
+        walk = 1 - crowd.queueSlowdown * closeness;
+        const ox = blocker.position.x - this.position.x;
+        const oz = blocker.position.z - this.position.z;
+        // Which side of my path is it on? Step to the other side (or my preferred side if dead ahead).
+        const cross = desired.x * oz - desired.z * ox;
+        const side = Math.abs(cross) > 0.05 ? -Math.sign(cross) : this.sideBias;
+        sideX = -desired.z * side * crowd.queueSidestep * closeness;
+        sideZ = desired.x * side * crowd.queueSidestep * closeness;
+      }
     }
-    tx *= this.speed * speedScale;
-    tz *= this.speed * speedScale;
+
+    // 4) Combine: walking (slowed when arriving / queueing / attacking) + sidestep + spacing push.
+    const walkSpeed = this.speed * speedScale * arrive * walk;
+    let tx = (hasPath ? desired.x * walkSpeed : 0) + (sideX + pushX * crowd.separationStrength) * this.speed;
+    let tz = (hasPath ? desired.z * walkSpeed : 0) + (sideZ + pushZ * crowd.separationStrength) * this.speed;
+    const maxSpeed = this.speed * crowd.maxCrowdSpeed;
+    const len = Math.hypot(tx, tz);
+    if (len > maxSpeed) {
+      tx *= maxSpeed / len;
+      tz *= maxSpeed / len;
+    }
 
     // 4) Accelerate toward it, then move with the same collision code as the player.
     let ax = tx - this.velocity.x;
@@ -207,10 +271,11 @@ export class Zombie {
     this.velocity.y = Math.max(this.velocity.y - feel.movement.gravity * dt, -feel.movement.maxFallSpeed);
     moveAndCollide(this.position, this.velocity, dt, type.radius, type.height, colliders, feel.movement.stepTolerance);
 
-    // 5) Face the way we're walking; face the player when close or standing still.
+    // 5) Face where I'm TRYING to go (not where shoves push me, which looked like skating sideways);
+    //    face the player when attacking, settled in my slot, at arm's length, or with nowhere to go.
     if (facePlayer) this.faceToward(player.position, dt, type.attack.turnSpeed); // locked on mid-attack
-    else if (distToPlayer < contact * 2 || this.horizontalSpeed < 0.2) this.faceToward(player.position, dt);
-    else this.faceDirection(this.velocity.x, this.velocity.z, dt);
+    else if (!hasPath || arrive < 0.5 || distToPlayer < contact * 2) this.faceToward(player.position, dt);
+    else this.faceDirection(desired.x, desired.z, dt);
   }
 
   distanceTo(player) {

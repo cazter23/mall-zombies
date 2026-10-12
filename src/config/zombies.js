@@ -80,12 +80,37 @@ export const zombieTypes = {
   },
 };
 
-// Pushing apart so a crowd doesn't stack into one blob.
+// How a crowd moves together: spacing, queueing, spreading out, surrounding the player.
 export const zombieCrowd = {
-  separationRadius: 0.8, // meters: zombies closer than this push apart
-  separationStrength: 1.2, // how hard they push (relative to walking)
+  // Spacing: zombies closer than separationRadius push apart, much harder the closer they get.
+  separationRadius: 1.1, // meters, center to center (two zombies touch at 2 x radius = 0.64)
+  separationStrength: 1.6, // push strength (x walking speed) when almost touching
+  maxCrowdSpeed: 1.35, // a shove can move a zombie up to this x its own speed
+  minSpacing: 0.66, // hard rule: centers never closer than this (overlaps are resolved after moving)
+
+  // Lanes: each zombie walks a personal line offset sideways from the shared route, so a horde
+  // spreads across a doorway instead of filing through one spot. Offsets fade out near the player.
+  laneMaxOffset: 0.9, // meters, each zombie picks a random offset in +-this
+  laneFadeDistance: 3, // offsets shrink to nothing over this many meters before the surround radius
+  lookAheadMin: 4, // each zombie looks this many..
+  lookAheadMax: 8, // ..to this many cells down the route (different corner-cutting per zombie)
+
+  // Queueing: a zombie with another zombie close ahead slows down and steps around it
+  // instead of pushing into its back (which is what makes conga lines).
+  queueDistance: 1.3, // meters: "close ahead"
+  queueConeDegrees: 35, // how directly ahead it must be
+  queueSlowdown: 0.65, // up to this much slower when right behind another zombie
+  queueSidestep: 0.7, // how hard it steps around (x walking speed)
+
+  // Surround (COD-style): near the player, each zombie claims its own spot on rings around them,
+  // so a crowd fans out and boxes you in instead of piling up behind one another.
+  surroundRadius: 4.5, // meters: zombies closer than this (with a clear line) take a slot
+  surroundRings: 3, // inner ring at arm's length, then rings every ringSpacing further out
+  surroundRingSpacing: 0.75,
+  surroundSlotSpacing: 0.76, // meters between neighbors on a ring (a bit more than shoulder width)
+
   contactGap: 0.12, // zombies stop this far from the player's body instead of overlapping it
-  arriveDistance: 0.5, // they start slowing down this far before reaching the player
+  arriveDistance: 0.5, // they start slowing down this far before reaching the player (or their slot)
   spawnDustColors: [0xb8b0a4, 0xd8cdb8, 0x8a7f72], // floor-tile dust when one rises out of the floor
   spawnDustCount: 18,
   minSpawnDistance: 4, // prefer spawn points at least this far from the player
@@ -95,7 +120,8 @@ export const zombieCrowd = {
 export const zombieNav = {
   cellSize: 0.5, // meters per grid cell
   refreshSeconds: 0.2, // how often the "arrows toward the player" are recalculated
-  lookAheadCells: 6, // zombies aim at the furthest visible cell along the path (smoother corners)
+  extraClearance: 0.3, // routes prefer to stay this much further from walls (soft: still passable)...
+  wallPenalty: 0.6, // ...because walking those cells costs this much extra
   playerSearchRadius: 1.5, // if the player stands somewhere zombies can't (a bench), path to cells this close
   floorTolerance: 0.05, // a box whose top is within this of y=0 counts as floor
 };

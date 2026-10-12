@@ -59,6 +59,20 @@ function pushOutHorizontal(pos, radius, height, colliders, stepTolerance) {
 }
 
 /**
+ * Would a cylinder (feet at pos) overlap anything solid sideways? Floors (boxes whose top is
+ * within stepTolerance of the feet) don't count. Used to make sure crowd shoves never push the
+ * player or a zombie into a wall. `margin` shrinks the radius a little so touching isn't overlap.
+ */
+export function overlapsSolid(pos, radius, height, colliders, stepTolerance, margin = 0.02) {
+  const r = radius - margin;
+  for (const box of colliders) {
+    if (box.max.y <= pos.y + stepTolerance || box.min.y >= pos.y + height) continue;
+    if (distSqToBoxXZ(pos.x, pos.z, box) < r * r) return true;
+  }
+  return false;
+}
+
+/**
  * Is there room to stand up? True if nothing solid sits in the extra space between
  * the crouched height and the standing height above the player's feet.
  * `margin` shrinks the radius so a wall merely touching the player doesn't count.
