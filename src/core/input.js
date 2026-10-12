@@ -5,7 +5,7 @@
 // =============================================================================
 
 // Keys whose default browser behaviour (scrolling, etc.) we block while playing.
-const GAME_KEYS = new Set(['Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'ShiftLeft', 'ShiftRight']);
+const GAME_KEYS = new Set(['Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'ShiftLeft', 'ShiftRight', 'KeyC', 'KeyR']);
 
 // Chrome occasionally reports a huge mouse jump right after locking; ignore those.
 const MAX_MOUSE_DELTA = 400;
@@ -28,6 +28,21 @@ export class Input {
 
     window.addEventListener('keyup', (e) => {
       this.held.delete(e.code);
+    });
+
+    // Mouse buttons are tracked like keys: 'Mouse0' = left, 'Mouse1' = middle, 'Mouse2' = right.
+    // Only while locked, so the click that starts the game doesn't also fire a shot.
+    document.addEventListener('mousedown', (e) => {
+      if (!this.locked) return;
+      const code = `Mouse${e.button}`;
+      this.pressed.add(code);
+      this.held.add(code);
+    });
+    document.addEventListener('mouseup', (e) => {
+      this.held.delete(`Mouse${e.button}`);
+    });
+    document.addEventListener('contextmenu', (e) => {
+      if (this.locked) e.preventDefault();
     });
 
     // Losing focus (alt-tab) would otherwise leave keys "stuck" down.

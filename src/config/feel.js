@@ -61,6 +61,7 @@ export const feel = {
     mouseSensitivity: 0.0022, // radians per pixel of mouse movement
     maxPitchDegrees: 89, // how far you can look up/down
     invertY: false,
+    kickRecovery: 10, // how fast weapon view kick settles back (higher = faster, per second)
   },
 
   camera: {
@@ -71,5 +72,35 @@ export const feel = {
 
   world: {
     shutterOpenSeconds: 1.2, // how long a security shutter takes to roll up
+  },
+
+  // First-person weapon model (drawn on top of the world so it never clips into walls)
+  viewmodel: {
+    offset: { x: 0.19, y: -0.15, z: -0.46 }, // meters from the camera: right, down, forward
+    aimYawDegrees: 6, // gun angles slightly in toward the crosshair
+    kickBack: 0.06, // meters the gun jolts back when firing
+    kickRotateDegrees: 9, // degrees the muzzle flips up when firing
+    kickReturnSeconds: 0.12, // how long the gun takes to settle after a shot
+    reloadDipDegrees: 40, // how far the gun tilts down during a reload
+    reloadDrop: 0.12, // meters the gun drops during a reload
+    reloadRollDegrees: 20, // how far the gun rolls sideways during a reload
+  },
+
+  // Hit effects (cartoon splatter, tracers, hit markers)
+  effects: {
+    tracerSeconds: 0.07, // how long the staple streak stays visible
+    tracerWidth: 0.012, // meters
+    maxParticles: 600,
+    particleGravity: 9, // m/s^2
+    particleLife: 0.55, // seconds
+    particleSize: 0.06, // meters
+    splatCount: 14, // particles per body hit
+    headshotSplatCount: 26, // particles per headshot
+    splatSpeed: 3.5, // m/s
+    puffCount: 6, // particles when a shot hits a wall
+    puffSpeed: 1.5, // m/s
+    puffColor: 0xb8b0a4, // dusty grey
+    hitMarkerSeconds: 0.18, // how long the crosshair hit marker shows
+    lowAmmoThreshold: 3, // magazine count at which the ammo counter turns red
   },
 };

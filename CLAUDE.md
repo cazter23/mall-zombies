@@ -23,7 +23,7 @@ does not run the game, so also try changes in `npm run dev`).
 
 ## Rules for working on this project
 - Game logic runs on a fixed 60Hz timestep; rendering is decoupled (render gets `alpha` to interpolate).
-- Every tunable number lives in `src/config/` (`feel.js`, `economy.js`, `debug.js`), never hardcoded in logic.
+- Every tunable number lives in `src/config/` (`feel.js`, `economy.js`, `weapons.js`, `debug.js`), never hardcoded in logic.
 - All player stats live in one stats object (`src/player/stats.js`) so perks, wardrobe and a
   future skill tree modify it in one place. Systems read stats, not config, at runtime.
 - Death is handled in one function (`onPlayerDeath`) so a downed/revive system can be added later.
@@ -40,19 +40,34 @@ package.json            scripts: dev / build / preview
 src/
   main.js               Entry: renderer, scene, camera, wires input/world/player/HUD, pause logic,
                         update(dt) + render(alpha); exposes window.__mall when debug.exposeToWindow
-  style.css             HUD, crosshair, sprint bar, start/pause overlay
+  style.css             HUD (crosshair, hit marker, health/stamina bars, ammo, prompt), start/pause overlay
   config/
-    feel.js             Movement, sprint, crouch, slide, look, camera, player size, sim tick rate, shutter speed
+    feel.js             Movement, sprint, crouch, slide, look (+ view kick recovery), camera, player size,
+                        sim tick rate, shutter speed, viewmodel placement/animation, hit effects
     economy.js          Points, payouts, kill values, door prices, wave scaling + helper functions
                         (zombieHealthForRound, zombieCountForRound, spawnDelayForRound, maxAliveForRound)
-    debug.js            showMarkers, allowShutterToggle (O key), testArena (T key), exposeToWindow
+    weapons.js          Per-weapon stats (damage, headshot mult, mag, reserve, fire interval, reload, kick,
+                        colors) + weaponStatDefaults for the stats object
+    debug.js            showMarkers, allowShutterToggle (O key), testArena (T key), dummies, exposeToWindow
   core/
     loop.js             startLoop(): fixed-timestep accumulator, calls update(dt) and render(alpha, frameTime)
     input.js            Input class: held keys, one-shot presses (consumePress/endTick), mouse delta, pointer lock
   player/
     controller.js       PlayerController: WASD, jump (buffer + coyote time), sprint meter, crouch/slide
                         (stance: stand|crouch|slide), gravity, mouse look (per render frame), camera interpolation
-    stats.js            createPlayerStats(): the single stats object (health, speeds, jump, sprint, crouch/slide)
+    stats.js            createPlayerStats(): the single stats object (health, speeds, jump, sprint, crouch/slide,
+                        damageMultiplier, reloadSpeed)
+  weapons/
+    weapon.js           Weapon class: ammo, fire cooldown + click buffer, reload. Pure state; update() returns
+                        'fire' | 'empty' | null
+    hitscan.js          castShot(): one ray vs world colliders and shootables' hitboxes; defines the
+                        "shootable" interface (hitboxes, isAlive, takeHit, splatColors)
+    playerGun.js        createPlayerGun(): glue. Reads Mouse0/KeyR, fires hitscan, applies damage
+                        (headshot x mult x stats.damageMultiplier), recoil, tracer, splatter, hit marker
+    viewmodel.js        First-person staple gun model in its own scene (drawn after the world with depth
+                        cleared); kick + reload animations; muzzle position for tracers
+  fx/
+    effects.js          Tracers (pooled) + particle bursts (one InstancedMesh): splat() and puff()
   world/
     map.js              buildMall(scene): all geometry, colliders, lights, signs, spawn/wall-buy markers,
                         player spawn. Exports LAYOUT. Returns { group, colliders, shutter, markers, playerSpawn, update }
@@ -61,15 +76,24 @@ src/
     shutter.js          createShutter(): roll-up door with its own Box3 collider (open/close/toggle/update)
     textures.js         Procedural canvas textures (floor tile, shop sign, shutter). No image files.
     testArena.js        Debug-only movement test range (buildTestArena). Not part of the real game.
+    dummy.js            createDummy(): practice mannequin (shootable) with head/body hitboxes, health bar,
+                        tips over when killed and pops back up. Test range only.
   ui/
-    hud.js              createHud(): crosshair, bottom-left health (white) + stamina (green) bars,
-                        click-to-play/paused overlay (plain DOM)
+    hud.js              createHud(): crosshair + hit marker (white body, big yellow head, red kill),
+                        bottom-left health (white) + stamina (green) bars, bottom-right ammo counter,
+                        reload prompt under the crosshair, click-to-play/paused overlay (plain DOM)
 ```
 
 ## How the pieces connect
 - `main.js` owns the loop. `update(dt)` (60Hz): if not running (pointer unlocked) it freezes the
-  player and clears input; otherwise handles debug keys, `player.update(dt)`, `world.update(dt)`, `input.endTick()`.
-  `render(alpha)`: applies accumulated mouse look, interpolates the camera, updates the HUD, renders.
+  player and clears input; otherwise handles debug keys, `player.update(dt)`, `gun.update(dt)` (after the player so
+  shots use this tick's eye), `world.update(dt)`, `arena.update(dt)`, `input.endTick()`.
+  `render(alpha, frameTime)`: applies mouse look, interpolates the camera, updates effects + viewmodel, updates the
+  HUD, then draws two passes: the world, then (after `clearDepth`) the viewmodel scene. `renderer.autoClear` is false.
+- Input: mouse buttons are tracked like keys as `Mouse0`/`Mouse1`/`Mouse2`, only while pointer-locked.
+- Shooting: `player.getAim()` gives eye + direction including view kick, so shots land exactly on the crosshair.
+  `main.js` keeps a `shootables` array (test-range dummies now; zombies should be pushed into it). A collider
+  Box3 with `ignoreShots = true` blocks walking but not bullets.
 - The game only runs while the pointer is locked; Esc pauses and shows the overlay.
 - Collision: world is a flat array `world.colliders` of `THREE.Box3`. `box(..., {collide})` in `map.js`
   makes a mesh and (optionally) a collider; some visuals use `collide:false` with a separate hand-sized
@@ -91,6 +115,7 @@ src/
 - Built when `debug.testArena` is true; press **T** in-game to teleport between the mall and the range
   (`player.teleport({ position, yaw })`). Its colliders go into the same `world.colliders` list.
 - 60x60m open floor centered at (0, -100), far south of the mall, 2m border walls, 1m floor tiles.
+- Shooting range: 5 practice dummies (3 at local z=17 near spawn, 2 at (+-9, 0)) with round-1 zombie health.
 - Contents: runway with a line every 5m; slide bars + an 8m low tunnel (underside 1.2m: crouch fits,
   standing doesn't); pillars; stairs (0.5m steps) to a 2m platform; jump boxes 0.3-1.2m (1.2 is
   deliberately unreachable); 0.6m platforms with 2/3/4/5m gaps for sprint-jumps.
@@ -106,12 +131,16 @@ ledge) and press C, and a slide starts on landing, skipping the cooldown and spr
 tapped in the air, held through landing, pressed up to `slide.chainPressBefore` before the jump, or up to
 `slide.chainPressAfterLanding` after landing. Airborne movement never slows you below your current speed
 (steering only), so slide-jumps keep their momentum. Crouch/slide tuning is in `feel.crouch` / `feel.slide`.
-Nothing yet reads `economy.js` (data only), `stats.health`/`maxHealth` are unused, and there are
-no weapons, zombies, waves, points or death handling.
+HUD: white health bar above green stamina bar, bottom-left.
+
+Build step 2 is done: staple gun (hitscan, semi-auto, 40 dmg, 3x headshots, 12/60 ammo, 1.5s reload, R or
+dry-click to reload, view kick), first-person model, silver tracer, confetti splatter, wall puffs, hit markers,
+ammo HUD, practice dummies in the test range. Only `zombieHealthForRound` from `economy.js` is used so far;
+`stats.health` never changes, and there are no zombies, waves, points or death handling.
 
 ## Planned build order
 1. Walkable mall (done)
-2. Staple gun: hitscan shooting, headshots, reload, ammo, hit feedback on static targets
+2. Staple gun: hitscan shooting, headshots, reload, ammo, hit feedback on static targets (done)
 3. Shopper zombies, chasing, attacking with a wind-up, regenerating health, death screen
 4. Waves, rounds, points, shutter purchase, first wall buy
 5. Mall Walker, then the rest of the roster

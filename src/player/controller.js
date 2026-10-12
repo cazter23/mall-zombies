@@ -24,6 +24,7 @@ export class PlayerController {
     this.velocity = new THREE.Vector3();
     this.yaw = 0; // left/right look (radians)
     this.pitch = 0; // up/down look (radians)
+    this.viewKick = 0; // extra upward pitch from weapon recoil; settles back to 0 (radians)
 
     this.grounded = false;
     this.timeSinceGrounded = 0;
@@ -66,6 +67,7 @@ export class PlayerController {
     this.velocity.set(0, 0, 0);
     this.yaw = yaw;
     this.pitch = 0;
+    this.viewKick = 0;
     this.stance = 'stand';
     this.height = feel.player.height;
     this.eyeHeight = feel.player.eyeHeight;
@@ -98,6 +100,20 @@ export class PlayerController {
     this.pitch = Math.max(-maxPitch, Math.min(maxPitch, this.pitch));
   }
 
+  // Weapon recoil: nudges the view up; it settles back over time (see feel.look.kickRecovery).
+  addViewKick(radians) {
+    this.viewKick += radians;
+  }
+
+  // Eye position and aim direction at this tick (used for hitscan shots).
+  // Includes view kick, so shots go exactly where the crosshair is.
+  getAim(outOrigin, outDirection) {
+    outOrigin.set(this.position.x, this.position.y + this.eyeHeight, this.position.z);
+    const pitch = this.pitch + this.viewKick;
+    const cosPitch = Math.cos(pitch);
+    outDirection.set(-Math.sin(this.yaw) * cosPitch, Math.sin(pitch), -Math.cos(this.yaw) * cosPitch);
+  }
+
   // Call while the game is paused so the camera doesn't interpolate stale motion.
   freeze() {
     this.prevPosition.copy(this.position);
@@ -111,6 +127,9 @@ export class PlayerController {
 
     this.prevPosition.copy(this.position);
     this.prevEyeHeight = this.eyeHeight;
+
+    // Weapon recoil settles back toward zero.
+    this.viewKick *= Math.max(0, 1 - feel.look.kickRecovery * dt);
 
     // --- Which way does the player want to go? (relative to where they look) ---
     const forwardInput = (input.isDown('KeyW') ? 1 : 0) - (input.isDown('KeyS') ? 1 : 0);
@@ -326,6 +345,6 @@ export class PlayerController {
   syncCamera(alpha) {
     this.camera.position.lerpVectors(this.prevPosition, this.position, alpha);
     this.camera.position.y += this.prevEyeHeight + (this.eyeHeight - this.prevEyeHeight) * alpha;
-    this.camera.rotation.set(this.pitch, this.yaw, 0);
+    this.camera.rotation.set(this.pitch + this.viewKick, this.yaw, 0);
   }
 }

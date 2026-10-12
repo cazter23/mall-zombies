@@ -6,6 +6,7 @@
 // =============================================================================
 
 import { feel } from '../config/feel.js';
+import { weaponStatDefaults } from '../config/weapons.js';
 
 export function createPlayerStats() {
   return {
@@ -24,5 +25,8 @@ export function createPlayerStats() {
     sprintDuration: feel.sprint.duration,
     sprintRefillDelay: feel.sprint.refillDelay,
     sprintRefillRate: feel.sprint.refillRate,
+
+    damageMultiplier: weaponStatDefaults.damageMultiplier,
+    reloadSpeed: weaponStatDefaults.reloadSpeed,
   };
 }

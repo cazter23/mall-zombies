@@ -1,6 +1,6 @@
 // =============================================================================
 // MALL ZOMBIES: entry point
-// Wires together the renderer, world, player, input, HUD, and the fixed-step loop.
+// Wires together the renderer, world, player, weapon, effects, input, HUD, and the fixed-step loop.
 // =============================================================================
 
 import './style.css';
@@ -14,12 +14,17 @@ import { buildTestArena } from './world/testArena.js';
 import { createPlayerStats } from './player/stats.js';
 import { PlayerController } from './player/controller.js';
 import { createHud } from './ui/hud.js';
+import { weapons } from './config/weapons.js';
+import { createEffects } from './fx/effects.js';
+import { createViewmodel } from './weapons/viewmodel.js';
+import { createPlayerGun } from './weapons/playerGun.js';
 
 // --- Renderer, scene, camera ---------------------------------------------------
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.autoClear = false; // we draw two passes per frame: the world, then the held gun on top
 document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
@@ -54,6 +59,22 @@ const player = new PlayerController({
 });
 const hud = createHud();
 
+// Everything the player can shoot. Practice dummies for now; zombies will join this list.
+const shootables = [...(arena ? arena.shootables : [])];
+const effects = createEffects(scene);
+const viewmodel = createViewmodel(weapons.stapleGun);
+const gun = createPlayerGun({
+  def: weapons.stapleGun,
+  stats,
+  player,
+  input,
+  colliders: world.colliders,
+  shootables,
+  effects,
+  viewmodel,
+  hud,
+});
+
 // The game only runs while the mouse is locked; Esc pauses.
 const game = {
   forceRun: false, // debug: run without pointer lock (used by automated tests)
@@ -84,17 +105,28 @@ function update(dt) {
   }
 
   player.update(dt);
+  gun.update(dt); // after the player moves, so shots come from this tick's eye position
   world.update(dt);
+  if (arena) arena.update(dt);
   input.endTick();
 }
 
-function render(alpha) {
+function render(alpha, frameTime) {
   const { dx, dy } = input.consumeMouse();
   if (game.running) player.applyLook(dx, dy);
   player.syncCamera(alpha);
+  if (game.running) effects.update(frameTime);
+  viewmodel.update(game.running ? frameTime : 0, camera, gun.weapon);
+
   hud.setHealth(player.healthFraction);
   hud.setSprint(player.sprintFraction, player.sprintExhausted, player.isSprinting);
+  hud.setAmmo(gun.weapon);
+
+  // Pass 1: the world. Pass 2: the gun, with depth cleared so it never clips into walls.
+  renderer.clear();
   renderer.render(scene, camera);
+  renderer.clearDepth();
+  renderer.render(viewmodel.scene, camera);
 }
 
 startLoop({
@@ -105,5 +137,5 @@ startLoop({
 });
 
 if (debug.exposeToWindow) {
-  window.__mall = { THREE, scene, camera, renderer, world, arena, player, stats, input, game, hud };
+  window.__mall = { THREE, scene, camera, renderer, world, arena, player, stats, input, game, hud, gun, effects, viewmodel, shootables };
 }

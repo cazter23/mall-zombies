@@ -9,10 +9,13 @@
 //   - Mid-west: slide bars and a long low tunnel (crouch height fits, standing doesn't)
 //   - Center: pillars to strafe around, and stairs up to a 2m platform
 //   - East:   jump boxes of increasing height, and platforms with growing gaps
+//   - Near spawn: shooting range with practice dummies (3 close, 2 far)
 // =============================================================================
 
 import * as THREE from 'three';
 import { makeTileTexture, makeSignTexture } from './textures.js';
+import { createDummy } from './dummy.js';
+import { zombieHealthForRound } from '../config/economy.js';
 
 export const ARENA = {
   center: { x: 0, z: -100 }, // far south of the mall, out of sight behind its walls
@@ -156,6 +159,21 @@ export function buildTestArena(scene, colliders) {
   }
   label('GAP JUMPS', 19, 2.6, -3, 4, 0.8);
 
+  // --- Shooting range: practice dummies --------------------------------------------
+  // Three close to the spawn, two further back off to the sides. They have
+  // round-1 zombie health, so kills take the same number of shots as the real thing.
+
+  const dummySpots = [[-5, 17], [0, 17], [5, 17], [-9, 0], [9, 0]];
+  const dummies = dummySpots.map(([x, z]) =>
+    createDummy({
+      parent: group,
+      colliders,
+      position: new THREE.Vector3(cx + x, 0, cz + z),
+      health: zombieHealthForRound(1),
+    }),
+  );
+  label('SHOOTING RANGE', 0, 2.9, 17.6, 4, 0.8);
+
   // --- Lighting ------------------------------------------------------------------
   // The mall's hemisphere/directional lights already reach here; add a little fill.
   const fill = new THREE.PointLight(0xffffff, 60, 0, 1.5);
@@ -168,6 +186,11 @@ export function buildTestArena(scene, colliders) {
     playerSpawn: { position: new THREE.Vector3(cx, 0, cz + S - 3), yaw: 0 },
     contains(pos) {
       return Math.abs(pos.x - cx) <= S + T && Math.abs(pos.z - cz) <= S + T;
+    },
+    // Things the player can shoot (see weapons/hitscan.js)
+    shootables: dummies,
+    update(dt) {
+      for (const dummy of dummies) dummy.update(dt);
     },
   };
 }

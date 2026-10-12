@@ -13,6 +13,13 @@ export const debug = {
   // Build the open movement test range (src/world/testArena.js). Press T to teleport there and back.
   testArena: true,
 
+  // Practice dummies in the test range (only exist when testArena is on).
+  dummies: {
+    respawnSeconds: 2.5, // how long a "killed" dummy stays down before popping back up
+    fallSeconds: 0.3, // how long it takes to tip over / stand back up
+    // Health uses the round-1 zombie health from economy.js, so kills feel like the real thing.
+  },
+
   // Expose game objects as window.__mall for poking at in the browser console.
   exposeToWindow: true,
 };

@@ -182,3 +182,87 @@ kbd {
   font-size: 12px;
   color: #8f86a0;
 }
+
+/* ---------- Hit marker (ticks around the crosshair) ---------- */
+
+.hitmarker {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  opacity: 0;
+}
+.hitmarker span {
+  position: absolute;
+  left: -1px;
+  top: -12px;
+  width: 2px;
+  height: 7px;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+  transform-origin: 1px 12px; /* rotate each tick around the crosshair center */
+}
+.hitmarker span:nth-child(1) { transform: rotate(45deg); }
+.hitmarker span:nth-child(2) { transform: rotate(135deg); }
+.hitmarker span:nth-child(3) { transform: rotate(225deg); }
+.hitmarker span:nth-child(4) { transform: rotate(315deg); }
+.hitmarker.show {
+  opacity: 1;
+}
+.hitmarker.head {
+  transform: scale(1.5);
+}
+.hitmarker.head span {
+  background: var(--mall-yellow);
+}
+.hitmarker.kill span {
+  background: #ff3b3b;
+}
+
+/* ---------- Prompt under the crosshair ---------- */
+
+.prompt {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 34px);
+  transform: translateX(-50%);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
+}
+
+/* ---------- Ammo counter (bottom-right) ---------- */
+
+.ammo {
+  position: absolute;
+  right: 24px;
+  bottom: 20px;
+  text-align: right;
+  color: #fff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
+}
+.ammo-count {
+  font-family: 'Bungee', Impact, 'Arial Black', sans-serif;
+  line-height: 1;
+}
+.ammo-mag {
+  font-size: 40px;
+}
+.ammo-reserve {
+  font-size: 20px;
+  opacity: 0.75;
+}
+.ammo-name {
+  margin-top: 4px;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+.ammo.low .ammo-mag {
+  color: #ff3b3b;
+}
