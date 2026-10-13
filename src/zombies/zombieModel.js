@@ -140,18 +140,29 @@ export function createZombieModel(type) {
       arms[1].rotation.z = -0.05;
       neck.rotation.set(0.12, 0, Math.sin(walkPhase * 0.5) * wa.headLoll); // lolling head
 
-      // Attack: arms rise overhead and the body leans back (the telegraph), then they slam down.
+      // Attack: arms rise overhead and the body leans back (the telegraph), then they slam down,
+      // landing at the end of the wind-up: the exact moment the hit is checked.
       const atk = type.attack;
       let armPose = null; // overrides the shamble arm angle when set
       if (zombie.state === 'windup') {
-        const t = ease(Math.min(1, zombie.stateTime / zombie.windupSeconds));
-        armPose = arms[0].rotation.x + (atk.armsRaisedRadians - arms[0].rotation.x) * t;
-        upper.rotation.x += 0.2 * t;
-        neck.rotation.x -= 0.25 * t;
+        const raiseSeconds = Math.max(0.01, zombie.windupSeconds - atk.slamSeconds);
+        if (zombie.stateTime < raiseSeconds) {
+          const t = ease(zombie.stateTime / raiseSeconds);
+          armPose = arms[0].rotation.x + (atk.armsRaisedRadians - arms[0].rotation.x) * t;
+          upper.rotation.x += 0.2 * t;
+          neck.rotation.x -= 0.25 * t;
+        } else {
+          // The slam: accelerates down (t^2) so it hits hard at the end.
+          const s = Math.min(1, (zombie.stateTime - raiseSeconds) / atk.slamSeconds);
+          const t = s * s;
+          armPose = atk.armsRaisedRadians + (atk.armsSlammedRadians - atk.armsRaisedRadians) * t;
+          upper.rotation.x += 0.2 - 0.55 * t;
+          neck.rotation.x -= 0.25 * (1 - t);
+        }
       } else if (zombie.state === 'swing') {
-        const t = ease(Math.min(1, zombie.stateTime / atk.swingSeconds));
-        armPose = atk.armsRaisedRadians + (atk.armsSlammedRadians - atk.armsRaisedRadians) * t;
-        upper.rotation.x += 0.2 - 0.55 * t;
+        // Follow-through: arms stay down, body leaning into the hit.
+        armPose = atk.armsSlammedRadians;
+        upper.rotation.x -= 0.35;
       } else if (zombie.state === 'chasing' && zombie.attackCooldown > 0) {
         // Recovery: arms ease back up from the slam during the first part of the cooldown.
         const r = Math.max(0, (zombie.attackCooldown / atk.recoverSeconds - 0.6) / 0.4); // 1 -> 0

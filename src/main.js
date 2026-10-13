@@ -311,6 +311,20 @@ function update(dt) {
 
 const stickRate = { yaw: 0, pitch: 0 };
 
+// Start of every frame, before the ticks: turn the view by this frame's mouse and stick input,
+// so shots and movement in this frame's ticks use where you're looking NOW (a flick-and-click
+// fires where the crosshair ended up, not one frame behind).
+function applyLookInput(frameTime) {
+  const { dx, dy } = input.consumeMouse();
+  if (!game.running) return;
+  player.applyLook(dx, dy);
+  // Controller look, slowed by aim assist when the crosshair is on a zombie.
+  gamepad.poll(); // fresh stick values for this frame (button presses are tracked on edges, so polling twice is safe)
+  gamepad.lookRate(frameTime, stickRate);
+  const slow = aimAssist.slowdown;
+  player.applyStickLook(stickRate.yaw * frameTime * slow, stickRate.pitch * frameTime * slow);
+}
+
 function render(alpha, frameTime) {
   // While paused nothing ticks, so interpolating between the last two ticks would make things
   // twitch: show the latest tick instead. Visual time keeps flowing after death (the world goes
@@ -326,16 +340,8 @@ function render(alpha, frameTime) {
     camera.fov = fov;
     camera.updateProjectionMatrix();
   }
-  player.lookScale = feel.ads.sensitivityFollowsZoom ? fov / feel.camera.fov : 1;
+  player.lookScale = feel.ads.sensitivityFollowsZoom ? fov / feel.camera.fov : 1; // used by next frame's look
 
-  const { dx, dy } = input.consumeMouse();
-  if (game.running) {
-    player.applyLook(dx, dy);
-    // Controller look, slowed by aim assist when the crosshair is on a zombie.
-    gamepad.lookRate(frameTime, stickRate);
-    const slow = aimAssist.slowdown;
-    player.applyStickLook(stickRate.yaw * frameTime * slow, stickRate.pitch * frameTime * slow);
-  }
   player.syncCamera(alpha);
   if (game.over) applyDeathCamera(alpha);
   body.root.visible = !game.over;
@@ -387,6 +393,7 @@ function applyDeathCamera(alpha) {
 startLoop({
   tickRate: feel.simulation.tickRate,
   maxFrameTime: feel.simulation.maxFrameTime,
+  beforeUpdate: applyLookInput,
   update,
   render,
 });
@@ -397,6 +404,7 @@ if (debug.exposeToWindow) {
   // testing when the browser isn't animating (e.g. a hidden tab). Pair with game.forceRun.
   window.__mall.step = (ticks = 1) => {
     const dt = 1 / feel.simulation.tickRate;
+    applyLookInput(dt);
     for (let i = 0; i < ticks; i++) update(dt);
     render(1, dt);
   };

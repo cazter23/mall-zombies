@@ -65,7 +65,11 @@ export class Weapon {
    * Returns 'fire' if a shot goes off this tick, 'empty' on a dry click, else null.
    */
   update(dt, { triggerPressed, reloadPressed, blocked = false }) {
-    this.cooldown = Math.max(0, this.cooldown - dt);
+    // The cooldown may dip just below zero on the tick it runs out. If a click is waiting, that
+    // leftover fraction of a tick counts toward the next shot, so the real fire rate matches
+    // fireInterval instead of rounding up to whole ticks (0.12s, not 0.133s at 60Hz). A gun that
+    // was already ready stays at exactly zero, so waiting never banks up a faster next shot.
+    this.cooldown = this.cooldown > 0 ? this.cooldown - dt : 0;
     this.fireRequest = Math.max(0, this.fireRequest - dt);
 
     if (this.isReloading) {
@@ -86,11 +90,13 @@ export class Weapon {
 
     if (this.magazine <= 0) {
       this.startReload(); // clicking on empty reloads automatically
+      this.cooldown = 0;
       return 'empty';
     }
 
     this.magazine -= 1;
-    this.cooldown = this.def.fireInterval;
+    this.cooldown += this.def.fireInterval; // carries the leftover (cooldown is <= 0 here)
     return 'fire';
   }
+
 }

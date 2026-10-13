@@ -36,6 +36,7 @@ export const economy = {
     // When a round's last zombie dies, the next round number goes up immediately, then this
     // short break, then its zombies start trickling in.
     breakSeconds: 6,
+    spawnRetrySeconds: 0.5, // no usable spawn point (none open/reachable)? try again this soon
   },
 
   waves: {

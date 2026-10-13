@@ -10,7 +10,9 @@
 //               player walks to its own surround slot (assigned by the manager), stops there
 //   windup   -> nearly in reach (no wall between): arms raised (the telegraph) while still
 //               stepping straight at the player at full speed
-//   swing    -> arms slam down; the player is hit only if still in reach and in front
+//              (the last attack.slamSeconds of it are the slam coming down)
+//   swing    -> the slam lands as this starts: the player is hit only if still in reach and in front;
+//               then a short follow-through
 //   (back to chasing, with a recovery before it may attack again: long after a hit, short after a miss)
 //   dead     -> tips over, lies there, sinks away, then `removed` is set
 // =============================================================================
@@ -322,6 +324,22 @@ export class Zombie {
     const len = Math.hypot(dx, dz);
     desired.x = dx / len;
     desired.z = dz / len;
+  }
+
+  // Start over at another spot (the stuck-zombie failsafe): rise out of the floor again,
+  // keeping its health.
+  respawnAt(position, yaw) {
+    this.position.copy(position);
+    this.position.y = 0;
+    this.prevPosition.copy(this.position);
+    this.velocity.set(0, 0, 0);
+    this.yaw = yaw;
+    this.prevYaw = yaw;
+    this.slot = null;
+    this.slotKey = null;
+    this.attackCooldown = 0;
+    this.setState('spawning');
+    this.updateHitboxes();
   }
 
   distanceTo(player) {

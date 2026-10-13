@@ -263,6 +263,9 @@ export class PlayerController {
         targetSpeed = Math.max(targetSpeed, Math.hypot(this.velocity.x, this.velocity.z));
       }
       const accel = this.grounded ? m.groundAcceleration : m.airAcceleration;
+      const speedBefore = Math.hypot(this.velocity.x, this.velocity.z);
+      // Steering in the air: is the held direction no more than 90 degrees off where you're going?
+      const steering = !this.grounded && wishLength > 0 && this.velocity.x * wishX + this.velocity.z * wishZ >= 0;
       let dvx = wishX * targetSpeed - this.velocity.x;
       let dvz = wishZ * targetSpeed - this.velocity.z;
       const dvLength = Math.hypot(dvx, dvz);
@@ -273,6 +276,16 @@ export class PlayerController {
       }
       this.velocity.x += dvx;
       this.velocity.z += dvz;
+      // Turning the velocity toward a new direction shortens it a little each tick; while steering
+      // in the air, put that speed back, so a slide-jump keeps its momentum through a turn.
+      // (Holding the opposite way still brakes, and letting go still slows you.)
+      if (steering) {
+        const speedAfter = Math.hypot(this.velocity.x, this.velocity.z);
+        if (speedAfter > 1e-6 && speedAfter < speedBefore) {
+          this.velocity.x *= speedBefore / speedAfter;
+          this.velocity.z *= speedBefore / speedAfter;
+        }
+      }
     }
 
     // --- Jump (with a small buffer and coyote time so it feels forgiving) ---

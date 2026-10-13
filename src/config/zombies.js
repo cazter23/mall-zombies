@@ -54,7 +54,9 @@ export const zombieTypes = {
       //                      reaches you, you're getting hit; the escape is not letting it reach you...
       windupShrinkPerRound: 0.00625, // ...getting this much shorter each round after that...
       minWindupSeconds: 0.3, // ...down to this (reached at round 9)
-      swingSeconds: 0.15, // arms slam down; damage is checked at the start of the swing
+      slamSeconds: 0.1, // the last part of the wind-up is the slam itself: the arms come down and land
+      //                  exactly when the damage is checked (end of the wind-up), so the hit matches what you see
+      swingSeconds: 0.15, // follow-through after the hit: arms down, body leaning into it
       recoverSeconds: 0.8, // no new attack for this long after a HIT (it keeps following you)
       damage: 40, // 3 hits from full health (Black Ops 3 style)
       hitHalfAngleDegrees: 60, // player must be within this angle of where the zombie faces
@@ -149,6 +151,15 @@ export const zombieCrowd = {
 };
 
 // Flow-field pathfinding on a flat grid (ground floor only, until the navmesh in step 7).
+// Stuck-zombie failsafe (like BO3's round_spawn_failsafe): a zombie far from the player that has
+// barely moved, or can't reach them, rises again at a spawn point with the same health.
+export const zombieFailsafe = {
+  checkSeconds: 10, // how often each zombie is checked
+  minMoveMeters: 1.0, // moved less than this since the last check = stuck
+  ignoreWithinMeters: 5, // zombies this close to the player are never rescued (crowding/attacking is fine)
+  fallOutHeight: -10, // below this, rescued straight away
+};
+
 export const zombieNav = {
   cellSize: 0.5, // meters per grid cell
   refreshSeconds: 0.2, // how often the "arrows toward the player" are recalculated

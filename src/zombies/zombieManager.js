@@ -9,7 +9,7 @@
 
 import * as THREE from 'three';
 import { feel } from '../config/feel.js';
-import { zombieTypes, zombieCrowd } from '../config/zombies.js';
+import { zombieTypes, zombieCrowd, zombieFailsafe } from '../config/zombies.js';
 import { zombieHealthForRound } from '../config/economy.js';
 import { createNavigation } from './navigation.js';
 import { overlapsSolid } from '../world/collision.js';
@@ -50,12 +50,13 @@ export function createZombieManager({
   const ctx = { nav, player, colliders, zombies, canAttack: true, onPlayerHit };
   const scratch = new THREE.Vector3();
 
-  // Only spawn points in open zones; prefer ones the player can be reached from, not right on top of them.
+  // A spawn point in an open zone that can reach the player, not right on top of them.
+  // Returns null if there's none right now (the caller waits and tries again).
   function pickSpawnPoint() {
-    const open = spawnPoints.filter((s) => isZoneOpen(s.zone));
-    const pool = open.length > 0 ? open : spawnPoints;
-    const reachable = pool.filter((s) => nav.distanceToTarget(s.position.x, s.position.z) < Infinity);
-    if (reachable.length === 0) return pool[Math.floor(Math.random() * pool.length)];
+    const reachable = spawnPoints.filter(
+      (s) => isZoneOpen(s.zone) && nav.distanceToTarget(s.position.x, s.position.z) < Infinity,
+    );
+    if (reachable.length === 0) return null;
     const farEnough = reachable.filter(
       (s) => s.position.distanceTo(player.position) >= zombieCrowd.minSpawnDistance,
     );
@@ -161,6 +162,44 @@ export function createZombieManager({
     }
   }
 
+  // --- Failsafe: stuck / lost zombies ------------------------------------------------
+  // A zombie that fell out of the world, or that's far from the player and has barely moved (or
+  // can't reach them) for a while, rises again at a fresh spawn point. It keeps its health and
+  // nobody gets points, so a round can't hang on one wedged zombie. Zombies near the player
+  // (crowding, attacking) are never touched.
+  function rescueStuckZombies(dt) {
+    const fs = zombieFailsafe;
+    for (const z of zombies) {
+      if (!z.isAlive || z.state === 'spawning') continue;
+      if (z.position.y < fs.fallOutHeight) {
+        rescue(z);
+        continue;
+      }
+      z.stuckTimer += dt;
+      if (z.stuckTimer < fs.checkSeconds) continue;
+      const moved = Math.hypot(z.position.x - z.stuckFrom.x, z.position.z - z.stuckFrom.z);
+      const far = z.distanceTo(player) > fs.ignoreWithinMeters;
+      const unreachable = nav.distanceToTarget(z.position.x, z.position.z) === Infinity;
+      if (far && (moved < fs.minMoveMeters || unreachable)) rescue(z);
+      z.stuckTimer = 0;
+      z.stuckFrom.x = z.position.x;
+      z.stuckFrom.z = z.position.z;
+    }
+  }
+
+  function rescue(z) {
+    const point = pickSpawnPoint();
+    if (!point) return; // nowhere better right now: try again at the next check
+    const yaw = Math.atan2(-(player.position.x - point.position.x), -(player.position.z - point.position.z));
+    z.respawnAt(point.position, yaw);
+    z.stuckTimer = 0;
+    z.stuckFrom.x = z.position.x;
+    z.stuckFrom.z = z.position.z;
+    scratch.copy(z.position);
+    scratch.y += 0.05;
+    effects.splat(scratch, UP, zombieCrowd.spawnDustColors, zombieCrowd.spawnDustCount);
+  }
+
   // --- Surround slots -------------------------------------------------------------
   // Rings of spots around the player (inner ring at arm's length). Zombies near the player
   // (with a clear line to them) each claim one, so a crowd fans out around you instead of
@@ -257,15 +296,20 @@ export function createZombieManager({
     },
 
     // Spawn one zombie of `typeId` at a good spawn point (or at `at`, a Vector3, if given).
+    // Returns the zombie, or null if no spawn point is usable right now.
     spawn(typeId = 'shopper', at = null) {
       const type = zombieTypes[typeId];
-      const position = at ? at.clone() : pickSpawnPoint().position.clone();
+      const point = at ? null : pickSpawnPoint();
+      if (!at && !point) return null;
+      const position = at ? at.clone() : point.position.clone();
       position.y = 0;
       const yaw = Math.atan2(-(player.position.x - position.x), -(player.position.z - position.z));
       const round = getRound();
       const speed = pickGaitSpeed(type, round);
       const zombie = new Zombie({ type, health: zombieHealthForRound(round), position, yaw, speed, round });
       zombie.onDeath = onZombieDeath;
+      zombie.stuckTimer = 0; // failsafe bookkeeping (see rescueStuckZombies)
+      zombie.stuckFrom = { x: position.x, z: position.z };
       scene.add(zombie.model.root);
       zombies.push(zombie);
       shootables.push(zombie);
@@ -294,6 +338,7 @@ export function createZombieManager({
       for (const z of zombies) z.update(dt, ctx);
       resolveZombieOverlaps();
       keepPlayerOutOfZombies();
+      rescueStuckZombies(dt);
       // The shoves above move zombies after they placed their hitboxes: move the hitboxes too,
       // or a shot at a shoved zombie's head could miss what you see.
       for (const z of zombies) if (z.isAlive) z.updateHitboxes();

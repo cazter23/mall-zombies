@@ -74,9 +74,12 @@ export function createRounds({ zombies, onRoundStart = null }) {
       if (state === 'active') {
         spawnTimer -= dt;
         if (toSpawn > 0 && spawnTimer <= 0 && zombies.aliveCount < maxAliveForRound(round)) {
-          zombies.spawn('shopper');
-          toSpawn -= 1;
-          spawnTimer = spawnDelayForRound(round);
+          if (zombies.spawn('shopper')) {
+            toSpawn -= 1;
+            spawnTimer = spawnDelayForRound(round);
+          } else {
+            spawnTimer = cfg.spawnRetrySeconds; // no usable spawn point right now: try again shortly
+          }
         }
         // Round over: the next round number goes up right away, then the short break.
         if (toSpawn === 0 && zombies.aliveCount === 0) announce(round + 1, cfg.breakSeconds);

@@ -15,8 +15,17 @@ function distSqToBoxXZ(x, z, box) {
   return dx * dx + dz * dz;
 }
 
-// Push the player sideways out of any box their body overlaps.
-function pushOutHorizontal(pos, radius, height, colliders, stepTolerance) {
+// A wall with outward normal (nx, nz) was hit: drop the part of the velocity going into it, so the
+// mover slides along the wall and its velocity says how fast it's REALLY moving (pinned = 0).
+function blockVelocity(vel, nx, nz) {
+  const into = vel.x * nx + vel.z * nz;
+  if (into >= 0) return;
+  vel.x -= into * nx;
+  vel.z -= into * nz;
+}
+
+// Push the player sideways out of any box their body overlaps (and stop velocity into it).
+function pushOutHorizontal(pos, vel, radius, height, colliders, stepTolerance) {
   // A few passes handle corners where two boxes push at once.
   for (let pass = 0; pass < 3; pass++) {
     let moved = false;
@@ -39,6 +48,7 @@ function pushOutHorizontal(pos, radius, height, colliders, stepTolerance) {
         const push = radius - dist;
         pos.x += (dx / dist) * push;
         pos.z += (dz / dist) * push;
+        blockVelocity(vel, dx / dist, dz / dist);
       } else {
         // Center is inside the box: exit through the nearest side.
         const toMinX = pos.x - box.min.x;
@@ -46,10 +56,19 @@ function pushOutHorizontal(pos, radius, height, colliders, stepTolerance) {
         const toMinZ = pos.z - box.min.z;
         const toMaxZ = box.max.z - pos.z;
         const nearest = Math.min(toMinX, toMaxX, toMinZ, toMaxZ);
-        if (nearest === toMinX) pos.x = box.min.x - radius;
-        else if (nearest === toMaxX) pos.x = box.max.x + radius;
-        else if (nearest === toMinZ) pos.z = box.min.z - radius;
-        else pos.z = box.max.z + radius;
+        if (nearest === toMinX) {
+          pos.x = box.min.x - radius;
+          blockVelocity(vel, -1, 0);
+        } else if (nearest === toMaxX) {
+          pos.x = box.max.x + radius;
+          blockVelocity(vel, 1, 0);
+        } else if (nearest === toMinZ) {
+          pos.z = box.min.z - radius;
+          blockVelocity(vel, 0, -1);
+        } else {
+          pos.z = box.max.z + radius;
+          blockVelocity(vel, 0, 1);
+        }
       }
       moved = true;
     }
@@ -96,7 +115,7 @@ export function moveAndCollide(pos, vel, dt, radius, height, colliders, stepTole
   // 1) Horizontal movement, then slide out of walls/obstacles.
   pos.x += vel.x * dt;
   pos.z += vel.z * dt;
-  pushOutHorizontal(pos, radius, height, colliders, stepTolerance);
+  pushOutHorizontal(pos, vel, radius, height, colliders, stepTolerance);
 
   // 2) Vertical movement, then land on floors / bonk on ceilings.
   pos.y += vel.y * dt;

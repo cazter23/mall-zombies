@@ -64,14 +64,15 @@ src/
     zombies.js          zombieTypes (per-type speed, size, hitboxes, attack, timings, colors, splatter), zombieCrowd
                         (spacing, lanes, queueing, surround rings + sector/still-wrap/circling, contact gap,
                         spawn dust, min spawn distance),
-                        zombieNav (grid, soft wall clearance + wall penalty)
+                        zombieNav (grid, soft wall clearance + wall penalty), zombieFailsafe (stuck-zombie rescue)
     controls.js         bindings (action -> keyboard/mouse + Pad* codes), buttonLabels (prompts per device),
                         gamepad (deadzones, look speed/curve, turn ramp, triggers, click-to-sprint release),
                         aimAssist (strength dial, range/cone, slowdown, rotational, ADS snap)
     debug.js            showMarkers, allowShutterToggle (O key: doors free), testArena (T key), zombieKeys
                         (Z spawn / X clear), cheatKeys (N next round / P +5000 points), dummies, exposeToWindow
   core/
-    loop.js             startLoop(): fixed-timestep accumulator, calls update(dt) and render(alpha, frameTime)
+    loop.js             startLoop(): fixed-timestep accumulator; each frame calls beforeUpdate(frameTime) (look
+                        input), then update(dt) per tick, then render(alpha, frameTime)
     spring.js           createSpring / createSpring3: damped springs back to 0 (exact solution, frame-rate
                         independent). kick(peak) (impulse sized so it peaks at `peak`), displace(), update(dt)
     keyframes.js        samplePose(keys, t, outPos, outRot): eased pose keyframes ({ t, pos: [m], rot: [deg] })
@@ -99,7 +100,8 @@ src/
                         solved with two-bone IK. Exports placeLimb()/makeBoxMesh() (also used for the arms)
   weapons/
     weapon.js           Weapon class: ammo, fire cooldown + click buffer, reload. Pure state; update() returns
-                        'fire' | 'empty' | null. `blocked` (melee swing) drops a queued click
+                        'fire' | 'empty' | null. `blocked` (melee swing) drops a queued click. The cooldown carries
+                        the leftover fraction of a tick into a queued next shot (real rate = fireInterval)
     aim.js              createAim(): ADS state (eased 0..1, blocks sprint, sprint cancels it) and hip-fire
                         spread (base + moving + airborne, smoothed, + per-shot bloom; x adsMultiplier).
                         applySpread() picks a random direction inside the cone; reset() (new run: hip, base spread)
@@ -141,7 +143,10 @@ src/
                         so routes stay off walls but narrow gaps still connect). Dijkstra from the player every
                         0.2s; rebuilds when colliders.length changes (shutter). directionTo(from, target, out,
                         { laneOffset, laneFade, lookAhead }) walks straight if the line is clear, else follows the
-                        field; each zombie's own lane offset shifts its aim sideways. Also clearLine(), isWalkableAt()
+                        field; each zombie's own lane offset shifts its aim sideways. Also clearLine(), isWalkableAt().
+                        The field is seeded only from cells near the player with no wall in between (a real ray vs
+                        the colliders, wallBetween), and bestCellNear() never picks a cell across a wall, so there
+                        are no phantom routes through thin walls
     zombie.js           Zombie class (shootable): states spawning -> chasing -> windup -> swing -> chasing (with
                         attackCooldown) / dead. Steering: goal = its surround slot (if assigned) else the route
                         along its own lane; spacing push (quadratic, capped); queueing (slow + sidestep around a
@@ -151,9 +156,13 @@ src/
     zombieModel.js      Blocky shopper model (random outfit, maybe a shopping bag) + code animation (walk cycle
                         numbers in zombieTypes.<type>.walkAnimation): shamble,
                         arms-overhead wind-up, slam, recovery, flinch/flash, rise from floor, tip over and sink
-    zombieManager.js    createZombieManager(): spawn (reachable spawn points >= minSpawnDistance away), update
+    zombieManager.js    createZombieManager(): spawn (open + reachable spawn points >= minSpawnDistance away; returns
+                        null if none, the round waits), update
                         (assign surround slots -> zombie updates -> resolve zombie overlaps -> keep the player out
-                        of zombies -> refresh hitboxes, since the shoves moved bodies), death splatter, shootables bookkeeping, clear(). Surround slots: rings around
+                        of zombies -> stuck-zombie failsafe -> refresh hitboxes, since the shoves moved bodies). Failsafe:
+                        a zombie > ignoreWithinMeters away that moved < minMoveMeters (or can't reach the player) in
+                        checkSeconds, or fell below fallOutHeight, rises again at a spawn point (zombie.respawnAt,
+                        same health, no points); death splatter, shootables bookkeeping, clear(). Surround slots: rings around
                         the player (inner at arm's length), innermost ring fills first, zombies keep their slot.
                         A zombie only takes slots within surroundSectorDegrees (50) of its own side of the player,
                         so a horde chasing you stays behind you; after you stand still for wrapAfterStillSeconds
@@ -166,7 +175,8 @@ src/
                         pop-ups). pointsForHit(): COD payouts (+10 hit; kill value +40 head / +70 melee; zombies only)
     rounds.js           createRounds(): announce(n, delay) flips the round number (and fires onRoundStart) the
                         moment the last zombie dies, then 'break' (6s, inBreak) -> 'active' (spawn quota at
-                        spawnDelay, capped by maxAlive). start() on first play, skipRound() (debug), reset()
+                        spawnDelay, capped by maxAlive; quota only used when a zombie actually spawned, else retry
+                        after spawnRetrySeconds). start() on first play, skipRound() (debug), reset()
   maps/
     index.js            Map registry + loadMap(id, scene, colliders) + THE MAP INTERFACE (id, group, zones, doors,
                         spawnPoints, wallBuys, playerSpawn, update, reset, dispose). New map = new folder + 1 line
@@ -182,7 +192,8 @@ src/
     effects.js          Tracers (pooled) + particle bursts (one InstancedMesh): splat(), puff(), clear() (new run)
   world/                Shared building blocks for maps
     door.js             createDoor(): buyable barrier (price, opensZone) wrapping a shutter; open/reset/toggle
-    collision.js        moveAndCollide(): horizontal push-out then vertical landing/ceiling vs. Box3 list;
+    collision.js        moveAndCollide(): horizontal push-out (also removes the velocity going into the wall, so
+                        a pinned mover reads speed 0 and slides along walls) then vertical landing/ceiling vs. Box3 list;
                         hasHeadroom(): can the player stand up here? overlapsSolid(): would a body overlap a wall?
     shutter.js          createShutter(): roll-up barrier with its own Box3 collider (open/close/toggle/update)
     textures.js         Procedural canvas textures (floor tile, shop sign, shutter, muzzle flash burst). No image files.
@@ -194,7 +205,9 @@ src/
 ```
 
 ## How the pieces connect
-- `main.js` owns the loop. `update(dt)` (60Hz): if `game.over` (dead) only zombies/health/death timer run (checked
+- `main.js` owns the loop. Every frame starts with `applyLookInput(frameTime)` (mouse + stick look, aim-assist
+  slowdown) BEFORE the ticks, so shots/movement in this frame's ticks use where you're looking now.
+  `update(dt)` (60Hz): if `game.over` (dead) only zombies/health/death timer run (checked
   first: the mouse is released on death); if not running (pointer unlocked) it freezes the player; otherwise debug
   keys, `player.update`, `melee.update`, `gun.update(dt, melee.isBusy)` (after the player so shots use this tick's
   eye), `zombies.update`, `rounds.update` (paused while in the test range), `health.update`, `map.update`,
@@ -210,7 +223,7 @@ src/
   shutter) -> re-lock.
 - Testing hook: `window.__mall.step(n)` advances the real loop n ticks and draws a frame (use with
   `game.forceRun = true`; set it back to false before screenshots, or the live loop keeps playing).
-  `render(alpha, frameTime)`: applies mouse look, interpolates the camera, updates effects + viewmodel, updates the
+  `step` also applies pending look first. `render(alpha, frameTime)`: interpolates the camera, updates effects + viewmodel, updates the
   HUD, then draws two passes: the world, then (after `clearDepth`) the viewmodel scene. `renderer.autoClear` is false.
 - Input: mouse buttons are tracked like keys as `Mouse0`/`Mouse1`/`Mouse2`, only while pointer-locked.
   Controller buttons are `PadA`.. codes written by `gamepad.poll()` (first thing in `update`).
@@ -269,7 +282,8 @@ up when C is released and there's headroom. Landing/chain slides: jump while spr
 ledge) and press C, and a slide starts on landing, skipping the cooldown and sprint requirement. C counts if
 tapped in the air, held through landing, pressed up to `slide.chainPressBefore` before the jump, or up to
 `slide.chainPressAfterLanding` after landing. Airborne movement never slows you below your current speed
-(steering only), so slide-jumps keep their momentum. Crouch/slide tuning is in `feel.crouch` / `feel.slide`.
+(steering only: turning within 90 deg of your travel direction keeps your exact speed; holding the opposite
+way still brakes), so slide-jumps keep their momentum. Crouch/slide tuning is in `feel.crouch` / `feel.slide`.
 HUD: white health bar above green stamina bar, bottom-left.
 
 Build step 2 is done: staple gun (hitscan, semi-auto, 40 dmg (now 30), 3x headshots, 12/60 ammo, 1.5s reload, R or
@@ -287,7 +301,8 @@ player with a flow field (around pillars/benches/planters, through the doorway o
 spacing in a crowd, stop at arm's length, block the player, and can be shot (150 HP round 1: 5 body / 2 head
 with the staple gun, now 30 dmg) with green/purple splatter, then fall over and sink. Attacks (COD-style, swing
 on the way in): start within 1.5m with no wall between (low stuff like counters doesn't block; `wallBetween`), no
-braking first; arms-overhead wind-up (0.35s in round 1, shrinking to 0.3s by round 9; `zombie.windupSeconds`)
+braking first; arms-overhead wind-up (0.35s in round 1, shrinking to 0.3s by round 9; `zombie.windupSeconds`;
+its last `attack.slamSeconds` (0.1) are the slam, landing exactly when the hit is checked)
 while stepping straight at you at full speed and turning fast (attack.turnSpeed 12), then a swing that hits for
 40 if you're within 1.7m (a bit past the 1.5m start range = the lunge) and in front (3 hits = dead); 0.8s recovery
 after a hit, only 0.3s after a miss (no free reset by stepping back). Standing still, strafing or walking up to

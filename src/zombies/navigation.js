@@ -38,6 +38,38 @@ export function createNavigation(colliders, agent) {
   let refreshTimer = 0;
   let hasField = false;
 
+  // Does a solid box stand between (x0,z0) and (x1,z1), anywhere between heights yLow and yHigh?
+  // A real physical check against the colliders (the grid alone can't see walls thinner than a cell).
+  function wallBetween(x0, z0, x1, z1, yLow, yHigh) {
+    const dx = x1 - x0;
+    const dz = z1 - z0;
+    for (const box of colliders) {
+      if (box.max.y <= yLow || box.min.y >= yHigh) continue; // floors, or overhead
+      if (x0 >= box.min.x && x0 <= box.max.x && z0 >= box.min.z && z0 <= box.max.z) continue; // starting inside
+      // Slab test: does the segment's [0,1] range overlap the box on both axes at once?
+      let t0 = 0;
+      let t1 = 1;
+      for (const [o, d, lo, hi] of [[x0, dx, box.min.x, box.max.x], [z0, dz, box.min.z, box.max.z]]) {
+        if (Math.abs(d) < 1e-9) {
+          if (o < lo || o > hi) {
+            t0 = 1;
+            t1 = 0;
+            break;
+          }
+          continue;
+        }
+        let a = (lo - o) / d;
+        let b = (hi - o) / d;
+        if (a > b) [a, b] = [b, a];
+        t0 = Math.max(t0, a);
+        t1 = Math.min(t1, b);
+        if (t0 > t1) break;
+      }
+      if (t0 <= t1) return true;
+    }
+    return false;
+  }
+
   // --- Grid building ---------------------------------------------------------
 
   function build() {
@@ -146,8 +178,12 @@ export function createNavigation(colliders, agent) {
     dist.fill(Infinity);
     heap.length = 0;
 
-    // Seed: walkable cells near the player (the player might stand on a bench zombies can't).
+    // Seed: walkable cells near the player (the player might stand on a bench zombies can't),
+    // but only ones with no wall in between: a cell on the far side of a wall isn't "next to the
+    // player", it's a dead end (zombies would walk into the wall instead of around through a door).
     const reach = zombieNav.playerSearchRadius;
+    const yLow = target.y + zombieNav.floorTolerance;
+    const yHigh = target.y + agent.height;
     const pc = colOf(target.x);
     const pr = rowOf(target.z);
     const span = Math.ceil(reach / cs);
@@ -157,6 +193,7 @@ export function createNavigation(colliders, agent) {
         if (!inside(c, r) || !walkable[r * cols + c]) continue;
         const d = Math.hypot(centerX(c) - target.x, centerZ(r) - target.z);
         if (d > reach) continue;
+        if (wallBetween(target.x, target.z, centerX(c), centerZ(r), yLow, yHigh)) continue;
         const i = r * cols + c;
         dist[i] = d / cs; // distances are stored in cells
         heapPush(i);
@@ -205,11 +242,14 @@ export function createNavigation(colliders, agent) {
 
   // The cell to path from for something standing at (x, z). Normally its own cell; if that
   // one is padding next to a wall (or unreachable), the best cell in the nearest ring around it.
-  // Rings grow outward one at a time so we never pick a cell on the far side of a thin wall.
+  // Rings grow outward one at a time, and a cell only counts if no wall stands between it and
+  // (x, z), so we never pick a cell on the far side of a thin wall.
   function bestCellNear(x, z) {
     const c = colOf(x);
     const r = rowOf(z);
     if (inside(c, r) && dist[r * cols + c] < Infinity) return r * cols + c;
+    const yLow = zombieNav.floorTolerance;
+    const yHigh = agent.height;
     for (let ring = 1; ring <= 2; ring++) {
       let best = -1;
       let bestD = Infinity;
@@ -220,7 +260,7 @@ export function createNavigation(colliders, agent) {
           const nr = r + dr;
           if (!inside(nc, nr)) continue;
           const i = nr * cols + nc;
-          if (dist[i] < bestD) {
+          if (dist[i] < bestD && !wallBetween(x, z, centerX(nc), centerZ(nr), yLow, yHigh)) {
             bestD = dist[i];
             best = i;
           }
