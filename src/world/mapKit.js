@@ -8,6 +8,8 @@
 //     sign(text, {...})          a flat sign with canvas-drawn text
 //     tiledFloor(...)            a floor slab with a tile texture
 //     slab(rect, y0, y1, ...)    a solid flat slab (ceiling) with an optional hole (an escalator well)
+//     corridor(spec, look)       a whole corridor from a data spec (world/corridor.js): floors, walls,
+//                                doorways, end caps, ceiling; returns its layout (pointAt, branchStart)
 //     wall({...}, material)      a straight wall, with doorway openings (+ lintels)
 //     shutterDoor({...})         a roll-up shutter in a doorway + the buyable door
 //     markers({...})             debug markers for spawn points and wall buys
@@ -21,6 +23,7 @@ import * as THREE from 'three';
 import { makeTileTexture, makeSignTexture, makeShutterTexture } from './textures.js';
 import { createShutter } from './shutter.js';
 import { createDoor } from './door.js';
+import { corridorLayout } from './corridor.js';
 
 /**
  * The boxes making up one straight wall with openings (pure math, no three.js).
@@ -33,7 +36,11 @@ import { createDoor } from './door.js';
  * Returns [{ min: [x, y, z], max: [x, y, z], part: 'segment' | 'lintel' }]: the solid pieces
  * left to right, then the lintels in the order of `openings`.
  */
-export function wallSegments({ along, from, to, at0, at1, height, openings = [] }) {
+export function wallSegments({ along, from, to, at0, at1, height, openings: rawOpenings = [] }) {
+  // Openings are clipped to the wall; ones entirely off it are ignored.
+  const openings = rawOpenings
+    .map((o) => ({ ...o, from: Math.max(from, o.from), to: Math.min(to, o.to) }))
+    .filter((o) => o.to > o.from);
   const sorted = [...openings].sort((a, b) => a.from - b.from);
   const toBox = (u0, u1, y0, y1, part) => (along === 'x'
     ? { min: [u0, y0, at0], max: [u1, y1, at1], part }
@@ -127,6 +134,23 @@ export function createMapKit(group, colliders) {
     return slabPieces(rect, hole).map((r) => box(r.minX, y0, r.minZ, r.maxX, y1, r.maxZ, material, { name }));
   }
 
+  /**
+   * A corridor built from a data spec (see world/corridor.js for the format): tiled floors, side walls
+   * (with doorways / shared-wall gaps), end caps and a ceiling, all solid.
+   *   look: { floor: tile texture options, wall: material, ceiling: material, name }
+   * Returns the layout: use layout.pointAt(run, at, side) to place props, spawns and doors along it,
+   * and layout.branchStart(run, at, side) to start a branch corridor through a side opening.
+   */
+  function corridor(spec, { floor = {}, wall: wallMaterial, ceiling: ceilingMaterial, name = 'corridor' } = {}) {
+    const layout = corridorLayout(spec);
+    for (const f of layout.floors) tiledFloor(f.minX, f.minZ, f.maxX, f.maxZ, floor);
+    for (const w of [...layout.walls, ...layout.caps]) wall(w, wallMaterial, { name: `${name}_wall` });
+    for (const f of layout.floors) {
+      box(f.minX, layout.height, f.minZ, f.maxX, layout.height + 0.3, f.maxZ, ceilingMaterial, { name: `${name}_ceiling` });
+    }
+    return layout;
+  }
+
   /** A straight wall with openings (see wallSegments for the options); every piece is solid. */
   function wall(options, material, { name = 'wall' } = {}) {
     return wallSegments(options).map((piece, i) => box(
@@ -177,5 +201,5 @@ export function createMapKit(group, colliders) {
     return markerGroup;
   }
 
-  return { group, colliders, mat, addCollider, box, sign, tiledFloor, slab, wall, shutterDoor, markers };
+  return { group, colliders, mat, addCollider, box, sign, tiledFloor, slab, wall, corridor, shutterDoor, markers };
 }

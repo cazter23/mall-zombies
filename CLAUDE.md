@@ -24,7 +24,9 @@ Gameplay regression tests live in `tests/` (`gameplay.test.js` movement/melee/va
 `mall.test.js` the REAL mall built in Node with a stub canvas: door ladder, spawn points on clear floor, zones
 sealed until their door is bought, vaultable counters, the sealed escalator (a real PlayerController sprint-jumping
 at it never gets on; you can walk under its high end), the ceiling hole, Food Court stalls/tables (queue spots and
-table lanes reachable, nobody gets onto or behind a counter)); there is no linter yet.
+table lanes reachable, nobody gets onto or behind a counter), `corridor.test.js` the modular corridor builder (floors
+never overlap, walls never intrude into the walkway, sealed except where asked, doorways/gaps/open ends/branches, a real
+nav grid end to end and through a branch doorway)); there is no linter yet.
 `npm run build` is the compile check (it only bundles; it
 does not run the game, so also try changes in `npm run dev`).
 
@@ -275,7 +277,16 @@ src/
     mapKit.js           createMapKit(group, colliders): mat, addCollider, box, sign, tiledFloor, wall({ along, from, to,
                         at0, at1, height, openings: [{ from, to, top }] }) (doorways get lintels), shutterDoor({ id, label,
                         price, opensZone, zones, doorway, text }), markers(), slab(rect, y0, y1, mat, { hole }) (a ceiling
-                        with a hole). wallSegments() / slabPieces(): the pure wall / slab math (tested)
+                        with a hole), corridor(spec, { floor, wall, ceiling }) (a whole corridor from a data spec; returns
+                        its layout). wallSegments() / slabPieces(): the pure wall / slab math (tested); wallSegments clips
+                        openings to the wall
+    corridor.js         corridorLayout(spec): MODULAR CORRIDORS AS DATA (pure math). Spec: { width, height, thickness, start
+                        { x, z }, segments: [{ dir 'north'|'south'|'east'|'west', length, noWall: ['left'|'right'], openings:
+                        [{ side, at, width, top }] }], startCap / endCap: true | false | { opening } }; runs turn 90 deg.
+                        Returns points, runs, floors (corner squares once; an open end reaches back under the doorway it
+                        joins), walls + caps (kit.wall specs; walls extend past a turn only on its OUTSIDE), pointAt(run, at,
+                        side, inset) (place props/spawns/doors; normal points into the corridor), branchStart(run, at, side)
+                        (start a branch corridor through a side opening). left/right = as walked (right = (-dz, dx))
     door.js             createDoor(): buyable barrier (price, opensZone) wrapping a shutter; open/reset/toggle. Several
                         doors may open the same zone: it stays open while any of them is open (tracked per zone)
     wallBuy.js          createWallBuyDisplay(): chalk outline (textures.makeChalkTexture) + the gun on two pegs, side on
@@ -588,7 +599,14 @@ Step 3 done: Food Court dressing (see Map). Verified: tests (every stall queue s
 behind the counters, counters out of jump reach, a real player sprint-jumping at Burger Barn stays on the floor) and in
 the browser (stalls, awnings, tables look right; zombies weave through the tables to the stalls and out to the
 hallway in ~7-8s and never climb). Known nit: from the door the tree planter hides most of WOK THIS WAY's sign.
-Next: step 4 = the corridor segment builder (modular), then step 5 = Service Corridor + 1250 door.
+Step 4 done: the modular corridor builder (world/corridor.js + kit.corridor; no change to the map yet). Verified:
+tests/corridor.test.js (straight / L / zig-zag / U-turn shapes: no floor overlaps, no wall pieces in the walkway, sealed on
+every edge and corner; doorways + lintels, shared-wall gaps, open ends and branches exactly where asked; a real nav grid
+walks a corridor end to end and through a branch doorway), and a throwaway sample corridor rendered in the browser.
+Found + fixed while building it: walls extended at INSIDE corners poked a post into the walkway (now outside corners
+only); an open end left no floor under the doorway it joins, so the nav grid couldn't cross (now the floor reaches
+through); wallSegments stretched a wall when an opening hung off its end (openings are clipped now).
+Next: step 5 = Service Corridor + its 1250 door (built with the corridor builder).
 
 ## Planned build order
 1. Walkable mall (done)
