@@ -136,3 +136,41 @@ export function makeShutterTexture(message = 'CLOSED') {
 
   return finish(canvas);
 }
+
+/**
+ * Cartoon muzzle-flash burst: a soft glowing center with pointed rays, white on
+ * transparent (tint it with the material color). `rays` = number of spikes.
+ */
+export function makeFlashTexture({ rays = 7, seed = 3 } = {}) {
+  const size = 128;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const rand = seededRandom(seed);
+  const c = size / 2;
+
+  // Pointed rays of uneven length, so it reads as a burst rather than a flower.
+  ctx.fillStyle = '#fff';
+  for (let i = 0; i < rays; i++) {
+    const angle = (i / rays) * Math.PI * 2 + rand() * 0.4;
+    const length = c * (0.65 + rand() * 0.35);
+    const width = 0.22 + rand() * 0.12; // half-width at the base, in radians
+    ctx.beginPath();
+    ctx.moveTo(c + Math.cos(angle - width) * c * 0.25, c + Math.sin(angle - width) * c * 0.25);
+    ctx.lineTo(c + Math.cos(angle) * length, c + Math.sin(angle) * length);
+    ctx.lineTo(c + Math.cos(angle + width) * c * 0.25, c + Math.sin(angle + width) * c * 0.25);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Bright soft core on top.
+  const glow = ctx.createRadialGradient(c, c, 0, c, c, c * 0.5);
+  glow.addColorStop(0, 'rgba(255,255,255,1)');
+  glow.addColorStop(0.45, 'rgba(255,255,255,0.85)');
+  glow.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, size, size);
+
+  return finish(canvas);
+}

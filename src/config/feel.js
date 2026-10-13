@@ -78,7 +78,12 @@ export const feel = {
     mouseSensitivity: 0.0022, // radians per pixel of mouse movement
     maxPitchDegrees: 89, // how far you can look up/down
     invertY: false,
-    kickRecovery: 10, // how fast weapon view kick settles back (higher = faster, per second)
+    // Weapon recoil and hit jolts move the view, then spring back (core/spring.js). The amounts
+    // per shot are in config/weapons.js -> recoil.
+    recoilFrequency: 4.5, // Hz: how fast the view settles back (higher = faster)
+    recoilDamping: 1, // 1 = settles without dipping past where you were aiming (keeps aim honest)
+    recoilRollFrequency: 3.5, // the visual-only roll settles at this rate...
+    recoilRollDamping: 0.55, // ...with a tiny wobble
   },
 
   ads: {
@@ -131,16 +136,47 @@ export const feel = {
 
   // First-person weapon model (drawn on top of the world so it never clips into walls)
   viewmodel: {
-    offset: { x: 0.19, y: -0.15, z: -0.46 }, // meters from the camera: right, down, forward
-    aimYawDegrees: 6, // gun angles slightly in toward the crosshair (straightens out in ADS)
+    // (Per-gun placement, recoil and reload animation are in config/weapons.js -> viewmodel / recoil.)
     fov: 75, // the gun is drawn with its own fixed FOV so ADS zoom doesn't enlarge it
-    kickBack: 0.06, // meters the gun jolts back when firing
-    kickRotateDegrees: 9, // degrees the muzzle flips up when firing
-    kickReturnSeconds: 0.12, // how long the gun takes to settle after a shot
-    reloadDipDegrees: 40, // how far the gun tilts down during a reload
-    reloadDrop: 0.12, // meters the gun drops during a reload
-    reloadRollDegrees: 20, // how far the gun rolls sideways during a reload
-    reloadHandDrop: 0.2, // meters the left hand drops away to grab a new staple strip
+    reloadBlendOutSeconds: 0.15, // a cancelled reload (box cutter) eases back instead of snapping
+    dryFireKick: 0.12, // squeezing an empty gun: this fraction of a real shot's muzzle flip
+    // Sway: the gun lags behind when you turn and catches up when you stop.
+    sway: {
+      degreesPerTurnSpeed: 0.9, // degrees of lag per radian/second of turning...
+      metersPerTurnSpeed: 0.0035, // ...and this much sideways/vertical shift
+      rollDegreesPerTurnSpeed: 0.7, // rolls a little into the turn
+      maxDegrees: 3.5,
+      maxMeters: 0.012,
+      maxTurnSpeed: 8, // radians/second; faster flicks don't sway any further
+      smoothing: 12, // how quickly it follows changes in turn speed (per second)
+      adsMultiplier: 0.12, // barely any while aiming, so the sight stays on the crosshair
+    },
+    // Walking: a gentle side-to-side "smile" with each step (sprinting has its own pose in sprintFx).
+    walkBob: {
+      side: 0.007, // meters left/right per step cycle
+      up: 0.004, // meters it rises at the ends of the swing
+      rollDegrees: 0.8,
+      blendSpeed: 8, // how fast it fades in/out when you start/stop walking
+      adsMultiplier: 0.15,
+    },
+    // Standing still: a slow breath.
+    breathing: {
+      speed: 1.7, // radians/second (~one breath every 3.7s)
+      up: 0.0015, // meters
+      pitchDegrees: 0.25,
+      adsMultiplier: 0.2,
+    },
+    // Landing from a jump or fall: the gun dips and springs back.
+    landing: {
+      minFallSpeed: 2, // m/s; softer landings (small steps) don't dip
+      dipPerSpeed: 0.004, // meters of dip per m/s of fall speed
+      maxDip: 0.03,
+      pitchPerSpeed: 0.7, // degrees the muzzle drops per m/s of fall speed
+      maxPitchDegrees: 5,
+      frequency: 4, // Hz
+      damping: 0.5,
+      adsMultiplier: 0.35,
+    },
     // Box cutter slash (left hand: backhand from upper left to lower right). Camera-space meters.
     melee: {
       enterFrom: { x: -0.3, y: -0.4, z: -0.34 }, // hand comes up from the bottom left...

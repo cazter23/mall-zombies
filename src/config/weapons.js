@@ -18,7 +18,51 @@ export const weapons = {
     fireBuffer: 0.1, // seconds a click is remembered if it comes slightly too early
     reloadTime: 1.5, // seconds
     range: 100, // meters
-    viewKickDegrees: 1.2, // camera kicks up this much per shot, then recovers
+
+    // Recoil. The camera part moves your crosshair (shots go where you look) and springs back to
+    // where you were aiming by itself; everything else is visual only.
+    recoil: {
+      pitchDegrees: 1.0, // the view kicks up this much per shot (peak, ~35ms after the shot), then settles
+      rollDegrees: 0.3, // visual only: the view tilts a hair left or right (rolling never moves the crosshair)
+      adsMultiplier: 0.7, // camera kick while aiming down sights
+      model: {
+        // The gun in your hands (visual only)
+        back: 0.045, // meters it jolts back toward you
+        up: 0.008, // meters it hops up
+        pitchDegrees: 7, // the muzzle flips up
+        yawDegrees: 1.5, // random little twist left or right
+        rollDegrees: 3, // random little roll
+        adsMultiplier: 0.4, // much smaller while aiming, so the sight stays readable
+        frequency: 6.5, // Hz: how fast it springs back (higher = snappier)
+        damping: 0.55, // < 1 settles with a slight forward bounce, which reads as weight
+      },
+    },
+
+    // Muzzle flash: a cartoon burst + a flicker of light on the gun and the room.
+    muzzleFlash: {
+      seconds: 0.05, // how long it lasts (about 3 frames)
+      size: 0.22, // meters across (outer burst), at the gun
+      coreSize: 0.11, // bright glowing center
+      outerOpacity: 0.9,
+      sizeJitter: 0.2, // each flash is up to 20% bigger or smaller
+      forwardOffset: 0.09, // meters in front of the muzzle (clear of the nose and the left hand)
+      outerColor: 0xffa733,
+      coreColor: 0xfff6dc,
+      // Down the sights the nose is hidden behind the gun, so the burst goes wide and flat: it pokes
+      // out both sides of the gun and stays below the crosshair. (The gun and hands always hide the
+      // parts of the burst behind them.)
+      adsWidth: 1.7, // x normal width while aiming
+      adsHeight: 0.6, // x normal height while aiming
+      adsTwistFraction: 0.06, // how much of the random twist it keeps while aiming (stays level)
+      lightColor: 0xffc878,
+      handLightIntensity: 0.6, // lights up the gun and hands...
+      handLightRange: 0.8, // meters
+      worldLightIntensity: 10, // ...and the walls/zombies around you
+      worldLightRange: 9, // meters
+    },
+
+    // Sound names (config/audio.js). Reload sounds are events in viewmodel.reload below.
+    sounds: { fire: 'stapleShot', dryFire: 'dryClick' },
 
     // Hip-fire spread: shots land at a random spot inside a cone around the crosshair.
     // All values are the cone's half-angle in degrees. The crosshair gap shows the real cone.
@@ -44,10 +88,49 @@ export const weapons = {
     // Visuals
     tracerColor: 0xe8eef5, // silver staple streak
     viewmodel: {
+      model: 'stapleGun', // first-person model builder (src/weapons/models/)
+      hipOffset: { x: 0.175, y: -0.14, z: -0.43 }, // meters from the camera: right, down, forward
+      // Hip angles (all straighten out in ADS): turned in toward the crosshair so you see the gun's
+      // side, muzzle tipped up a touch, canted slightly inward.
+      aimYawDegrees: 9,
+      hipPitchDegrees: 2,
+      hipRollDegrees: 4,
       bodyColor: 0xd62839, // classic red staple gun
       metalColor: 0x9aa0a8,
       gripColor: 0x2b2b2b,
       sightColor: 0xffd23f,
+      // Squeeze lever on each shot: snaps in, springs back out.
+      fire: { leverDegrees: 30, pressSeconds: 0.03, releaseSeconds: 0.09 },
+      // Reload, on a 0..1 clock (the real duration is reloadTime / stats.reloadSpeed).
+      // Poses: pos in meters (right, up, back), rot in degrees (muzzle up, turn left, roll left).
+      reload: {
+        // The whole gun: tips up and rolls toward the left hand, holds while the strip goes in, returns.
+        gunKeys: [
+          { t: 0, pos: [0, 0, 0], rot: [0, 0, 0] },
+          { t: 0.16, pos: [-0.015, -0.04, 0.02], rot: [10, 10, 28] },
+          { t: 0.6, pos: [-0.02, -0.045, 0.02], rot: [12, 10, 30] },
+          { t: 0.72, pos: [-0.015, -0.05, 0.02], rot: [6, 8, 24] },
+          { t: 0.9, pos: [0, 0, 0], rot: [0, 0, 0] },
+          { t: 1, pos: [0, 0, 0], rot: [0, 0, 0] },
+        ],
+        // The left hand (relative to where it braces the gun): drops out of view, comes back with a strip.
+        handKeys: [
+          { t: 0, pos: [0, 0, 0] },
+          { t: 0.12, pos: [0, 0, 0] },
+          { t: 0.3, pos: [-0.07, -0.24, 0.12], rot: [-20, 0, 0] },
+          { t: 0.42, pos: [-0.07, -0.24, 0.12], rot: [-20, 0, 0] },
+          { t: 0.58, pos: [-0.01, -0.03, 0.01], rot: [5, 0, 0] },
+          { t: 0.64, pos: [0, 0.006, 0] },
+          { t: 0.8, pos: [0, 0, 0] },
+        ],
+        stripVisible: [0.36, 0.64], // the new staple strip is in the hand between these times
+        // Sounds and bumps, in time with the animation (keep them before ~0.95).
+        events: [
+          { at: 0.14, sound: 'stapleReloadOut' }, // pusher rod pulled back
+          { at: 0.63, sound: 'stapleReloadIn', jolt: { up: -0.012, pitchDegrees: -4, rollDegrees: 2 } }, // strip slapped in
+          { at: 0.86, sound: 'stapleReloadReady', jolt: { back: 0.006, pitchDegrees: 2.5 } }, // rod snaps shut
+        ],
+      },
     },
   },
 };

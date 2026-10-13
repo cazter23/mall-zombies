@@ -8,6 +8,7 @@
 import * as THREE from 'three';
 import { feel } from '../config/feel.js';
 import { moveAndCollide, hasHeadroom } from '../world/collision.js';
+import { createSpring } from '../core/spring.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 
@@ -24,7 +25,12 @@ export class PlayerController {
     this.velocity = new THREE.Vector3();
     this.yaw = 0; // left/right look (radians)
     this.pitch = 0; // up/down look (radians)
-    this.viewKick = 0; // extra upward pitch from weapon recoil; settles back to 0 (radians)
+    // Recoil and hit jolts on the view, springing back to 0 (radians, core/spring.js).
+    // viewKick (pitch) is part of the aim, so shots go where the crosshair is; viewRoll is visual only.
+    this.kickSpring = createSpring({ frequency: feel.look.recoilFrequency, damping: feel.look.recoilDamping });
+    this.rollSpring = createSpring({ frequency: feel.look.recoilRollFrequency, damping: feel.look.recoilRollDamping });
+    this.prevViewKick = 0; // last tick's values, for smooth rendering between ticks
+    this.prevViewRoll = 0;
     // Set by the weapon each tick (see weapons/aim.js): aiming blocks sprint and slows walking.
     this.isAiming = false;
     this.aimAmount = 0; // 0 = hip, 1 = fully aimed
@@ -81,7 +87,10 @@ export class PlayerController {
     this.velocity.set(0, 0, 0);
     this.yaw = yaw;
     this.pitch = 0;
-    this.viewKick = 0;
+    this.kickSpring.reset();
+    this.rollSpring.reset();
+    this.prevViewKick = 0;
+    this.prevViewRoll = 0;
     this.stance = 'stand';
     this.height = feel.player.height;
     this.eyeHeight = feel.player.eyeHeight;
@@ -137,9 +146,30 @@ export class PlayerController {
     this.pitch = Math.max(-maxPitch, Math.min(maxPitch, this.pitch));
   }
 
-  // Weapon recoil: nudges the view up; it settles back over time (see feel.look.kickRecovery).
+  // Upward view offset from recoil and jolts (radians). Included in the aim.
+  get viewKick() {
+    return this.kickSpring.value;
+  }
+
+  // An instant jolt of the view (e.g. getting hit: negative = down). It springs back.
   addViewKick(radians) {
-    this.viewKick += radians;
+    this.kickSpring.displace(radians);
+  }
+
+  // A weapon shot: the view kicks up to `pitchRadians` (peak) and rolls `rollRadians`
+  // (visual only), then both spring back to where you were aiming.
+  addRecoil(pitchRadians, rollRadians = 0) {
+    this.kickSpring.kick(pitchRadians);
+    this.rollSpring.kick(rollRadians);
+  }
+
+  // Advance the recoil springs. Called at the END of each tick (after shots and hits), so a
+  // kick shows on the very next frame, in sync with the gun model and the muzzle flash.
+  updateView(dt) {
+    this.prevViewKick = this.kickSpring.value;
+    this.prevViewRoll = this.rollSpring.value;
+    this.kickSpring.update(dt);
+    this.rollSpring.update(dt);
   }
 
   // Eye position and aim direction at this tick (used for hitscan shots).
@@ -164,9 +194,6 @@ export class PlayerController {
 
     this.prevPosition.copy(this.position);
     this.prevEyeHeight = this.eyeHeight;
-
-    // Weapon recoil settles back toward zero.
-    this.viewKick *= Math.max(0, 1 - feel.look.kickRecovery * dt);
 
     // --- Which way does the player want to go? (relative to where they look) ---
     // WASD and the left stick combined; a partly pushed stick walks slower.
@@ -422,6 +449,9 @@ export class PlayerController {
     // Visual only: shots still come from the true eye position.
     this.camera.position.y -= Math.abs(Math.sin(this.bobPhase)) * this.bobStrength;
     const roll = Math.sin(this.bobPhase) * this.sprintAmount * feel.sprintFx.sprintBobRollDegrees * DEG_TO_RAD;
-    this.camera.rotation.set(this.pitch + this.viewKick, this.yaw, roll);
+    // Recoil, interpolated between ticks. Roll turns the view around its center, so it never moves the crosshair.
+    const kick = this.prevViewKick + (this.viewKick - this.prevViewKick) * alpha;
+    const kickRoll = this.prevViewRoll + (this.rollSpring.value - this.prevViewRoll) * alpha;
+    this.camera.rotation.set(this.pitch + kick, this.yaw, roll + kickRoll);
   }
 }

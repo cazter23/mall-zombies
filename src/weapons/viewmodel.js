@@ -6,96 +6,32 @@
 // position and rotation every frame; the gun hangs off the rig. The gun has its
 // own camera with a fixed FOV, so ADS zoom narrows the world view but doesn't
 // blow the gun up. While aiming it slides to the center, sight on the crosshair.
-// The player's hands and forearms are attached to the gun, so they follow kick,
-// ADS and reload automatically; the left hand also fetches a new staple strip.
-// For a melee swing, the gun drops aside and a separate left arm holding a box
-// cutter slashes across the screen.
+//
+// This file is the part every gun shares; the gun + hands model and its own
+// animation (trigger, hands while reloading) come from weapons/models/. Layers,
+// all added together on the "holder" each frame:
+//   rest pose    hip offset sliding to the ADS offset
+//   reload pose  keyframes from weapons.<id>.viewmodel.reload.gunKeys (eases out if cancelled)
+//   recoil       springs kicked on every shot (and by reload jolts): snap back, settle forward
+//   sway         lags behind when you turn, catches up when you stop
+//   walk bob     gentle side-to-side "smile" with your steps; breathing when idle
+//   landing      a quick dip when you land from a jump
+//   sprint pose  lowered and turned across the body (feel.sprintFx)
+//   melee        the gun drops aside while a box cutter arm slashes across
+// Everything that wiggles is scaled way down while aiming, so it never fights your aim.
+// All of it is visual only: shots come from the camera, not the gun model.
 // =============================================================================
 
 import * as THREE from 'three';
 import { feel } from '../config/feel.js';
 import { placeLimb, makeBoxMesh } from '../player/body.js';
+import { createSpring, createSpring3 } from '../core/spring.js';
+import { samplePose } from '../core/keyframes.js';
+import { buildWeaponModel } from './models/index.js';
+import { createMuzzleFlash } from './muzzleFlash.js';
 
 const DEG_TO_RAD = Math.PI / 180;
-
-/** Builds the low-poly staple gun. Points down -Z (the way the camera looks). */
-function buildStapleGun(colors) {
-  const gun = new THREE.Group();
-  const mat = (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.6, metalness: 0.1, flatShading: true });
-  const body = mat(colors.bodyColor);
-  const metal = mat(colors.metalColor);
-  const grip = mat(colors.gripColor);
-
-  function part(w, h, d, x, y, z, material) {
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
-    mesh.position.set(x, y, z);
-    gun.add(mesh);
-    return mesh;
-  }
-
-  // A chunky, boxy body (staple guns are short and tall, not long like a barrel).
-  part(0.055, 0.075, 0.17, 0, 0, -0.04, body); // main housing
-  part(0.04, 0.012, 0.15, 0, 0.043, -0.04, metal); // staple channel along the top
-  part(0.06, 0.05, 0.035, 0, -0.012, -0.135, metal); // nose plate where staples come out
-  part(0.018, 0.018, 0.018, 0, 0.055, -0.11, mat(colors.sightColor)); // little sight on top
-  const handle = part(0.042, 0.12, 0.05, 0, -0.09, 0.02, grip); // grip at the back
-  handle.rotation.x = 0.3;
-  const lever = part(0.014, 0.075, 0.016, 0, -0.07, -0.06, metal); // squeeze lever / trigger
-  lever.rotation.x = -0.45;
-
-  // Where tracers start: the bottom front of the nose plate.
-  const muzzle = new THREE.Object3D();
-  muzzle.position.set(0, -0.03, -0.155);
-  gun.add(muzzle);
-
-  return { gun, muzzle };
-}
-
-/**
- * Hands and forearms holding the gun, in the gun's own coordinates.
- * Right hand wraps the grip; left hand braces the left side of the body.
- * Returns the left arm group (animated during reloads) and the strip it carries.
- */
-function buildArms(gun, gunColors) {
-  const c = feel.body.colors;
-  const V = (x, y, z) => new THREE.Vector3(x, y, z);
-
-  function limb(color, a, b, width, depth, parent) {
-    const mesh = makeBoxMesh(color);
-    placeLimb(mesh, a, b, width, depth);
-    parent.add(mesh);
-    return mesh;
-  }
-  function block(color, w, h, d, x, y, z, parent) {
-    const mesh = makeBoxMesh(color);
-    mesh.scale.set(w, h, d);
-    mesh.position.set(x, y, z);
-    parent.add(mesh);
-    return mesh;
-  }
-
-  // Right arm: hand around the grip, forearm running back and down out of view, red polo sleeve.
-  const rightHand = block(c.skin, 0.062, 0.085, 0.075, 0.004, -0.1, 0.026, gun);
-  rightHand.rotation.x = 0.3; // matches the grip's angle
-  block(c.skin, 0.02, 0.025, 0.05, -0.03, -0.055, -0.005, gun); // thumb over the top of the grip
-  limb(c.skin, V(0.01, -0.13, 0.05), V(0.07, -0.38, 0.17), 0.058, 0.054, gun);
-  limb(c.shirt, V(0.07, -0.38, 0.17), V(0.09, -0.5, 0.23), 0.09, 0.09, gun);
-
-  // Left arm: palm flat on the left side, fingers curled under, forearm back-left. Grouped so
-  // it can let go of the gun during a reload.
-  const leftArm = new THREE.Group();
-  gun.add(leftArm);
-  block(c.skin, 0.028, 0.07, 0.1, -0.042, -0.012, -0.07, leftArm); // palm
-  block(c.skin, 0.07, 0.024, 0.085, -0.012, -0.05, -0.07, leftArm); // fingers under the body
-  limb(c.skin, V(-0.05, -0.045, -0.04), V(-0.24, -0.3, 0.06), 0.056, 0.052, leftArm);
-  limb(c.shirt, V(-0.24, -0.3, 0.06), V(-0.32, -0.4, 0.1), 0.09, 0.09, leftArm);
-
-  // A fresh strip of staples, only visible in the left hand mid-reload.
-  const strip = block(gunColors.metalColor, 0.03, 0.014, 0.12, -0.03, -0.07, -0.07, leftArm);
-  strip.visible = false;
-
-  return { leftArm, strip };
-}
+const clamp = (v, max) => Math.max(-max, Math.min(max, v));
 
 /** Left forearm + hand holding a little yellow box cutter, pointing -Z. Hidden until a melee swing. */
 function buildMeleeArm(meleeColors) {
@@ -143,33 +79,82 @@ export function createViewmodel(weaponDef, meleeDef) {
   rig.add(keyLight);
   rig.add(keyLight.target);
 
-  const holder = new THREE.Group(); // positioned at the resting offset; animated for kick/reload
+  const holder = new THREE.Group(); // rest pose + every animation layer, recomputed each frame
   rig.add(holder);
-  const { gun, muzzle } = buildStapleGun(weaponDef.viewmodel);
-  holder.add(gun);
-  const { leftArm, strip } = buildArms(gun, weaponDef.viewmodel);
+  const model = buildWeaponModel(weaponDef);
+  holder.add(model.root);
+  const flash = createMuzzleFlash(weaponDef.muzzleFlash);
+  model.muzzle.add(flash.object);
   const meleeArm = buildMeleeArm(meleeDef.colors);
   rig.add(meleeArm);
 
   const vm = feel.viewmodel;
+  const look = weaponDef.viewmodel;
   const ads = weaponDef.ads.offset;
-  let kickTimer = 0; // counts down from kickReturnSeconds after each shot
+  const rk = weaponDef.recoil.model;
   const camera = new THREE.PerspectiveCamera(vm.fov, 1, 0.01, 10);
+
+  // Recoil (and reload jolts): one spring for position, one for rotation.
+  const kickPos = createSpring3(rk);
+  const kickRot = createSpring3(rk);
+  // Landing dip: a softer spring.
+  const landY = createSpring(vm.landing);
+  const landPitch = createSpring(vm.landing);
+
+  let time = 0; // for breathing
+  let sinceFire = Infinity; // seconds since the last trigger squeeze (drives the model's trigger)
+  let reloadWeight = 0; // 1 while reloading; eases to 0 if a reload is cancelled
+  let reloadShown = 0; // reload progress being shown (kept after a cancel so it can ease out)
+  let prevYaw = null;
+  let prevPitch = null;
+  let yawRate = 0; // smoothed turn speeds (radians/second) for sway
+  let pitchRate = 0;
+  let walkBlend = 0;
+  let wasGrounded = true;
+  let fallSpeed = 0; // fastest downward speed during the current fall
+  const reloadPos = { x: 0, y: 0, z: 0 };
+  const reloadRot = { x: 0, y: 0, z: 0 };
+
+  // Random left-or-right, 50..100% strength: every shot twists a little differently.
+  const randomSide = () => (Math.random() < 0.5 ? -1 : 1) * (0.5 + Math.random() * 0.5);
 
   return {
     scene,
     camera, // render the viewmodel scene with this, not the world camera
+    worldLight: flash.worldLight, // add to the world scene: the muzzle flash lights up the room
 
-    // Call when a shot fires.
-    kick() {
-      kickTimer = vm.kickReturnSeconds;
+    // A shot just fired. `aimAmount` 0..1 (ADS kicks the model much less).
+    fire(aimAmount = 0) {
+      const m = 1 + (rk.adsMultiplier - 1) * aimAmount;
+      kickPos.kick(0, rk.up * m, rk.back * m);
+      kickRot.kick(
+        rk.pitchDegrees * DEG_TO_RAD * m,
+        rk.yawDegrees * DEG_TO_RAD * m * randomSide(),
+        rk.rollDegrees * DEG_TO_RAD * m * randomSide(),
+      );
+      flash.trigger(aimAmount);
+      sinceFire = 0;
     },
 
-    // Call every rendered frame, after the world camera has been placed.
-    // `aimAmount` is 0 (hip) .. 1 (fully aimed down sights).
-    // `meleeProgress` is 0..1 through a box cutter swing, or null.
-    // `sprintAmount` 0..1 blends in the running pose; `bobPhase` is the player's footstep phase.
-    update(frameTime, worldCamera, weapon, aimAmount, meleeProgress = null, sprintAmount = 0, bobPhase = 0) {
+    // Trigger squeezed on an empty gun: the trigger moves, the gun barely does, no flash.
+    dryFire() {
+      kickRot.kick(rk.pitchDegrees * DEG_TO_RAD * vm.dryFireKick, 0, 0);
+      sinceFire = 0;
+    },
+
+    // A bump from an animation event (e.g. slapping in a new magazine). Meters / degrees.
+    jolt({ back = 0, up = 0, pitchDegrees = 0, rollDegrees = 0 }) {
+      kickPos.kick(0, up, back);
+      kickRot.kick(pitchDegrees * DEG_TO_RAD, 0, rollDegrees * DEG_TO_RAD);
+    },
+
+    /**
+     * Call every rendered frame, after the world camera has been placed.
+     * `aimAmount` 0 (hip) .. 1 (fully aimed). `meleeProgress` 0..1 through a box cutter
+     * swing, or null. `player` gives look angles, movement and footstep phase.
+     */
+    update(frameTime, worldCamera, { weapon, aimAmount, meleeProgress = null, player }) {
+      const dt = frameTime;
       rig.position.copy(worldCamera.position);
       rig.quaternion.copy(worldCamera.quaternion);
       camera.position.copy(worldCamera.position);
@@ -178,49 +163,109 @@ export function createViewmodel(weaponDef, meleeDef) {
         camera.aspect = worldCamera.aspect;
         camera.updateProjectionMatrix();
       }
+      const adsScale = (multiplier) => 1 + (multiplier - 1) * aimAmount;
 
-      kickTimer = Math.max(0, kickTimer - frameTime);
-      const k = kickTimer / vm.kickReturnSeconds; // 1 right after firing -> 0 when settled
-      const kick = k * k;
+      time += dt;
+      sinceFire += dt;
+      kickPos.update(dt);
+      kickRot.update(dt);
+      landY.update(dt);
+      landPitch.update(dt);
+      flash.update(dt);
 
-      // Reload: dip and roll down, then come back up (a smooth hump over the reload).
+      // --- Reload pose (this gun's keyframes; a cancelled reload eases back instead of snapping) ---
       const progress = weapon.reloadProgress;
-      const dip = progress === null ? 0 : Math.sin(progress * Math.PI);
+      if (progress !== null) {
+        reloadShown = progress;
+        reloadWeight = 1;
+      } else if (dt > 0) {
+        reloadWeight = Math.max(0, reloadWeight - dt / vm.reloadBlendOutSeconds);
+      }
+      samplePose(look.reload.gunKeys, reloadShown, reloadPos, reloadRot);
+      const rw = reloadWeight;
 
-      // Left hand during a reload: drops away, comes back holding a strip, slaps it in.
-      const handOut = progress === null ? 0 : Math.sin(Math.min(1, progress / 0.75) * Math.PI);
-      leftArm.position.set(-0.05 * handOut, -vm.reloadHandDrop * handOut, 0.1 * handOut);
-      strip.visible = progress !== null && progress > 0.3 && progress < 0.72;
+      // --- Sway: lag behind the turn ---
+      const sw = vm.sway;
+      if (dt > 0) {
+        const rawYaw = prevYaw === null ? 0 : (player.yaw - prevYaw) / dt;
+        const rawPitch = prevPitch === null ? 0 : (player.pitch - prevPitch) / dt;
+        const k = Math.min(1, sw.smoothing * dt);
+        yawRate += (clamp(rawYaw, sw.maxTurnSpeed) - yawRate) * k;
+        pitchRate += (clamp(rawPitch, sw.maxTurnSpeed) - pitchRate) * k;
+      }
+      prevYaw = player.yaw;
+      prevPitch = player.pitch;
+      const swayK = adsScale(sw.adsMultiplier);
+      // Turning right (yaw falling) swings the gun left and rolls it into the turn; looking up dips it.
+      const swayX = clamp(yawRate * sw.metersPerTurnSpeed, sw.maxMeters) * swayK;
+      const swayY = clamp(-pitchRate * sw.metersPerTurnSpeed, sw.maxMeters) * swayK;
+      const swayYaw = clamp(-yawRate * sw.degreesPerTurnSpeed, sw.maxDegrees) * DEG_TO_RAD * swayK;
+      const swayPitch = clamp(-pitchRate * sw.degreesPerTurnSpeed, sw.maxDegrees) * DEG_TO_RAD * swayK;
+      const swayRoll = clamp(yawRate * sw.rollDegreesPerTurnSpeed, sw.maxDegrees) * DEG_TO_RAD * swayK;
 
-      // Resting spot slides from the hip offset to the centered ADS offset.
+      // --- Walk bob ("smile" path with your steps) and breathing ---
+      const wb = vm.walkBob;
+      const speed = Math.hypot(player.velocity.x, player.velocity.z);
+      const onFeet = player.grounded && player.stance !== 'slide';
+      const walkTarget = onFeet ? Math.min(1, speed / player.stats.walkSpeed) : 0;
+      walkBlend += (walkTarget - walkBlend) * Math.min(1, wb.blendSpeed * dt);
+      const bob = walkBlend * (1 - player.sprintAmount) * adsScale(wb.adsMultiplier); // sprint has its own pose
+      const step = Math.sin(player.bobPhase);
+      const bobX = step * wb.side * bob;
+      const bobY = (Math.abs(step) - 1) * wb.up * bob;
+      const bobRoll = step * wb.rollDegrees * DEG_TO_RAD * bob;
+      const br = vm.breathing;
+      const breath = adsScale(br.adsMultiplier) * (1 - walkBlend * 0.6);
+      const breathY = Math.sin(time * br.speed) * br.up * breath;
+      const breathPitch = Math.sin(time * br.speed - 0.6) * br.pitchDegrees * DEG_TO_RAD * breath;
+
+      // --- Landing dip, stronger after a longer fall ---
+      const ld = vm.landing;
+      if (!player.grounded) {
+        fallSpeed = Math.max(fallSpeed, -player.velocity.y);
+      } else {
+        if (!wasGrounded && fallSpeed > ld.minFallSpeed) {
+          const s = adsScale(ld.adsMultiplier);
+          landY.kick(-Math.min(ld.maxDip, fallSpeed * ld.dipPerSpeed) * s);
+          landPitch.kick(-Math.min(ld.maxPitchDegrees, fallSpeed * ld.pitchPerSpeed) * DEG_TO_RAD * s);
+        }
+        fallSpeed = 0;
+      }
+      wasGrounded = player.grounded;
+
+      // --- Add the layers up ---
       const lerp = (a, b) => a + (b - a) * aimAmount;
+      const hip = look.hipOffset;
       holder.position.set(
-        lerp(vm.offset.x, ads.x),
-        lerp(vm.offset.y, ads.y) - dip * vm.reloadDrop,
-        lerp(vm.offset.z, ads.z) + kick * vm.kickBack,
+        lerp(hip.x, ads.x) + reloadPos.x * rw + kickPos.x + swayX + bobX,
+        lerp(hip.y, ads.y) + reloadPos.y * rw + kickPos.y + landY.value + swayY + bobY + breathY,
+        lerp(hip.z, ads.z) + reloadPos.z * rw + kickPos.z,
       );
       holder.rotation.set(
-        kick * vm.kickRotateDegrees * DEG_TO_RAD - dip * vm.reloadDipDegrees * DEG_TO_RAD,
-        lerp(vm.aimYawDegrees, 0) * DEG_TO_RAD,
-        dip * vm.reloadRollDegrees * DEG_TO_RAD,
+        lerp(look.hipPitchDegrees, 0) * DEG_TO_RAD + reloadRot.x * rw + kickRot.x + landPitch.value + swayPitch + breathPitch,
+        lerp(look.aimYawDegrees, 0) * DEG_TO_RAD + reloadRot.y * rw + kickRot.y + swayYaw,
+        lerp(look.hipRollDegrees, 0) * DEG_TO_RAD + reloadRot.z * rw + kickRot.z + swayRoll + bobRoll,
       );
 
       // Sprinting: lower the gun and turn it across the body, swinging with each step.
-      const s = sprintAmount * (1 - aimAmount);
+      const s = player.sprintAmount * (1 - aimAmount);
       if (s > 0.001) {
         const fx = feel.sprintFx;
-        holder.position.x += s * (fx.gunRight + Math.sin(bobPhase) * fx.gunBobSide);
-        holder.position.y -= s * (fx.gunDrop + Math.abs(Math.cos(bobPhase)) * fx.gunBobUp);
+        holder.position.x += s * (fx.gunRight + step * fx.gunBobSide);
+        holder.position.y -= s * (fx.gunDrop + Math.abs(Math.cos(player.bobPhase)) * fx.gunBobUp);
         holder.position.z += s * fx.gunBack;
         holder.rotation.x -= s * fx.gunPitchDegrees * DEG_TO_RAD;
         holder.rotation.y += s * fx.gunYawDegrees * DEG_TO_RAD;
         holder.rotation.z += s * fx.gunRollDegrees * DEG_TO_RAD;
       }
 
+      // The gun's own moving parts (trigger, hands during the reload).
+      model.animate({ sinceFire, reloadProgress: reloadShown, reloadWeight: rw });
+
       // Melee: drop the gun aside, swap the left hand for the box cutter arm and slash.
       const mel = vm.melee;
       meleeArm.visible = meleeProgress !== null;
-      leftArm.visible = meleeProgress === null;
+      model.leftHandVisible = meleeProgress === null;
       if (meleeProgress !== null) {
         const p = meleeProgress;
         const out = Math.sin(p * Math.PI); // gun drops out and comes back
@@ -239,12 +284,30 @@ export function createViewmodel(weaponDef, meleeDef) {
         // Blade angled along the slash (down and to the right), turning through it.
         meleeArm.rotation.set(0.15, 0.3 - 0.6 * Math.min(1, p / mel.slashEnd), -0.5);
       }
+
+      // The world flash light sits at the muzzle (only matters while it's lit).
+      if (flash.worldLight.intensity > 0) this.getMuzzleWorldPosition(flash.worldLight.position);
     },
 
     // World-space position of the gun's muzzle (where tracers start).
     getMuzzleWorldPosition(out) {
       rig.updateMatrixWorld(true);
-      return muzzle.getWorldPosition(out);
+      return model.muzzle.getWorldPosition(out);
+    },
+
+    // New run: everything settled.
+    reset() {
+      kickPos.reset();
+      kickRot.reset();
+      landY.reset();
+      landPitch.reset();
+      flash.reset();
+      sinceFire = Infinity;
+      reloadWeight = 0;
+      prevYaw = null;
+      prevPitch = null;
+      yawRate = 0;
+      pitchRate = 0;
     },
   };
 }

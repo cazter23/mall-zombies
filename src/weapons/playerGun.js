@@ -3,7 +3,10 @@
 // Connects the held weapon to everything else: reads the trigger/reload input,
 // updates aim (ADS + spread), fires the hitscan ray inside the spread cone,
 // applies damage (with headshots and the player's stat multipliers), and
-// triggers recoil, tracers, splatter and hit markers.
+// triggers the feedback: camera recoil, gun-model recoil, muzzle flash, sound,
+// tracer, splatter and hit markers, all on the same tick as the shot.
+// Reload sounds and bumps fire from the weapon's reload events, on the same clock
+// as the reload animation, so they always line up.
 // =============================================================================
 
 import * as THREE from 'three';
@@ -24,6 +27,7 @@ export function createPlayerGun({
   effects,
   viewmodel,
   hud,
+  sound = null, // optional (audio/sound.js)
   onShot = null,
   onHit = null, // ({ target, killed, headshot, melee }) after any hit on a shootable (points)
   aimAssist = null, // optional (weapons/aimAssist.js): controller aim help, applied before each shot
@@ -33,6 +37,7 @@ export function createPlayerGun({
   const origin = new THREE.Vector3();
   const direction = new THREE.Vector3();
   const muzzle = new THREE.Vector3();
+  let lastReloadProgress = null; // for spotting reload events as the clock passes them
 
   function fire() {
     player.getAim(origin, direction);
@@ -40,9 +45,15 @@ export function createPlayerGun({
     aim.onShot(); // firing quickly widens the cone
     const shot = castShot(origin, direction, def.range, colliders, shootables);
 
-    // Recoil: kick the view (affects aim) and the gun model (just visual).
-    player.addViewKick(def.viewKickDegrees * DEG_TO_RAD);
-    viewmodel.kick();
+    // Feedback, all this tick. Camera recoil (moves the crosshair, springs back) uses the aim
+    // from before the kick, so this shot lands exactly where you were looking.
+    const r = def.recoil;
+    const ads = aim.amount;
+    const cameraScale = 1 + (r.adsMultiplier - 1) * ads;
+    const rollSide = Math.random() < 0.5 ? -1 : 1;
+    player.addRecoil(r.pitchDegrees * DEG_TO_RAD * cameraScale, rollSide * r.rollDegrees * DEG_TO_RAD * cameraScale);
+    viewmodel.fire(ads); // gun kick + muzzle flash (visual only)
+    if (sound) sound.play(def.sounds.fire);
     effects.tracer(viewmodel.getMuzzleWorldPosition(muzzle), shot.point, def.tracerColor);
 
     if (shot.target) {
@@ -58,6 +69,20 @@ export function createPlayerGun({
     }
     if (onShot) onShot(shot);
     return shot;
+  }
+
+  // Sounds and bumps placed along the reload (config: viewmodel.reload.events).
+  function runReloadEvents() {
+    const progress = weapon.reloadProgress;
+    if (progress !== null) {
+      const from = lastReloadProgress ?? -1; // a reload that just started counts from before 0
+      for (const event of def.viewmodel.reload.events) {
+        if (event.at <= from || event.at > progress) continue;
+        if (event.sound && sound) sound.play(event.sound);
+        if (event.jolt) viewmodel.jolt(event.jolt);
+      }
+    }
+    lastReloadProgress = progress;
   }
 
   return {
@@ -76,11 +101,18 @@ export function createPlayerGun({
         reloadPressed: reload && !blocked,
       });
       if (result === 'fire') this.lastShot = fire();
+      else if (result === 'empty') {
+        // Dry click on an empty mag (the weapon starts reloading by itself).
+        viewmodel.dryFire();
+        if (sound) sound.play(def.sounds.dryFire);
+      }
+      runReloadEvents();
     },
 
     // Full ammo, for a new run.
     reset() {
       weapon.reset();
+      lastReloadProgress = null;
       this.lastShot = null;
     },
   };

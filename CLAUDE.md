@@ -24,7 +24,7 @@ does not run the game, so also try changes in `npm run dev`).
 ## Rules for working on this project
 - Game logic runs on a fixed 60Hz timestep; rendering is decoupled (render gets `alpha` to interpolate).
 - Every tunable number lives in `src/config/` (`feel.js`, `economy.js`, `weapons.js`, `zombies.js`, `controls.js`,
-  `debug.js`), never hardcoded in logic.
+  `audio.js`, `debug.js`), never hardcoded in logic.
 - All player stats live in one stats object (`src/player/stats.js`) so perks, wardrobe and a
   future skill tree modify it in one place. Systems read stats, not config, at runtime.
 - Death is handled in one function (`onPlayerDeath` in `main.js`) so a downed/revive system can be added
@@ -45,16 +45,22 @@ src/
                         update(dt) + render(alpha); exposes window.__mall when debug.exposeToWindow
   style.css             HUD (crosshair, hit marker, health/stamina bars, ammo, prompt), start/pause overlay
   config/
-    feel.js             Movement, sprint, crouch, slide, look (+ view kick recovery), ADS (move speed,
-                        sensitivity), camera, player size, sim tick rate, shutter speed, viewmodel
-                        placement/animation/fov (+ box cutter slash path), hit effects, crosshair min gap,
+    feel.js             Movement, sprint, crouch, slide, look (+ recoil spring: frequency/damping, roll), ADS
+                        (move speed, sensitivity), camera, player size, sim tick rate, shutter speed, viewmodel
+                        handling shared by all guns (fov, sway, walk bob, breathing, landing dip, reload
+                        blend-out, dry-fire kick, box cutter slash path), hit effects, crosshair min gap,
                         body (colors + leg/pose tuning), health (regen, hurt edges), death camera, sprintFx,
                         melee lunge end
     economy.js          Points, payouts, kill values, door + wall-buy prices, round timing, wave scaling + helpers
                         (zombieHealthForRound, zombieCountForRound, spawnDelayForRound, maxAliveForRound)
-    weapons.js          Per-weapon stats (damage, headshot mult, mag, reserve, fire interval, reload, kick,
-                        spread cone, ADS time/zoom/gun offset, colors), `melee.boxCutter` (damage, reach,
-                        cone, swing timing, lunge), weaponStatDefaults for stats
+    weapons.js          Per-weapon stats (damage, headshot mult, mag, reserve, fire interval, reload, spread
+                        cone, ADS time/zoom/gun offset), recoil (camera pitch/roll + gun-model kick + spring),
+                        muzzleFlash (size, colors, ADS shape, lights), sounds, viewmodel (model name, hip
+                        offset/angles, colors, trigger anim, reload keyframes gunKeys/handKeys + timed events
+                        with sounds/jolts), `melee.boxCutter` (damage, reach, cone, swing timing, lunge),
+                        weaponStatDefaults for stats
+    audio.js            Master volume, pitch variation, compressor, and sound recipes (layers of filtered noise
+                        bursts and tones) for the staple gun shot, dry click and reload sounds
     zombies.js          zombieTypes (per-type speed, size, hitboxes, attack, timings, colors, splatter), zombieCrowd
                         (spacing, lanes, queueing, surround rings + sector/still-wrap/circling, contact gap,
                         spawn dust, min spawn distance),
@@ -66,6 +72,9 @@ src/
                         (Z spawn / X clear), cheatKeys (N next round / P +5000 points), dummies, exposeToWindow
   core/
     loop.js             startLoop(): fixed-timestep accumulator, calls update(dt) and render(alpha, frameTime)
+    spring.js           createSpring / createSpring3: damped springs back to 0 (exact solution, frame-rate
+                        independent). kick(peak) (impulse sized so it peaks at `peak`), displace(), update(dt)
+    keyframes.js        samplePose(keys, t, outPos, outRot): eased pose keyframes ({ t, pos: [m], rot: [deg] })
     input.js            Input class: held keys/buttons, one-shot presses, actions (actionDown/consumeAction/
                         actionPressed), moveAxis() (WASD + left stick), padMove/padLook, `device`
                         ('keyboard' | 'gamepad', last used), mouse delta, pointer lock
@@ -74,7 +83,10 @@ src/
                         click-to-sprint latch (PadSprint), Xbox/PlayStation detection, lookRate() w/ turn ramp
   player/
     controller.js       PlayerController: WASD, jump (buffer + coyote time), sprint meter, crouch/slide
-                        (stance: stand|crouch|slide), gravity, mouse look (per render frame), camera interpolation
+                        (stance: stand|crouch|slide), gravity, mouse look (per render frame), camera interpolation.
+                        View recoil: kickSpring (pitch, part of the aim; `viewKick` getter) + rollSpring (visual
+                        only). addRecoil(pitch, roll) for shots, addViewKick() for instant jolts (hits, melee),
+                        updateView(dt) at the END of each tick; syncCamera interpolates both
     stats.js            createPlayerStats(): the single stats object (health, speeds, jump, sprint, crouch/slide,
                         regenDelay/regenRate, adsMoveSpeed, damageMultiplier, meleeDamageMultiplier,
                         reloadSpeed)
@@ -100,11 +112,27 @@ src/
                         the gun; takeHit({ melee: true }) so kills count as melee
     playerGun.js        createPlayerGun(): glue. Updates aim, reads Mouse0/KeyR (ignored while `blocked`), onShot cb,
                         fires hitscan inside the spread cone, applies damage
-                        (headshot x mult x stats.damageMultiplier), recoil, tracer, splatter, hit marker
-    viewmodel.js        First-person staple gun model in its own scene + own fixed-FOV camera (drawn after the
-                        world with depth cleared); hands + forearms attached to the gun (left hand fetches a staple
-                        strip on reload); slides to center in ADS; kick + reload animations; muzzle pos;
-                        box cutter arm slashes across while the gun drops aside (meleeProgress)
+                        (headshot x mult x stats.damageMultiplier). Same tick as the shot: player.addRecoil
+                        (scaled by ADS), viewmodel.fire (gun kick + flash), shot sound, tracer, splatter, hit
+                        marker. 'empty' -> viewmodel.dryFire + dry click. Runs viewmodel.reload.events as the
+                        reload clock passes them (sound + viewmodel.jolt), so sounds match the animation
+    viewmodel.js        Shared first-person rig in its own scene + own fixed-FOV camera (drawn after the world
+                        with depth cleared). Builds the gun from weapons/models/, attaches the muzzle flash,
+                        and adds up layers on a `holder` each frame: hip->ADS rest pose, reload pose
+                        (gunKeys; eases out if cancelled), recoil springs (kickPos/kickRot: fire(), dryFire(),
+                        jolt()), turn sway, walk bob ("smile"), breathing, landing dip, sprint pose, melee
+                        (box cutter arm slashes while the gun drops aside). Wiggles scale way down in ADS.
+                        update(frameTime, camera, { weapon, aimAmount, meleeProgress, player }); `worldLight`
+                        (added to the world scene by main); getMuzzleWorldPosition(); reset()
+    models/             First-person weapon models. index.js = registry (viewmodel.model -> builder) + the model
+                        interface ({ root, muzzle, animate({ sinceFire, reloadProgress, reloadWeight }),
+                        leftHandVisible }). stapleGun.js = the gun + hands, squeeze lever on fire, left hand
+                        fetching a staple strip (handKeys). New gun = new file + 1 line
+    muzzleFlash.js      createMuzzleFlash(cfg): 2 sprites (normal-blended orange burst + additive core, random
+                        twist/size), hand light + world light (always in the scene at 0 so no shader recompile).
+                        Always depth-tested (the hands and gun hide whatever part of the burst is behind them),
+                        sits 9cm in front of the muzzle so it shows past the left hand at the hip; in ADS it
+                        goes wide/flat so the rays poke out around the gun, below the crosshair
   zombies/
     navigation.js       createNavigation(): flow field on a 0.5m ground-floor grid built from colliders (floor =
                         box top at y~0; obstacles padded by zombie radius; cells within extraClearance cost extra
@@ -144,6 +172,9 @@ src/
                         All meshes, lights and debug markers live in its group. Exports LAYOUT
     testRange/          Debug add-on (not a map): testRange.js buildTestRange(scene, colliders) with own lights,
                         dummy.js practice mannequins (shootables)
+  audio/
+    sound.js            createSound(): Web Audio synth for config/audio.js recipes. play(name, { volume }),
+                        unlock() (also on the first pointerdown/keydown; browsers block audio before that)
   fx/
     effects.js          Tracers (pooled) + particle bursts (one InstancedMesh): splat() and puff()
   world/                Shared building blocks for maps
@@ -151,7 +182,7 @@ src/
     collision.js        moveAndCollide(): horizontal push-out then vertical landing/ceiling vs. Box3 list;
                         hasHeadroom(): can the player stand up here? overlapsSolid(): would a body overlap a wall?
     shutter.js          createShutter(): roll-up barrier with its own Box3 collider (open/close/toggle/update)
-    textures.js         Procedural canvas textures (floor tile, shop sign, shutter). No image files.
+    textures.js         Procedural canvas textures (floor tile, shop sign, shutter, muzzle flash burst). No image files.
   ui/
     hud.js              createHud(): 4-line crosshair whose gap = spread cone (dot in ADS) + hit marker (white body, big yellow head, red kill),
                         bottom-left health (white) + stamina (green) bars, bottom-right ammo counter,
@@ -164,7 +195,8 @@ src/
   first: the mouse is released on death); if not running (pointer unlocked) it freezes the player; otherwise debug
   keys, `player.update`, `melee.update`, `gun.update(dt, melee.isBusy)` (after the player so shots use this tick's
   eye), `zombies.update`, `rounds.update` (paused while in the test range), `health.update`, `map.update`,
-  `arena.update`, `input.endTick()`. `rounds.start()` happens the first tick the game actually runs.
+  `arena.update`, `player.updateView` (recoil springs last, so a shot's kick shows on the very next frame),
+  `input.endTick()`. `rounds.start()` happens the first tick the game actually runs.
 - Map: `main.js` does `loadMap('mall', scene, colliders)` and only uses the map interface (maps/index.js).
   The zombie manager gets `map.spawnPoints` + `isZoneOpen`, so zombies only spawn in opened zones.
 - Points: gun and melee call `onHit({ target, killed, headshot, melee })` -> `wallet.earn(pointsForHit(...))`.
@@ -184,6 +216,9 @@ src/
 - Shooting: `player.getAim()` gives eye + direction including view kick; `aim.applySpread()` then randomizes it
   inside the spread cone. The crosshair gap is computed in `main.js` render from `aim.spreadDegrees` and the
   current camera FOV (gap px = tan(spread) / tan(fov/2) * screenHeight/2), so every shot lands inside the lines.
+- Recoil/feel: camera pitch kick is in the aim (and springs back to exactly where you aimed, no permanent climb);
+  camera roll, gun kick, sway, bob and the muzzle flash are visual only (shots never come from the gun model).
+  Audio starts on the first click/key (main also calls `sound.unlock()` on Click to play).
 - ADS: `aim` sets `player.isAiming` / `player.aimAmount` each tick (blocks sprint, scales walk speed by
   `stats.adsMoveSpeed`). Render zooms `camera.fov` by `def.ads.fovMultiplier` and sets `player.lookScale`.
   `main.js` keeps a `shootables` array (test-range dummies now; zombies should be pushed into it). A collider
@@ -270,6 +305,16 @@ Crowd behaviour (fixed chains/stacking/identical paths): measured with a 12-zomb
 overlap time 53% -> 0%, conga lines 68% -> ~20%, doorway crossing spots 2 -> 8-12, zombies surround the player in
 rings (several at arm's length all around), and a crowd can no longer shove the player through a wall (it used to
 push you out of the map). Attack difficulty unchanged (same dodge-test results).
+
+Gunplay polish (staple gun, reusable for every gun): camera recoil is a critically damped spring (1.0 deg peak
+~35ms after the shot, x0.7 in ADS, back to exactly where you aimed; spamming climbs ~1.1 deg max) plus a 0.3 deg
+visual-only roll; the gun model kicks on its own springs (4.5cm back, 7 deg flip, random twist/roll, slight forward
+settle, x0.4 in ADS); squeeze lever animates; cartoon muzzle flash (orange burst + white core, ~3 frames) lights the
+gun and the room; keyframed reload (gun tips up and rolls to show the staple channel, left hand drops away and
+brings a strip, slap-in and snap-shut jolts) with synced sounds; a reload cancelled by the box cutter eases out;
+turn sway (~2.5 deg, 0.25 in ADS), walk bob, breathing, landing dip. Synthesized sounds (shot, dry click, 3 reload
+sounds) with no audio files. Gun sits a bit closer/higher and angled in so you see its side. Shot, kick, flash and
+sound all happen on the same tick and show on the next frame; the crosshair still matches the shot exactly.
 
 Step 4 in progress. Done: part A (map package + zones + doors, see maps/index.js) and part B (rounds and
 points): round 1 starts on first play (3s delay), zombies spawn from open zones at the economy pace, the round

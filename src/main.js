@@ -28,6 +28,7 @@ import { createPlayerHealth } from './player/health.js';
 import { createRunStats } from './game/runStats.js';
 import { createWallet, pointsForHit } from './game/wallet.js';
 import { createRounds } from './game/rounds.js';
+import { createSound } from './audio/sound.js';
 
 // --- Renderer, scene, camera ---------------------------------------------------
 
@@ -80,7 +81,9 @@ const body = createPlayerBody(scene); // legs + torso you see when looking down
 // Everything the player can shoot. Practice dummies for now; zombies will join this list.
 const shootables = [...(arena ? arena.shootables : [])];
 const effects = createEffects(scene);
+const sound = createSound(); // synthesized sound effects (starts on the first click/key press)
 const viewmodel = createViewmodel(weapons.stapleGun, meleeWeapons.boxCutter);
+scene.add(viewmodel.worldLight); // the muzzle flash lights up the room
 const aimAssist = createAimAssist({ player, input, shootables, colliders });
 const gun = createPlayerGun({
   def: weapons.stapleGun,
@@ -92,6 +95,7 @@ const gun = createPlayerGun({
   effects,
   viewmodel,
   hud,
+  sound,
   onShot: (shot) => runStats.recordShot(shot),
   onHit: payForHit,
   aimAssist,
@@ -164,6 +168,7 @@ function resetRun() {
   health.reset();
   runStats.reset();
   gun.reset();
+  viewmodel.reset();
   melee.reset();
   aimAssist.reset();
   wallet.reset();
@@ -206,7 +211,10 @@ rounds = createRounds({
   },
 });
 
-hud.onStart(() => input.requestLock());
+hud.onStart(() => {
+  sound.unlock(); // browsers only allow audio after a click
+  input.requestLock();
+});
 input.onLockChange((locked) => {
   if (locked) game.padPlaying = false; // the mouse took over
   if (!game.over) hud.setPaused(!game.running); // when dead, the results screen is in charge
@@ -286,6 +294,7 @@ function update(dt) {
   health.update(dt);
   map.update(dt);
   if (arena) arena.update(dt);
+  player.updateView(dt); // recoil/jolt springs last, so this tick's kicks show on the next frame
   input.endTick();
 }
 
@@ -315,15 +324,12 @@ function render(alpha, frameTime) {
   body.update(game.running ? frameTime : 0, player, alpha);
   zombies.render(game.running ? frameTime : 0, alpha);
   if (game.running) effects.update(frameTime);
-  viewmodel.update(
-    game.running ? frameTime : 0,
-    camera,
-    gun.weapon,
+  viewmodel.update(game.running ? frameTime : 0, camera, {
+    weapon: gun.weapon,
     aimAmount,
-    melee.progress,
-    player.sprintAmount,
-    player.bobPhase,
-  );
+    meleeProgress: melee.progress,
+    player,
+  });
 
   // Crosshair gap in pixels = where the spread cone's edge lands on screen at the current FOV.
   const halfSpread = gun.aim.spreadDegrees * DEG_TO_RAD;
@@ -368,7 +374,7 @@ startLoop({
 });
 
 if (debug.exposeToWindow) {
-  window.__mall = { THREE, scene, camera, renderer, map, world: map, colliders, arena, player, stats, input, game, hud, gun, effects, viewmodel, shootables, body, zombies, health, melee, runStats, death, resetRun, gamepad, aimAssist, wallet, rounds };
+  window.__mall = { THREE, scene, camera, renderer, map, world: map, colliders, arena, player, stats, input, game, hud, gun, effects, viewmodel, shootables, body, zombies, health, melee, runStats, death, resetRun, gamepad, aimAssist, wallet, rounds, sound };
   // Advance the real game loop by `ticks` fixed steps and draw one frame. For automated
   // testing when the browser isn't animating (e.g. a hidden tab). Pair with game.forceRun.
   window.__mall.step = (ticks = 1) => {
