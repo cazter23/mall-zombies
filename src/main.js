@@ -29,6 +29,7 @@ import { createRunStats } from './game/runStats.js';
 import { createWallet, pointsForHit } from './game/wallet.js';
 import { createRounds } from './game/rounds.js';
 import { createSound } from './audio/sound.js';
+import { createInteractions } from './game/interactions.js';
 
 // --- Renderer, scene, camera ---------------------------------------------------
 
@@ -100,6 +101,25 @@ const gun = createPlayerGun({
   onHit: payForHit,
   aimAssist,
 });
+// Buyables (hold F / X): the map's doors now; wall buys later.
+const interactions = createInteractions({
+  input,
+  player,
+  wallet,
+  sound,
+  onReloadTap: () => gun.requestReload(), // controller X tapped next to a buyable: it was a reload
+});
+for (const door of map.doors) {
+  interactions.add({
+    label: door.label,
+    verb: 'open',
+    cost: door.price,
+    position: door.position,
+    available: () => !door.isOpen,
+    use: () => door.open(),
+  });
+}
+
 const melee = createMelee({
   def: meleeWeapons.boxCutter,
   stats,
@@ -168,6 +188,7 @@ function resetRun() {
   health.reset();
   runStats.reset();
   gun.reset();
+  interactions.reset();
   viewmodel.reset();
   effects.clear(); // no leftover splatter or tracers from the last run
   melee.reset();
@@ -295,8 +316,10 @@ function update(dt) {
   if (debug.zombieKeys && input.consumePress('KeyX')) zombies.clear();
   if (debug.cheatKeys && input.consumePress('KeyN')) rounds.skipRound();
   if (debug.cheatKeys && input.consumePress('KeyP')) wallet.earn(5000);
+  if (debug.cheatKeys && input.consumePress('Quote')) wallet.spend(wallet.points); // ' = points to 0
 
   player.update(dt);
+  interactions.update(dt); // before the gun: on controller X, a hold near a buyable buys instead of reloading
   melee.update(dt);
   gun.update(dt, melee.isBusy); // after the player moves, so shots come from this tick's eye position
   zombies.update(dt);
@@ -365,6 +388,7 @@ function render(alpha, frameTime) {
   hud.setSpeedLines(game.over ? 0 : player.sprintAmount * feel.sprintFx.speedLinesOpacity);
   hud.setSprint(player.sprintFraction, player.sprintExhausted, player.isSprinting);
   hud.setAmmo(gun.weapon, buttonLabel('reload'));
+  hud.setInteract(game.over ? null : interactions.prompt, buttonLabel('interact'));
   hud.setPoints(wallet.points);
   hud.setRoundFlashing(rounds.inBreak && rounds.round > 1); // counter blinks in the break between rounds
 
@@ -399,7 +423,7 @@ startLoop({
 });
 
 if (debug.exposeToWindow) {
-  window.__mall = { THREE, scene, camera, renderer, map, world: map, colliders, arena, player, stats, input, game, hud, gun, effects, viewmodel, shootables, body, zombies, health, melee, runStats, death, resetRun, gamepad, aimAssist, wallet, rounds, sound };
+  window.__mall = { THREE, scene, camera, renderer, map, world: map, colliders, arena, player, stats, input, game, hud, gun, effects, viewmodel, shootables, body, zombies, health, melee, runStats, death, resetRun, gamepad, aimAssist, wallet, rounds, sound, interactions };
   // Advance the real game loop by `ticks` fixed steps and draw one frame. For automated
   // testing when the browser isn't animating (e.g. a hidden tab). Pair with game.forceRun.
   window.__mall.step = (ticks = 1) => {

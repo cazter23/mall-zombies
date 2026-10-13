@@ -21,6 +21,7 @@ export const bindings = {
   fire: ['Mouse0', 'PadRT'],
   aim: ['Mouse2', 'PadLT'],
   reload: ['KeyR', 'PadX'],
+  interact: ['KeyF', 'PadX'], // hold to buy (doors, wall buys). On X: tap = reload, hold = buy (COD)
   melee: ['KeyV', 'PadRB', 'PadR3'],
   pause: ['PadStart'],
   confirm: ['PadA', 'PadStart'], // controller menus: start, resume, play again
@@ -28,9 +29,9 @@ export const bindings = {
 
 // Button names shown in on-screen prompts, per device.
 export const buttonLabels = {
-  keyboard: { reload: 'R', melee: 'V', confirm: 'Click' },
-  xbox: { reload: 'X', melee: 'RB', confirm: 'A' },
-  playstation: { reload: '□', melee: 'R1', confirm: '✕' },
+  keyboard: { reload: 'R', melee: 'V', confirm: 'Click', interact: 'F' },
+  xbox: { reload: 'X', melee: 'RB', confirm: 'A', interact: 'X' },
+  playstation: { reload: '□', melee: 'R1', confirm: '✕', interact: '□' },
 };
 
 export const gamepad = {

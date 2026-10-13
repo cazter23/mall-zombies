@@ -17,7 +17,7 @@ export const debug = {
   zombieKeys: true,
 
   // Press N to end the current round and start the next one, P for +5000 points.
-  cheatKeys: true,
+  cheatKeys: true, // N next round, P +5000 points, ' points to 0
 
   // Practice dummies in the test range (only exist when testArena is on).
   dummies: {

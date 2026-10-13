@@ -38,6 +38,7 @@ export function createPlayerGun({
   const direction = new THREE.Vector3();
   const muzzle = new THREE.Vector3();
   let lastReloadProgress = null; // for spotting reload events as the clock passes them
+  let reloadRequested = false; // set by requestReload() (e.g. a controller X tap next to a buyable)
 
   function fire() {
     player.getAim(origin, direction);
@@ -95,7 +96,8 @@ export function createPlayerGun({
       aim.update(dt); // ADS + spread first, so this tick's shot uses them
       if (aimAssist) aimAssist.update(dt, aim); // then controller aim assist nudges the view
       const trigger = input.consumeAction('fire');
-      const reload = input.consumeAction('reload');
+      const reload = input.consumeAction('reload') || reloadRequested;
+      reloadRequested = false;
       const result = weapon.update(dt, { triggerPressed: trigger, reloadPressed: reload, blocked });
       if (result === 'fire') this.lastShot = fire();
       else if (result === 'empty') {
@@ -106,10 +108,16 @@ export function createPlayerGun({
       runReloadEvents();
     },
 
+    // Reload as if the reload button was pressed (next tick).
+    requestReload() {
+      reloadRequested = true;
+    },
+
     // Full ammo and hip fire, for a new run.
     reset() {
       weapon.reset();
       aim.reset();
+      reloadRequested = false;
       lastReloadProgress = null;
       this.lastShot = null;
     },

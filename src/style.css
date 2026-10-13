@@ -166,6 +166,7 @@ canvas {
 /* Dead: hide the combat HUD */
 .hud.dead .crosshair,
 .hud.dead .hitmarker,
+.hud.dead .interact,
 .hud.dead .prompt,
 .hud.dead .ammo {
   display: none;
@@ -334,6 +335,67 @@ kbd {
 }
 
 /* ---------- Prompt under the crosshair ---------- */
+
+/* Buy prompt (doors, wall buys) */
+.interact {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 64px);
+  transform: translateX(-50%);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+  white-space: nowrap;
+}
+.interact.show {
+  display: flex;
+}
+.interact kbd {
+  display: inline-block;
+  min-width: 1.4em;
+  padding: 0 0.35em;
+  border: 2px solid #fff;
+  border-radius: 4px;
+  text-align: center;
+  font-family: inherit;
+  text-shadow: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+.interact .cost {
+  margin-left: 0.4em;
+  color: #ffd23f;
+}
+.interact.cant .cost {
+  color: #ff5a5a;
+}
+.interact.denied .interact-text {
+  color: #ff5a5a;
+  animation: interact-shake 0.3s;
+}
+.interact-bar {
+  width: 140px;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.interact-fill {
+  height: 100%;
+  background: #ffd23f;
+  transform: scaleX(0);
+  transform-origin: left;
+}
+@keyframes interact-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
 
 .prompt {
   position: absolute;

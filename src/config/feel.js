@@ -120,6 +120,15 @@ export const feel = {
     resultsDelay: 1.6, // seconds after death before the results screen shows
   },
 
+  // Buying things (doors, wall buys): hold the interact button (config/controls.js -> bindings.interact).
+  interact: {
+    holdSeconds: 0.25, // hold this long to buy
+    range: 2.5, // meters from the thing's interaction point
+    maxAngleDegrees: 60, // must be roughly facing it...
+    facingFreeDistance: 1.0, // ...unless this close
+    deniedSeconds: 0.6, // how long the prompt stays red after trying to buy without enough points
+  },
+
   melee: {
     // (the melee button is in config/controls.js -> bindings.melee)
     lungeEndSpeedKeep: 0.3, // fraction of lunge speed kept when it ends (so you don't skate past)

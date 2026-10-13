@@ -38,6 +38,25 @@ export const audio = {
       ],
     },
 
+    // Bought something: a cash-register "ka-ching" (drawer clunk + two bell tones).
+    purchase: {
+      volume: 0.6,
+      layers: [
+        { type: 'noise', filter: 'lowpass', freq: 900, q: 0.8, gain: 0.5, attack: 0.002, decay: 0.07 },
+        { type: 'tone', wave: 'triangle', freq: 1320, gain: 0.45, attack: 0.002, decay: 0.35, delay: 0.05 },
+        { type: 'tone', wave: 'triangle', freq: 1760, gain: 0.4, attack: 0.002, decay: 0.45, delay: 0.11 },
+        { type: 'tone', wave: 'sine', freq: 3520, gain: 0.12, attack: 0.002, decay: 0.3, delay: 0.11 },
+      ],
+    },
+    // Not enough points: a short, flat register buzz.
+    denied: {
+      volume: 0.45,
+      layers: [
+        { type: 'tone', wave: 'square', freq: 150, freqEnd: 140, gain: 0.35, attack: 0.004, decay: 0.22 },
+        { type: 'tone', wave: 'square', freq: 151, freqEnd: 141, gain: 0.25, attack: 0.004, decay: 0.22, delay: 0.005 },
+      ],
+    },
+
     // Reload: pusher rod pulled back (metal slide)...
     stapleReloadOut: {
       volume: 0.55,

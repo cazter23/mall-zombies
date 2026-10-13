@@ -50,7 +50,7 @@ src/
                         handling shared by all guns (fov, sway, walk bob, breathing, landing dip, reload
                         blend-out, dry-fire kick, box cutter slash path), hit effects, crosshair min gap,
                         body (colors + leg/pose tuning), health (regen, hurt edges), death camera, sprintFx,
-                        melee lunge end
+                        interact (hold time, range, facing angle, denied flash), melee lunge end
     economy.js          Points, payouts, kill values, door + wall-buy prices, round timing, wave scaling + helpers
                         (zombieHealthForRound, zombieCountForRound, spawnDelayForRound, maxAliveForRound)
     weapons.js          Per-weapon stats (damage, headshot mult, mag, reserve, fire interval, reload, spread
@@ -60,16 +60,16 @@ src/
                         with sounds/jolts), `melee.boxCutter` (damage, reach, cone, swing timing, lunge),
                         weaponStatDefaults for stats
     audio.js            Master volume, pitch variation, compressor, and sound recipes (layers of filtered noise
-                        bursts and tones) for the staple gun shot, dry click and reload sounds
+                        bursts and tones) for the staple gun shot, dry click, reload, purchase and denied sounds
     zombies.js          zombieTypes (per-type speed, size, hitboxes, attack, timings, colors, splatter), zombieCrowd
                         (spacing, lanes, queueing, surround rings + sector/still-wrap/circling, contact gap,
                         spawn dust, min spawn distance),
                         zombieNav (grid, soft wall clearance + wall penalty), zombieFailsafe (stuck-zombie rescue)
-    controls.js         bindings (action -> keyboard/mouse + Pad* codes), buttonLabels (prompts per device),
+    controls.js         bindings (action -> keyboard/mouse + Pad* codes; interact = F / X), buttonLabels (prompts per device),
                         gamepad (deadzones, look speed/curve, turn ramp, triggers, click-to-sprint release),
                         aimAssist (strength dial, range/cone, slowdown, rotational, ADS snap)
     debug.js            showMarkers, allowShutterToggle (O key: doors free), testArena (T key), zombieKeys
-                        (Z spawn / X clear), cheatKeys (N next round / P +5000 points), dummies, exposeToWindow
+                        (Z spawn / X clear), cheatKeys (N next round / P +5000 points / ' points to 0), dummies, exposeToWindow
   core/
     loop.js             startLoop(): fixed-timestep accumulator; each frame calls beforeUpdate(frameTime) (look
                         input), then update(dt) per tick, then render(alpha, frameTime)
@@ -173,6 +173,12 @@ src/
     runStats.js         createRunStats(): time alive, kills, headshot/melee kills, shots fired/hit, accuracy
     wallet.js           createWallet(): points (start 500), earn/spend/canAfford, totalEarned, onChange cb (HUD
                         pop-ups). pointsForHit(): COD payouts (+10 hit; kill value +40 head / +70 melee; zombies only)
+    interactions.js     createInteractions(): buyables (doors now, wall buys next). add({ label, verb, cost, position,
+                        available(), use() }). Each tick: nearest available item within feel.interact.range and
+                        roughly faced = focus; holding interact for holdSeconds (hold must START while focused) spends
+                        and calls use(), else red prompt + 'denied'. Buttons bound to both interact and reload
+                        (controller X): the press is hidden from the gun near a buyable; let go before it buys =
+                        onReloadTap (gun.requestReload()). `prompt` for the HUD; reset()
     rounds.js           createRounds(): announce(n, delay) flips the round number (and fires onRoundStart) the
                         moment the last zombie dies, then 'break' (6s, inBreak) -> 'active' (spawn quota at
                         spawnDelay, capped by maxAlive; quota only used when a zombie actually spawned, else retry
@@ -200,7 +206,8 @@ src/
   ui/
     hud.js              createHud(): 4-line crosshair whose gap = spread cone (dot in ADS) + hit marker (white body, big yellow head, red kill),
                         bottom-left health (white) + stamina (green) bars, bottom-right ammo counter,
-                        reload prompt under the crosshair, red hurt edges, click-to-play/paused overlay,
+                        reload prompt under the crosshair, buy prompt below it (setInteract: "Hold F to open X 500",
+                        red cost when unaffordable, shake when denied, hold-progress bar), red hurt edges, click-to-play/paused overlay,
                         "Clocked Out" results screen with Play again (plain DOM)
 ```
 
@@ -209,17 +216,20 @@ src/
   slowdown) BEFORE the ticks, so shots/movement in this frame's ticks use where you're looking now.
   `update(dt)` (60Hz): if `game.over` (dead) only zombies/health/death timer run (checked
   first: the mouse is released on death); if not running (pointer unlocked) it freezes the player; otherwise debug
-  keys, `player.update`, `melee.update`, `gun.update(dt, melee.isBusy)` (after the player so shots use this tick's
+  keys, `player.update`, `interactions.update` (before the gun, so a controller-X hold near a buyable buys instead
+  of reloading), `melee.update`, `gun.update(dt, melee.isBusy)` (after the player so shots use this tick's
   eye), `zombies.update`, `rounds.update` (paused while in the test range), `health.update`, `map.update`,
   `arena.update`, `player.updateView` (recoil springs last, so a shot's kick shows on the very next frame),
   `input.endTick()`. `rounds.start()` happens the first tick the game actually runs.
+- Buying: main adds every `map.doors` entry to `interactions` (verb 'open', cost door.price, use = door.open(), which
+  opens its zone so zombies start spawning there and the nav grid rebuilds when the shutter's collider goes).
 - Map: `main.js` does `loadMap('mall', scene, colliders)` and only uses the map interface (maps/index.js).
   The zombie manager gets `map.spawnPoints` + `isZoneOpen`, so zombies only spawn in opened zones.
 - Points: gun and melee call `onHit({ target, killed, headshot, melee })` -> `wallet.earn(pointsForHit(...))`.
   HUD: points above the ammo with +N pop-ups, round number top-left (blinks in the break), "ROUND N" banner.
 - Death flow: `onPlayerDeath()` sets `game.over`, hides the combat HUD, releases the mouse. Render then runs the
   death camera (drop + roll) and skips the gun pass; after `feel.death.resultsDelay` the results screen shows.
-  Play again -> `resetRun()` (zombies, health, run stats, ammo + aim, viewmodel, effects, melee, player position,
+  Play again -> `resetRun()` (zombies, health, run stats, ammo + aim, interactions, viewmodel, effects, melee, player position,
   shutter) -> re-lock.
 - Testing hook: `window.__mall.step(n)` advances the real loop n ticks and draws a frame (use with
   `game.forceRun = true`; set it back to false before screenshots, or the live loop keeps playing).
@@ -259,7 +269,7 @@ src/
   Play Time Toys, Byte Me Electronics), pillars, benches, planters, ceiling lights.
 - Start room: x -5..5, z 6..16 (north of concourse), 4m ceiling, checkout counter, shelf, crates, boarded vents.
 - 4m doorway at z=6 blocked by a security shutter door (500 in economy.js) that opens the concourse zone.
-  Debug: press **O** to toggle doors for free.
+  Hold **F** (controller: hold **X**) near it to buy it. Debug: press **O** to toggle doors for free.
 - Wall-buy spots: start room east wall (5, 1.5, 10) = Price Gun; concourse south wall (7.7, 1.5, -6) = Nail Gun.
 - Player spawns at (0, 0, 12) facing the shutter.
 
@@ -346,8 +356,11 @@ COD payouts; results show round reached + points earned.
 BO2-inspired tuning (after part B): wind-up 0.35s -> 0.3s; round number flips the instant the last zombie dies,
 6s break, then zombies trickle in (early rounds slower: `spawnDelay.earlyRounds` 3.0/2.6/2.2/1.9s, max alive
 5/6/9/12 in rounds 1-4); staple gun 30 dmg; a horde chasing you stays on its own side (behind you) and only
-wraps all the way round when you stand still. Next: part C (hold F / X to buy: the shutter first),
-part D (two weapon slots, Price Gun 500 full-auto pistol in the start room, Nail Gun 1000 in the concourse).
+wraps all the way round when you stand still.
+Part C done: interaction system (game/interactions.js). Hold F / X for 0.25s near and facing the shutter to buy it
+(500): ka-ching, points pop-up, shutter rolls up, concourse zone opens. Not enough points: red cost, shake, buzz.
+Controller X near a buyable: tap = reload, hold = buy. Next: part D (two weapon slots, Price Gun 500 full-auto
+pistol in the start room, Nail Gun 1000 in the concourse, ammo refills), using the same interaction system.
 
 ## Planned build order
 1. Walkable mall (done)

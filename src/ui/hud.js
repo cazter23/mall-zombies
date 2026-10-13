@@ -2,7 +2,7 @@
 // HUD + START OVERLAY
 // Plain HTML on top of the canvas: crosshair + hit marker, health and stamina
 // bars, ammo counter, points (+ pop-ups), round counter and banner, reload
-// prompt, and the click-to-play / paused / results screens.
+// prompt, buy prompt (with hold progress), and the click-to-play / paused / results screens.
 // =============================================================================
 
 import { debug } from '../config/debug.js';
@@ -47,6 +47,16 @@ export function createHud() {
   // Small prompt under the crosshair ("Reload", "No ammo").
   const prompt = el('div', 'prompt');
   hud.append(prompt);
+
+  // Buy prompt below that ("Hold F to open Security Shutter  500"), with a hold-progress bar.
+  const interact = el('div', 'interact');
+  const interactText = el('div', 'interact-text');
+  const interactBar = el('div', 'interact-bar');
+  const interactFill = el('div', 'interact-fill');
+  interactBar.append(interactFill);
+  interact.append(interactText, interactBar);
+  hud.append(interact);
+  let lastInteractKey = '';
 
   // Bottom-right, above the ammo: points, with "+60" pop-ups floating up from it.
   const points = el('div', 'points');
@@ -100,15 +110,16 @@ export function createHud() {
         <li><kbd>Mouse</kbd> look</li>
         <li><kbd>Click</kbd> shoot</li>
         <li><kbd>R</kbd> reload</li>
+        <li><kbd>F</kbd> buy (hold)</li>
         <li><kbd>V</kbd> box cutter</li>
         <li><kbd>Esc</kbd> pause</li>
       </ul>
       <p class="pad-hint">Controller? Press <kbd>A</kbd> / <kbd>✕</kbd> or <kbd>Start</kbd> to play.
-        LS move (click to sprint) · RS look · LT aim · RT shoot · A jump · B crouch/slide · X reload · RB knife</p>
+        LS move (click to sprint) · RS look · LT aim · RT shoot · A jump · B crouch/slide · X reload (hold X to buy) · RB knife</p>
       ${debug.allowShutterToggle ? '<p class="debug-hint">Debug: <kbd>O</kbd> opens the shutter</p>' : ''}
       ${debug.testArena ? '<p class="debug-hint">Debug: <kbd>T</kbd> teleports to the movement test range</p>' : ''}
       ${debug.zombieKeys ? '<p class="debug-hint">Debug: <kbd>Z</kbd> spawns a zombie, <kbd>X</kbd> clears them</p>' : ''}
-      ${debug.cheatKeys ? '<p class="debug-hint">Debug: <kbd>N</kbd> next round, <kbd>P</kbd> +5000 points</p>' : ''}
+      ${debug.cheatKeys ? '<p class="debug-hint">Debug: <kbd>N</kbd> next round, <kbd>P</kbd> +5000 points, <kbd>&#39;</kbd> points to 0</p>' : ''}
     </div>
   `;
   const kicker = overlay.querySelector('.kicker');
@@ -293,6 +304,22 @@ export function createHud() {
       else if (weapon.magazine === 0 && weapon.reserve === 0) text = 'No ammo';
       else if (weapon.magazine === 0) text = `Press ${reloadLabel} to reload`;
       prompt.textContent = text;
+    },
+
+    // Buy prompt: null hides it, else { label, verb, cost, canAfford, progress, denied }.
+    // `button` is the interact button for the device in use ("F", "X", "□").
+    setInteract(info, button = 'F') {
+      const key = info
+        ? `${info.label}|${info.cost}|${info.canAfford}|${info.denied}|${button}|${info.progress.toFixed(2)}`
+        : '';
+      if (key === lastInteractKey) return;
+      lastInteractKey = key;
+      interact.classList.toggle('show', !!info);
+      if (!info) return;
+      interactText.innerHTML = `Hold <kbd>${button}</kbd> to ${info.verb} ${info.label} <span class="cost">${info.cost}</span>`;
+      interact.classList.toggle('cant', !info.canAfford);
+      interact.classList.toggle('denied', info.denied);
+      interactFill.style.transform = `scaleX(${info.progress})`;
     },
 
     setSprint(fraction, exhausted, active) {
