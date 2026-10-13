@@ -463,11 +463,13 @@ export function buildMall(scene, colliders) {
     light.position.set(x, y, z);
     group.add(light);
   };
-  for (const x of [-10, 10]) lamp(0xfff0d0, 22, x, H.height - 0.8, HZ); // hallway
-  for (const x of [-12, 0, 12]) lamp(0xfff0d0, 22, x, F.height - 0.8, FZ); // Food Court
-  lamp(0xffe2b0, 8, 0, R.height - 0.5, 10); // start room
-  for (const z of [0, -15]) lamp(0xf2f6ff, 16, 27.5, M.height - 0.8, z); // Mega Mart: cool fluorescent
-  for (const at of [3, 12]) lamp(0xfff2dc, 7, service.points[1].x, SC.height - 0.5, service.pointAt(1, at).z); // Service Corridor
+  // Lamps hang well below the ceiling (about 60% of its height) and are dimmer to match: a lamp just
+  // under the ceiling lights a small, hard-edged bright disc on it; hung lower it's a soft wide glow.
+  for (const x of [-10, 10]) lamp(0xfff0d0, 10, x, H.height * 0.58, HZ); // hallway
+  for (const x of [-12, 0, 12]) lamp(0xfff0d0, 10, x, F.height * 0.58, FZ); // Food Court
+  lamp(0xffe2b0, 4.4, 0, R.height * 0.65, 10); // start room
+  for (const z of [0, -15]) lamp(0xf2f6ff, 8, 27.5, M.height * 0.6, z); // Mega Mart: cool fluorescent
+  for (const at of [3, 12]) lamp(0xfff2dc, 4.1, service.points[1].x, SC.height * 0.65, service.pointAt(1, at).z); // Service Corridor
 
   // --- Spawn points and wall-buy spots (invisible markers) -------------------
 

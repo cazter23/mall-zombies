@@ -429,6 +429,9 @@ The start room opens into a MAIN HALLWAY (the hub); every other area is bought o
   boxes + a vent (spawn) + NO LOITERING (ESPECIALLY THE UNDEAD) at the dead end; three ceiling strips (middle one
   dead), two warm point lights. Concrete-look floor, drab walls.
 - Wall-buy spots: start room east wall (5, 1.5, 10) = Price Gun; hallway south wall (11, 1.5, -2) = Nail Gun.
+- Lighting: room lamps (point lights) hang at ~60% of the ceiling height with intensity scaled to match, NOT just under
+  the ceiling: a lamp 0.8m under it lit a small hard-edged bright disc on the ceiling ("big circles"); hung lower it's a soft
+  glow. Keep that if you move or add lamps (mall.js, the `lamp()` calls).
 - Player spawns at (0, 0, 12) facing the shutter.
 
 ## Movement test range (debug only)
