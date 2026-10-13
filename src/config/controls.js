@@ -37,7 +37,7 @@ export const bindings = {
 // line, the rest dashed. Update this when bindings change.
 export const controlsHelp = {
   keyboard: [
-    { keys: 'WASD', text: 'Move', short: 'Move', anchors: ['S', 'W', 'A', 'D'] },
+    { keys: 'WASD', text: 'Move', short: 'Move', anchors: ['A', 'W', 'S', 'D'] },
     { keys: 'Mouse', text: 'Look', short: 'Look', anchors: ['mouse'] },
     { keys: 'Space', text: 'Jump / vault', short: 'Jump / vault', anchors: ['Space'] },
     { keys: 'Shift', text: 'Sprint', short: 'Sprint', anchors: ['Shift'] },
@@ -46,7 +46,8 @@ export const controlsHelp = {
     { keys: 'Right click', text: 'Aim down sights', short: 'Aim', anchors: ['rmb'] },
     { keys: 'R', text: 'Reload', short: 'Reload', anchors: ['R'] },
     { keys: 'F', text: 'Buy (hold)', short: 'Buy (hold)', anchors: ['F'] },
-    { keys: '1  2  /  Wheel', text: 'Switch weapon', short: 'Switch weapon', anchors: ['1', '2', 'wheel'] },
+    { keys: '1  2', text: 'Switch weapon', short: 'Switch weapon', anchors: ['1', '2'] },
+    { keys: 'Wheel', text: 'Switch weapon', short: 'Switch weapon', anchors: ['wheel'] },
     { keys: 'V', text: 'Box cutter', short: 'Box cutter', anchors: ['V'] },
     { keys: 'Esc', text: 'Pause', short: 'Pause', anchors: ['Esc'] },
   ],
@@ -59,7 +60,7 @@ export const controlsHelp = {
     { keys: 'LT', text: 'Aim down sights', short: 'Aim', anchors: ['lt'] },
     { keys: 'X', text: 'Reload (hold near a shop item to buy)', short: 'Reload / buy (hold)', anchors: ['x'] },
     { keys: 'Y', text: 'Switch weapon', short: 'Switch weapon', anchors: ['y'] },
-    { keys: 'RB / R3', text: 'Box cutter', short: 'Box cutter', anchors: ['rb', 'rs'] },
+    { keys: 'RB / R3', text: 'Box cutter', short: 'Box cutter', anchors: ['rb'] },
     { keys: 'Start', text: 'Pause', short: 'Pause', anchors: ['start'] },
   ],
 };

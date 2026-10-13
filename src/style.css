@@ -737,7 +737,7 @@ kbd {
 .controls-diagram {
   width: 100%;
   height: auto;
-  max-height: 60vh;
+  max-height: max(320px, calc(100vh - 230px));
 }
 .dg-body {
   fill: #3a2f4a;
