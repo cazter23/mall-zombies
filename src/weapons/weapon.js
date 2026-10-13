@@ -61,15 +61,21 @@ export class Weapon {
 
   /**
    * Advance one tick. `triggerPressed` / `reloadPressed` are one-shot presses.
+   * `blocked` (e.g. mid box-cutter swing): nothing fires, and a click queued just before is dropped.
    * Returns 'fire' if a shot goes off this tick, 'empty' on a dry click, else null.
    */
-  update(dt, { triggerPressed, reloadPressed }) {
+  update(dt, { triggerPressed, reloadPressed, blocked = false }) {
     this.cooldown = Math.max(0, this.cooldown - dt);
     this.fireRequest = Math.max(0, this.fireRequest - dt);
 
     if (this.isReloading) {
       this.reloadTimer -= dt;
       if (this.reloadTimer <= 0) this.finishReload();
+    }
+
+    if (blocked) {
+      this.fireRequest = 0;
+      return null;
     }
 
     if (reloadPressed) this.startReload();

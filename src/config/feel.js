@@ -44,6 +44,7 @@ export const feel = {
     coyoteTime: 0.1, // seconds after walking off a ledge where you can still jump
     jumpBufferTime: 0.1, // seconds a jump press is remembered before you land
     stepTolerance: 0.05, // bumps shorter than this never block you
+    fallOutHeight: -20, // safety net: falling below this height (meters) puts you back at the spawn
   },
 
   sprint: {

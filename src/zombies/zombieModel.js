@@ -27,7 +27,6 @@ const SHAPE = {
   armThickness: 0.13,
   neckY: 0.62, // above the hips
   head: 0.3,
-  strideLength: 1.0, // meters per full walk cycle
 };
 
 export function createZombieModel(type) {
@@ -127,18 +126,19 @@ export function createZombieModel(type) {
       // Joggers and runners take longer strides (so legs don't blur) and lean forward more.
       const gaitScale = Math.max(1, zombie.speed / type.speed);
       const runLean = Math.min(1, (gaitScale - 1) / 1.3) * Math.min(1, zombie.horizontalSpeed / zombie.speed);
-      walkPhase += ((zombie.horizontalSpeed * frameTime) / (S.strideLength * Math.sqrt(gaitScale))) * Math.PI * 2;
+      const wa = type.walkAnimation;
+      walkPhase += ((zombie.horizontalSpeed * frameTime) / (wa.strideLength * Math.sqrt(gaitScale))) * Math.PI * 2;
       const swing = Math.sin(walkPhase);
 
       // Shamble
-      legs[0].rotation.x = swing * 0.5 * moveAmount;
-      legs[1].rotation.x = -swing * 0.5 * moveAmount;
-      upper.rotation.set(-0.15 - 0.3 * runLean, 0, Math.sin(walkPhase) * 0.07); // hunched forward, swaying
-      arms[0].rotation.x = -0.1 + Math.sin(walkPhase + 0.6) * 0.12 * moveAmount;
-      arms[1].rotation.x = -0.1 + Math.sin(walkPhase + 2.2) * 0.12 * moveAmount;
+      legs[0].rotation.x = swing * wa.legSwing * moveAmount;
+      legs[1].rotation.x = -swing * wa.legSwing * moveAmount;
+      upper.rotation.set(-wa.hunch - wa.runLean * runLean, 0, swing * wa.torsoSway); // hunched forward, swaying
+      arms[0].rotation.x = -0.1 + Math.sin(walkPhase + 0.6) * wa.armBob * moveAmount;
+      arms[1].rotation.x = -0.1 + Math.sin(walkPhase + 2.2) * wa.armBob * moveAmount;
       arms[0].rotation.z = 0.05;
       arms[1].rotation.z = -0.05;
-      neck.rotation.set(0.12, 0, Math.sin(walkPhase * 0.5) * 0.18); // lolling head
+      neck.rotation.set(0.12, 0, Math.sin(walkPhase * 0.5) * wa.headLoll); // lolling head
 
       // Attack: arms rise overhead and the body leans back (the telegraph), then they slam down.
       const atk = type.attack;

@@ -80,7 +80,9 @@ src/
                         ('keyboard' | 'gamepad', last used), mouse delta, pointer lock
     gamepad.js          createGamepad(input): polls the first controller each tick (standard layout), writes
                         Pad* held/pressed codes + sticks (radial deadzones, look response curve) into input,
-                        click-to-sprint latch (PadSprint), Xbox/PlayStation detection, lookRate() w/ turn ramp
+                        click-to-sprint latch (PadSprint; ended by stick release or a FRESH aim/crouch action
+                        press, so L3 while holding LT drops ADS and sprints), Xbox/PlayStation detection,
+                        `connected`, lookRate() w/ turn ramp
   player/
     controller.js       PlayerController: WASD, jump (buffer + coyote time), sprint meter, crouch/slide
                         (stance: stand|crouch|slide), gravity, mouse look (per render frame), camera interpolation.
@@ -97,10 +99,10 @@ src/
                         solved with two-bone IK. Exports placeLimb()/makeBoxMesh() (also used for the arms)
   weapons/
     weapon.js           Weapon class: ammo, fire cooldown + click buffer, reload. Pure state; update() returns
-                        'fire' | 'empty' | null
+                        'fire' | 'empty' | null. `blocked` (melee swing) drops a queued click
     aim.js              createAim(): ADS state (eased 0..1, blocks sprint, sprint cancels it) and hip-fire
                         spread (base + moving + airborne, smoothed, + per-shot bloom; x adsMultiplier).
-                        applySpread() picks a random direction inside the cone
+                        applySpread() picks a random direction inside the cone; reset() (new run: hip, base spread)
     aimAssist.js        createAimAssist(): controller-only (input.device). Picks the visible target nearest the
                         crosshair (sticky), aims at its chest. Slowdown multiplier (read per frame for stick
                         look), rotational follow of the target's angular motion while a stick is in use, and
@@ -146,11 +148,12 @@ src/
                         zombie ahead); arrive braking; faces where it's trying to go. Personal laneOffset,
                         lookAhead, sideBias. During windup/swing it heads straight at the player (not its slot). circleAroundPlayer(): if
                         the player's body is in the way partway to its slot, it walks round them (not the last stretch)
-    zombieModel.js      Blocky shopper model (random outfit, maybe a shopping bag) + code animation: shamble,
+    zombieModel.js      Blocky shopper model (random outfit, maybe a shopping bag) + code animation (walk cycle
+                        numbers in zombieTypes.<type>.walkAnimation): shamble,
                         arms-overhead wind-up, slam, recovery, flinch/flash, rise from floor, tip over and sink
     zombieManager.js    createZombieManager(): spawn (reachable spawn points >= minSpawnDistance away), update
                         (assign surround slots -> zombie updates -> resolve zombie overlaps -> keep the player out
-                        of zombies), death splatter, shootables bookkeeping, clear(). Surround slots: rings around
+                        of zombies -> refresh hitboxes, since the shoves moved bodies), death splatter, shootables bookkeeping, clear(). Surround slots: rings around
                         the player (inner at arm's length), innermost ring fills first, zombies keep their slot.
                         A zombie only takes slots within surroundSectorDegrees (50) of its own side of the player,
                         so a horde chasing you stays behind you; after you stand still for wrapAfterStillSeconds
@@ -176,7 +179,7 @@ src/
     sound.js            createSound(): Web Audio synth for config/audio.js recipes. play(name, { volume }),
                         unlock() (also on the first pointerdown/keydown; browsers block audio before that)
   fx/
-    effects.js          Tracers (pooled) + particle bursts (one InstancedMesh): splat() and puff()
+    effects.js          Tracers (pooled) + particle bursts (one InstancedMesh): splat(), puff(), clear() (new run)
   world/                Shared building blocks for maps
     door.js             createDoor(): buyable barrier (price, opensZone) wrapping a shutter; open/reset/toggle
     collision.js        moveAndCollide(): horizontal push-out then vertical landing/ceiling vs. Box3 list;
@@ -203,7 +206,8 @@ src/
   HUD: points above the ammo with +N pop-ups, round number top-left (blinks in the break), "ROUND N" banner.
 - Death flow: `onPlayerDeath()` sets `game.over`, hides the combat HUD, releases the mouse. Render then runs the
   death camera (drop + roll) and skips the gun pass; after `feel.death.resultsDelay` the results screen shows.
-  Play again -> `resetRun()` (zombies, health, run stats, ammo, melee, player position, shutter) -> re-lock.
+  Play again -> `resetRun()` (zombies, health, run stats, ammo + aim, viewmodel, effects, melee, player position,
+  shutter) -> re-lock.
 - Testing hook: `window.__mall.step(n)` advances the real loop n ticks and draws a frame (use with
   `game.forceRun = true`; set it back to false before screenshots, or the live loop keeps playing).
   `render(alpha, frameTime)`: applies mouse look, interpolates the camera, updates effects + viewmodel, updates the
@@ -211,8 +215,11 @@ src/
 - Input: mouse buttons are tracked like keys as `Mouse0`/`Mouse1`/`Mouse2`, only while pointer-locked.
   Controller buttons are `PadA`.. codes written by `gamepad.poll()` (first thing in `update`).
 - Controller flow: `game.running` = pointer locked OR `game.padPlaying` OR forceRun. `handleControllerMenus()`
-  in main: A/Start starts or resumes (no pointer lock needed), Start pauses, A on the results screen plays
-  again. Stick look is applied per frame in render (`player.applyStickLook`) x `aimAssist.slowdown`.
+  in main: A/Start starts or resumes (no pointer lock needed; also tries `sound.unlock()`), Start pauses, A on the
+  results screen plays again, unplugging the controller mid-game pauses. Stick look is applied per frame in
+  render (`player.applyStickLook`) x `aimAssist.slowdown`.
+- Render timing: while paused (not running, not dead) render uses alpha = 1 and zero visual time, so nothing
+  twitches; after death visual time keeps flowing (zombies animate, particles fall, the flash fades).
 - Shooting: `player.getAim()` gives eye + direction including view kick; `aim.applySpread()` then randomizes it
   inside the spread cone. The crosshair gap is computed in `main.js` render from `aim.spreadDegrees` and the
   current camera FOV (gap px = tan(spread) / tan(fov/2) * screenHeight/2), so every shot lands inside the lines.

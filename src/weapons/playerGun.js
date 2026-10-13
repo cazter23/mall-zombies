@@ -96,10 +96,7 @@ export function createPlayerGun({
       if (aimAssist) aimAssist.update(dt, aim); // then controller aim assist nudges the view
       const trigger = input.consumeAction('fire');
       const reload = input.consumeAction('reload');
-      const result = weapon.update(dt, {
-        triggerPressed: trigger && !blocked,
-        reloadPressed: reload && !blocked,
-      });
+      const result = weapon.update(dt, { triggerPressed: trigger, reloadPressed: reload, blocked });
       if (result === 'fire') this.lastShot = fire();
       else if (result === 'empty') {
         // Dry click on an empty mag (the weapon starts reloading by itself).
@@ -109,9 +106,10 @@ export function createPlayerGun({
       runReloadEvents();
     },
 
-    // Full ammo, for a new run.
+    // Full ammo and hip fire, for a new run.
     reset() {
       weapon.reset();
+      aim.reset();
       lastReloadProgress = null;
       this.lastShot = null;
     },

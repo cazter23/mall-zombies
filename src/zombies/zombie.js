@@ -226,7 +226,7 @@ export class Zombie {
       const oz = this.position.z - other.position.z;
       const d = Math.hypot(ox, oz);
       if (d >= sepR || d < 1e-4) continue;
-      const w = Math.min(3, ((sepR - d) / (sepR - crowd.minSpacing)) ** 2);
+      const w = Math.min(crowd.maxSeparationPush, ((sepR - d) / (sepR - crowd.minSpacing)) ** 2);
       pushX += (ox / d) * w;
       pushZ += (oz / d) * w;
     }

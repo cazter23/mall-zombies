@@ -322,7 +322,7 @@ export class PlayerController {
     this.bobStrength += (targetBob - this.bobStrength) * blend;
 
     // Safety net: if we ever fall out of the world, put the player back.
-    if (this.position.y < -20) this.respawn();
+    if (this.position.y < feel.movement.fallOutHeight) this.respawn();
   }
 
   // Decides stand / crouch / slide, then sets collision height and eases the camera height.

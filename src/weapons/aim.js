@@ -76,6 +76,19 @@ export function createAim({ def, input, player }) {
       bloom = Math.max(0, bloom - s.bloomRecovery * dt);
     },
 
+    // New run: hip fire, resting spread.
+    reset() {
+      amount = 0;
+      prevAmount = 0;
+      cancelledBySprint = false;
+      movementSpread = s.base;
+      bloom = 0;
+      this.isAiming = false;
+      this.justStartedAiming = false;
+      player.isAiming = false;
+      player.aimAmount = 0;
+    },
+
     // Call after each shot: rapid firing widens the cone.
     onShot() {
       bloom = Math.min(s.maxBloom, bloom + s.perShot);

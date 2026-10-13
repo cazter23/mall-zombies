@@ -169,6 +169,7 @@ function resetRun() {
   runStats.reset();
   gun.reset();
   viewmodel.reset();
+  effects.clear(); // no leftover splatter or tracers from the last run
   melee.reset();
   aimAssist.reset();
   wallet.reset();
@@ -229,15 +230,25 @@ hud.onPlayAgain(() => {
 // --- Loop ------------------------------------------------------------------------
 
 // Controller menus: A/Start starts or resumes, Start pauses, A on the results screen plays again.
+// Unplugging the controller mid-game pauses (otherwise the zombies keep going with nobody playing).
+let padWasConnected = false;
 function handleControllerMenus() {
+  if (padWasConnected && !gamepad.connected && game.padPlaying) {
+    game.padPlaying = false;
+    if (!game.running && !game.over) hud.setPaused(true); // still running if the mouse is locked
+  }
+  padWasConnected = gamepad.connected;
+
   if (game.over) {
     if (death.resultsShown && input.consumeAction('confirm')) {
+      sound.unlock(); // controller-only players never click, so try to start audio here too
       resetRun();
       game.padPlaying = true;
       hud.setPaused(false);
     }
   } else if (!game.running) {
     if (input.consumeAction('confirm')) {
+      sound.unlock();
       game.padPlaying = true;
       hud.setPaused(false);
     }
@@ -301,6 +312,13 @@ function update(dt) {
 const stickRate = { yaw: 0, pitch: 0 };
 
 function render(alpha, frameTime) {
+  // While paused nothing ticks, so interpolating between the last two ticks would make things
+  // twitch: show the latest tick instead. Visual time keeps flowing after death (the world goes
+  // on around the death camera) but stops while paused.
+  const paused = !game.running && !game.over;
+  if (paused) alpha = 1;
+  const visualTime = paused ? 0 : frameTime;
+
   // ADS zoom: narrow the world camera's FOV, and slow the mouse to match if configured.
   const aimAmount = gun.aim.renderAmount(alpha);
   const fov = feel.camera.fov * (1 + (gun.weapon.def.ads.fovMultiplier - 1) * aimAmount);
@@ -321,10 +339,10 @@ function render(alpha, frameTime) {
   player.syncCamera(alpha);
   if (game.over) applyDeathCamera(alpha);
   body.root.visible = !game.over;
-  body.update(game.running ? frameTime : 0, player, alpha);
-  zombies.render(game.running ? frameTime : 0, alpha);
-  if (game.running) effects.update(frameTime);
-  viewmodel.update(game.running ? frameTime : 0, camera, {
+  body.update(visualTime, player, alpha);
+  zombies.render(visualTime, alpha);
+  effects.update(visualTime);
+  viewmodel.update(visualTime, camera, {
     weapon: gun.weapon,
     aimAmount,
     meleeProgress: melee.progress,

@@ -44,7 +44,7 @@ export const zombieTypes = {
       startRange: 1.5, // they start an attack this close (center to center; they stop at ~0.8), still walking
       //                  in at full speed: COD-style, they swing on the way in instead of stopping first...
       range: 1.7, // ...and the swing connects out to here (a bit past startRange: they lunge into it, so a
-      //             quick hop or step back right as the arms go up isn't a free dodge), so a little step back isn't a free dodge
+      //             quick hop or step back right as the arms go up isn't a free dodge)
       moveSpeedFraction: 1.0, // walking speed (x their gait speed) during the wind-up and swing: they keep
       //                         stepping straight at you (not to their crowd spot) until they're in your face
       closeInBrakeDistance: 0.15, // ...only braking in the last this-many meters before touching you
@@ -62,6 +62,17 @@ export const zombieTypes = {
       //                   anything lower, like a bench or counter, doesn't)
       armsRaisedRadians: 2.3, // arm angle at the top of the wind-up (0 = straight forward)
       armsSlammedRadians: -0.7, // arm angle at the bottom of the swing
+    },
+
+    // Shamble animation (visual only)
+    walkAnimation: {
+      strideLength: 1.0, // meters per full walk cycle (joggers/runners stretch it so legs don't blur)
+      legSwing: 0.5, // radians each leg swings forward/back
+      armBob: 0.12, // radians the outstretched arms bob
+      torsoSway: 0.07, // radians the upper body sways side to side
+      headLoll: 0.18, // radians the head lolls side to side
+      hunch: 0.15, // radians hunched forward when walking...
+      runLean: 0.3, // ...plus this much more for a full-speed runner
     },
 
     // Timings
@@ -95,6 +106,7 @@ export const zombieCrowd = {
   separationStrength: 1.6, // push strength (x walking speed) when almost touching
   maxCrowdSpeed: 1.35, // a shove can move a zombie up to this x its own speed
   minSpacing: 0.66, // hard rule: centers never closer than this (overlaps are resolved after moving)
+  maxSeparationPush: 3, // cap on one neighbour's push (x a normal push), so a pile-up can't fling anyone
 
   // Lanes: each zombie walks a personal line offset sideways from the shared route, so a horde
   // spreads across a doorway instead of filing through one spot. Offsets fade out near the player.

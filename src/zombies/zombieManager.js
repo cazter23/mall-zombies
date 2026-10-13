@@ -294,6 +294,9 @@ export function createZombieManager({
       for (const z of zombies) z.update(dt, ctx);
       resolveZombieOverlaps();
       keepPlayerOutOfZombies();
+      // The shoves above move zombies after they placed their hitboxes: move the hitboxes too,
+      // or a shot at a shoved zombie's head could miss what you see.
+      for (const z of zombies) if (z.isAlive) z.updateHitboxes();
 
       // Clean up corpses that have finished sinking.
       for (let i = zombies.length - 1; i >= 0; i--) {

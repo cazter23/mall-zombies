@@ -120,7 +120,17 @@ export function createEffects(scene) {
       burst(point, normal, [fx.puffColor], fx.puffCount, fx.puffSpeed, fx.particleSize * 0.7);
     },
 
-    // Call every rendered frame with the real frame time (skip while paused).
+    // Remove every tracer and particle (new run).
+    clear() {
+      for (const t of tracers) {
+        t.life = 0;
+        t.mesh.visible = false;
+      }
+      alive = 0;
+      particles.count = 0;
+    },
+
+    // Call every rendered frame with the real frame time (0 while paused).
     update(dt) {
       for (const t of tracers) {
         if (t.life <= 0) continue;
