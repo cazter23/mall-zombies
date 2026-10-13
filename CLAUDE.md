@@ -57,7 +57,8 @@ src/
                         body (colors + leg/pose tuning), health (regen, hurt edges), death camera, sprintFx,
                         weaponSwitch (lower/raise time, drop), interact (hold time, range, facing angle, denied
                         flash), world.wallBuyDisplay, melee lunge end
-    economy.js          Points, payouts, kill values, door + wall-buy prices, round timing, wave scaling + helpers
+    economy.js          Points, payouts, kill values, door prices (startShutter 500, megaMart 750, foodCourt 1000) +
+                        wall-buy prices, round timing, wave scaling + helpers
                         (zombieHealthForRound, zombieCountForRound, spawnDelayForRound, maxAliveForRound).
                         zombieMix: special types per round (mallWalker: from round 4, share 15% / 25% from 6 / 30% from 9,
                         healthMultiplier 0.65, introSpawnIndex) + zombieHealthFor(typeId, round), zombieTypeForRound(round)
@@ -240,11 +241,12 @@ src/
     index.js            Map registry + loadMap(id, scene, colliders) + THE MAP INTERFACE (id, group, zones, doors,
                         spawnPoints, wallBuys, playerSpawn, update, reset, dispose). New map = new folder + 1 line
     mall/mall.js        buildMall(scene, colliders): the mall's LAYOUT only (rooms, doors, props, lights, markers), built
-                        with the map kit + mall props. Zones startRoom (open) / concourse / megaMart; doors: start
-                        shutter (500) -> concourse, Mega Mart shutter (750, concourse east wall) -> megaMart; wall buys
-                        priceGun (start room) + nailGun (outside Nuts & Bolts) + a reserved spot in the Mega Mart
-                        (weapon 'foamDartBlaster', inert until that gun exists). All meshes, lights and debug markers
-                        live in its group. Exports LAYOUT (concourse, startRoom, doorway, megaMart, megaMartDoorway)
+                        with the map kit + mall props. Zones startRoom (open) / hallway / megaMart / foodCourt; doors:
+                        start shutter (500) -> hallway (the hub), Mega Mart shutter (750, hallway east end) -> megaMart,
+                        Food Court shutter (1000, hallway south wall) -> foodCourt; wall buys priceGun (start room) +
+                        nailGun (hallway south wall) + a reserved spot in the Mega Mart (weapon 'foamDartBlaster', inert
+                        until that gun exists). All meshes, lights and debug markers live in its group. Exports LAYOUT
+                        (startRoom, hallway, foodCourt, megaMart, doorway, foodCourtDoorway, megaMartDoorway)
     mall/props.js       createMallProps(kit): shopFront({ along 'x'|'z', from, to, wallAt, facing, color, text }), pillar,
                         bench (vaultable), planter ({ tree }), lightPanel ({ dead }), gondola (solid double-sided shelf,
                         products = one seeded InstancedMesh), checkout (vaultable counter + register + lane light),
@@ -357,23 +359,30 @@ src/
   Player is a cylinder (radius, height, feet position). Boxes whose top is within `stepTolerance`
   of the feet count as floor, not walls.
 - Coordinates: meters, +Y up. Camera looks down -Z at yaw 0.
-- Markers (invisible; shown if `debug.showMarkers`): `map.spawnPoints` (10: 2 start-room vents, 4 concourse
-  shopfronts, 4 Mega Mart: stockroom, receiving, back vent, emergency exit; each tagged with its zone) and
-  `map.wallBuys` (3, with an outward `normal` and a `weapon` id; the Mega Mart one is reserved/inert).
+- Markers (invisible; shown if `debug.showMarkers`): `map.spawnPoints` (13: 2 start-room vents, 3 hallway vents,
+  4 Food Court shopfronts, 4 Mega Mart: stockroom, receiving, back vent, emergency exit; each tagged with its zone)
+  and `map.wallBuys` (3, with an outward `normal` and a `weapon` id; the Mega Mart one is reserved/inert).
 
 ## Map (current)
-- Main concourse: x -20..20, z -6..6, 6m ceiling. Four decorative shopfronts (Good Sports, Nuts & Bolts,
-  Play Time Toys, Byte Me Electronics), pillars, benches, planters (two flank the Mega Mart entrance), ceiling
-  lights. East wall: the Mega Mart entrance (4m shutter, z -2..2) under a MEGA MART sign.
-- Start room: x -5..5, z 6..16 (north of concourse), 4m ceiling, checkout counter, shelf, crates, boarded vents.
-- 4m doorway at z=6 blocked by a security shutter door (500 in economy.js) that opens the concourse zone.
-  Hold **F** (controller: hold **X**) near it to buy it. Debug: press **O** to toggle doors for free.
-- Mega Mart: x 20..34, z -24..6, 5m ceiling, behind the 750 shutter. Front: 4 checkout lanes (vaultable counters,
-  x 24.5..27.5, 2m lanes, open ends to run round). Back: 3 stocked shelf gondolas (x 24 / 27.5 / 31, z -19.5..-8,
-  solid, 2m tall) making 4 aisles (west one 3.2m wide: the future Food Court door goes on that wall), a 4.5m back
-  walkway with stockroom/receiving doors + a boarded vent, an emergency exit on the east wall. Brand stripe,
-  aisle signs, fluorescent strips (some dead), 2 point lights.
-- Wall-buy spots: start room east wall (5, 1.5, 10) = Price Gun; concourse south wall (7.7, 1.5, -6) = Nail Gun.
+The start room opens into a MAIN HALLWAY (the hub); every other area is bought off it, in any order.
+- Start room: x -5..5, z 6..16, 4m ceiling, checkout counter, shelf, crates, boarded vents. Its 4m doorway at z=6
+  is blocked by a security shutter door (500) that opens the hallway. Hold **F** (controller: hold **X**) near a
+  door to buy it. Debug: press **O** to toggle every door for free.
+- Main hallway: x -20..20, z -2..6 (8m wide), 6m ceiling. Doors: Food Court (1000, south wall x -2..2, straight
+  across from the start door, under a FOOD COURT sign, framed by two planters), Mega Mart (750, east end z 0..4,
+  under a MEGA MART sign). West end: a painted "SERVICE CORRIDOR · STAFF ONLY" door where the Service Corridor
+  (1250) goes later. 3 boarded vents (zombie spawns). Kept mostly clear for the escalator (planned: west half) and
+  elevator (planned: north wall, east half).
+- Food Court: x -20..20, z -14.3..-2.3, 6m ceiling, behind the 1000 shutter: the old concourse moved south (its four
+  shopfronts Good Sports / Nuts & Bolts / Play Time Toys / Byte Me, 4 pillars, 3 benches, tree planter, end planters,
+  ceiling lights, 4 spawns), placed relative to its center line FZ = -8.3. Food stalls + tables come later.
+- Mega Mart: x 20..34, z -24..6, 5m ceiling, behind the 750 shutter. Its west wall (x 20..20.3, 6m tall) is also the
+  east wall of the hallway (door at z 0..4) and of the Food Court (room for a shortcut door later). Front: 4 checkout
+  lanes (vaultable counters, x 24.5..27.5, 2m lanes, open ends to run round). Back: 3 stocked shelf gondolas
+  (x 24 / 27.5 / 31, z -19.5..-8, solid, 2m tall) making 4 aisles, a 4.5m back walkway with stockroom/receiving
+  doors + a boarded vent, an emergency exit on the east wall. Brand stripe, aisle signs, fluorescent strips (some
+  dead), 2 point lights.
+- Wall-buy spots: start room east wall (5, 1.5, 10) = Price Gun; hallway south wall (11, 1.5, -2) = Nail Gun.
 - Player spawns at (0, 0, 12) facing the shutter.
 
 ## Movement test range (debug only)
@@ -483,7 +492,8 @@ zoom in ADS, dust-and-spark flash, pneumatic THUNK + hiss. Round 1: 2 body shots
 can kill a line of round-1 zombies).
 
 Core movement/combat additions: deliberate momentum vaults and committed box-cutter swings.
-- **Vault:** move toward the checkout counter or a concourse bench and press jump (Space / A).
+- **Vault:** move toward the start room's checkout counter, a Mega Mart checkout counter or a Food Court bench
+  (the old concourse benches) and press jump (Space / A).
   Only those colliders are marked `vaultable`; crossing the short side must fit `feel.vault.maxDepth`.
   Requires a standing, grounded approach, suitable height/speed, full standing-body clearance and a
   supported, unoccupied landing. Raises before the near edge, crosses above the top, lowers beyond
@@ -533,15 +543,21 @@ to be one if none came yet, and its first spawn in a run plays the PA chime + "A
 have entered the building" banner. Debug: Shift+Z spawns one. Verified in the browser (looks, power walk, a real
 hit + winded pose, round-4 banner) and by tests/zombies.test.js.
 
-Map expansion planned (before Cart Pusher / Mannequin / shop systems): a ground-floor loop. Mega Mart (east, door
-750), Food Court (south, door 1000 from the Mega Mart AND a second 1000 door from the corridor; one zone),
-Service Corridor (west, door 1250). Step 1 done (groundwork, no visible change): map kit (world/mapKit.js) + mall
-props/palette split out of mall.js (verified identical: same 105 objects, 71 colliders, spawns, wall buys, door, in
-the same order); doors can share a zone; the nav grid rebuilds on any marked collider change (count + version).
-Step 2 done: the Mega Mart + its 750 door (see Map). Verified: tests/mall.test.js (sealed until bought, all 4 spawns +
-every aisle reachable after, reset seals it again), and in the browser (entrance + shutter look right, a real F-hold
-is refused at 500 points and buys at 750, the player walks in, zombies from all 3 back spawns reach the front in
-~8s and from the far concourse in ~12s). Next: step 3 = Food Court + its 1000 door from the Mega Mart.
+Map expansion (before Cart Pusher / Mannequin / shop systems). Done earlier: map kit (world/mapKit.js) + mall
+props/palette split out of mall.js (verified identical), doors can share a zone, the nav grid rebuilds on any marked
+collider change; the Mega Mart + its 750 door.
+REVISED PLAN (hub layout): the start shutter opens into a new MAIN HALLWAY (hub); Mega Mart (750), Food Court (1000)
+and Service Corridor (1250) are each bought off it in any order; the hallway also gets an escalator + elevator
+(sealed: "out of order" / "service only") as the way up to a second floor later; the Service Corridor is built from a
+modular segment list so it can be extended. Steps: 1) hallway + the concourse becomes the Food Court (DONE),
+2) escalator + elevator, sealed, 3) Food Court dressing (stalls, tables), 4) corridor segment builder, 5) Service
+Corridor + 1250 door, 6) optional loop shortcuts (Food Court <-> Mega Mart, corridor <-> Food Court).
+Step 1 done: hallway hub (see Map), the old concourse moved south as the Food Court behind a 1000 door, Mega Mart door
+moved to the hallway's east end, Nail Gun wall buy moved onto the hallway wall (so it's still available right after
+the 500 shutter). Verified: tests/mall.test.js (each area sealed until its own door is bought, in any order; Nail Gun
+spot reachable after the start shutter; reset seals everything) and in the browser (real F-hold buys the start
+shutter, the hallway/Food Court/Mega Mart look right, zombies reach the hallway from the Food Court in ~8s and from
+the Mega Mart in ~10-14s).
 
 ## Planned build order
 1. Walkable mall (done)

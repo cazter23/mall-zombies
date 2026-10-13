@@ -253,7 +253,7 @@ export const weapons = {
     },
   },
 
-  // The first real upgrade (concourse, outside Nuts & Bolts, 1000): a framing nailer. Slow, hard-hitting
+  // The first real upgrade (main hallway wall, 1000): a framing nailer. Slow, hard-hitting
   // semi-auto whose nails go through zombies: line up a horde while you train it.
   nailGun: {
     id: 'nailGun',

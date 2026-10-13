@@ -25,7 +25,9 @@ function setup() {
   const map = buildMall(new THREE.Scene(), colliders);
   const shopper = zombieTypes.shopper;
   const nav = createNavigation(colliders, { radius: shopper.radius, height: shopper.height });
-  const player = new THREE.Vector3(0, 0, 0); // middle of the concourse
+  // Paths are measured from the start room (where the player begins), so every route has to go
+  // through the doors.
+  const player = new THREE.Vector3(0, 0, 12);
   const door = (id) => map.doors.find((d) => d.id === id);
   // Open a door for real: buy it, then let the shutter roll up until its collider is gone.
   const open = (id) => {
@@ -39,13 +41,19 @@ function setup() {
   return { map, colliders, nav, player, door, open, reach };
 }
 
-test('the door ladder: start shutter 500 -> concourse, Mega Mart 750 -> megaMart', () => {
+test('the door ladder: start shutter 500 -> hallway hub; Mega Mart 750 and Food Court 1000 off the hallway', () => {
   const { map, door } = setup();
-  assert.equal(door('startShutter').price, economy.doors.startShutter);
-  assert.equal(door('startShutter').opensZone, 'concourse');
-  assert.equal(door('megaMart').price, economy.doors.megaMart);
-  assert.equal(door('megaMart').opensZone, 'megaMart');
-  assert.equal(map.zones.megaMart.open, false);
+  const ladder = [
+    ['startShutter', 'hallway', economy.doors.startShutter],
+    ['megaMart', 'megaMart', economy.doors.megaMart],
+    ['foodCourt', 'foodCourt', economy.doors.foodCourt],
+  ];
+  for (const [id, zone, price] of ladder) {
+    assert.equal(door(id).price, price, `${id} price`);
+    assert.equal(door(id).opensZone, zone, `${id} opens ${zone}`);
+    assert.equal(map.zones[zone].open, false, `${zone} starts closed`);
+  }
+  assert.deepEqual([economy.doors.startShutter, economy.doors.megaMart, economy.doors.foodCourt], [500, 750, 1000]);
   for (const d of map.doors) assert.ok(map.zones[d.opensZone], `door ${d.id} opens a real zone`);
 });
 
@@ -61,27 +69,51 @@ test('every spawn point and the player spawn stand on open floor, not inside any
   assert.equal(overlapsSolid(map.playerSpawn.position, feel.player.radius, feel.player.height, colliders, feel.movement.stepTolerance), false);
 });
 
-test('the Mega Mart is sealed until its door is bought, then every corner of it is reachable', () => {
+test('each area is sealed until its own door is bought, in any order, and fully reachable after', () => {
   const { map, open, reach } = setup();
+  const spawnsIn = (zone) => map.spawnPoints.filter((s) => s.zone === zone);
+  const reachable = (p) => Number.isFinite(reach(p));
+  assert.deepEqual(['hallway', 'foodCourt', 'megaMart'].map((z) => spawnsIn(z).length), [3, 4, 4]);
+
+  // Nothing bought: only the start room.
+  for (const s of spawnsIn('hallway')) assert.equal(reach(s.position), Infinity, `${s.name} sealed`);
+
+  // Start shutter: the hallway (and its Nail Gun wall buy) opens; the Mega Mart and Food Court stay sealed.
   open('startShutter');
-  const martSpawns = map.spawnPoints.filter((s) => s.zone === 'megaMart');
-  assert.equal(martSpawns.length, 4);
-  for (const s of martSpawns) assert.equal(reach(s.position), Infinity, `${s.name} sealed off`);
-  for (const s of map.spawnPoints.filter((p) => p.zone !== 'megaMart')) {
-    assert.ok(Number.isFinite(reach(s.position)), `${s.name} reachable once the shutter is open`);
-  }
+  for (const s of [...spawnsIn('startRoom'), ...spawnsIn('hallway')]) assert.ok(reachable(s.position), `${s.name} reachable`);
+  const nailGun = map.wallBuys.find((w) => w.weapon === 'nailGun');
+  assert.equal(nailGun.zone, 'hallway');
+  assert.ok(reachable({ x: nailGun.position.x, z: nailGun.position.z + 0.8 }), 'you can stand at the Nail Gun wall buy');
+  for (const s of [...spawnsIn('megaMart'), ...spawnsIn('foodCourt')]) assert.equal(reach(s.position), Infinity, `${s.name} sealed`);
+
+  // Food Court first (any order works): it opens, the Mega Mart stays sealed.
+  open('foodCourt');
+  for (const s of spawnsIn('foodCourt')) assert.ok(reachable(s.position), `${s.name} reachable`);
+  for (const [x, z] of [[-19, -13.5], [19, -13.5], [0, -13], [-19, -3], [19, -3]]) assert.ok(reachable({ x, z }), `Food Court (${x}, ${z}) reachable`);
+  for (const s of spawnsIn('megaMart')) assert.equal(reach(s.position), Infinity, `${s.name} still sealed`);
+
+  // Then the Mega Mart: every aisle, both ends of the checkout row, the back walkway.
   open('megaMart');
-  assert.equal(map.zones.megaMart.open, true);
-  for (const s of martSpawns) assert.ok(Number.isFinite(reach(s.position)), `${s.name} reachable once the Mega Mart is open`);
-  // Every aisle, both lane ends of the checkout row, and the back walkway.
+  for (const s of spawnsIn('megaMart')) assert.ok(reachable(s.position), `${s.name} reachable`);
   for (const [x, z] of [[21.9, -14], [25.75, -14], [29.25, -14], [32.75, -14], [22, 5.5], [26, -5.5], [30, -22], [33, 5]]) {
-    assert.ok(Number.isFinite(reach({ x, z })), `(${x}, ${z}) reachable inside the Mega Mart`);
+    assert.ok(reachable({ x, z }), `Mega Mart (${x}, ${z}) reachable`);
   }
-  // Resetting closes it again.
+
+  // A new run closes everything again.
   map.reset();
   for (let t = 0; t < feel.world.shutterOpenSeconds + 0.5; t += dt) map.update(dt);
-  assert.equal(map.zones.megaMart.open, false);
-  assert.equal(reach(martSpawns[0].position), Infinity);
+  for (const z of ['hallway', 'megaMart', 'foodCourt']) assert.equal(map.zones[z].open, false, `${z} closed after reset`);
+  for (const s of [...spawnsIn('hallway'), ...spawnsIn('megaMart'), ...spawnsIn('foodCourt')]) {
+    assert.equal(reach(s.position), Infinity, `${s.name} sealed after reset`);
+  }
+});
+
+test('the Mega Mart is reachable from the hallway without the Food Court (and vice versa)', () => {
+  const { map, open, reach } = setup();
+  open('startShutter');
+  open('megaMart');
+  for (const s of map.spawnPoints.filter((p) => p.zone === 'megaMart')) assert.ok(Number.isFinite(reach(s.position)), `${s.name} reachable`);
+  for (const s of map.spawnPoints.filter((p) => p.zone === 'foodCourt')) assert.equal(reach(s.position), Infinity, `${s.name} sealed`);
 });
 
 test('the Mega Mart checkout counters are vaultable; the shelves are not', () => {
