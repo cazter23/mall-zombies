@@ -75,6 +75,7 @@ export const weapons = {
       airborne: 3.0, // added while in the air
       perShot: 0.8, // "bloom" added by each shot
       maxBloom: 3.0, // cap on bloom from rapid firing
+      bloomRecoveryDelay: 0.15, // seconds after the last shot before bloom starts closing
       bloomRecovery: 5, // degrees of bloom lost per second
       smoothing: 10, // how quickly movement/air spread grows and shrinks (higher = snappier)
       adsMultiplier: 0.08, // aiming down sights multiplies all spread by this
@@ -142,10 +143,10 @@ export const weapons = {
     id: 'priceGun',
     name: 'Price Gun',
     fireMode: 'auto',
-    damage: 22, // round-1 zombie (150 HP): 7 body shots or 3 headshots (22 x 3 = 66)
+    damage: 25, // round-1 zombie (150 HP): 6 body shots or 2 headshots (25 x 3 = 75)
     headshotMultiplier: 3,
     magazineSize: 24,
-    startingReserve: 120, // also the most it can hold in reserve (ammo buys refill to this)
+    startingReserve: 180, // also the most it can hold in reserve (ammo buys refill to this)
     fireInterval: 0.083, // ~12 shots per second while held
     fireBuffer: 0.1,
     reloadTime: 1.4,
@@ -175,6 +176,7 @@ export const weapons = {
       airborne: 3.0,
       perShot: 0.35, // the cone opens up the longer you hold the trigger...
       maxBloom: 3.5,
+      bloomRecoveryDelay: 0.15, // sustained fire builds bloom; short pauses let it close
       bloomRecovery: 6, // ...and closes again quickly when you let go
       smoothing: 10,
       adsMultiplier: 0.15, // looser than the staple gun when aiming
@@ -293,6 +295,7 @@ export const weapons = {
       airborne: 3.5,
       perShot: 1.2, // but rushing shots opens it up
       maxBloom: 3.0,
+      bloomRecoveryDelay: 0.15,
       bloomRecovery: 4,
       smoothing: 10,
       adsMultiplier: 0.04,

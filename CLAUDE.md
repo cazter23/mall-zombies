@@ -119,6 +119,8 @@ src/
                         of a tick into a queued next shot (real rate = fireInterval). refill(), isFull (ammo buys)
     aim.js              createAim(): ADS state (eased 0..1, blocks sprint, sprint cancels it) and hip-fire
                         spread (base + moving + airborne, smoothed, + per-shot bloom; x adsMultiplier).
+                        Bloom recovers after spread.bloomRecoveryDelay (0.15s after the latest shot per gun),
+                        so sustained fire builds spread; recovery then uses the existing bloomRecovery rate.
                         applySpread() picks a random direction inside the cone; reset() (new run: hip, base spread).
                         update(dt, allowAim) (false mid weapon switch). One aim per carried gun
     aimAssist.js        createAimAssist(): controller-only (input.device). Picks the visible target nearest the
@@ -425,8 +427,8 @@ Controller X near a buyable: tap = reload, hold = buy.
 Part D1 done: two weapon slots (COD rules: buying fills the empty slot, else replaces the gun in hand; each gun keeps
 its ammo), switching with 1/2, mouse wheel or controller Y (0.18s drop + 0.32s raise, no firing/ADS, cancels
 reloads). Price Gun wall buy on the start room's east wall: chalk outline + the gun on pegs; 500 to buy, 250 for
-ammo (refills mag + reserve; no prompt when full). Price Gun: full-auto label gun, 22 dmg (x3 head), ~12 shots/s,
-24/120, 1.4s reload, bloom grows while held, small pitch + random sideways camera kick, pink sticker flash, its own
+ammo (refills mag + reserve; no prompt when full). Price Gun: full-auto label gun, 25 dmg (x3 head; was 22, buffed after the balance playtest), ~12 shots/s,
+24/180, 1.4s reload, bloom grows while held, small pitch + random sideways camera kick, pink sticker flash, its own
 model/sounds/reload (swaps the label roll). The staple gun has no ammo refill (by design; maybe an ammo cache later).
 Part D2 done (step 4 complete): Nail Gun wall buy on the concourse wall next to Nuts & Bolts (1000, ammo 500; only
 offered once the shutter is open). Semi-auto framing nailer: 90 dmg (x3 head), nails pierce up to 3 zombies in a

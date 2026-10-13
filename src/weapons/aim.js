@@ -26,6 +26,7 @@ export function createAim({ def, input, player }) {
   let cancelledBySprint = false;
   let movementSpread = s.base; // smoothed base + moving + airborne part (degrees)
   let bloom = 0; // extra spread from firing quickly (degrees)
+  let bloomRecoveryTimer = 0; // seconds before bloom can recover after the latest shot
 
   const right = new THREE.Vector3();
   const up = new THREE.Vector3();
@@ -74,7 +75,10 @@ export function createAim({ def, input, player }) {
       const movingFactor = Math.min(speed / player.stats.walkSpeed, s.maxMovingFactor);
       const target = s.base + s.moving * movingFactor + (player.grounded ? 0 : s.airborne);
       movementSpread += (target - movementSpread) * Math.min(1, s.smoothing * dt);
-      bloom = Math.max(0, bloom - s.bloomRecovery * dt);
+      // Only the part of this tick after the delay expires can recover bloom.
+      const recoveryTime = Math.max(0, dt - bloomRecoveryTimer);
+      bloomRecoveryTimer = Math.max(0, bloomRecoveryTimer - dt);
+      bloom = Math.max(0, bloom - s.bloomRecovery * recoveryTime);
     },
 
     // New run: hip fire, resting spread.
@@ -84,6 +88,7 @@ export function createAim({ def, input, player }) {
       cancelledBySprint = false;
       movementSpread = s.base;
       bloom = 0;
+      bloomRecoveryTimer = 0;
       this.isAiming = false;
       this.justStartedAiming = false;
       player.isAiming = false;
@@ -93,6 +98,7 @@ export function createAim({ def, input, player }) {
     // Call after each shot: rapid firing widens the cone.
     onShot() {
       bloom = Math.min(s.maxBloom, bloom + s.perShot);
+      bloomRecoveryTimer = s.bloomRecoveryDelay ?? 0;
     },
 
     // Nudges `direction` (unit vector) to a random point inside the current cone.
