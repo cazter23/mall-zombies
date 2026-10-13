@@ -50,9 +50,10 @@ export function createAim({ def, input, player }) {
       return (movementSpread + bloom) * (1 + (s.adsMultiplier - 1) * ease(amount));
     },
 
-    update(dt) {
+    // `allowAim` false (e.g. mid weapon switch): hip fire this tick even if the aim button is held.
+    update(dt, allowAim = true) {
       // --- ADS ---
-      const held = input.actionDown('aim');
+      const held = input.actionDown('aim') && allowAim;
       if (input.consumeAction('aim') || !held) cancelledBySprint = false; // a fresh press re-enables aiming
       const sprintPressed = input.actionPressed('sprint') && input.moveAxis().y > 0;
       if (held && sprintPressed) cancelledBySprint = true;

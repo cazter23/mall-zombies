@@ -9,9 +9,8 @@
 // =============================================================================
 
 import * as THREE from 'three';
-import { feel } from '../../config/feel.js';
-import { placeLimb, makeBoxMesh } from '../../player/body.js';
 import { samplePose } from '../../core/keyframes.js';
+import { buildPistolArms, block } from './arms.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 
@@ -48,56 +47,18 @@ function buildGun(colors) {
   return { gun, muzzle, lever };
 }
 
-/**
- * Hands and forearms holding the gun, in the gun's own coordinates.
- * Right hand wraps the grip; left hand braces the left side of the body.
- * Returns the left arm group (animated during reloads) and the strip it carries.
- */
-function buildArms(gun, gunColors) {
-  const c = feel.body.colors;
-  const V = (x, y, z) => new THREE.Vector3(x, y, z);
-
-  function limb(color, a, b, width, depth, parent) {
-    const mesh = makeBoxMesh(color);
-    placeLimb(mesh, a, b, width, depth);
-    parent.add(mesh);
-    return mesh;
-  }
-  function block(color, w, h, d, x, y, z, parent) {
-    const mesh = makeBoxMesh(color);
-    mesh.scale.set(w, h, d);
-    mesh.position.set(x, y, z);
-    parent.add(mesh);
-    return mesh;
-  }
-
-  // Right arm: hand around the grip, forearm running back and down out of view, red polo sleeve.
-  const rightHand = block(c.skin, 0.062, 0.085, 0.075, 0.004, -0.1, 0.026, gun);
-  rightHand.rotation.x = 0.3; // matches the grip's angle
-  block(c.skin, 0.02, 0.025, 0.05, -0.03, -0.055, -0.005, gun); // thumb over the top of the grip
-  limb(c.skin, V(0.01, -0.13, 0.05), V(0.07, -0.38, 0.17), 0.058, 0.054, gun);
-  limb(c.shirt, V(0.07, -0.38, 0.17), V(0.09, -0.5, 0.23), 0.09, 0.09, gun);
-
-  // Left arm: palm flat on the left side (mid-body, so the nose and muzzle flash stay in view),
-  // fingers curled under, forearm back-left. Grouped so it can let go of the gun during a reload.
-  const leftArm = new THREE.Group();
-  gun.add(leftArm);
-  block(c.skin, 0.028, 0.07, 0.1, -0.042, -0.012, -0.025, leftArm); // palm
-  block(c.skin, 0.07, 0.024, 0.085, -0.012, -0.05, -0.025, leftArm); // fingers under the body
-  limb(c.skin, V(-0.05, -0.045, 0.005), V(-0.17, -0.33, 0.12), 0.056, 0.052, leftArm);
-  limb(c.shirt, V(-0.17, -0.33, 0.12), V(-0.21, -0.45, 0.17), 0.09, 0.09, leftArm);
-
-  // A fresh strip of staples, only visible in the left hand mid-reload.
-  const strip = block(gunColors.metalColor, 0.03, 0.014, 0.12, -0.03, -0.07, -0.025, leftArm);
-  strip.visible = false;
-
-  return { leftArm, strip };
+/** Just the gun, no hands (for the wall-buy display). */
+export function buildStapleGunDisplay(def) {
+  return buildGun(def.viewmodel).gun;
 }
 
 export function buildStapleGunModel(def) {
   const vm = def.viewmodel;
   const { gun, muzzle, lever } = buildGun(vm);
-  const { leftArm, strip } = buildArms(gun, vm);
+  const { leftArm } = buildPistolArms(gun);
+  // A fresh strip of staples, only visible in the left hand mid-reload.
+  const strip = block(vm.metalColor, 0.03, 0.014, 0.12, -0.03, -0.07, -0.025, leftArm);
+  strip.visible = false;
   const leverRest = lever.rotation.x;
 
   return {

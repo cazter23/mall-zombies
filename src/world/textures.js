@@ -174,3 +174,48 @@ export function makeFlashTexture({ rays = 7, seed = 3 } = {}) {
 
   return finish(canvas);
 }
+
+/**
+ * COD-style chalk outline for a wall buy: a rough hand-drawn frame and the weapon's name,
+ * white chalk on transparent (put it flat on the wall). `aspect` = width / height.
+ */
+export function makeChalkTexture(name, { aspect = 2, seed = 11 } = {}) {
+  const h = 256;
+  const w = Math.round(h * aspect);
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  const rand = seededRandom(seed);
+  const jitter = (v, amount) => v + (rand() - 0.5) * amount;
+
+  // A few wobbly passes over the same rectangle reads as chalk.
+  ctx.strokeStyle = 'rgba(245, 245, 240, 0.75)';
+  ctx.lineCap = 'round';
+  const m = 18;
+  for (let pass = 0; pass < 3; pass++) {
+    ctx.lineWidth = 3 + rand() * 3;
+    ctx.beginPath();
+    const corners = [[m, m], [w - m, m], [w - m, h - m], [m, h - m], [m, m]];
+    ctx.moveTo(jitter(corners[0][0], 8), jitter(corners[0][1], 8));
+    for (const [x, y] of corners.slice(1)) ctx.lineTo(jitter(x, 8), jitter(y, 8));
+    ctx.stroke();
+  }
+
+  // Dusty speckles.
+  for (let i = 0; i < 260; i++) {
+    ctx.fillStyle = `rgba(245, 245, 240, ${0.08 + rand() * 0.2})`;
+    ctx.fillRect(rand() * w, rand() * h, 1 + rand() * 2, 1 + rand() * 2);
+  }
+
+  // The name along the bottom, written twice slightly offset (chalk pressure).
+  ctx.font = 'bold 40px "Comic Sans MS", "Chalkboard SE", "Segoe Print", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'rgba(245, 245, 240, 0.7)';
+  ctx.fillText(name.toUpperCase(), w / 2, h - 44);
+  ctx.fillStyle = 'rgba(245, 245, 240, 0.35)';
+  ctx.fillText(name.toUpperCase(), w / 2 + 2, h - 42);
+
+  return finish(canvas);
+}

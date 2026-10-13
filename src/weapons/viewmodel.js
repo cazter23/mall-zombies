@@ -8,7 +8,8 @@
 // blow the gun up. While aiming it slides to the center, sight on the crosshair.
 //
 // This file is the part every gun shares; the gun + hands model and its own
-// animation (trigger, hands while reloading) come from weapons/models/. Layers,
+// animation (trigger, hands while reloading) come from weapons/models/. Every
+// gun's model is built up front and only the one in your hands is shown. Layers,
 // all added together on the "holder" each frame:
 //   rest pose    hip offset sliding to the ADS offset
 //   reload pose  keyframes from weapons.<id>.viewmodel.reload.gunKeys (eases out if cancelled)
@@ -17,6 +18,7 @@
 //   walk bob     gentle side-to-side "smile" with your steps; breathing when idle
 //   landing      a quick dip when you land from a jump
 //   sprint pose  lowered and turned across the body (feel.sprintFx)
+//   switching    the gun drops out of view and the next one comes up (feel.weaponSwitch)
 //   melee        the gun drops aside while a box cutter arm slashes across
 // Everything that wiggles is scaled way down while aiming, so it never fights your aim.
 // All of it is visual only: shots come from the camera, not the gun model.
@@ -67,7 +69,11 @@ function buildMeleeArm(meleeColors) {
   return arm;
 }
 
-export function createViewmodel(weaponDef, meleeDef) {
+/**
+ * @param weaponDefs every gun the player can hold (config/weapons.js entries); a model is built for each
+ * @param meleeDef   the box cutter
+ */
+export function createViewmodel(weaponDefs, meleeDef) {
   const scene = new THREE.Scene();
   scene.add(new THREE.HemisphereLight(0xfff6e6, 0x4a3f55, 1.6));
 
@@ -81,22 +87,34 @@ export function createViewmodel(weaponDef, meleeDef) {
 
   const holder = new THREE.Group(); // rest pose + every animation layer, recomputed each frame
   rig.add(holder);
-  const model = buildWeaponModel(weaponDef);
-  holder.add(model.root);
-  const flash = createMuzzleFlash(weaponDef.muzzleFlash);
-  model.muzzle.add(flash.object);
+
+  // The muzzle-flash lights are shared by all guns (lights must never come and go: see muzzleFlash.js).
+  const handLight = new THREE.PointLight(0xffffff, 0, 1, 1);
+  const worldLight = new THREE.PointLight(0xffffff, 0, 1, 2);
+
+  // One model + flash per gun; only the active one is visible.
+  const guns = new Map();
+  for (const def of weaponDefs) {
+    const model = buildWeaponModel(def);
+    model.root.visible = false;
+    holder.add(model.root);
+    const flash = createMuzzleFlash(def.muzzleFlash, { handLight, worldLight });
+    model.muzzle.add(flash.object);
+    guns.set(def.id, { def, model, flash });
+  }
+  let active = guns.get(weaponDefs[0].id);
+  active.model.root.visible = true;
+  active.flash.object.add(handLight);
+
   const meleeArm = buildMeleeArm(meleeDef.colors);
   rig.add(meleeArm);
 
   const vm = feel.viewmodel;
-  const look = weaponDef.viewmodel;
-  const ads = weaponDef.ads.offset;
-  const rk = weaponDef.recoil.model;
   const camera = new THREE.PerspectiveCamera(vm.fov, 1, 0.01, 10);
 
-  // Recoil (and reload jolts): one spring for position, one for rotation.
-  const kickPos = createSpring3(rk);
-  const kickRot = createSpring3(rk);
+  // Recoil (and reload jolts): one spring for position, one for rotation (tuned per gun).
+  const kickPos = createSpring3(active.def.recoil.model);
+  const kickRot = createSpring3(active.def.recoil.model);
   // Landing dip: a softer spring.
   const landY = createSpring(vm.landing);
   const landPitch = createSpring(vm.landing);
@@ -118,13 +136,31 @@ export function createViewmodel(weaponDef, meleeDef) {
   // Random left-or-right, 50..100% strength: every shot twists a little differently.
   const randomSide = () => (Math.random() < 0.5 ? -1 : 1) * (0.5 + Math.random() * 0.5);
 
+  // Show another gun's model (weapon switch / new gun bought).
+  function setActive(def) {
+    const next = guns.get(def.id);
+    if (!next || next === active) return;
+    active.model.root.visible = false;
+    active.flash.reset();
+    handLight.intensity = 0;
+    worldLight.intensity = 0;
+    active = next;
+    active.model.root.visible = true;
+    active.flash.object.add(handLight); // the hand light follows the gun in hand
+    kickPos.setParams(active.def.recoil.model);
+    kickRot.setParams(active.def.recoil.model);
+    sinceFire = Infinity;
+    reloadWeight = 0;
+  }
+
   return {
     scene,
     camera, // render the viewmodel scene with this, not the world camera
-    worldLight: flash.worldLight, // add to the world scene: the muzzle flash lights up the room
+    worldLight, // add to the world scene: the muzzle flash lights up the room
 
     // A shot just fired. `aimAmount` 0..1 (ADS kicks the model much less).
     fire(aimAmount = 0) {
+      const rk = active.def.recoil.model;
       const m = 1 + (rk.adsMultiplier - 1) * aimAmount;
       kickPos.kick(0, rk.up * m, rk.back * m);
       kickRot.kick(
@@ -132,13 +168,13 @@ export function createViewmodel(weaponDef, meleeDef) {
         rk.yawDegrees * DEG_TO_RAD * m * randomSide(),
         rk.rollDegrees * DEG_TO_RAD * m * randomSide(),
       );
-      flash.trigger(aimAmount);
+      active.flash.trigger(aimAmount);
       sinceFire = 0;
     },
 
     // Trigger squeezed on an empty gun: the trigger moves, the gun barely does, no flash.
     dryFire() {
-      kickRot.kick(rk.pitchDegrees * DEG_TO_RAD * vm.dryFireKick, 0, 0);
+      kickRot.kick(active.def.recoil.model.pitchDegrees * DEG_TO_RAD * vm.dryFireKick, 0, 0);
       sinceFire = 0;
     },
 
@@ -150,11 +186,17 @@ export function createViewmodel(weaponDef, meleeDef) {
 
     /**
      * Call every rendered frame, after the world camera has been placed.
+     * `weapon` is the gun in hand (its reload drives the reload pose); `shownDef` which model to show
+     * (mid-switch it's still the old gun while it drops away); `switchLower` 0 (up) .. 1 (out of view).
      * `aimAmount` 0 (hip) .. 1 (fully aimed). `meleeProgress` 0..1 through a box cutter
      * swing, or null. `player` gives look angles, movement and footstep phase.
      */
-    update(frameTime, worldCamera, { weapon, aimAmount, meleeProgress = null, player }) {
+    update(frameTime, worldCamera, { weapon, shownDef = weapon.def, switchLower = 0, aimAmount, meleeProgress = null, player }) {
       const dt = frameTime;
+      setActive(shownDef);
+      const { model, flash } = active;
+      const look = active.def.viewmodel;
+      const ads = active.def.ads.offset;
       rig.position.copy(worldCamera.position);
       rig.quaternion.copy(worldCamera.quaternion);
       camera.position.copy(worldCamera.position);
@@ -174,7 +216,7 @@ export function createViewmodel(weaponDef, meleeDef) {
       flash.update(dt);
 
       // --- Reload pose (this gun's keyframes; a cancelled reload eases back instead of snapping) ---
-      const progress = weapon.reloadProgress;
+      const progress = weapon.def === active.def ? weapon.reloadProgress : null;
       if (progress !== null) {
         reloadShown = progress;
         reloadWeight = 1;
@@ -259,6 +301,14 @@ export function createViewmodel(weaponDef, meleeDef) {
         holder.rotation.z += s * fx.gunRollDegrees * DEG_TO_RAD;
       }
 
+      // Switching: drop out of view (and come back up).
+      if (switchLower > 0) {
+        const ws = feel.weaponSwitch;
+        const e = switchLower * switchLower * (3 - 2 * switchLower);
+        holder.position.y -= e * ws.dropMeters;
+        holder.rotation.x -= e * ws.tiltDegrees * DEG_TO_RAD;
+      }
+
       // The gun's own moving parts (trigger, hands during the reload).
       model.animate({ sinceFire, reloadProgress: reloadShown, reloadWeight: rw });
 
@@ -286,13 +336,13 @@ export function createViewmodel(weaponDef, meleeDef) {
       }
 
       // The world flash light sits at the muzzle (only matters while it's lit).
-      if (flash.worldLight.intensity > 0) this.getMuzzleWorldPosition(flash.worldLight.position);
+      if (worldLight.intensity > 0) this.getMuzzleWorldPosition(worldLight.position);
     },
 
     // World-space position of the gun's muzzle (where tracers start).
     getMuzzleWorldPosition(out) {
       rig.updateMatrixWorld(true);
-      return model.muzzle.getWorldPosition(out);
+      return active.model.muzzle.getWorldPosition(out);
     },
 
     // New run: everything settled.
@@ -301,7 +351,9 @@ export function createViewmodel(weaponDef, meleeDef) {
       kickRot.reset();
       landY.reset();
       landPitch.reset();
-      flash.reset();
+      for (const g of guns.values()) g.flash.reset();
+      handLight.intensity = 0;
+      worldLight.intensity = 0;
       sinceFire = Infinity;
       reloadWeight = 0;
       prevYaw = null;

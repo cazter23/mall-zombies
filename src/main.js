@@ -30,6 +30,9 @@ import { createWallet, pointsForHit } from './game/wallet.js';
 import { createRounds } from './game/rounds.js';
 import { createSound } from './audio/sound.js';
 import { createInteractions } from './game/interactions.js';
+import { economy } from './config/economy.js';
+import { buildWeaponDisplay } from './weapons/models/index.js';
+import { createWallBuyDisplay } from './world/wallBuy.js';
 
 // --- Renderer, scene, camera ---------------------------------------------------
 
@@ -83,7 +86,7 @@ const body = createPlayerBody(scene); // legs + torso you see when looking down
 const shootables = [...(arena ? arena.shootables : [])];
 const effects = createEffects(scene);
 const sound = createSound(); // synthesized sound effects (starts on the first click/key press)
-const viewmodel = createViewmodel(weapons.stapleGun, meleeWeapons.boxCutter);
+const viewmodel = createViewmodel(Object.values(weapons), meleeWeapons.boxCutter); // a model for every gun
 scene.add(viewmodel.worldLight); // the muzzle flash lights up the room
 const aimAssist = createAimAssist({ player, input, shootables, colliders });
 const gun = createPlayerGun({
@@ -101,7 +104,7 @@ const gun = createPlayerGun({
   onHit: payForHit,
   aimAssist,
 });
-// Buyables (hold F / X): the map's doors now; wall buys later.
+// Buyables (hold F / X): the map's doors and wall buys.
 const interactions = createInteractions({
   input,
   player,
@@ -119,13 +122,43 @@ for (const door of map.doors) {
     use: () => door.open(),
   });
 }
+// Wall buys: buy the gun, or (once you own it) refill its ammo. Markers for guns that don't
+// exist yet in config/weapons.js are skipped.
+for (const wb of map.wallBuys) {
+  const def = weapons[wb.weapon];
+  const prices = economy.wallBuys[wb.weapon];
+  if (!def || !prices) continue;
+  scene.add(
+    createWallBuyDisplay({
+      position: wb.position,
+      normal: wb.normal,
+      name: def.name,
+      gunModel: buildWeaponDisplay(def),
+      cfg: feel.world.wallBuyDisplay,
+    }),
+  );
+  const owned = () => gun.owns(def.id);
+  interactions.add({
+    get label() {
+      return owned() ? `${def.name} ammo` : def.name;
+    },
+    verb: 'buy',
+    get cost() {
+      return owned() ? prices.ammo : prices.weapon;
+    },
+    position: wb.position,
+    // Only in an opened area, and not when you already have it with full ammo.
+    available: () => map.zones[wb.zone].open && !(owned() && gun.weaponFor(def.id).isFull),
+    use: () => gun.give(def),
+  });
+}
 
 const melee = createMelee({
   def: meleeWeapons.boxCutter,
   stats,
   player,
   input,
-  weapon: gun.weapon,
+  getWeapon: () => gun.weapon, // the gun in hand (knifing cancels its reload)
   shootables,
   colliders,
   effects,
@@ -373,6 +406,8 @@ function render(alpha, frameTime) {
   effects.update(visualTime);
   viewmodel.update(visualTime, camera, {
     weapon: gun.weapon,
+    shownDef: gun.shownDef, // mid-switch: the old gun while it drops away
+    switchLower: gun.switchLower,
     aimAmount,
     meleeProgress: melee.progress,
     player,

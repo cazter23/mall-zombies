@@ -27,6 +27,18 @@ export class Weapon {
     return this.isReloading ? 1 - this.reloadTimer / this.reloadDuration : null;
   }
 
+  // Magazine and reserve both full (nothing an ammo buy would add).
+  get isFull() {
+    return this.magazine === this.def.magazineSize && this.reserve === this.def.startingReserve;
+  }
+
+  // Ammo buy: magazine and reserve back to full. Any reload in progress is finished off.
+  refill() {
+    this.magazine = this.def.magazineSize;
+    this.reserve = this.def.startingReserve;
+    this.reloadTimer = 0;
+  }
+
   get canReload() {
     return !this.isReloading && this.magazine < this.def.magazineSize && this.reserve > 0;
   }
@@ -60,11 +72,12 @@ export class Weapon {
   }
 
   /**
-   * Advance one tick. `triggerPressed` / `reloadPressed` are one-shot presses.
+   * Advance one tick. `triggerPressed` / `reloadPressed` are one-shot presses; `triggerHeld` is the
+   * trigger being held down (a full-auto gun keeps firing while it is).
    * `blocked` (e.g. mid box-cutter swing): nothing fires, and a click queued just before is dropped.
    * Returns 'fire' if a shot goes off this tick, 'empty' on a dry click, else null.
    */
-  update(dt, { triggerPressed, reloadPressed, blocked = false }) {
+  update(dt, { triggerPressed, triggerHeld = false, reloadPressed, blocked = false }) {
     // The cooldown may dip just below zero on the tick it runs out. If a click is waiting, that
     // leftover fraction of a tick counts toward the next shot, so the real fire rate matches
     // fireInterval instead of rounding up to whole ticks (0.12s, not 0.133s at 60Hz). A gun that
@@ -83,7 +96,16 @@ export class Weapon {
     }
 
     if (reloadPressed) this.startReload();
-    if (triggerPressed) this.fireRequest = this.def.fireBuffer;
+    if (this.def.fireMode === 'auto') {
+      // Full auto: fires whenever the cooldown allows while the trigger is held (a fresh press
+      // counts too). An empty gun only dry-clicks on a fresh press, not every tick.
+      const wantsShot = triggerPressed || (triggerHeld && this.magazine > 0);
+      this.fireRequest = wantsShot ? this.def.fireBuffer : 0;
+      // Ran dry while still holding the trigger: reload by itself (COD).
+      if (triggerHeld && !triggerPressed && this.magazine === 0) this.startReload();
+    } else if (triggerPressed) {
+      this.fireRequest = this.def.fireBuffer;
+    }
 
     if (this.fireRequest <= 0 || this.cooldown > 0 || this.isReloading) return null;
     this.fireRequest = 0;

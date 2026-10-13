@@ -95,6 +95,13 @@ export function createSpring3({ frequency, damping }) {
     get z() {
       return axes[2].value;
     },
+    // Change how it springs (keeps its current motion).
+    setParams({ frequency: f, damping: d }) {
+      for (const a of axes) {
+        a.frequency = f;
+        a.damping = d;
+      }
+    },
     kick(x, y, z) {
       axes[0].kick(x);
       axes[1].kick(y);

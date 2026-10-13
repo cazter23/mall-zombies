@@ -22,6 +22,9 @@ export const bindings = {
   aim: ['Mouse2', 'PadLT'],
   reload: ['KeyR', 'PadX'],
   interact: ['KeyF', 'PadX'], // hold to buy (doors, wall buys). On X: tap = reload, hold = buy (COD)
+  switchWeapon: ['WheelUp', 'WheelDown', 'PadY'], // swap to the other weapon slot
+  weapon1: ['Digit1'], // straight to slot 1 / slot 2
+  weapon2: ['Digit2'],
   melee: ['KeyV', 'PadRB', 'PadR3'],
   pause: ['PadStart'],
   confirm: ['PadA', 'PadStart'], // controller menus: start, resume, play again

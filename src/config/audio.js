@@ -29,6 +29,16 @@ export const audio = {
       ],
     },
 
+    // Price Gun shot: a quick plasticky "chk" of the label punch (quiet: it fires 12 times a second).
+    priceShot: {
+      volume: 0.55,
+      layers: [
+        { type: 'noise', filter: 'bandpass', freq: 2200, q: 1.6, gain: 0.7, attack: 0.0008, decay: 0.03 },
+        { type: 'tone', wave: 'triangle', freq: 420, freqEnd: 180, gain: 0.5, attack: 0.001, decay: 0.045 },
+        { type: 'noise', filter: 'highpass', freq: 5000, q: 0.7, gain: 0.25, attack: 0.0005, decay: 0.012, delay: 0.01 },
+      ],
+    },
+
     // Trigger squeezed on an empty gun: a thin little click.
     dryClick: {
       volume: 0.6,
@@ -57,7 +67,32 @@ export const audio = {
       ],
     },
 
-    // Reload: pusher rod pulled back (metal slide)...
+    // Price Gun reload: empty roll popped off...
+    priceReloadOut: {
+      volume: 0.5,
+      layers: [
+        { type: 'noise', filter: 'bandpass', freq: 1800, q: 1.5, gain: 0.5, attack: 0.002, decay: 0.05 },
+        { type: 'tone', wave: 'triangle', freq: 600, freqEnd: 300, gain: 0.25, attack: 0.001, decay: 0.05 },
+      ],
+    },
+    // ...fresh roll pressed on...
+    priceReloadIn: {
+      volume: 0.6,
+      layers: [
+        { type: 'noise', filter: 'lowpass', freq: 1200, q: 0.8, gain: 0.6, attack: 0.001, decay: 0.05 },
+        { type: 'noise', filter: 'bandpass', freq: 2600, q: 1.5, gain: 0.35, attack: 0.0005, decay: 0.02, delay: 0.012 },
+      ],
+    },
+    // ...and the feed snapped shut.
+    priceReloadReady: {
+      volume: 0.6,
+      layers: [
+        { type: 'noise', filter: 'bandpass', freq: 3200, q: 1.4, gain: 0.55, attack: 0.0005, decay: 0.025 },
+        { type: 'tone', wave: 'sine', freq: 300, freqEnd: 150, gain: 0.25, attack: 0.001, decay: 0.04, delay: 0.03 },
+      ],
+    },
+
+    // Staple Gun reload: pusher rod pulled back (metal slide)...
     stapleReloadOut: {
       volume: 0.55,
       layers: [

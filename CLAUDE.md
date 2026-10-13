@@ -50,22 +50,25 @@ src/
                         handling shared by all guns (fov, sway, walk bob, breathing, landing dip, reload
                         blend-out, dry-fire kick, box cutter slash path), hit effects, crosshair min gap,
                         body (colors + leg/pose tuning), health (regen, hurt edges), death camera, sprintFx,
-                        interact (hold time, range, facing angle, denied flash), melee lunge end
+                        weaponSwitch (lower/raise time, drop), interact (hold time, range, facing angle, denied
+                        flash), world.wallBuyDisplay, melee lunge end
     economy.js          Points, payouts, kill values, door + wall-buy prices, round timing, wave scaling + helpers
                         (zombieHealthForRound, zombieCountForRound, spawnDelayForRound, maxAliveForRound)
-    weapons.js          Per-weapon stats (damage, headshot mult, mag, reserve, fire interval, reload, spread
-                        cone, ADS time/zoom/gun offset), recoil (camera pitch/roll + gun-model kick + spring),
+    weapons.js          stapleGun (start pistol, semi) + priceGun (wall buy, full auto). Per-weapon stats (fireMode
+                        'semi' | 'auto', damage, headshot mult, mag, reserve (= max for ammo buys), fire interval, reload, spread
+                        cone, ADS time/zoom/gun offset), recoil (camera pitch/yaw/roll + gun-model kick + spring),
                         muzzleFlash (size, colors, ADS shape, lights), sounds, viewmodel (model name, hip
                         offset/angles, colors, trigger anim, reload keyframes gunKeys/handKeys + timed events
                         with sounds/jolts), `melee.boxCutter` (damage, reach, cone, swing timing, lunge),
                         weaponStatDefaults for stats
     audio.js            Master volume, pitch variation, compressor, and sound recipes (layers of filtered noise
-                        bursts and tones) for the staple gun shot, dry click, reload, purchase and denied sounds
+                        bursts and tones): staple gun + price gun shots and reloads, dry click, purchase, denied
     zombies.js          zombieTypes (per-type speed, size, hitboxes, attack, timings, colors, splatter), zombieCrowd
                         (spacing, lanes, queueing, surround rings + sector/still-wrap/circling, contact gap,
                         spawn dust, min spawn distance),
                         zombieNav (grid, soft wall clearance + wall penalty), zombieFailsafe (stuck-zombie rescue)
-    controls.js         bindings (action -> keyboard/mouse + Pad* codes; interact = F / X), buttonLabels (prompts per device),
+    controls.js         bindings (action -> keyboard/mouse + Pad* codes; interact = F / X; switchWeapon = wheel / Y,
+                        weapon1/weapon2 = 1/2), buttonLabels (prompts per device),
                         gamepad (deadzones, look speed/curve, turn ramp, triggers, click-to-sprint release),
                         aimAssist (strength dial, range/cone, slowdown, rotational, ADS snap)
     debug.js            showMarkers, allowShutterToggle (O key: doors free), testArena (T key), zombieKeys
@@ -76,7 +79,7 @@ src/
     spring.js           createSpring / createSpring3: damped springs back to 0 (exact solution, frame-rate
                         independent). kick(peak) (impulse sized so it peaks at `peak`), displace(), update(dt)
     keyframes.js        samplePose(keys, t, outPos, outRot): eased pose keyframes ({ t, pos: [m], rot: [deg] })
-    input.js            Input class: held keys/buttons, one-shot presses, actions (actionDown/consumeAction/
+    input.js            Input class: held keys/buttons, one-shot presses (mouse wheel = 'WheelUp'/'WheelDown'), actions (actionDown/consumeAction/
                         actionPressed), moveAxis() (WASD + left stick), padMove/padLook, `device`
                         ('keyboard' | 'gamepad', last used), mouse delta, pointer lock
     gamepad.js          createGamepad(input): polls the first controller each tick (standard layout), writes
@@ -88,7 +91,8 @@ src/
     controller.js       PlayerController: WASD, jump (buffer + coyote time), sprint meter, crouch/slide
                         (stance: stand|crouch|slide), gravity, mouse look (per render frame), camera interpolation.
                         View recoil: kickSpring (pitch, part of the aim; `viewKick` getter) + rollSpring (visual
-                        only). addRecoil(pitch, roll) for shots, addViewKick() for instant jolts (hits, melee),
+                        only) + yawKickSpring (sideways, part of the aim; `viewKickYaw`). addRecoil(pitch, roll, yaw)
+                        for shots, addViewKick() for instant jolts (hits, melee),
                         updateView(dt) at the END of each tick; syncCamera interpolates both
     stats.js            createPlayerStats(): the single stats object (health, speeds, jump, sprint, crouch/slide,
                         regenDelay/regenRate, adsMoveSpeed, damageMultiplier, meleeDamageMultiplier,
@@ -99,12 +103,15 @@ src/
                         Hip height follows eye height; feet posed for walk cycle / slide (V) / air tuck, knees
                         solved with two-bone IK. Exports placeLimb()/makeBoxMesh() (also used for the arms)
   weapons/
-    weapon.js           Weapon class: ammo, fire cooldown + click buffer, reload. Pure state; update() returns
-                        'fire' | 'empty' | null. `blocked` (melee swing) drops a queued click. The cooldown carries
-                        the leftover fraction of a tick into a queued next shot (real rate = fireInterval)
+    weapon.js           Weapon class: ammo, fire cooldown + click buffer, reload. Pure state; update({ triggerPressed,
+                        triggerHeld, reloadPressed, blocked }) returns 'fire' | 'empty' | null. fireMode 'auto' fires
+                        while held (dry-clicks only on a fresh press; runs dry while held = reloads itself).
+                        `blocked` (melee, switching) drops a queued click. The cooldown carries the leftover fraction
+                        of a tick into a queued next shot (real rate = fireInterval). refill(), isFull (ammo buys)
     aim.js              createAim(): ADS state (eased 0..1, blocks sprint, sprint cancels it) and hip-fire
                         spread (base + moving + airborne, smoothed, + per-shot bloom; x adsMultiplier).
-                        applySpread() picks a random direction inside the cone; reset() (new run: hip, base spread)
+                        applySpread() picks a random direction inside the cone; reset() (new run: hip, base spread).
+                        update(dt, allowAim) (false mid weapon switch). One aim per carried gun
     aimAssist.js        createAimAssist(): controller-only (input.device). Picks the visible target nearest the
                         crosshair (sticky), aims at its chest. Slowdown multiplier (read per frame for stick
                         look), rotational follow of the target's angular motion while a stick is in use, and
@@ -114,24 +121,33 @@ src/
     melee.js            createMelee(): box cutter. V = swing; lunges at a target 1.08-3m away; hit at 0.15s on the
                         nearest target in a 40deg cone within 1.8m (walls block); cancels reload; isBusy blocks
                         the gun; takeHit({ melee: true }) so kills count as melee
-    playerGun.js        createPlayerGun(): glue. Updates aim, reads Mouse0/KeyR (ignored while `blocked`), onShot cb,
+    playerGun.js        createPlayerGun(): the LOADOUT (2 slots, each { def, weapon, aim }) + glue for the gun in hand
+                        (`weapon`, `aim`, `def` getters). give(def): owned = refill; free slot = add + switch to it;
+                        full = replace the gun in hand. Switching (switchWeapon / weapon1 / weapon2): the old gun drops
+                        (shownDef, switchLower for the viewmodel), the new one rises; no shooting/aiming meanwhile;
+                        cancels reloads. owns(id), weaponFor(id), requestReload(). Reads fire (press + held)/reload, onShot cb,
                         fires hitscan inside the spread cone, applies damage
                         (headshot x mult x stats.damageMultiplier). Same tick as the shot: player.addRecoil
                         (scaled by ADS), viewmodel.fire (gun kick + flash), shot sound, tracer, splatter, hit
                         marker. 'empty' -> viewmodel.dryFire + dry click. Runs viewmodel.reload.events as the
                         reload clock passes them (sound + viewmodel.jolt), so sounds match the animation
     viewmodel.js        Shared first-person rig in its own scene + own fixed-FOV camera (drawn after the world
-                        with depth cleared). Builds the gun from weapons/models/, attaches the muzzle flash,
+                        with depth cleared). createViewmodel(allWeaponDefs, meleeDef) builds every gun's model up
+                        front (only the shown one visible; one shared hand light + world light that each gun's
+                        flash recolors, so lights never come and go), attaches each muzzle flash,
                         and adds up layers on a `holder` each frame: hip->ADS rest pose, reload pose
                         (gunKeys; eases out if cancelled), recoil springs (kickPos/kickRot: fire(), dryFire(),
                         jolt()), turn sway, walk bob ("smile"), breathing, landing dip, sprint pose, melee
                         (box cutter arm slashes while the gun drops aside). Wiggles scale way down in ADS.
-                        update(frameTime, camera, { weapon, aimAmount, meleeProgress, player }); `worldLight`
+                        update(frameTime, camera, { weapon, shownDef, switchLower, aimAmount, meleeProgress, player }); `worldLight`
                         (added to the world scene by main); getMuzzleWorldPosition(); reset()
-    models/             First-person weapon models. index.js = registry (viewmodel.model -> builder) + the model
-                        interface ({ root, muzzle, animate({ sinceFire, reloadProgress, reloadWeight }),
-                        leftHandVisible }). stapleGun.js = the gun + hands, squeeze lever on fire, left hand
-                        fetching a staple strip (handKeys). New gun = new file + 1 line
+    models/             First-person weapon models. index.js = registry (viewmodel.model -> { model, display }
+                        builders) + the model interface ({ root, muzzle, animate({ sinceFire, reloadProgress,
+                        reloadWeight }), leftHandVisible }); buildWeaponDisplay(def) = the gun alone (wall buys).
+                        arms.js = shared pistol hands (buildPistolArms -> leftArm). stapleGun.js = staple gun,
+                        squeeze lever, left hand fetching a staple strip. priceGun.js = orange label gun with a
+                        sticker roll on top; lever; reload swaps the roll (rollGone / newRollVisible windows).
+                        New gun = new file + 1 line
     muzzleFlash.js      createMuzzleFlash(cfg): 2 sprites (normal-blended orange burst + additive core, random
                         twist/size), hand light + world light (always in the scene at 0 so no shader recompile).
                         Always depth-tested (the hands and gun hide whatever part of the burst is behind them),
@@ -198,11 +214,12 @@ src/
     effects.js          Tracers (pooled) + particle bursts (one InstancedMesh): splat(), puff(), clear() (new run)
   world/                Shared building blocks for maps
     door.js             createDoor(): buyable barrier (price, opensZone) wrapping a shutter; open/reset/toggle
+    wallBuy.js          createWallBuyDisplay(): chalk outline (textures.makeChalkTexture) + the gun on two pegs, side on
     collision.js        moveAndCollide(): horizontal push-out (also removes the velocity going into the wall, so
                         a pinned mover reads speed 0 and slides along walls) then vertical landing/ceiling vs. Box3 list;
                         hasHeadroom(): can the player stand up here? overlapsSolid(): would a body overlap a wall?
     shutter.js          createShutter(): roll-up barrier with its own Box3 collider (open/close/toggle/update)
-    textures.js         Procedural canvas textures (floor tile, shop sign, shutter, muzzle flash burst). No image files.
+    textures.js         Procedural canvas textures (floor tile, shop sign, shutter, muzzle flash burst, wall-buy chalk). No image files.
   ui/
     hud.js              createHud(): 4-line crosshair whose gap = spread cone (dot in ADS) + hit marker (white body, big yellow head, red kill),
                         bottom-left health (white) + stamina (green) bars, bottom-right ammo counter,
@@ -222,7 +239,10 @@ src/
   `arena.update`, `player.updateView` (recoil springs last, so a shot's kick shows on the very next frame),
   `input.endTick()`. `rounds.start()` happens the first tick the game actually runs.
 - Buying: main adds every `map.doors` entry to `interactions` (verb 'open', cost door.price, use = door.open(), which
-  opens its zone so zombies start spawning there and the nav grid rebuilds when the shutter's collider goes).
+  opens its zone so zombies start spawning there and the nav grid rebuilds when the shutter's collider goes), and
+  every `map.wallBuys` marker whose weapon exists in config/weapons.js (display built + an interactable: "buy
+  <Gun> <economy.wallBuys.x.weapon>", or once owned "buy <Gun> ammo <...ammo>"; hidden when its zone is closed or
+  you own it with full ammo; use = gun.give(def)). Melee gets `getWeapon: () => gun.weapon` (the gun in hand).
 - Map: `main.js` does `loadMap('mall', scene, colliders)` and only uses the map interface (maps/index.js).
   The zombie manager gets `map.spawnPoints` + `isZoneOpen`, so zombies only spawn in opened zones.
 - Points: gun and melee call `onHit({ target, killed, headshot, melee })` -> `wallet.earn(pointsForHit(...))`.
@@ -359,8 +379,15 @@ BO2-inspired tuning (after part B): wind-up 0.35s -> 0.3s; round number flips th
 wraps all the way round when you stand still.
 Part C done: interaction system (game/interactions.js). Hold F / X for 0.25s near and facing the shutter to buy it
 (500): ka-ching, points pop-up, shutter rolls up, concourse zone opens. Not enough points: red cost, shake, buzz.
-Controller X near a buyable: tap = reload, hold = buy. Next: part D (two weapon slots, Price Gun 500 full-auto
-pistol in the start room, Nail Gun 1000 in the concourse, ammo refills), using the same interaction system.
+Controller X near a buyable: tap = reload, hold = buy.
+Part D1 done: two weapon slots (COD rules: buying fills the empty slot, else replaces the gun in hand; each gun keeps
+its ammo), switching with 1/2, mouse wheel or controller Y (0.18s drop + 0.32s raise, no firing/ADS, cancels
+reloads). Price Gun wall buy on the start room's east wall: chalk outline + the gun on pegs; 500 to buy, 250 for
+ammo (refills mag + reserve; no prompt when full). Price Gun: full-auto label gun, 22 dmg (x3 head), ~12 shots/s,
+24/120, 1.4s reload, bloom grows while held, small pitch + random sideways camera kick, pink sticker flash, its own
+model/sounds/reload (swaps the label roll). The staple gun has no ammo refill (by design; maybe an ammo cache later).
+Next: part D2, the Nail Gun (1000, concourse outside Nuts & Bolts): hard-hitting semi-auto whose nails pierce
+2-3 zombies in a line.
 
 ## Planned build order
 1. Walkable mall (done)

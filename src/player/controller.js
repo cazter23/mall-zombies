@@ -29,6 +29,8 @@ export class PlayerController {
     // viewKick (pitch) is part of the aim, so shots go where the crosshair is; viewRoll is visual only.
     this.kickSpring = createSpring({ frequency: feel.look.recoilFrequency, damping: feel.look.recoilDamping });
     this.rollSpring = createSpring({ frequency: feel.look.recoilRollFrequency, damping: feel.look.recoilRollDamping });
+    this.yawKickSpring = createSpring({ frequency: feel.look.recoilFrequency, damping: feel.look.recoilDamping });
+    this.prevViewKickYaw = 0;
     this.prevViewKick = 0; // last tick's values, for smooth rendering between ticks
     this.prevViewRoll = 0;
     // Set by the weapon each tick (see weapons/aim.js): aiming blocks sprint and slows walking.
@@ -89,8 +91,10 @@ export class PlayerController {
     this.pitch = 0;
     this.kickSpring.reset();
     this.rollSpring.reset();
+    this.yawKickSpring.reset();
     this.prevViewKick = 0;
     this.prevViewRoll = 0;
+    this.prevViewKickYaw = 0;
     this.stance = 'stand';
     this.height = feel.player.height;
     this.eyeHeight = feel.player.eyeHeight;
@@ -156,11 +160,17 @@ export class PlayerController {
     this.kickSpring.displace(radians);
   }
 
-  // A weapon shot: the view kicks up to `pitchRadians` (peak) and rolls `rollRadians`
-  // (visual only), then both spring back to where you were aiming.
-  addRecoil(pitchRadians, rollRadians = 0) {
+  // Sideways recoil offset (radians, + = left). Included in the aim.
+  get viewKickYaw() {
+    return this.yawKickSpring.value;
+  }
+
+  // A weapon shot: the view kicks up to `pitchRadians` and sideways `yawRadians` (peaks; both part
+  // of the aim) and rolls `rollRadians` (visual only), then all spring back to where you were aiming.
+  addRecoil(pitchRadians, rollRadians = 0, yawRadians = 0) {
     this.kickSpring.kick(pitchRadians);
     this.rollSpring.kick(rollRadians);
+    this.yawKickSpring.kick(yawRadians);
   }
 
   // Advance the recoil springs. Called at the END of each tick (after shots and hits), so a
@@ -168,8 +178,10 @@ export class PlayerController {
   updateView(dt) {
     this.prevViewKick = this.kickSpring.value;
     this.prevViewRoll = this.rollSpring.value;
+    this.prevViewKickYaw = this.yawKickSpring.value;
     this.kickSpring.update(dt);
     this.rollSpring.update(dt);
+    this.yawKickSpring.update(dt);
   }
 
   // Eye position and aim direction at this tick (used for hitscan shots).
@@ -177,8 +189,9 @@ export class PlayerController {
   getAim(outOrigin, outDirection) {
     outOrigin.set(this.position.x, this.position.y + this.eyeHeight, this.position.z);
     const pitch = this.pitch + this.viewKick;
+    const yaw = this.yaw + this.viewKickYaw;
     const cosPitch = Math.cos(pitch);
-    outDirection.set(-Math.sin(this.yaw) * cosPitch, Math.sin(pitch), -Math.cos(this.yaw) * cosPitch);
+    outDirection.set(-Math.sin(yaw) * cosPitch, Math.sin(pitch), -Math.cos(yaw) * cosPitch);
   }
 
   // Call while the game is paused so the camera doesn't interpolate stale motion.
@@ -465,6 +478,7 @@ export class PlayerController {
     // Recoil, interpolated between ticks. Roll turns the view around its center, so it never moves the crosshair.
     const kick = this.prevViewKick + (this.viewKick - this.prevViewKick) * alpha;
     const kickRoll = this.prevViewRoll + (this.rollSpring.value - this.prevViewRoll) * alpha;
-    this.camera.rotation.set(this.pitch + kick, this.yaw, roll + kickRoll);
+    const kickYaw = this.prevViewKickYaw + (this.viewKickYaw - this.prevViewKickYaw) * alpha;
+    this.camera.rotation.set(this.pitch + kick, this.yaw + kickYaw, roll + kickRoll);
   }
 }

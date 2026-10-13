@@ -54,6 +54,16 @@ export class Input {
     document.addEventListener('mouseup', (e) => {
       this.held.delete(`Mouse${e.button}`);
     });
+    // Mouse wheel: each notch is a one-shot press 'WheelUp' / 'WheelDown' (weapon switching).
+    document.addEventListener(
+      'wheel',
+      (e) => {
+        if (!this.locked || e.deltaY === 0) return;
+        this.pressed.add(e.deltaY < 0 ? 'WheelUp' : 'WheelDown');
+        this.device = 'keyboard';
+      },
+      { passive: true },
+    );
     document.addEventListener('contextmenu', (e) => {
       if (this.locked) e.preventDefault();
     });

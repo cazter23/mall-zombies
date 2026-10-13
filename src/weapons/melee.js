@@ -14,7 +14,7 @@ import { castShot } from './hitscan.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 
-export function createMelee({ def, stats, player, input, weapon, shootables, colliders, effects, hud, onHit = null }) {
+export function createMelee({ def, stats, player, input, getWeapon, shootables, colliders, effects, hud, onHit = null }) {
   let timer = -1; // seconds into the current swing; -1 = not swinging
   let hasHit = false;
 
@@ -66,7 +66,7 @@ export function createMelee({ def, stats, player, input, weapon, shootables, col
   function startSwing() {
     timer = 0;
     hasHit = false;
-    weapon.cancelReload(); // the classic COD tradeoff: knifing interrupts a reload
+    getWeapon().cancelReload(); // the classic COD tradeoff: knifing interrupts a reload
 
     // Lunge at a target that's just out of reach (not while sliding or in the air).
     if (player.stance === 'slide' || !player.grounded) return;

@@ -10,6 +10,7 @@ export const weapons = {
   stapleGun: {
     id: 'stapleGun',
     name: 'Staple Gun',
+    fireMode: 'semi', // 'semi' = one shot per click, 'auto' = keeps firing while held
     damage: 30, // per body hit. Round-1 zombie (150 HP): 5 body shots or 2 headshots (30 x 3 = 90)
     headshotMultiplier: 3,
     magazineSize: 12,
@@ -23,6 +24,7 @@ export const weapons = {
     // where you were aiming by itself; everything else is visual only.
     recoil: {
       pitchDegrees: 1.0, // the view kicks up this much per shot (peak, ~35ms after the shot), then settles
+      yawDegrees: 0, // random left/right kick per shot (moves the crosshair too; springs back)
       rollDegrees: 0.3, // visual only: the view tilts a hair left or right (rolling never moves the crosshair)
       adsMultiplier: 0.7, // camera kick while aiming down sights
       model: {
@@ -129,6 +131,121 @@ export const weapons = {
           { at: 0.14, sound: 'stapleReloadOut' }, // pusher rod pulled back
           { at: 0.63, sound: 'stapleReloadIn', jolt: { up: -0.012, pitchDegrees: -4, rollDegrees: 2 } }, // strip slapped in
           { at: 0.86, sound: 'stapleReloadReady', jolt: { back: 0.006, pitchDegrees: 2.5 } }, // rod snaps shut
+        ],
+      },
+    },
+  },
+
+  // Cheap full-auto wall buy (start room, 500): a supermarket price-label gun shooting price stickers.
+  // Weaker per shot than the staple gun but it sprays: hold the trigger.
+  priceGun: {
+    id: 'priceGun',
+    name: 'Price Gun',
+    fireMode: 'auto',
+    damage: 22, // round-1 zombie (150 HP): 7 body shots or 3 headshots (22 x 3 = 66)
+    headshotMultiplier: 3,
+    magazineSize: 24,
+    startingReserve: 120, // also the most it can hold in reserve (ammo buys refill to this)
+    fireInterval: 0.083, // ~12 shots per second while held
+    fireBuffer: 0.1,
+    reloadTime: 1.4,
+    range: 80,
+
+    recoil: {
+      pitchDegrees: 0.45, // smaller kicks, but at 12 a second they stack into a small climb
+      yawDegrees: 0.25, // random sideways kick: sprays wander a little
+      rollDegrees: 0.15,
+      adsMultiplier: 0.65,
+      model: {
+        back: 0.02,
+        up: 0.004,
+        pitchDegrees: 3,
+        yawDegrees: 1,
+        rollDegrees: 1.5,
+        adsMultiplier: 0.4,
+        frequency: 9, // snappier spring so rapid shots stay readable
+        damping: 0.6,
+      },
+    },
+
+    spread: {
+      base: 1.2,
+      moving: 2.2,
+      maxMovingFactor: 1.6,
+      airborne: 3.0,
+      perShot: 0.35, // the cone opens up the longer you hold the trigger...
+      maxBloom: 3.5,
+      bloomRecovery: 6, // ...and closes again quickly when you let go
+      smoothing: 10,
+      adsMultiplier: 0.15, // looser than the staple gun when aiming
+    },
+
+    ads: {
+      seconds: 0.16,
+      fovMultiplier: 0.85, // a little less zoom than the staple gun
+      offset: { x: 0, y: -0.122, z: -0.4 }, // sight post tip just below the crosshair, over the label roll
+    },
+
+    muzzleFlash: {
+      seconds: 0.04,
+      size: 0.15,
+      coreSize: 0.075,
+      outerOpacity: 0.85,
+      sizeJitter: 0.25,
+      forwardOffset: 0.09,
+      outerColor: 0xff8fc8, // pink-ish: a puff of sticker glitter rather than fire
+      coreColor: 0xffffff,
+      adsWidth: 1.7,
+      adsHeight: 0.6,
+      adsTwistFraction: 0.06,
+      lightColor: 0xffd6ea,
+      handLightIntensity: 0.4,
+      handLightRange: 0.8,
+      worldLightIntensity: 6,
+      worldLightRange: 8,
+    },
+
+    sounds: { fire: 'priceShot', dryFire: 'dryClick' },
+
+    tracerColor: 0xfff3c4, // a little price sticker streak
+    viewmodel: {
+      model: 'priceGun',
+      hipOffset: { x: 0.175, y: -0.15, z: -0.43 },
+      aimYawDegrees: 9,
+      hipPitchDegrees: 2,
+      hipRollDegrees: 4,
+      bodyColor: 0xff7a1a, // pricing-gun orange
+      metalColor: 0x8d939c,
+      gripColor: 0x2b2b2b,
+      sightColor: 0xffe14a,
+      labelColor: 0xf6f2e6, // the roll of white stickers
+      fire: { leverDegrees: 22, pressSeconds: 0.02, releaseSeconds: 0.05 },
+      reload: {
+        // The gun tips up and rolls toward the left hand, holds while the roll is swapped, returns.
+        gunKeys: [
+          { t: 0, pos: [0, 0, 0], rot: [0, 0, 0] },
+          { t: 0.15, pos: [-0.015, -0.035, 0.02], rot: [14, 8, 26] },
+          { t: 0.62, pos: [-0.02, -0.04, 0.02], rot: [16, 8, 28] },
+          { t: 0.72, pos: [-0.015, -0.045, 0.02], rot: [8, 6, 22] },
+          { t: 0.9, pos: [0, 0, 0], rot: [0, 0, 0] },
+          { t: 1, pos: [0, 0, 0], rot: [0, 0, 0] },
+        ],
+        // The left hand: plucks the empty roll off the top, drops out of view, comes back with a fresh one.
+        handKeys: [
+          { t: 0, pos: [0, 0, 0] },
+          { t: 0.12, pos: [0.01, 0.1, 0.02], rot: [10, 0, 0] }, // up to the roll on top
+          { t: 0.32, pos: [-0.07, -0.24, 0.12], rot: [-20, 0, 0] }, // away and down
+          { t: 0.44, pos: [-0.07, -0.24, 0.12], rot: [-20, 0, 0] },
+          { t: 0.58, pos: [0.01, 0.12, 0.02], rot: [10, 0, 0] }, // fresh roll up onto the deck
+          { t: 0.64, pos: [0.01, 0.105, 0.02] }, // pressed on
+          { t: 0.8, pos: [0, 0, 0] },
+        ],
+        rollGone: [0.14, 0.63], // the roll on top is off the gun between these times...
+        newRollVisible: [0.38, 0.63], // ...and the fresh one is in the hand between these
+        events: [
+          { at: 0.13, sound: 'priceReloadOut' }, // empty roll popped off
+          { at: 0.63, sound: 'priceReloadIn', jolt: { up: -0.01, pitchDegrees: -3, rollDegrees: 2 } }, // fresh roll pressed on
+          { at: 0.86, sound: 'priceReloadReady', jolt: { back: 0.005, pitchDegrees: 2 } }, // feed snapped shut
         ],
       },
     },

@@ -12,7 +12,9 @@
 import * as THREE from 'three';
 import { makeFlashTexture } from '../world/textures.js';
 
-export function createMuzzleFlash(cfg) {
+// `lights` (optional): { handLight, worldLight } shared by every gun's flash, so switching guns
+// never changes how many lights exist (see the note above). The flash recolors them when it fires.
+export function createMuzzleFlash(cfg, lights = null) {
   const texture = makeFlashTexture();
   // The outer burst is drawn normally so its color holds up against bright walls; the core glows
   // (additive) on top of it.
@@ -41,10 +43,10 @@ export function createMuzzleFlash(cfg) {
   object.add(burst);
 
   // Lights the gun and hands (lives in the viewmodel scene, on the muzzle).
-  const handLight = new THREE.PointLight(cfg.lightColor, 0, cfg.handLightRange, 1);
-  object.add(handLight);
+  const handLight = lights ? lights.handLight : new THREE.PointLight(cfg.lightColor, 0, cfg.handLightRange, 1);
+  if (!lights) object.add(handLight);
   // Lights the world around the player (add to the world scene; placed every frame).
-  const worldLight = new THREE.PointLight(cfg.lightColor, 0, cfg.worldLightRange, 2);
+  const worldLight = lights ? lights.worldLight : new THREE.PointLight(cfg.lightColor, 0, cfg.worldLightRange, 2);
 
   let life = 0; // seconds left
   let scaleX = 1;
@@ -58,6 +60,10 @@ export function createMuzzleFlash(cfg) {
     // blasts out both sides of the gun's nose and stays below the crosshair.
     trigger(aimAmount = 0) {
       life = cfg.seconds;
+      handLight.color.setHex(cfg.lightColor);
+      handLight.distance = cfg.handLightRange;
+      worldLight.color.setHex(cfg.lightColor);
+      worldLight.distance = cfg.worldLightRange;
       const jitter = 1 - cfg.sizeJitter + Math.random() * cfg.sizeJitter * 2;
       scaleX = (1 + (cfg.adsWidth - 1) * aimAmount) * jitter;
       scaleY = (1 + (cfg.adsHeight - 1) * aimAmount) * jitter;
@@ -90,6 +96,7 @@ export function createMuzzleFlash(cfg) {
 
     reset() {
       life = 0;
+      burst.visible = false;
     },
   };
 }

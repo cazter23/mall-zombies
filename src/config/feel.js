@@ -120,6 +120,15 @@ export const feel = {
     resultsDelay: 1.6, // seconds after death before the results screen shows
   },
 
+  // Switching weapons (two slots, COD-style): the gun in hand drops out of view, the other comes up.
+  // No shooting or aiming until it's up. Switching cancels a reload.
+  weaponSwitch: {
+    lowerSeconds: 0.18, // old gun drops away...
+    raiseSeconds: 0.32, // ...new one comes up (ready to fire at the end)
+    dropMeters: 0.22, // how far it drops out of view
+    tiltDegrees: 35, // muzzle tips down as it drops
+  },
+
   // Buying things (doors, wall buys): hold the interact button (config/controls.js -> bindings.interact).
   interact: {
     holdSeconds: 0.25, // hold this long to buy
@@ -142,6 +151,8 @@ export const feel = {
 
   world: {
     shutterOpenSeconds: 1.2, // how long a security shutter takes to roll up
+    // Wall buy: chalk outline on the wall + the gun hanging on pegs (world/wallBuy.js)
+    wallBuyDisplay: { width: 1.1, height: 0.55, gunScale: 1.8, standOff: 0.07 },
   },
 
   // First-person weapon model (drawn on top of the world so it never clips into walls)

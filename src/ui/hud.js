@@ -111,11 +111,12 @@ export function createHud() {
         <li><kbd>Click</kbd> shoot</li>
         <li><kbd>R</kbd> reload</li>
         <li><kbd>F</kbd> buy (hold)</li>
+        <li><kbd>1</kbd> <kbd>2</kbd> / <kbd>Wheel</kbd> switch weapon</li>
         <li><kbd>V</kbd> box cutter</li>
         <li><kbd>Esc</kbd> pause</li>
       </ul>
       <p class="pad-hint">Controller? Press <kbd>A</kbd> / <kbd>✕</kbd> or <kbd>Start</kbd> to play.
-        LS move (click to sprint) · RS look · LT aim · RT shoot · A jump · B crouch/slide · X reload (hold X to buy) · RB knife</p>
+        LS move (click to sprint) · RS look · LT aim · RT shoot · A jump · B crouch/slide · X reload (hold X to buy) · Y switch weapon · RB knife</p>
       ${debug.allowShutterToggle ? '<p class="debug-hint">Debug: <kbd>O</kbd> opens the shutter</p>' : ''}
       ${debug.testArena ? '<p class="debug-hint">Debug: <kbd>T</kbd> teleports to the movement test range</p>' : ''}
       ${debug.zombieKeys ? '<p class="debug-hint">Debug: <kbd>Z</kbd> spawns a zombie, <kbd>X</kbd> clears them</p>' : ''}
