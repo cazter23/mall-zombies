@@ -11,6 +11,7 @@ import { startLoop } from './core/loop.js';
 import { Input } from './core/input.js';
 import { createGamepad } from './core/gamepad.js';
 import { buttonLabels } from './config/controls.js';
+import { zombieTypes } from './config/zombies.js';
 import { loadMap } from './maps/index.js';
 import { buildTestRange } from './maps/testRange/testRange.js';
 import { createPlayerStats } from './player/stats.js';
@@ -260,6 +261,7 @@ const zombies = createZombieManager({
     player.addViewKick(-feel.health.hitJoltDegrees * DEG_TO_RAD); // jolt the view down
   },
   onKill: (zombie) => runStats.recordKill(zombie),
+  onSound: (name, volume) => sound.play(name, { volume }), // Mall Walker squeaks, huffs and pants
 });
 
 rounds = createRounds({
@@ -267,6 +269,13 @@ rounds = createRounds({
   onRoundStart: (n) => {
     hud.setRound(n);
     hud.showRoundBanner(n);
+  },
+  // A zombie type's first appearance this run (Mall Walkers, round 4): PA chime + banner.
+  onTypeIntro: (typeId) => {
+    const intro = zombieTypes[typeId]?.introBanner;
+    if (!intro) return;
+    hud.showAnnouncement(intro);
+    sound.play('paChime');
   },
 });
 
@@ -369,7 +378,10 @@ function update(dt) {
     player.teleport(arena.contains(player.position) ? map.playerSpawn : arena.playerSpawn);
   }
 
-  if (debug.zombieKeys && input.consumePress('KeyZ')) zombies.spawn('shopper');
+  if (debug.zombieKeys && input.consumePress('KeyZ')) {
+    const shift = input.isDown('ShiftLeft') || input.isDown('ShiftRight');
+    zombies.spawn(shift ? 'mallWalker' : 'shopper'); // Z = Shopper, Shift+Z = Mall Walker
+  }
   if (debug.zombieKeys && input.consumePress('KeyX')) zombies.clear();
   if (debug.cheatKeys && input.consumePress('KeyN')) rounds.skipRound();
   if (debug.cheatKeys && input.consumePress('KeyP')) wallet.earn(5000);

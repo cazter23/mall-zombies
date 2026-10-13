@@ -9,7 +9,8 @@
 //   tone:  { type: 'tone', wave: 'sine' | 'square' | 'triangle' | 'sawtooth', freq, freqEnd, gain, attack, decay, delay }
 //
 // freq/freqEnd in Hz (a tone sweeps from freq to freqEnd), times in seconds, gain 0..1.
-// Weapons refer to sounds by name (config/weapons.js -> sounds, reload events).
+// Weapons refer to sounds by name (config/weapons.js -> sounds, reload events); so do zombie types
+// (config/zombies.js -> sounds) and the PA chime.
 // =============================================================================
 
 export const audio = {
@@ -47,6 +48,44 @@ export const audio = {
         { type: 'noise', filter: 'bandpass', freq: 2800, q: 1.2, gain: 0.7, attack: 0.0008, decay: 0.035 },
         { type: 'noise', filter: 'lowpass', freq: 800, q: 0.7, gain: 0.5, attack: 0.001, decay: 0.09 },
         { type: 'noise', filter: 'highpass', freq: 3500, q: 0.7, gain: 0.22, attack: 0.01, decay: 0.14, delay: 0.03 },
+      ],
+    },
+
+    // Mall Walker: a sneaker squeak on the shiny mall floor (quiet; volume also drops with distance)...
+    walkerSqueak: {
+      volume: 0.4,
+      layers: [
+        { type: 'tone', wave: 'sine', freq: 1700, freqEnd: 2600, gain: 0.5, attack: 0.006, decay: 0.07 },
+        { type: 'tone', wave: 'triangle', freq: 3300, freqEnd: 4300, gain: 0.12, attack: 0.006, decay: 0.05 },
+        { type: 'noise', filter: 'highpass', freq: 5000, q: 0.7, gain: 0.08, attack: 0.002, decay: 0.03 },
+      ],
+    },
+    // ...a breathy "hff" every couple of steps...
+    walkerHuff: {
+      volume: 0.5,
+      layers: [
+        { type: 'noise', filter: 'bandpass', freq: 950, q: 0.8, gain: 0.55, attack: 0.025, decay: 0.16 },
+        { type: 'noise', filter: 'lowpass', freq: 500, q: 0.7, gain: 0.3, attack: 0.025, decay: 0.12 },
+      ],
+    },
+    // ...and three quick pants when it's winded after a swing.
+    walkerPant: {
+      volume: 0.6,
+      layers: [
+        { type: 'noise', filter: 'bandpass', freq: 1050, q: 0.8, gain: 0.55, attack: 0.015, decay: 0.12 },
+        { type: 'noise', filter: 'bandpass', freq: 950, q: 0.8, gain: 0.5, attack: 0.015, decay: 0.12, delay: 0.24 },
+        { type: 'noise', filter: 'bandpass', freq: 850, q: 0.8, gain: 0.45, attack: 0.015, decay: 0.14, delay: 0.48 },
+      ],
+    },
+
+    // Mall PA "ding-dong" before an announcement (a new zombie type showing up).
+    paChime: {
+      volume: 0.55,
+      layers: [
+        { type: 'tone', wave: 'sine', freq: 880, gain: 0.55, attack: 0.005, decay: 0.8 },
+        { type: 'tone', wave: 'triangle', freq: 1760, gain: 0.08, attack: 0.005, decay: 0.35 },
+        { type: 'tone', wave: 'sine', freq: 698, gain: 0.55, attack: 0.005, decay: 1.0, delay: 0.42 },
+        { type: 'tone', wave: 'triangle', freq: 1396, gain: 0.08, attack: 0.005, decay: 0.4, delay: 0.42 },
       ],
     },
 

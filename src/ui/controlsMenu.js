@@ -36,7 +36,7 @@ export function createControlsMenu() {
   const hints = [];
   if (debug.allowShutterToggle) hints.push('O opens the shutter');
   if (debug.testArena) hints.push('T teleports to the movement test range');
-  if (debug.zombieKeys) hints.push('Z spawns a zombie, X clears them');
+  if (debug.zombieKeys) hints.push('Z spawns a Shopper (Shift+Z: a Mall Walker), X clears them');
   if (debug.cheatKeys) hints.push("N next round, P +5000 points, ' points to 0");
   if (hints.length) card.append(el('p', 'controls-debug', `Debug: ${hints.join(' · ')}`));
   card.append(footer, el('p', 'pad-hint settings-hint', 'Controller: LB/RB switch device · Y diagram or list · B back'));

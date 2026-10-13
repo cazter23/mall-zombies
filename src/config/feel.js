@@ -19,8 +19,8 @@ export const feel = {
 
   // Health regen and the red "you're hurt" screen edges
   health: {
-    regenDelay: 3, // seconds without being hit before health starts coming back
-    regenRate: 50, // health per second while regenerating (empty -> full in ~2s)
+    regenDelay: 3.5, // seconds without being hit before health starts coming back
+    regenRate: 40, // health per second while regenerating (empty -> full in ~2.5s)
     hitFlashSeconds: 0.4, // red flash on the screen edges when hit
     hitFlashOpacity: 0.65,
     hitJoltDegrees: 2.5, // the view jolts down this much when hit

@@ -17,6 +17,26 @@ export const economy = {
   // Base points for killing each zombie type
   killValues: {
     shopper: 60,
+    mallWalker: 60,
+  },
+
+  // Special zombie types mixed into the waves (every other spawn is a Shopper).
+  //   fromRound        first round they can show up
+  //   shareByRound     chance that each spawn is this type, from the last row whose fromRound is reached
+  //   healthMultiplier x the round's zombie health (waves.health below)
+  //   introSpawnIndex  in the first round they can appear, the spawn with this index (0 = the first) is
+  //                    forced to be one if none has come yet, so the "they're here" banner always has a zombie
+  zombieMix: {
+    mallWalker: {
+      fromRound: 4,
+      shareByRound: [
+        { fromRound: 4, share: 0.15 },
+        { fromRound: 6, share: 0.25 },
+        { fromRound: 9, share: 0.3 },
+      ],
+      healthMultiplier: 0.65,
+      introSpawnIndex: 2,
+    },
   },
 
   // Door / shutter prices
@@ -69,6 +89,24 @@ export function zombieHealthForRound(round) {
   const linearHealth = h.roundOne + h.perRoundIncrease * (linearRound - 1);
   if (round <= h.linearUntilRound) return linearHealth;
   return Math.round(linearHealth * Math.pow(h.multiplierAfter, round - h.linearUntilRound));
+}
+
+// Health of one zombie of `typeId` in `round` (special types scale the round's health; see zombieMix).
+export function zombieHealthFor(typeId, round) {
+  const multiplier = economy.zombieMix[typeId]?.healthMultiplier ?? 1;
+  return Math.round(zombieHealthForRound(round) * multiplier);
+}
+
+// Which type the next spawn in `round` is, from zombieMix (`roll` 0..1, random by default).
+export function zombieTypeForRound(round, roll = Math.random()) {
+  for (const [typeId, mix] of Object.entries(economy.zombieMix)) {
+    if (round < mix.fromRound) continue;
+    let share = 0;
+    for (const row of mix.shareByRound) if (round >= row.fromRound) share = row.share;
+    if (roll < share) return typeId;
+    roll -= share;
+  }
+  return 'shopper';
 }
 
 export function zombieCountForRound(round) {

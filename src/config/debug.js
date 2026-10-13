@@ -13,7 +13,7 @@ export const debug = {
   // Build the open movement test range (src/maps/testRange/). Press T to teleport there and back.
   testArena: true,
 
-  // Press Z to spawn an extra Shopper zombie, X to remove all zombies.
+  // Press Z to spawn an extra Shopper zombie (Shift+Z: a Mall Walker), X to remove all zombies.
   zombieKeys: true,
 
   // Press N to end the current round and start the next one, P for +5000 points.

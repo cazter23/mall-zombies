@@ -4,13 +4,13 @@
 // navigation, handing out surround slots near the player, ticking each zombie,
 // keeping zombies from overlapping each other or the player (never through
 // walls), adding/removing them from the shootables list, and death effects.
-// Waves (how many, how often) come in step 4; for now spawning is on demand.
+// Waves (how many, how often, which type) are decided by game/rounds.js, which calls spawn(typeId).
 // =============================================================================
 
 import * as THREE from 'three';
 import { feel } from '../config/feel.js';
 import { zombieTypes, zombieCrowd, zombieFailsafe } from '../config/zombies.js';
-import { zombieHealthForRound } from '../config/economy.js';
+import { zombieHealthFor } from '../config/economy.js';
 import { createNavigation } from './navigation.js';
 import { overlapsSolid } from '../world/collision.js';
 import { Zombie } from './zombie.js';
@@ -29,6 +29,7 @@ const UP = new THREE.Vector3(0, 1, 0);
  * @param canAttack    () => false once the player is dead
  * @param onPlayerHit  (damage, zombie) => apply a landed zombie hit to the player
  * @param onKill       optional (zombie) => called when a zombie dies (run stats, later points)
+ * @param onSound      optional (name, volume) => play a zombie sound (Mall Walker squeaks, huffs, pants)
  */
 export function createZombieManager({
   scene,
@@ -42,12 +43,23 @@ export function createZombieManager({
   canAttack,
   onPlayerHit,
   onKill = null,
+  onSound = null,
 }) {
   // Every zombie type shares one grid for now; sized for the shopper.
   const base = zombieTypes.shopper;
   const nav = createNavigation(colliders, { radius: base.radius, height: base.height });
   const zombies = [];
-  const ctx = { nav, player, colliders, zombies, canAttack: true, onPlayerHit };
+  // Zombie sounds go through here: the same sound never stacks within soundMinGapSeconds,
+  // so a group of Mall Walkers squeaks like a group, not a wall of noise.
+  let soundClock = 0;
+  const lastSoundAt = new Map();
+  function playZombieSound(name, volume) {
+    if (!onSound) return;
+    if (soundClock - (lastSoundAt.get(name) ?? -Infinity) < zombieCrowd.soundMinGapSeconds) return;
+    lastSoundAt.set(name, soundClock);
+    onSound(name, volume);
+  }
+  const ctx = { nav, player, colliders, zombies, canAttack: true, onPlayerHit, onSound: playZombieSound };
   const scratch = new THREE.Vector3();
 
   // A spawn point in an open zone that can reach the player, not right on top of them.
@@ -306,7 +318,7 @@ export function createZombieManager({
       const yaw = Math.atan2(-(player.position.x - position.x), -(player.position.z - position.z));
       const round = getRound();
       const speed = pickGaitSpeed(type, round);
-      const zombie = new Zombie({ type, health: zombieHealthForRound(round), position, yaw, speed, round });
+      const zombie = new Zombie({ type, health: zombieHealthFor(typeId, round), position, yaw, speed, round });
       zombie.onDeath = onZombieDeath;
       zombie.stuckTimer = 0; // failsafe bookkeeping (see rescueStuckZombies)
       zombie.stuckFrom = { x: position.x, z: position.z };
@@ -332,6 +344,7 @@ export function createZombieManager({
 
     // Fixed-tick update.
     update(dt) {
+      soundClock += dt;
       nav.update(dt, player.position);
       ctx.canAttack = canAttack();
       assignSurroundSlots(dt);

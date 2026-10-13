@@ -14,6 +14,8 @@
 //   swing    -> the slam lands as this starts: the player is hit only if still in reach and in front;
 //               then a short follow-through
 //   (back to chasing, with a recovery before it may attack again: long after a hit, short after a miss)
+//   Types with `winded` (Mall Walker) are winded after every swing instead: they stand panting
+//   (no attacks), then follow slowly for a moment (windedTimer; still the 'chasing' state)
 //   dead     -> tips over, lies there, sinks away, then `removed` is set
 // =============================================================================
 
@@ -50,9 +52,13 @@ export class Zombie {
     this.attackCooldown = 0; // seconds until it may start another attack
     const atk = type.attack;
     this.windupSeconds = Math.max(atk.minWindupSeconds, atk.windupSeconds - atk.windupShrinkPerRound * (round - 1));
+    this.windedTimer = 0; // > 0 while winded after a swing (types with `winded`)
     this.killedByHeadshot = false;
     this.killedByMelee = false;
-    this.removed = false; // set once the corpse has sunk away; the manager then deletes it
+    this.removed = false;
+    // Chase sounds (types with `sounds`): random start so a group doesn't squeak in unison.
+    this.stepSoundTimer = Math.random() * (type.sounds?.step?.interval ?? 0);
+    this.huffSoundTimer = Math.random() * (type.sounds?.huff?.interval ?? 0); // set once the corpse has sunk away; the manager then deletes it
 
     // Crowd personality, so a horde doesn't move as one: its own lane beside the shared route,
     // how far down the route it looks, and which side it prefers to step around others.
@@ -129,7 +135,8 @@ export class Zombie {
   /**
    * ctx: { nav, player, colliders, zombies,
    *        canAttack: boolean (false once the player is dead),
-   *        onPlayerHit(damage, zombie) }
+   *        onPlayerHit(damage, zombie),
+   *        onSound(name, volume) (optional: a zombie sound, volume 0..1 by distance) }
    */
   update(dt, ctx) {
     this.prevPosition.copy(this.position);
@@ -137,13 +144,15 @@ export class Zombie {
     this.stateTime += dt;
     this.flinchTimer = Math.max(0, this.flinchTimer - dt);
     this.attackCooldown = Math.max(0, this.attackCooldown - dt);
+    this.windedTimer = Math.max(0, this.windedTimer - dt);
     const attack = this.type.attack;
 
     if (this.state === 'spawning') {
       this.faceToward(ctx.player.position, dt);
       if (this.stateTime >= this.type.spawnSeconds) this.setState('chasing');
     } else if (this.state === 'chasing') {
-      this.chase(dt, ctx);
+      this.chase(dt, ctx, this.windedSpeedScale());
+      this.chaseSounds(dt, ctx);
       // Starts swinging on the way in (no stopping first), unless a wall is in the way.
       if (ctx.canAttack && this.attackCooldown <= 0 && this.inReach(ctx.player, attack.startRange) &&
           !this.wallBetween(ctx.player, ctx.colliders)) {
@@ -162,6 +171,13 @@ export class Zombie {
         this.setState('chasing');
         // A miss gets retried almost straight away, so stepping back isn't a free reset.
         this.attackCooldown = this.swingHit ? attack.recoverSeconds : attack.missRecoverSeconds;
+        const winded = this.type.winded;
+        if (winded) {
+          // Winded after every swing: stands panting (no attacks), then follows slowly for a moment.
+          this.windedTimer = winded.standSeconds + winded.slowSeconds;
+          this.attackCooldown = Math.max(this.attackCooldown, winded.standSeconds);
+          this.playSound(this.type.sounds?.winded, ctx);
+        }
       }
     } else if (this.state === 'dead') {
       const t = this.type;
@@ -169,6 +185,40 @@ export class Zombie {
     }
 
     if (this.isAlive) this.updateHitboxes();
+  }
+
+  // Walking speed while winded: 0 while standing panting, then slowSpeedFraction, then back to 1.
+  windedSpeedScale() {
+    const winded = this.type.winded;
+    if (!winded || this.windedTimer <= 0) return 1;
+    return this.windedTimer > winded.slowSeconds ? 0 : winded.slowSpeedFraction;
+  }
+
+  // Footstep squeaks and huffing while chasing (types with `sounds`), not while standing winded.
+  chaseSounds(dt, ctx) {
+    const sounds = this.type.sounds;
+    if (!sounds || this.windedSpeedScale() === 0) return;
+    if (sounds.step) {
+      this.stepSoundTimer -= dt;
+      if (this.stepSoundTimer <= 0) {
+        this.stepSoundTimer += sounds.step.interval;
+        if (Math.random() < sounds.step.chance) this.playSound(sounds.step, ctx);
+      }
+    }
+    if (sounds.huff) {
+      this.huffSoundTimer -= dt;
+      if (this.huffSoundTimer <= 0) {
+        this.huffSoundTimer += sounds.huff.interval;
+        this.playSound(sounds.huff, ctx);
+      }
+    }
+  }
+
+  // Play a sound ({ name, maxDistance }) through ctx.onSound, louder the closer the player is.
+  playSound(sound, ctx) {
+    if (!sound || !ctx.onSound) return;
+    const volume = 1 - this.distanceTo(ctx.player) / sound.maxDistance;
+    if (volume > 0) ctx.onSound(sound.name, volume);
   }
 
   // Move toward the player. `speedScale` slows the walking part (e.g. mid-attack); `facePlayer`
@@ -338,6 +388,7 @@ export class Zombie {
     this.slot = null;
     this.slotKey = null;
     this.attackCooldown = 0;
+    this.windedTimer = 0;
     this.setState('spawning');
     this.updateHitboxes();
   }

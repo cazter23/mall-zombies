@@ -77,6 +77,13 @@ export function createHud() {
   const roundBanner = el('div', 'round-banner');
   hud.append(roundBanner);
 
+  // PA-style announcement under it ("Attention shoppers / Mall Walkers have entered the building").
+  const announceBanner = el('div', 'announce-banner');
+  const announceKicker = el('div', 'announce-kicker');
+  const announceText = el('div', 'announce-text');
+  announceBanner.append(announceKicker, announceText);
+  hud.append(announceBanner);
+
   // Bottom-right: ammo counter.
   const ammo = el('div', 'ammo');
   ammo.innerHTML = `
@@ -231,6 +238,15 @@ export function createHud() {
     // --- Rounds ---
     setRound(n) {
       roundCounter.textContent = n > 0 ? String(n) : '';
+    },
+
+    // A PA-style announcement: { kicker, text }. Restarts the animation if one is already showing.
+    showAnnouncement({ kicker = '', text }) {
+      announceKicker.textContent = kicker;
+      announceText.textContent = text;
+      announceBanner.classList.remove('show');
+      void announceBanner.offsetWidth; // restart the animation
+      announceBanner.classList.add('show');
     },
 
     showRoundBanner(n) {

@@ -783,3 +783,54 @@ kbd {
 .menu-buttons .settings-btn {
   margin: 0;
 }
+
+/* PA-style announcement (a new zombie type showing up), under the round banner */
+.announce-banner {
+  position: absolute;
+  left: 50%;
+  top: 34%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+}
+.announce-banner.show {
+  animation: announce-banner 4.5s ease-out forwards;
+}
+.announce-kicker {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--mall-teal);
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+}
+.announce-text {
+  margin-top: 4px;
+  font-family: 'Bungee', Impact, 'Arial Black', sans-serif;
+  font-size: 30px;
+  line-height: 1.15;
+  color: var(--mall-yellow);
+  text-shadow: 3px 3px 0 var(--mall-pink), 0 6px 16px rgba(0, 0, 0, 0.5);
+  text-transform: uppercase;
+}
+@keyframes announce-banner {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  10% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  82% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-6px);
+  }
+}

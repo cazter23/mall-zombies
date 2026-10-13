@@ -19,7 +19,8 @@ npm run dev        # Vite dev server (hot reload)
 npm run build      # production build into dist/; run after every change to catch errors
 npm run preview    # serve the built dist/
 ```
-Gameplay regression tests live in `tests/gameplay.test.js`; there is no linter yet.
+Gameplay regression tests live in `tests/` (`gameplay.test.js` movement/melee/vault, `aim.test.js` spread,
+`zombies.test.js` zombie types/mix/rounds); there is no linter yet.
 `npm run build` is the compile check (it only bundles; it
 does not run the game, so also try changes in `npm run dev`).
 
@@ -55,7 +56,9 @@ src/
                         weaponSwitch (lower/raise time, drop), interact (hold time, range, facing angle, denied
                         flash), world.wallBuyDisplay, melee lunge end
     economy.js          Points, payouts, kill values, door + wall-buy prices, round timing, wave scaling + helpers
-                        (zombieHealthForRound, zombieCountForRound, spawnDelayForRound, maxAliveForRound)
+                        (zombieHealthForRound, zombieCountForRound, spawnDelayForRound, maxAliveForRound).
+                        zombieMix: special types per round (mallWalker: from round 4, share 15% / 25% from 6 / 30% from 9,
+                        healthMultiplier 0.65, introSpawnIndex) + zombieHealthFor(typeId, round), zombieTypeForRound(round)
     weapons.js          stapleGun (start pistol, semi), priceGun (wall buy, full auto), nailGun (wall buy, semi,
                         piercing: `pierce: { maxTargets, damageFalloff }`). Per-weapon stats (fireMode
                         'semi' | 'auto', damage, headshot mult, mag, reserve (= max for ammo buys), fire interval, reload, spread
@@ -65,10 +68,13 @@ src/
                         with sounds/jolts), `melee.boxCutter` (damage, reach, cone, swing timing, lunge),
                         weaponStatDefaults for stats
     audio.js            Master volume, pitch variation, compressor, and sound recipes (layers of filtered noise
-                        bursts and tones): staple / price / nail gun shots and reloads, dry click, purchase, denied
-    zombies.js          zombieTypes (per-type speed, size, hitboxes, attack, timings, colors, splatter), zombieCrowd
+                        bursts and tones): staple / price / nail gun shots and reloads, dry click, purchase, denied,
+                        Mall Walker walkerSqueak / walkerHuff / walkerPant, paChime (announcements)
+    zombies.js          zombieTypes (per-type speed, size, hitboxes, attack, timings, colors, splatter): `shopper`, and
+                        `mallWalker` = { ...shopper, overrides } (speed 5.4 no gaits, modelScale + slimmer hitbox, winded,
+                        powerWalk walkAnimation + windedAnimation, tracksuit `outfit`, introBanner, sounds). zombieCrowd
                         (spacing, lanes, queueing, surround rings + sector/still-wrap/circling, contact gap,
-                        spawn dust, min spawn distance),
+                        spawn dust, min spawn distance, soundMinGapSeconds),
                         zombieNav (grid, soft wall clearance + wall penalty), zombieFailsafe (stuck-zombie rescue)
     controls.js         bindings (action -> keyboard/mouse + Pad* codes; interact = F / X; switchWeapon = wheel / Y,
                         weapon1/weapon2 = 1/2; menu-only: settings = Y, controlsScreen = X on the pause screen), buttonLabels
@@ -79,7 +85,7 @@ src/
                         min/max/step, format, apply(value, ctx) }. Most apply() functions write into the config objects the
                         game reads every frame (feel, controls, audio). New setting = one entry here (new tab = add to settingsTabs)
     debug.js            showMarkers, allowShutterToggle (O key: doors free), testArena (T key), zombieKeys
-                        (Z spawn / X clear), cheatKeys (N next round / P +5000 points / ' points to 0), dummies, exposeToWindow
+                        (Z spawn Shopper / Shift+Z Mall Walker / X clear), cheatKeys (N next round / P +5000 points / ' points to 0), dummies, exposeToWindow
   core/
     loop.js             startLoop(): fixed-timestep accumulator; each frame calls beforeUpdate(frameTime) (look
                         input), then update(dt) per tick, then render(alpha, frameTime)
@@ -185,12 +191,19 @@ src/
                         along its own lane; spacing push (quadratic, capped); queueing (slow + sidestep around a
                         zombie ahead); arrive braking; faces where it's trying to go. Personal laneOffset,
                         lookAhead, sideBias. During windup/swing it heads straight at the player (not its slot). circleAroundPlayer(): if
-                        the player's body is in the way partway to its slot, it walks round them (not the last stretch)
-    zombieModel.js      Blocky shopper model (random outfit, maybe a shopping bag) + code animation (walk cycle
-                        numbers in zombieTypes.<type>.walkAnimation): shamble,
-                        arms-overhead wind-up, slam, recovery, flinch/flash, rise from floor, tip over and sink
-    zombieManager.js    createZombieManager(): spawn (open + reachable spawn points >= minSpawnDistance away; returns
-                        null if none, the round waits), update
+                        the player's body is in the way partway to its slot, it walks round them (not the last stretch).
+                        Types with `winded` (Mall Walker): after every swing windedTimer = stand + slow seconds; it stays
+                        'chasing' but windedSpeedScale() is 0 then slowSpeedFraction, and attackCooldown >= standSeconds.
+                        Types with `sounds`: chaseSounds() (step squeaks / huffs on timers) + playSound(): volume by
+                        distance through ctx.onSound
+    zombieModel.js      Blocky zombie model built from the type: shopper (random outfit, maybe a shopping bag) or Mall
+                        Walker (type.outfit: matching tracksuit + stripes, headband, wristbands, fanny pack; modelScale).
+                        Arms have shoulder + elbow joints. Code animation (numbers in zombieTypes.<type>.walkAnimation):
+                        shamble or style 'powerWalk' (bent arms pumping, hips twisting), arms-overhead wind-up, slam,
+                        recovery, winded pose (bent over, hands at knees, breathing), flinch/flash, rise from floor, tip over and sink
+    zombieManager.js    createZombieManager(): spawn(typeId) (open + reachable spawn points >= minSpawnDistance away; returns
+                        null if none, the round waits; health = zombieHealthFor(typeId, round)), onSound option (zombie
+                        sounds, the same sound never within zombieCrowd.soundMinGapSeconds), update
                         (assign surround slots -> zombie updates -> resolve zombie overlaps -> keep the player out
                         of zombies -> stuck-zombie failsafe -> refresh hitboxes, since the shoves moved bodies). Failsafe:
                         a zombie > ignoreWithinMeters away that moved < minMoveMeters (or can't reach the player) in
@@ -217,7 +230,9 @@ src/
     rounds.js           createRounds(): announce(n, delay) flips the round number (and fires onRoundStart) the
                         moment the last zombie dies, then 'break' (6s, inBreak) -> 'active' (spawn quota at
                         spawnDelay, capped by maxAlive; quota only used when a zombie actually spawned, else retry
-                        after spawnRetrySeconds). start() on first play, skipRound() (debug), reset()
+                        after spawnRetrySeconds). Each spawn's type: zombieTypeForRound, except a special type's
+                        first possible round forces its introSpawnIndex-th spawn to be one. onTypeIntro(typeId) fires
+                        the first time a type spawns in a run. start() on first play, skipRound() (debug), reset()
   maps/
     index.js            Map registry + loadMap(id, scene, colliders) + THE MAP INTERFACE (id, group, zones, doors,
                         spawnPoints, wallBuys, playerSpawn, update, reset, dispose). New map = new folder + 1 line
@@ -257,7 +272,8 @@ src/
                         reload prompt under the crosshair, buy prompt below it (setInteract: "Hold F to open X 500",
                         red cost when unaffordable, shake when denied, hold-progress bar), red hurt edges, click-to-play/paused overlay,
                         "Clocked Out" results screen with Play again (plain DOM). Pause screen: Click to play + Settings (left) /
-                        Controls (right) buttons (onOpenSettings/onOpenControls); FPS counter top right (setFpsVisible/setFps)
+                        Controls (right) buttons (onOpenSettings/onOpenControls); FPS counter top right (setFpsVisible/setFps);
+                        showAnnouncement({ kicker, text }): PA-style banner under the round banner (new zombie types)
 ```
 
 ## How the pieces connect
@@ -278,6 +294,10 @@ src/
   you own it with full ammo; use = gun.give(def)). Melee gets `getWeapon: () => gun.weapon` (the gun in hand).
 - Map: `main.js` does `loadMap('mall', scene, colliders)` and only uses the map interface (maps/index.js).
   The zombie manager gets `map.spawnPoints` + `isZoneOpen`, so zombies only spawn in opened zones.
+- Zombie types: rounds picks each spawn's type (economy.zombieMix) and calls `zombies.spawn(typeId)`; health is
+  `zombieHealthFor(typeId, round)`, kill value `economy.killValues[typeId]`. A type's first spawn in a run ->
+  `onTypeIntro` -> main shows `zombieTypes[id].introBanner` (hud.showAnnouncement) + plays 'paChime'. Zombie sounds:
+  zombie -> ctx.onSound -> manager (dedupe) -> main `sound.play(name, { volume })`.
 - Points: gun and melee call `onHit({ target, killed, headshot, melee })` -> `wallet.earn(pointsForHit(...))`.
   HUD: points above the ammo with +N pop-ups, round number top-left (blinks in the break), "ROUND N" banner.
 - Death flow: `onPlayerDeath()` sets `game.over`, hides the combat HUD, releases the mouse. Render then runs the
@@ -382,8 +402,8 @@ while stepping straight at you at full speed and turning fast (attack.turnSpeed 
 after a hit, only 0.3s after a miss (no free reset by stepping back). Standing still, strafing or walking up to
 one = hit; backing off or jump-backing from a walker only works if you leave the instant its arms go up (or
 earlier), never vs a jogger up close; a quick sprint-away (~0.1s reaction) still works. Player moves slower backwards (70%) and sideways (85%), stats.backpedalSpeed/strafeSpeed,
-so retreating while shooting costs you; sprinting away still escapes if you react fast. Health regens after 3s at
-50/s; red screen edges grow with damage, pulse below 40%, flash on hits. Box cutter (V): 150 dmg, lunge, cancels
+so retreating while shooting costs you; sprinting away still escapes if you react fast. Health regens after 3.5s at
+40/s; red screen edges grow with damage, pulse below 40%, flash on hits. Box cutter (V): 150 dmg, lunge, cancels
 reload. Death: camera tips over, "Clocked Out" results (time, round, kills, headshot/box cutter kills, accuracy),
 Play again resets the run. Spawning is still debug Z (X clears); round is fixed at 1 until waves (step 4).
 Sprint feedback (`feel.sprintFx`): head bob + slight roll (camera only, aim unaffected), the gun drops into a
@@ -475,6 +495,18 @@ Core movement/combat additions: deliberate momentum vaults and committed box-cut
 Settings screen: pause screen > Settings (video: FOV, FPS counter, render scale; mouse: sensitivity, invert Y, slower when
 zoomed; controller: look speed, invert Y, deadzone, aim assist; audio: master volume; comfort: head bob, speed lines).
 "Reset this tab" restores defaults. Adding more: see config/settings.js.
+Health regen nerfed slightly: 3.5s delay (was 3), 40 HP/s (was 50; empty to full ~2.5s).
+
+Step 5 in progress. Done: the Mall Walker (round 4+). A power-walking retiree in a matching tracksuit (stripes,
+headband, wristbands, white sneakers, silver hair, maybe a fanny pack), slimmer than a shopper (model + hitbox).
+5.4 m/s always (outpaces your walk 5 and backpedal 3.5, not your sprint 8), 65% of the round's health (round 4:
+293 vs 450), same 40-damage slam and wind-up, same 60-point kill value. Winded after every swing (hit or miss):
+stands bent over panting for 1.2s (no attacks), then follows at half speed for 0.6s: your opening. Squeaky
+sneakers + huffing while chasing, panting when winded (louder when close, silent past ~12-14m). Spawn mix: 15% of
+spawns from round 4, 25% from 6, 30% from 9 (part of the normal count); in its first round the 3rd spawn is forced
+to be one if none came yet, and its first spawn in a run plays the PA chime + "Attention shoppers / Mall Walkers
+have entered the building" banner. Debug: Shift+Z spawns one. Verified in the browser (looks, power walk, a real
+hit + winded pose, round-4 banner) and by tests/zombies.test.js.
 
 ## Planned build order
 1. Walkable mall (done)

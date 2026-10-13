@@ -1,108 +1,184 @@
 // =============================================================================
 // ZOMBIES CONFIG
-// Per-type zombie stats and looks, plus crowd and pathfinding settings.
+// Per-type zombie stats and looks (shopper, mallWalker), plus crowd and pathfinding settings.
+// Which types spawn in which rounds (and their health) is in economy.js -> zombieMix.
 // Health is NOT here: it comes from economy.js (zombieHealthForRound) so it
 // scales with the round. Logic in src/zombies/ reads these; never hardcode.
 // =============================================================================
 
-export const zombieTypes = {
-  // Round-1 zombie: a slow, shambling shopper.
-  shopper: {
-    id: 'shopper',
-    speed: 2.0, // m/s, a shamble: 40% of the player's walking speed (5). The base ("walk") gait.
-    speedVariation: 0.15, // each zombie gets +/- this fraction so a crowd doesn't move in lockstep
+// Round-1 zombie: a slow, shambling shopper.
+const shopper = {
+  id: 'shopper',
+  speed: 2.0, // m/s, a shamble: 40% of the player's walking speed (5). The base ("walk") gait.
+  speedVariation: 0.15, // each zombie gets +/- this fraction so a crowd doesn't move in lockstep
 
-    // Later rounds bring faster zombies (COD-style). Each zombie picks a gait when it spawns, using
-    // the chances from the last row whose `fromRound` has been reached. Player walks 5, sprints 8.
-    gaits: { walk: 2.0, jog: 3.4, run: 4.6 }, // m/s
-    gaitsByRound: [
-      { fromRound: 1, walk: 1 },
-      { fromRound: 3, walk: 0.7, jog: 0.3 },
-      { fromRound: 5, walk: 0.35, jog: 0.65 },
-      { fromRound: 7, walk: 0.15, jog: 0.55, run: 0.3 },
-      { fromRound: 10, jog: 0.4, run: 0.6 },
-      { fromRound: 13, jog: 0.15, run: 0.85 },
-    ],
-    acceleration: 8, // m/s^2
-    turnSpeed: 7, // radians per second it can turn to face where it's going
-    radius: 0.32, // collision radius
-    height: 1.75, // top of the head
+  // Later rounds bring faster zombies (COD-style). Each zombie picks a gait when it spawns, using
+  // the chances from the last row whose `fromRound` has been reached. Player walks 5, sprints 8.
+  gaits: { walk: 2.0, jog: 3.4, run: 4.6 }, // m/s
+  gaitsByRound: [
+    { fromRound: 1, walk: 1 },
+    { fromRound: 3, walk: 0.7, jog: 0.3 },
+    { fromRound: 5, walk: 0.35, jog: 0.65 },
+    { fromRound: 7, walk: 0.15, jog: 0.55, run: 0.3 },
+    { fromRound: 10, jog: 0.4, run: 0.6 },
+    { fromRound: 13, jog: 0.15, run: 0.85 },
+  ],
+  acceleration: 8, // m/s^2
+  turnSpeed: 7, // radians per second it can turn to face where it's going
+  radius: 0.32, // collision radius
+  height: 1.75, // top of the head
 
-    // Hitboxes (meters, from the feet). The head box is generous on purpose: headshots should feel fair.
-    hitbox: {
-      bodyHalfWidth: 0.26,
-      bodyTop: 1.4,
-      headHalfSize: 0.18,
-      headBottom: 1.4,
-      headTop: 1.78,
-    },
+  // Hitboxes (meters, from the feet). The head box is generous on purpose: headshots should feel fair.
+  hitbox: {
+    bodyHalfWidth: 0.26,
+    bodyTop: 1.4,
+    headHalfSize: 0.18,
+    headBottom: 1.4,
+    headTop: 1.78,
+  },
 
-    // Attack: wind up (telegraph), swing, then a short recovery before the next one.
-    // The hit only lands if the player is STILL in reach and in front when the arms come down.
-    // Zombies keep shuffling after you during the wind-up, so just walking away doesn't dodge it.
-    attack: {
-      startRange: 1.5, // they start an attack this close (center to center; they stop at ~0.8), still walking
-      //                  in at full speed: COD-style, they swing on the way in instead of stopping first...
-      range: 1.7, // ...and the swing connects out to here (a bit past startRange: they lunge into it, so a
-      //             quick hop or step back right as the arms go up isn't a free dodge)
-      moveSpeedFraction: 1.0, // walking speed (x their gait speed) during the wind-up and swing: they keep
-      //                         stepping straight at you (not to their crowd spot) until they're in your face
-      closeInBrakeDistance: 0.15, // ...only braking in the last this-many meters before touching you
-      missRecoverSeconds: 0.3, // after a swing that MISSED they try again this soon (no free reset by stepping back)
-      turnSpeed: 12, // radians/second they can turn to keep facing you mid-attack (normal turning: turnSpeed)
-      windupSeconds: 0.35, // arms raised overhead: the warning in round 1. Short (BO2-style): if a zombie
-      //                      reaches you, you're getting hit; the escape is not letting it reach you...
-      windupShrinkPerRound: 0.00625, // ...getting this much shorter each round after that...
-      minWindupSeconds: 0.3, // ...down to this (reached at round 9)
-      slamSeconds: 0.1, // the last part of the wind-up is the slam itself: the arms come down and land
-      //                  exactly when the damage is checked (end of the wind-up), so the hit matches what you see
-      swingSeconds: 0.15, // follow-through after the hit: arms down, body leaning into it
-      recoverSeconds: 0.8, // no new attack for this long after a HIT (it keeps following you)
-      damage: 40, // 3 hits from full health (Black Ops 3 style)
-      hitHalfAngleDegrees: 60, // player must be within this angle of where the zombie faces
-      reachHeight: 1.3, // meters above its feet the arms reach from (a wall in the way blocks the attack;
-      //                   anything lower, like a bench or counter, doesn't)
-      armsRaisedRadians: 2.3, // arm angle at the top of the wind-up (0 = straight forward)
-      armsSlammedRadians: -0.7, // arm angle at the bottom of the swing
-    },
+  // Attack: wind up (telegraph), swing, then a short recovery before the next one.
+  // The hit only lands if the player is STILL in reach and in front when the arms come down.
+  // Zombies keep shuffling after you during the wind-up, so just walking away doesn't dodge it.
+  attack: {
+    startRange: 1.5, // they start an attack this close (center to center; they stop at ~0.8), still walking
+    //                  in at full speed: COD-style, they swing on the way in instead of stopping first...
+    range: 1.7, // ...and the swing connects out to here (a bit past startRange: they lunge into it, so a
+    //             quick hop or step back right as the arms go up isn't a free dodge)
+    moveSpeedFraction: 1.0, // walking speed (x their gait speed) during the wind-up and swing: they keep
+    //                         stepping straight at you (not to their crowd spot) until they're in your face
+    closeInBrakeDistance: 0.15, // ...only braking in the last this-many meters before touching you
+    missRecoverSeconds: 0.3, // after a swing that MISSED they try again this soon (no free reset by stepping back)
+    turnSpeed: 12, // radians/second they can turn to keep facing you mid-attack (normal turning: turnSpeed)
+    windupSeconds: 0.35, // arms raised overhead: the warning in round 1. Short (BO2-style): if a zombie
+    //                      reaches you, you're getting hit; the escape is not letting it reach you...
+    windupShrinkPerRound: 0.00625, // ...getting this much shorter each round after that...
+    minWindupSeconds: 0.3, // ...down to this (reached at round 9)
+    slamSeconds: 0.1, // the last part of the wind-up is the slam itself: the arms come down and land
+    //                  exactly when the damage is checked (end of the wind-up), so the hit matches what you see
+    swingSeconds: 0.15, // follow-through after the hit: arms down, body leaning into it
+    recoverSeconds: 0.8, // no new attack for this long after a HIT (it keeps following you)
+    damage: 40, // 3 hits from full health (Black Ops 3 style)
+    hitHalfAngleDegrees: 60, // player must be within this angle of where the zombie faces
+    reachHeight: 1.3, // meters above its feet the arms reach from (a wall in the way blocks the attack;
+    //                   anything lower, like a bench or counter, doesn't)
+    armsRaisedRadians: 2.3, // arm angle at the top of the wind-up (0 = straight forward)
+    armsSlammedRadians: -0.7, // arm angle at the bottom of the swing
+  },
 
-    // Shamble animation (visual only)
-    walkAnimation: {
-      strideLength: 1.0, // meters per full walk cycle (joggers/runners stretch it so legs don't blur)
-      legSwing: 0.5, // radians each leg swings forward/back
-      armBob: 0.12, // radians the outstretched arms bob
-      torsoSway: 0.07, // radians the upper body sways side to side
-      headLoll: 0.18, // radians the head lolls side to side
-      hunch: 0.15, // radians hunched forward when walking...
-      runLean: 0.3, // ...plus this much more for a full-speed runner
-    },
+  // Shamble animation (visual only)
+  walkAnimation: {
+    strideLength: 1.0, // meters per full walk cycle (joggers/runners stretch it so legs don't blur)
+    legSwing: 0.5, // radians each leg swings forward/back
+    armBob: 0.12, // radians the outstretched arms bob
+    torsoSway: 0.07, // radians the upper body sways side to side
+    headLoll: 0.18, // radians the head lolls side to side
+    hunch: 0.15, // radians hunched forward when walking...
+    runLean: 0.3, // ...plus this much more for a full-speed runner
+  },
 
-    // Timings
-    spawnSeconds: 1.0, // rising up out of the floor
-    flinchSeconds: 0.15, // recoil when shot
-    fallSeconds: 0.45, // tipping over when killed
-    corpseSeconds: 3, // lying on the floor before sinking away
-    sinkSeconds: 1.2,
+  // Timings
+  spawnSeconds: 1.0, // rising up out of the floor
+  flinchSeconds: 0.15, // recoil when shot
+  fallSeconds: 0.45, // tipping over when killed
+  corpseSeconds: 3, // lying on the floor before sinking away
+  sinkSeconds: 1.2,
 
-    // Looks: each zombie picks random colors from these lists.
-    skinColors: [0x9bb08a, 0x8fa37d, 0xa8b894, 0x86a08f], // grey-green
-    shirtColors: [0xff6fae, 0x46c2e0, 0xffc93d, 0x9b6bff, 0x58c46b, 0xff8a3d, 0xf2f2f2],
-    pantsColors: [0x3b5b8c, 0x2b2b33, 0xb59a6a, 0x5c4a3d], // jeans, black, khaki, brown
-    hairColors: [0x3d2b1f, 0x1f1a17, 0xb88a4a, 0x7a7a7a, 0xd94f4f],
-    bagColors: [0xc79a5b, 0xff4f9a, 0x2ec4b6], // paper bag, pink boutique, teal boutique
-    bagChance: 0.4, // chance to be carrying a shopping bag
-    eyeColor: 0x1d1626,
-    shoeColor: 0x2b2b2b,
-    bagBandColor: 0xf2f2f2,
+  // Looks: each zombie picks random colors from these lists.
+  skinColors: [0x9bb08a, 0x8fa37d, 0xa8b894, 0x86a08f], // grey-green
+  shirtColors: [0xff6fae, 0x46c2e0, 0xffc93d, 0x9b6bff, 0x58c46b, 0xff8a3d, 0xf2f2f2],
+  pantsColors: [0x3b5b8c, 0x2b2b33, 0xb59a6a, 0x5c4a3d], // jeans, black, khaki, brown
+  hairColors: [0x3d2b1f, 0x1f1a17, 0xb88a4a, 0x7a7a7a, 0xd94f4f],
+  bagColors: [0xc79a5b, 0xff4f9a, 0x2ec4b6], // paper bag, pink boutique, teal boutique
+  bagChance: 0.4, // chance to be carrying a shopping bag
+  eyeColor: 0x1d1626,
+  shoeColor: 0x2b2b2b,
+  bagBandColor: 0xf2f2f2,
 
-    // Cartoon splatter (Halo CE style): bright green and purple.
-    splatColors: [0x6bdc3c, 0xc4f542, 0x9b4dff],
-    deathSplatCount: 30, // extra burst when a zombie dies
+  // Cartoon splatter (Halo CE style): bright green and purple.
+  splatColors: [0x6bdc3c, 0xc4f542, 0x9b4dff],
+  deathSplatCount: 30, // extra burst when a zombie dies
+};
+
+// Round 4+: a power-walking retiree in a matching tracksuit. Fast (outpaces your walk and backpedal,
+// not your sprint) but fragile (65% health: economy.zombieMix), a bit slimmer to hit, and WINDED
+// after every swing: it stops, hands on knees, panting, then follows at half speed for a moment.
+// That pause is your opening. Anything not listed here is the same as the Shopper.
+const mallWalker = {
+  ...shopper,
+  id: 'mallWalker',
+  speed: 5.4, // m/s: faster than your walk (5) and backpedal (3.5), slower than your sprint (8)
+  speedVariation: 0.06,
+  gaits: null, // always power-walks (no walk / jog / run mix)
+  gaitsByRound: null,
+  acceleration: 12, // m/s^2: snappier than a shopper
+  turnSpeed: 8,
+  radius: 0.3,
+  height: 1.72,
+  modelScale: { width: 0.88, height: 0.97 }, // slimmer and a touch shorter than a shopper (the model)...
+  hitbox: {
+    bodyHalfWidth: 0.22, // ...and the hitboxes match it (harder to hit than a shopper's 0.26)
+    bodyTop: 1.36,
+    headHalfSize: 0.16,
+    headBottom: 1.36,
+    headTop: 1.75,
+  },
+  attack: { ...shopper.attack }, // the same 40-damage slam and wind-up as a shopper
+
+  // After every swing (hit or miss): stands still panting for standSeconds (no attacks), then
+  // follows at slowSpeedFraction of its speed for slowSeconds, then it's back to full speed.
+  winded: { standSeconds: 1.2, slowSeconds: 0.6, slowSpeedFraction: 0.5 },
+
+  // Power walk (visual only): upright, arms bent at the elbow pumping opposite to the legs, hips twisting.
+  walkAnimation: {
+    style: 'powerWalk',
+    strideLength: 1.6,
+    legSwing: 0.6,
+    armSwing: 0.75, // radians the arms pump forward/back
+    armHang: -1.2, // arm angle at rest (0 = straight forward, -1.57 = straight down)
+    elbowBend: 1.5, // radians the forearm bends up at the elbow
+    torsoTwist: 0.16, // shoulders twist against the hips with each step
+    torsoSway: 0.04,
+    headLoll: 0.03,
+    hunch: 0.04,
+    runLean: 0,
+  },
+  // Winded pose: bent over, hands on knees, shoulders heaving.
+  windedAnimation: { hunch: 0.75, armAngle: -0.85, elbowBend: 0.2, breathRate: 10, breathAmount: 0.06 },
+
+  // Looks: a matching tracksuit (jacket + pants the same color) with white stripes, a headband,
+  // wristbands, white sneakers, silver hair, sometimes a fanny pack. No shopping bag.
+  hairColors: [0xd9d9d9, 0xbdbdbd, 0xf2f2f2, 0x9a9a9a],
+  shoeColor: 0xf2f2f2,
+  bagChance: 0,
+  outfit: {
+    tracksuitColors: [0x2ec4b6, 0x9b6bff, 0xff4f9a, 0x3a6ff0, 0xff8a3d],
+    stripeColor: 0xf2f2f2,
+    headbandColors: [0xf2f2f2, 0xffd23f, 0xff4f9a, 0x46c2e0],
+    wristbandColor: 0xf2f2f2,
+    fannyPackColors: [0x1d1626, 0xffd23f, 0x46c2e0, 0xff4f9a],
+    fannyPackChance: 0.6,
+  },
+
+  // Shown (with a PA chime) the first time one spawns in a run.
+  introBanner: { kicker: 'Attention shoppers', text: 'Mall Walkers have entered the building' },
+
+  // Sounds (config/audio.js) so you hear one coming: squeaky sneakers and huffing while it chases,
+  // panting when winded. Louder the closer it is; silent past maxDistance meters.
+  sounds: {
+    step: { name: 'walkerSqueak', interval: 0.5, chance: 0.45, maxDistance: 14 },
+    huff: { name: 'walkerHuff', interval: 1.3, maxDistance: 12 },
+    winded: { name: 'walkerPant', maxDistance: 14 },
   },
 };
 
+export const zombieTypes = { shopper, mallWalker };
+
 // How a crowd moves together: spacing, queueing, spreading out, surrounding the player.
 export const zombieCrowd = {
+  // Sounds from several zombies at once: the same sound never plays twice within this many seconds.
+  soundMinGapSeconds: 0.15,
+
   // Spacing: zombies closer than separationRadius push apart, much harder the closer they get.
   separationRadius: 1.1, // meters, center to center (two zombies touch at 2 x radius = 0.64)
   separationStrength: 1.6, // push strength (x walking speed) when almost touching
