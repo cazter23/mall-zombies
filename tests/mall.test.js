@@ -92,7 +92,7 @@ test('each area is sealed until its own door is bought, in any order, and fully 
   // Food Court first (any order works): it opens, the Mega Mart stays sealed.
   open('foodCourt');
   for (const s of spawnsIn('foodCourt')) assert.ok(reachable(s.position), `${s.name} reachable`);
-  for (const [x, z] of [[-19, -13.5], [19, -13.5], [0, -13], [-19, -3], [19, -3]]) assert.ok(reachable({ x, z }), `Food Court (${x}, ${z}) reachable`);
+  for (const [x, z] of [[-19, -13.5], [19, -13.5], [0, -12.2], [-19, -3], [19, -3]]) assert.ok(reachable({ x, z }), `Food Court (${x}, ${z}) reachable`);
   for (const s of spawnsIn('megaMart')) assert.equal(reach(s.position), Infinity, `${s.name} still sealed`);
 
   // Then the Mega Mart: every aisle, both ends of the checkout row, the back walkway.
@@ -211,4 +211,46 @@ test('the ceiling is open only above the escalator; the elevator wall stays soli
   }
   // Elevator: painted on, the wall behind it is solid.
   assert.ok(containsPoint(colliders, LAYOUT.elevator.centerX, 1.2, H.maxZ + 0.15), 'wall behind the elevator doors');
+});
+
+test('Food Court: you can queue at every stall and reach every gap between the tables, but never get behind a counter', () => {
+  const { colliders, nav, open, reach } = setup();
+  open('startShutter');
+  open('foodCourt');
+  const F = LAYOUT.foodCourt;
+  const reachable = (x, z) => Number.isFinite(reach({ x, z }));
+  // In front of each stall (the queue), the lanes between tables, the door-to-planter lane, the far ends.
+  for (const [x, z] of [[-5.75, -12.2], [0, -12.2], [5.75, -12.2], [-7.25, -7], [7.25, -8], [-7.25, -10], [0, -5],
+    [-3.5, -6], [3.5, -9], [-12, -8.3], [12, -6]]) {
+    assert.ok(reachable(x, z), `(${x}, ${z}) reachable`);
+  }
+  // Behind the counters: solid, not walkable.
+  for (const x of [-5.75, 0, 5.75]) assert.equal(nav.isWalkableAt(x, F.minZ + 0.6), false, `behind the counter at x ${x}`);
+  // Counters are too tall to get onto (jump peak + the step-up tolerance); tables are low enough to hop on.
+  const jumpPeak = (feel.movement.jumpVelocity ** 2) / (2 * feel.movement.gravity);
+  const counters = colliders.filter((b) => b.min.z <= F.minZ + 1e-6 && b.max.z > F.minZ + 1 && b.max.z < F.minZ + 1.5 && b.max.y < 2);
+  assert.equal(counters.length, 3, 'three stalls');
+  for (const b of counters) assert.ok(b.max.y > jumpPeak + feel.movement.stepTolerance + 0.05, 'stall counter out of reach');
+  const tables = colliders.filter((b) => Math.abs(b.max.y - 0.75) < 1e-6);
+  assert.equal(tables.length, 8, 'eight tables');
+  for (const b of tables) assert.ok(b.max.y < jumpPeak, 'tables can be hopped onto');
+});
+
+test('Food Court: sprint-jumping at a stall counter never gets you onto it', () => {
+  const { colliders } = setup();
+  const F = LAYOUT.foodCourt;
+  // Down the lane between the table columns, straight at Burger Barn.
+  const { player, input } = playerIn(colliders, new THREE.Vector3(-7.25, 0, -4), 0); // facing -Z
+  input.axis = { x: 0, y: 1 };
+  input.held.add('sprint');
+  let minZ = Infinity;
+  for (let i = 0; i < 60 * 3; i++) {
+    if (i % 15 === 0) input.pressed.add('jump');
+    player.update(dt);
+    minZ = Math.min(minZ, player.position.z);
+  }
+  const counterFront = F.minZ + 1.3;
+  assert.ok(minZ > counterFront + feel.player.radius - 0.02, `stopped at the counter (got to z ${minZ.toFixed(2)})`);
+  for (let i = 0; i < 60; i++) player.update(dt); // settle
+  assert.equal(player.position.y, 0, 'still on the floor');
 });

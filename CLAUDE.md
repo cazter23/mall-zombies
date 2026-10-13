@@ -23,7 +23,8 @@ Gameplay regression tests live in `tests/` (`gameplay.test.js` movement/melee/va
 `zombies.test.js` zombie types/mix/rounds, `maps.test.js` wall pieces, shared-zone doors, nav rebuilds,
 `mall.test.js` the REAL mall built in Node with a stub canvas: door ladder, spawn points on clear floor, zones
 sealed until their door is bought, vaultable counters, the sealed escalator (a real PlayerController sprint-jumping
-at it never gets on; you can walk under its high end), the ceiling hole); there is no linter yet.
+at it never gets on; you can walk under its high end), the ceiling hole, Food Court stalls/tables (queue spots and
+table lanes reachable, nobody gets onto or behind a counter)); there is no linter yet.
 `npm run build` is the compile check (it only bundles; it
 does not run the game, so also try changes in `npm run dev`).
 
@@ -256,7 +257,11 @@ src/
                         minZ, maxZ, upperY, ceilingY }) (extruded body + instanced steps + glass/handrails; sealed: rope
                         barrier + OUT OF ORDER board, colliders stepped along the slope: solid to the floor where low, overhead
                         where its underside is above 2m so you can walk under; returns { hole, topLanding }), upperLanding
-                        (walled, roofed, boarded-up level-2 landing seen through the hole), elevatorDoors (sealed, taped off)
+                        (walled, roofed, boarded-up level-2 landing seen through the hole), elevatorDoors (sealed, taped off),
+                        foodStall (facade + name sign + menu board + striped awning + counter/sneeze guard/register/food +
+                        gear behind: grill/fryer/wok/soda; ONE solid 1.2m block wall-to-counter: above jump peak + step-up),
+                        tableSet (round table 0.75m + 4 stools 0.45m; colliders: table + a "plus" of two low stool strips),
+                        trashCan
     mall/palette.js     COLORS shared by the mall's rooms and props
     testRange/          Debug add-on (not a map): testRange.js buildTestRange(scene, colliders) with own lights,
                         dummy.js practice mannequins (shootables)
@@ -386,8 +391,13 @@ The start room opens into a MAIN HALLWAY (the hub); every other area is bought o
   (x -10.4..-17.5) there's >= 2m headroom, so players and zombies walk under it. Elevator (SEALED): doors in the north
   wall at x 10.5 (taped off, OUT OF ORDER, floor indicator "1", call button); painted on, the wall behind is solid.
 - Food Court: x -20..20, z -14.3..-2.3, 6m ceiling, behind the 1000 shutter: the old concourse moved south (its four
-  shopfronts Good Sports / Nuts & Bolts / Play Time Toys / Byte Me, 4 pillars, 3 benches, tree planter, end planters,
-  ceiling lights, 4 spawns), placed relative to its center line FZ = -8.3. Food stalls + tables come later.
+  shopfronts Good Sports / Nuts & Bolts / Play Time Toys / Byte Me, 4 pillars, 2 benches (north side), tree planter,
+  end planters, ceiling lights, 4 spawns), placed relative to its center line FZ = -8.3. Three food stalls along the
+  south wall between the shops: BURGER BARN (x -8.4..-3.1), WOK THIS WAY (-2.6..2.6), CORN DOG CORRAL (3.1..8.4); each
+  is solid from the wall to its counter front (z -13.0), 1.2m tall, so you can't get onto or behind it. Eight round
+  table sets (tables 0.75m you can hop onto via the 0.45m stools) at x +-9 / +-5.5 around the tree planter, leaving
+  table lanes, a clear lane from the door to the planter and room to queue at the stalls; two trash cans (x +-11.2);
+  an "EXIT · MAIN HALL" sign over the door inside.
 - Mega Mart: x 20..34, z -24..6, 5m ceiling, behind the 750 shutter. Its west wall (x 20..20.3, 6m tall) is also the
   east wall of the hallway (door at z 0..4) and of the Food Court (room for a shortcut door later). Front: 4 checkout
   lanes (vaultable counters, x 24.5..27.5, 2m lanes, open ends to run round). Back: 3 stocked shelf gondolas
@@ -574,7 +584,11 @@ Step 2 done: the escalator + elevator, both sealed (see Map). Verified: tests (s
 player, walk-under clearance, ceiling open only above the escalator, the level-2 landing closed in, elevator wall
 solid) and in the browser (escalator, hole + landing and elevator look right; zombies route round and under the
 escalator and never leave the floor). Making them usable is step 7 (second floor, multi-floor navigation).
-Next: step 3 = Food Court dressing (food stalls, tables).
+Step 3 done: Food Court dressing (see Map). Verified: tests (every stall queue spot + table lane reachable, nothing walkable
+behind the counters, counters out of jump reach, a real player sprint-jumping at Burger Barn stays on the floor) and in
+the browser (stalls, awnings, tables look right; zombies weave through the tables to the stalls and out to the
+hallway in ~7-8s and never climb). Known nit: from the door the tree planter hides most of WOK THIS WAY's sign.
+Next: step 4 = the corridor segment builder (modular), then step 5 = Service Corridor + 1250 door.
 
 ## Planned build order
 1. Walkable mall (done)

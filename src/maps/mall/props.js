@@ -14,6 +14,9 @@
 //   escalator   an escalator up through the ceiling (sealed: rope barrier, OUT OF ORDER, unclimbable)
 //   upperLanding the boarded-up landing you see above an escalator's ceiling hole
 //   elevatorDoors sealed elevator doors on a wall (taped off, floor indicator, call button)
+//   foodStall   a food-court stall (facade, awning, counter, gear); one solid 1.2m block you can't get onto
+//   tableSet    a round table with four stools (hop on; zombies walk round)
+//   trashCan    a solid bin
 // createMallProps(kit) returns these as functions; maps/mall/mall.js places them.
 // =============================================================================
 
@@ -430,5 +433,107 @@ export function createMallProps(kit) {
     sign('ELEVATOR', { ...signAt(center, height + 0.95, 0.02), width: 1.6, height: 0.35, background: '#1d1626', color: '#ffffff' });
   }
 
-  return { shopFront, pillar, bench, planter, lightPanel, gondola, checkout, wallDoor, boardedVent, wallStripe, escalator, upperLanding, elevatorDoors };
+  // --- Food Court: stalls, tables, bins ------------------------------------------
+
+  /**
+   * A food stall against a wall: colored facade with the stall's name and a menu board, a striped
+   * awning, side partitions, a front counter (sneeze guard, register, food) and cooking gear
+   * behind it. The whole stall, wall to counter front, is ONE solid block 1.2m tall: taller than a
+   * jump plus the step-up tolerance, so nobody can stand on the counter or hide behind it (no
+   * pockets zombies can't reach).
+   *   along/from/to/wallAt/facing as for shopFront; depth = how far the counter sticks out.
+   *   colors: { main, accent, awning: [a, b], signBackground, signText }; name; menu (text)
+   *   gear: what's behind the counter, left to right: 'grill' | 'fryer' | 'wok' | 'soda'
+   */
+  function foodStall({ along = 'x', from, to, wallAt, facing, depth = 1.3, name, menu, colors, gear = [] }) {
+    const place = wallPlacer(along);
+    const d = (offset) => wallAt + facing * offset;
+    const flat = { collide: false };
+    const counterHeight = 1.2;
+    const [c0, c1] = [d(0), d(depth)].sort((a, b) => a - b);
+    if (along === 'x') addCollider(from, 0, c0, to, counterHeight, c1);
+    else addCollider(c0, 0, from, c1, counterHeight, to);
+
+    place(from, 0, to, 4.7, d(0), d(0.1), mat(colors.main), { ...flat, name: `stall_${name}` }); // facade
+    for (const [u0, u1] of [[from, from + 0.12], [to - 0.12, to]]) {
+      place(u0, 0, u1, 2.9, d(0.1), d(depth), mat(colors.accent), flat); // side partitions
+    }
+    place(from + 0.12, 0, to - 0.12, counterHeight - 0.06, d(depth - 0.6), d(depth), mat(colors.accent), flat); // counter
+    place(from + 0.08, counterHeight - 0.06, to - 0.08, counterHeight, d(depth - 0.65), d(depth + 0.05), mat(COLORS.stainless), flat);
+    place(from + 0.3, counterHeight, to - 0.3, counterHeight + 0.35, d(depth - 0.32), d(depth - 0.29),
+      mat(COLORS.balustradeGlass, { transparent: true, opacity: 0.3, roughness: 0.1, depthWrite: false }), flat); // sneeze guard
+    place(to - 0.75, counterHeight, to - 0.35, counterHeight + 0.26, d(depth - 0.55), d(depth - 0.35), mat(COLORS.register), flat);
+    // Food on the counter (a few trays)
+    const rand = seededRandom(Math.floor(Math.abs(from * 31 + to * 7)) + 1);
+    for (let u = from + 0.5; u < to - 1.0; u += 0.55) {
+      place(u, counterHeight, u + 0.38, counterHeight + 0.03, d(depth - 0.25), d(depth - 0.02), mat(COLORS.shopFrame), flat);
+      const food = COLORS.foodItems[Math.floor(rand() * COLORS.foodItems.length)];
+      place(u + 0.08, counterHeight + 0.03, u + 0.3, counterHeight + 0.03 + 0.06 + rand() * 0.08, d(depth - 0.2), d(depth - 0.07), mat(food), flat);
+    }
+    // Cooking gear against the back wall, spread across the stall
+    const slot = (to - from - 0.4) / Math.max(1, gear.length);
+    gear.forEach((kind, i) => {
+      const u0 = from + 0.2 + i * slot + 0.1;
+      const u1 = u0 + slot - 0.2;
+      const back = [d(0.1), d(0.65)];
+      if (kind === 'soda') {
+        place(u0, 0, u1, 1.7, ...back, mat(COLORS.elevatorSteel), flat);
+        place(u0 + 0.08, 0.8, u1 - 0.08, 1.6, d(0.65), d(0.67), mat(colors.main, { emissive: colors.main, emissiveIntensity: 0.35 }), flat);
+      } else {
+        place(u0, 0, u1, 0.9, ...back, mat(kind === 'fryer' ? COLORS.stainless : COLORS.grill), flat);
+        const top = kind === 'fryer' ? COLORS.fryerOil : COLORS.hotPlate;
+        place(u0 + 0.08, 0.9, u1 - 0.08, 0.92, d(0.18), d(0.57), mat(top, { emissive: top, emissiveIntensity: kind === 'fryer' ? 0.15 : 0.6 }), flat);
+        if (kind === 'wok') place(u0 + 0.15, 0.92, u1 - 0.15, 1.05, d(0.25), d(0.5), mat(COLORS.handrail), flat);
+      }
+    });
+    // Striped awning over the counter
+    const stripe = 0.5;
+    for (let u = from, i = 0; u < to - 1e-6; u += stripe, i++) {
+      place(u, 2.95, Math.min(to, u + stripe), 3.05, d(0.1), d(depth + 0.35), mat(colors.awning[i % 2]), flat);
+    }
+    // Name sign up top, menu board under the awning line
+    const mid = (from + to) / 2;
+    const at = (offset) => (along === 'x' ? { x: mid, z: d(offset), facing } : { x: d(offset), z: mid, facing: facing > 0 ? 'x+' : 'x-' });
+    sign(name, { ...at(0.12), y: 3.9, width: to - from - 0.5, height: 0.8, background: colors.signBackground, color: colors.signText });
+    sign(menu, { ...at(0.12), y: 2.25, width: to - from - 1.0, height: 0.5, background: '#1d1626', color: '#f1faee' });
+  }
+
+  /**
+   * A round food-court table (0.75m) with four stools (0.45m) around it. Three colliders: the
+   * table and a "plus" of two low strips under the stools (the corners stay open), so you can hop
+   * onto a stool then the table; zombies walk round it (and still reach you up there).
+   */
+  function tableSet(cx, cz, { stoolColor = COLORS.stool } = {}) {
+    addCollider(cx - 0.4, 0, cz - 0.4, cx + 0.4, 0.75, cz + 0.4);
+    addCollider(cx - 0.25, 0, cz - 0.85, cx + 0.25, 0.45, cz + 0.85);
+    addCollider(cx - 0.85, 0, cz - 0.25, cx + 0.85, 0.45, cz + 0.25);
+    const disc = (radius, height, y, x, z, material) => {
+      const mesh = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, height, 10), material);
+      mesh.position.set(x, y, z);
+      group.add(mesh);
+    };
+    disc(0.5, 0.05, 0.725, cx, cz, mat(COLORS.tableTop));
+    box(cx - 0.05, 0.04, cz - 0.05, cx + 0.05, 0.7, cz + 0.05, mat(COLORS.tableLeg), { collide: false });
+    disc(0.25, 0.04, 0.02, cx, cz, mat(COLORS.tableLeg));
+    for (const [dx, dz] of [[0.62, 0], [-0.62, 0], [0, 0.62], [0, -0.62]]) {
+      disc(0.2, 0.06, 0.42, cx + dx, cz + dz, mat(stoolColor));
+      box(cx + dx - 0.03, 0.03, cz + dz - 0.03, cx + dx + 0.03, 0.39, cz + dz + 0.03, mat(COLORS.tableLeg), { collide: false });
+      disc(0.14, 0.03, 0.015, cx + dx, cz + dz, mat(COLORS.tableLeg));
+    }
+  }
+
+  /** A trash can (solid, 0.9m). */
+  function trashCan(x, z) {
+    addCollider(x - 0.25, 0, z - 0.25, x + 0.25, 0.9, z + 0.25);
+    const can = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.22, 0.85, 10), mat(COLORS.trashCan));
+    can.position.set(x, 0.425, z);
+    const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.27, 0.06, 10), mat(COLORS.shopFrame));
+    lid.position.set(x, 0.87, z);
+    group.add(can, lid);
+  }
+
+  return {
+    shopFront, pillar, bench, planter, lightPanel, gondola, checkout, wallDoor, boardedVent, wallStripe,
+    escalator, upperLanding, elevatorDoors, foodStall, tableSet, trashCan,
+  };
 }

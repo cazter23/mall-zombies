@@ -51,6 +51,17 @@ export const COLORS = {
   elevatorSteel: 0xc4c9ce,
   elevatorFrame: 0x5d636b,
   indicator: 0x111114,
+  // Food Court: stall kit, tables, bins
+  stainless: 0xcfd4d8,
+  grill: 0x2b2b2e,
+  hotPlate: 0xff7a1a,
+  fryerOil: 0xd9a441,
+  tableTop: 0xf1faee,
+  tableLeg: 0x5d636b,
+  stool: 0xff4f9a,
+  stoolAlt: 0x2ec4b6,
+  trashCan: 0x2d6a4f,
+  foodItems: [0xc0763a, 0xffd23f, 0xe63946, 0x58c46b, 0xf1faee, 0x8b5a2b],
   // Product boxes on the shelves (cereal, snacks, detergent, toys...)
   products: [0xff4f9a, 0xffd23f, 0x2ec4b6, 0xff8a3d, 0x9b6bff, 0x58c46b, 0xe63946, 0x3a86ff, 0xf1faee, 0xffb4a2],
 };

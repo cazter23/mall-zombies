@@ -223,7 +223,8 @@ export function buildMall(scene, colliders) {
   props.lightPanel(-1, 13, 1, 14, R.height, { dead: true });
 
   // --- Food Court (the old concourse, south of the hallway, behind the 1000 shutter) ---
-  // Food stalls and tables come in a later step; for now it keeps the concourse's shops and props.
+  // The concourse's shops, pillars and planters, plus three food stalls along the south wall and
+  // tables in the middle (a clear lane runs from the door to the tree planter).
 
   const courtWall = mat(COLORS.concourseWall);
   wall({ along: 'x', from: F.minX - T, to: F.maxX, at0: F.minZ - T, at1: F.minZ, height: F.height }, courtWall, { name: 'foodcourt_wall_south' });
@@ -244,7 +245,6 @@ export function buildMall(scene, colliders) {
 
   for (const [px, pz] of [[-13, -3], [-13, 3], [13, -3], [13, 3]]) props.pillar(px, FZ + pz, F.height);
 
-  props.bench(4.5, FZ - 4.6, 6.9, FZ - 4.0);
   props.bench(-8, FZ + 3.9, -5.6, FZ + 4.5);
   props.bench(5.6, FZ + 3.9, 8, FZ + 4.5);
 
@@ -253,6 +253,38 @@ export function buildMall(scene, colliders) {
   props.planter(18, FZ - 0.7, 19.4, FZ + 0.7);
 
   for (const x of [-16, -8, 0, 8, 16]) props.lightPanel(x - 1.2, FZ - 0.6, x + 1.2, FZ + 0.6, F.height);
+
+  // Food stalls along the south wall, between Good Sports and Nuts & Bolts. Each is one solid
+  // 1.2m block from the wall to its counter (too tall to climb onto or hide behind).
+  const stallWall = { along: 'x', wallAt: F.minZ, facing: 1 };
+  props.foodStall({
+    ...stallWall, from: -8.4, to: -3.1, name: 'BURGER BARN', menu: 'BURGERS · FRIES · SHAKES',
+    colors: { main: 0xd62839, accent: 0x8d1c26, awning: [0xd62839, 0xf1faee], signBackground: '#2b1a12', signText: '#ffd23f' },
+    gear: ['grill', 'fryer', 'soda'],
+  });
+  props.foodStall({
+    ...stallWall, from: -2.6, to: 2.6, name: 'WOK THIS WAY', menu: 'NOODLES · RICE · FORTUNES (BAD)',
+    colors: { main: 0xe0a526, accent: 0x7a1f1f, awning: [0xd62839, 0xffd23f], signBackground: '#7a1f1f', signText: '#ffd23f' },
+    gear: ['wok', 'wok', 'soda'],
+  });
+  props.foodStall({
+    ...stallWall, from: 3.1, to: 8.4, name: 'CORN DOG CORRAL', menu: 'CORN DOGS · LEMONADE · REGRET',
+    colors: { main: 0x3a86ff, accent: 0x1d4e89, awning: [0xffd23f, 0x3a86ff], signBackground: '#1d4e89', signText: '#ffd23f' },
+    gear: ['fryer', 'fryer', 'soda'],
+  });
+
+  // Seating: eight table sets around the tree planter, leaving lanes between them, a clear path from
+  // the door to the planter, and room to queue at the stalls.
+  [[-9, 1.8], [-9, -1.2], [-5.5, 0.8], [-5.5, -2.3], [9, 1.8], [9, -1.2], [5.5, 0.8], [5.5, -2.3]].forEach(([x, dz], i) => {
+    props.tableSet(x, FZ + dz, { stoolColor: i % 2 ? COLORS.stoolAlt : COLORS.stool });
+  });
+  props.trashCan(-11.2, FZ);
+  props.trashCan(11.2, FZ);
+
+  sign('EXIT  ·  MAIN HALL', {
+    x: 0, y: 3.6, z: F.maxZ - 0.02, width: 3, height: 0.5, facing: -1,
+    background: '#1d1626', color: '#63e6be',
+  });
 
   // --- Mega Mart (east of the hallway, behind the 750 shutter) -----------------
 
