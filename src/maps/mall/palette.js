@@ -62,6 +62,14 @@ export const COLORS = {
   stoolAlt: 0x2ec4b6,
   trashCan: 0x2d6a4f,
   foodItems: [0xc0763a, 0xffd23f, 0xe63946, 0x58c46b, 0xf1faee, 0x8b5a2b],
+  // Service Corridor (back of house): drab walls, exposed pipes, lockers
+  serviceWall: 0xbdb5a6,
+  serviceCeiling: 0xd8d2c6,
+  pipeGrey: 0x6c7a89,
+  pipeRed: 0xb5543a,
+  locker: 0x5d7f9e,
+  lockerVent: 0x3f5a72,
+  electricalPanel: 0x8a8f96,
   // Product boxes on the shelves (cereal, snacks, detergent, toys...)
   products: [0xff4f9a, 0xffd23f, 0x2ec4b6, 0xff8a3d, 0x9b6bff, 0x58c46b, 0xe63946, 0x3a86ff, 0xf1faee, 0xffb4a2],
 };

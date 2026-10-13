@@ -44,19 +44,20 @@ function setup() {
   return { map, colliders, nav, player, door, open, reach };
 }
 
-test('the door ladder: start shutter 500 -> hallway hub; Mega Mart 750 and Food Court 1000 off the hallway', () => {
+test('the door ladder: start shutter 500 -> hallway hub; Mega Mart 750, Food Court 1000, Service Corridor 1250 off it', () => {
   const { map, door } = setup();
   const ladder = [
     ['startShutter', 'hallway', economy.doors.startShutter],
     ['megaMart', 'megaMart', economy.doors.megaMart],
     ['foodCourt', 'foodCourt', economy.doors.foodCourt],
+    ['serviceCorridor', 'serviceCorridor', economy.doors.serviceCorridor],
   ];
   for (const [id, zone, price] of ladder) {
     assert.equal(door(id).price, price, `${id} price`);
     assert.equal(door(id).opensZone, zone, `${id} opens ${zone}`);
     assert.equal(map.zones[zone].open, false, `${zone} starts closed`);
   }
-  assert.deepEqual([economy.doors.startShutter, economy.doors.megaMart, economy.doors.foodCourt], [500, 750, 1000]);
+  assert.deepEqual([economy.doors.startShutter, economy.doors.megaMart, economy.doors.foodCourt, economy.doors.serviceCorridor], [500, 750, 1000, 1250]);
   for (const d of map.doors) assert.ok(map.zones[d.opensZone], `door ${d.id} opens a real zone`);
 });
 
@@ -76,7 +77,7 @@ test('each area is sealed until its own door is bought, in any order, and fully 
   const { map, open, reach } = setup();
   const spawnsIn = (zone) => map.spawnPoints.filter((s) => s.zone === zone);
   const reachable = (p) => Number.isFinite(reach(p));
-  assert.deepEqual(['hallway', 'foodCourt', 'megaMart'].map((z) => spawnsIn(z).length), [3, 4, 4]);
+  assert.deepEqual(['hallway', 'foodCourt', 'megaMart', 'serviceCorridor'].map((z) => spawnsIn(z).length), [3, 4, 4, 3]);
 
   // Nothing bought: only the start room.
   for (const s of spawnsIn('hallway')) assert.equal(reach(s.position), Infinity, `${s.name} sealed`);
@@ -87,7 +88,7 @@ test('each area is sealed until its own door is bought, in any order, and fully 
   const nailGun = map.wallBuys.find((w) => w.weapon === 'nailGun');
   assert.equal(nailGun.zone, 'hallway');
   assert.ok(reachable({ x: nailGun.position.x, z: nailGun.position.z + 0.8 }), 'you can stand at the Nail Gun wall buy');
-  for (const s of [...spawnsIn('megaMart'), ...spawnsIn('foodCourt')]) assert.equal(reach(s.position), Infinity, `${s.name} sealed`);
+  for (const s of [...spawnsIn('megaMart'), ...spawnsIn('foodCourt'), ...spawnsIn('serviceCorridor')]) assert.equal(reach(s.position), Infinity, `${s.name} sealed`);
 
   // Food Court first (any order works): it opens, the Mega Mart stays sealed.
   open('foodCourt');
@@ -105,8 +106,8 @@ test('each area is sealed until its own door is bought, in any order, and fully 
   // A new run closes everything again.
   map.reset();
   for (let t = 0; t < feel.world.shutterOpenSeconds + 0.5; t += dt) map.update(dt);
-  for (const z of ['hallway', 'megaMart', 'foodCourt']) assert.equal(map.zones[z].open, false, `${z} closed after reset`);
-  for (const s of [...spawnsIn('hallway'), ...spawnsIn('megaMart'), ...spawnsIn('foodCourt')]) {
+  for (const z of ['hallway', 'megaMart', 'foodCourt', 'serviceCorridor']) assert.equal(map.zones[z].open, false, `${z} closed after reset`);
+  for (const s of [...spawnsIn('hallway'), ...spawnsIn('megaMart'), ...spawnsIn('foodCourt'), ...spawnsIn('serviceCorridor')]) {
     assert.equal(reach(s.position), Infinity, `${s.name} sealed after reset`);
   }
 });
@@ -253,4 +254,36 @@ test('Food Court: sprint-jumping at a stall counter never gets you onto it', () 
   assert.ok(minZ > counterFront + feel.player.radius - 0.02, `stopped at the counter (got to z ${minZ.toFixed(2)})`);
   for (let i = 0; i < 60; i++) player.update(dt); // settle
   assert.equal(player.position.y, 0, 'still on the floor');
+});
+
+test('Service Corridor: sealed until its door is bought, all of it reachable after, and no back way into the Food Court', () => {
+  const { map, nav, open, reach } = setup();
+  const reachable = (x, z) => Number.isFinite(reach({ x, z }));
+  const corridorSpawns = map.spawnPoints.filter((p) => p.zone === 'serviceCorridor');
+  open('startShutter');
+  for (const s of corridorSpawns) assert.equal(reach(s.position), Infinity, `${s.name} sealed`);
+  open('serviceCorridor');
+  for (const s of corridorSpawns) assert.ok(reachable(s.position.x, s.position.z), `${s.name} reachable`);
+  // The doorway, the corner, past the lockers, the dead end.
+  for (const [x, z] of [[-20.5, 2], [-22, 3], [-21.5, -10], [-21.8, -13.5]]) assert.ok(reachable(x, z), `(${x}, ${z}) reachable`);
+  assert.equal(nav.isWalkableAt(-23.1, -10), false, 'the lockers are solid');
+  // It runs along the Food Court's west wall, but that wall is solid: the Food Court stays sealed.
+  for (const s of map.spawnPoints.filter((p) => p.zone === 'foodCourt')) assert.equal(reach(s.position), Infinity, `${s.name} still sealed`);
+});
+
+test('Service Corridor: a real player walks in through the doorway, down to the dead end', () => {
+  const { colliders, map, door } = setup();
+  door('startShutter').open();
+  door('serviceCorridor').open();
+  for (let t = 0; t < feel.world.shutterOpenSeconds + 0.5; t += dt) map.update(dt);
+  const { player, input } = playerIn(colliders, new THREE.Vector3(-18, 0, 2), Math.PI / 2); // facing -X (west)
+  input.axis = { x: 0, y: 1 };
+  for (let i = 0; i < 60 * 1.2; i++) player.update(dt); // west through the doorway to the corridor's west wall
+  assert.ok(player.position.x < -21, `through the doorway (x ${player.position.x.toFixed(2)})`);
+  // Step back to the middle (walking down the west wall you'd walk into the lockers) and face south.
+  player.position.x = -21.8;
+  player.yaw = 0; // facing -Z (south) down the corridor
+  for (let i = 0; i < 60 * 4; i++) player.update(dt);
+  assert.ok(player.position.z < -12.5, `walked down to the dead end (z ${player.position.z.toFixed(2)})`);
+  assert.equal(player.position.y, 0);
 });

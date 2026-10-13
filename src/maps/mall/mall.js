@@ -1,5 +1,5 @@
 // =============================================================================
-// MALL MAP: start room, main hallway (the hub), Mega Mart, Food Court
+// MALL MAP: start room, main hallway (the hub), Mega Mart, Food Court, Service Corridor
 // The layout only: rooms, doors, props, lights and markers, placed with the map
 // kit (world/mapKit.js: boxes, walls with doorways, shutter doors, signs, markers)
 // and the mall props (./props.js: shop fronts, pillars, benches, planters, light
@@ -12,7 +12,7 @@
 //   hallway     start shutter (500): the hub every other area opens off
 //   megaMart    Mega Mart shutter (750), east end of the hallway
 //   foodCourt   Food Court shutter (1000), south wall of the hallway
-//   (planned)   Service Corridor (1250) off the west end
+//   serviceCorridor  Service Corridor shutter (1250), west end of the hallway
 // The hallway also has an escalator (west half, up through a hole in the ceiling to a boarded-up
 // level-2 landing) and elevator doors (north wall): both SEALED for now, the way up to a second floor later.
 //
@@ -24,6 +24,10 @@
 //   - Mega Mart:       x 20..34,  z -24..6, 5m ceiling. Its west wall (x 20..20.3, 6m tall)
 //                      is also the east wall of the hallway (with the Mega Mart door) and of
 //                      the Food Court (room for a shortcut door later).
+//   - Service Corridor: a 3m-wide back-of-house corridor built with the corridor builder
+//                      (world/corridor.js): through the hallway's west wall (z 0.5..3.5), then
+//                      south 16m along the Food Court's west side (sharing its wall: room for a
+//                      shortcut door later), to a dead end at z -14. 3.5m ceiling.
 // =============================================================================
 
 import * as THREE from 'three';
@@ -45,6 +49,8 @@ export const LAYOUT = {
   // (the top of the hallway ceiling, y 6.3). 2m wide. Sealed for now.
   escalator: { bottomX: -4, dir: -1, minZ: 1, maxZ: 3 },
   elevator: { centerX: 10.5 }, // doors in the hallway's north wall (sealed for now)
+  // Service Corridor: its doorway in the hallway's west wall, then south along the Food Court's west wall.
+  serviceCorridor: { width: 3, height: 3.5, length: 16, doorway: { minZ: 0.5, maxZ: 3.5, height: 3 } },
   wallThickness: 0.3,
 };
 
@@ -63,6 +69,7 @@ export function buildMall(scene, colliders) {
     hallway: { label: 'Main Hallway', open: false },
     megaMart: { label: 'Mega Mart', open: false },
     foodCourt: { label: 'Food Court', open: false },
+    serviceCorridor: { label: 'Service Corridor', open: false },
   };
 
   const R = LAYOUT.startRoom;
@@ -72,6 +79,8 @@ export function buildMall(scene, colliders) {
   const D = LAYOUT.doorway;
   const FD = LAYOUT.foodCourtDoorway;
   const MD = LAYOUT.megaMartDoorway;
+  const SC = LAYOUT.serviceCorridor;
+  const SCD = SC.doorway;
   const T = LAYOUT.wallThickness;
   const FZ = (F.minZ + F.maxZ) / 2; // Food Court center line (its props are placed relative to it)
   const HZ = (H.minZ + H.maxZ) / 2; // hallway center line
@@ -99,8 +108,11 @@ export function buildMall(scene, colliders) {
     along: 'x', from: H.minX - T, to: H.maxX, at0: H.minZ - T, at1: H.minZ, height: H.height,
     openings: [{ from: FD.minX, to: FD.maxX, top: FD.height }],
   }, hallWall, { name: 'hallway_wall_south' });
-  // West wall: the Service Corridor door goes here later (a painted staff door for now).
-  wall({ along: 'z', from: H.minZ, to: H.maxZ, at0: H.minX - T, at1: H.minX, height: H.height }, hallWall, { name: 'hallway_wall_west' });
+  // West wall: the Service Corridor door.
+  wall({
+    along: 'z', from: H.minZ, to: H.maxZ, at0: H.minX - T, at1: H.minX, height: H.height,
+    openings: [{ from: SCD.minZ, to: SCD.maxZ, top: SCD.height }],
+  }, hallWall, { name: 'hallway_wall_west' });
   // (East: the Mega Mart's west wall, built with the Mega Mart.)
 
   // Start-room storefront: the wall with the start doorway (shared by the start room and hallway)
@@ -139,6 +151,14 @@ export function buildMall(scene, colliders) {
     zones,
     doorway: { minX: FD.minX, maxX: FD.maxX, minZ: H.minZ - T, maxZ: H.minZ, height: FD.height },
   });
+  const serviceCorridorDoor = kit.shutterDoor({
+    id: 'serviceCorridor',
+    label: 'Service Corridor',
+    price: economy.doors.serviceCorridor,
+    opensZone: 'serviceCorridor',
+    zones,
+    doorway: { minX: H.minX - T, maxX: H.minX, minZ: SCD.minZ, maxZ: SCD.maxZ, height: SCD.height },
+  });
   // (The Mega Mart door is built with the Mega Mart below.)
 
   // --- Main hallway: escalator, elevator, ceiling ------------------------------
@@ -169,10 +189,9 @@ export function buildMall(scene, colliders) {
     x: H.maxX - 0.02, y: 4.3, z: (MD.minZ + MD.maxZ) / 2, width: 6, height: 1.2, facing: 'x-',
     background: '#1d4e89', color: '#ffd23f',
   });
-  // The Service Corridor's door (west end) arrives later: a painted staff door marks the spot.
-  props.wallDoor({
-    along: 'z', center: HZ, wallAt: H.minX, facing: 1, width: 1.2, leaves: 1, color: COLORS.serviceDoor,
-    label: 'SERVICE CORRIDOR · STAFF ONLY',
+  sign('SERVICE CORRIDOR · STAFF ONLY', {
+    x: H.minX + 0.02, y: 3.6, z: (SCD.minZ + SCD.maxZ) / 2, width: 3.4, height: 0.45, facing: 'x+',
+    background: '#3a3f47', color: '#ffd23f',
   });
 
   // Planters framing the Food Court door
@@ -285,6 +304,49 @@ export function buildMall(scene, colliders) {
     x: 0, y: 3.6, z: F.maxZ - 0.02, width: 3, height: 0.5, facing: -1,
     background: '#1d1626', color: '#63e6be',
   });
+
+  // --- Service Corridor (west of the hallway, behind the 1250 shutter) ----------
+  // Built from data with the corridor builder: in through the hallway's west wall, a short run west,
+  // then south along the Food Court. Its east side IS the hallway's and Food Court's west walls (no
+  // wall of its own there). Extend it by adding runs; branch off it with layout.branchStart().
+
+  const service = kit.corridor({
+    width: SC.width, height: SC.height, thickness: T,
+    start: { x: H.minX - T, z: (SCD.minZ + SCD.maxZ) / 2 },
+    startCap: false, // opens onto the shutter's doorway
+    endCap: true,
+    segments: [
+      { dir: 'west', length: SC.width / 2 },
+      { dir: 'south', length: SC.length, noWall: ['right'] },
+    ],
+  }, {
+    floor: { base: '#a19d95', grout: '#857f76', variation: 6, seed: 13 },
+    wall: mat(COLORS.serviceWall), ceiling: mat(COLORS.serviceCeiling), name: 'service',
+  });
+  // Dressing along the south run's west wall ('left', walking south). `at` = meters from the turn.
+  const westWall = { along: 'z', wallAt: service.pointAt(1, 0, 'left').x, facing: 1 };
+  const zAt = (at) => service.pointAt(1, at).z;
+  sign('EMPLOYEES MUST WASH HANDS', { x: westWall.wallAt + 0.02, y: 1.7, z: zAt(2.5), width: 1.3, height: 0.3, facing: 'x+', background: '#f1faee', color: '#1d1626' });
+  props.boardedVent({ ...westWall, center: zAt(4) });
+  props.electricalPanel({ ...westWall, center: zAt(6.5) });
+  props.boardedVent({ ...westWall, center: zAt(9) });
+  props.lockerBank({ ...westWall, from: zAt(13), to: zAt(11) });
+  props.pipeRun({ ...westWall, from: zAt(SC.length), to: service.points[1].z + SC.width / 2, y: SC.height - 0.45 });
+  // The dead end: boxes in the corner, a vent in the end wall, a sign.
+  const endZ = zAt(SC.length);
+  const westX = westWall.wallAt;
+  box(westX, 0, endZ, westX + 0.7, 0.7, endZ + 0.6, mat(COLORS.cardboard), { name: 'crate' });
+  box(westX + 0.05, 0.7, endZ + 0.05, westX + 0.55, 1.15, endZ + 0.5, mat(0xd2a86a), { name: 'crate' });
+  props.boardedVent({ along: 'x', center: service.points[2].x, wallAt: endZ, facing: 1 });
+  sign('NO LOITERING (ESPECIALLY THE UNDEAD)', {
+    x: service.points[2].x, y: 2.3, z: endZ + 0.02, width: 2.4, height: 0.32, facing: 1,
+    background: '#d62839', color: '#ffffff',
+  });
+  // Fluorescent strips down the middle (the middle one's dead).
+  const cx = service.points[1].x;
+  props.lightPanel(cx - 0.25, zAt(4), cx + 0.25, zAt(1), SC.height);
+  props.lightPanel(cx - 0.25, zAt(9), cx + 0.25, zAt(6), SC.height, { dead: true });
+  props.lightPanel(cx - 0.25, zAt(14.5), cx + 0.25, zAt(11.5), SC.height);
 
   // --- Mega Mart (east of the hallway, behind the 750 shutter) -----------------
 
@@ -405,6 +467,7 @@ export function buildMall(scene, colliders) {
   for (const x of [-12, 0, 12]) lamp(0xfff0d0, 22, x, F.height - 0.8, FZ); // Food Court
   lamp(0xffe2b0, 8, 0, R.height - 0.5, 10); // start room
   for (const z of [0, -15]) lamp(0xf2f6ff, 16, 27.5, M.height - 0.8, z); // Mega Mart: cool fluorescent
+  for (const at of [3, 12]) lamp(0xfff2dc, 7, service.points[1].x, SC.height - 0.5, service.pointAt(1, at).z); // Service Corridor
 
   // --- Spawn points and wall-buy spots (invisible markers) -------------------
 
@@ -423,6 +486,15 @@ export function buildMall(scene, colliders) {
     { name: 'spawn_megaMart_receiving', zone: 'megaMart', position: new THREE.Vector3(31.8, 0, -23.2) },
     { name: 'spawn_megaMart_vent', zone: 'megaMart', position: new THREE.Vector3(21.8, 0, -23.2) },
     { name: 'spawn_megaMart_emergencyExit', zone: 'megaMart', position: new THREE.Vector3(33.2, 0, 2.5) },
+    // Service Corridor: in front of its two wall vents and the vent in its dead end
+    ...[['ventNorth', 4], ['ventSouth', 9]].map(([name, at]) => {
+      const p = service.pointAt(1, at, 'left', 0.8);
+      return { name: `spawn_serviceCorridor_${name}`, zone: 'serviceCorridor', position: new THREE.Vector3(p.x, 0, p.z) };
+    }),
+    (() => {
+      const p = service.pointAt(1, SC.length - 0.8);
+      return { name: 'spawn_serviceCorridor_deadEnd', zone: 'serviceCorridor', position: new THREE.Vector3(p.x, 0, p.z) };
+    })(),
   ];
   // Where weapons are bought off the wall. `normal` points out of the wall; `weapon` is a
   // config/weapons.js id. Prices live in economy.js.
@@ -441,7 +513,7 @@ export function buildMall(scene, colliders) {
   // Player start: middle of the start room, facing the shutter (-Z)
   const playerSpawn = { position: new THREE.Vector3(0, 0, 12), yaw: 0 };
 
-  const doors = [startDoor, megaMartDoor, foodCourtDoor];
+  const doors = [startDoor, megaMartDoor, foodCourtDoor, serviceCorridorDoor];
 
   return {
     id: 'mall',

@@ -17,6 +17,9 @@
 //   foodStall   a food-court stall (facade, awning, counter, gear); one solid 1.2m block you can't get onto
 //   tableSet    a round table with four stools (hop on; zombies walk round)
 //   trashCan    a solid bin
+//   lockerBank  staff lockers against a wall (solid, too tall to climb)
+//   electricalPanel a panel + DANGER sign on a wall (decorative; a future "power" switch spot)
+//   pipeRun     exposed pipes along a wall near the ceiling (decorative)
 // createMallProps(kit) returns these as functions; maps/mall/mall.js places them.
 // =============================================================================
 
@@ -532,8 +535,48 @@ export function createMallProps(kit) {
     group.add(can, lid);
   }
 
+  // --- Service Corridor (back of house) ------------------------------------------
+
+  /** A bank of staff lockers against a wall, from..to along it (solid, 1.9m: not climbable). */
+  function lockerBank({ along, from, to, wallAt, facing, depth = 0.45, height = 1.9 }) {
+    const place = wallPlacer(along);
+    const d = (offset) => wallAt + facing * offset;
+    const [a, b] = [d(0), d(depth)].sort((x, y) => x - y);
+    if (along === 'x') addCollider(from, 0, a, to, height, b);
+    else addCollider(a, 0, from, b, height, to);
+    const count = Math.max(1, Math.round((to - from) / 0.5));
+    const each = (to - from) / count;
+    for (let i = 0; i < count; i++) {
+      const u0 = from + i * each;
+      place(u0 + 0.01, 0, u0 + each - 0.01, height, d(0), d(depth), mat(COLORS.locker), { collide: false });
+      for (const y of [height - 0.35, height - 0.25, height - 0.15]) {
+        place(u0 + 0.12, y, u0 + each - 0.12, y + 0.04, d(depth), d(depth + 0.01), mat(COLORS.lockerVent), { collide: false });
+      }
+      place(u0 + each - 0.12, height * 0.5, u0 + each - 0.08, height * 0.5 + 0.12, d(depth), d(depth + 0.02), mat(COLORS.metal), { collide: false });
+    }
+  }
+
+  /** An electrical panel on a wall with a warning sign (decorative; the future "power" switch spot). */
+  function electricalPanel({ along, center, wallAt, facing, y = 1.5 }) {
+    const place = wallPlacer(along);
+    const d = (offset) => wallAt + facing * offset;
+    place(center - 0.4, y - 0.6, center + 0.4, y + 0.6, d(0), d(0.14), mat(COLORS.electricalPanel), { collide: false });
+    place(center - 0.32, y - 0.5, center + 0.32, y + 0.4, d(0.14), d(0.15), mat(COLORS.metal), { collide: false });
+    place(center + 0.18, y - 0.1, center + 0.24, y + 0.15, d(0.15), d(0.22), mat(COLORS.rope), { collide: false }); // the lever
+    const at = along === 'x' ? { x: center, z: d(0.16), facing } : { x: d(0.16), z: center, facing: facing > 0 ? 'x+' : 'x-' };
+    sign('DANGER · HIGH VOLTAGE', { ...at, y: y + 0.82, width: 0.9, height: 0.22, background: '#ffd23f', color: '#1d1626' });
+  }
+
+  /** Exposed pipes running along a wall near the ceiling, from..to along it (decorative). */
+  function pipeRun({ along, from, to, wallAt, facing, y }) {
+    const place = wallPlacer(along);
+    const d = (offset) => wallAt + facing * offset;
+    place(from, y, to, y + 0.1, d(0.05), d(0.15), mat(COLORS.pipeGrey), { collide: false });
+    place(from, y + 0.16, to, y + 0.24, d(0.08), d(0.16), mat(COLORS.pipeRed), { collide: false });
+  }
+
   return {
     shopFront, pillar, bench, planter, lightPanel, gondola, checkout, wallDoor, boardedVent, wallStripe,
-    escalator, upperLanding, elevatorDoors, foodStall, tableSet, trashCan,
+    escalator, upperLanding, elevatorDoors, foodStall, tableSet, trashCan, lockerBank, electricalPanel, pipeRun,
   };
 }

@@ -61,7 +61,8 @@ src/
                         body (colors + leg/pose tuning), health (regen, hurt edges), death camera, sprintFx,
                         weaponSwitch (lower/raise time, drop), interact (hold time, range, facing angle, denied
                         flash), world.wallBuyDisplay, melee lunge end
-    economy.js          Points, payouts, kill values, door prices (startShutter 500, megaMart 750, foodCourt 1000) +
+    economy.js          Points, payouts, kill values, door prices (startShutter 500, megaMart 750, foodCourt 1000,
+                        serviceCorridor 1250) +
                         wall-buy prices, round timing, wave scaling + helpers
                         (zombieHealthForRound, zombieCountForRound, spawnDelayForRound, maxAliveForRound).
                         zombieMix: special types per round (mallWalker: from round 4, share 15% / 25% from 6 / 30% from 9,
@@ -245,13 +246,15 @@ src/
     index.js            Map registry + loadMap(id, scene, colliders) + THE MAP INTERFACE (id, group, zones, doors,
                         spawnPoints, wallBuys, playerSpawn, update, reset, dispose). New map = new folder + 1 line
     mall/mall.js        buildMall(scene, colliders): the mall's LAYOUT only (rooms, doors, props, lights, markers), built
-                        with the map kit + mall props. Zones startRoom (open) / hallway / megaMart / foodCourt; doors:
-                        start shutter (500) -> hallway (the hub), Mega Mart shutter (750, hallway east end) -> megaMart,
-                        Food Court shutter (1000, hallway south wall) -> foodCourt; wall buys priceGun (start room) +
+                        with the map kit + mall props. Zones startRoom (open) / hallway / megaMart / foodCourt /
+                        serviceCorridor; doors: start shutter (500) -> hallway (the hub), Mega Mart shutter (750, hallway
+                        east end) -> megaMart, Food Court shutter (1000, hallway south wall) -> foodCourt, Service
+                        Corridor shutter (1250, hallway west wall) -> serviceCorridor (built with kit.corridor from a data
+                        spec; its layout's pointAt places the dressing and spawns); wall buys priceGun (start room) +
                         nailGun (hallway south wall) + a reserved spot in the Mega Mart (weapon 'foamDartBlaster', inert
                         until that gun exists). All meshes, lights and debug markers live in its group. Exports LAYOUT
                         (startRoom, hallway, foodCourt, megaMart, doorway, foodCourtDoorway, megaMartDoorway, escalator,
-                        elevator). The hallway ceiling is a kit.slab with a hole where the escalator passes through
+                        elevator, serviceCorridor). The hallway ceiling is a kit.slab with a hole where the escalator passes through
     mall/props.js       createMallProps(kit): shopFront({ along 'x'|'z', from, to, wallAt, facing, color, text }), pillar,
                         bench (vaultable), planter ({ tree }), lightPanel ({ dead }), gondola (solid double-sided shelf,
                         products = one seeded InstancedMesh), checkout (vaultable counter + register + lane light),
@@ -263,7 +266,8 @@ src/
                         foodStall (facade + name sign + menu board + striped awning + counter/sneeze guard/register/food +
                         gear behind: grill/fryer/wok/soda; ONE solid 1.2m block wall-to-counter: above jump peak + step-up),
                         tableSet (round table 0.75m + 4 stools 0.45m; colliders: table + a "plus" of two low stool strips),
-                        trashCan
+                        trashCan, lockerBank (solid 1.9m), electricalPanel (+ DANGER sign; a future power switch spot),
+                        pipeRun (exposed pipes)
     mall/palette.js     COLORS shared by the mall's rooms and props
     testRange/          Debug add-on (not a map): testRange.js buildTestRange(scene, colliders) with own lights,
                         dummy.js practice mannequins (shootables)
@@ -382,8 +386,9 @@ src/
   Player is a cylinder (radius, height, feet position). Boxes whose top is within `stepTolerance`
   of the feet count as floor, not walls.
 - Coordinates: meters, +Y up. Camera looks down -Z at yaw 0.
-- Markers (invisible; shown if `debug.showMarkers`): `map.spawnPoints` (13: 2 start-room vents, 3 hallway vents,
-  4 Food Court shopfronts, 4 Mega Mart: stockroom, receiving, back vent, emergency exit; each tagged with its zone)
+- Markers (invisible; shown if `debug.showMarkers`): `map.spawnPoints` (16: 2 start-room vents, 3 hallway vents,
+  4 Food Court shopfronts, 4 Mega Mart: stockroom, receiving, back vent, emergency exit, 3 Service Corridor: two wall
+  vents + the dead end; each tagged with its zone)
   and `map.wallBuys` (3, with an outward `normal` and a `weapon` id; the Mega Mart one is reserved/inert).
 
 ## Map (current)
@@ -393,8 +398,8 @@ The start room opens into a MAIN HALLWAY (the hub); every other area is bought o
   door to buy it. Debug: press **O** to toggle every door for free.
 - Main hallway: x -20..20, z -2..6 (8m wide), 6m ceiling. Doors: Food Court (1000, south wall x -2..2, straight
   across from the start door, under a FOOD COURT sign, framed by two planters), Mega Mart (750, east end z 0..4,
-  under a MEGA MART sign). West end: a painted "SERVICE CORRIDOR · STAFF ONLY" door where the Service Corridor
-  (1250) goes later. 3 boarded vents (zombie spawns).
+  under a MEGA MART sign), Service Corridor (1250, west wall z 0.5..3.5, under a "SERVICE CORRIDOR · STAFF ONLY"
+  sign; the escalator's high end runs overhead just short of it). 3 boarded vents (zombie spawns).
   Escalator (SEALED): west half, z 1..3, bottom end at x -4 facing the hub, rising west at 30 deg through a hole in
   the ceiling (x ~-16.1..-11.9) to level 2 (y 6.3, the top of the ceiling slab), where a walled, boarded-up landing
   ("LEVEL 2 · OPENING SOON") is visible. Rope barrier + OUT OF ORDER board at the bottom; every collider you could
@@ -415,6 +420,14 @@ The start room opens into a MAIN HALLWAY (the hub); every other area is bought o
   (x 24 / 27.5 / 31, z -19.5..-8, solid, 2m tall) making 4 aisles, a 4.5m back walkway with stockroom/receiving
   doors + a boarded vent, an emergency exit on the east wall. Brand stripe, aisle signs, fluorescent strips (some
   dead), 2 point lights.
+- Service Corridor: behind the 1250 shutter, a 3m-wide back-of-house corridor built from a data spec with the
+  corridor builder: in through the hallway's west wall (floor reaches under the doorway), a 1.5m run west, then 16m
+  south along the Food Court's west side to a dead end at z -14 (x -23.3..-20.3, 3.5m ceiling). Its east side is the
+  hallway's and Food Court's own west walls (noWall), so a shortcut door into the Food Court is just an opening
+  later. Dressing on its west wall: EMPLOYEES MUST WASH HANDS sign, two boarded vents (spawns), an electrical panel
+  with a DANGER · HIGH VOLTAGE sign, a bank of lockers (solid, narrows it to ~2.5m), exposed pipes the whole way;
+  boxes + a vent (spawn) + NO LOITERING (ESPECIALLY THE UNDEAD) at the dead end; three ceiling strips (middle one
+  dead), two warm point lights. Concrete-look floor, drab walls.
 - Wall-buy spots: start room east wall (5, 1.5, 10) = Price Gun; hallway south wall (11, 1.5, -2) = Nail Gun.
 - Player spawns at (0, 0, 12) facing the shutter.
 
@@ -606,7 +619,13 @@ walks a corridor end to end and through a branch doorway), and a throwaway sampl
 Found + fixed while building it: walls extended at INSIDE corners poked a post into the walkway (now outside corners
 only); an open end left no floor under the doorway it joins, so the nav grid couldn't cross (now the floor reaches
 through); wallSegments stretched a wall when an opening hung off its end (openings are clipped now).
-Next: step 5 = Service Corridor + its 1250 door (built with the corridor builder).
+Step 5 done: the Service Corridor + its 1250 door (see Map), built with kit.corridor. Verified: tests (1250 in the
+door ladder; sealed until bought, in any order; every part reachable after, lockers solid; no back way into the Food
+Court through the shared wall; a real player walks in through the doorway to the dead end) and in the browser (a
+real F-hold buys it for 1250; doorway + sign and the corridor's dressing look right; zombies from its 3 spawns reach
+the hub in ~8-12s and never climb). The hub layout is now complete: start room -> hallway -> Mega Mart / Food Court /
+Service Corridor, in any order.
+Next (optional): step 6 = loop shortcuts (Food Court <-> Mega Mart, Service Corridor <-> Food Court).
 
 ## Planned build order
 1. Walkable mall (done)
