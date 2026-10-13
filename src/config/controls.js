@@ -28,6 +28,40 @@ export const bindings = {
   melee: ['KeyV', 'PadRB', 'PadR3'],
   pause: ['PadStart'],
   confirm: ['PadA', 'PadStart'], // controller menus: start, resume, play again
+  settings: ['PadY'], // controller: open Settings from the pause screen
+  controlsScreen: ['PadX'], // controller: open the Controls screen from the pause screen
+};
+
+// What the Controls screen shows. Each entry: keys + text (list view), short label + anchors (diagram view).
+// `anchors` = ids of the parts of the drawing it points at (see ui/controlsDiagram.js); the first gets a solid
+// line, the rest dashed. Update this when bindings change.
+export const controlsHelp = {
+  keyboard: [
+    { keys: 'WASD', text: 'Move', short: 'Move', anchors: ['S', 'W', 'A', 'D'] },
+    { keys: 'Mouse', text: 'Look', short: 'Look', anchors: ['mouse'] },
+    { keys: 'Space', text: 'Jump / vault', short: 'Jump / vault', anchors: ['Space'] },
+    { keys: 'Shift', text: 'Sprint', short: 'Sprint', anchors: ['Shift'] },
+    { keys: 'C', text: 'Crouch (hold) / slide (tap while sprinting)', short: 'Crouch / slide', anchors: ['C'] },
+    { keys: 'Click', text: 'Shoot', short: 'Shoot', anchors: ['lmb'] },
+    { keys: 'Right click', text: 'Aim down sights', short: 'Aim', anchors: ['rmb'] },
+    { keys: 'R', text: 'Reload', short: 'Reload', anchors: ['R'] },
+    { keys: 'F', text: 'Buy (hold)', short: 'Buy (hold)', anchors: ['F'] },
+    { keys: '1  2  /  Wheel', text: 'Switch weapon', short: 'Switch weapon', anchors: ['1', '2', 'wheel'] },
+    { keys: 'V', text: 'Box cutter', short: 'Box cutter', anchors: ['V'] },
+    { keys: 'Esc', text: 'Pause', short: 'Pause', anchors: ['Esc'] },
+  ],
+  gamepad: [
+    { keys: 'Left stick', text: 'Move (click to sprint)', short: 'Move / sprint (click)', anchors: ['ls'] },
+    { keys: 'Right stick', text: 'Look', short: 'Look', anchors: ['rs'] },
+    { keys: 'A', text: 'Jump / vault', short: 'Jump / vault', anchors: ['a'] },
+    { keys: 'B', text: 'Crouch / slide', short: 'Crouch / slide', anchors: ['b'] },
+    { keys: 'RT', text: 'Shoot', short: 'Shoot', anchors: ['rt'] },
+    { keys: 'LT', text: 'Aim down sights', short: 'Aim', anchors: ['lt'] },
+    { keys: 'X', text: 'Reload (hold near a shop item to buy)', short: 'Reload / buy (hold)', anchors: ['x'] },
+    { keys: 'Y', text: 'Switch weapon', short: 'Switch weapon', anchors: ['y'] },
+    { keys: 'RB / R3', text: 'Box cutter', short: 'Box cutter', anchors: ['rb', 'rs'] },
+    { keys: 'Start', text: 'Pause', short: 'Pause', anchors: ['start'] },
+  ],
 };
 
 // Button names shown in on-screen prompts, per device.

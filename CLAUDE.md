@@ -74,6 +74,9 @@ src/
                         weapon1/weapon2 = 1/2), buttonLabels (prompts per device),
                         gamepad (deadzones, look speed/curve, turn ramp, triggers, click-to-sprint release),
                         aimAssist (strength dial, range/cone, slowdown, rotational, ADS snap)
+    settings.js         THE LIST of player settings (options menu): { id, tab, label, type toggle|slider|select, default,
+                        min/max/step, format, apply(value, ctx) }. Most apply() functions write into the config objects the
+                        game reads every frame (feel, controls, audio). New setting = one entry here (new tab = add to settingsTabs)
     debug.js            showMarkers, allowShutterToggle (O key: doors free), testArena (T key), zombieKeys
                         (Z spawn / X clear), cheatKeys (N next round / P +5000 points / ' points to 0), dummies, exposeToWindow
   core/
@@ -197,6 +200,8 @@ src/
                         Crowd shoves never move anyone into a wall (overlapsSolid); a pinned player pushes the
                         zombie back instead. Options canAttack(), onPlayerHit(damage), onKill(zombie)
   game/
+    settings.js         createSettings(ctx): current value of every setting, saved in localStorage ('mallZombies.settings',
+                        values are sanitized on load), applies them all at startup; get/set/reset(tab)/onChange. ctx = { renderer, sound, hud }
     runStats.js         createRunStats(): time alive, kills, headshot/melee kills, shots fired/hit, accuracy
     wallet.js           createWallet(): points (start 500), earn/spend/canAfford, totalEarned, onChange cb (HUD
                         pop-ups). pointsForHit(): COD payouts (+10 hit; kill value +40 head / +70 melee; zombies only)
@@ -232,6 +237,16 @@ src/
     shutter.js          createShutter(): roll-up barrier with its own Box3 collider (open/close/toggle/update)
     textures.js         Procedural canvas textures (floor tile, shop sign, shutter, muzzle flash burst, wall-buy chalk). No image files.
   ui/
+    settingsMenu.js     createSettingsMenu(settings): builds the options screen from the settings list (tabs, rows per type:
+                        checkbox / range + readout / select). Opened by the pause screen's Settings button (controller: Y);
+                        Esc / Back / B closes. padNav(input): D-pad moves + changes, A toggles, LB/RB tabs, B back
+                        (main.js routes controller input to it while it's open)
+    controlsMenu.js     createControlsMenu(): the Controls screen (pause screen > Controls, controller X): tabs Keyboard & mouse /
+                        Controller, each as a Diagram (default) or List (controller Y toggles), from `controlsHelp` (config/controls.js:
+                        { keys, text, short, anchors }; update it when bindings change) + debug-key hints
+    controlsDiagram.js  buildControlsDiagram(device, entries): SVG keyboard + mouse / controller with colored labels and lines to the
+                        keys/buttons in each entry's `anchors` (ids of drawn parts: key names, 'mouse', 'lmb', 'ls', 'rt'...). New part = give
+                        it an id in drawKeyboard/drawController
     hud.js              createHud(): 4-line crosshair whose gap = spread cone (dot in ADS) + hit marker (white body, big yellow head, red kill),
                         bottom-left health (white) + stamina (green) bars, bottom-right ammo counter,
                         reload prompt under the crosshair, buy prompt below it (setInteract: "Hold F to open X 500",
@@ -429,9 +444,8 @@ Core movement/combat additions: deliberate momentum vaults and committed box-cut
   path can cross up to `maxApproachDegrees` 75 off straight-on, and where you LOOK barely matters
   (`maxLookDegrees` 100); a blocked straight landing tries paths angled `directionSearchDegrees`
   (0, +-12, +-24). From 1.5 m/s. HUD "[Space] Vault" prompt (vault.preview(): the full plan checked from
-  where you'll be when in reach) whenever a press would vault. DEBUG (temporary, `debug.vaultDebug`): a line at
-  the top shows vault.lastResult (why the last try failed, or "vaulted"); remove the flag + the 'debug-line'
-  bits in hud.js / main.js / style.css. Animation: a speed vault: both legs swing up and out to one side over it (body.js,
+  where you'll be when in reach) whenever a press would vault. `vault.lastResult` says why the last try failed (or
+  "vaulted") for testing in the console. Animation: a speed vault: both legs swing up and out to one side over it (body.js,
   feel.body.vault*), and the view dips/tilts so you see them (controller.syncCamera, feel.vault.camera*;
   visual only, the gun is tucked away anyway).
   Tuning is `feel.vault`; `stats.vaultMaxHeight` and `stats.vaultMomentumRetention` are player modifiers.
@@ -446,6 +460,10 @@ Core movement/combat additions: deliberate momentum vaults and committed box-cut
 - **Checks:** `npm test` covers vault paths/landings/momentum, interruptions, existing jump/slide behavior,
   melee commitment/hit validation/recovery, weapon blocking, and reset/pause behavior. Browser smoke checks
   also verified the actual counter/three benches, shutter purchase, both wall buys, and a real-zombie lunge.
+
+Settings screen: pause screen > Settings (video: FOV, FPS counter, render scale; mouse: sensitivity, invert Y, slower when
+zoomed; controller: look speed, invert Y, deadzone, aim assist; audio: master volume; comfort: head bob, speed lines).
+"Reset this tab" restores defaults. Adding more: see config/settings.js.
 
 ## Planned build order
 1. Walkable mall (done)

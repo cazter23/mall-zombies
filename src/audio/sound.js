@@ -94,6 +94,11 @@ export function createSound() {
 
     unlock, // also called when the game starts (a click), just in case
 
+    // Settings > Audio. Safe before the audio context exists (unlock() then starts at audio.masterVolume).
+    setMasterVolume(volume) {
+      if (master) master.gain.value = volume;
+    },
+
     get ready() {
       return !!ctx && ctx.state === 'running';
     },

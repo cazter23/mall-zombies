@@ -53,11 +53,6 @@ export function createHud() {
   hud.append(vaultPrompt);
   let lastVaultKey = '';
 
-  // DEBUG (debug.vaultDebug, temporary): why the last vault attempt failed. Remove with the flag.
-  const debugLine = el('div', 'debug-line');
-  hud.append(debugLine);
-  let lastDebugLine = null;
-
   // Buy prompt below that ("Hold F to open Security Shutter  500"), with a hold-progress bar.
   const interact = el('div', 'interact');
   const interactText = el('div', 'interact-text');
@@ -105,6 +100,11 @@ export function createHud() {
   vitals.append(health, sprint);
   hud.append(vitals);
 
+  // FPS counter (Settings > Video), top right.
+  const fpsCounter = el('div', 'fps');
+  hud.append(fpsCounter);
+  let lastFps = -1;
+
   const overlay = el('div', 'overlay');
   overlay.innerHTML = `
     <div class="card">
@@ -112,29 +112,17 @@ export function createHud() {
       <h1>Mall<br />Zombies</h1>
       <p class="tagline">The mall is closed. The shoppers didn't get the memo.</p>
       <button class="play" type="button">Click to play</button>
-      <ul class="controls">
-        <li><kbd>WASD</kbd> move</li>
-        <li><kbd>Space</kbd> jump</li>
-        <li><kbd>Shift</kbd> sprint</li>
-        <li><kbd>C</kbd> crouch (hold) / slide (tap while sprinting)</li>
-        <li><kbd>Mouse</kbd> look</li>
-        <li><kbd>Click</kbd> shoot</li>
-        <li><kbd>R</kbd> reload</li>
-        <li><kbd>F</kbd> buy (hold)</li>
-        <li><kbd>1</kbd> <kbd>2</kbd> / <kbd>Wheel</kbd> switch weapon</li>
-        <li><kbd>V</kbd> box cutter</li>
-        <li><kbd>Esc</kbd> pause</li>
-      </ul>
-      <p class="pad-hint">Controller? Press <kbd>A</kbd> / <kbd>✕</kbd> or <kbd>Start</kbd> to play.
-        LS move (click to sprint) · RS look · LT aim · RT shoot · A jump · B crouch/slide · X reload (hold X to buy) · Y switch weapon · RB knife</p>
-      ${debug.allowShutterToggle ? '<p class="debug-hint">Debug: <kbd>O</kbd> opens the shutter</p>' : ''}
-      ${debug.testArena ? '<p class="debug-hint">Debug: <kbd>T</kbd> teleports to the movement test range</p>' : ''}
-      ${debug.zombieKeys ? '<p class="debug-hint">Debug: <kbd>Z</kbd> spawns a zombie, <kbd>X</kbd> clears them</p>' : ''}
-      ${debug.cheatKeys ? '<p class="debug-hint">Debug: <kbd>N</kbd> next round, <kbd>P</kbd> +5000 points, <kbd>&#39;</kbd> points to 0</p>' : ''}
+      <div class="menu-buttons">
+        <button class="settings-btn" type="button">Settings</button>
+        <button class="controls-btn settings-btn" type="button">Controls</button>
+      </div>
+      <p class="pad-hint">Controller? Press <kbd>A</kbd> / <kbd>✕</kbd> or <kbd>Start</kbd> to play · <kbd>Y</kbd> settings · <kbd>X</kbd> controls</p>
     </div>
   `;
   const kicker = overlay.querySelector('.kicker');
   const playButton = overlay.querySelector('.play');
+  const controlsButton = overlay.querySelector('.controls-btn');
+  const settingsButton = overlay.querySelector('.settings-btn:not(.controls-btn)');
 
   // Results screen, shown when you die.
   const results = el('div', 'overlay results hidden');
@@ -156,6 +144,16 @@ export function createHud() {
 
   let startHandler = null;
   overlay.addEventListener('click', () => startHandler && startHandler());
+  let settingsHandler = null;
+  let controlsHandler = null;
+  controlsButton.addEventListener('click', (event) => {
+    event.stopPropagation();
+    if (controlsHandler) controlsHandler();
+  });
+  settingsButton.addEventListener('click', (event) => {
+    event.stopPropagation(); // don't count as "click to play"
+    if (settingsHandler) settingsHandler();
+  });
 
   let hasStarted = false;
   let lastHealth = -1;
@@ -166,6 +164,27 @@ export function createHud() {
   return {
     onStart(fn) {
       startHandler = fn;
+    },
+
+    // The pause screen's Controls button.
+    onOpenControls(fn) {
+      controlsHandler = fn;
+    },
+
+    // The pause screen's Settings button.
+    onOpenSettings(fn) {
+      settingsHandler = fn;
+    },
+
+    setFpsVisible(visible) {
+      fpsCounter.classList.toggle('show', visible);
+    },
+
+    // Whole frames per second; only touches the DOM when the number changes.
+    setFps(fps) {
+      if (fps === lastFps) return;
+      lastFps = fps;
+      fpsCounter.textContent = `${fps} FPS`;
     },
 
     // `restart`: show the "back to work" wording instead of "paused" (after Play again).
@@ -324,14 +343,6 @@ export function createHud() {
       lastVaultKey = key;
       vaultPrompt.classList.toggle('show', show);
       if (show) vaultPrompt.innerHTML = `<kbd>${button}</kbd> Vault`;
-    },
-
-    // DEBUG (debug.vaultDebug, temporary): a small line of text at the top; null/'' hides it.
-    setDebugLine(text) {
-      if (text === lastDebugLine) return;
-      lastDebugLine = text;
-      debugLine.textContent = text || '';
-      debugLine.style.display = text ? 'block' : 'none';
     },
 
     // Buy prompt: null hides it, else { label, verb, cost, canAfford, progress, denied }.

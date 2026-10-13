@@ -9,7 +9,7 @@
 //   - if the straight-ahead landing is blocked (e.g. a wall right behind a bench), it tries a few
 //     slightly angled paths (directionSearchDegrees) before giving up.
 //   - preview(): would pressing jump right now end in a vault? (drives the HUD "Vault" prompt)
-//   - lastResult: why the last attempt failed or "vaulted" (for the removable debug line).
+//   - lastResult: why the last attempt failed or "vaulted" (handy when testing in the console).
 import * as THREE from 'three';
 import { feel } from '../config/feel.js';
 import { overlapsSolid } from '../world/collision.js';
@@ -201,7 +201,7 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
   return {
     get active() { return state !== null; },
     get progress() { return state ? state.time / state.duration : null; },
-    lastResult: '', // why the last attempt failed, or 'vaulted' (debug line)
+    lastResult: '', // why the last attempt failed, or 'vaulted' (for testing / the console)
 
     // Is a vaultable obstacle on your path within magnetRange (worth holding a jump press for)?
     ahead() {

@@ -362,21 +362,6 @@ kbd {
   text-shadow: none;
 }
 
-/* DEBUG (debug.vaultDebug, temporary): why the last vault failed. Remove with the flag. */
-.debug-line {
-  position: absolute;
-  left: 50%;
-  top: 8px;
-  transform: translateX(-50%);
-  display: none;
-  padding: 2px 8px;
-  background: rgba(0, 0, 0, 0.55);
-  color: #9ef0b5;
-  font: 12px/1.4 monospace;
-  border-radius: 3px;
-  white-space: nowrap;
-}
-
 /* Buy prompt (doors, wall buys) */
 .interact {
   position: absolute;
@@ -577,4 +562,224 @@ kbd {
 }
 .ammo.low .ammo-mag {
   color: #ff3b3b;
+}
+
+/* ---------- Settings menu ---------- */
+
+.settings {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: radial-gradient(circle at 50% 40%, rgba(46, 196, 182, 0.25), rgba(17, 10, 24, 0.94) 70%), #110a18;
+}
+.settings.hidden {
+  display: none;
+}
+.settings-card {
+  width: min(640px, 100%);
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px 24px;
+  border-radius: 18px;
+  background: rgba(29, 22, 38, 0.92);
+  color: #fff;
+  box-sizing: border-box;
+}
+.settings-title {
+  margin: 0;
+  font-family: 'Bungee', Impact, 'Arial Black', sans-serif;
+  font-weight: 400;
+  color: var(--mall-yellow);
+}
+.settings-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.settings-tab,
+.settings-reset {
+  font: inherit;
+  font-size: 14px;
+  padding: 6px 14px;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+}
+.settings-tab.active {
+  background: var(--mall-teal);
+  border-color: var(--mall-teal);
+  color: var(--ink);
+}
+.settings-list {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 120px;
+}
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+.settings-row.focused,
+.settings-row:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.settings-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.settings-control input[type='range'] {
+  width: 180px;
+  accent-color: var(--mall-pink);
+}
+.settings-control input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--mall-pink);
+}
+.settings-value {
+  min-width: 52px;
+  text-align: right;
+  font-family: 'Bungee', Impact, 'Arial Black', sans-serif;
+  color: var(--mall-yellow);
+  font-size: 14px;
+}
+.settings-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.settings-hint {
+  margin: 0;
+  text-align: center;
+}
+.settings-btn {
+  display: block;
+  margin: 12px auto 0;
+  font: inherit;
+  font-size: 14px;
+  padding: 6px 18px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+}
+.settings-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* FPS counter (Settings > Video) */
+.fps {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  display: none;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #9ef0b5;
+  font: 13px/1.4 monospace;
+}
+.fps.show {
+  display: block;
+}
+
+.menu-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+.controls-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  overflow-y: auto;
+}
+.controls-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  color: #c8c0d4;
+  font-size: 14px;
+}
+.controls-list kbd {
+  min-width: 90px;
+  text-align: center;
+  flex: none;
+}
+.controls-debug {
+  margin: 0;
+  color: #9ef0b5;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.controls-view {
+  display: flex;
+  gap: 6px;
+}
+.controls-diagram {
+  width: 100%;
+  height: auto;
+  max-height: 60vh;
+}
+.dg-body {
+  fill: #3a2f4a;
+  stroke: rgba(255, 255, 255, 0.35);
+  stroke-width: 2;
+}
+.dg-key {
+  fill: #2b2238;
+  stroke: rgba(255, 255, 255, 0.25);
+  stroke-width: 1.5;
+}
+.dg-key-text {
+  fill: rgba(255, 255, 255, 0.55);
+  font: 12px sans-serif;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+.dg-used .dg-key-text {
+  fill: #1d1626;
+  font-weight: 700;
+}
+.dg-line {
+  stroke-width: 2;
+  fill: none;
+  opacity: 0.85;
+}
+.dg-line.dashed {
+  stroke-dasharray: 4 4;
+}
+.dg-label {
+  fill: #fff;
+  font: 700 15px sans-serif;
+}
+
+.controls-card {
+  width: min(1000px, 100%);
+}
+
+.menu-buttons {
+  margin-top: 12px;
+}
+.menu-buttons .settings-btn {
+  margin: 0;
 }

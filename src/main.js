@@ -33,6 +33,9 @@ import { createInteractions } from './game/interactions.js';
 import { economy } from './config/economy.js';
 import { buildWeaponDisplay } from './weapons/models/index.js';
 import { createWallBuyDisplay } from './world/wallBuy.js';
+import { createSettings } from './game/settings.js';
+import { createSettingsMenu } from './ui/settingsMenu.js';
+import { createControlsMenu } from './ui/controlsMenu.js';
 
 // --- Renderer, scene, camera ---------------------------------------------------
 
@@ -267,6 +270,14 @@ rounds = createRounds({
   },
 });
 
+// Settings (config/settings.js is the list; changes apply to the game and are saved in the browser).
+// Created after the HUD and sound so each setting's apply() can reach them.
+const settings = createSettings({ renderer, sound, hud });
+const settingsMenu = createSettingsMenu(settings);
+hud.onOpenSettings(() => settingsMenu.open());
+const controlsMenu = createControlsMenu();
+hud.onOpenControls(() => controlsMenu.open());
+
 hud.onStart(() => {
   sound.unlock(); // browsers only allow audio after a click
   input.requestLock();
@@ -288,6 +299,14 @@ hud.onPlayAgain(() => {
 // Unplugging the controller mid-game pauses (otherwise the zombies keep going with nobody playing).
 let padWasConnected = false;
 function handleControllerMenus() {
+  if (controlsMenu.isOpen) {
+    controlsMenu.padNav(input);
+    return;
+  }
+  if (settingsMenu.isOpen) {
+    settingsMenu.padNav(input); // the controller drives the settings menu while it's up
+    return;
+  }
   if (padWasConnected && !gamepad.connected && game.padPlaying) {
     game.padPlaying = false;
     if (!game.running && !game.over) hud.setPaused(true); // still running if the mouse is locked
@@ -302,7 +321,11 @@ function handleControllerMenus() {
       hud.setPaused(false);
     }
   } else if (!game.running) {
-    if (input.consumeAction('confirm')) {
+    if (input.consumeAction('settings')) {
+      settingsMenu.open();
+    } else if (input.consumeAction('controlsScreen')) {
+      controlsMenu.open();
+    } else if (input.consumeAction('confirm')) {
       sound.unlock();
       game.padPlaying = true;
       hud.setPaused(false);
@@ -386,7 +409,18 @@ function applyLookInput(frameTime) {
   player.applyStickLook(stickRate.yaw * frameTime * slow, stickRate.pitch * frameTime * slow);
 }
 
+// FPS counter: average over a quarter of a second so the number is readable.
+const fpsMeter = { frames: 0, time: 0 };
+
 function render(alpha, frameTime) {
+  fpsMeter.frames++;
+  fpsMeter.time += frameTime;
+  if (fpsMeter.time >= 0.25) {
+    hud.setFps(Math.round(fpsMeter.frames / fpsMeter.time));
+    fpsMeter.frames = 0;
+    fpsMeter.time = 0;
+  }
+
   // While paused nothing ticks, so interpolating between the last two ticks would make things
   // twitch: show the latest tick instead. Visual time keeps flowing after death (the world goes
   // on around the death camera) but stops while paused.
@@ -430,8 +464,6 @@ function render(alpha, frameTime) {
   hud.setAmmo(gun.weapon, buttonLabel('reload'));
   hud.setInteract(game.over ? null : interactions.prompt, buttonLabel('interact'));
   hud.setVaultPrompt(game.running && !game.over && vaultPromptVisible, buttonLabel('jump'));
-  // DEBUG (debug.vaultDebug, temporary): why the last vault attempt failed. Remove with the flag.
-  if (debug.vaultDebug) hud.setDebugLine(player.vault.lastResult ? `vault: ${player.vault.lastResult}` : '');
   hud.setPoints(wallet.points);
   hud.setRoundFlashing(rounds.inBreak && rounds.round > 1); // counter blinks in the break between rounds
 
