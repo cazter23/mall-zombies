@@ -71,7 +71,8 @@ src/
                         spawn dust, min spawn distance),
                         zombieNav (grid, soft wall clearance + wall penalty), zombieFailsafe (stuck-zombie rescue)
     controls.js         bindings (action -> keyboard/mouse + Pad* codes; interact = F / X; switchWeapon = wheel / Y,
-                        weapon1/weapon2 = 1/2), buttonLabels (prompts per device),
+                        weapon1/weapon2 = 1/2; menu-only: settings = Y, controlsScreen = X on the pause screen), buttonLabels
+                        (prompts per device), controlsHelp (what the Controls screen shows; keep in sync with bindings),
                         gamepad (deadzones, look speed/curve, turn ramp, triggers, click-to-sprint release),
                         aimAssist (strength dial, range/cone, slowdown, rotational, ADS snap)
     settings.js         THE LIST of player settings (options menu): { id, tab, label, type toggle|slider|select, default,
@@ -225,7 +226,8 @@ src/
                         dummy.js practice mannequins (shootables)
   audio/
     sound.js            createSound(): Web Audio synth for config/audio.js recipes. play(name, { volume }),
-                        unlock() (also on the first pointerdown/keydown; browsers block audio before that)
+                        unlock() (also on the first pointerdown/keydown; browsers block audio before that),
+                        setMasterVolume(v) (used by Settings > Audio)
   fx/
     effects.js          Tracers (pooled) + particle bursts (one InstancedMesh): splat(), puff(), clear() (new run)
   world/                Shared building blocks for maps
@@ -252,7 +254,8 @@ src/
                         bottom-left health (white) + stamina (green) bars, bottom-right ammo counter,
                         reload prompt under the crosshair, buy prompt below it (setInteract: "Hold F to open X 500",
                         red cost when unaffordable, shake when denied, hold-progress bar), red hurt edges, click-to-play/paused overlay,
-                        "Clocked Out" results screen with Play again (plain DOM)
+                        "Clocked Out" results screen with Play again (plain DOM). Pause screen: Click to play + Settings (left) /
+                        Controls (right) buttons (onOpenSettings/onOpenControls); FPS counter top right (setFpsVisible/setFps)
 ```
 
 ## How the pieces connect
@@ -283,6 +286,11 @@ src/
   `game.forceRun = true`; set it back to false before screenshots, or the live loop keeps playing).
   `step` also applies pending look first. `render(alpha, frameTime)`: interpolates the camera, updates effects + viewmodel, updates the
   HUD, then draws two passes: the world, then (after `clearDepth`) the viewmodel scene. `renderer.autoClear` is false.
+- Settings/Controls menus: `main.js` creates `createSettings({ renderer, sound, hud })` (loads saved values, applies all) and the two
+  menus after the HUD + sound exist. While either menu is open, `handleControllerMenus()` hands controller input to its `padNav`
+  and returns (so A/Start don't start the game). On the pause screen, controller Y opens Settings and X opens Controls. Settings
+  write straight into the config objects (feel/controls/audio), so everything that reads config each frame picks them up live.
+  `render()` also feeds the FPS counter.
 - Input: mouse buttons are tracked like keys as `Mouse0`/`Mouse1`/`Mouse2`, only while pointer-locked.
   Controller buttons are `PadA`.. codes written by `gamepad.poll()` (first thing in `update`).
 - Controller flow: `game.running` = pointer locked OR `game.padPlaying` OR forceRun. `handleControllerMenus()`
