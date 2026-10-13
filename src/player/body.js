@@ -5,7 +5,7 @@
 //
 // Animated in code every rendered frame:
 //   - Hip height follows the camera height (stand -> crouch -> slide blend smoothly)
-//   - Feet are placed by pose (walk cycle / slide / airborne), then each knee is
+//   - Feet are placed by pose (walk cycle / slide / airborne / vault), then each knee is
 //     solved so thigh + shin reach from hip to foot (simple two-bone IK).
 // The arms live on the gun model instead (weapons/viewmodel.js).
 // =============================================================================
@@ -95,9 +95,11 @@ export function createPlayerBody(scene) {
   let moveAmount = 0; // 0 = standing still, 1 = walking speed (more when sprinting)
   let slideAmount = 0; // 0..1 blend into the slide pose
   let airAmount = 0; // 0..1 blend into the airborne tuck
+  let vaultAmount = 0; // 0..1 how far into the vault's leg swing
   const swingDir = new THREE.Vector2(0, -1); // local direction the feet swing along (last movement dir)
   const walkFoot = new THREE.Vector3();
   const slideFoot = new THREE.Vector3();
+  const vaultFoot = new THREE.Vector3();
 
   // Hip height that follows the (smoothly easing) camera height between the stance poses.
   function hipHeightForEye(eye) {
@@ -139,6 +141,9 @@ export function createPlayerBody(scene) {
       moveAmount += (targetMove - moveAmount) * blend;
       slideAmount += ((player.stance === 'slide' ? 1 : 0) - slideAmount) * blend;
       airAmount += ((player.grounded ? 0 : 1) - airAmount) * blend;
+      // Vault: the legs swing up and over and back down along with the vault itself.
+      const vp = player.vault ? player.vault.progress : null;
+      vaultAmount = vp === null ? Math.max(0, vaultAmount - blend) : Math.sin(Math.min(1, vp) * Math.PI);
       if (walking) walkPhase += ((speed * frameTime) / b.strideLength) * Math.PI * 2;
 
       // --- Torso and hips ---
@@ -168,8 +173,18 @@ export function createPlayerBody(scene) {
         else slideFoot.set(x - b.slideSplay, b.ankleHeight, -b.slideBackFoot);
 
         leg.foot.copy(walkFoot).lerp(slideFoot, slideAmount);
-        // Airborne: pull the feet up a little (not during a slide).
-        leg.foot.y += b.airTuck * airAmount * (1 - slideAmount);
+        // Airborne: pull the feet up a little (not during a slide or a vault).
+        leg.foot.y += b.airTuck * airAmount * (1 - slideAmount) * (1 - vaultAmount);
+
+        // Vault: both feet together, up near hip height, out to one side and forward over the obstacle.
+        if (vaultAmount > 0) {
+          vaultFoot.set(
+            b.vaultSide * b.vaultFootOut + leg.side * 0.05,
+            hipY + b.vaultFootRaise,
+            -b.vaultFootForward + (leg.side === b.vaultSide ? -b.vaultFeetGap : 0),
+          );
+          leg.foot.lerp(vaultFoot, vaultAmount);
+        }
 
         solveKnee(leg.hip, leg.foot, b.thighLength, b.shinLength, leg.knee);
         placeLimb(leg.thigh, leg.hip, leg.knee, 0.14, 0.15);

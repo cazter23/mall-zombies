@@ -48,6 +48,16 @@ export function createHud() {
   const prompt = el('div', 'prompt');
   hud.append(prompt);
 
+  // "[Space] Vault": shown when pressing jump now would vault (feel.vault; player/vault.js preview()).
+  const vaultPrompt = el('div', 'vault-prompt');
+  hud.append(vaultPrompt);
+  let lastVaultKey = '';
+
+  // DEBUG (debug.vaultDebug, temporary): why the last vault attempt failed. Remove with the flag.
+  const debugLine = el('div', 'debug-line');
+  hud.append(debugLine);
+  let lastDebugLine = null;
+
   // Buy prompt below that ("Hold F to open Security Shutter  500"), with a hold-progress bar.
   const interact = el('div', 'interact');
   const interactText = el('div', 'interact-text');
@@ -305,6 +315,23 @@ export function createHud() {
       else if (weapon.magazine === 0 && weapon.reserve === 0) text = 'No ammo';
       else if (weapon.magazine === 0) text = `Press ${reloadLabel} to reload`;
       prompt.textContent = text;
+    },
+
+    // Vault prompt: shown while `show`; `button` = the jump button for the device ("Space", "A", "✕").
+    setVaultPrompt(show, button = 'Space') {
+      const key = show ? button : '';
+      if (key === lastVaultKey) return;
+      lastVaultKey = key;
+      vaultPrompt.classList.toggle('show', show);
+      if (show) vaultPrompt.innerHTML = `<kbd>${button}</kbd> Vault`;
+    },
+
+    // DEBUG (debug.vaultDebug, temporary): a small line of text at the top; null/'' hides it.
+    setDebugLine(text) {
+      if (text === lastDebugLine) return;
+      lastDebugLine = text;
+      debugLine.textContent = text || '';
+      debugLine.style.display = text ? 'block' : 'none';
     },
 
     // Buy prompt: null hides it, else { label, verb, cost, canAfford, progress, denied }.

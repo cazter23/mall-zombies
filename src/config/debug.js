@@ -26,6 +26,10 @@ export const debug = {
     // Health uses the round-1 zombie health from economy.js, so kills feel like the real thing.
   },
 
+  // Show a small line at the top of the screen with why the last vault attempt failed (or "vaulted").
+  // Temporary, for tuning the vault: delete this flag + the 'debug-line' bits in hud.js/main.js/style.css.
+  vaultDebug: true,
+
   // Expose game objects as window.__mall for poking at in the browser console.
   exposeToWindow: true,
 };

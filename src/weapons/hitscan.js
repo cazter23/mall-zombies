@@ -2,6 +2,8 @@
 // HITSCAN
 // One instant ray from the eye along the aim direction. Returns the closest
 // thing it hits: a world box (wall, floor, prop) or a shootable's hitbox.
+// A piercing shot (maxTargets > 1, e.g. the Nail Gun) goes on through up to that
+// many shootables in a line, still stopped by the first wall.
 //
 // A "shootable" is anything that can take hits (practice dummies now, zombies
 // later). It must provide:
@@ -18,11 +20,15 @@ const scratch = new THREE.Vector3();
 
 /**
  * @returns {{ point: THREE.Vector3, normal: THREE.Vector3, distance: number,
- *             target: object|null, part: string|null }}
- *   `target` is the shootable hit (null for walls/misses). On a complete miss,
- *   `point` is at max range and `distance` is `range`.
+ *             target: object|null, part: string|null,
+ *             hits: [{ target, part, point, normal, distance }], end: THREE.Vector3 }}
+ *   `target`/`part`/`point` are the first thing hit (target null for walls/misses). On a
+ *   complete miss, `point` is at max range and `distance` is `range`.
+ *   `hits`: every shootable hit, nearest first (at most `maxTargets`, all in front of the first wall).
+ *   `end`: where the shot stops (for the tracer): the last target if it ran out of pierce, else
+ *   the wall / max range. `endNormal`: the wall's outward normal there.
  */
-export function castShot(origin, direction, range, colliders, shootables) {
+export function castShot(origin, direction, range, colliders, shootables, maxTargets = 1) {
   ray.set(origin, direction);
 
   const best = { point: new THREE.Vector3(), normal: new THREE.Vector3(), distance: range, target: null, part: null };
@@ -45,23 +51,41 @@ export function castShot(origin, direction, range, colliders, shootables) {
     }
   }
 
-  // Shootables: checked after walls so a wall in front of a target blocks the shot.
+  // Shootables: each one's nearest hitbox along the ray, if it's in front of the wall.
+  // (Checked after walls so a wall in front of a target blocks the shot.)
+  const wallDistance = best.distance;
+  const hits = [];
   for (const target of shootables) {
     if (!target.isAlive) continue;
+    let nearest = null;
     for (const hitbox of target.hitboxes) {
       const hit = ray.intersectBox(hitbox.box, scratch);
       if (!hit) continue;
       const d = hit.distanceTo(origin);
-      if (d < best.distance) {
-        best.distance = d;
-        best.point.copy(hit);
-        boxNormalAt(hitbox.box, hit, best.normal);
-        best.target = target;
-        best.part = hitbox.part;
+      if (d < wallDistance && (!nearest || d < nearest.distance)) {
+        nearest = { target, part: hitbox.part, point: hit.clone(), normal: new THREE.Vector3(), distance: d };
+        boxNormalAt(hitbox.box, hit, nearest.normal);
       }
     }
+    if (nearest) hits.push(nearest);
   }
+  hits.sort((a, b) => a.distance - b.distance);
+  if (hits.length > maxTargets) hits.length = maxTargets;
 
+  const end = best.point.clone(); // wall or max range
+  const endNormal = best.normal.clone();
+  if (hits.length > 0) {
+    const first = hits[0];
+    best.distance = first.distance;
+    best.point.copy(first.point);
+    best.normal.copy(first.normal);
+    best.target = first.target;
+    best.part = first.part;
+    if (hits.length === maxTargets) end.copy(hits[hits.length - 1].point); // pierce used up: stops in the last one
+  }
+  best.hits = hits;
+  best.end = end;
+  best.endNormal = endNormal; // the wall's facing at `end` (for dust puffs)
   return best;
 }
 

@@ -66,6 +66,8 @@ const colliders = [];
 const map = loadMap('mall', scene, colliders);
 // Debug-only open area for testing movement and shooting (press T).
 const arena = debug.testArena ? buildTestRange(scene, colliders) : null;
+// Live combat bodies also block a vault's path and landing, even without a world collider.
+const shootables = [...(arena ? arena.shootables : [])];
 const input = new Input(renderer.domElement);
 const gamepad = createGamepad(input); // feeds controller buttons/sticks into `input`
 const stats = createPlayerStats();
@@ -75,6 +77,7 @@ const player = new PlayerController({
   stats,
   colliders,
   spawn: map.playerSpawn,
+  getBodies: () => shootables, // live hitboxes also block vault paths/landings
 });
 const hud = createHud();
 // Points. Every gain/spend shows a "+60" / "-500" pop-up by the counter.
@@ -82,8 +85,6 @@ const wallet = createWallet({ onChange: (amount) => hud.pointsPopup(amount) });
 const payForHit = (hit) => wallet.earn(pointsForHit(hit)); // +10 per hit, kill value + bonuses on kills
 const body = createPlayerBody(scene); // legs + torso you see when looking down
 
-// Everything the player can shoot. Practice dummies for now; zombies will join this list.
-const shootables = [...(arena ? arena.shootables : [])];
 const effects = createEffects(scene);
 const sound = createSound(); // synthesized sound effects (starts on the first click/key press)
 const viewmodel = createViewmodel(Object.values(weapons), meleeWeapons.boxCutter); // a model for every gun
@@ -352,9 +353,12 @@ function update(dt) {
   if (debug.cheatKeys && input.consumePress('Quote')) wallet.spend(wallet.points); // ' = points to 0
 
   player.update(dt);
+  // "[Space] Vault" prompt: would a jump press now end in a vault? (checked per tick, shown in render)
+  vaultPromptVisible = player.grounded && !player.vault.active && player.vault.preview();
   interactions.update(dt); // before the gun: on controller X, a hold near a buyable buys instead of reloading
-  melee.update(dt);
-  gun.update(dt, melee.isBusy); // after the player moves, so shots come from this tick's eye position
+  melee.update(dt, !gun.isSwitching);
+  // Hands busy with a slash or a vault: no shooting. A vault only pauses a reload (it carries on after).
+  gun.update(dt, melee.isBusy || player.vault.active, player.vault.active);
   zombies.update(dt);
   // Rounds pause while you're off in the debug test range (zombies can't reach you there).
   if (!(arena && arena.contains(player.position))) rounds.update(dt);
@@ -366,6 +370,7 @@ function update(dt) {
 }
 
 const stickRate = { yaw: 0, pitch: 0 };
+let vaultPromptVisible = false;
 
 // Start of every frame, before the ticks: turn the view by this frame's mouse and stick input,
 // so shots and movement in this frame's ticks use where you're looking NOW (a flick-and-click
@@ -424,6 +429,9 @@ function render(alpha, frameTime) {
   hud.setSprint(player.sprintFraction, player.sprintExhausted, player.isSprinting);
   hud.setAmmo(gun.weapon, buttonLabel('reload'));
   hud.setInteract(game.over ? null : interactions.prompt, buttonLabel('interact'));
+  hud.setVaultPrompt(game.running && !game.over && vaultPromptVisible, buttonLabel('jump'));
+  // DEBUG (debug.vaultDebug, temporary): why the last vault attempt failed. Remove with the flag.
+  if (debug.vaultDebug) hud.setDebugLine(player.vault.lastResult ? `vault: ${player.vault.lastResult}` : '');
   hud.setPoints(wallet.points);
   hud.setRoundFlashing(rounds.inBreak && rounds.round > 1); // counter blinks in the break between rounds
 

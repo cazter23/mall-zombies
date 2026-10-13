@@ -309,6 +309,14 @@ export function createViewmodel(weaponDefs, meleeDef) {
         holder.rotation.x -= e * ws.tiltDegrees * DEG_TO_RAD;
       }
 
+      // Vaulting: tuck the gun away while the standing body rises over the obstacle.
+      const vaultProgress = player.vault.progress;
+      if (vaultProgress !== null) {
+        const tuck = Math.sin(vaultProgress * Math.PI);
+        holder.position.y -= tuck * feel.vault.gunDrop;
+        holder.rotation.x -= tuck * feel.vault.gunTiltDegrees * DEG_TO_RAD;
+      }
+
       // The gun's own moving parts (trigger, hands during the reload).
       model.animate({ sinceFire, reloadProgress: reloadShown, reloadWeight: rw });
 

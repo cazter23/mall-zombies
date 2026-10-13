@@ -14,11 +14,13 @@ wardrobe, mods and hazards, repeat until you die. Death shows a results screen.
 ## Commands
 ```
 npm install        # once
+npm test           # gameplay regressions (Node's built-in test runner)
 npm run dev        # Vite dev server (hot reload)
 npm run build      # production build into dist/; run after every change to catch errors
 npm run preview    # serve the built dist/
 ```
-There are no tests or linter yet. `npm run build` is the compile check (it only bundles; it
+Gameplay regression tests live in `tests/gameplay.test.js`; there is no linter yet.
+`npm run build` is the compile check (it only bundles; it
 does not run the game, so also try changes in `npm run dev`).
 
 ## Rules for working on this project
@@ -54,7 +56,8 @@ src/
                         flash), world.wallBuyDisplay, melee lunge end
     economy.js          Points, payouts, kill values, door + wall-buy prices, round timing, wave scaling + helpers
                         (zombieHealthForRound, zombieCountForRound, spawnDelayForRound, maxAliveForRound)
-    weapons.js          stapleGun (start pistol, semi) + priceGun (wall buy, full auto). Per-weapon stats (fireMode
+    weapons.js          stapleGun (start pistol, semi), priceGun (wall buy, full auto), nailGun (wall buy, semi,
+                        piercing: `pierce: { maxTargets, damageFalloff }`). Per-weapon stats (fireMode
                         'semi' | 'auto', damage, headshot mult, mag, reserve (= max for ammo buys), fire interval, reload, spread
                         cone, ADS time/zoom/gun offset), recoil (camera pitch/yaw/roll + gun-model kick + spring),
                         muzzleFlash (size, colors, ADS shape, lights), sounds, viewmodel (model name, hip
@@ -62,7 +65,7 @@ src/
                         with sounds/jolts), `melee.boxCutter` (damage, reach, cone, swing timing, lunge),
                         weaponStatDefaults for stats
     audio.js            Master volume, pitch variation, compressor, and sound recipes (layers of filtered noise
-                        bursts and tones): staple gun + price gun shots and reloads, dry click, purchase, denied
+                        bursts and tones): staple / price / nail gun shots and reloads, dry click, purchase, denied
     zombies.js          zombieTypes (per-type speed, size, hitboxes, attack, timings, colors, splatter), zombieCrowd
                         (spacing, lanes, queueing, surround rings + sector/still-wrap/circling, contact gap,
                         spawn dust, min spawn distance),
@@ -94,6 +97,8 @@ src/
                         only) + yawKickSpring (sideways, part of the aim; `viewKickYaw`). addRecoil(pitch, roll, yaw)
                         for shots, addViewKick() for instant jolts (hits, melee),
                         updateView(dt) at the END of each tick; syncCamera interpolates both
+    vault.js            Opt-in low-obstacle vault: jump on approach, full-cylinder path/headroom/landing
+                        checks (including live shootables), entry momentum on exit, interrupt on crowd shove
     stats.js            createPlayerStats(): the single stats object (health, speeds, jump, sprint, crouch/slide,
                         regenDelay/regenRate, adsMoveSpeed, damageMultiplier, meleeDamageMultiplier,
                         reloadSpeed)
@@ -116,18 +121,22 @@ src/
                         crosshair (sticky), aims at its chest. Slowdown multiplier (read per frame for stick
                         look), rotational follow of the target's angular motion while a stick is in use, and
                         a 40% ADS snap within 5 deg with a cooldown. Runs inside playerGun.update after aim
-    hitscan.js          castShot(): one ray vs world colliders and shootables' hitboxes; defines the
-                        "shootable" interface (hitboxes, isAlive, takeHit, splatColors)
+    hitscan.js          castShot(origin, dir, range, colliders, shootables, maxTargets = 1): one ray vs world colliders
+                        and shootables' hitboxes. Returns the first hit (target/part/point/normal) plus `hits` (every
+                        shootable hit, nearest first, up to maxTargets, all in front of the first wall), `end` (where
+                        the tracer stops) and `endNormal`. Defines the "shootable" interface (hitboxes, isAlive,
+                        takeHit, splatColors)
     melee.js            createMelee(): box cutter. V = swing; lunges at a target 1.08-3m away; hit at 0.15s on the
                         nearest target in a 40deg cone within 1.8m (walls block); cancels reload; isBusy blocks
-                        the gun; takeHit({ melee: true }) so kills count as melee
+                        the gun; takeHit({ melee: true }) so kills count as melee. Attack heading is committed
+                        until impact; hit recovery 0.22s, miss recovery 0.5s (total 0.37/0.65s)
     playerGun.js        createPlayerGun(): the LOADOUT (2 slots, each { def, weapon, aim }) + glue for the gun in hand
                         (`weapon`, `aim`, `def` getters). give(def): owned = refill; free slot = add + switch to it;
                         full = replace the gun in hand. Switching (switchWeapon / weapon1 / weapon2): the old gun drops
                         (shownDef, switchLower for the viewmodel), the new one rises; no shooting/aiming meanwhile;
                         cancels reloads. owns(id), weaponFor(id), requestReload(). Reads fire (press + held)/reload, onShot cb,
-                        fires hitscan inside the spread cone, applies damage
-                        (headshot x mult x stats.damageMultiplier). Same tick as the shot: player.addRecoil
+                        fires hitscan inside the spread cone, applies damage to every hit
+                        (headshot x mult x pierce falloff x stats.damageMultiplier; points per zombie hit). Same tick as the shot: player.addRecoil
                         (scaled by ADS), viewmodel.fire (gun kick + flash), shot sound, tracer, splatter, hit
                         marker. 'empty' -> viewmodel.dryFire + dry click. Runs viewmodel.reload.events as the
                         reload clock passes them (sound + viewmodel.jolt), so sounds match the animation
@@ -147,6 +156,8 @@ src/
                         arms.js = shared pistol hands (buildPistolArms -> leftArm). stapleGun.js = staple gun,
                         squeeze lever, left hand fetching a staple strip. priceGun.js = orange label gun with a
                         sticker roll on top; lever; reload swaps the roll (rollGone / newRollVisible windows).
+                        nailGun.js = yellow/black framing nailer (piston cap, steel nose that punches forward on each
+                        shot, angled nail magazine); reload slides a fresh strip into the magazine.
                         New gun = new file + 1 line
     muzzleFlash.js      createMuzzleFlash(cfg): 2 sprites (normal-blended orange burst + additive core, random
                         twist/size), hand light + world light (always in the scene at 0 so no shader recompile).
@@ -234,7 +245,8 @@ src/
   `update(dt)` (60Hz): if `game.over` (dead) only zombies/health/death timer run (checked
   first: the mouse is released on death); if not running (pointer unlocked) it freezes the player; otherwise debug
   keys, `player.update`, `interactions.update` (before the gun, so a controller-X hold near a buyable buys instead
-  of reloading), `melee.update`, `gun.update(dt, melee.isBusy)` (after the player so shots use this tick's
+  of reloading), `melee.update` (no new swing while switching/vaulting),
+  `gun.update(dt, melee.isBusy || player.vault.active)` (after the player so shots use this tick's
   eye), `zombies.update`, `rounds.update` (paused while in the test range), `health.update`, `map.update`,
   `arena.update`, `player.updateView` (recoil springs last, so a shot's kick shows on the very next frame),
   `input.endTick()`. `rounds.start()` happens the first tick the game actually runs.
@@ -313,7 +325,13 @@ ledge) and press C, and a slide starts on landing, skipping the cooldown and spr
 tapped in the air, held through landing, pressed up to `slide.chainPressBefore` before the jump, or up to
 `slide.chainPressAfterLanding` after landing. Airborne movement never slows you below your current speed
 (steering only: turning within 90 deg of your travel direction keeps your exact speed; holding the opposite
-way still brakes), so slide-jumps keep their momentum. Crouch/slide tuning is in `feel.crouch` / `feel.slide`.
+way still brakes), so slide-jumps keep their momentum. Chain nerf: each chained (landing) slide in a row, incl.
+after a vault, starts slower: 10.5 -> 9.2 -> 8.0 -> 6.8 -> 5.8 -> 5.0 -> 4.5 m/s (floor; past ~5 chains it's slower
+than walking); a normal sprint slide is always 100%, and 1s on your feet resets the count (`slide.chainSpeed`, `chainResetSeconds`).
+Firing while sprinting drops you to a walk: the running pose snaps away (sprintFx.fireBlendOutSpeed), the shot goes
+off after `sprint.sprintOutSeconds` (0.08s from a full sprint; the click is buffered), and sprint can't resume until
+`sprint.fireBlocksSprintSeconds` (0.3s) after the last pull (player.blockSprint). Crouch/slide tuning is in
+`feel.crouch` / `feel.slide`.
 HUD: white health bar above green stamina bar, bottom-left.
 
 Build step 2 is done: staple gun (hitscan, semi-auto, 40 dmg (now 30), 3x headshots, 12/60 ammo, 1.5s reload, R or
@@ -386,14 +404,54 @@ reloads). Price Gun wall buy on the start room's east wall: chalk outline + the 
 ammo (refills mag + reserve; no prompt when full). Price Gun: full-auto label gun, 22 dmg (x3 head), ~12 shots/s,
 24/120, 1.4s reload, bloom grows while held, small pitch + random sideways camera kick, pink sticker flash, its own
 model/sounds/reload (swaps the label roll). The staple gun has no ammo refill (by design; maybe an ammo cache later).
-Next: part D2, the Nail Gun (1000, concourse outside Nuts & Bolts): hard-hitting semi-auto whose nails pierce
-2-3 zombies in a line.
+Part D2 done (step 4 complete): Nail Gun wall buy on the concourse wall next to Nuts & Bolts (1000, ammo 500; only
+offered once the shutter is open). Semi-auto framing nailer: 90 dmg (x3 head), nails pierce up to 3 zombies in a
+line (100% / 80% / 60% damage; walls still stop them; +10 points per zombie hit), 10/60, 0.25s between shots, 1.8s
+reload, big kick (1.8 deg + sideways wander), tight when you take your time but rushing opens the spread, 28%
+zoom in ADS, dust-and-spark flash, pneumatic THUNK + hiss. Round 1: 2 body shots / 1 headshot (one headshot nail
+can kill a line of round-1 zombies).
+
+Core movement/combat additions: deliberate momentum vaults and committed box-cutter swings.
+- **Vault:** move toward the checkout counter or a concourse bench and press jump (Space / A).
+  Only those colliders are marked `vaultable`; crossing the short side must fit `feel.vault.maxDepth`.
+  Requires a standing, grounded approach, suitable height/speed, full standing-body clearance and a
+  supported, unoccupied landing. Raises before the near edge, crosses above the top, lowers beyond
+  the far edge, and exits with the entry horizontal speed (no added speed). Horizontal speed is constant the
+  whole way (the rise takes near/speed, min one tick; the drop covers `landingDistance` at full speed), so a
+  vault never slows you (measured: sprint 8.00, walk 5.00, slide-in 10.3 m/s in, during and out). C / B during the vault
+  queues the existing landing slide. The whole path is checked before starting and again every tick;
+  a crowd shove or newly blocked path interrupts it. No invulnerability. The shutter cannot be vaulted.
+  The gun lowers, ADS/shooting/reloading/switch input are blocked, and a reload in progress PAUSES
+  (gun.update(dt, blocked, reloadPaused) -> weapon.update({ reloadPaused })) and carries on after.
+  Forgiving trigger (sprinting/walking at it + jump = vault): a press with a vaultable obstacle on your path
+  within `magnetRange` 3m holds (up to `magnetSeconds` 0.4) and vaults once in `reach` (1.7m) instead of
+  jumping early; a jump that started < `airGraceSeconds` 0.2 ago still turns into a vault in the air; your
+  path can cross up to `maxApproachDegrees` 75 off straight-on, and where you LOOK barely matters
+  (`maxLookDegrees` 100); a blocked straight landing tries paths angled `directionSearchDegrees`
+  (0, +-12, +-24). From 1.5 m/s. HUD "[Space] Vault" prompt (vault.preview(): the full plan checked from
+  where you'll be when in reach) whenever a press would vault. DEBUG (temporary, `debug.vaultDebug`): a line at
+  the top shows vault.lastResult (why the last try failed, or "vaulted"); remove the flag + the 'debug-line'
+  bits in hud.js / main.js / style.css. Animation: a speed vault: both legs swing up and out to one side over it (body.js,
+  feel.body.vault*), and the view dips/tilts so you see them (controller.syncCamera, feel.vault.camera*;
+  visual only, the gun is tucked away anyway).
+  Tuning is `feel.vault`; `stats.vaultMaxHeight` and `stats.vaultMomentumRetention` are player modifiers.
+- **Committed melee:** V / RB / R3 fixes the attack direction at swing start. Until the 0.15s impact,
+  turning is limited to +/-12 degrees and new jumps/slides/steering are blocked (existing motion continues).
+  Hit range, target life and walls are rechecked at impact, so a target can evade the slash. Movement returns
+  at impact; gunfire/reload/switching/another slash wait until 0.37s on hit or 0.65s on miss. Inputs during
+  recovery do not queue another slash. Lunges keep some entry speed on exit (85%, at least the existing
+  stationary-lunge carry), end at impact, and use normal collision. Damage and points are unchanged.
+  No melee starts during a vault or weapon switch. Teleport/reset clears pending actions.
+  Timing/turn limit live in `melee.boxCutter`; entry carry is `stats.meleeLungeMomentumRetention`.
+- **Checks:** `npm test` covers vault paths/landings/momentum, interruptions, existing jump/slide behavior,
+  melee commitment/hit validation/recovery, weapon blocking, and reset/pause behavior. Browser smoke checks
+  also verified the actual counter/three benches, shutter purchase, both wall buys, and a real-zombie lunge.
 
 ## Planned build order
 1. Walkable mall (done)
 2. Staple gun: hitscan shooting, headshots, reload, ammo, hit feedback on static targets (done)
 3. Shopper zombies, chasing, attacking with a wind-up, regenerating health, death screen (done, + box cutter melee)
-4. Waves, rounds, points, shutter purchase, first wall buy
+4. Waves, rounds, points, shutter purchase, wall buys (done)
 5. Mall Walker, then the rest of the roster
 6. Wardrobe, claw machine, vendor, Build-A-Blaster, hazards, Flash Sales
 7. Second floor, elevators, navmesh pathfinding

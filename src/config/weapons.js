@@ -250,6 +250,124 @@ export const weapons = {
       },
     },
   },
+
+  // The first real upgrade (concourse, outside Nuts & Bolts, 1000): a framing nailer. Slow, hard-hitting
+  // semi-auto whose nails go through zombies: line up a horde while you train it.
+  nailGun: {
+    id: 'nailGun',
+    name: 'Nail Gun',
+    fireMode: 'semi',
+    damage: 90, // round-1 zombie (150 HP): 2 body / 1 head; round 2 (250): 3 body; round 5 (550): 7 body / 3 head
+    headshotMultiplier: 3,
+    // Each nail goes through up to maxTargets zombies in a line (walls still stop it), doing a bit less
+    // damage to each one it has already passed through.
+    pierce: { maxTargets: 3, damageFalloff: [1, 0.8, 0.6] },
+    magazineSize: 10,
+    startingReserve: 60,
+    fireInterval: 0.25, // ~4 shots per second at most
+    fireBuffer: 0.1,
+    reloadTime: 1.8,
+    range: 100,
+
+    recoil: {
+      pitchDegrees: 1.8, // a big thump per shot...
+      yawDegrees: 0.35,
+      rollDegrees: 0.5,
+      adsMultiplier: 0.65,
+      model: {
+        back: 0.065,
+        up: 0.012,
+        pitchDegrees: 10,
+        yawDegrees: 1.5,
+        rollDegrees: 4,
+        adsMultiplier: 0.4,
+        frequency: 6, // ...and a heavier, slower settle
+        damping: 0.5,
+      },
+    },
+
+    spread: {
+      base: 0.6, // accurate when you take your time
+      moving: 2.4,
+      maxMovingFactor: 1.6,
+      airborne: 3.5,
+      perShot: 1.2, // but rushing shots opens it up
+      maxBloom: 3.0,
+      bloomRecovery: 4,
+      smoothing: 10,
+      adsMultiplier: 0.04,
+    },
+
+    ads: {
+      seconds: 0.2,
+      fovMultiplier: 0.72, // more zoom than the pistols
+      offset: { x: 0, y: -0.09, z: -0.4 }, // front sight just below the crosshair
+    },
+
+    muzzleFlash: {
+      seconds: 0.05,
+      size: 0.18,
+      coreSize: 0.07,
+      outerOpacity: 0.8,
+      sizeJitter: 0.2,
+      forwardOffset: 0.06,
+      outerColor: 0xd8d2c4, // a puff of dust and air from the nose...
+      coreColor: 0xfff1a8, // ...with a little spark
+      adsWidth: 1.7,
+      adsHeight: 0.6,
+      adsTwistFraction: 0.06,
+      lightColor: 0xfff0c0,
+      handLightIntensity: 0.4,
+      handLightRange: 0.8,
+      worldLightIntensity: 6,
+      worldLightRange: 8,
+    },
+
+    sounds: { fire: 'nailShot', dryFire: 'dryClick' },
+
+    tracerColor: 0xb8bec6, // steel nail streak
+    viewmodel: {
+      model: 'nailGun',
+      hipOffset: { x: 0.18, y: -0.15, z: -0.44 },
+      aimYawDegrees: 9,
+      hipPitchDegrees: 2,
+      hipRollDegrees: 4,
+      bodyColor: 0xf2c12e, // power-tool yellow
+      darkColor: 0x232323,
+      metalColor: 0xa7adb5,
+      sightColor: 0xff5a2e,
+      // Trigger pull + the nose punching forward on each shot.
+      fire: { triggerDegrees: 25, nosePunch: 0.012, pressSeconds: 0.025, releaseSeconds: 0.1 },
+      reload: {
+        // The gun tips up and rolls so the magazine faces the left hand, holds, returns.
+        gunKeys: [
+          { t: 0, pos: [0, 0, 0], rot: [0, 0, 0] },
+          { t: 0.15, pos: [-0.01, -0.03, 0.02], rot: [12, 10, 30] },
+          { t: 0.64, pos: [-0.015, -0.035, 0.02], rot: [14, 10, 32] },
+          { t: 0.72, pos: [-0.01, -0.045, 0.02], rot: [8, 8, 26] },
+          { t: 0.9, pos: [0, 0, 0], rot: [0, 0, 0] },
+          { t: 1, pos: [0, 0, 0], rot: [0, 0, 0] },
+        ],
+        // Left hand: drops out of view, comes back to the back of the magazine with a strip, slides it in.
+        handKeys: [
+          { t: 0, pos: [0, 0, 0] },
+          { t: 0.1, pos: [0, 0, 0] },
+          { t: 0.28, pos: [-0.07, -0.25, 0.12], rot: [-20, 0, 0] },
+          { t: 0.42, pos: [-0.07, -0.25, 0.12], rot: [-20, 0, 0] },
+          { t: 0.56, pos: [0.025, -0.02, 0.02], rot: [6, 0, 0] }, // strip lined up behind the magazine
+          { t: 0.67, pos: [0.025, -0.015, -0.06], rot: [6, 0, 0] }, // slid in
+          { t: 0.82, pos: [0, 0, 0] },
+        ],
+        stripVisible: [0.36, 0.67], // the fresh strip is in the hand between these times
+        magEmpty: [0.2, 0.67], // the magazine shows no nails between these
+        events: [
+          { at: 0.12, sound: 'nailReloadOut' }, // magazine latch flipped open
+          { at: 0.66, sound: 'nailReloadIn', jolt: { up: -0.01, back: -0.008, pitchDegrees: -3, rollDegrees: 2 } }, // strip in
+          { at: 0.86, sound: 'nailReloadReady', jolt: { back: 0.006, pitchDegrees: 2.5 } }, // follower snaps shut
+        ],
+      },
+    },
+  },
 };
 
 // The melee weapon: a box cutter from the employee's pocket (COD knife equivalent).
@@ -260,8 +378,11 @@ export const melee = {
     damage: 150, // one-hits a round-1 zombie, 2 hits rounds 2-3, then falls off (like COD)
     range: 1.8, // meters from the eye to the target's nearest point
     hitHalfAngleDegrees: 40, // how far off-center a target can be (wider than the crosshair: forgiving)
-    swingSeconds: 0.5, // whole swing; the gun can't fire during it
     hitAtSeconds: 0.15, // when in the swing the hit lands
+    hitRecoverySeconds: 0.22, // gun and another slash ready 0.37s after a connected swing
+    missRecoverySeconds: 0.5, // whiffing commits the gun for 0.65s in total
+    impactProgress: 0.3, // animation reaches its hit pose at the fixed impact time
+    commitTurnDegrees: 12, // small aim correction before impact; attack direction stays fixed
     lungeRange: 3.0, // a target this close (but out of reach) makes you lurch at it
     lungeSpeed: 9, // m/s during the lunge
     lungeMaxSeconds: 0.2,

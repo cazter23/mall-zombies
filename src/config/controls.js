@@ -32,9 +32,9 @@ export const bindings = {
 
 // Button names shown in on-screen prompts, per device.
 export const buttonLabels = {
-  keyboard: { reload: 'R', melee: 'V', confirm: 'Click', interact: 'F' },
-  xbox: { reload: 'X', melee: 'RB', confirm: 'A', interact: 'X' },
-  playstation: { reload: '□', melee: 'R1', confirm: '✕', interact: '□' },
+  keyboard: { reload: 'R', melee: 'V', confirm: 'Click', interact: 'F', jump: 'Space' },
+  xbox: { reload: 'X', melee: 'RB', confirm: 'A', interact: 'X', jump: 'A' },
+  playstation: { reload: '□', melee: 'R1', confirm: '✕', interact: '□', jump: '✕' },
 };
 
 export const gamepad = {

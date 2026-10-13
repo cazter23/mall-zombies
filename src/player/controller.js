@@ -9,11 +9,12 @@ import * as THREE from 'three';
 import { feel } from '../config/feel.js';
 import { moveAndCollide, hasHeadroom } from '../world/collision.js';
 import { createSpring } from '../core/spring.js';
+import { createVault } from './vault.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 
 export class PlayerController {
-  constructor({ camera, input, stats, colliders, spawn }) {
+  constructor({ camera, input, stats, colliders, spawn, getBodies = () => [] }) {
     this.camera = camera;
     this.input = input;
     this.stats = stats;
@@ -63,11 +64,24 @@ export class PlayerController {
     this.slideChainQueued = false; // C was pressed for this jump; slide on landing
     this.chainPressTimer = 0; // > 0 right after C is pressed mid-slide (C a hair before Space)
     this.chainGraceTimer = 0; // > 0 right after landing from a momentum jump (C a hair late)
+    this.chainCount = 0; // chained slides in a row (each one starts slower; see feel.slide.chainSpeed)
+    this.chainResetTimer = 0; // seconds on your feet since the last slide (resets chainCount)
+    this.slideSpeedScale = 1; // this slide's start-speed multiplier
+    this.sprintBlockTimer = 0; // > 0: no sprinting (just fired the gun)
+    this.vaultHold = 0; // > 0: a jump press is waiting to become a vault (feel.vault.magnetSeconds)
+    this.timeSinceJump = Infinity; // seconds since the last normal jump (a vault can still catch it)
+    this.jumpFloorY = 0; // floor height the last jump started from
 
     // Melee lunge: a short forced dash toward a target (set by weapons/melee.js).
     this.lungeTimer = 0;
     this.lungeVX = 0;
     this.lungeVZ = 0;
+    this.lungeExitSpeed = 0;
+    this.meleeBusy = false; // slash + recovery: blocks a new vault
+    this.meleeCommitted = false; // until impact: no new jump/slide or movement steering
+    this.meleeFacingYaw = 0;
+    this.meleeTurnLimit = 0;
+    this.vault = createVault({ player: this, colliders, getBodies });
 
     // Sprint effects (visual only): 0..1 blend toward "sprinting", step phase, bob strength.
     this.sprintAmount = 0;
@@ -105,7 +119,19 @@ export class PlayerController {
     this.slideChainQueued = false;
     this.chainPressTimer = 0;
     this.chainGraceTimer = 0;
+    this.chainCount = 0;
+    this.chainResetTimer = 0;
+    this.slideSpeedScale = 1;
+    this.sprintBlockTimer = 0;
+    this.vaultHold = 0;
+    this.timeSinceJump = Infinity;
     this.lungeTimer = 0;
+    this.meleeBusy = false;
+    this.meleeCommitted = false;
+    this.vault.reset();
+    this.grounded = false;
+    this.timeSinceGrounded = feel.movement.coyoteTime;
+    this.jumpBuffer = 0;
     this.sprintMeter = this.stats.sprintDuration;
     this.sprintExhausted = false;
   }
@@ -115,6 +141,20 @@ export class PlayerController {
     this.lungeVX = dirX * speed;
     this.lungeVZ = dirZ * speed;
     this.lungeTimer = seconds;
+    this.lungeExitSpeed = Math.max(
+      Math.hypot(this.velocity.x, this.velocity.z) * this.stats.meleeLungeMomentumRetention,
+      speed * feel.melee.lungeEndSpeedKeep,
+    );
+  }
+
+  stopLunge() {
+    if (this.lungeTimer <= 0) return;
+    this.lungeTimer = 0;
+    // Collision can already have stopped us: never restore speed through a wall or crowd.
+    const speed = Math.hypot(this.velocity.x, this.velocity.z);
+    const keep = speed > 0 ? Math.min(1, this.lungeExitSpeed / speed) : 0;
+    this.velocity.x *= keep;
+    this.velocity.z *= keep;
   }
 
   // 0..1, for the HUD health bar
@@ -148,6 +188,10 @@ export class PlayerController {
   clampPitch() {
     const maxPitch = feel.look.maxPitchDegrees * DEG_TO_RAD;
     this.pitch = Math.max(-maxPitch, Math.min(maxPitch, this.pitch));
+    if (this.meleeCommitted) {
+      const offset = Math.atan2(Math.sin(this.yaw - this.meleeFacingYaw), Math.cos(this.yaw - this.meleeFacingYaw));
+      this.yaw = this.meleeFacingYaw + Math.max(-this.meleeTurnLimit, Math.min(this.meleeTurnLimit, offset));
+    }
   }
 
   // Upward view offset from recoil and jolts (radians). Included in the aim.
@@ -208,6 +252,16 @@ export class PlayerController {
     this.prevPosition.copy(this.position);
     this.prevEyeHeight = this.eyeHeight;
 
+    if (this.vault.active) {
+      input.consumeAction('jump'); // a vault never banks another jump
+      if (input.consumeAction('crouch')) this.slideChainQueued = true;
+      this.slideCooldownTimer = Math.max(0, this.slideCooldownTimer - dt);
+      this.updateSprint(dt, this.isSprinting && input.actionDown('sprint') && !this.isAiming);
+      this.vault.update(dt);
+      this.updateMovementEffects(dt);
+      return;
+    }
+
     // --- Which way does the player want to go? (relative to where they look) ---
     // WASD and the left stick combined; a partly pushed stick walks slower.
     const move = input.moveAxis();
@@ -238,7 +292,9 @@ export class PlayerController {
     }
 
     // --- Sprint meter (only while standing and not aiming: crouch, slide or ADS cancels a sprint) ---
+    this.sprintBlockTimer = Math.max(0, this.sprintBlockTimer - dt);
     const wantsSprint =
+      this.sprintBlockTimer <= 0 && // just fired the gun: walking
       input.actionDown('sprint') &&
       this.stance === 'stand' &&
       !this.isAiming &&
@@ -251,21 +307,18 @@ export class PlayerController {
 
     // --- Accelerate toward the target velocity (a slide or melee lunge overrides this) ---
     if (this.lungeTimer > 0) {
-      this.lungeTimer -= dt;
       this.velocity.x = this.lungeVX;
       this.velocity.z = this.lungeVZ;
-      if (this.lungeTimer <= 0) {
-        // Bleed most of the lunge speed so you don't skate past the target.
-        this.velocity.x *= feel.melee.lungeEndSpeedKeep;
-        this.velocity.z *= feel.melee.lungeEndSpeedKeep;
-      }
+      if (this.lungeTimer <= dt) this.stopLunge();
+      else this.lungeTimer -= dt;
     } else if (this.stance === 'slide') {
       // Fast at first, then drops off toward endSpeed. Direction is locked at slide start.
       const t = 1 - this.slideTimer / stats.slideDuration;
-      const speed = feel.slide.endSpeed + (stats.slideSpeed - feel.slide.endSpeed) * (1 - t * t);
+      const startSpeed = stats.slideSpeed * this.slideSpeedScale; // chained slides start slower
+      const speed = feel.slide.endSpeed + (startSpeed - feel.slide.endSpeed) * (1 - t * t);
       this.velocity.x = this.slideDirX * speed;
       this.velocity.z = this.slideDirZ * speed;
-    } else {
+    } else if (!this.meleeCommitted) {
       let targetSpeed = this.isSprinting ? stats.sprintSpeed : stats.walkSpeed;
       if (this.stance === 'crouch') targetSpeed = stats.crouchSpeed;
       targetSpeed *= 1 + (stats.adsMoveSpeed - 1) * this.aimAmount; // slower while aiming
@@ -302,13 +355,37 @@ export class PlayerController {
     }
 
     // --- Jump (with a small buffer and coyote time so it feels forgiving) ---
-    if (input.consumeAction('jump')) this.jumpBuffer = m.jumpBufferTime;
+    if (input.consumeAction('jump') && !this.meleeCommitted) this.jumpBuffer = m.jumpBufferTime;
     else this.jumpBuffer = Math.max(0, this.jumpBuffer - dt);
 
-    const canJump = this.grounded || this.timeSinceGrounded < m.coyoteTime;
-    if (this.jumpBuffer > 0 && canJump) {
+    const canJump = !this.meleeCommitted && (this.grounded || this.timeSinceGrounded < m.coyoteTime);
+    this.timeSinceJump += dt;
+    let vaulted = this.jumpBuffer > 0 && this.vault.tryStart();
+    // Pressed jump a bit early with a vaultable obstacle on your path: wait for it instead of jumping.
+    if (!vaulted && this.jumpBuffer > 0 && canJump && this.vaultHold <= 0 && this.vault.ahead()) {
+      this.vaultHold = feel.vault.magnetSeconds;
+      this.jumpBuffer = 0;
+    }
+    if (this.vaultHold > 0) {
+      this.vaultHold -= dt;
+      vaulted = this.vault.tryStart();
+      if (vaulted) {
+        this.vaultHold = 0;
+      } else if (this.vaultHold <= 0 || !canJump || !this.vault.ahead()) {
+        // Ran out of time, turned away or stopped: it was a normal jump after all.
+        this.vaultHold = 0;
+        if (canJump) this.jumpBuffer = m.jumpBufferTime;
+      }
+    }
+    // A jump that just started can still turn into a vault in the air.
+    if (!vaulted && !this.grounded && this.timeSinceJump < feel.vault.airGraceSeconds) {
+      vaulted = this.vault.tryStart();
+    }
+    if (!vaulted && this.jumpBuffer > 0 && canJump && this.vaultHold <= 0) {
       this.velocity.y = stats.jumpVelocity;
       this.jumpBuffer = 0;
+      this.timeSinceJump = 0;
+      this.jumpFloorY = this.position.y;
       this.grounded = false;
       this.timeSinceGrounded = m.coyoteTime; // no double jumps
       // Jumping while sprinting or sliding: a C press before landing slides you on landing.
@@ -321,49 +398,71 @@ export class PlayerController {
     }
 
     // --- Gravity ---
-    this.velocity.y = Math.max(this.velocity.y - m.gravity * dt, -m.maxFallSpeed);
+    if (vaulted) {
+      this.vault.update(dt);
+    } else {
+      this.velocity.y = Math.max(this.velocity.y - m.gravity * dt, -m.maxFallSpeed);
 
-    // --- Move and collide ---
-    const result = moveAndCollide(
-      this.position,
-      this.velocity,
-      dt,
-      feel.player.radius,
-      this.height,
-      this.colliders,
-      m.stepTolerance,
-    );
-    this.grounded = result.grounded;
-    this.timeSinceGrounded = this.grounded ? 0 : this.timeSinceGrounded + dt;
+      // --- Move and collide ---
+      const result = moveAndCollide(
+        this.position,
+        this.velocity,
+        dt,
+        feel.player.radius,
+        this.height,
+        this.colliders,
+        m.stepTolerance,
+      );
+      this.grounded = result.grounded;
+      this.timeSinceGrounded = this.grounded ? 0 : this.timeSinceGrounded + dt;
+    }
 
-    // --- Sprint effects (visual only): blend, footstep phase, head bob strength ---
-    const fx = feel.sprintFx;
-    const blend = Math.min(1, fx.blendSpeed * dt);
-    this.sprintAmount += ((this.isSprinting ? 1 : 0) - this.sprintAmount) * blend;
-    const onFeet = this.grounded && this.stance !== 'slide';
-    const speed = Math.hypot(this.velocity.x, this.velocity.z);
-    if (onFeet) this.bobPhase += ((speed * dt) / fx.bobStride) * Math.PI * 2;
-    const walkFactor = Math.min(1, speed / stats.walkSpeed);
-    const targetBob = onFeet ? walkFactor * fx.walkBobHeight + this.sprintAmount * fx.sprintBobHeight : 0;
-    this.bobStrength += (targetBob - this.bobStrength) * blend;
+    this.updateMovementEffects(dt);
 
     // Safety net: if we ever fall out of the world, put the player back.
     if (this.position.y < feel.movement.fallOutHeight) this.respawn();
+  }
+
+  updateMovementEffects(dt) {
+    // --- Sprint effects (visual only): blend, footstep phase, head bob strength ---
+    const fx = feel.sprintFx;
+    const blend = Math.min(1, fx.blendSpeed * dt);
+    // Shooting out of a sprint snaps the running pose away fast, so the gun is up for the shot.
+    const poseBlend = this.sprintBlockTimer > 0 ? Math.min(1, fx.fireBlendOutSpeed * dt) : blend;
+    this.sprintAmount += ((this.isSprinting ? 1 : 0) - this.sprintAmount) * poseBlend;
+    const onFeet = this.grounded && this.stance !== 'slide';
+    const speed = Math.hypot(this.velocity.x, this.velocity.z);
+    if (onFeet) this.bobPhase += ((speed * dt) / fx.bobStride) * Math.PI * 2;
+    const walkFactor = Math.min(1, speed / this.stats.walkSpeed);
+    const targetBob = onFeet ? walkFactor * fx.walkBobHeight + this.sprintAmount * fx.sprintBobHeight : 0;
+    this.bobStrength += (targetBob - this.bobStrength) * blend;
   }
 
   // Decides stand / crouch / slide, then sets collision height and eases the camera height.
   updateStance(dt, wishX, wishZ) {
     const input = this.input;
     const stats = this.stats;
-    const cPressed = input.consumeAction('crouch');
-    const cHeld = input.actionDown('crouch');
+    const cPressed = input.consumeAction('crouch') && !this.meleeCommitted;
+    const cHeld = input.actionDown('crouch') && !this.meleeCommitted;
 
     this.slideCooldownTimer = Math.max(0, this.slideCooldownTimer - dt);
     this.chainPressTimer = Math.max(0, this.chainPressTimer - dt);
     this.chainGraceTimer = Math.max(0, this.chainGraceTimer - dt);
+    // Back on your feet for a moment: chained slides are back to full speed.
+    if (this.grounded && this.stance !== 'slide') {
+      this.chainResetTimer += dt;
+      if (this.chainResetTimer >= feel.slide.chainResetSeconds) this.chainCount = 0;
+    }
 
     // Landing slides skip the slide cooldown and don't need sprint; that's the reward for timing it.
-    if (this.stance === 'slide') {
+    if (this.meleeCommitted) {
+      // Existing slides keep running, but a swing cannot start a slide or queue a chain.
+      if (this.stance === 'slide') {
+        this.slideTimer -= dt;
+        if (!this.grounded) this.airborneWithMomentum = true;
+        if (this.slideTimer <= 0 || !this.grounded) this.endSlide();
+      }
+    } else if (this.stance === 'slide') {
       this.slideTimer -= dt;
       // C pressed mid-slide is remembered briefly, in case Space comes a split second later.
       if (cPressed) this.chainPressTimer = feel.slide.chainPressBefore;
@@ -378,7 +477,7 @@ export class PlayerController {
     } else if (this.airborneWithMomentum && this.grounded) {
       // Landed after a sprint/slide-jump: slide if C was pressed in the air or is held.
       if (this.slideChainQueued || cPressed || cHeld) {
-        this.startSlide(wishX, wishZ);
+        this.startSlide(wishX, wishZ, true);
       } else {
         this.chainGraceTimer = feel.slide.chainPressAfterLanding; // still a moment to press C
       }
@@ -388,7 +487,7 @@ export class PlayerController {
       this.slideChainQueued = true;
     } else if (cPressed && this.grounded && this.chainGraceTimer > 0) {
       // C pressed just after landing from a sprint/slide-jump: still counts.
-      this.startSlide(wishX, wishZ);
+      this.startSlide(wishX, wishZ, true);
     } else if (
       cPressed &&
       this.isSprinting &&
@@ -422,8 +521,24 @@ export class PlayerController {
     this.eyeHeight += Math.max(-maxEyeChange, Math.min(maxEyeChange, eyeDiff));
   }
 
-  // Slide in the direction we're moving (or want to move, if nearly stopped).
-  startSlide(wishX, wishZ) {
+  // The gun is being fired: stop sprinting now and for `seconds` (you walk while shooting).
+  blockSprint(seconds) {
+    this.sprintBlockTimer = Math.max(this.sprintBlockTimer, seconds);
+    this.isSprinting = false;
+  }
+
+  // Slide in the direction we're moving (or want to move, if nearly stopped). `chained`: a landing
+  // slide straight out of a jump/vault, which starts slower the more of them you chain in a row.
+  startSlide(wishX, wishZ, chained = false) {
+    if (chained) {
+      const speeds = feel.slide.chainSpeed;
+      this.slideSpeedScale = speeds[Math.min(this.chainCount, speeds.length - 1)];
+      this.chainCount += 1;
+    } else {
+      this.slideSpeedScale = 1;
+      this.chainCount = 0;
+    }
+    this.chainResetTimer = 0;
     const speed = Math.hypot(this.velocity.x, this.velocity.z);
     this.slideDirX = speed > 0.01 ? this.velocity.x / speed : wishX;
     this.slideDirZ = speed > 0.01 ? this.velocity.z / speed : wishZ;
@@ -479,6 +594,16 @@ export class PlayerController {
     const kick = this.prevViewKick + (this.viewKick - this.prevViewKick) * alpha;
     const kickRoll = this.prevViewRoll + (this.rollSpring.value - this.prevViewRoll) * alpha;
     const kickYaw = this.prevViewKickYaw + (this.viewKickYaw - this.prevViewKickYaw) * alpha;
-    this.camera.rotation.set(this.pitch + kick, this.yaw + kickYaw, roll + kickRoll);
+    // Vaulting: the view dips to look over the obstacle and tilts toward the side the legs swing out
+    // to, so you see them go over (visual only; the gun is tucked away during a vault).
+    let vaultDip = 0;
+    let vaultRoll = 0;
+    const vp = this.vault.progress;
+    if (vp !== null) {
+      const s = Math.sin(Math.min(1, vp) * Math.PI);
+      vaultDip = -feel.vault.cameraDipDegrees * DEG_TO_RAD * s;
+      vaultRoll = -feel.body.vaultSide * feel.vault.cameraRollDegrees * DEG_TO_RAD * s;
+    }
+    this.camera.rotation.set(this.pitch + kick + vaultDip, this.yaw + kickYaw, roll + kickRoll + vaultRoll);
   }
 }

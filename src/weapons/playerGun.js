@@ -71,7 +71,9 @@ export function createPlayerGun({
     player.getAim(origin, direction);
     aim.applySpread(direction); // random point inside the current spread cone
     aim.onShot(); // firing quickly widens the cone
-    const shot = castShot(origin, direction, d.range, colliders, shootables);
+    // Piercing guns (def.pierce) go through several zombies in a line, weaker after each one.
+    const pierce = d.pierce ?? null;
+    const shot = castShot(origin, direction, d.range, colliders, shootables, pierce ? pierce.maxTargets : 1);
 
     // Feedback, all this tick. Camera recoil (moves the crosshair, springs back) uses the aim
     // from before the kick, so this shot lands exactly where you were looking.
@@ -86,18 +88,26 @@ export function createPlayerGun({
     );
     viewmodel.fire(ads); // gun kick + muzzle flash (visual only)
     if (sound) sound.play(d.sounds.fire);
-    effects.tracer(viewmodel.getMuzzleWorldPosition(muzzle), shot.point, d.tracerColor);
+    effects.tracer(viewmodel.getMuzzleWorldPosition(muzzle), shot.end, d.tracerColor);
 
-    if (shot.target) {
-      const headshot = shot.part === 'head';
-      const damage = d.damage * (headshot ? d.headshotMultiplier : 1) * stats.damageMultiplier;
-      const { killed } = shot.target.takeHit({ damage, part: shot.part, point: shot.point });
+    // Every zombie the shot went through (just one for most guns), nearest first.
+    let anyKilled = false;
+    shot.hits.forEach((hit, i) => {
+      const headshot = hit.part === 'head';
+      const falloff = pierce ? pierce.damageFalloff[Math.min(i, pierce.damageFalloff.length - 1)] : 1;
+      const damage = d.damage * (headshot ? d.headshotMultiplier : 1) * falloff * stats.damageMultiplier;
+      const { killed } = hit.target.takeHit({ damage, part: hit.part, point: hit.point });
+      anyKilled = anyKilled || killed;
       const count = headshot ? feel.effects.headshotSplatCount : feel.effects.splatCount;
-      effects.splat(shot.point, shot.normal, shot.target.splatColors, count);
-      hud.showHitMarker({ headshot, killed });
-      if (onHit) onHit({ target: shot.target, killed, headshot, melee: false });
-    } else if (shot.distance < d.range) {
-      effects.puff(shot.point, shot.normal); // hit a wall or prop
+      effects.splat(hit.point, hit.normal, hit.target.splatColors, count);
+      if (onHit) onHit({ target: hit.target, killed, headshot, melee: false });
+    });
+    if (shot.hits.length > 0) {
+      hud.showHitMarker({ headshot: shot.hits[0].part === 'head', killed: anyKilled });
+    }
+    // Hit a wall or prop (if the shot made it that far).
+    if (shot.hits.length < (pierce ? pierce.maxTargets : 1) && shot.end.distanceTo(origin) < d.range - 1e-3) {
+      effects.puff(shot.end, shot.endNormal);
     }
     if (onShot) onShot(shot);
     return shot;
@@ -180,7 +190,8 @@ export function createPlayerGun({
     },
 
     // Fixed-tick update. `blocked` (e.g. mid melee swing): no firing, reloading or switching this tick.
-    update(dt, blocked = false) {
+    // `reloadPaused` (e.g. vaulting): a reload in progress waits instead of continuing.
+    update(dt, blocked = false, reloadPaused = false) {
       // --- Weapon switching ---
       const swap = input.consumeAction('switchWeapon');
       const pick1 = input.consumeAction('weapon1');
@@ -197,16 +208,30 @@ export function createPlayerGun({
 
       const slot = slots[current];
       const busy = blocked || switching !== null;
-      slot.aim.update(dt, !switching); // ADS + spread first, so this tick's shot uses them
-      if (aimAssist) aimAssist.update(dt, slot.aim); // then controller aim assist nudges the view
+      slot.aim.update(dt, !busy); // melee/vaulting also lower ADS; no snap during a committed action
+      if (aimAssist) {
+        if (busy) aimAssist.reset();
+        else aimAssist.update(dt, slot.aim);
+      }
       const trigger = input.consumeAction('fire');
+      const triggerHeld = input.actionDown('fire');
       const reload = input.consumeAction('reload') || reloadRequested;
       reloadRequested = false;
+      // Shooting while sprinting: drop to a walk and bring the gun up out of the running pose before
+      // the shot goes off (the click is buffered, so it fires as soon as the gun is up).
+      const wantsToFire = trigger || (triggerHeld && slot.def.fireMode === 'auto');
+      if (wantsToFire && !busy) {
+        if (player.isSprinting || player.sprintAmount > 0.3) {
+          slot.weapon.cooldown = Math.max(slot.weapon.cooldown, feel.sprint.sprintOutSeconds * player.sprintAmount);
+        }
+        player.blockSprint(feel.sprint.fireBlocksSprintSeconds);
+      }
       const result = slot.weapon.update(dt, {
         triggerPressed: trigger,
-        triggerHeld: input.actionDown('fire'),
+        triggerHeld,
         reloadPressed: reload,
         blocked: busy,
+        reloadPaused,
       });
       if (result === 'fire') this.lastShot = fire(slot);
       else if (result === 'empty') {

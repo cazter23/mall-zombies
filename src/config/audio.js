@@ -39,6 +39,17 @@ export const audio = {
       ],
     },
 
+    // Nail Gun shot: a pneumatic THUNK (low thump + metal driver snap) with a short air hiss after it.
+    nailShot: {
+      volume: 0.9,
+      layers: [
+        { type: 'tone', wave: 'sine', freq: 150, freqEnd: 45, gain: 1.0, attack: 0.001, decay: 0.12 },
+        { type: 'noise', filter: 'bandpass', freq: 2800, q: 1.2, gain: 0.7, attack: 0.0008, decay: 0.035 },
+        { type: 'noise', filter: 'lowpass', freq: 800, q: 0.7, gain: 0.5, attack: 0.001, decay: 0.09 },
+        { type: 'noise', filter: 'highpass', freq: 3500, q: 0.7, gain: 0.22, attack: 0.01, decay: 0.14, delay: 0.03 },
+      ],
+    },
+
     // Trigger squeezed on an empty gun: a thin little click.
     dryClick: {
       volume: 0.6,
@@ -89,6 +100,31 @@ export const audio = {
       layers: [
         { type: 'noise', filter: 'bandpass', freq: 3200, q: 1.4, gain: 0.55, attack: 0.0005, decay: 0.025 },
         { type: 'tone', wave: 'sine', freq: 300, freqEnd: 150, gain: 0.25, attack: 0.001, decay: 0.04, delay: 0.03 },
+      ],
+    },
+
+    // Nail Gun reload: magazine latch flipped open...
+    nailReloadOut: {
+      volume: 0.55,
+      layers: [
+        { type: 'noise', filter: 'bandpass', freq: 2200, q: 1.6, gain: 0.55, attack: 0.001, decay: 0.04 },
+        { type: 'tone', wave: 'triangle', freq: 500, freqEnd: 260, gain: 0.25, attack: 0.001, decay: 0.05 },
+      ],
+    },
+    // ...fresh nail strip slid in (a metal scrape)...
+    nailReloadIn: {
+      volume: 0.65,
+      layers: [
+        { type: 'noise', filter: 'bandpass', freq: 3400, q: 3, gain: 0.45, attack: 0.02, decay: 0.08 },
+        { type: 'noise', filter: 'lowpass', freq: 1000, q: 0.8, gain: 0.5, attack: 0.001, decay: 0.05, delay: 0.09 },
+      ],
+    },
+    // ...and the spring follower snapping shut.
+    nailReloadReady: {
+      volume: 0.65,
+      layers: [
+        { type: 'noise', filter: 'bandpass', freq: 3600, q: 1.4, gain: 0.6, attack: 0.0005, decay: 0.025 },
+        { type: 'tone', wave: 'sine', freq: 260, freqEnd: 120, gain: 0.3, attack: 0.001, decay: 0.05, delay: 0.02 },
       ],
     },
 

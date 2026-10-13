@@ -24,6 +24,10 @@ export function createPlayerStats() {
     slideDuration: feel.slide.duration,
     slideCooldown: feel.slide.cooldown,
 
+    vaultMaxHeight: feel.vault.maxHeight,
+    vaultMomentumRetention: feel.vault.momentumRetention,
+    meleeLungeMomentumRetention: feel.melee.entryMomentumKeep,
+
     sprintDuration: feel.sprint.duration,
     sprintRefillDelay: feel.sprint.refillDelay,
     sprintRefillRate: feel.sprint.refillRate,

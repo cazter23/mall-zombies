@@ -54,6 +54,10 @@ export const feel = {
     minToStart: 0.5, // after fully draining, the meter must refill this much before you can sprint again
     requiresForward: true, // like COD: you can only sprint while holding forward...
     minForwardInput: 0.5, // ...at least this much (matters for a controller stick; keys are 1)
+    // Shooting while sprinting drops you to a walk: the gun comes up out of the running pose first
+    // (sprint-out), then the shot goes off. Sprint resumes shortly after you stop shooting.
+    sprintOutSeconds: 0.08, // delay before the first shot when you fire from a full sprint
+    fireBlocksSprintSeconds: 0.3, // no sprinting until this long after the last trigger pull / shot
   },
 
   crouch: {
@@ -73,6 +77,42 @@ export const feel = {
     // Landing slides (jump while sprinting or sliding, press C, slide on landing). Timing windows:
     chainPressBefore: 0.15, // seconds: C pressed this long before jumping out of a slide still counts
     chainPressAfterLanding: 0.2, // seconds: C pressed this long after landing still counts
+    // Each CHAINED slide in a row (landing slides, incl. after a vault) starts slower than the last,
+    // so one or two chains are great but you can't chain-slide forever (a normal sprint slide is 100%).
+    // 10.5 -> 9.2 -> 8.0 -> 6.8 -> 5.8 -> 5.0 (walking speed) -> 4.5 m/s floor: past ~5 chains it's slower than walking.
+    chainSpeed: [0.88, 0.76, 0.65, 0.55, 0.48, 0.43], // start-speed multiplier per chained slide (last one repeats)
+    chainResetSeconds: 1.0, // on your feet (not sliding, not in the air) this long = back to full speed
+  },
+
+  // Jump near a marked low obstacle while moving into it. Carry entry speed out of the vault.
+  vault: {
+    minHeight: 0.25,
+    maxHeight: 1.1,
+    maxDepth: 1.4, // crossed along the approach direction; long sides of benches aren't vaults
+    reach: 1.7, // jump this close to the obstacle (gap from your body to it) and you vault it
+    minSpeed: 1.5, // m/s; a slow walk is enough
+    maxApproachDegrees: 75, // how far off straight-on your path can cross it (steeper runs along a long side)
+    maxLookDegrees: 100, // where you look barely matters: only don't be looking backwards
+    magnetRange: 3.0, // a vaultable obstacle this close on your path: a jump press waits to vault it...
+    magnetSeconds: 0.4, // ...for up to this long (then it's a normal jump)
+    airGraceSeconds: 0.2, // a jump that started this recently can still turn into a vault
+    directionSearchDegrees: [0, 12, -12, 24, -24], // blocked landing? try these slightly angled paths too
+    clearance: 0.08, // feet clear the top (and the counter's decorative lip)
+    landingDistance: 0.45, // clear the far edge, then drop to the floor over this much ground (at full speed)
+    // Speed is constant through a vault. The rise takes at least this long (only matters if you start it
+    // right against the obstacle: then you briefly cover less ground).
+    minLiftSeconds: 1 / 60, // one tick
+    maxSeconds: 1.2,
+    momentumRetention: 1, // never adds speed
+    sweepStep: 0.04, // check the entire cylinder along the path, including overhead
+    landingHeightTolerance: 0.05,
+    displacementTolerance: 0.03, // a crowd shove interrupts the planned path
+    gunDrop: 0.12,
+    gunTiltDegrees: 18,
+    // The view during a vault (visual only: the gun is tucked away, so aim doesn't matter):
+    // it dips to look over the obstacle and tilts toward the side your legs swing out to.
+    cameraDipDegrees: 16,
+    cameraRollDegrees: 7,
   },
 
   look: {
@@ -96,6 +136,7 @@ export const feel = {
   // Making sprinting obvious: head bob, the gun's running pose, and cartoon speed lines.
   sprintFx: {
     blendSpeed: 8, // how fast the effects fade in/out when you start/stop sprinting (per second)
+    fireBlendOutSpeed: 25, // ...and how fast the running pose drops when you shoot out of a sprint
     bobStride: 5.2, // meters per full bob cycle (two footsteps): ~3 steps/s at sprint speed
     walkBobHeight: 0.006, // a barely-there bob when walking...
     sprintBobHeight: 0.035, // ...and a clear one when sprinting
@@ -141,6 +182,7 @@ export const feel = {
   melee: {
     // (the melee button is in config/controls.js -> bindings.melee)
     lungeEndSpeedKeep: 0.3, // fraction of lunge speed kept when it ends (so you don't skate past)
+    entryMomentumKeep: 0.85, // moving into melee carries some speed out of the lunge
   },
 
   camera: {
@@ -240,6 +282,12 @@ export const feel = {
     slideBackFoot: 0.62, // the other foot: less far forward, splayed out to the side
     slideSplay: 0.25, // how far the second foot splays sideways
     airTuck: 0.25, // how far feet pull up while airborne
+    // Vault (speed vault): both legs swing up together and out to one side over the obstacle.
+    vaultSide: -1, // -1 = legs go out to the left (hand on the obstacle on the right), 1 = right
+    vaultFootOut: 0.45, // meters out to the side at the top of the swing
+    vaultFootForward: 0.85, // meters in front of you
+    vaultFootRaise: 0.22, // meters above the hips (legs out nearly level)
+    vaultFeetGap: 0.15, // the two feet, one a little ahead of the other
     blendSpeed: 10, // how fast the legs switch between walk/slide/air poses (per second)
   },
 

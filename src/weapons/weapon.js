@@ -75,9 +75,10 @@ export class Weapon {
    * Advance one tick. `triggerPressed` / `reloadPressed` are one-shot presses; `triggerHeld` is the
    * trigger being held down (a full-auto gun keeps firing while it is).
    * `blocked` (e.g. mid box-cutter swing): nothing fires, and a click queued just before is dropped.
+   * `reloadPaused`: a reload in progress holds where it is (and carries on afterwards).
    * Returns 'fire' if a shot goes off this tick, 'empty' on a dry click, else null.
    */
-  update(dt, { triggerPressed, triggerHeld = false, reloadPressed, blocked = false }) {
+  update(dt, { triggerPressed, triggerHeld = false, reloadPressed, blocked = false, reloadPaused = false }) {
     // The cooldown may dip just below zero on the tick it runs out. If a click is waiting, that
     // leftover fraction of a tick counts toward the next shot, so the real fire rate matches
     // fireInterval instead of rounding up to whole ticks (0.12s, not 0.133s at 60Hz). A gun that
@@ -85,7 +86,8 @@ export class Weapon {
     this.cooldown = this.cooldown > 0 ? this.cooldown - dt : 0;
     this.fireRequest = Math.max(0, this.fireRequest - dt);
 
-    if (this.isReloading) {
+    if (this.isReloading && !reloadPaused) {
+      // (`reloadPaused`: hands busy for a moment, e.g. vaulting: the reload waits, then carries on.)
       this.reloadTimer -= dt;
       if (this.reloadTimer <= 0) this.finishReload();
     }

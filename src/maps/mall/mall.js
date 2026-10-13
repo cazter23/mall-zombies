@@ -78,12 +78,12 @@ export function buildMall(scene, colliders) {
   }
 
   /** Adds a box spanning min..max. Solid (collides) unless { collide: false }. */
-  function box(minX, minY, minZ, maxX, maxY, maxZ, material, { collide = true, name } = {}) {
+  function box(minX, minY, minZ, maxX, maxY, maxZ, material, { collide = true, name, vaultable = false } = {}) {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(maxX - minX, maxY - minY, maxZ - minZ), material);
     mesh.position.set((minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2);
     if (name) mesh.name = name;
     group.add(mesh);
-    if (collide) addCollider(minX, minY, minZ, maxX, maxY, maxZ);
+    if (collide) addCollider(minX, minY, minZ, maxX, maxY, maxZ).vaultable = vaultable;
     return mesh;
   }
 
@@ -241,7 +241,7 @@ export function buildMall(scene, colliders) {
       box(x0 + 0.05, 0, z1 - 0.25, x1 - 0.05, 0.38, z1 - 0.1, legs, { collide: false });
     }
     box(x0, 0.38, z0, x1, 0.45, z1, mat(COLORS.wood), { collide: false, name: 'bench' });
-    addCollider(x0, 0, z0, x1, 0.45, z1);
+    addCollider(x0, 0, z0, x1, 0.45, z1).vaultable = true;
   }
   bench(4.5, -4.6, 6.9, -4.0);
   bench(-8, 3.9, -5.6, 4.5);
@@ -282,7 +282,7 @@ export function buildMall(scene, colliders) {
   // --- Start room props (a closed-down store) -------------------------------
 
   // Checkout counter
-  box(-4.2, 0, 13.6, -1.2, 0.95, 14.4, mat(COLORS.woodDark), { name: 'counter' });
+  box(-4.2, 0, 13.6, -1.2, 0.95, 14.4, mat(COLORS.woodDark), { name: 'counter', vaultable: true });
   box(-4.25, 0.95, 13.55, -1.15, 1.02, 14.45, mat(COLORS.wood), { collide: false });
 
   // Empty shelving unit against the west wall

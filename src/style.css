@@ -336,6 +336,47 @@ kbd {
 
 /* ---------- Prompt under the crosshair ---------- */
 
+/* "[Space] Vault" prompt, just under the crosshair's right side */
+.vault-prompt {
+  position: absolute;
+  left: calc(50% + 46px);
+  top: calc(50% + 20px);
+  display: none;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+  white-space: nowrap;
+}
+.vault-prompt.show {
+  display: block;
+}
+.vault-prompt kbd {
+  display: inline-block;
+  padding: 0 0.35em;
+  margin-right: 0.3em;
+  border: 2px solid #fff;
+  border-radius: 4px;
+  font-family: inherit;
+  text-shadow: none;
+}
+
+/* DEBUG (debug.vaultDebug, temporary): why the last vault failed. Remove with the flag. */
+.debug-line {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  transform: translateX(-50%);
+  display: none;
+  padding: 2px 8px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #9ef0b5;
+  font: 12px/1.4 monospace;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
 /* Buy prompt (doors, wall buys) */
 .interact {
   position: absolute;

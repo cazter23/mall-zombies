@@ -15,10 +15,12 @@
 
 import { buildStapleGunModel, buildStapleGunDisplay } from './stapleGun.js';
 import { buildPriceGunModel, buildPriceGunDisplay } from './priceGun.js';
+import { buildNailGunModel, buildNailGunDisplay } from './nailGun.js';
 
 const builders = {
   stapleGun: { model: buildStapleGunModel, display: buildStapleGunDisplay },
   priceGun: { model: buildPriceGunModel, display: buildPriceGunDisplay },
+  nailGun: { model: buildNailGunModel, display: buildNailGunDisplay },
 };
 
 function builderFor(def) {
