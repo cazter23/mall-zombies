@@ -9,7 +9,8 @@
 //   group         THREE.Group holding EVERYTHING the map added (meshes, lights,
 //                 debug markers), so removing it unloads the map's visuals
 //   zones         { [zoneId]: { label, open } }   the starting zone is open
-//   doors         [door]   buyable barriers that open zones (world/door.js)
+//   doors         [door]   buyable barriers that open zones (world/door.js); several doors
+//                 may open the same zone (it's open while any of them is)
 //   spawnPoints   [{ name, zone, position }]      zombie spawns, tagged by zone
 //   wallBuys      [{ name, zone, position, normal, weapon }]  weapon id per spot
 //   playerSpawn   { position, yaw }
@@ -17,7 +18,8 @@
 //   reset()       new run: close doors, lock zones
 //   dispose()     remove the map from the scene
 // Its solid boxes are pushed into the shared `colliders` array passed in (the
-// player, zombies and bullets all use that one list).
+// player, zombies and bullets all use that one list). Maps build with the map kit
+// (world/mapKit.js: boxes, walls with doorways, shutter doors, signs, markers).
 // =============================================================================
 
 import { buildMall } from './mall/mall.js';

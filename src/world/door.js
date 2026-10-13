@@ -3,11 +3,24 @@
 // A buyable barrier between two zones (COD "door"). Wraps whatever physically
 // blocks the way (for now a roll-up shutter, world/shutter.js) and the zone it
 // unlocks. Opening it is permanent for the run; resetting closes it again.
-// Maps create doors; the interaction system (step 4 part C) sells them.
+// Maps create doors; the interaction system (game/interactions.js) sells them.
+//
+// Several doors may open the SAME zone (e.g. a food court reachable from two
+// sides): each door is bought separately, the zone counts as open while at
+// least one of its doors is open, and only locks again when all are closed.
 // =============================================================================
 
+// zone object -> Set of the door ids currently holding it open. Kept outside the zone
+// objects so the map's zone table stays a plain { label, open } per zone.
+const openedBy = new WeakMap();
+
+function holders(zone) {
+  if (!openedBy.has(zone)) openedBy.set(zone, new Set());
+  return openedBy.get(zone);
+}
+
 /**
- * @param id         stable id, e.g. 'startShutter'
+ * @param id         stable id, e.g. 'startShutter' (unique per map)
  * @param label      shown in prompts, e.g. 'Security Shutter'
  * @param price      points to open
  * @param opensZone  zone id unlocked when opened
@@ -16,6 +29,8 @@
  * @param position   THREE.Vector3 where the player interacts with it
  */
 export function createDoor({ id, label, price, opensZone, zones, barrier, position }) {
+  const zone = zones[opensZone];
+  if (!zone) throw new Error(`Door "${id}" opens unknown zone "${opensZone}"`);
   let isOpen = false;
 
   return {
@@ -33,7 +48,8 @@ export function createDoor({ id, label, price, opensZone, zones, barrier, positi
     open() {
       if (isOpen) return;
       isOpen = true;
-      zones[opensZone].open = true;
+      holders(zone).add(id);
+      zone.open = true;
       barrier.open();
     },
 
@@ -43,10 +59,12 @@ export function createDoor({ id, label, price, opensZone, zones, barrier, positi
       else this.open();
     },
 
-    // Closed again, zone locked again (new run).
+    // Closed again (new run). Its zone locks again unless another of its doors is still open.
     reset() {
       isOpen = false;
-      zones[opensZone].open = false;
+      const held = holders(zone);
+      held.delete(id);
+      zone.open = held.size > 0;
       barrier.close();
     },
 

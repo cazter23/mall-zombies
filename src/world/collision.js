@@ -6,6 +6,18 @@
 // Pushing out along the contact normal is what makes you slide along walls.
 // =============================================================================
 
+// The shared collider list can change while the game runs (a door's shutter adds or removes its box).
+// Whatever changes it calls markCollidersChanged(); anything that caches work built from the list
+// (the zombie navigation grid) compares colliderSignature() to know when to rebuild. The length alone
+// isn't enough: one door opening and another closing in the same tick keeps the same length.
+export function markCollidersChanged(colliders) {
+  colliders.version = (colliders.version ?? 0) + 1;
+}
+
+export function colliderSignature(colliders) {
+  return `${colliders.length}:${colliders.version ?? 0}`;
+}
+
 // Distance-squared from point (x, z) to a box's footprint on the ground plane.
 function distSqToBoxXZ(x, z, box) {
   const cx = Math.max(box.min.x, Math.min(x, box.max.x));

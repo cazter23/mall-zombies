@@ -13,6 +13,7 @@
 // =============================================================================
 
 import { zombieNav } from '../config/zombies.js';
+import { colliderSignature } from '../world/collision.js';
 
 const SQRT2 = Math.SQRT2;
 // 8 neighbours: [dx, dz, cost]
@@ -23,6 +24,8 @@ const NEIGHBORS = [
 
 /**
  * @param colliders  the shared world collider list (Box3s); rebuilt automatically when it changes
+ *                   (any add/remove marked with world/collision.js markCollidersChanged). The grid
+ *                   covers every collider's footprint, so a bigger map needs no settings here.
  * @param agent      { radius, height } of the zombies using this grid
  */
 export function createNavigation(colliders, agent) {
@@ -34,7 +37,7 @@ export function createNavigation(colliders, agent) {
   let walkable = new Uint8Array(0);
   let nearWall = new Uint8Array(0); // 1 = walkable cell touching a blocked one (costs extra to walk)
   let dist = new Float32Array(0);
-  let builtForColliderCount = -1;
+  let builtForSignature = null; // colliderSignature() the grid was built for
   let refreshTimer = 0;
   let hasField = false;
 
@@ -74,7 +77,7 @@ export function createNavigation(colliders, agent) {
 
   function build() {
     const n = colliders.length;
-    builtForColliderCount = n;
+    builtForSignature = colliderSignature(colliders);
     if (n === 0) return;
 
     // Grid covers every collider's footprint.
@@ -276,7 +279,7 @@ export function createNavigation(colliders, agent) {
     // and refresh the field toward the player a few times a second.
     update(dt, target) {
       let rebuilt = false;
-      if (colliders.length !== builtForColliderCount) {
+      if (colliderSignature(colliders) !== builtForSignature) {
         build();
         rebuilt = true;
       }
@@ -287,9 +290,9 @@ export function createNavigation(colliders, agent) {
       }
     },
 
-    // Force a rebuild next tick (call if colliders change without the count changing).
+    // Force a rebuild next tick (normally not needed: colliderSignature() catches every marked change).
     markDirty() {
-      builtForColliderCount = -1;
+      builtForSignature = null;
     },
 
     // Walking distance (meters) from a point to the player, or Infinity if unreachable.

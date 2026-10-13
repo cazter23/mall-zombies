@@ -20,7 +20,8 @@ npm run build      # production build into dist/; run after every change to catc
 npm run preview    # serve the built dist/
 ```
 Gameplay regression tests live in `tests/` (`gameplay.test.js` movement/melee/vault, `aim.test.js` spread,
-`zombies.test.js` zombie types/mix/rounds); there is no linter yet.
+`zombies.test.js` zombie types/mix/rounds, `maps.test.js` wall pieces, shared-zone doors, nav rebuilds); there is
+no linter yet.
 `npm run build` is the compile check (it only bundles; it
 does not run the game, so also try changes in `npm run dev`).
 
@@ -180,7 +181,8 @@ src/
     navigation.js       createNavigation(): flow field on a 0.5m ground-floor grid built from colliders (floor =
                         box top at y~0; obstacles padded by zombie radius; cells within extraClearance cost extra
                         so routes stay off walls but narrow gaps still connect). Dijkstra from the player every
-                        0.2s; rebuilds when colliders.length changes (shutter). directionTo(from, target, out,
+                        0.2s; rebuilds when colliderSignature() changes (count + version, see collision.js). The grid
+                        covers every collider's footprint, so bigger maps need no settings. directionTo(from, target, out,
                         { laneOffset, laneFade, lookAhead }) walks straight if the line is clear, else follows the
                         field; each zombie's own lane offset shifts its aim sideways. Also clearLine(), isWalkableAt().
                         The field is seeded only from cells near the player with no wall in between (a real ray vs
@@ -236,9 +238,13 @@ src/
   maps/
     index.js            Map registry + loadMap(id, scene, colliders) + THE MAP INTERFACE (id, group, zones, doors,
                         spawnPoints, wallBuys, playerSpawn, update, reset, dispose). New map = new folder + 1 line
-    mall/mall.js        buildMall(scene, colliders): the mall. Zones startRoom (open) / concourse; shutter door
+    mall/mall.js        buildMall(scene, colliders): the mall's LAYOUT only (rooms, doors, props, lights, markers), built
+                        with the map kit + mall props. Zones startRoom (open) / concourse; shutter door
                         (500) opens the concourse; wall buys priceGun (start room) + nailGun (outside Nuts & Bolts).
                         All meshes, lights and debug markers live in its group. Exports LAYOUT
+    mall/props.js       createMallProps(kit): shopFront({ along 'x'|'z', from, to, wallAt, facing, color, text }), pillar,
+                        bench (vaultable), planter ({ tree }), lightPanel ({ dead })
+    mall/palette.js     COLORS shared by the mall's rooms and props
     testRange/          Debug add-on (not a map): testRange.js buildTestRange(scene, colliders) with own lights,
                         dummy.js practice mannequins (shootables)
   audio/
@@ -248,12 +254,18 @@ src/
   fx/
     effects.js          Tracers (pooled) + particle bursts (one InstancedMesh): splat(), puff(), clear() (new run)
   world/                Shared building blocks for maps
-    door.js             createDoor(): buyable barrier (price, opensZone) wrapping a shutter; open/reset/toggle
+    mapKit.js           createMapKit(group, colliders): mat, addCollider, box, sign, tiledFloor, wall({ along, from, to,
+                        at0, at1, height, openings: [{ from, to, top }] }) (doorways get lintels), shutterDoor({ id, label,
+                        price, opensZone, zones, doorway, text }), markers(). wallSegments(): the pure wall math (tested)
+    door.js             createDoor(): buyable barrier (price, opensZone) wrapping a shutter; open/reset/toggle. Several
+                        doors may open the same zone: it stays open while any of them is open (tracked per zone)
     wallBuy.js          createWallBuyDisplay(): chalk outline (textures.makeChalkTexture) + the gun on two pegs, side on
     collision.js        moveAndCollide(): horizontal push-out (also removes the velocity going into the wall, so
                         a pinned mover reads speed 0 and slides along walls) then vertical landing/ceiling vs. Box3 list;
                         hasHeadroom(): can the player stand up here? overlapsSolid(): would a body overlap a wall?
-    shutter.js          createShutter(): roll-up barrier with its own Box3 collider (open/close/toggle/update)
+                        markCollidersChanged(colliders) after adding/removing a collider at runtime; colliderSignature()
+    shutter.js          createShutter(): roll-up barrier with its own Box3 collider (open/close/toggle/update); marks
+                        collider changes
     textures.js         Procedural canvas textures (floor tile, shop sign, shutter, muzzle flash burst, wall-buy chalk). No image files.
   ui/
     settingsMenu.js     createSettingsMenu(settings): builds the options screen from the settings list (tabs, rows per type:
@@ -507,6 +519,13 @@ spawns from round 4, 25% from 6, 30% from 9 (part of the normal count); in its f
 to be one if none came yet, and its first spawn in a run plays the PA chime + "Attention shoppers / Mall Walkers
 have entered the building" banner. Debug: Shift+Z spawns one. Verified in the browser (looks, power walk, a real
 hit + winded pose, round-4 banner) and by tests/zombies.test.js.
+
+Map expansion planned (before Cart Pusher / Mannequin / shop systems): a ground-floor loop. Mega Mart (east, door
+750), Food Court (south, door 1000 from the Mega Mart AND a second 1000 door from the corridor; one zone),
+Service Corridor (west, door 1250). Step 1 done (groundwork, no visible change): map kit (world/mapKit.js) + mall
+props/palette split out of mall.js (verified identical: same 105 objects, 71 colliders, spawns, wall buys, door, in
+the same order); doors can share a zone; the nav grid rebuilds on any marked collider change (count + version).
+Next: step 2 = Mega Mart + 750 door.
 
 ## Planned build order
 1. Walkable mall (done)

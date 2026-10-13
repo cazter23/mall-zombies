@@ -6,6 +6,7 @@
 
 import * as THREE from 'three';
 import { feel } from '../config/feel.js';
+import { markCollidersChanged } from './collision.js';
 
 export function createShutter({ name, minX, maxX, minZ, maxZ, height, material, colliders }) {
   const width = maxX - minX;
@@ -20,16 +21,21 @@ export function createShutter({ name, minX, maxX, minZ, maxZ, height, material, 
   // The collider covers the full doorway thickness so the player can't wedge into it.
   const collider = new THREE.Box3(new THREE.Vector3(minX, 0, minZ), new THREE.Vector3(maxX, height, maxZ));
   colliders.push(collider);
+  markCollidersChanged(colliders);
 
   let state = 'closed'; // 'closed' | 'opening' | 'open' | 'closing'
   let raised = 0; // meters the shutter has rolled up
 
   function addCollider() {
-    if (!colliders.includes(collider)) colliders.push(collider);
+    if (colliders.includes(collider)) return;
+    colliders.push(collider);
+    markCollidersChanged(colliders);
   }
   function removeCollider() {
     const i = colliders.indexOf(collider);
-    if (i !== -1) colliders.splice(i, 1);
+    if (i === -1) return;
+    colliders.splice(i, 1);
+    markCollidersChanged(colliders);
   }
 
   return {
