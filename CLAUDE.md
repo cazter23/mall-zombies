@@ -20,8 +20,9 @@ npm run build      # production build into dist/; run after every change to catc
 npm run preview    # serve the built dist/
 ```
 Gameplay regression tests live in `tests/` (`gameplay.test.js` movement/melee/vault, `aim.test.js` spread,
-`zombies.test.js` zombie types/mix/rounds, `maps.test.js` wall pieces, shared-zone doors, nav rebuilds); there is
-no linter yet.
+`zombies.test.js` zombie types/mix/rounds, `maps.test.js` wall pieces, shared-zone doors, nav rebuilds,
+`mall.test.js` the REAL mall built in Node with a stub canvas: door ladder, spawn points on clear floor, zones
+sealed until their door is bought, vaultable counters); there is no linter yet.
 `npm run build` is the compile check (it only bundles; it
 does not run the game, so also try changes in `npm run dev`).
 
@@ -85,7 +86,7 @@ src/
     settings.js         THE LIST of player settings (options menu): { id, tab, label, type toggle|slider|select, default,
                         min/max/step, format, apply(value, ctx) }. Most apply() functions write into the config objects the
                         game reads every frame (feel, controls, audio). New setting = one entry here (new tab = add to settingsTabs)
-    debug.js            showMarkers, allowShutterToggle (O key: doors free), testArena (T key), zombieKeys
+    debug.js            showMarkers, allowShutterToggle (O key: every door open/closed for free), testArena (T key), zombieKeys
                         (Z spawn Shopper / Shift+Z Mall Walker / X clear), cheatKeys (N next round / P +5000 points / ' points to 0), dummies, exposeToWindow
   core/
     loop.js             startLoop(): fixed-timestep accumulator; each frame calls beforeUpdate(frameTime) (look
@@ -239,11 +240,15 @@ src/
     index.js            Map registry + loadMap(id, scene, colliders) + THE MAP INTERFACE (id, group, zones, doors,
                         spawnPoints, wallBuys, playerSpawn, update, reset, dispose). New map = new folder + 1 line
     mall/mall.js        buildMall(scene, colliders): the mall's LAYOUT only (rooms, doors, props, lights, markers), built
-                        with the map kit + mall props. Zones startRoom (open) / concourse; shutter door
-                        (500) opens the concourse; wall buys priceGun (start room) + nailGun (outside Nuts & Bolts).
-                        All meshes, lights and debug markers live in its group. Exports LAYOUT
+                        with the map kit + mall props. Zones startRoom (open) / concourse / megaMart; doors: start
+                        shutter (500) -> concourse, Mega Mart shutter (750, concourse east wall) -> megaMart; wall buys
+                        priceGun (start room) + nailGun (outside Nuts & Bolts) + a reserved spot in the Mega Mart
+                        (weapon 'foamDartBlaster', inert until that gun exists). All meshes, lights and debug markers
+                        live in its group. Exports LAYOUT (concourse, startRoom, doorway, megaMart, megaMartDoorway)
     mall/props.js       createMallProps(kit): shopFront({ along 'x'|'z', from, to, wallAt, facing, color, text }), pillar,
-                        bench (vaultable), planter ({ tree }), lightPanel ({ dead })
+                        bench (vaultable), planter ({ tree }), lightPanel ({ dead }), gondola (solid double-sided shelf,
+                        products = one seeded InstancedMesh), checkout (vaultable counter + register + lane light),
+                        wallDoor (painted service/exit door + sign), boardedVent, wallStripe
     mall/palette.js     COLORS shared by the mall's rooms and props
     testRange/          Debug add-on (not a map): testRange.js buildTestRange(scene, colliders) with own lights,
                         dummy.js practice mannequins (shootables)
@@ -265,8 +270,9 @@ src/
                         hasHeadroom(): can the player stand up here? overlapsSolid(): would a body overlap a wall?
                         markCollidersChanged(colliders) after adding/removing a collider at runtime; colliderSignature()
     shutter.js          createShutter(): roll-up barrier with its own Box3 collider (open/close/toggle/update); marks
-                        collider changes
+                        collider changes; the slab is thin along the wall's thickness (doorways in X or Z walls)
     textures.js         Procedural canvas textures (floor tile, shop sign, shutter, muzzle flash burst, wall-buy chalk). No image files.
+                        seededRandom(seed): deterministic random (also used for shelf stock)
   ui/
     settingsMenu.js     createSettingsMenu(settings): builds the options screen from the settings list (tabs, rows per type:
                         checkbox / range + readout / select). Opened by the pause screen's Settings button (controller: Y);
@@ -351,15 +357,22 @@ src/
   Player is a cylinder (radius, height, feet position). Boxes whose top is within `stepTolerance`
   of the feet count as floor, not walls.
 - Coordinates: meters, +Y up. Camera looks down -Z at yaw 0.
-- Markers (invisible; shown if `debug.showMarkers`): `map.spawnPoints` (6: 2 start-room vents, 4 concourse
-  shopfronts, each tagged with its zone) and `map.wallBuys` (2, with an outward `normal` and a `weapon` id).
+- Markers (invisible; shown if `debug.showMarkers`): `map.spawnPoints` (10: 2 start-room vents, 4 concourse
+  shopfronts, 4 Mega Mart: stockroom, receiving, back vent, emergency exit; each tagged with its zone) and
+  `map.wallBuys` (3, with an outward `normal` and a `weapon` id; the Mega Mart one is reserved/inert).
 
 ## Map (current)
 - Main concourse: x -20..20, z -6..6, 6m ceiling. Four decorative shopfronts (Good Sports, Nuts & Bolts,
-  Play Time Toys, Byte Me Electronics), pillars, benches, planters, ceiling lights.
+  Play Time Toys, Byte Me Electronics), pillars, benches, planters (two flank the Mega Mart entrance), ceiling
+  lights. East wall: the Mega Mart entrance (4m shutter, z -2..2) under a MEGA MART sign.
 - Start room: x -5..5, z 6..16 (north of concourse), 4m ceiling, checkout counter, shelf, crates, boarded vents.
 - 4m doorway at z=6 blocked by a security shutter door (500 in economy.js) that opens the concourse zone.
   Hold **F** (controller: hold **X**) near it to buy it. Debug: press **O** to toggle doors for free.
+- Mega Mart: x 20..34, z -24..6, 5m ceiling, behind the 750 shutter. Front: 4 checkout lanes (vaultable counters,
+  x 24.5..27.5, 2m lanes, open ends to run round). Back: 3 stocked shelf gondolas (x 24 / 27.5 / 31, z -19.5..-8,
+  solid, 2m tall) making 4 aisles (west one 3.2m wide: the future Food Court door goes on that wall), a 4.5m back
+  walkway with stockroom/receiving doors + a boarded vent, an emergency exit on the east wall. Brand stripe,
+  aisle signs, fluorescent strips (some dead), 2 point lights.
 - Wall-buy spots: start room east wall (5, 1.5, 10) = Price Gun; concourse south wall (7.7, 1.5, -6) = Nail Gun.
 - Player spawns at (0, 0, 12) facing the shutter.
 
@@ -525,7 +538,10 @@ Map expansion planned (before Cart Pusher / Mannequin / shop systems): a ground-
 Service Corridor (west, door 1250). Step 1 done (groundwork, no visible change): map kit (world/mapKit.js) + mall
 props/palette split out of mall.js (verified identical: same 105 objects, 71 colliders, spawns, wall buys, door, in
 the same order); doors can share a zone; the nav grid rebuilds on any marked collider change (count + version).
-Next: step 2 = Mega Mart + 750 door.
+Step 2 done: the Mega Mart + its 750 door (see Map). Verified: tests/mall.test.js (sealed until bought, all 4 spawns +
+every aisle reachable after, reset seals it again), and in the browser (entrance + shutter look right, a real F-hold
+is refused at 500 points and buys at 750, the player walks in, zombies from all 3 back spawns reach the front in
+~8s and from the far concourse in ~12s). Next: step 3 = Food Court + its 1000 door from the Mega Mart.
 
 ## Planned build order
 1. Walkable mall (done)

@@ -115,8 +115,10 @@ test('a winded Mall Walker stops, then follows at half speed, then full speed', 
   assert.ok(f.zombie.horizontalSpeed > f.zombie.speed * 0.95, 'back to full power-walk speed');
   assert.ok(f.zombie.speed > feel.movement.walkSpeed, 'outpaces a walking player');
   assert.ok(!f.sounds.some((s) => s.name === 'walkerHuff'), 'too far away to hear (past maxDistance)');
-  f.player.position.z = f.zombie.position.z - 8; // within earshot
-  for (let i = 0; i < 90; i++) f.zombie.update(dt, f.ctx);
+  // Within earshot (huff maxDistance 12) and far enough that it keeps chasing for longer than one
+  // huff interval (1.3s) before reaching attack range: 11m at 5.4 m/s = ~1.8s of chasing.
+  f.player.position.z = f.zombie.position.z - 11;
+  for (let i = 0; i < 100; i++) f.zombie.update(dt, f.ctx);
   const huff = f.sounds.find((s) => s.name === 'walkerHuff');
   assert.ok(huff && huff.volume > 0 && huff.volume < 1, 'huffs while chasing, quieter with distance');
 });

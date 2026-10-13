@@ -22,4 +22,23 @@ export const COLORS = {
   lightPanel: 0xfffbea,
   deadLightPanel: 0x9a978f,
   shopFrame: 0x2b2b2b,
+
+  // Mega Mart (big-box store): cool white walls, blue + yellow brand stripe, steel shelving.
+  megaMartWall: 0xdfe3e6,
+  megaMartBlue: 0x1d4e89,
+  megaMartYellow: 0xffd23f,
+  gondolaBase: 0x4a5560,
+  gondolaPanel: 0xb8bfc6,
+  gondolaShelf: 0xd2d7dc,
+  checkoutBody: 0x34495e,
+  checkoutTop: 0xd9d9d9,
+  checkoutBelt: 0x1f1f22,
+  register: 0x2b2f36,
+  registerScreen: 0x63e6be,
+  serviceDoor: 0x7d8790,
+  exitDoor: 0x9b2c2c,
+  doorWindow: 0x24405e,
+  plank: 0x7a5230,
+  // Product boxes on the shelves (cereal, snacks, detergent, toys...)
+  products: [0xff4f9a, 0xffd23f, 0x2ec4b6, 0xff8a3d, 0x9b6bff, 0x58c46b, 0xe63946, 0x3a86ff, 0xf1faee, 0xffb4a2],
 };

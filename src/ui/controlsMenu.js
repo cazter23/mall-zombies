@@ -34,7 +34,7 @@ export function createControlsMenu() {
 
   // Debug hints (only for the debug features that are switched on).
   const hints = [];
-  if (debug.allowShutterToggle) hints.push('O opens the shutter');
+  if (debug.allowShutterToggle) hints.push('O opens/closes every door');
   if (debug.testArena) hints.push('T teleports to the movement test range');
   if (debug.zombieKeys) hints.push('Z spawns a Shopper (Shift+Z: a Mall Walker), X clears them');
   if (debug.cheatKeys) hints.push("N next round, P +5000 points, ' points to 0");

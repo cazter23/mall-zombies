@@ -16,8 +16,8 @@ function finish(canvas, { repeat = false } = {}) {
   return texture;
 }
 
-// Tiny deterministic random so tiles look the same every time.
-function seededRandom(seed) {
+// Tiny deterministic random so tiles (and prop layouts) look the same every time. `seed` >= 1.
+export function seededRandom(seed) {
   let s = seed;
   return () => {
     s = (s * 16807) % 2147483647;

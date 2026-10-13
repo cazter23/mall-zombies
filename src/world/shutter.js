@@ -12,8 +12,12 @@ export function createShutter({ name, minX, maxX, minZ, maxZ, height, material, 
   const width = maxX - minX;
   const depth = maxZ - minZ;
 
-  // The visible slab is a bit thinner than the doorway so it hides inside the lintel when open.
-  const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth * 0.5), material);
+  // The visible slab is a bit thinner than the doorway (along the wall's thickness, whichever axis
+  // that is) so it hides inside the lintel when open.
+  const geometry = width >= depth
+    ? new THREE.BoxGeometry(width, height, depth * 0.5) // doorway in a wall running along X
+    : new THREE.BoxGeometry(width * 0.5, height, depth); // doorway in a wall running along Z
+  const mesh = new THREE.Mesh(geometry, material);
   mesh.name = name;
   mesh.position.set((minX + maxX) / 2, height / 2, (minZ + maxZ) / 2);
   mesh.userData = { kind: 'shutter', id: name };

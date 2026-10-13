@@ -7,7 +7,7 @@ export const debug = {
   // Show the invisible marker objects (zombie spawns = red pillars, wall buys = green boxes).
   showMarkers: false,
 
-  // Press O to open/close the start-room shutter. Temporary until buying doors exists.
+  // Press O to open/close every door for free (testing).
   allowShutterToggle: true,
 
   // Build the open movement test range (src/maps/testRange/). Press T to teleport there and back.

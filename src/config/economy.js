@@ -41,7 +41,8 @@ export const economy = {
 
   // Door / shutter prices
   doors: {
-    startShutter: 500,
+    startShutter: 500, // start room -> concourse
+    megaMart: 750, // concourse (east end) -> Mega Mart
   },
 
   // Wall-buy weapon prices. Buying a weapon you already own refills its ammo for `ammo`.
