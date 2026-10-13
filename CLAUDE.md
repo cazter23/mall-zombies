@@ -22,7 +22,8 @@ npm run preview    # serve the built dist/
 Gameplay regression tests live in `tests/` (`gameplay.test.js` movement/melee/vault, `aim.test.js` spread,
 `zombies.test.js` zombie types/mix/rounds, `maps.test.js` wall pieces, shared-zone doors, nav rebuilds,
 `mall.test.js` the REAL mall built in Node with a stub canvas: door ladder, spawn points on clear floor, zones
-sealed until their door is bought, vaultable counters); there is no linter yet.
+sealed until their door is bought, vaultable counters, the sealed escalator (a real PlayerController sprint-jumping
+at it never gets on; you can walk under its high end), the ceiling hole); there is no linter yet.
 `npm run build` is the compile check (it only bundles; it
 does not run the game, so also try changes in `npm run dev`).
 
@@ -246,11 +247,16 @@ src/
                         Food Court shutter (1000, hallway south wall) -> foodCourt; wall buys priceGun (start room) +
                         nailGun (hallway south wall) + a reserved spot in the Mega Mart (weapon 'foamDartBlaster', inert
                         until that gun exists). All meshes, lights and debug markers live in its group. Exports LAYOUT
-                        (startRoom, hallway, foodCourt, megaMart, doorway, foodCourtDoorway, megaMartDoorway)
+                        (startRoom, hallway, foodCourt, megaMart, doorway, foodCourtDoorway, megaMartDoorway, escalator,
+                        elevator). The hallway ceiling is a kit.slab with a hole where the escalator passes through
     mall/props.js       createMallProps(kit): shopFront({ along 'x'|'z', from, to, wallAt, facing, color, text }), pillar,
                         bench (vaultable), planter ({ tree }), lightPanel ({ dead }), gondola (solid double-sided shelf,
                         products = one seeded InstancedMesh), checkout (vaultable counter + register + lane light),
-                        wallDoor (painted service/exit door + sign), boardedVent, wallStripe
+                        wallDoor (painted service/exit door + sign), boardedVent, wallStripe, escalator({ bottomX, dir,
+                        minZ, maxZ, upperY, ceilingY }) (extruded body + instanced steps + glass/handrails; sealed: rope
+                        barrier + OUT OF ORDER board, colliders stepped along the slope: solid to the floor where low, overhead
+                        where its underside is above 2m so you can walk under; returns { hole, topLanding }), upperLanding
+                        (walled, roofed, boarded-up level-2 landing seen through the hole), elevatorDoors (sealed, taped off)
     mall/palette.js     COLORS shared by the mall's rooms and props
     testRange/          Debug add-on (not a map): testRange.js buildTestRange(scene, colliders) with own lights,
                         dummy.js practice mannequins (shootables)
@@ -263,7 +269,8 @@ src/
   world/                Shared building blocks for maps
     mapKit.js           createMapKit(group, colliders): mat, addCollider, box, sign, tiledFloor, wall({ along, from, to,
                         at0, at1, height, openings: [{ from, to, top }] }) (doorways get lintels), shutterDoor({ id, label,
-                        price, opensZone, zones, doorway, text }), markers(). wallSegments(): the pure wall math (tested)
+                        price, opensZone, zones, doorway, text }), markers(), slab(rect, y0, y1, mat, { hole }) (a ceiling
+                        with a hole). wallSegments() / slabPieces(): the pure wall / slab math (tested)
     door.js             createDoor(): buyable barrier (price, opensZone) wrapping a shutter; open/reset/toggle. Several
                         doors may open the same zone: it stays open while any of them is open (tracked per zone)
     wallBuy.js          createWallBuyDisplay(): chalk outline (textures.makeChalkTexture) + the gun on two pegs, side on
@@ -371,8 +378,13 @@ The start room opens into a MAIN HALLWAY (the hub); every other area is bought o
 - Main hallway: x -20..20, z -2..6 (8m wide), 6m ceiling. Doors: Food Court (1000, south wall x -2..2, straight
   across from the start door, under a FOOD COURT sign, framed by two planters), Mega Mart (750, east end z 0..4,
   under a MEGA MART sign). West end: a painted "SERVICE CORRIDOR · STAFF ONLY" door where the Service Corridor
-  (1250) goes later. 3 boarded vents (zombie spawns). Kept mostly clear for the escalator (planned: west half) and
-  elevator (planned: north wall, east half).
+  (1250) goes later. 3 boarded vents (zombie spawns).
+  Escalator (SEALED): west half, z 1..3, bottom end at x -4 facing the hub, rising west at 30 deg through a hole in
+  the ceiling (x ~-16.1..-11.9) to level 2 (y 6.3, the top of the ceiling slab), where a walled, boarded-up landing
+  ("LEVEL 2 · OPENING SOON") is visible. Rope barrier + OUT OF ORDER board at the bottom; every collider you could
+  reach from the floor is taller than a jump. Its low end (x -4..-10.4) is solid to the floor; under its high end
+  (x -10.4..-17.5) there's >= 2m headroom, so players and zombies walk under it. Elevator (SEALED): doors in the north
+  wall at x 10.5 (taped off, OUT OF ORDER, floor indicator "1", call button); painted on, the wall behind is solid.
 - Food Court: x -20..20, z -14.3..-2.3, 6m ceiling, behind the 1000 shutter: the old concourse moved south (its four
   shopfronts Good Sports / Nuts & Bolts / Play Time Toys / Byte Me, 4 pillars, 3 benches, tree planter, end planters,
   ceiling lights, 4 spawns), placed relative to its center line FZ = -8.3. Food stalls + tables come later.
@@ -558,6 +570,11 @@ the 500 shutter). Verified: tests/mall.test.js (each area sealed until its own d
 spot reachable after the start shutter; reset seals everything) and in the browser (real F-hold buys the start
 shutter, the hallway/Food Court/Mega Mart look right, zombies reach the hallway from the Food Court in ~8s and from
 the Mega Mart in ~10-14s).
+Step 2 done: the escalator + elevator, both sealed (see Map). Verified: tests (sealed against a real sprint-jumping
+player, walk-under clearance, ceiling open only above the escalator, the level-2 landing closed in, elevator wall
+solid) and in the browser (escalator, hole + landing and elevator look right; zombies route round and under the
+escalator and never leave the floor). Making them usable is step 7 (second floor, multi-floor navigation).
+Next: step 3 = Food Court dressing (food stalls, tables).
 
 ## Planned build order
 1. Walkable mall (done)

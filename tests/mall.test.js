@@ -10,6 +10,9 @@ import { zombieTypes } from '../src/config/zombies.js';
 import { economy } from '../src/config/economy.js';
 import { feel } from '../src/config/feel.js';
 import { overlapsSolid } from '../src/world/collision.js';
+import { PlayerController } from '../src/player/controller.js';
+import { createPlayerStats } from '../src/player/stats.js';
+import { LAYOUT } from '../src/maps/mall/mall.js';
 
 // A 2D context where every method is a no-op returning the context (gradients, measureText...).
 const ctx = new Proxy({}, {
@@ -127,4 +130,85 @@ test('the Mega Mart checkout counters are vaultable; the shelves are not', () =>
   }
   const shelves = colliders.filter((b) => inMart(b) && b.max.y >= 1.9 && b.max.y < 3 && !b.vaultable);
   assert.equal(shelves.length, 3, 'three solid gondolas');
+});
+
+// A real player (the game's own movement code) driven by a scripted input.
+function playerIn(colliders, position, yaw) {
+  const held = new Set();
+  const pressed = new Set();
+  const input = {
+    held, pressed, axis: { x: 0, y: 0 }, device: 'keyboard',
+    moveAxis() { return this.axis; },
+    consumeAction(action) { const v = pressed.has(action); pressed.delete(action); return v; },
+    actionDown(action) { return held.has(action); },
+    actionPressed(action) { return pressed.has(action); },
+  };
+  const player = new PlayerController({
+    camera: new THREE.PerspectiveCamera(), input, stats: createPlayerStats(), colliders,
+    spawn: { position: position.clone(), yaw },
+  });
+  return { player, input };
+}
+
+const containsPoint = (colliders, x, y, z) => colliders.some((b) => b.containsPoint(new THREE.Vector3(x, y, z)));
+
+test('the escalator is sealed: sprinting and jumping at it never gets you on it', () => {
+  const { colliders } = setup();
+  const E = LAYOUT.escalator;
+  // Anything on the escalator you could reach from the floor is taller than a jump.
+  const jumpPeak = (feel.movement.jumpVelocity ** 2) / (2 * feel.movement.gravity);
+  const onEscalator = colliders.filter((b) => b.min.z >= E.minZ - 1e-6 && b.max.z <= E.maxZ + 1e-6 && b.min.x >= -18 && b.max.x <= -3);
+  assert.ok(onEscalator.length >= 12, 'barrier + slope steps + top landing');
+  for (const b of onEscalator.filter((c) => c.min.y < feel.player.height)) {
+    assert.ok(b.max.y > jumpPeak + 0.1, `collider at x ${b.min.x.toFixed(1)}..${b.max.x.toFixed(1)} too tall to jump onto`);
+  }
+  // And for real: run at the bottom end from the hub side, jumping the whole way.
+  const { player, input } = playerIn(colliders, new THREE.Vector3(1, 0, 2), Math.PI / 2); // facing -X
+  input.axis = { x: 0, y: 1 };
+  input.held.add('sprint');
+  let maxY = 0;
+  let minX = Infinity;
+  for (let i = 0; i < 60 * 4; i++) {
+    if (i % 20 === 0) input.pressed.add('jump');
+    player.update(dt);
+    maxY = Math.max(maxY, player.position.y);
+    minX = Math.min(minX, player.position.x);
+  }
+  assert.ok(minX > E.bottomX + 0.6, `stopped at the barrier (got to x ${minX.toFixed(2)})`);
+  assert.ok(maxY < jumpPeak + 0.05, 'never stood on anything');
+});
+
+test('you can walk (and zombies can path) under the high end of the escalator, and round it', () => {
+  const { colliders, nav, open, reach } = setup();
+  open('startShutter');
+  // Under the high end: walkable floor, reachable, and a standing player fits.
+  for (const x of [-12, -14, -16.5]) {
+    assert.ok(Number.isFinite(reach({ x, z: 2 })), `(${x}, 2) reachable`); // (also builds the nav grid)
+    assert.ok(nav.isWalkableAt(x, 2), `(${x}, 2) under the escalator is walkable`);
+    assert.equal(overlapsSolid(new THREE.Vector3(x, 0, 2), feel.player.radius, feel.player.height, colliders, feel.movement.stepTolerance), false, `a player fits under at x ${x}`);
+  }
+  // The low end blocks the floor.
+  assert.equal(nav.isWalkableAt(-6, 2), false, 'the low end is solid');
+  // A real player walking east under it gets all the way to where it becomes solid.
+  const { player, input } = playerIn(colliders, new THREE.Vector3(-19, 0, 2), -Math.PI / 2); // facing +X
+  input.axis = { x: 0, y: 1 };
+  for (let i = 0; i < 60 * 3; i++) player.update(dt);
+  assert.ok(player.position.x > -11.2, `walked under the high end (reached x ${player.position.x.toFixed(2)})`);
+  assert.ok(player.position.x < -9.5, 'and stopped at the solid low end');
+  assert.equal(player.position.y, 0);
+});
+
+test('the ceiling is open only above the escalator; the elevator wall stays solid', () => {
+  const { colliders } = setup();
+  const H = LAYOUT.hallway;
+  const y = H.height + 0.15; // inside the ceiling slab
+  // In the hole, beside the escalator (its own balustrade colliders rise through the middle of it).
+  for (const z of [0.85, 3.15]) assert.equal(containsPoint(colliders, -14, y, z), false, `hole above the escalator at z ${z}`);
+  for (const [x, z] of [[0, 2], [-14, -1], [-14, 5], [-19, 2], [-8, 2]]) assert.ok(containsPoint(colliders, x, y, z), `ceiling at (${x}, ${z})`);
+  // The boarded-up level-2 landing above the hole is closed in (walls on all sides, a roof).
+  for (const [x, yy, z] of [[-14, 8, 0.55], [-14, 8, 3.45], [-11.8, 8, 2], [-19.35, 8, 2], [-14, 9.75, 2]]) {
+    assert.ok(containsPoint(colliders, x, yy, z), `upper landing closed at (${x}, ${yy}, ${z})`);
+  }
+  // Elevator: painted on, the wall behind it is solid.
+  assert.ok(containsPoint(colliders, LAYOUT.elevator.centerX, 1.2, H.maxZ + 0.15), 'wall behind the elevator doors');
 });

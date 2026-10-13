@@ -12,7 +12,9 @@
 //   hallway     start shutter (500): the hub every other area opens off
 //   megaMart    Mega Mart shutter (750), east end of the hallway
 //   foodCourt   Food Court shutter (1000), south wall of the hallway
-//   (planned)   Service Corridor (1250) off the west end; escalator + elevator in the hallway
+//   (planned)   Service Corridor (1250) off the west end
+// The hallway also has an escalator (west half, up through a hole in the ceiling to a boarded-up
+// level-2 landing) and elevator doors (north wall): both SEALED for now, the way up to a second floor later.
 //
 // Layout, in meters (+Y is up):
 //   - Start room:      x -5..5,   z 6..16, 4m ceiling (doorway in its south wall at z = 6)
@@ -39,6 +41,10 @@ export const LAYOUT = {
   doorway: { minX: -2, maxX: 2, height: 3 }, // start room -> hallway (in the hallway's north wall)
   foodCourtDoorway: { minX: -2, maxX: 2, height: 3 }, // hallway -> Food Court (hallway's south wall)
   megaMartDoorway: { minZ: 0, maxZ: 4, height: 3 }, // hallway -> Mega Mart (Mega Mart's west wall)
+  // Escalator in the hallway's west half: bottom end at x -4 (facing the hub), rising west to level 2
+  // (the top of the hallway ceiling, y 6.3). 2m wide. Sealed for now.
+  escalator: { bottomX: -4, dir: -1, minZ: 1, maxZ: 3 },
+  elevator: { centerX: 10.5 }, // doors in the hallway's north wall (sealed for now)
   wallThickness: 0.3,
 };
 
@@ -76,7 +82,7 @@ export function buildMall(scene, colliders) {
   tiledFloor(F.minX, F.minZ, F.maxX, H.minZ, { base: '#f1e8d6', grout: '#cdbfa8', seed: 3 }); // under the shared wall too
   tiledFloor(R.minX, R.minZ, R.maxX, R.maxZ, { base: '#d9cdb7', grout: '#a99a82', variation: 18, seed: 11 });
 
-  box(H.minX - T, H.height, H.minZ - T, H.maxX + T, H.height + 0.3, H.maxZ + T, mat(COLORS.ceiling), { name: 'ceiling' });
+  // (The hallway's ceiling is built with the escalator below: it has a hole for it.)
   box(F.minX - T, F.height, F.minZ - T, F.maxX + T, F.height + 0.3, F.maxZ, mat(COLORS.ceiling), { name: 'ceiling' });
   box(R.minX - T, R.height, R.minZ + T, R.maxX + T, R.height + 0.3, R.maxZ + T, mat(COLORS.ceiling), { name: 'ceiling' });
 
@@ -135,8 +141,25 @@ export function buildMall(scene, colliders) {
   });
   // (The Mega Mart door is built with the Mega Mart below.)
 
+  // --- Main hallway: escalator, elevator, ceiling ------------------------------
+
+  // The escalator up to level 2 (sealed), the ceiling with a hole where it passes through, and the
+  // boarded-up landing you can see up there.
+  const E = LAYOUT.escalator;
+  const upperY = H.height + 0.3; // level 2 floor = top of the hallway ceiling
+  const escalator = props.escalator({ ...E, upperY, ceilingY: H.height });
+  kit.slab({ minX: H.minX - T, maxX: H.maxX + T, minZ: H.minZ - T, maxZ: H.maxZ + T }, H.height, upperY, mat(COLORS.ceiling), {
+    hole: escalator.hole, name: 'ceiling',
+  });
+  props.upperLanding({
+    rect: { minX: escalator.topLanding.minX - 1.7, maxX: escalator.hole.maxX, minZ: escalator.hole.minZ, maxZ: escalator.hole.maxZ },
+    floorY: upperY, boardedEnd: 'minX', text: 'LEVEL 2 · OPENING SOON',
+  });
+
+  // Elevator doors in the north wall (sealed).
+  props.elevatorDoors({ along: 'x', center: LAYOUT.elevator.centerX, wallAt: H.maxZ, facing: -1 });
+
   // --- Main hallway dressing ---------------------------------------------------
-  // Kept mostly clear: the escalator (west half) and elevator (north wall, east half) go here next.
 
   sign('FOOD COURT', {
     x: 0, y: 4.3, z: H.minZ + 0.02, width: 6, height: 1.2, facing: 1,
@@ -161,7 +184,9 @@ export function buildMall(scene, colliders) {
   props.boardedVent({ along: 'x', center: 15, wallAt: H.maxZ, facing: -1 });
   props.boardedVent({ along: 'x', center: -14, wallAt: H.minZ, facing: 1 });
 
-  for (const x of [-16, -8, 0, 8, 16]) props.lightPanel(x - 1.2, HZ - 0.6, x + 1.2, HZ + 0.6, H.height);
+  // Ceiling lights (the west one is short: the escalator's ceiling hole is just east of it)
+  for (const x of [-8, 0, 8, 16]) props.lightPanel(x - 1.2, HZ - 0.6, x + 1.2, HZ + 0.6, H.height);
+  props.lightPanel(-19.6, HZ - 0.6, -18.0, HZ + 0.6, H.height);
 
   // --- Start room props (a closed-down store) -------------------------------
 

@@ -7,13 +7,14 @@
 //     box(...)                   a visible box; solid unless { collide: false }
 //     sign(text, {...})          a flat sign with canvas-drawn text
 //     tiledFloor(...)            a floor slab with a tile texture
+//     slab(rect, y0, y1, ...)    a solid flat slab (ceiling) with an optional hole (an escalator well)
 //     wall({...}, material)      a straight wall, with doorway openings (+ lintels)
 //     shutterDoor({...})         a roll-up shutter in a doorway + the buyable door
 //     markers({...})             debug markers for spawn points and wall buys
 //   }
 // Everything is added to the map's `group` (so unloading the map removes it) and
-// every solid box goes into the shared `colliders` list. wallSegments() is the
-// pure geometry behind wall() (tested in tests/maps.test.js).
+// every solid box goes into the shared `colliders` list. wallSegments() and slabPieces()
+// are the pure geometry behind wall() and slab() (tested in tests/maps.test.js).
 // =============================================================================
 
 import * as THREE from 'three';
@@ -48,6 +49,27 @@ export function wallSegments({ along, from, to, at0, at1, height, openings = [] 
     if (o.top !== undefined && o.top < height) boxes.push(toBox(o.from, o.to, o.top, height, 'lintel'));
   }
   return boxes;
+}
+
+/**
+ * The rectangles making up a flat slab (floor or ceiling) with one rectangular hole cut out of it
+ * (pure math). rect / hole: { minX, maxX, minZ, maxZ }. Returns up to four rects: the full-depth
+ * strips left and right of the hole, then the pieces in front of and behind it. No hole (or one
+ * entirely outside the slab) = just the slab.
+ */
+export function slabPieces(rect, hole) {
+  if (!hole) return [rect];
+  const h = {
+    minX: Math.max(rect.minX, hole.minX), maxX: Math.min(rect.maxX, hole.maxX),
+    minZ: Math.max(rect.minZ, hole.minZ), maxZ: Math.min(rect.maxZ, hole.maxZ),
+  };
+  if (h.minX >= h.maxX || h.minZ >= h.maxZ) return [rect];
+  return [
+    { minX: rect.minX, maxX: h.minX, minZ: rect.minZ, maxZ: rect.maxZ },
+    { minX: h.maxX, maxX: rect.maxX, minZ: rect.minZ, maxZ: rect.maxZ },
+    { minX: h.minX, maxX: h.maxX, minZ: rect.minZ, maxZ: h.minZ },
+    { minX: h.minX, maxX: h.maxX, minZ: h.maxZ, maxZ: rect.maxZ },
+  ].filter((r) => r.maxX - r.minX > 1e-6 && r.maxZ - r.minZ > 1e-6);
 }
 
 export function createMapKit(group, colliders) {
@@ -100,6 +122,11 @@ export function createMapKit(group, colliders) {
     return box(minX, -0.2, minZ, maxX, 0, maxZ, material, { name: 'floor' });
   }
 
+  /** A flat solid slab from y0 to y1 (a ceiling, say), optionally with one hole (see slabPieces). */
+  function slab(rect, y0, y1, material, { hole = null, name = 'slab' } = {}) {
+    return slabPieces(rect, hole).map((r) => box(r.minX, y0, r.minZ, r.maxX, y1, r.maxZ, material, { name }));
+  }
+
   /** A straight wall with openings (see wallSegments for the options); every piece is solid. */
   function wall(options, material, { name = 'wall' } = {}) {
     return wallSegments(options).map((piece, i) => box(
@@ -150,5 +177,5 @@ export function createMapKit(group, colliders) {
     return markerGroup;
   }
 
-  return { group, colliders, mat, addCollider, box, sign, tiledFloor, wall, shutterDoor, markers };
+  return { group, colliders, mat, addCollider, box, sign, tiledFloor, slab, wall, shutterDoor, markers };
 }

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import { wallSegments } from '../src/world/mapKit.js';
+import { wallSegments, slabPieces } from '../src/world/mapKit.js';
 import { createDoor } from '../src/world/door.js';
 import { createNavigation } from '../src/zombies/navigation.js';
 import { markCollidersChanged } from '../src/world/collision.js';
@@ -69,4 +69,20 @@ test('the navigation grid rebuilds when colliders change, even if the count stay
   markCollidersChanged(colliders);
   nav.update(1 / 60, player);
   assert.ok(Number.isFinite(nav.distanceToTarget(0, -5)), 'the grid was rebuilt: the gap is open now');
+});
+
+test('slabPieces: a slab with a hole is four pieces covering everything but the hole', () => {
+  const rect = { minX: -10, maxX: 10, minZ: -5, maxZ: 5 };
+  assert.deepEqual(slabPieces(rect, null), [rect]);
+  assert.deepEqual(slabPieces(rect, { minX: 20, maxX: 30, minZ: 0, maxZ: 1 }), [rect], 'hole outside: whole slab');
+  const hole = { minX: -2, maxX: 3, minZ: -1, maxZ: 2 };
+  const pieces = slabPieces(rect, hole);
+  assert.equal(pieces.length, 4);
+  const area = (r) => (r.maxX - r.minX) * (r.maxZ - r.minZ);
+  assert.equal(pieces.reduce((sum, r) => sum + area(r), 0), area(rect) - area(hole));
+  const inside = (r, x, z) => x > r.minX && x < r.maxX && z > r.minZ && z < r.maxZ;
+  assert.ok(!pieces.some((r) => inside(r, 0, 0)), 'nothing covers the hole');
+  for (const [x, z] of [[-9, 0], [9, 0], [0, -4], [0, 4]]) assert.ok(pieces.some((r) => inside(r, x, z)), `(${x}, ${z}) covered`);
+  // A hole running off the edge is clipped: three pieces.
+  assert.equal(slabPieces(rect, { minX: 5, maxX: 15, minZ: -1, maxZ: 1 }).length, 3);
 });

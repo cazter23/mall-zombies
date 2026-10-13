@@ -11,6 +11,9 @@
 //   wallDoor    a painted-on service / exit door with an optional sign
 //   boardedVent planks over a vent (zombie spawn dressing)
 //   wallStripe  a painted stripe along a wall
+//   escalator   an escalator up through the ceiling (sealed: rope barrier, OUT OF ORDER, unclimbable)
+//   upperLanding the boarded-up landing you see above an escalator's ceiling hole
+//   elevatorDoors sealed elevator doors on a wall (taped off, floor indicator, call button)
 // createMallProps(kit) returns these as functions; maps/mall/mall.js places them.
 // =============================================================================
 
@@ -241,5 +244,191 @@ export function createMallProps(kit) {
     wallPlacer(along)(from, y0, to, y1, wallAt, wallAt + facing * 0.02, mat(color), { collide: false });
   }
 
-  return { shopFront, pillar, bench, planter, lightPanel, gondola, checkout, wallDoor, boardedVent, wallStripe };
+  // --- Escalator + elevator (the way up to a second floor; sealed for now) -------
+
+  /**
+   * An escalator running along X up to the floor above, SEALED for now: a rope barrier, an
+   * OUT OF ORDER sign and colliders nobody can climb (the jump peaks at ~1.05m).
+   *   bottomX:  x of its bottom end; dir: -1 = rises toward -X, +1 = toward +X
+   *   minZ/maxZ: its width (balustrades included)
+   *   upperY:   the upper floor's level (top of the ceiling slab it passes through)
+   *   ceilingY: underside of that ceiling (where the hole has to start for a rider's head)
+   * Shape: a flat landing at each end and a 30deg slope between. Under its low end it's solid to
+   * the floor; where its underside is higher than `walkUnder` it's open, so you (and zombies) can
+   * walk under the high end, like a real mall escalator.
+   * Colliders follow the slope in steps: on the floor where it's low (blocks walking, bullets and
+   * zombie routes), overhead where it's high. Returns { hole, topLanding }: the rect the ceiling
+   * must leave open above it, and the x range of the flat top landing (over the upper floor).
+   */
+  function escalator({ bottomX, dir = -1, minZ, maxZ, upperY, ceilingY, landing = 1.4, angleDegrees = 30, walkUnder = 2.0, headroom = 2.1 }) {
+    const tan = Math.tan((angleDegrees * Math.PI) / 180);
+    const plate = 0.12; // bottom landing plate height (the steps start here)
+    const truss = 1.0; // depth of the structure under the steps
+    const rail = 1.0; // balustrade + handrail height above the steps
+    const run = (upperY - plate) / tan; // horizontal length of the slope
+    const slopeEnd = landing + run;
+    const length = slopeEnd + landing;
+    const xAt = (u) => bottomX + dir * u; // u = meters along the escalator from its bottom end
+    const surface = (u) => (u <= landing ? plate : u >= slopeEnd ? upperY : plate + (u - landing) * tan);
+    const uOpen = Math.min(slopeEnd, landing + (walkUnder + truss - plate) / tan); // underside reaches walkUnder
+    const width = maxZ - minZ;
+    const zMid = (minZ + maxZ) / 2;
+    const span = (u0, u1) => [Math.min(xAt(u0), xAt(u1)), Math.max(xAt(u0), xAt(u1))];
+
+    // Body: one extruded side profile (bottom landing, solid skirt, open truss, top landing).
+    const profile = new THREE.Shape();
+    const points = [
+      [0, 0], [uOpen, 0], [uOpen, walkUnder], [slopeEnd, upperY - truss], [length, upperY - truss],
+      [length, upperY], [slopeEnd, upperY], [landing, plate], [0, plate],
+    ];
+    points.forEach(([u, y], i) => (i === 0 ? profile.moveTo(xAt(u), y) : profile.lineTo(xAt(u), y)));
+    const body = new THREE.Mesh(new THREE.ExtrudeGeometry(profile, { depth: width, bevelEnabled: false }), mat(COLORS.escalatorBody));
+    body.position.z = minZ;
+    body.name = 'escalator';
+    group.add(body);
+
+    // A band following the escalator's top surface, from `low` to `high` above it (glass, handrails).
+    function band(u0, u1, low, high, z0, thickness, material) {
+      const lower = [[u0, surface(u0)]];
+      for (const corner of [landing, slopeEnd]) if (corner > u0 && corner < u1) lower.push([corner, surface(corner)]);
+      lower.push([u1, surface(u1)]);
+      const shape = new THREE.Shape();
+      lower.forEach(([u, y], i) => (i === 0 ? shape.moveTo(xAt(u), y + low) : shape.lineTo(xAt(u), y + low)));
+      for (const [u, y] of [...lower].reverse()) shape.lineTo(xAt(u), y + high);
+      const mesh = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: thickness, bevelEnabled: false }), material);
+      mesh.position.z = z0;
+      group.add(mesh);
+    }
+    const glass = mat(COLORS.balustradeGlass, { transparent: true, opacity: 0.3, roughness: 0.1, depthWrite: false });
+    const handrail = mat(COLORS.handrail);
+    for (const z of [minZ + 0.2, maxZ - 0.24]) band(0.3, length - 0.3, 0, rail - 0.1, z, 0.04, glass);
+    for (const z of [minZ + 0.17, maxZ - 0.27]) band(0.15, length - 0.15, rail - 0.1, rail, z, 0.1, handrail);
+
+    // Steps: a sawtooth of treads up the slope, each with a yellow edge (two InstancedMeshes).
+    const stepRun = 0.4;
+    const treadWidth = width - 0.9;
+    const count = Math.floor(run / stepRun);
+    const unit = new THREE.BoxGeometry(1, 1, 1);
+    const steps = new THREE.InstancedMesh(unit, mat(COLORS.escalatorStep), count);
+    const edges = new THREE.InstancedMesh(unit, mat(COLORS.safetyYellow), count);
+    const m4 = new THREE.Matrix4();
+    for (let i = 0; i < count; i++) {
+      const u0 = landing + i * stepRun;
+      const top = plate + (i + 1) * stepRun * tan;
+      steps.setMatrixAt(i, m4.makeScale(stepRun, 0.25, treadWidth).setPosition(xAt(u0 + stepRun / 2), top - 0.125, zMid));
+      edges.setMatrixAt(i, m4.makeScale(0.05, 0.012, treadWidth).setPosition(xAt(u0 + stepRun - 0.025), top + 0.006, zMid));
+    }
+    group.add(steps, edges);
+    // Landing plates (with a yellow comb line where the steps begin)
+    let [x0, x1] = span(0, landing);
+    box(x0, 0, minZ + 0.45, x1, plate + 0.005, maxZ - 0.45, mat(COLORS.escalatorPlate), { collide: false });
+    [x0, x1] = span(landing - 0.06, landing);
+    box(x0, plate, minZ + 0.45, x1, plate + 0.01, maxZ - 0.45, mat(COLORS.safetyYellow), { collide: false });
+    [x0, x1] = span(slopeEnd, length);
+    box(x0, upperY, minZ + 0.45, x1, upperY + 0.03, maxZ - 0.45, mat(COLORS.escalatorPlate), { collide: false });
+
+    // The barrier: two posts and a rope across the bottom, an OUT OF ORDER sandwich board in front,
+    // and a hanging sign. `out` = the direction the bottom end faces (where people walk up from).
+    const out = -dir;
+    const facing = out > 0 ? 'x+' : 'x-';
+    const postX = xAt(-0.3);
+    for (const z of [minZ + 0.1, maxZ - 0.1]) {
+      box(postX - 0.035, 0, z - 0.035, postX + 0.035, 1.0, z + 0.035, mat(COLORS.metal), { collide: false });
+      box(postX - 0.12, 0, z - 0.12, postX + 0.12, 0.04, z + 0.12, mat(COLORS.metal), { collide: false });
+    }
+    box(postX - 0.015, 0.84, minZ + 0.1, postX + 0.015, 0.87, maxZ - 0.1, mat(COLORS.rope), { collide: false });
+    const boardX = xAt(-0.6);
+    box(boardX - 0.03, 0, zMid - 0.5, boardX + 0.03, 1.0, zMid + 0.5, mat(COLORS.safetyYellow), { collide: false });
+    sign('OUT OF ORDER', {
+      x: boardX + out * 0.035, y: 0.62, z: zMid, width: 0.92, height: 0.5, facing,
+      background: '#ffd23f', color: '#1d1626',
+    });
+    const hangX = xAt(-0.1);
+    sign('ESCALATOR · LEVEL 2', {
+      x: hangX, y: 3.3, z: zMid, width: 2.4, height: 0.45, facing,
+      background: '#1d1626', color: '#ffd23f',
+    });
+    for (const z of [zMid - 1.0, zMid + 1.0]) {
+      box(hangX - 0.01, 3.52, z - 0.01, hangX + 0.01, ceilingY, z + 0.01, mat(COLORS.metal), { collide: false });
+    }
+
+    // Colliders: barrier + bottom landing (too tall to jump), the slope in steps, the top landing.
+    [x0, x1] = span(-0.7, landing);
+    addCollider(x0, 0, minZ, x1, 1.25, maxZ);
+    const segments = (u0, u1, n, raised) => {
+      for (let i = 0; i < n; i++) {
+        const ua = u0 + ((u1 - u0) * i) / n;
+        const ub = u0 + ((u1 - u0) * (i + 1)) / n;
+        [x0, x1] = span(ua, ub);
+        addCollider(x0, raised ? surface(ua) - truss : 0, minZ, x1, surface(ub) + rail, maxZ);
+      }
+    };
+    segments(landing, uOpen, 5, false); // low part: solid to the floor
+    segments(uOpen, slopeEnd, 5, true); // high part: overhead, walk under it
+    [x0, x1] = span(slopeEnd, length);
+    addCollider(x0, upperY - truss, minZ, x1, upperY + rail, maxZ);
+
+    // Where the ceiling must be open: from where a rider's head would hit it to the top of the slope.
+    const uHole = Math.max(landing, landing + (ceilingY - headroom - plate) / tan);
+    [x0, x1] = span(uHole, slopeEnd);
+    const hole = { minX: x0, maxX: x1, minZ: minZ - 0.3, maxZ: maxZ + 0.3 };
+    [x0, x1] = span(slopeEnd, length);
+    return { hole, topLanding: { minX: x0, maxX: x1 } };
+  }
+
+  /**
+   * The closed-off upper landing you see looking up through an escalator's ceiling hole: walls
+   * around `rect` (on top of the ceiling slab, from floorY up `height`), a roof, a light, and a
+   * boarded-up end (at `boardedEnd` 'minX' or 'maxX') with a sign. Solid, but out of reach.
+   */
+  function upperLanding({ rect, floorY, height = 3.3, boardedEnd = 'minX', text }) {
+    const t = 0.3;
+    const top = floorY + height;
+    const wallMat = mat(COLORS.concourseWall);
+    box(rect.minX - t, floorY, rect.minZ - t, rect.maxX + t, top, rect.minZ, wallMat, { name: 'upper_wall' });
+    box(rect.minX - t, floorY, rect.maxZ, rect.maxX + t, top, rect.maxZ + t, wallMat, { name: 'upper_wall' });
+    box(rect.minX - t, floorY, rect.minZ, rect.minX, top, rect.maxZ, wallMat, { name: 'upper_wall' });
+    box(rect.maxX, floorY, rect.minZ, rect.maxX + t, top, rect.maxZ, wallMat, { name: 'upper_wall' });
+    box(rect.minX - t, top, rect.minZ - t, rect.maxX + t, top + 0.3, rect.maxZ + t, mat(COLORS.ceiling), { name: 'upper_roof' });
+    const zMid = (rect.minZ + rect.maxZ) / 2;
+    const xMid = (rect.minX + rect.maxX) / 2;
+    lightPanel(xMid - 2, zMid - 0.4, xMid + 2, zMid + 0.4, top);
+    // Plywood boarding across the far end, with the sign on it.
+    const endX = boardedEnd === 'minX' ? rect.minX : rect.maxX;
+    const inward = boardedEnd === 'minX' ? 1 : -1;
+    const [bx0, bx1] = [endX, endX + inward * 0.06].sort((a, b) => a - b);
+    box(bx0, floorY, rect.minZ + 0.1, bx1, top - 0.3, rect.maxZ - 0.1, mat(COLORS.plywood), { collide: false });
+    sign(text, {
+      x: endX + inward * 0.07, y: floorY + 1.6, z: zMid, width: Math.min(2.4, rect.maxZ - rect.minZ - 0.3), height: 0.5,
+      facing: inward > 0 ? 'x+' : 'x-', background: '#1d1626', color: '#ffd23f',
+    });
+  }
+
+  /**
+   * Elevator doors on a wall (decorative and sealed for now: taped off, OUT OF ORDER). A steel
+   * frame, two door leaves, a floor indicator, a call button and an ELEVATOR sign.
+   *   along/wallAt/facing as for shopFront; `center` = middle of the doors along the wall.
+   */
+  function elevatorDoors({ along, center, wallAt, facing, width = 2.2, height = 2.5, floor = '1' }) {
+    const place = wallPlacer(along);
+    const d = (offset) => wallAt + facing * offset;
+    const half = width / 2;
+    const signAt = (u, y, offset) => (along === 'x'
+      ? { x: u, y, z: d(offset), facing }
+      : { x: d(offset), y, z: u, facing: facing > 0 ? 'x+' : 'x-' });
+    place(center - half - 0.15, 0, center + half + 0.15, height + 0.15, d(0), d(0.05), mat(COLORS.elevatorFrame), { collide: false });
+    place(center - half, 0, center - 0.02, height, d(0.05), d(0.09), mat(COLORS.elevatorSteel, { metalness: 0.4, roughness: 0.35 }), { collide: false });
+    place(center + 0.02, 0, center + half, height, d(0.05), d(0.09), mat(COLORS.elevatorSteel, { metalness: 0.4, roughness: 0.35 }), { collide: false });
+    // Caution tape across the doors
+    for (const y of [1.05, 1.95]) place(center - half - 0.1, y, center + half + 0.1, y + 0.08, d(0.09), d(0.11), mat(COLORS.safetyYellow), { collide: false });
+    sign('OUT OF ORDER', { ...signAt(center, 1.5, 0.12), width: 1.3, height: 0.42, background: '#f1faee', color: '#1d1626' });
+    // Floor indicator above the doors, and the call button beside them
+    place(center - 0.4, height + 0.25, center + 0.4, height + 0.65, d(0), d(0.06), mat(COLORS.indicator), { collide: false });
+    sign(floor, { ...signAt(center, height + 0.45, 0.07), width: 0.3, height: 0.3, background: '#111114', color: '#ffb000' });
+    place(center + half + 0.3, 1.0, center + half + 0.55, 1.45, d(0), d(0.04), mat(COLORS.elevatorSteel), { collide: false });
+    place(center + half + 0.38, 1.15, center + half + 0.47, 1.25, d(0.04), d(0.06), mat(COLORS.rope, { emissive: COLORS.rope, emissiveIntensity: 0.5 }), { collide: false });
+    sign('ELEVATOR', { ...signAt(center, height + 0.95, 0.02), width: 1.6, height: 0.35, background: '#1d1626', color: '#ffffff' });
+  }
+
+  return { shopFront, pillar, bench, planter, lightPanel, gondola, checkout, wallDoor, boardedVent, wallStripe, escalator, upperLanding, elevatorDoors };
 }

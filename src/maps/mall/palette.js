@@ -39,6 +39,18 @@ export const COLORS = {
   exitDoor: 0x9b2c2c,
   doorWindow: 0x24405e,
   plank: 0x7a5230,
+  // Escalator + elevator (main hallway)
+  escalatorBody: 0xa9b2ba,
+  escalatorStep: 0x3d4249,
+  escalatorPlate: 0x8d949c,
+  safetyYellow: 0xffd23f,
+  balustradeGlass: 0x9fd3e6,
+  handrail: 0x1d1d22,
+  rope: 0x8b1e2d,
+  plywood: 0xc9a26b,
+  elevatorSteel: 0xc4c9ce,
+  elevatorFrame: 0x5d636b,
+  indicator: 0x111114,
   // Product boxes on the shelves (cereal, snacks, detergent, toys...)
   products: [0xff4f9a, 0xffd23f, 0x2ec4b6, 0xff8a3d, 0x9b6bff, 0x58c46b, 0xe63946, 0x3a86ff, 0xf1faee, 0xffb4a2],
 };
