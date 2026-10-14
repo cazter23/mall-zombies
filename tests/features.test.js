@@ -71,3 +71,30 @@ test('the real game: buy the Price Gun off its wall, then refill it at the STAPL
   assert.equal(g.gun.weapon.magazine, weapons.priceGun.magazineSize);
   assert.equal(before - g.wallet.points, economy.ammoCache.price);
 });
+
+test('inherited names are not feature kinds (toString / constructor are errors, not builders)', () => {
+  for (const kind of ['toString', 'constructor', '__proto__']) {
+    assert.throws(() => buildFeatures({ id: 'm', features: [{ kind, name: 'x' }] }, {}), /unknown kind/, kind);
+  }
+});
+
+test('the real game gives features its systems, and ticks/resets them like the rest of the game', () => {
+  const t = headlessGame();
+  const { g } = t;
+  const ctx = g.features.context;
+  for (const [name, system] of Object.entries({ events: g.events, pricing: g.pricing, interactions: g.interactions, gun: g.gun, player: g.player, stats: g.stats, wallet: g.wallet, health: g.health, zombies: g.zombies, rounds: g.rounds, state: g.state, map: g.map })) {
+    assert.equal(ctx[name], system, name);
+  }
+  // A probe feature (what a hazard would be): counts its ticks and resets.
+  const probe = { ticks: 0, resets: 0, update() { this.ticks++; }, reset() { this.resets++; } };
+  g.features.list.push({ feature: { kind: 'probe', name: 'probe' }, instance: probe });
+  t.tick(10);
+  assert.equal(probe.ticks, 10, 'ticks while playing');
+  g.state.forceRun = false; t.tick(10);
+  assert.equal(probe.ticks, 10, 'not while paused');
+  g.state.forceRun = true;
+  g.health.takeDamage(10_000); t.tick(10);
+  assert.equal(probe.ticks, 10, 'not once dead');
+  g.resetRun();
+  assert.equal(probe.resets, 1, 'Play again resets it');
+});

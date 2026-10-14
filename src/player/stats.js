@@ -44,7 +44,13 @@ export function createPlayerStats() {
   };
 }
 
-/** New run: every stat back to its base value. Same object (the player, guns and health all hold it). */
+/**
+ * New run: every stat back to its base value, and anything added during the run that isn't a declared
+ * stat (a perk's own counter, say) removed. Same object (the player, guns and health all hold it).
+ * A new stat must be declared in createPlayerStats() with its default.
+ */
 export function resetPlayerStats(stats) {
-  Object.assign(stats, createPlayerStats());
+  const fresh = createPlayerStats();
+  for (const key of Object.keys(stats)) if (!(key in fresh)) delete stats[key];
+  Object.assign(stats, fresh);
 }

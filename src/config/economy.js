@@ -56,6 +56,9 @@ export const economy = {
     confettiCannon: { weapon: 1500, ammo: 500 }, // (was 750: dearer than the 400 STAPLE-O-MAT refill)
   },
 
+  // Discounted prices (Flash Sales, game/pricing.js) are rounded to the nearest multiple of this.
+  discountRoundTo: 10,
+
   // Ammo cache (the vending machine in the Food Court): refills the gun in your hand, any gun, one flat price.
   ammoCache: { price: 400 },
 

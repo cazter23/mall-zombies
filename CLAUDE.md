@@ -35,12 +35,17 @@ through the wall, solid + too tall to climb, zombies can reach its front), `bala
 Staple Gun weakest; relationships, not exact values), `gunStats.test.js` the per-hit formula + resolveGun (upgrades as data),
 `fullRun.test.js` WHOLE RUNS of the real game headless (tests/helpers/headlessGame.js builds createGame with stand-in HUD/sound/
 viewmodel: buy the shutter, rounds, shoot a zombie for exact payouts, die, results, and "Play again equals a freshly built game"
-via snapshot()). New cross-system behaviour should get a full-run test there), `events.test.js` the event bus + every payout path
+via snapshot(), which covers every stat incl. undeclared extras, run stats, features, prompt and reload; zombies keep walking
+after you die; a natural round 1 -> 2; resetPlayerStats). New cross-system behaviour should get a full-run test there), `events.test.js` the event bus + every payout path
 in the real game (body / headshot / box-cutter kills, a shotgun blast pays once per zombie, a non-player "hazard" kill still pays
-and counts, purchase / round / player-hit / death / Play-again events), `pricing.test.js` prices = config exactly, discounts
-(one category, rounded to 10, errors for unknown items), the real game charges + shows the sale price, a new run clears it),
+and counts, purchase / round / player-hit / death / Play-again events, purchase kind/label as it was BEFORE buying, a kill
+listener killing another zombie mid-shot pays each once (no +10 for a corpse), pierce/pellet multi-kills, dummies pay nothing,
+nothing paid or counted after death), `pricing.test.js` prices = config exactly, discounts
+(one category, rounded to economy.discountRoundTo, errors for unknown items incl. inherited names like toString), the real game
+charges + shows the sale price for doors, guns, ammo and the cache, a sale starting mid-hold charges the price at completion, a new run clears it),
 `features.test.js` map features (the mall's list, unknown kind = error, a new kind's update/reset hooks run, inert wall buy for a
-gun that doesn't exist, buy a wall gun + refill at the STAPLE-O-MAT in the real game);
+gun that doesn't exist, inherited names aren't kinds, features get the game's systems and tick only while playing (not paused /
+dead) + reset on Play again, buy a wall gun + refill at the STAPLE-O-MAT in the real game);
 there is no linter yet.
 `npm run build` is the compile check (it only bundles; it
 does not run the game, so also try changes in `npm run dev`).
@@ -60,7 +65,9 @@ does not run the game, so also try changes in `npm run dev`).
   `main.js` is only the browser side. A new gameplay system is created and wired in createGame.js, never in main.js.
 - Systems ANNOUNCE what happened on the event bus (`g.events`, game/events.js lists every event); features LISTEN.
   Don't thread new callbacks through createGame for things like Flash Sales, PA lines, hazards or perk procs.
-  All kill payouts and kill stats come from the 'kill' event (whatever killed the zombie).
+  All kill payouts and kill stats come from the 'kill' event (whatever killed the zombie). Once the player is dead nothing
+  more is paid or counted (events still fire). A hit on a target that is already dead (killed earlier in the same shot,
+  e.g. by a kill listener) is skipped: no +10 for corpses.
 - Every price the player pays comes from `g.pricing.priceOf(category, id)` (game/pricing.js), never straight from
   config/economy.js, so discounts (Flash Sales) apply everywhere at once.
 - Map things the player interacts with (besides doors) are DATA in `map.features` ({ kind, name, zone, position, normal, ...}),
@@ -154,7 +161,8 @@ src/
                         checks (including live shootables), entry momentum on exit, interrupt on crowd shove
     stats.js            createPlayerStats(): the single stats object (health, speeds, jump, sprint, crouch/slide,
                         regenDelay/regenRate, adsMoveSpeed, damageMultiplier, meleeDamageMultiplier,
-                        reloadSpeed); resetPlayerStats(stats) puts every stat back to base (same object) on a new run
+                        reloadSpeed); resetPlayerStats(stats) puts every stat back to base (same object) on a new run and DELETES
+                        anything not declared in createPlayerStats() (so a new stat must be declared there with its default)
     health.js           createPlayerHealth(): takeDamage, regen after a delay, `overlay` strength for the red
                         hurt edges (grows with damage, pulses when low, flashes on hit), calls onDeath once
     body.js             createPlayerBody(): first-person legs + lower torso in the world scene (visual only).
@@ -280,12 +288,13 @@ src/
                         zombie back instead. Options canAttack(), onPlayerHit(damage), onKill(zombie)
   game/
     pricing.js          createPricing(): priceOf('door'|'weapon'|'ammo'|'ammoCache', id) = economy.js base price with any
-                        discount applied (setDiscount(category, 0..1), rounded to the nearest 10; discountOf; reset() on a new
+                        discount applied (setDiscount(category, 0..1), rounded to the nearest economy.discountRoundTo (10); discountOf; reset() on a new
                         run). Unknown category/id throws. PRICE_CATEGORIES
     events.js           createEvents(): tiny synchronous bus (on -> unsubscribe fn, emit, count). The event list + payloads
                         are in its header: shot, hit (player attack hit; +10 if not lethal), kill (any zombie death, with
                         headshot / melee / source: 'gun' | 'melee' | future 'hazard'...; ALL kill payouts + kill stats),
-                        playerHit, playerDeath, roundStart, typeIntro, purchase, runReset
+                        playerHit, playerDeath, roundStart, typeIntro, purchase ({ label, cost, kind, id }, read before
+                        use()), runReset. 'shot' = one per staple / sticker / nail / dart / whole blast
     createGame.js       createGame({ scene, camera, input, hud, sound, viewmodel, mapId, buildTestRange, debugTick,
                         onPlayerDeath }): builds and wires EVERY gameplay system (map, stats, player, wallet, run stats,
                         effects, aim assist, gun, buyables, melee, health, zombies, rounds), owns update(dt) (the fixed tick,
@@ -306,7 +315,9 @@ src/
                         onReloadTap (gun.requestReload()). `prompt` for the HUD; reset()
     features/           MAP FEATURES by kind. index.js = the registry (kind -> build(feature, ctx) returning optional
                         { update(dt), reset() }), buildFeatures(map, ctx) (unknown kind throws; createGame ticks/resets them),
-                        featuresOf(map, kind), FEATURE_KINDS. ctx = { scene, map, gun, pricing, interactions, events }.
+                        featuresOf(map, kind), FEATURE_KINDS (own entries only). Built AFTER createGame's core event wiring (payouts/stats
+                        listen first) with ctx = { scene, map, events, pricing, interactions, gun, player, stats, wallet,
+                        health, zombies, rounds, state } (g.features.context). Ticked after map.update, only while playing.
                         wallBuy.js = chalk display + "buy <Gun>" / "<Gun> ammo" prompt (g.pricing weapon/ammo; inert for a gun
                         that doesn't exist yet). ammoCache.js = buildAmmoCache + ammoCacheItem({ cache, zones, gun, price }): the
                         STAPLE-O-MAT item: label "Ammo · <gun in hand>", available when its zone is open and the gun in hand
@@ -414,18 +425,18 @@ src/
   of reloading), `melee.update` (no new swing while switching/vaulting),
   `gun.update(dt, melee.isBusy || player.vault.active)` (after the player so shots use this tick's
   eye), `zombies.update`, `rounds.update` (paused while in the test range), `health.update`, `map.update`,
-  `arena.update`, `player.updateView` (recoil springs last, so a shot's kick shows on the very next frame),
+  `features.update`, `arena.update`, `player.updateView` (recoil springs last, so a shot's kick shows on the very next frame),
   `input.endTick()`. `rounds.start()` happens the first tick the game actually runs.
 - Buying: createGame adds every `map.doors` entry to `interactions` (verb 'open', cost pricing.priceOf('door', id), use =
   door.open(), which opens its zone so zombies start spawning there and the nav grid rebuilds when the shutter's collider
   goes), and builds every `map.features` entry by kind (game/features/): wall buys (display + "buy <Gun>" / "<Gun> ammo",
   hidden when its zone is closed or you own it with full ammo; use = gun.give(def)) and the ammo cache. Melee gets `getWeapon: () => gun.weapon` (the gun in hand).
-- Map: `main.js` does `loadMap('mall', scene, colliders)` and only uses the map interface (maps/index.js).
+- Map: createGame does `loadMap(mapId, scene, colliders)` and only uses the map interface (maps/index.js).
   The zombie manager gets `map.spawnPoints` + `isZoneOpen`, so zombies only spawn in opened zones.
 - Zombie types: rounds picks each spawn's type (economy.zombieMix) and calls `zombies.spawn(typeId)`; health is
   `zombieHealthFor(typeId, round)`, kill value `economy.killValues[typeId]`. A type's first spawn in a run ->
-  `onTypeIntro` -> main shows `zombieTypes[id].introBanner` (hud.showAnnouncement) + plays 'paChime'. Zombie sounds:
-  zombie -> ctx.onSound -> manager (dedupe) -> main `sound.play(name, { volume })`.
+  'typeIntro' event -> createGame shows `zombieTypes[id].introBanner` (hud.showAnnouncement) + plays 'paChime'. Zombie sounds:
+  zombie -> ctx.onSound -> manager (dedupe) -> createGame `sound.play(name, { volume })`.
 - Points: gun and melee call `onHit({ target, killed, headshot, melee })` -> createGame emits 'hit' (non-lethal zombie hit:
   +10); a zombie dying (zombie.takeHit records `killedBy`; the manager's onKill) -> 'kill' -> kill value + head/melee bonus
   (`pointsForHit`) and run stats. Same totals as COD, whatever made the kill.
@@ -534,6 +545,12 @@ The start room opens into a MAIN HALLWAY (the hub); every other area is bought o
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+Codex refactor-review fixes (no gameplay change): a pierced/pellet hit on a target that is already dead (e.g. killed by a
+'kill' listener earlier in the same shot) no longer pays +10; the 'purchase' event reads label/kind/id BEFORE use() (buying a
+gun reports the gun, not "<Gun> ammo"); once dead nothing more is paid or counted; the feature and price registries only
+accept their own entries (no 'toString' kind/category); resetPlayerStats removes undeclared fields; features are built after
+the core event wiring with a richer ctx (g.features.context); discount rounding is economy.discountRoundTo. Tests for each.
+
 Codex playtest follow-up: Foam Dart Blaster damage 45 -> 50 (round 3: two body bursts; round 5: one head burst), Confetti
 Cannon wall ammo 750 -> 500 (the 400 STAPLE-O-MAT was cheaper than the wall). Fixes: a shot ends any reload pose at once
 (viewmodel.fire sets reloadWeight 0), so the cannon no longer fires with its barrels open when firing cuts a shell-by-shell

@@ -31,6 +31,10 @@ export function buildWallBuy(wb, { scene, map, gun, pricing, interactions }) {
       return owned() ? `${def.name} ammo` : def.name;
     },
     verb: 'buy',
+    get kind() {
+      return owned() ? 'ammo' : 'weapon';
+    },
+    id: def.id,
     get cost() {
       return owned() ? pricing.priceOf('ammo', def.id) : pricing.priceOf('weapon', def.id);
     },

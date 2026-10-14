@@ -25,6 +25,10 @@ export function ammoCacheItem({ cache, zones, gun, price }) {
       return `Ammo · ${gun.def.name}`; // shows which gun it's for
     },
     verb: 'buy',
+    kind: 'ammoCache',
+    get id() {
+      return gun.def.id; // the gun being refilled
+    },
     get cost() {
       return typeof price === 'function' ? price() : price;
     },

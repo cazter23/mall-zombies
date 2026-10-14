@@ -7,7 +7,8 @@
 //   priceOf('weapon', gunId)       economy.wallBuys[gunId].weapon
 //   priceOf('ammo', gunId)         economy.wallBuys[gunId].ammo
 //   priceOf('ammoCache')           economy.ammoCache.price
-//   setDiscount(category, 0.25)    25% off everything in that category (0 = none); rounded to the nearest 10
+//   setDiscount(category, 0.25)    25% off everything in that category (0 = none); rounded to the nearest
+//                                  economy.discountRoundTo (10)
 //   reset()                        no discounts (a new run)
 // An unknown category or id is an error (a typo shouldn't make something free).
 // =============================================================================
@@ -27,7 +28,7 @@ export function createPricing() {
   const discounts = new Map(); // category -> fraction off (0..1)
 
   function check(category) {
-    if (!(category in BASE)) throw new Error(`pricing: unknown category "${category}" (${PRICE_CATEGORIES.join(', ')})`);
+    if (!Object.hasOwn(BASE, category)) throw new Error(`pricing: unknown category "${category}" (${PRICE_CATEGORIES.join(', ')})`);
   }
 
   return {
@@ -36,7 +37,8 @@ export function createPricing() {
       const base = BASE[category](id);
       if (typeof base !== 'number') throw new Error(`pricing: no ${category} price for "${id}"`);
       const off = discounts.get(category) ?? 0;
-      return off > 0 ? Math.round((base * (1 - off)) / 10) * 10 : base;
+      const step = economy.discountRoundTo;
+      return off > 0 ? Math.round((base * (1 - off)) / step) * step : base;
     },
 
     setDiscount(category, fraction) {

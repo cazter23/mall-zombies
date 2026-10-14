@@ -8,7 +8,8 @@
 //   3. entries with that `kind` in the map's features list
 // createGame never changes for a new kind.
 //
-// ctx (from createGame): { scene, map, gun, pricing, interactions, events }
+// ctx (from createGame, built after its core event wiring, so a feature's listeners run after payouts/stats):
+//   { scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state }
 // =============================================================================
 
 import { buildWallBuy } from './wallBuy.js';
@@ -30,7 +31,7 @@ export const FEATURE_KINDS = Object.keys(builders);
 export function buildFeatures(map, ctx, kinds = builders) {
   const list = [];
   for (const feature of map.features ?? []) {
-    const build = kinds[feature.kind];
+    const build = Object.hasOwn(kinds, feature.kind) ? kinds[feature.kind] : null; // (not inherited names like 'toString')
     if (!build) {
       throw new Error(`map "${map.id}": feature "${feature.name ?? '?'}" has unknown kind "${feature.kind}" (${Object.keys(kinds).join(', ')})`);
     }
@@ -38,6 +39,7 @@ export function buildFeatures(map, ctx, kinds = builders) {
   }
   return {
     list,
+    context: ctx, // what every feature was given (for tests / debugging)
     update(dt) {
       for (const { instance } of list) instance.update?.(dt);
     },

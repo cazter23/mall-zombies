@@ -54,3 +54,44 @@ test('the real game charges (and shows) the discounted price, and a new run has 
   g.resetRun();
   assert.equal(g.pricing.discountOf('door'), 0);
 });
+
+test('inherited names are not categories (no "free" toString / constructor prices)', () => {
+  const p = createPricing();
+  for (const name of ['toString', 'constructor', '__proto__', 'hasOwnProperty']) {
+    assert.throws(() => p.priceOf(name, 'x'), /unknown category/, name);
+    assert.throws(() => p.setDiscount(name, 0.5), /unknown category/, name);
+  }
+});
+
+test('the real game charges sale prices for a gun, its ammo and the STAPLE-O-MAT', () => {
+  const t = headlessGame();
+  const { g } = t;
+  t.tick(1);
+  g.wallet.earn(10_000);
+  for (const c of ['weapon', 'ammo', 'ammoCache']) g.pricing.setDiscount(c, 0.5);
+  const half = (n) => Math.round(n / 2 / economy.discountRoundTo) * economy.discountRoundTo;
+  const buy = (x, z, yaw) => { const before = g.wallet.points; t.standAt(x, z, yaw); t.press('KeyF', 30); t.tick(40); return before - g.wallet.points; };
+  assert.equal(buy(3.5, 10, -90), half(economy.wallBuys.priceGun.weapon), 'Price Gun on sale');
+  g.gun.weapon.magazine = 1;
+  assert.equal(buy(3.5, 10, -90), half(economy.wallBuys.priceGun.ammo), 'its ammo on sale');
+  for (const d of g.map.doors) d.open();
+  t.tick(120);
+  g.gun.weapon.magazine = 1;
+  const cache = g.map.features.find((f) => f.kind === 'ammoCache');
+  assert.equal(buy(cache.position.x + 1.5, cache.position.z, 90), half(economy.ammoCache.price), 'the cache on sale');
+});
+
+test('a sale that starts mid-hold: you pay the price when the hold completes', () => {
+  const t = headlessGame();
+  const { g } = t;
+  t.tick(1);
+  t.standAt(0, 8.5, 0);
+  t.input.pressed.add('KeyF'); t.input.held.add('KeyF');
+  t.tick(5); // holding, not done yet (0.25 s = 15 ticks)
+  assert.equal(g.map.doors.find((d) => d.id === 'startShutter').isOpen, false);
+  g.pricing.setDiscount('door', 0.5);
+  t.tick(30);
+  t.input.held.delete('KeyF');
+  assert.equal(g.map.doors.find((d) => d.id === 'startShutter').isOpen, true);
+  assert.equal(g.wallet.points, economy.startingPoints - economy.doors.startShutter / 2);
+});

@@ -117,7 +117,7 @@ test('events from the real game: purchase, round start, player hit, death, Play 
   assert.deepEqual(seen.find(([n]) => n === 'roundStart')[1], { round: 1 });
   t.standAt(0, 8.5, 0);
   t.press('KeyF', 30);
-  assert.deepEqual(seen.find(([n]) => n === 'purchase')[1], { label: 'Security Shutter', cost: economy.doors.startShutter });
+  assert.deepEqual(seen.find(([n]) => n === 'purchase')[1], { label: 'Security Shutter', cost: economy.doors.startShutter, kind: 'door', id: 'startShutter' });
   const before = t.g.health.fraction;
   t.g.events.emit('playerHit', { damage: 40, zombie: null });
   assert.ok(t.g.health.fraction < before, 'a player hit hurts');
@@ -125,4 +125,83 @@ test('events from the real game: purchase, round start, player hit, death, Play 
   assert.equal(seen.filter(([n]) => n === 'playerDeath').length, 1);
   t.g.resetRun();
   assert.equal(seen.filter(([n]) => n === 'runReset').length, 1);
+});
+
+// --- Edge cases from the refactor review (Codex) ---
+
+test('purchase events say what was bought BEFORE the purchase: a first Price Gun is a weapon, then its ammo', () => {
+  const t = headlessGame();
+  const { g } = t;
+  const bought = [];
+  g.events.on('purchase', (p) => bought.push(p));
+  t.tick(1);
+  g.wallet.earn(5000);
+  t.standAt(3.5, 10, -90);
+  t.press('KeyF', 30);
+  t.tick(40);
+  assert.deepEqual(bought[0], { label: 'Price Gun', cost: economy.wallBuys.priceGun.weapon, kind: 'weapon', id: 'priceGun' });
+  g.gun.weapon.magazine = 1;
+  t.standAt(3.5, 10, -90);
+  t.press('KeyF', 30);
+  assert.deepEqual(bought[1], { label: 'Price Gun ammo', cost: economy.wallBuys.priceGun.ammo, kind: 'ammo', id: 'priceGun' });
+});
+
+test('a kill listener that kills another zombie mid-shot: each kill pays once, no +10 for hitting the corpse', () => {
+  const { t, g, points } = setup();
+  g.gun.give(weapons.nailGun); t.tick(40);
+  t.standAt(0, 12, 0, aim(3, 1.0));
+  const front = zombieAhead(t, 3, 50);
+  const rear = zombieAhead(t, 4, 50);
+  // A future "on kill" proc: the front zombie's death also kills the one behind it.
+  g.events.on('kill', ({ zombie }) => { if (zombie === front && rear.isAlive) rear.takeHit({ damage: 9999, part: 'body', source: 'effect' }); });
+  t.press('Mouse0'); t.tick(2);
+  assert.equal(front.isAlive, false); assert.equal(rear.isAlive, false);
+  assert.equal(points(), 2 * KILL, 'two kills, nothing for the nail reaching an already-dead zombie');
+  assert.equal(g.runStats.kills, 2);
+});
+
+test('one nail through three weak zombies: three kill payouts; one blast through two: two', () => {
+  const { t, g, points } = setup();
+  g.gun.give(weapons.nailGun); t.tick(40);
+  t.standAt(0, 12, 0, aim(3, 1.0));
+  const line = [3, 4, 5].map((m) => zombieAhead(t, m, 40));
+  t.press('Mouse0'); t.tick(2);
+  assert.ok(line.every((z) => !z.isAlive));
+  assert.equal(points(), 3 * KILL);
+  g.zombies.clear(); g.wallet.points = 0;
+  g.gun.give(weapons.confettiCannon); t.tick(40);
+  t.standAt(0, 12, 0, aim(2, 1.0));
+  const pair = [2, 3].map((m) => zombieAhead(t, m, 60));
+  t.press('Mouse0'); t.tick(2);
+  assert.ok(pair.every((z) => !z.isAlive));
+  assert.equal(points(), 2 * KILL);
+});
+
+test('shooting a practice dummy (test range) pays nothing, but still counts as a hit', async () => {
+  const { buildTestRange } = await import('../src/maps/testRange/testRange.js');
+  const t = headlessGame({ buildTestRange });
+  const { g } = t;
+  t.tick(1); g.zombies.clear(); g.rounds.update = () => {};
+  const hits = [];
+  g.events.on('hit', (h) => hits.push(h));
+  const dummy = g.arena.shootables[0];
+  const c = dummy.hitboxes.find((h) => h.part === 'body').box.getCenter(new THREE.Vector3());
+  t.standAt(c.x, c.z + 3, 0, aim(3, c.y));
+  const before = g.wallet.points;
+  t.press('Mouse0'); t.tick(2);
+  assert.equal(hits.length, 1, 'the dummy was hit');
+  assert.equal(g.wallet.points, before);
+});
+
+test('once you are dead nothing more is paid or counted, and the results screen stays as it was', () => {
+  const { t, g } = setup();
+  const late = zombieAhead(t, 6, 150);
+  g.health.takeDamage(10_000); t.tick(1);
+  assert.equal(g.state.over, true);
+  const points = g.wallet.points, earned = g.wallet.totalEarned, kills = g.runStats.kills;
+  late.takeHit({ damage: 9999, part: 'body', source: 'effect' }); // a burning zombie dies after you
+  t.tick(60 * 5);
+  assert.equal(g.wallet.points, points); assert.equal(g.wallet.totalEarned, earned); assert.equal(g.runStats.kills, kills);
+  const results = t.hud.calls.find(([n]) => n === 'showResults')[1];
+  assert.equal(results.kills, kills); assert.equal(results.pointsEarned, earned);
 });

@@ -64,13 +64,19 @@ test('a real run: buy the shutter, round 1 starts, zombies come, shooting one pa
   assert.ok(t.hud.calls.some(([name]) => name === 'showHitMarker'));
 });
 
-test('dying: the world keeps going, the results screen comes up after the delay', () => {
+test('dying: the world keeps going (zombies still walk to you), the results screen comes up after the delay', () => {
   const t = headlessGame();
   const { g } = t;
-  t.tick(10);
+  t.tick(1);
+  g.zombies.clear();
+  const z = g.zombies.spawn('shopper', new THREE.Vector3(0, 0, 9)); // in the start room, 3 m away
+  t.tick(60 * 2); // risen and walking
   g.health.takeDamage(10_000);
   t.tick(1);
   assert.equal(g.state.over, true);
+  const at = z.position.clone();
+  t.tick(30);
+  assert.ok(z.position.distanceTo(at) > 0.05, 'the zombie kept moving after the death');
   assert.ok(t.hud.calls.some(([name, on]) => name === 'setDead' && on === true));
   t.tick(60 * 5);
   assert.equal(g.death.resultsShown, true);
@@ -94,6 +100,8 @@ test('Play again puts EVERYTHING back: the game equals a freshly built one', () 
   g.stats.damageMultiplier = 2;
   g.stats.maxHealth += 50;
   g.pricing.setDiscount('weapon', 0.5); // a Flash Sale running when you die
+  g.stats.perkCharges = 4; // a perk's own counter: not a declared stat, must not survive a new run
+  g.runStats.headshotKills += 2; g.runStats.meleeKills += 1; g.runStats.shotsHit += 5; // (every run stat matters)
   t.tick(60 * 8);
   g.rounds.skipRound();
   t.tick(60 * 4);
@@ -104,4 +112,33 @@ test('Play again puts EVERYTHING back: the game equals a freshly built one', () 
 
   g.resetRun();
   assert.deepEqual(snapshot(g), fresh);
+});
+
+test('a natural round: round 1 spawns its zombies, killing them all moves the game to round 2 and pays for each', () => {
+  const t = headlessGame();
+  const { g } = t;
+  const rounds = [];
+  g.events.on('roundStart', ({ round }) => rounds.push(round));
+  g.state.forceRun = true;
+  // Kill every zombie as soon as it has risen (a perfect player), until the round flips.
+  for (let i = 0; i < 60 * 120 && g.rounds.round < 2; i++) {
+    t.tick(1);
+    for (const z of g.zombies.zombies) if (z.isAlive && z.state === 'chasing') z.takeHit({ damage: 9999, part: 'body' });
+  }
+  assert.deepEqual(rounds, [1, 2], 'round 1, then round 2');
+  const count = economy.waves.count.base; // round(6 + 2.5 * 0)
+  assert.equal(g.runStats.kills, count, 'every zombie of round 1');
+  assert.equal(g.wallet.points, economy.startingPoints + count * economy.killValues.shopper);
+});
+
+test('resetPlayerStats: every stat back to base, undeclared extras removed, same object', async () => {
+  const { createPlayerStats, resetPlayerStats } = await import('../src/player/stats.js');
+  const stats = createPlayerStats();
+  const same = stats;
+  stats.damageMultiplier = 3;
+  stats.perkCharges = 4;
+  resetPlayerStats(stats);
+  assert.equal(stats, same);
+  assert.deepEqual(stats, createPlayerStats());
+  assert.equal('perkCharges' in stats, false);
 });

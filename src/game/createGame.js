@@ -120,6 +120,8 @@ export function createGame({
   for (const door of map.doors) {
     interactions.add({
       label: door.label,
+      kind: 'door', // (for the 'purchase' event)
+      id: door.id,
       verb: 'open',
       get cost() {
         return pricing.priceOf('door', door.id);
@@ -130,10 +132,6 @@ export function createGame({
       use: () => door.open(),
     });
   }
-  // Everything else in the map you interact with (wall buys, the ammo cache, later the claw machine,
-  // hazards...): map.features, built by kind (game/features/).
-  const features = buildFeatures(map, { scene, map, gun, pricing, interactions, events });
-
   const melee = createMelee({
     def: meleeWeapons.boxCutter,
     stats,
@@ -217,14 +215,20 @@ export function createGame({
   // --- Who reacts to what (the event bus; game/events.js lists the events) ---
   // Points, COD style: +10 for each non-lethal hit by the player; a kill pays the zombie's kill
   // value (+ headshot / box cutter bonus) from the 'kill' event, whatever made the kill.
+  // Once you're dead nothing more is paid or counted (a burning zombie dying later doesn't change
+  // the results screen).
   events.on('hit', (hit) => {
-    if (!hit.killed) wallet.earn(pointsForHit(hit));
+    if (!state.over && !hit.killed) wallet.earn(pointsForHit(hit));
   });
   events.on('kill', ({ zombie, headshot, melee }) => {
-    wallet.earn(pointsForHit({ target: zombie, killed: true, headshot, melee }));
+    if (!state.over) wallet.earn(pointsForHit({ target: zombie, killed: true, headshot, melee }));
   });
-  events.on('shot', (shot) => runStats.recordShot(shot));
-  events.on('kill', ({ zombie }) => runStats.recordKill(zombie));
+  events.on('shot', (shot) => {
+    if (!state.over) runStats.recordShot(shot);
+  });
+  events.on('kill', ({ zombie }) => {
+    if (!state.over) runStats.recordKill(zombie);
+  });
   events.on('playerHit', ({ damage }) => {
     health.takeDamage(damage);
     player.addViewKick(-feel.health.hitJoltDegrees * DEG_TO_RAD); // jolt the view down
@@ -239,6 +243,14 @@ export function createGame({
     if (!intro) return;
     hud.showAnnouncement(intro);
     sound.play('paChime');
+  });
+
+  // Everything else in the map you interact with (wall buys, the ammo cache, later the claw machine,
+  // hazards...): map.features, built by kind (game/features/). Built AFTER the core wiring above, so
+  // payouts and stats always run before any feature's own event listeners, and with every system a
+  // feature might need (game/features/index.js lists the context).
+  const features = buildFeatures(map, {
+    scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state,
   });
 
   // PLAY AGAIN: every system that holds per-run state, put back in this order. A new system with

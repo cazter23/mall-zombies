@@ -14,6 +14,8 @@
 //   seeThrough   optional [Box3]: solids that don't block the line of sight to it (a door's own shutter)
 //   available()  false once it can't be used any more (an opened door)
 //   use()        do the thing (points are already spent)
+//   kind, id     optional, for the 'purchase' event ('door' / 'weapon' / 'ammo' / 'ammoCache', the thing's id);
+//                read BEFORE use(), like the label (buying a gun turns its prompt into "<Gun> ammo")
 //
 // Reaching it takes: within feel.interact.range of the player's EYE in 3D (so a floor above or below
 // is out of reach), roughly facing it, and a clear line from the eye to it (no wall or ceiling in the
@@ -92,11 +94,12 @@ export function createInteractions({ input, player, wallet, sound = null, onRelo
   }
 
   function tryBuy(item) {
-    const cost = item.cost;
-    if (wallet.spend(cost)) {
+    // What is being bought, as it is NOW (use() can change it: a bought gun's prompt becomes its ammo).
+    const purchase = { label: item.label, cost: item.cost, kind: item.kind ?? 'other', id: item.id ?? null };
+    if (wallet.spend(purchase.cost)) {
       item.use();
       if (sound) sound.play('purchase');
-      if (onPurchase) onPurchase({ label: item.label, cost });
+      if (onPurchase) onPurchase(purchase);
     } else {
       deniedTimer = cfg.deniedSeconds;
       if (sound) sound.play('denied');

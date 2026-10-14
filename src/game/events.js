@@ -9,17 +9,21 @@
 // Listeners run in the order they were added, immediately, on the emitting tick.
 //
 // THE EVENTS (payloads):
-//   'shot'        shot                                   a gun fired (hitscan result; one per trigger pull)
+//   'shot'        shot                                   a gun fired (hitscan result): one per shot = one per staple /
+//                                                        sticker / nail / Foam dart (3 per burst) / whole shotgun blast
 //   'hit'         { target, killed, headshot, melee }    a PLAYER attack hit a shootable (one per target per shot
 //                                                        or swing). Non-lethal zombie hits pay +10 here.
 //   'kill'        { zombie, headshot, melee, source }    a zombie died, WHATEVER killed it ('gun', 'melee', or a
 //                                                        future 'hazard' / 'effect'...). ALL kill payouts and kill
-//                                                        stats come from this one event.
+//                                                        stats come from this one event. After the player's death
+//                                                        events still fire, but nothing more is paid or counted.
 //   'playerHit'   { damage, zombie }                     a zombie's swing landed
 //   'playerDeath' {}                                     after the death is registered (onPlayerDeath)
 //   'roundStart'  { round }                              the round number flipped (game/rounds.js)
 //   'typeIntro'   { typeId }                             a zombie type's first appearance this run
-//   'purchase'    { label, cost }                        something was bought (doors, guns, ammo...)
+//   'purchase'    { label, cost, kind, id }              something was bought; kind 'door' | 'weapon' | 'ammo' |
+//                                                        'ammoCache' | 'other', id = door / gun id (as it was BEFORE
+//                                                        the purchase: buying a gun is kind 'weapon', not its ammo)
 //   'runReset'    {}                                     after Play again reset everything
 // =============================================================================
 

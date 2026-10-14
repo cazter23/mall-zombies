@@ -120,7 +120,9 @@ export function createPlayerGun({
       const color = colors ? colors[rayIndex % colors.length] : d.tracerColor;
       effects.tracer(muzzlePosition, ray.end, color);
       ray.hits.forEach((hit, i) => {
-        if (targets.get(hit.target)?.killed) return;
+        // Hits are worked out before any damage, so a target can be dead by the time its hit applies
+        // (killed by an earlier pellet, or by something reacting to another kill this shot): skip it.
+        if (targets.get(hit.target)?.killed || !hit.target.isAlive) return;
         const headshot = hit.part === 'head';
         // Headshot x distance falloff x pass-through (pierce) falloff x player stats: gunStats.js.
         const damage = hitDamage(d, hit, i, stats);
