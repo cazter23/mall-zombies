@@ -115,6 +115,7 @@ const interactions = createInteractions({
   player,
   wallet,
   sound,
+  colliders, // buy spots must be in plain sight (no buying through walls)
   onReloadTap: () => gun.requestReload(), // controller X tapped next to a buyable: it was a reload
 });
 for (const door of map.doors) {
@@ -123,6 +124,7 @@ for (const door of map.doors) {
     verb: 'open',
     cost: door.price,
     position: door.position,
+    seeThrough: [door.barrier.collider], // the shutter itself doesn't block the view of its own buy spot
     available: () => !door.isOpen,
     use: () => door.open(),
   });

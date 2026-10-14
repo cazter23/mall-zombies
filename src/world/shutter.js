@@ -45,6 +45,7 @@ export function createShutter({ name, minX, maxX, minZ, maxZ, height, material, 
   return {
     name,
     mesh,
+    collider, // the solid slab filling the doorway (the interaction system sees through it to the buy spot)
     get state() {
       return state;
     },

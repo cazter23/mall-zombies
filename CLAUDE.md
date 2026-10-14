@@ -26,7 +26,9 @@ sealed until their door is bought, vaultable counters, the sealed escalator (a r
 at it never gets on; you can walk under its high end), the ceiling hole, Food Court stalls/tables (queue spots and
 table lanes reachable, nobody gets onto or behind a counter), `corridor.test.js` the modular corridor builder (floors
 never overlap, walls never intrude into the walkway, sealed except where asked, doorways/gaps/open ends/branches, a real
-nav grid end to end and through a branch doorway)); there is no linter yet.
+nav grid end to end and through a branch doorway), `interactions.test.js` buying against the real mall (every door and wall buy
+works from where you stand, the Nail Gun can't be bought through its wall, other floors are out of reach, facing matters));
+there is no linter yet.
 `npm run build` is the compile check (it only bundles; it
 does not run the game, so also try changes in `npm run dev`).
 
@@ -232,7 +234,8 @@ src/
                         pop-ups). pointsForHit(): COD payouts (+10 hit; kill value +40 head / +70 melee; zombies only)
     interactions.js     createInteractions(): buyables (doors now, wall buys next). add({ label, verb, cost, position,
                         available(), use() }). Each tick: nearest available item within feel.interact.range and
-                        roughly faced = focus; holding interact for holdSeconds (hold must START while focused) spends
+                        roughly faced, in 3D range of the EYE and in plain sight (a ray vs the colliders; an item's `seeThrough` boxes, e.g. a door's own
+                        shutter, don't block) = focus; holding interact for holdSeconds (hold must START while focused) spends
                         and calls use(), else red prompt + 'denied'. Buttons bound to both interact and reload
                         (controller X): the press is hidden from the gun near a buyable; let go before it buys =
                         onReloadTap (gun.requestReload()). `prompt` for the HUD; reset()
@@ -628,6 +631,18 @@ Court through the shared wall; a real player walks in through the doorway to the
 real F-hold buys it for 1250; doorway + sign and the corridor's dressing look right; zombies from its 3 spawns reach
 the hub in ~8-12s and never climb). The hub layout is now complete: start room -> hallway -> Mega Mart / Food Court /
 Service Corridor, in any order.
+Codex audit fixes, in steps: 1) light budget (SHELVED, see below), 2) sign textures cached + sized to the sign (low value on
+a dedicated GPU), 3) merge static map meshes (fewer draw calls; low value for now), 4) no buying through walls (DONE),
+5) map dispose removes its colliders + frees GPU memory, wall/corridor builders reject overlapping openings / self-crossing
+corridors.
+Step 1 shelved: a pool of 4 real point lights moved to the nearest lamps (world/lightPool.js) halved frame time on Intel
+integrated graphics but made no difference on the user's NVIDIA card (Firefox), so it's in `git stash` ("step 1: light
+budget"), not in the game. The "big circles on the ceiling" the user saw were the lamps themselves (hung 0.8m under the
+ceiling = a hard bright disc); fixed by hanging lamps at ~60% of ceiling height with matching intensity (see Map > Lighting).
+Step 4 done: buy spots need a clear line from the eye and 3D range (interactions.js; main passes `colliders`, doors pass their
+shutter as `seeThrough`; shutter exposes `collider`). Fixes: the Nail Gun could be bought from the Food Court through the
+wall; a second floor would have reached ground-floor buyables. Verified: tests/interactions.test.js (7) and in the browser
+(real held F buys the start shutter and the Nail Gun; no prompt behind the wall).
 Next (optional): step 6 = loop shortcuts (Food Court <-> Mega Mart, Service Corridor <-> Food Court).
 
 ## Planned build order

@@ -11,8 +11,13 @@
 //   verb         'open' (shown in the prompt)
 //   cost         points (number)
 //   position     THREE.Vector3 the player interacts with (distance + facing are measured to it)
+//   seeThrough   optional [Box3]: solids that don't block the line of sight to it (a door's own shutter)
 //   available()  false once it can't be used any more (an opened door)
 //   use()        do the thing (points are already spent)
+//
+// Reaching it takes: within feel.interact.range of the player's EYE in 3D (so a floor above or below
+// is out of reach), roughly facing it, and a clear line from the eye to it (no wall or ceiling in the
+// way, so a gun on the far side of a wall can't be bought through it).
 //
 // Controller X is both interact and reload (COD): near a buyable, holding it buys,
 // a quick tap still reloads. Any button bound to both is handled that way.
@@ -20,10 +25,15 @@
 
 import { feel } from '../config/feel.js';
 import { bindings } from '../config/controls.js';
+import * as THREE from 'three';
 
 const DEG_TO_RAD = Math.PI / 180;
+const eye = new THREE.Vector3();
+const toItem = new THREE.Vector3();
+const sightRay = new THREE.Ray();
+const sightHit = new THREE.Vector3();
 
-export function createInteractions({ input, player, wallet, sound = null, onReloadTap = null }) {
+export function createInteractions({ input, player, wallet, sound = null, onReloadTap = null, colliders = [] }) {
   const cfg = feel.interact;
   const items = [];
   // Buttons bound to both interact and reload (controller X): tap = reload, hold = buy.
@@ -36,16 +46,34 @@ export function createInteractions({ input, player, wallet, sound = null, onRelo
   let sharedUsed = false; // ...and it already bought (or tried to buy) something
   let deniedTimer = 0; // > 0: show the "not enough points" state
 
-  // Is this item within reach and roughly in front of the player?
+  // Is there nothing solid between the player's eye and the item? (Low counters etc. count: only
+  // boxes the ray really crosses. Invisible walk-blockers that bullets ignore don't.)
+  function hasClearLine(item) {
+    toItem.subVectors(item.position, eye);
+    const d = toItem.length();
+    if (d < 1e-6) return true;
+    sightRay.set(eye, toItem.divideScalar(d));
+    for (const box of colliders) {
+      if (box.ignoreShots || item.seeThrough?.includes(box)) continue;
+      if (box.containsPoint(eye)) continue; // a box the eye is inside (a floor slab's edge) isn't in the way
+      if (sightRay.intersectBox(box, sightHit) && sightHit.distanceTo(eye) < d - 0.05) return false;
+    }
+    return true;
+  }
+
+  // Is this item within reach, roughly in front of the player, and in plain sight?
   function canReach(item) {
+    eye.set(player.position.x, player.position.y + (player.eyeHeight ?? feel.player.eyeHeight), player.position.z);
+    if (eye.distanceTo(item.position) > cfg.range) return false;
     const dx = item.position.x - player.position.x;
     const dz = item.position.z - player.position.z;
     const d = Math.hypot(dx, dz);
-    if (d > cfg.range) return false;
-    if (d < cfg.facingFreeDistance) return true; // right next to it: any direction counts
-    const fx = -Math.sin(player.yaw);
-    const fz = -Math.cos(player.yaw);
-    return (dx * fx + dz * fz) / d >= Math.cos(cfg.maxAngleDegrees * DEG_TO_RAD);
+    if (d >= cfg.facingFreeDistance) {
+      const fx = -Math.sin(player.yaw);
+      const fz = -Math.cos(player.yaw);
+      if ((dx * fx + dz * fz) / d < Math.cos(cfg.maxAngleDegrees * DEG_TO_RAD)) return false;
+    }
+    return hasClearLine(item);
   }
 
   // Nearest reachable, still-available item.
