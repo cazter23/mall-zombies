@@ -9,7 +9,7 @@
 
 import * as THREE from 'three';
 import { feel } from '../config/feel.js';
-import { zombieTypes, zombieCrowd, zombieFailsafe } from '../config/zombies.js';
+import { zombieTypes, zombieCrowd, zombieFailsafe, zombieSpawn } from '../config/zombies.js';
 import { zombieHealthFor } from '../config/economy.js';
 import { createNavigation } from './navigation.js';
 import { overlapsSolid } from '../world/collision.js';
@@ -49,6 +49,8 @@ export function createZombieManager({
   const base = zombieTypes.shopper;
   const nav = createNavigation(colliders, { radius: base.radius, height: base.height });
   const zombies = [];
+  let spawnClock = 0;
+  const lastSpawnAt = new Map();
   // Zombie sounds go through here: the same sound never stacks within soundMinGapSeconds,
   // so a group of Mall Walkers squeaks like a group, not a wall of noise.
   let soundClock = 0;
@@ -62,21 +64,38 @@ export function createZombieManager({
   const ctx = { nav, player, colliders, zombies, canAttack: true, onPlayerHit, onSound: playZombieSound };
   const scratch = new THREE.Vector3();
 
-  // A spawn point in an open zone that can reach the player, not right on top of them.
-  // Returns null if there's none right now (the caller waits and tries again).
-  function pickSpawnPoint() {
-    const reachable = spawnPoints.filter(
-      (s) => isZoneOpen(s.zone) && nav.distanceToTarget(s.position.x, s.position.z) < Infinity,
+  // Hard safety checks first. A rising zombie reserves its full ground-level body,
+  // and a rescue ignores only the zombie being relocated. No safe point => retry later.
+  function pickSpawnPoint(type, ignoredZombie = null) {
+    const candidates = [];
+    for (const point of spawnPoints) {
+      if (!isZoneOpen(point.zone)) continue;
+      const p = point.position;
+      if (Math.hypot(p.x - player.position.x, p.z - player.position.z) < zombieCrowd.minSpawnDistance) continue;
+      const cost = nav.distanceToTarget(p.x, p.z);
+      if (!Number.isFinite(cost)) continue;
+      const occupied = zombies.some((z) => {
+        if (z === ignoredZombie || !z.isAlive) return false;
+        // Spawns stand at y=0; actors above or below that body do not occupy it.
+        if (z.position.y >= type.height || z.position.y + z.type.height <= 0) return false;
+        const clearance = type.radius + z.type.radius + zombieSpawn.clearanceGap;
+        return Math.hypot(p.x - z.position.x, p.z - z.position.z) < clearance;
+      });
+      if (!occupied) candidates.push({ point, cost });
+    }
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => a.cost - b.cost);
+    // The field includes wall penalties: cost is a route ranking, not literal walking meters.
+    const maxCost = candidates[0].cost + zombieSpawn.neighbourhoodCostAllowance;
+    const neighbourhood = candidates.filter((c) => c.cost <= maxCost);
+    const ready = neighbourhood.filter(({ point }) =>
+      spawnClock - (lastSpawnAt.get(point) ?? -Infinity) >= zombieSpawn.reuseCooldownSeconds,
     );
-    if (reachable.length === 0) return null;
-    const farEnough = reachable.filter(
-      (s) => s.position.distanceTo(player.position) >= zombieCrowd.minSpawnDistance,
-    );
-    if (farEnough.length > 0) return farEnough[Math.floor(Math.random() * farEnough.length)];
-    // Everything is close: use the farthest one.
-    return reachable.reduce((a, b) =>
-      a.position.distanceTo(player.position) > b.position.distanceTo(player.position) ? a : b,
-    );
+    // Relax cooldowns inside the neighbourhood, never player distance or body clearance.
+    const pool = ready.length > 0 ? ready : neighbourhood;
+    const count = Math.random() < zombieSpawn.nearbyChance
+      ? Math.min(pool.length, zombieSpawn.nearestCount) : pool.length;
+    return pool[Math.floor(Math.random() * count)].point;
   }
 
   // Walk / jog / run, picked by chance from the round's row in type.gaitsByRound.
@@ -200,10 +219,11 @@ export function createZombieManager({
   }
 
   function rescue(z) {
-    const point = pickSpawnPoint();
+    const point = pickSpawnPoint(z.type, z);
     if (!point) return; // nowhere better right now: try again at the next check
     const yaw = Math.atan2(-(player.position.x - point.position.x), -(player.position.z - point.position.z));
     z.respawnAt(point.position, yaw);
+    lastSpawnAt.set(point, spawnClock);
     z.stuckTimer = 0;
     z.stuckFrom.x = z.position.x;
     z.stuckFrom.z = z.position.z;
@@ -311,7 +331,7 @@ export function createZombieManager({
     // Returns the zombie, or null if no spawn point is usable right now.
     spawn(typeId = 'shopper', at = null) {
       const type = zombieTypes[typeId];
-      const point = at ? null : pickSpawnPoint();
+      const point = at ? null : pickSpawnPoint(type);
       if (!at && !point) return null;
       const position = at ? at.clone() : point.position.clone();
       position.y = 0;
@@ -325,6 +345,7 @@ export function createZombieManager({
       scene.add(zombie.model.root);
       zombies.push(zombie);
       shootables.push(zombie);
+      if (point) lastSpawnAt.set(point, spawnClock);
       // Floor-tile dust as it breaks through.
       scratch.copy(position);
       scratch.y += 0.05;
@@ -340,10 +361,13 @@ export function createZombieManager({
         if (i !== -1) shootables.splice(i, 1);
       }
       zombies.length = 0;
+      lastSpawnAt.clear();
+      spawnClock = 0;
     },
 
     // Fixed-tick update.
     update(dt) {
+      spawnClock += dt;
       soundClock += dt;
       nav.update(dt, player.position);
       ctx.canAttack = canAttack();

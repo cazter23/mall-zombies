@@ -89,6 +89,7 @@ src/
                         powerWalk walkAnimation + windedAnimation, tracksuit `outfit`, introBanner, sounds). zombieCrowd
                         (spacing, lanes, queueing, surround rings + sector/still-wrap/circling, contact gap,
                         spawn dust, min spawn distance, soundMinGapSeconds),
+                        zombieSpawn (local route-cost neighbourhood, nearest/random mix, body clearance + marker cooldown),
                         zombieNav (grid, soft wall clearance + wall penalty), zombieFailsafe (stuck-zombie rescue)
     controls.js         bindings (action -> keyboard/mouse + Pad* codes; interact = F / X; switchWeapon = wheel / Y,
                         weapon1/weapon2 = 1/2; menu-only: settings = Y, controlsScreen = X on the pause screen), buttonLabels
@@ -227,8 +228,10 @@ src/
                         Arms have shoulder + elbow joints. Code animation (numbers in zombieTypes.<type>.walkAnimation):
                         shamble or style 'powerWalk' (bent arms pumping, hips twisting), arms-overhead wind-up, slam,
                         recovery, winded pose (bent over, hands at knees, breathing), flinch/flash, rise from floor, tip over and sink
-    zombieManager.js    createZombieManager(): spawn(typeId) (open + reachable spawn points >= minSpawnDistance away; returns
-                        null if none, the round waits; health = zombieHealthFor(typeId, round)), onSound option (zombie
+    zombieManager.js    createZombieManager(): spawn(typeId) (open + reachable spawn points >= minSpawnDistance horizontally
+                        away, clear of live bodies including risers; local pool <= cheapest eligible route cost + 30;
+                        50% nearest 4 / 50% random local, prefer markers off their 3s reuse cooldown; returns null if none
+                        safe, the round waits; health = zombieHealthFor(typeId, round)), onSound option (zombie
                         sounds, the same sound never within zombieCrowd.soundMinGapSeconds), update
                         (assign surround slots -> zombie updates -> resolve zombie overlaps -> keep the player out
                         of zombies -> stuck-zombie failsafe -> refresh hitboxes, since the shoves moved bodies). Failsafe:
@@ -474,6 +477,16 @@ The start room opens into a MAIN HALLWAY (the hub); every other area is bought o
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+Local zombie spawning implemented: eligible markers are ranked by the existing weighted navigation field (wall
+penalties mean route cost is not literal walking meters). New spawns pick 50% from the nearest four and 50% from
+markers within 30 cost units of the cheapest safe marker. Open zones and reachability still gate every choice.
+Player distance (4m horizontally) and live-body clearance (both radii + 0.25m, including emerging zombies) are
+mandatory; no safe point returns null so rounds retry without spending quota. Prefer markers off a 3s cooldown;
+if all safe local markers are cooling, relax only cooldowns, inside that same neighbourhood. Successful spawns
+and stuck rescues record reuse; clear/new-run resets it. Rescues exclude their own body and keep health. Explicit
+debug spawn positions still bypass marker selection. Tests/spawning.test.js covers selection, safety, cooldowns,
+round retries, rescue health/occupancy and the real mall at six player positions. Distant-zombie recycling deferred.
+
 New wall guns implemented: Foam Dart Blaster (Mega Mart, 1200 / ammo 600), three-round burst, 45 damage,
 3x heads, 24/144 ammo, 0.07s between darts then 0.35s recovery, 1.9s drum-swap reload. Confetti Cannon
 (Service Corridor, 1500 / ammo 750), six-shell tube, eight 32-damage pellets per blast (256 point blank: one-shots rounds

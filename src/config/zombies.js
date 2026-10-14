@@ -1,6 +1,6 @@
 // =============================================================================
 // ZOMBIES CONFIG
-// Per-type zombie stats and looks (shopper, mallWalker), plus crowd and pathfinding settings.
+// Per-type zombie stats and looks (shopper, mallWalker), plus crowd, spawning and pathfinding settings.
 // Which types spawn in which rounds (and their health) is in economy.js -> zombieMix.
 // Health is NOT here: it comes from economy.js (zombieHealthForRound) so it
 // scales with the round. Logic in src/zombies/ reads these; never hardcode.
@@ -223,7 +223,16 @@ export const zombieCrowd = {
   arriveDistance: 0.5, // they start slowing down this far before reaching the player (or their slot)
   spawnDustColors: [0xb8b0a4, 0xd8cdb8, 0x8a7f72], // floor-tile dust when one rises out of the floor
   spawnDustCount: 18,
-  minSpawnDistance: 4, // prefer spawn points at least this far from the player
+  minSpawnDistance: 4, // require spawn points at least this far horizontally from the player
+};
+
+// New spawns follow the player without requiring additional authored map zones.
+export const zombieSpawn = {
+  neighbourhoodCostAllowance: 30, // eligible routes may cost this much more than the cheapest one
+  nearestCount: 4, // nearby branch picks randomly among this many lowest-cost markers
+  nearbyChance: 0.5, // otherwise pick randomly across the local neighbourhood
+  clearanceGap: 0.25, // extra meters beyond both body radii; rising zombies reserve their full body
+  reuseCooldownSeconds: 3, // prefer other local markers; relax only if all safe local ones are cooling
 };
 
 // Flow-field pathfinding on a flat grid (ground floor only, until the navmesh in step 7).

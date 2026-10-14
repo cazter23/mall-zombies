@@ -295,7 +295,7 @@ export function createNavigation(colliders, agent) {
       builtForSignature = null;
     },
 
-    // Walking distance (meters) from a point to the player, or Infinity if unreachable.
+    // Route cost in meter-scaled units (includes wall penalties), or Infinity if unreachable.
     distanceToTarget(x, z) {
       if (!hasField) return Infinity;
       const i = bestCellNear(x, z);
