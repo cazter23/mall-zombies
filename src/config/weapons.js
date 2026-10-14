@@ -259,7 +259,7 @@ export const weapons = {
     id: 'nailGun',
     name: 'Nail Gun',
     fireMode: 'semi',
-    damage: 90, // round-1 zombie (150 HP): 2 body / 1 head; round 2 (250): 3 body; round 5 (550): 7 body / 3 head
+    damage: 90, // round-1 zombie (150 HP): 2 body / 1 head; round 2 (225): 3 body; round 5 (450): 5 body / 2 head
     headshotMultiplier: 3,
     // Each nail goes through up to maxTargets zombies in a line (walls still stop it), doing a bit less
     // damage to each one it has already passed through.

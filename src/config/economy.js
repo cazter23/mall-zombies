@@ -69,8 +69,8 @@ export const economy = {
   },
 
   waves: {
-    // HP: 150 at round 1, +100 per round through round 9, then x1.1 per round
-    health: { roundOne: 150, perRoundIncrease: 100, linearUntilRound: 9, multiplierAfter: 1.1 },
+    // HP: 150 at round 1, +75 per round through round 9, then x1.075 per round
+    health: { roundOne: 150, perRoundIncrease: 75, linearUntilRound: 9, multiplierAfter: 1.075 },
     // Zombie count: round(6 + 2.5 * (round - 1))
     count: { base: 6, perRound: 2.5 },
     // Spawn delay: a slow trickle in the first rounds (earlyRounds, seconds, for rounds 1, 2, 3, 4),

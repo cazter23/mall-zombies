@@ -477,6 +477,10 @@ The start room opens into a MAIN HALLWAY (the hub); every other area is bought o
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+Zombie health tuning: 150 HP in round 1, +75 per round through round 9, then +7.5% per round.
+This reduces bullet-sponginess (round-8 Shopper: 675 HP, 27 Price Gun body hits / 8 Nail Gun body hits).
+Mall Walkers retain 65% of Shopper health. Zombie damage, movement, spawning and weapon stats are unchanged.
+
 Local zombie spawning implemented: eligible markers are ranked by the existing weighted navigation field (wall
 penalties mean route cost is not literal walking meters). New spawns pick 50% from the nearest four and 50% from
 markers within 30 cost units of the cheapest safe marker. Open zones and reachability still gate every choice.
@@ -642,7 +646,7 @@ Health regen nerfed slightly: 3.5s delay (was 3), 40 HP/s (was 50; empty to full
 Step 5 in progress. Done: the Mall Walker (round 4+). A power-walking retiree in a matching tracksuit (stripes,
 headband, wristbands, white sneakers, silver hair, maybe a fanny pack), slimmer than a shopper (model + hitbox).
 5.4 m/s always (outpaces your walk 5 and backpedal 3.5, not your sprint 8), 65% of the round's health (round 4:
-293 vs 450), same 40-damage slam and wind-up, same 60-point kill value. Winded after every swing (hit or miss):
+244 vs 375), same 40-damage slam and wind-up, same 60-point kill value. Winded after every swing (hit or miss):
 stands bent over panting for 1.2s (no attacks), then follows at half speed for 0.6s: your opening. Squeaky
 sneakers + huffing while chasing, panting when winded (louder when close, silent past ~12-14m). Spawn mix: 15% of
 spawns from round 4, 25% from 6, 30% from 9 (part of the normal count); in its first round the 3rd spawn is forced
@@ -737,5 +741,5 @@ Next (optional): step 6 = loop shortcuts (Food Court <-> Mega Mart, Service Corr
 - **Later:** multiple floors with escalators/elevators (needs a navmesh); meta progression and a skill
   tree (keep boosts small).
 - **Economy highlights:** start with 500 points, start shutter 500, zombie HP 150 at round 1 then
-  +100/round through round 9 then x1.1/round, zombie count `round(6 + 2.5*(round-1))`.
+  +75/round through round 9 then x1.075/round, zombie count `round(6 + 2.5*(round-1))`.
   Full values live in `src/config/economy.js`.
