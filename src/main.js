@@ -1,6 +1,7 @@
 // =============================================================================
-// MALL ZOMBIES: entry point
-// Wires together the renderer, world, player, weapon, zombies, effects, input, HUD, and the fixed-step loop.
+// MALL ZOMBIES: entry point (the browser side)
+// The renderer, camera, pointer lock, menus, controller menus, look input, debug keys and drawing.
+// All gameplay systems are built and ticked by game/createGame.js (which also runs headless in tests).
 // =============================================================================
 
 import './style.css';
@@ -11,33 +12,16 @@ import { startLoop } from './core/loop.js';
 import { Input } from './core/input.js';
 import { createGamepad } from './core/gamepad.js';
 import { buttonLabels } from './config/controls.js';
-import { zombieTypes } from './config/zombies.js';
-import { loadMap } from './maps/index.js';
 import { buildTestRange } from './maps/testRange/testRange.js';
-import { createPlayerStats } from './player/stats.js';
-import { PlayerController } from './player/controller.js';
 import { createHud } from './ui/hud.js';
 import { weapons, melee as meleeWeapons } from './config/weapons.js';
-import { createEffects } from './fx/effects.js';
 import { createViewmodel } from './weapons/viewmodel.js';
-import { createPlayerGun } from './weapons/playerGun.js';
-import { createMelee } from './weapons/melee.js';
-import { createAimAssist } from './weapons/aimAssist.js';
 import { createPlayerBody } from './player/body.js';
-import { createZombieManager } from './zombies/zombieManager.js';
-import { createPlayerHealth } from './player/health.js';
-import { createRunStats } from './game/runStats.js';
-import { createWallet, pointsForHit } from './game/wallet.js';
-import { createRounds } from './game/rounds.js';
 import { createSound } from './audio/sound.js';
-import { createInteractions } from './game/interactions.js';
-import { ammoCacheItem } from './game/ammoCache.js';
-import { economy } from './config/economy.js';
-import { buildWeaponDisplay } from './weapons/models/index.js';
-import { createWallBuyDisplay } from './world/wallBuy.js';
 import { createSettings } from './game/settings.js';
 import { createSettingsMenu } from './ui/settingsMenu.js';
 import { createControlsMenu } from './ui/controlsMenu.js';
+import { createGame } from './game/createGame.js';
 
 // --- Renderer, scene, camera ---------------------------------------------------
 
@@ -63,132 +47,33 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// --- Game objects --------------------------------------------------------------
+// --- Browser parts + the game ------------------------------------------------------
 
-// One shared list of solid boxes: the map, debug add-ons and doors all write into it;
-// the player, zombies and bullets all read it.
-const colliders = [];
-const map = loadMap('mall', scene, colliders);
-// Debug-only open area for testing movement and shooting (press T).
-const arena = debug.testArena ? buildTestRange(scene, colliders) : null;
-// Live combat bodies also block a vault's path and landing, even without a world collider.
-const shootables = [...(arena ? arena.shootables : [])];
 const input = new Input(renderer.domElement);
 const gamepad = createGamepad(input); // feeds controller buttons/sticks into `input`
-const stats = createPlayerStats();
-const player = new PlayerController({
-  camera,
-  input,
-  stats,
-  colliders,
-  spawn: map.playerSpawn,
-  getBodies: () => shootables, // live hitboxes also block vault paths/landings
-});
 const hud = createHud();
-// Points. Every gain/spend shows a "+60" / "-500" pop-up by the counter.
-const wallet = createWallet({ onChange: (amount) => hud.pointsPopup(amount) });
-const payForHit = (hit) => wallet.earn(pointsForHit(hit)); // +10 per hit, kill value + bonuses on kills
-const body = createPlayerBody(scene); // legs + torso you see when looking down
-
-const effects = createEffects(scene);
 const sound = createSound(); // synthesized sound effects (starts on the first click/key press)
 const viewmodel = createViewmodel(Object.values(weapons), meleeWeapons.boxCutter); // a model for every gun
-scene.add(viewmodel.worldLight); // the muzzle flash lights up the room
-const aimAssist = createAimAssist({ player, input, shootables, colliders });
-const gun = createPlayerGun({
-  def: weapons.stapleGun,
-  stats,
-  player,
+const body = createPlayerBody(scene); // legs + torso you see when looking down
+
+const g = createGame({
+  scene,
+  camera,
   input,
-  colliders,
-  shootables,
-  effects,
+  hud,
+  sound,
   viewmodel,
-  hud,
-  sound,
-  onShot: (shot) => runStats.recordShot(shot),
-  onHit: payForHit,
-  aimAssist,
-});
-// Buyables (hold F / X): the map's doors and wall buys.
-const interactions = createInteractions({
-  input,
-  player,
-  wallet,
-  sound,
-  colliders, // buy spots must be in plain sight (no buying through walls)
-  onReloadTap: () => gun.requestReload(), // controller X tapped next to a buyable: it was a reload
-});
-for (const door of map.doors) {
-  interactions.add({
-    label: door.label,
-    verb: 'open',
-    cost: door.price,
-    position: door.position,
-    seeThrough: [door.barrier.collider], // the shutter itself doesn't block the view of its own buy spot
-    available: () => !door.isOpen,
-    use: () => door.open(),
-  });
-}
-// Wall buys: buy the gun, or (once you own it) refill its ammo. Markers for guns that don't
-// exist yet in config/weapons.js are skipped.
-for (const wb of map.wallBuys) {
-  const def = weapons[wb.weapon];
-  const prices = economy.wallBuys[wb.weapon];
-  if (!def || !prices) continue;
-  scene.add(
-    createWallBuyDisplay({
-      position: wb.position,
-      normal: wb.normal,
-      name: def.name,
-      gunModel: buildWeaponDisplay(def),
-      cfg: feel.world.wallBuyDisplay,
-    }),
-  );
-  const owned = () => gun.owns(def.id);
-  interactions.add({
-    get label() {
-      return owned() ? `${def.name} ammo` : def.name;
-    },
-    verb: 'buy',
-    get cost() {
-      return owned() ? prices.ammo : prices.weapon;
-    },
-    position: wb.position,
-    // Only in an opened area, and not when you already have it with full ammo.
-    available: () => map.zones[wb.zone].open && !(owned() && gun.weaponFor(def.id).isFull),
-    use: () => gun.give(def),
-  });
-}
-
-// Ammo caches (vending machines): refill the gun in your hand for a flat price.
-for (const cache of map.ammoCaches ?? []) {
-  interactions.add(ammoCacheItem({ cache, zones: map.zones, gun, price: () => economy.ammoCache.price }));
-}
-
-const melee = createMelee({
-  def: meleeWeapons.boxCutter,
-  stats,
-  player,
-  input,
-  getWeapon: () => gun.weapon, // the gun in hand (knifing cancels its reload)
-  shootables,
-  colliders,
-  effects,
-  hud,
-  onHit: payForHit,
-});
-
-// The game runs while the mouse is locked (Esc pauses) or while playing on a controller
-// (Start pauses). A controller doesn't need the mouse locked.
-const game = {
-  forceRun: false, // debug: run without pointer lock (used by automated tests)
-  over: false, // true once the player has died
-  padPlaying: false, // started/resumed with a controller
-  get running() {
-    return input.locked || this.padPlaying || this.forceRun;
+  buildTestRange: debug.testArena ? buildTestRange : null,
+  debugTick: handleDebugKeys,
+  // Free the mouse as soon as you die, so it's usable by the time the results screen appears
+  // (browsers refuse to re-lock the pointer for about a second after it's released).
+  onPlayerDeath: () => {
+    if (document.pointerLockElement) document.exitPointerLock();
   },
-};
+});
+scene.add(viewmodel.worldLight); // the muzzle flash lights up the room
+const { state: game, death, map, player, gun, melee, zombies, rounds, health, wallet, effects, aimAssist, interactions } = g;
+const resetRun = g.resetRun;
 
 // Button name for prompts on whichever device was used last ("R" vs "X" vs "□").
 function buttonLabel(action) {
@@ -197,95 +82,25 @@ function buttonLabel(action) {
 }
 
 const DEG_TO_RAD = Math.PI / 180;
-const runStats = createRunStats();
-let rounds = null; // created below, once the zombie manager exists
-const getRound = () => Math.max(1, rounds ? rounds.round : 1);
-const death = { timer: 0, resultsShown: false };
 
-// THE single place the player dies. A downed/revive system would hook in here later
-// (e.g. go "downed" instead, and only call the rest of this if nobody revives you).
-function onPlayerDeath() {
-  game.over = true;
-  death.timer = 0;
-  death.resultsShown = false;
-  hud.setDead(true);
-  game.padPlaying = false;
-  // Free the mouse now, so it's usable by the time the results screen appears
-  // (browsers refuse to re-lock the pointer for about a second after it's released).
-  if (document.pointerLockElement) document.exitPointerLock();
+// Debug keys (raw key codes are only used here, never in gameplay). Run by the game each live tick,
+// just before the player moves.
+function handleDebugKeys() {
+  if (debug.allowShutterToggle && input.consumePress('KeyO')) {
+    for (const door of map.doors) door.toggle(); // debug: open/close doors for free
+  }
+  if (g.arena && input.consumePress('KeyT')) {
+    player.teleport(g.arena.contains(player.position) ? map.playerSpawn : g.arena.playerSpawn);
+  }
+  if (debug.zombieKeys && input.consumePress('KeyZ')) {
+    const shift = input.isDown('ShiftLeft') || input.isDown('ShiftRight');
+    zombies.spawn(shift ? 'mallWalker' : 'shopper'); // Z = Shopper, Shift+Z = Mall Walker
+  }
+  if (debug.zombieKeys && input.consumePress('KeyX')) zombies.clear();
+  if (debug.cheatKeys && input.consumePress('KeyN')) rounds.skipRound();
+  if (debug.cheatKeys && input.consumePress('KeyP')) wallet.earn(5000);
+  if (debug.cheatKeys && input.consumePress('Quote')) wallet.spend(wallet.points); // ' = points to 0
 }
-
-function showResults() {
-  death.resultsShown = true;
-  hud.showResults({
-    timeAlive: runStats.timeAlive,
-    round: rounds.round,
-    pointsEarned: wallet.totalEarned,
-    kills: runStats.kills,
-    headshotKills: runStats.headshotKills,
-    meleeKills: runStats.meleeKills,
-    accuracy: runStats.accuracy,
-  });
-}
-
-// Fresh run: everything back to the start without reloading the page.
-function resetRun() {
-  zombies.clear();
-  health.reset();
-  runStats.reset();
-  gun.reset();
-  interactions.reset();
-  viewmodel.reset();
-  effects.clear(); // no leftover splatter or tracers from the last run
-  melee.reset();
-  aimAssist.reset();
-  wallet.reset();
-  rounds.reset();
-  hud.setRound(0);
-  hud.setRoundFlashing(false);
-  player.teleport(map.playerSpawn);
-  map.reset(); // doors closed, zones locked
-  game.over = false;
-  death.timer = 0;
-  death.resultsShown = false;
-  hud.setDead(false);
-  hud.hideResults();
-}
-
-const health = createPlayerHealth({ stats, onDeath: onPlayerDeath });
-
-const zombies = createZombieManager({
-  scene,
-  colliders,
-  player,
-  shootables,
-  effects,
-  spawnPoints: map.spawnPoints,
-  isZoneOpen: (zone) => map.zones[zone].open,
-  getRound,
-  canAttack: () => !health.isDead,
-  onPlayerHit: (damage) => {
-    health.takeDamage(damage);
-    player.addViewKick(-feel.health.hitJoltDegrees * DEG_TO_RAD); // jolt the view down
-  },
-  onKill: (zombie) => runStats.recordKill(zombie),
-  onSound: (name, volume) => sound.play(name, { volume }), // Mall Walker squeaks, huffs and pants
-});
-
-rounds = createRounds({
-  zombies,
-  onRoundStart: (n) => {
-    hud.setRound(n);
-    hud.showRoundBanner(n);
-  },
-  // A zombie type's first appearance this run (Mall Walkers, round 4): PA chime + banner.
-  onTypeIntro: (typeId) => {
-    const intro = zombieTypes[typeId]?.introBanner;
-    if (!intro) return;
-    hud.showAnnouncement(intro);
-    sound.play('paChime');
-  },
-});
 
 // Settings (config/settings.js is the list; changes apply to the game and are saved in the browser).
 // Created after the HUD and sound so each setting's apply() can reach them.
@@ -357,63 +172,10 @@ function handleControllerMenus() {
 function update(dt) {
   gamepad.poll();
   handleControllerMenus();
-
-  // Dead: the world keeps going (zombies wander to the body), the player doesn't.
-  // Checked before the pause check, because the mouse is released on death.
-  if (game.over) {
-    death.timer += dt;
-    zombies.update(dt);
-    health.update(dt);
-    if (!death.resultsShown && death.timer >= feel.death.resultsDelay) showResults();
-    input.endTick();
-    return;
-  }
-
-  if (!game.running) {
-    player.freeze();
-    input.endTick();
-    return;
-  }
-
-  runStats.timeAlive += dt;
-  if (!rounds.started) rounds.start(); // round 1 begins the first time the game actually runs
-
-  if (debug.allowShutterToggle && input.consumePress('KeyO')) {
-    for (const door of map.doors) door.toggle(); // debug: open/close doors for free
-  }
-
-  if (arena && input.consumePress('KeyT')) {
-    player.teleport(arena.contains(player.position) ? map.playerSpawn : arena.playerSpawn);
-  }
-
-  if (debug.zombieKeys && input.consumePress('KeyZ')) {
-    const shift = input.isDown('ShiftLeft') || input.isDown('ShiftRight');
-    zombies.spawn(shift ? 'mallWalker' : 'shopper'); // Z = Shopper, Shift+Z = Mall Walker
-  }
-  if (debug.zombieKeys && input.consumePress('KeyX')) zombies.clear();
-  if (debug.cheatKeys && input.consumePress('KeyN')) rounds.skipRound();
-  if (debug.cheatKeys && input.consumePress('KeyP')) wallet.earn(5000);
-  if (debug.cheatKeys && input.consumePress('Quote')) wallet.spend(wallet.points); // ' = points to 0
-
-  player.update(dt);
-  // "[Space] Vault" prompt: would a jump press now end in a vault? (checked per tick, shown in render)
-  vaultPromptVisible = player.grounded && !player.vault.active && player.vault.preview();
-  interactions.update(dt); // before the gun: on controller X, a hold near a buyable buys instead of reloading
-  melee.update(dt, !gun.isSwitching);
-  // Hands busy with a slash or a vault: no shooting. A vault only pauses a reload (it carries on after).
-  gun.update(dt, melee.isBusy || player.vault.active, player.vault.active);
-  zombies.update(dt);
-  // Rounds pause while you're off in the debug test range (zombies can't reach you there).
-  if (!(arena && arena.contains(player.position))) rounds.update(dt);
-  health.update(dt);
-  map.update(dt);
-  if (arena) arena.update(dt);
-  player.updateView(dt); // recoil/jolt springs last, so this tick's kicks show on the next frame
-  input.endTick();
+  g.update(dt);
 }
 
 const stickRate = { yaw: 0, pitch: 0 };
-let vaultPromptVisible = false;
 
 // Start of every frame, before the ticks: turn the view by this frame's mouse and stick input,
 // so shots and movement in this frame's ticks use where you're looking NOW (a flick-and-click
@@ -483,7 +245,7 @@ function render(alpha, frameTime) {
   hud.setSprint(player.sprintFraction, player.sprintExhausted, player.isSprinting);
   hud.setAmmo(gun.weapon, buttonLabel('reload'));
   hud.setInteract(game.over ? null : interactions.prompt, buttonLabel('interact'));
-  hud.setVaultPrompt(game.running && !game.over && vaultPromptVisible, buttonLabel('jump'));
+  hud.setVaultPrompt(game.running && !game.over && g.vaultPromptVisible, buttonLabel('jump'));
   hud.setPoints(wallet.points);
   hud.setRoundFlashing(rounds.inBreak && rounds.round > 1); // counter blinks in the break between rounds
 
@@ -518,7 +280,11 @@ startLoop({
 });
 
 if (debug.exposeToWindow) {
-  window.__mall = { THREE, scene, camera, renderer, map, world: map, colliders, arena, player, stats, input, game, hud, gun, effects, viewmodel, shootables, body, zombies, health, melee, runStats, death, resetRun, gamepad, aimAssist, wallet, rounds, sound, interactions };
+  window.__mall = {
+    THREE, scene, camera, renderer, map, world: map, colliders: g.colliders, arena: g.arena, player, stats: g.stats, input, game,
+    hud, gun, effects, viewmodel, shootables: g.shootables, body, zombies, health, melee, runStats: g.runStats, death, resetRun,
+    gamepad, aimAssist, wallet, rounds, sound, interactions, g,
+  };
   // Advance the real game loop by `ticks` fixed steps and draw one frame. For automated
   // testing when the browser isn't animating (e.g. a hidden tab). Pair with game.forceRun.
   window.__mall.step = (ticks = 1) => {

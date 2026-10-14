@@ -32,7 +32,10 @@ works from where you stand, the Nail Gun can't be bought through its wall, other
 `ammoCache.test.js` the vending machine (refills any gun in hand, flat price, label follows the gun, needs its area open, not
 through the wall, solid + too tall to climb, zombies can reach its front), `balance.test.js` GUN ROLES on real measured numbers
 (cannon strongest up close / weakest at range, Price Gun best non-shotgun at 5 m but beaten at 30 m, Nail Gun best at 30 m,
-Staple Gun weakest; relationships, not exact values), `gunStats.test.js` the per-hit formula + resolveGun (upgrades as data));
+Staple Gun weakest; relationships, not exact values), `gunStats.test.js` the per-hit formula + resolveGun (upgrades as data),
+`fullRun.test.js` WHOLE RUNS of the real game headless (tests/helpers/headlessGame.js builds createGame with stand-in HUD/sound/
+viewmodel: buy the shutter, rounds, shoot a zombie for exact payouts, die, results, and "Play again equals a freshly built game"
+via snapshot()). New cross-system behaviour should get a full-run test there);
 there is no linter yet.
 `npm run build` is the compile check (it only bundles; it
 does not run the game, so also try changes in `npm run dev`).
@@ -46,8 +49,10 @@ does not run the game, so also try changes in `npm run dev`).
   `npm test` (tests/balance.test.js checks each gun still does its job).
 - All player stats live in one stats object (`src/player/stats.js`) so perks, wardrobe and a
   future skill tree modify it in one place. Systems read stats, not config, at runtime.
-- Death is handled in one function (`onPlayerDeath` in `main.js`) so a downed/revive system can be added
+- Death is handled in one function (`onPlayerDeath` in `game/createGame.js`) so a downed/revive system can be added
   later. `player/health.js` calls it exactly once when health reaches 0.
+- Gameplay systems are built and ticked in `game/createGame.js` (no DOM/WebGL there, so it runs headless in tests).
+  `main.js` is only the browser side. A new gameplay system is created and wired in createGame.js, never in main.js.
 - Keep code modular, readable and commented. Prefer small, reviewable changes.
 - Build in small steps. Do only the step the user asks for. Test it, then tell them how to try it.
 - After changes, run `npm run build` to check for errors.
@@ -60,8 +65,11 @@ does not run the game, so also try changes in `npm run dev`).
 index.html              Entry page; loads /src/main.js and the Bungee Google Font
 package.json            scripts: dev / build / preview
 src/
-  main.js               Entry: renderer, scene, camera, wires input/world/player/HUD, pause logic,
-                        update(dt) + render(alpha); exposes window.__mall when debug.exposeToWindow
+  main.js               Entry, BROWSER SIDE ONLY: renderer, scene, camera, Input + gamepad, HUD, sound, viewmodel, player body,
+                        settings/controls menus, controller menus (handleControllerMenus), pointer lock, debug keys
+                        (handleDebugKeys, run by the game each live tick), look input, render(alpha) + the death camera.
+                        Its tick = gamepad.poll + controller menus + g.update(dt). Exposes window.__mall (same names as
+                        before, plus `g` = the game) when debug.exposeToWindow
   style.css             HUD (crosshair, hit marker, health/stamina bars, ammo, prompt), start/pause overlay
   config/
     feel.js             Movement, sprint, crouch, slide, look (+ recoil spring: frequency/damping, roll), ADS
@@ -258,6 +266,11 @@ src/
                         Crowd shoves never move anyone into a wall (overlapsSolid); a pinned player pushes the
                         zombie back instead. Options canAttack(), onPlayerHit(damage), onKill(zombie)
   game/
+    createGame.js       createGame({ scene, camera, input, hud, sound, viewmodel, mapId, buildTestRange, debugTick,
+                        onPlayerDeath }): builds and wires EVERY gameplay system (map, stats, player, wallet, run stats,
+                        effects, aim assist, gun, buyables, melee, health, zombies, rounds), owns update(dt) (the fixed tick,
+                        in the order below), resetRun() (Play again), onPlayerDeath, showResults, state { forceRun, over,
+                        padPlaying, running }, death, vaultPromptVisible. No DOM: the browser parts are passed in
     settings.js         createSettings(ctx): current value of every setting, saved in localStorage ('mallZombies.settings',
                         values are sanitized on load), applies them all at startup; get/set/reset(tab)/onChange. ctx = { renderer, sound, hud }
     runStats.js         createRunStats(): time alive, kills, headshot/melee kills, shots fired/hit, accuracy
@@ -368,9 +381,10 @@ src/
 ## How the pieces connect
 - `main.js` owns the loop. Every frame starts with `applyLookInput(frameTime)` (mouse + stick look, aim-assist
   slowdown) BEFORE the ticks, so shots/movement in this frame's ticks use where you're looking now.
-  `update(dt)` (60Hz): if `game.over` (dead) only zombies/health/death timer run (checked
+  Each tick main polls the controller, runs the controller menus, then `g.update(dt)` (game/createGame.js).
+  `g.update(dt)` (60Hz): if `game.over` (dead) only zombies/health/death timer run (checked
   first: the mouse is released on death); if not running (pointer unlocked) it freezes the player; otherwise debug
-  keys, `player.update`, `interactions.update` (before the gun, so a controller-X hold near a buyable buys instead
+  keys (main's handleDebugKeys via the debugTick hook), `player.update`, `interactions.update` (before the gun, so a controller-X hold near a buyable buys instead
   of reloading), `melee.update` (no new swing while switching/vaulting),
   `gun.update(dt, melee.isBusy || player.vault.active)` (after the player so shots use this tick's
   eye), `zombies.update`, `rounds.update` (paused while in the test range), `health.update`, `map.update`,
