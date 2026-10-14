@@ -35,9 +35,10 @@ test('...and the weakest gun at range, near useless past 20 m', () => {
   assert.ok(dps(confettiCannon, 20) < 0.1 * dps(confettiCannon, 2));
 });
 
-test('Confetti Cannon blast targets: one blast kills round 3 up close; no single blast can kill round 5 (room for upgrades)', () => {
+test('Confetti Cannon blast targets: one blast kills round 3 up close; no single BODY blast can kill round 5 (room for upgrades)', () => {
   assert.ok(expectedShotDamage(confettiCannon, 2) >= zombieHealthForRound(3), 'average point-blank blast vs round 3');
-  assert.ok(confettiCannon.damage * confettiCannon.pellets.count < zombieHealthForRound(5), 'best possible blast vs round 5');
+  assert.ok(confettiCannon.damage * confettiCannon.pellets.count < zombieHealthForRound(5), 'best possible body blast vs round 5');
+  // (A point-blank HEAD blast can: 2x per pellet. That's a deliberate, risky close-range reward.)
 });
 
 test('Price Gun: the cheap close-range sprayer. Best sustained damage at 5 m of the non-shotguns...', () => {

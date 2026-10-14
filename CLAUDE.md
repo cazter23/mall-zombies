@@ -534,6 +534,15 @@ The start room opens into a MAIN HALLWAY (the hub); every other area is bought o
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+Codex playtest follow-up: Foam Dart Blaster damage 45 -> 50 (round 3: two body bursts; round 5: one head burst), Confetti
+Cannon wall ammo 750 -> 500 (the 400 STAPLE-O-MAT was cheaper than the wall). Fixes: a shot ends any reload pose at once
+(viewmodel.fire sets reloadWeight 0), so the cannon no longer fires with its barrels open when firing cuts a shell-by-shell
+reload short; the balance report's magazine time no longer counts the last shot's recovery (it overlaps the reload, as in
+weapon.js) and labels shots vs trigger pulls (Foam: darts (pulls)); the cannon ceiling check is "no single BODY blast kills
+round 5" (a point-blank head blast can: deliberate risky reward). Corrected sustained dps: Price 231, Nail 222, Foam 219,
+Cannon 439 at 2 m. Watch: Nail vs Foam at 30 m is now only ~1.4% apart (the role check still passes); if the Nail Gun's
+long-range role feels blurred, give the Foam Dart Blaster a little very-long-range falloff.
+
 Gun balance rework (roles + upgrade-ready structure): every hit's damage comes from weapons/gunStats.js hitDamage, falloff
 is a per-gun option, gameplay reads each slot's RESOLVED gun (resolveGun: config + mods), so Build-A-Blaster / attachments
 are data (playerGun.setMods). `npm run balance` prints every gun as it plays; tests/balance.test.js pins the ROLES.

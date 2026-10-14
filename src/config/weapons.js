@@ -388,7 +388,7 @@ export const weapons = {
   foamDartBlaster: {
     id: 'foamDartBlaster', name: 'Foam Dart Blaster', fireMode: 'burst',
     burst: { count: 3, interval: 0.07 },
-    damage: 45, headshotMultiplier: 3,
+    damage: 50, headshotMultiplier: 3, // (was 45) round 3: two body bursts; round 5: one head burst
     magazineSize: 24, startingReserve: 144,
     fireInterval: 0.35, // pause after the LAST dart
     fireBuffer: 0.12, reloadTime: 1.9, range: 100,
@@ -451,8 +451,8 @@ export const weapons = {
     id: 'confettiCannon', name: 'Confetti Cannon', fireMode: 'semi',
     // ROLE: the room-clearer. Clearly the strongest gun within ~3m (one blast kills a round-3 zombie),
     // about even at 5m, near useless past 9m: the wide cone scatters and the damage fades.
-    // Aiming down sights tightens the cone a lot (reaches ~5m). No single blast can kill round 5 on its
-    // own, leaving room for upgrades. (tests/balance.test.js checks all of this; `npm run balance` shows it.)
+    // Aiming down sights tightens the cone a lot (reaches ~5m). No single BODY blast can kill round 5,
+    // leaving room for upgrades (a point-blank head blast can: a deliberate, risky reward). (tests/balance.test.js checks all of this; `npm run balance` shows it.)
     pellets: { count: 12, spreadDegrees: 7.0, adsMultiplier: 0.45, tracerColors: [0xff6abc, 0xffd23f] },
     falloff: { start: 3, end: 10, minMultiplier: 0.05 },
     // A pellet that goes through a zombie hits the one behind it at half damage (clears clumps).

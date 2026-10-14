@@ -170,6 +170,9 @@ export function createViewmodel(weaponDefs, meleeDef) {
       );
       active.flash.trigger(aimAmount);
       sinceFire = 0;
+      // A shot ends any reload pose at once (a shell-by-shell gun fired mid-reload: barrels snap shut
+      // for the shot instead of easing closed over reloadBlendOutSeconds with the flash showing open).
+      reloadWeight = 0;
     },
 
     // Trigger squeezed on an empty gun: the trigger moves, the gun barely does, no flash.

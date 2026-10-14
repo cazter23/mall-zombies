@@ -241,7 +241,7 @@ test('pellet ADS cone tightens continuously; pellets and pierce can be combined'
 
 test('new-gun damage table is deliberate at rounds 1, 2, 5 and 9', () => {
   const table=[
-    [1,4,2,1,1,7], [2,5,2,1,1,11], [5,10,4,2,1,21], [9,17,6,2,1,35],
+    [1,3,1,1,1,7], [2,5,2,1,1,11], [5,9,3,2,1,21], [9,15,5,2,1,35],
   ];
   for(const [round,bodyDarts,headDarts,bodyBlasts,headBlasts,farBlasts] of table){
     const hp=zombieHealthForRound(round), foam=weapons.foamDartBlaster, confetti=weapons.confettiCannon;

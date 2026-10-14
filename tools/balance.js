@@ -11,13 +11,17 @@
 // results are repeatable.
 //
 //   cycleSeconds(def)              one trigger cycle (a burst counts as one cycle)
-//   magazineSeconds(def)           emptying a full magazine
+//   magazineSeconds(def)           emptying a full magazine: first shot to last shot (the last shot's recovery
+//                                  overlaps the reload, as in weapon.js)
 //   reloadSeconds(def)             a full reload from empty (shell-by-shell aware)
 //   expectedShotDamage(def, m, o)  average damage of one trigger pull (all pellets) at m meters
 //   sustainedDps(def, m, o)        damage per second over magazine + reload, at m meters
 //   burstDps(def, m, o)            damage per second while the magazine lasts (no reload)
 //   shotsToKill(def, hp, m, o)     trigger pulls for an average kill of `hp` at m meters
 // Options `o`: { ads: false, samples: 2000, seed: 7 }.
+// "A shot" = one dart / nail / sticker / staple, or one whole blast for pellet guns (all its pellets).
+// Absolute numbers assume RESTING spread (no bloom from sustained fire) and a target that doesn't move:
+// use them to compare guns and to see the effect of a change, not as exact in-game time-to-kill.
 // =============================================================================
 
 import * as THREE from 'three';
@@ -38,8 +42,11 @@ export function cycleSeconds(def) {
 }
 
 export function magazineSeconds(def) {
-  const perCycle = def.fireMode === 'burst' ? def.burst.count : 1;
-  return (def.magazineSize / perCycle) * cycleSeconds(def);
+  if (def.fireMode === 'burst') {
+    const bursts = def.magazineSize / def.burst.count;
+    return (bursts - 1) * cycleSeconds(def) + (def.burst.count - 1) * def.burst.interval;
+  }
+  return (def.magazineSize - 1) * def.fireInterval;
 }
 
 export function reloadSeconds(def) {
@@ -58,7 +65,7 @@ function seeded(seed, fn) {
   }
 }
 
-/** Average damage of ONE trigger pull (one dart of a burst; all pellets of a blast) at `distance` m. */
+/** Average damage of ONE shot (one dart of a burst; all pellets of a blast) at `distance` m. */
 export function expectedShotDamage(def, distance, { ads = false, samples = 2000, seed = 7 } = {}) {
   const origin = new THREE.Vector3(0, EYE, 0);
   const body = new THREE.Box3(
@@ -102,6 +109,7 @@ export function sustainedDps(def, distance, options) {
   return magDamage / (magazineSeconds(def) + reloadSeconds(def));
 }
 
+/** Shots (darts / nails / blasts) for an average kill of `hp`. Burst guns: divide by burst.count for trigger pulls. */
 export function shotsToKill(def, hp, distance, options) {
   const perShot = expectedShotDamage(def, distance, options);
   return perShot > 0 ? Math.ceil(hp / perShot) : Infinity;
