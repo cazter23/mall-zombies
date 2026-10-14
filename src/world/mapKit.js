@@ -13,9 +13,11 @@
 //     wall({...}, material)      a straight wall, with doorway openings (+ lintels)
 //     shutterDoor({...})         a roll-up shutter in a doorway + the buyable door
 //     markers({...})             debug markers for spawn points and wall buys
+//     dispose()                  unload: take every collider it added out of the shared list
+//                                and free the GPU memory (geometries, materials, textures)
 //   }
 // Everything is added to the map's `group` (so unloading the map removes it) and
-// every solid box goes into the shared `colliders` list. wallSegments() and slabPieces()
+// every solid box goes into the shared `colliders` list (the kit remembers which, for dispose). wallSegments() and slabPieces()
 // are the pure geometry behind wall() and slab() (tested in tests/maps.test.js).
 // =============================================================================
 
@@ -24,6 +26,7 @@ import { makeTileTexture, makeSignTexture, makeShutterTexture } from './textures
 import { createShutter } from './shutter.js';
 import { createDoor } from './door.js';
 import { corridorLayout } from './corridor.js';
+import { markCollidersChanged } from './collision.js';
 
 /**
  * The boxes making up one straight wall with openings (pure math, no three.js).
@@ -52,6 +55,13 @@ export function wallSegments({ along, from, to, at0, at1, height, openings: rawO
     cursor = Math.max(cursor, o.to);
   }
   if (cursor < to) boxes.push(toBox(cursor, to, 0, height, 'segment'));
+  // Overlapping openings are a mistake in the map data (each one gets its own lintel, so one
+  // doorway's lintel would hang down into the other): say so instead of building it wrong.
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i].from < sorted[i - 1].to - 1e-9) {
+      throw new Error(`wall openings overlap: ${sorted[i - 1].from}..${sorted[i - 1].to} and ${sorted[i].from}..${sorted[i].to}`);
+    }
+  }
   for (const o of openings) {
     if (o.top !== undefined && o.top < height) boxes.push(toBox(o.from, o.to, o.top, height, 'lintel'));
   }
@@ -81,6 +91,7 @@ export function slabPieces(rect, hole) {
 
 export function createMapKit(group, colliders) {
   const materials = new Map();
+  const ownColliders = []; // every Box3 this map put in `colliders` (shutters' too), for dispose()
 
   function mat(color, options = {}) {
     const key = `${color}-${JSON.stringify(options)}`;
@@ -96,6 +107,7 @@ export function createMapKit(group, colliders) {
   function addCollider(minX, minY, minZ, maxX, maxY, maxZ) {
     const b = new THREE.Box3(new THREE.Vector3(minX, minY, minZ), new THREE.Vector3(maxX, maxY, maxZ));
     colliders.push(b);
+    ownColliders.push(b);
     return b;
   }
 
@@ -169,6 +181,7 @@ export function createMapKit(group, colliders) {
   function shutterDoor({ id, label, price, opensZone, zones, doorway, text = 'CLOSED' }) {
     const material = new THREE.MeshStandardMaterial({ map: makeShutterTexture(text), roughness: 0.55, metalness: 0.25 });
     const shutter = createShutter({ name: `shutter_${id}`, ...doorway, material, colliders });
+    ownColliders.push(shutter.collider); // (in the list only while closed)
     group.add(shutter.mesh);
     return createDoor({
       id, label, price, opensZone, zones,
@@ -201,5 +214,35 @@ export function createMapKit(group, colliders) {
     return markerGroup;
   }
 
-  return { group, colliders, mat, addCollider, box, sign, tiledFloor, slab, wall, corridor, shutterDoor, markers };
+  /**
+   * Unload: remove every collider this map added from the shared list (so nothing invisible is
+   * left behind and the nav grid rebuilds), and free the GPU memory of everything in the group.
+   * The caller removes the group from the scene.
+   */
+  function dispose() {
+    let removed = 0;
+    for (const box of ownColliders) {
+      const i = colliders.indexOf(box);
+      if (i !== -1) {
+        colliders.splice(i, 1);
+        removed++;
+      }
+    }
+    ownColliders.length = 0;
+    if (removed) markCollidersChanged(colliders);
+    const geometries = new Set();
+    const mats = new Set();
+    group.traverse((o) => {
+      if (o.geometry) geometries.add(o.geometry);
+      for (const m of [o.material].flat()) if (m) mats.add(m);
+    });
+    for (const g of geometries) g.dispose();
+    for (const m of mats) {
+      for (const value of Object.values(m)) if (value?.isTexture) value.dispose();
+      m.dispose();
+    }
+    materials.clear();
+  }
+
+  return { group, colliders, mat, addCollider, box, sign, tiledFloor, slab, wall, corridor, shutterDoor, markers, dispose };
 }

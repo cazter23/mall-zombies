@@ -287,3 +287,33 @@ test('Service Corridor: a real player walks in through the doorway, down to the 
   assert.ok(player.position.z < -12.5, `walked down to the dead end (z ${player.position.z.toFixed(2)})`);
   assert.equal(player.position.y, 0);
 });
+
+test('dispose unloads the map: its colliders leave the shared list, GPU memory is freed, a reload is clean', () => {
+  const someoneElses = new THREE.Box3(new THREE.Vector3(0, -101, 0), new THREE.Vector3(1, -100, 1)); // e.g. the test range
+  const colliders = [someoneElses];
+  const scene = new THREE.Scene();
+  const map = buildMall(scene, colliders);
+  const built = colliders.length;
+  assert.ok(built > 100);
+  map.doors.find((d) => d.id === 'startShutter').open(); // one shutter's collider already gone, one still there
+  for (let t = 0; t < feel.world.shutterOpenSeconds + 0.5; t += dt) map.update(dt);
+
+  // Count what gets freed.
+  const things = new Set();
+  map.group.traverse((o) => {
+    if (o.geometry) things.add(o.geometry);
+    for (const m of [o.material].flat()) if (m) { things.add(m); if (m.map) things.add(m.map); }
+  });
+  let freed = 0;
+  for (const t of things) t.addEventListener('dispose', () => freed++);
+
+  map.dispose();
+  assert.deepEqual([...colliders], [someoneElses], 'only the other colliders are left');
+  assert.equal(freed, things.size, 'every geometry, material and texture freed');
+  assert.ok(!scene.children.includes(map.group), 'out of the scene');
+
+  const again = buildMall(scene, colliders);
+  assert.equal(colliders.length, built, 'reloading gives the same colliders, no invisible duplicates');
+  again.dispose();
+  assert.deepEqual([...colliders], [someoneElses]);
+});

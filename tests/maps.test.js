@@ -86,3 +86,11 @@ test('slabPieces: a slab with a hole is four pieces covering everything but the 
   // A hole running off the edge is clipped: three pieces.
   assert.equal(slabPieces(rect, { minX: 5, maxX: 15, minZ: -1, maxZ: 1 }).length, 3);
 });
+
+test('wallSegments: overlapping openings are an error; touching ones are fine', () => {
+  const base = { along: 'x', from: 0, to: 10, at0: 0, at1: 0.3, height: 4 };
+  assert.throws(() => wallSegments({ ...base, openings: [{ from: 2, to: 5, top: 3 }, { from: 4, to: 7, top: 2 }] }), /overlap/);
+  assert.throws(() => wallSegments({ ...base, openings: [{ from: 4, to: 7 }, { from: 2, to: 5 }] }), /overlap/, 'in any order');
+  const touching = wallSegments({ ...base, openings: [{ from: 2, to: 4, top: 3 }, { from: 4, to: 6, top: 2 }] });
+  assert.equal(touching.filter((b) => b.part === 'lintel').length, 2);
+});

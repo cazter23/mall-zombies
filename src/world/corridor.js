@@ -4,8 +4,10 @@
 // works out the floor rectangles, the side walls (with doorways and shared-wall
 // gaps), the end caps and handy anchor points. Pure math, no three.js: the map
 // kit (world/mapKit.js -> kit.corridor) turns the result into meshes + colliders,
-// and tests/maps.test.js checks it (floors never overlap, walls never stick into
+// and tests/corridor.test.js checks it (floors never overlap, walls never stick into
 // the walkway, the corridor is sealed everywhere you didn't ask for an opening).
+// A spec that would break that (a corridor crossing itself, or two runs so close that
+// one's wall lands in the other's walkway) throws an error instead of building it wrong.
 //
 // Spec:
 //   {
@@ -159,6 +161,23 @@ export function corridorLayout(spec) {
   }
   cap(startCap, points[0], runs[0], -1);
   cap(endCap, points[n], runs[n - 1], 1);
+
+  // --- Sanity: no part of the corridor may land on another part ---
+  const overlap = (a, b) => Math.min(a.maxX, b.maxX) - Math.max(a.minX, b.minX) > 1e-6
+    && Math.min(a.maxZ, b.maxZ) - Math.max(a.minZ, b.minZ) > 1e-6;
+  for (let i = 0; i < floors.length; i++) {
+    for (let j = i + 1; j < floors.length; j++) {
+      if (overlap(floors[i], floors[j])) throw new Error(`corridor crosses itself: runs ${i} and ${j} overlap`);
+    }
+  }
+  for (const w of [...walls, ...caps]) {
+    const rect = w.along === 'x'
+      ? { minX: w.from, maxX: w.to, minZ: w.at0, maxZ: w.at1 }
+      : { minX: w.at0, maxX: w.at1, minZ: w.from, maxZ: w.to };
+    floors.forEach((f, i) => {
+      if (overlap(rect, f)) throw new Error(`corridor runs too close: a wall of run ${w.run} lands in run ${i}'s walkway`);
+    });
+  }
 
   function pointAt(run, at, side = 'center', inset = 0) {
     const r = runs[run];

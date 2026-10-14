@@ -16,7 +16,8 @@
 //   playerSpawn   { position, yaw }
 //   update(dt)    animate doors etc.
 //   reset()       new run: close doors, lock zones
-//   dispose()     remove the map from the scene
+//   dispose()     unload: remove its colliders from the shared list, free its GPU memory
+//                 (geometries, materials, textures) and take its group out of the scene
 // Its solid boxes are pushed into the shared `colliders` array passed in (the
 // player, zombies and bullets all use that one list). Maps build with the map kit
 // (world/mapKit.js: boxes, walls with doorways, shutter doors, signs, markers).

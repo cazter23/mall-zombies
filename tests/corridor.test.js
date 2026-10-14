@@ -179,3 +179,22 @@ test('kit.corridor: a branch through a side doorway connects (zombies path from 
   const end = branch.pointAt(0, 5);
   assert.ok(Number.isFinite(nav.distanceToTarget(end.x, end.z)), 'through the doorway into the branch');
 });
+
+test('a corridor that crosses itself is an error, not overlapping floors and walls', () => {
+  const loop = {
+    width: 3, height: 3, start: { x: 0, z: 0 },
+    segments: [{ dir: 'east', length: 10 }, { dir: 'north', length: 10 }, { dir: 'west', length: 10 }, { dir: 'south', length: 14 }],
+  };
+  assert.throws(() => corridorLayout(loop), /crosses itself/);
+});
+
+test('two runs so close that a wall lands in the other walkway are an error', () => {
+  // A U-turn whose two long runs are only 3.2m apart (walkways 3m wide + walls 0.3m each don't fit).
+  const tight = {
+    width: 3, height: 3, start: { x: 0, z: 0 },
+    segments: [{ dir: 'north', length: 10 }, { dir: 'east', length: 3.2 }, { dir: 'south', length: 10 }],
+  };
+  assert.throws(() => corridorLayout(tight), /too close|crosses itself/);
+  // The same U-turn with room for both walls builds fine.
+  assert.doesNotThrow(() => corridorLayout({ ...tight, segments: [{ dir: 'north', length: 10 }, { dir: 'east', length: 3.6 }, { dir: 'south', length: 10 }] }));
+});

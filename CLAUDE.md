@@ -21,7 +21,7 @@ npm run preview    # serve the built dist/
 ```
 Gameplay regression tests live in `tests/` (`gameplay.test.js` movement/melee/vault, `aim.test.js` spread,
 `zombies.test.js` zombie types/mix/rounds, `maps.test.js` wall pieces, shared-zone doors, nav rebuilds,
-`mall.test.js` the REAL mall built in Node with a stub canvas: door ladder, spawn points on clear floor, zones
+`mall.test.js` the REAL mall built in Node with a stub canvas: dispose leaves no colliders + frees everything, door ladder, spawn points on clear floor, zones
 sealed until their door is bought, vaultable counters, the sealed escalator (a real PlayerController sprint-jumping
 at it never gets on; you can walk under its high end), the ceiling hole, Food Court stalls/tables (queue spots and
 table lanes reachable, nobody gets onto or behind a counter), `corridor.test.js` the modular corridor builder (floors
@@ -285,15 +285,17 @@ src/
                         at0, at1, height, openings: [{ from, to, top }] }) (doorways get lintels), shutterDoor({ id, label,
                         price, opensZone, zones, doorway, text }), markers(), slab(rect, y0, y1, mat, { hole }) (a ceiling
                         with a hole), corridor(spec, { floor, wall, ceiling }) (a whole corridor from a data spec; returns
-                        its layout). wallSegments() / slabPieces(): the pure wall / slab math (tested); wallSegments clips
-                        openings to the wall
+                        its layout), dispose() (unload: removes every collider it added, shutters' too, from the shared
+                        list + frees geometries/materials/textures). wallSegments() / slabPieces(): the pure wall / slab math
+                        (tested); wallSegments clips openings to the wall and THROWS on overlapping openings
     corridor.js         corridorLayout(spec): MODULAR CORRIDORS AS DATA (pure math). Spec: { width, height, thickness, start
                         { x, z }, segments: [{ dir 'north'|'south'|'east'|'west', length, noWall: ['left'|'right'], openings:
                         [{ side, at, width, top }] }], startCap / endCap: true | false | { opening } }; runs turn 90 deg.
                         Returns points, runs, floors (corner squares once; an open end reaches back under the doorway it
                         joins), walls + caps (kit.wall specs; walls extend past a turn only on its OUTSIDE), pointAt(run, at,
                         side, inset) (place props/spawns/doors; normal points into the corridor), branchStart(run, at, side)
-                        (start a branch corridor through a side opening). left/right = as walked (right = (-dz, dx))
+                        (start a branch corridor through a side opening). left/right = as walked (right = (-dz, dx)).
+                        THROWS if the corridor crosses itself or two runs are so close a wall lands in another's walkway
     door.js             createDoor(): buyable barrier (price, opensZone) wrapping a shutter; open/reset/toggle. Several
                         doors may open the same zone: it stays open while any of them is open (tracked per zone)
     wallBuy.js          createWallBuyDisplay(): chalk outline (textures.makeChalkTexture) + the gun on two pegs, side on
@@ -634,7 +636,7 @@ Service Corridor, in any order.
 Codex audit fixes, in steps: 1) light budget (SHELVED, see below), 2) sign textures cached + sized to the sign (low value on
 a dedicated GPU), 3) merge static map meshes (fewer draw calls; low value for now), 4) no buying through walls (DONE),
 5) map dispose removes its colliders + frees GPU memory, wall/corridor builders reject overlapping openings / self-crossing
-corridors.
+corridors (DONE).
 Step 1 shelved: a pool of 4 real point lights moved to the nearest lamps (world/lightPool.js) halved frame time on Intel
 integrated graphics but made no difference on the user's NVIDIA card (Firefox), so it's in `git stash` ("step 1: light
 budget"), not in the game. The "big circles on the ceiling" the user saw were the lamps themselves (hung 0.8m under the
@@ -643,6 +645,11 @@ Step 4 done: buy spots need a clear line from the eye and 3D range (interactions
 shutter as `seeThrough`; shutter exposes `collider`). Fixes: the Nail Gun could be bought from the Food Court through the
 wall; a second floor would have reached ground-floor buyables. Verified: tests/interactions.test.js (7) and in the browser
 (real held F buys the start shutter and the Nail Gun; no prompt behind the wall).
+Step 5 done: kit.dispose() (map.dispose calls it): unloading left all 117 colliders behind (a reload doubled them into
+invisible walls) and never freed GPU memory; now the shared list is back to exactly what it was and every geometry/material/
+texture is freed (tested, incl. reload). wallSegments throws on overlapping openings (one doorway's lintel used to hang into
+the other); corridorLayout throws on a self-crossing loop or runs too close together (both used to build overlapping floors /
+walls). None of these were triggered by the current mall; they protect future maps and rooms. Steps 2-3 remain optional.
 Next (optional): step 6 = loop shortcuts (Food Court <-> Mega Mart, Service Corridor <-> Food Court).
 
 ## Planned build order

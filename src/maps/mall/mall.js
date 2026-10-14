@@ -531,7 +531,9 @@ export function buildMall(scene, colliders) {
     reset() {
       for (const door of doors) door.reset();
     },
+    // Unload: colliders out of the shared list, GPU memory freed, group out of the scene.
     dispose() {
+      kit.dispose();
       group.removeFromParent();
     },
   };
