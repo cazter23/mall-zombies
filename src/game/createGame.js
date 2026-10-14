@@ -14,6 +14,7 @@
 //   g.resetRun()   Play again: everything back to the start of a run
 //   g.state        { forceRun, over, padPlaying, running }  (window.__mall.game)
 //   g.events       the event bus (game/events.js lists every event): systems announce, features listen
+//   g.pricing      every price the player pays (game/pricing.js): config base price + any discount
 //   g.<system>     map, colliders, arena, shootables, stats, player, wallet, runStats, effects, aimAssist,
 //                  gun, interactions, melee, health, zombies, rounds, death
 // =============================================================================
@@ -34,6 +35,7 @@ import { buildWeaponDisplay } from '../weapons/models/index.js';
 import { createWallBuyDisplay } from '../world/wallBuy.js';
 import { createZombieManager } from '../zombies/zombieManager.js';
 import { createEvents } from './events.js';
+import { createPricing } from './pricing.js';
 import { createRunStats } from './runStats.js';
 import { createWallet, pointsForHit } from './wallet.js';
 import { createRounds } from './rounds.js';
@@ -84,6 +86,8 @@ export function createGame({
   });
   // Systems announce what happened here; payouts, stats, HUD and sound listen (see the wiring below).
   const events = createEvents();
+  // Every price the player pays goes through here (base price from config/economy.js + any discount).
+  const pricing = createPricing();
   // Points. Every gain/spend shows a "+60" / "-500" pop-up by the counter.
   const wallet = createWallet({ onChange: (amount) => hud.pointsPopup(amount) });
   const runStats = createRunStats();
@@ -120,7 +124,9 @@ export function createGame({
     interactions.add({
       label: door.label,
       verb: 'open',
-      cost: door.price,
+      get cost() {
+        return pricing.priceOf('door', door.id);
+      },
       position: door.position,
       seeThrough: [door.barrier.collider], // the shutter itself doesn't block the view of its own buy spot
       available: () => !door.isOpen,
@@ -131,8 +137,7 @@ export function createGame({
   // exist yet in config/weapons.js are skipped.
   for (const wb of map.wallBuys) {
     const def = weapons[wb.weapon];
-    const prices = economy.wallBuys[wb.weapon];
-    if (!def || !prices) continue;
+    if (!def || !economy.wallBuys[wb.weapon]) continue;
     scene.add(
       createWallBuyDisplay({
         position: wb.position,
@@ -149,7 +154,7 @@ export function createGame({
       },
       verb: 'buy',
       get cost() {
-        return owned() ? prices.ammo : prices.weapon;
+        return owned() ? pricing.priceOf('ammo', def.id) : pricing.priceOf('weapon', def.id);
       },
       position: wb.position,
       // Only in an opened area, and not when you already have it with full ammo.
@@ -159,7 +164,7 @@ export function createGame({
   }
   // Ammo caches (vending machines): refill the gun in your hand for a flat price.
   for (const cache of map.ammoCaches ?? []) {
-    interactions.add(ammoCacheItem({ cache, zones: map.zones, gun, price: () => economy.ammoCache.price }));
+    interactions.add(ammoCacheItem({ cache, zones: map.zones, gun, price: () => pricing.priceOf('ammoCache') }));
   }
 
   const melee = createMelee({
@@ -284,6 +289,7 @@ export function createGame({
     ['melee', () => melee.reset()],
     ['aimAssist', () => aimAssist.reset()],
     ['wallet', () => wallet.reset()],
+    ['pricing', () => pricing.reset()], // no discounts carried into a new run
     ['rounds', () => rounds.reset()],
     ['player', () => player.teleport(map.playerSpawn)],
     ['map', () => map.reset()], // doors closed, zones locked
@@ -352,6 +358,7 @@ export function createGame({
   return {
     state,
     events,
+    pricing,
     death,
     map,
     colliders,

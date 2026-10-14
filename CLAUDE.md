@@ -37,7 +37,8 @@ Staple Gun weakest; relationships, not exact values), `gunStats.test.js` the per
 viewmodel: buy the shutter, rounds, shoot a zombie for exact payouts, die, results, and "Play again equals a freshly built game"
 via snapshot()). New cross-system behaviour should get a full-run test there), `events.test.js` the event bus + every payout path
 in the real game (body / headshot / box-cutter kills, a shotgun blast pays once per zombie, a non-player "hazard" kill still pays
-and counts, purchase / round / player-hit / death / Play-again events);
+and counts, purchase / round / player-hit / death / Play-again events), `pricing.test.js` prices = config exactly, discounts
+(one category, rounded to 10, errors for unknown items), the real game charges + shows the sale price, a new run clears it);
 there is no linter yet.
 `npm run build` is the compile check (it only bundles; it
 does not run the game, so also try changes in `npm run dev`).
@@ -58,6 +59,8 @@ does not run the game, so also try changes in `npm run dev`).
 - Systems ANNOUNCE what happened on the event bus (`g.events`, game/events.js lists every event); features LISTEN.
   Don't thread new callbacks through createGame for things like Flash Sales, PA lines, hazards or perk procs.
   All kill payouts and kill stats come from the 'kill' event (whatever killed the zombie).
+- Every price the player pays comes from `g.pricing.priceOf(category, id)` (game/pricing.js), never straight from
+  config/economy.js, so discounts (Flash Sales) apply everywhere at once.
 - Keep code modular, readable and commented. Prefer small, reviewable changes.
 - Build in small steps. Do only the step the user asks for. Test it, then tell them how to try it.
 - After changes, run `npm run build` to check for errors.
@@ -271,6 +274,9 @@ src/
                         Crowd shoves never move anyone into a wall (overlapsSolid); a pinned player pushes the
                         zombie back instead. Options canAttack(), onPlayerHit(damage), onKill(zombie)
   game/
+    pricing.js          createPricing(): priceOf('door'|'weapon'|'ammo'|'ammoCache', id) = economy.js base price with any
+                        discount applied (setDiscount(category, 0..1), rounded to the nearest 10; discountOf; reset() on a new
+                        run). Unknown category/id throws. PRICE_CATEGORIES
     events.js           createEvents(): tiny synchronous bus (on -> unsubscribe fn, emit, count). The event list + payloads
                         are in its header: shot, hit (player attack hit; +10 if not lethal), kill (any zombie death, with
                         headshot / melee / source: 'gun' | 'melee' | future 'hazard'...; ALL kill payouts + kill stats),

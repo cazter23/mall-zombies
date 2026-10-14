@@ -93,6 +93,7 @@ test('Play again puts EVERYTHING back: the game equals a freshly built one', () 
   g.stats.walkSpeed *= 1.25;
   g.stats.damageMultiplier = 2;
   g.stats.maxHealth += 50;
+  g.pricing.setDiscount('weapon', 0.5); // a Flash Sale running when you die
   t.tick(60 * 8);
   g.rounds.skipRound();
   t.tick(60 * 4);

@@ -23,6 +23,7 @@ globalThis.document.addEventListener ??= noop;
 globalThis.window ??= { addEventListener: noop };
 
 const { createGame } = await import('../../src/game/createGame.js');
+const { PRICE_CATEGORIES } = await import('../../src/game/pricing.js');
 const { Input } = await import('../../src/core/input.js');
 
 export const dt = 1 / feel.simulation.tickRate;
@@ -94,6 +95,7 @@ export function snapshot(g) {
     stats: Object.fromEntries(Object.entries(g.stats).filter(([, v]) => typeof v === 'number').map(([k, v]) => [k, round(v)])),
     runStats: { kills: g.runStats.kills, shots: g.runStats.shotsFired, time: round(g.runStats.timeAlive) },
     zombies: g.shootables.length,
+    discounts: PRICE_CATEGORIES.map((c) => g.pricing.discountOf(c)),
     position: g.player.position.toArray().map(round),
     yaw: round(g.player.yaw),
   };
