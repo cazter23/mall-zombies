@@ -72,15 +72,17 @@ src/
                         zombieMix: special types per round (mallWalker: from round 4, share 15% / 25% from 6 / 30% from 9,
                         healthMultiplier 0.65, introSpawnIndex) + zombieHealthFor(typeId, round), zombieTypeForRound(round)
     weapons.js          stapleGun (start pistol, semi), priceGun (wall buy, full auto), nailGun (wall buy, semi,
-                        piercing: `pierce: { maxTargets, damageFalloff }`). Per-weapon stats (fireMode
-                        'semi' | 'auto', damage, headshot mult, mag, reserve (= max for ammo buys), fire interval, reload, spread
+                        piercing: `pierce: { maxTargets, damageFalloff }`), foamDartBlaster (Mega Mart, burst),
+                        confettiCannon (Service Corridor, 8 pellets + distance falloff, pellets pierce 2 zombies, six-shell tube, shell-by-shell
+                        `shellReload`). Per-weapon stats (fireMode
+                        'semi' | 'auto' | 'burst', damage, headshot mult, mag, reserve (= max for ammo buys), fire interval, reload, spread
                         cone, ADS time/zoom/gun offset), recoil (camera pitch/yaw/roll + gun-model kick + spring),
                         muzzleFlash (size, colors, ADS shape, lights), sounds, viewmodel (model name, hip
                         offset/angles, colors, trigger anim, reload keyframes gunKeys/handKeys + timed events
                         with sounds/jolts), `melee.boxCutter` (damage, reach, cone, swing timing, lunge),
                         weaponStatDefaults for stats
     audio.js            Master volume, pitch variation, compressor, and sound recipes (layers of filtered noise
-                        bursts and tones): staple / price / nail gun shots and reloads, dry click, purchase, denied,
+                        bursts and tones): staple / price / nail / foam / confetti gun shots and reloads, dry click, purchase, denied,
                         Mall Walker walkerSqueak / walkerHuff / walkerPant, paChime (announcements)
     zombies.js          zombieTypes (per-type speed, size, hitboxes, attack, timings, colors, splatter): `shopper`, and
                         `mallWalker` = { ...shopper, overrides } (speed 5.4 no gaits, modelScale + slimmer hitbox, winded,
@@ -133,13 +135,18 @@ src/
     weapon.js           Weapon class: ammo, fire cooldown + click buffer, reload. Pure state; update({ triggerPressed,
                         triggerHeld, reloadPressed, blocked }) returns 'fire' | 'empty' | null. fireMode 'auto' fires
                         while held (dry-clicks only on a fresh press; runs dry while held = reloads itself).
-                        `blocked` (melee, switching) drops a queued click. The cooldown carries the leftover fraction
+                        fireMode 'burst' starts 3 darts on one press (holding never repeats); reload requests queue
+                        until the burst finishes. `blocked` / switching / reset / refill abort pending darts and input.
+                        Guns with `shellReload` (Confetti Cannon) reload in phases (start -> one shell per cycle -> end);
+                        the trigger interrupts that reload once magazine > 0 (normal guns can't fire mid-reload).
+                        The cooldown carries the leftover fraction
                         of a tick into a queued next shot (real rate = fireInterval). refill(), isFull (ammo buys)
     aim.js              createAim(): ADS state (eased 0..1, blocks sprint, sprint cancels it) and hip-fire
                         spread (base + moving + airborne, smoothed, + per-shot bloom; x adsMultiplier).
                         Bloom recovers after spread.bloomRecoveryDelay (0.15s after the latest shot per gun),
                         so sustained fire builds spread; recovery then uses the existing bloomRecovery rate.
-                        applySpread() picks a random direction inside the cone; reset() (new run: hip, base spread).
+                        applySpread() picks a random direction inside the cone; applyConeSpread() also samples pellets;
+                        pelletSpreadDegrees() blends their independent ADS cone. reset() (new run: hip, base spread).
                         update(dt, allowAim) (false mid weapon switch). One aim per carried gun
     aimAssist.js        createAimAssist(): controller-only (input.device). Picks the visible target nearest the
                         crosshair (sticky), aims at its chest. Slowdown multiplier (read per frame for stick
@@ -160,7 +167,11 @@ src/
                         (shownDef, switchLower for the viewmodel), the new one rises; no shooting/aiming meanwhile;
                         cancels reloads. owns(id), weaponFor(id), requestReload(). Reads fire (press + held)/reload, onShot cb,
                         fires hitscan inside the spread cone, applies damage to every hit
-                        (headshot x mult x pierce falloff x stats.damageMultiplier; points per zombie hit). Same tick as the shot: player.addRecoil
+                        (headshot x mult x pierce/distance falloff x stats.damageMultiplier). Pellets cast all rays before
+                        damage; points/splatter once per zombie, killing pellet decides the head bonus, one hit marker,
+                        max 4 wall puffs, one recoil/flash/sound/run-stat shot. Pellets can also pierce (`pierce` on a pellet gun): each pellet
+                        goes through up to maxTargets zombies, damage = distance falloff x pierce falloff.
+                        Same tick as the shot: player.addRecoil
                         (scaled by ADS), viewmodel.fire (gun kick + flash), shot sound, tracer, splatter, hit
                         marker. 'empty' -> viewmodel.dryFire + dry click. Runs viewmodel.reload.events as the
                         reload clock passes them (sound + viewmodel.jolt), so sounds match the animation
@@ -182,6 +193,8 @@ src/
                         sticker roll on top; lever; reload swaps the roll (rollGone / newRollVisible windows).
                         nailGun.js = yellow/black framing nailer (piston cap, steel nose that punches forward on each
                         shot, angled nail magazine); reload slides a fresh strip into the magazine.
+                        foamDartBlaster.js = blue/yellow toy rifle, visible foam darts in a removable drum; drum-swap reload.
+                        confettiCannon.js = pink/purple double barrels, gold rims; hinge open, a shell per cycle, snap shut.
                         New gun = new file + 1 line
     muzzleFlash.js      createMuzzleFlash(cfg): 2 sprites (normal-blended orange burst + additive core, random
                         twist/size), hand light + world light (always in the scene at 0 so no shader recompile).
@@ -259,8 +272,7 @@ src/
                         east end) -> megaMart, Food Court shutter (1000, hallway south wall) -> foodCourt, Service
                         Corridor shutter (1250, hallway west wall) -> serviceCorridor (built with kit.corridor from a data
                         spec; its layout's pointAt places the dressing and spawns); wall buys priceGun (start room) +
-                        nailGun (hallway south wall) + a reserved spot in the Mega Mart (weapon 'foamDartBlaster', inert
-                        until that gun exists). All meshes, lights and debug markers live in its group. Exports LAYOUT
+                        nailGun (hallway south wall) + foamDartBlaster (Mega Mart) + confettiCannon (Service Corridor). All meshes, lights and debug markers live in its group. Exports LAYOUT
                         (startRoom, hallway, foodCourt, megaMart, doorway, foodCourtDoorway, megaMartDoorway, escalator,
                         elevator, serviceCorridor). The hallway ceiling is a kit.slab with a hole where the escalator passes through
     mall/props.js       createMallProps(kit): shopFront({ along 'x'|'z', from, to, wallAt, facing, color, text }), pillar,
@@ -400,9 +412,8 @@ src/
 - Markers (invisible; shown if `debug.showMarkers`): `map.spawnPoints` (16: 2 start-room vents, 3 hallway vents,
   4 Food Court shopfronts, 4 Mega Mart: stockroom, receiving, back vent, emergency exit, 3 Service Corridor: two wall
   vents + the dead end; each tagged with its zone)
-  and `map.wallBuys` (4, with an outward `normal` and a `weapon` id; the Mega Mart (`foamDartBlaster`) and Service Corridor
-  (`confettiCannon`) ones are reserved/inert until those guns exist in config/weapons.js; prices already in economy.wallBuys;
-  the plan for building them is docs/codex-new-guns-plan.md).
+  and `map.wallBuys` (4, with an outward `normal` and a `weapon` id: Price Gun, Nail Gun, Mega Mart Foam Dart Blaster
+  and Service Corridor Confetti Cannon; prices in economy.wallBuys).
 
 ## Map (current)
 The start room opens into a MAIN HALLWAY (the hub); every other area is bought off it, in any order.
@@ -444,8 +455,8 @@ The start room opens into a MAIN HALLWAY (the hub); every other area is bought o
 - Ammo cache: a STAPLE-O-MAT vending machine on the Food Court's west wall (center z -5.1, front at x -19.4, in the open north
   of the planter). Hold F/X for 400 points to refill the gun in your hand (any gun, including the staple gun, which has no wall
   buy); no prompt when it's full or the Food Court is closed. `map.ammoCaches` -> main.js -> game/ammoCache.js.
-- Wall-buy spots: start room east wall (5, 1.5, 10) = Price Gun; hallway south wall (11, 1.5, -2) = Nail Gun; reserved
-  (inert): Mega Mart north wall (31.5, 1.5, 6) = Foam Dart Blaster, Service Corridor west wall near the dead end
+- Wall-buy spots: start room east wall (5, 1.5, 10) = Price Gun; hallway south wall (11, 1.5, -2) = Nail Gun;
+  Mega Mart north wall (31.5, 1.5, 6) = Foam Dart Blaster, Service Corridor west wall near the dead end
   (-23.28, 1.5, -12.2) = Confetti Cannon.
 - Lighting: room lamps (point lights) hang at ~60% of the ceiling height with intensity scaled to match, NOT just under
   the ceiling: a lamp 0.8m under it lit a small hard-edged bright disc on the ceiling ("big circles"); hung lower it's a soft
@@ -463,6 +474,22 @@ The start room opens into a MAIN HALLWAY (the hub); every other area is bought o
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+New wall guns implemented: Foam Dart Blaster (Mega Mart, 1200 / ammo 600), three-round burst, 45 damage,
+3x heads, 24/144 ammo, 0.07s between darts then 0.35s recovery, 1.9s drum-swap reload. Confetti Cannon
+(Service Corridor, 1500 / ammo 750), six-shell tube, eight 32-damage pellets per blast (256 point blank: one-shots rounds
+1-2, two-shots rounds 3-5), 2x heads, 5.5deg hip / 2.75deg ADS pellet cone, full damage through 6m then linear falloff to
+20% at 14m, each pellet goes through a second zombie at half damage, 6/30 ammo, 0.55s between blasts. SHELL-BY-SHELL
+reload (`def.shellReload`: 0.4s open, 0.4s per shell, 0.35s close; ~3.2s from empty, ~1.2s for one shell) and firing
+interrupts it as soon as a shell is in (shells already loaded stay). Weapon.reloadProgress maps the phases onto windows of
+the reload animation (start 0-0.3, ONE shell 0.3-0.7 repeating per shell, close 0.7-1); one load sound per shell. Existing balance numbers and prices preserved. Burst reload requests
+wait for the final dart; switching, melee and vaulting cancel remaining darts. Pellet scoring uses the usual
+hit/kill payout once per zombie per blast (killing pellet decides head bonus); walls and front bodies stop pellets.
+Tracer pool is now 16; max shotgun wall puffs is 4, both in feel.effects. Tests/newGuns.test.js covers burst cadence,
+cancellation, queued reloads, pellet damage/headshots/walls/scoring/accuracy, round damage tables, model/sound
+registration, the tracer pool, and both real-mall buy/refill spots. The only main.js change adds the ADS-scaled
+pellet cone to the crosshair. Built by Codex on codex/new-guns (plan: docs/codex-new-guns-plan.md), integrated into main
+alongside the ammo cache (STAPLE-O-MAT refills either new gun in hand for its flat price).
+
 Build step 1 is done: start room + concourse, security shutter, pointer-lock look, WASD, jump,
 limited sprint meter, wall/obstacle collision, config files, invisible spawn/wall-buy markers.
 Added after step 1: crouch (hold C) and slide (tap C while sprinting). Slide locks direction, starts
@@ -665,7 +692,7 @@ the other); corridorLayout throws on a self-crossing loop or runs too close toge
 walls). None of these were triggered by the current mall; they protect future maps and rooms. Steps 2-3 remain optional.
 Ammo cache done (first of the "flesh out the new areas" items): the vending machine above. Verified: tests/ammoCache.test.js (5) and
 in the browser (real held F refills the staple gun for 400; no prompt when full, far away, or from the Service Corridor side of
-the wall). Planned next: cover/funnels, loop shortcuts; the two new guns are being built by Codex (docs/codex-new-guns-plan.md).
+the wall). Planned next: cover/funnels, loop shortcuts. The two new guns are in (see the top of Current state).
 Next (optional): step 6 = loop shortcuts (Food Court <-> Mega Mart, Service Corridor <-> Food Court).
 
 ## Planned build order

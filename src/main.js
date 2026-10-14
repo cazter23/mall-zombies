@@ -473,7 +473,7 @@ function render(alpha, frameTime) {
   });
 
   // Crosshair gap in pixels = where the spread cone's edge lands on screen at the current FOV.
-  const halfSpread = gun.aim.spreadDegrees * DEG_TO_RAD;
+  const halfSpread = gun.spreadDegreesForDisplay(aimAmount) * DEG_TO_RAD;
   const gapPx = (Math.tan(halfSpread) / Math.tan((fov * DEG_TO_RAD) / 2)) * (window.innerHeight / 2);
   hud.setCrosshair(gapPx, aimAmount);
 

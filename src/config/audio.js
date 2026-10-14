@@ -19,6 +19,45 @@ export const audio = {
   compressor: { thresholdDb: -14, ratio: 4 }, // on the master bus, so rapid fire doesn't clip
 
   sounds: {
+    // Toy blaster: soft pneumatic puff + a plastic mechanism tick.
+    foamShot: { volume: 0.45, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 1400, q: 0.7, gain: 0.65, attack: 0.003, decay: 0.065 },
+      { type: 'tone', wave: 'triangle', freq: 550, freqEnd: 280, gain: 0.35, attack: 0.001, decay: 0.03 },
+      { type: 'noise', filter: 'highpass', freq: 4300, q: 0.7, gain: 0.18, attack: 0.001, decay: 0.012 },
+    ] },
+    foamReloadOut: { volume: 0.45, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 2100, q: 1.4, gain: 0.5, attack: 0.001, decay: 0.04 },
+      { type: 'tone', wave: 'triangle', freq: 650, freqEnd: 260, gain: 0.3, attack: 0.001, decay: 0.05 },
+    ] },
+    foamReloadIn: { volume: 0.6, layers: [
+      { type: 'noise', filter: 'lowpass', freq: 1200, q: 0.8, gain: 0.7, attack: 0.001, decay: 0.07 },
+      { type: 'noise', filter: 'bandpass', freq: 2800, q: 1.5, gain: 0.4, attack: 0.001, decay: 0.025, delay: 0.015 },
+    ] },
+    foamReloadReady: { volume: 0.5, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 3400, q: 1.5, gain: 0.6, attack: 0.001, decay: 0.035 },
+      { type: 'tone', wave: 'triangle', freq: 400, freqEnd: 170, gain: 0.25, attack: 0.001, decay: 0.04, delay: 0.02 },
+    ] },
+
+    // Party cannon: deep pop followed by a longer papery rustle.
+    confettiShot: { volume: 1, layers: [
+      { type: 'tone', wave: 'sine', freq: 120, freqEnd: 35, gain: 1, attack: 0.001, decay: 0.22 },
+      { type: 'noise', filter: 'lowpass', freq: 1500, q: 0.7, gain: 0.9, attack: 0.001, decay: 0.11 },
+      { type: 'noise', filter: 'highpass', freq: 2700, q: 0.7, gain: 0.45, attack: 0.015, decay: 0.28, delay: 0.03 },
+    ] },
+    confettiReloadOut: { volume: 0.6, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 1900, q: 1.5, gain: 0.7, attack: 0.001, decay: 0.06 },
+      { type: 'tone', wave: 'triangle', freq: 300, freqEnd: 140, gain: 0.4, attack: 0.001, decay: 0.08 },
+    ] },
+    // One shell; the reload timeline plays it twice, at each insertion.
+    confettiReloadIn: { volume: 0.55, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 2500, q: 1.8, gain: 0.6, attack: 0.002, decay: 0.055 },
+      { type: 'tone', wave: 'sine', freq: 350, freqEnd: 170, gain: 0.3, attack: 0.001, decay: 0.06 },
+    ] },
+    confettiReloadReady: { volume: 0.8, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 3200, q: 1.3, gain: 0.8, attack: 0.001, decay: 0.045 },
+      { type: 'tone', wave: 'sine', freq: 200, freqEnd: 65, gain: 0.5, attack: 0.001, decay: 0.1 },
+    ] },
+
     // Staple gun shot: a sharp metal snap, a chunky low thump and a tiny spring click.
     stapleShot: {
       volume: 0.9,

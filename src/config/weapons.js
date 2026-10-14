@@ -371,6 +371,142 @@ export const weapons = {
       },
     },
   },
+  // Mega Mart burst rifle: three foam darts per fresh trigger press, strong headshots.
+  foamDartBlaster: {
+    id: 'foamDartBlaster', name: 'Foam Dart Blaster', fireMode: 'burst',
+    burst: { count: 3, interval: 0.07 },
+    damage: 45, headshotMultiplier: 3,
+    magazineSize: 24, startingReserve: 144,
+    fireInterval: 0.35, // pause after the LAST dart
+    fireBuffer: 0.12, reloadTime: 1.9, range: 100,
+    recoil: {
+      pitchDegrees: 0.55, yawDegrees: 0.18, rollDegrees: 0.15, adsMultiplier: 0.7,
+      model: { back: 0.022, up: 0.004, pitchDegrees: 3.5, yawDegrees: 0.8, rollDegrees: 1,
+        adsMultiplier: 0.4, frequency: 8, damping: 0.6 },
+    },
+    spread: {
+      base: 0.8, moving: 2.2, maxMovingFactor: 1.6, airborne: 3,
+      perShot: 0.45, maxBloom: 2.2, bloomRecoveryDelay: 0.15, bloomRecovery: 5,
+      smoothing: 10, adsMultiplier: 0.05,
+    },
+    ads: { seconds: 0.2, fovMultiplier: 0.8, offset: { x: 0, y: -0.095, z: -0.43 } },
+    muzzleFlash: {
+      seconds: 0.035, size: 0.13, coreSize: 0.06, outerOpacity: 0.8, sizeJitter: 0.2,
+      forwardOffset: 0.06, outerColor: 0xffb457, coreColor: 0xffffff,
+      adsWidth: 1.7, adsHeight: 0.6, adsTwistFraction: 0.06,
+      lightColor: 0xffddad, handLightIntensity: 0.3, handLightRange: 0.8,
+      worldLightIntensity: 4, worldLightRange: 7,
+    },
+    sounds: { fire: 'foamShot', dryFire: 'dryClick' },
+    tracerColor: 0xff8a28,
+    viewmodel: {
+      model: 'foamDartBlaster', hipOffset: { x: 0.18, y: -0.16, z: -0.45 },
+      aimYawDegrees: 9, hipPitchDegrees: 2, hipRollDegrees: 4,
+      bodyColor: 0x1d4e89, accentColor: 0xffd23f, muzzleColor: 0xff7a1a,
+      darkColor: 0x28303b, dartColor: 0x63baff, sightColor: 0xffd23f,
+      fire: { triggerDegrees: 24, pressSeconds: 0.02, releaseSeconds: 0.05 },
+      reload: {
+        gunKeys: [
+          { t: 0, pos: [0, 0, 0], rot: [0, 0, 0] },
+          { t: 0.15, pos: [0.01, -0.035, 0.02], rot: [10, 8, 25] },
+          { t: 0.65, pos: [0.01, -0.04, 0.02], rot: [12, 8, 28] },
+          { t: 0.75, pos: [0, -0.04, 0.02], rot: [6, 6, 20] },
+          { t: 0.9, pos: [0, 0, 0], rot: [0, 0, 0] },
+          { t: 1, pos: [0, 0, 0], rot: [0, 0, 0] },
+        ],
+        handKeys: [
+          { t: 0, pos: [0, 0, 0] },
+          { t: 0.14, pos: [-0.02, 0.065, -0.045], rot: [0, 0, 0] },
+          { t: 0.32, pos: [-0.13, -0.25, 0.1], rot: [-20, 0, 0] },
+          { t: 0.43, pos: [-0.13, -0.25, 0.1], rot: [-20, 0, 0] },
+          { t: 0.6, pos: [-0.03, 0.065, -0.045], rot: [0, 0, 0] },
+          { t: 0.65, pos: [-0.02, 0.065, -0.045] },
+          { t: 0.84, pos: [0, 0, 0] },
+        ],
+        drumGone: [0.2, 0.65], oldDrumVisible: [0.2, 0.32], newDrumVisible: [0.4, 0.65],
+        events: [
+          { at: 0.2, sound: 'foamReloadOut' },
+          { at: 0.65, sound: 'foamReloadIn', jolt: { up: -0.01, pitchDegrees: -3, rollDegrees: 2 } },
+          { at: 0.86, sound: 'foamReloadReady', jolt: { back: 0.006, pitchDegrees: 2 } },
+        ],
+      },
+    },
+  },
+
+  // Service Corridor shotgun: one shell, eight pellets; rewards close-range positioning.
+  confettiCannon: {
+    id: 'confettiCannon', name: 'Confetti Cannon', fireMode: 'semi',
+    pellets: { count: 8, spreadDegrees: 5.5, adsMultiplier: 0.5,
+      falloff: { start: 6, end: 14, minMultiplier: 0.2 }, tracerColors: [0xff6abc, 0xffd23f] },
+    // A pellet that goes through a zombie hits the one behind it at half damage (clears clumps).
+    pierce: { maxTargets: 2, damageFalloff: [1, 0.5] },
+    damage: 32, headshotMultiplier: 2, // a point-blank blast is 8 x 32 = 256: one-shots rounds 1-2, two-shots rounds 3-5
+    magazineSize: 6, startingReserve: 30, // a six-shell tube
+    // Shell-by-shell reload: open up, one shell per cycle, close up. Firing interrupts it once a shell is in.
+    // `progress` = which window of the reload animation each phase plays (the shell window repeats per shell).
+    shellReload: { startSeconds: 0.4, shellSeconds: 0.4, endSeconds: 0.35,
+      progress: { start: [0, 0.3], shell: [0.3, 0.7], end: [0.7, 1] } },
+    fireInterval: 0.55, fireBuffer: 0.12, reloadTime: 2.4, range: 60, // (reloadTime is unused with shellReload)
+    recoil: {
+      pitchDegrees: 3.5, yawDegrees: 0.4, rollDegrees: 0.7, adsMultiplier: 0.75,
+      model: { back: 0.085, up: 0.016, pitchDegrees: 13, yawDegrees: 2, rollDegrees: 4,
+        adsMultiplier: 0.55, frequency: 4.5, damping: 0.6 },
+    },
+    spread: {
+      base: 0.35, moving: 0.8, maxMovingFactor: 1.6, airborne: 1.5,
+      perShot: 0.65, maxBloom: 1.5, bloomRecoveryDelay: 0.15, bloomRecovery: 4,
+      smoothing: 10, adsMultiplier: 0.1,
+    },
+    ads: { seconds: 0.22, fovMultiplier: 0.85, offset: { x: 0, y: -0.077, z: -0.43 } },
+    muzzleFlash: {
+      seconds: 0.075, size: 0.4, coreSize: 0.16, outerOpacity: 0.9, sizeJitter: 0.2,
+      forwardOffset: 0.07, outerColor: 0xff62bb, coreColor: 0xffef8a,
+      adsWidth: 1.5, adsHeight: 0.65, adsTwistFraction: 0.06,
+      lightColor: 0xffb4da, handLightIntensity: 0.8, handLightRange: 1,
+      worldLightIntensity: 14, worldLightRange: 10,
+    },
+    sounds: { fire: 'confettiShot', dryFire: 'dryClick' },
+    tracerColor: 0xff6abc,
+    viewmodel: {
+      model: 'confettiCannon', hipOffset: { x: 0.18, y: -0.155, z: -0.44 },
+      aimYawDegrees: 9, hipPitchDegrees: 2, hipRollDegrees: 4,
+      bodyColor: 0xff62bb, accentColor: 0x8544c8, metalColor: 0xffd23f,
+      darkColor: 0x312438, sightColor: 0xffef8a, shellColor: 0xfff1d9,
+      fire: { triggerDegrees: 28, pressSeconds: 0.03, releaseSeconds: 0.12 },
+      reload: {
+        gunKeys: [
+          { t: 0, pos: [0, 0, 0], rot: [0, 0, 0] },
+          { t: 0.15, pos: [0.015, -0.03, 0.02], rot: [10, 10, 18] },
+          { t: 0.74, pos: [0.015, -0.03, 0.02], rot: [10, 10, 18] },
+          { t: 0.88, pos: [0, 0, 0], rot: [0, 0, 0] },
+          { t: 1, pos: [0, 0, 0], rot: [0, 0, 0] },
+        ],
+        // Shell-by-shell timeline (see shellReload.progress): 0-0.3 break open, 0.3-0.7 ONE shell (hand grabs it,
+        // pushes it in; this window repeats for every shell), 0.7-1 snap shut.
+        handKeys: [
+          { t: 0, pos: [0, 0, 0] },
+          { t: 0.12, pos: [0, -0.02, 0.02] },
+          { t: 0.3, pos: [-0.1, -0.24, 0.12], rot: [-20, 0, 0] }, // low, grabbing a shell
+          { t: 0.48, pos: [0, 0.055, 0.015] }, // up to the open breech
+          { t: 0.6, pos: [0, 0.015, -0.025] }, // pushed in
+          { t: 0.7, pos: [-0.1, -0.24, 0.12], rot: [-20, 0, 0] }, // back down: the same pose the next shell starts from
+          { t: 0.86, pos: [0, 0, 0] },
+        ],
+        barrelKeys: [
+          { t: 0, rot: [0, 0, 0] }, { t: 0.18, rot: [-32, 0, 0] },
+          { t: 0.74, rot: [-32, 0, 0] }, { t: 0.84, rot: [0, 0, 0] },
+          { t: 1, rot: [0, 0, 0] },
+        ],
+        shellVisible: [[0.31, 0.6]], // the shell in the hand, until it's pushed in
+        events: [
+          { at: 0.18, sound: 'confettiReloadOut' },
+          { at: 0.6, sound: 'confettiReloadIn', jolt: { up: -0.006, pitchDegrees: -2 } }, // each shell
+          { at: 0.84, sound: 'confettiReloadReady', jolt: { back: 0.015, pitchDegrees: 4 } },
+        ],
+      },
+    },
+  },
+
 };
 
 // The melee weapon: a box cutter from the employee's pocket (COD knife equivalent).

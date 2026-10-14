@@ -19,10 +19,16 @@ import * as THREE from 'three';
 import { feel } from '../config/feel.js';
 import { Weapon } from './weapon.js';
 import { castShot } from './hitscan.js';
-import { createAim } from './aim.js';
+import { createAim, applyConeSpread, pelletSpreadDegrees } from './aim.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 const MAX_SLOTS = 2;
+
+export function pelletDamageFalloff(distance, falloff) {
+  if (distance <= falloff.start) return 1;
+  if (distance >= falloff.end) return falloff.minMultiplier;
+  return 1 + (falloff.minMultiplier - 1) * (distance - falloff.start) / (falloff.end - falloff.start);
+}
 
 export function createPlayerGun({
   def, // the starting gun
@@ -59,9 +65,12 @@ export function createPlayerGun({
 
   function startSwitch(toIndex, fromSlot = slots[current]) {
     if (toIndex === current && fromSlot === slots[current]) return;
+    fromSlot.weapon.cancelFire();
     slots[current].weapon.cancelReload();
     current = toIndex;
     slots[current].weapon.cancelReload();
+    slots[current].weapon.cancelFire();
+    lastReloadProgress = null;
     slots[current].aim.reset(); // comes up at the hip
     switching = { from: fromSlot, timer: 0 };
   }
@@ -69,11 +78,23 @@ export function createPlayerGun({
   function fire(slot) {
     const { def: d, aim } = slot;
     player.getAim(origin, direction);
-    aim.applySpread(direction); // random point inside the current spread cone
-    aim.onShot(); // firing quickly widens the cone
-    // Piercing guns (def.pierce) go through several zombies in a line, weaker after each one.
     const pierce = d.pierce ?? null;
-    const shot = castShot(origin, direction, d.range, colliders, shootables, pierce ? pierce.maxTargets : 1);
+    const rays = [];
+    const pelletCone = pelletSpreadDegrees(d, aim.amount);
+    // Resolve all rays before damage: a killed front zombie still stops this blast's other pellets.
+    for (let i = 0; i < (d.pellets?.count ?? 1); i++) {
+      const rayDirection = direction.clone();
+      aim.applySpread(rayDirection);
+      applyConeSpread(rayDirection, pelletCone);
+      rays.push(castShot(origin, rayDirection, d.range, colliders, shootables, pierce?.maxTargets ?? 1));
+    }
+    aim.onShot(); // once per blast, once per dart
+    const hits = rays.flatMap((ray) => ray.hits);
+    const firstHit = hits[0];
+    // One shot for run accuracy even if only a later pellet connected.
+    const shot = d.pellets
+      ? { ...rays[0], ...(firstHit ?? {}), hits, pellets: rays }
+      : rays[0];
 
     // Feedback, all this tick. Camera recoil (moves the crosshair, springs back) uses the aim
     // from before the kick, so this shot lands exactly where you were looking.
@@ -88,27 +109,46 @@ export function createPlayerGun({
     );
     viewmodel.fire(ads); // gun kick + muzzle flash (visual only)
     if (sound) sound.play(d.sounds.fire);
-    effects.tracer(viewmodel.getMuzzleWorldPosition(muzzle), shot.end, d.tracerColor);
-
-    // Every zombie the shot went through (just one for most guns), nearest first.
+    const muzzlePosition = viewmodel.getMuzzleWorldPosition(muzzle);
+    const targets = new Map();
+    let puffs = 0;
+    for (const [rayIndex, ray] of rays.entries()) {
+      const colors = d.pellets?.tracerColors;
+      const color = colors ? colors[rayIndex % colors.length] : d.tracerColor;
+      effects.tracer(muzzlePosition, ray.end, color);
+      ray.hits.forEach((hit, i) => {
+        if (targets.get(hit.target)?.killed) return;
+        const headshot = hit.part === 'head';
+        // Distance falloff (pellets) x pass-through falloff (pierce): a pellet that went through a zombie hits the next weaker.
+        const falloff = (d.pellets ? pelletDamageFalloff(hit.distance, d.pellets.falloff) : 1)
+          * (pierce ? pierce.damageFalloff[Math.min(i, pierce.damageFalloff.length - 1)] : 1);
+        const damage = d.damage * (headshot ? d.headshotMultiplier : 1) * falloff * stats.damageMultiplier;
+        const { killed } = hit.target.takeHit({ damage, part: hit.part, point: hit.point });
+        const previous = targets.get(hit.target);
+        // On a kill, ONLY the killing pellet decides the headshot bonus.
+        targets.set(hit.target, {
+          hit: killed || headshot || !previous ? hit : previous.hit,
+          killed,
+          headshot: killed ? headshot : headshot || (previous?.headshot ?? false),
+        });
+      });
+      if (ray.hits.length < (pierce?.maxTargets ?? 1) && ray.end.distanceTo(origin) < d.range - 1e-3
+        && (!d.pellets || puffs < feel.effects.maxPelletWallPuffs)) {
+        effects.puff(ray.end, ray.endNormal);
+        puffs += 1;
+      }
+    }
     let anyKilled = false;
-    shot.hits.forEach((hit, i) => {
-      const headshot = hit.part === 'head';
-      const falloff = pierce ? pierce.damageFalloff[Math.min(i, pierce.damageFalloff.length - 1)] : 1;
-      const damage = d.damage * (headshot ? d.headshotMultiplier : 1) * falloff * stats.damageMultiplier;
-      const { killed } = hit.target.takeHit({ damage, part: hit.part, point: hit.point });
-      anyKilled = anyKilled || killed;
-      const count = headshot ? feel.effects.headshotSplatCount : feel.effects.splatCount;
-      effects.splat(hit.point, hit.normal, hit.target.splatColors, count);
-      if (onHit) onHit({ target: hit.target, killed, headshot, melee: false });
-    });
-    if (shot.hits.length > 0) {
-      hud.showHitMarker({ headshot: shot.hits[0].part === 'head', killed: anyKilled });
+    let anyHeadshot = false;
+    for (const [target, result] of targets) {
+      const { hit, killed, headshot } = result;
+      anyKilled ||= killed;
+      anyHeadshot ||= headshot;
+      effects.splat(hit.point, hit.normal, target.splatColors,
+        headshot ? feel.effects.headshotSplatCount : feel.effects.splatCount);
+      if (onHit) onHit({ target, killed, headshot, melee: false });
     }
-    // Hit a wall or prop (if the shot made it that far).
-    if (shot.hits.length < (pierce ? pierce.maxTargets : 1) && shot.end.distanceTo(origin) < d.range - 1e-3) {
-      effects.puff(shot.end, shot.endNormal);
-    }
+    if (targets.size > 0) hud.showHitMarker({ headshot: d.pellets ? anyHeadshot : shot.hits[0].part === 'head', killed: anyKilled });
     if (onShot) onShot(shot);
     return shot;
   }
@@ -142,6 +182,11 @@ export function createPlayerGun({
     },
     get slots() {
       return slots.map((s) => s.def.id);
+    },
+
+    // Match the displayed cone to gameplay, using interpolated ADS for the pellet portion.
+    spreadDegreesForDisplay(aimAmount = slots[current].aim.amount) {
+      return slots[current].aim.spreadDegrees + pelletSpreadDegrees(slots[current].def, aimAmount);
     },
 
     // For the viewmodel: which gun model is showing, and how far out of view it is (0 up .. 1 gone).
@@ -183,6 +228,7 @@ export function createPlayerGun({
         startSwitch(slots.length - 1);
       } else {
         const old = slots[current];
+        old.weapon.cancelFire();
         old.weapon.cancelReload();
         slots[current] = makeSlot(newDef);
         startSwitch(current, old);
@@ -219,7 +265,7 @@ export function createPlayerGun({
       reloadRequested = false;
       // Shooting while sprinting: drop to a walk and bring the gun up out of the running pose before
       // the shot goes off (the click is buffered, so it fires as soon as the gun is up).
-      const wantsToFire = trigger || (triggerHeld && slot.def.fireMode === 'auto');
+      const wantsToFire = trigger || slot.weapon.isBursting || (triggerHeld && slot.def.fireMode === 'auto');
       if (wantsToFire && !busy) {
         if (player.isSprinting || player.sprintAmount > 0.3) {
           slot.weapon.cooldown = Math.max(slot.weapon.cooldown, feel.sprint.sprintOutSeconds * player.sprintAmount);
@@ -233,8 +279,10 @@ export function createPlayerGun({
         blocked: busy,
         reloadPaused,
       });
-      if (result === 'fire') this.lastShot = fire(slot);
-      else if (result === 'empty') {
+      if (result === 'fire') {
+        player.blockSprint(feel.sprint.fireBlocksSprintSeconds);
+        this.lastShot = fire(slot);
+      } else if (result === 'empty') {
         // Dry click on an empty mag (the weapon starts reloading by itself).
         viewmodel.dryFire();
         if (sound) sound.play(slot.def.sounds.dryFire);

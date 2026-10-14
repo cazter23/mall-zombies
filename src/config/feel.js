@@ -293,6 +293,8 @@ export const feel = {
 
   // Hit effects (cartoon splatter, tracers, hit markers)
   effects: {
+    tracerPool: 16, // enough for two eight-pellet blasts before a rendered frame
+    maxPelletWallPuffs: 4, // limit decoration per shotgun shot
     tracerSeconds: 0.07, // how long the staple streak stays visible
     tracerWidth: 0.012, // meters
     maxParticles: 600,

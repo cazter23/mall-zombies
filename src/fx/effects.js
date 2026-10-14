@@ -9,7 +9,6 @@ import * as THREE from 'three';
 import { feel } from '../config/feel.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
-const TRACER_POOL = 8;
 
 export function createEffects(scene) {
   const fx = feel.effects;
@@ -18,7 +17,7 @@ export function createEffects(scene) {
 
   const tracerGeometry = new THREE.CylinderGeometry(1, 1, 1, 5, 1, true);
   const tracers = [];
-  for (let i = 0; i < TRACER_POOL; i++) {
+  for (let i = 0; i < fx.tracerPool; i++) {
     const material = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false });
     const mesh = new THREE.Mesh(tracerGeometry, material);
     mesh.visible = false;
@@ -97,7 +96,7 @@ export function createEffects(scene) {
     // Staple streak from `from` (gun muzzle) to `to` (where the shot landed).
     tracer(from, to, hexColor) {
       const t = tracers[nextTracer];
-      nextTracer = (nextTracer + 1) % TRACER_POOL;
+      nextTracer = (nextTracer + 1) % tracers.length;
       tracerDir.subVectors(to, from);
       const length = tracerDir.length();
       if (length < 0.01) return;

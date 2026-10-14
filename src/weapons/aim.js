@@ -15,6 +15,26 @@ import { feel } from '../config/feel.js';
 const DEG_TO_RAD = Math.PI / 180;
 const WORLD_UP = new THREE.Vector3(0, 1, 0);
 const WORLD_RIGHT = new THREE.Vector3(1, 0, 0);
+const coneRight = new THREE.Vector3();
+const coneUp = new THREE.Vector3();
+
+/** Uniform random offset in a cone; modifies the unit direction in place. */
+export function applyConeSpread(direction, degrees) {
+  const halfAngle = degrees * DEG_TO_RAD;
+  if (halfAngle <= 0) return direction;
+  const radius = Math.tan(halfAngle) * Math.sqrt(Math.random());
+  const angle = Math.random() * Math.PI * 2;
+  coneRight.crossVectors(direction, Math.abs(direction.y) > 0.99 ? WORLD_RIGHT : WORLD_UP).normalize();
+  coneUp.crossVectors(coneRight, direction);
+  return direction.addScaledVector(coneRight, radius * Math.cos(angle))
+    .addScaledVector(coneUp, radius * Math.sin(angle)).normalize();
+}
+
+// ADS blends the pellet cone independently of the gun's ordinary bloom/spread.
+export function pelletSpreadDegrees(def, aimAmount) {
+  const p = def.pellets;
+  return p ? p.spreadDegrees * (1 + ((p.adsMultiplier ?? 0.5) - 1) * aimAmount) : 0;
+}
 
 // Smooth start and stop for the ADS transition (0..1 -> 0..1).
 const ease = (t) => t * t * (3 - 2 * t);
@@ -28,8 +48,6 @@ export function createAim({ def, input, player }) {
   let bloom = 0; // extra spread from firing quickly (degrees)
   let bloomRecoveryTimer = 0; // seconds before bloom can recover after the latest shot
 
-  const right = new THREE.Vector3();
-  const up = new THREE.Vector3();
 
   return {
     // True while the aim key is held (and not cancelled by sprinting).
@@ -104,16 +122,7 @@ export function createAim({ def, input, player }) {
     // Nudges `direction` (unit vector) to a random point inside the current cone.
     // Points are spread evenly over the crosshair circle, so the gap shows the real cone.
     applySpread(direction) {
-      const halfAngle = this.spreadDegrees * DEG_TO_RAD;
-      if (halfAngle <= 0) return direction;
-      const radius = Math.tan(halfAngle) * Math.sqrt(Math.random());
-      const angle = Math.random() * Math.PI * 2;
-      right.crossVectors(direction, Math.abs(direction.y) > 0.99 ? WORLD_RIGHT : WORLD_UP).normalize();
-      up.crossVectors(right, direction);
-      return direction
-        .addScaledVector(right, radius * Math.cos(angle))
-        .addScaledVector(up, radius * Math.sin(angle))
-        .normalize();
+      return applyConeSpread(direction, this.spreadDegrees);
     },
   };
 }
