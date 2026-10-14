@@ -1,7 +1,7 @@
 // =============================================================================
 // MAPS
 // Every playable map is a folder under src/maps/ with a build function that
-// returns the MAP INTERFACE below. main.js only ever talks to that interface,
+// returns the MAP INTERFACE below. The game (game/createGame.js) only ever talks to that interface,
 // so adding a map = adding a folder + one line in `maps`.
 //
 // Map interface (what build(scene, colliders) returns):
@@ -12,8 +12,9 @@
 //   doors         [door]   buyable barriers that open zones (world/door.js); several doors
 //                 may open the same zone (it's open while any of them is)
 //   spawnPoints   [{ name, zone, position }]      zombie spawns, tagged by zone
-//   wallBuys      [{ name, zone, position, normal, weapon }]  weapon id per spot
-//   ammoCaches    [{ name, zone, position, normal }]  (optional) vending machines: refill the gun in hand
+//   features      [{ kind, name, zone, position, normal, ...that kind's fields }]  everything (besides doors)
+//                 the player interacts with; built by kind in game/features/ (an unknown kind is an error).
+//                 Kinds now: 'wallBuy' (+ weapon: a config/weapons.js id), 'ammoCache'
 //   playerSpawn   { position, yaw }
 //   update(dt)    animate doors etc.
 //   reset()       new run: close doors, lock zones

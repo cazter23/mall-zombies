@@ -5,6 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { createInteractions } from '../src/game/interactions.js';
+import { featuresOf } from '../src/game/features/index.js';
 import { feel } from '../src/config/feel.js';
 
 const ctx = new Proxy({}, {
@@ -37,7 +38,7 @@ function setup() {
       seeThrough: [door.barrier.collider], available: () => !door.isOpen, use: () => bought.push(door.id),
     });
   }
-  for (const wb of map.wallBuys) {
+  for (const wb of featuresOf(map, 'wallBuy')) {
     interactions.add({
       label: wb.weapon, verb: 'buy', cost: 1, position: wb.position,
       available: () => map.zones[wb.zone].open, use: () => bought.push(wb.name),

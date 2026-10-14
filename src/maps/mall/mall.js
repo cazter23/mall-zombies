@@ -501,16 +501,16 @@ export function buildMall(scene, colliders) {
       return { name: 'spawn_serviceCorridor_deadEnd', zone: 'serviceCorridor', position: new THREE.Vector3(p.x, 0, p.z) };
     })(),
   ];
-  // Where weapons are bought off the wall. `normal` points out of the wall; `weapon` is a
-  // config/weapons.js id. Prices live in economy.js.
+  // Where weapons are bought off the wall (map features of kind 'wallBuy', game/features/wallBuy.js).
+  // `normal` points out of the wall; `weapon` is a config/weapons.js id. Prices live in economy.js.
   const wallBuys = [
     // Cheap full-auto pistol in the going-out-of-business store
     { name: 'wallbuy_startRoom', zone: 'startRoom', weapon: 'priceGun', position: new THREE.Vector3(R.maxX - 0.02, 1.5, 10), normal: new THREE.Vector3(-1, 0, 0) },
     // The first real upgrade, on the hallway's south wall (east of the Food Court door): available as
     // soon as the start shutter is open, like it was in the old concourse.
     { name: 'wallbuy_hallway', zone: 'hallway', weapon: 'nailGun', position: new THREE.Vector3(11, 1.5, H.minZ + 0.02), normal: new THREE.Vector3(0, 0, 1) },
-    // Reserved for a future gun (Mega Mart toy section). Inert until that weapon exists in
-    // config/weapons.js + economy.wallBuys: main.js skips wall buys for unknown weapons.
+    // The Mega Mart toy section. (A wall buy for a gun that doesn't exist in config/weapons.js +
+    // economy.wallBuys yet is inert: game/features/wallBuy.js skips it.)
     { name: 'wallbuy_megaMart', zone: 'megaMart', weapon: 'foamDartBlaster', position: new THREE.Vector3(31.5, 1.5, M.maxZ - 0.02), normal: new THREE.Vector3(0, 0, -1) },
     // Reserved the same way: the Service Corridor's west wall near its dead end (between the lockers and the crates).
     (() => {
@@ -523,9 +523,12 @@ export function buildMall(scene, colliders) {
   // Player start: middle of the start room, facing the shutter (-Z)
   const playerSpawn = { position: new THREE.Vector3(0, 0, 12), yaw: 0 };
 
-  // Ammo caches: buy a refill for the gun in your hand (the price is economy.ammoCache.price). Same shape as wall buys.
-  const ammoCaches = [
-    { name: 'ammocache_foodCourt', zone: 'foodCourt', position: foodCourtAmmo.position, normal: foodCourtAmmo.normal },
+  // Everything (besides doors) the player interacts with, by kind: game/features/ builds each one.
+  // New kinds (claw machine, fitting room, hazard switch...) are more entries here.
+  const features = [
+    ...wallBuys.map((w) => ({ kind: 'wallBuy', ...w })),
+    // The STAPLE-O-MAT: buy a refill for the gun in your hand (g.pricing 'ammoCache').
+    { kind: 'ammoCache', name: 'ammocache_foodCourt', zone: 'foodCourt', position: foodCourtAmmo.position, normal: foodCourtAmmo.normal },
   ];
 
   const doors = [startDoor, megaMartDoor, foodCourtDoor, serviceCorridorDoor];
@@ -536,8 +539,7 @@ export function buildMall(scene, colliders) {
     zones,
     doors,
     spawnPoints,
-    wallBuys,
-    ammoCaches,
+    features,
     playerSpawn,
     update(dt) {
       for (const door of doors) door.update(dt);

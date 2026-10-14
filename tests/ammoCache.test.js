@@ -3,7 +3,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import { ammoCacheItem } from '../src/game/ammoCache.js';
+import { ammoCacheItem } from '../src/game/features/ammoCache.js';
+import { featuresOf } from '../src/game/features/index.js';
 import { createInteractions } from '../src/game/interactions.js';
 import { Weapon } from '../src/weapons/weapon.js';
 import { weapons } from '../src/config/weapons.js';
@@ -69,7 +70,7 @@ function setupMall() {
   const player = { position: new THREE.Vector3(), yaw: 0, eyeHeight: feel.player.eyeHeight };
   const input = { pressed: new Set(), isDown: () => false, actionDown: () => true, consumeAction: () => true };
   const interactions = createInteractions({ input, player, wallet: { spend: () => true, canAfford: () => true }, colliders });
-  for (const cache of map.ammoCaches) interactions.add(ammoCacheItem({ cache, zones: map.zones, gun, price: 1 }));
+  for (const cache of featuresOf(map, 'ammoCache')) interactions.add(ammoCacheItem({ cache, zones: map.zones, gun, price: 1 }));
   const open = (id) => {
     map.doors.find((d) => d.id === id).open();
     for (let t = 0; t < feel.world.shutterOpenSeconds + 0.5; t += dt) map.update(dt);
@@ -89,8 +90,8 @@ function setupMall() {
 
 test('the real mall has a Food Court ammo cache in front of the west wall', () => {
   const { map } = setupMall();
-  assert.equal(map.ammoCaches.length, 1);
-  const cache = map.ammoCaches[0];
+  assert.equal(featuresOf(map, 'ammoCache').length, 1);
+  const cache = featuresOf(map, 'ammoCache')[0];
   assert.equal(cache.zone, 'foodCourt');
   assert.ok(cache.position.x < -19 && cache.position.x > -20, 'on the Food Court west wall');
   assert.deepEqual(cache.normal.toArray(), [1, 0, 0], 'faces into the room');
@@ -98,7 +99,7 @@ test('the real mall has a Food Court ammo cache in front of the west wall', () =
 
 test('the cache can be bought from in front of it, but not before its door, nor through the wall', () => {
   const { map, open, tryBuy } = setupMall();
-  const p = map.ammoCaches[0].position;
+  const p = featuresOf(map, 'ammoCache')[0].position;
   const FACING_WEST = Math.PI / 2; // yaw 0 faces -Z; +90 degrees faces -X
   open('startShutter');
   assert.equal(tryBuy(p.x + 1.5, p.z, FACING_WEST), false, 'the Food Court is still closed');
@@ -113,7 +114,7 @@ test('the cache can be bought from in front of it, but not before its door, nor 
 
 test('the machine is solid and too tall to climb; its front is open floor zombies can reach', () => {
   const { map, colliders, open } = setupMall();
-  const p = map.ammoCaches[0].position;
+  const p = featuresOf(map, 'ammoCache')[0].position;
   const body = colliders.find((b) => b.containsPoint(new THREE.Vector3(p.x - 0.3, 1.0, p.z)));
   assert.ok(body, 'a collider where the machine stands');
   assert.ok(body.max.y >= 1.9, 'taller than a jump peak (about 1.05m) plus a step-up');

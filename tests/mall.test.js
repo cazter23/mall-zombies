@@ -13,6 +13,7 @@ import { overlapsSolid } from '../src/world/collision.js';
 import { PlayerController } from '../src/player/controller.js';
 import { createPlayerStats } from '../src/player/stats.js';
 import { LAYOUT } from '../src/maps/mall/mall.js';
+import { featuresOf } from '../src/game/features/index.js';
 
 // A 2D context where every method is a no-op returning the context (gradients, measureText...).
 const ctx = new Proxy({}, {
@@ -98,7 +99,7 @@ test('each area is sealed until its own door is bought, in any order, and fully 
   // Start shutter: the hallway (and its Nail Gun wall buy) opens; the Mega Mart and Food Court stay sealed.
   open('startShutter');
   for (const s of [...spawnsIn('startRoom'), ...spawnsIn('hallway')]) assert.ok(reachable(s.position), `${s.name} reachable`);
-  const nailGun = map.wallBuys.find((w) => w.weapon === 'nailGun');
+  const nailGun = featuresOf(map, 'wallBuy').find((w) => w.weapon === 'nailGun');
   assert.equal(nailGun.zone, 'hallway');
   assert.ok(reachable({ x: nailGun.position.x, z: nailGun.position.z + 0.8 }), 'you can stand at the Nail Gun wall buy');
   for (const s of [...spawnsIn('megaMart'), ...spawnsIn('foodCourt'), ...spawnsIn('serviceCorridor')]) assert.equal(reach(s.position), Infinity, `${s.name} sealed`);

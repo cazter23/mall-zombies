@@ -22,7 +22,6 @@
 import { feel } from '../config/feel.js';
 import { zombieTypes } from '../config/zombies.js';
 import { weapons, melee as meleeWeapons } from '../config/weapons.js';
-import { economy } from '../config/economy.js';
 import { loadMap } from '../maps/index.js';
 import { createPlayerStats, resetPlayerStats } from '../player/stats.js';
 import { PlayerController } from '../player/controller.js';
@@ -31,8 +30,6 @@ import { createEffects } from '../fx/effects.js';
 import { createPlayerGun } from '../weapons/playerGun.js';
 import { createMelee } from '../weapons/melee.js';
 import { createAimAssist } from '../weapons/aimAssist.js';
-import { buildWeaponDisplay } from '../weapons/models/index.js';
-import { createWallBuyDisplay } from '../world/wallBuy.js';
 import { createZombieManager } from '../zombies/zombieManager.js';
 import { createEvents } from './events.js';
 import { createPricing } from './pricing.js';
@@ -40,7 +37,7 @@ import { createRunStats } from './runStats.js';
 import { createWallet, pointsForHit } from './wallet.js';
 import { createRounds } from './rounds.js';
 import { createInteractions } from './interactions.js';
-import { ammoCacheItem } from './ammoCache.js';
+import { buildFeatures } from './features/index.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 
@@ -133,39 +130,9 @@ export function createGame({
       use: () => door.open(),
     });
   }
-  // Wall buys: buy the gun, or (once you own it) refill its ammo. Markers for guns that don't
-  // exist yet in config/weapons.js are skipped.
-  for (const wb of map.wallBuys) {
-    const def = weapons[wb.weapon];
-    if (!def || !economy.wallBuys[wb.weapon]) continue;
-    scene.add(
-      createWallBuyDisplay({
-        position: wb.position,
-        normal: wb.normal,
-        name: def.name,
-        gunModel: buildWeaponDisplay(def),
-        cfg: feel.world.wallBuyDisplay,
-      }),
-    );
-    const owned = () => gun.owns(def.id);
-    interactions.add({
-      get label() {
-        return owned() ? `${def.name} ammo` : def.name;
-      },
-      verb: 'buy',
-      get cost() {
-        return owned() ? pricing.priceOf('ammo', def.id) : pricing.priceOf('weapon', def.id);
-      },
-      position: wb.position,
-      // Only in an opened area, and not when you already have it with full ammo.
-      available: () => map.zones[wb.zone].open && !(owned() && gun.weaponFor(def.id).isFull),
-      use: () => gun.give(def),
-    });
-  }
-  // Ammo caches (vending machines): refill the gun in your hand for a flat price.
-  for (const cache of map.ammoCaches ?? []) {
-    interactions.add(ammoCacheItem({ cache, zones: map.zones, gun, price: () => pricing.priceOf('ammoCache') }));
-  }
+  // Everything else in the map you interact with (wall buys, the ammo cache, later the claw machine,
+  // hazards...): map.features, built by kind (game/features/).
+  const features = buildFeatures(map, { scene, map, gun, pricing, interactions, events });
 
   const melee = createMelee({
     def: meleeWeapons.boxCutter,
@@ -293,6 +260,7 @@ export function createGame({
     ['rounds', () => rounds.reset()],
     ['player', () => player.teleport(map.playerSpawn)],
     ['map', () => map.reset()], // doors closed, zones locked
+    ['features', () => features.reset()],
     ['death', () => {
       state.over = false;
       death.timer = 0;
@@ -350,6 +318,7 @@ export function createGame({
     if (!(arena && arena.contains(player.position))) rounds.update(dt);
     health.update(dt);
     map.update(dt);
+    features.update(dt);
     if (arena) arena.update(dt);
     player.updateView(dt); // recoil/jolt springs last, so this tick's kicks show on the next frame
     input.endTick();
@@ -361,6 +330,7 @@ export function createGame({
     pricing,
     death,
     map,
+    features,
     colliders,
     arena,
     shootables,

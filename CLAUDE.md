@@ -38,7 +38,9 @@ viewmodel: buy the shutter, rounds, shoot a zombie for exact payouts, die, resul
 via snapshot()). New cross-system behaviour should get a full-run test there), `events.test.js` the event bus + every payout path
 in the real game (body / headshot / box-cutter kills, a shotgun blast pays once per zombie, a non-player "hazard" kill still pays
 and counts, purchase / round / player-hit / death / Play-again events), `pricing.test.js` prices = config exactly, discounts
-(one category, rounded to 10, errors for unknown items), the real game charges + shows the sale price, a new run clears it);
+(one category, rounded to 10, errors for unknown items), the real game charges + shows the sale price, a new run clears it),
+`features.test.js` map features (the mall's list, unknown kind = error, a new kind's update/reset hooks run, inert wall buy for a
+gun that doesn't exist, buy a wall gun + refill at the STAPLE-O-MAT in the real game);
 there is no linter yet.
 `npm run build` is the compile check (it only bundles; it
 does not run the game, so also try changes in `npm run dev`).
@@ -61,6 +63,9 @@ does not run the game, so also try changes in `npm run dev`).
   All kill payouts and kill stats come from the 'kill' event (whatever killed the zombie).
 - Every price the player pays comes from `g.pricing.priceOf(category, id)` (game/pricing.js), never straight from
   config/economy.js, so discounts (Flash Sales) apply everywhere at once.
+- Map things the player interacts with (besides doors) are DATA in `map.features` ({ kind, name, zone, position, normal, ...}),
+  built by kind in `game/features/`. A new kind (claw machine, fitting room, hazard...) = a module there + one registry line
+  + entries in the map; createGame doesn't change.
 - Keep code modular, readable and commented. Prefer small, reviewable changes.
 - Build in small steps. Do only the step the user asks for. Test it, then tell them how to try it.
 - After changes, run `npm run build` to check for errors.
@@ -299,9 +304,13 @@ src/
                         and calls use(), else red prompt + 'denied'. Buttons bound to both interact and reload
                         (controller X): the press is hidden from the gun near a buyable; let go before it buys =
                         onReloadTap (gun.requestReload()). `prompt` for the HUD; reset()
-    ammoCache.js        ammoCacheItem({ cache, zones, gun, price }): the vending machine as an interactions.add() item: label
-                        "Ammo · <gun in hand>", cost = price, available when its zone is open and the gun in hand isn't full,
-                        use = gun.weapon.refill() (mag + reserve, ANY gun incl. the staple gun). main.js adds one per map.ammoCaches
+    features/           MAP FEATURES by kind. index.js = the registry (kind -> build(feature, ctx) returning optional
+                        { update(dt), reset() }), buildFeatures(map, ctx) (unknown kind throws; createGame ticks/resets them),
+                        featuresOf(map, kind), FEATURE_KINDS. ctx = { scene, map, gun, pricing, interactions, events }.
+                        wallBuy.js = chalk display + "buy <Gun>" / "<Gun> ammo" prompt (g.pricing weapon/ammo; inert for a gun
+                        that doesn't exist yet). ammoCache.js = buildAmmoCache + ammoCacheItem({ cache, zones, gun, price }): the
+                        STAPLE-O-MAT item: label "Ammo · <gun in hand>", available when its zone is open and the gun in hand
+                        isn't full, use = gun.weapon.refill() (mag + reserve, ANY gun incl. the staple gun)
     rounds.js           createRounds(): announce(n, delay) flips the round number (and fires onRoundStart) the
                         moment the last zombie dies, then 'break' (6s, inBreak) -> 'active' (spawn quota at
                         spawnDelay, capped by maxAlive; quota only used when a zombie actually spawned, else retry
@@ -310,7 +319,8 @@ src/
                         the first time a type spawns in a run. start() on first play, skipRound() (debug), reset()
   maps/
     index.js            Map registry + loadMap(id, scene, colliders) + THE MAP INTERFACE (id, group, zones, doors,
-                        spawnPoints, wallBuys, ammoCaches (optional), playerSpawn, update, reset, dispose). New map = new folder + 1 line
+                        spawnPoints, features (wall buys, ammo cache... by kind), playerSpawn, update, reset, dispose).
+                        New map = new folder + 1 line
     mall/mall.js        buildMall(scene, colliders): the mall's LAYOUT only (rooms, doors, props, lights, markers), built
                         with the map kit + mall props. Zones startRoom (open) / hallway / megaMart / foodCourt /
                         serviceCorridor; doors: start shutter (500) -> hallway (the hub), Mega Mart shutter (750, hallway
@@ -406,11 +416,10 @@ src/
   eye), `zombies.update`, `rounds.update` (paused while in the test range), `health.update`, `map.update`,
   `arena.update`, `player.updateView` (recoil springs last, so a shot's kick shows on the very next frame),
   `input.endTick()`. `rounds.start()` happens the first tick the game actually runs.
-- Buying: main adds every `map.doors` entry to `interactions` (verb 'open', cost door.price, use = door.open(), which
-  opens its zone so zombies start spawning there and the nav grid rebuilds when the shutter's collider goes), and
-  every `map.wallBuys` marker whose weapon exists in config/weapons.js (display built + an interactable: "buy
-  <Gun> <economy.wallBuys.x.weapon>", or once owned "buy <Gun> ammo <...ammo>"; hidden when its zone is closed or
-  you own it with full ammo; use = gun.give(def)). Melee gets `getWeapon: () => gun.weapon` (the gun in hand).
+- Buying: createGame adds every `map.doors` entry to `interactions` (verb 'open', cost pricing.priceOf('door', id), use =
+  door.open(), which opens its zone so zombies start spawning there and the nav grid rebuilds when the shutter's collider
+  goes), and builds every `map.features` entry by kind (game/features/): wall buys (display + "buy <Gun>" / "<Gun> ammo",
+  hidden when its zone is closed or you own it with full ammo; use = gun.give(def)) and the ammo cache. Melee gets `getWeapon: () => gun.weapon` (the gun in hand).
 - Map: `main.js` does `loadMap('mall', scene, colliders)` and only uses the map interface (maps/index.js).
   The zombie manager gets `map.spawnPoints` + `isZoneOpen`, so zombies only spawn in opened zones.
 - Zombie types: rounds picks each spawn's type (economy.zombieMix) and calls `zombies.spawn(typeId)`; health is
@@ -460,11 +469,11 @@ src/
   Player is a cylinder (radius, height, feet position). Boxes whose top is within `stepTolerance`
   of the feet count as floor, not walls.
 - Coordinates: meters, +Y up. Camera looks down -Z at yaw 0.
-- Markers (invisible; shown if `debug.showMarkers`): `map.spawnPoints` (16: 2 start-room vents, 3 hallway vents,
+- Markers (invisible; shown if `debug.showMarkers`; wall-buy markers come from the 'wallBuy' features): `map.spawnPoints` (16: 2 start-room vents, 3 hallway vents,
   4 Food Court shopfronts, 4 Mega Mart: stockroom, receiving, back vent, emergency exit, 3 Service Corridor: two wall
   vents + the dead end; each tagged with its zone)
-  and `map.wallBuys` (4, with an outward `normal` and a `weapon` id: Price Gun, Nail Gun, Mega Mart Foam Dart Blaster
-  and Service Corridor Confetti Cannon; prices in economy.wallBuys).
+  and the 4 'wallBuy' features (outward `normal` + `weapon` id: Price Gun, Nail Gun, Mega Mart Foam Dart Blaster
+  and Service Corridor Confetti Cannon; prices in economy.wallBuys via g.pricing).
 
 ## Map (current)
 The start room opens into a MAIN HALLWAY (the hub); every other area is bought off it, in any order.
@@ -505,7 +514,7 @@ The start room opens into a MAIN HALLWAY (the hub); every other area is bought o
   dead), two warm point lights. Concrete-look floor, drab walls.
 - Ammo cache: a STAPLE-O-MAT vending machine on the Food Court's west wall (center z -5.1, front at x -19.4, in the open north
   of the planter). Hold F/X for 400 points to refill the gun in your hand (any gun, including the staple gun, which has no wall
-  buy); no prompt when it's full or the Food Court is closed. `map.ammoCaches` -> main.js -> game/ammoCache.js.
+  buy); no prompt when it's full or the Food Court is closed. A map feature of kind 'ammoCache' (game/features/ammoCache.js).
 - Wall-buy spots: start room east wall (5, 1.5, 10) = Price Gun; hallway south wall (11, 1.5, -2) = Nail Gun;
   Mega Mart north wall (31.5, 1.5, 6) = Foam Dart Blaster, Service Corridor west wall near the dead end
   (-23.28, 1.5, -12.2) = Confetti Cannon.

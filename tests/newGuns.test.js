@@ -14,6 +14,7 @@ import { buildWeaponModel, buildWeaponDisplay } from '../src/weapons/models/inde
 import { createRunStats } from '../src/game/runStats.js';
 import { pointsForHit, createWallet } from '../src/game/wallet.js';
 import { createInteractions } from '../src/game/interactions.js';
+import { featuresOf } from '../src/game/features/index.js';
 import { createEffects } from '../src/fx/effects.js';
 
 const dt = 1 / feel.simulation.tickRate;
@@ -276,7 +277,7 @@ test('real mall: new wall buys require their zones, buy/refill into the loadout,
   globalThis.document??={createElement:()=>({width:0,height:0,getContext:()=>ctx})};
   const {buildMall}=await import('../src/maps/mall/mall.js');
   for(const [id,doorId] of [['foamDartBlaster','megaMart'],['confettiCannon','serviceCorridor']]){
-    const colliders=[],map=buildMall(new THREE.Scene(),colliders),wb=map.wallBuys.find(w=>w.weapon===id);
+    const colliders=[],map=buildMall(new THREE.Scene(),colliders),wb=featuresOf(map,'wallBuy').find(w=>w.weapon===id);
     assert.ok(wb,id+' marker reserved');
     const f=fixture(weapons.stapleGun),wallet=createWallet();wallet.earn(10000);
     const player={position:wb.position.clone().addScaledVector(wb.normal,1.2),yaw:Math.atan2(wb.normal.x,wb.normal.z),eyeHeight:feel.player.eyeHeight};player.position.y=0;
