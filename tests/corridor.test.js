@@ -8,6 +8,22 @@ import { wallSegments, createMapKit } from '../src/world/mapKit.js';
 import { createNavigation } from '../src/zombies/navigation.js';
 
 const EPS = 1e-6;
+
+test('caps stop at shared-wall faces instead of extending into them, in every orientation', () => {
+  for (const [dir, negativeRight] of [['east', false], ['west', true], ['north', true], ['south', false]]) {
+    for (const side of ['right', 'left']) {
+      const layout = corridorLayout({
+        width: 3, height: 3.5, thickness: 0.3, start: { x: 0, z: 0 },
+        startCap: true, endCap: true, segments: [{ dir, length: 8, noWall: [side] }],
+      });
+      const negative = side === 'right' ? negativeRight : !negativeRight;
+      for (const cap of layout.caps) {
+        assert.equal(negative ? cap.from : cap.to, negative ? -1.5 : 1.5, `${dir}/${side}: shared face`);
+        assert.equal(negative ? cap.to : cap.from, negative ? 1.8 : -1.8, `${dir}/${side}: own wall corner`);
+      }
+    }
+  }
+});
 const overlapArea = (a, b) => Math.max(0, Math.min(a.maxX, b.maxX) - Math.max(a.minX, b.minX)) *
   Math.max(0, Math.min(a.maxZ, b.maxZ) - Math.max(a.minZ, b.minZ));
 const inRect = (r, x, z) => x > r.minX + EPS && x < r.maxX - EPS && z > r.minZ + EPS && z < r.maxZ - EPS;

@@ -44,6 +44,19 @@ function setup() {
   return { map, colliders, nav, player, door, open, reach };
 }
 
+test('Service Corridor walls do not overlap the Food Court west wall and flicker through its face', () => {
+  const { map } = setup();
+  map.group.updateMatrixWorld(true);
+  const shared = new THREE.Box3().setFromObject(map.group.getObjectByName('foodcourt_wall_west_0'));
+  map.group.traverse((o) => {
+    if (!o.name.startsWith('service_wall')) return;
+    const b = new THREE.Box3().setFromObject(o);
+    const overlapsZ = Math.min(b.max.z, shared.max.z) - Math.max(b.min.z, shared.min.z) > 1e-6;
+    if (overlapsZ) assert.ok(b.max.x <= shared.min.x + 1e-6, `${o.name} overlaps the shared wall`);
+  });
+  map.dispose();
+});
+
 test('the door ladder: start shutter 500 -> hallway hub; Mega Mart 750, Food Court 1000, Service Corridor 1250 off it', () => {
   const { map, door } = setup();
   const ladder = [

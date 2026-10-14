@@ -487,8 +487,10 @@ export const weapons = {
           { t: 0, pos: [0, 0, 0] },
           { t: 0.12, pos: [0, -0.02, 0.02] },
           { t: 0.3, pos: [-0.1, -0.24, 0.12], rot: [-20, 0, 0] }, // low, grabbing a shell
-          { t: 0.48, pos: [0, 0.055, 0.015] }, // up to the open breech
-          { t: 0.6, pos: [0, 0.015, -0.025] }, // pushed in
+          { t: 0.42, pos: [-0.08, 0.11, 0.045] }, // lift outside the wider receiver first
+          { t: 0.48, pos: [0.026, 0.11, 0.03] }, // over the open breech, fingers behind it
+          { t: 0.6, pos: [0.026, 0.11, 0.03] }, // shell slides in without pushing the palm into the gun
+          { t: 0.64, pos: [-0.08, 0.11, 0.045] }, // withdraw sideways before lowering past the receiver
           { t: 0.7, pos: [-0.1, -0.24, 0.12], rot: [-20, 0, 0] }, // back down: the same pose the next shell starts from
           { t: 0.86, pos: [0, 0, 0] },
         ],
@@ -496,6 +498,12 @@ export const weapons = {
           { t: 0, rot: [0, 0, 0] }, { t: 0.18, rot: [-32, 0, 0] },
           { t: 0.74, rot: [-32, 0, 0] }, { t: 0.84, rot: [0, 0, 0] },
           { t: 1, rot: [0, 0, 0] },
+        ],
+        shellKeys: [
+          { t: 0, pos: [-0.07, -0.055, -0.08], rot: [-32, 0, 0] },
+          { t: 0.48, pos: [-0.07, -0.055, -0.08], rot: [-32, 0, 0] },
+          { t: 0.6, pos: [-0.07, -0.089, -0.134], rot: [-32, 0, 0] },
+          { t: 0.7, pos: [-0.07, -0.055, -0.08], rot: [-32, 0, 0] },
         ],
         shellVisible: [[0.31, 0.6]], // the shell in the hand, until it's pushed in
         events: [

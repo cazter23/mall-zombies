@@ -477,6 +477,14 @@ The start room opens into a MAIN HALLWAY (the hub); every other area is bought o
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+Visual fixes: corridor caps extend across their own side walls only, so the Service Corridor end cap no longer
+overlaps/flickers through the Food Court wall beside the STAPLE-O-MAT. The Price Gun front sight post is seated
+in the housing (its tip/ADS position stays the same). Confetti Cannon has fitted support-hand/thumb geometry,
+a hinge below and forward of the breech, open rear bores and a shell/hand path that clears the receiver. Its
+closed muzzle position and gameplay/reload timing are preserved. The Foam Dart Blaster and Confetti Cannon front-sight
+beads sit on posts (they used to float above the body). Tests/weaponModels.test.js checks sight
+attachment and receiver clearance across the reload; corridor/mall tests cover the shared-wall cap.
+
 Zombie health tuning: 150 HP in round 1, +75 per round through round 9, then +7.5% per round.
 This reduces bullet-sponginess (round-8 Shopper: 675 HP, 27 Price Gun body hits / 8 Nail Gun body hits).
 Mall Walkers retain 65% of Shopper health. Zombie damage, movement, spawning and weapon stats are unchanged.

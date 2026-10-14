@@ -152,11 +152,19 @@ export function corridorLayout(spec) {
     const edge = across === 'z' ? point.x : point.z;
     const o = across === 'z' ? r.dx * outward : r.dz * outward;
     const opening = capSpec.opening;
+    const run = outward > 0 ? n - 1 : 0;
+    const missing = segments[run].noWall ?? [];
+    const negativeSide = r.left[across] < 0 ? 'left' : 'right';
+    const positiveSide = negativeSide === 'left' ? 'right' : 'left';
     caps.push({
-      along: across, from: center - half - T, to: center + half + T,
+      // Extend across our own side walls only. A shared wall on a noWall side
+      // already fills that corner; overlapping it creates coplanar, flickering faces.
+      along: across,
+      from: center - half - (missing.includes(negativeSide) ? 0 : T),
+      to: center + half + (missing.includes(positiveSide) ? 0 : T),
       at0: o > 0 ? edge : edge - T, at1: o > 0 ? edge + T : edge, height,
       openings: opening ? [{ from: center - opening.width / 2, to: center + opening.width / 2, top: opening.top }] : [],
-      side: outward > 0 ? 'end' : 'start', run: outward > 0 ? n - 1 : 0,
+      side: outward > 0 ? 'end' : 'start', run,
     });
   }
   cap(startCap, points[0], runs[0], -1);

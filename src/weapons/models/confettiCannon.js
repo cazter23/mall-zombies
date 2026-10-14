@@ -16,26 +16,38 @@ function buildGun(vm) {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(color));
     mesh.position.set(x, y, z); parent.add(mesh); return mesh;
   };
-  const cylinder = (radius, length, x, y, z, color, parent) => {
-    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, length, 12), mat(color));
+  const cylinder = (radius, length, x, y, z, color, parent, openEnded = false) => {
+    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, length, 12, 1, openEnded), mat(color));
     mesh.rotation.x = Math.PI / 2; mesh.position.set(x, y, z); parent.add(mesh); return mesh;
   };
-  box(0.108, 0.066, 0.1, 0, -0.008, 0.005, vm.darkColor);
-  box(0.112, 0.023, 0.11, 0, -0.052, 0.005, vm.metalColor);
+  const receiver = box(0.108, 0.066, 0.1, 0, -0.008, 0.005, vm.darkColor);
+  receiver.name = 'confettiReceiver';
+  const trim = box(0.112, 0.023, 0.11, 0, -0.052, 0.005, vm.metalColor);
+  trim.name = 'confettiReceiverTrim';
   const grip = box(0.043, 0.12, 0.052, 0, -0.095, 0.028, vm.darkColor); grip.rotation.x = 0.3;
   box(0.065, 0.06, 0.085, 0, -0.006, 0.09, vm.accentColor);
   box(0.069, 0.065, 0.018, 0, -0.006, 0.14, vm.metalColor);
   const trigger = box(0.012, 0.03, 0.014, 0, -0.065, -0.016, vm.metalColor);
-  const barrels = new THREE.Group(); barrels.position.set(0, 0.012, -0.045); gun.add(barrels);
+  // Hinge below and forward of the breech: opening lifts its rear clear of the receiver.
+  // The inner offset preserves the closed barrel and muzzle positions.
+  const barrels = new THREE.Group(); barrels.name = 'confettiHinge';
+  barrels.position.set(0, -0.029, -0.105); gun.add(barrels);
+  const assembly = new THREE.Group(); assembly.name = 'confettiBarrels';
+  assembly.position.set(0, 0.041, 0.06); barrels.add(assembly);
   for (const [i, x] of [-0.044, 0.044].entries()) {
     const base = i === 0 ? vm.bodyColor : vm.accentColor;
-    cylinder(0.041, 0.24, x, 0, -0.12, base, barrels);
-    for (const z of [-0.045, -0.11, -0.175]) cylinder(0.0415, 0.018, x, 0, z, i === 0 ? vm.accentColor : vm.bodyColor, barrels);
-    cylinder(0.045, 0.024, x, 0, -0.243, vm.metalColor, barrels);
-    cylinder(0.031, 0.002, x, 0, -0.256, vm.darkColor, barrels);
+    cylinder(0.041, 0.24, x, 0, -0.12, base, assembly, true);
+    // An open breech ring and recessed dark bore, rather than a solid cap through which shells clip.
+    const breech = new THREE.Mesh(new THREE.RingGeometry(0.031, 0.041, 12), mat(base));
+    breech.position.set(x, 0, 0); assembly.add(breech);
+    cylinder(0.031, 0.002, x, 0, -0.002, vm.darkColor, assembly);
+    for (const z of [-0.045, -0.11, -0.175]) cylinder(0.0415, 0.018, x, 0, z, i === 0 ? vm.accentColor : vm.bodyColor, assembly);
+    cylinder(0.045, 0.024, x, 0, -0.243, vm.metalColor, assembly);
+    cylinder(0.031, 0.002, x, 0, -0.256, vm.darkColor, assembly);
   }
-  box(0.014, 0.017, 0.018, 0, 0.057, -0.22, vm.sightColor, barrels);
-  const muzzle = new THREE.Object3D(); muzzle.position.set(0, 0, -0.258); barrels.add(muzzle);
+  box(0.007, 0.03, 0.012, 0, 0.04, -0.22, vm.metalColor, assembly); // post down between the barrels (the bead used to float)
+  box(0.014, 0.017, 0.018, 0, 0.057, -0.22, vm.sightColor, assembly);
+  const muzzle = new THREE.Object3D(); muzzle.position.set(0, 0, -0.258); assembly.add(muzzle);
   return { gun, muzzle, trigger, barrels, cylinder };
 }
 
@@ -44,8 +56,14 @@ export function buildConfettiCannonDisplay(def) { return buildGun(def.viewmodel)
 export function buildConfettiCannonModel(def) {
   const vm = def.viewmodel;
   const { gun, muzzle, trigger, barrels, cylinder } = buildGun(vm);
-  const { leftArm } = buildPistolArms(gun);
-  const shell = new THREE.Group(); shell.position.set(-0.04, -0.015, -0.025); leftArm.add(shell);
+  const { leftArm } = buildPistolArms(gun, {
+    leftOffset: new THREE.Vector3(-0.028, -0.027, 0),
+    thumbOffset: new THREE.Vector3(0, -0.022, 0),
+    fingerSize: new THREE.Vector3(0.036, 0.016, 0.06),
+    fingerOffset: new THREE.Vector3(-0.018, 0.004, 0),
+  });
+  leftArm.name = 'confettiSupportArm';
+  const shell = new THREE.Group(); shell.name = 'confettiHeldShell'; leftArm.add(shell);
   cylinder(0.022, 0.065, 0, 0, 0, vm.shellColor, shell);
   cylinder(0.024, 0.012, 0, 0, 0.033, vm.metalColor, shell);
   shell.visible = false;
@@ -63,6 +81,8 @@ export function buildConfettiCannonModel(def) {
       leftArm.rotation.set(leftArm.rotation.x * reloadWeight, leftArm.rotation.y * reloadWeight, leftArm.rotation.z * reloadWeight);
       samplePose(r.barrelKeys, reloadProgress, barrelPosition, barrelRotation);
       barrels.rotation.x = barrelRotation.x * reloadWeight;
+      // The hand stays above/behind the receiver while the shell slides into the open barrel.
+      samplePose(r.shellKeys, reloadProgress, shell.position, shell.rotation);
       shell.visible = reloadWeight > 0.5 && r.shellVisible.some(([a, b]) => reloadProgress > a && reloadProgress < b);
     },
     set leftHandVisible(visible) { leftArm.visible = visible; },

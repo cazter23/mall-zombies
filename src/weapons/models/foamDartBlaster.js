@@ -25,6 +25,7 @@ function buildGun(vm) {
   box(0.082, 0.085, 0.23, 0, 0.005, -0.07, vm.bodyColor);
   box(0.085, 0.025, 0.24, 0, -0.05, -0.07, vm.accentColor);
   box(0.032, 0.03, 0.065, 0, 0.063, 0.005, vm.darkColor); // rear rail
+  box(0.008, 0.05, 0.012, 0, 0.065, -0.185, vm.darkColor); // post that holds the front sight up (it used to float)
   box(0.014, 0.014, 0.016, 0, 0.091, -0.19, vm.sightColor); // clear sight above drum
   cylinder(0.027, 0.1, 0, 0.006, -0.22, vm.accentColor, gun);
   cylinder(0.031, 0.025, 0, 0.006, -0.275, vm.muzzleColor, gun);

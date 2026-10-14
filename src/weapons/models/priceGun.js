@@ -41,14 +41,17 @@ function buildGun(colors) {
     return mesh;
   }
 
-  part(0.052, 0.07, 0.17, 0, 0, -0.045, body); // main housing
+  const housing = part(0.052, 0.07, 0.17, 0, 0, -0.045, body); // main housing
+  housing.name = 'priceHousing';
   part(0.044, 0.014, 0.13, 0, 0.042, -0.05, metal); // deck the roll sits on
   part(0.05, 0.045, 0.04, 0, -0.008, -0.145, metal); // print head
   const roller = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.05, 8), grip); // ink roller
   roller.rotation.z = Math.PI / 2;
   roller.position.set(0, -0.032, -0.168);
   gun.add(roller);
-  part(0.008, 0.06, 0.008, 0, 0.08, -0.13, metal); // front sight post...
+  // Seat the post inside the housing; its old bottom floated above the gun.
+  const sightPost = part(0.008, 0.09, 0.014, 0, 0.065, -0.127, metal);
+  sightPost.name = 'priceSightPost';
   part(0.016, 0.014, 0.012, 0, 0.112, -0.13, mat(colors.sightColor)); // ...with a bright tip
   const handle = part(0.042, 0.12, 0.05, 0, -0.09, 0.02, grip); // grip at the back
   handle.rotation.x = 0.3;
