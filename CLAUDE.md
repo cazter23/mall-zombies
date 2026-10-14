@@ -35,7 +35,9 @@ through the wall, solid + too tall to climb, zombies can reach its front), `bala
 Staple Gun weakest; relationships, not exact values), `gunStats.test.js` the per-hit formula + resolveGun (upgrades as data),
 `fullRun.test.js` WHOLE RUNS of the real game headless (tests/helpers/headlessGame.js builds createGame with stand-in HUD/sound/
 viewmodel: buy the shutter, rounds, shoot a zombie for exact payouts, die, results, and "Play again equals a freshly built game"
-via snapshot()). New cross-system behaviour should get a full-run test there);
+via snapshot()). New cross-system behaviour should get a full-run test there), `events.test.js` the event bus + every payout path
+in the real game (body / headshot / box-cutter kills, a shotgun blast pays once per zombie, a non-player "hazard" kill still pays
+and counts, purchase / round / player-hit / death / Play-again events);
 there is no linter yet.
 `npm run build` is the compile check (it only bundles; it
 does not run the game, so also try changes in `npm run dev`).
@@ -53,6 +55,9 @@ does not run the game, so also try changes in `npm run dev`).
   later. `player/health.js` calls it exactly once when health reaches 0.
 - Gameplay systems are built and ticked in `game/createGame.js` (no DOM/WebGL there, so it runs headless in tests).
   `main.js` is only the browser side. A new gameplay system is created and wired in createGame.js, never in main.js.
+- Systems ANNOUNCE what happened on the event bus (`g.events`, game/events.js lists every event); features LISTEN.
+  Don't thread new callbacks through createGame for things like Flash Sales, PA lines, hazards or perk procs.
+  All kill payouts and kill stats come from the 'kill' event (whatever killed the zombie).
 - Keep code modular, readable and commented. Prefer small, reviewable changes.
 - Build in small steps. Do only the step the user asks for. Test it, then tell them how to try it.
 - After changes, run `npm run build` to check for errors.
@@ -266,6 +271,10 @@ src/
                         Crowd shoves never move anyone into a wall (overlapsSolid); a pinned player pushes the
                         zombie back instead. Options canAttack(), onPlayerHit(damage), onKill(zombie)
   game/
+    events.js           createEvents(): tiny synchronous bus (on -> unsubscribe fn, emit, count). The event list + payloads
+                        are in its header: shot, hit (player attack hit; +10 if not lethal), kill (any zombie death, with
+                        headshot / melee / source: 'gun' | 'melee' | future 'hazard'...; ALL kill payouts + kill stats),
+                        playerHit, playerDeath, roundStart, typeIntro, purchase, runReset
     createGame.js       createGame({ scene, camera, input, hud, sound, viewmodel, mapId, buildTestRange, debugTick,
                         onPlayerDeath }): builds and wires EVERY gameplay system (map, stats, player, wallet, run stats,
                         effects, aim assist, gun, buyables, melee, health, zombies, rounds), owns update(dt) (the fixed tick,
@@ -402,7 +411,9 @@ src/
   `zombieHealthFor(typeId, round)`, kill value `economy.killValues[typeId]`. A type's first spawn in a run ->
   `onTypeIntro` -> main shows `zombieTypes[id].introBanner` (hud.showAnnouncement) + plays 'paChime'. Zombie sounds:
   zombie -> ctx.onSound -> manager (dedupe) -> main `sound.play(name, { volume })`.
-- Points: gun and melee call `onHit({ target, killed, headshot, melee })` -> `wallet.earn(pointsForHit(...))`.
+- Points: gun and melee call `onHit({ target, killed, headshot, melee })` -> createGame emits 'hit' (non-lethal zombie hit:
+  +10); a zombie dying (zombie.takeHit records `killedBy`; the manager's onKill) -> 'kill' -> kill value + head/melee bonus
+  (`pointsForHit`) and run stats. Same totals as COD, whatever made the kill.
   HUD: points above the ammo with +N pop-ups, round number top-left (blinks in the break), "ROUND N" banner.
 - Death flow: `onPlayerDeath()` (createGame.js) sets `game.over`, hides the combat HUD, and main's hook releases the mouse. Render then runs the
   death camera (drop + roll) and skips the gun pass; after `feel.death.resultsDelay` the results screen shows.

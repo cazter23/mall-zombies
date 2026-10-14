@@ -33,7 +33,7 @@ const toItem = new THREE.Vector3();
 const sightRay = new THREE.Ray();
 const sightHit = new THREE.Vector3();
 
-export function createInteractions({ input, player, wallet, sound = null, onReloadTap = null, colliders = [] }) {
+export function createInteractions({ input, player, wallet, sound = null, onReloadTap = null, onPurchase = null, colliders = [] }) {
   const cfg = feel.interact;
   const items = [];
   // Buttons bound to both interact and reload (controller X): tap = reload, hold = buy.
@@ -92,9 +92,11 @@ export function createInteractions({ input, player, wallet, sound = null, onRelo
   }
 
   function tryBuy(item) {
-    if (wallet.spend(item.cost)) {
+    const cost = item.cost;
+    if (wallet.spend(cost)) {
       item.use();
       if (sound) sound.play('purchase');
+      if (onPurchase) onPurchase({ label: item.label, cost });
     } else {
       deniedTimer = cfg.deniedSeconds;
       if (sound) sound.play('denied');

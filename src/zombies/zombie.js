@@ -98,13 +98,16 @@ export class Zombie {
 
   // --- Shootable ---------------------------------------------------------------
 
-  takeHit({ damage, part, melee = false }) {
+  // `source`: what dealt the damage, for kill credit ('gun' by default, 'melee' for the box cutter,
+  // later 'hazard' / 'effect'...). Read as zombie.killedBy by the 'kill' event (game/events.js).
+  takeHit({ damage, part, melee = false, source = melee ? 'melee' : 'gun' }) {
     if (!this.isAlive) return { killed: false };
     this.health -= damage;
     this.flinchTimer = this.type.flinchSeconds; // flinches, but an attack already winding up still comes
     if (this.health > 0) return { killed: false };
     this.killedByHeadshot = part === 'head' && !melee;
     this.killedByMelee = melee;
+    this.killedBy = source;
     this.die();
     return { killed: true };
   }

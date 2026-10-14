@@ -13,6 +13,7 @@
 //   g.update(dt)   one fixed tick (60 Hz) of gameplay
 //   g.resetRun()   Play again: everything back to the start of a run
 //   g.state        { forceRun, over, padPlaying, running }  (window.__mall.game)
+//   g.events       the event bus (game/events.js lists every event): systems announce, features listen
 //   g.<system>     map, colliders, arena, shootables, stats, player, wallet, runStats, effects, aimAssist,
 //                  gun, interactions, melee, health, zombies, rounds, death
 // =============================================================================
@@ -32,6 +33,7 @@ import { createAimAssist } from '../weapons/aimAssist.js';
 import { buildWeaponDisplay } from '../weapons/models/index.js';
 import { createWallBuyDisplay } from '../world/wallBuy.js';
 import { createZombieManager } from '../zombies/zombieManager.js';
+import { createEvents } from './events.js';
 import { createRunStats } from './runStats.js';
 import { createWallet, pointsForHit } from './wallet.js';
 import { createRounds } from './rounds.js';
@@ -80,10 +82,13 @@ export function createGame({
     spawn: map.playerSpawn,
     getBodies: () => shootables, // live hitboxes also block vault paths/landings
   });
+  // Systems announce what happened here; payouts, stats, HUD and sound listen (see the wiring below).
+  const events = createEvents();
   // Points. Every gain/spend shows a "+60" / "-500" pop-up by the counter.
   const wallet = createWallet({ onChange: (amount) => hud.pointsPopup(amount) });
-  const payForHit = (hit) => wallet.earn(pointsForHit(hit)); // +10 per hit, kill value + bonuses on kills
   const runStats = createRunStats();
+  // A player attack (gun or box cutter) hit something: announce it.
+  const announceHit = (hit) => events.emit('hit', hit);
   const effects = createEffects(scene);
   const aimAssist = createAimAssist({ player, input, shootables, colliders });
   const gun = createPlayerGun({
@@ -97,8 +102,8 @@ export function createGame({
     viewmodel,
     hud,
     sound,
-    onShot: (shot) => runStats.recordShot(shot),
-    onHit: payForHit,
+    onShot: (shot) => events.emit('shot', shot),
+    onHit: announceHit,
     aimAssist,
   });
   // Buyables (hold F / X): the map's doors and wall buys.
@@ -109,6 +114,7 @@ export function createGame({
     sound,
     colliders, // buy spots must be in plain sight (no buying through walls)
     onReloadTap: () => gun.requestReload(), // controller X tapped next to a buyable: it was a reload
+    onPurchase: (purchase) => events.emit('purchase', purchase),
   });
   for (const door of map.doors) {
     interactions.add({
@@ -166,7 +172,7 @@ export function createGame({
     colliders,
     effects,
     hud,
-    onHit: payForHit,
+    onHit: announceHit,
   });
 
   // The game runs while the mouse is locked (Esc pauses) or while playing on a controller
@@ -192,6 +198,7 @@ export function createGame({
     hud.setDead(true);
     state.padPlaying = false;
     if (afterDeath) afterDeath(); // main.js frees the mouse now, so it's usable by the results screen
+    events.emit('playerDeath');
   }
 
   function showResults() {
@@ -219,27 +226,47 @@ export function createGame({
     isZoneOpen: (zone) => map.zones[zone].open,
     getRound,
     canAttack: () => !health.isDead,
-    onPlayerHit: (damage) => {
-      health.takeDamage(damage);
-      player.addViewKick(-feel.health.hitJoltDegrees * DEG_TO_RAD); // jolt the view down
-    },
-    onKill: (zombie) => runStats.recordKill(zombie),
+    onPlayerHit: (damage, zombie) => events.emit('playerHit', { damage, zombie }),
+    onKill: (zombie) => events.emit('kill', {
+      zombie,
+      headshot: zombie.killedByHeadshot,
+      melee: zombie.killedByMelee,
+      source: zombie.killedBy,
+    }),
     onSound: (name, volume) => sound.play(name, { volume }), // Mall Walker squeaks, huffs and pants
   });
 
   rounds = createRounds({
     zombies,
-    onRoundStart: (n) => {
-      hud.setRound(n);
-      hud.showRoundBanner(n);
-    },
-    // A zombie type's first appearance this run (Mall Walkers, round 4): PA chime + banner.
-    onTypeIntro: (typeId) => {
-      const intro = zombieTypes[typeId]?.introBanner;
-      if (!intro) return;
-      hud.showAnnouncement(intro);
-      sound.play('paChime');
-    },
+    onRoundStart: (round) => events.emit('roundStart', { round }),
+    onTypeIntro: (typeId) => events.emit('typeIntro', { typeId }),
+  });
+
+  // --- Who reacts to what (the event bus; game/events.js lists the events) ---
+  // Points, COD style: +10 for each non-lethal hit by the player; a kill pays the zombie's kill
+  // value (+ headshot / box cutter bonus) from the 'kill' event, whatever made the kill.
+  events.on('hit', (hit) => {
+    if (!hit.killed) wallet.earn(pointsForHit(hit));
+  });
+  events.on('kill', ({ zombie, headshot, melee }) => {
+    wallet.earn(pointsForHit({ target: zombie, killed: true, headshot, melee }));
+  });
+  events.on('shot', (shot) => runStats.recordShot(shot));
+  events.on('kill', ({ zombie }) => runStats.recordKill(zombie));
+  events.on('playerHit', ({ damage }) => {
+    health.takeDamage(damage);
+    player.addViewKick(-feel.health.hitJoltDegrees * DEG_TO_RAD); // jolt the view down
+  });
+  events.on('roundStart', ({ round }) => {
+    hud.setRound(round);
+    hud.showRoundBanner(round);
+  });
+  // A zombie type's first appearance this run (Mall Walkers, round 4): PA chime + banner.
+  events.on('typeIntro', ({ typeId }) => {
+    const intro = zombieTypes[typeId]?.introBanner;
+    if (!intro) return;
+    hud.showAnnouncement(intro);
+    sound.play('paChime');
   });
 
   // PLAY AGAIN: every system that holds per-run state, put back in this order. A new system with
@@ -276,6 +303,7 @@ export function createGame({
   // Fresh run: everything back to the start without reloading the page.
   function resetRun() {
     for (const [, reset] of resetSteps) reset();
+    events.emit('runReset');
   }
 
   let vaultPromptVisible = false;
@@ -323,6 +351,7 @@ export function createGame({
 
   return {
     state,
+    events,
     death,
     map,
     colliders,
