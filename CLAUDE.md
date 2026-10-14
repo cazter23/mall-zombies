@@ -141,7 +141,7 @@ src/
                         checks (including live shootables), entry momentum on exit, interrupt on crowd shove
     stats.js            createPlayerStats(): the single stats object (health, speeds, jump, sprint, crouch/slide,
                         regenDelay/regenRate, adsMoveSpeed, damageMultiplier, meleeDamageMultiplier,
-                        reloadSpeed)
+                        reloadSpeed); resetPlayerStats(stats) puts every stat back to base (same object) on a new run
     health.js           createPlayerHealth(): takeDamage, regen after a delay, `overlay` strength for the red
                         hurt edges (grows with damage, pulses when low, flashes on hit), calls onDeath once
     body.js             createPlayerBody(): first-person legs + lower torso in the world scene (visual only).
@@ -269,7 +269,8 @@ src/
     createGame.js       createGame({ scene, camera, input, hud, sound, viewmodel, mapId, buildTestRange, debugTick,
                         onPlayerDeath }): builds and wires EVERY gameplay system (map, stats, player, wallet, run stats,
                         effects, aim assist, gun, buyables, melee, health, zombies, rounds), owns update(dt) (the fixed tick,
-                        in the order below), resetRun() (Play again), onPlayerDeath, showResults, state { forceRun, over,
+                        in the order below), resetRun() (Play again: walks ONE ordered `resetSteps` list; a new system with
+                        per-run state = one line there), onPlayerDeath, showResults, state { forceRun, over,
                         padPlaying, running }, death, vaultPromptVisible. No DOM: the browser parts are passed in
     settings.js         createSettings(ctx): current value of every setting, saved in localStorage ('mallZombies.settings',
                         values are sanitized on load), applies them all at startup; get/set/reset(tab)/onChange. ctx = { renderer, sound, hud }
@@ -403,10 +404,10 @@ src/
   zombie -> ctx.onSound -> manager (dedupe) -> main `sound.play(name, { volume })`.
 - Points: gun and melee call `onHit({ target, killed, headshot, melee })` -> `wallet.earn(pointsForHit(...))`.
   HUD: points above the ammo with +N pop-ups, round number top-left (blinks in the break), "ROUND N" banner.
-- Death flow: `onPlayerDeath()` sets `game.over`, hides the combat HUD, releases the mouse. Render then runs the
+- Death flow: `onPlayerDeath()` (createGame.js) sets `game.over`, hides the combat HUD, and main's hook releases the mouse. Render then runs the
   death camera (drop + roll) and skips the gun pass; after `feel.death.resultsDelay` the results screen shows.
-  Play again -> `resetRun()` (zombies, health, run stats, ammo + aim, interactions, viewmodel, effects, melee, player position,
-  shutter) -> re-lock.
+  Play again -> `resetRun()` (createGame's resetSteps: zombies, player stats, health, run stats, guns + upgrades, interactions,
+  viewmodel, effects, melee, aim assist, wallet, rounds, player position, doors/zones, death state, HUD) -> re-lock.
 - Testing hook: `window.__mall.step(n)` advances the real loop n ticks and draws a frame (use with
   `game.forceRun = true`; set it back to false before screenshots, or the live loop keeps playing).
   `step` also applies pending look first. `render(alpha, frameTime)`: interpolates the camera, updates effects + viewmodel, updates the

@@ -22,7 +22,7 @@ import { zombieTypes } from '../config/zombies.js';
 import { weapons, melee as meleeWeapons } from '../config/weapons.js';
 import { economy } from '../config/economy.js';
 import { loadMap } from '../maps/index.js';
-import { createPlayerStats } from '../player/stats.js';
+import { createPlayerStats, resetPlayerStats } from '../player/stats.js';
 import { PlayerController } from '../player/controller.js';
 import { createPlayerHealth } from '../player/health.js';
 import { createEffects } from '../fx/effects.js';
@@ -242,28 +242,40 @@ export function createGame({
     },
   });
 
+  // PLAY AGAIN: every system that holds per-run state, put back in this order. A new system with
+  // run state = one line here. (tests/fullRun.test.js plays a messy run, resets, and checks the game
+  // equals a freshly built one, so anything forgotten here shows up as a failing test.)
+  const resetSteps = [
+    ['zombies', () => zombies.clear()],
+    ['stats', () => resetPlayerStats(stats)], // perks / wardrobe / skill-tree changes don't carry over
+    ['health', () => health.reset()], // (after stats: back to the base max health)
+    ['runStats', () => runStats.reset()],
+    ['gun', () => gun.reset()], // just the staple gun again, no upgrades
+    ['interactions', () => interactions.reset()],
+    ['viewmodel', () => viewmodel.reset()],
+    ['effects', () => effects.clear()], // no leftover splatter or tracers from the last run
+    ['melee', () => melee.reset()],
+    ['aimAssist', () => aimAssist.reset()],
+    ['wallet', () => wallet.reset()],
+    ['rounds', () => rounds.reset()],
+    ['player', () => player.teleport(map.playerSpawn)],
+    ['map', () => map.reset()], // doors closed, zones locked
+    ['death', () => {
+      state.over = false;
+      death.timer = 0;
+      death.resultsShown = false;
+    }],
+    ['hud', () => {
+      hud.setRound(0);
+      hud.setRoundFlashing(false);
+      hud.setDead(false);
+      hud.hideResults();
+    }],
+  ];
+
   // Fresh run: everything back to the start without reloading the page.
   function resetRun() {
-    zombies.clear();
-    health.reset();
-    runStats.reset();
-    gun.reset();
-    interactions.reset();
-    viewmodel.reset();
-    effects.clear(); // no leftover splatter or tracers from the last run
-    melee.reset();
-    aimAssist.reset();
-    wallet.reset();
-    rounds.reset();
-    hud.setRound(0);
-    hud.setRoundFlashing(false);
-    player.teleport(map.playerSpawn);
-    map.reset(); // doors closed, zones locked
-    state.over = false;
-    death.timer = 0;
-    death.resultsShown = false;
-    hud.setDead(false);
-    hud.hideResults();
+    for (const [, reset] of resetSteps) reset();
   }
 
   let vaultPromptVisible = false;
@@ -333,5 +345,6 @@ export function createGame({
     },
     update,
     resetRun,
+    resetSteps: resetSteps.map(([name]) => name), // (read-only list, for tests / debugging)
   };
 }

@@ -3,6 +3,8 @@
 // One object holds every player stat. Later systems (wardrobe perks, skill
 // tree, food court buffs) should modify THIS object instead of touching config
 // or controller code. The controller reads from it every tick.
+// A new run puts every stat back to its base value (resetPlayerStats), so nothing
+// bought or earned in one run carries into the next.
 // =============================================================================
 
 import { feel } from '../config/feel.js';
@@ -40,4 +42,9 @@ export function createPlayerStats() {
     meleeDamageMultiplier: weaponStatDefaults.meleeDamageMultiplier,
     reloadSpeed: weaponStatDefaults.reloadSpeed,
   };
+}
+
+/** New run: every stat back to its base value. Same object (the player, guns and health all hold it). */
+export function resetPlayerStats(stats) {
+  Object.assign(stats, createPlayerStats());
 }
