@@ -25,6 +25,16 @@ export class Weapon {
     return this.burstRemaining > 0;
   }
 
+  // The gun's stats changed (an upgrade was applied: gunStats.js resolveGun). Ammo carries over,
+  // clipped to the new magazine / reserve maximums; anything mid-way (burst, reload) is dropped.
+  setDef(def) {
+    this.cancelFire();
+    this.cancelReload();
+    this.def = def;
+    this.magazine = Math.min(this.magazine, def.magazineSize);
+    this.reserve = Math.min(this.reserve, def.startingReserve);
+  }
+
   // Lowering the gun abandons both remaining darts and buffered input.
   cancelFire() {
     this.burstRemaining = 0;

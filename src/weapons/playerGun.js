@@ -9,6 +9,10 @@
 // Reload sounds and bumps fire from the weapon's reload events, on the same clock
 // as the reload animation, so they always line up.
 //
+// Each slot's gun is RESOLVED (weapons/gunStats.js resolveGun): its config entry plus any upgrades
+// (mods, e.g. Build-A-Blaster), and everything here reads that resolved copy (`slot.def`). setMods()
+// changes a carried gun's upgrades mid-run; the config entries themselves are never modified.
+//
 // Slots: you start with one gun. Buying a gun fills the empty slot; with both full
 // it replaces the gun in your hands. Each gun keeps its own ammo. Switching
 // (feel.weaponSwitch) drops the gun out of view and raises the other; no shooting
@@ -20,15 +24,10 @@ import { feel } from '../config/feel.js';
 import { Weapon } from './weapon.js';
 import { castShot } from './hitscan.js';
 import { createAim, applyConeSpread, pelletSpreadDegrees } from './aim.js';
+import { hitDamage, resolveGun } from './gunStats.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 const MAX_SLOTS = 2;
-
-export function pelletDamageFalloff(distance, falloff) {
-  if (distance <= falloff.start) return 1;
-  if (distance >= falloff.end) return falloff.minMultiplier;
-  return 1 + (falloff.minMultiplier - 1) * (distance - falloff.start) / (falloff.end - falloff.start);
-}
 
 export function createPlayerGun({
   def, // the starting gun
@@ -52,8 +51,12 @@ export function createPlayerGun({
   let lastReloadProgress = null; // for spotting reload events as the clock passes them
   let reloadRequested = false; // set by requestReload() (e.g. a controller X tap next to a buyable)
 
-  // A slot = one carried gun: its ammo/cooldown state and its own aim (ADS/spread) settings.
-  const makeSlot = (d) => ({ def: d, weapon: new Weapon(d, stats), aim: createAim({ def: d, input, player }) });
+  // A slot = one carried gun: its config entry (`base`), its upgrades (`mods`), the resolved gun those
+  // make (`def`, what gameplay reads), its ammo/cooldown state and its own aim (ADS/spread) settings.
+  const makeSlot = (base, mods = []) => {
+    const d = resolveGun(base, mods);
+    return { base, mods, def: d, weapon: new Weapon(d, stats), aim: createAim({ def: d, input, player }) };
+  };
   let slots = [makeSlot(startDef)];
   let current = 0; // index of the gun in hand
 
@@ -119,10 +122,8 @@ export function createPlayerGun({
       ray.hits.forEach((hit, i) => {
         if (targets.get(hit.target)?.killed) return;
         const headshot = hit.part === 'head';
-        // Distance falloff (pellets) x pass-through falloff (pierce): a pellet that went through a zombie hits the next weaker.
-        const falloff = (d.pellets ? pelletDamageFalloff(hit.distance, d.pellets.falloff) : 1)
-          * (pierce ? pierce.damageFalloff[Math.min(i, pierce.damageFalloff.length - 1)] : 1);
-        const damage = d.damage * (headshot ? d.headshotMultiplier : 1) * falloff * stats.damageMultiplier;
+        // Headshot x distance falloff x pass-through (pierce) falloff x player stats: gunStats.js.
+        const damage = hitDamage(d, hit, i, stats);
         const { killed } = hit.target.takeHit({ damage, part: hit.part, point: hit.point });
         const previous = targets.get(hit.target);
         // On a kill, ONLY the killing pellet decides the headshot bonus.
@@ -211,6 +212,28 @@ export function createPlayerGun({
     weaponFor(id) {
       const slot = slots.find((s) => s.def.id === id);
       return slot ? slot.weapon : null;
+    },
+
+    // Upgrades on a carried gun ([] if none, null if you don't carry it).
+    modsFor(id) {
+      const slot = slots.find((s) => s.def.id === id);
+      return slot ? slot.mods : null;
+    },
+
+    /**
+     * Replace the upgrades on a carried gun (Build-A-Blaster etc.): re-resolves its stats from its config
+     * entry + `mods` and hands them to its ammo/aim state. Ammo carries over (clipped to new maximums).
+     * Upgrades stay through ammo buys; they go with the gun when it's replaced, and on a new run.
+     * Returns false if that gun isn't carried.
+     */
+    setMods(id, mods) {
+      const slot = slots.find((s) => s.def.id === id);
+      if (!slot) return false;
+      slot.mods = mods;
+      slot.def = resolveGun(slot.base, mods);
+      slot.weapon.setDef(slot.def);
+      slot.aim.setDef(slot.def);
+      return true;
     },
 
     /**

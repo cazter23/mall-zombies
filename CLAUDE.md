@@ -18,6 +18,7 @@ npm test           # gameplay regressions (Node's built-in test runner)
 npm run dev        # Vite dev server (hot reload)
 npm run build      # production build into dist/; run after every change to catch errors
 npm run preview    # serve the built dist/
+npm run balance    # gun balance report (tools/gunReport.mjs): dps by range, pulls to kill by round, cannon blast table
 ```
 Gameplay regression tests live in `tests/` (`gameplay.test.js` movement/melee/vault, `aim.test.js` spread,
 `zombies.test.js` zombie types/mix/rounds, `maps.test.js` wall pieces, shared-zone doors, nav rebuilds,
@@ -29,7 +30,9 @@ never overlap, walls never intrude into the walkway, sealed except where asked, 
 nav grid end to end and through a branch doorway), `interactions.test.js` buying against the real mall (every door and wall buy
 works from where you stand, the Nail Gun can't be bought through its wall, other floors are out of reach, facing matters),
 `ammoCache.test.js` the vending machine (refills any gun in hand, flat price, label follows the gun, needs its area open, not
-through the wall, solid + too tall to climb, zombies can reach its front));
+through the wall, solid + too tall to climb, zombies can reach its front), `balance.test.js` GUN ROLES on real measured numbers
+(cannon strongest up close / weakest at range, Price Gun best non-shotgun at 5 m but beaten at 30 m, Nail Gun best at 30 m,
+Staple Gun weakest; relationships, not exact values), `gunStats.test.js` the per-hit formula + resolveGun (upgrades as data));
 there is no linter yet.
 `npm run build` is the compile check (it only bundles; it
 does not run the game, so also try changes in `npm run dev`).
@@ -38,6 +41,9 @@ does not run the game, so also try changes in `npm run dev`).
 - Game logic runs on a fixed 60Hz timestep; rendering is decoupled (render gets `alpha` to interpolate).
 - Every tunable number lives in `src/config/` (`feel.js`, `economy.js`, `weapons.js`, `zombies.js`, `controls.js`,
   `audio.js`, `debug.js`), never hardcoded in logic.
+- Guns: numbers only in `config/weapons.js`; they are COMBINED only in `weapons/gunStats.js` (hitDamage per hit,
+  resolveGun for upgrades). Upgrades never edit config entries. After any weapon change run `npm run balance` and
+  `npm test` (tests/balance.test.js checks each gun still does its job).
 - All player stats live in one stats object (`src/player/stats.js`) so perks, wardrobe and a
   future skill tree modify it in one place. Systems read stats, not config, at runtime.
 - Death is handled in one function (`onPlayerDeath` in `main.js`) so a downed/revive system can be added
@@ -73,8 +79,9 @@ src/
                         healthMultiplier 0.65, introSpawnIndex) + zombieHealthFor(typeId, round), zombieTypeForRound(round)
     weapons.js          stapleGun (start pistol, semi), priceGun (wall buy, full auto), nailGun (wall buy, semi,
                         piercing: `pierce: { maxTargets, damageFalloff }`), foamDartBlaster (Mega Mart, burst),
-                        confettiCannon (Service Corridor, 8 pellets + distance falloff, pellets pierce 2 zombies, six-shell tube, shell-by-shell
-                        `shellReload`). Per-weapon stats (fireMode
+                        confettiCannon (Service Corridor, 12 pellets, pellets pierce 2 zombies, six-shell tube, shell-by-shell
+                        `shellReload`). Optional `falloff: { start, end, minMultiplier }` on ANY gun (distance damage; Price Gun +
+                        Confetti Cannon have one). Each gun's ROLE is written above its entry. Per-weapon stats (fireMode
                         'semi' | 'auto' | 'burst', damage, headshot mult, mag, reserve (= max for ammo buys), fire interval, reload, spread
                         cone, ADS time/zoom/gun offset), recoil (camera pitch/yaw/roll + gun-model kick + spring),
                         muzzleFlash (size, colors, ADS shape, lights), sounds, viewmodel (model name, hip
@@ -162,7 +169,13 @@ src/
                         nearest target in a 40deg cone within 1.8m (walls block); cancels reload; isBusy blocks
                         the gun; takeHit({ melee: true }) so kills count as melee. Attack heading is committed
                         until impact; hit recovery 0.22s, miss recovery 0.5s (total 0.37/0.65s)
-    playerGun.js        createPlayerGun(): the LOADOUT (2 slots, each { def, weapon, aim }) + glue for the gun in hand
+    gunStats.js         THE gun maths: damageFalloff(distance, falloff), hitDamage(def, hit, index, stats) (damage x head x falloff x
+                        pierce x player multiplier; the only place it's computed), resolveGun(base, mods) (upgrades as data:
+                        { id, modifiers: [{ stat: 'falloff.start', op: 'set'|'add'|'mul', value }] }; set, then adds, then muls;
+                        a bad stat path throws; returns a copy with .base/.mods). Layers: base config -> mods -> player stats -> per hit
+    playerGun.js        createPlayerGun(): the LOADOUT (2 slots, each { base, mods, def = resolveGun(base, mods), weapon, aim }); gameplay
+                        reads slot.def. setMods(id, mods) re-resolves a carried gun (the Build-A-Blaster hook: weapon.setDef + aim.setDef,
+                        ammo kept/clipped), modsFor(id); mods survive ammo buys, not replacement or a new run. Glue for the gun in hand
                         (`weapon`, `aim`, `def` getters). give(def): owned = refill; free slot = add + switch to it;
                         full = replace the gun in hand. Switching (switchWeapon / weapon1 / weapon2): the old gun drops
                         (shownDef, switchLower for the viewmodel), the new one rises; no shooting/aiming meanwhile;
@@ -301,6 +314,9 @@ src/
                         setMasterVolume(v) (used by Settings > Audio)
   fx/
     effects.js          Tracers (pooled) + particle bursts (one InstancedMesh): splat(), puff(), clear() (new run)
+  (tools/)              Dev scripts (not bundled): balance.js = gun balance maths shared with the tests (seeded Monte Carlo of each
+                        gun's real spread + pellets vs a Shopper's hitboxes at a range: expectedShotDamage, sustainedDps, burstDps,
+                        shotsToKill); gunReport.mjs = `npm run balance`
   world/                Shared building blocks for maps
     mapKit.js           createMapKit(group, colliders): mat, addCollider, box, sign, tiledFloor, wall({ along, from, to,
                         at0, at1, height, openings: [{ from, to, top }] }) (doorways get lintels), shutterDoor({ id, label,
@@ -477,6 +493,17 @@ The start room opens into a MAIN HALLWAY (the hub); every other area is bought o
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+Gun balance rework (roles + upgrade-ready structure): every hit's damage comes from weapons/gunStats.js hitDamage, falloff
+is a per-gun option, gameplay reads each slot's RESOLVED gun (resolveGun: config + mods), so Build-A-Blaster / attachments
+are data (playerGun.setMods). `npm run balance` prints every gun as it plays; tests/balance.test.js pins the ROLES.
+Confetti Cannon (room-clearer): 12 pellets x 36 (432 point blank), 7.0 deg hip cone (x0.45 aimed), full damage to 3 m then
+down to 5% at 10 m, 6 + 24 shells. Measured (and confirmed on real zombies in game): 432 / ~370 / ~190 / ~25 / ~3 per blast
+at 1.5 / 3 / 5 / 9 / 12 m from the hip (aimed: 327 at 5 m); one blast kills round 3 up close, none can kill round 5;
+sustained dps 402 at 2 m (next best 226) and ~0 past 10 m. Price Gun (cheap close-range sprayer): 28 dmg (was 25), 32-round
+magazine (was 24), 1.3s reload (was 1.4), 192 reserve, falloff full to 12 m -> 60% at 30 m: sustained 226 dps up to 12 m
+(best of the non-shotguns; Nail 209, Foam 186), 137 at 30 m (below Nail/Foam). Known balance smell left alone: the Foam Dart
+Blaster (1200) out-damages nothing it costs more than (186 dps vs Nail 209 at 1000); its role pass is a later step.
+
 Visual fixes: corridor caps extend across their own side walls only, so the Service Corridor end cap no longer
 overlaps/flickers through the Food Court wall beside the STAPLE-O-MAT. The Price Gun front sight post is seated
 in the housing (its tip/ADS position stays the same). Confetti Cannon has fitted support-hand/thumb geometry,

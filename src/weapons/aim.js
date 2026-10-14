@@ -40,7 +40,7 @@ export function pelletSpreadDegrees(def, aimAmount) {
 const ease = (t) => t * t * (3 - 2 * t);
 
 export function createAim({ def, input, player }) {
-  const s = def.spread;
+  let s = def.spread; // (both replaced by setDef when the gun's stats change)
   let amount = 0; // linear ADS progress, 0 = hip, 1 = fully aimed
   let prevAmount = 0; // last tick's value, for smooth rendering between ticks
   let cancelledBySprint = false;
@@ -97,6 +97,13 @@ export function createAim({ def, input, player }) {
       const recoveryTime = Math.max(0, dt - bloomRecoveryTimer);
       bloomRecoveryTimer = Math.max(0, bloomRecoveryTimer - dt);
       bloom = Math.max(0, bloom - s.bloomRecovery * recoveryTime);
+    },
+
+    // The gun's stats changed (an upgrade): read the new spread/ADS numbers from now on.
+    setDef(newDef) {
+      def = newDef;
+      s = newDef.spread;
+      movementSpread = s.base; // takes effect now, not after the smoothing catches up
     },
 
     // New run: hip fire, resting spread.

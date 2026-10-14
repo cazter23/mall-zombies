@@ -3,6 +3,16 @@
 // Stats for every weapon. Logic in src/weapons/ reads these; never hardcode
 // weapon numbers anywhere else. Player-side multipliers (perks, wardrobe) live
 // in the stats object (src/player/stats.js), not here.
+//
+// Damage per hit = damage x headshotMultiplier (head) x falloff (distance) x pierce falloff
+// (2nd/3rd zombie) x player stats; ONE function computes it: weapons/gunStats.js hitDamage().
+// Optional per gun:
+//   falloff: { start, end, minMultiplier }  full damage up to `start` meters, then down in a
+//            straight line to `minMultiplier` at `end` and beyond. No falloff = full damage at any range.
+//   pierce:  { maxTargets, damageFalloff: [1, 0.8, ...] }  a shot/pellet goes through zombies
+//   pellets: { count, spreadDegrees, adsMultiplier }      several rays per trigger pull (shotgun)
+// Upgrades (Build-A-Blaster...) never edit these entries: they are applied on top as data
+// (gunStats.js resolveGun). Check the effect of any change with `npm run balance`.
 // =============================================================================
 
 export const weapons = {
@@ -138,19 +148,22 @@ export const weapons = {
   },
 
   // Cheap full-auto wall buy (start room, 500): a supermarket price-label gun shooting price stickers.
-  // Weaker per shot than the staple gun but it sprays: hold the trigger.
+  // ROLE: the cheap close-range sprayer. Best sustained damage of the non-shotguns up close (it's
+  // firing most of the time: big magazine, quick reload), but the stickers lose punch with range,
+  // so the Nail Gun / Foam Dart Blaster own the long sightlines. (tests/balance.test.js checks this.)
   priceGun: {
     id: 'priceGun',
     name: 'Price Gun',
     fireMode: 'auto',
-    damage: 25, // round-1 zombie (150 HP): 6 body shots or 2 headshots (25 x 3 = 75)
+    damage: 28, // round-1 zombie (150 HP): 6 body shots or 2 headshots (28 x 3 = 84); round 5 (450): 17 body
     headshotMultiplier: 3,
-    magazineSize: 24,
-    startingReserve: 180, // also the most it can hold in reserve (ammo buys refill to this)
+    magazineSize: 32, // ~2.7s of fire per magazine
+    startingReserve: 192, // six magazines; also the most it can hold in reserve (ammo buys refill to this)
     fireInterval: 0.083, // ~12 shots per second while held
     fireBuffer: 0.1,
-    reloadTime: 1.4,
+    reloadTime: 1.3,
     range: 80,
+    falloff: { start: 12, end: 30, minMultiplier: 0.6 }, // full damage across a room; 60% down a long hallway
 
     recoil: {
       pitchDegrees: 0.45, // smaller kicks, but at 12 a second they stack into a small climb
@@ -436,12 +449,16 @@ export const weapons = {
   // Service Corridor shotgun: one shell, eight pellets; rewards close-range positioning.
   confettiCannon: {
     id: 'confettiCannon', name: 'Confetti Cannon', fireMode: 'semi',
-    pellets: { count: 8, spreadDegrees: 5.5, adsMultiplier: 0.5,
-      falloff: { start: 6, end: 14, minMultiplier: 0.2 }, tracerColors: [0xff6abc, 0xffd23f] },
+    // ROLE: the room-clearer. Clearly the strongest gun within ~3m (one blast kills a round-3 zombie),
+    // about even at 5m, near useless past 9m: the wide cone scatters and the damage fades.
+    // Aiming down sights tightens the cone a lot (reaches ~5m). No single blast can kill round 5 on its
+    // own, leaving room for upgrades. (tests/balance.test.js checks all of this; `npm run balance` shows it.)
+    pellets: { count: 12, spreadDegrees: 7.0, adsMultiplier: 0.45, tracerColors: [0xff6abc, 0xffd23f] },
+    falloff: { start: 3, end: 10, minMultiplier: 0.05 },
     // A pellet that goes through a zombie hits the one behind it at half damage (clears clumps).
     pierce: { maxTargets: 2, damageFalloff: [1, 0.5] },
-    damage: 32, headshotMultiplier: 2, // a point-blank blast is 8 x 32 = 256: one-shots rounds 1-2, two-shots rounds 3-5
-    magazineSize: 6, startingReserve: 30, // a six-shell tube
+    damage: 36, headshotMultiplier: 2, // a point-blank blast is 12 x 36 = 432: one-shots rounds 1-3 (and round 4 point blank)
+    magazineSize: 6, startingReserve: 24, // a six-shell tube; 30 shells in all
     // Shell-by-shell reload: open up, one shell per cycle, close up. Firing interrupts it once a shell is in.
     // `progress` = which window of the reload animation each phase plays (the shell window repeats per shell).
     shellReload: { startSeconds: 0.4, shellSeconds: 0.4, endSeconds: 0.35,

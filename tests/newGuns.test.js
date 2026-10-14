@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { Weapon } from '../src/weapons/weapon.js';
-import { createPlayerGun, pelletDamageFalloff } from '../src/weapons/playerGun.js';
+import { createPlayerGun } from '../src/weapons/playerGun.js';
+import { damageFalloff as pelletDamageFalloff } from '../src/weapons/gunStats.js';
 import { pelletSpreadDegrees } from '../src/weapons/aim.js';
 import { weapons } from '../src/config/weapons.js';
 import { audio } from '../src/config/audio.js';
@@ -142,23 +143,25 @@ function target(distance, health = 1000, part = 'body', minX = -2, maxX = 2) {
       const killed = this.health <= 0; this.isAlive = !killed; if (killed) this.killedByHeadshot = hitPart === 'head'; return { killed }; } };
 }
 
-test('pellets: eight rays, one ammo, recoil, flash, hit marker, splat and points callback', (t) => {
+test('pellets: one ray per pellet, one ammo, recoil, flash, hit marker, splat and points callback', (t) => {
   t.mock.method(Math, 'random', () => 0); const zombie = target(2);
+  const n = weapons.confettiCannon.pellets.count;
   const f = fixture(weapons.confettiCannon, [zombie]); const shot = f.fire();
-  assert.equal(shot.pellets.length, 8); assert.equal(f.tracers.length, 8); assert.equal(zombie.damages.length, 8);
-  assert.equal(zombie.health, 1000 - 8 * weapons.confettiCannon.damage); assert.equal(f.gun.weapon.magazine, 5);
+  assert.equal(shot.pellets.length, n); assert.equal(f.tracers.length, n); assert.equal(zombie.damages.length, n);
+  assert.equal(zombie.health, 1000 - n * weapons.confettiCannon.damage); assert.equal(f.gun.weapon.magazine, 5);
   assert.deepEqual(f.counts(), { recoils: 1, flashes: 1, markers: 1, puffs: 0, splats: 1 });
   assert.equal(f.hits.length, 1); assert.equal(pointsForHit(f.hits[0]), 10);
   assert.equal(f.runStats.shotsFired, 1); assert.equal(f.runStats.shotsHit, 1);
 });
 
 test('pellets: damage falls linearly with distance and includes headshots and player stats', (t) => {
-  t.mock.method(Math, 'random', () => 0); const falloff = weapons.confettiCannon.pellets.falloff;
-  for (const [distance, expected] of [[2,1], [6,1], [10,0.6], [12,0.4], [14,0.2], [30,0.2]]) {
+  t.mock.method(Math, 'random', () => 0); const falloff = weapons.confettiCannon.falloff;
+  const { start, end, minMultiplier: min } = falloff, mid = (start + end) / 2;
+  for (const [distance, expected] of [[2,1], [start,1], [mid,(1 + min) / 2], [end,min], [30,min]]) {
     assert.ok(Math.abs(pelletDamageFalloff(distance, falloff) - expected) < 1e-9);
     const zombie = target(distance, 10000, 'head'); const f = fixture(weapons.confettiCannon, [zombie]);
     f.player.stats.damageMultiplier = 1.5; f.fire();
-    assert.equal(zombie.damages.length, 8);
+    assert.equal(zombie.damages.length, weapons.confettiCannon.pellets.count);
     for (const damage of zombie.damages) assert.ok(Math.abs(damage - weapons.confettiCannon.damage*2*1.5*expected) < 1e-8);
   }
 });
@@ -171,13 +174,13 @@ test('pellets: a wall blocks all damage and limits dust to four puffs', (t) => {
 });
 
 test('pellets: one kill bonus for the front zombie, and the pellets carry on into the one behind at half damage', (t) => {
-  t.mock.method(Math, 'random', () => 0); const front = target(2, 150), back = target(3, 150);
+  t.mock.method(Math, 'random', () => 0); const front = target(2, 150), back = target(3, 1000);
   const f = fixture(weapons.confettiCannon, [front,back]); f.fire();
-  const d = weapons.confettiCannon, half = d.damage * d.pierce.damageFalloff[1];
+  const d = weapons.confettiCannon, half = d.damage * d.pierce.damageFalloff[1], n = d.pellets.count;
   assert.equal(front.isAlive, false); assert.equal(front.damages.length, Math.ceil(150 / d.damage), 'dead zombies stop taking damage');
-  assert.equal(back.damages.length, 8, 'every pellet carried through to the second zombie');
+  assert.equal(back.damages.length, n, 'every pellet carried through to the second zombie');
   for (const damage of back.damages) assert.equal(damage, half);
-  assert.equal(back.health, 150 - 8 * half);
+  assert.equal(back.health, 1000 - n * half);
   assert.equal(f.hits.length, 2); assert.equal(f.counts().splats, 2);
   const front_ = f.hits.find((h) => h.target === front), back_ = f.hits.find((h) => h.target === back);
   assert.equal(front_.killed, true); assert.equal(pointsForHit(front_), 60);
@@ -188,10 +191,11 @@ test('pellets: they go through two zombies and no further, and a wall still stop
   t.mock.method(Math, 'random', () => 0);
   const a = target(2), b = target(3), c = target(4);
   const f = fixture(weapons.confettiCannon, [a, b, c]); f.fire();
-  assert.equal(a.damages.length, 8); assert.equal(b.damages.length, 8); assert.equal(c.damages.length, 0);
+  const n = weapons.confettiCannon.pellets.count;
+  assert.equal(a.damages.length, n); assert.equal(b.damages.length, n); assert.equal(c.damages.length, 0);
   const wall = box(-3, 0, -2.5, 3, 4, -2.3), x = target(2), y = target(4);
   const g = fixture(weapons.confettiCannon, [x, y], [wall]); g.fire();
-  assert.equal(x.damages.length, 8); assert.equal(y.damages.length, 0, 'the wall behind the first zombie stops them');
+  assert.equal(x.damages.length, n); assert.equal(y.damages.length, 0, 'the wall behind the first zombie stops them');
 });
 
 test('pellets: a headshot killing pellet pays the head bonus once', (t) => {
@@ -225,9 +229,10 @@ test('pellets: two zombies are paid separately and a later pellet still counts f
 });
 
 test('pellet ADS cone tightens continuously; pellets and pierce can be combined', () => {
-  assert.equal(pelletSpreadDegrees(weapons.confettiCannon,0),5.5);
-  assert.equal(pelletSpreadDegrees(weapons.confettiCannon,1),2.75);
-  assert.equal(pelletSpreadDegrees(weapons.confettiCannon,0.5),4.125);
+  const p=weapons.confettiCannon.pellets, close=(a,b)=>Math.abs(a-b)<1e-9;
+  assert.ok(close(pelletSpreadDegrees(weapons.confettiCannon,0),p.spreadDegrees));
+  assert.ok(close(pelletSpreadDegrees(weapons.confettiCannon,1),p.spreadDegrees*p.adsMultiplier));
+  assert.ok(close(pelletSpreadDegrees(weapons.confettiCannon,0.5),p.spreadDegrees*(1+p.adsMultiplier)/2));
   assert.equal(pelletSpreadDegrees(weapons.nailGun,1),0);
   assert.doesNotThrow(()=>new Weapon(weapons.confettiCannon,createPlayerStats()));
   assert.equal(weapons.confettiCannon.pierce.maxTargets,2);
@@ -235,7 +240,7 @@ test('pellet ADS cone tightens continuously; pellets and pierce can be combined'
 
 test('new-gun damage table is deliberate at rounds 1, 2, 5 and 9', () => {
   const table=[
-    [1,4,2,1,1,2], [2,5,2,1,1,3], [5,10,4,2,1,5], [9,17,6,3,2,8],
+    [1,4,2,1,1,7], [2,5,2,1,1,11], [5,10,4,2,1,21], [9,17,6,2,1,35],
   ];
   for(const [round,bodyDarts,headDarts,bodyBlasts,headBlasts,farBlasts] of table){
     const hp=zombieHealthForRound(round), foam=weapons.foamDartBlaster, confetti=weapons.confettiCannon;
@@ -243,7 +248,7 @@ test('new-gun damage table is deliberate at rounds 1, 2, 5 and 9', () => {
     assert.equal(Math.ceil(hp/(foam.damage*foam.headshotMultiplier)),headDarts);
     assert.equal(Math.ceil(hp/(confetti.damage*confetti.pellets.count)),bodyBlasts);
     assert.equal(Math.ceil(hp/(confetti.damage*confetti.pellets.count*confetti.headshotMultiplier)),headBlasts);
-    assert.equal(Math.ceil(hp/(confetti.damage*confetti.pellets.count*pelletDamageFalloff(12,confetti.pellets.falloff))),farBlasts);
+    assert.equal(Math.ceil(hp/(confetti.damage*confetti.pellets.count*pelletDamageFalloff(12,confetti.falloff))),farBlasts);
   }
 });
 
@@ -313,27 +318,28 @@ test('existing semi and auto modes retain trigger, reload and ammo behavior',()=
   assert.equal(semiShots,1);assert.equal(semi.magazine,11);
   const auto=new Weapon(weapons.priceGun,createPlayerStats());let autoShots=0;
   for(let i=0;i<60;i++)if(tick(auto,{triggerPressed:i===0,triggerHeld:true})==='fire')autoShots++;
-  assert.equal(autoShots,12);assert.equal(auto.magazine,12);
+  assert.equal(autoShots,12);assert.equal(auto.magazine,weapons.priceGun.magazineSize-12);
   auto.magazine=1;auto.cooldown=0;tick(auto,{triggerHeld:true});tick(auto,{triggerHeld:true});
   assert.equal(auto.isReloading,true);
 });
 
 test('crosshair displays the same ADS pellet cone that shots use',()=>{
   const f=fixture(weapons.confettiCannon);
-  assert.equal(f.gun.spreadDegreesForDisplay(0),5.85);
+  const c=weapons.confettiCannon;
+  assert.ok(Math.abs(f.gun.spreadDegreesForDisplay(0)-(c.spread.base+c.pellets.spreadDegrees))<1e-9);
   f.input.held.add('aim');for(let i=0;i<20;i++)f.gun.update(dt);
-  assert.ok(Math.abs(f.gun.spreadDegreesForDisplay(1)-2.785)<1e-9);
+  assert.ok(Math.abs(f.gun.spreadDegreesForDisplay(1)-(c.spread.base*c.spread.adsMultiplier+c.pellets.spreadDegrees*c.pellets.adsMultiplier))<1e-9);
   const standard=fixture(weapons.stapleGun);
   assert.equal(standard.gun.spreadDegreesForDisplay(0),standard.gun.aim.spreadDegrees);
 });
 
 // --- Confetti Cannon: six-shell tube, shell-by-shell reload, pass-through ---
 
-test('confetti cannon numbers are deliberate (six shells, 32 per pellet, full damage to 6m)', () => {
+test('confetti cannon numbers are deliberate (six shells, 12 x 36 pellets, full damage to 3m, 5% at 10m)', () => {
   const d = weapons.confettiCannon;
-  assert.equal(d.magazineSize, 6); assert.equal(d.damage, 32); assert.equal(d.pellets.count, 8);
-  assert.equal(d.pellets.falloff.start, 6); assert.equal(d.pellets.falloff.end, 14);
-  assert.equal(d.damage * d.pellets.count, 256, 'a point-blank blast');
+  assert.equal(d.magazineSize, 6); assert.equal(d.startingReserve, 24); assert.equal(d.damage, 36); assert.equal(d.pellets.count, 12);
+  assert.equal(d.falloff.start, 3); assert.equal(d.falloff.end, 10); assert.equal(d.falloff.minMultiplier, 0.05);
+  assert.equal(d.damage * d.pellets.count, 432, 'a point-blank blast');
   const sr = d.shellReload;
   assert.deepEqual([sr.progress.start[1], sr.progress.shell[0], sr.progress.shell[1], sr.progress.end[0]], [0.3, 0.3, 0.7, 0.7], 'phase windows join up');
   assert.equal(sr.progress.start[0], 0); assert.equal(sr.progress.end[1], 1);
@@ -436,4 +442,50 @@ test('shell reload integration: one load sound per shell, and a blast can interr
   const before = w.magazine; assert.ok(before >= 2 && w.isReloading);
   f.input.pressed.add('fire'); f.gun.update(dt);
   assert.equal(w.magazine, before - 1); assert.equal(w.isReloading, false);
+});
+
+// --- Upgrades on a carried gun (gunStats.js resolveGun via playerGun.setMods: the Build-A-Blaster hook) ---
+
+test('upgrades: a mod changes what the gun in hand actually does; the config entry stays untouched', (t) => {
+  t.mock.method(Math, 'random', () => 0);
+  const before = structuredClone(weapons.stapleGun);
+  const zombie = target(5);
+  const f = fixture(weapons.stapleGun, [zombie]);
+  f.fire(); for (let i = 0; i < 30; i++) f.gun.update(dt);
+  assert.equal(zombie.damages[0], weapons.stapleGun.damage);
+  assert.equal(f.gun.setMods('stapleGun', [{ id: 'hot', modifiers: [{ stat: 'damage', op: 'mul', value: 2 }] }]), true);
+  f.fire();
+  assert.equal(zombie.damages[1], weapons.stapleGun.damage * 2, 'the upgraded gun hits twice as hard');
+  assert.deepEqual(f.gun.modsFor('stapleGun').map((m) => m.id), ['hot']);
+  assert.equal(f.gun.def.base, weapons.stapleGun); assert.deepEqual(weapons.stapleGun, before);
+  assert.equal(f.gun.setMods('nailGun', []), false, 'not carried');
+});
+
+test('upgrades: magazine / spread mods reach the ammo and aim state; ammo carries over, clipped', () => {
+  const f = fixture(weapons.priceGun);
+  const w = f.gun.weapon; w.magazine = 20; w.reserve = 100;
+  f.gun.setMods('priceGun', [{ id: 'bigMag', modifiers: [{ stat: 'magazineSize', op: 'add', value: 16 }, { stat: 'spread.base', op: 'mul', value: 0 }] }]);
+  assert.equal(w.magazine, 20, 'kept'); assert.equal(w.def.magazineSize, weapons.priceGun.magazineSize + 16);
+  assert.equal(f.gun.aim.spreadDegrees, 0, 'the aim reads the upgraded spread');
+  w.startReload(); for (let i = 0; i < 200 && w.isReloading; i++) w.update(dt, {});
+  assert.equal(w.magazine, weapons.priceGun.magazineSize + 16, 'reloads to the bigger magazine');
+  f.gun.setMods('priceGun', [{ id: 'smallMag', modifiers: [{ stat: 'magazineSize', op: 'set', value: 10 }] }]);
+  assert.equal(w.magazine, 10, 'clipped to the new maximum');
+});
+
+test('upgrades stay through an ammo buy, and go with the gun (replaced) or the run (reset)', () => {
+  const f = fixture(weapons.stapleGun);
+  const hot = [{ id: 'hot', modifiers: [{ stat: 'damage', op: 'add', value: 10 }] }];
+  f.gun.setMods('stapleGun', hot);
+  f.gun.weapon.magazine = 1; f.gun.give(weapons.stapleGun); // ammo buy
+  assert.equal(f.gun.def.damage, weapons.stapleGun.damage + 10); assert.equal(f.gun.weapon.magazine, weapons.stapleGun.magazineSize);
+  f.gun.give(weapons.priceGun); for (let i = 0; i < 60; i++) f.gun.update(dt);
+  f.gun.give(weapons.nailGun); for (let i = 0; i < 60; i++) f.gun.update(dt); // both slots full: replaces the Price Gun in hand
+  assert.deepEqual(f.gun.modsFor('stapleGun').map((m) => m.id), ['hot']);
+  f.gun.setMods('nailGun', hot); f.input.pressed.add('weapon1'); for (let i = 0; i < 60; i++) f.gun.update(dt);
+  f.gun.give(weapons.foamDartBlaster); // replaces the (upgraded) Staple Gun in hand
+  assert.equal(f.gun.modsFor('stapleGun'), null);
+  f.gun.reset();
+  assert.deepEqual(f.gun.modsFor('stapleGun'), [], 'new run: no upgrades');
+  assert.equal(f.gun.def.damage, weapons.stapleGun.damage);
 });

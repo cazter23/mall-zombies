@@ -216,7 +216,7 @@ export function createViewmodel(weaponDefs, meleeDef) {
       flash.update(dt);
 
       // --- Reload pose (this gun's keyframes; a cancelled reload eases back instead of snapping) ---
-      const progress = weapon.def === active.def ? weapon.reloadProgress : null;
+      const progress = weapon.def.id === active.def.id ? weapon.reloadProgress : null; // (ids: guns are resolved copies)
       if (progress !== null) {
         reloadShown = progress;
         reloadWeight = 1;
