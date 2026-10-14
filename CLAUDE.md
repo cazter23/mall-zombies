@@ -27,7 +27,9 @@ at it never gets on; you can walk under its high end), the ceiling hole, Food Co
 table lanes reachable, nobody gets onto or behind a counter), `corridor.test.js` the modular corridor builder (floors
 never overlap, walls never intrude into the walkway, sealed except where asked, doorways/gaps/open ends/branches, a real
 nav grid end to end and through a branch doorway), `interactions.test.js` buying against the real mall (every door and wall buy
-works from where you stand, the Nail Gun can't be bought through its wall, other floors are out of reach, facing matters));
+works from where you stand, the Nail Gun can't be bought through its wall, other floors are out of reach, facing matters),
+`ammoCache.test.js` the vending machine (refills any gun in hand, flat price, label follows the gun, needs its area open, not
+through the wall, solid + too tall to climb, zombies can reach its front));
 there is no linter yet.
 `npm run build` is the compile check (it only bundles; it
 does not run the game, so also try changes in `npm run dev`).
@@ -65,7 +67,7 @@ src/
                         flash), world.wallBuyDisplay, melee lunge end
     economy.js          Points, payouts, kill values, door prices (startShutter 500, megaMart 750, foodCourt 1000,
                         serviceCorridor 1250) +
-                        wall-buy prices, round timing, wave scaling + helpers
+                        wall-buy prices, ammoCache.price (400, flat, any gun), round timing, wave scaling + helpers
                         (zombieHealthForRound, zombieCountForRound, spawnDelayForRound, maxAliveForRound).
                         zombieMix: special types per round (mallWalker: from round 4, share 15% / 25% from 6 / 30% from 9,
                         healthMultiplier 0.65, introSpawnIndex) + zombieHealthFor(typeId, round), zombieTypeForRound(round)
@@ -239,6 +241,9 @@ src/
                         and calls use(), else red prompt + 'denied'. Buttons bound to both interact and reload
                         (controller X): the press is hidden from the gun near a buyable; let go before it buys =
                         onReloadTap (gun.requestReload()). `prompt` for the HUD; reset()
+    ammoCache.js        ammoCacheItem({ cache, zones, gun, price }): the vending machine as an interactions.add() item: label
+                        "Ammo · <gun in hand>", cost = price, available when its zone is open and the gun in hand isn't full,
+                        use = gun.weapon.refill() (mag + reserve, ANY gun incl. the staple gun). main.js adds one per map.ammoCaches
     rounds.js           createRounds(): announce(n, delay) flips the round number (and fires onRoundStart) the
                         moment the last zombie dies, then 'break' (6s, inBreak) -> 'active' (spawn quota at
                         spawnDelay, capped by maxAlive; quota only used when a zombie actually spawned, else retry
@@ -247,7 +252,7 @@ src/
                         the first time a type spawns in a run. start() on first play, skipRound() (debug), reset()
   maps/
     index.js            Map registry + loadMap(id, scene, colliders) + THE MAP INTERFACE (id, group, zones, doors,
-                        spawnPoints, wallBuys, playerSpawn, update, reset, dispose). New map = new folder + 1 line
+                        spawnPoints, wallBuys, ammoCaches (optional), playerSpawn, update, reset, dispose). New map = new folder + 1 line
     mall/mall.js        buildMall(scene, colliders): the mall's LAYOUT only (rooms, doors, props, lights, markers), built
                         with the map kit + mall props. Zones startRoom (open) / hallway / megaMart / foodCourt /
                         serviceCorridor; doors: start shutter (500) -> hallway (the hub), Mega Mart shutter (750, hallway
@@ -270,7 +275,8 @@ src/
                         gear behind: grill/fryer/wok/soda; ONE solid 1.2m block wall-to-counter: above jump peak + step-up),
                         tableSet (round table 0.75m + 4 stools 0.45m; colliders: table + a "plus" of two low stool strips),
                         trashCan, lockerBank (solid 1.9m), electricalPanel (+ DANGER sign; a future power switch spot),
-                        pipeRun (exposed pipes)
+                        pipeRun (exposed pipes), vendingMachine({ along, center, wallAt, facing }) (the ammo cache: solid 1.95m,
+                        lit product window, keypad, header "STAPLE-O-MAT"; returns { position, normal } = its buy spot)
     mall/palette.js     COLORS shared by the mall's rooms and props
     testRange/          Debug add-on (not a map): testRange.js buildTestRange(scene, colliders) with own lights,
                         dummy.js practice mannequins (shootables)
@@ -435,6 +441,9 @@ The start room opens into a MAIN HALLWAY (the hub); every other area is bought o
   with a DANGER · HIGH VOLTAGE sign, a bank of lockers (solid, narrows it to ~2.5m), exposed pipes the whole way;
   boxes + a vent (spawn) + NO LOITERING (ESPECIALLY THE UNDEAD) at the dead end; three ceiling strips (middle one
   dead), two warm point lights. Concrete-look floor, drab walls.
+- Ammo cache: a STAPLE-O-MAT vending machine on the Food Court's west wall (center z -5.1, front at x -19.4, in the open north
+  of the planter). Hold F/X for 400 points to refill the gun in your hand (any gun, including the staple gun, which has no wall
+  buy); no prompt when it's full or the Food Court is closed. `map.ammoCaches` -> main.js -> game/ammoCache.js.
 - Wall-buy spots: start room east wall (5, 1.5, 10) = Price Gun; hallway south wall (11, 1.5, -2) = Nail Gun; reserved
   (inert): Mega Mart north wall (31.5, 1.5, 6) = Foam Dart Blaster, Service Corridor west wall near the dead end
   (-23.28, 1.5, -12.2) = Confetti Cannon.
@@ -654,6 +663,9 @@ invisible walls) and never freed GPU memory; now the shared list is back to exac
 texture is freed (tested, incl. reload). wallSegments throws on overlapping openings (one doorway's lintel used to hang into
 the other); corridorLayout throws on a self-crossing loop or runs too close together (both used to build overlapping floors /
 walls). None of these were triggered by the current mall; they protect future maps and rooms. Steps 2-3 remain optional.
+Ammo cache done (first of the "flesh out the new areas" items): the vending machine above. Verified: tests/ammoCache.test.js (5) and
+in the browser (real held F refills the staple gun for 400; no prompt when full, far away, or from the Service Corridor side of
+the wall). Planned next: cover/funnels, loop shortcuts; the two new guns are being built by Codex (docs/codex-new-guns-plan.md).
 Next (optional): step 6 = loop shortcuts (Food Court <-> Mega Mart, Service Corridor <-> Food Court).
 
 ## Planned build order

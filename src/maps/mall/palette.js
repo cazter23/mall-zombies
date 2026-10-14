@@ -62,6 +62,12 @@ export const COLORS = {
   stoolAlt: 0x2ec4b6,
   trashCan: 0x2d6a4f,
   foodItems: [0xc0763a, 0xffd23f, 0xe63946, 0x58c46b, 0xf1faee, 0x8b5a2b],
+  // Vending machine (the ammo cache)
+  vendBody: 0x3b4d7a,
+  vendTrim: 0xffd23f,
+  vendGlass: 0x153045,
+  vendGlow: 0xb7f0ff,
+  vendSlot: 0x1b1b20,
   // Service Corridor (back of house): drab walls, exposed pipes, lockers
   serviceWall: 0xbdb5a6,
   serviceCeiling: 0xd8d2c6,

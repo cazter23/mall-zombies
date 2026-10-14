@@ -20,6 +20,7 @@
 //   lockerBank  staff lockers against a wall (solid, too tall to climb)
 //   electricalPanel a panel + DANGER sign on a wall (decorative; a future "power" switch spot)
 //   pipeRun     exposed pipes along a wall near the ceiling (decorative)
+//   vendingMachine  the ammo cache: a solid, lit vending machine against a wall; returns where to buy from it
 // createMallProps(kit) returns these as functions; maps/mall/mall.js places them.
 // =============================================================================
 
@@ -575,8 +576,61 @@ export function createMallProps(kit) {
     place(from, y + 0.16, to, y + 0.24, d(0.08), d(0.16), mat(COLORS.pipeRed), { collide: false });
   }
 
+  /**
+   * The ammo cache: a vending machine against a wall (solid, 1.95m: not climbable). `along` is the wall's direction
+   * (like the other wall props), `center` is where it sits along the wall, `facing` (+1 / -1) is the way its front faces.
+   * Returns { position, normal }: the buy spot on its front (the interaction point) and the outward direction.
+   */
+  function vendingMachine({ along, center, wallAt, facing, width = 1.1, depth = 0.6, height = 1.95, name = 'STAPLE-O-MAT' }) {
+    const place = wallPlacer(along);
+    const d = (offset) => wallAt + facing * offset;
+    const u0 = center - width / 2;
+    const u1 = center + width / 2;
+    // The solid body.
+    place(u0, 0, u1, height, d(0), d(depth), mat(COLORS.vendBody), { name: 'vending_body' });
+    // Yellow trim top and bottom.
+    place(u0, 0, u1, 0.12, d(depth), d(depth + 0.01), mat(COLORS.vendTrim), { collide: false });
+    place(u0, height - 0.28, u1, height, d(depth), d(depth + 0.01), mat(COLORS.vendTrim), { collide: false });
+    // The lit product window (unlit material: it glows) with shelves of little boxes.
+    const winU0 = u0 + 0.08;
+    const winU1 = u0 + width * 0.64;
+    place(winU0, 0.5, winU1, 1.62, d(depth), d(depth + 0.015), new THREE.MeshBasicMaterial({ color: COLORS.vendGlow }), { collide: false });
+    const rand = seededRandom(31);
+    for (let row = 0; row < 4; row++) {
+      const y = 0.6 + row * 0.26;
+      place(winU0, y + 0.2, winU1, y + 0.215, d(depth + 0.015), d(depth + 0.04), mat(COLORS.vendGlass), { collide: false }); // shelf lip
+      const count = 4;
+      const each = (winU1 - winU0 - 0.08) / count;
+      for (let i = 0; i < count; i++) {
+        const color = COLORS.products[Math.floor(rand() * COLORS.products.length)];
+        place(winU0 + 0.05 + i * each, y, winU0 + 0.05 + (i + 0.8) * each, y + 0.17, d(depth + 0.015), d(depth + 0.06), mat(color), { collide: false });
+      }
+    }
+    // Control column: a keypad, a coin slot and the delivery flap.
+    const colU0 = u0 + width * 0.7;
+    const colU1 = u1 - 0.07;
+    place(colU0, 1.0, colU1, 1.55, d(depth), d(depth + 0.02), mat(COLORS.vendGlass), { collide: false }); // panel
+    for (let r = 0; r < 3; r++) {
+      for (let c = 0; c < 2; c++) {
+        const ku = colU0 + 0.04 + c * ((colU1 - colU0 - 0.08) / 2);
+        place(ku, 1.1 + r * 0.13, ku + 0.07, 1.18 + r * 0.13, d(depth + 0.02), d(depth + 0.035), mat(COLORS.metal), { collide: false });
+      }
+    }
+    place(colU0 + 0.03, 0.82, colU1 - 0.03, 0.9, d(depth), d(depth + 0.02), mat(COLORS.vendSlot), { collide: false }); // coin slot
+    place(u0 + 0.12, 0.14, u1 - 0.12, 0.42, d(depth), d(depth + 0.03), mat(COLORS.vendSlot), { collide: false }); // delivery flap
+    // Header sign.
+    const at = along === 'x' ? { x: center, z: d(depth + 0.02), facing } : { x: d(depth + 0.02), z: center, facing: facing > 0 ? 'x+' : 'x-' };
+    sign(name, { ...at, y: height - 0.14, width: width - 0.1, height: 0.2, background: '#1d1626', color: '#ffd23f' });
+    // Where the player buys: on the keypad column, just in front of the machine.
+    const front = d(depth + 0.04);
+    const mid = colU0 + (colU1 - colU0) / 2;
+    const position = along === 'x' ? new THREE.Vector3(mid, 1.3, front) : new THREE.Vector3(front, 1.3, mid);
+    const normal = along === 'x' ? new THREE.Vector3(0, 0, facing) : new THREE.Vector3(facing, 0, 0);
+    return { position, normal };
+  }
+
   return {
     shopFront, pillar, bench, planter, lightPanel, gondola, checkout, wallDoor, boardedVent, wallStripe,
-    escalator, upperLanding, elevatorDoors, foodStall, tableSet, trashCan, lockerBank, electricalPanel, pipeRun,
+    escalator, upperLanding, elevatorDoors, foodStall, tableSet, trashCan, lockerBank, electricalPanel, pipeRun, vendingMachine,
   };
 }

@@ -13,6 +13,7 @@
 //                 may open the same zone (it's open while any of them is)
 //   spawnPoints   [{ name, zone, position }]      zombie spawns, tagged by zone
 //   wallBuys      [{ name, zone, position, normal, weapon }]  weapon id per spot
+//   ammoCaches    [{ name, zone, position, normal }]  (optional) vending machines: refill the gun in hand
 //   playerSpawn   { position, yaw }
 //   update(dt)    animate doors etc.
 //   reset()       new run: close doors, lock zones

@@ -31,6 +31,7 @@ import { createWallet, pointsForHit } from './game/wallet.js';
 import { createRounds } from './game/rounds.js';
 import { createSound } from './audio/sound.js';
 import { createInteractions } from './game/interactions.js';
+import { ammoCacheItem } from './game/ammoCache.js';
 import { economy } from './config/economy.js';
 import { buildWeaponDisplay } from './weapons/models/index.js';
 import { createWallBuyDisplay } from './world/wallBuy.js';
@@ -158,6 +159,11 @@ for (const wb of map.wallBuys) {
     available: () => map.zones[wb.zone].open && !(owned() && gun.weaponFor(def.id).isFull),
     use: () => gun.give(def),
   });
+}
+
+// Ammo caches (vending machines): refill the gun in your hand for a flat price.
+for (const cache of map.ammoCaches ?? []) {
+  interactions.add(ammoCacheItem({ cache, zones: map.zones, gun, price: () => economy.ammoCache.price }));
 }
 
 const melee = createMelee({

@@ -56,6 +56,9 @@ export const economy = {
     confettiCannon: { weapon: 1500, ammo: 750 },
   },
 
+  // Ammo cache (the vending machine in the Food Court): refills the gun in your hand, any gun, one flat price.
+  ammoCache: { price: 400 },
+
   // Round pacing
   rounds: {
     firstRoundDelay: 3, // seconds after the game starts before round 1's zombies begin spawning

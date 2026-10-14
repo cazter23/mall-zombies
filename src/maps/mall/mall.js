@@ -300,6 +300,9 @@ export function buildMall(scene, colliders) {
   props.trashCan(-11.2, FZ);
   props.trashCan(11.2, FZ);
 
+  // The ammo cache: a vending machine on the west wall, north of the planter, in the open (a clear approach).
+  const foodCourtAmmo = props.vendingMachine({ along: 'z', center: FZ + 3.2, wallAt: F.minX, facing: 1 });
+
   sign('EXIT  ·  MAIN HALL', {
     x: 0, y: 3.6, z: F.maxZ - 0.02, width: 3, height: 0.5, facing: -1,
     background: '#1d1626', color: '#63e6be',
@@ -520,6 +523,11 @@ export function buildMall(scene, colliders) {
   // Player start: middle of the start room, facing the shutter (-Z)
   const playerSpawn = { position: new THREE.Vector3(0, 0, 12), yaw: 0 };
 
+  // Ammo caches: buy a refill for the gun in your hand (the price is economy.ammoCache.price). Same shape as wall buys.
+  const ammoCaches = [
+    { name: 'ammocache_foodCourt', zone: 'foodCourt', position: foodCourtAmmo.position, normal: foodCourtAmmo.normal },
+  ];
+
   const doors = [startDoor, megaMartDoor, foodCourtDoor, serviceCorridorDoor];
 
   return {
@@ -529,6 +537,7 @@ export function buildMall(scene, colliders) {
     doors,
     spawnPoints,
     wallBuys,
+    ammoCaches,
     playerSpawn,
     update(dt) {
       for (const door of doors) door.update(dt);
