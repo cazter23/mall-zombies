@@ -394,7 +394,9 @@ src/
 - Markers (invisible; shown if `debug.showMarkers`): `map.spawnPoints` (16: 2 start-room vents, 3 hallway vents,
   4 Food Court shopfronts, 4 Mega Mart: stockroom, receiving, back vent, emergency exit, 3 Service Corridor: two wall
   vents + the dead end; each tagged with its zone)
-  and `map.wallBuys` (3, with an outward `normal` and a `weapon` id; the Mega Mart one is reserved/inert).
+  and `map.wallBuys` (4, with an outward `normal` and a `weapon` id; the Mega Mart (`foamDartBlaster`) and Service Corridor
+  (`confettiCannon`) ones are reserved/inert until those guns exist in config/weapons.js; prices already in economy.wallBuys;
+  the plan for building them is docs/codex-new-guns-plan.md).
 
 ## Map (current)
 The start room opens into a MAIN HALLWAY (the hub); every other area is bought off it, in any order.
@@ -433,7 +435,9 @@ The start room opens into a MAIN HALLWAY (the hub); every other area is bought o
   with a DANGER · HIGH VOLTAGE sign, a bank of lockers (solid, narrows it to ~2.5m), exposed pipes the whole way;
   boxes + a vent (spawn) + NO LOITERING (ESPECIALLY THE UNDEAD) at the dead end; three ceiling strips (middle one
   dead), two warm point lights. Concrete-look floor, drab walls.
-- Wall-buy spots: start room east wall (5, 1.5, 10) = Price Gun; hallway south wall (11, 1.5, -2) = Nail Gun.
+- Wall-buy spots: start room east wall (5, 1.5, 10) = Price Gun; hallway south wall (11, 1.5, -2) = Nail Gun; reserved
+  (inert): Mega Mart north wall (31.5, 1.5, 6) = Foam Dart Blaster, Service Corridor west wall near the dead end
+  (-23.28, 1.5, -12.2) = Confetti Cannon.
 - Lighting: room lamps (point lights) hang at ~60% of the ceiling height with intensity scaled to match, NOT just under
   the ceiling: a lamp 0.8m under it lit a small hard-edged bright disc on the ceiling ("big circles"); hung lower it's a soft
   glow. Keep that if you move or add lamps (mall.js, the `lamp()` calls).

@@ -509,6 +509,11 @@ export function buildMall(scene, colliders) {
     // Reserved for a future gun (Mega Mart toy section). Inert until that weapon exists in
     // config/weapons.js + economy.wallBuys: main.js skips wall buys for unknown weapons.
     { name: 'wallbuy_megaMart', zone: 'megaMart', weapon: 'foamDartBlaster', position: new THREE.Vector3(31.5, 1.5, M.maxZ - 0.02), normal: new THREE.Vector3(0, 0, -1) },
+    // Reserved the same way: the Service Corridor's west wall near its dead end (between the lockers and the crates).
+    (() => {
+      const p = service.pointAt(1, 14.2, 'left', 0.02);
+      return { name: 'wallbuy_serviceCorridor', zone: 'serviceCorridor', weapon: 'confettiCannon', position: new THREE.Vector3(p.x, 1.5, p.z), normal: new THREE.Vector3(p.normal.x, 0, p.normal.z) };
+    })(),
   ];
   kit.markers({ spawnPoints, wallBuys, visible: debug.showMarkers });
 

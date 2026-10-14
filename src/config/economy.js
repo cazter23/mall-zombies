@@ -51,6 +51,9 @@ export const economy = {
   wallBuys: {
     priceGun: { weapon: 500, ammo: 250 },
     nailGun: { weapon: 1000, ammo: 500 },
+    // Reserved for the guns planned for the Mega Mart and the Service Corridor (inert until those exist in config/weapons.js)
+    foamDartBlaster: { weapon: 1200, ammo: 600 },
+    confettiCannon: { weapon: 1500, ammo: 750 },
   },
 
   // Round pacing
