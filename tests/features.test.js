@@ -8,9 +8,10 @@ import { buildFeatures, featuresOf, FEATURE_KINDS } from '../src/game/features/i
 import { weapons } from '../src/config/weapons.js';
 import { economy } from '../src/config/economy.js';
 
-test('the mall lists its wall buys and the ammo cache as features, each fully described', () => {
+test('the mall lists its wall buys, the ammo cache and the upgrade desk as features, each fully described', () => {
   const { g } = headlessGame();
-  assert.deepEqual(FEATURE_KINDS, ['wallBuy', 'ammoCache']);
+  assert.deepEqual(FEATURE_KINDS, ['wallBuy', 'ammoCache', 'upgradeDesk']);
+  assert.equal(featuresOf(g.map, 'upgradeDesk').length, 1);
   assert.deepEqual(featuresOf(g.map, 'wallBuy').map((w) => w.weapon), ['priceGun', 'nailGun', 'foamDartBlaster', 'confettiCannon']);
   assert.equal(featuresOf(g.map, 'ammoCache').length, 1);
   for (const f of g.map.features) {

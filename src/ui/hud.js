@@ -89,10 +89,13 @@ export function createHud() {
   ammo.innerHTML = `
     <div class="ammo-count"><span class="ammo-mag"></span><span class="ammo-reserve"></span></div>
     <div class="ammo-name"></div>
+    <div class="ammo-tier"></div>
   `;
   const ammoMag = ammo.querySelector('.ammo-mag');
   const ammoReserve = ammo.querySelector('.ammo-reserve');
   const ammoName = ammo.querySelector('.ammo-name');
+  const ammoTier = ammo.querySelector('.ammo-tier');
+  let lastTierKey = null;
   hud.append(ammo);
   let lastAmmoKey = '';
 
@@ -332,6 +335,19 @@ export function createHud() {
       if (killed) hitMarker.classList.add('kill');
       clearTimeout(hitMarkerTimeout);
       hitMarkerTimeout = setTimeout(() => hitMarker.classList.remove('show'), feel.effects.hitMarkerSeconds * 1000);
+    },
+
+    // The held gun's Extended Warranty tier under its name ({ id, name, color } from config/upgrades.js),
+    // in the tier's color. Standard shows nothing. Called every frame; only touches the DOM on a change.
+    setAmmoTier(tier) {
+      const key = tier ? tier.id : '';
+      if (key === lastTierKey) return;
+      lastTierKey = key;
+      const show = !!tier && tier.id !== 'standard';
+      ammoTier.classList.toggle('show', show);
+      if (!show) return;
+      ammoTier.textContent = `${tier.name} warranty`;
+      ammoTier.style.color = `#${tier.color.toString(16).padStart(6, '0')}`;
     },
 
     // Called every frame with the held weapon; only touches the DOM when something changed.

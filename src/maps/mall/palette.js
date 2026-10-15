@@ -64,6 +64,11 @@ export const COLORS = {
   foodItems: [0xc0763a, 0xffd23f, 0xe63946, 0x58c46b, 0xf1faee, 0x8b5a2b],
   // Vending machine (the ammo cache)
   vendBody: 0x3b4d7a,
+  // Customer Service desk
+  deskBody: 0x2f6f73,
+  deskTop: 0xe9e2d0,
+  deskKick: 0x1d3f42,
+  deskBell: 0xd8c27a,
   vendTrim: 0xffd23f,
   vendGlass: 0x153045,
   vendGlow: 0xb7f0ff,

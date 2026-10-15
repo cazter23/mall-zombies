@@ -14,10 +14,12 @@
 
 import { buildWallBuy } from './wallBuy.js';
 import { buildAmmoCache } from './ammoCache.js';
+import { buildUpgradeDesk } from './upgradeDesk.js';
 
 const builders = {
   wallBuy: buildWallBuy, // buy a gun off the wall, or its ammo once you own it
   ammoCache: buildAmmoCache, // STAPLE-O-MAT: refill the gun in your hand
+  upgradeDesk: buildUpgradeDesk, // Customer Service: the next Extended Warranty tier for the gun in your hand
 };
 
 export const FEATURE_KINDS = Object.keys(builders);

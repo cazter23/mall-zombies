@@ -21,6 +21,7 @@
 //   electricalPanel a panel + DANGER sign on a wall (decorative; a future "power" switch spot)
 //   pipeRun     exposed pipes along a wall near the ceiling (decorative)
 //   vendingMachine  the ammo cache: a solid, lit vending machine against a wall; returns where to buy from it
+//   serviceDesk     the Customer Service desk (gun tiers): a solid counter against a wall + signs; returns its buy spot
 // createMallProps(kit) returns these as functions; maps/mall/mall.js places them.
 // =============================================================================
 
@@ -629,8 +630,51 @@ export function createMallProps(kit) {
     return { position, normal };
   }
 
+  /**
+   * The Customer Service desk (Extended Warranty tiers): a counter against a wall with a terminal, a bell,
+   * a CUSTOMER SERVICE sign on the wall above and an "EXTENDED WARRANTY" card showing the tier colors.
+   * ONE solid collider from the wall to the counter front, 1.25m tall (above jump height, like the food
+   * stalls), so nobody gets onto or behind it. Returns { position, normal }: the buy spot at the counter front.
+   */
+  function serviceDesk({ along, center, wallAt, facing, width = 3, depth = 1.0, tierColors = [] }) {
+    const place = wallPlacer(along);
+    const d = (offset) => wallAt + facing * offset;
+    const u0 = center - width / 2;
+    const u1 = center + width / 2;
+    const signAt = (u, y, offset) => (along === 'x'
+      ? { x: u, y, z: d(offset), facing }
+      : { x: d(offset), y, z: u, facing: facing > 0 ? 'x+' : 'x-' });
+    // Body (collides), a darker kick plate and a pale counter top with a small overhang.
+    place(u0, 0, u1, 1.0, d(0), d(depth), mat(COLORS.deskBody), { collide: false, name: 'service_desk' });
+    place(u0 + 0.05, 0, u1 - 0.05, 0.12, d(depth), d(depth + 0.01), mat(COLORS.deskKick), { collide: false });
+    place(u0 - 0.05, 1.0, u1 + 0.05, 1.06, d(0), d(depth + 0.06), mat(COLORS.deskTop), { collide: false });
+    addCollider(...(along === 'x'
+      ? [u0, 0, Math.min(d(0), d(depth + 0.06)), u1, 1.25, Math.max(d(0), d(depth + 0.06))]
+      : [Math.min(d(0), d(depth + 0.06)), 0, u0, Math.max(d(0), d(depth + 0.06)), 1.25, u1]));
+    // Terminal (screen tilted toward the customer, roughly) and a bell.
+    place(u0 + 0.35, 1.06, u0 + 0.85, 1.12, d(depth - 0.55), d(depth - 0.2), mat(COLORS.register), { collide: false });
+    place(u0 + 0.4, 1.12, u0 + 0.8, 1.42, d(depth - 0.45), d(depth - 0.4), mat(COLORS.register), { collide: false });
+    place(u0 + 0.43, 1.15, u0 + 0.77, 1.39, d(depth - 0.4), d(depth - 0.39), new THREE.MeshBasicMaterial({ color: COLORS.registerScreen }), { collide: false });
+    place(center + 0.2, 1.06, center + 0.34, 1.14, d(depth - 0.3), d(depth - 0.16), mat(COLORS.deskBell, { metalness: 0.6, roughness: 0.3 }), { collide: false });
+    // Signs: CUSTOMER SERVICE on the wall, the warranty card with a sticker per tier on the counter front.
+    sign('CUSTOMER SERVICE', { ...signAt(center, 2.7, 0.02), width: width + 0.4, height: 0.6, background: '#1f1a24', color: '#7fe3e8' });
+    sign('EXTENDED WARRANTY · ASK HERE', { ...signAt(center, 2.15, 0.02), width: width - 0.2, height: 0.32, background: '#f1faee', color: '#1d1626' });
+    const n = tierColors.length;
+    const rightward = along === 'x' ? facing : -facing; // +1 if "along the wall" runs left to right for a customer
+    tierColors.forEach((color, i) => {
+      const u = center + rightward * (i - (n - 1) / 2) * 0.32; // Standard on the left ... Platinum on the right
+      place(u - 0.12, 0.6, u + 0.12, 0.84, d(depth + 0.01), d(depth + 0.02), new THREE.MeshBasicMaterial({ color }), { collide: false });
+    });
+    // Where the player buys: the middle of the counter front, at counter height.
+    const front = d(depth + 0.1);
+    const position = along === 'x' ? new THREE.Vector3(center, 1.1, front) : new THREE.Vector3(front, 1.1, center);
+    const normal = along === 'x' ? new THREE.Vector3(0, 0, facing) : new THREE.Vector3(facing, 0, 0);
+    return { position, normal };
+  }
+
   return {
     shopFront, pillar, bench, planter, lightPanel, gondola, checkout, wallDoor, boardedVent, wallStripe,
     escalator, upperLanding, elevatorDoors, foodStall, tableSet, trashCan, lockerBank, electricalPanel, pipeRun, vendingMachine,
+    serviceDesk,
   };
 }

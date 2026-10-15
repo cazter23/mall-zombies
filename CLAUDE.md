@@ -48,7 +48,10 @@ nothing paid or counted after death), `pricing.test.js` prices = config exactly,
 charges + shows the sale price for doors, guns, ammo and the cache, a sale starting mid-hold charges the price at completion, a new run clears it),
 `upgrades.test.js` gun upgrades (tiers + attachments on every gun, whole magazines/bursts, each tier holds until its round,
 one attachment per slot, what fits, roles hold at every tier (near-ties within 3%) and with any one attachment, upgrades live
-with the carried gun in the real game), `features.test.js` map features (the mall's list, unknown kind = error, a new kind's update/reset hooks run, inert wall buy for a
+with the carried gun in the real game), `upgradeDesk.test.js` the Customer Service desk in the real game/mall (one desk in the hallway, LAYOUT.serviceDesk moves
+prop + collider + buy spot, solid and too tall to climb, tiers one at a time at pricing's price, gun in hand only, no refill,
+nothing past Platinum, Flash Sale applies, no prompt while closed / switching / facing away, Play again resets),
+`features.test.js` map features (the mall's list, unknown kind = error, a new kind's update/reset hooks run, inert wall buy for a
 gun that doesn't exist, inherited names aren't kinds, features get the game's systems and tick only while playing (not paused /
 dead) + reset on Play again, buy a wall gun + refill at the STAPLE-O-MAT in the real game);
 `spawning.test.js` covers local selection/safety/cooldowns/rescues plus the real mall at six positions with hallway
@@ -340,7 +343,9 @@ src/
                         wallBuy.js = chalk display + "buy <Gun>" / "<Gun> ammo" prompt (g.pricing weapon/ammo; inert for a gun
                         that doesn't exist yet). ammoCache.js = buildAmmoCache + ammoCacheItem({ cache, zones, gun, price }): the
                         STAPLE-O-MAT item: label "Ammo · <gun in hand>", available when its zone is open and the gun in hand
-                        isn't full, use = gun.weapon.refill() (mag + reserve, ANY gun incl. the staple gun)
+                        isn't full, use = gun.weapon.refill() (mag + reserve, ANY gun incl. the staple gun). upgradeDesk.js = Customer Service:
+                        "upgrade <Gun> → <next tier>" (g.pricing 'tier', purchase kind 'tier'), gun in hand only, not while
+                        switching, nothing past Platinum, NO ammo refill (the bigger magazine fills on the next reload/buy)
     rounds.js           createRounds(): announce(n, delay) flips the round number (and fires onRoundStart) the
                         moment the last zombie dies, then 'break' (6s, inBreak) -> 'active' (spawn quota at
                         spawnDelay, capped by maxAlive; quota only used when a zombie actually spawned, else retry
@@ -374,7 +379,10 @@ src/
                         tableSet (round table 0.75m + 4 stools 0.45m; colliders: table + a "plus" of two low stool strips),
                         trashCan, lockerBank (solid 1.9m), electricalPanel (+ DANGER sign; a future power switch spot),
                         pipeRun (exposed pipes), vendingMachine({ along, center, wallAt, facing }) (the ammo cache: solid 1.95m,
-                        lit product window, keypad, header "STAPLE-O-MAT"; returns { position, normal } = its buy spot)
+                        lit product window, keypad, header "STAPLE-O-MAT"; returns { position, normal } = its buy spot),
+                        serviceDesk({ along, center, wallAt, facing, tierColors }) (Customer Service counter, ONE solid 1.25m
+                        collider wall-to-front, terminal, bell, CUSTOMER SERVICE + EXTENDED WARRANTY signs, a sticker per tier
+                        left to right as the customer sees it; returns its buy spot)
     mall/palette.js     COLORS shared by the mall's rooms and props
     testRange/          Debug add-on (not a map): testRange.js buildTestRange(scene, colliders) with own lights,
                         dummy.js practice mannequins (shootables)
@@ -433,7 +441,8 @@ src/
                         red cost when unaffordable, shake when denied, hold-progress bar), red hurt edges, click-to-play/paused overlay,
                         "Clocked Out" results screen with Play again (plain DOM). Pause screen: Click to play + Settings (left) /
                         Controls (right) buttons (onOpenSettings/onOpenControls); FPS counter top right (setFpsVisible/setFps);
-                        showAnnouncement({ kicker, text }): PA-style banner under the round banner (new zombie types)
+                        setAmmoTier(tier): "<Tier> warranty" in the tier's color under the gun name
+                        (hidden at Standard; main.js feeds it from tierOf(gun.modsFor(...))); showAnnouncement({ kicker, text }): PA-style banner under the round banner (new zombie types)
 ```
 
 ## How the pieces connect
@@ -553,6 +562,9 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
   The west planter, STAPLE-O-MAT and cannon buy spots are unchanged. The cannon is out of buying range from the Food Court.
   Main loop: hallway -> Food Court -> Mega Mart -> hallway. West loop: hallway -> Service Corridor -> Food Court -> hallway.
   Any open holder keeps its zone open; Play again closes every shutter and seals all outer areas.
+- Customer Service desk (gun tiers): hallway north wall at x 5.5..8.5 (between the start doorway and the elevator), counter front
+  at z 5.0. Hold F/X to buy the next Extended Warranty tier for the gun in your hand. Its spot is ONE entry, LAYOUT.serviceDesk
+  in mall.js (along/center/wallAt/facing/zone): change it to move the desk. A map feature of kind 'upgradeDesk'.
 - Ammo cache: a STAPLE-O-MAT vending machine on the Food Court's west wall (center z -5.1, front at x -19.4, in the open north
   of the planter). Hold F/X for 400 points to refill the gun in your hand (any gun, including the staple gun, which has no wall
   buy); no prompt when it's full or the Food Court is closed. A map feature of kind 'ammoCache' (game/features/ammoCache.js).
@@ -575,7 +587,10 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
-Gun upgrades step 1 of 4 (the system, nothing in the map yet; branch claude/gun-upgrades): Extended Warranty tiers + store
+Gun upgrades step 2 of 4 done: the Customer Service desk (see Map) + the tier under the ammo counter. Buying a tier never refills
+ammo (the user's call). Verified in tests/upgradeDesk.test.js and in the browser (real F hold: Staple Gun -> Deluxe for 2000,
+damage 30 -> 42, magazine 12 -> 14 without a refill, HUD "Deluxe warranty"; the desk, signs and green-to-gold stickers look right).
+Gun upgrades step 1 of 4 (the system; branch claude/gun-upgrades, which also has Codex's loop shortcuts merged in): Extended Warranty tiers + store
 attachments as data (config/upgrades.js, prices economy.upgrades: tiers 2000 / 4000 / 8000, attachments 750-1000) turned into
 mods by weapons/upgrades.js and applied with playerGun.setMods. Tier damage x1.4 / x2.1 / x3.5 keeps round-8 shot counts until
 rounds 12 / 17 / 24. Roles hold at every tier, but the tiers' magazine/reload bonuses help reload-heavy guns a little more, so

@@ -37,6 +37,7 @@ import { createMallProps } from './props.js';
 import { COLORS } from './palette.js';
 import { debug } from '../../config/debug.js';
 import { economy } from '../../config/economy.js';
+import { upgrades } from '../../config/upgrades.js';
 
 export const LAYOUT = {
   startRoom: { minX: -5, maxX: 5, minZ: 6, maxZ: 16, height: 4 },
@@ -52,6 +53,9 @@ export const LAYOUT = {
   // (the top of the hallway ceiling, y 6.3). 2m wide. Sealed for now.
   escalator: { bottomX: -4, dir: -1, minZ: 1, maxZ: 3 },
   elevator: { centerX: 10.5 }, // doors in the hallway's north wall (sealed for now)
+  // Customer Service desk (Extended Warranty tiers): on the hallway's north wall between the start doorway
+  // and the elevator. Move it by changing this one entry (the prop, its collider and its buy spot follow).
+  serviceDesk: { along: 'x', center: 7, wallAt: 6, facing: -1, zone: 'hallway' },
   // Service Corridor: its doorway in the hallway's west wall, then south along the Food Court's west wall.
   serviceCorridor: { width: 3, height: 3.5, length: 16, doorway: { minZ: 0.5, maxZ: 3.5, height: 3 } },
   wallThickness: 0.3,
@@ -185,6 +189,10 @@ export function buildMall(scene, colliders) {
 
   // Elevator doors in the north wall (sealed).
   props.elevatorDoors({ along: 'x', center: LAYOUT.elevator.centerX, wallAt: H.maxZ, facing: -1 });
+
+  // Customer Service desk (gun tiers; a map feature of kind 'upgradeDesk', below).
+  const { zone: deskZone, ...deskSpot } = LAYOUT.serviceDesk;
+  const serviceDesk = props.serviceDesk({ ...deskSpot, tierColors: upgrades.tiers.map((t) => t.color) });
 
   // --- Main hallway dressing ---------------------------------------------------
 
@@ -574,6 +582,8 @@ export function buildMall(scene, colliders) {
     ...wallBuys.map((w) => ({ kind: 'wallBuy', ...w })),
     // The STAPLE-O-MAT: buy a refill for the gun in your hand (g.pricing 'ammoCache').
     { kind: 'ammoCache', name: 'ammocache_foodCourt', zone: 'foodCourt', position: foodCourtAmmo.position, normal: foodCourtAmmo.normal },
+    // Customer Service: upgrade the gun in your hand one Extended Warranty tier (g.pricing 'tier').
+    { kind: 'upgradeDesk', name: 'upgradedesk_hallway', zone: deskZone, position: serviceDesk.position, normal: serviceDesk.normal },
   ];
 
   const doors = [startDoor, megaMartDoor, foodCourtDoor, serviceCorridorDoor, foodCourtMegaMartDoor, serviceCorridorFoodCourtDoor];

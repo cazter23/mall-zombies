@@ -22,6 +22,7 @@ import { createSettings } from './game/settings.js';
 import { createSettingsMenu } from './ui/settingsMenu.js';
 import { createControlsMenu } from './ui/controlsMenu.js';
 import { createGame } from './game/createGame.js';
+import { tierById, tierOf } from './weapons/upgrades.js';
 
 // --- Renderer, scene, camera ---------------------------------------------------
 
@@ -244,6 +245,7 @@ function render(alpha, frameTime) {
   hud.setSpeedLines(game.over ? 0 : player.sprintAmount * feel.sprintFx.speedLinesOpacity);
   hud.setSprint(player.sprintFraction, player.sprintExhausted, player.isSprinting);
   hud.setAmmo(gun.weapon, buttonLabel('reload'));
+  hud.setAmmoTier(tierById(tierOf(gun.modsFor(gun.def.id) ?? [])));
   hud.setInteract(game.over ? null : interactions.prompt, buttonLabel('interact'));
   hud.setVaultPrompt(game.running && !game.over && g.vaultPromptVisible, buttonLabel('jump'));
   hud.setPoints(wallet.points);

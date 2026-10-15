@@ -560,6 +560,17 @@ kbd {
   text-transform: uppercase;
   opacity: 0.8;
 }
+.ammo-tier {
+  display: none;
+  margin-top: 2px;
+  font-family: 'Bungee', Impact, 'Arial Black', sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.ammo-tier.show {
+  display: block;
+}
 .ammo.low .ammo-mag {
   color: #ff3b3b;
 }

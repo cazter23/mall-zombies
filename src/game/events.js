@@ -22,7 +22,7 @@
 //   'roundStart'  { round }                              the round number flipped (game/rounds.js)
 //   'typeIntro'   { typeId }                             a zombie type's first appearance this run
 //   'purchase'    { label, cost, kind, id }              something was bought; kind 'door' | 'weapon' | 'ammo' |
-//                                                        'ammoCache' | 'other', id = door / gun id (as it was BEFORE
+//                                                        'ammoCache' | 'tier' | 'other', id = door / gun / tier id (as it was BEFORE
 //                                                        the purchase: buying a gun is kind 'weapon', not its ammo)
 //   'runReset'    {}                                     after Play again reset everything
 // =============================================================================
