@@ -1,8 +1,8 @@
 // =============================================================================
 // DOOR
 // A buyable barrier between two zones (COD "door"). Wraps whatever physically
-// blocks the way (for now a roll-up shutter, world/shutter.js) and the zone it
-// unlocks. Opening it is permanent for the run; resetting closes it again.
+// blocks the way (for now a roll-up shutter, world/shutter.js) and the zone(s) it
+// unlocks. Shortcuts unlock both adjoining areas. Opening is permanent for the run.
 // Maps create doors; the interaction system (game/interactions.js) sells them.
 //
 // Several doors may open the SAME zone (e.g. a food court reachable from two
@@ -67,7 +67,7 @@ export function createDoor({ id, label, price, opensZone, opensZones, zones, bar
       else this.open();
     },
 
-    // Closed again (new run). Its zone locks again unless another of its doors is still open.
+    // New run/debug close: each zone locks unless another door still holds it open.
     reset() {
       isOpen = false;
       for (const zone of openedZones) {

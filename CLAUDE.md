@@ -21,14 +21,16 @@ npm run preview    # serve the built dist/
 npm run balance    # gun balance report (tools/gunReport.mjs): dps by range, pulls to kill by round, cannon blast table
 ```
 Gameplay regression tests live in `tests/` (`gameplay.test.js` movement/melee/vault, `aim.test.js` spread,
-`zombies.test.js` zombie types/mix/rounds, `maps.test.js` wall pieces, shared-zone doors, nav rebuilds,
+`zombies.test.js` zombie types/mix/rounds, `maps.test.js` wall pieces, single/multi-zone shared doors, nav rebuilds,
 `mall.test.js` the REAL mall built in Node with a stub canvas: dispose leaves no colliders + frees everything, door ladder, spawn points on clear floor, zones
-sealed until their door is bought, vaultable counters, the sealed escalator (a real PlayerController sprint-jumping
+sealed until any connecting door is bought (all 120 orders after the start shutter), shortcut-only entrances,
+short nav paths and standing-player crossings in both directions, clear approaches, vaultable counters, the sealed escalator (a real PlayerController sprint-jumping
 at it never gets on; you can walk under its high end), the ceiling hole, Food Court stalls/tables (queue spots and
 table lanes reachable, nobody gets onto or behind a counter), `corridor.test.js` the modular corridor builder (floors
 never overlap, walls never intrude into the walkway, sealed except where asked, doorways/gaps/open ends/branches, a real
 nav grid end to end and through a branch doorway), `interactions.test.js` buying against the real mall (every door and wall buy
-works from where you stand, the Nail Gun can't be bought through its wall, other floors are out of reach, facing matters),
+works from where you stand, both shortcuts buy from either side but not through adjacent walls, the cannon cannot be
+bought across its shortcut, the Nail Gun can't be bought through its wall, other floors are out of reach, facing matters),
 `ammoCache.test.js` the vending machine (refills any gun in hand, flat price, label follows the gun, needs its area open, not
 through the wall, solid + too tall to climb, zombies can reach its front), `balance.test.js` GUN ROLES on real measured numbers
 (cannon strongest up close / weakest at range, Price Gun best non-shotgun at 5 m but beaten at 30 m, Nail Gun best at 30 m,
@@ -36,7 +38,8 @@ Staple Gun weakest; relationships, not exact values), `gunStats.test.js` the per
 `fullRun.test.js` WHOLE RUNS of the real game headless (tests/helpers/headlessGame.js builds createGame with stand-in HUD/sound/
 viewmodel: buy the shutter, rounds, shoot a zombie for exact payouts, die, results, and "Play again equals a freshly built game"
 via snapshot(), which covers every stat incl. undeclared extras, run stats, features, prompt and reload; zombies keep walking
-after you die; a natural round 1 -> 2; resetPlayerStats). New cross-system behaviour should get a full-run test there), `events.test.js` the event bus + every payout path
+after you die; a natural round 1 -> 2; buy Food Court then its shortcut with real F holds and see natural Mega Mart spawns
+while its hallway door stays shut; resetPlayerStats). New cross-system behaviour should get a full-run test there), `events.test.js` the event bus + every payout path
 in the real game (body / headshot / box-cutter kills, a shotgun blast pays once per zombie, a non-player "hazard" kill still pays
 and counts, purchase / round / player-hit / death / Play-again events, purchase kind/label as it was BEFORE buying, a kill
 listener killing another zombie mid-shot pays each once (no +10 for a corpse), pierce/pellet multi-kills, dummies pay nothing,
@@ -46,6 +49,9 @@ charges + shows the sale price for doors, guns, ammo and the cache, a sale start
 `features.test.js` map features (the mall's list, unknown kind = error, a new kind's update/reset hooks run, inert wall buy for a
 gun that doesn't exist, inherited names aren't kinds, features get the game's systems and tick only while playing (not paused /
 dead) + reset on Play again, buy a wall gun + refill at the STAPLE-O-MAT in the real game);
+`spawning.test.js` covers local selection/safety/cooldowns/rescues plus the real mall at six positions with hallway
+entrances only, shortcut entrances only, and both loops open. Mall tests also include the real debug range: shifting
+grid bounds must not disconnect either shortcut; floor covers both shared walls. The Mart sign clears its brand stripes.
 there is no linter yet.
 `npm run build` is the compile check (it only bundles; it
 does not run the game, so also try changes in `npm run dev`).
@@ -100,7 +106,7 @@ src/
                         weaponSwitch (lower/raise time, drop), interact (hold time, range, facing angle, denied
                         flash), world.wallBuyDisplay, melee lunge end
     economy.js          Points, payouts, kill values, door prices (startShutter 500, megaMart 750, foodCourt 1000,
-                        serviceCorridor 1250) +
+                        serviceCorridor 1250, foodCourtMegaMart 1000, serviceCorridorFoodCourt 1250) +
                         wall-buy prices, ammoCache.price (400, flat, any gun), round timing, wave scaling + helpers
                         (zombieHealthForRound, zombieCountForRound, spawnDelayForRound, maxAliveForRound).
                         zombieMix: special types per round (mallWalker: from round 4, share 15% / 25% from 6 / 30% from 9,
@@ -337,10 +343,11 @@ src/
                         serviceCorridor; doors: start shutter (500) -> hallway (the hub), Mega Mart shutter (750, hallway
                         east end) -> megaMart, Food Court shutter (1000, hallway south wall) -> foodCourt, Service
                         Corridor shutter (1250, hallway west wall) -> serviceCorridor (built with kit.corridor from a data
-                        spec; its layout's pointAt places the dressing and spawns); wall buys priceGun (start room) +
+                        spec; its layout's pointAt places the dressing and spawns); shortcuts foodCourtMegaMart (1000)
+                        and serviceCorridorFoodCourt (1250) each open both joined zones; wall buys priceGun (start room) +
                         nailGun (hallway south wall) + foamDartBlaster (Mega Mart) + confettiCannon (Service Corridor). All meshes, lights and debug markers live in its group. Exports LAYOUT
                         (startRoom, hallway, foodCourt, megaMart, doorway, foodCourtDoorway, megaMartDoorway, escalator,
-                        elevator, serviceCorridor). The hallway ceiling is a kit.slab with a hole where the escalator passes through
+                        elevator, serviceCorridor, foodCourtMegaMartDoorway, serviceCorridorFoodCourtDoorway). The hallway ceiling is a kit.slab with a hole where the escalator passes through
     mall/props.js       createMallProps(kit): shopFront({ along 'x'|'z', from, to, wallAt, facing, color, text }), pillar,
                         bench (vaultable), planter ({ tree }), lightPanel ({ dead }), gondola (solid double-sided shelf,
                         products = one seeded InstancedMesh), checkout (vaultable counter + register + lane light),
@@ -370,7 +377,7 @@ src/
   world/                Shared building blocks for maps
     mapKit.js           createMapKit(group, colliders): mat, addCollider, box, sign, tiledFloor, wall({ along, from, to,
                         at0, at1, height, openings: [{ from, to, top }] }) (doorways get lintels), shutterDoor({ id, label,
-                        price, opensZone, zones, doorway, text }), markers(), slab(rect, y0, y1, mat, { hole }) (a ceiling
+                        price, opensZone / opensZones, zones, doorway, text }), markers(), slab(rect, y0, y1, mat, { hole }) (a ceiling
                         with a hole), corridor(spec, { floor, wall, ceiling }) (a whole corridor from a data spec; returns
                         its layout), dispose() (unload: removes every collider it added, shutters' too, from the shared
                         list + frees geometries/materials/textures). wallSegments() / slabPieces(): the pure wall / slab math
@@ -383,8 +390,9 @@ src/
                         side, inset) (place props/spawns/doors; normal points into the corridor), branchStart(run, at, side)
                         (start a branch corridor through a side opening). left/right = as walked (right = (-dz, dx)).
                         THROWS if the corridor crosses itself or two runs are so close a wall lands in another's walkway
-    door.js             createDoor(): buyable barrier (price, opensZone) wrapping a shutter; open/reset/toggle. Several
-                        doors may open the same zone: it stays open while any of them is open (tracked per zone)
+    door.js             createDoor(): buyable barrier (price, legacy opensZone or opensZones array) wrapping a shutter;
+                        open/reset/toggle. A shortcut opens both zones. Every door exposes canonical opensZones;
+                        a zone stays open while any holder is open (tracked per zone), reset seals all doors/zones
     wallBuy.js          createWallBuyDisplay(): chalk outline (textures.makeChalkTexture) + the gun on two pegs, side on
     collision.js        moveAndCollide(): horizontal push-out (also removes the velocity going into the wall, so
                         a pinned mover reads speed 0 and slides along walls) then vertical landing/ceiling vs. Box3 list;
@@ -428,7 +436,7 @@ src/
   `features.update`, `arena.update`, `player.updateView` (recoil springs last, so a shot's kick shows on the very next frame),
   `input.endTick()`. `rounds.start()` happens the first tick the game actually runs.
 - Buying: createGame adds every `map.doors` entry to `interactions` (verb 'open', cost pricing.priceOf('door', id), use =
-  door.open(), which opens its zone so zombies start spawning there and the nav grid rebuilds when the shutter's collider
+  door.open(), which opens its zone(s) so zombies start spawning there and the nav grid rebuilds when the shutter's collider
   goes), and builds every `map.features` entry by kind (game/features/): wall buys (display + "buy <Gun>" / "<Gun> ammo",
   hidden when its zone is closed or you own it with full ammo; use = gun.give(def)) and the ammo cache. Melee gets `getWeapon: () => gun.weapon` (the gun in hand).
 - Map: createGame does `loadMap(mapId, scene, colliders)` and only uses the map interface (maps/index.js).
@@ -487,7 +495,8 @@ src/
   and Service Corridor Confetti Cannon; prices in economy.wallBuys via g.pricing).
 
 ## Map (current)
-The start room opens into a MAIN HALLWAY (the hub); every other area is bought off it, in any order.
+The start room opens into a MAIN HALLWAY (the hub). Each outer area has a hallway entrance; two buyable shortcuts
+also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and every shutter is bought separately.
 - Start room: x -5..5, z 6..16, 4m ceiling, checkout counter, shelf, crates, boarded vents. Its 4m doorway at z=6
   is blocked by a security shutter door (500) that opens the hallway. Hold **F** (controller: hold **X**) near a
   door to buy it. Debug: press **O** to toggle every door for free.
@@ -510,7 +519,7 @@ The start room opens into a MAIN HALLWAY (the hub); every other area is bought o
   table lanes, a clear lane from the door to the planter and room to queue at the stalls; two trash cans (x +-11.2);
   an "EXIT · MAIN HALL" sign over the door inside.
 - Mega Mart: x 20..34, z -24..6, 5m ceiling, behind the 750 shutter. Its west wall (x 20..20.3, 6m tall) is also the
-  east wall of the hallway (door at z 0..4) and of the Food Court (room for a shortcut door later). Front: 4 checkout
+  east wall of the hallway (door at z 0..4) and of the Food Court (shortcut at z -9.8..-6.8). Front: 4 checkout
   lanes (vaultable counters, x 24.5..27.5, 2m lanes, open ends to run round). Back: 3 stocked shelf gondolas
   (x 24 / 27.5 / 31, z -19.5..-8, solid, 2m tall) making 4 aisles, a 4.5m back walkway with stockroom/receiving
   doors + a boarded vent, an emergency exit on the east wall. Brand stripe, aisle signs, fluorescent strips (some
@@ -518,11 +527,19 @@ The start room opens into a MAIN HALLWAY (the hub); every other area is bought o
 - Service Corridor: behind the 1250 shutter, a 3m-wide back-of-house corridor built from a data spec with the
   corridor builder: in through the hallway's west wall (floor reaches under the doorway), a 1.5m run west, then 16m
   south along the Food Court's west side to a dead end at z -14 (x -23.3..-20.3, 3.5m ceiling). Its east side is the
-  hallway's and Food Court's own west walls (noWall), so a shortcut door into the Food Court is just an opening
-  later. Dressing on its west wall: EMPLOYEES MUST WASH HANDS sign, two boarded vents (spawns), an electrical panel
+  hallway's and Food Court's own west walls (noWall); the Food Court wall contains the shortcut at z -13.4..-11.
+  Dressing on its west wall: EMPLOYEES MUST WASH HANDS sign, two boarded vents (spawns), an electrical panel
   with a DANGER · HIGH VOLTAGE sign, a bank of lockers (solid, narrows it to ~2.5m), exposed pipes the whole way;
   boxes + a vent (spawn) + NO LOITERING (ESPECIALLY THE UNDEAD) at the dead end; three ceiling strips (middle one
   dead), two warm point lights. Concrete-look floor, drab walls.
+- Loop shortcuts (ordinary security shutters, buyable from either side, prices via g.pricing 'door'):
+  Food Court <-> Mega Mart (1000), x 20..20.3, z -9.8..-6.8, height 3m, centered FZ = -8.3, signs MEGA MART / FOOD COURT.
+  The east-end planter is split around the opening; clear approaches lead into the Mart's 3.2m west aisle.
+  Service Corridor <-> Food Court (1250), x -20.3..-20, z -13.4..-11, height 3m, opposite the cannon at z -12.2;
+  STAFF ONLY / EXIT · FOOD COURT signs. Lockers stay at z -11..-9, with 2.55m clear corridor width alongside/past them.
+  The west planter, STAPLE-O-MAT and cannon buy spots are unchanged. The cannon is out of buying range from the Food Court.
+  Main loop: hallway -> Food Court -> Mega Mart -> hallway. West loop: hallway -> Service Corridor -> Food Court -> hallway.
+  Any open holder keeps its zone open; Play again closes every shutter and seals all outer areas.
 - Ammo cache: a STAPLE-O-MAT vending machine on the Food Court's west wall (center z -5.1, front at x -19.4, in the open north
   of the planter). Hold F/X for 400 points to refill the gun in your hand (any gun, including the staple gun, which has no wall
   buy); no prompt when it's full or the Food Court is closed. A map feature of kind 'ammoCache' (game/features/ammoCache.js).
@@ -545,6 +562,30 @@ The start room opens into a MAIN HALLWAY (the hub); every other area is bought o
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+Loop shortcuts implemented on codex/loop-shortcuts in four steps: multi-zone doors, Food Court / Mega Mart (1000),
+Service Corridor / Food Court (1250), then full routing/spawn/purchase verification. Both use ordinary shutter doors,
+existing pricing and map data; each opens both adjoining zones and buys from either side. Door/zone reset preserves
+overlapping holders until all close. Sixteen spawn markers and weapon/buy-station positions are unchanged.
+Tests cover every purchase order, shortcut-only entry, both-sided interaction/collision/nav, natural Mega Mart wave spawns,
+and local spawn selection at six positions with entrances only, shortcuts only and both loops. No gun code changed.
+Browser verification (Chrome, fixed 60Hz): real F holds buy both shortcuts from either side at 1000 / 1250; ordinary
+movement completes the main loop in 12.92s and west loop in 14.98s along clear waypoints, without sprint/sliding.
+Controlled Shopper travel at 3.4m/s (includes 1s emergence; stop within 2m of a stationary player): Mega Mart rear vent
+(21.8,-23.2) -> east Food Court (18.4,-8.3), closed shortcuts 19.58s / open 5.50s; corridor end (-21.8,-13.2) -> west
+Food Court (-17.3,-12.2), 17.32s / 1.98s. Food Court east shop -> hallway centre stays ~7.5-7.6s; hallway northeast vent ->
+Food Court entrance stays ~6.1-6.3s. These are controlled route timings, not survival/difficulty benchmarks; normal
+4m spawn exclusion remains in force (all these origins are outside it).
+Twelve-Shopper groups at 3.4m/s all crossed each doorway: first/last 2.53/5.52s east, 1.68/4.53s west (includes emergence),
+no rescues, no climbing. A 12-zombie Z/Shift+Z horde aimed at the Food Court used both routes: Mart 2 shortcut / 1 hallway;
+corridor 1 shortcut / 1 hallway. Horde timing used extra player health to observe routing, not a survival run. Close crowd
+pressure can still shove the player. The cannon still buys for 1500 from its original corridor spot, cannot buy across
+the opening; STAPLE-O-MAT refills for 400 from its front, never through the wall. Within 1m of the cannon its existing
+facing-free prompt can take priority over the shortcut; stand nearer the corridor centre to buy the shutter.
+Keep the agreed door widths/prices.
+Browser-found fixes: floor beneath the west shared wall (the debug range shifted grid centres and revealed a 30cm
+unsupported strip; map-only nav had missed it), and Food Court sign 4cm off the Mart wall to clear its 2cm brand stripe.
+Both have regression tests. Final verification: 176 tests and production build pass (existing bundle-size warning only).
+
 Codex refactor-review fixes (no gameplay change): a pierced/pellet hit on a target that is already dead (e.g. killed by a
 'kill' listener earlier in the same shot) no longer pays +10; the 'purchase' event reads label/kind/id BEFORE use() (buying a
 gun reports the gun, not "<Gun> ammo"); once dead nothing more is paid or counted; the feature and price registries only
@@ -811,8 +852,8 @@ the other); corridorLayout throws on a self-crossing loop or runs too close toge
 walls). None of these were triggered by the current mall; they protect future maps and rooms. Steps 2-3 remain optional.
 Ammo cache done (first of the "flesh out the new areas" items): the vending machine above. Verified: tests/ammoCache.test.js (5) and
 in the browser (real held F refills the staple gun for 400; no prompt when full, far away, or from the Service Corridor side of
-the wall). Planned next: cover/funnels, loop shortcuts. The two new guns are in (see the top of Current state).
-Next (optional): step 6 = loop shortcuts (Food Court <-> Mega Mart, Service Corridor <-> Food Court).
+the wall). Cover/funnels remain optional; loop shortcuts and the two new guns are in (see the top of Current state).
+Step 6 done: loop shortcuts (Food Court <-> Mega Mart, Service Corridor <-> Food Court); see Map and the top of Current state.
 
 ## Planned build order
 1. Walkable mall (done)

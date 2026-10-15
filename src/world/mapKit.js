@@ -174,7 +174,7 @@ export function createMapKit(group, colliders) {
   /**
    * A roll-up shutter filling a doorway, wrapped in a buyable door.
    *   doorway: { minX, maxX, minZ, maxZ, height }  the opening it fills (full wall thickness)
-   *   id, label, price, opensZone, zones: see world/door.js
+   *   id, label, price, opensZone / opensZones, zones: see world/door.js
    *   text: painted on the shutter ('CLOSED')
    * The player buys it standing near the middle of the doorway (1.5m up).
    */

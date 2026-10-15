@@ -7,6 +7,7 @@ import { zombieCrowd, zombieFailsafe, zombieSpawn, zombieTypes } from '../src/co
 import { economy, zombieCountForRound } from '../src/config/economy.js';
 import { feel } from '../src/config/feel.js';
 import { buildMall } from '../src/maps/mall/mall.js';
+import { buildTestRange } from '../src/maps/testRange/testRange.js';
 
 const dt = 1 / feel.simulation.tickRate;
 const marker = (x, cost = x, zone = 'open') => ({
@@ -162,6 +163,7 @@ test('real mall: isolated selection improves mean route cost without losing mult
   const scene = new THREE.Scene();
   const colliders = [];
   const map = buildMall(scene, colliders);
+  buildTestRange(scene, colliders); // Same grid bounds as the browser's default debug setup.
   const player = { position: map.playerSpawn.position.clone(), velocity: new THREE.Vector3(), height: feel.player.height };
   const manager = createZombieManager({
     scene, colliders, player, spawnPoints: map.spawnPoints, shootables: [], effects: { splat() {} },
@@ -173,39 +175,48 @@ test('real mall: isolated selection improves mean route cost without losing mult
   assert.ok(startZombie);
   assert.ok(map.spawnPoints.some((p) => p.zone === 'startRoom' && p.position.equals(startZombie.position)));
   manager.clear();
-  for (const door of map.doors) door.open();
-  for (let tick = 0; tick < Math.ceil((feel.world.shutterOpenSeconds + 0.5) / dt); tick++) map.update(dt);
+  const configurations = [
+    ['hallway entrances', ['startShutter', 'foodCourt', 'megaMart', 'serviceCorridor']],
+    ['shortcut entrances', ['startShutter', 'foodCourt', 'foodCourtMegaMart', 'serviceCorridorFoodCourt']],
+    ['both loops', map.doors.map((d) => d.id)],
+  ];
+  for (const [configuration, doorIds] of configurations) {
+    map.reset();
+    for (const door of map.doors) if (doorIds.includes(door.id)) door.open();
+    for (let tick = 0; tick < Math.ceil((feel.world.shutterOpenSeconds + 0.5) / dt); tick++) map.update(dt);
 
-  for (const [name, x, z] of [
-    ['hallway', 0, 2], ['food entrance', 0, -5], ['mega aisle', 29.25, -14],
-    ['service end', -21.8, -12.2], ['ammo cache', -18.4, -5.1], ['start room', 0, 12],
-  ]) {
-    player.position.set(x, 0, z);
-    manager.nav.markDirty();
-    manager.update(dt);
-    const eligible = map.spawnPoints.filter((p) =>
-      p.position.distanceTo(player.position) >= zombieCrowd.minSpawnDistance &&
-      Number.isFinite(manager.nav.distanceToTarget(p.position.x, p.position.z)),
-    );
-    const costs = eligible.map((p) => manager.nav.distanceToTarget(p.position.x, p.position.z));
-    const oldMean = costs.reduce((sum, cost) => sum + cost, 0) / costs.length;
-    const maxCost = Math.min(...costs) + zombieSpawn.neighbourhoodCostAllowance;
-    const origins = new Set();
-    let totalCost = 0;
-    let count = 0;
-    for (const nearby of [true, false]) {
-      for (let sample = 0; sample < 40; sample++) {
-        const zombie = select(manager, nearby, (sample + 0.5) / 40);
-        assert.ok(zombie, `${name}: a safe marker exists`);
-        const cost = manager.nav.distanceToTarget(zombie.position.x, zombie.position.z);
-        assert.ok(cost <= maxCost, `${name}: selected marker belongs to the neighbourhood`);
-        origins.add(`${zombie.position.x},${zombie.position.z}`);
-        totalCost += cost;
-        count++;
-        manager.clear(); // isolated first-spawn distribution, without occupancy/cooldown effects
+    for (const [name, x, z] of [
+      ['hallway', 0, 2], ['food entrance', 0, -5], ['mega aisle', 29.25, -14],
+      ['service end', -21.8, -12.2], ['ammo cache', -18.4, -5.1], ['start room', 0, 12],
+    ]) {
+      player.position.set(x, 0, z);
+      manager.nav.markDirty();
+      manager.update(dt);
+      const eligible = map.spawnPoints.filter((p) =>
+        map.zones[p.zone].open &&
+        p.position.distanceTo(player.position) >= zombieCrowd.minSpawnDistance &&
+        Number.isFinite(manager.nav.distanceToTarget(p.position.x, p.position.z)),
+      );
+      const costs = eligible.map((p) => manager.nav.distanceToTarget(p.position.x, p.position.z));
+      const oldMean = costs.reduce((sum, cost) => sum + cost, 0) / costs.length;
+      const maxCost = Math.min(...costs) + zombieSpawn.neighbourhoodCostAllowance;
+      const origins = new Set();
+      let totalCost = 0;
+      let count = 0;
+      for (const nearby of [true, false]) {
+        for (let sample = 0; sample < 40; sample++) {
+          const zombie = select(manager, nearby, (sample + 0.5) / 40);
+          assert.ok(zombie, `${name}: a safe marker exists`);
+          const cost = manager.nav.distanceToTarget(zombie.position.x, zombie.position.z);
+          assert.ok(cost <= maxCost, `${name}: selected marker belongs to the neighbourhood`);
+          origins.add(`${zombie.position.x},${zombie.position.z}`);
+          totalCost += cost;
+          count++;
+          manager.clear(); // isolated first-spawn distribution, without occupancy/cooldown effects
+        }
       }
+      assert.ok(origins.size >= 4, `${configuration}, ${name}: preserve multiple spawn origins`);
+      assert.ok(totalCost / count < oldMean, `${configuration}, ${name}: mean route cost should improve`);
     }
-    assert.ok(origins.size >= 4, `${name}: preserve multiple spawn origins`);
-    assert.ok(totalCost / count < oldMean, `${name}: mean route cost should improve`);
   }
 });

@@ -13,6 +13,7 @@
 //   megaMart    Mega Mart shutter (750), east end of the hallway
 //   foodCourt   Food Court shutter (1000), south wall of the hallway
 //   serviceCorridor  Service Corridor shutter (1250), west end of the hallway
+//   foodCourtMegaMart (1000), serviceCorridorFoodCourt (1250): shortcuts open BOTH joined zones
 // The hallway also has an escalator (west half, up through a hole in the ceiling to a boarded-up
 // level-2 landing) and elevator doors (north wall): both SEALED for now, the way up to a second floor later.
 //
@@ -23,11 +24,11 @@
 //                      its door is straight across the hallway from the start room's)
 //   - Mega Mart:       x 20..34,  z -24..6, 5m ceiling. Its west wall (x 20..20.3, 6m tall)
 //                      is also the east wall of the hallway (with the Mega Mart door) and of
-//                      the Food Court (room for a shortcut door later).
+//                      the Food Court (shortcut at z -9.8..-6.8).
 //   - Service Corridor: a 3m-wide back-of-house corridor built with the corridor builder
 //                      (world/corridor.js): through the hallway's west wall (z 0.5..3.5), then
-//                      south 16m along the Food Court's west side (sharing its wall: room for a
-//                      shortcut door later), to a dead end at z -14. 3.5m ceiling.
+//                      south 16m along the Food Court's west side (shortcut at z -13.4..-11),
+//                      to an end vent at z -14. 3.5m ceiling.
 // =============================================================================
 
 import * as THREE from 'three';
@@ -92,7 +93,9 @@ export function buildMall(scene, colliders) {
   // --- Floors and ceilings -------------------------------------------------
 
   tiledFloor(H.minX, H.minZ, H.maxX, H.maxZ, { base: '#ebe2d1', grout: '#c2b6a2', variation: 12, seed: 5 });
-  tiledFloor(F.minX, F.minZ, F.maxX, H.minZ, { base: '#f1e8d6', grout: '#cdbfa8', seed: 3 }); // under the shared wall too
+  // Continue beneath both shared walls: a floor gap under the west shortcut can split the nav
+  // grid when other loaded geometry (the debug range, future areas) shifts its cell centres.
+  tiledFloor(F.minX - T, F.minZ, F.maxX, H.minZ, { base: '#f1e8d6', grout: '#cdbfa8', seed: 3 });
   tiledFloor(R.minX, R.minZ, R.maxX, R.maxZ, { base: '#d9cdb7', grout: '#a99a82', variation: 18, seed: 11 });
 
   // (The hallway's ceiling is built with the escalator below: it has a hole for it.)
@@ -414,9 +417,9 @@ export function buildMall(scene, colliders) {
     background: '#1d4e89', color: '#ffd23f',
   });
   sign('FOOD COURT', {
-    x: M.minX + T + 0.02, y: 3.6, z: FZ, width: 3.6, height: 0.7, facing: 'x+',
+    x: M.minX + T + 0.04, y: 3.6, z: FZ, width: 3.6, height: 0.7, facing: 'x+', // proud of the 2cm brand stripe
     background: '#2d6a4f', color: '#ffffff',
-  });
+  }).name = 'sign_foodCourtMegaMart_mart';
 
   // Blue + yellow brand stripe around the inside, above door height.
   const martInnerWalls = [
@@ -439,7 +442,7 @@ export function buildMall(scene, colliders) {
   [4.1, 1.3, -1.5, -4.3].forEach((z, i) => props.checkout(24.5, z - 0.4, 27.5, z + 0.4, i + 1));
 
   // Back of the store: three long shelf aisles (gondolas) running north-south. Aisles are 2.5m
-  // (the west one 3.2m: a Food Court shortcut door can go on that wall later), with a 4.5m
+  // (the west one 3.2m, meeting the Food Court shortcut), with a 4.5m
   // walkway at the back and a crossing at the front.
   const gondolaXs = [24.0, 27.5, 31.0];
   gondolaXs.forEach((x, i) => {
