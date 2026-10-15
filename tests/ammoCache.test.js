@@ -112,6 +112,20 @@ test('the cache can be bought from in front of it, but not before its door, nor 
   assert.equal(tryBuy(-21.4, p.z, -FACING_WEST), false, 'through the wall from the Service Corridor');
 });
 
+test('opening the service shortcut unlocks the cache, preserving its front-only access', () => {
+  const { map, open, tryBuy } = setupMall();
+  const p = featuresOf(map, 'ammoCache')[0].position;
+  open('startShutter');
+  open('serviceCorridor');
+  assert.equal(tryBuy(p.x + 1.5, p.z, Math.PI / 2), false, 'Food Court still locked');
+  open('serviceCorridorFoodCourt');
+  assert.equal(map.zones.foodCourt.open, true);
+  assert.equal(tryBuy(p.x + 1.5, p.z, Math.PI / 2), true, 'unchanged Food Court buy spot');
+  assert.equal(tryBuy(-21.4, p.z, -Math.PI / 2), false, 'no purchase through the shared wall');
+  assert.equal(tryBuy(-21.4, -12.2, -Math.PI / 2), false, 'not reachable through the new opening');
+  map.dispose();
+});
+
 test('the machine is solid and too tall to climb; its front is open floor zombies can reach', () => {
   const { map, colliders, open } = setupMall();
   const p = featuresOf(map, 'ammoCache')[0].position;

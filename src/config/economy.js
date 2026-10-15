@@ -46,6 +46,7 @@ export const economy = {
     foodCourt: 1000, // hallway (south wall) -> Food Court
     serviceCorridor: 1250, // hallway (west end) -> Service Corridor
     foodCourtMegaMart: 1000, // Food Court <-> Mega Mart (opens both)
+    serviceCorridorFoodCourt: 1250, // Service Corridor <-> Food Court (opens both)
   },
 
   // Wall-buy weapon prices. Buying a weapon you already own refills its ammo for `ammo`.

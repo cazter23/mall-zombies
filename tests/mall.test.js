@@ -109,6 +109,27 @@ test('every spawn point and the player spawn stand on open floor, not inside any
   assert.equal(overlapsSolid(map.playerSpawn.position, feel.player.radius, feel.player.height, colliders, feel.movement.stepTolerance), false);
 });
 
+test('service shortcut opens Food Court from the corridor, keeping both approaches and locker lane clear', () => {
+  const { map, open, door, reach, colliders } = setup();
+  assert.equal(door('serviceCorridorFoodCourt').price, 1250);
+  open('startShutter');
+  open('serviceCorridor');
+  assert.equal(reach({ x: -18.4, z: -12.2 }), Infinity);
+  open('serviceCorridorFoodCourt');
+  assert.equal(door('foodCourt').isOpen, false);
+  assert.equal(map.zones.foodCourt.open, true);
+  for (const s of map.spawnPoints.filter((s) => s.zone === 'foodCourt')) assert.ok(Number.isFinite(reach(s.position)), s.name);
+  for (const x of [-21.8, -20.8, -20.15, -19.5, -18.5]) {
+    for (const z of [-12.8, -12.2, -11.6]) {
+      assert.equal(overlapsSolid(new THREE.Vector3(x, 0, z), feel.player.radius, feel.player.height, colliders, feel.movement.stepTolerance), false, `clear approach (${x}, ${z})`);
+    }
+  }
+  const lockers = colliders.find((b) => b.min.x < -23 && b.max.x > -23 && b.min.z === -11 && b.max.z === -9 && b.max.y === 1.9);
+  assert.ok(lockers);
+  assert.ok(LAYOUT.foodCourt.minX - LAYOUT.wallThickness - lockers.max.x >= 2, 'at least 2m of clear corridor beside/past the bank');
+  map.dispose();
+});
+
 test('each area is sealed until its own door is bought, in any order, and fully reachable after', () => {
   const { map, open, reach } = setup();
   const spawnsIn = (zone) => map.spawnPoints.filter((s) => s.zone === zone);

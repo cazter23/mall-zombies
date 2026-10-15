@@ -102,6 +102,23 @@ test('the Nail Gun cannot be bought through its wall from the Food Court', () =>
   assert.deepEqual(buy(11, 0, -0.6, FACE.toward.negZ), ['wallbuy_hallway'], 'still fine from the hallway');
 });
 
+test('Service / Food Court shortcut works from both sides; cannon remains local to the corridor', () => {
+  const { map, buy, openDoor } = setup();
+  openDoor('startShutter');
+  openDoor('foodCourt');
+  assert.deepEqual(buy(-18.4, 0, -12.2, FACE.toward.negX), ['serviceCorridorFoodCourt']);
+  openDoor('serviceCorridor');
+  assert.deepEqual(buy(-21.7, 0, -12.2, FACE.toward.posX), ['serviceCorridorFoodCourt']);
+  assert.deepEqual(buy(-19, 0, -10, FACE.toward.negX), [], 'adjacent solid wall blocks the shortcut');
+  assert.deepEqual(buy(-21.2, 0, -10, FACE.toward.posX), [], 'same wall blocks from the corridor');
+  openDoor('serviceCorridorFoodCourt');
+  assert.deepEqual(buy(-21.7, 0, -12.2, FACE.toward.negX), ['wallbuy_serviceCorridor'], 'cannon buy spot unchanged');
+  for (const x of [-19.65, -19, -18.4]) {
+    assert.deepEqual(buy(x, 0, -12.2, FACE.toward.negX), [], 'cannot buy the cannon across the new opening');
+  }
+  map.dispose();
+});
+
 test('a door cannot be bought through a wall from the room behind it', () => {
   const { buy, openDoor } = setup();
   openDoor('startShutter');
