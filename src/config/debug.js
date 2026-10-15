@@ -7,7 +7,7 @@ export const debug = {
   // Show the invisible marker objects (zombie spawns = red pillars, wall buys = green boxes).
   showMarkers: false,
 
-  // Press O to open/close every door for free (testing).
+  // Press O to open ALL doors, or close ALL if every door is already open (testing).
   allowShutterToggle: true,
 
   // Build the open movement test range (src/maps/testRange/). Press T to teleport there and back.

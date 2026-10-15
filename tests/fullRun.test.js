@@ -7,6 +7,8 @@ import * as THREE from 'three';
 import { headlessGame, snapshot } from './helpers/headlessGame.js';
 import { economy } from '../src/config/economy.js';
 import { weapons } from '../src/config/weapons.js';
+import { toggleDoors } from '../src/world/door.js';
+import { tierOf } from '../src/weapons/upgrades.js';
 
 const FACE_NEG_Z = 0; // yaw 0 looks down -Z
 
@@ -169,6 +171,41 @@ test('a real run buys Food Court then its shortcut: Mega Mart spawns without buy
   g.resetRun();
   assert.ok(g.map.doors.every((d) => !d.isOpen));
   assert.deepEqual(Object.keys(g.map.zones).filter((id) => g.map.zones[id].open), ['startRoom']);
+});
+
+test('round 7 after buying the shutter: debug open-all preserves Nail Gun and Customer Service purchases', () => {
+  const t = headlessGame();
+  const { g } = t;
+  g.wallet.earn(10_000);
+  t.standAt(0, 8.5);
+  t.press('KeyF', 30);
+  assert.equal(g.map.doors.find((d) => d.id === 'startShutter').isOpen, true);
+  assert.ok(g.map.doors.some((d) => !d.isOpen), 'partly bought map before the O action');
+  for (let i = 0; i < 6; i++) g.rounds.skipRound(); // same action as N
+  assert.equal(g.rounds.round, 7);
+  toggleDoors(g.map.doors); // same group operation the browser's O key uses
+  t.tick(90);
+  assert.equal(g.map.zones.hallway.open, true);
+
+  t.standAt(11, -0.6);
+  assert.equal(g.interactions.prompt.label, 'Nail Gun');
+  let before = g.wallet.points;
+  t.press('KeyF', 30);
+  assert.equal(before - g.wallet.points, g.pricing.priceOf('weapon', 'nailGun'));
+  assert.equal(g.gun.owns('nailGun'), true);
+  t.tick(40);
+  const desk = g.map.features.find((f) => f.kind === 'upgradeDesk');
+  t.standAt(desk.position.x, desk.position.z - 1.4, 180);
+  assert.equal(g.interactions.prompt.label, 'Nail Gun → Deluxe');
+  before = g.wallet.points;
+  t.press('KeyF', 30);
+  assert.equal(before - g.wallet.points, g.pricing.priceOf('tier', 'deluxe'));
+  assert.equal(tierOf(g.gun.modsFor('nailGun')), 'deluxe');
+  assert.equal(g.state.over, false);
+
+  g.resetRun();
+  assert.ok(g.map.doors.every((d) => !d.isOpen));
+  assert.equal(g.map.zones.hallway.open, false);
 });
 
 test('resetPlayerStats: every stat back to base, undeclared extras removed, same object', async () => {

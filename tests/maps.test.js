@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { wallSegments, slabPieces } from '../src/world/mapKit.js';
-import { createDoor } from '../src/world/door.js';
+import { createDoor, toggleDoors } from '../src/world/door.js';
 import { createNavigation } from '../src/zombies/navigation.js';
 import { markCollidersChanged } from '../src/world/collision.js';
 
@@ -74,6 +74,24 @@ test('shortcut doors open several zones and share their independent zone holders
   assert.throws(() => make('bad', { opensZones: ['food', 'missing'] }), /unknown zone/);
   assert.throws(() => make('inherited', { opensZone: 'toString' }), /unknown zone/);
   assert.equal(zones.food.open, false, 'validation does not partially open zones');
+});
+
+test('debug door toggle synchronizes a partially bought map instead of closing its purchased entrance', () => {
+  const zones = { hall: { open: false }, food: { open: false }, mart: { open: false } };
+  const make = (id, opensZones) => createDoor({ id, opensZones, zones, barrier: { open() {}, close() {}, update() {} } });
+  const doors = [make('start', ['hall']), make('food', ['food']), make('shortcut', ['food', 'mart'])];
+  doors[0].open();
+  toggleDoors(doors);
+  assert.ok(doors.every((d) => d.isOpen));
+  assert.ok(Object.values(zones).every((z) => z.open), 'hallway and its shops remain unlocked');
+  toggleDoors(doors);
+  assert.ok(doors.every((d) => !d.isOpen));
+  assert.ok(Object.values(zones).every((z) => !z.open), 'all shared zone holders release together');
+  toggleDoors(doors);
+  assert.ok(doors.every((d) => d.isOpen), 'a completely shut map opens too');
+  doors[1].reset();
+  toggleDoors(doors);
+  assert.ok(doors.every((d) => d.isOpen), 'any mixed state opens completely');
 });
 
 test('the navigation grid rebuilds when colliders change, even if the count stays the same', () => {

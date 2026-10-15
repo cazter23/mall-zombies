@@ -150,7 +150,7 @@ src/
     settings.js         THE LIST of player settings (options menu): { id, tab, label, type toggle|slider|select, default,
                         min/max/step, format, apply(value, ctx) }. Most apply() functions write into the config objects the
                         game reads every frame (feel, controls, audio). New setting = one entry here (new tab = add to settingsTabs)
-    debug.js            showMarkers, allowShutterToggle (O key: every door open/closed for free), testArena (T key), zombieKeys
+    debug.js            showMarkers, allowShutterToggle (O: open all doors; close all only if all were open), testArena (T key), zombieKeys
                         (Z spawn Shopper / Shift+Z Mall Walker / X clear), cheatKeys (N next round / P +5000 points / ' points to 0), dummies, exposeToWindow
   core/
     loop.js             startLoop(): fixed-timestep accumulator; each frame calls beforeUpdate(frameTime) (look
@@ -413,7 +413,8 @@ src/
                         THROWS if the corridor crosses itself or two runs are so close a wall lands in another's walkway
     door.js             createDoor(): buyable barrier (price, legacy opensZone or opensZones array) wrapping a shutter;
                         open/reset/toggle. A shortcut opens both zones. Every door exposes canonical opensZones;
-                        a zone stays open while any holder is open (tracked per zone), reset seals all doors/zones
+                        a zone stays open while any holder is open (tracked per zone), reset seals all doors/zones.
+                        toggleDoors(doors): debug O synchronizes the whole group, preserving bought doors on open-all
     wallBuy.js          createWallBuyDisplay(): chalk outline (textures.makeChalkTexture) + the gun on two pegs, side on
     collision.js        moveAndCollide(): horizontal push-out (also removes the velocity going into the wall, so
                         a pinned mover reads speed 0 and slides along walls) then vertical landing/ceiling vs. Box3 list;
@@ -521,7 +522,7 @@ The start room opens into a MAIN HALLWAY (the hub). Each outer area has a hallwa
 also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and every shutter is bought separately.
 - Start room: x -5..5, z 6..16, 4m ceiling, checkout counter, shelf, crates, boarded vents. Its 4m doorway at z=6
   is blocked by a security shutter door (500) that opens the hallway. Hold **F** (controller: hold **X**) near a
-  door to buy it. Debug: press **O** to toggle every door for free.
+  door to buy it. Debug: press **O** to open all doors for free; if all are open, O closes them all.
 - Main hallway: x -20..20, z -2..6 (8m wide), 6m ceiling. Doors: Food Court (1000, south wall x -2..2, straight
   across from the start door, under a FOOD COURT sign, framed by two planters), Mega Mart (750, east end z 0..4,
   under a MEGA MART sign), Service Corridor (1250, west wall z 0.5..3.5, under a "SERVICE CORRIDOR · STAFF ONLY"
@@ -587,6 +588,10 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+Debug O opens all doors together (or closes all when every door is already open). It no longer inverts each door:
+buying the start shutter and then pressing O used to close it, lock the hallway zone and hide both the Nail Gun and
+Customer Service prompts. Regression tests cover mixed door states and actual purchases at round 7 after debug open-all.
+
 Gun upgrades step 2 of 4 done: the Customer Service desk (see Map) + the tier under the ammo counter. Buying a tier never refills
 ammo (the user's call). Verified in tests/upgradeDesk.test.js and in the browser (real F hold: Staple Gun -> Deluxe for 2000,
 damage 30 -> 42, magazine 12 -> 14 without a refill, HUD "Deluxe warranty"; the desk, signs and green-to-gold stickers look right).

@@ -23,6 +23,7 @@ import { createSettingsMenu } from './ui/settingsMenu.js';
 import { createControlsMenu } from './ui/controlsMenu.js';
 import { createGame } from './game/createGame.js';
 import { tierById, tierOf } from './weapons/upgrades.js';
+import { toggleDoors } from './world/door.js';
 
 // --- Renderer, scene, camera ---------------------------------------------------
 
@@ -88,7 +89,7 @@ const DEG_TO_RAD = Math.PI / 180;
 // just before the player moves.
 function handleDebugKeys() {
   if (debug.allowShutterToggle && input.consumePress('KeyO')) {
-    for (const door of map.doors) door.toggle(); // debug: open/close doors for free
+    toggleDoors(map.doors); // debug: open all, or close all if every door is already open
   }
   if (g.arena && input.consumePress('KeyT')) {
     player.teleport(g.arena.contains(player.position) ? map.playerSpawn : g.arena.playerSpawn);

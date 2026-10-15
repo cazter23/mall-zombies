@@ -14,6 +14,16 @@
 // objects so the map's zone table stays a plain { label, open } per zone.
 const openedBy = new WeakMap();
 
+// Debug group toggle: a partly bought map opens completely; only an entirely open map closes.
+// Toggling doors individually would close purchased entrances and lock their shops.
+export function toggleDoors(doors) {
+  const shouldOpen = doors.some((door) => !door.isOpen);
+  for (const door of doors) {
+    if (shouldOpen) door.open();
+    else door.reset();
+  }
+}
+
 function holders(zone) {
   if (!openedBy.has(zone)) openedBy.set(zone, new Set());
   return openedBy.get(zone);
