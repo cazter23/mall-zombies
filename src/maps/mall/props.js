@@ -22,12 +22,15 @@
 //   pipeRun     exposed pipes along a wall near the ceiling (decorative)
 //   vendingMachine  the ammo cache: a solid, lit vending machine against a wall; returns where to buy from it
 //   serviceDesk     the Customer Service desk (gun tiers): a solid counter against a wall + signs; returns its buy spot
+//   attachmentDisplay  a store's attachment counter: a glass case in front of a shop, or a pegboard on a wall, showing
+//                   its attachments (big copies of the gun parts); returns a buy spot per attachment
 // createMallProps(kit) returns these as functions; maps/mall/mall.js places them.
 // =============================================================================
 
 import * as THREE from 'three';
 import { COLORS } from './palette.js';
 import { seededRandom } from '../../world/textures.js';
+import { buildAttachmentPart } from '../../weapons/models/upgradeParts.js';
 
 export function createMallProps(kit) {
   const { box, mat, sign, addCollider, group } = kit;
@@ -672,9 +675,73 @@ export function createMallProps(kit) {
     return { position, normal };
   }
 
+  /**
+   * A store's attachment counter (gun upgrades). Shows each attachment as a big copy of the part that goes
+   * on the gun (weapons/models/upgradeParts.js), with a name card.
+   *   style 'case':     a glass display case standing in front of a shopfront (gap = how far out from the
+   *                     wall, past the facade). ONE solid 1.25m collider (too tall to climb, like the desk).
+   *   style 'pegboard': a pegboard on a wall with the parts hung on it (no depth to speak of: an aisle stays clear).
+   * items: [{ id, name }] (config/upgrades.js attachments). Returns [{ id, position, normal }], one buy spot each,
+   * spread along the wall in item order, left to right as a customer sees them.
+   */
+  function attachmentDisplay({ along, center, wallAt, facing, style = 'case', items, title, titleColor = '#ffd23f', gap = 0.25, width = 2.4 }) {
+    const place = wallPlacer(along);
+    const d = (offset) => wallAt + facing * offset;
+    const rightward = along === 'x' ? facing : -facing;
+    const spacing = width / items.length;
+    const uOf = (i) => center + rightward * (i - (items.length - 1) / 2) * spacing;
+    const signAt = (u, y, offset) => (along === 'x'
+      ? { x: u, y, z: d(offset), facing }
+      : { x: d(offset), y, z: u, facing: facing > 0 ? 'x+' : 'x-' });
+    const u0 = center - width / 2;
+    const u1 = center + width / 2;
+    let front; // how far the buy spots stand out from the wall
+    let partY; // height of the displayed parts
+    if (style === 'case') {
+      const depth = 0.6;
+      place(u0, 0, u1, 0.85, d(gap), d(gap + depth), mat(COLORS.caseBody), { collide: false, name: 'attachment_case' });
+      place(u0 + 0.04, 0.85, u1 - 0.04, 0.88, d(gap + 0.03), d(gap + depth - 0.03), mat(COLORS.caseGlass, { transparent: true, opacity: 0.45, roughness: 0.1 }), { collide: false });
+      addCollider(...(along === 'x'
+        ? [u0, 0, Math.min(d(gap), d(gap + depth)), u1, 1.25, Math.max(d(gap), d(gap + depth))]
+        : [Math.min(d(gap), d(gap + depth)), 0, u0, Math.max(d(gap), d(gap + depth)), 1.25, u1]));
+      if (title) sign(title, { ...signAt(center, 0.35, gap + depth + 0.01), width: width - 0.3, height: 0.28, background: '#1d1626', color: titleColor });
+      front = gap + depth + 0.1;
+      partY = 0.85;
+    } else {
+      place(u0, 0.9, u1, 2.3, d(0), d(0.04), mat(COLORS.pegboard), { collide: false, name: 'attachment_pegboard' });
+      const holes = mat(COLORS.pegboardHoles);
+      for (let row = 0; row < 6; row++) {
+        for (let col = 0; col < Math.round(width / 0.2); col++) {
+          const u = u0 + 0.1 + col * 0.2;
+          place(u - 0.012, 0.98 + row * 0.24, u + 0.012, 1.004 + row * 0.24, d(0.04), d(0.042), holes, { collide: false });
+        }
+      }
+      if (title) sign(title, { ...signAt(center, 2.15, 0.05), width: width - 0.2, height: 0.25, background: '#1d1626', color: titleColor });
+      front = 0.5;
+      partY = 1.55;
+    }
+    return items.map((item, i) => {
+      const u = uOf(i);
+      // The part, big, turned side-on so it reads as "this goes on a gun".
+      const part = buildAttachmentPart(item.id, {}, { display: true });
+      part.scale.setScalar(7);
+      part.rotation.y = along === 'x' ? Math.PI / 2 : 0;
+      part.position.copy(along === 'x' ? new THREE.Vector3(u, 0, d(front - 0.35)) : new THREE.Vector3(d(front - 0.35), 0, u));
+      // Seat it: resting on the glass (case) or hung at eye level (pegboard), whatever its shape.
+      part.updateMatrixWorld(true);
+      const bounds = new THREE.Box3().setFromObject(part);
+      part.position.y += style === 'case' ? 0.9 - bounds.min.y : 1.75 - (bounds.min.y + bounds.max.y) / 2;
+      group.add(part);
+      sign(item.name.toUpperCase(), { ...signAt(u, partY - 0.12 + (style === 'case' ? 0 : -0.18), style === 'case' ? front - 0.1 + 0.005 : 0.05), width: spacing - 0.2, height: 0.16, background: '#f1faee', color: '#1d1626' });
+      const position = along === 'x' ? new THREE.Vector3(u, 1.1, d(front)) : new THREE.Vector3(d(front), 1.1, u);
+      const normal = along === 'x' ? new THREE.Vector3(0, 0, facing) : new THREE.Vector3(facing, 0, 0);
+      return { id: item.id, position, normal };
+    });
+  }
+
   return {
     shopFront, pillar, bench, planter, lightPanel, gondola, checkout, wallDoor, boardedVent, wallStripe,
     escalator, upperLanding, elevatorDoors, foodStall, tableSet, trashCan, lockerBank, electricalPanel, pipeRun, vendingMachine,
-    serviceDesk,
+    serviceDesk, attachmentDisplay,
   };
 }

@@ -69,6 +69,11 @@ export const COLORS = {
   deskTop: 0xe9e2d0,
   deskKick: 0x1d3f42,
   deskBell: 0xd8c27a,
+  // Attachment counters (glass display cases + the hardware pegboard)
+  caseBody: 0x2b2f36,
+  caseGlass: 0xbfe6ef,
+  pegboard: 0xc79a62,
+  pegboardHoles: 0x8a6438,
   vendTrim: 0xffd23f,
   vendGlass: 0x153045,
   vendGlow: 0xb7f0ff,

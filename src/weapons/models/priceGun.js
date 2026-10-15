@@ -68,7 +68,16 @@ function buildGun(colors) {
   muzzle.position.set(0, -0.025, -0.172);
   gun.add(muzzle);
 
-  return { gun, muzzle, lever, roll };
+  // Where upgrade parts go (models/upgradeParts.js).
+  const mounts = {
+    barrel: { position: [0, -0.012, -0.168], size: { w: 0.05, h: 0.048 } },
+    top: { position: [-0.03, 0.049, -0.07] }, // off to the left: clear of the sight when aiming
+    side: { position: [0.034, -0.012, -0.1] },
+    grip: { position: [0, -0.09, 0.02], rotation: [0.3, 0, 0], size: { w: 0.042, h: 0.12, d: 0.05 } },
+    magazine: { position: [0, -0.035, -0.11] },
+    sticker: { position: [-0.027, 0.008, -0.1] },
+  };
+  return { gun, muzzle, lever, roll, mounts };
 }
 
 /** Just the gun, no hands (for the wall-buy display). */
@@ -78,7 +87,7 @@ export function buildPriceGunDisplay(def) {
 
 export function buildPriceGunModel(def) {
   const vm = def.viewmodel;
-  const { gun, muzzle, lever, roll } = buildGun(vm);
+  const { gun, muzzle, lever, roll, mounts } = buildGun(vm);
   const { leftArm } = buildPistolArms(gun);
   // The fresh roll the left hand brings during a reload. Placed so that when the hand presses it on
   // (its handKeys pose at the "pressed on" moment) it sits exactly where the roll on the gun goes.
@@ -91,6 +100,7 @@ export function buildPriceGunModel(def) {
   const leverRest = lever.rotation.x;
 
   return {
+    mounts, // where upgrade parts go (models/upgradeParts.js)
     root: gun,
     muzzle,
 

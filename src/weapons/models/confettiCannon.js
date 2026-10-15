@@ -48,14 +48,23 @@ function buildGun(vm) {
   box(0.007, 0.03, 0.012, 0, 0.04, -0.22, vm.metalColor, assembly); // post down between the barrels (the bead used to float)
   box(0.014, 0.017, 0.018, 0, 0.057, -0.22, vm.sightColor, assembly);
   const muzzle = new THREE.Object3D(); muzzle.position.set(0, 0, -0.258); assembly.add(muzzle);
-  return { gun, muzzle, trigger, barrels, cylinder };
+  // Where upgrade parts go (models/upgradeParts.js). Barrel parts and the laser ride on the barrels (they hinge).
+  const mounts = {
+    barrel: { parent: assembly, position: [0, 0, -0.255], radius: 0.04, twin: 0.044, size: { w: 0.18, h: 0.09 } },
+    top: { position: [-0.03, 0.025, 0.03] },
+    side: { parent: assembly, position: [0.094, -0.012, -0.15] },
+    grip: { position: [0, -0.095, 0.028], rotation: [0.3, 0, 0], size: { w: 0.043, h: 0.12, d: 0.052 } },
+    magazine: { position: [0.054, -0.008, 0], rotation: [0, 0, Math.PI / 2] }, // a side shell holder
+    sticker: { position: [-0.0335, -0.006, 0.09] }, // on the stock
+  };
+  return { gun, muzzle, trigger, barrels, cylinder, mounts };
 }
 
 export function buildConfettiCannonDisplay(def) { return buildGun(def.viewmodel).gun; }
 
 export function buildConfettiCannonModel(def) {
   const vm = def.viewmodel;
-  const { gun, muzzle, trigger, barrels, cylinder } = buildGun(vm);
+  const { gun, muzzle, trigger, barrels, cylinder, mounts } = buildGun(vm);
   const { leftArm } = buildPistolArms(gun, {
     leftOffset: new THREE.Vector3(-0.028, -0.027, 0),
     thumbOffset: new THREE.Vector3(0, -0.022, 0),
@@ -69,6 +78,7 @@ export function buildConfettiCannonModel(def) {
   shell.visible = false;
   const barrelPosition = new THREE.Vector3(), barrelRotation = new THREE.Euler();
   return {
+    mounts, // where upgrade parts go (models/upgradeParts.js)
     root: gun, muzzle,
     animate({ sinceFire, reloadProgress, reloadWeight }) {
       const f = vm.fire;

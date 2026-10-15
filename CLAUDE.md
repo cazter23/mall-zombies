@@ -51,7 +51,11 @@ one attachment per slot, what fits, roles hold at every tier (near-ties within 3
 with the carried gun in the real game), `upgradeDesk.test.js` the Customer Service desk in the real game/mall (one desk in the hallway, LAYOUT.serviceDesk moves
 prop + collider + buy spot, solid and too tall to climb, tiers one at a time at pricing's price, gun in hand only, no refill,
 nothing past Platinum, Flash Sale applies, no prompt while closed / switching / facing away, Play again resets),
-`features.test.js` map features (the mall's list, unknown kind = error, a new kind's update/reset hooks run, inert wall buy for a
+`attachmentCounter.test.js` the store counters in the real game/mall (every attachment at its store, real F buys fit the gun in
+hand + replace its slot at pricing's price, no prompt when fitted / doesn't fit / area closed / mid switch, cases solid + too tall,
+pegboard keeps aisle 4 clear, a LAYOUT entry moves a counter), `weaponModels.test.js` also checks upgrade parts (every gun has every
+mount, parts show only when fitted, the Extended Nozzle moves the muzzle + flash and back, tier sticker hidden at Standard, no part
+floats), `features.test.js` map features (the mall's list, unknown kind = error, a new kind's update/reset hooks run, inert wall buy for a
 gun that doesn't exist, inherited names aren't kinds, features get the game's systems and tick only while playing (not paused /
 dead) + reset on Play again, buy a wall gun + refill at the STAPLE-O-MAT in the real game);
 `spawning.test.js` covers local selection/safety/cooldowns/rescues plus the real mall at six positions with hallway
@@ -223,7 +227,7 @@ src/
                         pierce x player multiplier; the only place it's computed), resolveGun(base, mods) (upgrades as data:
                         { id, modifiers: [{ stat: 'falloff.start', op: 'set'|'add'|'mul', value }] }; set, then adds, then muls;
                         a bad stat path throws; counts (magazine, reserve, pellets...) are rounded whole after mods, a burst
-                        gun's magazine to whole bursts; returns a copy with .base/.mods). Layers: base config -> mods -> player stats -> per hit
+                        gun's magazine to whole bursts; returns a copy with .base/.mods (ids)/.modList (the mods themselves)). Layers: base config -> mods -> player stats -> per hit
     playerGun.js        createPlayerGun(): the LOADOUT (2 slots, each { base, mods, def = resolveGun(base, mods), weapon, aim }); gameplay
                         reads slot.def. setMods(id, mods) re-resolves a carried gun (the Build-A-Blaster hook: weapon.setDef + aim.setDef,
                         ammo kept/clipped), modsFor(id); mods survive ammo buys, not replacement or a new run. Glue for the gun in hand
@@ -260,7 +264,13 @@ src/
                         shot, angled nail magazine); reload slides a fresh strip into the magazine.
                         foamDartBlaster.js = blue/yellow toy rifle, visible foam darts in a removable drum; drum-swap reload.
                         confettiCannon.js = pink/purple double barrels, gold rims; hinge open, a shell per cycle, snap shut.
-                        New gun = new file + 1 line
+                        Each model also returns `mounts` (barrel / top / side / grip / magazine / sticker: where upgrade parts go).
+                        upgradeParts.js = what upgrades LOOK like: buildAttachmentPart(id) (cartoon parts in the stores' colors:
+                        nozzle tube, duct-taped Sawn-Off band, laser + faint beam, zoom tube with blue glass, grip tape wound round
+                        hand + grip, orange wristband on the right forearm, yellow XL Jumbo Pack, green Speed Loader tab) and
+                        createUpgradeVisuals(model): every part + a tier sticker built up front (hidden), show({ tier, attachments })
+                        per frame (the viewmodel reads shownDef.modList); the Extended Nozzle moves the muzzle (and flash) to its tip.
+                        New gun = new file + 1 line (+ its mounts)
     muzzleFlash.js      createMuzzleFlash(cfg): 2 sprites (normal-blended orange burst + additive core, random
                         twist/size), hand light + world light (always in the scene at 0 so no shader recompile).
                         Always depth-tested (the hands and gun hide whatever part of the burst is behind them),
@@ -345,7 +355,10 @@ src/
                         STAPLE-O-MAT item: label "Ammo · <gun in hand>", available when its zone is open and the gun in hand
                         isn't full, use = gun.weapon.refill() (mag + reserve, ANY gun incl. the staple gun). upgradeDesk.js = Customer Service:
                         "upgrade <Gun> → <next tier>" (g.pricing 'tier', purchase kind 'tier'), gun in hand only, not while
-                        switching, nothing past Platinum, NO ammo refill (the bigger magazine fills on the next reload/buy)
+                        switching, nothing past Platinum, NO ammo refill (the bigger magazine fills on the next reload/buy).
+                        attachmentCounter.js = one attachment on a store counter: "fit <Attachment> on the <Gun> · <blurb>"
+                        (g.pricing 'attachment', purchase kind 'attachment'), replaces that slot on the gun in hand; no prompt when
+                        already fitted, when it doesn't fit (Extended Nozzle on the Nail Gun), area closed or mid switch
     rounds.js           createRounds(): announce(n, delay) flips the round number (and fires onRoundStart) the
                         moment the last zombie dies, then 'break' (6s, inBreak) -> 'active' (spawn quota at
                         spawnDelay, capped by maxAlive; quota only used when a zombie actually spawned, else retry
@@ -382,7 +395,10 @@ src/
                         lit product window, keypad, header "STAPLE-O-MAT"; returns { position, normal } = its buy spot),
                         serviceDesk({ along, center, wallAt, facing, tierColors }) (Customer Service counter, ONE solid 1.25m
                         collider wall-to-front, terminal, bell, CUSTOMER SERVICE + EXTENDED WARRANTY signs, a sticker per tier
-                        left to right as the customer sees it; returns its buy spot)
+                        left to right as the customer sees it; returns its buy spot), attachmentDisplay({ along, center, wallAt,
+                        facing, style 'case'|'pegboard', items, title }) (a store's attachment counter: glass case in front of a
+                        shopfront, ONE solid 1.25m collider, or a flat pegboard on a wall; shows each attachment as a big copy of the
+                        gun part + a name card; returns a buy spot per attachment)
     mall/palette.js     COLORS shared by the mall's rooms and props
     testRange/          Debug add-on (not a map): testRange.js buildTestRange(scene, colliders) with own lights,
                         dummy.js practice mannequins (shootables)
@@ -566,6 +582,11 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
 - Customer Service desk (gun tiers): hallway north wall at x 5.5..8.5 (between the start doorway and the elevator), counter front
   at z 5.0. Hold F/X to buy the next Extended Warranty tier for the gun in your hand. Its spot is ONE entry, LAYOUT.serviceDesk
   in mall.js (along/center/wallAt/facing/zone): change it to move the desk. A map feature of kind 'upgradeDesk'.
+- Attachment counters (gun attachments): sights at a glass case in front of BYTE ME ELECTRONICS (Food Court north wall,
+  x ~9.8..12.2), grips in front of GOOD SPORTS (south wall, x ~-12.2..-9.8), magazines in front of PLAY TIME TOYS (north wall,
+  x ~-12.2..-9.8), barrels on a HARDWARE pegboard on the Mega Mart's east wall in aisle 4 (renamed "AISLE 4 · HARDWARE", z ~-15.2..
+  -12.8; the aisle stays clear). Two attachments per counter, one buy spot each. Each counter is ONE entry in
+  LAYOUT.attachmentCounters (mall.js). Map features of kind 'attachmentCounter' (one per attachment).
 - Ammo cache: a STAPLE-O-MAT vending machine on the Food Court's west wall (center z -5.1, front at x -19.4, in the open north
   of the planter). Hold F/X for 400 points to refill the gun in your hand (any gun, including the staple gun, which has no wall
   buy); no prompt when it's full or the Food Court is closed. A map feature of kind 'ammoCache' (game/features/ammoCache.js).
@@ -588,6 +609,12 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+Gun upgrades steps 3 + 4 done: the four store attachment counters (see Map) and the upgrade parts on the gun models (every
+attachment has a visible part on every gun it fits; the tier sticker shows on the gun from Deluxe up). Verified in tests and in the
+browser (real F hold at Byte Me fits a Laser Pointer to the staple gun for 750 and its beam shows; all four counters display their
+parts; parts checked from both sides and from the player's view on all five guns; the Zoom Lens stays clear of the sights in ADS;
+the grip tape is wound round hand + grip because the hand hides the handle). Gun upgrades are complete.
+
 Debug O opens all doors together (or closes all when every door is already open). It no longer inverts each door:
 buying the start shutter and then pressing O used to close it, lock the hallway zone and hide both the Nail Gun and
 Customer Service prompts. Regression tests cover mixed door states and actual purchases at round 7 after debug open-all.

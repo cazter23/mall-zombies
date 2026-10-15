@@ -56,6 +56,14 @@ export const LAYOUT = {
   // Customer Service desk (Extended Warranty tiers): on the hallway's north wall between the start doorway
   // and the elevator. Move it by changing this one entry (the prop, its collider and its buy spot follow).
   serviceDesk: { along: 'x', center: 7, wallAt: 6, facing: -1, zone: 'hallway' },
+  // Attachment counters (gun upgrades), one per slot, each at its store. Move one by changing its entry.
+  // Food Court: glass cases in front of three shopfronts. Mega Mart: a pegboard in the hardware aisle (east wall).
+  attachmentCounters: [
+    { slot: 'sight', zone: 'foodCourt', style: 'case', along: 'x', center: 11, wallAt: -2.3, facing: -1, title: 'BYTE ME · SIGHTS', titleColor: '#63b3ff' },
+    { slot: 'grip', zone: 'foodCourt', style: 'case', along: 'x', center: -11, wallAt: -14.3, facing: 1, title: 'GOOD SPORTS · GRIPS', titleColor: '#ff8a3d' },
+    { slot: 'magazine', zone: 'foodCourt', style: 'case', along: 'x', center: -11, wallAt: -2.3, facing: -1, title: 'PLAY TIME TOYS · MAGAZINES', titleColor: '#ffd23f' },
+    { slot: 'barrel', zone: 'megaMart', style: 'pegboard', along: 'z', center: -14, wallAt: 34, facing: -1, title: 'HARDWARE · BARRELS', titleColor: '#ffd23f' },
+  ],
   // Service Corridor: its doorway in the hallway's west wall, then south along the Food Court's west wall.
   serviceCorridor: { width: 3, height: 3.5, length: 16, doorway: { minZ: 0.5, maxZ: 3.5, height: 3 } },
   wallThickness: 0.3,
@@ -193,6 +201,12 @@ export function buildMall(scene, colliders) {
   // Customer Service desk (gun tiers; a map feature of kind 'upgradeDesk', below).
   const { zone: deskZone, ...deskSpot } = LAYOUT.serviceDesk;
   const serviceDesk = props.serviceDesk({ ...deskSpot, tierColors: upgrades.tiers.map((t) => t.color) });
+
+  // Attachment counters (map features of kind 'attachmentCounter', below): one buy spot per attachment.
+  const attachmentSpots = LAYOUT.attachmentCounters.flatMap(({ slot, zone, ...spot }) => {
+    const items = Object.entries(upgrades.attachments).filter(([, a]) => a.slot === slot).map(([id, a]) => ({ id, name: a.name }));
+    return props.attachmentDisplay({ ...spot, items }).map((s) => ({ ...s, slot, zone }));
+  });
 
   // --- Main hallway dressing ---------------------------------------------------
 
@@ -464,7 +478,7 @@ export function buildMall(scene, colliders) {
     [21.9, 'AISLE 1 · OUTDOOR'],
     [25.75, 'AISLE 2 · SNACKS'],
     [29.25, 'AISLE 3 · ALL HOLIDAYS'],
-    [32.75, 'AISLE 4 · HOUSEWARES'],
+    [32.75, 'AISLE 4 · HARDWARE'],
   ];
   for (const [x, text] of aisles) {
     for (const facing of [1, -1]) {
@@ -584,6 +598,8 @@ export function buildMall(scene, colliders) {
     { kind: 'ammoCache', name: 'ammocache_foodCourt', zone: 'foodCourt', position: foodCourtAmmo.position, normal: foodCourtAmmo.normal },
     // Customer Service: upgrade the gun in your hand one Extended Warranty tier (g.pricing 'tier').
     { kind: 'upgradeDesk', name: 'upgradedesk_hallway', zone: deskZone, position: serviceDesk.position, normal: serviceDesk.normal },
+    // Store attachment counters: fit that attachment to the gun in your hand (g.pricing 'attachment').
+    ...attachmentSpots.map((s) => ({ kind: 'attachmentCounter', name: `attachment_${s.id}`, zone: s.zone, attachment: s.id, position: s.position, normal: s.normal })),
   ];
 
   const doors = [startDoor, megaMartDoor, foodCourtDoor, serviceCorridorDoor, foodCourtMegaMartDoor, serviceCorridorFoodCourtDoor];

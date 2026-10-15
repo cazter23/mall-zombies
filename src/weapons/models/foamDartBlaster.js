@@ -46,18 +46,28 @@ function buildGun(vm) {
     cylinder(0.009, 0.006, -0.06, y, z, vm.muzzleColor, drum, 'x');
   }
   const muzzle = new THREE.Object3D(); muzzle.position.set(0, 0.006, -0.292); gun.add(muzzle);
-  return { gun, muzzle, trigger, drum };
+  // Where upgrade parts go (models/upgradeParts.js).
+  const mounts = {
+    barrel: { position: [0, 0.006, -0.289], radius: 0.028, size: { w: 0.064, h: 0.064 } },
+    top: { position: [-0.028, 0.0475, 0.03] },
+    side: { position: [0.05, -0.02, -0.15] },
+    grip: { position: [0, -0.095, 0.025], rotation: [0.3, 0, 0], size: { w: 0.042, h: 0.12, d: 0.05 } },
+    magazine: { position: [0, -0.0625, -0.11] },
+    sticker: { position: [-0.0425, 0, -0.16] }, // between the drum and the barrel
+  };
+  return { gun, muzzle, trigger, drum, mounts };
 }
 
 export function buildFoamDartBlasterDisplay(def) { return buildGun(def.viewmodel).gun; }
 
 export function buildFoamDartBlasterModel(def) {
   const vm = def.viewmodel;
-  const { gun, muzzle, trigger, drum } = buildGun(vm);
+  const { gun, muzzle, trigger, drum, mounts } = buildGun(vm);
   const { leftArm } = buildPistolArms(gun);
   const heldDrum = drum.clone(); heldDrum.position.set(-0.045, -0.04, -0.025);
   heldDrum.visible = false; leftArm.add(heldDrum);
   return {
+    mounts, // where upgrade parts go (models/upgradeParts.js)
     root: gun, muzzle,
     animate({ sinceFire, reloadProgress, reloadWeight }) {
       const f = vm.fire;

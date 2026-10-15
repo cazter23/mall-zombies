@@ -31,6 +31,8 @@ import { createSpring, createSpring3 } from '../core/spring.js';
 import { samplePose } from '../core/keyframes.js';
 import { buildWeaponModel } from './models/index.js';
 import { createMuzzleFlash } from './muzzleFlash.js';
+import { createUpgradeVisuals } from './models/upgradeParts.js';
+import { tierOf, attachmentsOf } from './upgrades.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 const clamp = (v, max) => Math.max(-max, Math.min(max, v));
@@ -100,7 +102,8 @@ export function createViewmodel(weaponDefs, meleeDef) {
     holder.add(model.root);
     const flash = createMuzzleFlash(def.muzzleFlash, { handLight, worldLight });
     model.muzzle.add(flash.object);
-    guns.set(def.id, { def, model, flash });
+    const upgrades = createUpgradeVisuals(model); // attachment parts + tier sticker, all hidden for now
+    guns.set(def.id, { def, model, flash, upgrades });
   }
   let active = guns.get(weaponDefs[0].id);
   active.model.root.visible = true;
@@ -198,6 +201,9 @@ export function createViewmodel(weaponDefs, meleeDef) {
       const dt = frameTime;
       setActive(shownDef);
       const { model, flash } = active;
+      // Show this gun's upgrades (shownDef is the resolved gun: its mods say which tier and attachments).
+      const mods = shownDef.modList ?? [];
+      active.upgrades.show({ tier: tierOf(mods), attachments: attachmentsOf(mods) });
       const look = active.def.viewmodel;
       const ads = active.def.ads.offset;
       rig.position.copy(worldCamera.position);

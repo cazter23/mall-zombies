@@ -10,6 +10,7 @@
 //   animate(state)    gun-specific animation every frame (trigger, hands during reload...);
 //                     state = { sinceFire, reloadProgress, reloadWeight }
 //   leftHandVisible   setter: hide the support hand (the box cutter arm replaces it)
+//   mounts            where upgrade parts go: barrel / top / side / grip / magazine / sticker (upgradeParts.js)
 // A display builder returns just the gun (no hands), for the wall-buy display.
 // =============================================================================
 

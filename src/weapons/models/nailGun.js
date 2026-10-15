@@ -66,7 +66,16 @@ function buildGun(colors) {
   muzzle.position.set(0, -0.06, -0.24);
   gun.add(muzzle);
 
-  return { gun, muzzle, trigger, nose, nails };
+  // Where upgrade parts go (models/upgradeParts.js). The barrel parts ride on the punching nose.
+  const mounts = {
+    barrel: { parent: nose, position: [0, -0.035, -0.062], size: { w: 0.02, h: 0.022 } },
+    top: { position: [-0.026, 0.045, -0.09] },
+    side: { position: [0.039, -0.01, -0.11] },
+    grip: { position: [0, -0.09, 0.02], rotation: [0.3, 0, 0], size: { w: 0.042, h: 0.12, d: 0.05 } },
+    magazine: { position: [0, -0.086, -0.125], rotation: [-0.12, 0, 0] },
+    sticker: { position: [-0.031, 0.008, -0.11] },
+  };
+  return { gun, muzzle, trigger, nose, nails, mounts };
 }
 
 /** Just the gun, no hands (for the wall-buy display). */
@@ -76,7 +85,7 @@ export function buildNailGunDisplay(def) {
 
 export function buildNailGunModel(def) {
   const vm = def.viewmodel;
-  const { gun, muzzle, trigger, nose, nails } = buildGun(vm);
+  const { gun, muzzle, trigger, nose, nails, mounts } = buildGun(vm);
   const { leftArm } = buildPistolArms(gun);
   // The fresh nail strip the left hand brings during a reload.
   const strip = block(vm.metalColor, 0.014, 0.014, 0.16, -0.025, -0.06, 0.02, leftArm);
@@ -85,6 +94,7 @@ export function buildNailGunModel(def) {
   const noseRest = nose.position.z;
 
   return {
+    mounts, // where upgrade parts go (models/upgradeParts.js)
     root: gun,
     muzzle,
 

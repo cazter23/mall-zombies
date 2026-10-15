@@ -67,7 +67,7 @@ function roundCounts(gun) {
 /**
  * The gun's effective stats: a deep copy of `base` with `mods` applied (see the header). `base` is
  * never changed. The copy keeps the same id/name/model, so it shows and sounds like the base gun.
- * resolved.base = the original config entry; resolved.mods = the applied mod ids.
+ * resolved.base = the original config entry; resolved.mods = the applied mod ids; resolved.modList = the mods.
  */
 export function resolveGun(base, mods = []) {
   const gun = structuredClone(base);
@@ -97,5 +97,6 @@ export function resolveGun(base, mods = []) {
   roundCounts(gun);
   gun.base = base;
   gun.mods = mods.map((m) => m.id);
+  gun.modList = mods; // the mods themselves (the gun model reads which tier/attachments to show)
   return gun;
 }

@@ -44,7 +44,16 @@ function buildGun(colors) {
   muzzle.position.set(0, -0.03, -0.155);
   gun.add(muzzle);
 
-  return { gun, muzzle, lever };
+  // Where upgrade parts go (models/upgradeParts.js).
+  const mounts = {
+    barrel: { position: [0, -0.012, -0.153], size: { w: 0.06, h: 0.05 } },
+    top: { position: [-0.03, 0.049, -0.03] }, // off to the left: clear of the sight when aiming
+    side: { position: [0.036, -0.012, -0.09] },
+    grip: { position: [0, -0.09, 0.02], rotation: [0.3, 0, 0], size: { w: 0.042, h: 0.12, d: 0.05 } },
+    magazine: { position: [0, -0.0375, -0.112] },
+    sticker: { position: [-0.0285, 0.008, -0.1] }, // left side, in front of the support palm
+  };
+  return { gun, muzzle, lever, mounts };
 }
 
 /** Just the gun, no hands (for the wall-buy display). */
@@ -54,7 +63,7 @@ export function buildStapleGunDisplay(def) {
 
 export function buildStapleGunModel(def) {
   const vm = def.viewmodel;
-  const { gun, muzzle, lever } = buildGun(vm);
+  const { gun, muzzle, lever, mounts } = buildGun(vm);
   const { leftArm } = buildPistolArms(gun);
   // A fresh strip of staples, only visible in the left hand mid-reload.
   const strip = block(vm.metalColor, 0.03, 0.014, 0.12, -0.03, -0.07, -0.025, leftArm);
@@ -62,6 +71,7 @@ export function buildStapleGunModel(def) {
   const leverRest = lever.rotation.x;
 
   return {
+    mounts, // where upgrade parts go (models/upgradeParts.js)
     root: gun,
     muzzle,
 
