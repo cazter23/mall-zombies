@@ -131,6 +131,46 @@ test('a natural round: round 1 spawns its zombies, killing them all moves the ga
   assert.equal(g.wallet.points, economy.startingPoints + count * economy.killValues.shopper);
 });
 
+test('a real run buys Food Court then its shortcut: Mega Mart spawns without buying its hallway entrance', (testContext) => {
+  const t = headlessGame();
+  const { g } = t;
+  g.wallet.earn(3000); // Fund the route; purchases still use the real hold, pricing and wallet.
+  const purchases = [];
+  g.events.on('purchase', (event) => purchases.push(event));
+  t.standAt(0, 8.5);
+  t.press('KeyF', 30);
+  t.tick(90);
+  t.standAt(0, -0.4);
+  t.press('KeyF', 30);
+  t.tick(90);
+  assert.equal(g.map.zones.megaMart.open, false);
+  t.standAt(18.4, -8.3, -90);
+  t.press('KeyF', 30);
+  t.tick(90);
+  assert.equal(g.map.zones.megaMart.open, true);
+  assert.equal(g.map.doors.find((d) => d.id === 'megaMart').isOpen, false);
+  assert.deepEqual(purchases.map(({ id, cost }) => [id, cost]), [
+    ['startShutter', 500], ['foodCourt', 1000], ['foodCourtMegaMart', 1000],
+  ]);
+  let seed = 12345;
+  testContext.mock.method(Math, 'random', () => ((seed = (1664525 * seed + 1013904223) >>> 0) / 2 ** 32));
+  const martMarkers = g.map.spawnPoints.filter((s) => s.zone === 'megaMart');
+  let spawnedInMart = false;
+  // Real rounds select real markers. Kill risen zombies to keep the run moving; no explicit-position spawn.
+  for (let tick = 0; tick < 60 * 120 && !spawnedInMart; tick++) {
+    t.tick();
+    for (const z of g.zombies.zombies) {
+      if (z.state === 'spawning' && martMarkers.some((s) => s.position.equals(z.position))) spawnedInMart = true;
+      if (z.isAlive && z.state === 'chasing') z.takeHit({ damage: 99999, part: 'body' });
+    }
+  }
+  assert.equal(spawnedInMart, true, 'the newly opened zone participates in natural wave spawns');
+  assert.equal(g.state.over, false);
+  g.resetRun();
+  assert.ok(g.map.doors.every((d) => !d.isOpen));
+  assert.deepEqual(Object.keys(g.map.zones).filter((id) => g.map.zones[id].open), ['startRoom']);
+});
+
 test('resetPlayerStats: every stat back to base, undeclared extras removed, same object', async () => {
   const { createPlayerStats, resetPlayerStats } = await import('../src/player/stats.js');
   const stats = createPlayerStats();

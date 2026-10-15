@@ -10,7 +10,8 @@
 //                 debug markers), so removing it unloads the map's visuals
 //   zones         { [zoneId]: { label, open } }   the starting zone is open
 //   doors         [door]   buyable barriers that open zones (world/door.js); several doors
-//                 may open the same zone (it's open while any of them is)
+//                 may open the same zone (it's open while any of them is); opensZones
+//                 lets a shortcut open both adjoining areas (opensZone still works)
 //   spawnPoints   [{ name, zone, position }]      zombie spawns, tagged by zone
 //   features      [{ kind, name, zone, position, normal, ...that kind's fields }]  everything (besides doors)
 //                 the player interacts with; built by kind in game/features/ (an unknown kind is an error).

@@ -13,6 +13,7 @@
 //   megaMart    Mega Mart shutter (750), east end of the hallway
 //   foodCourt   Food Court shutter (1000), south wall of the hallway
 //   serviceCorridor  Service Corridor shutter (1250), west end of the hallway
+//   foodCourtMegaMart (1000), serviceCorridorFoodCourt (1250): shortcuts open BOTH joined zones
 // The hallway also has an escalator (west half, up through a hole in the ceiling to a boarded-up
 // level-2 landing) and elevator doors (north wall): both SEALED for now, the way up to a second floor later.
 //
@@ -23,11 +24,11 @@
 //                      its door is straight across the hallway from the start room's)
 //   - Mega Mart:       x 20..34,  z -24..6, 5m ceiling. Its west wall (x 20..20.3, 6m tall)
 //                      is also the east wall of the hallway (with the Mega Mart door) and of
-//                      the Food Court (room for a shortcut door later).
+//                      the Food Court (shortcut at z -9.8..-6.8).
 //   - Service Corridor: a 3m-wide back-of-house corridor built with the corridor builder
 //                      (world/corridor.js): through the hallway's west wall (z 0.5..3.5), then
-//                      south 16m along the Food Court's west side (sharing its wall: room for a
-//                      shortcut door later), to a dead end at z -14. 3.5m ceiling.
+//                      south 16m along the Food Court's west side (shortcut at z -13.4..-11),
+//                      to an end vent at z -14. 3.5m ceiling.
 // =============================================================================
 
 import * as THREE from 'three';
@@ -45,6 +46,8 @@ export const LAYOUT = {
   doorway: { minX: -2, maxX: 2, height: 3 }, // start room -> hallway (in the hallway's north wall)
   foodCourtDoorway: { minX: -2, maxX: 2, height: 3 }, // hallway -> Food Court (hallway's south wall)
   megaMartDoorway: { minZ: 0, maxZ: 4, height: 3 }, // hallway -> Mega Mart (Mega Mart's west wall)
+  foodCourtMegaMartDoorway: { minZ: -9.8, maxZ: -6.8, height: 3 }, // shared east wall, Food Court centre line
+  serviceCorridorFoodCourtDoorway: { minZ: -13.4, maxZ: -11, height: 3 }, // opposite the cannon, beyond the lockers
   // Escalator in the hallway's west half: bottom end at x -4 (facing the hub), rising west to level 2
   // (the top of the hallway ceiling, y 6.3). 2m wide. Sealed for now.
   escalator: { bottomX: -4, dir: -1, minZ: 1, maxZ: 3 },
@@ -79,6 +82,8 @@ export function buildMall(scene, colliders) {
   const D = LAYOUT.doorway;
   const FD = LAYOUT.foodCourtDoorway;
   const MD = LAYOUT.megaMartDoorway;
+  const FM = LAYOUT.foodCourtMegaMartDoorway;
+  const SF = LAYOUT.serviceCorridorFoodCourtDoorway;
   const SC = LAYOUT.serviceCorridor;
   const SCD = SC.doorway;
   const T = LAYOUT.wallThickness;
@@ -88,7 +93,9 @@ export function buildMall(scene, colliders) {
   // --- Floors and ceilings -------------------------------------------------
 
   tiledFloor(H.minX, H.minZ, H.maxX, H.maxZ, { base: '#ebe2d1', grout: '#c2b6a2', variation: 12, seed: 5 });
-  tiledFloor(F.minX, F.minZ, F.maxX, H.minZ, { base: '#f1e8d6', grout: '#cdbfa8', seed: 3 }); // under the shared wall too
+  // Continue beneath both shared walls: a floor gap under the west shortcut can split the nav
+  // grid when other loaded geometry (the debug range, future areas) shifts its cell centres.
+  tiledFloor(F.minX - T, F.minZ, F.maxX, H.minZ, { base: '#f1e8d6', grout: '#cdbfa8', seed: 3 });
   tiledFloor(R.minX, R.minZ, R.maxX, R.maxZ, { base: '#d9cdb7', grout: '#a99a82', variation: 18, seed: 11 });
 
   // (The hallway's ceiling is built with the escalator below: it has a hole for it.)
@@ -247,7 +254,25 @@ export function buildMall(scene, colliders) {
 
   const courtWall = mat(COLORS.concourseWall);
   wall({ along: 'x', from: F.minX - T, to: F.maxX, at0: F.minZ - T, at1: F.minZ, height: F.height }, courtWall, { name: 'foodcourt_wall_south' });
-  wall({ along: 'z', from: F.minZ, to: F.maxZ, at0: F.minX - T, at1: F.minX, height: F.height }, courtWall, { name: 'foodcourt_wall_west' });
+  wall({
+    along: 'z', from: F.minZ, to: F.maxZ, at0: F.minX - T, at1: F.minX, height: F.height,
+    openings: [{ from: SF.minZ, to: SF.maxZ, top: SF.height }],
+  }, courtWall, { name: 'foodcourt_wall_west' });
+  const serviceCorridorFoodCourtDoor = kit.shutterDoor({
+    id: 'serviceCorridorFoodCourt', label: 'Service Corridor / Food Court Shortcut',
+    price: economy.doors.serviceCorridorFoodCourt,
+    opensZones: ['serviceCorridor', 'foodCourt'], zones,
+    doorway: { minX: F.minX - T, maxX: F.minX, ...SF },
+  });
+  const shortcutZ = (SF.minZ + SF.maxZ) / 2;
+  sign('STAFF ONLY', {
+    x: F.minX + 0.02, y: 3.25, z: shortcutZ, width: 2.6, height: 0.4, facing: 'x+',
+    background: '#3a3f47', color: '#ffd23f',
+  });
+  sign('EXIT · FOOD COURT', {
+    x: F.minX - T - 0.02, y: 3.25, z: shortcutZ, width: 2.6, height: 0.35, facing: 'x-',
+    background: '#2d6a4f', color: '#ffffff',
+  });
   // (North: the hallway's south wall. East: the Mega Mart's west wall.)
 
   const south = { along: 'x', wallAt: F.minZ, facing: 1 };
@@ -258,7 +283,7 @@ export function buildMall(scene, colliders) {
   props.shopFront({ ...north, from: 9, to: 17, color: 0x3d7fd9, text: 'BYTE ME ELECTRONICS', textColor: '#63b3ff' });
 
   sign('FOOD COURT  ·  NOW OPEN (KIND OF)', {
-    x: F.minX + 0.02, y: 3.2, z: FZ, width: 8, height: 0.9, facing: 'x+',
+    x: F.minX + 0.02, y: 3.2, z: FZ + 1.3, width: 5, height: 0.9, facing: 'x+',
     background: '#2d6a4f', color: '#ffffff',
   });
 
@@ -269,7 +294,9 @@ export function buildMall(scene, colliders) {
 
   props.planter(-1.8, FZ - 2.8, 1.8, FZ - 1.2, { tree: true });
   props.planter(-19.4, FZ - 0.7, -18, FZ + 0.7);
-  props.planter(18, FZ - 0.7, 19.4, FZ + 0.7);
+  // Two end planters frame the shortcut, leaving its full width and approaches clear.
+  props.planter(18, FM.minZ - 2.9, 19.4, FM.minZ - 1.5);
+  props.planter(18, FM.maxZ + 1.5, 19.4, FM.maxZ + 2.9);
 
   for (const x of [-16, -8, 0, 8, 16]) props.lightPanel(x - 1.2, FZ - 0.6, x + 1.2, FZ + 0.6, F.height);
 
@@ -364,7 +391,10 @@ export function buildMall(scene, colliders) {
   // the Mega Mart door is in the hallway stretch.
   wall({
     along: 'z', from: M.minZ, to: M.maxZ, at0: M.minX, at1: M.minX + T, height: H.height,
-    openings: [{ from: MD.minZ, to: MD.maxZ, top: MD.height }],
+    openings: [
+      { from: MD.minZ, to: MD.maxZ, top: MD.height },
+      { from: FM.minZ, to: FM.maxZ, top: FM.height },
+    ],
   }, martWall, { name: 'megamart_wall_west' });
 
   const megaMartDoor = kit.shutterDoor({
@@ -375,6 +405,21 @@ export function buildMall(scene, colliders) {
     zones,
     doorway: { minX: M.minX, maxX: M.minX + T, minZ: MD.minZ, maxZ: MD.maxZ, height: MD.height },
   });
+
+  const foodCourtMegaMartDoor = kit.shutterDoor({
+    id: 'foodCourtMegaMart', label: 'Food Court / Mega Mart Shortcut',
+    price: economy.doors.foodCourtMegaMart,
+    opensZones: ['foodCourt', 'megaMart'], zones,
+    doorway: { minX: M.minX, maxX: M.minX + T, ...FM },
+  });
+  sign('MEGA MART', {
+    x: M.minX - 0.02, y: 3.6, z: FZ, width: 3.6, height: 0.7, facing: 'x-',
+    background: '#1d4e89', color: '#ffd23f',
+  });
+  sign('FOOD COURT', {
+    x: M.minX + T + 0.04, y: 3.6, z: FZ, width: 3.6, height: 0.7, facing: 'x+', // proud of the 2cm brand stripe
+    background: '#2d6a4f', color: '#ffffff',
+  }).name = 'sign_foodCourtMegaMart_mart';
 
   // Blue + yellow brand stripe around the inside, above door height.
   const martInnerWalls = [
@@ -397,7 +442,7 @@ export function buildMall(scene, colliders) {
   [4.1, 1.3, -1.5, -4.3].forEach((z, i) => props.checkout(24.5, z - 0.4, 27.5, z + 0.4, i + 1));
 
   // Back of the store: three long shelf aisles (gondolas) running north-south. Aisles are 2.5m
-  // (the west one 3.2m: a Food Court shortcut door can go on that wall later), with a 4.5m
+  // (the west one 3.2m, meeting the Food Court shortcut), with a 4.5m
   // walkway at the back and a crossing at the front.
   const gondolaXs = [24.0, 27.5, 31.0];
   gondolaXs.forEach((x, i) => {
@@ -531,7 +576,7 @@ export function buildMall(scene, colliders) {
     { kind: 'ammoCache', name: 'ammocache_foodCourt', zone: 'foodCourt', position: foodCourtAmmo.position, normal: foodCourtAmmo.normal },
   ];
 
-  const doors = [startDoor, megaMartDoor, foodCourtDoor, serviceCorridorDoor];
+  const doors = [startDoor, megaMartDoor, foodCourtDoor, serviceCorridorDoor, foodCourtMegaMartDoor, serviceCorridorFoodCourtDoor];
 
   return {
     id: 'mall',

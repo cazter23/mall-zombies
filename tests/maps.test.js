@@ -49,6 +49,33 @@ test('two doors into the same zone: either opens it, it only locks when both are
   assert.throws(() => createDoor({ id: 'c', opensZone: 'nowhere', zones, barrier: barrier() }));
 });
 
+test('shortcut doors open several zones and share their independent zone holders', () => {
+  const zones = { food: { open: false }, mart: { open: false }, service: { open: false } };
+  const barrier = () => ({ open() {}, close() {}, update() {} });
+  const make = (id, spec) => createDoor({ id, zones, barrier: barrier(), ...spec });
+  const food = make('food', { opensZone: 'food' });
+  const east = make('east', { opensZones: ['food', 'mart', 'mart'] });
+  const west = make('west', { opensZones: ['food', 'service'] });
+  assert.deepEqual(food.opensZones, ['food'], 'legacy doors expose the same canonical list');
+  assert.deepEqual(east.opensZones, ['food', 'mart']);
+  east.open();
+  east.open();
+  assert.deepEqual(Object.values(zones).map((z) => z.open), [true, true, false]);
+  food.open();
+  west.open();
+  east.reset();
+  assert.deepEqual(Object.values(zones).map((z) => z.open), [true, false, true]);
+  food.reset();
+  assert.equal(zones.food.open, true, 'west shortcut still holds Food Court open');
+  west.reset();
+  west.reset();
+  assert.deepEqual(Object.values(zones).map((z) => z.open), [false, false, false]);
+  assert.throws(() => make('empty', { opensZones: [] }), /at least one zone/);
+  assert.throws(() => make('bad', { opensZones: ['food', 'missing'] }), /unknown zone/);
+  assert.throws(() => make('inherited', { opensZone: 'toString' }), /unknown zone/);
+  assert.equal(zones.food.open, false, 'validation does not partially open zones');
+});
+
 test('the navigation grid rebuilds when colliders change, even if the count stays the same', () => {
   const box = (x0, y0, z0, x1, y1, z1) => new THREE.Box3(new THREE.Vector3(x0, y0, z0), new THREE.Vector3(x1, y1, z1));
   // A floor split in two by a wall with a 2m gap; a plug blocks the gap.

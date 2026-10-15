@@ -174,17 +174,17 @@ export function createMapKit(group, colliders) {
   /**
    * A roll-up shutter filling a doorway, wrapped in a buyable door.
    *   doorway: { minX, maxX, minZ, maxZ, height }  the opening it fills (full wall thickness)
-   *   id, label, price, opensZone, zones: see world/door.js
+   *   id, label, price, opensZone / opensZones, zones: see world/door.js
    *   text: painted on the shutter ('CLOSED')
    * The player buys it standing near the middle of the doorway (1.5m up).
    */
-  function shutterDoor({ id, label, price, opensZone, zones, doorway, text = 'CLOSED' }) {
+  function shutterDoor({ id, label, price, opensZone, opensZones, zones, doorway, text = 'CLOSED' }) {
     const material = new THREE.MeshStandardMaterial({ map: makeShutterTexture(text), roughness: 0.55, metalness: 0.25 });
     const shutter = createShutter({ name: `shutter_${id}`, ...doorway, material, colliders });
     ownColliders.push(shutter.collider); // (in the list only while closed)
     group.add(shutter.mesh);
     return createDoor({
-      id, label, price, opensZone, zones,
+      id, label, price, opensZone, opensZones, zones,
       barrier: shutter,
       position: new THREE.Vector3((doorway.minX + doorway.maxX) / 2, 1.5, (doorway.minZ + doorway.maxZ) / 2),
     });

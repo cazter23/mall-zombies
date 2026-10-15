@@ -14,6 +14,7 @@ import { PlayerController } from '../src/player/controller.js';
 import { createPlayerStats } from '../src/player/stats.js';
 import { LAYOUT } from '../src/maps/mall/mall.js';
 import { featuresOf } from '../src/game/features/index.js';
+import { buildTestRange } from '../src/maps/testRange/testRange.js';
 
 // A 2D context where every method is a no-op returning the context (gradients, measureText...).
 const ctx = new Proxy({}, {
@@ -48,17 +49,34 @@ function setup() {
 test('Service Corridor walls do not overlap the Food Court west wall and flicker through its face', () => {
   const { map } = setup();
   map.group.updateMatrixWorld(true);
-  const shared = new THREE.Box3().setFromObject(map.group.getObjectByName('foodcourt_wall_west_0'));
+  const sharedPieces = map.group.children.filter((o) => o.name.startsWith('foodcourt_wall_west_'))
+    .map((o) => new THREE.Box3().setFromObject(o));
+  assert.ok(sharedPieces.length > 0);
   map.group.traverse((o) => {
     if (!o.name.startsWith('service_wall')) return;
     const b = new THREE.Box3().setFromObject(o);
-    const overlapsZ = Math.min(b.max.z, shared.max.z) - Math.max(b.min.z, shared.min.z) > 1e-6;
-    if (overlapsZ) assert.ok(b.max.x <= shared.min.x + 1e-6, `${o.name} overlaps the shared wall`);
+    for (const shared of sharedPieces) {
+      const overlapsZ = Math.min(b.max.z, shared.max.z) - Math.max(b.min.z, shared.min.z) > 1e-6;
+      if (overlapsZ) assert.ok(b.max.x <= shared.min.x + 1e-6, `${o.name} overlaps the shared wall`);
+    }
   });
   map.dispose();
 });
 
-test('the door ladder: start shutter 500 -> hallway hub; Mega Mart 750, Food Court 1000, Service Corridor 1250 off it', () => {
+test('Mega Mart shortcut sign clears the brand stripes instead of flickering against them', () => {
+  const { map } = setup();
+  map.group.updateMatrixWorld(true);
+  const sign = map.group.getObjectByName('sign_foodCourtMegaMart_mart');
+  assert.ok(sign);
+  const stripes = map.group.children.filter((o) => o.geometry?.type === 'BoxGeometry')
+    .map((o) => new THREE.Box3().setFromObject(o))
+    .filter((b) => Math.abs(b.min.x - 20.3) < 1e-5 && b.max.x < 20.4 && b.min.y >= 3.29 && b.max.y <= 3.67);
+  assert.equal(stripes.length, 2);
+  for (const stripe of stripes) assert.ok(sign.position.x > stripe.max.x + 0.001, 'sign lies in front of stripe face');
+  map.dispose();
+});
+
+test('the door ladder: four entrances and two independently priced, two-zone shortcuts', () => {
   const { map, door } = setup();
   const ladder = [
     ['startShutter', 'hallway', economy.doors.startShutter],
@@ -72,7 +90,125 @@ test('the door ladder: start shutter 500 -> hallway hub; Mega Mart 750, Food Cou
     assert.equal(map.zones[zone].open, false, `${zone} starts closed`);
   }
   assert.deepEqual([economy.doors.startShutter, economy.doors.megaMart, economy.doors.foodCourt, economy.doors.serviceCorridor], [500, 750, 1000, 1250]);
-  for (const d of map.doors) assert.ok(map.zones[d.opensZone], `door ${d.id} opens a real zone`);
+  assert.equal(map.doors.length, 6);
+  assert.equal(door('foodCourtMegaMart').price, economy.doors.foodCourtMegaMart);
+  assert.equal(door('serviceCorridorFoodCourt').price, economy.doors.serviceCorridorFoodCourt);
+  assert.deepEqual([economy.doors.foodCourtMegaMart, economy.doors.serviceCorridorFoodCourt], [1000, 1250]);
+  for (const d of map.doors) for (const zone of d.opensZones) assert.ok(map.zones[zone], `door ${d.id} opens a real zone`);
+});
+
+test('all 120 purchase orders: any bought entrance holds its zones open; reset seals every route', () => {
+  const { map, open, reach } = setup();
+  const permutations = (ids) => ids.length ? ids.flatMap((id) => permutations(ids.filter((other) => other !== id)).map((rest) => [id, ...rest])) : [[]];
+  const orders = permutations(map.doors.filter((d) => d.id !== 'startShutter').map((d) => d.id));
+  assert.equal(orders.length, 120);
+  for (const order of orders) {
+    map.reset();
+    open('startShutter');
+    for (const id of order) {
+      open(id);
+      for (const [zoneId, zone] of Object.entries(map.zones)) {
+        const expected = zoneId === 'startRoom' || map.doors.some((d) => d.isOpen && d.opensZones.includes(zoneId));
+        assert.equal(zone.open, expected, `${order}: ${zoneId} after ${id}`);
+      }
+      // Some permutations buy an isolated shortcut first (debug-only). Compare physical nav
+      // with the purchased doorway graph, independently of the logical spawn-zone flags.
+      const edges = [
+        ['startShutter', 'startRoom', 'hallway'], ['megaMart', 'hallway', 'megaMart'],
+        ['foodCourt', 'hallway', 'foodCourt'], ['serviceCorridor', 'hallway', 'serviceCorridor'],
+        ['foodCourtMegaMart', 'foodCourt', 'megaMart'], ['serviceCorridorFoodCourt', 'serviceCorridor', 'foodCourt'],
+      ];
+      const connected = new Set(['startRoom']);
+      for (let pass = 0; pass < Object.keys(map.zones).length; pass++) {
+        for (const [doorId, a, b] of edges) {
+          if (map.doors.find((d) => d.id === doorId).isOpen && (connected.has(a) || connected.has(b))) {
+            connected.add(a); connected.add(b);
+          }
+        }
+      }
+      for (const s of map.spawnPoints) {
+        assert.equal(Number.isFinite(reach(s.position)), connected.has(s.zone), `${order} after ${id}: ${s.name}`);
+      }
+    }
+    for (const s of map.spawnPoints) assert.ok(Number.isFinite(reach(s.position)), `${s.name} reachable with every door open`);
+    map.reset();
+    for (const s of map.spawnPoints.filter((s) => s.zone !== 'startRoom')) {
+      assert.equal(reach(s.position), Infinity, `${s.name} sealed on reset`);
+      assert.equal(map.zones[s.zone].open, false);
+    }
+  }
+  map.dispose();
+});
+
+test('each shortcut supplies a short nav route and a standing player can cross in either direction', () => {
+  for (const [id, x, z] of [['foodCourtMegaMart', 20.15, -8.3], ['serviceCorridorFoodCourt', -20.15, -12.2]]) {
+    const { map, colliders, player: target, open, reach } = setup();
+    for (const entrance of ['startShutter', 'foodCourt', 'megaMart', 'serviceCorridor']) open(entrance);
+    target.set(x - 1.7, 0, z);
+    assert.ok(reach({ x: x + 1.7, z }) > 20, `${id}: a closed shortcut forces the hallway detour`);
+    open(id);
+    assert.ok(reach({ x: x + 1.7, z }) < 8, `${id}: rebuilt nav crosses the new opening`);
+    for (const dir of [-1, 1]) {
+      const { player, input } = playerIn(colliders, new THREE.Vector3(x - dir * 1.7, 0, z), -dir * Math.PI / 2);
+      input.axis = { x: 0, y: 1 };
+      for (let i = 0; i < 50; i++) player.update(dt);
+      assert.ok((player.position.x - x) * dir > 1, `${id}: walked through toward ${dir}`);
+      assert.equal(player.position.y, 0, 'continuous floor under the shared wall');
+    }
+    map.dispose();
+  }
+});
+
+test('either shortcut can be the only entrance into its outer zone', () => {
+  for (const [id, zone] of [['foodCourtMegaMart', 'megaMart'], ['serviceCorridorFoodCourt', 'serviceCorridor']]) {
+    const { map, open, reach } = setup();
+    open('startShutter');
+    open('foodCourt');
+    for (const s of map.spawnPoints.filter((s) => s.zone === zone)) assert.equal(reach(s.position), Infinity);
+    open(id);
+    for (const s of map.spawnPoints.filter((s) => s.zone === zone)) assert.ok(Number.isFinite(reach(s.position)), s.name);
+    assert.equal(map.doors.find((d) => d.id === zone).isOpen, false);
+    map.dispose();
+  }
+});
+
+test('shortcuts still connect with the real debug range changing the navigation grid bounds', () => {
+  const scene = new THREE.Scene();
+  const colliders = [];
+  const map = buildMall(scene, colliders);
+  buildTestRange(scene, colliders); // main.js includes this: its bounds shift the cell centres.
+  for (const d of map.doors) d.open();
+  for (let i = 0; i < 90; i++) map.update(dt);
+  const nav = createNavigation(colliders, zombieTypes.shopper);
+  for (const [x, z] of [[-20.15, -12.2], [20.15, -8.3]]) {
+    nav.update(1, new THREE.Vector3(x + 1.7, 0, z));
+    assert.ok(nav.isWalkableAt(x, z), `floor under the doorway at ${x}`);
+    assert.ok(nav.distanceToTarget(x - 1.7, z) < 8, `short crossing at ${x}, with debug range present`);
+    assert.ok(colliders.some((b) => b.max.y === 0 && b.min.x <= x && b.max.x >= x && b.min.z <= z && b.max.z >= z), 'physical floor beneath the shared wall');
+  }
+  map.dispose();
+});
+
+test('Food Court shortcut opens the Mega Mart without its hallway door, with clear approaches', () => {
+  const { map, door, open, reach, colliders } = setup();
+  assert.equal(door('foodCourtMegaMart').price, 1000);
+  assert.deepEqual(door('foodCourtMegaMart').opensZones, ['foodCourt', 'megaMart']);
+  open('startShutter');
+  open('foodCourt');
+  assert.equal(reach({ x: 21.8, z: -8.3 }), Infinity, 'closed shutter seals the Mart');
+  open('foodCourtMegaMart');
+  assert.equal(door('megaMart').isOpen, false, 'hallway entrance remains separately buyable');
+  assert.equal(map.zones.megaMart.open, true);
+  for (const s of map.spawnPoints.filter((s) => s.zone === 'megaMart')) assert.ok(Number.isFinite(reach(s.position)), s.name);
+  for (const x of [18.5, 19.5, 20.15, 21, 21.8]) {
+    for (const z of [-9.3, -8.3, -7.3]) {
+      assert.equal(overlapsSolid(new THREE.Vector3(x, 0, z), feel.player.radius, feel.player.height, colliders, feel.movement.stepTolerance), false, `clear approach (${x}, ${z})`);
+    }
+  }
+  map.reset();
+  assert.equal(map.zones.megaMart.open, false);
+  assert.equal(map.zones.foodCourt.open, false);
+  map.dispose();
 });
 
 test('every spawn point and the player spawn stand on open floor, not inside anything', () => {
@@ -87,7 +223,31 @@ test('every spawn point and the player spawn stand on open floor, not inside any
   assert.equal(overlapsSolid(map.playerSpawn.position, feel.player.radius, feel.player.height, colliders, feel.movement.stepTolerance), false);
 });
 
-test('each area is sealed until its own door is bought, in any order, and fully reachable after', () => {
+test('service shortcut opens Food Court from the corridor, keeping both approaches and locker lane clear', () => {
+  const { map, open, door, reach, colliders } = setup();
+  assert.equal(door('serviceCorridorFoodCourt').price, 1250);
+  open('startShutter');
+  open('serviceCorridor');
+  assert.equal(reach({ x: -18.4, z: -12.2 }), Infinity);
+  open('serviceCorridorFoodCourt');
+  assert.equal(door('foodCourt').isOpen, false);
+  assert.equal(map.zones.foodCourt.open, true);
+  for (const s of map.spawnPoints.filter((s) => s.zone === 'foodCourt')) assert.ok(Number.isFinite(reach(s.position)), s.name);
+  for (const x of [-21.8, -20.8, -20.15, -19.5, -18.5]) {
+    for (const z of [-12.8, -12.2, -11.6]) {
+      assert.equal(overlapsSolid(new THREE.Vector3(x, 0, z), feel.player.radius, feel.player.height, colliders, feel.movement.stepTolerance), false, `clear approach (${x}, ${z})`);
+    }
+  }
+  const lockers = colliders.find((b) => b.min.x < -23 && b.max.x > -23 && b.min.z === -11 && b.max.z === -9 && b.max.y === 1.9);
+  assert.ok(lockers);
+  assert.ok(LAYOUT.foodCourt.minX - LAYOUT.wallThickness - lockers.max.x >= 2, 'at least 2m of clear corridor beside/past the bank');
+  for (const z of [-11.3, -12.3, -13.5]) {
+    assert.equal(overlapsSolid(new THREE.Vector3(-21.8, 0, z), feel.player.radius, feel.player.height, colliders, feel.movement.stepTolerance), false, 'more than 2m of walkable lane beyond the locker bank');
+  }
+  map.dispose();
+});
+
+test('with shortcuts shut, each area is sealed until its hallway entrance is bought and fully reachable after', () => {
   const { map, open, reach } = setup();
   const spawnsIn = (zone) => map.spawnPoints.filter((s) => s.zone === zone);
   const reachable = (p) => Number.isFinite(reach(p));
@@ -270,7 +430,7 @@ test('Food Court: sprint-jumping at a stall counter never gets you onto it', () 
   assert.equal(player.position.y, 0, 'still on the floor');
 });
 
-test('Service Corridor: sealed until its door is bought, all of it reachable after, and no back way into the Food Court', () => {
+test('Service Corridor: hallway door opens the corridor; its unbought shortcut keeps Food Court sealed', () => {
   const { map, nav, open, reach } = setup();
   const reachable = (x, z) => Number.isFinite(reach({ x, z }));
   const corridorSpawns = map.spawnPoints.filter((p) => p.zone === 'serviceCorridor');
@@ -281,7 +441,7 @@ test('Service Corridor: sealed until its door is bought, all of it reachable aft
   // The doorway, the corner, past the lockers, the dead end.
   for (const [x, z] of [[-20.5, 2], [-22, 3], [-21.5, -10], [-21.8, -13.5]]) assert.ok(reachable(x, z), `(${x}, ${z}) reachable`);
   assert.equal(nav.isWalkableAt(-23.1, -10), false, 'the lockers are solid');
-  // It runs along the Food Court's west wall, but that wall is solid: the Food Court stays sealed.
+  // Its shortcut is still shut: the shared wall/shutter keep the Food Court sealed.
   for (const s of map.spawnPoints.filter((p) => p.zone === 'foodCourt')) assert.equal(reach(s.position), Infinity, `${s.name} still sealed`);
 });
 
