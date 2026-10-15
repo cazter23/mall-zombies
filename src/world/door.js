@@ -23,14 +23,19 @@ function holders(zone) {
  * @param id         stable id, e.g. 'startShutter' (unique per map)
  * @param label      shown in prompts, e.g. 'Security Shutter'
  * @param price      points to open
- * @param opensZone  zone id unlocked when opened
+ * @param opensZone  legacy single zone id unlocked when opened
+ * @param opensZones optional zone ids unlocked together (takes precedence)
  * @param zones      the map's zone table: { [zoneId]: { open: boolean } }
  * @param barrier    the thing that blocks the way; needs open(), close(), update(dt)
  * @param position   THREE.Vector3 where the player interacts with it
  */
-export function createDoor({ id, label, price, opensZone, zones, barrier, position }) {
-  const zone = zones[opensZone];
-  if (!zone) throw new Error(`Door "${id}" opens unknown zone "${opensZone}"`);
+export function createDoor({ id, label, price, opensZone, opensZones, zones, barrier, position }) {
+  const zoneIds = [...new Set(opensZones ?? [opensZone])];
+  if (!zoneIds.length) throw new Error(`Door "${id}" must open at least one zone`);
+  const openedZones = zoneIds.map((zoneId) => {
+    if (!Object.hasOwn(zones, zoneId)) throw new Error(`Door "${id}" opens unknown zone "${zoneId}"`);
+    return zones[zoneId];
+  });
   let isOpen = false;
 
   return {
@@ -38,6 +43,7 @@ export function createDoor({ id, label, price, opensZone, zones, barrier, positi
     label,
     price,
     opensZone,
+    opensZones: zoneIds,
     position,
     barrier,
 
@@ -48,8 +54,10 @@ export function createDoor({ id, label, price, opensZone, zones, barrier, positi
     open() {
       if (isOpen) return;
       isOpen = true;
-      holders(zone).add(id);
-      zone.open = true;
+      for (const zone of openedZones) {
+        holders(zone).add(id);
+        zone.open = true;
+      }
       barrier.open();
     },
 
@@ -62,9 +70,11 @@ export function createDoor({ id, label, price, opensZone, zones, barrier, positi
     // Closed again (new run). Its zone locks again unless another of its doors is still open.
     reset() {
       isOpen = false;
-      const held = holders(zone);
-      held.delete(id);
-      zone.open = held.size > 0;
+      for (const zone of openedZones) {
+        const held = holders(zone);
+        held.delete(id);
+        zone.open = held.size > 0;
+      }
       barrier.close();
     },
 
