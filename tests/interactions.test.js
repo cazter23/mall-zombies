@@ -79,6 +79,19 @@ test('wall buys work from the room they hang in', () => {
   assert.deepEqual(buy(11, 0, -0.6, FACE.toward.negZ), ['wallbuy_hallway'], 'Nail Gun from the hallway');
 });
 
+test('Food Court / Mega Mart shortcut is buyable from either side, but not through the adjacent wall', () => {
+  const { map, buy, openDoor } = setup();
+  openDoor('startShutter');
+  openDoor('foodCourt');
+  assert.deepEqual(buy(18.4, 0, -8.3, FACE.toward.posX), ['foodCourtMegaMart']);
+  openDoor('megaMart');
+  assert.deepEqual(buy(21.8, 0, -8.3, FACE.toward.negX), ['foodCourtMegaMart']);
+  // Both points are within interaction range, but the ray crosses solid wall beyond the opening.
+  assert.deepEqual(buy(19, 0, -10.7, FACE.toward.posX), []);
+  assert.deepEqual(buy(21.1, 0, -5.9, FACE.toward.negX), []);
+  map.dispose();
+});
+
 test('the Nail Gun cannot be bought through its wall from the Food Court', () => {
   const { buy, openDoor } = setup();
   openDoor('startShutter');

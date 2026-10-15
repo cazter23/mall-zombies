@@ -45,6 +45,7 @@ export const LAYOUT = {
   doorway: { minX: -2, maxX: 2, height: 3 }, // start room -> hallway (in the hallway's north wall)
   foodCourtDoorway: { minX: -2, maxX: 2, height: 3 }, // hallway -> Food Court (hallway's south wall)
   megaMartDoorway: { minZ: 0, maxZ: 4, height: 3 }, // hallway -> Mega Mart (Mega Mart's west wall)
+  foodCourtMegaMartDoorway: { minZ: -9.8, maxZ: -6.8, height: 3 }, // shared east wall, Food Court centre line
   // Escalator in the hallway's west half: bottom end at x -4 (facing the hub), rising west to level 2
   // (the top of the hallway ceiling, y 6.3). 2m wide. Sealed for now.
   escalator: { bottomX: -4, dir: -1, minZ: 1, maxZ: 3 },
@@ -79,6 +80,7 @@ export function buildMall(scene, colliders) {
   const D = LAYOUT.doorway;
   const FD = LAYOUT.foodCourtDoorway;
   const MD = LAYOUT.megaMartDoorway;
+  const FM = LAYOUT.foodCourtMegaMartDoorway;
   const SC = LAYOUT.serviceCorridor;
   const SCD = SC.doorway;
   const T = LAYOUT.wallThickness;
@@ -269,7 +271,9 @@ export function buildMall(scene, colliders) {
 
   props.planter(-1.8, FZ - 2.8, 1.8, FZ - 1.2, { tree: true });
   props.planter(-19.4, FZ - 0.7, -18, FZ + 0.7);
-  props.planter(18, FZ - 0.7, 19.4, FZ + 0.7);
+  // Two end planters frame the shortcut, leaving its full width and approaches clear.
+  props.planter(18, FM.minZ - 2.9, 19.4, FM.minZ - 1.5);
+  props.planter(18, FM.maxZ + 1.5, 19.4, FM.maxZ + 2.9);
 
   for (const x of [-16, -8, 0, 8, 16]) props.lightPanel(x - 1.2, FZ - 0.6, x + 1.2, FZ + 0.6, F.height);
 
@@ -364,7 +368,10 @@ export function buildMall(scene, colliders) {
   // the Mega Mart door is in the hallway stretch.
   wall({
     along: 'z', from: M.minZ, to: M.maxZ, at0: M.minX, at1: M.minX + T, height: H.height,
-    openings: [{ from: MD.minZ, to: MD.maxZ, top: MD.height }],
+    openings: [
+      { from: MD.minZ, to: MD.maxZ, top: MD.height },
+      { from: FM.minZ, to: FM.maxZ, top: FM.height },
+    ],
   }, martWall, { name: 'megamart_wall_west' });
 
   const megaMartDoor = kit.shutterDoor({
@@ -374,6 +381,21 @@ export function buildMall(scene, colliders) {
     opensZone: 'megaMart',
     zones,
     doorway: { minX: M.minX, maxX: M.minX + T, minZ: MD.minZ, maxZ: MD.maxZ, height: MD.height },
+  });
+
+  const foodCourtMegaMartDoor = kit.shutterDoor({
+    id: 'foodCourtMegaMart', label: 'Food Court / Mega Mart Shortcut',
+    price: economy.doors.foodCourtMegaMart,
+    opensZones: ['foodCourt', 'megaMart'], zones,
+    doorway: { minX: M.minX, maxX: M.minX + T, ...FM },
+  });
+  sign('MEGA MART', {
+    x: M.minX - 0.02, y: 3.6, z: FZ, width: 3.6, height: 0.7, facing: 'x-',
+    background: '#1d4e89', color: '#ffd23f',
+  });
+  sign('FOOD COURT', {
+    x: M.minX + T + 0.02, y: 3.6, z: FZ, width: 3.6, height: 0.7, facing: 'x+',
+    background: '#2d6a4f', color: '#ffffff',
   });
 
   // Blue + yellow brand stripe around the inside, above door height.
@@ -531,7 +553,7 @@ export function buildMall(scene, colliders) {
     { kind: 'ammoCache', name: 'ammocache_foodCourt', zone: 'foodCourt', position: foodCourtAmmo.position, normal: foodCourtAmmo.normal },
   ];
 
-  const doors = [startDoor, megaMartDoor, foodCourtDoor, serviceCorridorDoor];
+  const doors = [startDoor, megaMartDoor, foodCourtDoor, serviceCorridorDoor, foodCourtMegaMartDoor];
 
   return {
     id: 'mall',

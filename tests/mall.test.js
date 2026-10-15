@@ -72,7 +72,29 @@ test('the door ladder: start shutter 500 -> hallway hub; Mega Mart 750, Food Cou
     assert.equal(map.zones[zone].open, false, `${zone} starts closed`);
   }
   assert.deepEqual([economy.doors.startShutter, economy.doors.megaMart, economy.doors.foodCourt, economy.doors.serviceCorridor], [500, 750, 1000, 1250]);
-  for (const d of map.doors) assert.ok(map.zones[d.opensZone], `door ${d.id} opens a real zone`);
+  for (const d of map.doors) for (const zone of d.opensZones) assert.ok(map.zones[zone], `door ${d.id} opens a real zone`);
+});
+
+test('Food Court shortcut opens the Mega Mart without its hallway door, with clear approaches', () => {
+  const { map, door, open, reach, colliders } = setup();
+  assert.equal(door('foodCourtMegaMart').price, 1000);
+  assert.deepEqual(door('foodCourtMegaMart').opensZones, ['foodCourt', 'megaMart']);
+  open('startShutter');
+  open('foodCourt');
+  assert.equal(reach({ x: 21.8, z: -8.3 }), Infinity, 'closed shutter seals the Mart');
+  open('foodCourtMegaMart');
+  assert.equal(door('megaMart').isOpen, false, 'hallway entrance remains separately buyable');
+  assert.equal(map.zones.megaMart.open, true);
+  for (const s of map.spawnPoints.filter((s) => s.zone === 'megaMart')) assert.ok(Number.isFinite(reach(s.position)), s.name);
+  for (const x of [18.5, 19.5, 20.15, 21, 21.8]) {
+    for (const z of [-9.3, -8.3, -7.3]) {
+      assert.equal(overlapsSolid(new THREE.Vector3(x, 0, z), feel.player.radius, feel.player.height, colliders, feel.movement.stepTolerance), false, `clear approach (${x}, ${z})`);
+    }
+  }
+  map.reset();
+  assert.equal(map.zones.megaMart.open, false);
+  assert.equal(map.zones.foodCourt.open, false);
+  map.dispose();
 });
 
 test('every spawn point and the player spawn stand on open floor, not inside anything', () => {
