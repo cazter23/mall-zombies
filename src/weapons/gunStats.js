@@ -19,6 +19,8 @@
 // mods, every 'set' applies first, then every 'add', then every 'mul': adds stack additively, and
 // multipliers multiply on top, so the order mods were bought in never matters. A stat path that
 // doesn't exist on that gun throws (a typo in a mod is an error, not a silent no-op).
+// Counts stay whole after mods (magazine x1.15 = 13.8 -> 14): see WHOLE_STATS; a burst gun's magazine
+// rounds to whole bursts.
 // =============================================================================
 
 /**
@@ -46,6 +48,21 @@ export function hitDamage(def, hit, index, stats) {
 }
 
 const OP_ORDER = { set: 0, add: 1, mul: 2 };
+
+// Stats that are counts: rounded to the nearest whole number (at least 1) after mods.
+const WHOLE_STATS = [['magazineSize'], ['startingReserve'], ['pellets', 'count'], ['burst', 'count'], ['pierce', 'maxTargets']];
+
+function roundCounts(gun) {
+  for (const path of WHOLE_STATS) {
+    const parent = path.length > 1 ? gun[path[0]] : gun;
+    const key = path[path.length - 1];
+    if (parent && typeof parent[key] === 'number') parent[key] = Math.max(1, Math.round(parent[key]));
+  }
+  if (gun.fireMode === 'burst') {
+    const n = gun.burst.count;
+    gun.magazineSize = Math.max(n, Math.round(gun.magazineSize / n) * n);
+  }
+}
 
 /**
  * The gun's effective stats: a deep copy of `base` with `mods` applied (see the header). `base` is
@@ -77,6 +94,7 @@ export function resolveGun(base, mods = []) {
     if (typeof parent[last] !== 'number') throw new Error(`mod "${c.mod}": ${base.id}.${c.stat} is not a number`);
     parent[last] = c.op === 'add' ? parent[last] + c.value : parent[last] * c.value;
   }
+  roundCounts(gun);
   gun.base = base;
   gun.mods = mods.map((m) => m.id);
   return gun;

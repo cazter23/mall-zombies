@@ -59,6 +59,18 @@ export const economy = {
   // Discounted prices (Flash Sales, game/pricing.js) are rounded to the nearest multiple of this.
   discountRoundTo: 10,
 
+  // Gun upgrades (what they do: config/upgrades.js). Tiers are bought one at a time for the gun in your hand;
+  // each tier costs about one round's earnings at the round it's meant for (round 12 pays ~3,400).
+  upgrades: {
+    tiers: { deluxe: 2000, premium: 4000, platinum: 8000 },
+    attachments: {
+      extendedNozzle: 1000, sawnOff: 1000, // barrel (Mega Mart hardware)
+      laserPointer: 750, zoomLens: 750, // sight (Byte Me Electronics)
+      gripTape: 750, wristband: 750, // grip (Good Sports)
+      jumboPack: 1000, speedLoader: 1000, // magazine (Play Time Toys)
+    },
+  },
+
   // Ammo cache (the vending machine in the Food Court): refills the gun in your hand, any gun, one flat price.
   ammoCache: { price: 400 },
 

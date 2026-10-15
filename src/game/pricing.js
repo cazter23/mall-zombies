@@ -7,6 +7,8 @@
 //   priceOf('weapon', gunId)       economy.wallBuys[gunId].weapon
 //   priceOf('ammo', gunId)         economy.wallBuys[gunId].ammo
 //   priceOf('ammoCache')           economy.ammoCache.price
+//   priceOf('tier', tierId)        economy.upgrades.tiers[tierId] (Extended Warranty: deluxe / premium / platinum)
+//   priceOf('attachment', id)      economy.upgrades.attachments[id]
 //   setDiscount(category, 0.25)    25% off everything in that category (0 = none); rounded to the nearest
 //                                  economy.discountRoundTo (10)
 //   reset()                        no discounts (a new run)
@@ -20,6 +22,8 @@ const BASE = {
   weapon: (id) => economy.wallBuys[id]?.weapon,
   ammo: (id) => economy.wallBuys[id]?.ammo,
   ammoCache: () => economy.ammoCache.price,
+  tier: (id) => (Object.hasOwn(economy.upgrades.tiers, id) ? economy.upgrades.tiers[id] : undefined),
+  attachment: (id) => (Object.hasOwn(economy.upgrades.attachments, id) ? economy.upgrades.attachments[id] : undefined),
 };
 
 export const PRICE_CATEGORIES = Object.keys(BASE);

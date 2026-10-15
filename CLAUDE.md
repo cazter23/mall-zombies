@@ -43,7 +43,9 @@ listener killing another zombie mid-shot pays each once (no +10 for a corpse), p
 nothing paid or counted after death), `pricing.test.js` prices = config exactly, discounts
 (one category, rounded to economy.discountRoundTo, errors for unknown items incl. inherited names like toString), the real game
 charges + shows the sale price for doors, guns, ammo and the cache, a sale starting mid-hold charges the price at completion, a new run clears it),
-`features.test.js` map features (the mall's list, unknown kind = error, a new kind's update/reset hooks run, inert wall buy for a
+`upgrades.test.js` gun upgrades (tiers + attachments on every gun, whole magazines/bursts, each tier holds until its round,
+one attachment per slot, what fits, roles hold at every tier (near-ties within 3%) and with any one attachment, upgrades live
+with the carried gun in the real game), `features.test.js` map features (the mall's list, unknown kind = error, a new kind's update/reset hooks run, inert wall buy for a
 gun that doesn't exist, inherited names aren't kinds, features get the game's systems and tick only while playing (not paused /
 dead) + reset on Play again, buy a wall gun + refill at the STAPLE-O-MAT in the real game);
 there is no linter yet.
@@ -116,6 +118,11 @@ src/
                         offset/angles, colors, trigger anim, reload keyframes gunKeys/handKeys + timed events
                         with sounds/jolts), `melee.boxCutter` (damage, reach, cone, swing timing, lunge),
                         weaponStatDefaults for stats
+    upgrades.js         GUN UPGRADES as effects (not stat paths): Extended Warranty `tiers` (standard / deluxe x1.4 dmg
+                        +15% mag / premium x2.1 +15% mag -10% reload / platinum x3.5 +30% mag -20% reload; color,
+                        holdsUntilRound) and store `attachments` (one per slot: barrel extendedNozzle|sawnOff, sight
+                        laserPointer|zoomLens, grip gripTape|wristband, magazine jumboPack|speedLoader; effects + blurb;
+                        sawnOff.falloffIfNone). Effect list in its header. Prices: economy.upgrades
     audio.js            Master volume, pitch variation, compressor, and sound recipes (layers of filtered noise
                         bursts and tones): staple / price / nail / foam / confetti gun shots and reloads, dry click, purchase, denied,
                         Mall Walker walkerSqueak / walkerHuff / walkerPant, paChime (announcements)
@@ -198,10 +205,16 @@ src/
                         nearest target in a 40deg cone within 1.8m (walls block); cancels reload; isBusy blocks
                         the gun; takeHit({ melee: true }) so kills count as melee. Attack heading is committed
                         until impact; hit recovery 0.22s, miss recovery 0.5s (total 0.37/0.65s)
+    upgrades.js         Upgrades -> mods (pure): withTier(base, mods, tierId) / withAttachment(base, mods, id) return a NEW
+                        mod list (mod ids 'tier' and 'attachment:<slot>'; other mods such as Build-A-Blaster untouched),
+                        tierOf / nextTier / attachmentsOf read them back, attachmentFits(base, id) (Extended Nozzle doesn't
+                        fit the Nail Gun). EFFECTS turns each effect into this gun's stat changes (shell-by-shell reload
+                        phases, pellet cones, hip spread that leaves aimed accuracy alone). Apply: gun.setMods(id, ...)
     gunStats.js         THE gun maths: damageFalloff(distance, falloff), hitDamage(def, hit, index, stats) (damage x head x falloff x
                         pierce x player multiplier; the only place it's computed), resolveGun(base, mods) (upgrades as data:
                         { id, modifiers: [{ stat: 'falloff.start', op: 'set'|'add'|'mul', value }] }; set, then adds, then muls;
-                        a bad stat path throws; returns a copy with .base/.mods). Layers: base config -> mods -> player stats -> per hit
+                        a bad stat path throws; counts (magazine, reserve, pellets...) are rounded whole after mods, a burst
+                        gun's magazine to whole bursts; returns a copy with .base/.mods). Layers: base config -> mods -> player stats -> per hit
     playerGun.js        createPlayerGun(): the LOADOUT (2 slots, each { base, mods, def = resolveGun(base, mods), weapon, aim }); gameplay
                         reads slot.def. setMods(id, mods) re-resolves a carried gun (the Build-A-Blaster hook: weapon.setDef + aim.setDef,
                         ammo kept/clipped), modsFor(id); mods survive ammo buys, not replacement or a new run. Glue for the gun in hand
@@ -287,7 +300,7 @@ src/
                         Crowd shoves never move anyone into a wall (overlapsSolid); a pinned player pushes the
                         zombie back instead. Options canAttack(), onPlayerHit(damage), onKill(zombie)
   game/
-    pricing.js          createPricing(): priceOf('door'|'weapon'|'ammo'|'ammoCache', id) = economy.js base price with any
+    pricing.js          createPricing(): priceOf('door'|'weapon'|'ammo'|'ammoCache'|'tier'|'attachment', id) = economy.js base price with any
                         discount applied (setDiscount(category, 0..1), rounded to the nearest economy.discountRoundTo (10); discountOf; reset() on a new
                         run). Unknown category/id throws. PRICE_CATEGORIES
     events.js           createEvents(): tiny synchronous bus (on -> unsubscribe fn, emit, count). The event list + payloads
@@ -545,6 +558,14 @@ The start room opens into a MAIN HALLWAY (the hub); every other area is bought o
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+Gun upgrades step 1 of 4 (the system, nothing in the map yet; branch claude/gun-upgrades): Extended Warranty tiers + store
+attachments as data (config/upgrades.js, prices economy.upgrades: tiers 2000 / 4000 / 8000, attachments 750-1000) turned into
+mods by weapons/upgrades.js and applied with playerGun.setMods. Tier damage x1.4 / x2.1 / x3.5 keeps round-8 shot counts until
+rounds 12 / 17 / 24. Roles hold at every tier, but the tiers' magazine/reload bonuses help reload-heavy guns a little more, so
+the Foam Dart Blaster's 15 m lead over the Nail Gun becomes a near-tie at Premium/Platinum (within ~2.5%). Next: 2) Customer
+Service desk (map feature, hallway by the elevator, position as data) + tier on the HUD, 3) attachment counters, 4) tier sticker +
+attachment parts on the gun models.
+
 Range pass (Staple Gun, Foam Dart Blaster, Nail Gun): every gun now has a range role. Staple Gun falloff full to 10 m -> 70% at
 25 m (weakest at every range: 128 dps up close, 89 at 30 m). Foam Dart Blaster 50 -> 52 damage + falloff full to 15 m -> 75% at
 30 m: the mid-range gun (best non-shotgun at 15 m: 228 vs Nail 222 / Price 217; just under the Price Gun up close, 228 vs 231;
