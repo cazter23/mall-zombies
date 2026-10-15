@@ -53,10 +53,28 @@ test('...but it falls off: the Nail Gun and Foam Dart Blaster beat it at 30 m', 
   assert.ok(dps(priceGun, 30) < dps(foamDartBlaster, 30));
 });
 
-test('Nail Gun: the long-range gun. Best sustained damage at 30 m', () => {
-  for (const d of others(nailGun)) assert.ok(dps(nailGun, 30) > dps(d, 30), `nail vs ${d.name} at 30 m`);
+test('Nail Gun: the long-range gun. CLEARLY the best sustained damage at 30 m (at least 15% ahead)', () => {
+  for (const d of others(nailGun)) {
+    assert.ok(dps(nailGun, 30) > 1.15 * dps(d, 30), `nail ${Math.round(dps(nailGun, 30))} vs ${d.name} ${Math.round(dps(d, 30))} at 30 m`);
+  }
 });
 
-test('Staple Gun: the free starter is the weakest gun at 5 m', () => {
-  for (const d of others(stapleGun)) assert.ok(dps(stapleGun, 5) < dps(d, 5), `staple vs ${d.name} at 5 m`);
+test('Foam Dart Blaster: the mid-range gun. Best sustained damage of the non-shotguns at 15 m', () => {
+  for (const d of [stapleGun, priceGun, nailGun]) {
+    assert.ok(dps(foamDartBlaster, 15) > dps(d, 15), `foam ${Math.round(dps(foamDartBlaster, 15))} vs ${d.name} ${Math.round(dps(d, 15))} at 15 m`);
+  }
+});
+
+test('Staple Gun: the free starter is the weakest gun at every range (the cannon aside past its reach)', () => {
+  for (const m of [2, 5, 10, 20, 30]) {
+    for (const d of others(stapleGun)) {
+      if (d === confettiCannon && m >= 5) continue; // the cannon is meant to be useless at range
+      assert.ok(dps(stapleGun, m) < dps(d, m), `staple vs ${d.name} at ${m} m`);
+    }
+  }
+});
+
+test('Staple Gun, Foam Dart Blaster: full damage across a room (falloff starts past 10 m)', () => {
+  for (const d of [stapleGun, foamDartBlaster]) assert.ok(d.falloff.start >= 10, d.id);
+  assert.equal(nailGun.falloff, undefined, 'the Nail Gun has no falloff');
 });

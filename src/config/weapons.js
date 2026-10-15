@@ -17,6 +17,8 @@
 
 export const weapons = {
   // Starting pistol. Hitscan: the shot lands instantly where the crosshair points.
+  // ROLE: the free starter, a close-to-mid range pistol. The weakest gun at every range (staples lose
+  // punch down a long hallway), so buying anything is an upgrade.
   stapleGun: {
     id: 'stapleGun',
     name: 'Staple Gun',
@@ -28,6 +30,7 @@ export const weapons = {
     fireInterval: 0.12, // seconds between shots; semi-auto, one shot per click
     fireBuffer: 0.1, // seconds a click is remembered if it comes slightly too early
     reloadTime: 1.5, // seconds
+    falloff: { start: 10, end: 25, minMultiplier: 0.7 }, // full across a room; 70% down a long hallway
     range: 100, // meters
 
     // Recoil. The camera part moves your crosshair (shots go where you look) and springs back to
@@ -268,6 +271,7 @@ export const weapons = {
 
   // The first real upgrade (main hallway wall, 1000): a framing nailer. Slow, hard-hitting
   // semi-auto whose nails go through zombies: line up a horde while you train it.
+  // ROLE: the long-range gun. No falloff: the only gun still at full damage at 30 m, clearly the best there.
   nailGun: {
     id: 'nailGun',
     name: 'Nail Gun',
@@ -385,13 +389,16 @@ export const weapons = {
     },
   },
   // Mega Mart burst rifle: three foam darts per fresh trigger press, strong headshots.
+  // ROLE: the mid-range gun. Best sustained damage around 15 m (past the Price Gun's falloff, ahead of the
+  // Nail Gun), just behind the Price Gun up close; foam drifts, so it falls behind the Nail Gun at 30 m.
   foamDartBlaster: {
     id: 'foamDartBlaster', name: 'Foam Dart Blaster', fireMode: 'burst',
     burst: { count: 3, interval: 0.07 },
-    damage: 50, headshotMultiplier: 3, // (was 45) round 3: two body bursts; round 5: one head burst
+    damage: 52, headshotMultiplier: 3, // (was 50) round 3: two body bursts; round 5: one head burst
     magazineSize: 24, startingReserve: 144,
     fireInterval: 0.35, // pause after the LAST dart
     fireBuffer: 0.12, reloadTime: 1.9, range: 100,
+    falloff: { start: 15, end: 30, minMultiplier: 0.75 }, // foam darts drift: full to 15 m, 75% at 30 m
     recoil: {
       pitchDegrees: 0.55, yawDegrees: 0.18, rollDegrees: 0.15, adsMultiplier: 0.7,
       model: { back: 0.022, up: 0.004, pitchDegrees: 3.5, yawDegrees: 0.8, rollDegrees: 1,

@@ -14,7 +14,7 @@ import {
 const guns = Object.values(weapons);
 const r0 = (n) => (Number.isFinite(n) ? Math.round(n) : '-');
 const r1 = (n) => (Number.isFinite(n) ? n.toFixed(1) : '-');
-const RANGES = [2, 5, 10, 20, 30];
+const RANGES = [2, 5, 10, 15, 20, 30];
 // Pellet guns are fired from the hip up close; everything else is measured aimed down sights.
 const playStyle = (d) => ({ ads: !d.pellets });
 

@@ -31,8 +31,8 @@ nav grid end to end and through a branch doorway), `interactions.test.js` buying
 works from where you stand, the Nail Gun can't be bought through its wall, other floors are out of reach, facing matters),
 `ammoCache.test.js` the vending machine (refills any gun in hand, flat price, label follows the gun, needs its area open, not
 through the wall, solid + too tall to climb, zombies can reach its front), `balance.test.js` GUN ROLES on real measured numbers
-(cannon strongest up close / weakest at range, Price Gun best non-shotgun at 5 m but beaten at 30 m, Nail Gun best at 30 m,
-Staple Gun weakest; relationships, not exact values), `gunStats.test.js` the per-hit formula + resolveGun (upgrades as data),
+(cannon strongest up close / weakest at range, Price Gun best non-shotgun at 5 m but beaten at 30 m, Foam Dart Blaster best
+non-shotgun at 15 m, Nail Gun clearly best at 30 m (15%+), Staple Gun weakest at every range; relationships, not exact values), `gunStats.test.js` the per-hit formula + resolveGun (upgrades as data),
 `fullRun.test.js` WHOLE RUNS of the real game headless (tests/helpers/headlessGame.js builds createGame with stand-in HUD/sound/
 viewmodel: buy the shutter, rounds, shoot a zombie for exact payouts, die, results, and "Play again equals a freshly built game"
 via snapshot(), which covers every stat incl. undeclared extras, run stats, features, prompt and reload; zombies keep walking
@@ -108,8 +108,8 @@ src/
     weapons.js          stapleGun (start pistol, semi), priceGun (wall buy, full auto), nailGun (wall buy, semi,
                         piercing: `pierce: { maxTargets, damageFalloff }`), foamDartBlaster (Mega Mart, burst),
                         confettiCannon (Service Corridor, 12 pellets, pellets pierce 2 zombies, six-shell tube, shell-by-shell
-                        `shellReload`). Optional `falloff: { start, end, minMultiplier }` on ANY gun (distance damage; Price Gun +
-                        Confetti Cannon have one). Each gun's ROLE is written above its entry. Per-weapon stats (fireMode
+                        `shellReload`). Optional `falloff: { start, end, minMultiplier }` on ANY gun (distance damage; every gun except
+                        the Nail Gun has one). Each gun's ROLE is written above its entry. Per-weapon stats (fireMode
                         'semi' | 'auto' | 'burst', damage, headshot mult, mag, reserve (= max for ammo buys), fire interval, reload, spread
                         cone, ADS time/zoom/gun offset), recoil (camera pitch/yaw/roll + gun-model kick + spring),
                         muzzleFlash (size, colors, ADS shape, lights), sounds, viewmodel (model name, hip
@@ -545,6 +545,12 @@ The start room opens into a MAIN HALLWAY (the hub); every other area is bought o
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+Range pass (Staple Gun, Foam Dart Blaster, Nail Gun): every gun now has a range role. Staple Gun falloff full to 10 m -> 70% at
+25 m (weakest at every range: 128 dps up close, 89 at 30 m). Foam Dart Blaster 50 -> 52 damage + falloff full to 15 m -> 75% at
+30 m: the mid-range gun (best non-shotgun at 15 m: 228 vs Nail 222 / Price 217; just under the Price Gun up close, 228 vs 231;
+172 at 30 m). 55 was tried and rejected: it beat the Price Gun up close. Nail Gun unchanged, no falloff: the long-range gun,
+222 at 30 m, now 29% ahead of the next gun (was 1.4%). tests/balance.test.js pins all of it; `npm run balance` shows 15 m.
+
 Codex refactor-review fixes (no gameplay change): a pierced/pellet hit on a target that is already dead (e.g. killed by a
 'kill' listener earlier in the same shot) no longer pays +10; the 'purchase' event reads label/kind/id BEFORE use() (buying a
 gun reports the gun, not "<Gun> ammo"); once dead nothing more is paid or counted; the feature and price registries only
