@@ -5,14 +5,14 @@
 // so it updates per rendered frame for smoothness.
 //
 // SPLATTER (feel.effects.blood.mode, the Settings > Comfort option): splat(..., { flesh: true }) is what a hit zombie
-// does. 'confetti' (default): the zombie's own colors, as always. 'red': cartoon blood, more of it; droplets that land
-// on the floor sometimes leave a flat stain, a corpse leaves a puddle that spreads (puddle()), and both fade away.
-// 'off': nothing. Dust and everything not "flesh" is unaffected.
+// does. 'confetti' (default): the zombie's own colors, as always. 'red': cartoon blood droplets, and each corpse leaves
+// one pool of blood that spreads out under it (pool()) and fades away after a while. 'off': nothing. Dust and everything
+// not "flesh" is unaffected.
 // =============================================================================
 
 import * as THREE from 'three';
 import { feel } from '../config/feel.js';
-import { makeSplatTexture } from '../world/textures.js';
+import { makePoolTexture } from '../world/textures.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
 
@@ -59,73 +59,65 @@ export function createEffects(scene) {
   const size = new Float32Array(max);
   let alive = 0;
 
-  const bloodFlag = new Uint8Array(max); // 1 = a red-mode droplet (may leave a stain when it lands)
-  const landed = new Uint8Array(max);
 
   const color = new THREE.Color();
   const dummy = new THREE.Object3D();
   const randomDir = new THREE.Vector3();
 
-  // --- Stains: flat splat-shaped patches on the floor (red mode), a ring buffer so the oldest are replaced -------------
-  // Each is a transparent plane drawn with a procedural splat texture (world/textures.js makeSplatTexture): a few
-  // different splats (one InstancedMesh per variant) plus a rounder pool for corpses. `size` = the blob's width in
-  // meters; the plane is larger so the thrown streaks and droplets fit around it.
+  // --- Pools: a flat pool of blood under each corpse (red mode), a ring buffer so the oldest are replaced -------------
+  // Each is a transparent plane drawn with a procedural pool texture (world/textures.js makePoolTexture), in a few
+  // different shapes (one InstancedMesh per shape). Drawn the first time one is needed.
 
   const blood = fx.blood;
-  const PUDDLE = blood.splatVariants; // the last variant is the puddle
-  const splatGeometry = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
-  const stainMeshes = [];
-  for (let v = 0; v <= PUDDLE; v++) {
+  const poolGeometry = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
+  const poolMeshes = [];
+  for (let v = 0; v < blood.poolVariants; v++) {
     const mesh = new THREE.InstancedMesh(
-      splatGeometry,
+      poolGeometry,
       new THREE.MeshBasicMaterial({
-        transparent: true, // (the splat texture is drawn the first time a stain is needed: ensureSplatTextures)
+        transparent: true,
         depthWrite: false,
-        // Drawn over the floor with a depth offset so a stain never z-fights with it.
+        // Drawn over the floor with a depth offset so a pool never z-fights with it.
         polygonOffset: true,
         polygonOffsetFactor: -4,
         polygonOffsetUnits: -4,
       }),
-      blood.maxStains,
+      blood.maxPools,
     );
-    mesh.name = v === PUDDLE ? 'stains_puddle' : `stains_${v}`;
+    mesh.name = `pools_${v}`;
     mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     mesh.frustumCulled = false;
     mesh.count = 0;
     scene.add(mesh);
-    stainMeshes.push(mesh);
+    poolMeshes.push(mesh);
   }
   let texturesReady = false;
-  function ensureSplatTextures() {
+  function ensurePoolTextures() {
     if (texturesReady) return;
     texturesReady = true;
-    stainMeshes.forEach((mesh, v) => {
-      mesh.material.map = makeSplatTexture({ seed: 7 + v * 13, puddle: v === PUDDLE, color: blood.stainColor, highlight: blood.stainHighlight });
+    poolMeshes.forEach((mesh, v) => {
+      mesh.material.map = makePoolTexture({ seed: 11 + v * 17 });
       mesh.material.needsUpdate = true;
     });
   }
-  const stain = { x: [], z: [], rot: [], size: [], flip: [], variant: [], age: [], life: [], grow: [] };
-  let stainCount = 0;
-  let nextStain = 0;
+  const pool = { x: [], z: [], rot: [], size: [], variant: [], age: [], life: [] };
+  let poolCount = 0;
+  let nextPool = 0;
 
-  function addStain(x, z, size, variant, seconds, growSeconds = 0.25) {
-    ensureSplatTextures();
-    const i = stainCount < blood.maxStains ? stainCount++ : nextStain;
-    nextStain = (nextStain + 1) % blood.maxStains;
-    stain.x[i] = x;
-    stain.z[i] = z;
-    stain.rot[i] = Math.random() * Math.PI * 2;
-    stain.size[i] = size;
-    stain.flip[i] = Math.random() < 0.5 ? -1 : 1;
-    stain.variant[i] = variant;
-    stain.age[i] = 0;
-    stain.life[i] = seconds;
-    stain.grow[i] = growSeconds;
+  function addPool(x, z, size) {
+    ensurePoolTextures();
+    const i = poolCount < blood.maxPools ? poolCount++ : nextPool;
+    nextPool = (nextPool + 1) % blood.maxPools;
+    pool.x[i] = x;
+    pool.z[i] = z;
+    pool.rot[i] = Math.random() * Math.PI * 2;
+    pool.size[i] = size;
+    pool.variant[i] = Math.floor(Math.random() * blood.poolVariants);
+    pool.age[i] = 0;
+    pool.life[i] = blood.poolSeconds;
   }
-  const randomSplat = () => Math.floor(Math.random() * PUDDLE);
-  const stainSizeNow = () => blood.stainSize.min + Math.random() * (blood.stainSize.max - blood.stainSize.min);
 
-  function spawnParticle(point, velocity, hexColor, particleSize, isBlood = false) {
+  function spawnParticle(point, velocity, hexColor, particleSize) {
     if (alive >= max) return; // pool full: skip (it's just decoration)
     const i = alive++;
     pos[i * 3] = point.x;
@@ -144,12 +136,10 @@ export function createEffects(scene) {
     maxLife[i] = fx.particleLife * (0.6 + Math.random() * 0.4);
     life[i] = maxLife[i];
     size[i] = particleSize * (0.6 + Math.random() * 0.8);
-    bloodFlag[i] = isBlood ? 1 : 0;
-    landed[i] = 0;
   }
 
   // A burst flying mostly away from the surface (along `normal`), in random colors from `colors`.
-  function burst(point, normal, colors, count, speed, particleSize, isBlood = false) {
+  function burst(point, normal, colors, count, speed, particleSize) {
     const velocity = new THREE.Vector3();
     for (let n = 0; n < count; n++) {
       randomDir.set(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1).normalize();
@@ -158,7 +148,7 @@ export function createEffects(scene) {
         .multiplyScalar(speed * 0.6)
         .addScaledVector(randomDir, speed * (0.4 + Math.random() * 0.6));
       velocity.y += speed * 0.3; // a little pop upward reads as more cartoony
-      spawnParticle(point, velocity, colors[n % colors.length], particleSize, isBlood);
+      spawnParticle(point, velocity, colors[n % colors.length], particleSize);
     }
   }
 
@@ -188,22 +178,21 @@ export function createEffects(scene) {
       }
       if (blood.mode === 'off') return;
       if (blood.mode === 'red') {
-        burst(point, normal, blood.colors, Math.round(count * blood.countScale), fx.splatSpeed, fx.particleSize, true);
+        burst(point, normal, blood.colors, Math.round(count * blood.countScale), fx.splatSpeed, fx.particleSize);
         return;
       }
       burst(point, normal, colors, count, fx.splatSpeed, fx.particleSize);
     },
 
-    // A corpse's puddle on the floor at (x, z): spreads out under the body, then fades (red mode only).
-    puddle(x, z) {
+    // A corpse's pool of blood on the floor at (x, z): spreads out under the body, then fades (red mode only).
+    pool(x, z) {
       if (blood.mode !== 'red') return;
-      const r = blood.puddleRadius * (0.85 + Math.random() * 0.3);
-      addStain(x, z, r * 2, PUDDLE, blood.puddleSeconds, blood.puddleGrowSeconds);
+      addPool(x, z, blood.poolRadius * 2 * (0.85 + Math.random() * 0.3));
     },
 
     // What is alive right now (for tests and debugging).
     get counts() {
-      return { particles: alive, stains: stainCount };
+      return { particles: alive, pools: poolCount };
     },
 
     // Little dust puff when a shot hits a wall or prop.
@@ -219,9 +208,9 @@ export function createEffects(scene) {
       }
       alive = 0;
       particles.count = 0;
-      stainCount = 0;
-      nextStain = 0;
-      for (const mesh of stainMeshes) mesh.count = 0;
+      poolCount = 0;
+      nextPool = 0;
+      for (const mesh of poolMeshes) mesh.count = 0;
     },
 
     // Call every rendered frame with the real frame time (0 while paused).
@@ -237,10 +226,6 @@ export function createEffects(scene) {
       while (i < alive) {
         life[i] -= dt;
         if (life[i] <= 0) {
-          // A red droplet that ran out of life in the air splashes down where it was (so most droplets can stain).
-          if (bloodFlag[i] && !landed[i] && Math.random() < blood.stainChance) {
-            addStain(pos[i * 3], pos[i * 3 + 2], stainSizeNow(), randomSplat(), blood.stainSeconds);
-          }
           // Swap the last live particle into this slot and shrink the live count.
           const last = --alive;
           for (const arr of [pos, vel, rot, col]) {
@@ -251,8 +236,6 @@ export function createEffects(scene) {
           life[i] = life[last];
           maxLife[i] = maxLife[last];
           size[i] = size[last];
-          bloodFlag[i] = bloodFlag[last];
-          landed[i] = landed[last];
           continue; // re-check slot i (it now holds a different particle)
         }
 
@@ -264,12 +247,6 @@ export function createEffects(scene) {
           // Land on the ground floor and stop (good enough for little bits of fluff).
           pos[i * 3 + 1] = 0;
           vel[i * 3] = vel[i * 3 + 1] = vel[i * 3 + 2] = 0;
-          if (!landed[i]) {
-            landed[i] = 1;
-            if (bloodFlag[i] && Math.random() < blood.stainChance) {
-              addStain(pos[i * 3], pos[i * 3 + 2], stainSizeNow(), randomSplat(), blood.stainSeconds);
-            }
-          }
         }
 
         const s = size[i] * (life[i] / maxLife[i]); // shrink away as it dies
@@ -287,31 +264,30 @@ export function createEffects(scene) {
       particles.instanceMatrix.needsUpdate = true;
       if (particles.instanceColor) particles.instanceColor.needsUpdate = true;
 
-      // Stains: spread out when new, shrink away at the end, and free their slot when done.
-      const used = new Array(stainMeshes.length).fill(0);
+      // Pools: spread out under the body (fast at first, then slowing), shrink away at the end, free their slot when done.
+      const used = new Array(poolMeshes.length).fill(0);
       let k = 0;
-      while (k < stainCount) {
-        stain.age[k] += dt;
-        if (stain.age[k] >= stain.life[k]) {
-          const last = --stainCount;
-          for (const key of Object.keys(stain)) stain[key][k] = stain[key][last];
-          if (nextStain >= stainCount) nextStain = 0;
+      while (k < poolCount) {
+        pool.age[k] += dt;
+        if (pool.age[k] >= pool.life[k]) {
+          const last = --poolCount;
+          for (const key of Object.keys(pool)) pool[key][k] = pool[key][last];
+          if (nextPool >= poolCount) nextPool = 0;
           continue;
         }
-        const grow = Math.min(1, stain.age[k] / stain.grow[k]);
-        const fade = Math.min(1, (stain.life[k] - stain.age[k]) / blood.fadeSeconds);
-        const scale = grow * fade;
-        const v = stain.variant[k];
-        // The plane is 1/blobShare times the blob so the thrown streaks and droplets fit around it.
-        const plane = (stain.size[k] / (v === PUDDLE ? blood.puddleShare : blood.splatShare)) * scale;
-        dummy.position.set(stain.x[k], 0.004, stain.z[k]);
-        dummy.rotation.set(0, stain.rot[k], 0);
-        dummy.scale.set(plane * stain.flip[k], 1, plane);
+        const t = Math.min(1, pool.age[k] / blood.poolGrowSeconds);
+        const grow = 1 - (1 - t) ** 3; // ease out
+        const fade = Math.min(1, (pool.life[k] - pool.age[k]) / blood.fadeSeconds);
+        const plane = (pool.size[k] / blood.poolShare) * grow * fade;
+        const v = pool.variant[k];
+        dummy.position.set(pool.x[k], 0.004, pool.z[k]);
+        dummy.rotation.set(0, pool.rot[k], 0);
+        dummy.scale.set(plane, 1, plane);
         dummy.updateMatrix();
-        stainMeshes[v].setMatrixAt(used[v]++, dummy.matrix);
+        poolMeshes[v].setMatrixAt(used[v]++, dummy.matrix);
         k++;
       }
-      stainMeshes.forEach((mesh, v) => {
+      poolMeshes.forEach((mesh, v) => {
         mesh.count = used[v];
         mesh.instanceMatrix.needsUpdate = true;
       });

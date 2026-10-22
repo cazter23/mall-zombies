@@ -1,5 +1,5 @@
 // Zombie splatter (feel.effects.blood, Settings > Comfort > Zombie splatter): confetti is the DEFAULT (the zombie's own
-// bright colors, exactly as before); red = cartoon blood that leaves floor stains and corpse puddles; off = nothing.
+// bright colors, exactly as before); red = cartoon blood droplets and ONE pool of blood under each corpse; off = nothing.
 // Dust and other non-flesh puffs never change. Checked on the real effects, and in the real game when a zombie dies.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -53,7 +53,7 @@ test('splatter is CONFETTI by default (config and settings), and the setting off
   def.apply(saved);
 });
 
-test('confetti mode: a zombie hit sprays its own colors, exactly as before, and leaves no stains', () => {
+test('confetti mode: a zombie hit sprays its own colors, exactly as before, and leaves no pool', () => {
   const { scene, fx } = make();
   fx.splat(new THREE.Vector3(0, 1, 0), UP, GREEN, 14, { flesh: true });
   fx.update(0);
@@ -61,7 +61,7 @@ test('confetti mode: a zombie hit sprays its own colors, exactly as before, and 
   const wanted = new Set(GREEN.map((hex) => new THREE.Color(hex).getHexString()));
   for (const c of particleColors(scene)) assert.ok(wanted.has(c.getHexString()), 'the zombie\'s own colors');
   settle(fx, 3);
-  assert.equal(fx.counts.stains, 0);
+  assert.equal(fx.counts.pools, 0);
 });
 
 test('red mode: more droplets, all red; the same chunky cubes', () => {
@@ -94,76 +94,72 @@ test('things that are not flesh (spawn dust, wall puffs) never change with the s
   }
 });
 
-test('red droplets that land leave floor stains (confetti never does), capped, and they fade away', () => {
+test('red droplets are only droplets: they never leave scattered stains on the floor', () => {
   inMode('red', () => {
     const { fx } = make();
-    fx.splat(new THREE.Vector3(0, 0.3, 0), UP, GREEN, 20, { flesh: true });
-    settle(fx, 1);
-    assert.ok(fx.counts.stains > 0, `${fx.counts.stains} stains from one hit`);
-    // Many hits: never more than the cap.
-    for (let i = 0; i < 80; i++) fx.splat(new THREE.Vector3(i * 0.1, 0.2, 0), UP, GREEN, 26, { flesh: true });
-    settle(fx, 1);
-    assert.ok(fx.counts.stains <= FX.maxStains, `capped at ${FX.maxStains}: ${fx.counts.stains}`);
-    settle(fx, FX.stainSeconds + FX.fadeSeconds + 1);
-    assert.equal(fx.counts.stains, 0, 'every stain faded away');
-  }, { stainChance: 1 });
-  inMode('confetti', () => {
-    const { fx } = make();
-    fx.splat(new THREE.Vector3(0, 0.3, 0), UP, GREEN, 20, { flesh: true });
-    settle(fx, 2);
-    assert.equal(fx.counts.stains, 0);
-  }, { stainChance: 1 });
+    for (let i = 0; i < 40; i++) fx.splat(new THREE.Vector3(i * 0.1, 0.3, 0), UP, GREEN, 26, { flesh: true });
+    settle(fx, 3);
+    assert.equal(fx.counts.particles, 0, 'the droplets are gone');
+    assert.equal(fx.counts.pools, 0, 'and left nothing behind: only a corpse makes a pool');
+  });
 });
 
-test('stains are splat-shaped, not squares: textured transparent planes in several different shapes', () => {
+test('a corpse leaves ONE pool of blood in red mode only; it spreads out, then fades; clear() removes it', () => {
   inMode('red', () => {
     const { scene, fx } = make();
-    const meshes = scene.children.filter((c) => c.isInstancedMesh && c.name.startsWith('stains_'));
-    assert.equal(meshes.length, FX.splatVariants + 1, 'a few splat shapes plus the puddle');
-    // A real spray uses more than one of them (and the textures are drawn the first time a stain appears).
-    for (let i = 0; i < 20; i++) fx.splat(new THREE.Vector3(i * 0.2, 0.2, 0), UP, GREEN, 26, { flesh: true });
-    fx.puddle(0, 0);
-    settle(fx, 1);
-    const textures = new Set();
-    for (const mesh of meshes) {
-      assert.equal(mesh.geometry.type, 'PlaneGeometry', 'flat, not a box');
-      assert.ok(mesh.material.map && mesh.material.transparent, 'an irregular shape cut out of a transparent texture');
-      textures.add(mesh.material.map.uuid);
-    }
-    assert.equal(textures.size, meshes.length, 'every shape has its own texture');
-    const used = meshes.filter((m) => m.name !== 'stains_puddle' && m.count > 0).length;
-    assert.ok(used >= 2, `${used} different splat shapes in use`);
-  }, { stainChance: 1 });
-});
-
-test('a corpse leaves a puddle in red mode only, it spreads out, and clear() removes everything', () => {
-  inMode('red', () => {
-    const { scene, fx } = make();
-    fx.puddle(2, 3);
-    assert.equal(fx.counts.stains, 1);
-    const stains = scene.getObjectByName('stains_puddle');
-    const widthAt = (seconds) => {
-      settle(fx, seconds);
-      const m = new THREE.Matrix4();
-      stains.getMatrixAt(0, m);
-      return new THREE.Vector3().setFromMatrixScale(m).x;
+    fx.pool(2, 3);
+    assert.equal(fx.counts.pools, 1);
+    const widthNow = () => {
+      for (const mesh of scene.children.filter((c) => c.isInstancedMesh && c.name.startsWith('pools_'))) {
+        if (mesh.count > 0) {
+          const m = new THREE.Matrix4();
+          mesh.getMatrixAt(0, m);
+          return new THREE.Vector3().setFromMatrixScale(m).x;
+        }
+      }
+      return 0;
     };
-    const early = widthAt(0.3);
-    const grown = widthAt(FX.puddleGrowSeconds);
+    settle(fx, 0.3);
+    const early = widthNow();
+    settle(fx, FX.poolGrowSeconds);
+    const grown = widthNow();
     assert.ok(grown > early * 2, `spreads out: ${early.toFixed(2)} -> ${grown.toFixed(2)} m`);
+    assert.ok(grown > FX.poolRadius * 2, 'a pool bigger than the body is wide');
+    settle(fx, FX.poolSeconds);
+    assert.equal(fx.counts.pools, 0, 'it faded away');
+    fx.pool(0, 0);
     fx.clear();
-    assert.equal(fx.counts.stains, 0);
+    assert.equal(fx.counts.pools, 0);
   });
   for (const mode of ['confetti', 'off']) {
     inMode(mode, () => {
       const { fx } = make();
-      fx.puddle(0, 0);
-      assert.equal(fx.counts.stains, 0, mode);
+      fx.pool(0, 0);
+      assert.equal(fx.counts.pools, 0, mode);
     });
   }
 });
 
-test('the real game: a dying zombie bursts and leaves its puddle only in red mode', () => {
+test('the pool is a smooth textured plane (not a square), in a few different shapes, capped in number', () => {
+  inMode('red', () => {
+    const { scene, fx } = make();
+    const meshes = scene.children.filter((c) => c.isInstancedMesh && c.name.startsWith('pools_'));
+    assert.equal(meshes.length, FX.poolVariants);
+    for (let i = 0; i < 60; i++) fx.pool(i * 0.5, 0);
+    fx.update(0.1);
+    assert.equal(fx.counts.pools, FX.maxPools, 'the oldest are replaced beyond the cap');
+    const textures = new Set();
+    for (const mesh of meshes) {
+      assert.equal(mesh.geometry.type, 'PlaneGeometry', 'flat, not a box');
+      assert.ok(mesh.material.map && mesh.material.transparent, 'an organic outline cut out of a transparent texture');
+      textures.add(mesh.material.map.uuid);
+    }
+    assert.equal(textures.size, meshes.length, 'every shape has its own texture');
+    assert.ok(meshes.filter((m) => m.count > 0).length >= 2, 'corpses do not all leave the same shape');
+  });
+});
+
+test('the real game: a dying zombie bursts and leaves its pool only in red mode', () => {
   const kill = () => {
     const t = headlessGame();
     const { g } = t;
@@ -177,13 +173,13 @@ test('the real game: a dying zombie bursts and leaves its puddle only in red mod
     z.updateHitboxes();
     const before = g.effects.counts.particles;
     z.takeHit({ damage: 99999, part: 'body', point: new THREE.Vector3(0, 1, 9) });
-    return { burst: g.effects.counts.particles - before, stains: g.effects.counts.stains };
+    return { burst: g.effects.counts.particles - before, pools: g.effects.counts.pools };
   };
   const confetti = inMode('confetti', kill);
   const red = inMode('red', kill);
   const off = inMode('off', kill);
-  assert.ok(confetti.burst >= zombieTypes.shopper.deathSplatCount && confetti.stains === 0, 'confetti: its burst, no puddle');
-  assert.ok(red.burst > confetti.burst && red.stains === 1, 'red: a bigger burst and one puddle');
+  assert.ok(confetti.burst >= zombieTypes.shopper.deathSplatCount && confetti.pools === 0, 'confetti: its burst, no pool');
+  assert.ok(red.burst > confetti.burst && red.pools === 1, 'red: a bigger burst and one pool');
   assert.equal(off.burst, 0);
-  assert.equal(off.stains, 0);
+  assert.equal(off.pools, 0);
 });

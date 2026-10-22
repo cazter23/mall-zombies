@@ -176,11 +176,11 @@ export function makeFlashTexture({ rays = 7, seed = 3 } = {}) {
 }
 
 /**
- * A blood splat drawn flat on transparent, lying on the floor: a ragged central blob, thin streaks flung outward
- * (some ending in a bead), and satellite droplets. Different seeds give different splats. `puddle: true` = a
- * rounder, wavy-edged pool with a lighter wet highlight and only a few droplets (a corpse's puddle).
+ * A pool of blood seen from above, on transparent: a smooth, slightly lopsided puddle (low-frequency wobble, no
+ * spikes) that is dark red at the rim and lighter and wetter in the middle, with a soft feathered edge, a glossy
+ * highlight and a few small drops beside it. Different seeds give different shapes.
  */
-export function makeSplatTexture({ seed = 1, puddle = false, color = '#8d0801', highlight = '#c1121f' } = {}) {
+export function makePoolTexture({ seed = 1 } = {}) {
   const size = 256;
   const canvas = document.createElement('canvas');
   canvas.width = size;
@@ -188,78 +188,74 @@ export function makeSplatTexture({ seed = 1, puddle = false, color = '#8d0801', 
   const ctx = canvas.getContext('2d');
   const rand = seededRandom(seed);
   const c = size / 2;
+  const R = size * 0.36; // the pool's average radius; the rest of the square is room for the feathered edge and drops
 
-  // A smooth closed blob: radius wobbles around `radius` at `points` angles, joined with curves.
-  function blob(radius, wobble, points, fill) {
-    const pts = [];
-    for (let i = 0; i < points; i++) {
-      const a = (i / points) * Math.PI * 2;
-      const r = radius * (1 - wobble + rand() * wobble * 2);
-      pts.push([c + Math.cos(a) * r, c + Math.sin(a) * r]);
-    }
-    ctx.fillStyle = fill;
+  // The outline: a circle pushed in and out by a few low-frequency waves, so it is organic but smooth.
+  const waves = [
+    [2, 0.09 + rand() * 0.05, rand() * 6.28],
+    [3, 0.06 + rand() * 0.04, rand() * 6.28],
+    [5, 0.035 + rand() * 0.03, rand() * 6.28],
+  ];
+  const stretch = 0.85 + rand() * 0.3; // a little longer one way than the other
+  const rotation = rand() * 3.14;
+  const radiusAt = (angle, scale) => {
+    let k = 1;
+    for (const [n, amp, phase] of waves) k += amp * Math.sin(n * angle + phase);
+    return R * k * scale;
+  };
+  const outline = (scale) => {
     ctx.beginPath();
-    for (let i = 0; i < points; i++) {
-      const [x0, y0] = pts[i];
-      const [x1, y1] = pts[(i + 1) % points];
-      const mx = (x0 + x1) / 2;
-      const my = (y0 + y1) / 2;
-      if (i === 0) ctx.moveTo(mx, my);
-      ctx.quadraticCurveTo(x1, y1, (x1 + pts[(i + 2) % points][0]) / 2, (y1 + pts[(i + 2) % points][1]) / 2);
+    const steps = 96;
+    for (let i = 0; i <= steps; i++) {
+      const a = (i / steps) * Math.PI * 2;
+      const r = radiusAt(a, scale);
+      const x = c + Math.cos(a + rotation) * r * stretch;
+      const y = c + Math.sin(a + rotation) * r / stretch;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
     }
     ctx.closePath();
+  };
+
+  // 1. The body of the pool, with a soft feathered edge (a blurred shadow of itself).
+  ctx.save();
+  ctx.shadowColor = 'rgba(48, 3, 7, 0.85)';
+  ctx.shadowBlur = 14;
+  ctx.fillStyle = '#3d050a';
+  outline(1);
+  ctx.fill();
+  ctx.restore();
+
+  // 2. Darker at the rim, lighter and wetter toward the middle.
+  const body = ctx.createRadialGradient(c - R * 0.15, c - R * 0.15, R * 0.05, c, c, R * 1.05);
+  body.addColorStop(0, '#8e0f18');
+  body.addColorStop(0.45, '#6f0a12');
+  body.addColorStop(0.85, '#4a060c');
+  body.addColorStop(1, '#350408');
+  ctx.fillStyle = body;
+  outline(0.93);
+  ctx.fill();
+
+  // 3. A glossy highlight, like a window reflecting in a wet surface.
+  const shine = ctx.createRadialGradient(c - R * 0.35, c - R * 0.4, 1, c - R * 0.35, c - R * 0.4, R * 0.42);
+  shine.addColorStop(0, 'rgba(255, 225, 225, 0.42)');
+  shine.addColorStop(0.5, 'rgba(255, 160, 160, 0.14)');
+  shine.addColorStop(1, 'rgba(255, 120, 120, 0)');
+  ctx.fillStyle = shine;
+  ctx.beginPath();
+  ctx.ellipse(c - R * 0.35, c - R * 0.4, R * 0.42, R * 0.24, -0.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 4. A few small drops just outside the edge.
+  ctx.fillStyle = '#4a060c';
+  for (let i = 0; i < 5; i++) {
+    const a = rand() * Math.PI * 2;
+    const d = R * (1.12 + rand() * 0.22);
+    ctx.beginPath();
+    ctx.arc(c + Math.cos(a) * d, c + Math.sin(a) * d, 1.5 + rand() * 3.5, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  if (puddle) {
-    blob(size * 0.38, 0.14, 11, color);
-    blob(size * 0.26, 0.12, 9, highlight); // the wet middle
-    for (let i = 0; i < 4; i++) {
-      const a = rand() * Math.PI * 2;
-      const d = size * (0.34 + rand() * 0.1);
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(c + Math.cos(a) * d, c + Math.sin(a) * d, 3 + rand() * 6, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  } else {
-    blob(size * 0.17, 0.28, 9, color); // the main splat
-    blob(size * 0.1, 0.25, 7, highlight);
-    // Streaks flung outward: tapered spikes, many ending in a bead.
-    const streaks = 9 + Math.floor(rand() * 5);
-    for (let i = 0; i < streaks; i++) {
-      const a = rand() * Math.PI * 2;
-      const length = size * (0.18 + rand() * 0.28);
-      const width = 4 + rand() * 7;
-      const nx = -Math.sin(a);
-      const ny = Math.cos(a);
-      const x0 = c + Math.cos(a) * size * 0.1;
-      const y0 = c + Math.sin(a) * size * 0.1;
-      const x1 = c + Math.cos(a) * (size * 0.1 + length);
-      const y1 = c + Math.sin(a) * (size * 0.1 + length);
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.moveTo(x0 + nx * width, y0 + ny * width);
-      ctx.lineTo(x1, y1);
-      ctx.lineTo(x0 - nx * width, y0 - ny * width);
-      ctx.closePath();
-      ctx.fill();
-      if (rand() < 0.6) {
-        ctx.beginPath();
-        ctx.arc(x1 + Math.cos(a) * 3, y1 + Math.sin(a) * 3, 2.5 + rand() * 4, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-    // Satellite droplets of all sizes, thrown further out.
-    for (let i = 0; i < 16; i++) {
-      const a = rand() * Math.PI * 2;
-      const d = size * (0.2 + rand() * 0.27);
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(c + Math.cos(a) * d, c + Math.sin(a) * d, 1.5 + rand() * rand() * 7, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   return texture;
