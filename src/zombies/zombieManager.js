@@ -116,7 +116,8 @@ export function createZombieManager({
     // A final burst of splatter from the chest.
     scratch.copy(zombie.position);
     scratch.y += zombie.type.hitbox.bodyTop * 0.75;
-    effects.splat(scratch, UP, zombie.type.splatColors, zombie.type.deathSplatCount);
+    effects.splat(scratch, UP, zombie.type.splatColors, zombie.type.deathSplatCount, { flesh: true });
+    effects.puddle(zombie.position.x, zombie.position.z); // (red splatter only)
     if (onKill) onKill(zombie);
   }
 

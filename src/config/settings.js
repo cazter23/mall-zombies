@@ -119,6 +119,15 @@ export const settingDefs = [
     },
   },
   {
+    id: 'splatter', tab: 'Comfort', label: 'Zombie splatter', type: 'select', default: 'confetti',
+    options: [
+      { value: 'confetti', label: 'Confetti' },
+      { value: 'red', label: 'Red (blood)' },
+      { value: 'off', label: 'Off' },
+    ],
+    apply: (v) => { feel.effects.blood.mode = v; }, // effects read it on every hit
+  },
+  {
     id: 'speedLines', tab: 'Comfort', label: 'Sprint speed lines', type: 'toggle', default: true,
     apply: (v) => { feel.sprintFx.speedLinesOpacity = v ? base.speedLines : 0; },
   },

@@ -98,7 +98,7 @@ export function createMelee({ def, stats, player, input, getWeapon, shootables, 
     const damage = def.damage * stats.meleeDamageMultiplier;
     const { killed } = found.target.takeHit({ damage, part: 'body', point: found.point, melee: true });
     normal.subVectors(eye, found.point).setY(0).normalize(); // splatter flies back toward the player
-    effects.splat(found.point, normal, found.target.splatColors, def.splatCount);
+    effects.splat(found.point, normal, found.target.splatColors, def.splatCount, { flesh: true });
     hud.showHitMarker({ headshot: false, killed });
     if (onHit) onHit({ target: found.target, killed, headshot: false, melee: true });
     player.addViewKick(-def.impactJoltDegrees * DEG_TO_RAD);

@@ -307,6 +307,22 @@ export const feel = {
     puffCount: 6, // particles when a shot hits a wall
     puffSpeed: 1.5, // m/s
     puffColor: 0xb8b0a4, // dusty grey
+    // SPLATTER setting (Settings > Comfort): what a zombie's body does when hit. 'confetti' = the zombie's own bright
+    // colors (the shipped default), 'red' = cartoon blood (same chunky cubes) that also leaves stains, 'off' = nothing.
+    blood: {
+      mode: 'confetti', // set from the setting
+      colors: [0xc1121f, 0xa4161a, 0xe5383b, 0x8d0801], // red mode: droplet colors
+      countScale: 1.3, // red mode: more droplets than confetti
+      stainChance: 0.2, // red mode: chance a droplet (landed, or run out of life in the air) leaves a stain
+      stainSize: { min: 0.12, max: 0.3 }, // meters across
+      stainSeconds: 22, // how long a stain lasts (it shrinks away over the last `fadeSeconds`)
+      fadeSeconds: 4,
+      maxStains: 160, // the oldest are replaced beyond this
+      puddleRadius: 0.75, // a corpse's puddle (red mode)
+      puddleSeconds: 40,
+      puddleGrowSeconds: 2.5, // it spreads out under the body
+      stainColor: 0x7a0c14, // darker than the spray
+    },
     hitMarkerSeconds: 0.18, // how long the crosshair hit marker shows
     crosshairMinGap: 4, // pixels: the crosshair lines never get closer to the center than this
     lowAmmoThreshold: 3, // magazine count at which the ammo counter turns red

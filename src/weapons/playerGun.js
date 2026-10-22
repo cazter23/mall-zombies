@@ -148,7 +148,7 @@ export function createPlayerGun({
       anyKilled ||= killed;
       anyHeadshot ||= headshot;
       effects.splat(hit.point, hit.normal, target.splatColors,
-        headshot ? feel.effects.headshotSplatCount : feel.effects.splatCount);
+        headshot ? feel.effects.headshotSplatCount : feel.effects.splatCount, { flesh: true });
       if (onHit) onHit({ target, killed, headshot, melee: false });
     }
     if (targets.size > 0) hud.showHitMarker({ headshot: d.pellets ? anyHeadshot : shot.hits[0].part === 'head', killed: anyKilled });
