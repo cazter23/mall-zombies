@@ -1002,6 +1002,41 @@ kbd {
   transform: scale(1.03);
 }
 
+/* How to play: the employee handbook */
+.help-screen {
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  overflow: auto;
+  background: rgba(17, 10, 24, 0.82);
+}
+.help-card {
+  max-width: 720px;
+}
+.help-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  margin: 6px 0 22px;
+  text-align: left;
+}
+.help-grid div {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+}
+.help-grid b {
+  font-family: 'Bungee', Impact, 'Arial Black', sans-serif;
+  font-weight: 400;
+  color: var(--mall-yellow);
+}
+.help-grid p {
+  margin: 6px 0 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #d9d2e3;
+}
+
 /* Results: the run's receipt, stamped CLOCKED OUT */
 .results-screen {
   display: grid;

@@ -26,6 +26,7 @@ import { tierById, tierOf } from './weapons/upgrades.js';
 import { PRICE_CATEGORIES } from './game/pricing.js';
 import { toggleDoors } from './world/door.js';
 import { createTitleCamera } from './ui/titleCamera.js';
+import { wireRunIntro } from './game/runIntro.js';
 
 // --- Renderer, scene, camera ---------------------------------------------------
 
@@ -111,6 +112,7 @@ function handleDebugKeys() {
 const settings = createSettings({ renderer, sound, hud });
 const settingsMenu = createSettingsMenu(settings);
 const controlsMenu = createControlsMenu();
+effects.prepare(renderer, camera); // shared impact graphics warmed before the first shot
 
 // --- Menus and the run's flow ------------------------------------------------------
 // title (live flyover) -> playing <-> paused -> dead -> results receipt -> playing again / title.
@@ -164,6 +166,7 @@ screens.on('playAgain', freshRun);
 screens.on('quit', goToTitle);
 screens.on('mainMenu', goToTitle);
 screens.on('settings', () => settingsMenu.open());
+wireRunIntro({ events: g.events, hud, sound }); // the PA's opening line as round 1 begins
 screens.on('controls', () => controlsMenu.open());
 
 input.onLockChange((locked) => {
@@ -232,7 +235,7 @@ function render(alpha, frameTime) {
     fpsMeter.time = 0;
   }
 
-  if (screens.current === 'title') {
+  if (screens.showsFlyover) {
     renderTitle(frameTime);
     return;
   }

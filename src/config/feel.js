@@ -191,6 +191,18 @@ export const feel = {
     far: 200,
   },
 
+  // The PA announcement when a run's first round begins (game/runIntro.js): one of these, at random.
+  runIntro: {
+    kicker: 'Attention shoppers',
+    lines: [
+      'The mall is now closed. Please remain calm and proceed to the nearest exit. There are no exits.',
+      'Due to unforeseen circumstances, today\'s sale has been extended. Indefinitely.',
+      'Would the owners of several hundred zombies please collect them from the food court.',
+      'Thank you for shopping with us. You will never leave.',
+      'A reminder that store employees are not allowed to clock out. Ever.',
+    ],
+  },
+
   // The main menu's flyover through the mall (ui/titleCamera.js; the shots are map data: map.titleShots).
   titleScreen: {
     shotSeconds: 9, // each camera glide
