@@ -215,7 +215,9 @@ test('real mall: isolated selection improves mean route cost without losing mult
           manager.clear(); // isolated first-spawn distribution, without occupancy/cooldown effects
         }
       }
-      assert.ok(origins.size >= 4, `${configuration}, ${name}: preserve multiple spawn origins`);
+      // Use every local marker up to four. (A far corner like the ammo cache can have only two close ones.)
+      const local = costs.filter((cost) => cost <= maxCost).length;
+      assert.ok(origins.size >= Math.min(4, local), `${configuration}, ${name}: preserve multiple spawn origins (${origins.size} of ${local} local)`);
       assert.ok(totalCost / count < oldMean, `${configuration}, ${name}: mean route cost should improve`);
     }
   }

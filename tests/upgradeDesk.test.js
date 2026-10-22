@@ -30,7 +30,7 @@ function atDesk() {
   return { t, g, desk, stand, bought, buy: () => { stand(); t.press('KeyF', 30); } };
 }
 
-test('the mall has ONE Customer Service desk: hallway north wall, between the start doorway and the elevator', () => {
+test('the mall has ONE Customer Service booth: hallway north wall, between the start doorway and the elevator', () => {
   const { g } = headlessGame();
   const desks = featuresOf(g.map, 'upgradeDesk');
   assert.equal(desks.length, 1);
@@ -38,17 +38,17 @@ test('the mall has ONE Customer Service desk: hallway north wall, between the st
   assert.equal(desk.zone, 'hallway');
   assert.deepEqual(desk.normal.toArray(), [0, 0, -1], 'faces into the hallway');
   assert.ok(desk.position.x > 2 && desk.position.x < LAYOUT.elevator.centerX - 1.1, 'clear of the doorway and the elevator');
-  assert.ok(desk.position.z > 4.5 && desk.position.z < 6, 'at the north wall');
+  assert.ok(desk.position.z > 3.5 && desk.position.z < 5, 'at the booth window, in front of the north wall');
 });
 
 test('moving the desk = changing LAYOUT.serviceDesk (the prop, its collider and its buy spot all follow)', () => {
   const before = LAYOUT.serviceDesk.center;
   try {
-    LAYOUT.serviceDesk.center = -6; // somewhere else on the same wall
+    LAYOUT.serviceDesk.center = -9; // somewhere else on the same wall
     const { g } = headlessGame();
     const desk = featuresOf(g.map, 'upgradeDesk')[0];
-    assert.equal(desk.position.x, -6);
-    const body = { position: new THREE.Vector3(-6, 0, 5.5) };
+    assert.equal(desk.position.x, -9);
+    const body = { position: new THREE.Vector3(-9, 0, 5.5) };
     assert.ok(overlapsSolid(body.position, 0.3, 1, g.colliders, 0.05), 'its collider moved with it');
     assert.ok(!overlapsSolid(new THREE.Vector3(7, 0, 5.5), 0.3, 1, g.colliders, 0.05), 'nothing left at the old spot');
   } finally {
@@ -56,12 +56,12 @@ test('moving the desk = changing LAYOUT.serviceDesk (the prop, its collider and 
   }
 });
 
-test('the desk is solid from the wall to the counter, too tall to climb, and you can stand right in front of it', () => {
+test('the booth is solid from the wall to the counter (full height), nobody gets inside, and you can stand right in front of it', () => {
   const { g, desk } = atDesk();
   const x = desk.position.x;
   for (const z of [5.1, 5.5, 5.9]) assert.ok(overlapsSolid(new THREE.Vector3(x, 0, z), 0.3, 1, g.colliders, 0.05), `solid at z ${z}`);
   const top = Math.max(...g.colliders.filter((c) => c.containsPoint(new THREE.Vector3(x, 0.5, 5.5))).map((c) => c.max.y));
-  assert.ok(top >= 1.2, `counter collider ${top} m: above jump height + step-up, like the food stalls`);
+  assert.ok(top >= 2.5, `booth collider ${top} m: a full-height block, not a counter you can climb`);
   assert.ok(!overlapsSolid(new THREE.Vector3(x, 0, desk.position.z - 0.6), 0.35, 1.8, g.colliders, 0.05), 'room for the player at the counter');
 });
 

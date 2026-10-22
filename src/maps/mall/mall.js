@@ -38,6 +38,7 @@ import { COLORS } from './palette.js';
 import { debug } from '../../config/debug.js';
 import { economy } from '../../config/economy.js';
 import { upgrades } from '../../config/upgrades.js';
+import { buildStores, storeOpenings } from './stores.js';
 
 export const LAYOUT = {
   startRoom: { minX: -5, maxX: 5, minZ: 6, maxZ: 16, height: 4 },
@@ -56,13 +57,30 @@ export const LAYOUT = {
   // Customer Service desk (Extended Warranty tiers): on the hallway's north wall between the start doorway
   // and the elevator. Move it by changing this one entry (the prop, its collider and its buy spot follow).
   serviceDesk: { along: 'x', center: 7, wallAt: 6, facing: -1, zone: 'hallway' },
-  // Attachment counters (gun upgrades), one per slot, each at its store. Move one by changing its entry.
-  // Food Court: glass cases in front of three shopfronts. Mega Mart: a pegboard in the hardware aisle (east wall).
-  attachmentCounters: [
-    { slot: 'sight', zone: 'foodCourt', style: 'case', along: 'x', center: 11, wallAt: -2.3, facing: -1, title: 'BYTE ME · SIGHTS', titleColor: '#63b3ff' },
-    { slot: 'grip', zone: 'foodCourt', style: 'case', along: 'x', center: -11, wallAt: -14.3, facing: 1, title: 'GOOD SPORTS · GRIPS', titleColor: '#ff8a3d' },
-    { slot: 'magazine', zone: 'foodCourt', style: 'case', along: 'x', center: -11, wallAt: -2.3, facing: -1, title: 'PLAY TIME TOYS · MAGAZINES', titleColor: '#ffd23f' },
-    { slot: 'barrel', zone: 'megaMart', style: 'pegboard', along: 'z', center: -14, wallAt: 34, facing: -1, title: 'HARDWARE · BARRELS', titleColor: '#ffd23f' },
+  // The four Food Court stores, each a real walk-in room selling one gun-attachment slot (see maps/mall/stores.js
+  // for the fields). Two are RECESSED into the south wall (rooms behind it), two are PODS standing against the
+  // hallway wall (3.5-4.5m into the Food Court). Move or resize a store by changing its entry.
+  stores: [
+    {
+      id: 'goodSports', name: 'GOOD SPORTS', slot: 'grip', side: 'south', from: -17, to: -9, depth: 6, doorWidth: 3, theme: 'goodSports',
+      color: 0xff8a3d, signColor: '#ff8a3d', wall: 0xf3e3c5, floor: { base: '#c79a62', grout: '#8a6438', variation: 14, seed: 41 },
+      apron: 0xff8a3d, title: 'GOOD SPORTS · GRIPS', titleColor: '#ff8a3d',
+    },
+    {
+      id: 'nutsAndBolts', name: 'NUTS & BOLTS', slot: 'barrel', side: 'south', from: 9, to: 17, depth: 6, doorWidth: 3, theme: 'nutsAndBolts',
+      color: 0xd9483b, signColor: '#ff6b5b', wall: 0x8a5a44, floor: { base: '#6b5b53', grout: '#4d423c', variation: 12, seed: 43 },
+      apron: 0xd9483b, title: 'NUTS & BOLTS · BARRELS', titleColor: '#ffd23f',
+    },
+    {
+      id: 'playTimeToys', name: 'PLAY TIME TOYS', slot: 'magazine', side: 'north', from: -16.4, to: -10.6, depth: 4.5, doorWidth: 3, theme: 'playTimeToys',
+      color: 0xffc83d, signColor: '#ffd23f', wall: 0xfff1a8, floor: { base: '#f4b6d2', grout: '#ffd6e7', variation: 8, seed: 45 },
+      apron: 0xff7bd5, title: 'PLAY TIME TOYS · MAGAZINES', titleColor: '#ffd23f',
+    },
+    {
+      id: 'byteMe', name: 'BYTE ME ELECTRONICS', slot: 'sight', side: 'north', from: 10.6, to: 16.4, depth: 4.5, doorWidth: 3, theme: 'byteMe',
+      color: 0x3d7fd9, signColor: '#63b3ff', wall: 0x2c3a5c, floor: { base: '#243457', grout: '#16213d', variation: 10, seed: 47 },
+      apron: 0x3d7fd9, title: 'BYTE ME · SIGHTS', titleColor: '#63b3ff',
+    },
   ],
   // Service Corridor: its doorway in the hallway's west wall, then south along the Food Court's west wall.
   serviceCorridor: { width: 3, height: 3.5, length: 16, doorway: { minZ: 0.5, maxZ: 3.5, height: 3 } },
@@ -202,12 +220,6 @@ export function buildMall(scene, colliders) {
   const { zone: deskZone, ...deskSpot } = LAYOUT.serviceDesk;
   const serviceDesk = props.serviceDesk({ ...deskSpot, tierColors: upgrades.tiers.map((t) => t.color) });
 
-  // Attachment counters (map features of kind 'attachmentCounter', below): one buy spot per attachment.
-  const attachmentSpots = LAYOUT.attachmentCounters.flatMap(({ slot, zone, ...spot }) => {
-    const items = Object.entries(upgrades.attachments).filter(([, a]) => a.slot === slot).map(([id, a]) => ({ id, name: a.name }));
-    return props.attachmentDisplay({ ...spot, items }).map((s) => ({ ...s, slot, zone }));
-  });
-
   // --- Main hallway dressing ---------------------------------------------------
 
   sign('FOOD COURT', {
@@ -275,7 +287,10 @@ export function buildMall(scene, colliders) {
   // tables in the middle (a clear lane runs from the door to the tree planter).
 
   const courtWall = mat(COLORS.concourseWall);
-  wall({ along: 'x', from: F.minX - T, to: F.maxX, at0: F.minZ - T, at1: F.minZ, height: F.height }, courtWall, { name: 'foodcourt_wall_south' });
+  wall({
+    along: 'x', from: F.minX - T, to: F.maxX, at0: F.minZ - T, at1: F.minZ, height: F.height,
+    openings: storeOpenings(LAYOUT.stores, 'south'), // the two recessed stores' fronts
+  }, courtWall, { name: 'foodcourt_wall_south' });
   wall({
     along: 'z', from: F.minZ, to: F.maxZ, at0: F.minX - T, at1: F.minX, height: F.height,
     openings: [{ from: SF.minZ, to: SF.maxZ, top: SF.height }],
@@ -297,19 +312,17 @@ export function buildMall(scene, colliders) {
   });
   // (North: the hallway's south wall. East: the Mega Mart's west wall.)
 
-  const south = { along: 'x', wallAt: F.minZ, facing: 1 };
-  const north = { along: 'x', wallAt: F.maxZ, facing: -1 };
-  props.shopFront({ ...south, from: -17, to: -9, color: 0xff8a3d, text: 'GOOD SPORTS', textColor: '#ff8a3d' });
-  props.shopFront({ ...south, from: 9, to: 17, color: 0xd9483b, text: 'NUTS & BOLTS', textColor: '#ff6b5b' });
-  props.shopFront({ ...north, from: -17, to: -9, color: 0xffc83d, text: 'PLAY TIME TOYS', textColor: '#ffd23f' });
-  props.shopFront({ ...north, from: 9, to: 17, color: 0x3d7fd9, text: 'BYTE ME ELECTRONICS', textColor: '#63b3ff' });
+  // The four shops are real walk-in stores (maps/mall/stores.js): their fronts, interiors, attachment counters,
+  // clerks and zombie spawns. Two are recessed into the south wall, two are pods against the hallway wall.
+  const stores = buildStores({ kit, props, court: F, thickness: T, stores: LAYOUT.stores });
 
   sign('FOOD COURT  ·  NOW OPEN (KIND OF)', {
     x: F.minX + 0.02, y: 3.2, z: FZ + 1.3, width: 5, height: 0.9, facing: 'x+',
     background: '#2d6a4f', color: '#ffffff',
   });
 
-  for (const [px, pz] of [[-13, -3], [-13, 3], [13, -3], [13, 3]]) props.pillar(px, FZ + pz, F.height);
+  // (The two north pillars would stand inside the pod stores, which hold the ceiling up themselves.)
+  for (const [px, pz] of [[-13, -3], [13, -3]]) props.pillar(px, FZ + pz, F.height);
 
   props.bench(-8, FZ + 3.9, -5.6, FZ + 4.5);
   props.bench(5.6, FZ + 3.9, 8, FZ + 4.5);
@@ -478,7 +491,7 @@ export function buildMall(scene, colliders) {
     [21.9, 'AISLE 1 · OUTDOOR'],
     [25.75, 'AISLE 2 · SNACKS'],
     [29.25, 'AISLE 3 · ALL HOLIDAYS'],
-    [32.75, 'AISLE 4 · HARDWARE'],
+    [32.75, 'AISLE 4 · HOUSEWARES'],
   ];
   for (const [x, text] of aisles) {
     for (const facing of [1, -1]) {
@@ -550,10 +563,7 @@ export function buildMall(scene, colliders) {
     { name: 'spawn_hallway_ventNorthWest', zone: 'hallway', position: new THREE.Vector3(-15, 0, H.maxZ - 0.8) },
     { name: 'spawn_hallway_ventNorthEast', zone: 'hallway', position: new THREE.Vector3(15, 0, H.maxZ - 0.8) },
     { name: 'spawn_hallway_ventSouth', zone: 'hallway', position: new THREE.Vector3(-14, 0, H.minZ + 0.8) },
-    { name: 'spawn_foodCourt_goodSports', zone: 'foodCourt', position: new THREE.Vector3(-15, 0, F.minZ + 0.8) },
-    { name: 'spawn_foodCourt_nutsAndBolts', zone: 'foodCourt', position: new THREE.Vector3(15, 0, F.minZ + 0.8) },
-    { name: 'spawn_foodCourt_playTimeToys', zone: 'foodCourt', position: new THREE.Vector3(-15, 0, F.maxZ - 0.8) },
-    { name: 'spawn_foodCourt_byteMe', zone: 'foodCourt', position: new THREE.Vector3(15, 0, F.maxZ - 0.8) },
+    ...stores.spawns, // a zombie spawn inside each of the four stores
     { name: 'spawn_megaMart_stockroom', zone: 'megaMart', position: new THREE.Vector3(26.5, 0, -23.2) },
     { name: 'spawn_megaMart_receiving', zone: 'megaMart', position: new THREE.Vector3(31.8, 0, -23.2) },
     { name: 'spawn_megaMart_vent', zone: 'megaMart', position: new THREE.Vector3(21.8, 0, -23.2) },
@@ -599,7 +609,7 @@ export function buildMall(scene, colliders) {
     // Customer Service: upgrade the gun in your hand one Extended Warranty tier (g.pricing 'tier').
     { kind: 'upgradeDesk', name: 'upgradedesk_hallway', zone: deskZone, position: serviceDesk.position, normal: serviceDesk.normal },
     // Store attachment counters: fit that attachment to the gun in your hand (g.pricing 'attachment').
-    ...attachmentSpots.map((s) => ({ kind: 'attachmentCounter', name: `attachment_${s.id}`, zone: s.zone, attachment: s.id, position: s.position, normal: s.normal })),
+    ...stores.spots.map((s) => ({ kind: 'attachmentCounter', name: `attachment_${s.id}`, zone: s.zone, attachment: s.id, position: s.position, normal: s.normal })),
   ];
 
   const doors = [startDoor, megaMartDoor, foodCourtDoor, serviceCorridorDoor, foodCourtMegaMartDoor, serviceCorridorFoodCourtDoor];

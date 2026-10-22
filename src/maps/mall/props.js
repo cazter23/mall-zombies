@@ -21,7 +21,9 @@
 //   electricalPanel a panel + DANGER sign on a wall (decorative; a future "power" switch spot)
 //   pipeRun     exposed pipes along a wall near the ceiling (decorative)
 //   vendingMachine  the ammo cache: a solid, lit vending machine against a wall; returns where to buy from it
-//   serviceDesk     the Customer Service desk (gun tiers): a solid counter against a wall + signs; returns its buy spot
+//   serviceDesk     the Customer Service booth (gun tiers): a walled office with a service window, clerk and signs
+//                   against a wall, one solid collider; returns its buy spot
+//   clerk           a zombie shop clerk in an apron behind a counter (decoration)
 //   attachmentDisplay  a store's attachment counter: a glass case in front of a shop, or a pegboard on a wall, showing
 //                   its attachments (big copies of the gun parts); returns a buy spot per attachment
 // createMallProps(kit) returns these as functions; maps/mall/mall.js places them.
@@ -634,42 +636,88 @@ export function createMallProps(kit) {
   }
 
   /**
-   * The Customer Service desk (Extended Warranty tiers): a counter against a wall with a terminal, a bell,
-   * a CUSTOMER SERVICE sign on the wall above and an "EXTENDED WARRANTY" card showing the tier colors.
-   * ONE solid collider from the wall to the counter front, 1.25m tall (above jump height, like the food
-   * stalls), so nobody gets onto or behind it. Returns { position, normal }: the buy spot at the counter front.
+   * A shop clerk: a zombie in an apron standing behind a counter, facing into the room (a harmless prop).
+   * Taller than the counter, so you see torso and head over it. `depth` = how far out from the wall it stands.
+   * Decoration only (no collider; nobody can reach the space behind a counter).
    */
-  function serviceDesk({ along, center, wallAt, facing, width = 3, depth = 1.0, tierColors = [] }) {
+  function clerk({ along, center, wallAt, facing, depth = 0.5, apron = 0xd62839, hair = 0x6b6b6b }) {
+    const place = wallPlacer(along);
+    const d = (offset) => wallAt + facing * offset;
+    const skin = mat(0x8fbf8a);
+    const dark = mat(0x23262d);
+    const o = { collide: false, name: 'clerk' };
+    for (const dx of [-0.13, 0.13]) place(center + dx - 0.09, 0, center + dx + 0.09, 0.95, d(depth - 0.1), d(depth + 0.1), mat(0x2f3340), o); // legs
+    place(center - 0.25, 0.95, center + 0.25, 1.65, d(depth - 0.14), d(depth + 0.14), mat(apron), o); // apron/torso
+    place(center - 0.07, 1.35, center + 0.07, 1.5, d(depth + 0.14), d(depth + 0.145), mat(0xf1faee), o); // name badge
+    for (const dx of [-0.34, 0.34]) place(center + dx - 0.06, 1.1, center + dx + 0.06, 1.6, d(depth - 0.06), d(depth + 0.06), skin, o); // arms
+    for (const dx of [-0.34, 0.34]) place(center + dx - 0.07, 1.04, center + dx + 0.07, 1.14, d(depth + 0.06), d(depth + 0.4), skin, o); // hands on the counter
+    place(center - 0.17, 1.65, center + 0.17, 2.0, d(depth - 0.15), d(depth + 0.15), skin, o); // head
+    place(center - 0.18, 1.95, center + 0.18, 2.08, d(depth - 0.16), d(depth + 0.16), mat(hair), o); // hair
+    for (const dx of [-0.07, 0.07]) place(center + dx - 0.03, 1.82, center + dx + 0.03, 1.88, d(depth + 0.15), d(depth + 0.16), dark, o); // eyes
+    place(center - 0.07, 1.7, center + 0.07, 1.73, d(depth + 0.15), d(depth + 0.16), dark, o); // mouth
+  }
+
+  /**
+   * The Customer Service booth (Extended Warranty tiers): a small walled office against a wall with a service
+   * window and counter, a zombie clerk, a computer and filing cabinets visible through the glass, a big
+   * CUSTOMER SERVICE sign on top, "NOW SERVING" above the window and a sticker per tier on the counter.
+   * You buy at the window; nobody goes inside: ONE solid full-height collider wall-to-counter (so it can't be
+   * climbed, and moving it along its wall never needs room behind it). Returns { position, normal }: the buy spot.
+   */
+  function serviceDesk({ along, center, wallAt, facing, width = 3.6, depth = 1.6, tierColors = [] }) {
     const place = wallPlacer(along);
     const d = (offset) => wallAt + facing * offset;
     const u0 = center - width / 2;
     const u1 = center + width / 2;
+    const H = 3.0;
+    const ledge = 0.3;
     const signAt = (u, y, offset) => (along === 'x'
       ? { x: u, y, z: d(offset), facing }
       : { x: d(offset), y, z: u, facing: facing > 0 ? 'x+' : 'x-' });
-    // Body (collides), a darker kick plate and a pale counter top with a small overhang.
-    place(u0, 0, u1, 1.0, d(0), d(depth), mat(COLORS.deskBody), { collide: false, name: 'service_desk' });
-    place(u0 + 0.05, 0, u1 - 0.05, 0.12, d(depth), d(depth + 0.01), mat(COLORS.deskKick), { collide: false });
-    place(u0 - 0.05, 1.0, u1 + 0.05, 1.06, d(0), d(depth + 0.06), mat(COLORS.deskTop), { collide: false });
+    const shell = mat(COLORS.deskBody);
+    const o = { collide: false };
+    // The one collider: the whole footprint, floor to the roof.
     addCollider(...(along === 'x'
-      ? [u0, 0, Math.min(d(0), d(depth + 0.06)), u1, 1.25, Math.max(d(0), d(depth + 0.06))]
-      : [Math.min(d(0), d(depth + 0.06)), 0, u0, Math.max(d(0), d(depth + 0.06)), 1.25, u1]));
-    // Terminal (screen tilted toward the customer, roughly) and a bell.
-    place(u0 + 0.35, 1.06, u0 + 0.85, 1.12, d(depth - 0.55), d(depth - 0.2), mat(COLORS.register), { collide: false });
-    place(u0 + 0.4, 1.12, u0 + 0.8, 1.42, d(depth - 0.45), d(depth - 0.4), mat(COLORS.register), { collide: false });
-    place(u0 + 0.43, 1.15, u0 + 0.77, 1.39, d(depth - 0.4), d(depth - 0.39), new THREE.MeshBasicMaterial({ color: COLORS.registerScreen }), { collide: false });
-    place(center + 0.2, 1.06, center + 0.34, 1.14, d(depth - 0.3), d(depth - 0.16), mat(COLORS.deskBell, { metalness: 0.6, roughness: 0.3 }), { collide: false });
-    // Signs: CUSTOMER SERVICE on the wall, the warranty card with a sticker per tier on the counter front.
-    sign('CUSTOMER SERVICE', { ...signAt(center, 2.7, 0.02), width: width + 0.4, height: 0.6, background: '#1f1a24', color: '#7fe3e8' });
-    sign('EXTENDED WARRANTY · ASK HERE', { ...signAt(center, 2.15, 0.02), width: width - 0.2, height: 0.32, background: '#f1faee', color: '#1d1626' });
+      ? [u0, 0, Math.min(d(0), d(depth + ledge)), u1, H, Math.max(d(0), d(depth + ledge))]
+      : [Math.min(d(0), d(depth + ledge)), 0, u0, Math.max(d(0), d(depth + ledge)), H, u1]));
+    // Shell: end walls, the front panel under the window, piers either side of it, the strip above, the roof.
+    place(u0, 0, u0 + 0.1, H, d(0), d(depth), shell, { ...o, name: 'service_booth' });
+    place(u1 - 0.1, 0, u1, H, d(0), d(depth), shell, o);
+    place(u0, 0, u1, 1.05, d(depth - 0.1), d(depth), shell, o);
+    place(u0, 1.05, u0 + 0.3, 2.3, d(depth - 0.1), d(depth), shell, o);
+    place(u1 - 0.3, 1.05, u1, 2.3, d(depth - 0.1), d(depth), shell, o);
+    place(u0, 2.3, u1, H, d(depth - 0.1), d(depth), shell, o);
+    place(u0, H, u1, H + 0.08, d(0), d(depth), mat(COLORS.deskKick), o);
+    place(u0 - 0.05, 0, u1 + 0.05, 0.1, d(depth), d(depth + 0.02), mat(COLORS.deskKick), o); // kick plate
+    // Counter top with a ledge to lean on, and glass above a 35cm service slot.
+    place(u0 - 0.05, 1.05, u1 + 0.05, 1.11, d(depth - 0.5), d(depth + ledge), mat(COLORS.deskTop), o);
+    place(u0 + 0.3, 1.4, u1 - 0.3, 2.3, d(depth - 0.06), d(depth - 0.04), mat(COLORS.caseGlass, { transparent: true, opacity: 0.25, roughness: 0.1 }), o);
+    // Inside: a cream back wall, a desk with a computer, filing cabinets, a wall clock, the clerk.
+    place(u0 + 0.1, 0, u1 - 0.1, 2.9, d(0), d(0.03), mat(0xd9d2b8), o);
+    place(u0 + 0.1, 0, u1 - 0.1, 0.8, d(0.1), d(0.6), mat(COLORS.woodDark), o); // back desk
+    place(center - 1.35, 0.8, center - 0.75, 0.84, d(0.15), d(0.5), mat(COLORS.register), o); // keyboard-ish
+    place(center - 1.25, 0.84, center - 0.85, 1.12, d(0.3), d(0.34), mat(COLORS.register), o); // monitor
+    place(center - 1.22, 0.87, center - 0.88, 1.09, d(0.34), d(0.35), new THREE.MeshBasicMaterial({ color: COLORS.registerScreen }), o);
+    for (const k of [0, 1]) {
+      place(u1 - 0.7 - k * 0.55, 0, u1 - 0.2 - k * 0.55, 1.35, d(0.1), d(0.6), mat(0x8a8f96), o); // filing cabinets
+      for (const y of [0.35, 0.8, 1.2]) place(u1 - 0.65 - k * 0.55, y, u1 - 0.25 - k * 0.55, y + 0.03, d(0.6), d(0.62), mat(0x4d5259), o); // drawer handles
+    }
+    place(center + 0.9, 1.9, center + 1.2, 2.2, d(0.03), d(0.06), mat(0xf1faee), o); // wall clock face
+    place(center + 1.04, 2.0, center + 1.06, 2.14, d(0.06), d(0.07), mat(0x23262d), o);
+    clerk({ along, center, wallAt, facing, depth: 0.85, apron: 0x2d6a4f });
+    // Signs.
+    place(u0 - 0.1, H + 0.08, u1 + 0.1, H + 0.9, d(depth - 0.3), d(depth), mat(0x1f1a24), o); // sign board standing on the roof
+    sign('CUSTOMER SERVICE', { ...signAt(center, H + 0.5, depth + 0.01), width: width + 0.1, height: 0.62, background: '#1f1a24', color: '#7fe3e8' });
+    sign('NOW SERVING  000', { ...signAt(center, 2.66, depth + 0.01), width: 1.5, height: 0.28, background: '#1d1626', color: '#ff6b5b' });
+    sign('EXTENDED WARRANTY · ASK HERE', { ...signAt(center, 0.5, depth + 0.021), width: width - 1.0, height: 0.3, background: '#f1faee', color: '#1d1626' });
     const n = tierColors.length;
     const rightward = along === 'x' ? facing : -facing; // +1 if "along the wall" runs left to right for a customer
     tierColors.forEach((color, i) => {
       const u = center + rightward * (i - (n - 1) / 2) * 0.32; // Standard on the left ... Platinum on the right
-      place(u - 0.12, 0.6, u + 0.12, 0.84, d(depth + 0.01), d(depth + 0.02), new THREE.MeshBasicMaterial({ color }), { collide: false });
+      place(u - 0.12, 0.62, u + 0.12, 0.86, d(depth + 0.01), d(depth + 0.025), new THREE.MeshBasicMaterial({ color }), o);
     });
     // Where the player buys: the middle of the counter front, at counter height.
-    const front = d(depth + 0.1);
+    const front = d(depth + ledge + 0.1);
     const position = along === 'x' ? new THREE.Vector3(center, 1.1, front) : new THREE.Vector3(front, 1.1, center);
     const normal = along === 'x' ? new THREE.Vector3(0, 0, facing) : new THREE.Vector3(facing, 0, 0);
     return { position, normal };
@@ -733,7 +781,7 @@ export function createMallProps(kit) {
       const bounds = new THREE.Box3().setFromObject(part);
       part.position.y += style === 'case' ? height + 0.02 - bounds.min.y : 1.75 - (bounds.min.y + bounds.max.y) / 2;
       group.add(part);
-      sign(item.name.toUpperCase(), { ...signAt(u, partY - 0.12 + (style === 'case' ? 0 : -0.18), style === 'case' ? front - 0.1 + 0.005 : 0.05), width: spacing - 0.2, height: 0.16, background: '#f1faee', color: '#1d1626' });
+      sign(item.name.toUpperCase(), { ...signAt(u, partY - 0.12 + (style === 'case' ? 0 : -0.18), style === 'case' ? front - 0.1 + 0.005 : 0.05), width: Math.min(spacing - 0.2, 1.7), height: 0.16, background: '#f1faee', color: '#1d1626' });
       const position = along === 'x' ? new THREE.Vector3(u, 1.1, d(front)) : new THREE.Vector3(d(front), 1.1, u);
       const normal = along === 'x' ? new THREE.Vector3(0, 0, facing) : new THREE.Vector3(facing, 0, 0);
       return { id: item.id, position, normal };
@@ -743,6 +791,6 @@ export function createMallProps(kit) {
   return {
     shopFront, pillar, bench, planter, lightPanel, gondola, checkout, wallDoor, boardedVent, wallStripe,
     escalator, upperLanding, elevatorDoors, foodStall, tableSet, trashCan, lockerBank, electricalPanel, pipeRun, vendingMachine,
-    serviceDesk, attachmentDisplay,
+    serviceDesk, clerk, attachmentDisplay,
   };
 }

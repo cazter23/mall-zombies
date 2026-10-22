@@ -55,7 +55,8 @@ nothing past Platinum (including the exact purchase frame and switching back to 
 no prompt while closed / switching / facing away, Play again resets),
 `attachmentCounter.test.js` the store counters in the real game/mall (every attachment at its store, real F buys fit the gun in
 hand + replace its slot at pricing's price, no prompt when fitted / doesn't fit / area closed / mid switch, cases solid + too tall,
-pegboard keeps aisle 4 clear, visible glass matches bullet collision, a LAYOUT entry moves a counter),
+visible glass matches bullet collision, the four stores are real rooms (walls, solid wall-to-wall counter so nobody reaches the
+clerk strip, windows are glass, you can walk in), a LAYOUT.stores entry moves a whole store),
 `viewmodel.test.js` real player-gun/model recoil with attachments, including firing and dry-clicking immediately after fitting/removing one
 before rendering, `weaponModels.test.js` also checks upgrade parts (every gun has every
 mount, parts show only when fitted, the Extended Nozzle moves the muzzle + flash and back, tier sticker hidden at Standard, no part
@@ -398,12 +399,25 @@ src/
                         trashCan, lockerBank (solid 1.9m), electricalPanel (+ DANGER sign; a future power switch spot),
                         pipeRun (exposed pipes), vendingMachine({ along, center, wallAt, facing }) (the ammo cache: solid 1.95m,
                         lit product window, keypad, header "STAPLE-O-MAT"; returns { position, normal } = its buy spot),
-                        serviceDesk({ along, center, wallAt, facing, tierColors }) (Customer Service counter, ONE solid 1.25m
-                        collider wall-to-front, terminal, bell, CUSTOMER SERVICE + EXTENDED WARRANTY signs, a sticker per tier
-                        left to right as the customer sees it; returns its buy spot), attachmentDisplay({ along, center, wallAt,
+                        serviceDesk({ along, center, wallAt, facing, tierColors }) (the Customer Service BOOTH: a walled office
+                        with a service window + counter, a zombie clerk, computer/cabinets/clock visible through the glass, a
+                        CUSTOMER SERVICE sign on the roof, NOW SERVING above the window, a sticker per tier on the counter; ONE solid
+                        full-height collider wall-to-counter, so nobody gets inside and moving it needs no room behind; returns its
+                        buy spot), clerk({ along, center, wallAt, facing, depth, apron }) (a zombie in an apron behind a counter,
+                        decoration), attachmentDisplay({ along, center, wallAt,
                         facing, style 'case'|'pegboard', items, title }) (a store's attachment counter: glass case in front of a
                         shopfront, visible top and ONE solid collider sharing height (default 1.25m), or a flat pegboard on a wall; shows each attachment as a big copy of the
                         gun part + a name card; returns a buy spot per attachment)
+    mall/stores.js      THE FOOD COURT STORES as data -> real walk-in rooms. LAYOUT.stores entries { id, name, slot, side
+                        'south'|'north', from, to, depth, doorWidth, theme, color, signColor, wall, floor, apron, title }:
+                        'south' = RECESSED behind the Food Court's south wall (storeOpenings() gives that wall its front openings),
+                        'north' = a POD against the hallway wall projecting into the Food Court (builds its own front wall + a
+                        carpet overlay). Each store: colored piers + sign + striped awning, two glass display windows either side of
+                        a 3m door (solid to walking/bullets, see-through), own floor/ceiling/walls/light panels, a full-width counter
+                        (props.attachmentDisplay, gap 1.0 for the clerk strip) with the slot's attachments, a clerk, theme dressing
+                        (byteMe: screen wall + laptops + neon; goodSports: wainscot, jerseys, trophies, bat rack, ball bin;
+                        playTimeToys: rainbow, plush shelves, blocks; nutsAndBolts: pegboard of tools, paint cans, workbench) and a
+                        zombie spawn just inside the door. buildStores({ kit, props, court, thickness, stores }) -> { spots, spawns }
     mall/palette.js     COLORS shared by the mall's rooms and props
     testRange/          Debug add-on (not a map): testRange.js buildTestRange(scene, colliders) with own lights,
                         dummy.js practice mannequins (shootables)
@@ -555,7 +569,7 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
   (x -10.4..-17.5) there's >= 2m headroom, so players and zombies walk under it. Elevator (SEALED): doors in the north
   wall at x 10.5 (taped off, OUT OF ORDER, floor indicator "1", call button); painted on, the wall behind is solid.
 - Food Court: x -20..20, z -14.3..-2.3, 6m ceiling, behind the 1000 shutter: the old concourse moved south (its four
-  shopfronts Good Sports / Nuts & Bolts / Play Time Toys / Byte Me, 4 pillars, 2 benches (north side), tree planter,
+  shops Good Sports / Nuts & Bolts / Play Time Toys / Byte Me are real stores now (see below), 2 pillars, 2 benches (north side), tree planter,
   end planters, ceiling lights, 4 spawns), placed relative to its center line FZ = -8.3. Three food stalls along the
   south wall between the shops: BURGER BARN (x -8.4..-3.1), WOK THIS WAY (-2.6..2.6), CORN DOG CORRAL (3.1..8.4); each
   is solid from the wall to its counter front (z -13.0), 1.2m tall, so you can't get onto or behind it. Eight round
@@ -584,14 +598,16 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
   The west planter, STAPLE-O-MAT and cannon buy spots are unchanged. The cannon is out of buying range from the Food Court.
   Main loop: hallway -> Food Court -> Mega Mart -> hallway. West loop: hallway -> Service Corridor -> Food Court -> hallway.
   Any open holder keeps its zone open; Play again closes every shutter and seals all outer areas.
-- Customer Service desk (gun tiers): hallway north wall at x 5.5..8.5 (between the start doorway and the elevator), counter front
-  at z 5.0. Hold F/X to buy the next Extended Warranty tier for the gun in your hand. Its spot is ONE entry, LAYOUT.serviceDesk
-  in mall.js (along/center/wallAt/facing/zone): change it to move the desk. A map feature of kind 'upgradeDesk'.
-- Attachment counters (gun attachments): sights at a glass case in front of BYTE ME ELECTRONICS (Food Court north wall,
-  x ~9.8..12.2), grips in front of GOOD SPORTS (south wall, x ~-12.2..-9.8), magazines in front of PLAY TIME TOYS (north wall,
-  x ~-12.2..-9.8), barrels on a HARDWARE pegboard on the Mega Mart's east wall in aisle 4 (renamed "AISLE 4 · HARDWARE", z ~-15.2..
-  -12.8; the aisle stays clear). Two attachments per counter, one buy spot each. Each counter is ONE entry in
-  LAYOUT.attachmentCounters (mall.js). Map features of kind 'attachmentCounter' (one per attachment).
+- Customer Service booth (gun tiers): a small walled office on the hallway's north wall at x 5.2..8.8 (between the start doorway
+  and the elevator), 1.6m deep + a 0.3m counter ledge; you buy at its service window (spot z ~4.1). Hold F/X to buy the next Extended
+  Warranty tier for the gun in your hand. Its spot is ONE entry, LAYOUT.serviceDesk in mall.js (along/center/wallAt/facing/zone):
+  change it to move the booth. A map feature of kind 'upgradeDesk'.
+- The four Food Court STORES (gun attachments; see mall/stores.js): GOOD SPORTS (grips) x -17..-9 and NUTS & BOLTS (barrels) x 9..17
+  are rooms 6m deep behind the south wall; PLAY TIME TOYS (magazines) x -16.4..-10.6 and BYTE ME ELECTRONICS (sights) x 10.6..16.4 are
+  4.5m-deep pods against the hallway wall (the two north pillars are gone: the pods hold the ceiling up). 3m doors, glass windows, a
+  zombie clerk behind a full-width counter, two attachments per counter (one buy spot each), a zombie spawn just inside each door. Each
+  store is ONE entry in LAYOUT.stores (mall.js). Map features of kind 'attachmentCounter' (one per attachment). The Mega Mart's aisle
+  4 is HOUSEWARES again (the barrels moved from the old hardware pegboard to Nuts & Bolts).
 - Ammo cache: a STAPLE-O-MAT vending machine on the Food Court's west wall (center z -5.1, front at x -19.4, in the open north
   of the planter). Hold F/X for 400 points to refill the gun in your hand (any gun, including the staple gun, which has no wall
   buy); no prompt when it's full or the Food Court is closed. A map feature of kind 'ammoCache' (game/features/ammoCache.js).
@@ -614,6 +630,14 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+Real stores: the Food Court's four shops are walk-in rooms (maps/mall/stores.js) with the attachment counters inside (barrels moved
+from the Mega Mart pegboard to Nuts & Bolts), each with a zombie clerk, its own look and a zombie spawn just inside its door; the
+Customer Service desk is a walled booth with a service window and clerk. Two south shops are recessed into the wall (6m deep), two
+north shops are pods (4.5m) against the hallway wall; the north pillars and the Mega Mart pegboard are gone. Found while building:
+the west pod first sealed the ammo machine's corner off (0.7m gap beside the planter), so both pods sit 0.6m inward (1.3m gap), and
+the spawning test now compares origins with the number of LOCAL markers (a far corner like the ammo cache has only two close ones).
+Verified by tests (210) and in the browser: every store looks right from outside and at the counter, the booth too.
+
 Upgrade audit fixes: Platinum purchases and switching to a Platinum gun no longer read an invalid next-tier price
 and freeze rendering. The interaction prompt rechecks availability before reading dynamic fields. Laser Pointer scales
 bloom recovery along with bloom, preserving its intended hip benefit / ADS penalty during repeated bursts. Gun-model recoil

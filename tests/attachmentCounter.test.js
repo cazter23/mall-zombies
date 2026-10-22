@@ -38,17 +38,18 @@ function openMall() {
   return { t, g, bought, standAt, buy };
 }
 
-test('every attachment has a counter spot at its own store: sights Byte Me, grips Good Sports, magazines Play Time Toys, barrels Mega Mart hardware', () => {
+test('every attachment has a counter spot INSIDE its own store: sights Byte Me, grips Good Sports, magazines Play Time Toys, barrels Nuts & Bolts', () => {
   const { g } = headlessGame();
   const spots = featuresOf(g.map, 'attachmentCounter');
   assert.deepEqual(spots.map((s) => s.attachment).sort(), Object.keys(upgrades.attachments).sort());
-  const zoneOf = { sight: 'foodCourt', grip: 'foodCourt', magazine: 'foodCourt', barrel: 'megaMart' };
-  for (const s of spots) assert.equal(s.zone, zoneOf[upgrades.attachments[s.attachment].slot], s.name);
-  // Byte Me / Play Time Toys are on the north wall, Good Sports on the south, the pegboard on the Mart's east wall.
-  assert.ok(spotOf(g, 'laserPointer').position.x > 9 && spotOf(g, 'laserPointer').position.z > -4);
-  assert.ok(spotOf(g, 'jumboPack').position.x < -9 && spotOf(g, 'jumboPack').position.z > -4);
-  assert.ok(spotOf(g, 'gripTape').position.x < -9 && spotOf(g, 'gripTape').position.z < -12);
-  assert.ok(spotOf(g, 'sawnOff').position.x > 32 && spotOf(g, 'sawnOff').position.z < -12);
+  for (const s of spots) assert.equal(s.zone, 'foodCourt', s.name);
+  // Byte Me (east) and Play Time Toys (west) are pods against the hallway wall; Good Sports and Nuts & Bolts are
+  // rooms behind the Food Court's south wall (z < -14.6).
+  const inPod = (id, sign) => { const p = spotOf(g, id).position; return p.x * sign > 10.6 && p.x * sign < 16.4 && p.z < -2.3 && p.z > -6.8; };
+  assert.ok(inPod('laserPointer', 1) && inPod('zoomLens', 1), 'Byte Me pod');
+  assert.ok(inPod('jumboPack', -1) && inPod('speedLoader', -1), 'Play Time Toys pod');
+  for (const id of ['gripTape', 'wristband']) assert.ok(spotOf(g, id).position.x < -9 && spotOf(g, id).position.z < -14.6, `${id}: Good Sports`);
+  for (const id of ['extendedNozzle', 'sawnOff']) assert.ok(spotOf(g, id).position.x > 9 && spotOf(g, id).position.z < -14.6, `${id}: Nuts and Bolts`);
 });
 
 test('buying at a counter fits the attachment to the gun in hand, replaces that slot, charges the pricing price, and announces it', () => {
@@ -128,15 +129,51 @@ test('a shot blocked by the top of a display case hits visible case geometry', (
   }
 });
 
-test('moving a counter = changing its LAYOUT.attachmentCounters entry', () => {
-  const entry = LAYOUT.attachmentCounters.find((c) => c.slot === 'sight');
-  const before = entry.center;
+test('moving a store = changing its LAYOUT.stores entry (the whole store, counter and spots follow)', () => {
+  const entry = LAYOUT.stores.find((s) => s.slot === 'sight');
+  const [from, to] = [entry.from, entry.to];
   try {
-    entry.center = 6;
+    entry.from -= 1.5; entry.to -= 1.5; // slide Byte Me west along the hallway wall
     const { g } = headlessGame();
     const xs = ['laserPointer', 'zoomLens'].map((id) => spotOf(g, id).position.x);
-    assert.ok(xs.every((x) => Math.abs(x - 6) < 1.3), `both sight spots moved: ${xs}`);
+    assert.ok(xs.every((x) => x > from - 1.5 && x < to - 1.5), `both sight spots moved with the store: ${xs}`);
   } finally {
-    entry.center = before;
+    entry.from = from; entry.to = to;
   }
+});
+
+test('stores are real rooms: walls and a ceiling, the counter seals the clerk strip, and you can walk in through the door', () => {
+  const { t, g, standAt } = openMall();
+  for (const store of LAYOUT.stores) {
+    const south = store.side === 'south';
+    const cx = (store.from + store.to) / 2;
+    const zBack = south ? -14.6 - store.depth : -2.3;
+    const dir = south ? 1 : -1;
+    const at = (d, x = cx) => new THREE.Vector3(x, 0, zBack + dir * d);
+    const clear = (v) => !overlapsSolid(v, 0.35, 1.8, g.colliders, 0.05);
+    assert.ok(clear(at(store.depth - 0.5)), `${store.id}: the door end is walkable`);
+    assert.ok(clear(at(store.depth + 0.8)), `${store.id}: the doorway and outside are walkable`);
+    assert.ok(clear(at(2.4)), `${store.id}: the middle is walkable`);
+    // The counter runs wall to wall (solid across the whole width), so nobody gets round it to the clerk strip.
+    for (const x of [store.from + 0.4, cx, store.to - 0.4]) assert.ok(!clear(at(1.3, x)), `${store.id}: counter is solid at x ${x}`);
+    assert.ok(!clear(at(2.4, store.from - 0.15)), `${store.id}: west wall`);
+    assert.ok(!clear(at(2.4, store.to + 0.15)), `${store.id}: east wall`);
+  }
+  // A real player standing in front of each counter gets its prompt.
+  for (const id of ['laserPointer', 'gripTape', 'jumboPack', 'extendedNozzle']) {
+    standAt(id, 1.3); t.tick(2);
+    assert.ok(g.interactions.prompt?.label.startsWith(upgrades.attachments[id].name), `${id}: prompt at the counter`);
+  }
+});
+
+test('the store windows are glass: solid to walking, and you can see through them', () => {
+  const { g } = openMall();
+  const store = LAYOUT.stores.find((s) => s.id === 'goodSports');
+  const x = store.from + 0.9; // inside a window (between the pier and the door)
+  assert.ok(overlapsSolid(new THREE.Vector3(x, 0, -14.45), 0.2, 1.8, g.colliders, 0.05), 'window blocks walking');
+  g.map.group.updateMatrixWorld(true);
+  const origin = new THREE.Vector3(x, 1.7, -12);
+  const hit = new THREE.Raycaster(origin, new THREE.Vector3(0, 0, -1), 0, 8).intersectObject(g.map.group, true)
+    .find((h) => h.object.name.endsWith('_window'));
+  assert.ok(hit, 'the glass is there to see');
 });
