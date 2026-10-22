@@ -1,12 +1,13 @@
 // =============================================================================
-// HUD + START OVERLAY
+// HUD
 // Plain HTML on top of the canvas: crosshair + hit marker, health and stamina
 // bars, ammo counter, points (+ pop-ups), round counter and banner, reload
-// prompt, buy prompt (with hold progress), and the click-to-play / paused / results screens.
+// prompt, buy prompt (with hold progress). The menus (title, pause, results receipt) are
+// ui/screens.js, created here and exposed as hud.screens.
 // =============================================================================
 
-import { debug } from '../config/debug.js';
 import { feel } from '../config/feel.js';
+import { createScreens } from './screens.js';
 
 function el(tag, className) {
   const node = document.createElement(tag);
@@ -120,76 +121,18 @@ export function createHud() {
   hud.append(fpsCounter);
   let lastFps = -1;
 
-  const overlay = el('div', 'overlay');
-  overlay.innerHTML = `
-    <div class="card">
-      <div class="kicker">Attention shoppers</div>
-      <h1>Mall<br />Zombies</h1>
-      <p class="tagline">The mall is closed. The shoppers didn't get the memo.</p>
-      <button class="play" type="button">Click to play</button>
-      <div class="menu-buttons">
-        <button class="settings-btn" type="button">Settings</button>
-        <button class="controls-btn settings-btn" type="button">Controls</button>
-      </div>
-      <p class="pad-hint">Controller? Press <kbd>A</kbd> / <kbd>✕</kbd> or <kbd>Start</kbd> to play · <kbd>Y</kbd> settings · <kbd>X</kbd> controls</p>
-    </div>
-  `;
-  const kicker = overlay.querySelector('.kicker');
-  const playButton = overlay.querySelector('.play');
-  const controlsButton = overlay.querySelector('.controls-btn');
-  const settingsButton = overlay.querySelector('.settings-btn:not(.controls-btn)');
+  // The menus around a run (title / pause / results receipt): ui/screens.js.
+  const screens = createScreens();
+  document.body.append(hud);
 
-  // Results screen, shown when you die.
-  const results = el('div', 'overlay results hidden');
-  results.innerHTML = `
-    <div class="card">
-      <div class="kicker">Attention shoppers</div>
-      <h1>Clocked<br />Out</h1>
-      <p class="tagline">Cleanup on aisle you.</p>
-      <dl class="results-stats"></dl>
-      <button class="play" type="button">Play again</button>
-      <p class="pad-hint">or press <kbd>A</kbd> / <kbd>✕</kbd> on a controller</p>
-    </div>
-  `;
-  const resultsStats = results.querySelector('.results-stats');
-  let playAgainHandler = null;
-  results.querySelector('.play').addEventListener('click', () => playAgainHandler && playAgainHandler());
-
-  document.body.append(hud, overlay, results);
-
-  let startHandler = null;
-  overlay.addEventListener('click', () => startHandler && startHandler());
-  let settingsHandler = null;
-  let controlsHandler = null;
-  controlsButton.addEventListener('click', (event) => {
-    event.stopPropagation();
-    if (controlsHandler) controlsHandler();
-  });
-  settingsButton.addEventListener('click', (event) => {
-    event.stopPropagation(); // don't count as "click to play"
-    if (settingsHandler) settingsHandler();
-  });
-
-  let hasStarted = false;
   let lastHealth = -1;
   let lastFraction = -1;
   let lastExhausted = null;
   let lastFull = null;
 
   return {
-    onStart(fn) {
-      startHandler = fn;
-    },
-
-    // The pause screen's Controls button.
-    onOpenControls(fn) {
-      controlsHandler = fn;
-    },
-
-    // The pause screen's Settings button.
-    onOpenSettings(fn) {
-      settingsHandler = fn;
-    },
+    // The title / pause / results screens (ui/screens.js): show(), on(action), padNav(), current.
+    screens,
 
     setFpsVisible(visible) {
       fpsCounter.classList.toggle('show', visible);
@@ -202,18 +145,9 @@ export function createHud() {
       fpsCounter.textContent = `${fps} FPS`;
     },
 
-    // `restart`: show the "back to work" wording instead of "paused" (after Play again).
-    setPaused(paused, { restart = false } = {}) {
-      overlay.classList.toggle('hidden', !paused);
-      hud.classList.toggle('dimmed', paused);
-      if (!paused) hasStarted = true;
-      if (paused && restart) {
-        kicker.textContent = 'Back to work';
-        playButton.textContent = 'Click to play';
-      } else if (paused && hasStarted) {
-        kicker.textContent = 'Paused';
-        playButton.textContent = 'Click to resume';
-      }
+    // While a menu is up the combat HUD fades out.
+    setDimmed(dimmed) {
+      hud.classList.toggle('dimmed', dimmed);
     },
 
     // Dead: hide the combat HUD (crosshair, ammo, prompts).
@@ -221,11 +155,6 @@ export function createHud() {
       hud.classList.toggle('dead', dead);
     },
 
-    onPlayAgain(fn) {
-      playAgainHandler = fn;
-    },
-
-    // { timeAlive (s), round, kills, headshotKills, meleeKills, accuracy (0..1) }
     // --- Points ---
     setPoints(value) {
       if (value === lastPoints) return;
@@ -269,24 +198,14 @@ export function createHud() {
       roundCounter.classList.toggle('flashing', flashing);
     },
 
+    // Death: the run's receipt ({ timeAlive (s), round, pointsEarned, kills, headshotKills, meleeKills, accuracy 0..1 }).
     showResults(r) {
-      const minutes = Math.floor(r.timeAlive / 60);
-      const seconds = String(Math.floor(r.timeAlive % 60)).padStart(2, '0');
-      const rows = [
-        ['Time survived', `${minutes}:${seconds}`],
-        ['Round reached', r.round],
-        ['Points earned', r.pointsEarned.toLocaleString('en-US')],
-        ['Zombies killed', r.kills],
-        ['Headshot kills', r.headshotKills],
-        ['Box cutter kills', r.meleeKills],
-        ['Accuracy', `${Math.round(r.accuracy * 100)}%`],
-      ];
-      resultsStats.innerHTML = rows.map(([label, value]) => `<dt>${label}</dt><dd>${value}</dd>`).join('');
-      results.classList.remove('hidden');
+      hud.classList.add('dimmed');
+      screens.show('results', r);
     },
 
     hideResults() {
-      results.classList.add('hidden');
+      if (screens.current === 'results') screens.show(null);
     },
 
     // Called every frame; only touches the DOM when something changed.

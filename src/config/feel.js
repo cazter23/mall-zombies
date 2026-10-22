@@ -191,6 +191,13 @@ export const feel = {
     far: 200,
   },
 
+  // The main menu's flyover through the mall (ui/titleCamera.js; the shots are map data: map.titleShots).
+  titleScreen: {
+    shotSeconds: 9, // each camera glide
+    fadeSeconds: 0.8, // fade through black at each cut
+    fov: 58, // a calmer, more cinematic lens than the gameplay camera
+  },
+
   world: {
     shutterOpenSeconds: 1.2, // how long a security shutter takes to roll up
     // Wall buy: chalk outline on the wall + the gun hanging on pegs (world/wallBuy.js)

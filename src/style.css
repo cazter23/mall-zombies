@@ -172,44 +172,6 @@ canvas {
   display: none;
 }
 
-/* ---------- Start / pause overlay ---------- */
-
-.overlay {
-  position: fixed;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  padding: 16px;
-  background: radial-gradient(circle at 50% 40%, rgba(46, 196, 182, 0.25), rgba(17, 10, 24, 0.82) 70%);
-  cursor: pointer;
-}
-.overlay.hidden {
-  display: none;
-}
-
-/* Results screen: same card, darker red-tinted backdrop, only the button is clickable */
-.results {
-  cursor: default;
-  background: radial-gradient(circle at 50% 40%, rgba(214, 40, 57, 0.3), rgba(17, 10, 24, 0.88) 70%);
-}
-.results-stats {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 6px 16px;
-  margin: 0 auto 24px;
-  max-width: 300px;
-  text-align: left;
-}
-.results-stats dt {
-  color: #c8c0d4;
-}
-.results-stats dd {
-  margin: 0;
-  font-family: 'Bungee', Impact, 'Arial Black', sans-serif;
-  color: var(--mall-yellow);
-  text-align: right;
-}
-
 .card {
   max-width: 460px;
   width: 100%;
@@ -716,22 +678,6 @@ kbd {
   margin: 0;
   text-align: center;
 }
-.settings-btn {
-  display: block;
-  margin: 12px auto 0;
-  font: inherit;
-  font-size: 14px;
-  padding: 6px 18px;
-  border: 2px solid rgba(255, 255, 255, 0.35);
-  border-radius: 999px;
-  background: transparent;
-  color: #fff;
-  cursor: pointer;
-}
-.settings-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
-}
-
 /* FPS counter (Settings > Video) */
 .fps {
   position: absolute;
@@ -748,11 +694,6 @@ kbd {
   display: block;
 }
 
-.menu-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-}
 .controls-list {
   list-style: none;
   margin: 0;
@@ -827,13 +768,6 @@ kbd {
   width: min(1000px, 100%);
 }
 
-.menu-buttons {
-  margin-top: 12px;
-}
-.menu-buttons .settings-btn {
-  margin: 0;
-}
-
 /* PA-style announcement (a new zombie type showing up), under the round banner */
 .announce-banner {
   position: absolute;
@@ -882,5 +816,332 @@ kbd {
   100% {
     opacity: 0;
     transform: translateX(-50%) translateY(-6px);
+  }
+}
+
+/* ---------- Menus: title / pause / results receipt (ui/screens.js) ---------- */
+
+.screen {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  color: #fff;
+}
+.screen.hidden {
+  display: none;
+}
+
+.menu-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.menu-row {
+  flex-direction: row;
+  justify-content: center;
+}
+.menu-btn {
+  min-width: 240px;
+  padding: 12px 22px;
+  font: inherit;
+  font-family: 'Bungee', Impact, 'Arial Black', sans-serif;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-transform: uppercase;
+  color: #fff;
+  background: rgba(29, 22, 38, 0.82);
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.12s, background 0.12s, border-color 0.12s;
+}
+.menu-btn:hover,
+.menu-btn:focus-visible,
+.menu-btn.focused {
+  outline: none;
+  transform: translateX(6px);
+  border-color: var(--mall-teal);
+  background: rgba(46, 196, 182, 0.24);
+}
+.menu-btn.primary {
+  background: var(--mall-pink);
+  border-color: var(--mall-pink);
+  box-shadow: 0 4px 0 #b3236a;
+}
+.menu-btn.primary:hover,
+.menu-btn.primary.focused {
+  background: #ff68ad;
+  border-color: #fff;
+}
+.menu-btn.danger:hover,
+.menu-btn.danger.focused,
+.menu-btn.armed {
+  border-color: #ff5a5a;
+  background: rgba(255, 90, 90, 0.22);
+}
+.menu-btn.armed {
+  color: #ffc2c2;
+}
+
+/* Title: the logo and menu on the left, over the live flyover of the mall */
+.title-screen {
+  display: flex;
+  align-items: center;
+}
+.title-fade {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+}
+.title-shade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(17, 10, 24, 0.9) 0%, rgba(17, 10, 24, 0.6) 34%, rgba(17, 10, 24, 0) 62%),
+    radial-gradient(ellipse at 60% 50%, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.55) 100%);
+}
+.title-panel {
+  position: relative;
+  max-width: 460px;
+  margin-left: clamp(16px, 8vw, 120px);
+  margin-right: 16px;
+}
+.title-logo {
+  margin: 8px 0 12px;
+  font-family: 'Bungee', Impact, 'Arial Black', sans-serif;
+  font-size: clamp(56px, 9vw, 108px);
+  line-height: 0.9;
+  text-transform: uppercase;
+  color: var(--mall-yellow);
+  text-shadow: 5px 5px 0 var(--mall-pink), 0 10px 30px rgba(0, 0, 0, 0.5);
+  animation: logo-in 0.9s ease-out both;
+}
+.title-panel .tagline {
+  margin: 0 0 26px;
+  font-size: 17px;
+  color: #e6dff0;
+}
+.title-panel .pad-hint {
+  margin-top: 22px;
+}
+.title-footer {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100vw - 32px);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-align: center;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+@keyframes logo-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Pause: the frozen game behind, blurred */
+.pause-screen {
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(17, 10, 24, 0.6);
+  backdrop-filter: blur(3px);
+}
+.pause-card {
+  max-width: 400px;
+}
+.pause-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin: 4px 0 22px;
+}
+.pause-stats:empty {
+  display: none;
+}
+.pause-stats div {
+  padding: 8px 4px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.07);
+}
+.pause-stats span {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #a79fb8;
+}
+.pause-stats b {
+  font-family: 'Bungee', Impact, 'Arial Black', sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--mall-yellow);
+}
+.pause-card .menu-list {
+  align-items: stretch;
+}
+.pause-card .menu-btn {
+  min-width: 0;
+  text-align: center;
+}
+.pause-card .menu-btn:hover,
+.pause-card .menu-btn.focused {
+  transform: scale(1.03);
+}
+
+/* Results: the run's receipt, stamped CLOCKED OUT */
+.results-screen {
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  overflow: auto;
+  background: radial-gradient(circle at 50% 40%, rgba(214, 40, 57, 0.35), rgba(17, 10, 24, 0.9) 70%);
+}
+.receipt-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+}
+.receipt {
+  position: relative;
+  width: min(320px, calc(100vw - 32px));
+  box-sizing: border-box;
+  padding: 22px 22px 24px;
+  font-family: 'Courier New', ui-monospace, monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #2a2530;
+  background: #fbf8f1;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
+  transform: rotate(-1.5deg);
+  animation: receipt-print 0.9s ease-out both;
+}
+/* torn zig-zag paper edges */
+.receipt::before,
+.receipt::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 10px;
+  background:
+    linear-gradient(135deg, #fbf8f1 50%, transparent 50%) 0 0 / 16px 10px,
+    linear-gradient(225deg, #fbf8f1 50%, transparent 50%) 0 0 / 16px 10px;
+}
+.receipt::after {
+  bottom: -10px;
+}
+.receipt::before {
+  top: -10px;
+  transform: scaleY(-1);
+}
+.receipt-store {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-align: center;
+}
+.receipt-sub {
+  font-size: 12px;
+  text-align: center;
+  color: #6b6375;
+}
+.receipt-rule {
+  margin: 10px 0;
+  border-top: 2px dashed #b9b2c2;
+}
+.receipt-line {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.receipt-line i {
+  flex: 1;
+  border-bottom: 2px dotted #c9c2d1;
+  transform: translateY(-4px);
+}
+.receipt-total {
+  display: flex;
+  justify-content: space-between;
+  font-size: 18px;
+  font-weight: 700;
+}
+.receipt-barcode {
+  display: flex;
+  justify-content: center;
+  height: 44px;
+  margin: 6px 0;
+}
+.receipt-barcode span {
+  display: block;
+  height: 100%;
+  background: #2a2530;
+}
+.receipt-thanks {
+  margin-top: 6px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
+  color: #6b6375;
+}
+.receipt-stamp {
+  position: absolute;
+  top: 79%; /* over the barcode: the numbers stay readable */
+  left: 50%;
+  padding: 4px 14px;
+  font-family: 'Bungee', Impact, 'Arial Black', sans-serif;
+  font-size: 32px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: rgba(214, 40, 57, 0.85);
+  border: 4px solid rgba(214, 40, 57, 0.85);
+  border-radius: 8px;
+  transform: translate(-50%, -50%) rotate(-16deg);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  animation: stamp 0.35s 0.75s ease-in both;
+}
+.menu-row .menu-btn {
+  min-width: 0;
+  text-align: center;
+}
+.menu-row .menu-btn:hover,
+.menu-row .menu-btn.focused {
+  transform: translateY(-3px);
+}
+@keyframes receipt-print {
+  from {
+    opacity: 0;
+    transform: translateY(-40px) rotate(-1.5deg);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-1.5deg);
+  }
+}
+@keyframes stamp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(-16deg) scale(2.2);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(-16deg) scale(1);
   }
 }

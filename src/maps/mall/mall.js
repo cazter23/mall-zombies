@@ -599,6 +599,17 @@ export function buildMall(scene, colliders) {
   // Player start: middle of the start room, facing the shutter (-Z)
   const playerSpawn = { position: new THREE.Vector3(0, 0, 12), yaw: 0 };
 
+  // The main menu's flyover (ui/titleCamera.js): slow camera glides through the mall, one after another.
+  // Each: from -> to (the camera), lookFrom -> lookTo (where it looks). Keep them clear of walls and shutters.
+  const titleShots = [
+    { from: [16, 2.4, 4.2], to: [6, 2.0, 3.0], lookFrom: [0, 2.0, 1.5], lookTo: [-12, 2.6, 2.0] }, // down the hallway to the escalator
+    { from: [-15.5, 3.4, -8.1], to: [-6, 3.0, -8.3], lookFrom: [-4, 1.4, -13.5], lookTo: [8, 1.4, -13.8] }, // Food Court: tables, stalls and stores (south of the pods)
+    { from: [3.5, 1.7, 0.4], to: [9.5, 1.8, 0.8], lookFrom: [6.5, 1.9, 6], lookTo: [8, 1.9, 6] }, // the Customer Service booth
+    { from: [13.5, 1.9, -10.2], to: [13.5, 1.8, -8.4], lookFrom: [13.2, 1.7, -3.5], lookTo: [13.5, 1.7, -3] }, // a push in toward Byte Me Electronics
+    { from: [21.9, 2.2, -21], to: [21.9, 1.9, -10.5], lookFrom: [21.9, 1.6, -5], lookTo: [22.6, 1.6, 2] }, // a Mega Mart aisle
+    { from: [3.6, 1.9, 7.4], to: [-2.6, 1.8, 8.2], lookFrom: [-2, 1.2, 14.5], lookTo: [2.5, 1.2, 15] }, // the closed-down start room
+  ];
+
   // Everything (besides doors) the player interacts with, by kind: game/features/ builds each one.
   // New kinds (claw machine, fitting room, hazard switch...) are more entries here.
   const features = [
@@ -621,6 +632,7 @@ export function buildMall(scene, colliders) {
     spawnPoints,
     features,
     playerSpawn,
+    titleShots,
     update(dt) {
       for (const door of doors) door.update(dt);
     },

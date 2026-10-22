@@ -25,6 +25,7 @@ import { createGame } from './game/createGame.js';
 import { tierById, tierOf } from './weapons/upgrades.js';
 import { PRICE_CATEGORIES } from './game/pricing.js';
 import { toggleDoors } from './world/door.js';
+import { createTitleCamera } from './ui/titleCamera.js';
 
 // --- Renderer, scene, camera ---------------------------------------------------
 
@@ -109,29 +110,74 @@ function handleDebugKeys() {
 // Created after the HUD and sound so each setting's apply() can reach them.
 const settings = createSettings({ renderer, sound, hud });
 const settingsMenu = createSettingsMenu(settings);
-hud.onOpenSettings(() => settingsMenu.open());
 const controlsMenu = createControlsMenu();
-hud.onOpenControls(() => controlsMenu.open());
 
-hud.onStart(() => {
-  sound.unlock(); // browsers only allow audio after a click
-  input.requestLock();
-});
-input.onLockChange((locked) => {
-  if (locked) game.padPlaying = false; // the mouse took over
-  if (!game.over) hud.setPaused(!game.running); // when dead, the results screen is in charge
-});
-hud.setPaused(true);
-hud.onPlayAgain(() => {
+// --- Menus and the run's flow ------------------------------------------------------
+// title (live flyover) -> playing <-> paused -> dead -> results receipt -> playing again / title.
+// With the mouse, PLAYING means the pointer is locked (a click on Play/Resume asks for the lock; the game starts
+// when the browser grants it). With a controller, the game runs without the lock (game.padPlaying).
+const screens = hud.screens;
+const titleCamera = createTitleCamera(map.titleShots, feel.titleScreen);
+
+function enterPlaying() {
+  screens.show(null);
+  hud.setDimmed(false);
+}
+function play({ pad }) {
+  sound.unlock(); // browsers only allow audio after a click / button press
+  if (pad) {
+    game.padPlaying = true;
+    enterPlaying();
+  } else {
+    input.requestLock(); // playing starts when the lock is granted (onLockChange below)
+  }
+}
+function runSoFar() {
+  return { round: rounds.round, points: wallet.points, time: g.runStats.timeAlive, kills: g.runStats.kills };
+}
+function pauseRun() {
+  game.padPlaying = false;
+  if (document.pointerLockElement) document.exitPointerLock();
+  screens.show('pause', runSoFar());
+  hud.setDimmed(true);
+}
+// A fresh run: everything reset, then straight into play (if the mouse lock is refused, "Back to work" waits).
+function freshRun(how) {
   resetRun();
-  hud.setPaused(true, { restart: true }); // stays up if the browser refuses the lock; click again
-  input.requestLock();
+  screens.show('pause', { fresh: true });
+  hud.setDimmed(true);
+  play(how);
+}
+function goToTitle() {
+  game.padPlaying = false;
+  if (document.pointerLockElement) document.exitPointerLock();
+  resetRun();
+  titleCamera.restart();
+  screens.show('title');
+  hud.setDimmed(true);
+}
+
+screens.on('play', play);
+screens.on('resume', play);
+screens.on('restart', freshRun);
+screens.on('playAgain', freshRun);
+screens.on('quit', goToTitle);
+screens.on('mainMenu', goToTitle);
+screens.on('settings', () => settingsMenu.open());
+screens.on('controls', () => controlsMenu.open());
+
+input.onLockChange((locked) => {
+  if (locked) {
+    game.padPlaying = false; // the mouse took over
+    if (!game.over) enterPlaying();
+  } else if (!game.over && !game.padPlaying && !screens.current) {
+    pauseRun(); // Esc (or the browser) released the mouse mid-run
+  }
 });
+goToTitle(); // the game opens on the main menu
 
-// --- Loop ------------------------------------------------------------------------
-
-// Controller menus: A/Start starts or resumes, Start pauses, A on the results screen plays again.
-// Unplugging the controller mid-game pauses (otherwise the zombies keep going with nobody playing).
+// Controller: the open menu gets the buttons; in play, Start pauses. Unplugging the controller mid-run pauses
+// (otherwise the zombies keep going with nobody playing).
 let padWasConnected = false;
 function handleControllerMenus() {
   if (controlsMenu.isOpen) {
@@ -142,33 +188,13 @@ function handleControllerMenus() {
     settingsMenu.padNav(input); // the controller drives the settings menu while it's up
     return;
   }
-  if (padWasConnected && !gamepad.connected && game.padPlaying) {
-    game.padPlaying = false;
-    if (!game.running && !game.over) hud.setPaused(true); // still running if the mouse is locked
-  }
+  if (padWasConnected && !gamepad.connected && game.padPlaying && !game.over) pauseRun();
   padWasConnected = gamepad.connected;
 
-  if (game.over) {
-    if (death.resultsShown && input.consumeAction('confirm')) {
-      sound.unlock(); // controller-only players never click, so try to start audio here too
-      resetRun();
-      game.padPlaying = true;
-      hud.setPaused(false);
-    }
-  } else if (!game.running) {
-    if (input.consumeAction('settings')) {
-      settingsMenu.open();
-    } else if (input.consumeAction('controlsScreen')) {
-      controlsMenu.open();
-    } else if (input.consumeAction('confirm')) {
-      sound.unlock();
-      game.padPlaying = true;
-      hud.setPaused(false);
-    }
-  } else if (input.consumeAction('pause')) {
-    game.padPlaying = false;
-    if (document.pointerLockElement) document.exitPointerLock();
-    hud.setPaused(true);
+  if (screens.current) {
+    screens.padNav(input);
+  } else if (game.running && !game.over && input.consumeAction('pause')) {
+    pauseRun();
   }
 }
 
@@ -204,6 +230,11 @@ function render(alpha, frameTime) {
     hud.setFps(Math.round(fpsMeter.frames / fpsMeter.time));
     fpsMeter.frames = 0;
     fpsMeter.time = 0;
+  }
+
+  if (screens.current === 'title') {
+    renderTitle(frameTime);
+    return;
   }
 
   // While paused nothing ticks, so interpolating between the last two ticks would make things
@@ -264,6 +295,21 @@ function render(alpha, frameTime) {
   renderer.render(viewmodel.scene, viewmodel.camera);
 }
 
+// The main menu's backdrop: the camera glides through the mall (map.titleShots), fading through black at each cut.
+// The game itself is frozen (nothing ticks without the mouse lock or a controller), and no gun or body is drawn.
+function renderTitle(frameTime) {
+  titleCamera.update(frameTime);
+  if (camera.fov !== feel.titleScreen.fov) {
+    camera.fov = feel.titleScreen.fov;
+    camera.updateProjectionMatrix();
+  }
+  screens.setFade(titleCamera.apply(camera));
+  body.root.visible = false;
+  effects.update(frameTime);
+  renderer.clear();
+  renderer.render(scene, camera);
+}
+
 // Dying: the view drops to the floor and rolls onto its side.
 function applyDeathCamera(alpha) {
   const d = feel.death;
@@ -290,7 +336,8 @@ if (debug.exposeToWindow) {
   window.__mall = {
     THREE, scene, camera, renderer, map, world: map, colliders: g.colliders, arena: g.arena, player, stats: g.stats, input, game,
     hud, gun, effects, viewmodel, shootables: g.shootables, body, zombies, health, melee, runStats: g.runStats, death, resetRun,
-    gamepad, aimAssist, wallet, rounds, sound, interactions, g,
+    gamepad, aimAssist, wallet, rounds, sound, interactions, g, screens, titleCamera,
+    menus: { play, pauseRun, freshRun, goToTitle }, // the menu flow, for testing
   };
   // Advance the real game loop by `ticks` fixed steps and draw one frame. For automated
   // testing when the browser isn't animating (e.g. a hidden tab). Pair with game.forceRun.
