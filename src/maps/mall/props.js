@@ -694,7 +694,7 @@ export function createMallProps(kit) {
     place(u0 + 0.3, 1.4, u1 - 0.3, 2.3, d(depth - 0.06), d(depth - 0.04), mat(COLORS.caseGlass, { transparent: true, opacity: 0.25, roughness: 0.1 }), o);
     // Inside: a cream back wall, a desk with a computer, filing cabinets, a wall clock, the clerk.
     place(u0 + 0.1, 0, u1 - 0.1, 2.9, d(0), d(0.03), mat(0xd9d2b8), o);
-    place(u0 + 0.1, 0, u1 - 0.1, 0.8, d(0.1), d(0.6), mat(COLORS.woodDark), o); // back desk
+    place(u0 + 0.1, 0, u1 - 1.3, 0.8, d(0.1), d(0.6), mat(COLORS.woodDark), o); // back desk (ends where the cabinets start)
     place(center - 1.35, 0.8, center - 0.75, 0.84, d(0.15), d(0.5), mat(COLORS.register), o); // keyboard-ish
     place(center - 1.25, 0.84, center - 0.85, 1.12, d(0.3), d(0.34), mat(COLORS.register), o); // monitor
     place(center - 1.22, 0.87, center - 0.88, 1.09, d(0.34), d(0.35), new THREE.MeshBasicMaterial({ color: COLORS.registerScreen }), o);
@@ -709,7 +709,7 @@ export function createMallProps(kit) {
     place(u0 - 0.1, H + 0.08, u1 + 0.1, H + 0.9, d(depth - 0.3), d(depth), mat(0x1f1a24), o); // sign board standing on the roof
     sign('CUSTOMER SERVICE', { ...signAt(center, H + 0.5, depth + 0.01), width: width + 0.1, height: 0.62, background: '#1f1a24', color: '#7fe3e8' });
     sign('NOW SERVING  000', { ...signAt(center, 2.66, depth + 0.01), width: 1.5, height: 0.28, background: '#1d1626', color: '#ff6b5b' });
-    sign('EXTENDED WARRANTY · ASK HERE', { ...signAt(center, 0.5, depth + 0.021), width: width - 1.0, height: 0.3, background: '#f1faee', color: '#1d1626' });
+    sign('EXTENDED WARRANTY · ASK HERE', { ...signAt(center, 0.4, depth + 0.011), width: width - 1.0, height: 0.26, background: '#f1faee', color: '#1d1626' }); // (below the tier stickers: nothing shares a plane)
     const n = tierColors.length;
     const rightward = along === 'x' ? facing : -facing; // +1 if "along the wall" runs left to right for a customer
     tierColors.forEach((color, i) => {

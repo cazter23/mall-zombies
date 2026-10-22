@@ -57,6 +57,9 @@ no prompt while closed / switching / facing away, Play again resets),
 hand + replace its slot at pricing's price, no prompt when fitted / doesn't fit / area closed / mid switch, cases solid + too tall,
 visible glass matches bullet collision, the four stores are real rooms (walls, solid wall-to-wall counter so nobody reaches the
 clerk strip, windows are glass, you can walk in), a LAYOUT.stores entry moves a whole store),
+`coplanar.test.js` no z-fighting (flicker) in the stores or the Customer Service booth: builds the real mall and checks every box face and
+sign in those rooms for another face within 4 mm that faces the same way, overlaps and looks different (hidden faces pressed against a
+solid are fine); run it after adding anything to a store (hang things on a wall 2cm+ proud, not on its plane),
 `viewmodel.test.js` real player-gun/model recoil with attachments, including firing and dry-clicking immediately after fitting/removing one
 before rendering, `weaponModels.test.js` also checks upgrade parts (every gun has every
 mount, parts show only when fitted, the Extended Nozzle moves the muzzle + flash and back, tier sticker hidden at Standard, no part
@@ -630,6 +633,11 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+Store flicker fix: z-fighting where my new geometry shared planes: the pod back-wall paint panel under the signs/screens, the door
+frame posts against the window sills, the store ceilings against the wall edges, the Customer Service booth's desk against its filing
+cabinets, and its warranty card against the tier stickers. Fixed (thinner panel, posts 2cm proud, ceilings inside the walls, no
+overlaps) and pinned by tests/coplanar.test.js (verified to fail when two of the bugs are put back).
+
 Real stores: the Food Court's four shops are walk-in rooms (maps/mall/stores.js) with the attachment counters inside (barrels moved
 from the Mega Mart pegboard to Nuts & Bolts), each with a zombie clerk, its own look and a zombie spawn just inside its door; the
 Customer Service desk is a walled booth with a service window and clerk. Two south shops are recessed into the wall (6m deep), two

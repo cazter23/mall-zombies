@@ -99,16 +99,15 @@ export function buildStores({ kit, props, court, thickness: T, stores }) {
       carpet.position.set(cx, 0.002, (zBack + zIn) / 2);
       group.add(carpet);
     }
-    const zMin = south ? zBack - T : zOut;
-    const zMax = south ? zOut : zBack;
-    box(from - T, CEIL_Y, zMin, to + T, WALL_H, zMax, mat(store.wall), { name: `store_${store.id}_ceiling` });
+    // The ceiling/roof fits between the walls (sharing no face with their edges, or with the Food Court wall).
+    box(from, CEIL_Y, zLo(zBack, zIn), to, WALL_H, zHi(zBack, zIn), mat(store.wall), { name: `store_${store.id}_ceiling` });
     // Side walls (and the back wall of a recessed store; a pod's back is the hallway wall).
     const sideMin = south ? zBack - T : zOut;
     const sideMax = south ? zIn : zBack;
     box(from - T, 0, sideMin, from, WALL_H, sideMax, wallMat, { name: `store_${store.id}_wall` });
     box(to, 0, sideMin, to + T, WALL_H, sideMax, wallMat, { name: `store_${store.id}_wall` });
     if (south) box(from - T, 0, zBack - T, to + T, WALL_H, zBack, wallMat, { name: `store_${store.id}_wall` });
-    else B(from, 0, 0, to, CEIL_Y, 0.03, wallMat, { collide: false }); // paint the hallway wall in the store's color
+    else B(from, 0, 0, to, CEIL_Y, 0.01, wallMat, { collide: false }); // paint the hallway wall in the store's color (1cm: things hung on it sit proud)
     // The front wall: a pod builds its own (a recessed store's is the Food Court wall, opened by storeOpenings).
     if (!south) {
       kit.wall({ along: 'x', from: from - T, to: to + T, at0: zOut, at1: zIn, height: WALL_H, openings: [opening] }, wallMat, { name: `store_${store.id}_front` });
@@ -120,7 +119,7 @@ export function buildStores({ kit, props, court, thickness: T, stores }) {
       box(a, 0, zLo(zIn, zOut), b, SILL, zHi(zIn, zOut), mat(store.color), { name: `store_${store.id}_sill` });
       box(a, SILL, zLo(zIn, zOut) + 0.1, b, OPENING_TOP, zHi(zIn, zOut) - 0.1, glass, { name: `store_${store.id}_window` });
     }
-    for (const x of [doorLo - 0.05, doorHi + 0.05]) box(x - 0.06, 0, zLo(zIn, zOut), x + 0.06, OPENING_TOP, zHi(zIn, zOut), mat(0x3a3f47), NC); // door frame
+    for (const x of [doorLo - 0.05, doorHi + 0.05]) box(x - 0.06, 0, zLo(zIn, zOut) - 0.02, x + 0.06, OPENING_TOP - 0.02, zHi(zIn, zOut) + 0.02, mat(0x3a3f47), NC); // door frame (2cm proud)
 
     // --- Facade (the outside of the front wall) ----------------------------------
     const F = (x0, y0, x1, y1, d0, d1, material) => box(x0, y0, zLo(out(d0), out(d1)), x1, y1, zHi(out(d0), out(d1)), material, NC);
@@ -211,7 +210,7 @@ const THEMES = {
     B(cx - 1.4, 3.1, 0.03, cx + 1.4, 3.16, 0.4, M(0x6e4a26), NC); // trophy shelf
     for (let i = 0; i < 5; i++) B(cx - 1.2 + i * 0.6, 3.16, 0.1, cx - 1.04 + i * 0.6, 3.34 + (i % 2) * 0.1, 0.26, M(0xffd23f), NC); // trophies
     // Bat rack on the west side: a base and tilted bats.
-    B(r.x0, 0, 2.0, r.x0 + 0.45, 0.9, 3.8, M(0x6e4a26));
+    B(r.x0, 0, 2.0, r.x0 + 0.45, 0.95, 3.8, M(0x6e4a26));
     const bat = new THREE.CylinderGeometry(0.035, 0.055, 1.3, 8);
     for (let i = 0; i < 6; i++) mesh(group, bat, M(i % 2 ? 0xc79a62 : 0x8a5a2b), r.x0 + 0.22, 1.5, zAt(2.2 + i * 0.27), [0, 0, 0.16]);
     // Ball bin on the east side: a drum with balls heaped on top.
