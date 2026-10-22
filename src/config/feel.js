@@ -314,14 +314,18 @@ export const feel = {
       colors: [0xc1121f, 0xa4161a, 0xe5383b, 0x8d0801], // red mode: droplet colors
       countScale: 1.3, // red mode: more droplets than confetti
       stainChance: 0.2, // red mode: chance a droplet (landed, or run out of life in the air) leaves a stain
-      stainSize: { min: 0.12, max: 0.3 }, // meters across
+      stainSize: { min: 0.25, max: 0.6 }, // meters across (the splat's blob; thrown streaks and droplets reach further)
+      splatVariants: 3, // different splat shapes (a rounder pool for puddles is made on top of these)
+      splatShare: 0.45, // how much of the splat's square the blob + streaks take (the rest is room for droplets)
+      puddleShare: 0.78, // same for the puddle shape
       stainSeconds: 22, // how long a stain lasts (it shrinks away over the last `fadeSeconds`)
       fadeSeconds: 4,
       maxStains: 160, // the oldest are replaced beyond this
       puddleRadius: 0.75, // a corpse's puddle (red mode)
       puddleSeconds: 40,
       puddleGrowSeconds: 2.5, // it spreads out under the body
-      stainColor: 0x7a0c14, // darker than the spray
+      stainColor: '#7a0c14', // the splat's dark red (a CSS color: it is drawn on a canvas)
+      stainHighlight: '#b3121b', // the lighter wet middle
     },
     hitMarkerSeconds: 0.18, // how long the crosshair hit marker shows
     crosshairMinGap: 4, // pixels: the crosshair lines never get closer to the center than this

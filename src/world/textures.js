@@ -176,6 +176,96 @@ export function makeFlashTexture({ rays = 7, seed = 3 } = {}) {
 }
 
 /**
+ * A blood splat drawn flat on transparent, lying on the floor: a ragged central blob, thin streaks flung outward
+ * (some ending in a bead), and satellite droplets. Different seeds give different splats. `puddle: true` = a
+ * rounder, wavy-edged pool with a lighter wet highlight and only a few droplets (a corpse's puddle).
+ */
+export function makeSplatTexture({ seed = 1, puddle = false, color = '#8d0801', highlight = '#c1121f' } = {}) {
+  const size = 256;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const rand = seededRandom(seed);
+  const c = size / 2;
+
+  // A smooth closed blob: radius wobbles around `radius` at `points` angles, joined with curves.
+  function blob(radius, wobble, points, fill) {
+    const pts = [];
+    for (let i = 0; i < points; i++) {
+      const a = (i / points) * Math.PI * 2;
+      const r = radius * (1 - wobble + rand() * wobble * 2);
+      pts.push([c + Math.cos(a) * r, c + Math.sin(a) * r]);
+    }
+    ctx.fillStyle = fill;
+    ctx.beginPath();
+    for (let i = 0; i < points; i++) {
+      const [x0, y0] = pts[i];
+      const [x1, y1] = pts[(i + 1) % points];
+      const mx = (x0 + x1) / 2;
+      const my = (y0 + y1) / 2;
+      if (i === 0) ctx.moveTo(mx, my);
+      ctx.quadraticCurveTo(x1, y1, (x1 + pts[(i + 2) % points][0]) / 2, (y1 + pts[(i + 2) % points][1]) / 2);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  if (puddle) {
+    blob(size * 0.38, 0.14, 11, color);
+    blob(size * 0.26, 0.12, 9, highlight); // the wet middle
+    for (let i = 0; i < 4; i++) {
+      const a = rand() * Math.PI * 2;
+      const d = size * (0.34 + rand() * 0.1);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(c + Math.cos(a) * d, c + Math.sin(a) * d, 3 + rand() * 6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else {
+    blob(size * 0.17, 0.28, 9, color); // the main splat
+    blob(size * 0.1, 0.25, 7, highlight);
+    // Streaks flung outward: tapered spikes, many ending in a bead.
+    const streaks = 9 + Math.floor(rand() * 5);
+    for (let i = 0; i < streaks; i++) {
+      const a = rand() * Math.PI * 2;
+      const length = size * (0.18 + rand() * 0.28);
+      const width = 4 + rand() * 7;
+      const nx = -Math.sin(a);
+      const ny = Math.cos(a);
+      const x0 = c + Math.cos(a) * size * 0.1;
+      const y0 = c + Math.sin(a) * size * 0.1;
+      const x1 = c + Math.cos(a) * (size * 0.1 + length);
+      const y1 = c + Math.sin(a) * (size * 0.1 + length);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(x0 + nx * width, y0 + ny * width);
+      ctx.lineTo(x1, y1);
+      ctx.lineTo(x0 - nx * width, y0 - ny * width);
+      ctx.closePath();
+      ctx.fill();
+      if (rand() < 0.6) {
+        ctx.beginPath();
+        ctx.arc(x1 + Math.cos(a) * 3, y1 + Math.sin(a) * 3, 2.5 + rand() * 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    // Satellite droplets of all sizes, thrown further out.
+    for (let i = 0; i < 16; i++) {
+      const a = rand() * Math.PI * 2;
+      const d = size * (0.2 + rand() * 0.27);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(c + Math.cos(a) * d, c + Math.sin(a) * d, 1.5 + rand() * rand() * 7, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+/**
  * COD-style chalk outline for a wall buy: a rough hand-drawn frame and the weapon's name,
  * white chalk on transparent (put it flat on the wall). `aspect` = width / height.
  */

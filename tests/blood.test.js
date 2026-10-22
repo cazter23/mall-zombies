@@ -115,12 +115,33 @@ test('red droplets that land leave floor stains (confetti never does), capped, a
   }, { stainChance: 1 });
 });
 
+test('stains are splat-shaped, not squares: textured transparent planes in several different shapes', () => {
+  inMode('red', () => {
+    const { scene, fx } = make();
+    const meshes = scene.children.filter((c) => c.isInstancedMesh && c.name.startsWith('stains_'));
+    assert.equal(meshes.length, FX.splatVariants + 1, 'a few splat shapes plus the puddle');
+    // A real spray uses more than one of them (and the textures are drawn the first time a stain appears).
+    for (let i = 0; i < 20; i++) fx.splat(new THREE.Vector3(i * 0.2, 0.2, 0), UP, GREEN, 26, { flesh: true });
+    fx.puddle(0, 0);
+    settle(fx, 1);
+    const textures = new Set();
+    for (const mesh of meshes) {
+      assert.equal(mesh.geometry.type, 'PlaneGeometry', 'flat, not a box');
+      assert.ok(mesh.material.map && mesh.material.transparent, 'an irregular shape cut out of a transparent texture');
+      textures.add(mesh.material.map.uuid);
+    }
+    assert.equal(textures.size, meshes.length, 'every shape has its own texture');
+    const used = meshes.filter((m) => m.name !== 'stains_puddle' && m.count > 0).length;
+    assert.ok(used >= 2, `${used} different splat shapes in use`);
+  }, { stainChance: 1 });
+});
+
 test('a corpse leaves a puddle in red mode only, it spreads out, and clear() removes everything', () => {
   inMode('red', () => {
     const { scene, fx } = make();
     fx.puddle(2, 3);
     assert.equal(fx.counts.stains, 1);
-    const [, stains] = scene.children.filter((c) => c.isInstancedMesh);
+    const stains = scene.getObjectByName('stains_puddle');
     const widthAt = (seconds) => {
       settle(fx, seconds);
       const m = new THREE.Matrix4();
