@@ -5,7 +5,7 @@
 // controller (padNav: D-pad, A, B, LB/RB for tabs).
 // =============================================================================
 
-import { settingsTabs } from '../config/settings.js';
+import { settingsTabs, settingPresets } from '../config/settings.js';
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -22,9 +22,12 @@ export function createSettingsMenu(settings) {
   const list = el('div', 'settings-list');
   const footer = el('div', 'settings-footer');
   const resetButton = el('button', 'settings-reset', 'Reset this tab');
+  const resetAllButton = el('button', 'settings-reset', 'Reset everything');
   const backButton = el('button', 'play', 'Back');
   const hint = el('p', 'pad-hint settings-hint', 'Controller: D-pad to move and change · A to toggle · LB/RB tabs · B back');
-  footer.append(resetButton, backButton);
+  const resets = el('div', 'settings-resets');
+  resets.append(resetButton, resetAllButton);
+  footer.append(resets, backButton);
   card.append(title, tabBar, list, footer, hint);
   root.append(card);
   document.body.append(root);
@@ -88,6 +91,33 @@ export function createSettingsMenu(settings) {
     return { def, node, refresh };
   }
 
+  // A tab's presets (config/settings.js settingPresets): one row of buttons that set several settings at once.
+  // Controller: Left/Right on this row applies the previous/next preset.
+  function buildPresetRow(presets) {
+    const node = el('div', 'settings-row settings-presets');
+    node.append(el('span', 'settings-label', 'Quick preset'));
+    const control = el('div', 'settings-control');
+    const buttons = presets.map((preset) => {
+      const button = el('button', 'settings-preset', preset.label);
+      button.type = 'button';
+      button.addEventListener('click', () => apply(preset));
+      control.append(button);
+      return button;
+    });
+    node.append(control);
+    const matches = (preset) => Object.entries(preset.values).every(([id, v]) => settings.get(id) === v);
+    function apply(preset) {
+      for (const [id, value] of Object.entries(preset.values)) settings.set(id, value);
+    }
+    const refresh = () => presets.forEach((preset, i) => buttons[i].classList.toggle('active', matches(preset)));
+    const step = (dir) => {
+      const now = presets.findIndex(matches);
+      apply(presets[(now + dir + presets.length) % presets.length]);
+    };
+    refresh();
+    return { def: { type: 'preset' }, node, refresh, step };
+  }
+
   function markFocus(show = true) {
     rows.forEach((r, i) => r.node.classList.toggle('focused', show && i === focus));
   }
@@ -98,6 +128,7 @@ export function createSettingsMenu(settings) {
     for (const [n, button] of tabButtons) button.classList.toggle('active', n === name);
     list.replaceChildren();
     rows = settings.defs.filter((d) => d.tab === name).map(buildRow);
+    if (settingPresets[name]) rows.unshift(buildPresetRow(settingPresets[name]));
     for (const r of rows) list.append(r.node);
     markFocus(false);
   }
@@ -105,6 +136,22 @@ export function createSettingsMenu(settings) {
   const refreshAll = () => rows.forEach((r) => r.refresh());
   settings.onChange(refreshAll);
   resetButton.addEventListener('click', () => settings.reset(tab));
+  // Everything at once asks twice (it undoes every tab).
+  let resetAllTimer = null;
+  resetAllButton.addEventListener('click', () => {
+    if (!resetAllTimer) {
+      resetAllButton.textContent = 'Sure? Click again';
+      resetAllTimer = setTimeout(() => {
+        resetAllButton.textContent = 'Reset everything';
+        resetAllTimer = null;
+      }, 3000);
+      return;
+    }
+    clearTimeout(resetAllTimer);
+    resetAllTimer = null;
+    resetAllButton.textContent = 'Reset everything';
+    settings.reset();
+  });
 
   function close() {
     root.classList.add('hidden');
@@ -141,7 +188,9 @@ export function createSettingsMenu(settings) {
       const def = rows[focus].def;
       const dir = (input.consumePress('PadRight') ? 1 : 0) - (input.consumePress('PadLeft') ? 1 : 0);
       const press = input.consumePress('PadA');
-      if (def.type === 'toggle' && (press || dir)) settings.set(def.id, !settings.get(def.id));
+      if (def.type === 'preset') {
+        if (dir || press) rows[focus].step(dir || 1);
+      } else if (def.type === 'toggle' && (press || dir)) settings.set(def.id, !settings.get(def.id));
       else if (def.type === 'slider' && dir) {
         settings.set(def.id, settings.get(def.id) + dir * Math.max(def.step, (def.max - def.min) / 20));
       } else if (def.type === 'select' && dir) {

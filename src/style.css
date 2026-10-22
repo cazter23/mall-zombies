@@ -585,7 +585,8 @@ kbd {
   display: grid;
   place-items: center;
   padding: 16px;
-  background: radial-gradient(circle at 50% 40%, rgba(46, 196, 182, 0.25), rgba(17, 10, 24, 0.94) 70%), #110a18;
+  background: rgba(17, 10, 24, 0.62);
+  backdrop-filter: blur(3px);
 }
 .settings.hidden {
   display: none;
@@ -598,9 +599,37 @@ kbd {
   gap: 12px;
   padding: 22px 24px;
   border-radius: 18px;
-  background: rgba(29, 22, 38, 0.92);
+  background: var(--ink);
+  border: 3px solid var(--mall-pink);
+  box-shadow: 8px 8px 0 var(--mall-teal);
   color: #fff;
   box-sizing: border-box;
+}
+.settings-resets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.settings-presets .settings-control {
+  gap: 6px;
+}
+.settings-preset {
+  padding: 5px 14px;
+  font: inherit;
+  font-size: 13px;
+  color: #fff;
+  background: transparent;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.settings-preset:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.settings-preset.active {
+  color: var(--ink);
+  background: var(--mall-teal);
+  border-color: var(--mall-teal);
 }
 .settings-title {
   margin: 0;

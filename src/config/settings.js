@@ -14,6 +14,9 @@
 //   format(v) (optional) how the value is shown, e.g. '75°'
 //   apply(v, ctx)  changes the game. `ctx` = { renderer, sound, hud }. Runs on load and on every change.
 //
+// PRESETS (settingPresets, below): one-click buttons at the top of a tab that set several settings at once
+// (e.g. Video: Low / Medium / High). They are not settings themselves (nothing extra is saved).
+//
 // Most settings simply write into the same config objects the game already reads
 // every frame (feel, controls, audio), so changes show up immediately.
 // =============================================================================
@@ -132,3 +135,16 @@ export const settingDefs = [
     apply: (v) => { feel.sprintFx.speedLinesOpacity = v ? base.speedLines : 0; },
   },
 ];
+
+// One-click presets per tab: { label, values: { settingId: value } } (shown as buttons at the top of that tab).
+export const settingPresets = {
+  Video: [
+    { label: 'Low', values: { renderScale: 0.75 } }, // for slow computers (school laptops)
+    { label: 'Medium', values: { renderScale: 1 } },
+    { label: 'High', values: { renderScale: roundTo(Math.min(window.devicePixelRatio || 1, 2), 0.25) } },
+  ],
+  Comfort: [
+    { label: 'Calm', values: { headBob: 0, speedLines: false } }, // for motion sickness
+    { label: 'Standard', values: { headBob: 1, speedLines: true } },
+  ],
+};
