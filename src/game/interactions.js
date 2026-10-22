@@ -120,6 +120,7 @@ export function createInteractions({ input, player, wallet, sound = null, onRelo
       return {
         label: focused.label,
         verb: focused.verb,
+        kind: focused.kind ?? 'other', // 'door' | 'weapon' | ... (a pricing category when it is one)
         cost: focused.cost,
         canAfford: wallet.canAfford(focused.cost),
         progress: armed ? Math.min(1, holdTime / cfg.holdSeconds) : 0,

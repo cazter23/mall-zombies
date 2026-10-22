@@ -23,6 +23,7 @@ import { createSettingsMenu } from './ui/settingsMenu.js';
 import { createControlsMenu } from './ui/controlsMenu.js';
 import { createGame } from './game/createGame.js';
 import { tierById, tierOf } from './weapons/upgrades.js';
+import { PRICE_CATEGORIES } from './game/pricing.js';
 import { toggleDoors } from './world/door.js';
 
 // --- Renderer, scene, camera ---------------------------------------------------
@@ -74,7 +75,7 @@ const g = createGame({
   },
 });
 scene.add(viewmodel.worldLight); // the muzzle flash lights up the room
-const { state: game, death, map, player, gun, melee, zombies, rounds, health, wallet, effects, aimAssist, interactions } = g;
+const { state: game, death, map, player, gun, melee, zombies, rounds, health, wallet, effects, aimAssist, interactions, pricing, flashSales } = g;
 const resetRun = g.resetRun;
 
 // Button name for prompts on whichever device was used last ("R" vs "X" vs "□").
@@ -247,7 +248,10 @@ function render(alpha, frameTime) {
   hud.setSprint(player.sprintFraction, player.sprintExhausted, player.isSprinting);
   hud.setAmmo(gun.weapon, buttonLabel('reload'));
   hud.setAmmoTier(tierById(tierOf(gun.modsFor(gun.def.id) ?? [])));
-  hud.setInteract(game.over ? null : interactions.prompt, buttonLabel('interact'));
+  const prompt = game.over ? null : interactions.prompt;
+  // A Flash Sale shows as a SALE mark on the price of whatever it discounted.
+  hud.setInteract(prompt && { ...prompt, sale: PRICE_CATEGORIES.includes(prompt.kind) && pricing.discountOf(prompt.kind) > 0 }, buttonLabel('interact'));
+  hud.setFlashSale(game.over ? null : flashSales.active);
   hud.setVaultPrompt(game.running && !game.over && g.vaultPromptVisible, buttonLabel('jump'));
   hud.setPoints(wallet.points);
   hud.setRoundFlashing(rounds.inBreak && rounds.round > 1); // counter blinks in the break between rounds

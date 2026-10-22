@@ -15,6 +15,7 @@
 //   g.state        { forceRun, over, padPlaying, running }  (window.__mall.game)
 //   g.events       the event bus (game/events.js lists every event): systems announce, features listen
 //   g.pricing      every price the player pays (game/pricing.js): config base price + any discount
+//   g.flashSales   the mall PA's timed discounts (game/flashSales.js); .active = the sale running now (or null)
 //   g.<system>     map, colliders, arena, shootables, stats, player, wallet, runStats, effects, aimAssist,
 //                  gun, interactions, melee, health, zombies, rounds, death
 // =============================================================================
@@ -33,11 +34,13 @@ import { createAimAssist } from '../weapons/aimAssist.js';
 import { createZombieManager } from '../zombies/zombieManager.js';
 import { createEvents } from './events.js';
 import { createPricing } from './pricing.js';
+import { createFlashSales } from './flashSales.js';
+import { nextTier } from '../weapons/upgrades.js';
 import { createRunStats } from './runStats.js';
 import { createWallet, pointsForHit } from './wallet.js';
 import { createRounds } from './rounds.js';
 import { createInteractions } from './interactions.js';
-import { buildFeatures } from './features/index.js';
+import { buildFeatures, featuresOf } from './features/index.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 
@@ -253,6 +256,28 @@ export function createGame({
     scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state,
   });
 
+  // FLASH SALES: the mall PA discounts one group of prices for a while (game/flashSales.js). A group is only picked
+  // when it would be of use right now.
+  const flashSales = createFlashSales({
+    events,
+    pricing,
+    eligible: (group) => {
+      if (group.id === 'doors') return map.doors.some((d) => !d.isOpen);
+      if (group.id === 'weapons') return featuresOf(map, 'wallBuy').some((w) => !gun.owns(w.weapon));
+      if (group.id === 'tiers') return gun.slots.some((id) => nextTier(gun.modsFor(id)));
+      return true;
+    },
+  });
+  events.on('flashSaleStart', ({ pa }) => {
+    hud.showAnnouncement(pa);
+    sound.play('paChime');
+  });
+  events.on('flashSaleEnd', ({ reason, pa }) => {
+    if (reason !== 'expired') return; // a new run ends it silently
+    hud.showAnnouncement(pa);
+    sound.play('paChime');
+  });
+
   // PLAY AGAIN: every system that holds per-run state, put back in this order. A new system with
   // run state = one line here. (tests/fullRun.test.js plays a messy run, resets, and checks the game
   // equals a freshly built one, so anything forgotten here shows up as a failing test.)
@@ -268,6 +293,7 @@ export function createGame({
     ['melee', () => melee.reset()],
     ['aimAssist', () => aimAssist.reset()],
     ['wallet', () => wallet.reset()],
+    ['flashSales', () => flashSales.reset()], // (before pricing: it puts back the discounts it set)
     ['pricing', () => pricing.reset()], // no discounts carried into a new run
     ['rounds', () => rounds.reset()],
     ['player', () => player.teleport(map.playerSpawn)],
@@ -331,6 +357,7 @@ export function createGame({
     health.update(dt);
     map.update(dt);
     features.update(dt);
+    flashSales.update(dt);
     if (arena) arena.update(dt);
     player.updateView(dt); // recoil/jolt springs last, so this tick's kicks show on the next frame
     input.endTick();
@@ -343,6 +370,7 @@ export function createGame({
     death,
     map,
     features,
+    flashSales,
     colliders,
     arena,
     shootables,

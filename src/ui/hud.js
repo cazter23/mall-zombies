@@ -84,6 +84,11 @@ export function createHud() {
   announceBanner.append(announceKicker, announceText);
   hud.append(announceBanner);
 
+  // Top middle: the Flash Sale running now ("FLASH SALE · Wall guns 30% OFF · 0:32").
+  const saleTag = el('div', 'sale-tag');
+  hud.append(saleTag);
+  let lastSaleKey = '';
+
   // Bottom-right: ammo counter.
   const ammo = el('div', 'ammo');
   ammo.innerHTML = `
@@ -377,11 +382,21 @@ export function createHud() {
       if (show) vaultPrompt.innerHTML = `<kbd>${button}</kbd> Vault`;
     },
 
-    // Buy prompt: null hides it, else { label, verb, cost, canAfford, progress, denied }.
+    // The running Flash Sale ({ label, discount 0..1, remaining seconds }) or null. Only touches the DOM when the text changes.
+    setFlashSale(sale) {
+      const text = sale ? `Flash sale · ${sale.label} ${Math.round(sale.discount * 100)}% off · ${Math.ceil(sale.remaining)}s` : '';
+      if (text === lastSaleKey) return;
+      lastSaleKey = text;
+      saleTag.classList.toggle('show', !!sale);
+      saleTag.textContent = text;
+    },
+
+    // Buy prompt: null hides it, else { label, verb, cost, canAfford, progress, denied, sale }.
+    // (`sale`: true while a Flash Sale has discounted this price: the cost turns green with a SALE mark.)
     // `button` is the interact button for the device in use ("F", "X", "□").
     setInteract(info, button = 'F') {
       const key = info
-        ? `${info.label}|${info.cost}|${info.canAfford}|${info.denied}|${button}|${info.progress.toFixed(2)}`
+        ? `${info.label}|${info.cost}|${info.canAfford}|${info.denied}|${button}|${info.progress.toFixed(2)}|${!!info.sale}`
         : '';
       if (key === lastInteractKey) return;
       lastInteractKey = key;
@@ -389,6 +404,7 @@ export function createHud() {
       if (!info) return;
       interactText.innerHTML = `Hold <kbd>${button}</kbd> to ${info.verb} ${info.label} <span class="cost">${info.cost}</span>`;
       interact.classList.toggle('cant', !info.canAfford);
+      interact.classList.toggle('sale', !!info.sale);
       interact.classList.toggle('denied', info.denied);
       interactFill.style.transform = `scaleX(${info.progress})`;
     },

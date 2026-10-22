@@ -397,8 +397,47 @@ kbd {
   margin-left: 0.4em;
   color: #ffd23f;
 }
+.interact.sale .cost {
+  color: #63e6be;
+}
+.interact.sale .cost::after {
+  content: ' SALE';
+  font-size: 0.7em;
+  letter-spacing: 0.08em;
+  color: #1d1626;
+  background: #63e6be;
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-left: 4px;
+}
 .interact.cant .cost {
   color: #ff5a5a;
+}
+
+/* ---------- Flash Sale tag (top middle) ---------- */
+
+.sale-tag {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  padding: 6px 16px;
+  font-family: 'Bungee', Impact, 'Arial Black', sans-serif;
+  font-size: 15px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #1d1626;
+  background: #63e6be;
+  border-radius: 999px;
+  box-shadow: 0 3px 0 var(--mall-pink), 0 4px 12px rgba(0, 0, 0, 0.45);
+  white-space: nowrap;
+}
+.sale-tag.show {
+  display: block;
+}
+.hud.dead .sale-tag {
+  display: none;
 }
 .interact.denied .interact-text {
   color: #ff5a5a;

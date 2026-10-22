@@ -76,6 +76,46 @@ export const economy = {
   // Ammo cache (the vending machine in the Food Court): refills the gun in your hand, any gun, one flat price.
   ammoCache: { price: 400 },
 
+  // FLASH SALES (game/flashSales.js): the mall PA announces a discount on one group of prices for a while. Times are
+  // play time (not while paused or dead). `groups`: id, label, categories (pricing categories, game/pricing.js),
+  // weight (how likely), and the PA lines ({pct} = the discount). A group is skipped when it would be useless right
+  // now (every door already open, every wall gun owned, every gun already Platinum).
+  flashSales: {
+    enabled: true,
+    firstDelaySeconds: 120, // into a run, before the first sale
+    gapSeconds: { min: 120, max: 240 }, // quiet time after a sale ends
+    durationSeconds: 45,
+    retrySeconds: 30, // when nothing was worth discounting, look again this soon
+    discounts: { min: 0.25, max: 0.5, step: 0.05 }, // "25-50% off"
+    groups: [
+      {
+        id: 'doors', label: 'Security shutters', categories: ['door'], weight: 1,
+        start: { kicker: 'Flash sale', text: 'Security shutters are {pct}% off! Please do not ask what is behind them.' },
+        end: { kicker: 'Sale over', text: 'The shutter sale has ended. Thank you for shopping. Please stop.' },
+      },
+      {
+        id: 'weapons', label: 'Wall guns', categories: ['weapon'], weight: 1,
+        start: { kicker: 'Flash sale', text: 'Wall guns are {pct}% off! Limited stock. Unlimited shoppers.' },
+        end: { kicker: 'Sale over', text: 'The gun sale has ended. All sales are final. So are you.' },
+      },
+      {
+        id: 'ammo', label: 'Ammo', categories: ['ammo', 'ammoCache'], weight: 1.3,
+        start: { kicker: 'Flash sale', text: 'Ammo is {pct}% off! Please shoot responsibly. Or do not.' },
+        end: { kicker: 'Sale over', text: 'The ammo sale has ended. We regret nothing.' },
+      },
+      {
+        id: 'tiers', label: 'Extended Warranties', categories: ['tier'], weight: 1,
+        start: { kicker: 'Flash sale', text: 'Extended Warranties are {pct}% off at Customer Service! Dying is not covered.' },
+        end: { kicker: 'Sale over', text: 'The warranty sale has ended. Your gun is now only a little bit covered.' },
+      },
+      {
+        id: 'attachments', label: 'Gun attachments', categories: ['attachment'], weight: 1,
+        start: { kicker: 'Flash sale', text: 'Gun attachments are {pct}% off in every store! Today only. (Today is all there is.)' },
+        end: { kicker: 'Sale over', text: 'The attachment sale has ended. Please remove your shopping from the zombies.' },
+      },
+    ],
+  },
+
   // Round pacing
   rounds: {
     firstRoundDelay: 3, // seconds after the game starts before round 1's zombies begin spawning
