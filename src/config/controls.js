@@ -17,6 +17,7 @@ export const bindings = {
   right: ['KeyD'],
   jump: ['Space', 'PadA'],
   crouch: ['KeyC', 'PadB'], // hold to crouch; tap while sprinting to slide
+  prone: ['ControlLeft', 'ControlRight', 'PadLB'], // toggle prone; jump rises without jumping
   sprint: ['ShiftLeft', 'ShiftRight', 'PadSprint'], // PadSprint = left stick click, latched (COD-style)
   fire: ['Mouse0', 'PadRT'],
   aim: ['Mouse2', 'PadLT'],
@@ -42,6 +43,7 @@ export const controlsHelp = {
     { keys: 'Space', text: 'Jump / vault', short: 'Jump / vault', anchors: ['Space'] },
     { keys: 'Shift', text: 'Sprint', short: 'Sprint', anchors: ['Shift'] },
     { keys: 'C', text: 'Crouch (hold) / slide (tap while sprinting)', short: 'Crouch / slide', anchors: ['C'] },
+    { keys: 'Ctrl', text: 'Toggle prone; Space gets up, C rises to crouch', short: 'Prone (toggle)', anchors: ['Ctrl'] },
     { keys: 'Click', text: 'Shoot', short: 'Shoot', anchors: ['lmb'] },
     { keys: 'Right click', text: 'Aim down sights', short: 'Aim', anchors: ['rmb'] },
     { keys: 'R', text: 'Reload', short: 'Reload', anchors: ['R'] },
@@ -56,6 +58,7 @@ export const controlsHelp = {
     { keys: 'Right stick', text: 'Look', short: 'Look', anchors: ['rs'] },
     { keys: 'A', text: 'Jump / vault', short: 'Jump / vault', anchors: ['a'] },
     { keys: 'B', text: 'Crouch / slide', short: 'Crouch / slide', anchors: ['b'] },
+    { keys: 'LB / L1', text: 'Toggle prone; A gets up, B rises to crouch', short: 'Prone (toggle)', anchors: ['lb'] },
     { keys: 'RT', text: 'Shoot', short: 'Shoot', anchors: ['rt'] },
     { keys: 'LT', text: 'Aim down sights', short: 'Aim', anchors: ['lt'] },
     { keys: 'X', text: 'Reload (hold near a shop item to buy)', short: 'Reload / buy (hold)', anchors: ['x'] },

@@ -68,6 +68,13 @@ export const feel = {
     headroomMargin: 0.01, // shrinks the standing-up check so a wall beside you never blocks it
   },
 
+  prone: {
+    height: 0.55, // low collision cylinder; same radius as the other stances
+    eyeHeight: 0.38,
+    speed: 1.25, // m/s crawling, before ADS/direction penalties
+    eyeTransitionSpeed: 3.5,
+  },
+
   slide: {
     startSpeed: 10.5, // m/s at the start of a slide (sprint is 8)
     endSpeed: 3, // m/s at the end; stays fast early, then drops off
@@ -284,7 +291,9 @@ export const feel = {
       belt: 0x4a3426, // brown belt
     },
     // Hip height for each stance. In between, it follows the camera height smoothly.
-    hipHeight: { stand: 0.92, crouch: 0.5, slide: 0.3 },
+    hipHeight: { stand: 0.92, crouch: 0.5, slide: 0.3, prone: 0.16 },
+    proneLegBack: 0.8, // legs trail behind the low camera, clear of the gun/forward view
+    proneAnkleHeight: 0.1, // shoe soles clear the floor in the prone pose
     hipWidth: 0.1, // each leg's distance from the center line
     thighLength: 0.46,
     shinLength: 0.44,

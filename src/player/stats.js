@@ -22,6 +22,7 @@ export function createPlayerStats() {
     jumpVelocity: feel.movement.jumpVelocity,
 
     crouchSpeed: feel.crouch.speed,
+    proneSpeed: feel.prone.speed,
     slideSpeed: feel.slide.startSpeed,
     slideDuration: feel.slide.duration,
     slideCooldown: feel.slide.cooldown,

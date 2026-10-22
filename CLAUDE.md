@@ -20,6 +20,9 @@ npm run build      # production build into dist/; run after every change to catc
 npm run preview    # serve the built dist/
 npm run balance    # gun balance report (tools/gunReport.mjs): dps by range, pulls to kill by round, cannon blast table
 ```
+`tests/prone.test.js` covers toggle controls, crawl speed from stats, smooth eye/collision lowering, low roofs,
+safe stand/crouch recovery, slide/jump/melee/vault constraints, gun use, zombie damage, body clearance, controller sprint latch and run reset.
+
 Gameplay regression tests live in `tests/` (`gameplay.test.js` movement/melee/vault, `aim.test.js` spread
 (including the Laser Pointer's hip benefit / ADS penalty through repeated shots and recovery),
 `startRoom.test.js` clearance-store dressing adds no collision, leaves central/spawn/vault spaces visually clear,
@@ -120,7 +123,7 @@ src/
   style.css             HUD (crosshair, hit marker, health/stamina bars, ammo, prompt), start/pause overlay
   config/
     environment.js      Decorative start-room and Mega Mart lighting: fixed warm/cool lamps, bounded range, no flicker
-    feel.js             Movement, sprint, crouch, slide, look (+ recoil spring: frequency/damping, roll), ADS
+    feel.js             Movement, sprint, crouch, slide, prone, look (+ recoil spring: frequency/damping, roll), ADS
                         (move speed, sensitivity), camera, player size, sim tick rate, shutter speed, viewmodel
                         handling shared by all guns (fov, sway, walk bob, breathing, landing dip, reload
                         blend-out, dry-fire kick, box cutter slash path), hit effects, crosshair min gap,
@@ -184,15 +187,15 @@ src/
                         press, so L3 while holding LT drops ADS and sprints), Xbox/PlayStation detection,
                         `connected`, lookRate() w/ turn ramp
   player/
-    controller.js       PlayerController: WASD, jump (buffer + coyote time), sprint meter, crouch/slide
-                        (stance: stand|crouch|slide), gravity, mouse look (per render frame), camera interpolation.
+    controller.js       PlayerController: WASD, jump (buffer + coyote time), sprint meter, crouch/slide/prone
+                        (stance: stand|crouch|slide|prone), gravity, mouse look (per render frame), camera interpolation.
                         View recoil: kickSpring (pitch, part of the aim; `viewKick` getter) + rollSpring (visual
                         only) + yawKickSpring (sideways, part of the aim; `viewKickYaw`). addRecoil(pitch, roll, yaw)
                         for shots, addViewKick() for instant jolts (hits, melee),
                         updateView(dt) at the END of each tick; syncCamera interpolates both
     vault.js            Opt-in low-obstacle vault: jump on approach, full-cylinder path/headroom/landing
                         checks (including live shootables), entry momentum on exit, interrupt on crowd shove
-    stats.js            createPlayerStats(): the single stats object (health, speeds, jump, sprint, crouch/slide,
+    stats.js            createPlayerStats(): the single stats object (health, speeds, jump, sprint, crouch/slide/prone,
                         regenDelay/regenRate, adsMoveSpeed, damageMultiplier, meleeDamageMultiplier,
                         reloadSpeed); resetPlayerStats(stats) puts every stat back to base (same object) on a new run and DELETES
                         anything not declared in createPlayerStats() (so a new stat must be declared there with its default)
@@ -653,6 +656,13 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+Prone: Ctrl (either side) / controller LB (L1) toggles a grounded prone stance. Crawl speed 1.25 m/s,
+collision height 0.55 m, eye height 0.38 m; lowering eases the camera and shrinks collision with it.
+Space/A or the prone button gets up without jumping; C/B rises to crouch. Headroom checks fall back to crouch
+or keep prone under low cover. No airborne dives, sprint, slide boost, vault or melee lunge while prone;
+shooting, ADS, reloads and ordinary zombie damage still work. Prone speed is a player stat, reset each run.
+The first-person body lies low with legs behind the view; Controls diagrams/list and How to play include prone.
+
 Mega Mart detail pass: department-specific stock replaces generic product cubes, with sparse bays, checkout clutter,
 receiving/stockroom wear, toy promotion, perimeter trolley and fluorescent housings. Gondola/counter collision and prices
 are unchanged; only the visible-size parked trolley adds one small collider away from the main routes. Both existing lamps

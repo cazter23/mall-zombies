@@ -4,7 +4,7 @@
 // when you look down. Purely visual: no collision, not shootable.
 //
 // Animated in code every rendered frame:
-//   - Hip height follows the camera height (stand -> crouch -> slide blend smoothly)
+//   - Hip height follows the camera height (stand -> crouch -> slide -> prone blend smoothly)
 //   - Feet are placed by pose (walk cycle / slide / airborne / vault), then each knee is
 //     solved so thigh + shin reach from hip to foot (simple two-bone IK).
 // The arms live on the gun model instead (weapons/viewmodel.js).
@@ -15,6 +15,7 @@ import { feel } from '../config/feel.js';
 
 const Z_AXIS = new THREE.Vector3(0, 0, 1);
 const KNEE_POLE = new THREE.Vector3(0, 0, -1); // knees bend forward (the body faces -Z)
+const UP = new THREE.Vector3(0, 1, 0);
 const unitBox = new THREE.BoxGeometry(1, 1, 1);
 
 /**
@@ -37,7 +38,7 @@ export function makeBoxMesh(color) {
 // If the foot is out of reach, it is pulled in to full leg length. Writes knee into `outKnee`.
 const tmpDir = new THREE.Vector3();
 const tmpPole = new THREE.Vector3();
-function solveKnee(hip, foot, l1, l2, outKnee) {
+function solveKnee(hip, foot, l1, l2, outKnee, proneAmount = 0) {
   tmpDir.subVectors(foot, hip);
   let d = tmpDir.length();
   if (d < 1e-6) {
@@ -53,7 +54,8 @@ function solveKnee(hip, foot, l1, l2, outKnee) {
   d = Math.max(d, Math.abs(l1 - l2) + 1e-3);
   const along = (l1 * l1 - l2 * l2 + d * d) / (2 * d); // hip -> knee, measured along hip->foot
   const out = Math.sqrt(Math.max(0, l1 * l1 - along * along)); // how far the knee sticks out
-  tmpPole.copy(KNEE_POLE).addScaledVector(tmpDir, -KNEE_POLE.dot(tmpDir));
+  tmpPole.copy(KNEE_POLE).lerp(UP, proneAmount);
+  tmpPole.addScaledVector(tmpDir, -tmpPole.dot(tmpDir));
   if (tmpPole.lengthSq() < 1e-6) tmpPole.set(0, 1, 0);
   tmpPole.normalize();
   outKnee.copy(hip).addScaledVector(tmpDir, along).addScaledVector(tmpPole, out);
@@ -100,6 +102,7 @@ export function createPlayerBody(scene) {
   const walkFoot = new THREE.Vector3();
   const slideFoot = new THREE.Vector3();
   const vaultFoot = new THREE.Vector3();
+  const proneFoot = new THREE.Vector3();
 
   // Hip height that follows the (smoothly easing) camera height between the stance poses.
   function hipHeightForEye(eye) {
@@ -107,6 +110,10 @@ export function createPlayerBody(scene) {
     const crouchEye = feel.crouch.eyeHeight;
     const slideEye = feel.slide.eyeHeight;
     const h = b.hipHeight;
+    if (eye < slideEye) {
+      const t = Math.max(0, (eye - feel.prone.eyeHeight) / (slideEye - feel.prone.eyeHeight));
+      return h.prone + (h.slide - h.prone) * t;
+    }
     if (eye >= crouchEye) {
       const t = Math.min(1, (eye - crouchEye) / (standEye - crouchEye));
       return h.crouch + (h.stand - h.crouch) * t;
@@ -136,7 +143,9 @@ export function createPlayerBody(scene) {
       if (speed > 0.1) swingDir.set(localX / speed, localZ / speed);
 
       const blend = Math.min(1, b.blendSpeed * frameTime);
-      const walking = player.grounded && player.stance !== 'slide';
+      const walking = player.grounded && player.stance !== 'slide' && player.stance !== 'prone';
+      const proneAmount = Math.max(0, Math.min(1, (feel.slide.eyeHeight - eye)
+        / (feel.slide.eyeHeight - feel.prone.eyeHeight)));
       const targetMove = walking ? Math.min(speed / player.stats.walkSpeed, 1.6) : 0;
       moveAmount += (targetMove - moveAmount) * blend;
       slideAmount += ((player.stance === 'slide' ? 1 : 0) - slideAmount) * blend;
@@ -150,6 +159,7 @@ export function createPlayerBody(scene) {
       const hipY = hipHeightForEye(eye);
       torso.position.set(0, hipY + 0.05 + b.torsoHeight / 2, b.backOffset);
       torso.scale.set(b.waistWidth, b.torsoHeight, b.waistDepth);
+      torso.rotation.x = proneAmount * Math.PI / 2;
       belt.position.set(0, hipY + 0.035, b.backOffset);
       belt.scale.set(b.waistWidth + 0.01, 0.035, b.waistDepth + 0.01);
       pelvis.position.set(0, hipY - 0.01, b.backOffset);
@@ -173,6 +183,8 @@ export function createPlayerBody(scene) {
         else slideFoot.set(x - b.slideSplay, b.ankleHeight, -b.slideBackFoot);
 
         leg.foot.copy(walkFoot).lerp(slideFoot, slideAmount);
+        proneFoot.set(x, b.proneAnkleHeight, b.backOffset + b.proneLegBack);
+        leg.foot.lerp(proneFoot, proneAmount);
         // Airborne: pull the feet up a little (not during a slide or a vault).
         leg.foot.y += b.airTuck * airAmount * (1 - slideAmount) * (1 - vaultAmount);
 
@@ -186,15 +198,16 @@ export function createPlayerBody(scene) {
           leg.foot.lerp(vaultFoot, vaultAmount);
         }
 
-        solveKnee(leg.hip, leg.foot, b.thighLength, b.shinLength, leg.knee);
+        solveKnee(leg.hip, leg.foot, b.thighLength, b.shinLength, leg.knee, proneAmount);
         placeLimb(leg.thigh, leg.hip, leg.knee, 0.14, 0.15);
         placeLimb(leg.shin, leg.knee, leg.foot, 0.12, 0.13);
 
         // Sneaker: flat, toe pointing forward, ankle near the back.
-        leg.shoe.position.set(leg.foot.x, leg.foot.y - 0.03, leg.foot.z - 0.07);
-        leg.shoe.rotation.set(0, 0, 0);
+        const toeOffset = 0.07 * (2 * proneAmount - 1);
+        leg.shoe.position.set(leg.foot.x, leg.foot.y - 0.03, leg.foot.z + toeOffset);
+        leg.shoe.rotation.set(0, proneAmount * Math.PI, 0);
         leg.shoe.scale.set(0.12, 0.08, 0.27);
-        leg.sole.position.set(leg.foot.x, leg.foot.y - 0.075, leg.foot.z - 0.07);
+        leg.sole.position.set(leg.foot.x, leg.foot.y - 0.075, leg.foot.z + toeOffset);
         leg.sole.scale.set(0.125, 0.02, 0.28);
       }
     },

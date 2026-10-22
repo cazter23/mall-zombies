@@ -1,6 +1,6 @@
 // =============================================================================
 // PLAYER CONTROLLER
-// First-person movement: mouse look, WASD, jump, limited sprint, gravity,
+// First-person movement: mouse look, WASD, jump, limited sprint, prone, gravity,
 // and collision. Runs on the fixed game tick; the camera is interpolated
 // between ticks at render time so motion stays smooth on any monitor.
 // =============================================================================
@@ -48,7 +48,7 @@ export class PlayerController {
     this.isSprinting = false;
     this.sprintExhausted = false;
 
-    // Stance: 'stand' | 'crouch' | 'slide'. Crouch is hold C; slide is tap C while sprinting.
+    // Stance: 'stand' | 'crouch' | 'slide' | 'prone'. Crouch/slide are unchanged; prone is a toggle.
     this.stance = 'stand';
     this.height = feel.player.height; // current collision height (shrinks when crouched/sliding)
     this.eyeHeight = feel.player.eyeHeight; // camera height; eases toward the stance's target
@@ -254,6 +254,7 @@ export class PlayerController {
 
     if (this.vault.active) {
       input.consumeAction('jump'); // a vault never banks another jump
+      input.consumeAction('prone'); // no prone/dive queued across a vault
       if (input.consumeAction('crouch')) this.slideChainQueued = true;
       this.slideCooldownTimer = Math.max(0, this.slideCooldownTimer - dt);
       this.updateSprint(dt, this.isSprinting && input.actionDown('sprint') && !this.isAiming);
@@ -321,6 +322,7 @@ export class PlayerController {
     } else if (!this.meleeCommitted) {
       let targetSpeed = this.isSprinting ? stats.sprintSpeed : stats.walkSpeed;
       if (this.stance === 'crouch') targetSpeed = stats.crouchSpeed;
+      if (this.stance === 'prone') targetSpeed = stats.proneSpeed;
       targetSpeed *= 1 + (stats.adsMoveSpeed - 1) * this.aimAmount; // slower while aiming
       if (!this.isSprinting) targetSpeed *= moveStrength * directionSpeed; // stick tilt, backpedal/strafe
       // In the air you keep your momentum: you can steer, but holding a direction never slows
@@ -430,7 +432,7 @@ export class PlayerController {
     // Shooting out of a sprint snaps the running pose away fast, so the gun is up for the shot.
     const poseBlend = this.sprintBlockTimer > 0 ? Math.min(1, fx.fireBlendOutSpeed * dt) : blend;
     this.sprintAmount += ((this.isSprinting ? 1 : 0) - this.sprintAmount) * poseBlend;
-    const onFeet = this.grounded && this.stance !== 'slide';
+    const onFeet = this.grounded && this.stance !== 'slide' && this.stance !== 'prone';
     const speed = Math.hypot(this.velocity.x, this.velocity.z);
     if (onFeet) this.bobPhase += ((speed * dt) / fx.bobStride) * Math.PI * 2;
     const walkFactor = Math.min(1, speed / this.stats.walkSpeed);
@@ -438,12 +440,22 @@ export class PlayerController {
     this.bobStrength += (targetBob - this.bobStrength) * blend;
   }
 
-  // Decides stand / crouch / slide, then sets collision height and eases the camera height.
+  // Grow a stance only if the newly occupied space is clear. A blocked stand may
+  // rise to crouch; if even that is blocked, the player keeps crawling.
+  riseFromProne(crouchOnly = false) {
+    const room = (height) => hasHeadroom(this.position, feel.player.radius,
+      this.height, height, this.colliders, feel.crouch.headroomMargin);
+    if (!crouchOnly && room(feel.player.height)) this.stance = 'stand';
+    else if (room(feel.crouch.height)) this.stance = 'crouch';
+  }
+
+  // Decides stand / crouch / slide / prone, then sets collision and camera height.
   updateStance(dt, wishX, wishZ) {
     const input = this.input;
     const stats = this.stats;
     const cPressed = input.consumeAction('crouch') && !this.meleeCommitted;
     const cHeld = input.actionDown('crouch') && !this.meleeCommitted;
+    const pronePressed = input.consumeAction('prone') && !this.meleeBusy;
 
     this.slideCooldownTimer = Math.max(0, this.slideCooldownTimer - dt);
     this.chainPressTimer = Math.max(0, this.chainPressTimer - dt);
@@ -455,7 +467,28 @@ export class PlayerController {
     }
 
     // Landing slides skip the slide cooldown and don't need sprint; that's the reward for timing it.
-    if (this.meleeCommitted) {
+    if (this.stance === 'prone') {
+      const jumpPressed = input.consumeAction('jump');
+      this.jumpBuffer = 0; // Space gets up, never banks a jump under a low ceiling
+      if (!this.meleeCommitted && (pronePressed || cPressed || jumpPressed)) this.riseFromProne(cPressed);
+    } else if (pronePressed && this.grounded) {
+      if (this.stance === 'slide') this.endSlide();
+      this.stance = 'prone';
+      this.isSprinting = false;
+      this.airborneWithMomentum = false;
+      this.slideChainQueued = false;
+      this.chainPressTimer = 0;
+      this.chainGraceTimer = 0;
+      this.vaultHold = 0;
+      this.jumpBuffer = 0;
+      this.timeSinceJump = Infinity;
+      input.consumeAction('jump');
+      // No dolphin dive or retained slide boost in a prone-sized collision body.
+      const speed = Math.hypot(this.velocity.x, this.velocity.z);
+      const keep = speed > 0 ? Math.min(1, stats.proneSpeed / speed) : 0;
+      this.velocity.x *= keep;
+      this.velocity.z *= keep;
+    } else if (this.meleeCommitted) {
       // Existing slides keep running, but a swing cannot start a slide or queue a chain.
       if (this.stance === 'slide') {
         this.slideTimer -= dt;
@@ -511,14 +544,20 @@ export class PlayerController {
       if (roomToStand) this.stance = 'stand';
     }
 
-    // Collision height changes right away; the camera eases so it doesn't snap.
-    this.height = this.stance === 'stand' ? feel.player.height : feel.crouch.height;
+    // Stand/crouch/slide collision changes right away; prone lowers with its camera below.
+    this.height = this.stance === 'stand' ? feel.player.height
+      : this.stance === 'prone' ? feel.prone.height : feel.crouch.height;
     let targetEye = feel.player.eyeHeight;
     if (this.stance === 'crouch') targetEye = feel.crouch.eyeHeight;
     if (this.stance === 'slide') targetEye = feel.slide.eyeHeight;
-    const maxEyeChange = feel.crouch.eyeTransitionSpeed * dt;
+    if (this.stance === 'prone') targetEye = feel.prone.eyeHeight;
+    const maxEyeChange = (this.stance === 'prone' ? feel.prone.eyeTransitionSpeed : feel.crouch.eyeTransitionSpeed) * dt;
     const eyeDiff = targetEye - this.eyeHeight;
     this.eyeHeight += Math.max(-maxEyeChange, Math.min(maxEyeChange, eyeDiff));
+    // Lower smoothly without letting the eye pass through an overhead: the body
+    // shrinks with the camera, reaching prone clearance only when fully lowered.
+    if (this.stance === 'prone') this.height = Math.max(feel.prone.height,
+      this.eyeHeight + feel.prone.height - feel.prone.eyeHeight);
   }
 
   // The gun is being fired: stop sprinting now and for `seconds` (you walk while shooting).

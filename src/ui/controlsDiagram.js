@@ -82,6 +82,7 @@ function drawKeyboard(parent, anchors, slots) {
     R: { x: 620, y: 192, align: 'start' }, // Reload
     F: { x: 620, y: 228, align: 'start' }, // Buy
     C: { x: 360, y: 420, align: 'middle' }, // Crouch / slide
+    Ctrl: { x: 232, y: 330, align: 'end' }, // Prone
     Space: { x: 440, y: 360, align: 'middle' }, // Jump
     V: { x: 520, y: 420, align: 'middle' }, // Box cutter
     lmb: { x: 805, y: 140, align: 'middle' }, // Shoot
@@ -134,6 +135,7 @@ function drawController(parent, anchors, slots) {
 
   Object.assign(slots, {
     lt: { x: 330, y: 166, align: 'end' }, // Aim
+    lb: { x: 330, y: 190, align: 'end' }, // Prone
     rt: { x: 710, y: 166, align: 'start' }, // Shoot
     rb: { x: 710, y: 190, align: 'start' }, // Box cutter
     ls: { x: 330, y: 250, align: 'end' }, // Move / sprint

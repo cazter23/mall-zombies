@@ -116,7 +116,7 @@ export function createScreens() {
         <div><b>Spend</b><p>Hold <kbd>F</kbd> / <kbd>X</kbd> to buy: shutters open new parts of the mall, guns hang on the walls, the STAPLE-O-MAT refills ammo.</p></div>
         <div><b>Upgrade</b><p>Customer Service sells Extended Warranties (more damage). The Food Court stores fit attachments to the gun in your hand.</p></div>
         <div><b>Listen</b><p>The PA announces Flash Sales: one kind of item gets 25-50% cheaper for a short time.</p></div>
-        <div><b>Move</b><p>Sprint, slide (<kbd>C</kbd>), vault counters (<kbd>Space</kbd>), slash with the box cutter (<kbd>V</kbd>). Stand still and they surround you.</p></div>
+        <div><b>Move</b><p>Sprint, slide (<kbd>C</kbd>), vault counters (<kbd>Space</kbd>), go prone (<kbd>Ctrl</kbd> / <kbd>LB</kbd>), slash with the box cutter (<kbd>V</kbd>). Space / A gets you up from prone. Stand still and they surround you.</p></div>
       </div>
       <div class="menu-list menu-row">
         <button class="menu-btn primary" data-action="back" type="button">Back</button>

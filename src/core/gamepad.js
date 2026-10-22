@@ -117,9 +117,9 @@ export function createGamepad(input) {
         input.pressed.add('PadSprint');
       }
       if (input.padMove.y < cfg.sprintReleaseForward && !l3Pressed) sprintLatched = false;
-      // A fresh aim or crouch press ends the sprint. (Only a fresh press: clicking sprint while
+      // A fresh aim, crouch or prone press ends the sprint. (Only a fresh press: clicking sprint while
       // already holding aim drops ADS and sprints, the COD way; see weapons/aim.js.)
-      if (!l3Pressed && (input.actionPressed('aim') || input.actionPressed('crouch'))) sprintLatched = false;
+      if (!l3Pressed && (input.actionPressed('aim') || input.actionPressed('crouch') || input.actionPressed('prone'))) sprintLatched = false;
       if (sprintLatched) input.held.add('PadSprint');
       else input.held.delete('PadSprint');
 

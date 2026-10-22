@@ -78,8 +78,8 @@ export function createMelee({ def, stats, player, input, getWeapon, shootables, 
     player.jumpBuffer = 0;
     getWeapon().cancelReload(); // the classic COD tradeoff: knifing interrupts a reload
 
-    // Lunge at a target that's just out of reach (not while sliding or in the air).
-    if (player.stance === 'slide' || !player.grounded) return;
+    // Lunge at a target that's just out of reach (not while sliding, prone or airborne).
+    if (player.stance === 'slide' || player.stance === 'prone' || !player.grounded) return;
     const found = findTarget(def.lungeRange);
     if (!found || found.distance <= def.range * def.lungeStopFraction) return;
     const dx = found.point.x - eye.x;
