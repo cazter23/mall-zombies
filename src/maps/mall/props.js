@@ -140,7 +140,7 @@ export function createMallProps(kit) {
    * InstancedMesh per gondola (hundreds of boxes, one draw call); `seed` keeps the stock the
    * same every load; about `looted` of the slots are empty.
    */
-  function gondola(x0, z0, x1, z1, { height = 2.0, seed = 1, looted = 0.12 } = {}) {
+  function gondola(x0, z0, x1, z1, { height = 2.0, seed = 1, looted = 0.12, stock = true } = {}) {
     addCollider(x0, 0, z0, x1, height, z1);
     const alongX = x1 - x0 >= z1 - z0;
     // Work in (u = along the gondola, w = across it) and map back to (x, z).
@@ -159,6 +159,8 @@ export function createMallProps(kit) {
       put(u0 + 0.02, y - 0.03, u1 - 0.02, y, wMid + 0.03, w1, mat(COLORS.gondolaShelf));
     }
 
+    // A map can supply its own themed stock while keeping this exact shelving/collision.
+    if (!stock) return;
     // Product boxes on every shelf, both faces.
     const rand = seededRandom(seed);
     const items = [];

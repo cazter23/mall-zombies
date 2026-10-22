@@ -22,6 +22,10 @@ npm run balance    # gun balance report (tools/gunReport.mjs): dps by range, pul
 ```
 Gameplay regression tests live in `tests/` (`gameplay.test.js` movement/melee/vault, `aim.test.js` spread
 (including the Laser Pointer's hip benefit / ADS penalty through repeated shots and recovery),
+`startRoom.test.js` clearance-store dressing adds no collision, leaves central/spawn/vault spaces visually clear,
+and preserves a real checkout vault and the original Price Gun purchase,
+`megaMartDetails.test.js` protects aisle/crossing/entrance/spawn/vault clearance against the actual decorative triangles,
+validates geometry and trolley placement, and vaults all four checkouts plus buys the Foam Dart Blaster at its original price,
 `zombies.test.js` zombie types/mix/rounds, `maps.test.js` wall pieces, single/multi-zone shared doors, nav rebuilds,
 `mall.test.js` the REAL mall built in Node with a stub canvas: dispose leaves no colliders + frees everything, door ladder, spawn points on clear floor, zones
 sealed until any connecting door is bought (all 120 orders after the start shutter), shortcut-only entrances,
@@ -115,6 +119,7 @@ src/
                         before, plus `g` = the game) when debug.exposeToWindow
   style.css             HUD (crosshair, hit marker, health/stamina bars, ammo, prompt), start/pause overlay
   config/
+    environment.js      Decorative start-room and Mega Mart lighting: fixed warm/cool lamps, bounded range, no flicker
     feel.js             Movement, sprint, crouch, slide, look (+ recoil spring: frequency/damping, roll), ADS
                         (move speed, sensitivity), camera, player size, sim tick rate, shutter speed, viewmodel
                         handling shared by all guns (fov, sway, walk bob, breathing, landing dip, reload
@@ -421,6 +426,12 @@ src/
                         (byteMe: screen wall + laptops + neon; goodSports: wainscot, jerseys, trophies, bat rack, ball bin;
                         playTimeToys: rainbow, plush shelves, blocks; nutsAndBolts: pegboard of tools, paint cans, workbench) and a
                         zombie spawn just inside the door. buildStores({ kit, props, court, thickness, stores }) -> { spots, spawns }
+    mall/startRoomDetails.js  Clearance-store dressing relative to the start room: register, receipt, bags, stock remnants,
+                        vent frames/boards, sale remnants, pricing station, floor wear, damaged light fitting and lamps.
+                        Decoration only (no collision or interactions); static boxes merged by material; map kit disposes resources.
+    mall/megaMartDetails.js  Department stock and interrupted-shopping detail (batched static meshes), checkout groceries,
+                        receiving hardware/signs, Foam Dart promotion, perimeter trolley, fluorescent housings and the two Mart lamps.
+                        MART_FIXTURES shares gondola positions and checkout lanes with mall.js. Only the parked trolley adds collision.
     mall/palette.js     COLORS shared by the mall's rooms and props
     testRange/          Debug add-on (not a map): testRange.js buildTestRange(scene, colliders) with own lights,
                         dummy.js practice mannequins (shootables)
@@ -561,6 +572,10 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
 - Start room: x -5..5, z 6..16, 4m ceiling, checkout counter, shelf, crates, boarded vents. Its 4m doorway at z=6
   is blocked by a security shutter door (500) that opens the hallway. Hold **F** (controller: hold **X**) near a
   door to buy it. Debug: press **O** to open all doors for free; if all are open, O closes them all.
+  Dressed as a picked-over clearance store: register/receipt/bags at the left end of the vaultable checkout,
+  open shelves with a few products and dusty stock outlines (original collision footprint), framed dark boarded vents,
+  sale/tape remnants, missing employee photo, FINAL MARKDOWN pricing station around the Price Gun, restrained perimeter
+  floor litter/scuffs, damaged dead ceiling fitting, warm checkout / cool shutter light. Central lane and both spawn bodies stay clear.
 - Main hallway: x -20..20, z -2..6 (8m wide), 6m ceiling. Doors: Food Court (1000, south wall x -2..2, straight
   across from the start door, under a FOOD COURT sign, framed by two planters), Mega Mart (750, east end z 0..4,
   under a MEGA MART sign), Service Corridor (1250, west wall z 0.5..3.5, under a "SERVICE CORRIDOR · STAFF ONLY"
@@ -585,6 +600,11 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
   (x 24 / 27.5 / 31, z -19.5..-8, solid, 2m tall) making 4 aisles, a 4.5m back walkway with stockroom/receiving
   doors + a boarded vent, an emergency exit on the east wall. Brand stripe, aisle signs, fluorescent strips (some
   dead), 2 point lights.
+  Detail pass: recognisable Outdoor / Snacks / All Holidays / Housewares stock inside the original shelf footprints,
+  looted stretches and shelf tickets, groceries/receipts/bags at register ends (vault lanes clear), receiving hardware and
+  delivery/safety notices, TRY BEFORE YOU BUY Foam Dart promotion, dropped basket within a gondola, perimeter spill/scuffs,
+  a solid parked trolley by the east wall at x 33.43..33.91, z -5.90..-5.08, framed fluorescent fittings. The two lamps now
+  separate warm checkouts from cool aisles; no flashing. Entrances, crossings, spawn spaces and four main aisles stay clear.
 - Service Corridor: behind the 1250 shutter, a 3m-wide back-of-house corridor built from a data spec with the
   corridor builder: in through the hallway's west wall (floor reaches under the doorway), a 1.5m run west, then 16m
   south along the Food Court's west side to a dead end at z -14 (x -23.3..-20.3, 3.5m ceiling). Its east side is the
@@ -633,6 +653,17 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+Mega Mart detail pass: department-specific stock replaces generic product cubes, with sparse bays, checkout clutter,
+receiving/stockroom wear, toy promotion, perimeter trolley and fluorescent housings. Gondola/counter collision and prices
+are unchanged; only the visible-size parked trolley adds one small collider away from the main routes. Both existing lamps
+are retuned in environment.js, with no extra lights. New clearance tests plus real checkout-vault/purchase tests pass.
+Browser verified all four checkout vaults, walking through both entrances, the 1200-point Foam Dart buy and trolley collision.
+
+Start-room detail pass complete: clearance-store checkout, picked-over shelves, framed zombie vents, sale remnants,
+Price Gun station, missing employee photo, floor wear and static warm/cool lighting. No new colliders, prices, spawns
+or gameplay features; shelf visuals opened up within the original collision footprint. Small static boxes are batched
+by material. Tests cover clear fighting/spawn/vault spaces, valid geometry, a real vault and the 500-point Price Gun buy.
+
 Store flicker fix: z-fighting where my new geometry shared planes: the pod back-wall paint panel under the signs/screens, the door
 frame posts against the window sills, the store ceilings against the wall edges, the Customer Service booth's desk against its filing
 cabinets, and its warranty card against the tier stickers. Fixed (thinner panel, posts 2cm proud, ceilings inside the walls, no

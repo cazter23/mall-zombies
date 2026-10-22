@@ -39,6 +39,8 @@ import { debug } from '../../config/debug.js';
 import { economy } from '../../config/economy.js';
 import { upgrades } from '../../config/upgrades.js';
 import { buildStores, storeOpenings } from './stores.js';
+import { buildStartRoomDetails } from './startRoomDetails.js';
+import { buildMegaMartDetails, MART_FIXTURES } from './megaMartDetails.js';
 
 export const LAYOUT = {
   startRoom: { minX: -5, maxX: 5, minZ: 6, maxZ: 16, height: 4 },
@@ -254,10 +256,12 @@ export function buildMall(scene, colliders) {
   box(-4.2, 0, 13.6, -1.2, 0.95, 14.4, mat(COLORS.woodDark), { name: 'counter', vaultable: true });
   box(-4.25, 0.95, 13.55, -1.15, 1.02, 14.45, mat(COLORS.wood), { collide: false });
 
-  // Empty shelving unit against the west wall
-  box(-5, 0, 8, -4.4, 2.1, 11.5, mat(0x8a8f96), { name: 'shelf' });
+  // Open shelves inside the same original collision box: unchanged walking and navigation space.
+  kit.addCollider(-5, 0, 8, -4.4, 2.1, 11.5);
+  box(-5, 0, 8, -4.94, 2.1, 11.5, mat(0x8a8f96), { name: 'shelf', collide: false });
+  for (const z of [8, 11.44]) box(-4.94, 0, z, -4.38, 2.1, z + 0.06, mat(0x8a8f96), { collide: false });
   for (const y of [0.6, 1.2, 1.8]) {
-    box(-4.42, y, 8.05, -4.38, y + 0.05, 11.45, mat(0x6c7178), { collide: false });
+    box(-4.94, y, 8.05, -4.38, y + 0.05, 11.44, mat(0x6c7178), { collide: false });
   }
 
   // Cardboard boxes (jumpable, stackable)
@@ -265,13 +269,8 @@ export function buildMall(scene, colliders) {
   box(3.6, 0, 14.3, 4.1, 0.5, 14.8, mat(0xb88a4f), { name: 'crate' });
   box(3.0, 0.6, 14.3, 3.45, 1.05, 14.75, mat(0xd2a86a), { name: 'crate' });
 
-  // Boarded-up vents where zombies crawl in
-  const plank = mat(COLORS.plank);
-  for (const vx of [-3.5, 3.5]) {
-    for (const y of [0.45, 0.8, 1.15]) {
-      box(vx - 0.7, y, R.maxZ - 0.06, vx + 0.7, y + 0.2, R.maxZ, plank, { collide: false });
-    }
-  }
+  // Clearance-store dressing and framed boarded vents; the existing collision layout stays intact.
+  buildStartRoomDetails(kit, R);
 
   sign('EVERYTHING MUST GO!', {
     x: 0, y: 2.7, z: R.maxZ - 0.02, width: 4.5, height: 0.8, facing: -1,
@@ -474,14 +473,13 @@ export function buildMall(scene, colliders) {
 
   // Front of the store: four checkout lanes (vaultable counters) facing the entrance. You walk in
   // at z 0..4 and the lanes are 2m wide; the ends stay open, so you can run round the row.
-  [4.1, 1.3, -1.5, -4.3].forEach((z, i) => props.checkout(24.5, z - 0.4, 27.5, z + 0.4, i + 1));
+  MART_FIXTURES.checkoutZs.forEach((z, i) => props.checkout(24.5, z - 0.4, 27.5, z + 0.4, i + 1));
 
   // Back of the store: three long shelf aisles (gondolas) running north-south. Aisles are 2.5m
   // (the west one 3.2m, meeting the Food Court shortcut), with a 4.5m
   // walkway at the back and a crossing at the front.
-  const gondolaXs = [24.0, 27.5, 31.0];
-  gondolaXs.forEach((x, i) => {
-    props.gondola(x - 0.5, -19.5, x + 0.5, -8, { seed: 3 + i * 2 });
+  MART_FIXTURES.gondolas.forEach(({ x }) => {
+    props.gondola(x - 0.5, -19.5, x + 0.5, -8, { stock: false });
     sign('SALE!', {
       x, y: 1.0, z: -7.99, width: 0.8, height: 0.4, facing: 1,
       background: '#e63946', color: '#ffffff',
@@ -531,6 +529,7 @@ export function buildMall(scene, colliders) {
   props.lightPanel(21.5, 2.75, 33, 3.25, M.height);
   props.lightPanel(21.5, -3.25, 33, -2.75, M.height);
   props.lightPanel(21.5, -22, 33, -21.5, M.height, { dead: true });
+  buildMegaMartDetails(kit, M);
 
   // --- Lighting --------------------------------------------------------------
 
@@ -550,8 +549,8 @@ export function buildMall(scene, colliders) {
   // under the ceiling lights a small, hard-edged bright disc on it; hung lower it's a soft wide glow.
   for (const x of [-10, 10]) lamp(0xfff0d0, 10, x, H.height * 0.58, HZ); // hallway
   for (const x of [-12, 0, 12]) lamp(0xfff0d0, 10, x, F.height * 0.58, FZ); // Food Court
-  lamp(0xffe2b0, 4.4, 0, R.height * 0.65, 10); // start room
-  for (const z of [0, -15]) lamp(0xf2f6ff, 8, 27.5, M.height * 0.6, z); // Mega Mart: cool fluorescent
+  // Start-room warm/cool lamps are built with its details (config/environment.js).
+  // Mega Mart's two fixed lamps are built with its details (config/environment.js).
   for (const at of [3, 12]) lamp(0xfff2dc, 4.1, service.points[1].x, SC.height * 0.65, service.pointAt(1, at).z); // Service Corridor
 
   // --- Spawn points and wall-buy spots (invisible markers) -------------------
