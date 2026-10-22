@@ -139,21 +139,24 @@ export function createViewmodel(weaponDefs, meleeDef) {
   // Random left-or-right, 50..100% strength: every shot twists a little differently.
   const randomSide = () => (Math.random() < 0.5 ? -1 : 1) * (0.5 + Math.random() * 0.5);
 
-  // Show another gun's model (weapon switch / new gun bought).
+  // Reuse the model, but keep its stats current when upgrades re-resolve the same gun.
   function setActive(def) {
     const next = guns.get(def.id);
-    if (!next || next === active) return;
-    active.model.root.visible = false;
-    active.flash.reset();
-    handLight.intensity = 0;
-    worldLight.intensity = 0;
-    active = next;
-    active.model.root.visible = true;
-    active.flash.object.add(handLight); // the hand light follows the gun in hand
+    if (!next || (next === active && active.def === def)) return;
+    if (next !== active) {
+      active.model.root.visible = false;
+      active.flash.reset();
+      handLight.intensity = 0;
+      worldLight.intensity = 0;
+      active = next;
+      active.model.root.visible = true;
+      active.flash.object.add(handLight); // the hand light follows the gun in hand
+      sinceFire = Infinity;
+      reloadWeight = 0;
+    }
+    active.def = def;
     kickPos.setParams(active.def.recoil.model);
     kickRot.setParams(active.def.recoil.model);
-    sinceFire = Infinity;
-    reloadWeight = 0;
   }
 
   return {
@@ -162,7 +165,9 @@ export function createViewmodel(weaponDefs, meleeDef) {
     worldLight, // add to the world scene: the muzzle flash lights up the room
 
     // A shot just fired. `aimAmount` 0..1 (ADS kicks the model much less).
-    fire(aimAmount = 0) {
+    fire(aimAmount = 0, def = active.def) {
+      // A purchase and shot can happen in one fixed tick, before update() sees the new definition.
+      setActive(def);
       const rk = active.def.recoil.model;
       const m = 1 + (rk.adsMultiplier - 1) * aimAmount;
       kickPos.kick(0, rk.up * m, rk.back * m);
@@ -179,7 +184,8 @@ export function createViewmodel(weaponDefs, meleeDef) {
     },
 
     // Trigger squeezed on an empty gun: the trigger moves, the gun barely does, no flash.
-    dryFire() {
+    dryFire(def = active.def) {
+      setActive(def);
       kickRot.kick(active.def.recoil.model.pitchDegrees * DEG_TO_RAD * vm.dryFireKick, 0, 0);
       sinceFire = 0;
     },

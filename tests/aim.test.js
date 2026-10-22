@@ -4,6 +4,9 @@ import { createAim } from '../src/weapons/aim.js';
 import { Weapon } from '../src/weapons/weapon.js';
 import { weapons } from '../src/config/weapons.js';
 import { feel } from '../src/config/feel.js';
+import { resolveGun } from '../src/weapons/gunStats.js';
+import { withAttachment } from '../src/weapons/upgrades.js';
+import { upgrades } from '../src/config/upgrades.js';
 
 function fixture(def = weapons.priceGun) {
   const input = {
@@ -78,4 +81,36 @@ test('a weapon without a recovery delay retains immediate bloom recovery', () =>
   legacy.onShot();
   legacy.update(0.01);
   closeTo(legacy.spreadDegrees, def.spread.base + def.spread.perShot - def.spread.bloomRecovery * 0.01);
+});
+
+test('Laser Pointer preserves its hip benefit and ADS penalty through repeated shots and recovery', () => {
+  const dt = 1 / feel.simulation.tickRate;
+  for (const base of Object.values(weapons)) {
+    const laser = resolveGun(base, withAttachment(base, [], 'laserPointer'));
+    for (const aiming of [false, true]) {
+      const plain = fixture(base);
+      const fitted = fixture(laser);
+      plain.input.aiming = fitted.input.aiming = aiming;
+      plain.aim.update(1); fitted.aim.update(1); // fully ADS before comparing cones
+      const weapon = new Weapon(base, { reloadSpeed: 1 });
+      const effects = upgrades.attachments.laserPointer.effects;
+      const ratio = aiming ? effects.adsSpread : effects.hipSpread;
+      let shots = 0;
+      // Actual cadence (including Foam Dart bursts), then a pause long enough to recover fully.
+      for (let tick = 0; tick < 340; tick++) {
+        plain.aim.update(dt); fitted.aim.update(dt);
+        const result = weapon.update(dt, {
+          triggerPressed: tick < 220 && !weapon.isBursting && weapon.cooldown < dt,
+          triggerHeld: tick < 220,
+        });
+        closeTo(fitted.aim.spreadDegrees, plain.aim.spreadDegrees * ratio);
+        if (result === 'fire') {
+          shots++;
+          plain.aim.onShot(); fitted.aim.onShot();
+        }
+      }
+      assert.ok(shots > 2, `${base.id}: exercised repeated shots`);
+      closeTo(plain.aim.spreadDegrees, base.spread.base * (aiming ? base.spread.adsMultiplier : 1));
+    }
+  }
 });

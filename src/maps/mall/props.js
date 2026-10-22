@@ -684,7 +684,7 @@ export function createMallProps(kit) {
    * items: [{ id, name }] (config/upgrades.js attachments). Returns [{ id, position, normal }], one buy spot each,
    * spread along the wall in item order, left to right as a customer sees them.
    */
-  function attachmentDisplay({ along, center, wallAt, facing, style = 'case', items, title, titleColor = '#ffd23f', gap = 0.25, width = 2.4 }) {
+  function attachmentDisplay({ along, center, wallAt, facing, style = 'case', items, title, titleColor = '#ffd23f', gap = 0.25, width = 2.4, height = 1.25 }) {
     const place = wallPlacer(along);
     const d = (offset) => wallAt + facing * offset;
     const rightward = along === 'x' ? facing : -facing;
@@ -699,14 +699,15 @@ export function createMallProps(kit) {
     let partY; // height of the displayed parts
     if (style === 'case') {
       const depth = 0.6;
-      place(u0, 0, u1, 0.85, d(gap), d(gap + depth), mat(COLORS.caseBody), { collide: false, name: 'attachment_case' });
-      place(u0 + 0.04, 0.85, u1 - 0.04, 0.88, d(gap + 0.03), d(gap + depth - 0.03), mat(COLORS.caseGlass, { transparent: true, opacity: 0.45, roughness: 0.1 }), { collide: false });
+      // Match the visible counter to its solid height, rather than blocking bullets above the glass.
+      place(u0, 0, u1, height - 0.03, d(gap), d(gap + depth), mat(COLORS.caseBody), { collide: false, name: 'attachment_case' });
+      place(u0, height - 0.03, u1, height, d(gap), d(gap + depth), mat(COLORS.caseGlass, { transparent: true, opacity: 0.45, roughness: 0.1 }), { collide: false, name: 'attachment_case_glass' });
       addCollider(...(along === 'x'
-        ? [u0, 0, Math.min(d(gap), d(gap + depth)), u1, 1.25, Math.max(d(gap), d(gap + depth))]
-        : [Math.min(d(gap), d(gap + depth)), 0, u0, Math.max(d(gap), d(gap + depth)), 1.25, u1]));
+        ? [u0, 0, Math.min(d(gap), d(gap + depth)), u1, height, Math.max(d(gap), d(gap + depth))]
+        : [Math.min(d(gap), d(gap + depth)), 0, u0, Math.max(d(gap), d(gap + depth)), height, u1]));
       if (title) sign(title, { ...signAt(center, 0.35, gap + depth + 0.01), width: width - 0.3, height: 0.28, background: '#1d1626', color: titleColor });
       front = gap + depth + 0.1;
-      partY = 0.85;
+      partY = height - 0.03;
     } else {
       place(u0, 0.9, u1, 2.3, d(0), d(0.04), mat(COLORS.pegboard), { collide: false, name: 'attachment_pegboard' });
       const holes = mat(COLORS.pegboardHoles);
@@ -730,7 +731,7 @@ export function createMallProps(kit) {
       // Seat it: resting on the glass (case) or hung at eye level (pegboard), whatever its shape.
       part.updateMatrixWorld(true);
       const bounds = new THREE.Box3().setFromObject(part);
-      part.position.y += style === 'case' ? 0.9 - bounds.min.y : 1.75 - (bounds.min.y + bounds.max.y) / 2;
+      part.position.y += style === 'case' ? height + 0.02 - bounds.min.y : 1.75 - (bounds.min.y + bounds.max.y) / 2;
       group.add(part);
       sign(item.name.toUpperCase(), { ...signAt(u, partY - 0.12 + (style === 'case' ? 0 : -0.18), style === 'case' ? front - 0.1 + 0.005 : 0.05), width: spacing - 0.2, height: 0.16, background: '#f1faee', color: '#1d1626' });
       const position = along === 'x' ? new THREE.Vector3(u, 1.1, d(front)) : new THREE.Vector3(d(front), 1.1, u);

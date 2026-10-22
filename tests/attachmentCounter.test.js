@@ -105,6 +105,29 @@ test('the glass cases are solid and too tall to climb; the pegboard leaves the h
   for (const z of [-15, -14, -13]) assert.ok(!overlapsSolid(new THREE.Vector3(32.75, 0, z), 0.35, 1.8, g.colliders, 0.05), `aisle at z ${z}`);
 });
 
+test('a shot blocked by the top of a display case hits visible case geometry', () => {
+  const { g } = openMall();
+  g.map.group.updateMatrixWorld(true);
+  for (const id of ['laserPointer', 'gripTape', 'jumboPack']) {
+    const spot = spotOf(g, id);
+    const inside = spot.position.clone().addScaledVector(spot.normal, -0.45);
+    const box = g.colliders.find((c) => c.containsPoint(new THREE.Vector3(inside.x, 0.5, inside.z)));
+    assert.ok(box, `${id}: found its case collider`);
+    const z = (box.min.z + box.max.z) / 2;
+    // Downward shot along the counter, from a standing eye to a zombie's chest beyond it.
+    const origin = new THREE.Vector3(box.min.x - 0.5, 1.6, z);
+    const target = new THREE.Vector3(box.max.x + 0.8, 0.98, z);
+    const direction = target.clone().sub(origin).normalize();
+    const hit = new THREE.Ray(origin, direction).intersectBox(box, new THREE.Vector3());
+    assert.ok(hit && hit.y > box.max.y - 0.01, `${id}: shot crosses the collider's top`);
+    const visible = new THREE.Raycaster(origin, direction, 0, origin.distanceTo(target))
+      .intersectObject(g.map.group, true).find((h) => h.object.name === 'attachment_case_glass');
+    assert.ok(visible, `${id}: blocked shot has a visible surface`);
+    assert.ok(Math.abs(visible.distance - origin.distanceTo(hit)) < 0.05,
+      `${id}: rendered top and bullet collider agree within 5 cm`);
+  }
+});
+
 test('moving a counter = changing its LAYOUT.attachmentCounters entry', () => {
   const entry = LAYOUT.attachmentCounters.find((c) => c.slot === 'sight');
   const before = entry.center;

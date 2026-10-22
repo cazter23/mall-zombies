@@ -104,6 +104,33 @@ test('the desk upgrades the gun IN HAND; each carried gun keeps its own tier; a 
   assert.equal(g.interactions.prompt.label, 'Staple Gun → Deluxe', 'the prompt follows the gun in hand');
 });
 
+test('the Platinum purchase frame and a switch to a Platinum gun have no stale desk prompt', () => {
+  const { t, g, buy, stand } = atDesk();
+  g.wallet.earn(20_000);
+  buy(); buy();
+  stand();
+  const before = g.wallet.points;
+  t.input.pressed.add('KeyF');
+  t.input.held.add('KeyF');
+  // Stop on the purchase tick: another tick would clear the stale focus and hide the bug.
+  for (let ticks = 0; tierOf(g.gun.modsFor('stapleGun')) !== 'platinum' && ticks < 30; ticks++) t.tick();
+  t.input.held.delete('KeyF');
+  assert.equal(tierOf(g.gun.modsFor('stapleGun')), 'platinum');
+  assert.equal(before - g.wallet.points, economy.upgrades.tiers.platinum);
+  assert.equal(g.interactions.prompt, null, 'safe to render immediately after buying the final tier');
+
+  g.gun.give(weapons.priceGun); t.tick(40);
+  stand();
+  assert.equal(g.interactions.prompt.label, 'Price Gun → Deluxe');
+  t.press('Digit1'); // interactions run before gun switching in this tick
+  assert.equal(g.interactions.prompt, null, 'safe to render the first switching frame');
+  t.tick(40);
+  assert.equal(g.gun.def.id, 'stapleGun');
+  assert.equal(g.interactions.prompt, null, 'Platinum gun is not upgradeable');
+  t.press('Digit2'); t.tick(40); stand();
+  assert.equal(g.interactions.prompt.label, 'Price Gun → Deluxe', 'the other gun remains upgradeable');
+});
+
 test('no prompt before the hallway is open, mid weapon switch, or facing away; Play again resets every tier', () => {
   const t = headlessGame();
   const { g } = t;

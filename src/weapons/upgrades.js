@@ -61,7 +61,8 @@ const EFFECTS = {
       : [mul('reloadTime', v)],
   falloffRange: (v, g) => (g.falloff ? [mul('falloff.start', v), mul('falloff.end', v)] : null),
   hipSpread: (v, g) => [
-    ...['base', 'moving', 'airborne', 'perShot', 'maxBloom'].map((k) => mul(`spread.${k}`, v)),
+    // Scale recovery with bloom too: otherwise the smaller hip cone also recovers faster in ADS.
+    ...['base', 'moving', 'airborne', 'perShot', 'maxBloom', 'bloomRecovery'].map((k) => mul(`spread.${k}`, v)),
     mul('spread.adsMultiplier', 1 / v), // (aimed spread = hip spread x adsMultiplier: keep it where it was)
     ...(g.pellets ? [mul('pellets.spreadDegrees', v), mul('pellets.adsMultiplier', 1 / v)] : []),
   ],

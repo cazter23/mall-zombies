@@ -110,7 +110,7 @@ export function createPlayerGun({
       side() * r.rollDegrees * DEG_TO_RAD * cameraScale,
       side() * (r.yawDegrees ?? 0) * DEG_TO_RAD * cameraScale * (0.5 + Math.random() * 0.5),
     );
-    viewmodel.fire(ads); // gun kick + muzzle flash (visual only)
+    viewmodel.fire(ads, d); // gun kick + muzzle flash using this shot's resolved stats (visual only)
     if (sound) sound.play(d.sounds.fire);
     const muzzlePosition = viewmodel.getMuzzleWorldPosition(muzzle);
     const targets = new Map();
@@ -309,7 +309,7 @@ export function createPlayerGun({
         this.lastShot = fire(slot);
       } else if (result === 'empty') {
         // Dry click on an empty mag (the weapon starts reloading by itself).
-        viewmodel.dryFire();
+        viewmodel.dryFire(slot.def);
         if (sound) sound.play(slot.def.sounds.dryFire);
       }
       runReloadEvents(slot);

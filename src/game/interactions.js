@@ -114,7 +114,9 @@ export function createInteractions({ input, player, wallet, sound = null, onRelo
 
     // What the HUD shows: null, or { label, verb, cost, canAfford, progress 0..1, denied }.
     get prompt() {
-      if (!focused) return null;
+      // Buying or switching guns can invalidate focus after this tick's interaction update.
+      // Recheck before reading dynamic prices (the final tier has no next price).
+      if (!focused || !focused.available()) return null;
       return {
         label: focused.label,
         verb: focused.verb,

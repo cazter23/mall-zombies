@@ -20,7 +20,8 @@ npm run build      # production build into dist/; run after every change to catc
 npm run preview    # serve the built dist/
 npm run balance    # gun balance report (tools/gunReport.mjs): dps by range, pulls to kill by round, cannon blast table
 ```
-Gameplay regression tests live in `tests/` (`gameplay.test.js` movement/melee/vault, `aim.test.js` spread,
+Gameplay regression tests live in `tests/` (`gameplay.test.js` movement/melee/vault, `aim.test.js` spread
+(including the Laser Pointer's hip benefit / ADS penalty through repeated shots and recovery),
 `zombies.test.js` zombie types/mix/rounds, `maps.test.js` wall pieces, single/multi-zone shared doors, nav rebuilds,
 `mall.test.js` the REAL mall built in Node with a stub canvas: dispose leaves no colliders + frees everything, door ladder, spawn points on clear floor, zones
 sealed until any connecting door is bought (all 120 orders after the start shutter), shortcut-only entrances,
@@ -50,10 +51,13 @@ charges + shows the sale price for doors, guns, ammo and the cache, a sale start
 one attachment per slot, what fits, roles hold at every tier (near-ties within 3%) and with any one attachment, upgrades live
 with the carried gun in the real game), `upgradeDesk.test.js` the Customer Service desk in the real game/mall (one desk in the hallway, LAYOUT.serviceDesk moves
 prop + collider + buy spot, solid and too tall to climb, tiers one at a time at pricing's price, gun in hand only, no refill,
-nothing past Platinum, Flash Sale applies, no prompt while closed / switching / facing away, Play again resets),
+nothing past Platinum (including the exact purchase frame and switching back to a Platinum gun), Flash Sale applies,
+no prompt while closed / switching / facing away, Play again resets),
 `attachmentCounter.test.js` the store counters in the real game/mall (every attachment at its store, real F buys fit the gun in
 hand + replace its slot at pricing's price, no prompt when fitted / doesn't fit / area closed / mid switch, cases solid + too tall,
-pegboard keeps aisle 4 clear, a LAYOUT entry moves a counter), `weaponModels.test.js` also checks upgrade parts (every gun has every
+pegboard keeps aisle 4 clear, visible glass matches bullet collision, a LAYOUT entry moves a counter),
+`viewmodel.test.js` real player-gun/model recoil with attachments, including firing and dry-clicking immediately after fitting/removing one
+before rendering, `weaponModels.test.js` also checks upgrade parts (every gun has every
 mount, parts show only when fitted, the Extended Nozzle moves the muzzle + flash and back, tier sticker hidden at Standard, no part
 floats), `features.test.js` map features (the mall's list, unknown kind = error, a new kind's update/reset hooks run, inert wall buy for a
 gun that doesn't exist, inherited names aren't kinds, features get the game's systems and tick only while playing (not paused /
@@ -249,9 +253,10 @@ src/
                         front (only the shown one visible; one shared hand light + world light that each gun's
                         flash recolors, so lights never come and go), attaches each muzzle flash,
                         and adds up layers on a `holder` each frame: hip->ADS rest pose, reload pose
-                        (gunKeys; eases out if cancelled), recoil springs (kickPos/kickRot: fire(), dryFire(),
+                        (gunKeys; eases out if cancelled), recoil springs (kickPos/kickRot: fire(aimAmount, resolvedDef), dryFire(resolvedDef),
                         jolt()), turn sway, walk bob ("smile"), breathing, landing dip, sprint pose, melee
-                        (box cutter arm slashes while the gun drops aside). Wiggles scale way down in ADS.
+                        (box cutter arm slashes while the gun drops aside). Re-resolved stats update on the same model without
+                        resetting its animation; fire/dryFire also sync stats before the next rendered frame. Wiggles scale way down in ADS.
                         update(frameTime, camera, { weapon, shownDef, switchLower, aimAmount, meleeProgress, player }); `worldLight`
                         (added to the world scene by main); getMuzzleWorldPosition(); reset()
     models/             First-person weapon models. index.js = registry (viewmodel.model -> { model, display }
@@ -397,7 +402,7 @@ src/
                         collider wall-to-front, terminal, bell, CUSTOMER SERVICE + EXTENDED WARRANTY signs, a sticker per tier
                         left to right as the customer sees it; returns its buy spot), attachmentDisplay({ along, center, wallAt,
                         facing, style 'case'|'pegboard', items, title }) (a store's attachment counter: glass case in front of a
-                        shopfront, ONE solid 1.25m collider, or a flat pegboard on a wall; shows each attachment as a big copy of the
+                        shopfront, visible top and ONE solid collider sharing height (default 1.25m), or a flat pegboard on a wall; shows each attachment as a big copy of the
                         gun part + a name card; returns a buy spot per attachment)
     mall/palette.js     COLORS shared by the mall's rooms and props
     testRange/          Debug add-on (not a map): testRange.js buildTestRange(scene, colliders) with own lights,
@@ -609,6 +614,14 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+Upgrade audit fixes: Platinum purchases and switching to a Platinum gun no longer read an invalid next-tier price
+and freeze rendering. The interaction prompt rechecks availability before reading dynamic fields. Laser Pointer scales
+bloom recovery along with bloom, preserving its intended hip benefit / ADS penalty during repeated bursts. Gun-model recoil
+reads resolved stats, including shots and dry clicks before the first render after an attachment change. Display cases now
+visibly reach their 1.25m collision height, with parts and name cards raised to match. Regression suite: 208 passing;
+build and balance report pass (base gun numbers unchanged). Browser checked all three tier purchases with live F holds,
+continued animation after Platinum, switching to the Platinum gun, case prompts/geometry, and fitting/firing Grip Tape.
+
 Gun upgrades steps 3 + 4 done: the four store attachment counters (see Map) and the upgrade parts on the gun models (every
 attachment has a visible part on every gun it fits; the tier sticker shows on the gun from Deluxe up). Verified in tests and in the
 browser (real F hold at Byte Me fits a Laser Pointer to the staple gun for 750 and its beam shows; all four counters display their
