@@ -16,6 +16,11 @@
 //   (back to chasing, with a recovery before it may attack again: long after a hit, short after a miss)
 //   Types with `winded` (Mall Walker) are winded after every swing instead: they stand panting
 //   (no attacks), then follow slowly for a moment (windedTimer; still the 'chasing' state)
+//   Types with `charge` (Cart Pusher), from chasing with a clear, wide lane at mid range:
+//   chargeTelegraph -> stands rattling its cart, turning to aim; the direction LOCKS at the end
+//   charging        -> straight line at charge speed; hits the player once (damage + knockback) ->
+//   chargeRecover   -> stands a moment, then chasing again
+//   crashed         -> the cart's nose hit something or it ran out of charge: stunned, takes extra damage
 //   dead     -> tips over, lies there, sinks away, then `removed` is set
 // =============================================================================
 
@@ -30,6 +35,7 @@ const clamp01 = (v) => Math.max(0, Math.min(1, v));
 const desired = { x: 0, z: 0 };
 const reachRay = new THREE.Ray();
 const reachHit = new THREE.Vector3();
+const laneRay = new THREE.Ray();
 
 export class Zombie {
   // `speed`: this zombie's gait speed in m/s (defaults to the type's base walk).
@@ -53,6 +59,11 @@ export class Zombie {
     const atk = type.attack;
     this.windupSeconds = Math.max(atk.minWindupSeconds, atk.windupSeconds - atk.windupShrinkPerRound * (round - 1));
     this.windedTimer = 0; // > 0 while winded after a swing (types with `winded`)
+    // Charge (types with `charge`): cooldown, lane-check timer, the locked direction and how far is left.
+    this.chargeCooldown = 0;
+    this.chargeCheckTimer = Math.random() * (type.charge?.checkSeconds ?? 0);
+    this.chargeDir = { x: 0, z: -1 };
+    this.chargeLeft = 0;
     this.killedByHeadshot = false;
     this.killedByMelee = false;
     this.removed = false;
@@ -102,6 +113,8 @@ export class Zombie {
   // later 'hazard' / 'effect'...). Read as zombie.killedBy by the 'kill' event (game/events.js).
   takeHit({ damage, part, melee = false, source = melee ? 'melee' : 'gun' }) {
     if (!this.isAlive) return { killed: false };
+    // A crashed Cart Pusher is wide open: hits do extra damage.
+    if (this.state === 'crashed') damage *= this.type.charge.crashDamageTakenMultiplier;
     this.health -= damage;
     this.flinchTimer = this.type.flinchSeconds; // flinches, but an attack already winding up still comes
     if (this.health > 0) return { killed: false };
@@ -148,7 +161,9 @@ export class Zombie {
     this.flinchTimer = Math.max(0, this.flinchTimer - dt);
     this.attackCooldown = Math.max(0, this.attackCooldown - dt);
     this.windedTimer = Math.max(0, this.windedTimer - dt);
+    this.chargeCooldown = Math.max(0, this.chargeCooldown - dt);
     const attack = this.type.attack;
+    const charge = this.type.charge;
 
     if (this.state === 'spawning') {
       this.faceToward(ctx.player.position, dt);
@@ -160,7 +175,36 @@ export class Zombie {
       if (ctx.canAttack && this.attackCooldown <= 0 && this.inReach(ctx.player, attack.startRange) &&
           !this.wallBetween(ctx.player, ctx.colliders)) {
         this.setState('windup');
+      } else if (charge && ctx.canAttack && this.chargeCooldown <= 0) {
+        // Cart Pusher: every so often, look for a clear, wide lane to the player at mid range.
+        this.chargeCheckTimer -= dt;
+        if (this.chargeCheckTimer <= 0) {
+          this.chargeCheckTimer = charge.checkSeconds;
+          if (this.canStartCharge(ctx.player, ctx.colliders)) {
+            this.setState('chargeTelegraph');
+            this.playSound(this.type.sounds?.telegraph, ctx);
+          }
+        }
       }
+    } else if (this.state === 'chargeTelegraph') {
+      this.standStill(dt, ctx);
+      this.faceToward(ctx.player.position, dt, charge.telegraphTurnSpeed);
+      if (this.stateTime >= charge.telegraphSeconds) {
+        // Lock the direction it's FACING (it tracked you at a limited turn speed): a late sidestep dodges it.
+        this.chargeDir.x = -Math.sin(this.yaw);
+        this.chargeDir.z = -Math.cos(this.yaw);
+        this.chargeLeft = Math.min(charge.maxMeters, this.distanceTo(ctx.player) + charge.overshootMeters);
+        this.setState('charging');
+      }
+    } else if (this.state === 'charging') {
+      this.updateCharge(dt, ctx);
+    } else if (this.state === 'chargeRecover') {
+      this.standStill(dt, ctx);
+      this.faceToward(ctx.player.position, dt);
+      if (this.stateTime >= charge.hitRecoverSeconds) this.endCharge();
+    } else if (this.state === 'crashed') {
+      this.standStill(dt, ctx);
+      if (this.stateTime >= charge.crashSeconds) this.endCharge();
     } else if (this.state === 'windup') {
       this.chase(dt, ctx, attack.moveSpeedFraction, true);
       if (this.stateTime >= this.windupSeconds) {
@@ -188,6 +232,101 @@ export class Zombie {
     }
 
     if (this.isAlive) this.updateHitboxes();
+  }
+
+  // --- Charge (Cart Pusher) -----------------------------------------------------------
+
+  // Can it charge from here? The player at mid range, at about its own height, and a clear lane: three
+  // horizontal rays at cart height (centre + both edges of a laneHalfWidth-wide lane), so walls, counters,
+  // benches and stools all block it, and it never charges through a doorway it would only half fit.
+  canStartCharge(player, colliders) {
+    const charge = this.type.charge;
+    const d = this.distanceTo(player);
+    if (d < charge.minRange || d > charge.maxRange) return false;
+    if (Math.abs(player.position.y - this.position.y) > 0.5) return false;
+    const dx = (player.position.x - this.position.x) / d;
+    const dz = (player.position.z - this.position.z) / d;
+    for (const side of [0, -1, 1]) {
+      const ox = -dz * side * charge.laneHalfWidth;
+      const oz = dx * side * charge.laneHalfWidth;
+      if (this.rayBlocked(this.position.x + ox, this.position.z + oz, dx, dz, d, colliders)) return false;
+    }
+    return true;
+  }
+
+  // Does a horizontal ray at cart height from (x, z) along (dx, dz) hit a collider within `length`?
+  rayBlocked(x, z, dx, dz, length, colliders) {
+    laneRay.origin.set(x, this.position.y + this.type.charge.laneCheckHeight, z);
+    laneRay.direction.set(dx, 0, dz);
+    for (const box of colliders) {
+      if (box.containsPoint(laneRay.origin)) continue;
+      if (laneRay.intersectBox(box, reachHit) && reachHit.distanceTo(laneRay.origin) < length) return true;
+    }
+    return false;
+  }
+
+  // One tick of the charge: dead straight along the locked direction. Crashes when the cart's nose meets
+  // something (or it gets stuck), skids out when the distance runs out, and hits the player at most once.
+  updateCharge(dt, ctx) {
+    const charge = this.type.charge;
+    const dir = this.chargeDir;
+    const speed = Math.min(charge.speed, this.horizontalSpeed + charge.acceleration * dt);
+    const step = speed * dt;
+    if (this.rayBlocked(this.position.x, this.position.z, dir.x, dir.z, charge.noseReach + step, ctx.colliders)) {
+      this.crash(ctx);
+      return;
+    }
+    const startX = this.position.x;
+    const startZ = this.position.z;
+    this.velocity.x = dir.x * speed;
+    this.velocity.z = dir.z * speed;
+    this.velocity.y = Math.max(this.velocity.y - feel.movement.gravity * dt, -feel.movement.maxFallSpeed);
+    moveAndCollide(this.position, this.velocity, dt, this.type.radius, this.type.height, ctx.colliders,
+      feel.movement.stepTolerance);
+    const moved = Math.hypot(this.position.x - startX, this.position.z - startZ);
+    this.chargeLeft -= moved;
+    this.faceDirection(dir.x, dir.z, dt, Infinity);
+
+    if (ctx.canAttack && this.chargeCatches(ctx.player)) {
+      ctx.onPlayerHit(charge.damage, this, { x: dir.x * charge.knockback, z: dir.z * charge.knockback });
+      this.velocity.set(0, 0, 0);
+      this.setState('chargeRecover');
+    } else if (this.chargeLeft <= 0 || (this.stateTime > 0.2 && moved < step * 0.3)) {
+      this.crash(ctx);
+    }
+  }
+
+  // Is the player's body in the cart's path: ahead of it within the nose (+ padding) and within the
+  // cart's width (+ padding) of its line? A sidestep of about a meter clears it.
+  chargeCatches(player) {
+    const charge = this.type.charge;
+    const dx = player.position.x - this.position.x;
+    const dz = player.position.z - this.position.z;
+    if (player.position.y > this.position.y + this.type.height || player.position.y + player.height < this.position.y) return false;
+    const along = dx * this.chargeDir.x + dz * this.chargeDir.z;
+    const across = Math.abs(dx * this.chargeDir.z - dz * this.chargeDir.x);
+    return along > -this.type.radius && along <= charge.noseReach + feel.player.radius + charge.hitPadding &&
+      across <= charge.hitHalfWidth + feel.player.radius;
+  }
+
+  crash(ctx) {
+    this.velocity.set(0, 0, 0);
+    this.setState('crashed');
+    this.playSound(this.type.sounds?.crash, ctx);
+  }
+
+  // Back to chasing after a charge (hit or crash): no charging again for a while.
+  endCharge() {
+    this.setState('chasing');
+    this.chargeCooldown = this.type.charge.cooldownSeconds;
+  }
+
+  // Stop where it stands (still falls if in the air): telegraphing, recovering, crashed.
+  standStill(dt, { colliders }) {
+    this.velocity.x = 0;
+    this.velocity.z = 0;
+    this.velocity.y = Math.max(this.velocity.y - feel.movement.gravity * dt, -feel.movement.maxFallSpeed);
+    moveAndCollide(this.position, this.velocity, dt, this.type.radius, this.type.height, colliders, feel.movement.stepTolerance);
   }
 
   // Walking speed while winded: 0 while standing panting, then slowSpeedFraction, then back to 1.
@@ -392,6 +531,7 @@ export class Zombie {
     this.slotKey = null;
     this.attackCooldown = 0;
     this.windedTimer = 0;
+    this.chargeCooldown = 0;
     this.setState('spawning');
     this.updateHitboxes();
   }

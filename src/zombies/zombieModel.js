@@ -4,6 +4,8 @@
 //   Shopper:     grey-green skin, coordinated clothing/build/hair/accessories from config/shoppers.js
 //   Mall Walker: matching tracksuit with stripes, headband, wristbands, white sneakers,
 //                silver hair, maybe a fanny pack; slimmer (type.modelScale)
+//   Cart Pusher: a shopper look pushing a shopping cart (type.cart, zombies/cartModel.js): arms out to the
+//                handle, the cart rattles on its telegraph, leans into the charge, tips over on a crash
 // Faces -Z like the player. All animation is done in code from the zombie's state
 // each rendered frame:
 //   shamble (legs swing, arms bob, torso sways, head lolls) or power walk (walkAnimation.style:
@@ -16,6 +18,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { shoppers } from '../config/shoppers.js';
 import { chooseShopperAppearance } from './shopperAppearance.js';
+import { buildCart } from './cartModel.js';
 
 const unitBox = new THREE.BoxGeometry(1, 1, 1);
 const skirtBox = new THREE.BoxGeometry(1, 1, 1);
@@ -67,7 +70,7 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
 
   // Outfit: a matching tracksuit (one color for top and bottom) or a random shirt + pants.
   const outfit = type.outfit ?? null;
-  const look = type.id === 'shopper' && !outfit ? appearance ?? chooseShopperAppearance(random) : null;
+  const look = (type.id === 'shopper' || type.cart) && !outfit ? appearance ?? chooseShopperAppearance(random) : null;
   const topStyle = look ? shoppers.tops[look.top] : null;
   const width = look?.build.width ?? 1;
   const skin = mat(pick(type.skinColors));
@@ -165,8 +168,15 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
     return { shoulder, elbow };
   });
 
+  // Cart Pusher: the cart stands on `root` (not `fall`), so it stays put when the zombie tips over dead.
+  const cart = type.cart ? buildCart(type.cart, mat, random) : null;
+  if (cart) {
+    root.add(cart);
+    ownedGeometry.push(...cart.userData.geometries);
+  }
+
   // Sometimes clutching a shopping bag in the right hand.
-  if (!look && random() < type.bagChance) {
+  if (!look && !cart && random() < type.bagChance) {
     const bag = new THREE.Group();
     bag.position.set(0, -0.05, -S.forearm + 0.02);
     block(mat(pick(type.bagColors)), 0.2, 0.26, 0.11, 0, -0.17, 0, bag);
@@ -225,6 +235,38 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
   // --- Animation state ---
   let walkPhase = random() * Math.PI * 2; // random start so a crowd isn't in sync
   let lastFlash = -1;
+
+  // Cart Pusher poses on top of the shamble: pushing (arms on the handle, leaning in), the telegraph (cart
+  // rattling side to side, crouching lower, head down), the charge (leaning hard), crashed (cart tipped onto two
+  // wheels, body slumped over the handle). `attacking`: the normal slam is posing the arms, leave them.
+  function poseCart(zombie, type, attacking) {
+    const ca = type.cartAnimation;
+    const t = zombie.stateTime;
+    cart.rotation.set(0, 0, 0);
+    cart.position.y = 0;
+    let lean = ca.hunch;
+    if (zombie.state === 'chargeTelegraph') {
+      const r = clamp01(t / type.charge.telegraphSeconds);
+      cart.rotation.y = Math.sin(t * 45) * ca.telegraphShake * (0.5 + r);
+      lean += ca.telegraphCrouch * ease(r);
+      neck.rotation.x = 0.35 * r;
+    } else if (zombie.state === 'charging') {
+      lean += ca.chargeLean;
+      cart.rotation.y = Math.sin(t * 30) * ca.telegraphShake * 0.4;
+    } else if (zombie.state === 'crashed') {
+      const r = ease(clamp01(t / 0.2)) * (1 - ease(clamp01((t - type.charge.crashSeconds + 0.3) / 0.3)));
+      cart.rotation.z = ca.crashTilt * r;
+      cart.position.y = Math.sin(ca.crashTilt * r) * type.cart.width * 0.5;
+      lean += ca.crashSlump * r;
+    }
+    if (zombie.state === 'dead' || zombie.state === 'spawning') return;
+    if (attacking) return; // the slam over the handle poses the body and arms itself
+    upper.rotation.x = -lean;
+    for (const arm of arms) {
+      arm.shoulder.rotation.x = ca.armAngle + lean; // keep the hands on the handle as the body leans
+      arm.elbow.rotation.x = 0;
+    }
+  }
 
   return {
     root,
@@ -328,6 +370,9 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
         }
         neck.rotation.x = lerp(neck.rotation.x, 0.55, w);
       }
+
+      // Cart Pusher: hands on the handle (unless slamming), and the charge poses.
+      if (cart) poseCart(zombie, type, armPose !== null);
 
       // Flinch: jolt the upper body and head back when shot, and flash white.
       const flinch = type.flinchSeconds > 0 ? zombie.flinchTimer / type.flinchSeconds : 0;

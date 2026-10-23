@@ -99,7 +99,8 @@ function handleDebugKeys() {
   }
   if (debug.zombieKeys && input.consumePress('KeyZ')) {
     const shift = input.isDown('ShiftLeft') || input.isDown('ShiftRight');
-    zombies.spawn(shift ? 'mallWalker' : 'shopper'); // Z = Shopper, Shift+Z = Mall Walker
+    const alt = input.isDown('AltLeft') || input.isDown('AltRight');
+    zombies.spawn(alt ? 'cartPusher' : shift ? 'mallWalker' : 'shopper'); // Z Shopper, Shift+Z Mall Walker, Alt+Z Cart Pusher
   }
   if (debug.zombieKeys && input.consumePress('KeyX')) zombies.clear();
   if (debug.cheatKeys && input.consumePress('KeyN')) rounds.skipRound();

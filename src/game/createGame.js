@@ -204,7 +204,7 @@ export function createGame({
     isZoneOpen: (zone) => map.zones[zone].open,
     getRound,
     canAttack: () => !health.isDead,
-    onPlayerHit: (damage, zombie) => events.emit('playerHit', { damage, zombie }),
+    onPlayerHit: (damage, zombie, knockback = null) => events.emit('playerHit', { damage, zombie, knockback }),
     onKill: (zombie) => events.emit('kill', {
       zombie,
       headshot: zombie.killedByHeadshot,
@@ -237,8 +237,12 @@ export function createGame({
   events.on('kill', ({ zombie }) => {
     if (!state.over) runStats.recordKill(zombie);
   });
-  events.on('playerHit', ({ damage }) => {
+  events.on('playerHit', ({ damage, knockback }) => {
     health.takeDamage(damage);
+    if (knockback) { // a Cart Pusher's charge shoves you along it (m/s, horizontal)
+      player.velocity.x += knockback.x;
+      player.velocity.z += knockback.z;
+    }
     player.addViewKick(-feel.health.hitJoltDegrees * DEG_TO_RAD); // jolt the view down
   });
   events.on('roundStart', ({ round }) => {

@@ -330,6 +330,8 @@ src/
                         Types with `sounds`: chaseSounds() (step squeaks / huffs on timers) + playSound(): volume by
                         distance through ctx.onSound
     shopperAppearance.js  Weighted, coordinated Shopper wardrobe selection; optional seeded random for tests, one look per spawn
+    cartModel.js        buildCart(cfg, mat): the Cart Pusher's shopping cart (wire basket, chassis, casters, red handle, shopping
+                        inside), merged by material; on the model's root so it stays upright when the zombie dies
     zombieModel.js      Blocky zombie model built from the type: Shopper (config/shoppers.js wardrobe) or Mall
                         Walker (type.outfit: matching tracksuit + stripes, headband, wristbands, fanny pack; modelScale).
                         Arms have shoulder + elbow joints. Code animation (numbers in zombieTypes.<type>.walkAnimation):
@@ -692,6 +694,20 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+Cart Pusher (round 6+, config/zombies.js `cartPusher` + economy.zombieMix: 10% of spawns, 15% from round 10; 2.2x health;
+worth 100; its 2nd spawn in round 6 is forced, with a PA banner). A Shopper-look zombie pushing a shopping cart
+(zombies/cartModel.js, visual only: no collider/hitbox, shots go through the basket). Walks like a Shopper and slams like
+one up close; with a clear 1.6 m-wide lane at 5-14 m (rays at cart height: walls, counters, benches and stools block it;
+checked every 0.25 s) it TELEGRAPHS for 0.9 s (stands, rattles the cart, head down, rattle + squeal sound) while turning
+to aim, LOCKS the direction it faces, then CHARGES straight at 9 m/s (faster than your sprint) up to 3 m past where you
+stood (max 16 m). In its path (the cart's width + 0.27 m; a ~1 m sidestep clears it) = 60 damage + a 7 m/s shove
+('playerHit' gets `knockback`), then a 1 s stop. A miss = it CRASHES (the nose ray hits a wall, or it runs out of charge):
+stunned 2 s, cart tipped, taking 1.5x damage. 4 s cooldown between charges. Debug: Alt+Z spawns one.
+tests/cartPusher.test.js: mix/health/value/intro, telegraph -> charge -> hit + shove, hit width, sidestep -> overshoot ->
+crash + stun + extra damage, wall crash stops at the nose, no charge too close/far, through a bench, a narrow doorway or a
+wall (but through a wide doorway), the normal slam up close, the model (cart on the root, upright when dead, poses, dispose)
+and a real charge in the real game's hallway. Verified in the browser (telegraph pose, a real hit for 60, a dodge + crash).
+
 Mall atmosphere pass: cooler hallway, warm clearance store/Food Court, fluorescent Mart and utility corridor;
 roughness contrast and scuffed tiles, soft fixture/zombie contact shadows, ceiling infrastructure, consistent
 mall notices and small interrupted-shopping scenes. Subtle sign sway/tube variation and spatial HVAC/fridge/music

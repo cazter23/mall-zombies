@@ -172,7 +172,86 @@ const mallWalker = {
   },
 };
 
-export const zombieTypes = { shopper, mallWalker };
+// Round 6+: a shopper welded to a wobbly shopping cart. Walks like a Shopper (and swings like one up close),
+// but with a clear, wide lane to you at mid range it TELEGRAPHS (stops, rattles the cart, squeals the wheels,
+// head down), then CHARGES in a straight line. The direction locks at the end of the telegraph, so a sidestep
+// dodges it. A miss means it overshoots and crashes (into a wall or skids out): stunned over its cart and taking
+// extra damage. That's your opening. Tanky (2.2x health: economy.zombieMix). Anything not listed = the Shopper.
+const cartPusher = {
+  ...shopper,
+  id: 'cartPusher',
+  speed: 2.0, // walks at a shopper's shamble...
+  speedVariation: 0.08,
+  gaits: { walk: 2.0, jog: 3.0 }, // ...and at most a brisk trot behind the cart (the charge is the fast part)
+  gaitsByRound: [
+    { fromRound: 1, walk: 1 },
+    { fromRound: 10, walk: 0.5, jog: 0.5 },
+  ],
+  acceleration: 6, // heavy: slower to get going than a shopper
+  turnSpeed: 4, // and slow to turn with a cart in front
+  radius: 0.42, // the body plus the cart's back end (the cart's nose is checked separately while charging)
+  attack: { ...shopper.attack }, // up close: the normal 40-damage slam (over the cart handle)
+
+  charge: {
+    minRange: 5, // meters: only charges from at least this far...
+    maxRange: 14, // ...and no further than this
+    laneHalfWidth: 0.8, // the lane must be clear this far either side of the line (a 1.6 m wide cart lane)...
+    laneCheckHeight: 0.3, // ...at this height (benches, stools and counters block it, not just walls)
+    telegraphSeconds: 0.9, // stands still rattling the cart, aiming at you; the direction LOCKS at the end
+    telegraphTurnSpeed: 6, // radians/second it can track you during the telegraph
+    speed: 9, // m/s, faster than your sprint (8), but dead straight
+    acceleration: 30, // m/s^2: gets up to speed in ~0.3 s
+    overshootMeters: 3, // keeps going this far past where you stood when it locked on...
+    maxMeters: 16, // ...but never further than this in one charge
+    noseReach: 1.2, // meters in front of its feet the cart's nose sticks out (hits walls first; matches the model)
+    hitPadding: 0.3, // you're hit if your body comes within this of the cart's nose...
+    hitHalfWidth: 0.55, // ...and within this of its centre line (the cart is 0.56 wide: +0.27 of forgiveness)
+    damage: 60, // two hits from full health
+    knockback: 7, // m/s shove along the charge
+    checkSeconds: 0.25, // how often a chasing cart pusher looks for a charge lane (rays vs the colliders)
+    hitRecoverSeconds: 1.0, // after hitting you: stops, then carries on
+    crashSeconds: 2.0, // after a miss: stunned over its cart (no attacks, can't move)...
+    crashDamageTakenMultiplier: 1.5, // ...and hits on it do this much more damage
+    cooldownSeconds: 4, // after any charge before it may charge again (it can still slam up close)
+  },
+
+  // Looks: the cart (visual only). Wire basket + child seat flap + handle + four casters.
+  cart: {
+    frameColor: 0xc9ccd1, // chrome
+    handleColor: 0xe0313a, // red plastic handle grip
+    bumperColor: 0x2b2b33,
+    wheelColor: 0x1d1d22,
+    contents: [0xffc93d, 0x46c2e0, 0xff6fae, 0x58c46b, 0xff8a3d, 0xf2f2f2], // a few boxes rattling around inside
+    contentsCount: [1, 3], // min / max
+    width: 0.56,
+    depth: 0.8,
+    basketBottom: 0.45,
+    basketTop: 0.95,
+    handleY: 1.0,
+    handleZ: -0.32, // meters in front of the feet (where the hands grip it)
+  },
+  // Pose while pushing (visual only): arms out to the handle, leaning in.
+  cartAnimation: {
+    armAngle: -0.62, // radians (0 = straight forward, -1.57 = straight down)
+    hunch: 0.3,
+    telegraphShake: 0.05, // radians the cart rattles side to side during the telegraph
+    telegraphCrouch: 0.35, // extra lean (head down) at the end of the telegraph
+    chargeLean: 0.55,
+    crashTilt: 0.45, // radians the cart tips onto two wheels when it crashes
+    crashSlump: 0.7, // the body slumps over the handle
+  },
+
+  introBanner: { kicker: 'Attention shoppers', text: 'There is a cart pusher loose. Please step out of the aisle.' },
+
+  // Squealing wheels while it rolls; a rattle + squeal on the telegraph (the warning); a crash on a miss.
+  sounds: {
+    step: { name: 'cartSqueak', interval: 0.7, chance: 0.5, maxDistance: 14 },
+    telegraph: { name: 'cartRattle', maxDistance: 24 },
+    crash: { name: 'cartCrash', maxDistance: 24 },
+  },
+};
+
+export const zombieTypes = { shopper, mallWalker, cartPusher };
 
 // How a crowd moves together: spacing, queueing, spreading out, surrounding the player.
 export const zombieCrowd = {

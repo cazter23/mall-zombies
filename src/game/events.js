@@ -17,7 +17,8 @@
 //                                                        future 'hazard' / 'effect'...). ALL kill payouts and kill
 //                                                        stats come from this one event. After the player's death
 //                                                        events still fire, but nothing more is paid or counted.
-//   'playerHit'   { damage, zombie }                     a zombie's swing landed
+//   'playerHit'   { damage, zombie, knockback }          a zombie's swing (or a cart charge) landed;
+//                                                        knockback = { x, z } m/s shove or null
 //   'playerDeath' {}                                     after the death is registered (onPlayerDeath)
 //   'roundStart'  { round }                              the round number flipped (game/rounds.js)
 //   'typeIntro'   { typeId }                             a zombie type's first appearance this run

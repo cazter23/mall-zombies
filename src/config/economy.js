@@ -18,6 +18,7 @@ export const economy = {
   killValues: {
     shopper: 60,
     mallWalker: 60,
+    cartPusher: 100, // tanky and dangerous: worth more
   },
 
   // Special zombie types mixed into the waves (every other spawn is a Shopper).
@@ -36,6 +37,15 @@ export const economy = {
       ],
       healthMultiplier: 0.65,
       introSpawnIndex: 2,
+    },
+    cartPusher: {
+      fromRound: 6,
+      shareByRound: [
+        { fromRound: 6, share: 0.1 },
+        { fromRound: 10, share: 0.15 },
+      ],
+      healthMultiplier: 2.2,
+      introSpawnIndex: 1,
     },
   },
 

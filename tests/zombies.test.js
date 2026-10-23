@@ -18,7 +18,8 @@ test('Mall Walkers only join the mix from round 4, at the configured shares', ()
   assert.equal(zombieTypeForRound(4, 0.151), 'shopper');
   assert.equal(zombieTypeForRound(6, 0.249), 'mallWalker');
   assert.equal(zombieTypeForRound(9, 0.299), 'mallWalker');
-  assert.equal(zombieTypeForRound(20, 0.301), 'shopper');
+  assert.equal(zombieTypeForRound(20, 0.301), 'cartPusher'); // the Cart Pushers' share comes after the Walkers' (tests/cartPusher.test.js)
+  assert.equal(zombieTypeForRound(20, 0.451), 'shopper');
 });
 
 test('Mall Walkers have 65% of the round health and pay the same kill value', () => {

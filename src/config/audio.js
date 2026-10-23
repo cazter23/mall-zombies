@@ -122,6 +122,38 @@ export const audio = {
       ],
     },
 
+    // Cart Pusher: a squealing wheel while it rolls...
+    cartSqueak: {
+      volume: 0.35,
+      layers: [
+        { type: 'tone', wave: 'sawtooth', freq: 2300, freqEnd: 1900, gain: 0.18, attack: 0.01, decay: 0.12 },
+        { type: 'tone', wave: 'sine', freq: 3100, freqEnd: 2700, gain: 0.25, attack: 0.01, decay: 0.1 },
+      ],
+    },
+    // ...the WARNING before a charge: the wire basket rattling hard and a long rising wheel squeal...
+    cartRattle: {
+      volume: 0.7,
+      layers: [
+        { type: 'noise', filter: 'bandpass', freq: 3200, q: 2.5, gain: 0.4, attack: 0.005, decay: 0.05 },
+        { type: 'noise', filter: 'bandpass', freq: 2800, q: 2.5, gain: 0.4, attack: 0.005, decay: 0.05, delay: 0.09 },
+        { type: 'noise', filter: 'bandpass', freq: 3400, q: 2.5, gain: 0.4, attack: 0.005, decay: 0.05, delay: 0.18 },
+        { type: 'noise', filter: 'bandpass', freq: 3000, q: 2.5, gain: 0.4, attack: 0.005, decay: 0.05, delay: 0.27 },
+        { type: 'noise', filter: 'bandpass', freq: 3300, q: 2.5, gain: 0.45, attack: 0.005, decay: 0.05, delay: 0.36 },
+        { type: 'noise', filter: 'bandpass', freq: 2900, q: 2.5, gain: 0.45, attack: 0.005, decay: 0.05, delay: 0.45 },
+        { type: 'tone', wave: 'sawtooth', freq: 1500, freqEnd: 2900, gain: 0.16, attack: 0.15, decay: 0.75 },
+      ],
+    },
+    // ...and a metal CRASH when it misses and hits something.
+    cartCrash: {
+      volume: 0.8,
+      layers: [
+        { type: 'noise', filter: 'lowpass', freq: 900, q: 0.7, gain: 0.7, attack: 0.002, decay: 0.18 },
+        { type: 'noise', filter: 'bandpass', freq: 2600, q: 1.5, gain: 0.5, attack: 0.002, decay: 0.35 },
+        { type: 'tone', wave: 'square', freq: 420, freqEnd: 300, gain: 0.12, attack: 0.002, decay: 0.3 },
+        { type: 'noise', filter: 'bandpass', freq: 3800, q: 3, gain: 0.25, attack: 0.002, decay: 0.08, delay: 0.14 },
+      ],
+    },
+
     // Mall PA "ding-dong" before an announcement (a new zombie type showing up).
     paChime: {
       volume: 0.55,
