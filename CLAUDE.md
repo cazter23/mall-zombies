@@ -516,7 +516,9 @@ src/
                         a zone stays open while any holder is open (tracked per zone), reset seals all doors/zones.
                         toggleDoors(doors): debug O synchronizes the whole group, preserving bought doors on open-all
     wallBuy.js          createWallBuyDisplay(): chalk outline (textures.makeChalkTexture) + the gun on two pegs, side on
-    collision.js        moveAndCollide(): horizontal push-out (also removes the velocity going into the wall, so
+    collision.js        RAMPS (addRamp / removeRamp / rampHeightAt, `colliders.ramps`): a walkable slope that is only a SURFACE the feet follow
+                        (never a wall or ceiling; add boxes beside/under it): up within rampStep 0.5 m, down within rampSnap 0.4 m, not while
+                        jumping. kit.ramp(spec) registers one and dispose removes it. moveAndCollide(): horizontal push-out (also removes the velocity going into the wall, so
                         a pinned mover reads speed 0 and slides along walls) then vertical landing/ceiling vs. Box3 list;
                         hasHeadroom(): can the player stand up here? overlapsSolid(): would a body overlap a wall?
                         markCollidersChanged(colliders) after adding/removing a collider at runtime; colliderSignature()
@@ -725,6 +727,18 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+Second floor, step 2 of 6: the escalator is walkable. props.escalator now builds a ramp surface (plate, 30-degree slope, top plate),
+tall side walls, blocks under the lane (kept 0.4 m below the surface at their start: a rider's body reaches ahead of the feet) and
+still the barrier across its foot; it returns { hole, topLanding, barrier, ramp, link, upperY } and the map exposes
+`navigation: { floors: [0, upperY], links: [escalator.link] }` (createGame passes it to the zombie manager) and
+`escalator: { barrier, ramp }`. The barrier is a normal collider: while it stands the escalator is sealed exactly as before (the old
+sprint-jump test passes unchanged apart from ignoring the enclosed lane blocks); REMOVING it (and markCollidersChanged) is what
+"repairing" means, which step 3 will make a purchase. Verified with the real game: a player walks up to level 2 (y 6.3) and back
+down, walking under the high end still keeps you on the ground, a zombie climbs to a player upstairs (~10 s) and comes down to one
+on the ground, and with the barrier up zombies never route up. The ceiling hole runs 0.4 m past the top of the slope (the slab's edge
+met a rider's body while the feet were still a little below it). tests/ramps.test.js, tests/escalatorWalk.test.js. Level 2 itself
+is still just the closed-off landing.
+
 Second floor, step 1 of 6 (the plan: multi-floor navigation core, walkable escalator, zone + repair purchase, build level 2, gameplay
 integration, verification): zombies/navigation.js now supports several floors joined by ramp links (see the folder structure).
 tests/navFloors.test.js on synthetic two-floor maps with a gentle staircase and the real collision code: zombies climb to a player

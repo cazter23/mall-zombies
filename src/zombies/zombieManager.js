@@ -30,6 +30,7 @@ const UP = new THREE.Vector3(0, 1, 0);
  * @param onPlayerHit  (damage, zombie) => apply a landed zombie hit to the player
  * @param onKill       optional (zombie) => called when a zombie dies (run stats, later points)
  * @param onSound      optional (name, volume) => play a zombie sound (Mall Walker squeaks, huffs, pants)
+ * @param navigation   optional { floors, links } for maps with more than one floor (zombies/navigation.js)
  */
 export function createZombieManager({
   scene,
@@ -44,10 +45,11 @@ export function createZombieManager({
   onPlayerHit,
   onKill = null,
   onSound = null,
+  navigation = undefined,
 }) {
   // Every zombie type shares one grid for now; sized for the shopper.
   const base = zombieTypes.shopper;
-  const nav = createNavigation(colliders, { radius: base.radius, height: base.height });
+  const nav = createNavigation(colliders, { radius: base.radius, height: base.height }, navigation);
   const zombies = [];
   let spawnClock = 0;
   const lastSpawnAt = new Map();

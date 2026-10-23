@@ -640,6 +640,10 @@ export function buildMall(scene, colliders) {
     playerSpawn,
     titleShots,
     ambience: dressing.emitters,
+    // Zombie navigation across floors (zombies/navigation.js): the ground floor and level 2, joined by the escalator.
+    navigation: { floors: [0, upperY], links: [escalator.link] },
+    // The escalator's barrier (a collider across its foot; whoever repairs it removes this) and its walkable surface.
+    escalator: { barrier: escalator.barrier, ramp: escalator.ramp },
     update(dt) {
       for (const door of doors) door.update(dt);
       dressing.update(dt);

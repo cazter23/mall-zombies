@@ -217,6 +217,7 @@ export function createGame({
       source: zombie.killedBy,
     }),
     onSound: (name, volume) => sound.play(name, { volume }), // Mall Walker squeaks, huffs and pants
+    navigation: map.navigation, // floors + the ramps between them (undefined = one ground floor)
   });
 
   rounds = createRounds({

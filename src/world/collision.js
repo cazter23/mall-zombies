@@ -18,6 +18,48 @@ export function colliderSignature(colliders) {
   return `${colliders.length}:${colliders.version ?? 0}`;
 }
 
+// RAMPS (walkable slopes: an escalator or stairs). The world is axis-aligned boxes, which can only make steps, and a body only
+// walks over bumps under `stepTolerance`. A ramp is the one non-box thing: a SURFACE the feet follow, stored on the shared
+// list as `colliders.ramps`. It is never a wall or a ceiling (put real boxes beside and under it for those); it only holds
+// feet up. Its height depends on how far along `axis` you are:
+//   ramp = { axis: 'x' | 'z', origin, dir (+1 | -1), minX, maxX, minZ, maxZ (the footprint),
+//            points: [[s, y], ...] (the height at distance s along the axis from `origin`, in `dir`; linear between),
+//            enabled (optional, default true) }
+// A body is held up when its feet are within `rampStep` below the surface (it walks up on it) or `rampSnap` above it
+// (it walks down on it instead of dropping), and only while not rising (jumps leave the surface).
+export const ramps = { rampStep: 0.5, rampSnap: 0.4 };
+
+export function addRamp(colliders, ramp) {
+  (colliders.ramps ??= []).push(ramp);
+  markCollidersChanged(colliders);
+  return ramp;
+}
+
+export function removeRamp(colliders, ramp) {
+  const i = colliders.ramps?.indexOf(ramp) ?? -1;
+  if (i !== -1) {
+    colliders.ramps.splice(i, 1);
+    markCollidersChanged(colliders);
+  }
+}
+
+/** The ramp's surface height at (x, z), or null if that point is off the ramp. */
+export function rampHeightAt(ramp, x, z) {
+  if (ramp.enabled === false || x < ramp.minX || x > ramp.maxX || z < ramp.minZ || z > ramp.maxZ) return null;
+  const along = ramp.axis === 'x' ? x : z;
+  const s = (along - ramp.origin) * ramp.dir;
+  const pts = ramp.points;
+  if (s <= pts[0][0]) return pts[0][1];
+  for (let i = 1; i < pts.length; i++) {
+    if (s <= pts[i][0]) {
+      const [s0, y0] = pts[i - 1];
+      const [s1, y1] = pts[i];
+      return y0 + ((s - s0) / (s1 - s0)) * (y1 - y0);
+    }
+  }
+  return pts[pts.length - 1][1];
+}
+
 // Distance-squared from point (x, z) to a box's footprint on the ground plane.
 function distSqToBoxXZ(x, z, box) {
   const cx = Math.max(box.min.x, Math.min(x, box.max.x));
@@ -147,6 +189,14 @@ export function moveAndCollide(pos, vel, dt, radius, height, colliders, stepTole
     // Rising: was our head below this box's bottom last tick?
     else if (vel.y > 0 && prevY + height <= box.min.y + 1e-4 && pos.y + height > box.min.y) {
       ceilingY = Math.min(ceilingY, box.min.y);
+    }
+  }
+
+  // Ramps: stand on the surface under the body's center.
+  if (vel.y <= 0 && colliders.ramps) {
+    for (const ramp of colliders.ramps) {
+      const h = rampHeightAt(ramp, pos.x, pos.z);
+      if (h !== null && prevY >= h - ramps.rampStep && pos.y <= h + ramps.rampSnap) landingY = Math.max(landingY, h);
     }
   }
 

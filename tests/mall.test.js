@@ -332,8 +332,10 @@ test('the escalator is sealed: sprinting and jumping at it never gets you on it'
   const E = LAYOUT.escalator;
   // Anything on the escalator you could reach from the floor is taller than a jump.
   const jumpPeak = (feel.movement.jumpVelocity ** 2) / (2 * feel.movement.gravity);
-  const onEscalator = colliders.filter((b) => b.min.z >= E.minZ - 1e-6 && b.max.z <= E.maxZ + 1e-6 && b.min.x >= -18 && b.max.x <= -3);
-  assert.ok(onEscalator.length >= 12, 'barrier + slope steps + top landing');
+  // (The blocks under the walkable lane sit between the side walls and the barrier: enclosed, out of reach until the barrier is gone.)
+  const inLane = (b) => b.min.z >= E.minZ + 0.3 - 1e-6 && b.max.z <= E.maxZ - 0.3 + 1e-6;
+  const onEscalator = colliders.filter((b) => b.min.z >= E.minZ - 1e-6 && b.max.z <= E.maxZ + 1e-6 && b.min.x >= -18 && b.max.x <= -3 && !inLane(b));
+  assert.ok(onEscalator.length >= 12, 'barrier + side walls along the slope + top landing');
   for (const b of onEscalator.filter((c) => c.min.y < feel.player.height)) {
     assert.ok(b.max.y > jumpPeak + 0.1, `collider at x ${b.min.x.toFixed(1)}..${b.max.x.toFixed(1)} too tall to jump onto`);
   }
@@ -362,8 +364,8 @@ test('you can walk (and zombies can path) under the high end of the escalator, a
     assert.ok(nav.isWalkableAt(x, 2), `(${x}, 2) under the escalator is walkable`);
     assert.equal(overlapsSolid(new THREE.Vector3(x, 0, 2), feel.player.radius, feel.player.height, colliders, feel.movement.stepTolerance), false, `a player fits under at x ${x}`);
   }
-  // The low end blocks the floor.
-  assert.equal(nav.isWalkableAt(-6, 2), false, 'the low end is solid');
+  // The low end blocks the floor (under the walkable lane; its first metre is the ramp's foot).
+  assert.equal(nav.isWalkableAt(-8, 2), false, 'the low end is solid');
   // A real player walking east under it gets all the way to where it becomes solid.
   const { player, input } = playerIn(colliders, new THREE.Vector3(-19, 0, 2), -Math.PI / 2); // facing +X
   input.axis = { x: 0, y: 1 };

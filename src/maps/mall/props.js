@@ -394,28 +394,65 @@ export function createMallProps(kit) {
       box(hangX - 0.01, 3.52, z - 0.01, hangX + 0.01, ceilingY, z + 0.01, mat(COLORS.metal), { collide: false });
     }
 
-    // Colliders: barrier + bottom landing (too tall to jump), the slope in steps, the top landing.
-    [x0, x1] = span(-0.7, landing);
-    addCollider(x0, 0, minZ, x1, 1.25, maxZ);
+    // Colliders. The slope is WALKABLE (once the barrier is gone): a ramp surface the feet follow (world/collision.js) with
+    // boxes round it: two side walls (1.5 m above the surface: no climbing out), and blocks under the lane so nobody walks
+    // under the low part (the high part is overhead: walk under it). Blocks under the lane stay below the surface, so they
+    // never get in the way of a rider.
+    const sideWidth = 0.3;
+    const laneMin = minZ + sideWidth;
+    const laneMax = maxZ - sideWidth;
+    const wallAbove = 1.5;
+    const underLane = 0.4; // blocks under the lane stay this far below the ramp surface at their start
+    // The barrier across the foot (too tall to jump). Returned: whoever repairs the escalator removes it.
+    [x0, x1] = span(-0.7, 0);
+    const barrier = addCollider(x0, 0, minZ, x1, 1.25, maxZ);
+    // Side walls: the bottom landing, the slope in segments, the top landing.
+    const sides = (ua, ub, bottom, top) => {
+      [x0, x1] = span(ua, ub);
+      addCollider(x0, bottom, minZ, x1, top, minZ + sideWidth);
+      addCollider(x0, bottom, maxZ - sideWidth, x1, top, maxZ);
+    };
+    sides(0, landing, 0, plate + wallAbove);
     const segments = (u0, u1, n, raised) => {
       for (let i = 0; i < n; i++) {
         const ua = u0 + ((u1 - u0) * i) / n;
         const ub = u0 + ((u1 - u0) * (i + 1)) / n;
+        sides(ua, ub, raised ? surface(ua) - truss : 0, surface(ub) + wallAbove);
         [x0, x1] = span(ua, ub);
-        addCollider(x0, raised ? surface(ua) - truss : 0, minZ, x1, surface(ub) + rail, maxZ);
+        const top = surface(ua) - underLane; // (a rider's body reaches this far ahead: the block must stay under their feet)
+        if (top > 0.02) addCollider(x0, raised ? surface(ua) - truss : 0, laneMin, x1, top, laneMax);
       }
     };
-    segments(landing, uOpen, 5, false); // low part: solid to the floor
+    segments(landing, uOpen, 5, false); // low part: solid to the floor under the lane
     segments(uOpen, slopeEnd, 5, true); // high part: overhead, walk under it
+    sides(slopeEnd, length, upperY - truss, upperY + wallAbove);
     [x0, x1] = span(slopeEnd, length);
-    addCollider(x0, upperY - truss, minZ, x1, upperY + rail, maxZ);
+    addCollider(x0, upperY - truss, laneMin, x1, upperY - underLane, laneMax);
+
+    // The walkable surface: the bottom plate, the slope, the top plate.
+    [x0, x1] = span(0, length);
+    const ramp = kit.ramp({
+      id: 'escalator', axis: 'x', origin: bottomX, dir,
+      minX: Math.min(x0, x1), maxX: Math.max(x0, x1), minZ: laneMin, maxZ: laneMax,
+      points: [[0, plate], [landing, plate], [slopeEnd, upperY], [length, upperY]],
+    });
+
+    // For zombie navigation (zombies/navigation.js): the ground floor and this one, joined by this ramp.
+    const link = {
+      id: 'escalator',
+      lower: { x: xAt(0), z: zMid, floor: 0 }, upper: { x: xAt(length), z: zMid, floor: 1 },
+      halfWidth: (laneMax - laneMin) / 2,
+      profile: [[0, plate], [landing, plate], [slopeEnd, upperY], [length, upperY]], // the surface height along it
+    };
 
     // Where the ceiling must be open: from where a rider's head would hit it to the top of the slope.
     const uHole = Math.max(landing, landing + (ceilingY - headroom - plate) / tan);
-    [x0, x1] = span(uHole, slopeEnd);
+    // (It runs 0.4 m past the top of the slope: a rider's body reaches ahead of their feet, and must not meet the slab's edge
+    // while still a little below the upper floor.)
+    [x0, x1] = span(uHole, Math.min(length, slopeEnd + 0.4));
     const hole = { minX: x0, maxX: x1, minZ: minZ - 0.3, maxZ: maxZ + 0.3 };
     [x0, x1] = span(slopeEnd, length);
-    return { hole, topLanding: { minX: x0, maxX: x1 } };
+    return { hole, topLanding: { minX: x0, maxX: x1 }, barrier, ramp, link, upperY };
   }
 
   /**

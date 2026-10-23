@@ -18,9 +18,10 @@
 // player; one at an end walks into the ramp when the route goes that way. With no `floors` / `links` it is the
 // single ground floor it always was.
 //
-//   link: { id, lower: { x, z, floor }, upper: { x, z, floor }, halfWidth }
+//   link: { id, lower: { x, z, floor }, upper: { x, z, floor }, halfWidth, profile? }
 //     lower / upper = where the ramp starts and ends on the map (floor = index into `floors`; the cell there must be
-//     open floor right at the ramp's foot / top); halfWidth = how wide the ramp is either side of that line.
+//     open floor right at the ramp's foot / top); halfWidth = how wide the ramp is either side of that line;
+//     profile = optional [[s, y], ...]: the surface height at distance s along it (default: a straight line).
 // =============================================================================
 
 import { zombieNav } from '../config/zombies.js';
@@ -201,7 +202,7 @@ export function createNavigation(colliders, agent, { floors = [0], links = [] } 
       if (t < 0 || t > 1) continue;
       const across = Math.abs((x - ax) * dz - (z - az) * dx) / Math.sqrt(len2);
       if (across > link.halfWidth) continue;
-      const surface = floors[link.lower.floor] + t * link.dy;
+      const surface = link.profile ? profileHeight(link.profile, t * Math.sqrt(len2)) : floors[link.lower.floor] + t * link.dy;
       if (Math.abs(y - surface) <= rampTolerance) return link;
     }
     return null;
@@ -509,6 +510,19 @@ export function createNavigation(colliders, agent, { floors = [0], links = [] } 
     isWalkableAt,
     clearLine,
   };
+}
+
+// Height along a surface profile [[s, y], ...] (linear between points; clamped at the ends).
+function profileHeight(points, s) {
+  if (s <= points[0][0]) return points[0][1];
+  for (let i = 1; i < points.length; i++) {
+    if (s <= points[i][0]) {
+      const [s0, y0] = points[i - 1];
+      const [s1, y1] = points[i];
+      return y0 + ((s - s0) / (s1 - s0)) * (y1 - y0);
+    }
+  }
+  return points[points.length - 1][1];
 }
 
 function setDir(out, dx, dz) {

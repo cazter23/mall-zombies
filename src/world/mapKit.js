@@ -28,7 +28,7 @@ import { makeTileTexture, makeSignTexture, makeShutterTexture } from './textures
 import { createShutter } from './shutter.js';
 import { createDoor } from './door.js';
 import { corridorLayout } from './corridor.js';
-import { markCollidersChanged } from './collision.js';
+import { markCollidersChanged, addRamp, removeRamp } from './collision.js';
 
 /**
  * The boxes making up one straight wall with openings (pure math, no three.js).
@@ -94,6 +94,7 @@ export function slabPieces(rect, hole) {
 export function createMapKit(group, colliders) {
   const materials = new Map();
   const ownColliders = []; // every Box3 this map put in `colliders` (shutters' too), for dispose()
+  const ownRamps = []; // every walkable ramp this map registered (world/collision.js addRamp), for dispose()
 
   function mat(color, options = {}) {
     const key = `${color}-${JSON.stringify(options)}`;
@@ -111,6 +112,13 @@ export function createMapKit(group, colliders) {
     colliders.push(b);
     ownColliders.push(b);
     return b;
+  }
+
+  /** A walkable ramp / stairs surface (see world/collision.js: it only holds feet up; add boxes for walls and undersides). */
+  function ramp(spec) {
+    const r = addRamp(colliders, spec);
+    ownRamps.push(r);
+    return r;
   }
 
   /** Adds a box spanning min..max. Solid (collides) unless { collide: false }. */
@@ -235,6 +243,8 @@ export function createMapKit(group, colliders) {
       }
     }
     ownColliders.length = 0;
+    for (const r of ownRamps) removeRamp(colliders, r);
+    ownRamps.length = 0;
     if (removed) markCollidersChanged(colliders);
     const geometries = new Set();
     const mats = new Set();
@@ -252,5 +262,5 @@ export function createMapKit(group, colliders) {
     materials.clear();
   }
 
-  return { group, colliders, mat, addCollider, box, sign, tiledFloor, slab, wall, corridor, shutterDoor, markers, dispose };
+  return { group, colliders, mat, addCollider, ramp, box, sign, tiledFloor, slab, wall, corridor, shutterDoor, markers, dispose };
 }
