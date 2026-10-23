@@ -30,6 +30,7 @@ import { feel } from './feel.js';
 import { audio } from './audio.js';
 import { gamepad, aimAssist } from './controls.js';
 import { atmosphere } from './environment.js';
+import { look } from './look.js';
 
 export const settingsTabs = ['Graphics', 'Mouse', 'Controller', 'Audio', 'Comfort'];
 export const menuFeel = { confirmSeconds: 3 };
@@ -95,6 +96,21 @@ export const settingDefs = [
       { value: 4, label: '4 nearest' },
     ],
     apply: (v, ctx) => ctx.lightPool?.setSize(v),
+  },
+  {
+    // Neon halos and the soft painted light under signs and trim (maps/mall/hallwayLook.js reads it every tick).
+    id: 'neonGlow', tab: 'Graphics', label: 'Neon glow', type: 'toggle', default: true, cost: 'medium',
+    apply: (v) => { look.runtime.neonGlow = v; },
+  },
+  {
+    // Scattered trash, receipts, puddles... (world/scatter.js; read every tick).
+    id: 'clutter', tab: 'Graphics', label: 'Clutter', type: 'select', default: 'full', cost: 'medium',
+    options: [
+      { value: 'full', label: 'Full' },
+      { value: 'some', label: 'Some' },
+      { value: 'none', label: 'None' },
+    ],
+    apply: (v) => { look.runtime.clutter = v; },
   },
 
   // ---- Mouse ----
@@ -201,10 +217,10 @@ export const autoGraphics = {
 export const settingPresets = {
   Graphics: [
     // Potato / Low are for weak computers (a school laptop): lower resolution, no post-processing, no dust / flickering lights.
-    { label: 'Potato', values: { renderScale: Math.max(0.5, nativeRatio * 0.5), visualEffects: 'off', ambientEffects: false, lampCount: 4 } },
-    { label: 'Low', values: { renderScale: Math.max(0.5, nativeRatio * 0.65), visualEffects: 'off', ambientEffects: false, lampCount: 6 } },
-    { label: 'Medium', values: { renderScale: Math.max(0.5, nativeRatio * 0.8), visualEffects: 'low', ambientEffects: true, lampCount: 8 } },
-    { label: 'High', values: { renderScale: nativeRatio, visualEffects: 'high', ambientEffects: true, lampCount: 'all' } }, // native, capped at 2x for performance
+    { label: 'Potato', values: { renderScale: Math.max(0.5, nativeRatio * 0.5), visualEffects: 'off', ambientEffects: false, lampCount: 4, neonGlow: false, clutter: 'none' } },
+    { label: 'Low', values: { renderScale: Math.max(0.5, nativeRatio * 0.65), visualEffects: 'off', ambientEffects: false, lampCount: 6, neonGlow: false, clutter: 'some' } },
+    { label: 'Medium', values: { renderScale: Math.max(0.5, nativeRatio * 0.8), visualEffects: 'low', ambientEffects: true, lampCount: 8, neonGlow: true, clutter: 'some' } },
+    { label: 'High', values: { renderScale: nativeRatio, visualEffects: 'high', ambientEffects: true, lampCount: 'all', neonGlow: true, clutter: 'full' } }, // native, capped at 2x for performance
   ],
   Comfort: [
     { label: 'Calm', values: { headBob: 0, speedLines: false } }, // for motion sickness

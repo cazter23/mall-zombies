@@ -143,10 +143,10 @@ export function createMallProps(kit) {
   }
 
   /** A ceiling light panel spanning x0..x1 / z0..z1, just under a ceiling at `ceilingY`. */
-  function lightPanel(x0, z0, x1, z1, ceilingY, { dead = false } = {}) {
+  function lightPanel(x0, z0, x1, z1, ceilingY, { dead = false, tint = COLORS.lightPanel, glow = 1.35 } = {}) {
     const material = dead
       ? mat(COLORS.deadLightPanel, { roughness: 0.45, metalness: 0.15 })
-      : mat(COLORS.lightPanel, { emissive: COLORS.lightPanel, emissiveIntensity: 1.35, roughness: 0.2 });
+      : mat(tint, { emissive: tint, emissiveIntensity: glow, roughness: 0.2 });
     box(x0, ceilingY - 0.06, z0, x1, ceilingY, z1, material, { collide: false });
   }
 

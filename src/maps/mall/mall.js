@@ -47,6 +47,8 @@ import { buildMallAtmosphere } from './atmosphere.js';
 import { buildRestockMachine } from './restockMachine.js';
 import { buildLevelTwo } from './levelTwo.js';
 import { buildAtrium } from './atrium.js';
+import { buildHallwayLook } from './hallwayLook.js';
+import { look } from '../../config/look.js';
 import { atmosphere } from '../../config/environment.js';
 
 export const LAYOUT = {
@@ -185,7 +187,7 @@ export function buildMall(scene, colliders) {
 
   // --- Floors and ceilings -------------------------------------------------
 
-  tiledFloor(H.minX, H.minZ, H.maxX, H.maxZ, { base: '#ebe2d1', grout: '#c2b6a2', variation: 12, seed: 5 });
+  tiledFloor(H.minX, H.minZ, H.maxX, H.maxZ, look.hallway.floor); // (the reference room's black terrazzo: config/look.js)
   // Continue beneath both shared walls: a floor gap under the west shortcut can split the nav
   // grid when other loaded geometry (the debug range, future areas) shifts its cell centres.
   tiledFloor(F.minX - T, F.minZ, F.maxX, H.minZ, { base: '#f1e8d6', grout: '#cdbfa8', seed: 3 });
@@ -197,7 +199,7 @@ export function buildMall(scene, colliders) {
 
   // --- Main hallway walls ------------------------------------------------------
 
-  const hallWall = mat(COLORS.concourseWall);
+  const hallWall = mat(look.hallway.wall);
   // North wall: open where the start room's storefront is (built next, in its own color).
   wall({
     along: 'x', from: H.minX - T, to: H.maxX + T, at0: H.maxZ, at1: H.maxZ + T, height: H.height,
@@ -221,10 +223,7 @@ export function buildMall(scene, colliders) {
     openings: [{ from: D.minX, to: D.maxX, top: D.height }],
   }, mat(COLORS.storefront), { name: 'storefront' });
 
-  sign('GOING OUT OF BUSINESS', {
-    x: 0, y: 3.95, z: H.maxZ - 0.01, width: 7, height: 0.9, facing: -1,
-    background: '#3b2f44', color: '#ffd23f',
-  });
+  // (Its GOING OUT OF BUSINESS sign is neon now: maps/mall/hallwayLook.js.)
 
   // --- Start room walls ------------------------------------------------------
 
@@ -269,7 +268,7 @@ export function buildMall(scene, colliders) {
   const upperY = H.height + 0.3; // level 2 floor = top of the hallway ceiling
   const escalator = props.escalator({ ...E, upperY, ceilingY: H.height });
   const ceilingHoles = [escalator.hole, ...LAYOUT.level2.voids]; // the escalator well + the balcony voids
-  kit.slab({ minX: H.minX - T, maxX: H.maxX + T, minZ: H.minZ - T, maxZ: H.maxZ + T }, H.height, upperY, mat(COLORS.ceiling), {
+  kit.slab({ minX: H.minX - T, maxX: H.maxX + T, minZ: H.minZ - T, maxZ: H.maxZ + T }, H.height, upperY, mat(look.hallway.ceiling), {
     holes: ceilingHoles, name: 'ceiling',
   });
 
@@ -330,10 +329,7 @@ export function buildMall(scene, colliders) {
     x: (AT.martLink.from + AT.martLink.to) / 2, y: 3.6, z: AT.rect.minZ + 0.02, width: 3.2, height: 0.6, facing: 1,
     background: '#1d4e89', color: '#ffd23f',
   });
-  sign('GRAND ATRIUM', {
-    x: (AT.gate.from + AT.gate.to) / 2, y: 4.3, z: H.maxZ - 0.02, width: 5, height: 1.0, facing: -1,
-    background: '#6b3f5e', color: '#ffd9a8',
-  });
+  // (The hallway side's GRAND ATRIUM sign is neon: maps/mall/hallwayLook.js.)
 
   // Elevator doors in the north wall (sealed).
   props.elevatorDoors({ along: 'x', center: LAYOUT.elevator.centerX, wallAt: H.maxZ, facing: -1 });
@@ -344,18 +340,7 @@ export function buildMall(scene, colliders) {
 
   // --- Main hallway dressing ---------------------------------------------------
 
-  sign('FOOD COURT', {
-    x: 0, y: 4.3, z: H.minZ + 0.02, width: 6, height: 1.2, facing: 1,
-    background: '#2d6a4f', color: '#ffffff',
-  });
-  sign('MEGA MART', {
-    x: H.maxX - 0.02, y: 4.3, z: (MD.minZ + MD.maxZ) / 2, width: 6, height: 1.2, facing: 'x-',
-    background: '#1d4e89', color: '#ffd23f',
-  });
-  sign('SERVICE CORRIDOR · STAFF ONLY', {
-    x: H.minX + 0.02, y: 3.6, z: (SCD.minZ + SCD.maxZ) / 2, width: 3.4, height: 0.45, facing: 'x+',
-    background: '#3a3f47', color: '#ffd23f',
-  });
+  // (The hallway's FOOD COURT / MEGA MART / STAFF ONLY signs are neon: maps/mall/hallwayLook.js.)
 
   // Planters framing the Food Court door
   props.planter(FD.minX - 2.4, H.minZ + 0.3, FD.minX - 1.0, H.minZ + 1.5);
@@ -368,12 +353,13 @@ export function buildMall(scene, colliders) {
 
   // Ceiling lights (the west one is short: the escalator's ceiling hole is just east of it). Over the balcony voids they move
   // to the solid strips either side; the bridge and the east end keep a centre panel.
-  for (const x of [0, 16]) props.lightPanel(x - 1.2, HZ - 0.6, x + 1.2, HZ + 0.6, H.height);
+  const hallPanel = { tint: look.hallway.panel, glow: look.hallway.panelGlow }; // (dim violet: the reference room's mood)
+  for (const x of [0, 16]) props.lightPanel(x - 1.2, HZ - 0.6, x + 1.2, HZ + 0.6, H.height, { ...hallPanel, dead: x === 16 });
   for (const x of [-5.5, 6.25]) {
-    props.lightPanel(x - 1.2, H.minZ + 0.6, x + 1.2, H.minZ + 1.2, H.height);
-    props.lightPanel(x - 1.2, H.maxZ - 1.9, x + 1.2, H.maxZ - 1.3, H.height);
+    props.lightPanel(x - 1.2, H.minZ + 0.6, x + 1.2, H.minZ + 1.2, H.height, hallPanel);
+    props.lightPanel(x - 1.2, H.maxZ - 1.9, x + 1.2, H.maxZ - 1.3, H.height, hallPanel);
   }
-  props.lightPanel(-19.6, HZ - 0.6, -18.0, HZ + 0.6, H.height);
+  props.lightPanel(-19.6, HZ - 0.6, -18.0, HZ + 0.6, H.height, hallPanel);
 
   // --- Start room props (a closed-down store) -------------------------------
 
@@ -677,7 +663,7 @@ export function buildMall(scene, colliders) {
   };
   // Lamps hang well below the ceiling (about 60% of its height) and are dimmer to match: a lamp just
   // under the ceiling lights a small, hard-edged bright disc on it; hung lower it's a soft wide glow.
-  for (const x of [-12, 0, 12]) lamp(atmosphere.roomLights.hallway, x, H.height * 0.58, HZ);
+  for (const x of [-12, 0, 12]) lamp(look.hallway.lamp, x, H.height * 0.58, HZ); // (the reference room's violet: config/look.js)
   for (const x of [-12, 0, 12]) lamp(atmosphere.roomLights.foodCourt, x, F.height * 0.58, FZ);
   // Start-room warm/cool lamps are built with its details (config/environment.js).
   // Mega Mart's two fixed lamps are built with its details (config/environment.js).
@@ -772,6 +758,19 @@ export function buildMall(scene, colliders) {
   const doors = [startDoor, megaMartDoor, foodCourtDoor, serviceCorridorDoor, foodCourtMegaMartDoor, serviceCorridorFoodCourtDoor, escalatorDoor, atriumDoor, atriumPromenadeDoor, atriumMegaMartDoor];
   const dressing = buildMallAtmosphere(kit, LAYOUT, { service, ceilingHoles });
 
+  // The hallway's new look (the visual overhaul's reference room): neon, painted light, two-tone walls, clutter.
+  // Clutter keeps clear of every doorway, spawn point, buy spot and the escalator's foot.
+  const around = (p, r) => ({ minX: p.x - r, maxX: p.x + r, minZ: p.z - r, maxZ: p.z + r });
+  const hallwayClear = [
+    ...spawnPoints.map((s) => around(s.position, 1.2)),
+    ...features.map((f) => around(f.position, 2.0)),
+    ...doors.map((d) => around(d.position, 2.6)),
+    around({ x: escalator.foot.x + 1, z: escalator.foot.z }, 2.5),
+    { minX: D.minX - 1, maxX: D.maxX + 1, minZ: H.maxZ - 3, maxZ: H.maxZ }, // the start door's approach
+    { minX: H.minX, maxX: H.maxX, minZ: HZ - 1.2, maxZ: HZ + 1.2 }, // the hallway's centre lane (fighting room)
+  ];
+  const hallwayLook = buildHallwayLook({ kit, layout: LAYOUT, colliders, keepClear: hallwayClear });
+
   return {
     id: 'mall',
     group,
@@ -797,10 +796,12 @@ export function buildMall(scene, colliders) {
     update(dt) {
       for (const door of doors) door.update(dt);
       dressing.update(dt);
+      hallwayLook.update(dt);
     },
     reset() {
       for (const door of doors) door.reset();
       dressing.reset();
+      hallwayLook.reset();
     },
     // Unload: colliders out of the shared list, GPU memory freed, group out of the scene.
     dispose() {

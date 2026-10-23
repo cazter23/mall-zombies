@@ -19,6 +19,7 @@ const worldBox = (list) => list.reduce((box, m) => box.union(new THREE.Box3().se
 test('the real mall: many fewer meshes, every triangle kept, the same overall extent', () => {
   const scene = new THREE.Scene();
   const map = buildMall(scene, []);
+  map.group.updateWorldMatrix(true, true); // (positioned groups, e.g. neon signs: world matrices before measuring)
   const before = meshes(map.group).filter((m) => m.visible);
   const trisBefore = triangles(before);
   const extentBefore = worldBox(before);
