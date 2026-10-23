@@ -38,7 +38,7 @@ export function createScreens() {
     <div class="title-shade"></div>
     <div class="title-panel">
       <div class="kicker">Attention shoppers</div>
-      <h1 class="title-logo">Mall<br />Zombies</h1>
+      <h1 class="title-logo">Sunset<br />Galleria</h1>
       <p class="tagline">The mall is closed. The shoppers didn't get the memo.</p>
       <div class="menu-list">
         <button class="menu-btn primary" data-action="play" type="button">Play</button>
@@ -77,7 +77,7 @@ export function createScreens() {
   const results = el('div', 'screen results-screen hidden', `
     <div class="receipt-wrap">
       <div class="receipt">
-        <div class="receipt-store">MALL ZOMBIES</div>
+        <div class="receipt-store">SUNSET GALLERIA</div>
         <div class="receipt-sub">Store #013 · Register 4</div>
         <div class="receipt-sub receipt-date"></div>
         <div class="receipt-sub">Cashier: YOU (deceased)</div>

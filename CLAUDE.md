@@ -1,4 +1,4 @@
-# Mall Zombies
+# Sunset Galleria
 
 A campy, absurd, COD Zombies-style wave survival shooter set in a shopping mall.
 Solo, one life, stylized low-poly look, cartoonish Halo CE-style splatter (colored

@@ -1,5 +1,5 @@
 // =============================================================================
-// MALL ZOMBIES: entry point (the browser side)
+// SUNSET GALLERIA: entry point (the browser side)
 // The renderer, camera, pointer lock, menus, controller menus, look input, debug keys and drawing.
 // All gameplay systems are built and ticked by game/createGame.js (which also runs headless in tests).
 // =============================================================================
