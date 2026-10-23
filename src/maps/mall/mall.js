@@ -696,6 +696,13 @@ export function buildMall(scene, colliders) {
     navigation: { floors: [0, upperY], links: [escalator.link] },
     // The escalator's barrier (a collider across its foot, removed by the escalatorRepair door) and its walkable surface.
     escalator: { barrier: escalator.barrier, ramp: escalator.ramp },
+    // For the debug "upstairs" command (Shift+T): where you arrive on level 2, where you go back down to, and the repair door.
+    levelTwo: {
+      minY: upperY / 2, // above this you count as upstairs
+      arrival: { position: new THREE.Vector3(H.minX + 1.2, upperY, 4.6), yaw: -Math.PI / 2 }, // west lobby, facing east down the walkway
+      below: { position: new THREE.Vector3(escalator.foot.x + 1.5, 0, escalator.foot.z), yaw: Math.PI / 2 }, // at the escalator's foot
+      repair: escalatorDoor,
+    },
     update(dt) {
       for (const door of doors) door.update(dt);
       dressing.update(dt);

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { atmosphere } from '../config/environment.js';
 import { makeSoftFootprint } from '../world/atmosphereTextures.js';
+import { rampHeightAt } from '../world/collision.js';
 
 /** One instanced draw, independent of hitboxes, navigation and damage. */
 export function createContactShadows(scene, colliders) {
@@ -25,6 +26,10 @@ export function createContactShadows(scene, colliders) {
         for (const b of colliders) {
           if (b.max.y <= position.y + cfg.floorTolerance && b.max.y > floor && b.min.x <= position.x && b.max.x >= position.x
             && b.min.z <= position.z && b.max.z >= position.z) floor = b.max.y;
+        }
+        for (const ramp of colliders.ramps ?? []) { // (an escalator: its surface, not the blocks under it)
+          const h = rampHeightAt(ramp, position.x, position.z);
+          if (h !== null && h <= position.y + cfg.floorTolerance && h > floor) floor = h;
         }
         const height = position.y - floor;
         if (!Number.isFinite(floor) || height >= cfg.fadeHeight) continue;

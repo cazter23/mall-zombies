@@ -204,3 +204,64 @@ test('a zombie coming along either passage gets onto the escalator whatever its 
     }
   }
 });
+
+test('level 2 has its own ambience: its music and air-con play up there (once open), muffled by the slab from below', async () => {
+  const { createAmbience } = await import('../src/game/ambience.js');
+  const t = fixture({ repaired: true });
+  const { g } = t;
+  let mix = [];
+  const ambience = createAmbience({ map: g.map, player: g.player, colliders: g.colliders, sound: { setAmbience: (v) => { mix = v; } } });
+  const level2 = () => mix.filter((v) => v.id.startsWith('level2_'));
+  g.player.teleport({ position: new THREE.Vector3(2, UPPER_Y, 1), yaw: 0 });
+  ambience.update(1 / 60, true);
+  const upstairs = level2();
+  assert.ok(upstairs.some((v) => v.kind === 'music'), 'the music is heard upstairs');
+  g.player.teleport({ position: new THREE.Vector3(2, 0, 1), yaw: 0 });
+  ambience.update(1 / 60, true);
+  const below = level2().find((v) => v.kind === 'music');
+  const above = upstairs.find((v) => v.kind === 'music');
+  assert.ok(!below || below.gain < above.gain * 0.5, 'from the hallway below it is muffled (or not heard at all)');
+  g.map.doors.find((d) => d.id === 'escalatorRepair').reset();
+  g.player.teleport({ position: new THREE.Vector3(2, UPPER_Y, 1), yaw: 0 });
+  ambience.update(1 / 60, true);
+  assert.equal(level2().length, 0, 'silent while level 2 is closed');
+});
+
+test('contact shadows sit on the escalator surface under a zombie riding it, and on level 2', async () => {
+  const { createContactShadows } = await import('../src/fx/contactShadows.js');
+  const t = fixture({ repaired: true });
+  const { g } = t;
+  const scene = new THREE.Scene();
+  const shadows = createContactShadows(scene, g.colliders);
+  const matrix = new THREE.Matrix4();
+  const at = new THREE.Vector3();
+  const shadowY = (x, y, z) => {
+    const zombie = { state: 'chasing', position: new THREE.Vector3(x, y, z), prevPosition: new THREE.Vector3(x, y, z) };
+    shadows.update([zombie]);
+    if (shadows.mesh.count === 0) return null;
+    shadows.mesh.getMatrixAt(0, matrix);
+    return at.setFromMatrixPosition(matrix).y;
+  };
+  const ramp = g.map.escalator.ramp;
+  const { rampHeightAt } = await import('../src/world/collision.js');
+  const surface = rampHeightAt(ramp, -10, zMid);
+  assert.ok(Math.abs(shadowY(-10, surface, zMid) - surface) < 0.05, 'on the moving stairs, not the blocks under them');
+  assert.ok(Math.abs(shadowY(0, UPPER_Y, 1) - UPPER_Y) < 0.05, 'on the level 2 floor');
+  shadows.dispose();
+});
+
+test('debug Shift+T: to level 2 (repairing the escalator for free) and back down', () => {
+  const t = headlessGame();
+  const { g } = t;
+  t.tick(1);
+  assert.equal(g.map.zones.upstairs.open, false);
+  const points = g.wallet.points;
+  g.debug.run('upstairs');
+  t.tick(2);
+  assert.equal(g.map.zones.upstairs.open, true);
+  assert.equal(g.wallet.points, points, 'free');
+  assert.ok(Math.abs(g.player.position.y - UPPER_Y) < 0.01, 'on level 2');
+  g.debug.run('upstairs');
+  t.tick(2);
+  assert.ok(g.player.position.y < 0.01, 'back on the ground');
+});

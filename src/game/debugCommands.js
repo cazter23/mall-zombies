@@ -104,6 +104,18 @@ export function createDebugCommands({ map, zombies, rounds, wallet, gun, health,
       return inside ? 'Back in the mall' : 'In the test range';
     },
 
+    upstairs() {
+      const spots = map.levelTwo;
+      if (!spots) return 'This map has no second floor';
+      if (player.position.y > spots.minY) {
+        player.teleport(spots.below);
+        return 'Back downstairs';
+      }
+      spots.repair.open(); // (free, like the doors key: the way up has to be open)
+      player.teleport(spots.arrival);
+      return 'On Level 2';
+    },
+
     panel() {
       state.panelOpen = !state.panelOpen;
       return state.panelOpen ? 'Debug window shown' : 'Debug window hidden';

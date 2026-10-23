@@ -88,6 +88,7 @@ export function buildMallAtmosphere(kit, layout, { service, ceilingHole }) {
 
   // One visual access panel and exposed back-of-house cable trays, above jump height.
   const cx = service.points[1].x, scY = layout.serviceCorridor.height;
+  const upperY = layout.hallway.height + 0.3; // level 2's floor
   box('service_cable_tray', cx - 0.8, scY - 0.18, -5.5, 0.32, 0.1, 13, metal);
   for (const dx of [-0.1, 0, 0.1]) box('service_cable', cx - 0.8 + dx, scY - 0.11, -5.5, 0.035, 0.03, 13, dark);
   box('access_panel_recess', cx + 0.5, scY - 0.015, -7.3, 0.8, 0.016, 0.8, dark);
@@ -319,6 +320,9 @@ export function buildMallAtmosphere(kit, layout, { service, ceilingHole }) {
     { id: 'hall_buzz', kind: 'fluorescentBuzz', zone: 'hallway', position: [0, 5.5, 2], range: 10 },
     { id: 'start_buzz', kind: 'fluorescentBuzz', zone: 'startRoom', position: [0, 3.8, 13.5], range: 8 },
     { id: 'mart_buzz', kind: 'fluorescentBuzz', zone: 'megaMart', position: [27, 4.5, -21], range: 10 },
+    // Level 2 (the Sunset Promenade, on top of the hallway's ceiling slab: the slab muffles it from below)
+    { id: 'level2_music', kind: 'music', zone: 'upstairs', position: [0, upperY + 3, 2], range: 22 },
+    { id: 'level2_hvac', kind: 'ventilation', zone: 'upstairs', position: [12, upperY + 3.2, 2], range: 12 },
   ];
   let time = 0;
   function ballastWave(t) {

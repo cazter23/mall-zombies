@@ -37,6 +37,7 @@ export const debug = {
 
     { id: 'doors', key: 'KeyO', group: 'Map', label: 'Open every door (press again to close them)' },
     { id: 'arena', key: 'KeyT', group: 'Map', label: 'Teleport to the test range and back' },
+    { id: 'upstairs', key: 'KeyT', shift: true, group: 'Map', label: 'Teleport to Level 2 and back (repairs the escalator)' },
 
     { id: 'panel', key: 'Backquote', group: 'Debug', label: 'Show / hide this window' },
   ],

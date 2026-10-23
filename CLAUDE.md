@@ -190,7 +190,7 @@ src/
                         bindings: tests check) + enabled (master switch), showMarkers, testArena, addPointsAmount, jumpRounds, panel,
                         dummies, exposeToWindow, keyLabel(). They work in a normal game (no debug mode): Z spawn the selected
                         zombie / Shift+Z next type / X clear / K kill all (pays), N next round / Shift+N +5 rounds / L Flash Sale,
-                        P +5000 / ' points to 0, G god mode / H next wall gun / U free tier, O all doors / T test range, ` window
+                        P +5000 / ' points to 0, G god mode / H next wall gun / U free tier, O all doors / T test range / Shift+T Level 2, ` window
   core/
     loop.js             startLoop(): fixed-timestep accumulator; each frame calls beforeUpdate(frameTime) (look
                         input), then update(dt) per tick, then render(alpha, frameTime)
@@ -739,6 +739,12 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+Second floor, step 5 of 6 (gameplay integration): level 2 ambience (atmosphere.js emitters level2_music + level2_hvac, zone 'upstairs';
+the ceiling slab occludes them from the hallway), contact shadows follow ramp surfaces (a zombie on the escalator gets its shadow on
+the steps, not on the blocks underneath), and debug Shift+T (`upstairs`, map.levelTwo { minY, arrival, below, repair }) teleports to
+level 2's west lobby, repairing the escalator for free, and back to its foot. The Cart Pusher already only charges on the player's
+floor (|dy| < 0.5) with lane rays at its own height. Tests in levelTwo.test.js (13 now).
+
 Second floor, step 4 of 6: Level 2 is built (maps/mall/levelTwo.js, see Map). The old closed-off landing (props.upperLanding) is gone.
 Done with it, because the first tests failed without it: the zombie manager treats spawn markers as standing on their own floor (spawn at
 the marker's y, route cost and occupancy checked at that y; an explicit spawn spot still goes on the ground), surround slots are taken
