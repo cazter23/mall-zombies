@@ -130,11 +130,11 @@ test('all 120 purchase orders: any bought entrance holds its zones open; reset s
           }
         }
       }
-      for (const s of map.spawnPoints) {
+      for (const s of map.spawnPoints.filter((s) => s.zone !== 'upstairs')) { // (level 2 has its own tests: levelTwo.test.js)
         assert.equal(Number.isFinite(reach(s.position)), connected.has(s.zone), `${order} after ${id}: ${s.name}`);
       }
     }
-    for (const s of map.spawnPoints) assert.ok(Number.isFinite(reach(s.position)), `${s.name} reachable with every door open`);
+    for (const s of map.spawnPoints.filter((s) => s.zone !== 'upstairs')) assert.ok(Number.isFinite(reach(s.position)), `${s.name} reachable with every door open`);
     map.reset();
     for (const s of map.spawnPoints.filter((s) => s.zone !== 'startRoom')) {
       assert.equal(reach(s.position), Infinity, `${s.name} sealed on reset`);
@@ -386,10 +386,12 @@ test('the ceiling is open only above the escalator; the elevator wall stays soli
   // In the hole, beside the escalator (its own balustrade colliders rise through the middle of it).
   for (const z of [0.85, 3.15]) assert.equal(containsPoint(colliders, -14, y, z), false, `hole above the escalator at z ${z}`);
   for (const [x, z] of [[0, 2], [-14, -1], [-14, 5], [-19, 2], [-8, 2]]) assert.ok(containsPoint(colliders, x, y, z), `ceiling at (${x}, ${z})`);
-  // The boarded-up level-2 landing above the hole is closed in (walls on all sides, a roof).
-  for (const [x, yy, z] of [[-14, 8, 0.55], [-14, 8, 3.45], [-11.8, 8, 2], [-19.35, 8, 2], [-14, 9.75, 2]]) {
-    assert.ok(containsPoint(colliders, x, yy, z), `upper landing closed at (${x}, ${yy}, ${z})`);
+  // Level 2 above it is closed in: walls on all four sides and a roof (levelTwo.test.js has the rest).
+  const upper = H.height + 0.3 + 1.8;
+  for (const [x, z] of [[0, H.maxZ + 0.15], [0, H.minZ - 0.15], [H.minX - 0.15, 2], [H.maxX + 0.15, 2]]) {
+    assert.ok(containsPoint(colliders, x, upper, z), `level 2 wall at (${x}, ${z})`);
   }
+  assert.ok(containsPoint(colliders, 0, H.height + 0.3 + LAYOUT.level2.height + 0.15, 2), 'level 2 roof');
   // Elevator: painted on, the wall behind it is solid.
   assert.ok(containsPoint(colliders, LAYOUT.elevator.centerX, 1.2, H.maxZ + 0.15), 'wall behind the elevator doors');
 });

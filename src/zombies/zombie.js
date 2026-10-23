@@ -559,7 +559,6 @@ export class Zombie {
   // keeping its health.
   respawnAt(position, yaw) {
     this.position.copy(position);
-    this.position.y = 0;
     this.prevPosition.copy(this.position);
     this.velocity.set(0, 0, 0);
     this.yaw = yaw;

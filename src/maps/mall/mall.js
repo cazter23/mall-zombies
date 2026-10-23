@@ -45,6 +45,7 @@ import { buildStartRoomDetails } from './startRoomDetails.js';
 import { buildMegaMartDetails, MART_FIXTURES } from './megaMartDetails.js';
 import { buildMallAtmosphere } from './atmosphere.js';
 import { buildRestockMachine } from './restockMachine.js';
+import { buildLevelTwo } from './levelTwo.js';
 import { atmosphere } from '../../config/environment.js';
 
 export const LAYOUT = {
@@ -61,6 +62,25 @@ export const LAYOUT = {
   // (the top of the hallway ceiling, y 6.3). 2m wide. Sealed for now.
   escalator: { bottomX: -4, dir: -1, minZ: 1, maxZ: 3 },
   elevator: { centerX: 10.5 }, // doors in the hallway's north wall (sealed for now)
+  // Level 2 (maps/mall/levelTwo.js): the quiet Sunset Promenade over the hallway, reached by the repaired escalator. Its footprint
+  // is the hallway's. shops = empty fronts on the north wall (x from..to), seating = the planter ring + wall benches, vents =
+  // boarded vents that are zombie spawns (wall + position along it), lamps = where its point lights hang (x, z).
+  level2: {
+    height: 3.6,
+    shops: [
+      { id: 'shoePer', from: -10, to: -4, color: 0x7a5c8a, text: 'SHOE-PER SALE', signBackground: '#2b2233', signColor: '#c9b6e4', gate: 0.7, note: 'SPACE AVAILABLE · INQUIRE WITHIN' },
+      { id: 'comingSoon', from: -3, to: 3, color: 0xe6c37a, text: 'COMING SOON', signBackground: '#ffd23f', signColor: '#1d1626', note: 'A NEW LOOK IS COMING' },
+      { id: 'pretzel', from: 4, to: 10, color: 0xd9822b, text: 'PRETZEL PALACE', signBackground: '#5c2e12', signColor: '#ffd9a8', gate: 2.0 },
+    ],
+    seating: { planterX: 13, planterZ: 1.6, wallBenches: [[-9, -7.2], [-6.2, -4.4]] },
+    vents: [
+      { id: 'southWest', wall: 'south', at: -13 },
+      { id: 'southMiddle', wall: 'south', at: 8 },
+      { id: 'east', wall: 'east', at: 4.2 },
+      { id: 'northEast', wall: 'north', at: 16 },
+    ],
+    lamps: [{ x: -8, z: 2 }, { x: 10, z: 2 }],
+  },
   // Customer Service desk (Extended Warranty tiers): on the hallway's north wall between the start doorway
   // and the elevator. Move it by changing this one entry (the prop, its collider and its buy spot follow).
   serviceDesk: { along: 'x', center: 7, wallAt: 6, facing: -1, zone: 'hallway' },
@@ -244,9 +264,9 @@ export function buildMall(scene, colliders) {
     opensZone: 'upstairs', zones, barrier: escalatorGate,
     position: new THREE.Vector3(escalator.foot.x, 1.1, escalator.foot.z),
   });
-  props.upperLanding({
-    rect: { minX: escalator.topLanding.minX - 1.7, maxX: escalator.hole.maxX, minZ: escalator.hole.minZ, maxZ: escalator.hole.maxZ },
-    floorY: upperY, boardedEnd: 'minX', text: 'LEVEL 2 · OPENING SOON',
+  // Level 2 itself, on top of the slab: walkway, shop fronts, seating, railings round the escalator well, boarded vents.
+  const levelTwo = buildLevelTwo({
+    kit, floorY: upperY, rect: { minX: H.minX, maxX: H.maxX, minZ: H.minZ, maxZ: H.maxZ }, hole: escalator.hole, layout: LAYOUT.level2,
   });
 
   // Elevator doors in the north wall (sealed).
@@ -586,6 +606,7 @@ export function buildMall(scene, colliders) {
   for (const x of [-12, 0, 12]) lamp(atmosphere.roomLights.foodCourt, x, F.height * 0.58, FZ);
   // Start-room warm/cool lamps are built with its details (config/environment.js).
   // Mega Mart's two fixed lamps are built with its details (config/environment.js).
+  for (const l of levelTwo.lamps) lamp(atmosphere.roomLights.level2, l.x, l.y, l.z);
   for (const at of [3, 12]) lamp(atmosphere.roomLights.serviceCorridor, service.points[1].x, SC.height * 0.65, service.pointAt(1, at).z);
 
   // --- Spawn points and wall-buy spots (invisible markers) -------------------
@@ -598,6 +619,7 @@ export function buildMall(scene, colliders) {
     { name: 'spawn_hallway_ventNorthEast', zone: 'hallway', position: new THREE.Vector3(15, 0, H.maxZ - 0.8) },
     { name: 'spawn_hallway_ventSouth', zone: 'hallway', position: new THREE.Vector3(-14, 0, H.minZ + 0.8) },
     ...stores.spawns, // a zombie spawn inside each of the four stores
+    ...levelTwo.spawns, // boarded vents on level 2 (their y is the upper floor)
     { name: 'spawn_megaMart_stockroom', zone: 'megaMart', position: new THREE.Vector3(26.5, 0, -23.2) },
     { name: 'spawn_megaMart_receiving', zone: 'megaMart', position: new THREE.Vector3(31.8, 0, -23.2) },
     { name: 'spawn_megaMart_vent', zone: 'megaMart', position: new THREE.Vector3(21.8, 0, -23.2) },

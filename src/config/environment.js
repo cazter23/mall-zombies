@@ -6,6 +6,7 @@ export const atmosphere = {
     hallway: { color: 0xcce6ff, intensity: 22, distance: 22 },
     foodCourt: { color: 0xffc988, intensity: 24, distance: 20 },
     serviceCorridor: { color: 0x8fd8e8, intensity: 10, distance: 11 },
+    level2: { color: 0xffc59a, intensity: 22, distance: 22 }, // the Sunset Promenade: warm, like the Food Court
     storeAccent: { intensity: 10, distance: 9 },
   },
   surfaces: {

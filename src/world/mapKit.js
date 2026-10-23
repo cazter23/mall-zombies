@@ -143,8 +143,11 @@ export function createMapKit(group, colliders) {
     return mesh;
   }
 
-  /** A 0.2m floor slab (top at y = 0) with a procedural tile texture (1 texture repeat = 2m). */
-  function tiledFloor(minX, minZ, maxX, maxZ, textureOptions) {
+  /**
+   * A 0.2m floor slab (top at y = 0) with a procedural tile texture (1 texture repeat = 2m).
+   * `top`, `thickness` and `collide` place it elsewhere: a thin tiled skin over an existing floor (collide: false).
+   */
+  function tiledFloor(minX, minZ, maxX, maxZ, textureOptions, { top = 0, thickness = 0.2, collide = true } = {}) {
     const texture = makeTileTexture(textureOptions);
     texture.repeat.set((maxX - minX) / 2, (maxZ - minZ) / 2);
     const roughnessMap = makeTileRoughness();
@@ -152,7 +155,7 @@ export function createMapKit(group, colliders) {
     const bumpMap = makeTileBump();
     bumpMap.repeat.copy(texture.repeat);
     const material = new THREE.MeshStandardMaterial({ map: texture, roughnessMap, bumpMap, ...atmosphere.surfaces.tile });
-    return box(minX, -0.2, minZ, maxX, 0, maxZ, material, { name: 'floor' });
+    return box(minX, top - thickness, minZ, maxX, top, maxZ, material, { name: 'floor', collide });
   }
 
   /** A flat solid slab from y0 to y1 (a ceiling, say), optionally with one hole (see slabPieces). */
@@ -214,7 +217,7 @@ export function createMapKit(group, colliders) {
     for (const s of spawnPoints) {
       const m = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 1.8, 8), spawnMaterial);
       m.name = s.name;
-      m.position.copy(s.position).setY(0.9);
+      m.position.copy(s.position).setY(s.position.y + 0.9);
       markerGroup.add(m);
     }
     const wallBuyMaterial = new THREE.MeshBasicMaterial({ color: 0x33ff88, transparent: true, opacity: 0.6 });

@@ -434,8 +434,8 @@ src/
                         wallDoor (painted service/exit door + sign), boardedVent, wallStripe, escalator({ bottomX, dir,
                         minZ, maxZ, upperY, ceilingY }) (extruded body + instanced steps + glass/handrails; sealed: rope
                         barrier + OUT OF ORDER board, colliders stepped along the slope: solid to the floor where low, overhead
-                        where its underside is above 2m so you can walk under; returns { hole, topLanding }), upperLanding
-                        (walled, roofed, boarded-up level-2 landing seen through the hole), elevatorDoors (sealed, taped off),
+                        where its underside is above 2m so you can walk under; returns { hole, topLanding, barrier, ramp, link... }),
+                        elevatorDoors (sealed, taped off),
                         foodStall (facade + name sign + menu board + striped awning + counter/sneeze guard/register/food +
                         gear behind: grill/fryer/wok/soda; ONE solid 1.2m block wall-to-counter: above jump peak + step-up),
                         tableSet (round table 0.75m + 4 stools 0.45m; colliders: table + a "plus" of two low stool strips),
@@ -461,6 +461,13 @@ src/
                         (byteMe: screen wall + laptops + neon; goodSports: wainscot, jerseys, trophies, bat rack, ball bin;
                         playTimeToys: rainbow, plush shelves, blocks; nutsAndBolts: pegboard of tools, paint cans, workbench) and a
                         zombie spawn just inside the door. buildStores({ kit, props, court, thickness, stores }) -> { spots, spawns }
+    mall/levelTwo.js    buildLevelTwo({ kit, floorY, rect, hole, layout }) -> { spawns, lamps }: LEVEL 2, the Sunset Promenade, on the hallway's
+                        ceiling slab (same 40 x 8 m footprint, 3.6m ceiling): peach walls with coral stripe + purple skirting, a tiled skin
+                        over the slab (the slab is the collider), roof beams + warm skylight strips, glass RAILINGS (1.5m solid, ignoreShots)
+                        on three sides of the escalator well (the west end is the way on/off), three empty shop fronts on the north wall (data:
+                        LAYOUT.level2.shops; "COMING SOON" is the future Wardrobe spot), a planter ringed by benches + wall benches (vaultable),
+                        signs, and boarded vents (LAYOUT.level2.vents) = the zombie spawns tagged zone 'upstairs' (their y is the floor). Only the
+                        perimeter, rails, benches and planter collide. mall.js hangs the lamps (config roomLights.level2)
     mall/restockMachine.js  buildRestockMachine({ kit, center, wallAt, facing }) -> { position, normal, screen }: the RESTOCK-O-MATIC
                         (north/south walls): body + hazard kick plate + glowing header and tagline, a lit window of ammo boxes, keypad,
                         card reader, live canvas screen (screen.show({ title, line, note, tone })), side signs, the AMMO blade sign, the
@@ -617,7 +624,7 @@ src/
   Player is a cylinder (radius, height, feet position). Boxes whose top is within `stepTolerance`
   of the feet count as floor, not walls.
 - Coordinates: meters, +Y up. Camera looks down -Z at yaw 0.
-- Markers (invisible; shown if `debug.showMarkers`; wall-buy markers come from the 'wallBuy' features): `map.spawnPoints` (16: 2 start-room vents, 3 hallway vents,
+- Markers (invisible; shown if `debug.showMarkers`; wall-buy markers come from the 'wallBuy' features): `map.spawnPoints` (20: 4 level-2 vents with y = 6.3, tagged zone 'upstairs'; 2 start-room vents, 3 hallway vents,
   4 Food Court shopfronts, 4 Mega Mart: stockroom, receiving, back vent, emergency exit, 3 Service Corridor: two wall
   vents + the dead end; each tagged with its zone)
   and the 4 'wallBuy' features (outward `normal` + `weapon` id: Price Gun, Nail Gun, Mega Mart Foam Dart Blaster
@@ -638,11 +645,16 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
   under a MEGA MART sign), Service Corridor (1250, west wall z 0.5..3.5, under a "SERVICE CORRIDOR · STAFF ONLY"
   sign; the escalator's high end runs overhead just short of it). 3 boarded vents (zombie spawns).
   Escalator (SEALED until repaired for 2000, see Current state): west half, z 1..3, bottom end at x -4 facing the hub, rising west at 30 deg through a hole in
-  the ceiling (x ~-16.1..-11.9) to level 2 (y 6.3, the top of the ceiling slab), where a walled, boarded-up landing
-  ("LEVEL 2 · OPENING SOON") is visible. Rope barrier + OUT OF ORDER board at the bottom; every collider you could
+  the ceiling (x ~-16.5..-11.95) to level 2 (y 6.3, the top of the ceiling slab; see Level 2 below). Rope barrier + OUT OF ORDER board at the bottom; every collider you could
   reach from the floor is taller than a jump. Its low end (x -4..-10.4) is solid to the floor; under its high end
   (x -10.4..-17.5) there's >= 2m headroom, so players and zombies walk under it. Elevator (SEALED): doors in the north
   wall at x 10.5 (taped off, OUT OF ORDER, floor indicator "1", call button); painted on, the wall behind is solid.
+- Level 2 (the Sunset Promenade; zone 'upstairs', opened by repairing the escalator for 2000): above the hallway, x -20..20, z -2..6,
+  floor y 6.3, ceiling 9.9. You step off the escalator into a 2.5m west lobby; the escalator well (x -16.5..-11.95, z 0.7..3.3) is fenced by
+  railings on its north, south and east sides, so the walkway splits into a north and a south passage (2.55m each) that rejoin east of it.
+  Three empty shop fronts on the north wall (SHOE-PER SALE x -10..-4, COMING SOON x -3..3, PRETZEL PALACE x 4..10), a bench ring round a
+  small tree planter at (13, 1.6), two benches on the south wall, four boarded vents (south x -13 and 8, east wall z 4.2, north x 16)
+  as spawns. The elevator stays sealed. Everything is data in LAYOUT.level2 (mall.js); see mall/levelTwo.js.
 - Food Court: x -20..20, z -14.3..-2.3, 6m ceiling, behind the 1000 shutter: the old concourse moved south (its four
   shops Good Sports / Nuts & Bolts / Play Time Toys / Byte Me are real stores now (see below), 2 pillars, 2 benches (north side), tree planter,
   end planters, ceiling lights, 4 spawns), placed relative to its center line FZ = -8.3. Three food stalls along the
@@ -727,6 +739,20 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+Second floor, step 4 of 6: Level 2 is built (maps/mall/levelTwo.js, see Map). The old closed-off landing (props.upperLanding) is gone.
+Done with it, because the first tests failed without it: the zombie manager treats spawn markers as standing on their own floor (spawn at
+the marker's y, route cost and occupancy checked at that y; an explicit spawn spot still goes on the ground), surround slots are taken
+only by zombies on the player's floor (slots and lines are checked at the player's y; a zombie on another floor follows the route to you,
+it used to stand right above you pressing at an invisible slot), the stuck-zombie failsafe asks the route from the zombie's own floor, and
+navigation.directionTo no longer cuts straight through a wall to a ramp's end from several cells away (zombies coming along either
+passage pinned themselves on the escalator's side wall: now they head for the ramp end like any other cell and only walk in when close).
+kit.tiledFloor takes { top, thickness, collide } (a thin tiled skin over the slab). Local spawning keeps zombies near you: with the
+player on the ground only ~1.5% of spawns are upstairs, with the player on level 2 almost all are. NOT done yet (step 5): ambience zones
+for level 2 (music/HVAC voices), contact shadows/Cart Pusher lanes on another floor, a debug teleport. tests/levelTwo.test.js (10 tests):
+closed in, rails (3, too tall to jump, shots pass), nobody falls into the well from three sides, the walkway is connected and the planter
+solid, every vent is a clean spawn on the floor, sealed until repaired (no upstairs spawn), spawn locality, a zombie from each vent comes
+down to a player below, one crosses level 2 to a player up there, Play again reseals, and no pinning at the side wall for any lane.
+
 Second floor, step 3 of 6: the escalator repair is a purchase. Door `escalatorRepair` (economy.doors.escalatorRepair 2000, ordinary
 pricing / Flash Sale category 'door') with verb 'repair': prompt "Hold F to repair Escalator 2000" at the foot (door.position = props.escalator's
 `foot`). Its barrier is an adapter in mall.js (`escalatorGate`): open() removes the escalator's barrier collider (+ markCollidersChanged, so

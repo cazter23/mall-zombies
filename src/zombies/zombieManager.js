@@ -74,12 +74,12 @@ export function createZombieManager({
       if (!isZoneOpen(point.zone)) continue;
       const p = point.position;
       if (Math.hypot(p.x - player.position.x, p.z - player.position.z) < zombieCrowd.minSpawnDistance) continue;
-      const cost = nav.distanceToTarget(p.x, p.z);
+      const cost = nav.distanceToTarget(p.x, p.z, p.y);
       if (!Number.isFinite(cost)) continue;
       const occupied = zombies.some((z) => {
         if (z === ignoredZombie || !z.isAlive) return false;
-        // Spawns stand at y=0; actors above or below that body do not occupy it.
-        if (z.position.y >= type.height || z.position.y + z.type.height <= 0) return false;
+        // Actors on another floor, above or below that body, do not occupy the point.
+        if (z.position.y >= p.y + type.height || z.position.y + z.type.height <= p.y) return false;
         const clearance = type.radius + z.type.radius + zombieSpawn.clearanceGap;
         return Math.hypot(p.x - z.position.x, p.z - z.position.z) < clearance;
       });
@@ -217,7 +217,7 @@ export function createZombieManager({
       if (z.stuckTimer < fs.checkSeconds) continue;
       const moved = Math.hypot(z.position.x - z.stuckFrom.x, z.position.z - z.stuckFrom.z);
       const far = z.distanceTo(player) > fs.ignoreWithinMeters;
-      const unreachable = nav.distanceToTarget(z.position.x, z.position.z) === Infinity;
+      const unreachable = nav.distanceToTarget(z.position.x, z.position.z, z.position.y) === Infinity;
       if (far && (moved < fs.minMoveMeters || unreachable)) rescue(z);
       z.stuckTimer = 0;
       z.stuckFrom.x = z.position.x;
@@ -269,8 +269,8 @@ export function createZombieManager({
         const angle = stagger + (k * 2 * Math.PI) / count;
         slotPoint.x = p.x + Math.cos(angle) * radius;
         slotPoint.z = p.z + Math.sin(angle) * radius;
-        if (!nav.isWalkableAt(slotPoint.x, slotPoint.z)) continue;
-        if (!nav.clearLine(p.x, p.z, slotPoint.x, slotPoint.z)) continue;
+        if (!nav.isWalkableAt(slotPoint.x, slotPoint.z, p.y)) continue;
+        if (!nav.clearLine(p.x, p.z, slotPoint.x, slotPoint.z, p.y)) continue;
         slots.set(ring * 1000 + k, { x: slotPoint.x, z: slotPoint.z, ring, angle });
       }
     }
@@ -282,7 +282,8 @@ export function createZombieManager({
       if (!z.isAlive || z.state === 'spawning') continue;
       const d = z.distanceTo(player);
       if (d > crowd.surroundRadius) continue;
-      if (!nav.clearLine(z.position.x, z.position.z, p.x, p.z)) continue;
+      if (nav.layerOf(z.position.y) !== nav.layerOf(p.y)) continue; // (a zombie on another floor takes the route to you, not a slot)
+      if (!nav.clearLine(z.position.x, z.position.z, p.x, p.z, p.y)) continue;
       candidates.push({ z, d });
     }
     candidates.sort((a, b) => a.d - b.d);
@@ -341,7 +342,7 @@ export function createZombieManager({
       const point = at ? null : pickSpawnPoint(type);
       if (!at && !point) return null;
       const position = at ? at.clone() : point.position.clone();
-      position.y = 0;
+      position.y = point ? point.position.y : 0; // (a spawn marker stands on its own floor; an explicit spot goes on the ground)
       const yaw = Math.atan2(-(player.position.x - position.x), -(player.position.z - position.z));
       const round = getRound();
       const speed = pickGaitSpeed(type, round);

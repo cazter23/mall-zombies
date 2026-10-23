@@ -12,7 +12,6 @@
 //   boardedVent planks over a vent (zombie spawn dressing)
 //   wallStripe  a painted stripe along a wall
 //   escalator   an escalator up through the ceiling (sealed: rope barrier, OUT OF ORDER, unclimbable)
-//   upperLanding the boarded-up landing you see above an escalator's ceiling hole
 //   elevatorDoors sealed elevator doors on a wall (taped off, floor indicator, call button)
 //   foodStall   a food-court stall (facade, awning, counter, gear); one solid 1.2m block you can't get onto
 //   tableSet    a round table with four stools (hop on; zombies walk round)
@@ -457,34 +456,6 @@ export function createMallProps(kit) {
   }
 
   /**
-   * The closed-off upper landing you see looking up through an escalator's ceiling hole: walls
-   * around `rect` (on top of the ceiling slab, from floorY up `height`), a roof, a light, and a
-   * boarded-up end (at `boardedEnd` 'minX' or 'maxX') with a sign. Solid, but out of reach.
-   */
-  function upperLanding({ rect, floorY, height = 3.3, boardedEnd = 'minX', text }) {
-    const t = 0.3;
-    const top = floorY + height;
-    const wallMat = mat(COLORS.concourseWall);
-    box(rect.minX - t, floorY, rect.minZ - t, rect.maxX + t, top, rect.minZ, wallMat, { name: 'upper_wall' });
-    box(rect.minX - t, floorY, rect.maxZ, rect.maxX + t, top, rect.maxZ + t, wallMat, { name: 'upper_wall' });
-    box(rect.minX - t, floorY, rect.minZ, rect.minX, top, rect.maxZ, wallMat, { name: 'upper_wall' });
-    box(rect.maxX, floorY, rect.minZ, rect.maxX + t, top, rect.maxZ, wallMat, { name: 'upper_wall' });
-    box(rect.minX - t, top, rect.minZ - t, rect.maxX + t, top + 0.3, rect.maxZ + t, mat(COLORS.ceiling), { name: 'upper_roof' });
-    const zMid = (rect.minZ + rect.maxZ) / 2;
-    const xMid = (rect.minX + rect.maxX) / 2;
-    lightPanel(xMid - 2, zMid - 0.4, xMid + 2, zMid + 0.4, top);
-    // Plywood boarding across the far end, with the sign on it.
-    const endX = boardedEnd === 'minX' ? rect.minX : rect.maxX;
-    const inward = boardedEnd === 'minX' ? 1 : -1;
-    const [bx0, bx1] = [endX, endX + inward * 0.06].sort((a, b) => a - b);
-    box(bx0, floorY, rect.minZ + 0.1, bx1, top - 0.3, rect.maxZ - 0.1, mat(COLORS.plywood), { collide: false });
-    sign(text, {
-      x: endX + inward * 0.07, y: floorY + 1.6, z: zMid, width: Math.min(2.4, rect.maxZ - rect.minZ - 0.3), height: 0.5,
-      facing: inward > 0 ? 'x+' : 'x-', background: '#1d1626', color: '#ffd23f',
-    });
-  }
-
-  /**
    * Elevator doors on a wall (decorative and sealed for now: taped off, OUT OF ORDER). A steel
    * frame, two door leaves, a floor indicator, a call button and an ELEVATOR sign.
    *   along/wallAt/facing as for shopFront; `center` = middle of the doors along the wall.
@@ -872,7 +843,7 @@ export function createMallProps(kit) {
 
   return {
     shopFront, pillar, bench, planter, lightPanel, gondola, checkout, wallDoor, boardedVent, wallStripe,
-    escalator, upperLanding, elevatorDoors, foodStall, tableSet, trashCan, lockerBank, electricalPanel, pipeRun, vendingMachine,
+    escalator, elevatorDoors, foodStall, tableSet, trashCan, lockerBank, electricalPanel, pipeRun, vendingMachine,
     serviceDesk, clerk, attachmentDisplay,
   };
 }

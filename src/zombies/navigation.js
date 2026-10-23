@@ -481,6 +481,11 @@ export function createNavigation(colliders, agent, { floors = [0], links = [] } 
             if (!(dist[edge.to] < dist[i]) && edge.link !== targetRamp) continue; // (or the player is standing on this ramp)
             const here = edge.link.lowerCell === i ? edge.link.lower : edge.link.upper;
             const there = edge.link.lowerCell === i ? edge.link.upper : edge.link.lower;
+            // Still a few cells away (round a wall, say): head for the ramp's end like any other cell, don't cut through to it.
+            if (Math.hypot(here.x - from.x, here.z - from.z) > cs * 2) {
+              if (clearLine(from.x, from.z, cellX(i), cellZ(i), floorY)) aim = i;
+              break;
+            }
             const ax = there.x - here.x;
             const az = there.z - here.z;
             const al = Math.hypot(ax, az) || 1;
