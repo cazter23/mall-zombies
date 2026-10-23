@@ -183,6 +183,20 @@ export const settingDefs = [
   },
 ];
 
+// First launch only (game/autoGraphics.js): measure the title flyover's frame rate for a few seconds, then pick the best
+// Graphics preset whose fps floor this computer reaches. tiers: best first; the last one is the fallback.
+export const autoGraphics = {
+  measureSeconds: 3, // seconds of good frames to measure
+  warmupFrames: 30, // first frames ignored (shader compiles)
+  maxFrameSeconds: 0.25, // a frame longer than this is a hitch / background tab, not a measurement
+  tiers: [
+    { label: 'High', minFps: 50 },
+    { label: 'Medium', minFps: 38 },
+    { label: 'Low', minFps: 26 },
+    { label: 'Potato', minFps: 0 },
+  ],
+};
+
 // One-click presets per tab: { label, values: { settingId: value } } (shown as buttons at the top of that tab).
 export const settingPresets = {
   Graphics: [

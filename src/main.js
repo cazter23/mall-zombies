@@ -18,7 +18,8 @@ import { weapons, melee as meleeWeapons } from './config/weapons.js';
 import { createViewmodel } from './weapons/viewmodel.js';
 import { createPlayerBody } from './player/body.js';
 import { createSound } from './audio/sound.js';
-import { createSettings } from './game/settings.js';
+import { createSettings, hasSavedSettings } from './game/settings.js';
+import { settingPresets } from './config/settings.js';
 import { createSettingsMenu } from './ui/settingsMenu.js';
 import { createControlsMenu } from './ui/controlsMenu.js';
 import { createGame } from './game/createGame.js';
@@ -29,6 +30,7 @@ import { createTitleCamera } from './ui/titleCamera.js';
 import { createBenchmark } from './fx/benchmark.js';
 import { createLightPool, collectPointLights } from './fx/lightPool.js';
 import { batchStatic } from './world/staticBatch.js';
+import { createAutoGraphics } from './game/autoGraphics.js';
 import { wireRunIntro } from './game/runIntro.js';
 import { atmosphere } from './config/environment.js';
 import { createPostProcessing } from './fx/postProcessing.js';
@@ -117,7 +119,18 @@ function handleDebugKeys() {
 // Created after the HUD and sound so each setting's apply() can reach them.
 // The light pool (fx/lightPool.js): on lower Graphics settings a few real lights follow the camera round the map's lamps.
 const lightPool = createLightPool({ scene, sources: collectPointLights(map.group, g.arena?.group) });
+const firstLaunch = !hasSavedSettings(); // (read before anything is saved)
 const settings = createSettings({ renderer, sound, hud, postProcessing, lightPool });
+// First launch: pick a Graphics preset that suits this computer from the title flyover's frame rate (game/autoGraphics.js).
+const autoGraphics = createAutoGraphics({
+  firstLaunch,
+  visible: () => document.visibilityState === 'visible' && document.hasFocus(),
+  choose: (label) => {
+    const preset = settingPresets.Graphics.find((p) => p.label === label);
+    for (const [id, value] of Object.entries(preset.values)) settings.set(id, value);
+    console.log(`Graphics: picked ${label} for this computer (Settings > Graphics to change)`);
+  },
+});
 const settingsMenu = createSettingsMenu(settings);
 const controlsMenu = createControlsMenu();
 // The debug window (the ` key): lists the debug keys with live numbers; hidden unless the game's debug state says so.
@@ -376,6 +389,7 @@ function render(alpha, frameTime) {
 // The main menu's backdrop: the camera glides through the mall (map.titleShots), fading through black at each cut.
 // The game itself is frozen (nothing ticks without the mouse lock or a controller), and no gun or body is drawn.
 function renderTitle(frameTime) {
+  autoGraphics.frame(frameTime);
   titleCamera.update(frameTime);
   if (camera.fov !== feel.titleScreen.fov) {
     camera.fov = feel.titleScreen.fov;

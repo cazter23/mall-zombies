@@ -19,6 +19,15 @@ function sanitize(def, value) {
   return def.default;
 }
 
+/** Has this browser saved settings before? (false on the very first launch: game/autoGraphics.js then picks a preset) */
+export function hasSavedSettings() {
+  try {
+    return localStorage.getItem(STORAGE_KEY) !== null;
+  } catch {
+    return true; // no storage: don't guess, keep the defaults
+  }
+}
+
 export function createSettings(ctx) {
   const values = {};
   const listeners = [];
