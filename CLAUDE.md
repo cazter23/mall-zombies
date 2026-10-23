@@ -771,6 +771,29 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+VISUAL OVERHAUL (neon 80s vaporwave mall, leaning hard into horror; every costly effect toggleable). Plan: 1) performance
+foundation, 2) the hallway as the approved REFERENCE ROOM, 3) neon + painted light pools, 4) floors/haze/post, 5) clutter,
+6) set pieces, 7) dynamic horror lighting, 8) presets/perf polish. Step 1 is DONE:
+- 1a Graphics tab (was Video): every setting that costs performance has `cost` ('low'|'medium'|'high', a tag in the menu) and
+  EVERY Graphics preset (Potato / Low / Medium / High; Ultra joins with the first Ultra-only effect) must set it (tested). New
+  effect = one entry in config/settings.js + its value in each Graphics preset.
+- 1b Benchmark: Shift+B on the title or pause screen (or `await __mall.benchmark()`): fx/benchmark.js flies map.benchmarkShots
+  (8 named long views, mall.js), every door opened for the route then restored; report = draw ms (CPU, not vsync-capped: the
+  number to compare), frame ms, draw calls, triangles, per shot + slowest. In the test browser use the PRODUCTION preview
+  (launch config mall-zombies-preview, `npm run build` first): the dev page reloads whenever another tool saves a file.
+  A hidden/background pane only draws ~1-5 fps: frame ms is meaningless there, draw ms and calls still count.
+- 1c Light pool (fx/lightPool.js, setting `lampCount` All / 8 / 6 / 4): below All the map's PointLights become hidden sources and
+  a fixed pool of real lights follows the camera (fade, copies flicker, skips lamps at 0). High = All (unchanged look).
+- 1d Static batching (world/staticBatch.js, main.js before the first frame; `?nobatch` turns it off to compare): still, opaque
+  meshes merged by material in 12m chunks, colour-only standard materials share one vertex-coloured material. NOT merged:
+  userData.dynamic (set it on anything shown/hidden/moved at runtime, e.g. the escalator barrier parts), material.userData.animated
+  (materials changed at runtime, e.g. the flickering tube), transparent, shutters, hidden, instanced, one-of-a-kind textured
+  (signs). 1483 -> 436 meshes, pixel-identical (mean diff 0 in 4 views), draw calls 612 -> 190 average (atrium ring 1378 -> 519).
+- 1e Auto graphics (game/autoGraphics.js): the FIRST launch only (nothing saved) measures the title flyover's frame rate (visible,
+  focused, hitch-free frames after a warm-up) and picks a preset (config/settings.js autoGraphics tiers).
+Room/portal culling was planned for 1d but frustum culling of the 12m batch chunks already does most of it; revisit if needed.
+Also merged: world/neon.js (neon tube builder) and world/decor.js + world/scatter.js (decoration kit), not placed yet.
+
 Atrium <-> Mega Mart shortcut 'atriumMegaMart' (1000, opens both zones, buyable from either side): a 3m shutter through the Mart's
 north wall and the atrium's south wall at x 21.5..24.5 (LAYOUT.atrium.martLink), west of the checkouts, into the atrium's arcade;
 GRAND ATRIUM / MEGA MART signs over it. 10 doors in all. tests/atrium.test.js covers both sides, walking through and Mart routes.
