@@ -24,7 +24,7 @@ import { createControlsMenu } from './ui/controlsMenu.js';
 import { createGame } from './game/createGame.js';
 import { tierById, tierOf } from './weapons/upgrades.js';
 import { PRICE_CATEGORIES } from './game/pricing.js';
-import { toggleDoors } from './world/door.js';
+import { createDebugPanel } from './ui/debugPanel.js';
 import { createTitleCamera } from './ui/titleCamera.js';
 import { wireRunIntro } from './game/runIntro.js';
 
@@ -88,24 +88,17 @@ function buttonLabel(action) {
 
 const DEG_TO_RAD = Math.PI / 180;
 
-// Debug keys (raw key codes are only used here, never in gameplay). Run by the game each live tick,
-// just before the player moves.
+// Debug keys (raw key codes are only used here, never in gameplay). Run by the game each live tick, just before the
+// player moves. config/debug.js lists the keys; each press becomes g.debug.run(id) (game/debugCommands.js).
+const debugCodes = [...new Set(debug.commands.map((c) => c.key))];
 function handleDebugKeys() {
-  if (debug.allowShutterToggle && input.consumePress('KeyO')) {
-    toggleDoors(map.doors); // debug: open all, or close all if every door is already open
+  if (!debug.enabled) return;
+  const shift = input.isDown('ShiftLeft') || input.isDown('ShiftRight');
+  for (const code of debugCodes) {
+    if (!input.consumePress(code)) continue;
+    const command = g.debug.resolve(code, shift);
+    if (command) g.debug.run(command.id);
   }
-  if (g.arena && input.consumePress('KeyT')) {
-    player.teleport(g.arena.contains(player.position) ? map.playerSpawn : g.arena.playerSpawn);
-  }
-  if (debug.zombieKeys && input.consumePress('KeyZ')) {
-    const shift = input.isDown('ShiftLeft') || input.isDown('ShiftRight');
-    const alt = input.isDown('AltLeft') || input.isDown('AltRight');
-    zombies.spawn(alt ? 'cartPusher' : shift ? 'mallWalker' : 'shopper'); // Z Shopper, Shift+Z Mall Walker, Alt+Z Cart Pusher
-  }
-  if (debug.zombieKeys && input.consumePress('KeyX')) zombies.clear();
-  if (debug.cheatKeys && input.consumePress('KeyN')) rounds.skipRound();
-  if (debug.cheatKeys && input.consumePress('KeyP')) wallet.earn(5000);
-  if (debug.cheatKeys && input.consumePress('Quote')) wallet.spend(wallet.points); // ' = points to 0
 }
 
 // Settings (config/settings.js is the list; changes apply to the game and are saved in the browser).
@@ -113,6 +106,9 @@ function handleDebugKeys() {
 const settings = createSettings({ renderer, sound, hud });
 const settingsMenu = createSettingsMenu(settings);
 const controlsMenu = createControlsMenu();
+// The debug window (the ` key): lists the debug keys with live numbers; hidden unless the game's debug state says so.
+const debugPanel = debug.enabled ? createDebugPanel({ status: () => g.debug.status() }) : null;
+if (debugPanel) document.body.appendChild(debugPanel.element);
 effects.prepare(renderer, camera); // shared impact graphics warmed before the first shot
 
 // --- Menus and the run's flow ------------------------------------------------------
@@ -232,6 +228,7 @@ function applyLookInput(frameTime) {
 const fpsMeter = { frames: 0, time: 0 };
 
 function render(alpha, frameTime) {
+  if (debugPanel) debugPanel.update(frameTime);
   fpsMeter.frames++;
   fpsMeter.time += frameTime;
   if (fpsMeter.time >= 0.25) {

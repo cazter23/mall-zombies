@@ -121,6 +121,13 @@ export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null 
       announce(round + 1, 0);
     },
 
+    // Debug: clear the zombies and jump straight to round `n` (no break).
+    jumpTo(n) {
+      if (!started) started = true;
+      zombies.clear();
+      announce(Math.max(1, Math.round(n)), 0);
+    },
+
     // New run: back to "not started" (round 1 begins when play starts).
     reset() {
       started = false;

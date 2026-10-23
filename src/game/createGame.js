@@ -16,6 +16,7 @@
 //   g.events       the event bus (game/events.js lists every event): systems announce, features listen
 //   g.pricing      every price the player pays (game/pricing.js): config base price + any discount
 //   g.flashSales   the mall PA's timed discounts (game/flashSales.js); .active = the sale running now (or null)
+//   g.debug        the developer shortcuts (game/debugCommands.js): run(id), resolve(key, shift), status()
 //   g.<system>     map, colliders, arena, shootables, stats, player, wallet, runStats, effects, aimAssist,
 //                  gun, interactions, melee, health, zombies, rounds, death
 // =============================================================================
@@ -37,6 +38,7 @@ import { createZombieManager } from '../zombies/zombieManager.js';
 import { createEvents } from './events.js';
 import { createPricing } from './pricing.js';
 import { createFlashSales } from './flashSales.js';
+import { createDebugCommands } from './debugCommands.js';
 import { nextTier } from '../weapons/upgrades.js';
 import { createRunStats } from './runStats.js';
 import { createWallet, pointsForHit } from './wallet.js';
@@ -277,6 +279,9 @@ export function createGame({
       return true;
     },
   });
+  // Developer shortcuts (config/debug.js lists the keys; main.js turns key presses into debug.run(id)).
+  const debugCommands = createDebugCommands({ map, zombies, rounds, wallet, gun, health, player, arena, flashSales });
+
   events.on('flashSaleStart', ({ pa }) => {
     hud.showAnnouncement(pa);
     sound.play('paChime');
@@ -383,6 +388,7 @@ export function createGame({
     map,
     features,
     flashSales,
+    debug: debugCommands,
     colliders,
     arena,
     shootables,

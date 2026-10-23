@@ -1221,3 +1221,55 @@ kbd {
     transform: translate(-50%, -50%) rotate(-16deg) scale(1);
   }
 }
+
+/* Debug window (config/debug.js, ui/debugPanel.js): a small read-only list of the debug keys, never takes clicks */
+.debug-panel {
+  position: fixed;
+  top: 76px;
+  left: 12px;
+  z-index: 40;
+  display: none;
+  min-width: 250px;
+  max-width: 340px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(10, 8, 18, 0.78);
+  color: #c8c0d4;
+  font: 12px/1.5 monospace;
+  pointer-events: none;
+  user-select: none;
+}
+.debug-panel.show {
+  display: block;
+}
+.debug-title {
+  color: #9ef0b5;
+  font-weight: bold;
+}
+.debug-live {
+  margin: 2px 0 4px;
+  color: #ffd23f;
+}
+.debug-group {
+  margin-top: 4px;
+  color: #8f86a0;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+.debug-row {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.debug-row kbd {
+  flex: none;
+  min-width: 64px;
+  text-align: right;
+  color: #fff;
+}
+.debug-last {
+  margin-top: 6px;
+  color: #9ef0b5;
+  min-height: 1.5em;
+}

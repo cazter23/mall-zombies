@@ -10,6 +10,7 @@
 //
 //   createFlashSales({ events, pricing, random, config, eligible }) -> {
 //     update(dt)     tick (game time)
+//     startNow()     debug: start a sale now (false if one is running or nothing is worth discounting)
 //     reset()        new run: end any sale silently, timer back to the first delay
 //     active         null, or { id, label, categories, discount, remaining, duration }
 //     timeUntilNext  seconds until the next sale starts (0 while one is running)
@@ -98,6 +99,13 @@ export function createFlashSales({ events, pricing, random = Math.random, config
       }
       untilNext -= dt;
       if (untilNext <= 0) start();
+    },
+
+    // Debug: start a sale right now (false if one is already running or nothing is worth discounting).
+    startNow() {
+      if (active) return false;
+      start();
+      return active !== null;
     },
 
     reset() {

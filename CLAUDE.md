@@ -185,8 +185,11 @@ src/
     settings.js         THE LIST of player settings (options menu): { id, tab, label, type toggle|slider|select, default,
                         min/max/step, format, apply(value, ctx) }. Most apply() functions write into the config objects the
                         game reads every frame (feel, controls, audio). New setting = one entry here (new tab = add to settingsTabs)
-    debug.js            showMarkers, allowShutterToggle (O: open all doors; close all only if all were open), testArena (T key), zombieKeys
-                        (Z spawn Shopper / Shift+Z Mall Walker / X clear), cheatKeys (N next round / P +5000 points / ' points to 0), dummies, exposeToWindow
+    debug.js            THE DEBUG KEYS as a table (`commands`: id, key, shift, group, label; keys must not clash with gameplay
+                        bindings: tests check) + enabled (master switch), showMarkers, testArena, addPointsAmount, jumpRounds, panel,
+                        dummies, exposeToWindow, keyLabel(). They work in a normal game (no debug mode): Z spawn the selected
+                        zombie / Shift+Z next type / X clear / K kill all (pays), N next round / Shift+N +5 rounds / L Flash Sale,
+                        P +5000 / ' points to 0, G god mode / H next wall gun / U free tier, O all doors / T test range, ` window
   core/
     loop.js             startLoop(): fixed-timestep accumulator; each frame calls beforeUpdate(frameTime) (look
                         input), then update(dt) per tick, then render(alpha, frameTime)
@@ -394,6 +397,10 @@ src/
                         attachmentCounter.js = one attachment on a store counter: "fit <Attachment> on the <Gun> · <blurb>"
                         (g.pricing 'attachment', purchase kind 'attachment'), replaces that slot on the gun in hand; no prompt when
                         already fitted, when it doesn't fit (Extended Nozzle on the Nail Gun), area closed or mid switch
+    debugCommands.js    createDebugCommands(game parts): the debug shortcuts as functions run(id) (spawn, cycleZombie, clearZombies,
+                        killZombies, nextRound, jumpRounds, flashSale, addPoints, zeroPoints, god, giveGun, upgradeGun, doors, arena, panel);
+                        resolve(code, shift), status(). g.debug. A new command = a table entry in config/debug.js + a function here.
+                        God mode is health.invulnerable; debug state is not part of a run (Play again keeps it)
     rounds.js           createRounds(): announce(n, delay) flips the round number (and fires onRoundStart) the
                         moment the last zombie dies, then 'break' (6s, inBreak) -> 'active' (spawn quota at
                         spawnDelay, capped by maxAlive; quota only used when a zombie actually spawned, else retry
@@ -511,6 +518,8 @@ src/
                         checkbox / range + readout / select). Opened by the pause screen's Settings button (controller: Y);
                         Esc / Back / B closes. padNav(input): D-pad moves + changes, A toggles, LB/RB tabs, B back
                         (main.js routes controller input to it while it's open)
+    debugPanel.js       createDebugPanel({ status }): the small read-only debug window (the ` key): every debug key by group, live
+                        round / points / zombies / spawn type / GOD / sale, and the last result; never takes clicks
     controlsMenu.js     createControlsMenu(): the Controls screen (pause screen > Controls, controller X): tabs Keyboard & mouse /
                         Controller, each as a Diagram (default) or List (controller Y toggles), from `controlsHelp` (config/controls.js:
                         { keys, text, short, anchors }; update it when bindings change) + debug-key hints
@@ -694,6 +703,14 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+Debug keys cleaned up: one table in config/debug.js (see the folder structure), run by game/debugCommands.js (headless, tested),
+polled by main.js (raw key codes stay there) and listed by the debug window (` toggles it; ui/debugPanel.js). Still live in a
+normal game, with `debug.enabled` as the master switch. Replaced the Alt+Z / Shift+Z combos and the per-feature flags
+(allowShutterToggle, zombieKeys, cheatKeys): Z spawns the selected zombie type, Shift+Z cycles the type. New: K kill all (pays),
+L Flash Sale now, Shift+N +5 rounds (rounds.jumpTo), G god mode (health.invulnerable), H give the next wall gun, U free tier
+(upgrade the gun in hand). tests/debugCommands.test.js: table (unique, no gameplay clashes, every id implemented), key
+resolution, every command in the real game/mall, god mode and the window state surviving Play again, and the window itself.
+
 Cart Pusher (round 6+, config/zombies.js `cartPusher` + economy.zombieMix: 10% of spawns, 15% from round 10; 2.2x health;
 worth 100; its 2nd spawn in round 6 is forced, with a PA banner). A Shopper-look zombie pushing a shopping cart
 (zombies/cartModel.js, visual only: no collider/hitbox, shots go through the basket). Walks like a Shopper and slams like
@@ -702,7 +719,7 @@ checked every 0.25 s) it TELEGRAPHS for 0.9 s (stands, rattles the cart, head do
 to aim, LOCKS the direction it faces, then CHARGES straight at 9 m/s (faster than your sprint) up to 3 m past where you
 stood (max 16 m). In its path (the cart's width + 0.27 m; a ~1 m sidestep clears it) = 60 damage + a 7 m/s shove
 ('playerHit' gets `knockback`), then a 1 s stop. A miss = it CRASHES (the nose ray hits a wall, or it runs out of charge):
-stunned 2 s, cart tipped, taking 1.5x damage. 4 s cooldown between charges. Debug: Alt+Z spawns one.
+stunned 2 s, cart tipped, taking 1.5x damage. 4 s cooldown between charges. Debug: Shift+Z until it is selected, then Z spawns one.
 tests/cartPusher.test.js: mix/health/value/intro, telegraph -> charge -> hit + shove, hit width, sidestep -> overshoot ->
 crash + stun + extra damage, wall crash stops at the nose, no charge too close/far, through a bench, a narrow doorway or a
 wall (but through a wide doorway), the normal slam up close, the model (cart on the root, upright when dead, poses, dispose)
@@ -1045,7 +1062,7 @@ stands bent over panting for 1.2s (no attacks), then follows at half speed for 0
 sneakers + huffing while chasing, panting when winded (louder when close, silent past ~12-14m). Spawn mix: 15% of
 spawns from round 4, 25% from 6, 30% from 9 (part of the normal count); in its first round the 3rd spawn is forced
 to be one if none came yet, and its first spawn in a run plays the PA chime + "Attention shoppers / Mall Walkers
-have entered the building" banner. Debug: Shift+Z spawns one. Verified in the browser (looks, power walk, a real
+have entered the building" banner. Debug: Shift+Z until it is selected, then Z spawns one. Verified in the browser (looks, power walk, a real
 hit + winded pose, round-4 banner) and by tests/zombies.test.js.
 
 Map expansion (before Cart Pusher / Mannequin / shop systems). Done earlier: map kit (world/mapKit.js) + mall

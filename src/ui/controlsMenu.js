@@ -6,7 +6,7 @@
 // =============================================================================
 
 import { controlsHelp } from '../config/controls.js';
-import { debug } from '../config/debug.js';
+import { debug, keyLabel } from '../config/debug.js';
 import { buildControlsDiagram } from './controlsDiagram.js';
 import { createModal } from './modal.js';
 
@@ -34,12 +34,11 @@ export function createControlsMenu() {
   card.append(el('h2', 'settings-title', 'Controls'), tabBar, viewBar, view);
 
   // Debug hints (only for the debug features that are switched on).
-  const hints = [];
-  if (debug.allowShutterToggle) hints.push('O opens/closes every door');
-  if (debug.testArena) hints.push('T teleports to the movement test range');
-  if (debug.zombieKeys) hints.push('Z spawns a Shopper (Shift+Z: a Mall Walker, Alt+Z: a Cart Pusher), X clears them');
-  if (debug.cheatKeys) hints.push("N next round, P +5000 points, ' points to 0");
-  if (hints.length) card.append(el('p', 'controls-debug', `Debug: ${hints.join(' · ')}`));
+  // The debug keys are a table (config/debug.js) listed in the debug window (ui/debugPanel.js): just point at it.
+  if (debug.enabled) {
+    const hint = `${keyLabel('Backquote')} shows the debug window listing every debug key`;
+    card.append(el('p', 'controls-debug', `Debug: ${hint}`));
+  }
   card.append(footer, el('p', 'pad-hint settings-hint', 'Controller: LB/RB switch device · Y diagram or list · B back'));
   root.append(card);
   document.body.append(root);

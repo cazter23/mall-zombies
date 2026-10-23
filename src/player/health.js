@@ -17,6 +17,9 @@ export function createPlayerHealth({ stats, onDeath }) {
   let dead = false;
 
   return {
+    // Debug god mode (game/debugCommands.js): no damage at all while true. Not part of a run, so it survives Play again.
+    invulnerable: false,
+
     get isDead() {
       return dead;
     },
@@ -26,7 +29,7 @@ export function createPlayerHealth({ stats, onDeath }) {
     },
 
     takeDamage(amount) {
-      if (dead || amount <= 0) return;
+      if (dead || amount <= 0 || this.invulnerable) return;
       stats.health = Math.max(0, stats.health - amount);
       sinceHit = 0;
       flash = feel.health.hitFlashSeconds;
