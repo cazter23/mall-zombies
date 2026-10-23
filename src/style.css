@@ -1654,3 +1654,18 @@ kbd {
   color: #9ef0b5;
   min-height: 1.5em;
 }
+
+/* Graphics settings: a small tag saying how much each one costs to run */
+.settings-cost {
+  margin-left: 0.6em;
+  padding: 0.05em 0.45em;
+  border-radius: 0.6em;
+  font-size: 0.7em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.85;
+  vertical-align: middle;
+}
+.settings-cost.cost-low { background: rgba(80, 200, 120, 0.25); color: #9ff0bb; }
+.settings-cost.cost-medium { background: rgba(255, 200, 60, 0.22); color: #ffe08a; }
+.settings-cost.cost-high { background: rgba(255, 90, 110, 0.25); color: #ffadb8; }

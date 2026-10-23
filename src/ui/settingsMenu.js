@@ -43,7 +43,7 @@ export function createSettingsMenu(settings) {
   const footerButtons = [resetButton, resetAllButton, backButton];
   const navigation = () => [...rows.map((r) => r.node), ...footerButtons];
   function refreshResolution() {
-    resolution.hidden = tab !== 'Video';
+    resolution.hidden = tab !== 'Graphics';
     const pixels = (ratio) => `${Math.floor(window.innerWidth * ratio)} × ${Math.floor(window.innerHeight * ratio)}`;
     resolution.textContent = `3D: ${pixels(settings.get('renderScale'))} · Display: ${pixels(displayPixelRatio())}. High uses native resolution (up to 2×).`;
   }
@@ -59,6 +59,7 @@ export function createSettingsMenu(settings) {
   function buildRow(def) {
     const node = el('div', 'settings-row');
     const label = el('span', 'settings-label', def.label);
+    if (def.cost) label.append(el('span', `settings-cost cost-${def.cost}`, `${def.cost} cost`)); // (how much it costs to run)
     const control = el('div', 'settings-control');
     node.append(label, control);
     const show = (v) => (def.format ? def.format(v) : String(v));

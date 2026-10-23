@@ -29,7 +29,7 @@ test('the Standard comfort preset is the shipped defaults (so picking it undoes 
   }
 });
 
-test('Video presets have distinct resolutions; High and the default retain exact native density without rounding down', () => {
+test('Graphics presets have distinct resolutions; High and the default retain exact native density without rounding down', () => {
   const saved = window.devicePixelRatio;
   try {
     for (const ratio of [1, 1.1, 1.25, 1.5, 2, 3]) {
@@ -37,8 +37,17 @@ test('Video presets have distinct resolutions; High and the default retain exact
       assert.equal(nativeRenderRatio(), Math.min(ratio, 2));
     }
   } finally { window.devicePixelRatio = saved; }
-  const values = settingPresets.Video.map((preset) => preset.values.renderScale);
+  const values = settingPresets.Graphics.map((preset) => preset.values.renderScale);
   assert.equal(new Set(values).size, values.length, 'controller can cycle every preset at DPR 1 too');
   assert.equal(values.at(-1), nativeRenderRatio());
   assert.equal(settingDefs.find((def) => def.id === 'renderScale').default, nativeRenderRatio());
+});
+
+test('every Graphics setting says what it costs, and every Graphics preset sets every costed setting', () => {
+  const graphics = settingDefs.filter((d) => d.tab === 'Graphics' && d.cost);
+  assert.ok(graphics.length >= 3);
+  for (const def of graphics) assert.ok(['low', 'medium', 'high'].includes(def.cost), def.id);
+  for (const preset of settingPresets.Graphics) {
+    for (const def of graphics) assert.ok(def.id in preset.values, `${preset.label} sets ${def.id}`);
+  }
 });

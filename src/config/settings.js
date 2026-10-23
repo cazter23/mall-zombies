@@ -13,9 +13,14 @@
 //   min/max/step  (slider)    options: [{ value, label }] (select)
 //   format(v) (optional) how the value is shown, e.g. '75°'
 //   apply(v, ctx)  changes the game. `ctx` = { renderer, sound, hud }. Runs on load and on every change.
+//   cost      (Graphics settings) how much it costs to run: 'low' | 'medium' | 'high' (shown as a tag in the menu)
 //
 // PRESETS (settingPresets, below): one-click buttons at the top of a tab that set several settings at once
-// (e.g. Video: Low / Medium / High). They are not settings themselves (nothing extra is saved).
+// (e.g. Graphics: Potato / Low / Medium / High). They are not settings themselves (nothing extra is saved).
+//
+// GRAPHICS: every visual feature that costs performance is one entry on the Graphics tab, with its `cost`, and each
+// Graphics preset sets all of them. A new effect (neon glow, reflections, fog, clutter...) = one entry here + its value
+// in every Graphics preset (tests/settingsPresets.test.js checks no Graphics setting is left out of a preset).
 //
 // Most settings simply write into the same config objects the game already reads
 // every frame (feel, controls, audio), so changes show up immediately.
@@ -26,7 +31,7 @@ import { audio } from './audio.js';
 import { gamepad, aimAssist } from './controls.js';
 import { atmosphere } from './environment.js';
 
-export const settingsTabs = ['Video', 'Mouse', 'Controller', 'Audio', 'Comfort'];
+export const settingsTabs = ['Graphics', 'Mouse', 'Controller', 'Audio', 'Comfort'];
 export const menuFeel = { confirmSeconds: 3 };
 
 // The config values as shipped. "Multiplier" settings scale these, so reset always returns to them.
@@ -49,26 +54,26 @@ export const nativeRenderRatio = () => Math.min(displayPixelRatio(), 2);
 const nativeRatio = nativeRenderRatio();
 
 export const settingDefs = [
-  // ---- Video ----
+  // ---- Graphics (was Video) ----
   {
-    id: 'fov', tab: 'Video', label: 'Field of view', type: 'slider',
+    id: 'fov', tab: 'Graphics', label: 'Field of view', type: 'slider',
     min: 60, max: 110, step: 1, default: feel.camera.fov,
     format: (v) => `${v}°`,
     apply: (v) => { feel.camera.fov = v; }, // render() reads this every frame (ADS zoom scales from it)
   },
   {
-    id: 'showFps', tab: 'Video', label: 'FPS counter', type: 'toggle', default: false,
+    id: 'showFps', tab: 'Graphics', label: 'FPS counter', type: 'toggle', default: false,
     apply: (v, ctx) => ctx.hud.setFpsVisible(v),
   },
   {
-    id: 'renderScale', tab: 'Video', label: 'Render resolution', type: 'slider',
-    min: 0.5, max: 2, step: 0.05, default: nativeRatio,
+    id: 'renderScale', tab: 'Graphics', label: 'Render resolution', type: 'slider',
+    min: 0.5, max: 2, step: 0.05, default: nativeRatio, cost: 'high',
     format: (v) => `${percent(v / displayPixelRatio())} native`,
     apply: (v, ctx) => ctx.renderer.setPixelRatio(v),
   },
 
   {
-    id: 'visualEffects', tab: 'Video', label: 'Visual effects', type: 'select', default: 'high',
+    id: 'visualEffects', tab: 'Graphics', label: 'Visual effects', type: 'select', default: 'high', cost: 'high',
     options: [
       { value: 'high', label: 'High' }, // bloom glow, lens vignette / colour fringing, smooth edges
       { value: 'low', label: 'Low' }, // no bloom or lens, no anti-aliasing
@@ -77,7 +82,7 @@ export const settingDefs = [
     apply: (v, ctx) => ctx.postProcessing?.setQuality(v),
   },
   {
-    id: 'ambientEffects', tab: 'Video', label: 'Dust and flickering lights', type: 'toggle', default: true,
+    id: 'ambientEffects', tab: 'Graphics', label: 'Dust and flickering lights', type: 'toggle', default: true, cost: 'medium',
     apply: (v) => { atmosphere.ambient.enabled = v; },
   },
 
@@ -169,10 +174,11 @@ export const settingDefs = [
 
 // One-click presets per tab: { label, values: { settingId: value } } (shown as buttons at the top of that tab).
 export const settingPresets = {
-  Video: [
-    // Low is for weak computers: half resolution, no post-processing, no dust / flickering lights.
-    { label: 'Low', values: { renderScale: Math.max(0.5, nativeRatio * 0.5), visualEffects: 'off', ambientEffects: false } },
-    { label: 'Medium', values: { renderScale: Math.max(0.5, nativeRatio * 0.75), visualEffects: 'low', ambientEffects: true } },
+  Graphics: [
+    // Potato / Low are for weak computers (a school laptop): lower resolution, no post-processing, no dust / flickering lights.
+    { label: 'Potato', values: { renderScale: Math.max(0.5, nativeRatio * 0.5), visualEffects: 'off', ambientEffects: false } },
+    { label: 'Low', values: { renderScale: Math.max(0.5, nativeRatio * 0.65), visualEffects: 'off', ambientEffects: false } },
+    { label: 'Medium', values: { renderScale: Math.max(0.5, nativeRatio * 0.8), visualEffects: 'low', ambientEffects: true } },
     { label: 'High', values: { renderScale: nativeRatio, visualEffects: 'high', ambientEffects: true } }, // native, capped at 2x for performance
   ],
   Comfort: [

@@ -100,9 +100,10 @@ test('the settings: Visual effects defaults to High and drives the pipeline; pre
   assert.deepEqual(seen, ['off', 'low', 'high']);
   assert.doesNotThrow(() => def.apply('low', {}), 'headless / tests have no pipeline');
 
-  const [low, medium, high] = settingPresets.Video;
-  assert.deepEqual([low, medium, high].map((p) => p.values.visualEffects), ['off', 'low', 'high']);
-  assert.deepEqual([low, medium, high].map((p) => p.values.ambientEffects), [false, true, true]);
+  const presets = settingPresets.Graphics;
+  assert.deepEqual(presets.map((p) => p.label), ['Potato', 'Low', 'Medium', 'High']);
+  assert.deepEqual(presets.map((p) => p.values.visualEffects), ['off', 'off', 'low', 'high']);
+  assert.deepEqual(presets.map((p) => p.values.ambientEffects), [false, false, true, true]);
   const ambient = settingDefs.find((d) => d.id === 'ambientEffects');
   assert.equal(ambient.default, true);
   assert.equal(atmosphere.ambient.enabled, true, 'the shipped game has the dust and lights on');

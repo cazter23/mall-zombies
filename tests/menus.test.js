@@ -65,7 +65,7 @@ test('a modal isolates background menus, traps Tab in both directions, and resto
 test('controller preset navigation wraps; custom values choose an endpoint; only one preset is highlighted', () => {
   const t = settingsMenu();
   try {
-    const presets = settingPresets.Video;
+    const presets = settingPresets.Graphics;
     t.settings.set('renderScale', presets.at(-1).values.renderScale);
     t.pad('PadRight');
     assert.equal(t.settings.get('renderScale'), presets[0].values.renderScale);
@@ -89,16 +89,16 @@ test('controller reaches Reset tab, Reset everything (twice), and Back; closing 
   for (let i = 0; i < rowCount; i++) t.pad('PadDown');
   assert.equal(t.root.querySelector('.focused').textContent, 'Reset this tab');
   t.pad('PadA');
-  assert.deepEqual(t.resets, ['Video']);
+  assert.deepEqual(t.resets, ['Graphics']);
   t.pad('PadDown');
   t.pad('PadA');
-  assert.deepEqual(t.resets, ['Video'], 'first press only asks');
+  assert.deepEqual(t.resets, ['Graphics'], 'first press only asks');
   t.menu.close();
   t.menu.open();
   t.pad('PadA');
-  assert.deepEqual(t.resets, ['Video'], 'old confirmation was cancelled');
+  assert.deepEqual(t.resets, ['Graphics'], 'old confirmation was cancelled');
   t.pad('PadA');
-  assert.deepEqual(t.resets, ['Video', 'all']);
+  assert.deepEqual(t.resets, ['Graphics', 'all']);
   t.pad('PadDown');
   assert.equal(t.root.querySelector('.focused').textContent, 'Back');
   t.pad('PadA');
@@ -106,23 +106,23 @@ test('controller reaches Reset tab, Reset everything (twice), and Back; closing 
 });
 
 test('equal-valued presets still advance on controller and never highlight two buttons', () => {
-  const medium = settingPresets.Video[1].values;
+  const medium = settingPresets.Graphics.find((p) => p.label === 'Medium').values;
   const saved = { ...medium };
-  Object.assign(medium, settingPresets.Video[2].values); // (every value equal, not just the resolution)
+  Object.assign(medium, settingPresets.Graphics.find((p) => p.label === 'High').values); // (every value equal, not just the resolution)
   const t = settingsMenu();
   try {
     t.pad('PadRight'); // Medium -> High (equal value, distinct selection)
     const active = t.root.querySelectorAll('.settings-preset').filter((node) => node.classList.contains('active'));
     assert.deepEqual(active.map((node) => node.textContent), ['High']);
-    t.pad('PadRight'); // High -> Low; the old findIndex implementation got stuck at High
-    assert.equal(t.settings.get('renderScale'), settingPresets.Video[0].values.renderScale);
+    t.pad('PadRight'); // High -> Potato (wraps); the old findIndex implementation got stuck at High
+    assert.equal(t.settings.get('renderScale'), settingPresets.Graphics[0].values.renderScale);
   } finally {
     t.menu.close();
     Object.assign(medium, saved);
   }
 });
 
-test('Video reports native percentage and both pixel sizes, while preserving saved pixel-ratio semantics', () => {
+test('Graphics reports native percentage and both pixel sizes, while preserving saved pixel-ratio semantics', () => {
   const t = settingsMenu();
   try {
     t.window.devicePixelRatio = 1.25;
