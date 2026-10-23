@@ -72,7 +72,13 @@ export const LAYOUT = {
       { id: 'comingSoon', from: -3, to: 3, color: 0xe6c37a, text: 'COMING SOON', signBackground: '#ffd23f', signColor: '#1d1626', note: 'A NEW LOOK IS COMING' },
       { id: 'pretzel', from: 4, to: 10, color: 0xd9822b, text: 'PRETZEL PALACE', signBackground: '#5c2e12', signColor: '#ffd9a8', gate: 2.0 },
     ],
-    seating: { planterX: 13, planterZ: 1.6, wallBenches: [[-9, -7.2], [-6.2, -4.4]] },
+    seating: { planterX: 14.2, planterZ: 1.6, wallBenches: [[-9, -7.2], [-6.2, -4.4]] },
+    // Balcony voids: open holes in level 2's floor (= the hallway ceiling), railed, looking down into the hallway. The 4m strip
+    // between them is a bridge in front of the start room / Food Court doors.
+    voids: [
+      { minX: -9.5, maxX: -1.5, minZ: 0.5, maxZ: 3.5 },
+      { minX: 2.5, maxX: 10, minZ: 0.5, maxZ: 3.5 },
+    ],
     vents: [
       { id: 'southWest', wall: 'south', at: -13 },
       { id: 'southMiddle', wall: 'south', at: 8 },
@@ -234,8 +240,9 @@ export function buildMall(scene, colliders) {
   const E = LAYOUT.escalator;
   const upperY = H.height + 0.3; // level 2 floor = top of the hallway ceiling
   const escalator = props.escalator({ ...E, upperY, ceilingY: H.height });
+  const ceilingHoles = [escalator.hole, ...LAYOUT.level2.voids]; // the escalator well + the balcony voids
   kit.slab({ minX: H.minX - T, maxX: H.maxX + T, minZ: H.minZ - T, maxZ: H.maxZ + T }, H.height, upperY, mat(COLORS.ceiling), {
-    hole: escalator.hole, name: 'ceiling',
+    holes: ceilingHoles, name: 'ceiling',
   });
 
   // REPAIRING the escalator = a buyable door: its "barrier" is the collider across the escalator's foot plus the rope and
@@ -300,8 +307,13 @@ export function buildMall(scene, colliders) {
   props.boardedVent({ along: 'x', center: 15, wallAt: H.maxZ, facing: -1 });
   props.boardedVent({ along: 'x', center: -14, wallAt: H.minZ, facing: 1 });
 
-  // Ceiling lights (the west one is short: the escalator's ceiling hole is just east of it)
-  for (const x of [-8, 0, 8, 16]) props.lightPanel(x - 1.2, HZ - 0.6, x + 1.2, HZ + 0.6, H.height);
+  // Ceiling lights (the west one is short: the escalator's ceiling hole is just east of it). Over the balcony voids they move
+  // to the solid strips either side; the bridge and the east end keep a centre panel.
+  for (const x of [0, 16]) props.lightPanel(x - 1.2, HZ - 0.6, x + 1.2, HZ + 0.6, H.height);
+  for (const x of [-5.5, 6.25]) {
+    props.lightPanel(x - 1.2, H.minZ + 0.6, x + 1.2, H.minZ + 1.2, H.height);
+    props.lightPanel(x - 1.2, H.maxZ - 1.9, x + 1.2, H.maxZ - 1.3, H.height);
+  }
   props.lightPanel(-19.6, HZ - 0.6, -18.0, HZ + 0.6, H.height);
 
   // --- Start room props (a closed-down store) -------------------------------
@@ -680,7 +692,7 @@ export function buildMall(scene, colliders) {
   ];
 
   const doors = [startDoor, megaMartDoor, foodCourtDoor, serviceCorridorDoor, foodCourtMegaMartDoor, serviceCorridorFoodCourtDoor, escalatorDoor];
-  const dressing = buildMallAtmosphere(kit, LAYOUT, { service, ceilingHole: escalator.hole });
+  const dressing = buildMallAtmosphere(kit, LAYOUT, { service, ceilingHoles });
 
   return {
     id: 'mall',

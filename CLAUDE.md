@@ -31,6 +31,8 @@ valid geometry and mesh budgets, animation, isolated hit flashes, owned-resource
 `tests/atmosphere.test.js` checks decorative triangles against protected routes/vaults and the escalator ceiling well,
 zero added collision, batching/motion reset, interpolated supporting-surface shadows and disposal, spatial sound
 occlusion/zones/panning/caps, pause/death/reset silence, closed-shutter rattles and Web Audio voice cleanup.
+`tests/careerStats.test.js` checks persistent lifetime totals, weighted accuracy, personal bests, bounded recent runs,
+debug-run exclusion, reset, corrupt saves and unavailable browser storage.
 
 Gameplay regression tests live in `tests/` (`gameplay.test.js` movement/melee/vault, `aim.test.js` spread
 (including the Laser Pointer's hip benefit / ADS penalty through repeated shots and recovery),
@@ -370,18 +372,22 @@ src/
     events.js           createEvents(): tiny synchronous bus (on -> unsubscribe fn, emit, count). The event list + payloads
                         are in its header: shot, hit (player attack hit; +10 if not lethal), kill (any zombie death, with
                         headshot / melee / source: 'gun' | 'melee' | future 'hazard'...; ALL kill payouts + kill stats),
-                        playerHit, playerDeath, roundStart, typeIntro, purchase ({ label, cost, kind, id }, read before
-                        use()), runReset. 'shot' = one per staple / sticker / nail / dart / whole blast
+                        playerHit, playerDeath, runEnd ({ summary }, one immutable final snapshot), roundStart, typeIntro,
+                        purchase ({ label, cost, kind, id }, read before use()), runReset. 'shot' = one per staple / sticker / nail / dart / whole blast
     createGame.js       createGame({ scene, camera, input, hud, sound, viewmodel, mapId, buildTestRange, debugTick,
                         onPlayerDeath }): builds and wires EVERY gameplay system (map, stats, player, wallet, run stats,
                         effects, aim assist, gun, buyables, melee, health, zombies, rounds), owns update(dt) (the fixed tick,
                         in the order below), resetRun() (Play again: walks ONE ordered `resetSteps` list; a new system with
                         per-run state = one line there), onPlayerDeath, showResults, state { forceRun, over,
-                        padPlaying, running }, death, vaultPromptVisible. No DOM: the browser parts are passed in
+                        padPlaying, assisted, running }, death (including the frozen run summary), vaultPromptVisible.
+                        No DOM: the browser parts are passed in
+    careerStats.js      createCareerStats({ storage }): versioned persistent employee record with lifetime totals,
+                        personal bests and the last 12 completed shifts. Assisted/debug runs are rejected; storage
+                        failures fall back to memory. main.js supplies localStorage and records the runEnd event
     settings.js         createSettings(ctx): current value of every setting, saved in localStorage ('mallZombies.settings',
                         values are sanitized on load), applies them all at startup; get/set/reset(tab)/onChange. ctx = { renderer, sound, hud }
     runStats.js         createRunStats(): time alive, kills, headshot/melee kills, shots fired/hit, accuracy
-    wallet.js           createWallet(): points (start 500), earn/spend/canAfford, totalEarned, onChange cb (HUD
+    wallet.js           createWallet(): points (start 500), earn/spend/canAfford, totalEarned, totalSpent, onChange cb (HUD
                         pop-ups). pointsForHit(): COD payouts (+10 hit; kill value +40 head / +70 melee; zombies only)
     interactions.js     createInteractions(): buyables (doors now, wall buys next). add({ label, verb, cost, position,
                         available(), use() }). Each tick: nearest available item within feel.interact.range and
@@ -461,7 +467,8 @@ src/
                         (byteMe: screen wall + laptops + neon; goodSports: wainscot, jerseys, trophies, bat rack, ball bin;
                         playTimeToys: rainbow, plush shelves, blocks; nutsAndBolts: pegboard of tools, paint cans, workbench) and a
                         zombie spawn just inside the door. buildStores({ kit, props, court, thickness, stores }) -> { spots, spawns }
-    mall/levelTwo.js    buildLevelTwo({ kit, floorY, rect, hole, layout }) -> { spawns, lamps }: LEVEL 2, the Sunset Promenade, on the hallway's
+    mall/levelTwo.js    buildLevelTwo({ kit, floorY, rect, hole, layout }) -> { spawns, lamps }: LEVEL 2, the Sunset Promenade (+ its railed balcony
+                        voids, layout.voids, looking down into the hallway), on the hallway's
                         ceiling slab (same 40 x 8 m footprint, 3.6m ceiling): peach walls with coral stripe + purple skirting, a tiled skin
                         over the slab (the slab is the collider), roof beams + warm skylight strips, glass RAILINGS (1.5m solid, ignoreShots)
                         on three sides of the escalator well (the west end is the way on/off), three empty shop fronts on the north wall (data:
@@ -739,6 +746,22 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+Balcony ("less cramped" pass, part 2): level 2's floor (= the hallway ceiling) has two open BALCONY VOIDS over the hallway,
+LAYOUT.level2.voids (x -9.5..-1.5 and 2.5..10, z 0.5..3.5), railed on all four sides (1.5m, ignoreShots: you can shoot down through
+them), with a 4m bridge between them in front of the start room / Food Court doors. The hallway feels 10m tall: you see level 2's
+skylights through the voids and zombies on the other floor. kit.slab takes `holes` (slabPiecesWithHoles in mapKit.js); the
+atmosphere's ceiling seams/vents skip every hole (`ceilingHoles`), the hallway's centre light panels over the voids moved to the solid
+strips beside them, the red promo banner and the swinging FOOD COURT / MEGA MART sign moved off the voids (the sign hangs under the
+bridge), the old upper exit beacon/emergency light moved to level 2's west wall, the level 2 planter ring moved to x 14.2, and the
+level 2 floor skin sits on the slab (it flickered against the void edges). tests: levelTwo.test.js balcony (open, sprint-jumping at each
+void from all four sides never drops you, rails, ground nav under them), mall.test.js (ceiling solid round them, open in them).
+
+Career statistics: the title menu's Statistics screen is an employee record with lifetime totals, personal bests and the
+last 12 completed shifts, saved in browser localStorage. Death freezes one authoritative run summary for both the receipt
+and the `runEnd` event. Gameplay-changing debug commands mark the run assisted, so its receipt still appears but it cannot
+alter career totals or records. The receipt calls out new records, career totals, or a debug-run exclusion. Clear records
+requires confirmation; controller navigation is supported.
+
 Wider entrances ("less cramped" pass, part 1): the Food Court gate is 7m (was 4), the Mega Mart gate 6m (was 4), the Food Court <->
 Mega Mart shortcut 5m (was 3); all are LAYOUT entries in mall.js. The RESTOCK-O-MATIC moved east to x 4.95 to stay clear of the wider
 door lane, the east-end planters by the shortcut sit 0.6m from it (so the Food Court's south-east corner stays reachable), the

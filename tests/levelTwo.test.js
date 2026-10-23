@@ -42,19 +42,19 @@ test('railings fence the escalator well on three sides: they are too tall to jum
   const { g } = fixture({ repaired: true });
   const hole = { minX: -16.5, maxX: -11.95 };
   const rails = g.colliders.filter((b) => b.ignoreShots && Math.abs(b.min.y - UPPER_Y) < 1e-6);
-  assert.equal(rails.length, 3, 'south, north and east');
+  assert.equal(rails.length, 3 + 4 * L2.voids.length, 'south, north and east of the well; all four sides of each balcony void');
   for (const b of rails) assert.ok(b.max.y - UPPER_Y >= 1.4, 'taller than a jump (about 1.05 m)');
-  assert.ok(rails.every((b) => b.min.x > hole.minX - 0.5 && b.max.x < hole.maxX + 0.5), 'round the well');
+  assert.equal(rails.filter((b) => b.min.x > hole.minX - 0.5 && b.max.x < hole.maxX + 0.5).length, 3, 'three round the well');
 });
 
 test('nobody falls into the well: walking at its east end and its two sides stops at the rail', () => {
   const t = fixture({ repaired: true });
   const { g } = t;
   // From the east, heading west along the well's line
-  g.player.teleport({ position: new THREE.Vector3(-8, UPPER_Y, zMid), yaw: Math.PI / 2 });
+  g.player.teleport({ position: new THREE.Vector3(-10.4, UPPER_Y, zMid), yaw: Math.PI / 2 }); // (between the well and the first balcony void)
   hold(t, ['KeyW', 'ShiftLeft'], 3);
   assert.equal(g.player.position.y, UPPER_Y, 'still on level 2');
-  assert.ok(g.player.position.x > -11.5, `stopped at the east rail (x ${g.player.position.x.toFixed(2)})`);
+  assert.ok(g.player.position.x > -11.6, `stopped at the east rail (x ${g.player.position.x.toFixed(2)})`);
   // From the north passage, heading south (yaw 0 faces -Z) at the north rail
   g.player.teleport({ position: new THREE.Vector3(-14, UPPER_Y, 5), yaw: 0 });
   hold(t, ['KeyW', 'ShiftLeft'], 3);
@@ -73,7 +73,7 @@ test('the walkway is open end to end, and the planter is solid', () => {
   g.player.teleport({ position: new THREE.Vector3(-19, UPPER_Y, 4.5), yaw: 0 });
   t.tick(30);
   const nav = g.zombies.nav;
-  for (const [x, z] of [[-19, 2], [-19, 5], [-14, 5], [-14, -1], [-8, 1], [0, 1], [8, 4.5], [13, 3.9], [13, -1], [19, 2]]) {
+  for (const [x, z] of [[-19, 2], [-19, 5], [-14, 5], [-14, -1], [-8, -1], [-8, 4.6], [0, 1], [8, 4.5], [13, 3.9], [13, -1], [19, 2]]) {
     assert.ok(Number.isFinite(nav.distanceToTarget(x, z, UPPER_Y)), `(${x}, ${z}) reachable on level 2`);
   }
   const { planterX, planterZ } = L2.seating;
@@ -264,4 +264,28 @@ test('debug Shift+T: to level 2 (repairing the escalator for free) and back down
   g.debug.run('upstairs');
   t.tick(2);
   assert.ok(g.player.position.y < 0.01, 'back on the ground');
+});
+
+test('balcony: the voids look down into the hallway, nobody falls in from any side, and you can shoot down through the rails', () => {
+  const t = fixture({ repaired: true });
+  const { g } = t;
+  for (const v of L2.voids) {
+    const cx = (v.minX + v.maxX) / 2;
+    const cz = (v.minZ + v.maxZ) / 2;
+    assert.ok(!contains(g.colliders, cx, UPPER_Y - 0.15, cz), 'open: no ceiling slab there');
+    // Sprint at it from all four sides (yaw: 0 faces -Z, PI/2 -X, PI +Z, -PI/2 +X)
+    for (const [x, z, yaw] of [[cx, v.maxZ + 1.5, 0], [cx, v.minZ - 1.5, Math.PI], [v.maxX + 1.0, cz, Math.PI / 2], [v.minX - 1.0, cz, -Math.PI / 2]]) {
+      g.player.teleport({ position: new THREE.Vector3(x, UPPER_Y, z), yaw });
+      for (let i = 0; i < 3; i++) { g.player.input.pressed.add('Space'); hold(t, ['KeyW', 'ShiftLeft'], 0.5); }
+      t.tick(60); // (land)
+      assert.equal(g.player.position.y, UPPER_Y, `still on level 2 after running at the void from (${x}, ${z})`);
+    }
+    // The rails stop walkers, not bullets: they are all ignoreShots.
+    const rails = g.colliders.filter((b) => b.ignoreShots && b.min.x >= v.minX - 0.2 && b.max.x <= v.maxX + 0.2 && Math.abs(b.min.y - UPPER_Y) < 1e-6);
+    assert.equal(rails.length, 4);
+  }
+  // Zombies on the ground can path right under the voids
+  g.player.teleport({ position: new THREE.Vector3(0, 0, 4.5), yaw: 0 });
+  t.tick(30);
+  for (const v of L2.voids) assert.ok(Number.isFinite(g.zombies.nav.distanceToTarget((v.minX + v.maxX) / 2, (v.minZ + v.maxZ) / 2, 0)));
 });

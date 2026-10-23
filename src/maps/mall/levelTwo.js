@@ -7,6 +7,7 @@
 // is named below: the perimeter, the railings round the well, the benches and the planter.
 //
 // buildLevelTwo({ kit, floorY, rect, hole, layout }) -> { spawns, lamps }
+//   layout.voids  open BALCONY holes in the floor, over the hallway (railed on all four sides): you look down into the hallway
 //   rect   the walkable footprint ({ minX, maxX, minZ, maxZ }, the hallway's)
 //   hole   the escalator's ceiling hole (left open in the floor)
 //   spawns [{ name, zone: 'upstairs', position }] for the zombie manager (y = the floor)
@@ -14,7 +15,7 @@
 // =============================================================================
 
 import * as THREE from 'three';
-import { slabPieces } from '../../world/mapKit.js';
+import { slabPiecesWithHoles } from '../../world/mapKit.js';
 import { COLORS } from './palette.js';
 
 const WALL = 0xf4dcc8; // warm peach
@@ -29,9 +30,10 @@ export function buildLevelTwo({ kit, floorY, rect, hole, layout }) {
   const y = (h) => floorY + h; // a height above the floor
 
   // --- Floor: a thin tiled skin over the slab (the slab itself is the collider), with the well left open -------------------
-  for (const piece of slabPieces(rect, hole)) {
+  const voids = layout.voids ?? [];
+  for (const piece of slabPiecesWithHoles(rect, [hole, ...voids])) {
     kit.tiledFloor(piece.minX, piece.minZ, piece.maxX, piece.maxZ,
-      { base: '#f0d2b0', grout: '#c9a47c', variation: 10, seed: 51 }, { top: floorY + 0.012, thickness: 0.02, collide: false });
+      { base: '#f0d2b0', grout: '#c9a47c', variation: 10, seed: 51 }, { top: floorY + 0.012, thickness: 0.012, collide: false });
   }
 
   // --- Walls and roof ----------------------------------------------------------------------------------------------------
@@ -74,6 +76,13 @@ export function buildLevelTwo({ kit, floorY, rect, hole, layout }) {
   rail(hole.minX, hole.minZ - edge, hole.maxX + edge, hole.minZ); // south side
   rail(hole.minX, hole.maxZ, hole.maxX + edge, hole.maxZ + edge); // north side
   rail(hole.maxX, hole.minZ, hole.maxX + edge, hole.maxZ); // east end
+  // The balcony voids over the hallway: railed all round
+  for (const v of voids) {
+    rail(v.minX - edge, v.minZ - edge, v.maxX + edge, v.minZ); // south
+    rail(v.minX - edge, v.maxZ, v.maxX + edge, v.maxZ + edge); // north
+    rail(v.minX - edge, v.minZ, v.minX, v.maxZ); // west
+    rail(v.maxX, v.minZ, v.maxX + edge, v.maxZ); // east
+  }
 
   // --- Empty shop fronts along the north wall -------------------------------------------------------------------------------------
   const wallAt = rect.maxZ;

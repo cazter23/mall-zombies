@@ -385,7 +385,9 @@ test('the ceiling is open only above the escalator; the elevator wall stays soli
   const y = H.height + 0.15; // inside the ceiling slab
   // In the hole, beside the escalator (its own balustrade colliders rise through the middle of it).
   for (const z of [0.85, 3.15]) assert.equal(containsPoint(colliders, -14, y, z), false, `hole above the escalator at z ${z}`);
-  for (const [x, z] of [[0, 2], [-14, -1], [-14, 5], [-19, 2], [-8, 2]]) assert.ok(containsPoint(colliders, x, y, z), `ceiling at (${x}, ${z})`);
+  for (const [x, z] of [[0, 2], [-14, -1], [-14, 5], [-19, 2], [-8, -1], [-8, 5], [6, -1], [6, 5], [-10.5, 2], [14, 2]]) assert.ok(containsPoint(colliders, x, y, z), `ceiling at (${x}, ${z})`);
+  // The balcony voids (level 2 looks down into the hallway through them) are open.
+  for (const v of LAYOUT.level2.voids) assert.equal(containsPoint(colliders, (v.minX + v.maxX) / 2, y, (v.minZ + v.maxZ) / 2), false, 'balcony void open');
   // Level 2 above it is closed in: walls on all four sides and a roof (levelTwo.test.js has the rest).
   const upper = H.height + 0.3 + 1.8;
   for (const [x, z] of [[0, H.maxZ + 0.15], [0, H.minZ - 0.15], [H.minX - 0.15, 2], [H.maxX + 0.15, 2]]) {

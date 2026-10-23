@@ -5,7 +5,7 @@ import { atmosphere } from '../../config/environment.js';
 import { makeSoftFootprint, makeDustMoteTexture } from '../../world/atmosphereTextures.js';
 import { seededRandom } from '../../world/textures.js';
 
-export function buildMallAtmosphere(kit, layout, { service, ceilingHole }) {
+export function buildMallAtmosphere(kit, layout, { service, ceilingHole, ceilingHoles = ceilingHole ? [ceilingHole] : [] }) {
   const group = new THREE.Group(); group.name = 'mall_atmosphere'; kit.group.add(group);
   const batches = new Map();
   const metal = kit.mat(0x849395, atmosphere.surfaces.metal);
@@ -28,12 +28,12 @@ export function buildMallAtmosphere(kit, layout, { service, ceilingHole }) {
     group.attach(mesh); mesh.name = 'galleria_notice'; return mesh;
   }
 
-  // Ceiling seams follow the actual rooms. The escalator well remains completely open.
+  // Ceiling seams follow the actual rooms. The escalator well and the balcony voids remain completely open.
   for (const key of ['startRoom', 'hallway', 'foodCourt', 'megaMart']) {
     const r = layout[key], y = r.height - 0.012;
-    const inHole = (x, z, w = 0, d = 0) => key === 'hallway'
-      && x + w / 2 > ceilingHole.minX - 0.03 && x - w / 2 < ceilingHole.maxX + 0.03
-      && z + d / 2 > ceilingHole.minZ - 0.03 && z - d / 2 < ceilingHole.maxZ + 0.03;
+    const inHole = (x, z, w = 0, d = 0) => key === 'hallway' && ceilingHoles.some((hole) =>
+      x + w / 2 > hole.minX - 0.03 && x - w / 2 < hole.maxX + 0.03
+      && z + d / 2 > hole.minZ - 0.03 && z - d / 2 < hole.maxZ + 0.03);
     // Short segments let us omit the well rather than running long beams across it.
     for (let x = r.minX + 1; x < r.maxX; x += atmosphere.ceiling.spacing) {
       for (let z = r.minZ + 1; z < r.maxZ; z += atmosphere.ceiling.spacing) {
@@ -81,7 +81,7 @@ export function buildMallAtmosphere(kit, layout, { service, ceilingHole }) {
     box('banner_footer_stripe', bx, 4.32, bz, 1.84, 0.12, 0.028, yellow);
     box('banner_center_emblem', bx, 4.65, bz, 1.25, 0.22, 0.03, cream);
   }
-  promoBanner(-1.8, 2.0, red, cream);
+  promoBanner(-1.8, 4.6, red, cream); // (beside the balcony void, not over it)
   promoBanner(11.5, 2.0, teal, cream);
   promoBanner(-4.5, -5.5, teal, red);
   promoBanner(4.5, -5.5, red, teal);
@@ -100,12 +100,12 @@ export function buildMallAtmosphere(kit, layout, { service, ceilingHole }) {
   box('exit_beacon_hall', 13, 3.35, 5.93, 0.52, 0.2, 0.07, exitGlow);
   box('exit_beacon_mart', 33.93, 2.95, 2.5, 0.07, 0.2, 0.52, exitGlow);
   box('exit_beacon_service', cx, 2.75, -13.93, 0.48, 0.18, 0.07, exitGlow);
-  box('exit_beacon_upper', -10.25, 6.28, 3.22, 0.44, 0.18, 0.07, exitGlow);
+  box('exit_beacon_upper', -19.96, upperY + 2.95, 2, 0.07, 0.2, 0.52, exitGlow); // level 2, over the escalator
 
   const emergencyLights = []; // (dimmed to 0 by Settings > Video > Dust and flickering lights)
   if (atmosphere.flicker) {
     const { emergencyLightColor, emergencyLightIntensity, emergencyLightDistance } = atmosphere.flicker;
-    for (const [ex, ey, ez] of [[cx, 2.8, -12.8], [-10.25, 6.15, 2.0]]) {
+    for (const [ex, ey, ez] of [[cx, 2.8, -12.8], [-19.3, upperY + 2.6, 2.0]]) {
       const emergencyLight = new THREE.PointLight(emergencyLightColor, emergencyLightIntensity, emergencyLightDistance, 2);
       emergencyLight.position.set(ex, ey, ez);
       group.add(emergencyLight);
@@ -125,12 +125,13 @@ export function buildMallAtmosphere(kit, layout, { service, ceilingHole }) {
   sign('TABLES ARE FOR CUSTOMERS. MOSTLY.', { x: -16.9, y: 2.8, z: -14.25, width: 3.1, height: 0.3, facing: 1 });
   sign('RESTOCK IN PROGRESS', { x: 29.05, y: 2.1, z: -23.95, width: 1.8, height: 0.28, facing: 1 });
 
-  const hanging = sign('FOOD COURT  /  MEGA MART >', { x: 3.4, y: 4.5, z: 2,
+  // (Hung under the bridge between the two balcony voids.)
+  const hanging = sign('FOOD COURT  /  MEGA MART >', { x: 0.5, y: 4.5, z: 2,
     width: 3.2, height: 0.42, facing: 1 });
   // A second face for the return trip; both pivot around the same centre.
-  const reverse = sign('< FOOD COURT  /  MEGA MART', { x: 3.4, y: 4.5, z: 1.98,
+  const reverse = sign('< FOOD COURT  /  MEGA MART', { x: 0.5, y: 4.5, z: 1.98,
     width: 3.2, height: 0.42, facing: -1 });
-  for (const x of [2.2, 4.6]) box('sign_suspension', x, 5.35, 2, 0.025, 1.3, 0.025, metal);
+  for (const x of [-0.7, 1.7]) box('sign_suspension', x, 5.35, 2, 0.025, 1.3, 0.025, metal);
 
   // Interrupted lunch. Trays, cups and cartons stay on existing table tops.
   for (const [x, z, angle] of [[-9, -6.5, 0.2], [5.5, -10.6, -0.25]]) {

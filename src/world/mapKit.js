@@ -91,6 +91,13 @@ export function slabPieces(rect, hole) {
   ].filter((r) => r.maxX - r.minX > 1e-6 && r.maxZ - r.minZ > 1e-6);
 }
 
+/** slabPieces with any number of holes (each cut from whatever pieces it overlaps). Holes must not overlap each other. */
+export function slabPiecesWithHoles(rect, holes = []) {
+  let pieces = [rect];
+  for (const hole of holes) pieces = pieces.flatMap((piece) => slabPieces(piece, hole));
+  return pieces;
+}
+
 export function createMapKit(group, colliders) {
   const materials = new Map();
   const ownColliders = []; // every Box3 this map put in `colliders` (shutters' too), for dispose()
@@ -158,9 +165,9 @@ export function createMapKit(group, colliders) {
     return box(minX, top - thickness, minZ, maxX, top, maxZ, material, { name: 'floor', collide });
   }
 
-  /** A flat solid slab from y0 to y1 (a ceiling, say), optionally with one hole (see slabPieces). */
-  function slab(rect, y0, y1, material, { hole = null, name = 'slab' } = {}) {
-    return slabPieces(rect, hole).map((r) => box(r.minX, y0, r.minZ, r.maxX, y1, r.maxZ, material, { name }));
+  /** A flat solid slab from y0 to y1 (a ceiling, say), optionally with a hole or several `holes` (see slabPieces). */
+  function slab(rect, y0, y1, material, { hole = null, holes = null, name = 'slab' } = {}) {
+    return slabPiecesWithHoles(rect, holes ?? (hole ? [hole] : [])).map((r) => box(r.minX, y0, r.minZ, r.maxX, y1, r.maxZ, material, { name }));
   }
 
   /**
