@@ -313,7 +313,13 @@ src/
                         sits 9cm in front of the muzzle so it shows past the left hand at the hip; in ADS it
                         goes wide/flat so the rays poke out around the gun, below the crosshair
   zombies/
-    navigation.js       createNavigation(): flow field on a 0.5m ground-floor grid built from colliders (floor =
+    navigation.js       createNavigation(colliders, agent, { floors, links }): flow field on a 0.5m grid built from colliders, one LAYER per floor
+                        (floors = their walking heights, default [0]: walkable where a box top sits at that height, blocked by anything solid
+                        between ankle and head above it) joined by LINKS (a ramp/stairs: { lower: {x,z,floor}, upper: {x,z,floor}, halfWidth }):
+                        in the field a link is one extra edge between its end cells; a mover ON a ramp (within zombieNav.rampTolerance of its
+                        surface) walks to whichever end is closer to the player (or straight at a player on the same ramp); at a ramp's foot it
+                        walks in when the route goes that way. layerOf(y), rampAt(x,y,z); distanceToTarget / isWalkableAt / clearLine take
+                        an optional floor height y. Single-floor maps are unchanged. (Ground-floor description:) flow field on a 0.5m grid (floor =
                         box top at y~0; obstacles padded by zombie radius; cells within extraClearance cost extra
                         so routes stay off walls but narrow gaps still connect). Dijkstra from the player every
                         0.2s; rebuilds when colliderSignature() changes (count + version, see collision.js). The grid
@@ -719,6 +725,14 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+Second floor, step 1 of 6 (the plan: multi-floor navigation core, walkable escalator, zone + repair purchase, build level 2, gameplay
+integration, verification): zombies/navigation.js now supports several floors joined by ramp links (see the folder structure).
+tests/navFloors.test.js on synthetic two-floor maps with a gentle staircase and the real collision code: zombies climb to a player
+upstairs, come down to one on the ground, reach one standing on the stairs from both floors, and a floor with no link is unreachable.
+Nothing in the mall uses it yet (floors default to [0]). NOTE for the next step: the collision code only walks over bumps under
+5 cm and a circle of radius 0.32 sees steps ahead, so real stairs need a slope under ~9 degrees; the escalator (30 degrees) needs a
+ramp collider type.
+
 Visual effects settings (for weak computers): Settings > Video > Visual effects = High / Low / Off (fx/postProcessing.js
 setQuality: flags + MSAA sample count only, nothing rebuilt, safe mid-run; Off draws straight to the screen) and "Dust and flickering
 lights" (config/environment.js atmosphere.ambient.enabled, read each tick by maps/mall/atmosphere.js). The Video presets set them:

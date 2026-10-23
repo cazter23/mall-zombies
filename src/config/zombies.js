@@ -336,4 +336,8 @@ export const zombieNav = {
   wallPenalty: 0.6, // ...because walking those cells costs this much extra
   playerSearchRadius: 1.5, // if the player stands somewhere zombies can't (a bench), path to cells this close
   floorTolerance: 0.05, // a box whose top is within this of y=0 counts as floor
+  // Several floors (navigation.js `floors` + `links`): a mover within rampTolerance of a ramp's surface is ON the ramp;
+  // linkPenalty makes a ramp cost this much extra of its length (1 = twice as far), so routes avoid needless stairs.
+  rampTolerance: 0.6,
+  linkPenalty: 0.25,
 };
