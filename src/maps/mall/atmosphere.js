@@ -2,7 +2,8 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { atmosphere } from '../../config/environment.js';
-import { makeSoftFootprint } from '../../world/atmosphereTextures.js';
+import { makeSoftFootprint, makeDustMoteTexture } from '../../world/atmosphereTextures.js';
+import { seededRandom } from '../../world/textures.js';
 
 export function buildMallAtmosphere(kit, layout, { service, ceilingHole }) {
   const group = new THREE.Group(); group.name = 'mall_atmosphere'; kit.group.add(group);
@@ -11,6 +12,7 @@ export function buildMallAtmosphere(kit, layout, { service, ceilingHole }) {
   const trim = kit.mat(0xaaa99e), dark = kit.mat(0x333f42), teal = kit.mat(0x237d83);
   const cream = kit.mat(0xf1dfb9), paper = kit.mat(0xf3e7cd, atmosphere.surfaces.cardboard);
   const red = kit.mat(0xb95448), ochre = kit.mat(0xb18c51, atmosphere.surfaces.cardboard);
+  const exitGlow = kit.mat(0xff4a3d, { emissive: 0xff2b1f, emissiveIntensity: 1.45, roughness: 0.25 });
   function box(name, x, y, z, w, h, d, material, rotation = [0, 0, 0]) {
     const geometry = new THREE.BoxGeometry(w, h, d);
     const transform = new THREE.Matrix4().compose(new THREE.Vector3(x, y, z),
@@ -62,6 +64,21 @@ export function buildMallAtmosphere(kit, layout, { service, ceilingHole }) {
   box('loose_access_panel', cx + 0.5, scY - 0.16, -7.05, 0.77, 0.03, 0.5, trim, [0.45, 0, 0]);
   box('maintenance_tag', cx + 0.5, scY - 0.27, -7.35, 0.04, 0.34, 0.04, red);
   sign('MAINTENANCE: BACK IN 5 MINUTES', { x: -23.25, y: 2.65, z: -7.2, width: 1.8, height: 0.24, facing: 'x+' });
+
+  // Glowing red emergency exit beacons above sealed exit doors and dark back-of-house corners.
+  box('exit_beacon_hall', 13, 3.35, 5.93, 0.52, 0.2, 0.07, exitGlow);
+  box('exit_beacon_mart', 33.93, 2.95, 2.5, 0.07, 0.2, 0.52, exitGlow);
+  box('exit_beacon_service', cx, 2.75, -13.93, 0.48, 0.18, 0.07, exitGlow);
+  box('exit_beacon_upper', -10.25, 6.28, 3.22, 0.44, 0.18, 0.07, exitGlow);
+
+  if (atmosphere.flicker) {
+    const { emergencyLightColor, emergencyLightIntensity, emergencyLightDistance } = atmosphere.flicker;
+    for (const [ex, ey, ez] of [[cx, 2.8, -12.8], [-10.25, 6.15, 2.0]]) {
+      const emergencyLight = new THREE.PointLight(emergencyLightColor, emergencyLightIntensity, emergencyLightDistance, 2);
+      emergencyLight.position.set(ex, ey, ez);
+      group.add(emergencyLight);
+    }
+  }
 
   // Mall-owned signage shares a palette; store identities stay their own.
   sign('SUNSET GALLERIA', { x: 0, y: 3.35, z: 15.94, width: 3.6, height: 0.48, facing: -1 });
@@ -126,15 +143,77 @@ export function buildMallAtmosphere(kit, layout, { service, ceilingHole }) {
   patches('table_spill', [[-9.28, -6.45, 0.4, 0.7], [5.2, -10.5, 0.55, 0.35]], 0x835c38, 0.23);
   patches('service_leak', [[cx + 0.85, -7.3, 0.65, 1.3]], 0x4a645b, 0.24);
 
-  // Gentle local tube variation, without flashing an entire room or extinguishing a route.
-  const tubeMaterial = kit.mat(0xe6f3ef, { emissive: 0x9abcb6, emissiveIntensity: 0.9 });
-  const tube = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.035, 1.2), tubeMaterial);
-  tube.name = 'service_aging_tube'; tube.position.set(cx + 0.3, scY - 0.08, -7.3); group.add(tube);
+  // Failing ballast fluorescent tubes (Service Corridor, West Hallway dead troffer, Rear Mega Mart) + local floor shimmer.
+  const tubeMaterial = kit.mat(0xe6f3ef, { emissive: 0xa8dcd6, emissiveIntensity: 1.0, roughness: 0.2 });
+  const tubeSpecs = [
+    [cx + 0.3, scY - 0.08, -7.3, 0.13, 0.035, 1.2],
+    [-14.5, layout.hallway.height - 0.068, 4.35, 1.8, 0.035, 0.16],
+    [27.2, layout.megaMart.height - 0.068, -21.75, 1.8, 0.035, 0.16],
+  ];
+  const tubePieces = tubeSpecs.map(([tx, ty, tz, tw, th, td]) => {
+    const g = new THREE.BoxGeometry(tw, th, td);
+    g.translate(tx, ty, tz);
+    return g;
+  });
+  const tube = new THREE.Mesh(mergeGeometries(tubePieces), tubeMaterial);
+  for (const g of tubePieces) g.dispose();
+  tube.name = 'service_aging_tube';
+  group.add(tube);
+
+  const flickerCfg = atmosphere.flicker ?? { hallwayLightColor: 0xbbe2ff, hallwayLightIntensity: 7.5, hallwayLightDistance: 12 };
+  const hallwayFlickerLight = new THREE.PointLight(
+    flickerCfg.hallwayLightColor,
+    flickerCfg.hallwayLightIntensity,
+    flickerCfg.hallwayLightDistance,
+    2,
+  );
+  hallwayFlickerLight.position.set(-14.5, layout.hallway.height - 0.7, 4.35);
+  group.add(hallwayFlickerLight);
+
   for (const [material, geometries] of batches) {
     const mesh = new THREE.Mesh(mergeGeometries(geometries), material);
     mesh.name = 'atmosphere_detail_batch'; group.add(mesh);
     for (const geometry of geometries) geometry.dispose();
   }
+
+  // Floating dust motes suspended in overhead light cones (one THREE.Points draw call).
+  const dustCfg = atmosphere.dust ?? { count: 140, size: 0.075, opacity: 0.42, color: 0xeef6ff, driftY: 0.16, driftXZ: 0.12, period: 11 };
+  const dustRandom = seededRandom(404);
+  const dustZones = [
+    [-3.8, 3.8, 0.7, 3.3, 7.0, 14.8], // Start Room
+    [-17.5, 17.5, 0.8, 4.8, -1.5, 4.8], // Main Hallway
+    [-16.5, 16.5, 0.8, 4.8, -12.5, -3.5], // Food Court
+    [21.5, 32.5, 0.8, 4.2, -21.0, 3.5], // Mega Mart
+    [cx - 0.9, cx + 0.9, 0.8, 2.8, -12.5, -1.5], // Service Corridor
+  ];
+  const dustBase = new Float32Array(dustCfg.count * 3);
+  const dustPositions = new Float32Array(dustCfg.count * 3);
+  const dustPhases = new Float32Array(dustCfg.count);
+  for (let i = 0; i < dustCfg.count; i++) {
+    const [x0, x1, y0, y1, z0, z1] = dustZones[i % dustZones.length];
+    const i3 = i * 3;
+    dustBase[i3] = x0 + dustRandom() * (x1 - x0);
+    dustBase[i3 + 1] = y0 + dustRandom() * (y1 - y0);
+    dustBase[i3 + 2] = z0 + dustRandom() * (z1 - z0);
+    dustPhases[i] = dustRandom() * Math.PI * 2;
+  }
+  dustPositions.set(dustBase);
+  const dustGeometry = new THREE.BufferGeometry();
+  const dustPosAttr = new THREE.BufferAttribute(dustPositions, 3);
+  dustGeometry.setAttribute('position', dustPosAttr);
+  const dustMaterial = new THREE.PointsMaterial({
+    map: makeDustMoteTexture(),
+    color: dustCfg.color,
+    size: dustCfg.size,
+    transparent: true,
+    opacity: dustCfg.opacity,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+  const dustPoints = new THREE.Points(dustGeometry, dustMaterial);
+  dustPoints.name = 'mall_dust_motes';
+  group.add(dustPoints);
+
   const emitters = [
     { id: 'start_vent', kind: 'ventilation', zone: 'startRoom', position: [-3.4, 3, 14.6], range: 8 },
     { id: 'hall_music', kind: 'music', zone: 'hallway', position: [2, 4.5, 2], range: 23 },
@@ -143,10 +222,27 @@ export function buildMallAtmosphere(kit, layout, { service, ceilingHole }) {
     { id: 'service_hvac', kind: 'ventilation', zone: 'serviceCorridor', position: [cx, 3, -7], range: 12 },
   ];
   let time = 0;
+  function ballastWave(t) {
+    const slow = 0.5 + 0.5 * Math.sin((t * Math.PI * 2) / atmosphere.motion.tubePeriod);
+    // Failing fluorescent starter stutter when the ballast cycle dips into its trough
+    const stutter = slow < 0.35 ? 0.55 + 0.45 * Math.sin(t * 43) * Math.cos(t * 29) : 1;
+    return atmosphere.motion.tubeMin + (1.2 - atmosphere.motion.tubeMin) * slow * stutter;
+  }
   function pose() {
     hanging.rotation.z = reverse.rotation.z = Math.sin(time * Math.PI * 2 / atmosphere.motion.signPeriod) * atmosphere.motion.signRadians;
-    tubeMaterial.emissiveIntensity = atmosphere.motion.tubeMin + (1 - atmosphere.motion.tubeMin)
-      * (0.5 + 0.5 * Math.sin(time * Math.PI * 2 / atmosphere.motion.tubePeriod));
+    const tubeLevel = ballastWave(time);
+    tubeMaterial.emissiveIntensity = tubeLevel;
+    hallwayFlickerLight.intensity = flickerCfg.hallwayLightIntensity * tubeLevel;
+
+    const w = (time * Math.PI * 2) / dustCfg.period;
+    for (let i = 0; i < dustCfg.count; i++) {
+      const i3 = i * 3;
+      const phase = dustPhases[i];
+      dustPositions[i3] = dustBase[i3] + Math.sin(w + phase) * dustCfg.driftXZ;
+      dustPositions[i3 + 1] = dustBase[i3 + 1] + Math.sin(w * 0.85 + phase * 1.7) * dustCfg.driftY;
+      dustPositions[i3 + 2] = dustBase[i3 + 2] + Math.cos(w * 0.9 + phase * 1.3) * dustCfg.driftXZ;
+    }
+    dustPosAttr.needsUpdate = true;
   }
   pose();
   return { group, emitters, update(dt) { time += dt; pose(); }, reset() { time = 0; pose(); } };

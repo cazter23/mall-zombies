@@ -16,6 +16,22 @@ export function makeSoftFootprint() {
   return texture;
 }
 
+/** Soft radial pinpoint sprite for floating dust motes caught in overhead light beams. */
+export function makeDustMoteTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 32;
+  const c = canvas.getContext('2d');
+  const gradient = c.createRadialGradient(16, 16, 1, 16, 16, 15);
+  gradient.addColorStop(0, 'rgba(255,255,255,1)');
+  gradient.addColorStop(0.35, 'rgba(235,245,255,0.65)');
+  gradient.addColorStop(1, 'rgba(235,245,255,0)');
+  c.fillStyle = gradient;
+  c.fillRect(0, 0, 32, 32);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
 /** Linear data: grout stays matte while the broad waxed tile faces catch crisp specular light. */
 export function makeTileRoughness() {
   const size = 256;

@@ -47,8 +47,15 @@ test('atmosphere adds no collision and keeps actual triangles out of shortcuts, 
   });
   assert.ok(draws < 30, 'static boxes batch by material');
   const sign = dressing.group.children.find(o => o.name === 'galleria_notice' && o.position.y === 4.5);
-  dressing.update(2); assert.notEqual(sign.rotation.z, 0);
-  dressing.reset(); assert.equal(sign.rotation.z, 0);
+  const dust = dressing.group.children.find(o => o.name === 'mall_dust_motes');
+  assert.ok(dust?.isPoints);
+  const initialDustY = dust.geometry.attributes.position.getY(0);
+  dressing.update(2);
+  assert.notEqual(sign.rotation.z, 0);
+  assert.notEqual(dust.geometry.attributes.position.getY(0), initialDustY);
+  dressing.reset();
+  assert.equal(sign.rotation.z, 0);
+  assert.equal(dust.geometry.attributes.position.getY(0), initialDustY);
   kit.dispose();
 });
 
