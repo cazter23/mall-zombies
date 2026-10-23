@@ -24,6 +24,7 @@
 import { feel } from './feel.js';
 import { audio } from './audio.js';
 import { gamepad, aimAssist } from './controls.js';
+import { atmosphere } from './environment.js';
 
 export const settingsTabs = ['Video', 'Mouse', 'Controller', 'Audio', 'Comfort'];
 export const menuFeel = { confirmSeconds: 3 };
@@ -64,6 +65,20 @@ export const settingDefs = [
     min: 0.5, max: 2, step: 0.05, default: nativeRatio,
     format: (v) => `${percent(v / displayPixelRatio())} native`,
     apply: (v, ctx) => ctx.renderer.setPixelRatio(v),
+  },
+
+  {
+    id: 'visualEffects', tab: 'Video', label: 'Visual effects', type: 'select', default: 'high',
+    options: [
+      { value: 'high', label: 'High' }, // bloom glow, lens vignette / colour fringing, smooth edges
+      { value: 'low', label: 'Low' }, // no bloom or lens, no anti-aliasing
+      { value: 'off', label: 'Off' }, // drawn straight to the screen: the fastest
+    ],
+    apply: (v, ctx) => ctx.postProcessing?.setQuality(v),
+  },
+  {
+    id: 'ambientEffects', tab: 'Video', label: 'Dust and flickering lights', type: 'toggle', default: true,
+    apply: (v) => { atmosphere.ambient.enabled = v; },
   },
 
   // ---- Mouse ----
@@ -155,9 +170,10 @@ export const settingDefs = [
 // One-click presets per tab: { label, values: { settingId: value } } (shown as buttons at the top of that tab).
 export const settingPresets = {
   Video: [
-    { label: 'Low', values: { renderScale: Math.max(0.5, nativeRatio * 0.5) } }, // half resolution, within the slider range
-    { label: 'Medium', values: { renderScale: Math.max(0.5, nativeRatio * 0.75) } },
-    { label: 'High', values: { renderScale: nativeRatio } }, // native, capped at 2x for performance
+    // Low is for weak computers: half resolution, no post-processing, no dust / flickering lights.
+    { label: 'Low', values: { renderScale: Math.max(0.5, nativeRatio * 0.5), visualEffects: 'off', ambientEffects: false } },
+    { label: 'Medium', values: { renderScale: Math.max(0.5, nativeRatio * 0.75), visualEffects: 'low', ambientEffects: true } },
+    { label: 'High', values: { renderScale: nativeRatio, visualEffects: 'high', ambientEffects: true } }, // native, capped at 2x for performance
   ],
   Comfort: [
     { label: 'Calm', values: { headBob: 0, speedLines: false } }, // for motion sickness

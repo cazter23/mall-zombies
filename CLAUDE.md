@@ -702,7 +702,10 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
   is emitter data. `game/ambience.js` selects zone-aware, distance/occlusion-attenuated and stereo-panned HVAC,
   fridge and muffled music voices; occasional rattles come from nearby closed shutters. It owns no Web Audio nodes.
   Pause/death/reset silence the mix; `audio/sound.js` owns browser audio and uses `audio.ambienceVolume`.
-  No realtime shadow maps, global blur or postprocessing; zombie contact shadows render after interpolation in main.
+  No realtime shadow maps or global blur; zombie contact shadows render after interpolation in main. Post-processing (bloom, lens
+  vignette/fringing, ACES tone mapping, MSAA) is fx/postProcessing.js with three levels, Settings > Video > Visual effects: High (default),
+  Low (composer only: no bloom/lens/MSAA), Off (no composer: the world and the gun drawn straight to the screen). "Dust and
+  flickering lights" (atmosphere.ambient.enabled) hides the dust motes and zeroes the flicker/emergency lights (kept in the scene).
 - Player spawns at (0, 0, 12) facing the shutter.
 
 ## Movement test range (debug only)
@@ -716,6 +719,16 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+Visual effects settings (for weak computers): Settings > Video > Visual effects = High / Low / Off (fx/postProcessing.js
+setQuality: flags + MSAA sample count only, nothing rebuilt, safe mid-run; Off draws straight to the screen) and "Dust and flickering
+lights" (config/environment.js atmosphere.ambient.enabled, read each tick by maps/mall/atmosphere.js). The Video presets set them:
+Low = half resolution + effects Off + no dust/lights, Medium = 75% + Low, High = native + High (the default; High's output is
+unchanged from before: measured ~0.2 mean difference on 0-255). Measured in the software-rendered test browser (relative only):
+High ~52 ms/frame, Off + no dust ~17 ms (about 3x faster); the dust motes alone were ~13 ms of that. Off/Low look the same colour and
+brightness as High (mean difference ~5/255) minus the bloom glow, lens vignette/fringing and smooth edges.
+tests/visualEffects.test.js: the three levels on a stand-in renderer, Off's draw order, settings + presets + saving, and the mall's
+dust/lights switch.
+
 Single-file build: `npm run build:single` writes dist-single/sunset-galleria.html (~1.1 MB, git-ignored), the whole game with no
 other files, so it runs by double-clicking it (the normal dist/ needs a web server: browsers refuse separate module scripts and
 workers from file://). No image/audio files exist (textures drawn, sounds and music synthesized), so nothing else has to travel

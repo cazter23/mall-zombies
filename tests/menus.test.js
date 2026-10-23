@@ -107,8 +107,8 @@ test('controller reaches Reset tab, Reset everything (twice), and Back; closing 
 
 test('equal-valued presets still advance on controller and never highlight two buttons', () => {
   const medium = settingPresets.Video[1].values;
-  const saved = medium.renderScale;
-  medium.renderScale = settingPresets.Video[2].values.renderScale;
+  const saved = { ...medium };
+  Object.assign(medium, settingPresets.Video[2].values); // (every value equal, not just the resolution)
   const t = settingsMenu();
   try {
     t.pad('PadRight'); // Medium -> High (equal value, distinct selection)
@@ -118,7 +118,7 @@ test('equal-valued presets still advance on controller and never highlight two b
     assert.equal(t.settings.get('renderScale'), settingPresets.Video[0].values.renderScale);
   } finally {
     t.menu.close();
-    medium.renderScale = saved;
+    Object.assign(medium, saved);
   }
 });
 

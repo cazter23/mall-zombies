@@ -110,7 +110,7 @@ function handleDebugKeys() {
 
 // Settings (config/settings.js is the list; changes apply to the game and are saved in the browser).
 // Created after the HUD and sound so each setting's apply() can reach them.
-const settings = createSettings({ renderer, sound, hud });
+const settings = createSettings({ renderer, sound, hud, postProcessing });
 const settingsMenu = createSettingsMenu(settings);
 const controlsMenu = createControlsMenu();
 // The debug window (the ` key): lists the debug keys with live numbers; hidden unless the game's debug state says so.

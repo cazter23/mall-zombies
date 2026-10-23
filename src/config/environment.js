@@ -26,6 +26,9 @@ export const atmosphere = {
     emergencyLightIntensity: 4.5,
     emergencyLightDistance: 8,
   },
+  // Settings > Video > "Dust and flickering lights": off hides the dust motes and sets the flickering / emergency point
+  // lights to zero (they stay in the scene, so nothing recompiles when it's switched). Read every tick.
+  ambient: { enabled: true },
   dust: {
     count: 140,
     size: 0.075,

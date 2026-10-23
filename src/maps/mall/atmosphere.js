@@ -101,12 +101,14 @@ export function buildMallAtmosphere(kit, layout, { service, ceilingHole }) {
   box('exit_beacon_service', cx, 2.75, -13.93, 0.48, 0.18, 0.07, exitGlow);
   box('exit_beacon_upper', -10.25, 6.28, 3.22, 0.44, 0.18, 0.07, exitGlow);
 
+  const emergencyLights = []; // (dimmed to 0 by Settings > Video > Dust and flickering lights)
   if (atmosphere.flicker) {
     const { emergencyLightColor, emergencyLightIntensity, emergencyLightDistance } = atmosphere.flicker;
     for (const [ex, ey, ez] of [[cx, 2.8, -12.8], [-10.25, 6.15, 2.0]]) {
       const emergencyLight = new THREE.PointLight(emergencyLightColor, emergencyLightIntensity, emergencyLightDistance, 2);
       emergencyLight.position.set(ex, ey, ez);
       group.add(emergencyLight);
+      emergencyLights.push(emergencyLight);
     }
   }
 
@@ -329,7 +331,13 @@ export function buildMallAtmosphere(kit, layout, { service, ceilingHole }) {
     hanging.rotation.z = reverse.rotation.z = Math.sin(time * Math.PI * 2 / atmosphere.motion.signPeriod) * atmosphere.motion.signRadians;
     const tubeLevel = ballastWave(time);
     tubeMaterial.emissiveIntensity = tubeLevel;
-    hallwayFlickerLight.intensity = flickerCfg.hallwayLightIntensity * tubeLevel;
+    // The ambient extras can be switched off (weak computers): lights to zero (kept in the scene, so no shader
+    // recompile), the dust motes hidden and not animated.
+    const ambient = atmosphere.ambient?.enabled !== false;
+    hallwayFlickerLight.intensity = ambient ? flickerCfg.hallwayLightIntensity * tubeLevel : 0;
+    for (const light of emergencyLights) light.intensity = ambient ? atmosphere.flicker.emergencyLightIntensity : 0;
+    dustPoints.visible = ambient;
+    if (!ambient) return;
 
     const w = (time * Math.PI * 2) / dustCfg.period;
     for (let i = 0; i < dustCfg.count; i++) {

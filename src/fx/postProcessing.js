@@ -7,6 +7,10 @@
 //   3. Viewmodel RenderPass (depth cleared on the active target so the gun never clips walls)
 //   4. Cinema lens pass (subtle edge chromatic aberration + vignette, boosted slightly during sprint/slide)
 //   5. OutputPass (ACES Filmic Tone Mapping + sRGB conversion)
+// QUALITY (setQuality, Settings > Video > Visual effects):
+//   high  everything above (the default)
+//   low   no bloom, no lens pass, no MSAA: world + gun + tone mapping only
+//   off   no composer at all: the world and the gun are drawn straight to the screen (the cheapest path)
 // Automatically tracks renderer.getPixelRatio() and canvas dimensions so Video settings
 // ("Render resolution" slider and Low/Medium/High presets) work seamlessly.
 // =============================================================================
@@ -126,6 +130,23 @@ export function createPostProcessing({ renderer, scene, camera, viewmodel }) {
   const outputPass = new OutputPass();
   composer.addPass(outputPass);
 
+  // High / low / off (see the header). Switching only flips flags and the MSAA sample count, so it is safe mid-run.
+  let quality = 'high';
+  const highSamples = renderTarget.samples;
+  function setQuality(next) {
+    if (!['high', 'low', 'off'].includes(next)) throw new Error(`postProcessing: unknown quality "${next}"`);
+    quality = next;
+    bloomPass.enabled = next === 'high';
+    lensPass.enabled = next === 'high';
+    const samples = next === 'high' ? highSamples : 0;
+    for (const target of [composer.renderTarget1, composer.renderTarget2]) {
+      if (target.samples !== samples) {
+        target.samples = samples;
+        target.dispose(); // (re-created at the new sample count on its next use)
+      }
+    }
+  }
+
   function syncSize() {
     const width = Math.max(1, window.innerWidth);
     const height = Math.max(1, window.innerHeight);
@@ -143,7 +164,22 @@ export function createPostProcessing({ renderer, scene, camera, viewmodel }) {
     composer,
     bloomPass,
     lensPass,
+    setQuality,
+    get quality() {
+      return quality;
+    },
     render({ showViewmodel = true, speedAmount = 0 } = {}) {
+      if (quality === 'off') {
+        // No composer: the world, then (depth cleared so the gun never clips walls) the gun, straight to the screen.
+        renderer.setRenderTarget(null);
+        renderer.clear();
+        renderer.render(scene, camera);
+        if (showViewmodel) {
+          renderer.clearDepth();
+          renderer.render(viewmodel.scene, viewmodel.camera);
+        }
+        return;
+      }
       syncSize();
       viewmodelPass.enabled = showViewmodel;
       lensPass.uniforms.aberration.value = cfg.aberrationBase + cfg.aberrationSprintBoost * speedAmount;
