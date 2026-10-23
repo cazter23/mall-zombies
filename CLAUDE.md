@@ -511,7 +511,7 @@ src/
                         side, inset) (place props/spawns/doors; normal points into the corridor), branchStart(run, at, side)
                         (start a branch corridor through a side opening). left/right = as walked (right = (-dz, dx)).
                         THROWS if the corridor crosses itself or two runs are so close a wall lands in another's walkway
-    door.js             createDoor(): buyable barrier (price, legacy opensZone or opensZones array) wrapping a shutter;
+    door.js             createDoor(): buyable barrier (price, legacy opensZone or opensZones array, `verb` in the prompt: 'open', or 'repair' for the escalator) wrapping a shutter or any barrier { open, close, update, collider };
                         open/reset/toggle. A shortcut opens both zones. Every door exposes canonical opensZones;
                         a zone stays open while any holder is open (tracked per zone), reset seals all doors/zones.
                         toggleDoors(doors): debug O synchronizes the whole group, preserving bought doors on open-all
@@ -637,7 +637,7 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
   across from the start door, under a FOOD COURT sign, framed by two planters), Mega Mart (750, east end z 0..4,
   under a MEGA MART sign), Service Corridor (1250, west wall z 0.5..3.5, under a "SERVICE CORRIDOR · STAFF ONLY"
   sign; the escalator's high end runs overhead just short of it). 3 boarded vents (zombie spawns).
-  Escalator (SEALED): west half, z 1..3, bottom end at x -4 facing the hub, rising west at 30 deg through a hole in
+  Escalator (SEALED until repaired for 2000, see Current state): west half, z 1..3, bottom end at x -4 facing the hub, rising west at 30 deg through a hole in
   the ceiling (x ~-16.1..-11.9) to level 2 (y 6.3, the top of the ceiling slab), where a walled, boarded-up landing
   ("LEVEL 2 · OPENING SOON") is visible. Rope barrier + OUT OF ORDER board at the bottom; every collider you could
   reach from the floor is taller than a jump. Its low end (x -4..-10.4) is solid to the floor; under its high end
@@ -727,6 +727,14 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+Second floor, step 3 of 6: the escalator repair is a purchase. Door `escalatorRepair` (economy.doors.escalatorRepair 2000, ordinary
+pricing / Flash Sale category 'door') with verb 'repair': prompt "Hold F to repair Escalator 2000" at the foot (door.position = props.escalator's
+`foot`). Its barrier is an adapter in mall.js (`escalatorGate`): open() removes the escalator's barrier collider (+ markCollidersChanged, so
+the nav grid rebuilds and zombies can route up) and hides the rope/posts/OUT OF ORDER board (props.escalator returns them as `barrierParts`);
+close() (Play again) puts it all back. It opens the new zone `upstairs` ('Level 2', closed at the start, nothing spawns there yet).
+The map has 7 doors now; debug O (open all doors) includes the repair. Verified in tests (real F hold: too poor / enough, Play again
+reseals, the mall door ladder) and in the browser (prompt, 2000 spent, rope and board gone). Level 2 itself is still just the closed-off landing.
+
 Second floor, step 2 of 6: the escalator is walkable. props.escalator now builds a ramp surface (plate, 30-degree slope, top plate),
 tall side walls, blocks under the lane (kept 0.4 m below the surface at their start: a rider's body reaches ahead of the feet) and
 still the barrier across its foot; it returns { hole, topLanding, barrier, ramp, link, upperY } and the map exposes
