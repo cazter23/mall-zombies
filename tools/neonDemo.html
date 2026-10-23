@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Neon Sample Wall</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #05030a; overflow: hidden; font: 13px system-ui, sans-serif; color: #ddd; }
+    #hud { position: fixed; left: 10px; top: 8px; background: rgba(0,0,0,.55); padding: 6px 10px; border-radius: 6px; }
+    #hud label { margin-right: 12px; }
+  </style>
+</head>
+<body>
+  <div id="hud">
+    <label><input type="checkbox" id="halo" checked /> halos</label>
+    <label><input type="checkbox" id="flicker" checked /> flicker</label>
+    <label><input type="checkbox" id="bloom" checked /> bloom (game's High settings)</label>
+    <span id="stats"></span>
+  </div>
+  <script type="module" src="./neonDemo.js"></script>
+</body>
+</html>
