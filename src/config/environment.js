@@ -35,6 +35,20 @@ export const atmosphere = {
     driftXZ: 0.12,
     period: 11,
   },
+  postProcessing: {
+    exposure: 1.06,
+    bloomStrength: 0.25,
+    bloomRadius: 0.35,
+    bloomThreshold: 0.9,
+    aberrationBase: 0.0008,
+    aberrationSprintBoost: 0.0018,
+    vignetteStrength: 0.22,
+    vignetteSoftness: 0.55,
+    sprintFovDegrees: 5.5,
+    // Anti-aliasing samples on the post-processing buffers (the game's only AA). 4 = smoothest edges,
+    // 2 = most of the smoothing for much less GPU bandwidth, 0 = fastest (visible stair-stepping on edges).
+    msaaSamples: 2,
+  },
   contact: { maxZombies: 64, opacity: 0.28, radius: 0.48, depthRatio: 0.825, lift: 0.007, fadeHeight: 1.3,
     floorTolerance: 0.08,
     fixtureOpacity: 0.22, fixturePadding: 0.16 },
@@ -45,6 +59,7 @@ export const atmosphere = {
     voices: {
       ventilation: { noise: true, frequency: 180, gain: 0.045 },
       refrigerator: { noise: false, frequency: 60, gain: 0.035 },
+      fluorescentBuzz: { noise: false, wave: 'sawtooth', frequency: 120, gain: 0.038 },
     },
   },
 };

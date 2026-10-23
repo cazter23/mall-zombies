@@ -69,7 +69,7 @@ const EFFECTS = {
   adsSpread: (v, g) => [mul('spread.adsMultiplier', v), ...(g.pellets ? [mul('pellets.adsMultiplier', v)] : [])],
   adsTime: (v) => [mul('ads.seconds', v)],
   zoom: (v) => [mul('ads.fovMultiplier', v)],
-  recoil: (v) => ['recoil.pitchDegrees', 'recoil.yawDegrees', 'recoil.model.back', 'recoil.model.pitchDegrees'].map((s) => mul(s, v)),
+  recoil: (v) => ['recoil.pitchDegrees', 'recoil.yawDegrees', 'recoil.model.back', 'recoil.model.up', 'recoil.model.pitchDegrees'].map((s) => mul(s, v)),
 };
 
 /** The modifiers for a set of effects on this gun. `onMissing(effect)` decides what an inapplicable effect does. */

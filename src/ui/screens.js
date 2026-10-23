@@ -28,6 +28,87 @@ function el(tag, className, html) {
   return node;
 }
 
+export function evaluatePerformance(r = {}) {
+  const round = r.round ?? 1;
+  const timeAlive = r.timeAlive ?? 0;
+  const kills = r.kills ?? 0;
+  const headshotKills = r.headshotKills ?? 0;
+  const meleeKills = r.meleeKills ?? 0;
+  const accuracy = r.accuracy ?? 0;
+  const pointsRemaining = r.pointsRemaining ?? 0;
+  const shotsFired = r.shotsFired ?? 0;
+
+  if (round >= 8 || timeAlive >= 480) {
+    return {
+      title: 'UNAUTHORIZED OVERTIME',
+      rating: 'CODE: OT-99 // VIOLATION',
+      comment: 'Shift exceeded scheduled operational hours. Overtime wages denied per corporate policy.',
+    };
+  }
+
+  if (round >= 6 && kills >= 45 && accuracy >= 0.5) {
+    return {
+      title: 'EMPLOYEE OF THE MONTH',
+      rating: 'RATING: EXCEEDS EXPECTATIONS (A+)',
+      comment: 'Exemplary floor coverage. Designated parking spot awarded posthumously.',
+    };
+  }
+
+  if (meleeKills >= 8 || (kills >= 6 && meleeKills / Math.max(1, kills) >= 0.35)) {
+    return {
+      title: 'BOX CUTTER ENTHUSIAST',
+      rating: 'RATING: LOSS PREVENTION HERO',
+      comment: 'Severe stock clearance using manual utility blade. Janitorial staff notified.',
+    };
+  }
+
+  if (kills >= 8 && accuracy >= 0.55 && (headshotKills / Math.max(1, kills)) >= 0.6) {
+    return {
+      title: 'MARKDOWN SPECIALIST',
+      rating: 'RATING: PRECISION TAGGER',
+      comment: 'Exceptional staple economy. Corporate commends surgical head-level markdowns.',
+    };
+  }
+
+  if (pointsRemaining >= 2500) {
+    return {
+      title: 'WINDOW SHOPPER',
+      rating: 'CODE: UNCLAIMED STIPEND',
+      comment: 'Retained excessive store credit without reinvesting in survival. Budget revoked.',
+    };
+  }
+
+  if (shotsFired >= 40 && accuracy < 0.25) {
+    return {
+      title: 'CANVASSING SPECIALIST',
+      rating: 'CODE: EXCESS SHRINKAGE',
+      comment: 'Significant drywall collateral reported. Restocking fees deducted from final check.',
+    };
+  }
+
+  if (shotsFired >= 250) {
+    return {
+      title: 'BULK CONSUMER',
+      rating: 'CODE: SUPPLY DEPLETION',
+      comment: 'Exhausted entire store ammunition requisition. Restock warehouse backlog pending.',
+    };
+  }
+
+  if (round <= 2 && timeAlive < 90) {
+    return {
+      title: 'FAILED PROBATION',
+      rating: 'STATUS: IMMEDIATE TERMINATION',
+      comment: 'Failed 90-second orientation period. Vest and nametag must be returned to HR.',
+    };
+  }
+
+  return {
+    title: 'GENERAL CASUALTY',
+    rating: 'STATUS: SHIFT CONCLUDED',
+    comment: 'Standard associate casualty. Replacement cashier position posted to regional bulletin.',
+  };
+}
+
 export function createScreens() {
   const handlers = {};
   const emit = (action, pad = false) => handlers[action]?.({ pad });
@@ -86,6 +167,13 @@ export function createScreens() {
         <div class="receipt-rule"></div>
         <div class="receipt-total"><span>Points earned</span><span class="receipt-total-value"></span></div>
         <div class="receipt-rule"></div>
+        <div class="receipt-review">
+          <div class="receipt-eval-header">*** PERFORMANCE REVIEW ***</div>
+          <div class="receipt-eval-title"></div>
+          <div class="receipt-eval-rating"></div>
+          <div class="receipt-eval-comment"></div>
+        </div>
+        <div class="receipt-rule"></div>
         <div class="receipt-barcode"></div>
         <div class="receipt-thanks">Thank you for shopping with us<br />All sales final · No refunds · No respawns</div>
         <div class="receipt-stamp">Clocked out</div>
@@ -101,6 +189,9 @@ export function createScreens() {
   const receiptLines = results.querySelector('.receipt-lines');
   const receiptTotal = results.querySelector('.receipt-total-value');
   const barcode = results.querySelector('.receipt-barcode');
+  const evalTitle = results.querySelector('.receipt-eval-title');
+  const evalRating = results.querySelector('.receipt-eval-rating');
+  const evalComment = results.querySelector('.receipt-eval-comment');
 
   // --- How to play ---------------------------------------------------------------------
   const pay = economy.payouts;
@@ -197,6 +288,10 @@ export function createScreens() {
       .map(([label, value]) => `<div class="receipt-line"><span>${label.replace(/^ {2}/, '&nbsp;&nbsp;')}</span><i></i><span>${value}</span></div>`)
       .join('');
     receiptTotal.textContent = r.pointsEarned.toLocaleString('en-US');
+    const review = evaluatePerformance(r);
+    evalTitle.textContent = review.title;
+    evalRating.textContent = review.rating;
+    evalComment.textContent = review.comment;
     // A barcode: bars of random widths (different every receipt).
     let bars = '';
     for (let i = 0; i < 46; i++) bars += `<span style="width:${1 + Math.floor(Math.random() * 3)}px;margin-right:${1 + Math.floor(Math.random() * 2)}px"></span>`;

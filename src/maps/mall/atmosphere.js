@@ -12,6 +12,7 @@ export function buildMallAtmosphere(kit, layout, { service, ceilingHole }) {
   const trim = kit.mat(0xaaa99e), dark = kit.mat(0x333f42), teal = kit.mat(0x237d83);
   const cream = kit.mat(0xf1dfb9), paper = kit.mat(0xf3e7cd, atmosphere.surfaces.cardboard);
   const red = kit.mat(0xb95448), ochre = kit.mat(0xb18c51, atmosphere.surfaces.cardboard);
+  const yellow = kit.mat(0xffd23f, atmosphere.surfaces.plastic);
   const exitGlow = kit.mat(0xff4a3d, { emissive: 0xff2b1f, emissiveIntensity: 1.45, roughness: 0.25 });
   function box(name, x, y, z, w, h, d, material, rotation = [0, 0, 0]) {
     const geometry = new THREE.BoxGeometry(w, h, d);
@@ -55,6 +56,35 @@ export function buildMallAtmosphere(kit, layout, { service, ceilingHole }) {
       box('sprinkler_head', x + 1, y - 0.08, z + 0.7, 0.065, 0.05, 0.065, metal);
     }
   }
+
+  // Exposed overhead HVAC trunk ductwork, flange joints, and PA speaker horns in the high ceilings.
+  box('hall_hvac_trunk', 6.5, 5.72, 5.35, 24, 0.28, 0.42, metal);
+  for (let x = -4; x <= 16; x += 4) {
+    box('hvac_flange', x, 5.72, 5.35, 0.06, 0.32, 0.46, dark);
+    box('hvac_strap', x, 5.88, 5.35, 0.03, 0.22, 0.46, dark);
+  }
+  box('food_exhaust_duct', 0, 5.68, -13.55, 17, 0.34, 0.48, metal);
+  for (let x = -7; x <= 7; x += 3.5) box('food_duct_flange', x, 5.68, -13.55, 0.06, 0.38, 0.52, dark);
+  for (const x of [-5.75, 0, 5.75]) box('stall_exhaust_riser', x, 5.15, -13.55, 0.36, 0.75, 0.36, metal);
+  for (const [sx, sy, sz, ry] of [[-5.5, 4.85, 5.88, 0], [12.5, 4.85, 5.88, 0], [-12.6, 4.6, -8.3, 0.4], [12.6, 4.6, -8.3, -0.4]]) {
+    box('pa_speaker_mount', sx, sy, sz, 0.08, 0.14, 0.12, dark, [0, ry, 0]);
+    box('pa_speaker_horn', sx, sy - 0.02, sz + ( sz > 0 ? -0.14 : 0.14), 0.22, 0.18, 0.2, cream, [0.18, ry, 0]);
+  }
+
+  // Hanging overhead promotional cloth banners in the Main Concourse and Food Court (well above routes).
+  function promoBanner(bx, bz, primaryMat, accentMat) {
+    for (const dx of [-0.85, 0.85]) box('banner_wire', bx + dx, 5.55, bz, 0.02, 0.88, 0.02, metal);
+    box('banner_top_rod', bx, 5.12, bz, 1.95, 0.035, 0.035, metal);
+    box('banner_bottom_rod', bx, 4.18, bz, 1.95, 0.03, 0.03, metal);
+    box('banner_cloth', bx, 4.65, bz, 1.82, 0.92, 0.022, primaryMat);
+    box('banner_header_stripe', bx, 4.98, bz, 1.84, 0.14, 0.028, accentMat);
+    box('banner_footer_stripe', bx, 4.32, bz, 1.84, 0.12, 0.028, yellow);
+    box('banner_center_emblem', bx, 4.65, bz, 1.25, 0.22, 0.03, cream);
+  }
+  promoBanner(-1.8, 2.0, red, cream);
+  promoBanner(11.5, 2.0, teal, cream);
+  promoBanner(-4.5, -5.5, teal, red);
+  promoBanner(4.5, -5.5, red, teal);
 
   // One visual access panel and exposed back-of-house cable trays, above jump height.
   const cx = service.points[1].x, scY = layout.serviceCorridor.height;
@@ -117,6 +147,66 @@ export function buildMallAtmosphere(kit, layout, { service, ceilingHole }) {
   box('carton_interior', 27.5, 0.455, -8.35, 0.47, 0.012, 0.4, dark);
   for (const side of [-1, 1]) box('carton_flap', 27.5 + side * 0.33, 0.48, -8.35,
     0.22, 0.016, 0.49, ochre, [0, 0, side * 0.35]);
+
+  // Yellow "CAUTION: WET FLOOR" A-frame cones & janitor mop bucket near spills and leaks.
+  function wetFloorCone(wx, wz, yaw = 0, fallen = false) {
+    if (fallen) {
+      box('wet_cone_fallen_a', wx, 0.045, wz, 0.28, 0.022, 0.56, yellow, [0.06, yaw, 0.08]);
+      box('wet_cone_fallen_b', wx, 0.022, wz + 0.04, 0.28, 0.022, 0.56, yellow, [-0.04, yaw, 0]);
+      box('wet_cone_badge', wx, 0.06, wz, 0.16, 0.01, 0.22, red, [0.06, yaw, 0.08]);
+      return;
+    }
+    const s = Math.sin(yaw), c = Math.cos(yaw);
+    for (const side of [-1, 1]) {
+      const ox = s * side * 0.09, oz = c * side * 0.09;
+      box('wet_cone_board', wx + ox, 0.29, wz + oz, 0.28, 0.58, 0.022, yellow, [side * 0.19, yaw, 0]);
+      box('wet_cone_stripe', wx + ox * 1.12, 0.31, wz + oz * 1.12, 0.19, 0.18, 0.012, red, [side * 0.19, yaw, 0]);
+      box('wet_cone_icon', wx + ox * 1.18, 0.31, wz + oz * 1.18, 0.04, 0.11, 0.012, dark, [side * 0.19, yaw, 0.25]);
+    }
+    box('wet_cone_top', wx, 0.57, wz, 0.24, 0.03, 0.05, yellow, [0, yaw, 0]);
+  }
+  wetFloorCone(cx + 0.72, -6.55, 0.35);
+  wetFloorCone(-8.65, -6.15, -0.42);
+  wetFloorCone(-3.15, -1.15, 0.28, true); // overturned wet floor cone beside the Food Court doorway planter
+
+  // Janitor mop bucket & leaning mop at the Service Corridor ceiling leak.
+  const bx = cx + 0.88, bz = -7.85;
+  box('mop_bucket', bx, 0.19, bz, 0.34, 0.3, 0.42, yellow, [0, 0.18, 0]);
+  box('mop_wringer', bx - 0.02, 0.38, bz - 0.08, 0.26, 0.18, 0.22, yellow, [0, 0.18, 0]);
+  box('mop_wringer_lever', bx - 0.16, 0.48, bz - 0.08, 0.025, 0.26, 0.025, metal, [0.25, 0, -0.15]);
+  for (const [dx, dz] of [[-0.14, -0.16], [0.14, -0.16], [-0.14, 0.16], [0.14, 0.16]]) {
+    box('mop_bucket_wheel', bx + dx, 0.025, bz + dz, 0.045, 0.045, 0.045, dark);
+  }
+  box('mop_handle', bx + 0.04, 0.68, bz - 0.04, 0.028, 1.25, 0.028, ochre, [-0.12, 0, -0.16]);
+  box('mop_head', bx - 0.04, 0.12, bz + 0.02, 0.22, 0.12, 0.18, cream, [0, 0.3, 0]);
+
+  // Tipped chrome shopping cart & spilled grocery boxes in the north-east hallway corner (outside Mega Mart).
+  const cartX = 18.85, cartZ = 5.18;
+  box('tipped_cart_basket', cartX, 0.24, cartZ, 0.82, 0.44, 0.52, metal, [0.12, -0.28, 1.38]);
+  box('tipped_cart_base', cartX + 0.22, 0.18, cartZ + 0.12, 0.78, 0.04, 0.46, metal, [0, -0.28, 0.15]);
+  box('tipped_cart_handle', cartX + 0.48, 0.28, cartZ + 0.16, 0.04, 0.48, 0.04, red, [0.28, 0, 1.45]);
+  for (const [dx, dy, dz] of [[-0.22, 0.12, 0.28], [-0.22, 0.38, 0.22], [0.32, 0.12, 0.18], [0.32, 0.38, 0.12]]) {
+    box('tipped_cart_wheel', cartX + dx, dy, cartZ + dz, 0.08, 0.08, 0.04, dark, [0, 0.4, 0]);
+  }
+  for (const [gx, gz, gw, gh, gd, gmat, rotY] of [
+    [18.12, 4.95, 0.24, 0.16, 0.18, red, 0.45],
+    [18.38, 4.72, 0.2, 0.12, 0.22, yellow, -0.35],
+    [17.92, 5.28, 0.22, 0.18, 0.16, teal, 0.7],
+    [18.45, 5.42, 0.28, 0.14, 0.2, ochre, -0.18],
+  ]) {
+    box('spilled_cart_item', gx, gh / 2, gz, gw, gh, gd, gmat, [0, rotY, 0]);
+  }
+
+  // Scattered trash, crumpled bags, receipts and soda cups near bins and benches.
+  for (const [lx, lz, yaw] of [[-10.75, -8.05, 0.5], [-11.55, -8.55, -0.4], [10.78, -8.1, -0.6], [11.52, -8.5, 0.35], [-6.2, -4.15, 0.25], [6.4, -4.15, -0.3]]) {
+    box('litter_bag', lx, 0.065, lz, 0.15, 0.13, 0.12, ochre, [0.15, yaw, -0.2]);
+    box('litter_receipt', lx + 0.18, 0.008, lz + 0.08, 0.09, 0.006, 0.21, paper, [0, yaw + 0.7, 0]);
+  }
+  for (const [cx0, cz0, yaw] of [[-7.7, -4.25, 0.8], [7.65, -4.2, -0.55], [-10.85, -8.52, 0.2]]) {
+    box('dropped_cup', cx0, 0.055, cz0, 0.09, 0.09, 0.18, paper, [0.08, yaw, 0]);
+    box('dropped_cup_stripe', cx0, 0.058, cz0, 0.094, 0.094, 0.06, red, [0.08, yaw, 0]);
+    box('dropped_straw', cx0 + 0.06, 0.02, cz0 + 0.1, 0.015, 0.015, 0.14, red, [0, yaw + 0.3, 0]);
+  }
 
   // A single shared texture/material family for localized leaks, dust and contact shadows.
   const soft = makeSoftFootprint();
@@ -215,11 +305,18 @@ export function buildMallAtmosphere(kit, layout, { service, ceilingHole }) {
   group.add(dustPoints);
 
   const emitters = [
+    { id: 'start_music', kind: 'music', zone: 'startRoom', position: [0, 3.5, 11], range: 14 },
+    { id: 'food_music', kind: 'music', zone: 'foodCourt', position: [0, 5.5, -8], range: 24 },
+    { id: 'mart_music', kind: 'music', zone: 'megaMart', position: [27.5, 4.5, -10], range: 22 },
+    { id: 'service_music', kind: 'music', zone: 'serviceCorridor', position: [cx, 3, -7], range: 16 },
     { id: 'start_vent', kind: 'ventilation', zone: 'startRoom', position: [-3.4, 3, 14.6], range: 8 },
     { id: 'hall_music', kind: 'music', zone: 'hallway', position: [2, 4.5, 2], range: 23 },
     { id: 'food_fridge', kind: 'refrigerator', zone: 'foodCourt', position: [6.5, 2, -13.8], range: 12 },
     { id: 'mart_hvac', kind: 'ventilation', zone: 'megaMart', position: [27.5, 4, -14], range: 16 },
     { id: 'service_hvac', kind: 'ventilation', zone: 'serviceCorridor', position: [cx, 3, -7], range: 12 },
+    { id: 'hall_buzz', kind: 'fluorescentBuzz', zone: 'hallway', position: [0, 5.5, 2], range: 10 },
+    { id: 'start_buzz', kind: 'fluorescentBuzz', zone: 'startRoom', position: [0, 3.8, 13.5], range: 8 },
+    { id: 'mart_buzz', kind: 'fluorescentBuzz', zone: 'megaMart', position: [27, 4.5, -21], range: 10 },
   ];
   let time = 0;
   function ballastWave(t) {

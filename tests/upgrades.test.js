@@ -48,7 +48,7 @@ test('every tier works on every gun: whole magazines (whole bursts), the cannon 
     }
   }
   assert.equal(at(stapleGun, 'deluxe').magazineSize, 14); // 12 x 1.15 = 13.8
-  assert.equal(at(foamDartBlaster, 'platinum').magazineSize, 30); // 24 x 1.3 = 31.2 -> 10 bursts
+  assert.equal(at(foamDartBlaster, 'platinum').magazineSize, 39); // 30 x 1.3 -> 13 whole bursts
   const cannon = at(confettiCannon, 'platinum');
   assert.ok(Math.abs(cannon.shellReload.shellSeconds - confettiCannon.shellReload.shellSeconds * 0.8) < 1e-9);
   assert.ok(Math.abs(at(nailGun, 'premium').reloadTime - nailGun.reloadTime * 0.9) < 1e-9);
@@ -121,7 +121,9 @@ test('roles hold at EVERY tier when guns are compared at the same tier (near-tie
     const others = (id) => guns.filter((b) => b.id !== id).map((b) => t[b.id]);
     const msg = (what) => `${tierId}: ${what}`;
     for (const d of others('confettiCannon')) assert.ok(dps(t.confettiCannon, 2) >= 1.4 * dps(d, 2), msg(`cannon vs ${d.name} at 2 m`));
-    for (const d of [t.stapleGun, t.nailGun, t.foamDartBlaster]) assert.ok(TIE * dps(t.priceGun, 5) > dps(d, 5), msg(`price vs ${d.name} at 5 m`));
+    assert.ok(dps(t.priceGun, 5) > dps(t.stapleGun, 5), msg('price beats the starter at 5 m'));
+    assert.ok(dps(t.priceGun, 5) >= 0.95 * dps(t.nailGun, 5), msg('price stays within 5% of Nail Gun sustained damage at 5 m'));
+    assert.ok(dps(t.foamDartBlaster, 5) < 1.1 * dps(t.priceGun, 5), msg('premium Foam stays within 10% of the cheap close-range sprayer'));
     for (const d of [t.stapleGun, t.priceGun, t.nailGun]) assert.ok(TIE * dps(t.foamDartBlaster, 15) > dps(d, 15), msg(`foam vs ${d.name} at 15 m`));
     for (const d of others('nailGun')) assert.ok(dps(t.nailGun, 30) > 1.15 * dps(d, 30), msg(`nail vs ${d.name} at 30 m`));
     for (const d of others('stapleGun')) assert.ok(dps(t.stapleGun, 5) < dps(d, 5), msg(`staple vs ${d.name} at 5 m`));

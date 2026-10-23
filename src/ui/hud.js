@@ -258,7 +258,7 @@ export function createHud() {
       if (headshot) hitMarker.classList.add('head');
       if (killed) hitMarker.classList.add('kill');
       clearTimeout(hitMarkerTimeout);
-      hitMarkerTimeout = setTimeout(() => hitMarker.classList.remove('show'), feel.effects.hitMarkerSeconds * 1000);
+      hitMarkerTimeout = setTimeout(() => { hitMarker.className = 'hitmarker'; }, feel.effects.hitMarkerSeconds * 1000);
     },
 
     // The held gun's Extended Warranty tier under its name ({ id, name, color } from config/upgrades.js),

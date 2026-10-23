@@ -502,6 +502,9 @@ export function createMallProps(kit) {
     place(from + 0.3, counterHeight, to - 0.3, counterHeight + 0.35, d(depth - 0.32), d(depth - 0.29),
       mat(COLORS.balustradeGlass, { transparent: true, opacity: 0.3, roughness: 0.1, depthWrite: false }), flat); // sneeze guard
     place(to - 0.75, counterHeight, to - 0.35, counterHeight + 0.26, d(depth - 0.55), d(depth - 0.35), mat(COLORS.register), flat);
+    place(to - 1.02, counterHeight, to - 0.84, counterHeight + 0.22, d(depth - 0.48), d(depth - 0.32), mat(COLORS.stainless), flat); // napkin dispenser
+    place(from + 0.2, counterHeight, from + 0.34, counterHeight + 0.32, d(depth - 0.5), d(depth - 0.36), mat(colors.main), flat); // stacked soda cups
+    place(from + 0.22, 2.15, to - 0.22, 2.48, d(0.1), d(0.72), mat(COLORS.stainless), flat); // stainless kitchen exhaust hood
     // Food on the counter (a few trays)
     const rand = seededRandom(Math.floor(Math.abs(from * 31 + to * 7)) + 1);
     for (let u = from + 0.5; u < to - 1.0; u += 0.55) {
@@ -721,12 +724,24 @@ export function createMallProps(kit) {
     // Counter top with a ledge to lean on, and glass above a 35cm service slot.
     place(u0 - 0.05, 1.05, u1 + 0.05, 1.11, d(depth - 0.5), d(depth + ledge), mat(COLORS.deskTop), o);
     place(u0 + 0.3, 1.4, u1 - 0.3, 2.3, d(depth - 0.06), d(depth - 0.04), mat(COLORS.caseGlass, { transparent: true, opacity: 0.25, roughness: 0.1 }), o);
-    // Inside: a cream back wall, a desk with a computer, filing cabinets, a wall clock, the clerk.
+    // Counter accessories: classic service call bell and warranty pamphlet holder on the customer ledge.
+    place(center + 0.82, 1.11, center + 0.94, 1.13, d(depth + 0.06), d(depth + 0.18), mat(COLORS.register), o); // bell base
+    place(center + 0.835, 1.13, center + 0.925, 1.185, d(depth + 0.075), d(depth + 0.165), mat(COLORS.deskBell), o); // bell dome
+    place(center + 0.868, 1.185, center + 0.892, 1.202, d(depth + 0.108), d(depth + 0.132), mat(COLORS.metal), o); // bell button
+    place(center - 1.14, 1.11, center - 0.94, 1.19, d(depth + 0.04), d(depth + 0.16), mat(COLORS.register), o); // pamphlet holder
+    place(center - 1.12, 1.19, center - 0.96, 1.27, d(depth + 0.055), d(depth + 0.12), mat(0xf1faee), o); // pamphlets
+    // Inside: a cream back wall, a desk with a computer, filing cabinets, a wall clock, schedule board, the clerk.
     place(u0 + 0.1, 0, u1 - 0.1, 2.9, d(0), d(0.03), mat(0xd9d2b8), o);
     place(u0 + 0.1, 0, u1 - 1.3, 0.8, d(0.1), d(0.6), mat(COLORS.woodDark), o); // back desk (ends where the cabinets start)
     place(center - 1.35, 0.8, center - 0.75, 0.84, d(0.15), d(0.5), mat(COLORS.register), o); // keyboard-ish
     place(center - 1.25, 0.84, center - 0.85, 1.12, d(0.3), d(0.34), mat(COLORS.register), o); // monitor
     place(center - 1.22, 0.87, center - 0.88, 1.09, d(0.34), d(0.35), new THREE.MeshBasicMaterial({ color: COLORS.registerScreen }), o);
+    place(center - 0.58, 0.8, center - 0.3, 0.84, d(0.2), d(0.46), mat(COLORS.metal), o); // paper inbox tray
+    place(center - 0.55, 0.84, center - 0.33, 0.87, d(0.23), d(0.43), mat(0xf1faee), o); // stacked forms
+    place(center - 0.2, 0.8, center - 0.11, 0.91, d(0.32), d(0.41), mat(0xd62839), o); // coffee mug
+    place(center - 0.68, 1.58, center + 0.18, 2.22, d(0.03), d(0.055), mat(COLORS.plank), o); // employee schedule corkboard
+    place(center - 0.58, 1.72, center - 0.22, 2.1, d(0.055), d(0.068), mat(0xf1faee), o); // pinned schedule sheet
+    place(center - 0.1, 1.84, center + 0.08, 2.02, d(0.055), d(0.068), mat(COLORS.safetyYellow), o); // sticky note
     for (const k of [0, 1]) {
       place(u1 - 0.7 - k * 0.55, 0, u1 - 0.2 - k * 0.55, 1.35, d(0.1), d(0.6), mat(0x8a8f96), o); // filing cabinets
       for (const y of [0.35, 0.8, 1.2]) place(u1 - 0.65 - k * 0.55, y, u1 - 0.25 - k * 0.55, y + 0.03, d(0.6), d(0.62), mat(0x4d5259), o); // drawer handles

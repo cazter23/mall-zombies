@@ -59,6 +59,7 @@ export function createShutter({ name, minX, maxX, minZ, maxZ, height, material, 
     close() {
       if (state === 'open' || state === 'opening') {
         state = 'closing';
+        mesh.visible = true;
         addCollider(); // block immediately so nobody slips under a closing door
       }
     },
@@ -78,6 +79,9 @@ export function createShutter({ name, minX, maxX, minZ, maxZ, height, material, 
         if (raised <= 0) state = 'closed';
       }
       mesh.position.y = height / 2 + raised;
+      // A raised three-metre slab would occupy the lintel itself. At shallow angles its faces can
+      // leak through the wall and flicker, so the fully rolled-up shutter lives inside its housing.
+      mesh.visible = state !== 'open';
     },
   };
 }

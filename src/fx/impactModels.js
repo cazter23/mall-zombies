@@ -9,14 +9,29 @@ export function buildImpactModel(kind, variant) {
     const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 160;
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, 256, 160);
-    ctx.fillStyle = '#56504a'; ctx.fillRect(12, 20, 232, 126); // scuffed backing
-    ctx.fillStyle = ['#ffe16a', '#f3d9b1', '#ff9e9e'][variant]; ctx.fillRect(20, 12, 216, 128);
-    ctx.fillStyle = '#933c38'; ctx.fillRect(25, 17, 206, 28);
-    ctx.fillStyle = '#f9edcb'; ctx.font = 'bold 20px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('MEGA MARKDOWN', 128, 37);
-    ctx.fillStyle = '#352d32'; ctx.font = 'bold 30px sans-serif';
-    ctx.fillText(['REDUCED', 'FINAL SALE', '$0.01'][variant], 128, 88);
-    for (let i = 0; i < 23; i++) ctx.fillRect(48 + i * 7, 104, i % 3 ? 2 : 4, 20);
+    // Drop shadow & scuffed adhesive backing
+    ctx.fillStyle = 'rgba(20, 18, 22, 0.55)'; ctx.fillRect(14, 18, 232, 130);
+    ctx.fillStyle = '#56504a'; ctx.fillRect(12, 16, 230, 126);
+    // Fluorescent retail label stock
+    ctx.fillStyle = ['#ffe44d', '#ffd28a', '#ff858d'][variant]; ctx.fillRect(18, 10, 220, 132);
+    // Subtle paper crease sheen
+    const sheen = ctx.createLinearGradient(18, 10, 238, 142);
+    sheen.addColorStop(0, 'rgba(255,255,255,0.28)');
+    sheen.addColorStop(0.5, 'rgba(255,255,255,0)');
+    sheen.addColorStop(1, 'rgba(0,0,0,0.12)');
+    ctx.fillStyle = sheen; ctx.fillRect(18, 10, 220, 132);
+    // Red retail header bar
+    ctx.fillStyle = '#b8252a'; ctx.fillRect(23, 15, 210, 30);
+    ctx.fillStyle = '#fff6dc'; ctx.font = 'bold 20px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('MEGA MARKDOWN', 128, 36);
+    // Main price / clearance stamp
+    ctx.fillStyle = '#241e22'; ctx.font = 'bold 32px sans-serif';
+    ctx.fillText(['REDUCED', 'FINAL SALE', '$0.01'][variant], 128, 86);
+    // Crisp UPC barcode + feed notches
+    ctx.fillStyle = '#1e191d';
+    for (let i = 0; i < 26; i++) ctx.fillRect(42 + i * 6.6, 100, i % 4 === 0 ? 4 : i % 2 ? 2 : 3, 24);
+    ctx.clearRect(120, 8, 16, 5);
+    ctx.clearRect(120, 139, 16, 5);
     const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
     return {
       geometry: new THREE.PlaneGeometry(0.12, 0.075),
@@ -37,31 +52,38 @@ export function buildImpactModel(kind, variant) {
   }
   const box = (w, h, d, color, x, y, z, rotation) => part(new THREE.BoxGeometry(w, h, d), color, x, y, z, rotation);
   const pin = (radius, length, color, x, y, z) => part(new THREE.CylinderGeometry(radius, radius, length, 6), color, x, y, z, [Math.PI / 2, 0, 0]);
-  const hole = (x, y, radius) => part(new THREE.CircleGeometry(radius, 8), 0x3c3835, x, y, 0.001);
+  const hole = (x, y, radius) => {
+    part(new THREE.CircleGeometry(radius * 1.38, 8), 0x6e675f, x, y, 0.0006);
+    part(new THREE.CircleGeometry(radius, 8), 0x262320, x, y, 0.0012);
+  };
   if (kind === 'staple') {
-    for (const x of [-0.015, 0.015]) { hole(x, 0, 0.005); pin(0.0025, 0.012, 0xb9c5cb, x, 0, 0.006); }
-    box(0.035, 0.005, 0.005, 0xc3cbd0, 0, 0, 0.013, [0, variant ? 0.12 : 0, variant ? 0.08 : 0]);
+    for (const x of [-0.015, 0.015]) { hole(x, 0, 0.005); pin(0.0026, 0.013, 0xbecad2, x, 0, 0.0065); }
+    const tilt = [0, variant ? 0.12 : 0, variant ? 0.08 : 0];
+    box(0.036, 0.0055, 0.005, 0xd4dde4, 0, 0, 0.0135, tilt);
+    box(0.034, 0.0022, 0.002, 0xf2f7fa, 0, 0.0015, 0.016, tilt);
   } else if (kind === 'nail') {
     hole(0, 0, 0.011);
-    for (let i = 0; i < 3; i++) box(0.003, 0.018, 0.001, 0x52483e, 0, 0, 0.0015, [0, 0, i * 2.1 + variant]);
-    pin(0.003, 0.055, 0xa6b1bc, 0, 0, 0.028);
-    pin(0.008, 0.004, 0x697d8c, 0, 0, 0.057);
+    for (let i = 0; i < 4; i++) box(0.0032, 0.02, 0.0012, 0x4d433a, 0, 0, 0.0016, [0, 0, i * 1.57 + variant]);
+    pin(0.0032, 0.056, 0xb2bec9, 0, 0, 0.028);
+    pin(0.0088, 0.0045, 0x7c8f9e, 0, 0, 0.057);
+    box(0.011, 0.002, 0.0015, 0xdce6ee, 0, 0, 0.06, [0, 0, variant * 0.7]);
   } else if (kind === 'dart') {
     hole(0, 0, 0.010);
-    pin(0.010, 0.012, 0xf39b48, 0, 0, 0.007);
-    part(new THREE.CylinderGeometry(0.009, 0.009, 0.055, 7), [0x5eadd4, 0x9b72c5, 0x7ec9a4][variant],
+    pin(0.013, 0.004, 0xff7b29, 0, 0, 0.003); // squashed suction-cup flange
+    pin(0.0095, 0.011, 0xf39b48, 0, 0, 0.008);
+    part(new THREE.CylinderGeometry(0.009, 0.009, 0.055, 7), [0x3aa6ff, 0xa864ff, 0x4CE0B3][variant],
       0, -0.002, 0.039, [Math.PI / 2 + 0.10, 0, 0]);
-    pin(0.010, 0.004, 0xf6dc86, 0, -0.005, 0.068);
+    pin(0.0105, 0.005, 0xffe066, 0, -0.005, 0.068);
   } else if (kind === 'confetti') {
     const random = seededRandom(97 + variant * 123);
-    const colors = [0xffcf42, 0xd95695, 0x6e5bbb, 0x50bfba, 0xf0e5c0];
-    for (let i = 0; i < 7; i++) box(0.009, 0.017, 0.001, colors[i % colors.length],
-      (random() - 0.5) * 0.09, (random() - 0.5) * 0.09, 0.002 + i * 0.0004, [0, 0, random() * Math.PI]);
-    // A short curled streamer alongside the paper flecks.
-    for (let i = 0; i < 5; i++) box(0.006, 0.018, 0.001, colors[variant],
-      -0.015 + Math.sin(i * 1.4) * 0.009, -0.04 + i * 0.014, 0.006, [0, 0, Math.cos(i * 1.4) * 0.5]);
+    const colors = [0xffcf42, 0xff4f9a, 0x7b5cff, 0x2ec4b6, 0xf1faee, 0xff8a3d];
+    for (let i = 0; i < 10; i++) box(0.01, 0.018, 0.0012, colors[i % colors.length],
+      (random() - 0.5) * 0.095, (random() - 0.5) * 0.095, 0.002 + i * 0.0003, [0, 0, random() * Math.PI]);
+    // Curled party streamers alongside the paper flecks.
+    for (let i = 0; i < 6; i++) box(0.0065, 0.019, 0.0012, colors[(variant + i) % colors.length],
+      -0.016 + Math.sin(i * 1.35) * 0.011, -0.042 + i * 0.014, 0.006, [0, 0, Math.cos(i * 1.35) * 0.55]);
   } else throw new Error(`Unknown impact signature: ${kind}`);
   const geometry = mergeGeometries(parts); parts.forEach((g) => g.dispose());
-  return { geometry, material: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.7,
+  return { geometry, material: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.45, metalness: 0.22,
     polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }) };
 }

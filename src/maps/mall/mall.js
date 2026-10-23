@@ -69,22 +69,22 @@ export const LAYOUT = {
     {
       id: 'goodSports', name: 'GOOD SPORTS', slot: 'grip', side: 'south', from: -17, to: -9, depth: 6, doorWidth: 3, theme: 'goodSports',
       color: 0xff8a3d, signColor: '#ff8a3d', wall: 0xf3e3c5, floor: { base: '#c79a62', grout: '#8a6438', variation: 14, seed: 41 },
-      apron: 0xff8a3d, title: 'GOOD SPORTS · GRIPS', titleColor: '#ff8a3d',
+      apron: 0xff8a3d, title: 'GOOD SPORTS · GRIPS', titleColor: '#ff8a3d', signStyle: 'varsity',
     },
     {
       id: 'nutsAndBolts', name: 'NUTS & BOLTS', slot: 'barrel', side: 'south', from: 9, to: 17, depth: 6, doorWidth: 3, theme: 'nutsAndBolts',
       color: 0xd9483b, signColor: '#ff6b5b', wall: 0x8a5a44, floor: { base: '#6b5b53', grout: '#4d423c', variation: 12, seed: 43 },
-      apron: 0xd9483b, title: 'NUTS & BOLTS · BARRELS', titleColor: '#ffd23f',
+      apron: 0xd9483b, title: 'NUTS & BOLTS · BARRELS', titleColor: '#ffd23f', signStyle: 'industrial',
     },
     {
       id: 'playTimeToys', name: 'PLAY TIME TOYS', slot: 'magazine', side: 'north', from: -16.4, to: -10.6, depth: 4.5, doorWidth: 3, theme: 'playTimeToys',
       color: 0xffc83d, signColor: '#ffd23f', wall: 0xfff1a8, floor: { base: '#f4b6d2', grout: '#ffd6e7', variation: 8, seed: 45 },
-      apron: 0xff7bd5, title: 'PLAY TIME TOYS · MAGAZINES', titleColor: '#ffd23f',
+      apron: 0xff7bd5, title: 'PLAY TIME TOYS · MAGAZINES', titleColor: '#ffd23f', signStyle: 'toy',
     },
     {
       id: 'byteMe', name: 'BYTE ME ELECTRONICS', slot: 'sight', side: 'north', from: 10.6, to: 16.4, depth: 4.5, doorWidth: 3, theme: 'byteMe',
       color: 0x3d7fd9, signColor: '#63b3ff', wall: 0x2c3a5c, floor: { base: '#243457', grout: '#16213d', variation: 10, seed: 47 },
-      apron: 0x3d7fd9, title: 'BYTE ME · SIGHTS', titleColor: '#63b3ff',
+      apron: 0x3d7fd9, title: 'BYTE ME · SIGHTS', titleColor: '#63b3ff', signStyle: 'tech',
     },
   ],
   // Service Corridor: its doorway in the hallway's west wall, then south along the Food Court's west wall.

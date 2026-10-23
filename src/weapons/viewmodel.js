@@ -203,7 +203,7 @@ export function createViewmodel(weaponDefs, meleeDef) {
      * `aimAmount` 0 (hip) .. 1 (fully aimed). `meleeProgress` 0..1 through a box cutter
      * swing, or null. `player` gives look angles, movement and footstep phase.
      */
-    update(frameTime, worldCamera, { weapon, shownDef = weapon.def, switchLower = 0, aimAmount, meleeProgress = null, player }) {
+    update(frameTime, worldCamera, { weapon, shownDef = weapon.def, switchLower = 0, aimAmount, meleeProgress = null, player, inspectProgress = null }) {
       const dt = frameTime;
       setActive(shownDef);
       const { model, flash } = active;
@@ -330,6 +330,21 @@ export function createViewmodel(weaponDefs, meleeDef) {
         const tuck = Math.sin(vaultProgress * Math.PI);
         holder.position.y -= tuck * feel.vault.gunDrop;
         holder.rotation.x -= tuck * feel.vault.gunTiltDegrees * DEG_TO_RAD;
+      }
+
+      // Weapon inspect: smoothly raise and tilt the gun across the view to admire tier finish and attachments
+      if (inspectProgress !== null && aimAmount < 0.05 && meleeProgress === null) {
+        const envelope = Math.sin(inspectProgress * Math.PI);
+        const pitchAngle = Math.sin(inspectProgress * Math.PI) * -11 * DEG_TO_RAD;
+        const yawAngle = Math.sin(inspectProgress * Math.PI * 1.1) * 24 * DEG_TO_RAD;
+        const rollAngle = Math.sin(inspectProgress * Math.PI) * 38 * DEG_TO_RAD;
+
+        holder.position.x += envelope * -0.05;
+        holder.position.y += envelope * 0.035;
+        holder.position.z += envelope * -0.04;
+        holder.rotation.x += pitchAngle;
+        holder.rotation.y += yawAngle;
+        holder.rotation.z -= rollAngle;
       }
 
       // The gun's own moving parts (trigger, hands during the reload).

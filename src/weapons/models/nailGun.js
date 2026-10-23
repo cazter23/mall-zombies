@@ -18,10 +18,11 @@ const DEG_TO_RAD = Math.PI / 180;
 /** The gun itself. Points down -Z (the way the camera looks). */
 function buildGun(colors) {
   const gun = new THREE.Group();
-  const mat = (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.55, metalness: 0.15, flatShading: true });
-  const body = mat(colors.bodyColor);
-  const dark = mat(colors.darkColor);
-  const metal = mat(colors.metalColor);
+  const mat = (color, opts = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.34, metalness: 0.1, flatShading: true, ...opts });
+  const body = mat(colors.bodyColor, { roughness: 0.32, metalness: 0.12 });
+  const dark = mat(colors.darkColor, { roughness: 0.72, metalness: 0.08 });
+  const metal = mat(colors.metalColor, { roughness: 0.24, metalness: 0.75 });
+  const sight = mat(colors.sightColor, { emissive: colors.sightColor, emissiveIntensity: 0.7, roughness: 0.2 });
 
   function part(w, h, d, x, y, z, material, parent = gun) {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
@@ -38,7 +39,7 @@ function buildGun(colors) {
   cap.position.set(0, 0.055, 0.0);
   gun.add(cap);
   part(0.012, 0.012, 0.15, 0, 0.051, -0.09, dark); // top rail...
-  part(0.016, 0.016, 0.014, 0, 0.064, -0.155, mat(colors.sightColor)); // ...with a bright front sight
+  part(0.016, 0.016, 0.014, 0, 0.064, -0.155, sight); // ...with a bright front sight
 
   // The nose (driver guide): steel, sticks out the front and points a little down. It "punches" on each shot.
   const nose = new THREE.Group();

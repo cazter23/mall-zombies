@@ -142,8 +142,8 @@ export function createSound({ renderMusic = renderMusicInWorker } = {}) {
       if (!voice) {
         const source = (isMusic || def.noise) ? ctx.createBufferSource() : ctx.createOscillator();
         if (isMusic || def.noise) { source.buffer = isMusic ? musicBuffer : noiseBuffer; source.loop = true; }
-        else { source.type = 'sine'; source.frequency.value = def.frequency; }
-        const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = isMusic ? def.lowpassHz : def.frequency * 2;
+        else { source.type = def.wave || 'sine'; source.frequency.value = def.frequency; }
+        const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = isMusic ? def.lowpassHz : (def.filterHz ?? def.frequency * 2.5);
         const gain = ctx.createGain(); gain.gain.value = 0;
         const pan = ctx.createStereoPanner();
         source.connect(filter); filter.connect(gain); gain.connect(pan); pan.connect(master);

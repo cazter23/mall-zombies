@@ -17,10 +17,11 @@ const DEG_TO_RAD = Math.PI / 180;
 /** The gun itself. Points down -Z (the way the camera looks). */
 function buildGun(colors) {
   const gun = new THREE.Group();
-  const mat = (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.6, metalness: 0.1, flatShading: true });
-  const body = mat(colors.bodyColor);
-  const metal = mat(colors.metalColor);
-  const grip = mat(colors.gripColor);
+  const mat = (color, opts = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.34, metalness: 0.08, flatShading: true, ...opts });
+  const body = mat(colors.bodyColor, { roughness: 0.32, metalness: 0.1 });
+  const metal = mat(colors.metalColor, { roughness: 0.24, metalness: 0.72 });
+  const grip = mat(colors.gripColor, { roughness: 0.78, metalness: 0.04 });
+  const sight = mat(colors.sightColor, { emissive: colors.sightColor, emissiveIntensity: 0.7, roughness: 0.2 });
 
   function part(w, h, d, x, y, z, material) {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
@@ -33,7 +34,7 @@ function buildGun(colors) {
   part(0.055, 0.075, 0.17, 0, 0, -0.04, body); // main housing
   part(0.04, 0.012, 0.15, 0, 0.043, -0.04, metal); // staple channel along the top
   part(0.06, 0.05, 0.035, 0, -0.012, -0.135, metal); // nose plate where staples come out
-  part(0.018, 0.018, 0.018, 0, 0.055, -0.11, mat(colors.sightColor)); // little sight on top
+  part(0.018, 0.018, 0.018, 0, 0.055, -0.11, sight); // little sight on top
   const handle = part(0.042, 0.12, 0.05, 0, -0.09, 0.02, grip); // grip at the back
   handle.rotation.x = 0.3;
   const lever = part(0.014, 0.075, 0.016, 0, -0.07, -0.06, metal); // squeeze lever / trigger

@@ -15,7 +15,7 @@ import { castShot } from './hitscan.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 
-export function createMelee({ def, stats, player, input, getWeapon, shootables, colliders, effects, hud, onHit = null }) {
+export function createMelee({ def, stats, player, input, getWeapon, shootables, colliders, effects, hud, sound = null, onHit = null }) {
   let timer = -1; // seconds into the current swing; -1 = not swinging
   let hasHit = false;
   let recoverySeconds = def.missRecoverySeconds;
@@ -77,6 +77,7 @@ export function createMelee({ def, stats, player, input, getWeapon, shootables, 
     player.meleeTurnLimit = def.commitTurnDegrees * DEG_TO_RAD;
     player.jumpBuffer = 0;
     getWeapon().cancelReload(); // the classic COD tradeoff: knifing interrupts a reload
+    if (sound) sound.play('meleeSwing');
 
     // Lunge at a target that's just out of reach (not while sliding, prone or airborne).
     if (player.stance === 'slide' || player.stance === 'prone' || !player.grounded) return;
@@ -96,10 +97,26 @@ export function createMelee({ def, stats, player, input, getWeapon, shootables, 
     const found = findTarget(def.range);
     if (!found) return null;
     const damage = def.damage * stats.meleeDamageMultiplier;
-    const { killed } = found.target.takeHit({ damage, part: 'body', point: found.point, melee: true });
+    const dir = { x: facingX, y: 0, z: facingZ };
+    const { killed } = found.target.takeHit({
+      damage,
+      part: 'body',
+      point: found.point,
+      melee: true,
+      direction: dir,
+      impact: def.impact,
+    });
     normal.subVectors(eye, found.point).setY(0).normalize(); // splatter flies back toward the player
-    effects.splat(found.point, normal, found.target.splatColors, def.splatCount, { flesh: true });
+    effects.splat(found.point, normal, found.target.splatColors, def.splatCount, {
+      flesh: true,
+      speedScale: 1.25,
+      direction: dir,
+    });
     hud.showHitMarker({ headshot: false, killed });
+    if (sound) {
+      sound.play('hitBody');
+      if (killed) sound.play('killConfirm');
+    }
     if (onHit) onHit({ target: found.target, killed, headshot: false, melee: true });
     player.addViewKick(-def.impactJoltDegrees * DEG_TO_RAD);
     return { target: found.target, killed };

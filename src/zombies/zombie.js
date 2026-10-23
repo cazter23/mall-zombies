@@ -56,6 +56,14 @@ export class Zombie {
     this.state = 'spawning';
     this.stateTime = 0;
     this.flinchTimer = 0;
+    this.flinchDuration = type.flinchSeconds;
+    this.flinchStrength = 1;
+    this.flinchPart = 'body';
+    this.flinchSide = 1;
+    this.hitstopTimer = 0;
+    this.deathImpulse = 1;
+    this.deathTwist = 0;
+    this.lastHitDir = null;
     this.attackCooldown = 0; // seconds until it may start another attack
     const atk = type.attack;
     this.windupSeconds = Math.max(atk.minWindupSeconds, atk.windupSeconds - atk.windupShrinkPerRound * (round - 1));
@@ -113,16 +121,40 @@ export class Zombie {
 
   // `source`: what dealt the damage, for kill credit ('gun' by default, 'melee' for the box cutter,
   // later 'hazard' / 'effect'...). Read as zombie.killedBy by the 'kill' event (game/events.js).
-  takeHit({ damage, part, melee = false, source = melee ? 'melee' : 'gun' }) {
+  takeHit({ damage, part, melee = false, source = melee ? 'melee' : 'gun', direction = null, impact = null }) {
     if (!this.isAlive) return { killed: false };
     // A crashed Cart Pusher is wide open: hits do extra damage.
     if (this.state === 'crashed') damage *= this.type.charge.crashDamageTakenMultiplier;
     this.health -= damage;
-    this.flinchTimer = this.type.flinchSeconds; // flinches, but an attack already winding up still comes
-    if (this.health > 0) return { killed: false };
+    const flinchMul = (impact?.flinch ?? 1) * (part === 'head' ? 1.35 : 1);
+    this.flinchDuration = this.type.flinchSeconds * Math.min(1.6, Math.max(0.85, flinchMul * 0.85));
+    this.flinchTimer = this.flinchDuration; // flinches, but an attack already winding up still comes
+    this.flinchStrength = flinchMul;
+    this.flinchPart = part === 'head' ? 'head' : 'body';
+    this.flinchSide = -this.flinchSide;
+    if (direction) {
+      this.lastHitDir = { x: direction.x, y: direction.y ?? 0, z: direction.z };
+    }
+    if (this.health > 0) {
+      // Physical stagger knockback & brief micro-hitstop on live chasing zombies
+      if (impact && direction && this.state === 'chasing' && this.speed > 0) {
+        const kb = (impact.knockback ?? 0) * (part === 'head' ? 1.25 : 1);
+        if (kb > 0) {
+          const len = Math.hypot(direction.x, direction.z) || 1;
+          this.velocity.x += (direction.x / len) * kb;
+          this.velocity.z += (direction.z / len) * kb;
+        }
+        if (impact.hitstopSeconds > 0) {
+          this.hitstopTimer = Math.max(this.hitstopTimer, impact.hitstopSeconds * (part === 'head' ? 1.3 : 1));
+        }
+      }
+      return { killed: false };
+    }
     this.killedByHeadshot = part === 'head' && !melee;
     this.killedByMelee = melee;
     this.killedBy = source;
+    this.deathImpulse = (impact?.deathImpulse ?? 1) * (this.killedByHeadshot ? 1.25 : 1);
+    this.deathTwist = this.flinchSide * Math.min(0.42, 0.16 * this.deathImpulse);
     this.die();
     return { killed: true };
   }
@@ -162,6 +194,7 @@ export class Zombie {
     this.prevYaw = this.yaw;
     this.stateTime += dt;
     this.flinchTimer = Math.max(0, this.flinchTimer - dt);
+    this.hitstopTimer = Math.max(0, this.hitstopTimer - dt);
     this.attackCooldown = Math.max(0, this.attackCooldown - dt);
     this.windedTimer = Math.max(0, this.windedTimer - dt);
     this.chargeCooldown = Math.max(0, this.chargeCooldown - dt);
@@ -172,7 +205,8 @@ export class Zombie {
       this.faceToward(ctx.player.position, dt);
       if (this.stateTime >= this.type.spawnSeconds) this.setState('chasing');
     } else if (this.state === 'chasing') {
-      this.chase(dt, ctx, this.windedSpeedScale());
+      const hitstopScale = this.hitstopTimer > 0 ? 0.15 : 1;
+      this.chase(dt, ctx, this.windedSpeedScale() * hitstopScale);
       this.chaseSounds(dt, ctx);
       // Starts swinging on the way in (no stopping first), unless a wall is in the way.
       if (ctx.canAttack && this.attackCooldown <= 0 && this.inReach(ctx.player, attack.startRange) &&

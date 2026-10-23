@@ -51,6 +51,8 @@ export function createPlayerGun({
   const muzzle = new THREE.Vector3();
   let lastReloadProgress = null; // for spotting reload events as the clock passes them
   let reloadRequested = false; // set by requestReload() (e.g. a controller X tap next to a buyable)
+  let inspectTimer = 0;
+  const INSPECT_DURATION = 1.8;
 
   // A slot = one carried gun: its config entry (`base`), its upgrades (`mods`), the resolved gun those
   // make (`def`, what gameplay reads), its ammo/cooldown state and its own aim (ADS/spread) settings.
@@ -75,6 +77,7 @@ export function createPlayerGun({
     slots[current].weapon.cancelReload();
     slots[current].weapon.cancelFire();
     lastReloadProgress = null;
+    inspectTimer = 0;
     slots[current].aim.reset(); // comes up at the hip
     switching = { from: fromSlot, timer: 0 };
   }
@@ -128,7 +131,13 @@ export function createPlayerGun({
         const headshot = hit.part === 'head';
         // Headshot x distance falloff x pass-through (pierce) falloff x player stats: gunStats.js.
         const damage = hitDamage(d, hit, i, stats);
-        const { killed } = hit.target.takeHit({ damage, part: hit.part, point: hit.point });
+        const { killed } = hit.target.takeHit({
+          damage,
+          part: hit.part,
+          point: hit.point,
+          direction,
+          impact: d.impact,
+        });
         const previous = targets.get(hit.target);
         // On a kill, ONLY the killing pellet decides the headshot bonus.
         targets.set(hit.target, {
@@ -149,15 +158,27 @@ export function createPlayerGun({
     }
     let anyKilled = false;
     let anyHeadshot = false;
+    const baseImpulse = Math.sqrt(Math.max(1, d.impact?.deathImpulse ?? 1));
     for (const [target, result] of targets) {
       const { hit, killed, headshot } = result;
       anyKilled ||= killed;
       anyHeadshot ||= headshot;
       effects.splat(hit.point, hit.normal, target.splatColors,
-        headshot ? feel.effects.headshotSplatCount : feel.effects.splatCount, { flesh: true });
+        headshot ? feel.effects.headshotSplatCount : feel.effects.splatCount, {
+          flesh: true,
+          speedScale: baseImpulse * (headshot ? 1.2 : 1),
+          direction,
+        });
       if (onHit) onHit({ target, killed, headshot, melee: false });
     }
-    if (targets.size > 0) hud.showHitMarker({ headshot: d.pellets ? anyHeadshot : shot.hits[0].part === 'head', killed: anyKilled });
+    if (targets.size > 0) {
+      const isHead = d.pellets ? anyHeadshot : shot.hits[0].part === 'head';
+      hud.showHitMarker({ headshot: isHead, killed: anyKilled });
+      if (sound) {
+        sound.play(isHead ? 'hitHead' : 'hitBody');
+        if (anyKilled) sound.play('killConfirm');
+      }
+    }
     if (onShot) onShot(shot);
     return shot;
   }
@@ -294,9 +315,18 @@ export function createPlayerGun({
       const triggerHeld = input.actionDown('fire');
       const reload = input.consumeAction('reload') || reloadRequested;
       reloadRequested = false;
+      const inspect = input.consumeAction('inspect');
+      if (inspect && !busy && slot.weapon.reloadProgress === null && slot.aim.amount < 0.1) {
+        inspectTimer = INSPECT_DURATION;
+      }
       // Shooting while sprinting: drop to a walk and bring the gun up out of the running pose before
       // the shot goes off (the click is buffered, so it fires as soon as the gun is up).
       const wantsToFire = trigger || slot.weapon.isBursting || (triggerHeld && slot.def.fireMode === 'auto');
+      if (wantsToFire || slot.aim.amount > 0.1 || player.isSprinting || reload || busy) {
+        inspectTimer = 0;
+      } else if (inspectTimer > 0) {
+        inspectTimer = Math.max(0, inspectTimer - dt);
+      }
       if (wantsToFire && !busy) {
         if (player.isSprinting || player.sprintAmount > 0.3) {
           slot.weapon.cooldown = Math.max(slot.weapon.cooldown, feel.sprint.sprintOutSeconds * player.sprintAmount);
@@ -321,6 +351,11 @@ export function createPlayerGun({
       runReloadEvents(slot);
     },
 
+    // Inspect progress for viewmodel animation (0 to 1, or null if not inspecting).
+    get inspectProgress() {
+      return inspectTimer > 0 ? (1 - inspectTimer / INSPECT_DURATION) : null;
+    },
+
     // Reload as if the reload button was pressed (next tick).
     requestReload() {
       reloadRequested = true;
@@ -332,6 +367,7 @@ export function createPlayerGun({
       current = 0;
       switching = null;
       reloadRequested = false;
+      inspectTimer = 0;
       lastReloadProgress = null;
       this.lastShot = null;
     },

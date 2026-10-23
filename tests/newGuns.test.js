@@ -26,7 +26,7 @@ test('burst: one held press gives three darts at the configured cadence and indi
   const times = [];
   for (let i = 0; i < 120; i++) if (tick(w, { triggerPressed: i === 0, triggerHeld: true }) === 'fire') times.push(i * dt);
   assert.equal(times.length, 3);
-  assert.equal(w.magazine, 21);
+  assert.equal(w.magazine, 27);
   times.forEach((time, i) => assert.ok(Math.abs(time - i * 0.07) <= dt));
 });
 
@@ -34,15 +34,15 @@ test('burst: a buffered press starts the next burst after the last dart cooldown
   const w = new Weapon(weapons.foamDartBlaster, createPlayerStats());
   const times = [];
   let last = -Infinity;
-  for (let i = 0; i < 240; i++) {
+  for (let i = 0; i < 300; i++) {
     // Press just before ready, once the burst itself has ended.
     const press = i === 0 || (!w.isBursting && w.cooldown < 0.08 && i - last > 10);
     if (press) last = i;
     if (tick(w, { triggerPressed: press }) === 'fire') times.push(i * dt);
   }
-  // Eight bursts in the 24-dart magazine. Burst starts should remain 0.49s apart.
-  assert.equal(times.length, 24);
-  for (let burst = 0; burst < 8; burst++) {
+  // Ten bursts in the 30-dart magazine. Burst starts should remain 0.49s apart.
+  assert.equal(times.length, 30);
+  for (let burst = 0; burst < 10; burst++) {
     assert.ok(Math.abs(times[burst * 3] - burst * 0.49) < dt + 1e-9);
   }
 });
@@ -68,7 +68,7 @@ test('burst: reload waits until the last dart, and a direct reload request also 
     }
     assert.deepEqual(events, ['fire', 'fire']); assert.equal(w.isReloading, true);
     for (let i = 0; i < 120; i++) tick(w);
-    assert.equal(w.magazine, 24); assert.equal(w.reserve, 141);
+    assert.equal(w.magazine, 30); assert.equal(w.reserve, 141);
   }
 });
 
@@ -107,7 +107,7 @@ test('burst integration: each dart recoils, blooms, flashes, sounds and records 
   const f = fixture(weapons.foamDartBlaster);
   f.input.held.add('fire'); f.fire();
   for (let i = 0; i < 12; i++) f.gun.update(dt);
-  assert.equal(f.gun.weapon.magazine, 21); assert.equal(f.counts().recoils, 3); assert.equal(f.counts().flashes, 3);
+  assert.equal(f.gun.weapon.magazine, 27); assert.equal(f.counts().recoils, 3); assert.equal(f.counts().flashes, 3);
   assert.equal(f.sounds.filter((s) => s === 'foamShot').length, 3); assert.equal(f.runStats.shotsFired, 3);
   assert.ok(f.gun.aim.spreadDegrees > weapons.foamDartBlaster.spread.base + 1);
 });
@@ -121,14 +121,14 @@ test('burst integration: switching away and back never resumes an abandoned burs
   assert.equal(burstGun.isBursting, false);
   for (let i = 0; i < 40; i++) f.gun.update(dt);
   f.input.pressed.add('weapon1'); for (let i = 0; i < 100; i++) f.gun.update(dt);
-  assert.equal(burstGun.magazine, 23); assert.equal(f.runStats.shotsFired, 1);
+  assert.equal(burstGun.magazine, weapons.foamDartBlaster.magazineSize - 1); assert.equal(f.runStats.shotsFired, 1);
 });
 
 test('burst integration: melee/vault blocking stops darts, including a replaced loadout slot', () => {
   for (const paused of [false, true]) {
     const f = fixture(weapons.foamDartBlaster); f.fire(); f.gun.update(dt, true, paused);
     for (let i = 0; i < 100; i++) f.gun.update(dt);
-    assert.equal(f.runStats.shotsFired, 1); assert.equal(f.gun.weapon.magazine, 23);
+    assert.equal(f.runStats.shotsFired, 1); assert.equal(f.gun.weapon.magazine, weapons.foamDartBlaster.magazineSize - 1);
   }
   const f = fixture(weapons.foamDartBlaster);
   f.gun.give(weapons.priceGun); for (let i = 0; i < 40; i++) f.gun.update(dt);
@@ -241,7 +241,7 @@ test('pellet ADS cone tightens continuously; pellets and pierce can be combined'
 
 test('new-gun damage table is deliberate at rounds 1, 2, 5 and 9', () => {
   const table=[
-    [1,3,1,1,1,7], [2,5,2,1,1,11], [5,9,3,2,1,21], [9,15,5,2,1,35],
+    [1,3,1,1,1,4], [2,5,2,1,1,6], [5,9,3,2,1,11], [9,15,5,2,1,18],
   ];
   for(const [round,bodyDarts,headDarts,bodyBlasts,headBlasts,farBlasts] of table){
     const hp=zombieHealthForRound(round), foam=weapons.foamDartBlaster, confetti=weapons.confettiCannon;
@@ -336,10 +336,10 @@ test('crosshair displays the same ADS pellet cone that shots use',()=>{
 
 // --- Confetti Cannon: six-shell tube, shell-by-shell reload, pass-through ---
 
-test('confetti cannon numbers are deliberate (six shells, 12 x 36 pellets, full damage to 3m, 5% at 10m)', () => {
+test('confetti cannon numbers are deliberate (six shells, 12 x 36 pellets, full damage to 4m, 10% at 12m)', () => {
   const d = weapons.confettiCannon;
   assert.equal(d.magazineSize, 6); assert.equal(d.startingReserve, 24); assert.equal(d.damage, 36); assert.equal(d.pellets.count, 12);
-  assert.equal(d.falloff.start, 3); assert.equal(d.falloff.end, 10); assert.equal(d.falloff.minMultiplier, 0.05);
+  assert.equal(d.falloff.start, 4); assert.equal(d.falloff.end, 12); assert.equal(d.falloff.minMultiplier, 0.1);
   assert.equal(d.damage * d.pellets.count, 432, 'a point-blank blast');
   const sr = d.shellReload;
   assert.deepEqual([sr.progress.start[1], sr.progress.shell[0], sr.progress.shell[1], sr.progress.end[0]], [0.3, 0.3, 0.7, 0.7], 'phase windows join up');

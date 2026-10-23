@@ -131,3 +131,16 @@ test('Shoppers are unchanged: no winded state, normal hit recovery', () => {
   assert.equal(f.zombie.attackCooldown, zombieTypes.shopper.attack.recoverSeconds);
   assert.equal(f.sounds.length, 0);
 });
+
+test('weapon impact feel: chasing zombies take directional knockback, flinch scaling, hitstop, and death impulse', () => {
+  const f = walkerFixture('shopper', -10);
+  const impact = { flinch: 1.65, knockback: 2.2, hitstopSeconds: 0.025, deathImpulse: 1.5 };
+  const dir = { x: 0, y: 0, z: 1 }; // shot pushing zombie back along +Z
+  f.zombie.takeHit({ damage: 50, part: 'head', direction: dir, impact });
+  assert.ok(f.zombie.velocity.z > 2.5, 'headshot knockback shoves chasing zombie along shot direction');
+  assert.ok(f.zombie.flinchStrength > 2.0, 'headshot scales weapon flinch strength');
+  assert.ok(f.zombie.hitstopTimer > 0.025, 'heavy weapon applies micro-hitstop on headshot');
+  f.zombie.takeHit({ damage: 500, part: 'head', direction: dir, impact });
+  assert.equal(f.zombie.isAlive, false);
+  assert.ok(f.zombie.deathImpulse > 1.8, 'killing headshot carries amplified death impulse');
+});

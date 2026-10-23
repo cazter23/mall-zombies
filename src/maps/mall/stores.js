@@ -145,7 +145,7 @@ export function buildStores({ kit, props, court, thickness: T, stores }) {
     F(from, OPENING_TOP, to, WALL_H, 0, 0.12, mat(store.color));
     sign(store.name, {
       x: cx, y: 3.9, z: out(0.14), width: Math.min(width - 1.2, 5.2), height: 0.8, facing: facingOut,
-      background: '#1f1a24', color: store.signColor,
+      background: '#1f1a24', color: store.signColor, style: store.signStyle,
     });
     // Striped awning over the doorway and windows (no collider: you walk under it).
     const stripes = Math.round((opening.to - opening.from) / 0.5);
@@ -208,7 +208,7 @@ function mesh(group, geometry, material, x, y, z, rotation = [0, 0, 0]) {
 const NC = { collide: false };
 
 const THEMES = {
-  // Blue demo-wall electronics: a wall of screens, shelves of glowing laptops, neon.
+  // Blue demo-wall electronics: a wall of screens, CRT TV stacks, vintage beige PC towers, shelves of glowing laptops, neon.
   byteMe(r) {
     const { B, S, M, cx } = r;
     [['BYTE ME', '#0b1d3a', '#63b3ff'], ['LOADING...', '#102a1a', '#63ff9b'], ['NO SIGNAL', '#2a0b2a', '#ff7bd5']]
@@ -216,15 +216,33 @@ const THEMES = {
     B(r.x0, 3.92, 0.02, r.x1, 3.99, 0.07, glowing(0x63e6ff), NC); // neon strip
     sideShelves(r, 0x2c3a5c);
     const screens = [glowing(0x63b3ff), glowing(0x63ff9b), glowing(0xff7bd5)];
+    const crtCase = M(0x232834);
+    const beigePc = M(0xd8d2c2);
+    const darkSlot = M(0x1d1626);
     [r.x0, r.x1 - 0.5].forEach((sx, side) => {
       for (let i = 0, d = 2.2; d < r.depth - 1.5; i++, d += 0.7) {
-        B(sx + 0.1, 1.7, d, sx + 0.4, 1.75, d + 0.3, M(0x1d1626), NC); // laptop base
+        B(sx + 0.1, 1.7, d, sx + 0.4, 1.75, d + 0.3, darkSlot, NC); // laptop base
         B(sx + 0.12, 1.75, d + 0.1, sx + 0.38, 2.05, d + 0.13, screens[(i + side) % 3], NC); // lit screen
+      }
+      // Vintage beige PC tower at the front end of each shelf
+      const td = r.depth - 1.52;
+      B(sx + 0.08, 1.7, td, sx + 0.42, 2.18, td + 0.24, beigePc, NC);
+      B(sx + 0.12, 2.04, td + 0.24, sx + 0.38, 2.08, td + 0.252, darkSlot, NC); // floppy bay
+      B(sx + 0.12, 1.96, td + 0.24, sx + 0.38, 2.0, td + 0.252, darkSlot, NC); // CD-ROM bay
+      B(sx + 0.34, 1.86, td + 0.24, sx + 0.37, 1.89, td + 0.255, screens[1], NC); // power LED
+    });
+    // Bulky CRT TV stacks flanking the clerk behind the counter
+    [r.x0 + 0.28, r.x1 - 0.82].forEach((tx, side) => {
+      B(tx, 0, 0.12, tx + 0.54, 0.72, 0.48, M(0x1b2234), NC); // TV stand plinth
+      for (const [tier, y0] of [0.72, 1.22].entries()) {
+        const inset = tier * 0.03;
+        B(tx + 0.03 + inset, y0, 0.15 + inset, tx + 0.51 - inset, y0 + 0.48, 0.45 - inset, crtCase, NC); // CRT shell
+        B(tx + 0.07 + inset, y0 + 0.06, 0.45 - inset, tx + 0.43 - inset, y0 + 0.42, 0.465 - inset, screens[(side + tier) % 3], NC); // glowing CRT tube
       }
     });
   },
 
-  // Wood floor, a bat rack, a bin of balls, jerseys and a trophy shelf.
+  // Wood floor, a bat rack, a bin of balls, sneaker & shoebox rack, jerseys and a trophy shelf.
   goodSports(r) {
     const { B, S, M, cx, group, zAt } = r;
     B(r.x0, 0, 0.02, r.x1, 0.9, 0.06, M(0xff8a3d), NC); // orange wainscot
@@ -236,6 +254,13 @@ const THEMES = {
     B(r.x0, 0, 2.0, r.x0 + 0.45, 0.95, 3.8, M(0x6e4a26));
     const bat = new THREE.CylinderGeometry(0.035, 0.055, 1.3, 8);
     for (let i = 0; i < 6; i++) mesh(group, bat, M(i % 2 ? 0xc79a62 : 0x8a5a2b), r.x0 + 0.22, 1.5, zAt(2.2 + i * 0.27), [0, 0, 0.16]);
+    // East wall sneaker & shoebox display shelf behind the ball bin
+    B(r.x1 - 0.45, 0, 1.95, r.x1 - 0.04, 1.45, 2.55, M(0x6e4a26), NC);
+    for (const [i, boxColor] of [0xd62839, 0x3a86ff, 0xff8a3d].entries()) {
+      const d0 = 2.0 + i * 0.17;
+      B(r.x1 - 0.39, 1.45, d0, r.x1 - 0.1, 1.58, d0 + 0.14, M(boxColor), NC); // shoebox
+      B(r.x1 - 0.37, 1.58, d0 + 0.01, r.x1 - 0.12, 1.61, d0 + 0.13, M(0xf1faee), NC); // shoebox lid
+    }
     // Ball bin on the east side: a drum with balls heaped on top.
     const bx = r.x1 - 0.6;
     const bz = zAt(3.2);
@@ -249,7 +274,7 @@ const THEMES = {
     mesh(group, ball, M(0xff8a3d), bx, 1.0, bz);
   },
 
-  // Pastel floor, a rainbow, shelves of plush toys and scattered letter blocks.
+  // Pastel floor, a rainbow, shelves of plush toys, retro toy robots behind the counter, and scattered letter blocks.
   playTimeToys(r) {
     const { B, S, M, cx } = r;
     S('PLAY TIME!', cx, 2.5, 0.03, 3.2, 0.75, '#ff7bd5', '#ffffff');
@@ -266,16 +291,30 @@ const THEMES = {
         B(sx + 0.3, 2.12, d + 0.24, sx + 0.38, 2.2, d + 0.32, M(c), NC);
       }
     }
+    // Giant retro blocky toy robots flanking the clerk behind the counter
+    [r.x0 + 0.35, r.x1 - 0.75].forEach((rx, side) => {
+      const bodyCol = M(side === 0 ? 0x3a86ff : 0xe63946);
+      const accentCol = M(0xffd23f);
+      B(rx, 0, 0.14, rx + 0.4, 0.65, 0.44, accentCol, NC); // display box pedestal
+      B(rx + 0.06, 0.65, 0.18, rx + 0.17, 1.02, 0.38, bodyCol, NC); // left leg
+      B(rx + 0.23, 0.65, 0.18, rx + 0.34, 1.02, 0.38, bodyCol, NC); // right leg
+      B(rx + 0.03, 1.02, 0.16, rx + 0.37, 1.48, 0.4, bodyCol, NC); // robot torso
+      B(rx + 0.08, 1.14, 0.4, rx + 0.32, 1.38, 0.42, accentCol, NC); // chest plate
+      B(rx + 0.09, 1.48, 0.2, rx + 0.31, 1.72, 0.38, bodyCol, NC); // robot head
+      B(rx + 0.12, 1.56, 0.38, rx + 0.28, 1.64, 0.395, glowing(0x63e6be), NC); // glowing visor eyes
+    });
     // Letter blocks near the door end (low enough to step over: no collider).
     [[r.x0 + 0.9, r.depth - 1.0, 0xe63946], [r.x0 + 1.25, r.depth - 0.8, 0x3a86ff], [r.x1 - 1.0, r.depth - 1.0, 0xffd23f], [r.x1 - 1.4, r.depth - 1.25, 0x63e6be]]
       .forEach(([x, d, c]) => B(x, 0, d, x + 0.28, 0.28, d + 0.28, M(c), NC));
   },
 
-  // Pegboard wall of tools, paint-can shelves, a workbench with a vise.
+  // Pegboard wall of tools, paint-can shelves, a workbench with a vise, toolboxes, and stacked hardware cartons.
   nutsAndBolts(r) {
     const { B, S, M, cx } = r;
     const wood = M(0x6e4a26);
     const steel = M(0x9aa3ad);
+    const redTool = M(0xd62839);
+    const cordOrange = M(0xff8a3d);
     B(r.x0 + 0.3, 1.75, 0.02, r.x1 - 0.3, 3.6, 0.07, M(0xc79a62), NC); // pegboard
     const n = Math.floor((r.width - 1.2) / 1.0);
     for (let i = 0; i < n; i++) {
@@ -287,14 +326,18 @@ const THEMES = {
         B(x, 1.95, 0.07, x + 0.05, 2.6, 0.1, wood, NC);
         B(x - 0.08, 2.55, 0.07, x + 0.13, 2.67, 0.13, steel, NC);
       }
+      // Coiled orange extension cord / circular saw blade hung high on the pegboard
+      B(x + 0.36, 2.95, 0.07, x + 0.62, 3.35, 0.11, i % 2 ? cordOrange : steel, NC);
     }
     S('MEASURE TWICE · CURSE ONCE', cx, 3.85, 0.03, 4.2, 0.35, '#1f1a24', '#ffd23f');
     // West: shelves of paint cans.
     r.B(r.x0, 0, 1.9, r.x0 + 0.5, 1.8, r.depth - 1.2, M(0x5b636d));
     const cans = [0xd62839, 0xffd23f, 0x3a86ff, 0x2d6a4f];
     for (let i = 0, d = 2.0; d < r.depth - 1.5; i++, d += 0.45) B(r.x0 + 0.12, 1.8, d, r.x0 + 0.38, 2.05, d + 0.26, M(cans[i % cans.length]), NC);
-    // East: a workbench with a vise.
+    // East: a workbench with a vise and a mechanic's red tool chest.
     B(r.x1 - 0.9, 0, 2.2, r.x1, 0.95, r.depth - 2.0, wood);
-    B(r.x1 - 0.55, 0.95, 2.6, r.x1 - 0.25, 1.15, 2.9, M(0x3a3f47), NC);
+    B(r.x1 - 0.55, 0.95, 2.6, r.x1 - 0.25, 1.15, 2.9, M(0x3a3f47), NC); // vise
+    B(r.x1 - 0.68, 0.95, 3.2, r.x1 - 0.14, 1.32, 3.82, redTool, NC); // red mechanics tool chest
+    for (const dy of [1.02, 1.12, 1.22]) B(r.x1 - 0.7, dy, 3.26, r.x1 - 0.68, dy + 0.05, 3.76, steel, NC); // chrome drawer pulls
   },
 };

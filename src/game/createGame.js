@@ -149,6 +149,7 @@ export function createGame({
     colliders,
     effects,
     hud,
+    sound,
     onHit: announceHit,
   });
 
@@ -187,6 +188,8 @@ export function createGame({
       timeAlive: runStats.timeAlive,
       round: rounds.round,
       pointsEarned: wallet.totalEarned,
+      pointsRemaining: wallet.points,
+      shotsFired: runStats.shotsFired,
       kills: runStats.kills,
       headshotKills: runStats.headshotKills,
       meleeKills: runStats.meleeKills,

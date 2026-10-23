@@ -52,7 +52,7 @@ works from where you stand, both shortcuts buy from either side but not through 
 bought across its shortcut, the Nail Gun can't be bought through its wall, other floors are out of reach, facing matters),
 `ammoCache.test.js` the vending machine (refills any gun in hand, flat price, label follows the gun, needs its area open, not
 through the wall, solid + too tall to climb, zombies can reach its front), `balance.test.js` GUN ROLES on real measured numbers
-(cannon strongest up close / weakest at range, Price Gun best non-shotgun at 5 m but beaten at 30 m, Foam Dart Blaster best
+(cannon strongest up close / weakest at range, Price Gun competitive within 10% of premium Foam at 5 m but beaten at 30 m, Foam Dart Blaster best
 non-shotgun at 15 m, Nail Gun clearly best at 30 m (15%+), Staple Gun weakest at every range; relationships, not exact values), `gunStats.test.js` the per-hit formula + resolveGun (upgrades as data),
 `fullRun.test.js` WHOLE RUNS of the real game headless (tests/helpers/headlessGame.js builds createGame with stand-in HUD/sound/
 viewmodel: buy the shutter, rounds, shoot a zombie for exact payouts, die, results, and "Play again equals a freshly built game"
@@ -742,6 +742,11 @@ L Flash Sale now, Shift+N +5 rounds (rounds.jumpTo), G god mode (health.invulner
 (upgrade the gun in hand). tests/debugCommands.test.js: table (unique, no gameplay clashes, every id implemented), key
 resolution, every command in the real game/mall, god mode and the window state surviving Play again, and the window itself.
 
+Foam Dart Blaster capacity pass: 30 darts (ten bursts), up from 24 (eight bursts). Damage, burst timing, reload,
+reserve and prices are unchanged. Measured sustained DPS rises from 228 to 242 at 5-15 m; the cheaper Price Gun
+remains competitive up close, and Nail Gun retains its long-range lead. Upgraded capacities remain whole bursts
+(Platinum: 39 darts). Burst, cancellation, reload, base-role and upgrade-role tests cover the new capacity.
+
 Cart Pusher (round 6+, config/zombies.js `cartPusher` + economy.zombieMix: 10% of spawns, 15% from round 10; 1.8x health;
 worth 130; its 2nd spawn in round 6 is forced, with a PA banner). A Shopper-look zombie pushing a shopping cart
 (zombies/cartModel.js, visual only: no collider/hitbox, shots go through the basket). Walks like a Shopper and slams like
@@ -755,6 +760,12 @@ tests/cartPusher.test.js: mix/health/value/intro, telegraph -> charge -> hit + s
 crash + stun + extra damage, wall crash stops at the nose, no charge too close/far, through a bench, a narrow doorway or a
 wall (but through a wide doorway), the normal slam up close, the model (cart on the root, upright when dead, poses, dispose)
 and a real charge in the real game's hallway. Verified in the browser (telegraph pose, a real hit for 60, a dodge + crash).
+
+Cannon consistency pass: pellet cone 7 -> 6 degrees, full damage through 4 m (was 3 m), taper to 10% at 12 m
+(was 5% at 10 m). Point-blank body damage remains 432, with the same ammunition, reload, fire rate and penetration.
+Stationary chest simulations average 412/333/261 damage at 3/4/5 m hip, 394 aimed at 5 m; individual seeded blasts
+check reliable round-3 kills at 3 m and aimed at 5 m, plus useful hip fire at 4 m. These are controlled simulations,
+not promises for moving targets, off-centre aim or movement spread. Other guns are unchanged.
 
 Mall atmosphere pass: cooler hallway, warm clearance store/Food Court, fluorescent Mart and utility corridor;
 roughness contrast and scuffed tiles, soft fixture/zombie contact shadows, ceiling infrastructure, consistent
@@ -903,10 +914,10 @@ long-range role feels blurred, give the Foam Dart Blaster a little very-long-ran
 Gun balance rework (roles + upgrade-ready structure): every hit's damage comes from weapons/gunStats.js hitDamage, falloff
 is a per-gun option, gameplay reads each slot's RESOLVED gun (resolveGun: config + mods), so Build-A-Blaster / attachments
 are data (playerGun.setMods). `npm run balance` prints every gun as it plays; tests/balance.test.js pins the ROLES.
-Confetti Cannon (room-clearer): 12 pellets x 36 (432 point blank), 7.0 deg hip cone (x0.45 aimed), full damage to 3 m then
-down to 5% at 10 m, 6 + 24 shells. Measured (and confirmed on real zombies in game): 432 / ~370 / ~190 / ~25 / ~3 per blast
-at 1.5 / 3 / 5 / 9 / 12 m from the hip (aimed: 327 at 5 m); one blast kills round 3 up close, none can kill round 5;
-sustained dps 402 at 2 m (next best 226) and ~0 past 10 m. Price Gun (cheap close-range sprayer): 28 dmg (was 25), 32-round
+Confetti Cannon (room-clearer, updated consistency pass): 12 pellets x 36 (432 point blank), 6 deg hip cone (x0.45 aimed),
+full damage through 4 m then down to 10% at 12 m, 6 + 24 shells. Controlled chest simulations average
+432 / 412 / 261 / 71 / 11 damage at 1.5 / 3 / 5 / 9 / 12 m hip (aimed: 394 at 5 m). No single all-body blast can kill
+round 5. Hip sustained DPS is 439 at 2 m, 265 at 5 m and 45 at 10 m. Price Gun (cheap close-range sprayer): 28 dmg (was 25), 32-round
 magazine (was 24), 1.3s reload (was 1.4), 192 reserve, falloff full to 12 m -> 60% at 30 m: sustained 226 dps up to 12 m
 (best of the non-shotguns; Nail 209, Foam 186), 137 at 30 m (below Nail/Foam). Known balance smell left alone: the Foam Dart
 Blaster (1200) out-damages nothing it costs more than (186 dps vs Nail 209 at 1000); its role pass is a later step.

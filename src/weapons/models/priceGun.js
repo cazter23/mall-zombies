@@ -29,10 +29,11 @@ function buildRoll(colors, radius, width) {
 /** The gun itself. Points down -Z (the way the camera looks). */
 function buildGun(colors) {
   const gun = new THREE.Group();
-  const mat = (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.55, metalness: 0.1, flatShading: true });
-  const body = mat(colors.bodyColor);
-  const metal = mat(colors.metalColor);
-  const grip = mat(colors.gripColor);
+  const mat = (color, opts = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.34, metalness: 0.08, flatShading: true, ...opts });
+  const body = mat(colors.bodyColor, { roughness: 0.32, metalness: 0.08 });
+  const metal = mat(colors.metalColor, { roughness: 0.25, metalness: 0.72 });
+  const grip = mat(colors.gripColor, { roughness: 0.78, metalness: 0.04 });
+  const sight = mat(colors.sightColor, { emissive: colors.sightColor, emissiveIntensity: 0.7, roughness: 0.2 });
 
   function part(w, h, d, x, y, z, material) {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
@@ -52,7 +53,7 @@ function buildGun(colors) {
   // Seat the post inside the housing; its old bottom floated above the gun.
   const sightPost = part(0.008, 0.09, 0.014, 0, 0.065, -0.127, metal);
   sightPost.name = 'priceSightPost';
-  part(0.016, 0.014, 0.012, 0, 0.112, -0.13, mat(colors.sightColor)); // ...with a bright tip
+  part(0.016, 0.014, 0.012, 0, 0.112, -0.13, sight); // ...with a bright tip
   const handle = part(0.042, 0.12, 0.05, 0, -0.09, 0.02, grip); // grip at the back
   handle.rotation.x = 0.3;
   const lever = part(0.016, 0.085, 0.018, 0, -0.075, -0.052, body); // squeeze lever along the grip

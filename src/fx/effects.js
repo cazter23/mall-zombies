@@ -22,15 +22,15 @@ export function createEffects(scene, { surfaces = [] } = {}) {
 
   // --- Tracers: thin stretched cylinders that fade out quickly -------------------
 
-  const tracerGeometry = new THREE.CylinderGeometry(1, 1, 1, 5, 1, true);
+  const tracerGeometry = new THREE.CylinderGeometry(0.42, 1, 1, 6, 1, true);
   const tracers = [];
   for (let i = 0; i < fx.tracerPool; i++) {
-    const material = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false });
+    const material = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
     const mesh = new THREE.Mesh(tracerGeometry, material);
     mesh.visible = false;
     mesh.frustumCulled = false;
     scene.add(mesh);
-    tracers.push({ mesh, life: 0 });
+    tracers.push({ mesh, life: 0, length: 1 });
   }
   let nextTracer = 0;
   const tracerDir = new THREE.Vector3();
@@ -54,6 +54,7 @@ export function createEffects(scene, { surfaces = [] } = {}) {
   const pos = new Float32Array(max * 3);
   const vel = new Float32Array(max * 3);
   const rot = new Float32Array(max * 3);
+  const spin = new Float32Array(max * 3);
   const col = new Float32Array(max * 3);
   const life = new Float32Array(max);
   const maxLife = new Float32Array(max);
@@ -133,6 +134,9 @@ export function createEffects(scene, { surfaces = [] } = {}) {
     rot[i * 3] = Math.random() * Math.PI;
     rot[i * 3 + 1] = Math.random() * Math.PI;
     rot[i * 3 + 2] = Math.random() * Math.PI;
+    spin[i * 3] = (Math.random() - 0.5) * 16;
+    spin[i * 3 + 1] = (Math.random() - 0.5) * 16;
+    spin[i * 3 + 2] = (Math.random() - 0.5) * 16;
     color.setHex(hexColor);
     col[i * 3] = color.r;
     col[i * 3 + 1] = color.g;
@@ -144,7 +148,7 @@ export function createEffects(scene, { surfaces = [] } = {}) {
   }
 
   // A burst flying mostly away from the surface (along `normal`), in random colors from `colors`.
-  function burst(point, normal, colors, count, speed, particleSize, flesh = 0) {
+  function burst(point, normal, colors, count, speed, particleSize, flesh = 0, biasDir = null) {
     const velocity = new THREE.Vector3();
     for (let n = 0; n < count; n++) {
       randomDir.set(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1).normalize();
@@ -152,7 +156,13 @@ export function createEffects(scene, { surfaces = [] } = {}) {
         .copy(normal)
         .multiplyScalar(speed * 0.6)
         .addScaledVector(randomDir, speed * (0.4 + Math.random() * 0.6));
-      velocity.y += speed * 0.3; // a little pop upward reads as more cartoony
+      if (biasDir) {
+        const through = (n & 1) === 0 ? 0.5 : -0.15;
+        velocity.x += biasDir.x * speed * through;
+        velocity.y += (biasDir.y ?? 0) * speed * through * 0.5;
+        velocity.z += biasDir.z * speed * through;
+      }
+      velocity.y += speed * 0.35; // a little pop upward reads as more cartoony
       spawnParticle(point, velocity, colors[n % colors.length], particleSize, flesh);
     }
   }
@@ -169,6 +179,7 @@ export function createEffects(scene, { surfaces = [] } = {}) {
       tracerDir.subVectors(to, from);
       const length = tracerDir.length();
       if (length < 0.01) return;
+      t.length = length;
       t.mesh.position.copy(from).addScaledVector(tracerDir, 0.5);
       t.mesh.quaternion.setFromUnitVectors(UP, tracerDir.normalize());
       t.mesh.scale.set(fx.tracerWidth, length, fx.tracerWidth);
@@ -180,17 +191,18 @@ export function createEffects(scene, { surfaces = [] } = {}) {
 
     // Colored splatter when a shot hits something squishy. `flesh: true` = a zombie's body: it follows the Splatter
     // setting (see the header). Without it (dust, spawn puffs) the colors are used as given.
-    splat(point, normal, colors, count, { flesh = false } = {}) {
+    splat(point, normal, colors, count, { flesh = false, speedScale = 1, direction = null } = {}) {
+      const speed = fx.splatSpeed * speedScale;
       if (!flesh) {
-        burst(point, normal, colors, count, fx.splatSpeed, fx.particleSize);
+        burst(point, normal, colors, count, speed, fx.particleSize, 0, direction);
         return;
       }
       if (blood.mode === 'off') return;
       if (blood.mode === 'red') {
-        burst(point, normal, blood.colors, Math.round(count * blood.countScale), fx.splatSpeed, fx.particleSize, 2);
+        burst(point, normal, blood.colors, Math.round(count * blood.countScale), speed, fx.particleSize, 2, direction);
         return;
       }
-      burst(point, normal, colors, count, fx.splatSpeed, fx.particleSize, 1);
+      burst(point, normal, colors, count, speed, fx.particleSize, 1, direction);
     },
 
     // A corpse's pool of blood on the floor at (x, z): spreads out under the body, then fades (red mode only).
@@ -235,7 +247,10 @@ export function createEffects(scene, { surfaces = [] } = {}) {
       for (const t of tracers) {
         if (t.life <= 0) continue;
         t.life -= dt;
-        t.mesh.material.opacity = Math.max(0, t.life / fx.tracerSeconds);
+        const ratio = Math.max(0, t.life / fx.tracerSeconds);
+        t.mesh.material.opacity = ratio;
+        const w = fx.tracerWidth * (0.35 + 0.65 * ratio);
+        t.mesh.scale.set(w, t.length, w);
         if (t.life <= 0) t.mesh.visible = false;
       }
 
@@ -245,7 +260,7 @@ export function createEffects(scene, { surfaces = [] } = {}) {
         if (life[i] <= 0 || (fleshMode[i] && fleshMode[i] !== currentFlesh)) {
           // Swap the last live particle into this slot and shrink the live count.
           const last = --alive;
-          for (const arr of [pos, vel, rot, col]) {
+          for (const arr of [pos, vel, rot, spin, col]) {
             arr[i * 3] = arr[last * 3];
             arr[i * 3 + 1] = arr[last * 3 + 1];
             arr[i * 3 + 2] = arr[last * 3 + 2];
@@ -257,20 +272,41 @@ export function createEffects(scene, { surfaces = [] } = {}) {
           continue; // re-check slot i (it now holds a different particle)
         }
 
-        vel[i * 3 + 1] -= fx.particleGravity * dt;
+        const isConfetti = fleshMode[i] === 1 && (i & 1) === 0;
+        const gravScale = isConfetti ? 0.62 : 1;
+        vel[i * 3 + 1] -= fx.particleGravity * gravScale * dt;
+        if (isConfetti && pos[i * 3 + 1] > 0.02) {
+          vel[i * 3] += Math.sin(life[i] * 22 + i) * 1.8 * dt;
+          vel[i * 3 + 2] += Math.cos(life[i] * 19 + i) * 1.8 * dt;
+        }
         pos[i * 3] += vel[i * 3] * dt;
         pos[i * 3 + 1] += vel[i * 3 + 1] * dt;
         pos[i * 3 + 2] += vel[i * 3 + 2] * dt;
-        if (pos[i * 3 + 1] < 0) {
-          // Land on the ground floor and stop (good enough for little bits of fluff).
-          pos[i * 3 + 1] = 0;
-          vel[i * 3] = vel[i * 3 + 1] = vel[i * 3 + 2] = 0;
-        }
+        rot[i * 3] += spin[i * 3] * dt;
+        rot[i * 3 + 1] += spin[i * 3 + 1] * dt;
+        rot[i * 3 + 2] += spin[i * 3 + 2] * dt;
 
         const s = size[i] * (life[i] / maxLife[i]); // shrink away as it dies
+        const floorY = s * 0.45;
+        if (pos[i * 3 + 1] < floorY) {
+          pos[i * 3 + 1] = floorY;
+          if (vel[i * 3 + 1] < -0.45) {
+            vel[i * 3 + 1] = -vel[i * 3 + 1] * 0.36;
+            vel[i * 3] *= 0.62;
+            vel[i * 3 + 2] *= 0.62;
+            spin[i * 3] *= 0.55;
+            spin[i * 3 + 1] *= 0.55;
+            spin[i * 3 + 2] *= 0.55;
+          } else if (vel[i * 3 + 1] < 0) {
+            vel[i * 3] = vel[i * 3 + 1] = vel[i * 3 + 2] = 0;
+            spin[i * 3] = spin[i * 3 + 1] = spin[i * 3 + 2] = 0;
+          }
+        }
+
         dummy.position.set(pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2]);
         dummy.rotation.set(rot[i * 3], rot[i * 3 + 1], rot[i * 3 + 2]);
-        dummy.scale.set(s, s, s);
+        if (isConfetti) dummy.scale.set(s * 1.38, s * 0.36, s * 1.05);
+        else dummy.scale.set(s, s, s);
         dummy.updateMatrix();
         particles.setMatrixAt(i, dummy.matrix);
         color.setRGB(col[i * 3], col[i * 3 + 1], col[i * 3 + 2]);

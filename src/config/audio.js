@@ -26,13 +26,14 @@ export const audio = {
       { type: 'noise', filter: 'bandpass', freq: 650, q: 2, gain: 0.3, attack: 0.04, decay: 0.45 },
       { type: 'tone', wave: 'triangle', freq: 170, freqEnd: 95, gain: 0.12, attack: 0.03, decay: 0.35, delay: 0.12 },
     ] },
-    // Chunky compressed-air darts: mid-bass body stays audible on small speakers. Short tails separate each dart.
-    foamShot: { volume: 0.5, layers: [
-      { type: 'noise', filter: 'bandpass', freq: 1000, q: 0.8, gain: 0.7, attack: 0.001, decay: 0.035 },
-      { type: 'tone', wave: 'triangle', freq: 235, freqEnd: 130, gain: 0.58, attack: 0.001, decay: 0.05 },
-      { type: 'tone', wave: 'sine', freq: 140, freqEnd: 90, gain: 0.45, attack: 0.002, decay: 0.06 },
-      { type: 'noise', filter: 'bandpass', freq: 2700, q: 1, gain: 0.2, attack: 0.0008, decay: 0.011 },
-      { type: 'tone', wave: 'triangle', freq: 620, freqEnd: 390, gain: 0.1, attack: 0.001, decay: 0.018, delay: 0.02 },
+    // Chunky compressed-air darts: mid-bass body + sub-bass tube thump stays punchy on headphones and speakers.
+    foamShot: { volume: 0.56, layers: [
+      { type: 'tone', wave: 'sine', freq: 115, freqEnd: 54, gain: 0.55, attack: 0.001, decay: 0.065 },
+      { type: 'noise', filter: 'bandpass', freq: 1000, q: 0.8, gain: 0.72, attack: 0.001, decay: 0.035 },
+      { type: 'tone', wave: 'triangle', freq: 235, freqEnd: 130, gain: 0.6, attack: 0.001, decay: 0.05 },
+      { type: 'tone', wave: 'sine', freq: 140, freqEnd: 90, gain: 0.48, attack: 0.002, decay: 0.06 },
+      { type: 'noise', filter: 'bandpass', freq: 2700, q: 1, gain: 0.22, attack: 0.0008, decay: 0.011 },
+      { type: 'tone', wave: 'triangle', freq: 620, freqEnd: 390, gain: 0.11, attack: 0.001, decay: 0.018, delay: 0.02 },
     ] },
     foamReloadOut: { volume: 0.45, layers: [
       { type: 'noise', filter: 'bandpass', freq: 2100, q: 1.4, gain: 0.5, attack: 0.001, decay: 0.04 },
@@ -47,12 +48,13 @@ export const audio = {
       { type: 'tone', wave: 'triangle', freq: 400, freqEnd: 170, gain: 0.25, attack: 0.001, decay: 0.04, delay: 0.02 },
     ] },
 
-    // Pressure boom + opening crack, then a quieter paper flutter (not a long wash of hiss).
-    confettiShot: { volume: 0.95, layers: [
+    // Deep chest-thumping pressure boom + opening crack, then a crisp paper flutter.
+    confettiShot: { volume: 0.98, layers: [
+      { type: 'tone', wave: 'sine', freq: 110, freqEnd: 38, gain: 1.15, attack: 0.001, decay: 0.25 },
       { type: 'tone', wave: 'sine', freq: 175, freqEnd: 55, gain: 1.15, attack: 0.002, decay: 0.22 },
-      { type: 'noise', filter: 'lowpass', freq: 1200, q: 0.75, gain: 1, attack: 0.001, decay: 0.1 },
-      { type: 'noise', filter: 'bandpass', freq: 2800, q: 0.8, gain: 0.52, attack: 0.0008, decay: 0.03 },
-      { type: 'tone', wave: 'triangle', freq: 320, freqEnd: 115, gain: 0.35, attack: 0.002, decay: 0.085 },
+      { type: 'noise', filter: 'lowpass', freq: 1200, q: 0.75, gain: 1.05, attack: 0.001, decay: 0.11 },
+      { type: 'noise', filter: 'bandpass', freq: 2800, q: 0.8, gain: 0.56, attack: 0.0008, decay: 0.032 },
+      { type: 'tone', wave: 'triangle', freq: 320, freqEnd: 115, gain: 0.38, attack: 0.002, decay: 0.085 },
       { type: 'noise', filter: 'bandpass', freq: 1800, q: 0.8, gain: 0.2, attack: 0.008, decay: 0.16, delay: 0.055 },
       { type: 'noise', filter: 'highpass', freq: 3500, q: 0.7, gain: 0.15, attack: 0.012, decay: 0.18, delay: 0.065 },
     ] },
@@ -70,39 +72,83 @@ export const audio = {
       { type: 'tone', wave: 'sine', freq: 200, freqEnd: 65, gain: 0.5, attack: 0.001, decay: 0.1 },
     ] },
 
-    // Metal snap + solid tool-body clunk, with a tiny spring ring after the strike.
+    // Metal snap + heavy sub-bass tool-body clunk, with a tiny spring ring after the strike.
     stapleShot: {
-      volume: 0.9,
+      volume: 0.92,
       layers: [
-        { type: 'noise', filter: 'bandpass', freq: 2500, q: 0.8, gain: 0.7, attack: 0.0008, decay: 0.025 },
+        { type: 'tone', wave: 'sine', freq: 135, freqEnd: 56, gain: 0.75, attack: 0.001, decay: 0.095 },
+        { type: 'noise', filter: 'bandpass', freq: 2500, q: 0.8, gain: 0.72, attack: 0.0008, decay: 0.025 },
         { type: 'tone', wave: 'sine', freq: 230, freqEnd: 105, gain: 1.25, attack: 0.001, decay: 0.12 },
-        { type: 'noise', filter: 'lowpass', freq: 1100, q: 0.7, gain: 0.6, attack: 0.001, decay: 0.07 },
-        { type: 'tone', wave: 'triangle', freq: 320, freqEnd: 175, gain: 0.42, attack: 0.001, decay: 0.055 },
-        { type: 'tone', wave: 'triangle', freq: 1800, freqEnd: 1500, gain: 0.07, attack: 0.001, decay: 0.038, delay: 0.013 },
+        { type: 'noise', filter: 'lowpass', freq: 1100, q: 0.7, gain: 0.64, attack: 0.001, decay: 0.07 },
+        { type: 'tone', wave: 'triangle', freq: 320, freqEnd: 175, gain: 0.44, attack: 0.001, decay: 0.055 },
+        { type: 'tone', wave: 'triangle', freq: 1800, freqEnd: 1500, gain: 0.08, attack: 0.001, decay: 0.038, delay: 0.013 },
       ],
     },
 
-    // Fast label punch: low body beneath the click, short enough to stay crisp at 12 shots/second.
+    // Fast label punch: tight low-end body beneath the click, short enough to stay crisp at 12 shots/second.
     priceShot: {
-      volume: 0.55,
+      volume: 0.58,
       layers: [
-        { type: 'noise', filter: 'bandpass', freq: 1700, q: 0.9, gain: 0.62, attack: 0.0008, decay: 0.022 },
-        { type: 'tone', wave: 'sine', freq: 200, freqEnd: 115, gain: 0.66, attack: 0.001, decay: 0.055 },
-        { type: 'noise', filter: 'lowpass', freq: 900, q: 0.7, gain: 0.48, attack: 0.001, decay: 0.036 },
-        { type: 'tone', wave: 'triangle', freq: 580, freqEnd: 320, gain: 0.13, attack: 0.001, decay: 0.016, delay: 0.012 },
+        { type: 'tone', wave: 'sine', freq: 130, freqEnd: 62, gain: 0.5, attack: 0.0008, decay: 0.048 },
+        { type: 'noise', filter: 'bandpass', freq: 1700, q: 0.9, gain: 0.64, attack: 0.0008, decay: 0.022 },
+        { type: 'tone', wave: 'sine', freq: 200, freqEnd: 115, gain: 0.68, attack: 0.001, decay: 0.055 },
+        { type: 'noise', filter: 'lowpass', freq: 900, q: 0.7, gain: 0.5, attack: 0.001, decay: 0.036 },
+        { type: 'tone', wave: 'triangle', freq: 580, freqEnd: 320, gain: 0.14, attack: 0.001, decay: 0.016, delay: 0.012 },
         { type: 'noise', filter: 'highpass', freq: 4500, q: 0.7, gain: 0.08, attack: 0.0005, decay: 0.008, delay: 0.004 },
       ],
     },
 
-    // Heavy pneumatic driver: broad crack, piston slam and a short steel ring/air release.
+    // Heavy pneumatic driver: deep sub-bass piston slam, broad crack, and a short steel ring/air release.
     nailShot: {
-      volume: 0.9,
+      volume: 0.94,
       layers: [
-        { type: 'tone', wave: 'sine', freq: 210, freqEnd: 80, gain: 1.05, attack: 0.001, decay: 0.14 },
-        { type: 'noise', filter: 'bandpass', freq: 1500, q: 0.8, gain: 0.9, attack: 0.0008, decay: 0.045 },
-        { type: 'noise', filter: 'lowpass', freq: 650, q: 0.7, gain: 0.62, attack: 0.001, decay: 0.095 },
-        { type: 'tone', wave: 'triangle', freq: 740, freqEnd: 680, gain: 0.18, attack: 0.001, decay: 0.065, delay: 0.01 },
-        { type: 'noise', filter: 'bandpass', freq: 3100, q: 0.9, gain: 0.16, attack: 0.006, decay: 0.08, delay: 0.035 },
+        { type: 'tone', wave: 'sine', freq: 115, freqEnd: 46, gain: 0.95, attack: 0.001, decay: 0.15 },
+        { type: 'tone', wave: 'sine', freq: 210, freqEnd: 80, gain: 1.08, attack: 0.001, decay: 0.14 },
+        { type: 'noise', filter: 'bandpass', freq: 1500, q: 0.8, gain: 0.92, attack: 0.0008, decay: 0.045 },
+        { type: 'noise', filter: 'lowpass', freq: 650, q: 0.7, gain: 0.66, attack: 0.001, decay: 0.095 },
+        { type: 'tone', wave: 'triangle', freq: 740, freqEnd: 680, gain: 0.2, attack: 0.001, decay: 0.065, delay: 0.01 },
+        { type: 'noise', filter: 'bandpass', freq: 3100, q: 0.9, gain: 0.18, attack: 0.006, decay: 0.08, delay: 0.035 },
+      ],
+    },
+
+    // Meaty body impact: wet low-mid thud + slap when a shot connects with a zombie.
+    hitBody: {
+      volume: 0.52,
+      layers: [
+        { type: 'tone', wave: 'sine', freq: 155, freqEnd: 62, gain: 0.65, attack: 0.001, decay: 0.065 },
+        { type: 'noise', filter: 'lowpass', freq: 780, q: 0.9, gain: 0.55, attack: 0.001, decay: 0.045 },
+        { type: 'noise', filter: 'bandpass', freq: 1650, q: 1.2, gain: 0.35, attack: 0.0008, decay: 0.025 },
+      ],
+    },
+
+    // Crunchy headshot impact: wet skull-crack + bright arcade confirmation ping.
+    hitHead: {
+      volume: 0.7,
+      layers: [
+        { type: 'tone', wave: 'sine', freq: 175, freqEnd: 68, gain: 0.7, attack: 0.001, decay: 0.07 },
+        { type: 'noise', filter: 'bandpass', freq: 2850, q: 1.4, gain: 0.68, attack: 0.0006, decay: 0.032 },
+        { type: 'noise', filter: 'lowpass', freq: 950, q: 0.85, gain: 0.55, attack: 0.001, decay: 0.05 },
+        { type: 'tone', wave: 'triangle', freq: 1380, freqEnd: 1960, gain: 0.24, attack: 0.001, decay: 0.065, delay: 0.008 },
+      ],
+    },
+
+    // Lethal blow confirmation: deep splatter pop + punchy low drop when a target goes down.
+    killConfirm: {
+      volume: 0.68,
+      layers: [
+        { type: 'tone', wave: 'sine', freq: 190, freqEnd: 48, gain: 0.78, attack: 0.001, decay: 0.11 },
+        { type: 'noise', filter: 'bandpass', freq: 2150, q: 1.1, gain: 0.52, attack: 0.001, decay: 0.048, delay: 0.006 },
+        { type: 'tone', wave: 'triangle', freq: 920, freqEnd: 560, gain: 0.2, attack: 0.001, decay: 0.075, delay: 0.012 },
+      ],
+    },
+
+    // Box cutter slash: metallic blade snick + sharp air whoosh.
+    meleeSwing: {
+      volume: 0.55,
+      layers: [
+        { type: 'noise', filter: 'bandpass', freq: 3800, q: 2.2, gain: 0.38, attack: 0.001, decay: 0.03 },
+        { type: 'noise', filter: 'bandpass', freq: 1250, q: 1.1, gain: 0.52, attack: 0.018, decay: 0.095, delay: 0.02 },
+        { type: 'tone', wave: 'triangle', freq: 520, freqEnd: 210, gain: 0.22, attack: 0.01, decay: 0.08, delay: 0.025 },
       ],
     },
 
@@ -176,12 +222,14 @@ export const audio = {
       ],
     },
 
-    // Trigger squeezed on an empty gun: a thin little click.
+    // Trigger squeezed on an empty gun: crisp metallic striker snap, hammer release, and hollow chamber ring.
     dryClick: {
-      volume: 0.6,
+      volume: 0.85,
       layers: [
-        { type: 'noise', filter: 'highpass', freq: 4000, q: 0.7, gain: 0.6, attack: 0.0005, decay: 0.018 },
-        { type: 'tone', wave: 'square', freq: 1600, freqEnd: 1200, gain: 0.08, attack: 0.0005, decay: 0.015 },
+        { type: 'noise', filter: 'bandpass', freq: 3800, q: 2.2, gain: 0.8, attack: 0.0005, decay: 0.026 },
+        { type: 'tone', wave: 'triangle', freq: 2400, freqEnd: 1500, gain: 0.35, attack: 0.0005, decay: 0.022 },
+        { type: 'tone', wave: 'sine', freq: 880, freqEnd: 520, gain: 0.22, attack: 0.001, decay: 0.065, delay: 0.006 },
+        { type: 'noise', filter: 'lowpass', freq: 1200, q: 1.2, gain: 0.28, attack: 0.001, decay: 0.038, delay: 0.004 },
       ],
     },
 

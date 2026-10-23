@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { wallSegments, slabPieces } from '../src/world/mapKit.js';
 import { createDoor, toggleDoors } from '../src/world/door.js';
+import { createShutter } from '../src/world/shutter.js';
 import { createNavigation } from '../src/zombies/navigation.js';
 import { markCollidersChanged } from '../src/world/collision.js';
 
@@ -92,6 +93,24 @@ test('debug door toggle synchronizes a partially bought map instead of closing i
   doors[1].reset();
   toggleDoors(doors);
   assert.ok(doors.every((d) => d.isOpen), 'any mixed state opens completely');
+});
+
+test('a fully raised shutter hides inside its housing instead of flickering through the lintel', () => {
+  const colliders = [];
+  const shutter = createShutter({
+    name: 'test', minX: -0.15, maxX: 0.15, minZ: -1.2, maxZ: 1.2, height: 3,
+    material: new THREE.MeshBasicMaterial(), colliders,
+  });
+  shutter.open();
+  shutter.update(10);
+  assert.equal(shutter.isOpen, true);
+  assert.equal(shutter.mesh.visible, false);
+  assert.equal(colliders.length, 0);
+  shutter.close();
+  assert.equal(shutter.mesh.visible, true, 'closing brings the shutter back out of its housing');
+  assert.equal(colliders.length, 1, 'closing blocks the doorway immediately');
+  shutter.mesh.geometry.dispose();
+  shutter.mesh.material.dispose();
 });
 
 test('the navigation grid rebuilds when colliders change, even if the count stays the same', () => {

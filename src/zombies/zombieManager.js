@@ -113,10 +113,14 @@ export function createZombieManager({
   }
 
   function onZombieDeath(zombie) {
-    // A final burst of splatter from the chest.
+    // A final burst of splatter from the chest, carrying the killing blow's directional momentum.
     scratch.copy(zombie.position);
     scratch.y += zombie.type.hitbox.bodyTop * 0.75;
-    effects.splat(scratch, UP, zombie.type.splatColors, zombie.type.deathSplatCount, { flesh: true });
+    effects.splat(scratch, UP, zombie.type.splatColors, zombie.type.deathSplatCount, {
+      flesh: true,
+      speedScale: zombie.deathImpulse ?? 1,
+      direction: zombie.lastHitDir ?? null,
+    });
     effects.pool(zombie.position.x, zombie.position.z); // (red splatter only)
     if (onKill) onKill(zombie);
   }

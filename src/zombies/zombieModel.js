@@ -372,10 +372,24 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
       // Cart Pusher: hands on the handle (unless slamming), and the charge poses.
       if (cart) poseCart(zombie, type, armPose !== null);
 
-      // Flinch: jolt the upper body and head back when shot, and flash white.
-      const flinch = type.flinchSeconds > 0 ? zombie.flinchTimer / type.flinchSeconds : 0;
-      upper.rotation.x += flinch * 0.35;
-      neck.rotation.x -= flinch * 0.3;
+      // Flinch: jolt the upper body, shoulders and head back when shot, and flash white.
+      const flinchDur = zombie.flinchDuration || type.flinchSeconds;
+      const flinch = flinchDur > 0 ? clamp01(zombie.flinchTimer / flinchDur) : 0;
+      const strength = Math.min(2.2, zombie.flinchStrength ?? 1);
+      const isHead = zombie.flinchPart === 'head';
+      const side = zombie.flinchSide ?? 1;
+      const snap = flinch * flinch;
+      upper.rotation.x += flinch * (isHead ? 0.3 : 0.44) * strength;
+      upper.rotation.y += snap * 0.2 * side * strength;
+      upper.rotation.z += snap * 0.1 * side * strength;
+      neck.rotation.x -= flinch * (isHead ? 0.62 : 0.34) * strength;
+      neck.rotation.y -= snap * (isHead ? 0.3 : 0.12) * side * strength;
+      if (armPose === null && !cart && flinch > 0) {
+        arms[0].shoulder.rotation.x -= snap * 0.3 * strength;
+        arms[1].shoulder.rotation.x -= snap * 0.3 * strength;
+        arms[0].shoulder.rotation.z -= snap * 0.15 * strength;
+        arms[1].shoulder.rotation.z += snap * 0.15 * strength;
+      }
       const flash = flinch > 0 ? 0.5 : 0;
       if (flash !== lastFlash) {
         for (const m of materials) m.emissive.setScalar(flash);
@@ -387,19 +401,24 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
         const t = ease(Math.min(1, zombie.stateTime / type.spawnSeconds));
         root.position.y -= type.height * (1 - t);
         fall.rotation.x = 0;
+        fall.rotation.y = 0;
       }
 
-      // Dead: tip over backwards, lie there, then sink through the floor.
+      // Dead: tip over backwards (faster and with a slight twist on heavy/headshot kills), lie there, then sink.
       if (zombie.state === 'dead') {
         const t = zombie.stateTime;
-        const tip = ease(Math.min(1, t / type.fallSeconds));
+        const impulse = Math.max(1, zombie.deathImpulse ?? 1);
+        const fallDur = type.fallSeconds / Math.min(1.55, Math.sqrt(impulse));
+        const tip = ease(Math.min(1, t / fallDur));
         fall.rotation.x = tip * (Math.PI / 2 - 0.08);
+        fall.rotation.y = tip * (zombie.deathTwist ?? 0);
         legs[0].rotation.x = legs[1].rotation.x = 0;
         const sinkStart = type.fallSeconds + type.corpseSeconds;
         const sink = Math.max(0, Math.min(1, (t - sinkStart) / type.sinkSeconds));
         root.position.y -= sink * 0.6;
       } else {
         fall.rotation.x = 0;
+        fall.rotation.y = 0;
       }
     },
 

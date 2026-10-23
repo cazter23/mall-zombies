@@ -38,19 +38,27 @@ export const weapons = {
     recoil: {
       pitchDegrees: 1.0, // the view kicks up this much per shot (peak, ~35ms after the shot), then settles
       yawDegrees: 0, // random left/right kick per shot (moves the crosshair too; springs back)
-      rollDegrees: 0.3, // visual only: the view tilts a hair left or right (rolling never moves the crosshair)
+      rollDegrees: 0.45, // visual only: the view tilts a hair left or right (rolling never moves the crosshair)
       adsMultiplier: 0.7, // camera kick while aiming down sights
       model: {
         // The gun in your hands (visual only)
-        back: 0.045, // meters it jolts back toward you
-        up: 0.008, // meters it hops up
-        pitchDegrees: 7, // the muzzle flips up
-        yawDegrees: 1.5, // random little twist left or right
-        rollDegrees: 3, // random little roll
+        back: 0.052, // meters it jolts back toward you
+        up: 0.01, // meters it hops up
+        pitchDegrees: 8.5, // the muzzle flips up
+        yawDegrees: 1.8, // random little twist left or right
+        rollDegrees: 3.5, // random little roll
         adsMultiplier: 0.4, // much smaller while aiming, so the sight stays readable
-        frequency: 6.5, // Hz: how fast it springs back (higher = snappier)
-        damping: 0.55, // < 1 settles with a slight forward bounce, which reads as weight
+        frequency: 6.8, // Hz: how fast it springs back (higher = snappier)
+        damping: 0.52, // < 1 settles with a slight forward bounce, which reads as weight
       },
+    },
+
+    // Target impact & combat feel (read by playerGun, zombie.takeHit, zombieModel, and effects)
+    impact: {
+      flinch: 1.0, // upper-body/head stagger multiplier
+      knockback: 0.9, // m/s horizontal shove on chasing zombies
+      hitstopSeconds: 0, // micro-hitstop freeze on the hit target
+      deathImpulse: 1.1, // corpse knockdown speed & splatter burst velocity multiplier
     },
 
     // Muzzle flash: a cartoon burst + a flicker of light on the gun and the room.
@@ -151,8 +159,8 @@ export const weapons = {
   },
 
   // Cheap full-auto wall buy (start room, 500): a supermarket price-label gun shooting price stickers.
-  // ROLE: the cheap close-range sprayer. Best sustained damage of the non-shotguns up close (it's
-  // firing most of the time: big magazine, quick reload), but the stickers lose punch with range,
+  // ROLE: the cheap close-range sprayer. Competitive with the dearer Foam Dart Blaster up close
+  // (big magazine, quick reload), but the stickers lose punch with range,
   // so the Nail Gun / Foam Dart Blaster own the long sightlines. (tests/balance.test.js checks this.)
   priceGun: {
     id: 'priceGun',
@@ -171,18 +179,25 @@ export const weapons = {
     recoil: {
       pitchDegrees: 0.45, // smaller kicks, but at 12 a second they stack into a small climb
       yawDegrees: 0.25, // random sideways kick: sprays wander a little
-      rollDegrees: 0.15,
+      rollDegrees: 0.25,
       adsMultiplier: 0.65,
       model: {
-        back: 0.02,
-        up: 0.004,
-        pitchDegrees: 3,
-        yawDegrees: 1,
-        rollDegrees: 1.5,
+        back: 0.025,
+        up: 0.005,
+        pitchDegrees: 3.8,
+        yawDegrees: 1.2,
+        rollDegrees: 2.0,
         adsMultiplier: 0.4,
-        frequency: 9, // snappier spring so rapid shots stay readable
-        damping: 0.6,
+        frequency: 9.2, // snappier spring so rapid shots stay readable
+        damping: 0.56,
       },
+    },
+
+    impact: {
+      flinch: 0.78,
+      knockback: 0.55,
+      hitstopSeconds: 0,
+      deathImpulse: 1.0,
     },
 
     spread: {
@@ -291,18 +306,25 @@ export const weapons = {
     recoil: {
       pitchDegrees: 1.8, // a big thump per shot...
       yawDegrees: 0.35,
-      rollDegrees: 0.5,
+      rollDegrees: 0.7,
       adsMultiplier: 0.65,
       model: {
-        back: 0.065,
-        up: 0.012,
-        pitchDegrees: 10,
-        yawDegrees: 1.5,
-        rollDegrees: 4,
+        back: 0.075,
+        up: 0.015,
+        pitchDegrees: 12,
+        yawDegrees: 1.8,
+        rollDegrees: 4.5,
         adsMultiplier: 0.4,
-        frequency: 6, // ...and a heavier, slower settle
-        damping: 0.5,
+        frequency: 5.8, // ...and a heavier, slower settle
+        damping: 0.48,
       },
+    },
+
+    impact: {
+      flinch: 1.65,
+      knockback: 2.2,
+      hitstopSeconds: 0.025,
+      deathImpulse: 1.5,
     },
 
     spread: {
@@ -357,7 +379,7 @@ export const weapons = {
       metalColor: 0xa7adb5,
       sightColor: 0xff5a2e,
       // Trigger pull + the nose punching forward on each shot.
-      fire: { triggerDegrees: 25, nosePunch: 0.012, pressSeconds: 0.025, releaseSeconds: 0.1 },
+      fire: { triggerDegrees: 25, nosePunch: 0.016, pressSeconds: 0.025, releaseSeconds: 0.1 },
       reload: {
         // The gun tips up and rolls so the magazine faces the left hand, holds, returns.
         gunKeys: [
@@ -390,19 +412,26 @@ export const weapons = {
   },
   // Mega Mart burst rifle: three foam darts per fresh trigger press, strong headshots.
   // ROLE: the mid-range gun. Best sustained damage around 15 m (past the Price Gun's falloff, ahead of the
-  // Nail Gun), just behind the Price Gun up close; foam drifts, so it falls behind the Nail Gun at 30 m.
+  // Nail Gun), with a small sustained-damage lead over the cheaper Price Gun up close. Foam drifts,
+  // so it falls behind the Nail Gun at 30 m.
   foamDartBlaster: {
     id: 'foamDartBlaster', name: 'Foam Dart Blaster', fireMode: 'burst',
     burst: { count: 3, interval: 0.07 },
     damage: 52, headshotMultiplier: 3, // (was 50) round 3: two body bursts; round 5: one head burst
-    magazineSize: 24, startingReserve: 144,
+    magazineSize: 30, startingReserve: 144, // ten full bursts; reserve unchanged
     fireInterval: 0.35, // pause after the LAST dart
     fireBuffer: 0.12, reloadTime: 1.9, range: 100,
     falloff: { start: 15, end: 30, minMultiplier: 0.75 }, // foam darts drift: full to 15 m, 75% at 30 m
     recoil: {
-      pitchDegrees: 0.55, yawDegrees: 0.18, rollDegrees: 0.15, adsMultiplier: 0.7,
-      model: { back: 0.022, up: 0.004, pitchDegrees: 3.5, yawDegrees: 0.8, rollDegrees: 1,
-        adsMultiplier: 0.4, frequency: 8, damping: 0.6 },
+      pitchDegrees: 0.55, yawDegrees: 0.18, rollDegrees: 0.25, adsMultiplier: 0.7,
+      model: { back: 0.028, up: 0.005, pitchDegrees: 4.2, yawDegrees: 1.0, rollDegrees: 1.5,
+        adsMultiplier: 0.4, frequency: 8.5, damping: 0.56 },
+    },
+    impact: {
+      flinch: 0.95,
+      knockback: 0.85,
+      hitstopSeconds: 0,
+      deathImpulse: 1.2,
     },
     spread: {
       base: 0.8, moving: 2.2, maxMovingFactor: 1.6, airborne: 3,
@@ -453,15 +482,15 @@ export const weapons = {
     },
   },
 
-  // Service Corridor shotgun: one shell, eight pellets; rewards close-range positioning.
+  // Service Corridor shotgun: one shell, twelve pellets; rewards close-range positioning.
   confettiCannon: {
     id: 'confettiCannon', name: 'Confetti Cannon', fireMode: 'semi',
-    // ROLE: the room-clearer. Clearly the strongest gun within ~3m (one blast kills a round-3 zombie),
-    // about even at 5m, near useless past 9m: the wide cone scatters and the damage fades.
-    // Aiming down sights tightens the cone a lot (reaches ~5m). No single BODY blast can kill round 5,
+    // ROLE: the room-clearer. Reliable round-3 chest kills within ~3m, useful hip fire through ~4m.
+    // Full pellet damage through 4m, then a gradual fade; the cone still limits single-target range.
+    // Aiming down sights extends reliable damage to ~5m. No single BODY blast can kill round 5,
     // leaving room for upgrades (a point-blank head blast can: a deliberate, risky reward). (tests/balance.test.js checks all of this; `npm run balance` shows it.)
-    pellets: { count: 12, spreadDegrees: 7.0, adsMultiplier: 0.45, tracerColors: [0xff6abc, 0xffd23f] },
-    falloff: { start: 3, end: 10, minMultiplier: 0.05 },
+    pellets: { count: 12, spreadDegrees: 6.0, adsMultiplier: 0.45, tracerColors: [0xff6abc, 0xffd23f] },
+    falloff: { start: 4, end: 12, minMultiplier: 0.1 },
     // A pellet that goes through a zombie hits the one behind it at half damage (clears clumps).
     pierce: { maxTargets: 2, damageFalloff: [1, 0.5] },
     damage: 36, headshotMultiplier: 2, // a point-blank blast is 12 x 36 = 432: one-shots rounds 1-3 (and round 4 point blank)
@@ -472,9 +501,15 @@ export const weapons = {
       progress: { start: [0, 0.3], shell: [0.3, 0.7], end: [0.7, 1] } },
     fireInterval: 0.55, fireBuffer: 0.12, reloadTime: 2.4, range: 60, // (reloadTime is unused with shellReload)
     recoil: {
-      pitchDegrees: 3.5, yawDegrees: 0.4, rollDegrees: 0.7, adsMultiplier: 0.75,
-      model: { back: 0.085, up: 0.016, pitchDegrees: 13, yawDegrees: 2, rollDegrees: 4,
-        adsMultiplier: 0.55, frequency: 4.5, damping: 0.6 },
+      pitchDegrees: 3.5, yawDegrees: 0.4, rollDegrees: 0.95, adsMultiplier: 0.75,
+      model: { back: 0.095, up: 0.02, pitchDegrees: 15, yawDegrees: 2.4, rollDegrees: 5,
+        adsMultiplier: 0.55, frequency: 4.5, damping: 0.54 },
+    },
+    impact: {
+      flinch: 2.2,
+      knockback: 3.6,
+      hitstopSeconds: 0.035,
+      deathImpulse: 1.85,
     },
     spread: {
       base: 0.35, moving: 0.8, maxMovingFactor: 1.6, airborne: 1.5,
@@ -558,8 +593,14 @@ export const melee = {
     lungeSpeed: 9, // m/s during the lunge
     lungeMaxSeconds: 0.2,
     lungeStopFraction: 0.6, // the lunge stops when the target is this fraction of `range` away
-    impactJoltDegrees: 1.5, // view jolt when the slash connects
+    impactJoltDegrees: 1.8, // view jolt when the slash connects
     splatCount: 30, // big splatter on a hit
+    impact: {
+      flinch: 1.5,
+      knockback: 2.0,
+      hitstopSeconds: 0.025,
+      deathImpulse: 1.4,
+    },
     colors: { handle: 0xffd23f, blade: 0xdfe6ee, grip: 0x2b2b2b },
   },
 };

@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { weapons } from '../src/config/weapons.js';
 import { zombieHealthForRound } from '../src/config/economy.js';
 import { sustainedDps, expectedShotDamage } from '../tools/balance.js';
+import { seededRandom } from '../src/world/textures.js';
 
 const style = (d) => ({ ads: !d.pellets, samples: 1500 });
 const dps = (d, m) => sustainedDps(d, m, style(d));
@@ -41,11 +42,33 @@ test('Confetti Cannon blast targets: one blast kills round 3 up close; no single
   // (A point-blank HEAD blast can: 2x per pellet. That's a deliberate, risky close-range reward.)
 });
 
-test('Price Gun: the cheap close-range sprayer. Best sustained damage at 5 m of the non-shotguns...', () => {
+test('Cannon close-range reliability: round-3 chest kills are dependable at 3 m, useful at 4 m, and aimed at 5 m', () => {
+  // Count individual blasts, rather than hiding inconsistent kills inside an average damage figure.
+  // Independent seeded spread sequences keep this repeatable without aligning the first pellet of every blast.
+  function killRate(range, ads = false) {
+    const random = seededRandom(421), trials = 1500;
+    let kills = 0;
+    for (let i = 0; i < trials; i++) {
+      const damage = expectedShotDamage(confettiCannon, range, {
+        ads, samples: 1, seed: 1 + Math.floor(random() * 2147483645),
+      });
+      if (damage >= zombieHealthForRound(3)) kills++;
+    }
+    return kills / trials;
+  }
+  assert.ok(killRate(3) > 0.98, 'close chest blasts should rarely require a second shell');
+  assert.ok(killRate(4) > 0.65, 'hip fire should still be useful one step farther out');
+  assert.ok(killRate(5, true) > 0.95, 'aiming should reliably extend a round-3 kill to 5 m');
+  assert.ok(expectedShotDamage(confettiCannon, 7, { ads: true })
+    > 1.5 * expectedShotDamage(confettiCannon, 7), 'aiming remains valuable beyond hip range');
+});
+
+test('Price Gun: the cheap close-range sprayer stays competitive with the premium Foam Dart Blaster...', () => {
   const at5 = dps(priceGun, 5);
-  for (const d of [stapleGun, nailGun, foamDartBlaster]) {
+  for (const d of [stapleGun, nailGun]) {
     assert.ok(at5 > dps(d, 5), `price ${Math.round(at5)} vs ${d.name} ${Math.round(dps(d, 5))} at 5 m`);
   }
+  assert.ok(dps(foamDartBlaster, 5) < 1.1 * at5, 'Foam capacity gives a modest premium, not a large close-range advantage');
 });
 
 test('...but it falls off: the Nail Gun and Foam Dart Blaster beat it at 30 m', () => {

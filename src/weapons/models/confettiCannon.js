@@ -9,7 +9,18 @@ function buildGun(vm) {
   const gun = new THREE.Group();
   const materials = new Map();
   const mat = (color) => {
-    if (!materials.has(color)) materials.set(color, new THREE.MeshStandardMaterial({ color, roughness: 0.5, metalness: 0.15, flatShading: true }));
+    if (!materials.has(color)) {
+      const isMetal = color === vm.metalColor;
+      const isDark = color === vm.darkColor;
+      const isSight = color === vm.sightColor;
+      materials.set(color, new THREE.MeshStandardMaterial({
+        color,
+        roughness: isSight ? 0.2 : isMetal ? 0.24 : isDark ? 0.72 : 0.32,
+        metalness: isMetal ? 0.74 : isDark ? 0.12 : 0.1,
+        ...(isSight ? { emissive: color, emissiveIntensity: 0.7 } : {}),
+        flatShading: true,
+      }));
+    }
     return materials.get(color);
   };
   const box = (w, h, d, x, y, z, color, parent = gun) => {

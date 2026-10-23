@@ -27,6 +27,7 @@ export const bindings = {
   weapon1: ['Digit1'], // straight to slot 1 / slot 2
   weapon2: ['Digit2'],
   melee: ['KeyV', 'PadRB', 'PadR3'],
+  inspect: ['KeyI', 'PadDown'],
   pause: ['PadStart'],
   confirm: ['PadA', 'PadStart'], // controller menus: start, resume, play again
   settings: ['PadY'], // controller: open Settings from the pause screen
@@ -51,6 +52,7 @@ export const controlsHelp = {
     { keys: '1  2', text: 'Switch weapon', short: 'Switch weapon', anchors: ['1', '2'] },
     { keys: 'Wheel', text: 'Switch weapon', short: 'Switch weapon', anchors: ['wheel'] },
     { keys: 'V', text: 'Box cutter', short: 'Box cutter', anchors: ['V'] },
+    { keys: 'I', text: 'Inspect weapon', short: 'Inspect', anchors: ['I'] },
     { keys: 'Esc', text: 'Pause', short: 'Pause', anchors: ['Esc'] },
   ],
   gamepad: [

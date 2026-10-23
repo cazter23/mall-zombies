@@ -97,8 +97,47 @@ export function makeTileTexture({ base = '#efe5d3', grout = '#c9bba4', variation
   return finish(canvas, { repeat: true });
 }
 
-/** A shop sign: bold text on a backlit colored band with a recessed bezel. */
-export function makeSignTexture(text, { background = '#222', color = '#fff', aspect = 6 } = {}) {
+function measureTextWidth(ctx, text) {
+  const m = ctx.measureText(text);
+  return typeof m?.width === 'number' && !Number.isNaN(m.width) ? m.width : 0;
+}
+
+function fitText(ctx, text, family, maxFontSize, maxWidth) {
+  let fontSize = maxFontSize;
+  ctx.font = `${fontSize}px ${family}`;
+  let w = measureTextWidth(ctx, text);
+  while (w > maxWidth && fontSize > 10) {
+    fontSize -= 2;
+    ctx.font = `${fontSize}px ${family}`;
+    w = measureTextWidth(ctx, text);
+  }
+  return fontSize;
+}
+
+export function detectSignStyle(text, background = '') {
+  const upper = String(text).toUpperCase();
+  if (upper.includes('BYTE ME') || upper.includes('LOADING') || upper.includes('NO SIGNAL')) return 'tech';
+  if (upper.includes('GOOD SPORTS') || /^\b\d{1,3}\b$/.test(upper.trim())) return 'varsity';
+  if (upper.includes('PLAY TIME')) return 'toy';
+  if (upper.includes('NUTS & BOLTS') || upper.includes('MEASURE TWICE') || upper.includes('CURSE ONCE')) return 'industrial';
+  if (upper.includes('BURGER BARN')) return 'diner';
+  if (upper.includes('WOK THIS WAY')) return 'wok';
+  if (upper.includes('CORN DOG')) return 'carnival';
+  if (upper.includes('MEGA MART') || upper.startsWith('AISLE') || upper.includes('EXPRESS') || upper.includes('HOLIDAY') || upper.includes('HOUSEWARES') || upper.includes('SNACKS') || upper.includes('OUTDOOR') || upper.includes('THANK YOU FOR SHOPPING')) return 'supermarket';
+  if (upper.includes('BUSINESS') || upper.includes('MUST GO') || upper.includes('ALL SALES FINAL') || upper.includes('MARKDOWN') || upper.includes('70% OFF') || upper.includes('NO REFUNDS') || upper.includes('SALE!')) return 'clearance';
+  if (upper.includes('DANGER') || upper.includes('HIGH VOLTAGE')) return 'hazard';
+  if (upper.includes('NOW SERVING') || upper === '0.00' || upper.includes('REGISTER_SCREEN')) return 'digital';
+  if (upper.includes('OUT OF ORDER') || upper.includes('BACK IN 5') || upper.includes('STILL WAITING') || upper.includes('NO LOITERING') || upper.includes('HANDS') || upper.includes('TABLES ARE FOR CUSTOMERS')) return 'handwritten';
+  if (upper.includes('CUSTOMER SERVICE') || upper.includes('WARRANTY')) return 'service';
+  if (upper.includes('RESTOCK') || upper.startsWith('AMMO')) return 'ammo';
+  if (upper.startsWith('EXIT') || upper.includes('FOOD COURT') || upper.includes('MAIN HALL') || upper.includes('STAFF ONLY') || upper.includes('GALLERIA') || upper.includes('PARKING') || upper.includes('ESCALATOR') || upper.includes('ELEVATOR') || upper.includes('DIRECTORY')) return 'wayfinding';
+  return 'standard';
+}
+
+/**
+ * A themed shop/mall sign with unique typography, graphics, and era-appropriate styling.
+ */
+export function makeSignTexture(text, { background, color, aspect = 6, style, subtext, font, accentColor } = {}) {
   const width = 1024;
   const height = Math.round(width / aspect);
   const canvas = document.createElement('canvas');
@@ -106,41 +145,621 @@ export function makeSignTexture(text, { background = '#222', color = '#fff', asp
   canvas.height = height;
   const ctx = canvas.getContext('2d');
 
-  ctx.fillStyle = background;
-  ctx.fillRect(0, 0, width, height);
+  const detectedStyle = style || detectSignStyle(text, background);
+  const cx = width / 2;
+  const cy = height / 2;
 
-  // Subtle internal lightbox glow (brighter across the horizontal center, vignette at top/bottom)
-  const glow = ctx.createLinearGradient(0, 0, 0, height);
-  glow.addColorStop(0, 'rgba(0,0,0,0.22)');
-  glow.addColorStop(0.25, 'rgba(255,255,255,0.08)');
-  glow.addColorStop(0.5, 'rgba(255,255,255,0.14)');
-  glow.addColorStop(0.75, 'rgba(255,255,255,0.06)');
-  glow.addColorStop(1, 'rgba(0,0,0,0.28)');
-  ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, width, height);
+  switch (detectedStyle) {
+    case 'tech': {
+      // 90s Computer Store / Demo Wall: CRT scanlines, cyan PCB traces, terminal font
+      ctx.fillStyle = background || '#060d1a';
+      ctx.fillRect(0, 0, width, height);
 
-  // Outer metallic bezel & inner border
-  ctx.strokeStyle = 'rgba(0,0,0,0.45)';
-  ctx.lineWidth = 8;
-  ctx.strokeRect(4, 4, width - 8, height - 8);
-  ctx.strokeStyle = 'rgba(255,255,255,0.42)';
-  ctx.lineWidth = 5;
-  ctx.strokeRect(12, 12, width - 24, height - 24);
+      // CRT phosphor horizontal scanlines
+      ctx.fillStyle = 'rgba(0, 240, 212, 0.05)';
+      for (let y = 0; y < height; y += 4) ctx.fillRect(0, y, width, 1);
 
-  // Fit text to the sign
-  let fontSize = Math.round(height * 0.62);
-  const family = 'Impact, "Arial Black", "Helvetica Neue", sans-serif';
-  ctx.font = `${fontSize}px ${family}`;
-  while (ctx.measureText(text).width > width * 0.88 && fontSize > 10) {
-    fontSize -= 2;
-    ctx.font = `${fontSize}px ${family}`;
+      // Glowing corner PCB brackets
+      ctx.strokeStyle = '#00f0d4';
+      ctx.lineWidth = 4;
+      const bLen = Math.min(36, height * 0.35);
+      // Top-left
+      ctx.beginPath(); ctx.moveTo(12 + bLen, 12); ctx.lineTo(12, 12); ctx.lineTo(12, 12 + bLen); ctx.stroke();
+      // Top-right
+      ctx.beginPath(); ctx.moveTo(width - 12 - bLen, 12); ctx.lineTo(width - 12, 12); ctx.lineTo(width - 12, 12 + bLen); ctx.stroke();
+      // Bottom-left
+      ctx.beginPath(); ctx.moveTo(12 + bLen, height - 12); ctx.lineTo(12, height - 12); ctx.lineTo(12, height - 12 - bLen); ctx.stroke();
+      // Bottom-right
+      ctx.beginPath(); ctx.moveTo(width - 12 - bLen, height - 12); ctx.lineTo(width - 12, height - 12); ctx.lineTo(width - 12, height - 12 - bLen); ctx.stroke();
+
+      // Solder point dots
+      ctx.fillStyle = '#00f0d4';
+      for (const [px, py] of [[12, 12], [width - 12, 12], [12, height - 12], [width - 12, height - 12]]) {
+        ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
+      }
+
+      // Font & glowing text
+      const family = font || '"VT323", "Space Grotesk", "Courier New", monospace';
+      const fontSize = fitText(ctx, text, family, Math.round(height * 0.62), width * 0.82);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // Neon cyan shadow
+      ctx.shadowColor = color || '#00f0d4';
+      ctx.shadowBlur = 14;
+      ctx.fillStyle = color || '#00f0d4';
+      ctx.fillText(text, cx, cy);
+      ctx.shadowBlur = 0;
+      break;
+    }
+
+    case 'varsity': {
+      // 90s Sports Gear: Varsity block lettering, racing stripes, speed chevrons
+      ctx.fillStyle = background || '#0c1a2e';
+      ctx.fillRect(0, 0, width, height);
+
+      // Top and bottom athletic racing stripes
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 8, width, 4);
+      ctx.fillRect(0, height - 12, width, 4);
+      ctx.fillStyle = accentColor || '#ff8a3d';
+      ctx.fillRect(0, 15, width, 6);
+      ctx.fillRect(0, height - 21, width, 6);
+
+      // Speed chevrons on sides
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+      for (let i = 0; i < 2; i++) {
+        const xOff = 24 + i * 16;
+        ctx.beginPath();
+        ctx.moveTo(xOff, cy - 14); ctx.lineTo(xOff + 12, cy); ctx.lineTo(xOff, cy + 14);
+        ctx.lineTo(xOff + 5, cy + 14); ctx.lineTo(xOff + 17, cy); ctx.lineTo(xOff + 5, cy - 14);
+        ctx.fill();
+
+        const rxOff = width - xOff - 12;
+        ctx.beginPath();
+        ctx.moveTo(rxOff + 12, cy - 14); ctx.lineTo(rxOff, cy); ctx.lineTo(rxOff + 12, cy + 14);
+        ctx.lineTo(rxOff + 7, cy + 14); ctx.lineTo(rxOff - 5, cy); ctx.lineTo(rxOff + 7, cy - 14);
+        ctx.fill();
+      }
+
+      // Slanted athletic block font
+      ctx.save();
+      ctx.transform(1, 0, -0.09, 1, 0, 0);
+      const family = font || '"Teko", "Righteous", "Impact", sans-serif';
+      const fontSize = fitText(ctx, text, family, Math.round(height * 0.65), width * 0.78);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // Thick dark jersey outline + athletic fill
+      ctx.lineWidth = Math.max(6, fontSize * 0.14);
+      ctx.strokeStyle = '#050a14';
+      ctx.strokeText(text, cx + 8, cy);
+      ctx.fillStyle = color || '#ff8a3d';
+      ctx.fillText(text, cx + 8, cy);
+      ctx.restore();
+      break;
+    }
+
+    case 'toy': {
+      // 90s Toy Store: Bubbly cartoon letters, candy polka-dot border, starbursts
+      ctx.fillStyle = background || '#8338ec';
+      ctx.fillRect(0, 0, width, height);
+
+      // Lightbox gradient
+      const glow = ctx.createLinearGradient(0, 0, 0, height);
+      glow.addColorStop(0, 'rgba(255, 255, 255, 0.18)');
+      glow.addColorStop(0.5, 'rgba(0, 0, 0, 0)');
+      glow.addColorStop(1, 'rgba(0, 0, 0, 0.22)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, width, height);
+
+      // Candy polka-dot frame
+      const dotColors = ['#ffd60a', '#00f5d4', '#ff70a6', '#70e000', '#ffffff'];
+      let dIdx = 0;
+      const step = 28;
+      for (let x = 16; x < width - 16; x += step) {
+        ctx.fillStyle = dotColors[dIdx++ % dotColors.length];
+        ctx.beginPath(); ctx.arc(x, 10, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = dotColors[dIdx++ % dotColors.length];
+        ctx.beginPath(); ctx.arc(x, height - 10, 4, 0, Math.PI * 2); ctx.fill();
+      }
+
+      // Sparkle stars in corners
+      const drawStar = (sx, sy, r) => {
+        ctx.fillStyle = '#ffd60a';
+        ctx.beginPath();
+        ctx.moveTo(sx, sy - r);
+        ctx.quadraticCurveTo(sx, sy, sx + r, sy);
+        ctx.quadraticCurveTo(sx, sy, sx, sy + r);
+        ctx.quadraticCurveTo(sx, sy, sx - r, sy);
+        ctx.quadraticCurveTo(sx, sy, sx, sy - r);
+        ctx.fill();
+      };
+      drawStar(26, 26, 12);
+      drawStar(width - 26, 26, 12);
+      drawStar(26, height - 26, 12);
+      drawStar(width - 26, height - 26, 12);
+
+      // Bubbly text
+      const family = font || '"Fredoka", "Righteous", "Comic Sans MS", cursive, sans-serif';
+      const fontSize = fitText(ctx, text, family, Math.round(height * 0.58), width * 0.82);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      ctx.lineWidth = Math.max(6, fontSize * 0.14);
+      ctx.strokeStyle = '#240046';
+      ctx.strokeText(text, cx, cy + 2);
+      ctx.fillStyle = color || '#ffd60a';
+      ctx.fillText(text, cx, cy);
+      break;
+    }
+
+    case 'industrial': {
+      // 90s Hardware & Workshop: Stenciled slab, heavy steel bezel, hex bolts
+      ctx.fillStyle = background || '#202328';
+      ctx.fillRect(0, 0, width, height);
+
+      // Outer beveled frame
+      ctx.strokeStyle = '#121417';
+      ctx.lineWidth = 10;
+      ctx.strokeRect(5, 5, width - 10, height - 10);
+      ctx.strokeStyle = '#4a4f58';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(12, 12, width - 24, height - 24);
+
+      // 4 Metallic hex bolts
+      for (const [bx, by] of [[24, 24], [width - 24, 24], [24, height - 24], [width - 24, height - 24]]) {
+        ctx.fillStyle = '#7a828e';
+        ctx.beginPath(); ctx.arc(bx, by, 9, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#1e2126';
+        ctx.beginPath(); ctx.arc(bx, by, 6, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#adb5bd';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(bx - 4, by); ctx.lineTo(bx + 4, by); ctx.stroke();
+      }
+
+      // Yellow/black warning diagonal tabs on left and right edges
+      for (const side of [0, width - 42]) {
+        for (let y = 14; y < height - 14; y += 14) {
+          ctx.fillStyle = (Math.floor(y / 14) % 2 === 0) ? '#ffd23f' : '#1e2126';
+          ctx.fillRect(side + 14, y, 14, 14);
+        }
+      }
+
+      const family = font || '"Impact", "Arial Black", "Trebuchet MS", sans-serif';
+      const fontSize = fitText(ctx, text, family, Math.round(height * 0.58), width * 0.78);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+      ctx.fillText(text, cx + 4, cy + 4);
+      ctx.fillStyle = color || '#ffd23f';
+      ctx.fillText(text, cx, cy);
+      break;
+    }
+
+    case 'diner': {
+      // 80s/90s Diner / Burger Joint: Cooper/Righteous display, gold pinstripes
+      ctx.fillStyle = background || '#28080c';
+      ctx.fillRect(0, 0, width, height);
+
+      // Warm center glow
+      const glow = ctx.createRadialGradient(cx, cy, 10, cx, cy, width * 0.55);
+      glow.addColorStop(0, 'rgba(255, 180, 50, 0.15)');
+      glow.addColorStop(1, 'rgba(0, 0, 0, 0.45)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, width, height);
+
+      // Dual horizontal gold pinstripes
+      ctx.strokeStyle = '#ffd166';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(30, 14); ctx.lineTo(width - 30, 14); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(30, height - 14); ctx.lineTo(width - 30, height - 14); ctx.stroke();
+
+      // Corner diamond flourishes
+      const diamond = (dx, dy) => {
+        ctx.fillStyle = '#ffd166';
+        ctx.beginPath(); ctx.moveTo(dx, dy - 6); ctx.lineTo(dx + 6, dy); ctx.lineTo(dx, dy + 6); ctx.lineTo(dx - 6, dy); ctx.fill();
+      };
+      diamond(30, 14); diamond(width - 30, 14); diamond(30, height - 14); diamond(width - 30, height - 14);
+
+      const family = font || '"Righteous", "Georgia", "Cooper Black", serif';
+      const fontSize = fitText(ctx, text, family, Math.round(height * 0.62), width * 0.82);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // Rich drop shadow
+      ctx.fillStyle = '#8a1c26';
+      ctx.fillText(text, cx + 4, cy + 5);
+      ctx.fillStyle = color || '#ffd166';
+      ctx.fillText(text, cx, cy);
+      break;
+    }
+
+    case 'wok': {
+      // Asian Express: Imperial crimson, pagoda stepped frame, golden steam curls
+      ctx.fillStyle = background || '#4a0810';
+      ctx.fillRect(0, 0, width, height);
+
+      // Gold framing lines with stepped corners
+      ctx.strokeStyle = '#ffd23f';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(14, 14, width - 28, height - 28);
+      ctx.strokeRect(20, 20, width - 40, height - 40);
+
+      // Golden steam spiral flourishes on flanks
+      const curl = (sx, dir) => {
+        ctx.strokeStyle = 'rgba(255, 210, 63, 0.45)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(sx, cy - 8, 12, 0, Math.PI, false);
+        ctx.arc(sx + dir * 12, cy - 8, 6, Math.PI, 0, true);
+        ctx.stroke();
+      };
+      curl(50, 1);
+      curl(width - 50, -1);
+
+      const family = font || '"Righteous", "Brush Script MT", "Impact", cursive, sans-serif';
+      const fontSize = fitText(ctx, text, family, Math.round(height * 0.6), width * 0.78);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // Radiant gold text with fiery neon backlight glow
+      ctx.shadowColor = '#ff2a4b';
+      ctx.shadowBlur = 18;
+      ctx.fillStyle = color || '#ffd23f';
+      ctx.fillText(text, cx, cy);
+      ctx.shadowBlur = 0;
+      break;
+    }
+
+    case 'carnival': {
+      // Corn Dog Corral / Carnival: Scalloped ticket stub notches, marquee bulb dots
+      ctx.fillStyle = background || '#122c5e';
+      ctx.fillRect(0, 0, width, height);
+
+      // Scalloped corner notches
+      ctx.fillStyle = '#081226';
+      for (const [nx, ny] of [[0, 0], [width, 0], [0, height], [width, height]]) {
+        ctx.beginPath(); ctx.arc(nx, ny, 20, 0, Math.PI * 2); ctx.fill();
+      }
+
+      // Marquee incandescent bulb dots around border
+      ctx.fillStyle = '#ffd166';
+      const bStep = 32;
+      for (let x = 32; x < width - 32; x += bStep) {
+        ctx.beginPath(); ctx.arc(x, 12, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x, height - 12, 4, 0, Math.PI * 2); ctx.fill();
+      }
+
+      const family = font || '"Righteous", "Copperplate", "Impact", sans-serif';
+      const fontSize = fitText(ctx, text, family, Math.round(height * 0.6), width * 0.8);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      ctx.fillStyle = '#d62839';
+      ctx.fillText(text, cx + 4, cy + 4);
+      ctx.fillStyle = color || '#ffd166';
+      ctx.fillText(text, cx, cy);
+      break;
+    }
+
+    case 'supermarket': {
+      // Mega Mart & Aisles: Corporate blue, yellow brand bar, modern italic geometric sans
+      ctx.fillStyle = background || '#0f3c75';
+      ctx.fillRect(0, 0, width, height);
+
+      // Crisp white top border & bright yellow bottom brand bar
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, width, 4);
+      ctx.fillStyle = '#ffd23f';
+      ctx.fillRect(0, height - 14, width, 14);
+
+      // Starburst or aisle badge
+      if (text.startsWith('AISLE')) {
+        const match = text.match(/AISLE\s+(\d+)/);
+        const aisleNum = match ? match[1] : '1';
+        // White circular roundel badge on left
+        const rX = 54;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.arc(rX, cy - 4, Math.min(28, height * 0.36), 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#0f3c75';
+        ctx.font = `bold ${Math.round(height * 0.42)}px "Space Grotesk", sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(aisleNum, rX, cy - 4);
+      } else if (text.includes('MEGA MART')) {
+        // Multi-point yellow starburst spark on left
+        const sX = 52;
+        ctx.fillStyle = '#ffd23f';
+        ctx.beginPath();
+        for (let i = 0; i < 8; i++) {
+          const a = (i / 8) * Math.PI * 2;
+          const r = i % 2 === 0 ? 22 : 9;
+          const px = sX + Math.cos(a) * r;
+          const py = cy - 4 + Math.sin(a) * r;
+          if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // Modern geometric italic sans
+      ctx.save();
+      ctx.transform(1, 0, -0.08, 1, 0, 0);
+      const family = font || '"Space Grotesk", "Helvetica Neue", "Arial", sans-serif';
+      const fontSize = fitText(ctx, text, family, Math.round(height * 0.58), width * 0.78);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+      ctx.fillText(text, cx + 3, cy + 2);
+      ctx.fillStyle = color || '#ffd23f';
+      ctx.fillText(text, cx, cy - 4);
+      ctx.restore();
+      break;
+    }
+
+    case 'clearance': {
+      // Going Out of Business / Everything Must Go: Caution yellow/red, hazard diagonal ends, grommets
+      ctx.fillStyle = background || '#ffe500';
+      ctx.fillRect(0, 0, width, height);
+
+      // Left & right 12% diagonal black caution stripes
+      const stripeW = Math.round(width * 0.12);
+      const drawStripes = (x0) => {
+        ctx.save();
+        ctx.beginPath(); ctx.rect(x0, 0, stripeW, height); ctx.clip();
+        ctx.fillStyle = '#111114';
+        for (let p = -height; p < stripeW + height; p += 24) {
+          ctx.beginPath();
+          ctx.moveTo(x0 + p, 0); ctx.lineTo(x0 + p + 12, 0);
+          ctx.lineTo(x0 + p + 12 - height, height); ctx.lineTo(x0 + p - height, height);
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.restore();
+      };
+      drawStripes(0);
+      drawStripes(width - stripeW);
+
+      // Brass grommets in 4 corners
+      for (const [gx, gy] of [[stripeW + 16, 16], [width - stripeW - 16, 16], [stripeW + 16, height - 16], [width - stripeW - 16, height - 16]]) {
+        ctx.fillStyle = '#b38a38';
+        ctx.beginPath(); ctx.arc(gx, gy, 8, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#222222';
+        ctx.beginPath(); ctx.arc(gx, gy, 4, 0, Math.PI * 2); ctx.fill();
+      }
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(-0.02);
+      const family = font || '"Impact", "Arial Black", sans-serif';
+      const fontSize = fitText(ctx, text, family, Math.round(height * 0.65), width * 0.68);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+      ctx.fillText(text, 3, 3);
+      ctx.fillStyle = color || (background === '#d62839' ? '#ffffff' : '#111114');
+      ctx.fillText(text, 0, 0);
+      ctx.restore();
+      break;
+    }
+
+    case 'hazard': {
+      // OSHA / High Voltage: Yellow caution background, black pill header with DANGER
+      ctx.fillStyle = background || '#ffd23f';
+      ctx.fillRect(0, 0, width, height);
+
+      // Black perimeter border
+      ctx.strokeStyle = '#18191c';
+      ctx.lineWidth = 8;
+      ctx.strokeRect(6, 6, width - 12, height - 12);
+
+      // Black header bar on top
+      const barH = Math.round(height * 0.42);
+      ctx.fillStyle = '#18191c';
+      ctx.fillRect(10, 10, width - 20, barH);
+
+      // Red pill in header with white DANGER
+      ctx.fillStyle = '#d90429';
+      const pillW = Math.min(220, width * 0.35);
+      const pillH = barH - 8;
+      ctx.beginPath();
+      ctx.roundRect ? ctx.roundRect(cx - pillW / 2, 14, pillW, pillH, 8) : ctx.rect(cx - pillW / 2, 14, pillW, pillH);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `bold ${Math.round(pillH * 0.68)}px "Arial Black", sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('DANGER', cx, 14 + pillH / 2);
+
+      // Warning text below
+      const lowerH = height - barH - 20;
+      const family = font || '"Space Grotesk", "Arial Black", sans-serif';
+      const fontSize = fitText(ctx, text, family, Math.round(lowerH * 0.58), width * 0.85);
+      ctx.fillStyle = color || '#18191c';
+      ctx.fillText(text, cx, barH + 10 + lowerH / 2);
+      break;
+    }
+
+    case 'digital': {
+      // 7-Segment LED / VFD Display: Smoked dark acrylic, scanlines, glowing segments
+      ctx.fillStyle = background || '#080c10';
+      ctx.fillRect(0, 0, width, height);
+
+      // Smoked acrylic frame
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(4, 4, width - 8, height - 8);
+
+      const family = font || '"VT323", monospace';
+      const fontSize = fitText(ctx, text, family, Math.round(height * 0.72), width * 0.88);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // Ghost segments background
+      ctx.fillStyle = 'rgba(255, 42, 75, 0.06)';
+      ctx.fillText('888888888888'.slice(0, text.length || 6), cx, cy);
+
+      // Glowing LED digits
+      ctx.shadowColor = color || '#ff2a55';
+      ctx.shadowBlur = 16;
+      ctx.fillStyle = color || '#ff2a55';
+      ctx.fillText(text, cx, cy);
+      ctx.shadowBlur = 0;
+      break;
+    }
+
+    case 'handwritten': {
+      // Hand-scrawled sharpie note on paper with silver tape corners
+      ctx.fillStyle = background || '#f5f0df';
+      ctx.fillRect(0, 0, width, height);
+
+      // Faint blue ruled lines
+      ctx.strokeStyle = 'rgba(60, 110, 180, 0.12)';
+      ctx.lineWidth = 2;
+      for (let y = 18; y < height; y += 18) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+      }
+
+      // Silver duct-tape patches on top corners
+      const drawTape = (tx, ty, rot) => {
+        ctx.save();
+        ctx.translate(tx, ty);
+        ctx.rotate(rot);
+        ctx.fillStyle = 'rgba(180, 190, 200, 0.78)';
+        ctx.fillRect(-35, -12, 70, 24);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(-35, -12, 70, 24);
+        ctx.restore();
+      };
+      drawTape(32, 12, -0.35);
+      drawTape(width - 32, 12, 0.35);
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(-0.025);
+      const family = font || '"Permanent Marker", "Comic Sans MS", "Chalkboard SE", cursive, sans-serif';
+      const fontSize = fitText(ctx, text, family, Math.round(height * 0.58), width * 0.82);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      ctx.fillStyle = color || '#18141d';
+      ctx.fillText(text, 0, 0);
+      ctx.restore();
+      break;
+    }
+
+    case 'wayfinding': {
+      // 90s Concourse Wayfinding: Clean rounded white border, transit sans, clean arrows
+      ctx.fillStyle = background || '#12482e';
+      ctx.fillRect(0, 0, width, height);
+
+      // Rounded white hairline border
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 4;
+      if (ctx.roundRect) {
+        ctx.beginPath(); ctx.roundRect(10, 10, width - 20, height - 20, 14); ctx.stroke();
+      } else {
+        ctx.strokeRect(10, 10, width - 20, height - 20);
+      }
+
+      const family = font || '"Space Grotesk", "Helvetica Neue", "Arial", sans-serif';
+      const fontSize = fitText(ctx, text, family, Math.round(height * 0.52), width * 0.84);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      ctx.fillStyle = color || '#ffffff';
+      ctx.fillText(text, cx, cy);
+      break;
+    }
+
+    case 'service': {
+      // Customer Service: Elegant dark plum, polished brass dual-line frame
+      ctx.fillStyle = background || '#1a1424';
+      ctx.fillRect(0, 0, width, height);
+
+      // Dual-line gold border
+      ctx.strokeStyle = '#ffd166';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(10, 10, width - 20, height - 20);
+      ctx.strokeStyle = 'rgba(255, 209, 102, 0.4)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(16, 16, width - 32, height - 32);
+
+      const family = font || '"Space Grotesk", "Georgia", serif';
+      const fontSize = fitText(ctx, text, family, Math.round(height * 0.54), width * 0.84);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      ctx.fillStyle = color || '#ffd166';
+      ctx.fillText(text, cx, cy);
+      break;
+    }
+
+    case 'ammo': {
+      // RESTOCK-O-MATIC: Mil-spec stencil, hot orange hazard bands
+      ctx.fillStyle = background || '#16141a';
+      ctx.fillRect(0, 0, width, height);
+
+      // Orange hazard side bars
+      ctx.fillStyle = '#ff6a13';
+      ctx.fillRect(0, 0, 18, height);
+      ctx.fillRect(width - 18, 0, 18, height);
+      ctx.fillStyle = '#ffd23f';
+      ctx.fillRect(18, 0, 6, height);
+      ctx.fillRect(width - 24, 0, 6, height);
+
+      const family = font || '"Righteous", "Teko", "Impact", sans-serif';
+      const fontSize = fitText(ctx, text, family, Math.round(height * 0.62), width * 0.82);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      ctx.shadowColor = '#ff6a13';
+      ctx.shadowBlur = 12;
+      ctx.fillStyle = color || '#ffe14d';
+      ctx.fillText(text, cx, cy);
+      ctx.shadowBlur = 0;
+      break;
+    }
+
+    default: {
+      // Standard shop sign: backlit colored band with metallic bezel
+      ctx.fillStyle = background || '#222';
+      ctx.fillRect(0, 0, width, height);
+
+      const glow = ctx.createLinearGradient(0, 0, 0, height);
+      glow.addColorStop(0, 'rgba(0,0,0,0.22)');
+      glow.addColorStop(0.25, 'rgba(255,255,255,0.08)');
+      glow.addColorStop(0.5, 'rgba(255,255,255,0.14)');
+      glow.addColorStop(0.75, 'rgba(255,255,255,0.06)');
+      glow.addColorStop(1, 'rgba(0,0,0,0.28)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+      ctx.lineWidth = 8;
+      ctx.strokeRect(4, 4, width - 8, height - 8);
+      ctx.strokeStyle = 'rgba(255,255,255,0.42)';
+      ctx.lineWidth = 5;
+      ctx.strokeRect(12, 12, width - 24, height - 24);
+
+      const family = font || '"Space Grotesk", "Impact", "Arial Black", sans-serif';
+      const fontSize = fitText(ctx, text, family, Math.round(height * 0.6), width * 0.88);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      ctx.fillStyle = 'rgba(0,0,0,0.42)';
+      ctx.fillText(text, cx + 4, cy + 5);
+      ctx.fillStyle = color || '#fff';
+      ctx.fillText(text, cx, cy);
+      break;
+    }
   }
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = 'rgba(0,0,0,0.42)';
-  ctx.fillText(text, width / 2 + 4, height / 2 + 5);
-  ctx.fillStyle = color;
-  ctx.fillText(text, width / 2, height / 2);
 
   return finish(canvas);
 }
@@ -353,7 +972,7 @@ export function makeChalkTexture(name, { aspect = 2, seed = 11 } = {}) {
   }
 
   // The name along the bottom, written twice slightly offset (chalk pressure).
-  ctx.font = 'bold 40px "Comic Sans MS", "Chalkboard SE", "Segoe Print", sans-serif';
+  ctx.font = 'bold 38px "Permanent Marker", "Chalkboard SE", "Segoe Print", "Comic Sans MS", sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = 'rgba(245, 245, 240, 0.7)';

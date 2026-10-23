@@ -147,6 +147,36 @@ export function buildMegaMartDetails(kit, room) {
   }
   shape('perimeter_spill', new THREE.CircleGeometry(0.36, 9), mat(0xa2b3a1, { transparent: true, opacity: 0.5, depthWrite: false }),
     33.55, 0.014, -7, [-Math.PI / 2, 0, 0]);
+  // Wet-floor cone beside the east perimeter spill, outside the front cross-aisle.
+  for (const side of [-1, 1]) {
+    box('mart_wet_cone', 33.58, 0.28, -6.48 + side * 0.08, 0.26, 0.54, 0.02, yellow, [side * 0.18, 0.15, 0]);
+    box('mart_wet_cone_stripe', 33.58, 0.30, -6.48 + side * 0.095, 0.18, 0.16, 0.012, red, [side * 0.18, 0.15, 0]);
+  }
+  box('mart_wet_cone_top', 33.58, 0.54, -6.48, 0.22, 0.03, 0.05, yellow, [0, 0.15, 0]);
+
+  // Row of 3 nested chrome shopping carts tucked against the north-west wall (z ~ 5.52, clear of entrance z <= 3.9).
+  for (let i = 0; i < 3; i++) {
+    const cx = 21.25 + i * 0.55, cz = 5.52;
+    for (const dx of [-0.32, 0.32]) for (const dz of [-0.18, 0.18]) {
+      cylinder('nested_cart_wheel', cx + dx, 0.09, cz + dz, 0.08, 0.05, dark, [Math.PI / 2, 0, 0]);
+      box('nested_cart_upright', cx + dx, 0.52, cz + dz, 0.022, 0.80, 0.022, metal);
+    }
+    for (const y of [0.24, 0.52, 0.80]) {
+      for (const dz of [-0.20, 0.20]) box('nested_cart_wire', cx, y, cz + dz, 0.68, 0.022, 0.022, metal);
+      for (const dx of [-0.34, 0.34]) box('nested_cart_wire', cx + dx, y, cz, 0.022, 0.022, 0.42, metal);
+    }
+    box('nested_cart_handle', cx - 0.36, 0.94, cz, 0.035, 0.035, 0.44, red);
+  }
+
+  // Receiving bay wooden pallet with stacked hardware & paint cartons (z = -23.48, behind rear cross-aisle z < -22.8).
+  const px = 29.1, pz = -23.48;
+  for (const dz of [-0.28, 0, 0.28]) box('pallet_runner', px, 0.035, pz + dz, 0.96, 0.07, 0.08, cardboard);
+  for (let s = -2; s <= 2; s++) box('pallet_slat', px + s * 0.21, 0.082, pz, 0.15, 0.024, 0.68, cardboard);
+  box('pallet_box_a', px - 0.18, 0.25, pz - 0.04, 0.44, 0.31, 0.42, cardboard, [0, 0.06, 0]);
+  box('pallet_box_b', px + 0.22, 0.23, pz + 0.05, 0.36, 0.27, 0.38, blue, [0, -0.08, 0]);
+  box('pallet_box_c', px - 0.14, 0.52, pz - 0.02, 0.34, 0.23, 0.32, red, [0, 0.14, 0]);
+  for (const dx of [-0.22, 0.22]) cylinder('pallet_paint_bucket', px + 0.20 + dx * 0.35, 0.47, pz + 0.04, 0.09, 0.21, dx < 0 ? yellow : green);
+
   // A trolley parked snugly against the east wall; its ONE visible-size collider keeps it honest.
   // It never enters aisle 4 or the front crossing's central route.
   const tx = room.maxX - 0.33, tz = -5.5;

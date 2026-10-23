@@ -27,10 +27,15 @@ import { PRICE_CATEGORIES } from './game/pricing.js';
 import { createDebugPanel } from './ui/debugPanel.js';
 import { createTitleCamera } from './ui/titleCamera.js';
 import { wireRunIntro } from './game/runIntro.js';
+import { atmosphere } from './config/environment.js';
+import { createPostProcessing } from './fx/postProcessing.js';
 
 // --- Renderer, scene, camera ---------------------------------------------------
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+// No canvas anti-aliasing: every frame is drawn through fx/postProcessing.js, whose last pass is one
+// full-screen quad, so canvas MSAA would cost memory and bandwidth without smoothing anything.
+// The game's anti-aliasing lives on the composer's buffers (atmosphere.postProcessing.msaaSamples).
+const renderer = new THREE.WebGLRenderer({ antialias: false });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.autoClear = false; // we draw two passes per frame: the world, then the held gun on top
@@ -59,6 +64,7 @@ const gamepad = createGamepad(input); // feeds controller buttons/sticks into `i
 const hud = createHud();
 const sound = createSound(); // synthesized sound effects (starts on the first click/key press)
 const viewmodel = createViewmodel(Object.values(weapons), meleeWeapons.boxCutter); // a model for every gun
+const postProcessing = createPostProcessing({ renderer, scene, camera, viewmodel });
 const body = createPlayerBody(scene); // legs + torso you see when looking down
 
 const g = createGame({
@@ -256,14 +262,16 @@ function render(alpha, frameTime) {
   if (paused) alpha = 1;
   const visualTime = paused ? 0 : frameTime;
 
-  // ADS zoom: narrow the world camera's FOV, and slow the mouse to match if configured.
+  // ADS zoom + sprint FOV kick: narrow the world camera's FOV on ADS, widen slightly when sprinting.
   const aimAmount = gun.aim.renderAmount(alpha);
-  const fov = feel.camera.fov * (1 + (gun.weapon.def.ads.fovMultiplier - 1) * aimAmount);
+  const baseFov = feel.camera.fov * (1 + (gun.weapon.def.ads.fovMultiplier - 1) * aimAmount);
+  const speedAmount = game.over ? 0 : player.sprintAmount * (1 - aimAmount);
+  const fov = baseFov + (atmosphere.postProcessing?.sprintFovDegrees ?? 5.5) * speedAmount;
   if (camera.fov !== fov) {
     camera.fov = fov;
     camera.updateProjectionMatrix();
   }
-  player.lookScale = feel.ads.sensitivityFollowsZoom ? fov / feel.camera.fov : 1; // used by next frame's look
+  player.lookScale = feel.ads.sensitivityFollowsZoom ? baseFov / feel.camera.fov : 1; // used by next frame's look
 
   player.syncCamera(alpha);
   if (game.over) applyDeathCamera(alpha);
@@ -279,6 +287,7 @@ function render(alpha, frameTime) {
     aimAmount,
     meleeProgress: melee.progress,
     player,
+    inspectProgress: gun.inspectProgress,
   });
 
   // Crosshair gap in pixels = where the spread cone's edge lands on screen at the current FOV.
@@ -300,12 +309,8 @@ function render(alpha, frameTime) {
   hud.setPoints(wallet.points);
   hud.setRoundFlashing(rounds.inBreak && rounds.round > 1); // counter blinks in the break between rounds
 
-  // Pass 1: the world. Pass 2: the gun, with depth cleared so it never clips into walls.
-  renderer.clear();
-  renderer.render(scene, camera);
-  if (game.over) return; // no gun in your hands once you're down
-  renderer.clearDepth();
-  renderer.render(viewmodel.scene, viewmodel.camera);
+  // Render world + viewmodel through HDR post-processing (UnrealBloom + lens vignette/aberration + ACES tone mapping).
+  postProcessing.render({ showViewmodel: !game.over, speedAmount });
 }
 
 // The main menu's backdrop: the camera glides through the mall (map.titleShots), fading through black at each cut.
@@ -319,8 +324,7 @@ function renderTitle(frameTime) {
   screens.setFade(titleCamera.apply(camera));
   body.root.visible = false;
   effects.update(frameTime);
-  renderer.clear();
-  renderer.render(scene, camera);
+  postProcessing.render({ showViewmodel: false, speedAmount: 0 });
 }
 
 // Dying: the view drops to the floor and rolls onto its side.
@@ -347,7 +351,7 @@ startLoop({
 
 if (debug.exposeToWindow) {
   window.__mall = {
-    THREE, scene, camera, renderer, map, world: map, colliders: g.colliders, arena: g.arena, player, stats: g.stats, input, game,
+    THREE, scene, camera, renderer, postProcessing, map, world: map, colliders: g.colliders, arena: g.arena, player, stats: g.stats, input, game,
     hud, gun, effects, viewmodel, shootables: g.shootables, body, zombies, health, melee, runStats: g.runStats, death, resetRun,
     gamepad, aimAssist, wallet, rounds, sound, interactions, g, screens, titleCamera,
     menus: { play, pauseRun, freshRun, goToTitle }, // the menu flow, for testing

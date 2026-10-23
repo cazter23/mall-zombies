@@ -124,8 +124,8 @@ export function createMapKit(group, colliders) {
   }
 
   /** A flat sign. `facing` is +1 (faces +Z) or -1 (faces -Z); or 'x+'/'x-' for side walls. */
-  function sign(text, { x, y, z, width, height, facing, background, color }) {
-    const texture = makeSignTexture(text, { background, color, aspect: width / height });
+  function sign(text, { x, y, z, width, height, facing, background, color, ...extra }) {
+    const texture = makeSignTexture(text, { background, color, aspect: width / height, ...extra });
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height), new THREE.MeshBasicMaterial({ map: texture }));
     mesh.position.set(x, y, z);
     if (facing === -1) mesh.rotation.y = Math.PI;
