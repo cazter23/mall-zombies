@@ -18,7 +18,7 @@ export const economy = {
   killValues: {
     shopper: 60,
     mallWalker: 60,
-    cartPusher: 100, // tanky and dangerous: worth more
+    cartPusher: 130, // 2.2x a Shopper's health, so about the same points per bullet as a Shopper (60 / 525 hp at round 6)
   },
 
   // Special zombie types mixed into the waves (every other spawn is a Shopper).
