@@ -374,17 +374,18 @@ export function createMallProps(kit) {
     const out = -dir;
     const facing = out > 0 ? 'x+' : 'x-';
     const postX = xAt(-0.3);
+    const barrierParts = []; // everything that goes away when the escalator is repaired
     for (const z of [minZ + 0.1, maxZ - 0.1]) {
-      box(postX - 0.035, 0, z - 0.035, postX + 0.035, 1.0, z + 0.035, mat(COLORS.metal), { collide: false });
-      box(postX - 0.12, 0, z - 0.12, postX + 0.12, 0.04, z + 0.12, mat(COLORS.metal), { collide: false });
+      barrierParts.push(box(postX - 0.035, 0, z - 0.035, postX + 0.035, 1.0, z + 0.035, mat(COLORS.metal), { collide: false }));
+      barrierParts.push(box(postX - 0.12, 0, z - 0.12, postX + 0.12, 0.04, z + 0.12, mat(COLORS.metal), { collide: false }));
     }
-    box(postX - 0.015, 0.84, minZ + 0.1, postX + 0.015, 0.87, maxZ - 0.1, mat(COLORS.rope), { collide: false });
+    barrierParts.push(box(postX - 0.015, 0.84, minZ + 0.1, postX + 0.015, 0.87, maxZ - 0.1, mat(COLORS.rope), { collide: false }));
     const boardX = xAt(-0.6);
-    box(boardX - 0.03, 0, zMid - 0.5, boardX + 0.03, 1.0, zMid + 0.5, mat(COLORS.safetyYellow), { collide: false });
-    sign('OUT OF ORDER', {
+    barrierParts.push(box(boardX - 0.03, 0, zMid - 0.5, boardX + 0.03, 1.0, zMid + 0.5, mat(COLORS.safetyYellow), { collide: false }));
+    barrierParts.push(sign('OUT OF ORDER', {
       x: boardX + out * 0.035, y: 0.62, z: zMid, width: 0.92, height: 0.5, facing,
       background: '#ffd23f', color: '#1d1626',
-    });
+    }));
     const hangX = xAt(-0.1);
     sign('ESCALATOR · LEVEL 2', {
       x: hangX, y: 3.3, z: zMid, width: 2.4, height: 0.45, facing,
@@ -452,7 +453,7 @@ export function createMallProps(kit) {
     [x0, x1] = span(uHole, Math.min(length, slopeEnd + 0.4));
     const hole = { minX: x0, maxX: x1, minZ: minZ - 0.3, maxZ: maxZ + 0.3 };
     [x0, x1] = span(slopeEnd, length);
-    return { hole, topLanding: { minX: x0, maxX: x1 }, barrier, ramp, link, upperY };
+    return { hole, topLanding: { minX: x0, maxX: x1 }, barrier, barrierParts, ramp, link, upperY, foot: { x: xAt(-0.8), z: zMid } };
   }
 
   /**

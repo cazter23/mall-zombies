@@ -76,7 +76,7 @@ test('Mega Mart shortcut sign clears the brand stripes instead of flickering aga
   map.dispose();
 });
 
-test('the door ladder: four entrances and two independently priced, two-zone shortcuts', () => {
+test('the door ladder: four entrances, two independently priced two-zone shortcuts, and the escalator repair', () => {
   const { map, door } = setup();
   const ladder = [
     ['startShutter', 'hallway', economy.doors.startShutter],
@@ -90,17 +90,21 @@ test('the door ladder: four entrances and two independently priced, two-zone sho
     assert.equal(map.zones[zone].open, false, `${zone} starts closed`);
   }
   assert.deepEqual([economy.doors.startShutter, economy.doors.megaMart, economy.doors.foodCourt, economy.doors.serviceCorridor], [500, 750, 1000, 1250]);
-  assert.equal(map.doors.length, 6);
+  assert.equal(map.doors.length, 7);
+  assert.equal(door('escalatorRepair').price, economy.doors.escalatorRepair);
+  assert.equal(economy.doors.escalatorRepair, 2000);
+  assert.deepEqual(door('escalatorRepair').opensZones, ['upstairs']);
+  assert.equal(door('escalatorRepair').verb, 'repair');
   assert.equal(door('foodCourtMegaMart').price, economy.doors.foodCourtMegaMart);
   assert.equal(door('serviceCorridorFoodCourt').price, economy.doors.serviceCorridorFoodCourt);
   assert.deepEqual([economy.doors.foodCourtMegaMart, economy.doors.serviceCorridorFoodCourt], [1000, 1250]);
   for (const d of map.doors) for (const zone of d.opensZones) assert.ok(map.zones[zone], `door ${d.id} opens a real zone`);
 });
 
-test('all 120 purchase orders: any bought entrance holds its zones open; reset seals every route', () => {
+test('all 120 purchase orders: any bought entrance holds its zones open; reset seals every route (the escalator repair is a separate door, tested in escalatorWalk.test.js)', () => {
   const { map, open, reach } = setup();
   const permutations = (ids) => ids.length ? ids.flatMap((id) => permutations(ids.filter((other) => other !== id)).map((rest) => [id, ...rest])) : [[]];
-  const orders = permutations(map.doors.filter((d) => d.id !== 'startShutter').map((d) => d.id));
+  const orders = permutations(map.doors.filter((d) => d.id !== 'startShutter' && d.id !== 'escalatorRepair').map((d) => d.id));
   assert.equal(orders.length, 120);
   for (const order of orders) {
     map.reset();

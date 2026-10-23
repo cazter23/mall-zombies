@@ -33,6 +33,8 @@
 
 import * as THREE from 'three';
 import { createMapKit } from '../../world/mapKit.js';
+import { createDoor } from '../../world/door.js';
+import { markCollidersChanged } from '../../world/collision.js';
 import { createMallProps } from './props.js';
 import { COLORS } from './palette.js';
 import { debug } from '../../config/debug.js';
@@ -109,6 +111,7 @@ export function buildMall(scene, colliders) {
     megaMart: { label: 'Mega Mart', open: false },
     foodCourt: { label: 'Food Court', open: false },
     serviceCorridor: { label: 'Service Corridor', open: false },
+    upstairs: { label: 'Level 2', open: false }, // opened by repairing the escalator (the escalatorRepair door)
   };
 
   const R = LAYOUT.startRoom;
@@ -213,6 +216,33 @@ export function buildMall(scene, colliders) {
   const escalator = props.escalator({ ...E, upperY, ceilingY: H.height });
   kit.slab({ minX: H.minX - T, maxX: H.maxX + T, minZ: H.minZ - T, maxZ: H.maxZ + T }, H.height, upperY, mat(COLORS.ceiling), {
     hole: escalator.hole, name: 'ceiling',
+  });
+
+  // REPAIRING the escalator = a buyable door: its "barrier" is the collider across the escalator's foot plus the rope and
+  // OUT OF ORDER board. Opening it removes them (the ramp and its link are always there); it opens the 'upstairs' zone.
+  const escalatorGate = {
+    collider: escalator.barrier,
+    open() {
+      const i = colliders.indexOf(escalator.barrier);
+      if (i !== -1) {
+        colliders.splice(i, 1);
+        markCollidersChanged(colliders);
+      }
+      for (const part of escalator.barrierParts) part.visible = false;
+    },
+    close() {
+      if (!colliders.includes(escalator.barrier)) {
+        colliders.push(escalator.barrier);
+        markCollidersChanged(colliders);
+      }
+      for (const part of escalator.barrierParts) part.visible = true;
+    },
+    update() {},
+  };
+  const escalatorDoor = createDoor({
+    id: 'escalatorRepair', label: 'Escalator', verb: 'repair', price: economy.doors.escalatorRepair,
+    opensZone: 'upstairs', zones, barrier: escalatorGate,
+    position: new THREE.Vector3(escalator.foot.x, 1.1, escalator.foot.z),
   });
   props.upperLanding({
     rect: { minX: escalator.topLanding.minX - 1.7, maxX: escalator.hole.maxX, minZ: escalator.hole.minZ, maxZ: escalator.hole.maxZ },
@@ -627,7 +657,7 @@ export function buildMall(scene, colliders) {
     ...stores.spots.map((s) => ({ kind: 'attachmentCounter', name: `attachment_${s.id}`, zone: s.zone, attachment: s.id, position: s.position, normal: s.normal })),
   ];
 
-  const doors = [startDoor, megaMartDoor, foodCourtDoor, serviceCorridorDoor, foodCourtMegaMartDoor, serviceCorridorFoodCourtDoor];
+  const doors = [startDoor, megaMartDoor, foodCourtDoor, serviceCorridorDoor, foodCourtMegaMartDoor, serviceCorridorFoodCourtDoor, escalatorDoor];
   const dressing = buildMallAtmosphere(kit, LAYOUT, { service, ceilingHole: escalator.hole });
 
   return {
@@ -642,7 +672,7 @@ export function buildMall(scene, colliders) {
     ambience: dressing.emitters,
     // Zombie navigation across floors (zombies/navigation.js): the ground floor and level 2, joined by the escalator.
     navigation: { floors: [0, upperY], links: [escalator.link] },
-    // The escalator's barrier (a collider across its foot; whoever repairs it removes this) and its walkable surface.
+    // The escalator's barrier (a collider across its foot, removed by the escalatorRepair door) and its walkable surface.
     escalator: { barrier: escalator.barrier, ramp: escalator.ramp },
     update(dt) {
       for (const door of doors) door.update(dt);

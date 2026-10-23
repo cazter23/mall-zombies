@@ -36,10 +36,11 @@ function holders(zone) {
  * @param opensZone  legacy single zone id unlocked when opened
  * @param opensZones optional zone ids unlocked together (takes precedence)
  * @param zones      the map's zone table: { [zoneId]: { open: boolean } }
- * @param barrier    the thing that blocks the way; needs open(), close(), update(dt)
+ * @param barrier    the thing that blocks the way; needs open(), close(), update(dt), and `collider` (the buy prompt sees through it)
+ * @param verb       what buying it is called in the prompt (default 'open'; the escalator says 'repair')
  * @param position   THREE.Vector3 where the player interacts with it
  */
-export function createDoor({ id, label, price, opensZone, opensZones, zones, barrier, position }) {
+export function createDoor({ id, label, price, opensZone, opensZones, zones, barrier, position, verb = 'open' }) {
   const zoneIds = [...new Set(opensZones ?? [opensZone])];
   if (!zoneIds.length) throw new Error(`Door "${id}" must open at least one zone`);
   const openedZones = zoneIds.map((zoneId) => {
@@ -56,6 +57,7 @@ export function createDoor({ id, label, price, opensZone, opensZones, zones, bar
     opensZones: zoneIds,
     position,
     barrier,
+    verb,
 
     get isOpen() {
       return isOpen;

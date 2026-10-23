@@ -4,7 +4,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { headlessGame } from './helpers/headlessGame.js'; // (first: it stubs the browser globals)
-import { markCollidersChanged } from '../src/world/collision.js';
 import { LAYOUT } from '../src/maps/mall/mall.js';
 
 const E = LAYOUT.escalator;
@@ -17,17 +16,13 @@ function fixture({ repaired }) {
   t.tick(1);
   t.g.rounds.update = () => {};
   t.g.zombies.clear();
-  t.g.debug.run('doors');
+  t.g.debug.run('doors'); // (opens every door, the escalator repair too: put that one back to what this test wants)
   t.g.debug.run('god');
+  const repair = t.g.map.doors.find((d) => d.id === 'escalatorRepair');
+  if (!repaired) repair.reset();
   t.tick(120);
-  if (repaired) removeBarrier(t.g);
+  assert.equal(t.g.colliders.includes(t.g.map.escalator.barrier), !repaired, 'the barrier stands exactly while it is not repaired');
   return t;
-}
-function removeBarrier(g) {
-  const i = g.colliders.indexOf(g.map.escalator.barrier);
-  assert.ok(i >= 0, 'the barrier is in the collider list');
-  g.colliders.splice(i, 1);
-  markCollidersChanged(g.colliders);
 }
 // Hold a movement key for `seconds` (the real Input), then release.
 function hold(t, keys, seconds) {
@@ -124,4 +119,42 @@ test('barrier up: a zombie does not path to a player upstairs (no route yet) and
     t.tick(1);
   }
   assert.ok(z.position.y < 0.3, `still on the ground floor (y ${z.position.y.toFixed(2)})`);
+});
+
+test('the repair is a normal purchase: a real F hold at the foot costs 2000, opens level 2 and the way up; Play again seals it again', () => {
+  const t = headlessGame();
+  const { g } = t;
+  t.tick(1);
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  g.map.doors.find((d) => d.id === 'startShutter').open(); // (the hallway is open; everything else is not)
+  const foot = g.map.escalator.barrier;
+  const stand = new THREE.Vector3(E.bottomX + 1.4, 0, zMid);
+  g.player.teleport({ position: stand, yaw: Math.PI / 2 }); // facing the foot of the escalator (west)
+  t.tick(5);
+  assert.equal(g.map.zones.upstairs.open, false);
+  assert.equal(g.interactions.prompt?.label, 'Escalator');
+  assert.equal(g.interactions.prompt?.verb, 'repair');
+  assert.equal(g.interactions.prompt?.cost, 2000);
+
+  const hiddenBefore = new Set(g.map.group.children.filter((c) => c.visible === false)); // (debug markers and such)
+  g.wallet.earn(1000); // 1500 in total: not enough
+  t.press('KeyF', 40);
+  assert.equal(g.map.zones.upstairs.open, false, 'too poor: still broken');
+  assert.ok(g.colliders.includes(foot));
+
+  g.wallet.earn(1000);
+  const before = g.wallet.points;
+  t.press('KeyF', 40);
+  assert.equal(before - g.wallet.points, 2000);
+  assert.equal(g.map.zones.upstairs.open, true, 'level 2 is open');
+  assert.ok(!g.colliders.includes(foot), 'the barrier is gone');
+  assert.equal(g.interactions.prompt, null, 'nothing left to repair');
+  const bits = g.map.group.children.filter((c) => c.visible === false && !hiddenBefore.has(c));
+  assert.ok(bits.length >= 4, 'the rope, posts and OUT OF ORDER board are hidden');
+
+  g.resetRun();
+  assert.equal(g.map.zones.upstairs.open, false);
+  assert.ok(g.colliders.includes(foot), 'the barrier is back after Play again');
+  assert.ok(bits.every((c) => c.visible), 'and the rope, posts and board are back');
 });

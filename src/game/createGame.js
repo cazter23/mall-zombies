@@ -129,7 +129,7 @@ export function createGame({
       label: door.label,
       kind: 'door', // (for the 'purchase' event)
       id: door.id,
-      verb: 'open',
+      verb: door.verb ?? 'open',
       get cost() {
         return pricing.priceOf('door', door.id);
       },
