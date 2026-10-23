@@ -241,6 +241,11 @@ const cartPusher = {
     crashSlump: 0.7, // the body slumps over the handle
   },
 
+  // Hitboxes that follow the pose (zombies/cartPose.js): the head box moves with the lean (headReach = pivot at the hips
+  // to the head centre, torsoShare = how far the torso box follows it), and while it is crashed the tipped cart is a
+  // target too (a box from cartFrom to cartTo metres ahead, cartHalfWidth either side, cartBottom..cartTop high).
+  cartHitbox: { headReach: 0.79, torsoShare: 0.5, cartFrom: 0.2, cartTo: 1.25, cartHalfWidth: 0.34, cartBottom: 0.05, cartTop: 1.05 },
+
   introBanner: { kicker: 'Attention shoppers', text: 'There is a cart pusher loose. Please step out of the aisle.' },
 
   // Squealing wheels while it rolls; a rattle + squeal on the telegraph (the warning); a crash on a miss.

@@ -236,3 +236,72 @@ test('the real game and mall: a Cart Pusher in the hallway runs over a player st
   t.tick(1);
   assert.ok(g.player.velocity.x < -2, 'the shove moves you');
 });
+
+// --- BUG: after a miss the pusher slumps over its cart and the tipped cart fills the view; the hitboxes used to stay
+// where a standing zombie is, so shots at what you SEE (the slumped head, the cart) passed through it. ---
+test('after a crash the hitboxes follow what you see: the slumped head and the tipped cart can be shot', async () => {
+  const { castShot } = await import('../src/weapons/hitscan.js');
+  const t = fixture(9);
+  assert.ok(t.until('charging'));
+  t.player.position.x = 1.5; // dodge
+  assert.ok(t.until('crashed', 120));
+  t.tick(18); // let the slump finish
+  const z = t.zombie;
+  assert.equal(z.state, 'crashed');
+
+  // Where the model's head and cart really are (the real pose, from the real model).
+  const model = createZombieModel(TYPE);
+  model.update(1 / 60, z, 1);
+  model.root.updateMatrixWorld(true);
+  const head = model.root.getObjectByName('head').localToWorld(new THREE.Vector3(0, 0.17, 0));
+  const cartBox = new THREE.Box3().setFromObject(model.root.getObjectByName('cart'));
+  const cartCentre = cartBox.getCenter(new THREE.Vector3());
+  const standingHead = z.position.clone().add(new THREE.Vector3(0, 1.59, 0));
+  assert.ok(head.distanceTo(standingHead) > 0.4, `the head really has moved (${head.distanceTo(standingHead).toFixed(2)} m)`);
+
+  // Shoot at each from 4 m away, level with it, from the side (the dodging player's view).
+  const shootAt = (point, from = new THREE.Vector3(point.x + 0.3, point.y, point.z + 4)) => {
+    const dir = point.clone().sub(from).normalize();
+    return castShot(from, dir, 50, t.ctx.colliders, [z], 1);
+  };
+  const atHead = shootAt(head);
+  assert.equal(atHead.target, z, 'a shot at the slumped head hits the zombie');
+  assert.equal(atHead.part, 'head', 'and it counts as a headshot');
+  const atCart = shootAt(cartCentre);
+  assert.equal(atCart.target, z, 'a shot at the tipped cart hits the zombie');
+  assert.equal(atCart.part, 'body');
+
+  // And it takes the extra stunned damage from those hits.
+  const before = z.health;
+  z.takeHit({ damage: 100, part: atCart.part });
+  assert.equal(before - z.health, 100 * C.crashDamageTakenMultiplier);
+
+  // Back on its feet: the box is the body box again (the cart is shoot-through, as designed) and the head box is home.
+  assert.ok(t.until('chasing', 200));
+  t.tick(30);
+  const [headBox, bodyBox, cartBoxAgain] = z.hitboxes;
+  assert.ok(cartBoxAgain.box.equals(bodyBox.box), 'the cart box is only a target while crashed');
+  assert.ok(headBox.box.max.y > 1.6, 'the head box is back up high');
+});
+
+test('while it leans (telegraph, charge) the head box leans with it, and no box is ever empty or NaN', () => {
+  const t = fixture(9);
+  const z = t.zombie;
+  const standingX = z.hitboxes[0].box.getCenter(new THREE.Vector3());
+  for (const state of ['chasing', 'chargeTelegraph', 'charging', 'crashed', 'chargeRecover', 'windup', 'swing']) {
+    z.setState(state);
+    z.stateTime = 0.4;
+    z.yaw = 0.7;
+    z.updateHitboxes();
+    for (const { box } of z.hitboxes) {
+      assert.ok(!box.isEmpty(), `${state}: a real box`);
+      for (const v of [...box.min.toArray(), ...box.max.toArray()]) assert.ok(Number.isFinite(v), state);
+    }
+  }
+  z.yaw = 0;
+  z.setState('charging');
+  z.updateHitboxes();
+  const forwardZ = standingX.z - z.hitboxes[0].box.getCenter(new THREE.Vector3()).z; // facing -Z: the head moves to -Z (positive here)
+  assert.ok(forwardZ > 0.2, `the head box leans forward (${forwardZ.toFixed(2)} m)`);
+  assert.ok(z.hitboxes[0].box.max.y < 1.78, 'and lower');
+});

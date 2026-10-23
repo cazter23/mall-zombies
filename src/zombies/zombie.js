@@ -29,6 +29,7 @@ import { feel } from '../config/feel.js';
 import { zombieCrowd } from '../config/zombies.js';
 import { moveAndCollide } from '../world/collision.js';
 import { createZombieModel } from './zombieModel.js';
+import { applyCartHitboxes } from './cartPose.js';
 
 const ease = (t) => t * t * (3 - 2 * t);
 const clamp01 = (v) => Math.max(0, Math.min(1, v));
@@ -90,6 +91,7 @@ export class Zombie {
       { part: 'body', box: new THREE.Box3() },
     ];
 
+    if (type.cartHitbox) this.hitboxes.push({ part: 'body', box: new THREE.Box3() }); // the tipped cart (zombies/cartPose.js)
     this.model = createZombieModel(type);
     this.updateHitboxes();
   }
@@ -144,6 +146,7 @@ export class Zombie {
     this.hitboxes[0].box.max.set(p.x + hb.headHalfSize, y + hb.headTop, p.z + hb.headHalfSize);
     this.hitboxes[1].box.min.set(p.x - hb.bodyHalfWidth, y, p.z - hb.bodyHalfWidth);
     this.hitboxes[1].box.max.set(p.x + hb.bodyHalfWidth, y + hb.bodyTop, p.z + hb.bodyHalfWidth);
+    if (this.type.cartHitbox) applyCartHitboxes(this, y); // the Cart Pusher leans: its boxes follow the pose
   }
 
   // --- Tick ----------------------------------------------------------------------

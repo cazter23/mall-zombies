@@ -19,6 +19,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { shoppers } from '../config/shoppers.js';
 import { chooseShopperAppearance } from './shopperAppearance.js';
 import { buildCart } from './cartModel.js';
+import { cartLean } from './cartPose.js';
 
 const unitBox = new THREE.BoxGeometry(1, 1, 1);
 const skirtBox = new THREE.BoxGeometry(1, 1, 1);
@@ -244,20 +245,17 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
     const t = zombie.stateTime;
     cart.rotation.set(0, 0, 0);
     cart.position.y = 0;
-    let lean = ca.hunch;
+    const lean = cartLean(zombie, type); // (shared with the hitboxes: zombies/cartPose.js)
     if (zombie.state === 'chargeTelegraph') {
       const r = clamp01(t / type.charge.telegraphSeconds);
       cart.rotation.y = Math.sin(t * 45) * ca.telegraphShake * (0.5 + r);
-      lean += ca.telegraphCrouch * ease(r);
       neck.rotation.x = 0.35 * r;
     } else if (zombie.state === 'charging') {
-      lean += ca.chargeLean;
       cart.rotation.y = Math.sin(t * 30) * ca.telegraphShake * 0.4;
     } else if (zombie.state === 'crashed') {
       const r = ease(clamp01(t / 0.2)) * (1 - ease(clamp01((t - type.charge.crashSeconds + 0.3) / 0.3)));
       cart.rotation.z = ca.crashTilt * r;
       cart.position.y = Math.sin(ca.crashTilt * r) * type.cart.width * 0.5;
-      lean += ca.crashSlump * r;
     }
     if (zombie.state === 'dead' || zombie.state === 'spawning') return;
     if (attacking) return; // the slam over the handle poses the body and arms itself
