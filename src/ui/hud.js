@@ -8,6 +8,7 @@
 
 import { feel } from '../config/feel.js';
 import { createScreens } from './screens.js';
+import { createIncentiveHud } from './incentiveHud.js';
 
 function el(tag, className) {
   const node = document.createElement(tag);
@@ -17,6 +18,8 @@ function el(tag, className) {
 
 export function createHud() {
   const hud = el('div', 'hud');
+  const incentives = createIncentiveHud();
+  hud.append(incentives.element);
 
   // Red glow around the screen edges when hurt (under everything else in the HUD).
   const hurt = el('div', 'hurt');
@@ -133,6 +136,10 @@ export function createHud() {
   return {
     // The title / pause / results screens (ui/screens.js): show(), on(action), padNav(), current.
     screens,
+
+    setPowerUps(status) {
+      incentives.update(status);
+    },
 
     setFpsVisible(visible) {
       fpsCounter.classList.toggle('show', visible);

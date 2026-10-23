@@ -61,6 +61,8 @@ export class Zombie {
     this.flinchPart = 'body';
     this.flinchSide = 1;
     this.hitstopTimer = 0;
+    this.staggerTimer = 0;
+    this.staggerDrag = 0;
     this.deathImpulse = 1;
     this.deathTwist = 0;
     this.lastHitDir = null;
@@ -165,6 +167,26 @@ export class Zombie {
     if (this.onDeath) this.onDeath(this);
   }
 
+  // Security Sweep interrupts attacks/charges without invoking damage or kill events.
+  staggerAway(origin, { seconds, knockback, drag }) {
+    if (!this.isAlive || this.state === 'spawning') return false;
+    this.setState('chasing');
+    this.staggerTimer = seconds;
+    this.staggerDrag = drag;
+    this.attackCooldown = Math.max(this.attackCooldown, seconds);
+    this.chargeCooldown = Math.max(this.chargeCooldown, seconds);
+    this.chargeLeft = 0;
+    const dx = this.position.x - origin.x;
+    const dz = this.position.z - origin.z;
+    const length = Math.hypot(dx, dz);
+    this.velocity.x = (length > 0 ? dx / length : Math.sin(this.yaw)) * knockback;
+    this.velocity.z = (length > 0 ? dz / length : Math.cos(this.yaw)) * knockback;
+    this.flinchTimer = seconds;
+    this.flinchDuration = seconds;
+    this.updateHitboxes();
+    return true;
+  }
+
   // Hitboxes are axis-aligned boxes that follow the zombie (and rise with it while spawning).
   updateHitboxes() {
     const p = this.position;
@@ -200,6 +222,16 @@ export class Zombie {
     this.chargeCooldown = Math.max(0, this.chargeCooldown - dt);
     const attack = this.type.attack;
     const charge = this.type.charge;
+
+    if (this.isAlive && this.staggerTimer > 0) {
+      this.staggerTimer = Math.max(0, this.staggerTimer - dt);
+      this.velocity.x *= Math.exp(-this.staggerDrag * dt);
+      this.velocity.z *= Math.exp(-this.staggerDrag * dt);
+      this.velocity.y = Math.max(this.velocity.y - feel.movement.gravity * dt, -feel.movement.maxFallSpeed);
+      moveAndCollide(this.position, this.velocity, dt, this.type.radius, this.type.height, ctx.colliders, feel.movement.stepTolerance);
+      this.updateHitboxes();
+      return;
+    }
 
     if (this.state === 'spawning') {
       this.faceToward(ctx.player.position, dt);
@@ -568,6 +600,7 @@ export class Zombie {
     this.attackCooldown = 0;
     this.windedTimer = 0;
     this.chargeCooldown = 0;
+    this.staggerTimer = 0;
     this.setState('spawning');
     this.updateHitboxes();
   }

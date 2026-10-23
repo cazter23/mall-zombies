@@ -1,18 +1,20 @@
 // =============================================================================
 // SCREENS: the menus around a run (plain DOM over the canvas).
-//   'title'    the main menu: logo + Play / Settings / Controls over a live 3D flyover of the mall
+//   'title'    the main menu: logo + Play / Statistics / Settings / Controls over a live 3D flyover of the mall
 //              (main.js renders it with ui/titleCamera.js while this screen is up)
 //   'pause'    PAUSED + this run so far (round, points, time, kills): Resume / Restart run / Settings /
 //              Controls / Quit to title. Restart and Quit ask twice ("click again to confirm"): they end the run.
 //              show('pause', { fresh: true }) = "Back to work" (after Play again, if the mouse lock was refused)
 //   'help'     How to play: the core loop on one page (numbers read from config, so it never goes stale); Back
 //              returns to the screen it was opened from
+//   'stats'    persistent employee record: career totals, personal bests and recent completed runs
 //   'results'  death: a store RECEIPT of the run (time, round, kills, headshots, box cutter kills, accuracy,
 //              total points), stamped CLOCKED OUT: Play again / Main menu
 // One at a time: show(name, data) (null hides them all), `current`.
 // Buttons emit ACTIONS: on(action, fn) with fn({ pad }) where pad = true when a controller pressed it (main.js
 // then plays with the controller instead of asking for the mouse lock).
-//   actions: 'play' 'resume' 'restart' 'quit' 'settings' 'controls' 'playAgain' 'mainMenu' ('help' / 'back' are handled here)
+//   actions: 'play' 'resume' 'restart' 'quit' 'settings' 'controls' 'stats' 'clearStats' 'statsBack'
+//            'playAgain' 'mainMenu' ('help' / 'back' are handled here)
 // padNav(input): D-pad up/down moves, A presses, B / Start = Resume on the pause screen, Start = Play on the
 // title, Y = Settings and X = Controls on the title and pause screens.
 // setFade(0..1): a black fade over the title flyover (between camera shots).
@@ -124,6 +126,7 @@ export function createScreens() {
       <div class="menu-list">
         <button class="menu-btn primary" data-action="play" type="button">Play</button>
         <button class="menu-btn" data-action="help" type="button">How to play</button>
+        <button class="menu-btn" data-action="stats" type="button">Statistics</button>
         <button class="menu-btn" data-action="settings" type="button">Settings</button>
         <button class="menu-btn" data-action="controls" type="button">Controls</button>
       </div>
@@ -173,6 +176,7 @@ export function createScreens() {
           <div class="receipt-eval-rating"></div>
           <div class="receipt-eval-comment"></div>
         </div>
+        <div class="receipt-career"></div>
         <div class="receipt-rule"></div>
         <div class="receipt-barcode"></div>
         <div class="receipt-thanks">Thank you for shopping with us<br />All sales final · No refunds · No respawns</div>
@@ -192,6 +196,7 @@ export function createScreens() {
   const evalTitle = results.querySelector('.receipt-eval-title');
   const evalRating = results.querySelector('.receipt-eval-rating');
   const evalComment = results.querySelector('.receipt-eval-comment');
+  const receiptCareer = results.querySelector('.receipt-career');
 
   // --- How to play ---------------------------------------------------------------------
   const pay = economy.payouts;
@@ -215,7 +220,40 @@ export function createScreens() {
     </div>
   `);
 
-  const screens = { title, pause, results, help };
+  // --- Statistics ------------------------------------------------------------------
+  const stats = el('div', 'screen stats-screen hidden', `
+    <div class="card stats-card">
+      <div class="kicker">Human resources · Permanent file</div>
+      <h1 class="stats-title">Employee record</h1>
+      <div class="stats-empty">No completed shifts yet. Try not to make that permanent.</div>
+      <div class="stats-content">
+        <section>
+          <h2>Employment record</h2>
+          <div class="stats-grid stats-totals"></div>
+        </section>
+        <section>
+          <h2>Best shifts</h2>
+          <div class="stats-grid stats-bests"></div>
+        </section>
+        <section>
+          <h2>Recent shifts</h2>
+          <div class="stats-recent"></div>
+        </section>
+      </div>
+      <div class="menu-list menu-row">
+        <button class="menu-btn danger" data-action="clearStats" data-confirm="Clear records? Press again" type="button">Clear records</button>
+        <button class="menu-btn primary" data-action="statsBack" type="button">Back</button>
+      </div>
+      <p class="pad-hint">Controller: D-pad + <kbd>A</kbd> · <kbd>B</kbd> back</p>
+    </div>
+  `);
+  const statsEmpty = stats.querySelector('.stats-empty');
+  const statsContent = stats.querySelector('.stats-content');
+  const statsTotals = stats.querySelector('.stats-totals');
+  const statsBests = stats.querySelector('.stats-bests');
+  const statsRecent = stats.querySelector('.stats-recent');
+
+  const screens = { title, pause, results, help, stats };
   for (const node of Object.values(screens)) document.body.append(node);
   let current = null;
   let focus = 0;
@@ -263,6 +301,8 @@ export function createScreens() {
 
   const pad2 = (n) => String(n).padStart(2, '0');
   const clock = (seconds) => `${Math.floor(seconds / 60)}:${pad2(Math.floor(seconds % 60))}`;
+  const percent = (value) => `${Math.round((value ?? 0) * 100)}%`;
+  const statCards = (items) => items.map(([label, value]) => `<div><span>${label}</span><b>${value}</b></div>`).join('');
 
   function fillPause({ fresh = false, round = 0, points = 0, time = 0, kills = 0 } = {}) {
     pauseKicker.textContent = fresh ? 'Fresh shift' : 'Paused';
@@ -292,11 +332,59 @@ export function createScreens() {
     evalTitle.textContent = review.title;
     evalRating.textContent = review.rating;
     evalComment.textContent = review.comment;
+    if (!careerResult) {
+      receiptCareer.textContent = '';
+      receiptCareer.classList.remove('show');
+    } else {
+      receiptCareer.classList.add('show');
+      if (!careerResult.saved) {
+        receiptCareer.textContent = 'DEBUG RUN · RECORDS NOT SAVED';
+      } else if (careerResult.newRecords.length) {
+        receiptCareer.textContent = `NEW RECORD · ${careerResult.newRecords.join(' · ').toUpperCase()}`;
+      } else {
+        const totals = careerResult.snapshot.totals;
+        receiptCareer.textContent = `CAREER SHIFT #${totals.runs} · ${totals.kills.toLocaleString('en-US')} TOTAL KILLS`;
+      }
+    }
     // A barcode: bars of random widths (different every receipt).
     let bars = '';
     for (let i = 0; i < 46; i++) bars += `<span style="width:${1 + Math.floor(Math.random() * 3)}px;margin-right:${1 + Math.floor(Math.random() * 2)}px"></span>`;
     barcode.innerHTML = bars;
   }
+
+  function fillStats(data = {}) {
+    const totals = data.totals ?? {};
+    const bests = data.bests ?? {};
+    const recent = data.recentRuns ?? [];
+    const empty = !(totals.runs > 0);
+    statsEmpty.classList.toggle('hidden', !empty);
+    statsContent.classList.toggle('hidden', empty);
+    if (empty) return;
+    statsTotals.innerHTML = statCards([
+      ['Shifts worked', totals.runs.toLocaleString('en-US')],
+      ['Time employed', clock(totals.timeAlive)],
+      ['Zombies cleared', totals.kills.toLocaleString('en-US')],
+      ['Headshots', totals.headshotKills.toLocaleString('en-US')],
+      ['Box cutter', totals.meleeKills.toLocaleString('en-US')],
+      ['Lifetime accuracy', percent(totals.accuracy)],
+      ['Points earned', totals.pointsEarned.toLocaleString('en-US')],
+      ['Points spent', totals.pointsSpent.toLocaleString('en-US')],
+    ]);
+    statsBests.innerHTML = statCards([
+      ['Highest round', bests.round],
+      ['Longest shift', clock(bests.timeAlive)],
+      ['Most kills', bests.kills],
+      ['Most headshots', bests.headshotKills],
+      ['Most points', bests.pointsEarned.toLocaleString('en-US')],
+      ['Best accuracy', bests.accuracy === null ? '—' : percent(bests.accuracy)],
+    ]);
+    statsRecent.innerHTML = recent.map((run) => {
+      const date = run.endedAt ? new Date(run.endedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Unknown';
+      return `<div class="stats-run"><span>${date}</span><b>Round ${run.round}</b><span>${clock(run.timeAlive)}</span><span>${run.kills} kills</span><span>${percent(run.accuracy)}</span></div>`;
+    }).join('');
+  }
+
+  let careerResult = null;
 
   const api = {
     get current() {
@@ -305,7 +393,7 @@ export function createScreens() {
 
     // Should the title flyover be drawn behind? (the title itself, or How to play opened from it)
     get showsFlyover() {
-      return current === 'title' || (current === 'help' && helpReturn === 'title');
+      return current === 'title' || current === 'stats' || (current === 'help' && helpReturn === 'title');
     },
 
     on(action, fn) {
@@ -325,11 +413,16 @@ export function createScreens() {
       if (name === 'pause') fillPause(data);
       if (name === 'results') fillResults(data);
       if (name === 'help') helpReturn = data?.from ?? 'title';
+      if (name === 'stats') fillStats(data);
       markFocus(false);
     },
 
     setFade(opacity) {
       fade.style.opacity = String(opacity);
+    },
+
+    setCareerResult(result) {
+      careerResult = result;
     },
 
     padNav(input) {
@@ -342,6 +435,7 @@ export function createScreens() {
         markFocus(true);
       }
       if (current === 'help' && input.consumePress('PadB')) return api.show(helpReturn);
+      if (current === 'stats' && input.consumePress('PadB')) return emit('statsBack', true);
       if (current === 'pause' && (input.consumePress('PadB') || input.consumePress('PadStart'))) return emit('resume', true);
       if (current === 'title' && input.consumePress('PadStart')) return emit('play', true);
       if ((current === 'title' || current === 'pause') && input.consumePress('PadY')) return emit('settings', true);

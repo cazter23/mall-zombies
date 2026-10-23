@@ -42,7 +42,7 @@ function setup() {
   t.g.zombies.clear();
   t.g.rounds.update = () => {}; // (no round spawns in the way of these measurements)
   const seen = [];
-  for (const name of ['shot', 'hit', 'kill', 'playerHit', 'playerDeath', 'roundStart', 'typeIntro', 'purchase', 'runReset']) {
+  for (const name of ['shot', 'hit', 'kill', 'playerHit', 'playerDeath', 'runEnd', 'roundStart', 'typeIntro', 'purchase', 'runReset']) {
     t.g.events.on(name, (p) => seen.push([name, p]));
   }
   t.g.wallet.points = 0;
@@ -125,6 +125,47 @@ test('events from the real game: purchase, round start, player hit, death, Play 
   assert.equal(seen.filter(([n]) => n === 'playerDeath').length, 1);
   t.g.resetRun();
   assert.equal(seen.filter(([n]) => n === 'runReset').length, 1);
+});
+
+test('death emits one immutable final run summary; later events and the results delay cannot change it', () => {
+  const t = headlessGame();
+  const ended = [];
+  t.g.events.on('runEnd', ({ summary }) => ended.push(summary));
+  t.tick(60);
+  t.g.wallet.earn(400);
+  t.g.wallet.spend(125);
+  t.g.runStats.kills = 3;
+  t.g.runStats.shotsFired = 10;
+  t.g.runStats.shotsHit = 4;
+  t.g.health.takeDamage(10_000);
+  assert.equal(ended.length, 1);
+  assert.equal(Object.isFrozen(ended[0]), true);
+  assert.deepEqual({
+    kills: ended[0].kills,
+    shotsHit: ended[0].shotsHit,
+    accuracy: ended[0].accuracy,
+    pointsEarned: ended[0].pointsEarned,
+    pointsSpent: ended[0].pointsSpent,
+  }, { kills: 3, shotsHit: 4, accuracy: 0.4, pointsEarned: 400, pointsSpent: 125 });
+  t.g.events.emit('kill', { zombie: { type: { id: 'shopper' } }, headshot: false, melee: false });
+  t.tick(60 * 5);
+  assert.equal(ended.length, 1);
+  assert.equal(t.hud.calls.find(([name]) => name === 'showResults')[1], ended[0], 'receipt uses the exact frozen summary');
+});
+
+test('gameplay debug commands mark a run assisted; panel and spawn selection do not; Play again clears it', () => {
+  const t = headlessGame();
+  t.g.debug.run('panel');
+  t.g.debug.run('cycleZombie');
+  assert.equal(t.g.state.assisted, false);
+  t.g.debug.run('addPoints');
+  assert.equal(t.g.state.assisted, true);
+  const ended = [];
+  t.g.events.on('runEnd', ({ summary }) => ended.push(summary));
+  t.g.health.takeDamage(10_000);
+  assert.equal(ended[0].assisted, true);
+  t.g.resetRun();
+  assert.equal(t.g.state.assisted, false);
 });
 
 // --- Edge cases from the refactor review (Codex) ---

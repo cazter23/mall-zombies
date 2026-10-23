@@ -335,6 +335,12 @@ export function createZombieManager({
       return zombies.reduce((n, z) => n + (z.isAlive ? 1 : 0), 0);
     },
 
+    securitySweep(origin, tuning) {
+      let count = 0;
+      for (const z of zombies) if (z.staggerAway(origin, tuning)) count += 1;
+      return count;
+    },
+
     // Spawn one zombie of `typeId` at a good spawn point (or at `at`, a Vector3, if given).
     // Returns the zombie, or null if no spawn point is usable right now.
     spawn(typeId = 'shopper', at = null) {

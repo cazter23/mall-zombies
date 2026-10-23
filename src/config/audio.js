@@ -22,6 +22,21 @@ export const audio = {
   compressor: { thresholdDb: -10, ratio: 8, attack: 0, release: 0.08, kneeDb: 6 },
 
   sounds: {
+    // Three distinct employee incentives, all routed through the existing master-volume bus.
+    incentiveRestock: { volume: 0.55, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 1200, q: 1, gain: 0.35, attack: 0.002, decay: 0.08 },
+      { type: 'tone', wave: 'triangle', freq: 440, freqEnd: 440, gain: 0.3, attack: 0.005, decay: 0.13 },
+      { type: 'tone', wave: 'triangle', freq: 660, freqEnd: 660, gain: 0.3, attack: 0.005, decay: 0.2, delay: 0.12 },
+    ] },
+    incentiveBlueLight: { volume: 0.5, layers: [
+      { type: 'tone', wave: 'sine', freq: 660, freqEnd: 880, gain: 0.4, attack: 0.008, decay: 0.18 },
+      { type: 'tone', wave: 'sine', freq: 880, freqEnd: 1320, gain: 0.3, attack: 0.008, decay: 0.3, delay: 0.14 },
+    ] },
+    incentiveSecurity: { volume: 0.6, layers: [
+      { type: 'tone', wave: 'triangle', freq: 620, freqEnd: 380, gain: 0.4, attack: 0.01, decay: 0.23 },
+      { type: 'tone', wave: 'triangle', freq: 620, freqEnd: 380, gain: 0.35, attack: 0.01, decay: 0.23, delay: 0.25 },
+      { type: 'tone', wave: 'sine', freq: 100, freqEnd: 45, gain: 0.4, attack: 0.005, decay: 0.2 },
+    ] },
     shutterRattle: { volume: 0.12, layers: [
       { type: 'noise', filter: 'bandpass', freq: 650, q: 2, gain: 0.3, attack: 0.04, decay: 0.45 },
       { type: 'tone', wave: 'triangle', freq: 170, freqEnd: 95, gain: 0.12, attack: 0.03, decay: 0.35, delay: 0.12 },

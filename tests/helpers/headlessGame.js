@@ -83,6 +83,11 @@ export function snapshot(g) {
     death: { ...g.death },
     points: g.wallet.points,
     totalEarned: g.wallet.totalEarned,
+    totalSpent: g.wallet.totalSpent,
+    powerUps: {
+      progress: round(g.powerUps.progress), drops: g.powerUps.dropsThisRound,
+      pickup: g.powerUps.pickup?.id ?? null, active: g.powerUps.active?.id ?? null,
+    },
     round: g.rounds.round,
     started: g.rounds.started,
     zones: Object.fromEntries(Object.entries(g.map.zones).map(([id, z]) => [id, z.open])),

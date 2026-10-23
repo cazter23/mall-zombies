@@ -77,6 +77,15 @@ export class Weapon {
     this.reloadPhase = null;
   }
 
+  // Stockroom Delivery: reserve ammo, with a small ready-magazine top-up.
+  // Never bypass a running reload or the Cannon's individual shell loading.
+  restock(magazineFraction = 0) {
+    this.reserve = this.def.startingReserve;
+    if (!this.isReloading && !this.isShellReload) {
+      this.magazine = Math.max(this.magazine, Math.ceil(this.def.magazineSize * magazineFraction));
+    }
+  }
+
   get canReload() {
     return !this.isBursting && !this.isReloading && this.magazine < this.def.magazineSize && this.reserve > 0;
   }

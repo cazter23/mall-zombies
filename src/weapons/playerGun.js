@@ -243,6 +243,11 @@ export function createPlayerGun({
       return slot ? slot.weapon : null;
     },
 
+    // Refill carried reserves; only the gun in hand receives the ready-magazine top-up.
+    restock(magazineFraction) {
+      for (const slot of slots) slot.weapon.restock(slot === slots[current] ? magazineFraction : 0);
+    },
+
     // Upgrades on a carried gun ([] if none, null if you don't carry it).
     modsFor(id) {
       const slot = slots.find((s) => s.def.id === id);

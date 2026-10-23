@@ -24,7 +24,7 @@ const ZOMBIE_IDS = Object.keys(zombieTypes);
 const WALL_GUN_IDS = Object.keys(weapons).filter((id) => id !== 'stapleGun');
 const nameOf = (id) => id.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
 
-export function createDebugCommands({ map, zombies, rounds, wallet, gun, health, player, arena, flashSales, commands = debug.commands }) {
+export function createDebugCommands({ map, zombies, rounds, wallet, gun, health, player, arena, flashSales, commands = debug.commands, onUse = null }) {
   const state = { panelOpen: debug.panel.startOpen, zombieIndex: 0, gunIndex: 0, last: '' };
   const selectedZombie = () => ZOMBIE_IDS[state.zombieIndex];
 
@@ -128,6 +128,7 @@ export function createDebugCommands({ map, zombies, rounds, wallet, gun, health,
     /** Run a command by id; the returned message is also kept as the "last result" for the window. */
     run(id) {
       if (!Object.hasOwn(run, id)) throw new Error(`debug: unknown command "${id}"`);
+      if (onUse) onUse(id);
       state.last = run[id]();
       return state.last;
     },

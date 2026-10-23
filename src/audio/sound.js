@@ -12,6 +12,7 @@
 import { audio } from '../config/audio.js';
 import { atmosphere } from '../config/environment.js';
 import { mallMusic } from '../config/music.js';
+import { deathMusic } from '../config/deathMusic.js';
 
 function renderMusicInWorker() {
   return new Promise((resolve, reject) => {
@@ -28,6 +29,7 @@ export function createSound({ renderMusic = renderMusicInWorker } = {}) {
   let noiseBuffer = null;
   const ambientVoices = new Map();
   let musicBuffer = null, musicLoading = false, musicFailed = false, musicCursor = 0;
+  let deathVoice = null;
 
   function prepareMusic() {
     if (musicBuffer || musicLoading || musicFailed) return;
@@ -163,11 +165,50 @@ export function createSound({ renderMusic = renderMusicInWorker } = {}) {
     }
   }
 
+  function stopDeathMusic() {
+    if (!deathVoice) return;
+    const voice = deathVoice;
+    deathVoice = null;
+    const now = ctx.currentTime;
+    voice.gain.gain.cancelScheduledValues(now);
+    voice.gain.gain.setTargetAtTime(0, now, deathMusic.stopFadeSeconds / 3);
+    for (const source of voice.sources) source.stop(now + deathMusic.stopFadeSeconds);
+    // A suspended context cannot advance the fade; disconnect so resuming cannot leak the old sting.
+    if (ctx.state !== 'running') voice.gain.disconnect();
+  }
+
+  function playDeathMusic({ receiptAt } = {}) {
+    stopDeathMusic();
+    if (!ctx || ctx.state !== 'running') return;
+    const gain = ctx.createGain();
+    gain.gain.value = deathMusic.volume * audio.musicVolume;
+    gain.connect(master);
+    const voice = { gain, sources: [], remaining: deathMusic.layers.length };
+    deathVoice = voice;
+    const now = ctx.currentTime;
+    for (const layer of deathMusic.layers) {
+      const delay = (layer.delay ?? 0) + (layer.anchor === 'receipt' ? (receiptAt ?? 0) : 0);
+      const source = playLayer(layer, now + delay, 1, 1, gain);
+      voice.sources.push(source);
+      const cleanup = source.onended;
+      source.onended = () => {
+        cleanup();
+        if (--voice.remaining === 0) {
+          gain.disconnect();
+          if (deathVoice === voice) deathVoice = null;
+        }
+      };
+    }
+  }
+
   return {
+    playDeathMusic,
+    stopDeathMusic,
     setAmbience,
     resetMusic() { musicCursor = 0; },
     setMusicVolume(volume) {
       audio.musicVolume = volume;
+      if (deathVoice) deathVoice.gain.gain.value = deathMusic.volume * volume;
       for (const voice of ambientVoices.values()) if (voice.kind === 'music') {
         voice.gain.gain.setTargetAtTime(voice.spatialGain * mallMusic.gain * volume, ctx.currentTime, atmosphere.ambience.fadeSeconds);
       }

@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import './helpers/headlessGame.js';
 import { renderMallMusic } from '../src/audio/mallMusic.js';
 import { mallMusic } from '../src/config/music.js';
+import { deathMusic } from '../src/config/deathMusic.js';
+import { feel } from '../src/config/feel.js';
+import { headlessGame } from './helpers/headlessGame.js';
 import { audio } from '../src/config/audio.js';
 import { createSound } from '../src/audio/sound.js';
 import { createAmbience } from '../src/game/ambience.js';
@@ -56,6 +59,57 @@ function fakeAudio() {
   }
   return { AudioContext, nodes, sources, context: () => ctx };
 }
+
+test('End of Shift schedules once at death, anchors the bell to the receipt, respects music volume, and cancels future notes on restart', () => {
+  const f = fakeAudio(), previous = window.AudioContext, volume = audio.musicVolume;
+  window.AudioContext = f.AudioContext;
+  try {
+    const sound = createSound();
+    sound.playDeathMusic({ receiptAt: 1.6 });
+    assert.equal(f.sources.length, 0, 'locked audio never queues a delayed sting');
+    sound.unlock();
+    sound.playDeathMusic({ receiptAt: 1.6 });
+    const voices = f.sources.slice();
+    assert.equal(voices.length, deathMusic.layers.length);
+    const bellIndex = deathMusic.layers.findIndex((layer) => layer.anchor === 'receipt');
+    assert.equal(voices[bellIndex].started[0], 11.6);
+    assert.ok(voices.some((source) => source.started[0] > 14), 'ending chords are scheduled in the future');
+    const bus = f.nodes.filter((node) => node.kind === 'gain')[1];
+    sound.setMusicVolume(0);
+    assert.equal(bus.gain.value, 0);
+    sound.setMusicVolume(0.5);
+    assert.equal(bus.gain.value, deathMusic.volume * 0.5);
+    sound.stopDeathMusic();
+    for (const source of voices) assert.equal(source.stopped, 10 + deathMusic.stopFadeSeconds);
+    sound.stopDeathMusic(); // harmless if already stopped
+    sound.playDeathMusic({ receiptAt: 1.6 });
+    const replacementBus = f.nodes.filter((node) => node.kind === 'gain').at(-deathMusic.layers.length - 1);
+    voices.forEach((source) => source.onended());
+    assert.ok(bus.disconnected);
+    assert.equal(replacementBus.disconnected, undefined, 'old callbacks cannot disconnect the replacement');
+    sound.stopDeathMusic();
+    for (const source of f.sources.slice(voices.length)) source.onended();
+    assert.ok(f.nodes.filter((node) => node.kind === 'gain').every((node, i) => i === 0 || node.disconnected));
+  } finally { window.AudioContext = previous; audio.musicVolume = volume; }
+});
+
+test('a real run plays its sting once on death and stops it when Play again or Main Menu resets the run', () => {
+  const calls = [];
+  const t = headlessGame({ sound: {
+    play() {},
+    playDeathMusic: (options) => calls.push(['play', options]),
+    stopDeathMusic: () => calls.push(['stop']),
+  } });
+  t.tick();
+  t.g.health.takeDamage(10000);
+  t.g.health.takeDamage(10000);
+  t.tick(180);
+  assert.deepEqual(calls, [['play', { receiptAt: feel.death.resultsDelay }]]);
+  t.g.resetRun();
+  assert.equal(calls.at(-1)[0], 'stop');
+  t.g.resetRun();
+  assert.equal(calls.at(-1)[0], 'stop');
+});
 
 test('music loads once asynchronously, stays in sync between speakers, resumes after pause, resets and mutes independently', async () => {
   const f = fakeAudio(), previous = window.AudioContext, volumes = [audio.musicVolume, audio.ambienceVolume];

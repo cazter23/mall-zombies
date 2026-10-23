@@ -540,6 +540,36 @@ kbd {
   white-space: nowrap;
 }
 
+/* Small employee punch card below the round counter. */
+.incentive-hud {
+  position: absolute;
+  left: 24px;
+  top: 132px;
+  max-width: min(290px, calc(100vw - 48px));
+  padding: 8px 10px;
+  border-left: 2px solid var(--mall-yellow);
+  border-radius: 4px;
+  background: var(--ink-glass);
+  font: 10px var(--font-ui);
+  letter-spacing: 0.06em;
+  color: #e0d8e8;
+}
+.incentive-hud[hidden], .hud.dead .incentive-hud { display: none; }
+.incentive-progress {
+  display: block;
+  width: 140px;
+  height: 5px;
+  margin-top: 6px;
+  accent-color: var(--mall-yellow);
+}
+.incentive-drop:not(:empty), .incentive-zone:not(:empty) {
+  margin-top: 9px;
+  line-height: 1.5;
+  font-weight: 700;
+}
+.incentive-drop { color: var(--mall-yellow); }
+.incentive-zone { color: #75c9ff; }
+
 /* ---------- Points (bottom-right, above the ammo) ---------- */
 
 .points {
@@ -1280,6 +1310,110 @@ kbd {
   font-size: 14px;
   line-height: 1.45;
   color: #d9d2e3;
+}
+
+/* Statistics: a permanent employee file over the title flyover. */
+.stats-screen {
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  overflow: auto;
+  background: rgba(17, 10, 24, 0.84);
+}
+.stats-card {
+  width: min(880px, calc(100vw - 32px));
+  box-sizing: border-box;
+}
+.stats-title {
+  margin-bottom: 18px;
+}
+.stats-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+.stats-content section:last-child {
+  grid-column: 1 / -1;
+}
+.stats-content h2 {
+  margin: 0 0 8px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mall-yellow);
+}
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.stats-grid div,
+.stats-run,
+.stats-empty {
+  padding: 9px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.055);
+}
+.stats-grid span {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #aaa1b8;
+}
+.stats-grid b {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--font-hud);
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--mall-teal);
+}
+.stats-recent {
+  display: grid;
+  gap: 5px;
+}
+.stats-run {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr 0.8fr 0.8fr 0.6fr;
+  gap: 10px;
+  align-items: center;
+  font-size: 13px;
+  color: #cfc7da;
+}
+.stats-run b {
+  color: #fff;
+}
+.stats-empty {
+  margin-bottom: 22px;
+  color: #cfc7da;
+}
+.stats-card > .menu-row {
+  justify-content: flex-end;
+}
+.receipt-career {
+  display: none;
+  margin: 9px 0 2px;
+  padding: 5px 3px;
+  border: 2px solid #4d8f83;
+  font-family: var(--font-receipt);
+  font-size: 14px;
+  line-height: 1.15;
+  text-align: center;
+  color: #326b62;
+  transform: rotate(0.5deg);
+}
+.receipt-career.show {
+  display: block;
+}
+@media (max-width: 640px) {
+  .stats-content { grid-template-columns: 1fr; }
+  .stats-content section:last-child { grid-column: auto; }
+  .stats-run { grid-template-columns: repeat(2, 1fr); }
+  .stats-run span:first-child { grid-column: 1 / -1; }
 }
 
 /* Results: the run's receipt, stamped CLOCKED OUT */

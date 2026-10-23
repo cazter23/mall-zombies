@@ -31,6 +31,8 @@ import { createPlayerHealth } from '../player/health.js';
 import { createEffects } from '../fx/effects.js';
 import { createContactShadows } from '../fx/contactShadows.js';
 import { createAmbience } from './ambience.js';
+import { createPowerUps } from './powerUps.js';
+import { createPowerUpView } from '../fx/powerUpView.js';
 import { createPlayerGun } from '../weapons/playerGun.js';
 import { createMelee } from '../weapons/melee.js';
 import { createAimAssist } from '../weapons/aimAssist.js';
@@ -159,6 +161,7 @@ export function createGame({
     forceRun: false, // debug: run without pointer lock (used by automated tests)
     over: false, // true once the player has died
     padPlaying: false, // started/resumed with a controller
+    assisted: false, // gameplay-changing debug command used; career records ignore this run
     get running() {
       return input.locked || this.padPlaying || this.forceRun;
     },
@@ -166,9 +169,28 @@ export function createGame({
   const ambience = createAmbience({ map, player, sound, colliders });
   const contactShadows = createContactShadows(scene, colliders);
   events.on('playerDeath', () => ambience.silence());
+  events.on('playerDeath', () => sound.playDeathMusic?.({ receiptAt: feel.death.resultsDelay }));
+  events.on('runReset', () => sound.stopDeathMusic?.());
   let rounds = null; // created below, once the zombie manager exists
   const getRound = () => Math.max(1, rounds ? rounds.round : 1);
-  const death = { timer: 0, resultsShown: false };
+  const death = { timer: 0, resultsShown: false, summary: null };
+
+  function buildRunSummary() {
+    return Object.freeze({
+      timeAlive: runStats.timeAlive,
+      round: rounds.round,
+      pointsEarned: wallet.totalEarned,
+      pointsSpent: wallet.totalSpent,
+      pointsRemaining: wallet.points,
+      shotsFired: runStats.shotsFired,
+      shotsHit: runStats.shotsHit,
+      kills: runStats.kills,
+      headshotKills: runStats.headshotKills,
+      meleeKills: runStats.meleeKills,
+      accuracy: runStats.accuracy,
+      assisted: state.assisted || health.invulnerable,
+    });
+  }
 
   // THE single place the player dies. A downed/revive system would hook in here later
   // (e.g. go "downed" instead, and only call the rest of this if nobody revives you).
@@ -176,25 +198,18 @@ export function createGame({
     state.over = true;
     death.timer = 0;
     death.resultsShown = false;
+    const summary = buildRunSummary();
+    death.summary = summary;
     hud.setDead(true);
     state.padPlaying = false;
     if (afterDeath) afterDeath(); // main.js frees the mouse now, so it's usable by the results screen
     events.emit('playerDeath');
+    events.emit('runEnd', { summary });
   }
 
   function showResults() {
     death.resultsShown = true;
-    hud.showResults({
-      timeAlive: runStats.timeAlive,
-      round: rounds.round,
-      pointsEarned: wallet.totalEarned,
-      pointsRemaining: wallet.points,
-      shotsFired: runStats.shotsFired,
-      kills: runStats.kills,
-      headshotKills: runStats.headshotKills,
-      meleeKills: runStats.meleeKills,
-      accuracy: runStats.accuracy,
-    });
+    hud.showResults(death.summary);
   }
 
   const health = createPlayerHealth({ stats, onDeath: onPlayerDeath });
@@ -225,6 +240,7 @@ export function createGame({
     onRoundStart: (round) => events.emit('roundStart', { round }),
     onTypeIntro: (typeId) => events.emit('typeIntro', { typeId }),
   });
+  let powerUps = null;
 
   // --- Who reacts to what (the event bus; game/events.js lists the events) ---
   // Points, COD style: +10 for each non-lethal hit by the player; a kill pays the zombie's kill
@@ -235,7 +251,10 @@ export function createGame({
     if (!state.over && !hit.killed) wallet.earn(pointsForHit(hit));
   });
   events.on('kill', ({ zombie, headshot, melee }) => {
-    if (!state.over) wallet.earn(pointsForHit({ target: zombie, killed: true, headshot, melee }));
+    if (!state.over) wallet.earn(pointsForHit({
+      target: zombie, killed: true, headshot, melee,
+      killMultiplier: powerUps?.killMultiplier(zombie.position) ?? 1,
+    }));
   });
   events.on('shot', (shot) => {
     if (!state.over) runStats.recordShot(shot);
@@ -263,6 +282,15 @@ export function createGame({
     sound.play('paChime');
   });
 
+  powerUps = createPowerUps({
+    events, player, gun, zombies, colliders, state,
+    view: createPowerUpView(scene, colliders),
+  });
+  events.on('powerUpCollect', ({ pa, sound: name }) => {
+    hud.showAnnouncement(pa);
+    sound.play(name);
+  });
+
   // Everything else in the map you interact with (wall buys, the ammo cache, later the claw machine,
   // hazards...): map.features, built by kind (game/features/). Built AFTER the core wiring above, so
   // payouts and stats always run before any feature's own event listeners, and with every system a
@@ -284,7 +312,13 @@ export function createGame({
     },
   });
   // Developer shortcuts (config/debug.js lists the keys; main.js turns key presses into debug.run(id)).
-  const debugCommands = createDebugCommands({ map, zombies, rounds, wallet, gun, health, player, arena, flashSales });
+  const debugCommands = createDebugCommands({
+    map, zombies, rounds, wallet, gun, health, player, arena, flashSales,
+    onUse: (id) => {
+      // Merely showing the panel or choosing the next spawn type changes no run outcome.
+      if (id !== 'panel' && id !== 'cycleZombie') state.assisted = true;
+    },
+  });
 
   events.on('flashSaleStart', ({ pa }) => {
     hud.showAnnouncement(pa);
@@ -300,6 +334,7 @@ export function createGame({
   // run state = one line here. (tests/fullRun.test.js plays a messy run, resets, and checks the game
   // equals a freshly built one, so anything forgotten here shows up as a failing test.)
   const resetSteps = [
+    ['powerUps', () => powerUps.reset()],
     ['zombies', () => zombies.clear()],
     ['stats', () => resetPlayerStats(stats)], // perks / wardrobe / skill-tree changes don't carry over
     ['health', () => health.reset()], // (after stats: back to the base max health)
@@ -321,8 +356,10 @@ export function createGame({
     ['features', () => features.reset()],
     ['death', () => {
       state.over = false;
+      state.assisted = false;
       death.timer = 0;
       death.resultsShown = false;
+      death.summary = null;
     }],
     ['hud', () => {
       hud.setRound(0);
@@ -366,6 +403,7 @@ export function createGame({
     if (debugTick) debugTick();
 
     player.update(dt);
+    powerUps.update(dt); // collect escape rewards before this tick's zombie attacks; paused/dead timers freeze
     // "[Space] Vault" prompt: would a jump press now end in a vault? (checked per tick, shown in render)
     vaultPromptVisible = player.grounded && !player.vault.active && player.vault.preview();
     interactions.update(dt); // before the gun: on controller X, a hold near a buyable buys instead of reloading
@@ -392,6 +430,7 @@ export function createGame({
     map,
     features,
     flashSales,
+    powerUps,
     debug: debugCommands,
     colliders,
     arena,

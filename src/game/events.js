@@ -20,6 +20,12 @@
 //   'playerHit'   { damage, zombie, knockback }          a zombie's swing (or a cart charge) landed;
 //                                                        knockback = { x, z } m/s shove or null
 //   'playerDeath' {}                                     after the death is registered (onPlayerDeath)
+//   'runEnd'      { summary }                            immutable final run totals, emitted once on player death
+//   'powerUpDrop' { id, position, seconds }               earned incentive appeared on clear floor
+//   'powerUpCollect' { id, name, pa, sound }              walk-through collection (instant effect or zone start)
+//   'powerUpStart' { id, position, remaining, radius }    Blue Light earning zone began
+//   'powerUpEnd'  { id, reason }                         zone ended: expired | reset | death
+//   'powerUpExpire' { id }                               uncollected incentive timed out
 //   'roundStart'  { round }                              the round number flipped (game/rounds.js)
 //   'typeIntro'   { typeId }                             a zombie type's first appearance this run
 //   'purchase'    { label, cost, kind, id }              something was bought; kind 'door' | 'weapon' | 'ammo' |

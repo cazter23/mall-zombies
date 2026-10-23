@@ -10,6 +10,7 @@ export function createWallet({ onChange = null } = {}) {
   return {
     points: economy.startingPoints,
     totalEarned: 0, // for the results screen
+    totalSpent: 0, // for this run's receipt / persistent career record
 
     canAfford(cost) {
       return this.points >= cost;
@@ -26,6 +27,7 @@ export function createWallet({ onChange = null } = {}) {
     spend(cost) {
       if (!this.canAfford(cost)) return false;
       this.points -= cost;
+      this.totalSpent += cost;
       if (onChange) onChange(-cost, this.points);
       return true;
     },
@@ -33,6 +35,7 @@ export function createWallet({ onChange = null } = {}) {
     reset() {
       this.points = economy.startingPoints;
       this.totalEarned = 0;
+      this.totalSpent = 0;
       if (onChange) onChange(0, this.points);
     },
   };
@@ -42,11 +45,11 @@ export function createWallet({ onChange = null } = {}) {
  * COD-style points for one hit on a zombie: +10 for a hit that doesn't kill; a kill pays the
  * zombie's kill value plus a headshot or melee bonus. Returns 0 for non-zombies (practice dummies).
  */
-export function pointsForHit({ target, killed, headshot, melee }) {
+export function pointsForHit({ target, killed, headshot, melee, killMultiplier = 1 }) {
   if (!target.type) return 0; // only zombies pay
   const p = economy.payouts;
   if (!killed) return p.nonLethalHit;
-  let points = economy.killValues[target.type.id] ?? 0;
+  let points = (economy.killValues[target.type.id] ?? 0) * killMultiplier;
   if (melee) points += p.meleeKillBonus;
   else if (headshot) points += p.headshotKillBonus;
   return points;

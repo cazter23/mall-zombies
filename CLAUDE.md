@@ -33,6 +33,12 @@ zero added collision, batching/motion reset, interpolated supporting-surface sha
 occlusion/zones/panning/caps, pause/death/reset silence, closed-shutter rattles and Web Audio voice cleanup.
 `tests/careerStats.test.js` checks persistent lifetime totals, weighted accuracy, personal bests, bounded recent runs,
 debug-run exclusion, reset, corrupt saves and unavailable browser storage.
+`tests/music.test.js` also covers the End of Shift death sting: receipt-timed bell, music volume, cancellation of future
+notes, replacement-voice cleanup, and real-game death/reset wiring.
+`tests/powerUps.test.js` checks earned incentive thresholds, skill credit, single drops, caps/repeats, expiry, safe floor/ramp
+placement, swept slide collection, wall/storey rejection, Blue Light payouts/timers, reserve delivery without bypassing
+reloads/upgrades, Security Sweep through all zombie attack/charge states, visuals/disposal and HUD. fullRun.test.js also
+earns and collects a drop with production tuning, then checks Play again cleanup.
 
 Gameplay regression tests live in `tests/` (`gameplay.test.js` movement/melee/vault, `aim.test.js` spread
 (including the Laser Pointer's hip benefit / ADS penalty through repeated shots and recovery),
@@ -136,6 +142,10 @@ src/
                         before, plus `g` = the game) when debug.exposeToWindow
   style.css             HUD (crosshair, hit marker, health/stamina bars, ammo, prompt), start/pause overlay
   config/
+    deathMusic.js       End of Shift: original seven-second death composition (piano/pad/bell/noise layers), gain and
+                        stop fade. Bell anchors to feel.death.resultsDelay; played once through sound's music/master buses
+    powerUps.js         Employee-incentive drop tuning, skill credit, round caps, pickup/zone durations, ammo top-up,
+                        sweep strength, colors and PA lines. First round 2, 12-16 credit per drop, maximum 3 per round
     shoppers.js         Cosmetic-only Shopper wardrobe: coordinated palettes/profiles, shirts/layers, bottoms, hair,
                         modest width variations, accessories and wear. Parts are data; combat never reads this file.
     impacts.js          Cosmetic impact cap (200), Cannon budget (2 clusters), projection/edge tolerances and gun signatures
@@ -387,6 +397,10 @@ src/
     settings.js         createSettings(ctx): current value of every setting, saved in localStorage ('mallZombies.settings',
                         values are sanitized on load), applies them all at startup; get/set/reset(tab)/onChange. ctx = { renderer, sound, hud }
     runStats.js         createRunStats(): time alive, kills, headshot/melee kills, shots fired/hit, accuracy
+    powerUps.js         createPowerUps(): listens to kill/round/death events; earned dynamic pickups on clear floor,
+                        swept walk-through collection, 15s expiry, no repeats, per-round caps. Blue Light multiplies only
+                        base kill credit, within its 4m radius, same floor and line of sight. reset/dispose; debugDrop(id, at)
+                        marks the run assisted. createGame builds/ticks/resets it; exposed as g.powerUps
     wallet.js           createWallet(): points (start 500), earn/spend/canAfford, totalEarned, totalSpent, onChange cb (HUD
                         pop-ups). pointsForHit(): COD payouts (+10 hit; kill value +40 head / +70 melee; zombies only)
     interactions.js     createInteractions(): buyables (doors now, wall buys next). add({ label, verb, cost, position,
@@ -499,6 +513,8 @@ src/
                         setMasterVolume(v) (used by Settings > Audio), setAmbience(mix) (up to three continuous spatial voices,
                         short crossfades), playAmbient(name, {volume, pan}); faded sources stop and disconnect
   fx/
+    powerUpView.js      Reusable delivery carton, blue beacon and security badge (no lights/colliders); bob/spin/blink,
+                        floor-projected Blue Light ring clipped at walls/voids, hide on reset/death, owned-resource disposal
     contactShadows.js   One instanced draw for soft zombie grounding; interpolates feet and finds supporting collider tops.
                         No collision, hitbox or navigation changes; clear on restart, dispose owned GPU resources on unload.
     impactMarks.js      Persistent world aftermath: visible-mesh ray + flat-face corner checks, ring of 200 marks shared
@@ -544,6 +560,7 @@ src/
     atmosphereTextures.js Soft footprint alpha and deterministic tile roughness (no image downloads)
                         seededRandom(seed): deterministic random (also used for shelf stock)
   ui/
+    incentiveHud.js     Small employee punch card (drop progress), uncollected incentive countdown and Blue Light timer
     modal.js            Shared Settings/Controls dialog behavior: inert background, focus trap, Escape, restores focus on close
     settingsMenu.js     createSettingsMenu(settings): builds the options screen from the settings list (tabs, rows per type:
                         checkbox / range + readout / select). Opened by the pause screen's Settings button (controller: Y);
@@ -757,6 +774,24 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
 Atrium <-> Mega Mart shortcut 'atriumMegaMart' (1000, opens both zones, buyable from either side): a 3m shutter through the Mart's
 north wall and the atrium's south wall at x 21.5..24.5 (LAYOUT.atrium.martLink), west of the checkouts, into the atrium's arcade;
 GRAND ATRIUM / MEGA MART signs over it. 10 doors in all. tests/atrium.test.js covers both sides, walking through and Mart routes.
+
+End of Shift death music: a quiet original seven-second sting (descending piano over Am -> F -> E7 -> Am/add9, a soft
+falling thump, slightly detuning pad, register bell at receipt appearance, ending ventilation fade). Config in deathMusic.js;
+sound.playDeathMusic({ receiptAt }) schedules a managed group of synthesized voices on the existing music/master volume
+controls. playerDeath starts it after ambience is silenced; runReset (Play Again / Main Menu) cancels even future notes with
+a short fade. Completed/cancelled voices disconnect their audio nodes; repeated starts replace the old group cleanly.
+
+Employee incentives (power-ups): player gun/melee kills from round 2 fill a subtle performance meter (headshots/melee and
+rapid multi-kills earn extra credit). At 12-16 credit a zombie drops a floating carton, blue beacon or security badge on
+clear floor. One uncollected drop, 15s lifetime, no immediate repeats, maximum 3 drops per round; near-full inventories
+exclude ammo drops. Walk through to collect (fast slides work; walls and other floors block collection). Stockroom Delivery
+fills every carried reserve and tops the ready gun up to half a magazine; it never bypasses a running reload or the Cannon's
+individual shells. Blue Light Special leaves a 4m zone for 20s: base kill credit doubles for zombies killed inside, with
+same-floor/line-of-sight checks; +10 hits and headshot/melee bonuses are unchanged. Security Sweep knocks back and staggers
+risen zombies for 2s, interrupting attacks and Cart Pusher charges, with collision but no damage or free points. HUD progress,
+pickup/timer text, PA banners and distinct synthesized sounds; no added lights. Pausing freezes timers; death/Play again clear
+pickups/zones. Debug testing: window.__mall.g.powerUps.debugDrop('stockroomDelivery'|'blueLightSpecial'|'securitySweep')
+drops at the player's feet and marks the run assisted. Map source files are unchanged by this feature.
 
 THE GRAND ATRIUM (maps/mall/atrium.js, see Map): the big open two-storey room north of the hallway. Gate 'atrium' (1500) in the
 hallway's north wall (the north-east hallway vent moved to the south wall at x 16 for it), shortcut shutter 'atriumPromenade' (1000)

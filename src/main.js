@@ -29,6 +29,7 @@ import { createTitleCamera } from './ui/titleCamera.js';
 import { wireRunIntro } from './game/runIntro.js';
 import { atmosphere } from './config/environment.js';
 import { createPostProcessing } from './fx/postProcessing.js';
+import { createCareerStats } from './game/careerStats.js';
 
 // --- Renderer, scene, camera ---------------------------------------------------
 
@@ -130,6 +131,8 @@ effects.prepare(renderer, camera); // shared impact graphics warmed before the f
 // when the browser grants it). With a controller, the game runs without the lock (game.padPlaying).
 const screens = hud.screens;
 const titleCamera = createTitleCamera(map.titleShots, feel.titleScreen);
+const careerStats = createCareerStats();
+g.events.on('runEnd', ({ summary }) => screens.setCareerResult(careerStats.recordRun(summary)));
 
 function enterPlaying() {
   // A delayed pointer-lock grant can arrive after another menu was opened.
@@ -159,6 +162,7 @@ function pauseRun() {
 }
 // A fresh run: everything reset, then straight into play (if the mouse lock is refused, "Back to work" waits).
 function freshRun(how) {
+  screens.setCareerResult(null);
   resetRun();
   screens.show('pause', { fresh: true });
   hud.setDimmed(true);
@@ -168,6 +172,7 @@ function goToTitle() {
   game.padPlaying = false;
   if (document.pointerLockElement) document.exitPointerLock();
   resetRun();
+  screens.setCareerResult(null);
   titleCamera.restart();
   screens.show('title');
   hud.setDimmed(true);
@@ -180,6 +185,9 @@ screens.on('playAgain', freshRun);
 screens.on('quit', goToTitle);
 screens.on('mainMenu', goToTitle);
 screens.on('settings', () => settingsMenu.open());
+screens.on('stats', () => screens.show('stats', careerStats.snapshot()));
+screens.on('clearStats', () => screens.show('stats', careerStats.reset()));
+screens.on('statsBack', () => screens.show('title'));
 wireRunIntro({ events: g.events, hud, sound }); // the PA's opening line as round 1 begins
 screens.on('controls', () => controlsMenu.open());
 
@@ -305,6 +313,7 @@ function render(alpha, frameTime) {
   // A Flash Sale shows as a SALE mark on the price of whatever it discounted.
   hud.setInteract(prompt && { ...prompt, sale: PRICE_CATEGORIES.includes(prompt.kind) && pricing.discountOf(prompt.kind) > 0 }, buttonLabel('interact'));
   hud.setFlashSale(game.over ? null : flashSales.active);
+  hud.setPowerUps(game.over ? null : g.powerUps);
   hud.setVaultPrompt(game.running && !game.over && g.vaultPromptVisible, buttonLabel('jump'));
   hud.setPoints(wallet.points);
   hud.setRoundFlashing(rounds.inBreak && rounds.round > 1); // counter blinks in the break between rounds

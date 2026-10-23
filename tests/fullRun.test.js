@@ -208,6 +208,39 @@ test('round 7 after buying the shutter: debug open-all preserves Nail Gun and Cu
   assert.equal(g.map.zones.hallway.open, false);
 });
 
+test('round-2 combat earns a real incentive, collects it without F, and Play again removes all incentive state', () => {
+  const t = headlessGame();
+  const { g } = t;
+  t.tick();
+  g.rounds.skipRound();
+  g.rounds.update = () => {}; // controlled combat, using the real payout and drop listeners
+  g.zombies.clear();
+  const drops = [];
+  g.events.on('powerUpDrop', (drop) => drops.push(drop));
+  t.standAt(0, 12);
+  const spot = new THREE.Vector3(0, 0, 9);
+  for (let i = 0; i < 20 && !g.powerUps.pickup; i++) {
+    const z = g.zombies.spawn('shopper', spot);
+    z.setState('chasing');
+    z.takeHit({ damage: 10000, part: 'head' });
+    t.tick();
+  }
+  assert.equal(drops.length, 1, 'actual combat earned one drop with production tuning');
+  assert.ok(g.runStats.kills >= 8 && g.runStats.kills <= 16);
+  assert.equal(g.state.assisted, false, 'ordinary earned reward is eligible for career stats');
+  const pickup = g.powerUps.pickup;
+  assert.equal(pickup.position.y, 0);
+  g.player.teleport({ position: pickup.position.clone(), yaw: 0 });
+  t.tick();
+  assert.equal(g.powerUps.pickup, null, 'walk-through collection needs no interact input');
+  assert.ok(g.powerUps.active || t.sounds.includes('incentiveSecurity'), 'full inventory earns a zone or a sweep');
+  g.resetRun();
+  assert.equal(g.powerUps.pickup, null);
+  assert.equal(g.powerUps.active, null);
+  assert.equal(g.powerUps.progress, 0);
+  assert.equal(g.powerUps.dropsThisRound, 0);
+});
+
 test('resetPlayerStats: every stat back to base, undeclared extras removed, same object', async () => {
   const { createPlayerStats, resetPlayerStats } = await import('../src/player/stats.js');
   const stats = createPlayerStats();
