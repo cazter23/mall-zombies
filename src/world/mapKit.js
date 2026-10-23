@@ -23,7 +23,7 @@
 
 import * as THREE from 'three';
 import { atmosphere } from '../config/environment.js';
-import { makeTileRoughness } from './atmosphereTextures.js';
+import { makeTileRoughness, makeTileBump } from './atmosphereTextures.js';
 import { makeTileTexture, makeSignTexture, makeShutterTexture } from './textures.js';
 import { createShutter } from './shutter.js';
 import { createDoor } from './door.js';
@@ -141,7 +141,9 @@ export function createMapKit(group, colliders) {
     texture.repeat.set((maxX - minX) / 2, (maxZ - minZ) / 2);
     const roughnessMap = makeTileRoughness();
     roughnessMap.repeat.copy(texture.repeat);
-    const material = new THREE.MeshStandardMaterial({ map: texture, roughnessMap, ...atmosphere.surfaces.tile });
+    const bumpMap = makeTileBump();
+    bumpMap.repeat.copy(texture.repeat);
+    const material = new THREE.MeshStandardMaterial({ map: texture, roughnessMap, bumpMap, ...atmosphere.surfaces.tile });
     return box(minX, -0.2, minZ, maxX, 0, maxZ, material, { name: 'floor' });
   }
 
@@ -183,7 +185,7 @@ export function createMapKit(group, colliders) {
    * The player buys it standing near the middle of the doorway (1.5m up).
    */
   function shutterDoor({ id, label, price, opensZone, opensZones, zones, doorway, text = 'CLOSED' }) {
-    const material = new THREE.MeshStandardMaterial({ map: makeShutterTexture(text), roughness: 0.55, metalness: 0.25 });
+    const material = new THREE.MeshStandardMaterial({ map: makeShutterTexture(text), roughness: 0.36, metalness: 0.58 });
     const shutter = createShutter({ name: `shutter_${id}`, ...doorway, material, colliders });
     ownColliders.push(shutter.collider); // (in the list only while closed)
     group.add(shutter.mesh);

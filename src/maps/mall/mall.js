@@ -549,7 +549,7 @@ export function buildMall(scene, colliders) {
   };
   // Lamps hang well below the ceiling (about 60% of its height) and are dimmer to match: a lamp just
   // under the ceiling lights a small, hard-edged bright disc on it; hung lower it's a soft wide glow.
-  for (const x of [-10, 10]) lamp(atmosphere.roomLights.hallway, x, H.height * 0.58, HZ);
+  for (const x of [-12, 0, 12]) lamp(atmosphere.roomLights.hallway, x, H.height * 0.58, HZ);
   for (const x of [-12, 0, 12]) lamp(atmosphere.roomLights.foodCourt, x, F.height * 0.58, FZ);
   // Start-room warm/cool lamps are built with its details (config/environment.js).
   // Mega Mart's two fixed lamps are built with its details (config/environment.js).

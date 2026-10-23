@@ -35,11 +35,33 @@ import { atmosphere } from '../../config/environment.js';
 import { seededRandom } from '../../world/textures.js';
 import { buildAttachmentPart } from '../../weapons/models/upgradeParts.js';
 
+const METAL_COLORS = new Set([
+  COLORS.metal, COLORS.tableLeg, COLORS.stainless, COLORS.elevatorSteel, COLORS.elevatorFrame,
+  COLORS.escalatorBody, COLORS.escalatorStep, COLORS.escalatorPlate, COLORS.gondolaBase,
+  COLORS.gondolaPanel, COLORS.gondolaShelf, COLORS.checkoutTop, COLORS.serviceDoor,
+  COLORS.pipeGrey, COLORS.pipeRed, COLORS.locker, COLORS.lockerVent, COLORS.electricalPanel,
+  COLORS.deskBell, COLORS.grill,
+]);
+const PLASTIC_COLORS = new Set([
+  COLORS.stool, COLORS.stoolAlt, COLORS.tableTop, COLORS.trashCan, COLORS.safetyYellow,
+  COLORS.vendBody, COLORS.vendTrim, COLORS.checkoutBody, COLORS.register,
+]);
+const WOOD_COLORS = new Set([
+  COLORS.wood, COLORS.woodDark, COLORS.plank, COLORS.plywood, COLORS.pegboard, COLORS.deskTop,
+]);
+const GLASS_COLORS = new Set([
+  COLORS.glass, COLORS.doorWindow, COLORS.balustradeGlass, COLORS.caseGlass, COLORS.vendGlass,
+]);
+
 export function createMallProps(kit) {
   const { box, sign, addCollider, group } = kit;
   const mat = (color, options = {}) => kit.mat(color, {
-    ...(color === COLORS.metal || color === COLORS.tableLeg ? atmosphere.surfaces.metal : {}),
-    ...(color === COLORS.stool ? atmosphere.surfaces.plastic : {}), ...options,
+    ...(METAL_COLORS.has(color) ? atmosphere.surfaces.metal : {}),
+    ...(PLASTIC_COLORS.has(color) ? atmosphere.surfaces.plastic : {}),
+    ...(WOOD_COLORS.has(color) ? atmosphere.surfaces.wood : {}),
+    ...(GLASS_COLORS.has(color) ? atmosphere.surfaces.glass : {}),
+    ...(color === COLORS.cardboard ? atmosphere.surfaces.cardboard : {}),
+    ...options,
   });
 
   /**
@@ -60,7 +82,7 @@ export function createMallProps(kit) {
     // Colored facade
     place(from, 0, to, 4.7, depth(0, 0.12), mat(color), { collide: false, name: `shop_${text}` });
     // Dark glass window
-    place(from + 0.6, 0.35, to - 0.6, 3.15, depth(0.12, 0.15), mat(COLORS.glass, { roughness: 0.15, metalness: 0.3 }), { collide: false });
+    place(from + 0.6, 0.35, to - 0.6, 3.15, depth(0.12, 0.15), mat(COLORS.glass), { collide: false });
     // Window frame mullions
     const frame = mat(COLORS.shopFrame);
     for (let i = 1; i < 3; i++) {
@@ -124,8 +146,8 @@ export function createMallProps(kit) {
   /** A ceiling light panel spanning x0..x1 / z0..z1, just under a ceiling at `ceilingY`. */
   function lightPanel(x0, z0, x1, z1, ceilingY, { dead = false } = {}) {
     const material = dead
-      ? mat(COLORS.deadLightPanel)
-      : mat(COLORS.lightPanel, { emissive: COLORS.lightPanel, emissiveIntensity: 0.9 });
+      ? mat(COLORS.deadLightPanel, { roughness: 0.45, metalness: 0.15 })
+      : mat(COLORS.lightPanel, { emissive: COLORS.lightPanel, emissiveIntensity: 1.35, roughness: 0.2 });
     box(x0, ceilingY - 0.06, z0, x1, ceilingY, z1, material, { collide: false });
   }
 

@@ -18,9 +18,9 @@ export const COLORS = {
   leaves: 0x4caf50,
   leavesDark: 0x2f8f46,
   cardboard: 0xc79a5b,
-  glass: 0x24405e,
-  lightPanel: 0xfffbea,
-  deadLightPanel: 0x9a978f,
+  glass: 0x1e3650,
+  lightPanel: 0xf4faff,
+  deadLightPanel: 0x565c63,
   shopFrame: 0x2b2b2b,
 
   // Mega Mart (big-box store): cool white walls, blue + yellow brand stripe, steel shelving.

@@ -24,6 +24,8 @@
 
 import * as THREE from 'three';
 import { makeTileTexture } from '../../world/textures.js';
+import { makeTileRoughness, makeTileBump } from '../../world/atmosphereTextures.js';
+import { atmosphere } from '../../config/environment.js';
 import { upgrades } from '../../config/upgrades.js';
 
 const WALL_H = 4.5; // store walls
@@ -70,7 +72,7 @@ export function buildStores({ kit, props, court, thickness: T, stores }) {
   const { box, mat, sign, addCollider, group } = kit;
   const spots = [];
   const spawns = [];
-  const glass = mat(0xbfe6ef, { transparent: true, opacity: 0.3, roughness: 0.1 });
+  const glass = mat(0xbfe6ef, { transparent: true, opacity: 0.3, ...atmosphere.surfaces.glass });
 
   for (const store of stores) {
     const room = storeRoom(store, court, T);
@@ -91,10 +93,25 @@ export function buildStores({ kit, props, court, thickness: T, stores }) {
     } else {
       // A pod stands on the Food Court's floor: lay a colored carpet over it (visual only; offset so it never z-fights).
       const texture = makeTileTexture(store.floor);
+      const roughnessMap = makeTileRoughness();
+      const bumpMap = makeTileBump();
       texture.repeat.set(width / 2, depth / 2);
+      roughnessMap.repeat.set(width / 2, depth / 2);
+      bumpMap.repeat.set(width / 2, depth / 2);
+      const tileSurf = atmosphere.surfaces.tile;
       const carpet = new THREE.Mesh(
         new THREE.BoxGeometry(width, 0.004, depth),
-        new THREE.MeshStandardMaterial({ map: texture, roughness: 0.6, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
+        new THREE.MeshStandardMaterial({
+          map: texture,
+          roughnessMap,
+          bumpMap,
+          bumpScale: tileSurf.bumpScale ?? 0.015,
+          roughness: tileSurf.roughness,
+          metalness: tileSurf.metalness ?? 0.06,
+          polygonOffset: true,
+          polygonOffsetFactor: -2,
+          polygonOffsetUnits: -2,
+        }),
       );
       carpet.position.set(cx, 0.002, (zBack + zIn) / 2);
       group.add(carpet);
@@ -142,6 +159,12 @@ export function buildStores({ kit, props, court, thickness: T, stores }) {
     for (const frac of [0.35, 0.75]) {
       const d = depth * frac;
       props.lightPanel(cx - 1.2, zLo(zAt(d - 0.35), zAt(d + 0.35)), cx + 1.2, zHi(zAt(d - 0.35), zAt(d + 0.35)), CEIL_Y);
+    }
+    if (atmosphere.roomLights.storeAccent) {
+      const { intensity, distance } = atmosphere.roomLights.storeAccent;
+      const storeLamp = new THREE.PointLight(store.color, intensity, distance, 2);
+      storeLamp.position.set(cx, 3.2, zAt(depth * 0.65));
+      group.add(storeLamp);
     }
     const items = Object.entries(upgrades.attachments)
       .filter(([, a]) => a.slot === store.slot)

@@ -30,7 +30,7 @@ export function seededRandom(seed) {
  * returned texture to (width / 2, depth / 2) for 1m tiles.
  */
 export function makeTileTexture({ base = '#efe5d3', grout = '#c9bba4', variation = 10, seed = 7 } = {}) {
-  const size = 256;
+  const size = 512;
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
@@ -40,35 +40,64 @@ export function makeTileTexture({ base = '#efe5d3', grout = '#c9bba4', variation
   const tile = size / 2;
   for (let ty = 0; ty < 2; ty++) {
     for (let tx = 0; tx < 2; tx++) {
+      const x0 = tx * tile;
+      const y0 = ty * tile;
       ctx.fillStyle = base;
-      ctx.fillRect(tx * tile, ty * tile, tile, tile);
+      ctx.fillRect(x0, y0, tile, tile);
+
       // Slight per-tile brightness variation reads as "polished stone"
       const shade = Math.round((rand() - 0.5) * variation);
       ctx.fillStyle = shade >= 0 ? `rgba(255,255,255,${shade / 100})` : `rgba(0,0,0,${-shade / 100})`;
-      ctx.fillRect(tx * tile, ty * tile, tile, tile);
-      // Soft diagonal sheen
-      const g = ctx.createLinearGradient(tx * tile, ty * tile, (tx + 1) * tile, (ty + 1) * tile);
-      g.addColorStop(0, 'rgba(255,255,255,0.10)');
-      g.addColorStop(0.5, 'rgba(255,255,255,0)');
-      g.addColorStop(1, 'rgba(0,0,0,0.04)');
+      ctx.fillRect(x0, y0, tile, tile);
+
+      // Subtle terrazzo mineral flecks inside each tile
+      for (let f = 0; f < 28; f++) {
+        const fx = x0 + 10 + rand() * (tile - 20);
+        const fy = y0 + 10 + rand() * (tile - 20);
+        const fw = 2 + rand() * 5;
+        const fh = 2 + rand() * 4;
+        ctx.fillStyle = rand() > 0.45 ? 'rgba(255,255,255,0.09)' : 'rgba(40,32,24,0.06)';
+        ctx.fillRect(fx, fy, fw, fh);
+      }
+
+      // Multi-stop diagonal wax sheen across the tile face
+      const g = ctx.createLinearGradient(x0, y0, x0 + tile, y0 + tile);
+      g.addColorStop(0, 'rgba(255,255,255,0.14)');
+      g.addColorStop(0.38, 'rgba(255,255,255,0.03)');
+      g.addColorStop(0.62, 'rgba(0,0,0,0.01)');
+      g.addColorStop(1, 'rgba(0,0,0,0.07)');
       ctx.fillStyle = g;
-      ctx.fillRect(tx * tile, ty * tile, tile, tile);
+      ctx.fillRect(x0, y0, tile, tile);
+
+      // Crisp inner tile bevel highlight (top/left catch light, bottom/right recede)
+      ctx.fillStyle = 'rgba(255,255,255,0.18)';
+      ctx.fillRect(x0 + 4, y0 + 4, tile - 8, 2);
+      ctx.fillRect(x0 + 4, y0 + 4, 2, tile - 8);
+      ctx.fillStyle = 'rgba(0,0,0,0.09)';
+      ctx.fillRect(x0 + 4, y0 + tile - 6, tile - 8, 2);
+      ctx.fillRect(x0 + tile - 6, y0 + 4, 2, tile - 8);
     }
   }
 
-  // Grout lines
-  ctx.fillStyle = grout;
-  const line = 3;
+  // Recessed grout lines with subtle edge shadow and center mortar seam
+  const line = 6;
   for (let i = 0; i <= 2; i++) {
     const p = i * tile - line / 2;
+    ctx.fillStyle = 'rgba(0,0,0,0.12)';
+    ctx.fillRect(p - 2, 0, line + 4, size);
+    ctx.fillRect(0, p - 2, size, line + 4);
+    ctx.fillStyle = grout;
     ctx.fillRect(p, 0, line, size);
     ctx.fillRect(0, p, size, line);
+    ctx.fillStyle = 'rgba(0,0,0,0.16)';
+    ctx.fillRect(i * tile - 1, 0, 2, size);
+    ctx.fillRect(0, i * tile - 1, size, 2);
   }
 
   return finish(canvas, { repeat: true });
 }
 
-/** A shop sign: bold text on a colored band. */
+/** A shop sign: bold text on a backlit colored band with a recessed bezel. */
 export function makeSignTexture(text, { background = '#222', color = '#fff', aspect = 6 } = {}) {
   const width = 1024;
   const height = Math.round(width / aspect);
@@ -80,10 +109,23 @@ export function makeSignTexture(text, { background = '#222', color = '#fff', asp
   ctx.fillStyle = background;
   ctx.fillRect(0, 0, width, height);
 
-  // Inner border
-  ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-  ctx.lineWidth = 6;
-  ctx.strokeRect(10, 10, width - 20, height - 20);
+  // Subtle internal lightbox glow (brighter across the horizontal center, vignette at top/bottom)
+  const glow = ctx.createLinearGradient(0, 0, 0, height);
+  glow.addColorStop(0, 'rgba(0,0,0,0.22)');
+  glow.addColorStop(0.25, 'rgba(255,255,255,0.08)');
+  glow.addColorStop(0.5, 'rgba(255,255,255,0.14)');
+  glow.addColorStop(0.75, 'rgba(255,255,255,0.06)');
+  glow.addColorStop(1, 'rgba(0,0,0,0.28)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, width, height);
+
+  // Outer metallic bezel & inner border
+  ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+  ctx.lineWidth = 8;
+  ctx.strokeRect(4, 4, width - 8, height - 8);
+  ctx.strokeStyle = 'rgba(255,255,255,0.42)';
+  ctx.lineWidth = 5;
+  ctx.strokeRect(12, 12, width - 24, height - 24);
 
   // Fit text to the sign
   let fontSize = Math.round(height * 0.62);
@@ -95,7 +137,7 @@ export function makeSignTexture(text, { background = '#222', color = '#fff', asp
   }
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.fillStyle = 'rgba(0,0,0,0.42)';
   ctx.fillText(text, width / 2 + 4, height / 2 + 5);
   ctx.fillStyle = color;
   ctx.fillText(text, width / 2, height / 2);
@@ -103,7 +145,7 @@ export function makeSignTexture(text, { background = '#222', color = '#fff', asp
   return finish(canvas);
 }
 
-/** Roll-up security shutter: horizontal metal slats with a stenciled message. */
+/** Roll-up security shutter: corrugated metal slats with side guide rails and stenciled message. */
 export function makeShutterTexture(message = 'CLOSED') {
   const size = 512;
   const canvas = document.createElement('canvas');
@@ -114,11 +156,27 @@ export function makeShutterTexture(message = 'CLOSED') {
   const slat = 24;
   for (let y = 0; y < size; y += slat) {
     const g = ctx.createLinearGradient(0, y, 0, y + slat);
-    g.addColorStop(0, '#b9bec4');
-    g.addColorStop(0.55, '#9aa0a8');
-    g.addColorStop(1, '#6f757d');
+    g.addColorStop(0, '#cfd5dc');
+    g.addColorStop(0.18, '#b5bcc4');
+    g.addColorStop(0.58, '#8d949e');
+    g.addColorStop(0.88, '#636972');
+    g.addColorStop(1, '#3e434a');
     ctx.fillStyle = g;
     ctx.fillRect(0, y, size, slat);
+
+    // Specular ridge line along the top curve of each slat
+    ctx.fillStyle = 'rgba(255,255,255,0.28)';
+    ctx.fillRect(0, y + 2, size, 2);
+  }
+
+  // Side guide tracks and rivets
+  ctx.fillStyle = 'rgba(30,34,40,0.45)';
+  ctx.fillRect(0, 0, 18, size);
+  ctx.fillRect(size - 18, 0, 18, size);
+  ctx.fillStyle = 'rgba(230,235,240,0.45)';
+  for (let y = slat / 2; y < size; y += slat) {
+    ctx.fillRect(7, y - 2, 4, 4);
+    ctx.fillRect(size - 11, y - 2, 4, 4);
   }
 
   ctx.save();
@@ -127,10 +185,10 @@ export function makeShutterTexture(message = 'CLOSED') {
   ctx.font = 'bold 92px Impact, "Arial Black", sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillStyle = 'rgba(214, 40, 57, 0.88)';
+  ctx.fillStyle = 'rgba(214, 40, 57, 0.90)';
   ctx.fillText(message, 0, 0);
   ctx.font = 'bold 34px Impact, "Arial Black", sans-serif';
-  ctx.fillStyle = 'rgba(30, 30, 30, 0.7)';
+  ctx.fillStyle = 'rgba(24, 26, 30, 0.78)';
   ctx.fillText('NO REFUNDS. NO RETURNS.', 0, 80);
   ctx.restore();
 
