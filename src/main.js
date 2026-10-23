@@ -90,7 +90,8 @@ const DEG_TO_RAD = Math.PI / 180;
 
 // Debug keys (raw key codes are only used here, never in gameplay). Run by the game each live tick, just before the
 // player moves. config/debug.js lists the keys; each press becomes g.debug.run(id) (game/debugCommands.js).
-const debugCodes = [...new Set(debug.commands.map((c) => c.key))];
+// (The window's own key is handled below, so it also works on the title and pause screens, not just while playing.)
+const debugCodes = [...new Set(debug.commands.filter((c) => c.id !== 'panel').map((c) => c.key))];
 function handleDebugKeys() {
   if (!debug.enabled) return;
   const shift = input.isDown('ShiftLeft') || input.isDown('ShiftRight');
@@ -108,7 +109,13 @@ const settingsMenu = createSettingsMenu(settings);
 const controlsMenu = createControlsMenu();
 // The debug window (the ` key): lists the debug keys with live numbers; hidden unless the game's debug state says so.
 const debugPanel = debug.enabled ? createDebugPanel({ status: () => g.debug.status() }) : null;
-if (debugPanel) document.body.appendChild(debugPanel.element);
+if (debugPanel) {
+  document.body.appendChild(debugPanel.element);
+  window.addEventListener('keydown', (e) => {
+    if (e.repeat) return;
+    if (g.debug.resolve(e.code, e.shiftKey)?.id === 'panel') g.debug.run('panel');
+  });
+}
 effects.prepare(renderer, camera); // shared impact graphics warmed before the first shot
 
 // --- Menus and the run's flow ------------------------------------------------------
