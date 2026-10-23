@@ -26,6 +26,7 @@ import { tierById, tierOf } from './weapons/upgrades.js';
 import { PRICE_CATEGORIES } from './game/pricing.js';
 import { createDebugPanel } from './ui/debugPanel.js';
 import { createTitleCamera } from './ui/titleCamera.js';
+import { createBenchmark } from './fx/benchmark.js';
 import { wireRunIntro } from './game/runIntro.js';
 import { atmosphere } from './config/environment.js';
 import { createPostProcessing } from './fx/postProcessing.js';
@@ -98,7 +99,8 @@ const DEG_TO_RAD = Math.PI / 180;
 // Debug keys (raw key codes are only used here, never in gameplay). Run by the game each live tick, just before the
 // player moves. config/debug.js lists the keys; each press becomes g.debug.run(id) (game/debugCommands.js).
 // (The window's own key is handled below, so it also works on the title and pause screens, not just while playing.)
-const debugCodes = [...new Set(debug.commands.filter((c) => c.id !== 'panel').map((c) => c.key))];
+const browserOnly = new Set(['panel', 'benchmark']); // (handled by the keydown listener below, on any screen)
+const debugCodes = [...new Set(debug.commands.filter((c) => !browserOnly.has(c.id)).map((c) => c.key))];
 function handleDebugKeys() {
   if (!debug.enabled) return;
   const shift = input.isDown('ShiftLeft') || input.isDown('ShiftRight');
@@ -120,8 +122,41 @@ if (debugPanel) {
   document.body.appendChild(debugPanel.element);
   window.addEventListener('keydown', (e) => {
     if (e.repeat) return;
-    if (g.debug.resolve(e.code, e.shiftKey)?.id === 'panel') g.debug.run('panel');
+    const id = g.debug.resolve(e.code, e.shiftKey)?.id;
+    if (id === 'panel') g.debug.run('panel');
+    if (id === 'benchmark') runBenchmark();
   });
+}
+
+// The benchmark (fx/benchmark.js): a fixed camera route through every area (map.benchmarkShots), timed. Only while the
+// game isn't ticking (title or pause screen), so nothing in the run moves. Every door is opened for the route (a closed
+// shutter would hide whole rooms) and put back exactly as it was afterwards. Press Shift+B again to stop early.
+const benchmark = createBenchmark({
+  camera, renderer, draw: () => postProcessing.render({ showViewmodel: false, speedAmount: 0 }),
+});
+async function runBenchmark() {
+  if (benchmark.active) return benchmark.cancel();
+  if (game.running) {
+    hud.showAnnouncement({ kicker: 'Benchmark', text: 'Pause first (Esc), then press Shift+B' });
+    return null;
+  }
+  const settle = () => { for (let i = 0; i < 240; i++) map.update(1 / 60); }; // (shutters finish rolling)
+  const wasOpen = map.doors.map((d) => d.isOpen);
+  for (const d of map.doors) if (!d.isOpen) d.open();
+  settle();
+  camera.fov = feel.camera.fov;
+  camera.updateProjectionMatrix();
+  const report = await benchmark.start(map.benchmarkShots ?? map.titleShots, debug.benchmark);
+  map.doors.forEach((d, i) => { if (!wasOpen[i]) d.reset(); });
+  settle();
+  report.settings = Object.fromEntries(settings.defs.filter((d) => d.tab === 'Graphics').map((d) => [d.id, settings.get(d.id)]));
+  const line = `${report.drawMs.avg} ms draw (p95 ${report.drawMs.p95}), ${report.fps} fps, ${report.calls} draw calls; slowest: ${report.slowestShot}`;
+  g.debug.state.last = `Benchmark: ${line}`;
+  hud.showAnnouncement({ kicker: report.cancelled ? 'Benchmark (stopped early)' : 'Benchmark', text: line });
+  console.log('Benchmark', report);
+  console.table(report.perShot);
+  if (window.__mall) window.__mall.lastBenchmark = report;
+  return report;
 }
 effects.prepare(renderer, camera); // shared impact graphics warmed before the first shot
 
@@ -258,6 +293,11 @@ function render(alpha, frameTime) {
     fpsMeter.time = 0;
   }
 
+  if (benchmark.active) {
+    benchmark.frame(frameTime); // (it owns the camera and the draw until its route is done)
+    return;
+  }
+
   if (screens.showsFlyover) {
     renderTitle(frameTime);
     return;
@@ -364,6 +404,7 @@ if (debug.exposeToWindow) {
     hud, gun, effects, viewmodel, shootables: g.shootables, body, zombies, health, melee, runStats: g.runStats, death, resetRun,
     gamepad, aimAssist, wallet, rounds, sound, interactions, g, screens, titleCamera,
     menus: { play, pauseRun, freshRun, goToTitle }, // the menu flow, for testing
+    benchmark: runBenchmark, // await __mall.benchmark() -> the report (title or pause screen)
   };
   // Advance the real game loop by `ticks` fixed steps and draw one frame. For automated
   // testing when the browser isn't animating (e.g. a hidden tab). Pair with game.forceRun.

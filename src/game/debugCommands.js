@@ -116,6 +116,11 @@ export function createDebugCommands({ map, zombies, rounds, wallet, gun, health,
       return 'On Level 2';
     },
 
+    // The benchmark itself is browser-side (fx/benchmark.js, run by main.js on Shift+B); headless it only says so.
+    benchmark() {
+      return 'The benchmark runs in the browser: on the title or pause screen, press Shift+B';
+    },
+
     panel() {
       state.panelOpen = !state.panelOpen;
       return state.panelOpen ? 'Debug window shown' : 'Debug window hidden';

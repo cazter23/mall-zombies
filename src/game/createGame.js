@@ -316,7 +316,7 @@ export function createGame({
     map, zombies, rounds, wallet, gun, health, player, arena, flashSales,
     onUse: (id) => {
       // Merely showing the panel or choosing the next spawn type changes no run outcome.
-      if (id !== 'panel' && id !== 'cycleZombie') state.assisted = true;
+      if (id !== 'panel' && id !== 'cycleZombie' && id !== 'benchmark') state.assisted = true;
     },
   });
 

@@ -744,6 +744,19 @@ export function buildMall(scene, colliders) {
     { from: [3.6, 1.9, 7.4], to: [-2.6, 1.8, 8.2], lookFrom: [-2, 1.2, 14.5], lookTo: [2.5, 1.2, 15] }, // the closed-down start room
   ];
 
+  // The benchmark route (fx/benchmark.js, debug Shift+B): long views through every area at eye height, the worst cases
+  // for drawing. Same shape as titleShots, plus a name for the report. Keep them clear of walls and shutters.
+  const benchmarkShots = [
+    { name: 'hallway', from: [18, 1.7, 2], to: [8, 1.7, 2], lookFrom: [-18, 2, 2], lookTo: [-18, 2.5, 2] },
+    { name: 'food court', from: [-17, 1.7, -4], to: [17, 1.7, -4], lookFrom: [0, 1.5, -13], lookTo: [0, 1.5, -13] },
+    { name: 'mega mart', from: [22, 1.7, 4.8], to: [32, 1.7, 4.8], lookFrom: [27, 1.5, -20], lookTo: [27, 1.5, -20] },
+    { name: 'service corridor', from: [-21.8, 1.7, 1], to: [-21.8, 1.7, -12], lookFrom: [-21.8, 1.5, -14], lookTo: [-21.8, 1.5, -14] },
+    { name: 'start room', from: [0, 1.7, 7], to: [0, 1.7, 13], lookFrom: [0, 1.5, 16], lookTo: [-3, 1.5, 16] },
+    { name: 'atrium court', from: [10, 1.7, 8], to: [30, 1.7, 8], lookFrom: [20, 4, 25], lookTo: [20, 4, 25] },
+    { name: 'atrium ring', from: [10, 8, 29.3], to: [30, 8, 29.3], lookFrom: [20, 2, 15], lookTo: [20, 2, 15] },
+    { name: 'level 2', from: [-18.5, 8, 4.6], to: [18, 8, 4.6], lookFrom: [20, 7.5, 2], lookTo: [20, 7.5, 2] },
+  ];
+
   // Everything (besides doors) the player interacts with, by kind: game/features/ builds each one.
   // New kinds (claw machine, fitting room, hazard switch...) are more entries here.
   const features = [
@@ -768,6 +781,7 @@ export function buildMall(scene, colliders) {
     features,
     playerSpawn,
     titleShots,
+    benchmarkShots,
     ambience: [...dressing.emitters, ...atrium.emitters],
     // Zombie navigation across floors (zombies/navigation.js): the ground floor and level 2, joined by the escalator.
     navigation: { floors: [0, upperY], links: [escalator.link, atrium.link] },

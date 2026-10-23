@@ -40,7 +40,11 @@ export const debug = {
     { id: 'upstairs', key: 'KeyT', shift: true, group: 'Map', label: 'Teleport to Level 2 and back (repairs the escalator)' },
 
     { id: 'panel', key: 'Backquote', group: 'Debug', label: 'Show / hide this window' },
+    { id: 'benchmark', key: 'KeyB', shift: true, group: 'Debug', label: 'Benchmark: time a camera route (title or pause screen)' },
   ],
+
+  // The benchmark (Shift+B, fx/benchmark.js): seconds per shot of map.benchmarkShots, and a warm-up not counted.
+  benchmark: { shotSeconds: 4, warmupSeconds: 0.5 },
 
   // How much +points gives, and how far the "jump ahead" command goes.
   addPointsAmount: 5000,
