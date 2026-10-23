@@ -6,7 +6,8 @@
 // zombies get in. Everything is placed from the LAYOUT.level2 entry in mall.js. Decoration adds NO collision except what
 // is named below: the perimeter, the railings round the well, the benches and the planter.
 //
-// buildLevelTwo({ kit, floorY, rect, hole, layout }) -> { spawns, lamps }
+// buildLevelTwo({ kit, props, floorY, rect, hole, layout }) -> { spawns, lamps }
+//   layout.atriumLink  { from, to, top }: an opening in the north wall into the Grand Atrium's upper ring (its shutter is built by mall.js)
 //   layout.voids  open BALCONY holes in the floor, over the hallway (railed on all four sides): you look down into the hallway
 //   rect   the walkable footprint ({ minX, maxX, minZ, maxZ }, the hallway's)
 //   hole   the escalator's ceiling hole (left open in the floor)
@@ -22,7 +23,7 @@ const WALL = 0xf4dcc8; // warm peach
 const STRIPE = 0xff8a5c; // sunset coral
 const TRIM = 0x6b3f5e; // dusk purple
 
-export function buildLevelTwo({ kit, floorY, rect, hole, layout }) {
+export function buildLevelTwo({ kit, props, floorY, rect, hole, layout }) {
   const { box, mat, sign, addCollider } = kit;
   const T = 0.3; // wall thickness (they sit on the slab's rim, like the walls below)
   const top = floorY + layout.height; // underside of the roof
@@ -38,7 +39,11 @@ export function buildLevelTwo({ kit, floorY, rect, hole, layout }) {
 
   // --- Walls and roof ----------------------------------------------------------------------------------------------------
   const wallMat = mat(WALL);
-  box(rect.minX - T, floorY, rect.maxZ, rect.maxX + T, top, rect.maxZ + T, wallMat, { name: 'level2_wall_north' });
+  const link = layout.atriumLink;
+  kit.wall({
+    along: 'x', from: rect.minX - T, to: rect.maxX + T, at0: rect.maxZ, at1: rect.maxZ + T, bottom: floorY, height: layout.height,
+    openings: link ? [{ from: link.from, to: link.to, top: link.top }] : [],
+  }, wallMat, { name: 'level2_wall_north' });
   box(rect.minX - T, floorY, rect.minZ - T, rect.maxX + T, top, rect.minZ, wallMat, { name: 'level2_wall_south' });
   box(rect.minX - T, floorY, rect.minZ, rect.minX, top, rect.maxZ, wallMat, { name: 'level2_wall_west' });
   box(rect.maxX, floorY, rect.minZ, rect.maxX + T, top, rect.maxZ, wallMat, { name: 'level2_wall_east' });
@@ -47,7 +52,9 @@ export function buildLevelTwo({ kit, floorY, rect, hole, layout }) {
   const stripe = mat(STRIPE);
   const skirting = mat(TRIM);
   for (const [x0, z0, x1, z1] of [
-    [rect.minX, rect.maxZ - 0.02, rect.maxX, rect.maxZ], // north
+    ...(link // north (split round the atrium link)
+      ? [[rect.minX, rect.maxZ - 0.02, link.from, rect.maxZ], [link.to, rect.maxZ - 0.02, rect.maxX, rect.maxZ]]
+      : [[rect.minX, rect.maxZ - 0.02, rect.maxX, rect.maxZ]]),
     [rect.minX, rect.minZ, rect.maxX, rect.minZ + 0.02], // south
     [rect.minX, rect.minZ, rect.minX + 0.02, rect.maxZ], // west
     [rect.maxX - 0.02, rect.minZ, rect.maxX, rect.maxZ], // east
@@ -63,15 +70,7 @@ export function buildLevelTwo({ kit, floorY, rect, hole, layout }) {
 
   // --- Railings round the escalator well (solid to walking, not to bullets) ----------------------------------------------------
   // The well's west end is the way on and off the escalator, so it stays open; the other three sides are fenced.
-  const railHeight = 1.5; // taller than a jump peaks (about 1.05 m)
-  const glass = mat(COLORS.balustradeGlass, { transparent: true, opacity: 0.3, roughness: 0.1, depthWrite: false });
-  const handrail = mat(COLORS.handrail);
-  const rail = (x0, z0, x1, z1) => {
-    addCollider(x0, floorY, z0, x1, y(railHeight), z1).ignoreShots = true;
-    const thinX = x1 - x0 < z1 - z0; // the glass is inset on the rail's thin side
-    box(x0 + (thinX ? 0.04 : 0), y(0.05), z0 + (thinX ? 0 : 0.04), x1 - (thinX ? 0.04 : 0), y(1.0), z1 - (thinX ? 0 : 0.04), glass, { collide: false });
-    box(x0 - 0.02, y(1.0), z0 - 0.02, x1 + 0.02, y(1.08), z1 + 0.02, handrail, { collide: false, name: 'level2_handrail' });
-  };
+  const rail = (x0, z0, x1, z1) => props.railing(x0, z0, x1, z1, floorY); // (1.5m glass: taller than a jump peaks)
   const edge = 0.12; // the rails stand on the slab, just outside the hole
   rail(hole.minX, hole.minZ - edge, hole.maxX + edge, hole.minZ); // south side
   rail(hole.minX, hole.maxZ, hole.maxX + edge, hole.maxZ + edge); // north side

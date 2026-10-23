@@ -19,7 +19,7 @@ function fixture({ repaired }) {
   t.g.zombies.clear();
   t.g.debug.run('doors');
   t.g.debug.run('god');
-  if (!repaired) t.g.map.doors.find((d) => d.id === 'escalatorRepair').reset();
+  if (!repaired) for (const id of ['escalatorRepair', 'atriumPromenade']) t.g.map.doors.find((d) => d.id === id).reset(); // (both lead up)
   t.tick(120);
   return t;
 }
@@ -41,7 +41,7 @@ test('level 2 is closed in: four walls, a roof, and a floor you can stand on', (
 test('railings fence the escalator well on three sides: they are too tall to jump, shots go through them', () => {
   const { g } = fixture({ repaired: true });
   const hole = { minX: -16.5, maxX: -11.95 };
-  const rails = g.colliders.filter((b) => b.ignoreShots && Math.abs(b.min.y - UPPER_Y) < 1e-6);
+  const rails = g.colliders.filter((b) => b.ignoreShots && Math.abs(b.min.y - UPPER_Y) < 1e-6 && b.max.z <= H.maxZ); // (level 2's, not the atrium ring's)
   assert.equal(rails.length, 3 + 4 * L2.voids.length, 'south, north and east of the well; all four sides of each balcony void');
   for (const b of rails) assert.ok(b.max.y - UPPER_Y >= 1.4, 'taller than a jump (about 1.05 m)');
   assert.equal(rails.filter((b) => b.min.x > hole.minX - 0.5 && b.max.x < hole.maxX + 0.5).length, 3, 'three round the well');
@@ -221,7 +221,7 @@ test('level 2 has its own ambience: its music and air-con play up there (once op
   const below = level2().find((v) => v.kind === 'music');
   const above = upstairs.find((v) => v.kind === 'music');
   assert.ok(!below || below.gain < above.gain * 0.5, 'from the hallway below it is muffled (or not heard at all)');
-  g.map.doors.find((d) => d.id === 'escalatorRepair').reset();
+  for (const id of ['escalatorRepair', 'atriumPromenade']) g.map.doors.find((d) => d.id === id).reset();
   g.player.teleport({ position: new THREE.Vector3(2, UPPER_Y, 1), yaw: 0 });
   ambience.update(1 / 60, true);
   assert.equal(level2().length, 0, 'silent while level 2 is closed');

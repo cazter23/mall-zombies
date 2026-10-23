@@ -90,7 +90,11 @@ test('the door ladder: four entrances, two independently priced two-zone shortcu
     assert.equal(map.zones[zone].open, false, `${zone} starts closed`);
   }
   assert.deepEqual([economy.doors.startShutter, economy.doors.megaMart, economy.doors.foodCourt, economy.doors.serviceCorridor], [500, 750, 1000, 1250]);
-  assert.equal(map.doors.length, 7);
+  assert.equal(map.doors.length, 9);
+  assert.equal(door('atrium').price, 1500);
+  assert.deepEqual(door('atrium').opensZones, ['atrium']);
+  assert.equal(door('atriumPromenade').price, 1000);
+  assert.deepEqual(door('atriumPromenade').opensZones, ['atrium', 'upstairs']);
   assert.equal(door('escalatorRepair').price, economy.doors.escalatorRepair);
   assert.equal(economy.doors.escalatorRepair, 2000);
   assert.deepEqual(door('escalatorRepair').opensZones, ['upstairs']);
@@ -101,10 +105,10 @@ test('the door ladder: four entrances, two independently priced two-zone shortcu
   for (const d of map.doors) for (const zone of d.opensZones) assert.ok(map.zones[zone], `door ${d.id} opens a real zone`);
 });
 
-test('all 120 purchase orders: any bought entrance holds its zones open; reset seals every route (the escalator repair is a separate door, tested in escalatorWalk.test.js)', () => {
+test('all 120 purchase orders: any bought entrance holds its zones open; reset seals every route (the escalator repair and the atrium doors have their own tests)', () => {
   const { map, open, reach } = setup();
   const permutations = (ids) => ids.length ? ids.flatMap((id) => permutations(ids.filter((other) => other !== id)).map((rest) => [id, ...rest])) : [[]];
-  const orders = permutations(map.doors.filter((d) => d.id !== 'startShutter' && d.id !== 'escalatorRepair').map((d) => d.id));
+  const orders = permutations(map.doors.filter((d) => !['startShutter', 'escalatorRepair', 'atrium', 'atriumPromenade'].includes(d.id)).map((d) => d.id));
   assert.equal(orders.length, 120);
   for (const order of orders) {
     map.reset();
@@ -130,11 +134,11 @@ test('all 120 purchase orders: any bought entrance holds its zones open; reset s
           }
         }
       }
-      for (const s of map.spawnPoints.filter((s) => s.zone !== 'upstairs')) { // (level 2 has its own tests: levelTwo.test.js)
+      for (const s of map.spawnPoints.filter((s) => s.zone !== 'upstairs' && s.zone !== 'atrium')) { // (level 2 has its own tests: levelTwo.test.js)
         assert.equal(Number.isFinite(reach(s.position)), connected.has(s.zone), `${order} after ${id}: ${s.name}`);
       }
     }
-    for (const s of map.spawnPoints.filter((s) => s.zone !== 'upstairs')) assert.ok(Number.isFinite(reach(s.position)), `${s.name} reachable with every door open`);
+    for (const s of map.spawnPoints.filter((s) => s.zone !== 'upstairs' && s.zone !== 'atrium')) assert.ok(Number.isFinite(reach(s.position)), `${s.name} reachable with every door open`);
     map.reset();
     for (const s of map.spawnPoints.filter((s) => s.zone !== 'startRoom')) {
       assert.equal(reach(s.position), Infinity, `${s.name} sealed on reset`);

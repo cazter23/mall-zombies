@@ -301,7 +301,7 @@ export function createMallProps(kit) {
    * zombie routes), overhead where it's high. Returns { hole, topLanding }: the rect the ceiling
    * must leave open above it, and the x range of the flat top landing (over the upper floor).
    */
-  function escalator({ bottomX, dir = -1, minZ, maxZ, upperY, ceilingY, landing = 1.4, angleDegrees = 30, walkUnder = 2.0, headroom = 2.1 }) {
+  function escalator({ bottomX, dir = -1, minZ, maxZ, upperY, ceilingY, landing = 1.4, angleDegrees = 30, walkUnder = 2.0, headroom = 2.1, sealed = true, hangingSign = true }) {
     const tan = Math.tan((angleDegrees * Math.PI) / 180);
     const plate = 0.12; // bottom landing plate height (the steps start here)
     const truss = 1.0; // depth of the structure under the steps
@@ -363,7 +363,7 @@ export function createMallProps(kit) {
     // Landing plates (with a yellow comb line where the steps begin)
     let [x0, x1] = span(0, landing);
     box(x0, 0, minZ + 0.45, x1, plate + 0.005, maxZ - 0.45, mat(COLORS.escalatorPlate), { collide: false });
-    [x0, x1] = span(landing - 0.06, landing);
+    [x0, x1] = span(landing - 0.066, landing - 0.006); // (just short of the plate's end face: they'd share it and flicker)
     box(x0, plate, minZ + 0.45, x1, plate + 0.01, maxZ - 0.45, mat(COLORS.safetyYellow), { collide: false });
     [x0, x1] = span(slopeEnd, length);
     box(x0, upperY, minZ + 0.45, x1, upperY + 0.03, maxZ - 0.45, mat(COLORS.escalatorPlate), { collide: false });
@@ -374,24 +374,28 @@ export function createMallProps(kit) {
     const facing = out > 0 ? 'x+' : 'x-';
     const postX = xAt(-0.3);
     const barrierParts = []; // everything that goes away when the escalator is repaired
-    for (const z of [minZ + 0.1, maxZ - 0.1]) {
+    for (const z of sealed ? [minZ + 0.1, maxZ - 0.1] : []) {
       barrierParts.push(box(postX - 0.035, 0, z - 0.035, postX + 0.035, 1.0, z + 0.035, mat(COLORS.metal), { collide: false }));
       barrierParts.push(box(postX - 0.12, 0, z - 0.12, postX + 0.12, 0.04, z + 0.12, mat(COLORS.metal), { collide: false }));
     }
-    barrierParts.push(box(postX - 0.015, 0.84, minZ + 0.1, postX + 0.015, 0.87, maxZ - 0.1, mat(COLORS.rope), { collide: false }));
     const boardX = xAt(-0.6);
-    barrierParts.push(box(boardX - 0.03, 0, zMid - 0.5, boardX + 0.03, 1.0, zMid + 0.5, mat(COLORS.safetyYellow), { collide: false }));
-    barrierParts.push(sign('OUT OF ORDER', {
-      x: boardX + out * 0.035, y: 0.62, z: zMid, width: 0.92, height: 0.5, facing,
-      background: '#ffd23f', color: '#1d1626',
-    }));
+    if (sealed) {
+      barrierParts.push(box(postX - 0.015, 0.84, minZ + 0.1, postX + 0.015, 0.87, maxZ - 0.1, mat(COLORS.rope), { collide: false }));
+      barrierParts.push(box(boardX - 0.03, 0, zMid - 0.5, boardX + 0.03, 1.0, zMid + 0.5, mat(COLORS.safetyYellow), { collide: false }));
+      barrierParts.push(sign('OUT OF ORDER', {
+        x: boardX + out * 0.035, y: 0.62, z: zMid, width: 0.92, height: 0.5, facing,
+        background: '#ffd23f', color: '#1d1626',
+      }));
+    }
     const hangX = xAt(-0.1);
-    sign('ESCALATOR · LEVEL 2', {
-      x: hangX, y: 3.3, z: zMid, width: 2.4, height: 0.45, facing,
-      background: '#1d1626', color: '#ffd23f',
-    });
-    for (const z of [zMid - 1.0, zMid + 1.0]) {
-      box(hangX - 0.01, 3.52, z - 0.01, hangX + 0.01, ceilingY, z + 0.01, mat(COLORS.metal), { collide: false });
+    if (hangingSign) {
+      sign('ESCALATOR · LEVEL 2', {
+        x: hangX, y: 3.3, z: zMid, width: 2.4, height: 0.45, facing,
+        background: '#1d1626', color: '#ffd23f',
+      });
+      for (const z of [zMid - 1.0, zMid + 1.0]) {
+        box(hangX - 0.01, 3.52, z - 0.01, hangX + 0.01, ceilingY, z + 0.01, mat(COLORS.metal), { collide: false });
+      }
     }
 
     // Colliders. The slope is WALKABLE (once the barrier is gone): a ramp surface the feet follow (world/collision.js) with
@@ -405,7 +409,7 @@ export function createMallProps(kit) {
     const underLane = 0.4; // blocks under the lane stay this far below the ramp surface at their start
     // The barrier across the foot (too tall to jump). Returned: whoever repairs the escalator removes it.
     [x0, x1] = span(-0.7, 0);
-    const barrier = addCollider(x0, 0, minZ, x1, 1.25, maxZ);
+    const barrier = sealed ? addCollider(x0, 0, minZ, x1, 1.25, maxZ) : null; // (an unsealed escalator works from the start)
     // Side walls: the bottom landing, the slope in segments, the top landing.
     const sides = (ua, ub, bottom, top) => {
       [x0, x1] = span(ua, ub);
@@ -453,6 +457,18 @@ export function createMallProps(kit) {
     const hole = { minX: x0, maxX: x1, minZ: minZ - 0.3, maxZ: maxZ + 0.3 };
     [x0, x1] = span(slopeEnd, length);
     return { hole, topLanding: { minX: x0, maxX: x1 }, barrier, barrierParts, ramp, link, upperY, foot: { x: xAt(-0.8), z: zMid } };
+  }
+
+  /**
+   * A glass balustrade standing on a floor at `floorY`, filling x0..x1 / z0..z1 (thin along one axis): solid to walking
+   * (1.5m: taller than a jump peaks), see-through, and bullets pass (ignoreShots). Used round escalator wells and balconies.
+   */
+  function railing(x0, z0, x1, z1, floorY) {
+    addCollider(x0, floorY, z0, x1, floorY + 1.5, z1).ignoreShots = true;
+    const thinX = x1 - x0 < z1 - z0; // the glass is inset on the thin side
+    const glass = mat(COLORS.balustradeGlass, { transparent: true, opacity: 0.3, roughness: 0.1, depthWrite: false });
+    box(x0 + (thinX ? 0.04 : 0), floorY + 0.05, z0 + (thinX ? 0 : 0.04), x1 - (thinX ? 0.04 : 0), floorY + 1.0, z1 - (thinX ? 0 : 0.04), glass, { collide: false });
+    box(x0 - 0.02, floorY + 1.0, z0 - 0.02, x1 + 0.02, floorY + 1.08, z1 + 0.02, mat(COLORS.handrail), { collide: false, name: 'handrail' });
   }
 
   /**
@@ -843,7 +859,7 @@ export function createMallProps(kit) {
 
   return {
     shopFront, pillar, bench, planter, lightPanel, gondola, checkout, wallDoor, boardedVent, wallStripe,
-    escalator, elevatorDoors, foodStall, tableSet, trashCan, lockerBank, electricalPanel, pipeRun, vendingMachine,
+    escalator, railing, elevatorDoors, foodStall, tableSet, trashCan, lockerBank, electricalPanel, pipeRun, vendingMachine,
     serviceDesk, clerk, attachmentDisplay,
   };
 }

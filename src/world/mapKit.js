@@ -41,15 +41,15 @@ import { markCollidersChanged, addRamp, removeRamp } from './collision.js';
  * Returns [{ min: [x, y, z], max: [x, y, z], part: 'segment' | 'lintel' }]: the solid pieces
  * left to right, then the lintels in the order of `openings`.
  */
-export function wallSegments({ along, from, to, at0, at1, height, openings: rawOpenings = [] }) {
+export function wallSegments({ along, from, to, at0, at1, height, bottom = 0, openings: rawOpenings = [] }) {
   // Openings are clipped to the wall; ones entirely off it are ignored.
   const openings = rawOpenings
     .map((o) => ({ ...o, from: Math.max(from, o.from), to: Math.min(to, o.to) }))
     .filter((o) => o.to > o.from);
   const sorted = [...openings].sort((a, b) => a.from - b.from);
-  const toBox = (u0, u1, y0, y1, part) => (along === 'x'
-    ? { min: [u0, y0, at0], max: [u1, y1, at1], part }
-    : { min: [at0, y0, u0], max: [at1, y1, u1], part });
+  const toBox = (u0, u1, y0, y1, part) => (along === 'x' // (heights are relative to `bottom`: a wall standing on an upper floor)
+    ? { min: [u0, bottom + y0, at0], max: [u1, bottom + y1, at1], part }
+    : { min: [at0, bottom + y0, u0], max: [at1, bottom + y1, u1], part });
   const boxes = [];
   let cursor = from;
   for (const o of sorted) {
@@ -210,7 +210,7 @@ export function createMapKit(group, colliders) {
     return createDoor({
       id, label, price, opensZone, opensZones, zones,
       barrier: shutter,
-      position: new THREE.Vector3((doorway.minX + doorway.maxX) / 2, 1.5, (doorway.minZ + doorway.maxZ) / 2),
+      position: new THREE.Vector3((doorway.minX + doorway.maxX) / 2, (doorway.minY ?? 0) + 1.5, (doorway.minZ + doorway.maxZ) / 2),
     });
   }
 

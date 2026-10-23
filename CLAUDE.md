@@ -467,6 +467,8 @@ src/
                         (byteMe: screen wall + laptops + neon; goodSports: wainscot, jerseys, trophies, bat rack, ball bin;
                         playTimeToys: rainbow, plush shelves, blocks; nutsAndBolts: pegboard of tools, paint cans, workbench) and a
                         zombie spawn just inside the door. buildStores({ kit, props, court, thickness, stores }) -> { spots, spawns }
+    mall/atrium.js      buildAtrium({ kit, props, layout, upperY }) -> { spawns, lamps, link, ramp, emitters }: THE GRAND ATRIUM (walls, ring
+                        slab + skin + railings, escalator, fountain, kiosks, planters, benches, signs, vents). Doors are built by mall.js
     mall/levelTwo.js    buildLevelTwo({ kit, floorY, rect, hole, layout }) -> { spawns, lamps }: LEVEL 2, the Sunset Promenade (+ its railed balcony
                         voids, layout.voids, looking down into the hallway), on the hallway's
                         ceiling slab (same 40 x 8 m footprint, 3.6m ceiling): peach walls with coral stripe + purple skirting, a tiled skin
@@ -662,6 +664,12 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
   Three empty shop fronts on the north wall (SHOE-PER SALE x -10..-4, COMING SOON x -3..3, PRETZEL PALACE x 4..10), a bench ring round a
   small tree planter at (13, 1.6), two benches on the south wall, four boarded vents (south x -13 and 8, east wall z 4.2, north x 16)
   as spawns. The elevator stays sealed. Everything is data in LAYOUT.level2 (mall.js); see mall/levelTwo.js.
+- The Grand Atrium (zone 'atrium'): x 8..32, z 6.6..30.6, behind a 5m gate (1500) in the hallway's north wall at x 13..18 under a
+  GRAND ATRIUM sign. Two storeys (roof 9.9 under a big warm skylight): an open court x 11.5..28.5, z 10.1..27.1 with a square
+  fountain (glass guard, solid to 2.2m) in the middle, CELL-OUT and SHADE SHACK kiosks, four tree planters, three benches; a 3.5m arcade
+  round the edge under the UPPER RING (y 6.3), which is railed all round the court. A second escalator rises east from the court
+  (x 16.5) to the ring's east side. The ring's south wall has the 'atriumPromenade' shutter (1000, x 11.5..14.5) into level 2.
+  Five spawns: four ground vents (north x 13 / 27, west z 16, east z 12) and one on the ring's north wall. Data: LAYOUT.atrium.
 - Food Court: x -20..20, z -14.3..-2.3, 6m ceiling, behind the 1000 shutter: the old concourse moved south (its four
   shops Good Sports / Nuts & Bolts / Play Time Toys / Byte Me are real stores now (see below), 2 pillars, 2 benches (north side), tree planter,
   end planters, ceiling lights, 4 spawns), placed relative to its center line FZ = -8.3. Three food stalls along the
@@ -746,6 +754,21 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+THE GRAND ATRIUM (maps/mall/atrium.js, see Map): the big open two-storey room north of the hallway. Gate 'atrium' (1500) in the
+hallway's north wall (the north-east hallway vent moved to the south wall at x 16 for it), shortcut shutter 'atriumPromenade' (1000)
+from its upper ring into the level 2 Promenade (opens both zones, buyable from either side, sits on the upper floor: shutters and
+kit.wall take a floor height now, doorway.minY / wall bottom). 9 doors in all. Its escalator is props.escalator({ sealed: false,
+hangingSign: false }) and is a second nav link (map.navigation.links). Found while building: a bench next to the fountain let you
+jump onto it, out of every zombie's reach, so the fountain has a glass guard on its rim (one 2.2m collider) and the kiosks are solid
+up to their canopies. Shared props.railing(x0, z0, x1, z1, floorY) builds every glass railing (level 2 and the atrium). Escalator
+comb strip nudged 6mm off its plate's end (the two shared a face and flickered; the hallway escalator had it too). tests/atrium.test.js
+(9): the real F-hold gate buy + Play again, sealed until bought (no route, no spawns) then every vent reachable incl. the ring's, a
+running lap round the fountain with clear straight runs, the arcade corners, fountain/kiosks not standable even from a bench, ring
+rails from four sides, a player rides the escalator up and down, zombies use it both ways, the Promenade link from both sides and
+walkable through, no buying the gate from level 2; coplanar.test.js covers the whole atrium; mall.test.js counts 9 doors (its
+120-orders test leaves out the escalator repair and both atrium doors, which have their own tests). The scene has 25 point lights
+now (the atrium added 2, level 2 2): if the school computer struggles, the shelved light pool (git stash) is the fix to revisit.
+
 Balcony ("less cramped" pass, part 2): level 2's floor (= the hallway ceiling) has two open BALCONY VOIDS over the hallway,
 LAYOUT.level2.voids (x -9.5..-1.5 and 2.5..10, z 0.5..3.5), railed on all four sides (1.5m, ignoreShots: you can shoot down through
 them), with a 4m bridge between them in front of the start room / Food Court doors. The hallway feels 10m tall: you see level 2's

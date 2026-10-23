@@ -8,7 +8,7 @@ import * as THREE from 'three';
 import { feel } from '../config/feel.js';
 import { markCollidersChanged } from './collision.js';
 
-export function createShutter({ name, minX, maxX, minZ, maxZ, height, material, colliders }) {
+export function createShutter({ name, minX, maxX, minZ, maxZ, minY = 0, height, material, colliders }) {
   const width = maxX - minX;
   const depth = maxZ - minZ;
 
@@ -19,11 +19,11 @@ export function createShutter({ name, minX, maxX, minZ, maxZ, height, material, 
     : new THREE.BoxGeometry(width * 0.5, height, depth); // doorway in a wall running along Z
   const mesh = new THREE.Mesh(geometry, material);
   mesh.name = name;
-  mesh.position.set((minX + maxX) / 2, height / 2, (minZ + maxZ) / 2);
+  mesh.position.set((minX + maxX) / 2, minY + height / 2, (minZ + maxZ) / 2);
   mesh.userData = { kind: 'shutter', id: name };
 
   // The collider covers the full doorway thickness so the player can't wedge into it.
-  const collider = new THREE.Box3(new THREE.Vector3(minX, 0, minZ), new THREE.Vector3(maxX, height, maxZ));
+  const collider = new THREE.Box3(new THREE.Vector3(minX, minY, minZ), new THREE.Vector3(maxX, minY + height, maxZ));
   collider.noImpactMarks = true; // rolling shutters are excluded from persistent cosmetic impacts
   colliders.push(collider);
   markCollidersChanged(colliders);
@@ -78,7 +78,7 @@ export function createShutter({ name, minX, maxX, minZ, maxZ, height, material, 
         raised = Math.max(0, raised - speed * dt);
         if (raised <= 0) state = 'closed';
       }
-      mesh.position.y = height / 2 + raised;
+      mesh.position.y = minY + height / 2 + raised;
       // A raised three-metre slab would occupy the lintel itself. At shallow angles its faces can
       // leak through the wall and flicker, so the fully rolled-up shutter lives inside its housing.
       mesh.visible = state !== 'open';

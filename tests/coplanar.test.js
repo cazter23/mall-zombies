@@ -64,6 +64,8 @@ test('no coplanar (flickering) surfaces inside the stores, the Customer Service 
   regions.push({ name: 'booth', minX: desk.center - 2.1, maxX: desk.center + 2.1, minZ: desk.wallAt - 2.3, maxZ: desk.wallAt + 0.1 });
   const restock = LAYOUT.restockMachine; // the RESTOCK-O-MATIC, its pad and its signs
   regions.push({ name: 'restock', minX: restock.x - 1.2, maxX: restock.x + 1.2, minZ: LAYOUT.foodCourt.maxZ - 2.4, maxZ: LAYOUT.foodCourt.maxZ + 0.1 });
+  const at = LAYOUT.atrium.rect; // the Grand Atrium, its fountain, kiosks and both floors
+  regions.push({ name: 'atrium', minX: at.minX - 0.4, maxX: at.maxX + 0.4, minZ: at.minZ - 0.7, maxZ: at.maxZ + 0.4 });
   const inRegion = (m) => regions.some((r) => m.position.x > r.minX && m.position.x < r.maxX && m.position.z > r.minZ && m.position.z < r.maxZ);
 
   const all = [];

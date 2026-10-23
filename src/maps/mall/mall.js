@@ -46,6 +46,7 @@ import { buildMegaMartDetails, MART_FIXTURES } from './megaMartDetails.js';
 import { buildMallAtmosphere } from './atmosphere.js';
 import { buildRestockMachine } from './restockMachine.js';
 import { buildLevelTwo } from './levelTwo.js';
+import { buildAtrium } from './atrium.js';
 import { atmosphere } from '../../config/environment.js';
 
 export const LAYOUT = {
@@ -86,6 +87,7 @@ export const LAYOUT = {
       { id: 'northEast', wall: 'north', at: 16 },
     ],
     lamps: [{ x: -8, z: 2 }, { x: 10, z: 2 }],
+    atriumLink: { from: 11.5, to: 14.5, top: 2.7 }, // the opening in its north wall into the Grand Atrium's ring (= atrium.link)
   },
   // Customer Service desk (Extended Warranty tiers): on the hallway's north wall between the start doorway
   // and the elevator. Move it by changing this one entry (the prop, its collider and its buy spot follow).
@@ -118,6 +120,30 @@ export const LAYOUT = {
   // Service Corridor: its doorway in the hallway's west wall, then south along the Food Court's west wall.
   serviceCorridor: { width: 3, height: 3.5, length: 16, doorway: { minZ: 0.5, maxZ: 3.5, height: 3 } },
   wallThickness: 0.3,
+  // THE GRAND ATRIUM (maps/mall/atrium.js): north of the hallway's east half, 24 x 24 m, two storeys. gate = its doorway in the
+  // hallway's north wall; link = the shutter from its upper ring into the level 2 Promenade (level2.atriumLink is the same gap).
+  atrium: {
+    rect: { minX: 8, maxX: 32, minZ: 6.6, maxZ: 30.6 },
+    ringDepth: 3.5, // the upper ring (and the arcade under it) round the open court
+    upperHeight: 3.6, // the ring's floor to the roof
+    gate: { from: 13, to: 18, height: 3 },
+    link: { from: 11.5, to: 14.5, height: 2.7 },
+    escalator: { bottomX: 16.5, minZ: 23.6, maxZ: 25.6 }, // rises east from the court to the ring's east side
+    fountain: { half: 2.6 }, // a square basin in the middle of the court
+    kiosks: [
+      { x: 12.6, z: 14.8, name: 'CELL-OUT', color: 0x2ec4b6, signColor: '#7dffe0' },
+      { x: 27.4, z: 14.5, name: 'SHADE SHACK', color: 0xff8a3d, signColor: '#ffd23f' },
+    ],
+    planters: [[13.4, 11.8], [26.6, 11.8], [13.2, 21], [26.8, 21]],
+    benches: [[15.6, 17.6, 16.1, 19.6], [23.9, 17.6, 24.4, 19.6], [19, 13.6, 21, 14.1]],
+    vents: [
+      { id: 'northWest', wall: 'north', at: 13 },
+      { id: 'northEast', wall: 'north', at: 27 },
+      { id: 'west', wall: 'west', at: 16 },
+      { id: 'east', wall: 'east', at: 12 },
+      { id: 'ringNorth', wall: 'north', at: 20, upper: true },
+    ],
+  },
   restockMachine: { x: 4.95 }, // the RESTOCK-O-MATIC on the Food Court's north wall (its x; the front faces south)
 };
 
@@ -138,6 +164,7 @@ export function buildMall(scene, colliders) {
     foodCourt: { label: 'Food Court', open: false },
     serviceCorridor: { label: 'Service Corridor', open: false },
     upstairs: { label: 'Level 2', open: false }, // opened by repairing the escalator (the escalatorRepair door)
+    atrium: { label: 'Grand Atrium', open: false },
   };
 
   const R = LAYOUT.startRoom;
@@ -173,7 +200,7 @@ export function buildMall(scene, colliders) {
   // North wall: open where the start room's storefront is (built next, in its own color).
   wall({
     along: 'x', from: H.minX - T, to: H.maxX + T, at0: H.maxZ, at1: H.maxZ + T, height: H.height,
-    openings: [{ from: R.minX, to: R.maxX }],
+    openings: [{ from: R.minX, to: R.maxX }, { from: LAYOUT.atrium.gate.from, to: LAYOUT.atrium.gate.to, top: LAYOUT.atrium.gate.height }],
   }, hallWall, { name: 'hallway_wall_north' });
   // South wall (shared with the Food Court), with the Food Court door in the middle.
   wall({
@@ -273,7 +300,24 @@ export function buildMall(scene, colliders) {
   });
   // Level 2 itself, on top of the slab: walkway, shop fronts, seating, railings round the escalator well, boarded vents.
   const levelTwo = buildLevelTwo({
-    kit, floorY: upperY, rect: { minX: H.minX, maxX: H.maxX, minZ: H.minZ, maxZ: H.maxZ }, hole: escalator.hole, layout: LAYOUT.level2,
+    kit, props, floorY: upperY, rect: { minX: H.minX, maxX: H.maxX, minZ: H.minZ, maxZ: H.maxZ }, hole: escalator.hole, layout: LAYOUT.level2,
+  });
+
+  // The Grand Atrium north of the hallway (maps/mall/atrium.js), its gate off the hallway, and the shutter between its upper
+  // ring and the level 2 Promenade (a shortcut: it opens both zones, like the ground-floor shortcuts).
+  const AT = LAYOUT.atrium;
+  const atrium = buildAtrium({ kit, props, layout: AT, upperY });
+  const atriumDoor = kit.shutterDoor({
+    id: 'atrium', label: 'Grand Atrium', price: economy.doors.atrium, opensZone: 'atrium', zones,
+    doorway: { minX: AT.gate.from, maxX: AT.gate.to, minZ: H.maxZ, maxZ: AT.rect.minZ, height: AT.gate.height },
+  });
+  const atriumPromenadeDoor = kit.shutterDoor({
+    id: 'atriumPromenade', label: 'Promenade', price: economy.doors.atriumPromenade, opensZones: ['atrium', 'upstairs'], zones,
+    doorway: { minX: AT.link.from, maxX: AT.link.to, minZ: H.maxZ, maxZ: AT.rect.minZ, minY: upperY, height: AT.link.height },
+  });
+  sign('GRAND ATRIUM', {
+    x: (AT.gate.from + AT.gate.to) / 2, y: 4.3, z: H.maxZ - 0.02, width: 5, height: 1.0, facing: -1,
+    background: '#6b3f5e', color: '#ffd9a8',
   });
 
   // Elevator doors in the north wall (sealed).
@@ -304,7 +348,7 @@ export function buildMall(scene, colliders) {
 
   // Boarded vents where zombies get into the hallway
   props.boardedVent({ along: 'x', center: -15, wallAt: H.maxZ, facing: -1 });
-  props.boardedVent({ along: 'x', center: 15, wallAt: H.maxZ, facing: -1 });
+  props.boardedVent({ along: 'x', center: 16, wallAt: H.minZ, facing: 1 }); // (south wall: the north one gave way to the atrium gate)
   props.boardedVent({ along: 'x', center: -14, wallAt: H.minZ, facing: 1 });
 
   // Ceiling lights (the west one is short: the escalator's ceiling hole is just east of it). Over the balcony voids they move
@@ -619,6 +663,7 @@ export function buildMall(scene, colliders) {
   // Start-room warm/cool lamps are built with its details (config/environment.js).
   // Mega Mart's two fixed lamps are built with its details (config/environment.js).
   for (const l of levelTwo.lamps) lamp(atmosphere.roomLights.level2, l.x, l.y, l.z);
+  for (const l of atrium.lamps) lamp(atmosphere.roomLights.atrium, l.x, l.y, l.z);
   for (const at of [3, 12]) lamp(atmosphere.roomLights.serviceCorridor, service.points[1].x, SC.height * 0.65, service.pointAt(1, at).z);
 
   // --- Spawn points and wall-buy spots (invisible markers) -------------------
@@ -628,7 +673,8 @@ export function buildMall(scene, colliders) {
     { name: 'spawn_startRoom_ventLeft', zone: 'startRoom', position: new THREE.Vector3(-3.5, 0, 15.4) },
     { name: 'spawn_startRoom_ventRight', zone: 'startRoom', position: new THREE.Vector3(3.5, 0, 15.4) },
     { name: 'spawn_hallway_ventNorthWest', zone: 'hallway', position: new THREE.Vector3(-15, 0, H.maxZ - 0.8) },
-    { name: 'spawn_hallway_ventNorthEast', zone: 'hallway', position: new THREE.Vector3(15, 0, H.maxZ - 0.8) },
+    { name: 'spawn_hallway_ventSouthEast', zone: 'hallway', position: new THREE.Vector3(16, 0, H.minZ + 0.8) },
+    ...atrium.spawns, // the Grand Atrium's vents (one on its upper ring)
     { name: 'spawn_hallway_ventSouth', zone: 'hallway', position: new THREE.Vector3(-14, 0, H.minZ + 0.8) },
     ...stores.spawns, // a zombie spawn inside each of the four stores
     ...levelTwo.spawns, // boarded vents on level 2 (their y is the upper floor)
@@ -691,7 +737,7 @@ export function buildMall(scene, colliders) {
     ...stores.spots.map((s) => ({ kind: 'attachmentCounter', name: `attachment_${s.id}`, zone: s.zone, attachment: s.id, position: s.position, normal: s.normal })),
   ];
 
-  const doors = [startDoor, megaMartDoor, foodCourtDoor, serviceCorridorDoor, foodCourtMegaMartDoor, serviceCorridorFoodCourtDoor, escalatorDoor];
+  const doors = [startDoor, megaMartDoor, foodCourtDoor, serviceCorridorDoor, foodCourtMegaMartDoor, serviceCorridorFoodCourtDoor, escalatorDoor, atriumDoor, atriumPromenadeDoor];
   const dressing = buildMallAtmosphere(kit, LAYOUT, { service, ceilingHoles });
 
   return {
@@ -703,9 +749,9 @@ export function buildMall(scene, colliders) {
     features,
     playerSpawn,
     titleShots,
-    ambience: dressing.emitters,
+    ambience: [...dressing.emitters, ...atrium.emitters],
     // Zombie navigation across floors (zombies/navigation.js): the ground floor and level 2, joined by the escalator.
-    navigation: { floors: [0, upperY], links: [escalator.link] },
+    navigation: { floors: [0, upperY], links: [escalator.link, atrium.link] },
     // The escalator's barrier (a collider across its foot, removed by the escalatorRepair door) and its walkable surface.
     escalator: { barrier: escalator.barrier, ramp: escalator.ramp },
     // For the debug "upstairs" command (Shift+T): where you arrive on level 2, where you go back down to, and the repair door.
