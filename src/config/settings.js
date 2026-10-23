@@ -121,6 +121,12 @@ export const settingDefs = [
     apply: (v) => { audio.ambienceVolume = v; },
   },
 
+  {
+    id: 'musicVolume', tab: 'Audio', label: 'Background music', type: 'slider',
+    min: 0, max: 1, step: 0.05, default: audio.musicVolume, format: percent,
+    apply: (v, ctx) => { audio.musicVolume = v; ctx.sound.setMusicVolume?.(v); },
+  },
+
   // ---- Comfort ----
   {
     id: 'headBob', tab: 'Comfort', label: 'Head bob', type: 'slider',

@@ -32,7 +32,13 @@ export function createAmbience({ map, player, sound, colliders, random = seededR
         if (mix) voices.push({ id: emitter.id, kind: emitter.kind, ...mix });
       }
       voices.sort((a, b) => b.gain - a.gain);
-      const selected = voices.slice(0, cfg.maxVoices);
+      // Hear only the nearest/loudest speaker for the shared soundtrack, leaving room for HVAC.
+      let hasMusic = false;
+      const selected = voices.filter(v => {
+        if (v.kind !== 'music') return true;
+        if (hasMusic) return false;
+        hasMusic = true; return true;
+      }).slice(0, cfg.maxVoices);
       sound.setAmbience?.(selected);
       rattle -= dt;
       if (rattle <= 0) {
@@ -48,6 +54,6 @@ export function createAmbience({ map, player, sound, colliders, random = seededR
       }
     },
     silence,
-    reset() { silence(); rattle = cfg.rattleMinSeconds + random() * (cfg.rattleMaxSeconds - cfg.rattleMinSeconds); },
+    reset() { silence(); sound.resetMusic?.(); rattle = cfg.rattleMinSeconds + random() * (cfg.rattleMaxSeconds - cfg.rattleMinSeconds); },
   };
 }

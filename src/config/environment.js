@@ -42,11 +42,9 @@ export const atmosphere = {
     maxVoices: 3, occludedGain: 0.2, fadeSeconds: 0.16,
     listenerHeightFraction: 0.8, occlusionMargin: 0.1,
     rattleMinSeconds: 24, rattleMaxSeconds: 46, rattleRange: 20,
-    musicNotes: [261.63, 329.63, 392, 329.63, 293.66, 349.23, 440, 392], noteSeconds: 0.65,
     voices: {
       ventilation: { noise: true, frequency: 180, gain: 0.045 },
       refrigerator: { noise: false, frequency: 60, gain: 0.035 },
-      music: { noise: false, frequency: 261.63, gain: 0.018 },
     },
   },
 };

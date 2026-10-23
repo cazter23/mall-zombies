@@ -703,6 +703,15 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+Original background music: "After Closing", a 43.64-second/16-bar stereo lounge loop at 88 BPM, with electric piano,
+bass, soft drums, detuned pad, echoes and a borrowed-minor second-half turn. config/music.js owns score/timbres;
+audio/mallMusic.js deterministically renders PCM in audio/musicWorker.js, off the gameplay thread. sound.js caches
+one buffer and shares a single looping source between mall speakers; distance/occlusion/pan and speaker EQ apply.
+Pause preserves the cursor; Play again rewinds. Settings > Audio > Background music saves an independent volume
+(45% default, zero mutes), separate from Mall ambience and Master volume. No audio downloads or per-note timers.
+tests/music.test.js covers PCM/headroom/seam/determinism, asynchronous loading/source reuse, pause/reset/mute,
+speaker selection and saved settings. Preview export: node tools/exportMusic.mjs path/to/after-closing.wav.
+
 Debug keys cleaned up: one table in config/debug.js (see the folder structure), run by game/debugCommands.js (headless, tested),
 polled by main.js (raw key codes stay there) and listed by the debug window (` toggles it; ui/debugPanel.js). Still live in a
 normal game, with `debug.enabled` as the master switch. Replaced the Alt+Z / Shift+Z combos and the per-feature flags

@@ -11,12 +11,37 @@
 
 import { audio } from '../config/audio.js';
 import { atmosphere } from '../config/environment.js';
+import { mallMusic } from '../config/music.js';
 
-export function createSound() {
+function renderMusicInWorker() {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL('./musicWorker.js', import.meta.url), { type: 'module' });
+    worker.onmessage = ({ data }) => { worker.terminate(); resolve(data); };
+    worker.onerror = error => { worker.terminate(); reject(error); };
+    worker.postMessage(null);
+  });
+}
+
+export function createSound({ renderMusic = renderMusicInWorker } = {}) {
   let ctx = null;
   let master = null;
   let noiseBuffer = null;
   const ambientVoices = new Map();
+  let musicBuffer = null, musicLoading = false, musicFailed = false, musicCursor = 0;
+
+  function prepareMusic() {
+    if (musicBuffer || musicLoading || musicFailed) return;
+    musicLoading = true;
+    Promise.resolve().then(renderMusic).then(track => {
+      musicBuffer = ctx.createBuffer(2, track.left.length, track.sampleRate);
+      musicBuffer.getChannelData(0).set(track.left);
+      musicBuffer.getChannelData(1).set(track.right);
+      musicLoading = false;
+    }).catch(error => {
+      musicLoading = false; musicFailed = true;
+      console.warn('Mall music could not be prepared:', error);
+    });
+  }
 
   // One second of white noise, reused by every noise layer.
   function makeNoiseBuffer() {
@@ -92,43 +117,58 @@ export function createSound() {
   function setAmbience(mix) {
     if (!ctx) return;
     const now = ctx.currentTime, cfg = atmosphere.ambience;
-    const wanted = new Set(mix.slice(0, cfg.maxVoices).map(v => v.id));
+    // Every speaker shares one track and timeline; changing rooms only moves its pan/gain.
+    const entries = mix.slice(0, cfg.maxVoices).map(v => v.kind === 'music' ? { ...v, id: 'mall_music' } : v);
+    const wanted = new Set(entries.map(v => v.id));
     for (const [id, voice] of ambientVoices) {
       if (wanted.has(id)) continue;
+      if (voice.kind === 'music') musicCursor = (voice.offset + now - voice.startedAt) % musicBuffer.duration;
       voice.gain.gain.cancelScheduledValues(now);
       voice.gain.gain.setTargetAtTime(0, now, cfg.fadeSeconds / 3);
       voice.source.stop(now + cfg.fadeSeconds);
       voice.source.onended = () => { for (const node of voice.nodes) node.disconnect(); };
       ambientVoices.delete(id);
     }
-    for (const item of mix.slice(0, cfg.maxVoices)) {
+    for (const item of entries) {
       if (ctx.state !== 'running') break;
-      const def = cfg.voices[item.kind];
+      const isMusic = item.kind === 'music';
+      const def = isMusic ? mallMusic : cfg.voices[item.kind];
       if (!def) continue;
+      if (isMusic && !musicBuffer) { if (audio.musicVolume > 0) prepareMusic(); continue; }
       let voice = ambientVoices.get(item.id);
       if (!voice) {
-        const source = def.noise ? ctx.createBufferSource() : ctx.createOscillator();
-        if (def.noise) { source.buffer = noiseBuffer; source.loop = true; }
+        const source = (isMusic || def.noise) ? ctx.createBufferSource() : ctx.createOscillator();
+        if (isMusic || def.noise) { source.buffer = isMusic ? musicBuffer : noiseBuffer; source.loop = true; }
         else { source.type = 'sine'; source.frequency.value = def.frequency; }
-        const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = def.frequency * 2;
+        const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = isMusic ? def.lowpassHz : def.frequency * 2;
         const gain = ctx.createGain(); gain.gain.value = 0;
         const pan = ctx.createStereoPanner();
         source.connect(filter); filter.connect(gain); gain.connect(pan); pan.connect(master);
-        source.start();
-        voice = { source, gain, pan, nodes: [source, filter, gain, pan] };
+        const nodes = [source, filter, gain, pan];
+        if (isMusic) {
+          source.disconnect();
+          const highpass = ctx.createBiquadFilter(); highpass.type = 'highpass'; highpass.frequency.value = def.highpassHz;
+          source.connect(highpass); highpass.connect(filter); nodes.push(highpass);
+        }
+        source.start(now, isMusic ? musicCursor : 0);
+        voice = { source, gain, pan, nodes, kind: item.kind, startedAt: now, offset: musicCursor };
         ambientVoices.set(item.id, voice);
       }
       voice.pan.pan.setTargetAtTime(item.pan, now, cfg.fadeSeconds);
-      voice.gain.gain.setTargetAtTime(Math.max(0, item.gain) * def.gain * audio.ambienceVolume, now, cfg.fadeSeconds);
-      if (item.kind === 'music') {
-        const note = cfg.musicNotes[Math.floor(now / cfg.noteSeconds) % cfg.musicNotes.length];
-        voice.source.frequency.setTargetAtTime(note, now, cfg.fadeSeconds);
-      }
+      voice.spatialGain = Math.max(0, item.gain);
+      voice.gain.gain.setTargetAtTime(voice.spatialGain * def.gain * (isMusic ? audio.musicVolume : audio.ambienceVolume), now, cfg.fadeSeconds);
     }
   }
 
   return {
     setAmbience,
+    resetMusic() { musicCursor = 0; },
+    setMusicVolume(volume) {
+      audio.musicVolume = volume;
+      for (const voice of ambientVoices.values()) if (voice.kind === 'music') {
+        voice.gain.gain.setTargetAtTime(voice.spatialGain * mallMusic.gain * volume, ctx.currentTime, atmosphere.ambience.fadeSeconds);
+      }
+    },
     playAmbient(name, { volume = 1, pan = 0 } = {}) {
       const def = audio.sounds[name];
       if (!def || !ctx || ctx.state !== 'running') return;

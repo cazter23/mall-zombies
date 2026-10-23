@@ -16,6 +16,7 @@
 export const audio = {
   masterVolume: 0.55,
   ambienceVolume: 0.65,
+  musicVolume: 0.45,
   pitchVariation: 0.05, // each play is randomly up to this fraction higher/lower, so repeats don't sound robotic
   compressor: { thresholdDb: -14, ratio: 4 }, // on the master bus, so rapid fire doesn't clip
 
