@@ -83,7 +83,7 @@ before rendering, `weaponModels.test.js` also checks upgrade parts (every gun ha
 mount, parts show only when fitted, the Extended Nozzle moves the muzzle + flash and back, tier sticker hidden at Standard, no part
 floats), `features.test.js` map features (the mall's list, unknown kind = error, a new kind's update/reset hooks run, inert wall buy for a
 gun that doesn't exist, inherited names aren't kinds, features get the game's systems and tick only while playing (not paused /
-dead) + reset on Play again, buy a wall gun + refill at the STAPLE-O-MAT in the real game);
+dead) + reset on Play again, buy a wall gun + refill at the RESTOCK-O-MATIC in the real game);
 `spawning.test.js` covers local selection/safety/cooldowns/rescues plus the real mall at six positions with hallway
 entrances only, shortcut entrances only, and both loops open. Mall tests also include the real debug range: shifting
 grid bounds must not disconnect either shortcut; floor covers both shared walls. The Mart sign clears its brand stripes.
@@ -390,7 +390,7 @@ src/
                         health, zombies, rounds, state } (g.features.context). Ticked after map.update, only while playing.
                         wallBuy.js = chalk display + "buy <Gun>" / "<Gun> ammo" prompt (g.pricing weapon/ammo; inert for a gun
                         that doesn't exist yet). ammoCache.js = buildAmmoCache + ammoCacheItem({ cache, zones, gun, price }): the
-                        STAPLE-O-MAT item: label "Ammo · <gun in hand>", available when its zone is open and the gun in hand
+                        RESTOCK-O-MATIC item: label "Ammo · <gun in hand>", available when its zone is open and the gun in hand
                         isn't full, use = gun.weapon.refill() (mag + reserve, ANY gun incl. the staple gun). upgradeDesk.js = Customer Service:
                         "upgrade <Gun> → <next tier>" (g.pricing 'tier', purchase kind 'tier'), gun in hand only, not while
                         switching, nothing past Platinum, NO ammo refill (the bigger magazine fills on the next reload/buy).
@@ -434,7 +434,7 @@ src/
                         tableSet (round table 0.75m + 4 stools 0.45m; colliders: table + a "plus" of two low stool strips),
                         trashCan, lockerBank (solid 1.9m), electricalPanel (+ DANGER sign; a future power switch spot),
                         pipeRun (exposed pipes), vendingMachine({ along, center, wallAt, facing }) (the ammo cache: solid 1.95m,
-                        lit product window, keypad, header "STAPLE-O-MAT"; returns { position, normal } = its buy spot),
+                        lit product window, keypad, header "RESTOCK-O-MATIC"; returns { position, normal } = its buy spot),
                         serviceDesk({ along, center, wallAt, facing, tierColors }) (the Customer Service BOOTH: a walled office
                         with a service window + counter, a zombie clerk, computer/cabinets/clock visible through the glass, a
                         CUSTOMER SERVICE sign on the roof, NOW SERVING above the window, a sticker per tier on the counter; ONE solid
@@ -454,6 +454,10 @@ src/
                         (byteMe: screen wall + laptops + neon; goodSports: wainscot, jerseys, trophies, bat rack, ball bin;
                         playTimeToys: rainbow, plush shelves, blocks; nutsAndBolts: pegboard of tools, paint cans, workbench) and a
                         zombie spawn just inside the door. buildStores({ kit, props, court, thickness, stores }) -> { spots, spawns }
+    mall/restockMachine.js  buildRestockMachine({ kit, center, wallAt, facing }) -> { position, normal, screen }: the RESTOCK-O-MATIC
+                        (north/south walls): body + hazard kick plate + glowing header and tagline, a lit window of ammo boxes, keypad,
+                        card reader, live canvas screen (screen.show({ title, line, note, tone })), side signs, the AMMO blade sign, the
+                        hazard stand pad and glow pool on the floor. One collider. (props.vendingMachine is the old RESTOCK-O-MATIC, unused)
     mall/startRoomDetails.js  Clearance-store dressing relative to the start room: register, receipt, bags, stock remnants,
                         vent frames/boards, sale remnants, pricing station, floor wear, damaged light fitting and lamps.
                         Decoration only (no collision or interactions); static boxes merged by material; map kit disposes resources.
@@ -660,7 +664,7 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
   The east-end planter is split around the opening; clear approaches lead into the Mart's 3.2m west aisle.
   Service Corridor <-> Food Court (1250), x -20.3..-20, z -13.4..-11, height 3m, opposite the cannon at z -12.2;
   STAFF ONLY / EXIT · FOOD COURT signs. Lockers stay at z -11..-9, with 2.55m clear corridor width alongside/past them.
-  The west planter, STAPLE-O-MAT and cannon buy spots are unchanged. The cannon is out of buying range from the Food Court.
+  The west planter, RESTOCK-O-MATIC and cannon buy spots are unchanged. The cannon is out of buying range from the Food Court.
   Main loop: hallway -> Food Court -> Mega Mart -> hallway. West loop: hallway -> Service Corridor -> Food Court -> hallway.
   Any open holder keeps its zone open; Play again closes every shutter and seals all outer areas.
 - Customer Service booth (gun tiers): a small walled office on the hallway's north wall at x 5.2..8.8 (between the start doorway
@@ -673,9 +677,15 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
   zombie clerk behind a full-width counter, two attachments per counter (one buy spot each), a zombie spawn just inside each door. Each
   store is ONE entry in LAYOUT.stores (mall.js). Map features of kind 'attachmentCounter' (one per attachment). The Mega Mart's aisle
   4 is HOUSEWARES again (the barrels moved from the old hardware pegboard to Nuts & Bolts).
-- Ammo cache: a STAPLE-O-MAT vending machine on the Food Court's west wall (center z -5.1, front at x -19.4, in the open north
-  of the planter). Hold F/X for 400 points to refill the gun in your hand (any gun, including the staple gun, which has no wall
-  buy); no prompt when it's full or the Food Court is closed. A map feature of kind 'ammoCache' (game/features/ammoCache.js).
+- Ammo cache: the RESTOCK-O-MATIC, a big hot-orange vending machine on the Food Court's NORTH wall just inside the door,
+  east side (x 3.05..4.75, front at z -3.15 facing south; LAYOUT.restockMachine.x moves it along the wall), clear of the door
+  lane, the east bench and the Byte Me pod. Hold F/X for 400 points to refill the gun in your hand (any gun, including the
+  staple gun, which has no wall buy); no prompt when it's full or the Food Court is closed. Built to be seen: glowing header sign,
+  an "AMMO" blade sign sticking out of the wall that reads down the wall both ways, "AMMO" on both sides, a yellow-and-black
+  hazard pad on the floor where you stand and a soft warm glow on the tiles (unlit materials, no real lights, no flicker). Its LCD
+  is live (the gun in hand, its ammo, the price / FULL / SALE). Solid 2.35 m body, one collider. A map feature of kind 'ammoCache'
+  (game/features/ammoCache.js; mall/restockMachine.js builds it). It used to be a RESTOCK-O-MATIC on the west wall, which the
+  Food Court stores made a far, awkward detour.
 - Wall-buy spots: start room east wall (5, 1.5, 10) = Price Gun; hallway south wall (11, 1.5, -2) = Nail Gun;
   Mega Mart north wall (31.5, 1.5, 6) = Foam Dart Blaster, Service Corridor west wall near the dead end
   (-23.28, 1.5, -12.2) = Confetti Cannon.
@@ -703,6 +713,13 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+RESTOCK-O-MATIC (the ammo machine, renamed from STAPLE-O-MAT and moved from the far west wall to the Food Court's north wall just
+inside the door; see Map). Same 400-point flat refill, same feature kind; new look and a live screen. The feature now returns an
+update hook that keeps the screen on the gun in hand (ammoScreenText: price, FULL or SALE). tests/ammoCache.test.js has the new
+position (beside the door, north wall, faces south), buying from the front and never through the wall from the hallway, solidity,
+clear door lane and routes, and the screen text; tests/coplanar.test.js also covers its region (it caught the cap/body and
+side-sign shared planes).
+
 Original background music: "After Closing", a 43.64-second/16-bar stereo lounge loop at 88 BPM, with electric piano,
 bass, soft drums, detuned pad, echoes and a borrowed-minor second-half turn. config/music.js owns score/timbres;
 audio/mallMusic.js deterministically renders PCM in audio/musicWorker.js, off the gameplay thread. sound.js caches
@@ -856,7 +873,7 @@ Twelve-Shopper groups at 3.4m/s all crossed each doorway: first/last 2.53/5.52s 
 no rescues, no climbing. A 12-zombie Z/Shift+Z horde aimed at the Food Court used both routes: Mart 2 shortcut / 1 hallway;
 corridor 1 shortcut / 1 hallway. Horde timing used extra player health to observe routing, not a survival run. Close crowd
 pressure can still shove the player. The cannon still buys for 1500 from its original corridor spot, cannot buy across
-the opening; STAPLE-O-MAT refills for 400 from its front, never through the wall. Within 1m of the cannon its existing
+the opening; RESTOCK-O-MATIC refills for 400 from its front, never through the wall. Within 1m of the cannon its existing
 facing-free prompt can take priority over the shortcut; stand nearer the corridor centre to buy the shutter.
 Keep the agreed door widths/prices.
 Browser-found fixes: floor beneath the west shared wall (the debug range shifted grid centres and revealed a 30cm
@@ -870,7 +887,7 @@ accept their own entries (no 'toString' kind/category); resetPlayerStats removes
 the core event wiring with a richer ctx (g.features.context); discount rounding is economy.discountRoundTo. Tests for each.
 
 Codex playtest follow-up: Foam Dart Blaster damage 45 -> 50 (round 3: two body bursts; round 5: one head burst), Confetti
-Cannon wall ammo 750 -> 500 (the 400 STAPLE-O-MAT was cheaper than the wall). Fixes: a shot ends any reload pose at once
+Cannon wall ammo 750 -> 500 (the 400 RESTOCK-O-MATIC was cheaper than the wall). Fixes: a shot ends any reload pose at once
 (viewmodel.fire sets reloadWeight 0), so the cannon no longer fires with its barrels open when firing cuts a shell-by-shell
 reload short; the balance report's magazine time no longer counts the last shot's recovery (it overlaps the reload, as in
 weapon.js) and labels shots vs trigger pulls (Foam: darts (pulls)); the cannon ceiling check is "no single BODY blast kills
@@ -890,7 +907,7 @@ magazine (was 24), 1.3s reload (was 1.4), 192 reserve, falloff full to 12 m -> 6
 Blaster (1200) out-damages nothing it costs more than (186 dps vs Nail 209 at 1000); its role pass is a later step.
 
 Visual fixes: corridor caps extend across their own side walls only, so the Service Corridor end cap no longer
-overlaps/flickers through the Food Court wall beside the STAPLE-O-MAT. The Price Gun front sight post is seated
+overlaps/flickers through the Food Court wall beside the RESTOCK-O-MATIC. The Price Gun front sight post is seated
 in the housing (its tip/ADS position stays the same). Confetti Cannon has fitted support-hand/thumb geometry,
 a hinge below and forward of the breech, open rear bores and a shell/hand path that clears the receiver. Its
 closed muzzle position and gameplay/reload timing are preserved. The Foam Dart Blaster and Confetti Cannon front-sight
@@ -925,7 +942,7 @@ Tracer pool is now 16; max shotgun wall puffs is 4, both in feel.effects. Tests/
 cancellation, queued reloads, pellet damage/headshots/walls/scoring/accuracy, round damage tables, model/sound
 registration, the tracer pool, and both real-mall buy/refill spots. The only main.js change adds the ADS-scaled
 pellet cone to the crosshair. Built by Codex on codex/new-guns (plan: docs/codex-new-guns-plan.md), integrated into main
-alongside the ammo cache (STAPLE-O-MAT refills either new gun in hand for its flat price).
+alongside the ammo cache (RESTOCK-O-MATIC refills either new gun in hand for its flat price).
 
 Build step 1 is done: start room + concourse, security shutter, pointer-lock look, WASD, jump,
 limited sprint meter, wall/obstacle collision, config files, invisible spawn/wall-buy markers.

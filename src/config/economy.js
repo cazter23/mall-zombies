@@ -65,7 +65,7 @@ export const economy = {
     nailGun: { weapon: 1000, ammo: 500 },
     // Reserved for the guns planned for the Mega Mart and the Service Corridor (inert until those exist in config/weapons.js)
     foamDartBlaster: { weapon: 1200, ammo: 600 },
-    confettiCannon: { weapon: 1500, ammo: 500 }, // (was 750: dearer than the 400 STAPLE-O-MAT refill)
+    confettiCannon: { weapon: 1500, ammo: 500 }, // (was 750: dearer than the 400 RESTOCK-O-MATIC refill)
   },
 
   // Discounted prices (Flash Sales, game/pricing.js) are rounded to the nearest multiple of this.

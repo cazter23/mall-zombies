@@ -19,7 +19,7 @@ import { buildAttachmentCounter } from './attachmentCounter.js';
 
 const builders = {
   wallBuy: buildWallBuy, // buy a gun off the wall, or its ammo once you own it
-  ammoCache: buildAmmoCache, // STAPLE-O-MAT: refill the gun in your hand
+  ammoCache: buildAmmoCache, // RESTOCK-O-MATIC: refill the gun in your hand
   upgradeDesk: buildUpgradeDesk, // Customer Service: the next Extended Warranty tier for the gun in your hand
   attachmentCounter: buildAttachmentCounter, // a store's attachment: fit it to the gun in your hand
 };

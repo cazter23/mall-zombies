@@ -65,7 +65,7 @@ test('inherited names are not categories (no "free" toString / constructor price
   }
 });
 
-test('the real game charges sale prices for a gun, its ammo and the STAPLE-O-MAT', () => {
+test('the real game charges sale prices for a gun, its ammo and the RESTOCK-O-MATIC', () => {
   const t = headlessGame();
   const { g } = t;
   t.tick(1);

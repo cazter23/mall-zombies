@@ -67,7 +67,7 @@ test('a sale discounts every category in its group, in steps of 5% between 25 an
     assert.equal(sales.active.id, 'ammo');
     assert.equal(sales.active.discount, expected, `roll ${roll}`);
     assert.equal(pricing.discountOf('ammo'), expected);
-    assert.equal(pricing.discountOf('ammoCache'), expected, 'the STAPLE-O-MAT is part of the ammo sale');
+    assert.equal(pricing.discountOf('ammoCache'), expected, 'the RESTOCK-O-MATIC is part of the ammo sale');
     assert.equal(pricing.discountOf('door'), 0, 'other groups are untouched');
     assert.equal(pricing.priceOf('ammoCache'), Math.round((economy.ammoCache.price * (1 - expected)) / 10) * 10);
   }

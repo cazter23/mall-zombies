@@ -52,7 +52,7 @@ test('a wall buy for a gun that does not exist yet is inert (no prompt, nothing 
   assert.equal(scene.children.length, 0);
 });
 
-test('the real game: buy the Price Gun off its wall, then refill it at the STAPLE-O-MAT', () => {
+test('the real game: buy the Price Gun off its wall, then refill it at the RESTOCK-O-MATIC', () => {
   const t = headlessGame();
   const { g } = t;
   t.tick(1);

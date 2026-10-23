@@ -1,4 +1,4 @@
-// No z-fighting (flicker) in the stores and the Customer Service booth: two surfaces on the same plane, facing the same
+// No z-fighting (flicker) in the stores, the Customer Service booth and the RESTOCK-O-MATIC: two surfaces on the same plane, facing the same
 // way, with different looks, fight over the pixels and shimmer as you move. This builds the REAL mall and checks every
 // box face and sign inside the store rooms and the booth against every other: a pair is a problem if its faces lie
 // within 4 mm of each other, face the same way, overlap, look different, and aren't hidden against a solid behind them.
@@ -49,7 +49,7 @@ function facesOf(mesh) {
 
 const overlap = (a, b) => [0, 1].map((i) => Math.min(a.hi[i], b.hi[i]) - Math.max(a.lo[i], b.lo[i]));
 
-test('no coplanar (flickering) surfaces inside the stores and the Customer Service booth', () => {
+test('no coplanar (flickering) surfaces inside the stores, the Customer Service booth and the RESTOCK-O-MATIC', () => {
   const scene = new THREE.Scene();
   const map = buildMall(scene, []);
   scene.updateMatrixWorld(true);
@@ -62,6 +62,8 @@ test('no coplanar (flickering) surfaces inside the stores and the Customer Servi
   });
   const desk = LAYOUT.serviceDesk;
   regions.push({ name: 'booth', minX: desk.center - 2.1, maxX: desk.center + 2.1, minZ: desk.wallAt - 2.3, maxZ: desk.wallAt + 0.1 });
+  const restock = LAYOUT.restockMachine; // the RESTOCK-O-MATIC, its pad and its signs
+  regions.push({ name: 'restock', minX: restock.x - 1.2, maxX: restock.x + 1.2, minZ: LAYOUT.foodCourt.maxZ - 2.4, maxZ: LAYOUT.foodCourt.maxZ + 0.1 });
   const inRegion = (m) => regions.some((r) => m.position.x > r.minX && m.position.x < r.maxX && m.position.z > r.minZ && m.position.z < r.maxZ);
 
   const all = [];

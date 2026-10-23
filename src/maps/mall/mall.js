@@ -42,6 +42,7 @@ import { buildStores, storeOpenings } from './stores.js';
 import { buildStartRoomDetails } from './startRoomDetails.js';
 import { buildMegaMartDetails, MART_FIXTURES } from './megaMartDetails.js';
 import { buildMallAtmosphere } from './atmosphere.js';
+import { buildRestockMachine } from './restockMachine.js';
 import { atmosphere } from '../../config/environment.js';
 
 export const LAYOUT = {
@@ -89,6 +90,7 @@ export const LAYOUT = {
   // Service Corridor: its doorway in the hallway's west wall, then south along the Food Court's west wall.
   serviceCorridor: { width: 3, height: 3.5, length: 16, doorway: { minZ: 0.5, maxZ: 3.5, height: 3 } },
   wallThickness: 0.3,
+  restockMachine: { x: 3.9 }, // the RESTOCK-O-MATIC on the Food Court's north wall (its x; the front faces south)
 };
 
 export function buildMall(scene, colliders) {
@@ -363,8 +365,9 @@ export function buildMall(scene, colliders) {
   props.trashCan(-11.2, FZ);
   props.trashCan(11.2, FZ);
 
-  // The ammo cache: a vending machine on the west wall, north of the planter, in the open (a clear approach).
-  const foodCourtAmmo = props.vendingMachine({ along: 'z', center: FZ + 3.2, wallAt: F.minX, facing: 1 });
+  // The ammo cache: the RESTOCK-O-MATIC (mall/restockMachine.js), on the north wall just inside the door, east side:
+  // the first thing you see walking in. Clear of the door lane (x -2..2), the east bench and the Byte Me pod.
+  const foodCourtAmmo = buildRestockMachine({ kit, center: LAYOUT.restockMachine.x, wallAt: F.maxZ, facing: -1 });
 
   sign('EXIT  ·  MAIN HALL', {
     x: 0, y: 3.6, z: F.maxZ - 0.02, width: 3, height: 0.5, facing: -1,
@@ -616,8 +619,8 @@ export function buildMall(scene, colliders) {
   // New kinds (claw machine, fitting room, hazard switch...) are more entries here.
   const features = [
     ...wallBuys.map((w) => ({ kind: 'wallBuy', ...w })),
-    // The STAPLE-O-MAT: buy a refill for the gun in your hand (g.pricing 'ammoCache').
-    { kind: 'ammoCache', name: 'ammocache_foodCourt', zone: 'foodCourt', position: foodCourtAmmo.position, normal: foodCourtAmmo.normal },
+    // The RESTOCK-O-MATIC: buy a refill for the gun in your hand (g.pricing 'ammoCache'); its screen shows what it sells.
+    { kind: 'ammoCache', name: 'ammocache_foodCourt', zone: 'foodCourt', position: foodCourtAmmo.position, normal: foodCourtAmmo.normal, screen: foodCourtAmmo.screen },
     // Customer Service: upgrade the gun in your hand one Extended Warranty tier (g.pricing 'tier').
     { kind: 'upgradeDesk', name: 'upgradedesk_hallway', zone: deskZone, position: serviceDesk.position, normal: serviceDesk.normal },
     // Store attachment counters: fit that attachment to the gun in your hand (g.pricing 'attachment').

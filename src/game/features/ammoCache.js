@@ -1,10 +1,12 @@
 // =============================================================================
-// AMMO CACHE (map feature kind 'ammoCache'): the STAPLE-O-MAT vending machine (its body is map geometry,
-// mall/props.js vendingMachine). Hold the interact button next to it to refill the gun in your hand
+// AMMO CACHE (map feature kind 'ammoCache'): the RESTOCK-O-MATIC vending machine (its body is map geometry,
+// mall/restockMachine.js). Hold the interact button next to it to refill the gun in your hand
 // (magazine + reserve, any gun, including the staple gun that has no wall buy) for one flat price
 // (g.pricing 'ammoCache'). Only works once its area is open, and not when the gun in hand is already full.
 //
-// feature: { kind: 'ammoCache', name, zone, position (the buy spot), normal }
+// feature: { kind: 'ammoCache', name, zone, position (the buy spot), normal, screen? }
+//   screen (optional): the machine's live display ({ show({ title, line, note, tone }) }): this feature keeps it
+//   showing the gun in your hand, its ammo and the price (only redrawn when the words change).
 //
 //   buildAmmoCache(feature, ctx)   registers the buyable (game/features/index.js calls this)
 //   ammoCacheItem({ cache, zones, gun, price }) -> an item for interactions.add()
@@ -16,7 +18,18 @@
 
 export function buildAmmoCache(cache, { map, gun, pricing, interactions }) {
   interactions.add(ammoCacheItem({ cache, zones: map.zones, gun, price: () => pricing.priceOf('ammoCache') }));
-  return null; // nothing to tick or reset
+  if (!cache.screen) return null;
+  const refresh = () => cache.screen.show(ammoScreenText({ gun, price: pricing.priceOf('ammoCache'), sale: pricing.discountOf('ammoCache') > 0 }));
+  refresh();
+  return { update: refresh, reset: refresh }; // (features tick only while playing: the screen is cheap, it only redraws on a change)
+}
+
+// What the machine's screen says: the gun in hand, its ammo, and either FULL or the price.
+export function ammoScreenText({ gun, price, sale = false }) {
+  const w = gun.weapon;
+  const name = gun.def.name.toUpperCase();
+  if (w.isFull) return { title: name, line: 'FULL', note: `${w.magazine} / ${w.reserve}`, tone: '#7dffb0' };
+  return { title: name, line: `${price} PTS`, note: `${w.magazine} / ${w.reserve}${sale ? '  SALE' : ''}`, tone: sale ? '#ffd23f' : '#ff9f43' };
 }
 
 export function ammoCacheItem({ cache, zones, gun, price }) {

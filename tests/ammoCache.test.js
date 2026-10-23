@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import { ammoCacheItem } from '../src/game/features/ammoCache.js';
+import { ammoCacheItem, ammoScreenText, buildAmmoCache } from '../src/game/features/ammoCache.js';
 import { featuresOf } from '../src/game/features/index.js';
 import { createInteractions } from '../src/game/interactions.js';
 import { Weapon } from '../src/weapons/weapon.js';
@@ -19,7 +19,7 @@ const ctx = new Proxy({}, {
   set: (target, key, value) => { target[key] = value; return true; },
 });
 globalThis.document ??= { createElement: () => ({ width: 0, height: 0, getContext: () => ctx }) };
-const { buildMall } = await import('../src/maps/mall/mall.js');
+const { buildMall, LAYOUT } = await import('../src/maps/mall/mall.js');
 
 const dt = 1 / feel.simulation.tickRate;
 
@@ -88,57 +88,91 @@ function setupMall() {
   return { map, colliders, open, tryBuy };
 }
 
-test('the real mall has a Food Court ammo cache in front of the west wall', () => {
+// Yaw that looks AT a machine whose front faces `normal` (i.e. along -normal; yaw 0 looks along -Z, the look direction is (-sin, -cos)).
+const yawToward = (normal) => Math.atan2(normal.x, normal.z);
+
+test('the real mall has the RESTOCK-O-MATIC just inside the Food Court door, on its north wall', () => {
   const { map } = setupMall();
   assert.equal(featuresOf(map, 'ammoCache').length, 1);
   const cache = featuresOf(map, 'ammoCache')[0];
   assert.equal(cache.zone, 'foodCourt');
-  assert.ok(cache.position.x < -19 && cache.position.x > -20, 'on the Food Court west wall');
-  assert.deepEqual(cache.normal.toArray(), [1, 0, 0], 'faces into the room');
+  const door = LAYOUT.foodCourtDoorway;
+  assert.ok(cache.position.x > door.maxX && cache.position.x < door.maxX + 4, 'right beside the door, on the east side');
+  assert.ok(cache.position.z < -2.3 && cache.position.z > -4.5, 'against the north wall (the hallway south wall)');
+  assert.deepEqual(cache.normal.toArray(), [0, 0, -1], 'faces south, into the room');
+  assert.ok(cache.screen && typeof cache.screen.show === 'function', 'it has a live screen');
 });
 
 test('the cache can be bought from in front of it, but not before its door, nor through the wall', () => {
   const { map, open, tryBuy } = setupMall();
-  const p = featuresOf(map, 'ammoCache')[0].position;
-  const FACING_WEST = Math.PI / 2; // yaw 0 faces -Z; +90 degrees faces -X
+  const cache = featuresOf(map, 'ammoCache')[0];
+  const p = cache.position;
+  const facing = yawToward(cache.normal); // looking at it (the direction opposite its front)
   open('startShutter');
-  assert.equal(tryBuy(p.x + 1.5, p.z, FACING_WEST), false, 'the Food Court is still closed');
+  assert.equal(tryBuy(p.x, p.z - 1.2, facing), false, 'the Food Court is still closed');
   open('foodCourt');
-  assert.equal(tryBuy(p.x + 1.5, p.z, FACING_WEST), true, 'standing in front of it');
-  assert.equal(tryBuy(p.x + 1.5, p.z, -FACING_WEST), false, 'with your back to it');
-  assert.equal(tryBuy(p.x + 6, p.z, FACING_WEST), false, 'too far away');
-  open('serviceCorridor');
-  // Behind the wall in the Service Corridor (x -23.3..-20.3), facing the machine, well within range.
-  assert.equal(tryBuy(-21.4, p.z, -FACING_WEST), false, 'through the wall from the Service Corridor');
+  assert.equal(tryBuy(p.x, p.z - 1.2, facing), true, 'standing in front of it');
+  assert.equal(tryBuy(p.x, p.z - 1.2, facing + Math.PI), false, 'with your back to it');
+  assert.equal(tryBuy(p.x, p.z - 6, facing), false, 'too far away');
+  // In the hallway, on the other side of the wall behind it, facing it and well within range.
+  assert.equal(tryBuy(p.x, -1.0, 0), false, 'through the wall from the hallway');
+  assert.equal(tryBuy(p.x, 0.5, 0), false, 'or from further back');
 });
 
 test('opening the service shortcut unlocks the cache, preserving its front-only access', () => {
   const { map, open, tryBuy } = setupMall();
-  const p = featuresOf(map, 'ammoCache')[0].position;
+  const cache = featuresOf(map, 'ammoCache')[0];
+  const p = cache.position;
+  const facing = yawToward(cache.normal);
   open('startShutter');
   open('serviceCorridor');
-  assert.equal(tryBuy(p.x + 1.5, p.z, Math.PI / 2), false, 'Food Court still locked');
+  assert.equal(tryBuy(p.x, p.z - 1.2, facing), false, 'Food Court still locked');
   open('serviceCorridorFoodCourt');
   assert.equal(map.zones.foodCourt.open, true);
-  assert.equal(tryBuy(p.x + 1.5, p.z, Math.PI / 2), true, 'unchanged Food Court buy spot');
-  assert.equal(tryBuy(-21.4, p.z, -Math.PI / 2), false, 'no purchase through the shared wall');
-  assert.equal(tryBuy(-21.4, -12.2, -Math.PI / 2), false, 'not reachable through the new opening');
+  assert.equal(tryBuy(p.x, p.z - 1.2, facing), true, 'the same buy spot');
+  assert.equal(tryBuy(p.x, -1.0, 0), false, 'no purchase through the wall from the hallway');
   map.dispose();
 });
 
-test('the machine is solid and too tall to climb; its front is open floor zombies can reach', () => {
+test('the machine is solid and too tall to climb; its front is open floor zombies can reach, and the door lane stays clear', () => {
   const { map, colliders, open } = setupMall();
-  const p = featuresOf(map, 'ammoCache')[0].position;
-  const body = colliders.find((b) => b.containsPoint(new THREE.Vector3(p.x - 0.3, 1.0, p.z)));
+  const cache = featuresOf(map, 'ammoCache')[0];
+  const p = cache.position;
+  const inside = new THREE.Vector3(p.x - 0.3, 1.0, p.z + 0.4);
+  const body = colliders.find((b) => b.containsPoint(inside));
   assert.ok(body, 'a collider where the machine stands');
-  assert.ok(body.max.y >= 1.9, 'taller than a jump peak (about 1.05m) plus a step-up');
-  assert.ok(overlapsSolid(new THREE.Vector3(p.x - 0.3, 0, p.z), 0.35, 1.8, colliders, 0.3), 'you cannot stand in it');
+  assert.ok(body.max.y >= 2.0, 'taller than a jump peak (about 1.05m) plus a step-up');
+  assert.ok(overlapsSolid(new THREE.Vector3(inside.x, 0, inside.z), 0.35, 1.8, colliders, 0.3), 'you cannot stand in it');
+  // The door lane (x -2..2) and the way along the wall to the east bench stay open.
+  const door = LAYOUT.foodCourtDoorway;
+  assert.ok(body.min.x > door.maxX + 0.5, 'clear of the door lane');
   open('startShutter');
   open('foodCourt');
-  // A zombie can walk to the spot in front of it (flow field from the player standing there).
   const shopper = zombieTypes.shopper;
   const nav = createNavigation(colliders, { radius: shopper.radius, height: shopper.height });
-  const front = new THREE.Vector3(p.x + 1.2, 0, p.z);
+  const front = new THREE.Vector3(p.x, 0, p.z - 1.2);
   nav.update(dt, front);
-  assert.ok(Number.isFinite(nav.distanceToTarget(0, -4)), 'the middle of the Food Court reaches the machine front');
+  assert.ok(Number.isFinite(nav.distanceToTarget(0, -8)), 'the middle of the Food Court reaches the machine front');
+  assert.ok(Number.isFinite(nav.distanceToTarget(0, -3.5)), 'and so does the spot just inside the door');
+});
+
+test('the screen shows the gun in hand and its ammo: the price when it needs a refill, FULL when it does not, SALE on a discount', () => {
+  const gun = loadout(weapons.nailGun);
+  assert.deepEqual(ammoScreenText({ gun, price: 400 }), { title: 'NAIL GUN', line: 'FULL', note: `${gun.weapon.magazine} / ${gun.weapon.reserve}`, tone: '#7dffb0' });
+  gun.weapon.magazine = 3;
+  gun.weapon.reserve = 12;
+  const need = ammoScreenText({ gun, price: 400 });
+  assert.equal(need.line, '400 PTS');
+  assert.equal(need.note, '3 / 12');
+  assert.match(ammoScreenText({ gun, price: 200, sale: true }).note, /SALE$/);
+  // Redraws only when the words change.
+  const shown = [];
+  const screen = { show: (text) => shown.push(text) };
+  const item = buildAmmoCache({ zone: 'foodCourt', position: new THREE.Vector3(), screen }, {
+    map: { zones: { foodCourt: { open: true } } }, gun, pricing: { priceOf: () => 400, discountOf: () => 0 }, interactions: { add() {} },
+  });
+  assert.equal(shown.length, 1, 'drawn once when built');
+  item.update();
+  assert.equal(shown.length, 2, 'the hook asks again each tick; the screen itself skips unchanged words');
+  assert.equal(shown.at(-1).line, '400 PTS');
 });
