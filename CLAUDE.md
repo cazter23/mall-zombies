@@ -720,8 +720,8 @@ L Flash Sale now, Shift+N +5 rounds (rounds.jumpTo), G god mode (health.invulner
 (upgrade the gun in hand). tests/debugCommands.test.js: table (unique, no gameplay clashes, every id implemented), key
 resolution, every command in the real game/mall, god mode and the window state surviving Play again, and the window itself.
 
-Cart Pusher (round 6+, config/zombies.js `cartPusher` + economy.zombieMix: 10% of spawns, 15% from round 10; 2.2x health;
-worth 130 (about a Shopper's points per bullet); its 2nd spawn in round 6 is forced, with a PA banner). A Shopper-look zombie pushing a shopping cart
+Cart Pusher (round 6+, config/zombies.js `cartPusher` + economy.zombieMix: 10% of spawns, 15% from round 10; 1.8x health;
+worth 130; its 2nd spawn in round 6 is forced, with a PA banner). A Shopper-look zombie pushing a shopping cart
 (zombies/cartModel.js, visual only: no collider/hitbox, shots go through the basket). Walks like a Shopper and slams like
 one up close; with a clear 1.6 m-wide lane at 5-14 m (rays at cart height: walls, counters, benches and stools block it;
 checked every 0.25 s) it TELEGRAPHS for 0.9 s (stands, rattles the cart, head down, rattle + squeal sound) while turning

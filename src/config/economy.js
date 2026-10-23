@@ -18,7 +18,7 @@ export const economy = {
   killValues: {
     shopper: 60,
     mallWalker: 60,
-    cartPusher: 130, // 2.2x a Shopper's health, so about the same points per bullet as a Shopper (60 / 525 hp at round 6)
+    cartPusher: 130, // 1.8x a Shopper's health (an even per-bullet payout would be 108), a little extra for how dangerous it is
   },
 
   // Special zombie types mixed into the waves (every other spawn is a Shopper).
@@ -44,7 +44,7 @@ export const economy = {
         { fromRound: 6, share: 0.1 },
         { fromRound: 10, share: 0.15 },
       ],
-      healthMultiplier: 2.2,
+      healthMultiplier: 1.8, // (was 2.2: a bullet sponge by round 12)
       introSpawnIndex: 1,
     },
   },

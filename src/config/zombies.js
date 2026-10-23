@@ -176,7 +176,7 @@ const mallWalker = {
 // but with a clear, wide lane to you at mid range it TELEGRAPHS (stops, rattles the cart, squeals the wheels,
 // head down), then CHARGES in a straight line. The direction locks at the end of the telegraph, so a sidestep
 // dodges it. A miss means it overshoots and crashes (into a wall or skids out): stunned over its cart and taking
-// extra damage. That's your opening. Tanky (2.2x health: economy.zombieMix). Anything not listed = the Shopper.
+// extra damage. That's your opening. Tanky (1.8x health: economy.zombieMix). Anything not listed = the Shopper.
 const cartPusher = {
   ...shopper,
   id: 'cartPusher',

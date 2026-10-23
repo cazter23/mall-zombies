@@ -54,7 +54,7 @@ function fixture(distance = 9, extra = []) {
 }
 const box = (x0, y0, z0, x1, y1, z1) => new THREE.Box3(new THREE.Vector3(x0, y0, z0), new THREE.Vector3(x1, y1, z1));
 
-test('round mix: Cart Pushers from round 6 (10%, 15% from round 10), 2.2x health, worth 130', () => {
+test('round mix: Cart Pushers from round 6 (10%, 15% from round 10), 1.8x health, worth 130', () => {
   for (const round of [1, 4, 5]) for (const roll of [0, 0.2, 0.3, 0.5, 0.99]) assert.notEqual(zombieTypeForRound(round, roll), 'cartPusher');
   assert.equal(zombieTypeForRound(6, 0.249), 'mallWalker');
   assert.equal(zombieTypeForRound(6, 0.26), 'cartPusher');
@@ -63,7 +63,7 @@ test('round mix: Cart Pushers from round 6 (10%, 15% from round 10), 2.2x health
   assert.equal(zombieTypeForRound(10, 0.449), 'cartPusher'); // after the Mall Walkers' 30%
   assert.equal(zombieTypeForRound(10, 0.451), 'shopper');
   for (const round of [6, 9, 14]) {
-    assert.equal(zombieHealthFor('cartPusher', round), Math.round(zombieHealthForRound(round) * 2.2));
+    assert.equal(zombieHealthFor('cartPusher', round), Math.round(zombieHealthForRound(round) * 1.8));
   }
   assert.equal(pointsForHit({ target: { type: TYPE }, killed: true }), economy.killValues.cartPusher);
   assert.equal(economy.killValues.cartPusher, 130);
