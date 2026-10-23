@@ -85,6 +85,17 @@ export const settingDefs = [
     id: 'ambientEffects', tab: 'Graphics', label: 'Dust and flickering lights', type: 'toggle', default: true, cost: 'medium',
     apply: (v) => { atmosphere.ambient.enabled = v; },
   },
+  {
+    // Real lamps cost on every lit surface. Below 'All', a few real lights follow you round the map's lamps (fx/lightPool.js).
+    id: 'lampCount', tab: 'Graphics', label: 'Lamps', type: 'select', default: 'all', cost: 'high',
+    options: [
+      { value: 'all', label: 'All' },
+      { value: 8, label: '8 nearest' },
+      { value: 6, label: '6 nearest' },
+      { value: 4, label: '4 nearest' },
+    ],
+    apply: (v, ctx) => ctx.lightPool?.setSize(v),
+  },
 
   // ---- Mouse ----
   {
@@ -176,10 +187,10 @@ export const settingDefs = [
 export const settingPresets = {
   Graphics: [
     // Potato / Low are for weak computers (a school laptop): lower resolution, no post-processing, no dust / flickering lights.
-    { label: 'Potato', values: { renderScale: Math.max(0.5, nativeRatio * 0.5), visualEffects: 'off', ambientEffects: false } },
-    { label: 'Low', values: { renderScale: Math.max(0.5, nativeRatio * 0.65), visualEffects: 'off', ambientEffects: false } },
-    { label: 'Medium', values: { renderScale: Math.max(0.5, nativeRatio * 0.8), visualEffects: 'low', ambientEffects: true } },
-    { label: 'High', values: { renderScale: nativeRatio, visualEffects: 'high', ambientEffects: true } }, // native, capped at 2x for performance
+    { label: 'Potato', values: { renderScale: Math.max(0.5, nativeRatio * 0.5), visualEffects: 'off', ambientEffects: false, lampCount: 4 } },
+    { label: 'Low', values: { renderScale: Math.max(0.5, nativeRatio * 0.65), visualEffects: 'off', ambientEffects: false, lampCount: 6 } },
+    { label: 'Medium', values: { renderScale: Math.max(0.5, nativeRatio * 0.8), visualEffects: 'low', ambientEffects: true, lampCount: 8 } },
+    { label: 'High', values: { renderScale: nativeRatio, visualEffects: 'high', ambientEffects: true, lampCount: 'all' } }, // native, capped at 2x for performance
   ],
   Comfort: [
     { label: 'Calm', values: { headBob: 0, speedLines: false } }, // for motion sickness

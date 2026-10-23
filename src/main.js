@@ -27,6 +27,7 @@ import { PRICE_CATEGORIES } from './game/pricing.js';
 import { createDebugPanel } from './ui/debugPanel.js';
 import { createTitleCamera } from './ui/titleCamera.js';
 import { createBenchmark } from './fx/benchmark.js';
+import { createLightPool, collectPointLights } from './fx/lightPool.js';
 import { wireRunIntro } from './game/runIntro.js';
 import { atmosphere } from './config/environment.js';
 import { createPostProcessing } from './fx/postProcessing.js';
@@ -113,7 +114,9 @@ function handleDebugKeys() {
 
 // Settings (config/settings.js is the list; changes apply to the game and are saved in the browser).
 // Created after the HUD and sound so each setting's apply() can reach them.
-const settings = createSettings({ renderer, sound, hud, postProcessing });
+// The light pool (fx/lightPool.js): on lower Graphics settings a few real lights follow the camera round the map's lamps.
+const lightPool = createLightPool({ scene, sources: collectPointLights(map.group, g.arena?.group) });
+const settings = createSettings({ renderer, sound, hud, postProcessing, lightPool });
 const settingsMenu = createSettingsMenu(settings);
 const controlsMenu = createControlsMenu();
 // The debug window (the ` key): lists the debug keys with live numbers; hidden unless the game's debug state says so.
@@ -132,7 +135,10 @@ if (debugPanel) {
 // game isn't ticking (title or pause screen), so nothing in the run moves. Every door is opened for the route (a closed
 // shutter would hide whole rooms) and put back exactly as it was afterwards. Press Shift+B again to stop early.
 const benchmark = createBenchmark({
-  camera, renderer, draw: () => postProcessing.render({ showViewmodel: false, speedAmount: 0 }),
+  camera, renderer, draw: () => {
+    lightPool.update(camera.position, 1 / 60);
+    postProcessing.render({ showViewmodel: false, speedAmount: 0 });
+  },
 });
 async function runBenchmark() {
   if (benchmark.active) return benchmark.cancel();
@@ -322,6 +328,7 @@ function render(alpha, frameTime) {
   player.lookScale = feel.ads.sensitivityFollowsZoom ? baseFov / feel.camera.fov : 1; // used by next frame's look
 
   player.syncCamera(alpha);
+  lightPool.update(camera.position, frameTime);
   if (game.over) applyDeathCamera(alpha);
   body.root.visible = !game.over;
   body.update(visualTime, player, alpha);
@@ -371,6 +378,7 @@ function renderTitle(frameTime) {
     camera.updateProjectionMatrix();
   }
   screens.setFade(titleCamera.apply(camera));
+  lightPool.update(camera.position, frameTime);
   body.root.visible = false;
   effects.update(frameTime);
   postProcessing.render({ showViewmodel: false, speedAmount: 0 });
@@ -405,6 +413,7 @@ if (debug.exposeToWindow) {
     gamepad, aimAssist, wallet, rounds, sound, interactions, g, screens, titleCamera,
     menus: { play, pauseRun, freshRun, goToTitle }, // the menu flow, for testing
     benchmark: runBenchmark, // await __mall.benchmark() -> the report (title or pause screen)
+    settings, lightPool, // (settings.set(id, value) as the menu would; the light pool)
   };
   // Advance the real game loop by `ticks` fixed steps and draw one frame. For automated
   // testing when the browser isn't animating (e.g. a hidden tab). Pair with game.forceRun.
