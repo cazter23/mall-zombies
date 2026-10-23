@@ -16,8 +16,8 @@ test('Mega Mart details leave aisles, crossings, entrances, spawns and checkout 
     ...[21.9, 25.75, 29.25, 32.75].map((x) => bounds([x - 0.48, 0.05, -19.4], [x + 0.48, 2.4, -8.05])),
     bounds([20.5, 0.05, -22.8], [33.3, 2.4, -20]), // rear cross-aisle
     bounds([20.5, 0.05, -7.5], [33.1, 2.4, -5.2]), // front cross-aisle, clear of parked trolley
-    bounds([20.3, 0.05, -9.8], [22.8, 2.7, -6.8]), // Food Court shortcut
-    bounds([20.3, 0.05, 0.1], [23.8, 2.7, 3.9]), // hallway entrance
+    bounds([20.3, 0.05, LAYOUT.foodCourtMegaMartDoorway.minZ + 0.1], [22.8, 2.7, LAYOUT.foodCourtMegaMartDoorway.maxZ - 0.1]), // Food Court shortcut
+    bounds([20.3, 0.05, LAYOUT.megaMartDoorway.minZ + 0.1], [23.8, 2.7, LAYOUT.megaMartDoorway.maxZ - 0.1]), // hallway entrance
     ...MART_FIXTURES.checkoutZs.map((z) => bounds([24.7, 1.09, z - 0.6], [26.3, 2.98, z + 0.6])),
     ...[[26.5, -23.2], [31.8, -23.2], [21.8, -23.2], [33.2, 2.5]]
       .map(([x, z]) => bounds([x - 0.35, 0.05, z - 0.35], [x + 0.35, 1.8, z + 0.35])),

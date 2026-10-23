@@ -54,9 +54,9 @@ export const LAYOUT = {
   foodCourt: { minX: -20, maxX: 20, minZ: -14.3, maxZ: -2.3, height: 6 }, // north wall = hallway's south wall
   megaMart: { minX: 20, maxX: 34, minZ: -24, maxZ: 6, height: 5 },
   doorway: { minX: -2, maxX: 2, height: 3 }, // start room -> hallway (in the hallway's north wall)
-  foodCourtDoorway: { minX: -2, maxX: 2, height: 3 }, // hallway -> Food Court (hallway's south wall)
-  megaMartDoorway: { minZ: 0, maxZ: 4, height: 3 }, // hallway -> Mega Mart (Mega Mart's west wall)
-  foodCourtMegaMartDoorway: { minZ: -9.8, maxZ: -6.8, height: 3 }, // shared east wall, Food Court centre line
+  foodCourtDoorway: { minX: -3.5, maxX: 3.5, height: 3 }, // hallway -> Food Court (hallway's south wall): a wide 7m mall gate
+  megaMartDoorway: { minZ: -1, maxZ: 5, height: 3 }, // hallway -> Mega Mart (Mega Mart's west wall): 6m wide
+  foodCourtMegaMartDoorway: { minZ: -10.8, maxZ: -5.8, height: 3 }, // shared east wall, Food Court centre line: 5m wide
   serviceCorridorFoodCourtDoorway: { minZ: -13.4, maxZ: -11, height: 3 }, // opposite the cannon, beyond the lockers
   // Escalator in the hallway's west half: bottom end at x -4 (facing the hub), rising west to level 2
   // (the top of the hallway ceiling, y 6.3). 2m wide. Sealed for now.
@@ -112,7 +112,7 @@ export const LAYOUT = {
   // Service Corridor: its doorway in the hallway's west wall, then south along the Food Court's west wall.
   serviceCorridor: { width: 3, height: 3.5, length: 16, doorway: { minZ: 0.5, maxZ: 3.5, height: 3 } },
   wallThickness: 0.3,
-  restockMachine: { x: 3.9 }, // the RESTOCK-O-MATIC on the Food Court's north wall (its x; the front faces south)
+  restockMachine: { x: 4.95 }, // the RESTOCK-O-MATIC on the Food Court's north wall (its x; the front faces south)
 };
 
 export function buildMall(scene, colliders) {
@@ -383,8 +383,8 @@ export function buildMall(scene, colliders) {
   props.planter(-1.8, FZ - 2.8, 1.8, FZ - 1.2, { tree: true });
   props.planter(-19.4, FZ - 0.7, -18, FZ + 0.7);
   // Two end planters frame the shortcut, leaving its full width and approaches clear.
-  props.planter(18, FM.minZ - 2.9, 19.4, FM.minZ - 1.5);
-  props.planter(18, FM.maxZ + 1.5, 19.4, FM.maxZ + 2.9);
+  props.planter(18, FM.minZ - 2.0, 19.4, FM.minZ - 0.6);
+  props.planter(18, FM.maxZ + 0.6, 19.4, FM.maxZ + 2.0);
 
   for (const x of [-16, -8, 0, 8, 16]) props.lightPanel(x - 1.2, FZ - 0.6, x + 1.2, FZ + 0.6, F.height);
 

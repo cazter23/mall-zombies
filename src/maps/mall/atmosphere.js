@@ -170,7 +170,7 @@ export function buildMallAtmosphere(kit, layout, { service, ceilingHole }) {
   }
   wetFloorCone(cx + 0.72, -6.55, 0.35);
   wetFloorCone(-8.65, -6.15, -0.42);
-  wetFloorCone(-3.15, -1.15, 0.28, true); // overturned wet floor cone beside the Food Court doorway planter
+  wetFloorCone(-6.4, -1.15, 0.28, true); // overturned wet floor cone beside the Food Court doorway planter
 
   // Janitor mop bucket & leaning mop at the Service Corridor ceiling leak.
   const bx = cx + 0.88, bz = -7.85;

@@ -143,7 +143,7 @@ test('the machine is solid and too tall to climb; its front is open floor zombie
   assert.ok(body, 'a collider where the machine stands');
   assert.ok(body.max.y >= 2.0, 'taller than a jump peak (about 1.05m) plus a step-up');
   assert.ok(overlapsSolid(new THREE.Vector3(inside.x, 0, inside.z), 0.35, 1.8, colliders, 0.3), 'you cannot stand in it');
-  // The door lane (x -2..2) and the way along the wall to the east bench stay open.
+  // The door lane and the way along the wall to the east bench stay open.
   const door = LAYOUT.foodCourtDoorway;
   assert.ok(body.min.x > door.maxX + 0.5, 'clear of the door lane');
   open('startShutter');

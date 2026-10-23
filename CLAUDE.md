@@ -640,8 +640,8 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
   open shelves with a few products and dusty stock outlines (original collision footprint), framed dark boarded vents,
   sale/tape remnants, missing employee photo, FINAL MARKDOWN pricing station around the Price Gun, restrained perimeter
   floor litter/scuffs, damaged dead ceiling fitting, warm checkout / cool shutter light. Central lane and both spawn bodies stay clear.
-- Main hallway: x -20..20, z -2..6 (8m wide), 6m ceiling. Doors: Food Court (1000, south wall x -2..2, straight
-  across from the start door, under a FOOD COURT sign, framed by two planters), Mega Mart (750, east end z 0..4,
+- Main hallway: x -20..20, z -2..6 (8m wide), 6m ceiling. Doors: Food Court (1000, south wall x -3.5..3.5, a 7m gate, straight
+  across from the start door, under a FOOD COURT sign, framed by two planters), Mega Mart (750, east end z -1..5, 6m,
   under a MEGA MART sign), Service Corridor (1250, west wall z 0.5..3.5, under a "SERVICE CORRIDOR · STAFF ONLY"
   sign; the escalator's high end runs overhead just short of it). 3 boarded vents (zombie spawns).
   Escalator (SEALED until repaired for 2000, see Current state): west half, z 1..3, bottom end at x -4 facing the hub, rising west at 30 deg through a hole in
@@ -683,7 +683,7 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
   boxes + a vent (spawn) + NO LOITERING (ESPECIALLY THE UNDEAD) at the dead end; three ceiling strips (middle one
   dead), two warm point lights. Concrete-look floor, drab walls.
 - Loop shortcuts (ordinary security shutters, buyable from either side, prices via g.pricing 'door'):
-  Food Court <-> Mega Mart (1000), x 20..20.3, z -9.8..-6.8, height 3m, centered FZ = -8.3, signs MEGA MART / FOOD COURT.
+  Food Court <-> Mega Mart (1000), x 20..20.3, z -10.8..-5.8 (5m), height 3m, centered FZ = -8.3, signs MEGA MART / FOOD COURT.
   The east-end planter is split around the opening; clear approaches lead into the Mart's 3.2m west aisle.
   Service Corridor <-> Food Court (1250), x -20.3..-20, z -13.4..-11, height 3m, opposite the cannon at z -12.2;
   STAFF ONLY / EXIT · FOOD COURT signs. Lockers stay at z -11..-9, with 2.55m clear corridor width alongside/past them.
@@ -701,7 +701,7 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
   store is ONE entry in LAYOUT.stores (mall.js). Map features of kind 'attachmentCounter' (one per attachment). The Mega Mart's aisle
   4 is HOUSEWARES again (the barrels moved from the old hardware pegboard to Nuts & Bolts).
 - Ammo cache: the RESTOCK-O-MATIC, a big hot-orange vending machine on the Food Court's NORTH wall just inside the door,
-  east side (x 3.05..4.75, front at z -3.15 facing south; LAYOUT.restockMachine.x moves it along the wall), clear of the door
+  east side (x 4.1..5.8, front at z -3.15 facing south; LAYOUT.restockMachine.x moves it along the wall), clear of the door
   lane, the east bench and the Byte Me pod. Hold F/X for 400 points to refill the gun in your hand (any gun, including the
   staple gun, which has no wall buy); no prompt when it's full or the Food Court is closed. Built to be seen: glowing header sign,
   an "AMMO" blade sign sticking out of the wall that reads down the wall both ways, "AMMO" on both sides, a yellow-and-black
@@ -739,6 +739,11 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+Wider entrances ("less cramped" pass, part 1): the Food Court gate is 7m (was 4), the Mega Mart gate 6m (was 4), the Food Court <->
+Mega Mart shortcut 5m (was 3); all are LAYOUT entries in mall.js. The RESTOCK-O-MATIC moved east to x 4.95 to stay clear of the wider
+door lane, the east-end planters by the shortcut sit 0.6m from it (so the Food Court's south-east corner stays reachable), the
+fallen wet-floor cone moved out of the door lane. Prices and doors unchanged. megaMartDetails.test.js reads the doorways from LAYOUT.
+
 Second floor, step 5 of 6 (gameplay integration): level 2 ambience (atmosphere.js emitters level2_music + level2_hvac, zone 'upstairs';
 the ceiling slab occludes them from the hallway), contact shadows follow ramp surfaces (a zombie on the escalator gets its shadow on
 the steps, not on the blocks underneath), and debug Shift+T (`upstairs`, map.levelTwo { minY, arrival, below, repair }) teleports to
