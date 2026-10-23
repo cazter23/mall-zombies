@@ -754,6 +754,10 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+Atrium <-> Mega Mart shortcut 'atriumMegaMart' (1000, opens both zones, buyable from either side): a 3m shutter through the Mart's
+north wall and the atrium's south wall at x 21.5..24.5 (LAYOUT.atrium.martLink), west of the checkouts, into the atrium's arcade;
+GRAND ATRIUM / MEGA MART signs over it. 10 doors in all. tests/atrium.test.js covers both sides, walking through and Mart routes.
+
 THE GRAND ATRIUM (maps/mall/atrium.js, see Map): the big open two-storey room north of the hallway. Gate 'atrium' (1500) in the
 hallway's north wall (the north-east hallway vent moved to the south wall at x 16 for it), shortcut shutter 'atriumPromenade' (1000)
 from its upper ring into the level 2 Promenade (opens both zones, buyable from either side, sits on the upper floor: shutters and

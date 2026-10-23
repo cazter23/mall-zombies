@@ -90,7 +90,9 @@ test('the door ladder: four entrances, two independently priced two-zone shortcu
     assert.equal(map.zones[zone].open, false, `${zone} starts closed`);
   }
   assert.deepEqual([economy.doors.startShutter, economy.doors.megaMart, economy.doors.foodCourt, economy.doors.serviceCorridor], [500, 750, 1000, 1250]);
-  assert.equal(map.doors.length, 9);
+  assert.equal(map.doors.length, 10);
+  assert.equal(door('atriumMegaMart').price, 1000);
+  assert.deepEqual(door('atriumMegaMart').opensZones, ['atrium', 'megaMart']);
   assert.equal(door('atrium').price, 1500);
   assert.deepEqual(door('atrium').opensZones, ['atrium']);
   assert.equal(door('atriumPromenade').price, 1000);
@@ -108,7 +110,7 @@ test('the door ladder: four entrances, two independently priced two-zone shortcu
 test('all 120 purchase orders: any bought entrance holds its zones open; reset seals every route (the escalator repair and the atrium doors have their own tests)', () => {
   const { map, open, reach } = setup();
   const permutations = (ids) => ids.length ? ids.flatMap((id) => permutations(ids.filter((other) => other !== id)).map((rest) => [id, ...rest])) : [[]];
-  const orders = permutations(map.doors.filter((d) => !['startShutter', 'escalatorRepair', 'atrium', 'atriumPromenade'].includes(d.id)).map((d) => d.id));
+  const orders = permutations(map.doors.filter((d) => !['startShutter', 'escalatorRepair', 'atrium', 'atriumPromenade', 'atriumMegaMart'].includes(d.id)).map((d) => d.id));
   assert.equal(orders.length, 120);
   for (const order of orders) {
     map.reset();

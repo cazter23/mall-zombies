@@ -33,7 +33,8 @@ export function buildAtrium({ kit, props, layout, upperY }) {
   const V = { minX: A.minX + d, maxX: A.maxX - d, minZ: A.minZ + d, maxZ: A.maxZ - d }; // the open court under the skylight
   const cx = (V.minX + V.maxX) / 2;
   const cz = (V.minZ + V.maxZ) / 2;
-  const { gate, link } = layout;
+  const { gate, link, martLink } = layout;
+  const groundOpenings = [gate, ...(martLink ? [martLink] : [])]; // the hallway gate, the Mega Mart shortcut
 
   // --- Floors -----------------------------------------------------------------------------------------------------------------------
   const tile = { base: '#efe3cf', grout: '#c8b89c', variation: 10, seed: 61 };
@@ -68,7 +69,7 @@ export function buildAtrium({ kit, props, layout, upperY }) {
   // --- Walls and roof -------------------------------------------------------------------------------------------------------------
   const wallMat = mat(WALL);
   const along = { along: 'x', from: A.minX - T, to: A.maxX + T, at0: A.minZ - T, at1: A.minZ };
-  kit.wall({ ...along, height: upperY, openings: [{ from: gate.from, to: gate.to, top: gate.height }] }, wallMat, { name: 'atrium_wall_south' });
+  kit.wall({ ...along, height: upperY, openings: groundOpenings.map((o) => ({ from: o.from, to: o.to, top: o.height })) }, wallMat, { name: 'atrium_wall_south' });
   kit.wall({ ...along, bottom: upperY, height: roofY - upperY, openings: [{ from: link.from, to: link.to, top: link.height }] }, wallMat, { name: 'atrium_wall_south_upper' });
   kit.wall({ along: 'x', from: A.minX - T, to: A.maxX + T, at0: A.maxZ, at1: A.maxZ + T, height: roofY }, wallMat, { name: 'atrium_wall_north' });
   kit.wall({ along: 'z', from: A.minZ, to: A.maxZ, at0: A.minX - T, at1: A.minX, height: roofY }, wallMat, { name: 'atrium_wall_west' });
@@ -77,20 +78,24 @@ export function buildAtrium({ kit, props, layout, upperY }) {
   // Coral stripe + purple skirting on both floors (2 cm proud of the walls), split round the openings
   const stripe = mat(STRIPE);
   const skirting = mat(TRIM);
-  const trims = (floorY, gapFrom, gapTo) => {
+  const trims = (floorY, gaps) => {
+    const south = [];
+    let from = A.minX;
+    for (const g of [...gaps].sort((a, b) => a.from - b.from)) { south.push([from, A.minZ, g.from, A.minZ + 0.02]); from = g.to; }
+    south.push([from, A.minZ, A.maxX, A.minZ + 0.02]);
     const runs = [
       [A.minX, A.maxZ - 0.02, A.maxX, A.maxZ], // north
       [A.minX, A.minZ, A.minX + 0.02, A.maxZ], // west
       [A.maxX - 0.02, A.minZ, A.maxX, A.maxZ], // east
-      [A.minX, A.minZ, gapFrom, A.minZ + 0.02], [gapTo, A.minZ, A.maxX, A.minZ + 0.02], // south, either side of its opening
+      ...south, // south, round its openings
     ];
     for (const [x0, z0, x1, z1] of runs) {
       box(x0, floorY + 1.05, z0, x1, floorY + 1.2, z1, stripe, { collide: false });
       box(x0, floorY + (floorY > 0 ? 0.012 : 0), z0, x1, floorY + 0.12, z1, skirting, { collide: false });
     }
   };
-  trims(0, gate.from, gate.to);
-  trims(upperY, link.from, link.to);
+  trims(0, groundOpenings);
+  trims(upperY, [link]);
   // The skylight: one big warm glowing panel over the court, crossed by beams
   const glow = mat(0xffc58a, { emissive: 0xffa24d, emissiveIntensity: 1.25, roughness: 0.3 });
   box(V.minX + 0.4, roofY - 0.05, V.minZ + 0.4, V.maxX - 0.4, roofY, V.maxZ - 0.4, glow, { collide: false, name: 'atrium_skylight' });

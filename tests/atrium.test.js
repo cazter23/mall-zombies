@@ -200,3 +200,35 @@ test('the atrium is out of reach from other floors: no buying the gate from leve
   t.tick(5);
   assert.notEqual(g.interactions.prompt?.label, 'Grand Atrium');
 });
+
+test('the Mega Mart shortcut: a 1000 shutter buyable from either side, opening both zones; walk through; routes both ways', () => {
+  const t = started();
+  const { g } = t;
+  const short = door(g, 'atriumMegaMart');
+  assert.equal(short.price, 1000);
+  const mid = (AT.martLink.from + AT.martLink.to) / 2;
+  const martZ = LAYOUT.megaMart.maxZ;
+  for (const [z, yaw] of [[martZ - 1.2, Math.PI], [A.minZ + 1.2, 0]]) { // from the Mart facing +Z, then from the atrium facing -Z
+    g.resetRun();
+    g.wallet.earn(5000);
+    t.tick(2);
+    g.player.teleport({ position: new THREE.Vector3(mid, 0, z), yaw });
+    t.tick(5);
+    assert.equal(g.interactions.prompt?.cost, 1000, `prompt from z ${z}`);
+    t.press('KeyF', 40);
+    assert.equal(short.isOpen, true);
+    assert.equal(g.map.zones.atrium.open, true);
+    assert.equal(g.map.zones.megaMart.open, true);
+    assert.equal(g.map.zones.hallway.open, false, 'and nothing else');
+  }
+  t.tick(120);
+  g.player.teleport({ position: new THREE.Vector3(mid, 0, A.minZ + 1.5), yaw: 0 }); // in the atrium, facing the Mart (-Z)
+  hold(t, ['KeyW'], 1.5);
+  assert.ok(g.player.position.z < martZ - 0.5, `walked into the Mart (z ${g.player.position.z.toFixed(2)})`);
+  // Zombies route through it: a Mart vent reaches a player in the atrium without the hallway doors.
+  g.player.teleport({ position: new THREE.Vector3(cx, 0, A.minZ + 1.5), yaw: 0 });
+  t.tick(30);
+  for (const s of g.map.spawnPoints.filter((p) => p.zone === 'megaMart' || p.zone === 'atrium')) {
+    assert.ok(Number.isFinite(g.zombies.nav.distanceToTarget(s.position.x, s.position.z, s.position.y)), `${s.name} reaches the atrium`);
+  }
+});

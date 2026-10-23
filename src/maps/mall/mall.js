@@ -128,6 +128,7 @@ export const LAYOUT = {
     upperHeight: 3.6, // the ring's floor to the roof
     gate: { from: 13, to: 18, height: 3 },
     link: { from: 11.5, to: 14.5, height: 2.7 },
+    martLink: { from: 21.5, to: 24.5, height: 3 }, // the Mega Mart shortcut: through the Mart's north wall, west of the checkouts
     escalator: { bottomX: 16.5, minZ: 23.6, maxZ: 25.6 }, // rises east from the court to the ring's east side
     fountain: { half: 2.6 }, // a square basin in the middle of the court
     kiosks: [
@@ -314,6 +315,20 @@ export function buildMall(scene, colliders) {
   const atriumPromenadeDoor = kit.shutterDoor({
     id: 'atriumPromenade', label: 'Promenade', price: economy.doors.atriumPromenade, opensZones: ['atrium', 'upstairs'], zones,
     doorway: { minX: AT.link.from, maxX: AT.link.to, minZ: H.maxZ, maxZ: AT.rect.minZ, minY: upperY, height: AT.link.height },
+  });
+  // The Mega Mart shortcut: through the Mart's north wall into the atrium's arcade (opens both zones, like the other shortcuts).
+  const atriumMegaMartDoor = kit.shutterDoor({
+    id: 'atriumMegaMart', label: 'Grand Atrium', price: economy.doors.atriumMegaMart, opensZones: ['atrium', 'megaMart'], zones,
+    doorway: { minX: AT.martLink.from, maxX: AT.martLink.to, minZ: LAYOUT.megaMart.maxZ, maxZ: AT.rect.minZ, height: AT.martLink.height },
+  });
+  tiledFloor(AT.martLink.from, LAYOUT.megaMart.maxZ, AT.martLink.to, AT.rect.minZ - T, { base: '#e6e8e6', grout: '#c4c9c6', variation: 8, seed: 22 }); // (under the Mart's wall)
+  sign('GRAND ATRIUM', { // (Mart side, proud of the brand stripe)
+    x: (AT.martLink.from + AT.martLink.to) / 2, y: 3.95, z: LAYOUT.megaMart.maxZ - 0.04, width: 3.2, height: 0.6, facing: -1,
+    background: '#6b3f5e', color: '#ffd9a8',
+  });
+  sign('MEGA MART', {
+    x: (AT.martLink.from + AT.martLink.to) / 2, y: 3.6, z: AT.rect.minZ + 0.02, width: 3.2, height: 0.6, facing: 1,
+    background: '#1d4e89', color: '#ffd23f',
   });
   sign('GRAND ATRIUM', {
     x: (AT.gate.from + AT.gate.to) / 2, y: 4.3, z: H.maxZ - 0.02, width: 5, height: 1.0, facing: -1,
@@ -529,7 +544,11 @@ export function buildMall(scene, colliders) {
   box(M.minX + T, M.height, M.minZ - T, M.maxX + T, M.height + 0.3, M.maxZ + T, mat(COLORS.ceiling), { name: 'ceiling' });
 
   const martWall = mat(COLORS.megaMartWall);
-  wall({ along: 'x', from: M.minX + T, to: M.maxX, at0: M.maxZ, at1: M.maxZ + T, height: M.height }, martWall, { name: 'megamart_wall_north' });
+  const ML = LAYOUT.atrium.martLink;
+  wall({
+    along: 'x', from: M.minX + T, to: M.maxX, at0: M.maxZ, at1: M.maxZ + T, height: M.height,
+    openings: [{ from: ML.from, to: ML.to, top: ML.height }],
+  }, martWall, { name: 'megamart_wall_north' });
   wall({ along: 'z', from: M.minZ - T, to: M.maxZ + T, at0: M.maxX, at1: M.maxX + T, height: M.height }, martWall, { name: 'megamart_wall_east' });
   wall({ along: 'x', from: M.minX, to: M.maxX, at0: M.minZ - T, at1: M.minZ, height: M.height }, martWall, { name: 'megamart_wall_south' });
   // West wall: also the east wall of the hallway and the Food Court, so it's as tall as they are (6m);
@@ -737,7 +756,7 @@ export function buildMall(scene, colliders) {
     ...stores.spots.map((s) => ({ kind: 'attachmentCounter', name: `attachment_${s.id}`, zone: s.zone, attachment: s.id, position: s.position, normal: s.normal })),
   ];
 
-  const doors = [startDoor, megaMartDoor, foodCourtDoor, serviceCorridorDoor, foodCourtMegaMartDoor, serviceCorridorFoodCourtDoor, escalatorDoor, atriumDoor, atriumPromenadeDoor];
+  const doors = [startDoor, megaMartDoor, foodCourtDoor, serviceCorridorDoor, foodCourtMegaMartDoor, serviceCorridorFoodCourtDoor, escalatorDoor, atriumDoor, atriumPromenadeDoor, atriumMegaMartDoor];
   const dressing = buildMallAtmosphere(kit, LAYOUT, { service, ceilingHoles });
 
   return {

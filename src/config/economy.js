@@ -59,6 +59,7 @@ export const economy = {
     serviceCorridorFoodCourt: 1250, // Service Corridor <-> Food Court (opens both)
     atrium: 1500, // hallway (north wall, east half) -> the Grand Atrium
     atriumPromenade: 1000, // the atrium's upper ring <-> the level 2 Promenade (opens both)
+    atriumMegaMart: 1000, // the atrium's arcade <-> the Mega Mart, through its north wall (opens both)
     escalatorRepair: 2000, // hallway escalator -> level 2 (the 'upstairs' zone)
   },
 
