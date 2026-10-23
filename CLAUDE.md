@@ -18,6 +18,7 @@ npm test           # gameplay regressions (Node's built-in test runner)
 npm run dev        # Vite dev server (hot reload)
 npm run build      # production build into dist/; run after every change to catch errors
 npm run preview    # serve the built dist/
+npm run build:single  # dist-single/sunset-galleria.html: the WHOLE game in one file (double-click it; no server, no Node, no internet)
 npm run balance    # gun balance report (tools/gunReport.mjs): dps by range, pulls to kill by round, cannon blast table
 ```
 Menu regressions: `tests/menus.test.js` covers modal inert/focus isolation, Tab/Escape, controller presets including
@@ -483,7 +484,9 @@ src/
                         removes marks when surfaces unload, clears on restart. prepare(renderer,camera) warms shared graphics.
     impactModels.js     Small shared staple/nail/dart/confetti meshes with vertex colours; three procedural price-sticker textures
     effects.js          Tracers (pooled) + particle bursts (one InstancedMesh): splat(), puff(), clear() (new run)
-  (tools/)              Dev scripts (not bundled): balance.js = gun balance maths shared with the tests (seeded Monte Carlo of each
+  (tools/)              Dev scripts (not bundled): buildSingle.mjs = `npm run build:single` (a normal Vite build into dist-single/, then the JS, CSS and
+                        the music worker (as a Blob worker) pasted into ONE html file; the Google Fonts link loads non-blocking so a blocked
+                        network just falls back to system fonts; tests/singleFile.test.js builds it and checks it is self-contained); balance.js = gun balance maths shared with the tests (seeded Monte Carlo of each
                         gun's real spread + pellets vs a Shopper's hitboxes at a range: expectedShotDamage, sustainedDps, burstDps,
                         shotsToKill); gunReport.mjs = `npm run balance`
   world/                Shared building blocks for maps
@@ -713,6 +716,12 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+Single-file build: `npm run build:single` writes dist-single/sunset-galleria.html (~1.1 MB, git-ignored), the whole game with no
+other files, so it runs by double-clicking it (the normal dist/ needs a web server: browsers refuse separate module scripts and
+workers from file://). No image/audio files exist (textures drawn, sounds and music synthesized), so nothing else has to travel
+with it. Verified served from a plain static server (loads, title screen, a run, the music worker starts as a blob: worker, no
+console errors); NOT yet opened through file:// in a real browser from here. Settings are saved per browser.
+
 RESTOCK-O-MATIC (the ammo machine, renamed from STAPLE-O-MAT and moved from the far west wall to the Food Court's north wall just
 inside the door; see Map). Same 400-point flat refill, same feature kind; new look and a live screen. The feature now returns an
 update hook that keeps the screen on the gun in hand (ammoScreenText: price, FULL or SALE). tests/ammoCache.test.js has the new
