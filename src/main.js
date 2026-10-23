@@ -28,6 +28,7 @@ import { createDebugPanel } from './ui/debugPanel.js';
 import { createTitleCamera } from './ui/titleCamera.js';
 import { createBenchmark } from './fx/benchmark.js';
 import { createLightPool, collectPointLights } from './fx/lightPool.js';
+import { batchStatic } from './world/staticBatch.js';
 import { wireRunIntro } from './game/runIntro.js';
 import { atmosphere } from './config/environment.js';
 import { createPostProcessing } from './fx/postProcessing.js';
@@ -164,6 +165,9 @@ async function runBenchmark() {
   if (window.__mall) window.__mall.lastBenchmark = report;
   return report;
 }
+// Static batching (world/staticBatch.js): the map's still, opaque meshes merged by material and chunk, before the first frame
+// (about 1,500 meshes -> about 450). Browser only: the map's own tests see every mesh as built.
+if (!new URLSearchParams(location.search).has('nobatch')) batchStatic(map.group); // (?nobatch: off, to compare)
 effects.prepare(renderer, camera); // shared impact graphics warmed before the first shot
 
 // --- Menus and the run's flow ------------------------------------------------------

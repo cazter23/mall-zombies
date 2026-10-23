@@ -387,6 +387,7 @@ export function createMallProps(kit) {
         background: '#ffd23f', color: '#1d1626',
       }));
     }
+    for (const part of barrierParts) part.userData.dynamic = true; // (hidden when repaired: never merged into a static batch)
     const hangX = xAt(-0.1);
     if (hangingSign) {
       sign('ESCALATOR · LEVEL 2', {

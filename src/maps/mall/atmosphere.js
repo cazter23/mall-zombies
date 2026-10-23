@@ -239,6 +239,7 @@ export function buildMallAtmosphere(kit, layout, { service, ceilingHole, ceiling
 
   // Failing ballast fluorescent tubes (Service Corridor, West Hallway dead troffer, Rear Mega Mart) + local floor shimmer.
   const tubeMaterial = kit.mat(0xe6f3ef, { emissive: 0xa8dcd6, emissiveIntensity: 1.0, roughness: 0.2 });
+  tubeMaterial.userData.animated = true; // (its glow changes every frame: world/staticBatch.js keeps it its own material)
   const tubeSpecs = [
     [cx + 0.3, scY - 0.08, -7.3, 0.13, 0.035, 1.2],
     [-14.5, layout.hallway.height - 0.068, 4.35, 1.8, 0.035, 0.16],
