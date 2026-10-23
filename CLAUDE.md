@@ -720,6 +720,11 @@ position (beside the door, north wall, faces south), buying from the front and n
 clear door lane and routes, and the screen text; tests/coplanar.test.js also covers its region (it caught the cap/body and
 side-sign shared planes).
 
+Weapon firing sounds use distinct, heavier procedural recipes: the Staple Gun has a metal/tool-body strike, the
+Price Gun a short label-punch snap, the Nail Gun a pneumatic piston slam, the Foam Dart Blaster a compressed-air
+burst, and the Confetti Cannon a pressure boom with paper flutter. The master compressor has explicit fast peak
+control so automatic fire and the cannon retain headroom even when the volume slider is at 100%.
+
 Original background music: "After Closing", a 43.64-second/16-bar stereo lounge loop at 88 BPM, with electric piano,
 bass, soft drums, detuned pad, echoes and a borrowed-minor second-half turn. config/music.js owns score/timbres;
 audio/mallMusic.js deterministically renders PCM in audio/musicWorker.js, off the gameplay thread. sound.js caches

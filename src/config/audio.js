@@ -18,18 +18,21 @@ export const audio = {
   ambienceVolume: 0.65,
   musicVolume: 0.45,
   pitchVariation: 0.05, // each play is randomly up to this fraction higher/lower, so repeats don't sound robotic
-  compressor: { thresholdDb: -14, ratio: 4 }, // on the master bus, so rapid fire doesn't clip
+  // Fast peak control leaves the body of each shot intact while catching the initial transient at full volume.
+  compressor: { thresholdDb: -10, ratio: 8, attack: 0, release: 0.08, kneeDb: 6 },
 
   sounds: {
     shutterRattle: { volume: 0.12, layers: [
       { type: 'noise', filter: 'bandpass', freq: 650, q: 2, gain: 0.3, attack: 0.04, decay: 0.45 },
       { type: 'tone', wave: 'triangle', freq: 170, freqEnd: 95, gain: 0.12, attack: 0.03, decay: 0.35, delay: 0.12 },
     ] },
-    // Toy blaster: soft pneumatic puff + a plastic mechanism tick.
-    foamShot: { volume: 0.45, layers: [
-      { type: 'noise', filter: 'bandpass', freq: 1400, q: 0.7, gain: 0.65, attack: 0.003, decay: 0.065 },
-      { type: 'tone', wave: 'triangle', freq: 550, freqEnd: 280, gain: 0.35, attack: 0.001, decay: 0.03 },
-      { type: 'noise', filter: 'highpass', freq: 4300, q: 0.7, gain: 0.18, attack: 0.001, decay: 0.012 },
+    // Chunky compressed-air darts: mid-bass body stays audible on small speakers. Short tails separate each dart.
+    foamShot: { volume: 0.5, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 1000, q: 0.8, gain: 0.7, attack: 0.001, decay: 0.035 },
+      { type: 'tone', wave: 'triangle', freq: 235, freqEnd: 130, gain: 0.58, attack: 0.001, decay: 0.05 },
+      { type: 'tone', wave: 'sine', freq: 140, freqEnd: 90, gain: 0.45, attack: 0.002, decay: 0.06 },
+      { type: 'noise', filter: 'bandpass', freq: 2700, q: 1, gain: 0.2, attack: 0.0008, decay: 0.011 },
+      { type: 'tone', wave: 'triangle', freq: 620, freqEnd: 390, gain: 0.1, attack: 0.001, decay: 0.018, delay: 0.02 },
     ] },
     foamReloadOut: { volume: 0.45, layers: [
       { type: 'noise', filter: 'bandpass', freq: 2100, q: 1.4, gain: 0.5, attack: 0.001, decay: 0.04 },
@@ -44,11 +47,14 @@ export const audio = {
       { type: 'tone', wave: 'triangle', freq: 400, freqEnd: 170, gain: 0.25, attack: 0.001, decay: 0.04, delay: 0.02 },
     ] },
 
-    // Party cannon: deep pop followed by a longer papery rustle.
-    confettiShot: { volume: 1, layers: [
-      { type: 'tone', wave: 'sine', freq: 120, freqEnd: 35, gain: 1, attack: 0.001, decay: 0.22 },
-      { type: 'noise', filter: 'lowpass', freq: 1500, q: 0.7, gain: 0.9, attack: 0.001, decay: 0.11 },
-      { type: 'noise', filter: 'highpass', freq: 2700, q: 0.7, gain: 0.45, attack: 0.015, decay: 0.28, delay: 0.03 },
+    // Pressure boom + opening crack, then a quieter paper flutter (not a long wash of hiss).
+    confettiShot: { volume: 0.95, layers: [
+      { type: 'tone', wave: 'sine', freq: 175, freqEnd: 55, gain: 1.15, attack: 0.002, decay: 0.22 },
+      { type: 'noise', filter: 'lowpass', freq: 1200, q: 0.75, gain: 1, attack: 0.001, decay: 0.1 },
+      { type: 'noise', filter: 'bandpass', freq: 2800, q: 0.8, gain: 0.52, attack: 0.0008, decay: 0.03 },
+      { type: 'tone', wave: 'triangle', freq: 320, freqEnd: 115, gain: 0.35, attack: 0.002, decay: 0.085 },
+      { type: 'noise', filter: 'bandpass', freq: 1800, q: 0.8, gain: 0.2, attack: 0.008, decay: 0.16, delay: 0.055 },
+      { type: 'noise', filter: 'highpass', freq: 3500, q: 0.7, gain: 0.15, attack: 0.012, decay: 0.18, delay: 0.065 },
     ] },
     confettiReloadOut: { volume: 0.6, layers: [
       { type: 'noise', filter: 'bandpass', freq: 1900, q: 1.5, gain: 0.7, attack: 0.001, decay: 0.06 },
@@ -64,35 +70,39 @@ export const audio = {
       { type: 'tone', wave: 'sine', freq: 200, freqEnd: 65, gain: 0.5, attack: 0.001, decay: 0.1 },
     ] },
 
-    // Staple gun shot: a sharp metal snap, a chunky low thump and a tiny spring click.
+    // Metal snap + solid tool-body clunk, with a tiny spring ring after the strike.
     stapleShot: {
       volume: 0.9,
       layers: [
-        { type: 'noise', filter: 'bandpass', freq: 3400, q: 1.1, gain: 0.8, attack: 0.001, decay: 0.045 },
-        { type: 'tone', wave: 'sine', freq: 190, freqEnd: 55, gain: 1.0, attack: 0.001, decay: 0.1 },
-        { type: 'noise', filter: 'lowpass', freq: 1100, q: 0.7, gain: 0.55, attack: 0.001, decay: 0.08 },
-        { type: 'tone', wave: 'square', freq: 2300, freqEnd: 1500, gain: 0.12, attack: 0.0005, decay: 0.02, delay: 0.004 },
+        { type: 'noise', filter: 'bandpass', freq: 2500, q: 0.8, gain: 0.7, attack: 0.0008, decay: 0.025 },
+        { type: 'tone', wave: 'sine', freq: 230, freqEnd: 105, gain: 1.25, attack: 0.001, decay: 0.12 },
+        { type: 'noise', filter: 'lowpass', freq: 1100, q: 0.7, gain: 0.6, attack: 0.001, decay: 0.07 },
+        { type: 'tone', wave: 'triangle', freq: 320, freqEnd: 175, gain: 0.42, attack: 0.001, decay: 0.055 },
+        { type: 'tone', wave: 'triangle', freq: 1800, freqEnd: 1500, gain: 0.07, attack: 0.001, decay: 0.038, delay: 0.013 },
       ],
     },
 
-    // Price Gun shot: a quick plasticky "chk" of the label punch (quiet: it fires 12 times a second).
+    // Fast label punch: low body beneath the click, short enough to stay crisp at 12 shots/second.
     priceShot: {
       volume: 0.55,
       layers: [
-        { type: 'noise', filter: 'bandpass', freq: 2200, q: 1.6, gain: 0.7, attack: 0.0008, decay: 0.03 },
-        { type: 'tone', wave: 'triangle', freq: 420, freqEnd: 180, gain: 0.5, attack: 0.001, decay: 0.045 },
-        { type: 'noise', filter: 'highpass', freq: 5000, q: 0.7, gain: 0.25, attack: 0.0005, decay: 0.012, delay: 0.01 },
+        { type: 'noise', filter: 'bandpass', freq: 1700, q: 0.9, gain: 0.62, attack: 0.0008, decay: 0.022 },
+        { type: 'tone', wave: 'sine', freq: 200, freqEnd: 115, gain: 0.66, attack: 0.001, decay: 0.055 },
+        { type: 'noise', filter: 'lowpass', freq: 900, q: 0.7, gain: 0.48, attack: 0.001, decay: 0.036 },
+        { type: 'tone', wave: 'triangle', freq: 580, freqEnd: 320, gain: 0.13, attack: 0.001, decay: 0.016, delay: 0.012 },
+        { type: 'noise', filter: 'highpass', freq: 4500, q: 0.7, gain: 0.08, attack: 0.0005, decay: 0.008, delay: 0.004 },
       ],
     },
 
-    // Nail Gun shot: a pneumatic THUNK (low thump + metal driver snap) with a short air hiss after it.
+    // Heavy pneumatic driver: broad crack, piston slam and a short steel ring/air release.
     nailShot: {
       volume: 0.9,
       layers: [
-        { type: 'tone', wave: 'sine', freq: 150, freqEnd: 45, gain: 1.0, attack: 0.001, decay: 0.12 },
-        { type: 'noise', filter: 'bandpass', freq: 2800, q: 1.2, gain: 0.7, attack: 0.0008, decay: 0.035 },
-        { type: 'noise', filter: 'lowpass', freq: 800, q: 0.7, gain: 0.5, attack: 0.001, decay: 0.09 },
-        { type: 'noise', filter: 'highpass', freq: 3500, q: 0.7, gain: 0.22, attack: 0.01, decay: 0.14, delay: 0.03 },
+        { type: 'tone', wave: 'sine', freq: 210, freqEnd: 80, gain: 1.05, attack: 0.001, decay: 0.14 },
+        { type: 'noise', filter: 'bandpass', freq: 1500, q: 0.8, gain: 0.9, attack: 0.0008, decay: 0.045 },
+        { type: 'noise', filter: 'lowpass', freq: 650, q: 0.7, gain: 0.62, attack: 0.001, decay: 0.095 },
+        { type: 'tone', wave: 'triangle', freq: 740, freqEnd: 680, gain: 0.18, attack: 0.001, decay: 0.065, delay: 0.01 },
+        { type: 'noise', filter: 'bandpass', freq: 3100, q: 0.9, gain: 0.16, attack: 0.006, decay: 0.08, delay: 0.035 },
       ],
     },
 

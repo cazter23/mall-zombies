@@ -35,6 +35,7 @@ function fakeAudio() {
     exponentialRampToValueAtTime() {}, cancelScheduledValues() {}, setTargetAtTime(v) { this.value = v; } });
   const make = kind => {
     const n = { kind, gain: param(), frequency: param(), pan: param(), Q: param(), threshold: param(), ratio: param(),
+      attack: param(), release: param(), knee: param(),
       connect() {}, disconnect() { this.disconnected = true; }, start(...args) { this.started = args; },
       stop(at) { this.stopped = at; } };
     nodes.push(n); if (kind === 'source' || kind === 'oscillator') sources.push(n); return n;
@@ -64,6 +65,10 @@ test('music loads once asynchronously, stays in sync between speakers, resumes a
   try {
     audio.musicVolume = 0.45;
     const sound = createSound({ renderMusic: () => { renders++; return rendered; } }); sound.unlock();
+    const compressor = f.nodes.find(n => n.kind === 'compressor');
+    assert.deepEqual([compressor.threshold.value, compressor.ratio.value, compressor.attack.value,
+      compressor.release.value, compressor.knee.value], [audio.compressor.thresholdDb, audio.compressor.ratio,
+      audio.compressor.attack, audio.compressor.release, audio.compressor.kneeDb]);
     const mix = id => [{ id, kind: 'music', gain: 0.8, pan: 0 }, { id: 'vent', kind: 'ventilation', gain: 0.5, pan: 0 }];
     sound.setAmbience(mix('hall')); sound.setAmbience(mix('hall'));
     await Promise.resolve(); assert.equal(renders, 1);

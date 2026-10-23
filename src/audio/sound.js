@@ -61,6 +61,9 @@ export function createSound({ renderMusic = renderMusicInWorker } = {}) {
       const compressor = ctx.createDynamicsCompressor();
       compressor.threshold.value = audio.compressor.thresholdDb;
       compressor.ratio.value = audio.compressor.ratio;
+      if (compressor.attack) compressor.attack.value = audio.compressor.attack;
+      if (compressor.release) compressor.release.value = audio.compressor.release;
+      if (compressor.knee) compressor.knee.value = audio.compressor.kneeDb;
       master = ctx.createGain();
       master.gain.value = audio.masterVolume;
       master.connect(compressor);
