@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { seededRandom } from '../../world/textures.js';
 import { megaMartLighting, atmosphere } from '../../config/environment.js';
+import { buildMartProduct, MART_PRODUCTS } from './martProducts.js';
 
 export const MART_FIXTURES = {
   gondolas: [
@@ -33,60 +34,58 @@ export function buildMegaMartDetails(kit, room) {
     const mesh = kit.sign(text, { x, y, z, width, height, facing, background, color });
     mesh.name = name; details.add(mesh); return mesh;
   }
-  function badge(x, y, z, side, w = 0.10, h = 0.13) {
-    box('product_label', x + side * 0.125, y, z, 0.012, h, w, cream);
-  }
-
   // All stock stays INSIDE the existing 1m-wide gondola footprints. Shapes, palette and sparse
-  // stretches vary by department; fixed seeds keep the same shelves every load.
+  // stretches vary by department; fixed per-shelf seeds keep it stable without repeating rows.
   for (const fixture of MART_FIXTURES.gondolas) {
-    const random = seededRandom(fixture.seed);
     for (const [face, department] of fixture.faces.entries()) {
-      const side = face === 0 ? -1 : 1, x = fixture.x + side * 0.29;
+      const side = face === 0 ? -1 : 1;
       for (const [level, y0] of [0.12, 0.62, 1.12, 1.62].entries()) {
-        for (let slot = 0; slot < 12; slot++) {
-          // One clearly looted bay, alongside more orderly stretches.
-          const looted = (slot >= 4 && slot <= 6 && level < 3) ? 0.82 : 0.20;
-          if (random() < looted) continue;
-          const z = -18.95 + slot * 0.91 + (random() - 0.5) * 0.08;
-          const kind = (slot + level) % 3, y = y0 + 0.15;
-          if (department === 'outdoor') {
-            if (kind === 0) {
-              box('charcoal_bag', x, y + 0.015, z, 0.24, 0.33, 0.28, dark); badge(x, y, z, side);
-            } else if (kind === 1) {
-              box('cooler', x, y0 + 0.105, z, 0.25, 0.21, 0.34, blue);
-              box('cooler_lid', x, y0 + 0.23, z, 0.27, 0.04, 0.36, cream);
-              badge(x + side * 0.01, y0 + 0.12, z, side, 0.07, 0.07);
-            } else cylinder('rolled_mat', x, y0 + 0.11, z, 0.10, 0.25, green, [0, 0, Math.PI / 2]);
-          } else if (department === 'snacks') {
-            if (kind === 0) cylinder('food_can', x, y0 + 0.115, z, 0.10, 0.23, yellow);
-            else {
-              box('cereal_box', x, y + 0.03, z, 0.23, 0.36, 0.28, kind === 1 ? red : blue);
-              badge(x, y + 0.03, z, side);
+        const random = seededRandom(fixture.seed * 1009 + face * 7919 + level * 104729);
+        const products = MART_PRODUCTS[department];
+        let cursor = -19.25;
+        while (cursor < -8.25) {
+          // Unequal runs tell small stories: untouched stock, a disturbed patch, or a stripped
+          // section. Neither their boundaries nor their contents line up with the shelf above.
+          const end = Math.min(-8.25, cursor + 0.8 + random() * 2.5);
+          const condition = random();
+          const bare = condition < 0.28, disturbed = condition > 0.64;
+          const groupId = products[Math.floor(random() * products.length)];
+          const frontEdge = 0.40 + random() * 0.08;
+          if (bare) cursor += (end - cursor) * (0.55 + random() * 0.4);
+          while (cursor < end - 0.08) {
+            const id = random() < (disturbed ? 0.30 : 0.07)
+              ? products[Math.floor(random() * products.length)] : groupId;
+            const product = buildMartProduct(id, mat);
+            product.rotation.y = (random() - 0.5) * (disturbed ? 0.75 : 0.10);
+            if (random() < (disturbed ? 0.32 : 0.025)) product.rotation.z = Math.PI / 2;
+            let bounds = new THREE.Box3().setFromObject(product);
+            const size = bounds.getSize(new THREE.Vector3());
+            product.scale.setScalar(Math.min(1, 0.34 / size.x, 0.40 / size.y, 0.38 / size.z));
+            bounds = new THREE.Box3().setFromObject(product);
+            bounds.getSize(size);
+            // Advance by actual width along the shelf: clusters can be packed or scattered,
+            // but even toppled products never intersect their neighbours or cross a run's end.
+            if (cursor + size.z > end) {
+              product.traverse((mesh) => { if (mesh.isMesh) mesh.geometry.dispose(); });
+              break;
             }
-          } else if (department === 'holidays') {
-            if (kind === 0) {
-              shape('pumpkin', new THREE.SphereGeometry(0.13, 8, 5), mat(0xd68138), x, y0 + 0.13, z);
-              box('pumpkin_stem', x, y0 + 0.27, z, 0.035, 0.07, 0.035, green);
-            } else if (kind === 1) {
-              box('gift_box', x, y0 + 0.13, z, 0.24, 0.26, 0.28, red);
-              box('gift_ribbon', x + side * 0.125, y0 + 0.13, z, 0.012, 0.26, 0.035, cream);
-              box('gift_ribbon_top', x, y0 + 0.268, z, 0.24, 0.015, 0.035, cream);
-            } else {
-              const egg = shape('easter_egg', new THREE.IcosahedronGeometry(0.11, 1), mat(0xc8a4c5), x, y0 + 0.14, z);
-              egg.scale.y = 1.3;
-            }
-          } else if (kind === 0) {
-            box('detergent', x, y0 + 0.15, z, 0.23, 0.30, 0.24, blue);
-            box('detergent_cap', x, y0 + 0.33, z, 0.09, 0.06, 0.09, yellow);
-            badge(x, y0 + 0.15, z, side);
-          } else if (kind === 1) {
-            cylinder('paper_towels', x, y0 + 0.16, z, 0.11, 0.32, cream);
-            cylinder('paper_core', x, y0 + 0.326, z, 0.028, 0.012, cardboard);
-          } else {
-            cylinder('bucket', x, y0 + 0.12, z, 0.08, 0.24, green, undefined, 0.12);
-            box('bucket_handle', x + side * 0.125, y0 + 0.17, z, 0.015, 0.12, 0.10, metal);
+            const centre = bounds.getCenter(new THREE.Vector3());
+            const depth = disturbed || bare
+              ? 0.05 + size.x / 2 + random() * (0.43 - size.x)
+              : frontEdge - size.x / 2;
+            product.position.set(fixture.x + side * depth - centre.x,
+              y0 + 0.004 - bounds.min.y, cursor + size.z / 2 - centre.z);
+            product.updateMatrixWorld(true);
+            product.traverse((mesh) => {
+              if (!mesh.isMesh) return;
+              mesh.geometry.applyMatrix4(mesh.matrixWorld);
+              mesh.position.set(0, 0, 0); mesh.rotation.set(0, 0, 0); mesh.scale.setScalar(1);
+              meshes.push(mesh);
+            });
+            cursor += size.z + (disturbed ? 0.10 + random() * 0.50 : 0.035 + random() * 0.12);
+            if (bare) break;
           }
+          cursor = end + 0.06 + random() * 0.25;
         }
       }
       for (const [i, z] of [-17.5, -12.6, -9.0].entries()) {

@@ -26,6 +26,7 @@ import { audio } from './audio.js';
 import { gamepad, aimAssist } from './controls.js';
 
 export const settingsTabs = ['Video', 'Mouse', 'Controller', 'Audio', 'Comfort'];
+export const menuFeel = { confirmSeconds: 3 };
 
 // The config values as shipped. "Multiplier" settings scale these, so reset always returns to them.
 const base = {
@@ -40,7 +41,11 @@ const base = {
 
 const percent = (v) => `${Math.round(v * 100)}%`;
 const times = (v) => `${v.toFixed(2)}x`;
-const roundTo = (v, step) => Math.round(v / step) * step;
+// Render scale is a pixel ratio (kept compatible with saved settings). Show its actual
+// relationship to the display, rather than calling one CSS pixel "100%" on every monitor.
+export const displayPixelRatio = () => window.devicePixelRatio || 1;
+export const nativeRenderRatio = () => Math.min(displayPixelRatio(), 2);
+const nativeRatio = nativeRenderRatio();
 
 export const settingDefs = [
   // ---- Video ----
@@ -55,9 +60,9 @@ export const settingDefs = [
     apply: (v, ctx) => ctx.hud.setFpsVisible(v),
   },
   {
-    id: 'renderScale', tab: 'Video', label: 'Render scale (lower = faster)', type: 'slider',
-    min: 0.5, max: 2, step: 0.25, default: roundTo(Math.min(window.devicePixelRatio || 1, 2), 0.25),
-    format: percent,
+    id: 'renderScale', tab: 'Video', label: 'Render resolution', type: 'slider',
+    min: 0.5, max: 2, step: 0.05, default: nativeRatio,
+    format: (v) => `${percent(v / displayPixelRatio())} native`,
     apply: (v, ctx) => ctx.renderer.setPixelRatio(v),
   },
 
@@ -110,6 +115,11 @@ export const settingDefs = [
       ctx.sound.setMasterVolume(v);
     },
   },
+  {
+    id: 'ambienceVolume', tab: 'Audio', label: 'Mall ambience', type: 'slider',
+    min: 0, max: 1, step: 0.05, default: audio.ambienceVolume, format: percent,
+    apply: (v) => { audio.ambienceVolume = v; },
+  },
 
   // ---- Comfort ----
   {
@@ -139,9 +149,9 @@ export const settingDefs = [
 // One-click presets per tab: { label, values: { settingId: value } } (shown as buttons at the top of that tab).
 export const settingPresets = {
   Video: [
-    { label: 'Low', values: { renderScale: 0.75 } }, // for slow computers (school laptops)
-    { label: 'Medium', values: { renderScale: 1 } },
-    { label: 'High', values: { renderScale: roundTo(Math.min(window.devicePixelRatio || 1, 2), 0.25) } },
+    { label: 'Low', values: { renderScale: Math.max(0.5, nativeRatio * 0.5) } }, // half resolution, within the slider range
+    { label: 'Medium', values: { renderScale: Math.max(0.5, nativeRatio * 0.75) } },
+    { label: 'High', values: { renderScale: nativeRatio } }, // native, capped at 2x for performance
   ],
   Comfort: [
     { label: 'Calm', values: { headBob: 0, speedLines: false } }, // for motion sickness

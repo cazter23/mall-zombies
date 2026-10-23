@@ -5,7 +5,8 @@
 // controller (padNav: D-pad, A, B, LB/RB for tabs).
 // =============================================================================
 
-import { settingsTabs, settingPresets } from '../config/settings.js';
+import { settingsTabs, settingPresets, menuFeel, displayPixelRatio } from '../config/settings.js';
+import { createModal } from './modal.js';
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -20,6 +21,7 @@ export function createSettingsMenu(settings) {
   const title = el('h2', 'settings-title', 'Settings');
   const tabBar = el('div', 'settings-tabs');
   const list = el('div', 'settings-list');
+  const resolution = el('p', 'settings-hint settings-resolution');
   const footer = el('div', 'settings-footer');
   const resetButton = el('button', 'settings-reset', 'Reset this tab');
   const resetAllButton = el('button', 'settings-reset', 'Reset everything');
@@ -28,16 +30,24 @@ export function createSettingsMenu(settings) {
   const resets = el('div', 'settings-resets');
   resets.append(resetButton, resetAllButton);
   footer.append(resets, backButton);
-  card.append(title, tabBar, list, footer, hint);
+  card.append(title, tabBar, list, resolution, footer, hint);
   root.append(card);
   document.body.append(root);
 
   let tab = settingsTabs[0];
-  let focus = 0; // controller cursor: index into the current tab's rows
+  let focus = 0; // controller cursor: rows, then Reset tab / Reset everything / Back
   let rows = []; // { def, node, refresh() }
   let closeHandler = null;
 
   const tabButtons = new Map();
+  const footerButtons = [resetButton, resetAllButton, backButton];
+  const navigation = () => [...rows.map((r) => r.node), ...footerButtons];
+  function refreshResolution() {
+    resolution.hidden = tab !== 'Video';
+    const pixels = (ratio) => `${Math.floor(window.innerWidth * ratio)} × ${Math.floor(window.innerHeight * ratio)}`;
+    resolution.textContent = `3D: ${pixels(settings.get('renderScale'))} · Display: ${pixels(displayPixelRatio())}. High uses native resolution (up to 2×).`;
+  }
+  window.addEventListener('resize', refreshResolution);
   for (const name of settingsTabs) {
     const button = el('button', 'settings-tab', name);
     button.addEventListener('click', () => showTab(name));
@@ -107,19 +117,27 @@ export function createSettingsMenu(settings) {
     node.append(control);
     const matches = (preset) => Object.entries(preset.values).every(([id, v]) => settings.get(id) === v);
     function apply(preset) {
+      selected = presets.indexOf(preset);
       for (const [id, value] of Object.entries(preset.values)) settings.set(id, value);
+      refresh();
     }
-    const refresh = () => presets.forEach((preset, i) => buttons[i].classList.toggle('active', matches(preset)));
+    let selected = presets.findIndex(matches);
+    const refresh = () => {
+      if (selected < 0 || !matches(presets[selected])) selected = presets.findIndex(matches);
+      buttons.forEach((button, i) => button.classList.toggle('active', i === selected));
+    };
     const step = (dir) => {
-      const now = presets.findIndex(matches);
-      apply(presets[(now + dir + presets.length) % presets.length]);
+      refresh();
+      const next = selected < 0 ? (dir < 0 ? presets.length - 1 : 0)
+        : (selected + dir + presets.length) % presets.length;
+      apply(presets[next]);
     };
     refresh();
     return { def: { type: 'preset' }, node, refresh, step };
   }
 
   function markFocus(show = true) {
-    rows.forEach((r, i) => r.node.classList.toggle('focused', show && i === focus));
+    navigation().forEach((node, i) => node.classList.toggle('focused', show && i === focus));
   }
 
   function showTab(name) {
@@ -131,9 +149,13 @@ export function createSettingsMenu(settings) {
     if (settingPresets[name]) rows.unshift(buildPresetRow(settingPresets[name]));
     for (const r of rows) list.append(r.node);
     markFocus(false);
+    refreshResolution();
   }
 
-  const refreshAll = () => rows.forEach((r) => r.refresh());
+  const refreshAll = () => {
+    rows.forEach((r) => r.refresh());
+    refreshResolution();
+  };
   settings.onChange(refreshAll);
   resetButton.addEventListener('click', () => settings.reset(tab));
   // Everything at once asks twice (it undoes every tab).
@@ -144,7 +166,7 @@ export function createSettingsMenu(settings) {
       resetAllTimer = setTimeout(() => {
         resetAllButton.textContent = 'Reset everything';
         resetAllTimer = null;
-      }, 3000);
+      }, menuFeel.confirmSeconds * 1000);
       return;
     }
     clearTimeout(resetAllTimer);
@@ -154,21 +176,23 @@ export function createSettingsMenu(settings) {
   });
 
   function close() {
-    root.classList.add('hidden');
+    modal.close();
+    clearTimeout(resetAllTimer);
+    resetAllTimer = null;
+    resetAllButton.textContent = 'Reset everything';
     if (closeHandler) closeHandler();
   }
+  const modal = createModal(root, close);
+  root.setAttribute('aria-label', 'Settings');
   backButton.addEventListener('click', close);
-  window.addEventListener('keydown', (event) => {
-    if (!root.classList.contains('hidden') && event.code === 'Escape') close();
-  });
   showTab(tab);
 
   return {
     get isOpen() { return !root.classList.contains('hidden'); },
     onClose(fn) { closeHandler = fn; },
     open() {
-      root.classList.remove('hidden');
       refreshAll();
+      modal.open();
     },
     close,
 
@@ -178,16 +202,20 @@ export function createSettingsMenu(settings) {
       if (input.consumePress('PadB') || input.consumePress('PadStart')) return close();
       if (input.consumePress('PadRB')) showTab(settingsTabs[(tabIndex + 1) % settingsTabs.length]);
       if (input.consumePress('PadLB')) showTab(settingsTabs[(tabIndex - 1 + settingsTabs.length) % settingsTabs.length]);
-      if (!rows.length) return;
+      const nodes = navigation();
       const step = (input.consumePress('PadDown') ? 1 : 0) - (input.consumePress('PadUp') ? 1 : 0);
       if (step) {
-        focus = (focus + step + rows.length) % rows.length;
-        rows[focus].node.scrollIntoView({ block: 'nearest' });
+        focus = (focus + step + nodes.length) % nodes.length;
+        nodes[focus].scrollIntoView({ block: 'nearest' });
       }
       markFocus();
-      const def = rows[focus].def;
       const dir = (input.consumePress('PadRight') ? 1 : 0) - (input.consumePress('PadLeft') ? 1 : 0);
       const press = input.consumePress('PadA');
+      if (focus >= rows.length) {
+        if (press) footerButtons[focus - rows.length].click();
+        return;
+      }
+      const def = rows[focus].def;
       if (def.type === 'preset') {
         if (dir || press) rows[focus].step(dir || 1);
       } else if (def.type === 'toggle' && (press || dir)) settings.set(def.id, !settings.get(def.id));

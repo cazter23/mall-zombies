@@ -1,7 +1,7 @@
 // =============================================================================
 // EFFECTS
-// Purely visual, short-lived stuff: staple tracers and cartoon particle bursts
-// (Halo CE-style colored splatter, wall dust). Nothing here affects gameplay,
+// Purely visual tracers, cartoon particle bursts and capped persistent world impacts
+// (Halo CE-style colored splatter, wall dust, gun-specific marks). Nothing here affects gameplay,
 // so it updates per rendered frame for smoothness.
 //
 // SPLATTER (feel.effects.blood.mode, the Settings > Comfort option): splat(..., { flesh: true }) is what a hit zombie
@@ -13,10 +13,11 @@
 import * as THREE from 'three';
 import { feel } from '../config/feel.js';
 import { makePoolTexture } from '../world/textures.js';
+import { createImpactMarks } from './impactMarks.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
 
-export function createEffects(scene) {
+export function createEffects(scene, { surfaces = [] } = {}) {
   const fx = feel.effects;
 
   // --- Tracers: thin stretched cylinders that fade out quickly -------------------
@@ -57,6 +58,9 @@ export function createEffects(scene) {
   const life = new Float32Array(max);
   const maxLife = new Float32Array(max);
   const size = new Float32Array(max);
+  // 0 = unrelated dust; 1 = confetti flesh; 2 = red flesh. A changed comfort
+  // setting can remove existing flesh effects without touching wall/spawn puffs.
+  const fleshMode = new Uint8Array(max);
   let alive = 0;
 
 
@@ -117,7 +121,7 @@ export function createEffects(scene) {
     pool.life[i] = blood.poolSeconds;
   }
 
-  function spawnParticle(point, velocity, hexColor, particleSize) {
+  function spawnParticle(point, velocity, hexColor, particleSize, flesh = 0) {
     if (alive >= max) return; // pool full: skip (it's just decoration)
     const i = alive++;
     pos[i * 3] = point.x;
@@ -136,10 +140,11 @@ export function createEffects(scene) {
     maxLife[i] = fx.particleLife * (0.6 + Math.random() * 0.4);
     life[i] = maxLife[i];
     size[i] = particleSize * (0.6 + Math.random() * 0.8);
+    fleshMode[i] = flesh;
   }
 
   // A burst flying mostly away from the surface (along `normal`), in random colors from `colors`.
-  function burst(point, normal, colors, count, speed, particleSize) {
+  function burst(point, normal, colors, count, speed, particleSize, flesh = 0) {
     const velocity = new THREE.Vector3();
     for (let n = 0; n < count; n++) {
       randomDir.set(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1).normalize();
@@ -148,11 +153,15 @@ export function createEffects(scene) {
         .multiplyScalar(speed * 0.6)
         .addScaledVector(randomDir, speed * (0.4 + Math.random() * 0.6));
       velocity.y += speed * 0.3; // a little pop upward reads as more cartoony
-      spawnParticle(point, velocity, colors[n % colors.length], particleSize);
+      spawnParticle(point, velocity, colors[n % colors.length], particleSize, flesh);
     }
   }
 
+  const marks = createImpactMarks(scene, surfaces);
   return {
+    prepare(renderer, camera) { marks.prepare(renderer, camera); },
+    // Persistent, gun-specific world aftermath. Pure decoration: no colliders or damage.
+    impact(gunId, origin, worldHit) { return marks.add(gunId, origin, worldHit); },
     // Staple streak from `from` (gun muzzle) to `to` (where the shot landed).
     tracer(from, to, hexColor) {
       const t = tracers[nextTracer];
@@ -178,10 +187,10 @@ export function createEffects(scene) {
       }
       if (blood.mode === 'off') return;
       if (blood.mode === 'red') {
-        burst(point, normal, blood.colors, Math.round(count * blood.countScale), fx.splatSpeed, fx.particleSize);
+        burst(point, normal, blood.colors, Math.round(count * blood.countScale), fx.splatSpeed, fx.particleSize, 2);
         return;
       }
-      burst(point, normal, colors, count, fx.splatSpeed, fx.particleSize);
+      burst(point, normal, colors, count, fx.splatSpeed, fx.particleSize, 1);
     },
 
     // A corpse's pool of blood on the floor at (x, z): spreads out under the body, then fades (red mode only).
@@ -192,7 +201,7 @@ export function createEffects(scene) {
 
     // What is alive right now (for tests and debugging).
     get counts() {
-      return { particles: alive, pools: poolCount };
+      return { particles: alive, pools: poolCount, marks: marks.count };
     },
 
     // Little dust puff when a shot hits a wall or prop.
@@ -200,8 +209,9 @@ export function createEffects(scene) {
       burst(point, normal, [fx.puffColor], fx.puffCount, fx.puffSpeed, fx.particleSize * 0.7);
     },
 
-    // Remove every tracer and particle (new run).
+    // Remove every tracer, particle, pool and persistent impact (new run).
     clear() {
+      marks.clear();
       for (const t of tracers) {
         t.life = 0;
         t.mesh.visible = false;
@@ -215,6 +225,13 @@ export function createEffects(scene) {
 
     // Call every rendered frame with the real frame time (0 while paused).
     update(dt) {
+      marks.update();
+      // Runs even with dt=0: switching the option in a paused menu takes effect immediately.
+      if (blood.mode !== 'red') {
+        poolCount = 0;
+        nextPool = 0;
+      }
+      const currentFlesh = blood.mode === 'red' ? 2 : blood.mode === 'confetti' ? 1 : 0;
       for (const t of tracers) {
         if (t.life <= 0) continue;
         t.life -= dt;
@@ -225,7 +242,7 @@ export function createEffects(scene) {
       let i = 0;
       while (i < alive) {
         life[i] -= dt;
-        if (life[i] <= 0) {
+        if (life[i] <= 0 || (fleshMode[i] && fleshMode[i] !== currentFlesh)) {
           // Swap the last live particle into this slot and shrink the live count.
           const last = --alive;
           for (const arr of [pos, vel, rot, col]) {
@@ -236,6 +253,7 @@ export function createEffects(scene) {
           life[i] = life[last];
           maxLife[i] = maxLife[last];
           size[i] = size[last];
+          fleshMode[i] = fleshMode[last];
           continue; // re-check slot i (it now holds a different particle)
         }
 

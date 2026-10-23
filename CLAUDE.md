@@ -20,15 +20,22 @@ npm run build      # production build into dist/; run after every change to catc
 npm run preview    # serve the built dist/
 npm run balance    # gun balance report (tools/gunReport.mjs): dps by range, pulls to kill by round, cannon blast table
 ```
+Menu regressions: `tests/menus.test.js` covers modal inert/focus isolation, Tab/Escape, controller presets including
+equal/custom values, reset buttons/confirmation and native-resolution readout. `tests/blood.test.js` also changes
+splatter while paused, clearing flesh effects/pools immediately without removing dust or tracers.
 `tests/prone.test.js` covers toggle controls, crawl speed from stats, smooth eye/collision lowering, low roofs,
 safe stand/crouch recovery, slide/jump/melee/vault constraints, gun use, zombie damage, body clearance, controller sprint latch and run reset.
-
+`tests/shopperAppearance.test.js` covers coordinated wardrobe choices and rarity, every clothing/hair/accessory/wear variant,
+valid geometry and mesh budgets, animation, isolated hit flashes, owned-resource disposal, fixed hitboxes and unchanged Mall Walkers.
 `tests/atmosphere.test.js` checks decorative triangles against protected routes/vaults and the escalator ceiling well,
 zero added collision, batching/motion reset, interpolated supporting-surface shadows and disposal, spatial sound
 occlusion/zones/panning/caps, pause/death/reset silence, closed-shutter rattles and Web Audio voice cleanup.
 
 Gameplay regression tests live in `tests/` (`gameplay.test.js` movement/melee/vault, `aim.test.js` spread
 (including the Laser Pointer's hip benefit / ADS penalty through repeated shots and recovery),
+`impactMarks.test.js` all five cosmetic signatures, visible-surface/edge checks, floor/ceiling/instanced normals,
+misses/targets/pierce/shutters, shared cap/reuse/disposal, map unloading, startup preparation, debug sprites,
+Cannon projection budget, unchanged wall-shot payouts/accuracy/ammo and Play-again cleanup,
 `startRoom.test.js` clearance-store dressing adds no collision, leaves central/spawn/vault spaces visually clear,
 and preserves a real checkout vault and the original Price Gun purchase,
 `megaMartDetails.test.js` protects aisle/crossing/entrance/spawn/vault clearance against the actual decorative triangles,
@@ -126,6 +133,9 @@ src/
                         before, plus `g` = the game) when debug.exposeToWindow
   style.css             HUD (crosshair, hit marker, health/stamina bars, ammo, prompt), start/pause overlay
   config/
+    shoppers.js         Cosmetic-only Shopper wardrobe: coordinated palettes/profiles, shirts/layers, bottoms, hair,
+                        modest width variations, accessories and wear. Parts are data; combat never reads this file.
+    impacts.js          Cosmetic impact cap (200), Cannon budget (2 clusters), projection/edge tolerances and gun signatures
     environment.js      Cosmetic mall lighting/materials, ceiling spacing, subtle local motion, contact shadows,
                         ambient voice/distance/occlusion/fade tuning; fixed start-room and Mega Mart lamps
     feel.js             Movement, sprint, crouch, slide, prone, look (+ recoil spring: frequency/damping, roll), ADS
@@ -319,7 +329,8 @@ src/
                         'chasing' but windedSpeedScale() is 0 then slowSpeedFraction, and attackCooldown >= standSeconds.
                         Types with `sounds`: chaseSounds() (step squeaks / huffs on timers) + playSound(): volume by
                         distance through ctx.onSound
-    zombieModel.js      Blocky zombie model built from the type: shopper (random outfit, maybe a shopping bag) or Mall
+    shopperAppearance.js  Weighted, coordinated Shopper wardrobe selection; optional seeded random for tests, one look per spawn
+    zombieModel.js      Blocky zombie model built from the type: Shopper (config/shoppers.js wardrobe) or Mall
                         Walker (type.outfit: matching tracksuit + stripes, headband, wristbands, fanny pack; modelScale).
                         Arms have shoulder + elbow joints. Code animation (numbers in zombieTypes.<type>.walkAnimation):
                         shamble or style 'powerWalk' (bent arms pumping, hips twisting), arms-overhead wind-up, slam,
@@ -440,6 +451,9 @@ src/
     mall/megaMartDetails.js  Department stock and interrupted-shopping detail (batched static meshes), checkout groceries,
                         receiving hardware/signs, Foam Dart promotion, perimeter trolley, fluorescent housings and the two Mart lamps.
                         MART_FIXTURES shares gondola positions and checkout lanes with mall.js. Only the parked trolley adds collision.
+    mall/martProducts.js  Low-poly shelf product models: Outdoor, Snacks, Holidays and Housewares (31 types).
+                        The arranger fits whole models into irregular runs: crowded stock, disturbed patches, isolated leftovers and bare stretches;
+                        geometry is merged by material alongside the rest of the Mart dressing (no per-product draw calls).
     mall/palette.js     COLORS shared by the mall's rooms and props
     testRange/          Debug add-on (not a map): testRange.js buildTestRange(scene, colliders) with own lights,
                         dummy.js practice mannequins (shootables)
@@ -451,6 +465,10 @@ src/
   fx/
     contactShadows.js   One instanced draw for soft zombie grounding; interpolates feet and finds supporting collider tops.
                         No collision, hitbox or navigation changes; clear on restart, dispose owned GPU resources on unload.
+    impactMarks.js      Persistent world aftermath: visible-mesh ray + flat-face corner checks, ring of 200 marks shared
+                        across instanced signature pools. Skips shutters/unsupported edges; follows rigid surface transforms,
+                        removes marks when surfaces unload, clears on restart. prepare(renderer,camera) warms shared graphics.
+    impactModels.js     Small shared staple/nail/dart/confetti meshes with vertex colours; three procedural price-sticker textures
     effects.js          Tracers (pooled) + particle bursts (one InstancedMesh): splat(), puff(), clear() (new run)
   (tools/)              Dev scripts (not bundled): balance.js = gun balance maths shared with the tests (seeded Monte Carlo of each
                         gun's real spread + pellets vs a Shopper's hitboxes at a range: expectedShotDamage, sustainedDps, burstDps,
@@ -483,9 +501,10 @@ src/
     shutter.js          createShutter(): roll-up barrier with its own Box3 collider (open/close/toggle/update); marks
                         collider changes; the slab is thin along the wall's thickness (doorways in X or Z walls)
     textures.js         Procedural canvas textures (floor tile, shop sign, shutter, muzzle flash burst, wall-buy chalk). No image files.
-                        seededRandom(seed): deterministic random (also used for shelf stock)
     atmosphereTextures.js Soft footprint alpha and deterministic tile roughness (no image downloads)
+                        seededRandom(seed): deterministic random (also used for shelf stock)
   ui/
+    modal.js            Shared Settings/Controls dialog behavior: inert background, focus trap, Escape, restores focus on close
     settingsMenu.js     createSettingsMenu(settings): builds the options screen from the settings list (tabs, rows per type:
                         checkbox / range + readout / select). Opened by the pause screen's Settings button (controller: Y);
                         Esc / Back / B closes. padNav(input): D-pad moves + changes, A toggles, LB/RB tabs, B back
@@ -680,12 +699,44 @@ add life without changing routes, collision, purchases, spawning or combat. Ambi
 and audio.js; sound fades out on pause/death/reset. Decorative geometry is batched; the escalator well and combat
 lanes stay clear. Regression coverage lives in atmosphere.test.js.
 
+Shopper visual variety: coordinated weekend/office/teen/errand/summer outfits; seven top styles, trousers/shorts/skirts,
+seven hairstyles, three subtle width builds, stripes/logos, occasional torn sleeves/stains/missing shoes. Most have
+no accessory; others get one bag, backpack, sunglasses or headphones. Thirty clothing palettes span blues, violets/lilacs,
+yellows, ivory/white, charcoal, tan and the original reds/greens; accessories also have brighter choices. Head position, hitboxes, health, speed and
+attack behavior are unchanged. Mall Walkers retain their original tracksuit/headband design. Rigid details batch
+by material on each animated bone; materials are shared only within one zombie so hit flashes stay isolated,
+and per-model merged geometry is disposed with the corpse. Appearance is picked once per spawn.
+
 Prone: Ctrl (either side) / controller LB (L1) toggles a grounded prone stance. Crawl speed 1.25 m/s,
 collision height 0.55 m, eye height 0.38 m; lowering eases the camera and shrinks collision with it.
 Space/A or the prone button gets up without jumping; C/B rises to crouch. Headroom checks fall back to crouch
 or keep prone under low cover. No airborne dives, sprint, slide boost, vault or melee lunge while prone;
 shooting, ADS, reloads and ordinary zombie damage still work. Prone speed is a player stat, reset each run.
 The first-person body lies low with legs behind the view; Controls diagrams/list and How to play include prone.
+
+Menu audit fixes: Settings/Controls isolate keyboard focus and make background menus inert. Hidden menus explicitly
+clear backdrop blur; entering play also closes Settings/Controls, including after a delayed pointer-lock grant.
+Controller Settings navigation includes Reset tab, Reset everything (two presses), and Back; closing cancels a pending confirmation.
+Preset selection tracks the selected button, including equivalent values, and custom values step to either endpoint.
+Splatter changes clear existing flesh effects and red pools on the next rendered frame even while paused; dust,
+tracers and persistent gun marks are preserved. Video shows native percentage and actual render/display pixel sizes.
+Low/Medium/High target 50%/75%/100% of capped display density (2x maximum); exact native default avoids rounding down.
+Saved pixel-ratio values remain compatible; select High to undo a previously saved low-resolution setting.
+
+Gun-specific world impacts: embedded staples, crooked price stickers, protruding nails, foam darts and confetti/streamer
+clusters. Cosmetic only; uses hitscan worldHit metadata after pierce. A visual ray verifies real map/debug-range mesh
+surfaces (never invisible collision proxies, sprite labels or moving shutters), with corner checks to avoid overhanging
+edges. One global 200-mark cap; Cannon limited to 2 projection attempts per blast; startup warms the 13 shared variant
+pools and sticker textures. Restart clears marks; unloading a surface removes its marks on the next effects update.
+Browser verified each signature, 300 impacts recycling to 200, restart to zero; projection averaged ~0.26ms per attempt
+in the local test browser. Damage/points/accuracy/ammo are unchanged; regression suite, build and balance report pass.
+
+Mega Mart stock variety expanded to 31 product types: camping gear, snack packs/jars/cups, mixed holiday decorations,
+and household bottles/tissues/towels/pans. Independent per-shelf seeds give each level unequal runs of tidy, disturbed and
+heavily looted stock: varying group sizes/gaps, front-to-back placement, crooked or fallen items, and occasional stray products.
+There is no fixed pair/bay grid. Actual model bounds space neighbours apart and keep stock supported, inside the shelf
+footprint and below the next shelf. Placements stay the same between runs. Existing clearance/vault/purchase regressions
+pass; no collision, lighting, economy or combat changes.
 
 Mega Mart detail pass: department-specific stock replaces generic product cubes, with sparse bays, checkout clutter,
 receiving/stockroom wear, toy promotion, perimeter trolley and fluorescent housings. Gondola/counter collision and prices

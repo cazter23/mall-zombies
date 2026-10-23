@@ -27,11 +27,14 @@ const scratch = new THREE.Vector3();
  *   `hits`: every shootable hit, nearest first (at most `maxTargets`, all in front of the first wall).
  *   `end`: where the shot stops (for the tracer): the last target if it ran out of pierce, else
  *   the wall / max range. `endNormal`: the wall's outward normal there.
+ *   `worldHit`: { box, point } only when the ray reaches a real world collider (after any pierce),
+ *   otherwise null. Cosmetic impacts use it without changing damage or target-hit accounting.
  */
 export function castShot(origin, direction, range, colliders, shootables, maxTargets = 1) {
   ray.set(origin, direction);
 
   const best = { point: new THREE.Vector3(), normal: new THREE.Vector3(), distance: range, target: null, part: null };
+  let wallBox = null;
   best.point.copy(origin).addScaledVector(direction, range);
   best.normal.copy(direction).negate();
 
@@ -43,6 +46,7 @@ export function castShot(origin, direction, range, colliders, shootables, maxTar
     if (!hit) continue;
     const d = hit.distanceTo(origin);
     if (d < best.distance) {
+      wallBox = box;
       best.distance = d;
       best.point.copy(hit);
       boxNormalAt(box, hit, best.normal);
@@ -86,6 +90,8 @@ export function castShot(origin, direction, range, colliders, shootables, maxTar
   best.hits = hits;
   best.end = end;
   best.endNormal = endNormal; // the wall's facing at `end` (for dust puffs)
+  // Cosmetic surface metadata: null on a miss or when the shot stopped inside a target.
+  best.worldHit = wallBox && hits.length < maxTargets ? { box: wallBox, point: end.clone() } : null;
   return best;
 }
 

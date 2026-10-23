@@ -19,6 +19,7 @@
 // =============================================================================
 
 import { economy } from '../config/economy.js';
+import { menuFeel } from '../config/settings.js';
 
 function el(tag, className, html) {
   const node = document.createElement(tag);
@@ -26,8 +27,6 @@ function el(tag, className, html) {
   if (html !== undefined) node.innerHTML = html;
   return node;
 }
-
-const CONFIRM_SECONDS = 3;
 
 export function createScreens() {
   const handlers = {};
@@ -143,7 +142,7 @@ export function createScreens() {
         button.textContent = label;
         button.classList.remove('armed');
         armed.delete(button);
-      }, CONFIRM_SECONDS * 1000));
+      }, menuFeel.confirmSeconds * 1000));
       button.dataset.label = label;
       return;
     }

@@ -25,6 +25,7 @@ import { Weapon } from './weapon.js';
 import { castShot } from './hitscan.js';
 import { createAim, applyConeSpread, pelletSpreadDegrees } from './aim.js';
 import { hitDamage, resolveGun } from './gunStats.js';
+import { impacts } from '../config/impacts.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 const MAX_SLOTS = 2;
@@ -115,6 +116,7 @@ export function createPlayerGun({
     const muzzlePosition = viewmodel.getMuzzleWorldPosition(muzzle);
     const targets = new Map();
     let puffs = 0;
+    let marks = 0;
     for (const [rayIndex, ray] of rays.entries()) {
       const colors = d.pellets?.tracerColors;
       const color = colors ? colors[rayIndex % colors.length] : d.tracerColor;
@@ -139,6 +141,10 @@ export function createPlayerGun({
         && (!d.pellets || puffs < feel.effects.maxPelletWallPuffs)) {
         effects.puff(ray.end, ray.endNormal);
         puffs += 1;
+      }
+      if (ray.worldHit && (!d.pellets || marks < impacts.maxPelletMarks)) {
+        effects.impact?.(d.id, origin, ray.worldHit);
+        marks++; // cap projection work too, even if a tiny/unsupported surface rejects the mark
       }
     }
     let anyKilled = false;

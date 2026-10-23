@@ -82,6 +82,36 @@ test('off mode: a zombie hit sprays nothing', () => {
   });
 });
 
+test('changing splatter while paused clears existing flesh/pools immediately, preserving dust and tracers', () => {
+  for (const next of ['off', 'confetti']) inMode('red', () => {
+    const { scene, fx } = make();
+    const point = new THREE.Vector3(0, 1, 0);
+    fx.splat(point, UP, GREEN, 14, { flesh: true });
+    fx.pool(0, 0);
+    fx.puff(point, UP);
+    fx.tracer(point, new THREE.Vector3(0, 1, 2), 0xffffff);
+    fx.update(0);
+    assert.ok(fx.counts.pools && fx.counts.particles > feel.effects.puffCount);
+    FX.mode = next;
+    fx.update(0); // Settings is open: no game or visual time passes
+    assert.equal(fx.counts.pools, 0, next);
+    assert.equal(fx.counts.particles, feel.effects.puffCount, 'wall dust remains');
+    assert.ok(particleColors(scene).every((c) => c.getHexString() === new THREE.Color(feel.effects.puffColor).getHexString()));
+    assert.ok(scene.children.some((mesh) => mesh.geometry?.type === 'CylinderGeometry' && mesh.visible), 'tracer remains');
+    assert.ok(scene.children.filter((mesh) => mesh.name.startsWith('pools_')).every((mesh) => mesh.count === 0));
+    FX.mode = 'red';
+    fx.update(0);
+    assert.equal(fx.counts.pools, 0, 'old pools do not reappear');
+  });
+  inMode('confetti', () => {
+    const { fx } = make();
+    fx.splat(new THREE.Vector3(0, 1, 0), UP, GREEN, 14, { flesh: true });
+    FX.mode = 'off';
+    fx.update(0);
+    assert.equal(fx.counts.particles, 0, 'Off also removes existing confetti flesh');
+  });
+});
+
 test('things that are not flesh (spawn dust, wall puffs) never change with the setting', () => {
   for (const mode of ['confetti', 'red', 'off']) {
     inMode(mode, () => {

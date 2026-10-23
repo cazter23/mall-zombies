@@ -95,7 +95,7 @@ export function createGame({
   const runStats = createRunStats();
   // A player attack (gun or box cutter) hit something: announce it.
   const announceHit = (hit) => events.emit('hit', hit);
-  const effects = createEffects(scene);
+  const effects = createEffects(scene, { surfaces: [map.group, ...(arena ? [arena.group] : [])] });
   const aimAssist = createAimAssist({ player, input, shootables, colliders });
   const gun = createPlayerGun({
     def: weapons.stapleGun,

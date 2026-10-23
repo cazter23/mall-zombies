@@ -24,6 +24,7 @@ export function createShutter({ name, minX, maxX, minZ, maxZ, height, material, 
 
   // The collider covers the full doorway thickness so the player can't wedge into it.
   const collider = new THREE.Box3(new THREE.Vector3(minX, 0, minZ), new THREE.Vector3(maxX, height, maxZ));
+  collider.noImpactMarks = true; // rolling shutters are excluded from persistent cosmetic impacts
   colliders.push(collider);
   markCollidersChanged(colliders);
 

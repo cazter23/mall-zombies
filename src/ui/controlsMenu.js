@@ -8,6 +8,7 @@
 import { controlsHelp } from '../config/controls.js';
 import { debug } from '../config/debug.js';
 import { buildControlsDiagram } from './controlsDiagram.js';
+import { createModal } from './modal.js';
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -82,17 +83,16 @@ export function createControlsMenu() {
   }
 
   function close() {
-    root.classList.add('hidden');
+    modal.close();
   }
+  const modal = createModal(root, close);
+  root.setAttribute('aria-label', 'Controls');
   backButton.addEventListener('click', close);
-  window.addEventListener('keydown', (event) => {
-    if (!root.classList.contains('hidden') && event.code === 'Escape') close();
-  });
   render();
 
   return {
     get isOpen() { return !root.classList.contains('hidden'); },
-    open() { root.classList.remove('hidden'); },
+    open() { modal.open(); },
     close,
     // Controller: B / Start close, bumpers switch tab.
     padNav(input) {

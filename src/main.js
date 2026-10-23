@@ -122,6 +122,10 @@ const screens = hud.screens;
 const titleCamera = createTitleCamera(map.titleShots, feel.titleScreen);
 
 function enterPlaying() {
+  // A delayed pointer-lock grant can arrive after another menu was opened.
+  // Playing must remove every overlay, including its backdrop-filter layer.
+  settingsMenu.close();
+  controlsMenu.close();
   screens.show(null);
   hud.setDimmed(false);
 }
