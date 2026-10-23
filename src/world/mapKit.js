@@ -22,6 +22,8 @@
 // =============================================================================
 
 import * as THREE from 'three';
+import { atmosphere } from '../config/environment.js';
+import { makeTileRoughness } from './atmosphereTextures.js';
 import { makeTileTexture, makeSignTexture, makeShutterTexture } from './textures.js';
 import { createShutter } from './shutter.js';
 import { createDoor } from './door.js';
@@ -137,7 +139,9 @@ export function createMapKit(group, colliders) {
   function tiledFloor(minX, minZ, maxX, maxZ, textureOptions) {
     const texture = makeTileTexture(textureOptions);
     texture.repeat.set((maxX - minX) / 2, (maxZ - minZ) / 2);
-    const material = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.35, metalness: 0.05 });
+    const roughnessMap = makeTileRoughness();
+    roughnessMap.repeat.copy(texture.repeat);
+    const material = new THREE.MeshStandardMaterial({ map: texture, roughnessMap, ...atmosphere.surfaces.tile });
     return box(minX, -0.2, minZ, maxX, 0, maxZ, material, { name: 'floor' });
   }
 
@@ -237,10 +241,12 @@ export function createMapKit(group, colliders) {
       for (const m of [o.material].flat()) if (m) mats.add(m);
     });
     for (const g of geometries) g.dispose();
+    const textures = new Set();
     for (const m of mats) {
-      for (const value of Object.values(m)) if (value?.isTexture) value.dispose();
+      for (const value of Object.values(m)) if (value?.isTexture) textures.add(value);
       m.dispose();
     }
+    for (const texture of textures) texture.dispose();
     materials.clear();
   }
 

@@ -41,6 +41,8 @@ import { upgrades } from '../../config/upgrades.js';
 import { buildStores, storeOpenings } from './stores.js';
 import { buildStartRoomDetails } from './startRoomDetails.js';
 import { buildMegaMartDetails, MART_FIXTURES } from './megaMartDetails.js';
+import { buildMallAtmosphere } from './atmosphere.js';
+import { atmosphere } from '../../config/environment.js';
 
 export const LAYOUT = {
   startRoom: { minX: -5, maxX: 5, minZ: 6, maxZ: 16, height: 4 },
@@ -534,24 +536,24 @@ export function buildMall(scene, colliders) {
   // --- Lighting --------------------------------------------------------------
 
   // All lights live in the map's group, so unloading the map removes them too.
-  group.add(new THREE.HemisphereLight(0xfff6e6, 0xd8cdb8, 1.5));
+  group.add(new THREE.HemisphereLight(atmosphere.hemisphere.sky, atmosphere.hemisphere.ground, atmosphere.hemisphere.intensity));
 
-  const sun = new THREE.DirectionalLight(0xffffff, 0.9);
+  const sun = new THREE.DirectionalLight(atmosphere.sun.color, atmosphere.sun.intensity);
   sun.position.set(6, 20, 8);
   group.add(sun);
 
-  const lamp = (color, intensity, x, y, z) => {
-    const light = new THREE.PointLight(color, intensity, 0, 2);
+  const lamp = ({ color, intensity, distance }, x, y, z) => {
+    const light = new THREE.PointLight(color, intensity, distance, 2);
     light.position.set(x, y, z);
     group.add(light);
   };
   // Lamps hang well below the ceiling (about 60% of its height) and are dimmer to match: a lamp just
   // under the ceiling lights a small, hard-edged bright disc on it; hung lower it's a soft wide glow.
-  for (const x of [-10, 10]) lamp(0xfff0d0, 10, x, H.height * 0.58, HZ); // hallway
-  for (const x of [-12, 0, 12]) lamp(0xfff0d0, 10, x, F.height * 0.58, FZ); // Food Court
+  for (const x of [-10, 10]) lamp(atmosphere.roomLights.hallway, x, H.height * 0.58, HZ);
+  for (const x of [-12, 0, 12]) lamp(atmosphere.roomLights.foodCourt, x, F.height * 0.58, FZ);
   // Start-room warm/cool lamps are built with its details (config/environment.js).
   // Mega Mart's two fixed lamps are built with its details (config/environment.js).
-  for (const at of [3, 12]) lamp(0xfff2dc, 4.1, service.points[1].x, SC.height * 0.65, service.pointAt(1, at).z); // Service Corridor
+  for (const at of [3, 12]) lamp(atmosphere.roomLights.serviceCorridor, service.points[1].x, SC.height * 0.65, service.pointAt(1, at).z);
 
   // --- Spawn points and wall-buy spots (invisible markers) -------------------
 
@@ -623,6 +625,7 @@ export function buildMall(scene, colliders) {
   ];
 
   const doors = [startDoor, megaMartDoor, foodCourtDoor, serviceCorridorDoor, foodCourtMegaMartDoor, serviceCorridorFoodCourtDoor];
+  const dressing = buildMallAtmosphere(kit, LAYOUT, { service, ceilingHole: escalator.hole });
 
   return {
     id: 'mall',
@@ -633,11 +636,14 @@ export function buildMall(scene, colliders) {
     features,
     playerSpawn,
     titleShots,
+    ambience: dressing.emitters,
     update(dt) {
       for (const door of doors) door.update(dt);
+      dressing.update(dt);
     },
     reset() {
       for (const door of doors) door.reset();
+      dressing.reset();
     },
     // Unload: colliders out of the shared list, GPU memory freed, group out of the scene.
     dispose() {

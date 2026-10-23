@@ -261,6 +261,7 @@ function render(alpha, frameTime) {
   body.root.visible = !game.over;
   body.update(visualTime, player, alpha);
   zombies.render(visualTime, alpha);
+  g.contactShadows.update(zombies.zombies, alpha);
   effects.update(visualTime);
   viewmodel.update(visualTime, camera, {
     weapon: gun.weapon,

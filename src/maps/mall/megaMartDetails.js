@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { seededRandom } from '../../world/textures.js';
-import { megaMartLighting } from '../../config/environment.js';
+import { megaMartLighting, atmosphere } from '../../config/environment.js';
 
 export const MART_FIXTURES = {
   gondolas: [
@@ -18,9 +18,9 @@ export function buildMegaMartDetails(kit, room) {
   const details = new THREE.Group(); details.name = 'mega_mart_details'; kit.group.add(details);
   const meshes = [];
   const mat = (color, options) => kit.mat(color, options);
-  const cream = mat(0xeee5ca), metal = mat(0x78868b), dark = mat(0x354044);
+  const cream = mat(0xeee5ca), metal = mat(0x78868b, atmosphere.surfaces.metal), dark = mat(0x354044);
   const red = mat(0xc95045), blue = mat(0x4479a6), green = mat(0x638363);
-  const cardboard = mat(0xb48b56), yellow = mat(0xe8bd56), white = mat(0xd8ded9);
+  const cardboard = mat(0xb48b56, atmosphere.surfaces.cardboard), yellow = mat(0xe8bd56), white = mat(0xd8ded9);
   function shape(name, geometry, material, x, y, z, rotation = [0, 0, 0]) {
     const mesh = new THREE.Mesh(geometry, material); mesh.name = name;
     mesh.position.set(x, y, z); mesh.rotation.set(...rotation); meshes.push(mesh); return mesh;

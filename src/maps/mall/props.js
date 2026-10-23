@@ -31,11 +31,16 @@
 
 import * as THREE from 'three';
 import { COLORS } from './palette.js';
+import { atmosphere } from '../../config/environment.js';
 import { seededRandom } from '../../world/textures.js';
 import { buildAttachmentPart } from '../../weapons/models/upgradeParts.js';
 
 export function createMallProps(kit) {
-  const { box, mat, sign, addCollider, group } = kit;
+  const { box, sign, addCollider, group } = kit;
+  const mat = (color, options = {}) => kit.mat(color, {
+    ...(color === COLORS.metal || color === COLORS.tableLeg ? atmosphere.surfaces.metal : {}),
+    ...(color === COLORS.stool ? atmosphere.surfaces.plastic : {}), ...options,
+  });
 
   /**
    * A shop facade on a wall (decorative, not enterable).

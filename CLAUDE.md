@@ -23,6 +23,10 @@ npm run balance    # gun balance report (tools/gunReport.mjs): dps by range, pul
 `tests/prone.test.js` covers toggle controls, crawl speed from stats, smooth eye/collision lowering, low roofs,
 safe stand/crouch recovery, slide/jump/melee/vault constraints, gun use, zombie damage, body clearance, controller sprint latch and run reset.
 
+`tests/atmosphere.test.js` checks decorative triangles against protected routes/vaults and the escalator ceiling well,
+zero added collision, batching/motion reset, interpolated supporting-surface shadows and disposal, spatial sound
+occlusion/zones/panning/caps, pause/death/reset silence, closed-shutter rattles and Web Audio voice cleanup.
+
 Gameplay regression tests live in `tests/` (`gameplay.test.js` movement/melee/vault, `aim.test.js` spread
 (including the Laser Pointer's hip benefit / ADS penalty through repeated shots and recovery),
 `startRoom.test.js` clearance-store dressing adds no collision, leaves central/spawn/vault spaces visually clear,
@@ -122,7 +126,8 @@ src/
                         before, plus `g` = the game) when debug.exposeToWindow
   style.css             HUD (crosshair, hit marker, health/stamina bars, ammo, prompt), start/pause overlay
   config/
-    environment.js      Decorative start-room and Mega Mart lighting: fixed warm/cool lamps, bounded range, no flicker
+    environment.js      Cosmetic mall lighting/materials, ceiling spacing, subtle local motion, contact shadows,
+                        ambient voice/distance/occlusion/fade tuning; fixed start-room and Mega Mart lamps
     feel.js             Movement, sprint, crouch, slide, prone, look (+ recoil spring: frequency/damping, roll), ADS
                         (move speed, sensitivity), camera, player size, sim tick rate, shutter speed, viewmodel
                         handling shared by all guns (fov, sway, walk bob, breathing, landing dip, reload
@@ -441,8 +446,11 @@ src/
   audio/
     sound.js            createSound(): Web Audio synth for config/audio.js recipes. play(name, { volume }),
                         unlock() (also on the first pointerdown/keydown; browsers block audio before that),
-                        setMasterVolume(v) (used by Settings > Audio)
+                        setMasterVolume(v) (used by Settings > Audio), setAmbience(mix) (up to three continuous spatial voices,
+                        short crossfades), playAmbient(name, {volume, pan}); faded sources stop and disconnect
   fx/
+    contactShadows.js   One instanced draw for soft zombie grounding; interpolates feet and finds supporting collider tops.
+                        No collision, hitbox or navigation changes; clear on restart, dispose owned GPU resources on unload.
     effects.js          Tracers (pooled) + particle bursts (one InstancedMesh): splat(), puff(), clear() (new run)
   (tools/)              Dev scripts (not bundled): balance.js = gun balance maths shared with the tests (seeded Monte Carlo of each
                         gun's real spread + pellets vs a Shopper's hitboxes at a range: expectedShotDamage, sustainedDps, burstDps,
@@ -476,6 +484,7 @@ src/
                         collider changes; the slab is thin along the wall's thickness (doorways in X or Z walls)
     textures.js         Procedural canvas textures (floor tile, shop sign, shutter, muzzle flash burst, wall-buy chalk). No image files.
                         seededRandom(seed): deterministic random (also used for shelf stock)
+    atmosphereTextures.js Soft footprint alpha and deterministic tile roughness (no image downloads)
   ui/
     settingsMenu.js     createSettingsMenu(settings): builds the options screen from the settings list (tabs, rows per type:
                         checkbox / range + readout / select). Opened by the pause screen's Settings button (controller: Y);
@@ -643,6 +652,14 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
 - Lighting: room lamps (point lights) hang at ~60% of the ceiling height with intensity scaled to match, NOT just under
   the ceiling: a lamp 0.8m under it lit a small hard-edged bright disc on the ceiling ("big circles"); hung lower it's a soft
   glow. Keep that if you move or add lamps (mall.js, the `lamp()` calls).
+- Atmosphere: `mall/atmosphere.js` adds ceiling seams/vents/sprinklers (excluding the escalator well), service cable
+  trays/access panel, Sunset Galleria notices/directory and a gently swaying two-sided sign, interrupted lunches,
+  a fallen seat, restocking carton, perimeter dust/spills/leak and static fixture contact shadows. Decorative boxes
+  batch by material and add no colliders. `map.update/reset` owns the local sign/tube animation; `map.ambience`
+  is emitter data. `game/ambience.js` selects zone-aware, distance/occlusion-attenuated and stereo-panned HVAC,
+  fridge and muffled music voices; occasional rattles come from nearby closed shutters. It owns no Web Audio nodes.
+  Pause/death/reset silence the mix; `audio/sound.js` owns browser audio and uses `audio.ambienceVolume`.
+  No realtime shadow maps, global blur or postprocessing; zombie contact shadows render after interpolation in main.
 - Player spawns at (0, 0, 12) facing the shutter.
 
 ## Movement test range (debug only)
@@ -656,6 +673,13 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+Mall atmosphere pass: cooler hallway, warm clearance store/Food Court, fluorescent Mart and utility corridor;
+roughness contrast and scuffed tiles, soft fixture/zombie contact shadows, ceiling infrastructure, consistent
+mall notices and small interrupted-shopping scenes. Subtle sign sway/tube variation and spatial HVAC/fridge/music
+add life without changing routes, collision, purchases, spawning or combat. Ambient tuning is in environment.js
+and audio.js; sound fades out on pause/death/reset. Decorative geometry is batched; the escalator well and combat
+lanes stay clear. Regression coverage lives in atmosphere.test.js.
+
 Prone: Ctrl (either side) / controller LB (L1) toggles a grounded prone stance. Crawl speed 1.25 m/s,
 collision height 0.55 m, eye height 0.38 m; lowering eases the camera and shrinks collision with it.
 Space/A or the prone button gets up without jumping; C/B rises to crouch. Headroom checks fall back to crouch

@@ -28,6 +28,8 @@ import { createPlayerStats, resetPlayerStats } from '../player/stats.js';
 import { PlayerController } from '../player/controller.js';
 import { createPlayerHealth } from '../player/health.js';
 import { createEffects } from '../fx/effects.js';
+import { createContactShadows } from '../fx/contactShadows.js';
+import { createAmbience } from './ambience.js';
 import { createPlayerGun } from '../weapons/playerGun.js';
 import { createMelee } from '../weapons/melee.js';
 import { createAimAssist } from '../weapons/aimAssist.js';
@@ -158,6 +160,9 @@ export function createGame({
       return input.locked || this.padPlaying || this.forceRun;
     },
   };
+  const ambience = createAmbience({ map, player, sound, colliders });
+  const contactShadows = createContactShadows(scene, colliders);
+  events.on('playerDeath', () => ambience.silence());
   let rounds = null; // created below, once the zombie manager exists
   const getRound = () => Math.max(1, rounds ? rounds.round : 1);
   const death = { timer: 0, resultsShown: false };
@@ -290,6 +295,8 @@ export function createGame({
     ['interactions', () => interactions.reset()],
     ['viewmodel', () => viewmodel.reset()],
     ['effects', () => effects.clear()], // no leftover splatter or tracers from the last run
+    ['contactShadows', () => contactShadows.clear()],
+    ['ambience', () => ambience.reset()],
     ['melee', () => melee.reset()],
     ['aimAssist', () => aimAssist.reset()],
     ['wallet', () => wallet.reset()],
@@ -322,6 +329,7 @@ export function createGame({
 
   // One fixed tick. (main.js polls the controller and runs its menus just before this.)
   function update(dt) {
+    ambience.update(dt, state.running && !state.over);
     // Dead: the world keeps going (zombies wander to the body), the player doesn't.
     // Checked before the pause check, because the mouse is released on death.
     if (state.over) {
@@ -379,6 +387,8 @@ export function createGame({
     wallet,
     runStats,
     effects,
+    ambience,
+    contactShadows,
     aimAssist,
     gun,
     interactions,

@@ -15,10 +15,15 @@
 
 export const audio = {
   masterVolume: 0.55,
+  ambienceVolume: 0.65,
   pitchVariation: 0.05, // each play is randomly up to this fraction higher/lower, so repeats don't sound robotic
   compressor: { thresholdDb: -14, ratio: 4 }, // on the master bus, so rapid fire doesn't clip
 
   sounds: {
+    shutterRattle: { volume: 0.12, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 650, q: 2, gain: 0.3, attack: 0.04, decay: 0.45 },
+      { type: 'tone', wave: 'triangle', freq: 170, freqEnd: 95, gain: 0.12, attack: 0.03, decay: 0.35, delay: 0.12 },
+    ] },
     // Toy blaster: soft pneumatic puff + a plastic mechanism tick.
     foamShot: { volume: 0.45, layers: [
       { type: 'noise', filter: 'bandpass', freq: 1400, q: 0.7, gain: 0.65, attack: 0.003, decay: 0.065 },

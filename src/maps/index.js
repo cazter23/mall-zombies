@@ -18,6 +18,7 @@
 //                 Kinds now: 'wallBuy' (+ weapon: a config/weapons.js id), 'ammoCache'
 //   playerSpawn   { position, yaw }
 //   titleShots    [{ from, to, lookFrom, lookTo }]   the main menu's camera flyover (ui/titleCamera.js)
+//   ambience      optional [{ id, kind, zone, position: [x,y,z], range }] cosmetic spatial emitters
 //   update(dt)    animate doors etc.
 //   reset()       new run: close doors, lock zones
 //   dispose()     unload: remove its colliders from the shared list, free its GPU memory
