@@ -299,3 +299,77 @@ export function buildLevelTwoLook({ looks, layout, floorY, hole, keepClear = [] 
     keepClear: [...keepClear, pad(hole), ...L2.voids.map(pad), { minX: H.minX, maxX: hole.minX, minZ: H.minZ, maxZ: H.maxZ }],
   });
 }
+
+/** The Grand Atrium: neon suns, the mall's promise across the court, trim round both floors, posters, clutter in the court. */
+export function buildAtriumLook({ looks, layout, upperY, keepClear = [] }) {
+  const L = look.atrium;
+  const AT = layout.atrium;
+  const A = AT.rect;
+  const d = AT.ringDepth;
+  const V = { minX: A.minX + d, maxX: A.maxX - d, minZ: A.minZ + d, maxZ: A.maxZ - d }; // the open court
+  const cx = (V.minX + V.maxX) / 2;
+  const S = L.signs;
+  const sat = L.satire;
+  const backing = look.hallway.backing;
+  const inset = 0.05;
+
+  // Neon: two suns either side of the SUNSET GALLERIA sign (north upper wall), the promise on the south upper wall.
+  const neon = looks.neon('atrium');
+  for (const dx of [-6.6, 6.6]) neon.shape('sun', { x: cx + dx, y: upperY + 1.9, z: A.maxZ - inset, facing: -1, size: 2.6, color: S.sun });
+  const promiseX = 23.4;
+  neon.sign({ text: sat.promise, x: promiseX, y: upperY + 2.3, z: A.minZ + inset, facing: 1, height: 0.46, color: S.promise, backing, border: L.trim.ringLong, flickerLetters: [27] });
+
+  // Trim: orange round the arcade (under the ring), cyan on the ring's long walls, pink on its ends (one tube dying).
+  const tube = (points, opts) => neon.tube(points, opts);
+  const aY = L.arcadeTrimY;
+  const rY = upperY + L.ringTrimY;
+  const edges = (y) => ({
+    north: [[A.minX + 0.4, y, A.maxZ - inset], [A.maxX - 0.4, y, A.maxZ - inset]],
+    south: [[A.minX + 0.4, y, A.minZ + inset], [A.maxX - 0.4, y, A.minZ + inset]],
+    west: [[A.minX + inset, y, A.minZ + 0.4], [A.minX + inset, y, A.maxZ - 0.4]],
+    east: [[A.maxX - inset, y, A.minZ + 0.4], [A.maxX - inset, y, A.maxZ - 0.4]],
+  });
+  const arcade = edges(aY);
+  for (const side of ['north', 'south', 'west', 'east']) tube(arcade[side], { color: L.trim.arcade, flicker: side === 'east' });
+  const ring = edges(rY);
+  tube(ring.north, { color: L.trim.ringLong });
+  const southRing = A.minZ + inset; // (split round the PROMENADE · LEVEL 2 sign over the link)
+  tube([[A.minX + 0.4, rY, southRing], [AT.link.from - 0.3, rY, southRing]], { color: L.trim.ringLong });
+  tube([[AT.link.to + 0.3, rY, southRing], [A.maxX - 0.4, rY, southRing]], { color: L.trim.ringLong });
+  tube(ring.west, { color: L.trim.ringEnds });
+  tube(ring.east, { color: L.trim.ringEnds, flicker: 'dying' });
+
+  // Painted light: washes under every trim (1 cm off the walls), glows behind the suns and the promise.
+  const P = look.hallway.pools;
+  const w = A.maxX - A.minX - 1;
+  const dz = A.maxZ - A.minZ - 1;
+  const midZ = (A.minZ + A.maxZ) / 2;
+  const midX = (A.minX + A.maxX) / 2;
+  for (const [y, longColor, endColor] of [[aY, L.trim.arcade, L.trim.arcade], [rY, L.trim.ringLong, L.trim.ringEnds]]) {
+    looks.pool(midX, y - 0.45, A.maxZ - 0.01, w, 0.9, -1, longColor, P.trimOpacity, { wash: true });
+    looks.pool(midX, y - 0.45, A.minZ + 0.01, w, 0.9, 1, longColor, P.trimOpacity, { wash: true });
+    looks.pool(A.minX + 0.01, y - 0.45, midZ, dz, 0.9, 'x+', endColor, P.trimOpacity, { wash: true });
+    looks.pool(A.maxX - 0.01, y - 0.45, midZ, dz, 0.9, 'x-', endColor, P.trimOpacity, { wash: true });
+  }
+  for (const dx of [-6.6, 6.6]) looks.pool(cx + dx, upperY + 1.9, A.maxZ - 0.026, 5, 3.4, -1, S.sun, P.wallOpacity);
+  looks.pool(promiseX, upperY + 2.3, A.minZ + 0.026, 12, 1.6, 1, S.promise, P.wallOpacity);
+
+  // Posters, 3 cm proud (arcade walls and the ring's east wall).
+  looks.poster('banner', { text: sat.grandOpening[0], sub: sat.grandOpening[1], colors: ['#ffd1a1', '#ff9ec7'] }, A.minX + 0.03, 2.6, 22, 4.0, 1.0, 'x+');
+  looks.poster('notice', { title: sat.lostFound[0], body: sat.lostFound[1], header: '#2ec4b6' }, A.maxX - 0.03, 2.0, 18, 1.2, 0.9, 'x-');
+  looks.poster('sunny', { text: sat.wish[0], sub: sat.wish[1] }, 20, 2.1, A.maxZ - 0.03, 1.0, 1.5, -1);
+  looks.poster('notice', { title: sat.rules[0], body: sat.rules[1], header: '#ff6b6b' }, A.maxX - 0.03, upperY + 1.8, 15, 1.2, 0.9, 'x-');
+
+  // Clutter on the ground floor (scatter keeps it out of the fountain, kiosks and planters; never the escalator or doorways).
+  const E = AT.escalator;
+  looks.clutter({
+    name: 'atrium', area: { minX: A.minX + 0.3, maxX: A.maxX - 0.3, minZ: A.minZ + 0.3, maxZ: A.maxZ - 0.3, y: 0 },
+    kinds: L.clutter.kinds, seed: L.clutter.seed, perSquareMeter: L.clutter.perSquareMeter,
+    keepClear: [
+      ...keepClear,
+      { minX: E.bottomX - 2.5, maxX: V.maxX + 0.5, minZ: E.minZ - 0.4, maxZ: E.maxZ + 0.4 }, // the escalator (and its foot)
+      { minX: AT.gate.from - 0.5, maxX: AT.gate.to + 0.5, minZ: A.minZ, maxZ: A.minZ + 3 }, // the hallway gate
+      { minX: AT.martLink.from - 0.5, maxX: AT.martLink.to + 0.5, minZ: A.minZ, maxZ: A.minZ + 3 }, // the Mega Mart shortcut
+    ],
+  });
+}

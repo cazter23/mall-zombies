@@ -184,4 +184,25 @@ export const look = {
       kinds: { receipts: 2, sodaCup: 2, shoppingBag: 1.5, puddle: 1, coins: 1, popcorn: 1, cassettes: 1 },
     },
   },
+
+  // The Grand Atrium: the showpiece. Two neon suns flank the SUNSET GALLERIA sign under the skylight, trim rings both floors
+  // (orange round the arcade, pink and cyan round the upper ring), and the mall's promise across the court.
+  atrium: {
+    arcadeTrimY: 5.4, // round the arcade, under the ring
+    ringTrimY: 3.2, // above the ring's floor
+    trim: { arcade: NEON_COLORS.sunsetOrange, ringLong: NEON_COLORS.cyan, ringEnds: NEON_COLORS.hotPink },
+    signs: { sun: NEON_COLORS.sunsetOrange, promise: NEON_COLORS.hotPink },
+    satire: {
+      promise: 'COME FOR THE SALES. STAY FOREVER.',
+      grandOpening: ['GRAND OPENING!', '(SINCE 1986)'],
+      lostFound: ['LOST & FOUND', 'Found: 1,204 left shoes. Lost: everyone.'],
+      wish: ['MAKE A WISH!', 'Coins are non-refundable. So are wishes.'],
+      rules: ['ATRIUM RULES', 'No running. No screaming. No leaving.'],
+    },
+    clutter: {
+      seed: 1991,
+      perSquareMeter: 0.06,
+      kinds: { receipts: 2, coins: 2.5, sodaCup: 2, shoppingBag: 1.5, popcorn: 1, puddle: 1, brokenGlass: 0.8, fallenSign: 0.5 },
+    },
+  },
 };

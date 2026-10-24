@@ -49,7 +49,7 @@ import { buildLevelTwo } from './levelTwo.js';
 import { buildAtrium } from './atrium.js';
 import { buildHallwayLook } from './hallwayLook.js';
 import { createLookKit } from './lookKit.js';
-import { buildFoodCourtLook, buildMegaMartLook, buildServiceCorridorLook, buildStartRoomLook, buildLevelTwoLook } from './zoneLooks.js';
+import { buildFoodCourtLook, buildMegaMartLook, buildServiceCorridorLook, buildStartRoomLook, buildLevelTwoLook, buildAtriumLook } from './zoneLooks.js';
 import { look } from '../../config/look.js';
 import { atmosphere } from '../../config/environment.js';
 
@@ -778,6 +778,7 @@ export function buildMall(scene, colliders) {
   buildMegaMartLook({ looks, layout: LAYOUT, keepClear: hallwayClear.slice(0, -2) });
   buildServiceCorridorLook({ looks, kit, layout: LAYOUT, corridor: service, keepClear: hallwayClear.slice(0, -2) });
   buildLevelTwoLook({ looks, layout: LAYOUT, floorY: upperY, hole: escalator.hole, keepClear: hallwayClear.slice(0, -2) });
+  buildAtriumLook({ looks, layout: LAYOUT, upperY, keepClear: hallwayClear.slice(0, -2) });
 
   return {
     id: 'mall',
