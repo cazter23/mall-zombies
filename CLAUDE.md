@@ -797,7 +797,16 @@ details, darkness only in back of house and in later rounds (step 7). Hallway no
 lavender wainscot + chrome rail + peach band, white ceiling, warm-white lamps/panels (x 16 panel dead), neon kept but BACKED (dark
 panels) where it sits on pastel walls; satire layer: neon OPEN 24/7/365/FOREVER and SMILE! IT'S IN YOUR CONTRACT, canvas posters
 (world/posterTextures.js: Sunny the sun mascot, EMPLOYEE OF THE MONTH = Dale the zombie x6, the YOU ARE HERE. YOU WILL STAY HERE. map,
-banners, notices: lost children, Galleria Rewards, wet floor); copy in look.hallway.satire. Still waiting for approval of this version.
+banners, notices: lost children, Galleria Rewards, wet floor); copy in look.hallway.satire. APPROVED ("This is good. Keep going.").
+Rolled out to every area (maps/mall/zoneLooks.js, one builder per area, all from config/look.js entries, one shared look kit):
+Start room (faded butter / raspberry clearance store; THANK YOU FOR SHOPPING! over the shutter, CLEARANCE), Food Court (peach / teal /
+coral; FRESH MEAT DAILY, EAT · SHOP · REPEAT, FREE REFILLS*), Mega Mart (cool white + brand blue / yellow; LOW PRICES. LOWER
+STANDARDS., SAVE MONEY. LIVE LESS., dying red tube at the back), Service Corridor (back of house: green / cream institutional
+two-tone, dying sick-green tube, red EXIT, staff notices, heavier clutter), Level 2 (pink trim, THE SUN NEVER SETS ON SAVINGS,
+YOUR STORE HERE!), Grand Atrium (neon sunsets beside SUNSET GALLERIA, COME FOR THE SALES. STAY FOREVER., trim round the arcade
+and ring). Walls an area borrows from a neighbour get a 1 cm paintPanel (paint is on both faces of a shared wall). Washes sit 1 cm
+off a wall (behind 2 cm stripes), sign glows 2.6 cm (coplanar.test covers the atrium and part of the Mart). Back of house is darker
+in DECOR only so far: real dimming is the zone lighting step. Not yet benchmarked (hidden pane too slow).
 (First version, superseded:)  config/look.js =
 the art direction as data (palette rules, hallway colours, neon colours, pool strengths, clutter; look.runtime = what the
 Graphics settings write: neonGlow, clutter). maps/mall/hallwayLook.js builds it on top of the hallway: plum wainscot + chrome
