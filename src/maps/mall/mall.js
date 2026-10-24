@@ -790,6 +790,17 @@ export function buildMall(scene, colliders) {
     playerSpawn,
     titleShots,
     benchmarkShots,
+    // Zone lighting (fx/zoneGrading.js, grades in config/look.js): which grade where. First match wins, so small areas
+    // come before the big ones they sit in; anywhere else (the hallway) uses the fallback grade.
+    gradeZones: [
+      { grade: 'serviceCorridor', minX: H.minX - T - SC.width, maxX: H.minX - T, minZ: -14, maxZ: SCD.maxZ, maxY: SC.height },
+      { grade: 'martBack', minX: M.minX + T, maxX: M.maxX, minZ: M.minZ, maxZ: -19.5, maxY: M.height },
+      { grade: 'megaMart', minX: M.minX + T, maxX: M.maxX, minZ: M.minZ, maxZ: M.maxZ, maxY: M.height },
+      { grade: 'startRoom', minX: R.minX, maxX: R.maxX, minZ: H.maxZ + T, maxZ: R.maxZ, maxY: R.height },
+      { grade: 'foodCourt', minX: F.minX, maxX: F.maxX, minZ: F.minZ - 6, maxZ: F.maxZ, maxY: F.height }, // (+ the recessed stores)
+      { grade: 'atrium', minX: AT.rect.minX, maxX: AT.rect.maxX, minZ: AT.rect.minZ, maxZ: AT.rect.maxZ },
+      { grade: 'level2', minX: H.minX, maxX: H.maxX, minZ: H.minZ, maxZ: H.maxZ, minY: H.height },
+    ],
     ambience: [...dressing.emitters, ...atrium.emitters],
     // Zombie navigation across floors (zombies/navigation.js): the ground floor and level 2, joined by the escalator.
     navigation: { floors: [0, upperY], links: [escalator.link, atrium.link] },

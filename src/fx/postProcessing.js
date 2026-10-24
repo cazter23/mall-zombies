@@ -5,12 +5,14 @@
 //   1. World RenderPass
 //   2. UnrealBloomPass (world emissives only; the close-up muzzle sprite must not wash over the whole frame)
 //   3. Viewmodel RenderPass (depth cleared on the active target so the gun never clips walls)
+//   3b. Grade pass (zone lighting, fx/zoneGrading.js: tint / saturation / contrast; exposure goes through the tone mapping)
 //   4. Cinema lens pass (subtle edge chromatic aberration + vignette, boosted slightly during sprint/slide)
 //   5. OutputPass (ACES Filmic Tone Mapping + sRGB conversion)
 // QUALITY (setQuality, Settings > Video > Visual effects):
 //   high  everything above (the default)
 //   low   no bloom, no lens pass, no MSAA: world + gun + tone mapping only
-//   off   no composer at all: the world and the gun are drawn straight to the screen (the cheapest path)
+//   off   no composer at all: the world and the gun are drawn straight to the screen (the cheapest path); a zone grade
+//         keeps only its exposure there
 // Automatically tracks renderer.getPixelRatio() and canvas dimensions so Video settings
 // ("Render resolution" slider and Low/Medium/High presets) work seamlessly.
 // =============================================================================
@@ -59,6 +61,34 @@ const CinemaLensShader = {
       float vig = 1.0 - smoothstep(0.8 - vignetteSoftness, 0.8, length(offset));
       vec3 color = mix(vec3(r, g, b) * (1.0 - vignetteStrength), vec3(r, g, b), vig);
       gl_FragColor = vec4(color, a);
+    }
+  `,
+};
+
+// Zone colour grading (a grade's extra `vignette` darkens the lens pass's edges, High only), in linear HDR before tone mapping: tint, then saturation round the luminance, then contrast round mid grey.
+const GradeShader = {
+  name: 'GradeShader',
+  uniforms: {
+    tDiffuse: { value: null },
+    tint: { value: new THREE.Vector3(1, 1, 1) },
+    saturation: { value: 1 },
+    contrast: { value: 1 },
+  },
+  vertexShader: CinemaLensShader.vertexShader,
+  fragmentShader: /* glsl */ `
+    uniform sampler2D tDiffuse;
+    uniform vec3 tint;
+    uniform float saturation;
+    uniform float contrast;
+    varying vec2 vUv;
+
+    void main() {
+      vec4 texel = texture2D(tDiffuse, vUv);
+      vec3 c = max(texel.rgb * tint, vec3(0.0));
+      float luma = dot(c, vec3(0.2126, 0.7152, 0.0722));
+      c = max(mix(vec3(luma), c, saturation), vec3(0.0));
+      c = 0.18 * pow(c / 0.18, vec3(contrast));
+      gl_FragColor = vec4(c, texel.a);
     }
   `,
 };
@@ -121,6 +151,9 @@ export function createPostProcessing({ renderer, scene, camera, viewmodel }) {
   };
   composer.addPass(viewmodelPass);
 
+  const gradePass = new ShaderPass(GradeShader);
+  composer.addPass(gradePass);
+
   const lensPass = new ShaderPass(CinemaLensShader);
   lensPass.uniforms.aberration.value = cfg.aberrationBase;
   lensPass.uniforms.vignetteStrength.value = cfg.vignetteStrength;
@@ -168,7 +201,10 @@ export function createPostProcessing({ renderer, scene, camera, viewmodel }) {
     get quality() {
       return quality;
     },
-    render({ showViewmodel = true, speedAmount = 0 } = {}) {
+    gradePass,
+    /** grade: { exposure, tint, saturation, contrast } (fx/zoneGrading.js), or null for none. */
+    render({ showViewmodel = true, speedAmount = 0, grade = null } = {}) {
+      renderer.toneMappingExposure = cfg.exposure * (grade?.exposure ?? 1);
       if (quality === 'off') {
         // No composer: the world, then (depth cleared so the gun never clips walls) the gun, straight to the screen.
         renderer.setRenderTarget(null);
@@ -182,7 +218,15 @@ export function createPostProcessing({ renderer, scene, camera, viewmodel }) {
       }
       syncSize();
       viewmodelPass.enabled = showViewmodel;
+      const neutral = !grade || (grade.saturation === 1 && grade.contrast === 1 && grade.tint.every((t) => t === 1));
+      gradePass.enabled = !neutral; // (no extra full-screen pass while there's nothing to grade)
+      if (!neutral) {
+        gradePass.uniforms.tint.value.fromArray(grade.tint);
+        gradePass.uniforms.saturation.value = grade.saturation;
+        gradePass.uniforms.contrast.value = grade.contrast;
+      }
       lensPass.uniforms.aberration.value = cfg.aberrationBase + cfg.aberrationSprintBoost * speedAmount;
+      lensPass.uniforms.vignetteStrength.value = Math.min(0.9, cfg.vignetteStrength + (grade?.vignette ?? 0));
       composer.render();
     },
     dispose() {

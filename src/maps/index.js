@@ -19,6 +19,7 @@
 //   playerSpawn   { position, yaw }
 //   titleShots    [{ from, to, lookFrom, lookTo }]   the main menu's camera flyover (ui/titleCamera.js)
 //   benchmarkShots [{ name, from, to, lookFrom, lookTo }]  optional: the timed camera route of the benchmark (fx/benchmark.js)
+//   gradeZones    [{ grade, minX, maxX, minZ, maxZ, minY?, maxY? }]  optional: zone lighting (fx/zoneGrading.js, config/look.js grading)
 //   ambience      optional [{ id, kind, zone, position: [x,y,z], range }] cosmetic spatial emitters
 //   update(dt)    animate doors etc.
 //   reset()       new run: close doors, lock zones

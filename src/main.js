@@ -34,6 +34,8 @@ import { createAutoGraphics } from './game/autoGraphics.js';
 import { wireRunIntro } from './game/runIntro.js';
 import { atmosphere } from './config/environment.js';
 import { createPostProcessing } from './fx/postProcessing.js';
+import { createZoneGrading } from './fx/zoneGrading.js';
+import { look } from './config/look.js';
 import { createCareerStats } from './game/careerStats.js';
 
 // --- Renderer, scene, camera ---------------------------------------------------
@@ -119,6 +121,9 @@ function handleDebugKeys() {
 // Created after the HUD and sound so each setting's apply() can reach them.
 // The light pool (fx/lightPool.js): on lower Graphics settings a few real lights follow the camera round the map's lamps.
 const lightPool = createLightPool({ scene, sources: collectPointLights(map.group, g.arena?.group) });
+// Zone lighting: the view eases to the colour grade of the area the camera is in (fx/zoneGrading.js, config/look.js grading).
+const zoneGrading = createZoneGrading({ zones: map.gradeZones, ...look.grading });
+const gradeAt = (frameTime) => zoneGrading.update(frameTime, camera.position, look.runtime.zoneGrading);
 const firstLaunch = !hasSavedSettings(); // (read before anything is saved)
 const settings = createSettings({ renderer, sound, hud, postProcessing, lightPool });
 // First launch: pick a Graphics preset that suits this computer from the title flyover's frame rate (game/autoGraphics.js).
@@ -151,7 +156,7 @@ if (debugPanel) {
 const benchmark = createBenchmark({
   camera, renderer, draw: () => {
     lightPool.update(camera.position, 1 / 60);
-    postProcessing.render({ showViewmodel: false, speedAmount: 0 });
+    postProcessing.render({ showViewmodel: false, speedAmount: 0, grade: gradeAt(1 / 60) });
   },
 });
 async function runBenchmark() {
@@ -383,7 +388,7 @@ function render(alpha, frameTime) {
   hud.setRoundFlashing(rounds.inBreak && rounds.round > 1); // counter blinks in the break between rounds
 
   // Render world + viewmodel through HDR post-processing (UnrealBloom + lens vignette/aberration + ACES tone mapping).
-  postProcessing.render({ showViewmodel: !game.over, speedAmount });
+  postProcessing.render({ showViewmodel: !game.over, speedAmount, grade: gradeAt(frameTime) });
 }
 
 // The main menu's backdrop: the camera glides through the mall (map.titleShots), fading through black at each cut.
@@ -399,7 +404,7 @@ function renderTitle(frameTime) {
   lightPool.update(camera.position, frameTime);
   body.root.visible = false;
   effects.update(frameTime);
-  postProcessing.render({ showViewmodel: false, speedAmount: 0 });
+  postProcessing.render({ showViewmodel: false, speedAmount: 0, grade: gradeAt(frameTime) });
 }
 
 // Dying: the view drops to the floor and rolls onto its side.

@@ -20,6 +20,25 @@ export const look = {
   runtime: {
     neonGlow: true, // neon halos + painted light pools (Graphics > Neon glow)
     clutter: 'full', // decoration density: 'none' | 'some' | 'full' (Graphics > Clutter)
+    zoneGrading: true, // per-area colour grading (Graphics > Zone lighting)
+  },
+
+  // ZONE LIGHTING (fx/zoneGrading.js): each area's grade; the view eases to the grade of the area the camera is in
+  // (map.gradeZones says where they are). exposure scales the light (1 = as lit), tint multiplies the colour,
+  // saturation 0 = grey / 1 = as is, contrast > 1 = deeper shadows, vignette = extra darkening at the screen edges (High only). Front of house stays bright; back of house goes dark.
+  grading: {
+    blendSeconds: 0.8, // how long a change of area takes to settle
+    fallback: 'front', // anywhere outside every zone (the hallway)
+    grades: {
+      front: { exposure: 1, tint: [1, 1, 1], saturation: 1.04, contrast: 1 },
+      startRoom: { exposure: 0.97, tint: [1.03, 1, 0.94], saturation: 0.92, contrast: 1 }, // faded clearance store
+      foodCourt: { exposure: 1.02, tint: [1.04, 1, 0.95], saturation: 1.06, contrast: 1 }, // warm and hungry
+      megaMart: { exposure: 1, tint: [0.97, 1, 1.04], saturation: 0.98, contrast: 1.02 }, // cool fluorescent
+      martBack: { exposure: 0.55, tint: [1.1, 0.88, 0.85], saturation: 0.8, contrast: 1.15, vignette: 0.2 }, // the stockroom walkway: dim, red
+      serviceCorridor: { exposure: 0.42, tint: [0.88, 1.05, 0.8], saturation: 0.6, contrast: 1.2, vignette: 0.3 }, // back of house: dark, sick green
+      level2: { exposure: 1, tint: [1.05, 0.98, 0.92], saturation: 1.03, contrast: 1 }, // the Sunset Promenade
+      atrium: { exposure: 1.03, tint: [1.05, 0.99, 0.92], saturation: 1.06, contrast: 1 }, // under the sunset skylight
+    },
   },
 
   // The start room: a clearance store in its final week (for about forty years). Faded butter and raspberry, a neon
