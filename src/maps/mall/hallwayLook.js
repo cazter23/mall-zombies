@@ -71,6 +71,13 @@ export function buildHallwayLook({ kit, layout, colliders, keepClear = [] }) {
   // West wall (x = H.minX): the Service Corridor door. East wall (x = H.maxX): the Mega Mart gate.
   run('z', H.minZ, H.maxZ, H.minX, 1, [[SCD.minZ, SCD.maxZ]]);
   run('z', H.minZ, H.maxZ, H.maxX, -1, [[MD.minZ, MD.maxZ]]);
+  // The east end wall is the Mega Mart's (white on both faces): a 1 cm panel in the hallway's colour over its hallway side,
+  // round the Mega Mart gate (behind the wainscot, which stands 2 cm proud).
+  const paint = mat(L.wall);
+  const eastPanel = (z0, z1, y0, y1) => box(H.maxX - 0.01, y0, z0, H.maxX, y1, z1, paint, { collide: false, name: 'hallway_east_paint' });
+  eastPanel(H.minZ, MD.minZ, 0, H.height);
+  eastPanel(MD.maxZ, H.maxZ, 0, H.height);
+  eastPanel(MD.minZ, MD.maxZ, MD.height, H.height);
 
   // --- Neon: signs, the SUNSET GALLERIA centrepiece, trim tubes along the long walls ------------------------------------
   const neonGroup = dynamicGroup('hallway_neon');
@@ -148,7 +155,7 @@ export function buildHallwayLook({ kit, layout, colliders, keepClear = [] }) {
   // Signs: a halo on the wall behind, a pool on the floor in front.
   pool(0, 4.3, H.minZ + wallIn + 0.006, 7.5, 2.6, 1, S.foodCourt, P.wallOpacity);
   pool(0, 0.012, H.minZ + 2.2, 7, 4, 'floor', S.foodCourt, P.floorOpacity);
-  pool(H.maxX - wallIn, 4.3, (MD.minZ + MD.maxZ) / 2, 6.5, 2.6, 'x-', S.megaMart, P.wallOpacity);
+  pool(H.maxX - 0.02, 4.3, (MD.minZ + MD.maxZ) / 2, 6.5, 2.6, 'x-', S.megaMart, P.wallOpacity); // (in front of the east panel)
   pool(H.maxX - 2.2, 0.012, (MD.minZ + MD.maxZ) / 2, 4, 6.5, 'floor', S.megaMart, P.floorOpacity);
   pool((gate.from + gate.to) / 2, 4.3, H.maxZ - wallIn - 0.006, 6, 2.2, -1, S.atrium, P.wallOpacity); // (in front of the trim wash)
   pool(H.minX + wallIn, 3.6, (SCD.minZ + SCD.maxZ) / 2, 3, 1.2, 'x+', S.staffOnly, P.wallOpacity);
