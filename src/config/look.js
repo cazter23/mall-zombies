@@ -72,4 +72,30 @@ export const look = {
       kinds: { receipts: 4, sodaCup: 2, shoppingBag: 2, popcorn: 1.5, puddle: 2, brokenGlass: 1, trashPile: 1, coins: 1.2, cassettes: 1, cautionTape: 0.6 },
     },
   },
+
+  // The Food Court: the cheeriest room in the mall (peach, teal, coral), and the hungriest.
+  foodCourt: {
+    wall: 0xffd9c4, // peach
+    wainscot: 0x74c7bd, // teal
+    rail: 0xd8dce4,
+    band: 0xff9f8b, // coral
+    floor: { base: '#fbebd9', grout: '#6cc8bc', variation: 14, seed: 3 }, // cream terrazzo, teal grout
+    trimY: 5.4,
+    trim: NEON_COLORS.sunsetOrange,
+    signs: { meat: NEON_COLORS.hotPink, eat: NEON_COLORS.cyan, refills: NEON_COLORS.electricPurple },
+    satire: {
+      meat: 'FRESH MEAT DAILY',
+      eat: 'EAT · SHOP · REPEAT',
+      refills: 'FREE REFILLS*',
+      refillsSmall: ['*OF WHAT?', 'Management reserves the right not to say.'],
+      inspection: ['HEALTH INSPECTION: A+', 'Inspector not seen since March.'],
+      combo: ['TRY OUR NEW BRAINS COMBO!', '(CONTAINS BRAINS)'],
+      seat: ['SEAT YOURSELF!', 'Tables are for paying customers. Mostly.'],
+    },
+    clutter: {
+      seed: 1987,
+      perSquareMeter: 0.07,
+      kinds: { sodaCup: 4, popcorn: 3, receipts: 2, puddle: 2, trashPile: 1.5, shoppingBag: 1, overturnedChair: 0.8, coins: 0.8 },
+    },
+  },
 };

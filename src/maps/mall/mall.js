@@ -49,6 +49,7 @@ import { buildLevelTwo } from './levelTwo.js';
 import { buildAtrium } from './atrium.js';
 import { buildHallwayLook } from './hallwayLook.js';
 import { createLookKit } from './lookKit.js';
+import { buildFoodCourtLook } from './zoneLooks.js';
 import { look } from '../../config/look.js';
 import { atmosphere } from '../../config/environment.js';
 
@@ -191,7 +192,7 @@ export function buildMall(scene, colliders) {
   tiledFloor(H.minX, H.minZ, H.maxX, H.maxZ, look.hallway.floor); // (the reference room's black terrazzo: config/look.js)
   // Continue beneath both shared walls: a floor gap under the west shortcut can split the nav
   // grid when other loaded geometry (the debug range, future areas) shifts its cell centres.
-  tiledFloor(F.minX - T, F.minZ, F.maxX, H.minZ, { base: '#f1e8d6', grout: '#cdbfa8', seed: 3 });
+  tiledFloor(F.minX - T, F.minZ, F.maxX, H.minZ, look.foodCourt.floor); // (config/look.js)
   tiledFloor(R.minX, R.minZ, R.maxX, R.maxZ, { base: '#d9cdb7', grout: '#a99a82', variation: 18, seed: 11 });
 
   // (The hallway's ceiling is built with the escalator below: it has a hole for it.)
@@ -397,7 +398,7 @@ export function buildMall(scene, colliders) {
   // The concourse's shops, pillars and planters, plus three food stalls along the south wall and
   // tables in the middle (a clear lane runs from the door to the tree planter).
 
-  const courtWall = mat(COLORS.concourseWall);
+  const courtWall = mat(look.foodCourt.wall);
   wall({
     along: 'x', from: F.minX - T, to: F.maxX, at0: F.minZ - T, at1: F.minZ, height: F.height,
     openings: storeOpenings(LAYOUT.stores, 'south'), // the two recessed stores' fronts
@@ -772,6 +773,7 @@ export function buildMall(scene, colliders) {
   ];
   const looks = createLookKit({ kit, colliders }); // (one for the whole map: it follows the Graphics settings for all of it)
   buildHallwayLook({ looks, kit, layout: LAYOUT, keepClear: hallwayClear });
+  buildFoodCourtLook({ looks, kit, layout: LAYOUT, keepClear: hallwayClear.slice(0, -2) }); // (spawns, buy spots, doors; not the hallway's lanes)
 
   return {
     id: 'mall',
