@@ -257,3 +257,45 @@ export function buildStartRoomLook({ looks, kit, layout }) {
   // The store's farewell notice beside the shutter (3 cm proud).
   looks.poster('notice', { title: L.satire.closing[0], body: L.satire.closing[1], header: '#d9768a' }, 3.4, 2.0, front + 0.03, 1.2, 0.9, 1);
 }
+
+/** Level 2 (the Sunset Promenade): pink trim, THE SUN NEVER SETS ON SAVINGS, YOUR STORE HERE!, posters, light clutter. */
+export function buildLevelTwoLook({ looks, layout, floorY, hole, keepClear = [] }) {
+  const L = look.level2;
+  const H = layout.hallway; // level 2 has the hallway's footprint
+  const L2 = layout.level2;
+  const y = (h) => floorY + h;
+  const S = L.signs;
+  const sat = L.satire;
+  const backing = look.hallway.backing;
+  const north = H.maxZ - 0.05;
+  const south = H.minZ + 0.05;
+
+  // Neon: the sunset slogan over the south-west vent, YOUR STORE HERE! over the escalator lobby, pink trim along both long walls.
+  const neon = looks.neon('level2');
+  neon.sign({ text: sat.sunset, x: -12, y: y(2.75), z: south, facing: 1, height: 0.24, color: S.sunset, backing, border: L.trim, flickerLetters: [8] });
+  neon.sign({ text: sat.leasing, x: -15, y: y(2.75), z: north, facing: -1, height: 0.26, color: S.leasing, backing, flickerLetters: [11] });
+  const tY = y(L.trimY);
+  neon.tube([[H.minX + 0.4, tY, north], [H.maxX - 0.4, tY, north]], { color: L.trim });
+  neon.tube([[H.minX + 0.4, tY, south], [-1, tY, south]], { color: L.trim, flicker: true });
+  neon.tube([[1, tY, south], [H.maxX - 0.4, tY, south]], { color: L.trim });
+
+  // Painted light: washes under the trim (behind the shop facades), glows behind the two signs.
+  const P = look.hallway.pools;
+  looks.pool(0, tY - 0.45, H.maxZ - 0.01, H.maxX - H.minX - 1, 0.9, -1, L.trim, P.trimOpacity, { wash: true });
+  looks.pool(0, tY - 0.45, H.minZ + 0.01, H.maxX - H.minX - 1, 0.9, 1, L.trim, P.trimOpacity, { wash: true });
+  looks.pool(-12, y(2.75), H.minZ + 0.026, 7.5, 1.1, 1, S.sunset, P.wallOpacity);
+  looks.pool(-15, y(2.75), H.maxZ - 0.026, 4.6, 1.1, -1, S.leasing, P.wallOpacity);
+
+  // Posters, 3 cm proud: the leasing notice under its neon, a banner over the south benches, Sunny on the east wall.
+  looks.poster('notice', { title: sat.leasingNote[0], body: sat.leasingNote[1], header: '#22c3d6' }, -15, y(1.8), H.maxZ - 0.03, 1.2, 0.9, -1);
+  looks.poster('banner', { text: sat.top[0], sub: sat.top[1], colors: ['#ffb38a', '#c9b6e4'] }, -6.7, y(1.9), H.minZ + 0.03, 3.4, 0.9, 1);
+  looks.poster('sunny', { text: sat.view[0], sub: sat.view[1] }, H.maxX - 0.03, y(1.9), 0, 1.0, 1.5, 'x-');
+
+  // Clutter (never over the escalator well or the balcony voids, spawns, doors).
+  const pad = (r) => ({ minX: r.minX - 0.3, maxX: r.maxX + 0.3, minZ: r.minZ - 0.3, maxZ: r.maxZ + 0.3 });
+  looks.clutter({
+    name: 'level2', area: { minX: H.minX + 0.3, maxX: H.maxX - 0.3, minZ: H.minZ + 0.3, maxZ: H.maxZ - 0.3, y: floorY },
+    kinds: L.clutter.kinds, seed: L.clutter.seed, perSquareMeter: L.clutter.perSquareMeter,
+    keepClear: [...keepClear, pad(hole), ...L2.voids.map(pad), { minX: H.minX, maxX: hole.minX, minZ: H.minZ, maxZ: H.maxZ }],
+  });
+}

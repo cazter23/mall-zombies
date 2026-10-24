@@ -164,4 +164,24 @@ export const look = {
       kinds: { puddle: 3, trashPile: 2, cardboardBox: 1.5, receipts: 1.5, cautionTape: 1.2, brokenGlass: 1.2, ceilingTile: 1, sodaCup: 0.8 },
     },
   },
+
+  // Level 2, the Sunset Promenade (its peach / coral / dusk-purple surfaces are in levelTwo.js): pink trim, a sunset slogan,
+  // an empty upper floor still pitching itself to tenants and to shoppers looking down from the balconies.
+  level2: {
+    trimY: 3.2, // above the floor
+    trim: NEON_COLORS.hotPink,
+    signs: { sunset: NEON_COLORS.sunsetOrange, leasing: NEON_COLORS.cyan },
+    satire: {
+      sunset: 'THE SUN NEVER SETS ON SAVINGS',
+      leasing: 'YOUR STORE HERE!',
+      leasingNote: ['NOW LEASING', 'Ask about our lifetime lease. Our very literal lifetime lease.'],
+      top: ['WELCOME TO THE TOP!', '(PLEASE ENJOY IT. YOU ARE NOT LEAVING.)'],
+      view: ['ENJOY THE VIEW!', 'Please do not feed the shoppers below.'],
+    },
+    clutter: {
+      seed: 1990,
+      perSquareMeter: 0.05,
+      kinds: { receipts: 2, sodaCup: 2, shoppingBag: 1.5, puddle: 1, coins: 1, popcorn: 1, cassettes: 1 },
+    },
+  },
 };

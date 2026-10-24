@@ -17,7 +17,7 @@ test('the hallway hangs its satire posters on the walls, 3 cm proud, and the cop
   const map = buildMall(new THREE.Scene(), []);
   const posters = [];
   const H = LAYOUT.hallway;
-  const inHallway = (o) => o.position.z > H.minZ - 0.1 && o.position.z < H.maxZ + 0.1 && o.position.x > H.minX && o.position.x < H.maxX;
+  const inHallway = (o) => o.position.z > H.minZ - 0.1 && o.position.z < H.maxZ + 0.1 && o.position.x > H.minX && o.position.x < H.maxX && o.position.y < H.height; // (not level 2's, above it)
   map.group.traverse((o) => { if (o.name.startsWith('poster_') && inHallway(o)) posters.push(o); });
   assert.ok(posters.length >= 8, `${posters.length} posters`);
   for (const p of posters) {
