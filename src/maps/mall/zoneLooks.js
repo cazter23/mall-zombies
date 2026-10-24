@@ -221,3 +221,39 @@ export function buildServiceCorridorLook({ looks, kit, layout, corridor, keepCle
     kinds: L.clutter.kinds, seed: L.clutter.seed, perSquareMeter: L.clutter.perSquareMeter, keepClear,
   });
 }
+
+/** The start room (a clearance store): faded butter / raspberry bands, CLEARANCE and THANK YOU FOR SHOPPING! in neon. */
+export function buildStartRoomLook({ looks, kit, layout }) {
+  const L = look.startRoom;
+  const R = layout.startRoom;
+  const D = layout.doorway;
+  const front = layout.hallway.maxZ + layout.wallThickness; // the storefront wall's inside face
+  const colors = { wainscot: L.wainscot, rail: L.rail, band: L.band };
+
+  // The storefront wall is the hallway's (its storefront colour on both faces): paint the inside, round the shutter's doorway.
+  paintPanel(kit, {
+    along: 'x', from: R.minX, to: R.maxX, wallAt: front, facing: 1, height: R.height, color: L.wall, name: 'startroom_paint',
+    holes: [{ from: D.minX, to: D.maxX, top: D.height }],
+  });
+
+  // Bands round the shelf (west), the Price Gun station (east), the boarded vents (back) and the shutter (front).
+  looks.bands({ along: 'z', from: front, to: R.maxZ, wallAt: R.minX, facing: 1, colors, gaps: [[7.9, 11.6]], name: 'startroom_wainscot' });
+  looks.bands({ along: 'z', from: front, to: R.maxZ, wallAt: R.maxX, facing: -1, colors, gaps: [[9.1, 10.9]], name: 'startroom_wainscot' });
+  looks.bands({ along: 'x', from: R.minX, to: R.maxX, wallAt: R.maxZ, facing: -1, colors, gaps: [[-4.4, -2.6], [2.6, 4.4]], name: 'startroom_wainscot' });
+  looks.bands({ along: 'x', from: R.minX, to: R.maxX, wallAt: front + 0.01, facing: 1, colors, gaps: [[D.minX, D.maxX]], name: 'startroom_wainscot' });
+
+  // Neon: CLEARANCE over the west wall (past the shelf), and the goodbye over the shutter: the first thing you see.
+  const neon = looks.neon('startRoom');
+  const S = L.signs;
+  const backing = look.hallway.backing;
+  neon.sign({ text: L.satire.thanks, x: 0, y: 3.5, z: front + 0.05, facing: 1, height: 0.24, color: S.thanks, backing, flickerLetters: [9] });
+  neon.sign({ text: L.satire.clearance, x: R.minX + 0.05, y: 3.25, z: 13.4, facing: 'x+', height: 0.36, color: S.clearance, backing, border: S.thanks, flickerLetters: [4] });
+
+  const P = look.hallway.pools;
+  looks.pool(0, 3.5, front + 0.026, 6.5, 1.0, 1, S.thanks, P.wallOpacity);
+  looks.pool(R.minX + 0.026, 3.25, 13.4, 4.2, 1.3, 'x+', S.clearance, P.wallOpacity);
+  looks.pool(R.minX + 1.4, 0.012, 13.4, 2.6, 3.6, 'floor', S.clearance, P.floorOpacity * 0.7);
+
+  // The store's farewell notice beside the shutter (3 cm proud).
+  looks.poster('notice', { title: L.satire.closing[0], body: L.satire.closing[1], header: '#d9768a' }, 3.4, 2.0, front + 0.03, 1.2, 0.9, 1);
+}

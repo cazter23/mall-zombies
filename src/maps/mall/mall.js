@@ -49,7 +49,7 @@ import { buildLevelTwo } from './levelTwo.js';
 import { buildAtrium } from './atrium.js';
 import { buildHallwayLook } from './hallwayLook.js';
 import { createLookKit } from './lookKit.js';
-import { buildFoodCourtLook, buildMegaMartLook, buildServiceCorridorLook } from './zoneLooks.js';
+import { buildFoodCourtLook, buildMegaMartLook, buildServiceCorridorLook, buildStartRoomLook } from './zoneLooks.js';
 import { look } from '../../config/look.js';
 import { atmosphere } from '../../config/environment.js';
 
@@ -229,7 +229,7 @@ export function buildMall(scene, colliders) {
 
   // --- Start room walls ------------------------------------------------------
 
-  const roomWall = mat(COLORS.startRoomWall);
+  const roomWall = mat(look.startRoom.wall);
   wall({ along: 'z', from: H.maxZ + T, to: R.maxZ + T, at0: R.minX - T, at1: R.minX, height: R.height }, roomWall, { name: 'startroom_wall_west' });
   wall({ along: 'z', from: H.maxZ + T, to: R.maxZ + T, at0: R.maxX, at1: R.maxX + T, height: R.height }, roomWall, { name: 'startroom_wall_east' });
   wall({ along: 'x', from: R.minX - T, to: R.maxX + T, at0: R.maxZ, at1: R.maxZ + T, height: R.height }, roomWall, { name: 'startroom_wall_back' });
@@ -774,6 +774,7 @@ export function buildMall(scene, colliders) {
   const looks = createLookKit({ kit, colliders }); // (one for the whole map: it follows the Graphics settings for all of it)
   buildHallwayLook({ looks, kit, layout: LAYOUT, keepClear: hallwayClear });
   buildFoodCourtLook({ looks, kit, layout: LAYOUT, keepClear: hallwayClear.slice(0, -2) }); // (spawns, buy spots, doors; not the hallway's lanes)
+  buildStartRoomLook({ looks, kit, layout: LAYOUT });
   buildMegaMartLook({ looks, layout: LAYOUT, keepClear: hallwayClear.slice(0, -2) });
   buildServiceCorridorLook({ looks, kit, layout: LAYOUT, corridor: service, keepClear: hallwayClear.slice(0, -2) });
 

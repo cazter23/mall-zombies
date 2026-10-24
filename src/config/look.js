@@ -22,6 +22,22 @@ export const look = {
     clutter: 'full', // decoration density: 'none' | 'some' | 'full' (Graphics > Clutter)
   },
 
+  // The start room: a clearance store in its final week (for about forty years). Faded butter and raspberry, a neon
+  // CLEARANCE that still buzzes, and a goodbye over the shutter you're about to buy. Its own dressing (startRoomDetails.js)
+  // already has the litter, so no clutter here.
+  startRoom: {
+    wall: 0xf2e2bd, // faded butter
+    wainscot: 0xd9768a, // faded raspberry
+    rail: 0xd8dce4,
+    band: 0x8ad0c8, // faded aqua
+    signs: { thanks: NEON_COLORS.hotPink, clearance: NEON_COLORS.electricPurple },
+    satire: {
+      thanks: 'THANK YOU FOR SHOPPING!',
+      clearance: 'CLEARANCE',
+      closing: ['STORE CLOSING', 'Thank you for 40 wonderful years. And counting. And counting.'],
+    },
+  },
+
   hallway: {
     wall: 0xcfeae0, // pale mint (upper wall)
     wainscot: 0xb9a6dc, // lavender, 0 .. wainscotHeight
