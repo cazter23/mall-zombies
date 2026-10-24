@@ -21,6 +21,18 @@ export const look = {
     neonGlow: true, // neon halos + painted light pools (Graphics > Neon glow)
     clutter: 'full', // decoration density: 'none' | 'some' | 'full' (Graphics > Clutter)
     zoneGrading: true, // per-area colour grading (Graphics > Zone lighting)
+    vhs: 'off', // the VHS tape look: 'off' | 'subtle' | 'full' (Graphics > VHS filter; a style choice, off by default)
+  },
+
+  // THE VHS FILTER (fx/postProcessing.js VhsShader): a worn rental tape. Each number is at 'full'; 'subtle' scales them all.
+  vhs: {
+    strength: { off: 0, subtle: 0.5, full: 1 },
+    scanlines: 0.14, // darkening between scanlines (one dark line every 2 screen pixels)
+    bleed: 0.0028, // colour fringing: red and blue smeared sideways (fraction of the screen width)
+    wobble: 0.0007, // the whole picture's gentle sideways waver
+    grain: 0.05, // tape noise
+    desaturate: 0.18, // tapes lose colour
+    trackingBand: { height: 0.06, speed: 0.07, shift: 0.006, streaks: 0.25 }, // the bright rolling band of bad tracking
   },
 
   // ZONE LIGHTING (fx/zoneGrading.js): each area's grade; the view eases to the grade of the area the camera is in

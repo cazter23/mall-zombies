@@ -117,6 +117,17 @@ export const settingDefs = [
     id: 'zoneGrading', tab: 'Graphics', label: 'Zone lighting', type: 'toggle', default: true, cost: 'low',
     apply: (v) => { look.runtime.zoneGrading = v; },
   },
+  {
+    // The VHS tape look (fx/postProcessing.js VhsShader): a style choice, so no cost tag and no preset changes it.
+    // One cheap full-screen pass; with Visual effects Off it still shows (that frame is drawn like Low).
+    id: 'vhsFilter', tab: 'Graphics', label: 'VHS filter', type: 'select', default: 'off',
+    options: [
+      { value: 'off', label: 'Off' },
+      { value: 'subtle', label: 'Subtle' },
+      { value: 'full', label: 'Full' },
+    ],
+    apply: (v) => { look.runtime.vhs = v; },
+  },
 
   // ---- Mouse ----
   {

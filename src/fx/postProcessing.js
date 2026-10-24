@@ -6,13 +6,14 @@
 //   2. UnrealBloomPass (world emissives only; the close-up muzzle sprite must not wash over the whole frame)
 //   3. Viewmodel RenderPass (depth cleared on the active target so the gun never clips walls)
 //   3b. Grade pass (zone lighting, fx/zoneGrading.js: tint / saturation / contrast; exposure goes through the tone mapping)
+//   3c. VHS pass (Graphics > VHS filter, config/look.js `vhs`, off by default: scanlines, colour bleed, grain, a tracking band)
 //   4. Cinema lens pass (subtle edge chromatic aberration + vignette, boosted slightly during sprint/slide)
 //   5. OutputPass (ACES Filmic Tone Mapping + sRGB conversion)
 // QUALITY (setQuality, Settings > Video > Visual effects):
 //   high  everything above (the default)
 //   low   no bloom, no lens pass, no MSAA: world + gun + tone mapping only
 //   off   no composer at all: the world and the gun are drawn straight to the screen (the cheapest path); a zone grade
-//         keeps only its exposure there
+//         keeps only its exposure there. With the VHS filter on, Off draws like Low instead (the filter needs the composer)
 // Automatically tracks renderer.getPixelRatio() and canvas dimensions so Video settings
 // ("Render resolution" slider and Low/Medium/High presets) work seamlessly.
 // =============================================================================
@@ -24,6 +25,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { atmosphere } from '../config/environment.js';
+import { look } from '../config/look.js';
 
 const CinemaLensShader = {
   name: 'CinemaLensShader',
@@ -93,6 +95,72 @@ const GradeShader = {
   `,
 };
 
+// The VHS tape look, in linear HDR before tone mapping (look.runtime.vhs picks the strength; numbers in look.vhs).
+const VhsShader = {
+  name: 'VhsShader',
+  uniforms: {
+    tDiffuse: { value: null },
+    time: { value: 0 },
+    strength: { value: 0 },
+    resolution: { value: new THREE.Vector2(800, 600) },
+    scanlines: { value: 0 },
+    bleed: { value: 0 },
+    wobble: { value: 0 },
+    grain: { value: 0 },
+    desaturate: { value: 0 },
+    band: { value: new THREE.Vector4(0, 0, 0, 0) }, // height, speed, shift, streaks
+  },
+  vertexShader: CinemaLensShader.vertexShader,
+  fragmentShader: /* glsl */ `
+    uniform sampler2D tDiffuse;
+    uniform float time;
+    uniform float strength;
+    uniform vec2 resolution;
+    uniform float scanlines;
+    uniform float bleed;
+    uniform float wobble;
+    uniform float grain;
+    uniform float desaturate;
+    uniform vec4 band;
+    varying vec2 vUv;
+
+    float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+
+    void main() {
+      vec2 uv = vUv;
+      // The tracking band rolls down the screen; inside it the picture tears sideways and streaks.
+      float bandY = 1.0 - fract(time * band.y);
+      float inBand = 1.0 - smoothstep(0.0, band.x, abs(uv.y - bandY));
+      float line = floor(uv.y * resolution.y);
+      uv.x += sin(uv.y * 40.0 + time * 1.7) * wobble * strength;
+      uv.x += (hash(vec2(line, floor(time * 30.0))) - 0.5) * band.z * inBand * strength;
+
+      // Colour bleed: red and blue smeared to either side of the brightness.
+      float b = bleed * strength;
+      vec3 c;
+      c.r = (texture2D(tDiffuse, uv + vec2(b, 0.0)).r + texture2D(tDiffuse, uv + vec2(b * 2.0, 0.0)).r) * 0.5;
+      c.g = texture2D(tDiffuse, uv).g;
+      c.b = (texture2D(tDiffuse, uv - vec2(b, 0.0)).b + texture2D(tDiffuse, uv - vec2(b * 2.0, 0.0)).b) * 0.5;
+      float a = texture2D(tDiffuse, uv).a;
+
+      float luma = dot(c, vec3(0.2126, 0.7152, 0.0722));
+      c = mix(c, vec3(luma), desaturate * strength);
+      // Scanlines (one dark line every 2 screen pixels), grain, and the band's streaks.
+      float scan = 0.5 + 0.5 * cos(vUv.y * resolution.y * 3.14159265);
+      c *= 1.0 - scanlines * strength * scan;
+      float n = hash(vUv * resolution + fract(time) * 100.0) - 0.5;
+      c += n * grain * strength * (0.4 + luma);
+      c += inBand * band.w * strength * step(0.985, hash(vec2(floor(vUv.x * resolution.x * 0.25), line + floor(time * 24.0))));
+      gl_FragColor = vec4(max(c, vec3(0.0)), a);
+    }
+  `,
+};
+
+/** How strong the VHS filter is for a setting value ('off' | 'subtle' | 'full'). */
+export function vhsStrength(mode = look.runtime.vhs) {
+  return look.vhs.strength[mode] ?? 0;
+}
+
 export function createPostProcessing({ renderer, scene, camera, viewmodel }) {
   const cfg = atmosphere.postProcessing ?? {
     exposure: 1.06,
@@ -154,6 +222,10 @@ export function createPostProcessing({ renderer, scene, camera, viewmodel }) {
   const gradePass = new ShaderPass(GradeShader);
   composer.addPass(gradePass);
 
+  const vhsPass = new ShaderPass(VhsShader);
+  vhsPass.enabled = false;
+  composer.addPass(vhsPass);
+
   const lensPass = new ShaderPass(CinemaLensShader);
   lensPass.uniforms.aberration.value = cfg.aberrationBase;
   lensPass.uniforms.vignetteStrength.value = cfg.vignetteStrength;
@@ -202,10 +274,12 @@ export function createPostProcessing({ renderer, scene, camera, viewmodel }) {
       return quality;
     },
     gradePass,
+    vhsPass,
     /** grade: { exposure, tint, saturation, contrast } (fx/zoneGrading.js), or null for none. */
     render({ showViewmodel = true, speedAmount = 0, grade = null } = {}) {
       renderer.toneMappingExposure = cfg.exposure * (grade?.exposure ?? 1);
-      if (quality === 'off') {
+      const vhs = vhsStrength();
+      if (quality === 'off' && vhs === 0) {
         // No composer: the world, then (depth cleared so the gun never clips walls) the gun, straight to the screen.
         renderer.setRenderTarget(null);
         renderer.clear();
@@ -218,6 +292,20 @@ export function createPostProcessing({ renderer, scene, camera, viewmodel }) {
       }
       syncSize();
       viewmodelPass.enabled = showViewmodel;
+      vhsPass.enabled = vhs > 0;
+      if (vhs > 0) {
+        const u = vhsPass.uniforms;
+        const V = look.vhs;
+        u.strength.value = vhs;
+        u.time.value = performance.now() / 1000;
+        u.resolution.value.set(lastWidth * lastPixelRatio, lastHeight * lastPixelRatio);
+        u.scanlines.value = V.scanlines;
+        u.bleed.value = V.bleed;
+        u.wobble.value = V.wobble;
+        u.grain.value = V.grain;
+        u.desaturate.value = V.desaturate;
+        u.band.value.set(V.trackingBand.height, V.trackingBand.speed, V.trackingBand.shift, V.trackingBand.streaks);
+      }
       const neutral = !grade || (grade.saturation === 1 && grade.contrast === 1 && grade.tint.every((t) => t === 1));
       gradePass.enabled = !neutral; // (no extra full-screen pass while there's nothing to grade)
       if (!neutral) {
