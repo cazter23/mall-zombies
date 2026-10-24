@@ -33,6 +33,7 @@ export const look = {
     lamp: { color: 0xfff0dc, intensity: 22, distance: 22 }, // warm white: the mall is OPEN
     panel: 0xfff8ee, // ceiling light panels: warm white (one is dead)
     panelGlow: 1.3,
+    backing: '#2a1838', // dark panels behind neon on pastel walls (neon alone washes out on light colours)
 
     trimY: 3.4, // the neon trim tubes along the long walls
     trim: { north: NEON_COLORS.cyan, south: NEON_COLORS.hotPink },

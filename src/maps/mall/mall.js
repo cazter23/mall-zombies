@@ -48,6 +48,7 @@ import { buildRestockMachine } from './restockMachine.js';
 import { buildLevelTwo } from './levelTwo.js';
 import { buildAtrium } from './atrium.js';
 import { buildHallwayLook } from './hallwayLook.js';
+import { createLookKit } from './lookKit.js';
 import { look } from '../../config/look.js';
 import { atmosphere } from '../../config/environment.js';
 
@@ -769,7 +770,8 @@ export function buildMall(scene, colliders) {
     { minX: D.minX - 1, maxX: D.maxX + 1, minZ: H.maxZ - 3, maxZ: H.maxZ }, // the start door's approach
     { minX: H.minX, maxX: H.maxX, minZ: HZ - 1.2, maxZ: HZ + 1.2 }, // the hallway's centre lane (fighting room)
   ];
-  const hallwayLook = buildHallwayLook({ kit, layout: LAYOUT, colliders, keepClear: hallwayClear });
+  const looks = createLookKit({ kit, colliders }); // (one for the whole map: it follows the Graphics settings for all of it)
+  buildHallwayLook({ looks, kit, layout: LAYOUT, keepClear: hallwayClear });
 
   return {
     id: 'mall',
@@ -796,12 +798,12 @@ export function buildMall(scene, colliders) {
     update(dt) {
       for (const door of doors) door.update(dt);
       dressing.update(dt);
-      hallwayLook.update(dt);
+      looks.update(dt);
     },
     reset() {
       for (const door of doors) door.reset();
       dressing.reset();
-      hallwayLook.reset();
+      looks.reset();
     },
     // Unload: colliders out of the shared list, GPU memory freed, group out of the scene.
     dispose() {
