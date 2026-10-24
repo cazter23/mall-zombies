@@ -49,7 +49,7 @@ import { buildLevelTwo } from './levelTwo.js';
 import { buildAtrium } from './atrium.js';
 import { buildHallwayLook } from './hallwayLook.js';
 import { createLookKit } from './lookKit.js';
-import { buildFoodCourtLook } from './zoneLooks.js';
+import { buildFoodCourtLook, buildMegaMartLook } from './zoneLooks.js';
 import { look } from '../../config/look.js';
 import { atmosphere } from '../../config/environment.js';
 
@@ -528,10 +528,10 @@ export function buildMall(scene, colliders) {
 
   // --- Mega Mart (east of the hallway, behind the 750 shutter) -----------------
 
-  tiledFloor(M.minX, M.minZ, M.maxX, M.maxZ, { base: '#e6e8e6', grout: '#c4c9c6', variation: 8, seed: 21 });
+  tiledFloor(M.minX, M.minZ, M.maxX, M.maxZ, look.megaMart.floor); // (config/look.js)
   box(M.minX + T, M.height, M.minZ - T, M.maxX + T, M.height + 0.3, M.maxZ + T, mat(COLORS.ceiling), { name: 'ceiling' });
 
-  const martWall = mat(COLORS.megaMartWall);
+  const martWall = mat(look.megaMart.wall);
   const ML = LAYOUT.atrium.martLink;
   wall({
     along: 'x', from: M.minX + T, to: M.maxX, at0: M.maxZ, at1: M.maxZ + T, height: M.height,
@@ -774,6 +774,7 @@ export function buildMall(scene, colliders) {
   const looks = createLookKit({ kit, colliders }); // (one for the whole map: it follows the Graphics settings for all of it)
   buildHallwayLook({ looks, kit, layout: LAYOUT, keepClear: hallwayClear });
   buildFoodCourtLook({ looks, kit, layout: LAYOUT, keepClear: hallwayClear.slice(0, -2) }); // (spawns, buy spots, doors; not the hallway's lanes)
+  buildMegaMartLook({ looks, layout: LAYOUT, keepClear: hallwayClear.slice(0, -2) });
 
   return {
     id: 'mall',

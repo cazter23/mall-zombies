@@ -97,3 +97,63 @@ export function buildFoodCourtLook({ looks, kit, layout, keepClear = [] }) {
     ],
   });
 }
+
+/** The Mega Mart: cool white and brand blue, LOW PRICES. LOWER STANDARDS. over the checkouts, a dying red tube at the back. */
+export function buildMegaMartLook({ looks, layout, keepClear = [] }) {
+  const L = look.megaMart;
+  const M = layout.megaMart;
+  const T = layout.wallThickness;
+  const MD = layout.megaMartDoorway;
+  const FM = layout.foodCourtMegaMartDoorway;
+  const ML = layout.atrium.martLink;
+  const west = M.minX + T; // the inside face of the shared west wall
+  const colors = { wainscot: L.wainscot, rail: L.rail, band: L.band };
+
+  // Wall bands, round the doorways, the Foam Dart wall buy, the emergency exit and the back wall's doors and vent.
+  looks.bands({ along: 'x', from: west, to: M.maxX, wallAt: M.maxZ, facing: -1, colors, gaps: [[ML.from, ML.to], [30.2, 32.8]], name: 'megamart_wainscot' });
+  looks.bands({ along: 'z', from: M.minZ, to: M.maxZ, wallAt: M.maxX, facing: -1, colors, gaps: [[1.4, 3.6]], name: 'megamart_wainscot' });
+  looks.bands({ along: 'x', from: west, to: M.maxX, wallAt: M.minZ, facing: 1, colors, gaps: [[20.85, 22.75], [25.2, 27.8], [30.5, 33.1]], name: 'megamart_wainscot' });
+  looks.bands({ along: 'z', from: M.minZ, to: M.maxZ, wallAt: west, facing: 1, colors, gaps: [[MD.minZ, MD.maxZ], [FM.minZ, FM.maxZ]], name: 'megamart_wainscot' });
+
+  // Neon: the slogan over the checkouts, the motto down the east wall, cyan trim; at the back, a dying red emergency tube.
+  const neon = looks.neon('megaMart');
+  const S = L.signs;
+  const sat = L.satire;
+  const backing = look.hallway.backing;
+  const north = M.maxZ - 0.05;
+  const east = M.maxX - 0.05;
+  const south = M.minZ + 0.05;
+  const tY = L.trimY;
+  neon.sign({ text: sat.slogan, x: 29.4, y: 4.4, z: north, facing: -1, height: 0.38, color: S.slogan, backing, border: S.live, flickerLetters: [21] });
+  neon.sign({ text: sat.live, x: east, y: 4.4, z: -13.5, facing: 'x-', height: 0.34, color: S.live, backing, flickerLetters: [17] });
+  neon.tube([[25.2, tY, north], [M.maxX - 0.4, tY, north]], { color: L.trim });
+  neon.tube([[east, tY, M.minZ + 0.4], [east, tY, -1]], { color: L.trim, flicker: true });
+  neon.tube([[west + 0.4, tY, south], [M.maxX - 0.4, tY, south]], { color: S.emergency, flicker: 'dying' });
+
+  // Painted light: trim washes 1 cm off the wall (behind the 2 cm brand stripe), sign glows in front of it.
+  const P = look.hallway.pools;
+  looks.pool(29.4, 4.4, M.maxZ - 0.026, 10.5, 1.6, -1, S.slogan, P.wallOpacity);
+  looks.pool(M.maxX - 0.026, 4.4, -13.5, 7, 1.5, 'x-', S.live, P.wallOpacity);
+  looks.pool(29.4, tY - 0.45, M.maxZ - 0.01, M.maxX - 25.2, 0.9, -1, L.trim, P.trimOpacity, { wash: true });
+  looks.pool(27.2, tY - 0.45, M.minZ + 0.01, M.maxX - west - 0.8, 0.9, 1, S.emergency, P.trimOpacity * 2, { wash: true });
+  looks.pool(27.2, 0.012, M.minZ + 1.6, M.maxX - west - 1, 3, 'floor', S.emergency, P.floorOpacity * 0.7);
+
+  // The corporate cheer on paper, 3 cm proud of the walls (clear of the detail pass's signs).
+  looks.poster('banner', { text: sat.mustGo[0], sub: sat.mustGo[1], colors: ['#ffd23f', '#9cc3e6'] }, west + 0.03, 2.6, -17, 4.0, 1.0, 'x+');
+  looks.poster('notice', { title: sat.priceMatch[0], body: sat.priceMatch[1], header: '#2f6fb5' }, west + 0.03, 2.0, -3.4, 1.2, 0.9, 'x+');
+  looks.poster('sunny', { text: sat.shopTillYouDrop[0], sub: sat.shopTillYouDrop[1] }, M.maxX - 0.03, 2.2, -10.5, 1.0, 1.5, 'x-');
+  looks.poster('notice', { title: sat.bulk[0], body: sat.bulk[1], header: '#ffd23f' }, M.maxX - 0.03, 2.0, -17.5, 1.2, 0.9, 'x-');
+  looks.poster('notice', { title: sat.stockroom[0], body: sat.stockroom[1], header: '#ff6b6b' }, 29.1, 2.55, M.minZ + 0.03, 1.2, 0.9, 1);
+
+  // Clutter (scatter keeps it out of the shelves; never the entrances, the checkout lanes, spawns or buy spots).
+  looks.clutter({
+    name: 'megaMart', area: { minX: west + 0.3, maxX: M.maxX - 0.3, minZ: M.minZ + 0.3, maxZ: M.maxZ - 0.3, y: 0 },
+    kinds: L.clutter.kinds, seed: L.clutter.seed, perSquareMeter: L.clutter.perSquareMeter,
+    keepClear: [
+      ...keepClear,
+      { minX: west, maxX: 24.2, minZ: MD.minZ, maxZ: MD.maxZ }, // the hallway entrance
+      { minX: west, maxX: 23.6, minZ: FM.minZ, maxZ: FM.maxZ }, // the Food Court shortcut
+      { minX: 24, maxX: 28, minZ: -5, maxZ: 5 }, // the checkout lanes (vaults)
+    ],
+  });
+}

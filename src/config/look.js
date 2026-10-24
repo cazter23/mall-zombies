@@ -98,4 +98,31 @@ export const look = {
       kinds: { sodaCup: 4, popcorn: 3, receipts: 2, puddle: 2, trashPile: 1.5, shoppingBag: 1, overturnedChair: 0.8, coins: 0.8 },
     },
   },
+
+  // The Mega Mart: a fluorescent big box, cool white and brand blue, still promising savings. Its back walkway (stockroom,
+  // receiving) is back of house: a dying red emergency tube, and that's where the light goes.
+  megaMart: {
+    wall: 0xe8edf1, // cool white
+    wainscot: 0x2f6fb5, // brand blue
+    rail: 0xd8dce4,
+    band: 0xffd23f, // brand yellow
+    floor: { base: '#eef1f3', grout: '#9cc3e6', variation: 8, seed: 21 }, // white vinyl, pale blue grout
+    trimY: 3.9,
+    trim: NEON_COLORS.cyan,
+    signs: { slogan: NEON_COLORS.cyan, live: NEON_COLORS.hotPink, emergency: NEON_COLORS.emergencyRed },
+    satire: {
+      slogan: 'LOW PRICES. LOWER STANDARDS.',
+      live: 'SAVE MONEY. LIVE LESS.',
+      mustGo: ['EVERYTHING MUST GO!', '(INCLUDING YOU)'],
+      priceMatch: ['PRICE MATCH GUARANTEE', "We match any price. We just don't pay it."],
+      shopTillYouDrop: ['SHOP TILL YOU DROP!', "We'll take it from there."],
+      bulk: ['BULK SAVINGS', 'Buy 2, get 1 eaten free.'],
+      stockroom: ['STOCKROOM RULES', '1. Do not open the stockroom. 2. See rule 1.'],
+    },
+    clutter: {
+      seed: 1988,
+      perSquareMeter: 0.05,
+      kinds: { receipts: 3, shoppingBag: 3, sodaCup: 1.5, puddle: 1.5, brokenGlass: 1, coins: 1, trashPile: 1, cautionTape: 0.6 },
+    },
+  },
 };
