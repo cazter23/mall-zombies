@@ -49,6 +49,7 @@ import { buildLevelTwo } from './levelTwo.js';
 import { buildAtrium } from './atrium.js';
 import { buildHallwayLook } from './hallwayLook.js';
 import { createLookKit } from './lookKit.js';
+import { buildSetPieces } from './setPieces.js';
 import { buildFoodCourtLook, buildMegaMartLook, buildServiceCorridorLook, buildStartRoomLook, buildLevelTwoLook, buildAtriumLook } from './zoneLooks.js';
 import { look } from '../../config/look.js';
 import { atmosphere } from '../../config/environment.js';
@@ -771,6 +772,8 @@ export function buildMall(scene, colliders) {
     { minX: D.minX - 1, maxX: D.maxX + 1, minZ: H.maxZ - 3, maxZ: H.maxZ }, // the start door's approach
     { minX: H.minX, maxX: H.maxX, minZ: HZ - 1.2, maxZ: HZ + 1.2 }, // the hallway's centre lane (fighting room)
   ];
+  // Set pieces first: their colliders keep the clutter scattered below out of them.
+  const setPieces = buildSetPieces({ kit, layout: LAYOUT, floorY: upperY }); // (one signature scene per area: maps/mall/setPieces.js)
   const looks = createLookKit({ kit, colliders }); // (one for the whole map: it follows the Graphics settings for all of it)
   buildHallwayLook({ looks, kit, layout: LAYOUT, keepClear: hallwayClear });
   buildFoodCourtLook({ looks, kit, layout: LAYOUT, keepClear: hallwayClear.slice(0, -2) }); // (spawns, buy spots, doors; not the hallway's lanes)
@@ -817,11 +820,13 @@ export function buildMall(scene, colliders) {
       for (const door of doors) door.update(dt);
       dressing.update(dt);
       looks.update(dt);
+      setPieces.update(dt);
     },
     reset() {
       for (const door of doors) door.reset();
       dressing.reset();
       looks.reset();
+      setPieces.reset();
     },
     // Unload: colliders out of the shared list, GPU memory freed, group out of the scene.
     dispose() {
