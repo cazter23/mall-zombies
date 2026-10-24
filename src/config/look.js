@@ -125,4 +125,27 @@ export const look = {
       kinds: { receipts: 3, shoppingBag: 3, sodaCup: 1.5, puddle: 1.5, brokenGlass: 1, coins: 1, trashPile: 1, cautionTape: 0.6 },
     },
   },
+
+  // The Service Corridor: BACK OF HOUSE, where the cheer runs out. Institutional two-tone (sick green under nicotine cream),
+  // a dying green tube, a red EXIT, and staff notices that say the quiet part out loud.
+  serviceCorridor: {
+    wall: 0xcfc6ad, // nicotine cream (upper wall)
+    wainscot: 0x6f8c6a, // institutional green
+    wainscotHeight: 1.2,
+    rail: 0x55595c, // dull steel
+    band: 0x9c3b33, // a dull red stripe
+    trimY: 2.95,
+    signs: { tube: NEON_COLORS.sickGreen, exit: NEON_COLORS.emergencyRed },
+    satire: {
+      clockIn: ['HAVE YOU CLOCKED IN?', 'There is no clocking out.'],
+      mandatoryFun: ['MANDATORY FUN', 'Thursdays. Attendance is mandatory. So is fun.'],
+      seeSomething: ['IF YOU SEE SOMETHING', 'say nothing. Management is aware.'],
+      breakRoom: ['BREAK ROOM CLOSED', 'Breaks are a privilege. Privileges are suspended.'],
+    },
+    clutter: {
+      seed: 1989,
+      perSquareMeter: 0.14,
+      kinds: { puddle: 3, trashPile: 2, cardboardBox: 1.5, receipts: 1.5, cautionTape: 1.2, brokenGlass: 1.2, ceilingTile: 1, sodaCup: 0.8 },
+    },
+  },
 };

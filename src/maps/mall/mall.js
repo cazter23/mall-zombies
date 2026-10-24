@@ -49,7 +49,7 @@ import { buildLevelTwo } from './levelTwo.js';
 import { buildAtrium } from './atrium.js';
 import { buildHallwayLook } from './hallwayLook.js';
 import { createLookKit } from './lookKit.js';
-import { buildFoodCourtLook, buildMegaMartLook } from './zoneLooks.js';
+import { buildFoodCourtLook, buildMegaMartLook, buildServiceCorridorLook } from './zoneLooks.js';
 import { look } from '../../config/look.js';
 import { atmosphere } from '../../config/environment.js';
 
@@ -499,7 +499,7 @@ export function buildMall(scene, colliders) {
     ],
   }, {
     floor: { base: '#a19d95', grout: '#857f76', variation: 6, seed: 13 },
-    wall: mat(COLORS.serviceWall), ceiling: mat(COLORS.serviceCeiling), name: 'service',
+    wall: mat(look.serviceCorridor.wall), ceiling: mat(COLORS.serviceCeiling), name: 'service',
   });
   // Dressing along the south run's west wall ('left', walking south). `at` = meters from the turn.
   const westWall = { along: 'z', wallAt: service.pointAt(1, 0, 'left').x, facing: 1 };
@@ -775,6 +775,7 @@ export function buildMall(scene, colliders) {
   buildHallwayLook({ looks, kit, layout: LAYOUT, keepClear: hallwayClear });
   buildFoodCourtLook({ looks, kit, layout: LAYOUT, keepClear: hallwayClear.slice(0, -2) }); // (spawns, buy spots, doors; not the hallway's lanes)
   buildMegaMartLook({ looks, layout: LAYOUT, keepClear: hallwayClear.slice(0, -2) });
+  buildServiceCorridorLook({ looks, kit, layout: LAYOUT, corridor: service, keepClear: hallwayClear.slice(0, -2) });
 
   return {
     id: 'mall',

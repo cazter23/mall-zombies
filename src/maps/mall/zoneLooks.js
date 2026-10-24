@@ -157,3 +157,67 @@ export function buildMegaMartLook({ looks, layout, keepClear = [] }) {
     ],
   });
 }
+
+/**
+ * The Service Corridor (back of house): green-and-cream two-tone, a dying sick-green tube, a red EXIT, staff notices.
+ * corridor = the corridor builder's layout (mall.js `service`), for the west wall and the dead end.
+ */
+export function buildServiceCorridorLook({ looks, kit, layout, corridor, keepClear = [] }) {
+  const L = look.serviceCorridor;
+  const SC = layout.serviceCorridor;
+  const SF = layout.serviceCorridorFoodCourtDoorway;
+  const eastX = layout.hallway.minX - layout.wallThickness; // the hallway's and Food Court's west walls (their outer face)
+  const westX = corridor.pointAt(1, 0, 'left').x;
+  const zAt = (at) => corridor.pointAt(1, at).z;
+  const northZ = corridor.points[1].z + SC.width / 2;
+  const endZ = zAt(SC.length);
+  const colors = { wainscot: L.wainscot, rail: L.rail, band: L.band };
+  const heights = { wainscot: L.wainscotHeight, band: [1.35, 1.45] };
+
+  // The east side is the hallway's and Food Court's walls (mint / peach on both faces): paint the corridor's face, round the
+  // shortcut to the Food Court. (The corridor's own north end is the shutter's doorway.)
+  paintPanel(kit, {
+    along: 'z', from: endZ, to: layout.serviceCorridor.doorway.minZ, wallAt: eastX, facing: -1, height: SC.height, color: L.wall,
+    holes: [{ from: SF.minZ, to: SF.maxZ, top: SF.height }], name: 'service_paint',
+  });
+
+  // Two-tone bands: the west wall round its vents, electrical panel, lockers and the cannon; the east face round the shortcut.
+  looks.bands({
+    along: 'z', from: endZ, to: northZ, wallAt: westX, facing: 1, colors, heights, name: 'service_wainscot',
+    gaps: [[zAt(4) - 0.8, zAt(4) + 0.8], [zAt(6.5) - 0.5, zAt(6.5) + 0.5], [zAt(9) - 0.8, zAt(9) + 0.8], [zAt(13) - 0.1, zAt(11) + 0.1], [zAt(15.4), zAt(13)]],
+  });
+  looks.bands({
+    along: 'z', from: endZ, to: layout.serviceCorridor.doorway.minZ, wallAt: eastX - 0.01, facing: -1, colors, heights,
+    gaps: [[SF.minZ - 0.2, SF.maxZ + 0.2]], name: 'service_wainscot',
+  });
+
+  // Neon, what little there is back here: a dying green tube along the east face, a red EXIT pointing back to the mall.
+  const neon = looks.neon('serviceCorridor');
+  const S = L.signs;
+  const tY = L.trimY;
+  const east = eastX - 0.05;
+  neon.tube([[east, tY, endZ + 0.4], [east, tY, SF.minZ - 0.4]], { color: S.tube, flicker: 'dying' });
+  neon.tube([[east, tY, SF.maxZ + 0.4], [east, tY, layout.serviceCorridor.doorway.minZ - 0.3]], { color: S.tube, dead: true });
+  neon.sign({ text: 'EXIT', x: westX + 0.05, y: 2.75, z: zAt(0.3), facing: 'x+', height: 0.22, color: S.exit, backing: look.hallway.backing, flickerLetters: [1] });
+
+  // Painted light: a sick green wash under the tube, red round the EXIT and a red glow at the dead end.
+  const P = look.hallway.pools;
+  const midZ = (endZ + layout.serviceCorridor.doorway.minZ) / 2;
+  const span = layout.serviceCorridor.doorway.minZ - endZ - 0.8;
+  looks.pool(eastX - 0.012, tY - 0.45, midZ, span, 0.9, 'x-', S.tube, P.trimOpacity * 1.5, { wash: true });
+  looks.pool(westX + 0.022, 2.75, zAt(0.3), 1.6, 0.9, 'x+', S.exit, P.wallOpacity * 1.4);
+  looks.pool(corridor.points[2].x, 0.012, endZ + 1.4, SC.width - 0.2, 2.6, 'floor', S.exit, P.floorOpacity * 0.8);
+
+  // Staff notices on the painted east face, 3 cm proud.
+  const onEast = eastX - 0.03;
+  looks.poster('notice', { title: L.satire.clockIn[0], body: L.satire.clockIn[1], header: '#9c3b33' }, onEast, 1.9, zAt(1.6) - 1.2, 1.0, 0.75, 'x-');
+  looks.poster('notice', { title: L.satire.mandatoryFun[0], body: L.satire.mandatoryFun[1], header: '#ffd23f' }, onEast, 1.9, zAt(5.5), 1.1, 0.82, 'x-');
+  looks.poster('notice', { title: L.satire.seeSomething[0], body: L.satire.seeSomething[1], header: '#6f8c6a' }, onEast, 1.9, zAt(9.5), 1.1, 0.82, 'x-');
+  looks.poster('notice', { title: L.satire.breakRoom[0], body: L.satire.breakRoom[1], header: '#55595c' }, onEast, 1.9, zAt(12), 1.0, 0.75, 'x-');
+
+  // Clutter: it's worse back here.
+  looks.clutter({
+    name: 'serviceCorridor', area: { minX: westX + 0.25, maxX: eastX - 0.25, minZ: endZ + 0.25, maxZ: northZ - 0.25, y: 0 },
+    kinds: L.clutter.kinds, seed: L.clutter.seed, perSquareMeter: L.clutter.perSquareMeter, keepClear,
+  });
+}
