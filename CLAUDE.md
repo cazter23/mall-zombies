@@ -791,6 +791,17 @@ foundation, 2) the hallway as the approved REFERENCE ROOM, 3) neon + painted lig
   (signs). 1483 -> 436 meshes, pixel-identical (mean diff 0 in 4 views), draw calls 612 -> 190 average (atrium ring 1378 -> 519).
 - 1e Auto graphics (game/autoGraphics.js): the FIRST launch only (nothing saved) measures the title flyover's frame rate (visible,
   focused, hitch-free frames after a warm-up) and picks a preset (config/settings.js autoGraphics tiers).
+Step 2 (IN REVIEW: waiting for the user's approval before rolling out): the HALLWAY is the reference room. config/look.js =
+the art direction as data (palette rules, hallway colours, neon colours, pool strengths, clutter; look.runtime = what the
+Graphics settings write: neonGlow, clutter). maps/mall/hallwayLook.js builds it on top of the hallway: plum wainscot + chrome
+rail round every opening, neon signs (FOOD COURT dead U, MEGA MART, GRAND ATRIUM, dying red STAFF ONLY, "GO NG OUT OF BUS NESS"),
+a SUNSET GALLERIA centrepiece (neon sun + two stars; palms read as stick figures at that size), cyan/pink trim tubes in pieces,
+painted light pools (additive soft quads, no real lights; sign glows sit 6 mm in front of the trim wash so coplanar.test passes),
+a paint panel over the Mega Mart's white end wall, and clutter (world/scatter.js) kept out of doorways / spawns / buy spots / the
+centre lane. mall.js takes the hallway's wall / floor / ceiling colours, lamps and dim violet light panels (props.lightPanel tint/glow)
+from look.js; the old flat hallway signs are gone. Neon, pools and clutter groups are userData.dynamic (never static-batched).
+Graphics settings neonGlow (halos + pools) and clutter (none/some/full) in every preset. Shots for review were taken from the
+production preview with a canvas capture (main menu HUD excluded).
 Room/portal culling was planned for 1d but frustum culling of the 12m batch chunks already does most of it; revisit if needed.
 Also merged: world/neon.js (neon tube builder) and world/decor.js + world/scatter.js (decoration kit), not placed yet.
 
