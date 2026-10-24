@@ -791,7 +791,14 @@ foundation, 2) the hallway as the approved REFERENCE ROOM, 3) neon + painted lig
   (signs). 1483 -> 436 meshes, pixel-identical (mean diff 0 in 4 views), draw calls 612 -> 190 average (atrium ring 1378 -> 519).
 - 1e Auto graphics (game/autoGraphics.js): the FIRST launch only (nothing saved) measures the title flyover's frame rate (visible,
   focused, hitch-free frames after a warm-up) and picks a preset (config/settings.js autoGraphics tiers).
-Step 2 (IN REVIEW: waiting for the user's approval before rolling out): the HALLWAY is the reference room. config/look.js =
+Step 2 REVISED after review: the user liked the neon but NOT the black, and missed the corporate-satire tone. New direction
+"GRAND OPENING, FOREVER" (config/look.js header): a bright 80s pastel mall still cheerfully open around the zombies; horror in the
+details, darkness only in back of house and in later rounds (step 7). Hallway now: cream terrazzo with pink grout, mint walls,
+lavender wainscot + chrome rail + peach band, white ceiling, warm-white lamps/panels (x 16 panel dead), neon kept but BACKED (dark
+panels) where it sits on pastel walls; satire layer: neon OPEN 24/7/365/FOREVER and SMILE! IT'S IN YOUR CONTRACT, canvas posters
+(world/posterTextures.js: Sunny the sun mascot, EMPLOYEE OF THE MONTH = Dale the zombie x6, the YOU ARE HERE. YOU WILL STAY HERE. map,
+banners, notices: lost children, Galleria Rewards, wet floor); copy in look.hallway.satire. Still waiting for approval of this version.
+(First version, superseded:)  config/look.js =
 the art direction as data (palette rules, hallway colours, neon colours, pool strengths, clutter; look.runtime = what the
 Graphics settings write: neonGlow, clutter). maps/mall/hallwayLook.js builds it on top of the hallway: plum wainscot + chrome
 rail round every opening, neon signs (FOOD COURT dead U, MEGA MART, GRAND ATRIUM, dying red STAFF ONLY, "GO NG OUT OF BUS NESS"),
