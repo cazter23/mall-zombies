@@ -254,4 +254,31 @@ export const look = {
       kinds: { receipts: 2, coins: 2.5, sodaCup: 2, shoppingBag: 1.5, popcorn: 1, puddle: 1, brokenGlass: 0.8, fallenSign: 0.5 },
     },
   },
+
+  // HOFFMAN'S · Est. Forever (maps/mall/departmentStore*.js; the room's own colours are config/departmentStore.js): the
+  // department store that thinks it's still 1986's classiest address. Cream and gold, burgundy wainscot, a hot-pink script
+  // logo, and copy that reads like a store policy written by the undead.
+  departmentStore: {
+    wainscot: 0x8c2f45, // burgundy
+    rail: 0xc9a14a, // brass
+    band: 0xe8b4bc, // dusty rose
+    trimY: 4.35,
+    trim: NEON_COLORS.hotPink,
+    signs: { logo: NEON_COLORS.hotPink, border: NEON_COLORS.white, slogan: NEON_COLORS.cyan, size: NEON_COLORS.electricPurple },
+    satire: {
+      logo: "HOFFMAN'S",
+      tagline: 'EST. FOREVER',
+      final: 'ALL SALES FINAL. SO ARE YOU.',
+      size: 'YOUR SIZE IS IN THE BACK.',
+      hiring: ['NOW HIRING', 'Full time. All the time. Forever.'],
+      layaway: ['LAYAWAY PLAN', 'Pay forever. Take it home never.'],
+      fitting: ['FITTING ROOMS', 'Limit 3 items. 0 exits.'],
+      opening: ['GRAND OPENING', 'EVERYTHING MUST STAY'],
+    },
+    clutter: {
+      seed: 1988,
+      perSquareMeter: 0.05,
+      kinds: { receipts: 3, shoppingBag: 3, coins: 1, brokenGlass: 0.8, puddle: 0.8, cautionTape: 0.4 },
+    },
+  },
 };

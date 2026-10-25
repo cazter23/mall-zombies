@@ -51,7 +51,7 @@ import { buildAtrium } from './atrium.js';
 import { buildHallwayLook } from './hallwayLook.js';
 import { createLookKit } from './lookKit.js';
 import { buildSetPieces } from './setPieces.js';
-import { buildFoodCourtLook, buildMegaMartLook, buildServiceCorridorLook, buildStartRoomLook, buildLevelTwoLook, buildAtriumLook } from './zoneLooks.js';
+import { buildFoodCourtLook, buildMegaMartLook, buildServiceCorridorLook, buildStartRoomLook, buildLevelTwoLook, buildAtriumLook, buildDepartmentStoreLook } from './zoneLooks.js';
 import { look } from '../../config/look.js';
 import { atmosphere } from '../../config/environment.js';
 import { promenade } from '../../config/promenade.js';
@@ -841,6 +841,7 @@ export function buildMall(scene, colliders) {
   buildLevelTwoLook({ looks, layout: LAYOUT, floorY: upperY, hole: escalator.hole, keepClear: hallwayClear.slice(0, -2) });
   buildPromenadeDetails({ kit, looks, layout: LAYOUT.level2, floorY: upperY });
   buildAtriumLook({ looks, layout: LAYOUT, upperY, keepClear: hallwayClear.slice(0, -2) });
+  buildDepartmentStoreLook({ looks, kit, layout: LAYOUT, keepClear: hallwayClear.slice(0, -2) });
 
   // The horror layer (game/features/horror.js, config/look.js horror): which lamps and neon it may kill, area by area
   // (areas are zone lighting's grades, so a power cut darkens the same space its grade covers).

@@ -379,3 +379,82 @@ export function buildAtriumLook({ looks, layout, upperY, keepClear = [] }) {
     ],
   });
 }
+
+/** HOFFMAN'S (the department store): cream walls, burgundy wainscot and brass rail, the hot-pink logo, store policy in neon. */
+export function buildDepartmentStoreLook({ looks, kit, layout, keepClear = [] }) {
+  const L = look.departmentStore;
+  const DS = layout.departmentStore;
+  const r = DS.rect;
+  const gate = DS.gate;
+  const side = DS.startRoomLink;
+  const F = DS.fittingRooms;
+  const W = DS.shoeWall;
+  const T = layout.wallThickness;
+  const startRoomBack = layout.startRoom.maxZ + T; // north of this the east wall is the store's own
+  const colors = { wainscot: L.wainscot, rail: L.rail, band: L.band };
+
+  // Paint over the walls it borrows: the hallway's north wall (round the gate) and the start room's west wall (round the
+  // side door, up past the start room's ceiling slab to where the store's own wall starts).
+  paintPanel(kit, {
+    along: 'x', from: r.minX, to: r.maxX, wallAt: r.minZ, facing: 1, height: DS.height, color: DS.colors.wall, name: 'deptstore_paint',
+    holes: [{ from: gate.from, to: gate.to, top: gate.height }],
+  });
+  paintPanel(kit, {
+    along: 'z', from: r.minZ, to: startRoomBack, wallAt: r.maxX, facing: -1, height: 4.3, color: DS.colors.wall, name: 'deptstore_paint',
+    holes: [{ from: side.from, to: side.to, top: side.height }],
+  });
+
+  // Bands round the gate, the side door, the vent, the stockroom door, and the fitting rooms and shoe wall (flush to the walls).
+  const stockroom = [DS.stockroomDoorX - 1.1, DS.stockroomDoorX + 1.1];
+  looks.bands({ along: 'x', from: r.minX, to: r.maxX, wallAt: r.minZ + 0.01, facing: 1, colors, gaps: [[gate.from, gate.to]], name: 'deptstore_wainscot' });
+  looks.bands({ along: 'x', from: r.minX, to: r.maxX, wallAt: r.maxZ, facing: -1, colors, gaps: [[F.x0, F.x1 + 0.1], stockroom, [r.maxX - W.depth - 0.1, r.maxX]], name: 'deptstore_wainscot' });
+  looks.bands({ along: 'z', from: r.minZ, to: r.maxZ, wallAt: r.minX, facing: 1, colors, gaps: [[DS.westVentZ - 0.8, DS.westVentZ + 0.8], [r.maxZ - F.depth - 0.1, r.maxZ]], name: 'deptstore_wainscot' });
+  looks.bands({ along: 'z', from: r.minZ, to: startRoomBack, wallAt: r.maxX - 0.01, facing: -1, colors, gaps: [[side.from, side.to]], name: 'deptstore_wainscot' });
+  looks.bands({ along: 'z', from: startRoomBack, to: r.maxZ, wallAt: r.maxX, facing: -1, colors, gaps: [[W.z0 - 0.1, W.z1 + 0.1]], name: 'deptstore_wainscot' });
+
+  // Neon: the logo on the back wall, store policy over the way out and over the shoes, a pink trim tube down the west wall.
+  // Over the gate on the hallway side: the name, so you know what 1250 buys.
+  const neon = looks.neon('departmentStore');
+  const S = L.signs;
+  const sat = L.satire;
+  const backing = look.hallway.backing;
+  const logoX = (F.x1 + DS.stockroomDoorX - 1.1) / 2 - 0.4;
+  neon.sign({ text: sat.logo, x: logoX, y: 3.95, z: r.maxZ - 0.05, facing: -1, height: 0.62, color: S.logo, backing, border: S.border, flickerLetters: [6] });
+  neon.sign({ text: sat.tagline, x: logoX, y: 3.2, z: r.maxZ - 0.05, facing: -1, height: 0.2, color: S.slogan, backing });
+  const finalX = (gate.to + r.maxX) / 2;
+  neon.sign({ text: sat.final, x: finalX, y: 3.75, z: r.minZ + 0.06, facing: 1, height: 0.28, color: S.slogan, backing, flickerLetters: [20] });
+  const sizeZ = (W.z0 + W.z1) / 2;
+  neon.sign({ text: sat.size, x: r.maxX - 0.05, y: 3.25, z: sizeZ, facing: 'x-', height: 0.24, color: S.size, backing, deadLetters: [9] });
+  const hallNorth = layout.hallway.maxZ - 0.04;
+  neon.sign({ text: sat.logo, x: (gate.from + gate.to) / 2, y: 3.95, z: hallNorth, facing: -1, height: 0.42, color: S.logo, backing, border: S.border });
+  neon.tube([[r.minX + 0.05, L.trimY, r.minZ + 0.4], [r.minX + 0.05, L.trimY, r.maxZ - 0.4]], { color: L.trim, flicker: true });
+
+  // Painted light behind the signs and under the trim (sign glows 6 mm in front of the wash, 1 cm off the wall).
+  const P = look.hallway.pools;
+  looks.pool(logoX, 3.7, r.maxZ - 0.026, 6, 2.2, -1, S.logo, P.wallOpacity);
+  looks.pool(logoX, 0.012, r.maxZ - 2.6, 5, 3, 'floor', S.logo, P.floorOpacity * 0.7);
+  looks.pool(finalX, 3.75, r.minZ + 0.036, 8.5, 1.2, 1, S.slogan, P.wallOpacity);
+  looks.pool(r.maxX - 0.026, 3.25, sizeZ, 6.5, 1.1, 'x-', S.size, P.wallOpacity);
+  looks.pool((gate.from + gate.to) / 2, 3.95, layout.hallway.maxZ - 0.021, 5, 1.5, -1, S.logo, P.wallOpacity);
+  looks.pool(r.minX + 0.01, L.trimY - 0.45, (r.minZ + r.maxZ) / 2, r.maxZ - r.minZ - 1, 0.9, 'x+', L.trim, P.trimOpacity, { wash: true });
+
+  // The policies on paper, 3 cm proud: hiring by the gate, layaway on the back wall, Dale (employee of the month, every month)
+  // on the west wall, the grand opening over the side door, the fitting-room rules on the fitting rooms' open end.
+  looks.poster('notice', { title: sat.hiring[0], body: sat.hiring[1], header: '#8c2f45' }, gate.to + 1.3, 2.0, r.minZ + 0.04, 1.0, 0.75, 1);
+  looks.poster('notice', { title: sat.layaway[0], body: sat.layaway[1], header: '#c9a14a' }, (F.x1 + DS.stockroomDoorX - 1.1) / 2, 1.9, r.maxZ - 0.03, 1.2, 0.9, -1);
+  looks.poster('employee', {}, r.minX + 0.03, 2.25, 14.4, 2.0, 1.33, 'x+');
+  looks.poster('banner', { text: sat.opening[0], sub: sat.opening[1], colors: ['#f6e7c8', '#e8b4bc'] }, r.maxX - 0.04, 3.55, (side.from + side.to) / 2, 3.6, 0.9, 'x-');
+  looks.poster('sunny', { text: sat.fitting[0], sub: sat.fitting[1] }, F.x1 + 0.03, 1.5, r.maxZ - F.depth / 2, 0.8, 1.2, 'x+');
+
+  // Clutter (scatter keeps it off the fixtures; never in the gate, the side door or the counters' vault lanes).
+  looks.clutter({
+    name: 'departmentStore', area: { minX: r.minX + 0.3, maxX: r.maxX - 0.3, minZ: r.minZ + 0.3, maxZ: r.maxZ - 0.3, y: 0 },
+    kinds: L.clutter.kinds, seed: L.clutter.seed, perSquareMeter: L.clutter.perSquareMeter,
+    keepClear: [
+      ...keepClear,
+      { minX: gate.from - 0.5, maxX: gate.to + 0.5, minZ: r.minZ, maxZ: r.minZ + 3 },
+      { minX: r.maxX - 3, maxX: r.maxX, minZ: side.from - 0.5, maxZ: side.to + 0.5 },
+      ...[...DS.counters, DS.layaway].map((c) => ({ minX: c.x0, maxX: c.x1, minZ: c.z - 2, maxZ: c.z + 2 })),
+    ],
+  });
+}
