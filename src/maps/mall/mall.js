@@ -55,6 +55,7 @@ import { buildFoodCourtLook, buildMegaMartLook, buildServiceCorridorLook, buildS
 import { look } from '../../config/look.js';
 import { atmosphere } from '../../config/environment.js';
 import { promenade } from '../../config/promenade.js';
+import { buildPromenadeDetails } from './promenadeDetails.js';
 
 export const LAYOUT = {
   startRoom: { minX: -5, maxX: 5, minZ: 6, maxZ: 16, height: 4 },
@@ -81,7 +82,6 @@ export const LAYOUT = {
       { id: 'comingSoon', from: -3, to: 3, color: 0xe6c37a, text: 'COMING SOON', signBackground: '#ffd23f', signColor: '#1d1626', note: 'A NEW LOOK IS COMING' },
       { id: 'pretzel', from: 4, to: 10, color: 0xd9822b, text: 'PRETZEL PALACE', signBackground: '#5c2e12', signColor: '#ffd9a8', gate: 2.0 },
     ],
-    seating: { planterX: 14.2, planterZ: 1.6, wallBenches: [[-9, -7.2], [-6.2, -4.4]] },
     // Balcony voids: open holes in level 2's floor (= the hallway ceiling), railed, looking down into the hallway. The 4m strip
     // between them is a bridge in front of the start room / Food Court doors.
     voids: [
@@ -809,6 +809,7 @@ export function buildMall(scene, colliders) {
   buildMegaMartLook({ looks, layout: LAYOUT, keepClear: hallwayClear.slice(0, -2) });
   buildServiceCorridorLook({ looks, kit, layout: LAYOUT, corridor: service, keepClear: hallwayClear.slice(0, -2) });
   buildLevelTwoLook({ looks, layout: LAYOUT, floorY: upperY, hole: escalator.hole, keepClear: hallwayClear.slice(0, -2) });
+  buildPromenadeDetails({ kit, looks, layout: LAYOUT.level2, floorY: upperY });
   buildAtriumLook({ looks, layout: LAYOUT, upperY, keepClear: hallwayClear.slice(0, -2) });
 
   // The horror layer (game/features/horror.js, config/look.js horror): which lamps and neon it may kill, area by area
@@ -823,7 +824,7 @@ export function buildMall(scene, colliders) {
       { id: 'foodCourt', grades: ['foodCourt'], neons: ['foodCourt'] },
       { id: 'megaMart', grades: ['megaMart', 'martBack'], neons: ['megaMart'] },
       { id: 'serviceCorridor', grades: ['serviceCorridor'], neons: ['serviceCorridor'] },
-      { id: 'level2', grades: ['level2'], neons: ['level2'] },
+      { id: 'level2', grades: ['level2'], neons: ['level2', 'promenade_workshop'] },
       { id: 'atrium', grades: ['atrium'], neons: ['atrium'] },
     ],
   };
@@ -843,13 +844,17 @@ export function buildMall(scene, colliders) {
     cullAreas: [
       { id: 'startRoom', minX: R.minX, maxX: R.maxX, minY: 0, maxY: R.height + 0.3, minZ: H.maxZ + T, maxZ: R.maxZ },
       { id: 'hallway', minX: H.minX, maxX: H.maxX, minY: 0, maxY: H.height, minZ: H.minZ, maxZ: H.maxZ },
-      { id: 'level2', minX: H.minX, maxX: H.maxX, minY: upperY, maxY: upperY + LAYOUT.level2.height + 0.3, minZ: H.minZ, maxZ: H.maxZ },
+      { id: 'level2', ...LAYOUT.level2.rect, minY: upperY, maxY: upperY + LAYOUT.level2.height + 0.3 },
+      { id: 'shoePer', ...LAYOUT.level2.sections.find(s => s.id === 'shoePer'), minZ: LAYOUT.level2.rect.maxZ + T,
+        minY: upperY, maxY: upperY + LAYOUT.level2.height + 0.3 },
       { id: 'foodCourt', minX: F.minX, maxX: F.maxX, minY: 0, maxY: F.height + 0.3, minZ: F.minZ - 6, maxZ: F.maxZ }, // (+ the recessed stores)
       { id: 'megaMart', minX: M.minX + T, maxX: M.maxX, minY: 0, maxY: M.height + 0.3, minZ: M.minZ, maxZ: M.maxZ },
       { id: 'serviceCorridor', minX: H.minX - T - SC.width, maxX: H.minX - T, minY: 0, maxY: SC.height + 0.3, minZ: -14, maxZ: SCD.maxZ },
       { id: 'atrium', minX: AT.rect.minX, maxX: AT.rect.maxX, minY: 0, maxY: upperY + AT.upperHeight + 0.3, minZ: AT.rect.minZ, maxZ: AT.rect.maxZ },
     ],
     cullPortals: [
+      ...LAYOUT.level2.shoeStore.entrances.map(e => ({ a: 'level2', b: 'shoePer', minX: e.from, maxX: e.to,
+        minY: upperY, maxY: upperY + e.top, minZ: LAYOUT.level2.rect.maxZ, maxZ: LAYOUT.level2.rect.maxZ + T })),
       { a: 'startRoom', b: 'hallway', door: 'startShutter', minX: D.minX, maxX: D.maxX, minY: 0, maxY: D.height, minZ: H.maxZ, maxZ: H.maxZ + T },
       { a: 'hallway', b: 'foodCourt', door: 'foodCourt', minX: FD.minX, maxX: FD.maxX, minY: 0, maxY: FD.height, minZ: H.minZ - T, maxZ: H.minZ },
       { a: 'hallway', b: 'megaMart', door: 'megaMart', minX: M.minX, maxX: M.minX + T, minY: 0, maxY: MD.height, minZ: MD.minZ, maxZ: MD.maxZ },

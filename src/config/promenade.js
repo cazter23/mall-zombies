@@ -4,6 +4,32 @@ export const promenade = {
   rect: { minX: -20, maxX: 20, minZ: -4.5, maxZ: 6 },
   slabThickness: .3,
   wallThickness: .3,
+  seating: {
+    planterX: 14.2, planterZ: 1.6,
+    landmark: { halfWidth: .55, halfDepth: .4, height: .65 },
+    // Rectangles hug the perimeter, leaving the Atrium approach and east-wing
+    // reservation open. The older western benches remain movement obstacles.
+    loungeBenches: [[11.6, -4.4, 14.6, -3.9], [19.4, .4, 19.9, 2.3], [17.3, 5.4, 18.8, 5.9]],
+    wallBenches: [[-9, -7.2], [-6.2, -4.4]],
+  },
+  details: {
+    colors: { brass: 0xbba16f, plum: 0x56415d, cream: 0xe6d7bd, dark: 0x302d3c,
+      peach: 0xcc947b, teal: 0x638e90, paper: 0xf2e6ce, glass: 0xbdd6d4, ink: 0x44404a },
+    directory: { x: 10.3, height: 1.7, width: 1.35 },
+    phones: { z: [2.55, 3.05], y: 1.55 },
+    magazineRack: { x: 16.25, width: 1.05 },
+    skylight: { minX: 16.5, maxX: 19, minZ: -.8, maxZ: 2.2 },
+    hangingSigns: [
+      { x: -10.6, z: -2.25, width: 2.6, text: 'SHOPS  ·  EAST LOUNGE →', color: '#d9bddf' },
+      { x: 11.2, z: 3.85, width: 2.4, text: 'GRAND ATRIUM →', color: '#e7c99a' },
+    ],
+    workshop: { title: 'BUILD-A-BLASTER', subtitle: 'CUSTOM WORKSHOP · COMING SOON',
+      notice: 'EXCUSE OUR PERMANENT IMPROVEMENTS', neon: 0xeab68c, paperSeed: 54 },
+    pretzel: { notice: 'BACK AFTER ONE LAST BREAK', menu: 'ORIGINAL  2.50    /    CINNAMON  SOLD OUT',
+      colors: [0xb37841, 0xd29a57, 0xa36737] },
+    shoe: { tickets: ['PAIRING IS CARING', 'LAST PAIR. BOTH LEFT.', 'SOLES FOR EVERY SOUL'],
+      boxColors: [0xab7e80, 0x82718b, 0xb49b71] },
+  },
   sections: [
     { id: 'promenade', minX: -20, maxX: 20, minZ: -4.5, maxZ: 6 },
     { id: 'shoePer', minX: -10.3, maxX: -3.7, minZ: 6, maxZ: 11.6 },

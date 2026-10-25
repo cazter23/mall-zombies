@@ -41,7 +41,7 @@ function getToyBrandTexture() {
   if (!ctx) return null;
   ctx.fillStyle = '#153a66';
   ctx.fillRect(0, 0, 160, 56);
-  ctx.fillStyle = '#ffd23f';
+  ctx.fillStyle = '#ffb800';
   ctx.fillRect(4, 4, 152, 24);
   ctx.fillStyle = '#ff7a1a';
   ctx.fillRect(4, 24, 152, 5);

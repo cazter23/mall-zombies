@@ -119,7 +119,8 @@ export function buildLevelTwo({ kit, props, floorY, supportRect, supportRects = 
   // --- Empty shop fronts along the north wall -------------------------------------------------------------------------------------
   const wallAt = rect.maxZ;
   for (const shop of layout.shops) {
-    if (shop.id === 'shoePer') continue; // its two open entrances and real interior replace the flat facade
+    // The detail builder supplies these frontages; the shoe store has a real room.
+    if (['shoePer', 'comingSoon', 'pretzel'].includes(shop.id)) continue;
     const w = shop.to - shop.from;
     const mid = (shop.from + shop.to) / 2;
     // Facade + dark window (0.12 / 0.15 m out from the wall), a sign band above, and its leftovers
@@ -164,23 +165,11 @@ export function buildLevelTwo({ kit, props, floorY, supportRect, supportRects = 
   const { seating } = layout;
   const px = seating.planterX;
   const pz = seating.planterZ;
-  // The planter: a bush and a small tree (kept under the roof)
-  box(px - 0.8, floorY, pz - 0.8, px + 0.8, y(0.6), pz + 0.8, mat(COLORS.planter), { name: 'level2_planter' });
-  box(px - 0.68, y(0.6), pz - 0.68, px + 0.68, y(0.62), pz + 0.68, mat(COLORS.soil), { collide: false });
-  box(px - 0.12, y(0.6), pz - 0.12, px + 0.12, y(1.9), pz + 0.12, mat(COLORS.woodDark), { collide: false, name: 'level2_tree_trunk' });
-  const foliage = mat(COLORS.leaves);
-  const leaves = [[0, 2.3, 0, 0.95], [0.35, 2.85, -0.15, 0.6], [-0.4, 2.1, 0.3, 0.5]];
-  for (const [dx, h, dz, r] of leaves) { // (low-poly blobs, like the ground floor's trees)
-    const blob = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 0), foliage);
-    blob.position.set(px + dx, y(h), pz + dz);
-    blob.name = 'level2_leaves';
-    kit.group.add(blob);
-  }
-  // Four benches round it, with gaps at the corners
-  bench(px - 0.9, pz + 1.0, px + 0.9, pz + 1.5); // north
-  bench(px - 0.9, pz - 1.5, px + 0.9, pz - 1.0); // south
-  bench(px - 1.7, pz - 0.8, px - 1.2, pz + 0.8); // west
-  bench(px + 1.2, pz - 0.8, px + 1.7, pz + 0.8); // east
+  const landmark = seating.landmark;
+  box(px - landmark.halfWidth, floorY, pz - landmark.halfDepth,
+    px + landmark.halfWidth, y(landmark.height), pz + landmark.halfDepth,
+    mat(TRIM), { name: 'level2_landmark' });
+  for (const bounds of seating.loungeBenches) bench(...bounds);
   for (const [x0, x1] of seating.wallBenches) bench(x0, rect.minZ + 0.1, x1, rect.minZ + 0.6);
 
   // --- Signs and leftovers (decoration) ----------------------------------------------------------------------------------------------

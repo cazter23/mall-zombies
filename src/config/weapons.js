@@ -451,8 +451,8 @@ export const weapons = {
     viewmodel: {
       model: 'foamDartBlaster', hipOffset: { x: 0.18, y: -0.16, z: -0.45 },
       aimYawDegrees: 9, hipPitchDegrees: 2, hipRollDegrees: 4,
-      bodyColor: 0x1d4e89, accentColor: 0xffd23f, muzzleColor: 0xff7a1a,
-      darkColor: 0x28303b, dartColor: 0x63baff, sightColor: 0xffd23f,
+      bodyColor: 0x1d4e89, accentColor: 0xffb800, muzzleColor: 0xff7a1a,
+      darkColor: 0x28303b, dartColor: 0x63baff, sightColor: 0xffb800,
       fire: { triggerDegrees: 24, pressSeconds: 0.02, releaseSeconds: 0.05 },
       reload: {
         gunKeys: [

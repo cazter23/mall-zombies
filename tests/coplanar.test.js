@@ -66,7 +66,11 @@ test('no coplanar (flickering) surfaces inside the stores, the Customer Service 
   regions.push({ name: 'restock', minX: restock.x - 1.2, maxX: restock.x + 1.2, minZ: LAYOUT.foodCourt.maxZ - 2.4, maxZ: LAYOUT.foodCourt.maxZ + 0.1 });
   const at = LAYOUT.atrium.rect; // the Grand Atrium, its fountain, kiosks and both floors
   regions.push({ name: 'atrium', minX: at.minX - 0.4, maxX: at.maxX + 0.4, minZ: at.minZ - 0.7, maxZ: at.maxZ + 0.4 });
-  const inRegion = (m) => regions.some((r) => m.position.x > r.minX && m.position.x < r.maxX && m.position.z > r.minZ && m.position.z < r.maxZ);
+  const upper = LAYOUT.level2.rect;
+  regions.push({ name: 'promenade', minX: upper.minX - .4, maxX: upper.maxX + .4, minZ: upper.minZ - .4,
+    maxZ: Math.max(...LAYOUT.level2.sections.map(s => s.maxZ)) + .4, minY: LAYOUT.hallway.height + .3 });
+  const inRegion = (m) => regions.some((r) => m.position.x > r.minX && m.position.x < r.maxX && m.position.z > r.minZ && m.position.z < r.maxZ
+    && (r.minY === undefined || m.position.y >= r.minY));
 
   const all = [];
   map.group.traverse((o) => { if (o.isMesh && o.geometry && !o.rotation.x && !o.rotation.z) all.push(...facesOf(o)); });
@@ -78,6 +82,10 @@ test('no coplanar (flickering) surfaces inside the stores, the Customer Service 
   const problems = new Map();
   for (const a of mine) {
     for (const b of all) {
+      // Upstairs tile skins sit over structural slabs; their concealed side and
+      // underside contacts with walls are not exposed decorative surfaces.
+      if ((a.mesh.name === 'floor' || b.mesh.name === 'floor')
+        && a.mesh.position.y >= LAYOUT.hallway.height + .3 && b.mesh.position.y >= LAYOUT.hallway.height + .3) continue;
       if (a.mesh === b.mesh || a.axis !== b.axis || a.dir !== b.dir || Math.abs(a.c - b.c) > EPS) continue;
       if (a.mesh.id > b.mesh.id && inRegion(b.mesh)) continue; // count each pair once
       const ox = overlap(a, b);

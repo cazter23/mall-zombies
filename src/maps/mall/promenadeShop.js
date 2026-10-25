@@ -25,7 +25,7 @@ export function buildPromenadeShop({ kit, floorY, rect, layout }) {
   // stays over the shelf, leaving both door approaches and the side aisles open.
   kit.addCollider(s.from + .15, floorY, back - .57, s.to - .15, y(2.25), back);
   box(s.from + .15, floorY, back - .06, s.to - .15, y(2.25), back, mat(c.cabinet), { ...decor, name: 'shoe_shelf_back' });
-  for (const x of [s.from + .15, s.to - .23]) box(x, floorY, back - .57, x + .08, y(2.25), back - .06, mat(c.cabinet), decor);
+  for (const x of [s.from + .15, s.to - .23]) box(x, floorY, back - .55, x + .08, y(2.25), back - .06, mat(c.cabinet), decor);
   box(s.from + .15, floorY, back - .57, s.to - .15, y(.2), back - .06, mat(c.cabinet), decor);
   for (const h of s.shelfHeights) {
     box(s.from + .18, y(h - .045), back - .57, s.to - .18, y(h), back - .06, mat(c.trim), decor);

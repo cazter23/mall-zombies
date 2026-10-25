@@ -43,7 +43,9 @@ resource disposal, ripple/mobile animation/reset/settings and the fountain's exi
 collision timing/reversal/reset, finishes/aspects, static batching/disposal, real F purchases and motor/roll/stop sounds
 (pause freezes progress; death/reset cancel; debug open-all is silent), and unobscured low destination signs.
 `tests/promenade.test.js` checks independent upper-floor expansion/support, the widened southern route, sealed future
-connections, a real two-entrance shoe-store loop in both directions, momentum vaults and live zombie entry paths.
+connections, a real two-entrance shoe-store loop in both directions, momentum vaults, the eastern junction and live zombie
+routes from both escalators plus a 12-zombie horde using both lanes. `tests/promenadeDetails.test.js` checks actual decorative
+triangles against routes/vents/vaults, resource disposal, batching/geometry budgets and the expanded room-culling areas.
 `tests/careerStats.test.js` checks persistent lifetime totals, weighted accuracy, personal bests, bounded recent runs,
 debug-run exclusion, reset, corrupt saves and unavailable browser storage.
 `tests/music.test.js` also covers the End of Shift death sting: receipt-timed bell, music volume, cancellation of future
@@ -526,6 +528,9 @@ src/
                         connections, railings, furniture, shop frontages and upstairs spawns; mall.js hangs the existing lamps.
     mall/promenadeShop.js  SHOE-PER SALE interior: two entrances, perimeter shoe shelves, fitting mirror/bench, shoe boxes and a low
                         island with a clear momentum-vault crossing. Shares upper-floor unlock/navigation/reset/disposal.
+    mall/promenadeDetails.js  Fixed upper-floor dressing: low sunset medallion, perimeter upholstery, directory/phones/magazines,
+                        overhead signs/diffuser, Build-A-Blaster renovation frontage, closed Pretzel Palace counter and shoe tickets.
+                        Called with the existing look kit; no new collision/lights/purchases/timers. Kit owns resources; static parts batch.
     config/promenade.js  Independent upstairs bounds/sections, slab/wall dimensions, shoe-store geometry/finish data and three
                         reserved expansion connections (west/east wings, COMING SOON workshop). Closures are solid, not purchases.
     mall/restockMachine.js  buildRestockMachine({ kit, center, wallAt, facing }) -> { position, normal, screen }: the RESTOCK-O-MATIC
@@ -718,11 +723,16 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
   railings on its north, south and east sides. The southern passage gained 2.5m; the balcony holes and central bridge are unchanged.
   SHOE-PER SALE x -10..-4 is a real store extending north to z 11.3, with 2.1m entrances x -9.8..-7.7 and -6.3..-4.2,
   shoe shelves, fitting mirror/bench and a vaultable 0.65m display island. COMING SOON x -3..3 and PRETZEL PALACE x 4..10 remain closed.
-  The bench-ring planter at (14.2, 1.6) remains for a later lounge pass. Southern benches, signs and two southern vents follow the
+  Eastern lounge: a low 1.1 x 0.8m sunset-medallion plinth at (14.2, 1.6) replaces the tree/bench enclosure; benches hug the south,
+  east and north perimeter, leaving routes round both sides and a clear Atrium-shutter approach. Directory on the south wall,
+  east-wall payphones, magazine rack, upholstered seats and a backlit ceiling feature identify the junction. Southern benches, signs and two southern vents follow the
   new wall; all four existing upstairs spawn markers remain (east z 4.2, north x 16). Reserved solid connections at both ends
   (z -4.1..-1.7) and behind COMING SOON (x -1.3..1.3) prepare future wings/workshop. No new price or purchase path.
   Main floor and annex are sections in config/promenade.js, independent of the hallway; navigation/grade follow the upper sections.
-  The elevator stays sealed. Data is exposed through LAYOUT.level2; see mall/levelTwo.js and mall/promenadeShop.js.
+  COMING SOON now has an illuminated BUILD-A-BLASTER workshop title, papered frontage and renovation notices; it stays sealed,
+  with no functioning upgrade station yet. Pretzel Palace remains closed but has a scenic warmer/counter/menu/grille. Shoe-store
+  tickets/fitting shoes and two-sided hanging directional signs complete the pass. No new weapons or spawn markers.
+  The elevator stays sealed. Data is exposed through LAYOUT.level2; see mall/levelTwo.js, promenadeShop.js and promenadeDetails.js.
 - The Grand Atrium (zone 'atrium'): x 8..32, z 6.6..30.6, behind a 5m gate (1500) in the hallway's north wall at x 13..18 under a
   GRAND ATRIUM sign. Two storeys (roof 9.9 under a big warm skylight): an open court x 11.5..28.5, z 10.1..27.1 with a square
   fountain (glass guard, solid to 2.2m) in the middle, CELL-OUT and SHADE SHACK kiosks, four tree planters, three benches; a 3.5m arcade
@@ -848,7 +858,17 @@ display and perimeter stock/fitting area. Existing upper unlock, balcony holes/r
 spawn markers retained. Southern vents/decor follow the moved wall. Structural support is reused without doubled slabs;
 new annex support/roof, floor-aware navigation and grading are integrated. tests/promenade.test.js covers traversal/vaults/live
 zombies; mall.test.js now checks spawn floor heights instead of accidentally testing upstairs markers on the ground layer.
-Eastern lounge, full decoration pass and future Build-A-Blaster destination are deferred.
+Steps 4-6 complete: eastern bench ring/tree replaced by a low landmark and perimeter seats, opening both junction routes and
+the Atrium approach. Authored detail adds directory artwork, payphones/magazine rack, upholstered seats/forgotten bag, overhead
+direction signs (arrows reversed on the back), warm ceiling diffuser, shoe tickets/fitting pair, a closed Pretzel Palace scenic
+counter and lit BUILD-A-BLASTER renovation frontage. The actual workshop/system and expansion wings remain sealed for later.
+All detail is static/map-owned: about 7.7k triangles and 36 meshes after isolated batching, no added real lights/colliders.
+Fixed a coincident shelf/post edge found by extending the coplanar regression to upstairs. Culling now covers the wider main
+floor and the shoe annex, with a portal for each entrance; the workshop neon follows upstairs horror/quality controls.
+Browser: sprint/slide, shop loop, Atrium crossing and a 12-zombie horde (all arrive in about 10-15s). Controlled headless round-1
+Shopper routes from the ground-floor hallway/Atrium approaches through their escalators reach the eastern junction in about
+24-25s; exact times vary with gait/speed/crowding. Spawn counts/rates/prices are unchanged; the existing four upstairs markers
+keep local pressure. New geometry/clearance/culling/resource tests plus the full suite and build verify the changes.
 
 Security shutters rebuilt: matte enamel slats, faded Galleria sunset/band, area-specific notices/stickers/wear; clearance
 raspberry, Food Court teal, Mart blue-grey, Atrium lavender/brass, staff institutional green. config/shutters.js owns finishes,

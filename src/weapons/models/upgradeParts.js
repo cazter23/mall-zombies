@@ -35,7 +35,7 @@ const C = {
   lens: 0x9fe3ff,
   tapeLight: 0xf1faee,
   sportsOrange: 0xff8a3d,
-  toyYellow: 0xffc83d,
+  toyYellow: 0xffb800,
   toyRed: 0xe63946,
   toyBlue: 0x2563eb,
   green: 0x5fd068,

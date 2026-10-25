@@ -115,3 +115,57 @@ test('a live zombie follows through either shoe-store entrance, including when t
   }
   g.map.dispose();
 });
+
+test('the eastern junction has a clear Atrium approach and broad paths around its low landmark', () => {
+  const t = fixture(), { g } = t;
+  const paths = [
+    { start: [11.1, -2.8], yaw: Math.PI, ticks: 90, axis: 'z', min: 4.2 },
+    { start: [17.1, -2.8], yaw: Math.PI, ticks: 90, axis: 'z', min: 4.2 },
+    { start: [11.1, 3.6], yaw: -Math.PI / 2, ticks: 80, axis: 'x', min: 17 },
+    { start: [13, 3.6], yaw: Math.PI, ticks: 55, axis: 'z', min: 7 },
+  ];
+  for (const path of paths) {
+    g.player.teleport({ position: new THREE.Vector3(path.start[0], Y, path.start[1]), yaw: path.yaw });
+    walk(t, path.yaw, path.ticks);
+    assert.ok(g.player.position[path.axis] > path.min, `clear junction route from ${path.start}: ${g.player.position.toArray()}`);
+    assert.equal(g.player.position.y, Y);
+  }
+  g.map.dispose();
+});
+
+test('Shoppers reach the eastern junction from both escalators and a horde uses both promenade lanes', ctx => {
+  const t = fixture(), { g } = t;
+  const target = new THREE.Vector3(16.7, Y, 2.6);
+  const spawn = (x, height, z) => {
+    const zombie = g.zombies.spawn('shopper', new THREE.Vector3(x, height, z));
+    zombie.position.y = height; zombie.prevPosition.copy(zombie.position); zombie.setState('chasing'); zombie.updateHitboxes();
+    return zombie;
+  };
+  for (const [name, position] of [
+    ['hallway escalator', [0, 0, 2]], ['Atrium escalator', [22, 0, 22]],
+  ]) {
+    g.zombies.clear(); g.player.teleport({ position: target, yaw: 0 }); t.tick(20);
+    const z = spawn(...position); let seconds = null;
+    for (let i = 0; i < 60 * 90 && seconds === null; i++) {
+      g.player.teleport({ position: target, yaw: 0 }); t.tick();
+      if (Math.abs(z.position.y - Y) < .1 && Math.hypot(z.position.x - target.x, z.position.z - target.z) < 2.4) seconds = i / 60;
+    }
+    assert.notEqual(seconds, null, `${name}: ${z.position.toArray()}`);
+    ctx.diagnostic(`Shopper via ${name} reaches east junction in ${seconds.toFixed(1)} s`);
+  }
+  g.zombies.clear(); g.player.teleport({ position: target, yaw: 0 }); t.tick(20);
+  const horde = [];
+  for (const z of [-2.8, 4.8]) for (let i = 0; i < 6; i++) horde.push(spawn(-7 - i * .8, Y, z));
+  const crossed = new Map(), arrived = new Map();
+  for (let i = 0; i < 60 * 55 && arrived.size < horde.length; i++) {
+    g.player.teleport({ position: target, yaw: 0 }); t.tick();
+    for (const z of horde) {
+      if (!crossed.has(z) && z.position.x > 10.5) crossed.set(z, z.position.z);
+      if (!arrived.has(z) && Math.hypot(z.position.x - target.x, z.position.z - target.z) < 2.8) arrived.set(z, i / 60);
+    }
+  }
+  assert.equal(arrived.size, 12, `no horde members stuck: ${horde.filter(z => !arrived.has(z)).map(z => z.position.toArray())}`);
+  assert.ok([...crossed.values()].some(z => z < 0) && [...crossed.values()].some(z => z > 3.5), 'north and south routes both used');
+  ctx.diagnostic(`12-zombie horde: all arrive in ${Math.min(...arrived.values()).toFixed(1)}–${Math.max(...arrived.values()).toFixed(1)} s; both lanes used`);
+  g.map.dispose();
+});
