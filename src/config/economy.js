@@ -61,6 +61,7 @@ export const economy = {
     atriumPromenade: 1000, // the atrium's upper ring <-> the level 2 Promenade (opens both)
     atriumMegaMart: 1000, // the atrium's arcade <-> the Mega Mart, through its north wall (opens both)
     escalatorRepair: 2000, // hallway escalator -> level 2 (the 'upstairs' zone)
+    departmentStore: 1250, // hallway (north wall, west end) -> HOFFMAN'S department store
   },
 
   // Wall-buy weapon prices. Buying a weapon you already own refills its ammo for `ammo`.

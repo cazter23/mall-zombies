@@ -66,6 +66,7 @@ export const look = {
       serviceCorridor: { exposure: 0.42, tint: [0.88, 1.05, 0.8], saturation: 0.6, contrast: 1.2, vignette: 0.3 }, // back of house: dark, sick green
       level2: { exposure: 1, tint: [1.05, 0.98, 0.92], saturation: 1.03, contrast: 1 }, // the Sunset Promenade
       atrium: { exposure: 1.03, tint: [1.05, 0.99, 0.92], saturation: 1.06, contrast: 1 }, // under the sunset skylight
+      departmentStore: { exposure: 1.01, tint: [1.04, 1, 0.95], saturation: 1, contrast: 1.02 }, // HOFFMAN'S: warm, a little upscale
       powerCut: { exposure: 0.3, tint: [1.3, 0.5, 0.45], saturation: 0.55, contrast: 1.2, vignette: 0.35 }, // the horror layer: emergency red
     },
   },

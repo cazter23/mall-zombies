@@ -31,9 +31,12 @@ export const shutters = {
       notice: 'THANK YOU FOR YOUR INDEFINITE PATIENCE.', seed: 79 },
     staff: { base: '#aab6a6', accent: '#667a70', ink: '#344b43', heading: 'ACCESS RESTRICTED',
       notice: 'AUTHORIZED PERSONNEL. AUTHORIZED SMILES.', sticker: 'INSPECTED 1986', seed: 97 },
+    department: { base: '#efe2cd', accent: '#8c2f45', ink: '#4a1d2a', brass: true, heading: 'GRAND OPENING',
+      notice: "HOFFMAN'S. EST. FOREVER.", sticker: 'NOW HIRING', seed: 113 },
   },
   doors: { startShutter: 'clearance', foodCourt: 'foodCourt', serviceCorridor: 'staff', megaMart: 'mart',
-    foodCourtMegaMart: 'mart', serviceCorridorFoodCourt: 'staff', atrium: 'atrium', atriumPromenade: 'atrium', atriumMegaMart: 'mart' },
+    foodCourtMegaMart: 'mart', serviceCorridorFoodCourt: 'staff', atrium: 'atrium', atriumPromenade: 'atrium', atriumMegaMart: 'mart',
+    departmentStore: 'department' },
 };
 
 export function shutterFinish(id) {

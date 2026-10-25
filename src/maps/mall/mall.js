@@ -56,6 +56,8 @@ import { look } from '../../config/look.js';
 import { atmosphere } from '../../config/environment.js';
 import { promenade } from '../../config/promenade.js';
 import { buildPromenadeDetails } from './promenadeDetails.js';
+import { buildDepartmentStore } from './departmentStore.js';
+import { departmentStore } from '../../config/departmentStore.js';
 
 export const LAYOUT = {
   startRoom: { minX: -5, maxX: 5, minZ: 6, maxZ: 16, height: 4 },
@@ -154,6 +156,8 @@ export const LAYOUT = {
     ],
   },
   restockMachine: { x: 4.95 }, // the RESTOCK-O-MATIC on the Food Court's north wall (its x; the front faces south)
+  // HOFFMAN'S department store (maps/mall/departmentStore.js): north of the hallway's west half, gate in the hallway's north wall.
+  departmentStore,
 };
 
 export function buildMall(scene, colliders) {
@@ -174,6 +178,7 @@ export function buildMall(scene, colliders) {
     serviceCorridor: { label: 'Service Corridor', open: false },
     upstairs: { label: 'Level 2', open: false }, // opened by repairing the escalator (the escalatorRepair door)
     atrium: { label: 'Grand Atrium', open: false },
+    departmentStore: { label: "Hoffman's", open: false },
   };
 
   const R = LAYOUT.startRoom;
@@ -209,7 +214,10 @@ export function buildMall(scene, colliders) {
   // North wall: open where the start room's storefront is (built next, in its own color).
   wall({
     along: 'x', from: H.minX - T, to: H.maxX + T, at0: H.maxZ, at1: H.maxZ + T, height: H.height,
-    openings: [{ from: R.minX, to: R.maxX }, { from: LAYOUT.atrium.gate.from, to: LAYOUT.atrium.gate.to, top: LAYOUT.atrium.gate.height }],
+    openings: [
+      { from: LAYOUT.departmentStore.gate.from, to: LAYOUT.departmentStore.gate.to, top: LAYOUT.departmentStore.gate.height },
+      { from: R.minX, to: R.maxX }, { from: LAYOUT.atrium.gate.from, to: LAYOUT.atrium.gate.to, top: LAYOUT.atrium.gate.height },
+    ],
   }, hallWall, { name: 'hallway_wall_north' });
   // South wall (shared with the Food Court), with the Food Court door in the middle.
   wall({
@@ -265,6 +273,13 @@ export function buildMall(scene, colliders) {
     doorway: { minX: H.minX - T, maxX: H.minX, minZ: SCD.minZ, maxZ: SCD.maxZ, height: SCD.height },
   });
   // (The Mega Mart door is built with the Mega Mart below.)
+  // HOFFMAN'S: the department store north of the hallway's west end (maps/mall/departmentStore.js builds the room).
+  const DS = LAYOUT.departmentStore;
+  const departmentStoreRoom = buildDepartmentStore({ kit, props, layout: DS, thickness: T });
+  const departmentStoreDoor = kit.shutterDoor({
+    id: 'departmentStore', label: "Hoffman's", price: economy.doors.departmentStore, opensZone: 'departmentStore', zones,
+    doorway: { minX: DS.gate.from, maxX: DS.gate.to, minZ: H.maxZ, maxZ: H.maxZ + T, height: DS.gate.height },
+  });
 
   // --- Main hallway: escalator, elevator, ceiling ------------------------------
 
@@ -357,7 +372,7 @@ export function buildMall(scene, colliders) {
   props.planter(FD.maxX + 1.0, H.minZ + 0.3, FD.maxX + 2.4, H.minZ + 1.5);
 
   // Boarded vents where zombies get into the hallway
-  props.boardedVent({ along: 'x', center: -15, wallAt: H.maxZ, facing: -1 });
+  props.boardedVent({ along: 'x', center: DS.hallwayVentX, wallAt: H.maxZ, facing: -1 }); // (moved from x -15 for HOFFMAN'S gate)
   props.boardedVent({ along: 'x', center: 16, wallAt: H.minZ, facing: 1 }); // (south wall: the north one gave way to the atrium gate)
   props.boardedVent({ along: 'x', center: -14, wallAt: H.minZ, facing: 1 });
 
@@ -688,6 +703,7 @@ export function buildMall(scene, colliders) {
   for (const l of levelTwo.lamps) lamp(atmosphere.roomLights.level2, l.x, l.y, l.z);
   for (const l of atrium.lamps) lamp(atmosphere.roomLights.atrium, l.x, l.y, l.z);
   for (const at of [3, 12]) lamp(atmosphere.roomLights.serviceCorridor, service.points[1].x, SC.height * 0.65, service.pointAt(1, at).z);
+  for (const l of departmentStoreRoom.lamps) lamp(DS.lamp, l.x, l.y, l.z);
 
   // --- Spawn points and wall-buy spots (invisible markers) -------------------
 
@@ -695,12 +711,13 @@ export function buildMall(scene, colliders) {
   const spawnPoints = [
     { name: 'spawn_startRoom_ventLeft', zone: 'startRoom', position: new THREE.Vector3(-3.5, 0, 15.4) },
     { name: 'spawn_startRoom_ventRight', zone: 'startRoom', position: new THREE.Vector3(3.5, 0, 15.4) },
-    { name: 'spawn_hallway_ventNorthWest', zone: 'hallway', position: new THREE.Vector3(-15, 0, H.maxZ - 0.8) },
+    { name: 'spawn_hallway_ventNorthWest', zone: 'hallway', position: new THREE.Vector3(DS.hallwayVentX, 0, H.maxZ - 0.8) },
     { name: 'spawn_hallway_ventSouthEast', zone: 'hallway', position: new THREE.Vector3(16, 0, H.minZ + 0.8) },
     ...atrium.spawns, // the Grand Atrium's vents (one on its upper ring)
     { name: 'spawn_hallway_ventSouth', zone: 'hallway', position: new THREE.Vector3(-14, 0, H.minZ + 0.8) },
     ...stores.spawns, // a zombie spawn inside each of the four stores
     ...levelTwo.spawns, // boarded vents on level 2 (their y is the upper floor)
+    ...departmentStoreRoom.spawns, // HOFFMAN'S: its stockroom door and west vent
     { name: 'spawn_megaMart_stockroom', zone: 'megaMart', position: new THREE.Vector3(26.5, 0, -23.2) },
     { name: 'spawn_megaMart_receiving', zone: 'megaMart', position: new THREE.Vector3(31.8, 0, -23.2) },
     { name: 'spawn_megaMart_vent', zone: 'megaMart', position: new THREE.Vector3(21.8, 0, -23.2) },
@@ -772,6 +789,7 @@ export function buildMall(scene, colliders) {
     { name: 'atrium court', from: [10, 1.7, 8], to: [30, 1.7, 8], lookFrom: [20, 4, 25], lookTo: [20, 4, 25] },
     { name: 'atrium ring', from: [10, 8, 29.3], to: [30, 8, 29.3], lookFrom: [20, 2, 15], lookTo: [20, 2, 15] },
     { name: 'level 2', from: [-18.5, 8, 4.6], to: [18, 8, 4.6], lookFrom: [20, 7.5, 2], lookTo: [20, 7.5, 2] },
+    { name: 'department store', from: [-18.5, 1.7, 7.4], to: [-7, 1.7, 7.4], lookFrom: [-12.6, 1.5, 25], lookTo: [-12.6, 1.5, 25] },
   ];
 
   // Everything (besides doors) the player interacts with, by kind: game/features/ builds each one.
@@ -786,7 +804,7 @@ export function buildMall(scene, colliders) {
     ...stores.spots.map((s) => ({ kind: 'attachmentCounter', name: `attachment_${s.id}`, zone: s.zone, attachment: s.id, position: s.position, normal: s.normal })),
   ];
 
-  const doors = [startDoor, megaMartDoor, foodCourtDoor, serviceCorridorDoor, foodCourtMegaMartDoor, serviceCorridorFoodCourtDoor, escalatorDoor, atriumDoor, atriumPromenadeDoor, atriumMegaMartDoor];
+  const doors = [startDoor, megaMartDoor, foodCourtDoor, serviceCorridorDoor, foodCourtMegaMartDoor, serviceCorridorFoodCourtDoor, escalatorDoor, atriumDoor, atriumPromenadeDoor, atriumMegaMartDoor, departmentStoreDoor];
   const dressing = buildMallAtmosphere(kit, LAYOUT, { service, ceilingHoles });
 
   // The hallway's new look (the visual overhaul's reference room): neon, painted light, two-tone walls, clutter.
@@ -826,6 +844,7 @@ export function buildMall(scene, colliders) {
       { id: 'serviceCorridor', grades: ['serviceCorridor'], neons: ['serviceCorridor'] },
       { id: 'level2', grades: ['level2'], neons: ['level2', 'promenade_workshop'] },
       { id: 'atrium', grades: ['atrium'], neons: ['atrium'] },
+      { id: 'departmentStore', grades: ['departmentStore'], neons: ['departmentStore'] },
     ],
   };
   features.push({ kind: 'horror', name: 'horror_director', zone: 'startRoom', position: playerSpawn.position.clone(), normal: new THREE.Vector3(0, 0, -1), seed: 1986 });
@@ -851,6 +870,7 @@ export function buildMall(scene, colliders) {
       { id: 'megaMart', minX: M.minX + T, maxX: M.maxX, minY: 0, maxY: M.height + 0.3, minZ: M.minZ, maxZ: M.maxZ },
       { id: 'serviceCorridor', minX: H.minX - T - SC.width, maxX: H.minX - T, minY: 0, maxY: SC.height + 0.3, minZ: -14, maxZ: SCD.maxZ },
       { id: 'atrium', minX: AT.rect.minX, maxX: AT.rect.maxX, minY: 0, maxY: upperY + AT.upperHeight + 0.3, minZ: AT.rect.minZ, maxZ: AT.rect.maxZ },
+      { id: 'departmentStore', ...DS.rect, minY: 0, maxY: DS.height + 0.3 },
     ],
     cullPortals: [
       ...LAYOUT.level2.shoeStore.entrances.map(e => ({ a: 'level2', b: 'shoePer', minX: e.from, maxX: e.to,
@@ -863,6 +883,7 @@ export function buildMall(scene, colliders) {
       { a: 'serviceCorridor', b: 'foodCourt', door: 'serviceCorridorFoodCourt', minX: F.minX - T, maxX: F.minX, minY: 0, maxY: SF.height, minZ: SF.minZ, maxZ: SF.maxZ },
       { a: 'hallway', b: 'atrium', door: 'atrium', minX: AT.gate.from, maxX: AT.gate.to, minY: 0, maxY: AT.gate.height, minZ: H.maxZ, maxZ: AT.rect.minZ },
       { a: 'megaMart', b: 'atrium', door: 'atriumMegaMart', minX: AT.martLink.from, maxX: AT.martLink.to, minY: 0, maxY: AT.martLink.height, minZ: M.maxZ, maxZ: AT.rect.minZ },
+      { a: 'hallway', b: 'departmentStore', door: 'departmentStore', minX: DS.gate.from, maxX: DS.gate.to, minY: 0, maxY: DS.gate.height, minZ: H.maxZ, maxZ: H.maxZ + T },
       { a: 'level2', b: 'atrium', door: 'atriumPromenade', minX: AT.link.from, maxX: AT.link.to, minY: upperY, maxY: upperY + AT.link.height, minZ: H.maxZ, maxZ: AT.rect.minZ },
       // Down through the floor: the escalator's hole and the two balcony voids (no doors; the rope across the escalator hides nothing)
       ...[escalator.hole, ...LAYOUT.level2.voids].map((r) => ({ a: 'hallway', b: 'level2', minX: r.minX, maxX: r.maxX, minY: H.height - 0.1, maxY: upperY + 0.1, minZ: r.minZ, maxZ: r.maxZ })),
@@ -876,6 +897,7 @@ export function buildMall(scene, colliders) {
       { grade: 'martBack', minX: M.minX + T, maxX: M.maxX, minZ: M.minZ, maxZ: -19.5, maxY: M.height },
       { grade: 'megaMart', minX: M.minX + T, maxX: M.maxX, minZ: M.minZ, maxZ: M.maxZ, maxY: M.height },
       { grade: 'startRoom', minX: R.minX, maxX: R.maxX, minZ: H.maxZ + T, maxZ: R.maxZ, maxY: R.height },
+      { grade: 'departmentStore', ...DS.rect, maxY: DS.height },
       { grade: 'foodCourt', minX: F.minX, maxX: F.maxX, minZ: F.minZ - 6, maxZ: F.maxZ, maxY: F.height }, // (+ the recessed stores)
       { grade: 'atrium', minX: AT.rect.minX, maxX: AT.rect.maxX, minZ: AT.rect.minZ, maxZ: AT.rect.maxZ },
       ...LAYOUT.level2.sections.map(section => ({ grade: 'level2', ...section, minY: H.height })),

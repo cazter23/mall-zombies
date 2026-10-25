@@ -25,7 +25,8 @@ export function buildHallwayLook({ looks, kit, layout, keepClear = [] }) {
   // North wall: the start room's storefront, the Customer Service booth, the elevator, the atrium gate.
   looks.bands({
     along: 'x', from: H.minX, to: H.maxX, wallAt: H.maxZ, facing: -1, colors, heights, name: 'hallway_wainscot',
-    gaps: [[layout.startRoom.minX, layout.startRoom.maxX], [desk.center - 1.9, desk.center + 1.9], [elevatorX - 1.45, elevatorX + 1.45], [gate.from, gate.to]],
+    gaps: [[layout.departmentStore.gate.from, layout.departmentStore.gate.to], [layout.startRoom.minX, layout.startRoom.maxX],
+      [desk.center - 1.9, desk.center + 1.9], [elevatorX - 1.45, elevatorX + 1.45], [gate.from, gate.to]],
   });
   // South wall: the Food Court gate, the Nail Gun wall buy (x 11). West: the Service Corridor door. East: the Mega Mart gate.
   looks.bands({ along: 'x', from: H.minX, to: H.maxX, wallAt: H.minZ, facing: 1, colors, heights, gaps: [[FD.minX, FD.maxX], [10, 12]], name: 'hallway_wainscot' });
@@ -68,7 +69,7 @@ export function buildHallwayLook({ looks, kit, layout, keepClear = [] }) {
   // Trim: one tube a little under the ceiling line on each long wall, in pieces (one dead, two stuttering).
   const trimY = L.trimY;
   const trim = (x0, x1, z, color, opts = {}) => neon.tube([[x0, trimY, z], [x1, trimY, z]], { color, ...opts });
-  trim(H.minX + 0.4, -15.2, north, L.trim.north);
+  // (No tube at the west end of the north wall any more: HOFFMAN'S gate and its sign are there.)
   trim(-6.8, layout.startRoom.minX - 0.3, north, L.trim.north, { dead: true });
   trim(layout.startRoom.maxX + 0.3, desk.center - 2.1, north, L.trim.north);
   trim(gate.to + 0.3, H.maxX - 0.4, north, L.trim.north, { flicker: true });
