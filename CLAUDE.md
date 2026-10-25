@@ -46,6 +46,10 @@ collision timing/reversal/reset, finishes/aspects, static batching/disposal, rea
 connections, a real two-entrance shoe-store loop in both directions, momentum vaults, the eastern junction and live zombie
 routes from both escalators plus a 12-zombie horde using both lanes. `tests/promenadeDetails.test.js` checks actual decorative
 triangles against routes/vents/vaults, resource disposal, batching/geometry budgets and the expanded room-culling areas.
+`tests/departmentStore.test.js` covers HOFFMAN'S: real F-hold buys of the 1250 gate (hallway) and the 1250 side door (start room,
+before the start shutter; from either side, never through the wall), sealed until bought, spawns clear and reachable, a real walk in,
+routes both ways through both doors, lanes and clear straight runs, real vaults over all three counters, "nothing to perch on"
+(every exposed top is a step, a vaultable counter or >= 2.1 m, even jumping from a counter top), a 12-zombie horde, culling, grade, horror.
 `tests/careerStats.test.js` checks persistent lifetime totals, weighted accuracy, personal bests, bounded recent runs,
 debug-run exclusion, reset, corrupt saves and unavailable browser storage.
 `tests/music.test.js` also covers the End of Shift death sting: receipt-timed bell, music volume, cancellation of future
@@ -180,7 +184,8 @@ src/
                         weaponSwitch (lower/raise time, drop), interact (hold time, range, facing angle, denied
                         flash), world.wallBuyDisplay, melee lunge end
     economy.js          Points, payouts, kill values, door prices (startShutter 500, megaMart 750, foodCourt 1000,
-                        serviceCorridor 1250, foodCourtMegaMart 1000, serviceCorridorFoodCourt 1250) +
+                        serviceCorridor 1250, foodCourtMegaMart 1000, serviceCorridorFoodCourt 1250, departmentStore 1250,
+                        departmentStoreStartRoom 1250) +
                         wall-buy prices, ammoCache.price (400, flat, any gun), round timing, wave scaling + helpers
                         (zombieHealthForRound, zombieCountForRound, spawnDelayForRound, maxAliveForRound).
                         zombieMix: special types per round (mallWalker: from round 4, share 15% / 25% from 6 / 30% from 9,
@@ -528,6 +533,10 @@ src/
                         connections, railings, furniture, shop frontages and upstairs spawns; mall.js hangs the existing lamps.
     mall/promenadeShop.js  SHOE-PER SALE interior: two entrances, perimeter shoe shelves, fitting mirror/bench, shoe boxes and a low
                         island with a clear momentum-vault crossing. Shares upper-floor unlock/navigation/reset/disposal.
+    mall/departmentStore.js  HOFFMAN'S room (floor, walls, roof, panels, stockroom door + west vent, spawns); config/departmentStore.js
+                        has every number. mall/departmentStoreFixtures.js: vaultable cosmetics/fragrance/layaway counters, round
+                        clothing racks (see-through topper colliders), mannequins on plinths, fitting rooms, shoe wall. Its look:
+                        zoneLooks.js buildDepartmentStoreLook + look.departmentStore.
     mall/promenadeDetails.js  Fixed upper-floor dressing: low sunset medallion, perimeter upholstery, directory/phones/magazines,
                         overhead signs/diffuser, Build-A-Blaster renovation frontage, closed Pretzel Palace counter and shoe tickets.
                         Called with the existing look kit; no new collision/lights/purchases/timers. Kit owns resources; static parts batch.
@@ -693,7 +702,8 @@ src/
   Player is a cylinder (radius, height, feet position). Boxes whose top is within `stepTolerance`
   of the feet count as floor, not walls.
 - Coordinates: meters, +Y up. Camera looks down -Z at yaw 0.
-- Markers (invisible; shown if `debug.showMarkers`; wall-buy markers come from the 'wallBuy' features): `map.spawnPoints` (20: 4 level-2 vents with y = 6.3, tagged zone 'upstairs'; 2 start-room vents, 3 hallway vents,
+- Markers (invisible; shown if `debug.showMarkers`; wall-buy markers come from the 'wallBuy' features): `map.spawnPoints` (23: 4 level-2 vents with y = 6.3, tagged zone 'upstairs'; 2 start-room vents, 3 hallway vents,
+  3 HOFFMAN'S: stockroom door, west vent, fitting rooms,
   4 Food Court shopfronts, 4 Mega Mart: stockroom, receiving, back vent, emergency exit, 3 Service Corridor: two wall
   vents + the dead end; each tagged with its zone)
   and the 4 'wallBuy' features (outward `normal` + `weapon` id: Price Gun, Nail Gun, Mega Mart Foam Dart Blaster
@@ -733,6 +743,14 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
   with no functioning upgrade station yet. Pretzel Palace remains closed but has a scenic warmer/counter/menu/grille. Shoe-store
   tickets/fitting shoes and two-sided hanging directional signs complete the pass. No new weapons or spawn markers.
   The elevator stays sealed. Data is exposed through LAYOUT.level2; see mall/levelTwo.js, promenadeShop.js and promenadeDetails.js.
+- HOFFMAN'S · Est. Forever (zone 'departmentStore', maps/mall/departmentStore.js): the department store north of the hallway's
+  west half, x -20..-5.3, z 6.3..26, 5 m ceiling, open sky above (the Promenade's shoe store and the cinema are outside it).
+  Gate (1250) in the hallway's north wall at x -19.5..-15.5 under a HOFFMAN'S neon; side door 'departmentStoreStartRoom' (1250)
+  through the start room's west wall at z 11.6..13.5 (the start room's only second exit: buyable before the start shutter).
+  Front: cosmetics + fragrance counters (vaultable); middle: six round racks and three mannequins; back: fitting rooms (a
+  spawn out of the middle curtain), LAYAWAY counter (vaultable), shoe wall; stockroom door + west vent spawns. Collision rule:
+  counters 0.95 m and vaultable, everything else >= 2.1 m (a counter-top jump peaks ~2.0 m). Cream/burgundy/brass look,
+  ALL SALES FINAL. SO ARE YOU. The hallway's north-west vent moved to x -7 and the directory over it for the gate.
 - The Grand Atrium (zone 'atrium'): x 8..32, z 6.6..30.6, behind a 5m gate (1500) in the hallway's north wall at x 13..18 under a
   GRAND ATRIUM sign. Two storeys (roof 9.9 under a big warm skylight): an open court x 11.5..28.5, z 10.1..27.1 with a square
   fountain (glass guard, solid to 2.2m) in the middle, CELL-OUT and SHADE SHACK kiosks, four tree planters, three benches; a 3.5m arcade
@@ -797,7 +815,7 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
   Mega Mart north wall (31.5, 1.5, 6) = Foam Dart Blaster, Service Corridor west wall near the dead end
   (-23.28, 1.5, -12.2) = Confetti Cannon; Grand Atrium west arcade wall (8.02, 1.5, 21.5) = Rivet Rifle; Sunset Promenade
   south wall (1.5, 7.8, -4.48) = Heavy Coil Nailer (zone 'upstairs'; the Promenade is still growing: one entry to move);
-  Byte Me's pod, east face looking over the Food Court's east end (16.72, 1.5, -6.2) = Barcode Scanner.
+  HOFFMAN'S east wall between its side door and shoe wall (-5.33, 1.5, 15.3) = Barcode Scanner (zone 'departmentStore').
 - Lighting: room lamps (point lights) hang at ~60% of the ceiling height with intensity scaled to match, NOT just under
   the ceiling: a lamp 0.8m under it lit a small hard-edged bright disc on the ceiling ("big circles"); hung lower it's a soft
   glow. Keep that if you move or add lamps (mall.js, the `lamp()` calls).
@@ -979,6 +997,11 @@ production preview with a canvas capture (main menu HUD excluded).
 Room/portal culling was planned for 1d but frustum culling of the 12m batch chunks already does most of it; revisit if needed.
 Also merged: world/neon.js (neon tube builder) and world/decor.js + world/scatter.js (decoration kit), not placed yet.
 
+
+HOFFMAN'S DEPARTMENT STORE (built in a worktree in 5 steps: shell + gate, fixtures, start-room side door, look, Scanner move + perf):
+see Map. Wiring in mall.js: LAYOUT.departmentStore (= config/departmentStore.js), zone, 2 doors, spawns, lamps (2), cullAreas +
+2 cullPortals, gradeZones ('departmentStore' grade in look.grading), a horror area, a benchmark shot. Door count 12. Measured from its
+benchmark view: 226 draw calls / 36k triangles (hallway 639 / 101k). The Barcode Scanner moved here from Byte Me's pod.
 
 LATE WALL GUNS: the Rivet Rifle, Heavy Coil Nailer and Barcode Scanner are now real wall buys (economy.wallBuys, 'debugOnly' gone;
 H still cycles them). Prices from `npm run balance`: Rivet 1500 / ammo 750 (best sustained non-shotgun dps at 2-10 m, 246: priced with
