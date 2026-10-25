@@ -173,6 +173,58 @@ test('a real run buys Food Court then its shortcut: Mega Mart spawns without buy
   assert.deepEqual(Object.keys(g.map.zones).filter((id) => g.map.zones[id].open), ['startRoom']);
 });
 
+test('a real run buys the shutter, repairs the escalator and opens the cinema, then receives natural cinema wave spawns', context => {
+  const t = headlessGame(), { g } = t; g.wallet.earn(5000); g.health.invulnerable = true;
+  const purchases = []; g.events.on('purchase', e => purchases.push([e.id, e.cost]));
+  let seed = 1986; context.mock.method(Math, 'random', () => ((seed = (1664525 * seed + 1013904223) >>> 0) / 2 ** 32));
+  t.standAt(0, 8.5); t.press('KeyF', 30); t.tick(90);
+  const repair = g.map.levelTwo.repair;
+  t.standAt(repair.position.x + 1.5, repair.position.z, 90);
+  assert.equal(g.interactions.prompt?.id, 'escalatorRepair'); t.press('KeyF', 30); t.tick(90);
+  assert.equal(g.map.zones.upstairs.open, true); assert.equal(g.map.zones.cinema.open, false);
+  g.player.teleport({ position: new THREE.Vector3(-18.6, g.map.cinema.floorY, -2.9), yaw: Math.PI / 2 }); t.tick();
+  assert.equal(g.interactions.prompt?.id, 'cinema'); t.press('KeyF', 30); t.tick(90);
+  assert.deepEqual(purchases, [['startShutter', 500], ['escalatorRepair', 2000], ['cinema', 1500]]);
+  assert.equal(g.map.zones.cinema.open, true); g.rounds.jumpTo(6);
+  const markers = g.map.spawnPoints.filter(s => s.zone === 'cinema');
+  g.player.teleport({ position: new THREE.Vector3(-33, g.map.cinema.floorY, 24), yaw: 0 });
+  let spawned = false;
+  for (let i = 0; i < 60 * 30 && !spawned; i++) {
+    t.tick();
+    spawned = g.zombies.zombies.some(z => z.state === 'spawning' && markers.some(s => s.position.equals(z.position)));
+    for (const z of g.zombies.zombies) if (z.isAlive && z.state === 'chasing') z.takeHit({ damage: 99999, part: 'body' });
+  }
+  assert.ok(spawned, 'real rounds select an unlocked cinema marker, with no explicit-position spawn');
+  g.resetRun(); assert.ok(g.map.doors.every(d => !d.isOpen)); assert.equal(g.map.zones.cinema.open, false);
+  assert.equal(g.map.cinema.presentation.screen.userData.slideIndex, 0); g.map.dispose();
+});
+
+test('the service stairs supply an alternate cinema entrance and the inside cinema purchase unlocks Promenade spawns', context => {
+  const t = headlessGame(), { g } = t; g.wallet.earn(8000); g.health.invulnerable = true;
+  let seed = 1945; context.mock.method(Math, 'random', () => ((seed = (1664525 * seed + 1013904223) >>> 0) / 2 ** 32));
+  const paid = []; g.events.on('purchase', e => paid.push([e.id, e.cost]));
+  t.standAt(0, 8.5); t.press('KeyF', 30); t.tick(100);
+  t.standAt(-18.6, 2, 90); t.press('KeyF', 30); t.tick(100);
+  t.standAt(-21.8, 2, 180); assert.equal(g.interactions.prompt?.id, 'cinemaStairs'); t.press('KeyF', 30); t.tick(100);
+  assert.equal(g.map.zones.cinema.open, true); assert.equal(g.map.zones.upstairs.open, false);
+  assert.equal(g.map.doors.find(d => d.id === 'escalatorRepair').isOpen, false);
+  const naturalSpawn = (zone, at) => {
+    g.rounds.jumpTo(6); g.player.teleport({ position: new THREE.Vector3(...at), yaw: 0 });
+    const markers = g.map.spawnPoints.filter(s => s.zone === zone); let found = false;
+    for (let i = 0; i < 60 * 30 && !found; i++) {
+      t.tick(); found = g.zombies.zombies.some(z => z.state === 'spawning' && markers.some(s => s.position.equals(z.position)));
+      for (const z of g.zombies.zombies) if (z.isAlive && z.state === 'chasing') z.takeHit({ damage: 99999, part: 'body' });
+    }
+    assert.ok(found, `${zone} participates in real waves`);
+  };
+  naturalSpawn('cinema', [-33, 6.3, 24]);
+  g.player.teleport({ position: new THREE.Vector3(-21.7, 6.3, -2.9), yaw: -Math.PI / 2 }); t.tick();
+  assert.equal(g.interactions.prompt?.id, 'cinema'); t.press('KeyF', 30); t.tick(100);
+  assert.equal(g.map.zones.upstairs.open, true); naturalSpawn('upstairs', [16, 6.3, 1]);
+  assert.deepEqual(paid, [['startShutter', 500], ['serviceCorridor', 1250], ['cinemaStairs', 1500], ['cinema', 1500]]);
+  g.resetRun(); assert.deepEqual(Object.keys(g.map.zones).filter(k => g.map.zones[k].open), ['startRoom']); g.map.dispose();
+});
+
 test('round 7 after buying the shutter: debug open-all preserves Nail Gun and Customer Service purchases', () => {
   const t = headlessGame();
   const { g } = t;

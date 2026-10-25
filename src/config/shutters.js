@@ -31,9 +31,11 @@ export const shutters = {
       notice: 'THANK YOU FOR YOUR INDEFINITE PATIENCE.', seed: 79 },
     staff: { base: '#aab6a6', accent: '#667a70', ink: '#344b43', heading: 'ACCESS RESTRICTED',
       notice: 'AUTHORIZED PERSONNEL. AUTHORIZED SMILES.', sticker: 'INSPECTED 1986', seed: 97 },
+    cinema: { base: '#dfc6ce', accent: '#82516e', ink: '#49364f', brass: true, heading: 'FEATURE PRESENTATION',
+      notice: 'YOUR SEAT IS RESERVED. FOREVER.', sticker: 'ADMIT ONE', seed: 113 },
   },
   doors: { startShutter: 'clearance', foodCourt: 'foodCourt', serviceCorridor: 'staff', megaMart: 'mart',
-    foodCourtMegaMart: 'mart', serviceCorridorFoodCourt: 'staff', atrium: 'atrium', atriumPromenade: 'atrium', atriumMegaMart: 'mart' },
+    foodCourtMegaMart: 'mart', serviceCorridorFoodCourt: 'staff', atrium: 'atrium', atriumPromenade: 'atrium', atriumMegaMart: 'mart', cinema: 'cinema', cinemaStairs: 'staff' },
 };
 
 export function shutterFinish(id) {

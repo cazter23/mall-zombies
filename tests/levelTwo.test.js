@@ -19,7 +19,7 @@ function fixture({ repaired }) {
   t.g.zombies.clear();
   t.g.debug.run('doors');
   t.g.debug.run('god');
-  if (!repaired) for (const id of ['escalatorRepair', 'atriumPromenade']) t.g.map.doors.find((d) => d.id === id).reset(); // (both lead up)
+  if (!repaired) for (const id of ['escalatorRepair', 'atriumPromenade', 'cinema']) t.g.map.doors.find((d) => d.id === id).reset(); // all entrances to the Promenade
   t.tick(120);
   return t;
 }
@@ -221,7 +221,7 @@ test('level 2 has its own ambience: its music and air-con play up there (once op
   const below = level2().find((v) => v.kind === 'music');
   const above = upstairs.find((v) => v.kind === 'music');
   assert.ok(!below || below.gain < above.gain * 0.5, 'from the hallway below it is muffled (or not heard at all)');
-  for (const id of ['escalatorRepair', 'atriumPromenade']) g.map.doors.find((d) => d.id === id).reset();
+  for (const id of ['escalatorRepair', 'atriumPromenade', 'cinema']) g.map.doors.find((d) => d.id === id).reset();
   g.player.teleport({ position: new THREE.Vector3(2, UPPER_Y, 1), yaw: 0 });
   ambience.update(1 / 60, true);
   assert.equal(level2().length, 0, 'silent while level 2 is closed');

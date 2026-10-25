@@ -69,6 +69,12 @@ test('no coplanar (flickering) surfaces inside the stores, the Customer Service 
   const upper = LAYOUT.level2.rect;
   regions.push({ name: 'promenade', minX: upper.minX - .4, maxX: upper.maxX + .4, minZ: upper.minZ - .4,
     maxZ: Math.max(...LAYOUT.level2.sections.map(s => s.maxZ)) + .4, minY: LAYOUT.hallway.height + .3 });
+  regions.push({ name: 'cinema', minX: LAYOUT.cinema.lobby.minX - .4, maxX: LAYOUT.cinema.passage.maxX + .4,
+    minZ: LAYOUT.cinema.lobby.minZ - .4, maxZ: LAYOUT.cinema.auditorium.maxZ + .4, minY: LAYOUT.hallway.height + .3 });
+  regions.push({ name: 'cinemaStairwell', minX: LAYOUT.cinemaStairs.shaft.minX - .4, maxX: LAYOUT.cinemaStairs.shaft.maxX + .4,
+    minZ: LAYOUT.cinemaStairs.shaft.minZ - .4, maxZ: LAYOUT.cinemaStairs.shaft.maxZ + .4 });
+  regions.push({ name: 'cinemaReturn', minX: LAYOUT.cinemaStairs.returnHall.minX - .4, maxX: LAYOUT.cinemaStairs.connector.maxX + .4,
+    minZ: LAYOUT.cinemaStairs.connector.minZ, maxZ: LAYOUT.cinemaStairs.returnHall.maxZ + .4 });
   const inRegion = (m) => regions.some((r) => m.position.x > r.minX && m.position.x < r.maxX && m.position.z > r.minZ && m.position.z < r.maxZ
     && (r.minY === undefined || m.position.y >= r.minY));
 

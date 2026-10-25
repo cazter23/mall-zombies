@@ -61,8 +61,8 @@ export function buildPromenadeDetails({ kit, looks, layout, floorY }) {
   ctx.fillStyle = '#b3545c'; ctx.beginPath(); ctx.arc(mx(d.directory.x), mz(r.minZ + .2), 8, 0, Math.PI * 2); ctx.fill();
   ctx.font = 'bold 20px sans-serif'; ctx.fillText('YOU ARE HERE', mx(d.directory.x), 380);
   ctx.fillStyle = '#56415d'; ctx.textAlign = 'left'; ctx.font = '22px sans-serif';
-  for (const [i, text] of ['01  SHOE-PER SALE', '02  BUILD-A-BLASTER · COMING SOON', '03  PRETZEL PALACE', '04  GRAND ATRIUM  →'].entries()) ctx.fillText(text, 30, 435 + i * 36);
-  ctx.font = '16px sans-serif'; ctx.fillText('WEST / EAST WINGS · FUTURE EXPANSION', 30, 605);
+  for (const [i, text] of ['01  SHOE-PER SALE', '02  BUILD-A-BLASTER · COMING SOON', '03  PRETZEL PALACE', '04  GRAND ATRIUM  →', '05  ← SUNSET CINEMA'].entries()) ctx.fillText(text, 30, 435 + i * 36);
+  ctx.font = '16px sans-serif'; ctx.fillText('EAST WING · FUTURE EXPANSION', 30, 622);
   const texture = new THREE.CanvasTexture(directory); texture.colorSpace = THREE.SRGBColorSpace;
   const dx = d.directory.x, dz = r.minZ + .11, dh = d.directory.height;
   box('directory_frame', dx, dh - .9, dz - .05, d.directory.width + .12, 1.92, .10, c.brass);

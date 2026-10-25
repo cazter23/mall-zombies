@@ -51,6 +51,8 @@ export const economy = {
 
   // Door / shutter prices
   doors: {
+    cinema: 1500,
+    cinemaStairs: 1500, // Service Corridor <-> cinema, through the west stairwell
     startShutter: 500, // start room -> main hallway (the hub)
     megaMart: 750, // hallway (east end) -> Mega Mart
     foodCourt: 1000, // hallway (south wall) -> Food Court

@@ -8,6 +8,7 @@ import { createMallProps } from '../src/maps/mall/props.js';
 import { buildLevelTwo } from '../src/maps/mall/levelTwo.js';
 import { markCollidersChanged, overlapsSolid } from '../src/world/collision.js';
 import { feel } from '../src/config/feel.js';
+import { seededRandom } from '../src/world/textures.js';
 
 const Y = LAYOUT.hallway.height + .3;
 const contains = (b, x, y, z) => b.containsPoint(new THREE.Vector3(x, y, z));
@@ -44,7 +45,7 @@ test('widened southern lane supports a real sprint end to end and each reserved 
   assert.ok(g.player.position.x > 16, `walked the southern lane: ${g.player.position.toArray()}`);
   assert.equal(g.player.position.y, Y, 'floor supports the new lane all the way');
   assert.ok(!g.colliders.some(b => contains(b, 0, Y + 1, LAYOUT.hallway.minZ)), 'no wall on the old boundary');
-  for (const c of LAYOUT.level2.expansionConnections) {
+  for (const c of LAYOUT.level2.expansionConnections.filter(c => !c.door)) {
     const mid = (c.from + c.to) / 2;
     const x = c.wall === 'north' ? mid : c.wall === 'west' ? -20.15 : 20.15;
     const z = c.wall === 'north' ? 6.15 : mid;
@@ -134,6 +135,10 @@ test('the eastern junction has a clear Atrium approach and broad paths around it
 });
 
 test('Shoppers reach the eastern junction from both escalators and a horde uses both promenade lanes', ctx => {
+  // This is a repeatable geometry/routing regression. Random gaits and lane
+  // offsets can legitimately make the entire group prefer one of two open
+  // routes; hold those draws stable rather than making CI depend on that roll.
+  ctx.mock.method(Math, 'random', seededRandom(1986));
   const t = fixture(), { g } = t;
   const target = new THREE.Vector3(16.7, Y, 2.6);
   const spawn = (x, height, z) => {
