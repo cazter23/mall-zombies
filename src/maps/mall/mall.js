@@ -812,6 +812,30 @@ export function buildMall(scene, colliders) {
     features,
     playerSpawn,
     horror,
+    // Room culling (fx/roomCulling.js): the rooms, and the openings you can see one room from another through (a door id =
+    // its shutter blocks the view while closed). A mesh wholly inside a room is skipped when the camera can't see that room.
+    cullAreas: [
+      { id: 'startRoom', minX: R.minX, maxX: R.maxX, minY: 0, maxY: R.height + 0.3, minZ: H.maxZ + T, maxZ: R.maxZ },
+      { id: 'hallway', minX: H.minX, maxX: H.maxX, minY: 0, maxY: H.height, minZ: H.minZ, maxZ: H.maxZ },
+      { id: 'level2', minX: H.minX, maxX: H.maxX, minY: upperY, maxY: upperY + LAYOUT.level2.height + 0.3, minZ: H.minZ, maxZ: H.maxZ },
+      { id: 'foodCourt', minX: F.minX, maxX: F.maxX, minY: 0, maxY: F.height + 0.3, minZ: F.minZ - 6, maxZ: F.maxZ }, // (+ the recessed stores)
+      { id: 'megaMart', minX: M.minX + T, maxX: M.maxX, minY: 0, maxY: M.height + 0.3, minZ: M.minZ, maxZ: M.maxZ },
+      { id: 'serviceCorridor', minX: H.minX - T - SC.width, maxX: H.minX - T, minY: 0, maxY: SC.height + 0.3, minZ: -14, maxZ: SCD.maxZ },
+      { id: 'atrium', minX: AT.rect.minX, maxX: AT.rect.maxX, minY: 0, maxY: upperY + AT.upperHeight + 0.3, minZ: AT.rect.minZ, maxZ: AT.rect.maxZ },
+    ],
+    cullPortals: [
+      { a: 'startRoom', b: 'hallway', door: 'startShutter', minX: D.minX, maxX: D.maxX, minY: 0, maxY: D.height, minZ: H.maxZ, maxZ: H.maxZ + T },
+      { a: 'hallway', b: 'foodCourt', door: 'foodCourt', minX: FD.minX, maxX: FD.maxX, minY: 0, maxY: FD.height, minZ: H.minZ - T, maxZ: H.minZ },
+      { a: 'hallway', b: 'megaMart', door: 'megaMart', minX: M.minX, maxX: M.minX + T, minY: 0, maxY: MD.height, minZ: MD.minZ, maxZ: MD.maxZ },
+      { a: 'hallway', b: 'serviceCorridor', door: 'serviceCorridor', minX: H.minX - T, maxX: H.minX, minY: 0, maxY: SCD.height, minZ: SCD.minZ, maxZ: SCD.maxZ },
+      { a: 'foodCourt', b: 'megaMart', door: 'foodCourtMegaMart', minX: M.minX, maxX: M.minX + T, minY: 0, maxY: FM.height, minZ: FM.minZ, maxZ: FM.maxZ },
+      { a: 'serviceCorridor', b: 'foodCourt', door: 'serviceCorridorFoodCourt', minX: F.minX - T, maxX: F.minX, minY: 0, maxY: SF.height, minZ: SF.minZ, maxZ: SF.maxZ },
+      { a: 'hallway', b: 'atrium', door: 'atrium', minX: AT.gate.from, maxX: AT.gate.to, minY: 0, maxY: AT.gate.height, minZ: H.maxZ, maxZ: AT.rect.minZ },
+      { a: 'megaMart', b: 'atrium', door: 'atriumMegaMart', minX: AT.martLink.from, maxX: AT.martLink.to, minY: 0, maxY: AT.martLink.height, minZ: M.maxZ, maxZ: AT.rect.minZ },
+      { a: 'level2', b: 'atrium', door: 'atriumPromenade', minX: AT.link.from, maxX: AT.link.to, minY: upperY, maxY: upperY + AT.link.height, minZ: H.maxZ, maxZ: AT.rect.minZ },
+      // Down through the floor: the escalator's hole and the two balcony voids (no doors; the rope across the escalator hides nothing)
+      ...[escalator.hole, ...LAYOUT.level2.voids].map((r) => ({ a: 'hallway', b: 'level2', minX: r.minX, maxX: r.maxX, minY: H.height - 0.1, maxY: upperY + 0.1, minZ: r.minZ, maxZ: r.maxZ })),
+    ],
     titleShots,
     benchmarkShots,
     // Zone lighting (fx/zoneGrading.js, grades in config/look.js): which grade where. First match wins, so small areas

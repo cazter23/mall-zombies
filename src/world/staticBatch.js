@@ -72,7 +72,8 @@ export function batchStatic(root, { cellSize = 12, upperY = 6 } = {}) {
     if (!eligible(o, root)) return;
     bounds.setFromObject(o).getCenter(center);
     const look = colourKey(o.material);
-    const key = `${look ?? o.material.uuid}|${Math.floor(center.x / cellSize)}|${Math.floor(center.z / cellSize)}|${center.y > upperY ? 1 : 0}`;
+    // (layers: room culling's rooms, fx/roomCulling.js: meshes of different rooms never share a batch)
+    const key = `${look ?? o.material.uuid}|${Math.floor(center.x / cellSize)}|${Math.floor(center.z / cellSize)}|${center.y > upperY ? 1 : 0}|${o.layers.mask}`;
     if (!groups.has(key)) groups.set(key, { material: o.material, look, meshes: [] });
     groups.get(key).meshes.push(o);
   });
@@ -105,6 +106,7 @@ export function batchStatic(root, { cellSize = 12, upperY = 6 } = {}) {
     const batch = new THREE.Mesh(geometry, batchMaterial);
     batch.name = `static_${meshes[0].name || 'batch'}`;
     batch.userData.staticBatch = meshes.length;
+    batch.layers.mask = meshes[0].layers.mask;
     root.add(batch);
     batches++;
     for (const mesh of meshes) {

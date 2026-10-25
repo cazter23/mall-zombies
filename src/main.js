@@ -35,6 +35,7 @@ import { wireRunIntro } from './game/runIntro.js';
 import { atmosphere } from './config/environment.js';
 import { createPostProcessing } from './fx/postProcessing.js';
 import { createZoneGrading } from './fx/zoneGrading.js';
+import { createRoomCulling } from './fx/roomCulling.js';
 import { look } from './config/look.js';
 import { createCareerStats } from './game/careerStats.js';
 
@@ -157,6 +158,7 @@ if (debugPanel) {
 const benchmark = createBenchmark({
   camera, renderer, draw: () => {
     lightPool.update(camera.position, 1 / 60);
+    roomCulling.update(cullingOn);
     postProcessing.render({ showViewmodel: false, speedAmount: 0, grade: gradeAt(1 / 60) });
   },
 });
@@ -186,6 +188,14 @@ async function runBenchmark() {
 }
 // Static batching (world/staticBatch.js): the map's still, opaque meshes merged by material and chunk, before the first frame
 // (about 1,500 meshes -> about 450). Browser only: the map's own tests see every mesh as built.
+// Room culling (fx/roomCulling.js): rooms the camera can't see aren't drawn. Tagged before batching, so batches keep rooms
+// apart; updated before every draw. ?noculling: off, to compare.
+const doorById = new Map(map.doors.map((d) => [d.id, d]));
+const roomCulling = createRoomCulling({
+  areas: map.cullAreas, portals: map.cullPortals, camera, isOpen: (id) => doorById.get(id)?.isOpen ?? true,
+});
+const cullingOn = !new URLSearchParams(location.search).has('noculling');
+if (cullingOn) roomCulling.tag(map.group);
 if (!new URLSearchParams(location.search).has('nobatch')) batchStatic(map.group); // (?nobatch: off, to compare)
 effects.prepare(renderer, camera); // shared impact graphics warmed before the first shot
 
@@ -389,6 +399,7 @@ function render(alpha, frameTime) {
   hud.setRoundFlashing(rounds.inBreak && rounds.round > 1); // counter blinks in the break between rounds
 
   // Render world + viewmodel through HDR post-processing (UnrealBloom + lens vignette/aberration + ACES tone mapping).
+  roomCulling.update(cullingOn);
   postProcessing.render({ showViewmodel: !game.over, speedAmount, grade: gradeAt(frameTime) });
 }
 
@@ -405,6 +416,7 @@ function renderTitle(frameTime) {
   lightPool.update(camera.position, frameTime);
   body.root.visible = false;
   effects.update(frameTime);
+  roomCulling.update(cullingOn);
   postProcessing.render({ showViewmodel: false, speedAmount: 0, grade: gradeAt(frameTime) });
 }
 
@@ -434,7 +446,7 @@ if (debug.exposeToWindow) {
   window.__mall = {
     THREE, scene, camera, renderer, postProcessing, map, world: map, colliders: g.colliders, arena: g.arena, player, stats: g.stats, input, game,
     hud, gun, effects, viewmodel, shootables: g.shootables, body, zombies, health, melee, runStats: g.runStats, death, resetRun,
-    gamepad, aimAssist, wallet, rounds, sound, interactions, g, screens, titleCamera,
+    gamepad, aimAssist, wallet, rounds, sound, interactions, g, screens, titleCamera, roomCulling,
     menus: { play, pauseRun, freshRun, goToTitle }, // the menu flow, for testing
     benchmark: runBenchmark, // await __mall.benchmark() -> the report (title or pause screen)
     settings, lightPool, // (settings.set(id, value) as the menu would; the light pool)

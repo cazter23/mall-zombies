@@ -12,6 +12,7 @@ export function createImpactMarks(scene, surfaces = []) {
   const batches = new Map(), slots = new Array(impacts.maxMarks).fill(null);
   const random = seededRandom(1979); // cosmetics never consume gameplay's random stream
   const ray = new THREE.Raycaster(), point = new THREE.Vector3(), direction = new THREE.Vector3();
+  ray.layers.enableAll(); // (room culling puts map meshes on per-room layers: fx/roomCulling.js)
   const normal = new THREE.Vector3(), probe = new THREE.Vector3(), corner = new THREE.Vector3();
   const normalMatrix = new THREE.Matrix3(), rotation = new THREE.Quaternion(), twist = new THREE.Quaternion();
   const surfaceMatrix = new THREE.Matrix4(), instanceMatrix = new THREE.Matrix4();
