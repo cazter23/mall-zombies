@@ -36,7 +36,7 @@ export const shutters = {
   },
   doors: { startShutter: 'clearance', foodCourt: 'foodCourt', serviceCorridor: 'staff', megaMart: 'mart',
     foodCourtMegaMart: 'mart', serviceCorridorFoodCourt: 'staff', atrium: 'atrium', atriumPromenade: 'atrium', atriumMegaMart: 'mart',
-    departmentStore: 'department' },
+    departmentStore: 'department', departmentStoreStartRoom: 'department' },
 };
 
 export function shutterFinish(id) {

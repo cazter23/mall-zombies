@@ -115,7 +115,8 @@ export function buildMallAtmosphere(kit, layout, { service, ceilingHole, ceiling
 
   // Mall-owned signage shares a palette; store identities stay their own.
   sign('SUNSET GALLERIA', { x: 0, y: 3.35, z: 15.94, width: 3.6, height: 0.48, facing: -1 });
-  sign('TRADING HOURS: UNTIL FURTHER NOTICE', { x: -4.94, y: 2.65, z: 11.5, width: 2.5, height: 0.28, facing: 'x+' });
+  // (North of HOFFMAN'S side door, which took the stretch of wall this notice hung on.)
+  sign('TRADING HOURS: UNTIL FURTHER NOTICE', { x: -4.94, y: 2.65, z: 14.9, width: 2.0, height: 0.25, facing: 'x+' });
   // (The directory hung at x -18 until HOFFMAN'S gate took that stretch of wall: now over the hallway's north-west vent.)
   sign('SUNSET GALLERIA / DIRECTORY', { x: -6.9, y: 2.6, z: 5.95, width: 2.3, height: 0.34, facing: -1 });
   for (const [i, text] of ['FOOD COURT  -  SOUTH', 'MEGA MART  -  EAST', 'CUSTOMER SERVICE  -  CENTRE'].entries()) {

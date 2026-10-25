@@ -13,6 +13,9 @@ export const departmentStore = {
   gate: { from: -19.5, to: -15.5, height: 3 },
   // The hallway's north-west boarded vent (a spawn) moves here, between the centrepiece and the start room, for the gate.
   hallwayVentX: -7,
+  // The side door: a shutter through the start room's west wall (z along it), in the lane between the start room's shelf
+  // (ends z 11.5) and its checkout counter (starts z 13.6). The only second way out of the start room: priced like the gate.
+  startRoomLink: { from: 11.6, to: 13.5, height: 2.5 },
 
   colors: {
     wall: 0xf1e4d0, // warm cream

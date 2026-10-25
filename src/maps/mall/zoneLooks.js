@@ -237,7 +237,7 @@ export function buildStartRoomLook({ looks, kit, layout }) {
   });
 
   // Bands round the shelf (west), the Price Gun station (east), the boarded vents (back) and the shutter (front).
-  looks.bands({ along: 'z', from: front, to: R.maxZ, wallAt: R.minX, facing: 1, colors, gaps: [[7.9, 11.6]], name: 'startroom_wainscot' });
+  looks.bands({ along: 'z', from: front, to: R.maxZ, wallAt: R.minX, facing: 1, colors, gaps: [[7.9, 11.6], [layout.departmentStore.startRoomLink.from, layout.departmentStore.startRoomLink.to]], name: 'startroom_wainscot' }); // (the shelf; HOFFMAN'S side door)
   looks.bands({ along: 'z', from: front, to: R.maxZ, wallAt: R.maxX, facing: -1, colors, gaps: [[9.1, 10.9]], name: 'startroom_wainscot' });
   looks.bands({ along: 'x', from: R.minX, to: R.maxX, wallAt: R.maxZ, facing: -1, colors, gaps: [[-4.4, -2.6], [2.6, 4.4]], name: 'startroom_wainscot' });
   looks.bands({ along: 'x', from: R.minX, to: R.maxX, wallAt: front + 0.01, facing: 1, colors, gaps: [[D.minX, D.maxX]], name: 'startroom_wainscot' });

@@ -242,7 +242,10 @@ export function buildMall(scene, colliders) {
   // --- Start room walls ------------------------------------------------------
 
   const roomWall = mat(look.startRoom.wall);
-  wall({ along: 'z', from: H.maxZ + T, to: R.maxZ + T, at0: R.minX - T, at1: R.minX, height: R.height }, roomWall, { name: 'startroom_wall_west' });
+  wall({
+    along: 'z', from: H.maxZ + T, to: R.maxZ + T, at0: R.minX - T, at1: R.minX, height: R.height,
+    openings: [{ from: LAYOUT.departmentStore.startRoomLink.from, to: LAYOUT.departmentStore.startRoomLink.to, top: LAYOUT.departmentStore.startRoomLink.height }], // (HOFFMAN'S side door)
+  }, roomWall, { name: 'startroom_wall_west' });
   wall({ along: 'z', from: H.maxZ + T, to: R.maxZ + T, at0: R.maxX, at1: R.maxX + T, height: R.height }, roomWall, { name: 'startroom_wall_east' });
   wall({ along: 'x', from: R.minX - T, to: R.maxX + T, at0: R.maxZ, at1: R.maxZ + T, height: R.height }, roomWall, { name: 'startroom_wall_back' });
 
@@ -280,6 +283,15 @@ export function buildMall(scene, colliders) {
     id: 'departmentStore', label: "Hoffman's", price: economy.doors.departmentStore, opensZone: 'departmentStore', zones,
     doorway: { minX: DS.gate.from, maxX: DS.gate.to, minZ: H.maxZ, maxZ: H.maxZ + T, height: DS.gate.height },
   });
+  // Its side door: a shortcut through the start room's west wall (the start room is always open, so it opens just the store;
+  // it is the only second way out of the start room, so it costs as much as the gate).
+  const DSL = DS.startRoomLink;
+  const departmentStoreStartRoomDoor = kit.shutterDoor({
+    id: 'departmentStoreStartRoom', label: "Hoffman's Side Door", price: economy.doors.departmentStoreStartRoom,
+    opensZone: 'departmentStore', zones,
+    doorway: { minX: R.minX - T, maxX: R.minX, minZ: DSL.from, maxZ: DSL.to, height: DSL.height },
+  });
+  tiledFloor(R.minX - T, DSL.from, R.minX, DSL.to, look.hallway.floor); // (under the start room's wall)
 
   // --- Main hallway: escalator, elevator, ceiling ------------------------------
 
@@ -804,7 +816,7 @@ export function buildMall(scene, colliders) {
     ...stores.spots.map((s) => ({ kind: 'attachmentCounter', name: `attachment_${s.id}`, zone: s.zone, attachment: s.id, position: s.position, normal: s.normal })),
   ];
 
-  const doors = [startDoor, megaMartDoor, foodCourtDoor, serviceCorridorDoor, foodCourtMegaMartDoor, serviceCorridorFoodCourtDoor, escalatorDoor, atriumDoor, atriumPromenadeDoor, atriumMegaMartDoor, departmentStoreDoor];
+  const doors = [startDoor, megaMartDoor, foodCourtDoor, serviceCorridorDoor, foodCourtMegaMartDoor, serviceCorridorFoodCourtDoor, escalatorDoor, atriumDoor, atriumPromenadeDoor, atriumMegaMartDoor, departmentStoreDoor, departmentStoreStartRoomDoor];
   const dressing = buildMallAtmosphere(kit, LAYOUT, { service, ceilingHoles });
 
   // The hallway's new look (the visual overhaul's reference room): neon, painted light, two-tone walls, clutter.
@@ -884,6 +896,7 @@ export function buildMall(scene, colliders) {
       { a: 'hallway', b: 'atrium', door: 'atrium', minX: AT.gate.from, maxX: AT.gate.to, minY: 0, maxY: AT.gate.height, minZ: H.maxZ, maxZ: AT.rect.minZ },
       { a: 'megaMart', b: 'atrium', door: 'atriumMegaMart', minX: AT.martLink.from, maxX: AT.martLink.to, minY: 0, maxY: AT.martLink.height, minZ: M.maxZ, maxZ: AT.rect.minZ },
       { a: 'hallway', b: 'departmentStore', door: 'departmentStore', minX: DS.gate.from, maxX: DS.gate.to, minY: 0, maxY: DS.gate.height, minZ: H.maxZ, maxZ: H.maxZ + T },
+      { a: 'startRoom', b: 'departmentStore', door: 'departmentStoreStartRoom', minX: R.minX - T, maxX: R.minX, minY: 0, maxY: DSL.height, minZ: DSL.from, maxZ: DSL.to },
       { a: 'level2', b: 'atrium', door: 'atriumPromenade', minX: AT.link.from, maxX: AT.link.to, minY: upperY, maxY: upperY + AT.link.height, minZ: H.maxZ, maxZ: AT.rect.minZ },
       // Down through the floor: the escalator's hole and the two balcony voids (no doors; the rope across the escalator hides nothing)
       ...[escalator.hole, ...LAYOUT.level2.voids].map((r) => ({ a: 'hallway', b: 'level2', minX: r.minX, maxX: r.maxX, minY: H.height - 0.1, maxY: upperY + 0.1, minZ: r.minZ, maxZ: r.maxZ })),

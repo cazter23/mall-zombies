@@ -282,3 +282,85 @@ test('a 12-zombie horde from the back of the store reaches a player in the hallw
   assert.equal(arrived.size, 12, `stuck: ${horde.filter((z) => !arrived.has(z)).map((z) => z.position.toArray().map((v) => v.toFixed(1)))}`);
   ctx.diagnostic(`12-zombie horde: all arrive in ${Math.min(...arrived.values()).toFixed(1)}-${Math.max(...arrived.values()).toFixed(1)} s`);
 });
+
+// --- Step 3: the side door from the start room --------------------------------------------------------------------------
+
+const DSL = DS.startRoomLink;
+const linkZ = (DSL.from + DSL.to) / 2;
+const R = LAYOUT.startRoom;
+
+test("the side door: 1250 from the start room at the very start (before the start shutter), opening only HOFFMAN'S", () => {
+  const t = started();
+  const { g } = t;
+  assert.equal(economy.doors.departmentStoreStartRoom, 1250);
+  g.wallet.earn(1000); // 500 + 1000: enough for the side door instead of the start shutter
+  t.standAt(R.minX + 1.3, linkZ, 90); // in the start room, facing west (-X)
+  t.tick(5);
+  assert.equal(g.interactions.prompt?.label, "Hoffman's Side Door");
+  assert.equal(g.interactions.prompt?.cost, 1250);
+  const before = g.wallet.points;
+  t.press('KeyF', 40);
+  assert.equal(before - g.wallet.points, 1250);
+  assert.equal(g.map.zones.departmentStore.open, true);
+  assert.equal(g.map.zones.hallway.open, false, 'the hallway stays shut: this is the other way out');
+  g.resetRun();
+  assert.equal(g.map.zones.departmentStore.open, false);
+  assert.equal(door(g, 'departmentStoreStartRoom').isOpen, false);
+});
+
+test('the side door is buyable from inside the store too, and not through the wall beside it', () => {
+  const t = storeOpen(); // (bought through the gate)
+  const { g } = t;
+  g.wallet.earn(2000);
+  t.standAt(R.minX - 0.3 - 1.3, linkZ, -90); // in the store, facing east (+X)
+  t.tick(5);
+  assert.equal(g.interactions.prompt?.label, "Hoffman's Side Door");
+  t.standAt(R.minX - 0.3 - 1.3, linkZ + 3.2, -90); // beside it, facing the solid wall
+  t.tick(5);
+  assert.notEqual(g.interactions.prompt?.label, "Hoffman's Side Door");
+  t.standAt(R.minX + 1.3, linkZ + 3.2, 90); // in the start room, facing the solid wall north of it
+  t.tick(5);
+  assert.notEqual(g.interactions.prompt?.label, "Hoffman's Side Door");
+});
+
+test('through the side door: a player walks from the start room into the store; zombies route through it both ways', () => {
+  const t = started();
+  const { g } = t;
+  door(g, 'departmentStoreStartRoom').open();
+  t.tick(120);
+  g.zombies.clear();
+  g.player.teleport({ position: new THREE.Vector3(-2, 0, linkZ), yaw: Math.PI / 2 }); // facing west
+  t.tick(2);
+  hold(t, ['KeyW'], 2.5);
+  assert.ok(g.player.position.x < R.minX - 1, `walked into the store (x ${g.player.position.x.toFixed(2)})`);
+  const nav = g.zombies.nav;
+  for (const s of spawns(g)) assert.ok(Number.isFinite(nav.distanceToTarget(s.position.x, s.position.z, 0)), `${s.name} reachable`);
+  const chase = (from, target, seconds) => {
+    g.player.teleport({ position: target, yaw: 0 });
+    t.tick(30);
+    g.zombies.clear();
+    const z = g.zombies.spawn('shopper', from.clone());
+    for (let i = 0; i < 60 * seconds; i++) {
+      g.player.teleport({ position: target, yaw: 0 });
+      t.tick(1);
+      if (Math.hypot(z.position.x - target.x, z.position.z - target.z) < 2) return i / 60;
+    }
+    assert.fail(`never got there (ended at ${z.position.toArray().map((v) => v.toFixed(1))})`);
+  };
+  const fitting = spawns(g).find((s) => s.name.includes('fittingRoom')).position;
+  assert.ok(chase(fitting, new THREE.Vector3(1, 0, 10), 30) < 30, 'from the fitting rooms into the start room');
+  assert.ok(chase(new THREE.Vector3(3.5, 0, 15), new THREE.Vector3(-8, 0, 24), 30) < 30, 'from the start room to the back of the store');
+});
+
+test('culling: the store is seen from the start room only through the open side door', () => {
+  const { g } = started();
+  const camera = new THREE.PerspectiveCamera(70, 16 / 9, 0.05, 200);
+  let open = false;
+  // (every other door shut, so the hallway gate can't show it)
+  const culling = createRoomCulling({ areas: g.map.cullAreas, portals: g.map.cullPortals, camera, isOpen: (id) => id === 'departmentStoreStartRoom' && open });
+  camera.position.set(-1, 1.7, linkZ);
+  camera.lookAt(-20, 1.7, linkZ);
+  assert.equal(culling.update().has('departmentStore'), false);
+  open = true;
+  assert.equal(culling.update().has('departmentStore'), true);
+});
