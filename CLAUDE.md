@@ -806,7 +806,27 @@ two-tone, dying sick-green tube, red EXIT, staff notices, heavier clutter), Leve
 YOUR STORE HERE!), Grand Atrium (neon sunsets beside SUNSET GALLERIA, COME FOR THE SALES. STAY FOREVER., trim round the arcade
 and ring). Walls an area borrows from a neighbour get a 1 cm paintPanel (paint is on both faces of a shared wall). Washes sit 1 cm
 off a wall (behind 2 cm stripes), sign glows 2.6 cm (coplanar.test covers the atrium and part of the Mart). Back of house is darker
-in DECOR only so far: real dimming is the zone lighting step. Not yet benchmarked (hidden pane too slow).
+in DECOR only so far: real dimming is the zone lighting step.
+Steps 4-8 done:
+- Zone lighting (fx/zoneGrading.js, config/look.js grading, map.gradeZones): per-area grade (exposure, tint, saturation, contrast,
+  vignette) eased by the CAMERA position; dark sick-green Service Corridor, dim red Mart stockroom walkway. Graphics > Zone lighting
+  (low cost; Potato off). fx/postProcessing.js grade pass (exposure goes through the tone mapping, so Visual effects Off keeps it).
+- VHS filter (postProcessing VhsShader, look.vhs): Graphics > VHS filter Off/Subtle/Full, off by default, a style choice with no cost
+  tag so presets never change it; with Visual effects Off that frame is composed like Low.
+- Set pieces (maps/mall/setPieces.js, SET_PIECES data): hallway arcade bank (south wall, west end), start room CRT TV wall (static +
+  SALE ad), Mega Mart can pyramid (no collision), level 2 mannequins. One collider each; built BEFORE the look kit so clutter avoids them.
+  Atrium set piece skipped (another tool owns atrium.js / atriumDetails.js); Food Court ball pit not done.
+- Horror layer (game/features/horror.js, map feature kind 'horror', look.horror, map.horror): from round 5 darker each round, a growing
+  share of flickering neon dies (neon.setFailures), lamps flicker out for the run; from round 6, 35%/round power cut in the player's area
+  (neon.setPower(0), its lamps off, zone grade -> powerCut red), stutters back. All flicker holds >= 0.18 s (under 3 flashes/s).
+  Comfort > Horror lighting (Calm off). forceCut() on the instance for testing. Start room / Mart detail lamps never die.
+- Performance: measured in the (throttled) test pane at 1280x720 with gl.finish per frame: timings too noisy to tune from, except real
+  lamps (all ~25 ms avg vs 6 lamps ~19 ms; a 12-lamp pool looks identical but isn't faster). Neon glow / clutter barely matter.
+  Room culling (fx/roomCulling.js, map.cullAreas / map.cullPortals): meshes wholly inside a room go on that room's camera layer
+  (tagged before static batching; batches key on the layer), each frame a portal walk (open doors only, screen-rect narrowing) enables
+  the visible rooms' layers. Pixel-identical to no culling in 84 renders (all benchmark + title poses, doors shut and open). Doors shut:
+  2416 -> 1797 draw calls, 650k -> 339k triangles over the 8 benchmark views (atrium ring 655 -> 396, level 2 437 -> 254); all doors
+  open: up to -22%. ?noculling compares. Raycasters must use layers.enableAll() (impactMarks does).
 (First version, superseded:)  config/look.js =
 the art direction as data (palette rules, hallway colours, neon colours, pool strengths, clutter; look.runtime = what the
 Graphics settings write: neonGlow, clutter). maps/mall/hallwayLook.js builds it on top of the hallway: plum wainscot + chrome
