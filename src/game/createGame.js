@@ -22,6 +22,7 @@
 // =============================================================================
 
 import { feel } from '../config/feel.js';
+import { createShutterSounds } from './shutterSounds.js';
 import { zombieTypes } from '../config/zombies.js';
 import { weapons, melee as meleeWeapons } from '../config/weapons.js';
 import { loadMap } from '../maps/index.js';
@@ -126,6 +127,7 @@ export function createGame({
     onReloadTap: () => gun.requestReload(), // controller X tapped next to a buyable: it was a reload
     onPurchase: (purchase) => events.emit('purchase', purchase),
   });
+  const shutterSounds = createShutterSounds({ events, doors: map.doors, sound });
   for (const door of map.doors) {
     interactions.add({
       label: door.label,
@@ -278,7 +280,7 @@ export function createGame({
   events.on('typeIntro', ({ typeId }) => {
     const intro = zombieTypes[typeId]?.introBanner;
     if (!intro) return;
-    hud.showAnnouncement(intro);
+    hud.showAnnouncement({ ...intro, priority: 2 });
     sound.play('paChime');
   });
 
@@ -287,7 +289,7 @@ export function createGame({
     view: createPowerUpView(scene, colliders),
   });
   events.on('powerUpCollect', ({ pa, sound: name }) => {
-    hud.showAnnouncement(pa);
+    hud.showAnnouncement({ ...pa, priority: 1 });
     sound.play(name);
   });
 
@@ -415,6 +417,7 @@ export function createGame({
     if (!(arena && arena.contains(player.position))) rounds.update(dt);
     health.update(dt);
     map.update(dt);
+    shutterSounds.update(dt);
     features.update(dt);
     flashSales.update(dt);
     if (arena) arena.update(dt);

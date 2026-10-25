@@ -5,12 +5,14 @@
 // =============================================================================
 
 import './style.css';
+import './ui/retail.css';
 import * as THREE from 'three';
 import { feel } from './config/feel.js';
 import { debug } from './config/debug.js';
 import { startLoop } from './core/loop.js';
 import { Input } from './core/input.js';
 import { createGamepad } from './core/gamepad.js';
+import { createHaptics } from './core/haptics.js';
 import { buttonLabels } from './config/controls.js';
 import { buildTestRange } from './maps/testRange/testRange.js';
 import { createHud } from './ui/hud.js';
@@ -94,6 +96,8 @@ const g = createGame({
 scene.add(viewmodel.worldLight); // the muzzle flash lights up the room
 const { state: game, death, map, player, gun, melee, zombies, rounds, health, wallet, effects, aimAssist, interactions, pricing, flashSales } = g;
 const resetRun = g.resetRun;
+hud.connectEvents(g.events);
+const haptics = createHaptics({ gamepad, input, state: game, health, events: g.events });
 
 // Button name for prompts on whichever device was used last ("R" vs "X" vs "□").
 function buttonLabel(action) {
@@ -127,7 +131,7 @@ const zoneGrading = createZoneGrading({ zones: map.gradeZones, ...look.grading }
 // (map.horror.state: the horror layer's round darkness and power cuts, game/features/horror.js)
 const gradeAt = (frameTime) => zoneGrading.update(frameTime, camera.position, look.runtime.zoneGrading, map.horror?.state);
 const firstLaunch = !hasSavedSettings(); // (read before anything is saved)
-const settings = createSettings({ renderer, sound, hud, postProcessing, lightPool });
+const settings = createSettings({ renderer, sound, hud, postProcessing, lightPool, haptics });
 // First launch: pick a Graphics preset that suits this computer from the title flyover's frame rate (game/autoGraphics.js).
 const autoGraphics = createAutoGraphics({
   firstLaunch,
@@ -229,6 +233,7 @@ function runSoFar() {
   return { round: rounds.round, points: wallet.points, time: g.runStats.timeAlive, kills: g.runStats.kills };
 }
 function pauseRun() {
+  haptics.stop();
   game.padPlaying = false;
   if (document.pointerLockElement) document.exitPointerLock();
   screens.show('pause', runSoFar());
@@ -299,6 +304,7 @@ function handleControllerMenus() {
 
 function update(dt) {
   gamepad.poll();
+  haptics.update();
   handleControllerMenus();
   g.update(dt);
 }
@@ -391,7 +397,11 @@ function render(alpha, frameTime) {
   hud.setAmmoTier(tierById(tierOf(gun.modsFor(gun.def.id) ?? [])));
   const prompt = game.over ? null : interactions.prompt;
   // A Flash Sale shows as a SALE mark on the price of whatever it discounted.
-  hud.setInteract(prompt && { ...prompt, sale: PRICE_CATEGORIES.includes(prompt.kind) && pricing.discountOf(prompt.kind) > 0 }, buttonLabel('interact'));
+  hud.setInteract(prompt && {
+    ...prompt,
+    sale: PRICE_CATEGORIES.includes(prompt.kind) && pricing.discountOf(prompt.kind) > 0,
+    originalCost: PRICE_CATEGORIES.includes(prompt.kind) ? pricing.basePriceOf(prompt.kind, prompt.id) : prompt.cost,
+  }, buttonLabel('interact'));
   hud.setFlashSale(game.over ? null : flashSales.active);
   hud.setPowerUps(game.over ? null : g.powerUps);
   hud.setVaultPrompt(game.running && !game.over && g.vaultPromptVisible, buttonLabel('jump'));

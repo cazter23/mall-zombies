@@ -261,7 +261,7 @@ export function buildStartRoomLook({ looks, kit, layout }) {
 /** Level 2 (the Sunset Promenade): pink trim, THE SUN NEVER SETS ON SAVINGS, YOUR STORE HERE!, posters, light clutter. */
 export function buildLevelTwoLook({ looks, layout, floorY, hole, keepClear = [] }) {
   const L = look.level2;
-  const H = layout.hallway; // level 2 has the hallway's footprint
+  const H = layout.level2.rect;
   const L2 = layout.level2;
   const y = (h) => floorY + h;
   const S = L.signs;
@@ -296,7 +296,13 @@ export function buildLevelTwoLook({ looks, layout, floorY, hole, keepClear = [] 
   looks.clutter({
     name: 'level2', area: { minX: H.minX + 0.3, maxX: H.maxX - 0.3, minZ: H.minZ + 0.3, maxZ: H.maxZ - 0.3, y: floorY },
     kinds: L.clutter.kinds, seed: L.clutter.seed, perSquareMeter: L.clutter.perSquareMeter,
-    keepClear: [...keepClear, pad(hole), ...L2.voids.map(pad), { minX: H.minX, maxX: hole.minX, minZ: H.minZ, maxZ: H.maxZ }],
+    keepClear: [...keepClear, pad(hole), ...L2.voids.map(pad),
+      ...L2.shoeStore.entrances.map(e => ({ minX: e.from - .4, maxX: e.to + .4, minZ: H.maxZ - 1.4, maxZ: H.maxZ + .4 })),
+      ...L2.expansionConnections.map(c => c.wall === 'north'
+        ? { minX: c.from - .4, maxX: c.to + .4, minZ: H.maxZ - 1.5, maxZ: H.maxZ }
+        : { minX: c.wall === 'west' ? H.minX : H.maxX - 1.5, maxX: c.wall === 'west' ? H.minX + 1.5 : H.maxX,
+          minZ: c.from - .4, maxZ: c.to + .4 }),
+      { minX: H.minX, maxX: hole.minX, minZ: H.minZ, maxZ: H.maxZ }],
   });
 }
 

@@ -8,6 +8,9 @@ export const impacts = {
   edgeProbe: 0.04,
   normalMatch: 0.98,
   signatures: {
+    rivetRifle: { kind: 'rivet', radius: 0.027, variants: 2 },
+    coilNailer: { kind: 'coilNail', radius: 0.028, variants: 2 },
+    barcodeScanner: { kind: 'laserBurn', radius: 0.03, variants: 2 },
     stapleGun: { kind: 'staple', radius: 0.028, variants: 2 },
     priceGun: { kind: 'sticker', radius: 0.072, variants: 3, rotationDegrees: 22 },
     nailGun: { kind: 'nail', radius: 0.028, variants: 2 },

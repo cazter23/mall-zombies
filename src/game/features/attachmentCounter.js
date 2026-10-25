@@ -25,6 +25,11 @@ export function attachmentCounterItem({ spot, zones, gun, pricing }) {
       return `${attachment.name} on the ${gun.def.name} · ${attachment.blurb}`;
     },
     verb: 'fit',
+    title: attachment.name,
+    get detail() {
+      const current = attachmentsOf(gun.modsFor(gun.def.id))[attachment.slot];
+      return `${attachment.blurb} · ${current ? `Replaces ${attachmentById(current).name}` : `${upgrades.attachmentSlots[attachment.slot].name} slot`}`;
+    },
     kind: 'attachment',
     id,
     get cost() {

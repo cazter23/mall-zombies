@@ -28,6 +28,7 @@
 
 import { feel } from './feel.js';
 import { audio } from './audio.js';
+import { haptics } from './haptics.js';
 import { gamepad, aimAssist } from './controls.js';
 import { atmosphere } from './environment.js';
 import { look } from './look.js';
@@ -167,6 +168,12 @@ export const settingDefs = [
     id: 'aimAssist', tab: 'Controller', label: 'Aim assist strength', type: 'slider',
     min: 0, max: 1.5, step: 0.05, default: aimAssist.strength, format: percent,
     apply: (v) => { aimAssist.strength = v; },
+  },
+
+  {
+    id: 'padVibration', tab: 'Controller', label: 'Controller vibration', type: 'slider',
+    min: 0, max: 1, step: 0.05, default: haptics.strength, format: percent,
+    apply: (v, ctx) => { haptics.strength = v; ctx.haptics?.setStrength(v); },
   },
 
   // ---- Audio ----

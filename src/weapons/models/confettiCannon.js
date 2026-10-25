@@ -5,6 +5,31 @@ import { buildPistolArms } from './arms.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 
+let partyBrandTex = null;
+function getPartyBrandTexture() {
+  if (partyBrandTex) return partyBrandTex;
+  if (typeof document === 'undefined') return null;
+  const c = document.createElement('canvas');
+  c.width = 128;
+  c.height = 48;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#fef6e4';
+  ctx.fillRect(0, 0, 128, 48);
+  ctx.strokeStyle = '#ff5ea8';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(2, 2, 124, 44);
+  ctx.fillStyle = '#ff5ea8';
+  ctx.font = 'bold 15px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('PARTY POP!', 64, 21);
+  ctx.fillStyle = '#06b6d4';
+  ctx.font = 'bold 10px monospace';
+  ctx.fillText('TWIN FESTIVE SHELLS', 64, 37);
+  partyBrandTex = new THREE.CanvasTexture(c);
+  partyBrandTex.colorSpace = THREE.SRGBColorSpace;
+  return partyBrandTex;
+}
+
 function buildGun(vm) {
   const gun = new THREE.Group();
   const materials = new Map();
@@ -38,6 +63,14 @@ function buildGun(vm) {
   const grip = box(0.043, 0.12, 0.052, 0, -0.095, 0.028, vm.darkColor); grip.rotation.x = 0.3;
   box(0.065, 0.06, 0.085, 0, -0.006, 0.09, vm.accentColor);
   box(0.069, 0.065, 0.018, 0, -0.006, 0.14, vm.metalColor);
+  const brandTex = getPartyBrandTexture();
+  const brandMat = brandTex
+    ? new THREE.MeshBasicMaterial({ map: brandTex })
+    : mat(vm.shellColor ?? 0xffd166);
+  const brandPlaque = new THREE.Mesh(new THREE.BoxGeometry(0.0016, 0.022, 0.048), brandMat);
+  brandPlaque.name = 'confettiBrandLabel';
+  brandPlaque.position.set(0.0335, -0.006, 0.09);
+  gun.add(brandPlaque);
   const trigger = box(0.012, 0.03, 0.014, 0, -0.065, -0.016, vm.metalColor);
   // Hinge below and forward of the breech: opening lifts its rear clear of the receiver.
   // The inner offset preserves the closed barrel and muzzle positions.
@@ -65,7 +98,7 @@ function buildGun(vm) {
     top: { position: [-0.03, 0.025, 0.03] },
     side: { parent: assembly, position: [0.094, -0.012, -0.15] },
     grip: { position: [0, -0.095, 0.028], rotation: [0.3, 0, 0], size: { w: 0.043, h: 0.12, d: 0.052 } },
-    magazine: { position: [0.054, -0.008, 0], rotation: [0, 0, Math.PI / 2] }, // a side shell holder
+    magazine: { position: [0.054, -0.008, 0], rotation: [0, 0, Math.PI / 2], gunId: 'confettiCannon' }, // a side shell holder
     sticker: { position: [-0.0335, -0.006, 0.09] }, // on the stock
   };
   return { gun, muzzle, trigger, barrels, cylinder, mounts };
@@ -85,6 +118,8 @@ export function buildConfettiCannonModel(def) {
   leftArm.name = 'confettiSupportArm';
   const shell = new THREE.Group(); shell.name = 'confettiHeldShell'; leftArm.add(shell);
   cylinder(0.022, 0.065, 0, 0, 0, vm.shellColor, shell);
+  cylinder(0.0226, 0.018, 0, 0, -0.004, vm.bodyColor, shell); // festive paper label band
+  cylinder(0.0228, 0.005, 0, 0, -0.018, vm.accentColor, shell); // contrasting foil stripe
   cylinder(0.024, 0.012, 0, 0, 0.033, vm.metalColor, shell);
   shell.visible = false;
   const barrelPosition = new THREE.Vector3(), barrelRotation = new THREE.Euler();

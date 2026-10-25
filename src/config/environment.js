@@ -63,6 +63,7 @@ export const atmosphere = {
     rattleMinSeconds: 24, rattleMaxSeconds: 46, rattleRange: 20,
     voices: {
       ventilation: { noise: true, frequency: 180, gain: 0.045 },
+      fountain: { noise: true, frequency: 880, filterHz: 2200, gain: 0.035 },
       refrigerator: { noise: false, frequency: 60, gain: 0.035 },
       fluorescentBuzz: { noise: false, wave: 'sawtooth', frequency: 120, gain: 0.038 },
     },

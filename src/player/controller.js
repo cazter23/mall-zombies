@@ -37,6 +37,7 @@ export class PlayerController {
     // Set by the weapon each tick (see weapons/aim.js): aiming blocks sprint and slows walking.
     this.isAiming = false;
     this.aimAmount = 0; // 0 = hip, 1 = fully aimed
+    this.aimMoveMultiplier = 1; // optional weapon handling penalty, separate from perk/player stats
     this.lookScale = 1; // mouse sensitivity multiplier (lower while zoomed in)
 
     this.grounded = false;
@@ -323,7 +324,7 @@ export class PlayerController {
       let targetSpeed = this.isSprinting ? stats.sprintSpeed : stats.walkSpeed;
       if (this.stance === 'crouch') targetSpeed = stats.crouchSpeed;
       if (this.stance === 'prone') targetSpeed = stats.proneSpeed;
-      targetSpeed *= 1 + (stats.adsMoveSpeed - 1) * this.aimAmount; // slower while aiming
+      targetSpeed *= 1 + (stats.adsMoveSpeed * this.aimMoveMultiplier - 1) * this.aimAmount;
       if (!this.isSprinting) targetSpeed *= moveStrength * directionSpeed; // stick tilt, backpedal/strafe
       // In the air you keep your momentum: you can steer, but holding a direction never slows
       // you down (otherwise a slide-jump bleeds speed mid-air). Letting go of keys still does.

@@ -284,11 +284,17 @@ export const feel = {
   body: {
     colors: {
       skin: 0xe0ac7e,
+      skinShade: 0xc99366, // knuckle / inner-palm warm shadow tone
       shirt: 0xc8102e, // red polo
+      shirtTrim: 0x990b22, // ribbed cuff / hem trim
+      shirtStripe: 0xf4e8d1, // cream uniform cuff tipping stripe
       pants: 0xc3a57a, // khaki
+      pantsShade: 0xa88b60, // khaki cuff / seam shade
       shoes: 0xf2f2f2, // white sneakers
+      shoeAccent: 0xc8102e, // sneaker heel tab & tongue stripe
       soles: 0x8a8a8a,
       belt: 0x4a3426, // brown belt
+      buckle: 0xd4af37, // brass employee belt buckle
     },
     // Hip height for each stance. In between, it follows the camera height smoothly.
     hipHeight: { stand: 0.92, crouch: 0.5, slide: 0.3, prone: 0.16 },

@@ -24,6 +24,11 @@ npm run balance    # gun balance report (tools/gunReport.mjs): dps by range, pul
 Menu regressions: `tests/menus.test.js` covers modal inert/focus isolation, Tab/Escape, controller presets including
 equal/custom values, reset buttons/confirmation and native-resolution readout. `tests/blood.test.js` also changes
 splatter while paused, clearing flesh effects/pools immediately without removing dust or tracers.
+`tests/retailUi.test.js` covers PA message priority, duplicates, bounded queues/cancellation, real purchase-ticket shortages,
+sale/base prices, weapon/ammo distinctions, attachment replacement/tradeoff text and warranty transitions.
+`tests/haptics.test.js` covers distinct gun pulses (including every dart in a real burst), damage priority, pickups,
+intensity/off, unsupported/rejected actuator APIs, legacy pulse fallback, gamepad snapshots/unplug, focus/pause/death/reset
+cleanup and keyboard suppression. Settings -> Controller -> Controller vibration is saved with the other settings.
 `tests/prone.test.js` covers toggle controls, crawl speed from stats, smooth eye/collision lowering, low roofs,
 safe stand/crouch recovery, slide/jump/melee/vault constraints, gun use, zombie damage, body clearance, controller sprint latch and run reset.
 `tests/shopperAppearance.test.js` covers coordinated wardrobe choices and rarity, every clothing/hair/accessory/wear variant,
@@ -31,6 +36,14 @@ valid geometry and mesh budgets, animation, isolated hit flashes, owned-resource
 `tests/atmosphere.test.js` checks decorative triangles against protected routes/vaults and the escalator ceiling well,
 zero added collision, batching/motion reset, interpolated supporting-surface shadows and disposal, spatial sound
 occlusion/zones/panning/caps, pause/death/reset silence, closed-shutter rattles and Web Audio voice cleanup.
+`tests/atriumDetails.test.js` checks the new authored atrium triangles against the fountain lap, all entrances/vents,
+upper-ring walking lanes and the escalator; zero added collision/lights, varied displays/stock, geometry/batching budgets,
+resource disposal, ripple/mobile animation/reset/settings and the fountain's existing spatial-ambience path.
+`tests/shutters.test.js` checks both wall axes/upstairs, fixed frame clearance, physical slat pitch/UV cropping, original
+collision timing/reversal/reset, finishes/aspects, static batching/disposal, real F purchases and motor/roll/stop sounds
+(pause freezes progress; death/reset cancel; debug open-all is silent), and unobscured low destination signs.
+`tests/promenade.test.js` checks independent upper-floor expansion/support, the widened southern route, sealed future
+connections, a real two-entrance shoe-store loop in both directions, momentum vaults and live zombie entry paths.
 `tests/careerStats.test.js` checks persistent lifetime totals, weighted accuracy, personal bests, bounded recent runs,
 debug-run exclusion, reset, corrupt saves and unavailable browser storage.
 `tests/music.test.js` also covers the End of Shift death sting: receipt-timed bell, music volume, cancellation of future
@@ -42,7 +55,7 @@ earns and collects a drop with production tuning, then checks Play again cleanup
 
 Gameplay regression tests live in `tests/` (`gameplay.test.js` movement/melee/vault, `aim.test.js` spread
 (including the Laser Pointer's hip benefit / ADS penalty through repeated shots and recovery),
-`impactMarks.test.js` all five cosmetic signatures, visible-surface/edge checks, floor/ceiling/instanced normals,
+`impactMarks.test.js` all six cosmetic signatures, visible-surface/edge checks, floor/ceiling/instanced normals,
 misses/targets/pierce/shutters, shared cap/reuse/disposal, map unloading, startup preparation, debug sprites,
 Cannon projection budget, unchanged wall-shot payouts/accuracy/ammo and Play-again cleanup,
 `startRoom.test.js` clearance-store dressing adds no collision, leaves central/spawn/vault spaces visually clear,
@@ -141,7 +154,13 @@ src/
                         Its tick = gamepad.poll + controller menus + g.update(dt). Exposes window.__mall (same names as
                         before, plus `g` = the game) when debug.exposeToWindow
   style.css             HUD (crosshair, hit marker, health/stamina bars, ammo, prompt), start/pause overlay
+  ui/retail.css         Retail presentation layer loaded after style.css: mall directory, distinct combat signs,
+                        shelf tickets, personnel paperwork, facilities settings and handbook. Responsive + reduced motion.
+  config/ui.js          Presentation timing, PA queue limit and brief weapon-role copy (no gameplay tuning)
+  ui/announcements.js   Bounded PA queue: type introductions priority 2, incentives 1, routine messages 0;
+                        clear on pause/death/reset; wall-clock presentation timers only
   config/
+    haptics.js          Controller vibration intensity and per-gun/damage/pickup durations, motor strengths and priorities
     deathMusic.js       End of Shift: original seven-second death composition (piano/pad/bell/noise layers), gain and
                         stop fade. Bell anchors to feel.death.resultsDelay; played once through sound's music/master buses
     powerUps.js         Employee-incentive drop tuning, skill credit, round caps, pickup/zone durations, ammo top-up,
@@ -167,10 +186,12 @@ src/
     weapons.js          stapleGun (start pistol, semi), priceGun (wall buy, full auto), nailGun (wall buy, semi,
                         piercing: `pierce: { maxTargets, damageFalloff }`), foamDartBlaster (Mega Mart, burst),
                         confettiCannon (Service Corridor, 12 pellets, pellets pierce 2 zombies, six-shell tube, shell-by-shell
-                        `shellReload`). Optional `falloff: { start, end, minMultiplier }` on ANY gun (distance damage; every gun except
+                        `shellReload`), rivetRifle (debug-only automatic prototype, no wall buy or price).
+                        Optional `falloff: { start, end, minMultiplier }` on ANY gun (distance damage; every gun except
                         the Nail Gun has one). Each gun's ROLE is written above its entry. Per-weapon stats (fireMode
                         'semi' | 'auto' | 'burst', damage, headshot mult, mag, reserve (= max for ammo buys), fire interval, reload, spread
-                        cone, ADS time/zoom/gun offset), recoil (camera pitch/yaw/roll + gun-model kick + spring),
+                        cone, ADS time/zoom/gun offset + optional moveSpeedMultiplier applied on top of stats.adsMoveSpeed),
+                        recoil (camera pitch/yaw/roll + gun-model kick + spring),
                         muzzleFlash (size, colors, ADS shape, lights), sounds, viewmodel (model name, hip
                         offset/angles, colors, trigger anim, reload keyframes gunKeys/handKeys + timed events
                         with sounds/jolts), `melee.boxCutter` (damage, reach, cone, swing timing, lunge),
@@ -233,8 +254,9 @@ src/
     health.js           createPlayerHealth(): takeDamage, regen after a delay, `overlay` strength for the red
                         hurt edges (grows with damage, pulses when low, flashes on hit), calls onDeath once
     body.js             createPlayerBody(): first-person legs + lower torso in the world scene (visual only).
+                        Tapered faceted waist/pelvis, belt buckle, tapered thighs/shins and faceted sneakers with tongue accent.
                         Hip height follows eye height; feet posed for walk cycle / slide (V) / air tuck, knees
-                        solved with two-bone IK. Exports placeLimb()/makeBoxMesh() (also used for the arms)
+                        solved with two-bone IK. Exports placeLimb()/makeBoxMesh()/makeFacetedLimbMesh()/buildDeformedBoxGeometry() (also used for the arms)
   weapons/
     weapon.js           Weapon class: ammo, fire cooldown + click buffer, reload. Pure state; update({ triggerPressed,
                         triggerHeld, reloadPressed, blocked }) returns 'fire' | 'empty' | null. fireMode 'auto' fires
@@ -305,19 +327,27 @@ src/
     models/             First-person weapon models. index.js = registry (viewmodel.model -> { model, display }
                         builders) + the model interface ({ root, muzzle, animate({ sinceFire, reloadProgress,
                         reloadWeight }), leftHandVisible }); buildWeaponDisplay(def) = the gun alone (wall buys).
-                        arms.js = shared pistol hands (buildPistolArms -> leftArm). stapleGun.js = staple gun,
-                        squeeze lever, left hand fetching a staple strip. priceGun.js = orange label gun with a
-                        sticker roll on top; lever; reload swaps the roll (rollGone / newRollVisible windows).
-                        nailGun.js = yellow/black framing nailer (piston cap, steel nose that punches forward on each
-                        shot, angled nail magazine); reload slides a fresh strip into the magazine.
-                        foamDartBlaster.js = blue/yellow toy rifle, visible foam darts in a removable drum; drum-swap reload.
-                        confettiCannon.js = pink/purple double barrels, gold rims; hinge open, a shell per cycle, snap shut.
+                        arms.js = shared faceted first-person hands & arms (buildPistolArms -> leftArm, buildCuffedArmSegment):
+                        shaped palms, distinct thumbs, readable right trigger finger + 3 grouped lower grip fingers, 4 curled
+                        support fingers, tapered 8-sided forearms, polo sleeves with ribbed crimson cuffs and cream tipping stripes.
+                        stapleGun.js = office heavy-duty tacker (faceted stamped-steel housing, hinged upper compression lever with
+                        rubber palm pad, full-length chrome staple channel + animated rear spring-pusher rod, side staple window,
+                        STAPLE-PRO T50 sticker). priceGun.js = supermarket price tagger (sloped housing, exposed red-bordered sticker
+                        roll + visible feed ribbon, price-band dial, ink feed roller, emerging "$9.99" label, enclosed trigger guard,
+                        PRICEMASTER plaque, roll/roller/sticker feed motion when firing). nailGun.js = pneumatic framing nailer
+                        (cylindrical rear piston tower + bolted exhaust cap, exhaust vents, CAUTION 120 PSI decal, reciprocating
+                        driver nose with brass serrated safety contact foot, steeply angled magazine with visible collated nails,
+                        brass quick-connect air fitting + hose stub). foamDartBlaster.js = blue/yellow toy blaster (faceted clamshell
+                        receiver with parting seam & screw bosses, ribbed foregrip, shaped skeletonized stock with orange buttpad,
+                        FOAM STORM · AGES 8-80 plaque, indexing rotary dart drum). rivetRifle.js = teal industrial automatic rifle.
+                        coilNailer.js = heavy automatic pneumatic coil nailer with round wire-collated drum. barcodeScanner.js =
+                        charge-beam retail laser scanner with capacitor coils and Li-Ion battery pack. confettiCannon.js = pink/purple
+                        double barrels, gold rims, PARTY POP! stock label and striped shells; hinge open, a shell per cycle, snap shut.
                         Each model also returns `mounts` (barrel / top / side / grip / magazine / sticker: where upgrade parts go).
-                        upgradeParts.js = what upgrades LOOK like: buildAttachmentPart(id) (cartoon parts in the stores' colors:
-                        nozzle tube, duct-taped Sawn-Off band, laser + faint beam, zoom tube with blue glass, grip tape wound round
-                        hand + grip, orange wristband on the right forearm, yellow XL Jumbo Pack, green Speed Loader tab) and
-                        createUpgradeVisuals(model): every part + a tier sticker built up front (hidden), show({ tier, attachments })
-                        per frame (the viewmodel reads shownDef.modList); the Extended Nozzle moves the muzzle (and flash) to its tip.
+                        upgradeParts.js = what upgrades LOOK like: buildAttachmentPart(id, mount) (mounting brackets/adapters on universal
+                        parts, weapon-suited Jumbo Pack reservoirs/drums/packs via mount.gunId, Speed Loader cam latch + ribbed finger loop,
+                        terrycloth wristband with woven tag) and createUpgradeVisuals(model): every part + a branded Extended Warranty service
+                        seal built up front (hidden), show({ tier, attachments }) per frame; the Extended Nozzle moves the muzzle (and flash) to its tip.
                         New gun = new file + 1 line (+ its mounts)
     muzzleFlash.js      createMuzzleFlash(cfg): 2 sprites (normal-blended orange burst + additive core, random
                         twist/size), hand light + world light (always in the scene at 0 so no shader recompile).
@@ -354,8 +384,13 @@ src/
     shopperAppearance.js  Weighted, coordinated Shopper wardrobe selection; optional seeded random for tests, one look per spawn
     cartModel.js        buildCart(cfg, mat): the Cart Pusher's shopping cart (wire basket, chassis, casters, red handle, shopping
                         inside), merged by material; on the model's root so it stays upright when the zombie dies
-    zombieModel.js      Blocky zombie model built from the type: Shopper (config/shoppers.js wardrobe) or Mall
-                        Walker (type.outfit: matching tracksuit + stripes, headband, wristbands, fanny pack; modelScale).
+    zombieModel.js      Faceted low-poly zombie model built from the type: Shopper (config/shoppers.js wardrobe + 5 cartoon-undead
+                        face profiles: sunkenEyes, offsetJaw, droopingEyelid, retailSmile, discolored), Mall Walker (type.outfit:
+                        matching tracksuit + stripes, headband, wristbands, fanny pack; modelScale) or Cart Pusher. Shared indexed
+                        ANATOMY_GEOMETRIES (faceted cranium + tapered jaw + brow/ears, V-tapered torso with shoulder caps, tapered
+                        limbs, faceted shoes and recognizable hands with palm/fingers/thumb) batch per bone across all zombie types.
+                        Also exports buildClerkFigure(apronColor, mat) for static store/service-booth clerks with isolated cloned
+                        geometries so map disposal never touches live zombie singletons.
                         Arms have shoulder + elbow joints. Code animation (numbers in zombieTypes.<type>.walkAnimation):
                         shamble or style 'powerWalk' (bent arms pumping, hips twisting), arms-overhead wind-up, slam,
                         recovery, winded pose (bent over, hands at knees, breathing), flinch/flash, rise from floor, tip over and sink
@@ -481,16 +516,18 @@ src/
                         (byteMe: screen wall + laptops + neon; goodSports: wainscot, jerseys, trophies, bat rack, ball bin;
                         playTimeToys: rainbow, plush shelves, blocks; nutsAndBolts: pegboard of tools, paint cans, workbench) and a
                         zombie spawn just inside the door. buildStores({ kit, props, court, thickness, stores }) -> { spots, spawns }
-    mall/atrium.js      buildAtrium({ kit, props, layout, upperY }) -> { spawns, lamps, link, ramp, emitters }: THE GRAND ATRIUM (walls, ring
+    mall/atrium.js      buildAtrium({ kit, props, layout, upperY }) -> { spawns, lamps, link, ramp, emitters, update, reset }: THE GRAND ATRIUM (walls, ring
                         slab + skin + railings, escalator, fountain, kiosks, planters, benches, signs, vents). Doors are built by mall.js
-    mall/levelTwo.js    buildLevelTwo({ kit, floorY, rect, hole, layout }) -> { spawns, lamps }: LEVEL 2, the Sunset Promenade (+ its railed balcony
-                        voids, layout.voids, looking down into the hallway), on the hallway's
-                        ceiling slab (same 40 x 8 m footprint, 3.6m ceiling): peach walls with coral stripe + purple skirting, a tiled skin
-                        over the slab (the slab is the collider), roof beams + warm skylight strips, glass RAILINGS (1.5m solid, ignoreShots)
-                        on three sides of the escalator well (the west end is the way on/off), three empty shop fronts on the north wall (data:
-                        LAYOUT.level2.shops; "COMING SOON" is the future Wardrobe spot), a planter ringed by benches + wall benches (vaultable),
-                        signs, and boarded vents (LAYOUT.level2.vents) = the zombie spawns tagged zone 'upstairs' (their y is the floor). Only the
-                        perimeter, rails, benches and planter collide. mall.js hangs the lamps (config roomLights.level2)
+    mall/atriumDetails.js  Authored display facades, kiosk merchandise, fountain/floor details, overhead decorations and small scenes.
+                        Uses config/atrium.js; no colliders/lights/interactions. Only ripples/mobile animate; kit owns disposal.
+    mall/levelTwo.js    buildLevelTwo({ kit, props, floorY, supportRects, hole, layout }) -> { spawns, lamps }: LEVEL 2 shell,
+                        independently sized by config/promenade.js (merged into LAYOUT.level2); floor sections use existing downstairs
+                        ceiling support where available and add structural slabs elsewhere. Main perimeter, roofs, reserved closed
+                        connections, railings, furniture, shop frontages and upstairs spawns; mall.js hangs the existing lamps.
+    mall/promenadeShop.js  SHOE-PER SALE interior: two entrances, perimeter shoe shelves, fitting mirror/bench, shoe boxes and a low
+                        island with a clear momentum-vault crossing. Shares upper-floor unlock/navigation/reset/disposal.
+    config/promenade.js  Independent upstairs bounds/sections, slab/wall dimensions, shoe-store geometry/finish data and three
+                        reserved expansion connections (west/east wings, COMING SOON workshop). Closures are solid, not purchases.
     mall/restockMachine.js  buildRestockMachine({ kit, center, wallAt, facing }) -> { position, normal, screen }: the RESTOCK-O-MATIC
                         (north/south walls): body + hazard kick plate + glowing header and tagline, a lit window of ammo boxes, keypad,
                         card reader, live canvas screen (screen.show({ title, line, note, tone })), side signs, the AMMO blade sign, the
@@ -555,7 +592,8 @@ src/
                         hasHeadroom(): can the player stand up here? overlapsSolid(): would a body overlap a wall?
                         markCollidersChanged(colliders) after adding/removing a collider at runtime; colliderSignature()
     shutter.js          createShutter(): roll-up barrier with its own Box3 collider (open/close/toggle/update); marks
-                        collider changes; the slab is thin along the wall's thickness (doorways in X or Z walls)
+                        collider changes. mesh = cropped moving curtain + hardware; frame = fixed guides/housing (mapKit adds both).
+                        Constant slat pitch in X/Z walls, hidden curtain when fully rolled up. config/shutters.js owns finishes/dimensions.
     textures.js         Procedural canvas textures (floor tile, shop sign, shutter, muzzle flash burst, wall-buy chalk). No image files.
     atmosphereTextures.js Soft footprint alpha and deterministic tile roughness (no image downloads)
                         seededRandom(seed): deterministic random (also used for shelf stock)
@@ -675,12 +713,16 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
   reach from the floor is taller than a jump. Its low end (x -4..-10.4) is solid to the floor; under its high end
   (x -10.4..-17.5) there's >= 2m headroom, so players and zombies walk under it. Elevator (SEALED): doors in the north
   wall at x 10.5 (taped off, OUT OF ORDER, floor indicator "1", call button); painted on, the wall behind is solid.
-- Level 2 (the Sunset Promenade; zone 'upstairs', opened by repairing the escalator for 2000): above the hallway, x -20..20, z -2..6,
+- Level 2 (the Sunset Promenade; zone 'upstairs', opened by repairing the escalator for 2000): x -20..20, z -4.5..6,
   floor y 6.3, ceiling 9.9. You step off the escalator into a 2.5m west lobby; the escalator well (x -16.5..-11.95, z 0.7..3.3) is fenced by
-  railings on its north, south and east sides, so the walkway splits into a north and a south passage (2.55m each) that rejoin east of it.
-  Three empty shop fronts on the north wall (SHOE-PER SALE x -10..-4, COMING SOON x -3..3, PRETZEL PALACE x 4..10), a bench ring round a
-  small tree planter at (13, 1.6), two benches on the south wall, four boarded vents (south x -13 and 8, east wall z 4.2, north x 16)
-  as spawns. The elevator stays sealed. Everything is data in LAYOUT.level2 (mall.js); see mall/levelTwo.js.
+  railings on its north, south and east sides. The southern passage gained 2.5m; the balcony holes and central bridge are unchanged.
+  SHOE-PER SALE x -10..-4 is a real store extending north to z 11.3, with 2.1m entrances x -9.8..-7.7 and -6.3..-4.2,
+  shoe shelves, fitting mirror/bench and a vaultable 0.65m display island. COMING SOON x -3..3 and PRETZEL PALACE x 4..10 remain closed.
+  The bench-ring planter at (14.2, 1.6) remains for a later lounge pass. Southern benches, signs and two southern vents follow the
+  new wall; all four existing upstairs spawn markers remain (east z 4.2, north x 16). Reserved solid connections at both ends
+  (z -4.1..-1.7) and behind COMING SOON (x -1.3..1.3) prepare future wings/workshop. No new price or purchase path.
+  Main floor and annex are sections in config/promenade.js, independent of the hallway; navigation/grade follow the upper sections.
+  The elevator stays sealed. Data is exposed through LAYOUT.level2; see mall/levelTwo.js and mall/promenadeShop.js.
 - The Grand Atrium (zone 'atrium'): x 8..32, z 6.6..30.6, behind a 5m gate (1500) in the hallway's north wall at x 13..18 under a
   GRAND ATRIUM sign. Two storeys (roof 9.9 under a big warm skylight): an open court x 11.5..28.5, z 10.1..27.1 with a square
   fountain (glass guard, solid to 2.2m) in the middle, CELL-OUT and SHADE SHACK kiosks, four tree planters, three benches; a 3.5m arcade
@@ -771,6 +813,80 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
 - Turn `debug.testArena` off before shipping. Don't build game features into it.
 
 ## Current state
+
+Character and weapon model refresh ("faceted, not voxel"):
+- First-person hands, arms and lower body (`weapons/models/arms.js`, `player/body.js`, `weapons/viewmodel.js`, `config/feel.js`):
+  replaced rectangular palm/finger blocks with shaped faceted palms (`unitPalmGeo`), distinct thumbs (`unitThumbGeo`), a readable
+  right trigger index finger (`rightIndexFinger`) plus 3 grouped grip fingers (`rightGripFingers`), 4 articulated curled support
+  fingers (`unitSupportFingersGeo`) plus `supportThumb`, and tapered 8-sided forearms with employee polo sleeves, ribbed crimson
+  cuffs (`rightCuff`/`leftCuff`) and cream uniform tipping stripes. Melee box-cutter arm shares `buildCuffedArmSegment` and has a
+  faceted fist + trapezoid snap-off blade. First-person body adds a faceted waist, brass belt buckle, tapered legs and faceted sneakers.
+- Shared zombie anatomy & static shop clerks (`zombies/zombieModel.js`, `config/shoppers.js`, `zombies/shopperAppearance.js`,
+  `maps/mall/props.js`): shared indexed `ANATOMY_GEOMETRIES` give Shoppers, Mall Walkers and Cart Pushers a faceted cranium and
+  tapered jaw (`head` stays comfortably inside the 0.25m headshot hitbox), brow ridge, ears, V-tapered torso with shoulder caps,
+  tapered limbs, faceted shoes, recognizable hands (palm, curled fingers, inner thumb), and five restrained cartoon-undead face
+  profiles (`sunkenEyes`, `offsetJaw`, `droopingEyelid`, `retailSmile`, `discolored`). Per-bone geometry batching now runs on all
+  zombie types (~17-18 meshes / ~1.5k tris per Shopper or Mall Walker) with isolated per-zombie materials for hit flashes.
+  `props.clerk()` uses `buildClerkFigure()` with cloned geometry instances so `map.dispose()` never disposes shared zombie geometry.
+- Refreshed older weapons & upgrade parts (`priceGun.js`, `stapleGun.js`, `nailGun.js`, `foamDartBlaster.js`, `confettiCannon.js`,
+  `upgradeParts.js`): Price Gun rebuilt as a sloped supermarket tagger with open cradle cheeks, red-bordered sticker roll, visible
+  paper feed ribbon, price-band dial, ink roller, emerging `"$9.99"` label, enclosed trigger guard, `PRICEMASTER` plaque and firing
+  roll/roller/label feed motion. Staple Gun rebuilt with a hinged upper compression lever + rubber palm pad, full-length chrome
+  staple channel + animated rear spring-pusher rod, stepped driver nose, side staple inspection windows and `STAPLE-PRO T50` sticker.
+  Nail Gun adds a cylindrical rear piston tower + bolted exhaust cap, exhaust louvres, fasteners, `CAUTION 120 PSI` decal, brass
+  serrated safety contact foot + return spring on the punching nose, twin-rail angled magazine with visible collated nails, and a
+  brass quick-connect air fitting + hose stub. Foam Dart Blaster adds a faceted clamshell receiver with parting seam and screw bosses,
+  ribbed foregrip, shaped skeletonized stock with orange buttpad, `FOAM STORM · AGES 8-80` plaque and indexing rotary drum.
+  `upgradeParts.js` adds mounting brackets/adapters on universal parts, weapon-tailored `jumboPack` reservoirs/drums/packs via
+  `mount.gunId`, a cam-latch + finger-loop `speedLoader`, a woven-tag `wristband`, and a branded Extended Warranty service seal.
+
+Promenade steps 1-3: independently authored upper bounds/floor sections and three sealed future connections; widened southern
+route (+2.5m above the Food Court, no downstairs layout changes); SHOE-PER SALE becomes a two-entrance room with a vaultable
+display and perimeter stock/fitting area. Existing upper unlock, balcony holes/rails, escalators, Atrium shutter, prices and four
+spawn markers retained. Southern vents/decor follow the moved wall. Structural support is reused without doubled slabs;
+new annex support/roof, floor-aware navigation and grading are integrated. tests/promenade.test.js covers traversal/vaults/live
+zombies; mall.test.js now checks spawn floor heights instead of accidentally testing upstairs markers on the ground layer.
+Eastern lounge, full decoration pass and future Build-A-Blaster destination are deferred.
+
+Security shutters rebuilt: matte enamel slats, faded Galleria sunset/band, area-specific notices/stickers/wear; clearance
+raspberry, Food Court teal, Mart blue-grey, Atrium lavender/brass, staff institutional green. config/shutters.js owns finishes,
+door-ID assignments, slat pitch and hardware dimensions. Fixed side guides and roller cassettes stay after opening; a solid
+bottom rail, lifting handles and lock plates move with the curtain. world/shutter.js shortens the visible curtain and crops
+its UVs as it feeds upward (constant slat/letter size, top fixed at the housing; no slab rising through the lintel). Original
+collider box, headroom threshold, 1.2s speed, prices/zone events and reset behaviour remain. Frames add no collision; existing
+static batching leaves all moving pieces alone. Guide caps/edges and cassette undersides keep an 8mm clearance from adjacent
+floor, jamb and lintel planes so the fixed frames do not z-fight after batching. Low staff-shortcut/Promenade destination signs are mounted forward of the
+cassette on rigid plaques. game/shutterSounds.js listens to purchases: short motor start, tick-paced rolling rattle, clunk
+on actual completion. No queued wall-clock finish sound; pause freezes it and death/runReset cancel; debug opens are silent.
+
+
+Grand Atrium detail pass: twelve shallow decorative storefronts on the ground and upper perimeter (fashion mannequins,
+perfume, luggage, TVs, repeated employee portraits, papered/closed displays). No new accessible rooms, collision, doors or
+lights. CELL-OUT stocks phones/keypads/cables/packages; SHADE SHACK has a glasses rack, display head, mirror, register and
+disordered stock. Fountain adds stone panels, submerged coins (water now translucent), dedication, hatch, stains/chips,
+subtle ripples and a local fountain voice through the existing capped/occluded ambience system. A single floor overlay
+adds a tiled medallion, entrance bands and traffic wear; below normal shadow/decal height, no floor collision changes.
+Opening banners (readable both sides), sunset mobile, pennants, pilasters/brackets and a stranded balloon dress the height;
+bench bags/drink, planter-integrated litter bin, cleaning kit, employee board and directory add small scenes. Existing
+vents, doors, fountain loop, upper ring and escalator remain clear (actual-triangle tests + existing movement/nav tests).
+Data/colours/counts/timing: config/atrium.js. Builder: maps/mall/atriumDetails.js, called by atrium.js; its update/reset run
+from map.update/reset. Static pieces use the existing batcher; only three ripples + the mobile animate (ambientEffects off
+sets a still pose). This pass adds about 10k triangles, no new lights. All resources belong to the map kit.
+
+
+Retail UI: title directory with sunset emblem/arrow navigation over the live flyover; combat round sign, checkout credit
+display, floating ammo/name/tier text and employee reward strip. Vitals are two unframed continuous lines (health above thinner
+stamina, fading almost out when full). Purchases use a compact hold-button/name/price line with a thin progress underline;
+only upgrade terms or a points shortage add detail. Warranty transitions, replacement attachments and crossed-out original
+sale prices remain (pricing.basePriceOf; charged prices unchanged). Brief Purchased text appears near the points counter.
+Purchase confirmations listen to the event bus in the browser. PA messages
+queue instead of overwriting each other; new threats preempt routine copy. Round/PA/sale use separate HUD positions.
+Pause and stats use cream personnel forms/ruled ledgers; settings a facilities console; controls/help an employee handbook.
+Receipt retained, with sticky retry buttons outside its printing animation. Controls, focus/inert behavior and gameplay
+unchanged. Presentation lives in ui/retail.css, ui/announcements.js and config/ui.js. Stats empty/content sections now correctly
+hide each other; equal-ammo weapon switches refresh the HUD name. Browser QA includes real F purchases, keyboard/controller
+navigation and 1440x900, 800x600 and narrow layouts. No map/weapon balance edits for the UI.
+
 VISUAL OVERHAUL (neon 80s vaporwave mall, leaning hard into horror; every costly effect toggleable). Plan: 1) performance
 foundation, 2) the hallway as the approved REFERENCE ROOM, 3) neon + painted light pools, 4) floors/haze/post, 5) clutter,
 6) set pieces, 7) dynamic horror lighting, 8) presets/perf polish. Step 1 is DONE:
@@ -840,6 +956,22 @@ Graphics settings neonGlow (halos + pools) and clutter (none/some/full) in every
 production preview with a canvas capture (main menu HUD excluded).
 Room/portal culling was planned for 1d but frustum culling of the 12m batch chunks already does most of it; revisit if needed.
 Also merged: world/neon.js (neon tube builder) and world/decor.js + world/scatter.js (decoration kit), not placed yet.
+
+
+Rivet Rifle prototype: debug-only (H cycles through the existing guns, then the rifle); no wall buy, map placement or
+economy price. Automatic 52 damage at 7.5 shots/s, 1.75x headshots, 24 + 144 ammo, 2s magazine reload. Full damage to
+12m, falling to 60% at 28m. Steady body fire with slower ADS (0.26s) and 0.78x normal ADS movement, smaller magazine
+and weaker headshots than Foam; Nail retains the long-range advantage. Own model, recoil, audio, impact marks and
+controller pulse; supports existing tiers/attachments and cache refills. H marks the run assisted. tests/rivetRifle.test.js
+covers cadence/reload, roles at every tier, bloom, real hits/payouts/no pierce, ADS/switch/reset, model reload and debug/cache
+integration. Existing gun stats are unchanged. Play Again now immediately clears the previous gun's ADS state.
+
+Controller vibration: core/haptics.js listens to shot (now includes weaponId), playerHit and powerUpCollect from the browser.
+Five distinct gun pulses; damage overrides shots/pickups until its pulse ends. Uses the currently polled gamepad's dual-rumble
+actuator, with legacy pulse fallback; missing/blocked devices are harmless no-ops. Settings -> Controller -> Controller
+vibration adjusts strength (0 = off), saved normally. Stops immediately on pause, death, run reset, blur/hidden tab, unplug,
+controller replacement or returning to keyboard/mouse. No queued feedback or changes to gameplay/visuals. Browser peripheral
+built in main.js; createGame remains hardware-independent. Physical feel needs testing on the player's actual controller.
 
 Atrium <-> Mega Mart shortcut 'atriumMegaMart' (1000, opens both zones, buyable from either side): a 3m shutter through the Mart's
 north wall and the atrium's south wall at x 21.5..24.5 (LAYOUT.atrium.martLink), west of the checkouts, into the atrium's arcade;

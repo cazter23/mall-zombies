@@ -6,7 +6,7 @@
 // A second escalator rises inside the court to the ring's east side, and the ring joins the Sunset Promenade (level 2 over
 // the hallway) through a shutter in the shared wall. A big sunset skylight sits over the court.
 //
-// buildAtrium({ kit, props, layout, upperY }) -> { spawns, lamps, link, ramp, emitters }
+// buildAtrium({ kit, props, layout, upperY }) -> { spawns, lamps, link, ramp, emitters, update, reset }
 //   layout  LAYOUT.atrium (mall.js): rect, ring depth, gate / link openings, fountain, kiosks, planters, vents
 //   upperY  the level 2 floor height (the ring's floor)
 //   link    the escalator, for zombie navigation (zombies/navigation.js links)
@@ -17,6 +17,9 @@
 import * as THREE from 'three';
 import { slabPiecesWithHoles } from '../../world/mapKit.js';
 import { COLORS } from './palette.js';
+import { buildAtriumDetails } from './atriumDetails.js';
+import { atriumDetails } from '../../config/atrium.js';
+import { shutters } from '../../config/shutters.js';
 
 const WALL = 0xf6e7d2; // warm cream
 const STRIPE = 0xff8a5c; // sunset coral (as on the Promenade)
@@ -123,7 +126,8 @@ export function buildAtrium({ kit, props, layout, upperY }) {
   const stone = mat(STONE);
   box(fx - r, 0, fz - r, fx + r, 0.95, fz + r, stone, { collide: false, name: 'atrium_fountain' });
   box(fx - r - 0.06, 0.95, fz - r - 0.06, fx + r + 0.06, 1.05, fz + r + 0.06, mat(0xe9dfcc), { collide: false });
-  const water = mat(WATER, { emissive: 0x1d5f7a, emissiveIntensity: 0.4, roughness: 0.1, metalness: 0.2 });
+  const water = mat(WATER, { emissive: 0x1d5f7a, emissiveIntensity: 0.4, roughness: 0.1, metalness: 0.2,
+    transparent: true, opacity: atriumDetails.fountain.waterOpacity, depthWrite: false });
   box(fx - r + 0.3, 1.05, fz - r + 0.3, fx + r - 0.3, 1.07, fz + r - 0.3, water, { collide: false, name: 'atrium_water' });
   const tier = (radius, y0, y1, material) => {
     const m = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius * 0.85, y1 - y0, 12), material);
@@ -152,7 +156,7 @@ export function buildAtrium({ kit, props, layout, upperY }) {
     box(x0, 2.15, z0, x1, 2.2, z1, mat(0xc9a04a), { collide: false });
   }
   sign('PLEASE DO NOT FEED THE FOUNTAIN', {
-    x: fx, y: 0.55, z: fz - r - 0.01, width: 2.6, height: 0.3, facing: -1, background: '#3b2f44', color: '#ffd9a8',
+    x: fx, y: 0.55, z: fz - r - 0.06, width: 2.6, height: 0.3, facing: -1, background: '#3b2f44', color: '#ffd9a8',
   });
 
   // --- Kiosks (solid up to their canopy: nobody stands on the counter), planters, benches round the fountain -----------------------
@@ -184,9 +188,12 @@ export function buildAtrium({ kit, props, layout, upperY }) {
     x: cx, y: 4.3, z: A.maxZ - 0.02, width: 6, height: 0.8, facing: -1, background: '#3b2f44', color: '#ffd23f',
   });
   sign('PROMENADE · LEVEL 2', {
-    x: (link.from + link.to) / 2, y: upperY + link.height + 0.35, z: A.minZ + 0.02, width: 2.8, height: 0.4, facing: 1,
+    x: (link.from + link.to) / 2, y: upperY + link.height + 0.35, z: A.minZ + shutters.track.signOffset, width: 2.8, height: 0.4, facing: 1,
     background: '#1d1626', color: '#ffd23f',
-  });
+  }).name = 'sign_atrium_promenade';
+  box((link.from + link.to) / 2 - 1.4, upperY + link.height + .15, A.minZ + .03,
+    (link.from + link.to) / 2 + 1.4, upperY + link.height + .55, A.minZ + shutters.track.signOffset - .01,
+    mat(0x1d1626), { collide: false, name: 'promenade_sign_mount' });
 
   // --- Boarded vents (zombie spawns): on the ground floor, and one on the ring --------------------------------------------------
   const spawns = [];
@@ -211,7 +218,10 @@ export function buildAtrium({ kit, props, layout, upperY }) {
     });
   }
 
+  const details = buildAtriumDetails(kit, layout, upperY);
   return {
+    update: details.update,
+    reset: details.reset,
     spawns,
     lamps: [
       { x: cx, y: upperY * 0.6, z: A.minZ + d + 1 }, // over the court's south half
@@ -222,6 +232,7 @@ export function buildAtrium({ kit, props, layout, upperY }) {
     emitters: [
       { id: 'atrium_music', kind: 'music', zone: 'atrium', position: [cx, 4, cz], range: 26 },
       { id: 'atrium_hvac', kind: 'ventilation', zone: 'atrium', position: [cx, roofY - 0.5, cz], range: 14 },
+      { id: 'atrium_fountain', kind: 'fountain', zone: 'atrium', position: [fx, 1.1, fz - r - .2], range: atriumDetails.fountain.soundRange },
     ],
   };
 }

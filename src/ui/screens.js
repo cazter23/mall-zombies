@@ -120,10 +120,15 @@ export function createScreens() {
     <div class="title-fade"></div>
     <div class="title-shade"></div>
     <div class="title-panel">
-      <div class="kicker">Attention shoppers</div>
+      <div class="directory-brand" aria-hidden="true">
+        <svg class="directory-sun" viewBox="0 0 120 80"><defs><clipPath id="sun-disc"><circle cx="60" cy="39" r="35" /></clipPath></defs><g clip-path="url(#sun-disc)" fill="currentColor"><path d="M20 0h80v40H20zM20 45h80v6H20zM20 56h80v5H20zM20 66h80v4H20zM20 75h80v3H20z" /></g></svg>
+        <span>Shopping · Dining · Eternal employment</span>
+      </div>
+      <div class="kicker">Welcome to your forever mall</div>
       <h1 class="title-logo">Sunset<br />Galleria</h1>
       <p class="tagline">The mall is closed. The shoppers didn't get the memo.</p>
-      <div class="menu-list">
+      <div class="directory-heading">Galleria directory <span>You are here ↓</span></div>
+      <div class="menu-list directory-list">
         <button class="menu-btn primary" data-action="play" type="button">Play</button>
         <button class="menu-btn" data-action="help" type="button">How to play</button>
         <button class="menu-btn" data-action="stats" type="button">Statistics</button>
@@ -132,16 +137,18 @@ export function createScreens() {
       </div>
       <p class="pad-hint">Controller: D-pad + <kbd>A</kbd> · <kbd>Start</kbd> to play · <kbd>Y</kbd> settings · <kbd>X</kbd> controls</p>
     </div>
-    <div class="title-footer">Now hiring · No experience necessary · Must provide own staples</div>
+    <div class="title-footer"><b>OPEN UNTIL FURTHER NOTICE</b><span>Notice will not be provided. · Now hiring · Must provide own staples</span></div>
   `);
   const fade = title.querySelector('.title-fade');
 
   // --- Pause -----------------------------------------------------------------------
   const pause = el('div', 'screen pause-screen hidden', `
     <div class="card pause-card">
+      <div class="form-number">SG / PERSONNEL · FORM 02-B</div>
       <div class="kicker pause-kicker">Paused</div>
       <h1 class="pause-title">On break</h1>
       <div class="pause-stats"></div>
+      <p class="paper-note">Your absence has been noted. Please return to the sales floor.</p>
       <div class="menu-list">
         <button class="menu-btn primary" data-action="resume" type="button">Resume</button>
         <button class="menu-btn" data-action="restart" data-confirm="Restart? Click again" type="button">Restart run</button>
@@ -178,9 +185,11 @@ export function createScreens() {
         </div>
         <div class="receipt-career"></div>
         <div class="receipt-rule"></div>
-        <div class="receipt-barcode"></div>
+        <div class="receipt-validation">
+          <div class="receipt-barcode"></div>
+          <div class="receipt-stamp">Clocked out</div>
+        </div>
         <div class="receipt-thanks">Thank you for shopping with us<br />All sales final · No refunds · No respawns</div>
-        <div class="receipt-stamp">Clocked out</div>
       </div>
       <div class="menu-list menu-row">
         <button class="menu-btn primary" data-action="playAgain" type="button">Play again</button>
@@ -203,6 +212,7 @@ export function createScreens() {
   const kill = economy.killValues.shopper;
   const help = el('div', 'screen help-screen hidden', `
     <div class="card help-card">
+      <div class="form-number">ORIENTATION · RETAIN FOR YOUR ENTIRE EMPLOYMENT</div>
       <div class="kicker">Employee handbook</div>
       <h1 class="help-title">How to play</h1>
       <div class="help-grid">
@@ -223,6 +233,7 @@ export function createScreens() {
   // --- Statistics ------------------------------------------------------------------
   const stats = el('div', 'screen stats-screen hidden', `
     <div class="card stats-card">
+      <div class="file-tab">Personnel / 013</div>
       <div class="kicker">Human resources · Permanent file</div>
       <h1 class="stats-title">Employee record</h1>
       <div class="stats-empty">No completed shifts yet. Try not to make that permanent.</div>
@@ -237,7 +248,7 @@ export function createScreens() {
         </section>
         <section>
           <h2>Recent shifts</h2>
-          <div class="stats-recent"></div>
+          <div class="ledger-scroll"><table class="shift-ledger"><thead><tr><th scope="col">Filed</th><th scope="col">Round</th><th scope="col">Shift length</th><th scope="col">Cleared</th><th scope="col">Accuracy</th></tr></thead><tbody class="stats-recent"></tbody></table></div>
         </section>
       </div>
       <div class="menu-list menu-row">
@@ -380,7 +391,7 @@ export function createScreens() {
     ]);
     statsRecent.innerHTML = recent.map((run) => {
       const date = run.endedAt ? new Date(run.endedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Unknown';
-      return `<div class="stats-run"><span>${date}</span><b>Round ${run.round}</b><span>${clock(run.timeAlive)}</span><span>${run.kills} kills</span><span>${percent(run.accuracy)}</span></div>`;
+      return `<tr class="stats-run"><td>${date}</td><td><b>${run.round}</b></td><td>${clock(run.timeAlive)}</td><td>${run.kills}</td><td>${percent(run.accuracy)}</td></tr>`;
     }).join('');
   }
 

@@ -4,13 +4,14 @@ import { shoppers } from '../src/config/shoppers.js';
 import { chooseShopperAppearance } from '../src/zombies/shopperAppearance.js';
 import { seededRandom } from '../src/world/textures.js';
 import * as THREE from 'three';
-import { createZombieModel } from '../src/zombies/zombieModel.js';
+import { createZombieModel, buildClerkFigure, ANATOMY_GEOMETRIES } from '../src/zombies/zombieModel.js';
+import { batchStatic } from '../src/world/staticBatch.js';
 import { Zombie } from '../src/zombies/zombie.js';
 import { zombieTypes } from '../src/config/zombies.js';
 
 test('Shopper wardrobe mixes coordinated profiles with broad variety and mostly no accessory', () => {
   const random = seededRandom(81);
-  const seen = { profile: new Set(), top: new Set(), bottom: new Set(), hair: new Set(), accessory: new Set(), wear: new Set() };
+  const seen = { profile: new Set(), top: new Set(), bottom: new Set(), hair: new Set(), accessory: new Set(), wear: new Set(), face: new Set() };
   let plainAccessory = 0;
   for (let i = 0; i < 3000; i++) {
     const look = chooseShopperAppearance(random);
@@ -30,6 +31,7 @@ test('Shopper wardrobe mixes coordinated profiles with broad variety and mostly 
   assert.equal(seen.hair.size, Object.keys(shoppers.hair).length);
   assert.equal(seen.accessory.size, Object.keys(shoppers.accessories).length);
   assert.equal(seen.wear.size, shoppers.wearWeights.length);
+  assert.equal(seen.face.size, shoppers.faceProfiles.length);
   assert.ok(plainAccessory > 1500 && plainAccessory < 2700, `${plainAccessory}/3000 without accessories`);
 });
 
@@ -71,6 +73,7 @@ test('every clothing/hair/accessory/condition builds valid geometry, follows the
     ...Object.keys(shoppers.hair).map((hair) => ({ hair })),
     ...Object.keys(shoppers.accessories).map((accessory) => ({ accessory })),
     ...shoppers.wearWeights.map(({ id: wear }) => ({ wear })),
+    ...shoppers.faceProfiles.map(({ id: face }) => ({ face })),
     ...shoppers.builds.map((build) => ({ build })),
   ];
   const type = zombieTypes.shopper;
@@ -153,4 +156,27 @@ test('Shopper hitboxes/stats stay fixed across appearance rolls; Mall Walkers ke
   walker.update(1 / 60, { ...posedZombie(zombieTypes.mallWalker), windedTimer: 1 }, 1);
   assert.ok(walker.root.children[0].children.some((node) => node.name === 'upperBody'));
   walker.dispose();
+});
+
+test('static shop clerks use the shared faceted builder, batch cleanly, and dispose without freeing live zombie geometry', () => {
+  const group = new THREE.Group();
+  const mats = new Map();
+  const mat = (color) => {
+    if (!mats.has(color)) mats.set(color, new THREE.MeshStandardMaterial({ color, roughness: 0.85, flatShading: true }));
+    return mats.get(color);
+  };
+  let sharedDisposed = false;
+  for (const geo of Object.values(ANATOMY_GEOMETRIES)) {
+    geo.addEventListener('dispose', () => { sharedDisposed = true; });
+  }
+  const clerkMeshes = buildClerkFigure({ group, mat, x: 2, z: -3, rotationY: Math.PI, apron: 0xd62839, hair: 0x6b6b6b });
+  assert.ok(clerkMeshes.length >= 4 && clerkMeshes.length <= 8);
+  const clerkBounds = new THREE.Box3().setFromObject(group);
+  assert.ok(clerkBounds.min.y >= -0.01 && clerkBounds.max.y > 1.95 && clerkBounds.max.y < 2.15, 'counter height proportions preserved');
+  // Add a second clerk in the same chunk and verify static batching merges them
+  buildClerkFigure({ group, mat, x: 3, z: -3, rotationY: Math.PI, apron: 0x2d6a4f, hair: 0x6b6b6b });
+  const { merged, batches } = batchStatic(group);
+  assert.ok(merged > 0 && batches > 0, 'clerk meshes participate in static batching');
+  group.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
+  assert.equal(sharedDisposed, false, 'disposing map-owned clerk geometry never disposes shared zombie anatomy');
 });

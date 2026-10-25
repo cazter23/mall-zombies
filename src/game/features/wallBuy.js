@@ -10,6 +10,7 @@
 import { feel } from '../../config/feel.js';
 import { weapons } from '../../config/weapons.js';
 import { economy } from '../../config/economy.js';
+import { ui } from '../../config/ui.js';
 import { buildWeaponDisplay } from '../../weapons/models/index.js';
 import { createWallBuyDisplay } from '../../world/wallBuy.js';
 
@@ -31,6 +32,9 @@ export function buildWallBuy(wb, { scene, map, gun, pricing, interactions }) {
       return owned() ? `${def.name} ammo` : def.name;
     },
     verb: 'buy',
+    get detail() {
+      return owned() ? 'Refills this weapon’s magazine and reserve' : ui.weaponRoles[def.id] ?? 'Weapon requisition';
+    },
     get kind() {
       return owned() ? 'ammo' : 'weapon';
     },

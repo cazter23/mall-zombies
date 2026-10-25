@@ -8,7 +8,7 @@
 // feature: { kind: 'upgradeDesk', name, zone, position (the buy spot), normal }
 // =============================================================================
 
-import { nextTier, tierById, withTier } from '../../weapons/upgrades.js';
+import { nextTier, tierById, tierOf, withTier } from '../../weapons/upgrades.js';
 
 export function buildUpgradeDesk(desk, { map, gun, pricing, interactions }) {
   interactions.add(upgradeDeskItem({ desk, zones: map.zones, gun, pricing }));
@@ -22,6 +22,12 @@ export function upgradeDeskItem({ desk, zones, gun, pricing }) {
       return `${gun.def.name} → ${tierById(next() ?? 'platinum').name}`;
     },
     verb: 'upgrade',
+    get title() {
+      return `${tierById(tierOf(gun.modsFor(gun.def.id))).name} → ${tierById(next() ?? 'platinum').name}`;
+    },
+    get detail() {
+      return `${tierById(tierOf(gun.modsFor(gun.def.id))).name} → ${tierById(next() ?? 'platinum').name} warranty · More damage · Ammo not included`;
+    },
     kind: 'tier',
     get id() {
       return next(); // the tier being bought

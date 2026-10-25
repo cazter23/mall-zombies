@@ -574,6 +574,209 @@ export const weapons = {
     },
   },
 
+  // PROTOTYPE: debug H only; no wall buy or purchase price yet.
+  // ROLE: steady medium-range body damage, paid for with slower ADS/strafe, a smaller
+  // magazine and weaker headshots than Foam. No penetration; Nail wins long hallways.
+  rivetRifle: {
+    id: 'rivetRifle', name: 'Rivet Rifle', debugOnly: true, fireMode: 'auto',
+    damage: 52, headshotMultiplier: 1.75,
+    magazineSize: 24, startingReserve: 144,
+    fireInterval: 1 / 7.5, fireBuffer: 0.1, reloadTime: 2, range: 100,
+    falloff: { start: 12, end: 28, minMultiplier: 0.6 },
+    recoil: {
+      pitchDegrees: 0.9, yawDegrees: 0.16, rollDegrees: 0.25, adsMultiplier: 0.7,
+      model: { back: 0.043, up: 0.008, pitchDegrees: 5.5, yawDegrees: 0.7, rollDegrees: 1.6,
+        adsMultiplier: 0.38, frequency: 7.5, damping: 0.6 },
+    },
+    impact: { flinch: 1.1, knockback: 0.95, hitstopSeconds: 0, deathImpulse: 1.3 },
+    spread: {
+      base: 1.15, moving: 2.7, maxMovingFactor: 1.6, airborne: 4,
+      perShot: 0.7, maxBloom: 4, bloomRecoveryDelay: 0.18, bloomRecovery: 5,
+      smoothing: 10, adsMultiplier: 0.055,
+    },
+    ads: { seconds: 0.26, fovMultiplier: 0.78, moveSpeedMultiplier: 0.78,
+      offset: { x: 0, y: -0.094, z: -0.46 } },
+    muzzleFlash: {
+      seconds: 0.035, size: 0.13, coreSize: 0.05, outerOpacity: 0.7, sizeJitter: 0.18,
+      forwardOffset: 0.06, outerColor: 0xffbf70, coreColor: 0xfff3d2,
+      adsWidth: 1.7, adsHeight: 0.55, adsTwistFraction: 0.05,
+      lightColor: 0xffd5a0, handLightIntensity: 0.25, handLightRange: 0.8,
+      worldLightIntensity: 3, worldLightRange: 6,
+    },
+    sounds: { fire: 'rivetShot', dryFire: 'dryClick' }, tracerColor: 0xffd5a0,
+    viewmodel: {
+      model: 'rivetRifle', hipOffset: { x: 0.18, y: -0.145, z: -0.43 },
+      aimYawDegrees: 8, hipPitchDegrees: 2, hipRollDegrees: 3,
+      bodyColor: 0x217f84, accentColor: 0xf49d36, darkColor: 0x252e35,
+      metalColor: 0xa9b9bd, sightColor: 0xffcf52,
+      fire: { triggerDegrees: 24, boltTravel: 0.018, pressSeconds: 0.022, releaseSeconds: 0.075 },
+      reload: {
+        gunKeys: [
+          { t: 0, pos: [0, 0, 0], rot: [0, 0, 0] },
+          { t: 0.16, pos: [0.015, 0.015, 0.04], rot: [8, 6, 24] },
+          { t: 0.65, pos: [0.015, 0.015, 0.04], rot: [10, 6, 26] },
+          { t: 0.78, pos: [0.01, 0, 0.02], rot: [5, 3, 16] },
+          { t: 0.94, pos: [0, 0, 0], rot: [0, 0, 0] },
+          { t: 1, pos: [0, 0, 0], rot: [0, 0, 0] },
+        ],
+        handKeys: [
+          { t: 0, pos: [0, 0, 0] },
+          { t: 0.15, pos: [0.03, -0.035, 0.105], rot: [0, 0, 0] },
+          { t: 0.34, pos: [-0.1, -0.3, 0.14], rot: [-15, 0, -10] },
+          { t: 0.46, pos: [-0.1, -0.3, 0.14], rot: [-15, 0, -10] },
+          { t: 0.67, pos: [0.03, -0.035, 0.105], rot: [0, 0, 0] },
+          { t: 0.81, pos: [0.015, 0.08, 0.08], rot: [12, 0, 0] },
+          { t: 0.95, pos: [0, 0, 0], rot: [0, 0, 0] },
+        ],
+        magazineGone: [0.22, 0.68], oldMagazineVisible: [0.22, 0.34], newMagazineVisible: [0.46, 0.68],
+        events: [
+          { at: 0.22, sound: 'rivetReloadOut' },
+          { at: 0.68, sound: 'rivetReloadIn', jolt: { up: -0.008, pitchDegrees: -2 } },
+          { at: 0.83, sound: 'rivetReloadReady', jolt: { back: 0.005, pitchDegrees: 2 } },
+        ],
+      },
+    },
+  },
+
+  // PROTOTYPE: debug H only; no wall buy or purchase price yet.
+  // ROLE: heavy industrial LMG. Huge 64-nail wire-collated drum and 2-target pierce chew through
+  // corridor hordes for over 6 seconds straight, paid for with heavy ADS handling and a long 3.1s drum swap.
+  coilNailer: {
+    id: 'coilNailer', name: 'Heavy Coil Nailer', debugOnly: true, fireMode: 'auto',
+    damage: 34, headshotMultiplier: 2.2,
+    pierce: { maxTargets: 2, damageFalloff: [1, 0.5] },
+    magazineSize: 64, startingReserve: 256,
+    fireInterval: 0.1, fireBuffer: 0.1, reloadTime: 3.1, range: 90,
+    falloff: { start: 10, end: 26, minMultiplier: 0.55 },
+    recoil: {
+      pitchDegrees: 0.68, yawDegrees: 0.28, rollDegrees: 0.38, adsMultiplier: 0.68,
+      model: {
+        back: 0.048, up: 0.009, pitchDegrees: 6.2, yawDegrees: 1.5, rollDegrees: 2.8,
+        adsMultiplier: 0.4, frequency: 7.2, damping: 0.54,
+      },
+    },
+    impact: { flinch: 1.25, knockback: 1.35, hitstopSeconds: 0.012, deathImpulse: 1.35 },
+    spread: {
+      base: 1.35, moving: 2.9, maxMovingFactor: 1.6, airborne: 4.2,
+      perShot: 0.28, maxBloom: 3.8, bloomRecoveryDelay: 0.18, bloomRecovery: 4.8,
+      smoothing: 9, adsMultiplier: 0.08,
+    },
+    ads: {
+      seconds: 0.3, fovMultiplier: 0.82, moveSpeedMultiplier: 0.72,
+      offset: { x: 0, y: -0.082, z: -0.42 },
+    },
+    muzzleFlash: {
+      seconds: 0.045, size: 0.2, coreSize: 0.08, outerOpacity: 0.82, sizeJitter: 0.22,
+      forwardOffset: 0.06, outerColor: 0xe6a145, coreColor: 0xfff4c2,
+      adsWidth: 1.7, adsHeight: 0.6, adsTwistFraction: 0.06,
+      lightColor: 0xffd28a, handLightIntensity: 0.45, handLightRange: 0.9,
+      worldLightIntensity: 7, worldLightRange: 8,
+    },
+    sounds: { fire: 'coilShot', dryFire: 'dryClick' },
+    tracerColor: 0xd8a24a,
+    viewmodel: {
+      model: 'coilNailer', hipOffset: { x: 0.185, y: -0.155, z: -0.43 },
+      aimYawDegrees: 9, hipPitchDegrees: 2, hipRollDegrees: 4,
+      bodyColor: 0xd96b27, drumColor: 0x3a3f47, coilColor: 0xd8a24a,
+      darkColor: 0x22262b, metalColor: 0x9ea6b0, sightColor: 0xffd23f,
+      fire: { triggerDegrees: 24, nosePunch: 0.015, capHop: 0.006, pressSeconds: 0.02, releaseSeconds: 0.065 },
+      reload: {
+        gunKeys: [
+          { t: 0, pos: [0, 0, 0], rot: [0, 0, 0] },
+          { t: 0.14, pos: [0.018, -0.02, 0.03], rot: [12, 8, 28] },
+          { t: 0.66, pos: [0.02, -0.025, 0.03], rot: [14, 8, 30] },
+          { t: 0.78, pos: [0.01, -0.015, 0.015], rot: [6, 4, 16] },
+          { t: 0.94, pos: [0, 0, 0], rot: [0, 0, 0] },
+          { t: 1, pos: [0, 0, 0], rot: [0, 0, 0] },
+        ],
+        handKeys: [
+          { t: 0, pos: [0, 0, 0] },
+          { t: 0.16, pos: [0.02, -0.03, 0.06], rot: [0, 0, 0] },
+          { t: 0.34, pos: [-0.11, -0.28, 0.14], rot: [-18, 0, -8] },
+          { t: 0.48, pos: [-0.11, -0.28, 0.14], rot: [-18, 0, -8] },
+          { t: 0.68, pos: [0.02, -0.03, 0.06], rot: [0, 0, 0] },
+          { t: 0.82, pos: [0.01, 0.05, 0.04], rot: [10, 0, 0] },
+          { t: 0.95, pos: [0, 0, 0], rot: [0, 0, 0] },
+        ],
+        drumGone: [0.2, 0.68], oldDrumVisible: [0.2, 0.34], newDrumVisible: [0.46, 0.68],
+        events: [
+          { at: 0.2, sound: 'coilReloadOut' },
+          { at: 0.68, sound: 'coilReloadIn', jolt: { up: -0.012, pitchDegrees: -3.5, rollDegrees: 2.5 } },
+          { at: 0.84, sound: 'coilReloadReady', jolt: { back: 0.008, pitchDegrees: 2.5 } },
+        ],
+      },
+    },
+  },
+
+  // PROTOTYPE: debug H only; no wall buy or purchase price yet.
+  // ROLE: charge-and-release precision laser railgun. Tap for a quick 1-target laser snap, or hold 0.42s
+  // to charge the capacitor bank for a full-power 4-target piercing checkout beam with 3x headshots.
+  barcodeScanner: {
+    id: 'barcodeScanner', name: 'Barcode Scanner', debugOnly: true, fireMode: 'charge',
+    charge: { seconds: 0.42, minDamageMultiplier: 0.35, minTargets: 1, sound: 'scannerCharge' },
+    damage: 160, headshotMultiplier: 3,
+    pierce: { maxTargets: 4, damageFalloff: [1, 0.85, 0.7, 0.55] },
+    magazineSize: 8, startingReserve: 40,
+    fireInterval: 0.28, fireBuffer: 0.12, reloadTime: 1.8, range: 100,
+    falloff: { start: 16, end: 34, minMultiplier: 0.74 },
+    recoil: {
+      pitchDegrees: 2.1, yawDegrees: 0.2, rollDegrees: 0.55, adsMultiplier: 0.6,
+      model: {
+        back: 0.068, up: 0.014, pitchDegrees: 10.5, yawDegrees: 1.2, rollDegrees: 3.2,
+        adsMultiplier: 0.38, frequency: 6.4, damping: 0.52,
+      },
+    },
+    impact: { flinch: 1.85, knockback: 2.5, hitstopSeconds: 0.03, deathImpulse: 1.65 },
+    spread: {
+      base: 0.45, moving: 1.8, maxMovingFactor: 1.6, airborne: 2.8,
+      perShot: 0.9, maxBloom: 2.4, bloomRecoveryDelay: 0.15, bloomRecovery: 5,
+      smoothing: 10, adsMultiplier: 0.025,
+    },
+    ads: {
+      seconds: 0.2, fovMultiplier: 0.7,
+      offset: { x: 0, y: -0.072, z: -0.4 },
+    },
+    muzzleFlash: {
+      seconds: 0.06, size: 0.24, coreSize: 0.1, outerOpacity: 0.92, sizeJitter: 0.15,
+      forwardOffset: 0.06, outerColor: 0xff2a38, coreColor: 0xffd6dc,
+      adsWidth: 1.6, adsHeight: 0.55, adsTwistFraction: 0.05,
+      lightColor: 0xff4d5a, handLightIntensity: 0.75, handLightRange: 1.0,
+      worldLightIntensity: 12, worldLightRange: 10,
+    },
+    sounds: { fire: 'scannerShot', dryFire: 'dryClick' },
+    tracerColor: 0xff2a38,
+    viewmodel: {
+      model: 'barcodeScanner', hipOffset: { x: 0.175, y: -0.145, z: -0.42 },
+      aimYawDegrees: 9, hipPitchDegrees: 2, hipRollDegrees: 4,
+      bodyColor: 0xd8dadf, darkColor: 0x262930, metalColor: 0x8f98a3,
+      coilColor: 0xe07a2e, windowColor: 0xff1e2e, sightColor: 0x5fd068,
+      fire: { triggerDegrees: 26, coilKick: 0.012, pressSeconds: 0.025, releaseSeconds: 0.09 },
+      reload: {
+        gunKeys: [
+          { t: 0, pos: [0, 0, 0], rot: [0, 0, 0] },
+          { t: 0.15, pos: [-0.01, -0.03, 0.02], rot: [14, 10, 26] },
+          { t: 0.64, pos: [-0.015, -0.035, 0.02], rot: [16, 10, 28] },
+          { t: 0.76, pos: [-0.008, -0.02, 0.01], rot: [8, 6, 18] },
+          { t: 0.92, pos: [0, 0, 0], rot: [0, 0, 0] },
+          { t: 1, pos: [0, 0, 0], rot: [0, 0, 0] },
+        ],
+        handKeys: [
+          { t: 0, pos: [0, 0, 0] },
+          { t: 0.15, pos: [0.01, -0.02, 0.02], rot: [0, 0, 0] },
+          { t: 0.32, pos: [-0.08, -0.25, 0.12], rot: [-18, 0, 0] },
+          { t: 0.45, pos: [-0.08, -0.25, 0.12], rot: [-18, 0, 0] },
+          { t: 0.65, pos: [0.01, -0.02, 0.02], rot: [0, 0, 0] },
+          { t: 0.84, pos: [0, 0, 0], rot: [0, 0, 0] },
+        ],
+        batteryGone: [0.18, 0.65], oldBatteryVisible: [0.18, 0.32], newBatteryVisible: [0.44, 0.65],
+        events: [
+          { at: 0.18, sound: 'scannerReloadOut' },
+          { at: 0.65, sound: 'scannerReloadIn', jolt: { up: -0.01, pitchDegrees: -3, rollDegrees: 2 } },
+          { at: 0.84, sound: 'scannerReloadReady', jolt: { back: 0.006, pitchDegrees: 2 } },
+        ],
+      },
+    },
+  },
 };
 
 // The melee weapon: a box cutter from the employee's pocket (COD knife equivalent).

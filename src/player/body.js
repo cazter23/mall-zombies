@@ -1,7 +1,7 @@
 // =============================================================================
 // PLAYER BODY (first-person legs and torso)
-// A blocky body under the camera so you see your own torso, legs and sneakers
-// when you look down. Purely visual: no collision, not shootable.
+// A faceted low-poly body under the camera so you see your own torso, legs and
+// sneakers when you look down. Purely visual: no collision, not shootable.
 //
 // Animated in code every rendered frame:
 //   - Hip height follows the camera height (stand -> crouch -> slide -> prone blend smoothly)
@@ -18,8 +18,90 @@ const KNEE_POLE = new THREE.Vector3(0, 0, -1); // knees bend forward (the body f
 const UP = new THREE.Vector3(0, 1, 0);
 const unitBox = new THREE.BoxGeometry(1, 1, 1);
 
+// 8-sided octagonal prism radius so flat top/bottom/left/right facets sit at +-0.5.
+const OCT_RADIUS = 0.5 / Math.cos(Math.PI / 8);
+const limbGeoCache = new Map();
+
 /**
- * Stretches a unit-box mesh into a limb from `a` to `b` (in its parent's space).
+ * Returns a unit-length (z in [-0.5, 0.5]) 8-sided faceted limb geometry whose
+ * cross-section tapers from `startScale` at point `a` (z = -0.5) to `endScale`
+ * at point `b` (z = +0.5), bounded within [-0.5, 0.5] when scales <= 1.
+ */
+export function getFacetedLimbGeometry(startScale = 1, endScale = 1) {
+  const key = `${startScale.toFixed(3)}|${endScale.toFixed(3)}`;
+  if (!limbGeoCache.has(key)) {
+    const geo = new THREE.CylinderGeometry(
+      endScale * OCT_RADIUS,
+      startScale * OCT_RADIUS,
+      1,
+      8,
+      1,
+    );
+    geo.rotateY(Math.PI / 8);
+    geo.rotateX(Math.PI / 2);
+    geo.computeVertexNormals();
+    limbGeoCache.set(key, geo);
+  }
+  return limbGeoCache.get(key);
+}
+
+/**
+ * Deforms a subdivided unit box in [-0.5, 0.5]^3 using `fn(x, y, z) -> [nx, ny, nz]`
+ * and computes flat-shaded vertex normals.
+ */
+export function buildDeformedBoxGeometry(segX, segY, segZ, fn) {
+  const geo = new THREE.BoxGeometry(1, 1, 1, segX, segY, segZ).toNonIndexed();
+  const pos = geo.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const [nx, ny, nz] = fn(pos.getX(i), pos.getY(i), pos.getZ(i));
+    pos.setXYZ(i, nx, ny, nz);
+  }
+  geo.computeVertexNormals();
+  return geo;
+}
+
+// Faceted sneaker upper bounded strictly within [-0.5, 0.5]^3:
+// sloped vamp toward -Z (toe), tapered faceted toe box, and shaped ankle collar at +Z.
+const unitSneakerGeo = buildDeformedBoxGeometry(2, 2, 4, (x, y, z) => {
+  let nx = x;
+  let ny = y;
+  const nz = z;
+  if (z < 0.05) {
+    // Front vamp & toe box (-Z is forward): slope top down and taper width toward the toe
+    const t = Math.min(1, (0.05 - z) / 0.55); // 0 at mid-foot -> 1 at toe tip
+    if (y > 0) {
+      ny = y * (1 - 0.52 * t) - 0.08 * t;
+      // Bevel upper side ridges of the toe box
+      if (Math.abs(x) > 0.2) nx *= 1 - 0.14 * t;
+    }
+    nx *= 1 - 0.24 * t * t;
+  } else {
+    // Ankle collar (+Z is heel): slight inward taper at the top rim and heel bevel
+    const h = (z - 0.05) / 0.45;
+    if (y > 0) nx *= 1 - 0.1 * h;
+    if (z > 0.4 && Math.abs(x) > 0.2) nx *= 0.88;
+  }
+  return [
+    Math.max(-0.5, Math.min(0.5, nx)),
+    Math.max(-0.5, Math.min(0.5, ny)),
+    Math.max(-0.5, Math.min(0.5, nz)),
+  ];
+});
+
+// Faceted sneaker outsole bounded within [-0.5, 0.5]^3: tapered toe bumper at -Z.
+const unitSoleGeo = buildDeformedBoxGeometry(2, 1, 4, (x, y, z) => {
+  let nx = x;
+  if (z < 0) {
+    const t = Math.min(1, -z / 0.5);
+    nx *= 1 - 0.22 * t * t;
+  } else if (z > 0.35 && Math.abs(x) > 0.2) {
+    nx *= 0.9;
+  }
+  return [nx, y, z];
+});
+
+/**
+ * Stretches a unit mesh into a limb from `a` to `b` (in its parent's space).
  * `width` and `depth` are its thickness. Shared with the viewmodel arms.
  */
 export function placeLimb(mesh, a, b, width, depth = width) {
@@ -32,6 +114,13 @@ export function placeLimb(mesh, a, b, width, depth = width) {
 
 export function makeBoxMesh(color) {
   return new THREE.Mesh(unitBox, new THREE.MeshStandardMaterial({ color, roughness: 0.8, flatShading: true }));
+}
+
+export function makeFacetedLimbMesh(color, startScale = 1, endScale = 1, roughness = 0.8) {
+  return new THREE.Mesh(
+    getFacetedLimbGeometry(startScale, endScale),
+    new THREE.MeshStandardMaterial({ color, roughness, flatShading: true }),
+  );
 }
 
 // Two-bone IK: where does the knee go so thigh (l1) + shin (l2) connect hip to foot?
@@ -69,16 +158,43 @@ export function createPlayerBody(scene) {
   root.name = 'playerBody';
   scene.add(root);
 
-  const torso = makeBoxMesh(c.shirt); // lower torso only: a slim waist with the polo hem
-  const belt = makeBoxMesh(c.belt);
-  const pelvis = makeBoxMesh(c.pants);
+  // Lower torso (children[0]): tapered faceted polo waist
+  const torsoGeo = getFacetedLimbGeometry(0.94, 1.0).clone();
+  torsoGeo.rotateX(Math.PI / 2); // align taper along Y
+  const torso = new THREE.Mesh(
+    torsoGeo,
+    new THREE.MeshStandardMaterial({ color: c.shirt, roughness: 0.78, flatShading: true }),
+  );
+  const belt = new THREE.Mesh(
+    torsoGeo,
+    new THREE.MeshStandardMaterial({ color: c.belt, roughness: 0.65, flatShading: true }),
+  );
+  // Small brass belt buckle on the front (-Z) of the belt
+  const buckle = makeBoxMesh(c.buckle ?? 0xd4af37);
+  buckle.scale.set(0.18, 0.92, 0.08);
+  buckle.position.set(0, 0, -0.49);
+  belt.add(buckle);
+
+  const pelvis = new THREE.Mesh(
+    torsoGeo,
+    new THREE.MeshStandardMaterial({ color: c.pants, roughness: 0.8, flatShading: true }),
+  );
   root.add(torso, belt, pelvis);
 
+  const shoeMat = new THREE.MeshStandardMaterial({ color: c.shoes, roughness: 0.72, flatShading: true });
+  const soleMat = new THREE.MeshStandardMaterial({ color: c.soles, roughness: 0.85, flatShading: true });
+  const accentMat = new THREE.MeshStandardMaterial({ color: c.shoeAccent ?? c.shirt, roughness: 0.65, flatShading: true });
+
   const legs = [-1, 1].map((side) => {
-    const thigh = makeBoxMesh(c.pants);
-    const shin = makeBoxMesh(c.pants);
-    const shoe = makeBoxMesh(c.shoes);
-    const sole = makeBoxMesh(c.soles);
+    const thigh = makeFacetedLimbMesh(c.pants, 1.0, 0.84);
+    const shin = makeFacetedLimbMesh(c.pants, 0.94, 0.76);
+    const shoe = new THREE.Mesh(unitSneakerGeo, shoeMat);
+    // Tongue stripe & heel tab inside the unit sneaker bounds
+    const tongue = new THREE.Mesh(unitBox, accentMat);
+    tongue.scale.set(0.36, 0.18, 0.22);
+    tongue.position.set(0, 0.26, -0.02);
+    shoe.add(tongue);
+    const sole = new THREE.Mesh(unitSoleGeo, soleMat);
     root.add(thigh, shin, shoe, sole);
     return {
       side, // -1 = left, +1 = right
@@ -202,12 +318,13 @@ export function createPlayerBody(scene) {
         placeLimb(leg.thigh, leg.hip, leg.knee, 0.14, 0.15);
         placeLimb(leg.shin, leg.knee, leg.foot, 0.12, 0.13);
 
-        // Sneaker: flat, toe pointing forward, ankle near the back.
+        // Sneaker: faceted upper + sole, toe pointing forward, ankle near the back.
         const toeOffset = 0.07 * (2 * proneAmount - 1);
         leg.shoe.position.set(leg.foot.x, leg.foot.y - 0.03, leg.foot.z + toeOffset);
         leg.shoe.rotation.set(0, proneAmount * Math.PI, 0);
         leg.shoe.scale.set(0.12, 0.08, 0.27);
         leg.sole.position.set(leg.foot.x, leg.foot.y - 0.075, leg.foot.z + toeOffset);
+        leg.sole.rotation.set(0, proneAmount * Math.PI, 0);
         leg.sole.scale.set(0.125, 0.02, 0.28);
       }
     },

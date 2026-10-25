@@ -21,11 +21,12 @@ function fixture() {
 test('each gun leaves a distinct visible signature on the real surface with its normal pointing out', () => {
   const f = fixture();
   for (const id of Object.keys(impacts.signatures)) assert.equal(f.add(id), true, id);
-  assert.equal(f.marks.count, 5);
-  assert.equal(f.group.children.length, 5, 'one instanced draw per signature/variant used');
-  assert.equal(new Set(f.group.children.map((m) => m.name.split(':')[0])).size, 5);
+  const count = Object.keys(impacts.signatures).length;
+  assert.equal(f.marks.count, count);
+  assert.equal(f.group.children.length, count, 'one instanced draw per signature/variant used');
+  assert.equal(new Set(f.group.children.map((m) => m.name.split(':')[0])).size, count);
   const matrix = new THREE.Matrix4(), normal = new THREE.Vector3();
-  for (let slot = 0; slot < 5; slot++) {
+  for (let slot = 0; slot < count; slot++) {
     f.group.children[slot].getMatrixAt(slot, matrix);
     const position = new THREE.Vector3().setFromMatrixPosition(matrix);
     assert.ok(Math.abs(position.z - (-3.8 + impacts.offset + slot * impacts.layerStep)) < 1e-5, 'offset above visible wall');
@@ -144,6 +145,7 @@ test('real guns leave world signatures without paying points/hits; Cannon is cap
     t.standAt(2, 12, -90);
     const points = g.wallet.points, ammo = g.gun.weapon.magazine;
     t.press('Mouse0');
+    if (def.fireMode === 'charge') t.tick();
     assert.equal(g.runStats.shotsFired, 1, def.id); assert.equal(g.runStats.shotsHit, 0);
     assert.equal(g.wallet.points, points); assert.equal(g.gun.weapon.magazine, ammo - 1);
     assert.ok(g.effects.counts.marks >= 1, `${def.id}: real wall impact`);

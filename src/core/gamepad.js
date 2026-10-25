@@ -45,6 +45,7 @@ export function createGamepad(input) {
   const look = { x: 0, y: 0, magnitude: 0 };
   let sprintLatched = false;
   let rampTime = 0; // seconds the look stick has been held fully sideways
+  let currentPad = null;
 
   function releaseAll() {
     for (let i = 0; i < BUTTON_CODES.length; i++) {
@@ -60,6 +61,7 @@ export function createGamepad(input) {
   const state = {
     connected: false,
     type: 'xbox', // 'xbox' | 'playstation' (for prompts)
+    get pad() { return currentPad; }, // live browser snapshot for controller vibration
 
     // Call once per game tick, before anything reads input.
     poll() {
@@ -71,6 +73,7 @@ export function createGamepad(input) {
           break;
         }
       }
+      currentPad = pad;
       if (!pad) {
         if (state.connected) releaseAll();
         state.connected = false;

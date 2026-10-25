@@ -33,6 +33,7 @@ import { COLORS } from './palette.js';
 import { atmosphere } from '../../config/environment.js';
 import { seededRandom } from '../../world/textures.js';
 import { buildAttachmentPart } from '../../weapons/models/upgradeParts.js';
+import { buildClerkFigure } from '../../zombies/zombieModel.js';
 
 const METAL_COLORS = new Set([
   COLORS.metal, COLORS.tableLeg, COLORS.stainless, COLORS.elevatorSteel, COLORS.elevatorFrame,
@@ -699,20 +700,14 @@ export function createMallProps(kit) {
    * Decoration only (no collider; nobody can reach the space behind a counter).
    */
   function clerk({ along, center, wallAt, facing, depth = 0.5, apron = 0xd62839, hair = 0x6b6b6b }) {
-    const place = wallPlacer(along);
     const d = (offset) => wallAt + facing * offset;
-    const skin = mat(0x8fbf8a);
-    const dark = mat(0x23262d);
-    const o = { collide: false, name: 'clerk' };
-    for (const dx of [-0.13, 0.13]) place(center + dx - 0.09, 0, center + dx + 0.09, 0.95, d(depth - 0.1), d(depth + 0.1), mat(0x2f3340), o); // legs
-    place(center - 0.25, 0.95, center + 0.25, 1.65, d(depth - 0.14), d(depth + 0.14), mat(apron), o); // apron/torso
-    place(center - 0.07, 1.35, center + 0.07, 1.5, d(depth + 0.14), d(depth + 0.145), mat(0xf1faee), o); // name badge
-    for (const dx of [-0.34, 0.34]) place(center + dx - 0.06, 1.1, center + dx + 0.06, 1.6, d(depth - 0.06), d(depth + 0.06), skin, o); // arms
-    for (const dx of [-0.34, 0.34]) place(center + dx - 0.07, 1.04, center + dx + 0.07, 1.14, d(depth + 0.06), d(depth + 0.4), skin, o); // hands on the counter
-    place(center - 0.17, 1.65, center + 0.17, 2.0, d(depth - 0.15), d(depth + 0.15), skin, o); // head
-    place(center - 0.18, 1.95, center + 0.18, 2.08, d(depth - 0.16), d(depth + 0.16), mat(hair), o); // hair
-    for (const dx of [-0.07, 0.07]) place(center + dx - 0.03, 1.82, center + dx + 0.03, 1.88, d(depth + 0.15), d(depth + 0.16), dark, o); // eyes
-    place(center - 0.07, 1.7, center + 0.07, 1.73, d(depth + 0.15), d(depth + 0.16), dark, o); // mouth
+    const x = along === 'x' ? center : d(depth);
+    const z = along === 'x' ? d(depth) : center;
+    // buildClerkFigure faces -Z at rotationY = 0
+    const rotationY = along === 'x'
+      ? (facing > 0 ? Math.PI : 0)
+      : (facing > 0 ? -Math.PI / 2 : Math.PI / 2);
+    return buildClerkFigure({ group, mat, x, z, rotationY, apron, hair });
   }
 
   /**

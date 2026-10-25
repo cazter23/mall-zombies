@@ -61,6 +61,23 @@ export function buildImpactModel(kind, variant) {
     const tilt = [0, variant ? 0.12 : 0, variant ? 0.08 : 0];
     box(0.036, 0.0055, 0.005, 0xd4dde4, 0, 0, 0.0135, tilt);
     box(0.034, 0.0022, 0.002, 0xf2f7fa, 0, 0.0015, 0.016, tilt);
+  } else if (kind === 'rivet') {
+    hole(0, 0, 0.018);
+    pin(0.013, 0.008, 0xb8c7cc, 0, 0, 0.005);
+    pin(0.006, 0.004, 0xe0e8e8, 0, 0, 0.011);
+    for (let i = 0; i < 3; i++) box(0.002, 0.022, 0.001, 0x514a41, 0, 0, 0.0016, [0, 0, i * Math.PI / 3 + variant]);
+  } else if (kind === 'coilNail') {
+    hole(0, 0, 0.012);
+    pin(0.0038, 0.046, 0xc7923e, 0, 0, 0.023);
+    pin(0.0105, 0.0045, 0xd8a24a, 0, 0, 0.047);
+    box(0.016, 0.0025, 0.0018, 0xb87333, 0, 0, 0.049, [0, 0, variant * 0.65]);
+  } else if (kind === 'laserBurn') {
+    hole(0, 0, 0.02);
+    part(new THREE.CircleGeometry(0.014, 8), 0x7a1616, 0, 0, 0.0018);
+    part(new THREE.CircleGeometry(0.0075, 8), 0xff3b30, 0, 0, 0.0024);
+    for (let i = 0; i < 4; i++) {
+      box(0.0024, 0.032, 0.0012, 0x3b1714, 0, 0, 0.0015, [0, 0, i * Math.PI / 4 + variant * 0.4]);
+    }
   } else if (kind === 'nail') {
     hole(0, 0, 0.011);
     for (let i = 0; i < 4; i++) box(0.0032, 0.02, 0.0012, 0x4d433a, 0, 0, 0.0016, [0, 0, i * 1.57 + variant]);

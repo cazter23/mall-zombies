@@ -201,7 +201,7 @@ export function buildControlsDiagram(device, entries) {
       class: 'dg-label', x: slot.x, y: slot.y, 'dominant-baseline': 'central',
       'text-anchor': slot.align === 'end' ? 'end' : slot.align === 'start' ? 'start' : 'middle',
     }, entry.short);
-    text.style.fill = color;
+    // Printed handbook labels use dark ink; the matching keys/leader lines retain their colors.
     labels.append(text);
     const path = route(slot, target);
     lines.append(svg('path', { class: 'dg-line', stroke: color, d: path.d }));

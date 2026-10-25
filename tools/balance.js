@@ -38,6 +38,7 @@ const NO_STATS = { damageMultiplier: 1 };
 
 export function cycleSeconds(def) {
   if (def.fireMode === 'burst') return def.burst.interval * (def.burst.count - 1) + def.fireInterval;
+  if (def.fireMode === 'charge') return def.charge.seconds + def.fireInterval;
   return def.fireInterval;
 }
 
@@ -45,6 +46,9 @@ export function magazineSeconds(def) {
   if (def.fireMode === 'burst') {
     const bursts = def.magazineSize / def.burst.count;
     return (bursts - 1) * cycleSeconds(def) + (def.burst.count - 1) * def.burst.interval;
+  }
+  if (def.fireMode === 'charge') {
+    return def.magazineSize * def.charge.seconds + (def.magazineSize - 1) * def.fireInterval;
   }
   return (def.magazineSize - 1) * def.fireInterval;
 }

@@ -26,6 +26,7 @@ import { atmosphere } from '../config/environment.js';
 import { makeTileRoughness, makeTileBump } from './atmosphereTextures.js';
 import { makeTileTexture, makeSignTexture, makeShutterTexture } from './textures.js';
 import { createShutter } from './shutter.js';
+import { shutters, shutterFinish } from '../config/shutters.js';
 import { createDoor } from './door.js';
 import { corridorLayout } from './corridor.js';
 import { markCollidersChanged, addRamp, removeRamp } from './collision.js';
@@ -203,10 +204,12 @@ export function createMapKit(group, colliders) {
    * The player buys it standing near the middle of the doorway (1.5m up).
    */
   function shutterDoor({ id, label, price, opensZone, opensZones, zones, doorway, text = 'CLOSED' }) {
-    const material = new THREE.MeshStandardMaterial({ map: makeShutterTexture(text), roughness: 0.36, metalness: 0.58 });
-    const shutter = createShutter({ name: `shutter_${id}`, ...doorway, material, colliders });
+    const finish = shutterFinish(id);
+    const width = Math.max(doorway.maxX - doorway.minX, doorway.maxZ - doorway.minZ);
+    const material = new THREE.MeshStandardMaterial({ map: makeShutterTexture(text, { width, height: doorway.height, finish }), ...shutters.paint });
+    const shutter = createShutter({ name: `shutter_${id}`, ...doorway, material, finish, colliders });
     ownColliders.push(shutter.collider); // (in the list only while closed)
-    group.add(shutter.mesh);
+    group.add(shutter.mesh, shutter.frame);
     return createDoor({
       id, label, price, opensZone, opensZones, zones,
       barrier: shutter,

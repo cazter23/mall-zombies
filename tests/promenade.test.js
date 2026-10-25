@@ -1,0 +1,117 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import * as THREE from 'three';
+import { headlessGame } from './helpers/headlessGame.js';
+import { LAYOUT } from '../src/maps/mall/mall.js';
+import { createMapKit } from '../src/world/mapKit.js';
+import { createMallProps } from '../src/maps/mall/props.js';
+import { buildLevelTwo } from '../src/maps/mall/levelTwo.js';
+import { markCollidersChanged, overlapsSolid } from '../src/world/collision.js';
+import { feel } from '../src/config/feel.js';
+
+const Y = LAYOUT.hallway.height + .3;
+const contains = (b, x, y, z) => b.containsPoint(new THREE.Vector3(x, y, z));
+
+function fixture() {
+  const t = headlessGame();
+  t.tick(); t.g.rounds.update = () => {}; t.g.zombies.clear(); t.g.debug.run('doors'); t.g.health.invulnerable = true; t.tick(120);
+  return t;
+}
+function walk(t, yaw, ticks) {
+  t.g.player.yaw = yaw; t.press('KeyW', ticks);
+}
+
+test('upstairs can extend its supported floor independently of the downstairs hallway', () => {
+  const layout = structuredClone(LAYOUT.level2);
+  layout.rect.minZ -= 2;
+  layout.sections[0].minZ = layout.rect.minZ;
+  const kit = createMapKit(new THREE.Group(), []);
+  const supportRect = { ...LAYOUT.hallway };
+  buildLevelTwo({ kit, props: createMallProps(kit), floorY: Y, supportRect,
+    hole: { minX: -16.5, maxX: -11.95, minZ: 1, maxZ: 3 }, layout });
+  assert.ok(kit.colliders.some(b => contains(b, 0, Y - .1, layout.rect.minZ + .5)), 'extension has structural floor');
+  assert.ok(kit.colliders.some(b => contains(b, 0, Y + 1, layout.rect.minZ - .1)), 'wall follows upstairs bounds');
+  assert.ok(!kit.colliders.some(b => contains(b, 0, Y + 1, LAYOUT.hallway.minZ)), 'old hallway boundary does not leave an invisible wall');
+  assert.ok(!kit.colliders.some(b => contains(b, 0, Y - .1, 0)), 'existing support is not duplicated');
+  assert.equal(LAYOUT.hallway.minZ, -2, 'downstairs was not reshaped');
+  kit.dispose();
+});
+
+test('widened southern lane supports a real sprint end to end and each reserved expansion stays sealed', () => {
+  const t = fixture(), { g } = t;
+  g.player.teleport({ position: new THREE.Vector3(-18.5, Y, -3.1), yaw: -Math.PI / 2 });
+  t.input.held.add('ShiftLeft'); t.press('KeyW', 300); t.input.clear();
+  assert.ok(g.player.position.x > 16, `walked the southern lane: ${g.player.position.toArray()}`);
+  assert.equal(g.player.position.y, Y, 'floor supports the new lane all the way');
+  assert.ok(!g.colliders.some(b => contains(b, 0, Y + 1, LAYOUT.hallway.minZ)), 'no wall on the old boundary');
+  for (const c of LAYOUT.level2.expansionConnections) {
+    const mid = (c.from + c.to) / 2;
+    const x = c.wall === 'north' ? mid : c.wall === 'west' ? -20.15 : 20.15;
+    const z = c.wall === 'north' ? 6.15 : mid;
+    assert.ok(g.colliders.some(b => contains(b, x, Y + 1, z)), `${c.id} stays sealed even with debug doors open`);
+  }
+  g.map.dispose();
+});
+
+test('the shoe store is a supported two-entrance loop, traversable in both directions with clear thresholds', () => {
+  const t = fixture(), { g } = t;
+  for (const reversed of [false, true]) {
+    const left = reversed ? -5.25 : -8.75;
+    g.player.teleport({ position: new THREE.Vector3(left, Y, 4.8), yaw: Math.PI });
+    walk(t, Math.PI, 60); assert.ok(g.player.position.z > 9.4, 'walked through entrance into store');
+    walk(t, reversed ? Math.PI / 2 : -Math.PI / 2, 42);
+    assert.ok(Math.abs(g.player.position.x - (reversed ? -8.75 : -5.25)) < .3, 'crossed behind display');
+    walk(t, 0, 60); assert.ok(g.player.position.z < 5.5, 'returned through the other entrance');
+    assert.equal(g.player.position.y, Y);
+  }
+  for (const e of LAYOUT.level2.shoeStore.entrances) {
+    const x = (e.from + e.to) / 2;
+    for (const z of [5.6, 6, 6.3, 6.7]) assert.equal(overlapsSolid(new THREE.Vector3(x, Y, z),
+      feel.player.radius, feel.player.height, g.colliders, feel.movement.stepTolerance), false, 'full standing clearance at threshold');
+  }
+  // The work area remains visibly sealed; the playable store does not bypass it.
+  assert.ok(g.colliders.some(b => contains(b, 0, Y + 1, 6.15)));
+  g.map.dispose();
+});
+
+test('the shoe island supports a real momentum vault in either direction with a supported landing', () => {
+  const t = fixture(), { g } = t;
+  for (const reverse of [false, true]) {
+    g.player.teleport({ position: new THREE.Vector3(-7, Y, reverse ? 9.8 : 7.25), yaw: reverse ? 0 : Math.PI });
+    t.tick(2); g.player.velocity.set(0, 0, reverse ? -8 : 8);
+    t.input.held.add('KeyW'); t.input.held.add('ShiftLeft'); t.input.pressed.add('Space');
+    let vaulted = false;
+    for (let i = 0; i < 24; i++) { t.tick(); vaulted ||= g.player.vault.active; }
+    t.input.clear();
+    assert.ok(vaulted, 'jump starts the authored vault');
+    assert.ok(reverse ? g.player.position.z < 8.0 : g.player.position.z > 9.1, 'crossed the display');
+    assert.ok(g.player.position.y >= Y - .01, 'no unsupported fall');
+  }
+  g.map.dispose();
+});
+
+test('a live zombie follows through either shoe-store entrance, including when the other entrance is blocked', ctx => {
+  const t = fixture(), { g } = t;
+  const entrances = LAYOUT.level2.shoeStore.entrances;
+  for (let index = 0; index < entrances.length; index++) {
+    g.zombies.clear();
+    const other = entrances[1 - index];
+    const blocker = new THREE.Box3(new THREE.Vector3(other.from, Y, 5.9), new THREE.Vector3(other.to, Y + 3, 6.4));
+    g.colliders.push(blocker); markCollidersChanged(g.colliders);
+    const entry = entrances[index], x = (entry.from + entry.to) / 2;
+    const target = new THREE.Vector3(x, Y, 4.8);
+    g.player.teleport({ position: target, yaw: Math.PI }); t.tick(20);
+    const z = g.zombies.spawn('shopper', new THREE.Vector3(x, Y, 9.6));
+    z.position.y = Y; z.prevPosition.copy(z.position); z.setState('chasing'); z.updateHitboxes();
+    let crossed = null;
+    for (let i = 0; i < 60 * 15 && crossed === null; i++) {
+      g.player.teleport({ position: target, yaw: Math.PI }); t.tick();
+      if (z.position.z < 5.9) crossed = i / 60;
+    }
+    assert.notEqual(crossed, null, `zombie uses entrance ${index + 1}: ${z.position.toArray()}`);
+    ctx.diagnostic(`Shopper crosses entrance ${index + 1} from 3.6 m inside in ${crossed.toFixed(2)} s`);
+    assert.ok(Math.abs(z.position.y - Y) < .05);
+    g.colliders.splice(g.colliders.indexOf(blocker), 1); markCollidersChanged(g.colliders);
+  }
+  g.map.dispose();
+});

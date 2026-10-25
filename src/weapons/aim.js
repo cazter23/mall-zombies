@@ -87,6 +87,7 @@ export function createAim({ def, input, player }) {
       // The controller reads these on its next tick (blocks sprint, slows walking).
       player.isAiming = this.isAiming;
       player.aimAmount = ease(amount);
+      player.aimMoveMultiplier = def.ads.moveSpeedMultiplier ?? 1;
 
       // --- Spread ---
       const speed = Math.hypot(player.velocity.x, player.velocity.z);
@@ -118,6 +119,7 @@ export function createAim({ def, input, player }) {
       this.justStartedAiming = false;
       player.isAiming = false;
       player.aimAmount = 0;
+      player.aimMoveMultiplier = 1;
     },
 
     // Call after each shot: rapid firing widens the cone.

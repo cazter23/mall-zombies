@@ -1,15 +1,16 @@
 // =============================================================================
 // LEVEL 2 (the Sunset Promenade)
 // The quiet upper floor, reached by the repaired escalator. It sits on the hallway's ceiling slab (top at y 6.3), the same
-// 40 x 8 m footprint, as a closed-in walkway: walls and a roof all round, the escalator well fenced off with glass railings,
-// three empty shop fronts (one of them COMING SOON) along the north wall, a seating area and a few boarded vents where
+// independently authored footprint (config/promenade.js): walls and a roof all round, the escalator well fenced off with glass railings,
+// a two-entrance shoe-store loop plus two closed shop fronts along the north wall, a seating area and boarded vents where
 // zombies get in. Everything is placed from the LAYOUT.level2 entry in mall.js. Decoration adds NO collision except what
 // is named below: the perimeter, the railings round the well, the benches and the planter.
 //
-// buildLevelTwo({ kit, props, floorY, rect, hole, layout }) -> { spawns, lamps }
+// buildLevelTwo({ kit, props, floorY, supportRects, hole, layout }) -> { spawns, lamps }
 //   layout.atriumLink  { from, to, top }: an opening in the north wall into the Grand Atrium's upper ring (its shutter is built by mall.js)
 //   layout.voids  open BALCONY holes in the floor, over the hallway (railed on all four sides): you look down into the hallway
-//   rect   the walkable footprint ({ minX, maxX, minZ, maxZ }, the hallway's)
+//   layout.rect / sections   independent promenade bounds and supported floor sections
+//   supportRects   existing downstairs ceilings at floorY; do not build duplicate support there
 //   hole   the escalator's ceiling hole (left open in the floor)
 //   spawns [{ name, zone: 'upstairs', position }] for the zombie manager (y = the floor)
 //   lamps  [{ x, y, z }] where mall.js hangs the level's point lights
@@ -18,43 +19,75 @@
 import * as THREE from 'three';
 import { slabPiecesWithHoles } from '../../world/mapKit.js';
 import { COLORS } from './palette.js';
+import { buildPromenadeShop } from './promenadeShop.js';
 
 const WALL = 0xf4dcc8; // warm peach
 const STRIPE = 0xff8a5c; // sunset coral
 const TRIM = 0x6b3f5e; // dusk purple
 
-export function buildLevelTwo({ kit, props, floorY, rect, hole, layout }) {
+export function buildLevelTwo({ kit, props, floorY, supportRect, supportRects = supportRect ? [supportRect] : [], hole, layout }) {
   const { box, mat, sign, addCollider } = kit;
-  const T = 0.3; // wall thickness (they sit on the slab's rim, like the walls below)
+  const rect = layout.rect;
+  const T = layout.wallThickness;
   const top = floorY + layout.height; // underside of the roof
   const zMid = (rect.minZ + rect.maxZ) / 2;
   const y = (h) => floorY + h; // a height above the floor
 
   // --- Floor: a thin tiled skin over the slab (the slab itself is the collider), with the well left open -------------------
   const voids = layout.voids ?? [];
-  for (const piece of slabPiecesWithHoles(rect, [hole, ...voids])) {
+  // Only build structural floor where the downstairs ceiling does not already
+  // support it. This avoids doubled floor faces/colliders along shared seams.
+  for (const section of layout.sections) {
+    for (const piece of slabPiecesWithHoles(section, supportRects)) {
+      kit.slab(piece, floorY - layout.slabThickness, floorY, mat(COLORS.ceiling), { name: `level2_floor_${section.id}` });
+    }
+  }
+  for (const section of layout.sections) for (const piece of slabPiecesWithHoles(section, [hole, ...voids])) {
     kit.tiledFloor(piece.minX, piece.minZ, piece.maxX, piece.maxZ,
-      { base: '#f0d2b0', grout: '#c9a47c', variation: 10, seed: 51 }, { top: floorY + 0.012, thickness: 0.012, collide: false });
+      section.id === 'shoePer' ? layout.shoeStore.floor : { base: '#f0d2b0', grout: '#c9a47c', variation: 10, seed: 51 },
+      { top: floorY + 0.012, thickness: 0.012, collide: false });
   }
 
   // --- Walls and roof ----------------------------------------------------------------------------------------------------
   const wallMat = mat(WALL);
   const link = layout.atriumLink;
+  const reserved = layout.expansionConnections;
+  const openings = side => reserved.filter(c => c.wall === side).map(c => ({ from: c.from, to: c.to, top: c.top }));
+  const northOpenings = [...(link ? [{ from: link.from, to: link.to, top: link.top }] : []),
+    ...openings('north'), ...layout.shoeStore.entrances];
   kit.wall({
     along: 'x', from: rect.minX - T, to: rect.maxX + T, at0: rect.maxZ, at1: rect.maxZ + T, bottom: floorY, height: layout.height,
-    openings: link ? [{ from: link.from, to: link.to, top: link.top }] : [],
+    openings: northOpenings,
   }, wallMat, { name: 'level2_wall_north' });
   box(rect.minX - T, floorY, rect.minZ - T, rect.maxX + T, top, rect.minZ, wallMat, { name: 'level2_wall_south' });
-  box(rect.minX - T, floorY, rect.minZ, rect.minX, top, rect.maxZ, wallMat, { name: 'level2_wall_west' });
-  box(rect.maxX, floorY, rect.minZ, rect.maxX + T, top, rect.maxZ, wallMat, { name: 'level2_wall_east' });
+  for (const side of ['west', 'east']) kit.wall({
+    along: 'z', from: rect.minZ, to: rect.maxZ, at0: side === 'west' ? rect.minX - T : rect.maxX,
+    at1: side === 'west' ? rect.minX : rect.maxX + T, bottom: floorY, height: layout.height, openings: openings(side),
+  }, wallMat, { name: `level2_wall_${side}` });
+  // Explicit removable closures, not live purchases: replacing one with a door later
+  // does not require cutting a monolithic wall or moving furniture out of its approach.
+  for (const c of reserved) {
+    const north = c.wall === 'north';
+    const at = north ? rect.maxZ : c.wall === 'west' ? rect.minX : rect.maxX;
+    const a = c.wall === 'west' ? at - T : at;
+    box(...(north ? [c.from, floorY, at, c.to, y(c.top), at + T]
+      : [a, floorY, c.from, a + T, y(c.top), c.to]), mat(TRIM), { name: `level2_reserved_${c.id}` });
+    if (!north) sign(c.label, { x: at + (c.wall === 'west' ? .025 : -.025), y: y(1.7), z: (c.from + c.to) / 2,
+      width: c.to - c.from - .2, height: .45, facing: c.wall === 'west' ? 'x+' : 'x-', background: '#3b2f44', color: '#f4dcc8' });
+  }
   box(rect.minX - T, top, rect.minZ - T, rect.maxX + T, top + 0.3, rect.maxZ + T, mat(COLORS.ceiling), { name: 'level2_roof' });
   // Coral stripe + purple skirting round the inside (decoration, 2 cm proud of the wall)
   const stripe = mat(STRIPE);
   const skirting = mat(TRIM);
+  const northBands = [];
+  let cursor = rect.minX;
+  for (const opening of [...northOpenings].sort((a, b) => a.from - b.from)) {
+    if (opening.from > cursor) northBands.push([cursor, rect.maxZ - .02, opening.from, rect.maxZ]);
+    cursor = opening.to;
+  }
+  if (cursor < rect.maxX) northBands.push([cursor, rect.maxZ - .02, rect.maxX, rect.maxZ]);
   for (const [x0, z0, x1, z1] of [
-    ...(link // north (split round the atrium link)
-      ? [[rect.minX, rect.maxZ - 0.02, link.from, rect.maxZ], [link.to, rect.maxZ - 0.02, rect.maxX, rect.maxZ]]
-      : [[rect.minX, rect.maxZ - 0.02, rect.maxX, rect.maxZ]]),
+    ...northBands,
     [rect.minX, rect.minZ, rect.maxX, rect.minZ + 0.02], // south
     [rect.minX, rect.minZ, rect.minX + 0.02, rect.maxZ], // west
     [rect.maxX - 0.02, rect.minZ, rect.maxX, rect.maxZ], // east
@@ -86,6 +119,7 @@ export function buildLevelTwo({ kit, props, floorY, rect, hole, layout }) {
   // --- Empty shop fronts along the north wall -------------------------------------------------------------------------------------
   const wallAt = rect.maxZ;
   for (const shop of layout.shops) {
+    if (shop.id === 'shoePer') continue; // its two open entrances and real interior replace the flat facade
     const w = shop.to - shop.from;
     const mid = (shop.from + shop.to) / 2;
     // Facade + dark window (0.12 / 0.15 m out from the wall), a sign band above, and its leftovers
@@ -110,6 +144,7 @@ export function buildLevelTwo({ kit, props, floorY, rect, hole, layout }) {
       });
     }
   }
+  buildPromenadeShop({ kit, floorY, rect, layout });
 
   // --- Seating: a bench ring round a planter (east), benches along the south wall (west) --------------------------------
   const wood = mat(COLORS.wood);

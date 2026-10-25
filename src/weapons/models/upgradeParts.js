@@ -1,21 +1,22 @@
 // =============================================================================
 // UPGRADE PARTS: what store attachments and Extended Warranty tiers LOOK like on a gun.
-// Small cartoon parts (config/upgrades.js ids), sized for a pistol and scaled by each gun's mount.
+// Small faceted parts (config/upgrades.js ids), sized for a pistol and scaled by each gun's mount.
 //
 // Every gun model lists `mounts` (gun-local spots; see models/index.js):
 //   barrel    the muzzle: Extended Nozzle (a tube that moves the muzzle/flash forward), Sawn-Off (taped band)
 //   top       on top, off to the left so it never blocks the sights: Zoom Lens
 //   side      the right side, toward the front: Laser Pointer (+ a faint red beam)
 //   grip      the handle (centre + angle): Grip Tape
-//   magazine  where more ammo would go: Jumbo Pack (a big bright box), Speed Loader (a pull tab)
-//   sticker   the left side you see at the hip: the tier sticker (hidden at Standard)
+//   magazine  where more ammo would go: Jumbo Pack (weapon-suited reservoir/drum/box), Speed Loader (latch + pull loop)
+//   sticker   the left side you see at the hip: the branded Extended Warranty service seal (hidden at Standard)
 // The wristband goes on the right forearm (the same spot on every gun: arms.js).
 // A mount: { position: [x, y, z], rotation?: [x, y, z] (radians), scale?: n, size?: { w, h, d } (what it wraps),
-//            radius? (nozzle), twin?: half-spacing for double barrels, parent?: Object3D that moves (cannon barrels) }
+//            radius? (nozzle), twin?: half-spacing for double barrels, parent?: Object3D that moves (cannon barrels),
+//            gunId?: string (optional weapon id for tailored magazine attachments) }
 //
-//   buildAttachmentPart(id)       just the part (also the shop displays use it, scaled up)
-//   createUpgradeVisuals(model)   builds every part up front (hidden), returns
-//                                 { show({ tier, attachments }) } to switch them on/off per frame
+//   buildAttachmentPart(id, mount)  just the part (also the shop displays use it, scaled up)
+//   createUpgradeVisuals(model)     builds every part up front (hidden), returns
+//                                   { show({ tier, attachments }) } to switch them on/off per frame
 // =============================================================================
 
 import * as THREE from 'three';
@@ -23,8 +24,24 @@ import { upgrades } from '../../config/upgrades.js';
 
 // Colors in the shops' brand colors, so a part reads as "from that store".
 const C = {
-  steel: 0x9aa3ad, dark: 0x262a30, tape: 0x8d939a, hazard: 0xffd23f, red: 0xff2a2a,
-  lens: 0x9fe3ff, tapeLight: 0xf1faee, sportsOrange: 0xff8a3d, toyYellow: 0xffc83d, toyRed: 0xe63946, green: 0x5fd068,
+  steel: 0x9aa3ad,
+  chrome: 0xd4dce4,
+  dark: 0x262a30,
+  charcoal: 0x383e47,
+  tape: 0x8d939a,
+  hazard: 0xffd23f,
+  brass: 0xd9a441,
+  red: 0xff2a2a,
+  lens: 0x9fe3ff,
+  tapeLight: 0xf1faee,
+  sportsOrange: 0xff8a3d,
+  toyYellow: 0xffc83d,
+  toyRed: 0xe63946,
+  toyBlue: 0x2563eb,
+  green: 0x5fd068,
+  greenDark: 0x2b8a3e,
+  copper: 0xc87d4b,
+  pink: 0xff5ea8,
 };
 
 const materials = new Map();
@@ -33,7 +50,7 @@ function mat(color, basic = false) {
   if (!materials.has(key)) {
     materials.set(key, basic
       ? new THREE.MeshBasicMaterial({ color })
-      : new THREE.MeshStandardMaterial({ color, roughness: 0.55, metalness: 0.15, flatShading: true }));
+      : new THREE.MeshStandardMaterial({ color, roughness: 0.5, metalness: 0.2, flatShading: true }));
   }
   return materials.get(key);
 }
@@ -46,15 +63,148 @@ function box(group, w, h, d, x, y, z, color, basic) {
 }
 
 // A tube along -Z starting at z0 (toward the front).
-function tube(group, radius, length, x, y, z0, color, basic) {
-  const mesh = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, length, 10), mat(color, basic));
+function tube(group, radius, length, x, y, z0, color, basic, segs = 10) {
+  const mesh = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, length, segs), mat(color, basic));
   mesh.rotation.x = Math.PI / 2;
   mesh.position.set(x, y, z0 - length / 2);
   group.add(mesh);
   return mesh;
 }
 
+// A vertical cylinder along Y centered at (x, y, z).
+function cylY(group, radiusTop, radiusBottom, height, x, y, z, color, basic, segs = 10) {
+  const mesh = new THREE.Mesh(
+    new THREE.CylinderGeometry(radiusTop, radiusBottom, height, segs),
+    mat(color, basic),
+  );
+  mesh.position.set(x, y, z);
+  group.add(mesh);
+  return mesh;
+}
+
+let warrantySealTex = null;
+function getWarrantySealTexture() {
+  if (warrantySealTex) return warrantySealTex;
+  if (typeof document === 'undefined') return null;
+  const c = document.createElement('canvas');
+  c.width = 128;
+  c.height = 96;
+  const ctx = c.getContext('2d');
+  // Bright neutral base so face.material.color tints the seal cleanly per tier
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, 128, 96);
+  // Dark outer & inner certificate border
+  ctx.strokeStyle = '#1f242b';
+  ctx.lineWidth = 6;
+  ctx.strokeRect(5, 5, 118, 86);
+  ctx.lineWidth = 2;
+  ctx.strokeRect(11, 11, 106, 74);
+  // Header ribbon bar
+  ctx.fillStyle = '#1f242b';
+  ctx.fillRect(14, 15, 100, 20);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 13px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('WARRANTY', 64, 30);
+  // Center seal text
+  ctx.fillStyle = '#1f242b';
+  ctx.font = 'bold 14px monospace';
+  ctx.fillText('★ CERTIFIED ★', 64, 54);
+  ctx.font = 'bold 10px sans-serif';
+  ctx.fillText('SERVICE SEAL', 64, 72);
+  warrantySealTex = new THREE.CanvasTexture(c);
+  warrantySealTex.colorSpace = THREE.SRGBColorSpace;
+  return warrantySealTex;
+}
+
 export const NOZZLE_LENGTH = 0.06; // how far the Extended Nozzle moves the muzzle forward (at scale 1)
+
+function buildJumboPackForGun(g, gunId) {
+  if (gunId === 'priceGun') {
+    // Auxiliary twin label-roll feeder cassette mounted under the frame
+    box(g, 0.036, 0.012, 0.052, 0, -0.005, 0, C.dark); // top mounting bracket
+    box(g, 0.04, 0.046, 0.068, 0, -0.03, 0, C.toyYellow); // yellow cassette housing
+    box(g, 0.042, 0.011, 0.07, 0, -0.042, 0, C.toyRed); // red retail stripe
+    // Exposed jumbo secondary sticker roll inside the side cradle
+    const roll = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.044, 12), mat(C.tapeLight));
+    roll.rotation.z = Math.PI / 2;
+    roll.position.set(0, -0.028, -0.004);
+    g.add(roll);
+    const core = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.046, 10), mat(C.brass));
+    core.rotation.z = Math.PI / 2;
+    core.position.set(0, -0.028, -0.004);
+    g.add(core);
+    return;
+  }
+
+  if (gunId === 'stapleGun') {
+    // Heavy-duty twin-channel staple reservoir box under the staple channel
+    box(g, 0.034, 0.01, 0.072, 0, -0.004, 0, C.chrome); // chrome rail clamp
+    box(g, 0.04, 0.042, 0.08, 0, -0.026, 0, C.toyYellow); // reservoir body
+    box(g, 0.042, 0.01, 0.082, 0, -0.036, 0, C.toyRed); // "XL" band
+    // Twin visible brass/steel staple stack strips on the sides
+    box(g, 0.043, 0.012, 0.058, 0, -0.02, 0, C.brass);
+    return;
+  }
+
+  if (gunId === 'nailGun') {
+    // Extended dual-track stick-nail magazine pack with visible collated nail row
+    box(g, 0.034, 0.012, 0.064, 0, -0.005, 0, C.dark); // rail clamp collar
+    box(g, 0.036, 0.05, 0.076, 0, -0.03, 0, C.toyYellow); // yellow magazine booster
+    box(g, 0.038, 0.011, 0.078, 0, -0.042, 0, C.toyRed); // red warning band
+    box(g, 0.04, 0.018, 0.058, 0, -0.024, 0, C.brass); // exposed collated brass nail rack
+    return;
+  }
+
+  if (gunId === 'foamDartBlaster') {
+    // Oversized toy auxiliary dart drum / side-pod with visible orange dart tips
+    box(g, 0.034, 0.012, 0.056, 0, -0.005, 0, C.toyBlue); // blue clamp adapter
+    box(g, 0.044, 0.05, 0.074, 0, -0.03, 0, C.toyYellow); // yellow drum box
+    box(g, 0.046, 0.012, 0.076, 0, -0.042, 0, C.toyRed); // red "PLAY TIME XL" band
+    for (const x of [-0.011, 0.011]) {
+      tube(g, 0.006, 0.012, x, -0.026, -0.036, C.sportsOrange); // foam dart tips peeking out
+    }
+    return;
+  }
+
+  if (gunId === 'coilNailer') {
+    // Deep high-capacity auxiliary wire-coil canister beneath the drum
+    cylY(g, 0.03, 0.032, 0.012, 0, -0.005, 0, C.dark);
+    cylY(g, 0.034, 0.032, 0.044, 0, -0.028, 0, C.toyYellow, false, 12);
+    cylY(g, 0.035, 0.035, 0.012, 0, -0.028, 0, C.copper, false, 12); // visible copper nail coil band
+    cylY(g, 0.0355, 0.0355, 0.009, 0, -0.042, 0, C.toyRed, false, 12);
+    return;
+  }
+
+  if (gunId === 'barcodeScanner') {
+    // High-capacity twin-cell Li-Ion battery expansion pack
+    box(g, 0.036, 0.01, 0.056, 0, -0.004, 0, C.dark);
+    box(g, 0.04, 0.044, 0.068, 0, -0.028, 0, C.toyYellow);
+    box(g, 0.042, 0.01, 0.07, 0, -0.038, 0, C.toyRed);
+    for (const x of [-0.012, 0.012]) {
+      tube(g, 0.008, 0.064, x, -0.026, 0.032, C.charcoal); // twin cylindrical cells
+    }
+    return;
+  }
+
+  if (gunId === 'confettiCannon') {
+    // Side-saddle twin party shell carrier
+    box(g, 0.034, 0.01, 0.066, 0, -0.004, 0, C.dark); // mounting plate
+    box(g, 0.038, 0.038, 0.072, 0, -0.024, 0, C.toyYellow); // yellow shell clip
+    for (const z of [-0.016, 0.016]) {
+      cylY(g, 0.011, 0.011, 0.048, 0, -0.028, z, C.pink, false, 10);
+      cylY(g, 0.012, 0.012, 0.01, 0, -0.008, z, C.brass, false, 10);
+    }
+    return;
+  }
+
+  // Default / Rivet Rifle / shop display: molded high-capacity "XL" box magazine extension
+  box(g, 0.032, 0.012, 0.068, 0, -0.005, 0, C.dark); // top feed-lip adapter collar
+  box(g, 0.036, 0.052, 0.075, 0, -0.03, 0, C.toyYellow); // main yellow reservoir body
+  box(g, 0.038, 0.012, 0.077, 0, -0.041, 0, C.toyRed); // red "XL" band
+  box(g, 0.039, 0.008, 0.042, 0, -0.022, 0, C.brass); // side ammo-window strip
+  box(g, 0.038, 0.006, 0.079, 0, -0.054, 0, C.dark); // reinforced rubberized baseplate
+}
 
 // Each builder: (mount) -> Group in mount space (origin = the mount, -Z = forward).
 const PARTS = {
@@ -62,9 +212,17 @@ const PARTS = {
     const g = new THREE.Group();
     const r = m.radius ?? 0.017;
     for (const x of m.twin ? [-m.twin, m.twin] : [0]) {
+      // Stepped clamp adapter collar at the base with top/bottom clamping lug
+      tube(g, r + 0.0032, 0.014, x, 0, 0.003, C.dark);
+      box(g, r * 0.9, r * 2.35, 0.01, x, 0, -0.002, C.charcoal);
+      // Main machined steel barrel extension
       tube(g, r, NOZZLE_LENGTH, x, 0, 0, C.steel);
-      tube(g, r + 0.002, 0.01, x, 0, -NOZZLE_LENGTH + 0.01, C.hazard); // a bright band at the tip
-      tube(g, r * 0.65, 0.002, x, 0, -NOZZLE_LENGTH - 0.0005, C.dark, true); // dark opening
+      // Mid-barrel knurled cooling ring
+      tube(g, r + 0.0016, 0.008, x, 0, -NOZZLE_LENGTH * 0.5, C.chrome);
+      // High-visibility hazard band near the muzzle tip
+      tube(g, r + 0.0022, 0.011, x, 0, -NOZZLE_LENGTH + 0.011, C.hazard);
+      // Recessed dark bore opening
+      tube(g, r * 0.65, 0.002, x, 0, -NOZZLE_LENGTH - 0.0005, C.dark, true);
     }
     return g;
   },
@@ -72,14 +230,31 @@ const PARTS = {
     const g = new THREE.Group();
     const w = (m.size?.w ?? 0.05) + 0.008;
     const h = (m.size?.h ?? 0.045) + 0.008;
-    box(g, w, h, 0.018, 0, 0, 0.016, C.tape); // duct tape round the cut end
-    box(g, w + 0.002, 0.006, 0.006, 0, h / 2 - 0.004, 0.006, C.red); // a red "cut here" line
+    // Layered grey duct-tape wrap around the cut muzzle end
+    box(g, w, h, 0.02, 0, 0, 0.016, C.tape);
+    box(g, w + 0.0018, h * 0.55, 0.012, 0, 0.002, 0.013, C.steel); // overlapped tape seam
+    // Serrated steel hose-clamp band + worm-drive screw housing at the rear edge
+    box(g, w + 0.0028, h + 0.0028, 0.005, 0, 0, 0.024, C.chrome);
+    box(g, 0.009, 0.01, 0.008, w * 0.45, h * 0.38, 0.024, C.brass);
+    // Bright red "CUT HERE" hardware tape stripe near the front
+    box(g, w + 0.0024, 0.006, 0.006, 0, h / 2 - 0.004, 0.006, C.red);
     return g;
   },
   laserPointer() {
     const g = new THREE.Group();
-    box(g, 0.016, 0.016, 0.05, 0, 0, 0, C.dark);
-    box(g, 0.01, 0.01, 0.003, 0, 0, -0.026, C.red, true); // the glowing lens
+    // Side rail clamp bracket extending inward (-X) to grip the receiver flank
+    box(g, 0.014, 0.012, 0.032, -0.007, 0, 0.004, C.charcoal);
+    box(g, 0.02, 0.005, 0.026, -0.004, 0.007, 0.004, C.steel);
+    // Knurled brass locking thumbscrew on the outer side (+X)
+    const screw = new THREE.Mesh(new THREE.CylinderGeometry(0.0045, 0.0045, 0.005, 8), mat(C.brass));
+    screw.rotation.z = Math.PI / 2;
+    screw.position.set(0.01, 0, 0.006);
+    g.add(screw);
+    // Faceted dark anodized laser module housing + red accent collar
+    box(g, 0.016, 0.016, 0.052, 0, 0, 0, C.dark);
+    box(g, 0.0172, 0.0172, 0.006, 0, 0, -0.016, C.red);
+    box(g, 0.013, 0.013, 0.004, 0, 0, -0.027, C.steel); // aperture bezel
+    box(g, 0.009, 0.009, 0.003, 0, 0, -0.0285, C.red, true); // glowing emitter lens
     const beam = box(g, 0.0025, 0.0025, 0.7, 0, 0, -0.38, C.red, true);
     beam.material = new THREE.MeshBasicMaterial({ color: C.red, transparent: true, opacity: 0.35, depthWrite: false });
     beam.name = 'laserBeam';
@@ -87,39 +262,72 @@ const PARTS = {
   },
   zoomLens() {
     const g = new THREE.Group();
-    tube(g, 0.013, 0.07, 0, 0.014, 0.035, C.dark);
-    tube(g, 0.0115, 0.002, 0, 0.014, -0.0352, C.lens, true); // front glass
-    tube(g, 0.0115, 0.002, 0, 0.014, 0.0362, C.lens, true); // back glass
-    box(g, 0.008, 0.012, 0.008, 0, 0.003, 0.02, C.dark); // two little legs
-    box(g, 0.008, 0.012, 0.008, 0, 0.003, -0.02, C.dark);
+    // Dovetail rail mounting base sitting directly on the receiver top (y = 0..0.005)
+    box(g, 0.016, 0.005, 0.054, 0, 0.0025, 0, C.charcoal);
+    // Two split scope rings clamping the tube, with brass locking nuts
+    for (const z of [-0.018, 0.018]) {
+      box(g, 0.012, 0.014, 0.009, 0, 0.006, z, C.dark);
+      tube(g, 0.0142, 0.009, 0, 0.015, z + 0.0045, C.charcoal);
+      box(g, 0.004, 0.005, 0.006, 0.009, 0.004, z, C.brass);
+    }
+    // Main optic tube + flared objective (front) and ocular (rear) bells
+    tube(g, 0.0115, 0.072, 0, 0.015, 0.036, C.dark);
+    tube(g, 0.0145, 0.018, 0, 0.015, -0.02, C.dark); // front objective bell
+    tube(g, 0.0135, 0.014, 0, 0.015, 0.037, C.dark); // rear ocular bell
+    // Top elevation & side windage adjustment turret caps
+    cylY(g, 0.0045, 0.0045, 0.006, 0, 0.028, 0, C.steel);
+    box(g, 0.006, 0.007, 0.007, 0.013, 0.015, 0, C.steel);
+    // Cyan anti-reflective glass lenses at front and back
+    tube(g, 0.0125, 0.002, 0, 0.015, -0.0372, C.lens, true);
+    tube(g, 0.0115, 0.002, 0, 0.015, 0.0375, C.lens, true);
     return g;
   },
   gripTape() {
-    // Athletic tape wound round the hand AND the grip (the hand hides the handle itself), white with dark edges.
+    // Athletic tape wound round the hand AND the grip, with overlapped cross-wraps and a frayed tail tab.
     const g = new THREE.Group();
     for (const y of [-0.032, 0.002]) {
       box(g, 0.072, 0.016, 0.086, 0.004, y, 0.006, C.tapeLight);
       box(g, 0.073, 0.003, 0.087, 0.004, y + 0.008, 0.006, C.dark);
+      box(g, 0.073, 0.0025, 0.087, 0.004, y - 0.008, 0.006, C.tape);
     }
+    // Diagonal cross-wrap strip across the backstrap/palm
+    const cross = box(g, 0.0735, 0.01, 0.087, 0.004, -0.015, 0.006, C.tapeLight);
+    cross.rotation.z = 0.18;
+    // Small loose tape tail tab at the lower rear edge
+    const tail = box(g, 0.014, 0.014, 0.004, 0.018, -0.044, 0.048, C.tapeLight);
+    tail.rotation.x = 0.25;
     return g;
   },
   wristband() {
     const g = new THREE.Group();
-    box(g, 0.088, 0.034, 0.084, 0, 0, 0, C.sportsOrange); // (the forearm is ~0.08 thick: this sits proud of it)
-    box(g, 0.09, 0.008, 0.086, 0, 0, 0, C.tapeLight); // white stripe
+    // Ribbed terrycloth sweatband sitting proud of the forearm
+    box(g, 0.088, 0.036, 0.084, 0, 0, 0, C.sportsOrange);
+    box(g, 0.09, 0.005, 0.086, 0, 0.014, 0, C.toyRed); // upper ribbed trim
+    box(g, 0.09, 0.005, 0.086, 0, -0.014, 0, C.toyRed); // lower ribbed trim
+    box(g, 0.091, 0.008, 0.0865, 0, 0, 0, C.tapeLight); // center white athletic stripe
+    // Stitched woven brand tag on the outer wrist
+    box(g, 0.003, 0.012, 0.024, 0.045, 0, 0, C.dark);
+    box(g, 0.0035, 0.008, 0.02, 0.0455, 0, 0, C.hazard);
     return g;
   },
-  jumboPack() {
+  jumboPack(m = {}) {
     const g = new THREE.Group();
-    box(g, 0.034, 0.055, 0.075, 0, -0.0275, 0, C.toyYellow);
-    box(g, 0.036, 0.012, 0.077, 0, -0.04, 0, C.toyRed); // "XL" band
+    buildJumboPackForGun(g, m.gunId);
     return g;
   },
   speedLoader() {
     const g = new THREE.Group();
-    box(g, 0.03, 0.012, 0.03, 0, -0.006, 0, C.green);
-    box(g, 0.006, 0.026, 0.006, 0, -0.024, 0.008, C.green); // the pull tab
-    box(g, 0.018, 0.006, 0.006, 0, -0.037, 0.008, C.green);
+    // Quick-release baseplate collar + spring cam latch
+    box(g, 0.032, 0.01, 0.034, 0, -0.005, 0, C.dark);
+    box(g, 0.035, 0.008, 0.022, 0, -0.006, 0, C.greenDark);
+    // Thumb release latch lever on the rear face
+    const latch = box(g, 0.014, 0.014, 0.006, 0, -0.007, 0.019, C.steel);
+    latch.rotation.x = -0.25;
+    // Tactile ribbed finger pull loop (two vertical straps + ribbed bottom pull bar)
+    box(g, 0.005, 0.024, 0.006, -0.008, -0.022, 0.006, C.green);
+    box(g, 0.005, 0.024, 0.006, 0.008, -0.022, 0.006, C.green);
+    box(g, 0.024, 0.007, 0.009, 0, -0.035, 0.006, C.green);
+    box(g, 0.025, 0.003, 0.011, 0, -0.038, 0.006, C.greenDark); // grip ridge
     return g;
   },
 };
@@ -179,13 +387,29 @@ export function createUpgradeVisuals(model, gun = model.root) {
     if (mount) parts[id] = place(buildAttachmentPart(id, mount), mount);
   }
 
-  // Tier sticker: a colored square on a white backing. One sticker, recolored per tier.
+  // Branded Extended Warranty service seal: foil seal backing + tier-colored certificate face.
+  // Keep `s.children.length === 2` (backing + face) so existing model inspection checks match.
   let sticker = null;
   if (mounts.sticker) {
     const s = new THREE.Group();
-    box(s, 0.0015, 0.03, 0.036, 0, 0, 0, C.tapeLight, true);
-    const face = box(s, 0.002, 0.024, 0.03, -0.0005, 0, 0, upgrades.tiers[0].color, true);
-    face.material = new THREE.MeshBasicMaterial({ color: upgrades.tiers[0].color });
+    const backing = box(s, 0.0016, 0.032, 0.04, 0, 0, 0, C.brass);
+    // Attach serrated seal points + ribbon tails as children of `backing`
+    const rosette = new THREE.Mesh(new THREE.BoxGeometry(0.0014, 0.028, 0.028), mat(C.tapeLight, true));
+    rosette.rotation.x = Math.PI / 4;
+    backing.add(rosette);
+    for (const z of [-0.007, 0.007]) {
+      const ribbon = new THREE.Mesh(new THREE.BoxGeometry(0.0014, 0.01, 0.006), mat(C.toyRed, true));
+      ribbon.position.set(0.0001, -0.018, z);
+      ribbon.rotation.x = z < 0 ? 0.22 : -0.22;
+      backing.add(ribbon);
+    }
+
+    const sealTex = getWarrantySealTexture();
+    const face = box(s, 0.002, 0.025, 0.033, -0.0006, 0, 0, upgrades.tiers[0].color, true);
+    face.material = new THREE.MeshBasicMaterial({
+      color: upgrades.tiers[0].color,
+      ...(sealTex ? { map: sealTex } : {}),
+    });
     sticker = { holder: place(s, mounts.sticker), face };
   }
 

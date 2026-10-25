@@ -4,6 +4,7 @@
 // =============================================================================
 
 import * as THREE from 'three';
+import { shutters } from '../config/shutters.js';
 
 function finish(canvas, { repeat = false } = {}) {
   const texture = new THREE.CanvasTexture(canvas);
@@ -764,53 +765,52 @@ export function makeSignTexture(text, { background, color, aspect = 6, style, su
   return finish(canvas);
 }
 
-/** Roll-up security shutter: corrugated metal slats with side guide rails and stenciled message. */
-export function makeShutterTexture(message = 'CLOSED') {
-  const size = 512;
+/** Painted shutter curtain. Aspect and slat pitch follow metres; tracks/housing are real stationary geometry. */
+export function makeShutterTexture(message = 'CLOSED', { width = 3, height = 3, finish: look = shutters.finishes.public } = {}) {
   const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
+  canvas.width = Math.max(128, Math.round(width * shutters.pixelsPerMetre));
+  canvas.height = Math.max(128, Math.round(height * shutters.pixelsPerMetre));
   const ctx = canvas.getContext('2d');
-
-  const slat = 24;
-  for (let y = 0; y < size; y += slat) {
-    const g = ctx.createLinearGradient(0, y, 0, y + slat);
-    g.addColorStop(0, '#cfd5dc');
-    g.addColorStop(0.18, '#b5bcc4');
-    g.addColorStop(0.58, '#8d949e');
-    g.addColorStop(0.88, '#636972');
-    g.addColorStop(1, '#3e434a');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, y, size, slat);
-
-    // Specular ridge line along the top curve of each slat
-    ctx.fillStyle = 'rgba(255,255,255,0.28)';
-    ctx.fillRect(0, y + 2, size, 2);
+  const w = canvas.width, h = canvas.height, random = seededRandom(look.seed);
+  ctx.fillStyle = look.base; ctx.fillRect(0, 0, w, h);
+  // Faded company livery: paint on the curtain, not a floating sign that stays behind when it rolls up.
+  ctx.globalAlpha = .3; ctx.fillStyle = look.accent; ctx.fillRect(0, h * .31, w, h * .12);
+  ctx.globalAlpha = .58;
+  const radius = Math.min(w * .12, h * .125), sunY = h * .34;
+  ctx.beginPath(); ctx.arc(w / 2, sunY, radius, Math.PI, 0); ctx.closePath(); ctx.fill();
+  for (let i = 0; i < 3; i++) ctx.fillRect(w / 2 - radius + i * radius * .15, sunY + 4 + i * radius * .19,
+    radius * 2 - i * radius * .3, radius * .11);
+  ctx.globalAlpha = 1;
+  function words(text, y, size, color = look.ink) {
+    ctx.font = `700 ${size}px sans-serif`;
+    while (ctx.measureText(text).width > w * .88 && size > 8) { size--; ctx.font = `700 ${size}px sans-serif`; }
+    ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, w / 2, y);
   }
-
-  // Side guide tracks and rivets
-  ctx.fillStyle = 'rgba(30,34,40,0.45)';
-  ctx.fillRect(0, 0, 18, size);
-  ctx.fillRect(size - 18, 0, 18, size);
-  ctx.fillStyle = 'rgba(230,235,240,0.45)';
-  for (let y = slat / 2; y < size; y += slat) {
-    ctx.fillRect(7, y - 2, 4, 4);
-    ctx.fillRect(size - 11, y - 2, 4, 4);
+  words('SUNSET GALLERIA', h * .52, Math.round(h * .035));
+  words(message === 'CLOSED' ? look.heading : message, h * .62, Math.round(h * .052));
+  words(look.notice, h * .69, Math.round(h * .026));
+  // Broad, nearly flat enamel slats. Recessed seams are deliberately much softer than the old silver gradients.
+  const slat = h / height * shutters.slatHeight;
+  for (let y = 0; y < h; y += slat) {
+    ctx.fillStyle = '#392f4329'; ctx.fillRect(0, y, w, 1.6);
+    ctx.fillStyle = '#fff9e91f'; ctx.fillRect(0, y + 2, w, 1);
   }
-
+  // Deterministic rubbed paint and old adhesive marks; dense wear stays down by the bottom rail.
+  for (let i = 0; i < 46; i++) {
+    const x = random() * w, y = i < 30 ? h * (.83 + random() * .16) : random() * h;
+    ctx.fillStyle = i % 3 ? '#60544926' : '#fff5d933'; ctx.fillRect(x, y, 2 + random() * 13, 1 + random() * 2);
+  }
   ctx.save();
-  ctx.translate(size / 2, size / 2);
-  ctx.rotate(-0.06);
-  ctx.font = 'bold 92px Impact, "Arial Black", sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = 'rgba(214, 40, 57, 0.90)';
-  ctx.fillText(message, 0, 0);
-  ctx.font = 'bold 34px Impact, "Arial Black", sans-serif';
-  ctx.fillStyle = 'rgba(24, 26, 30, 0.78)';
-  ctx.fillText('NO REFUNDS. NO RETURNS.', 0, 80);
+  ctx.translate(w * .78, h * .83); ctx.rotate(-.07);
+  if (look.sticker) {
+    ctx.fillStyle = '#e9d5a8'; ctx.fillRect(-w * .115, -h * .045, w * .23, h * .09);
+    ctx.fillStyle = look.ink; ctx.font = `700 ${Math.round(h * .022)}px monospace`;
+    ctx.fillText(look.sticker, 0, 0);
+  }
   ctx.restore();
-
+  ctx.fillStyle = look.ink; ctx.globalAlpha = .6; ctx.font = `${Math.round(h * .022)}px monospace`;
+  ctx.textAlign = 'left'; ctx.fillText(`SG / ${look.seed} · SECURITY SYSTEMS`, w * .05, h * .94);
+  ctx.globalAlpha = 1;
   return finish(canvas);
 }
 

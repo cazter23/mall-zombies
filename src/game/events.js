@@ -9,7 +9,7 @@
 // Listeners run in the order they were added, immediately, on the emitting tick.
 //
 // THE EVENTS (payloads):
-//   'shot'        shot                                   a gun fired (hitscan result): one per shot = one per staple /
+//   'shot'        shot (including weaponId)              a gun fired (hitscan result): one per shot = one per staple /
 //                                                        sticker / nail / Foam dart (3 per burst) / whole shotgun blast
 //   'hit'         { target, killed, headshot, melee }    a PLAYER attack hit a shootable (one per target per shot
 //                                                        or swing). Non-lethal zombie hits pay +10 here.

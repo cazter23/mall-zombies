@@ -40,6 +40,7 @@ import { COLORS } from './palette.js';
 import { debug } from '../../config/debug.js';
 import { economy } from '../../config/economy.js';
 import { upgrades } from '../../config/upgrades.js';
+import { shutters } from '../../config/shutters.js';
 import { buildStores, storeOpenings } from './stores.js';
 import { buildStartRoomDetails } from './startRoomDetails.js';
 import { buildMegaMartDetails, MART_FIXTURES } from './megaMartDetails.js';
@@ -53,6 +54,7 @@ import { buildSetPieces } from './setPieces.js';
 import { buildFoodCourtLook, buildMegaMartLook, buildServiceCorridorLook, buildStartRoomLook, buildLevelTwoLook, buildAtriumLook } from './zoneLooks.js';
 import { look } from '../../config/look.js';
 import { atmosphere } from '../../config/environment.js';
+import { promenade } from '../../config/promenade.js';
 
 export const LAYOUT = {
   startRoom: { minX: -5, maxX: 5, minZ: 6, maxZ: 16, height: 4 },
@@ -68,10 +70,11 @@ export const LAYOUT = {
   // (the top of the hallway ceiling, y 6.3). 2m wide. Sealed for now.
   escalator: { bottomX: -4, dir: -1, minZ: 1, maxZ: 3 },
   elevator: { centerX: 10.5 }, // doors in the hallway's north wall (sealed for now)
-  // Level 2 (maps/mall/levelTwo.js): the quiet Sunset Promenade over the hallway, reached by the repaired escalator. Its footprint
-  // is the hallway's. shops = empty fronts on the north wall (x from..to), seating = the planter ring + wall benches, vents =
+  // Level 2 (maps/mall/levelTwo.js): the Sunset Promenade, reached by the repaired escalator. config/promenade.js independently
+  // owns its bounds/floor sections, shoe-store loop and reserved connections. shops = remaining north-wall frontages, seating = the planter ring + wall benches, vents =
   // boarded vents that are zombie spawns (wall + position along it), lamps = where its point lights hang (x, z).
   level2: {
+    ...promenade,
     height: 3.6,
     shops: [
       { id: 'shoePer', from: -10, to: -4, color: 0x7a5c8a, text: 'SHOE-PER SALE', signBackground: '#2b2233', signColor: '#c9b6e4', gate: 0.7, note: 'SPACE AVAILABLE · INQUIRE WITHIN' },
@@ -303,7 +306,11 @@ export function buildMall(scene, colliders) {
   });
   // Level 2 itself, on top of the slab: walkway, shop fronts, seating, railings round the escalator well, boarded vents.
   const levelTwo = buildLevelTwo({
-    kit, props, floorY: upperY, rect: { minX: H.minX, maxX: H.maxX, minZ: H.minZ, maxZ: H.maxZ }, hole: escalator.hole, layout: LAYOUT.level2,
+    kit, props, floorY: upperY, supportRects: [
+      { minX: H.minX - T, maxX: H.maxX + T, minZ: H.minZ - T, maxZ: H.maxZ + T },
+      { minX: F.minX - T, maxX: F.maxX + T, minZ: F.minZ - T, maxZ: F.maxZ },
+    ],
+    hole: escalator.hole, layout: LAYOUT.level2,
   });
 
   // The Grand Atrium north of the hallway (maps/mall/atrium.js), its gate off the hallway, and the shutter between its upper
@@ -415,14 +422,20 @@ export function buildMall(scene, colliders) {
     doorway: { minX: F.minX - T, maxX: F.minX, ...SF },
   });
   const shortcutZ = (SF.minZ + SF.maxZ) / 2;
+  // These signs share the shallow headroom with the roller cassette: mount them on rigid plaques in front of it.
+  const shutterSignOffset = shutters.track.signOffset;
+  box(F.minX + .03, 3.05, shortcutZ - 1.3, F.minX + shutterSignOffset - .01, 3.45, shortcutZ + 1.3,
+    mat(0x3a3f47), { collide: false, name: 'staff_shortcut_sign_mount' });
   sign('STAFF ONLY', {
-    x: F.minX + 0.02, y: 3.25, z: shortcutZ, width: 2.6, height: 0.4, facing: 'x+',
+    x: F.minX + shutterSignOffset, y: 3.25, z: shortcutZ, width: 2.6, height: 0.4, facing: 'x+',
     background: '#3a3f47', color: '#ffd23f',
-  });
+  }).name = 'sign_staff_shortcut';
+  box(F.minX - T - shutterSignOffset + .01, 3.075, shortcutZ - 1.3, F.minX - T - .03, 3.425, shortcutZ + 1.3,
+    mat(0x2d6a4f), { collide: false, name: 'foodcourt_exit_sign_mount' });
   sign('EXIT · FOOD COURT', {
-    x: F.minX - T - 0.02, y: 3.25, z: shortcutZ, width: 2.6, height: 0.35, facing: 'x-',
+    x: F.minX - T - shutterSignOffset, y: 3.25, z: shortcutZ, width: 2.6, height: 0.35, facing: 'x-',
     background: '#2d6a4f', color: '#ffffff',
-  });
+  }).name = 'sign_foodcourt_exit';
   // (North: the hallway's south wall. East: the Mega Mart's west wall.)
 
   // The four shops are real walk-in stores (maps/mall/stores.js): their fronts, interiors, attachment counters,
@@ -847,7 +860,7 @@ export function buildMall(scene, colliders) {
       { grade: 'startRoom', minX: R.minX, maxX: R.maxX, minZ: H.maxZ + T, maxZ: R.maxZ, maxY: R.height },
       { grade: 'foodCourt', minX: F.minX, maxX: F.maxX, minZ: F.minZ - 6, maxZ: F.maxZ, maxY: F.height }, // (+ the recessed stores)
       { grade: 'atrium', minX: AT.rect.minX, maxX: AT.rect.maxX, minZ: AT.rect.minZ, maxZ: AT.rect.maxZ },
-      { grade: 'level2', minX: H.minX, maxX: H.maxX, minZ: H.minZ, maxZ: H.maxZ, minY: H.height },
+      ...LAYOUT.level2.sections.map(section => ({ grade: 'level2', ...section, minY: H.height })),
     ],
     ambience: [...dressing.emitters, ...atrium.emitters],
     // Zombie navigation across floors (zombies/navigation.js): the ground floor and level 2, joined by the escalator.
@@ -856,6 +869,8 @@ export function buildMall(scene, colliders) {
     escalator: { barrier: escalator.barrier, ramp: escalator.ramp },
     // For the debug "upstairs" command (Shift+T): where you arrive on level 2, where you go back down to, and the repair door.
     levelTwo: {
+      sections: LAYOUT.level2.sections,
+      expansionConnections: LAYOUT.level2.expansionConnections,
       minY: upperY / 2, // above this you count as upstairs
       arrival: { position: new THREE.Vector3(H.minX + 1.2, upperY, 4.6), yaw: -Math.PI / 2 }, // west lobby, facing east down the walkway
       below: { position: new THREE.Vector3(escalator.foot.x + 1.5, 0, escalator.foot.z), yaw: Math.PI / 2 }, // at the escalator's foot
@@ -864,12 +879,14 @@ export function buildMall(scene, colliders) {
     update(dt) {
       for (const door of doors) door.update(dt);
       dressing.update(dt);
+      atrium.update(dt);
       looks.update(dt);
       setPieces.update(dt);
     },
     reset() {
       for (const door of doors) door.reset();
       dressing.reset();
+      atrium.reset();
       looks.reset();
       setPieces.reset();
     },

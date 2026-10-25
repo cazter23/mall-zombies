@@ -37,14 +37,15 @@ export function damageFalloff(distance, falloff) {
 
 /**
  * Damage of ONE hit (one bullet, dart, nail or pellet on one zombie).
- *   hit:    { part: 'head' | 'body', distance }   (distance from the eye, meters)
- *   index:  0 for the first zombie this ray hit, 1 for the one behind it (pierce), ...
- *   stats:  the player's stats object (stats.damageMultiplier)
+ *   hit:         { part: 'head' | 'body', distance }   (distance from the eye, meters)
+ *   index:       0 for the first zombie this ray hit, 1 for the one behind it (pierce), ...
+ *   stats:       the player's stats object (stats.damageMultiplier)
+ *   chargeScale: optional charge damage multiplier (1 by default)
  */
-export function hitDamage(def, hit, index, stats) {
+export function hitDamage(def, hit, index, stats, chargeScale = 1) {
   const head = hit.part === 'head' ? def.headshotMultiplier : 1;
   const pierce = def.pierce ? def.pierce.damageFalloff[Math.min(index, def.pierce.damageFalloff.length - 1)] : 1;
-  return def.damage * head * damageFalloff(hit.distance, def.falloff) * pierce * stats.damageMultiplier;
+  return def.damage * chargeScale * head * damageFalloff(hit.distance, def.falloff) * pierce * stats.damageMultiplier;
 }
 
 const OP_ORDER = { set: 0, add: 1, mul: 2 };

@@ -9,6 +9,9 @@
 import { feel } from '../config/feel.js';
 import { createScreens } from './screens.js';
 import { createIncentiveHud } from './incentiveHud.js';
+import { createAnnouncements } from './announcements.js';
+import { ui } from '../config/ui.js';
+import { upgrades } from '../config/upgrades.js';
 
 function el(tag, className) {
   const node = document.createElement(tag);
@@ -60,32 +63,71 @@ export function createHud() {
   // Buy prompt below that ("Hold F to open Security Shutter  500"), with a hold-progress bar.
   const interact = el('div', 'interact');
   const interactText = el('div', 'interact-text');
+  const interactTitle = el('strong', 'interact-title');
+  const interactPrice = el('div', 'interact-price');
+  const interactOriginal = el('s', 'interact-original');
+  const interactCost = el('span', 'cost');
+  interactPrice.append(interactOriginal, interactCost);
+  const interactDetail = el('div', 'interact-detail');
+  const interactAction = el('div', 'interact-action');
+  const interactButton = el('kbd');
+  const interactHold = el('span'); interactHold.textContent = 'Hold';
+  interactAction.append(interactButton, interactHold);
+  const interactStatus = el('div', 'interact-status');
+  interactText.append(interactAction, interactTitle, interactPrice, interactDetail, interactStatus);
   const interactBar = el('div', 'interact-bar');
   const interactFill = el('div', 'interact-fill');
   interactBar.append(interactFill);
   interact.append(interactText, interactBar);
   hud.append(interact);
   let lastInteractKey = '';
+  const purchaseStamp = el('div', 'purchase-stamp');
+  purchaseStamp.setAttribute('role', 'status');
+  hud.append(purchaseStamp);
+  let purchaseTimer = null;
+  function clearNotices() {
+    announcements.clear();
+    clearTimeout(purchaseTimer);
+    purchaseStamp.classList.remove('show');
+    roundBanner.classList.remove('show');
+  }
 
   // Bottom-right, above the ammo: points, with "+60" pop-ups floating up from it.
   const points = el('div', 'points');
   const pointsValue = el('div', 'points-value');
-  points.append(pointsValue);
+  const pointsLabel = el('span', 'hud-label'); pointsLabel.textContent = 'Store credit';
+  points.append(pointsLabel, pointsValue);
   hud.append(points);
   let lastPoints = null;
 
   // Top-left: the round number (flashes during the break between rounds).
   const roundCounter = el('div', 'round-counter');
+  const roundLabel = el('span', 'hud-label'); roundLabel.textContent = 'Round';
+  const roundValue = el('strong', 'round-value');
+  roundCounter.append(roundLabel, roundValue);
   hud.append(roundCounter);
   // Middle of the screen: "ROUND 3" announcement when a round starts.
   const roundBanner = el('div', 'round-banner');
+  roundBanner.style.setProperty('--round-seconds', `${ui.roundSeconds}s`);
   hud.append(roundBanner);
 
   // PA-style announcement under it ("Attention shoppers / Mall Walkers have entered the building").
   const announceBanner = el('div', 'announce-banner');
+  announceBanner.style.animationDuration = `${ui.announcementSeconds}s`;
   const announceKicker = el('div', 'announce-kicker');
   const announceText = el('div', 'announce-text');
   announceBanner.append(announceKicker, announceText);
+  announceBanner.setAttribute('role', 'status');
+  const announcements = createAnnouncements({
+    show({ kicker = '', text }) {
+      announceKicker.textContent = kicker || 'Galleria public address';
+      announceText.textContent = text;
+      announceBanner.classList.remove('show');
+      void announceBanner.offsetWidth;
+      announceBanner.classList.add('show');
+    },
+    hide() { announceBanner.classList.remove('show'); },
+  });
   hud.append(announceBanner);
 
   // Top middle: the Flash Sale running now ("FLASH SALE · Wall guns 30% OFF · 0:32").
@@ -112,9 +154,15 @@ export function createHud() {
   const vitals = el('div', 'vitals');
   const health = el('div', 'health');
   const healthFill = el('div', 'health-fill');
+  health.setAttribute('aria-label', 'Health');
+  health.setAttribute('role', 'meter');
+  health.setAttribute('aria-valuemin', '0'); health.setAttribute('aria-valuemax', '100');
   health.append(healthFill);
   const sprint = el('div', 'sprint');
   const sprintFill = el('div', 'sprint-fill');
+  sprint.setAttribute('aria-label', 'Stamina');
+  sprint.setAttribute('role', 'meter');
+  sprint.setAttribute('aria-valuemin', '0'); sprint.setAttribute('aria-valuemax', '100');
   sprint.append(sprintFill);
   vitals.append(health, sprint);
   hud.append(vitals);
@@ -137,6 +185,20 @@ export function createHud() {
     // The title / pause / results screens (ui/screens.js): show(), on(action), padNav(), current.
     screens,
 
+    // Peripheral feedback listens to the existing event bus; no purchase callbacks in gameplay.
+    connectEvents(events) {
+      events.on('purchase', ({ label, kind, id }) => {
+        clearTimeout(purchaseTimer);
+        purchaseStamp.textContent = `Purchased: ${kind === 'attachment' ? upgrades.attachments[id]?.name ?? label : label}`;
+        purchaseStamp.classList.remove('show');
+        void purchaseStamp.offsetWidth;
+        purchaseStamp.classList.add('show');
+        purchaseTimer = setTimeout(() => purchaseStamp.classList.remove('show'), ui.purchaseSeconds * 1000);
+      });
+      events.on('runReset', clearNotices);
+      events.on('playerDeath', clearNotices);
+    },
+
     setPowerUps(status) {
       incentives.update(status);
     },
@@ -155,11 +217,13 @@ export function createHud() {
     // While a menu is up the combat HUD fades out.
     setDimmed(dimmed) {
       hud.classList.toggle('dimmed', dimmed);
+      if (dimmed) clearNotices();
     },
 
     // Dead: hide the combat HUD (crosshair, ammo, prompts).
     setDead(dead) {
       hud.classList.toggle('dead', dead);
+      if (dead) clearNotices();
     },
 
     // --- Points ---
@@ -181,16 +245,12 @@ export function createHud() {
 
     // --- Rounds ---
     setRound(n) {
-      roundCounter.textContent = n > 0 ? String(n) : '';
+      roundValue.textContent = n > 0 ? String(n).padStart(2, '0') : '—';
     },
 
-    // A PA-style announcement: { kicker, text }. Restarts the animation if one is already showing.
-    showAnnouncement({ kicker = '', text }) {
-      announceKicker.textContent = kicker;
-      announceText.textContent = text;
-      announceBanner.classList.remove('show');
-      void announceBanner.offsetWidth; // restart the animation
-      announceBanner.classList.add('show');
+    // A PA-style announcement: { kicker, text, priority? }. Queue/preempt rather than overwrite.
+    showAnnouncement(message) {
+      announcements.push(message);
     },
 
     showRoundBanner(n) {
@@ -220,6 +280,7 @@ export function createHud() {
       const rounded = Math.round(Math.max(0, Math.min(1, fraction)) * 200) / 200;
       if (rounded !== lastHealth) {
         healthFill.style.transform = `scaleX(${rounded})`;
+        health.setAttribute('aria-valuenow', String(Math.round(rounded * 100)));
         lastHealth = rounded;
       }
     },
@@ -277,14 +338,14 @@ export function createHud() {
       const show = !!tier && tier.id !== 'standard';
       ammoTier.classList.toggle('show', show);
       if (!show) return;
-      ammoTier.textContent = `${tier.name} warranty`;
+      ammoTier.textContent = tier.name;
       ammoTier.style.color = `#${tier.color.toString(16).padStart(6, '0')}`;
     },
 
     // Called every frame with the held weapon; only touches the DOM when something changed.
     // `reloadLabel`: the reload button for the device in use ("R", "X", "□").
     setAmmo(weapon, reloadLabel = 'R') {
-      const key = `${weapon.magazine}|${weapon.reserve}|${weapon.isReloading}|${reloadLabel}`;
+      const key = `${weapon.def.id}|${weapon.magazine}|${weapon.reserve}|${weapon.isReloading}|${reloadLabel}`;
       if (key === lastAmmoKey) return;
       lastAmmoKey = key;
       ammoMag.textContent = weapon.magazine;
@@ -322,13 +383,20 @@ export function createHud() {
     // `button` is the interact button for the device in use ("F", "X", "□").
     setInteract(info, button = 'F') {
       const key = info
-        ? `${info.label}|${info.cost}|${info.canAfford}|${info.denied}|${button}|${info.progress.toFixed(2)}|${!!info.sale}`
+        ? JSON.stringify([info.title, info.label, info.verb, info.detail, info.kind, info.cost, info.originalCost, info.shortfall, info.canAfford, info.denied, button, info.progress.toFixed(2), !!info.sale])
         : '';
       if (key === lastInteractKey) return;
       lastInteractKey = key;
       interact.classList.toggle('show', !!info);
       if (!info) return;
-      interactText.innerHTML = `Hold <kbd>${button}</kbd> to ${info.verb} ${info.label} <span class="cost">${info.cost}</span>`;
+      interactTitle.textContent = info.title ?? info.label;
+      interactCost.textContent = info.cost.toLocaleString('en-US');
+      interactOriginal.hidden = !info.sale || !(info.originalCost > info.cost);
+      interactOriginal.textContent = `${(info.originalCost ?? info.cost).toLocaleString('en-US')}`;
+      // Ordinary purchases need one line. Keep the terms only where they affect an upgrade decision.
+      interactDetail.textContent = info.kind === 'attachment' ? info.detail ?? '' : info.kind === 'tier' ? 'Ammo not included' : '';
+      interactButton.textContent = button;
+      interactStatus.textContent = !info.canAfford ? `Need ${(info.shortfall ?? 0).toLocaleString('en-US')} more` : '';
       interact.classList.toggle('cant', !info.canAfford);
       interact.classList.toggle('sale', !!info.sale);
       interact.classList.toggle('denied', info.denied);
@@ -339,6 +407,7 @@ export function createHud() {
       const rounded = Math.round(fraction * 200) / 200;
       if (rounded !== lastFraction) {
         sprintFill.style.transform = `scaleX(${rounded})`;
+        sprint.setAttribute('aria-valuenow', String(Math.round(rounded * 100)));
         lastFraction = rounded;
       }
       if (exhausted !== lastExhausted) {

@@ -199,7 +199,8 @@ test('real game: Blue Light changes base kill payouts only, pickup sound/PA fire
   t.tick();
   assert.ok(g.powerUps.active);
   assert.ok(t.sounds.includes(powerUps.types.blueLightSpecial.sound));
-  assert.ok(t.hud.calls.some(([name, data]) => name === 'showAnnouncement' && data === powerUps.types.blueLightSpecial.pa));
+  assert.ok(t.hud.calls.some(([name, data]) => name === 'showAnnouncement'
+    && data.text === powerUps.types.blueLightSpecial.pa.text && data.priority === 1));
   const remaining = g.powerUps.active.remaining;
   g.state.forceRun = false;
   t.tick(120);

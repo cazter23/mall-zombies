@@ -9,6 +9,7 @@
 //   priceOf('ammoCache')           economy.ammoCache.price
 //   priceOf('tier', tierId)        economy.upgrades.tiers[tierId] (Extended Warranty: deluxe / premium / platinum)
 //   priceOf('attachment', id)      economy.upgrades.attachments[id]
+//   basePriceOf(category, id)      original shelf price before a discount (same validation/source)
 //   setDiscount(category, 0.25)    25% off everything in that category (0 = none); rounded to the nearest
 //                                  economy.discountRoundTo (10)
 //   reset()                        no discounts (a new run)
@@ -35,11 +36,17 @@ export function createPricing() {
     if (!Object.hasOwn(BASE, category)) throw new Error(`pricing: unknown category "${category}" (${PRICE_CATEGORIES.join(', ')})`);
   }
 
+  function basePriceOf(category, id) {
+    check(category);
+    const base = BASE[category](id);
+    if (typeof base !== 'number') throw new Error(`pricing: no ${category} price for "${id}"`);
+    return base;
+  }
+
   return {
+    basePriceOf, // crossed-out shelf price; uses the same source and validation as the charged price
     priceOf(category, id) {
-      check(category);
-      const base = BASE[category](id);
-      if (typeof base !== 'number') throw new Error(`pricing: no ${category} price for "${id}"`);
+      const base = basePriceOf(category, id);
       const off = discounts.get(category) ?? 0;
       const step = economy.discountRoundTo;
       return off > 0 ? Math.round((base * (1 - off)) / step) * step : base;

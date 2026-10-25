@@ -22,5 +22,6 @@ export function chooseShopperAppearance(random = Math.random) {
     pattern: pick(profile.patterns, random),
     wear: weighted(shoppers.wearWeights, random).id,
     accessoryColor: pick(shoppers.colors.accessory, random),
+    face: pick(shoppers.faceProfiles, random).id,
   };
 }

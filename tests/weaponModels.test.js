@@ -51,7 +51,7 @@ test('Confetti support palm, fingers and thumb clear the receiver at rest and du
 
 // --- Upgrade parts (models/upgradeParts.js): store attachments + the tier sticker on every gun ---
 
-const GUN_IDS = ['stapleGun', 'priceGun', 'nailGun', 'foamDartBlaster', 'confettiCannon'];
+const GUN_IDS = Object.keys(weapons);
 
 test('every gun model has every upgrade mount, and every attachment that fits it has a part', () => {
   for (const id of GUN_IDS) {
@@ -93,6 +93,50 @@ test('no upgrade part floats: each one touches its gun (or the hands) within 1 c
       holder.traverse((o) => { if (o.isMesh && o.name !== 'laserBeam') box.expandByObject(o); });
       box.expandByScalar(0.01);
       assert.ok(bodyMeshes.some((m) => box.intersectsBox(bounds(m))), `${id}: ${a} floats`);
+    }
+  }
+});
+
+test('every weapon model uses the refreshed faceted hands and sleeved cuffs without floating fingers', () => {
+  for (const id of GUN_IDS) {
+    const model = buildWeaponModel(weapons[id]);
+    model.root.updateMatrixWorld(true);
+    for (const part of ['rightPalm', 'rightGripFingers', 'rightIndexFinger', 'gripThumb', 'supportPalm', 'supportFingers', 'supportThumb', 'rightCuff', 'leftCuff']) {
+      assert.ok(model.root.getObjectByName(part), `${id}: missing ${part}`);
+    }
+    const rightPalm = bounds(model.root.getObjectByName('rightPalm')).expandByScalar(0.012);
+    for (const finger of ['rightGripFingers', 'rightIndexFinger', 'gripThumb']) {
+      assert.ok(rightPalm.intersectsBox(bounds(model.root.getObjectByName(finger))), `${id}: ${finger} floats from rightPalm`);
+    }
+    const supportPalm = bounds(model.root.getObjectByName('supportPalm')).expandByScalar(0.012);
+    for (const finger of ['supportFingers', 'supportThumb']) {
+      assert.ok(supportPalm.intersectsBox(bounds(model.root.getObjectByName(finger))), `${id}: ${finger} floats from supportPalm`);
+    }
+    model.leftHandVisible = false;
+    assert.equal(model.root.getObjectByName('supportPalm').parent.visible, false, `${id}: leftHandVisible hides support arm`);
+    model.leftHandVisible = true;
+    assert.equal(model.root.getObjectByName('supportPalm').parent.visible, true, `${id}: leftHandVisible restores support arm`);
+  }
+});
+
+test('refreshed Price Gun, Staple Gun, Nail Gun, and Foam Dart Blaster expose their distinct tool parts and animate cleanly', () => {
+  const expectedParts = {
+    priceGun: ['priceHousing', 'priceRoll', 'emergingPriceLabel', 'heldPriceRoll'],
+    stapleGun: ['stapleHousing', 'stapleUpperLever', 'stapleChannel', 'visibleStapleStrip', 'heldStapleStrip'],
+    nailGun: ['nailHousing', 'nailPistonCap', 'nailDriverNose', 'nailMagazine', 'airConnector', 'heldNailStrip'],
+    foamDartBlaster: ['foamHousing', 'dartDrum', 'foamForegrip', 'foamStock', 'heldDartDrum'],
+  };
+  for (const [id, names] of Object.entries(expectedParts)) {
+    const model = buildWeaponModel(weapons[id]);
+    const display = buildWeaponDisplay(weapons[id]);
+    for (const name of names) {
+      assert.ok(model.root.getObjectByName(name), `${id} model missing ${name}`);
+      if (!name.startsWith('held')) assert.ok(display.getObjectByName(name), `${id} display missing ${name}`);
+    }
+    for (const sinceFire of [0.02, 0.1, Infinity]) {
+      for (const reloadProgress of [0, 0.25, 0.5, 0.75, 1]) {
+        model.animate({ sinceFire, reloadProgress, reloadWeight: reloadProgress > 0 && reloadProgress < 1 ? 1 : 0 });
+      }
     }
   }
 });

@@ -83,9 +83,16 @@ export function createPlayerGun({
   }
 
   function fire(slot) {
-    const { def: d, aim } = slot;
+    const { def: d, aim, weapon } = slot;
     player.getAim(origin, direction);
+    const chargeRatio = d.charge ? (weapon.lastChargeRatio ?? 1) : 1;
+    const chargeScale = d.charge ? d.charge.minDamageMultiplier + (1 - d.charge.minDamageMultiplier) * chargeRatio : 1;
     const pierce = d.pierce ?? null;
+    const maxTargets = pierce
+      ? (d.charge
+          ? Math.round((d.charge.minTargets ?? 1) + (pierce.maxTargets - (d.charge.minTargets ?? 1)) * chargeRatio)
+          : pierce.maxTargets)
+      : 1;
     const rays = [];
     const pelletCone = pelletSpreadDegrees(d, aim.amount);
     // Resolve all rays before damage: a killed front zombie still stops this blast's other pellets.
@@ -93,7 +100,7 @@ export function createPlayerGun({
       const rayDirection = direction.clone();
       aim.applySpread(rayDirection);
       applyConeSpread(rayDirection, pelletCone);
-      rays.push(castShot(origin, rayDirection, d.range, colliders, shootables, pierce?.maxTargets ?? 1));
+      rays.push(castShot(origin, rayDirection, d.range, colliders, shootables, maxTargets));
     }
     aim.onShot(); // once per blast, once per dart
     const hits = rays.flatMap((ray) => ray.hits);
@@ -102,12 +109,14 @@ export function createPlayerGun({
     const shot = d.pellets
       ? { ...rays[0], ...(firstHit ?? {}), hits, pellets: rays }
       : rays[0];
+    if (d.charge) shot.chargeRatio = chargeRatio;
 
     // Feedback, all this tick. Camera recoil (moves the crosshair, springs back) uses the aim
     // from before the kick, so this shot lands exactly where you were looking.
     const r = d.recoil;
     const ads = aim.amount;
-    const cameraScale = 1 + (r.adsMultiplier - 1) * ads;
+    const kickChargeScale = d.charge ? 0.55 + 0.45 * chargeRatio : 1;
+    const cameraScale = (1 + (r.adsMultiplier - 1) * ads) * kickChargeScale;
     const side = () => (Math.random() < 0.5 ? -1 : 1);
     player.addRecoil(
       r.pitchDegrees * DEG_TO_RAD * cameraScale,
@@ -130,7 +139,7 @@ export function createPlayerGun({
         if (targets.get(hit.target)?.killed || !hit.target.isAlive) return;
         const headshot = hit.part === 'head';
         // Headshot x distance falloff x pass-through (pierce) falloff x player stats: gunStats.js.
-        const damage = hitDamage(d, hit, i, stats);
+        const damage = hitDamage(d, hit, i, stats, chargeScale);
         const { killed } = hit.target.takeHit({
           damage,
           part: hit.part,
@@ -146,7 +155,7 @@ export function createPlayerGun({
           headshot: killed ? headshot : headshot || (previous?.headshot ?? false),
         });
       });
-      if (ray.hits.length < (pierce?.maxTargets ?? 1) && ray.end.distanceTo(origin) < d.range - 1e-3
+      if (ray.hits.length < maxTargets && ray.end.distanceTo(origin) < d.range - 1e-3
         && (!d.pellets || puffs < feel.effects.maxPelletWallPuffs)) {
         effects.puff(ray.end, ray.endNormal);
         puffs += 1;
@@ -179,6 +188,7 @@ export function createPlayerGun({
         if (anyKilled) sound.play('killConfirm');
       }
     }
+    shot.weaponId = d.id; // capture the firing gun, even if a kill listener switches the loadout
     if (onShot) onShot(shot);
     return shot;
   }
@@ -326,7 +336,8 @@ export function createPlayerGun({
       }
       // Shooting while sprinting: drop to a walk and bring the gun up out of the running pose before
       // the shot goes off (the click is buffered, so it fires as soon as the gun is up).
-      const wantsToFire = trigger || slot.weapon.isBursting || (triggerHeld && slot.def.fireMode === 'auto');
+      const wantsToFire = trigger || slot.weapon.isBursting || slot.weapon.isCharging
+        || (triggerHeld && (slot.def.fireMode === 'auto' || slot.def.fireMode === 'charge'));
       if (wantsToFire || slot.aim.amount > 0.1 || player.isSprinting || reload || busy) {
         inspectTimer = 0;
       } else if (inspectTimer > 0) {
@@ -345,6 +356,9 @@ export function createPlayerGun({
         blocked: busy,
         reloadPaused,
       });
+      if (slot.weapon.justStartedCharging && sound && slot.def.charge?.sound) {
+        sound.play(slot.def.charge.sound);
+      }
       if (result === 'fire') {
         player.blockSprint(feel.sprint.fireBlocksSprintSeconds);
         this.lastShot = fire(slot);
@@ -369,6 +383,7 @@ export function createPlayerGun({
     // New run: just the starting gun, full ammo, hip fire.
     reset() {
       slots = [makeSlot(startDef)];
+      slots[0].aim.reset(); // clear the old gun's ADS progress and handling penalty immediately
       current = 0;
       switching = null;
       reloadRequested = false;

@@ -22,6 +22,69 @@ export const audio = {
   compressor: { thresholdDb: -10, ratio: 8, attack: 0, release: 0.08, kneeDb: 6 },
 
   sounds: {
+    rivetShot: { volume: 0.72, layers: [
+      { type: 'tone', wave: 'sine', freq: 150, freqEnd: 58, gain: 0.85, attack: 0.001, decay: 0.105 },
+      { type: 'noise', filter: 'bandpass', freq: 1800, q: 0.9, gain: 0.7, attack: 0.001, decay: 0.035 },
+      { type: 'noise', filter: 'lowpass', freq: 800, q: 0.7, gain: 0.55, attack: 0.002, decay: 0.07 },
+      { type: 'tone', wave: 'triangle', freq: 740, freqEnd: 430, gain: 0.18, attack: 0.001, decay: 0.045, delay: 0.025 },
+    ] },
+    rivetReloadOut: { volume: 0.5, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 1500, q: 1.2, gain: 0.65, attack: 0.001, decay: 0.065 },
+      { type: 'tone', wave: 'triangle', freq: 280, freqEnd: 160, gain: 0.3, attack: 0.001, decay: 0.07 },
+    ] },
+    rivetReloadIn: { volume: 0.65, layers: [
+      { type: 'noise', filter: 'lowpass', freq: 1000, q: 0.8, gain: 0.8, attack: 0.001, decay: 0.095 },
+      { type: 'tone', wave: 'sine', freq: 180, freqEnd: 70, gain: 0.6, attack: 0.001, decay: 0.09 },
+    ] },
+    rivetReloadReady: { volume: 0.5, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 2300, q: 1, gain: 0.55, attack: 0.001, decay: 0.05 },
+      { type: 'tone', wave: 'triangle', freq: 520, freqEnd: 250, gain: 0.25, attack: 0.001, decay: 0.06, delay: 0.025 },
+    ] },
+    // Heavy Coil Nailer: rapid industrial piston thump + wire-collated steel clack + pneumatic hiss.
+    coilShot: { volume: 0.78, layers: [
+      { type: 'tone', wave: 'sine', freq: 135, freqEnd: 52, gain: 0.88, attack: 0.001, decay: 0.085 },
+      { type: 'tone', wave: 'triangle', freq: 245, freqEnd: 95, gain: 0.65, attack: 0.001, decay: 0.07 },
+      { type: 'noise', filter: 'bandpass', freq: 1650, q: 0.85, gain: 0.72, attack: 0.0008, decay: 0.032 },
+      { type: 'noise', filter: 'lowpass', freq: 720, q: 0.7, gain: 0.55, attack: 0.001, decay: 0.06 },
+      { type: 'tone', wave: 'triangle', freq: 860, freqEnd: 580, gain: 0.16, attack: 0.001, decay: 0.03, delay: 0.012 },
+    ] },
+    coilReloadOut: { volume: 0.58, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 1450, q: 1.3, gain: 0.65, attack: 0.001, decay: 0.075 },
+      { type: 'tone', wave: 'triangle', freq: 310, freqEnd: 130, gain: 0.4, attack: 0.001, decay: 0.085 },
+    ] },
+    coilReloadIn: { volume: 0.72, layers: [
+      { type: 'noise', filter: 'lowpass', freq: 950, q: 0.8, gain: 0.85, attack: 0.001, decay: 0.11 },
+      { type: 'tone', wave: 'sine', freq: 165, freqEnd: 58, gain: 0.68, attack: 0.001, decay: 0.1 },
+      { type: 'noise', filter: 'bandpass', freq: 2600, q: 1.5, gain: 0.38, attack: 0.001, decay: 0.035, delay: 0.02 },
+    ] },
+    coilReloadReady: { volume: 0.62, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 2950, q: 1.3, gain: 0.65, attack: 0.001, decay: 0.04 },
+      { type: 'tone', wave: 'sine', freq: 240, freqEnd: 95, gain: 0.35, attack: 0.001, decay: 0.055, delay: 0.018 },
+    ] },
+    // Barcode Scanner: rising capacitor whine, retail checkout laser beep + high-voltage crackle discharge.
+    scannerCharge: { volume: 0.48, layers: [
+      { type: 'tone', wave: 'sine', freq: 520, freqEnd: 1760, gain: 0.42, attack: 0.015, decay: 0.38 },
+      { type: 'tone', wave: 'triangle', freq: 1040, freqEnd: 2640, gain: 0.18, attack: 0.02, decay: 0.36 },
+    ] },
+    scannerShot: { volume: 0.86, layers: [
+      { type: 'tone', wave: 'square', freq: 2150, freqEnd: 2150, gain: 0.34, attack: 0.0005, decay: 0.042 },
+      { type: 'tone', wave: 'sine', freq: 185, freqEnd: 46, gain: 0.92, attack: 0.001, decay: 0.14 },
+      { type: 'tone', wave: 'sawtooth', freq: 980, freqEnd: 220, gain: 0.48, attack: 0.001, decay: 0.09 },
+      { type: 'noise', filter: 'bandpass', freq: 2800, q: 1.1, gain: 0.68, attack: 0.0006, decay: 0.04 },
+      { type: 'noise', filter: 'highpass', freq: 3800, q: 0.8, gain: 0.25, attack: 0.002, decay: 0.075, delay: 0.015 },
+    ] },
+    scannerReloadOut: { volume: 0.52, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 2200, q: 1.5, gain: 0.52, attack: 0.001, decay: 0.045 },
+      { type: 'tone', wave: 'sine', freq: 780, freqEnd: 320, gain: 0.32, attack: 0.001, decay: 0.06 },
+    ] },
+    scannerReloadIn: { volume: 0.62, layers: [
+      { type: 'noise', filter: 'lowpass', freq: 1150, q: 0.85, gain: 0.68, attack: 0.001, decay: 0.065 },
+      { type: 'tone', wave: 'triangle', freq: 440, freqEnd: 880, gain: 0.3, attack: 0.002, decay: 0.07, delay: 0.015 },
+    ] },
+    scannerReloadReady: { volume: 0.58, layers: [
+      { type: 'tone', wave: 'sine', freq: 1320, freqEnd: 1760, gain: 0.36, attack: 0.001, decay: 0.055 },
+      { type: 'tone', wave: 'triangle', freq: 2150, freqEnd: 2150, gain: 0.24, attack: 0.001, decay: 0.045, delay: 0.045 },
+    ] },
     // Three distinct employee incentives, all routed through the existing master-volume bus.
     incentiveRestock: { volume: 0.55, layers: [
       { type: 'noise', filter: 'bandpass', freq: 1200, q: 1, gain: 0.35, attack: 0.002, decay: 0.08 },
@@ -40,6 +103,19 @@ export const audio = {
     shutterRattle: { volume: 0.12, layers: [
       { type: 'noise', filter: 'bandpass', freq: 650, q: 2, gain: 0.3, attack: 0.04, decay: 0.45 },
       { type: 'tone', wave: 'triangle', freq: 170, freqEnd: 95, gain: 0.12, attack: 0.03, decay: 0.35, delay: 0.12 },
+    ] },
+    shutterMotor: { volume: 0.32, layers: [
+      { type: 'tone', wave: 'triangle', freq: 105, freqEnd: 145, gain: 0.28, attack: 0.018, decay: 0.15 },
+      { type: 'noise', filter: 'lowpass', freq: 850, gain: 0.16, attack: 0.006, decay: 0.09 },
+    ] },
+    shutterRoll: { volume: 0.2, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 1100, q: 1.2, gain: 0.3, attack: 0.004, decay: 0.075 },
+      { type: 'tone', wave: 'triangle', freq: 205, freqEnd: 170, gain: 0.1, attack: 0.003, decay: 0.06 },
+    ] },
+    shutterStop: { volume: 0.34, layers: [
+      { type: 'tone', wave: 'sine', freq: 95, freqEnd: 43, gain: 0.48, attack: 0.002, decay: 0.13 },
+      { type: 'noise', filter: 'lowpass', freq: 1200, gain: 0.34, attack: 0.001, decay: 0.06 },
+      { type: 'tone', wave: 'triangle', freq: 360, freqEnd: 190, gain: 0.1, attack: 0.002, decay: 0.07 },
     ] },
     // Chunky compressed-air darts: mid-bass body + sub-bass tube thump stays punchy on headphones and speakers.
     foamShot: { volume: 0.56, layers: [

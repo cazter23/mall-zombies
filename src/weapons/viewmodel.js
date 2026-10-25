@@ -26,7 +26,8 @@
 
 import * as THREE from 'three';
 import { feel } from '../config/feel.js';
-import { placeLimb, makeBoxMesh } from '../player/body.js';
+import { makeBoxMesh, buildDeformedBoxGeometry } from '../player/body.js';
+import { buildCuffedArmSegment } from './models/arms.js';
 import { createSpring, createSpring3 } from '../core/spring.js';
 import { samplePose } from '../core/keyframes.js';
 import { buildWeaponModel } from './models/index.js';
@@ -37,35 +38,66 @@ import { tierOf, attachmentsOf } from './upgrades.js';
 const DEG_TO_RAD = Math.PI / 180;
 const clamp = (v, max) => Math.max(-max, Math.min(max, v));
 
-/** Left forearm + hand holding a little yellow box cutter, pointing -Z. Hidden until a melee swing. */
+const meleeFistGeo = buildDeformedBoxGeometry(2, 2, 2, (x, y, z) => {
+  let nx = x;
+  let ny = y;
+  if (Math.abs(x) > 0.25 && Math.abs(y) > 0.25) {
+    nx *= 0.86;
+    ny *= 0.88;
+  }
+  return [nx, ny, z];
+});
+
+const meleeBladeGeo = buildDeformedBoxGeometry(1, 1, 2, (x, y, z) => {
+  // Trapezoid snap-off utility blade: angled cutting tip at -Z
+  let ny = y;
+  if (z < -0.1 && y > 0) {
+    const t = (-0.1 - z) / 0.4;
+    ny = y * (1 - 0.82 * t) - 0.35 * t;
+  }
+  return [x, ny, z];
+});
+
+/** Left forearm + faceted hand holding a yellow snap-off box cutter, pointing -Z. Hidden until a melee swing. */
 function buildMeleeArm(meleeColors) {
   const c = feel.body.colors;
   const arm = new THREE.Group();
   const V = (x, y, z) => new THREE.Vector3(x, y, z);
   const add = (mesh) => (arm.add(mesh), mesh);
 
-  // Forearm runs back and down-left from the hand, out the bottom-left of the screen.
-  const hand = add(makeBoxMesh(c.skin));
-  hand.scale.set(0.06, 0.06, 0.08);
-  const forearm = add(makeBoxMesh(c.skin));
-  placeLimb(forearm, V(0, -0.01, 0.03), V(-0.07, -0.24, 0.22), 0.056, 0.052);
-  const sleeve = add(makeBoxMesh(c.shirt));
-  placeLimb(sleeve, V(-0.07, -0.24, 0.22), V(-0.1, -0.36, 0.3), 0.09, 0.09);
+  // Faceted fist + curled fingers + thumb bracing the cutter spine
+  const skinMat = new THREE.MeshStandardMaterial({ color: c.skin, roughness: 0.76, flatShading: true });
+  const shadeMat = new THREE.MeshStandardMaterial({ color: c.skinShade ?? c.skin, roughness: 0.78, flatShading: true });
+  const hand = add(new THREE.Mesh(meleeFistGeo, skinMat));
+  hand.scale.set(0.058, 0.058, 0.078);
+  const knuckles = add(new THREE.Mesh(meleeFistGeo, shadeMat));
+  knuckles.scale.set(0.024, 0.054, 0.068);
+  knuckles.position.set(0.026, -0.002, -0.006);
+  const thumb = add(new THREE.Mesh(meleeFistGeo, skinMat));
+  thumb.scale.set(0.02, 0.022, 0.052);
+  thumb.position.set(0.008, 0.028, -0.015);
+  thumb.rotation.x = 0.45;
 
-  // Box cutter angled up and forward out of the fist (pointing straight ahead it would be
-  // seen end-on and vanish): yellow body, dark slider, silver blade.
+  // Tapered forearm + cuffed red polo sleeve running back and down-left out of the screen.
+  buildCuffedArmSegment(arm, V(0, -0.01, 0.03), V(-0.07, -0.24, 0.22), V(-0.1, -0.36, 0.3), 0.056, 0.052);
+
+  // Box cutter angled up and forward out of the fist: faceted yellow handle, dark guide channel & slider, trapezoid blade.
   const cutter = new THREE.Group();
   cutter.rotation.x = 1.0;
   arm.add(cutter);
-  const part = (color, sx, sy, sz, y, z) => {
-    const mesh = makeBoxMesh(color);
+  const part = (color, sx, sy, sz, x, y, z, geo = null, metalness = 0.15, roughness = 0.55) => {
+    const mesh = geo
+      ? new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color, roughness, metalness, flatShading: true }))
+      : makeBoxMesh(color);
     mesh.scale.set(sx, sy, sz);
-    mesh.position.set(0, y, z);
+    mesh.position.set(x, y, z);
     cutter.add(mesh);
+    return mesh;
   };
-  part(meleeColors.handle, 0.034, 0.03, 0.13, 0.012, -0.07);
-  part(meleeColors.grip, 0.014, 0.01, 0.035, 0.031, -0.05);
-  part(meleeColors.blade, 0.006, 0.03, 0.06, 0.008, -0.165);
+  part(meleeColors.handle, 0.034, 0.032, 0.132, 0, 0.012, -0.07, meleeFistGeo, 0.1, 0.42);
+  part(meleeColors.grip, 0.036, 0.01, 0.095, 0, -0.002, -0.068, null, 0.1, 0.8); // lower rubber grip insert
+  part(meleeColors.grip, 0.014, 0.01, 0.035, 0, 0.031, -0.05, null, 0.2, 0.7); // thumb slider
+  part(meleeColors.blade, 0.005, 0.03, 0.062, 0, 0.008, -0.165, meleeBladeGeo, 0.78, 0.25);
 
   arm.visible = false;
   return arm;
@@ -347,8 +379,9 @@ export function createViewmodel(weaponDefs, meleeDef) {
         holder.rotation.z -= rollAngle;
       }
 
-      // The gun's own moving parts (trigger, hands during the reload).
-      model.animate({ sinceFire, reloadProgress: reloadShown, reloadWeight: rw });
+      // The gun's own moving parts (trigger, hands during the reload, charge state).
+      const chargeProgress = weapon.def.id === active.def.id ? (weapon.chargeProgress ?? 0) : 0;
+      model.animate({ sinceFire, reloadProgress: reloadShown, reloadWeight: rw, chargeProgress });
 
       // Melee: drop the gun aside, swap the left hand for the box cutter arm and slash.
       const mel = vm.melee;

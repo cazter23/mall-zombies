@@ -10,6 +10,7 @@
 //   label        'Security Shutter'
 //   verb         'open' (shown in the prompt)
 //   cost         points (number)
+//   title/detail optional shelf-ticket heading and explanation (strings or getters); label remains the purchase-event text
 //   position     THREE.Vector3 the player interacts with (distance + facing are measured to it)
 //   seeThrough   optional [Box3]: solids that don't block the line of sight to it (a door's own shutter)
 //   available()  false once it can't be used any more (an opened door)
@@ -112,15 +113,19 @@ export function createInteractions({ input, player, wallet, sound = null, onRelo
       return item;
     },
 
-    // What the HUD shows: null, or { label, verb, cost, canAfford, progress 0..1, denied }.
+    // HUD ticket: null, or label/title/detail, kind/id, live cost/shortfall, canAfford, progress 0..1, denied.
     get prompt() {
       // Buying or switching guns can invalidate focus after this tick's interaction update.
       // Recheck before reading dynamic prices (the final tier has no next price).
       if (!focused || !focused.available()) return null;
       return {
         label: focused.label,
+        title: focused.title ?? focused.label,
         verb: focused.verb,
         kind: focused.kind ?? 'other', // 'door' | 'weapon' | ... (a pricing category when it is one)
+        id: focused.id ?? null,
+        detail: focused.detail ?? '',
+        shortfall: Math.max(0, focused.cost - wallet.points),
         cost: focused.cost,
         canAfford: wallet.canAfford(focused.cost),
         progress: armed ? Math.min(1, holdTime / cfg.holdSeconds) : 0,

@@ -30,7 +30,7 @@ export function createSettingsMenu(settings) {
   const resets = el('div', 'settings-resets');
   resets.append(resetButton, resetAllButton);
   footer.append(resets, backButton);
-  card.append(title, tabBar, list, resolution, footer, hint);
+  card.append(el('div', 'form-number', 'SG / FACILITIES · AUTHORIZED ADJUSTMENTS'), title, tabBar, list, resolution, footer, hint);
   root.append(card);
   document.body.append(root);
 

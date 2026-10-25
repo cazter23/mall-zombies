@@ -29,7 +29,7 @@ function setup() {
   const colliders = [];
   const map = buildMall(new THREE.Scene(), colliders);
   const shopper = zombieTypes.shopper;
-  const nav = createNavigation(colliders, { radius: shopper.radius, height: shopper.height });
+  const nav = createNavigation(colliders, { radius: shopper.radius, height: shopper.height }, map.navigation);
   // Paths are measured from the start room (where the player begins), so every route has to go
   // through the doors.
   const player = new THREE.Vector3(0, 0, 12);
@@ -227,7 +227,7 @@ test('every spawn point and the player spawn stand on open floor, not inside any
   const body = { radius: zombieTypes.shopper.radius, height: zombieTypes.shopper.height };
   for (const s of map.spawnPoints) {
     assert.ok(map.zones[s.zone], `${s.name} has a real zone`);
-    assert.ok(nav.isWalkableAt(s.position.x, s.position.z), `${s.name} is on walkable floor`);
+    assert.ok(nav.isWalkableAt(s.position.x, s.position.z, s.position.y), `${s.name} is on walkable floor`);
     assert.equal(overlapsSolid(s.position, body.radius, body.height, colliders, feel.movement.stepTolerance), false, `${s.name} is clear`);
   }
   assert.equal(overlapsSolid(map.playerSpawn.position, feel.player.radius, feel.player.height, colliders, feel.movement.stepTolerance), false);
@@ -396,7 +396,8 @@ test('the ceiling is open only above the escalator; the elevator wall stays soli
   for (const v of LAYOUT.level2.voids) assert.equal(containsPoint(colliders, (v.minX + v.maxX) / 2, y, (v.minZ + v.maxZ) / 2), false, 'balcony void open');
   // Level 2 above it is closed in: walls on all four sides and a roof (levelTwo.test.js has the rest).
   const upper = H.height + 0.3 + 1.8;
-  for (const [x, z] of [[0, H.maxZ + 0.15], [0, H.minZ - 0.15], [H.minX - 0.15, 2], [H.maxX + 0.15, 2]]) {
+  const U = LAYOUT.level2.rect;
+  for (const [x, z] of [[0, U.maxZ + 0.15], [0, U.minZ - 0.15], [U.minX - 0.15, 2], [U.maxX + 0.15, 2]]) {
     assert.ok(containsPoint(colliders, x, upper, z), `level 2 wall at (${x}, ${z})`);
   }
   assert.ok(containsPoint(colliders, 0, H.height + 0.3 + LAYOUT.level2.height + 0.15, 2), 'level 2 roof');

@@ -31,7 +31,7 @@ export function createControlsMenu() {
   const footer = el('div', 'settings-footer');
   const backButton = el('button', 'play', 'Back');
   footer.append(el('span'), backButton);
-  card.append(el('h2', 'settings-title', 'Controls'), tabBar, viewBar, view);
+  card.append(el('div', 'form-number', 'EMPLOYEE HANDBOOK · EQUIPMENT OPERATION'), el('h2', 'settings-title', 'Controls'), tabBar, viewBar, view);
 
   // Debug hints (only for the debug features that are switched on).
   // The debug keys are a table (config/debug.js) listed in the debug window (ui/debugPanel.js): just point at it.

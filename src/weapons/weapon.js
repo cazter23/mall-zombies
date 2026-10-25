@@ -8,6 +8,9 @@
 export class Weapon {
   constructor(def, stats) {
     this.burstRemaining = 0;
+    this.chargeTimer = 0; // seconds spent charging the current shot (fireMode: 'charge')
+    this.lastChargeRatio = 1; // 0..1 charge level of the most recently fired shot
+    this.justStartedCharging = false; // true on the tick a charge begins (triggers charge sound)
     this.reloadPhase = null; // shell-by-shell guns: 'start' (open up) -> 'shell' (one per cycle) -> 'end' (close up)
     this.reloadQueued = false; // a reload press during a burst waits for its last dart
     this.def = def; // entry from config/weapons.js
@@ -25,6 +28,16 @@ export class Weapon {
     return this.burstRemaining > 0;
   }
 
+  get isCharging() {
+    return this.chargeTimer > 0;
+  }
+
+  // 0..1 progress toward a full charge (0 when not charging).
+  get chargeProgress() {
+    if (!this.isCharging || !this.def.charge) return 0;
+    return Math.min(1, this.chargeTimer / this.def.charge.seconds);
+  }
+
   // The gun's stats changed (an upgrade was applied: gunStats.js resolveGun). Ammo carries over,
   // clipped to the new magazine / reserve maximums; anything mid-way (burst, reload) is dropped.
   setDef(def) {
@@ -38,6 +51,8 @@ export class Weapon {
   // Lowering the gun abandons both remaining darts and buffered input.
   cancelFire() {
     this.burstRemaining = 0;
+    this.chargeTimer = 0;
+    this.justStartedCharging = false;
     this.fireRequest = 0;
     this.reloadQueued = false;
   }
@@ -87,7 +102,7 @@ export class Weapon {
   }
 
   get canReload() {
-    return !this.isBursting && !this.isReloading && this.magazine < this.def.magazineSize && this.reserve > 0;
+    return !this.isBursting && !this.isCharging && !this.isReloading && this.magazine < this.def.magazineSize && this.reserve > 0;
   }
 
   startReload() {
@@ -95,6 +110,7 @@ export class Weapon {
       this.reloadQueued = true;
       return;
     }
+    this.chargeTimer = 0;
     this.reloadQueued = false;
     if (!this.canReload) return;
     if (this.isShellReload) {
@@ -171,6 +187,7 @@ export class Weapon {
     // was already ready stays at exactly zero, so waiting never banks up a faster next shot.
     this.cooldown = this.cooldown > 0 ? this.cooldown - dt : 0;
     this.fireRequest = Math.max(0, this.fireRequest - dt);
+    this.justStartedCharging = false;
 
     if (this.isReloading && !reloadPaused) {
       // (`reloadPaused`: hands busy for a moment, e.g. vaulting: the reload waits, then carries on.)
@@ -187,7 +204,26 @@ export class Weapon {
     }
 
     if (reloadPressed || (this.reloadQueued && !this.isBursting)) this.startReload();
-    if (this.def.fireMode === 'auto') {
+
+    if (this.def.fireMode === 'charge') {
+      if (this.isCharging) {
+        if (this.isReloading) {
+          this.chargeTimer = 0;
+          return null;
+        }
+        if (triggerHeld) {
+          this.chargeTimer += dt;
+          if (this.chargeTimer >= this.def.charge.seconds) {
+            return this.fireChargedShot(1);
+          }
+          return null;
+        }
+        return this.fireChargedShot(this.chargeProgress);
+      }
+      const wantsCharge = triggerPressed || (triggerHeld && this.magazine > 0);
+      this.fireRequest = wantsCharge ? this.def.fireBuffer : 0;
+      if (triggerHeld && !triggerPressed && this.magazine === 0) this.startReload();
+    } else if (this.def.fireMode === 'auto') {
       // Full auto: fires whenever the cooldown allows while the trigger is held (a fresh press
       // counts too). An empty gun only dry-clicks on a fresh press, not every tick.
       const wantsShot = triggerPressed || (triggerHeld && this.magazine > 0);
@@ -217,6 +253,16 @@ export class Weapon {
       return 'empty';
     }
 
+    if (this.def.fireMode === 'charge') {
+      if (!triggerHeld) return this.fireChargedShot(0);
+      this.chargeTimer = dt;
+      this.justStartedCharging = true;
+      if (this.chargeTimer >= this.def.charge.seconds) {
+        return this.fireChargedShot(1);
+      }
+      return null;
+    }
+
     if (this.def.fireMode === 'burst') {
       this.burstRemaining = this.def.burst.count;
       return this.fireBurstDart();
@@ -224,6 +270,14 @@ export class Weapon {
 
     this.magazine -= 1;
     this.cooldown += this.def.fireInterval; // carries the leftover (cooldown is <= 0 here)
+    return 'fire';
+  }
+
+  fireChargedShot(ratio) {
+    this.lastChargeRatio = Math.max(0, Math.min(1, ratio));
+    this.chargeTimer = 0;
+    this.magazine -= 1;
+    this.cooldown = Math.min(0, this.cooldown) + this.def.fireInterval;
     return 'fire';
   }
 

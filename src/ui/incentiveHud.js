@@ -15,7 +15,10 @@ export function createIncentiveHud() {
   drop.className = 'incentive-drop';
   const zone = document.createElement('div');
   zone.className = 'incentive-zone';
-  element.append(label, progress, drop, zone);
+  const heading = document.createElement('div');
+  heading.className = 'incentive-heading';
+  heading.textContent = 'Employee rewards';
+  element.append(heading, label, progress, drop, zone);
   let lastKey = '';
   return {
     element,

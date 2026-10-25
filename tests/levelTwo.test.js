@@ -32,7 +32,7 @@ const contains = (colliders, x, y, z) => colliders.some((b) => x > b.min.x && x 
 
 test('level 2 is closed in: four walls, a roof, and a floor you can stand on', () => {
   const { g } = fixture({ repaired: true });
-  const walls = [[0, H.maxZ + 0.15], [0, H.minZ - 0.15], [H.minX - 0.15, 2], [H.maxX + 0.15, 2]];
+  const walls = [[0, L2.rect.maxZ + 0.15], [0, L2.rect.minZ - 0.15], [L2.rect.minX - 0.15, 2], [L2.rect.maxX + 0.15, 2]];
   for (const [x, z] of walls) for (const y of [UPPER_Y + 0.5, UPPER_Y + 3]) assert.ok(contains(g.colliders, x, y, z), `wall at (${x}, ${y.toFixed(1)}, ${z})`);
   assert.ok(contains(g.colliders, 0, UPPER_Y + L2.height + 0.15, 2), 'roof');
   assert.ok(contains(g.colliders, 0, UPPER_Y - 0.1, 2), 'the slab is the floor');

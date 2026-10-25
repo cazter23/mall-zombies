@@ -21,11 +21,11 @@ const playStyle = (d) => ({ ads: !d.pellets });
 console.log('\nGUN OVERVIEW (dps measured at 5 m; ADS except pellet guns)');
 console.table(guns.map((d) => ({
   gun: d.name,
-  price: economy.wallBuys[d.id]?.weapon ?? 'start',
+  price: d.debugOnly ? 'debug only' : economy.wallBuys[d.id]?.weapon ?? 'start',
   'ammo price': economy.wallBuys[d.id]?.ammo ?? '-',
   'max per shot': d.damage * (d.pellets?.count ?? 1),
   'shots/s': r1(1 / (cycleSeconds(d) / (d.burst?.count ?? 1))),
-  'per pull': d.burst ? `${d.burst.count} shots` : '1 shot',
+  'per pull': d.burst ? `${d.burst.count} shots` : d.charge ? `charge (${d.charge.seconds}s)` : '1 shot',
   mag: d.magazineSize,
   reserve: d.startingReserve,
   'mag s': r1(magazineSeconds(d)),

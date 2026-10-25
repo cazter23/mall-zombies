@@ -17,11 +17,17 @@
 import { buildStapleGunModel, buildStapleGunDisplay } from './stapleGun.js';
 import { buildPriceGunModel, buildPriceGunDisplay } from './priceGun.js';
 import { buildNailGunModel, buildNailGunDisplay } from './nailGun.js';
+import { buildRivetRifleModel, buildRivetRifleDisplay } from './rivetRifle.js';
+import { buildCoilNailerModel, buildCoilNailerDisplay } from './coilNailer.js';
+import { buildBarcodeScannerModel, buildBarcodeScannerDisplay } from './barcodeScanner.js';
 
 import { buildFoamDartBlasterModel, buildFoamDartBlasterDisplay } from './foamDartBlaster.js';
 import { buildConfettiCannonModel, buildConfettiCannonDisplay } from './confettiCannon.js';
 
 const builders = {
+  rivetRifle: { model: buildRivetRifleModel, display: buildRivetRifleDisplay },
+  coilNailer: { model: buildCoilNailerModel, display: buildCoilNailerDisplay },
+  barcodeScanner: { model: buildBarcodeScannerModel, display: buildBarcodeScannerDisplay },
   foamDartBlaster: { model: buildFoamDartBlasterModel, display: buildFoamDartBlasterDisplay },
   confettiCannon: { model: buildConfettiCannonModel, display: buildConfettiCannonDisplay },
   stapleGun: { model: buildStapleGunModel, display: buildStapleGunDisplay },
