@@ -200,13 +200,13 @@ test('Barcode Scanner model ramps LED charge bars and emitter glow with chargePr
   assert.equal(heldBattery.visible, false);
 });
 
-test('both new guns remain off the map and wall-buy list while supporting debug giveGun, upgrades, and roles across tiers', () => {
+test('both guns are wall buys (tests/lateWallGuns.test.js buys them) while still supporting debug giveGun, upgrades, and roles across tiers', () => {
   const t = headlessGame();
   const { g } = t;
   for (const gun of [coilNailer, barcodeScanner]) {
-    assert.equal(gun.debugOnly, true);
-    assert.equal(economy.wallBuys[gun.id], undefined);
-    assert.ok(g.map.features.every((f) => f.weapon !== gun.id));
+    assert.equal(gun.debugOnly, undefined);
+    assert.ok(economy.wallBuys[gun.id].weapon > 0 && economy.wallBuys[gun.id].ammo > 0);
+    assert.equal(g.map.features.filter((f) => f.weapon === gun.id).length, 1);
   }
   for (const tier of upgrades.tiers) {
     const at = (base) => resolveGun(base, withTier(base, [], tier.id));

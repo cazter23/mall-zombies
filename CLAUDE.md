@@ -186,7 +186,7 @@ src/
     weapons.js          stapleGun (start pistol, semi), priceGun (wall buy, full auto), nailGun (wall buy, semi,
                         piercing: `pierce: { maxTargets, damageFalloff }`), foamDartBlaster (Mega Mart, burst),
                         confettiCannon (Service Corridor, 12 pellets, pellets pierce 2 zombies, six-shell tube, shell-by-shell
-                        `shellReload`), rivetRifle (debug-only automatic prototype, no wall buy or price).
+                        `shellReload`), rivetRifle (Grand Atrium wall buy 1500), coilNailer (Sunset Promenade wall buy 1250), barcodeScanner (Byte Me wall buy 1750; `fireMode: 'charge'`).
                         Optional `falloff: { start, end, minMultiplier }` on ANY gun (distance damage; every gun except
                         the Nail Gun has one). Each gun's ROLE is written above its entry. Per-weapon stats (fireMode
                         'semi' | 'auto' | 'burst', damage, headshot mult, mag, reserve (= max for ammo buys), fire interval, reload, spread
@@ -785,7 +785,9 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
   Food Court stores made a far, awkward detour.
 - Wall-buy spots: start room east wall (5, 1.5, 10) = Price Gun; hallway south wall (11, 1.5, -2) = Nail Gun;
   Mega Mart north wall (31.5, 1.5, 6) = Foam Dart Blaster, Service Corridor west wall near the dead end
-  (-23.28, 1.5, -12.2) = Confetti Cannon.
+  (-23.28, 1.5, -12.2) = Confetti Cannon; Grand Atrium west arcade wall (8.02, 1.5, 21.5) = Rivet Rifle; Sunset Promenade
+  south wall (1.5, 7.8, -4.48) = Heavy Coil Nailer (zone 'upstairs'; the Promenade is still growing: one entry to move);
+  Byte Me's pod, east face looking over the Food Court's east end (16.72, 1.5, -6.2) = Barcode Scanner.
 - Lighting: room lamps (point lights) hang at ~60% of the ceiling height with intensity scaled to match, NOT just under
   the ceiling: a lamp 0.8m under it lit a small hard-edged bright disc on the ceiling ("big circles"); hung lower it's a soft
   glow. Keep that if you move or add lamps (mall.js, the `lamp()` calls).
@@ -958,8 +960,16 @@ Room/portal culling was planned for 1d but frustum culling of the 12m batch chun
 Also merged: world/neon.js (neon tube builder) and world/decor.js + world/scatter.js (decoration kit), not placed yet.
 
 
-Rivet Rifle prototype: debug-only (H cycles through the existing guns, then the rifle); no wall buy, map placement or
-economy price. Automatic 52 damage at 7.5 shots/s, 1.75x headshots, 24 + 144 ammo, 2s magazine reload. Full damage to
+LATE WALL GUNS: the Rivet Rifle, Heavy Coil Nailer and Barcode Scanner are now real wall buys (economy.wallBuys, 'debugOnly' gone;
+H still cycles them). Prices from `npm run balance`: Rivet 1500 / ammo 750 (best sustained non-shotgun dps at 2-10 m, 246: priced with
+the Cannon), Coil Nailer 1250 / 650 (Price Gun dps, 231, but a 64-nail drum and a 2-zombie pierce), Scanner 1750 / 900 (weak sustained
+dps, 180, but pierces 4 in a line, ~3x: the top crowd gun). Spots (mall.js wallBuys, each probed against the built geometry: nothing within
+a metre, 3 m+ from every spawn on its floor): see Map > Wall-buy spots. Buying follows the existing two-slot rule. The old assertions
+that these guns stay off the map now check they are on it once. tests/lateWallGuns.test.js: priced + zoned + one feature each, real F
+holds buy for the exact price and refill for the ammo price (also from level 2), nothing offered while the area is closed or from inside
+Byte Me through its wall, spots clear of spawns, all three bought in a row replace the gun in hand, Play again takes them away.
+
+Rivet Rifle (a wall buy now, see above; was a debug-only prototype): the notes below still describe its stats. Automatic 52 damage at 7.5 shots/s, 1.75x headshots, 24 + 144 ammo, 2s magazine reload. Full damage to
 12m, falling to 60% at 28m. Steady body fire with slower ADS (0.26s) and 0.78x normal ADS movement, smaller magazine
 and weaker headshots than Foam; Nail retains the long-range advantage. Own model, recoil, audio, impact marks and
 controller pulse; supports existing tiers/attachments and cache refills. H marks the run assisted. tests/rivetRifle.test.js

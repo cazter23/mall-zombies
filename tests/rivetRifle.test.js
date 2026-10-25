@@ -122,12 +122,12 @@ test('rifle has a shared display, working bolt/trigger, magazine exchange, attac
   for (const mount of ['barrel', 'top', 'side', 'grip', 'magazine', 'sticker']) assert.ok(model.mounts[mount]);
 });
 
-test('prototype remains off the map and price list; debug cycle grants it, upgrades it and refills it at the existing cache', () => {
+test('a wall buy in the Grand Atrium (tests/lateWallGuns.test.js buys it); the debug cycle still grants it, upgrades it and refills it at the existing cache', () => {
   const t = headlessGame();
   const { g } = t;
-  assert.equal(rifle.debugOnly, true);
-  assert.equal(economy.wallBuys.rivetRifle, undefined);
-  assert.ok(g.map.features.every((f) => f.weapon !== rifle.id));
+  assert.equal(rifle.debugOnly, undefined);
+  assert.deepEqual(economy.wallBuys.rivetRifle, { weapon: 1500, ammo: 750 });
+  assert.equal(g.map.features.filter((f) => f.weapon === rifle.id).length, 1);
   assert.equal(g.gun.owns(rifle.id), false);
   for (let i = 0; i < Object.keys(weapons).length && !g.gun.owns(rifle.id); i++) { g.debug.run('giveGun'); t.tick(45); }
   assert.equal(g.gun.def.id, rifle.id);

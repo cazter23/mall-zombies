@@ -70,6 +70,10 @@ export const economy = {
     // Reserved for the guns planned for the Mega Mart and the Service Corridor (inert until those exist in config/weapons.js)
     foamDartBlaster: { weapon: 1200, ammo: 600 },
     confettiCannon: { weapon: 1500, ammo: 500 }, // (was 750: dearer than the 400 RESTOCK-O-MATIC refill)
+    // The three late guns (priced from `npm run balance`): ammo about half the gun, like the others.
+    rivetRifle: { weapon: 1500, ammo: 750 }, // best sustained non-shotgun dps at 2-10 m (246): priced with the Cannon (Grand Atrium)
+    coilNailer: { weapon: 1250, ammo: 650 }, // Price Gun dps (231) but a 64-nail drum and a 2-zombie pierce (Sunset Promenade)
+    barcodeScanner: { weapon: 1750, ammo: 900 }, // weak sustained dps (180) but pierces 4 in a line, ~3x (Byte Me Electronics)
   },
 
   // Discounted prices (Flash Sales, game/pricing.js) are rounded to the nearest multiple of this.

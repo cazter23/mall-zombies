@@ -574,11 +574,11 @@ export const weapons = {
     },
   },
 
-  // PROTOTYPE: debug H only; no wall buy or purchase price yet.
+  // WALL BUY: Grand Atrium (economy.wallBuys). Debug H still cycles it.
   // ROLE: steady medium-range body damage, paid for with slower ADS/strafe, a smaller
   // magazine and weaker headshots than Foam. No penetration; Nail wins long hallways.
   rivetRifle: {
-    id: 'rivetRifle', name: 'Rivet Rifle', debugOnly: true, fireMode: 'auto',
+    id: 'rivetRifle', name: 'Rivet Rifle', fireMode: 'auto',
     damage: 52, headshotMultiplier: 1.75,
     magazineSize: 24, startingReserve: 144,
     fireInterval: 1 / 7.5, fireBuffer: 0.1, reloadTime: 2, range: 100,
@@ -638,11 +638,11 @@ export const weapons = {
     },
   },
 
-  // PROTOTYPE: debug H only; no wall buy or purchase price yet.
+  // WALL BUY: Sunset Promenade (economy.wallBuys).
   // ROLE: heavy industrial LMG. Huge 64-nail wire-collated drum and 2-target pierce chew through
   // corridor hordes for over 6 seconds straight, paid for with heavy ADS handling and a long 3.1s drum swap.
   coilNailer: {
-    id: 'coilNailer', name: 'Heavy Coil Nailer', debugOnly: true, fireMode: 'auto',
+    id: 'coilNailer', name: 'Heavy Coil Nailer', fireMode: 'auto',
     damage: 34, headshotMultiplier: 2.2,
     pierce: { maxTargets: 2, damageFalloff: [1, 0.5] },
     magazineSize: 64, startingReserve: 256,
@@ -708,11 +708,11 @@ export const weapons = {
     },
   },
 
-  // PROTOTYPE: debug H only; no wall buy or purchase price yet.
+  // WALL BUY: Byte Me Electronics, east face of its pod (economy.wallBuys).
   // ROLE: charge-and-release precision laser railgun. Tap for a quick 1-target laser snap, or hold 0.42s
   // to charge the capacitor bank for a full-power 4-target piercing checkout beam with 3x headshots.
   barcodeScanner: {
-    id: 'barcodeScanner', name: 'Barcode Scanner', debugOnly: true, fireMode: 'charge',
+    id: 'barcodeScanner', name: 'Barcode Scanner', fireMode: 'charge',
     charge: { seconds: 0.42, minDamageMultiplier: 0.35, minTargets: 1, sound: 'scannerCharge' },
     damage: 160, headshotMultiplier: 3,
     pierce: { maxTargets: 4, damageFalloff: [1, 0.85, 0.7, 0.55] },

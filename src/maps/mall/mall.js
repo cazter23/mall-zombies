@@ -731,6 +731,19 @@ export function buildMall(scene, colliders) {
       const p = service.pointAt(1, 14.2, 'left', 0.02);
       return { name: 'wallbuy_serviceCorridor', zone: 'serviceCorridor', weapon: 'confettiCannon', position: new THREE.Vector3(p.x, 1.5, p.z), normal: new THREE.Vector3(p.normal.x, 0, p.normal.z) };
     })(),
+    // The three late guns, one in each upper / far area. Each spot was checked against the built geometry (nothing within
+    // a metre of it) and sits well away from every vent.
+    // Grand Atrium: the west arcade wall, between the "SECOND SKIN" and "COMING SOON" shopfronts, 5.5m from the west vent.
+    { name: 'wallbuy_atrium', zone: 'atrium', weapon: 'rivetRifle', position: new THREE.Vector3(LAYOUT.atrium.rect.minX + 0.02, 1.5, 21.5), normal: new THREE.Vector3(1, 0, 0) },
+    // Sunset Promenade (level 2): the south wall under the SUNSET GALLERIA banner. The Promenade is still growing, so this
+    // is one entry to move (LAYOUT.level2 has the walls).
+    { name: 'wallbuy_promenade', zone: 'upstairs', weapon: 'coilNailer', position: new THREE.Vector3(1.5, upperY + 1.5, LAYOUT.level2.rect.minZ + 0.02), normal: new THREE.Vector3(0, 0, 1) },
+    // Byte Me Electronics: the pod's east face, looking out over the Food Court's east end (the shop sells the sights; the
+    // scanner hangs outside). z is south of the east planters so there is open floor to stand on.
+    (() => {
+      const byteMe = LAYOUT.stores.find((s) => s.id === 'byteMe');
+      return { name: 'wallbuy_byteMe', zone: 'foodCourt', weapon: 'barcodeScanner', position: new THREE.Vector3(byteMe.to + T + 0.02, 1.5, -6.2), normal: new THREE.Vector3(1, 0, 0) };
+    })(),
   ];
   kit.markers({ spawnPoints, wallBuys, visible: debug.showMarkers });
 
