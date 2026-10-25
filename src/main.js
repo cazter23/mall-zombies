@@ -123,7 +123,8 @@ function handleDebugKeys() {
 const lightPool = createLightPool({ scene, sources: collectPointLights(map.group, g.arena?.group) });
 // Zone lighting: the view eases to the colour grade of the area the camera is in (fx/zoneGrading.js, config/look.js grading).
 const zoneGrading = createZoneGrading({ zones: map.gradeZones, ...look.grading });
-const gradeAt = (frameTime) => zoneGrading.update(frameTime, camera.position, look.runtime.zoneGrading);
+// (map.horror.state: the horror layer's round darkness and power cuts, game/features/horror.js)
+const gradeAt = (frameTime) => zoneGrading.update(frameTime, camera.position, look.runtime.zoneGrading, map.horror?.state);
 const firstLaunch = !hasSavedSettings(); // (read before anything is saved)
 const settings = createSettings({ renderer, sound, hud, postProcessing, lightPool });
 // First launch: pick a Graphics preset that suits this computer from the title flyover's frame rate (game/autoGraphics.js).

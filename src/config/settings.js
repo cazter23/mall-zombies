@@ -213,6 +213,12 @@ export const settingDefs = [
     id: 'speedLines', tab: 'Comfort', label: 'Sprint speed lines', type: 'toggle', default: true,
     apply: (v) => { feel.sprintFx.speedLinesOpacity = v ? base.speedLines : 0; },
   },
+  {
+    // The horror layer (game/features/horror.js): lamps and neon die as the rounds climb, power cuts to emergency red.
+    // Its flicker stays under 3 flashes a second; Calm turns it off.
+    id: 'horrorLighting', tab: 'Comfort', label: 'Horror lighting (dying lights, power cuts)', type: 'toggle', default: true,
+    apply: (v) => { look.runtime.horror = v; },
+  },
 ];
 
 // First launch only (game/autoGraphics.js): measure the title flyover's frame rate for a few seconds, then pick the best
@@ -239,7 +245,7 @@ export const settingPresets = {
     { label: 'High', values: { renderScale: nativeRatio, visualEffects: 'high', ambientEffects: true, lampCount: 'all', neonGlow: true, clutter: 'full', zoneGrading: true } }, // native, capped at 2x for performance
   ],
   Comfort: [
-    { label: 'Calm', values: { headBob: 0, speedLines: false } }, // for motion sickness
-    { label: 'Standard', values: { headBob: 1, speedLines: true } },
+    { label: 'Calm', values: { headBob: 0, speedLines: false, horrorLighting: false } }, // for motion sickness (and no flicker)
+    { label: 'Standard', values: { headBob: 1, speedLines: true, horrorLighting: true } },
   ],
 };

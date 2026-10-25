@@ -659,10 +659,12 @@ export function buildMall(scene, colliders) {
   sun.position.set(6, 20, 8);
   group.add(sun);
 
+  const lamps = []; // (the horror layer lets some of these die: game/features/horror.js)
   const lamp = ({ color, intensity, distance }, x, y, z) => {
     const light = new THREE.PointLight(color, intensity, distance, 2);
     light.position.set(x, y, z);
     group.add(light);
+    lamps.push(light);
   };
   // Lamps hang well below the ceiling (about 60% of its height) and are dimmer to match: a lamp just
   // under the ceiling lights a small, hard-edged bright disc on it; hung lower it's a soft wide glow.
@@ -783,6 +785,24 @@ export function buildMall(scene, colliders) {
   buildLevelTwoLook({ looks, layout: LAYOUT, floorY: upperY, hole: escalator.hole, keepClear: hallwayClear.slice(0, -2) });
   buildAtriumLook({ looks, layout: LAYOUT, upperY, keepClear: hallwayClear.slice(0, -2) });
 
+  // The horror layer (game/features/horror.js, config/look.js horror): which lamps and neon it may kill, area by area
+  // (areas are zone lighting's grades, so a power cut darkens the same space its grade covers).
+  const horror = {
+    state: { exposure: 1, cut: null }, // read by zone lighting (main.js)
+    lamps,
+    neons: looks.parts.neonsByName,
+    areas: [
+      { id: 'hallway', grades: ['front'], neons: ['hallway'] },
+      { id: 'startRoom', grades: ['startRoom'], neons: ['startRoom'] },
+      { id: 'foodCourt', grades: ['foodCourt'], neons: ['foodCourt'] },
+      { id: 'megaMart', grades: ['megaMart', 'martBack'], neons: ['megaMart'] },
+      { id: 'serviceCorridor', grades: ['serviceCorridor'], neons: ['serviceCorridor'] },
+      { id: 'level2', grades: ['level2'], neons: ['level2'] },
+      { id: 'atrium', grades: ['atrium'], neons: ['atrium'] },
+    ],
+  };
+  features.push({ kind: 'horror', name: 'horror_director', zone: 'startRoom', position: playerSpawn.position.clone(), normal: new THREE.Vector3(0, 0, -1), seed: 1986 });
+
   return {
     id: 'mall',
     group,
@@ -791,6 +811,7 @@ export function buildMall(scene, colliders) {
     spawnPoints,
     features,
     playerSpawn,
+    horror,
     titleShots,
     benchmarkShots,
     // Zone lighting (fx/zoneGrading.js, grades in config/look.js): which grade where. First match wins, so small areas

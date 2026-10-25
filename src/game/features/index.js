@@ -16,12 +16,14 @@ import { buildWallBuy } from './wallBuy.js';
 import { buildAmmoCache } from './ammoCache.js';
 import { buildUpgradeDesk } from './upgradeDesk.js';
 import { buildAttachmentCounter } from './attachmentCounter.js';
+import { buildHorror } from './horror.js';
 
 const builders = {
   wallBuy: buildWallBuy, // buy a gun off the wall, or its ammo once you own it
   ammoCache: buildAmmoCache, // RESTOCK-O-MATIC: refill the gun in your hand
   upgradeDesk: buildUpgradeDesk, // Customer Service: the next Extended Warranty tier for the gun in your hand
   attachmentCounter: buildAttachmentCounter, // a store's attachment: fit it to the gun in your hand
+  horror: buildHorror, // the horror layer: lights die and the power cuts out as the rounds climb (visual only)
 };
 
 export const FEATURE_KINDS = Object.keys(builders);

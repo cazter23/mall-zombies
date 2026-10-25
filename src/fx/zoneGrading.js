@@ -6,7 +6,9 @@
 //   map.gradeZones  [{ grade, minX, maxX, minZ, maxZ, minY?, maxY? }]   first match wins (list small areas first);
 //                   outside every zone = grading.fallback
 //   const grading = createZoneGrading({ zones, grades, fallback, blendSeconds })
-//   grading.update(dt, position, enabled) -> the current grade (eased; NEUTRAL_GRADE while disabled)
+//   grading.update(dt, position, enabled, mood) -> the current grade (eased; NEUTRAL_GRADE while disabled)
+//     mood (the horror layer, map.horror.state): { exposure (x every grade), cut: { grades, level } (those areas blend
+//     towards the `powerCut` grade by level) }
 //   grading.snap(position)   jump straight to that spot's grade (no easing)
 // fx/postProcessing.js applies a grade: exposure through the tone mapping, tint / saturation / contrast in its grade pass.
 // =============================================================================
@@ -40,15 +42,31 @@ export function createZoneGrading({ zones = [], grades, fallback, blendSeconds =
     current.vignette = from.vignette;
     for (let i = 0; i < 3; i++) current.tint[i] = from.tint[i];
   };
-  const targetAt = (position) => gradeFor(gradeZoneAt(zones, position));
+  const targetAt = (position, mood) => {
+    const id = gradeZoneAt(zones, position) ?? fallback;
+    const target = gradeFor(id);
+    const cut = mood?.cut;
+    if (cut && cut.level > 0 && grades.powerCut && cut.grades.includes(id)) {
+      const red = gradeFor('powerCut');
+      const k = cut.level;
+      target.exposure += (red.exposure - target.exposure) * k;
+      target.saturation += (red.saturation - target.saturation) * k;
+      target.contrast += (red.contrast - target.contrast) * k;
+      target.vignette += (red.vignette - target.vignette) * k;
+      for (let i = 0; i < 3; i++) target.tint[i] += (red.tint[i] - target.tint[i]) * k;
+    }
+    target.exposure *= mood?.exposure ?? 1;
+    return target;
+  };
 
   return {
     get current() {
       return current;
     },
-    update(dt, position, enabled = true) {
-      const target = enabled ? targetAt(position) : NEUTRAL_GRADE;
-      const k = blendSeconds > 0 ? 1 - Math.exp(-Math.max(0, dt) / blendSeconds) : 1;
+    update(dt, position, enabled = true, mood = null) {
+      const target = enabled ? targetAt(position, mood) : NEUTRAL_GRADE;
+      const blend = mood?.cut?.level > 0 ? Math.min(blendSeconds, 0.08) : blendSeconds; // (a power cut is instant)
+      const k = blend > 0 ? 1 - Math.exp(-Math.max(0, dt) / blend) : 1;
       current.exposure += (target.exposure - current.exposure) * k;
       current.saturation += (target.saturation - current.saturation) * k;
       current.contrast += (target.contrast - current.contrast) * k;

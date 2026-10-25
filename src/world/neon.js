@@ -365,6 +365,8 @@ export function createNeon(kit, { seed = cfg.flicker.seed } = {}) {
   const halos = []; // every halo mesh (setQuality hides them)
   const flickers = []; // flickering parts: { style, level, on, timer, rand, litMat, haloMat, baseColor }
   const quality = { halo: true, flicker: true };
+  let power = 1; // the area's power (setPower: 0 = a power cut)
+  let failure = 0; // the share of flickering parts that have died for good (setFailures)
   let partCount = 0;
   let disposed = false;
 
@@ -373,6 +375,7 @@ export function createNeon(kit, { seed = cfg.flicker.seed } = {}) {
   function litMaterial(color) {
     const m = new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(cfg.glow.intensity) });
     m.userData.neon = 'lit';
+    m.userData.baseColor = m.color.clone(); // (setPower scales from it)
     return own(m, materials);
   }
   function haloMaterial(color) {
@@ -423,7 +426,8 @@ export function createNeon(kit, { seed = cfg.flicker.seed } = {}) {
     addMesh(parent, merged(glass), litMat, 'flicker');
     addMesh(parent, merged(haloPieces(strokes, radius)), haloMat, 'flickerHalo');
     const rand = seededRandom(((seed * 7919 + ++partCount * 104729) % 2147483646) + 1);
-    const part = { style, styleCfg, rand, litMat, haloMat, baseColor: litMat.color.clone(), on: style !== 'dying', timer: 0, level: 1 };
+    // failRank: where this part sits in the order parts die for good (setFailures), fixed when it's built
+    const part = { style, styleCfg, rand, litMat, haloMat, baseColor: litMat.color.clone(), on: style !== 'dying', timer: 0, level: 1, failRank: rand(), failed: false };
     part.timer = pick(rand, part.on ? styleCfg.on : styleCfg.off) * rand(); // random phase so parts don't sync
     applyLevel(part, part.on || !quality.flicker ? 1 : cfg.flicker.offLevel);
     flickers.push(part);
@@ -582,8 +586,26 @@ export function createNeon(kit, { seed = cfg.flicker.seed } = {}) {
 
   function applyLevel(part, level) {
     part.level = level;
-    part.litMat.color.copy(part.baseColor).multiplyScalar(level);
-    part.haloMat.opacity = cfg.halo.opacity * level;
+    const shown = part.failed ? 0 : level * power;
+    part.litMat.color.copy(part.baseColor).multiplyScalar(Math.max(shown, part.failed ? cfg.flicker.offLevel * 0.25 : 0));
+    part.haloMat.opacity = cfg.halo.opacity * shown;
+  }
+
+  /** The area's power, 0..1 (the horror layer's power cuts): scales every lit tube and halo, steady and flickering alike. */
+  function setPower(level) {
+    power = Math.min(1, Math.max(0, level));
+    for (const m of shared.lit.values()) m.color.copy(m.userData.baseColor).multiplyScalar(power);
+    for (const m of shared.halo.values()) m.opacity = cfg.halo.opacity * power;
+    for (const part of flickers) applyLevel(part, part.level);
+  }
+
+  /** Lets a share (0..1) of the flickering parts die for good, always the same ones first (slogans lose letters); 0 = all back. */
+  function setFailures(fraction) {
+    failure = Math.min(1, Math.max(0, fraction));
+    for (const part of flickers) {
+      part.failed = part.failRank < failure;
+      applyLevel(part, part.level);
+    }
   }
 
   /** Advances every flickering part by dt seconds (nothing happens while flicker is off). */
@@ -641,9 +663,11 @@ export function createNeon(kit, { seed = cfg.flicker.seed } = {}) {
   return {
     group: root,
     tube, text, shape, sign,
-    update, setQuality, stats, dispose,
+    update, setQuality, setPower, setFailures, stats, dispose,
+    get power() { return power; },
+    get failure() { return failure; },
     /** Read-only view of the flickering parts ({ style, level, on }), for tests and debugging. */
-    get flickers() { return flickers.map(({ style, level, on }) => ({ style, level, on })); },
+    get flickers() { return flickers.map(({ style, level, on, failed }) => ({ style, level, on, failed })); },
     get quality() { return { ...quality }; },
     /** Geometries / materials currently owned (counts), for tests. */
     get owned() { return { geometries: geometries.size, materials: materials.size }; },

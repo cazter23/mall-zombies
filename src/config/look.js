@@ -22,6 +22,22 @@ export const look = {
     clutter: 'full', // decoration density: 'none' | 'some' | 'full' (Graphics > Clutter)
     zoneGrading: true, // per-area colour grading (Graphics > Zone lighting)
     vhs: 'off', // the VHS tape look: 'off' | 'subtle' | 'full' (Graphics > VHS filter; a style choice, off by default)
+    horror: true, // the horror layer: lights dying, power cuts (Comfort > Horror lighting)
+  },
+
+  // THE HORROR LAYER (game/features/horror.js): the mall falls apart as the rounds climb. Visual only.
+  horror: {
+    fromRound: 5, // nothing before this round
+    darkness: { perRound: 0.025, max: 0.2 }, // the whole mall's exposure falls this much per round past fromRound
+    neonFailure: { perRound: 0.08, max: 0.6 }, // share of flickering neon (letters, tubes) that dies for good, per round
+    lampDeaths: { everyRounds: 2, maxShare: 0.4, flickerSeconds: 2.5 }, // one more lamp dies every N rounds (it flickers first)
+    powerCuts: {
+      fromRound: 6,
+      chance: 0.35, // per round
+      delay: [10, 40], // seconds into the round
+      seconds: [4, 6.5], // how long the area stays dark
+      stutterSeconds: 0.8, // the power stutters back on at the end
+    },
   },
 
   // THE VHS FILTER (fx/postProcessing.js VhsShader): a worn rental tape. Each number is at 'full'; 'subtle' scales them all.
@@ -50,6 +66,7 @@ export const look = {
       serviceCorridor: { exposure: 0.42, tint: [0.88, 1.05, 0.8], saturation: 0.6, contrast: 1.2, vignette: 0.3 }, // back of house: dark, sick green
       level2: { exposure: 1, tint: [1.05, 0.98, 0.92], saturation: 1.03, contrast: 1 }, // the Sunset Promenade
       atrium: { exposure: 1.03, tint: [1.05, 0.99, 0.92], saturation: 1.06, contrast: 1 }, // under the sunset skylight
+      powerCut: { exposure: 0.3, tint: [1.3, 0.5, 0.45], saturation: 0.55, contrast: 1.2, vignette: 0.35 }, // the horror layer: emergency red
     },
   },
 

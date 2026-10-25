@@ -12,7 +12,7 @@
 //   looks.pool(x, y, z, w, h, facing, color, opacity, { wash })   facing: 1 | -1 | 'x+' | 'x-' | 'floor'
 //   looks.poster(kind, options, x, y, z, w, h, facing)            world/posterTextures.js, facing as for signs
 //   looks.clutter({ name, area, kinds, seed, perSquareMeter, keepClear })
-//   looks.update(dt), looks.reset(), looks.parts
+//   looks.update(dt), looks.reset(), looks.parts (parts.neonsByName: each area's neon builder)
 // =============================================================================
 
 import * as THREE from 'three';
@@ -51,6 +51,7 @@ function makeWashTexture() {
 export function createLookKit({ kit, colliders }) {
   const { box, mat } = kit;
   const neons = [];
+  const neonsByName = {}; // area name -> its neon builder (the horror layer cuts an area's power)
   const clutters = [];
   const posters = [];
   const groups = new Map();
@@ -96,6 +97,7 @@ export function createLookKit({ kit, colliders }) {
   function neon(name) {
     const n = createNeon({ group: dynamicGroup(`look_neon_${name}`) });
     neons.push(n);
+    neonsByName[name] = n;
     return n;
   }
 
@@ -161,7 +163,7 @@ export function createLookKit({ kit, colliders }) {
 
   return {
     bands, neon, pool, poster, clutter,
-    parts: { neons, clutters, posters, pools: poolGroup },
+    parts: { neons, neonsByName, clutters, posters, pools: poolGroup },
     update(dt) {
       follow();
       for (const n of neons) n.update(dt);
