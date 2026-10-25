@@ -1,5 +1,5 @@
 // The three late guns are real wall buys: Rivet Rifle (Grand Atrium), Heavy Coil Nailer (Sunset Promenade, level 2) and
-// Barcode Scanner (Byte Me Electronics' east face). Real F holds in the real game: the exact price is charged, the gun goes
+// Barcode Scanner (HOFFMAN'S department store, east wall). Real F holds in the real game: the exact price is charged, the gun goes
 // in hand, a second hold refills it for the ammo price, nothing is offered while its area is closed or through a wall, and
 // each spot is clear of spawns. The balance pins for the guns themselves are in newGuns / rivetRifle / coilAndScanner tests.
 import test from 'node:test';
@@ -16,7 +16,7 @@ const UPPER_Y = LAYOUT.hallway.height + 0.3;
 const GUNS = [
   { id: 'rivetRifle', zone: 'atrium', floorY: 0, stand: [9.3, 21.5], yawDeg: 90 }, // west arcade wall, facing -X
   { id: 'coilNailer', zone: 'upstairs', floorY: UPPER_Y, stand: [1.5, -3.3], yawDeg: 0 }, // Promenade south wall, facing -Z (yaw 0)
-  { id: 'barcodeScanner', zone: 'foodCourt', floorY: 0, stand: [17.9, -6.2], yawDeg: 90 }, // Byte Me's east face, facing -X
+  { id: 'barcodeScanner', zone: 'departmentStore', floorY: 0, stand: [LAYOUT.departmentStore.rect.maxX - 1.3, LAYOUT.departmentStore.scannerZ], yawDeg: -90 }, // HOFFMAN'S east wall, facing +X
 ];
 
 function standing(t, gunCase, [x, z] = gunCase.stand) {
@@ -88,22 +88,30 @@ for (const c of GUNS) {
     assert.equal(g.gun.owns(c.id), false);
   });
 
-  test(`${c.id}: the spot is well clear of every spawn marker on its floor`, () => {
+  test(`${c.id}: the spot is well clear of every spawn marker on its floor (on its side of the wall)`, () => {
     const { g } = headlessGame();
     const wb = featuresOf(g.map, 'wallBuy').find((f) => f.weapon === c.id);
+    const eye = (p) => new THREE.Vector3(p.x, c.floorY + 1.9, p.z); // (over counters and clothes racks: only walls count)
     for (const s of g.map.spawnPoints) {
       if (Math.abs(s.position.y - c.floorY) > 1) continue;
+      // A spawn behind a wall (e.g. the start room's vent behind HOFFMAN'S east wall) is in another room: skip it.
+      const from = eye(wb.position).addScaledVector(wb.normal, 0.3);
+      const to = eye(s.position);
+      const ray = new THREE.Ray(from, to.clone().sub(from).normalize());
+      const length = from.distanceTo(to);
+      const hit = new THREE.Vector3();
+      if (g.colliders.some((b) => !b.ignoreShots && ray.intersectBox(b, hit) && from.distanceTo(hit) < length - 0.05)) continue;
       const d = Math.hypot(s.position.x - wb.position.x, s.position.z - wb.position.z);
       assert.ok(d >= 3, `${s.name} is ${d.toFixed(1)} m away`);
     }
   });
 }
 
-test('the Scanner cannot be bought from inside Byte Me, through the wall behind it', () => {
+test('the Scanner cannot be bought from the start room, through the wall behind it', () => {
   const t = readyGame();
   const { g } = t;
   openEverything(t);
-  standing(t, { ...GUNS[2], yawDeg: -90 }, [15.6, -6.2]); // inside the store, facing east at the same wall
+  standing(t, { ...GUNS[2], yawDeg: 90 }, [LAYOUT.startRoom.minX + 1.2, LAYOUT.departmentStore.scannerZ]); // in the start room, facing west at the same wall
   assert.notEqual(g.interactions.prompt?.id, 'barcodeScanner');
   t.press('KeyF', 30);
   assert.equal(g.gun.owns('barcodeScanner'), false);

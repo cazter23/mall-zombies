@@ -16,6 +16,8 @@ export const departmentStore = {
   // The side door: a shutter through the start room's west wall (z along it), in the lane between the start room's shelf
   // (ends z 11.5) and its checkout counter (starts z 13.6). The only second way out of the start room: priced like the gate.
   startRoomLink: { from: 11.6, to: 13.5, height: 2.5 },
+  // The Barcode Scanner's wall buy (price check, aisle 1): the east wall between the side door and the shoe wall.
+  scannerZ: 15.3,
 
   colors: {
     wall: 0xf1e4d0, // warm cream

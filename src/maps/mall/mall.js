@@ -767,12 +767,9 @@ export function buildMall(scene, colliders) {
     // Sunset Promenade (level 2): the south wall under the SUNSET GALLERIA banner. The Promenade is still growing, so this
     // is one entry to move (LAYOUT.level2 has the walls).
     { name: 'wallbuy_promenade', zone: 'upstairs', weapon: 'coilNailer', position: new THREE.Vector3(1.5, upperY + 1.5, LAYOUT.level2.rect.minZ + 0.02), normal: new THREE.Vector3(0, 0, 1) },
-    // Byte Me Electronics: the pod's east face, looking out over the Food Court's east end (the shop sells the sights; the
-    // scanner hangs outside). z is south of the east planters so there is open floor to stand on.
-    (() => {
-      const byteMe = LAYOUT.stores.find((s) => s.id === 'byteMe');
-      return { name: 'wallbuy_byteMe', zone: 'foodCourt', weapon: 'barcodeScanner', position: new THREE.Vector3(byteMe.to + T + 0.02, 1.5, -6.2), normal: new THREE.Vector3(1, 0, 0) };
-    })(),
+    // HOFFMAN'S: the east wall between its side door and the shoe wall (3 cm out: the store's paint panel is on that wall).
+    // (It hung on Byte Me's pod in the Food Court before the department store opened.)
+    { name: 'wallbuy_departmentStore', zone: 'departmentStore', weapon: 'barcodeScanner', position: new THREE.Vector3(DS.rect.maxX - 0.03, 1.5, DS.scannerZ), normal: new THREE.Vector3(-1, 0, 0) },
   ];
   kit.markers({ spawnPoints, wallBuys, visible: debug.showMarkers });
 

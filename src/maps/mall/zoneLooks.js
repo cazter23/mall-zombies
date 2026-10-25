@@ -409,7 +409,7 @@ export function buildDepartmentStoreLook({ looks, kit, layout, keepClear = [] })
   looks.bands({ along: 'x', from: r.minX, to: r.maxX, wallAt: r.minZ + 0.01, facing: 1, colors, gaps: [[gate.from, gate.to]], name: 'deptstore_wainscot' });
   looks.bands({ along: 'x', from: r.minX, to: r.maxX, wallAt: r.maxZ, facing: -1, colors, gaps: [[F.x0, F.x1 + 0.1], stockroom, [r.maxX - W.depth - 0.1, r.maxX]], name: 'deptstore_wainscot' });
   looks.bands({ along: 'z', from: r.minZ, to: r.maxZ, wallAt: r.minX, facing: 1, colors, gaps: [[DS.westVentZ - 0.8, DS.westVentZ + 0.8], [r.maxZ - F.depth - 0.1, r.maxZ]], name: 'deptstore_wainscot' });
-  looks.bands({ along: 'z', from: r.minZ, to: startRoomBack, wallAt: r.maxX - 0.01, facing: -1, colors, gaps: [[side.from, side.to]], name: 'deptstore_wainscot' });
+  looks.bands({ along: 'z', from: r.minZ, to: startRoomBack, wallAt: r.maxX - 0.01, facing: -1, colors, gaps: [[side.from, side.to], [DS.scannerZ - 0.9, DS.scannerZ + 0.9]], name: 'deptstore_wainscot' }); // (the side door; the Barcode Scanner)
   looks.bands({ along: 'z', from: startRoomBack, to: r.maxZ, wallAt: r.maxX, facing: -1, colors, gaps: [[W.z0 - 0.1, W.z1 + 0.1]], name: 'deptstore_wainscot' });
 
   // Neon: the logo on the back wall, store policy over the way out and over the shoes, a pink trim tube down the west wall.
