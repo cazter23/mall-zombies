@@ -66,11 +66,13 @@ test('no coplanar (flickering) surfaces inside the stores, the Customer Service 
   regions.push({ name: 'restock', minX: restock.x - 1.2, maxX: restock.x + 1.2, minZ: LAYOUT.foodCourt.maxZ - 2.4, maxZ: LAYOUT.foodCourt.maxZ + 0.1 });
   const at = LAYOUT.atrium.rect; // the Grand Atrium, its fountain, kiosks and both floors
   regions.push({ name: 'atrium', minX: at.minX - 0.4, maxX: at.maxX + 0.4, minZ: at.minZ - 0.7, maxZ: at.maxZ + 0.4 });
+  const ds = LAYOUT.departmentStore.rect; // HOFFMAN'S: its counters, racks, mannequins, fitting rooms, shoe wall and the gate
+  regions.push({ name: 'departmentStore', minX: ds.minX - 0.4, maxX: ds.maxX + 0.4, minZ: ds.minZ - 0.7, maxZ: ds.maxZ + 0.4, maxY: LAYOUT.hallway.height });
   const upper = LAYOUT.level2.rect;
   regions.push({ name: 'promenade', minX: upper.minX - .4, maxX: upper.maxX + .4, minZ: upper.minZ - .4,
     maxZ: Math.max(...LAYOUT.level2.sections.map(s => s.maxZ)) + .4, minY: LAYOUT.hallway.height + .3 });
   const inRegion = (m) => regions.some((r) => m.position.x > r.minX && m.position.x < r.maxX && m.position.z > r.minZ && m.position.z < r.maxZ
-    && (r.minY === undefined || m.position.y >= r.minY));
+    && (r.minY === undefined || m.position.y >= r.minY) && (r.maxY === undefined || m.position.y < r.maxY));
 
   const all = [];
   map.group.traverse((o) => { if (o.isMesh && o.geometry && !o.rotation.x && !o.rotation.z) all.push(...facesOf(o)); });

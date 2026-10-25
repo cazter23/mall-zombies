@@ -9,6 +9,7 @@ import { LAYOUT } from '../src/maps/mall/mall.js';
 import { economy } from '../src/config/economy.js';
 import { createRoomCulling } from '../src/fx/roomCulling.js';
 import { gradeZoneAt } from '../src/fx/zoneGrading.js';
+import { feel } from '../src/config/feel.js';
 
 const DS = LAYOUT.departmentStore;
 const r = DS.rect;
@@ -79,21 +80,23 @@ test('sealed until bought: no route in, nothing spawns inside; after: every spaw
     const body = new THREE.Box3(new THREE.Vector3(s.position.x - 0.4, 0.1, s.position.z - 0.4), new THREE.Vector3(s.position.x + 0.4, 1.8, s.position.z + 0.4));
     assert.ok(!g.colliders.some((b) => b.intersectsBox(body)), `${s.name} is not inside anything`);
   }
-  for (const [x, z] of [[r.minX + 1, r.minZ + 1], [r.maxX - 1, r.minZ + 1], [r.minX + 1, r.maxZ - 1], [r.maxX - 1, r.maxZ - 1]]) {
+  // (The north-west corner is the fitting rooms and the north-east one the shoe wall: their fronts instead)
+  for (const [x, z] of [[r.minX + 1, r.minZ + 1], [r.maxX - 1, r.minZ + 1], [r.minX + 1, r.maxZ - DS.fittingRooms.depth - 0.8], [r.maxX - 1.2, r.maxZ - 1]]) {
     assert.ok(Number.isFinite(nav.distanceToTarget(x, z, 0)), `corner (${x}, ${z}) reachable`);
   }
 });
 
-test('a player walks in through the gate and to the back wall; the walls hold', () => {
+test('a player walks in through the gate, up the west aisle to the fitting rooms; the walls hold', () => {
   const t = hallwayOpen();
   const { g } = t;
   door(g, 'departmentStore').open();
   t.tick(120);
-  g.player.teleport({ position: new THREE.Vector3(gateX, 0, 3.5), yaw: Math.PI }); // facing +Z (north)
+  g.player.teleport({ position: new THREE.Vector3(-18.8, 0, 3.5), yaw: Math.PI }); // facing +Z (north), in line with the west aisle
   t.tick(2);
   hold(t, ['KeyW'], 5);
   const p = g.player.position;
-  assert.ok(p.z > r.maxZ - 1.5 && p.z < r.maxZ, `reached the back wall (z ${p.z.toFixed(2)})`);
+  const fittingFront = r.maxZ - DS.fittingRooms.depth;
+  assert.ok(p.z > fittingFront - 1 && p.z < fittingFront, `reached the fitting rooms (z ${p.z.toFixed(2)})`);
   assert.ok(Math.abs(p.y) < 0.01, 'on the floor');
   // Into each wall: you stop at it
   for (const [yaw, check] of [[Math.PI / 2, () => g.player.position.x > r.minX], [-Math.PI / 2, () => g.player.position.x < r.maxX]]) {
@@ -160,4 +163,122 @@ test('wiring: a culling room seen only through its open gate, its own grade, a h
       assert.ok(b.max.y <= DS.height + 0.3 + 1e-6, `collider up to y ${b.max.y}`);
     }
   }
+});
+
+// --- Step 2: the fixtures ---------------------------------------------------------------------------------------------
+
+function storeOpen() {
+  const t = hallwayOpen();
+  door(t.g, 'departmentStore').open();
+  t.tick(120);
+  t.g.zombies.clear();
+  return t;
+}
+const inStore = (b) => b.min.x >= r.minX - 0.01 && b.max.x <= r.maxX + 0.01 && b.min.z >= r.minZ - 0.01 && b.max.z <= r.maxZ + 0.01;
+
+test('lanes: a lap round the room, between the racks and down both sides stays open floor with clear straight runs', () => {
+  const t = storeOpen();
+  const { g } = t;
+  g.player.teleport({ position: new THREE.Vector3(-12.6, 0, 7.5), yaw: 0 });
+  t.tick(30);
+  const nav = g.zombies.nav;
+  // The west aisle, the back (past the fitting rooms and the layaway counter), the east lane, the front (past the counters)
+  const lap = [[-18.6, 8], [-18.6, 13.5], [-18.6, 20.4], [-14.6, 20.4], [-9.5, 20.4], [-6.6, 20.4], [-6.6, 16.9], [-6.6, 12], [-6.6, 8], [-12.6, 8]];
+  for (let i = 0; i < lap.length; i++) {
+    const [x, z] = lap[i];
+    const [nx, nz] = lap[(i + 1) % lap.length];
+    assert.ok(nav.isWalkableAt(x, z, 0), `lap point (${x}, ${z})`);
+    assert.ok(nav.clearLine(x, z, nx, nz, 0), `straight run (${x}, ${z}) -> (${nx}, ${nz})`);
+  }
+  // Crossings between the racks (north-south and east-west)
+  for (const [[x, z], [nx, nz]] of [[[-14.6, 13], [-14.6, 20.4]], [[-10.6, 13], [-10.6, 20.4]], [[-18.6, 16.9], [-6.6, 16.9]]]) {
+    assert.ok(nav.clearLine(x, z, nx, nz, 0), `crossing (${x}, ${z}) -> (${nx}, ${nz})`);
+  }
+  // Behind the layaway counter, in front of the stockroom door, is reachable
+  assert.ok(Number.isFinite(nav.distanceToTarget(-11.9, 24, 0)));
+});
+
+test('the cosmetics, fragrance and layaway counters are real vaults from both sides', () => {
+  const t = storeOpen();
+  const { g } = t;
+  for (const c of [...DS.counters, DS.layaway]) {
+    const x = (c.x0 + c.x1) / 2;
+    for (const dir of [1, -1]) {
+      t.standAt(x, c.z - dir * 1.3, dir > 0 ? 180 : 0);
+      g.player.velocity.set(0, 0, dir * 5);
+      assert.equal(g.player.vault.tryStart(), true, `vault the counter at z ${c.z} going ${dir > 0 ? 'north' : 'south'} (${g.player.vault.lastResult})`);
+      let ticks = 0;
+      while (g.player.vault.active && ticks++ < 90) t.tick();
+      assert.ok(ticks < 90 && dir * (g.player.position.z - c.z) > 0.4, 'landed on the other side');
+      assert.ok(Math.abs(g.player.position.y) < 0.01);
+    }
+  }
+});
+
+test('nothing to perch on: every exposed top is a step, a vaultable counter, or out of reach even from a counter', () => {
+  const { g } = storeOpen();
+  const standing = g.colliders.filter((b) => inStore(b) && b.min.y < 0.05 && b.max.y > 0.05 && b.max.y < DS.height);
+  assert.ok(DS.tallMinHeight > DS.counterHeight + 1.05, 'a jump from a counter top (about 2.0 m) cannot reach a tall top');
+  for (const b of standing) {
+    for (let i = 0; i <= 4; i++) for (let j = 0; j <= 4; j++) {
+      const x = b.min.x + 0.05 + ((b.max.x - b.min.x - 0.1) * i) / 4;
+      const z = b.min.z + 0.05 + ((b.max.z - b.min.z - 0.1) * j) / 4;
+      // The top here: climb up through every collider stacked on this point
+      let top = b.max.y;
+      for (let pass = 0; pass < 4; pass++) {
+        for (const c of g.colliders) {
+          if (x > c.min.x && x < c.max.x && z > c.min.z && z < c.max.z && c.min.y <= top + 0.01 && c.max.y > top) top = c.max.y;
+        }
+      }
+      const ok = top <= 0.35 || (top <= feel.vault.maxHeight && b.vaultable) || top >= DS.tallMinHeight;
+      assert.ok(ok, `a perch at (${x.toFixed(2)}, ${z.toFixed(2)}) ${top.toFixed(2)} m up`);
+    }
+  }
+});
+
+test('sprint-jumping from the counter tops at the racks and mannequins never lands you on them', () => {
+  const t = storeOpen();
+  const { g } = t;
+  // From each counter's top, run and jump toward the nearest rack / mannequin
+  const tries = [
+    [-13.1, DS.counters[0].z, Math.PI], [-9.1, DS.counters[1].z, Math.PI], [-11.9, DS.layaway.z, 0],
+    [-12.0, DS.counters[0].z, Math.PI * 0.75], [-14.2, DS.counters[0].z, -Math.PI * 0.85],
+  ];
+  for (const [x, z, yaw] of tries) {
+    g.player.teleport({ position: new THREE.Vector3(x, DS.counterHeight, z), yaw });
+    t.tick(2);
+    for (let i = 0; i < 3; i++) { g.player.input.pressed.add('Space'); hold(t, ['KeyW', 'ShiftLeft'], 0.45); }
+    t.tick(60);
+    assert.ok(g.player.position.y < DS.counterHeight + 0.01, `ended ${g.player.position.y.toFixed(2)} m up at (${g.player.position.x.toFixed(1)}, ${g.player.position.z.toFixed(1)})`);
+  }
+  // And from the floor at the fitting rooms, the shoe wall and a mannequin plinth
+  for (const [x, z, yaw] of [[-17.1, 21.2, Math.PI], [-7.6, 21.6, -Math.PI / 2], [-15.6, 11.6, Math.PI / 2]]) {
+    g.player.teleport({ position: new THREE.Vector3(x, 0, z), yaw });
+    for (let i = 0; i < 4; i++) { g.player.input.pressed.add('Space'); hold(t, ['KeyW', 'ShiftLeft'], 0.4); }
+    t.tick(60);
+    assert.ok(g.player.position.y < 0.31, `still on the floor (or a plinth) at (${g.player.position.x.toFixed(1)}, ${g.player.position.z.toFixed(1)})`);
+  }
+});
+
+test('a 12-zombie horde from the back of the store reaches a player in the hallway', (ctx) => {
+  const t = storeOpen();
+  const { g } = t;
+  const target = new THREE.Vector3(gateX, 0, 2.2);
+  g.player.teleport({ position: target, yaw: 0 });
+  t.tick(20);
+  const horde = [];
+  for (let i = 0; i < 12; i++) {
+    const z = g.zombies.spawn('shopper', new THREE.Vector3(-16.5 + (i % 6) * 1.9, 0, i < 6 ? 20.6 : 23.2));
+    z.position.y = 0; z.prevPosition.copy(z.position); z.setState('chasing'); z.updateHitboxes();
+    horde.push(z);
+  }
+  const arrived = new Map();
+  for (let i = 0; i < 60 * 45 && arrived.size < horde.length; i++) {
+    g.player.teleport({ position: target, yaw: 0 });
+    t.tick();
+    for (const z of horde) if (!arrived.has(z) && Math.hypot(z.position.x - target.x, z.position.z - target.z) < 3) arrived.set(z, i / 60);
+    for (const z of horde) assert.ok(z.position.y < 0.5, 'nobody climbs anything');
+  }
+  assert.equal(arrived.size, 12, `stuck: ${horde.filter((z) => !arrived.has(z)).map((z) => z.position.toArray().map((v) => v.toFixed(1)))}`);
+  ctx.diagnostic(`12-zombie horde: all arrive in ${Math.min(...arrived.values()).toFixed(1)}-${Math.max(...arrived.values()).toFixed(1)} s`);
 });
