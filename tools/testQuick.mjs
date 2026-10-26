@@ -11,7 +11,7 @@
 // A changed file selects a test when
 //   - the test IS the changed file,
 //   - the test imports the changed file directly (tests/foo.test.js -> src/.../x.js), or
-//   - the test's name and the file's name start the same way (departmentStoreFixtures.js -> departmentStore*.test.js, cinemaStairs...).
+//   - the test and the file are the same area by name (departmentStoreFixtures.js -> departmentStore.test.js + departmentStoreDetails.test.js).
 // Changes to tests/helpers, package.json or src/main.js run everything (they can affect any test). Maps are wired through mall.js, so
 // the core set always includes the real-mall, flicker and wiring tests.
 // =============================================================================
@@ -36,7 +36,19 @@ const git = (...a) => {
 const norm = (p) => p.split(sep).join('/');
 
 const testFiles = readdirSync(join(root, 'tests')).filter((f) => f.endsWith('.test.js')).sort();
-const stemOf = (file) => file.replace(/\.test\.js$/, '').replace(/\.js$/, '').toLowerCase();
+const rawStem = (file) => file.replace(/\.test\.js$/, '').replace(/\.m?js$/, '');
+const stemOf = (file) => rawStem(file).toLowerCase();
+// The same area: names that share a leading camelCase word group of 6+ letters (departmentStoreFixtures / departmentStoreDetails.test,
+// cinemaStairs / cinema.test), or one name that starts with the other (zombieManager / zombie).
+function sameArea(fileA, fileB) {
+  const a = rawStem(fileA), b = rawStem(fileB);
+  let n = 0;
+  while (n < a.length && n < b.length && a[n] === b[n]) n++;
+  const boundary = (s) => n === s.length || /[A-Z]/.test(s[n]);
+  if (n >= 6 && boundary(a) && boundary(b)) return true;
+  const la = a.toLowerCase(), lb = b.toLowerCase();
+  return la.length >= 5 && lb.length >= 5 && (la.startsWith(lb) || lb.startsWith(la));
+}
 const plan = new Map(); // test file -> why
 const add = (file, why) => { if (!plan.has(file)) plan.set(file, why); };
 
@@ -74,11 +86,9 @@ function select() {
   for (const f of files) {
     if (/^tests\/.+\.test\.js$/.test(f)) { add(f.slice('tests/'.length), 'changed'); continue; }
     if (!/^(src|tools)\/.+\.m?js$/.test(f)) continue;
-    const stem = stemOf(f.split('/').pop().replace(/\.mjs$/, '.js'));
     for (const t of testFiles) {
-      if (imports.get(t).has(norm(f).replace(/\.js$/, '.js'))) add(t, `imports ${f}`);
-      const ts = stemOf(t);
-      if (ts.length >= 5 && stem.length >= 5 && (stem.startsWith(ts) || ts.startsWith(stem))) add(t, `named like ${f}`);
+      if (imports.get(t).has(norm(f))) add(t, `imports ${f}`);
+      if (sameArea(f.split('/').pop(), t)) add(t, `same area as ${f}`);
     }
   }
   for (const w of words) for (const t of testFiles) if (t.toLowerCase().includes(w.toLowerCase())) add(t, `asked for "${w}"`);
