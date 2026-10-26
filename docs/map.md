@@ -1,0 +1,155 @@
+# Sunset Galleria: the map, area by area (coordinates, doors, spawns, buy spots)
+
+> Moved out of CLAUDE.md (verbatim) so the file every session loads stays small. Read the entry for the area you are working in. CLAUDE.md has a one-screen summary.
+
+The start room opens into a MAIN HALLWAY (the hub). Each outer area has a hallway entrance; two buyable shortcuts
+also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and every shutter is bought separately.
+- Start room: x -5..5, z 6..16, 4m ceiling, checkout counter, shelf, crates, boarded vents. Its 4m doorway at z=6
+  is blocked by a security shutter door (500) that opens the hallway. Hold **F** (controller: hold **X**) near a
+  door to buy it. Debug: press **O** to open all doors for free; if all are open, O closes them all.
+  Dressed as a picked-over clearance store: register/receipt/bags at the left end of the vaultable checkout,
+  open shelves with a few products and dusty stock outlines (original collision footprint), framed dark boarded vents,
+  sale/tape remnants, missing employee photo, FINAL MARKDOWN pricing station around the Price Gun, restrained perimeter
+  floor litter/scuffs, damaged dead ceiling fitting, warm checkout / cool shutter light. Central lane and both spawn bodies stay clear.
+- Main hallway: x -20..20, z -2..6 (8m wide), 6m ceiling. Doors: Food Court (1000, south wall x -3.5..3.5, a 7m gate, straight
+  across from the start door, under a FOOD COURT sign, framed by two planters), Mega Mart (750, east end z -1..5, 6m,
+  under a MEGA MART sign), Service Corridor (1250, west wall z 0.5..3.5, under a "SERVICE CORRIDOR · STAFF ONLY"
+  sign; the escalator's high end runs overhead just short of it). 3 boarded vents (zombie spawns).
+  Escalator (SEALED until repaired for 2000, see Current state): west half, z 1..3, bottom end at x -4 facing the hub, rising west at 30 deg through a hole in
+  the ceiling (x ~-16.5..-11.95) to level 2 (y 6.3, the top of the ceiling slab; see Level 2 below). Rope barriers + OUT OF ORDER boards at both ends remain until the repair is bought, even with Atrium access; every collider you could
+  reach from the floor is taller than a jump. Its low end (x -4..-10.4) is solid to the floor; under its high end
+  (x -10.4..-17.5) there's >= 2m headroom, so players and zombies walk under it. Elevator (SEALED): doors in the north
+  wall at x 10.5 (taped off, OUT OF ORDER, floor indicator "1", call button); painted on, the wall behind is solid.
+- Level 2 (the Sunset Promenade; zone 'upstairs', opened by repairing the escalator for 2000): x -20..20, z -4.5..6,
+  floor y 6.3, ceiling 9.9. You step off the escalator into a 2.5m west lobby; the escalator well (x -16.5..-11.95, z 0.7..3.3) is fenced by
+  railings on its north, south and east sides. The southern passage gained 2.5m; the balcony holes and central bridge are unchanged.
+  SHOE-PER SALE x -10..-4 is a real store extending north to z 11.3, with 2.1m entrances x -9.8..-7.7 and -6.3..-4.2,
+  shoe shelves, fitting mirror/bench and a vaultable 0.65m display island. COMING SOON x -3..3 and PRETZEL PALACE x 4..10 remain closed.
+  Eastern lounge: a low 1.1 x 0.8m sunset-medallion plinth at (14.2, 1.6) replaces the tree/bench enclosure; benches hug the south,
+  east and north perimeter, leaving routes round both sides and a clear Atrium-shutter approach. Directory on the south wall,
+  east-wall payphones, magazine rack, upholstered seats and a backlit ceiling feature identify the junction. Southern benches, signs and two southern vents follow the
+  new wall; all four existing upstairs spawn markers remain (east z 4.2, north x 16). The west connection (z -4.1..-1.7)
+  now leads through the 1500-point cinema shutter. The east connection and COMING SOON (x -1.3..1.3) remain sealed for expansion.
+  Main floor and annex are sections in config/promenade.js, independent of the hallway; navigation/grade follow the upper sections.
+  COMING SOON now has an illuminated BUILD-A-BLASTER workshop title, papered frontage and renovation notices; it stays sealed,
+  with no functioning upgrade station yet. Pretzel Palace remains closed but has a scenic warmer/counter/menu/grille. Shoe-store
+  tickets/fitting shoes and two-sided hanging directional signs complete the pass. No new weapons or spawn markers.
+  The elevator stays sealed. Data is exposed through LAYOUT.level2; see mall/levelTwo.js, promenadeShop.js and promenadeDetails.js.
+- HOFFMAN'S · Est. Forever (zone 'departmentStore', maps/mall/departmentStore.js): the department store north of the hallway's
+  west half, x -20..-5.3, z 6.3..26, 5 m ceiling, open sky above (the Promenade's shoe store and the cinema are outside it).
+  Gate (1250) in the hallway's north wall at x -19.5..-15.5 under a HOFFMAN'S neon; side door 'departmentStoreStartRoom' (1250)
+  through the start room's west wall at z 11.6..13.5 (the start room's only second exit: buyable before the start shutter).
+  Front: cosmetics + fragrance counters (vaultable); middle: six round racks and three mannequins; back: fitting rooms (a
+  spawn out of the middle curtain), LAYAWAY counter (vaultable), shoe wall; stockroom door + west vent spawns. Collision rule:
+  counters 0.95 m and vaultable, everything else >= 2.1 m (a counter-top jump peaks ~2.0 m). Cream/burgundy/brass look,
+  ALL SALES FINAL. SO ARE YOU. The hallway's north-west vent moved to x -7 and the directory over it for the gate.
+  Detail pass: each of the six racks is a department (COATS, DRESSES, BUSINESS CASUAL, MARKED DOWN FROM FOREVER with price tags, KNITS,
+  a nearly bare NEW ARRIVALS) with a two-sided sign; folded-knit shelving on the west wall (z 7.7..12.9) and layaway bags on the north wall
+  (x -13.9..-10.2), both solid 2.2 m; the middle fitting room's curtain pulled aside onto a mirror, the east booth taped off, scratches on
+  the west curtain; a full-length wall mirror, wall busts, brass-edged beams with a hung EVERYTHING MUST STAY banner, sprinklers, diffusers;
+  a tipped mannequin, a dropped bag, a lone shoe, packing peanuts; muffled music + air handling (existing ambience voices).
+- Sunset Cinema (zone 'cinema', separate 1500-point shutter off the Promenade's west wall at x -20.3..-20, z -4.1..-1.7):
+  floor y 6.3, 4.8m ceiling height. Lobby x -42..-20.3, z -10.5..5.5; flat Screen 1 x -42..-24, z 5.8..27.8;
+  projection passage x -23.7..-20.3, z 5.8..27.8. A 3.4m auditorium doorway and 3m passage entrance connect to the lobby;
+  a 3.4m crossover at z 22..25.4 closes the loop. Four low seating blocks leave side/central aisles, a middle crossing and
+  a broad front fighting floor. Seats remain vulnerable to zombie attacks; the low lobby display is vaultable. Concessions
+  and ticket cases are enclosed/solid to their visible glass height. Screen 2/3 stay sealed.
+  A west service stairwell now descends to the Service Corridor's north end (see below).
+  Six local upper-floor spawn markers unlock with either cinema entrance.
+  Plum carpet, brass, curtains, neon, fictional movie posters, slow locally drawn advertising slides, faint projector beam,
+  projector/refrigerator/ventilation ambience and a quiet periodic projector relay, two pooled lamps, three culling rooms
+  and three color grades (warm lobby, dark screen, readable cool service). Stepped cornices, coffers, steady marquee,
+  detailed popcorn/soda/slush equipment, box-office printer/showtimes, acoustic ribs/speakers, numbered seats/cupholders,
+  authored coats/drinks and sparse litter complete the detail pass. No new guns or balance changes.
+  Data: LAYOUT.cinema (config/cinema.js); modules mall/cinema.js and cinemaDetails.js. Play again closes/resets the entire wing.
+- Cinema Service Stairs: from the lobby's west doorway x -42.3..-42, z -8.8..-5.6, through a 3.7m-wide stairwell
+  x -46..-42.3 down from y 6.3 to y 0; a 3m-wide return passage at z 7.1..10.1 joins the north end of Service Corridor
+  through a 2.6m shutter (cinemaStairs, 1500, x -23.1..-20.5, z 3.5..3.8). Buyable from either side, it unlocks both cinema
+  and serviceCorridor. Cinema's original 1500 shutter also unlocks upstairs, so entering from below then buying it opens
+  Promenade spawns without needing the escalator repair. Each door stays independently priced; zones remain open while
+  any of their entrances is open. Smooth ramp collision under 36 visible treads supports walking/sprinting/sliding; broad
+  plateaus, solid under-stair support, wall-mounted handrails and wayfinding leave no climbable side refuge. The existing
+  Cannon, lockers and Food Court shortcut stay where they are. No additional spawns or real lights; painted glow follows
+  Neon glow. Projection equipment, maintenance signage, overhead pipes/cables, landing numbers, delivery/cleaning scenes
+  and concrete wear decorate existing surfaces without shrinking routes or adding lights. Data: LAYOUT.cinemaStairs.
+  Both floor landings and the link reset/unload with the map.
+- The Grand Atrium (zone 'atrium'): x 8..32, z 6.6..30.6, behind a 5m gate (1500) in the hallway's north wall at x 13..18 under a
+  GRAND ATRIUM sign. Two storeys (roof 9.9 under a big warm skylight): an open court x 11.5..28.5, z 10.1..27.1 with a square
+  fountain (glass guard, solid to 2.2m) in the middle, CELL-OUT and SHADE SHACK kiosks, four tree planters, three benches; a 3.5m arcade
+  round the edge under the UPPER RING (y 6.3), which is railed all round the court. A second escalator rises east from the court
+  (x 16.5) to the ring's east side. The ring's south wall has the 'atriumPromenade' shutter (1000, x 11.5..14.5) into level 2.
+  Five spawns: four ground vents (north x 13 / 27, west z 16, east z 12) and one on the ring's north wall. Data: LAYOUT.atrium.
+- Food Court: x -20..20, z -14.3..-2.3, 6m ceiling, behind the 1000 shutter: the old concourse moved south (its four
+  shops Good Sports / Nuts & Bolts / Play Time Toys / Byte Me are real stores now (see below), 2 pillars, 2 benches (north side), tree planter,
+  end planters, ceiling lights, 4 spawns), placed relative to its center line FZ = -8.3. Three food stalls along the
+  south wall between the shops: BURGER BARN (x -8.4..-3.1), WOK THIS WAY (-2.6..2.6), CORN DOG CORRAL (3.1..8.4); each
+  is solid from the wall to its counter front (z -13.0), 1.2m tall, so you can't get onto or behind it. Eight round
+  table sets (tables 0.75m you can hop onto via the 0.45m stools) at x +-9 / +-5.5 around the tree planter, leaving
+  table lanes, a clear lane from the door to the planter and room to queue at the stalls; two trash cans (x +-11.2);
+  an "EXIT · MAIN HALL" sign over the door inside.
+- Mega Mart: x 20..34, z -24..6, 5m ceiling, behind the 750 shutter. Its west wall (x 20..20.3, 6m tall) is also the
+  east wall of the hallway (door at z 0..4) and of the Food Court (shortcut at z -9.8..-6.8). Front: 4 checkout
+  lanes (vaultable counters, x 24.5..27.5, 2m lanes, open ends to run round). Back: 3 stocked shelf gondolas
+  (x 24 / 27.5 / 31, z -19.5..-8, solid, 2m tall) making 4 aisles, a 4.5m back walkway with stockroom/receiving
+  doors + a boarded vent, an emergency exit on the east wall. Brand stripe, aisle signs, fluorescent strips (some
+  dead), 2 point lights.
+  Detail pass: recognisable Outdoor / Snacks / All Holidays / Housewares stock inside the original shelf footprints,
+  looted stretches and shelf tickets, groceries/receipts/bags at register ends (vault lanes clear), receiving hardware and
+  delivery/safety notices, TRY BEFORE YOU BUY Foam Dart promotion, dropped basket within a gondola, perimeter spill/scuffs,
+  a solid parked trolley by the east wall at x 33.43..33.91, z -5.90..-5.08, framed fluorescent fittings. The two lamps now
+  separate warm checkouts from cool aisles; no flashing. Entrances, crossings, spawn spaces and four main aisles stay clear.
+- Service Corridor: behind the 1250 shutter, a 3m-wide back-of-house corridor built from a data spec with the
+  corridor builder: in through the hallway's west wall (floor reaches under the doorway), a 1.5m run west, then 16m
+  south along the Food Court's west side to a dead end at z -14 (x -23.3..-20.3, 3.5m ceiling). Its east side is the
+  hallway's and Food Court's own west walls (noWall); the Food Court wall contains the shortcut at z -13.4..-11.
+  Dressing on its west wall: EMPLOYEES MUST WASH HANDS sign, two boarded vents (spawns), an electrical panel
+  with a DANGER · HIGH VOLTAGE sign, a bank of lockers (solid, narrows it to ~2.5m), exposed pipes the whole way;
+  boxes + a vent (spawn) + NO LOITERING (ESPECIALLY THE UNDEAD) at the dead end; three ceiling strips (middle one
+  dead), two warm point lights. Concrete-look floor, drab walls.
+- Loop shortcuts (ordinary security shutters, buyable from either side, prices via g.pricing 'door'):
+  Food Court <-> Mega Mart (1000), x 20..20.3, z -10.8..-5.8 (5m), height 3m, centered FZ = -8.3, signs MEGA MART / FOOD COURT.
+  The east-end planter is split around the opening; clear approaches lead into the Mart's 3.2m west aisle.
+  Service Corridor <-> Food Court (1250), x -20.3..-20, z -13.4..-11, height 3m, opposite the cannon at z -12.2;
+  STAFF ONLY / EXIT · FOOD COURT signs. Lockers stay at z -11..-9, with 2.55m clear corridor width alongside/past them.
+  The west planter, RESTOCK-O-MATIC and cannon buy spots are unchanged. The cannon is out of buying range from the Food Court.
+  Main loop: hallway -> Food Court -> Mega Mart -> hallway. West loop: hallway -> Service Corridor -> Food Court -> hallway.
+  Any open holder keeps its zone open; Play again closes every shutter and seals all outer areas.
+- Customer Service booth (gun tiers): a small walled office on the hallway's north wall at x 5.2..8.8 (between the start doorway
+  and the elevator), 1.6m deep + a 0.3m counter ledge; you buy at its service window (spot z ~4.1). Hold F/X to buy the next Extended
+  Warranty tier for the gun in your hand. Its spot is ONE entry, LAYOUT.serviceDesk in mall.js (along/center/wallAt/facing/zone):
+  change it to move the booth. A map feature of kind 'upgradeDesk'.
+- The four Food Court STORES (gun attachments; see mall/stores.js): GOOD SPORTS (grips) x -17..-9 and NUTS & BOLTS (barrels) x 9..17
+  are rooms 6m deep behind the south wall; PLAY TIME TOYS (magazines) x -16.4..-10.6 and BYTE ME ELECTRONICS (sights) x 10.6..16.4 are
+  4.5m-deep pods against the hallway wall (the two north pillars are gone: the pods hold the ceiling up). 3m doors, glass windows, a
+  zombie clerk behind a full-width counter, two attachments per counter (one buy spot each), a zombie spawn just inside each door. Each
+  store is ONE entry in LAYOUT.stores (mall.js). Map features of kind 'attachmentCounter' (one per attachment). The Mega Mart's aisle
+  4 is HOUSEWARES again (the barrels moved from the old hardware pegboard to Nuts & Bolts).
+- Ammo cache: the RESTOCK-O-MATIC, a big hot-orange vending machine on the Food Court's NORTH wall just inside the door,
+  east side (x 4.1..5.8, front at z -3.15 facing south; LAYOUT.restockMachine.x moves it along the wall), clear of the door
+  lane, the east bench and the Byte Me pod. Hold F/X for 400 points to refill the gun in your hand (any gun, including the
+  staple gun, which has no wall buy); no prompt when it's full or the Food Court is closed. Built to be seen: glowing header sign,
+  an "AMMO" blade sign sticking out of the wall that reads down the wall both ways, "AMMO" on both sides, a yellow-and-black
+  hazard pad on the floor where you stand and a soft warm glow on the tiles (unlit materials, no real lights, no flicker). Its LCD
+  is live (the gun in hand, its ammo, the price / FULL / SALE). Solid 2.35 m body, one collider. A map feature of kind 'ammoCache'
+  (game/features/ammoCache.js; mall/restockMachine.js builds it). It used to be a RESTOCK-O-MATIC on the west wall, which the
+  Food Court stores made a far, awkward detour.
+- Wall-buy spots: start room east wall (5, 1.5, 10) = Price Gun; hallway south wall (11, 1.5, -2) = Nail Gun;
+  Mega Mart north wall (31.5, 1.5, 6) = Foam Dart Blaster, Service Corridor west wall near the dead end
+  (-23.28, 1.5, -12.2) = Confetti Cannon; Grand Atrium west arcade wall (8.02, 1.5, 21.5) = Rivet Rifle; Sunset Promenade
+  south wall (1.5, 7.8, -4.48) = Heavy Coil Nailer (zone 'upstairs'; the Promenade is still growing: one entry to move);
+  HOFFMAN'S east wall between its side door and shoe wall (-5.33, 1.5, 15.3) = Barcode Scanner (zone 'departmentStore').
+- Lighting: room lamps (point lights) hang at ~60% of the ceiling height with intensity scaled to match, NOT just under
+  the ceiling: a lamp 0.8m under it lit a small hard-edged bright disc on the ceiling ("big circles"); hung lower it's a soft
+  glow. Keep that if you move or add lamps (mall.js, the `lamp()` calls).
+- Atmosphere: `mall/atmosphere.js` adds ceiling seams/vents/sprinklers (excluding the escalator well), service cable
+  trays/access panel, Sunset Galleria notices/directory and a gently swaying two-sided sign, interrupted lunches,
+  a fallen seat, restocking carton, perimeter dust/spills/leak and static fixture contact shadows. Decorative boxes
+  batch by material and add no colliders. `map.update/reset` owns the local sign/tube animation; `map.ambience`
+  is emitter data. `game/ambience.js` selects zone-aware, distance/occlusion-attenuated and stereo-panned HVAC,
+  fridge and muffled music voices; occasional rattles come from nearby closed shutters. It owns no Web Audio nodes.
+  Pause/death/reset silence the mix; `audio/sound.js` owns browser audio and uses `audio.ambienceVolume`.
+  No realtime shadow maps or global blur; zombie contact shadows render after interpolation in main. Post-processing (bloom, lens
+  vignette/fringing, ACES tone mapping, MSAA) is fx/postProcessing.js with three levels, Settings > Video > Visual effects: High (default),
+  Low (composer only: no bloom/lens/MSAA), Off (no composer: the world and the gun drawn straight to the screen). "Dust and
+  flickering lights" (atmosphere.ambient.enabled) hides the dust motes and zeroes the flicker/emergency lights (kept in the scene).
+- Player spawns at (0, 0, 12) facing the shutter.

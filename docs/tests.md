@@ -1,0 +1,120 @@
+# Sunset Galleria: what each test file covers
+
+> Moved out of CLAUDE.md (verbatim) so the file every session loads stays small. Read it to find the test that guards something before you change it, or to see where a new test belongs.
+
+Menu regressions: `tests/menus.test.js` covers modal inert/focus isolation, Tab/Escape, controller presets including
+equal/custom values, reset buttons/confirmation and native-resolution readout. `tests/blood.test.js` also changes
+splatter while paused, clearing flesh effects/pools immediately without removing dust or tracers.
+`tests/retailUi.test.js` covers PA message priority, duplicates, bounded queues/cancellation, real purchase-ticket shortages,
+sale/base prices, weapon/ammo distinctions, attachment replacement/tradeoff text and warranty transitions.
+`tests/haptics.test.js` covers distinct gun pulses (including every dart in a real burst), damage priority, pickups,
+intensity/off, unsupported/rejected actuator APIs, legacy pulse fallback, gamepad snapshots/unplug, focus/pause/death/reset
+cleanup and keyboard suppression. Settings -> Controller -> Controller vibration is saved with the other settings.
+`tests/prone.test.js` covers toggle controls, crawl speed from stats, smooth eye/collision lowering, low roofs,
+safe stand/crouch recovery, slide/jump/melee/vault constraints, gun use, zombie damage, body clearance, controller sprint latch and run reset.
+`tests/shopperAppearance.test.js` covers coordinated wardrobe choices and rarity, every clothing/hair/accessory/wear variant,
+valid geometry and mesh budgets, animation, isolated hit flashes, owned-resource disposal, fixed hitboxes and unchanged Mall Walkers.
+`tests/atmosphere.test.js` checks decorative triangles against protected routes/vaults and the escalator ceiling well,
+zero added collision, batching/motion reset, interpolated supporting-surface shadows and disposal, spatial sound
+occlusion/zones/panning/caps, pause/death/reset silence, closed-shutter rattles and Web Audio voice cleanup.
+`tests/atriumDetails.test.js` checks the new authored atrium triangles against the fountain lap, all entrances/vents,
+upper-ring walking lanes and the escalator; zero added collision/lights, varied displays/stock, geometry/batching budgets,
+resource disposal, ripple/mobile animation/reset/settings and the fountain's existing spatial-ambience path.
+`tests/shutters.test.js` checks both wall axes/upstairs, fixed frame clearance, physical slat pitch/UV cropping, original
+collision timing/reversal/reset, finishes/aspects, static batching/disposal, real F purchases and motor/roll/stop sounds
+(pause freezes progress; death/reset cancel; debug open-all is silent), and unobscured low destination signs.
+`tests/promenade.test.js` checks independent upper-floor expansion/support, the widened southern route, sealed future
+connections, a real two-entrance shoe-store loop in both directions, momentum vaults, the eastern junction and live zombie
+routes from both escalators plus a 12-zombie horde using both lanes. `tests/promenadeDetails.test.js` checks actual decorative
+triangles against routes/vents/vaults, resource disposal, batching/geometry budgets and the expanded room-culling areas.
+`tests/departmentStore.test.js` covers HOFFMAN'S: real F-hold buys of the 1250 gate (hallway) and the 1250 side door (start room,
+before the start shutter; from either side, never through the wall), sealed until bought, spawns clear and reachable, a real walk in,
+routes both ways through both doors, lanes and clear straight runs, real vaults over all three counters, "nothing to perch on"
+(every exposed top is a step, a vaultable counter or >= 2.1 m, even jumping from a counter top), a 12-zombie horde, culling, grade, horror, and that
+nothing else lies on a face of the store's walls. `tests/departmentStoreDetails.test.js` covers its detail pass: departments on every rack, only two
+added colliders (the shelving, 2.2 m), nothing over 12 cm in any lane / door approach / buy spot / spawn (checked on the real triangles), floor
+litter, the open/taped fitting rooms, ambience emitters, mesh/triangle budgets and the cinema seam (receiving door, one-sheets, ticket stubs).
+`tests/cinema.test.js` covers the priced two-sided F purchase/reset, sealed unlock, upper-floor spawns, standing loop traversal,
+display vault, live zombie routes through both entrances/front crossover, local selection, vulnerable seat perches and slide
+clock/settings/reset/disposal. `tests/cinemaDetails.test.js` checks real triangle clearance, batching/resource budgets and all
+three room-culling areas/portals. `coplanar.test.js` includes the cinema and its shared Promenade wall.
+`tests/cinemaStairs.test.js` covers the lower two-sided F purchase/discount/reset, independent shared-zone holders, sealed
+unlocks, real player walking/sliding, all three zombie types up/down and a mixed 12-zombie horde without rescue teleports,
+and stairwell/return culling.
+`tests/cinemaVisuals.test.js` protects service-detail triangle clearance, geometry/batching budgets, resource disposal,
+visible-screen upload limits, ambient/clutter controls, pause/death/reset and spatial ambience. `tests/ambientPulse.test.js`
+checks the quiet periodic projector relay buffer, its silent intervals and unchanged random stream.
+fullRun.test.js also enters the cinema through Service Corridor without repairing the escalator, then buys the cinema's
+Promenade shutter from inside and receives natural upstairs spawns.
+`tests/careerStats.test.js` checks persistent lifetime totals, weighted accuracy, personal bests, bounded recent runs,
+debug-run exclusion, reset, corrupt saves and unavailable browser storage.
+`tests/music.test.js` also covers the End of Shift death sting: receipt-timed bell, music volume, cancellation of future
+notes, replacement-voice cleanup, and real-game death/reset wiring.
+`tests/powerUps.test.js` checks earned incentive thresholds, skill credit, single drops, caps/repeats, expiry, safe floor/ramp
+placement, swept slide collection, wall/storey rejection, Blue Light payouts/timers, reserve delivery without bypassing
+reloads/upgrades, Security Sweep through all zombie attack/charge states, visuals/disposal and HUD. fullRun.test.js also
+earns and collects a drop with production tuning, then checks Play again cleanup.
+
+Gameplay regression tests live in `tests/` (`gameplay.test.js` movement/melee/vault, `aim.test.js` spread
+(including the Laser Pointer's hip benefit / ADS penalty through repeated shots and recovery),
+`impactMarks.test.js` all six cosmetic signatures, visible-surface/edge checks, floor/ceiling/instanced normals,
+misses/targets/pierce/shutters, shared cap/reuse/disposal, map unloading, startup preparation, debug sprites,
+Cannon projection budget, unchanged wall-shot payouts/accuracy/ammo and Play-again cleanup,
+`startRoom.test.js` clearance-store dressing adds no collision, leaves central/spawn/vault spaces visually clear,
+and preserves a real checkout vault and the original Price Gun purchase,
+`megaMartDetails.test.js` protects aisle/crossing/entrance/spawn/vault clearance against the actual decorative triangles,
+validates geometry and trolley placement, and vaults all four checkouts plus buys the Foam Dart Blaster at its original price,
+`zombies.test.js` zombie types/mix/rounds, `maps.test.js` wall pieces, single/multi-zone shared doors, nav rebuilds,
+`mall.test.js` the REAL mall built in Node with a stub canvas: dispose leaves no colliders + frees everything, door ladder, spawn points on clear floor, zones
+sealed until any connecting door is bought (all 120 orders after the start shutter), shortcut-only entrances,
+short nav paths and standing-player crossings in both directions, clear approaches, vaultable counters, the sealed escalator (a real PlayerController sprint-jumping
+at it never gets on; you can walk under its high end), the ceiling hole, Food Court stalls/tables (queue spots and
+table lanes reachable, nobody gets onto or behind a counter), `corridor.test.js` the modular corridor builder (floors
+never overlap, walls never intrude into the walkway, sealed except where asked, doorways/gaps/open ends/branches, a real
+nav grid end to end and through a branch doorway), `interactions.test.js` buying against the real mall (every door and wall buy
+works from where you stand, both shortcuts buy from either side but not through adjacent walls, the cannon cannot be
+bought across its shortcut, the Nail Gun can't be bought through its wall, other floors are out of reach, facing matters),
+`ammoCache.test.js` the vending machine (refills any gun in hand, flat price, label follows the gun, needs its area open, not
+through the wall, solid + too tall to climb, zombies can reach its front), `balance.test.js` GUN ROLES on real measured numbers
+(cannon strongest up close / weakest at range, Price Gun below premium automatics at 5 m, Foam Dart Blaster beats the older
+non-shotguns at 15 m, Nail Gun best single-target sustained damage at 30 m (10%+), Staple Gun weakest at every range;
+relationships, not exact values). `weaponProgression.test.js` runs real aimed shots, bloom, reloads and upgrades against
+stationary round-8/10 targets through helpers/weaponTrial.js (perfect tracking; not a human survival playtest).
+`gunStats.test.js` checks the per-hit formula + resolveGun (upgrades as data),
+`fullRun.test.js` WHOLE RUNS of the real game headless (tests/helpers/headlessGame.js builds createGame with stand-in HUD/sound/
+viewmodel: buy the shutter, rounds, shoot a zombie for exact payouts, die, results, and "Play again equals a freshly built game"
+via snapshot(), which covers every stat incl. undeclared extras, run stats, features, prompt and reload; zombies keep walking
+after you die; a natural round 1 -> 2; buy Food Court then its shortcut with real F holds and see natural Mega Mart spawns
+while its hallway door stays shut; buy the start shutter, repair the escalator and buy the cinema, receive natural cinema
+wave spawns, then reset its door/slide state; resetPlayerStats). New cross-system behaviour should get a full-run test there), `events.test.js` the event bus + every payout path
+in the real game (body / headshot / box-cutter kills, a shotgun blast pays once per zombie, a non-player "hazard" kill still pays
+and counts, purchase / round / player-hit / death / Play-again events, purchase kind/label as it was BEFORE buying, a kill
+listener killing another zombie mid-shot pays each once (no +10 for a corpse), pierce/pellet multi-kills, dummies pay nothing,
+nothing paid or counted after death), `pricing.test.js` prices = config exactly, discounts
+(one category, rounded to economy.discountRoundTo, errors for unknown items incl. inherited names like toString), the real game
+charges + shows the sale price for doors, guns, ammo and the cache, a sale starting mid-hold charges the price at completion, a new run clears it),
+`upgrades.test.js` gun upgrades (tiers + attachments on every gun, whole magazines/bursts, each tier holds until its round,
+one attachment per slot, what fits, roles hold at every tier (near-ties within 3%) and with any one attachment, upgrades live
+with the carried gun in the real game), `upgradeDesk.test.js` the Customer Service desk in the real game/mall (one desk in the hallway, LAYOUT.serviceDesk moves
+prop + collider + buy spot, solid and too tall to climb, tiers one at a time at pricing's price, gun in hand only, no refill,
+nothing past Platinum (including the exact purchase frame and switching back to a Platinum gun), Flash Sale applies,
+no prompt while closed / switching / facing away, Play again resets),
+`attachmentCounter.test.js` the store counters in the real game/mall (every attachment at its store, real F buys fit the gun in
+hand + replace its slot at pricing's price, no prompt when fitted / doesn't fit / area closed / mid switch, cases solid + too tall,
+visible glass matches bullet collision, the four stores are real rooms (walls, solid wall-to-wall counter so nobody reaches the
+clerk strip, windows are glass, you can walk in), a LAYOUT.stores entry moves a whole store),
+`coplanar.test.js` no z-fighting (flicker) in the stores or the Customer Service booth: builds the real mall and checks every box face and
+sign in those rooms for another face within 4 mm that faces the same way, overlaps and looks different (hidden faces pressed against a
+solid are fine); run it after adding anything to a store (hang things on a wall 2cm+ proud, not on its plane),
+`viewmodel.test.js` real player-gun/model recoil with attachments, including firing and dry-clicking immediately after fitting/removing one
+before rendering, `weaponModels.test.js` also checks upgrade parts (every gun has every
+mount, parts show only when fitted, the Extended Nozzle moves the muzzle + flash and back, tier sticker hidden at Standard, no part
+floats), `features.test.js` map features (the mall's list, unknown kind = error, a new kind's update/reset hooks run, inert wall buy for a
+gun that doesn't exist, inherited names aren't kinds, features get the game's systems and tick only while playing (not paused /
+dead) + reset on Play again, buy a wall gun + refill at the RESTOCK-O-MATIC in the real game);
+`spawning.test.js` covers local selection/safety/cooldowns/rescues plus the real mall at six positions with hallway
+entrances only, shortcut entrances only, and both loops open. Mall tests also include the real debug range: shifting
+grid bounds must not disconnect either shortcut; floor covers both shared walls. The Mart sign clears its brand stripes.
+there is no linter yet.
+`npm run build` is the compile check (it only bundles; it
+does not run the game, so also try changes in `npm run dev`).
