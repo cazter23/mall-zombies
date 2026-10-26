@@ -67,6 +67,7 @@ test('no coplanar (flickering) surfaces inside the stores, the Customer Service 
   const at = LAYOUT.atrium.rect; // the Grand Atrium, its fountain, kiosks and both floors
   regions.push({ name: 'atrium', minX: at.minX - 0.4, maxX: at.maxX + 0.4, minZ: at.minZ - 0.7, maxZ: at.maxZ + 0.4 });
   const ds = LAYOUT.departmentStore.rect; // HOFFMAN'S: its counters, racks, mannequins, fitting rooms, shoe wall and the gate
+  regions.push({ name: 'westSide', minX: -60, maxX: -5, minZ: 6, maxZ: 30 }); // HOFFMAN'S + the cinema + the stair connector between them, every floor
   regions.push({ name: 'departmentStore', minX: ds.minX - 0.4, maxX: ds.maxX + 0.4, minZ: ds.minZ - 0.7, maxZ: ds.maxZ + 0.4, maxY: LAYOUT.hallway.height });
   const upper = LAYOUT.level2.rect;
   regions.push({ name: 'promenade', minX: upper.minX - .4, maxX: upper.maxX + .4, minZ: upper.minZ - .4,

@@ -26,7 +26,9 @@ export function buildCinemaStairs({ kit, layout: c, cinema, floorY: Y, zones, pr
   box('east_under_cinema', S.maxX, 0, S.minZ, S.maxX + T, Y - cinema.slabThickness, lower, C.wall);
   box('landing_header', S.maxX, c.serviceDoor.top, lower, S.maxX + T, c.corridorHeight, S.maxZ, C.wall);
   box('landing_upper_wall', S.maxX, c.corridorHeight + T, lower, S.maxX + T, Y - cinema.slabThickness, S.maxZ, C.wall);
-  box('return_north_wall', H.minX, 0, H.maxZ, K.maxX + T, c.corridorHeight, H.maxZ + T, C.wall);
+  // (It ends at the connector's outer face, x -20.3, where HOFFMAN'S west wall begins: running on to -20.0 put this wall's end
+  // face exactly on the store's inner wall face, a grey strip fighting the cream one.)
+  box('return_north_wall', H.minX, 0, H.maxZ, K.maxX, c.corridorHeight, H.maxZ + T, C.wall);
   box('return_south_wall', H.minX, 0, H.minZ - T, K.minX - T, c.corridorHeight, H.minZ, C.wall);
   box('connector_west_wall', K.minX - T, 0, K.minZ + T, K.minX, c.corridorHeight, H.minZ, C.wall);
   // The hallway owns the lower stretch of this shared wall, including its

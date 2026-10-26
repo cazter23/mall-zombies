@@ -138,6 +138,34 @@ test("the hallway's north-west vent moved east of the gate and is still a clean 
   assert.ok(!g.colliders.some((b) => b.intersectsBox(body)));
 });
 
+test("nothing else lies on a face of HOFFMAN'S walls (a neighbour's wall ending flush with them z-fights: the cinema stair wall did)", () => {
+  const { g } = headlessGame();
+  g.map.group.updateMatrixWorld(true);
+  // every axis-aligned box face as { axis, dir, c, lo, hi }
+  const faces = [];
+  g.map.group.traverse((o) => {
+    if (!o.isMesh || o.geometry.type !== 'BoxGeometry' || o.rotation.x || o.rotation.y || o.rotation.z) return;
+    const { width: w, height: h, depth: d } = o.geometry.parameters;
+    const p = o.position;
+    const min = [p.x - w / 2, p.y - h / 2, p.z - d / 2];
+    const max = [p.x + w / 2, p.y + h / 2, p.z + d / 2];
+    for (let axis = 0; axis < 3; axis++) {
+      const u = [(axis + 1) % 3, (axis + 2) % 3];
+      for (const dir of [-1, 1]) faces.push({ axis, dir, c: dir > 0 ? max[axis] : min[axis], lo: u.map((k) => min[k]), hi: u.map((k) => max[k]), mesh: o });
+    }
+  });
+  const walls = faces.filter((f) => f.mesh.name.startsWith('deptstore_wall') && f.mesh.name !== 'deptstore_wall_east_upper');
+  const clashes = [];
+  for (const a of walls) {
+    for (const b of faces) {
+      if (a.mesh === b.mesh || a.axis !== b.axis || a.dir !== b.dir || Math.abs(a.c - b.c) > 0.003) continue;
+      const ox = [0, 1].map((i) => Math.min(a.hi[i], b.hi[i]) - Math.max(a.lo[i], b.lo[i]));
+      if (ox[0] > 0.01 && ox[1] > 0.01) clashes.push(`${a.mesh.name} / ${b.mesh.name || 'box'} on ${'xyz'[a.axis]}=${a.c.toFixed(2)} ${ox[0].toFixed(2)} x ${ox[1].toFixed(2)} m`);
+    }
+  }
+  assert.deepEqual(clashes, []);
+});
+
 test('wiring: a culling room seen only through its open gate, its own grade, a horror area; it stays below the floors above', () => {
   const { g } = started();
   const map = g.map;
