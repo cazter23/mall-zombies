@@ -20,6 +20,8 @@ occlusion/zones/panning/caps, pause/death/reset silence, closed-shutter rattles 
 `tests/atriumDetails.test.js` checks the new authored atrium triangles against the fountain lap, all entrances/vents,
 upper-ring walking lanes and the escalator; zero added collision/lights, varied displays/stock, geometry/batching budgets,
 resource disposal, ripple/mobile animation/reset/settings and the fountain's existing spatial-ambience path.
+`tests/atriumStorefronts.test.js` checks physical shop depth/shells, visible openings through the atrium masonry, arcade-facing
+glazing, continuous window/door barriers on both floors and a shared lettering material.
 `tests/shutters.test.js` checks both wall axes/upstairs, fixed frame clearance, physical slat pitch/UV cropping, original
 collision timing/reversal/reset, finishes/aspects, static batching/disposal, real F purchases and motor/roll/stop sounds
 (pause freezes progress; death/reset cancel; debug open-all is silent), and unobscured low destination signs.
@@ -122,3 +124,18 @@ grid bounds must not disconnect either shortcut; floor covers both shared walls.
 there is no linter yet.
 `npm run build` is the compile check (it only bundles; it
 does not run the game, so also try changes in `npm run dev`).
+
+## Area ownership
+
+`tests/lateWallGuns.test.js` checks seven unique wall buys, Cinema-only Coil access, both ownership routes, and a real
+5250-point Hallway -> Service Corridor -> Cinema -> Coil purchase sequence. The relocated Coil's F-hold purchase,
+650-point refill, full-ammo hiding, spawn clearance and restart use the real interaction system.
+
+`tests/areaUnlocks.test.js` buys all nine areas through the real interaction system for 9500 points, verifies all 15 barriers open, automatic connection sound/collision/navigation, reverse destination pricing and mid-hold sales, denied purchases, no cascade, and repeatable reset. Existing geometry tests may use raw door.open/reset to isolate a particular physical route; production purchases use map.areaUnlocks.
+
+`tests/parkingLot.test.js` checks a real discounted parking purchase, player traversal in both directions, flush threshold, restart/disposal, all outdoor spawn routes and lanes with and without the debug range, vehicle collision and the fenced perimeter. It also checks RVs against the actual rendered bay lines and raycasts the exterior from two parking positions with the Atrium closed, before and after static batching. The coplanar test includes the exterior.
+
+The parking detail checks protect the front/rear fighting lanes, both central gaps and every spawn approach from detail
+geometry; confirm real trolley collision and complete collider cleanup; and verify haze/sign comfort settings, reset and
+shared-texture disposal. Atmosphere tests cover authored loop gain/pulses, local-event range/unlock/pause/reset/no-backlog
+behavior, and Web Audio source/panner cleanup for sign rattle, indistinct PA and distant traffic recipes.

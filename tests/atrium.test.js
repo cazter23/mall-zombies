@@ -37,7 +37,7 @@ function hold(t, keys, seconds) {
 const door = (g, id) => g.map.doors.find((dd) => dd.id === id);
 const spawns = (g) => g.map.spawnPoints.filter((s) => s.zone === 'atrium');
 
-test('the gate is a normal 1500 purchase from the hallway: a real F hold opens the atrium; Play again seals it', () => {
+test('the gate is a normal 1250 purchase from the hallway: a real F hold opens the atrium; Play again seals it', () => {
   const t = started();
   const { g } = t;
   door(g, 'startShutter').open();
@@ -47,10 +47,10 @@ test('the gate is a normal 1500 purchase from the hallway: a real F hold opens t
   t.standAt((AT.gate.from + AT.gate.to) / 2, LAYOUT.hallway.maxZ - 1.4, 180); // in the hallway, facing north (+Z)
   t.tick(5);
   assert.equal(g.interactions.prompt?.label, 'Grand Atrium');
-  assert.equal(g.interactions.prompt?.cost, 1500);
+  assert.equal(g.interactions.prompt?.cost, 1250);
   const before = g.wallet.points;
   t.press('KeyF', 40);
-  assert.equal(before - g.wallet.points, 1500);
+  assert.equal(before - g.wallet.points, 1250);
   assert.equal(g.map.zones.atrium.open, true);
   assert.equal(gate.isOpen, true);
   g.resetRun();
@@ -164,20 +164,22 @@ test('zombies use the atrium escalator both ways: from the ring vent down to the
   assert.ok(chase(new THREE.Vector3(cx - 6, 0, A.minZ + 1.5), new THREE.Vector3(cx, UPPER_Y, A.maxZ - 1.5), 40) < 40);
 });
 
-test('the Promenade link: a 1000 shutter buyable from either side, opening both the atrium and level 2, and walkable through', () => {
+test('the Promenade link buys the other area for 1250 from either side and is walkable through', () => {
   const t = started();
   const { g } = t;
   const link = door(g, 'atriumPromenade');
-  assert.equal(link.price, 1000);
+  assert.equal(link.price, 1250);
   g.wallet.earn(5000);
   const mid = (AT.link.from + AT.link.to) / 2;
   for (const [z, yaw] of [[LAYOUT.hallway.maxZ - 1.2, Math.PI], [A.minZ + 1.2, 0]]) { // level 2 side facing +Z, then the ring side facing -Z
     g.resetRun();
     g.wallet.earn(5000);
     t.tick(2);
+    g.map.areaUnlocks.unlock(z < A.minZ ? 'upstairs' : 'atrium');
     g.player.teleport({ position: new THREE.Vector3(mid, UPPER_Y, z), yaw });
     t.tick(5);
-    assert.equal(g.interactions.prompt?.label, 'Promenade', `prompt from z ${z}`);
+    assert.equal(g.interactions.prompt?.label, z < A.minZ ? 'Grand Atrium' : 'Sunset Promenade', `prompt from z ${z}`);
+    assert.equal(g.interactions.prompt.cost, 1250);
     t.press('KeyF', 40);
     assert.equal(link.isOpen, true);
     assert.equal(g.map.zones.atrium.open, true);
@@ -201,20 +203,21 @@ test('the atrium is out of reach from other floors: no buying the gate from leve
   assert.notEqual(g.interactions.prompt?.label, 'Grand Atrium');
 });
 
-test('the Mega Mart shortcut: a 1000 shutter buyable from either side, opening both zones; walk through; routes both ways', () => {
+test('the Mega Mart shortcut buys the destination area from either side; walk through; routes both ways', () => {
   const t = started();
   const { g } = t;
   const short = door(g, 'atriumMegaMart');
-  assert.equal(short.price, 1000);
+  assert.equal(short.price, 1250);
   const mid = (AT.martLink.from + AT.martLink.to) / 2;
   const martZ = LAYOUT.megaMart.maxZ;
   for (const [z, yaw] of [[martZ - 1.2, Math.PI], [A.minZ + 1.2, 0]]) { // from the Mart facing +Z, then from the atrium facing -Z
     g.resetRun();
     g.wallet.earn(5000);
     t.tick(2);
+    g.map.areaUnlocks.unlock(z < A.minZ ? 'megaMart' : 'atrium');
     g.player.teleport({ position: new THREE.Vector3(mid, 0, z), yaw });
     t.tick(5);
-    assert.equal(g.interactions.prompt?.cost, 1000, `prompt from z ${z}`);
+    assert.equal(g.interactions.prompt?.cost, z < A.minZ ? 1250 : 750, `destination price from z ${z}`);
     t.press('KeyF', 40);
     assert.equal(short.isOpen, true);
     assert.equal(g.map.zones.atrium.open, true);

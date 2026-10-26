@@ -133,6 +133,40 @@ test('occasional rattles come from closed shutters and their timer freezes while
   ambience.update(atmosphere.ambience.rattleMaxSeconds, true); assert.equal(calls.length, 1);
 });
 
+test('local ambient events wait for unlock and range, freeze on pause, and restart their countdown on reset', () => {
+  const calls = [], player = { position: new THREE.Vector3(), height: 2, yaw: 0 };
+  const map = { zones: { outside: { open: false } }, doors: [], ambience: [], ambientEvents: [
+    { id: 'sign', sound: 'looseSignRattle', zone: 'outside', position: [2, 1.6, 0], range: 10,
+      minSeconds: 3, maxSeconds: 3, gain: .4 },
+  ] };
+  const ambience = createAmbience({ map, player, colliders: [], random: () => 0,
+    sound: { playAmbient: (...args) => calls.push(args) } });
+  ambience.update(30, true); assert.equal(calls.length, 0, 'locked');
+  map.zones.outside.open = true; player.position.x = 20;
+  ambience.update(30, true); assert.equal(calls.length, 0, 'out of range');
+  player.position.x = 0; ambience.update(2, true);
+  ambience.update(30, false); assert.equal(calls.length, 0, 'paused');
+  ambience.update(1, true); assert.equal(calls.length, 1);
+  assert.equal(calls[0][0], 'looseSignRattle'); assert.ok(calls[0][1].volume > 0 && calls[0][1].volume <= .4);
+  ambience.update(2, true); ambience.reset(); ambience.update(1, true); assert.equal(calls.length, 1);
+  ambience.update(2, true); assert.equal(calls.length, 2, 'fresh countdown');
+  ambience.update(100, true); assert.equal(calls.length, 3, 'no backlog burst');
+});
+
+test('spatial ambience applies authored gain and smooth pulses within the shared voice cap', () => {
+  let mix;
+  const map = { zones: { outside: { open: true } }, doors: [], ambience: [
+    { id: 'traffic', kind: 'distantTraffic', zone: 'outside', position: [0, 1.6, 0], range: 20,
+      gain: .4, pulse: { period: 4, depth: .5 } },
+  ] };
+  const ambience = createAmbience({ map, player: { position: new THREE.Vector3(), height: 2, yaw: 0 }, colliders: [],
+    sound: { setAmbience: v => { mix = v; } } });
+  ambience.update(1, true); const quiet = mix[0].gain;
+  ambience.update(2, true); const loud = mix[0].gain;
+  assert.ok(quiet > 0 && quiet < loud && loud <= .4);
+  ambience.reset(); ambience.update(1, true); assert.equal(mix[0].gain, quiet, 'pulse timeline resets');
+});
+
 test('Web Audio ambience reuses voices, fades and disconnects them even if paused while the context is suspended', () => {
   const sources = [], nodes = [];
   const param = () => ({ value: 0, setValueAtTime() {}, linearRampToValueAtTime() {},
@@ -174,5 +208,12 @@ test('Web Audio ambience reuses voices, fades and disconnects them even if pause
     sound.setAmbience([{ id: 'relay', kind: 'projectorRelay', gain: 1, pan: 0 }]);
     const secondTick = sources.at(-1); assert.equal(secondTick.buffer, pulseBuffer, 'relay buffer is reused when returning to the cinema');
     sound.setAmbience([]); secondTick.onended(); assert.ok(secondTick.disconnected);
+    for (const name of ['looseSignRattle', 'distantPa', 'distantTrafficPass']) {
+      const first = sources.length; sound.playAmbient(name, { volume: .5, pan: -.3 });
+      const emitted = sources.slice(first); assert.ok(emitted.length > 0, `${name} synthesizes audio`);
+      for (const source of emitted) source.onended();
+      assert.ok(emitted.every(source => source.disconnected), `${name} releases its sources`);
+      assert.ok(nodes.filter(n => n.pan).at(-1).disconnected, `${name} releases its spatial panner`);
+    }
   } finally { window.AudioContext = previous; }
 });

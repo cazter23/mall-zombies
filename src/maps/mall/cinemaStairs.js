@@ -8,7 +8,7 @@ export function buildCinemaStairs({ kit, layout: c, cinema, floorY: Y, zones, pr
   const box = (name, x0, y0, z0, x1, y1, z1, color, collide = true, options = {}) =>
     kit.box(x0, y0, z0, x1, y1, z1, kit.mat(color, options), { name: `cinema_stairs_${name}`, collide });
   const sign = (text, x, y, z, width, facing) => kit.sign(text, { x, y, z, width, height: .36,
-    facing, background: '#38434a', color: '#d7e9d4' });
+    facing, background: '#38434a', color: '#d7e9d4', font: 'Arial, "Helvetica Neue", sans-serif' });
   // All horizontal slabs meet edge to edge, including the original cinema floor
   // through the upper doorway and the original Service Corridor below.
   box('upper_landing', S.minX, 0, S.minZ, S.maxX, Y, upper, C.base);
@@ -77,15 +77,15 @@ export function buildCinemaStairs({ kit, layout: c, cinema, floorY: Y, zones, pr
     box('return_light', px - .8, c.corridorHeight - .10, 8.5, px + .8, c.corridorHeight - .06, 8.7, C.exit, false, light);
   }
   box('connector_light', -22.5, c.corridorHeight - .10, 5.7, -21.1, c.corridorHeight - .06, 5.9, C.exit, false, light);
-  sign('← SERVICE CORRIDOR', -27, 2.45, H.maxZ - .035, 3.1, -1);
-  sign('← CINEMA', -38, 2.45, H.minZ + .035, 2.7, 1);
-  sign('CINEMA →', -21.8, 2.45, K.maxZ - .035, 2.5, -1);
-  sign('SUNSET CINEMA ↑', -21.8, 3.05, e.at - .07, 2.9, -1);
-  sign('SERVICE CORRIDOR ↓', -21.8, 3.05, e.at + .37, 2.9, 1);
-  sign('EXIT / SERVICE CORRIDOR ↓', S.minX + .06, Y + 2.3, -7.2, 3.0, 'x+');
-  sign('SERVICE CORRIDOR', S.maxX - .04, 3.1, 8.6, 2.6, 'x-');
-  sign('CINEMA ↑', S.maxX + T + .03, 3.1, 8.6, 2.3, 'x+');
-  sign('CINEMA ←', S.minX + .04, 1.9, 8.6, 2.5, 'x+');
+  sign('← Service Corridor', -27, 2.45, H.maxZ - .035, 3.1, -1);
+  sign('← Cinema', -38, 2.45, H.minZ + .035, 2.7, 1);
+  sign('Cinema →', -21.8, 2.45, K.maxZ - .035, 2.5, -1);
+  sign('Sunset Cinema ↑', -21.8, 3.05, e.at - .07, 2.9, -1);
+  sign('Service Corridor ↓', -21.8, 3.05, e.at + .37, 2.9, 1);
+  sign('Exit / Service Corridor ↓', S.minX + .06, Y + 2.3, -7.2, 3.0, 'x+');
+  sign('Service Corridor', S.maxX - .04, 3.1, 8.6, 2.6, 'x-');
+  sign('Cinema ↑', S.maxX + T + .03, 3.1, 8.6, 2.3, 'x+');
+  sign('Cinema ←', S.minX + .04, 1.9, 8.6, 2.5, 'x+');
   const rooms = [
     { id: 'cinemaStairwell', ...S, minY: 0, maxY: roof + T },
     { id: 'cinemaReturn', minX: H.minX, maxX: K.maxX, minZ: K.minZ, maxZ: H.maxZ, minY: 0, maxY: c.corridorHeight + T },

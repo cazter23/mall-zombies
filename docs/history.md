@@ -2,6 +2,61 @@
 
 > Moved out of CLAUDE.md (verbatim) so the file every session loads stays small. Roughly newest first: what each pass changed, how it was verified, measured numbers and decisions. Read it when you need the background of an area or a past decision; it is not needed to work on the code.
 
+## 26 October 2026 — wall-buy progression: Coil into Cinema
+
+Moved the single Heavy Coil Nailer wall buy from the Promenade to the Cinema projection passage's east wall at
+(-20.36, 8.3, 20), above the tile dado and between the reel rack/rewind equipment and rear crossover. Weapon price
+is now 2500; ammo remains 650. The cheapest door route is Hallway (500) -> Service Corridor (1000) -> Cinema (1250),
+so doors plus the Coil cost 5250. Cinema ownership through either entrance grants access; Promenade ownership alone
+does not. The six other unique wall buys retain the audit's recommended locations. Seven unique stations remain;
+the proposed duplicate Rivet/Nail stations are deferred. Combat stats and universal ammo pricing are unchanged.
+Validation: production build, balance report and all 595 tests pass. Browser checks confirm the mounted display clears
+the tile dado/equipment, Cinema-only availability, the 2500-point purchase, 650-point refill and restart reset.
+
+## 26 October 2026 — parking atmosphere and environmental detail
+
+Added worn/patched/cracked asphalt, faded paint, tyre/engine stains, puddles/drains/weeds, RV fittings and weathering,
+mall service hardware/notices, and three compact scenes behind the RVs: abandoned shopping, interrupted delivery and an
+untouched drink/chair/suitcase. The trolley/chair have vaultable collision; a shallow tall electrical cabinet is solid.
+The street gains a bus shelter/timetable, bins, street names, roadworks, a stopped car and warm windows/delivery notices.
+Painted lamp pools, a cool edge wash and distant haze supply dusk depth without additional real lamps. Haze and a gently
+moving loose sign follow ambient-effects settings and reset. Spatial traffic/tree loops, an exit music speaker, cabinet
+hum and occasional sign/PA/traffic sounds use authored gain/range and pulse/event timing; generic ambience timers freeze
+on pause, require an audible unlocked area, reset on restart and never emit a backlog burst. All textures are procedural
+and map-owned. Data is in config/parkingDetails.js; small visual modules keep the main mall builder focused on wiring.
+The full-run reward assertion now recognizes the existing temporary benefit types as well as the original zone/sweep;
+additional map geometry exposed that old assumption through a different random reward selection. Production reward logic
+is unchanged, and the test now verifies that temporary benefits are also removed on restart.
+Validation: production build and all 593 tests pass. Real browser checks cover the shopping/waiting scenes, RV row,
+wall services and bus shelter; all three new ambient events fire with Web Audio running, ambient-effects off hides haze,
+and outdoor zombie pursuit/purchase/restart pass. Screenshots: scratch/parking-detail-*.png.
+
+## 26 October 2026 — exterior visibility, RV parking and roadside detail
+
+The parking view exposed a room-culling problem: the Atrium's interior walls could disappear while its cross-room floor
+slabs stayed visible. mall/mallExterior.js adds opaque exterior facades, a roof and corner returns, tagged alwaysVisible
+for room culling; the interior remains culled. RV positions now derive from alternate painted bay centres rather than
+independent coordinates. mall/parkingSurroundings.js replaces the sparse horizon with a marked road/intersection,
+sidewalks, planted verges, three signed roadside businesses, distant buildings/cars, utility poles/wires and a mall pylon.
+Scenery adds neither navigation colliders nor real lights. Parking tests cover actual bay containment and opaque
+exterior sightlines before/after batching with the Atrium closed; the coplanar check also covers the new shell.
+Validation: production build, all 589 tests, and a final 13-test exterior/culling/batching check pass. Browser views from
+the north fence, the RV row and the east fence confirm the corrected silhouette, bay alignment and roadside detail;
+purchase, zombie pursuit and restart also pass in the browser.
+
+## 26 October 2026 — Customer Parking
+
+Mega Mart's painted emergency exit now opens a 1250-point Customer Parking area (x 34.3..62.3, z -24..6).
+An asphalt lot and flush sidewalk surround a row of three tall abandoned vans, with empty bays and wide circulation lanes.
+Three fenced boundaries, four outdoor spawn markers, two pole lamps, a sunset sky, facade signage, wind and electrical
+buzz give it an exterior identity. The former emergency-exit spawn moved to a boarded vent away from the threshold.
+The area uses destination ownership, Flash Sales, culling, grading, horror, ambience, benchmark and map disposal/reset;
+the complete map now costs 9500 points across nine purchases and 15 barriers. The focused parking tests cover buying,
+walking both ways, every exterior spawn/route with and without the debug range, vehicle/perimeter collision and restart.
+Validation: production build and all 587 tests pass. A real browser check bought the exit, captured the lot,
+followed an outdoor Shopper to the player and verified reset; screenshots are in scratch/parking-overview.png and
+scratch/parking-entrance.png. Distant pavement, trees and stores supply a horizon without adding navigation cells.
+
 ## 26 October 2026 — stronger base weapons against the existing health curve
 
 BO3's readable Zombies GSC starts standard zombies at 150 HP, adds 100 per round through round 9, then adds 10% per round starting at round 10. Mall keeps its softer 150 / +75 / 7.5% curve; the weapon pass aims for comparable body-shot kills and ideal TTK around rounds 5–15. The free Staple stays at 30 damage. Price goes to 70 damage, 24 + 144 ammo; Nail 135; Foam 90 per dart with a 0.16 s pause after each three-dart burst; Cannon 70 per pellet; Rivet 95 at 10 shots/s with a 30-round magazine; Coil 95; Scanner 260. Headshot multipliers, falloff, upgrade multipliers, prices, and zombie health stay as before.
@@ -10,6 +65,21 @@ At 5 m, the balance model gives round-8 body kills in 10 Price shots, 5 Nails, 8
 
 The proposed Cannon value of 60 damage per pellet only killed a round-8 Shopper with one hip blast at 3 m about 54% of the time in sampled spread. At 70, the sampled rate was about 98%; at 5 m ADS it was dependable. This keeps the close-range promise despite pellet spread. Faster kills also mean fewer +10 nonlethal-hit payouts and more kills per ammo refill; watch round pacing and the economy in human playtesting.
 
+Area unlock purchases (2026-10-26):
+- Replaced independent shutter tolls with eight destination purchases totaling 8250 points. Existing 14 physical barriers open automatically once both adjoining areas are owned; no cascading ownership or paid shortcuts between owned areas.
+- Area prices: Hallway 500, Mega Mart 750, Food Court/Service Corridor 1000, HOFFMAN'S/Atrium/Promenade/Cinema 1250. Destination prompts and Flash Sale original/discounted prices work from either entrance. Purchase events retain the physical barrier id and add areaId/openedDoorIds; one charge can animate and sound several shutters.
+- Promenade ownership repairs the escalator when Hallway is owned. Debug O and Play again synchronize all ownership and barriers. Focused integration tests cover the complete 8250-point route, alternate entrance pricing, automatic connections/navigation/sound, denied purchases, discounts and reset.
+
+
+Cinema second detail pass (2026-10-26):
+- Projection corridor now has continuous tiled dado/skirting, conduit/junction boxes, guarded light housings, a shallow rewind bench with film spools and transport cases, and a louvred air-handling access panel. Return corridor adds blockwork, kick/chair rails, overhead channels, meters, delivery dockets and a cleaning checklist. Stairwell gains concrete joints, lower-wall paint and utility conduit. All new equipment sits outside the existing tested movement envelopes.
+- Lobby adds carpet borders, framed entrances/poster cases, fitted concession frontage and candy packaging/cup stacks, an usher station, shallow waiting seats, suspended premiere banners and a changeable-letter showtime board. Auditorium adds broad fabric bays, continuous wall-side aisle strips, curtain pelmet, chamfered seat/cushion silhouettes and a reserved-for-repair seat scene.
+- New data: config/cinemaFinish.js; builders: cinemaPublicFinish.js / cinemaServiceFinish.js. cinemaPrint.js shares a map-local 32-cell artwork sheet across row letters, identity signs, packaging and forms, keeping the original detail budgets intact: public dressing 23,422 triangles / 109 isolated batched meshes, service 3,598 / 33. Seat geometry in the real map is also reshaped; the isolated public count excludes the base seating. No additional real lights or collision; gameplay, purchases and spawn layout are unchanged.
+- Production build and all 25 existing cinema, stairs, visual/clearance/resource and coplanar checks pass in the shared checkout. Six 1440x900 production-browser views reviewed with no runtime exceptions. Render counts were collected separately from the existing flythrough benchmark; software-browser cold shader timings are not useful for GPU performance comparisons.
+
+Start room typography refresh & foundational balance tuning:
+- Start room typography overhaul: Google Fonts added in index.html (Anton, Bebas Neue, Fraunces, Playfair Display, Silkscreen, Caveat). Replaced generic monospace sheet() with authentic POS thermal dot-matrix receiptSheet (VT323/Silkscreen, purple-black ribbon ink #2a2436, serrated tear, barcode, store #042) and legal-pad clipboardSheet (Permanent Marker/Caveat ballpoint scrawl, cyan rules, red margin). Added Monarch 1136 price label gun style (pricetag) with day-glo yellow/pink/red stickers and rubber stamp font. Upgraded clearance signage ("NO REFUNDS") to Anton/Bebas Neue condensed liquidation wood-type, and store farewell notice ("STORE CLOSING") to a dignified 1970s department-store parchment letterhead (Playfair Display/Fraunces serif with gold double-borders).
+- Foundational balance levers tuned to Treyarch solo benchmarks: economy.rounds.breakSeconds increased from 6 to 10s (intermission travel window); feel.health.regenDelay reduced from 3.5 to 2.5s and regenRate increased from 40 to 50 HP/s (prevents death during sprint meter exhaustion); feel.movement.backpedalMultiplier tuned from 0.70 to 0.78 (3.9 m/s retreat speed vs 3.4 m/s joggers). All verified against tests/startRoom.test.js, posterTextures.test.js, decor.test.js, departmentStore.test.js, and npm run test:quick.
 
 Weapon balance pass: Price Gun magazine/reserve 28/168, damage still 28; Rivet damage 58; Foam Dart damage 56;
 Heavy Coil damage 44, full to 15m then 65% at 30m. Fire rates, handling, reloads, prices and zombie health unchanged.

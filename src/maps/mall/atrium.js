@@ -11,13 +11,14 @@
 //   upperY  the level 2 floor height (the ring's floor)
 //   link    the escalator, for zombie navigation (zombies/navigation.js links)
 // Doors (the hallway gate, the Promenade link shutter) are built by mall.js, which owns the zones. Decoration adds no collision
-// except what is named: the walls, roof, ring slab, railings, fountain, kiosk counters, planters, benches and the escalator.
+// except what is named: the walls, sealed shop glazing, roof, ring slab, railings, fountain, kiosk counters, planters, benches and the escalator.
 // =============================================================================
 
 import * as THREE from 'three';
 import { slabPiecesWithHoles } from '../../world/mapKit.js';
 import { COLORS } from './palette.js';
 import { buildAtriumDetails } from './atriumDetails.js';
+import { atriumShopOpenings } from './atriumStorefronts.js';
 import { atriumDetails } from '../../config/atrium.js';
 import { shutters } from '../../config/shutters.js';
 
@@ -74,23 +75,44 @@ export function buildAtrium({ kit, props, layout, upperY }) {
   const along = { along: 'x', from: A.minX - T, to: A.maxX + T, at0: A.minZ - T, at1: A.minZ };
   kit.wall({ ...along, height: upperY, openings: groundOpenings.map((o) => ({ from: o.from, to: o.to, top: o.height })) }, wallMat, { name: 'atrium_wall_south' });
   kit.wall({ ...along, bottom: upperY, height: roofY - upperY, openings: [{ from: link.from, to: link.to, top: link.height }] }, wallMat, { name: 'atrium_wall_south_upper' });
-  kit.wall({ along: 'x', from: A.minX - T, to: A.maxX + T, at0: A.maxZ, at1: A.maxZ + T, height: roofY }, wallMat, { name: 'atrium_wall_north' });
-  kit.wall({ along: 'z', from: A.minZ, to: A.maxZ, at0: A.minX - T, at1: A.minX, height: roofY }, wallMat, { name: 'atrium_wall_west' });
-  kit.wall({ along: 'z', from: A.minZ, to: A.maxZ, at0: A.maxX, at1: A.maxX + T, height: roofY }, wallMat, { name: 'atrium_wall_east' });
+  // Cut actual shop openings on both floors. A continuous glass barrier seals every opening:
+  // scenery can have depth behind the wall without adding accessible floor or navigation space.
+  for (const side of ['north', 'west', 'east']) {
+    const alongX = side === 'north', wallAt = { north: A.maxZ, west: A.minX, east: A.maxX }[side];
+    const at0 = side === 'west' ? wallAt - T : wallAt;
+    const at1 = side === 'west' ? wallAt : wallAt + T;
+    for (const upper of [false, true]) {
+      const bottom = upper ? upperY : 0, height = upper ? roofY - upperY : upperY;
+      const openings = atriumShopOpenings(layout, side, upper);
+      kit.wall({ along: alongX ? 'x' : 'z', from: alongX ? A.minX - T : A.minZ,
+        to: alongX ? A.maxX + T : A.maxZ, at0, at1, bottom, height, openings }, wallMat, { name: `atrium_wall_${side}` });
+      for (const o of openings) {
+        const [a, b] = [wallAt, wallAt + (side === 'west' ? .18 : -.18)].sort((a, b) => a - b);
+        const barrier = alongX
+          ? kit.addCollider(o.from, bottom, a, o.to, bottom + o.top, b)
+          : kit.addCollider(a, bottom, o.from, b, bottom + o.top, o.to);
+        barrier.name = 'atrium_sealed_shop';
+      }
+    }
+  }
   box(A.minX - T, roofY, A.minZ - T, A.maxX + T, roofY + 0.3, A.maxZ + T, mat(COLORS.ceiling), { name: 'atrium_roof' });
   // Coral stripe + purple skirting on both floors (2 cm proud of the walls), split round the openings
   const stripe = mat(STRIPE);
   const skirting = mat(TRIM);
   const trims = (floorY, gaps) => {
-    const south = [];
-    let from = A.minX;
-    for (const g of [...gaps].sort((a, b) => a.from - b.from)) { south.push([from, A.minZ, g.from, A.minZ + 0.02]); from = g.to; }
-    south.push([from, A.minZ, A.maxX, A.minZ + 0.02]);
+    const pieces = (start, end, openings) => {
+      const runs = []; let from = start;
+      for (const g of [...openings].sort((a, b) => a.from - b.from)) {
+        if (g.from > from) runs.push([from, g.from]); from = g.to;
+      }
+      if (from < end) runs.push([from, end]); return runs;
+    };
+    const upper = floorY > 0;
     const runs = [
-      [A.minX, A.maxZ - 0.02, A.maxX, A.maxZ], // north
-      [A.minX, A.minZ, A.minX + 0.02, A.maxZ], // west
-      [A.maxX - 0.02, A.minZ, A.maxX, A.maxZ], // east
-      ...south, // south, round its openings
+      ...pieces(A.minX, A.maxX, atriumShopOpenings(layout, 'north', upper)).map(([a, b]) => [a, A.maxZ - .02, b, A.maxZ]),
+      ...pieces(A.minZ, A.maxZ, atriumShopOpenings(layout, 'west', upper)).map(([a, b]) => [A.minX, a, A.minX + .02, b]),
+      ...pieces(A.minZ, A.maxZ, atriumShopOpenings(layout, 'east', upper)).map(([a, b]) => [A.maxX - .02, a, A.maxX, b]),
+      ...pieces(A.minX, A.maxX, gaps).map(([a, b]) => [a, A.minZ, b, A.minZ + .02]),
     ];
     for (const [x0, z0, x1, z1] of runs) {
       box(x0, floorY + 1.05, z0, x1, floorY + 1.2, z1, stripe, { collide: false });
@@ -155,8 +177,8 @@ export function buildAtrium({ kit, props, layout, upperY }) {
     [fx - r - 0.03, fz - r, fx - r + 0.03, fz + r], [fx + r - 0.03, fz - r, fx + r + 0.03, fz + r]]) {
     box(x0, 2.15, z0, x1, 2.2, z1, mat(0xc9a04a), { collide: false });
   }
-  sign('PLEASE DO NOT FEED THE FOUNTAIN', {
-    x: fx, y: 0.55, z: fz - r - 0.06, width: 2.6, height: 0.3, facing: -1, background: '#3b2f44', color: '#ffd9a8',
+  sign('Please do not feed the fountain', {
+    x: fx, y: 0.55, z: fz - r - 0.06, width: 2.6, height: 0.3, facing: -1, background: '#3b2f44', color: '#ffd9a8', font: 'Arial, "Helvetica Neue", sans-serif',
   });
 
   // --- Kiosks (solid up to their canopy: nobody stands on the counter), planters, benches round the fountain -----------------------
@@ -185,11 +207,11 @@ export function buildAtrium({ kit, props, layout, upperY }) {
     x: cx, y: upperY + 2.3, z: A.maxZ - 0.02, width: 8, height: 1.1, facing: -1, background: '#6b3f5e', color: '#ffd9a8',
   });
   sign('THE GRAND ATRIUM', {
-    x: cx, y: 4.3, z: A.maxZ - 0.02, width: 6, height: 0.8, facing: -1, background: '#3b2f44', color: '#ffd23f',
+    x: cx, y: 4.3, z: A.maxZ - 0.02, width: 6, height: 0.8, facing: -1, background: '#3b2f44', color: '#ffd23f', font: 'Georgia, "Times New Roman", serif',
   });
-  sign('PROMENADE · LEVEL 2', {
+  sign('Promenade · Level 2', {
     x: (link.from + link.to) / 2, y: upperY + link.height + 0.35, z: A.minZ + shutters.track.signOffset, width: 2.8, height: 0.4, facing: 1,
-    background: '#1d1626', color: '#ffd23f',
+    background: '#1d1626', color: '#ffd23f', font: 'Arial, "Helvetica Neue", sans-serif',
   }).name = 'sign_atrium_promenade';
   box((link.from + link.to) / 2 - 1.4, upperY + link.height + .15, A.minZ + .03,
     (link.from + link.to) / 2 + 1.4, upperY + link.height + .55, A.minZ + shutters.track.signOffset - .01,

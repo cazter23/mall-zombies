@@ -101,9 +101,9 @@ docs/                history.md, folder-structure.md, map.md, tests.md + older p
   eye), `zombies.update`, `rounds.update` (paused while in the test range), `health.update`, `map.update`,
   `features.update`, `arena.update`, `player.updateView` (recoil springs last, so a shot's kick shows on the very next frame),
   `input.endTick()`. `rounds.start()` happens the first tick the game actually runs.
-- Buying: createGame adds every `map.doors` entry to `interactions` (verb 'open', cost pricing.priceOf('door', id), use =
-  door.open(), which opens its zone(s) so zombies start spawning there and the nav grid rebuilds when the shutter's collider
-  goes), and builds every `map.features` entry by kind (game/features/): wall buys (display + "buy <Gun>" / "<Gun> ammo",
+- Buying: createGame adds every `map.doors` entry to `interactions` (verb 'unlock', cost pricing.priceOf('door', destinationAreaId), use =
+  map.areaUnlocks.unlock(destinationAreaId), which owns only that destination and opens all barriers between owned areas;
+  zombies start spawning there and the nav grid rebuilds when each shutter's collider goes), and builds every `map.features` entry by kind (game/features/): wall buys (display + "buy <Gun>" / "<Gun> ammo",
   hidden when its zone is closed or you own it with full ammo; use = gun.give(def)) and the ammo cache. Melee gets `getWeapon: () => gun.weapon` (the gun in hand).
 - Map: createGame does `loadMap(mapId, scene, colliders)` and only uses the map interface (maps/index.js).
   The zombie manager gets `map.spawnPoints` + `isZoneOpen`, so zombies only spawn in opened zones.
@@ -167,20 +167,23 @@ docs/                history.md, folder-structure.md, map.md, tests.md + older p
   Rivet Rifle, Heavy Coil Nailer and Barcode Scanner; prices in economy.wallBuys via g.pricing.
 
 ## Map (short; coordinates, spawns and details per area in docs/map.md)
-Metres, +Y up, yaw 0 faces -Z. The start room opens into the MAIN HALLWAY (the hub); every area is bought separately with a shutter (prices in
-`config/economy.js`, read through `g.pricing`, never hardcoded). A shortcut shutter opens BOTH adjoining zones. Keep the agreed widths/prices.
+Metres, +Y up, yaw 0 faces -Z. The start room opens into the MAIN HALLWAY (the hub); each area is bought once through any accessible entrance (prices in
+`config/economy.js` economy.doors, keyed by destination area, read through `g.pricing`). Connections open free when both
+adjoining areas are owned. No cascading unlocks. Nine area purchases total 9500; 15 physical barriers remain.
 - **Start room** x -5..5, z 6..16 (open at start). Start shutter 500 -> hallway. Side door 1250 (west wall) -> HOFFMAN'S.
-- **Main hallway** x -20..20, z -2..6, 6 m. Doors: Food Court 1000 (south), Mega Mart 750 (east end), Service Corridor 1250 (west), Grand Atrium 1500
-  (north, x 13..18), HOFFMAN'S 1250 (north, x -19.5..-15.5). Escalator (repair 2000) up to level 2. Customer Service booth (gun tiers) on the north wall.
+- **Main hallway** x -20..20, z -2..6, 6 m. Doors: Food Court 1000 (south), Mega Mart 750 (east end), Service Corridor 1000 (west), Grand Atrium 1250
+  (north, x 13..18), HOFFMAN'S 1250 (north, x -19.5..-15.5). Promenade unlock 1250 also repairs the escalator when Hallway is owned. Customer Service booth (gun tiers) on the north wall.
 - **Food Court** x -20..20, z -14.3..-2.3: four stores (attachments), stalls, RESTOCK-O-MATIC (400 refill). **Mega Mart** x 20..34, z -24..6.
   **Service Corridor** 3 m wide, west of the hallway then south to z -14.
-- **Shortcuts:** Food Court <-> Mega Mart 1000, Service Corridor <-> Food Court 1250, Atrium <-> Mega Mart 1000, Atrium <-> Promenade 1000.
+- **Connections:** Food Court <-> Mega Mart, Service Corridor <-> Food Court, Atrium <-> Mega Mart, Atrium <-> Promenade: free once both endpoints are owned; otherwise buy the unowned area at its destination price.
 - **Grand Atrium** x 8..32, z 6.6..30.6, two storeys (upper ring y 6.3), second escalator.
 - **Level 2 / Sunset Promenade** x -20..20, z -4.5..6 (+ shoe annex), floor y 6.3, zone 'upstairs'.
 - **HOFFMAN'S department store** x -20..-5.3, z 6.3..26, 5 m (counters vaultable; everything else >= 2.1 m).
-- **Sunset Cinema** upstairs x -42..-20.3: 1500 shutter off the Promenade's west wall; service stairs down to the Service Corridor's north end (1500 shutter).
+- **Sunset Cinema** upstairs x -42..-20.3: 1250 area unlock off the Promenade's west wall or Service Corridor's north end; the other connection opens free when its neighbouring area is owned.
 - **Wall buys:** Price Gun (start room), Nail Gun (hallway), Foam Dart Blaster (Mega Mart), Confetti Cannon (Service Corridor), Rivet Rifle (Atrium),
-  Heavy Coil Nailer (Promenade), Barcode Scanner (HOFFMAN'S). Door count: 14.
+  Heavy Coil Nailer (Cinema projection passage, 2500), Barcode Scanner (HOFFMAN'S). Door count: 15.
+- **Customer Parking** x 34.3..62.3, z -24..6, y 0: 1250 through Mega Mart's former east emergency exit (z 1..4).
+  Three tall abandoned vans, four outdoor spawns, fenced perimeter, sunset sky; config/parkingLot.js and maps/mall/parkingLot.js.
 - **Player spawns** at (0, 0, 12). Zombie spawn markers are tagged by zone and floor height and only used while their zone is open.
 
 ## Gotchas that have cost time (read before changing the map or its tests)

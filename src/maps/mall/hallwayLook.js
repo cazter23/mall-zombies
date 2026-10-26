@@ -99,12 +99,12 @@ export function buildHallwayLook({ looks, kit, layout, keepClear = [] }) {
   const onSouth = H.minZ + 0.03;
   looks.poster('sunny', { text: sat.sunny[0], sub: sat.sunny[1] }, -13.2, 2.25, onNorth, 1.0, 1.5, -1);
   looks.poster('employee', {}, -9.5, 2.25, onNorth, 2.0, 1.33, -1);
-  looks.poster('notice', { title: sat.lostChildren[0], body: sat.lostChildren[1], header: '#ff9ec7' }, 3.6, 2.15, onNorth, 1.0, 0.75, -1);
-  looks.poster('mallMap', {}, -9, 2.15, onSouth, 1.8, 1.2, 1);
+  looks.poster('notice', { title: sat.lostChildren[0], body: sat.lostChildren[1], header: '#ff9ec7', typeface: 'utility' }, 3.6, 2.15, onNorth, 1.0, 0.75, -1);
+  looks.poster('mallMap', { typeface: 'utility', caption: 'You are here. You will stay here.' }, -9, 2.15, onSouth, 1.8, 1.2, 1);
   looks.poster('banner', { text: sat.familyBanner[0], sub: sat.familyBanner[1], colors: ['#a8e6dd', '#c9b6e4'] }, -15.6, 2.6, onSouth, 4.0, 1.0, 1);
   looks.poster('banner', { text: sat.customerBanner[0], sub: sat.customerBanner[1], colors: ['#ff9ec7', '#ffd1a1'] }, smileX, 2.6, onSouth, 4.0, 1.0, 1);
-  looks.poster('notice', { title: sat.rewards[0], body: sat.rewards[1], header: '#2bb5a6' }, 7.5, 2.0, onSouth, 1.2, 0.9, 1);
-  looks.poster('notice', { title: sat.wetFloor[0], body: sat.wetFloor[1] }, -6.6, 2.0, onSouth, 1.1, 0.82, 1);
+  looks.poster('notice', { title: sat.rewards[0], body: sat.rewards[1], header: '#2bb5a6', typeface: 'utility' }, 7.5, 2.0, onSouth, 1.2, 0.9, 1);
+  looks.poster('notice', { title: sat.wetFloor[0], body: sat.wetFloor[1], typeface: 'utility' }, -6.6, 2.0, onSouth, 1.1, 0.82, 1);
 
   // --- Clutter along the walls (never in doorways, spawns, buy spots or the centre lane) ----------------------------------
   looks.clutter({

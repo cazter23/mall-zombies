@@ -1,9 +1,10 @@
 // Authored decoration only: no colliders, navigation links, lights or interactions.
-// Keep substantial shapes within existing fixture silhouettes / the wall's capsule margin.
+// Shop interiors extend behind the arcade walls; other shapes stay inside existing fixture silhouettes.
 import * as THREE from 'three';
 import { atriumDetails as cfg } from '../../config/atrium.js';
 import { atmosphere } from '../../config/environment.js';
 import { seededRandom } from '../../world/textures.js';
+import { buildAtriumStorefronts } from './atriumStorefronts.js';
 
 export function buildAtriumDetails(kit, layout, upperY) {
   const root = new THREE.Group(); root.name = 'atrium_details'; kit.group.add(root);
@@ -30,22 +31,21 @@ export function buildAtriumDetails(kit, layout, upperY) {
       c.fillStyle = bg; c.fillRect(0, 0, canvas.width, canvas.height);
       c.strokeStyle = color; c.lineWidth = tall ? 5 : 2; c.strokeRect(9, 9, canvas.width - 18, canvas.height - 18);
       c.fillStyle = color; c.textAlign = 'center'; c.textBaseline = 'middle';
+      const family = name === 'employee_schedule' ? '"Courier New", monospace'
+        : name === 'directory_title' ? 'Georgia, "Times New Roman", serif' : 'Arial, "Helvetica Neue", sans-serif';
       const parts = text.split('\n');
       const lines = tall ? [...parts[0].split(' '), '', ...parts.slice(1).flatMap(s => s.split(' '))] : parts;
       lines.forEach((line, i) => {
         let size = tall ? (i < parts[0].split(' ').length ? 38 : 25) : Math.min(32, canvas.height / (lines.length + 1) * .65);
-        c.font = `700 ${size}px sans-serif`;
-        while (c.measureText(line).width > canvas.width - 36 && size > 10) { size--; c.font = `700 ${size}px sans-serif`; }
+        const weight = name === 'directory_floorplan' ? '400' : '700';
+        c.font = `${weight} ${size}px ${family}`;
+        while (c.measureText(line).width > canvas.width - 36 && size > 10) { size--; c.font = `${weight} ${size}px ${family}`; }
         c.fillText(line, canvas.width / 2, (i + 1) * canvas.height / (lines.length + 1));
       });
       const map = new THREE.CanvasTexture(canvas); map.colorSpace = THREE.SRGBColorSpace;
       m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map }));
     } else m = kit.sign(text, { x: 0, y: 0, z: 0, width: w, height: h, facing: 1, background: bg, color });
     m.name = name; m.position.set(...at); parent.add(m); return m;
-  }
-  function frame(name, width, height, bottom, depth, mat, parent) {
-    for (const x of [-width / 2, width / 2]) box(name, [.075, height, .07], [x, bottom + height / 2, depth], mat, parent);
-    for (const y of [bottom, bottom + height]) box(name, [width + .075, .075, .07], [0, y, depth], mat, parent);
   }
   function wallGroup(spec) {
     const g = new THREE.Group(); g.name = spec.name ? `display_${spec.name}` : 'wall_detail';
@@ -54,81 +54,7 @@ export function buildAtriumDetails(kit, layout, upperY) {
       spec.upper ? upperY : 0, alongZ ? A.minZ + spec.at : A.maxZ);
     g.rotation.y = { west: Math.PI / 2, east: -Math.PI / 2, north: Math.PI }[spec.wall]; root.add(g); return g;
   }
-  function mannequin(parent, x, color, pose = 0) {
-    const skin = material(0xd4c5ae), cloth = material(color);
-    cyl('mannequin_base', .15, .045, [x, .39, .13], chrome, parent);
-    box('mannequin_torso', [.25, .48, .12], [x, 1.18, .13], cloth, parent);
-    mesh('mannequin_head', new THREE.IcosahedronGeometry(.12, 0), skin, [x, 1.57, .13], parent);
-    for (const side of [-1, 1]) {
-      box('mannequin_leg', [.075, .51, .075], [x + side * .07, .67, .13], skin, parent);
-      box('mannequin_arm', [.065, .43, .065], [x + side * .19, 1.2 + (pose && side === 1 ? .08 : 0), .13], skin, parent, [0, 0, side * (pose ? .35 : .12)]);
-    }
-  }
-  function bottles(parent, width) {
-    for (const y of [.55, 1.16]) {
-      box('beauty_shelf', [width - .3, .045, .16], [0, y, .12], cream, parent);
-      for (let i = 0; i < 6; i++) {
-        const x = (i - 2.5) * (width - .6) / 6;
-        const h = .18 + (i % 3) * .065;
-        box('perfume_bottle', [.12 + (i % 2) * .04, h, .1], [x, y + .035 + h / 2, .13], [coral, mint, gold][i % 3], parent);
-        box('perfume_cap', [.065, .05, .07], [x, y + .06 + h, .13], gold, parent);
-      }
-    }
-  }
-  // The existing wall is the opaque back of each shallow display; all stock stays within 25cm of it.
-  for (const s of cfg.storefronts) {
-    const g = wallGroup(s), w = s.width, accent = material(s.color);
-    const pilasterHeight = s.upper || s.wall === 'north' ? 3.12 : 5.15;
-    for (const side of [-1, 1]) {
-      const x = side * (w / 2 + .14);
-      box('arcade_pilaster', [.14, pilasterHeight, .13], [x, pilasterHeight / 2, .08], accent, g);
-      box('pilaster_capital', [.25, .13, .21], [x, pilasterHeight - .12, .12], cream, g);
-      if (!s.upper && s.wall !== 'north') box('arcade_bracket', [.2, .18, .38], [x, upperY - .48, .18], cream, g);
-    }
-    box('window_shadow', [w, 2.18, .025], [0, 1.36, .055], dark, g);
-    box('display_sill', [w + .12, .15, .24], [0, .28, .14], accent, g);
-    frame('shop_frame', w, 2.3, .22, .19, cream, g);
-    box('shop_header', [w + .12, .47, .18], [0, 2.8, .13], accent, g);
-    label('shop_name', s.name, [0, 2.8, .235], w - .16, .35, `#${s.color.toString(16)}`, '#302739', g);
-    label('shop_terms', s.sub, [0, 2.35, .235], w - .2, .13, '#28303c', '#edddbc', g);
-    if (s.awning) {
-      for (let i = 0; i < 9; i++) box('striped_awning', [w / 9, .06, .38], [-w / 2 + w * (i + .5) / 9, 2.5, .18], i % 2 ? cream : accent, g, [-.16, 0, 0]);
-    }
-    if (s.theme === 'fashion') {
-      mannequin(g, -.65, P.mint); mannequin(g, .65, P.coral, 1);
-      box('folded_clothes', [.4, .08, .13], [0, .42, .13], cream, g);
-    } else if (s.theme === 'beauty') bottles(g, w);
-    else if (s.theme === 'luggage') {
-      for (let i = 0; i < 4; i++) {
-        const x = (i - 1.5) * .53, h = .48 + (i % 2) * .2;
-        box('suitcase', [.4, h, .13], [x, .38 + h / 2, .13], [coral, mint, cream, accent][i], g);
-        box('case_strap', [.035, h + .02, .025], [x, .38 + h / 2, .21], gold, g);
-        box('case_handle', [.14, .045, .05], [x, .42 + h, .13], dark, g);
-      }
-    } else if (s.theme === 'television') {
-      for (const [x, y] of [[-.56, .69], [.56, .69], [0, 1.43]]) {
-        box('television_case', [.75, .53, .15], [x, y, .13], cream, g);
-        box('television_screen', [.54, .37, .018], [x - .035, y, .218], material(0x78b3bd, { emissive: 0x285560, emissiveIntensity: .35 }), g);
-        for (let i = 0; i < 3; i++) box('television_scanline', [.52, .012, .008], [x - .035, y - .12 + i * .11, .233], mint, g);
-      }
-    } else if (s.theme === 'portraits') {
-      for (let i = 0; i < 3; i++) {
-        const x = (i - 1) * .71;
-        box('portrait_frame', [.6, .81, .06], [x, 1.23, .11], gold, g);
-        box('portrait_paper', [.5, .71, .012], [x, 1.23, .148], cream, g);
-        mesh('same_employee_head', new THREE.CircleGeometry(.105, 8), material(0x88a47d), [x, 1.36, .161], g);
-        box('same_employee_uniform', [.27, .25, .013], [x, 1.11, .164], coral, g);
-      }
-    } else {
-      box('covered_window', [w - .2, 1.79, .035], [0, 1.2, .105], paper, g);
-      for (let i = 0; i < 6; i++) {
-        box('paper_seam', [.012, 1.76, .008], [-w / 2 + .24 + i * (w - .4) / 6, 1.2, .13], cream, g);
-      }
-      label('opening_notice', 'OPENING SPRING 1986', [0, 1.42, .155], w * .7, .28, '#e5d4b2', '#7c4561', g);
-      label('opening_footnote', 'PLEASE EXCUSE OUR PERMANENT PROGRESS', [0, .93, .155], w * .82, .13, '#e5d4b2', '#7c4561', g);
-      for (let i = 0; i < 7; i++) box('closed_shutter_slat', [w - .15, .06, .045], [0, .44 + i * .09, .17], chrome, g);
-    }
-  }
+  buildAtriumStorefronts(kit, layout, upperY, root);
 
   // Kiosk stock is on the original counter, inside its existing solid footprint.
   function register(g, x) {
@@ -294,8 +220,8 @@ export function buildAtriumDetails(kit, layout, upperY) {
   label('employee_schedule', `EMPLOYEE NOTICEBOARD\n${cfg.signage.notice.replace(' · ', '\n')}\nMON TUE WED THU FRI SAT SUN\nDALE DALE DALE DALE DALE DALE DALE`, [0, 1.7, .135], 1.5, .9, '#e5d4b2', '#51364e', notice);
   const directory = wallGroup({ wall: 'east', at: 2.6 });
   box('directory_case', [1.05, 1.65, .12], [0, 1.5, .1], plum, directory);
-  label('directory_title', 'SUNSET GALLERIA', [0, 2.15, .175], .94, .2, '#4b304e', '#f3e3bf', directory);
-  label('directory_floorplan', '01  SHOPPING\n02  MORE SHOPPING\n← FOOD COURT\n↓ MEGA MART\n↑ PROMENADE\nYOU ARE HERE', [0, 1.5, .175], .88, .95, '#d5dfcb', '#4b304e', directory);
+  label('directory_title', 'Sunset Galleria', [0, 2.15, .175], .94, .2, '#4b304e', '#f3e3bf', directory);
+  label('directory_floorplan', '01  Shopping\n02  More Shopping\n← Food Court\n↓ Mega Mart\n↑ Promenade\nYou are here', [0, 1.5, .175], .88, .95, '#d5dfcb', '#4b304e', directory);
   label('directory_terms', cfg.signage.directory, [0, .85, .175], .94, .15, '#4b304e', '#f3e3bf', directory);
   // A single tired promotional balloon caught high by the north-west roof beam.
   mesh('stranded_balloon', new THREE.SphereGeometry(.26, 8, 6), material(P.coral, { roughness: .25, metalness: .15 }), [A.minX + 4, roof - .62, A.maxZ - 4]);

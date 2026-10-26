@@ -23,22 +23,146 @@ export function buildStartRoomDetails(kit, room) {
     boxes.push(mesh);
     return mesh;
   }
-  function sign(name, text, x, y, z, width, height, facing, background, color = '#f6edda') {
-    const mesh = kit.sign(text, { x: cx + x, y, z: front + z, width, height, facing, background, color });
+  function sign(name, text, x, y, z, width, height, facing, background, color = '#f6edda', typography = {}) {
+    const mesh = kit.sign(text, { x: cx + x, y, z: front + z, width, height, facing, background, color, ...typography });
     mesh.name = name;
     details.add(mesh);
     return mesh;
   }
-  function sheet(name, lines, width, height, position, rotation) {
+  function receiptSheet(name, lines, width, height, position, rotation) {
     const canvas = document.createElement('canvas');
     canvas.width = 256; canvas.height = 512;
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#ece3c9'; ctx.fillRect(0, 0, 256, 512);
-    ctx.fillStyle = '#514d46'; ctx.font = 'bold 19px monospace'; ctx.textAlign = 'center';
-    lines.forEach((line, i) => ctx.fillText(line, 128, 45 + i * 37));
+
+    // Off-white thermal receipt paper with subtle gradient
+    ctx.fillStyle = '#faf6ec';
+    ctx.fillRect(0, 0, 256, 512);
+
+    const edgeGrad = ctx.createLinearGradient(0, 0, 18, 0);
+    edgeGrad.addColorStop(0, 'rgba(0, 0, 0, 0.08)');
+    edgeGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = edgeGrad;
+    ctx.fillRect(0, 0, 18, 512);
+
+    // Serrated zig-zag receipt tear at top
+    ctx.fillStyle = '#1c1b18';
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    for (let x = 0; x <= 256; x += 8) {
+      ctx.lineTo(x + 4, (x / 8) % 2 === 0 ? 6 : 0);
+    }
+    ctx.lineTo(256, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    // 9-pin dot-matrix purple-black ribbon ink
+    ctx.fillStyle = '#2a2436';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Store header in dot-matrix font
+    ctx.font = 'bold 22px "VT323", "Silkscreen", monospace';
+    ctx.fillText('SUNSET GALLERIA #042', 128, 30);
+    ctx.font = '16px "VT323", "Silkscreen", monospace';
+    ctx.fillText('REGISTER #01  TRAN #9884', 128, 50);
+
+    // Dotted separator
+    ctx.font = '18px "VT323", "Silkscreen", monospace';
+    ctx.fillText('. . . . . . . . . . . . . . . . . .', 128, 68);
+
+    // Receipt lines
+    let y = 92;
+    lines.forEach((line) => {
+      if (line.includes('---')) {
+        ctx.font = '16px "VT323", "Silkscreen", monospace';
+        ctx.fillText('- - - - - - - - - - - - - - -', 128, y);
+      } else if (line === 'FINAL SALE' || line === 'NO REFUNDS') {
+        ctx.font = 'bold 24px "VT323", "Silkscreen", monospace';
+        ctx.fillText(`* ${line} *`, 128, y);
+      } else {
+        ctx.font = '20px "VT323", "Silkscreen", monospace';
+        ctx.fillText(line, 128, y);
+      }
+      y += 33;
+    });
+
+    // Barcode at bottom of receipt
+    const barY = 438;
+    const barH = 38;
+    ctx.fillStyle = '#2a2436';
+    const barPattern = [3, 1, 2, 4, 1, 3, 2, 1, 4, 2, 1, 3, 4, 1, 2, 3, 1, 4, 2, 1, 3, 2, 4, 1, 2, 3, 2, 1, 4, 1, 3, 2, 4, 2];
+    let bx = 30;
+    for (const w of barPattern) {
+      ctx.fillRect(bx, barY, w, barH);
+      bx += w + 2;
+    }
+    ctx.font = '14px "VT323", "Silkscreen", monospace';
+    ctx.fillText('0 725272 730429', 128, barY + barH + 12);
+
     const texture = new THREE.CanvasTexture(canvas);
     texture.colorSpace = THREE.SRGBColorSpace;
-    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height), new THREE.MeshStandardMaterial({ map: texture, roughness: 1, side: THREE.DoubleSide }));
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height), new THREE.MeshStandardMaterial({ map: texture, roughness: 0.95, side: THREE.DoubleSide }));
+    mesh.name = name;
+    mesh.position.set(cx + position[0], position[1], front + position[2]);
+    mesh.rotation.set(...rotation);
+    details.add(mesh);
+    return mesh;
+  }
+
+  function clipboardSheet(name, lines, width, height, position, rotation) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256; canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+
+    // Yellow legal pad paper background
+    ctx.fillStyle = '#fdf8cb';
+    ctx.fillRect(0, 0, 256, 512);
+
+    // Light cyan horizontal ruled lines
+    ctx.strokeStyle = 'rgba(80, 160, 200, 0.4)';
+    ctx.lineWidth = 1.5;
+    for (let ly = 48; ly < 512; ly += 34) {
+      ctx.beginPath();
+      ctx.moveTo(0, ly);
+      ctx.lineTo(256, ly);
+      ctx.stroke();
+    }
+
+    // Red left margin vertical line
+    ctx.strokeStyle = 'rgba(220, 60, 60, 0.65)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(42, 0);
+    ctx.lineTo(42, 512);
+    ctx.stroke();
+
+    // Dark ballpoint pen blue ink
+    ctx.fillStyle = '#102554';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+
+    // Frantic manager handwriting
+    ctx.font = 'bold 24px "Permanent Marker", "Caveat", cursive';
+    ctx.save();
+    ctx.translate(50, 42);
+    ctx.rotate(-0.02);
+    ctx.fillText(lines[0] || 'INVENTORY', 0, 0);
+    ctx.restore();
+
+    ctx.font = '22px "Permanent Marker", "Caveat", cursive';
+    lines.slice(1).forEach((line, i) => {
+      ctx.save();
+      const jitter = (i % 2 === 0 ? 0.012 : -0.012);
+      const ly = 80 + i * 40;
+      ctx.translate(48, ly);
+      ctx.rotate(jitter);
+      ctx.fillText(line, 0, 0);
+      ctx.restore();
+    });
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height), new THREE.MeshStandardMaterial({ map: texture, roughness: 0.9, side: THREE.DoubleSide }));
     mesh.name = name;
     mesh.position.set(cx + position[0], position[1], front + position[2]);
     mesh.rotation.set(...rotation);
@@ -57,7 +181,7 @@ export function buildStartRoomDetails(kit, room) {
     box('register_key', x, 1.45, z, x + 0.055, 1.465, z + 0.032, row === 2 && col === 3 ? red : cream);
   }
   box('receipt_top', -4.01, 1.025, 7.55, -3.82, 1.035, 7.75, cream);
-  sheet('checkout_receipt', ['FINAL SALE', '------------', 'STAPLES x9999', 'STAPLES x9999', 'STAPLES x9999', '------------', 'NO REFUNDS', 'THANK YOU!'],
+  receiptSheet('checkout_receipt', ['FINAL SALE', '------------', 'STAPLES x9999', 'STAPLES x9999', 'STAPLES x9999', '------------', 'NO REFUNDS', 'THANK YOU!'],
     0.19, 0.54, [-3.915, 0.755, 7.535], [0, Math.PI, 0]);
   // Two paper bags at the till end; simple rigid handles fit the low-poly style.
   for (const [x, z] of [[-3.34, 7.92], [-3.30, 8.25]]) {
@@ -65,10 +189,10 @@ export function buildStartRoomDetails(kit, room) {
     for (const hx of [x + 0.04, x + 0.15]) box('bag_handle', hx, 1.32, z + 0.08, hx + 0.015, 1.43, z + 0.10, tape);
     box('bag_handle', x + 0.04, 1.415, z + 0.08, x + 0.165, 1.43, z + 0.10, tape);
   }
-  sign('no_refunds', 'NO REFUNDS', -2.7, 0.67, 7.589, 1.15, 0.25, -1, '#8f342f');
+  sign('no_refunds', 'NO REFUNDS', -2.7, 0.67, 7.589, 1.15, 0.25, -1, '#d90429', '#ffffff', { font: '"Arial Black", Arial, sans-serif' });
   // Clipboard rests at the far end, away from the vault route.
   box('inventory_clipboard', -4.12, 1.024, 8.05, -3.88, 1.035, 8.42, wood);
-  sheet('inventory_sheet', ['INVENTORY', 'STOCK: 0', 'STAFF: 0', 'PROBLEMS:', 'TOO MANY'], 0.17, 0.28, [-3.99, 1.04, 8.25], [-Math.PI / 2, 0, -0.15]);
+  clipboardSheet('inventory_sheet', ['INVENTORY', 'STOCK: 0', 'STAFF: 0', 'PROBLEMS:', 'TOO MANY'], 0.17, 0.28, [-3.99, 1.04, 8.25], [-Math.PI / 2, 0, -0.15]);
 
   // Shelving: the existing solid carcass remains unchanged. Dress its room-facing edge as shallow
   // shelves; products stay within that silhouette, leaving the walking lane beside it alone.
@@ -83,9 +207,31 @@ export function buildStartRoomDetails(kit, room) {
     box('product_label', -4.394, y + 0.06, z + 0.025, -4.387, y + 0.17, z + 0.17, cream);
   }
   box('empty_packaging', -4.70, 0.665, 4.20, -4.40, 0.71, 4.56, wood);
-  for (const [z, y, label] of [[2.6, 0.57, '99c'], [4.1, 1.17, 'SOLD'], [5, 1.77, '70% OFF']]) {
-    const tag = sign('shelf_tag', label, -4.365, y, z, 0.34, 0.12, 'x+', '#c5ae68', '#403a30');
+  for (const [z, y, label, bg, col] of [
+    [2.6, 0.57, '99c', '#ffee00', '#141419'], // day-glo yellow Monarch sticker
+    [4.1, 1.17, 'SOLD', '#d90429', '#ffffff'], // red clearance sold tag
+    [5.0, 1.77, '70% OFF', '#ff0055', '#ffffff'], // electric pink markdown tag
+  ]) {
+    const tag = sign('shelf_tag', label, -4.365, y, z, 0.34, 0.12, 'x+', bg, col, { font: 'Arial, sans-serif' });
     tag.rotation.x = 0.06;
+  }
+
+  // Dust shadows left by a display that was dragged out, plus faded queue markers from better days.
+  // These are paper-thin floor details, kept to the side of the central combat lane.
+  const ghost = material(0x9a8c75);
+  for (const [x0, z0, x1, z1] of [
+    [1.65, 3.15, 3.45, 3.19], [1.65, 3.15, 1.69, 5.35],
+    [3.41, 3.15, 3.45, 5.35], [1.65, 5.31, 3.45, 5.35],
+  ]) box('old_display_footprint', x0, 0.004, z0, x1, 0.006, z1, ghost);
+  for (const z of [8.65, 9.45]) {
+    box('queue_marker_worn', -2.65, 0.004, z, -1.95, 0.006, z + 0.07, tape);
+    box('queue_marker_worn', -2.65, 0.004, z + 0.14, -1.95, 0.006, z + 0.21, tape);
+  }
+  // Two old shelf labels survive after the stock and their price strips were pulled away.
+  for (const [z, y, label] of [[3.05, 1.19, 'WAS 29.99'], [4.55, 1.79, 'FINAL 99¢']]) {
+    const remnant = sign('torn_shelf_label', label, -4.365, y, z, 0.42, 0.13, 'x+', '#d7c9aa', '#71634d', { font: 'Georgia, serif' });
+    remnant.rotation.x = -0.08;
+    remnant.rotation.z = z < 4 ? 0.035 : -0.045;
   }
 
   // Boarded entrances: dark backing inset visually into the wall, framed and scraped. No new
@@ -114,15 +260,15 @@ export function buildStartRoomDetails(kit, room) {
   for (const z of [3.15, 3.98]) box('poster_tape', -4.966, 3.13, z, -4.956, 3.24, z + 0.12, tape);
   sign('sale_sticker', '70% OFF', -4.945, 2.73, 3.65, 0.73, 0.35, 'x+', '#ac3d35');
   box('peeled_sticker_corner', -4.94, 2.87, 3.9, -4.91, 2.92, 4.01, cream).rotation.x = -0.16;
-  const final = sign('final_sale_banner', 'ALL SALES FINAL', 0.35, 3.30, 9.96, 3.25, 0.40, -1, '#b44638');
+  const final = sign('final_sale_banner', 'ALL SALES FINAL', 0.35, 3.30, 9.96, 3.25, 0.40, -1, '#b44638', '#f6edda', { font: '"Arial Black", Arial, sans-serif' });
   final.rotation.z = -0.045;
   box('employee_frame', 4.91, 2.02, 6.35, 4.98, 2.98, 7.15, wood);
-  sign('employee_title', 'EMPLOYEE OF THE MONTH', 4.899, 2.82, 6.75, 0.69, 0.14, 'x-', '#574b3a');
+  sign('employee_title', 'EMPLOYEE OF THE MONTH', 4.899, 2.82, 6.75, 0.69, 0.14, 'x-', '#574b3a', '#e1d2b2', { font: 'Georgia, "Times New Roman", serif' });
   box('missing_photo', 4.89, 2.10, 6.46, 4.90, 2.65, 7.04, material(0xe1d2b2));
   for (const z of [6.5, 6.93]) box('photo_tape', 4.875, 2.53, z, 4.885, 2.70, z + 0.07, tape);
 
   // Price Gun station: frame around the existing outline, never over the gun or its label.
-  sign('pricing_station_title', 'FINAL MARKDOWN', 4.97, 2.23, 4, 1.42, 0.28, 'x-', '#8f342f');
+  sign('pricing_station_title', 'FINAL MARKDOWN', 4.97, 2.23, 4, 1.42, 0.28, 'x-', '#8f342f', '#f6edda', { font: '"Space Grotesk", Arial, sans-serif' });
   box('pricing_station_sill', 4.72, 0.92, 3.20, 4.99, 0.98, 4.80, wood);
   for (const z of [3.32, 4.40]) {
     const roll = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, 0.14, 10), cream);

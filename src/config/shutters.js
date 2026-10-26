@@ -37,6 +37,7 @@ export const shutters = {
       notice: 'YOUR SEAT IS RESERVED. FOREVER.', sticker: 'ADMIT ONE', seed: 113 },
   },
   doors: { startShutter: 'clearance', foodCourt: 'foodCourt', serviceCorridor: 'staff', megaMart: 'mart',
+    parkingLot: 'staff',
     foodCourtMegaMart: 'mart', serviceCorridorFoodCourt: 'staff', atrium: 'atrium', atriumPromenade: 'atrium', atriumMegaMart: 'mart', cinema: 'cinema', cinemaStairs: 'staff',
     departmentStore: 'department', departmentStoreStartRoom: 'department' },
 };

@@ -12,8 +12,8 @@ export function buildPromenadeDetails({ kit, looks, layout, floorY }) {
     return tag(kit.box(x - w / 2, y(h), z - depth / 2, x + w / 2, y(h + height), z + depth / 2,
       kit.mat(color, options), { name: `promenade_detail_${name}`, collide: false }));
   }
-  function sign(name, text, x, h, z, width, height, facing = -1, background = '#56415d', color = '#f2e6ce') {
-    const mesh = kit.sign(text, { x, y: y(h), z, width, height, facing, background, color });
+  function sign(name, text, x, h, z, width, height, facing = -1, background = '#56415d', color = '#f2e6ce', font = 'Arial, "Helvetica Neue", sans-serif') {
+    const mesh = kit.sign(text, { x, y: y(h), z, width, height, facing, background, color, font });
     mesh.name = `promenade_detail_${name}`; return tag(mesh);
   }
   function disc(name, radius, thickness, x, h, z, color, upright = false) {
@@ -32,7 +32,7 @@ export function buildPromenadeDetails({ kit, looks, layout, floorY }) {
       pz + Math.cos(angle) * .29, .035, .018, .09, c.brass);
     ray.rotation.y = angle;
   }
-  sign('landmark_plaque', 'SUNSET · FOREVER', px, .35, pz - seating.landmark.halfDepth - .018, .8, .16);
+  sign('landmark_plaque', 'SUNSET · FOREVER', px, .35, pz - seating.landmark.halfDepth - .018, .8, .16, -1, '#56415d', '#f2e6ce', 'Georgia, "Times New Roman", serif');
   // Upholstered perimeter seats, brass trim and a single forgotten shopping bag.
   for (const [x0, z0, x1, z1] of seating.loungeBenches) {
     box('seat_cushion', (x0 + x1) / 2, .455, (z0 + z1) / 2, x1 - x0 - .08, .035, z1 - z0 - .08, c.plum);
@@ -48,8 +48,8 @@ export function buildPromenadeDetails({ kit, looks, layout, floorY }) {
   const ctx = directory.getContext('2d');
   ctx.fillStyle = '#e6d7bd'; ctx.fillRect(0, 0, 512, 640);
   ctx.fillStyle = '#56415d'; ctx.fillRect(0, 0, 512, 95);
-  ctx.fillStyle = '#f2e6ce'; ctx.textAlign = 'center'; ctx.font = 'bold 36px sans-serif'; ctx.fillText('SUNSET PROMENADE', 256, 42);
-  ctx.font = '19px sans-serif'; ctx.fillText('LEVEL TWO · DIRECTORY', 256, 74);
+  ctx.fillStyle = '#f2e6ce'; ctx.textAlign = 'center'; ctx.font = 'bold 36px Georgia, "Times New Roman", serif'; ctx.fillText('Sunset Promenade', 256, 42);
+  ctx.font = '19px Arial, "Helvetica Neue", sans-serif'; ctx.fillText('Level Two · Directory', 256, 74);
   const mx = x => 32 + (x - r.minX) / (r.maxX - r.minX) * 448;
   const mz = z => 340 - (z - r.minZ) / (r.maxZ - r.minZ) * 170;
   ctx.fillStyle = '#c4adbe'; ctx.fillRect(32, 170, 448, 170);
@@ -57,12 +57,12 @@ export function buildPromenadeDetails({ kit, looks, layout, floorY }) {
   ctx.fillStyle = '#638e90'; ctx.fillRect(mx(layout.shoeStore.from), 140, mx(layout.shoeStore.to) - mx(layout.shoeStore.from), 30);
   ctx.fillStyle = '#a87973'; ctx.fillRect(mx(-3), 140, mx(3) - mx(-3), 30);
   ctx.fillStyle = '#bba16f'; ctx.fillRect(mx(4), 140, mx(10) - mx(4), 30);
-  ctx.fillStyle = '#56415d'; ctx.font = 'bold 20px sans-serif'; ctx.fillText('SHOPS ↑                       ATRIUM ↑', 256, 123);
+  ctx.fillStyle = '#56415d'; ctx.font = '600 20px Arial, "Helvetica Neue", sans-serif'; ctx.fillText('Shops ↑                       Atrium ↑', 256, 123);
   ctx.fillStyle = '#b3545c'; ctx.beginPath(); ctx.arc(mx(d.directory.x), mz(r.minZ + .2), 8, 0, Math.PI * 2); ctx.fill();
-  ctx.font = 'bold 20px sans-serif'; ctx.fillText('YOU ARE HERE', mx(d.directory.x), 380);
-  ctx.fillStyle = '#56415d'; ctx.textAlign = 'left'; ctx.font = '22px sans-serif';
-  for (const [i, text] of ['01  SHOE-PER SALE', '02  BUILD-A-BLASTER · COMING SOON', '03  PRETZEL PALACE', '04  GRAND ATRIUM  →', '05  ← SUNSET CINEMA'].entries()) ctx.fillText(text, 30, 435 + i * 36);
-  ctx.font = '16px sans-serif'; ctx.fillText('EAST WING · FUTURE EXPANSION', 30, 622);
+  ctx.font = '600 20px Arial, "Helvetica Neue", sans-serif'; ctx.fillText('You are here', mx(d.directory.x), 380);
+  ctx.fillStyle = '#56415d'; ctx.textAlign = 'left'; ctx.font = '22px Arial, "Helvetica Neue", sans-serif';
+  for (const [i, text] of ['01  Shoe-per Sale', '02  Build-a-Blaster · Coming Soon', '03  Pretzel Palace', '04  Grand Atrium  →', '05  ← Sunset Cinema'].entries()) ctx.fillText(text, 30, 435 + i * 36);
+  ctx.font = '16px Arial, "Helvetica Neue", sans-serif'; ctx.fillText('East Wing · Future Expansion', 30, 622);
   const texture = new THREE.CanvasTexture(directory); texture.colorSpace = THREE.SRGBColorSpace;
   const dx = d.directory.x, dz = r.minZ + .11, dh = d.directory.height;
   box('directory_frame', dx, dh - .9, dz - .05, d.directory.width + .12, 1.92, .10, c.brass);
@@ -78,7 +78,7 @@ export function buildPromenadeDetails({ kit, looks, layout, floorY }) {
     for (let row = 0; row < 3; row++) for (let col = 0; col < 3; col++) box('phone_key', x - .105, h - .12 + row * .05,
       z + col * .045 - .02, .018, .028, .028, c.cream);
     for (let j = 0; j < 7; j++) box('phone_cord', x - .105, h - .30 - j * .023, z - .075 + (j % 2) * .014, .02, .025, .02, c.dark);
-    sign('phone_label', i ? 'NO ANSWER' : 'LOCAL CALLS', x - .12, h + .33, z, .31, .13, 'x-');
+    sign('phone_label', i ? 'No answer' : 'Local calls', x - .12, h + .33, z, .31, .13, 'x-');
   }
   // Magazine rack is a shallow wall display, not a new obstacle on the floor.
   const rackX = d.magazineRack.x, rackZ = r.minZ + .12;
@@ -87,7 +87,7 @@ export function buildPromenadeDetails({ kit, looks, layout, floorY }) {
     for (let i = 0; i < 3; i++) {
       const x = rackX + (i - 1) * .29;
       box('magazine', x, .76 + row * .38, rackZ + .015, .24, .32, .025, [c.teal, c.peach, c.cream][(row + i) % 3]);
-      sign('magazine_title', ['SOLE', 'MALL LIFE', 'AFTER HOURS'][i], x, .98 + row * .38, rackZ + .037, .22, .07, 1);
+      sign('magazine_title', ['SOLE', 'MALL LIFE', 'AFTER HOURS'][i], x, .98 + row * .38, rackZ + .037, .22, .07, 1, '#56415d', '#f2e6ce', 'Georgia, "Times New Roman", serif');
     }
     box('magazine_lip', rackX, .74 + row * .38, rackZ + .045, d.magazineRack.width + .03, .035, .04, c.brass);
   }
@@ -139,7 +139,7 @@ export function buildPromenadeDetails({ kit, looks, layout, floorY }) {
     mesh.name = 'promenade_detail_pretzel'; kit.group.add(mesh); tag(mesh);
   }
   box('warmer_glass', pc, 1.16, front - .225, 1.94, .59, .012, c.glass, { transparent: true, opacity: .15, roughness: .3, depthWrite: false });
-  sign('pretzel_header', 'PRETZEL PALACE', pc, 2.72, front - .16, 5.2, .5, -1, '#5c2e12', '#ffd9a8');
+  sign('pretzel_header', 'PRETZEL PALACE', pc, 2.72, front - .16, 5.2, .5, -1, '#5c2e12', '#ffd9a8', 'Georgia, "Times New Roman", serif');
   sign('pretzel_menu', d.pretzel.menu, pc, 2.25, front - .17, 4.9, .25);
   sign('pretzel_notice', d.pretzel.notice, pc + 1.9, 1.55, front - .23, 1.2, .38);
   // Slatted grille closes the upper serving hatch but leaves the warmer readable.

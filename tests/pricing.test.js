@@ -49,10 +49,10 @@ test('the real game charges (and shows) the discounted price, and a new run has 
   g.pricing.setDiscount('door', 0.5);
   t.standAt(0, 8.5, 0);
   t.tick(2);
-  assert.equal(g.interactions.prompt.cost, economy.doors.startShutter / 2, 'the prompt shows the sale price');
+  assert.equal(g.interactions.prompt.cost, economy.doors.hallway / 2, 'the prompt shows the sale price');
   t.press('KeyF', 30);
   assert.equal(g.map.doors.find((d) => d.id === 'startShutter').isOpen, true);
-  assert.equal(g.wallet.points, economy.startingPoints - economy.doors.startShutter / 2, 'charged the sale price');
+  assert.equal(g.wallet.points, economy.startingPoints - economy.doors.hallway / 2, 'charged the sale price');
   g.resetRun();
   assert.equal(g.pricing.discountOf('door'), 0);
 });
@@ -95,5 +95,5 @@ test('a sale that starts mid-hold: you pay the price when the hold completes', (
   t.tick(30);
   t.input.held.delete('KeyF');
   assert.equal(g.map.doors.find((d) => d.id === 'startShutter').isOpen, true);
-  assert.equal(g.wallet.points, economy.startingPoints - economy.doors.startShutter / 2);
+  assert.equal(g.wallet.points, economy.startingPoints - economy.doors.hallway / 2);
 });

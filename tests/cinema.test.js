@@ -26,9 +26,9 @@ test('cinema entrance is a real F purchase through pricing, buyable both sides, 
     const t = fixture(), { g } = t;
     g.wallet.earn(5000); g.pricing.setDiscount('door', .5);
     stand(t, inside ? -21.7 : -18.6, -2.9, inside ? -Math.PI / 2 : Math.PI / 2);
-    assert.equal(g.interactions.prompt?.id, 'cinema'); assert.equal(g.interactions.prompt.cost, 750);
+    assert.equal(g.interactions.prompt?.id, 'cinema'); assert.equal(g.interactions.prompt.cost, 630);
     const before = g.wallet.points; t.press('KeyF', 30); t.tick(100);
-    assert.equal(g.wallet.points, before - 750); assert.equal(g.map.zones.cinema.open, true);
+    assert.equal(g.wallet.points, before - 630); assert.equal(g.map.zones.cinema.open, true);
     assert.equal(g.map.doors.find(d => d.id === 'cinema').price, economy.doors.cinema);
     g.resetRun(); t.tick(120); assert.equal(g.map.zones.cinema.open, false);
     assert.equal(g.map.doors.find(d => d.id === 'cinema').barrier.state, 'closed');

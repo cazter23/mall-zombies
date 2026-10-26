@@ -13,6 +13,15 @@ import * as THREE from 'three';
 
 const FONT = '"Bungee", "Arial Black", system-ui, sans-serif';
 const BODY = '"Arial Black", "Helvetica Neue", Arial, sans-serif';
+const TYPOGRAPHY = Object.freeze({
+  brand: { display: FONT, body: BODY, weight: '400' },
+  utility: { display: 'Arial, "Helvetica Neue", sans-serif', body: 'Arial, "Helvetica Neue", sans-serif', weight: '600' },
+  heritage: { display: 'Georgia, "Times New Roman", serif', body: 'Georgia, "Times New Roman", serif', weight: '400', bodyStyle: 'italic' },
+  handwritten: { display: '"Permanent Marker", "Comic Sans MS", cursive', body: '"Comic Sans MS", cursive', weight: '400' },
+  cinema: { display: 'Georgia, "Times New Roman", serif', body: 'Arial, "Helvetica Neue", sans-serif', weight: '700' },
+});
+
+function typographyFor(name) { return TYPOGRAPHY[name] || TYPOGRAPHY.brand; }
 
 function canvasOf(width, height) {
   const canvas = document.createElement('canvas');
@@ -22,10 +31,10 @@ function canvasOf(width, height) {
 }
 
 // Text that shrinks until it fits `maxWidth`.
-function fitText(ctx, text, x, y, maxWidth, size, font = FONT) {
+function fitText(ctx, text, x, y, maxWidth, size, font = FONT, weight = '400') {
   let s = size;
   do {
-    ctx.font = `${s}px ${font}`;
+    ctx.font = `${weight} ${s}px ${font}`;
     s -= 2;
   } while (ctx.measureText(text).width > maxWidth && s > 8);
   ctx.fillText(text, x, y);
@@ -182,7 +191,7 @@ const draw = {
     return canvas;
   },
 
-  mallMap({ caption = 'YOU ARE HERE. YOU WILL STAY HERE.' }) {
+  mallMap({ caption = 'YOU ARE HERE. YOU WILL STAY HERE.', typeface = 'brand' }) {
     const { canvas, ctx } = canvasOf(768, 512);
     ctx.fillStyle = '#fff8ef';
     ctx.fillRect(0, 0, 768, 512);
@@ -191,21 +200,26 @@ const draw = {
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    fitText(ctx, 'SUNSET GALLERIA · DIRECTORY', 384, 33, 720, 34);
+    const type = typographyFor(typeface);
+    const utility = typeface === 'utility';
+    fitText(ctx, utility ? 'Sunset Galleria · Directory' : 'SUNSET GALLERIA · DIRECTORY', 384, 33, 720, 34, type.display, utility ? type.weight : '400');
     const rooms = [ // a cheerful, roughly right floor plan
       ['FOOD COURT', 120, 300, 380, 120, '#ffb3c7'], ['MEGA MART', 520, 200, 200, 230, '#a7d8f0'],
       ['HALLWAY', 120, 220, 380, 70, '#f5e6a8'], ['ATRIUM', 380, 90, 200, 120, '#ffd1a1'],
       ['START', 240, 130, 110, 80, '#c9b6e4'], ['STAFF', 40, 220, 70, 200, '#cfcfcf'],
     ];
     for (const [label, x, y, w, h, c] of rooms) {
+      const roomLabel = utility
+        ? label.toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase())
+        : label;
       ctx.fillStyle = c;
       ctx.fillRect(x, y, w, h);
       ctx.strokeStyle = '#5a4a66';
       ctx.lineWidth = 4;
       ctx.strokeRect(x, y, w, h);
       ctx.fillStyle = '#3a2f4f';
-      ctx.font = `18px ${FONT}`;
-      ctx.fillText(label, x + w / 2, y + h / 2);
+      ctx.font = `${utility ? type.weight : '400'} 18px ${type.display}`;
+      ctx.fillText(roomLabel, x + w / 2, y + h / 2);
     }
     ctx.fillStyle = '#e8263a'; // YOU ARE HERE
     ctx.beginPath();
@@ -217,10 +231,10 @@ const draw = {
     ctx.arc(310, 255, 24, 0, Math.PI * 2);
     ctx.stroke();
     ctx.fillStyle = '#e8263a';
-    fitText(ctx, caption, 384, 470, 720, 32);
+    fitText(ctx, caption, 384, 470, 720, 32, type.body, '400');
     ctx.fillStyle = '#7a6a86';
-    ctx.font = `16px ${BODY}`;
-    ctx.fillText('EXITS: SEE CUSTOMER SERVICE (CLOSED)', 384, 500);
+    ctx.font = `16px ${type.body}`;
+    ctx.fillText(utility ? 'Exits: see Customer Service (closed).' : 'EXITS: SEE CUSTOMER SERVICE (CLOSED)', 384, 500);
     return canvas;
   },
 
@@ -254,8 +268,55 @@ const draw = {
     return canvas;
   },
 
-  notice({ title, body = '', header = '#ffd23f', ink = '#1d1626' }) {
+  notice({ title, body = '', header = '#ffd23f', ink = '#1d1626', typeface = 'brand' }) {
+    const isClosing = title.toUpperCase().includes('STORE CLOSING');
     const { canvas, ctx } = canvasOf(512, 384);
+
+    if (isClosing) {
+      // Elegant 1970s Department Store Farewell Letter (Fraunces / Playfair Display)
+      ctx.fillStyle = '#faf5ea'; // warm aged parchment
+      ctx.fillRect(0, 0, 512, 384);
+
+      // Deep burgundy header bar
+      ctx.fillStyle = '#5c1b27';
+      ctx.fillRect(0, 0, 512, 92);
+
+      // Delicate gold framing borders
+      ctx.strokeStyle = '#c9a050';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(10, 10, 492, 364);
+      ctx.strokeRect(14, 14, 484, 356);
+
+      // Decorative corner flourishes
+      ctx.fillStyle = '#c9a050';
+      for (const [cx, cy] of [[18, 18], [494, 18], [18, 366], [494, 366]]) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Title in heritage serif
+      ctx.fillStyle = '#f8ecd2';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const serifTitle = '"Playfair Display", "Fraunces", "Georgia", serif';
+      fitText(ctx, title, 256, 48, 460, 42, serifTitle);
+
+      // Small gold sub-rule
+      ctx.strokeStyle = '#c9a050';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(180, 78);
+      ctx.lineTo(332, 78);
+      ctx.stroke();
+
+      // Body text in elegant book serif
+      ctx.fillStyle = '#2e1c20';
+      ctx.font = 'italic 23px "Playfair Display", "Fraunces", "Georgia", serif';
+      wrap(ctx, body, 440).forEach((line, i) => ctx.fillText(line, 256, 160 + i * 44));
+      return canvas;
+    }
+
     ctx.fillStyle = '#fbfaf5';
     ctx.fillRect(0, 0, 512, 384);
     ctx.fillStyle = header;
@@ -263,8 +324,9 @@ const draw = {
     ctx.fillStyle = ink;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    fitText(ctx, title, 256, 50, 470, 46);
-    ctx.font = `30px ${BODY}`;
+    const type = typographyFor(typeface);
+    fitText(ctx, title, 256, 50, 470, 46, type.display, type.weight);
+    ctx.font = `${type.bodyStyle ? `${type.bodyStyle} ` : ''}30px ${type.body}`;
     wrap(ctx, body, 450).forEach((line, i) => ctx.fillText(line, 256, 160 + i * 40));
     return canvas;
   },

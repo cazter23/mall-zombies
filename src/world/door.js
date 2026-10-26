@@ -1,12 +1,12 @@
 // =============================================================================
 // DOOR
-// A buyable barrier between two zones (COD "door"). Wraps whatever physically
+// A barrier between zones (COD "door"). Wraps whatever physically
 // blocks the way (for now a roll-up shutter, world/shutter.js) and the zone(s) it
-// unlocks. Shortcuts unlock both adjoining areas. Opening is permanent for the run.
-// Maps create doors; the interaction system (game/interactions.js) sells them.
+// unlocks. Opening is permanent for the run. Mall purchases are coordinated by
+// areaUnlocks.js, which opens a barrier only after both endpoints are owned.
 //
 // Several doors may open the SAME zone (e.g. a food court reachable from two
-// sides): each door is bought separately, the zone counts as open while at
+// sides): for low-level geometry/debug callers, the zone counts as open while at
 // least one of its doors is open, and only locks again when all are closed.
 // =============================================================================
 
@@ -18,6 +18,12 @@ const openedBy = new WeakMap();
 // Toggling doors individually would close purchased entrances and lock their shops.
 export function toggleDoors(doors) {
   const shouldOpen = doors.some((door) => !door.isOpen);
+  const areas = doors[0]?.areaUnlocks;
+  if (areas) {
+    if (shouldOpen) areas.openAll();
+    else areas.reset();
+    return;
+  }
   for (const door of doors) {
     if (shouldOpen) door.open();
     else door.reset();

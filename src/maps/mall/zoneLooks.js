@@ -81,8 +81,8 @@ export function buildFoodCourtLook({ looks, kit, layout, keepClear = [] }) {
 
   // The corporate cheer on paper.
   const onNorth = F.maxZ - 0.04;
-  looks.poster('notice', { title: sat.inspection[0], body: sat.inspection[1], header: '#7fd3a8' }, -6.6, 2.15, onNorth, 1.2, 0.9, -1);
-  looks.poster('notice', { title: sat.refillsSmall[0], body: sat.refillsSmall[1], header: '#c9b6e4' }, 8.4, 2.1, onNorth, 1.0, 0.75, -1);
+  looks.poster('notice', { title: sat.inspection[0], body: sat.inspection[1], header: '#7fd3a8', typeface: 'utility' }, -6.6, 2.15, onNorth, 1.2, 0.9, -1);
+  looks.poster('notice', { title: sat.refillsSmall[0], body: sat.refillsSmall[1], header: '#c9b6e4', typeface: 'utility' }, 8.4, 2.1, onNorth, 1.0, 0.75, -1);
   looks.poster('banner', { text: sat.combo[0], sub: sat.combo[1], colors: ['#ffd1a1', '#ff9ec7'] }, F.maxX - 0.04, 2.6, -4.1, 3.0, 0.8, 'x-');
   looks.poster('sunny', { text: sat.seat[0], sub: sat.seat[1] }, F.minX + 0.03, 2.2, -3.4, 1.0, 1.5, 'x+');
 
@@ -111,7 +111,8 @@ export function buildMegaMartLook({ looks, layout, keepClear = [] }) {
 
   // Wall bands, round the doorways, the Foam Dart wall buy, the emergency exit and the back wall's doors and vent.
   looks.bands({ along: 'x', from: west, to: M.maxX, wallAt: M.maxZ, facing: -1, colors, gaps: [[ML.from, ML.to], [30.2, 32.8]], name: 'megamart_wainscot' });
-  looks.bands({ along: 'z', from: M.minZ, to: M.maxZ, wallAt: M.maxX, facing: -1, colors, gaps: [[1.4, 3.6]], name: 'megamart_wainscot' });
+  looks.bands({ along: 'z', from: M.minZ, to: M.maxZ, wallAt: M.maxX, facing: -1, colors,
+    gaps: [[layout.parkingLot.gate.from, layout.parkingLot.gate.to]], name: 'megamart_wainscot' });
   looks.bands({ along: 'x', from: west, to: M.maxX, wallAt: M.minZ, facing: 1, colors, gaps: [[20.85, 22.75], [25.2, 27.8], [30.5, 33.1]], name: 'megamart_wainscot' });
   looks.bands({ along: 'z', from: M.minZ, to: M.maxZ, wallAt: west, facing: 1, colors, gaps: [[MD.minZ, MD.maxZ], [FM.minZ, FM.maxZ]], name: 'megamart_wainscot' });
 
@@ -140,10 +141,10 @@ export function buildMegaMartLook({ looks, layout, keepClear = [] }) {
 
   // The corporate cheer on paper, 3 cm proud of the walls (clear of the detail pass's signs).
   looks.poster('banner', { text: sat.mustGo[0], sub: sat.mustGo[1], colors: ['#ffd23f', '#9cc3e6'] }, west + 0.03, 2.6, -17, 4.0, 1.0, 'x+');
-  looks.poster('notice', { title: sat.priceMatch[0], body: sat.priceMatch[1], header: '#2f6fb5' }, west + 0.03, 2.0, -3.4, 1.2, 0.9, 'x+');
+  looks.poster('notice', { title: sat.priceMatch[0], body: sat.priceMatch[1], header: '#2f6fb5', typeface: 'utility' }, west + 0.03, 2.0, -3.4, 1.2, 0.9, 'x+');
   looks.poster('sunny', { text: sat.shopTillYouDrop[0], sub: sat.shopTillYouDrop[1] }, M.maxX - 0.03, 2.2, -10.5, 1.0, 1.5, 'x-');
   looks.poster('notice', { title: sat.bulk[0], body: sat.bulk[1], header: '#ffd23f' }, M.maxX - 0.03, 2.0, -17.5, 1.2, 0.9, 'x-');
-  looks.poster('notice', { title: sat.stockroom[0], body: sat.stockroom[1], header: '#ff6b6b' }, 29.1, 2.55, M.minZ + 0.03, 1.2, 0.9, 1);
+  looks.poster('notice', { title: sat.stockroom[0], body: sat.stockroom[1], header: '#ff6b6b', typeface: 'utility' }, 29.1, 2.55, M.minZ + 0.03, 1.2, 0.9, 1);
 
   // Clutter (scatter keeps it out of the shelves; never the entrances, the checkout lanes, spawns or buy spots).
   looks.clutter({
@@ -210,10 +211,10 @@ export function buildServiceCorridorLook({ looks, kit, layout, corridor, keepCle
 
   // Staff notices on the painted east face, 3 cm proud.
   const onEast = eastX - 0.03;
-  looks.poster('notice', { title: L.satire.clockIn[0], body: L.satire.clockIn[1], header: '#9c3b33' }, onEast, 1.9, zAt(1.6) - 1.2, 1.0, 0.75, 'x-');
-  looks.poster('notice', { title: L.satire.mandatoryFun[0], body: L.satire.mandatoryFun[1], header: '#ffd23f' }, onEast, 1.9, zAt(5.5), 1.1, 0.82, 'x-');
-  looks.poster('notice', { title: L.satire.seeSomething[0], body: L.satire.seeSomething[1], header: '#6f8c6a' }, onEast, 1.9, zAt(9.5), 1.1, 0.82, 'x-');
-  looks.poster('notice', { title: L.satire.breakRoom[0], body: L.satire.breakRoom[1], header: '#55595c' }, onEast, 1.9, zAt(12), 1.0, 0.75, 'x-');
+  looks.poster('notice', { title: L.satire.clockIn[0], body: L.satire.clockIn[1], header: '#9c3b33', typeface: 'utility' }, onEast, 1.9, zAt(1.6) - 1.2, 1.0, 0.75, 'x-');
+  looks.poster('notice', { title: L.satire.mandatoryFun[0], body: L.satire.mandatoryFun[1], header: '#ffd23f', typeface: 'utility' }, onEast, 1.9, zAt(5.5), 1.1, 0.82, 'x-');
+  looks.poster('notice', { title: L.satire.seeSomething[0], body: L.satire.seeSomething[1], header: '#6f8c6a', typeface: 'handwritten' }, onEast, 1.9, zAt(9.5), 1.1, 0.82, 'x-');
+  looks.poster('notice', { title: L.satire.breakRoom[0], body: L.satire.breakRoom[1], header: '#55595c', typeface: 'utility' }, onEast, 1.9, zAt(12), 1.0, 0.75, 'x-');
 
   // Clutter: it's worse back here.
   looks.clutter({
@@ -287,7 +288,7 @@ export function buildLevelTwoLook({ looks, layout, floorY, hole, keepClear = [] 
   looks.pool(-15, y(2.75), H.maxZ - 0.026, 4.6, 1.1, -1, S.leasing, P.wallOpacity);
 
   // Posters, 3 cm proud: the leasing notice under its neon, a banner over the south benches, Sunny on the east wall.
-  looks.poster('notice', { title: sat.leasingNote[0], body: sat.leasingNote[1], header: '#22c3d6' }, -15, y(1.8), H.maxZ - 0.03, 1.2, 0.9, -1);
+  looks.poster('notice', { title: sat.leasingNote[0], body: sat.leasingNote[1], header: '#22c3d6', typeface: 'utility' }, -15, y(1.8), H.maxZ - 0.03, 1.2, 0.9, -1);
   looks.poster('banner', { text: sat.top[0], sub: sat.top[1], colors: ['#ffb38a', '#c9b6e4'] }, -6.7, y(1.9), H.minZ + 0.03, 3.4, 0.9, 1);
   looks.poster('sunny', { text: sat.view[0], sub: sat.view[1] }, H.maxX - 0.03, y(1.9), 0, 1.0, 1.5, 'x-');
 
@@ -362,9 +363,9 @@ export function buildAtriumLook({ looks, layout, upperY, keepClear = [] }) {
 
   // Posters, 3 cm proud (arcade walls and the ring's east wall).
   looks.poster('banner', { text: sat.grandOpening[0], sub: sat.grandOpening[1], colors: ['#ffd1a1', '#ff9ec7'] }, A.minX + 0.03, 2.6, 22, 4.0, 1.0, 'x+');
-  looks.poster('notice', { title: sat.lostFound[0], body: sat.lostFound[1], header: '#2ec4b6' }, A.maxX - 0.03, 2.0, 18, 1.2, 0.9, 'x-');
+  looks.poster('notice', { title: sat.lostFound[0], body: sat.lostFound[1], header: '#2ec4b6', typeface: 'utility' }, A.maxX - 0.03, 2.0, 18, 1.2, 0.9, 'x-');
   looks.poster('sunny', { text: sat.wish[0], sub: sat.wish[1] }, 20, 2.1, A.maxZ - 0.03, 1.0, 1.5, -1);
-  looks.poster('notice', { title: sat.rules[0], body: sat.rules[1], header: '#ff6b6b' }, A.maxX - 0.03, upperY + 1.8, 15, 1.2, 0.9, 'x-');
+  looks.poster('notice', { title: sat.rules[0], body: sat.rules[1], header: '#ff6b6b', typeface: 'utility' }, A.maxX - 0.03, upperY + 1.8, 15, 1.2, 0.9, 'x-');
 
   // Clutter on the ground floor (scatter keeps it out of the fountain, kiosks and planters; never the escalator or doorways).
   const E = AT.escalator;
@@ -440,8 +441,8 @@ export function buildDepartmentStoreLook({ looks, kit, layout, keepClear = [] })
 
   // The policies on paper, 3 cm proud: hiring by the gate, layaway on the back wall, Dale (employee of the month, every month)
   // on the west wall, the grand opening over the side door, the fitting-room rules on the fitting rooms' open end.
-  looks.poster('notice', { title: sat.hiring[0], body: sat.hiring[1], header: '#8c2f45' }, gate.to + 1.3, 2.0, r.minZ + 0.04, 1.0, 0.75, 1);
-  looks.poster('notice', { title: sat.layaway[0], body: sat.layaway[1], header: '#c9a14a' }, (F.x1 + DS.stockroomDoorX - 1.1) / 2, 1.9, r.maxZ - 0.03, 1.2, 0.9, -1);
+  looks.poster('notice', { title: sat.hiring[0], body: sat.hiring[1], header: '#8c2f45', typeface: 'utility' }, gate.to + 1.3, 2.0, r.minZ + 0.04, 1.0, 0.75, 1);
+  looks.poster('notice', { title: sat.layaway[0], body: sat.layaway[1], header: '#c9a14a', typeface: 'heritage' }, (F.x1 + DS.stockroomDoorX - 1.1) / 2, 1.9, r.maxZ - 0.03, 1.2, 0.9, -1);
   looks.poster('employee', {}, r.minX + 0.03, 2.25, 14.4, 2.0, 1.33, 'x+');
   looks.poster('banner', { text: sat.opening[0], sub: sat.opening[1], colors: ['#f6e7c8', '#e8b4bc'] }, r.maxX - 0.04, 3.55, (side.from + side.to) / 2, 3.6, 0.9, 'x-');
   looks.poster('sunny', { text: sat.fitting[0], sub: sat.fitting[1] }, F.x1 + 0.03, 1.5, r.maxZ - F.depth / 2, 0.8, 1.2, 'x+');
@@ -451,7 +452,7 @@ export function buildDepartmentStoreLook({ looks, kit, layout, keepClear = [] })
   looks.pool((fragrance.x0 + fragrance.x1) / 2, 0.012, fragrance.z, fragrance.x1 - fragrance.x0 + 1.2, 2.6, 'floor', '#b57bff', P.floorOpacity * 0.6);
   looks.pool((DS.layaway.x0 + DS.layaway.x1) / 2, 0.012, DS.layaway.z, DS.layaway.x1 - DS.layaway.x0 + 1.2, 2.6, 'floor', '#ffbf6b', P.floorOpacity * 0.55);
   // A hand-lettered notice by the gate (the staff's own handwriting on a torn card).
-  looks.poster('notice', { title: sat.handwritten[0], body: sat.handwritten[1], header: '#2b2d42' }, gate.to + 3.2, 1.9, r.minZ + 0.04, 0.9, 0.7, 1);
+  looks.poster('notice', { title: sat.handwritten[0], body: sat.handwritten[1], header: '#2b2d42', typeface: 'handwritten' }, gate.to + 3.2, 1.9, r.minZ + 0.04, 0.9, 0.7, 1);
 
   // Clutter (scatter keeps it off the fixtures; never in the gate, the side door or the counters' vault lanes).
   looks.clutter({

@@ -9,14 +9,15 @@ import { buildCinemaAuditoriumDetails } from './cinemaAuditoriumDetails.js';
 import { buildCinemaStoryDetails } from './cinemaStoryDetails.js';
 import { cinemaDetails as detailConfig } from '../../config/cinemaDetails.js';
 import { makeDustMoteTexture } from '../../world/atmosphereTextures.js';
+import { buildCinemaPublicFinish } from './cinemaPublicFinish.js';
 
 export function buildCinemaDetails({ kit, looks, layout: c, floorY: Y }) {
   const C = c.colors, L = c.lobby, A = c.auditorium, P = c.passage, p = c.presentation;
   const y = h => Y + h;
   const box = (name, x, h, z, w, height, d, color, options = {}) => kit.box(x - w / 2, y(h), z - d / 2,
     x + w / 2, y(h + height), z + d / 2, kit.mat(color, options), { collide: false, name: `cinema_detail_${name}` });
-  function sign(name, text, x, h, z, w, height, facing = 1, background = '#423044', color = '#f0dfbc') {
-    const m = kit.sign(text, { x, y: y(h), z, width: w, height, facing, background, color });
+  function sign(name, text, x, h, z, w, height, facing = 1, background = '#423044', color = '#f0dfbc', font = 'Arial, "Helvetica Neue", sans-serif') {
+    const m = kit.sign(text, { x, y: y(h), z, width: w, height, facing, background, color, font });
     m.name = `cinema_detail_${name}`; return m;
   }
   const glow = color => ({ emissive: color, emissiveIntensity: .6, roughness: .7 });
@@ -57,18 +58,18 @@ export function buildCinemaDetails({ kit, looks, layout: c, floorY: Y }) {
     box('service_strip', P.maxX - .07, .22, z, .06, .08, 1.1, C.teal, glow(C.teal));
     box('service_pipe', P.maxX - .08, 3.45, z, .11, .11, 2.4, C.brass);
   }
-  sign('screen_entry', 'SCREEN 1', -39.1, 3.05, 5.43, 2.9, .4, -1);
-  sign('passage_entry', 'PROJECTION / EXIT', -22, 3.05, 5.43, 2.9, .35, -1);
-  sign('auditorium_exit', 'EXIT →', -24.07, 3.05, 23.7, 2.0, .35, 'x-');
-  sign('passage_exit', '← LOBBY', -22, 3.1, 5.88, 2.4, .35, 1);
-  for (const side of [-1, 1]) sign('entrance', side === -1 ? 'SUNSET CINEMA' : 'SUNSET PROMENADE',
-    side === -1 ? -19.9 : -20.43, 3.15, -2.9, 3.15, .45, side === -1 ? 'x+' : 'x-');
+  sign('screen_entry', 'Screen 1', -39.1, 3.05, 5.43, 2.9, .4, -1);
+  sign('passage_entry', 'Projection / Exit', -22, 3.05, 5.43, 2.9, .35, -1);
+  sign('auditorium_exit', 'Exit →', -24.07, 3.05, 23.7, 2.0, .35, 'x-');
+  sign('passage_exit', '← Lobby', -22, 3.1, 5.88, 2.4, .35, 1);
+  for (const side of [-1, 1]) sign('entrance', side === -1 ? 'Sunset Cinema' : 'Sunset Promenade',
+    side === -1 ? -19.9 : -20.43, 3.15, -2.9, 3.15, .45, side === -1 ? 'x+' : 'x-', '#423044', '#f0dfbc', side === -1 ? 'Georgia, "Times New Roman", serif' : 'Arial, "Helvetica Neue", sans-serif');
   for (const s of c.futureScreens) {
     for (const dx of [-.6, .6]) box('future_door_handle', (s.from + s.to) / 2 + dx, 1.02, L.minZ + .055, .04, .35, .05, C.brass);
-    sign('future_screen_closed', 'NOT IN SERVICE', (s.from + s.to) / 2, 1.8, L.minZ + .06, 1.7, .25);
+    sign('future_screen_closed', s.label, (s.from + s.to) / 2, 1.8, L.minZ + .06, 1.7, .25);
   }
-  sign('service_stairs', 'EXIT · SERVICE STAIRS ↓', L.minX + .06, 3.05, -7.2, 3.15, .35, 'x+');
-  sign('service_gate_notice', 'SECURITY SHUTTER BELOW', L.minX + .06, 3.43, -7.2, 2.9, .20, 'x+');
+  sign('service_stairs', 'Exit · Service Stairs ↓', L.minX + .06, 3.05, -7.2, 3.15, .35, 'x+');
+  sign('service_gate_notice', 'Security Shutter Below', L.minX + .06, 3.43, -7.2, 2.9, .20, 'x+');
 
   // Enclosed counter cases match the existing tall collision: no invisible
   // space above a low counter and no campable strip behind the tills.
@@ -80,20 +81,20 @@ export function buildCinemaDetails({ kit, looks, layout: c, floorY: Y }) {
       r.maxX - r.minX + .08, .16, r.maxZ - r.minZ + .08, C.brass);
   }
   const con = c.concessions, tx = (c.ticketBooth.minX + c.ticketBooth.maxX) / 2;
-  sign('concession_menu', 'POPCORN / SODA / FOREVER', con.maxX + .03, 3.05, .45, 4.8, .5, 'x+');
-  sign('ticket_header', 'BOX OFFICE · ADMIT ONE', tx, 3.05, -9.35, 4.1, .45);
-  sign('ticket_price', 'TONIGHT: YOUR ENTIRE SHIFT', tx, .67, -9.37, 3.3, .3);
+  sign('concession_menu', 'Popcorn / Soda / Forever', con.maxX + .03, 3.05, .45, 4.8, .5, 'x+');
+  sign('ticket_header', 'Box Office · Admit One', tx, 3.05, -9.35, 4.1, .45, 1, '#423044', '#f0dfbc', 'Georgia, "Times New Roman", serif');
+  sign('ticket_price', 'Tonight: Your Entire Shift', tx, .67, -9.37, 3.3, .3);
   buildCinemaLobbyDetails({ kit, layout: c, floorY: Y });
   buildCinemaAuditoriumDetails({ kit, looks, layout: c, floorY: Y });
   const story = buildCinemaStoryDetails({ kit, layout: c, floorY: Y });
-  sign('island_ad', 'NOW SHOWING · FOREVER', -33.5, .38, c.island.minZ - .025, 3.6, .25, -1);
+  sign('island_ad', 'Now Showing · Forever', -33.5, .38, c.island.minZ - .025, 3.6, .25, -1, '#423044', '#f0dfbc', 'Georgia, "Times New Roman", serif');
   // Portrait one-sheets, with original graphic art rather than more menu tiles.
   for (const [i, poster] of c.posters.entries()) {
     const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 768;
     const ctx = canvas.getContext('2d'); ctx.fillStyle = poster.base; ctx.fillRect(0, 0, 512, 768);
     ctx.strokeStyle = poster.accent; ctx.lineWidth = 4; ctx.strokeRect(16, 16, 480, 736);
-    ctx.fillStyle = poster.accent; ctx.textAlign = 'center'; ctx.font = 'bold 39px sans-serif'; ctx.fillText(poster.title, 256, 105);
-    ctx.font = '17px sans-serif'; ctx.fillText(poster.tagline, 256, 660);
+    ctx.fillStyle = poster.accent; ctx.textAlign = 'center'; ctx.font = 'bold 39px Georgia, "Times New Roman", serif'; ctx.fillText(poster.title, 256, 105);
+    ctx.font = 'italic 17px Georgia, "Times New Roman", serif'; ctx.fillText(poster.tagline, 256, 660);
     ctx.font = '15px sans-serif'; ctx.fillText('A SUNSET PICTURES PRESENTATION', 256, 713);
     ctx.beginPath(); ctx.arc(256, 340, 143, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#282333'; ctx.strokeStyle = '#282333'; ctx.lineWidth = 14;
@@ -127,6 +128,7 @@ export function buildCinemaDetails({ kit, looks, layout: c, floorY: Y }) {
     for (let i = 0; i < 7; i++) box('spawn_louvre', x + (alongX ? 0 : s.wall === 'west' ? .035 : -.035), .3 + i * .21,
       z + (alongX ? s.wall === 'south' ? .035 : -.035 : 0), alongX ? 1.1 : .04, .06, alongX ? .04 : 1.1, C.brass);
   }
+  buildCinemaPublicFinish({ kit, layout: c, floorY: Y });
   const neon = looks.neon('cinema');
   neon.text('CINEMA', { x: -30, y: y(3.9), z: L.maxZ - .07, width: 5, height: .65, facing: -1, color: '#e7a7ce' });
 

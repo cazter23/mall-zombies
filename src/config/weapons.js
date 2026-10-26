@@ -637,7 +637,7 @@ export const weapons = {
     },
   },
 
-  // WALL BUY: Sunset Promenade (economy.wallBuys).
+  // WALL BUY: Cinema projection passage (economy.wallBuys).
   // ROLE: heavy industrial LMG. Huge 64-nail wire-collated drum and 2-target pierce chew through
   // corridor hordes for over 6 seconds straight, paid for with heavy ADS handling and a long 3.1s drum swap.
   coilNailer: {

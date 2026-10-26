@@ -19,8 +19,8 @@ export const feel = {
 
   // Health regen and the red "you're hurt" screen edges
   health: {
-    regenDelay: 3.5, // seconds without being hit before health starts coming back
-    regenRate: 40, // health per second while regenerating (empty -> full in ~2.5s)
+    regenDelay: 2.5, // seconds without being hit before health starts coming back
+    regenRate: 50, // health per second while regenerating (empty -> full in ~2.0s)
     hitFlashSeconds: 0.4, // red flash on the screen edges when hit
     hitFlashOpacity: 0.65,
     hitJoltDegrees: 2.5, // the view jolts down this much when hit
@@ -34,7 +34,7 @@ export const feel = {
   movement: {
     walkSpeed: 5, // m/s (forwards)
     sprintSpeed: 8, // m/s
-    backpedalMultiplier: 0.7, // walking backwards is slower (COD-style): retreating while shooting costs you
+    backpedalMultiplier: 0.78, // walking backwards is slower (COD-style): retreating while shooting costs you
     strafeMultiplier: 0.85, // so is walking sideways; diagonals blend between
     groundAcceleration: 60, // m/s^2: how quickly you reach full speed on the ground
     airAcceleration: 15, // m/s^2: less control while airborne

@@ -7,6 +7,9 @@ export function createAmbience({ map, player, sound, colliders, random = seededR
   const cfg = atmosphere.ambience, origin = new THREE.Vector3(), target = new THREE.Vector3();
   const ray = new THREE.Ray(), hit = new THREE.Vector3();
   let rattle = cfg.rattleMinSeconds + random() * (cfg.rattleMaxSeconds - cfg.rattleMinSeconds);
+  let elapsed = 0;
+  const nextEvent = event => event.minSeconds + random() * (event.maxSeconds - event.minSeconds);
+  const events = (map.ambientEvents ?? []).map(event => ({ event, remaining: nextEvent(event) }));
   function silence() { sound.setAmbience?.([]); }
   function spatialMix(position, range) {
     target.copy(position);
@@ -23,13 +26,18 @@ export function createAmbience({ map, player, sound, colliders, random = seededR
   return {
     update(dt, active) {
       if (!active) { silence(); return; }
+      elapsed += dt;
       origin.copy(player.position); origin.y += player.height * cfg.listenerHeightFraction;
       const voices = [];
       for (const emitter of map.ambience ?? []) {
         if (!map.zones[emitter.zone]?.open) continue;
         target.fromArray(emitter.position);
         const mix = spatialMix(target, emitter.range);
-        if (mix) voices.push({ id: emitter.id, kind: emitter.kind, ...mix });
+        if (mix) {
+          const pulse = emitter.pulse;
+          const motion = pulse ? 1 - pulse.depth * (.5 + .5 * Math.sin(elapsed * Math.PI * 2 / pulse.period)) : 1;
+          voices.push({ id: emitter.id, kind: emitter.kind, ...mix, gain: mix.gain * (emitter.gain ?? 1) * motion });
+        }
       }
       voices.sort((a, b) => b.gain - a.gain);
       // Hear only the nearest/loudest speaker for the shared soundtrack, leaving room for HVAC.
@@ -40,6 +48,20 @@ export function createAmbience({ map, player, sound, colliders, random = seededR
         hasMusic = true; return true;
       }).slice(0, cfg.maxVoices);
       sound.setAmbience?.(selected);
+      // Local one-shots wait for an audible, unlocked area. Pause/death freeze them,
+      // and a single update never releases a backlog of sounds after a long frame.
+      for (const state of events) {
+        const e = state.event;
+        if (!map.zones[e.zone]?.open) continue;
+        target.fromArray(e.position);
+        const mix = spatialMix(target, e.range);
+        if (!mix) continue;
+        state.remaining -= dt;
+        if (state.remaining <= 0) {
+          sound.playAmbient?.(e.sound, { volume: mix.gain * (e.gain ?? 1), pan: mix.pan });
+          state.remaining = nextEvent(e);
+        }
+      }
       rattle -= dt;
       if (rattle <= 0) {
         // Rattles come from a real closed shutter, rather than the nearest HVAC/music emitter.
@@ -54,6 +76,10 @@ export function createAmbience({ map, player, sound, colliders, random = seededR
       }
     },
     silence,
-    reset() { silence(); sound.resetMusic?.(); rattle = cfg.rattleMinSeconds + random() * (cfg.rattleMaxSeconds - cfg.rattleMinSeconds); },
+    reset() {
+      silence(); sound.resetMusic?.(); elapsed = 0;
+      rattle = cfg.rattleMinSeconds + random() * (cfg.rattleMaxSeconds - cfg.rattleMinSeconds);
+      for (const state of events) state.remaining = nextEvent(state.event);
+    },
   };
 }

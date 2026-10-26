@@ -79,7 +79,7 @@ test('Mega Mart shortcut sign clears the brand stripes instead of flickering aga
 test('the door ladder: four entrances, two independently priced two-zone shortcuts, and the escalator repair', () => {
   const { map, door } = setup();
   const ladder = [
-    ['startShutter', 'hallway', economy.doors.startShutter],
+    ['startShutter', 'hallway', economy.doors.hallway],
     ['megaMart', 'megaMart', economy.doors.megaMart],
     ['foodCourt', 'foodCourt', economy.doors.foodCourt],
     ['serviceCorridor', 'serviceCorridor', economy.doors.serviceCorridor],
@@ -89,32 +89,32 @@ test('the door ladder: four entrances, two independently priced two-zone shortcu
     assert.equal(door(id).opensZone, zone, `${id} opens ${zone}`);
     assert.equal(map.zones[zone].open, false, `${zone} starts closed`);
   }
-  assert.deepEqual([economy.doors.startShutter, economy.doors.megaMart, economy.doors.foodCourt, economy.doors.serviceCorridor], [500, 750, 1000, 1250]);
-  assert.equal(map.doors.length, 14);
+  assert.deepEqual([economy.doors.hallway, economy.doors.megaMart, economy.doors.foodCourt, economy.doors.serviceCorridor], [500, 750, 1000, 1000]);
+  assert.equal(map.doors.length, 15);
   assert.equal(door('departmentStoreStartRoom').price, 1250); // HOFFMAN'S side door from the start room
   assert.deepEqual(door('departmentStoreStartRoom').opensZones, ['departmentStore']);
   assert.equal(door('departmentStore').price, 1250); // HOFFMAN'S (tests/departmentStore.test.js)
   assert.deepEqual(door('departmentStore').opensZones, ['departmentStore']);
-  assert.equal(door('atriumMegaMart').price, 1000);
+  assert.equal(door('atriumMegaMart').price, 1250);
   assert.deepEqual(door('atriumMegaMart').opensZones, ['atrium', 'megaMart']);
-  assert.equal(door('atrium').price, 1500);
+  assert.equal(door('atrium').price, 1250);
   assert.deepEqual(door('atrium').opensZones, ['atrium']);
-  assert.equal(door('atriumPromenade').price, 1000);
+  assert.equal(door('atriumPromenade').price, 1250);
   assert.deepEqual(door('atriumPromenade').opensZones, ['atrium', 'upstairs']);
-  assert.equal(door('escalatorRepair').price, economy.doors.escalatorRepair);
-  assert.equal(economy.doors.escalatorRepair, 2000);
+  assert.equal(door('escalatorRepair').price, economy.doors.upstairs);
+  assert.equal(economy.doors.upstairs, 1250);
   assert.deepEqual(door('escalatorRepair').opensZones, ['upstairs']);
   assert.equal(door('escalatorRepair').verb, 'repair');
-  assert.equal(door('foodCourtMegaMart').price, economy.doors.foodCourtMegaMart);
-  assert.equal(door('serviceCorridorFoodCourt').price, economy.doors.serviceCorridorFoodCourt);
-  assert.deepEqual([economy.doors.foodCourtMegaMart, economy.doors.serviceCorridorFoodCourt], [1000, 1250]);
+  assert.equal(door('foodCourtMegaMart').price, economy.doors.megaMart);
+  assert.equal(door('serviceCorridorFoodCourt').price, economy.doors.serviceCorridor);
+  assert.deepEqual([economy.doors.megaMart, economy.doors.serviceCorridor], [750, 1000]);
   for (const d of map.doors) for (const zone of d.opensZones) assert.ok(map.zones[zone], `door ${d.id} opens a real zone`);
 });
 
 test('all 120 purchase orders: any bought entrance holds its zones open; reset seals every route (the escalator repair, the atrium doors and HOFFMAN\'S have their own tests)', () => {
   const { map, open, reach } = setup();
   const permutations = (ids) => ids.length ? ids.flatMap((id) => permutations(ids.filter((other) => other !== id)).map((rest) => [id, ...rest])) : [[]];
-  const orders = permutations(map.doors.filter((d) => !['startShutter', 'escalatorRepair', 'atrium', 'atriumPromenade', 'atriumMegaMart', 'cinema', 'cinemaStairs', 'departmentStore', 'departmentStoreStartRoom'].includes(d.id)).map((d) => d.id));
+  const orders = permutations(map.doors.filter((d) => !['startShutter', 'escalatorRepair', 'atrium', 'atriumPromenade', 'atriumMegaMart', 'cinema', 'cinemaStairs', 'departmentStore', 'departmentStoreStartRoom', 'parkingLot'].includes(d.id)).map((d) => d.id));
   assert.equal(orders.length, 120);
   for (const order of orders) {
     map.reset();
@@ -140,11 +140,11 @@ test('all 120 purchase orders: any bought entrance holds its zones open; reset s
           }
         }
       }
-      for (const s of map.spawnPoints.filter((s) => !['upstairs', 'atrium', 'cinema', 'departmentStore'].includes(s.zone))) { // upper areas have their own tests
+      for (const s of map.spawnPoints.filter((s) => !['upstairs', 'atrium', 'cinema', 'departmentStore', 'parkingLot'].includes(s.zone))) { // expansion areas have their own tests
         assert.equal(Number.isFinite(reach(s.position)), connected.has(s.zone), `${order} after ${id}: ${s.name}`);
       }
     }
-    for (const s of map.spawnPoints.filter((s) => !['upstairs', 'atrium', 'cinema', 'departmentStore'].includes(s.zone))) assert.ok(Number.isFinite(reach(s.position)), `${s.name} reachable with every door open`);
+    for (const s of map.spawnPoints.filter((s) => !['upstairs', 'atrium', 'cinema', 'departmentStore', 'parkingLot'].includes(s.zone))) assert.ok(Number.isFinite(reach(s.position)), `${s.name} reachable with every door open`);
     map.reset();
     for (const s of map.spawnPoints.filter((s) => s.zone !== 'startRoom')) {
       assert.equal(reach(s.position), Infinity, `${s.name} sealed on reset`);
@@ -205,7 +205,7 @@ test('shortcuts still connect with the real debug range changing the navigation 
 
 test('Food Court shortcut opens the Mega Mart without its hallway door, with clear approaches', () => {
   const { map, door, open, reach, colliders } = setup();
-  assert.equal(door('foodCourtMegaMart').price, 1000);
+  assert.equal(door('foodCourtMegaMart').price, 750);
   assert.deepEqual(door('foodCourtMegaMart').opensZones, ['foodCourt', 'megaMart']);
   open('startShutter');
   open('foodCourt');
@@ -239,7 +239,7 @@ test('every spawn point and the player spawn stand on open floor, not inside any
 
 test('service shortcut opens Food Court from the corridor, keeping both approaches and locker lane clear', () => {
   const { map, open, door, reach, colliders } = setup();
-  assert.equal(door('serviceCorridorFoodCourt').price, 1250);
+  assert.equal(door('serviceCorridorFoodCourt').price, 1000);
   open('startShutter');
   open('serviceCorridor');
   assert.equal(reach({ x: -18.4, z: -12.2 }), Infinity);

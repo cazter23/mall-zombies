@@ -39,7 +39,13 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .ammo-count { padding: 0 0 3px; text-shadow: 0 2px 3px #000, 1px 0 2px #000, -1px 0 2px #000; }
 .ammo-mag { font-size: 52px; color: #fffcef; text-shadow: inherit; font-variant-numeric: tabular-nums; }
 .ammo-reserve { color: #c9c4c2; font-size: 24px; text-shadow: inherit; }
-.ammo-name { padding: 0; margin: 1px 0 0; background: none; color: #e6dce3; border: 0; font-size: 10px; letter-spacing: .1em; line-height: 1.4; text-shadow: 0 1px 3px #000, 0 0 2px #000; }
+.ammo-name {
+  width: fit-content; max-width: 100%; box-sizing: border-box; margin: 4px 0 0 auto; padding: 3px 7px;
+  border: 0; border-left: 2px solid var(--raspberry); border-radius: 0;
+  background: var(--paper); color: var(--plum); font-size: 10px; font-weight: 700;
+  letter-spacing: .12em; line-height: 1.2; text-shadow: none;
+  box-shadow: 2px 2px 0 #160f18a6;
+}
 .ammo-tier { margin: 3px 0 0 auto; padding: 0; width: fit-content; max-width: 100%; box-sizing: border-box; background: none; border: 0; text-shadow: 0 1px 3px #000, 0 0 2px #000; font-size: 9px; transform: none; }
 .ammo.low .ammo-mag { color: #ffba87; text-shadow: 0 2px 3px #000, 1px 0 2px #000; }
 .vitals {
@@ -104,9 +110,9 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .round-banner.show { animation: retail-round var(--round-seconds, 2.2s) ease-out forwards; }
 @keyframes retail-round { 0%, 100% { opacity: 0; transform: translateX(-50%) translateY(-8px); } 10%, 80% { opacity: 1; transform: translateX(-50%); } }
 @keyframes compact-pa { 0%, 100% { opacity: 0; } 10%, 82% { opacity: 1; } }
-.announce-banner { top: 24px; width: min(500px, calc(100vw - 530px)); max-width: 500px; text-align: left; background: #302535f5; border-left: 4px solid var(--mint); padding: 8px 14px; box-sizing: border-box; }
-.announce-kicker { color: var(--mint); font-size: 9px; text-shadow: none; letter-spacing: .13em; }
-.announce-text { margin-top: 4px; color: var(--paper-light); font: 500 14px/1.35 var(--font-ui); letter-spacing: 0; text-transform: none; text-shadow: none; overflow-wrap: anywhere; }
+.announce-banner { top: 24px; width: min(620px, calc(100vw - 530px)); max-width: 620px; text-align: left; background: #302535f5; border-left: 5px solid var(--mint); padding: 12px 18px; box-sizing: border-box; }
+.announce-kicker { color: var(--mint); font-size: 11px; text-shadow: none; letter-spacing: .13em; }
+.announce-text { margin-top: 5px; color: var(--paper-light); font: 400 24px/1.2 'Bebas Neue', var(--font-ui); letter-spacing: .04em; text-transform: uppercase; text-shadow: none; overflow-wrap: anywhere; }
 .sale-tag { left: auto; right: 24px; top: 24px; transform: none; width: 155px; box-sizing: border-box; white-space: normal; padding: 9px 12px; color: #422731; font: 700 11px/1.5 var(--font-ui); letter-spacing: .03em; background: #f3c66e; border-radius: 0; border-bottom: 3px dashed #a14759; box-shadow: 3px 3px 0 #39294088; }
 
 /* Directory: luminous sign typography, arrow selection, ruled entries. */
@@ -261,7 +267,9 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   .incentive-heading { font-size: 8px; }
   .announce-banner { top: 105px; left: auto; right: 14px; transform: none; width: calc(100vw - 180px); min-width: 0; }
   .announce-banner.show { animation: compact-pa 4.5s ease-out forwards; }
-  .announce-text { font-size: 11px; }
+  .announce-banner { padding: 9px 12px; }
+  .announce-kicker { font-size: 9px; }
+  .announce-text { font-size: 17px; }
   .sale-tag { right: 14px; top: 14px; width: 145px; }
   .round-banner { top: 14px; font-size: 24px; padding-inline: 10px; }
   .vitals { left: 14px; bottom: 24px; }

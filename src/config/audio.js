@@ -22,6 +22,24 @@ export const audio = {
   compressor: { thresholdDb: -10, ratio: 8, attack: 0, release: 0.08, kneeDb: 6 },
 
   sounds: {
+    looseSignRattle: { volume: .18, layers: [
+      { type: 'tone', wave: 'triangle', freq: 460, freqEnd: 330, gain: .22, attack: .002, decay: .18 },
+      { type: 'noise', filter: 'bandpass', freq: 1800, q: 2, gain: .24, attack: .002, decay: .11, delay: .13 },
+      { type: 'tone', wave: 'sine', freq: 620, freqEnd: 430, gain: .12, attack: .003, decay: .28, delay: .3 },
+    ] },
+    // Speech-shaped, low-passed PA chatter; deliberately indistinct through the exit.
+    distantPa: { volume: .16, layers: [
+      { type: 'tone', wave: 'sine', freq: 490, freqEnd: 410, gain: .18, attack: .03, decay: .22 },
+      { type: 'tone', wave: 'sine', freq: 650, freqEnd: 500, gain: .13, attack: .03, decay: .28, delay: .18 },
+      ...[.65, .9, 1.14, 1.54, 1.83, 2.14, 2.65, 2.88].map((delay, i) => ({
+        type: 'noise', filter: 'bandpass', freq: 430 + i % 3 * 130, q: 2.5,
+        gain: .13, attack: .035, decay: .16 + i % 2 * .08, delay,
+      })),
+    ] },
+    distantTrafficPass: { volume: .14, layers: [
+      { type: 'noise', filter: 'lowpass', freq: 500, gain: .3, attack: 1.5, decay: 3.5 },
+      { type: 'tone', wave: 'sine', freq: 96, freqEnd: 66, gain: .12, attack: 1, decay: 3, delay: .4 },
+    ] },
     rivetShot: { volume: 0.72, layers: [
       { type: 'tone', wave: 'sine', freq: 150, freqEnd: 58, gain: 0.85, attack: 0.001, decay: 0.105 },
       { type: 'noise', filter: 'bandpass', freq: 1800, q: 0.9, gain: 0.7, attack: 0.001, decay: 0.035 },

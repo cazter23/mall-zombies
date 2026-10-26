@@ -24,6 +24,7 @@
 import { feel } from '../config/feel.js';
 import { Vector3 } from 'three';
 import { powerUps as incentiveConfig } from '../config/powerUps.js';
+import { economy } from '../config/economy.js';
 import { createShutterSounds } from './shutterSounds.js';
 import { zombieTypes } from '../config/zombies.js';
 import { weapons, melee as meleeWeapons } from '../config/weapons.js';
@@ -132,17 +133,27 @@ export function createGame({
   const shutterSounds = createShutterSounds({ events, doors: map.doors, sound });
   for (const door of map.doors) {
     interactions.add({
-      label: door.label,
+      get label() {
+        const area = map.areaUnlocks?.destination(door);
+        return area ? map.zones[area].label : door.label;
+      },
+      get title() { return map.areaUnlocks ? `Unlock ${this.label}` : this.label; },
       kind: 'door', // (for the 'purchase' event)
       id: door.id,
-      verb: door.verb ?? 'open',
+      get pricingId() { return map.areaUnlocks ? map.areaUnlocks.destination(door) : door.id; },
+      verb: map.areaUnlocks ? 'unlock' : (door.verb ?? 'open'),
+      detail: map.areaUnlocks ? 'Includes connections to unlocked areas' : '',
       get cost() {
-        return pricing.priceOf('door', door.id);
+        return pricing.priceOf('door', map.areaUnlocks ? map.areaUnlocks.destination(door) : door.id);
       },
       position: door.position,
       seeThrough: [door.barrier.collider], // the shutter itself doesn't block the view of its own buy spot
-      available: () => !door.isOpen,
-      use: () => door.open(),
+      available: () => map.areaUnlocks ? map.areaUnlocks.destination(door) !== null : !door.isOpen,
+      use: () => {
+        if (!map.areaUnlocks) return door.open();
+        const areaId = map.areaUnlocks.destination(door);
+        return { areaId, openedDoorIds: map.areaUnlocks.unlock(areaId) };
+      },
     });
   }
   const melee = createMelee({
@@ -318,7 +329,9 @@ export function createGame({
     events,
     pricing,
     eligible: (group) => {
-      if (group.id === 'doors') return map.doors.some((d) => !d.isOpen);
+      if (group.id === 'doors') return map.areaUnlocks
+        ? Object.keys(economy.doors).some(id => !map.zones[id].open)
+        : map.doors.some((d) => !d.isOpen);
       if (group.id === 'weapons') return featuresOf(map, 'wallBuy').some((w) => !gun.owns(w.weapon));
       if (group.id === 'tiers') return gun.slots.some((id) => nextTier(gun.modsFor(id)));
       return true;

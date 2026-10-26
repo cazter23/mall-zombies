@@ -9,9 +9,10 @@
 //   group         THREE.Group holding EVERYTHING the map added (meshes, lights,
 //                 debug markers), so removing it unloads the map's visuals
 //   zones         { [zoneId]: { label, open } }   the starting zone is open
-//   doors         [door]   buyable barriers that open zones (world/door.js); several doors
-//                 may open the same zone (it's open while any of them is); opensZones
-//                 lets a shortcut open both adjoining areas (opensZone still works)
+//   doors         [door]   physical barriers (world/door.js), with stable ids and animation/collision hooks
+//   areaUnlocks   optional controller (world/areaUnlocks.js): destination(door), unlock(areaId), openAll(), reset().
+//                 Purchases unlock one destination; connections open free when both endpoints are owned.
+//                 Maps without this controller retain individual door purchases and opensZones behavior.
 //   spawnPoints   [{ name, zone, position }]      zombie spawns, tagged by zone
 //   features      [{ kind, name, zone, position, normal, ...that kind's fields }]  everything (besides doors)
 //                 the player interacts with; built by kind in game/features/ (an unknown kind is an error).
@@ -20,7 +21,8 @@
 //   titleShots    [{ from, to, lookFrom, lookTo }]   the main menu's camera flyover (ui/titleCamera.js)
 //   benchmarkShots [{ name, from, to, lookFrom, lookTo }]  optional: the timed camera route of the benchmark (fx/benchmark.js)
 //   gradeZones    [{ grade, minX, maxX, minZ, maxZ, minY?, maxY? }]  optional: zone lighting (fx/zoneGrading.js, config/look.js grading)
-//   ambience      optional [{ id, kind, zone, position: [x,y,z], range }] cosmetic spatial emitters
+//   ambience      optional [{ id, kind, zone, position: [x,y,z], range, gain?, pulse? }] spatial loops
+//   ambientEvents optional [{ id, sound, zone, position: [x,y,z], range, minSeconds, maxSeconds, gain? }] local one-shots
 //   update(dt)    animate doors etc.
 //   reset()       new run: close doors, lock zones
 //   dispose()     unload: remove its colliders from the shared list, free its GPU memory

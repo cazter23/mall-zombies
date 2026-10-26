@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { cinemaDetails as d } from '../../config/cinemaDetails.js';
 import { cinemaDecorKit } from './cinemaDecorKit.js';
 import { seededRandom } from '../../world/textures.js';
+import { buildCinemaServiceFinish } from './cinemaServiceFinish.js';
 
 export function buildCinemaServiceDetails({ kit, looks, cinema: c, stairs: s, floorY: Y }) {
   const C = d.palette, P = c.passage, upper = cinemaDecorKit(kit, C, Y), ground = cinemaDecorKit(kit, C);
@@ -90,4 +91,5 @@ export function buildCinemaServiceDetails({ kit, looks, cinema: c, stairs: s, fl
     texture.repeat.set(mesh.geometry.parameters.width / 2, mesh.geometry.parameters.depth / 2);
     mesh.material = new THREE.MeshStandardMaterial({ map: texture, roughness: .94 });
   }
+  buildCinemaServiceFinish({ kit, cinema: c, stairs: s, floorY: Y });
 }

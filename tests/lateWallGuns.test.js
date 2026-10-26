@@ -1,4 +1,4 @@
-// The three late guns are real wall buys: Rivet Rifle (Grand Atrium), Heavy Coil Nailer (Sunset Promenade, level 2) and
+// The three late guns are real wall buys: Rivet Rifle (Grand Atrium), Heavy Coil Nailer (Cinema projection passage) and
 // Barcode Scanner (HOFFMAN'S department store, east wall). Real F holds in the real game: the exact price is charged, the gun goes
 // in hand, a second hold refills it for the ammo price, nothing is offered while its area is closed or through a wall, and
 // each spot is clear of spawns. The balance pins for the guns themselves are in newGuns / rivetRifle / coilAndScanner tests.
@@ -15,7 +15,8 @@ const UPPER_Y = LAYOUT.hallway.height + 0.3;
 // stand = where a player really stands (1.2-1.4 m from the wall); yawDeg faces the wall (yaw 0 faces -Z)
 const GUNS = [
   { id: 'rivetRifle', zone: 'atrium', floorY: 0, stand: [9.3, 21.5], yawDeg: 90 }, // west arcade wall, facing -X
-  { id: 'coilNailer', zone: 'upstairs', floorY: UPPER_Y, stand: [1.5, -3.3], yawDeg: 0 }, // Promenade south wall, facing -Z (yaw 0)
+  { id: 'coilNailer', zone: 'cinema', floorY: UPPER_Y,
+    stand: [LAYOUT.cinema.passage.maxX - 1.3, LAYOUT.cinema.wallBuy.z], yawDeg: -90 }, // east service wall, facing +X
   { id: 'barcodeScanner', zone: 'departmentStore', floorY: 0, stand: [LAYOUT.departmentStore.rect.maxX - 1.3, LAYOUT.departmentStore.scannerZ], yawDeg: -90 }, // HOFFMAN'S east wall, facing +X
 ];
 
@@ -46,7 +47,44 @@ test('each is a priced wall buy in the right area, with its debug-only flag gone
     assert.equal(features[0].zone, c.zone);
     assert.equal(g.pricing.priceOf('weapon', c.id), economy.wallBuys[c.id].weapon, 'the price goes through pricing');
   }
-  assert.deepEqual(GUNS.map((c) => economy.wallBuys[c.id].weapon), [1500, 1250, 1750]);
+  assert.deepEqual(GUNS.map((c) => economy.wallBuys[c.id].weapon), [1500, 2500, 1750]);
+});
+
+test('seven unique buys remain; the Coil is exclusive to Cinema and Promenade ownership cannot unlock it', () => {
+  const t = readyGame(), { g } = t;
+  g.rounds.update = () => {}; g.zombies.clear();
+  const buys = featuresOf(g.map, 'wallBuy');
+  assert.equal(buys.length, 7); assert.equal(new Set(buys.map(w => w.weapon)).size, 7);
+  g.map.areaUnlocks.unlock('hallway'); g.map.areaUnlocks.unlock('upstairs'); t.tick(120);
+  standing(t, GUNS[1]);
+  assert.notEqual(g.interactions.prompt?.id, 'coilNailer');
+  t.press('KeyF', 30); assert.equal(g.gun.owns('coilNailer'), false);
+  g.map.areaUnlocks.unlock('cinema'); t.tick(120); standing(t, GUNS[1]);
+  assert.equal(g.interactions.prompt?.id, 'coilNailer');
+  assert.equal(g.interactions.prompt.cost, 2500);
+  g.map.dispose();
+});
+
+test('the Service Corridor route buys the Coil for 5250 total without owning the Promenade', () => {
+  const t = headlessGame(), { g } = t;
+  t.tick(); g.rounds.update = () => {}; g.zombies.clear(); g.health.invulnerable = true;
+  g.wallet.earn(4750);
+  function buy(id, x, z, yaw) {
+    t.standAt(x, z, yaw); assert.equal(g.interactions.prompt?.id, id);
+    t.press('KeyF', 30); t.tick(120);
+  }
+  buy('startShutter', 0, 8.5, 0);
+  buy('serviceCorridor', -18.6, 2, 90);
+  const entrance = g.map.doors.find(d => d.id === 'cinemaStairs');
+  buy(entrance.id, entrance.position.x, entrance.position.z - 1.4, 180);
+  standing(t, GUNS[1]); assert.equal(g.interactions.prompt?.id, 'coilNailer');
+  t.press('KeyF', 30); t.tick(30);
+  assert.equal(g.gun.owns('coilNailer'), true);
+  assert.equal(g.wallet.totalSpent, 5250); assert.equal(g.wallet.points, 0);
+  assert.equal(g.map.zones.upstairs.open, false);
+  g.resetRun(); t.tick(120);
+  assert.equal(g.map.zones.cinema.open, false); assert.equal(g.gun.owns('coilNailer'), false);
+  g.map.dispose();
 });
 
 for (const c of GUNS) {

@@ -45,7 +45,7 @@ src/
     weapons.js          stapleGun (start pistol, semi), priceGun (wall buy, full auto), nailGun (wall buy, semi,
                         piercing: `pierce: { maxTargets, damageFalloff }`), foamDartBlaster (Mega Mart, burst),
                         confettiCannon (Service Corridor, 12 pellets, pellets pierce 2 zombies, six-shell tube, shell-by-shell
-                        `shellReload`), rivetRifle (Grand Atrium wall buy 1500), coilNailer (Sunset Promenade wall buy 1250), barcodeScanner (Byte Me wall buy 1750; `fireMode: 'charge'`).
+                        `shellReload`), rivetRifle (Grand Atrium wall buy 1500), coilNailer (Cinema projection-passage wall buy 2500), barcodeScanner (HOFFMAN'S wall buy 1750; `fireMode: 'charge'`).
                         Optional `falloff: { start, end, minMultiplier }` on ANY gun (distance damage; every gun except
                         the Nail Gun has one). Each gun's ROLE is written above its entry. Per-weapon stats (fireMode
                         'semi' | 'auto' | 'burst', damage, headshot mult, mag, reserve (= max for ammo buys), fire interval, reload, spread
@@ -380,12 +380,28 @@ src/
                         zombie spawn just inside the door. buildStores({ kit, props, court, thickness, stores }) -> { spots, spawns }
     mall/atrium.js      buildAtrium({ kit, props, layout, upperY }) -> { spawns, lamps, link, ramp, emitters, update, reset }: THE GRAND ATRIUM (walls, ring
                         slab + skin + railings, escalator, fountain, kiosks, planters, benches, signs, vents). Doors are built by mall.js
-    mall/atriumDetails.js  Authored display facades, kiosk merchandise, fountain/floor details, overhead decorations and small scenes.
+    mall/atriumDetails.js  Authored shop interiors, kiosk merchandise, fountain/floor details, overhead decorations and small scenes.
                         Uses config/atrium.js; no colliders/lights/interactions. Only ripples/mobile animate; kit owns disposal.
+    mall/atriumStorefronts.js  Twelve sealed shops with real shells behind wall openings, glazing/locked doors, themed stock and
+                        fixtures on both floors. Shared lettering atlas; returns wall-opening data to atrium.js, which seals each with a collider.
     mall/levelTwo.js    buildLevelTwo({ kit, props, floorY, supportRects, hole, layout }) -> { spawns, lamps }: LEVEL 2 shell,
                         independently sized by config/promenade.js (merged into LAYOUT.level2); floor sections use existing downstairs
                         ceiling support where available and add structural slabs elsewhere. Main perimeter, roofs, reserved closed
                         connections, railings, furniture, shop frontages and upstairs spawns; mall.js hangs the existing lamps.
+    mall/parkingLot.js  Customer Parking through Mega Mart's former emergency exit. config/parkingLot.js holds its footprint,
+                        entrance, vehicle row, fences, lamps, spawns, sky, ambience and benchmark shot. Builder returns its shutter,
+                        spawns, lamps and culling room/portal; mall.js wires ownership, grades, horror and reset. Kit owns disposal.
+    mall/parkingSurroundings.js  Scenic intersection, sidewalks, planted verges, roadside shops, distant buildings/cars,
+                        utility poles/wires and mall pylon. Uses config/parkingLot.js; no colliders or additional real lights.
+    mall/parkingDetails.js  Worn asphalt/paint, repairs, engine stains, puddles, drains/weeds; RV fittings, wall services and
+                        three abandoned scenes. Adds solid vaultable trolley/chair collision and a tall electrical cabinet.
+                        Painted light uses lookKit; local haze and a gently moving sign respect ambient-effects settings/reset.
+    mall/parkingStreetDetails.js  Bus shelter/timetable, bins, street names, roadworks, stopped car, warm shop windows and
+                        delivery notices. Scenic geometry only; uses config/parkingDetails.js alongside parkingLot.js.
+    mall/parkingDetailKit.js  Shared boxes, rods, signs, planes and canvas decal materials; all resources owned by mapKit.
+    config/parkingDetails.js  Authored wear/scene/service/street locations, RV labels, haze/sway settings, ambient loops/events.
+    mall/mallExterior.js  Opaque outer Atrium facades, roof and returns close the building beyond Mega Mart. Meshes opt into
+                        userData.alwaysVisible so room culling preserves the building silhouette while hiding its interior.
     mall/promenadeShop.js  SHOE-PER SALE interior: two entrances, perimeter shoe shelves, fitting mirror/bench, shoe boxes and a low
                         island with a clear momentum-vault crossing. Shares upper-floor unlock/navigation/reset/disposal.
     mall/departmentStore.js  HOFFMAN'S room (floor, walls, roof, panels, stockroom door + west vent, spawns); config/departmentStore.js
@@ -413,6 +429,13 @@ src/
                         Ambient extras freezes slides/poster motion and hides beam/dust; screen animation uploads at most
                         five times per second while rendered. Clutter controls litter. Map owns update/reset/disposal;
                         static parts batch by room. cinemaServiceDetails dresses the passage/stairs/return without collision.
+    config/cinemaFinish.js  Second cinema pass: service runs, equipment landmarks, lobby entrances, carpet bounds and fabric bays.
+    mall/cinemaPublicFinish.js  Lobby carpet borders, waiting seats, premiere banners, concession frontage/packaging, usher station,
+                        poster cases and letter-board showtimes; auditorium fabric panels, aisle strips, pelmet and chamfered seats.
+    mall/cinemaServiceFinish.js  Projection tile/dado, conduit, guarded lights, rewind bench/transport cases and access cabinet;
+                        return blockwork, meter bank, delivery/checklist scenes, overhead channels and stair concrete joints.
+    mall/cinemaPrint.js  Map-local canvas print sheet shared by row letters, forms, packaging and cinema identity signs so they
+                        batch with the existing static system. Each map owns its sheet/material; no runtime canvas updates.
     config/cinemaStairs.js  West stairwell/return-passage bounds, ramp plateaus, tread count, lower door opening and painted light.
     mall/cinemaStairs.js  Physical service stairs with a smooth ramp under visible treads, solid supports, handrails, two culling
                         rooms and the floor-to-floor nav link. Lower shutter (1500) opens cinema + serviceCorridor; the original
@@ -438,6 +461,8 @@ src/
                         unlock() (also on the first pointerdown/keydown; browsers block audio before that),
                         setMasterVolume(v) (used by Settings > Audio), setAmbience(mix) (up to three continuous spatial voices,
                         short crossfades), playAmbient(name, {volume, pan}); faded sources stop and disconnect
+    game/ambience.js     Spatial loop selection with optional emitter gain/smooth pulses; local map.ambientEvents play
+                        occasional one-shots only in audible unlocked areas. Timers freeze on pause and restart on reset.
   fx/
     powerUpView.js      Reusable delivery carton, blue beacon and security badge (no lights/colliders); bob/spin/blink,
                         floor-projected Blue Light ring clipped at walls/voids, hide on reset/death, owned-resource disposal
@@ -469,10 +494,13 @@ src/
                         side, inset) (place props/spawns/doors; normal points into the corridor), branchStart(run, at, side)
                         (start a branch corridor through a side opening). left/right = as walked (right = (-dz, dx)).
                         THROWS if the corridor crosses itself or two runs are so close a wall lands in another's walkway
-    door.js             createDoor(): buyable barrier (price, legacy opensZone or opensZones array, `verb` in the prompt: 'open', or 'repair' for the escalator) wrapping a shutter or any barrier { open, close, update, collider };
-                        open/reset/toggle. A shortcut opens both zones. Every door exposes canonical opensZones;
-                        a zone stays open while any holder is open (tracked per zone), reset seals all doors/zones.
-                        toggleDoors(doors): debug O synchronizes the whole group, preserving bought doors on open-all
+    areaUnlocks.js      createAreaUnlocks({ zones, doors, connections }): destination(door) identifies the one locked
+                        endpoint. unlock(areaId) owns only that area and opens all connections whose endpoints are owned,
+                        returning their barrier ids for sound feedback. openAll/reset support debug and Play again.
+                        Mall's 15 barriers connect nine purchasable areas plus the initially owned Start Room.
+    door.js             createDoor(): physical barrier wrapping open/close/update/collider. Raw open/reset retains
+                        legacy zone-holder behavior for standalone maps and geometry tests. Mall gameplay purchases
+                        go through areaUnlocks, never directly through door.open. toggleDoors delegates to area ownership.
     wallBuy.js          createWallBuyDisplay(): chalk outline (textures.makeChalkTexture) + the gun on two pegs, side on
     collision.js        RAMPS (addRamp / removeRamp / rampHeightAt, `colliders.ramps`): a walkable slope that is only a SURFACE the feet follow
                         (never a wall or ceiling; add boxes beside/under it): up within rampStep 0.5 m, down within rampSnap 0.4 m, not while

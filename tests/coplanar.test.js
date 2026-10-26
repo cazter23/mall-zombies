@@ -61,6 +61,9 @@ test('no coplanar (flickering) surfaces inside the stores, the Customer Service 
     return { name: s.id, minX: s.from - T - 0.1, maxX: s.to + T + 0.1, minZ: Math.min(r.zBack, r.zOut) - T - 0.1, maxZ: Math.max(r.zBack, r.zOut) + 0.3 };
   });
   const desk = LAYOUT.serviceDesk;
+  regions.push({ name: 'parkingLot', minX: LAYOUT.parkingLot.rect.minX - .4,
+    maxX: LAYOUT.parkingLot.rect.maxX + .4, minZ: LAYOUT.parkingLot.rect.minZ - .4,
+    maxZ: LAYOUT.parkingLot.rect.maxZ + .4 });
   regions.push({ name: 'booth', minX: desk.center - 2.1, maxX: desk.center + 2.1, minZ: desk.wallAt - 2.3, maxZ: desk.wallAt + 0.1 });
   const restock = LAYOUT.restockMachine; // the RESTOCK-O-MATIC, its pad and its signs
   regions.push({ name: 'restock', minX: restock.x - 1.2, maxX: restock.x + 1.2, minZ: LAYOUT.foodCourt.maxZ - 2.4, maxZ: LAYOUT.foodCourt.maxZ + 0.1 });

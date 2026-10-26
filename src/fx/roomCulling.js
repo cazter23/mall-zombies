@@ -97,6 +97,8 @@ export function createRoomCulling({ areas = [], portals = [], camera, isOpen = (
       const counts = {};
       root.traverse((o) => {
         if (!(o.isMesh || o.isSprite || o.isPoints || o.isLine)) return;
+        // Exterior facades must still occlude a room when its interior layer is culled.
+        if (o.userData.alwaysVisible) { o.layers.set(0); return; }
         box.setFromObject(o);
         if (box.isEmpty()) return;
         const eps = 0.02;

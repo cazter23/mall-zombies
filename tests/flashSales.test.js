@@ -161,8 +161,8 @@ test('the real game: the PA banner + chime, the sale price in the prompt and in 
     const banner = t.hud.calls.find(([name]) => name === 'showAnnouncement');
     assert.ok(banner && banner[1].kicker === 'Flash sale' && banner[1].text.includes(`${Math.round(sale.discount * 100)}%`), 'the PA banner says the real discount');
     assert.ok(t.sounds.includes('paChime'));
-    const price = g.pricing.priceOf('door', 'startShutter');
-    assert.ok(price < economy.doors.startShutter, `sale price ${price}`);
+    const price = g.pricing.priceOf('door', 'hallway');
+    assert.ok(price < economy.doors.hallway, `sale price ${price}`);
     // The prompt carries the sale price and its kind (the HUD marks it SALE), and the real purchase charges it.
     t.standAt(0, 8.5, 0);
     t.tick(2);
@@ -220,7 +220,7 @@ test('the real game: Play again ends the sale silently, restores prices, and sta
     const banners = t.hud.calls.filter(([name]) => name === 'showAnnouncement').length;
     g.resetRun();
     assert.equal(g.flashSales.active, null);
-    assert.equal(g.pricing.priceOf('door', 'startShutter'), economy.doors.startShutter);
+    assert.equal(g.pricing.priceOf('door', 'hallway'), economy.doors.hallway);
     assert.equal(t.hud.calls.filter(([name]) => name === 'showAnnouncement').length, banners, 'no end banner on a reset');
     assert.equal(g.flashSales.timeUntilNext, economy.flashSales.firstDelaySeconds);
     assert.ok(g.resetSteps.includes('flashSales'));

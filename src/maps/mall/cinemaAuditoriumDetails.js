@@ -1,8 +1,8 @@
 import { cinemaDetails as d } from '../../config/cinemaDetails.js';
-import { cinemaDecorKit } from './cinemaDecorKit.js';
+import { cinemaPrint } from './cinemaPrint.js';
 
 export function buildCinemaAuditoriumDetails({ kit, looks, layout: c, floorY: Y }) {
-  const C = d.palette, A = c.auditorium, { box, cyl, placard, y } = cinemaDecorKit(kit, C, Y);
+  const C = d.palette, A = c.auditorium, { box, cyl, placard, y, canvas, printPanel } = cinemaPrint(kit, C, Y);
   const metal = { metalness: .45, roughness: .45 };
   box('proscenium_crown', -33, 4.61, A.maxZ - .23, 15.8, .14, .28, C.plum);
   box('proscenium_crown_line', -33, 4.77, A.maxZ - .25, 16.05, .025, .22, C.gold, metal);
@@ -42,7 +42,12 @@ export function buildCinemaAuditoriumDetails({ kit, looks, layout: c, floorY: Y 
       const z = z0 + .38 + row * (z1 - z0 - .7) / (c.seats.rowsPerBlock - 1);
       for (let col = 0; col < c.seats.columns.length; col++) {
         const [x0, x1] = c.seats.columns[col], spacing = (x1 - x0) / c.seats.perRow;
-        placard('row_letter', String.fromCharCode(65 + rowId), x0 + .13, .84, z - .325, .16, .14, -1);
+        const rowArt = canvas(128, 128), rowCtx = rowArt.getContext('2d');
+        rowCtx.fillStyle = '#49354d'; rowCtx.fillRect(0, 0, 128, 128);
+        rowCtx.strokeStyle = '#efdfbf'; rowCtx.lineWidth = 4; rowCtx.strokeRect(7, 7, 114, 114);
+        rowCtx.fillStyle = '#efdfbf'; rowCtx.textAlign = 'center'; rowCtx.font = 'bold 86px Georgia, serif';
+        rowCtx.fillText(String.fromCharCode(65 + rowId), 64, 95);
+        printPanel('row_letter', rowArt, x0 + .13, .84, z - .325, .16, .14, -1);
         for (let i = 0; i < c.seats.perRow; i++) {
           const x = x0 + spacing * (i + .5), hx = x + spacing * .45;
           cyl('cupholder_lip', hx, .642, z + .16, .043, .018, C.gold, [0, 0, 0], metal, 8);

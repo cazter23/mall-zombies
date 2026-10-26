@@ -320,11 +320,11 @@ const R = LAYOUT.startRoom;
 test("the side door: 1250 from the start room at the very start (before the start shutter), opening only HOFFMAN'S", () => {
   const t = started();
   const { g } = t;
-  assert.equal(economy.doors.departmentStoreStartRoom, 1250);
+  assert.equal(economy.doors.departmentStore, 1250);
   g.wallet.earn(1000); // 500 + 1000: enough for the side door instead of the start shutter
   t.standAt(R.minX + 1.3, linkZ, 90); // in the start room, facing west (-X)
   t.tick(5);
-  assert.equal(g.interactions.prompt?.label, "Hoffman's Side Door");
+  assert.equal(g.interactions.prompt?.label, "Hoffman's");
   assert.equal(g.interactions.prompt?.cost, 1250);
   const before = g.wallet.points;
   t.press('KeyF', 40);
@@ -336,19 +336,23 @@ test("the side door: 1250 from the start room at the very start (before the star
   assert.equal(door(g, 'departmentStoreStartRoom').isOpen, false);
 });
 
-test('the side door is buyable from inside the store too, and not through the wall beside it', () => {
-  const t = storeOpen(); // (bought through the gate)
+test('owning the store makes its start-room connection free, with no purchase beside its walls', () => {
+  const t = started();
   const { g } = t;
+  g.map.areaUnlocks.unlock('hallway');
+  g.map.areaUnlocks.unlock('departmentStore');
+  t.tick(120);
   g.wallet.earn(2000);
   t.standAt(R.minX - 0.3 - 1.3, linkZ, -90); // in the store, facing east (+X)
   t.tick(5);
-  assert.equal(g.interactions.prompt?.label, "Hoffman's Side Door");
+  assert.equal(g.interactions.prompt, null);
+  assert.equal(door(g, 'departmentStoreStartRoom').isOpen, true);
   t.standAt(R.minX - 0.3 - 1.3, linkZ + 3.2, -90); // beside it, facing the solid wall
   t.tick(5);
-  assert.notEqual(g.interactions.prompt?.label, "Hoffman's Side Door");
+  assert.notEqual(g.interactions.prompt?.label, "Hoffman's");
   t.standAt(R.minX + 1.3, linkZ + 3.2, 90); // in the start room, facing the solid wall north of it
   t.tick(5);
-  assert.notEqual(g.interactions.prompt?.label, "Hoffman's Side Door");
+  assert.notEqual(g.interactions.prompt?.label, "Hoffman's");
 });
 
 test('through the side door: a player walks from the start room into the store; zombies route through it both ways', () => {

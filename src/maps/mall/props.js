@@ -238,10 +238,12 @@ export function createMallProps(kit) {
     // Lane light: a thin pole with the lane number on top, readable from both sides.
     const px = x1 - 0.08;
     const pz = (z0 + z1) / 2;
-    box(px - 0.03, 1.0, pz - 0.03, px + 0.03, 2.3, pz + 0.03, mat(COLORS.metal), { collide: false });
+    // The pole enters a solid housing; two detached planes left a visible gap above the old post.
+    box(px - 0.03, 1.0, pz - 0.03, px + 0.03, 2.48, pz + 0.03, mat(COLORS.metal), { collide: false, name: 'checkout_lane_post' });
+    box(px - 0.16, 2.32, pz - 0.04, px + 0.16, 2.64, pz + 0.04, mat(0x1d4e89), { collide: false, name: 'checkout_lane_housing' });
     for (const facing of [1, -1]) {
       sign(String(lane), {
-        x: px, y: 2.48, z: pz + facing * 0.04, width: 0.32, height: 0.32, facing,
+        x: px, y: 2.48, z: pz + facing * 0.045, width: 0.32, height: 0.32, facing,
         background: '#1d4e89', color: '#ffd23f',
       });
     }

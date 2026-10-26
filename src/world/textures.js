@@ -125,6 +125,7 @@ export function detectSignStyle(text, background = '') {
   if (upper.includes('WOK THIS WAY')) return 'wok';
   if (upper.includes('CORN DOG')) return 'carnival';
   if (upper.includes('MEGA MART') || upper.startsWith('AISLE') || upper.includes('EXPRESS') || upper.includes('HOLIDAY') || upper.includes('HOUSEWARES') || upper.includes('SNACKS') || upper.includes('OUTDOOR') || upper.includes('THANK YOU FOR SHOPPING')) return 'supermarket';
+  if (upper === '99C' || upper === 'SOLD' || upper === '99¢' || (upper.startsWith('$') && upper.length <= 6)) return 'pricetag';
   if (upper.includes('BUSINESS') || upper.includes('MUST GO') || upper.includes('ALL SALES FINAL') || upper.includes('MARKDOWN') || upper.includes('70% OFF') || upper.includes('NO REFUNDS') || upper.includes('SALE!')) return 'clearance';
   if (upper.includes('DANGER') || upper.includes('HIGH VOLTAGE')) return 'hazard';
   if (upper.includes('NOW SERVING') || upper === '0.00' || upper.includes('REGISTER_SCREEN')) return 'digital';
@@ -226,7 +227,7 @@ export function makeSignTexture(text, { background, color, aspect = 6, style, su
       // Slanted athletic block font
       ctx.save();
       ctx.transform(1, 0, -0.09, 1, 0, 0);
-      const family = font || '"Teko", "Righteous", "Impact", sans-serif';
+      const family = font || '"Teko", "Arial Black", sans-serif';
       const fontSize = fitText(ctx, text, family, Math.round(height * 0.65), width * 0.78);
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -327,7 +328,7 @@ export function makeSignTexture(text, { background, color, aspect = 6, style, su
         }
       }
 
-      const family = font || '"Impact", "Arial Black", "Trebuchet MS", sans-serif';
+      const family = font || '"Space Grotesk", "Arial Black", "Trebuchet MS", sans-serif';
       const fontSize = fitText(ctx, text, family, Math.round(height * 0.58), width * 0.78);
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -400,7 +401,7 @@ export function makeSignTexture(text, { background, color, aspect = 6, style, su
       curl(50, 1);
       curl(width - 50, -1);
 
-      const family = font || '"Righteous", "Brush Script MT", "Impact", cursive, sans-serif';
+      const family = font || '"Righteous", "Permanent Marker", cursive, sans-serif';
       const fontSize = fitText(ctx, text, family, Math.round(height * 0.6), width * 0.78);
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -433,7 +434,7 @@ export function makeSignTexture(text, { background, color, aspect = 6, style, su
         ctx.beginPath(); ctx.arc(x, height - 12, 4, 0, Math.PI * 2); ctx.fill();
       }
 
-      const family = font || '"Righteous", "Copperplate", "Impact", sans-serif';
+      const family = font || '"Righteous", "Arial Black", sans-serif';
       const fontSize = fitText(ctx, text, family, Math.round(height * 0.6), width * 0.8);
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -535,7 +536,7 @@ export function makeSignTexture(text, { background, color, aspect = 6, style, su
       ctx.save();
       ctx.translate(cx, cy);
       ctx.rotate(-0.02);
-      const family = font || '"Impact", "Arial Black", sans-serif';
+      const family = font || '"Anton", "Bebas Neue", "Arial Black", sans-serif';
       const fontSize = fitText(ctx, text, family, Math.round(height * 0.65), width * 0.68);
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -543,6 +544,32 @@ export function makeSignTexture(text, { background, color, aspect = 6, style, su
       ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
       ctx.fillText(text, 3, 3);
       ctx.fillStyle = color || (background === '#d62839' ? '#ffffff' : '#111114');
+      ctx.fillText(text, 0, 0);
+      ctx.restore();
+      break;
+    }
+
+    case 'pricetag': {
+      // Day-Glo Price Sticker (Monarch 1136 price label gun style): fluorescent neon, scalloped edge, stamped ink
+      ctx.fillStyle = background || '#ffee00';
+      ctx.fillRect(0, 0, width, height);
+
+      // Label border outline
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(3, 3, width - 6, height - 6);
+
+      // Rubber-stamp text with mechanical stamp feel
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(-0.015);
+      const family = font || '"Teko", "Arial Black", sans-serif';
+      const fontSize = fitText(ctx, text, family, Math.round(height * 0.72), width * 0.85);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // Stamped ink look: dark purple/black with slight stamp punch
+      ctx.fillStyle = color || '#141419';
       ctx.fillText(text, 0, 0);
       ctx.restore();
       break;
@@ -669,7 +696,7 @@ export function makeSignTexture(text, { background, color, aspect = 6, style, su
         ctx.strokeRect(10, 10, width - 20, height - 20);
       }
 
-      const family = font || '"Space Grotesk", "Helvetica Neue", "Arial", sans-serif';
+      const family = font || 'Arial, "Helvetica Neue", sans-serif';
       const fontSize = fitText(ctx, text, family, Math.round(height * 0.52), width * 0.84);
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -715,7 +742,7 @@ export function makeSignTexture(text, { background, color, aspect = 6, style, su
       ctx.fillRect(18, 0, 6, height);
       ctx.fillRect(width - 24, 0, 6, height);
 
-      const family = font || '"Righteous", "Teko", "Impact", sans-serif';
+      const family = font || '"Teko", "Righteous", sans-serif';
       const fontSize = fitText(ctx, text, family, Math.round(height * 0.62), width * 0.82);
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -749,7 +776,7 @@ export function makeSignTexture(text, { background, color, aspect = 6, style, su
       ctx.lineWidth = 5;
       ctx.strokeRect(12, 12, width - 24, height - 24);
 
-      const family = font || '"Space Grotesk", "Impact", "Arial Black", sans-serif';
+      const family = font || '"Space Grotesk", "Arial Black", sans-serif';
       const fontSize = fitText(ctx, text, family, Math.round(height * 0.6), width * 0.88);
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';

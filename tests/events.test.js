@@ -117,7 +117,7 @@ test('events from the real game: purchase, round start, player hit, death, Play 
   assert.deepEqual(seen.find(([n]) => n === 'roundStart')[1], { round: 1 });
   t.standAt(0, 8.5, 0);
   t.press('KeyF', 30);
-  assert.deepEqual(seen.find(([n]) => n === 'purchase')[1], { label: 'Security Shutter', cost: economy.doors.startShutter, kind: 'door', id: 'startShutter' });
+  assert.deepEqual(seen.find(([n]) => n === 'purchase')[1], { label: 'Main Hallway', cost: economy.doors.hallway, kind: 'door', id: 'startShutter', areaId: 'hallway', openedDoorIds: ['startShutter'] });
   const before = t.g.health.fraction;
   t.g.events.emit('playerHit', { damage: 40, zombie: null });
   assert.ok(t.g.health.fraction < before, 'a player hit hurts');

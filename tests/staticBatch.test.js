@@ -58,7 +58,7 @@ test('after batching the escalator barrier still hides on repair and comes back 
   const map = buildMall(scene, colliders);
   batchStatic(map.group);
   const repair = map.doors.find((d) => d.id === 'escalatorRepair');
-  const parts = meshes(map.group).filter((m) => m.userData.dynamic);
+  const parts = meshes(map.group).filter((m) => m.userData.dynamic && m.name !== 'parking_sunset_sky');
   assert.ok(parts.length >= 4);
   repair.open();
   assert.ok(parts.every((p) => !p.visible));

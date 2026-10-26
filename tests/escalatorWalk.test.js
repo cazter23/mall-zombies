@@ -121,7 +121,7 @@ test('barrier up: a zombie does not path to a player upstairs (no route yet) and
   assert.ok(z.position.y < 0.3, `still on the ground floor (y ${z.position.y.toFixed(2)})`);
 });
 
-test('the repair is a normal purchase: a real F hold at the foot costs 2000, opens level 2 and the way up; Play again seals it again', () => {
+test('the repair is a normal purchase: a real F hold at the foot costs 1250, opens level 2 and the way up; Play again seals it again', () => {
   const t = headlessGame();
   const { g } = t;
   t.tick(1);
@@ -133,12 +133,12 @@ test('the repair is a normal purchase: a real F hold at the foot costs 2000, ope
   g.player.teleport({ position: stand, yaw: Math.PI / 2 }); // facing the foot of the escalator (west)
   t.tick(5);
   assert.equal(g.map.zones.upstairs.open, false);
-  assert.equal(g.interactions.prompt?.label, 'Escalator');
-  assert.equal(g.interactions.prompt?.verb, 'repair');
-  assert.equal(g.interactions.prompt?.cost, 2000);
+  assert.equal(g.interactions.prompt?.label, 'Sunset Promenade');
+  assert.equal(g.interactions.prompt?.verb, 'unlock');
+  assert.equal(g.interactions.prompt?.cost, 1250);
 
   const hiddenBefore = new Set(g.map.group.children.filter((c) => c.visible === false)); // (debug markers and such)
-  g.wallet.earn(1000); // 1500 in total: not enough
+  g.wallet.earn(500); // 1000 in total: not enough
   t.press('KeyF', 40);
   assert.equal(g.map.zones.upstairs.open, false, 'too poor: still broken');
   assert.ok(g.colliders.includes(foot));
@@ -146,7 +146,7 @@ test('the repair is a normal purchase: a real F hold at the foot costs 2000, ope
   g.wallet.earn(1000);
   const before = g.wallet.points;
   t.press('KeyF', 40);
-  assert.equal(before - g.wallet.points, 2000);
+  assert.equal(before - g.wallet.points, 1250);
   assert.equal(g.map.zones.upstairs.open, true, 'level 2 is open');
   assert.ok(!g.colliders.includes(foot), 'the barrier is gone');
   assert.equal(g.interactions.prompt, null, 'nothing left to repair');

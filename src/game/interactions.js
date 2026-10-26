@@ -98,7 +98,11 @@ export function createInteractions({ input, player, wallet, sound = null, onRelo
     // What is being bought, as it is NOW (use() can change it: a bought gun's prompt becomes its ammo).
     const purchase = { label: item.label, cost: item.cost, kind: item.kind ?? 'other', id: item.id ?? null };
     if (wallet.spend(purchase.cost)) {
-      item.use();
+      const result = item.use();
+      if (result?.areaId) {
+        purchase.areaId = result.areaId;
+        purchase.openedDoorIds = result.openedDoorIds;
+      }
       if (sound) sound.play('purchase');
       if (onPurchase) onPurchase(purchase);
     } else {
@@ -124,6 +128,7 @@ export function createInteractions({ input, player, wallet, sound = null, onRelo
         verb: focused.verb,
         kind: focused.kind ?? 'other', // 'door' | 'weapon' | ... (a pricing category when it is one)
         id: focused.id ?? null,
+        pricingId: focused.pricingId ?? focused.id ?? null,
         detail: focused.detail ?? '',
         shortfall: Math.max(0, focused.cost - wallet.points),
         cost: focused.cost,

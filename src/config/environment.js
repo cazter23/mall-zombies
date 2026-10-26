@@ -62,6 +62,9 @@ export const atmosphere = {
     listenerHeightFraction: 0.8, occlusionMargin: 0.1,
     rattleMinSeconds: 24, rattleMaxSeconds: 46, rattleRange: 20,
     voices: {
+      wind: { noise: true, frequency: 95, filterHz: 650, gain: .028 },
+      treeRustle: { noise: true, frequency: 440, filterHz: 1500, gain: .018 },
+      distantTraffic: { noise: true, frequency: 100, filterHz: 340, gain: .025 },
       ventilation: { noise: true, frequency: 180, gain: 0.045 },
       fountain: { noise: true, frequency: 880, filterHz: 2200, gain: 0.035 },
       projector: { noise: true, frequency: 110, filterHz: 950, gain: .028 },

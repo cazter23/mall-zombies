@@ -183,25 +183,25 @@ export function buildLevelTwo({ kit, props, floorY, supportRect, supportRects = 
   for (const [x0, x1] of seating.wallBenches) bench(x0, rect.minZ + 0.1, x1, rect.minZ + 0.6);
 
   // --- Signs and leftovers (decoration) ----------------------------------------------------------------------------------------------
-  sign('LEVEL 2 · SUNSET PROMENADE', {
+  sign('Level 2 · Sunset Promenade', {
     x: rect.minX + 0.02, y: y(2.5), z: zMid + 3.5, width: 3.2, height: 0.6, facing: 'x+',
-    background: '#3b2f44', color: '#ffd23f',
+    background: '#3b2f44', color: '#ffd23f', font: 'Arial, "Helvetica Neue", sans-serif',
   });
-  sign('ESCALATOR · LEVEL 1 ↓', {
+  sign('Escalator · Level 1 ↓', {
     x: rect.minX + 0.02, y: y(2.5), z: zMid, width: 2.8, height: 0.5, facing: 'x+',
-    background: '#1d1626', color: '#ffffff',
+    background: '#1d1626', color: '#ffffff', font: 'Arial, "Helvetica Neue", sans-serif',
   });
-  sign('MIND THE GAP', {
+  sign('Mind the Gap', {
     x: hole.maxX + edge - 0.03, y: y(0.55), z: (hole.minZ + hole.maxZ) / 2, width: 1.2, height: 0.35, facing: 'x+',
-    background: '#ffd23f', color: '#1d1626',
+    background: '#ffd23f', color: '#1d1626', font: 'Arial, "Helvetica Neue", sans-serif',
   });
-  sign('SUNSET GALLERIA · LEVEL 2', {
+  sign('Sunset Galleria · Level 2', {
     x: 2, y: y(2.55), z: rect.minZ + 0.02, width: 7, height: 0.8, facing: 1,
-    background: '#6b3f5e', color: '#ffd9a8',
+    background: '#6b3f5e', color: '#ffd9a8', font: 'Georgia, "Times New Roman", serif',
   });
-  sign('RESTROOMS → NOT ANYMORE', {
+  sign('Restrooms → Not anymore', {
     x: 15.5, y: y(2.2), z: rect.minZ + 0.02, width: 2.6, height: 0.45, facing: 1,
-    background: '#3a3f47', color: '#ffd23f',
+    background: '#3a3f47', color: '#ffd23f', font: 'Arial, "Helvetica Neue", sans-serif',
   });
   // A "wet floor" cone and a tipped shopping bag by the well
   box(hole.maxX + 1.0, floorY, hole.maxZ + 0.7, hole.maxX + 1.3, y(0.55), hole.maxZ + 1.0, mat(0xffa21f), { collide: false });

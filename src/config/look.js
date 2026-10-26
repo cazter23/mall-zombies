@@ -58,6 +58,7 @@ export const look = {
     blendSeconds: 0.8, // how long a change of area takes to settle
     fallback: 'front', // anywhere outside every zone (the hallway)
     grades: {
+      parkingLot: { exposure: 1.05, tint: [1.06, .98, .96], saturation: .94, contrast: 1.04 },
       front: { exposure: 1, tint: [1, 1, 1], saturation: 1.04, contrast: 1 },
       startRoom: { exposure: 0.97, tint: [1.03, 1, 0.94], saturation: 0.92, contrast: 1 }, // faded clearance store
       foodCourt: { exposure: 1.02, tint: [1.04, 1, 0.95], saturation: 1.06, contrast: 1 }, // warm and hungry
@@ -128,9 +129,9 @@ export const look = {
       customerBanner: ['THE CUSTOMER IS ALWAYS RIGHT', '(BEHIND YOU)'],
       familyBanner: ["WE'RE A FAMILY HERE", "(YOU CAN'T LEAVE)"],
       sunny: ['HAVE A SUNNY DAY!', 'Exits are for customers who have finished shopping.'],
-      rewards: ['GALLERIA REWARDS', 'Earn points for every shopper you serve!'],
-      lostChildren: ['LOST CHILDREN', 'will be kept at Customer Service. Forever.'],
-      wetFloor: ['CAUTION: WET FLOOR', "Please don't ask what it is."],
+      rewards: ['Galleria Rewards', 'Earn points for every shopper you serve!'],
+      lostChildren: ['Lost Children', 'will be kept at Customer Service. Forever.'],
+      wetFloor: ['Caution: Wet Floor', "Please don't ask what it is."],
     },
 
     // Clutter along the walls (world/scatter.js): kinds + weights, density per m2 at 'full'.
@@ -155,8 +156,8 @@ export const look = {
       meat: 'FRESH MEAT DAILY',
       eat: 'EAT · SHOP · REPEAT',
       refills: 'FREE REFILLS*',
-      refillsSmall: ['*OF WHAT?', 'Management reserves the right not to say.'],
-      inspection: ['HEALTH INSPECTION: A+', 'Inspector not seen since March.'],
+      refillsSmall: ['*Of what?', 'Management reserves the right not to say.'],
+      inspection: ['Health Inspection: A+', 'Inspector not seen since March.'],
       combo: ['TRY OUR NEW BRAINS COMBO!', '(CONTAINS BRAINS)'],
       seat: ['SEAT YOURSELF!', 'Tables are for paying customers. Mostly.'],
     },
@@ -182,10 +183,10 @@ export const look = {
       slogan: 'LOW PRICES. LOWER STANDARDS.',
       live: 'SAVE MONEY. LIVE LESS.',
       mustGo: ['EVERYTHING MUST GO!', '(INCLUDING YOU)'],
-      priceMatch: ['PRICE MATCH GUARANTEE', "We match any price. We just don't pay it."],
+      priceMatch: ['Price Match Guarantee', "We match any price. We just don't pay it."],
       shopTillYouDrop: ['SHOP TILL YOU DROP!', "We'll take it from there."],
-      bulk: ['BULK SAVINGS', 'Buy 2, get 1 eaten free.'],
-      stockroom: ['STOCKROOM RULES', '1. Do not open the stockroom. 2. See rule 1.'],
+      bulk: ['Bulk Savings', 'Buy 2, get 1 eaten free.'],
+      stockroom: ['Stockroom Rules', '1. Do not open the stockroom. 2. See rule 1.'],
     },
     clutter: {
       seed: 1988,
@@ -205,10 +206,10 @@ export const look = {
     trimY: 2.95,
     signs: { tube: NEON_COLORS.sickGreen, exit: NEON_COLORS.emergencyRed },
     satire: {
-      clockIn: ['HAVE YOU CLOCKED IN?', 'There is no clocking out.'],
-      mandatoryFun: ['MANDATORY FUN', 'Thursdays. Attendance is mandatory. So is fun.'],
-      seeSomething: ['IF YOU SEE SOMETHING', 'say nothing. Management is aware.'],
-      breakRoom: ['BREAK ROOM CLOSED', 'Breaks are a privilege. Privileges are suspended.'],
+      clockIn: ['Have you clocked in?', 'There is no clocking out.'],
+      mandatoryFun: ['Mandatory fun', 'Thursdays. Attendance is mandatory. So is fun.'],
+      seeSomething: ['If you see something', 'say nothing. Management is aware.'],
+      breakRoom: ['Break room closed', 'Breaks are a privilege. Privileges are suspended.'],
     },
     clutter: {
       seed: 1989,
@@ -226,7 +227,7 @@ export const look = {
     satire: {
       sunset: 'THE SUN NEVER SETS ON SAVINGS',
       leasing: 'YOUR STORE HERE!',
-      leasingNote: ['NOW LEASING', 'Ask about our lifetime lease. Our very literal lifetime lease.'],
+      leasingNote: ['Now leasing', 'Ask about our lifetime lease. Our very literal lifetime lease.'],
       top: ['WELCOME TO THE TOP!', '(PLEASE ENJOY IT. YOU ARE NOT LEAVING.)'],
       view: ['ENJOY THE VIEW!', 'Please do not feed the shoppers below.'],
     },
@@ -247,9 +248,9 @@ export const look = {
     satire: {
       promise: 'COME FOR THE SALES. STAY FOREVER.',
       grandOpening: ['GRAND OPENING!', '(SINCE 1986)'],
-      lostFound: ['LOST & FOUND', 'Found: 1,204 left shoes. Lost: everyone.'],
+      lostFound: ['Lost & Found', 'Found: 1,204 left shoes. Lost: everyone.'],
       wish: ['MAKE A WISH!', 'Coins are non-refundable. So are wishes.'],
-      rules: ['ATRIUM RULES', 'No running. No screaming. No leaving.'],
+      rules: ['Atrium Rules', 'No running. No screaming. No leaving.'],
     },
     clutter: {
       seed: 1991,
@@ -273,10 +274,10 @@ export const look = {
       tagline: 'EST. FOREVER',
       final: 'ALL SALES FINAL. SO ARE YOU.',
       size: 'YOUR SIZE IS IN THE BACK.',
-      hiring: ['NOW HIRING', 'Full time. All the time. Forever.'],
-      layaway: ['LAYAWAY PLAN', 'Pay forever. Take it home never.'],
+      hiring: ['Now hiring', 'Full time. All the time. Forever.'],
+      layaway: ['Layaway plan', 'Pay forever. Take it home never.'],
       fitting: ['FITTING ROOMS', 'Limit 3 items. 0 exits.'],
-      handwritten: ['NO TRY-ONS AFTER CLOSING', 'We close at death. Management.'],
+      handwritten: ['No try-ons after closing', 'We close at death. Management.'],
       opening: ['GRAND OPENING', 'EVERYTHING MUST STAY'],
     },
     clutter: {

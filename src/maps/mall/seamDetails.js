@@ -26,7 +26,7 @@ export function buildSeamDetails({ kit, looks, props, floorY }) {
 
   // The cinema's front door from the Promenade: one-sheets and a trail of stubs
   const P = D.posters;
-  P.zs.forEach((z, i) => looks.poster('notice', { title: P.films[i][0], body: P.films[i][1], header: i === 4 ? '#6b4a8c' : '#c9a14a' }, P.x + 0.03, floorY + P.y, z, P.w, P.h, 'x+'));
+  P.zs.forEach((z, i) => looks.poster('notice', { title: P.films[i][0], body: P.films[i][1], header: i === 4 ? '#6b4a8c' : '#c9a14a', typeface: 'cinema' }, P.x + 0.03, floorY + P.y, z, P.w, P.h, 'x+'));
   const S = D.stubs;
   for (let i = 0; i < S.count; i++) {
     const t = i / (S.count - 1);

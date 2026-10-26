@@ -9,6 +9,30 @@ import { economy } from '../src/config/economy.js';
 
 const bounds = (a, b) => new THREE.Box3(new THREE.Vector3(...a), new THREE.Vector3(...b));
 
+test('checkout wall labels clear the atrium opening and toy signs; lane number housings touch their posts', () => {
+  const scene = new THREE.Scene(), { g } = headlessGame({ scene });
+  try {
+    scene.updateMatrixWorld(true);
+    const boxOf = name => new THREE.Box3().setFromObject(scene.getObjectByName(name));
+    const thanks = boxOf('mart_checkout_thanks'), express = boxOf('express_lane');
+    const toy = boxOf('foam_promotion'), doorway = LAYOUT.atrium.martLink;
+    for (const sign of [thanks, express]) {
+      assert.ok(sign.min.x > doorway.to + .3, 'entire label clears the doorway and its frame');
+      assert.ok(sign.max.x < LAYOUT.megaMart.maxX, 'entire label stays on the wall');
+      assert.ok(sign.max.y < 3.3, 'label clears the blue trim');
+      assert.ok(!sign.intersectsBox(toy), 'label does not overlap the toy promotion');
+    }
+    assert.ok(!thanks.intersectsBox(express), 'wall labels do not overlap each other');
+    const posts = [], housings = [];
+    scene.traverse(m => { if (m.name === 'checkout_lane_post') posts.push(m); if (m.name === 'checkout_lane_housing') housings.push(m); });
+    assert.equal(posts.length, MART_FIXTURES.checkoutZs.length);
+    for (const post of posts) {
+      const support = new THREE.Box3().setFromObject(post);
+      assert.ok(housings.some(m => support.intersectsBox(new THREE.Box3().setFromObject(m))), 'lane panel is physically connected to its post');
+    }
+  } finally { g.map.dispose(); }
+});
+
 test('Mega Mart details leave aisles, crossings, entrances, spawns and checkout vaults visually clear', () => {
   const kit = createMapKit(new THREE.Group(), []);
   const details = buildMegaMartDetails(kit, LAYOUT.megaMart);

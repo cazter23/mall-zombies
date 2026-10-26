@@ -1,9 +1,20 @@
 // Authored Grand Atrium dressing. at = metres along a wall from the room's min X/Z;
 // the builder follows LAYOUT.atrium, so moving the room moves all of its dressing.
-// Windows are shallow displays on existing walls, not new rooms or buyables.
+// Shops have real interiors behind sealed glazing; they are scenery, never walkable rooms.
 export const atriumDetails = {
   palette: { cream: 0xf3e3bf, plum: 0x4b304e, mint: 0x84b9a7, coral: 0xdd7e85,
     gold: 0xd1ae62, blue: 0x689bb1, ink: 0x28303c, chrome: 0xa4b4b7, paper: 0xe5d4b2 },
+  shopInterior: {
+    depth: 2.35, openingHeight: 3.08, glassOpacity: 0.12,
+    finishes: {
+      fashion: { wall: 0xe6d9cf, floor: 0xa98265, font: 'Georgia, serif' },
+      beauty: { wall: 0xe6d9df, floor: 0xd5dcd4, font: 'Georgia, serif' },
+      luggage: { wall: 0xd5e1dc, floor: 0xbba78b, font: '"Space Grotesk", Arial, sans-serif' },
+      television: { wall: 0xa6b9c5, floor: 0x727c86, font: '"Teko", "Arial Narrow", sans-serif' },
+      portraits: { wall: 0xdcd0ba, floor: 0x99837d, font: 'Georgia, serif' },
+      paper: { wall: 0xc4bdb0, floor: 0x9f9d92, font: 'Arial, sans-serif' },
+    },
+  },
   storefronts: [
     { wall: 'west', at: 4.1, width: 4.5, theme: 'fashion', name: 'SECOND SKIN', sub: 'A PERFECT FIT. EVENTUALLY.', color: 0xd382a1, awning: true },
     { wall: 'west', at: 20.8, width: 4.0, theme: 'paper', name: 'COMING SOON', sub: 'GRAND OPENING · SPRING 1986', color: 0x88b9ad },

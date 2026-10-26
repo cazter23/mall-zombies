@@ -3,7 +3,7 @@
 // Base prices live in config/economy.js; this applies any active discount on top (Flash Sales:
 // "25-50% off one category"), so every buyable shows and charges the same, current price.
 //
-//   priceOf('door', doorId)        economy.doors[doorId]
+//   priceOf('door', areaId)        economy.doors[areaId] (destination, independent of entrance)
 //   priceOf('weapon', gunId)       economy.wallBuys[gunId].weapon
 //   priceOf('ammo', gunId)         economy.wallBuys[gunId].ammo
 //   priceOf('ammoCache')           economy.ammoCache.price

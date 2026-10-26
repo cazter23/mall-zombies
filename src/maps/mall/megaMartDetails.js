@@ -107,7 +107,8 @@ export function buildMegaMartDetails(kit, room) {
     for (let j = 0; j < 4; j++) box('receipt_print', 27.12, 0.77 + j * 0.045, z - 0.456, 0.05, 0.009, 0.005, dark);
     box('shopping_list', 26.82, 1.022, z - 0.23, 0.16, 0.009, 0.18, cream, [0, 0.18, 0]);
   }
-  sign('express_lane', 'EXPRESS: APPROXIMATELY 12 ITEMS', 26, 3.25, 4.1, 3.0, 0.30, -1);
+  // Solid wall beneath the checkout banner, clear of the atrium frame and the toy promotion.
+  sign('express_lane', 'EXPRESS: APPROXIMATELY 12 ITEMS', 28.25, 2.2, room.maxZ - 0.04, 3.0, 0.30, -1);
   sign('holiday_slogan', 'ALL HOLIDAYS, ALL YEAR', 29.25, 4.05, -7.6, 2.7, 0.32);
 
   // Receiving doors: hardware sits against the existing wall, well behind spawn bodies.

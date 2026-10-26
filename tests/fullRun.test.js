@@ -45,7 +45,7 @@ test('a real run: buy the shutter, round 1 starts, zombies come, shooting one pa
   t.tick(60 * 2);
   assert.equal(g.map.doors.find((d) => d.id === 'startShutter').isOpen, true);
   assert.equal(g.map.zones.hallway.open, true);
-  assert.equal(g.wallet.points, economy.startingPoints - economy.doors.startShutter);
+  assert.equal(g.wallet.points, economy.startingPoints - economy.doors.hallway);
   // Zombies arrive after the round's start delay.
   t.tick(60 * 6);
   assert.ok(g.zombies.aliveCount > 0, 'round 1 zombies spawned');
@@ -133,7 +133,7 @@ test('a natural round: round 1 spawns its zombies, killing them all moves the ga
   assert.equal(g.wallet.points, economy.startingPoints + count * economy.killValues.shopper);
 });
 
-test('a real run buys Food Court then its shortcut: Mega Mart spawns without buying its hallway entrance', (testContext) => {
+test('a real run buys Mega Mart through Food Court: both entrances open for one area purchase', (testContext) => {
   const t = headlessGame();
   const { g } = t;
   g.wallet.earn(3000); // Fund the route; purchases still use the real hold, pricing and wallet.
@@ -150,9 +150,9 @@ test('a real run buys Food Court then its shortcut: Mega Mart spawns without buy
   t.press('KeyF', 30);
   t.tick(90);
   assert.equal(g.map.zones.megaMart.open, true);
-  assert.equal(g.map.doors.find((d) => d.id === 'megaMart').isOpen, false);
+  assert.equal(g.map.doors.find((d) => d.id === 'megaMart').isOpen, true);
   assert.deepEqual(purchases.map(({ id, cost }) => [id, cost]), [
-    ['startShutter', 500], ['foodCourt', 1000], ['foodCourtMegaMart', 1000],
+    ['startShutter', 500], ['foodCourt', 1000], ['foodCourtMegaMart', 750],
   ]);
   let seed = 12345;
   testContext.mock.method(Math, 'random', () => ((seed = (1664525 * seed + 1013904223) >>> 0) / 2 ** 32));
@@ -184,7 +184,7 @@ test('a real run buys the shutter, repairs the escalator and opens the cinema, t
   assert.equal(g.map.zones.upstairs.open, true); assert.equal(g.map.zones.cinema.open, false);
   g.player.teleport({ position: new THREE.Vector3(-18.6, g.map.cinema.floorY, -2.9), yaw: Math.PI / 2 }); t.tick();
   assert.equal(g.interactions.prompt?.id, 'cinema'); t.press('KeyF', 30); t.tick(90);
-  assert.deepEqual(purchases, [['startShutter', 500], ['escalatorRepair', 2000], ['cinema', 1500]]);
+  assert.deepEqual(purchases, [['startShutter', 500], ['escalatorRepair', 1250], ['cinema', 1250]]);
   assert.equal(g.map.zones.cinema.open, true); g.rounds.jumpTo(6);
   const markers = g.map.spawnPoints.filter(s => s.zone === 'cinema');
   g.player.teleport({ position: new THREE.Vector3(-33, g.map.cinema.floorY, 24), yaw: 0 });
@@ -221,7 +221,7 @@ test('the service stairs supply an alternate cinema entrance and the inside cine
   g.player.teleport({ position: new THREE.Vector3(-21.7, 6.3, -2.9), yaw: -Math.PI / 2 }); t.tick();
   assert.equal(g.interactions.prompt?.id, 'cinema'); t.press('KeyF', 30); t.tick(100);
   assert.equal(g.map.zones.upstairs.open, true); naturalSpawn('upstairs', [16, 6.3, 1]);
-  assert.deepEqual(paid, [['startShutter', 500], ['serviceCorridor', 1250], ['cinemaStairs', 1500], ['cinema', 1500]]);
+  assert.deepEqual(paid, [['startShutter', 500], ['serviceCorridor', 1000], ['cinemaStairs', 1250], ['cinema', 1250]]);
   g.resetRun(); assert.deepEqual(Object.keys(g.map.zones).filter(k => g.map.zones[k].open), ['startRoom']); g.map.dispose();
 });
 
@@ -285,12 +285,15 @@ test('round-2 combat earns a real incentive, collects it without F, and Play aga
   g.player.teleport({ position: pickup.position.clone(), yaw: 0 });
   t.tick();
   assert.equal(g.powerUps.pickup, null, 'walk-through collection needs no interact input');
-  assert.ok(g.powerUps.active || t.sounds.includes('incentiveSecurity'), 'full inventory earns a zone or a sweep');
+  assert.notEqual(pickup.id, 'stockroomDelivery', 'full inventory earns a useful reward');
+  assert.ok(g.powerUps.active || g.powerUps.effects.some(effect => effect.id === pickup.id)
+    || pickup.id === 'securitySweep', 'collected reward activates its zone, temporary benefit or immediate sweep');
   g.resetRun();
   assert.equal(g.powerUps.pickup, null);
   assert.equal(g.powerUps.active, null);
   assert.equal(g.powerUps.progress, 0);
   assert.equal(g.powerUps.dropsThisRound, 0);
+  assert.deepEqual(g.powerUps.effects, [], 'all temporary benefits removed on restart');
 });
 
 test('resetPlayerStats: every stat back to base, undeclared extras removed, same object', async () => {

@@ -20,9 +20,9 @@ test('the stair shutter is bought with F from either side, uses pricing, unlocks
   for (const inside of [false, true]) {
     const t = fixture(), { g } = t; g.wallet.earn(5000); g.pricing.setDiscount('door', .5);
     stand(t, -21.8, 0, inside ? 5.2 : 2, inside ? 0 : Math.PI);
-    assert.equal(g.interactions.prompt?.id, 'cinemaStairs'); assert.equal(g.interactions.prompt.cost, 750);
+    assert.equal(g.interactions.prompt?.id, 'cinemaStairs'); assert.equal(g.interactions.prompt.cost, 630);
     const before = g.wallet.points; t.press('KeyF', 30); t.tick(120);
-    assert.equal(before - g.wallet.points, 750); assert.ok(g.map.zones.cinema.open && g.map.zones.serviceCorridor.open);
+    assert.equal(before - g.wallet.points, 630); assert.ok(g.map.zones.cinema.open && g.map.zones.serviceCorridor.open);
     assert.equal(g.map.zones.upstairs.open, false, 'cinema access does not bypass its separate Promenade shutter');
     assert.equal(g.map.doors.find(d => d.id === 'cinema').isOpen, false);
     g.resetRun(); t.tick(120); assert.equal(g.map.zones.cinema.open, false); assert.equal(g.map.zones.serviceCorridor.open, false);

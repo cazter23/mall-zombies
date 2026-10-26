@@ -20,8 +20,8 @@
   --danger-red: #ff3344;
 
   /* Typography tokens */
-  --font-display: 'Righteous', Impact, 'Arial Black', sans-serif;
-  --font-hud: 'Teko', Impact, sans-serif;
+  --font-display: 'Righteous', 'Arial Black', sans-serif;
+  --font-hud: 'Teko', 'Arial Narrow', sans-serif;
   --font-ui: 'Space Grotesk', system-ui, -apple-system, sans-serif;
   --font-receipt: 'VT323', 'Courier New', monospace;
 }

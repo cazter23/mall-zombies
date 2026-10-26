@@ -118,21 +118,21 @@ export function buildMallAtmosphere(kit, layout, { service, ceilingHole, ceiling
   // (North of HOFFMAN'S side door, which took the stretch of wall this notice hung on.)
   sign('TRADING HOURS: UNTIL FURTHER NOTICE', { x: -4.94, y: 2.65, z: 14.9, width: 2.0, height: 0.25, facing: 'x+' });
   // (The directory hung at x -18 until HOFFMAN'S gate took that stretch of wall: now over the hallway's north-west vent.)
-  sign('SUNSET GALLERIA / DIRECTORY', { x: -6.9, y: 2.6, z: 5.95, width: 2.3, height: 0.34, facing: -1 });
-  for (const [i, text] of ['FOOD COURT  -  SOUTH', 'MEGA MART  -  EAST', "HOFFMAN'S  -  NORTH-WEST", 'CINEMA  -  UPSTAIRS, WEST'].entries()) {
+  sign('Sunset Galleria / Directory', { x: -6.9, y: 2.6, z: 5.95, width: 2.3, height: 0.34, facing: -1, font: 'Arial, "Helvetica Neue", sans-serif' });
+  for (const [i, text] of ['Food Court  ·  South', 'Mega Mart  ·  East', "Hoffman's  ·  North-West", 'Cinema  ·  Upstairs, West'].entries()) {
     sign(text, { x: -6.9, y: 2.19 - i * 0.29, z: 5.94, width: 2.3, height: 0.25, facing: -1,
-      background: '#eee1c1', color: '#2e5158' });
+      background: '#eee1c1', color: '#2e5158', font: 'Arial, "Helvetica Neue", sans-serif' });
   }
-  sign('PLEASE ENJOY YOUR STAY', { x: 18.8, y: 3.6, z: 5.95, width: 1.8, height: 0.28, facing: -1 });
+  sign('Please enjoy your stay', { x: 18.8, y: 3.6, z: 5.95, width: 1.8, height: 0.28, facing: -1, font: 'Arial, "Helvetica Neue", sans-serif' });
   sign('TABLES ARE FOR CUSTOMERS. MOSTLY.', { x: -16.9, y: 2.8, z: -14.25, width: 3.1, height: 0.3, facing: 1 });
   sign('RESTOCK IN PROGRESS', { x: 29.05, y: 2.1, z: -23.95, width: 1.8, height: 0.28, facing: 1 });
 
   // (Hung under the bridge between the two balcony voids.)
-  const hanging = sign('FOOD COURT  /  MEGA MART >', { x: 0.5, y: 4.5, z: 2,
-    width: 3.2, height: 0.42, facing: 1 });
+  const hanging = sign('Food Court  /  Mega Mart  →', { x: 0.5, y: 4.5, z: 2,
+    width: 3.2, height: 0.42, facing: 1, font: 'Arial, "Helvetica Neue", sans-serif' });
   // A second face for the return trip; both pivot around the same centre.
-  const reverse = sign('< FOOD COURT  /  MEGA MART', { x: 0.5, y: 4.5, z: 1.98,
-    width: 3.2, height: 0.42, facing: -1 });
+  const reverse = sign('←  Food Court  /  Mega Mart', { x: 0.5, y: 4.5, z: 1.98,
+    width: 3.2, height: 0.42, facing: -1, font: 'Arial, "Helvetica Neue", sans-serif' });
   for (const x of [-0.7, 1.7]) box('sign_suspension', x, 5.35, 2, 0.025, 1.3, 0.025, metal);
 
   // Interrupted lunch. Trays, cups and cartons stay on existing table tops.

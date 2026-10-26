@@ -4,12 +4,14 @@ import { shutters } from '../config/shutters.js';
 // the sequence, death/reset cancels it, and debug open-all never starts nine motors.
 export function createShutterSounds({ events, doors, sound }) {
   const pending = new Map();
-  events.on('purchase', ({ kind, id: purchaseId }) => {
+  events.on('purchase', ({ kind, id: purchaseId, openedDoorIds }) => {
     if (kind !== 'door') return;
-    const door = doors.find(d => d.id === purchaseId);
-    if (door?.barrier.mesh?.userData.kind !== 'shutter' || pending.has(purchaseId)) return;
-    pending.set(purchaseId, { barrier: door.barrier, elapsed: 0 });
-    sound.play('shutterMotor');
+    for (const id of openedDoorIds ?? [purchaseId]) {
+      const door = doors.find(d => d.id === id);
+      if (door?.barrier.mesh?.userData.kind !== 'shutter' || pending.has(id)) continue;
+      pending.set(id, { barrier: door.barrier, elapsed: 0 });
+      sound.play('shutterMotor');
+    }
   });
   const clear = () => pending.clear();
   events.on('runReset', clear);

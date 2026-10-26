@@ -49,22 +49,18 @@ export const economy = {
     },
   },
 
-  // Door / shutter prices
+  // One purchase per destination, through any entrance. Shared connections are free
+  // once both adjoining areas are unlocked. Category stays 'door' for Flash Sales.
   doors: {
-    cinema: 1500,
-    cinemaStairs: 1500, // Service Corridor <-> cinema, through the west stairwell
-    startShutter: 500, // start room -> main hallway (the hub)
-    megaMart: 750, // hallway (east end) -> Mega Mart
-    foodCourt: 1000, // hallway (south wall) -> Food Court
-    serviceCorridor: 1250, // hallway (west end) -> Service Corridor
-    foodCourtMegaMart: 1000, // Food Court <-> Mega Mart (opens both)
-    serviceCorridorFoodCourt: 1250, // Service Corridor <-> Food Court (opens both)
-    atrium: 1500, // hallway (north wall, east half) -> the Grand Atrium
-    atriumPromenade: 1000, // the atrium's upper ring <-> the level 2 Promenade (opens both)
-    atriumMegaMart: 1000, // the atrium's arcade <-> the Mega Mart, through its north wall (opens both)
-    escalatorRepair: 2000, // hallway escalator -> level 2 (the 'upstairs' zone)
-    departmentStore: 1250, // hallway (north wall, west end) -> HOFFMAN'S department store
-    departmentStoreStartRoom: 1250, // HOFFMAN'S side door from the start room: the only second way out of it, so not a cheap skip
+    parkingLot: 1250,
+    hallway: 500,
+    megaMart: 750,
+    foodCourt: 1000,
+    serviceCorridor: 1000,
+    departmentStore: 1250,
+    atrium: 1250,
+    upstairs: 1250,
+    cinema: 1250,
   },
 
   // Wall-buy weapon prices. Buying a weapon you already own refills its ammo for `ammo`.
@@ -76,7 +72,7 @@ export const economy = {
     confettiCannon: { weapon: 1500, ammo: 500 }, // (was 750: dearer than the 400 RESTOCK-O-MATIC refill)
     // The three late guns (priced from `npm run balance`): ammo about half the gun, like the others.
     rivetRifle: { weapon: 1500, ammo: 750 }, // stronger automatic rifle; smaller magazine and quicker handling than Coil (Grand Atrium)
-    coilNailer: { weapon: 1250, ammo: 650 }, // strongest sustained automatic body damage; heavy handling, slow reload, 2-target pierce (Sunset Promenade)
+    coilNailer: { weapon: 2500, ammo: 650 }, // late Cinema purchase: large drum, slow reload and 2-target pierce
     barcodeScanner: { weapon: 1750, ammo: 900 }, // weak sustained dps (180) but pierces 4 in a line, ~3x (Byte Me Electronics)
   },
 
@@ -143,7 +139,7 @@ export const economy = {
     firstRoundDelay: 3, // seconds after the game starts before round 1's zombies begin spawning
     // When a round's last zombie dies, the next round number goes up immediately, then this
     // short break, then its zombies start trickling in.
-    breakSeconds: 6,
+    breakSeconds: 10,
     spawnRetrySeconds: 0.5, // no usable spawn point (none open/reachable)? try again this soon
   },
 
