@@ -68,7 +68,9 @@ test('a power cut darkens the area you are in (lamps, neon, emergency red), then
     }
     assert.equal(g.map.horror.state.cut, null, 'the power came back');
     assert.equal(g.map.horror.neons.hallway.power, 1);
-    assert.ok(flips <= Math.ceil(3 * look.horror.powerCuts.stutterSeconds) + 1, `${flips} flips in the stutter`);
+    // A flash is an off + on pair = 2 flips, so 3 flashes a second is 6 flips a second (+1: the flip as the power returns).
+    // (This used to count single flips, which only passed for some seeded random sequences; adding lamps reshuffles them.)
+    assert.ok(flips <= Math.ceil(2 * 3 * look.horror.powerCuts.stutterSeconds) + 1, `${flips} flips in the stutter`);
   } finally { Object.assign(look.horror.powerCuts, saved); }
 });
 

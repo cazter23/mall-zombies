@@ -50,6 +50,18 @@ triangles against routes/vents/vaults, resource disposal, batching/geometry budg
 before the start shutter; from either side, never through the wall), sealed until bought, spawns clear and reachable, a real walk in,
 routes both ways through both doors, lanes and clear straight runs, real vaults over all three counters, "nothing to perch on"
 (every exposed top is a step, a vaultable counter or >= 2.1 m, even jumping from a counter top), a 12-zombie horde, culling, grade, horror.
+`tests/cinema.test.js` covers the priced two-sided F purchase/reset, sealed unlock, upper-floor spawns, standing loop traversal,
+display vault, live zombie routes through both entrances/front crossover, local selection, vulnerable seat perches and slide
+clock/settings/reset/disposal. `tests/cinemaDetails.test.js` checks real triangle clearance, batching/resource budgets and all
+three room-culling areas/portals. `coplanar.test.js` includes the cinema and its shared Promenade wall.
+`tests/cinemaStairs.test.js` covers the lower two-sided F purchase/discount/reset, independent shared-zone holders, sealed
+unlocks, real player walking/sliding, all three zombie types up/down and a mixed 12-zombie horde without rescue teleports,
+and stairwell/return culling.
+`tests/cinemaVisuals.test.js` protects service-detail triangle clearance, geometry/batching budgets, resource disposal,
+visible-screen upload limits, ambient/clutter controls, pause/death/reset and spatial ambience. `tests/ambientPulse.test.js`
+checks the quiet periodic projector relay buffer, its silent intervals and unchanged random stream.
+fullRun.test.js also enters the cinema through Service Corridor without repairing the escalator, then buys the cinema's
+Promenade shutter from inside and receives natural upstairs spawns.
 `tests/careerStats.test.js` checks persistent lifetime totals, weighted accuracy, personal bests, bounded recent runs,
 debug-run exclusion, reset, corrupt saves and unavailable browser storage.
 `tests/music.test.js` also covers the End of Shift death sting: receipt-timed bell, music volume, cancellation of future
@@ -80,13 +92,17 @@ works from where you stand, both shortcuts buy from either side but not through 
 bought across its shortcut, the Nail Gun can't be bought through its wall, other floors are out of reach, facing matters),
 `ammoCache.test.js` the vending machine (refills any gun in hand, flat price, label follows the gun, needs its area open, not
 through the wall, solid + too tall to climb, zombies can reach its front), `balance.test.js` GUN ROLES on real measured numbers
-(cannon strongest up close / weakest at range, Price Gun competitive within 10% of premium Foam at 5 m but beaten at 30 m, Foam Dart Blaster best
-non-shotgun at 15 m, Nail Gun clearly best at 30 m (15%+), Staple Gun weakest at every range; relationships, not exact values), `gunStats.test.js` the per-hit formula + resolveGun (upgrades as data),
+(cannon strongest up close / weakest at range, Price Gun below premium automatics at 5 m, Foam Dart Blaster beats the older
+non-shotguns at 15 m, Nail Gun best single-target sustained damage at 30 m (10%+), Staple Gun weakest at every range;
+relationships, not exact values). `weaponProgression.test.js` runs real aimed shots, bloom, reloads and upgrades against
+stationary round-8/10 targets through helpers/weaponTrial.js (perfect tracking; not a human survival playtest).
+`gunStats.test.js` checks the per-hit formula + resolveGun (upgrades as data),
 `fullRun.test.js` WHOLE RUNS of the real game headless (tests/helpers/headlessGame.js builds createGame with stand-in HUD/sound/
 viewmodel: buy the shutter, rounds, shoot a zombie for exact payouts, die, results, and "Play again equals a freshly built game"
 via snapshot(), which covers every stat incl. undeclared extras, run stats, features, prompt and reload; zombies keep walking
 after you die; a natural round 1 -> 2; buy Food Court then its shortcut with real F holds and see natural Mega Mart spawns
-while its hallway door stays shut; resetPlayerStats). New cross-system behaviour should get a full-run test there), `events.test.js` the event bus + every payout path
+while its hallway door stays shut; buy the start shutter, repair the escalator and buy the cinema, receive natural cinema
+wave spawns, then reset its door/slide state; resetPlayerStats). New cross-system behaviour should get a full-run test there), `events.test.js` the event bus + every payout path
 in the real game (body / headshot / box-cutter kills, a shotgun blast pays once per zombie, a non-player "hazard" kill still pays
 and counts, purchase / round / player-hit / death / Play-again events, purchase kind/label as it was BEFORE buying, a kill
 listener killing another zombie mid-shot pays each once (no +10 for a corpse), pierce/pellet multi-kills, dummies pay nothing,
@@ -541,7 +557,23 @@ src/
                         overhead signs/diffuser, Build-A-Blaster renovation frontage, closed Pretzel Palace counter and shoe tickets.
                         Called with the existing look kit; no new collision/lights/purchases/timers. Kit owns resources; static parts batch.
     config/promenade.js  Independent upstairs bounds/sections, slab/wall dimensions, shoe-store geometry/finish data and three
-                        reserved expansion connections (west/east wings, COMING SOON workshop). Closures are solid, not purchases.
+                        expansion connections (west/east wings, COMING SOON workshop). West connects to the live cinema door;
+                        the east wing and workshop remain solid reserved closures.
+    config/cinema.js     Independent upstairs lobby, Screen 1, passage, seat blocks, future sealed connections, spawn markers,
+                        colors, two pooled lamps, spatial ambience and procedural slide data. Entrance price: economy.doors.cinema.
+    mall/cinema.js       Physical cinema wing, shutter, upper-floor spawns and room/portal/grade/ambience metadata. The Promenade
+                        owns their shared wall. Lobby -> auditorium -> projection passage -> lobby is a flat-floor fighting loop.
+    mall/cinemaDetails.js  Patterned carpet on the actual floor, velvet curtains, concessions/box office cases, exit signs,
+                        acoustic panels and one reusable slide texture/projector beam. Orchestrates cinemaArchitecture,
+                        cinemaLobbyDetails, cinemaAuditoriumDetails and cinemaStoryDetails; shared geometry/canvas helpers
+                        live in cinemaDecorKit, authored cosmetic data in config/cinemaDetails.js. No colliders or real lights.
+                        Ambient extras freezes slides/poster motion and hides beam/dust; screen animation uploads at most
+                        five times per second while rendered. Clutter controls litter. Map owns update/reset/disposal;
+                        static parts batch by room. cinemaServiceDetails dresses the passage/stairs/return without collision.
+    config/cinemaStairs.js  West stairwell/return-passage bounds, ramp plateaus, tread count, lower door opening and painted light.
+    mall/cinemaStairs.js  Physical service stairs with a smooth ramp under visible treads, solid supports, handrails, two culling
+                        rooms and the floor-to-floor nav link. Lower shutter (1500) opens cinema + serviceCorridor; the original
+                        cinema shutter now opens cinema + upstairs. No real lights, guns or spawn markers added.
     mall/restockMachine.js  buildRestockMachine({ kit, center, wallAt, facing }) -> { position, normal, screen }: the RESTOCK-O-MATIC
                         (north/south walls): body + hazard kick plate + glowing header and tagline, a lit window of ammo boxes, keypad,
                         card reader, live canvas screen (screen.show({ title, line, note, tone })), side signs, the AMMO blade sign, the
@@ -708,6 +740,11 @@ src/
   vents + the dead end; each tagged with its zone)
   and the 4 'wallBuy' features (outward `normal` + `weapon` id: Price Gun, Nail Gun, Mega Mart Foam Dart Blaster
   and Service Corridor Confetti Cannon; prices in economy.wallBuys via g.pricing).
+- Markers (invisible; shown if `debug.showMarkers`; wall-buy markers come from the 'wallBuy' features): `map.spawnPoints`
+  (31: 2 start-room, 3 hallway, 5 Atrium, 4 Food Court, 4 Promenade, 6 cinema, 4 Mega Mart and 3 Service Corridor;
+  each tagged with its zone and actual floor height). The service stairs add no markers.
+  The seven 'wallBuy' features have outward `normal` + `weapon` id: Price Gun, Nail Gun, Foam Dart Blaster, Confetti Cannon,
+  Rivet Rifle, Heavy Coil Nailer and Barcode Scanner; prices in economy.wallBuys via g.pricing.
 
 ## Map (current)
 The start room opens into a MAIN HALLWAY (the hub). Each outer area has a hallway entrance; two buyable shortcuts
@@ -724,7 +761,7 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
   under a MEGA MART sign), Service Corridor (1250, west wall z 0.5..3.5, under a "SERVICE CORRIDOR · STAFF ONLY"
   sign; the escalator's high end runs overhead just short of it). 3 boarded vents (zombie spawns).
   Escalator (SEALED until repaired for 2000, see Current state): west half, z 1..3, bottom end at x -4 facing the hub, rising west at 30 deg through a hole in
-  the ceiling (x ~-16.5..-11.95) to level 2 (y 6.3, the top of the ceiling slab; see Level 2 below). Rope barrier + OUT OF ORDER board at the bottom; every collider you could
+  the ceiling (x ~-16.5..-11.95) to level 2 (y 6.3, the top of the ceiling slab; see Level 2 below). Rope barriers + OUT OF ORDER boards at both ends remain until the repair is bought, even with Atrium access; every collider you could
   reach from the floor is taller than a jump. Its low end (x -4..-10.4) is solid to the floor; under its high end
   (x -10.4..-17.5) there's >= 2m headroom, so players and zombies walk under it. Elevator (SEALED): doors in the north
   wall at x 10.5 (taped off, OUT OF ORDER, floor indicator "1", call button); painted on, the wall behind is solid.
@@ -736,8 +773,8 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
   Eastern lounge: a low 1.1 x 0.8m sunset-medallion plinth at (14.2, 1.6) replaces the tree/bench enclosure; benches hug the south,
   east and north perimeter, leaving routes round both sides and a clear Atrium-shutter approach. Directory on the south wall,
   east-wall payphones, magazine rack, upholstered seats and a backlit ceiling feature identify the junction. Southern benches, signs and two southern vents follow the
-  new wall; all four existing upstairs spawn markers remain (east z 4.2, north x 16). Reserved solid connections at both ends
-  (z -4.1..-1.7) and behind COMING SOON (x -1.3..1.3) prepare future wings/workshop. No new price or purchase path.
+  new wall; all four existing upstairs spawn markers remain (east z 4.2, north x 16). The west connection (z -4.1..-1.7)
+  now leads through the 1500-point cinema shutter. The east connection and COMING SOON (x -1.3..1.3) remain sealed for expansion.
   Main floor and annex are sections in config/promenade.js, independent of the hallway; navigation/grade follow the upper sections.
   COMING SOON now has an illuminated BUILD-A-BLASTER workshop title, papered frontage and renovation notices; it stays sealed,
   with no functioning upgrade station yet. Pretzel Palace remains closed but has a scenic warmer/counter/menu/grille. Shoe-store
@@ -751,6 +788,31 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
   spawn out of the middle curtain), LAYAWAY counter (vaultable), shoe wall; stockroom door + west vent spawns. Collision rule:
   counters 0.95 m and vaultable, everything else >= 2.1 m (a counter-top jump peaks ~2.0 m). Cream/burgundy/brass look,
   ALL SALES FINAL. SO ARE YOU. The hallway's north-west vent moved to x -7 and the directory over it for the gate.
+- Sunset Cinema (zone 'cinema', separate 1500-point shutter off the Promenade's west wall at x -20.3..-20, z -4.1..-1.7):
+  floor y 6.3, 4.8m ceiling height. Lobby x -42..-20.3, z -10.5..5.5; flat Screen 1 x -42..-24, z 5.8..27.8;
+  projection passage x -23.7..-20.3, z 5.8..27.8. A 3.4m auditorium doorway and 3m passage entrance connect to the lobby;
+  a 3.4m crossover at z 22..25.4 closes the loop. Four low seating blocks leave side/central aisles, a middle crossing and
+  a broad front fighting floor. Seats remain vulnerable to zombie attacks; the low lobby display is vaultable. Concessions
+  and ticket cases are enclosed/solid to their visible glass height. Screen 2/3 stay sealed.
+  A west service stairwell now descends to the Service Corridor's north end (see below).
+  Six local upper-floor spawn markers unlock with either cinema entrance.
+  Plum carpet, brass, curtains, neon, fictional movie posters, slow locally drawn advertising slides, faint projector beam,
+  projector/refrigerator/ventilation ambience and a quiet periodic projector relay, two pooled lamps, three culling rooms
+  and three color grades (warm lobby, dark screen, readable cool service). Stepped cornices, coffers, steady marquee,
+  detailed popcorn/soda/slush equipment, box-office printer/showtimes, acoustic ribs/speakers, numbered seats/cupholders,
+  authored coats/drinks and sparse litter complete the detail pass. No new guns or balance changes.
+  Data: LAYOUT.cinema (config/cinema.js); modules mall/cinema.js and cinemaDetails.js. Play again closes/resets the entire wing.
+- Cinema Service Stairs: from the lobby's west doorway x -42.3..-42, z -8.8..-5.6, through a 3.7m-wide stairwell
+  x -46..-42.3 down from y 6.3 to y 0; a 3m-wide return passage at z 7.1..10.1 joins the north end of Service Corridor
+  through a 2.6m shutter (cinemaStairs, 1500, x -23.1..-20.5, z 3.5..3.8). Buyable from either side, it unlocks both cinema
+  and serviceCorridor. Cinema's original 1500 shutter also unlocks upstairs, so entering from below then buying it opens
+  Promenade spawns without needing the escalator repair. Each door stays independently priced; zones remain open while
+  any of their entrances is open. Smooth ramp collision under 36 visible treads supports walking/sprinting/sliding; broad
+  plateaus, solid under-stair support, wall-mounted handrails and wayfinding leave no climbable side refuge. The existing
+  Cannon, lockers and Food Court shortcut stay where they are. No additional spawns or real lights; painted glow follows
+  Neon glow. Projection equipment, maintenance signage, overhead pipes/cables, landing numbers, delivery/cleaning scenes
+  and concrete wear decorate existing surfaces without shrinking routes or adding lights. Data: LAYOUT.cinemaStairs.
+  Both floor landings and the link reset/unload with the map.
 - The Grand Atrium (zone 'atrium'): x 8..32, z 6.6..30.6, behind a 5m gate (1500) in the hallway's north wall at x 13..18 under a
   GRAND ATRIUM sign. Two storeys (roof 9.9 under a big warm skylight): an open court x 11.5..28.5, z 10.1..27.1 with a square
   fountain (glass guard, solid to 2.2m) in the middle, CELL-OUT and SHADE SHACK kiosks, four tree planters, three benches; a 3.5m arcade
@@ -844,6 +906,24 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
 
 ## Current state
 
+Weapon balance pass: Price Gun magazine/reserve 28/168, damage still 28; Rivet damage 58; Foam Dart damage 56;
+Heavy Coil damage 44, full to 15m then 65% at 30m. Fire rates, handling, reloads, prices and zombie health unchanged.
+Headshot multipliers: Staple/Nail/Scanner 2x, Price/Coil 1.5x, Foam/Rivet 1.75x, Cannon 1.2x.
+Price is the early-game sprayer; Rivet is a stronger automatic, Coil trades handling/reload for sustained fire and pierce.
+Foam remains the quicker-aiming accurate burst option. Equal-tier and attachment role tests reflect this progression;
+range attachments may challenge Nail at 30m, but it retains the 40m advantage. Older balance notes below are historical.
+
+Sunset Cinema is playable from the Promenade's west-wing shutter (1500 points): a broad lobby, flat auditorium and projection
+passage form a continuous combat loop. Six upper-floor spawns, normal door pricing/reset, culling/grading and spatial ambience
+are connected. The west service stairs now reach Service Corridor through a separate 1500-point lower shutter, completing
+an external loop through Promenade and the hallway; the cinema's front shutter opens both cinema and upstairs. Screen 2/3
+remain sealed. The full cinema detail pass is in: warm architectural trim/coffers/marquee, concession equipment and
+box-office paperwork/showtimes, acoustic ribs/speakers, numbered seats/cupholders, restrained seat/litter stories,
+projection equipment, service wayfinding/cleaning/delivery scenes and worn stair concrete. Local screen art moves slowly
+with capped visible-only uploads; dust/poster motion respects Ambient extras and litter respects Clutter. Existing two
+lamps are retuned, service spaces have their own readable grade, and spatial ventilation/relay sounds use existing
+ambient voice limits. Combat footprints, door prices, weapons and balance are unchanged.
+
 Character and weapon model refresh ("faceted, not voxel"):
 - First-person hands, arms and lower body (`weapons/models/arms.js`, `player/body.js`, `weapons/viewmodel.js`, `config/feel.js`):
   replaced rectangular palm/finger blocks with shaped faceted palms (`unitPalmGeo`), distinct thumbs (`unitThumbGeo`), a readable
@@ -934,7 +1014,7 @@ foundation, 2) the hallway as the approved REFERENCE ROOM, 3) neon + painted lig
   EVERY Graphics preset (Potato / Low / Medium / High; Ultra joins with the first Ultra-only effect) must set it (tested). New
   effect = one entry in config/settings.js + its value in each Graphics preset.
 - 1b Benchmark: Shift+B on the title or pause screen (or `await __mall.benchmark()`): fx/benchmark.js flies map.benchmarkShots
-  (8 named long views, mall.js), every door opened for the route then restored; report = draw ms (CPU, not vsync-capped: the
+  (11 named long views including the cinema lobby/screen/stairs, mall.js), every door opened for the route then restored; report = draw ms (CPU, not vsync-capped: the
   number to compare), frame ms, draw calls, triangles, per shot + slowest. In the test browser use the PRODUCTION preview
   (launch config mall-zombies-preview, `npm run build` first): the dev page reloads whenever another tool saves a file.
   A hidden/background pane only draws ~1-5 fps: frame ms is meaningless there, draw ms and calls still count.
@@ -1000,21 +1080,21 @@ Also merged: world/neon.js (neon tube builder) and world/decor.js + world/scatte
 
 HOFFMAN'S DEPARTMENT STORE (built in a worktree in 5 steps: shell + gate, fixtures, start-room side door, look, Scanner move + perf):
 see Map. Wiring in mall.js: LAYOUT.departmentStore (= config/departmentStore.js), zone, 2 doors, spawns, lamps (2), cullAreas +
-2 cullPortals, gradeZones ('departmentStore' grade in look.grading), a horror area, a benchmark shot. Door count 12. Measured from its
+2 cullPortals, gradeZones ('departmentStore' grade in look.grading), a horror area, a benchmark shot. Door count 14 (with the cinema's two). Measured from its
 benchmark view: 226 draw calls / 36k triangles (hallway 639 / 101k). The Barcode Scanner moved here from Byte Me's pod.
 
 LATE WALL GUNS: the Rivet Rifle, Heavy Coil Nailer and Barcode Scanner are now real wall buys (economy.wallBuys, 'debugOnly' gone;
-H still cycles them). Prices from `npm run balance`: Rivet 1500 / ammo 750 (best sustained non-shotgun dps at 2-10 m, 246: priced with
-the Cannon), Coil Nailer 1250 / 650 (Price Gun dps, 231, but a 64-nail drum and a 2-zombie pierce), Scanner 1750 / 900 (weak sustained
+H still cycles them). Prices: Rivet 1500 / ammo 750 (275 sustained body DPS up close),
+Coil Nailer 1250 / 650 (300 sustained body DPS, a 64-nail drum and a 2-zombie pierce), Scanner 1750 / 900 (weak sustained
 dps, 180, but pierces 4 in a line, ~3x: the top crowd gun). Spots (mall.js wallBuys, each probed against the built geometry: nothing within
 a metre, 3 m+ from every spawn on its floor): see Map > Wall-buy spots. Buying follows the existing two-slot rule. The old assertions
 that these guns stay off the map now check they are on it once. tests/lateWallGuns.test.js: priced + zoned + one feature each, real F
 holds buy for the exact price and refill for the ammo price (also from level 2), nothing offered while the area is closed or from inside
 Byte Me through its wall, spots clear of spawns, all three bought in a row replace the gun in hand, Play again takes them away.
 
-Rivet Rifle (a wall buy now, see above; was a debug-only prototype): the notes below still describe its stats. Automatic 52 damage at 7.5 shots/s, 1.75x headshots, 24 + 144 ammo, 2s magazine reload. Full damage to
+Rivet Rifle (a wall buy now, see above; was a debug-only prototype): automatic 58 damage at 7.5 shots/s, 1.75x headshots, 24 + 144 ammo, 2s magazine reload. Full damage to
 12m, falling to 60% at 28m. Steady body fire with slower ADS (0.26s) and 0.78x normal ADS movement, smaller magazine
-and weaker headshots than Foam; Nail retains the long-range advantage. Own model, recoil, audio, impact marks and
+than Foam but stronger per-hit damage; Nail retains the long-range advantage. Own model, recoil, audio, impact marks and
 controller pulse; supports existing tiers/attachments and cache refills. H marks the run assisted. tests/rivetRifle.test.js
 covers cadence/reload, roles at every tier, bloom, real hits/payouts/no pierce, ADS/switch/reset, model reload and debug/cache
 integration. Existing gun stats are unchanged. Play Again now immediately clears the previous gun's ADS state.
@@ -1106,8 +1186,8 @@ down to a player below, one crosses level 2 to a player up there, Play again res
 
 Second floor, step 3 of 6: the escalator repair is a purchase. Door `escalatorRepair` (economy.doors.escalatorRepair 2000, ordinary
 pricing / Flash Sale category 'door') with verb 'repair': prompt "Hold F to repair Escalator 2000" at the foot (door.position = props.escalator's
-`foot`). Its barrier is an adapter in mall.js (`escalatorGate`): open() removes the escalator's barrier collider (+ markCollidersChanged, so
-the nav grid rebuilds and zombies can route up) and hides the rope/posts/OUT OF ORDER board (props.escalator returns them as `barrierParts`);
+`foot`). Its barrier is an adapter in mall.js (`escalatorGate`): open() removes both landing barrier colliders (+ markCollidersChanged, so
+the nav grid rebuilds and zombies can route up) and hides both ends' rope/posts/OUT OF ORDER boards (props.escalator returns them as `barrierParts`);
 close() (Play again) puts it all back. It opens the new zone `upstairs` ('Level 2', closed at the start, nothing spawns there yet).
 The map has 7 doors now; debug O (open all doors) includes the repair. Verified in tests (real F hold: too poor / enough, Play again
 reseals, the mall door ladder) and in the browser (prompt, 2000 spent, rope and board gone). Level 2 itself is still just the closed-off landing.

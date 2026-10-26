@@ -45,7 +45,7 @@ export const promenade = {
       shoes: [0xbe7892, 0x4d789b, 0xb99757, 0x695487], boxes: [0x98816a, 0x635372, 0xae7b80] },
   },
   expansionConnections: [
-    { id: 'westWing', wall: 'west', from: -4.1, to: -1.7, top: 2.7, label: 'WEST WING · FUTURE EXPANSION' },
+    { id: 'westWing', wall: 'west', from: -4.1, to: -1.7, top: 2.7, door: 'cinema', label: 'SUNSET CINEMA' },
     { id: 'eastWing', wall: 'east', from: -4.1, to: -1.7, top: 2.7, label: 'EAST WING · FUTURE EXPANSION' },
     { id: 'workshop', wall: 'north', from: -1.3, to: 1.3, top: 2.7, label: 'COMING SOON' },
   ],

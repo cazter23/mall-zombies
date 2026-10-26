@@ -163,7 +163,7 @@ test('pellets: damage falls linearly with distance and includes headshots and pl
     const zombie = target(distance, 10000, 'head'); const f = fixture(weapons.confettiCannon, [zombie]);
     f.player.stats.damageMultiplier = 1.5; f.fire();
     assert.equal(zombie.damages.length, weapons.confettiCannon.pellets.count);
-    for (const damage of zombie.damages) assert.ok(Math.abs(damage - weapons.confettiCannon.damage*2*1.5*expected) < 1e-8);
+    for (const damage of zombie.damages) assert.ok(Math.abs(damage - weapons.confettiCannon.damage*weapons.confettiCannon.headshotMultiplier*1.5*expected) < 1e-8);
   }
 });
 
@@ -210,7 +210,7 @@ test('pellets: an earlier head hit does not award the head bonus when a body pel
   // First ray goes right into the head, other rays go centrally into the body of the SAME target.
   let randomCall=0; t.mock.method(Math,'random',()=>randomCall++===0 ? 0.9 : 0);
   const d=structuredClone(weapons.confettiCannon); d.spread.base=0;
-  const zombie=target(2,80); zombie.hitboxes=[
+  const zombie=target(2,d.damage*d.headshotMultiplier+d.damage*.5); zombie.hitboxes=[
     {part:'head',box:box(0.15,1.3,-2.2,0.3,2,-2)},
     {part:'body',box:box(-0.08,1.3,-2.2,0.08,2,-2)},
   ];
@@ -241,7 +241,7 @@ test('pellet ADS cone tightens continuously; pellets and pierce can be combined'
 
 test('new-gun damage table is deliberate at rounds 1, 2, 5 and 9', () => {
   const table=[
-    [1,3,1,1,1,4], [2,5,2,1,1,6], [5,9,3,2,1,11], [9,15,5,2,1,18],
+    [1,3,2,1,1,4], [2,5,3,1,1,6], [5,9,5,2,1,11], [9,14,8,2,2,18],
   ];
   for(const [round,bodyDarts,headDarts,bodyBlasts,headBlasts,farBlasts] of table){
     const hp=zombieHealthForRound(round), foam=weapons.foamDartBlaster, confetti=weapons.confettiCannon;

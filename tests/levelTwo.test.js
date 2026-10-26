@@ -19,7 +19,7 @@ function fixture({ repaired }) {
   t.g.zombies.clear();
   t.g.debug.run('doors');
   t.g.debug.run('god');
-  if (!repaired) for (const id of ['escalatorRepair', 'atriumPromenade']) t.g.map.doors.find((d) => d.id === id).reset(); // (both lead up)
+  if (!repaired) for (const id of ['escalatorRepair', 'atriumPromenade', 'cinema']) t.g.map.doors.find((d) => d.id === id).reset(); // all entrances to the Promenade
   t.tick(120);
   return t;
 }
@@ -29,6 +29,37 @@ function hold(t, keys, seconds) {
   for (const k of keys) t.g.player.input.held.delete(k);
 }
 const contains = (colliders, x, y, z) => colliders.some((b) => x > b.min.x && x < b.max.x && y > b.min.y && y < b.max.y && z > b.min.z && z < b.max.z);
+
+test('Atrium access cannot bypass the unrepaired upper escalator barrier; repair and reset affect both ends', () => {
+  const t = fixture({ repaired: false }), { g } = t;
+  g.map.doors.find(d => d.id === 'atriumPromenade').open();
+  assert.equal(g.map.zones.upstairs.open, true, 'Promenade access is independent of the repair');
+  const repair = g.map.doors.find(d => d.id === 'escalatorRepair');
+  const topX = g.map.escalator.ramp.minX;
+  const approach = () => g.player.teleport({ position: new THREE.Vector3(topX - 1, UPPER_Y, zMid), yaw: -Math.PI / 2 });
+  for (const jumping of [false, true]) {
+    approach();
+    g.player.input.held.add('KeyW'); g.player.input.held.add('ShiftLeft');
+    for (let i = 0; i < 180; i++) {
+      if (jumping && i % 20 === 0) g.player.input.pressed.add('Space');
+      t.tick(1);
+      assert.ok(g.player.position.x < topX, 'cannot cross from the upper floor, even jumping');
+    }
+    g.player.input.clear();
+  }
+  repair.open(); approach(); hold(t, ['KeyW'], 3);
+  assert.ok(g.player.position.y < UPPER_Y - 1, 'repair permits walking down');
+  assert.equal(g.colliders.includes(g.map.escalator.barrier), false, 'lower barrier also removed');
+  repair.reset(); repair.reset();
+  assert.equal(g.colliders.filter(b => b === g.map.escalator.barrier).length, 1, 'lower barrier restored exactly once');
+  approach(); hold(t, ['KeyW'], 2);
+  assert.ok(g.player.position.x < topX, 'upper barrier restored, although Atrium access stays open');
+  assert.equal(g.map.zones.upstairs.open, true);
+  g.resetRun();
+  approach(); hold(t, ['KeyW'], 2);
+  assert.ok(g.player.position.x < topX, 'Play again restores the upper barrier');
+  g.map.dispose();
+});
 
 test('level 2 is closed in: four walls, a roof, and a floor you can stand on', () => {
   const { g } = fixture({ repaired: true });
@@ -221,7 +252,7 @@ test('level 2 has its own ambience: its music and air-con play up there (once op
   const below = level2().find((v) => v.kind === 'music');
   const above = upstairs.find((v) => v.kind === 'music');
   assert.ok(!below || below.gain < above.gain * 0.5, 'from the hallway below it is muffled (or not heard at all)');
-  for (const id of ['escalatorRepair', 'atriumPromenade']) g.map.doors.find((d) => d.id === id).reset();
+  for (const id of ['escalatorRepair', 'atriumPromenade', 'cinema']) g.map.doors.find((d) => d.id === id).reset();
   g.player.teleport({ position: new THREE.Vector3(2, UPPER_Y, 1), yaw: 0 });
   ambience.update(1 / 60, true);
   assert.equal(level2().length, 0, 'silent while level 2 is closed');

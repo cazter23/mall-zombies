@@ -58,8 +58,16 @@ import { promenade } from '../../config/promenade.js';
 import { buildPromenadeDetails } from './promenadeDetails.js';
 import { buildDepartmentStore } from './departmentStore.js';
 import { departmentStore } from '../../config/departmentStore.js';
+import { cinema } from '../../config/cinema.js';
+import { buildCinema } from './cinema.js';
+import { buildCinemaDetails } from './cinemaDetails.js';
+import { cinemaStairs } from '../../config/cinemaStairs.js';
+import { buildCinemaStairs, dressCinemaStairs } from './cinemaStairs.js';
+import { buildCinemaServiceDetails } from './cinemaServiceDetails.js';
 
 export const LAYOUT = {
+  cinema,
+  cinemaStairs,
   startRoom: { minX: -5, maxX: 5, minZ: 6, maxZ: 16, height: 4 },
   hallway: { minX: -20, maxX: 20, minZ: -2, maxZ: 6, height: 6 },
   foodCourt: { minX: -20, maxX: 20, minZ: -14.3, maxZ: -2.3, height: 6 }, // north wall = hallway's south wall
@@ -177,6 +185,7 @@ export function buildMall(scene, colliders) {
     foodCourt: { label: 'Food Court', open: false },
     serviceCorridor: { label: 'Service Corridor', open: false },
     upstairs: { label: 'Level 2', open: false }, // opened by repairing the escalator (the escalatorRepair door)
+    cinema: { label: 'Sunset Cinema', open: false },
     atrium: { label: 'Grand Atrium', open: false },
     departmentStore: { label: "Hoffman's", open: false },
   };
@@ -305,22 +314,25 @@ export function buildMall(scene, colliders) {
     holes: ceilingHoles, name: 'ceiling',
   });
 
-  // REPAIRING the escalator = a buyable door: its "barrier" is the collider across the escalator's foot plus the rope and
-  // OUT OF ORDER board. Opening it removes them (the ramp and its link are always there); it opens the 'upstairs' zone.
+  // One repair removes both landing barriers, including when upstairs was reached via another entrance.
   const escalatorGate = {
     collider: escalator.barrier,
     open() {
-      const i = colliders.indexOf(escalator.barrier);
-      if (i !== -1) {
-        colliders.splice(i, 1);
-        markCollidersChanged(colliders);
+      for (const barrier of escalator.barriers) {
+        const i = colliders.indexOf(barrier);
+        if (i !== -1) {
+          colliders.splice(i, 1);
+          markCollidersChanged(colliders);
+        }
       }
       for (const part of escalator.barrierParts) part.visible = false;
     },
     close() {
-      if (!colliders.includes(escalator.barrier)) {
-        colliders.push(escalator.barrier);
-        markCollidersChanged(colliders);
+      for (const barrier of escalator.barriers) {
+        if (!colliders.includes(barrier)) {
+          colliders.push(barrier);
+          markCollidersChanged(colliders);
+        }
       }
       for (const part of escalator.barrierParts) part.visible = true;
     },
@@ -339,6 +351,8 @@ export function buildMall(scene, colliders) {
     ],
     hole: escalator.hole, layout: LAYOUT.level2,
   });
+  const cinemaWing = buildCinema({ kit, layout: LAYOUT.cinema, floorY: upperY, promenade: LAYOUT.level2,
+    zones, price: economy.doors.cinema });
 
   // The Grand Atrium north of the hallway (maps/mall/atrium.js), its gate off the hallway, and the shutter between its upper
   // ring and the level 2 Promenade (a shortcut: it opens both zones, like the ground-floor shortcuts).
@@ -535,13 +549,16 @@ export function buildMall(scene, colliders) {
     startCap: false, // opens onto the shutter's doorway
     endCap: true,
     segments: [
-      { dir: 'west', length: SC.width / 2 },
+      { dir: 'west', length: SC.width / 2, openings: [{ side: 'left', at: LAYOUT.cinemaStairs.serviceDoor.runAt,
+        width: LAYOUT.cinemaStairs.serviceDoor.to - LAYOUT.cinemaStairs.serviceDoor.from, top: LAYOUT.cinemaStairs.serviceDoor.top }] },
       { dir: 'south', length: SC.length, noWall: ['right'] },
     ],
   }, {
     floor: { base: '#a19d95', grout: '#857f76', variation: 6, seed: 13 },
     wall: mat(look.serviceCorridor.wall), ceiling: mat(COLORS.serviceCeiling), name: 'service',
   });
+  const cinemaConnection = buildCinemaStairs({ kit, layout: LAYOUT.cinemaStairs, cinema: LAYOUT.cinema,
+    floorY: upperY, zones, price: economy.doors.cinemaStairs });
   // Dressing along the south run's west wall ('left', walking south). `at` = meters from the turn.
   const westWall = { along: 'z', wallAt: service.pointAt(1, 0, 'left').x, facing: 1 };
   const zAt = (at) => service.pointAt(1, at).z;
@@ -713,6 +730,7 @@ export function buildMall(scene, colliders) {
   // Start-room warm/cool lamps are built with its details (config/environment.js).
   // Mega Mart's two fixed lamps are built with its details (config/environment.js).
   for (const l of levelTwo.lamps) lamp(atmosphere.roomLights.level2, l.x, l.y, l.z);
+  for (const l of cinemaWing.lamps) lamp(l, l.x, l.y, l.z);
   for (const l of atrium.lamps) lamp(atmosphere.roomLights.atrium, l.x, l.y, l.z);
   for (const at of [3, 12]) lamp(atmosphere.roomLights.serviceCorridor, service.points[1].x, SC.height * 0.65, service.pointAt(1, at).z);
   for (const l of departmentStoreRoom.lamps) lamp(DS.lamp, l.x, l.y, l.z);
@@ -730,6 +748,7 @@ export function buildMall(scene, colliders) {
     ...stores.spawns, // a zombie spawn inside each of the four stores
     ...levelTwo.spawns, // boarded vents on level 2 (their y is the upper floor)
     ...departmentStoreRoom.spawns, // HOFFMAN'S: its stockroom door and west vent
+    ...cinemaWing.spawns,
     { name: 'spawn_megaMart_stockroom', zone: 'megaMart', position: new THREE.Vector3(26.5, 0, -23.2) },
     { name: 'spawn_megaMart_receiving', zone: 'megaMart', position: new THREE.Vector3(31.8, 0, -23.2) },
     { name: 'spawn_megaMart_vent', zone: 'megaMart', position: new THREE.Vector3(21.8, 0, -23.2) },
@@ -799,6 +818,9 @@ export function buildMall(scene, colliders) {
     { name: 'atrium ring', from: [10, 8, 29.3], to: [30, 8, 29.3], lookFrom: [20, 2, 15], lookTo: [20, 2, 15] },
     { name: 'level 2', from: [-18.5, 8, 4.6], to: [18, 8, 4.6], lookFrom: [20, 7.5, 2], lookTo: [20, 7.5, 2] },
     { name: 'department store', from: [-18.5, 1.7, 7.4], to: [-7, 1.7, 7.4], lookFrom: [-12.6, 1.5, 25], lookTo: [-12.6, 1.5, 25] },
+    { name: 'cinema lobby', from: [-23, 8, -6.5], to: [-37, 8, -6.5], lookFrom: [-34, 8.5, 5], lookTo: [-34, 8.5, 5] },
+    { name: 'cinema screen', from: [-33, 8, 7.5], to: [-33, 8, 16], lookFrom: [-33, 8.8, 27.6], lookTo: [-33, 8.8, 27.6] },
+    { name: 'cinema stairs', from: [-44.15, 7.9, -5.6], to: [-44.15, 1.8, 7.1], lookFrom: [-44.15, 1.7, 9], lookTo: [-41, 1.7, 8.6] },
   ];
 
   // Everything (besides doors) the player interacts with, by kind: game/features/ builds each one.
@@ -813,7 +835,7 @@ export function buildMall(scene, colliders) {
     ...stores.spots.map((s) => ({ kind: 'attachmentCounter', name: `attachment_${s.id}`, zone: s.zone, attachment: s.id, position: s.position, normal: s.normal })),
   ];
 
-  const doors = [startDoor, megaMartDoor, foodCourtDoor, serviceCorridorDoor, foodCourtMegaMartDoor, serviceCorridorFoodCourtDoor, escalatorDoor, atriumDoor, atriumPromenadeDoor, atriumMegaMartDoor, departmentStoreDoor, departmentStoreStartRoomDoor];
+  const doors = [startDoor, megaMartDoor, foodCourtDoor, serviceCorridorDoor, foodCourtMegaMartDoor, serviceCorridorFoodCourtDoor, escalatorDoor, atriumDoor, atriumPromenadeDoor, atriumMegaMartDoor, cinemaWing.door, cinemaConnection.door, departmentStoreDoor, departmentStoreStartRoomDoor];
   const dressing = buildMallAtmosphere(kit, LAYOUT, { service, ceilingHoles });
 
   // The hallway's new look (the visual overhaul's reference room): neon, painted light, two-tone walls, clutter.
@@ -837,6 +859,9 @@ export function buildMall(scene, colliders) {
   buildServiceCorridorLook({ looks, kit, layout: LAYOUT, corridor: service, keepClear: hallwayClear.slice(0, -2) });
   buildLevelTwoLook({ looks, layout: LAYOUT, floorY: upperY, hole: escalator.hole, keepClear: hallwayClear.slice(0, -2) });
   buildPromenadeDetails({ kit, looks, layout: LAYOUT.level2, floorY: upperY });
+  const cinemaDetails = buildCinemaDetails({ kit, looks, layout: LAYOUT.cinema, floorY: upperY });
+  dressCinemaStairs({ looks, layout: LAYOUT.cinemaStairs });
+  buildCinemaServiceDetails({ kit, looks, cinema: LAYOUT.cinema, stairs: LAYOUT.cinemaStairs, floorY: upperY });
   buildAtriumLook({ looks, layout: LAYOUT, upperY, keepClear: hallwayClear.slice(0, -2) });
   buildDepartmentStoreLook({ looks, kit, layout: LAYOUT, keepClear: hallwayClear.slice(0, -2) });
 
@@ -855,6 +880,7 @@ export function buildMall(scene, colliders) {
       { id: 'level2', grades: ['level2'], neons: ['level2', 'promenade_workshop'] },
       { id: 'atrium', grades: ['atrium'], neons: ['atrium'] },
       { id: 'departmentStore', grades: ['departmentStore'], neons: ['departmentStore'] },
+      { id: 'cinema', grades: ['cinemaLobby', 'cinemaScreen', 'cinemaService'], neons: ['cinema'] },
     ],
   };
   features.push({ kind: 'horror', name: 'horror_director', zone: 'startRoom', position: playerSpawn.position.clone(), normal: new THREE.Vector3(0, 0, -1), seed: 1986 });
@@ -881,8 +907,12 @@ export function buildMall(scene, colliders) {
       { id: 'serviceCorridor', minX: H.minX - T - SC.width, maxX: H.minX - T, minY: 0, maxY: SC.height + 0.3, minZ: -14, maxZ: SCD.maxZ },
       { id: 'atrium', minX: AT.rect.minX, maxX: AT.rect.maxX, minY: 0, maxY: upperY + AT.upperHeight + 0.3, minZ: AT.rect.minZ, maxZ: AT.rect.maxZ },
       { id: 'departmentStore', ...DS.rect, minY: 0, maxY: DS.height + 0.3 },
+      ...cinemaWing.rooms,
+      ...cinemaConnection.rooms,
     ],
     cullPortals: [
+      ...cinemaWing.portals,
+      ...cinemaConnection.portals,
       ...LAYOUT.level2.shoeStore.entrances.map(e => ({ a: 'level2', b: 'shoePer', minX: e.from, maxX: e.to,
         minY: upperY, maxY: upperY + e.top, minZ: LAYOUT.level2.rect.maxZ, maxZ: LAYOUT.level2.rect.maxZ + T })),
       { a: 'startRoom', b: 'hallway', door: 'startShutter', minX: D.minX, maxX: D.maxX, minY: 0, maxY: D.height, minZ: H.maxZ, maxZ: H.maxZ + T },
@@ -904,6 +934,8 @@ export function buildMall(scene, colliders) {
     // Zone lighting (fx/zoneGrading.js, grades in config/look.js): which grade where. First match wins, so small areas
     // come before the big ones they sit in; anywhere else (the hallway) uses the fallback grade.
     gradeZones: [
+      ...cinemaWing.grades,
+      ...cinemaConnection.grades,
       { grade: 'serviceCorridor', minX: H.minX - T - SC.width, maxX: H.minX - T, minZ: -14, maxZ: SCD.maxZ, maxY: SC.height },
       { grade: 'martBack', minX: M.minX + T, maxX: M.maxX, minZ: M.minZ, maxZ: -19.5, maxY: M.height },
       { grade: 'megaMart', minX: M.minX + T, maxX: M.maxX, minZ: M.minZ, maxZ: M.maxZ, maxY: M.height },
@@ -913,9 +945,10 @@ export function buildMall(scene, colliders) {
       { grade: 'atrium', minX: AT.rect.minX, maxX: AT.rect.maxX, minZ: AT.rect.minZ, maxZ: AT.rect.maxZ },
       ...LAYOUT.level2.sections.map(section => ({ grade: 'level2', ...section, minY: H.height })),
     ],
-    ambience: [...dressing.emitters, ...atrium.emitters],
+    ambience: [...dressing.emitters, ...atrium.emitters, ...cinemaWing.emitters, ...LAYOUT.cinemaStairs.ambience],
+    cinema: { layout: LAYOUT.cinema, floorY: upperY, presentation: cinemaDetails, stairs: cinemaConnection },
     // Zombie navigation across floors (zombies/navigation.js): the ground floor and level 2, joined by the escalator.
-    navigation: { floors: [0, upperY], links: [escalator.link, atrium.link] },
+    navigation: { floors: [0, upperY], links: [escalator.link, atrium.link, cinemaConnection.link] },
     // The escalator's barrier (a collider across its foot, removed by the escalatorRepair door) and its walkable surface.
     escalator: { barrier: escalator.barrier, ramp: escalator.ramp },
     // For the debug "upstairs" command (Shift+T): where you arrive on level 2, where you go back down to, and the repair door.
@@ -933,6 +966,7 @@ export function buildMall(scene, colliders) {
       atrium.update(dt);
       looks.update(dt);
       setPieces.update(dt);
+      cinemaDetails.update(dt);
     },
     reset() {
       for (const door of doors) door.reset();
@@ -940,6 +974,7 @@ export function buildMall(scene, colliders) {
       atrium.reset();
       looks.reset();
       setPieces.reset();
+      cinemaDetails.reset();
     },
     // Unload: colliders out of the shared list, GPU memory freed, group out of the scene.
     dispose() {

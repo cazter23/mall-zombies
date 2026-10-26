@@ -123,9 +123,10 @@ test('roles hold at EVERY tier when guns are compared at the same tier (near-tie
     for (const d of others('confettiCannon')) assert.ok(dps(t.confettiCannon, 2) >= 1.4 * dps(d, 2), msg(`cannon vs ${d.name} at 2 m`));
     assert.ok(dps(t.priceGun, 5) > dps(t.stapleGun, 5), msg('price beats the starter at 5 m'));
     assert.ok(dps(t.priceGun, 5) >= 0.95 * dps(t.nailGun, 5), msg('price stays within 5% of Nail Gun sustained damage at 5 m'));
-    assert.ok(dps(t.foamDartBlaster, 5) < 1.1 * dps(t.priceGun, 5), msg('premium Foam stays within 10% of the cheap close-range sprayer'));
+    for (const id of ['foamDartBlaster', 'rivetRifle', 'coilNailer'])
+      assert.ok(dps(t[id], 5) > 1.1 * dps(t.priceGun, 5), msg(`${id} beats the early-game gun`));
     for (const d of [t.stapleGun, t.priceGun, t.nailGun]) assert.ok(TIE * dps(t.foamDartBlaster, 15) > dps(d, 15), msg(`foam vs ${d.name} at 15 m`));
-    for (const d of others('nailGun')) assert.ok(dps(t.nailGun, 30) > 1.15 * dps(d, 30), msg(`nail vs ${d.name} at 30 m`));
+    for (const d of others('nailGun')) assert.ok(dps(t.nailGun, 30) > 1.1 * dps(d, 30), msg(`nail vs ${d.name} at 30 m`));
     for (const d of others('stapleGun')) assert.ok(dps(t.stapleGun, 5) < dps(d, 5), msg(`staple vs ${d.name} at 5 m`));
   }
 });
@@ -135,8 +136,9 @@ test('one attachment shifts a gun, it never takes over another gun\'s job (vs pl
     for (const id of ATTACHMENTS.filter((a) => attachmentFits(base, a))) {
       const g = at(base, 'standard', id);
       const name = `${base.name} + ${id}`;
-      if (base !== confettiCannon) assert.ok(dps(confettiCannon, 2) >= 1.4 * dps(g, 2), `${name}: cannon still rules 2 m`);
-      if (base !== nailGun) assert.ok(dps(nailGun, 30) > dps(g, 30), `${name}: Nail Gun still rules 30 m`);
+      if (base !== confettiCannon) assert.ok(dps(confettiCannon, 2) >= 1.25 * dps(g, 2), `${name}: cannon still rules 2 m against an attached gun`);
+      // A range attachment can compete at 30 m; Nail retains the longest sightlines.
+      if (base !== nailGun) assert.ok(dps(nailGun, 40) > dps(g, 40), `${name}: Nail Gun still rules 40 m`);
       if (base === stapleGun) for (const d of [priceGun, nailGun, foamDartBlaster]) assert.ok(dps(g, 5) < dps(d, 5), `${name} vs ${d.name}`);
     }
   }

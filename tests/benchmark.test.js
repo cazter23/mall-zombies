@@ -63,7 +63,7 @@ test('cancel ends the run with what it has; the mall has a named route through e
   const { buildMall } = await import('../src/maps/mall/mall.js');
   const map = buildMall(new THREE.Scene(), []);
   const names = map.benchmarkShots.map((s) => s.name);
-  for (const area of ['hallway', 'food court', 'mega mart', 'service corridor', 'start room', 'atrium court', 'atrium ring', 'level 2']) {
+  for (const area of ['hallway', 'food court', 'mega mart', 'service corridor', 'start room', 'atrium court', 'atrium ring', 'level 2', 'cinema lobby', 'cinema screen', 'cinema stairs']) {
     assert.ok(names.includes(area), `route covers ${area}`);
   }
   map.dispose();

@@ -67,6 +67,7 @@ export function buildLevelTwo({ kit, props, floorY, supportRect, supportRects = 
   // Explicit removable closures, not live purchases: replacing one with a door later
   // does not require cutting a monolithic wall or moving furniture out of its approach.
   for (const c of reserved) {
+    if (c.door) continue; // a connected wing owns this opening's live buyable shutter
     const north = c.wall === 'north';
     const at = north ? rect.maxZ : c.wall === 'west' ? rect.minX : rect.maxX;
     const a = c.wall === 'west' ? at - T : at;
@@ -86,11 +87,20 @@ export function buildLevelTwo({ kit, props, floorY, supportRect, supportRects = 
     cursor = opening.to;
   }
   if (cursor < rect.maxX) northBands.push([cursor, rect.maxZ - .02, rect.maxX, rect.maxZ]);
+  const sideBands = [];
+  for (const side of ['west', 'east']) {
+    let start = rect.minZ;
+    const x0 = side === 'west' ? rect.minX : rect.maxX - .02;
+    for (const opening of reserved.filter(c => c.wall === side && c.door).sort((a, b) => a.from - b.from)) {
+      if (opening.from > start) sideBands.push([x0, start, x0 + .02, opening.from]);
+      start = opening.to;
+    }
+    if (start < rect.maxZ) sideBands.push([x0, start, x0 + .02, rect.maxZ]);
+  }
   for (const [x0, z0, x1, z1] of [
     ...northBands,
     [rect.minX, rect.minZ, rect.maxX, rect.minZ + 0.02], // south
-    [rect.minX, rect.minZ, rect.minX + 0.02, rect.maxZ], // west
-    [rect.maxX - 0.02, rect.minZ, rect.maxX, rect.maxZ], // east
+    ...sideBands, // live wing doorways must also cut the decorative stripe/skirting
   ]) {
     box(x0, y(1.05), z0, x1, y(1.2), z1, stripe, { collide: false });
     box(x0, floorY, z0, x1, y(0.12), z1, skirting, { collide: false });
@@ -178,7 +188,7 @@ export function buildLevelTwo({ kit, props, floorY, supportRect, supportRects = 
     background: '#3b2f44', color: '#ffd23f',
   });
   sign('ESCALATOR · LEVEL 1 ↓', {
-    x: rect.minX + 0.02, y: y(2.5), z: zMid - 3.2, width: 3.0, height: 0.5, facing: 'x+',
+    x: rect.minX + 0.02, y: y(2.5), z: zMid, width: 2.8, height: 0.5, facing: 'x+',
     background: '#1d1626', color: '#ffffff',
   });
   sign('MIND THE GAP', {

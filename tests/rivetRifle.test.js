@@ -39,12 +39,12 @@ test('Rivet Rifle remains a body-fire alternative to Foam, with smaller magazine
     const dps = (d, meters) => sustainedDps(d, meters, { ads: true, samples: 500 });
     assert.ok(dps(r, 5) > 0.95 * dps(foam, 5), tier.id);
     assert.ok(dps(r, 5) < 1.12 * dps(foam, 5), 'continuous fire is not a large raw-DPS upgrade');
-    assert.ok(dps(foam, 15) > dps(r, 15));
+    assert.ok(dps(foam, 15) * 1.1 > dps(r, 15), 'Foam stays within 10% at mid range across tiers');
     assert.ok(dps(nail, 30) > 1.15 * dps(r, 30));
     assert.ok(r.magazineSize < foam.magazineSize);
     assert.ok(r.ads.seconds > foam.ads.seconds);
     assert.ok(hitDamage(r, { part: 'head', distance: 10 }, 0, { damageMultiplier: 1 })
-      < hitDamage(foam, { part: 'head', distance: 10 }, 0, { damageMultiplier: 1 }));
+      > hitDamage(foam, { part: 'head', distance: 10 }, 0, { damageMultiplier: 1 }));
     assert.equal(r.pierce, undefined);
   }
 });

@@ -90,7 +90,7 @@ test('the door ladder: four entrances, two independently priced two-zone shortcu
     assert.equal(map.zones[zone].open, false, `${zone} starts closed`);
   }
   assert.deepEqual([economy.doors.startShutter, economy.doors.megaMart, economy.doors.foodCourt, economy.doors.serviceCorridor], [500, 750, 1000, 1250]);
-  assert.equal(map.doors.length, 12);
+  assert.equal(map.doors.length, 14);
   assert.equal(door('departmentStoreStartRoom').price, 1250); // HOFFMAN'S side door from the start room
   assert.deepEqual(door('departmentStoreStartRoom').opensZones, ['departmentStore']);
   assert.equal(door('departmentStore').price, 1250); // HOFFMAN'S (tests/departmentStore.test.js)
@@ -114,7 +114,7 @@ test('the door ladder: four entrances, two independently priced two-zone shortcu
 test('all 120 purchase orders: any bought entrance holds its zones open; reset seals every route (the escalator repair, the atrium doors and HOFFMAN\'S have their own tests)', () => {
   const { map, open, reach } = setup();
   const permutations = (ids) => ids.length ? ids.flatMap((id) => permutations(ids.filter((other) => other !== id)).map((rest) => [id, ...rest])) : [[]];
-  const orders = permutations(map.doors.filter((d) => !['startShutter', 'escalatorRepair', 'atrium', 'atriumPromenade', 'atriumMegaMart', 'departmentStore', 'departmentStoreStartRoom'].includes(d.id)).map((d) => d.id));
+  const orders = permutations(map.doors.filter((d) => !['startShutter', 'escalatorRepair', 'atrium', 'atriumPromenade', 'atriumMegaMart', 'cinema', 'cinemaStairs', 'departmentStore', 'departmentStoreStartRoom'].includes(d.id)).map((d) => d.id));
   assert.equal(orders.length, 120);
   for (const order of orders) {
     map.reset();
@@ -140,11 +140,11 @@ test('all 120 purchase orders: any bought entrance holds its zones open; reset s
           }
         }
       }
-      for (const s of map.spawnPoints.filter((s) => !['upstairs', 'atrium', 'departmentStore'].includes(s.zone))) { // (own tests: levelTwo / atrium / departmentStore)
+      for (const s of map.spawnPoints.filter((s) => !['upstairs', 'atrium', 'cinema', 'departmentStore'].includes(s.zone))) { // upper areas have their own tests
         assert.equal(Number.isFinite(reach(s.position)), connected.has(s.zone), `${order} after ${id}: ${s.name}`);
       }
     }
-    for (const s of map.spawnPoints.filter((s) => !['upstairs', 'atrium', 'departmentStore'].includes(s.zone))) assert.ok(Number.isFinite(reach(s.position)), `${s.name} reachable with every door open`);
+    for (const s of map.spawnPoints.filter((s) => !['upstairs', 'atrium', 'cinema', 'departmentStore'].includes(s.zone))) assert.ok(Number.isFinite(reach(s.position)), `${s.name} reachable with every door open`);
     map.reset();
     for (const s of map.spawnPoints.filter((s) => s.zone !== 'startRoom')) {
       assert.equal(reach(s.position), Infinity, `${s.name} sealed on reset`);

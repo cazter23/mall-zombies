@@ -51,6 +51,8 @@ export const economy = {
 
   // Door / shutter prices
   doors: {
+    cinema: 1500,
+    cinemaStairs: 1500, // Service Corridor <-> cinema, through the west stairwell
     startShutter: 500, // start room -> main hallway (the hub)
     megaMart: 750, // hallway (east end) -> Mega Mart
     foodCourt: 1000, // hallway (south wall) -> Food Court
@@ -73,8 +75,8 @@ export const economy = {
     foamDartBlaster: { weapon: 1200, ammo: 600 },
     confettiCannon: { weapon: 1500, ammo: 500 }, // (was 750: dearer than the 400 RESTOCK-O-MATIC refill)
     // The three late guns (priced from `npm run balance`): ammo about half the gun, like the others.
-    rivetRifle: { weapon: 1500, ammo: 750 }, // best sustained non-shotgun dps at 2-10 m (246): priced with the Cannon (Grand Atrium)
-    coilNailer: { weapon: 1250, ammo: 650 }, // Price Gun dps (231) but a 64-nail drum and a 2-zombie pierce (Sunset Promenade)
+    rivetRifle: { weapon: 1500, ammo: 750 }, // stronger automatic rifle; smaller magazine and quicker handling than Coil (Grand Atrium)
+    coilNailer: { weapon: 1250, ammo: 650 }, // strongest sustained automatic body damage; heavy handling, slow reload, 2-target pierce (Sunset Promenade)
     barcodeScanner: { weapon: 1750, ammo: 900 }, // weak sustained dps (180) but pierces 4 in a line, ~3x (Byte Me Electronics)
   },
 

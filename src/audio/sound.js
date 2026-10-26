@@ -13,6 +13,7 @@ import { audio } from '../config/audio.js';
 import { atmosphere } from '../config/environment.js';
 import { mallMusic } from '../config/music.js';
 import { deathMusic } from '../config/deathMusic.js';
+import { makeAmbientPulse } from './ambientPulse.js';
 
 function renderMusicInWorker() {
   return new Promise((resolve, reject) => {
@@ -28,6 +29,7 @@ export function createSound({ renderMusic = renderMusicInWorker } = {}) {
   let master = null;
   let noiseBuffer = null;
   const ambientVoices = new Map();
+  const ambientPulseBuffers = new Map();
   let musicBuffer = null, musicLoading = false, musicFailed = false, musicCursor = 0;
   let deathVoice = null;
 
@@ -143,7 +145,11 @@ export function createSound({ renderMusic = renderMusicInWorker } = {}) {
       let voice = ambientVoices.get(item.id);
       if (!voice) {
         const source = (isMusic || def.noise) ? ctx.createBufferSource() : ctx.createOscillator();
-        if (isMusic || def.noise) { source.buffer = isMusic ? musicBuffer : noiseBuffer; source.loop = true; }
+        if (isMusic || def.noise) {
+          if (def.clickEverySeconds && !ambientPulseBuffers.has(item.kind)) ambientPulseBuffers.set(item.kind, makeAmbientPulse(ctx, noiseBuffer, def));
+          source.buffer = isMusic ? musicBuffer : def.clickEverySeconds ? ambientPulseBuffers.get(item.kind) : noiseBuffer;
+          source.loop = true;
+        }
         else { source.type = def.wave || 'sine'; source.frequency.value = def.frequency; }
         const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = isMusic ? def.lowpassHz : (def.filterHz ?? def.frequency * 2.5);
         const gain = ctx.createGain(); gain.gain.value = 0;
@@ -155,7 +161,7 @@ export function createSound({ renderMusic = renderMusicInWorker } = {}) {
           const highpass = ctx.createBiquadFilter(); highpass.type = 'highpass'; highpass.frequency.value = def.highpassHz;
           source.connect(highpass); highpass.connect(filter); nodes.push(highpass);
         }
-        source.start(now, isMusic ? musicCursor : 0);
+        source.start(now, isMusic ? musicCursor : def.clickEverySeconds ? now % def.clickEverySeconds : 0);
         voice = { source, gain, pan, nodes, kind: item.kind, startedAt: now, offset: musicCursor };
         ambientVoices.set(item.id, voice);
       }
