@@ -31,6 +31,7 @@ export const PRICE_CATEGORIES = Object.keys(BASE);
 
 export function createPricing() {
   const discounts = new Map(); // category -> fraction off (0..1)
+  let coupon = null; // One employee coupon, applied after category sales.
 
   function check(category) {
     if (!Object.hasOwn(BASE, category)) throw new Error(`pricing: unknown category "${category}" (${PRICE_CATEGORIES.join(', ')})`);
@@ -49,8 +50,12 @@ export function createPricing() {
       const base = basePriceOf(category, id);
       const off = discounts.get(category) ?? 0;
       const step = economy.discountRoundTo;
-      return off > 0 ? Math.round((base * (1 - off)) / step) * step : base;
+      const salePrice = off > 0 ? Math.round((base * (1 - off)) / step) * step : base;
+      return coupon ? salePrice - Math.min(coupon.maxSaving, Math.floor(salePrice * coupon.fraction / step) * step) : salePrice;
     },
+
+    setCoupon(value) { coupon = value; },
+    clearCoupon() { coupon = null; },
 
     setDiscount(category, fraction) {
       check(category);
@@ -66,6 +71,7 @@ export function createPricing() {
 
     reset() {
       discounts.clear();
+      coupon = null;
     },
   };
 }

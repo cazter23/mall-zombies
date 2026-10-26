@@ -2,8 +2,9 @@
 import * as THREE from 'three';
 import { powerUps as defaults } from '../config/powerUps.js';
 import { overlapsSolid, rampHeightAt } from '../world/collision.js';
+import { createIncentiveEffects } from './incentiveEffects.js';
 
-export function createPowerUps({ events, player, gun, zombies, colliders, state, config = defaults, random = Math.random, view = null }) {
+export function createPowerUps({ events, player, gun, zombies, colliders, state, stats, pricing, wallet, config = defaults, random = Math.random, view = null }) {
   let round = 0;
   let earned = 0;
   let threshold;
@@ -15,6 +16,7 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
   let lastKillAt = -Infinity;
   let pendingPosition = null;
   let seen = new WeakSet();
+  let rotation = [];
   const ray = new THREE.Ray();
   const intersection = new THREE.Vector3();
   const probe = new THREE.Vector3();
@@ -64,6 +66,7 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
   }
 
   function useful(id) {
+    if (!benefits.useful(id)) return false;
     if (id === 'blueLightSpecial' && active) return false;
     if (id !== 'stockroomDelivery') return true;
     return gun.slots.some((id) => {
@@ -77,15 +80,24 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
 
   function chooseType() {
     const eligible = Object.keys(config.types).filter(useful);
-    const pool = eligible.filter((id) => id !== lastType);
+    // A weighted shuffled bag: finish eligible entries before replenishing it.
+    // Newly useful rewards join the next cycle rather than starving the others.
+    if (!rotation.some(id => eligible.includes(id) && id !== lastType)) {
+      rotation = Object.keys(config.types);
+    }
+    const pool = rotation.filter(id => eligible.includes(id) && id !== lastType);
     if (!pool.length) return null; // wait rather than repeat when no other type is useful
     let pick = random() * pool.reduce((sum, id) => sum + config.types[id].weight, 0);
     for (const id of pool) {
       pick -= config.types[id].weight;
-      if (pick <= 0) return id;
+      if (pick <= 0) { rotation = rotation.filter(entry => entry !== id); return id; }
     }
-    return pool.at(-1);
+    const id = pool.at(-1);
+    rotation = rotation.filter(entry => entry !== id);
+    return id;
   }
+
+  const benefits = createIncentiveEffects({ events, player, gun, zombies, stats, pricing, wallet, state, config, clearLine, findPosition });
 
   function endZone(reason) {
     if (!active) return;
@@ -103,6 +115,12 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
     if (item.id === 'blueLightSpecial') {
       active = { id: item.id, position: item.position.clone(), remaining: def.seconds, radius: def.radius };
       events.emit('powerUpStart', { ...active, position: active.position.clone() });
+    }
+    if (!['stockroomDelivery', 'securitySweep', 'blueLightSpecial'].includes(item.id)) {
+      if (!benefits.start(item.id, item.position)) {
+        events.emit('powerUpExpire', { id: item.id });
+        return;
+      }
     }
     events.emit('powerUpCollect', { id: item.id, name: def.name, pa: def.pa, sound: def.sound });
   }
@@ -122,6 +140,7 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
       pickup = null;
       pendingPosition = null;
       endZone('death');
+      benefits.reset('death');
       view?.update(null, null, 0);
     }),
   ];
@@ -129,6 +148,7 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
   const api = {
     get pickup() { return pickup; },
     get active() { return active; },
+    get effects() { return benefits.active; },
     get progress() { return Math.min(1, earned / threshold); },
     get dropsThisRound() { return dropped; },
     get round() { return round; },
@@ -156,6 +176,7 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
     update(dt) {
       if (state.over) return;
       clock += dt;
+      benefits.update(dt);
       if (active) {
         active.remaining -= dt;
         if (active.remaining <= 0) endZone('expired');
@@ -194,16 +215,18 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
               && clearLine(from, pickup.position)) collect();
         }
       }
-      view?.update(pickup, active, dt);
+      view?.update(pickup, active, dt, benefits.active);
     },
 
     reset() {
+      benefits.reset();
       endZone('reset');
       round = 0;
       earned = 0;
       threshold = nextThreshold();
       dropped = 0;
       lastType = null;
+      rotation = [];
       lastKillAt = -Infinity;
       clock = 0;
       pickup = null;
@@ -215,6 +238,7 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
     dispose() {
       api.reset();
       off.forEach((unsubscribe) => unsubscribe());
+      benefits.dispose();
       view?.dispose();
     },
   };

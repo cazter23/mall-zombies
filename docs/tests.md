@@ -54,6 +54,10 @@ notes, replacement-voice cleanup, and real-game death/reset wiring.
 placement, swept slide collection, wall/storey rejection, Blue Light payouts/timers, reserve delivery without bypassing
 reloads/upgrades, Security Sweep through all zombie attack/charge states, visuals/disposal and HUD. fullRun.test.js also
 earns and collects a drop with production tuning, then checks Play again cleanup.
+`tests/incentiveEffects.test.js` covers all ten additional incentives through the real game: reload/swap timing,
+bounded healing, deferred secondary kills, coupon composition/consumption, marked-target payouts, slow chase/charge,
+capped overtime, three melee charges, sprint pulses, recall interrupts, reward rotation, death/reset cleanup,
+concurrent HUD counters, floor zones and target markers.
 
 Gameplay regression tests live in `tests/` (`gameplay.test.js` movement/melee/vault, `aim.test.js` spread
 (including the Laser Pointer's hip benefit / ADS penalty through repeated shots and recovery),

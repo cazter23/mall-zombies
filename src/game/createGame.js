@@ -22,6 +22,8 @@
 // =============================================================================
 
 import { feel } from '../config/feel.js';
+import { Vector3 } from 'three';
+import { powerUps as incentiveConfig } from '../config/powerUps.js';
 import { createShutterSounds } from './shutterSounds.js';
 import { zombieTypes } from '../config/zombies.js';
 import { weapons, melee as meleeWeapons } from '../config/weapons.js';
@@ -285,12 +287,21 @@ export function createGame({
   });
 
   powerUps = createPowerUps({
-    events, player, gun, zombies, colliders, state,
+    events, player, gun, zombies, colliders, state, stats, pricing, wallet,
     view: createPowerUpView(scene, colliders),
   });
   events.on('powerUpCollect', ({ pa, sound: name }) => {
     hud.showAnnouncement({ ...pa, priority: 1 });
     sound.play(name);
+  });
+  events.on('incentiveComplete', ({ text }) => {
+    hud.showAnnouncement({ kicker: 'Employee incentive complete', text, priority: 1 });
+    sound.play('incentiveRestock');
+  });
+  events.on('incentiveBurst', ({ position }) => {
+    const visual = incentiveConfig.types.inventoryLiquidation;
+    effects.splat(position, new Vector3(0, 1, 0), visual.splatColors, visual.splatCount);
+    sound.play('incentiveSecurity');
   });
 
   // Everything else in the map you interact with (wall buys, the ammo cache, later the claw machine,

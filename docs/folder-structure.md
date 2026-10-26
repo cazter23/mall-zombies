@@ -295,6 +295,9 @@ src/
                         swept walk-through collection, 15s expiry, no repeats, per-round caps. Blue Light multiplies only
                         base kill credit, within its 4m radius, same floor and line of sight. reset/dispose; debugDrop(id, at)
                         marks the run assisted. createGame builds/ticks/resets it; exposed as g.powerUps
+    incentiveEffects.js Temporary employee benefits: concurrent timers, reversible stat modifiers, finite healing,
+                        deferred non-recursive liquidation damage, one-purchase coupons, target marks, slow patches,
+                        overtime extensions, melee charges and sprint pulses. Owned/reset/disposed by powerUps.js.
     wallet.js           createWallet(): points (start 500), earn/spend/canAfford, totalEarned, totalSpent, onChange cb (HUD
                         pop-ups). pointsForHit(): COD payouts (+10 hit; kill value +40 head / +70 melee; zombies only)
     interactions.js     createInteractions(): buyables (doors now, wall buys next). add({ label, verb, cost, position,

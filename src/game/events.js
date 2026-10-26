@@ -23,8 +23,10 @@
 //   'runEnd'      { summary }                            immutable final run totals, emitted once on player death
 //   'powerUpDrop' { id, position, seconds }               earned incentive appeared on clear floor
 //   'powerUpCollect' { id, name, pa, sound }              walk-through collection (instant effect or zone start)
-//   'powerUpStart' { id, position, remaining, radius }    Blue Light earning zone began
-//   'powerUpEnd'  { id, reason }                         zone ended: expired | reset | death
+//   'powerUpStart' { id, position, remaining, radius, ... } zone or temporary employee benefit began
+//   'powerUpEnd'  { id, reason }                         benefit ended: expired | reset | death | spent | completed | targetLost | replaced
+//   'incentiveComplete' { id, text }                     marked-target bonus earned (PA/HUD feedback)
+//   'incentiveBurst' { position, radius, color }          deferred liquidation burst (visual/sound feedback)
 //   'powerUpExpire' { id }                               uncollected incentive timed out
 //   'roundStart'  { round }                              the round number flipped (game/rounds.js)
 //   'typeIntro'   { typeId }                             a zombie type's first appearance this run

@@ -42,6 +42,7 @@ export function createPlayerStats() {
     damageMultiplier: weaponStatDefaults.damageMultiplier,
     meleeDamageMultiplier: weaponStatDefaults.meleeDamageMultiplier,
     reloadSpeed: weaponStatDefaults.reloadSpeed,
+    switchSpeed: 1,
   };
 }
 

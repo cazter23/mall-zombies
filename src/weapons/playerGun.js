@@ -315,7 +315,7 @@ export function createPlayerGun({
         else if (pick2 && current !== 1) startSwitch(1);
       }
       if (switching) {
-        switching.timer += dt;
+        switching.timer += dt * (stats.switchSpeed ?? 1);
         if (switching.timer >= ws.lowerSeconds + ws.raiseSeconds) switching = null;
       }
 

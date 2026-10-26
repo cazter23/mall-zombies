@@ -63,6 +63,8 @@ export class Zombie {
     this.hitstopTimer = 0;
     this.staggerTimer = 0;
     this.staggerDrag = 0;
+    this.slowTimer = 0;
+    this.slowFraction = 1;
     this.deathImpulse = 1;
     this.deathTwist = 0;
     this.lastHitDir = null;
@@ -188,6 +190,12 @@ export class Zombie {
   }
 
   // Hitboxes are axis-aligned boxes that follow the zombie (and rise with it while spawning).
+  applySlow(seconds, fraction) {
+    if (!this.isAlive || this.state === 'spawning') return;
+    this.slowFraction = this.slowTimer > 0 ? Math.min(this.slowFraction, fraction) : fraction;
+    this.slowTimer = Math.max(this.slowTimer, seconds);
+  }
+
   updateHitboxes() {
     const p = this.position;
     const hb = this.type.hitbox;
@@ -220,6 +228,8 @@ export class Zombie {
     this.attackCooldown = Math.max(0, this.attackCooldown - dt);
     this.windedTimer = Math.max(0, this.windedTimer - dt);
     this.chargeCooldown = Math.max(0, this.chargeCooldown - dt);
+    this.slowTimer = Math.max(0, this.slowTimer - dt);
+    if (this.slowTimer === 0) this.slowFraction = 1;
     const attack = this.type.attack;
     const charge = this.type.charge;
 
@@ -339,7 +349,7 @@ export class Zombie {
   updateCharge(dt, ctx) {
     const charge = this.type.charge;
     const dir = this.chargeDir;
-    const speed = Math.min(charge.speed, this.horizontalSpeed + charge.acceleration * dt);
+    const speed = Math.min(charge.speed * this.slowFraction, this.horizontalSpeed + charge.acceleration * dt);
     const step = speed * dt;
     if (this.rayBlocked(this.position.x, this.position.z, dir.x, dir.z, charge.noseReach + step, ctx.colliders)) {
       this.crash(ctx);
@@ -435,6 +445,7 @@ export class Zombie {
   // Move toward the player. `speedScale` slows the walking part (e.g. mid-attack); `facePlayer`
   // keeps it turned toward the player (locked on while attacking).
   chase(dt, { nav, player, colliders, zombies }, speedScale = 1, facePlayer = false) {
+    speedScale *= this.slowFraction;
     const type = this.type;
     const crowd = zombieCrowd;
     const dx = player.position.x - this.position.x;

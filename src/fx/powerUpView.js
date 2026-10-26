@@ -41,11 +41,40 @@ export function createPowerUpView(scene, colliders) {
       box(group, [0.48, 0.1, 0.4], [0, -0.18, 0], dark);
       box(group, [0.3, 0.32, 0.3], [0, 0.03, 0], color);
       box(group, [0.06, 0.34, 0.32], [0, 0.03, 0], cream);
-    } else {
+    } else if (id === 'securitySweep') {
       box(group, [0.42, 0.52, 0.1], [0, 0, 0], color);
       box(group, [0.29, 0.32, 0.12], [0, -0.02, 0], cream);
       box(group, [0.1, 0.27, 0.14], [0, 0, 0], dark);
       box(group, [0.27, 0.1, 0.14], [0, 0, 0], dark);
+    } else {
+      // A colored staff badge plus a distinct silhouette for each benefit.
+      box(group, [0.42, 0.5, 0.06], [0, 0, 0], cream);
+      box(group, [0.16, 0.06, 0.08], [0, 0.23, 0], dark);
+      const glyph = (size, at = [0, 0, 0.06], mat = color) => box(group, size, at, mat);
+      if (def.icon === 'cross') {
+        glyph([0.1, 0.3, 0.08]); glyph([0.3, 0.1, 0.08]);
+      } else if (def.icon === 'arrows') {
+        glyph([0.3, 0.06, 0.08], [0, 0.07, 0.06]); glyph([0.3, 0.06, 0.08], [0, -0.07, 0.06]);
+        glyph([0.07, 0.12, 0.08], [0.12, 0.1, 0.06]); glyph([0.07, 0.12, 0.08], [-0.12, -0.1, 0.06]);
+      } else if (def.icon === 'burst') {
+        for (let i = 0; i < 4; i++) glyph([0.06, 0.34, 0.08]).rotation.z = i * Math.PI / 4;
+      } else if (def.icon === 'ticket') {
+        glyph([0.3, 0.16, 0.08]).rotation.z = 0.45;
+        glyph([0.04, 0.21, 0.1], [0, 0, 0.08], dark);
+      } else if (def.icon === 'eye') {
+        glyph([0.3, 0.12, 0.08]); glyph([0.1, 0.21, 0.08]); glyph([0.06, 0.07, 0.1], [0, 0, 0.08], dark);
+      } else if (def.icon === 'spill') {
+        glyph([0.34, 0.07, 0.08], [0, -0.1, 0.06]); glyph([0.17, 0.2, 0.08], [0.04, 0.02, 0.06]).rotation.z = 0.35;
+      } else if (def.icon === 'clock') {
+        glyph([0.27, 0.27, 0.08]); glyph([0.03, 0.13, 0.1], [0, 0.04, 0.08], dark); glyph([0.1, 0.03, 0.1], [0.04, -0.02, 0.08], dark);
+      } else if (def.icon === 'shield') {
+        glyph([0.28, 0.2, 0.08], [0, 0.05, 0.06]); glyph([0.2, 0.2, 0.08], [0, -0.06, 0.06]).rotation.z = Math.PI / 4;
+      } else if (def.icon === 'door') {
+        glyph([0.28, 0.34, 0.08]); glyph([0.16, 0.25, 0.1], [0.02, -0.02, 0.08], dark);
+      } else if (def.icon === 'recall') {
+        for (const x of [-0.1, 0.1]) glyph([0.09, 0.2, 0.08], [x, 0, 0.06]);
+        glyph([0.28, 0.05, 0.08], [0, 0.12, 0.06]); glyph([0.28, 0.05, 0.08], [0, -0.12, 0.06]);
+      }
     }
     const ringGeo = new THREE.TorusGeometry(0.44, 0.025, 4, 24);
     geometry.push(ringGeo);
@@ -86,13 +115,13 @@ export function createPowerUpView(scene, colliders) {
     return best;
   }
 
-  function placeZone(position) {
-    const attribute = zoneGeo.attributes.position;
+  function placeZone(position, mesh = zone, template = ringTemplate) {
+    const attribute = mesh.geometry.attributes.position;
     for (let triangle = 0; triangle < attribute.count; triangle += 3) {
       let supported = true;
       for (let i = triangle; i < triangle + 3; i++) {
-        const x = position.x + ringTemplate[i * 3];
-        const z = position.z + ringTemplate[i * 3 + 1];
+        const x = position.x + template[i * 3];
+        const z = position.z + template[i * 3 + 1];
         const y = floorAt(x, z, position.y);
         if (y === null) { supported = false; continue; }
         attribute.setXYZ(i, x, y + config.visual.floorOffset, z);
@@ -107,12 +136,40 @@ export function createPowerUpView(scene, colliders) {
       if (!supported) for (let i = triangle; i < triangle + 3; i++) attribute.setXYZ(i, position.x, position.y + config.visual.floorOffset, position.z);
     }
     attribute.needsUpdate = true;
-    zoneGeo.computeBoundingSphere();
+    mesh.geometry.computeBoundingSphere();
+  }
+
+  const benefitZones = {};
+  for (const id of ['paidBreak', 'spillCleanup']) {
+    const def = config.types[id];
+    const source = new THREE.RingGeometry(def.radius - 0.12, def.radius, 48);
+    const geo = source.toNonIndexed();
+    source.dispose();
+    const mat = new THREE.MeshBasicMaterial({ color: def.color, transparent: true, opacity: 0.7, side: THREE.DoubleSide, depthWrite: false });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.name = `${id}Zone`;
+    mesh.visible = false;
+    root.add(mesh);
+    geometry.push(geo); materials.push(mat);
+    benefitZones[id] = { mesh, template: geo.attributes.position.array.slice(), position: null };
+  }
+  const markerGeo = new THREE.OctahedronGeometry(0.18);
+  geometry.push(markerGeo);
+  const markers = [];
+  for (const id of ['mysteryShopper', 'productRecall']) {
+    const mat = material(config.types[id].color, true);
+    for (let i = 0; i < (config.types[id].targets ?? 1); i++) {
+      const mesh = new THREE.Mesh(markerGeo, mat);
+      mesh.name = `${id}Marker${i}`;
+      mesh.visible = false;
+      root.add(mesh);
+      markers.push({ id, index: i, mesh });
+    }
   }
 
   return {
     root,
-    update(pickup, active) {
+    update(pickup, active, dt = 0, effects = []) {
       for (const prop of Object.values(props)) prop.visible = false;
       if (pickup) {
         const prop = props[pickup.id];
@@ -130,6 +187,23 @@ export function createPowerUpView(scene, colliders) {
         }
         zoneMat.opacity = active.remaining < config.visual.blinkLastSeconds ? 0.35 + 0.35 * Math.abs(Math.sin(active.remaining * 5)) : 0.75;
       } else zonePosition = null;
+      for (const [id, visual] of Object.entries(benefitZones)) {
+        const effect = effects.find(e => e.id === id);
+        visual.mesh.visible = !!effect;
+        if (effect && visual.position !== effect.position) {
+          placeZone(effect.position, visual.mesh, visual.template);
+          visual.position = effect.position;
+        }
+        if (!effect) visual.position = null;
+      }
+      for (const marker of markers) {
+        const target = effects.find(e => e.id === marker.id)?.targets?.[marker.index];
+        marker.mesh.visible = !!target?.isAlive;
+        if (target) {
+          marker.mesh.position.copy(target.position).y += target.type.height + 0.45;
+          marker.mesh.rotation.y += dt * config.visual.spinSpeed;
+        }
+      }
     },
     dispose() {
       root.removeFromParent();
