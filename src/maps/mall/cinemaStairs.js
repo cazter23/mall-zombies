@@ -93,7 +93,7 @@ export function buildCinemaStairs({ kit, layout: c, cinema, floorY: Y, zones, pr
     { a: 'cinemaStairwell', b: 'cinemaReturn', minX: S.maxX, maxX: S.maxX + T, minZ: lower, maxZ: S.maxZ, minY: 0, maxY: e.top },
     { a: 'cinemaReturn', b: 'serviceCorridor', door: 'cinemaStairs', minX: e.from, maxX: e.to, minZ: e.at, maxZ: e.at + T, minY: 0, maxY: e.top },
   ];
-  return { door, ramp, link, rooms, portals, grades: rooms.map(r => ({ ...r, grade: 'serviceCorridor' })) };
+  return { door, ramp, link, rooms, portals, grades: rooms.map(r => ({ ...r, grade: 'cinemaService' })) };
 }
 
 export function dressCinemaStairs({ looks, layout }) {

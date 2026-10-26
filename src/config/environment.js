@@ -65,6 +65,7 @@ export const atmosphere = {
       ventilation: { noise: true, frequency: 180, gain: 0.045 },
       fountain: { noise: true, frequency: 880, filterHz: 2200, gain: 0.035 },
       projector: { noise: true, frequency: 110, filterHz: 950, gain: .028 },
+      projectorRelay: { noise: true, frequency: 110, filterHz: 1700, gain: .012, clickEverySeconds: 7, clickSeconds: .018 },
       refrigerator: { noise: false, frequency: 60, gain: 0.035 },
       fluorescentBuzz: { noise: false, wave: 'sawtooth', frequency: 120, gain: 0.038 },
     },

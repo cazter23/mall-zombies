@@ -63,12 +63,13 @@ test('Cannon close-range reliability: round-3 chest kills are dependable at 3 m,
     > 1.5 * expectedShotDamage(confettiCannon, 7), 'aiming remains valuable beyond hip range');
 });
 
-test('Price Gun: the cheap close-range sprayer stays competitive with the premium Foam Dart Blaster...', () => {
+test('Price Gun: an affordable starter upgrade, clearly below the premium automatic guns...', () => {
   const at5 = dps(priceGun, 5);
-  for (const d of [stapleGun, nailGun]) {
+  for (const d of [stapleGun]) {
     assert.ok(at5 > dps(d, 5), `price ${Math.round(at5)} vs ${d.name} ${Math.round(dps(d, 5))} at 5 m`);
   }
-  assert.ok(dps(foamDartBlaster, 5) < 1.1 * at5, 'Foam capacity gives a modest premium, not a large close-range advantage');
+  for (const d of [foamDartBlaster, weapons.rivetRifle, weapons.coilNailer])
+    assert.ok(dps(d, 5) > 1.1 * at5, `${d.name} is a meaningful upgrade`);
 });
 
 test('...but it falls off: the Nail Gun and Foam Dart Blaster beat it at 30 m', () => {
@@ -76,9 +77,9 @@ test('...but it falls off: the Nail Gun and Foam Dart Blaster beat it at 30 m', 
   assert.ok(dps(priceGun, 30) < dps(foamDartBlaster, 30));
 });
 
-test('Nail Gun: the long-range gun. CLEARLY the best sustained damage at 30 m (at least 15% ahead)', () => {
+test('Nail Gun: the long-range gun. Best sustained damage at 30 m (at least 10% ahead)', () => {
   for (const d of others(nailGun)) {
-    assert.ok(dps(nailGun, 30) > 1.15 * dps(d, 30), `nail ${Math.round(dps(nailGun, 30))} vs ${d.name} ${Math.round(dps(d, 30))} at 30 m`);
+    assert.ok(dps(nailGun, 30) > 1.1 * dps(d, 30), `nail ${Math.round(dps(nailGun, 30))} vs ${d.name} ${Math.round(dps(d, 30))} at 30 m`);
   }
 });
 

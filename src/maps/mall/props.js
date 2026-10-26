@@ -388,6 +388,21 @@ export function createMallProps(kit) {
         background: '#ffd23f', color: '#1d1626',
       }));
     }
+    // The Promenade can be reached via the Atrium before this repair is bought.
+    // Seal the upper landing too, with matching visible maintenance barriers.
+    const topPostX = xAt(length - .3);
+    if (sealed) {
+      for (const z of [minZ + .1, maxZ - .1]) {
+        barrierParts.push(box(topPostX - .035, upperY, z - .035, topPostX + .035, upperY + 1, z + .035, mat(COLORS.metal), { collide: false }));
+        barrierParts.push(box(topPostX - .12, upperY, z - .12, topPostX + .12, upperY + .04, z + .12, mat(COLORS.metal), { collide: false }));
+      }
+      barrierParts.push(box(topPostX - .015, upperY + .84, minZ + .1, topPostX + .015, upperY + .87, maxZ - .1, mat(COLORS.rope), { collide: false }));
+      barrierParts.push(box(topPostX - .03, upperY, zMid - .5, topPostX + .03, upperY + 1, zMid + .5, mat(COLORS.safetyYellow), { collide: false }));
+      barrierParts.push(sign('OUT OF ORDER', {
+        x: topPostX + dir * .035, y: upperY + .62, z: zMid, width: .92, height: .5,
+        facing: dir > 0 ? 'x+' : 'x-', background: '#ffd23f', color: '#1d1626',
+      }));
+    }
     for (const part of barrierParts) part.userData.dynamic = true; // (hidden when repaired: never merged into a static batch)
     const hangX = xAt(-0.1);
     if (hangingSign) {
@@ -412,6 +427,9 @@ export function createMallProps(kit) {
     // The barrier across the foot (too tall to jump). Returned: whoever repairs the escalator removes it.
     [x0, x1] = span(-0.7, 0);
     const barrier = sealed ? addCollider(x0, 0, minZ, x1, 1.25, maxZ) : null; // (an unsealed escalator works from the start)
+    [x0, x1] = span(length - .45, length);
+    const upperBarrier = sealed ? addCollider(x0, upperY, minZ, x1, upperY + 1.5, maxZ) : null;
+    const barriers = [barrier, upperBarrier].filter(Boolean);
     // Side walls: the bottom landing, the slope in segments, the top landing.
     const sides = (ua, ub, bottom, top) => {
       [x0, x1] = span(ua, ub);
@@ -458,7 +476,7 @@ export function createMallProps(kit) {
     [x0, x1] = span(uHole, Math.min(length, slopeEnd + 0.4));
     const hole = { minX: x0, maxX: x1, minZ: minZ - 0.3, maxZ: maxZ + 0.3 };
     [x0, x1] = span(slopeEnd, length);
-    return { hole, topLanding: { minX: x0, maxX: x1 }, barrier, barrierParts, ramp, link, upperY, foot: { x: xAt(-0.8), z: zMid } };
+    return { hole, topLanding: { minX: x0, maxX: x1 }, barrier, barriers, barrierParts, ramp, link, upperY, foot: { x: xAt(-0.8), z: zMid } };
   }
 
   /**

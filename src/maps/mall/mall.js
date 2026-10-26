@@ -61,6 +61,7 @@ import { buildCinema } from './cinema.js';
 import { buildCinemaDetails } from './cinemaDetails.js';
 import { cinemaStairs } from '../../config/cinemaStairs.js';
 import { buildCinemaStairs, dressCinemaStairs } from './cinemaStairs.js';
+import { buildCinemaServiceDetails } from './cinemaServiceDetails.js';
 
 export const LAYOUT = {
   cinema,
@@ -286,22 +287,25 @@ export function buildMall(scene, colliders) {
     holes: ceilingHoles, name: 'ceiling',
   });
 
-  // REPAIRING the escalator = a buyable door: its "barrier" is the collider across the escalator's foot plus the rope and
-  // OUT OF ORDER board. Opening it removes them (the ramp and its link are always there); it opens the 'upstairs' zone.
+  // One repair removes both landing barriers, including when upstairs was reached via another entrance.
   const escalatorGate = {
     collider: escalator.barrier,
     open() {
-      const i = colliders.indexOf(escalator.barrier);
-      if (i !== -1) {
-        colliders.splice(i, 1);
-        markCollidersChanged(colliders);
+      for (const barrier of escalator.barriers) {
+        const i = colliders.indexOf(barrier);
+        if (i !== -1) {
+          colliders.splice(i, 1);
+          markCollidersChanged(colliders);
+        }
       }
       for (const part of escalator.barrierParts) part.visible = false;
     },
     close() {
-      if (!colliders.includes(escalator.barrier)) {
-        colliders.push(escalator.barrier);
-        markCollidersChanged(colliders);
+      for (const barrier of escalator.barriers) {
+        if (!colliders.includes(barrier)) {
+          colliders.push(barrier);
+          markCollidersChanged(colliders);
+        }
       }
       for (const part of escalator.barrierParts) part.visible = true;
     },
@@ -830,6 +834,7 @@ export function buildMall(scene, colliders) {
   buildPromenadeDetails({ kit, looks, layout: LAYOUT.level2, floorY: upperY });
   const cinemaDetails = buildCinemaDetails({ kit, looks, layout: LAYOUT.cinema, floorY: upperY });
   dressCinemaStairs({ looks, layout: LAYOUT.cinemaStairs });
+  buildCinemaServiceDetails({ kit, looks, cinema: LAYOUT.cinema, stairs: LAYOUT.cinemaStairs, floorY: upperY });
   buildAtriumLook({ looks, layout: LAYOUT, upperY, keepClear: hallwayClear.slice(0, -2) });
 
   // The horror layer (game/features/horror.js, config/look.js horror): which lamps and neon it may kill, area by area
@@ -846,7 +851,7 @@ export function buildMall(scene, colliders) {
       { id: 'serviceCorridor', grades: ['serviceCorridor'], neons: ['serviceCorridor'] },
       { id: 'level2', grades: ['level2'], neons: ['level2', 'promenade_workshop'] },
       { id: 'atrium', grades: ['atrium'], neons: ['atrium'] },
-      { id: 'cinema', grades: ['cinemaLobby', 'cinemaScreen'], neons: ['cinema'] },
+      { id: 'cinema', grades: ['cinemaLobby', 'cinemaScreen', 'cinemaService'], neons: ['cinema'] },
     ],
   };
   features.push({ kind: 'horror', name: 'horror_director', zone: 'startRoom', position: playerSpawn.position.clone(), normal: new THREE.Vector3(0, 0, -1), seed: 1986 });
@@ -907,7 +912,7 @@ export function buildMall(scene, colliders) {
       { grade: 'atrium', minX: AT.rect.minX, maxX: AT.rect.maxX, minZ: AT.rect.minZ, maxZ: AT.rect.maxZ },
       ...LAYOUT.level2.sections.map(section => ({ grade: 'level2', ...section, minY: H.height })),
     ],
-    ambience: [...dressing.emitters, ...atrium.emitters, ...cinemaWing.emitters],
+    ambience: [...dressing.emitters, ...atrium.emitters, ...cinemaWing.emitters, ...LAYOUT.cinemaStairs.ambience],
     cinema: { layout: LAYOUT.cinema, floorY: upperY, presentation: cinemaDetails, stairs: cinemaConnection },
     // Zombie navigation across floors (zombies/navigation.js): the ground floor and level 2, joined by the escalator.
     navigation: { floors: [0, upperY], links: [escalator.link, atrium.link, cinemaConnection.link] },

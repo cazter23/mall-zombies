@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import './helpers/headlessGame.js';
 import { headlessGame } from './helpers/headlessGame.js';
 import { cinema as C } from '../src/config/cinema.js';
+import { cinemaDetails as D } from '../src/config/cinemaDetails.js';
 import { createMapKit } from '../src/world/mapKit.js';
 import { createLookKit } from '../src/maps/mall/lookKit.js';
 import { buildCinemaDetails } from '../src/maps/mall/cinemaDetails.js';
@@ -25,7 +26,7 @@ test('cinema dressing leaves real triangles clear of doors, fighting lanes, vent
     space(-24.8, 22.4, -22.8, 25.0), space(-41.1, 7.2, -40.3, 26.7),
     space(-33.5, 8.5, -32.5, 23.0), space(-23.0, 6.6, -21, 26.2),
     new THREE.Box3(new THREE.Vector3(-35, Y + C.island.height + .08, -4.4), new THREE.Vector3(-32, Y + 2.7, -.7)),
-    space(-40.2, 14.0, -25.4, 16.3),
+    space(-40.2, C.seats.rows[0][1] + .05, -25.4, C.seats.rows[1][0] - .1),
   ];
   for (const s of C.spawns) spaces.push(space(s.x - .42, s.z - .42, s.x + .42, s.z + .42, 2.2));
   const tri = new THREE.Triangle(); let count = 0;
@@ -54,7 +55,7 @@ test('cinema details batch within a small budget and all presentation resources 
   kit.dispose(); assert.equal(disposed.size, resources.size);
   const b = make(); batchStatic(b.kit.group); let meshes = 0;
   b.kit.group.traverse(m => { if (m.isMesh) meshes++; });
-  assert.ok(triangles < 12000, `${triangles} triangles`); assert.ok(meshes < 65, `${meshes} meshes`);
+  assert.ok(triangles < D.budgets.triangles, `${triangles} triangles`); assert.ok(meshes < D.budgets.meshes, `${meshes} meshes`);
   assert.ok(b.details.screen.parent && b.details.beam.parent, 'animated presentation survives batching');
   b.details.update(C.presentation.slideSeconds + .1); assert.equal(b.details.screen.userData.slideIndex, 1);
   ctx.diagnostic(`${triangles} detail triangles / ${meshes} meshes after isolated batching`); b.kit.dispose();

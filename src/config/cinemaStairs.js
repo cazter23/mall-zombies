@@ -13,7 +13,8 @@ export const cinemaStairs = {
   connector: { minX: -23.3, maxX: -20.3, minZ: 3.5, maxZ: 10.1 },
   serviceDoor: { from: -23.1, to: -20.5, at: 3.5, top: 2.8, runAt: 1.5 },
   sharedHallwayWallEnd: 6.3,
-  colors: { wall: 0x8b8991, base: 0x4d4959, step: 0x807c83, edge: 0xc5a36c, exit: 0x87c3ad },
+  colors: { wall: 0xa4a7a3, base: 0x68666d, step: 0x9a9690, edge: 0xc5a36c, exit: 0x87c3ad },
+  ambience: [{ id: 'cinema_service_fan', kind: 'ventilation', zone: 'cinema', position: [-33, 3, 8.6], range: 13 }],
   // Painted light follows Neon glow, without adding real lights to the pool
   // or changing the horror director's existing lamp-death schedule.
   lightPools: [

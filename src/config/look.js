@@ -65,8 +65,9 @@ export const look = {
       martBack: { exposure: 0.55, tint: [1.1, 0.88, 0.85], saturation: 0.8, contrast: 1.15, vignette: 0.2 }, // the stockroom walkway: dim, red
       serviceCorridor: { exposure: 0.42, tint: [0.88, 1.05, 0.8], saturation: 0.6, contrast: 1.2, vignette: 0.3 }, // back of house: dark, sick green
       level2: { exposure: 1, tint: [1.05, 0.98, 0.92], saturation: 1.03, contrast: 1 }, // the Sunset Promenade
-      cinemaLobby: { exposure: .95, tint: [1.06, .97, 1], saturation: .95, contrast: 1.02 },
+      cinemaLobby: { exposure: 1.02, tint: [1.06, 1, .98], saturation: 1.02, contrast: 1.02 },
       cinemaScreen: { exposure: .82, tint: [.99, .96, 1.08], saturation: .94, contrast: 1.04 },
+      cinemaService: { exposure: .70, tint: [.98, 1.03, 1.03], saturation: .85, contrast: 1.06 },
       atrium: { exposure: 1.03, tint: [1.05, 0.99, 0.92], saturation: 1.06, contrast: 1 }, // under the sunset skylight
       powerCut: { exposure: 0.3, tint: [1.3, 0.5, 0.45], saturation: 0.55, contrast: 1.2, vignette: 0.35 }, // the horror layer: emergency red
     },

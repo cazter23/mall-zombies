@@ -168,5 +168,11 @@ test('Web Audio ambience reuses voices, fades and disconnects them even if pause
     const newSources = sources.slice(2); assert.ok(newSources.length > 0);
     for (const s of newSources) s.onended();
     assert.ok(nodes.filter(n => n.pan).slice(-1)[0].disconnected);
+    sound.setAmbience([{ id: 'relay', kind: 'projectorRelay', gain: 1, pan: 0 }]);
+    const firstTick = sources.at(-1); assert.equal(firstTick.loop, true);
+    const pulseBuffer = firstTick.buffer; sound.setAmbience([]); firstTick.onended();
+    sound.setAmbience([{ id: 'relay', kind: 'projectorRelay', gain: 1, pan: 0 }]);
+    const secondTick = sources.at(-1); assert.equal(secondTick.buffer, pulseBuffer, 'relay buffer is reused when returning to the cinema');
+    sound.setAmbience([]); secondTick.onended(); assert.ok(secondTick.disconnected);
   } finally { window.AudioContext = previous; }
 });

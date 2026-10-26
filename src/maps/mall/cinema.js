@@ -70,7 +70,7 @@ export function buildCinema({ kit, layout: c, floorY: Y, promenade, zones, price
       portal('cinemaLobby', 'cinemaScreen', c.auditoriumEntry, L.maxZ),
       portal('cinemaLobby', 'cinemaPassage', c.passageEntry, L.maxZ),
       portal('cinemaScreen', 'cinemaPassage', c.auditoriumExit, A.maxX, 'z')],
-    grades: rooms.map(r => ({ ...r, grade: r.id === 'cinemaScreen' ? 'cinemaScreen' : 'cinemaLobby' })),
+    grades: rooms.map(r => ({ ...r, grade: r.id === 'cinemaScreen' ? 'cinemaScreen' : r.id === 'cinemaPassage' ? 'cinemaService' : 'cinemaLobby' })),
     emitters: c.ambience.map(e => ({ id: e.id, kind: e.kind, zone: 'cinema', position: [e.x, y(e.h), e.z], range: e.range })),
     lamps: c.lighting.map(l => ({ ...l, y: y(l.h) })),
   };

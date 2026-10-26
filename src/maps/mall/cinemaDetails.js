@@ -2,6 +2,13 @@
 // colliders or extra real lights; static pieces participate in room batching.
 import * as THREE from 'three';
 import { atmosphere } from '../../config/environment.js';
+import { buildCinemaArchitecture } from './cinemaArchitecture.js';
+import { makeTileTexture } from '../../world/textures.js';
+import { buildCinemaLobbyDetails } from './cinemaLobbyDetails.js';
+import { buildCinemaAuditoriumDetails } from './cinemaAuditoriumDetails.js';
+import { buildCinemaStoryDetails } from './cinemaStoryDetails.js';
+import { cinemaDetails as detailConfig } from '../../config/cinemaDetails.js';
+import { makeDustMoteTexture } from '../../world/atmosphereTextures.js';
 
 export function buildCinemaDetails({ kit, looks, layout: c, floorY: Y }) {
   const C = c.colors, L = c.lobby, A = c.auditorium, P = c.passage, p = c.presentation;
@@ -27,17 +34,14 @@ export function buildCinemaDetails({ kit, looks, layout: c, floorY: Y }) {
     texture.anisotropy = 8;
     const floor = kit.group.getObjectByName(`cinema_floor_${id}`);
     // kit.mat is cached: give each floor its own material so repeat/UVs stay local.
-    floor.material = new THREE.MeshStandardMaterial({ color: 0xffffff, map: texture, roughness: .98 });
+    if (id === 'passage') {
+      texture.dispose();
+      const tile = makeTileTexture({ base: '#85918e', grout: '#566461', variation: 8, seed: 81 });
+      tile.repeat.set((r.maxX - r.minX) / 2, (r.maxZ - r.minZ) / 2);
+      floor.material = new THREE.MeshStandardMaterial({ color: 0xffffff, map: tile, roughness: .9 });
+    } else floor.material = new THREE.MeshStandardMaterial({ color: 0xffffff, map: texture, roughness: .98 });
   }
-  // Lobby cornice and auditorium acoustic panels stay on the room edges.
-  for (const [z, facing] of [[L.minZ + .04, 1], [L.maxZ - .04, -1]]) {
-    box('lobby_cornice', -31.15, 3.55, z, 21.4, .12, .08, C.brass);
-    if (facing === 1) sign('lobby_slogan', 'SUNSET CINEMA · THE SHOW GOES ON', -31.2, 3.1, z + .04, 8.2, .5);
-  }
-  for (const x of [-25.5, -31, -37.5]) for (const z of [-6.2, 2.8]) {
-    box('ceiling_fixture', x, c.height - .16, z, 2.1, .07, .28, C.brass);
-    box('ceiling_diffuser', x, c.height - .18, z, 1.9, .025, .20, C.cream, glow(C.cream));
-  }
+  buildCinemaArchitecture({ kit, looks, layout: c, floorY: Y });
   for (const x of [A.minX + .055, A.maxX - .055]) {
     for (const z of [8.5, 14.8, 20.9, 27.1]) {
       // The partition exit occupies z 22..25.4; none of these panels enter it.
@@ -60,7 +64,6 @@ export function buildCinemaDetails({ kit, looks, layout: c, floorY: Y }) {
   for (const side of [-1, 1]) sign('entrance', side === -1 ? 'SUNSET CINEMA' : 'SUNSET PROMENADE',
     side === -1 ? -19.9 : -20.43, 3.15, -2.9, 3.15, .45, side === -1 ? 'x+' : 'x-');
   for (const s of c.futureScreens) {
-    sign('future_screen', s.label, (s.from + s.to) / 2, 3.1, L.minZ + .06, 3.2, .4);
     for (const dx of [-.6, .6]) box('future_door_handle', (s.from + s.to) / 2 + dx, 1.02, L.minZ + .055, .04, .35, .05, C.brass);
     sign('future_screen_closed', 'NOT IN SERVICE', (s.from + s.to) / 2, 1.8, L.minZ + .06, 1.7, .25);
   }
@@ -80,16 +83,9 @@ export function buildCinemaDetails({ kit, looks, layout: c, floorY: Y }) {
   sign('concession_menu', 'POPCORN / SODA / FOREVER', con.maxX + .03, 3.05, .45, 4.8, .5, 'x+');
   sign('ticket_header', 'BOX OFFICE · ADMIT ONE', tx, 3.05, -9.35, 4.1, .45);
   sign('ticket_price', 'TONIGHT: YOUR ENTIRE SHIFT', tx, .67, -9.37, 3.3, .3);
-  for (let i = 0; i < 5; i++) {
-    const z = -1.85 + i * 1.0;
-    box('popcorn_carton', -41.35, 1.08, z, .34, .38, .30, i % 2 ? C.cream : C.curtain);
-    for (let k = 0; k < 3; k++) box('popcorn', -41.35 + (k - 1) * .10, 1.46 + (k % 2) * .025, z, .12, .07, .24, C.paper);
-    box('soda_cup', -41.05, 1.07, z + .38, .16, .27, .16, C.teal);
-    box('soda_straw', -41.05, 1.34, z + .38, .018, .16, .018, C.cream);
-  }
-  box('ticket_till', tx + .9, 1.06, -9.85, .48, .3, .30, C.teal);
-  box('ticket_roll', tx - .7, 1.07, -9.85, .25, .14, .22, C.paper);
-  box('ticket_strip', tx - .7, .88, -9.365, .22, .24, .018, C.paper);
+  buildCinemaLobbyDetails({ kit, layout: c, floorY: Y });
+  buildCinemaAuditoriumDetails({ kit, looks, layout: c, floorY: Y });
+  const story = buildCinemaStoryDetails({ kit, layout: c, floorY: Y });
   sign('island_ad', 'NOW SHOWING · FOREVER', -33.5, .38, c.island.minZ - .025, 3.6, .25, -1);
   // Portrait one-sheets, with original graphic art rather than more menu tiles.
   for (const [i, poster] of c.posters.entries()) {
@@ -177,18 +173,56 @@ export function buildCinemaDetails({ kit, looks, layout: c, floorY: Y }) {
   const beam = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: C.screen, map: beamTexture, transparent: true,
     opacity: q.beamOpacity, depthWrite: false, side: THREE.DoubleSide }));
   beam.name = 'cinema_projector_beam'; root.add(beam);
-  let time = 0, slide = -1;
+  const dustPositions = new Float32Array(12 * 3), dustGeometry = new THREE.BufferGeometry();
+  dustGeometry.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
+  const dust = new THREE.Points(dustGeometry, new THREE.PointsMaterial({ map: makeDustMoteTexture(),
+    color: C.screen, size: .038, opacity: .16, transparent: true, depthWrite: false }));
+  dust.name = 'cinema_projector_dust'; root.add(dust);
+  let time = 0, slide = -1, drawnFrame = -1;
   function draw(index) {
     const s = p.slides[index]; ctx.fillStyle = s.base; ctx.fillRect(0, 0, 1024, 320);
     ctx.strokeStyle = s.accent; ctx.lineWidth = 3; ctx.strokeRect(22, 20, 980, 280);
     ctx.fillStyle = s.accent; ctx.textAlign = 'center';
-    ctx.font = 'bold 48px sans-serif'; ctx.fillText(s.title, 512, 112);
-    ctx.font = '24px sans-serif'; ctx.fillText(s.subtitle, 512, 170);
-    ctx.font = '18px sans-serif'; ctx.fillText(s.footer, 512, 258);
-    ctx.fillRect(100, 200, 824, 2); texture.needsUpdate = true; slide = index;
+    ctx.font = 'bold 48px sans-serif'; ctx.fillText(s.title, 512, 98);
+    ctx.font = '24px sans-serif'; ctx.fillText(s.subtitle, 512, 146);
+    ctx.font = '18px sans-serif'; ctx.fillText(s.footer, 512, 280);
+    // Quiet moving line art on a fixed-brightness field, never a strobe.
+    const phase = time * .35;
+    if (index === 0) {
+      for (const x of [460, 564]) {
+        ctx.beginPath(); ctx.arc(x, 205, 28, 0, Math.PI * 2); ctx.stroke();
+        for (let i = 0; i < 4; i++) { const a = phase + i * Math.PI / 2; ctx.beginPath(); ctx.moveTo(x, 205); ctx.lineTo(x + Math.cos(a) * 23, 205 + Math.sin(a) * 23); ctx.stroke(); }
+      }
+    } else if (index === 1) {
+      ctx.beginPath(); ctx.arc(512, 205, 30, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(512, 205); ctx.lineTo(512 + Math.sin(phase) * 24, 205 - Math.cos(phase) * 24); ctx.stroke();
+    } else if (index === 2) {
+      ctx.strokeRect(480, 192, 64, 43);
+      for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.arc(487 + i * 12, 184 + Math.sin(phase + i) * 2, 6, 0, Math.PI * 2); ctx.stroke(); }
+    } else {
+      ctx.beginPath(); ctx.arc(512, 219, 30, Math.PI, Math.PI * 2); ctx.stroke();
+      for (let i = 0; i < 4; i++) ctx.fillRect(450 + Math.sin(phase + i) * 5, 223 + i * 5, 124, 1);
+    }
+    texture.needsUpdate = true; slide = index; drawnFrame = Math.floor(time / detailConfig.motion.screenFrameSeconds);
     screen.userData.slideIndex = index;
   }
-  function pose() { beam.visible = atmosphere.ambient.enabled; const index = Math.floor(time / p.slideSeconds) % p.slides.length; if (index !== slide) draw(index); }
+  function pose() {
+    beam.visible = dust.visible = atmosphere.ambient.enabled;
+    const index = Math.floor(time / p.slideSeconds) % p.slides.length; if (index !== slide) draw(index);
+    for (let i = 0; i < 12; i++) {
+      dustPositions[i * 3] = cx + Math.sin(i * 3.7 + time * .08) * (1.2 + i * .08);
+      dustPositions[i * 3 + 1] = y(2.5 + Math.sin(i * 2.3 + time * .13) * .5);
+      dustPositions[i * 3 + 2] = 12 + i * .9 + Math.sin(time * .06 + i) * .08;
+    }
+    dustGeometry.attributes.position.needsUpdate = true; dustGeometry.computeBoundingSphere();
+  }
+  screen.onBeforeRender = () => {
+    // Redraw animation only while the screen is actually rendered. Hidden rooms
+    // keep their clock but incur no 5-Hz canvas upload in the rest of the mall.
+    if (atmosphere.ambient.enabled && Math.floor(time / detailConfig.motion.screenFrameSeconds) !== drawnFrame) draw(slide);
+  };
   draw(0); pose();
-  return { root, screen, beam, update(dt) { if (atmosphere.ambient.enabled) time += dt; pose(); }, reset() { time = 0; pose(); } };
+  return { root, screen, beam, dust, story,
+    update(dt) { if (atmosphere.ambient.enabled) time += dt; pose(); story.update(dt); },
+    reset() { time = 0; pose(); draw(0); story.reset(); } };
 }

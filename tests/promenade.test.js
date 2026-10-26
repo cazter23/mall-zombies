@@ -138,8 +138,10 @@ test('Shoppers reach the eastern junction from both escalators and a horde uses 
   // This is a repeatable geometry/routing regression. Random gaits and lane
   // offsets can legitimately make the entire group prefer one of two open
   // routes; hold those draws stable rather than making CI depend on that roll.
-  ctx.mock.method(Math, 'random', seededRandom(1986));
   const t = fixture(), { g } = t;
+  // Seed gameplay after construction: Three.js UUIDs also consume Math.random,
+  // so adding a decorative mesh must not change this routing scenario's gaits.
+  ctx.mock.method(Math, 'random', seededRandom(1986));
   const target = new THREE.Vector3(16.7, Y, 2.6);
   const spawn = (x, height, z) => {
     const zombie = g.zombies.spawn('shopper', new THREE.Vector3(x, height, z));

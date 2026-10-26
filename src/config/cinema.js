@@ -26,8 +26,8 @@ export const cinema = {
     { id: 'screen_rear', x: -33, z: 6.6, wall: 'south' },
     { id: 'projection', x: -22, z: 27, wall: 'north' },
   ],
-  colors: { lobbyWall: 0xbd9ca4, theaterWall: 0x514357, serviceWall: 0x7c7c82,
-    carpet: 0x48334f, aisle: 0x6e4963, ceiling: 0x453c50, brass: 0xc5a36c, trim: 0x423044,
+  colors: { lobbyWall: 0xdac9b6, theaterWall: 0x6b5369, serviceWall: 0x85908e,
+    carpet: 0x48334f, aisle: 0x6e4963, ceiling: 0x655368, brass: 0xc5a36c, trim: 0x423044,
     seat: 0x743b59, seatEdge: 0x382b3b, curtain: 0x773858, screen: 0xe8deca,
     cream: 0xf0dfbc, dark: 0x262333, paper: 0xe9d7ac, teal: 0x668f94 },
   posters: [
@@ -36,12 +36,14 @@ export const cinema = {
     { x: -28, title: 'CLOSING TIME', tagline: 'THE DOORS DISAGREE', base: '#795d49', accent: '#e8c4b0' },
   ],
   lighting: [
-    { x: -31, h: 3.0, z: -1, color: 0xffc18d, intensity: 20, distance: 22 },
-    { x: -33, h: 3.0, z: 21.8, color: 0xc8b0eb, intensity: 16, distance: 24 },
+    { x: -31, h: 3.0, z: -1, color: 0xffcfa0, intensity: 32, distance: 22 },
+    { x: -33, h: 3.0, z: 21.8, color: 0xc8b0eb, intensity: 24, distance: 24 },
   ],
   ambience: [
     { id: 'cinema_projector', kind: 'projector', x: -33, h: 3.6, z: 7.3, range: 26 },
     { id: 'cinema_concessions', kind: 'refrigerator', x: -41.2, h: 1.5, z: .5, range: 13 },
+    { id: 'cinema_projector_relay', kind: 'projectorRelay', x: -33, h: 3.6, z: 7.3, range: 12 },
+    { id: 'cinema_projection_air', kind: 'ventilation', x: -22, h: 3.8, z: 18, range: 11 },
   ],
   presentation: {
     slideSeconds: 9, screenWidth: 12.4, screenHeight: 3.3, screenY: 2.5,

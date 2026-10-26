@@ -23,8 +23,8 @@ export const weapons = {
     id: 'stapleGun',
     name: 'Staple Gun',
     fireMode: 'semi', // 'semi' = one shot per click, 'auto' = keeps firing while held
-    damage: 30, // per body hit. Round-1 zombie (150 HP): 5 body shots or 2 headshots (30 x 3 = 90)
-    headshotMultiplier: 3,
+    damage: 30, // round-1 Shopper (150 HP): 5 body shots or 3 headshots
+    headshotMultiplier: 2,
     magazineSize: 12,
     startingReserve: 60, // spare staples you start with
     fireInterval: 0.12, // seconds between shots; semi-auto, one shot per click
@@ -159,17 +159,17 @@ export const weapons = {
   },
 
   // Cheap full-auto wall buy (start room, 500): a supermarket price-label gun shooting price stickers.
-  // ROLE: the cheap close-range sprayer. Competitive with the dearer Foam Dart Blaster up close
-  // (big magazine, quick reload), but the stickers lose punch with range,
+  // ROLE: the cheap early-game close-range sprayer. Quick reloads and affordable ammo,
+  // but premium guns offer more firepower and the stickers lose punch with range,
   // so the Nail Gun / Foam Dart Blaster own the long sightlines. (tests/balance.test.js checks this.)
   priceGun: {
     id: 'priceGun',
     name: 'Price Gun',
     fireMode: 'auto',
-    damage: 28, // round-1 zombie (150 HP): 6 body shots or 2 headshots (28 x 3 = 84); round 5 (450): 17 body
-    headshotMultiplier: 3,
-    magazineSize: 32, // ~2.7s of fire per magazine
-    startingReserve: 192, // six magazines; also the most it can hold in reserve (ammo buys refill to this)
+    damage: 28, // round-1 Shopper (150 HP): 6 body shots or 4 headshots
+    headshotMultiplier: 1.5,
+    magazineSize: 28,
+    startingReserve: 168, // six magazines; also the reserve cap for ammo buys
     fireInterval: 0.083, // ~12 shots per second while held
     fireBuffer: 0.1,
     reloadTime: 1.3,
@@ -292,7 +292,7 @@ export const weapons = {
     name: 'Nail Gun',
     fireMode: 'semi',
     damage: 90, // round-1 zombie (150 HP): 2 body / 1 head; round 2 (225): 3 body; round 5 (450): 5 body / 2 head
-    headshotMultiplier: 3,
+    headshotMultiplier: 2,
     // Each nail goes through up to maxTargets zombies in a line (walls still stop it), doing a bit less
     // damage to each one it has already passed through.
     pierce: { maxTargets: 3, damageFalloff: [1, 0.8, 0.6] },
@@ -417,7 +417,7 @@ export const weapons = {
   foamDartBlaster: {
     id: 'foamDartBlaster', name: 'Foam Dart Blaster', fireMode: 'burst',
     burst: { count: 3, interval: 0.07 },
-    damage: 52, headshotMultiplier: 3, // (was 50) round 3: two body bursts; round 5: one head burst
+    damage: 56, headshotMultiplier: 1.75, // 168 body damage per full burst
     magazineSize: 30, startingReserve: 144, // ten full bursts; reserve unchanged
     fireInterval: 0.35, // pause after the LAST dart
     fireBuffer: 0.12, reloadTime: 1.9, range: 100,
@@ -493,7 +493,7 @@ export const weapons = {
     falloff: { start: 4, end: 12, minMultiplier: 0.1 },
     // A pellet that goes through a zombie hits the one behind it at half damage (clears clumps).
     pierce: { maxTargets: 2, damageFalloff: [1, 0.5] },
-    damage: 36, headshotMultiplier: 2, // a point-blank blast is 12 x 36 = 432: one-shots rounds 1-3 (and round 4 point blank)
+    damage: 36, headshotMultiplier: 1.2, // a point-blank blast is 12 x 36 = 432: one-shots rounds 1-3 (and round 4 point blank)
     magazineSize: 6, startingReserve: 24, // a six-shell tube; 30 shells in all
     // Shell-by-shell reload: open up, one shell per cycle, close up. Firing interrupts it once a shell is in.
     // `progress` = which window of the reload animation each phase plays (the shell window repeats per shell).
@@ -576,10 +576,10 @@ export const weapons = {
 
   // WALL BUY: Grand Atrium (economy.wallBuys). Debug H still cycles it.
   // ROLE: steady medium-range body damage, paid for with slower ADS/strafe, a smaller
-  // magazine and weaker headshots than Foam. No penetration; Nail wins long hallways.
+  // magazine than Foam. Stronger per-hit damage than Price; no penetration.
   rivetRifle: {
     id: 'rivetRifle', name: 'Rivet Rifle', fireMode: 'auto',
-    damage: 52, headshotMultiplier: 1.75,
+    damage: 58, headshotMultiplier: 1.75,
     magazineSize: 24, startingReserve: 144,
     fireInterval: 1 / 7.5, fireBuffer: 0.1, reloadTime: 2, range: 100,
     falloff: { start: 12, end: 28, minMultiplier: 0.6 },
@@ -643,11 +643,11 @@ export const weapons = {
   // corridor hordes for over 6 seconds straight, paid for with heavy ADS handling and a long 3.1s drum swap.
   coilNailer: {
     id: 'coilNailer', name: 'Heavy Coil Nailer', fireMode: 'auto',
-    damage: 34, headshotMultiplier: 2.2,
+    damage: 44, headshotMultiplier: 1.5,
     pierce: { maxTargets: 2, damageFalloff: [1, 0.5] },
     magazineSize: 64, startingReserve: 256,
     fireInterval: 0.1, fireBuffer: 0.1, reloadTime: 3.1, range: 90,
-    falloff: { start: 10, end: 26, minMultiplier: 0.55 },
+    falloff: { start: 15, end: 30, minMultiplier: 0.65 },
     recoil: {
       pitchDegrees: 0.68, yawDegrees: 0.28, rollDegrees: 0.38, adsMultiplier: 0.68,
       model: {
@@ -710,11 +710,11 @@ export const weapons = {
 
   // WALL BUY: Byte Me Electronics, east face of its pod (economy.wallBuys).
   // ROLE: charge-and-release precision laser railgun. Tap for a quick 1-target laser snap, or hold 0.42s
-  // to charge the capacitor bank for a full-power 4-target piercing checkout beam with 3x headshots.
+  // to charge the capacitor bank for a full-power 4-target piercing checkout beam with 2x headshots.
   barcodeScanner: {
     id: 'barcodeScanner', name: 'Barcode Scanner', fireMode: 'charge',
     charge: { seconds: 0.42, minDamageMultiplier: 0.35, minTargets: 1, sound: 'scannerCharge' },
-    damage: 160, headshotMultiplier: 3,
+    damage: 160, headshotMultiplier: 2,
     pierce: { maxTargets: 4, damageFalloff: [1, 0.85, 0.7, 0.55] },
     magazineSize: 8, startingReserve: 40,
     fireInterval: 0.28, fireBuffer: 0.12, reloadTime: 1.8, range: 100,

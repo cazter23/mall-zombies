@@ -30,6 +30,37 @@ function hold(t, keys, seconds) {
 }
 const contains = (colliders, x, y, z) => colliders.some((b) => x > b.min.x && x < b.max.x && y > b.min.y && y < b.max.y && z > b.min.z && z < b.max.z);
 
+test('Atrium access cannot bypass the unrepaired upper escalator barrier; repair and reset affect both ends', () => {
+  const t = fixture({ repaired: false }), { g } = t;
+  g.map.doors.find(d => d.id === 'atriumPromenade').open();
+  assert.equal(g.map.zones.upstairs.open, true, 'Promenade access is independent of the repair');
+  const repair = g.map.doors.find(d => d.id === 'escalatorRepair');
+  const topX = g.map.escalator.ramp.minX;
+  const approach = () => g.player.teleport({ position: new THREE.Vector3(topX - 1, UPPER_Y, zMid), yaw: -Math.PI / 2 });
+  for (const jumping of [false, true]) {
+    approach();
+    g.player.input.held.add('KeyW'); g.player.input.held.add('ShiftLeft');
+    for (let i = 0; i < 180; i++) {
+      if (jumping && i % 20 === 0) g.player.input.pressed.add('Space');
+      t.tick(1);
+      assert.ok(g.player.position.x < topX, 'cannot cross from the upper floor, even jumping');
+    }
+    g.player.input.clear();
+  }
+  repair.open(); approach(); hold(t, ['KeyW'], 3);
+  assert.ok(g.player.position.y < UPPER_Y - 1, 'repair permits walking down');
+  assert.equal(g.colliders.includes(g.map.escalator.barrier), false, 'lower barrier also removed');
+  repair.reset(); repair.reset();
+  assert.equal(g.colliders.filter(b => b === g.map.escalator.barrier).length, 1, 'lower barrier restored exactly once');
+  approach(); hold(t, ['KeyW'], 2);
+  assert.ok(g.player.position.x < topX, 'upper barrier restored, although Atrium access stays open');
+  assert.equal(g.map.zones.upstairs.open, true);
+  g.resetRun();
+  approach(); hold(t, ['KeyW'], 2);
+  assert.ok(g.player.position.x < topX, 'Play again restores the upper barrier');
+  g.map.dispose();
+});
+
 test('level 2 is closed in: four walls, a roof, and a floor you can stand on', () => {
   const { g } = fixture({ repaired: true });
   const walls = [[0, L2.rect.maxZ + 0.15], [0, L2.rect.minZ - 0.15], [L2.rect.minX - 0.15, 2], [L2.rect.maxX + 0.15, 2]];
