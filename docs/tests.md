@@ -76,9 +76,9 @@ works from where you stand, both shortcuts buy from either side but not through 
 bought across its shortcut, the Nail Gun can't be bought through its wall, other floors are out of reach, facing matters),
 `ammoCache.test.js` the vending machine (refills any gun in hand, flat price, label follows the gun, needs its area open, not
 through the wall, solid + too tall to climb, zombies can reach its front), `balance.test.js` GUN ROLES on real measured numbers
-(cannon strongest up close / weakest at range, Price Gun below premium automatics at 5 m, Foam Dart Blaster beats the older
-non-shotguns at 15 m, Nail Gun best single-target sustained damage at 30 m (10%+), Staple Gun weakest at every range;
-relationships, not exact values). `weaponProgression.test.js` runs real aimed shots, bloom, reloads and upgrades against
+(Cannon strongest up close / weakest at range, round-8 close-blast reliability, Price below premium automatics, Foam's
+mid-range advantage, Nail's no-falloff penetration, Staple weakest, and round-8 body-shot targets).
+`weaponProgression.test.js` runs real aimed shots, bloom, reloads and upgrades against
 stationary round-8/10 targets through helpers/weaponTrial.js (perfect tracking; not a human survival playtest).
 `gunStats.test.js` checks the per-hit formula + resolveGun (upgrades as data),
 `fullRun.test.js` WHOLE RUNS of the real game headless (tests/helpers/headlessGame.js builds createGame with stand-in HUD/sound/

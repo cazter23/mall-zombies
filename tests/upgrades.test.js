@@ -110,9 +110,8 @@ test('fits: everything fits every gun except the Extended Nozzle on the Nail Gun
 const style = (d) => ({ ads: !d.pellets, samples: 600 });
 const dps = (d, m) => sustainedDps(d, m, style(d));
 
-// Tiers aren't a pure damage scale (bigger magazines and faster reloads help reload-heavy guns like the
-// Nail Gun a bit more), so at the same tier a role may become a near-tie (within 3%), but no gun may
-// clearly take over another gun's job.
+// Tiers aren't a pure damage scale (magazine and reload changes help guns differently),
+// so allow a small near-tie while checking the intended roles at every tier.
 const TIE = 1.03;
 
 test('roles hold at EVERY tier when guns are compared at the same tier (near-ties allowed)', () => {
@@ -120,25 +119,27 @@ test('roles hold at EVERY tier when guns are compared at the same tier (near-tie
     const t = Object.fromEntries(guns.map((b) => [b.id, at(b, tierId)]));
     const others = (id) => guns.filter((b) => b.id !== id).map((b) => t[b.id]);
     const msg = (what) => `${tierId}: ${what}`;
-    for (const d of others('confettiCannon')) assert.ok(dps(t.confettiCannon, 2) >= 1.4 * dps(d, 2), msg(`cannon vs ${d.name} at 2 m`));
+    for (const d of others('confettiCannon')) assert.ok(dps(t.confettiCannon, 2) > dps(d, 2), msg(`cannon vs ${d.name} at 2 m`));
     assert.ok(dps(t.priceGun, 5) > dps(t.stapleGun, 5), msg('price beats the starter at 5 m'));
-    assert.ok(dps(t.priceGun, 5) >= 0.95 * dps(t.nailGun, 5), msg('price stays within 5% of Nail Gun sustained damage at 5 m'));
-    for (const id of ['foamDartBlaster', 'rivetRifle', 'coilNailer'])
+    assert.ok(dps(t.priceGun, 5) > dps(t.nailGun, 5), msg('Price sprays faster than Nail against one close target'));
+    assert.ok(dps(t.foamDartBlaster, 5) > 1.05 * dps(t.priceGun, 5), msg('Foam improves close sustained fire'));
+    for (const id of ['rivetRifle', 'coilNailer'])
       assert.ok(dps(t[id], 5) > 1.1 * dps(t.priceGun, 5), msg(`${id} beats the early-game gun`));
     for (const d of [t.stapleGun, t.priceGun, t.nailGun]) assert.ok(TIE * dps(t.foamDartBlaster, 15) > dps(d, 15), msg(`foam vs ${d.name} at 15 m`));
-    for (const d of others('nailGun')) assert.ok(dps(t.nailGun, 30) > 1.1 * dps(d, 30), msg(`nail vs ${d.name} at 30 m`));
+    assert.ok(dps(t.nailGun, 30) > 0.98 * dps(t.nailGun, 5), msg('Nail keeps its damage at range'));
+    assert.ok(dps(t.nailGun, 30) > dps(t.priceGun, 30), msg('Nail beats the early gun at 30 m'));
     for (const d of others('stapleGun')) assert.ok(dps(t.stapleGun, 5) < dps(d, 5), msg(`staple vs ${d.name} at 5 m`));
   }
 });
 
-test('one attachment shifts a gun, it never takes over another gun\'s job (vs plain guns)', () => {
+test('one attachment shifts a gun while the Cannon keeps its close advantage and the starter stays weakest', () => {
   for (const base of guns) {
     for (const id of ATTACHMENTS.filter((a) => attachmentFits(base, a))) {
       const g = at(base, 'standard', id);
       const name = `${base.name} + ${id}`;
-      if (base !== confettiCannon) assert.ok(dps(confettiCannon, 2) >= 1.25 * dps(g, 2), `${name}: cannon still rules 2 m against an attached gun`);
-      // A range attachment can compete at 30 m; Nail retains the longest sightlines.
-      if (base !== nailGun) assert.ok(dps(nailGun, 40) > dps(g, 40), `${name}: Nail Gun still rules 40 m`);
+      if (base !== confettiCannon) assert.ok(dps(confettiCannon, 2) > dps(g, 2), `${name}: cannon still rules 2 m against an attached gun`);
+      if (base !== nailGun && base !== confettiCannon)
+        assert.ok(dps(g, 40) < dps(g, 5), `${name}: range falloff still matters`);
       if (base === stapleGun) for (const d of [priceGun, nailGun, foamDartBlaster]) assert.ok(dps(g, 5) < dps(d, 5), `${name} vs ${d.name}`);
     }
   }

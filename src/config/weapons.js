@@ -166,10 +166,10 @@ export const weapons = {
     id: 'priceGun',
     name: 'Price Gun',
     fireMode: 'auto',
-    damage: 28, // round-1 Shopper (150 HP): 6 body shots or 4 headshots
+    damage: 70, // round-1 Shopper (150 HP): 3 body shots or 2 headshots
     headshotMultiplier: 1.5,
-    magazineSize: 28,
-    startingReserve: 168, // six magazines; also the reserve cap for ammo buys
+    magazineSize: 24,
+    startingReserve: 144, // six magazines; also the reserve cap for ammo buys
     fireInterval: 0.083, // ~12 shots per second while held
     fireBuffer: 0.1,
     reloadTime: 1.3,
@@ -286,12 +286,12 @@ export const weapons = {
 
   // The first real upgrade (main hallway wall, 1000): a framing nailer. Slow, hard-hitting
   // semi-auto whose nails go through zombies: line up a horde while you train it.
-  // ROLE: the long-range gun. No falloff: the only gun still at full damage at 30 m, clearly the best there.
+  // ROLE: precise long-range penetration. No falloff, so each nail keeps its damage at 30 m.
   nailGun: {
     id: 'nailGun',
     name: 'Nail Gun',
     fireMode: 'semi',
-    damage: 90, // round-1 zombie (150 HP): 2 body / 1 head; round 2 (225): 3 body; round 5 (450): 5 body / 2 head
+    damage: 135, // round-1 zombie (150 HP): 2 body / 1 head; round 8 (675): 5 body / 3 head
     headshotMultiplier: 2,
     // Each nail goes through up to maxTargets zombies in a line (walls still stop it), doing a bit less
     // damage to each one it has already passed through.
@@ -411,15 +411,14 @@ export const weapons = {
     },
   },
   // Mega Mart burst rifle: three foam darts per fresh trigger press, strong headshots.
-  // ROLE: the mid-range gun. Best sustained damage around 15 m (past the Price Gun's falloff, ahead of the
-  // Nail Gun), with a small sustained-damage lead over the cheaper Price Gun up close. Foam drifts,
-  // so it falls behind the Nail Gun at 30 m.
+  // ROLE: accurate mid-range bursts with a quick aim and better reach than the Price Gun.
+  // Premium automatics sustain more damage, while the Nail Gun rewards lined-up targets.
   foamDartBlaster: {
     id: 'foamDartBlaster', name: 'Foam Dart Blaster', fireMode: 'burst',
     burst: { count: 3, interval: 0.07 },
-    damage: 56, headshotMultiplier: 1.75, // 168 body damage per full burst
+    damage: 90, headshotMultiplier: 1.75, // 270 body damage per full burst
     magazineSize: 30, startingReserve: 144, // ten full bursts; reserve unchanged
-    fireInterval: 0.35, // pause after the LAST dart
+    fireInterval: 0.16, // pause after the LAST dart; three darts every 0.3 s
     fireBuffer: 0.12, reloadTime: 1.9, range: 100,
     falloff: { start: 15, end: 30, minMultiplier: 0.75 }, // foam darts drift: full to 15 m, 75% at 30 m
     recoil: {
@@ -485,15 +484,15 @@ export const weapons = {
   // Service Corridor shotgun: one shell, twelve pellets; rewards close-range positioning.
   confettiCannon: {
     id: 'confettiCannon', name: 'Confetti Cannon', fireMode: 'semi',
-    // ROLE: the room-clearer. Reliable round-3 chest kills within ~3m, useful hip fire through ~4m.
+    // ROLE: the room-clearer. A close body blast can kill a round-8 Shopper; spread still limits reach.
     // Full pellet damage through 4m, then a gradual fade; the cone still limits single-target range.
-    // Aiming down sights extends reliable damage to ~5m. No single BODY blast can kill round 5,
-    // leaving room for upgrades (a point-blank head blast can: a deliberate, risky reward). (tests/balance.test.js checks all of this; `npm run balance` shows it.)
+    // Aiming down sights extends useful damage to ~5m. (tests/balance.test.js checks this;
+    // `npm run balance` shows it.)
     pellets: { count: 12, spreadDegrees: 6.0, adsMultiplier: 0.45, tracerColors: [0xff6abc, 0xffd23f] },
     falloff: { start: 4, end: 12, minMultiplier: 0.1 },
     // A pellet that goes through a zombie hits the one behind it at half damage (clears clumps).
     pierce: { maxTargets: 2, damageFalloff: [1, 0.5] },
-    damage: 36, headshotMultiplier: 1.2, // a point-blank blast is 12 x 36 = 432: one-shots rounds 1-3 (and round 4 point blank)
+    damage: 70, headshotMultiplier: 1.2, // a point-blank body blast is 12 x 70 = 840
     magazineSize: 6, startingReserve: 24, // a six-shell tube; 30 shells in all
     // Shell-by-shell reload: open up, one shell per cycle, close up. Firing interrupts it once a shell is in.
     // `progress` = which window of the reload animation each phase plays (the shell window repeats per shell).
@@ -575,13 +574,13 @@ export const weapons = {
   },
 
   // WALL BUY: Grand Atrium (economy.wallBuys). Debug H still cycles it.
-  // ROLE: steady medium-range body damage, paid for with slower ADS/strafe, a smaller
-  // magazine than Foam. Stronger per-hit damage than Price; no penetration.
+  // ROLE: steady medium-range body damage, paid for with slower ADS/strafe.
+  // Stronger per-hit damage than Price, with a full 30-round magazine; no penetration.
   rivetRifle: {
     id: 'rivetRifle', name: 'Rivet Rifle', fireMode: 'auto',
-    damage: 58, headshotMultiplier: 1.75,
-    magazineSize: 24, startingReserve: 144,
-    fireInterval: 1 / 7.5, fireBuffer: 0.1, reloadTime: 2, range: 100,
+    damage: 95, headshotMultiplier: 1.75,
+    magazineSize: 30, startingReserve: 144,
+    fireInterval: 0.1, fireBuffer: 0.1, reloadTime: 2, range: 100,
     falloff: { start: 12, end: 28, minMultiplier: 0.6 },
     recoil: {
       pitchDegrees: 0.9, yawDegrees: 0.16, rollDegrees: 0.25, adsMultiplier: 0.7,
@@ -643,7 +642,7 @@ export const weapons = {
   // corridor hordes for over 6 seconds straight, paid for with heavy ADS handling and a long 3.1s drum swap.
   coilNailer: {
     id: 'coilNailer', name: 'Heavy Coil Nailer', fireMode: 'auto',
-    damage: 44, headshotMultiplier: 1.5,
+    damage: 95, headshotMultiplier: 1.5,
     pierce: { maxTargets: 2, damageFalloff: [1, 0.5] },
     magazineSize: 64, startingReserve: 256,
     fireInterval: 0.1, fireBuffer: 0.1, reloadTime: 3.1, range: 90,
@@ -714,7 +713,7 @@ export const weapons = {
   barcodeScanner: {
     id: 'barcodeScanner', name: 'Barcode Scanner', fireMode: 'charge',
     charge: { seconds: 0.42, minDamageMultiplier: 0.35, minTargets: 1, sound: 'scannerCharge' },
-    damage: 160, headshotMultiplier: 2,
+    damage: 260, headshotMultiplier: 2,
     pierce: { maxTargets: 4, damageFalloff: [1, 0.85, 0.7, 0.55] },
     magazineSize: 8, startingReserve: 40,
     fireInterval: 0.28, fireBuffer: 0.12, reloadTime: 1.8, range: 100,

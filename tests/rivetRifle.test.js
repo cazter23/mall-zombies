@@ -20,7 +20,7 @@ test('Rivet Rifle auto fire delivers its configured cadence, empties one magazin
   const w = new Weapon(rifle, createPlayerStats());
   let shots = 0;
   for (let tick = 0; tick < 60; tick++) if (w.update(dt, { triggerPressed: tick === 0, triggerHeld: true }) === 'fire') shots++;
-  assert.equal(shots, 8, '7.5/s including the first instant shot');
+  assert.equal(shots, 10, '10/s including the first instant shot');
   for (let tick = 0; tick < 200 && w.magazine; tick++) if (w.update(dt, { triggerHeld: true }) === 'fire') shots++;
   assert.equal(shots, rifle.magazineSize);
   assert.equal(w.magazine, 0);
@@ -32,7 +32,7 @@ test('Rivet Rifle auto fire delivers its configured cadence, empties one magazin
   assert.equal(w.reserve, rifle.startingReserve - rifle.magazineSize);
 });
 
-test('Rivet Rifle remains a body-fire alternative to Foam, with smaller magazine/slower ADS; Nail retains range at every tier', () => {
+test('Rivet Rifle remains a body-fire alternative to Foam, with slower ADS; Nail keeps per-hit range damage at every tier', () => {
   for (const tier of upgrades.tiers) {
     const at = (base) => resolveGun(base, withTier(base, [], tier.id));
     const r = at(rifle), foam = at(weapons.foamDartBlaster), nail = at(weapons.nailGun);
@@ -40,8 +40,9 @@ test('Rivet Rifle remains a body-fire alternative to Foam, with smaller magazine
     assert.ok(dps(r, 5) > 0.95 * dps(foam, 5), tier.id);
     assert.ok(dps(r, 5) < 1.12 * dps(foam, 5), 'continuous fire is not a large raw-DPS upgrade');
     assert.ok(dps(foam, 15) * 1.1 > dps(r, 15), 'Foam stays within 10% at mid range across tiers');
-    assert.ok(dps(nail, 30) > 1.15 * dps(r, 30));
-    assert.ok(r.magazineSize < foam.magazineSize);
+    assert.ok(hitDamage(nail, { part: 'body', distance: 30 }, 0, { damageMultiplier: 1 })
+      > hitDamage(r, { part: 'body', distance: 30 }, 0, { damageMultiplier: 1 }));
+    assert.ok(r.magazineSize >= foam.magazineSize - foam.burst.count, 'magazines stay comparable after tier rounding');
     assert.ok(r.ads.seconds > foam.ads.seconds);
     assert.ok(hitDamage(r, { part: 'head', distance: 10 }, 0, { damageMultiplier: 1 })
       > hitDamage(foam, { part: 'head', distance: 10 }, 0, { damageMultiplier: 1 }));

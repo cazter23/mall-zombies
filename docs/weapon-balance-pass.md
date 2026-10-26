@@ -1,5 +1,7 @@
 # Weapon balance pass — 25 October 2026
 
+Historical record of the 25 October pass. The newer base-weapon pass and measurements are at the top of `docs/history.md`.
+
 Implemented the agreed changes. Prices, zombie health, fire rates, recoil, spread,
 ADS/movement handling and reload durations are unchanged.
 

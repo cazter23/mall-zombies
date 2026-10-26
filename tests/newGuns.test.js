@@ -32,6 +32,7 @@ test('burst: one held press gives three darts at the configured cadence and indi
 
 test('burst: a buffered press starts the next burst after the last dart cooldown, with no tick rounding drift', () => {
   const w = new Weapon(weapons.foamDartBlaster, createPlayerStats());
+  w.reserve = 0; // observe one magazine without an automatic reload starting an eleventh burst
   const times = [];
   let last = -Infinity;
   for (let i = 0; i < 300; i++) {
@@ -40,10 +41,11 @@ test('burst: a buffered press starts the next burst after the last dart cooldown
     if (press) last = i;
     if (tick(w, { triggerPressed: press }) === 'fire') times.push(i * dt);
   }
-  // Ten bursts in the 30-dart magazine. Burst starts should remain 0.49s apart.
+  // Ten bursts in the 30-dart magazine. Starts follow the configured burst cycle.
   assert.equal(times.length, 30);
+  const cycle = w.def.burst.interval * (w.def.burst.count - 1) + w.def.fireInterval;
   for (let burst = 0; burst < 10; burst++) {
-    assert.ok(Math.abs(times[burst * 3] - burst * 0.49) < dt + 1e-9);
+    assert.ok(Math.abs(times[burst * 3] - burst * cycle) < dt + 1e-9);
   }
 });
 
@@ -239,9 +241,9 @@ test('pellet ADS cone tightens continuously; pellets and pierce can be combined'
   assert.equal(weapons.confettiCannon.pierce.maxTargets,2);
 });
 
-test('new-gun damage table is deliberate at rounds 1, 2, 5 and 9', () => {
+test('burst darts and cannon blasts meet their early, middle and later round damage targets', () => {
   const table=[
-    [1,3,2,1,1,4], [2,5,3,1,1,6], [5,9,5,2,1,11], [9,14,8,2,2,18],
+    [1,2,1,1,1,2], [8,8,5,1,1,9], [15,13,8,2,2,14],
   ];
   for(const [round,bodyDarts,headDarts,bodyBlasts,headBlasts,farBlasts] of table){
     const hp=zombieHealthForRound(round), foam=weapons.foamDartBlaster, confetti=weapons.confettiCannon;
@@ -305,12 +307,13 @@ test('existing nail piercing retains per-target falloff, scoring and wall stoppi
   t.mock.method(Math,'random',()=>0);
   const targets=[target(2),target(3),target(4),target(5)];
   const f=fixture(weapons.nailGun,targets);f.fire();
-  assert.deepEqual(targets.map(z=>z.health),[910,928,946,1000]);
+  assert.deepEqual(targets.map(z=>z.health),
+    weapons.nailGun.pierce.damageFalloff.map(scale=>1000-weapons.nailGun.damage*scale).concat(1000));
   assert.equal(f.hits.length,3);assert.equal(f.tracers.length,1);assert.equal(f.counts().splats,3);
   assert.equal(f.runStats.shotsFired,1);
   const blockedTargets=[target(2),target(4)];
   const blocked=fixture(weapons.nailGun,blockedTargets,[box(-3,0,-3.2,3,4,-3)]);blocked.fire();
-  assert.deepEqual(blockedTargets.map(z=>z.health),[910,1000]);assert.equal(blocked.counts().puffs,1);
+  assert.deepEqual(blockedTargets.map(z=>z.health),[1000-weapons.nailGun.damage,1000]);assert.equal(blocked.counts().puffs,1);
 });
 
 test('existing semi and auto modes retain trigger, reload and ammo behavior',()=>{
@@ -336,11 +339,11 @@ test('crosshair displays the same ADS pellet cone that shots use',()=>{
 
 // --- Confetti Cannon: six-shell tube, shell-by-shell reload, pass-through ---
 
-test('confetti cannon numbers are deliberate (six shells, 12 x 36 pellets, full damage to 4m, 10% at 12m)', () => {
+test('confetti cannon numbers are deliberate (six shells, 12 x 70 pellets, full damage to 4m, 10% at 12m)', () => {
   const d = weapons.confettiCannon;
-  assert.equal(d.magazineSize, 6); assert.equal(d.startingReserve, 24); assert.equal(d.damage, 36); assert.equal(d.pellets.count, 12);
+  assert.equal(d.magazineSize, 6); assert.equal(d.startingReserve, 24); assert.equal(d.damage, 70); assert.equal(d.pellets.count, 12);
   assert.equal(d.falloff.start, 4); assert.equal(d.falloff.end, 12); assert.equal(d.falloff.minMultiplier, 0.1);
-  assert.equal(d.damage * d.pellets.count, 432, 'a point-blank blast');
+  assert.equal(d.damage * d.pellets.count, 840, 'a point-blank blast');
   const sr = d.shellReload;
   assert.deepEqual([sr.progress.start[1], sr.progress.shell[0], sr.progress.shell[1], sr.progress.end[0]], [0.3, 0.3, 0.7, 0.7], 'phase windows join up');
   assert.equal(sr.progress.start[0], 0); assert.equal(sr.progress.end[1], 1);

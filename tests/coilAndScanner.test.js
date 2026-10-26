@@ -218,7 +218,7 @@ test('both guns are wall buys (tests/lateWallGuns.test.js buys them) while still
     assert.ok(dps(coil, 5) > dps(staple, 5), tier.id);
     assert.ok(dps(scanner, 5) > dps(staple, 5), tier.id);
     assert.ok(dps(coil, 5) > dps(at(weapons.rivetRifle), 5), `${tier.id}: heavy sustained-fire role`);
-    assert.ok(dps(nail, 30) > 1.1 * dps(coil, 30), tier.id);
-    assert.ok(dps(nail, 30) > 1.15 * dps(scanner, 30), tier.id);
+    assert.ok(dps(nail, 30) > 0.98 * dps(nail, 5), `${tier.id}: Nail damage holds at range`);
+    assert.equal(scanner.pierce.maxTargets, 4, `${tier.id}: Scanner keeps its crowd role`);
   }
 });

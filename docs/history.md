@@ -2,6 +2,14 @@
 
 > Moved out of CLAUDE.md (verbatim) so the file every session loads stays small. Roughly newest first: what each pass changed, how it was verified, measured numbers and decisions. Read it when you need the background of an area or a past decision; it is not needed to work on the code.
 
+## 26 October 2026 — stronger base weapons against the existing health curve
+
+BO3's readable Zombies GSC starts standard zombies at 150 HP, adds 100 per round through round 9, then adds 10% per round starting at round 10. Mall keeps its softer 150 / +75 / 7.5% curve; the weapon pass aims for comparable body-shot kills and ideal TTK around rounds 5–15. The free Staple stays at 30 damage. Price goes to 70 damage, 24 + 144 ammo; Nail 135; Foam 90 per dart with a 0.16 s pause after each three-dart burst; Cannon 70 per pellet; Rivet 95 at 10 shots/s with a 30-round magazine; Coil 95; Scanner 260. Headshot multipliers, falloff, upgrade multipliers, prices, and zombie health stay as before.
+
+At 5 m, the balance model gives round-8 body kills in 10 Price shots, 5 Nails, 8 Foam darts (three bursts), 2 hip Cannon blasts, 8 Rivets, 8 Coil nails, or 3 charged Scanner shots. A close Cannon blast kills in one. Controlled headless aimed body trials against stationary round-8 Shoppers took Price 0.75 s, Nail 1.02 s, Foam 0.68 s, Rivet and Coil 0.72 s, and Scanner 1.40 s from the first shot. The Cannon needed one aimed blast in that trial. These timings include shots and intervening reloads, but exclude the Scanner's initial charge, aiming, switching, moving enemies, and missed shots.
+
+The proposed Cannon value of 60 damage per pellet only killed a round-8 Shopper with one hip blast at 3 m about 54% of the time in sampled spread. At 70, the sampled rate was about 98%; at 5 m ADS it was dependable. This keeps the close-range promise despite pellet spread. Faster kills also mean fewer +10 nonlethal-hit payouts and more kills per ammo refill; watch round pacing and the economy in human playtesting.
+
 
 Weapon balance pass: Price Gun magazine/reserve 28/168, damage still 28; Rivet damage 58; Foam Dart damage 56;
 Heavy Coil damage 44, full to 15m then 65% at 30m. Fire rates, handling, reloads, prices and zombie health unchanged.

@@ -17,12 +17,14 @@ test('weapon pass: bounded headshot rewards and real round-8/10 combat separate 
       }
       for (const id of ['foamDartBlaster', 'rivetRifle', 'coilNailer'])
         assert.ok(results[id].seconds < results.priceGun.seconds, `${id} is a real upgrade at round ${round}`);
-      assert.equal(results.priceGun.reloads, round === 10 ? 1 : 0, 'smaller Price magazine creates its intended breakpoint');
+      assert.equal(results.priceGun.reloads, 0, 'the early gun still kills one round-10 Shopper per magazine');
       const head = trial.run({ id: 'rivetRifle', round, part: 'head' });
       assert.equal(head.headKills, 1); assert.ok(head.shots < results.rivetRifle.shots);
     }
-    const sustained = trial.run({ id: 'coilNailer', round: 8, count: 5 });
-    assert.equal(sustained.kills, 5); assert.ok(sustained.reloads >= 1, 'large drum still requires a real reload');
+    const latePrice = trial.run({ id: 'priceGun', round: 21 });
+    assert.equal(latePrice.kills, 1); assert.equal(latePrice.reloads, 1, 'Price eventually needs a reload for one body kill');
+    const sustained = trial.run({ id: 'coilNailer', round: 8, count: 9 });
+    assert.equal(sustained.kills, 9); assert.ok(sustained.reloads >= 1, 'large drum still requires a real reload');
     const upgraded = trial.run({ id: 'rivetRifle', round: 17, tier: 'premium' });
     assert.ok(upgraded.kills === 1 && upgraded.reloads === 0, 'equal-tier progression remains viable');
     const longPrice = trial.run({ id: 'priceGun', round: 8, range: 30 });
