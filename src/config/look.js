@@ -276,6 +276,7 @@ export const look = {
       hiring: ['NOW HIRING', 'Full time. All the time. Forever.'],
       layaway: ['LAYAWAY PLAN', 'Pay forever. Take it home never.'],
       fitting: ['FITTING ROOMS', 'Limit 3 items. 0 exits.'],
+      handwritten: ['NO TRY-ONS AFTER CLOSING', 'We close at death. Management.'],
       opening: ['GRAND OPENING', 'EVERYTHING MUST STAY'],
     },
     clutter: {

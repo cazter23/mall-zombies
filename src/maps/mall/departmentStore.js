@@ -12,6 +12,7 @@
 
 import * as THREE from 'three';
 import { buildDepartmentFixtures } from './departmentStoreFixtures.js';
+import { buildDepartmentStoreDetails } from './departmentStoreDetails.js';
 
 export function buildDepartmentStore({ kit, props, layout, thickness: T }) {
   const { box, mat, tiledFloor, wall } = kit;
@@ -43,6 +44,7 @@ export function buildDepartmentStore({ kit, props, layout, thickness: T }) {
   props.boardedVent({ along: 'z', center: S.westVentZ, wallAt: r.minX, facing: 1 });
   // The fixtures (counters, racks, mannequins, fitting rooms, shoe wall, layaway): maps/mall/departmentStoreFixtures.js
   const fixtures = buildDepartmentFixtures({ kit, layout: S });
+  const detailing = buildDepartmentStoreDetails({ kit, layout: S }); // the detail pass: stock, scenes, ceiling, ambience
   const spawns = [
     { name: 'spawn_departmentStore_stockroom', zone: 'departmentStore', position: new THREE.Vector3(S.stockroomDoorX, 0, r.maxZ - 0.8) },
     { name: 'spawn_departmentStore_ventWest', zone: 'departmentStore', position: new THREE.Vector3(r.minX + 0.8, 0, S.westVentZ) },
@@ -51,5 +53,5 @@ export function buildDepartmentStore({ kit, props, layout, thickness: T }) {
   ];
 
   const lamps = S.lamps.map((l) => ({ x: l.x, y: S.height * 0.6, z: l.z }));
-  return { spawns, lamps };
+  return { spawns, lamps, emitters: detailing.emitters };
 }

@@ -445,6 +445,13 @@ export function buildDepartmentStoreLook({ looks, kit, layout, keepClear = [] })
   looks.poster('employee', {}, r.minX + 0.03, 2.25, 14.4, 2.0, 1.33, 'x+');
   looks.poster('banner', { text: sat.opening[0], sub: sat.opening[1], colors: ['#f6e7c8', '#e8b4bc'] }, r.maxX - 0.04, 3.55, (side.from + side.to) / 2, 3.6, 0.9, 'x-');
   looks.poster('sunny', { text: sat.fitting[0], sub: sat.fitting[1] }, F.x1 + 0.03, 1.5, r.maxZ - F.depth / 2, 0.8, 1.2, 'x+');
+  // The counters glow on the floor: pink round cosmetics, violet round fragrance, amber round layaway (painted light, no real lights).
+  const [cosmetics, fragrance] = DS.counters;
+  looks.pool((cosmetics.x0 + cosmetics.x1) / 2, 0.012, cosmetics.z, cosmetics.x1 - cosmetics.x0 + 1.2, 2.6, 'floor', '#ff7ac6', P.floorOpacity * 0.6);
+  looks.pool((fragrance.x0 + fragrance.x1) / 2, 0.012, fragrance.z, fragrance.x1 - fragrance.x0 + 1.2, 2.6, 'floor', '#b57bff', P.floorOpacity * 0.6);
+  looks.pool((DS.layaway.x0 + DS.layaway.x1) / 2, 0.012, DS.layaway.z, DS.layaway.x1 - DS.layaway.x0 + 1.2, 2.6, 'floor', '#ffbf6b', P.floorOpacity * 0.55);
+  // A hand-lettered notice by the gate (the staff's own handwriting on a torn card).
+  looks.poster('notice', { title: sat.handwritten[0], body: sat.handwritten[1], header: '#2b2d42' }, gate.to + 3.2, 1.9, r.minZ + 0.04, 0.9, 0.7, 1);
 
   // Clutter (scatter keeps it off the fixtures; never in the gate, the side door or the counters' vault lanes).
   looks.clutter({

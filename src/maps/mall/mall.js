@@ -57,6 +57,7 @@ import { atmosphere } from '../../config/environment.js';
 import { promenade } from '../../config/promenade.js';
 import { buildPromenadeDetails } from './promenadeDetails.js';
 import { buildDepartmentStore } from './departmentStore.js';
+import { buildSeamDetails } from './seamDetails.js';
 import { departmentStore } from '../../config/departmentStore.js';
 import { cinema } from '../../config/cinema.js';
 import { buildCinema } from './cinema.js';
@@ -859,6 +860,7 @@ export function buildMall(scene, colliders) {
   buildServiceCorridorLook({ looks, kit, layout: LAYOUT, corridor: service, keepClear: hallwayClear.slice(0, -2) });
   buildLevelTwoLook({ looks, layout: LAYOUT, floorY: upperY, hole: escalator.hole, keepClear: hallwayClear.slice(0, -2) });
   buildPromenadeDetails({ kit, looks, layout: LAYOUT.level2, floorY: upperY });
+  buildSeamDetails({ kit, looks, props, floorY: upperY }); // where HOFFMAN'S meets the cinema (the connector's receiving door, the cinema's Promenade front)
   const cinemaDetails = buildCinemaDetails({ kit, looks, layout: LAYOUT.cinema, floorY: upperY });
   dressCinemaStairs({ looks, layout: LAYOUT.cinemaStairs });
   buildCinemaServiceDetails({ kit, looks, cinema: LAYOUT.cinema, stairs: LAYOUT.cinemaStairs, floorY: upperY });
@@ -945,7 +947,7 @@ export function buildMall(scene, colliders) {
       { grade: 'atrium', minX: AT.rect.minX, maxX: AT.rect.maxX, minZ: AT.rect.minZ, maxZ: AT.rect.maxZ },
       ...LAYOUT.level2.sections.map(section => ({ grade: 'level2', ...section, minY: H.height })),
     ],
-    ambience: [...dressing.emitters, ...atrium.emitters, ...cinemaWing.emitters, ...LAYOUT.cinemaStairs.ambience],
+    ambience: [...dressing.emitters, ...atrium.emitters, ...cinemaWing.emitters, ...LAYOUT.cinemaStairs.ambience, ...departmentStoreRoom.emitters],
     cinema: { layout: LAYOUT.cinema, floorY: upperY, presentation: cinemaDetails, stairs: cinemaConnection },
     // Zombie navigation across floors (zombies/navigation.js): the ground floor and level 2, joined by the escalator.
     navigation: { floors: [0, upperY], links: [escalator.link, atrium.link, cinemaConnection.link] },

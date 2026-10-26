@@ -61,15 +61,25 @@ export const departmentStore = {
   // Round clothing racks: the clothes are solid to rackHeight (they stop bullets), the sale topper pole above them is a
   // see-through collider (bullets pass) up to tallMinHeight.
   racks: [
-    { x: -16.6, z: 15.2 }, { x: -12.6, z: 15.2 }, { x: -8.6, z: 15.2 },
-    { x: -16.6, z: 18.6 }, { x: -12.6, z: 18.6 }, { x: -8.6, z: 18.6 },
+    { x: -16.6, z: 15.2, dept: 'coats' }, { x: -12.6, z: 15.2, dept: 'dresses' }, { x: -8.6, z: 15.2, dept: 'suits' },
+    { x: -16.6, z: 18.6, dept: 'sale' }, { x: -12.6, z: 18.6, dept: 'knits' }, { x: -8.6, z: 18.6, dept: 'bare' },
   ],
   rackRadius: 0.62,
   rackHeight: 1.35,
   rackColors: [0xc1121f, 0xf4a259, 0x5b8e7d, 0x8c2f45, 0xf1e4d0, 0x3d5a80, 0xe5989b, 0x2b2d42],
+  // What each rack holds (garment hang length in metres, how many of the 14 hanger slots are filled, colours, price tags).
+  // The topper sign names the department; the satire is in the signs.
+  departments: {
+    coats: { sign: 'COATS · FOR THE DRAFT', length: 1.1, filled: 12, colors: [0x2b2d42, 0x6d4c3d, 0x8c2f45, 0x3d5a80], tags: false },
+    dresses: { sign: 'DRESSES · ONE SIZE FITS DEAD', length: 0.95, filled: 12, colors: [0xe5989b, 0xf4a259, 0x5b8e7d, 0xc9a14a], tags: false },
+    suits: { sign: 'BUSINESS CASUAL · FOREVER', length: 0.85, filled: 11, colors: [0x2b2d42, 0x514357, 0x6e6a60, 0x3d4a5c], tags: false },
+    sale: { sign: 'MARKED DOWN FROM FOREVER', length: 0.78, filled: 14, colors: [0xc1121f, 0xf4a259, 0xffd23f, 0xf1e4d0], tags: true },
+    knits: { sign: 'KNITS · SOME ARE STILL WARM', length: 0.7, filled: 12, colors: [0x5b8e7d, 0xe8b4bc, 0xf1e4d0, 0x8c2f45], tags: false },
+    bare: { sign: 'NEW ARRIVALS · SOON', length: 0.8, filled: 3, colors: [0xf1e4d0, 0x2b2d42], tags: false },
+  },
   // Back: three fitting rooms (one solid block against the north-west corner; zombies come out of the middle curtain),
   // the shoe wall along the east wall, and the LAYAWAY counter (vaultable).
-  fittingRooms: { x0: -20, x1: -14.2, depth: 2.4, height: 2.4, booths: 3, curtain: 0x8c2f45 },
+  fittingRooms: { x0: -20, x1: -14.2, depth: 2.4, height: 2.4, booths: 3, curtain: 0x8c2f45, openBooth: 1 }, // (the open booth's curtain is pulled aside)
   shoeWall: { z0: 17.6, z1: 25.6, depth: 0.5, height: 2.2 },
   layaway: { x0: -13.4, x1: -10.4, z: 22.4 },
 };

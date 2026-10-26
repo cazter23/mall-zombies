@@ -49,7 +49,10 @@ triangles against routes/vents/vaults, resource disposal, batching/geometry budg
 `tests/departmentStore.test.js` covers HOFFMAN'S: real F-hold buys of the 1250 gate (hallway) and the 1250 side door (start room,
 before the start shutter; from either side, never through the wall), sealed until bought, spawns clear and reachable, a real walk in,
 routes both ways through both doors, lanes and clear straight runs, real vaults over all three counters, "nothing to perch on"
-(every exposed top is a step, a vaultable counter or >= 2.1 m, even jumping from a counter top), a 12-zombie horde, culling, grade, horror.
+(every exposed top is a step, a vaultable counter or >= 2.1 m, even jumping from a counter top), a 12-zombie horde, culling, grade, horror, and that
+nothing else lies on a face of the store's walls. `tests/departmentStoreDetails.test.js` covers its detail pass: departments on every rack, only two
+added colliders (the shelving, 2.2 m), nothing over 12 cm in any lane / door approach / buy spot / spawn (checked on the real triangles), floor
+litter, the open/taped fitting rooms, ambience emitters, mesh/triangle budgets and the cinema seam (receiving door, one-sheets, ticket stubs).
 `tests/cinema.test.js` covers the priced two-sided F purchase/reset, sealed unlock, upper-floor spawns, standing loop traversal,
 display vault, live zombie routes through both entrances/front crossover, local selection, vulnerable seat perches and slide
 clock/settings/reset/disposal. `tests/cinemaDetails.test.js` checks real triangle clearance, batching/resource budgets and all
@@ -552,7 +555,11 @@ src/
     mall/departmentStore.js  HOFFMAN'S room (floor, walls, roof, panels, stockroom door + west vent, spawns); config/departmentStore.js
                         has every number. mall/departmentStoreFixtures.js: vaultable cosmetics/fragrance/layaway counters, round
                         clothing racks (see-through topper colliders), mannequins on plinths, fitting rooms, shoe wall. Its look:
-                        zoneLooks.js buildDepartmentStoreLook + look.departmentStore.
+                        zoneLooks.js buildDepartmentStoreLook + look.departmentStore. mall/departmentStoreDetails.js (data: config/
+                        departmentStoreDetails.js): the detail pass: wall shelving (knits west, layaway bags north: the only colliders), counter-top
+                        scenes, fitting-room scene, wall mirror + busts, brass beams + hung banner + sprinklers, interrupted-shopping litter, ambience
+                        emitters. mall/seamDetails.js: the receiving door on the stair connector's east wall and the Promenade side of the cinema's
+                        front (now-showing one-sheets, ticket stubs).
     mall/promenadeDetails.js  Fixed upper-floor dressing: low sunset medallion, perimeter upholstery, directory/phones/magazines,
                         overhead signs/diffuser, Build-A-Blaster renovation frontage, closed Pretzel Palace counter and shoe tickets.
                         Called with the existing look kit; no new collision/lights/purchases/timers. Kit owns resources; static parts batch.
@@ -788,6 +795,11 @@ also join the outer areas into loops. A shortcut opens BOTH adjoining zones, and
   spawn out of the middle curtain), LAYAWAY counter (vaultable), shoe wall; stockroom door + west vent spawns. Collision rule:
   counters 0.95 m and vaultable, everything else >= 2.1 m (a counter-top jump peaks ~2.0 m). Cream/burgundy/brass look,
   ALL SALES FINAL. SO ARE YOU. The hallway's north-west vent moved to x -7 and the directory over it for the gate.
+  Detail pass: each of the six racks is a department (COATS, DRESSES, BUSINESS CASUAL, MARKED DOWN FROM FOREVER with price tags, KNITS,
+  a nearly bare NEW ARRIVALS) with a two-sided sign; folded-knit shelving on the west wall (z 7.7..12.9) and layaway bags on the north wall
+  (x -13.9..-10.2), both solid 2.2 m; the middle fitting room's curtain pulled aside onto a mirror, the east booth taped off, scratches on
+  the west curtain; a full-length wall mirror, wall busts, brass-edged beams with a hung EVERYTHING MUST STAY banner, sprinklers, diffusers;
+  a tipped mannequin, a dropped bag, a lone shoe, packing peanuts; muffled music + air handling (existing ambience voices).
 - Sunset Cinema (zone 'cinema', separate 1500-point shutter off the Promenade's west wall at x -20.3..-20, z -4.1..-1.7):
   floor y 6.3, 4.8m ceiling height. Lobby x -42..-20.3, z -10.5..5.5; flat Screen 1 x -42..-24, z 5.8..27.8;
   projection passage x -23.7..-20.3, z 5.8..27.8. A 3.4m auditorium doorway and 3m passage entrance connect to the lobby;
@@ -1082,6 +1094,11 @@ HOFFMAN'S DEPARTMENT STORE (built in a worktree in 5 steps: shell + gate, fixtur
 see Map. Wiring in mall.js: LAYOUT.departmentStore (= config/departmentStore.js), zone, 2 doors, spawns, lamps (2), cullAreas +
 2 cullPortals, gradeZones ('departmentStore' grade in look.grading), a horror area, a benchmark shot. Door count 14 (with the cinema's two). Measured from its
 benchmark view: 226 draw calls / 36k triangles (hallway 639 / 101k). The Barcode Scanner moved here from Byte Me's pod.
+HOFFMAN'S DETAIL PASS + SEAM: see Map. The store view went 226 -> 455 draw calls, 36k -> 54k triangles (hallway: 739 / 89k); the pass itself is
+~310 static meshes / 4.4k triangles. Beside it: a receiving door on the stair connector wall (the store's west wall), now-showing one-sheets and
+ticket stubs on the Promenade side of the cinema's front, and HOFFMAN'S / CINEMA on the hallway directory. FOUND: Three.js makes object ids
+with Math.random(), so a test that seeds Math.random BEFORE building the map is tied to the map's mesh count (cinemaStairs.test.js did: its
+horde scenarios flipped when meshes were added); seed AFTER building. The cinema's own detail pass (Codex) was already complete.
 
 LATE WALL GUNS: the Rivet Rifle, Heavy Coil Nailer and Barcode Scanner are now real wall buys (economy.wallBuys, 'debugOnly' gone;
 H still cycles them). Prices: Rivet 1500 / ammo 750 (275 sustained body DPS up close),

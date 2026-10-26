@@ -119,7 +119,7 @@ export function buildMallAtmosphere(kit, layout, { service, ceilingHole, ceiling
   sign('TRADING HOURS: UNTIL FURTHER NOTICE', { x: -4.94, y: 2.65, z: 14.9, width: 2.0, height: 0.25, facing: 'x+' });
   // (The directory hung at x -18 until HOFFMAN'S gate took that stretch of wall: now over the hallway's north-west vent.)
   sign('SUNSET GALLERIA / DIRECTORY', { x: -6.9, y: 2.6, z: 5.95, width: 2.3, height: 0.34, facing: -1 });
-  for (const [i, text] of ['FOOD COURT  -  SOUTH', 'MEGA MART  -  EAST', 'CUSTOMER SERVICE  -  CENTRE'].entries()) {
+  for (const [i, text] of ['FOOD COURT  -  SOUTH', 'MEGA MART  -  EAST', "HOFFMAN'S  -  NORTH-WEST", 'CINEMA  -  UPSTAIRS, WEST'].entries()) {
     sign(text, { x: -6.9, y: 2.19 - i * 0.29, z: 5.94, width: 2.3, height: 0.25, facing: -1,
       background: '#eee1c1', color: '#2e5158' });
   }

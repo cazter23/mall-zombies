@@ -126,23 +126,31 @@ export function buildDepartmentFixtures({ kit, layout: S }) {
   const ring = new THREE.TorusGeometry(R - 0.08, 0.018, 4, 16);
   const pole = new THREE.CylinderGeometry(0.028, 0.028, 1, 6);
   const base = new THREE.CylinderGeometry(0.34, 0.38, 0.06, 8);
-  const garment = new THREE.BoxGeometry(0.34, 0.78, 0.05);
+  const tagGeo = new THREE.BoxGeometry(0.07, 0.1, 0.012);
   S.racks.forEach((k, i) => {
+    const dept = S.departments[k.dept];
     addCollider(k.x - R, 0, k.z - R, k.x + R, S.rackHeight, k.z + R); // the clothes (stop bullets)
     addCollider(k.x - R, S.rackHeight, k.z - R, k.x + R, tall, k.z + R).ignoreShots = true; // the topper: nothing to stand on
     shape(base, CHROME, k.x, 0.03, k.z);
     shape(pole, CHROME, k.x, 1.05, k.z).scale.y = 2.0;
     shape(ring, CHROME, k.x, S.rackHeight - 0.05, k.z, 0, { rx: Math.PI / 2 });
-    const colors = [S.rackColors[i % S.rackColors.length], S.rackColors[(i + 3) % S.rackColors.length]];
+    // Garments hang from the ring: the department sets their length, colours and how picked over the rack is.
+    const garment = new THREE.BoxGeometry(0.34, dept.length, 0.05);
     const n = 14;
+    const keep = new Set();
+    while (keep.size < dept.filled) keep.add(Math.floor(rand() * n));
     for (let j = 0; j < n; j++) {
-      if (rand() < 0.12) continue; // a few gaps: picked over
+      if (!keep.has(j)) continue;
       const a = (j / n) * Math.PI * 2 + rand() * 0.08;
       const rr = R - 0.1;
-      shape(garment, colors[j % 2], k.x + Math.cos(a) * rr, S.rackHeight - 0.45, k.z + Math.sin(a) * rr, -a + Math.PI / 2, { rz: (rand() - 0.5) * 0.08 });
+      const gx = k.x + Math.cos(a) * rr, gz = k.z + Math.sin(a) * rr;
+      shape(garment, dept.colors[j % dept.colors.length], gx, S.rackHeight - 0.07 - dept.length / 2, gz, -a + Math.PI / 2, { rz: (rand() - 0.5) * 0.08 });
+      if (dept.tags) shape(tagGeo, 0xffd23f, gx + Math.cos(a) * 0.04, S.rackHeight - 0.2, gz + Math.sin(a) * 0.04, -a + Math.PI / 2);
     }
-    // The topper: a SALE card on the pole
-    box(k.x - 0.26, 1.82, k.z - 0.015, k.x + 0.26, 2.06, k.z + 0.015, mat(i % 2 ? 0xc1121f : BURGUNDY), deco);
+    // The topper: the department's name, readable from both sides of the rack.
+    for (const facing of [-1, 1]) {
+      sign(dept.sign, { x: k.x, y: 1.95, z: k.z + facing * 0.02, width: 1.02, height: 0.26, facing, background: i % 2 ? '#8c2f45' : '#2b2d42', color: '#f6e7c8' });
+    }
   });
 
   // --- Fitting rooms (north-west corner): one solid block, three curtained booths facing south ------------------------
@@ -153,8 +161,12 @@ export function buildDepartmentFixtures({ kit, layout: S }) {
   for (let b = 0; b < F.booths; b++) {
     const bx0 = F.x0 + b * boothW + 0.18;
     const bx1 = F.x0 + (b + 1) * boothW - 0.18;
-    box(bx0, 0.12, front - 0.03, bx1, 2.05, front - 0.01, mat(F.curtain), deco); // curtain
-    for (let x = bx0 + 0.12; x < bx1 - 0.05; x += 0.16) box(x, 0.12, front - 0.045, x + 0.05, 2.05, front - 0.03, mat(0x6d2638), deco); // folds
+    // The curtain; the open booth's is pulled to both sides (bunched 0.5 m each), leaving a gap onto the booth (details pass).
+    const spans = b === F.openBooth ? [[bx0, bx0 + 0.5], [bx1 - 0.5, bx1]] : [[bx0, bx1]];
+    for (const [u0, u1] of spans) {
+      box(u0, 0.12, front - 0.03, u1, 2.05, front - 0.01, mat(F.curtain), deco);
+      for (let x = u0 + 0.12; x < u1 - 0.05; x += 0.16) box(x, 0.12, front - 0.045, x + 0.05, 2.05, front - 0.03, mat(0x6d2638), deco); // folds
+    }
     box(bx0 - 0.05, 2.07, front - 0.06, bx1 + 0.05, 2.11, front - 0.01, mat(CHROME), deco); // rail
     box((bx0 + bx1) / 2 - 0.12, 2.18, front - 0.02, (bx0 + bx1) / 2 + 0.12, 2.32, front - 0.01, mat(GOLD), deco); // booth number plate
   }

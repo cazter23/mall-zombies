@@ -65,7 +65,7 @@ test('a real standing player walks the Service Corridor–cinema route up and do
 });
 
 test('all zombie types traverse the stairs in both directions, with the original escalator and cinema front still shut', ctx => {
-  ctx.mock.method(Math, 'random', seededRandom(1986)); const t = fixture(true), { g } = t; g.rounds.jumpTo(6);
+  const t = fixture(true), { g } = t; ctx.mock.method(Math, 'random', seededRandom(1986)); /* (seed after the build: ids come from Math.random) */ g.rounds.jumpTo(6);
   for (const type of ['shopper', 'mallWalker', 'cartPusher']) for (const down of [false, true]) {
     g.zombies.clear();
     const target = new THREE.Vector3(...(down ? route[0] : route.at(-1)));
@@ -97,7 +97,7 @@ test('culling connects both landings through the stairwell, and a closed lower s
 });
 
 test('a mixed horde clears the lower turn and upper exit without anyone becoming stuck in the staircase', ctx => {
-  ctx.mock.method(Math, 'random', seededRandom(4851)); const t = fixture(true), { g } = t; g.rounds.jumpTo(7);
+  const t = fixture(true), { g } = t; ctx.mock.method(Math, 'random', seededRandom(4851)); /* (seed after the build: ids come from Math.random) */ g.rounds.jumpTo(7);
   const target = new THREE.Vector3(-39, Y, -7.2); stand(t, ...target.toArray());
   const horde = [], arrived = new Map();
   for (let i = 0; i < 12; i++) {
