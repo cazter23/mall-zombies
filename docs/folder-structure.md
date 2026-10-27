@@ -510,7 +510,8 @@ src/
                         markCollidersChanged(colliders) after adding/removing a collider at runtime; colliderSignature()
     shutter.js          createShutter(): roll-up barrier with its own Box3 collider (open/close/toggle/update); marks
                         collider changes. mesh = cropped moving curtain + hardware; frame = fixed guides/housing (mapKit adds both).
-                        Constant slat pitch in X/Z walls, hidden curtain when fully rolled up. config/shutters.js owns finishes/dimensions.
+                        Constant slat pitch in X/Z walls, hidden curtain when fully rolled up. Curtain and frame stay on the always-drawn
+                        layer so a closed doorway cannot cull its own barrier. config/shutters.js owns finishes/dimensions.
     textures.js         Procedural canvas textures (floor tile, shop sign, shutter, muzzle flash burst, wall-buy chalk). No image files.
     atmosphereTextures.js Soft footprint alpha and deterministic tile roughness (no image downloads)
                         seededRandom(seed): deterministic random (also used for shelf stock)

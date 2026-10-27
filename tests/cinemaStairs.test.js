@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { headlessGame } from './helpers/headlessGame.js';
 import { cinemaStairs as S } from '../src/config/cinemaStairs.js';
 import { seededRandom } from '../src/world/textures.js';
-import { areaAt, visibleAreas } from '../src/fx/roomCulling.js';
+import { areaAt, createRoomCulling, visibleAreas } from '../src/fx/roomCulling.js';
 
 const Y = 6.3;
 function fixture(open = false) {
@@ -94,6 +94,23 @@ test('culling connects both landings through the stairwell, and a closed lower s
   camera.position.set(-21.8, 1.6, 5.3); camera.lookAt(-21.8, 1.6, 2); camera.updateMatrixWorld();
   assert.ok(!visibleAreas({ ...params, isOpen: () => false }).has('serviceCorridor'));
   assert.ok(visibleAreas({ ...params, isOpen: () => true }).has('serviceCorridor')); g.map.dispose();
+});
+
+test('the closed stair shutter remains rendered from the Service Corridor side', () => {
+  const t = fixture(), { g } = t;
+  const shutter = g.map.cinema.stairs.door.barrier.mesh;
+  const camera = new THREE.PerspectiveCamera(75, 16 / 9, .05, 200);
+  camera.position.set(-21.8, 1.6, 2);
+  camera.lookAt(-21.8, 1.6, 5);
+  const culling = createRoomCulling({ areas: g.map.cullAreas, portals: g.map.cullPortals,
+    camera, isOpen: id => g.map.doors.find(d => d.id === id)?.isOpen ?? true });
+  culling.tag(g.map.group);
+  culling.update();
+  assert.equal(shutter.visible, true);
+  assert.ok(culling.visible.has('serviceCorridor'));
+  assert.ok(!culling.visible.has('cinemaReturn'), 'the closed door hides the room beyond');
+  assert.ok(camera.layers.test(shutter.layers), 'the camera must still draw the closed shutter');
+  g.map.dispose();
 });
 
 test('a mixed horde clears the lower turn and upper exit without anyone becoming stuck in the staircase', ctx => {

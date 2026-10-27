@@ -59,6 +59,12 @@ export function createShutter({ name, minX, maxX, minZ, maxZ, minY = 0, height, 
     const keyhole = box('shutter_keyhole', [.009, .023, .008], [.22, 0, face * (thickness * .25 + .027)], dark, fittings);
     handles.push(plate, grip, lock, keyhole);
   }
+  // A closed shutter can lie just inside the room it seals. Keep the curtain and
+  // frame on the always-drawn layer so room culling cannot hide the barrier from
+  // someone standing on the opposite side of its closed portal.
+  for (const part of [mesh, frame]) part.traverse((o) => {
+    if (o.isMesh) o.userData.alwaysVisible = true;
+  });
   const positions = geometry.attributes.position, uv = geometry.attributes.uv;
   const closedY = Float32Array.from(positions.array.filter((_, i) => i % 3 === 1));
   const closedV = Float32Array.from(uv.array.filter((_, i) => i % 2 === 1));

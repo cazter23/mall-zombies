@@ -42,7 +42,7 @@ clock/settings/reset/disposal. `tests/cinemaDetails.test.js` checks real triangl
 three room-culling areas/portals. `coplanar.test.js` includes the cinema and its shared Promenade wall.
 `tests/cinemaStairs.test.js` covers the lower two-sided F purchase/discount/reset, independent shared-zone holders, sealed
 unlocks, real player walking/sliding, all three zombie types up/down and a mixed 12-zombie horde without rescue teleports,
-and stairwell/return culling.
+and stairwell/return culling, including the closed lower shutter staying visible from the Service Corridor.
 `tests/cinemaVisuals.test.js` protects service-detail triangle clearance, geometry/batching budgets, resource disposal,
 visible-screen upload limits, ambient/clutter controls, pause/death/reset and spatial ambience. `tests/ambientPulse.test.js`
 checks the quiet periodic projector relay buffer, its silent intervals and unchanged random stream.
