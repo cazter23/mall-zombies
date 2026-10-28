@@ -2,6 +2,19 @@
 
 > Moved out of CLAUDE.md (verbatim) so the file every session loads stays small. Roughly newest first: what each pass changed, how it was verified, measured numbers and decisions. Read it when you need the background of an area or a past decision; it is not needed to work on the code.
 
+## 28 October 2026 — Mannequin enemy
+
+Added a faceless plastic mannequin from round 8 (5% of spawns, 8% from round 12), capped at two living actors.
+Excess selections become Shoppers without increasing the round budget. Health is 0.8x Shopper, speed 5.8 m/s,
+base kill payout 100. Attacks deal 40 with a fixed 0.45s wind-up and 1s recovery.
+Watching the head or chest through a clear world sightline stops movement and interrupts attacks; looking away
+plays a joint click and allows movement after 0.3s. Fixed-tick aim, base FOV and camera aspect drive observation;
+ADS and renderer culling cannot release it. Screen-edge padding has hysteresis. Other actors do not occlude sight.
+Watched actors resist crowd pushing and skip stationary rescue; gravity, forced stagger, death and removal still run.
+A separate articulated plastic model preserves limb poses while frozen, with hard footsteps and joint sounds.
+No map geometry or weapon balance changed. New mannequin tests cover observation, release/attacks, crowd/rescue,
+health/mix/cap/quota, death/reset/disposal, real cinema stair traversal and pause.
+
 ## 26 October 2026 â€” wall-buy progression: Coil into Cinema
 
 Moved the single Heavy Coil Nailer wall buy from the Promenade to the Cinema projection passage's east wall at

@@ -139,3 +139,7 @@ The parking detail checks protect the front/rear fighting lanes, both central ga
 geometry; confirm real trolley collision and complete collider cleanup; and verify haze/sign comfort settings, reset and
 shared-texture disposal. Atmosphere tests cover authored loop gain/pulses, local-event range/unlock/pause/reset/no-backlog
 behavior, and Web Audio source/panner cleanup for sign rattle, indistinct PA and distant traffic recipes.
+
+`tests/mannequin.test.js` covers fixed-tick observation (aspect/pitch/edges/ADS and world occlusion), release delay,
+attack cancellation and real damage, frozen crowd/rescue protection, kill payouts/reset, round mix/health/live cap/quota,
+plastic pose retention/resource disposal, real cinema stairs and pause.

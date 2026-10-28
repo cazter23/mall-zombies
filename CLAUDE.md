@@ -227,7 +227,7 @@ adjoining areas are owned. No cascading unlocks. Nine area purchases total 9500;
 
 ## Design reference (decisions made so far)
 - **Zombie roster, with intro rounds:** Shopper (round 1), Mall Walker (4, fast, low HP),
-  Cart Pusher (6, telegraphed charge), Mannequin (8, frozen while looked at), Mascot (10, tanky, 5x HP).
+  Cart Pusher (6, telegraphed charge), Mannequin (8, frozen while looked at; implemented), Mascot (10, tanky, 5x HP).
 - **Weapons by store:** start with a staple gun pistol; wall buys like baseball bat, nail gun,
   foam dart blaster, confetti cannon, leaf blower, water cannon, taser rifle, condiment cannon,
   balloon launcher, tennis ball launcher.

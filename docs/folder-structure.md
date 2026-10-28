@@ -214,6 +214,8 @@ src/
                         sits 9cm in front of the muzzle so it shows past the left hand at the hip; in ADS it
                         goes wide/flat so the rays poke out around the gun, below the crosshair
   zombies/
+    observation.js     Fixed-tick head/chest sight rays against world colliders with base FOV/aspect and edge hysteresis.
+    mannequinModel.js  Articulated faceless plastic model, joint seams/inventory tag, frozen pose retention and owned disposal.
     navigation.js       createNavigation(colliders, agent, { floors, links }): flow field on a 0.5m grid built from colliders, one LAYER per floor
                         (floors = their walking heights, default [0]: walkable where a box top sits at that height, blocked by anything solid
                         between ankle and head above it) joined by LINKS (a ramp/stairs: { lower: {x,z,floor}, upper: {x,z,floor}, halfWidth }):

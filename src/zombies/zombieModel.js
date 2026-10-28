@@ -19,6 +19,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { shoppers } from '../config/shoppers.js';
 import { chooseShopperAppearance } from './shopperAppearance.js';
 import { buildCart } from './cartModel.js';
+import { createMannequinModel } from './mannequinModel.js';
 import { cartLean } from './cartPose.js';
 
 function deformIndexedBox(segX, segY, segZ, fn) {
@@ -170,6 +171,7 @@ const SHAPE = {
 };
 
 export function createZombieModel(type, { random = Math.random, appearance } = {}) {
+  if (type.plastic) return createMannequinModel(type);
   const materials = [];
   const materialCache = new Map(); // per zombie: hit flashes must never affect its neighbours
   const ownedGeometry = [];

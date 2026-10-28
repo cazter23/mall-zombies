@@ -289,6 +289,14 @@ export const audio = {
     },
 
     // Cart Pusher: a squealing wheel while it rolls...
+    mannequinClick: { volume: .45, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 1800, q: 3, gain: .4, attack: .002, decay: .045 },
+      { type: 'tone', wave: 'sine', freq: 650, freqEnd: 310, gain: .25, attack: .002, decay: .07 },
+    ] },
+    mannequinStep: { volume: .3, layers: [
+      { type: 'noise', filter: 'highpass', freq: 1200, gain: .25, attack: .002, decay: .035 },
+      { type: 'tone', wave: 'sine', freq: 260, freqEnd: 150, gain: .35, attack: .002, decay: .055 },
+    ] },
     cartSqueak: {
       volume: 0.35,
       layers: [

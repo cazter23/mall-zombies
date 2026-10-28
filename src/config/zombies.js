@@ -256,7 +256,19 @@ const cartPusher = {
   },
 };
 
-export const zombieTypes = { shopper, mallWalker, cartPusher };
+const mannequin = {
+  ...shopper, id: 'mannequin', speed: 5.8, speedVariation: 0,
+  gaits: null, gaitsByRound: null, acceleration: 16,
+  observation: { releaseSeconds: .3, edgePadding: 2, edgeReleasePadding: 5, sampleHeights: [1.6, 1.1] },
+  attack: { ...shopper.attack, windupSeconds: .45, minWindupSeconds: .45,
+    windupShrinkPerRound: 0, recoverSeconds: 1, missRecoverSeconds: 1 },
+  plastic: { color: 0xe9dfc8, jointColor: 0x6b6464, tagColor: 0xc45177, roughness: .32 },
+  splatColors: [0xe9dfc8, 0xcfc3aa],
+  sounds: { step: { name: 'mannequinStep', interval: .4, chance: 1, maxDistance: 16 },
+    release: { name: 'mannequinClick', maxDistance: 20 } },
+  introBanner: { kicker: 'Display advisory', text: 'Mannequins move when you look away. Keep them in sight.' },
+};
+export const zombieTypes = { shopper, mallWalker, cartPusher, mannequin };
 
 // How a crowd moves together: spacing, queueing, spreading out, surrounding the player.
 export const zombieCrowd = {

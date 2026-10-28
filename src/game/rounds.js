@@ -90,8 +90,10 @@ export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null 
       if (state === 'active') {
         spawnTimer -= dt;
         if (toSpawn > 0 && spawnTimer <= 0 && zombies.aliveCount < maxAliveForRound(round)) {
-          const typeId = nextType();
-          if (zombies.spawn(typeId)) {
+          let typeId = nextType();
+          const spawned = zombies.spawn(typeId);
+          if (spawned) {
+            typeId = spawned.type?.id ?? typeId;
             toSpawn -= 1;
             spawnedThisRound += 1;
             if (!seenTypes.has(typeId)) {

@@ -18,6 +18,7 @@ export const economy = {
   killValues: {
     shopper: 60,
     mallWalker: 60,
+    mannequin: 100,
     cartPusher: 130, // 1.8x a Shopper's health (an even per-bullet payout would be 108), a little extra for how dangerous it is
   },
 
@@ -46,6 +47,10 @@ export const economy = {
       ],
       healthMultiplier: 1.8, // (was 2.2: a bullet sponge by round 12)
       introSpawnIndex: 1,
+    },
+    mannequin: {
+      fromRound: 8, shareByRound: [{ fromRound: 8, share: .05 }, { fromRound: 12, share: .08 }],
+      healthMultiplier: .8, introSpawnIndex: 3, maxAlive: 2,
     },
   },
 

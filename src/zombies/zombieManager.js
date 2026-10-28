@@ -10,7 +10,7 @@
 import * as THREE from 'three';
 import { feel } from '../config/feel.js';
 import { zombieTypes, zombieCrowd, zombieFailsafe, zombieSpawn } from '../config/zombies.js';
-import { zombieHealthFor } from '../config/economy.js';
+import { economy, zombieHealthFor } from '../config/economy.js';
 import { createNavigation } from './navigation.js';
 import { overlapsSolid } from '../world/collision.js';
 import { Zombie } from './zombie.js';
@@ -119,11 +119,11 @@ export function createZombieManager({
     scratch.copy(zombie.position);
     scratch.y += zombie.type.hitbox.bodyTop * 0.75;
     effects.splat(scratch, UP, zombie.type.splatColors, zombie.type.deathSplatCount, {
-      flesh: true,
+      flesh: !zombie.type.plastic,
       speedScale: zombie.deathImpulse ?? 1,
       direction: zombie.lastHitDir ?? null,
     });
-    effects.pool(zombie.position.x, zombie.position.z); // (red splatter only)
+    if (!zombie.type.plastic) effects.pool(zombie.position.x, zombie.position.z); // (red splatter only)
     if (onKill) onKill(zombie);
   }
 
@@ -163,7 +163,7 @@ export function createZombieManager({
       const nx = dx / len;
       const nz = dz / len;
       if (!shoveIfClear(p, nx * push, nz * push, feel.player.radius, player.height)) {
-        shoveIfClear(z.position, -nx * push, -nz * push, z.type.radius, z.type.height);
+        if (!z.frozen) shoveIfClear(z.position, -nx * push, -nz * push, z.type.radius, z.type.height);
       }
     }
   }
@@ -192,8 +192,8 @@ export function createZombieManager({
           const nz = dz / d;
           const overlap = minSpacing - Math.min(d, minSpacing);
           const half = overlap / 2;
-          const aMoved = shoveIfClear(a.position, -nx * half, -nz * half, a.type.radius, a.type.height);
-          const bMoved = shoveIfClear(b.position, nx * (aMoved ? half : overlap), nz * (aMoved ? half : overlap), b.type.radius, b.type.height);
+          const aMoved = !a.frozen && shoveIfClear(a.position, -nx * half, -nz * half, a.type.radius, a.type.height);
+          const bMoved = !b.frozen && shoveIfClear(b.position, nx * (aMoved ? half : overlap), nz * (aMoved ? half : overlap), b.type.radius, b.type.height);
           if (!bMoved && aMoved) shoveIfClear(a.position, -nx * half, -nz * half, a.type.radius, a.type.height);
         }
       }
@@ -209,6 +209,9 @@ export function createZombieManager({
     const fs = zombieFailsafe;
     for (const z of zombies) {
       if (!z.isAlive || z.state === 'spawning') continue;
+      if (z.frozen && z.position.y >= fs.fallOutHeight) {
+        z.stuckTimer = 0; z.stuckFrom.x = z.position.x; z.stuckFrom.z = z.position.z; continue;
+      }
       if (z.position.y < fs.fallOutHeight) {
         rescue(z);
         continue;
@@ -344,6 +347,8 @@ export function createZombieManager({
     // Spawn one zombie of `typeId` at a good spawn point (or at `at`, a Vector3, if given).
     // Returns the zombie, or null if no spawn point is usable right now.
     spawn(typeId = 'shopper', at = null) {
+      const cap = economy.zombieMix[typeId]?.maxAlive;
+      if (cap && zombies.filter(z => z.isAlive && z.type.id === typeId).length >= cap) typeId = 'shopper';
       const type = zombieTypes[typeId];
       const point = at ? null : pickSpawnPoint(type);
       if (!at && !point) return null;

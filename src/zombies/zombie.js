@@ -29,6 +29,7 @@ import { feel } from '../config/feel.js';
 import { zombieCrowd } from '../config/zombies.js';
 import { moveAndCollide } from '../world/collision.js';
 import { createZombieModel } from './zombieModel.js';
+import { isObserved } from './observation.js';
 import { applyCartHitboxes } from './cartPose.js';
 
 const ease = (t) => t * t * (3 - 2 * t);
@@ -53,6 +54,9 @@ export class Zombie {
     this.prevYaw = yaw;
     this.speed = speed * (1 + (Math.random() * 2 - 1) * type.speedVariation);
 
+    this.observed = false;
+    this.observationHold = 0;
+    this.frozen = false;
     this.state = 'spawning';
     this.stateTime = 0;
     this.flinchTimer = 0;
@@ -233,6 +237,25 @@ export class Zombie {
     const attack = this.type.attack;
     const charge = this.type.charge;
 
+    this.frozen = false;
+    if (this.type.observation && this.isAlive && this.state !== 'spawning') {
+      const wasObserved = this.observed;
+      this.observed = ctx.canAttack && isObserved(this, ctx.player, ctx.colliders);
+      if (this.observed) this.observationHold = this.type.observation.releaseSeconds;
+      else this.observationHold = Math.max(0, this.observationHold - dt);
+      if (wasObserved && !this.observed) this.playSound(this.type.sounds.release, ctx);
+      this.frozen = this.observed || this.observationHold > 0;
+      if (this.frozen && this.staggerTimer <= 0) {
+        if (this.state === 'windup' || this.state === 'swing') {
+          if (this.state === 'swing') this.attackCooldown = Math.max(this.attackCooldown, attack.recoverSeconds);
+          this.setState('chasing');
+        }
+        this.velocity.x = this.velocity.z = 0;
+        this.standStill(dt, ctx); // gravity continues, including on stairs
+        this.updateHitboxes();
+        return;
+      }
+    }
     if (this.isAlive && this.staggerTimer > 0) {
       this.staggerTimer = Math.max(0, this.staggerTimer - dt);
       this.velocity.x *= Math.exp(-this.staggerDrag * dt);
@@ -601,6 +624,8 @@ export class Zombie {
   // Start over at another spot (the stuck-zombie failsafe): rise out of the floor again,
   // keeping its health.
   respawnAt(position, yaw) {
+    this.observed = this.frozen = false;
+    this.observationHold = 0;
     this.position.copy(position);
     this.prevPosition.copy(this.position);
     this.velocity.set(0, 0, 0);
