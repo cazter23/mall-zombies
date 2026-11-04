@@ -175,6 +175,24 @@ export function createPlayerBody(scene) {
   buckle.position.set(0, 0, -0.49);
   belt.add(buckle);
 
+  const addDetail = (parent, color, size, position) => {
+    const detail = makeBoxMesh(color);
+    detail.scale.set(...size);
+    detail.position.set(...position);
+    parent.add(detail);
+    return detail;
+  };
+  // The shift card peeks over the waistband, where it can be seen from above.
+  const card = addDetail(torso, c.shirtStripe, [.19, .25, .025], [.24, -.26, -.49]);
+  card.name = 'shiftCard';
+  card.rotation.z = -.14;
+  addDetail(card, c.shoeAccent, [.82, .22, .2], [0, .30, -.55]);
+  addDetail(card, c.belt, [.58, .07, .2], [0, -.12, -.55]);
+  addDetail(belt, c.uniformGold, [.07, .84, .05], [-.29, -.02, -.50]);
+  const key = addDetail(belt, c.uniformGold, [.029, 1.55, .05], [-.29, -.88, -.51]);
+  key.rotation.z = -.08;
+  addDetail(belt, c.uniformGold, [.05, .32, .04], [-.26, -1.50, -.51]);
+
   const pelvis = new THREE.Mesh(
     torsoGeo,
     new THREE.MeshStandardMaterial({ color: c.pants, roughness: 0.8, flatShading: true }),
@@ -189,11 +207,22 @@ export function createPlayerBody(scene) {
     const thigh = makeFacetedLimbMesh(c.pants, 1.0, 0.84);
     const shin = makeFacetedLimbMesh(c.pants, 0.94, 0.76);
     const shoe = new THREE.Mesh(unitSneakerGeo, shoeMat);
-    // Tongue stripe & heel tab inside the unit sneaker bounds
+    // Raised tongue, contrasting quarter panels, laces, and a gold heel pull.
     const tongue = new THREE.Mesh(unitBox, accentMat);
     tongue.scale.set(0.36, 0.18, 0.22);
     tongue.position.set(0, 0.26, -0.02);
     shoe.add(tongue);
+    for (const edge of [-1, 1]) {
+      const panel = addDetail(shoe, c.shoeAccent, [.055, .31, .39], [edge * .47, -.11, .12]);
+      panel.rotation.x = -.12;
+    }
+    for (const [y, z] of [[.38, -.04], [.32, -.14], [.26, -.24]]) {
+      addDetail(shoe, c.shirtStripe, [.45, .055, .045], [0, y, z]);
+    }
+    addDetail(shoe, c.uniformGold, [.22, .36, .055], [0, .24, .49]);
+    const kneeFold = addDetail(shin, c.pantsShade, [.62, .045, .052], [0, -.47, -.29]);
+    kneeFold.rotation.y = .10 * side;
+    addDetail(shin, c.pantsShade, [.62, .045, .040], [0, -.39, .37]);
     const sole = new THREE.Mesh(unitSoleGeo, soleMat);
     root.add(thigh, shin, shoe, sole);
     return {

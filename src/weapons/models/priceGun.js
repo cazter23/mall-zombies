@@ -278,6 +278,7 @@ export function buildPriceGunModel(def) {
       const r = vm.reload;
       samplePose(r.handKeys, reloadProgress, leftArm.position, leftArm.rotation);
       leftArm.position.multiplyScalar(reloadWeight);
+      leftArm.position.y -= .32 * (1 - reloadWeight);
       leftArm.rotation.set(leftArm.rotation.x * reloadWeight, leftArm.rotation.y * reloadWeight, leftArm.rotation.z * reloadWeight);
       const mid = reloadWeight > 0.5;
       newRoll.visible = mid && reloadProgress > r.newRollVisible[0] && reloadProgress < r.newRollVisible[1];

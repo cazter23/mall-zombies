@@ -76,7 +76,7 @@ const unitThumbGeo = buildDeformedBoxGeometry(2, 2, 3, (x, y, z) => {
     nx *= 1 - 0.22 * t;
     ny *= 1 - 0.24 * t;
     // Slight upward/inward pad angle toward tip
-    ny += 0.06 * t * (1 - t * 0.5);
+    ny += 0.13 * t * (1 - t * 0.5);
   } else {
     // Metacarpal base bevel
     const b = z / 0.5;
@@ -134,7 +134,7 @@ const unitGripFingersGeo = (() => {
       const taper = 1 - 0.15 * Math.abs(x);
       const nx = x * reach;
       const ny = Math.max(-0.5, Math.min(0.5, y0 + y * 0.28 * taper));
-      const nz = z * (0.85 + 0.15 * Math.cos(x * Math.PI * 0.8));
+      const nz = z * (0.78 + 0.22 * Math.cos(x * Math.PI * 0.8)) + 0.05 * Math.cos(x * Math.PI);
       return [nx, ny, Math.max(-0.5, Math.min(0.5, nz))];
     });
     parts.push(g);
@@ -175,6 +175,25 @@ export function buildCuffedArmSegment(parent, wristPos, elbowPos, shoulderPos, f
   const stripe = makeFacetedLimbMesh(c.shirtStripe ?? 0xf4e8d1, 1.0, 1.0, 0.75);
   placeLimb(stripe, stripeStart, stripeEnd, 0.097, 0.097);
   parent.add(stripe);
+
+  const gold = makeFacetedLimbMesh(c.uniformGold);
+  placeLimb(gold, cuffStart.clone().lerp(cuffEnd, 0.72), cuffStart.clone().lerp(cuffEnd, 0.86), 0.097, 0.097);
+  parent.add(gold);
+
+  // The embroidered sunset sits on the outward facet and follows the sleeve through reloads.
+  const side = Math.sign(elbowPos.x);
+  const badge = new THREE.Group();
+  badge.name = 'galleriaSleevePatch';
+  badge.position.copy(elbowPos).lerp(shoulderPos, .43)
+    .add(V(side * .046, 0, 0).applyQuaternion(sleeve.quaternion));
+  badge.quaternion.copy(sleeve.quaternion).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(0, side * Math.PI / 2, 0)));
+  parent.add(badge);
+  block(c.shirtTrim, .034, .044, .002, 0, 0, 0, badge);
+  const sun = new THREE.Mesh(new THREE.CircleGeometry(.010, 10), new THREE.MeshStandardMaterial({ color: c.uniformGold }));
+  sun.position.set(0, .005, .002);
+  badge.add(sun);
+  block(c.shirtStripe, .024, .003, .001, 0, -.009, .002, badge);
+  block(c.uniformGold, .018, .002, .001, 0, -.014, .002, badge);
 
   return { forearm, sleeve, cuff, stripe };
 }

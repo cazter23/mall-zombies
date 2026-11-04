@@ -151,7 +151,8 @@ export function buildCoilNailerModel(def) {
   const vm = def.viewmodel;
   const { gun, muzzle, trigger, nose, pistonCap, drum, mounts } = buildGun(vm);
   const { leftArm } = buildPistolArms(gun, {
-    leftOffset: new THREE.Vector3(-0.008, -0.058, -0.165),
+    leftOffset: new THREE.Vector3(-0.004, -0.058, -0.165),
+    fingerSize: new THREE.Vector3(0.078, 0.024, 0.09),
     thumbOffset: new THREE.Vector3(0, -0.014, 0),
   });
   const heldDrum = buildDrum(vm);

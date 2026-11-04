@@ -289,11 +289,12 @@ export const feel = {
       shirt: 0xc8102e, // red polo
       shirtTrim: 0x990b22, // ribbed cuff / hem trim
       shirtStripe: 0xf4e8d1, // cream uniform cuff tipping stripe
+      uniformGold: 0xe9ae50,
       pants: 0xc3a57a, // khaki
       pantsShade: 0xa88b60, // khaki cuff / seam shade
       shoes: 0xf2f2f2, // white sneakers
-      shoeAccent: 0xc8102e, // sneaker heel tab & tongue stripe
-      soles: 0x8a8a8a,
+      shoeAccent: 0x842344, // burgundy sneaker panels
+      soles: 0xf0dfbc,
       belt: 0x4a3426, // brown belt
       buckle: 0xd4af37, // brass employee belt buckle
     },
