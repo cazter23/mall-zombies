@@ -70,8 +70,9 @@ export function createIncentiveEffects({ events, player, gun, zombies, stats, pr
           wallet?.earn(config.types.mysteryShopper.points);
           for (const id of gun.slots) {
             const weapon = gun.weaponFor(id);
-            weapon.reserve = Math.min(weapon.def.startingReserve,
-              weapon.reserve + Math.ceil(weapon.def.startingReserve * config.types.mysteryShopper.ammoFraction));
+            // Tops up to the normal reserve; a reserve already above it is never cut.
+            weapon.reserve = Math.max(weapon.reserve, Math.min(weapon.def.startingReserve,
+              weapon.reserve + Math.ceil(weapon.def.startingReserve * config.types.mysteryShopper.ammoFraction)));
           }
           events.emit('incentiveComplete', { id: mystery.id, text: `Mystery Shopper complete · +${config.types.mysteryShopper.points} & ammo` });
         }

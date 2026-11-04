@@ -1,12 +1,25 @@
 # Sunset Galleria: build history ("Current state")
 
+## 4 November 2026 — tenant branding and font loading
+
+Mega Mart and Hoffman's got their own tenant branding (config/look.js, zoneLooks.js, hallwayLook.js, textures.js).
+Canvas signs were being drawn before the web fonts arrived, so a sign could keep its fallback font for good. src/boot.js now
+waits for them (config/fonts.js, at most 2.5 s, then starts anyway), then imports main.js. Mystery Shopper's ammo reward no
+longer cuts a reserve that is already above the gun's normal amount. tests/fontsReady.test.js guards the wait.
+
+## 3 November 2026 — first-person employee model
+
+player/body.js now models the Galleria uniform's upper body and a refined sprint: sleeves that would double up with the held
+arms are hidden in first person, and sprint foot plants stay under the player. weapons/models/arms.js matches the uniform.
+Checks live in tests/prone.test.js.
+
 ## Build-A-Blaster workshop prototype
 
 The Promenade workbench installs Party Trap on the Confetti Cannon and Clearance Rack on the Price Gun. Aimed floor shots plant a charge. Fatal traps yank zombies off their feet and pop them into streamers. Clearance Rack body shots tag up to three zombies, and a headshot on a tagged target pops the whole rack.
 
 > Moved out of CLAUDE.md (verbatim) so the file every session loads stays small. Roughly newest first: what each pass changed, how it was verified, measured numbers and decisions. Read it when you need the background of an area or a past decision; it is not needed to work on the code.
 
-## 28 October 2026 � Mannequin enemy
+## 28 October 2026 � Mannequin enemy
 
 Added a faceless plastic mannequin from round 8 (5% of spawns, 8% from round 12), capped at two living actors.
 Excess selections become Shoppers without increasing the round budget. Health is 0.8x Shopper, speed 5.8 m/s,

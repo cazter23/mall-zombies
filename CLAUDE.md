@@ -154,14 +154,8 @@ docs/                history.md, folder-structure.md, map.md, tests.md + older p
   Player is a cylinder (radius, height, feet position). Boxes whose top is within `stepTolerance`
   of the feet count as floor, not walls.
 - Coordinates: meters, +Y up. Camera looks down -Z at yaw 0.
-- Markers (invisible; shown if `debug.showMarkers`; wall-buy markers come from the 'wallBuy' features): `map.spawnPoints` (23: 4 level-2 vents with y = 6.3, tagged zone 'upstairs'; 2 start-room vents, 3 hallway vents,
-  3 HOFFMAN'S: stockroom door, west vent, fitting rooms,
-  4 Food Court shopfronts, 4 Mega Mart: stockroom, receiving, back vent, emergency exit, 3 Service Corridor: two wall
-  vents + the dead end; each tagged with its zone)
-  and the 4 'wallBuy' features (outward `normal` + `weapon` id: Price Gun, Nail Gun, Mega Mart Foam Dart Blaster
-  and Service Corridor Confetti Cannon; prices in economy.wallBuys via g.pricing).
 - Markers (invisible; shown if `debug.showMarkers`; wall-buy markers come from the 'wallBuy' features): `map.spawnPoints`
-  (31: 2 start-room, 3 hallway, 5 Atrium, 4 Food Court, 4 Promenade, 6 cinema, 4 Mega Mart and 3 Service Corridor;
+  (38: 2 start-room, 3 hallway, 5 Atrium, 4 Food Court, 4 Promenade, 3 HOFFMAN'S, 6 cinema, 4 Mega Mart, 4 Parking, 3 Service Corridor;
   each tagged with its zone and actual floor height). The service stairs add no markers.
   The seven 'wallBuy' features have outward `normal` + `weapon` id: Price Gun, Nail Gun, Foam Dart Blaster, Confetti Cannon,
   Rivet Rifle, Heavy Coil Nailer and Barcode Scanner; prices in economy.wallBuys via g.pricing.
@@ -180,6 +174,7 @@ adjoining areas are owned. No cascading unlocks. Nine area purchases total 9500;
 - **Level 2 / Sunset Promenade** x -20..20, z -4.5..6 (+ shoe annex), floor y 6.3, zone 'upstairs'.
 - **HOFFMAN'S department store** x -20..-5.3, z 6.3..26, 5 m (counters vaultable; everything else >= 2.1 m).
 - **Sunset Cinema** upstairs x -42..-20.3: 1250 area unlock off the Promenade's west wall or Service Corridor's north end; the other connection opens free when its neighbouring area is owned.
+- **Build-A-Blaster:** open workshop off the Promenade (config/workshop.js): Party Trap on the Confetti Cannon, Clearance Rack on the Price Gun, one build per gun.
 - **Wall buys:** Price Gun (start room), Nail Gun (hallway), Foam Dart Blaster (Mega Mart), Confetti Cannon (Service Corridor), Rivet Rifle (Atrium),
   Heavy Coil Nailer (Cinema projection passage, 2500), Barcode Scanner (HOFFMAN'S). Door count: 15.
 - **Customer Parking** x 34.3..62.3, z -24..6, y 0: 1250 through Mega Mart's former east emergency exit (z 1..4).
@@ -201,6 +196,7 @@ adjoining areas are owned. No cascading unlocks. Nine area purchases total 9500;
 - **Several tools edit this repo at once.** Work in your own git worktree + branch (`.claude/worktrees/`), commit only your own changes, never run a bare
   `git stash`, and never overwrite another tool's uncommitted files. Say which shared files you changed (mall.js, economy.js, shutters.js, CLAUDE.md, tests).
 - **Windows shell:** complicated quoting in Bash heredocs fails; write scripts with the file tools. Files are CRLF: edit scripts must be CRLF-safe.
+- **Canvas fonts:** `src/boot.js` waits for the web fonts, then imports main.js. A new font on a sign goes in index.html AND config/fonts.js, or it stays on the fallback.
 - **Browser checks:** build first (`npm run build`) and use `npm run preview`; a hidden pane shows stale frames (take two), and its frame times mean nothing
   (draw calls and triangles still count). `window.__mall` has `step(n)`, `g`, `game.forceRun`; `g.debug.run('doors'|'god')`.
 - **Keep this file small.** It loads in every session. New history goes in docs/history.md, new per-module notes in docs/folder-structure.md, new

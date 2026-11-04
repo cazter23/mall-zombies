@@ -153,3 +153,5 @@ behavior, and Web Audio source/panner cleanup for sign rattle, indistinct PA and
 `tests/mannequin.test.js` covers fixed-tick observation (aspect/pitch/edges/ADS and world occlusion), release delay,
 attack cancellation and real damage, frozen crowd/rescue protection, kill payouts/reset, round mix/health/live cap/quota,
 plastic pose retention/resource disposal, real cinema stairs and pause.
+
+- `fontsReady.test.js`: startup waits for canvas fonts, never hangs on a stuck network or failed font, and the page boots through the wait.

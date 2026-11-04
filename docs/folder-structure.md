@@ -21,6 +21,14 @@ src/
   config/retailUnease.js Rare atrium display changes and localized back-room sound timings/ranges; no gameplay tuning.
   game/features/retailUnease.js Called by the existing horror feature: unseen mannequin turn, shared empty-concourse TV feed,
                         distant upstairs silhouette. Quiet intervals, comfort gates, reset and static-batching-safe hooks.
+  boot.js               The page's entry point: waits for the web fonts (core/fontsReady.js, list and time limit in config/fonts.js), then imports main.js.
+  config/workshop.js    Build-A-Blaster builds: which gun, trap and tag numbers, pop effects; workshopModOf reads a gun's build.
+  game/features/workshop.js The Promenade bench purchase, plus Party Trap charges (placement, arming, trigger, blast, reset).
+  game/features/clearanceRack.js Clearance Rack tags on up to three zombies; a headshot on a tagged zombie pops them all.
+  game/features/clearanceSticker.js The canvas sticker drawn on tagged zombies.
+  zombies/partyTrapDeath.js The pose, ribbon and confetti after a trap kill. The kill is paid on impact; this is visual only.
+  weapons/models/workshopBuilds.js The reversible model changes for each workshop build.
+  maps/mall/workshopRoom.js The open Build-A-Blaster room and its dressing.
   ui/announcements.js   Bounded PA queue: type introductions priority 2, incentives 1, routine messages 0;
                         clear on pause/death/reset; wall-clock presentation timers only
   config/

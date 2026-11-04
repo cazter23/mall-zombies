@@ -54,6 +54,9 @@ const workerCall = /new Worker\((?:(?!new Worker)[\s\S]){0,300}?musicWorker[\s\S
 if (!workerCall.test(js)) throw new Error('single build: could not find the music worker call in the bundle');
 js = js.replace(workerCall, `new Worker(URL.createObjectURL(new Blob([${JSON.stringify(worker)}],{type:"text/javascript"})))`);
 
+// src/boot.js imports main.js dynamically: the code is all inlined, so the import helper needs no address.
+js = js.replace(/,void 0,import\.meta\.url\)/g, ',void 0)');
+
 const safe = (text) => text.replace(/<\/(script|style)/gi, '<\\/$1').replace(/<!--/g, '<\\!--'); // (a "</script" inside the code would end it early)
 
 let html = readFileSync(join(OUT, 'index.html'), 'utf8');
