@@ -172,9 +172,9 @@ export const look = {
   // receiving) is back of house: a dying red emergency tube, and that's where the light goes.
   megaMart: {
     wall: 0xe8edf1, // cool white
-    wainscot: 0x2f6fb5, // brand blue
+    wainscot: 0x263d5c, // Mega Mart navy
     rail: 0xd8dce4,
-    band: 0xffd23f, // brand yellow
+    band: 0xf58a39, // Mega Mart orange
     floor: { base: '#eef1f3', grout: '#9cc3e6', variation: 8, seed: 21 }, // white vinyl, pale blue grout
     trimY: 3.9,
     trim: NEON_COLORS.cyan,

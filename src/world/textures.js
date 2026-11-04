@@ -152,6 +152,38 @@ export function makeSignTexture(text, { background, color, aspect = 6, style, su
   const cy = height / 2;
 
   switch (detectedStyle) {
+    case 'martBrand':
+    case 'hoffmanBrand': {
+      const mart = detectedStyle === 'martBrand';
+      const ground = background || (mart ? '#182b49' : '#39282b');
+      const ink = color || (mart ? '#fff0d2' : '#f2cd8d');
+      const accent = accentColor || (mart ? '#f58a39' : '#a67a50');
+      ctx.fillStyle = ground;
+      ctx.fillRect(0, 0, width, height);
+      if (mart) {
+        ctx.fillStyle = accent;
+        ctx.fillRect(0, 0, width, height * .09);
+        ctx.fillRect(0, height * .91, width, height * .09);
+      } else {
+        ctx.strokeStyle = accent;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(10, 10, width - 20, height - 20);
+        ctx.strokeRect(17, 17, width - 34, height - 34);
+      }
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = ink;
+      const family = mart ? 'bold Arial Black, Arial, sans-serif' : 'bold Georgia, serif';
+      fitText(ctx, text, family, Math.round(height * (subtext ? .46 : .57)), width * .88);
+      ctx.fillText(text, cx, height * (subtext ? .43 : .51));
+      if (subtext) {
+        ctx.fillStyle = mart ? accent : ink;
+        fitText(ctx, subtext, 'bold Arial, sans-serif', Math.round(height * .16), width * .85);
+        ctx.fillText(subtext, cx, height * .74);
+      }
+      break;
+    }
+
     case 'tech': {
       // 90s Computer Store / Demo Wall: CRT scanlines, cyan PCB traces, terminal font
       ctx.fillStyle = background || '#060d1a';

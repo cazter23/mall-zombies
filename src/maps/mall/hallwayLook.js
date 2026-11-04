@@ -48,7 +48,16 @@ export function buildHallwayLook({ looks, kit, layout, keepClear = [] }) {
   const south = H.minZ + 0.04;
   const backing = L.backing; // dark sign panels: neon needs them to pop on the bright pastel walls
   neon.sign({ text: 'FOOD COURT', x: (FD.minX + FD.maxX) / 2, y: 4.3, z: south, facing: 1, height: 0.55, color: S.foodCourt, border: S.foodCourt, flickerLetters: [7] });
-  neon.sign({ text: 'MEGA MART', x: H.maxX - 0.04, y: 4.3, z: (MD.minZ + MD.maxZ) / 2, facing: 'x-', height: 0.55, color: S.megaMart, flickerLetters: [5] });
+  // A big-box fascia with printed price cards, separate from the landlord's neon.
+  const martZ = (MD.minZ + MD.maxZ) / 2;
+  kit.box(H.maxX - .24, 3.72, MD.minZ - .68, H.maxX - .023, 4.93, MD.maxZ + .68,
+    kit.mat(look.megaMart.wainscot), { collide: false, name: 'mart_fascia' });
+  kit.sign('MEGA MART', { x: H.maxX - .265, y: 4.325, z: martZ, width: 7.1, height: 1.06,
+    facing: 'x-', style: 'martBrand', subtext: 'DISCOUNT SUPERMARKET' }).name = 'mart_fascia_wordmark';
+  for (const [z, text, subtext] of [[MD.minZ - .53, '99¢', 'WEEKLY DEAL'], [MD.maxZ + .53, '2 FOR 1', 'CLUB PRICE']]) {
+    kit.sign(text, { x: H.maxX - .065, y: 2.25, z, width: .72, height: 1.02, facing: 'x-',
+      style: 'martBrand', background: '#f58a39', color: '#182b49', accentColor: '#fff0d2', subtext }).name = 'mart_window_offer';
+  }
   neon.sign({ text: 'GRAND ATRIUM', x: (gate.from + gate.to) / 2, y: 4.3, z: north, facing: -1, height: 0.42, color: S.atrium, border: S.atrium });
   neon.sign({
     text: 'STAFF ONLY', x: H.minX + 0.04, y: 3.6, z: (SCD.minZ + SCD.maxZ) / 2, facing: 'x+', height: 0.22, color: S.staffOnly,
@@ -82,8 +91,7 @@ export function buildHallwayLook({ looks, kit, layout, keepClear = [] }) {
   const wallIn = 0.015;
   looks.pool(0, 4.3, H.minZ + wallIn + 0.006, 7.5, 2.6, 1, S.foodCourt, P.wallOpacity);
   looks.pool(0, 0.012, H.minZ + 2.2, 7, 4, 'floor', S.foodCourt, P.floorOpacity);
-  looks.pool(H.maxX - 0.02, 4.3, (MD.minZ + MD.maxZ) / 2, 6.5, 2.6, 'x-', S.megaMart, P.wallOpacity); // (in front of the east panel)
-  looks.pool(H.maxX - 2.2, 0.012, (MD.minZ + MD.maxZ) / 2, 4, 6.5, 'floor', S.megaMart, P.floorOpacity);
+  looks.pool(H.maxX - 2.2, 0.012, martZ, 4, 6.5, 'floor', '#e9f2ff', P.floorOpacity);
   looks.pool((gate.from + gate.to) / 2, 4.3, H.maxZ - wallIn - 0.006, 6, 2.2, -1, S.atrium, P.wallOpacity);
   looks.pool(H.minX + wallIn, 3.6, (SCD.minZ + SCD.maxZ) / 2, 3, 1.2, 'x+', S.staffOnly, P.wallOpacity);
   looks.pool(openX, 4.35, H.minZ + wallIn + 0.006, 9.5, 1.8, 1, S.open, P.wallOpacity);

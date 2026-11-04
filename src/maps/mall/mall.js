@@ -384,7 +384,7 @@ export function buildMall(scene, colliders) {
   });
   sign('MEGA MART', {
     x: (AT.martLink.from + AT.martLink.to) / 2, y: 3.6, z: AT.rect.minZ + 0.02, width: 3.2, height: 0.6, facing: 1,
-    background: '#1d4e89', color: '#ffd23f',
+    style: 'martBrand',
   });
   // (The hallway side's GRAND ATRIUM sign is neon: maps/mall/hallwayLook.js.)
 
@@ -643,7 +643,7 @@ export function buildMall(scene, colliders) {
     background: '#2d6a4f', color: '#ffffff',
   }).name = 'sign_foodCourtMegaMart_mart';
 
-  // Blue + yellow brand stripe around the inside, above door height.
+  // Mega Mart's navy and orange stripe, above door height.
   const martInnerWalls = [
     { along: 'x', from: M.minX + T, to: M.maxX, wallAt: M.maxZ, facing: -1 }, // north
     { along: 'z', from: M.minZ, to: M.maxZ, wallAt: M.maxX, facing: -1 }, // east
@@ -651,12 +651,12 @@ export function buildMall(scene, colliders) {
     { along: 'z', from: M.minZ, to: M.maxZ, wallAt: M.minX + T, facing: 1 }, // west
   ];
   for (const w of martInnerWalls) {
-    props.wallStripe({ ...w, y0: 3.3, y1: 3.6, color: COLORS.megaMartBlue });
-    props.wallStripe({ ...w, y0: 3.6, y1: 3.66, color: COLORS.megaMartYellow });
+    props.wallStripe({ ...w, y0: 3.3, y1: 3.6, color: look.megaMart.wainscot });
+    props.wallStripe({ ...w, y0: 3.6, y1: 3.66, color: look.megaMart.band });
   }
   sign('THANK YOU FOR SHOPPING AT MEGA MART', {
     x: 28.25, y: 2.8, z: M.maxZ - 0.04, width: 6.5, height: 0.5, facing: -1,
-    background: '#1d4e89', color: '#ffffff',
+    style: 'martBrand',
   }).name = 'mart_checkout_thanks';
 
   // Front of the store: four checkout lanes (vaultable counters) facing the entrance. You walk in
@@ -674,16 +674,16 @@ export function buildMall(scene, colliders) {
     });
   });
   const aisles = [
-    [21.9, 'AISLE 1 · OUTDOOR'],
-    [25.75, 'AISLE 2 · SNACKS'],
-    [29.25, 'AISLE 3 · ALL HOLIDAYS'],
-    [32.75, 'AISLE 4 · HOUSEWARES'],
+    [21.9, 'OUTDOOR'],
+    [25.75, 'SNACKS'],
+    [29.25, 'ALL HOLIDAYS'],
+    [32.75, 'HOUSEWARES'],
   ];
-  for (const [x, text] of aisles) {
+  for (const [i, [x, department]] of aisles.entries()) {
     for (const facing of [1, -1]) {
-      sign(text, {
-        x, y: 3.4, z: -7.6 + facing * 0.01, width: 2.2, height: 0.5, facing,
-        background: '#1d4e89', color: '#ffd23f',
+      sign(`AISLE 0${i + 1}`, {
+        x, y: 3.4, z: -7.6 + facing * 0.01, width: 2.2, height: .62, facing,
+        style: 'martBrand', subtext: department,
       });
     }
   }
@@ -894,7 +894,7 @@ export function buildMall(scene, colliders) {
   buildHallwayLook({ looks, kit, layout: LAYOUT, keepClear: hallwayClear });
   buildFoodCourtLook({ looks, kit, layout: LAYOUT, keepClear: hallwayClear.slice(0, -2) }); // (spawns, buy spots, doors; not the hallway's lanes)
   buildStartRoomLook({ looks, kit, layout: LAYOUT });
-  buildMegaMartLook({ looks, layout: LAYOUT, keepClear: hallwayClear.slice(0, -2) });
+  buildMegaMartLook({ looks, kit, layout: LAYOUT, keepClear: hallwayClear.slice(0, -2) });
   buildServiceCorridorLook({ looks, kit, layout: LAYOUT, corridor: service, keepClear: hallwayClear.slice(0, -2) });
   buildLevelTwoLook({ looks, layout: LAYOUT, floorY: upperY, hole: escalator.hole, keepClear: hallwayClear.slice(0, -2) });
   buildPromenadeDetails({ kit, looks, layout: LAYOUT.level2, floorY: upperY });

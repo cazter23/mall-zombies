@@ -98,8 +98,8 @@ export function buildFoodCourtLook({ looks, kit, layout, keepClear = [] }) {
   });
 }
 
-/** The Mega Mart: cool white and brand blue, LOW PRICES. LOWER STANDARDS. over the checkouts, a dying red tube at the back. */
-export function buildMegaMartLook({ looks, layout, keepClear = [] }) {
+/** Mega Mart: cool white, navy and orange, with printed price signs and a dying receiving light. */
+export function buildMegaMartLook({ looks, kit, layout, keepClear = [] }) {
   const L = look.megaMart;
   const M = layout.megaMart;
   const T = layout.wallThickness;
@@ -116,33 +116,31 @@ export function buildMegaMartLook({ looks, layout, keepClear = [] }) {
   looks.bands({ along: 'x', from: west, to: M.maxX, wallAt: M.minZ, facing: 1, colors, gaps: [[20.85, 22.75], [25.2, 27.8], [30.5, 33.1]], name: 'megamart_wainscot' });
   looks.bands({ along: 'z', from: M.minZ, to: M.maxZ, wallAt: west, facing: 1, colors, gaps: [[MD.minZ, MD.maxZ], [FM.minZ, FM.maxZ]], name: 'megamart_wainscot' });
 
-  // Neon: the slogan over the checkouts, the motto down the east wall, cyan trim; at the back, a dying red emergency tube.
+  // Printed supermarket headers and a dying emergency strip in receiving.
   const neon = looks.neon('megaMart');
   const S = L.signs;
   const sat = L.satire;
-  const backing = look.hallway.backing;
   const north = M.maxZ - 0.05;
   const east = M.maxX - 0.05;
   const south = M.minZ + 0.05;
   const tY = L.trimY;
-  neon.sign({ text: sat.slogan, x: 29.4, y: 4.4, z: north, facing: -1, height: 0.38, color: S.slogan, backing, border: S.live, flickerLetters: [21] });
-  neon.sign({ text: sat.live, x: east, y: 4.4, z: -13.5, facing: 'x-', height: 0.34, color: S.live, backing, flickerLetters: [17] });
-  neon.tube([[25.2, tY, north], [M.maxX - 0.4, tY, north]], { color: L.trim });
-  neon.tube([[east, tY, M.minZ + 0.4], [east, tY, -1]], { color: L.trim, flicker: true });
+  kit.sign(sat.slogan, { x: 29.4, y: 4.42, z: north, facing: -1, width: 7.3, height: .72,
+    style: 'martBrand', subtext: 'THE MEGA MART PRICE PROMISE' }).name = 'mart_price_promise';
+  kit.sign(sat.live, { x: east, y: 4.4, z: -13.5, facing: 'x-', width: 6.4, height: .68,
+    style: 'martBrand', subtext: 'LOW PRICES EVERY DAY' }).name = 'mart_savings_header';
   neon.tube([[west + 0.4, tY, south], [M.maxX - 0.4, tY, south]], { color: S.emergency, flicker: 'dying' });
 
-  // Painted light: trim washes 1 cm off the wall (behind the 2 cm brand stripe), sign glows in front of it.
+  // Painted spill from the failing receiving light.
   const P = look.hallway.pools;
-  looks.pool(29.4, 4.4, M.maxZ - 0.026, 10.5, 1.6, -1, S.slogan, P.wallOpacity);
-  looks.pool(M.maxX - 0.026, 4.4, -13.5, 7, 1.5, 'x-', S.live, P.wallOpacity);
-  looks.pool(29.4, tY - 0.45, M.maxZ - 0.01, M.maxX - 25.2, 0.9, -1, L.trim, P.trimOpacity, { wash: true });
   looks.pool(27.2, tY - 0.45, M.minZ + 0.01, M.maxX - west - 0.8, 0.9, 1, S.emergency, P.trimOpacity * 2, { wash: true });
   looks.pool(27.2, 0.012, M.minZ + 1.6, M.maxX - west - 1, 3, 'floor', S.emergency, P.floorOpacity * 0.7);
 
   // The corporate cheer on paper, 3 cm proud of the walls (clear of the detail pass's signs).
   looks.poster('banner', { text: sat.mustGo[0], sub: sat.mustGo[1], colors: ['#ffd23f', '#9cc3e6'] }, west + 0.03, 2.6, -17, 4.0, 1.0, 'x+');
   looks.poster('notice', { title: sat.priceMatch[0], body: sat.priceMatch[1], header: '#2f6fb5', typeface: 'utility' }, west + 0.03, 2.0, -3.4, 1.2, 0.9, 'x+');
-  looks.poster('sunny', { text: sat.shopTillYouDrop[0], sub: sat.shopTillYouDrop[1] }, M.maxX - 0.03, 2.2, -10.5, 1.0, 1.5, 'x-');
+  kit.sign('2 FOR 1', { x: M.maxX - .03, y: 2.2, z: -10.5, width: 1.05, height: 1.46,
+    facing: 'x-', style: 'martBrand', background: '#f58a39', color: '#182b49', accentColor: '#fff0d2',
+    subtext: 'MEGA MART CLUB' }).name = 'mart_club_offer';
   looks.poster('notice', { title: sat.bulk[0], body: sat.bulk[1], header: '#ffd23f' }, M.maxX - 0.03, 2.0, -17.5, 1.2, 0.9, 'x-');
   looks.poster('notice', { title: sat.stockroom[0], body: sat.stockroom[1], header: '#ff6b6b', typeface: 'utility' }, 29.1, 2.55, M.minZ + 0.03, 1.2, 0.9, 1);
 
@@ -381,7 +379,7 @@ export function buildAtriumLook({ looks, layout, upperY, keepClear = [] }) {
   });
 }
 
-/** HOFFMAN'S (the department store): cream walls, burgundy wainscot and brass rail, the hot-pink logo, store policy in neon. */
+/** HOFFMAN'S: a brass-and-walnut department store with window displays and printed house signs. */
 export function buildDepartmentStoreLook({ looks, kit, layout, keepClear = [] }) {
   const L = look.departmentStore;
   const DS = layout.departmentStore;
@@ -413,31 +411,53 @@ export function buildDepartmentStoreLook({ looks, kit, layout, keepClear = [] })
   looks.bands({ along: 'z', from: r.minZ, to: startRoomBack, wallAt: r.maxX - 0.01, facing: -1, colors, gaps: [[side.from, side.to], [DS.scannerZ - 0.9, DS.scannerZ + 0.9]], name: 'deptstore_wainscot' }); // (the side door; the Barcode Scanner)
   looks.bands({ along: 'z', from: startRoomBack, to: r.maxZ, wallAt: r.maxX, facing: -1, colors, gaps: [[W.z0 - 0.1, W.z1 + 0.1]], name: 'deptstore_wainscot' });
 
-  // Neon: the logo on the back wall, store policy over the way out and over the shoes, a pink trim tube down the west wall.
-  // Over the gate on the hallway side: the name, so you know what 1250 buys.
-  const neon = looks.neon('departmentStore');
-  const S = L.signs;
   const sat = L.satire;
-  const backing = look.hallway.backing;
   const logoX = (F.x1 + DS.stockroomDoorX - 1.1) / 2 - 0.4;
-  neon.sign({ text: sat.logo, x: logoX, y: 3.95, z: r.maxZ - 0.05, facing: -1, height: 0.62, color: S.logo, backing, border: S.border, flickerLetters: [6] });
-  neon.sign({ text: sat.tagline, x: logoX, y: 3.2, z: r.maxZ - 0.05, facing: -1, height: 0.2, color: S.slogan, backing });
+  const plaque = (text, x, y, z, width, height, facing, subtext) =>
+    kit.sign(text, { x, y, z, width, height, facing, subtext, style: 'hoffmanBrand' });
+  plaque(sat.logo, logoX, 3.91, r.maxZ - .065, 3.65, .83, -1, sat.tagline).name = 'hoffman_interior_wordmark';
   const finalX = (gate.to + r.maxX) / 2;
-  neon.sign({ text: sat.final, x: finalX, y: 3.75, z: r.minZ + 0.06, facing: 1, height: 0.28, color: S.slogan, backing, flickerLetters: [20] });
+  plaque(sat.final, finalX, 3.75, r.minZ + .06, 4.4, .48, 1);
   const sizeZ = (W.z0 + W.z1) / 2;
-  neon.sign({ text: sat.size, x: r.maxX - 0.05, y: 3.25, z: sizeZ, facing: 'x-', height: 0.24, color: S.size, backing, deadLetters: [9] });
-  const hallNorth = layout.hallway.maxZ - 0.04;
-  neon.sign({ text: sat.logo, x: (gate.from + gate.to) / 2, y: 3.95, z: hallNorth, facing: -1, height: 0.42, color: S.logo, backing, border: S.border });
-  neon.tube([[r.minX + 0.05, L.trimY, r.minZ + 0.4], [r.minX + 0.05, L.trimY, r.maxZ - 0.4]], { color: L.trim, flicker: true });
+  plaque('SHOES & ACCESSORIES', r.maxX - .065, 3.25, sizeZ, 4.1, .56, 'x-', sat.size);
+  const hallNorth = layout.hallway.maxZ;
+  const gateX = (gate.from + gate.to) / 2;
+  const walnut = kit.mat(0x362426);
+  const brass = kit.mat(L.rail, { metalness: .35, roughness: .42 });
+  const velvet = kit.mat(0x522b38);
+  const facade = (name, x0, y0, depth0, x1, y1, depth1, material) =>
+    kit.box(x0, y0, hallNorth - depth1, x1, y1, hallNorth - depth0, material, { collide: false, name });
+  facade('hoffman_cornice', gate.from - .27, 3.5, .026, gate.to + .28, 4.58, .24, walnut);
+  plaque(sat.logo, gateX, 4.04, hallNorth - .265, 4.46, .88, -1, 'DEPARTMENT STORE  ·  EST. FOREVER').name = 'hoffman_fascia_wordmark';
+  for (const [x0, x1] of [[gate.from - .33, gate.from - .13], [gate.to + .12, gate.to + .32]]) {
+    facade('hoffman_jamb', x0, .02, .035, x1, 3.48, .2, walnut);
+    facade('hoffman_brass_inlay', x0 + .075, .12, .204, x0 + .11, 3.39, .226, brass);
+  }
+  // A shallow, dark vitrine beside the gate, with a lit display bust above a collection card.
+  const display = gate.to + 1.12;
+  facade('hoffman_vitrine', display - .73, .64, .038, display + .73, 3.16, .105, velvet);
+  for (const x of [display - .75, display + .68]) facade('hoffman_window_edge', x, .63, .108, x + .072, 3.17, .26, brass);
+  facade('hoffman_display_sill', display - .68, .66, .116, display + .68, .82, .285, walnut);
+  facade('hoffman_display_light', display - .675, 3.04, .12, display + .675, 3.15, .27,
+    kit.mat(0xeac688, { emissive: 0xeac688, emissiveIntensity: .55 }));
+  const plaster = kit.mat(0xf3dac0);
+  facade('hoffman_bust_plinth', display - .27, 1.08, .125, display + .27, 1.36, .248, brass);
+  facade('hoffman_bust_jacket', display - .24, 1.34, .14, display + .24, 1.97, .258, kit.mat(0x25313c));
+  facade('hoffman_bust_neck', display - .069, 1.95, .13, display + .069, 2.12, .226, plaster);
+  facade('hoffman_bust_head', display - .108, 2.105, .135, display + .108, 2.42, .253, plaster);
+  facade('hoffman_bust_shirt', display - .046, 1.61, .259, display + .046, 1.95, .273, plaster);
+  plaque('EVENINGWEAR', display, .94, hallNorth - .246, 1.03, .225, -1);
 
-  // Painted light behind the signs and under the trim (sign glows 6 mm in front of the wash, 1 cm off the wall).
+  // An inset-looking runner guides the approach from the gate without changing the floor collision.
+  const runner = (name, x0, x1, z0, z1, top, material) =>
+    kit.box(x0, top - .008, z0, x1, top, z1, material, { collide: false, name });
+  runner('hoffman_runner_border', gateX - 1.18, gateX + 1.18, r.minZ + .16, r.minZ + 3.5, .022, brass);
+  runner('hoffman_runner', gateX - 1.115, gateX + 1.115, r.minZ + .222, r.minZ + 3.438, .029, velvet);
+
+  // Warm display spill on each side of the entrance.
   const P = look.hallway.pools;
-  looks.pool(logoX, 3.7, r.maxZ - 0.026, 6, 2.2, -1, S.logo, P.wallOpacity);
-  looks.pool(logoX, 0.012, r.maxZ - 2.6, 5, 3, 'floor', S.logo, P.floorOpacity * 0.7);
-  looks.pool(finalX, 3.75, r.minZ + 0.036, 8.5, 1.2, 1, S.slogan, P.wallOpacity);
-  looks.pool(r.maxX - 0.026, 3.25, sizeZ, 6.5, 1.1, 'x-', S.size, P.wallOpacity);
-  looks.pool((gate.from + gate.to) / 2, 3.95, layout.hallway.maxZ - 0.021, 5, 1.5, -1, S.logo, P.wallOpacity);
-  looks.pool(r.minX + 0.01, L.trimY - 0.45, (r.minZ + r.maxZ) / 2, r.maxZ - r.minZ - 1, 0.9, 'x+', L.trim, P.trimOpacity, { wash: true });
+  looks.pool(logoX, 0.012, r.maxZ - 2.6, 5, 3, 'floor', '#ffcf9e', P.floorOpacity * .7);
+  looks.pool(gateX + .5, .017, hallNorth - 1.4, 4.9, 2.25, 'floor', '#ffc583', P.floorOpacity);
 
   // The policies on paper, 3 cm proud: hiring by the gate, layaway on the back wall, Dale (employee of the month, every month)
   // on the west wall, the grand opening over the side door, the fitting-room rules on the fitting rooms' open end.
@@ -445,7 +465,7 @@ export function buildDepartmentStoreLook({ looks, kit, layout, keepClear = [] })
   looks.poster('notice', { title: sat.layaway[0], body: sat.layaway[1], header: '#c9a14a', typeface: 'heritage' }, (F.x1 + DS.stockroomDoorX - 1.1) / 2, 1.9, r.maxZ - 0.03, 1.2, 0.9, -1);
   looks.poster('employee', {}, r.minX + 0.03, 2.25, 14.4, 2.0, 1.33, 'x+');
   looks.poster('banner', { text: sat.opening[0], sub: sat.opening[1], colors: ['#f6e7c8', '#e8b4bc'] }, r.maxX - 0.04, 3.55, (side.from + side.to) / 2, 3.6, 0.9, 'x-');
-  looks.poster('sunny', { text: sat.fitting[0], sub: sat.fitting[1] }, F.x1 + 0.03, 1.5, r.maxZ - F.depth / 2, 0.8, 1.2, 'x+');
+  plaque(sat.fitting[0], F.x1 + .03, 1.5, r.maxZ - F.depth / 2, .8, .65, 'x+', sat.fitting[1]);
   // The counters glow on the floor: pink round cosmetics, violet round fragrance, amber round layaway (painted light, no real lights).
   const [cosmetics, fragrance] = DS.counters;
   looks.pool((cosmetics.x0 + cosmetics.x1) / 2, 0.012, cosmetics.z, cosmetics.x1 - cosmetics.x0 + 1.2, 2.6, 'floor', '#ff7ac6', P.floorOpacity * 0.6);
