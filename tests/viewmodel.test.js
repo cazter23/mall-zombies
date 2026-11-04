@@ -43,7 +43,7 @@ test('resolved attachments change visible recoil without changing weapon id', (t
   const wrist = measureKick('wristband');
   assert.ok(plain > 0, 'a shot actually moves the model');
   assert.ok(grip < plain * 0.9, `Grip Tape reduces visible kick: ${grip} vs ${plain}`);
-  assert.ok(wrist > plain * 1.1, `Wristband increases visible kick: ${wrist} vs ${plain}`);
+  assert.ok(wrist > plain * 1.05, `Wristband increases visible kick: ${wrist} vs ${plain}`);
 });
 
 test('the first shot and dry click after fitting/removing an attachment use the current resolved recoil', (t) => {

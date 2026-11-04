@@ -21,6 +21,8 @@
 
 import * as THREE from 'three';
 import { upgrades } from '../../config/upgrades.js';
+import { attachmentVisuals } from '../../config/attachmentVisuals.js';
+import { prepareShortBarrel } from './shortBarrel.js';
 
 // Colors in the shops' brand colors, so a part reads as "from that store".
 const C = {
@@ -117,7 +119,7 @@ function getWarrantySealTexture() {
   return warrantySealTex;
 }
 
-export const NOZZLE_LENGTH = 0.06; // how far the Extended Nozzle moves the muzzle forward (at scale 1)
+export const NOZZLE_LENGTH = 0.095; // visible extension; also moves the tracer/flash origin
 
 function buildJumboPackForGun(g, gunId) {
   if (gunId === 'priceGun') {
@@ -230,14 +232,16 @@ const PARTS = {
     const g = new THREE.Group();
     const w = (m.size?.w ?? 0.05) + 0.008;
     const h = (m.size?.h ?? 0.045) + 0.008;
-    // Layered grey duct-tape wrap around the cut muzzle end
-    box(g, w, h, 0.02, 0, 0, 0.016, C.tape);
-    box(g, w + 0.0018, h * 0.55, 0.012, 0, 0.002, 0.013, C.steel); // overlapped tape seam
-    // Serrated steel hose-clamp band + worm-drive screw housing at the rear edge
-    box(g, w + 0.0028, h + 0.0028, 0.005, 0, 0, 0.024, C.chrome);
-    box(g, 0.009, 0.01, 0.008, w * 0.45, h * 0.38, 0.024, C.brass);
-    // Bright red "CUT HERE" hardware tape stripe near the front
-    box(g, w + 0.0024, 0.006, 0.006, 0, h / 2 - 0.004, 0.006, C.red);
+    // An open clamp surrounds the cut muzzle; the bore stays visibly open.
+    for (const y of [-h / 2, h / 2]) box(g, w, .005, .02, 0, y, .013, C.tape);
+    for (const x of [-w / 2, w / 2]) box(g, .005, h, .02, x, 0, .013, C.steel);
+    const r = m.radius ?? .017;
+    for (const x of m.twin ? [-m.twin, m.twin] : [0]) {
+      tube(g, r + .002, .012, x, 0, .008, C.chrome);
+      tube(g, r * .72, .002, x, 0, -.0045, C.dark, true);
+    }
+    box(g, w, .005, .006, 0, h / 2, .004, C.red);
+    box(g, .009, .01, .008, w * .45, h * .38, .024, C.brass);
     return g;
   },
   laserPointer() {
@@ -256,7 +260,7 @@ const PARTS = {
     box(g, 0.013, 0.013, 0.004, 0, 0, -0.027, C.steel); // aperture bezel
     box(g, 0.009, 0.009, 0.003, 0, 0, -0.0285, C.red, true); // glowing emitter lens
     const beam = box(g, 0.0025, 0.0025, 0.7, 0, 0, -0.38, C.red, true);
-    beam.material = new THREE.MeshBasicMaterial({ color: C.red, transparent: true, opacity: 0.35, depthWrite: false });
+    beam.material = new THREE.MeshBasicMaterial({ color: C.red, transparent: true, opacity: 0.16, depthWrite: false });
     beam.name = 'laserBeam';
     return g;
   },
@@ -296,6 +300,7 @@ const PARTS = {
     // Small loose tape tail tab at the lower rear edge
     const tail = box(g, 0.014, 0.014, 0.004, 0.018, -0.044, 0.048, C.tapeLight);
     tail.rotation.x = 0.25;
+    box(g, .004, .032, .045, -.034, -.015, .008, C.sportsOrange);
     return g;
   },
   wristband() {
@@ -308,6 +313,8 @@ const PARTS = {
     // Stitched woven brand tag on the outer wrist
     box(g, 0.003, 0.012, 0.024, 0.045, 0, 0, C.dark);
     box(g, 0.0035, 0.008, 0.02, 0.0455, 0, 0, C.hazard);
+    box(g, .004, .018, .03, -.045, 0, .006, C.tapeLight);
+    box(g, .0045, .006, .02, -.046, 0, .006, C.sportsOrange);
     return g;
   },
   jumboPack(m = {}) {
@@ -315,7 +322,7 @@ const PARTS = {
     buildJumboPackForGun(g, m.gunId);
     return g;
   },
-  speedLoader() {
+  speedLoader(m = {}) {
     const g = new THREE.Group();
     // Quick-release baseplate collar + spring cam latch
     box(g, 0.032, 0.01, 0.034, 0, -0.005, 0, C.dark);
@@ -328,6 +335,25 @@ const PARTS = {
     box(g, 0.005, 0.024, 0.006, 0.008, -0.022, 0.006, C.green);
     box(g, 0.024, 0.007, 0.009, 0, -0.035, 0.006, C.green);
     box(g, 0.025, 0.003, 0.011, 0, -0.038, 0.006, C.greenDark); // grip ridge
+    // The release/feed hardware matches the ammunition, rather than a universal extra magazine.
+    if (m.gunId === 'confettiCannon') {
+      for (const z of [-.018, .018]) cylY(g, .008, .008, .028, 0, -.026, z, C.brass);
+    } else if (m.gunId === 'coilNailer') {
+      cylY(g, .026, .026, .007, 0, -.014, 0, C.greenDark);
+      box(g, .012, .018, .035, .023, -.02, 0, C.sportsOrange);
+    } else if (m.gunId === 'barcodeScanner') {
+      for (const x of [-.009, .009]) box(g, .006, .012, .025, x, -.015, -.012, C.brass);
+      box(g, .025, .006, .008, 0, -.02, -.025, C.green, true);
+    } else if (m.gunId === 'nailGun' || m.gunId === 'stapleGun') {
+      box(g, .026, .006, .07, 0, -.015, -.02, C.chrome);
+      box(g, .03, .012, .012, 0, -.02, -.048, C.brass);
+    } else if (m.gunId === 'foamDartBlaster') {
+      cylY(g, .02, .02, .012, 0, -.015, 0, C.toyBlue);
+      box(g, .025, .012, .024, 0, -.027, -.018, C.sportsOrange);
+    } else if (m.gunId === 'priceGun') {
+      tube(g, .01, .035, 0, -.02, .01, C.tapeLight);
+      box(g, .032, .008, .015, 0, -.012, -.02, C.sportsOrange);
+    } else box(g, .035, .012, .05, 0, -.017, -.012, C.steel);
     return g;
   },
 };
@@ -361,7 +387,12 @@ export function buildAttachmentPart(id, mount = {}, { display = false } = {}) {
  */
 export function createUpgradeVisuals(model, gun = model.root) {
   const mounts = model.mounts ?? {};
+  const profile = attachmentVisuals.profiles[mounts.magazine?.gunId];
+  const short = profile ? prepareShortBarrel(model, profile.span, attachmentVisuals.shortFactor) : null;
+  const barrelParent = mounts.barrel?.parent ?? gun;
+  if (model.muzzle.parent !== barrelParent) { gun.updateWorldMatrix(true, true); barrelParent.attach(model.muzzle); }
   const parts = {};
+  const reloadParts = [];
   const place = (object, mount) => {
     const holder = new THREE.Group();
     holder.position.fromArray(mount.position);
@@ -384,7 +415,26 @@ export function createUpgradeVisuals(model, gun = model.root) {
       continue;
     }
     const mount = mounts[MOUNT_OF[id]];
-    if (mount) parts[id] = place(buildAttachmentPart(id, mount), mount);
+    if (mount) {
+      const adjusted = { ...mount, position: [...mount.position] };
+      const scale = profile ? (id === 'zoomLens' ? profile.optic : id === 'laserPointer' ? profile.laser : ['jumboPack', 'speedLoader'].includes(id) ? profile.pack : 1) : 1;
+      adjusted.scale = (mount.scale ?? 1) * scale;
+      if (id === 'zoomLens' && profile?.opticX) adjusted.position[0] = profile.opticX;
+      if (id === 'laserPointer') adjusted.position[0] = profile?.laserX ?? -mount.position[0]; // visible near-side rail
+      const part = buildAttachmentPart(id, mount);
+      if (id === 'zoomLens' && profile?.opticX) {
+        const reach = (mount.position[0] - adjusted.position[0]) / adjusted.scale;
+        box(part, Math.abs(reach) + .016, .008, .04, reach / 2, .002, 0, C.charcoal);
+      }
+      const holder = place(part, adjusted);
+      if (id === 'laserPointer') holder.scale.x *= -1;
+      parts[id] = holder;
+      const held = profile?.held && gun.getObjectByName(profile.held);
+      if (held && ['jumboPack', 'speedLoader'].includes(id)) {
+        const copy = holder.clone(); held.add(copy); copy.position.fromArray(mount.position);
+        reloadParts.push({ id, copy });
+      }
+    }
   }
 
   // Branded Extended Warranty service seal: foil seal backing + tier-colored certificate face.
@@ -427,7 +477,11 @@ export function createUpgradeVisuals(model, gun = model.root) {
       shownKey = key;
       const fitted = new Set(Object.values(attachments));
       for (const [id, holder] of Object.entries(parts)) holder.visible = fitted.has(id);
+      for (const { id, copy } of reloadParts) copy.visible = fitted.has(id);
+      short?.show(fitted.has('sawnOff'));
+      if (parts.sawnOff) parts.sawnOff.position.z = mounts.barrel.position[2] + (fitted.has('sawnOff') ? short?.shift ?? 0 : 0);
       model.muzzle.position.copy(muzzleHome);
+      if (fitted.has('sawnOff')) model.muzzle.position.z += short?.shift ?? 0;
       if (parts.extendedNozzle?.visible && nozzleMovesMuzzle) model.muzzle.position.z -= NOZZLE_LENGTH * nozzleScale;
       if (sticker) {
         const t = upgrades.tiers.find((x) => x.id === tier);

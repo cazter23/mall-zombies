@@ -90,7 +90,7 @@ test('attachment tickets name replacements and tradeoffs; warranty tickets follo
   t.standAt(spot.position.x + spot.normal.x * 1.3, spot.position.z + spot.normal.z * 1.3,
     Math.atan2(spot.normal.x, spot.normal.z) * 180 / Math.PI);
   assert.equal(g.interactions.prompt.title, 'Grip Tape');
-  assert.match(g.interactions.prompt.detail, /Less recoil; slower to aim/);
+  assert.match(g.interactions.prompt.detail, /Kick:.*→/);
   assert.match(g.interactions.prompt.detail, /Replaces Wristband/);
   assert.ok(!g.interactions.prompt.detail.includes(g.gun.def.name), 'compact terms omit redundant weapon name');
   const desk = featuresOf(g.map, 'upgradeDesk')[0];

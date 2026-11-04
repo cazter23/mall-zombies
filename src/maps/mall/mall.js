@@ -538,6 +538,10 @@ export function buildMall(scene, colliders) {
   // The ammo cache: the RESTOCK-O-MATIC (mall/restockMachine.js), on the north wall just inside the door, east side:
   // the first thing you see walking in. Clear of the door lane (x -2..2), the east bench and the Byte Me pod.
   const foodCourtAmmo = buildRestockMachine({ kit, center: LAYOUT.restockMachine.x, wallAt: F.maxZ, facing: -1 });
+  const atriumAmmo = buildRestockMachine({ kit, center: atriumDetails.restockMachine.x,
+    wallAt: AT.rect.maxZ - atriumDetails.restockMachine.wallInset, facing: -1 });
+  const cinemaAmmo = buildRestockMachine({ kit, center: LAYOUT.cinema.restockMachine.x,
+    wallAt: LAYOUT.cinema.lobby.maxZ - LAYOUT.cinema.restockMachine.wallInset, facing: -1, floorY: upperY });
 
   sign('EXIT  ·  MAIN HALL', {
     x: 0, y: 3.6, z: F.maxZ - 0.02, width: 3, height: 0.5, facing: -1,
@@ -839,6 +843,8 @@ export function buildMall(scene, colliders) {
     ...wallBuys.map((w) => ({ kind: 'wallBuy', ...w })),
     // The RESTOCK-O-MATIC: buy a refill for the gun in your hand (g.pricing 'ammoCache'); its screen shows what it sells.
     { kind: 'ammoCache', name: 'ammocache_foodCourt', zone: 'foodCourt', position: foodCourtAmmo.position, normal: foodCourtAmmo.normal, screen: foodCourtAmmo.screen },
+    { kind: 'ammoCache', name: 'ammocache_atrium', zone: 'atrium', position: atriumAmmo.position, normal: atriumAmmo.normal, screen: atriumAmmo.screen },
+    { kind: 'ammoCache', name: 'ammocache_cinema', zone: 'cinema', position: cinemaAmmo.position, normal: cinemaAmmo.normal, screen: cinemaAmmo.screen },
     // Customer Service: upgrade the gun in your hand one Extended Warranty tier (g.pricing 'tier').
     { kind: 'upgradeDesk', name: 'upgradedesk_hallway', zone: deskZone, position: serviceDesk.position, normal: serviceDesk.normal },
     // Store attachment counters: fit that attachment to the gun in your hand (g.pricing 'attachment').
@@ -983,7 +989,7 @@ export function buildMall(scene, colliders) {
       ...LAYOUT.level2.sections.map(section => ({ grade: 'level2', ...section, minY: H.height })),
     ],
     ambience: [...dressing.emitters, ...atrium.emitters, ...cinemaWing.emitters, ...LAYOUT.cinemaStairs.ambience, ...departmentStoreRoom.emitters, ...parkingLot.ambience, ...parkingDetails.ambience],
-    ambientEvents: parkingDetails.ambientEvents,
+    ambientEvents: [...parkingDetails.ambientEvents, ...atrium.ambientEvents],
     cinema: { layout: LAYOUT.cinema, floorY: upperY, presentation: cinemaDetails, stairs: cinemaConnection },
     // Zombie navigation across floors (zombies/navigation.js): the ground floor and level 2, joined by the escalator.
     navigation: { floors: [0, upperY], links: [escalator.link, atrium.link, cinemaConnection.link] },

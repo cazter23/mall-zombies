@@ -202,6 +202,7 @@ export const feel = {
   runIntro: {
     kicker: 'Attention shoppers',
     lines: [
+        'Attention shoppers. Attention shoppers. Please disregard the previous announcement. Shopping will continue as normal.',
       'The mall is now closed. Please remain calm and proceed to the nearest exit. There are no exits.',
       'Due to unforeseen circumstances, today\'s sale has been extended. Indefinitely.',
       'Would the owners of several hundred zombies please collect them from the food court.',

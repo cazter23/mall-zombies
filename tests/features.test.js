@@ -15,7 +15,7 @@ test('the mall lists its wall buys, the ammo cache, the upgrade desk and the att
   assert.equal(featuresOf(g.map, 'attachmentCounter').length, 8);
   assert.equal(featuresOf(g.map, 'upgradeDesk').length, 1);
   assert.deepEqual(featuresOf(g.map, 'wallBuy').map((w) => w.weapon), ['priceGun', 'nailGun', 'foamDartBlaster', 'confettiCannon', 'rivetRifle', 'coilNailer', 'barcodeScanner']);
-  assert.equal(featuresOf(g.map, 'ammoCache').length, 1);
+  assert.equal(featuresOf(g.map, 'ammoCache').length, 3);
   for (const f of g.map.features) {
     assert.ok(f.kind && f.name && f.zone in g.map.zones && f.position?.isVector3 && f.normal?.isVector3, f.name);
   }

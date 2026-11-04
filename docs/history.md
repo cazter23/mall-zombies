@@ -15,6 +15,15 @@ A separate articulated plastic model preserves limb poses while frozen, with har
 No map geometry or weapon balance changed. New mannequin tests cover observation, release/attacks, crowd/rescue,
 health/mix/cap/quota, death/reset/disposal, real cinema stair traversal and pause.
 
+## 26 October 2026 — Atrium and Cinema ammo machines
+
+Added RESTOCK-O-MATICs in the Grand Atrium's ground-floor northeast corner and Cinema lobby beside the projection-passage
+entrance. The Food Court machine remains; all three refill the held weapon for the existing 400-point price and require
+their own area to be unlocked. The shared machine builder now supports raised floors, including geometry, collision,
+signs, glow, pad and interaction spot. Recessed the body back and raised the inner mat to avoid shared decorative planes.
+Validation: production build and 36 focused tests pass, including purchases, ownership/reset, zombie navigation, floor
+height and coplanar checks. Browser screenshots inspected; both machines completed real 400-point refills without runtime errors.
+
 ## 26 October 2026 — wall-buy progression: Coil into Cinema
 
 Moved the single Heavy Coil Nailer wall buy from the Promenade to the Cinema projection passage's east wall at

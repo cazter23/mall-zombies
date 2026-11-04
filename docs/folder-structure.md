@@ -15,6 +15,12 @@ src/
   ui/retail.css         Retail presentation layer loaded after style.css: mall directory, distinct combat signs,
                         shelf tickets, personnel paperwork, facilities settings and handbook. Responsive + reduced motion.
   config/ui.js          Presentation timing, PA queue limit and brief weapon-role copy (no gameplay tuning)
+  config/attachmentVisuals.js Per-weapon attachment sizing, near-side rail placement, short-barrel spans and held reload copies.
+  weapons/attachmentComparison.js Compares fully resolved builds: magazine, reload, damage, range, accuracy, aim time and recoil.
+  weapons/models/shortBarrel.js Reversible front-segment geometry variants, preserving moving-parent transforms and owning both variants.
+  config/retailUnease.js Rare atrium display changes and localized back-room sound timings/ranges; no gameplay tuning.
+  game/features/retailUnease.js Called by the existing horror feature: unseen mannequin turn, shared empty-concourse TV feed,
+                        distant upstairs silhouette. Quiet intervals, comfort gates, reset and static-batching-safe hooks.
   ui/announcements.js   Bounded PA queue: type introductions priority 2, incentives 1, routine messages 0;
                         clear on pause/death/reset; wall-clock presentation timers only
   config/
@@ -322,7 +328,9 @@ src/
                         switching, nothing past Platinum, NO ammo refill (the bigger magazine fills on the next reload/buy).
                         attachmentCounter.js = one attachment on a store counter: "fit <Attachment> on the <Gun> · <blurb>"
                         (g.pricing 'attachment', purchase kind 'attachment'), replaces that slot on the gun in hand; no prompt when
-                        already fitted, when it doesn't fit (Extended Nozzle on the Nail Gun), area closed or mid switch
+                        already fitted, when it doesn't fit (Extended Nozzle on the Nail Gun), area closed or busy. First purchase
+                        unlocks free refitting across compatible carried/replacement guns for the run; reset clears ownership.
+                        Counters display resolved comparisons and preserve ammunition. Fully owned attachments are ineligible for Flash Sales.
     debugCommands.js    createDebugCommands(game parts): the debug shortcuts as functions run(id) (spawn, cycleZombie, clearZombies,
                         killZombies, nextRound, jumpRounds, flashSale, addPoints, zeroPoints, god, giveGun, upgradeGun, doors, arena, panel);
                         resolve(code, shift), status(). g.debug. A new command = a table entry in config/debug.js + a function here.
@@ -442,7 +450,7 @@ src/
     mall/cinemaStairs.js  Physical service stairs with a smooth ramp under visible treads, solid supports, handrails, two culling
                         rooms and the floor-to-floor nav link. Lower shutter (1500) opens cinema + serviceCorridor; the original
                         cinema shutter now opens cinema + upstairs. No real lights, guns or spawn markers added.
-    mall/restockMachine.js  buildRestockMachine({ kit, center, wallAt, facing }) -> { position, normal, screen }: the RESTOCK-O-MATIC
+    mall/restockMachine.js  buildRestockMachine({ kit, center, wallAt, facing, floorY = 0 }) -> { position, normal, screen }: the RESTOCK-O-MATIC
                         (north/south walls): body + hazard kick plate + glowing header and tagline, a lit window of ammo boxes, keypad,
                         card reader, live canvas screen (screen.show({ title, line, note, tone })), side signs, the AMMO blade sign, the
                         hazard stand pad and glow pool on the floor. One collider. (props.vendingMachine is the old RESTOCK-O-MATIC, unused)

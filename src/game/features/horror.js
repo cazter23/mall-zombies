@@ -16,6 +16,7 @@
 import { look } from '../../config/look.js';
 import { gradeZoneAt } from '../../fx/zoneGrading.js';
 import { seededRandom } from '../../world/textures.js';
+import { buildRetailUnease } from './retailUnease.js';
 
 const between = (rand, [a, b]) => a + (b - a) * rand();
 // Flicker holds each on/off state at least this long: under 3 flashes a second (photosensitivity guidance).
@@ -25,6 +26,7 @@ export function buildHorror(feature, { map, events, rounds, player }) {
   const hooks = map.horror;
   if (!hooks) return {};
   const cfg = look.horror;
+  const unease = buildRetailUnease({ map, player, rounds });
   const { state } = hooks;
   const areas = hooks.areas.map((a) => ({ id: a.id, grades: a.grades, neons: a.neons.map((name) => hooks.neons[name]).filter(Boolean) }));
   const areaAt = (position) => {
@@ -115,6 +117,7 @@ export function buildHorror(feature, { map, events, rounds, player }) {
   });
 
   function newRun() {
+    unease.reset();
     restore();
     runs += 1;
     rand = seededRandom((feature.seed ?? 1) + runs * 7919);
@@ -128,6 +131,7 @@ export function buildHorror(feature, { map, events, rounds, player }) {
       return { round, cut: cut && { area: cut.area.id, timeLeft: cut.timeLeft }, pendingCut, deadLamps: lamps.filter((l) => l.dead).length };
     },
     update(dt) {
+      unease.update(dt);
       const want = look.runtime.horror !== false;
       if (want !== enabled) {
         enabled = want;

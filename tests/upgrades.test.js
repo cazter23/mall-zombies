@@ -81,11 +81,11 @@ test('attachments: one per slot (a new one replaces the old), read back from the
 test('what each attachment does (on the Price Gun), and that the Laser Pointer leaves aimed accuracy alone', () => {
   const g = (id) => at(priceGun, 'standard', id);
   const aimed = (d) => d.spread.base * d.spread.adsMultiplier;
-  assert.equal(g('extendedNozzle').falloff.start, priceGun.falloff.start * 1.4);
+  assert.equal(g('extendedNozzle').falloff.start, priceGun.falloff.start * 1.6);
   assert.ok(g('extendedNozzle').ads.seconds > priceGun.ads.seconds);
   assert.ok(g('sawnOff').damage > priceGun.damage && g('sawnOff').falloff.end < priceGun.falloff.end);
   assert.ok(g('laserPointer').spread.base < priceGun.spread.base);
-  assert.ok(Math.abs(aimed(g('laserPointer')) - aimed(priceGun) * 1.25) < 1e-9, 'aimed: only the 1.25 penalty');
+  assert.ok(Math.abs(aimed(g('laserPointer')) - aimed(priceGun)) < 1e-9, 'aimed accuracy is preserved');
   assert.ok(g('zoomLens').ads.fovMultiplier < priceGun.ads.fovMultiplier && aimed(g('zoomLens')) < aimed(priceGun));
   assert.ok(g('gripTape').recoil.pitchDegrees < priceGun.recoil.pitchDegrees);
   assert.ok(g('wristband').ads.seconds < priceGun.ads.seconds && g('wristband').recoil.pitchDegrees > priceGun.recoil.pitchDegrees);
@@ -156,7 +156,7 @@ test('the real game: upgrades stay through an ammo buy, go with a replaced gun, 
   up((b, m) => withTier(b, m, 'premium'));
   up((b, m) => withAttachment(b, m, 'jumboPack'));
   assert.equal(g.gun.def.damage, priceGun.damage * 2.1);
-  assert.equal(g.gun.def.magazineSize, Math.round(priceGun.magazineSize * 1.15 * 1.3));
+  assert.equal(g.gun.def.magazineSize, Math.round(priceGun.magazineSize * 1.15 * 1.5));
   g.gun.weapon.magazine = 1;
   g.gun.give(priceGun); // ammo buy
   assert.equal(g.gun.weapon.magazine, g.gun.def.magazineSize, 'refilled to the UPGRADED magazine');

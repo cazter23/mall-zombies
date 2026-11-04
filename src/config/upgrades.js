@@ -30,8 +30,8 @@ export const upgrades = {
     { id: 'platinum', name: 'Platinum', color: 0xffc83d, effects: { damage: 3.5, magazine: 1.3, reload: 0.8 }, holdsUntilRound: 24 },
   ],
 
-  // STORE ATTACHMENTS: one per slot, each sold at its store's counter. A small upside with a small
-  // downside; buying another one for the same slot replaces it. `fits` is worked out per gun (an
+  // STORE ATTACHMENTS: one per slot. First purchase unlocks free fitting at that store for the run;
+  // fitting another attachment in the same slot replaces it. `fits` is worked out per gun (an
   // attachment that would do nothing on a gun isn't offered for it).
   attachmentSlots: {
     barrel: { name: 'Barrel', store: 'Mega Mart hardware' },
@@ -42,37 +42,37 @@ export const upgrades = {
   attachments: {
     extendedNozzle: {
       slot: 'barrel', name: 'Extended Nozzle', blurb: 'Hits hard further out; slower to aim',
-      effects: { falloffRange: 1.4, adsTime: 1.15 },
+      effects: { falloffRange: 1.6, adsTime: 1.1 },
     },
     sawnOff: {
       slot: 'barrel', name: 'Sawn-Off', blurb: 'More damage up close; drops off sooner',
-      effects: { damage: 1.12, falloffRange: 0.7 },
+      effects: { damage: 1.2, falloffRange: 0.65 },
       // On a gun with no falloff (the Nail Gun) it adds this one instead.
-      falloffIfNone: { start: 12, end: 30, minMultiplier: 0.7 },
+      falloffIfNone: { start: 8, end: 22, minMultiplier: 0.65 },
     },
     laserPointer: {
-      slot: 'sight', name: 'Laser Pointer', blurb: 'Tighter hip fire; looser when aimed',
-      effects: { hipSpread: 0.75, adsSpread: 1.25 },
+      slot: 'sight', name: 'Laser Pointer', blurb: 'Tighter hip fire; aimed accuracy unchanged',
+      effects: { hipSpread: 0.65 },
     },
     zoomLens: {
       slot: 'sight', name: 'Zoom Lens', blurb: 'More zoom, tighter aim; slower to aim',
-      effects: { zoom: 0.9, adsSpread: 0.8, adsTime: 1.2 },
+      effects: { zoom: 0.9, adsSpread: 0.65, adsTime: 1.1 },
     },
     gripTape: {
-      slot: 'grip', name: 'Grip Tape', blurb: 'Less recoil; slower to aim',
-      effects: { recoil: 0.75, adsTime: 1.1 },
+      slot: 'grip', name: 'Grip Tape', blurb: 'Less recoil for controlled sustained fire',
+      effects: { recoil: 0.65 },
     },
     wristband: {
       slot: 'grip', name: 'Wristband', blurb: 'Faster to aim; more recoil',
-      effects: { adsTime: 0.8, recoil: 1.2 },
+      effects: { adsTime: 0.7, recoil: 1.1 },
     },
     jumboPack: {
       slot: 'magazine', name: 'Jumbo Pack', blurb: 'Bigger magazine; slower reload',
-      effects: { magazine: 1.3, reload: 1.15 },
+      effects: { magazine: 1.5, reload: 1.2 },
     },
     speedLoader: {
       slot: 'magazine', name: 'Speed Loader', blurb: 'Faster reload; smaller magazine',
-      effects: { reload: 0.75, magazine: 0.8 },
+      effects: { reload: 0.65, magazine: 0.9 },
     },
   },
 };

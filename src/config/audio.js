@@ -22,6 +22,18 @@ export const audio = {
   compressor: { thresholdDb: -10, ratio: 8, attack: 0, release: 0.08, kneeDb: 6 },
 
   sounds: {
+    // Sparse back-room sounds, spatially mixed and occluded by their closed storefronts.
+    backroomPhone: { volume: .25, layers: [
+      { type: 'tone', wave: 'triangle', freq: 980, freqEnd: 960, gain: .22, attack: .01, decay: .22 },
+      { type: 'tone', wave: 'sine', freq: 1240, freqEnd: 1200, gain: .12, attack: .01, decay: .2, delay: .09 },
+      { type: 'tone', wave: 'triangle', freq: 980, freqEnd: 960, gain: .22, attack: .01, decay: .22, delay: .5 },
+    ] },
+    distantSteps: { volume: .35, layers: [0, .64, 1.39].map(delay =>
+      ({ type: 'noise', filter: 'lowpass', freq: 650, q: .8, gain: .45, attack: .008, decay: .14, delay })) },
+    unseenCart: { volume: .25, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 570, q: 1.8, gain: .22, attack: .25, decay: 1.2 },
+      { type: 'tone', wave: 'sine', freq: 730, freqEnd: 560, gain: .06, attack: .2, decay: .7, delay: .3 },
+    ] },
     looseSignRattle: { volume: .18, layers: [
       { type: 'tone', wave: 'triangle', freq: 460, freqEnd: 330, gain: .22, attack: .002, decay: .18 },
       { type: 'noise', filter: 'bandpass', freq: 1800, q: 2, gain: .24, attack: .002, decay: .11, delay: .13 },

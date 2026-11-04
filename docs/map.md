@@ -91,6 +91,10 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   Twelve non-enterable shops on both floors have 2.35m interiors beyond cut wall openings: fashion, beauty, luggage, televisions,
   portraits and vacant fit-out units. Continuous glass colliders seal all windows and locked entrances; no new navigation or buys.
   Floors, ceilings, rear/side walls, stock, counters and luminous fixtures are scenery, with shared lettering for batching.
+  Quiet horror details: Second Skin's mannequin head can turn after a sighting and an extended look away; TV stores can share
+  an empty-concourse feed, and an upstairs vacant unit has a brief distant silhouette. The locked ground vacant unit contains
+  an abandoned lunch and off-hook phone; upstairs footprints lead toward an empty display. Sparse phone/cart/footstep sounds
+  use the existing spatial ambience and wall occlusion. Comfort > Horror effects disables anomalies; new runs restore them.
 - Food Court: x -20..20, z -14.3..-2.3, 6m ceiling, behind the 1000 shutter: the old concourse moved south (its four
   shops Good Sports / Nuts & Bolts / Play Time Toys / Byte Me are real stores now (see below), 2 pillars, 2 benches (north side), tree planter,
   end planters, ceiling lights, 4 spawns), placed relative to its center line FZ = -8.3. Three food stalls along the
@@ -169,6 +173,10 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   is live (the gun in hand, its ammo, the price / FULL / SALE). Solid 2.35 m body, one collider. A map feature of kind 'ammoCache'
   (game/features/ammoCache.js; mall/restockMachine.js builds it). It used to be a RESTOCK-O-MATIC on the west wall, which the
   Food Court stores made a far, awkward detour.
+  Two additional machines use the same 400-point held-weapon refill: the Grand Atrium's ground-floor northeast corner
+  (body centre x 30.5, back z 30.4, facing south), and Cinema lobby's north wall beside the projection-passage entrance
+  (body centre x -25.7, back z 5.3, floor y 6.3, facing south). Each requires its own area's ownership, has an independent
+  live screen and solid tall body, and leaves its front approach clear. No Parking or Promenade machine was added.
 - Wall-buy spots: start room east wall (5, 1.5, 10) = Price Gun; hallway south wall (11, 1.5, -2) = Nail Gun;
   Mega Mart north wall (31.5, 1.5, 6) = Foam Dart Blaster, Service Corridor west wall near the dead end
   (-23.28, 1.5, -12.2) = Confetti Cannon; Grand Atrium west arcade wall (8.02, 1.5, 21.5) = Rivet Rifle;

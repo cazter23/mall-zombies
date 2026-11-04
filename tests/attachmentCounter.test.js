@@ -63,7 +63,7 @@ test('buying at a counter fits the attachment to the gun in hand, replaces that 
     assert.equal(bought.at(-1).kind, 'attachment');
     assert.equal(bought.at(-1).id, id);
   }
-  assert.equal(g.gun.def.magazineSize, Math.round(weapons.priceGun.magazineSize * 1.3), 'the Jumbo Pack works');
+  assert.equal(g.gun.def.magazineSize, Math.round(weapons.priceGun.magazineSize * 1.5), 'the Jumbo Pack works');
   buy('zoomLens'); // same slot as the Laser Pointer
   assert.deepEqual(attachmentsOf(g.gun.modsFor('priceGun')), { sight: 'zoomLens', grip: 'gripTape', magazine: 'jumboPack', barrel: 'sawnOff' });
   assert.deepEqual(g.gun.modsFor('stapleGun'), [], 'the other gun is untouched');
@@ -81,7 +81,7 @@ test('no prompt for an attachment the gun already has, one that does nothing on 
   standAt('laserPointer'); t.tick(1);
   assert.equal(g.interactions.prompt, null, 'mid switch');
   t.tick(40);
-  assert.equal(g.interactions.prompt?.label, 'Laser Pointer on the Price Gun · Tighter hip fire; looser when aimed', 'names the gun in hand');
+  assert.equal(g.interactions.prompt?.label, 'Laser Pointer on the Price Gun · Tighter hip fire; aimed accuracy unchanged', 'names the gun in hand');
   assert.equal(g.interactions.prompt.verb, 'fit');
   // A fresh game: the Food Court is shut.
   const fresh = headlessGame();

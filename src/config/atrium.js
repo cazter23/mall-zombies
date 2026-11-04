@@ -2,6 +2,7 @@
 // the builder follows LAYOUT.atrium, so moving the room moves all of its dressing.
 // Shops have real interiors behind sealed glazing; they are scenery, never walkable rooms.
 export const atriumDetails = {
+  restockMachine: { x: 30.5, wallInset: .2 }, // ground-floor northeast corner, facing the court
   palette: { cream: 0xf3e3bf, plum: 0x4b304e, mint: 0x84b9a7, coral: 0xdd7e85,
     gold: 0xd1ae62, blue: 0x689bb1, ink: 0x28303c, chrome: 0xa4b4b7, paper: 0xe5d4b2 },
   shopInterior: {

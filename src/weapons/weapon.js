@@ -39,13 +39,14 @@ export class Weapon {
   }
 
   // The gun's stats changed (an upgrade was applied: gunStats.js resolveGun). Ammo carries over,
-  // clipped to the new magazine / reserve maximums; anything mid-way (burst, reload) is dropped.
+  // excess magazine rounds return to reserve; anything mid-way (burst, reload) is dropped.
   setDef(def) {
     this.cancelFire();
     this.cancelReload();
     this.def = def;
-    this.magazine = Math.min(this.magazine, def.magazineSize);
-    this.reserve = Math.min(this.reserve, def.startingReserve);
+    const excess = Math.max(0, this.magazine - def.magazineSize);
+    this.magazine -= excess;
+    this.reserve += excess; // Unloaded rounds remain yours, even if the reserve was already full.
   }
 
   // Lowering the gun abandons both remaining darts and buffered input.
@@ -80,14 +81,14 @@ export class Weapon {
 
   // Magazine and reserve both full (nothing an ammo buy would add).
   get isFull() {
-    return this.magazine === this.def.magazineSize && this.reserve === this.def.startingReserve;
+    return this.magazine === this.def.magazineSize && this.reserve >= this.def.startingReserve;
   }
 
   // Ammo buy: magazine and reserve back to full. Any reload in progress is finished off.
   refill() {
     this.cancelFire();
     this.magazine = this.def.magazineSize;
-    this.reserve = this.def.startingReserve;
+    this.reserve = Math.max(this.reserve, this.def.startingReserve);
     this.reloadTimer = 0;
     this.reloadPhase = null;
   }
@@ -95,7 +96,7 @@ export class Weapon {
   // Stockroom Delivery: reserve ammo, with a small ready-magazine top-up.
   // Never bypass a running reload or the Cannon's individual shell loading.
   restock(magazineFraction = 0) {
-    this.reserve = this.def.startingReserve;
+    this.reserve = Math.max(this.reserve, this.def.startingReserve);
     if (!this.isReloading && !this.isShellReload) {
       this.magazine = Math.max(this.magazine, Math.ceil(this.def.magazineSize * magazineFraction));
     }

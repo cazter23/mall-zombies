@@ -1,6 +1,7 @@
 // Closed shops with physical interiors beyond the arcade walls. Local +Z faces the atrium;
 // negative Z is inside each shop. The shell owns the continuous, non-vaultable glass barriers.
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { atriumDetails as cfg } from '../../config/atrium.js';
 import { makeSignTexture } from '../../world/textures.js';
 
@@ -54,11 +55,17 @@ export function buildAtriumStorefronts(kit, layout, upperY, root) {
     for (let i = 0; i < uv.count; i++) uv.setXY(i, region.u + uv.getX(i) * region.w, region.v + uv.getY(i) * region.h);
     return mesh(g, name, geometry, printMaterial, at);
   }
-  function mannequin(g, x, z, cloth, pose) {
+  function mannequin(g, x, z, cloth, pose, uneasy = false) {
     cyl(g, 'mannequin_base', .23, .04, [x, .22, z], chrome);
     box(g, 'mannequin_torso', [.32, .5, .19], [x, 1.14, z], cloth);
     box(g, 'mannequin_neck', [.07, .09, .07], [x, 1.41, z], cream);
-    mesh(g, 'mannequin_head', new THREE.IcosahedronGeometry(.13, 0), cream, [x, 1.56, z]);
+    if (uneasy) {
+      const head = new THREE.Group(); head.name = 'retail_unease_head'; head.userData.dynamic = true;
+      head.position.set(x, 1.56, z); g.add(head);
+      mesh(head, 'mannequin_head', new THREE.IcosahedronGeometry(.13, 0), cream, [0, 0, 0]);
+      const eyes = [-.044, .044].map(dx => new THREE.BoxGeometry(.024, .016, .012).translate(dx, .015, .118));
+      mesh(head, 'mannequin_eye_marks', mergeGeometries(eyes), ink, [0, 0, 0]); eyes.forEach(e => e.dispose());
+    } else mesh(g, 'mannequin_head', new THREE.IcosahedronGeometry(.13, 0), cream, [x, 1.56, z]);
     for (const side of [-1, 1]) {
       box(g, 'mannequin_leg', [.09, .55, .1], [x + side * .085, .63, z], cream);
       box(g, 'mannequin_shoe', [.12, .07, .2], [x + side * .085, .32, z + .04], ink);
@@ -159,7 +166,7 @@ export function buildAtriumStorefronts(kit, layout, upperY, root) {
       for (let i = 0; i < 2; i++) box(g, 'shop_stock_carton', [.3, .23, .28], [doorX + .1, .14 + i * .23, -2.02], paper);
     }
     if (s.theme === 'fashion') {
-      mannequin(g, -w / 2 + .65, -.51, colors[variant], variant);
+      mannequin(g, -w / 2 + .65, -.51, colors[variant], variant, index === 0);
       mannequin(g, doorLeft - .6, -.63, colors[3 - variant], 1 - variant);
       box(g, 'clothing_rail', [w - .55, .035, .035], [0, 1.91, -1.88], chrome);
       for (const x of [-w / 2 + .3, w / 2 - .3]) box(g, 'clothing_rail_support', [.03, 1.85, .03], [x, .98, -1.88], chrome);
@@ -228,6 +235,24 @@ export function buildAtriumStorefronts(kit, layout, upperY, root) {
         cyl(g, 'fitout_paint_lid', .125, .018, [x, .269, -.8], chrome);
       }
       for (let i = 0; i < 7; i++) box(g, 'closed_shutter_slat', [displayW, .055, .045], [dx, 2.44 - i * .055, .02], chrome);
+      if (!s.upper) {
+        // A lunch break interrupted in the locked unit: everything rests on its workbench.
+        box(g, 'abandoned_workbench', [.7, .05, .42], [-w / 2 + .55, .8, -1.03], cream);
+        for (const x of [-w / 2 + .27, -w / 2 + .83]) box(g, 'workbench_support', [.05, .76, .3], [x, .4, -1.03], chrome);
+        cyl(g, 'employee_drink', .045, .14, [-w / 2 + .35, .895, -1.03], cream);
+        box(g, 'unfinished_sandwich', [.15, .04, .11], [-w / 2 + .55, .845, -1], paper);
+        box(g, 'backroom_phone', [.18, .06, .16], [-w / 2 + .76, .855, -1.03], ink);
+        box(g, 'phone_receiver_off_hook', [.2, .025, .055], [-w / 2 + .73, .84, -.9], ink, [0, .3, 0]);
+      } else {
+        for (let i = 0; i < 4; i++) face(g, 'display_footprint', .07, .15, [-.65 + (i % 2) * .16, .02, -.4 - i * .24], ink, [-Math.PI / 2, 0, .15]);
+        const outline = new THREE.Shape();
+        outline.moveTo(-.2, 0); outline.lineTo(-.17, .7); outline.lineTo(-.25, .9);
+        outline.lineTo(-.14, 1.27); outline.lineTo(-.08, 1.3); outline.lineTo(-.1, 1.51);
+        outline.lineTo(.1, 1.51); outline.lineTo(.08, 1.3); outline.lineTo(.2, 1.22);
+        outline.lineTo(.24, .8); outline.lineTo(.13, .7); outline.lineTo(.18, 0); outline.closePath();
+        const figure = mesh(g, 'retail_unease_silhouette', new THREE.ShapeGeometry(outline), colors[3], [.65, .02, -1.25]);
+        figure.userData.dynamic = true; figure.visible = false;
+      }
     }
   }
   atlas.needsUpdate = true;

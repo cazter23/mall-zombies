@@ -21,6 +21,7 @@ import { buildAtriumDetails } from './atriumDetails.js';
 import { atriumShopOpenings } from './atriumStorefronts.js';
 import { atriumDetails } from '../../config/atrium.js';
 import { shutters } from '../../config/shutters.js';
+import { retailUnease } from '../../config/retailUnease.js';
 
 const WALL = 0xf6e7d2; // warm cream
 const STRIPE = 0xff8a5c; // sunset coral (as on the Promenade)
@@ -256,5 +257,7 @@ export function buildAtrium({ kit, props, layout, upperY }) {
       { id: 'atrium_hvac', kind: 'ventilation', zone: 'atrium', position: [cx, roofY - 0.5, cz], range: 14 },
       { id: 'atrium_fountain', kind: 'fountain', zone: 'atrium', position: [fx, 1.1, fz - r - .2], range: atriumDetails.fountain.soundRange },
     ],
+    ambientEvents: retailUnease.sounds.map(s => ({ ...s, unsettling: true, zone: 'atrium',
+      position: [s.wall === 'west' ? A.minX - .6 : A.maxX + .6, (s.upper ? upperY : 0) + s.height, A.minZ + s.at] })),
   };
 }

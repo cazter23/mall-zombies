@@ -223,7 +223,7 @@ export const settingDefs = [
   {
     // The horror layer (game/features/horror.js): lamps and neon die as the rounds climb, power cuts to emergency red.
     // Its flicker stays under 3 flashes a second; Calm turns it off.
-    id: 'horrorLighting', tab: 'Comfort', label: 'Horror lighting (dying lights, power cuts)', type: 'toggle', default: true,
+    id: 'horrorLighting', tab: 'Comfort', label: 'Horror effects (lighting, displays, eerie sounds)', type: 'toggle', default: true,
     apply: (v) => { look.runtime.horror = v; },
   },
 ];

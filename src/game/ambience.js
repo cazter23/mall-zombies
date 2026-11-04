@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { atmosphere } from '../config/environment.js';
 import { seededRandom } from '../world/textures.js';
+import { look } from '../config/look.js';
 
 /** Spatial mix only: the browser sound service owns Web Audio nodes. */
 export function createAmbience({ map, player, sound, colliders, random = seededRandom(809) }) {
@@ -52,6 +53,7 @@ export function createAmbience({ map, player, sound, colliders, random = seededR
       // and a single update never releases a backlog of sounds after a long frame.
       for (const state of events) {
         const e = state.event;
+        if (e.unsettling && (look.runtime.horror === false || !atmosphere.ambient.enabled)) continue;
         if (!map.zones[e.zone]?.open) continue;
         target.fromArray(e.position);
         const mix = spatialMix(target, e.range);

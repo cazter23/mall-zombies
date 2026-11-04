@@ -51,6 +51,7 @@ import { createWallet, pointsForHit } from './wallet.js';
 import { createRounds } from './rounds.js';
 import { createInteractions } from './interactions.js';
 import { buildFeatures, featuresOf } from './features/index.js';
+import { ownsAttachment } from './features/attachmentCounter.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 
@@ -334,6 +335,7 @@ export function createGame({
         : map.doors.some((d) => !d.isOpen);
       if (group.id === 'weapons') return featuresOf(map, 'wallBuy').some((w) => !gun.owns(w.weapon));
       if (group.id === 'tiers') return gun.slots.some((id) => nextTier(gun.modsFor(id)));
+      if (group.id === 'attachments') return featuresOf(map, 'attachmentCounter').some(s => !ownsAttachment(gun, s.attachment));
       return true;
     },
   });

@@ -27,6 +27,47 @@ const dt = 1 / feel.simulation.tickRate;
 const loadout = (def) => ({ def, weapon: new Weapon(def, { reloadSpeed: 1 }) });
 const cacheAt = { zone: 'foodCourt', position: new THREE.Vector3() };
 
+test('Atrium and Cinema machines refill through real interactions, respect ownership, and reset with the run', async () => {
+  const { headlessGame } = await import('./helpers/headlessGame.js');
+  const t = headlessGame(), { g } = t;
+  t.tick(); g.rounds.update = () => {}; g.zombies.clear();
+  g.wallet.earn(10000);
+  try {
+    const caches = featuresOf(g.map, 'ammoCache');
+    assert.deepEqual(caches.map(c => c.zone), ['foodCourt', 'atrium', 'cinema']);
+    for (const zone of ['atrium', 'cinema']) {
+      const cache = caches.find(c => c.zone === zone), p = cache.position;
+      const floorY = zone === 'cinema' ? g.map.navigation.floors[1] : 0;
+      // The front stand spot must be usable by both players and pursuing zombies.
+      const stand = new THREE.Vector3(p.x, floorY, p.z - 1.2);
+      assert.equal(overlapsSolid(stand, .35, 1.8, g.colliders, .3), false, `${zone}: clear approach`);
+      const item = ammoCacheItem({ cache, zones: g.map.zones, gun: g.gun, price: 400 });
+      g.gun.weapon.magazine = 1; g.gun.weapon.reserve = 0;
+      assert.equal(item.available(), false, `${zone}: locked`);
+      g.map.areaUnlocks.unlock(zone); t.tick(120);
+      const nav = createNavigation(g.colliders, zombieTypes.shopper, g.map.navigation);
+      nav.update(dt, stand);
+      const source = zone === 'cinema' ? [-31, -1] : [30, 20];
+      assert.ok(Number.isFinite(nav.distanceToTarget(source[0], source[1], floorY)), `${zone}: zombies can reach the front`);
+      g.player.teleport({ position: stand, yaw: Math.PI }); g.player.pitch = 0; t.tick();
+      assert.equal(g.interactions.prompt?.kind, 'ammoCache');
+      assert.equal(g.interactions.prompt.cost, 400);
+      const before = g.wallet.points;
+      t.press('KeyF', 40);
+      assert.equal(before - g.wallet.points, 400);
+      assert.equal(g.gun.weapon.isFull, true);
+      assert.notEqual(g.interactions.prompt?.kind, 'ammoCache');
+      const body = g.colliders.find(b => b.containsPoint(new THREE.Vector3(p.x, floorY + 1, p.z + .4)));
+      assert.ok(body, `${zone}: solid body at the correct floor`);
+      assert.equal(body.min.y, floorY);
+      assert.ok(body.max.y > floorY + 2.1);
+    }
+    g.resetRun();
+    assert.equal(g.map.zones.atrium.open, false);
+    assert.equal(g.map.zones.cinema.open, false);
+  } finally { g.map.dispose(); }
+});
+
 test('the cache refills the gun in hand, whichever gun it is, for the flat price', () => {
   for (const def of [weapons.stapleGun, weapons.priceGun, weapons.nailGun]) {
     const gun = loadout(def);
@@ -93,7 +134,7 @@ const yawToward = (normal) => Math.atan2(normal.x, normal.z);
 
 test('the real mall has the RESTOCK-O-MATIC just inside the Food Court door, on its north wall', () => {
   const { map } = setupMall();
-  assert.equal(featuresOf(map, 'ammoCache').length, 1);
+  assert.equal(featuresOf(map, 'ammoCache').length, 3);
   const cache = featuresOf(map, 'ammoCache')[0];
   assert.equal(cache.zone, 'foodCourt');
   const door = LAYOUT.foodCourtDoorway;

@@ -83,7 +83,7 @@ test('a weapon without a recovery delay retains immediate bloom recovery', () =>
   closeTo(legacy.spreadDegrees, def.spread.base + def.spread.perShot - def.spread.bloomRecovery * 0.01);
 });
 
-test('Laser Pointer preserves its hip benefit and ADS penalty through repeated shots and recovery', () => {
+test('Laser Pointer preserves its hip benefit and unchanged aimed accuracy through repeated shots and recovery', () => {
   const dt = 1 / feel.simulation.tickRate;
   for (const base of Object.values(weapons)) {
     const laser = resolveGun(base, withAttachment(base, [], 'laserPointer'));
@@ -94,7 +94,7 @@ test('Laser Pointer preserves its hip benefit and ADS penalty through repeated s
       plain.aim.update(1); fitted.aim.update(1); // fully ADS before comparing cones
       const weapon = new Weapon(base, { reloadSpeed: 1 });
       const effects = upgrades.attachments.laserPointer.effects;
-      const ratio = aiming ? effects.adsSpread : effects.hipSpread;
+      const ratio = aiming ? (effects.adsSpread ?? 1) : effects.hipSpread;
       let shots = 0;
       // Actual cadence (including Foam Dart bursts), then a pause long enough to recover fully.
       for (let tick = 0; tick < 340; tick++) {

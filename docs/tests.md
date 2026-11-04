@@ -1,5 +1,8 @@
 # Sunset Galleria: what each test file covers
 
+`tests/attachmentRework.test.js` covers paid run unlocks, discounted first purchases, free refits across replacement guns,
+ownership reset, reload blocking, ammo conservation/full-reserve overflow, fully-owned sale eligibility and four-slot builds.
+
 > Moved out of CLAUDE.md (verbatim) so the file every session loads stays small. Read it to find the test that guards something before you change it, or to see where a new test belongs.
 
 Menu regressions: `tests/menus.test.js` covers modal inert/focus isolation, Tab/Escape, controller presets including
@@ -22,6 +25,8 @@ upper-ring walking lanes and the escalator; zero added collision/lights, varied 
 resource disposal, ripple/mobile animation/reset/settings and the fountain's existing spatial-ambience path.
 `tests/atriumStorefronts.test.js` checks physical shop depth/shells, visible openings through the atrium masonry, arcade-facing
 glazing, continuous window/door barriers on both floors and a shared lettering material.
+`tests/retailUnease.test.js` checks sighting/look-away and quiet-interval gates, distant silhouette duration, TV feed visibility
+after static batching, reset/comfort restoration, and local sound ownership/pause/comfort gates.
 `tests/shutters.test.js` checks both wall axes/upstairs, fixed frame clearance, physical slat pitch/UV cropping, original
 collision timing/reversal/reset, finishes/aspects, static batching/disposal, real F purchases and motor/roll/stop sounds
 (pause freezes progress; death/reset cancel; debug open-all is silent), and unobscured low destination signs.
@@ -81,7 +86,8 @@ nav grid end to end and through a branch doorway), `interactions.test.js` buying
 works from where you stand, both shortcuts buy from either side but not through adjacent walls, the cannon cannot be
 bought across its shortcut, the Nail Gun can't be bought through its wall, other floors are out of reach, facing matters),
 `ammoCache.test.js` the vending machine (refills any gun in hand, flat price, label follows the gun, needs its area open, not
-through the wall, solid + too tall to climb, zombies can reach its front), `balance.test.js` GUN ROLES on real measured numbers
+through the wall, solid + too tall to climb, zombies can reach its front; Atrium/Cinema machines also exercise real F purchases,
+correct floor height, ownership and run reset), `balance.test.js` GUN ROLES on real measured numbers
 (Cannon strongest up close / weakest at range, round-8 close-blast reliability, Price below premium automatics, Foam's
 mid-range advantage, Nail's no-falloff penetration, Staple weakest, and round-8 body-shot targets).
 `weaponProgression.test.js` runs real aimed shots, bloom, reloads and upgrades against

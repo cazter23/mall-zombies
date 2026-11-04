@@ -111,12 +111,23 @@ export function createHud() {
   roundBanner.style.setProperty('--round-seconds', `${ui.roundSeconds}s`);
   hud.append(roundBanner);
 
-  // PA-style announcement under it ("Attention shoppers / Mall Walkers have entered the building").
+  // A small intercom unit: permanent station identification above the current message.
   const announceBanner = el('div', 'announce-banner');
   announceBanner.style.animationDuration = `${ui.announcementSeconds}s`;
+  const announceSpeaker = el('div', 'pa-speaker');
+  announceSpeaker.setAttribute('aria-hidden', 'true');
+  const announceDisplay = el('div', 'pa-display');
+  const announceHeader = el('div', 'pa-header');
+  const announceStation = el('span', 'pa-station');
+  announceStation.textContent = 'Galleria public address';
+  const announceIndicator = el('span', 'pa-indicator');
+  announceIndicator.textContent = 'On air';
+  announceIndicator.setAttribute('aria-hidden', 'true');
+  announceHeader.append(announceStation, announceIndicator);
   const announceKicker = el('div', 'announce-kicker');
   const announceText = el('div', 'announce-text');
-  announceBanner.append(announceKicker, announceText);
+  announceDisplay.append(announceHeader, announceKicker, announceText);
+  announceBanner.append(announceSpeaker, announceDisplay);
   announceBanner.setAttribute('role', 'status');
   const announcements = createAnnouncements({
     show({ kicker = '', text }) {
@@ -187,9 +198,9 @@ export function createHud() {
 
     // Peripheral feedback listens to the existing event bus; no purchase callbacks in gameplay.
     connectEvents(events) {
-      events.on('purchase', ({ label, kind, id }) => {
+      events.on('purchase', ({ label, kind, id, cost }) => {
         clearTimeout(purchaseTimer);
-        purchaseStamp.textContent = `Purchased: ${kind === 'attachment' ? upgrades.attachments[id]?.name ?? label : label}`;
+        purchaseStamp.textContent = `${kind === 'attachment' && cost === 0 ? 'Refitted' : 'Purchased'}: ${kind === 'attachment' ? upgrades.attachments[id]?.name ?? label : label}`;
         purchaseStamp.classList.remove('show');
         void purchaseStamp.offsetWidth;
         purchaseStamp.classList.add('show');
@@ -390,7 +401,7 @@ export function createHud() {
       interact.classList.toggle('show', !!info);
       if (!info) return;
       interactTitle.textContent = info.title ?? info.label;
-      interactCost.textContent = info.cost.toLocaleString('en-US');
+      interactCost.textContent = info.owned ? 'Owned · Free' : info.cost.toLocaleString('en-US');
       interactOriginal.hidden = !info.sale || !(info.originalCost > info.cost);
       interactOriginal.textContent = `${(info.originalCost ?? info.cost).toLocaleString('en-US')}`;
       // Ordinary purchases need one line. Keep the terms only where they affect an upgrade decision.

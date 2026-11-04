@@ -7,7 +7,7 @@
 // machine, so it can't be climbed and nobody gets behind it); the pad and glow add no collision. Everything lights
 // itself (unlit materials, no real lights, no flicker).
 //
-//   buildRestockMachine({ kit, center, wallAt, facing }) -> { position, normal, screen }
+//   buildRestockMachine({ kit, center, wallAt, facing, floorY = 0 }) -> { position, normal, screen }
 //     a machine on a wall that runs along X (north / south walls): center = its x, wallAt = the wall's z, facing = +1 / -1
 //     (the way its front faces, along Z)
 //     position / normal   the buy spot on its front and the outward direction (the interaction point)
@@ -112,14 +112,15 @@ function createScreen() {
   return { texture, show };
 }
 
-export function buildRestockMachine({ kit, center, wallAt, facing, spec = RESTOCK }) {
+export function buildRestockMachine({ kit, center, wallAt, facing, floorY = 0, spec = RESTOCK }) {
   const { width, depth, height, colors } = spec;
   const solid = (hex, options = {}) => new THREE.MeshStandardMaterial({ color: hex, roughness: 0.55, ...options });
   const glow = (hex) => new THREE.MeshBasicMaterial({ color: hex });
   const d = (offset) => wallAt + facing * offset;
   // u = x along the wall, a..b = z away from it
   const place = (u0, y0, u1, y1, a, b, material, options = { collide: false }) =>
-    kit.box(u0, y0, Math.min(a, b), u1, y1, Math.max(a, b), material, options);
+    kit.box(u0, floorY + y0, Math.min(a, b), u1, floorY + y1, Math.max(a, b), material, options);
+  const sign = (text, options) => kit.sign(text, { ...options, y: floorY + options.y });
   const signAt = (u, y, offset) => ({ x: u, y, z: d(offset), facing }); // a sign on the front, facing out
   const u0 = center - width / 2;
   const u1 = center + width / 2;
@@ -127,7 +128,7 @@ export function buildRestockMachine({ kit, center, wallAt, facing, spec = RESTOC
   hazard.map.repeat.set(width / 0.5, 1);
 
   // --- The solid body (the only collider), a darker base plinth, a cap that overhangs ---
-  place(u0, 0, u1, height - 0.02, d(0), d(depth), solid(colors.body), { collide: true, name: 'restock_body' }); // (2 cm under the cap's top: no shared plane)
+  place(u0, 0, u1, height - 0.02, d(-.01), d(depth), solid(colors.body), { collide: true, name: 'restock_body' }); // Recess the back behind the trim to avoid shared faces.
   place(u0 - 0.03, 0, u1 + 0.03, 0.22, d(0), d(depth + 0.03), hazard); // hazard kick-plate across the bottom
   place(u0 - 0.05, height - 0.34, u1 + 0.05, height, d(0), d(depth + 0.06), solid(colors.trim)); // the cap
   place(u0 - 0.06, height - 0.36, u1 + 0.06, height - 0.34, d(0), d(depth + 0.07), glow(colors.glow)); // glowing edge under the cap
@@ -135,8 +136,8 @@ export function buildRestockMachine({ kit, center, wallAt, facing, spec = RESTOC
 
   // --- Header: the big glowing name, then a tagline strip ---
   const header = { y: height - 0.17, width: width - 0.14, height: 0.26 };
-  kit.sign(spec.name, { ...signAt(center, header.y, depth + 0.075), width: header.width, height: header.height, background: '#1d1626', color: '#ffe14d' });
-  kit.sign('AMMO  ·  REFILLS  ·  NO QUESTIONS', { ...signAt(center, height - 0.41, depth + 0.03), width: width - 0.14, height: 0.13, background: '#b83f06', color: '#fff3d6' });
+  sign(spec.name, { ...signAt(center, header.y, depth + 0.075), width: header.width, height: header.height, background: '#1d1626', color: '#ffe14d' });
+  sign('AMMO  ·  REFILLS  ·  NO QUESTIONS', { ...signAt(center, height - 0.41, depth + 0.03), width: width - 0.14, height: 0.13, background: '#b83f06', color: '#fff3d6' });
 
   // --- Window: lit, with shelves of boxes of rounds ---
   const winU0 = u0 + 0.1;
@@ -180,8 +181,8 @@ export function buildRestockMachine({ kit, center, wallAt, facing, spec = RESTOC
   place(u0 + 0.14, 0.4, u1 - 0.12, 0.43, d(depth + 0.05), d(depth + 0.06), glow(colors.glow)); // ...with a lit lip
 
   // --- Side signs, so it reads when you walk past along the wall ---
-  kit.sign('AMMO', { x: u0 - 0.025, y: 1.5, z: d(depth / 2), facing: 'x-', width: depth - 0.1, height: 0.5, background: '#b83f06', color: '#fff3d6' });
-  kit.sign('AMMO', { x: u1 + 0.025, y: 1.5, z: d(depth / 2), facing: 'x+', width: depth - 0.1, height: 0.5, background: '#b83f06', color: '#fff3d6' });
+  sign('AMMO', { x: u0 - 0.025, y: 1.5, z: d(depth / 2), facing: 'x-', width: depth - 0.1, height: 0.5, background: '#b83f06', color: '#fff3d6' });
+  sign('AMMO', { x: u1 + 0.025, y: 1.5, z: d(depth / 2), facing: 'x+', width: depth - 0.1, height: 0.5, background: '#b83f06', color: '#fff3d6' });
 
   // --- The blade sign: a double-sided glowing "AMMO" arm sticking out of the wall above the machine ---
   const bladeY = height + 0.95;
@@ -191,7 +192,7 @@ export function buildRestockMachine({ kit, center, wallAt, facing, spec = RESTOC
   place(center - 0.02, bladeY - 0.6, center + 0.02, bladeY - 0.05, d(0.1), d(0.14), solid(colors.trim)); // wall bracket
   place(center - 0.02, bladeY - 0.6, center + 0.02, bladeY - 0.56, d(0.1), d(0.1 + bladeLen), solid(colors.trim)); // bottom rail
   for (const faceSide of [-1, 1]) {
-    kit.sign('AMMO ▸ ▸', {
+    sign('AMMO ▸ ▸', {
       x: center + faceSide * 0.035, y: bladeY - 0.3, z: bladeCenter, facing: faceSide < 0 ? 'x-' : 'x+',
       width: bladeLen - 0.1, height: 0.46, background: '#ff6a13', color: '#1d1626',
     });
@@ -202,20 +203,20 @@ export function buildRestockMachine({ kit, center, wallAt, facing, spec = RESTOC
   const padMaterial = new THREE.MeshStandardMaterial({ map: hazardTexture(), roughness: 0.8 });
   padMaterial.map.repeat.set((pad.u1 - pad.u0) / 0.5, 1);
   place(pad.u0, 0, pad.u1, 0.025, pad.a, pad.b, padMaterial, { collide: false, name: 'restock_pad' });
-  place(pad.u0 + 0.12, 0.025, pad.u1 - 0.12, 0.03, pad.a + 0.12 * facing, pad.b - 0.12 * facing, solid(0x2a2a30)); // dark inner mat
+  place(pad.u0 + 0.12, 0.04, pad.u1 - 0.12, 0.045, pad.a + 0.12 * facing, pad.b - 0.12 * facing, solid(0x2a2a30)); // dark inner mat, above decorative floor inlays
   const pool = new THREE.Mesh(
     new THREE.PlaneGeometry(width + 2.6, depth + 3.2),
     new THREE.MeshBasicMaterial({ map: glowTexture(), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
   );
   pool.rotation.x = -Math.PI / 2;
-  pool.position.set(center, 0.004, d(depth / 2 + 0.7));
+  pool.position.set(center, floorY + 0.004, d(depth / 2 + 0.7));
   pool.name = 'restock_glow';
   pool.renderOrder = 1;
   kit.group.add(pool);
 
   // --- Where the player buys: on the keypad column, just in front of the machine ---
   const front = d(depth + 0.04);
-  const position = new THREE.Vector3(colMid, 1.3, front);
+  const position = new THREE.Vector3(colMid, floorY + 1.3, front);
   const normal = new THREE.Vector3(0, 0, facing);
   return { position, normal, screen };
 }

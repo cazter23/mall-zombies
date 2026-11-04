@@ -266,7 +266,7 @@ export function createPlayerGun({
 
     /**
      * Replace the upgrades on a carried gun (Build-A-Blaster etc.): re-resolves its stats from its config
-     * entry + `mods` and hands them to its ammo/aim state. Ammo carries over (clipped to new maximums).
+     * entry + `mods` and hands them to its ammo/aim state. Ammo carries over (excess loaded rounds return to reserve).
      * Upgrades stay through ammo buys; they go with the gun when it's replaced, and on a new run.
      * Returns false if that gun isn't carried.
      */

@@ -53,6 +53,29 @@ test('Confetti support palm, fingers and thumb clear the receiver at rest and du
 
 const GUN_IDS = Object.keys(weapons);
 
+test('every attachment build survives firing/reload poses and short barrels restore their original geometry', () => {
+  for (const id of GUN_IDS) {
+    const model = buildWeaponModel(weapons[id]);
+    const original = new Map(); model.root.traverse(m => { if (m.isMesh) original.set(m, m.geometry); });
+    const visuals = createUpgradeVisuals(model);
+    for (const attachments of [
+      { barrel: 'extendedNozzle', sight: 'zoomLens', grip: 'gripTape', magazine: 'jumboPack' },
+      { barrel: 'sawnOff', sight: 'laserPointer', grip: 'wristband', magazine: 'speedLoader' },
+    ]) {
+      visuals.show({ attachments });
+      for (const reloadProgress of [0, .2, .5, .8, 1]) {
+        model.animate({ sinceFire: .03, reloadProgress, reloadWeight: reloadProgress > 0 && reloadProgress < 1 ? 1 : 0 });
+        model.root.updateMatrixWorld(true);
+        for (const holder of Object.values(visuals.parts)) {
+          assert.ok(holder.getWorldPosition(new THREE.Vector3()).toArray().every(Number.isFinite), `${id}: finite attachment pose`);
+        }
+      }
+    }
+    visuals.show({ attachments: {} });
+    for (const [mesh, geometry] of original) assert.equal(mesh.geometry, geometry, `${id}: stock geometry restored`);
+  }
+});
+
 test('every gun model has every upgrade mount, and every attachment that fits it has a part', () => {
   for (const id of GUN_IDS) {
     const model = buildWeaponModel(weapons[id]);
@@ -73,7 +96,7 @@ test('parts show only when fitted; the Extended Nozzle carries the muzzle (and f
     assert.ok(visuals.parts.extendedNozzle.visible && visuals.parts.laserPointer.visible && !visuals.parts.zoomLens.visible);
     assert.ok(model.muzzle.position.z < home - 0.02, `${id}: muzzle moved to the nozzle tip`);
     visuals.show({ tier: 'premium', attachments: { barrel: 'sawnOff' } });
-    assert.equal(model.muzzle.position.z, home, `${id}: back when the nozzle comes off`);
+    assert.ok(model.muzzle.position.z > home, `${id}: Sawn-Off shortens the muzzle`);
     const sticker = model.root.children.find((c) => c.children[0]?.children?.length === 2 && c.visible);
     assert.ok(sticker, `${id}: the tier sticker shows at Premium`);
     visuals.show({ tier: 'standard', attachments: {} });

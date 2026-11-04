@@ -399,7 +399,7 @@ function render(alpha, frameTime) {
   // A Flash Sale shows as a SALE mark on the price of whatever it discounted.
   hud.setInteract(prompt && {
     ...prompt,
-    sale: PRICE_CATEGORIES.includes(prompt.kind) && pricing.discountOf(prompt.kind) > 0,
+    sale: !prompt.owned && PRICE_CATEGORIES.includes(prompt.kind) && pricing.discountOf(prompt.kind) > 0,
     originalCost: PRICE_CATEGORIES.includes(prompt.kind) ? pricing.basePriceOf(prompt.kind, prompt.pricingId ?? prompt.id) : prompt.cost,
   }, buttonLabel('interact'));
   hud.setFlashSale(game.over ? null : flashSales.active);

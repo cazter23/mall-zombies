@@ -7,6 +7,7 @@ export const cinema = {
   passage: { minX: -23.7, maxX: -20.3, minZ: 5.8, maxZ: 27.8 },
   // Coil Nailer: beyond the lobby, above the service-wall dado and clear of equipment.
   wallBuy: { z: 20, height: 2, wallOffset: .06 },
+  restockMachine: { x: -25.7, wallInset: .2 }, // lobby north wall, beside the projection-passage entrance
   auditoriumEntry: { from: -40.8, to: -37.4, top: 2.8 },
   passageEntry: { from: -23.5, to: -20.5, top: 2.8 },
   auditoriumExit: { from: 22, to: 25.4, top: 2.8 },

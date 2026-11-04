@@ -130,6 +130,7 @@ export function createInteractions({ input, player, wallet, sound = null, onRelo
         id: focused.id ?? null,
         pricingId: focused.pricingId ?? focused.id ?? null,
         detail: focused.detail ?? '',
+        owned: focused.owned ?? false,
         shortfall: Math.max(0, focused.cost - wallet.points),
         cost: focused.cost,
         canAfford: wallet.canAfford(focused.cost),
