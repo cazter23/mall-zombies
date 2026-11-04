@@ -200,8 +200,11 @@ export function createPlayerBody(scene) {
   chest.position.y = .26;
   chest.scale.set(.38, .36, .20);
   upperBody.add(torso, chest);
+  const sleeves = new THREE.Group();
+  sleeves.name = 'playerBodySleeves';
+  upperBody.add(sleeves);
   for (const side of [-1, 1]) {
-    const sleeve = addDetail(upperBody, c.shirt, [.115, .18, .16], [side * .191, .338, 0]);
+    const sleeve = addDetail(sleeves, c.shirt, [.115, .18, .16], [side * .191, .338, 0]);
     sleeve.rotation.z = side * .25;
     addDetail(sleeve, c.shirtStripe, [1.02, .09, 1.02], [0, -.38, 0]);
     const collar = addDetail(upperBody, c.shirtTrim, [.065, .065, .022], [side * .05, .433, -.092]);
@@ -233,7 +236,8 @@ export function createPlayerBody(scene) {
     new THREE.MeshStandardMaterial({ color: c.pants, roughness: 0.8, flatShading: true }),
   );
   root.add(upperBody, belt, pelvis);
-  // The viewmodel supplies the first-person arms. An external view can show the head.
+  // The gun and melee viewmodels already supply the sleeved first-person arms.
+  sleeves.visible = false;
   head.visible = false;
 
   const shoeMat = new THREE.MeshStandardMaterial({ color: c.shoes, roughness: 0.72, flatShading: true });
@@ -350,6 +354,7 @@ export function createPlayerBody(scene) {
         Math.PI / 2, proneAmount) - b.run.lean * runAmount,
         Math.sin(walkPhase) * b.run.twist * runAmount, 0);
       head.visible = !firstPerson;
+      sleeves.visible = !firstPerson;
       torso.position.set(0, 0.05 + b.torsoHeight / 2, 0);
       torso.scale.set(b.waistWidth, b.torsoHeight, b.waistDepth);
       belt.position.set(0, hipY + 0.035, b.backOffset);

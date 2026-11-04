@@ -238,6 +238,7 @@ test('the complete employee model stays camera-safe and the sprint pose blends b
   const body = createPlayerBody(new THREE.Scene());
   const head = body.root.getObjectByName('playerHead');
   const chest = body.root.getObjectByName('playerChest');
+  const sleeves = body.root.getObjectByName('playerBodySleeves');
   const torso = body.root.getObjectByName('playerUpperBody');
   player.grounded = true;
   player.isSprinting = true;
@@ -246,12 +247,15 @@ test('the complete employee model stays camera-safe and the sprint pose blends b
   assert.ok(torso.rotation.x < -.1, 'torso leans into a steady sprint');
   assert.equal(chest.visible, true);
   assert.equal(head.visible, false, 'the face stays outside the first-person render');
+  assert.equal(sleeves.visible, false, 'the viewmodel supplies the first-person sleeves');
   body.update(dt, player, 1, { firstPerson: false });
   assert.equal(head.visible, true);
+  assert.equal(sleeves.visible, true);
 
   player.isSprinting = false;
   player.velocity.set(0, 0, 0);
   for (let i = 0; i < 60; i++) body.update(dt, player, 1);
   assert.ok(Math.abs(torso.rotation.x) < .001);
   assert.equal(head.visible, false);
+  assert.equal(sleeves.visible, false);
 });
