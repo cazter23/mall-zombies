@@ -6,6 +6,7 @@ import { createImpactMarks } from '../src/fx/impactMarks.js';
 import { impacts } from '../src/config/impacts.js';
 import { weapons } from '../src/config/weapons.js';
 import { castShot } from '../src/weapons/hitscan.js';
+import { seededRandom } from '../src/world/textures.js';
 
 function fixture() {
   const scene = new THREE.Scene(), map = new THREE.Group(); scene.add(map);
@@ -137,15 +138,19 @@ test('Cannon caps projection attempts even when every visible surface rejects re
   t.press('Mouse0'); assert.equal(attempts, impacts.maxPelletMarks);
 });
 
-test('real guns leave world signatures without paying points/hits; Cannon is capped and Play again clears them', () => {
+test('real guns leave world signatures without paying points/hits; Cannon is capped and Play again clears them', ctx => {
   for (const def of Object.values(weapons)) {
     const t = headlessGame(), { g } = t;
     t.tick(); g.zombies.clear(); g.rounds.update = () => {};
     if (def.id !== 'stapleGun') { g.gun.give(def); t.tick(40); }
     t.standAt(2, 12, -90);
     const points = g.wallet.points, ammo = g.gun.weapon.magazine;
-    t.press('Mouse0');
-    if (def.fireMode === 'charge') t.tick();
+    // Keep pellet spread repeatable without seeding map creation.
+    const random = ctx.mock.method(Math, 'random', seededRandom(421));
+    try {
+      t.press('Mouse0');
+      if (def.fireMode === 'charge') t.tick();
+    } finally { random.mock.restore(); }
     assert.equal(g.runStats.shotsFired, 1, def.id); assert.equal(g.runStats.shotsHit, 0);
     assert.equal(g.wallet.points, points); assert.equal(g.gun.weapon.magazine, ammo - 1);
     assert.ok(g.effects.counts.marks >= 1, `${def.id}: real wall impact`);

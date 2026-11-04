@@ -23,8 +23,6 @@ export const promenade = {
       { x: -10.6, z: -2.25, width: 2.6, text: 'SHOPS  ·  EAST LOUNGE →', color: '#d9bddf' },
       { x: 11.2, z: 3.85, width: 2.4, text: 'GRAND ATRIUM →', color: '#e7c99a' },
     ],
-    workshop: { title: 'BUILD-A-BLASTER', subtitle: 'CUSTOM WORK ORDERS · OPEN',
-      notice: 'PARTY TRAP  /  SKATE FEED', neon: 0xeab68c, counter: { x: 0, height: 1.45, inset: .26 } },
     pretzel: { notice: 'BACK AFTER ONE LAST BREAK', menu: 'ORIGINAL  2.50    /    CINNAMON  SOLD OUT',
       colors: [0xb37841, 0xd29a57, 0xa36737] },
     shoe: { tickets: ['PAIRING IS CARING', 'LAST PAIR. BOTH LEFT.', 'SOLES FOR EVERY SOUL'],
@@ -33,6 +31,7 @@ export const promenade = {
   sections: [
     { id: 'promenade', minX: -20, maxX: 20, minZ: -4.5, maxZ: 6 },
     { id: 'shoePer', minX: -10.3, maxX: -3.7, minZ: 6, maxZ: 11.6 },
+    { id: 'workshop', minX: -3.3, maxX: 3.3, minZ: 6, maxZ: 11.5 },
   ],
   shoeStore: {
     from: -10, to: -4, depth: 5.3,
@@ -44,9 +43,18 @@ export const promenade = {
       display: 0x8c667f, bench: 0x6c536f, sole: 0xe9dfc8, mirror: 0x9bafb7, lamp: 0xf9cf9c,
       shoes: [0xbe7892, 0x4d789b, 0xb99757, 0x695487], boxes: [0x98816a, 0x635372, 0xae7b80] },
   },
+  workshop: {
+    from: -3, to: 3, depth: 5.2,
+    entrances: [{ from: -2.85, to: -.85, top: 2.7 }, { from: .85, to: 2.85, top: 2.7 }],
+    window: { from: -.85, to: .85, top: 2.7, sill: .62 },
+    bench: { halfWidth: 1.55, height: 1.02, offsetZ: 4.05, depth: .88, promptHeight: 1.43, promptInset: .15 },
+    floor: { light: '#dec9aa', dark: '#877582', grout: '#a09086', tileSize: .55 },
+    colors: { wall: 0xe6d4b0, cream: 0xf2dfaa, cabinet: 0xe1b76d, plum: 0x523a54, metal: 0x39333e,
+      wood: 0x99724f, paper: 0xf5ebd6, red: 0xc64140, lamp: 0xffcb8a, glass: 0xe2f7ef },
+    lamp: { x: 0, height: 2.55, offsetZ: 3.25, color: 0xffce99, intensity: 1.05, distance: 7 },
+  },
   expansionConnections: [
     { id: 'westWing', wall: 'west', from: -4.1, to: -1.7, top: 2.7, door: 'cinema', label: 'SUNSET CINEMA' },
     { id: 'eastWing', wall: 'east', from: -4.1, to: -1.7, top: 2.7, label: 'EAST WING · FUTURE EXPANSION' },
-    { id: 'workshop', wall: 'north', from: -1.3, to: 1.3, top: 2.7, label: 'COMING SOON' },
   ],
 };

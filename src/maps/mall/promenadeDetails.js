@@ -107,18 +107,13 @@ export function buildPromenadeDetails({ kit, looks, layout, floorY }) {
     for (const side of [-1, 1]) box('sign_drop', s.x + side * (s.width / 2 - .16), 3.41, s.z, .018, layout.height - 3.41, .018, c.brass);
   }
 
-  // Walk-up service window. The solid backing keeps the future annex sealed.
-  const shop = layout.shops.find(s => s.id === 'comingSoon'), mid = (shop.from + shop.to) / 2, front = r.maxZ;
-  box('workshop_frame', mid, 0, front - .07, shop.to - shop.from, 3.0, .14, c.plum);
-  box('workshop_window', mid, 1.16, front - .154, shop.to - shop.from - .36, 1.37, .025, c.dark);
-  box('workshop_counter', mid, 1.06, front - .135, 4.9, .075, .24, c.brass);
-  box('workshop_toolbox', -1.7, 1.14, front - .18, .48, .26, .12, c.teal);
-  box('workshop_receipts', 1.7, 1.14, front - .18, .24, .05, .12, c.cream);
-  box('workshop_header', mid, 2.52, front - .16, shop.to - shop.from - .16, .6, .10, c.dark);
-  looks.neon('promenade_workshop').text(d.workshop.title, { x: mid, y: y(2.87), z: front - .235, facing: -1, height: .29, color: d.workshop.neon });
-  sign('workshop_open', d.workshop.subtitle, mid, 2.13, front - .195, 4.8, .25);
-  sign('workshop_notice', d.workshop.notice, mid, 1.45, front - .20, 4.7, .25, -1, '#f2e6ce', '#56415d');
-  sign('workshop_schedule', 'BRING YOUR BLASTER TO THE BENCH', mid, .84, front - .20, 3.4, .22, -1, '#f2e6ce', '#56415d');
+  const front = r.maxZ;
+  const workshop = layout.workshop;
+  const center = (workshop.from + workshop.to) / 2;
+  box('workshop_header', center, 2.79, front - .09, workshop.to - workshop.from, .58, .16, c.plum);
+  looks.neon('promenade_workshop').text('BUILD-A-BLASTER', { x: center, y: y(3.08), z: front - .19,
+    facing: -1, height: .34, color: workshop.colors.lamp });
+  looks.pool(center, y(.018), front - .62, 5.8, 2.2, 'floor', '#ffc588', .26);
 
   // Pretzel counter: shallow scenic cabinet against the still-solid shop wall.
   const pretzel = layout.shops.find(s => s.id === 'pretzel'), pc = (pretzel.from + pretzel.to) / 2;

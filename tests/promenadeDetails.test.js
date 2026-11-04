@@ -81,5 +81,10 @@ test('room culling includes the wider lane and shoe-store room and shows both en
   const visible = visibleAreas({ areas: g.map.cullAreas, portals: g.map.cullPortals, camera: cam, isOpen: () => false });
   assert.ok(visible.has('shoePer') && visible.has('level2'), 'shop and visible promenade draw together');
   assert.equal(g.map.cullPortals.filter(p => p.a === 'level2' && p.b === 'shoePer').length, 2);
+  cam.position.set(0, Y + 1.6, 4.8); cam.lookAt(0, Y + 1.6, 8);
+  cam.updateMatrixWorld();
+  assert.ok(visibleAreas({ areas: g.map.cullAreas, portals: g.map.cullPortals, camera: cam, isOpen: () => false }).has('workshop'),
+    'display glass exposes the workshop from the promenade');
+  assert.equal(areaAt(g.map.cullAreas, new THREE.Vector3(0, Y + 1.6, 8))?.id, 'workshop');
   g.map.dispose();
 });

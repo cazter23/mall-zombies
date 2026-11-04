@@ -28,15 +28,16 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   floor y 6.3, ceiling 9.9. You step off the escalator into a 2.5m west lobby; the escalator well (x -16.5..-11.95, z 0.7..3.3) is fenced by
   railings on its north, south and east sides. The southern passage gained 2.5m; the balcony holes and central bridge are unchanged.
   SHOE-PER SALE x -10..-4 is a real store extending north to z 11.3, with 2.1m entrances x -9.8..-7.7 and -6.3..-4.2,
-  shoe shelves, fitting mirror/bench and a vaultable 0.65m display island. COMING SOON x -3..3 and PRETZEL PALACE x 4..10 remain closed.
+  shoe shelves, fitting mirror/bench and a vaultable 0.65m display island. PRETZEL PALACE x 4..10 remains closed.
   Eastern lounge: a low 1.1 x 0.8m sunset-medallion plinth at (14.2, 1.6) replaces the tree/bench enclosure; benches hug the south,
   east and north perimeter, leaving routes round both sides and a clear Atrium-shutter approach. Directory on the south wall,
   east-wall payphones, magazine rack, upholstered seats and a backlit ceiling feature identify the junction. Southern benches, signs and two southern vents follow the
   new wall; all four existing upstairs spawn markers remain (east z 4.2, north x 16). The west connection (z -4.1..-1.7)
-  now leads through the 1250-point Cinema area entrance. The east connection and COMING SOON (x -1.3..1.3) remain sealed for expansion.
+  now leads through the 1250-point Cinema area entrance. The east connection remains sealed for expansion.
   Main floor and annex are sections in config/promenade.js, independent of the hallway; navigation/grade follow the upper sections.
-  BUILD-A-BLASTER takes work orders at the Promenade-facing service window (x 0, z 5.74).
-  Hold interact with the Confetti Cannon or Price Gun to install its custom build once per carried gun. The annex backing stays solid. Pretzel Palace remains closed but has a scenic warmer/counter/menu/grille. Shoe-store
+  BUILD-A-BLASTER is a walk-in workshop (interior x -3..3, z 6.3..11.2) with two 2 m entrances flanking a solid glass display.
+  The checkerboard floor and side displays leave a loop through the middle. Hold interact at the back bench (x 0, z 9.9)
+  with the Confetti Cannon or Price Gun to install its custom build once per carried gun. It shares Promenade ownership. Pretzel Palace remains closed but has a scenic warmer/counter/menu/grille. Shoe-store
   tickets/fitting shoes and two-sided hanging directional signs complete the pass. No new weapons or spawn markers.
   The elevator stays sealed. Data is exposed through LAYOUT.level2; see mall/levelTwo.js, promenadeShop.js and promenadeDetails.js.
 - HOFFMAN'S · Est. Forever (zone 'departmentStore', maps/mall/departmentStore.js): the department store north of the hallway's

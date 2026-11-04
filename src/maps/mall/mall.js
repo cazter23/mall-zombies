@@ -94,7 +94,7 @@ export const LAYOUT = {
     height: 3.6,
     shops: [
       { id: 'shoePer', from: -10, to: -4, color: 0x7a5c8a, text: 'SHOE-PER SALE', signBackground: '#2b2233', signColor: '#c9b6e4', gate: 0.7, note: 'SPACE AVAILABLE · INQUIRE WITHIN' },
-      { id: 'comingSoon', from: -3, to: 3, color: 0xe6c37a, text: 'COMING SOON', signBackground: '#ffd23f', signColor: '#1d1626', note: 'A NEW LOOK IS COMING' },
+      { id: 'workshop', from: promenade.workshop.from, to: promenade.workshop.to },
       { id: 'pretzel', from: 4, to: 10, color: 0xd9822b, text: 'PRETZEL PALACE', signBackground: '#5c2e12', signColor: '#ffd9a8', gate: 2.0 },
     ],
     // Balcony voids: open holes in level 2's floor (= the hallway ceiling), railed, looking down into the hallway. The 4m strip
@@ -741,6 +741,8 @@ export function buildMall(scene, colliders) {
   // Start-room warm/cool lamps are built with its details (config/environment.js).
   // Mega Mart's two fixed lamps are built with its details (config/environment.js).
   for (const l of levelTwo.lamps) lamp(atmosphere.roomLights.level2, l.x, l.y, l.z);
+  const workLight = levelTwo.workshop.light;
+  lamp(workLight, workLight.x, workLight.y, workLight.z);
   for (const l of cinemaWing.lamps) lamp(l, l.x, l.y, l.z);
   for (const l of atrium.lamps) lamp(atmosphere.roomLights.atrium, l.x, l.y, l.z);
   for (const at of [3, 12]) lamp(atmosphere.roomLights.serviceCorridor, service.points[1].x, SC.height * 0.65, service.pointAt(1, at).z);
@@ -839,10 +841,9 @@ export function buildMall(scene, colliders) {
 
   // Everything (besides doors) the player interacts with, by kind: game/features/ builds each one.
   // New kinds (claw machine, fitting room, hazard switch...) are more entries here.
-  const bench = LAYOUT.level2.details.workshop.counter;
   const features = [
     { kind: 'workshop', name: 'buildABlaster', zone: 'upstairs',
-      position: new THREE.Vector3(bench.x, upperY + bench.height, LAYOUT.level2.rect.maxZ - bench.inset),
+      position: levelTwo.workshop.purchasePosition,
       normal: new THREE.Vector3(0, 0, -1) },
     ...wallBuys.map((w) => ({ kind: 'wallBuy', ...w })),
     // The RESTOCK-O-MATIC: buy a refill for the gun in your hand (g.pricing 'ammoCache'); its screen shows what it sells.
@@ -943,6 +944,8 @@ export function buildMall(scene, colliders) {
       { id: 'level2', ...LAYOUT.level2.rect, minY: upperY, maxY: upperY + LAYOUT.level2.height + 0.3 },
       { id: 'shoePer', ...LAYOUT.level2.sections.find(s => s.id === 'shoePer'), minZ: LAYOUT.level2.rect.maxZ + T,
         minY: upperY, maxY: upperY + LAYOUT.level2.height + 0.3 },
+      { id: 'workshop', ...LAYOUT.level2.sections.find(s => s.id === 'workshop'), minZ: LAYOUT.level2.rect.maxZ + T,
+        minY: upperY, maxY: upperY + LAYOUT.level2.height + T },
       { id: 'foodCourt', minX: F.minX, maxX: F.maxX, minY: 0, maxY: F.height + 0.3, minZ: F.minZ - 6, maxZ: F.maxZ }, // (+ the recessed stores)
       { id: 'megaMart', minX: M.minX + T, maxX: M.maxX, minY: 0, maxY: M.height + 0.3, minZ: M.minZ, maxZ: M.maxZ },
       { id: 'serviceCorridor', minX: H.minX - T - SC.width, maxX: H.minX - T, minY: 0, maxY: SC.height + 0.3, minZ: -14, maxZ: SCD.maxZ },
@@ -961,6 +964,9 @@ export function buildMall(scene, colliders) {
       ...cinemaConnection.portals,
       ...LAYOUT.level2.shoeStore.entrances.map(e => ({ a: 'level2', b: 'shoePer', minX: e.from, maxX: e.to,
         minY: upperY, maxY: upperY + e.top, minZ: LAYOUT.level2.rect.maxZ, maxZ: LAYOUT.level2.rect.maxZ + T })),
+      ...[...LAYOUT.level2.workshop.entrances, LAYOUT.level2.workshop.window].map(e => ({ a: 'level2', b: 'workshop',
+        minX: e.from, maxX: e.to, minY: upperY + (e.sill ?? 0), maxY: upperY + e.top,
+        minZ: LAYOUT.level2.rect.maxZ, maxZ: LAYOUT.level2.rect.maxZ + T })),
       { a: 'startRoom', b: 'hallway', door: 'startShutter', minX: D.minX, maxX: D.maxX, minY: 0, maxY: D.height, minZ: H.maxZ, maxZ: H.maxZ + T },
       { a: 'hallway', b: 'foodCourt', door: 'foodCourt', minX: FD.minX, maxX: FD.maxX, minY: 0, maxY: FD.height, minZ: H.minZ - T, maxZ: H.minZ },
       { a: 'hallway', b: 'megaMart', door: 'megaMart', minX: M.minX, maxX: M.minX + T, minY: 0, maxY: MD.height, minZ: MD.minZ, maxZ: MD.maxZ },

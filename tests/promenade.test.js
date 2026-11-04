@@ -70,8 +70,38 @@ test('the shoe store is a supported two-entrance loop, traversable in both direc
     for (const z of [5.6, 6, 6.3, 6.7]) assert.equal(overlapsSolid(new THREE.Vector3(x, Y, z),
       feel.player.radius, feel.player.height, g.colliders, feel.movement.stepTolerance), false, 'full standing clearance at threshold');
   }
-  // The work area remains visibly sealed; the playable store does not bypass it.
-  assert.ok(g.colliders.some(b => contains(b, 0, Y + 1, 6.15)));
+  g.map.dispose();
+});
+
+test('the workshop glass is solid and the room supports both loop directions and zombie pursuit', () => {
+  const t = fixture(), { g } = t;
+  const front = LAYOUT.level2.rect.maxZ;
+  const entrances = LAYOUT.level2.workshop.entrances.map(e => (e.from + e.to) / 2);
+  assert.ok(g.colliders.some(b => contains(b, 0, Y + 1.3, front + .13)), 'central display window blocks movement');
+  for (const [enter, exit] of [entrances, [...entrances].reverse()]) {
+    const start = new THREE.Vector3(enter, Y, front - .9);
+    g.player.teleport({ position: start, yaw: Math.PI });
+    const destinations = [[enter, front + 2.5], [exit, front + 2.5], [exit, front - .65]];
+    for (const [x, z] of destinations) {
+      t.input.held.add('KeyW');
+      let ticks = 0;
+      while (Math.hypot(g.player.position.x - x, g.player.position.z - z) > .15 && ticks++ < 120) {
+        g.player.yaw = Math.atan2(g.player.position.x - x, g.player.position.z - z);
+        t.tick();
+      }
+      assert.ok(ticks < 120, 'walkable route through the workshop');
+      assert.equal(g.player.position.y, Y);
+    }
+    t.input.clear();
+    const zombie = g.zombies.spawn('shopper', start);
+    zombie.position.copy(start);
+    zombie.setState('chasing');
+    g.player.teleport({ position: new THREE.Vector3(enter, Y, front + 2.7), yaw: 0 });
+    for (let i = 0; i < 350 && zombie.position.z < front + 1; i++) t.tick();
+    assert.ok(zombie.position.z >= front + 1, 'zombie can pursue the player inside');
+    assert.ok(Math.abs(zombie.position.y - Y) < .05);
+    g.zombies.clear();
+  }
   g.map.dispose();
 });
 

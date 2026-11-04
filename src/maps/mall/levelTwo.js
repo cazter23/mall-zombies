@@ -20,6 +20,7 @@ import * as THREE from 'three';
 import { slabPiecesWithHoles } from '../../world/mapKit.js';
 import { COLORS } from './palette.js';
 import { buildPromenadeShop } from './promenadeShop.js';
+import { buildWorkshopRoom } from './workshopRoom.js';
 
 const WALL = 0xf4dcc8; // warm peach
 const STRIPE = 0xff8a5c; // sunset coral
@@ -43,6 +44,7 @@ export function buildLevelTwo({ kit, props, floorY, supportRect, supportRects = 
     }
   }
   for (const section of layout.sections) for (const piece of slabPiecesWithHoles(section, [hole, ...voids])) {
+    if (section.id === 'workshop') continue; // checkerboard skin belongs to the workshop
     kit.tiledFloor(piece.minX, piece.minZ, piece.maxX, piece.maxZ,
       section.id === 'shoePer' ? layout.shoeStore.floor : { base: '#f0d2b0', grout: '#c9a47c', variation: 10, seed: 51 },
       { top: floorY + 0.012, thickness: 0.012, collide: false });
@@ -54,7 +56,7 @@ export function buildLevelTwo({ kit, props, floorY, supportRect, supportRects = 
   const reserved = layout.expansionConnections;
   const openings = side => reserved.filter(c => c.wall === side).map(c => ({ from: c.from, to: c.to, top: c.top }));
   const northOpenings = [...(link ? [{ from: link.from, to: link.to, top: link.top }] : []),
-    ...openings('north'), ...layout.shoeStore.entrances];
+    ...openings('north'), ...layout.shoeStore.entrances, ...layout.workshop.entrances, layout.workshop.window];
   kit.wall({
     along: 'x', from: rect.minX - T, to: rect.maxX + T, at0: rect.maxZ, at1: rect.maxZ + T, bottom: floorY, height: layout.height,
     openings: northOpenings,
@@ -130,7 +132,7 @@ export function buildLevelTwo({ kit, props, floorY, supportRect, supportRects = 
   const wallAt = rect.maxZ;
   for (const shop of layout.shops) {
     // The detail builder supplies these frontages; the shoe store has a real room.
-    if (['shoePer', 'comingSoon', 'pretzel'].includes(shop.id)) continue;
+    if (['shoePer', 'workshop', 'pretzel'].includes(shop.id)) continue;
     const w = shop.to - shop.from;
     const mid = (shop.from + shop.to) / 2;
     // Facade + dark window (0.12 / 0.15 m out from the wall), a sign band above, and its leftovers
@@ -156,6 +158,7 @@ export function buildLevelTwo({ kit, props, floorY, supportRect, supportRects = 
     }
   }
   buildPromenadeShop({ kit, floorY, rect, layout });
+  const workshop = buildWorkshopRoom({ kit, floorY, layout });
 
   // --- Seating: a bench ring round a planter (east), benches along the south wall (west) --------------------------------
   const wood = mat(COLORS.wood);
@@ -229,5 +232,5 @@ export function buildLevelTwo({ kit, props, floorY, supportRect, supportRects = 
     });
   }
 
-  return { spawns, lamps: layout.lamps.map((l) => ({ x: l.x, y: floorY + layout.height * 0.58, z: l.z })) };
+  return { spawns, workshop, lamps: layout.lamps.map((l) => ({ x: l.x, y: floorY + layout.height * 0.58, z: l.z })) };
 }
