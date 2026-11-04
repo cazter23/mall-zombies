@@ -57,6 +57,21 @@ export function buildWorkshopRoom({ kit, floorY, layout }) {
     box('shutter_lip', entry.from + .07, entry.top + .035, front - .16, entry.to - .07, entry.top + .07, front - .132, c.cabinet);
   }
   sign('CHOOSE  •  BUILD  •  NAME YOUR BLASTER', center, 1.38, front + .1, 1.48, .16, 'transparent', '#fff4dc');
+  box('display_deck', window.from + .09, .69, front + .24, window.to - .09, .77, front + .65, c.plum);
+  for (const [i, color] of [c.red, 0x74c9bb, c.cabinet].entries()) {
+    const x = center + (i - 1) * .48;
+    const top = .98 + (i % 2) * .13;
+    box('display_kit', x - .17, .78, front + .30, x + .17, top, front + .56, color);
+    sign('MAKE KIT', x, top - .08, front + .274, .28, .09, '#fff0cb', '#253c87');
+  }
+  for (const side of [-1, 1]) {
+    const x = side < 0 ? from + .035 : to - .035;
+    const facing = side < 0 ? 'x+' : 'x-';
+    sign(side < 0 ? 'TODAY’S BUILD CLUB' : 'MADE AT SUNSET GALLERIA', x, 2.03,
+      front + 1.28, 1.16, .32, '#294679', '#fff0cb', facing);
+    sign(side < 0 ? 'PICK  /  STUFF  /  STAMP' : 'TAKE HOME SOMETHING LOUD', x, 1.69,
+      front + 1.28, 1.16, .23, '#ffe39b', '#253c87', facing);
+  }
 
   // Back bench. Everything on the counter is over its collision footprint.
   const left = center - bench.halfWidth, right = center + bench.halfWidth;
@@ -78,6 +93,12 @@ export function buildWorkshopRoom({ kit, floorY, layout }) {
   receipt.rotation.x = -.6;
   box('unfinished_order', center - .3, bench.height + .006, benchFront + .2, center + .18, bench.height + .016, benchFront + .53, c.paper);
   box('order_pencil', center - .22, bench.height + .018, benchFront + .36, center + .06, bench.height + .038, benchFront + .385, c.red);
+  box('parts_tray', center + .28, bench.height + .004, benchFront + .47, center + .82, bench.height + .06, benchFront + .72, c.plum);
+  for (const [i, color] of [c.red, c.cabinet, 0x74c9bb].entries()) {
+    const x = center + .33 + i * .16;
+    box('tray_divider', x + .13, bench.height + .06, benchFront + .49, x + .15, bench.height + .105, benchFront + .7, c.cream);
+    box('tray_part', x, bench.height + .065, benchFront + .53, x + .10, bench.height + .13, benchFront + .65, color);
+  }
 
   box('pegboard', left, 1.38, back - .09, right, 2.44, back - .04, c.wood);
   for (let i = 0; i < 8; i++) {
@@ -149,6 +170,18 @@ export function buildWorkshopRoom({ kit, floorY, layout }) {
   }
   kit.group.add(fluff);
   sign('STUFF-O-MATIC', center, .50, machineZ - radius - .026, 1.11, .27, '#ffe39b', '#253c87');
+  // The operator station faces the rear bench. Keep its controls over the tower footprint.
+  box('control_panel', center - .25, .39, machineZ + .60, center + .25, .70, machineZ + .695, c.metal);
+  sign('FILL  /  PURGE', center, .625, machineZ + .723, .43, .10, '#ffe39b', '#253c87', 1);
+  for (const [i, color] of [0x74c9bb, c.cabinet, c.red].entries()) {
+    const x = center - .15 + i * .12;
+    box('panel_button', x, .46, machineZ + .698, x + .06, .52, machineZ + .716, color);
+  }
+  for (const dx of [-.44, .44]) {
+    cylinder('glass_support', .034, 1.43, 1.62, c.metal, {}, center + dx, machineZ + .43);
+    cylinder('support_collar', .057, .09, .98, c.cabinet, {}, center + dx, machineZ + .43);
+    cylinder('support_collar', .057, .09, 2.28, c.cabinet, {}, center + dx, machineZ + .43);
+  }
   for (const dx of [-.31, .31]) {
     const ear = new THREE.Mesh(new THREE.IcosahedronGeometry(.123, 1), kit.mat(0xf0b854));
     ear.position.set(center + dx * .68, floorY + 2.95, machineZ);

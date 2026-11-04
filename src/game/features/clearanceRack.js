@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { workshopBuilds, workshopModOf } from '../../config/workshop.js';
-import { makeSignTexture } from '../../world/textures.js';
+import { makeClearanceSticker } from './clearanceSticker.js';
 
 export function createClearanceRack({ gun, zombies, effects, sound }) {
   const cfg = workshopBuilds.clearanceRack;
@@ -28,9 +28,10 @@ export function createClearanceRack({ gun, zombies, effects, sound }) {
     if (tags.size === cfg.maxTags) untag(tags.keys().next().value);
     if (!geometry) {
       geometry = new THREE.PlaneGeometry(.34, .17);
-      material = new THREE.MeshBasicMaterial({ map: makeSignTexture('99¢', {
-        background: '#e84623', color: '#fff4ce', aspect: 2,
-      }), polygonOffset: true, polygonOffsetFactor: -2 });
+      material = new THREE.MeshBasicMaterial({
+        map: makeClearanceSticker(), alphaTest: .45, toneMapped: false,
+        polygonOffset: true, polygonOffsetFactor: -2,
+      });
     }
     const stickers = new THREE.Group();
     stickers.name = 'clearanceSticker';
