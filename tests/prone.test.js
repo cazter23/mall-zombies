@@ -232,3 +232,26 @@ test('the prone body stays above the floor and below its clearance, trailing beh
   assert.ok(standing.max.y > feel.prone.height);
   assert.equal(body.root.children[0].rotation.x, 0, 'standing torso is upright again');
 });
+
+test('the complete employee model stays camera-safe and the sprint pose blends back to idle', () => {
+  const { player } = fixture();
+  const body = createPlayerBody(new THREE.Scene());
+  const head = body.root.getObjectByName('playerHead');
+  const chest = body.root.getObjectByName('playerChest');
+  const torso = body.root.getObjectByName('playerUpperBody');
+  player.grounded = true;
+  player.isSprinting = true;
+  player.velocity.z = -player.stats.sprintSpeed;
+  for (let i = 0; i < 30; i++) body.update(dt, player, 1);
+  assert.ok(torso.rotation.x < -.1, 'torso leans into a steady sprint');
+  assert.equal(chest.visible, true);
+  assert.equal(head.visible, false, 'the face stays outside the first-person render');
+  body.update(dt, player, 1, { firstPerson: false });
+  assert.equal(head.visible, true);
+
+  player.isSprinting = false;
+  player.velocity.set(0, 0, 0);
+  for (let i = 0; i < 60; i++) body.update(dt, player, 1);
+  assert.ok(Math.abs(torso.rotation.x) < .001);
+  assert.equal(head.visible, false);
+});

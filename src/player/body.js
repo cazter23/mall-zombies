@@ -161,6 +161,8 @@ export function createPlayerBody(scene) {
   // Lower torso (children[0]): tapered faceted polo waist
   const torsoGeo = getFacetedLimbGeometry(0.94, 1.0).clone();
   torsoGeo.rotateX(Math.PI / 2); // align taper along Y
+  const upperBody = new THREE.Group();
+  upperBody.name = 'playerUpperBody';
   const torso = new THREE.Mesh(
     torsoGeo,
     new THREE.MeshStandardMaterial({ color: c.shirt, roughness: 0.78, flatShading: true }),
@@ -193,11 +195,46 @@ export function createPlayerBody(scene) {
   key.rotation.z = -.08;
   addDetail(belt, c.uniformGold, [.05, .32, .04], [-.26, -1.50, -.51]);
 
+  const chest = new THREE.Mesh(torsoGeo, torso.material);
+  chest.name = 'playerChest';
+  chest.position.y = .26;
+  chest.scale.set(.38, .36, .20);
+  upperBody.add(torso, chest);
+  for (const side of [-1, 1]) {
+    const sleeve = addDetail(upperBody, c.shirt, [.115, .18, .16], [side * .191, .338, 0]);
+    sleeve.rotation.z = side * .25;
+    addDetail(sleeve, c.shirtStripe, [1.02, .09, 1.02], [0, -.38, 0]);
+    const collar = addDetail(upperBody, c.shirtTrim, [.065, .065, .022], [side * .05, .433, -.092]);
+    collar.rotation.z = side * -.43;
+  }
+  addDetail(upperBody, c.shirtStripe, [.065, .036, .012], [.107, .36, -.107]);
+  addDetail(upperBody, c.skinShade, [.095, .087, .097], [0, .462, 0]);
+
+  const head = new THREE.Group();
+  head.name = 'playerHead';
+  head.position.y = .58;
+  upperBody.add(head);
+  const skull = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 1),
+    new THREE.MeshStandardMaterial({ color: c.skin, roughness: .86, flatShading: true }));
+  skull.scale.set(.103, .127, .096);
+  head.add(skull);
+  const hair = new THREE.Mesh(skull.geometry, new THREE.MeshStandardMaterial({ color: c.belt, roughness: .94, flatShading: true }));
+  hair.scale.set(.108, .073, .101);
+  hair.position.set(0, .067, .014);
+  head.add(hair);
+  for (const side of [-1, 1]) {
+    addDetail(head, c.skinShade, [.026, .047, .037], [side * .095, -.015, .001]);
+    addDetail(head, c.belt, [.027, .011, .009], [side * .039, .014, -.089]);
+  }
+  addDetail(head, c.skinShade, [.028, .039, .032], [0, -.014, -.093]);
+
   const pelvis = new THREE.Mesh(
     torsoGeo,
     new THREE.MeshStandardMaterial({ color: c.pants, roughness: 0.8, flatShading: true }),
   );
-  root.add(torso, belt, pelvis);
+  root.add(upperBody, belt, pelvis);
+  // The viewmodel supplies the first-person arms. An external view can show the head.
+  head.visible = false;
 
   const shoeMat = new THREE.MeshStandardMaterial({ color: c.shoes, roughness: 0.72, flatShading: true });
   const soleMat = new THREE.MeshStandardMaterial({ color: c.soles, roughness: 0.85, flatShading: true });
@@ -240,6 +277,7 @@ export function createPlayerBody(scene) {
   // Animation state
   let walkPhase = 0;
   let moveAmount = 0; // 0 = standing still, 1 = walking speed (more when sprinting)
+  let runAmount = 0;
   let slideAmount = 0; // 0..1 blend into the slide pose
   let airAmount = 0; // 0..1 blend into the airborne tuck
   let vaultAmount = 0; // 0..1 how far into the vault's leg swing
@@ -271,7 +309,7 @@ export function createPlayerBody(scene) {
     root,
 
     // Call every rendered frame (after the player has updated).
-    update(frameTime, player, alpha) {
+    update(frameTime, player, alpha, { firstPerson = true } = {}) {
       // Follow the player (interpolated like the camera) and face where they look.
       root.position.lerpVectors(player.prevPosition, player.position, alpha);
       root.rotation.y = player.yaw;
@@ -293,18 +331,27 @@ export function createPlayerBody(scene) {
         / (feel.slide.eyeHeight - feel.prone.eyeHeight)));
       const targetMove = walking ? Math.min(speed / player.stats.walkSpeed, 1.6) : 0;
       moveAmount += (targetMove - moveAmount) * blend;
+      const running = walking && player.isSprinting;
+      runAmount += ((running ? Math.min(1, speed / player.stats.sprintSpeed) : 0) - runAmount) * blend;
       slideAmount += ((player.stance === 'slide' ? 1 : 0) - slideAmount) * blend;
       airAmount += ((player.grounded ? 0 : 1) - airAmount) * blend;
       // Vault: the legs swing up and over and back down along with the vault itself.
       const vp = player.vault ? player.vault.progress : null;
       vaultAmount = vp === null ? Math.max(0, vaultAmount - blend) : Math.sin(Math.min(1, vp) * Math.PI);
-      if (walking) walkPhase += ((speed * frameTime) / b.strideLength) * Math.PI * 2;
+      const stride = THREE.MathUtils.lerp(b.strideLength, b.run.strideLength, runAmount);
+      if (walking) walkPhase = (walkPhase + ((speed * frameTime) / stride) * Math.PI * 2) % (Math.PI * 2);
 
       // --- Torso and hips ---
-      const hipY = hipHeightForEye(eye);
-      torso.position.set(0, hipY + 0.05 + b.torsoHeight / 2, b.backOffset);
+      const hipY = hipHeightForEye(eye) - (1 - Math.cos(walkPhase * 2)) * .5 * b.run.hipRise * runAmount;
+      upperBody.position.set(0, hipY, b.backOffset);
+      const crouchAmount = THREE.MathUtils.clamp((feel.player.eyeHeight - eye)
+        / (feel.player.eyeHeight - feel.crouch.eyeHeight), 0, 1);
+      upperBody.rotation.set(THREE.MathUtils.lerp(b.crouchTorsoLean * crouchAmount,
+        Math.PI / 2, proneAmount) - b.run.lean * runAmount,
+        Math.sin(walkPhase) * b.run.twist * runAmount, 0);
+      head.visible = !firstPerson;
+      torso.position.set(0, 0.05 + b.torsoHeight / 2, 0);
       torso.scale.set(b.waistWidth, b.torsoHeight, b.waistDepth);
-      torso.rotation.x = proneAmount * Math.PI / 2;
       belt.position.set(0, hipY + 0.035, b.backOffset);
       belt.scale.set(b.waistWidth + 0.01, 0.035, b.waistDepth + 0.01);
       pelvis.position.set(0, hipY - 0.01, b.backOffset);
@@ -317,8 +364,15 @@ export function createPlayerBody(scene) {
 
         // Walk cycle: feet swing along the movement direction, opposite each other, lifting on the way forward.
         const phase = walkPhase + (leg.side > 0 ? 0 : Math.PI);
-        const swing = Math.sin(phase) * b.stepSwing * moveAmount;
-        const lift = Math.max(0, Math.cos(phase)) * b.stepLift * moveAmount;
+        // Ground contact sweeps backward at a steady rate; only the recovery foot lifts.
+        const cycle = (phase / (Math.PI * 2) + .25) % 1;
+        const planted = cycle < b.run.plantFraction;
+        const recovery = (cycle - b.run.plantFraction) / (1 - b.run.plantFraction);
+        const runSwing = planted ? 1 - 2 * cycle / b.run.plantFraction : -Math.cos(recovery * Math.PI);
+        const swing = THREE.MathUtils.lerp(Math.sin(phase) * b.stepSwing * Math.min(1, moveAmount),
+          runSwing * b.run.swing, runAmount);
+        const lift = THREE.MathUtils.lerp(Math.max(0, Math.cos(phase)) * b.stepLift * Math.min(1, moveAmount),
+          planted ? 0 : Math.sin(recovery * Math.PI) * b.run.lift, runAmount);
         const footZ = b.backOffset - b.feetForward;
         walkFoot.set(x + swingDir.x * swing, b.ankleHeight + lift, footZ + swingDir.y * swing);
 
@@ -349,11 +403,16 @@ export function createPlayerBody(scene) {
 
         // Sneaker: faceted upper + sole, toe pointing forward, ankle near the back.
         const toeOffset = 0.07 * (2 * proneAmount - 1);
-        leg.shoe.position.set(leg.foot.x, leg.foot.y - 0.03, leg.foot.z + toeOffset);
-        leg.shoe.rotation.set(0, proneAmount * Math.PI, 0);
+        const pitch = (planted ? 0 : -Math.sin(recovery * Math.PI * 2) * b.run.toeOff)
+          * runAmount * (1 - slideAmount) * (1 - airAmount) * (1 - vaultAmount);
+        const cosPitch = Math.cos(pitch), sinPitch = Math.sin(pitch);
+        leg.shoe.position.set(leg.foot.x, leg.foot.y - .03 * cosPitch - toeOffset * sinPitch,
+          leg.foot.z + toeOffset * cosPitch - .03 * sinPitch);
+        leg.shoe.rotation.set(pitch, proneAmount * Math.PI, 0);
         leg.shoe.scale.set(0.12, 0.08, 0.27);
-        leg.sole.position.set(leg.foot.x, leg.foot.y - 0.075, leg.foot.z + toeOffset);
-        leg.sole.rotation.set(0, proneAmount * Math.PI, 0);
+        leg.sole.position.set(leg.foot.x, leg.foot.y - .075 * cosPitch - toeOffset * sinPitch,
+          leg.foot.z + toeOffset * cosPitch - .075 * sinPitch);
+        leg.sole.rotation.set(pitch, proneAmount * Math.PI, 0);
         leg.sole.scale.set(0.125, 0.02, 0.28);
       }
     },

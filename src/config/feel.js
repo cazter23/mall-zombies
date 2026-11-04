@@ -146,14 +146,14 @@ export const feel = {
     fireBlendOutSpeed: 25, // ...and how fast the running pose drops when you shoot out of a sprint
     bobStride: 5.2, // meters per full bob cycle (two footsteps): ~3 steps/s at sprint speed
     walkBobHeight: 0.006, // a barely-there bob when walking...
-    sprintBobHeight: 0.035, // ...and a clear one when sprinting
-    sprintBobRollDegrees: 0.6, // slight side-to-side tilt with each step while sprinting
+    sprintBobHeight: 0.022, // restrained vertical movement when sprinting
+    sprintBobRollDegrees: 0.35, // slight side-to-side tilt with each step while sprinting
     gunDrop: 0.06, // the gun lowers this much (meters) in the running pose...
     gunRight: 0.035, // ...shifts right...
     gunBack: 0.03, // ...and pulls back toward you
-    gunPitchDegrees: 22, // muzzle tips down
-    gunYawDegrees: 28, // and turns inward across the body
-    gunRollDegrees: 18,
+    gunPitchDegrees: 17, // muzzle tips down
+    gunYawDegrees: 18, // and turns inward across the body
+    gunRollDegrees: 10,
     gunBobSide: 0.008, // the gun sways left-right once per two steps...
     gunBobUp: 0.005, // ...and dips slightly on each step
     speedLinesOpacity: 0.16, // faint streaks at the very edges of the screen at full sprint
@@ -306,7 +306,8 @@ export const feel = {
     thighLength: 0.46,
     shinLength: 0.44,
     ankleHeight: 0.08,
-    torsoHeight: 0.12, // only the lower torso (belly + shirt hem) is drawn; a full chest would fill the screen
+    torsoHeight: 0.12, // lower polo section, below the ribcage
+    crouchTorsoLean: .65, // radians; keeps the complete upper body under low cover
     waistWidth: 0.3, // slim, flat waist: a wide deep box reads as a big gut from above
     waistDepth: 0.15,
     backOffset: 0.36, // torso and hips sit this far behind the camera, so looking down you see past the belly
@@ -314,6 +315,8 @@ export const feel = {
     strideLength: 1.4, // meters traveled per full walk cycle (both steps)
     stepSwing: 0.28, // how far each foot swings forward/back at walking speed
     stepLift: 0.12, // how high feet lift while walking
+    run: { strideLength: 3.6, plantFraction: .30, swing: .48, lift: .24,
+      lean: .17, twist: .09, hipRise: .027, toeOff: .34 },
     slideFrontFoot: 0.75, // how far the leading foot reaches forward in a slide
     slideBackFoot: 0.62, // the other foot: less far forward, splayed out to the side
     slideSplay: 0.25, // how far the second foot splays sideways
