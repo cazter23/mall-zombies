@@ -39,6 +39,13 @@ test('the single-file build\'s late stylesheet is waited for before fonts are re
   assert.equal(asked.length, 1);
 });
 
+test('it watches the stylesheet link, not the preconnect link to the same host', async () => {
+  let selector;
+  const doc = { querySelector: (s) => { selector = s; return null; }, fonts: { load: () => Promise.resolve() } };
+  await waitForFonts(doc, { canvas: ['x'], sampleText: 'Aa', maxWaitMs: 5 });
+  assert.match(selector, /rel="stylesheet"/);
+});
+
 test('every font in the config is requested by the page, and the page boots through the wait', () => {
   const html = readFileSync('index.html', 'utf8');
   for (const font of fonts.canvas) {
