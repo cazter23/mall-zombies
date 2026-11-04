@@ -248,6 +248,7 @@ export function createPlayerBody(scene) {
     const thigh = makeFacetedLimbMesh(c.pants, 1.0, 0.84);
     const shin = makeFacetedLimbMesh(c.pants, 0.94, 0.76);
     const shoe = new THREE.Mesh(unitSneakerGeo, shoeMat);
+    shoe.name = side < 0 ? 'playerLeftShoe' : 'playerRightShoe';
     // Raised tongue, contrasting quarter panels, laces, and a gold heel pull.
     const tongue = new THREE.Mesh(unitBox, accentMat);
     tongue.scale.set(0.36, 0.18, 0.22);
@@ -373,12 +374,14 @@ export function createPlayerBody(scene) {
         const cycle = (phase / (Math.PI * 2) + .25) % 1;
         const planted = cycle < b.run.plantFraction;
         const recovery = (cycle - b.run.plantFraction) / (1 - b.run.plantFraction);
-        const runSwing = planted ? 1 - 2 * cycle / b.run.plantFraction : -Math.cos(recovery * Math.PI);
-        const swing = THREE.MathUtils.lerp(Math.sin(phase) * b.stepSwing * Math.min(1, moveAmount),
-          runSwing * b.run.swing, runAmount);
+        const runSwing = planted
+          ? THREE.MathUtils.lerp(b.run.landingReach, -b.run.pushBack, cycle / b.run.plantFraction)
+          : THREE.MathUtils.lerp(-b.run.pushBack, b.run.landingReach, (1 - Math.cos(recovery * Math.PI)) * .5);
+        const walkSwing = Math.sin(phase) * b.stepSwing * Math.min(1, moveAmount);
+        const swing = THREE.MathUtils.lerp(walkSwing, runSwing, runAmount);
         const lift = THREE.MathUtils.lerp(Math.max(0, Math.cos(phase)) * b.stepLift * Math.min(1, moveAmount),
-          planted ? 0 : Math.sin(recovery * Math.PI) * b.run.lift, runAmount);
-        const footZ = b.backOffset - b.feetForward;
+          planted ? 0 : Math.sin(recovery * (2 - recovery) * Math.PI) * b.run.lift, runAmount);
+        const footZ = b.backOffset - b.feetForward * (1 - runAmount);
         walkFoot.set(x + swingDir.x * swing, b.ankleHeight + lift, footZ + swingDir.y * swing);
 
         // Slide: both legs out in front in a loose V (right leads, left splays out),

@@ -244,6 +244,16 @@ test('the complete employee model stays camera-safe and the sprint pose blends b
   player.isSprinting = true;
   player.velocity.z = -player.stats.sprintSpeed;
   for (let i = 0; i < 30; i++) body.update(dt, player, 1);
+  const shoe = body.root.getObjectByName('playerLeftShoe');
+  let front = Infinity;
+  let rear = -Infinity;
+  for (let i = 0; i < 60; i++) {
+    body.update(dt, player, 1);
+    front = Math.min(front, shoe.position.z);
+    rear = Math.max(rear, shoe.position.z);
+  }
+  assert.ok(front > feel.body.backOffset - .23, 'the landing foot stays under the body');
+  assert.ok(rear > feel.body.backOffset + .4, 'the stride extends behind the hips');
   assert.ok(torso.rotation.x < -.1, 'torso leans into a steady sprint');
   assert.equal(chest.visible, true);
   assert.equal(head.visible, false, 'the face stays outside the first-person render');

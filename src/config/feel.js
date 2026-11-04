@@ -315,7 +315,7 @@ export const feel = {
     strideLength: 1.4, // meters traveled per full walk cycle (both steps)
     stepSwing: 0.28, // how far each foot swings forward/back at walking speed
     stepLift: 0.12, // how high feet lift while walking
-    run: { strideLength: 3.6, plantFraction: .30, swing: .48, lift: .24,
+    run: { strideLength: 3.6, plantFraction: .20, landingReach: .12, pushBack: .60, lift: .24,
       lean: .17, twist: .09, hipRise: .027, toeOff: .34 },
     slideFrontFoot: 0.75, // how far the leading foot reaches forward in a slide
     slideBackFoot: 0.62, // the other foot: less far forward, splayed out to the side
