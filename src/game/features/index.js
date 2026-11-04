@@ -16,6 +16,7 @@ import { buildWallBuy } from './wallBuy.js';
 import { buildAmmoCache } from './ammoCache.js';
 import { buildUpgradeDesk } from './upgradeDesk.js';
 import { buildAttachmentCounter } from './attachmentCounter.js';
+import { buildWorkshop } from './workshop.js';
 import { buildHorror } from './horror.js';
 
 const builders = {
@@ -23,6 +24,7 @@ const builders = {
   ammoCache: buildAmmoCache, // RESTOCK-O-MATIC: refill the gun in your hand
   upgradeDesk: buildUpgradeDesk, // Customer Service: the next Extended Warranty tier for the gun in your hand
   attachmentCounter: buildAttachmentCounter, // a store's attachment: fit it to the gun in your hand
+  workshop: buildWorkshop,
   horror: buildHorror, // the horror layer: lights die and the power cuts out as the rounds climb (visual only)
 };
 

@@ -164,11 +164,15 @@ export class Weapon {
     else begin('end', sr.endSeconds);
   }
 
-  finishReload() {
-    const needed = this.def.magazineSize - this.magazine;
-    const loaded = Math.min(needed, this.reserve);
+  feedFromReserve(limit) {
+    const loaded = Math.min(limit, this.def.magazineSize - this.magazine, this.reserve);
     this.magazine += loaded;
     this.reserve -= loaded;
+    return loaded;
+  }
+
+  finishReload() {
+    this.feedFromReserve(this.def.magazineSize);
     this.reloadTimer = 0;
   }
 

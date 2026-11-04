@@ -22,6 +22,7 @@
 import * as THREE from 'three';
 import { feel } from '../config/feel.js';
 import { Weapon } from './weapon.js';
+import { workshopBuilds, workshopModOf } from '../config/workshop.js';
 import { castShot } from './hitscan.js';
 import { createAim, applyConeSpread, pelletSpreadDegrees } from './aim.js';
 import { hitDamage, resolveGun } from './gunStats.js';
@@ -93,10 +94,16 @@ export function createPlayerGun({
           ? Math.round((d.charge.minTargets ?? 1) + (pierce.maxTargets - (d.charge.minTargets ?? 1)) * chargeRatio)
           : pierce.maxTargets)
       : 1;
-    const rays = [];
+    const trap = workshopBuilds.partyTrap;
+    const placementRay = workshopModOf(slot.mods) === 'partyTrap' && aim.amount >= trap.aimAmount
+      ? castShot(origin, direction, trap.placementRange, colliders, shootables) : null;
+    const placement = placementRay?.worldHit && placementRay.hits.length === 0 && placementRay.endNormal.y === 1
+      ? placementRay.end : null;
+    // A placement spends the normal shell and uses its recoil, with no extra pellet attack.
+    const rays = placement ? [placementRay] : [];
     const pelletCone = pelletSpreadDegrees(d, aim.amount);
     // Resolve all rays before damage: a killed front zombie still stops this blast's other pellets.
-    for (let i = 0; i < (d.pellets?.count ?? 1); i++) {
+    for (let i = 0; !placement && i < (d.pellets?.count ?? 1); i++) {
       const rayDirection = direction.clone();
       aim.applySpread(rayDirection);
       applyConeSpread(rayDirection, pelletCone);
@@ -110,6 +117,7 @@ export function createPlayerGun({
       ? { ...rays[0], ...(firstHit ?? {}), hits, pellets: rays }
       : rays[0];
     if (d.charge) shot.chargeRatio = chargeRatio;
+    if (placement) shot.workshopPlacement = placement;
 
     // Feedback, all this tick. Camera recoil (moves the crosshair, springs back) uses the aim
     // from before the kick, so this shot lands exactly where you were looking.

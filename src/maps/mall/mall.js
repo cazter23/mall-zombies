@@ -839,7 +839,11 @@ export function buildMall(scene, colliders) {
 
   // Everything (besides doors) the player interacts with, by kind: game/features/ builds each one.
   // New kinds (claw machine, fitting room, hazard switch...) are more entries here.
+  const bench = LAYOUT.level2.details.workshop.counter;
   const features = [
+    { kind: 'workshop', name: 'buildABlaster', zone: 'upstairs',
+      position: new THREE.Vector3(bench.x, upperY + bench.height, LAYOUT.level2.rect.maxZ - bench.inset),
+      normal: new THREE.Vector3(0, 0, -1) },
     ...wallBuys.map((w) => ({ kind: 'wallBuy', ...w })),
     // The RESTOCK-O-MATIC: buy a refill for the gun in your hand (g.pricing 'ammoCache'); its screen shows what it sells.
     { kind: 'ammoCache', name: 'ammocache_foodCourt', zone: 'foodCourt', position: foodCourtAmmo.position, normal: foodCourtAmmo.normal, screen: foodCourtAmmo.screen },

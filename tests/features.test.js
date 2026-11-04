@@ -10,7 +10,7 @@ import { economy } from '../src/config/economy.js';
 
 test('the mall lists its wall buys, the ammo cache, the upgrade desk and the attachment counters as features, each fully described', () => {
   const { g } = headlessGame();
-  assert.deepEqual(FEATURE_KINDS, ['wallBuy', 'ammoCache', 'upgradeDesk', 'attachmentCounter', 'horror']);
+  assert.deepEqual(FEATURE_KINDS, ['wallBuy', 'ammoCache', 'upgradeDesk', 'attachmentCounter', 'workshop', 'horror']);
   assert.equal(featuresOf(g.map, 'horror').length, 1);
   assert.equal(featuresOf(g.map, 'attachmentCounter').length, 8);
   assert.equal(featuresOf(g.map, 'upgradeDesk').length, 1);

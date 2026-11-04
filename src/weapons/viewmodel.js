@@ -32,6 +32,7 @@ import { createSpring, createSpring3 } from '../core/spring.js';
 import { samplePose } from '../core/keyframes.js';
 import { buildWeaponModel } from './models/index.js';
 import { createMuzzleFlash } from './muzzleFlash.js';
+import { workshopModOf } from '../config/workshop.js';
 import { createUpgradeVisuals } from './models/upgradeParts.js';
 import { tierOf, attachmentsOf } from './upgrades.js';
 
@@ -241,7 +242,7 @@ export function createViewmodel(weaponDefs, meleeDef) {
       const { model, flash } = active;
       // Show this gun's upgrades (shownDef is the resolved gun: its mods say which tier and attachments).
       const mods = shownDef.modList ?? [];
-      active.upgrades.show({ tier: tierOf(mods), attachments: attachmentsOf(mods) });
+      active.upgrades.show({ tier: tierOf(mods), attachments: attachmentsOf(mods), workshop: workshopModOf(mods) });
       const look = active.def.viewmodel;
       const ads = active.def.ads.offset;
       rig.position.copy(worldCamera.position);

@@ -1,7 +1,6 @@
 // Fixed, map-owned upper-floor dressing. No collision, lights, purchases or timers.
 // Low props sit on existing furniture; wall details stay within its capsule margin.
 import * as THREE from 'three';
-import { seededRandom } from '../../world/textures.js';
 
 export function buildPromenadeDetails({ kit, looks, layout, floorY }) {
   const d = layout.details, c = d.colors, r = layout.rect;
@@ -61,7 +60,7 @@ export function buildPromenadeDetails({ kit, looks, layout, floorY }) {
   ctx.fillStyle = '#b3545c'; ctx.beginPath(); ctx.arc(mx(d.directory.x), mz(r.minZ + .2), 8, 0, Math.PI * 2); ctx.fill();
   ctx.font = '600 20px Arial, "Helvetica Neue", sans-serif'; ctx.fillText('You are here', mx(d.directory.x), 380);
   ctx.fillStyle = '#56415d'; ctx.textAlign = 'left'; ctx.font = '22px Arial, "Helvetica Neue", sans-serif';
-  for (const [i, text] of ['01  Shoe-per Sale', '02  Build-a-Blaster · Coming Soon', '03  Pretzel Palace', '04  Grand Atrium  →', '05  ← Sunset Cinema'].entries()) ctx.fillText(text, 30, 435 + i * 36);
+  for (const [i, text] of ['01  Shoe-per Sale', '02  Build-a-Blaster · Workshop', '03  Pretzel Palace', '04  Grand Atrium  →', '05  ← Sunset Cinema'].entries()) ctx.fillText(text, 30, 435 + i * 36);
   ctx.font = '16px Arial, "Helvetica Neue", sans-serif'; ctx.fillText('East Wing · Future Expansion', 30, 622);
   const texture = new THREE.CanvasTexture(directory); texture.colorSpace = THREE.SRGBColorSpace;
   const dx = d.directory.x, dz = r.minZ + .11, dh = d.directory.height;
@@ -108,22 +107,18 @@ export function buildPromenadeDetails({ kit, looks, layout, floorY }) {
     for (const side of [-1, 1]) box('sign_drop', s.x + side * (s.width / 2 - .16), 3.41, s.z, .018, layout.height - 3.41, .018, c.brass);
   }
 
-  // Renovation frontage remains a solid reserved expansion, with no purchase or
-  // implied functioning upgrade station. All boards fit inside its old frontage.
+  // Walk-up service window. The solid backing keeps the future annex sealed.
   const shop = layout.shops.find(s => s.id === 'comingSoon'), mid = (shop.from + shop.to) / 2, front = r.maxZ;
   box('workshop_frame', mid, 0, front - .07, shop.to - shop.from, 3.0, .14, c.plum);
-  box('workshop_paper', mid, .22, front - .155, shop.to - shop.from - .36, 2.24, .025, c.cream);
-  const rand = seededRandom(d.workshop.paperSeed);
-  for (let i = 0; i < 7; i++) {
-    const x = shop.from + .55 + i * .8;
-    box('paper_seam', x, .25, front - .172, .012, 2.16, .008, c.peach);
-    box('renovation_tape', x, 2.23 + rand() * .08, front - .19, .16, .035, .018, c.brass);
-  }
+  box('workshop_window', mid, 1.16, front - .154, shop.to - shop.from - .36, 1.37, .025, c.dark);
+  box('workshop_counter', mid, 1.06, front - .135, 4.9, .075, .24, c.brass);
+  box('workshop_toolbox', -1.7, 1.14, front - .18, .48, .26, .12, c.teal);
+  box('workshop_receipts', 1.7, 1.14, front - .18, .24, .05, .12, c.cream);
   box('workshop_header', mid, 2.52, front - .16, shop.to - shop.from - .16, .6, .10, c.dark);
   looks.neon('promenade_workshop').text(d.workshop.title, { x: mid, y: y(2.87), z: front - .235, facing: -1, height: .29, color: d.workshop.neon });
-  sign('workshop_soon', d.workshop.subtitle, mid, 2.13, front - .195, 4.8, .25);
+  sign('workshop_open', d.workshop.subtitle, mid, 2.13, front - .195, 4.8, .25);
   sign('workshop_notice', d.workshop.notice, mid, 1.45, front - .20, 4.7, .25, -1, '#f2e6ce', '#56415d');
-  sign('workshop_schedule', 'OPENING DATE: UNDER REVIEW', mid, 1.05, front - .20, 3.4, .22, -1, '#f2e6ce', '#56415d');
+  sign('workshop_schedule', 'BRING YOUR BLASTER TO THE BENCH', mid, .84, front - .20, 3.4, .22, -1, '#f2e6ce', '#56415d');
 
   // Pretzel counter: shallow scenic cabinet against the still-solid shop wall.
   const pretzel = layout.shops.find(s => s.id === 'pretzel'), pc = (pretzel.from + pretzel.to) / 2;

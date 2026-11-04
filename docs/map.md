@@ -35,8 +35,8 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   new wall; all four existing upstairs spawn markers remain (east z 4.2, north x 16). The west connection (z -4.1..-1.7)
   now leads through the 1250-point Cinema area entrance. The east connection and COMING SOON (x -1.3..1.3) remain sealed for expansion.
   Main floor and annex are sections in config/promenade.js, independent of the hallway; navigation/grade follow the upper sections.
-  COMING SOON now has an illuminated BUILD-A-BLASTER workshop title, papered frontage and renovation notices; it stays sealed,
-  with no functioning upgrade station yet. Pretzel Palace remains closed but has a scenic warmer/counter/menu/grille. Shoe-store
+  BUILD-A-BLASTER takes work orders at the Promenade-facing service window (x 0, z 5.74).
+  Hold interact with the Confetti Cannon or Price Gun to install its custom build once per carried gun. The annex backing stays solid. Pretzel Palace remains closed but has a scenic warmer/counter/menu/grille. Shoe-store
   tickets/fitting shoes and two-sided hanging directional signs complete the pass. No new weapons or spawn markers.
   The elevator stays sealed. Data is exposed through LAYOUT.level2; see mall/levelTwo.js, promenadeShop.js and promenadeDetails.js.
 - HOFFMAN'S · Est. Forever (zone 'departmentStore', maps/mall/departmentStore.js): the department store north of the hallway's

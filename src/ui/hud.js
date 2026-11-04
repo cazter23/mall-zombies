@@ -200,7 +200,7 @@ export function createHud() {
     connectEvents(events) {
       events.on('purchase', ({ label, kind, id, cost }) => {
         clearTimeout(purchaseTimer);
-        purchaseStamp.textContent = `${kind === 'attachment' && cost === 0 ? 'Refitted' : 'Purchased'}: ${kind === 'attachment' ? upgrades.attachments[id]?.name ?? label : label}`;
+        purchaseStamp.textContent = kind === 'workshop' ? label : `${kind === 'attachment' && cost === 0 ? 'Refitted' : 'Purchased'}: ${kind === 'attachment' ? upgrades.attachments[id]?.name ?? label : label}`;
         purchaseStamp.classList.remove('show');
         void purchaseStamp.offsetWidth;
         purchaseStamp.classList.add('show');
@@ -405,7 +405,7 @@ export function createHud() {
       interactOriginal.hidden = !info.sale || !(info.originalCost > info.cost);
       interactOriginal.textContent = `${(info.originalCost ?? info.cost).toLocaleString('en-US')}`;
       // Ordinary purchases need one line. Keep the terms only where they affect an upgrade decision.
-      interactDetail.textContent = info.kind === 'attachment' ? info.detail ?? '' : info.kind === 'tier' ? 'Ammo not included' : '';
+      interactDetail.textContent = (info.kind === 'attachment' || info.kind === 'workshop') ? info.detail ?? '' : info.kind === 'tier' ? 'Ammo not included' : '';
       interactButton.textContent = button;
       interactStatus.textContent = !info.canAfford ? `Need ${(info.shortfall ?? 0).toLocaleString('en-US')} more` : '';
       interact.classList.toggle('cant', !info.canAfford);

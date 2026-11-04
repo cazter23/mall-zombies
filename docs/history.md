@@ -1,5 +1,9 @@
 # Sunset Galleria: build history ("Current state")
 
+## Build-A-Blaster workshop prototype
+
+The Promenade service window installs Party Trap on the Confetti Cannon and Skate Feed on the Price Gun. Aimed floor shots trade a shell for a timed charge; starting a slide transfers reserve rounds with a cooldown.
+
 > Moved out of CLAUDE.md (verbatim) so the file every session loads stays small. Roughly newest first: what each pass changed, how it was verified, measured numbers and decisions. Read it when you need the background of an area or a past decision; it is not needed to work on the code.
 
 ## 28 October 2026 — Mannequin enemy

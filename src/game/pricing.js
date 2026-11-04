@@ -24,6 +24,7 @@ const BASE = {
   ammo: (id) => economy.wallBuys[id]?.ammo,
   ammoCache: () => economy.ammoCache.price,
   tier: (id) => (Object.hasOwn(economy.upgrades.tiers, id) ? economy.upgrades.tiers[id] : undefined),
+  workshop: (id) => (Object.hasOwn(economy.upgrades.workshop, id) ? economy.upgrades.workshop[id] : undefined),
   attachment: (id) => (Object.hasOwn(economy.upgrades.attachments, id) ? economy.upgrades.attachments[id] : undefined),
 };
 

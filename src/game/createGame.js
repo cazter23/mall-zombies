@@ -322,6 +322,7 @@ export function createGame({
   // feature might need (game/features/index.js lists the context).
   const features = buildFeatures(map, {
     scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state,
+    colliders, effects, sound,
   });
 
   // FLASH SALES: the mall PA discounts one group of prices for a while (game/flashSales.js). A group is only picked

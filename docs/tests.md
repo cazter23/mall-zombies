@@ -1,5 +1,9 @@
 # Sunset Galleria: what each test file covers
 
+`tests/workshop.test.js` covers workshop purchases, ammo conservation during slides, trap arming, target shielding and run reset.
+
+`tests/workshop.test.js` covers Promenade purchase gating and pricing, retaining upgrades, reserve-fed slides, and real trap shots, arming, damage and reset.
+
 `tests/attachmentRework.test.js` covers paid run unlocks, discounted first purchases, free refits across replacement guns,
 ownership reset, reload blocking, ammo conservation/full-reserve overflow, fully-owned sale eligibility and four-slot builds.
 
