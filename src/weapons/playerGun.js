@@ -95,7 +95,8 @@ export function createPlayerGun({
           : pierce.maxTargets)
       : 1;
     const trap = workshopBuilds.partyTrap;
-    const placementRay = workshopModOf(slot.mods) === 'partyTrap' && aim.amount >= trap.aimAmount
+    const workshop = workshopModOf(slot.mods);
+    const placementRay = workshop === 'partyTrap' && aim.amount >= trap.aimAmount
       ? castShot(origin, direction, trap.placementRange, colliders, shootables) : null;
     const placement = placementRay?.worldHit && placementRay.hits.length === 0 && placementRay.endNormal.y === 1
       ? placementRay.end : null;
@@ -197,6 +198,10 @@ export function createPlayerGun({
       }
     }
     shot.weaponId = d.id; // capture the firing gun, even if a kill listener switches the loadout
+    if (workshop === 'clearanceRack') {
+      const resolvedHit = targets.values().next().value;
+      if (resolvedHit) shot.clearanceHit = { ...resolvedHit, weapon, baseDamage: d.damage };
+    }
     if (onShot) onShot(shot);
     return shot;
   }

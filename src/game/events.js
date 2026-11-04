@@ -11,6 +11,7 @@
 // THE EVENTS (payloads):
 //   'shot'        shot (including weaponId)              a gun fired (hitscan result): one per shot = one per staple /
 //                                                        sticker / nail / Foam dart (3 per burst) / whole shotgun blast
+//                workshopPlacement / clearanceHit carry the corresponding build's resolved shot data
 //   'hit'         { target, killed, headshot, melee }    a PLAYER attack hit a shootable (one per target per shot
 //                                                        or swing). Non-lethal zombie hits pay +10 here.
 //   'kill'        { zombie, headshot, melee, source }    a zombie died, WHATEVER killed it ('gun', 'melee', or a

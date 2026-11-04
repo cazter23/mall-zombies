@@ -37,18 +37,18 @@ test('Promenade work order is gated by the zone, charges the live price and pres
   g.gun.setMods(id, oldMods);
   g.pricing.setDiscount('workshop', .25);
   tick();
-  assert.equal(g.interactions.prompt?.id, 'skateFeed');
+  assert.equal(g.interactions.prompt?.id, 'clearanceRack');
   const cost = g.interactions.prompt.cost;
   const before = g.wallet.points;
   let receipt;
   g.events.on('purchase', p => { receipt = p; });
   press('KeyF', 30);
   assert.equal(g.wallet.points, before - cost);
-  assert.match(receipt.label, /Skate Feed installed.*reserve/);
+  assert.match(receipt.label, /Clearance Rack installed.*Headshot/);
   assert.deepEqual(g.gun.modsFor(id).slice(0, -1), oldMods);
-  assert.equal(workshopModOf(g.gun.modsFor(id)), 'skateFeed');
+  assert.equal(workshopModOf(g.gun.modsFor(id)), 'clearanceRack');
   g.gun.give(weapons.priceGun);
-  assert.equal(workshopModOf(g.gun.modsFor(id)), 'skateFeed');
+  assert.equal(workshopModOf(g.gun.modsFor(id)), 'clearanceRack');
   tick();
   assert.notEqual(g.interactions.prompt?.kind, 'workshop');
   g.resetRun();
@@ -56,30 +56,47 @@ test('Promenade work order is gated by the zone, charges the live price and pres
   g.map.dispose();
 });
 
-test('Skate Feed transfers reserve ammo once at the start of a real slide and respects cooldown', () => {
+test('Clearance Rack tags different zombies, caps at three, and pays secondary kills once on a marked headshot', () => {
   const t = fixture(weapons.priceGun), { g } = t;
-  g.gun.setMods('priceGun', [{ id: 'workshop', workshop: 'skateFeed' }]);
-  const weapon = g.gun.weapon;
-  weapon.magazine = 8; weapon.reserve = 30;
-  t.standAt(0, 13);
-  t.input.held.add('KeyW'); t.input.held.add('ShiftLeft'); t.tick(12);
-  t.press('KeyC', 1);
-  assert.equal(g.player.stance, 'slide');
-  assert.equal(weapon.magazine, 8 + workshopBuilds.skateFeed.rounds);
-  assert.equal(weapon.magazine + weapon.reserve, 38);
-  t.tick(5);
-  assert.equal(weapon.magazine, 14);
-  // Re-enter a slide while the feed is still on cooldown.
-  t.input.held.clear();
-  t.standAt(0, 13);
-  t.input.held.add('KeyW'); t.input.held.add('ShiftLeft'); t.tick(12); t.press('KeyC');
-  assert.equal(g.player.stance, 'slide');
-  assert.equal(weapon.magazine, 14);
+  g.gun.setMods('priceGun', [{ id: 'workshop', workshop: 'clearanceRack' }]);
+  const group = [-2.3, -.75, .75, 2.3].map(x => {
+    const zombie = g.zombies.spawn('shopper', new THREE.Vector3(x, 0, 10));
+    zombie.setState('chasing'); zombie.speed = 0; zombie.health = 1000;
+    return zombie;
+  });
+  const shoot = (z, part) => {
+    t.standAt(z.position.x, 12.5);
+    const point = z.hitboxes.find(h => h.part === part).box.getCenter(new THREE.Vector3());
+    g.player.pitch = Math.atan2(point.y - g.player.eyeHeight, 12.5 - point.z);
+    t.input.held.add('Mouse2'); t.tick(25);
+    t.press('Mouse0'); t.tick(10);
+  };
+  const tagged = z => z.model.root.getObjectByName('clearanceSticker') !== undefined;
+  for (const z of group) shoot(z, 'body');
+  assert.deepEqual(group.map(tagged), [false, true, true, true]);
+  assert.equal(g.gun.weapon.clearanceTagCount, 3);
+  shoot(group[0], 'head');
+  assert.equal(g.gun.weapon.clearanceTagCount, 3, 'an unmarked headshot does not spend tags');
+  group[1].health = 1; // even a lethal triggering headshot redeems the other tags
+  group[2].health = g.gun.def.damage * 2;
+  const before = group[3].health, kills = g.runStats.kills, shots = g.runStats.shotsFired;
+  shoot(group[1], 'head');
+  assert.equal(group[1].killedBy, 'gun');
+  assert.equal(group[2].killedBy, 'clearanceRack');
+  assert.equal(group[3].health, before - g.gun.def.damage * workshopBuilds.clearanceRack.damageMultiplier);
+  assert.equal(g.runStats.kills - kills, 2);
+  assert.equal(g.runStats.shotsFired - shots, 1);
+  assert.equal(g.gun.weapon.clearanceTagCount, 0);
+  assert.ok(group.every(z => !tagged(z)));
+  shoot(group[3], 'body');
+  assert.equal(g.gun.weapon.clearanceTagCount, 1);
+  g.resetRun();
+  assert.equal(tagged(group[3]), false, 'Play Again removes the remaining sticker');
   g.map.dispose();
 });
 
 test('Party Trap spends one shell, arms before damage, pays a kill once and cleans up on reset', () => {
-  const t = fixture(weapons.confettiCannon), { g } = t;
+  const t = fixture(weapons.confettiCannon), { g, scene } = t;
   g.gun.setMods('confettiCannon', [{ id: 'workshop', workshop: 'partyTrap' }]);
   t.standAt(0, 12, 0, -.8);
   t.input.held.add('Mouse2');
@@ -101,16 +118,20 @@ test('Party Trap spends one shell, arms before damage, pays a kill once and clea
   assert.ok(g.wallet.points > before);
   const particles = g.effects.counts.particles;
   g.zombies.render(0, 1);
-  assert.ok(target.model.root.scale.x > 1, 'body balloons during the trap death wind-up');
-  t.tick(15);
+  assert.ok(target.model.root.rotation.x > 0, 'ribbon yanks the body into a backward fall');
+  assert.ok(scene.getObjectByName('partyTrapRibbon'), 'ribbon connects the trap to its victim');
+  t.tick(26);
   assert.ok(!g.zombies.zombies.includes(target), 'pop removes the body instead of leaving a corpse');
   assert.equal(g.effects.counts.particles - particles, workshopBuilds.partyTrap.pop.count);
+  assert.ok(scene.getObjectByName('partyTrapRibbon'), 'ribbon hangs in the air after the pop');
+  assert.ok(t.sounds.includes('partySnap'));
 
   const paid = g.wallet.points;
   t.tick(15);
   assert.equal(g.wallet.points, paid);
   g.resetRun();
   assert.equal(g.gun.modsFor('confettiCannon'), null);
+  assert.equal(scene.getObjectByName('partyTrapRibbon'), undefined);
   g.map.dispose();
 });
 

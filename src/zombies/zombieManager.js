@@ -8,7 +8,7 @@
 // =============================================================================
 
 import * as THREE from 'three';
-import { workshopBuilds } from '../config/workshop.js';
+import { createPartyTrapDeaths } from './partyTrapDeath.js';
 import { feel } from '../config/feel.js';
 import { zombieTypes, zombieCrowd, zombieFailsafe, zombieSpawn } from '../config/zombies.js';
 import { economy, zombieHealthFor } from '../config/economy.js';
@@ -115,7 +115,10 @@ export function createZombieManager({
     return type.speed;
   }
 
-  const partyPop = workshopBuilds.partyTrap.pop;
+  const partyDeaths = createPartyTrapDeaths({ scene, effects, playPop: (position) => {
+    const volume = Math.max(0, 1 - position.distanceTo(player.position) / 14);
+    if (volume > 0) playZombieSound('partySnap', volume);
+  } });
   function onZombieDeath(zombie) {
     if (zombie.killedBy === 'partyTrap') {
       if (onKill) onKill(zombie);
@@ -379,7 +382,10 @@ export function createZombieManager({
     },
 
     // Remove every zombie immediately (debug).
+    playPartyTrapDeath: partyDeaths.start,
+
     clear() {
+      partyDeaths.clear();
       for (const z of zombies) {
         z.model.dispose();
         const i = shootables.indexOf(z);
@@ -397,15 +403,8 @@ export function createZombieManager({
       nav.update(dt, player.position);
       ctx.canAttack = canAttack();
       assignSurroundSlots(dt);
-      for (const z of zombies) {
-        z.update(dt, ctx);
-        if (z.killedBy === 'partyTrap' && z.stateTime >= partyPop.delaySeconds) {
-          scratch.copy(z.position);
-          scratch.y += z.type.hitbox.bodyTop * .75;
-          effects.confetti(scratch, UP, partyPop);
-          z.removed = true;
-        }
-      }
+      for (const z of zombies) z.update(dt, ctx);
+      partyDeaths.update(dt);
       resolveZombieOverlaps();
       keepPlayerOutOfZombies();
       rescueStuckZombies(dt);
@@ -426,15 +425,8 @@ export function createZombieManager({
 
     // Every rendered frame: animate and interpolate the models.
     render(frameTime, alpha) {
-      for (const z of zombies) {
-        if (z.killedBy !== 'partyTrap') {
-          z.model.update(frameTime, z, alpha);
-          continue;
-        }
-        // The body balloons for a few ticks, then the fixed update replaces it with paper.
-        const t = Math.min(1, z.stateTime / partyPop.delaySeconds);
-        z.model.root.scale.set(1 + .25 * t, 1 + .15 * t, 1 + .25 * t);
-      }
+      for (const z of zombies) if (!partyDeaths.has(z)) z.model.update(frameTime, z, alpha);
+      partyDeaths.render(alpha);
     },
   };
 }

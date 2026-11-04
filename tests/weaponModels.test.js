@@ -167,7 +167,7 @@ test('refreshed Price Gun, Staple Gun, Nail Gun, and Foam Dart Blaster expose th
 
 test('workshop builds change the housing and silhouette reversibly, with Party Trap sleeves on the hinge', () => {
   for (const [id, build, housingName] of [
-    ['priceGun', 'skateFeed', 'priceHousing'], ['confettiCannon', 'partyTrap', 'confettiReceiverTrim'],
+    ['priceGun', 'clearanceRack', 'priceHousing'], ['confettiCannon', 'partyTrap', 'confettiReceiverTrim'],
   ]) {
     const model = buildWeaponModel(weapons[id]);
     const housing = model.root.getObjectByName(housingName), original = housing.material;
@@ -178,6 +178,12 @@ test('workshop builds change the housing and silhouette reversibly, with Party T
     visuals.show({ workshop: build });
     assert.equal(chassis.visible, true);
     assert.notEqual(housing.material.color.getHex(), original.color.getHex());
+    if (build === 'clearanceRack') {
+      const lights = chassis.children.filter(child => child.name === 'clearanceTagLight');
+      assert.equal(lights.length, 3);
+      visuals.show({ workshop: build, workshopCount: 2 });
+      assert.deepEqual(lights.map(light => light.material.emissiveIntensity > 1), [true, true, false]);
+    }
     const sleeves = model.root.getObjectByName('partyTrap_hinge_trim');
     if (sleeves) {
       assert.equal(sleeves.parent.name, 'confettiBarrels');

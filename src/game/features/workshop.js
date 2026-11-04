@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { workshopBuilds, workshopModOf } from '../../config/workshop.js';
 import { castShot } from '../../weapons/hitscan.js';
+import { createClearanceRack } from './clearanceRack.js';
 
 export function buildWorkshop(bench, { map, gun, pricing, interactions, events, player, scene, zombies, colliders, effects, sound }) {
   const builds = Object.entries(workshopBuilds);
@@ -26,11 +27,12 @@ export function buildWorkshop(bench, { map, gun, pricing, interactions, events, 
     },
   });
 
-  const trap = workshopBuilds.partyTrap, skate = workshopBuilds.skateFeed;
+  const trap = workshopBuilds.partyTrap;
+  const clearance = createClearanceRack({ gun, zombies, effects, sound });
+  events.on('shot', ({ clearanceHit }) => { if (clearanceHit) clearance.hit(clearanceHit); });
   const traps = [];
   const up = new THREE.Vector3(0, 1, 0);
   const from = new THREE.Vector3(), direction = new THREE.Vector3();
-  let slideActive = false, feedCooldown = 0;
 
   function removeTrap(index) {
     const [{ mesh }] = traps.splice(index, 1);
@@ -78,27 +80,20 @@ export function buildWorkshop(bench, { map, gun, pricing, interactions, events, 
       const targets = zombies.zombies.filter(z => nearby(z, position, trap.blastRadius) && clearPath(z, position));
       targets.sort((a, b) => a.position.distanceToSquared(position) - b.position.distanceToSquared(position));
       for (const target of targets.slice(0, trap.maxTargets)) {
-        target.takeHit({ damage: trap.damage, part: 'body', source: 'partyTrap' });
+        const { killed } = target.takeHit({ damage: trap.damage, part: 'body', source: 'partyTrap' });
+        if (killed) zombies.playPartyTrapDeath(target, position);
       }
     }
   }
 
   return {
     update(dt) {
-      feedCooldown = Math.max(0, feedCooldown - dt);
-      const sliding = player.stance === 'slide';
-      if (sliding && !slideActive && feedCooldown === 0 && !gun.isSwitching &&
-          !gun.weapon.isReloading && workshopModOf(gun.modsFor(gun.def.id)) === 'skateFeed' &&
-          gun.weapon.feedFromReserve(skate.rounds) > 0) {
-        feedCooldown = skate.cooldownSeconds;
-      }
-      slideActive = sliding;
+      clearance.update();
       updateTraps(dt);
     },
     reset() {
       while (traps.length) removeTrap(traps.length - 1);
-      slideActive = false;
-      feedCooldown = 0;
+      clearance.reset();
     },
   };
 }

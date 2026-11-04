@@ -170,6 +170,14 @@ export const audio = {
     ] },
 
     // Deep chest-thumping pressure boom + opening crack, then a crisp paper flutter.
+    partySnap: { volume: .8, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 3300, q: .8, gain: .9, attack: .001, decay: .045 },
+      { type: 'noise', filter: 'lowpass', freq: 920, q: .7, gain: .48, attack: .002, decay: .075 },
+    ] },
+    clearanceStamp: { volume: .55, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 1800, q: 1.7, gain: .7, attack: .002, decay: .048 },
+      { type: 'tone', wave: 'triangle', freq: 680, freqEnd: 390, gain: .25, attack: .002, decay: .13 },
+    ] },
     confettiShot: { volume: 0.98, layers: [
       { type: 'tone', wave: 'sine', freq: 110, freqEnd: 38, gain: 1.15, attack: 0.001, decay: 0.25 },
       { type: 'tone', wave: 'sine', freq: 175, freqEnd: 55, gain: 1.15, attack: 0.002, decay: 0.22 },

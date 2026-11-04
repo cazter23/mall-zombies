@@ -1,14 +1,15 @@
 import * as THREE from 'three';
+import { workshopBuilds } from '../../config/workshop.js';
 import { weapons } from '../../config/weapons.js';
 
 export function createWorkshopVisual(model, gun) {
   const mount = model.mounts?.workshop;
   if (!mount) return null;
   const id = mount.id;
-  const skate = id === 'skateFeed';
-  const vm = (skate ? weapons.priceGun : weapons.confettiCannon).viewmodel;
-  const palette = skate
-    ? new Map([[vm.bodyColor, 0x21b49e], [0xd95f0e, 0x12675f], [vm.metalColor, 0xd4e8e6]])
+  const clearance = id === 'clearanceRack';
+  const vm = (clearance ? weapons.priceGun : weapons.confettiCannon).viewmodel;
+  const palette = clearance
+    ? new Map([[vm.bodyColor, 0xc23b29], [0xd95f0e, 0x831e22], [vm.metalColor, 0xf2cb61]])
     : new Map([[vm.bodyColor, 0xffcf51], [vm.accentColor, 0x3747a6], [vm.metalColor, 0xfaf0d8]]);
   const replacementMaterials = new Map(), swaps = [];
   gun.traverse(mesh => {
@@ -27,7 +28,7 @@ export function createWorkshopVisual(model, gun) {
   chassis.name = id + '_chassis';
   gun.add(chassis);
   const mat = (color, metalness = .12) => new THREE.MeshStandardMaterial({ color, metalness, roughness: .38, flatShading: true });
-  const teal = mat(0x28c6ae), midnight = mat(0x203047), white = mat(0xf2e9d7), chrome = mat(0xb5c9cb, .68);
+  const midnight = mat(0x203047), white = mat(0xf2e9d7);
   const pink = mat(0xf65e9a), blue = mat(0x3549a8), gold = mat(0xfad46f);
   function piece(geometry, material, x, y, z, parent = chassis) {
     const mesh = new THREE.Mesh(geometry, material);
@@ -45,19 +46,23 @@ export function createWorkshopVisual(model, gun) {
   }
 
   let hingeTrim;
-  if (skate) {
-    // Low sidecar with two skate wheels, an axle cage, and a visible feed strip.
-    for (const side of [-1, 1]) {
-      block(.026, .035, .114, side * .035, .007, -.058, midnight);
-      block(.012, .011, .12, side * .051, .026, -.059, teal);
-      block(.013, .009, .106, side * .05, -.013, -.059, chrome);
-      for (const z of [-.026, -.088]) {
-        roller(.023, .019, side * .057, .007, z, teal);
-        roller(.012, .006, side * .069, .007, z, white);
-        roller(.0055, .005, side * .073, .007, z, midnight);
-      }
-      block(.006, .008, .047, side * .059, .008, -.057, white);
+  const lights = [];
+  const lampOn = new THREE.MeshStandardMaterial({ color: 0xffdc65, emissive: 0xffad2c, emissiveIntensity: 1.6 });
+  if (clearance) {
+    // Chunky label printer and a rear-facing counter, clear of the sight and trigger.
+    const red = mat(0xb4242d), lampOff = mat(0x704737);
+    block(.035, .063, .118, -.037, .009, -.053, midnight);
+    block(.015, .051, .106, -.057, .012, -.057, red);
+    block(.011, .013, .107, -.065, .039, -.057, gold);
+    block(.012, .021, .085, -.066, .012, -.062, white);
+    for (const z of [-.095, -.075, -.055, -.035]) block(.004, .014, .009, -.073, .013, z, red);
+    block(.037, .031, .026, -.042, .015, .018, midnight);
+    for (let i = 0; i < workshopBuilds.clearanceRack.maxTags; i++) {
+      const light = block(.008, .014, .006, -.053 + i * .011, .019, .032, lampOff);
+      light.name = 'clearanceTagLight';
+      lights.push(light);
     }
+    for (const light of lights) light.userData.unlit = lampOff;
   } else {
     // A party popper chassis: side-mounted charge drum and scalloped sleeves
     // that travel with the existing break-action barrels during reload.
@@ -85,5 +90,7 @@ export function createWorkshopVisual(model, gun) {
     for (const { mesh, original, upgraded } of swaps) mesh.material = on ? upgraded : original;
   }
   show(false);
-  return { id, show };
+  return { id, show, setCount(count) {
+    for (const [index, light] of lights.entries()) light.material = index < count ? lampOn : light.userData.unlit;
+  } };
 }

@@ -474,7 +474,8 @@ export function createUpgradeVisuals(model, gun = model.root) {
 
   return {
     parts,
-    show({ tier = 'standard', attachments = {}, workshop } = {}) {
+    show({ tier = 'standard', attachments = {}, workshop, workshopCount = 0 } = {}) {
+      workshopVisual?.setCount(workshopCount);
       const key = `${tier}|${Object.values(attachments).join(',')}|${workshop ?? ''}`;
       if (key === shownKey) return;
       shownKey = key;
