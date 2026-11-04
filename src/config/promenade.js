@@ -31,7 +31,7 @@ export const promenade = {
   sections: [
     { id: 'promenade', minX: -20, maxX: 20, minZ: -4.5, maxZ: 6 },
     { id: 'shoePer', minX: -10.3, maxX: -3.7, minZ: 6, maxZ: 11.6 },
-    { id: 'workshop', minX: -3.3, maxX: 3.3, minZ: 6, maxZ: 11.5 },
+    { id: 'workshop', minX: -3.65, maxX: 3.65, minZ: 6, maxZ: 14.5 },
   ],
   shoeStore: {
     from: -10, to: -4, depth: 5.3,
@@ -44,14 +44,15 @@ export const promenade = {
       shoes: [0xbe7892, 0x4d789b, 0xb99757, 0x695487], boxes: [0x98816a, 0x635372, 0xae7b80] },
   },
   workshop: {
-    from: -3, to: 3, depth: 5.2,
-    entrances: [{ from: -2.85, to: -.85, top: 2.7 }, { from: .85, to: 2.85, top: 2.7 }],
-    window: { from: -.85, to: .85, top: 2.7, sill: .62 },
-    bench: { halfWidth: 1.55, height: 1.02, offsetZ: 4.05, depth: .88, promptHeight: 1.43, promptInset: .15 },
-    floor: { light: '#dec9aa', dark: '#877582', grout: '#a09086', tileSize: .55 },
-    colors: { wall: 0xe6d4b0, cream: 0xf2dfaa, cabinet: 0xe1b76d, plum: 0x523a54, metal: 0x39333e,
+    from: -3.35, to: 3.35, depth: 8.2,
+    entrances: [{ from: -3.18, to: -.95, top: 2.7 }, { from: .95, to: 3.18, top: 2.7 }],
+    window: { from: -.95, to: .95, top: 2.7, sill: .62 },
+    bench: { halfWidth: 1.55, height: 1.02, offsetZ: 6.92, depth: .88, promptHeight: 1.43, promptInset: .15 },
+    floor: { light: '#f4dfb3', dark: '#b3a483', grout: '#b4a78c', tileSize: .55 },
+    machine: { offsetZ: 3.48, radius: .71 },
+    colors: { wall: 0xf6dfb4, cream: 0xffedca, cabinet: 0xf2c569, plum: 0x253c87, metal: 0x354668,
       wood: 0x99724f, paper: 0xf5ebd6, red: 0xc64140, lamp: 0xffcb8a, glass: 0xe2f7ef },
-    lamp: { x: 0, height: 2.55, offsetZ: 3.25, color: 0xffce99, intensity: 1.05, distance: 7 },
+    lamp: { x: 0, height: 2.55, offsetZ: 5.85, color: 0xffce99, intensity: 1.05, distance: 7 },
   },
   expansionConnections: [
     { id: 'westWing', wall: 'west', from: -4.1, to: -1.7, top: 2.7, door: 'cinema', label: 'SUNSET CINEMA' },

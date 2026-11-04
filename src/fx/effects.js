@@ -59,6 +59,7 @@ export function createEffects(scene, { surfaces = [] } = {}) {
   const life = new Float32Array(max);
   const maxLife = new Float32Array(max);
   const size = new Float32Array(max);
+  const paper = new Uint8Array(max);
   // 0 = unrelated dust; 1 = confetti flesh; 2 = red flesh. A changed comfort
   // setting can remove existing flesh effects without touching wall/spawn puffs.
   const fleshMode = new Uint8Array(max);
@@ -122,7 +123,7 @@ export function createEffects(scene, { surfaces = [] } = {}) {
     pool.life[i] = blood.poolSeconds;
   }
 
-  function spawnParticle(point, velocity, hexColor, particleSize, flesh = 0) {
+  function spawnParticle(point, velocity, hexColor, particleSize, flesh = 0, isPaper = false) {
     if (alive >= max) return; // pool full: skip (it's just decoration)
     const i = alive++;
     pos[i * 3] = point.x;
@@ -141,14 +142,15 @@ export function createEffects(scene, { surfaces = [] } = {}) {
     col[i * 3] = color.r;
     col[i * 3 + 1] = color.g;
     col[i * 3 + 2] = color.b;
-    maxLife[i] = fx.particleLife * (0.6 + Math.random() * 0.4);
+    maxLife[i] = fx.particleLife * (0.6 + Math.random() * 0.4) * (isPaper ? 2.1 : 1);
+    paper[i] = isPaper;
     life[i] = maxLife[i];
     size[i] = particleSize * (0.6 + Math.random() * 0.8);
     fleshMode[i] = flesh;
   }
 
   // A burst flying mostly away from the surface (along `normal`), in random colors from `colors`.
-  function burst(point, normal, colors, count, speed, particleSize, flesh = 0, biasDir = null) {
+  function burst(point, normal, colors, count, speed, particleSize, flesh = 0, biasDir = null, isPaper = false) {
     const velocity = new THREE.Vector3();
     for (let n = 0; n < count; n++) {
       randomDir.set(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1).normalize();
@@ -163,7 +165,7 @@ export function createEffects(scene, { surfaces = [] } = {}) {
         velocity.z += biasDir.z * speed * through;
       }
       velocity.y += speed * 0.35; // a little pop upward reads as more cartoony
-      spawnParticle(point, velocity, colors[n % colors.length], particleSize, flesh);
+      spawnParticle(point, velocity, colors[n % colors.length], particleSize, flesh, isPaper);
     }
   }
 
@@ -203,6 +205,10 @@ export function createEffects(scene, { surfaces = [] } = {}) {
         return;
       }
       burst(point, normal, colors, count, speed, fx.particleSize, 1, direction);
+    },
+
+    confetti(point, normal, { colors, count, speed, size }) {
+      burst(point, normal, colors, count, speed, size, 0, null, true);
     },
 
     // A corpse's pool of blood on the floor at (x, z): spreads out under the body, then fades (red mode only).
@@ -268,11 +274,12 @@ export function createEffects(scene, { surfaces = [] } = {}) {
           life[i] = life[last];
           maxLife[i] = maxLife[last];
           size[i] = size[last];
+          paper[i] = paper[last];
           fleshMode[i] = fleshMode[last];
           continue; // re-check slot i (it now holds a different particle)
         }
 
-        const isConfetti = fleshMode[i] === 1 && (i & 1) === 0;
+        const isConfetti = paper[i] || (fleshMode[i] === 1 && (i & 1) === 0);
         const gravScale = isConfetti ? 0.62 : 1;
         vel[i * 3 + 1] -= fx.particleGravity * gravScale * dt;
         if (isConfetti && pos[i * 3 + 1] > 0.02) {
@@ -305,7 +312,8 @@ export function createEffects(scene, { surfaces = [] } = {}) {
 
         dummy.position.set(pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2]);
         dummy.rotation.set(rot[i * 3], rot[i * 3 + 1], rot[i * 3 + 2]);
-        if (isConfetti) dummy.scale.set(s * 1.38, s * 0.36, s * 1.05);
+        if (paper[i]) dummy.scale.set(s * (i % 3 === 0 ? 2.1 : 1.25), s * .13, s * .9);
+        else if (isConfetti) dummy.scale.set(s * 1.38, s * 0.36, s * 1.05);
         else dummy.scale.set(s, s, s);
         dummy.updateMatrix();
         particles.setMatrixAt(i, dummy.matrix);

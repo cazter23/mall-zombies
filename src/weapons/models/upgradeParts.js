@@ -20,7 +20,7 @@
 // =============================================================================
 
 import * as THREE from 'three';
-import { workshopBuilds } from '../../config/workshop.js';
+import { createWorkshopVisual } from './workshopBuilds.js';
 import { upgrades } from '../../config/upgrades.js';
 import { attachmentVisuals } from '../../config/attachmentVisuals.js';
 import { prepareShortBarrel } from './shortBarrel.js';
@@ -464,14 +464,7 @@ export function createUpgradeVisuals(model, gun = model.root) {
     sticker = { holder: place(s, mounts.sticker), face };
   }
 
-  const buildPart = mounts.workshop && new THREE.Group();
-  if (buildPart) {
-    const { id } = mounts.workshop;
-    box(buildPart, .012, .021, .048, 0, 0, 0, C.brass);
-    box(buildPart, .008, .013, .032, -.007, 0, 0, workshopBuilds[id].color, true);
-    place(buildPart, mounts.workshop).visible = true;
-    buildPart.visible = false;
-  }
+  const workshopVisual = createWorkshopVisual(model, gun);
 
   // The Extended Nozzle carries the muzzle (and its flash) forward to its tip.
   const muzzleHome = model.muzzle.position.clone();
@@ -485,7 +478,7 @@ export function createUpgradeVisuals(model, gun = model.root) {
       const key = `${tier}|${Object.values(attachments).join(',')}|${workshop ?? ''}`;
       if (key === shownKey) return;
       shownKey = key;
-      if (buildPart) buildPart.visible = workshop === mounts.workshop.id;
+      workshopVisual?.show(workshop === workshopVisual.id);
       const fitted = new Set(Object.values(attachments));
       for (const [id, holder] of Object.entries(parts)) holder.visible = fitted.has(id);
       for (const { id, copy } of reloadParts) copy.visible = fitted.has(id);

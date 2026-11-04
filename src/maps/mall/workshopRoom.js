@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { workshopBuilds } from '../../config/workshop.js';
+import { seededRandom } from '../../world/textures.js';
 
 function checkerboard({ light, dark, grout, tileSize }, width, depth) {
   const canvas = document.createElement('canvas');
@@ -56,7 +56,7 @@ export function buildWorkshopRoom({ kit, floorY, layout }) {
     box('shutter_housing', entry.from + .04, entry.top + .025, front - .13, entry.to - .04, entry.top + .18, front - .015, c.metal);
     box('shutter_lip', entry.from + .07, entry.top + .035, front - .16, entry.to - .07, entry.top + .07, front - .132, c.cabinet);
   }
-  sign('IF THE CONFETTI MOVES, STEP BACK.', center, 1.38, front + .1, 1.48, .16, 'transparent', '#fff4dc');
+  sign('CHOOSE  •  BUILD  •  NAME YOUR BLASTER', center, 1.38, front + .1, 1.48, .16, 'transparent', '#fff4dc');
 
   // Back bench. Everything on the counter is over its collision footprint.
   const left = center - bench.halfWidth, right = center + bench.halfWidth;
@@ -93,39 +93,79 @@ export function buildWorkshopRoom({ kit, floorY, layout }) {
   box('lamp_diffuser', center - .33, 2.345, back - .55, center + .33, 2.382, back - .19, c.lamp,
     { emissive: c.lamp, emissiveIntensity: 1.5 });
 
-  // Pink trap and mint slide displays along the side walls leave the middle free.
-  const bayFront = front + 2.15, bayBack = front + 3.71;
+  // Product-neutral cubbies and a fitting station leave room for future work orders.
   for (const side of [-1, 1]) {
-    const id = side === -1 ? 'partyTrap' : 'skateFeed', build = workshopBuilds[id];
-    const x0 = side === -1 ? from + .075 : to - .61, x1 = x0 + .535;
-    const mid = (x0 + x1) / 2;
-    box(id + '_cabinet', x0, 0, bayFront, x1, .94, bayBack, c.cream, solid);
-    box(id + '_trim', x0 + .025, .947, bayFront + .015, x1 - .025, .996, bayBack - .015, build.color);
-    box(id + '_backboard', side === -1 ? x0 : x1 - .08, 1.02, bayFront, side === -1 ? x0 + .08 : x1,
-      2.38, bayBack, c.plum);
-    sign(build.name.toUpperCase(), side === -1 ? x0 + .094 : x1 - .094, 2.15,
-      (bayFront + bayBack) / 2, 1.4, .30, side === -1 ? '#87395e' : '#2a605a', '#fff7e3', side === -1 ? 'x+' : 'x-');
-    sign(side === -1 ? '01 SHELL / 02 FUSE / 03 POP' : 'RESERVE > ROLLERS > MAG',
-      side === -1 ? x0 + .095 : x1 - .095, 1.65, (bayFront + bayBack) / 2, 1.38, .22,
-      '#eed9be', '#49384e', side === -1 ? 'x+' : 'x-');
-    if (side === -1) {
-      box('confetti_bin', x0 + .1, 1.005, bayFront + .16, x1 - .08, 1.13, bayFront + .56, build.color);
-      for (let i = 0; i < 7; i++) {
-        const x = x0 + .13 + i % 3 * .075, z = bayFront + .21 + Math.floor(i / 3) * .093;
-        box('confetti_sample', x, 1.134, z, x + .043, 1.146, z + .045, [build.color, c.paper, 0x50cbb9][i % 3]);
+    const x0 = side < 0 ? from + .045 : to - .48, x1 = x0 + .435;
+    const facing = side < 0 ? 'x+' : 'x-';
+    const signX = side < 0 ? x1 + .024 : x0 - .024;
+    const z0 = front + 2.25, z1 = front + 5.8;
+    kit.addCollider(x0, floorY, z0, x1, floorY + 2.46, z1);
+    box('cubby_base', x0, 0, z0, x1, .42, z1, c.cream);
+    box('cubby_back', side < 0 ? x0 : x1 - .04, .44, z0, side < 0 ? x0 + .04 : x1, 2.46, z1, c.plum);
+    for (const h of [.76, 1.21, 1.68, 2.13]) {
+      box('shelf', x0 + .018, h, z0 + .055, x1 - .012, h + .048, z1 - .055, c.cream);
+      for (let i = 0; i < 6; i++) {
+        if ((i + Math.round(h * 10)) % 4 === 0) continue;
+        const z = z0 + .20 + i * .52;
+        const color = [0x74c9bb, 0xe57b79, 0xf7c75f, 0x94a9e6][(i + Math.round(h * 4)) % 4];
+        box('parts_carton', x0 + .095, h + .051, z, x1 - .065, h + .20 + (i % 2) * .056, z + .27, color);
+        const labelX = side < 0 ? x1 - .070 : x0 + .086;
+        box('carton_label', labelX, h + .102, z + .091, labelX + .014, h + .158, z + .179, c.paper);
       }
-      box('charge_cutaway', mid - .13, 1.008, bayBack - .69, mid + .13, 1.2, bayBack - .24, build.color);
-      box('exposed_fuse', mid - .08, 1.205, bayBack - .63, mid + .08, 1.24, bayBack - .28, c.metal);
-    } else {
-      box('feed_magazine', mid - .13, 1.006, bayFront + .18, mid + .13, 1.16, bayFront + .67, c.metal);
-      for (const z of [bayFront + .3, bayFront + .49]) box('feed_roller', mid - .11, 1.167, z, mid + .11, 1.228, z + .06, build.color);
-      const wheel = new THREE.Mesh(new THREE.CylinderGeometry(.118, .118, .095, 16), kit.mat(0x496862));
-      wheel.rotation.z = Math.PI / 2;
-      wheel.position.set(mid, floorY + 1.116, bayBack - .38);
-      wheel.name = 'workshop_skate_wheel';
-      kit.group.add(wheel);
     }
+    sign(side < 0 ? '01  PICK YOUR PARTS' : '02  MAKE IT YOURS', signX, 2.58,
+      (z0 + z1) / 2, 2.48, .28, '#294679', '#fff0cb', facing);
   }
+
+  // A tall stuffing tower is the landmark. Keep the two broad lanes beside it open.
+  const machineZ = front + shop.machine.offsetZ, radius = shop.machine.radius;
+  kit.addCollider(center - radius, floorY, machineZ - radius, center + radius, floorY + 2.82, machineZ + radius);
+  const cylinder = (name, r, h, y, color, options = {}, x = center, z = machineZ) => {
+    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 16), kit.mat(color, options));
+    mesh.name = 'workshop_' + name;
+    mesh.position.set(x, floorY + y, z);
+    kit.group.add(mesh);
+    return mesh;
+  };
+  cylinder('tower_pedestal', radius, .78, .41, c.plum);
+  cylinder('tower_lower_band', radius + .05, .12, .86, 0x4268bd);
+  cylinder('tower_upper_band', radius + .045, .20, 2.41, 0x4268bd);
+  cylinder('tower_lid', radius - .04, .1, 2.56, c.cream);
+  cylinder('stuffing_glass', radius - .082, 1.42, 1.62, 0xc8eaff,
+    { transparent: true, opacity: .2, roughness: .15, depthWrite: false });
+  cylinder('stuffing_spindle', .047, 1.51, 1.58, c.metal);
+  const fluffGeometry = new THREE.IcosahedronGeometry(1, 1);
+  const fluffMaterial = kit.mat(0xfff5de, { roughness: .9 });
+  const fluff = new THREE.InstancedMesh(fluffGeometry, fluffMaterial, 58);
+  fluff.name = 'workshop_stuffing';
+  const rng = seededRandom(86), form = new THREE.Object3D();
+  for (let i = 0; i < fluff.count; i++) {
+    const angle = rng() * Math.PI * 2, r = Math.sqrt(rng()) * .49, size = .085 + rng() * .10;
+    form.position.set(center + Math.cos(angle) * r, floorY + .99 + rng() * .39, machineZ + Math.sin(angle) * r);
+    form.rotation.set(rng() * 3, rng() * 3, rng() * 3);
+    form.scale.set(size * 1.14, size, size * .93);
+    form.updateMatrix();
+    fluff.setMatrixAt(i, form.matrix);
+  }
+  kit.group.add(fluff);
+  sign('STUFF-O-MATIC', center, .50, machineZ - radius - .026, 1.11, .27, '#ffe39b', '#253c87');
+  for (const dx of [-.31, .31]) {
+    const ear = new THREE.Mesh(new THREE.IcosahedronGeometry(.123, 1), kit.mat(0xf0b854));
+    ear.position.set(center + dx * .68, floorY + 2.95, machineZ);
+    kit.group.add(ear);
+  }
+  const mascot = new THREE.Mesh(new THREE.IcosahedronGeometry(.24, 1), kit.mat(0xf0b854));
+  mascot.name = 'workshop_mascot';
+  mascot.position.set(center, floorY + 2.82, machineZ);
+  mascot.scale.set(1.14, 1, .87);
+  kit.group.add(mascot);
+  const muzzle = new THREE.Mesh(new THREE.IcosahedronGeometry(.105, 1), kit.mat(c.cream));
+  muzzle.position.set(center, floorY + 2.77, machineZ - .177);
+  kit.group.add(muzzle);
+  for (const dx of [-.086, .086]) box('mascot_eye', center + dx - .022, 2.85, machineZ - .208,
+    center + dx + .022, 2.895, machineZ - .172, c.metal);
+  box('mascot_nose', center - .03, 2.781, machineZ - .285, center + .03, 2.824, machineZ - .24, c.metal);
+  sign('03  FINISH YOUR BUILD', center, 3.18, back - .053, 3.2, .24, '#ffe39b', '#253c87');
 
   // Tucked beside the bench, outside the route between the doors.
   const stool = box('overturned_stool', right + .36, .11, benchFront + .16, right + .79, .20, benchFront + .62, c.red);

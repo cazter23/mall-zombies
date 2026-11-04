@@ -35,8 +35,8 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   new wall; all four existing upstairs spawn markers remain (east z 4.2, north x 16). The west connection (z -4.1..-1.7)
   now leads through the 1250-point Cinema area entrance. The east connection remains sealed for expansion.
   Main floor and annex are sections in config/promenade.js, independent of the hallway; navigation/grade follow the upper sections.
-  BUILD-A-BLASTER is a walk-in workshop (interior x -3..3, z 6.3..11.2) with two 2 m entrances flanking a solid glass display.
-  The checkerboard floor and side displays leave a loop through the middle. Hold interact at the back bench (x 0, z 9.9)
+  BUILD-A-BLASTER is a walk-in workshop (interior x -3.35..3.35, z 6.3..14.2) with two entrances flanking a solid glass display.
+  Generic parts shelves and a mascot-topped stuffing machine leave a loop on either side. Hold interact at the back bench (x 0, z 12.77)
   with the Confetti Cannon or Price Gun to install its custom build once per carried gun. It shares Promenade ownership. Pretzel Palace remains closed but has a scenic warmer/counter/menu/grille. Shoe-store
   tickets/fitting shoes and two-sided hanging directional signs complete the pass. No new weapons or spawn markers.
   The elevator stays sealed. Data is exposed through LAYOUT.level2; see mall/levelTwo.js, promenadeShop.js and promenadeDetails.js.

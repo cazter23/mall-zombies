@@ -81,7 +81,8 @@ test('the workshop glass is solid and the room supports both loop directions and
   for (const [enter, exit] of [entrances, [...entrances].reverse()]) {
     const start = new THREE.Vector3(enter, Y, front - .9);
     g.player.teleport({ position: start, yaw: Math.PI });
-    const destinations = [[enter, front + 2.5], [exit, front + 2.5], [exit, front - .65]];
+    const crossover = front + LAYOUT.level2.workshop.machine.offsetZ + 1.35;
+    const destinations = [[enter, crossover], [exit, crossover], [exit, front - .65]];
     for (const [x, z] of destinations) {
       t.input.held.add('KeyW');
       let ticks = 0;

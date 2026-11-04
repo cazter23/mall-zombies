@@ -99,7 +99,7 @@ function buildGun(vm) {
     side: { parent: assembly, position: [0.094, -0.012, -0.15] },
     grip: { position: [0, -0.095, 0.028], rotation: [0.3, 0, 0], size: { w: 0.043, h: 0.12, d: 0.052 } },
     magazine: { position: [0.054, -0.008, 0], rotation: [0, 0, Math.PI / 2], gunId: 'confettiCannon' }, // a side shell holder
-    workshop: { id: 'partyTrap', position: [-.034, .01, .04] },
+    workshop: { id: 'partyTrap', parent: assembly },
     sticker: { position: [-0.0335, -0.006, 0.09] }, // on the stock
   };
   return { gun, muzzle, trigger, barrels, cylinder, mounts };

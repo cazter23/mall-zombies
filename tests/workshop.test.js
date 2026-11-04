@@ -99,6 +99,13 @@ test('Party Trap spends one shell, arms before damage, pays a kill once and clea
   assert.equal(target.isAlive, false);
   assert.equal(target.killedBy, 'partyTrap');
   assert.ok(g.wallet.points > before);
+  const particles = g.effects.counts.particles;
+  g.zombies.render(0, 1);
+  assert.ok(target.model.root.scale.x > 1, 'body balloons during the trap death wind-up');
+  t.tick(15);
+  assert.ok(!g.zombies.zombies.includes(target), 'pop removes the body instead of leaving a corpse');
+  assert.equal(g.effects.counts.particles - particles, workshopBuilds.partyTrap.pop.count);
+
   const paid = g.wallet.points;
   t.tick(15);
   assert.equal(g.wallet.points, paid);

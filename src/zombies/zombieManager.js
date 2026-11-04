@@ -8,6 +8,7 @@
 // =============================================================================
 
 import * as THREE from 'three';
+import { workshopBuilds } from '../config/workshop.js';
 import { feel } from '../config/feel.js';
 import { zombieTypes, zombieCrowd, zombieFailsafe, zombieSpawn } from '../config/zombies.js';
 import { economy, zombieHealthFor } from '../config/economy.js';
@@ -114,7 +115,12 @@ export function createZombieManager({
     return type.speed;
   }
 
+  const partyPop = workshopBuilds.partyTrap.pop;
   function onZombieDeath(zombie) {
+    if (zombie.killedBy === 'partyTrap') {
+      if (onKill) onKill(zombie);
+      return;
+    }
     // A final burst of splatter from the chest, carrying the killing blow's directional momentum.
     scratch.copy(zombie.position);
     scratch.y += zombie.type.hitbox.bodyTop * 0.75;
@@ -391,7 +397,15 @@ export function createZombieManager({
       nav.update(dt, player.position);
       ctx.canAttack = canAttack();
       assignSurroundSlots(dt);
-      for (const z of zombies) z.update(dt, ctx);
+      for (const z of zombies) {
+        z.update(dt, ctx);
+        if (z.killedBy === 'partyTrap' && z.stateTime >= partyPop.delaySeconds) {
+          scratch.copy(z.position);
+          scratch.y += z.type.hitbox.bodyTop * .75;
+          effects.confetti(scratch, UP, partyPop);
+          z.removed = true;
+        }
+      }
       resolveZombieOverlaps();
       keepPlayerOutOfZombies();
       rescueStuckZombies(dt);
@@ -412,7 +426,15 @@ export function createZombieManager({
 
     // Every rendered frame: animate and interpolate the models.
     render(frameTime, alpha) {
-      for (const z of zombies) z.model.update(frameTime, z, alpha);
+      for (const z of zombies) {
+        if (z.killedBy !== 'partyTrap') {
+          z.model.update(frameTime, z, alpha);
+          continue;
+        }
+        // The body balloons for a few ticks, then the fixed update replaces it with paper.
+        const t = Math.min(1, z.stateTime / partyPop.delaySeconds);
+        z.model.root.scale.set(1 + .25 * t, 1 + .15 * t, 1 + .25 * t);
+      }
     },
   };
 }
