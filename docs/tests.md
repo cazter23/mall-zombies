@@ -20,6 +20,8 @@ stopping stuffings, quality scaling, picking at the bins and the Heart wall, tod
 
 `tests/limitedEditions.test.js` covers the drops: nothing on sale any more, bag zombies only, from the right round, one at a time, only what you can use, fitting free and keeping the gun's other upgrades, waiting for a swapped-away gun, not reachable through a floor, running out, and Play again.
 
+`tests/zombieConfusion.test.js` covers Glitter's AI: fighting the nearest zombie, ignoring the player, kills paying once, walls and floors, standing dazzled alone, immunity afterwards, who can't be confused, Glitter on a real headshot, a round still ending, and its balance.
+
 `tests/attachmentRework.test.js` covers paid run unlocks, discounted first purchases, free refits across replacement guns,
 ownership reset, reload blocking, ammo conservation/full-reserve overflow, fully-owned sale eligibility and four-slot builds.
 

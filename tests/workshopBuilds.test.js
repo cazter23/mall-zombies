@@ -53,7 +53,7 @@ const PAIRS = Object.keys(workshopStuffings).flatMap(s => Object.keys(workshopHe
 const implemented = (s, h) => PAIRS.some(([a, b]) => a === s && b === h);
 
 test('every stuffing and Heart has its numbers in config, and each area stocks its own', () => {
-  for (const id of ['smoothie', 'fryerOil', 'neonTube', 'popcornButter', 'antifreeze']) assert.ok(workshopStuffings[id], id);
+  for (const id of ['smoothie', 'fryerOil', 'neonTube', 'popcornButter', 'antifreeze', 'glitter']) assert.ok(workshopStuffings[id], id);
   for (const id of ['headshot', 'lastRound', 'reload', 'everyTenth']) assert.ok(workshopHearts[id], id);
   assert.ok(implemented('smoothie', 'headshot'));
   assert.equal(workshopStuffings.smoothie.stockedBy, null, 'always stocked');
@@ -61,6 +61,8 @@ test('every stuffing and Heart has its numbers in config, and each area stocks i
   assert.equal(workshopStuffings.neonTube.stockedBy, 'megaMart');
   assert.equal(workshopStuffings.popcornButter.stockedBy, 'cinema');
   assert.equal(workshopStuffings.antifreeze.stockedBy, 'parkingLot');
+  assert.equal(workshopStuffings.glitter.stockedBy, 'departmentStore');
+  assert.equal(PAIRS.length, 24, 'six stuffings and four Hearts');
   assert.equal(todayCount, 3);
 });
 
@@ -100,6 +102,7 @@ const EFFECT = {
     assert.ok(z.slowTimer > 0 && z.slowFraction < 1, 'slowed by the puddle');
   },
   antifreeze: (z) => assert.ok(z.slowTimer > 0 && z.slowFraction < 1, 'chilled'),
+  glitter: (z) => assert.ok(z.confusion, 'confused'),
 };
 
 for (const [stuffing, heart] of PAIRS) {

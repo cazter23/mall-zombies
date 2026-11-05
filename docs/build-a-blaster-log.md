@@ -180,3 +180,20 @@ During a ritual the hall peaks at 244 calls. Carrying a built gun adds about 10 
 
 **Tests changed on purpose.** tests/workshop.test.js: the first test bought a Clearance Rack at the shelf; the plan ends that sale, so it now fits one from a drop and checks the same things (upgrades kept, survives an ammo buy, gone on Play again). tests/workshopRitual.test.js: the Limited Edition + ritual test fits the mod directly instead of buying it.
 
+## Phase 6, part 3: Glitter
+
+**What changed.** The sixth stuffing, stocked by HOFFMAN'S. Up to 3 zombies round the hit forget you for a few seconds, walk at the nearest other zombie and hit it with their normal attack. All 24 pairs now work.
+
+**Verified.**
+- tests/zombieConfusion.test.js (10 tests) and all 24 pairs set off for real in tests/workshopBuilds.test.js.
+- Built game, real ritual and a real headshot into a crowd of 5: 3 were confused, the other zombies lost health to their blows at 15 a hit (a Staple Gun's number), the un-confused zombie kept chasing me, and no confused zombie hit the player. The shot's tracer showed Glitter's violet and the gun its violet seam.
+
+**Decisions made for you.**
+- A confused zombie is immune for 4 s after it wears off. Without that, a Headshot heart on a fast gun could keep a whole crowd harmless.
+- At most 3 zombies per proc, for 3 s at Understuffed, up to a 6 s cap.
+- Blows are weak on purpose: 0.06 gun-seconds, so Glitter's value is the crowd control, not the damage. Confused kills still pay you the normal kill value, once, and fill the gauge if they happen in the room.
+- Only the zombies Glitter touches are confused. The ones they hit don't fight back.
+- A zombie with nobody within 6 m on its floor just stands there, dazzled.
+- It can't confuse a rising zombie or a frozen Mannequin. A charging cart stops mid-charge.
+- Confused zombies walk straight at their target rather than path-finding, because navigation only ever routes to the player. A wall simply stops them. It's short range, so this rarely shows.
+

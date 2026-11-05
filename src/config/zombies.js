@@ -334,6 +334,15 @@ export const zombieSpawn = {
 // Flow-field pathfinding on a flat grid (ground floor only, until the navmesh in step 7).
 // Stuck-zombie failsafe (like BO3's round_spawn_failsafe): a zombie far from the player that has
 // barely moved, or can't reach them, rises again at a spawn point with the same health.
+// Build-A-Blaster's Glitter (zombies/confusion.js). How long and how hard come from the stuffing (config/workshop.js).
+export const zombieConfusion = {
+  rangeMeters: 6, // how far it looks for another zombie to fight
+  retargetSeconds: .4,
+  floorTolerance: 1, // zombies further apart in height than this are on different floors
+  speedFraction: .8, // of its normal speed
+  immuneSeconds: 4, // after it wears off, so a fast gun can't keep a crowd confused for ever
+};
+
 export const zombieFailsafe = {
   checkSeconds: 10, // how often each zombie is checked
   minMoveMeters: 1.0, // moved less than this since the last check = stuck

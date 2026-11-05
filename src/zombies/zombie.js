@@ -26,11 +26,12 @@
 
 import * as THREE from 'three';
 import { feel } from '../config/feel.js';
-import { zombieCrowd } from '../config/zombies.js';
+import { zombieConfusion, zombieCrowd } from '../config/zombies.js';
 import { moveAndCollide } from '../world/collision.js';
 import { createZombieModel } from './zombieModel.js';
 import { isObserved } from './observation.js';
 import { applyCartHitboxes } from './cartPose.js';
+import { updateConfusion } from './confusion.js';
 
 const ease = (t) => t * t * (3 - 2 * t);
 const clamp01 = (v) => Math.max(0, Math.min(1, v));
@@ -70,6 +71,8 @@ export class Zombie {
     this.slowTimer = 0;
     this.slowFraction = 1;
     this.burn = null; // Fryer Oil: { perTick, tickSeconds, nextTick, left }, or null
+    this.confusion = null; // Glitter: { left, damage, target, retarget }, or null (zombies/confusion.js)
+    this.confusionImmune = 0; // seconds before it can be confused again
     this.dropHeight = 0; // > 0: it arrives by falling this far (the Returns Chute) rather than rising through the floor
     this.deathImpulse = 1;
     this.deathTwist = 0;
@@ -202,6 +205,22 @@ export class Zombie {
     this.slowTimer = Math.max(this.slowTimer, seconds);
   }
 
+  // Glitter: for `seconds` it fights other zombies instead of you, hitting for `damage`. Refused while it rises, while a mannequin is frozen, and
+  // for a while after the last dose. Returns whether it took.
+  applyConfusion(seconds, damage) {
+    if (!this.isAlive || this.state === 'spawning' || this.frozen || this.confusionImmune > 0) return false;
+    this.confusion = { left: seconds, damage, target: null, retarget: 0 };
+    this.setState('chasing'); // whatever it was doing to you, it has forgotten
+    this.chargeLeft = 0;
+    return true;
+  }
+
+  endConfusion() {
+    this.confusion = null;
+    this.confusionImmune = zombieConfusion.immuneSeconds;
+    if (this.isAlive) this.setState('chasing');
+  }
+
   // Antifreeze shatters a slowed zombie: the shatter uses the slow up.
   clearSlow() {
     this.slowTimer = 0;
@@ -267,6 +286,11 @@ export class Zombie {
     this.slowTimer = Math.max(0, this.slowTimer - dt);
     if (this.slowTimer === 0) this.slowFraction = 1;
     this.updateBurn(dt);
+    this.confusionImmune = Math.max(0, this.confusionImmune - dt);
+    if (this.confusion) {
+      this.confusion.left -= dt;
+      if (this.confusion.left <= 0) this.endConfusion();
+    }
     const attack = this.type.attack;
     const charge = this.type.charge;
 
@@ -295,6 +319,12 @@ export class Zombie {
       this.velocity.z *= Math.exp(-this.staggerDrag * dt);
       this.velocity.y = Math.max(this.velocity.y - feel.movement.gravity * dt, -feel.movement.maxFallSpeed);
       moveAndCollide(this.position, this.velocity, dt, this.type.radius, this.type.height, ctx.colliders, feel.movement.stepTolerance);
+      this.updateHitboxes();
+      return;
+    }
+
+    if (this.confusion && this.isAlive) {
+      updateConfusion(this, dt, ctx);
       this.updateHitboxes();
       return;
     }
@@ -657,6 +687,7 @@ export class Zombie {
   // Start over at another spot (the stuck-zombie failsafe): rise out of the floor again,
   // keeping its health.
   respawnAt(position, yaw) {
+    this.confusion = null;
     this.observed = this.frozen = false;
     this.observationHold = 0;
     this.position.copy(position);

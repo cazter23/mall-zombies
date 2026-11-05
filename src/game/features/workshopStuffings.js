@@ -151,6 +151,16 @@ export function createBuildEffects({ events, gun, player, zombies, colliders, ef
     return hit;
   };
 
+  // The zombies round the hit forget you and turn on each other (zombies/confusion.js).
+  STUFFINGS.glitter = ({ spot, target, power, gunSecond }) => {
+    const { confuse } = workshopStuffings.glitter;
+    const hit = new Set(target && canBeHit(target) ? [target] : []);
+    for (const zombie of nearby(spot, confuse.radius * Math.sqrt(power))) if (hit.size < confuse.maxTargets) hit.add(zombie);
+    const seconds = Math.min(confuse.maxSeconds, confuse.seconds * power);
+    for (const zombie of hit) if (!zombie.applyConfusion(seconds, gunSecond * confuse.gunSeconds * power)) hit.delete(zombie);
+    return hit;
+  };
+
   const firstHeadHit = (shot) => shot.hits?.find((hit) => hit.part === 'head' && hit.target.type);
   const firstZombieHit = (shot) => shot.hits?.find((hit) => hit.target.type);
   const HEARTS = {
@@ -210,9 +220,13 @@ export function createBuildEffects({ events, gun, player, zombies, colliders, ef
       updatePuddles(dt);
       emberTimer -= dt;
       if (emberTimer > 0) return;
-      const { burn } = workshopStuffings.fryerOil;
+      const { burn } = workshopStuffings.fryerOil, { sparkle } = workshopStuffings.glitter.confuse;
       emberTimer = burn.emberSeconds;
-      for (const zombie of zombies.zombies) if (zombie.burn && zombie.isAlive) effects.confetti(chest(zombie), UP, burn.ember);
+      for (const zombie of zombies.zombies) {
+        if (!zombie.isAlive) continue;
+        if (zombie.burn) effects.confetti(chest(zombie), UP, burn.ember);
+        if (zombie.confusion) effects.confetti(chest(zombie), UP, sparkle);
+      }
     },
     reset() {
       heartCooldowns.clear();

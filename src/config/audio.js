@@ -207,6 +207,12 @@ export const audio = {
       { type: 'tone', wave: 'triangle', freq: 2350, gain: .22, attack: .002, decay: .2 },
       { type: 'tone', wave: 'triangle', freq: 3130, gain: .12, attack: .002, decay: .14, delay: .05 },
     ] },
+    stuffingGlitter: { volume: .42, layers: [
+      { type: 'tone', wave: 'sine', freq: 2093, gain: .3, attack: .002, decay: .16 },
+      { type: 'tone', wave: 'sine', freq: 2637, gain: .24, attack: .002, decay: .16, delay: .05 },
+      { type: 'tone', wave: 'sine', freq: 3136, gain: .2, attack: .002, decay: .2, delay: .1 },
+      { type: 'noise', filter: 'highpass', freq: 6000, q: .7, gain: .15, attack: .004, decay: .22 },
+    ] },
     stuffingNeon: { volume: .46, layers: [
       { type: 'tone', wave: 'sawtooth', freq: 120, gain: .4, attack: .002, decay: .16 },
       { type: 'tone', wave: 'square', freq: 1860, gain: .12, attack: .002, decay: .08 },

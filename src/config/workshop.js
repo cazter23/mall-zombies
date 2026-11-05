@@ -130,6 +130,13 @@ export const workshopStuffings = {
     shatter: { gunSeconds: .12, maxTargets: 3 },
     pop: { colors: [0x7dff9a, 0xd7ffe6, 0x49c9ff], count: 10, speed: 2.8, size: .05 },
   },
+  glitter: {
+    name: 'Glitter', stockedBy: 'departmentStore', color: 0xe08bff, sound: 'stuffingGlitter', blurb: 'Confused zombies fight each other',
+    // gunSeconds = how hard a confused zombie hits. Its behaviour is zombies/confusion.js (numbers: config/zombies.js zombieConfusion).
+    confuse: { seconds: 3, maxSeconds: 6, radius: 2.2, maxTargets: 3, gunSeconds: .06, sparkleSeconds: .3,
+      sparkle: { colors: [0xe08bff, 0xfff3d4, 0x8bd8ff], count: 3, speed: .9, size: .03 } },
+    pop: { colors: [0xe08bff, 0xff8bd8, 0xfff3d4, 0x8bd8ff], count: 14, speed: 2.2, size: .04 },
+  },
 };
 export const todayCount = 3; // bins open per round
 
