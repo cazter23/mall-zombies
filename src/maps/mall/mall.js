@@ -743,6 +743,7 @@ export function buildMall(scene, colliders) {
   for (const l of levelTwo.lamps) lamp(atmosphere.roomLights.level2, l.x, l.y, l.z);
   const workLight = levelTwo.workshop.light;
   lamp(workLight, workLight.x, workLight.y, workLight.z);
+  for (const l of levelTwo.workshop.lamps) lamp(l, l.x, l.y, l.z);
   for (const l of cinemaWing.lamps) lamp(l, l.x, l.y, l.z);
   for (const l of atrium.lamps) lamp(atmosphere.roomLights.atrium, l.x, l.y, l.z);
   for (const at of [3, 12]) lamp(atmosphere.roomLights.serviceCorridor, service.points[1].x, SC.height * 0.65, service.pointAt(1, at).z);
@@ -837,6 +838,7 @@ export function buildMall(scene, colliders) {
     { name: 'cinema lobby', from: [-23, 8, -6.5], to: [-37, 8, -6.5], lookFrom: [-34, 8.5, 5], lookTo: [-34, 8.5, 5] },
     { name: 'cinema screen', from: [-33, 8, 7.5], to: [-33, 8, 16], lookFrom: [-33, 8.8, 27.6], lookTo: [-33, 8.8, 27.6] },
     { name: 'cinema stairs', from: [-44.15, 7.9, -5.6], to: [-44.15, 1.8, 7.1], lookFrom: [-44.15, 1.7, 9], lookTo: [-41, 1.7, 8.6] },
+    { name: 'workshop hall', from: [-8.4, 8, 13.2], to: [3.4, 8, 13.2], lookFrom: [-2.8, 8.4, 19], lookTo: [-2.8, 8.4, 19] },
   ];
 
   // Everything (besides doors) the player interacts with, by kind: game/features/ builds each one.
@@ -946,6 +948,8 @@ export function buildMall(scene, colliders) {
         minY: upperY, maxY: upperY + LAYOUT.level2.height + 0.3 },
       { id: 'workshop', ...LAYOUT.level2.sections.find(s => s.id === 'workshop'), minZ: LAYOUT.level2.rect.maxZ + T,
         minY: upperY, maxY: upperY + LAYOUT.level2.height + T },
+      { id: 'workshopHall', ...LAYOUT.level2.sections.find(s => s.id === 'workshopHall'),
+        minY: upperY, maxY: upperY + LAYOUT.level2.workshop.hall.height + T },
       { id: 'foodCourt', minX: F.minX, maxX: F.maxX, minY: 0, maxY: F.height + 0.3, minZ: F.minZ - 6, maxZ: F.maxZ }, // (+ the recessed stores)
       { id: 'megaMart', minX: M.minX + T, maxX: M.maxX, minY: 0, maxY: M.height + 0.3, minZ: M.minZ, maxZ: M.maxZ },
       { id: 'serviceCorridor', minX: H.minX - T - SC.width, maxX: H.minX - T, minY: 0, maxY: SC.height + 0.3, minZ: -14, maxZ: SCD.maxZ },
@@ -967,6 +971,8 @@ export function buildMall(scene, colliders) {
       ...[...LAYOUT.level2.workshop.entrances, LAYOUT.level2.workshop.window].map(e => ({ a: 'level2', b: 'workshop',
         minX: e.from, maxX: e.to, minY: upperY + (e.sill ?? 0), maxY: upperY + e.top,
         minZ: LAYOUT.level2.rect.maxZ, maxZ: LAYOUT.level2.rect.maxZ + T })),
+      { a: 'workshop', b: 'workshopHall', minX: LAYOUT.level2.workshop.from, maxX: LAYOUT.level2.workshop.to, minY: upperY,
+        maxY: upperY + LAYOUT.level2.workshop.hall.mouthTop, minZ: LAYOUT.level2.workshop.hall.minZ - T, maxZ: LAYOUT.level2.workshop.hall.minZ },
       { a: 'startRoom', b: 'hallway', door: 'startShutter', minX: D.minX, maxX: D.maxX, minY: 0, maxY: D.height, minZ: H.maxZ, maxZ: H.maxZ + T },
       { a: 'hallway', b: 'foodCourt', door: 'foodCourt', minX: FD.minX, maxX: FD.maxX, minY: 0, maxY: FD.height, minZ: H.minZ - T, maxZ: H.minZ },
       { a: 'hallway', b: 'megaMart', door: 'megaMart', minX: M.minX, maxX: M.minX + T, minY: 0, maxY: MD.height, minZ: MD.minZ, maxZ: MD.maxZ },

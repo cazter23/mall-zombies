@@ -35,9 +35,13 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   new wall; all four existing upstairs spawn markers remain (east z 4.2, north x 16). The west connection (z -4.1..-1.7)
   now leads through the 1250-point Cinema area entrance. The east connection remains sealed for expansion.
   Main floor and annex are sections in config/promenade.js, independent of the hallway; navigation/grade follow the upper sections.
-  BUILD-A-BLASTER is a walk-in workshop (interior x -3.35..3.35, z 6.3..14.2) with two entrances flanking a solid glass display.
-  Generic parts shelves and a mascot-topped stuffing machine leave a loop on either side. Hold interact at the back bench (x 0, z 12.77)
-  with the Confetti Cannon or Price Gun to install its custom build once per carried gun. It shares Promenade ownership. Pretzel Palace remains closed but has a scenic warmer/counter/menu/grille. Shoe-store
+  BUILD-A-BLASTER is a walk-in workshop, part of the Promenade zone. Storefront: interior x -3.35..3.35, z 6.3..11.7, two entrances flanking a solid
+  glass display, parts cubbies down both walls, the order bench in the middle (x 0, z 9.4..10.28; prompt z 9.25) with a 1.8 m lane either side.
+  Back hall (section 'workshopHall'): interior x -9.5..4.9, z 12..26.5, 4.8 m high, reached through a 6.7 m wide, 3.2 m high mouth. It sits on its
+  own slab over HOFFMAN'S and the start room; the east wall stops at x 5.2 because the Atrium's exterior wall starts at 5.27. The island
+  (x -6.1..0.5, z 15.7..22.3) is the Stuffing Tank (centre -2.8, 19) plus a U-shaped conveyor open to the east, behind a glass guard: one
+  bullet-through collider 2.2 m high, so nothing inside can be reached. Lanes round it are >= 3 m. Naming Booth on the east wall (z 20..23.2), lever
+  further south on the same wall (z 16.8), Returns Chute hatch in the north wall (x -7). Pretzel Palace remains closed but has a scenic warmer/counter/menu/grille. Shoe-store
   tickets/fitting shoes and two-sided hanging directional signs complete the pass. No new weapons or spawn markers.
   The elevator stays sealed. Data is exposed through LAYOUT.level2; see mall/levelTwo.js, promenadeShop.js and promenadeDetails.js.
 - HOFFMAN'S · Est. Forever (zone 'departmentStore', maps/mall/departmentStore.js): the department store north of the hallway's

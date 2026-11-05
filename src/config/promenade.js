@@ -31,7 +31,8 @@ export const promenade = {
   sections: [
     { id: 'promenade', minX: -20, maxX: 20, minZ: -4.5, maxZ: 6 },
     { id: 'shoePer', minX: -10.3, maxX: -3.7, minZ: 6, maxZ: 11.6 },
-    { id: 'workshop', minX: -3.65, maxX: 3.65, minZ: 6, maxZ: 14.5 },
+    { id: 'workshop', minX: -3.65, maxX: 3.65, minZ: 6, maxZ: 11.7 },
+    { id: 'workshopHall', minX: -9.8, maxX: 5.2, minZ: 11.7, maxZ: 26.8 },
   ],
   shoeStore: {
     from: -10, to: -4, depth: 5.3,
@@ -44,15 +45,29 @@ export const promenade = {
       shoes: [0xbe7892, 0x4d789b, 0xb99757, 0x695487], boxes: [0x98816a, 0x635372, 0xae7b80] },
   },
   workshop: {
-    from: -3.35, to: 3.35, depth: 8.2,
+    from: -3.35, to: 3.35, depth: 5.7, // the storefront, up to the hall's front wall
     entrances: [{ from: -3.18, to: -.95, top: 2.7 }, { from: .95, to: 3.18, top: 2.7 }],
     window: { from: -.95, to: .95, top: 2.7, sill: .62 },
-    bench: { halfWidth: 1.55, height: 1.02, offsetZ: 6.92, depth: .88, promptHeight: 1.43, promptInset: .15 },
+    bench: { halfWidth: 1.05, height: 1.02, offsetZ: 3.4, depth: .88, promptHeight: 1.43, promptInset: .15 },
     floor: { light: '#f4dfb3', dark: '#b3a483', grout: '#b4a78c', tileSize: .55 },
-    machine: { offsetZ: 3.48, radius: .71 },
     colors: { wall: 0xf6dfb4, cream: 0xffedca, cabinet: 0xf2c569, plum: 0x253c87, metal: 0x354668,
       wood: 0x99724f, paper: 0xf5ebd6, red: 0xc64140, lamp: 0xffcb8a, glass: 0xe2f7ef },
-    lamp: { x: 0, height: 2.55, offsetZ: 5.85, color: 0xffce99, intensity: 1.05, distance: 7 },
+    lamp: { x: 0, height: 2.55, offsetZ: 2.2, color: 0xffce99, intensity: 1.05, distance: 7 },
+    // The back hall (Build-A-Blaster ritual room). It sits above HOFFMAN'S and the start room; the Atrium's exterior wall
+    // starts at x 5.27, so the east wall stops short of it. Lanes round the island stay >= 3 m (tests/workshopRoom.test.js).
+    hall: {
+      minX: -9.5, maxX: 4.9, minZ: 12, maxZ: 26.5, height: 4.8,
+      mouthTop: 3.2, // the opening from the storefront, as wide as the storefront
+      island: { minX: -6.1, maxX: .5, minZ: 15.7, maxZ: 22.3, solidHeight: 2.2 }, // glass guard round tank + conveyor; nothing inside is reachable
+      tank: { x: -2.8, z: 19, radius: 1.5, height: 4.1 },
+      conveyor: { inset: .15, width: .8, height: .95 }, // a U open to the east, ending by the Naming Booth
+      booth: { minX: 3.7, maxX: 4.9, minZ: 20, maxZ: 23.2, height: 2.6, promptHeight: 1.45 },
+      lever: { z: 16.8, height: 1.35, depth: .14 }, // on the east wall, south of the booth
+      chute: { x: -7, width: 2.2, sill: .45, top: 2.25 }, // the Returns Chute hatch in the north wall
+      panels: [[-7.6, 14], [2.6, 14], [-7.6, 24.2], [2.6, 24.2]],
+      lamps: [{ x: -2.3, z: 14 }, { x: -2.3, z: 24.4 }],
+      lampLight: { color: 0xffe2bd, intensity: 15, distance: 16, height: 3.1 },
+    },
   },
   expansionConnections: [
     { id: 'westWing', wall: 'west', from: -4.1, to: -1.7, top: 2.7, door: 'cinema', label: 'SUNSET CINEMA' },

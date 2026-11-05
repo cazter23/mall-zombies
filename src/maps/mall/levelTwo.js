@@ -44,7 +44,7 @@ export function buildLevelTwo({ kit, props, floorY, supportRect, supportRects = 
     }
   }
   for (const section of layout.sections) for (const piece of slabPiecesWithHoles(section, [hole, ...voids])) {
-    if (section.id === 'workshop') continue; // checkerboard skin belongs to the workshop
+    if (section.id.startsWith('workshop')) continue; // checkerboard skin belongs to the workshop
     kit.tiledFloor(piece.minX, piece.minZ, piece.maxX, piece.maxZ,
       section.id === 'shoePer' ? layout.shoeStore.floor : { base: '#f0d2b0', grout: '#c9a47c', variation: 10, seed: 51 },
       { top: floorY + 0.012, thickness: 0.012, collide: false });
@@ -158,7 +158,7 @@ export function buildLevelTwo({ kit, props, floorY, supportRect, supportRects = 
     }
   }
   buildPromenadeShop({ kit, floorY, rect, layout });
-  const workshop = buildWorkshopRoom({ kit, floorY, layout });
+  const workshop = buildWorkshopRoom({ kit, props, floorY, layout });
 
   // --- Seating: a bench ring round a planter (east), benches along the south wall (west) --------------------------------
   const wood = mat(COLORS.wood);

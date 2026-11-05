@@ -4,6 +4,9 @@
 
 `tests/workshop.test.js` covers Promenade purchase gating and pricing, retaining upgrades, reserve-fed slides, and real trap shots, arming, damage and reset.
 
+`tests/workshopRoom.test.js` covers the Build-A-Blaster room: plot limits, lanes of at least 3 m round the island, a player lap both ways, every floor point
+reachable by zombies, a zombie following round each side, the hall as its own culling room and its grade.
+
 `tests/attachmentRework.test.js` covers paid run unlocks, discounted first purchases, free refits across replacement guns,
 ownership reset, reload blocking, ammo conservation/full-reserve overflow, fully-owned sale eligibility and four-slot builds.
 

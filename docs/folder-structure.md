@@ -28,7 +28,7 @@ src/
   game/features/clearanceSticker.js The canvas sticker drawn on tagged zombies.
   zombies/partyTrapDeath.js The pose, ribbon and confetti after a trap kill. The kill is paid on impact; this is visual only.
   weapons/models/workshopBuilds.js The reversible model changes for each workshop build.
-  maps/mall/workshopRoom.js The open Build-A-Blaster room and its dressing.
+  maps/mall/workshopRoom.js The Build-A-Blaster storefront and back hall (island, booth, lever, chute) and their dressing. Layout numbers: config/promenade.js workshop.
   ui/announcements.js   Bounded PA queue: type introductions priority 2, incentives 1, routine messages 0;
                         clear on pause/death/reset; wall-clock presentation timers only
   config/

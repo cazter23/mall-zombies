@@ -1,5 +1,15 @@
 # Sunset Galleria: build history ("Current state")
 
+## November 2026 — Build-A-Blaster rebuild (branch build-a-blaster)
+
+Plan: docs/build-a-blaster-plan.md. Running log with every decision: docs/build-a-blaster-log.md.
+
+Phase 1, the room: the workshop grew a 14.4 x 14.5 m back hall behind the storefront (config/promenade.js workshop.hall, section 'workshopHall').
+The tank, conveyor, booth, lever and chute are plain blocks for now. The bench moved from the old back wall to the middle of the storefront and still
+sells Party Trap and Clearance Rack. The island's guard is ONE ignoreShots collider, not four rails: rails inside the balcony's x range count as balcony
+rails in levelTwo.test.js, and one block also seals the inside. Measured in the built game (draw calls / triangles): hall 144-189 / 17-19k, storefront 168 / 18k,
+Promenade at the window 210 / 28k, north lane looking out through the mouth 876 / 106k; for comparison hallway 1082 / 171k, Level 2 1397 / 260k, HOFFMAN'S 515 / 80k.
+
 ## 4 November 2026 — tenant branding and font loading
 
 Mega Mart and Hoffman's got their own tenant branding (config/look.js, zoneLooks.js, hallwayLook.js, textures.js).
