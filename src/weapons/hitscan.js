@@ -8,6 +8,7 @@
 // A "shootable" is anything that can take hits (practice dummies now, zombies
 // later). It must provide:
 //   hitboxes: [{ box: THREE.Box3, part: 'head' | 'body' }]  (world space)
+//     Optional localBox and toLocal/toWorld matrices give a rotated part an exact box for shots.
 //   isAlive: boolean                                         (dead ones are skipped)
 //   takeHit({ damage, part, point }) -> { killed: boolean }
 //   splatColors: [hex, ...]                                  (particle colors when hit)
@@ -16,7 +17,9 @@
 import * as THREE from 'three';
 
 const ray = new THREE.Ray();
+const localRay = new THREE.Ray();
 const scratch = new THREE.Vector3();
+const worldPoint = new THREE.Vector3();
 
 /**
  * @returns {{ point: THREE.Vector3, normal: THREE.Vector3, distance: number,
@@ -63,12 +66,17 @@ export function castShot(origin, direction, range, colliders, shootables, maxTar
     if (!target.isAlive) continue;
     let nearest = null;
     for (const hitbox of target.hitboxes) {
-      const hit = ray.intersectBox(hitbox.box, scratch);
+      const { box, localBox, toLocal, toWorld, part } = hitbox;
+      const hit = localBox
+        ? localRay.copy(ray).applyMatrix4(toLocal).intersectBox(localBox, scratch)
+        : ray.intersectBox(box, scratch);
       if (!hit) continue;
-      const d = hit.distanceTo(origin);
+      const point = localBox ? worldPoint.copy(hit).applyMatrix4(toWorld) : hit;
+      const d = point.distanceTo(origin);
       if (d < wallDistance && (!nearest || d < nearest.distance)) {
-        nearest = { target, part: hitbox.part, point: hit.clone(), normal: new THREE.Vector3(), distance: d };
-        boxNormalAt(hitbox.box, hit, nearest.normal);
+        nearest = { target, part, point: point.clone(), normal: new THREE.Vector3(), distance: d };
+        boxNormalAt(localBox ?? box, hit, nearest.normal);
+        if (localBox) nearest.normal.transformDirection(toWorld);
       }
     }
     if (nearest) hits.push(nearest);

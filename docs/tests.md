@@ -154,4 +154,9 @@ behavior, and Web Audio source/panner cleanup for sign rattle, indistinct PA and
 attack cancellation and real damage, frozen crowd/rescue protection, kill payouts/reset, round mix/health/live cap/quota,
 plastic pose retention/resource disposal, real cinema stairs and pause.
 
+`tests/mascot.test.js` runs the round 10 introduction through the live wave and PA systems. It covers health scaling,
+the two-alive cap, one kill payout, foam splatter in Red mode, and the one-time half-health rush, pop and stuffing burst.
+Shot rays cover the helmet and torso, the smaller exposed head, and a miss through the fallen helmet. Reset removes
+the model and debris and disposes their shared geometry and materials.
+
 - `fontsReady.test.js`: startup waits for canvas fonts, never hangs on a stuck network or failed font, and the page boots through the wait.

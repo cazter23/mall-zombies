@@ -41,7 +41,13 @@ export function createMelee({ def, stats, player, input, getWeapon, shootables, 
     for (const target of shootables) {
       if (!target.isAlive) continue;
       for (const hitbox of target.hitboxes) {
-        hitbox.box.clampPoint(eye, point); // closest point of this hitbox to the eye
+        // Closest point on the box in its own space for articulated parts.
+        if (hitbox.localBox) {
+          point.copy(eye).applyMatrix4(hitbox.toLocal);
+          hitbox.localBox.clampPoint(point, point).applyMatrix4(hitbox.toWorld);
+        } else {
+          hitbox.box.clampPoint(eye, point);
+        }
         const distance = point.distanceTo(eye);
         if (distance > maxRange || (best && distance >= best.distance)) continue;
 

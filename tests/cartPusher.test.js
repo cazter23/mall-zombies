@@ -61,7 +61,7 @@ test('round mix: Cart Pushers from round 6 (10%, 15% from round 10), 1.8x health
   assert.equal(zombieTypeForRound(6, 0.349), 'cartPusher');
   assert.equal(zombieTypeForRound(6, 0.351), 'shopper');
   assert.equal(zombieTypeForRound(10, 0.449), 'cartPusher'); // after the Mall Walkers' 30%
-  assert.equal(zombieTypeForRound(10, 0.501), 'shopper');
+  assert.equal(zombieTypeForRound(10, 0.541), 'shopper'); // beyond the Mannequin and Mascot shares
   for (const round of [6, 9, 14]) {
     assert.equal(zombieHealthFor('cartPusher', round), Math.round(zombieHealthForRound(round) * 1.8));
   }

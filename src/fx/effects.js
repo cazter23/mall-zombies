@@ -12,6 +12,7 @@
 
 import * as THREE from 'three';
 import { feel } from '../config/feel.js';
+import { mascotFoamColors } from '../config/zombies.js';
 import { makePoolTexture } from '../world/textures.js';
 import { createImpactMarks } from './impactMarks.js';
 
@@ -195,7 +196,9 @@ export function createEffects(scene, { surfaces = [] } = {}) {
     // setting (see the header). Without it (dust, spawn puffs) the colors are used as given.
     splat(point, normal, colors, count, { flesh = false, speedScale = 1, direction = null } = {}) {
       const speed = fx.splatSpeed * speedScale;
-      if (!flesh) {
+      // Gun and melee impacts carry the shootable's palette. Foam keeps its
+      // material colors even when the player's Splatter setting is Red.
+      if (!flesh || colors === mascotFoamColors) {
         burst(point, normal, colors, count, speed, fx.particleSize, 0, direction);
         return;
       }

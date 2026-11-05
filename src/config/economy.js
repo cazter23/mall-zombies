@@ -20,6 +20,7 @@ export const economy = {
     mallWalker: 60,
     mannequin: 100,
     cartPusher: 130, // 1.8x a Shopper's health (an even per-bullet payout would be 108), a little extra for how dangerous it is
+    mascot: 300,
   },
 
   // Special zombie types mixed into the waves (every other spawn is a Shopper).
@@ -28,6 +29,7 @@ export const economy = {
   //   healthMultiplier x the round's zombie health (waves.health below)
   //   introSpawnIndex  in the first round they can appear, the spawn with this index (0 = the first) is
   //                    forced to be one if none has come yet, so the "they're here" banner always has a zombie
+  //   maxAlive         further selections become Shoppers while this many are alive
   zombieMix: {
     mallWalker: {
       fromRound: 4,
@@ -51,6 +53,10 @@ export const economy = {
     mannequin: {
       fromRound: 8, shareByRound: [{ fromRound: 8, share: .05 }, { fromRound: 12, share: .08 }],
       healthMultiplier: .8, introSpawnIndex: 3, maxAlive: 2,
+    },
+    mascot: {
+      fromRound: 10, shareByRound: [{ fromRound: 10, share: 0.04 }],
+      healthMultiplier: 5, introSpawnIndex: 4, maxAlive: 2,
     },
   },
 

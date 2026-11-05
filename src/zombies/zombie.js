@@ -99,6 +99,11 @@ export class Zombie {
     this.slot = null;
     this.slotKey = null;
     this.onDeath = null; // optional callback(zombie), set by the manager
+    if (type.mascot) {
+      this.mascotHeadOff = false;
+      this.mascotDropAge = null;
+      this.mascotWalkPhase = 0;
+    }
 
     // Shootable interface
     this.splatColors = type.splatColors;
@@ -144,9 +149,17 @@ export class Zombie {
       this.lastHitDir = { x: direction.x, y: direction.y ?? 0, z: direction.z };
     }
     if (this.health > 0) {
+      const mascot = this.type.mascot;
+      if (mascot && !this.mascotHeadOff && this.health <= this.maxHealth * mascot.healthFraction) {
+        this.model.releaseHead(this);
+        this.mascotHeadOff = true;
+        this.speed = mascot.exposedSpeed;
+        this.updateHitboxes(); // the next shot can already hit the exposed head
+      }
       // Physical stagger knockback & brief micro-hitstop on live chasing zombies
       if (impact && direction && this.state === 'chasing' && this.speed > 0) {
-        const kb = (impact.knockback ?? 0) * (part === 'head' ? 1.25 : 1);
+        const weight = mascot && !this.mascotHeadOff ? mascot.hitKnockbackScale : 1;
+        const kb = (impact.knockback ?? 0) * (part === 'head' ? 1.25 : 1) * weight;
         if (kb > 0) {
           const len = Math.hypot(direction.x, direction.z) || 1;
           this.velocity.x += (direction.x / len) * kb;
@@ -201,6 +214,10 @@ export class Zombie {
   }
 
   updateHitboxes() {
+    if (this.type.mascot) {
+      this.hitboxes = this.model.updateHitboxes(this);
+      return;
+    }
     const p = this.position;
     const hb = this.type.hitbox;
     let rise = 0;
@@ -227,6 +244,13 @@ export class Zombie {
     this.prevPosition.copy(this.position);
     this.prevYaw = this.yaw;
     this.stateTime += dt;
+    if (this.type.mascot) {
+      this.mascotWalkPhase += this.horizontalSpeed * dt * this.type.mascot.pose.radiansPerMeter;
+      if (this.mascotHeadOff) {
+        if (this.mascotDropAge === null) this.playSound(this.type.sounds.headPop, ctx);
+        this.mascotDropAge = (this.mascotDropAge ?? 0) + dt;
+      }
+    }
     this.flinchTimer = Math.max(0, this.flinchTimer - dt);
     this.hitstopTimer = Math.max(0, this.hitstopTimer - dt);
     this.attackCooldown = Math.max(0, this.attackCooldown - dt);
@@ -575,7 +599,8 @@ export class Zombie {
     let ax = tx - this.velocity.x;
     let az = tz - this.velocity.z;
     const aLen = Math.hypot(ax, az);
-    const maxChange = type.acceleration * dt;
+    const acceleration = this.mascotHeadOff ? type.mascot.exposedAcceleration : type.acceleration;
+    const maxChange = acceleration * dt;
     if (aLen > maxChange) {
       ax *= maxChange / aLen;
       az *= maxChange / aLen;
@@ -684,12 +709,12 @@ export class Zombie {
     return facing >= Math.cos((attack.hitHalfAngleDegrees * Math.PI) / 180);
   }
 
-  faceToward(point, dt, turnSpeed = this.type.turnSpeed) {
+  faceToward(point, dt, turnSpeed) {
     this.faceDirection(point.x - this.position.x, point.z - this.position.z, dt, turnSpeed);
   }
 
   // Turn (at most turnSpeed rad/s) so the model's -Z faces direction (dx, dz).
-  faceDirection(dx, dz, dt, turnSpeed = this.type.turnSpeed) {
+  faceDirection(dx, dz, dt, turnSpeed = this.mascotHeadOff ? this.type.mascot.exposedTurnSpeed : this.type.turnSpeed) {
     if (Math.abs(dx) + Math.abs(dz) < 1e-6) return;
     const target = Math.atan2(-dx, -dz);
     let diff = target - this.yaw;
