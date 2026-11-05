@@ -44,6 +44,7 @@ export function createPlayerGun({
   sound = null, // optional (audio/sound.js)
   onShot = null,
   onHit = null, // ({ target, killed, headshot, melee }) after any hit on a shootable (points)
+  onReload = null, // ({ weaponId }) a reload just began
   aimAssist = null, // optional (weapons/aimAssist.js): controller aim help, applied before each shot
 }) {
   const startDef = def;
@@ -448,6 +449,7 @@ export function createPlayerGun({
         }
         player.blockSprint(feel.sprint.fireBlocksSprintSeconds);
       }
+      const wasReloading = slot.weapon.isReloading;
       const result = slot.weapon.update(dt, {
         triggerPressed: trigger,
         triggerHeld,
@@ -455,6 +457,7 @@ export function createPlayerGun({
         blocked: busy,
         reloadPaused,
       });
+      if (!wasReloading && slot.weapon.isReloading) onReload?.({ weaponId: slot.def.id });
       if (slot.weapon.justStartedCharging && sound && slot.def.charge?.sound) {
         sound.play(slot.def.charge.sound);
       }

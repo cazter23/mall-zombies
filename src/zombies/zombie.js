@@ -202,6 +202,12 @@ export class Zombie {
     this.slowTimer = Math.max(this.slowTimer, seconds);
   }
 
+  // Antifreeze shatters a slowed zombie: the shatter uses the slow up.
+  clearSlow() {
+    this.slowTimer = 0;
+    this.slowFraction = 1;
+  }
+
   // Burning: `damage` in total over `seconds`, paid in ticks through takeHit, so a kill counts like any other. A new burn
   // restarts the clock and never weakens one already burning. Burns don't stack: re-lighting a zombie doesn't add damage.
   applyBurn(damage, seconds, tickSeconds) {

@@ -11,7 +11,7 @@ reachable by zombies, a zombie following round each side, the hall as its own cu
 walking away and coming back, conveyor stages, the lever and booth only answering at the right time, gun purchases mid-ritual, upgrades staying on the gun, Play again and death
 mid-ritual, the chute steering spawns only while you are in the room, a full round where the chute adds no zombies and the round still ends, and the debug shortcut.
 
-`tests/workshopBuilds.test.js` covers finished builds: every Stuffing + Heart pair on real shots, a Last Round miss, burn ticks and no stacking, kills paying once, stuffing kills not firing a Heart, the Heart cooldown, walls and floors
+`tests/workshopBuilds.test.js` covers finished builds: every Stuffing + Heart pair set off for real, a Last Round miss, Reload's blast and cooldown, Every 10th counting only that gun's kills, puddles, Antifreeze's chill then shatter, Hearts per gun, burn ticks and no stacking, kills paying once, stuffing kills not firing a Heart, the Heart cooldown, walls and floors
 stopping stuffings, quality scaling, picking at the bins and the Heart wall, today's stock and area stocking, re-stuffing, stacking with tiers and attachments, and the round curve (a stuffing adds less than the gun itself, one proc never kills a full-health zombie from round 5).
 
 `tests/workshopNames.test.js` covers names (unique in a run until the list runs out, kept through a re-stuff), the Birth Certificate's fields and wording, the PA lines in order, the HUD label, and "Survived by" in the run summary, even for a gun still at the workshop. `tests/receiptReview.test.js` covers the receipt line.

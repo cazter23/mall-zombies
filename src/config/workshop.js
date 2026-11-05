@@ -101,8 +101,21 @@ export const workshopStuffings = {
   },
   neonTube: {
     name: 'Neon Tube', stockedBy: 'megaMart', color: 0x4fe0ff, sound: 'stuffingNeon', blurb: 'Arcs to nearby zombies',
-    chain: { gunSeconds: .08, jumps: 2, range: 5, falloff: .8 },
+    chain: { gunSeconds: .08, jumps: 2, maxJumps: 5, range: 5, falloff: .8 },
     pop: { colors: [0x4fe0ff, 0xc9f5ff, 0xff4fd8], count: 8, speed: 2.4, size: .045 },
+  },
+  popcornButter: {
+    name: 'Popcorn Butter', stockedBy: 'cinema', color: 0xffd24a, sound: 'stuffingButter', blurb: 'Leaves a slippery puddle',
+    // Spill Cleanup's zone, per proc: anything on it keeps being slowed while it stands there.
+    puddle: { radius: 1.8, seconds: 6, slowFraction: .35, slowSeconds: .2, maxPuddles: 3, lift: .03 },
+    pop: { colors: [0xffd24a, 0xfff1a8, 0xe0a526], count: 8, speed: 1.4, size: .05 },
+  },
+  antifreeze: {
+    name: 'Antifreeze', stockedBy: 'parkingLot', color: 0x7dff9a, sound: 'stuffingFreeze', blurb: 'Chills zombies, then shatters the chilled',
+    // A slowed zombie (by anything) shatters and loses the slow; one that isn't slowed is chilled.
+    chill: { seconds: 3, fraction: .5, radius: 2.2 },
+    shatter: { gunSeconds: .12, maxTargets: 3 },
+    pop: { colors: [0x7dff9a, 0xd7ffe6, 0x49c9ff], count: 10, speed: 2.8, size: .05 },
   },
 };
 export const todayCount = 3; // bins open per round
@@ -111,6 +124,8 @@ export const todayCount = 3; // bins open per round
 export const workshopHearts = {
   headshot: { name: 'Headshot', blurb: 'Fires on a headshot', strength: 1, cooldownSeconds: .75 },
   lastRound: { name: 'Last Round', blurb: 'Fires on the last round in the magazine', strength: 1.5, cooldownSeconds: 0 },
+  reload: { name: 'Reload', blurb: 'Fires a blast around you when you reload', strength: 1, cooldownSeconds: 4 },
+  everyTenth: { name: 'Every 10th', blurb: 'Fires on every 10th kill with this gun', strength: 2, cooldownSeconds: 0, everyKills: 10 },
 };
 
 // Every finished gun gets a name at the Naming Booth, and keeps it through a re-stuff. A run uses each name once while any are left.

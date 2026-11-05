@@ -119,6 +119,7 @@ export function createGame({
     sound,
     onShot: (shot) => events.emit('shot', shot),
     onHit: announceHit,
+    onReload: (reload) => events.emit('reload', reload),
     aimAssist,
   });
   // Buyables (hold F / X): the map's doors and wall buys.

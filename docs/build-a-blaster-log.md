@@ -146,3 +146,20 @@ During a ritual the hall peaks at 244 calls. Carrying a built gun adds about 10 
 
 **Interruption.** The session crashed just before this commit. Nothing was lost: the phase 5 work was intact in the worktree. I re-ran the browser check, the tests and the build before committing.
 
+## Phase 6, part 1: Popcorn Butter, Antifreeze, Reload, Every 10th
+
+**What changed.** Two more stuffings and two more Hearts, so 5 stuffings and 4 Hearts. All 20 pairs work.
+
+**Verified.**
+- tests/workshopBuilds.test.js sets every pair off for real, plus puddle, shatter, cooldown and kill-count tests.
+- Built game: a Popcorn Butter + Reload gun reloaded for real next to two zombies. The puddle landed on the floor under them, the gun showed its seam in butter yellow, no console errors.
+- Not looked at on screen: Antifreeze's chill and shatter. Those are checked by tests only.
+
+**Decisions made for you.**
+- Stuffing is named "Popcorn Butter", because "Stale Popcorn Butter" doesn't fit a bin label.
+- Antifreeze needs two procs on its own: the first chills, the second shatters. It also shatters anything slowed by another source, such as Spill Cleanup or a Smoothie gun. A shatter uses up the slow and hits at most 3 zombies per proc.
+- Every 10th counts kills made by that gun only. Box cutter, hazards, traps and stuffing kills don't count, and it keeps counting through another gun's cooldown.
+- Reload has a 4 s cooldown, otherwise tapping R after one shot would spam it. It blasts around you even with nobody near.
+- Heart cooldowns are per gun now, so two built guns don't share one.
+- Slow and chill radii grow with the square root of power, and Neon jumps cap at 5. Otherwise Every 10th on an Extra Stuffed gun would cover most of a room.
+

@@ -198,6 +198,15 @@ export const audio = {
       { type: 'noise', filter: 'highpass', freq: 3200, q: .7, gain: .7, attack: .01, decay: .32 },
       { type: 'noise', filter: 'bandpass', freq: 1500, q: 1.1, gain: .3, attack: .004, decay: .1 },
     ] },
+    stuffingButter: { volume: .5, layers: [
+      { type: 'noise', filter: 'lowpass', freq: 620, q: 1.3, gain: .75, attack: .006, decay: .2 },
+      { type: 'tone', wave: 'sine', freq: 210, freqEnd: 90, gain: .35, attack: .006, decay: .22 },
+    ] },
+    stuffingFreeze: { volume: .46, layers: [
+      { type: 'noise', filter: 'highpass', freq: 4200, q: 1, gain: .6, attack: .002, decay: .14 },
+      { type: 'tone', wave: 'triangle', freq: 2350, gain: .22, attack: .002, decay: .2 },
+      { type: 'tone', wave: 'triangle', freq: 3130, gain: .12, attack: .002, decay: .14, delay: .05 },
+    ] },
     stuffingNeon: { volume: .46, layers: [
       { type: 'tone', wave: 'sawtooth', freq: 120, gain: .4, attack: .002, decay: .16 },
       { type: 'tone', wave: 'square', freq: 1860, gain: .12, attack: .002, decay: .08 },

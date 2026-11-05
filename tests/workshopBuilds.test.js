@@ -52,45 +52,69 @@ function fixture({ gun = weapons.nailGun, open = true } = {}) {
 const PAIRS = Object.keys(workshopStuffings).flatMap(s => Object.keys(workshopHearts).map(h => [s, h]));
 const implemented = (s, h) => PAIRS.some(([a, b]) => a === s && b === h);
 
-test('the three first stuffings and two Hearts are all on sale, with the numbers in config', () => {
-  for (const id of ['smoothie', 'fryerOil', 'neonTube']) assert.ok(workshopStuffings[id], id);
-  for (const id of ['headshot', 'lastRound']) assert.ok(workshopHearts[id], id);
+test('every stuffing and Heart has its numbers in config, and each area stocks its own', () => {
+  for (const id of ['smoothie', 'fryerOil', 'neonTube', 'popcornButter', 'antifreeze']) assert.ok(workshopStuffings[id], id);
+  for (const id of ['headshot', 'lastRound', 'reload', 'everyTenth']) assert.ok(workshopHearts[id], id);
   assert.ok(implemented('smoothie', 'headshot'));
   assert.equal(workshopStuffings.smoothie.stockedBy, null, 'always stocked');
   assert.equal(workshopStuffings.fryerOil.stockedBy, 'foodCourt');
   assert.equal(workshopStuffings.neonTube.stockedBy, 'megaMart');
+  assert.equal(workshopStuffings.popcornButter.stockedBy, 'cinema');
+  assert.equal(workshopStuffings.antifreeze.stockedBy, 'parkingLot');
   assert.equal(todayCount, 3);
 });
 
+// How each Heart is set off for real. Returns the zombie it fired at (it may be dead: Every 10th fires at a corpse).
+const SET_OFF = {
+  headshot(t, target, fired) {
+    t.shoot(target, 'body');
+    assert.equal(fired.length, 0, 'a body shot does not fire the Headshot heart');
+    t.shoot(target, 'head');
+  },
+  lastRound(t, target, fired, { g }) {
+    t.shoot(target, 'head');
+    assert.equal(fired.length, 0, 'a full magazine does not fire the Last Round heart');
+    g.gun.weapon.magazine = 1;
+    t.shoot(target, 'body');
+  },
+  reload(t, target, fired, { g }) {
+    t.standAt(0, 7);
+    g.gun.weapon.magazine -= 1;
+    assert.equal(fired.length, 0);
+    t.press('KeyR'); t.tick(2);
+  },
+  everyTenth(t, target, fired, { g }) {
+    const kill = (zombie) => zombie.takeHit({ damage: zombie.health + 1, part: 'body', source: 'gun' });
+    for (let i = 0; i < 9; i++) kill(t.row([12 + i * .1], -1, 0, 1)[0]);
+    assert.equal(fired.length, 0, 'nine kills do not fire it');
+    kill(target);
+  },
+};
+// What each Stuffing does to a zombie a metre from the one it fired at.
+const EFFECT = {
+  smoothie: (z) => assert.ok(z.slowTimer > 0 && z.slowFraction < 1, 'slowed'),
+  fryerOil: (z) => assert.ok(z.burn, 'burning'),
+  neonTube: (z) => assert.ok(z.health < 100000, 'the arc reached it'),
+  popcornButter(z, t) {
+    t.tick(2); // (the puddle slows what stands on it, each tick)
+    assert.ok(z.slowTimer > 0 && z.slowFraction < 1, 'slowed by the puddle');
+  },
+  antifreeze: (z) => assert.ok(z.slowTimer > 0 && z.slowFraction < 1, 'chilled'),
+};
+
 for (const [stuffing, heart] of PAIRS) {
-  test(`${stuffing} + ${heart} fires on real shots`, () => {
+  test(`${stuffing} + ${heart} fires for real`, () => {
     const t = fixture(), { g } = t;
     const fired = [];
     g.events.on('buildFired', e => fired.push(e));
     t.fit(stuffing, heart);
-    const [target, neighbour] = t.row([-.9, .9]);
-    if (heart === 'headshot') {
-      t.shoot(target, 'body');
-      assert.equal(fired.length, 0, 'a body shot does not fire the Headshot heart');
-      t.shoot(target, 'head');
-    } else {
-      t.shoot(target, 'head');
-      assert.equal(fired.length, 0, 'a full magazine does not fire the Last Round heart');
-      g.gun.weapon.magazine = 1;
-      t.shoot(target, 'body');
-    }
+    const [target, neighbour] = t.row([-.5, .5]);
+    SET_OFF[heart](t, target, fired, t);
     assert.equal(fired.length, 1, 'fired once');
     assert.equal(fired[0].stuffing, stuffing);
     assert.equal(fired[0].heart, heart);
     assert.equal(fired[0].weaponId, g.gun.def.id);
-    if (stuffing === 'smoothie') {
-      assert.ok(target.slowTimer > 0 && target.slowFraction < 1, 'target slowed');
-      assert.ok(neighbour.slowTimer > 0, 'neighbour slowed');
-    } else if (stuffing === 'fryerOil') {
-      assert.ok(target.burn, 'target burning');
-    } else {
-      assert.ok(neighbour.health < 100000, 'the arc reached the neighbour');
-    }
+    EFFECT[stuffing](neighbour, t);
     g.map.dispose();
   });
 }
@@ -168,6 +192,113 @@ test('the Heart has a cooldown, so a fast gun cannot fire it every shot', () => 
   t.tick(Math.ceil(workshopHearts.headshot.cooldownSeconds * 60));
   t.shoot(zombie, 'head');
   assert.equal(fired.length, 2);
+  g.map.dispose();
+});
+
+test('Reload: the blast goes off round you, with a cooldown, and an empty hall still gets the bang', () => {
+  const t = fixture(), { g } = t;
+  t.fit('smoothie', 'reload');
+  const fired = [];
+  g.events.on('buildFired', e => fired.push(e));
+  const [near, far] = t.row([0, 8], 4);
+  t.standAt(0, 5.5);
+  g.gun.weapon.magazine -= 1;
+  t.press('KeyR'); t.tick(2);
+  assert.equal(fired.length, 1);
+  assert.ok(near.slowTimer > 0);
+  assert.equal(far.slowTimer, 0, 'only round you');
+  t.tick(Math.ceil(g.gun.def.reloadTime * 60) + 5);
+  g.gun.weapon.magazine -= 1;
+  t.press('KeyR'); t.tick(2);
+  assert.equal(fired.length, 1, 'still on cooldown');
+  t.tick(Math.ceil(workshopHearts.reload.cooldownSeconds * 60));
+  g.gun.weapon.magazine -= 1;
+  t.press('KeyR'); t.tick(2);
+  assert.equal(fired.length, 2);
+  g.map.dispose();
+});
+
+test('Every 10th counts this gun\'s kills only: melee, hazards and its own stuffing do not count', () => {
+  const t = fixture(), { g } = t;
+  t.fit('neonTube', 'everyTenth');
+  const fired = [];
+  g.events.on('buildFired', e => fired.push(e));
+  const kill = (source) => { const [z] = t.row([12], -1, 0, 1); z.takeHit({ damage: 10, part: 'body', source, melee: source === 'melee' }); };
+  for (let i = 0; i < 12; i++) kill('melee');
+  for (let i = 0; i < 12; i++) kill('hazard');
+  for (let i = 0; i < 12; i++) kill('build');
+  assert.equal(fired.length, 0);
+  for (let i = 0; i < 9; i++) kill('gun');
+  assert.equal(fired.length, 0);
+  kill('gun');
+  assert.equal(fired.length, 1);
+  for (let i = 0; i < 9; i++) kill('gun');
+  assert.equal(fired.length, 1);
+  kill('gun');
+  assert.equal(fired.length, 2);
+  g.map.dispose();
+});
+
+test('Popcorn Butter: a puddle keeps slowing what stands on it, the oldest gives way, and it dries up', () => {
+  const t = fixture(), { g } = t;
+  const { puddle } = workshopStuffings.popcornButter;
+  const scene = g.features.context.scene;
+  const shown = () => scene.children.filter(o => o.name === 'butterPuddle' && o.visible);
+  t.fit('popcornButter', 'headshot');
+  const [zombie] = t.row([0]);
+  t.shoot(zombie, 'head');
+  assert.equal(shown().length, 1);
+  assert.ok(Math.abs(shown()[0].position.y - puddle.lift) < .01, 'on the floor');
+  t.tick(90);
+  assert.ok(zombie.slowTimer > 0, 'still slowed while it stands there');
+  for (let i = 0; i < 3; i++) { t.tick(50); t.shoot(zombie, 'head'); }
+  assert.equal(shown().length, puddle.maxPuddles, 'never more than the pool');
+  t.tick(Math.ceil(puddle.seconds * 60) + 2);
+  assert.equal(shown().length, 0, 'dried up');
+  t.shoot(zombie, 'head');
+  g.resetRun(); t.tick();
+  assert.equal(shown().length, 0, 'Play again mops up');
+  g.map.dispose();
+});
+
+test('Antifreeze: the first proc chills, the second shatters, and a slow from anything else shatters too', () => {
+  const t = fixture(), { g } = t;
+  t.fit('antifreeze', 'headshot');
+  const [zombie] = t.row([0]);
+  t.shoot(zombie, 'head');
+  const afterChill = zombie.health;
+  assert.ok(zombie.slowTimer > 0, 'chilled');
+  t.tick(50);
+  t.shoot(zombie, 'head');
+  const damage = gunPower(g.gun.def, g.stats) * workshopStuffings.antifreeze.shatter.gunSeconds;
+  const headshot = afterChill - zombie.health;
+  assert.ok(headshot > damage, `the shatter landed on top of the shot: ${headshot} vs ${damage}`);
+  assert.equal(zombie.slowTimer, 0, 'the shatter uses the chill up');
+  t.tick(50);
+  zombie.applySlow(5, .8); // (a Spill Cleanup, say)
+  const before = zombie.health;
+  t.shoot(zombie, 'head');
+  assert.ok(before - zombie.health > damage);
+  g.map.dispose();
+});
+
+test('one gun\'s Heart and cooldown leave the other gun alone', () => {
+  const t = fixture(), { g } = t;
+  t.fit('smoothie', 'headshot');
+  g.gun.setMods('stapleGun', [{ id: 'build', build: { stuffing: 'smoothie', heart: 'headshot', quality: 'understuffed', kills: 0 } }]);
+  const fired = [];
+  g.events.on('buildFired', e => fired.push(e.weaponId));
+  const [zombie] = t.row([0]);
+  t.shoot(zombie, 'head');
+  t.press('Digit1'); t.tick(60);
+  assert.equal(g.gun.def.id, 'stapleGun');
+  g.gun.weapon.cooldown = 0;
+  zombie.updateHitboxes();
+  const point = zombie.hitboxes.find(h => h.part === 'head').box.getCenter(new THREE.Vector3());
+  g.player.pitch = Math.atan2(point.y - g.player.eyeHeight, 12 - point.z);
+  t.input.held.add('Mouse2'); t.tick(30);
+  t.press('Mouse0'); t.input.held.delete('Mouse2'); t.tick(2);
+  assert.deepEqual(fired, ['nailGun', 'stapleGun']);
   g.map.dispose();
 });
 
@@ -357,6 +488,17 @@ test('balance: at its best, a stuffing adds less than the gun itself at every ro
     const sustained = sustainedDps(gun, 5, { ads: !gun.pellets, samples: 300 });
     assert.ok(burnTotal / burn.seconds < sustained, `${gun.name}: burn per second ${Math.round(burnTotal / burn.seconds)} vs ${Math.round(sustained)}`);
   }
+});
+
+test('balance: the rare Hearts stay in proportion', () => {
+  const extra = workshopRitual.qualities.find(q => q.id === 'extraStuffed').power;
+  const { burn } = workshopStuffings.fryerOil, { shatter } = workshopStuffings.antifreeze;
+  const rare = workshopHearts.everyTenth.strength * extra;
+  assert.ok(burn.gunSeconds * rare < 1.5, 'an Every 10th burn is worth under a second and a half of the gun');
+  // Best case for antifreeze: every other proc shatters a full set of chilled zombies.
+  const perSecond = (shatter.gunSeconds * extra * shatter.maxTargets) / (2 * workshopHearts.headshot.cooldownSeconds);
+  assert.ok(perSecond < .6, `antifreeze adds ${perSecond.toFixed(2)} of the gun's fire per second`);
+  assert.ok(Math.round(workshopStuffings.neonTube.chain.jumps * rare) >= workshopStuffings.neonTube.chain.maxJumps, 'the jump cap is what holds it');
 });
 
 test('balance: one proc never kills a full-health zombie outright from round 5 on', () => {

@@ -26,6 +26,8 @@ unlit instanced bulbs, so it adds no lights. Runtime-shown parts sit under a dyn
 north lane 914 / 109k, Promenade at the window 241 / 31k, hallway 1086 / 171k, Level 2 1411 / 260k. During a ritual the hall peaks at 244. A built gun adds about 10 calls wherever it is carried; the first version used a mesh per stitch and added about 50, so stitches are instanced now.
 buildVisual places from mounts, never from bounds: model.root holds the hands and arms, and bounds put the patch off in space (caught on screen, not by a test; there is a test now).
 
+Phase 6, first part: Popcorn Butter (a fixed pool of three puddles, Spill Cleanup's slow per tick), Antifreeze (chills, then shatters anything slowed, by any source), the Reload Heart (a new 'reload' event) and Every 10th. Hearts now name the events they want and cooldowns are per gun, so one gun can't swallow another's tenth kill.
+
 ## 4 November 2026 — tenant branding and font loading
 
 Mega Mart and Hoffman's got their own tenant branding (config/look.js, zoneLooks.js, hallwayLook.js, textures.js).

@@ -31,7 +31,7 @@ export function buildWorkshop(bench, { map, gun, pricing, interactions, events, 
   });
 
   const ritual = createWorkshopRitual({ bench, map, gun, pricing, interactions, events, player, zombies, rounds, scene });
-  const buildEffects = createBuildEffects({ events, gun, zombies, colliders, effects, stats, state, sound });
+  const buildEffects = createBuildEffects({ events, gun, player, zombies, colliders, effects, stats, state, sound, scene });
   const spectacle = createWorkshopSpectacle({ bench, ritual, events, zombies, player, sound });
   const trap = workshopBuilds.partyTrap;
   const clearance = createClearanceRack({ gun, zombies, effects, sound });
