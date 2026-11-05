@@ -22,10 +22,10 @@ function fixture(weapon) {
 test('Promenade work order is gated by the zone, charges the live price and preserves existing upgrades', () => {
   const { g, tick, press } = fixture(weapons.priceGun);
   const bench = g.map.features.find(f => f.kind === 'workshop');
-  const position = bench.position.clone();
+  const position = bench.limitedEdition.clone(); // the Limited Editions shelf (the bench itself now takes guns for the ritual)
   position.y = g.map.navigation.floors[1];
-  position.z -= 1.1;
-  g.player.teleport({ position, yaw: Math.PI });
+  position.z += 1.1;
+  g.player.teleport({ position, yaw: 0 });
   tick();
   assert.notEqual(g.interactions.prompt?.kind, 'workshop');
   g.map.areaUnlocks.openAll();

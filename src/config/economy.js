@@ -87,7 +87,8 @@ export const economy = {
   // Gun upgrades (what they do: config/upgrades.js). Tiers are bought one at a time for the gun in your hand;
   // each tier costs about one round's earnings at the round it's meant for (round 12 pays ~3,400).
   upgrades: {
-    workshop: { partyTrap: 1500, clearanceRack: 1000 },
+    // PLACEHOLDER PRICES: ritual and restuff are not decided yet (the economy simulation sets them). Limited Editions keep the old prices.
+    workshop: { partyTrap: 1500, clearanceRack: 1000, ritual: 1500, restuff: 750 },
     tiers: { deluxe: 2000, premium: 4000, platinum: 8000 },
     attachments: {
       extendedNozzle: 1000, sawnOff: 1000, // barrel (Mega Mart hardware)

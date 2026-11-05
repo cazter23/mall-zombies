@@ -37,6 +37,11 @@
 //                                                        Area purchases also include areaId and openedDoorIds (one charge, many barriers).
 //   'flashSaleStart' { id, label, categories, discount, seconds, pa: { kicker, text } }   a Flash Sale began (game/flashSales.js)
 //   'flashSaleEnd'   { id, label, reason 'expired' | 'reset', pa }                         it ended (no banner on 'reset')
+//   'ritualStart' { gunId, gunName, loaner, restuff, pa }  Build-A-Blaster took a gun (game/features/workshopRitual.js)
+//   'ritualStage' { stage }                               the gun reached the next stage of the conveyor
+//   'ritualKill'  { zombie, kills, quality }              a kill in the room went into the tank
+//   'ritualReady' { gunId, kills, quality, reason 'lever' | 'time', pa }  the gun is waiting at the Naming Booth
+//   'ritualCollect' { gunId, build, pa }                  the player took the finished gun
 //   'runReset'    {}                                     after Play again reset everything
 // =============================================================================
 

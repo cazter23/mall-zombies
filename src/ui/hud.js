@@ -9,6 +9,7 @@
 import { feel } from '../config/feel.js';
 import { createScreens } from './screens.js';
 import { createIncentiveHud } from './incentiveHud.js';
+import { createRitualHud } from './ritualHud.js';
 import { createAnnouncements } from './announcements.js';
 import { ui } from '../config/ui.js';
 import { upgrades } from '../config/upgrades.js';
@@ -23,6 +24,8 @@ export function createHud() {
   const hud = el('div', 'hud');
   const incentives = createIncentiveHud();
   hud.append(incentives.element);
+  const ritualTicket = createRitualHud();
+  hud.append(ritualTicket.element);
 
   // Red glow around the screen edges when hurt (under everything else in the HUD).
   const hurt = el('div', 'hurt');
@@ -200,7 +203,7 @@ export function createHud() {
     connectEvents(events) {
       events.on('purchase', ({ label, kind, id, cost }) => {
         clearTimeout(purchaseTimer);
-        purchaseStamp.textContent = kind === 'workshop' ? label : `${kind === 'attachment' && cost === 0 ? 'Refitted' : 'Purchased'}: ${kind === 'attachment' ? upgrades.attachments[id]?.name ?? label : label}`;
+        purchaseStamp.textContent = kind === 'workshop' || kind === 'ritual' ? label : `${kind === 'attachment' && cost === 0 ? 'Refitted' : 'Purchased'}: ${kind === 'attachment' ? upgrades.attachments[id]?.name ?? label : label}`;
         purchaseStamp.classList.remove('show');
         void purchaseStamp.offsetWidth;
         purchaseStamp.classList.add('show');
@@ -212,6 +215,11 @@ export function createHud() {
 
     setPowerUps(status) {
       incentives.update(status);
+    },
+
+    // Build-A-Blaster's order ticket: null hides it (game/features/workshopRitual.js status).
+    setRitual(status) {
+      ritualTicket.update(status);
     },
 
     setFpsVisible(visible) {
@@ -401,11 +409,11 @@ export function createHud() {
       interact.classList.toggle('show', !!info);
       if (!info) return;
       interactTitle.textContent = info.title ?? info.label;
-      interactCost.textContent = info.owned ? 'Owned · Free' : info.cost.toLocaleString('en-US');
+      interactCost.textContent = info.priceLabel ?? (info.owned ? 'Owned · Free' : info.cost.toLocaleString('en-US'));
       interactOriginal.hidden = !info.sale || !(info.originalCost > info.cost);
       interactOriginal.textContent = `${(info.originalCost ?? info.cost).toLocaleString('en-US')}`;
       // Ordinary purchases need one line. Keep the terms only where they affect an upgrade decision.
-      interactDetail.textContent = (info.kind === 'attachment' || info.kind === 'workshop') ? info.detail ?? '' : info.kind === 'tier' ? 'Ammo not included' : '';
+      interactDetail.textContent = (info.kind === 'attachment' || info.kind === 'workshop' || info.kind === 'ritual') ? info.detail ?? '' : info.kind === 'tier' ? 'Ammo not included' : '';
       interactButton.textContent = button;
       interactStatus.textContent = !info.canAfford ? `Need ${(info.shortfall ?? 0).toLocaleString('en-US')} more` : '';
       interact.classList.toggle('cant', !info.canAfford);

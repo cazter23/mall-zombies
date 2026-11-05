@@ -116,6 +116,14 @@ export function createDebugCommands({ map, zombies, rounds, wallet, gun, health,
       return 'On Level 2';
     },
 
+    workshop() {
+      const spots = map.levelTwo;
+      if (!spots?.workshop) return 'This map has no workshop';
+      spots.repair.open();
+      player.teleport(spots.workshop);
+      return 'At the Build-A-Blaster bench';
+    },
+
     // The benchmark itself is browser-side (fx/benchmark.js, run by main.js on Shift+B); headless it only says so.
     benchmark() {
       return 'The benchmark runs in the browser: on the title or pause screen, press Shift+B';

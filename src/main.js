@@ -95,6 +95,7 @@ const g = createGame({
 });
 scene.add(viewmodel.worldLight); // the muzzle flash lights up the room
 const { state: game, death, map, player, gun, melee, zombies, rounds, health, wallet, effects, aimAssist, interactions, pricing, flashSales } = g;
+const ritual = g.features.list.find(({ feature }) => feature.kind === 'workshop')?.instance.ritual; // Build-A-Blaster (the HUD reads its status)
 const resetRun = g.resetRun;
 hud.connectEvents(g.events);
 const haptics = createHaptics({ gamepad, input, state: game, health, events: g.events });
@@ -404,6 +405,7 @@ function render(alpha, frameTime) {
   }, buttonLabel('interact'));
   hud.setFlashSale(game.over ? null : flashSales.active);
   hud.setPowerUps(game.over ? null : g.powerUps);
+  hud.setRitual(game.over ? null : ritual?.status ?? null);
   hud.setVaultPrompt(game.running && !game.over && g.vaultPromptVisible, buttonLabel('jump'));
   hud.setPoints(wallet.points);
   hud.setRoundFlashing(rounds.inBreak && rounds.round > 1); // counter blinks in the break between rounds

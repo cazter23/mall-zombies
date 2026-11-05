@@ -10,6 +10,11 @@ sells Party Trap and Clearance Rack. The island's guard is ONE ignoreShots colli
 rails in levelTwo.test.js, and one block also seals the inside. Measured in the built game (draw calls / triangles): hall 144-189 / 17-19k, storefront 168 / 18k,
 Promenade at the window 210 / 28k, north lane looking out through the mouth 876 / 106k; for comparison hallway 1082 / 171k, Level 2 1397 / 260k, HOFFMAN'S 515 / 80k.
 
+Phase 2, the ritual: game/features/workshopRitual.js (idle, running, ready), built by workshop.js so FEATURE_KINDS and createGame's systems don't change. playerGun gained handOver/collect:
+the slot itself leaves the loadout, so ammo and upgrades wait with it. zombieManager.steerSpawns(points) changes where spawns land and nothing else; rounds still decides how many. Free actions (lever,
+booth) use kind 'ritual', because main.js looks up a shelf price for any kind in PRICE_CATEGORIES and 'workshop' has none for them. The bench took over feature.position, so the Limited Editions moved to a
+shelf behind the window (feature.limitedEdition). Spawn steering only applies while the player is in the room, so a ritual can't be used to send a round's zombies far from you.
+
 ## 4 November 2026 — tenant branding and font loading
 
 Mega Mart and Hoffman's got their own tenant branding (config/look.js, zoneLooks.js, hallwayLook.js, textures.js).

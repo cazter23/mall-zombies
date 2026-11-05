@@ -93,6 +93,14 @@ export class Weapon {
     this.reloadPhase = null;
   }
 
+  // Build-A-Blaster: a gun comes back from the Naming Booth loaded. The reserve is untouched.
+  loadMagazine() {
+    this.cancelFire();
+    this.reloadTimer = 0;
+    this.reloadPhase = null;
+    this.magazine = this.def.magazineSize;
+  }
+
   // Stockroom Delivery: reserve ammo, with a small ready-magazine top-up.
   // Never bypass a running reload or the Cannon's individual shell loading.
   restock(magazineFraction = 0) {

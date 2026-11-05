@@ -38,6 +38,7 @@ export const debug = {
     { id: 'doors', key: 'KeyO', group: 'Map', label: 'Open every door (press again to close them)' },
     { id: 'arena', key: 'KeyT', group: 'Map', label: 'Teleport to the test range and back' },
     { id: 'upstairs', key: 'KeyT', shift: true, group: 'Map', label: 'Teleport to Level 2 and back (repairs the escalator)' },
+    { id: 'workshop', key: 'KeyY', group: 'Map', label: 'Teleport to the Build-A-Blaster bench (opens the Promenade)' },
 
     { id: 'panel', key: 'Backquote', group: 'Debug', label: 'Show / hide this window' },
     { id: 'benchmark', key: 'KeyB', shift: true, group: 'Debug', label: 'Benchmark: time a camera route (title or pause screen)' },

@@ -11,6 +11,7 @@
 //   verb         'open' (shown in the prompt)
 //   cost         points (number)
 //   title/detail optional shelf-ticket heading and explanation (strings or getters); label remains the purchase-event text
+//   priceLabel   optional text instead of the number on the ticket (a free action: "Free")
 //   position     THREE.Vector3 the player interacts with (distance + facing are measured to it)
 //   seeThrough   optional [Box3]: solids that don't block the line of sight to it (a door's own shutter)
 //   available()  false once it can't be used any more (an opened door)
@@ -131,6 +132,7 @@ export function createInteractions({ input, player, wallet, sound = null, onRelo
         pricingId: focused.pricingId ?? focused.id ?? null,
         detail: focused.detail ?? '',
         owned: focused.owned ?? false,
+        priceLabel: focused.priceLabel ?? null, // shown instead of the number ("Free")
         shortfall: Math.max(0, focused.cost - wallet.points),
         cost: focused.cost,
         canAfford: wallet.canAfford(focused.cost),

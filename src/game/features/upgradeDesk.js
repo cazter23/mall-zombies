@@ -36,7 +36,7 @@ export function upgradeDeskItem({ desk, zones, gun, pricing }) {
       return pricing.priceOf('tier', next());
     },
     position: desk.position,
-    available: () => zones[desk.zone].open && !gun.isSwitching && next() !== null,
+    available: () => zones[desk.zone].open && !gun.isSwitching && !gun.isLoaner && next() !== null,
     use: () => {
       const id = gun.def.id;
       gun.setMods(id, withTier(gun.def.base, gun.modsFor(id), next()));

@@ -846,7 +846,9 @@ export function buildMall(scene, colliders) {
   const features = [
     { kind: 'workshop', name: 'buildABlaster', zone: 'upstairs',
       position: levelTwo.workshop.purchasePosition,
-      normal: new THREE.Vector3(0, 0, -1) },
+      normal: new THREE.Vector3(0, 0, -1),
+      limitedEdition: levelTwo.workshop.limitedEdition,
+      stations: levelTwo.workshop.stations },
     ...wallBuys.map((w) => ({ kind: 'wallBuy', ...w })),
     // The RESTOCK-O-MATIC: buy a refill for the gun in your hand (g.pricing 'ammoCache'); its screen shows what it sells.
     { kind: 'ammoCache', name: 'ammocache_foodCourt', zone: 'foodCourt', position: foodCourtAmmo.position, normal: foodCourtAmmo.normal, screen: foodCourtAmmo.screen },
@@ -1019,6 +1021,7 @@ export function buildMall(scene, colliders) {
       arrival: { position: new THREE.Vector3(H.minX + 1.2, upperY, 4.6), yaw: -Math.PI / 2 }, // west lobby, facing east down the walkway
       below: { position: new THREE.Vector3(escalator.foot.x + 1.5, 0, escalator.foot.z), yaw: Math.PI / 2 }, // at the escalator's foot
       repair: escalatorDoor,
+      workshop: levelTwo.workshop.arrival, // for the debug "workshop" command
     },
     update(dt) {
       for (const door of doors) door.update(dt);

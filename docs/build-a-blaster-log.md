@@ -39,3 +39,25 @@ The 876 view is the room looking out over the Promenade and down a balcony. It i
 
 **Tooling note.** The preview tool's launch config only exists in the main checkout and runs from there, so `mall-zombies-preview` serves main's build. I did not edit that file. I run `npm run preview -- --port 4188` from the worktree instead and open that URL.
 
+## Phase 2: the ritual
+
+**What changed.** New game/features/workshopRitual.js with states idle, running and ready. Hand your gun over at the bench and it rides the conveyor; kills in the room fill the gauge; the lever or the 45 s limit ends it; collect at the Naming Booth. New HUD order ticket. Effects are still a placeholder: the gun gets a build record (quality and kills) that does nothing yet.
+
+**Verified.**
+- tests/workshopRitual.test.js (20 tests) covers everything in the plan's "Done when": death and Play again mid-ritual, walking away and returning, the loaner returning, gun purchases mid-ritual, the chute adding no zombies, the round still ending.
+- Built game, real ritual start to finish through `window.__mall`: paid 1500 at the bench, Courtesy Loaner came up, zombies landed at the chute, real shots from the loaner filled the gauge to 3, ticket read "Being stuffed · 34s, 3 in the tank · 4 for Regular", lever gave Understuffed, booth returned the Staple Gun with a full magazine and the build, ticket cleared. Then Play again mid-ritual left nothing behind. No console errors from the game.
+
+**Decisions made for you.**
+- Kills count anywhere in the workshop, storefront as well as hall.
+- Spawns steer to the chute only while you are inside the room. If they stayed steered after you left, you could start a ritual and walk off, and every zombie would have a long trek to reach you.
+- If you stand on the chute, spawns fall back to the normal markers rather than dropping a zombie on you.
+- The clock keeps running after you leave. The gun then waits at the booth with no deadline.
+- The gun comes back with a full magazine; its reserve is unchanged. Handing over an empty gun and collecting it empty mid-fight felt bad.
+- Collecting with a full loadout replaces the gun in your hand, the same rule as a wall buy, and the booth ticket warns you first ("Replaces your Foam Dart Blaster"). Buying the same gun again mid-ritual is allowed; the finished gun replaces that copy.
+- The loaner shows on the HUD as "Courtesy Loaner". Customer Service and attachment counters ignore it, so nobody pays to upgrade a gun that gets taken back.
+- Limited Editions needed their own spot now the bench takes guns for the ritual, so they moved to a shelf behind the display window. Price unchanged.
+- A gun can hold a Limited Edition and a ritual build at once.
+- New debug key Y teleports to the bench and opens the Promenade. (J was my first choice, but tests/debugCommands.test.js relies on J being unbound, so I took Y.)
+
+**Test changed on purpose.** tests/workshop.test.js: the first test now stands at the Limited Editions shelf rather than the bench. Same checks, new spot.
+

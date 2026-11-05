@@ -64,6 +64,9 @@ export function createPlayerGun({
   let slots = [makeSlot(startDef)];
   let current = 0; // index of the gun in hand
 
+  // A gun handed over at Build-A-Blaster: out of the loadout until collect() brings it back. Keeps its own ammo.
+  let away = null;
+
   // Switching: null, or { from: slot shown while it drops away, timer: seconds since the switch started }.
   // (`from` can be a slot that was just replaced by a bought gun: it still drops away visibly.)
   let switching = null;
@@ -81,6 +84,16 @@ export function createPlayerGun({
     inspectTimer = 0;
     slots[current].aim.reset(); // comes up at the hip
     switching = { from: fromSlot, timer: 0 };
+  }
+
+  // Where a gun coming back from Build-A-Blaster goes: over a copy of itself bought meanwhile, over the loaner, into a free
+  // slot, or, with two guns of your own, over the gun in your hand (like buying a gun with a full loadout).
+  function collectSlot(id) {
+    const copy = slots.findIndex((s) => s.def.id === id && !s.loaner);
+    if (copy !== -1) return copy;
+    const loan = slots.findIndex((s) => s.loaner);
+    if (loan !== -1) return loan;
+    return slots.length < MAX_SLOTS ? slots.length : current;
   }
 
   function fire(slot) {
@@ -293,6 +306,68 @@ export function createPlayerGun({
       return true;
     },
 
+    // True when the gun in hand is the Courtesy Loaner: nothing can be bought for it, it goes back at collection.
+    get isLoaner() {
+      return slots[current].loaner === true;
+    },
+
+    // The gun handed over at Build-A-Blaster, or null: { def, mods }.
+    get away() {
+      return away ? { def: away.def, mods: away.mods } : null;
+    },
+
+    /**
+     * Build-A-Blaster: the gun in your hand leaves the loadout. Your other gun comes up, or, if it was your only
+     * gun, `loanerDef` is lent to you (a plain gun, flagged as the loaner). Returns false if a gun is already away.
+     */
+    handOver(loanerDef) {
+      if (away) return false;
+      const slot = slots[current];
+      slot.weapon.cancelFire();
+      slot.weapon.cancelReload();
+      away = slot;
+      if (slots.length > 1) {
+        slots.splice(current, 1);
+        current = 0;
+      } else {
+        const loan = makeSlot(loanerDef);
+        loan.loaner = true;
+        slots[0] = loan;
+      }
+      startSwitch(0, slot);
+      return true;
+    },
+
+    /**
+     * Build-A-Blaster: the away gun comes back, loaded, into your hand, with withBuild(mods) as its new mods.
+     * The slot it takes: see collectSlot. (Only a player with one gun gets the loaner, and that gun is always the starting
+     * gun, which can't be bought again, so a loaner and a bought copy never meet.)
+     */
+    collect(withBuild = (mods) => mods) {
+      if (!away) return false;
+      const slot = away;
+      away = null;
+      slot.mods = withBuild(slot.mods);
+      slot.def = resolveGun(slot.base, slot.mods);
+      slot.weapon.setDef(slot.def);
+      slot.aim.setDef(slot.def);
+      slot.weapon.loadMagazine();
+      const previous = slots[current];
+      previous.weapon.cancelFire();
+      previous.weapon.cancelReload();
+      const index = collectSlot(slot.def.id);
+      slots[index] = slot;
+      startSwitch(index, previous);
+      return true;
+    },
+
+    // The gun of yours that collecting would replace (its name), or null if it costs you nothing.
+    get collectReplaces() {
+      if (!away) return null;
+      const replaced = slots[collectSlot(away.def.id)];
+      return replaced && !replaced.loaner ? replaced.def.name : null;
+    },
+
     /**
      * Bought a gun off the wall. Already have it: full ammo. Room in the loadout: added and
      * switched to. Loadout full: it replaces the gun in your hands (the old one drops away).
@@ -399,6 +474,7 @@ export function createPlayerGun({
       slots[0].aim.reset(); // clear the old gun's ADS progress and handling penalty immediately
       current = 0;
       switching = null;
+      away = null;
       reloadRequested = false;
       inspectTimer = 0;
       lastReloadProgress = null;

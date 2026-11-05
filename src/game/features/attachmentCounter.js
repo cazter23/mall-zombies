@@ -47,7 +47,7 @@ export function attachmentCounterItem({ spot, zones, gun, pricing }) {
       return owned.has(id) ? 0 : pricing.priceOf('attachment', id);
     },
     position: spot.position,
-    available: () => zones[spot.zone].open && !gun.isSwitching && !gun.weapon?.isReloading && !gun.weapon?.isBursting && !gun.weapon?.isCharging && attachmentFits(gun.def.base, id) && !fitted(),
+    available: () => zones[spot.zone].open && !gun.isSwitching && !gun.isLoaner && !gun.weapon?.isReloading && !gun.weapon?.isBursting && !gun.weapon?.isCharging && attachmentFits(gun.def.base, id) && !fitted(),
     use: () => {
       const gunId = gun.def.id;
       gun.setMods(gunId, withAttachment(gun.def.base, gun.modsFor(gunId), id));

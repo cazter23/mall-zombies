@@ -66,12 +66,13 @@ export function createZombieManager({
   }
   const ctx = { nav, player, colliders, zombies, canAttack: true, onPlayerHit, onSound: playZombieSound };
   const scratch = new THREE.Vector3();
+  let steered = null; // spawn markers tried before the map's own (Build-A-Blaster's Returns Chute), or null
 
   // Hard safety checks first. A rising zombie reserves its full ground-level body,
   // and a rescue ignores only the zombie being relocated. No safe point => retry later.
-  function pickSpawnPoint(type, ignoredZombie = null) {
+  function pickSpawnPoint(type, ignoredZombie = null, points = spawnPoints) {
     const candidates = [];
-    for (const point of spawnPoints) {
+    for (const point of points) {
       if (!isZoneOpen(point.zone)) continue;
       const p = point.position;
       if (Math.hypot(p.x - player.position.x, p.z - player.position.z) < zombieCrowd.minSpawnDistance) continue;
@@ -353,13 +354,19 @@ export function createZombieManager({
       return count;
     },
 
+    // Steer new spawns to these markers ({ zone, position }) while they are usable; null = back to normal. Only WHERE
+    // changes: rounds still decides how many, so this adds no zombies. A failsafe rescue ignores it.
+    steerSpawns(points) {
+      steered = points;
+    },
+
     // Spawn one zombie of `typeId` at a good spawn point (or at `at`, a Vector3, if given).
     // Returns the zombie, or null if no spawn point is usable right now.
     spawn(typeId = 'shopper', at = null) {
       const cap = economy.zombieMix[typeId]?.maxAlive;
       if (cap && zombies.filter(z => z.isAlive && z.type.id === typeId).length >= cap) typeId = 'shopper';
       const type = zombieTypes[typeId];
-      const point = at ? null : pickSpawnPoint(type);
+      const point = at ? null : (steered && pickSpawnPoint(type, null, steered)) || pickSpawnPoint(type);
       if (!at && !point) return null;
       const position = at ? at.clone() : point.position.clone();
       position.y = point ? point.position.y : 0; // (a spawn marker stands on its own floor; an explicit spot goes on the ground)

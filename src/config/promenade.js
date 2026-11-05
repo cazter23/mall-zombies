@@ -53,6 +53,7 @@ export const promenade = {
     colors: { wall: 0xf6dfb4, cream: 0xffedca, cabinet: 0xf2c569, plum: 0x253c87, metal: 0x354668,
       wood: 0x99724f, paper: 0xf5ebd6, red: 0xc64140, lamp: 0xffcb8a, glass: 0xe2f7ef },
     lamp: { x: 0, height: 2.55, offsetZ: 2.2, color: 0xffce99, intensity: 1.05, distance: 7 },
+    rideHeight: .22, // the gun rides this far above the belt
     // The back hall (Build-A-Blaster ritual room). It sits above HOFFMAN'S and the start room; the Atrium's exterior wall
     // starts at x 5.27, so the east wall stops short of it. Lanes round the island stay >= 3 m (tests/workshopRoom.test.js).
     hall: {
@@ -63,7 +64,7 @@ export const promenade = {
       conveyor: { inset: .15, width: .8, height: .95 }, // a U open to the east, ending by the Naming Booth
       booth: { minX: 3.7, maxX: 4.9, minZ: 20, maxZ: 23.2, height: 2.6, promptHeight: 1.45 },
       lever: { z: 16.8, height: 1.35, depth: .14 }, // on the east wall, south of the booth
-      chute: { x: -7, width: 2.2, sill: .45, top: 2.25 }, // the Returns Chute hatch in the north wall
+      chute: { x: -7, width: 2.2, sill: .45, top: 2.25, spawnInset: .9 }, // the Returns Chute hatch in the north wall; zombies land spawnInset out from it
       panels: [[-7.6, 14], [2.6, 14], [-7.6, 24.2], [2.6, 24.2]],
       lamps: [{ x: -2.3, z: 14 }, { x: -2.3, z: 24.4 }],
       lampLight: { color: 0xffe2bd, intensity: 15, distance: 16, height: 3.1 },

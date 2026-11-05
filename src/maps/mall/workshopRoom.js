@@ -6,7 +6,7 @@
 // Numbers are in config/promenade.js workshop; game/features/workshop*.js gives the room its gameplay.
 //
 // buildWorkshopRoom({ kit, props, floorY, layout }) ->
-//   { purchasePosition, light, lamps, stations: { hall, lever, booth, chute, conveyor } }
+//   { purchasePosition, limitedEdition, light, lamps, arrival, stations: { rooms, lever, booth, chute, path } }
 // =============================================================================
 
 import * as THREE from 'three';
@@ -209,9 +209,26 @@ export function buildWorkshopRoom({ kit, props, floorY, layout }) {
   sign('CUSTOM WORK ORDERS · WHILE YOU WAIT', boardX, 2.78, boardZ - .055, 3.9, .42);
   sign('WORK ORDER 018', boardX - 1.01, 1.57, boardZ - .183, .72, .19, '#f5ebd6', '#593c50');
 
+  // The Limited Editions shelf: the display deck behind the window, facing into the shop.
+  sign('LIMITED EDITIONS', center, 1.3, front + .68, 1.5, .2, '#c64140', '#fff0cb', 1);
+
   const lamp = shop.lamp;
+  const rideY = floorY + belt.height + shop.rideHeight;
+  const beltMiddle = belt.width / 2;
   return {
     purchasePosition: new THREE.Vector3(center, floorY + bench.promptHeight, benchFront - bench.promptInset),
+    limitedEdition: new THREE.Vector3(center, floorY + 1.2, front + .75),
+    arrival: { position: new THREE.Vector3(center, floorY, benchFront - 1.1), yaw: Math.PI }, // (debug: in front of the bench)
+    stations: {
+      rooms: layout.sections.filter(s => s.id.startsWith('workshop'))
+        .map(({ minX, maxX, minZ, maxZ }) => ({ minX, maxX, minZ, maxZ, minY: floorY - .5, maxY: floorY + H.height })),
+      lever: new THREE.Vector3(H.maxX - L.depth - .08, floorY + L.height, L.z),
+      booth: new THREE.Vector3(B.minX - .08, floorY + B.promptHeight, (B.minZ + B.maxZ) / 2),
+      chute: [-1.1, 0, 1.1].map((dx, i) => ({ name: `spawn_workshop_chute_${i}`, zone: 'upstairs',
+        position: new THREE.Vector3(C.x + dx, floorY, H.maxZ - C.spawnInset) })),
+      path: [[bx1 - .3, bz0 + beltMiddle], [bx0 + beltMiddle, bz0 + beltMiddle], [bx0 + beltMiddle, bz1 - beltMiddle], [bx1 - .3, bz1 - beltMiddle]]
+        .map(([x, z]) => new THREE.Vector3(x, rideY, z)),
+    },
     light: { ...lamp, x: center + lamp.x, y: floorY + lamp.height, z: front + lamp.offsetZ },
     lamps: H.lamps.map(l => ({ ...H.lampLight, x: l.x, y: floorY + H.lampLight.height, z: l.z })),
   };
