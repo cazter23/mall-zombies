@@ -100,6 +100,13 @@ export function attachmentFits(base, id) {
   return attachmentModifiers(base, attachmentById(id)) !== null;
 }
 
+/** A finished Build-A-Blaster gun's stat changes: its shots streak in the stuffing's colour. */
+export function buildModifiers(base, color) {
+  return base.pellets?.tracerColors
+    ? [{ stat: 'pellets.tracerColors', op: 'set', value: [color, 0xfff3d4] }]
+    : [{ stat: 'tracerColor', op: 'set', value: color }];
+}
+
 export function withTier(base, mods, tierId) {
   const tier = tierById(tierId);
   const rest = mods.filter((m) => m.id !== 'tier');

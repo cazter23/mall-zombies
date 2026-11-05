@@ -16,6 +16,8 @@ stopping stuffings, quality scaling, picking at the bins and the Heart wall, tod
 
 `tests/workshopNames.test.js` covers names (unique in a run until the list runs out, kept through a re-stuff), the Birth Certificate's fields and wording, the PA lines in order, the HUD label, and "Survived by" in the run summary, even for a gun still at the workshop. `tests/receiptReview.test.js` covers the receipt line.
 
+`tests/workshopSpectacle.test.js` covers ritual mode: moving parts out of batching, no added lights, tank fill and colour, kills flying into the tank and paying once, returns tumbling out of the chute, the lever, the arm, the jingle, the belt, PA narration priority, stuffing-coloured tracers, and Play again putting every part back. `tests/weaponModels.test.js` checks the stitched look on every gun: anchored to the gun, gun-sized, cheap, reversible.
+
 `tests/attachmentRework.test.js` covers paid run unlocks, discounted first purchases, free refits across replacement guns,
 ownership reset, reload blocking, ammo conservation/full-reserve overflow, fully-owned sale eligibility and four-slot builds.
 

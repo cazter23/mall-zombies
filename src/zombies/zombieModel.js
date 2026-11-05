@@ -550,8 +550,9 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
       // Spawning: rise up out of the floor.
       if (zombie.state === 'spawning') {
         const t = ease(Math.min(1, zombie.stateTime / type.spawnSeconds));
-        root.position.y -= type.height * (1 - t);
-        fall.rotation.x = 0;
+        // (Out of the Returns Chute it tumbles down instead.)
+        root.position.y += zombie.dropHeight > 0 ? zombie.dropHeight * (1 - t) : -type.height * (1 - t);
+        fall.rotation.x = zombie.dropHeight > 0 ? (1 - t) * 2.4 : 0;
         fall.rotation.y = 0;
       }
 
@@ -567,7 +568,7 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
         const sinkStart = type.fallSeconds + type.corpseSeconds;
         const sink = Math.max(0, Math.min(1, (t - sinkStart) / type.sinkSeconds));
         root.position.y -= sink * 0.6;
-      } else {
+      } else if (zombie.state !== 'spawning') {
         fall.rotation.x = 0;
         fall.rotation.y = 0;
       }

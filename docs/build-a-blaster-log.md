@@ -105,3 +105,44 @@ The 876 view is the room looking out over the Promenade and down a balcony. It i
 - The name appears only after collection, never before, so a gun you die with on its first ritual gets no line on the receipt. Naming it at the booth is the point of the booth.
 - Only the gun's first ritual gets a welcome line; a quality line plays once per ritual, each time the gauge reaches a new quality.
 
+## Phase 5: spectacle
+
+**What changed.** Real tank with quality marks that fills in the stuffing's colour, running belt, gantry arm that carries the gun to the booth, chute flap and slide, lever, booth, party bulbs, party colours on the lamps. Kills in the room fly into the tank; returns tumble out of the chute. Jingle, narration, per-stuffing sounds, Neon arcs, Fryer embers, shots that streak in the stuffing's colour, the stitched gun look and the Overstuffed bulge.
+
+**Verified.**
+- tests/workshopSpectacle.test.js (16 tests), plus checks on every gun in tests/weaponModels.test.js.
+- Built game, looked at screenshots of: the tank mid-ritual, the chute with a zombie falling out, the arm lowering a gun to the booth, the Birth Certificate, an Overstuffed gun in hand.
+- I could not hear the jingle or the new sounds: I can only check that they are triggered with the right volume. **Please listen to them.** They are synthesised from notes I chose without hearing them.
+
+**Performance**, same views as phase 1, draw calls / triangles:
+
+| View | Phase 1 | Phase 5 |
+|---|---|---|
+| Hall, SW corner | 189 / 19k | 217 / 23k |
+| Hall, SE corner | 144 / 17k | 164 / 20k |
+| Hall, north lane looking out | 876 / 106k | 914 / 109k |
+| Storefront | 168 / 18k | 190 / 21k |
+| Promenade at the window | 210 / 28k | 241 / 31k |
+| Hallway | 1082 / 171k | 1086 / 171k |
+| Level 2 | 1397 / 260k | 1411 / 260k |
+| Atrium court | 305 / 40k | 310 / 41k |
+
+During a ritual the hall peaks at 244 calls. Carrying a built gun adds about 10 calls anywhere. No lights were added.
+
+**Bugs caught by looking at it.**
+- The patch and stitches floated off to the side of the gun, huge. I had measured the model's bounds, and the model root includes the hands and arms. They now anchor to the gun's own mounts, and there is a test for it.
+- Zombies fell out of the chute standing upright, because the model's alive branch reset the tumble. Fixed, with a test.
+- On the Staple Gun the hand hides the side patch, so I added a seam of thread along the top of the gun, which is the surface you actually see.
+- Each stitch was its own mesh, which added about 50 draw calls everywhere you carried a built gun. They are instanced now.
+
+**Decisions made for you.**
+- Ritual mode only recolours the hall's two existing lamps and steps an unlit bulb string, so it cannot exceed the light pool.
+- The storefront's old mascot-topped machine is gone; the mascot sits on the new tank's lid.
+- Narration lines are lowest priority, so a quality or "ready" line beats them. With a queue of three, some narration gets dropped in a busy ritual, which is the intent.
+- Zombies from the chute fall 1.5 m instead of rising through the floor, in the same time.
+- The stuffing's colour goes on the gun's tracer, seam, patch and the tank.
+
+**Failure on the way.** tests/staticBatch.test.js failed a second time, for the same reason as phase 3: I had flagged the belt and bulbs directly instead of under a group. Fixed the same way, without touching the test.
+
+**Interruption.** The session crashed just before this commit. Nothing was lost: the phase 5 work was intact in the worktree. I re-ran the browser check, the tests and the build before committing.
+

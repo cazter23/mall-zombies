@@ -9,6 +9,7 @@
 
 import * as THREE from 'three';
 import { createPartyTrapDeaths } from './partyTrapDeath.js';
+import { createTankDeaths } from './tankDeath.js';
 import { feel } from '../config/feel.js';
 import { zombieTypes, zombieCrowd, zombieFailsafe, zombieSpawn } from '../config/zombies.js';
 import { economy, zombieHealthFor } from '../config/economy.js';
@@ -67,6 +68,7 @@ export function createZombieManager({
   const ctx = { nav, player, colliders, zombies, canAttack: true, onPlayerHit, onSound: playZombieSound };
   const scratch = new THREE.Vector3();
   let steered = null; // spawn markers tried before the map's own (Build-A-Blaster's Returns Chute), or null
+  let chuteDrop = 0, onChuteDrop = null;
 
   // Hard safety checks first. A rising zombie reserves its full ground-level body,
   // and a rescue ignores only the zombie being relocated. No safe point => retry later.
@@ -120,6 +122,7 @@ export function createZombieManager({
     const volume = Math.max(0, 1 - position.distanceTo(player.position) / 14);
     if (volume > 0) playZombieSound('partySnap', volume);
   } });
+  const tankDeaths = createTankDeaths();
   function onZombieDeath(zombie) {
     if (zombie.killedBy === 'partyTrap') {
       if (onKill) onKill(zombie);
@@ -356,8 +359,16 @@ export function createZombieManager({
 
     // Steer new spawns to these markers ({ zone, position }) while they are usable; null = back to normal. Only WHERE
     // changes: rounds still decides how many, so this adds no zombies. A failsafe rescue ignores it.
-    steerSpawns(points) {
+    steerSpawns(points, { dropHeight = 0, onDrop = null } = {}) {
       steered = points;
+      chuteDrop = dropHeight;
+      onChuteDrop = onDrop;
+    },
+
+    // A corpse flies into `mouth` (Build-A-Blaster's Stuffing Tank) instead of lying where it fell.
+    playTankDeath(zombie, mouth) {
+      if (partyDeaths.has(zombie) || zombie.killedBy === 'partyTrap') return;
+      tankDeaths.start(zombie, mouth);
     },
 
     // Spawn one zombie of `typeId` at a good spawn point (or at `at`, a Vector3, if given).
@@ -381,6 +392,13 @@ export function createZombieManager({
       zombies.push(zombie);
       shootables.push(zombie);
       if (point) lastSpawnAt.set(point, spawnClock);
+      // Out of the Returns Chute: it falls out of the hatch rather than rising through the floor (no dust).
+      if (point && steered?.includes(point)) {
+        zombie.dropHeight = chuteDrop;
+        zombie.updateHitboxes();
+        onChuteDrop?.(zombie);
+        return zombie;
+      }
       // Floor-tile dust as it breaks through.
       scratch.copy(position);
       scratch.y += 0.05;
@@ -393,6 +411,7 @@ export function createZombieManager({
 
     clear() {
       partyDeaths.clear();
+      tankDeaths.clear();
       for (const z of zombies) {
         z.model.dispose();
         const i = shootables.indexOf(z);
@@ -412,6 +431,7 @@ export function createZombieManager({
       assignSurroundSlots(dt);
       for (const z of zombies) z.update(dt, ctx);
       partyDeaths.update(dt);
+      tankDeaths.update(dt);
       resolveZombieOverlaps();
       keepPlayerOutOfZombies();
       rescueStuckZombies(dt);
@@ -432,8 +452,9 @@ export function createZombieManager({
 
     // Every rendered frame: animate and interpolate the models.
     render(frameTime, alpha) {
-      for (const z of zombies) if (!partyDeaths.has(z)) z.model.update(frameTime, z, alpha);
+      for (const z of zombies) if (!partyDeaths.has(z) && !tankDeaths.has(z)) z.model.update(frameTime, z, alpha);
       partyDeaths.render(alpha);
+      tankDeaths.render(alpha);
     },
   };
 }

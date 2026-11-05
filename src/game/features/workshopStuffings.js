@@ -18,9 +18,12 @@ const UP = new THREE.Vector3(0, 1, 0);
 const CHEST_HEIGHT = 1.1; // where a stuffing's line of sight is measured, above a zombie's feet
 const MISS_OFFSET = .15; // metres out from a wall a missed Last Round goes off
 
-export function createBuildEffects({ events, gun, zombies, colliders, effects, stats, state }) {
+export function createBuildEffects({ events, gun, zombies, colliders, effects, stats, state, sound }) {
   let heartCooldown = 0;
+  let emberTimer = 0;
+  const chest = (zombie) => from.copy(zombie.position).setY(zombie.position.y + CHEST_HEIGHT);
   const from = new THREE.Vector3(), to = new THREE.Vector3(), direction = new THREE.Vector3();
+  const arcFrom = new THREE.Vector3(), arcTo = new THREE.Vector3();
 
   const canBeHit = (z) => z.isAlive && z.state !== 'spawning';
   const clearLine = (a, b) => {
@@ -69,6 +72,7 @@ export function createBuildEffects({ events, gun, zombies, colliders, effects, s
         const next = nearby(at, chain.range, hit)[0];
         if (!next) break;
         hit.add(next);
+        effects.tracer(arcFrom.copy(at).setY(at.y + CHEST_HEIGHT), arcTo.copy(next.position).setY(next.position.y + CHEST_HEIGHT), workshopStuffings.neonTube.color);
         next.takeHit({ damage, part: 'body', source: 'build' });
         damage *= chain.falloff;
         at = next.position;
@@ -102,8 +106,9 @@ export function createBuildEffects({ events, gun, zombies, colliders, effects, s
     const gunSecond = gunPower(gun.defOf(weaponId), stats);
     const hit = STUFFINGS[build.stuffing]({ spot, target, power, gunSecond });
     for (const zombie of hit) {
-      effects.confetti(from.copy(zombie.position).setY(zombie.position.y + CHEST_HEIGHT), UP, stuffing.pop);
+      effects.confetti(chest(zombie), UP, stuffing.pop);
     }
+    if (hit.size) sound?.play(stuffing.sound);
     events.emit('buildFired', { stuffing: build.stuffing, heart: build.heart, weaponId, hit: [...hit] });
   }
 
@@ -120,9 +125,15 @@ export function createBuildEffects({ events, gun, zombies, colliders, effects, s
   return {
     update(dt) {
       heartCooldown = Math.max(0, heartCooldown - dt);
+      emberTimer -= dt;
+      if (emberTimer > 0) return;
+      const { burn } = workshopStuffings.fryerOil;
+      emberTimer = burn.emberSeconds;
+      for (const zombie of zombies.zombies) if (zombie.burn && zombie.isAlive) effects.confetti(chest(zombie), UP, burn.ember);
     },
     reset() {
       heartCooldown = 0;
+      emberTimer = 0;
     },
   };
 }

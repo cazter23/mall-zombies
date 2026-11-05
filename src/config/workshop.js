@@ -37,8 +37,26 @@ export const workshopRitual = {
     { id: 'stitching', at: .8, label: 'Being stitched up' },
   ],
   catchUpSeconds: 2.5, // how long the gun takes to run to the end of the belt when the lever is pulled
+  gunScale: 1.6, // the gun on the conveyor
+  // RITUAL MODE (game/features/workshopSpectacle.js). Party colours go on the hall's two existing lamps, so it adds no lights.
+  spectacle: {
+    partyColors: [0xff4e92, 0x54e4cd, 0xffcf51, 0x8b79fd],
+    partySeconds: .9, // how long the lamps hold each colour
+    bulbSeconds: .22, // how often the bulb string steps along
+    jingleSeconds: 6, // the jingle repeats over the fighting
+    jingleRange: 26, // metres from the tank at which it fades out
+    beltSpeed: 1.4, // slats per second
+    fillSeconds: .5, // how fast the tank catches up with the gauge
+    fluffTurnSpeed: .5, // radians per second
+    flapOpenAngle: .9, flapSeconds: .35, // the chute's flap, and how fast it moves
+    leverSeconds: .25,
+    tankDeathSeconds: .85, // a kill in the room flying into the tank
+    tankDeathSpin: 7, // radians over the flight
+    tankDeathArc: 1.1, // metres above the straight line
+  },
   // Lent to a player who hands over their only gun, taken back at collection. Plain: no upgrades can be bought for it.
   loaner: { weapon: 'stapleGun', name: 'Courtesy Loaner' },
+  chuteDropHeight: 1.5, // a return falls this far out of the hatch (replaces rising from the floor)
   // PA lines. {gun} and {name} are filled in by the ritual. A quality's line plays when the gauge first reaches it.
   pa: {
     start: { kicker: 'Build-A-Blaster', text: 'One {gun} on the conveyor. Please keep the room busy.' },
@@ -47,6 +65,11 @@ export const workshopRitual = {
       regular: { kicker: 'Build-A-Blaster', text: 'The tank is coming along nicely. Regular.' },
       extraStuffed: { kicker: 'Build-A-Blaster', text: 'Extra Stuffed. A staff member has been told to stand back.' },
       overstuffed: { kicker: 'Build-A-Blaster', text: 'Overstuffed. We cannot be held responsible.' },
+    },
+    stages: {
+      stuffing: { kicker: 'Build-A-Blaster', text: 'Now adding the stuffing. Do not be alarmed by the noise.' },
+      heart: { kicker: 'Build-A-Blaster', text: 'Fitting the heart. Everyone make a wish.' },
+      stitching: { kicker: 'Build-A-Blaster', text: 'Stitching up. Nearly there.' },
     },
     ready: { kicker: 'Build-A-Blaster', text: 'Your {gun} is ready at the Naming Booth.' },
     readyAgain: { kicker: 'Build-A-Blaster', text: '{name} is ready at the Naming Booth.' },
@@ -66,17 +89,18 @@ export const workshopRitual = {
 // gunSeconds = damage as seconds of the gun's own fire (weapons/gunStats.js gunPower), scaled again by the build's power.
 export const workshopStuffings = {
   smoothie: {
-    name: 'Smoothie', stockedBy: null, color: 0xff7fb2, blurb: 'Slows everything round the hit',
+    name: 'Smoothie', stockedBy: null, color: 0xff7fb2, sound: 'stuffingSmoothie', blurb: 'Slows everything round the hit',
     slow: { seconds: 3, fraction: .55, radius: 2.5 },
     pop: { colors: [0xff7fb2, 0xffd1e3, 0xfff3d4], count: 8, speed: 1.6, size: .05 },
   },
   fryerOil: {
-    name: 'Fryer Oil', stockedBy: 'foodCourt', color: 0xf0a020, blurb: 'Sets the target burning',
-    burn: { gunSeconds: .35, seconds: 3, tickSeconds: .5, radius: 1.2 },
+    name: 'Fryer Oil', stockedBy: 'foodCourt', color: 0xf0a020, sound: 'stuffingFryer', blurb: 'Sets the target burning',
+    burn: { gunSeconds: .35, seconds: 3, tickSeconds: .5, radius: 1.2, emberSeconds: .25,
+      ember: { colors: [0xff8a1f, 0xffd24a], count: 3, speed: 1.1, size: .035 } },
     pop: { colors: [0xff8a1f, 0xffd24a, 0xff4d1f], count: 8, speed: 2, size: .05 },
   },
   neonTube: {
-    name: 'Neon Tube', stockedBy: 'megaMart', color: 0x4fe0ff, blurb: 'Arcs to nearby zombies',
+    name: 'Neon Tube', stockedBy: 'megaMart', color: 0x4fe0ff, sound: 'stuffingNeon', blurb: 'Arcs to nearby zombies',
     chain: { gunSeconds: .08, jumps: 2, range: 5, falloff: .8 },
     pop: { colors: [0x4fe0ff, 0xc9f5ff, 0xff4fd8], count: 8, speed: 2.4, size: .045 },
   },

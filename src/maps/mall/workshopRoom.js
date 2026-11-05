@@ -11,7 +11,8 @@
 
 import * as THREE from 'three';
 import { COLORS } from './palette.js';
-import { workshopHearts, workshopStuffings } from '../../config/workshop.js';
+import { workshopHearts, workshopRitual, workshopStuffings } from '../../config/workshop.js';
+import { seededRandom } from '../../world/textures.js';
 
 function checkerboard({ light, dark, grout, tileSize }, width, depth) {
   const canvas = document.createElement('canvas');
@@ -31,6 +32,21 @@ function checkerboard({ light, dark, grout, tileSize }, width, depth) {
   map.colorSpace = THREE.SRGBColorSpace;
   map.wrapS = map.wrapT = THREE.RepeatWrapping;
   map.repeat.set(width / (2 * tileSize), depth / (2 * tileSize));
+  return map;
+}
+
+// The belt: dark slats on a repeating texture, so sliding its offset runs the conveyor.
+function beltTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 64; canvas.height = 8;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#2a2d36';
+  ctx.fillRect(0, 0, 64, 8);
+  ctx.fillStyle = '#4a4f5e';
+  ctx.fillRect(0, 0, 10, 8);
+  const map = new THREE.CanvasTexture(canvas);
+  map.colorSpace = THREE.SRGBColorSpace;
+  map.wrapS = map.wrapT = THREE.RepeatWrapping;
   return map;
 }
 
@@ -195,33 +211,195 @@ export function buildWorkshopRoom({ kit, props, floorY, layout }) {
   box('conveyor_south', bx0, 0, bz0, bx1, belt.height, bz0 + belt.width, c.metal, solid);
   box('conveyor_west', bx0, 0, bz0 + belt.width, bx0 + belt.width, belt.height, bz1 - belt.width, c.metal, solid);
   box('conveyor_north', bx0, 0, bz1 - belt.width, bx1, belt.height, bz1, c.metal, solid);
-  const tank = H.tank;
+  // Hazard lips down both edges of the belt, then the belt itself: one texture, three strips, so a single offset runs them all.
+  for (const [x0, z0, x1, z1] of [[bx0, bz0, bx1, bz0 + .05], [bx0 + belt.width, bz0 + belt.width - .05, bx1, bz0 + belt.width],
+    [bx0, bz1 - .05, bx1, bz1], [bx0 + belt.width, bz1 - belt.width, bx1, bz1 - belt.width + .05],
+    [bx0, bz0 + belt.width, bx0 + .05, bz1 - belt.width], [bx0 + belt.width - .05, bz0 + belt.width, bx0 + belt.width, bz1 - belt.width]]) {
+    box('conveyor_lip', x0, belt.height, z0, x1, belt.height + .05, z1, c.cabinet);
+  }
+  const beltMaterial = new THREE.MeshStandardMaterial({ map: beltTexture(), roughness: .8 });
+  const beltRig = new THREE.Group();
+  beltRig.name = 'workshop_belt_rig';
+  beltRig.userData.dynamic = true; // (its texture slides: keep it out of static batching)
+  kit.group.add(beltRig);
+  const beltY = floorY + belt.height + .012;
+  const addBelt = (length, x, z, angle) => {
+    const geometry = new THREE.PlaneGeometry(length, belt.width - .1);
+    const uv = geometry.attributes.uv;
+    for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) * length / belt.slatMeters);
+    const strip = new THREE.Mesh(geometry, beltMaterial);
+    strip.name = 'workshop_belt';
+    strip.rotation.set(-Math.PI / 2, 0, angle);
+    strip.position.set(x, beltY, z);
+    beltRig.add(strip);
+  };
+  const beltMiddle = belt.width / 2;
+  addBelt(bx1 - bx0, (bx0 + bx1) / 2, bz0 + beltMiddle, Math.PI); // south, running west
+  addBelt(bz1 - bz0 - 2 * belt.width, bx0 + beltMiddle, (bz0 + bz1) / 2, Math.PI / 2); // west, running north
+  addBelt(bx1 - bx0, (bx0 + bx1) / 2, bz1 - beltMiddle, 0); // north, running east
+
+  // The Stuffing Tank: a glass drum with the quality marks painted up it, filling as the room does. A mascot on the lid, for the kids.
+  const tank = H.tank, gaugeRange = tank.gaugeTop - tank.gaugeBase;
   kit.addCollider(tank.x - tank.radius, floorY, tank.z - tank.radius, tank.x + tank.radius, floorY + tank.height, tank.z + tank.radius);
-  const cylinder = (name, r, h, y, color, options = {}) => {
-    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 20), kit.mat(color, options));
+  const cylinder = (name, r, h, y, color, options = {}, x = tank.x, z = tank.z) => {
+    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 24), kit.mat(color, options));
     mesh.name = 'workshop_' + name;
-    mesh.position.set(tank.x, floorY + y, tank.z);
+    mesh.position.set(x, floorY + y, z);
     kit.group.add(mesh);
     return mesh;
   };
-  cylinder('tank_pedestal', tank.radius, .7, .35, c.plum);
-  cylinder('tank_glass', tank.radius - .08, tank.height - 1.1, .7 + (tank.height - 1.1) / 2, 0xc8eaff,
-    { transparent: true, opacity: .22, roughness: .15, depthWrite: false });
-  cylinder('tank_stuffing', tank.radius - .2, .9, 1.15, 0xfff5de, { roughness: .9 });
-  cylinder('tank_lid', tank.radius, .4, tank.height - .2, c.cream);
-  sign('STUFFING TANK', tank.x, .42, tank.z - tank.radius - .03, 1.5, .28, '#ffe39b', '#253c87');
+  cylinder('tank_pedestal', tank.radius, tank.gaugeBase, tank.gaugeBase / 2, c.plum);
+  cylinder('tank_band_low', tank.radius + .05, .12, tank.gaugeBase + .06, 0x4268bd);
+  cylinder('tank_band_high', tank.radius + .05, .16, tank.height - .46, 0x4268bd);
+  cylinder('tank_lid', tank.radius - .04, .3, tank.height - .2, c.cream);
+  cylinder('tank_spindle', .07, tank.height - tank.gaugeBase, (tank.height + tank.gaugeBase) / 2, c.metal);
+  const glassHeight = tank.height - tank.gaugeBase - .4;
+  cylinder('tank_glass', tank.radius - .08, glassHeight, tank.gaugeBase + glassHeight / 2, 0xc8eaff,
+    { transparent: true, opacity: .2, roughness: .15, depthWrite: false });
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    cylinder('tank_post', .035, glassHeight, tank.gaugeBase + glassHeight / 2, c.metal, {},
+      tank.x + Math.cos(a) * (tank.radius - .04), tank.z + Math.sin(a) * (tank.radius - .04));
+  }
+  // The marks: a painted line at each quality's kill count, its name facing the room on both sides.
+  const topKills = workshopRitual.qualities.at(-1).minKills;
+  for (const quality of workshopRitual.qualities.slice(1)) {
+    const y = tank.gaugeBase + (quality.minKills / topKills) * gaugeRange;
+    cylinder('tank_mark', tank.radius - .065, .035, y, c.red);
+    for (const [side, facing] of [[-1, -1], [1, 1]]) {
+      kit.sign(quality.name.toUpperCase(), { x: tank.x, y: floorY + y + .09, z: tank.z + side * (tank.radius - .05), width: .95, height: .14, facing, background: 'transparent', color: '#c64140' });
+    }
+  }
+  sign('STUFFING TANK', tank.x, tank.gaugeBase / 2 + .06, tank.z - tank.radius - .03, 1.5, .28, '#ffe39b', '#253c87');
+  sign('STUFF-O-MATIC', tank.x, tank.gaugeBase / 2 + .06, tank.z + tank.radius + .03, 1.5, .28, '#ffe39b', '#253c87', 1);
+  const mascotAt = tank.height + .22, mascotColor = 0xf0b854, mascot = (name, r, dx, dy, dz, sx = 1, sy = 1, sz = 1, color = mascotColor) => {
+    const part = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 1), kit.mat(color));
+    part.name = 'workshop_' + name;
+    part.position.set(tank.x + dx, floorY + mascotAt + dy, tank.z + dz);
+    part.scale.set(sx, sy, sz);
+    kit.group.add(part);
+  };
+  mascot('mascot', .34, 0, 0, 0, 1.14, 1, .87);
+  mascot('mascot_ear', .17, -.27, .28, 0);
+  mascot('mascot_ear', .17, .27, .28, 0);
+  mascot('mascot_muzzle', .15, 0, -.07, -.25, 1, 1, 1, c.cream);
+  for (const dx of [-.12, .12]) box('mascot_eye', tank.x + dx - .03, mascotAt + .07, tank.z - .3, tank.x + dx + .03, mascotAt + .13, tank.z - .25, c.metal);
 
-  // Past the end of the conveyor: the Naming Booth, then the lever further along the east wall.
-  const B = H.booth, L = H.lever;
+  // What moves inside: stuffing rising in the drum, and fluff turning in it. One dynamic group, out of static batching.
+  const fillRig = new THREE.Group();
+  fillRig.name = 'workshop_tank_fill';
+  fillRig.userData.dynamic = true;
+  kit.group.add(fillRig);
+  const fillGeometry = new THREE.CylinderGeometry(tank.radius - .16, tank.radius - .16, 1, 24);
+  fillGeometry.translate(0, .5, 0); // scales up from the bottom
+  const fillMaterial = new THREE.MeshStandardMaterial({ color: 0xfff5de, roughness: .9, flatShading: true });
+  const fill = new THREE.Mesh(fillGeometry, fillMaterial);
+  fill.name = 'workshop_tank_stuffing';
+  fill.position.set(tank.x, floorY + tank.gaugeBase, tank.z);
+  fill.scale.y = .02;
+  fillRig.add(fill);
+  const fluff = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 1), kit.mat(0xfff5de, { roughness: .9 }), tank.fluffCount);
+  fluff.name = 'workshop_stuffing';
+  fluff.position.set(tank.x, floorY + tank.gaugeBase, tank.z);
+  const rng = seededRandom(86), form = new THREE.Object3D();
+  for (let i = 0; i < fluff.count; i++) {
+    const angle = rng() * Math.PI * 2, r = Math.sqrt(rng()) * (tank.radius - .4), size = .09 + rng() * .12;
+    form.position.set(Math.cos(angle) * r, rng() * gaugeRange, Math.sin(angle) * r);
+    form.rotation.set(rng() * 3, rng() * 3, rng() * 3);
+    form.scale.set(size * 1.14, size, size * .93);
+    form.updateMatrix();
+    fluff.setMatrixAt(i, form.matrix);
+  }
+  fluff.count = 0; // grows with the gauge
+  fillRig.add(fluff);
+
+  // Past the end of the conveyor: a gantry carries the gun over the lane to the Naming Booth's counter, and the lever is further along the wall.
+  const B = H.booth, L = H.lever, A = H.arm, boothZ = (B.minZ + B.maxZ) / 2, armStartX = bx1 - .3;
   box('naming_booth', B.minX, 0, B.minZ, B.maxX, B.height, B.maxZ, c.cabinet, solid);
-  sign('NAMING BOOTH', B.minX - .025, 2.2, (B.minZ + B.maxZ) / 2, 2.4, .36, '#294679', '#fff0cb', 'x-');
-  box('lever_box', H.maxX - L.depth, .9, L.z - .3, H.maxX, 1.8, L.z + .3, c.red);
-  sign('FINISH EARLY', H.maxX - L.depth - .025, 2.05, L.z, 1.2, .24, '#ffe39b', '#253c87', 'x-');
+  box('booth_counter', B.minX - .28, B.counterHeight - .08, B.minZ + .3, B.minX, B.counterHeight, B.maxZ - .3, c.wood, solid);
+  box('booth_window', B.minX - .02, B.counterHeight + .15, B.minZ + .55, B.minX, B.height - .45, B.maxZ - .55, 0x1b1b20);
+  box('booth_awning', B.minX - .36, B.height - .1, B.minZ - .05, B.minX, B.height, B.maxZ + .05, c.red);
+  sign('NAMING BOOTH', B.minX - .03, B.height - .3, boothZ, 2.4, .3, '#294679', '#fff0cb', 'x-');
+  box('stamp_base', B.minX - .22, B.counterHeight, B.maxZ - .75, B.minX - .04, B.counterHeight + .09, B.maxZ - .5, c.plum);
+  box('stamp_arm', B.minX - .16, B.counterHeight + .09, B.maxZ - .66, B.minX - .1, B.counterHeight + .3, B.maxZ - .6, c.metal);
+  box('arm_rail', armStartX - .1, A.railHeight, boothZ - .07, B.minX + .4, A.railHeight + .14, boothZ + .07, c.metal);
+  box('arm_post', armStartX - .1, belt.height, boothZ - .1, armStartX + .1, A.railHeight, boothZ + .1, c.metal, solid);
+  box('arm_mount', B.minX + .1, B.height, boothZ - .1, B.minX + .4, A.railHeight, boothZ + .1, c.metal);
+  const arm = new THREE.Group();
+  arm.name = 'workshop_arm';
+  arm.userData.dynamic = true;
+  arm.position.set(armStartX, floorY + A.railHeight, boothZ);
+  const armMaterial = kit.mat(c.metal), clawMaterial = kit.mat(c.red);
+  const addArmPart = (w, h, d, x, y, z, material) => {
+    const part = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+    part.position.set(x, y, z);
+    arm.add(part);
+    return part;
+  };
+  addArmPart(.26, .1, .22, 0, -.06, 0, armMaterial); // the trolley on the rail
+  const cable = addArmPart(.03, 1, .03, 0, -.5, 0, armMaterial);
+  const claw = new THREE.Group();
+  arm.add(claw);
+  for (const side of [-1, 1]) {
+    const prong = new THREE.Mesh(new THREE.BoxGeometry(.04, .2, .05), clawMaterial);
+    prong.position.set(side * .1, -.1, 0);
+    claw.add(prong);
+  }
+  kit.group.add(arm);
 
-  // The Returns Chute: a dark hatch in the north wall, with room on the floor below it.
-  const C = H.chute;
-  box('chute_hatch', C.x - C.width / 2, C.sill, H.maxZ - .06, C.x + C.width / 2, C.top, H.maxZ, 0x1b1b20);
-  sign('RETURNS', C.x, C.top + .3, H.maxZ - .03, 1.5, .34, '#c64140', '#fff0cb');
+  const leverRig = new THREE.Group();
+  leverRig.name = 'workshop_lever';
+  leverRig.userData.dynamic = true;
+  leverRig.position.set(H.maxX - L.depth - .03, floorY + L.height, L.z);
+  const handle = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, .42, 8), kit.mat(c.metal));
+  handle.position.y = .21;
+  const knob = new THREE.Mesh(new THREE.IcosahedronGeometry(.07, 1), kit.mat(c.red));
+  knob.position.y = .44;
+  leverRig.add(handle, knob);
+  leverRig.rotation.z = L.upAngle;
+  kit.group.add(leverRig);
+  box('lever_box', H.maxX - L.depth, L.height - .45, L.z - .3, H.maxX, L.height + .45, L.z + .3, c.plum);
+  sign('FINISH EARLY', H.maxX - L.depth - .025, L.height + .7, L.z, 1.2, .24, '#ffe39b', '#253c87', 'x-');
+
+  // The Returns Chute: a steel frame in the north wall, a slide, and a flap that swings while it is taking returns.
+  const C = H.chute, chuteLeft = C.x - C.width / 2, chuteRight = C.x + C.width / 2, hatch = H.maxZ - .06;
+  box('chute_hatch', chuteLeft, C.sill, hatch, chuteRight, C.top, H.maxZ, 0x1b1b20);
+  for (const [x0, x1] of [[chuteLeft - .12, chuteLeft], [chuteRight, chuteRight + .12]]) box('chute_frame', x0, C.sill - .12, H.maxZ - .14, x1, C.top + .12, H.maxZ, c.metal);
+  box('chute_frame', chuteLeft, C.top, H.maxZ - .14, chuteRight, C.top + .12, H.maxZ, c.metal);
+  box('chute_frame', chuteLeft, C.sill - .12, H.maxZ - .14, chuteRight, C.sill, H.maxZ, c.metal);
+  const slide = box('chute_slide', chuteLeft, .24, H.maxZ - .62, chuteRight, .29, H.maxZ - .02, c.metal);
+  slide.rotation.x = -C.slideAngle;
+  sign('RETURNS', C.x, C.top + .34, H.maxZ - .03, 1.5, .34, '#c64140', '#fff0cb');
+  sign('NO RECEIPT? NO PROBLEM.', C.x, C.top + .1, H.maxZ - .155, 1.7, .13, 'transparent', '#fff0cb');
+  const flap = new THREE.Group();
+  flap.name = 'workshop_chute_flap';
+  flap.userData.dynamic = true;
+  flap.position.set(C.x, floorY + C.top, H.maxZ - .1);
+  const flapPanel = new THREE.Mesh(new THREE.BoxGeometry(C.width - .06, C.top - C.sill - .05, .04), kit.mat(c.red, { roughness: .6 }));
+  flapPanel.position.y = -(C.top - C.sill - .05) / 2;
+  flap.add(flapPanel);
+  kit.group.add(flap);
+
+  // Party bulbs: a string round the hall. One instanced draw, and no real lights: ritual mode recolours the two hall lamps instead.
+  const bulbSpots = [];
+  const bulbH = H.bulbs.height;
+  for (let x = H.minX + .3; x < H.maxX - .2; x += H.bulbs.spacing) bulbSpots.push([x, H.minZ + .06], [x, H.maxZ - .06]);
+  for (let z = H.minZ + .3; z < H.maxZ - .2; z += H.bulbs.spacing) bulbSpots.push([H.minX + .06, z], [H.maxX - .06, z]);
+  const bulbs = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(.055, 0), new THREE.MeshBasicMaterial(), bulbSpots.length);
+  bulbs.name = 'workshop_bulbs';
+  bulbSpots.forEach(([x, z], i) => {
+    form.position.set(x, floorY + bulbH, z);
+    form.rotation.set(0, 0, 0);
+    form.scale.setScalar(1);
+    form.updateMatrix();
+    bulbs.setMatrixAt(i, form.matrix);
+    bulbs.setColorAt(i, new THREE.Color(H.bulbs.idleColor));
+  });
+  const bulbRig = new THREE.Group();
+  bulbRig.name = 'workshop_bulb_rig';
+  bulbRig.userData.dynamic = true;
+  bulbRig.add(bulbs);
+  kit.group.add(bulbRig);
 
   // Work-order board on the north wall, opposite the mouth.
   const boardX = (H.minX + H.maxX) / 2 + 3, boardZ = H.maxZ;
@@ -241,7 +419,7 @@ export function buildWorkshopRoom({ kit, props, floorY, layout }) {
 
   const lamp = shop.lamp;
   const rideY = floorY + belt.height + shop.rideHeight;
-  const beltMiddle = belt.width / 2;
+  const carryY = floorY + A.carryHeight, restY = floorY + B.counterHeight + .05;
   return {
     purchasePosition: new THREE.Vector3(center, floorY + bench.promptHeight, benchFront - bench.promptInset),
     limitedEdition: new THREE.Vector3(center, floorY + 1.2, front + .75),
@@ -250,13 +428,26 @@ export function buildWorkshopRoom({ kit, props, floorY, layout }) {
       rooms: layout.sections.filter(s => s.id.startsWith('workshop'))
         .map(({ minX, maxX, minZ, maxZ }) => ({ minX, maxX, minZ, maxZ, minY: floorY - .5, maxY: floorY + H.height })),
       lever: new THREE.Vector3(H.maxX - L.depth - .08, floorY + L.height, L.z),
-      booth: new THREE.Vector3(B.minX - .08, floorY + B.promptHeight, (B.minZ + B.maxZ) / 2),
+      booth: new THREE.Vector3(B.minX - .4, floorY + B.promptHeight, boothZ),
       bins,
       hearts,
       chute: [-1.1, 0, 1.1].map((dx, i) => ({ name: `spawn_workshop_chute_${i}`, zone: 'upstairs',
         position: new THREE.Vector3(C.x + dx, floorY, H.maxZ - C.spawnInset) })),
-      path: [[bx1 - .3, bz0 + beltMiddle], [bx0 + beltMiddle, bz0 + beltMiddle], [bx0 + beltMiddle, bz1 - beltMiddle], [bx1 - .3, bz1 - beltMiddle]]
-        .map(([x, z]) => new THREE.Vector3(x, rideY, z)),
+      path: [
+        ...[[bx1 - .3, bz0 + beltMiddle], [bx0 + beltMiddle, bz0 + beltMiddle], [bx0 + beltMiddle, bz1 - beltMiddle], [armStartX, bz1 - beltMiddle]]
+          .map(([x, z]) => new THREE.Vector3(x, rideY, z)),
+        new THREE.Vector3(armStartX, carryY, boothZ), // lifted off the end of the belt, over the lane, down onto the counter
+        new THREE.Vector3(B.minX - .16, carryY, boothZ),
+        new THREE.Vector3(B.minX - .16, restY, boothZ),
+      ],
+      tank: { fill, fluff, fillRig, height: gaugeRange, mouth: new THREE.Vector3(tank.x, floorY + tank.height - .5, tank.z), fluffCount: tank.fluffCount },
+      belt: beltMaterial.map,
+      arm: { group: arm, cable, claw, railY: floorY + A.railHeight, minX: armStartX, maxX: B.minX - .16 },
+      leverHandle: leverRig,
+      leverAngles: { up: L.upAngle, down: L.downAngle },
+      flap,
+      bulbs,
+      chuteMouth: new THREE.Vector3(C.x, floorY + C.top - .3, H.maxZ - .3),
     },
     light: { ...lamp, x: center + lamp.x, y: floorY + lamp.height, z: front + lamp.offsetZ },
     lamps: H.lamps.map(l => ({ ...H.lampLight, x: l.x, y: floorY + H.lampLight.height, z: l.z })),

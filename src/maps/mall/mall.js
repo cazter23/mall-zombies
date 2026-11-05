@@ -733,6 +733,7 @@ export function buildMall(scene, colliders) {
     light.position.set(x, y, z);
     group.add(light);
     lamps.push(light);
+    return light;
   };
   // Lamps hang well below the ceiling (about 60% of its height) and are dimmer to match: a lamp just
   // under the ceiling lights a small, hard-edged bright disc on it; hung lower it's a soft wide glow.
@@ -743,7 +744,7 @@ export function buildMall(scene, colliders) {
   for (const l of levelTwo.lamps) lamp(atmosphere.roomLights.level2, l.x, l.y, l.z);
   const workLight = levelTwo.workshop.light;
   lamp(workLight, workLight.x, workLight.y, workLight.z);
-  for (const l of levelTwo.workshop.lamps) lamp(l, l.x, l.y, l.z);
+  levelTwo.workshop.stations.lamps = levelTwo.workshop.lamps.map(l => lamp(l, l.x, l.y, l.z)); // (ritual mode recolours these two)
   for (const l of cinemaWing.lamps) lamp(l, l.x, l.y, l.z);
   for (const l of atrium.lamps) lamp(atmosphere.roomLights.atrium, l.x, l.y, l.z);
   for (const at of [3, 12]) lamp(atmosphere.roomLights.serviceCorridor, service.points[1].x, SC.height * 0.65, service.pointAt(1, at).z);

@@ -63,12 +63,14 @@ export const promenade = {
       minX: -9.5, maxX: 4.9, minZ: 12, maxZ: 26.5, height: 4.8,
       mouthTop: 3.2, // the opening from the storefront, as wide as the storefront
       island: { minX: -6.1, maxX: .5, minZ: 15.7, maxZ: 22.3, solidHeight: 2.2 }, // glass guard round tank + conveyor; nothing inside is reachable
-      tank: { x: -2.8, z: 19, radius: 1.5, height: 4.1 },
-      conveyor: { inset: .15, width: .8, height: .95 }, // a U open to the east, ending by the Naming Booth
-      booth: { minX: 3.7, maxX: 4.9, minZ: 20, maxZ: 23.2, height: 2.6, promptHeight: 1.45 },
-      lever: { z: 16.8, height: 1.35, depth: .14 }, // on the east wall, south of the booth
-      chute: { x: -7, width: 2.2, sill: .45, top: 2.25, spawnInset: .9 }, // the Returns Chute hatch in the north wall; zombies land spawnInset out from it
+      tank: { x: -2.8, z: 19, radius: 1.5, height: 3.9, gaugeBase: .7, gaugeTop: 3.3, fluffCount: 70 },
+      conveyor: { inset: .15, width: .8, height: .95, slatMeters: .4 }, // a U open to the east, ending by the Naming Booth
+      booth: { minX: 3.7, maxX: 4.9, minZ: 20, maxZ: 23.2, height: 2.6, counterHeight: 1.1, promptHeight: 1.45 },
+      arm: { railHeight: 3.7, carryHeight: 2.9 }, // the gantry from the end of the belt to the booth, above the lane
+      lever: { z: 16.8, height: 1.35, depth: .14, upAngle: .55, downAngle: -.55 }, // on the east wall, south of the booth
+      chute: { x: -7, width: 2.2, sill: .45, top: 2.25, spawnInset: .9, slideAngle: .55 }, // the Returns Chute hatch in the north wall; zombies land spawnInset out from it
       panels: [[-7.6, 14], [2.6, 14], [-7.6, 24.2], [2.6, 24.2]],
+      bulbs: { height: 3.6, spacing: .9, idleColor: 0x8a7a60 }, // the party string round the walls
       lamps: [{ x: -2.3, z: 14 }, { x: -2.3, z: 24.4 }],
       lampLight: { color: 0xffe2bd, intensity: 15, distance: 16, height: 3.1 },
     },

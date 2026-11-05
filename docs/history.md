@@ -21,6 +21,11 @@ from tools/balance.js into gunStats.js so the game and the report share it. Zomb
 
 Phase 4, name and certificate: a gun is named at collection and keeps the name through a re-stuff. The certificate is a notice that clears itself, not a modal, because you collect mid-fight. run summaries gained survivedBy. receiptLinesFor moved out of createScreens so it could be tested, and that test caught `clock` being local to createScreens, which would have crashed the death screen.
 
+Phase 5, spectacle: real tank (quality marks, fill in the stuffing's colour, turning fluff, mascot), running belt, gantry arm, chute flap and slide, lever, booth. Ritual mode recolours the hall's two existing lamps and steps a string of 64
+unlit instanced bulbs, so it adds no lights. Runtime-shown parts sit under a dynamic GROUP, not a dynamic mesh: tests/staticBatch.test.js treats every directly flagged mesh as an escalator part. Measured (calls / triangles, plain gun): hall 164-217 / 20-23k, storefront 190 / 21k,
+north lane 914 / 109k, Promenade at the window 241 / 31k, hallway 1086 / 171k, Level 2 1411 / 260k. During a ritual the hall peaks at 244. A built gun adds about 10 calls wherever it is carried; the first version used a mesh per stitch and added about 50, so stitches are instanced now.
+buildVisual places from mounts, never from bounds: model.root holds the hands and arms, and bounds put the patch off in space (caught on screen, not by a test; there is a test now).
+
 ## 4 November 2026 — tenant branding and font loading
 
 Mega Mart and Hoffman's got their own tenant branding (config/look.js, zoneLooks.js, hallwayLook.js, textures.js).

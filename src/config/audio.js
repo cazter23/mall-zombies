@@ -170,6 +170,40 @@ export const audio = {
     ] },
 
     // Deep chest-thumping pressure boom + opening crack, then a crisp paper flutter.
+    // Build-A-Blaster. The jingle is a music-box tune, repeated over the fighting while a ritual runs.
+    ritualJingle: { volume: .34, layers: [
+      ...[[784, 0], [988, .22], [1175, .44], [1568, .66], [1319, 1.1], [1175, 1.32], [988, 1.54], [1175, 1.76], [784, 2.2], [880, 2.42], [988, 2.64], [1175, 2.86], [1568, 3.3], [1760, 3.52], [1568, 3.74], [1175, 3.96]]
+        .flatMap(([freq, delay]) => [
+          { type: 'tone', wave: 'triangle', freq, gain: .5, attack: .004, decay: .32, delay },
+          { type: 'tone', wave: 'sine', freq: freq * 2, gain: .12, attack: .004, decay: .16, delay },
+        ]),
+    ] },
+    tankGulp: { volume: .5, layers: [
+      { type: 'tone', wave: 'sine', freq: 180, freqEnd: 520, gain: .7, attack: .01, decay: .22 },
+      { type: 'noise', filter: 'lowpass', freq: 800, q: .7, gain: .25, attack: .01, decay: .12 },
+    ] },
+    chuteThunk: { volume: .6, layers: [
+      { type: 'noise', filter: 'lowpass', freq: 520, q: .9, gain: .9, attack: .002, decay: .16 },
+      { type: 'tone', wave: 'sine', freq: 92, gain: .7, attack: .002, decay: .2 },
+    ] },
+    leverClunk: { volume: .7, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 1400, q: 1.4, gain: .7, attack: .001, decay: .05 },
+      { type: 'tone', wave: 'square', freq: 120, gain: .3, attack: .002, decay: .1 },
+    ] },
+    stuffingSmoothie: { volume: .5, layers: [
+      { type: 'noise', filter: 'lowpass', freq: 900, q: 1.1, gain: .7, attack: .004, decay: .14 },
+      { type: 'tone', wave: 'sine', freq: 340, freqEnd: 150, gain: .4, attack: .004, decay: .16 },
+    ] },
+    stuffingFryer: { volume: .48, layers: [
+      { type: 'noise', filter: 'highpass', freq: 3200, q: .7, gain: .7, attack: .01, decay: .32 },
+      { type: 'noise', filter: 'bandpass', freq: 1500, q: 1.1, gain: .3, attack: .004, decay: .1 },
+    ] },
+    stuffingNeon: { volume: .46, layers: [
+      { type: 'tone', wave: 'sawtooth', freq: 120, gain: .4, attack: .002, decay: .16 },
+      { type: 'tone', wave: 'square', freq: 1860, gain: .12, attack: .002, decay: .08 },
+      { type: 'noise', filter: 'highpass', freq: 5200, q: .7, gain: .35, attack: .001, decay: .09 },
+    ] },
+
     partySnap: { volume: .8, layers: [
       { type: 'noise', filter: 'bandpass', freq: 3300, q: .8, gain: .9, attack: .001, decay: .045 },
       { type: 'noise', filter: 'lowpass', freq: 920, q: .7, gain: .48, attack: .002, decay: .075 },

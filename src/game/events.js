@@ -38,7 +38,8 @@
 //   'flashSaleStart' { id, label, categories, discount, seconds, pa: { kicker, text } }   a Flash Sale began (game/flashSales.js)
 //   'flashSaleEnd'   { id, label, reason 'expired' | 'reset', pa }                         it ended (no banner on 'reset')
 //   'ritualStart' { gunId, gunName, loaner, restuff, pa }  Build-A-Blaster took a gun (game/features/workshopRitual.js)
-//   'ritualStage' { stage }                               the gun reached the next stage of the conveyor
+//   'ritualStage' { stage, pa }                           the gun reached the next stage of the conveyor
+//   'chuteDrop'   {}                                      a zombie fell out of the Returns Chute
 //   'ritualKill'  { zombie, kills, quality }              a kill in the room went into the tank
 //   'ritualQuality' { quality, pa }                       the gauge reached a new quality
 //   'ritualReady' { gunId, kills, quality, reason 'lever' | 'time', pa }  the gun is waiting at the Naming Booth

@@ -70,6 +70,7 @@ export class Zombie {
     this.slowTimer = 0;
     this.slowFraction = 1;
     this.burn = null; // Fryer Oil: { perTick, tickSeconds, nextTick, left }, or null
+    this.dropHeight = 0; // > 0: it arrives by falling this far (the Returns Chute) rather than rising through the floor
     this.deathImpulse = 1;
     this.deathTwist = 0;
     this.lastHitDir = null;
@@ -229,7 +230,8 @@ export class Zombie {
     const hb = this.type.hitbox;
     let rise = 0;
     if (this.state === 'spawning') {
-      rise = -this.type.height * (1 - ease(Math.min(1, this.stateTime / this.type.spawnSeconds)));
+      const left = 1 - ease(Math.min(1, this.stateTime / this.type.spawnSeconds));
+      rise = this.dropHeight > 0 ? this.dropHeight * left : -this.type.height * left;
     }
     const y = p.y + rise;
     this.hitboxes[0].box.min.set(p.x - hb.headHalfSize, y + hb.headBottom, p.z - hb.headHalfSize);

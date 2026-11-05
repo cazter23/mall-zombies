@@ -6,6 +6,7 @@ import { buildWeaponModel, buildWeaponDisplay } from '../src/weapons/models/inde
 import { createUpgradeVisuals } from '../src/weapons/models/upgradeParts.js';
 import { upgrades } from '../src/config/upgrades.js';
 import { attachmentFits } from '../src/weapons/upgrades.js';
+import { workshopStuffings } from '../src/config/workshop.js';
 
 const bounds = (o) => new THREE.Box3().setFromObject(o);
 const overlaps = (a, b) => ['x', 'y', 'z'].every((axis) =>
@@ -164,6 +165,41 @@ test('refreshed Price Gun, Staple Gun, Nail Gun, and Foam Dart Blaster expose th
   }
 });
 
+
+test('a finished build stitches any gun, in its stuffing\'s colour; only Overstuffed bulges; all of it comes off', () => {
+  for (const def of Object.values(weapons)) {
+    const model = buildWeaponModel(def);
+    const visuals = createUpgradeVisuals(model);
+    const look = model.root.getObjectByName('buildVisual');
+    assert.ok(look, def.id);
+    assert.equal(look.visible, false, 'a plain gun shows nothing');
+    // On the gun, at the gun's scale: model.root holds the hands and arms too, so this must not come from its bounds.
+    assert.ok(look.position.distanceTo(new THREE.Vector3().fromArray(model.mounts.sticker.position)) < 1e-6, 'anchored to the gun');
+    look.visible = true;
+    const size = new THREE.Box3().setFromObject(look).getSize(new THREE.Vector3());
+    look.visible = false;
+    assert.ok(Math.max(size.x, size.y, size.z) < .4, `no bigger than the gun: ${size.toArray()}`); // (the longest gun is about .5 m)
+    let draws = 0;
+    look.traverse(o => { if (o.isMesh) draws++; });
+    assert.ok(draws < 16, `a built gun is carried everywhere, so it stays cheap: ${draws} draws`);
+    visuals.show({ build: { stuffing: 'neonTube', quality: 'regular' } });
+    assert.equal(look.visible, true);
+    assert.equal(look.getObjectByName('buildBulge').visible, false, 'Regular does not bulge');
+    assert.equal(look.getObjectByName('buildPatch').material.color.getHex(), workshopStuffings.neonTube.color);
+    assert.ok(look.getObjectByName('buildStitch').count >= 10, 'stitched');
+    assert.equal(look.getObjectByName('buildThread').material.color.getHex(), workshopStuffings.neonTube.color, 'the seam shows the stuffing too');
+    visuals.show({ build: { stuffing: 'smoothie', quality: 'overstuffed' } });
+    assert.equal(look.getObjectByName('buildBulge').visible, true, 'Overstuffed bulges');
+    assert.equal(look.getObjectByName('buildPatch').material.color.getHex(), workshopStuffings.smoothie.color);
+    const tuft = look.getObjectByName('buildTuft');
+    visuals.show({ build: { stuffing: 'smoothie', quality: 'overstuffed' }, time: .4 });
+    const a = tuft.position.clone();
+    visuals.show({ build: { stuffing: 'smoothie', quality: 'overstuffed' }, time: 1 });
+    assert.notDeepEqual(tuft.position.toArray(), a.toArray(), 'it leaks');
+    visuals.show();
+    assert.equal(look.visible, false);
+  }
+});
 
 test('workshop builds change the housing and silhouette reversibly, with Party Trap sleeves on the hinge', () => {
   for (const [id, build, housingName] of [

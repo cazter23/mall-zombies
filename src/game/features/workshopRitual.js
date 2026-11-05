@@ -18,6 +18,7 @@
 // =============================================================================
 
 import { buildWeaponDisplay } from '../../weapons/models/index.js';
+import { buildModifiers } from '../../weapons/upgrades.js';
 import { weapons } from '../../config/weapons.js';
 import { workshopRitual as cfg, workshopStuffings, workshopHearts, workshopNames, todayCount, buildOf, qualityFor, nextQualityFor, stageFor, paLine } from '../../config/workshop.js';
 import * as THREE from 'three';
@@ -91,12 +92,13 @@ export function createWorkshopRitual({ bench, map, gun, pricing, interactions, e
   function steer(on) {
     if (on === steering) return;
     steering = on;
-    zombies.steerSpawns(on ? stations.chute : null);
+    zombies.steerSpawns(on ? stations.chute : null, { dropHeight: cfg.chuteDropHeight, onDrop: () => events.emit('chuteDrop') });
   }
 
   function showGun(def) {
     display = buildWeaponDisplay(def);
     display.name = 'ritualGun';
+    display.scale.setScalar(cfg.gunScale);
     riding = 0;
     pointAlong(path, 0, display.position);
     scene.add(display);
@@ -142,7 +144,8 @@ export function createWorkshopRitual({ bench, map, gun, pricing, interactions, e
   function collect() {
     const name = order.name ?? newName();
     const build = { name, stuffing: order.stuffing, heart: order.heart, quality: order.quality.id, kills: order.kills };
-    gun.collect((mods) => [...mods.filter((m) => m.id !== 'build'), { id: 'build', build }]);
+    const modifiers = buildModifiers(gun.away.def.base, workshopStuffings[order.stuffing].color); // its shots streak in the stuffing's colour
+    gun.collect((mods) => [...mods.filter((m) => m.id !== 'build'), { id: 'build', build, modifiers }]);
     hideGun();
     const certificate = {
       name, gunName: order.gunName, stuffing: workshopStuffings[order.stuffing].name, heart: workshopHearts[order.heart].name,
@@ -250,6 +253,9 @@ export function createWorkshopRitual({ bench, map, gun, pricing, interactions, e
 
   return {
     get phase() { return phase; },
+    get gunPosition() { return display?.position ?? null; }, // the gun on the conveyor (the arm follows it)
+    get stuffingColor() { return order ? workshopStuffings[order.stuffing].color : null; },
+    get steering() { return steering; },
     get today() { return today; },
     get pick() { return pick; },
     /** Pick for the next order, as the bins and Heart wall do (for tests and debugging). */
@@ -284,7 +290,7 @@ export function createWorkshopRitual({ bench, map, gun, pricing, interactions, e
         const stage = stageFor(fraction);
         if (stage !== order.stage) {
           order.stage = stage;
-          events.emit('ritualStage', { stage });
+          events.emit('ritualStage', { stage, pa: cfg.pa.stages[stage.id] });
         }
         riding = fraction;
         if (order.elapsed >= cfg.maxSeconds) finish('time');
