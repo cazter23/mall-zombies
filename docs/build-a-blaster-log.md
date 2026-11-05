@@ -197,3 +197,22 @@ During a ritual the hall peaks at 244 calls. Carrying a built gun adds about 10 
 - It can't confuse a rising zombie or a frozen Mannequin. A charging cart stops mid-charge.
 - Confused zombies walk straight at their target rather than path-finding, because navigation only ever routes to the player. A wall simply stops them. It's short range, so this rarely shows.
 
+## Final state
+
+**Tests.** `npm test`: 742 tests, all passing, up from 623. `npm run build` and `npm run build:single` are clean.
+
+**Soak run.** A bot played all 24 pairs across the 8 guns through live rounds: a real order, 30 s of fighting through the ritual, collection, 40 s with the finished gun, then death and Play again. 24 rituals, 241 stuffing procs, 705 kills, no exceptions, no stuck rounds. The script was throwaway and is not in the repo.
+
+**Merging.** A dry-run merge with current main (738e7f5) has no conflicts. Main has only gained docs/boss-zombies-plan.md since this branch was cut. Nothing is merged and nothing is pushed.
+
+**Shared files changed** (from the CLAUDE.md rule): mall.js, levelTwo.js, promenade.js, economy.js, CLAUDE.md, zombie.js, zombieManager.js, zombieModel.js, playerGun.js, createGame.js, events.js, interactions.js, hud.js, main.js, screens.js. shutters.js was not touched.
+
+**Unfinished or unverified.**
+- Prices are placeholders: ritual 1500, re-stuff 750.
+- Every number in Stuffings, Hearts, quality and drops is a first guess. Nobody has played it with hands. The balance tests prove nothing is broken, not that it is fun.
+- The jingle and the new sounds have not been heard by anyone. They are synthesised from notes I chose.
+- Antifreeze has not been looked at on screen. It is covered by tests and the soak run.
+- The stitched look was only inspected on the Staple Gun. The tests check it is anchored and gun-sized on all 8 guns, but the others may need a nudge.
+- A Glitter-confused zombie does not path-find round walls.
+- The How to Play screen doesn't mention Build-A-Blaster yet.
+- The Party Trap and Clearance Rack prices sit unused in economy.js, kept as you asked.

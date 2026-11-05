@@ -69,7 +69,7 @@ index.html, package.json
 src/main.js          BROWSER SIDE ONLY: renderer, scene, camera, input + gamepad, HUD, sound, viewmodel, menus, pointer lock, loop, window.__mall test hook
 src/game/            ALL gameplay wiring, DOM-free so it runs headless in tests: createGame.js (builds + ticks every system), rounds, wallet, pricing,
                      events (the bus), interactions (buying), features/ (map features by kind: wall buys, ammo cache, upgrade desk, attachment
-                     counters, horror director), powerUps, careerStats, settings, debugCommands, ambience, shutterSounds
+                     counters, Build-A-Blaster's ritual and builds, horror director), powerUps, careerStats, settings, debugCommands, ambience, shutterSounds
 src/config/          EVERY tunable number: feel, economy (prices), weapons, zombies, controls, audio, settings, debug, look (art direction),
                      environment, plus one file per area (promenade, cinema, cinemaStairs, departmentStore, departmentStoreDetails, atrium...)
 src/core/            fixed-step loop, input, gamepad, haptics, springs, keyframes
@@ -174,7 +174,7 @@ adjoining areas are owned. No cascading unlocks. Nine area purchases total 9500;
 - **Level 2 / Sunset Promenade** x -20..20, z -4.5..6 (+ shoe annex), floor y 6.3, zone 'upstairs'.
 - **HOFFMAN'S department store** x -20..-5.3, z 6.3..26, 5 m (counters vaultable; everything else >= 2.1 m).
 - **Sunset Cinema** upstairs x -42..-20.3: 1250 area unlock off the Promenade's west wall or Service Corridor's north end; the other connection opens free when its neighbouring area is owned.
-- **Build-A-Blaster:** open workshop off the Promenade (config/workshop.js): Party Trap on the Confetti Cannon, Clearance Rack on the Price Gun, one build per gun.
+- **Build-A-Blaster:** storefront + back hall off the Promenade (numbers: config/workshop.js, config/promenade.js workshop; docs/map.md). Pick a Stuffing and a Heart, hand a gun over, fight in the room, collect it named at the Naming Booth: game/features/workshop*.js. Party Trap and Clearance Rack drop from zombies with shopping bags (limitedEditions.js).
 - **Wall buys:** Price Gun (start room), Nail Gun (hallway), Foam Dart Blaster (Mega Mart), Confetti Cannon (Service Corridor), Rivet Rifle (Atrium),
   Heavy Coil Nailer (Cinema projection passage, 2500), Barcode Scanner (HOFFMAN'S). Door count: 15.
 - **Customer Parking** x 34.3..62.3, z -24..6, y 0: 1250 through Mega Mart's former east emergency exit (z 1..4).
@@ -186,7 +186,7 @@ adjoining areas are owned. No cascading unlocks. Nine area purchases total 9500;
 ## Gotchas that have cost time (read before changing the map or its tests)
 - **Decoration** is static and has no collision (`collide:false`); the static batcher merges it. Hang things >= 2 cm proud of a wall, never on its plane:
   two faces within 4 mm facing the same way z-fight (flicker). `tests/coplanar.test.js` checks every room; `departmentStore.test.js` checks that no
-  other wall ends flush on the store's wall faces. Mark anything shown/hidden/moved at runtime `userData.dynamic`.
+  other wall ends flush on the store's wall faces. Mark anything shown/hidden/moved at runtime `userData.dynamic`, on a parent group: tests/staticBatch.test.js takes every directly flagged mesh for an escalator part.
 - **Anything standable must be**: a step (<= 0.35 m), a vaultable counter (<= 1.1 m, short side), or >= 2.1 m tall (a jump from a 0.95 m counter peaks ~2.0 m).
 - **Tests: never seed `Math.random` before building the map.** Three.js makes object ids with it, so the scenario then depends on the map's mesh
   count and flips whenever anyone adds a mesh. Build first, seed after.
@@ -232,7 +232,7 @@ adjoining areas are owned. No cascading unlocks. Nine area purchases total 9500;
 - **Mystery box equivalent:** a claw machine (sometimes a plush toy appears and it relocates).
 - **Perks = wardrobe system:** 4 slots (head, torso, feet, accessory), one item per slot, each with a
   small upside and downside; buy once, swap free at fitting rooms.
-- **Pack-a-Punch equivalent: Build-A-Blaster.** One mod per weapon (fryer oil = burn, smoothie freeze = slow,
+- **Pack-a-Punch equivalent: Build-A-Blaster (built: docs/build-a-blaster-plan.md).** One build per weapon (fryer oil = burn, smoothie freeze = slow,
   neon sign = electric chain, glitter = confuse zombies).
 - **Vendor: Kiosk Kevin** sells lethals, tacticals, armor plates and a turret, with rotating stock each round.
 - **Environmental hazards** (pay to trigger, with cooldowns): fire sprinklers, electrified fountain,

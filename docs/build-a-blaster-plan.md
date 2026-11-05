@@ -1,7 +1,6 @@
 # Build-A-Blaster rebuild: plan
 
-Status: agreed outline, nothing built yet. The current prototype (`game/features/workshop.js`, `maps/mall/workshopRoom.js`,
-`config/workshop.js`) is what this replaces. Build one phase at a time, in its own git worktree, and test before the next.
+Status: all six phases built on branch `build-a-blaster`; docs/build-a-blaster-log.md has what was done and every decision made. Prices are still placeholders.
 
 ## The idea
 
