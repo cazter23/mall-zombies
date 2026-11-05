@@ -23,7 +23,8 @@ src/
                         distant upstairs silhouette. Quiet intervals, comfort gates, reset and static-batching-safe hooks.
   boot.js               The page's entry point: waits for the web fonts (core/fontsReady.js, list and time limit in config/fonts.js), then imports main.js.
   config/workshop.js    Build-A-Blaster: Limited Edition numbers (workshopBuilds), the ritual (workshopRitual: time, qualities, stages, loaner, PA), Stuffings and Hearts, buildOf reads a gun's finished build.
-  game/features/workshop.js The workshop feature: builds the ritual, sells the Limited Editions from the shelf behind the window, runs Party Trap charges.
+  game/features/workshop.js The workshop feature: builds the ritual, its effects and the Limited Edition drops, runs Party Trap charges.
+  game/features/limitedEditions.js The bag a shopping-bag zombie sometimes drops: walk over it and Party Trap or Clearance Rack fits a gun you carry, free.
   game/features/workshopRitual.js The Build-A-Blaster ritual: idle, running, ready. Bench, gun on the conveyor, gauge, lever, maximum time, Naming Booth, chute steering. Built by workshop.js.
   game/features/workshopStuffings.js What a finished build does: one function per Stuffing, one per Heart. Hearts read 'shot' and hand off to the stuffing; nothing here emits 'shot', so a stuffing's kills can't fire a Heart.
   game/features/workshopSpectacle.js Ritual mode: tank fill, party colours on the hall's two lamps, bulb string, belt, arm, flap, lever, jingle. Show only; reset() puts every part back.

@@ -28,6 +28,8 @@ buildVisual places from mounts, never from bounds: model.root holds the hands an
 
 Phase 6, first part: Popcorn Butter (a fixed pool of three puddles, Spill Cleanup's slow per tick), Antifreeze (chills, then shatters anything slowed, by any source), the Reload Heart (a new 'reload' event) and Every 10th. Hearts now name the events they want and cooldowns are per gun, so one gun can't swallow another's tenth kill.
 
+Phase 6, Limited Edition drops: Party Trap and Clearance Rack left the shelf, as the plan set out. A zombie carrying a shopping bag (model.hasBag) sometimes drops one for a gun you carry that doesn't have it; walking over the bag fits it free. Their prices stay in economy.upgrades.workshop for the economy simulation, unused for now.
+
 ## 4 November 2026 — tenant branding and font loading
 
 Mega Mart and Hoffman's got their own tenant branding (config/look.js, zoneLooks.js, hallwayLook.js, textures.js).

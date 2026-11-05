@@ -301,7 +301,7 @@ export function createGame({
   });
 
   // Build-A-Blaster's PA lines (game/features/workshopRitual.js).
-  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualCollect']) {
+  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualCollect', 'limitedEditionDrop', 'limitedEditionFitted']) {
     events.on(name, ({ pa }) => {
       hud.showAnnouncement({ ...pa, priority: 1 });
       sound.play('paChime');

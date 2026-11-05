@@ -1,38 +1,17 @@
 import * as THREE from 'three';
-import { workshopBuilds, workshopModOf } from '../../config/workshop.js';
+import { workshopBuilds } from '../../config/workshop.js';
 import { castShot } from '../../weapons/hitscan.js';
 import { createClearanceRack } from './clearanceRack.js';
 import { createWorkshopRitual } from './workshopRitual.js';
 import { createBuildEffects } from './workshopStuffings.js';
 import { createWorkshopSpectacle } from './workshopSpectacle.js';
+import { createLimitedEditionDrops } from './limitedEditions.js';
 
 export function buildWorkshop(bench, { map, gun, pricing, interactions, events, player, scene, zombies, rounds, colliders, effects, sound, stats, state }) {
-  const builds = Object.entries(workshopBuilds);
-  const currentBuild = () => builds.find(([, build]) => build.weapon === gun.def.id);
-  interactions.add({
-    get label() { const [, build] = currentBuild(); return build.name + ' installed. ' + build.instructions; },
-    get title() { return currentBuild()[1].name; },
-    get detail() { return currentBuild()[1].instructions; },
-    get id() { return currentBuild()[0]; },
-    get cost() { return pricing.priceOf('workshop', this.id); },
-    verb: 'install',
-    kind: 'workshop',
-    position: bench.limitedEdition, // the display case: the bench itself takes guns for the ritual
-    available() {
-      const match = currentBuild();
-      return map.zones[bench.zone].open && !!match && !gun.isSwitching &&
-        !gun.weapon.isReloading && workshopModOf(gun.modsFor(gun.def.id)) !== match[0];
-    },
-    use() {
-      const id = gun.def.id;
-      const mods = gun.modsFor(id).filter(m => m.id !== 'workshop');
-      gun.setMods(id, [...mods, { id: 'workshop', workshop: this.id }]);
-    },
-  });
-
   const ritual = createWorkshopRitual({ bench, map, gun, pricing, interactions, events, player, zombies, rounds, scene });
   const buildEffects = createBuildEffects({ events, gun, player, zombies, colliders, effects, stats, state, sound, scene });
   const spectacle = createWorkshopSpectacle({ bench, ritual, events, zombies, player, sound });
+  const drops = createLimitedEditionDrops({ events, gun, player, scene, rounds, state, sound });
   const trap = workshopBuilds.partyTrap;
   const clearance = createClearanceRack({ gun, zombies, effects, sound });
   events.on('shot', ({ clearanceHit }) => { if (clearanceHit) clearance.hit(clearanceHit); });
@@ -94,12 +73,14 @@ export function buildWorkshop(bench, { map, gun, pricing, interactions, events, 
 
   return {
     ritual,
+    drops,
     update(dt) {
       clearance.update();
       updateTraps(dt);
       ritual.update(dt);
       buildEffects.update(dt);
       spectacle.update(dt);
+      drops.update(dt);
     },
     reset() {
       while (traps.length) removeTrap(traps.length - 1);
@@ -107,6 +88,7 @@ export function buildWorkshop(bench, { map, gun, pricing, interactions, events, 
       ritual.reset();
       buildEffects.reset();
       spectacle.reset();
+      drops.reset();
     },
   };
 }

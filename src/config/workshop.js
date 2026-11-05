@@ -1,4 +1,4 @@
-// One workshop build per carried gun, separate from tiers and attachments.
+// Limited Editions: one per carried gun, separate from tiers, attachments and finished builds. They can't be bought: bag-carrying zombies drop them.
 export const workshopBuilds = {
   partyTrap: {
     weapon: 'confettiCannon', name: 'Party Trap', color: 0xff59a9,
@@ -18,6 +18,19 @@ export const workshopBuilds = {
 };
 
 export const workshopModOf = (mods) => mods?.find(m => m.id === 'workshop')?.workshop;
+
+// game/features/limitedEditions.js
+export const limitedEditionDrops = {
+  fromRound: 3,
+  dropChance: .15, // per kill of a zombie carrying a shopping bag
+  lifetimeSeconds: 30, // how long a bag waits on the floor
+  pickupRadius: 1.1, pickupHeight: 1.2,
+  spinSpeed: 1.8, glow: .5,
+  pa: {
+    drop: { kicker: 'Limited Edition', text: 'A customer has dropped a {name}. Finders keepers.' },
+    fitted: { kicker: 'Limited Edition', text: '{name} fitted to your {gun}. {instructions}' },
+  },
+};
 
 // THE RITUAL (game/features/workshopRitual.js): hand a gun over, fight for it, collect it at the Naming Booth.
 export const workshopRitual = {

@@ -303,10 +303,7 @@ test('upgrades stay on the gun while it is away, and it comes back loaded with i
 
 test('a Limited Edition and a ritual sit on one gun without getting in each other\'s way', () => {
   const t = fixture({ guns: [weapons.priceGun] }), { g } = t;
-  const shelf = t.bench.limitedEdition;
-  g.player.teleport({ position: new THREE.Vector3(shelf.x, Y, shelf.z + 1.1), yaw: 0 }); t.tick();
-  assert.equal(g.interactions.prompt?.id, 'clearanceRack');
-  t.press('KeyF', 20);
+  g.gun.setMods('priceGun', [{ id: 'workshop', workshop: 'clearanceRack' }]);
   t.atBench();
   t.ritual.choose('smoothie', 'lastRound');
   t.atBench();

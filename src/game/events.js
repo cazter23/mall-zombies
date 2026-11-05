@@ -46,6 +46,8 @@
 //   'ritualReady' { gunId, kills, quality, reason 'lever' | 'time', pa }  the gun is waiting at the Naming Booth
 //   'ritualCollect' { gunId, build, certificate, pa }     the player took the finished gun (certificate = the Birth Certificate's fields)
 //   'buildFired'  { stuffing, heart, weaponId, hit: [zombie] }  a finished build's Heart fired its stuffing (game/features/workshopStuffings.js)
+//   'limitedEditionDrop'   { id, position, pa }           a bag-carrying zombie dropped a Limited Edition (game/features/limitedEditions.js)
+//   'limitedEditionFitted' { id, weapon, pa }             the player walked over it
 //   'runReset'    {}                                     after Play again reset everything
 // =============================================================================
 

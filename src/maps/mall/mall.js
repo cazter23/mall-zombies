@@ -848,7 +848,6 @@ export function buildMall(scene, colliders) {
     { kind: 'workshop', name: 'buildABlaster', zone: 'upstairs',
       position: levelTwo.workshop.purchasePosition,
       normal: new THREE.Vector3(0, 0, -1),
-      limitedEdition: levelTwo.workshop.limitedEdition,
       stations: levelTwo.workshop.stations },
     ...wallBuys.map((w) => ({ kind: 'wallBuy', ...w })),
     // The RESTOCK-O-MATIC: buy a refill for the gun in your hand (g.pricing 'ammoCache'); its screen shows what it sells.

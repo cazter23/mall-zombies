@@ -18,6 +18,8 @@ stopping stuffings, quality scaling, picking at the bins and the Heart wall, tod
 
 `tests/workshopSpectacle.test.js` covers ritual mode: moving parts out of batching, no added lights, tank fill and colour, kills flying into the tank and paying once, returns tumbling out of the chute, the lever, the arm, the jingle, the belt, PA narration priority, stuffing-coloured tracers, and Play again putting every part back. `tests/weaponModels.test.js` checks the stitched look on every gun: anchored to the gun, gun-sized, cheap, reversible.
 
+`tests/limitedEditions.test.js` covers the drops: nothing on sale any more, bag zombies only, from the right round, one at a time, only what you can use, fitting free and keeping the gun's other upgrades, waiting for a swapped-away gun, not reachable through a floor, running out, and Play again.
+
 `tests/attachmentRework.test.js` covers paid run unlocks, discounted first purchases, free refits across replacement guns,
 ownership reset, reload blocking, ammo conservation/full-reserve overflow, fully-owned sale eligibility and four-slot builds.
 

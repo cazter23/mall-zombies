@@ -6,7 +6,7 @@
 // Numbers are in config/promenade.js workshop; game/features/workshop*.js gives the room its gameplay.
 //
 // buildWorkshopRoom({ kit, props, floorY, layout }) ->
-//   { purchasePosition, limitedEdition, light, lamps, arrival, stations: { rooms, lever, booth, chute, path } }
+//   { purchasePosition, light, lamps, arrival, stations: { rooms, lever, booth, chute, path } }
 // =============================================================================
 
 import * as THREE from 'three';
@@ -414,15 +414,14 @@ export function buildWorkshopRoom({ kit, props, floorY, layout }) {
   sign('CUSTOM WORK ORDERS · WHILE YOU WAIT', boardX, 2.78, boardZ - .055, 3.9, .42);
   sign('WORK ORDER 018', boardX - 1.01, 1.57, boardZ - .183, .72, .19, '#f5ebd6', '#593c50');
 
-  // The Limited Editions shelf: the display deck behind the window, facing into the shop.
-  sign('LIMITED EDITIONS', center, 1.3, front + .68, 1.5, .2, '#c64140', '#fff0cb', 1);
+  // The Limited Editions shelf is empty: they turn up in shoppers' bags now (game/features/limitedEditions.js).
+  sign('LIMITED EDITIONS · ASK A SHOPPER', center, 1.3, front + .68, 1.5, .2, '#c64140', '#fff0cb', 1);
 
   const lamp = shop.lamp;
   const rideY = floorY + belt.height + shop.rideHeight;
   const carryY = floorY + A.carryHeight, restY = floorY + B.counterHeight + .05;
   return {
     purchasePosition: new THREE.Vector3(center, floorY + bench.promptHeight, benchFront - bench.promptInset),
-    limitedEdition: new THREE.Vector3(center, floorY + 1.2, front + .75),
     arrival: { position: new THREE.Vector3(center, floorY, benchFront - 1.1), yaw: Math.PI }, // (debug: in front of the bench)
     stations: {
       rooms: layout.sections.filter(s => s.id.startsWith('workshop'))

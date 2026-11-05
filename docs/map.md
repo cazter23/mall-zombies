@@ -41,8 +41,8 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   own slab over HOFFMAN'S and the start room; the east wall stops at x 5.2 because the Atrium's exterior wall starts at 5.27. The island
   (x -6.1..0.5, z 15.7..22.3) is the Stuffing Tank (centre -2.8, 19) plus a U-shaped conveyor open to the east, behind a glass guard: one
   bullet-through collider 2.2 m high, so nothing inside can be reached. A gantry carries the gun from the end of the belt over the east lane to the booth's counter, above head height. Lanes round it are >= 3 m. Naming Booth on the east wall (z 20..23.2), lever
-  further south on the same wall (z 16.8), Returns Chute hatch in the north wall (x -7; its three spawn spots are not in map.spawnPoints, the ritual steers to them). Limited Editions are sold
-  from the shelf behind the display window (prompt z 6.75). Debug Y teleports to the bench. Pretzel Palace remains closed but has a scenic warmer/counter/menu/grille. Shoe-store
+  further south on the same wall (z 16.8), Returns Chute hatch in the north wall (x -7; its three spawn spots are not in map.spawnPoints, the ritual steers to them). The Limited Editions
+  shelf behind the display window is empty: they drop from zombies now. Debug Y teleports to the bench. Pretzel Palace remains closed but has a scenic warmer/counter/menu/grille. Shoe-store
   tickets/fitting shoes and two-sided hanging directional signs complete the pass. No new weapons or spawn markers.
   The elevator stays sealed. Data is exposed through LAYOUT.level2; see mall/levelTwo.js, promenadeShop.js and promenadeDetails.js.
 - HOFFMAN'S · Est. Forever (zone 'departmentStore', maps/mall/departmentStore.js): the department store north of the hallway's

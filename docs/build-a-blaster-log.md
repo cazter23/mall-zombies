@@ -163,3 +163,20 @@ During a ritual the hall peaks at 244 calls. Carrying a built gun adds about 10 
 - Heart cooldowns are per gun now, so two built guns don't share one.
 - Slow and chill radii grow with the square root of power, and Neon jumps cap at 5. Otherwise Every 10th on an Extra Stuffed gun would cover most of a room.
 
+## Phase 6, part 2: Limited Edition drops
+
+**What changed.** Party Trap and Clearance Rack are no longer on sale. A zombie with a shopping bag sometimes drops one: walk over the bag and it fits itself to the gun it belongs to. The empty shelf behind the window now reads "LIMITED EDITIONS · ASK A SHOPPER".
+
+**Verified.**
+- tests/limitedEditions.test.js (11 tests).
+- Built game: a Clearance Rack bag showed on the floor, walking onto it fitted the Price Gun free. No console errors.
+
+**Decisions made for you.**
+- The drop is free and fits instantly. The plan says these stay on sale "until phase 6" and then drop, so I ended the sale. **Please check this one**: the plan's price section still mentions Limited Editions. Their prices stay in `economy.upgrades.workshop` as you asked, but nothing charges them now.
+- A bag only drops if you carry that gun and it doesn't already have that Limited Edition, so a drop is never wasted. No gun for it means no drop.
+- It fits whichever carried gun it belongs to, even if you aren't holding that gun.
+- From round 3, 15% per kill of a bag-carrying zombie, one bag at a time, 30 s on the floor. These numbers are guesses.
+- If you swap the gun away, the bag waits for you until it runs out.
+
+**Tests changed on purpose.** tests/workshop.test.js: the first test bought a Clearance Rack at the shelf; the plan ends that sale, so it now fits one from a drop and checks the same things (upgrades kept, survives an ammo buy, gone on Play again). tests/workshopRitual.test.js: the Limited Edition + ritual test fits the mod directly instead of buying it.
+

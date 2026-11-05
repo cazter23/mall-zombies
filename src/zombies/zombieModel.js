@@ -316,7 +316,9 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
   }
 
   // Sometimes clutching a shopping bag in the right hand.
+  let carriesBag = look?.accessory === 'shoppingBag';
   if (!look && !cart && random() < type.bagChance) {
+    carriesBag = true;
     const bag = new THREE.Group();
     bag.position.set(0, -0.05, -S.forearm + 0.02);
     block(mat(pick(type.bagColors)), 0.2, 0.26, 0.11, 0, -0.17, 0, bag);
@@ -419,6 +421,7 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
 
   return {
     root,
+    hasBag: carriesBag, // (Build-A-Blaster: only these can drop a Limited Edition)
 
     // Call every rendered frame. `zombie` supplies state; `alpha` interpolates between ticks.
     update(frameTime, zombie, alpha) {

@@ -19,38 +19,19 @@ function fixture(weapon) {
   return { ...t, scene };
 }
 
-test('Promenade work order is gated by the zone, charges the live price and preserves existing upgrades', () => {
-  const { g, tick, press } = fixture(weapons.priceGun);
-  const bench = g.map.features.find(f => f.kind === 'workshop');
-  const position = bench.limitedEdition.clone(); // the Limited Editions shelf (the bench itself now takes guns for the ritual)
-  position.y = g.map.navigation.floors[1];
-  position.z += 1.1;
-  g.player.teleport({ position, yaw: 0 });
-  tick();
-  assert.notEqual(g.interactions.prompt?.kind, 'workshop');
-  g.map.areaUnlocks.openAll();
-  tick(120);
-  g.wallet.earn(5000);
+test('a Limited Edition keeps a gun\'s other upgrades, stays through an ammo buy, and goes with the run', () => {
+  const { g, tick } = fixture(weapons.priceGun);
   const id = g.gun.def.id;
   const tier = withTier(weapons.priceGun, [], 'deluxe');
   const oldMods = withAttachment(weapons.priceGun, tier, 'jumboPack');
   g.gun.setMods(id, oldMods);
-  g.pricing.setDiscount('workshop', .25);
-  tick();
-  assert.equal(g.interactions.prompt?.id, 'clearanceRack');
-  const cost = g.interactions.prompt.cost;
-  const before = g.wallet.points;
-  let receipt;
-  g.events.on('purchase', p => { receipt = p; });
-  press('KeyF', 30);
-  assert.equal(g.wallet.points, before - cost);
-  assert.match(receipt.label, /Clearance Rack installed.*Headshot/);
+  const { drops } = g.features.list.find(f => f.feature.kind === 'workshop').instance;
+  drops.debugDrop('clearanceRack', g.player.position);
+  tick(2);
   assert.deepEqual(g.gun.modsFor(id).slice(0, -1), oldMods);
   assert.equal(workshopModOf(g.gun.modsFor(id)), 'clearanceRack');
   g.gun.give(weapons.priceGun);
   assert.equal(workshopModOf(g.gun.modsFor(id)), 'clearanceRack');
-  tick();
-  assert.notEqual(g.interactions.prompt?.kind, 'workshop');
   g.resetRun();
   assert.equal(g.gun.modsFor(id), null);
   g.map.dispose();
