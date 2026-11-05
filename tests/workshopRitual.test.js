@@ -119,7 +119,8 @@ test('kills fill the gauge only in the room, and the kill count sets the quality
   assert.equal(ritual.status.kills, 10, 'the tank is sealed once the ritual ends');
   t.collect();
   const build = buildOf(g.gun.modsFor('nailGun'));
-  assert.deepEqual(build, { stuffing: 'smoothie', heart: 'headshot', quality: 'extraStuffed', kills: 10 });
+  assert.equal(typeof build.name, 'string');
+  assert.deepEqual({ ...build, name: undefined }, { name: undefined, stuffing: 'smoothie', heart: 'headshot', quality: 'extraStuffed', kills: 10 });
   g.map.dispose();
 });
 

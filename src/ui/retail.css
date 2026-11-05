@@ -72,6 +72,20 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .ritual-hud[hidden], .hud.dead .ritual-hud { display: none; }
 .ritual-heading { font: 700 10px var(--font-ui); text-transform: uppercase; letter-spacing: .08em; border-bottom: 1px dashed var(--print-rule); padding-bottom: 5px; margin-bottom: 6px; }
 .ritual-stage { font-weight: 700; margin-bottom: 2px; }
+.birth-certificate {
+  position: absolute; top: 96px; right: 28px; width: 268px; max-width: 42vw; padding: 12px 16px 13px; box-sizing: border-box;
+  background: var(--paper-light); color: var(--plum); border: 2px solid var(--plum); outline: 1px solid var(--plum); outline-offset: -6px;
+  box-shadow: 3px 4px 0 #39294088; transform: rotate(1.2deg); text-align: center;
+}
+.birth-certificate[hidden], .hud.dead .birth-certificate { display: none; }
+.certificate-title { font: 700 13px var(--font-ui); text-transform: uppercase; letter-spacing: .14em; }
+.certificate-sub { font: 600 9px var(--font-ui); letter-spacing: .06em; opacity: .75; }
+.certificate-name { margin-top: 6px; font: 700 40px/1 'Caveat', cursive; color: var(--raspberry); }
+.certificate-gun { font: 600 10px var(--font-ui); text-transform: uppercase; letter-spacing: .08em; }
+.certificate-lines { display: grid; grid-template-columns: auto 1fr; gap: 1px 10px; margin: 9px 0 7px; font: 600 10px var(--font-ui); text-align: left; }
+.certificate-lines dt { opacity: .7; }
+.certificate-lines dd { margin: 0; text-align: right; }
+.certificate-remark { padding-top: 6px; border-top: 1px dashed var(--print-rule); font: 700 16px/1.1 'Caveat', cursive; }
 .incentive-progress { width: 100%; height: 8px; border: 1px solid var(--plum); border-radius: 0; background: #d4c9b8; accent-color: var(--raspberry); }
 .incentive-progress::-webkit-progress-bar { background: repeating-linear-gradient(90deg, #ded3c1 0 8%, var(--paper) 8% 10%); }
 .incentive-progress::-webkit-progress-value { background: var(--raspberry); }

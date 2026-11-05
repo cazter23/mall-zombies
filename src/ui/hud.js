@@ -10,6 +10,8 @@ import { feel } from '../config/feel.js';
 import { createScreens } from './screens.js';
 import { createIncentiveHud } from './incentiveHud.js';
 import { createRitualHud } from './ritualHud.js';
+import { createBirthCertificate } from './birthCertificate.js';
+import { gunLabel } from '../config/workshop.js';
 import { createAnnouncements } from './announcements.js';
 import { ui } from '../config/ui.js';
 import { upgrades } from '../config/upgrades.js';
@@ -26,6 +28,8 @@ export function createHud() {
   hud.append(incentives.element);
   const ritualTicket = createRitualHud();
   hud.append(ritualTicket.element);
+  const certificate = createBirthCertificate();
+  hud.append(certificate.element);
 
   // Red glow around the screen edges when hurt (under everything else in the HUD).
   const hurt = el('div', 'hurt');
@@ -93,6 +97,7 @@ export function createHud() {
     clearTimeout(purchaseTimer);
     purchaseStamp.classList.remove('show');
     roundBanner.classList.remove('show');
+    certificate.hide();
   }
 
   // Bottom-right, above the ammo: points, with "+60" pop-ups floating up from it.
@@ -220,6 +225,11 @@ export function createHud() {
     // Build-A-Blaster's order ticket: null hides it (game/features/workshopRitual.js status).
     setRitual(status) {
       ritualTicket.update(status);
+    },
+
+    // The Birth Certificate, at collection: { name, gunName, stuffing, heart, quality, kills, round, remark }.
+    showCertificate(fields) {
+      certificate.show(fields);
     },
 
     setFpsVisible(visible) {
@@ -364,12 +374,13 @@ export function createHud() {
     // Called every frame with the held weapon; only touches the DOM when something changed.
     // `reloadLabel`: the reload button for the device in use ("R", "X", "□").
     setAmmo(weapon, reloadLabel = 'R') {
-      const key = `${weapon.def.id}|${weapon.magazine}|${weapon.reserve}|${weapon.isReloading}|${reloadLabel}`;
+      const name = gunLabel(weapon.def);
+      const key = `${name}|${weapon.magazine}|${weapon.reserve}|${weapon.isReloading}|${reloadLabel}`;
       if (key === lastAmmoKey) return;
       lastAmmoKey = key;
       ammoMag.textContent = weapon.magazine;
       ammoReserve.textContent = ` / ${weapon.reserve}`;
-      ammoName.textContent = weapon.def.name;
+      ammoName.textContent = name;
       ammo.classList.toggle('low', weapon.magazine <= feel.effects.lowAmmoThreshold);
 
       let text = '';

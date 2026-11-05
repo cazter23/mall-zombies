@@ -30,6 +30,23 @@ function el(tag, className, html) {
   return node;
 }
 
+const pad2 = (n) => String(n).padStart(2, '0');
+const clock = (seconds) => `${Math.floor(seconds / 60)}:${pad2(Math.floor(seconds % 60))}`;
+
+/** The lines above the receipt's total: [label, value]. "Survived by" only appears if you named a gun at Build-A-Blaster. */
+export function receiptLinesFor(r) {
+  const lines = [
+    ['Shift length', clock(r.timeAlive)],
+    ['Rounds survived', r.round],
+    ['Zombies cleared', r.kills],
+    ['  Headshots', r.headshotKills],
+    ['  Box cutter', r.meleeKills],
+    ['Accuracy', `${Math.round(r.accuracy * 100)}%`],
+  ];
+  if (r.survivedBy?.length) lines.push(['Survived by', r.survivedBy.join(' and ')]);
+  return lines;
+}
+
 export function evaluatePerformance(r = {}) {
   const round = r.round ?? 1;
   const timeAlive = r.timeAlive ?? 0;
@@ -310,8 +327,6 @@ export function createScreens() {
     buttonsOf(current).forEach((b, i) => b.classList.toggle('focused', show && i === focus));
   }
 
-  const pad2 = (n) => String(n).padStart(2, '0');
-  const clock = (seconds) => `${Math.floor(seconds / 60)}:${pad2(Math.floor(seconds % 60))}`;
   const percent = (value) => `${Math.round((value ?? 0) * 100)}%`;
   const statCards = (items) => items.map(([label, value]) => `<div><span>${label}</span><b>${value}</b></div>`).join('');
 
@@ -327,14 +342,7 @@ export function createScreens() {
   function fillResults(r) {
     const now = new Date();
     receiptDate.textContent = `${now.toLocaleDateString('en-US')} ${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
-    const lines = [
-      ['Shift length', clock(r.timeAlive)],
-      ['Rounds survived', r.round],
-      ['Zombies cleared', r.kills],
-      ['  Headshots', r.headshotKills],
-      ['  Box cutter', r.meleeKills],
-      ['Accuracy', `${Math.round(r.accuracy * 100)}%`],
-    ];
+    const lines = receiptLinesFor(r);
     receiptLines.innerHTML = lines
       .map(([label, value]) => `<div class="receipt-line"><span>${label.replace(/^ {2}/, '&nbsp;&nbsp;')}</span><i></i><span>${value}</span></div>`)
       .join('');

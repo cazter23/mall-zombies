@@ -5,7 +5,7 @@ import { createClearanceRack } from './clearanceRack.js';
 import { createWorkshopRitual } from './workshopRitual.js';
 import { createBuildEffects } from './workshopStuffings.js';
 
-export function buildWorkshop(bench, { map, gun, pricing, interactions, events, player, scene, zombies, colliders, effects, sound, stats, state }) {
+export function buildWorkshop(bench, { map, gun, pricing, interactions, events, player, scene, zombies, rounds, colliders, effects, sound, stats, state }) {
   const builds = Object.entries(workshopBuilds);
   const currentBuild = () => builds.find(([, build]) => build.weapon === gun.def.id);
   interactions.add({
@@ -29,7 +29,7 @@ export function buildWorkshop(bench, { map, gun, pricing, interactions, events, 
     },
   });
 
-  const ritual = createWorkshopRitual({ bench, map, gun, pricing, interactions, events, player, zombies, scene });
+  const ritual = createWorkshopRitual({ bench, map, gun, pricing, interactions, events, player, zombies, rounds, scene });
   const buildEffects = createBuildEffects({ events, gun, zombies, colliders, effects, stats, state });
   const trap = workshopBuilds.partyTrap;
   const clearance = createClearanceRack({ gun, zombies, effects, sound });

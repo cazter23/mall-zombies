@@ -87,3 +87,21 @@ The 876 view is the room looking out over the Promenade and down a balcony. It i
 
 **Not done here.** Stuffing visuals are placeholder confetti in each stuffing's colours. Phase 5 replaces them.
 
+## Phase 4: name and Birth Certificate
+
+**What changed.** Each finished gun gets a random name. A certificate shows on screen at collection, the HUD reads "DALE · STAPLE GUN", the PA follows the order, and the death receipt says "Survived by Dale".
+
+**Verified.**
+- tests/workshopNames.test.js plus a new receipt test in tests/receiptReview.test.js.
+- Built game: ran a Fryer Oil + Last Round order with 10 kills in the room. The certificate showed the right fields, the HUD showed the name, and dying put "Survived by Dale" on the real receipt screen. Looking at the screenshot is what caught "A EXTRA STUFFED"; it now says "an".
+
+**Bug caught and fixed.** My first receipt change called a helper that only exists inside the screen builder, which would have crashed the death screen. The new test caught it before it was committed.
+
+**Decisions made for you.**
+- The certificate is a notice in the top-right that clears itself after 6 s, not a screen you have to dismiss. You collect mid-fight, so it must not pause anything or take your input.
+- A re-stuffed gun keeps its name. Gerald stays Gerald. The PA line for that is "Gerald has been altered. Please do not tell them."
+- No two guns in a run share a name until all 24 have been used.
+- "Survived by" includes a named gun that was on the conveyor or at the booth when you died.
+- The name appears only after collection, never before, so a gun you die with on its first ritual gets no line on the receipt. Naming it at the booth is the point of the booth.
+- Only the gun's first ritual gets a welcome line; a quality line plays once per ritual, each time the gauge reaches a new quality.
+

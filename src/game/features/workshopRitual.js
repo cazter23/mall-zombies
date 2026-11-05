@@ -19,7 +19,7 @@
 
 import { buildWeaponDisplay } from '../../weapons/models/index.js';
 import { weapons } from '../../config/weapons.js';
-import { workshopRitual as cfg, workshopStuffings, workshopHearts, todayCount, buildOf, qualityFor, nextQualityFor, stageFor } from '../../config/workshop.js';
+import { workshopRitual as cfg, workshopStuffings, workshopHearts, workshopNames, todayCount, buildOf, qualityFor, nextQualityFor, stageFor, paLine } from '../../config/workshop.js';
 import * as THREE from 'three';
 
 const copyWithName = (def, name) => ({ ...def, name });
@@ -40,7 +40,7 @@ function measured(points) {
   return { points, lengths, total: lengths.reduce((a, b) => a + b, 0) };
 }
 
-export function createWorkshopRitual({ bench, map, gun, pricing, interactions, events, player, zombies, scene }) {
+export function createWorkshopRitual({ bench, map, gun, pricing, interactions, events, player, zombies, rounds, scene }) {
   const { stations } = bench;
   const path = measured(stations.path);
   let phase = 'idle'; // 'idle' | 'running' | 'ready'
@@ -50,6 +50,15 @@ export function createWorkshopRitual({ bench, map, gun, pricing, interactions, e
   let steering = false;
   let pick = { stuffing: null, heart: null }; // what the next order will be
   let today = []; // the stuffing ids in the bins this round
+  const namesUsed = new Set(); // this run's names: no two guns share one until the list runs out
+
+  function newName() {
+    const free = workshopNames.filter((name) => !namesUsed.has(name));
+    const pool = free.length ? free : workshopNames;
+    const name = pool[Math.floor(Math.random() * pool.length)];
+    namesUsed.add(name);
+    return name;
+  }
 
   const stocked = () => Object.keys(workshopStuffings).filter((id) => {
     const zone = workshopStuffings[id].stockedBy;
@@ -109,14 +118,16 @@ export function createWorkshopRitual({ bench, map, gun, pricing, interactions, e
   function start() {
     const def = gun.def;
     const restuff = hasBuild();
-    order = { gunId: def.id, gunName: def.name, restuff, stuffing: pick.stuffing, heart: pick.heart,
+    const name = buildOf(gun.modsFor(def.id))?.name ?? null; // a re-stuffed gun keeps its name
+    order = { gunId: def.id, gunName: def.name, name, restuff, stuffing: pick.stuffing, heart: pick.heart,
       elapsed: 0, kills: 0, stage: cfg.stages[0], reason: null, quality: null };
     pick = { stuffing: null, heart: null };
     const loaner = gun.slots.length === 1;
     gun.handOver(copyWithName(weapons[cfg.loaner.weapon], cfg.loaner.name));
     phase = 'running';
     showGun(def);
-    events.emit('ritualStart', { gunId: def.id, gunName: def.name, loaner, restuff, pa: cfg.pa.start });
+    const pa = paLine(restuff ? cfg.pa.restuff : cfg.pa.start, { gun: def.name, name });
+    events.emit('ritualStart', { gunId: def.id, gunName: def.name, loaner, restuff, pa });
   }
 
   function finish(reason) {
@@ -124,17 +135,24 @@ export function createWorkshopRitual({ bench, map, gun, pricing, interactions, e
     order.reason = reason;
     order.quality = qualityFor(order.kills);
     steer(false);
-    events.emit('ritualReady', { gunId: order.gunId, kills: order.kills, quality: order.quality, reason, pa: cfg.pa.ready });
+    const pa = paLine(order.name ? cfg.pa.readyAgain : cfg.pa.ready, { gun: order.gunName, name: order.name });
+    events.emit('ritualReady', { gunId: order.gunId, kills: order.kills, quality: order.quality, reason, pa });
   }
 
   function collect() {
-    const build = { stuffing: order.stuffing, heart: order.heart, quality: order.quality.id, kills: order.kills };
+    const name = order.name ?? newName();
+    const build = { name, stuffing: order.stuffing, heart: order.heart, quality: order.quality.id, kills: order.kills };
     gun.collect((mods) => [...mods.filter((m) => m.id !== 'build'), { id: 'build', build }]);
     hideGun();
+    const certificate = {
+      name, gunName: order.gunName, stuffing: workshopStuffings[order.stuffing].name, heart: workshopHearts[order.heart].name,
+      quality: order.quality.name, kills: order.kills, round: rounds.round, remark: cfg.remarks[order.quality.id],
+    };
+    const pa = paLine(order.name ? cfg.pa.collectAgain : cfg.pa.collect, { gun: order.gunName, name });
     const { gunId } = order;
     phase = 'idle';
     order = null;
-    events.emit('ritualCollect', { gunId, build, pa: cfg.pa.collect });
+    events.emit('ritualCollect', { gunId, build, certificate, pa });
   }
 
   for (const bin of stations.bins) {
@@ -223,8 +241,11 @@ export function createWorkshopRitual({ bench, map, gun, pricing, interactions, e
   events.on('roundStart', rollToday);
   events.on('kill', ({ zombie }) => {
     if (phase !== 'running' || !inside(zombie.position)) return;
+    const before = qualityFor(order.kills);
     order.kills += 1;
-    events.emit('ritualKill', { zombie, kills: order.kills, quality: qualityFor(order.kills) });
+    const quality = qualityFor(order.kills);
+    events.emit('ritualKill', { zombie, kills: order.kills, quality });
+    if (quality !== before) events.emit('ritualQuality', { quality, pa: cfg.pa.qualities[quality.id] });
   });
 
   return {
@@ -279,6 +300,7 @@ export function createWorkshopRitual({ bench, map, gun, pricing, interactions, e
       order = null;
       riding = 0;
       pick = { stuffing: null, heart: null };
+      namesUsed.clear();
       rollToday();
       steer(false);
       hideGun();

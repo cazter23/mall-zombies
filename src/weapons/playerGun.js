@@ -22,7 +22,7 @@
 import * as THREE from 'three';
 import { feel } from '../config/feel.js';
 import { Weapon } from './weapon.js';
-import { workshopBuilds, workshopModOf } from '../config/workshop.js';
+import { workshopBuilds, workshopModOf, buildOf } from '../config/workshop.js';
 import { castShot } from './hitscan.js';
 import { createAim, applyConeSpread, pelletSpreadDegrees } from './aim.js';
 import { hitDamage, resolveGun } from './gunStats.js';
@@ -365,6 +365,11 @@ export function createPlayerGun({
       slots[index] = slot;
       startSwitch(index, previous);
       return true;
+    },
+
+    // The names of your Build-A-Blaster guns, whether carried or back at the workshop.
+    get buildNames() {
+      return [...slots, ...(away ? [away] : [])].map((s) => buildOf(s.mods)?.name).filter(Boolean);
     },
 
     // The gun of yours that collecting would replace (its name), or null if it costs you nothing.

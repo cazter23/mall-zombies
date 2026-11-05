@@ -205,6 +205,7 @@ export function createGame({
       meleeKills: runStats.meleeKills,
       accuracy: runStats.accuracy,
       assisted: state.assisted || health.invulnerable,
+      survivedBy: gun.buildNames, // the guns you named at Build-A-Blaster (the receipt reads them out)
     });
   }
 
@@ -299,12 +300,14 @@ export function createGame({
   });
 
   // Build-A-Blaster's PA lines (game/features/workshopRitual.js).
-  for (const name of ['ritualStart', 'ritualReady', 'ritualCollect']) {
+  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualCollect']) {
     events.on(name, ({ pa }) => {
       hud.showAnnouncement({ ...pa, priority: 1 });
       sound.play('paChime');
     });
   }
+
+  events.on('ritualCollect', ({ certificate }) => hud.showCertificate(certificate));
 
   powerUps = createPowerUps({
     events, player, gun, zombies, colliders, state, stats, pricing, wallet,

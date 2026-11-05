@@ -4,6 +4,7 @@ export const ui = {
   announcementQueueSize: 3,
   purchaseSeconds: 1.6,
   roundSeconds: 2.2,
+  certificateSeconds: 6, // the Birth Certificate clears itself: you are mid-fight
   weaponRoles: {
     stapleGun: 'Precision sidearm · Aim for heads',
     priceGun: 'Close-range automatic · Fast reload',

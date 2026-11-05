@@ -39,10 +39,26 @@ export const workshopRitual = {
   catchUpSeconds: 2.5, // how long the gun takes to run to the end of the belt when the lever is pulled
   // Lent to a player who hands over their only gun, taken back at collection. Plain: no upgrades can be bought for it.
   loaner: { weapon: 'stapleGun', name: 'Courtesy Loaner' },
+  // PA lines. {gun} and {name} are filled in by the ritual. A quality's line plays when the gauge first reaches it.
   pa: {
-    start: { kicker: 'Build-A-Blaster', text: 'Your order is on the conveyor. Please keep the room busy.' },
-    ready: { kicker: 'Build-A-Blaster', text: 'Your order is ready at the Naming Booth.' },
-    collect: { kicker: 'Build-A-Blaster', text: 'Thank you for building with us.' },
+    start: { kicker: 'Build-A-Blaster', text: 'One {gun} on the conveyor. Please keep the room busy.' },
+    restuff: { kicker: 'Build-A-Blaster', text: '{name} is back in for alterations. Please keep the room busy.' },
+    qualities: {
+      regular: { kicker: 'Build-A-Blaster', text: 'The tank is coming along nicely. Regular.' },
+      extraStuffed: { kicker: 'Build-A-Blaster', text: 'Extra Stuffed. A staff member has been told to stand back.' },
+      overstuffed: { kicker: 'Build-A-Blaster', text: 'Overstuffed. We cannot be held responsible.' },
+    },
+    ready: { kicker: 'Build-A-Blaster', text: 'Your {gun} is ready at the Naming Booth.' },
+    readyAgain: { kicker: 'Build-A-Blaster', text: '{name} is ready at the Naming Booth.' },
+    collect: { kicker: 'Build-A-Blaster', text: 'Please welcome {name} to the family.' },
+    collectAgain: { kicker: 'Build-A-Blaster', text: '{name} has been altered. Please do not tell them.' },
+  },
+  // What the Birth Certificate says under the details.
+  remarks: {
+    understuffed: 'A little light. We love them anyway.',
+    regular: 'Healthy, loud and ready to go home.',
+    extraStuffed: 'A big one. Mind the seams.',
+    overstuffed: 'The doctors are concerned.',
   },
 };
 
@@ -73,6 +89,10 @@ export const workshopHearts = {
   lastRound: { name: 'Last Round', blurb: 'Fires on the last round in the magazine', strength: 1.5, cooldownSeconds: 0 },
 };
 
+// Every finished gun gets a name at the Naming Booth, and keeps it through a re-stuff. A run uses each name once while any are left.
+export const workshopNames = ['Gerald', 'Doris', 'Mavis', 'Todd', 'Nigel', 'Beverly', 'Clive', 'Agnes', 'Stanley', 'Rhonda', 'Gus', 'Mildred',
+  'Dale', 'Phyllis', 'Norman', 'Bernice', 'Wendell', 'Trudy', 'Earl', 'Hortense', 'Steve', 'Lorraine', 'Vern', 'Gladys'];
+
 export const qualityFor = (kills) =>
   workshopRitual.qualities.reduce((best, q) => (kills >= q.minKills ? q : best), workshopRitual.qualities[0]);
 export const qualityById = (id) => workshopRitual.qualities.find(q => q.id === id);
@@ -82,3 +102,15 @@ export const stageFor = (fraction) =>
 
 // A finished ritual lives on the gun as a mod: { id: 'build', build: { stuffing, heart, quality, kills } }. It stacks with tiers and attachments.
 export const buildOf = (mods) => mods?.find(m => m.id === 'build')?.build ?? null;
+
+/** What a gun is called on the HUD: "Gerald · Nail Gun" once it has been named. `def` is a resolved gun. */
+export const gunLabel = (def) => {
+  const build = buildOf(def.modList);
+  return build?.name ? `${build.name} · ${def.name}` : def.name;
+};
+
+/** The Birth Certificate's description: "a Regular Nail Gun", "an Extra Stuffed Nail Gun". */
+export const certificateSubtitle = (quality, gunName) => `${/^[aeiou]/i.test(quality) ? 'an' : 'a'} ${quality} ${gunName}`;
+
+/** Fill a PA line's {gun} and {name}. */
+export const paLine = (line, values) => ({ ...line, text: line.text.replace(/\{(\w+)\}/g, (_, key) => values[key]) });

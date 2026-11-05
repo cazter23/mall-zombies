@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { menuDom } from './helpers/menuDom.js';
 
 menuDom(); // window mock for module imports
-const { evaluatePerformance } = await import('../src/ui/screens.js');
+const { evaluatePerformance, receiptLinesFor } = await import('../src/ui/screens.js');
 
 test('evaluatePerformance assigns UNAUTHORIZED OVERTIME on high round or long duration', () => {
   const byRound = evaluatePerformance({ round: 8, timeAlive: 100 });
@@ -79,4 +79,13 @@ test('evaluatePerformance handles missing, null, or empty arguments safely', () 
 
   const undef = evaluatePerformance(undefined);
   assert.equal(undef.title, 'FAILED PROBATION');
+});
+
+test('the receipt reads out the guns you named at Build-A-Blaster, and says nothing if you named none', () => {
+  const base = { timeAlive: 60, round: 3, kills: 4, headshotKills: 1, meleeKills: 0, accuracy: .5 };
+  const label = (r) => receiptLinesFor(r).find(([name]) => name === 'Survived by');
+  assert.equal(label({ ...base, survivedBy: [] }), undefined);
+  assert.equal(label(base), undefined);
+  assert.deepEqual(label({ ...base, survivedBy: ['Gerald'] }), ['Survived by', 'Gerald']);
+  assert.deepEqual(label({ ...base, survivedBy: ['Gerald', 'Doris'] }), ['Survived by', 'Gerald and Doris']);
 });
