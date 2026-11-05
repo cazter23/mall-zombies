@@ -11,6 +11,7 @@
 
 import * as THREE from 'three';
 import { COLORS } from './palette.js';
+import { workshopHearts, workshopStuffings } from '../../config/workshop.js';
 
 function checkerboard({ light, dark, grout, tileSize }, width, depth) {
   const canvas = document.createElement('canvas');
@@ -122,10 +123,10 @@ export function buildWorkshopRoom({ kit, props, floorY, layout }) {
     kit.addCollider(x0, floorY, z0, x1, floorY + 2.46, z1);
     box('cubby_base', x0, 0, z0, x1, .42, z1, c.cream);
     box('cubby_back', side < 0 ? x0 : x1 - .04, .44, z0, side < 0 ? x0 + .04 : x1, 2.46, z1, c.plum);
-    for (const h of [.76, 1.21, 1.68, 2.13]) {
+    for (const h of side < 0 ? [.76, 1.21, 1.68, 2.13] : [1.68, 2.13]) { // (the east cubby's lower shelves are the Heart wall)
       box('shelf', x0 + .018, h, z0 + .055, x1 - .012, h + .048, z1 - .055, c.cream);
       for (let i = 0; i < 6; i++) {
-        if ((i + Math.round(h * 10)) % 4 === 0) continue;
+        if ((i + Math.round(h * 10)) % 4 === 0 || (side < 0 && h < 1)) continue; // (the west cubby's bottom shelf holds the bins)
         const z = z0 + .17 + i * .47;
         const color = [0x74c9bb, 0xe57b79, 0xf7c75f, 0x94a9e6][(i + Math.round(h * 4)) % 4];
         box('parts_carton', x0 + .095, h + .051, z, x1 - .065, h + .20 + (i % 2) * .056, z + .27, color);
@@ -133,9 +134,35 @@ export function buildWorkshopRoom({ kit, props, floorY, layout }) {
         box('carton_label', labelX, h + .102, z + .091, labelX + .014, h + .158, z + .179, c.paper);
       }
     }
-    sign(side < 0 ? '01  PICK YOUR PARTS' : '02  MAKE IT YOURS', signX, 2.58,
+    sign(side < 0 ? '01  TODAY’S STUFFINGS' : '02  PICK A HEART', signX, 2.58,
       (z0 + z1) / 2, 2.48, .28, '#294679', '#fff0cb', facing);
   }
+
+  // The bins: one per stuffing, on the west cubby's bottom shelf. The strip above a bin lights while it is in today's stock.
+  const cubbyFace = from + .48, B0 = shop.bins, heartFace = to - .48, HW = shop.hearts;
+  // (Shown and hidden at runtime: one dynamic group keeps them out of static batching, like the neon.)
+  const binLamps = new THREE.Group();
+  binLamps.name = 'workshop_bin_lamps';
+  binLamps.userData.dynamic = true;
+  kit.group.add(binLamps);
+  const bins = Object.entries(workshopStuffings).map(([id, stuffing], i) => {
+    const z = front + B0.firstOffsetZ + i * B0.spacing;
+    box('bin', cubbyFace - .36, B0.sill, z - B0.width / 2, cubbyFace - .02, B0.top, z + B0.width / 2, stuffing.color);
+    kit.sign(stuffing.name.toUpperCase(), { x: cubbyFace + .004, y: floorY + (B0.sill + B0.top) / 2, z, width: B0.width - .03, height: .11, facing: 'x+', background: '#fff0cb', color: '#253c87' });
+    const lamp = box('bin_lamp', cubbyFace - .12, B0.top + .012, z - B0.width / 2 + .02, cubbyFace - .03, B0.top + .04, z + B0.width / 2 - .02, stuffing.color,
+      { emissive: stuffing.color, emissiveIntensity: 2.2 });
+    binLamps.add(lamp);
+    lamp.visible = false;
+    return { id, position: new THREE.Vector3(cubbyFace + .1, floorY + B0.promptHeight, z), lamp };
+  });
+  // The Heart wall: one per Heart, on the back of the east cubby.
+  const hearts = Object.keys(workshopHearts).map((id, i) => {
+    const z = front + HW.firstOffsetZ + i * HW.spacing, half = HW.size / 2;
+    box('heart_plaque', heartFace + .1, HW.height - half - .08, z - half - .08, heartFace + .44, HW.height + half + .08, z + half + .08, c.plum);
+    kit.sign('♥', { x: heartFace + .08, y: floorY + HW.height + .05, z, width: HW.size, height: HW.size, facing: 'x-', background: 'transparent', color: '#e04a68' });
+    kit.sign(workshopHearts[id].name.toUpperCase(), { x: heartFace + .072, y: floorY + HW.height - half + .02, z, width: HW.size + .12, height: .09, facing: 'x-', background: 'transparent', color: '#fff0cb' });
+    return { id, position: new THREE.Vector3(heartFace - .1, floorY + HW.promptHeight, z) };
+  });
 
   // Tucked beside the bench, outside the route between the doors.
   const stool = box('overturned_stool', right + .1, .11, benchBack - .46, right + .53, .20, benchBack, c.red);
@@ -224,6 +251,8 @@ export function buildWorkshopRoom({ kit, props, floorY, layout }) {
         .map(({ minX, maxX, minZ, maxZ }) => ({ minX, maxX, minZ, maxZ, minY: floorY - .5, maxY: floorY + H.height })),
       lever: new THREE.Vector3(H.maxX - L.depth - .08, floorY + L.height, L.z),
       booth: new THREE.Vector3(B.minX - .08, floorY + B.promptHeight, (B.minZ + B.maxZ) / 2),
+      bins,
+      hearts,
       chute: [-1.1, 0, 1.1].map((dx, i) => ({ name: `spawn_workshop_chute_${i}`, zone: 'upstairs',
         position: new THREE.Vector3(C.x + dx, floorY, H.maxZ - C.spawnInset) })),
       path: [[bx1 - .3, bz0 + beltMiddle], [bx0 + beltMiddle, bz0 + beltMiddle], [bx0 + beltMiddle, bz1 - beltMiddle], [bx1 - .3, bz1 - beltMiddle]]

@@ -61,3 +61,29 @@ The 876 view is the room looking out over the Promenade and down a balcony. It i
 
 **Test changed on purpose.** tests/workshop.test.js: the first test now stands at the Limited Editions shelf rather than the bench. Same checks, new spot.
 
+## Phase 3: Stuffings and Hearts
+
+**What changed.** Smoothie, Fryer Oil and Neon Tube, the Headshot and Last Round Hearts, quality scaling, the daily stock, area stocking and re-stuffing. All prices go through `g.pricing.priceOf('workshop', ...)`.
+
+**Verified.**
+- tests/workshopBuilds.test.js (22 tests): all 6 pairs on real shots, a kill pays once, a stuffing's kills never fire a Heart, tiers and attachments stack with a build.
+- `npm run balance` now prints a proc table; tests/balance.test.js still passes unchanged, because base guns did not change.
+- Built game: picked Neon Tube at its bin and Headshot at the wall through the real input path, ordered, collected, then a real headshot dealt 60 to the target and arcs of 20 and 16 to the two zombies beside it.
+
+**Proc numbers (Extra Stuffed), for tuning.** One burn: Staple Gun 149, Price Gun 502, Nail Gun 321, Foam Dart 535, Cannon 909, Rivet 565, Coil 565, Scanner 221. Compare zombie health: round 5 450, round 10 806, round 15 1157, round 20 1662, round 30 3425. Since stuffing scales with the gun, it falls behind at high rounds the same way guns do.
+
+**Decisions made for you.**
+- You pick by walking to a bin and a Heart and holding interact. There is no menu. The bench refuses until both are picked and says what is missing.
+- Stuffing damage scales from one second of the gun's fire, not one shot. Shots range from 30 (Staple Gun) to 840 (Cannon), so per-shot scaling would have made the same stuffing 28 times stronger on the Cannon.
+- All damage numbers are first guesses: burn is 0.35 gun-seconds over 3 s, an arc is 0.08 gun-seconds with 2 jumps at Understuffed (3 at Regular and above).
+- Headshot Heart has a 0.75 s cooldown, or a Price Gun would fire it on nearly every shot. Last Round has no cooldown and is 1.5 times stronger, because it fires so rarely.
+- Last Round fires even on a miss, at the spot the round lands. It is your last round, so it should always do something.
+- Burns don't stack. Re-lighting a burning zombie restarts its clock and adds no damage.
+- An empty bin fills at once when you buy an area; otherwise the stock only changes at the start of a round.
+- A stuffing you picked that leaves the bins at the next round drops off your order. The Heart stays.
+- A re-stuff keeps the old build on the gun until you collect the new one, then replaces it.
+
+**A failure I hit.** tests/staticBatch.test.js failed on the first full run: it treats every mesh flagged `dynamic` as part of the escalator barrier, and my bin lamps were flagged that way. I did not touch the test. The lamps now sit under one dynamic group, the same pattern the neon uses, which keeps them out of batching. Checked in the built game that they survive batching and light up as areas open.
+
+**Not done here.** Stuffing visuals are placeholder confetti in each stuffing's colours. Phase 5 replaces them.
+

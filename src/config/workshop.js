@@ -46,11 +46,39 @@ export const workshopRitual = {
   },
 };
 
+// STUFFINGS: what a build does. Each round the bins offer todayCount of what is stocked. stockedBy = the zone that has to be owned (null = always).
+// gunSeconds = damage as seconds of the gun's own fire (weapons/gunStats.js gunPower), scaled again by the build's power.
+export const workshopStuffings = {
+  smoothie: {
+    name: 'Smoothie', stockedBy: null, color: 0xff7fb2, blurb: 'Slows everything round the hit',
+    slow: { seconds: 3, fraction: .55, radius: 2.5 },
+    pop: { colors: [0xff7fb2, 0xffd1e3, 0xfff3d4], count: 8, speed: 1.6, size: .05 },
+  },
+  fryerOil: {
+    name: 'Fryer Oil', stockedBy: 'foodCourt', color: 0xf0a020, blurb: 'Sets the target burning',
+    burn: { gunSeconds: .35, seconds: 3, tickSeconds: .5, radius: 1.2 },
+    pop: { colors: [0xff8a1f, 0xffd24a, 0xff4d1f], count: 8, speed: 2, size: .05 },
+  },
+  neonTube: {
+    name: 'Neon Tube', stockedBy: 'megaMart', color: 0x4fe0ff, blurb: 'Arcs to nearby zombies',
+    chain: { gunSeconds: .08, jumps: 2, range: 5, falloff: .8 },
+    pop: { colors: [0x4fe0ff, 0xc9f5ff, 0xff4fd8], count: 8, speed: 2.4, size: .045 },
+  },
+};
+export const todayCount = 3; // bins open per round
+
+// HEARTS: when a build fires. strength multiplies the stuffing; cooldownSeconds stops a fast gun firing it every shot.
+export const workshopHearts = {
+  headshot: { name: 'Headshot', blurb: 'Fires on a headshot', strength: 1, cooldownSeconds: .75 },
+  lastRound: { name: 'Last Round', blurb: 'Fires on the last round in the magazine', strength: 1.5, cooldownSeconds: 0 },
+};
+
 export const qualityFor = (kills) =>
   workshopRitual.qualities.reduce((best, q) => (kills >= q.minKills ? q : best), workshopRitual.qualities[0]);
+export const qualityById = (id) => workshopRitual.qualities.find(q => q.id === id);
 export const nextQualityFor = (kills) => workshopRitual.qualities.find(q => q.minKills > kills) ?? null;
 export const stageFor = (fraction) =>
   workshopRitual.stages.reduce((best, stage) => (fraction >= stage.at ? stage : best), workshopRitual.stages[0]);
 
-// A finished ritual lives on the gun as a mod: { id: 'build', build: { quality, kills, ... } }. It stacks with tiers and attachments.
+// A finished ritual lives on the gun as a mod: { id: 'build', build: { stuffing, heart, quality, kills } }. It stacks with tiers and attachments.
 export const buildOf = (mods) => mods?.find(m => m.id === 'build')?.build ?? null;

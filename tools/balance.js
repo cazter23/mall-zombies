@@ -26,7 +26,7 @@
 
 import * as THREE from 'three';
 import { applyConeSpread, pelletSpreadDegrees } from '../src/weapons/aim.js';
-import { hitDamage } from '../src/weapons/gunStats.js';
+import { hitDamage, cycleSeconds } from '../src/weapons/gunStats.js';
 import { zombieTypes } from '../src/config/zombies.js';
 import { feel } from '../src/config/feel.js';
 import { seededRandom } from '../src/world/textures.js';
@@ -36,11 +36,7 @@ const EYE = feel.player.eyeHeight;
 const CHEST = hb.bodyTop * 0.7; // aim point: the middle of the chest
 const NO_STATS = { damageMultiplier: 1 };
 
-export function cycleSeconds(def) {
-  if (def.fireMode === 'burst') return def.burst.interval * (def.burst.count - 1) + def.fireInterval;
-  if (def.fireMode === 'charge') return def.charge.seconds + def.fireInterval;
-  return def.fireInterval;
-}
+export { cycleSeconds }; // (weapons/gunStats.js: the game's own number)
 
 export function magazineSeconds(def) {
   if (def.fireMode === 'burst') {

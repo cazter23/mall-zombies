@@ -3,8 +3,9 @@ import { workshopBuilds, workshopModOf } from '../../config/workshop.js';
 import { castShot } from '../../weapons/hitscan.js';
 import { createClearanceRack } from './clearanceRack.js';
 import { createWorkshopRitual } from './workshopRitual.js';
+import { createBuildEffects } from './workshopStuffings.js';
 
-export function buildWorkshop(bench, { map, gun, pricing, interactions, events, player, scene, zombies, colliders, effects, sound }) {
+export function buildWorkshop(bench, { map, gun, pricing, interactions, events, player, scene, zombies, colliders, effects, sound, stats, state }) {
   const builds = Object.entries(workshopBuilds);
   const currentBuild = () => builds.find(([, build]) => build.weapon === gun.def.id);
   interactions.add({
@@ -29,6 +30,7 @@ export function buildWorkshop(bench, { map, gun, pricing, interactions, events, 
   });
 
   const ritual = createWorkshopRitual({ bench, map, gun, pricing, interactions, events, player, zombies, scene });
+  const buildEffects = createBuildEffects({ events, gun, zombies, colliders, effects, stats, state });
   const trap = workshopBuilds.partyTrap;
   const clearance = createClearanceRack({ gun, zombies, effects, sound });
   events.on('shot', ({ clearanceHit }) => { if (clearanceHit) clearance.hit(clearanceHit); });
@@ -94,11 +96,13 @@ export function buildWorkshop(bench, { map, gun, pricing, interactions, events, 
       clearance.update();
       updateTraps(dt);
       ritual.update(dt);
+      buildEffects.update(dt);
     },
     reset() {
       while (traps.length) removeTrap(traps.length - 1);
       clearance.reset();
       ritual.reset();
+      buildEffects.reset();
     },
   };
 }

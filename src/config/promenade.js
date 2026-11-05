@@ -54,6 +54,9 @@ export const promenade = {
       wood: 0x99724f, paper: 0xf5ebd6, red: 0xc64140, lamp: 0xffcb8a, glass: 0xe2f7ef },
     lamp: { x: 0, height: 2.55, offsetZ: 2.2, color: 0xffce99, intensity: 1.05, distance: 7 },
     rideHeight: .22, // the gun rides this far above the belt
+    // One bin per stuffing down the west cubby, one heart per Heart up the east cubby (from the bench's end towards the doors).
+    bins: { firstOffsetZ: 2.42, spacing: .5, width: .42, sill: .8, top: 1.14, promptHeight: 1.05 },
+    hearts: { firstOffsetZ: 2.6, spacing: .75, height: 1.45, size: .34, promptHeight: 1.45 },
     // The back hall (Build-A-Blaster ritual room). It sits above HOFFMAN'S and the start room; the Atrium's exterior wall
     // starts at x 5.27, so the east wall stops short of it. Lanes round the island stay >= 3 m (tests/workshopRoom.test.js).
     hall: {

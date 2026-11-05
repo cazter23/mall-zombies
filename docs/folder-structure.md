@@ -22,10 +22,11 @@ src/
   game/features/retailUnease.js Called by the existing horror feature: unseen mannequin turn, shared empty-concourse TV feed,
                         distant upstairs silhouette. Quiet intervals, comfort gates, reset and static-batching-safe hooks.
   boot.js               The page's entry point: waits for the web fonts (core/fontsReady.js, list and time limit in config/fonts.js), then imports main.js.
-  config/workshop.js    Build-A-Blaster builds: which gun, trap and tag numbers, pop effects; workshopModOf reads a gun's build.
+  config/workshop.js    Build-A-Blaster: Limited Edition numbers (workshopBuilds), the ritual (workshopRitual: time, qualities, stages, loaner, PA), Stuffings and Hearts, buildOf reads a gun's finished build.
   game/features/workshop.js The workshop feature: builds the ritual, sells the Limited Editions from the shelf behind the window, runs Party Trap charges.
   game/features/workshopRitual.js The Build-A-Blaster ritual: idle, running, ready. Bench, gun on the conveyor, gauge, lever, maximum time, Naming Booth, chute steering. Built by workshop.js.
-  ui/ritualHud.js       The order ticket on the HUD while a ritual runs (reads the ritual's status).
+  game/features/workshopStuffings.js What a finished build does: one function per Stuffing, one per Heart. Hearts read 'shot' and hand off to the stuffing; nothing here emits 'shot', so a stuffing's kills can't fire a Heart.
+  ui/ritualHud.js       The order ticket on the HUD: your picks, then the gun's stage, gauge and time (reads the ritual's status).
   game/features/clearanceRack.js Clearance Rack tags on up to three zombies; a headshot on a tagged zombie pops them all.
   game/features/clearanceSticker.js The canvas sticker drawn on tagged zombies.
   zombies/partyTrapDeath.js The pose, ribbon and confetti after a trap kill. The kill is paid on impact; this is visual only.

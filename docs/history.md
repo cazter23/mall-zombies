@@ -15,6 +15,10 @@ the slot itself leaves the loadout, so ammo and upgrades wait with it. zombieMan
 booth) use kind 'ritual', because main.js looks up a shelf price for any kind in PRICE_CATEGORIES and 'workshop' has none for them. The bench took over feature.position, so the Limited Editions moved to a
 shelf behind the window (feature.limitedEdition). Spawn steering only applies while the player is in the room, so a ritual can't be used to send a round's zombies far from you.
 
+Phase 3, Stuffings and Hearts: picks happen at physical bins and a Heart wall in the storefront, not in a menu. game/features/workshopStuffings.js is one function per Stuffing and per Heart, so any pair works.
+Stuffings scale from gunPower (weapons/gunStats.js: one second of the gun's fire), not from one shot: shots range from 30 to 840 damage, so a per-shot scale made the Cannon's procs 28 times the Staple Gun's. cycleSeconds moved
+from tools/balance.js into gunStats.js so the game and the report share it. Zombies gained a burn status (zombie.applyBurn) paid through takeHit with source 'build'. Interactions gained `blocked`: a prompt that shows why it can't be bought yet.
+
 ## 4 November 2026 — tenant branding and font loading
 
 Mega Mart and Hoffman's got their own tenant branding (config/look.js, zoneLooks.js, hallwayLook.js, textures.js).

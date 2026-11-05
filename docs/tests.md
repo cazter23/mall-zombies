@@ -11,6 +11,9 @@ reachable by zombies, a zombie following round each side, the hall as its own cu
 walking away and coming back, conveyor stages, the lever and booth only answering at the right time, gun purchases mid-ritual, upgrades staying on the gun, Play again and death
 mid-ritual, the chute steering spawns only while you are in the room, a full round where the chute adds no zombies and the round still ends, and the debug shortcut.
 
+`tests/workshopBuilds.test.js` covers finished builds: every Stuffing + Heart pair on real shots, a Last Round miss, burn ticks and no stacking, kills paying once, stuffing kills not firing a Heart, the Heart cooldown, walls and floors
+stopping stuffings, quality scaling, picking at the bins and the Heart wall, today's stock and area stocking, re-stuffing, stacking with tiers and attachments, and the round curve (a stuffing adds less than the gun itself, one proc never kills a full-health zombie from round 5).
+
 `tests/attachmentRework.test.js` covers paid run unlocks, discounted first purchases, free refits across replacement guns,
 ownership reset, reload blocking, ammo conservation/full-reserve overflow, fully-owned sale eligibility and four-slot builds.
 

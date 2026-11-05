@@ -48,6 +48,22 @@ export function hitDamage(def, hit, index, stats, chargeScale = 1) {
   return def.damage * chargeScale * head * damageFalloff(hit.distance, def.falloff) * pierce * stats.damageMultiplier;
 }
 
+/** One trigger cycle (a burst counts as one cycle). */
+export function cycleSeconds(def) {
+  if (def.fireMode === 'burst') return def.burst.interval * (def.burst.count - 1) + def.fireInterval;
+  if (def.fireMode === 'charge') return def.charge.seconds + def.fireInterval;
+  return def.fireInterval;
+}
+
+/**
+ * One second of this gun's fire at full damage (body, no falloff, no reloads). Build-A-Blaster's stuffings scale from this rather
+ * than from one shot, so a slow heavy gun and a fast light one get comparable effects. Tiers and player stats count.
+ */
+export function gunPower(def, stats) {
+  const perCycle = def.damage * (def.pellets?.count ?? 1) * (def.burst?.count ?? 1);
+  return (perCycle / cycleSeconds(def)) * stats.damageMultiplier;
+}
+
 const OP_ORDER = { set: 0, add: 1, mul: 2 };
 
 // Stats that are counts: rounded to the nearest whole number (at least 1) after mods.

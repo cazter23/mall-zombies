@@ -11,12 +11,15 @@
 // DOM-free: it listens and announces on g.events (game/events.js lists the 'ritual*' events), and main.js reads .status for
 // the HUD. Its only runtime objects are the gun on the conveyor and the steered spawns: reset() clears both.
 //
-//   stations (from the map feature): { rooms: [rects], lever, booth, chute: [spawn markers], path: [Vector3...] }
+// Before the bench: pick a Stuffing from today's bins and a Heart from the wall. Each round reopens todayCount bins, at random, from what
+// is stocked (owning an area stocks its stuffing). A gun that already has a build can be re-stuffed for the lower price.
+//
+//   stations (from the map feature): { rooms: [rects], lever, booth, chute: [spawn markers], path: [Vector3...], bins: [{ id, position, lamp }], hearts: [{ id, position }] }
 // =============================================================================
 
 import { buildWeaponDisplay } from '../../weapons/models/index.js';
 import { weapons } from '../../config/weapons.js';
-import { workshopRitual as cfg, qualityFor, nextQualityFor, stageFor } from '../../config/workshop.js';
+import { workshopRitual as cfg, workshopStuffings, workshopHearts, todayCount, buildOf, qualityFor, nextQualityFor, stageFor } from '../../config/workshop.js';
 import * as THREE from 'three';
 
 const copyWithName = (def, name) => ({ ...def, name });
@@ -45,6 +48,33 @@ export function createWorkshopRitual({ bench, map, gun, pricing, interactions, e
   let riding = 0; // how far along the belt the gun is drawn (0..1)
   let display = null; // the gun on the conveyor
   let steering = false;
+  let pick = { stuffing: null, heart: null }; // what the next order will be
+  let today = []; // the stuffing ids in the bins this round
+
+  const stocked = () => Object.keys(workshopStuffings).filter((id) => {
+    const zone = workshopStuffings[id].stockedBy;
+    return zone === null || map.zones[zone].open;
+  });
+
+  function setToday(ids) {
+    today = ids;
+    if (pick.stuffing && !today.includes(pick.stuffing)) pick.stuffing = null;
+    for (const bin of stations.bins) bin.lamp.visible = today.includes(bin.id);
+  }
+
+  function rollToday() {
+    const pool = stocked();
+    const chosen = [];
+    while (chosen.length < todayCount && pool.length) chosen.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+    setToday(chosen);
+  }
+
+  // A newly stocked stuffing doesn't wait for the next round if a bin is still empty.
+  function fillEmptyBins() {
+    if (today.length >= todayCount) return;
+    const extra = stocked().filter((id) => !today.includes(id));
+    if (extra.length) setToday([...today, ...extra.slice(0, todayCount - today.length)]);
+  }
 
   const inside = (p) => stations.rooms.some((r) => p.x >= r.minX && p.x <= r.maxX && p.z >= r.minZ && p.z <= r.maxZ
     && p.y >= r.minY && p.y <= r.maxY);
@@ -74,10 +104,14 @@ export function createWorkshopRitual({ bench, map, gun, pricing, interactions, e
     display = null;
   }
 
+  const hasBuild = () => buildOf(gun.modsFor(gun.def.id)) !== null;
+
   function start() {
     const def = gun.def;
-    const restuff = false;
-    order = { gunId: def.id, gunName: def.name, restuff, elapsed: 0, kills: 0, stage: cfg.stages[0], reason: null, quality: null };
+    const restuff = hasBuild();
+    order = { gunId: def.id, gunName: def.name, restuff, stuffing: pick.stuffing, heart: pick.heart,
+      elapsed: 0, kills: 0, stage: cfg.stages[0], reason: null, quality: null };
+    pick = { stuffing: null, heart: null };
     const loaner = gun.slots.length === 1;
     gun.handOver(copyWithName(weapons[cfg.loaner.weapon], cfg.loaner.name));
     phase = 'running';
@@ -94,7 +128,7 @@ export function createWorkshopRitual({ bench, map, gun, pricing, interactions, e
   }
 
   function collect() {
-    const build = { quality: order.quality.id, kills: order.kills };
+    const build = { stuffing: order.stuffing, heart: order.heart, quality: order.quality.id, kills: order.kills };
     gun.collect((mods) => [...mods.filter((m) => m.id !== 'build'), { id: 'build', build }]);
     hideGun();
     const { gunId } = order;
@@ -103,14 +137,53 @@ export function createWorkshopRitual({ bench, map, gun, pricing, interactions, e
     events.emit('ritualCollect', { gunId, build, pa: cfg.pa.collect });
   }
 
+  for (const bin of stations.bins) {
+    const stuffing = workshopStuffings[bin.id];
+    interactions.add({
+      label: `${stuffing.name} picked`,
+      title: stuffing.name,
+      detail: stuffing.blurb,
+      kind: 'ritual',
+      id: `stuffing:${bin.id}`,
+      verb: 'pick',
+      cost: 0,
+      priceLabel: 'Free',
+      position: bin.position,
+      available: () => phase === 'idle' && map.zones[bench.zone].open && today.includes(bin.id) && pick.stuffing !== bin.id,
+      use: () => { pick.stuffing = bin.id; },
+    });
+  }
+  for (const spot of stations.hearts) {
+    const heart = workshopHearts[spot.id];
+    interactions.add({
+      label: `${heart.name} heart picked`,
+      title: `${heart.name} heart`,
+      detail: heart.blurb,
+      kind: 'ritual',
+      id: `heart:${spot.id}`,
+      verb: 'pick',
+      cost: 0,
+      priceLabel: 'Free',
+      position: spot.position,
+      available: () => phase === 'idle' && map.zones[bench.zone].open && pick.heart !== spot.id,
+      use: () => { pick.heart = spot.id; },
+    });
+  }
+
   interactions.add({
     get label() { return `${gun.def.name} handed over`; },
-    get title() { return `Build-A-Blaster: ${gun.def.name}`; },
-    detail: 'Hand it over. Fight in the room to fill the tank. Collect it at the Naming Booth.',
+    get title() { return `${hasBuild() ? 'Re-stuff' : 'Stuff'} your ${gun.def.name}`; },
+    get detail() {
+      if (!pick.stuffing || !pick.heart) return 'Pick a Stuffing from the bins and a Heart from the wall.';
+      return `${workshopStuffings[pick.stuffing].name} · ${workshopHearts[pick.heart].name} heart. Fight in the room to fill the tank.`;
+    },
+    get blocked() {
+      return !pick.stuffing ? 'Pick a Stuffing' : !pick.heart ? 'Pick a Heart' : null;
+    },
     kind: 'workshop',
-    id: 'ritual',
+    get id() { return hasBuild() ? 'restuff' : 'ritual'; },
     verb: 'stuff',
-    get cost() { return pricing.priceOf('workshop', 'ritual'); },
+    get cost() { return pricing.priceOf('workshop', this.id); },
     position: bench.position,
     available: () => phase === 'idle' && map.zones[bench.zone].open && !gun.isSwitching && !gun.isLoaner
       && !gun.weapon.isReloading && !gun.weapon.isBursting && !gun.weapon.isCharging,
@@ -146,6 +219,8 @@ export function createWorkshopRitual({ bench, map, gun, pricing, interactions, e
     use: collect,
   });
 
+  rollToday();
+  events.on('roundStart', rollToday);
   events.on('kill', ({ zombie }) => {
     if (phase !== 'running' || !inside(zombie.position)) return;
     order.kills += 1;
@@ -154,11 +229,21 @@ export function createWorkshopRitual({ bench, map, gun, pricing, interactions, e
 
   return {
     get phase() { return phase; },
-    /** For the HUD: null when idle. */
+    get today() { return today; },
+    get pick() { return pick; },
+    /** Pick for the next order, as the bins and Heart wall do (for tests and debugging). */
+    choose(stuffing, heart) { pick = { stuffing, heart }; },
+
+    /** For the HUD: null with nothing on order. */
     get status() {
-      if (phase === 'idle') return null;
+      if (phase === 'idle') {
+        if (!pick.stuffing && !pick.heart) return null;
+        return { phase: 'picking', stuffing: workshopStuffings[pick.stuffing]?.name ?? null, heart: workshopHearts[pick.heart]?.name ?? null };
+      }
       return {
         phase,
+        stuffingName: workshopStuffings[order.stuffing].name,
+        heartName: workshopHearts[order.heart].name,
         gunName: order.gunName,
         stage: order.stage.label,
         kills: order.kills,
@@ -169,6 +254,7 @@ export function createWorkshopRitual({ bench, map, gun, pricing, interactions, e
     },
 
     update(dt) {
+      fillEmptyBins();
       if (phase === 'idle') return;
       if (phase === 'running') {
         steer(inside(player.position)); // run from the room and the zombies go back to finding you the normal way
@@ -192,6 +278,8 @@ export function createWorkshopRitual({ bench, map, gun, pricing, interactions, e
       phase = 'idle';
       order = null;
       riding = 0;
+      pick = { stuffing: null, heart: null };
+      rollToday();
       steer(false);
       hideGun();
     },

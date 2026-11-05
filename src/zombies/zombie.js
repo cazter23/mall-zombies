@@ -69,6 +69,7 @@ export class Zombie {
     this.staggerDrag = 0;
     this.slowTimer = 0;
     this.slowFraction = 1;
+    this.burn = null; // Fryer Oil: { perTick, tickSeconds, nextTick, left }, or null
     this.deathImpulse = 1;
     this.deathTwist = 0;
     this.lastHitDir = null;
@@ -200,6 +201,29 @@ export class Zombie {
     this.slowTimer = Math.max(this.slowTimer, seconds);
   }
 
+  // Burning: `damage` in total over `seconds`, paid in ticks through takeHit, so a kill counts like any other. A new burn
+  // restarts the clock and never weakens one already burning. Burns don't stack: re-lighting a zombie doesn't add damage.
+  applyBurn(damage, seconds, tickSeconds) {
+    if (!this.isAlive || this.state === 'spawning') return;
+    const perTick = (damage * tickSeconds) / seconds;
+    this.burn = { perTick: Math.max(perTick, this.burn?.perTick ?? 0), tickSeconds, nextTick: this.burn?.nextTick ?? tickSeconds, left: seconds };
+  }
+
+  updateBurn(dt) {
+    if (!this.burn) return;
+    if (!this.isAlive) {
+      this.burn = null;
+      return;
+    }
+    this.burn.left -= dt;
+    this.burn.nextTick -= dt;
+    if (this.burn.nextTick <= 1e-9) {
+      this.burn.nextTick += this.burn.tickSeconds;
+      this.takeHit({ damage: this.burn.perTick, part: 'body', source: 'build' });
+    }
+    if (this.burn && this.burn.left <= 1e-9) this.burn = null;
+  }
+
   updateHitboxes() {
     const p = this.position;
     const hb = this.type.hitbox;
@@ -234,6 +258,7 @@ export class Zombie {
     this.chargeCooldown = Math.max(0, this.chargeCooldown - dt);
     this.slowTimer = Math.max(0, this.slowTimer - dt);
     if (this.slowTimer === 0) this.slowFraction = 1;
+    this.updateBurn(dt);
     const attack = this.type.attack;
     const charge = this.type.charge;
 

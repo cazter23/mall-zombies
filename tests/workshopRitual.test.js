@@ -34,7 +34,7 @@ function fixture({ guns = [weapons.nailGun], points = 10000, liveRounds = false 
     ...t, bench, ritual,
     /** Stand at the bench and hold interact. */
     atBench() { face(bench.position, bench.position.x, bench.position.z - 1, Math.PI); },
-    startRitual() { this.atBench(); hold(); },
+    startRitual() { ritual.choose('smoothie', 'headshot'); this.atBench(); hold(); },
     atLever() { const s = bench.stations.lever; face(s, s.x - 1, s.z, -Math.PI / 2); },
     pullLever() { this.atLever(); hold(); },
     atBooth() { const s = bench.stations.booth; face(s, s.x - 1, s.z, -Math.PI / 2); },
@@ -53,6 +53,7 @@ function fixture({ guns = [weapons.nailGun], points = 10000, liveRounds = false 
 test('the bench charges the live price, takes the gun in hand and brings up your other gun', () => {
   const t = fixture({ guns: [weapons.nailGun] }), { g, ritual } = t;
   assert.deepEqual(g.gun.slots, ['stapleGun', 'nailGun']);
+  ritual.choose('smoothie', 'headshot');
   t.atBench();
   assert.equal(g.interactions.prompt?.id, 'ritual');
   assert.equal(g.interactions.prompt.cost, economy.upgrades.workshop.ritual);
@@ -118,7 +119,7 @@ test('kills fill the gauge only in the room, and the kill count sets the quality
   assert.equal(ritual.status.kills, 10, 'the tank is sealed once the ritual ends');
   t.collect();
   const build = buildOf(g.gun.modsFor('nailGun'));
-  assert.deepEqual(build, { quality: 'extraStuffed', kills: 10 });
+  assert.deepEqual(build, { stuffing: 'smoothie', heart: 'headshot', quality: 'extraStuffed', kills: 10 });
   g.map.dispose();
 });
 
@@ -202,7 +203,7 @@ test('the lever and booth only answer at the right time, and the bench takes one
   t.collect();
   t.tick(30);
   t.atBench();
-  assert.equal(g.interactions.prompt?.id, 'ritual', 'free again');
+  assert.equal(g.interactions.prompt?.id, 'restuff', 'free again, and this gun now has a build');
   g.map.dispose();
 });
 
@@ -224,6 +225,7 @@ test('free actions cost nothing, and a player who cannot afford the bench gets a
 test('a bench discount reaches the ritual price', () => {
   const t = fixture(), { g } = t;
   g.pricing.setDiscount('workshop', .5);
+  t.ritual.choose('smoothie', 'headshot');
   t.atBench();
   assert.equal(g.interactions.prompt.cost, g.pricing.priceOf('workshop', 'ritual'));
   assert.ok(g.interactions.prompt.cost < economy.upgrades.workshop.ritual);
@@ -304,6 +306,8 @@ test('a Limited Edition and a ritual sit on one gun without getting in each othe
   g.player.teleport({ position: new THREE.Vector3(shelf.x, Y, shelf.z + 1.1), yaw: 0 }); t.tick();
   assert.equal(g.interactions.prompt?.id, 'clearanceRack');
   t.press('KeyF', 20);
+  t.atBench();
+  t.ritual.choose('smoothie', 'lastRound');
   t.atBench();
   assert.equal(g.interactions.prompt?.id, 'ritual', 'same gun, at the bench');
   t.press('KeyF', 20);

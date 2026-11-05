@@ -211,6 +211,7 @@ export function createPlayerGun({
       }
     }
     shot.weaponId = d.id; // capture the firing gun, even if a kill listener switches the loadout
+    shot.magazineLeft = weapon.magazine; // (Build-A-Blaster's Last Round heart)
     if (workshop === 'clearanceRack') {
       const resolvedHit = targets.values().next().value;
       if (resolvedHit) shot.clearanceHit = { ...resolvedHit, weapon, baseDamage: d.damage };
@@ -271,6 +272,11 @@ export function createPlayerGun({
 
     owns(id) {
       return slots.some((s) => s.def.id === id);
+    },
+
+    // The resolved gun with this id (or null).
+    defOf(id) {
+      return slots.find((s) => s.def.id === id)?.def ?? null;
     },
 
     // The carried Weapon with this id (or null).

@@ -42,6 +42,7 @@
 //   'ritualKill'  { zombie, kills, quality }              a kill in the room went into the tank
 //   'ritualReady' { gunId, kills, quality, reason 'lever' | 'time', pa }  the gun is waiting at the Naming Booth
 //   'ritualCollect' { gunId, build, pa }                  the player took the finished gun
+//   'buildFired'  { stuffing, heart, weaponId, hit: [zombie] }  a finished build's Heart fired its stuffing (game/features/workshopStuffings.js)
 //   'runReset'    {}                                     after Play again reset everything
 // =============================================================================
 

@@ -6,6 +6,8 @@
 // =============================================================================
 
 import { weapons } from '../src/config/weapons.js';
+import { workshopRitual, workshopStuffings, workshopHearts } from '../src/config/workshop.js';
+import { gunPower } from '../src/weapons/gunStats.js';
 import { economy, zombieHealthForRound } from '../src/config/economy.js';
 import {
   cycleSeconds, magazineSeconds, reloadSeconds, expectedShotDamage, burstDps, sustainedDps, shotsToKill,
@@ -56,3 +58,17 @@ console.table([1.5, 3, 4, 5, 7, 9, 12].map((m) => ({
   hip: r0(expectedShotDamage(cannon, m)),
   aimed: r0(expectedShotDamage(cannon, m, { ads: true })),
 })));
+
+// Build-A-Blaster: what a build adds. One proc on a target, at each quality, against the zombie health it meets.
+const noStats = { damageMultiplier: 1 };
+console.log('\nBUILD-A-BLASTER: damage of one proc (Headshot heart; Last Round is x' + workshopHearts.lastRound.strength + ')');
+console.table(guns.map((d) => {
+  const second = gunPower(d, noStats);
+  const row = { gun: d.name, 'gun per second': r0(second) };
+  for (const q of workshopRitual.qualities.slice(0, 3)) {
+    row[`burn ${q.name}`] = r0(second * workshopStuffings.fryerOil.burn.gunSeconds * q.power);
+    row[`arc ${q.name}`] = r0(second * workshopStuffings.neonTube.chain.gunSeconds * q.power);
+  }
+  return row;
+}));
+console.log('Zombie health for comparison: ' + [5, 10, 15, 20, 30].map((r) => `round ${r} ${zombieHealthForRound(r)}`).join(', '));

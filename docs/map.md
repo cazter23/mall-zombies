@@ -36,7 +36,7 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   now leads through the 1250-point Cinema area entrance. The east connection remains sealed for expansion.
   Main floor and annex are sections in config/promenade.js, independent of the hallway; navigation/grade follow the upper sections.
   BUILD-A-BLASTER is a walk-in workshop, part of the Promenade zone. Storefront: interior x -3.35..3.35, z 6.3..11.7, two entrances flanking a solid
-  glass display, parts cubbies down both walls, the order bench in the middle (x 0, z 9.4..10.28; prompt z 9.25) with a 1.8 m lane either side.
+  glass display, parts cubbies down both walls (west: the Stuffing bins on the bottom shelf, lit while in today's stock; east: the Heart wall), the order bench in the middle (x 0, z 9.4..10.28; prompt z 9.25) with a 1.8 m lane either side.
   Back hall (section 'workshopHall'): interior x -9.5..4.9, z 12..26.5, 4.8 m high, reached through a 6.7 m wide, 3.2 m high mouth. It sits on its
   own slab over HOFFMAN'S and the start room; the east wall stops at x 5.2 because the Atrium's exterior wall starts at 5.27. The island
   (x -6.1..0.5, z 15.7..22.3) is the Stuffing Tank (centre -2.8, 19) plus a U-shaped conveyor open to the east, behind a glass guard: one

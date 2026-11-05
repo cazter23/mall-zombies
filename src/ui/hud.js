@@ -402,7 +402,7 @@ export function createHud() {
     // `button` is the interact button for the device in use ("F", "X", "□").
     setInteract(info, button = 'F') {
       const key = info
-        ? JSON.stringify([info.title, info.label, info.verb, info.detail, info.kind, info.cost, info.originalCost, info.shortfall, info.canAfford, info.denied, button, info.progress.toFixed(2), !!info.sale])
+        ? JSON.stringify([info.blocked, info.title, info.label, info.verb, info.detail, info.kind, info.cost, info.originalCost, info.shortfall, info.canAfford, info.denied, button, info.progress.toFixed(2), !!info.sale])
         : '';
       if (key === lastInteractKey) return;
       lastInteractKey = key;
@@ -415,8 +415,8 @@ export function createHud() {
       // Ordinary purchases need one line. Keep the terms only where they affect an upgrade decision.
       interactDetail.textContent = (info.kind === 'attachment' || info.kind === 'workshop' || info.kind === 'ritual') ? info.detail ?? '' : info.kind === 'tier' ? 'Ammo not included' : '';
       interactButton.textContent = button;
-      interactStatus.textContent = !info.canAfford ? `Need ${(info.shortfall ?? 0).toLocaleString('en-US')} more` : '';
-      interact.classList.toggle('cant', !info.canAfford);
+      interactStatus.textContent = info.blocked ?? (!info.canAfford ? `Need ${(info.shortfall ?? 0).toLocaleString('en-US')} more` : '');
+      interact.classList.toggle('cant', !info.canAfford || !!info.blocked);
       interact.classList.toggle('sale', !!info.sale);
       interact.classList.toggle('denied', info.denied);
       interactFill.style.transform = `scaleX(${info.progress})`;

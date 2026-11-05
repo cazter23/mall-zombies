@@ -12,6 +12,7 @@
 //   cost         points (number)
 //   title/detail optional shelf-ticket heading and explanation (strings or getters); label remains the purchase-event text
 //   priceLabel   optional text instead of the number on the ticket (a free action: "Free")
+//   blocked      optional text (string or getter): shown on the ticket instead of being bought, and refused like too few points
 //   position     THREE.Vector3 the player interacts with (distance + facing are measured to it)
 //   seeThrough   optional [Box3]: solids that don't block the line of sight to it (a door's own shutter)
 //   available()  false once it can't be used any more (an opened door)
@@ -96,6 +97,11 @@ export function createInteractions({ input, player, wallet, sound = null, onRelo
   }
 
   function tryBuy(item) {
+    if (item.blocked) {
+      deniedTimer = cfg.deniedSeconds;
+      if (sound) sound.play('denied');
+      return;
+    }
     // What is being bought, as it is NOW (use() can change it: a bought gun's prompt becomes its ammo).
     const purchase = { label: item.label, cost: item.cost, kind: item.kind ?? 'other', id: item.id ?? null };
     if (wallet.spend(purchase.cost)) {
@@ -133,6 +139,7 @@ export function createInteractions({ input, player, wallet, sound = null, onRelo
         detail: focused.detail ?? '',
         owned: focused.owned ?? false,
         priceLabel: focused.priceLabel ?? null, // shown instead of the number ("Free")
+        blocked: focused.blocked ?? null,
         shortfall: Math.max(0, focused.cost - wallet.points),
         cost: focused.cost,
         canAfford: wallet.canAfford(focused.cost),

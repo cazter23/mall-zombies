@@ -19,6 +19,15 @@ export function createRitualHud() {
         lastKey = '';
         return;
       }
+      if (status.phase === 'picking') {
+        const key = `picking|${status.stuffing}|${status.heart}`;
+        if (key === lastKey) return;
+        lastKey = key;
+        heading.textContent = 'Build-A-Blaster · Your order';
+        stage.textContent = `Stuffing: ${status.stuffing ?? 'pick one from the bins'}`;
+        gauge.textContent = `Heart: ${status.heart ?? 'pick one from the wall'}`;
+        return;
+      }
       const { phase, gunName, kills, quality, next, secondsLeft } = status;
       const key = `${phase}|${gunName}|${status.stage}|${kills}|${quality.id}|${Math.ceil(secondsLeft)}`;
       if (key === lastKey) return;
