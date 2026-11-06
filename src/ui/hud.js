@@ -10,6 +10,7 @@ import { feel } from '../config/feel.js';
 import { createScreens } from './screens.js';
 import { createIncentiveHud } from './incentiveHud.js';
 import { createRitualHud } from './ritualHud.js';
+import { createBagMarker } from './bagMarker.js';
 import { createBirthCertificate } from './birthCertificate.js';
 import { gunLabel } from '../config/workshop.js';
 import { createAnnouncements } from './announcements.js';
@@ -28,6 +29,8 @@ export function createHud() {
   hud.append(incentives.element);
   const ritualTicket = createRitualHud();
   hud.append(ritualTicket.element);
+  const bagMarker = createBagMarker();
+  hud.append(bagMarker.element);
   const certificate = createBirthCertificate();
   hud.append(certificate.element);
 
@@ -227,7 +230,12 @@ export function createHud() {
       ritualTicket.update(status);
     },
 
-    // The Birth Certificate, at collection: { name, gunName, stuffing, heart, quality, kills, round, remark }.
+    // A dropped Limited Edition's direction: null hides it (game/features/limitedEditions.js status).
+    setLimitedEdition(status) {
+      bagMarker.update(status);
+    },
+
+    // The Birth Certificate, at collection: { name, gunName, combo, stuffing, heart, quality, kills, round, remark, note }.
     showCertificate(fields) {
       certificate.show(fields);
     },

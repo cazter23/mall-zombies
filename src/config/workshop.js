@@ -23,6 +23,7 @@ export const workshopModOf = (mods) => mods?.find(m => m.id === 'workshop')?.wor
 // game/features/limitedEditions.js
 export const limitedEditionDrops = {
   fromRound: 3,
+  marker: { floorGap: 2, up: 'upstairs', down: 'downstairs' }, // the HUD says which floor once the bag is this many metres above or below you
   dropChance: .15, // per kill of a zombie carrying a shopping bag
   lifetimeSeconds: 30, // how long a bag waits on the floor
   pickupRadius: 1.1, pickupHeight: 1.2,
@@ -41,7 +42,7 @@ export const workshopRitual = {
     { id: 'understuffed', name: 'Understuffed', minKills: 0, power: 1 },
     { id: 'regular', name: 'Regular', minKills: 4, power: 1.35 },
     { id: 'extraStuffed', name: 'Extra Stuffed', minKills: 9, power: 1.7 },
-    { id: 'overstuffed', name: 'Overstuffed', minKills: 15, power: 1.7, bulge: true },
+    { id: 'overstuffed', name: 'Overstuffed', minKills: 15, power: 2.1, heartCooldown: .5, bulge: true }, // heartCooldown: x the Heart's cooldown
   ],
   // Where your gun is along the conveyor (fraction of maxSeconds).
   stages: [
@@ -70,6 +71,11 @@ export const workshopRitual = {
   },
   // Lent to a player who hands over their only gun, taken back at collection. Plain: no upgrades can be bought for it.
   loaner: { weapon: 'stapleGun', name: 'Courtesy Loaner' },
+  // Printed on the Birth Certificate when the Loaner was lent.
+  loanerNotes: {
+    returned: 'Courtesy Loaner returned. Late fee waived, this once.',
+    lost: 'Courtesy Loaner not returned. Late fee: everything you own.',
+  },
   chuteDropHeight: 1.5, // a return falls this far out of the hatch (replaces rising from the floor)
   // PA lines. {gun} and {name} are filled in by the ritual. A quality's line plays when the gauge first reaches it.
   pa: {
@@ -160,6 +166,20 @@ export const workshopHearts = {
 export const workshopNames = ['Gerald', 'Doris', 'Mavis', 'Todd', 'Nigel', 'Beverly', 'Clive', 'Agnes', 'Stanley', 'Rhonda', 'Gus', 'Mildred',
   'Dale', 'Phyllis', 'Norman', 'Bernice', 'Wendell', 'Trudy', 'Earl', 'Hortense', 'Steve', 'Lorraine', 'Vern', 'Gladys'];
 
+// What a Stuffing and Heart make together: the model name on the Birth Certificate and the receipt.
+export const workshopComboNames = {
+  smoothie: { headshot: 'Brain Freeze', lastRound: 'Last Sip', reload: 'Free Refill', everyTenth: 'Punch Card' },
+  fryerOil: { headshot: 'Hot Head', lastRound: 'Final Fry', reload: 'Grease Fire', everyTenth: 'Combo Meal' },
+  neonTube: { headshot: 'Bright Idea', lastRound: 'Closing Time', reload: 'Power Surge', everyTenth: 'Vacancy' },
+  popcornButter: { headshot: 'Extra Butter', lastRound: 'End Credits', reload: 'Bottomless Tub', everyTenth: 'Matinee Special' },
+  antifreeze: { headshot: 'Cold Call', lastRound: 'Deep Freeze', reload: 'Cold Snap', everyTenth: 'Frequent Freezer' },
+  glitter: { headshot: 'Razzle Dazzle', lastRound: 'Grand Finale', reload: 'Glitter Bomb', everyTenth: 'Party Favor' },
+};
+export const comboName = ({ stuffing, heart }) => workshopComboNames[stuffing][heart];
+
+/** A named gun on the death receipt: "Gerald (Grand Finale), 212 confirmed". */
+export const survivorLine = ({ name, combo, confirmed }) => `${name} (${combo}), ${confirmed} confirmed`;
+
 export const qualityFor = (kills) =>
   workshopRitual.qualities.reduce((best, q) => (kills >= q.minKills ? q : best), workshopRitual.qualities[0]);
 export const qualityById = (id) => workshopRitual.qualities.find(q => q.id === id);
@@ -167,7 +187,8 @@ export const nextQualityFor = (kills) => workshopRitual.qualities.find(q => q.mi
 export const stageFor = (fraction) =>
   workshopRitual.stages.reduce((best, stage) => (fraction >= stage.at ? stage : best), workshopRitual.stages[0]);
 
-// A finished ritual lives on the gun as a mod: { id: 'build', build: { stuffing, heart, quality, kills } }. It stacks with tiers and attachments.
+// A finished ritual lives on the gun as a mod: { id: 'build', build: { name, stuffing, heart, quality, kills, confirmed } }. kills = what filled the tank,
+// confirmed = the gun's kills since it was named, kept through a re-stuff. It stacks with tiers and attachments.
 export const buildOf = (mods) => mods?.find(m => m.id === 'build')?.build ?? null;
 
 /** What a gun is called on the HUD: "Gerald · Nail Gun" once it has been named. `def` is a resolved gun. */

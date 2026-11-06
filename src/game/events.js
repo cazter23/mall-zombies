@@ -19,6 +19,7 @@
 //                                                        future 'hazard' / 'effect'...). ALL kill payouts and kill
 //                                                        stats come from this one event. After the player's death
 //                                                        events still fire, but nothing more is paid or counted.
+//   'mascotHeadPop' { zombie, headshot, source }         Sir Waffles' helmet came off at half health (whatever hit him)
 //   'playerHit'   { damage, zombie, knockback }          a zombie's swing (or a cart charge) landed;
 //                                                        knockback = { x, z } m/s shove or null
 //   'playerDeath' {}                                     after the death is registered (onPlayerDeath)

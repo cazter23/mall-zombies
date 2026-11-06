@@ -20,6 +20,7 @@ const { chestHeight: CHEST_HEIGHT, missOffset: MISS_OFFSET, floorSearch: FLOOR_S
 
 export function createBuildEffects({ events, gun, player, zombies, colliders, effects, stats, state, sound, scene }) {
   const heartCooldowns = new Map(); // weapon id -> seconds until its Heart can fire again
+  let firing = null; // the weapon id whose stuffing is going off right now (its instant kills belong to that gun)
   const killCounts = new Map(); // weapon id -> kills for Every 10th
   let emberTimer = 0;
   const chest = (zombie) => from.copy(zombie.position).setY(zombie.position.y + CHEST_HEIGHT);
@@ -190,8 +191,11 @@ export function createBuildEffects({ events, gun, player, zombies, colliders, ef
     const spot = target ? target.position.clone() : point.clone().setY(point.y - CHEST_HEIGHT);
     const power = qualityById(build.quality).power * heart.strength;
     const gunSecond = gunPower(gun.defOf(weaponId), stats);
+    firing = weaponId;
     const hit = STUFFINGS[build.stuffing]({ spot, target, power, gunSecond });
+    firing = null;
     for (const zombie of hit) {
+      zombie.stuffedBy = weaponId; // (a burn or a confused blow can finish it later)
       effects.confetti(chest(zombie), UP, stuffing.pop);
     }
     if (burst) effects.confetti(chest({ position: spot }), UP, stuffing.pop);
@@ -205,12 +209,21 @@ export function createBuildEffects({ events, gun, player, zombies, colliders, ef
     const build = buildOf(gun.modsFor(weaponId));
     const trigger = build && HEARTS[build.heart]?.[name]?.(payload, weaponId); // (asked first: Every 10th has to count every kill)
     if (!trigger || (heartCooldowns.get(weaponId) ?? 0) > 0) return;
-    heartCooldowns.set(weaponId, workshopHearts[build.heart].cooldownSeconds);
+    heartCooldowns.set(weaponId, workshopHearts[build.heart].cooldownSeconds * (qualityById(build.quality).heartCooldown ?? 1));
     fire(build, weaponId, trigger);
   }
   events.on('shot', (shot) => offer('shot', shot, shot.weaponId));
   events.on('reload', (reload) => offer('reload', reload, reload.weaponId));
-  events.on('kill', (kill) => { if (kill.source === 'gun') offer('kill', kill, gun.def.id); });
+  // A named gun's record: its own kills and its stuffing's, for the receipt. Nothing counts once you're dead.
+  function confirmKill({ zombie, source }) {
+    const weaponId = source === 'gun' ? gun.def.id : source === 'build' ? firing ?? zombie.stuffedBy : null;
+    const build = !state.over && weaponId ? buildOf(gun.modsFor(weaponId)) : null;
+    if (build) build.confirmed = (build.confirmed ?? 0) + 1;
+  }
+  events.on('kill', (kill) => {
+    confirmKill(kill);
+    if (kill.source === 'gun') offer('kill', kill, gun.def.id);
+  });
 
   return {
     update(dt) {

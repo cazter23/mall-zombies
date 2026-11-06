@@ -368,9 +368,14 @@ export function createPlayerGun({
       return true;
     },
 
-    // The names of your Build-A-Blaster guns, whether carried or back at the workshop.
-    get buildNames() {
-      return [...slots, ...(away ? [away] : [])].map((s) => buildOf(s.mods)?.name).filter(Boolean);
+    // Your named Build-A-Blaster guns' builds, whether carried or back at the workshop.
+    get namedBuilds() {
+      return [...slots, ...(away ? [away] : [])].map((s) => buildOf(s.mods)).filter((build) => build?.name);
+    },
+
+    // Is the Courtesy Loaner still in your loadout? (A bought gun can replace it.)
+    get hasLoaner() {
+      return slots.some((s) => s.loaner);
     },
 
     // The gun of yours that collecting would replace (its name), or null if it costs you nothing.

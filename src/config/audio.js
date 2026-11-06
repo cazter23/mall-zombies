@@ -405,6 +405,14 @@ export const audio = {
         { type: 'noise', filter: 'lowpass', freq: 420, gain: 0.34, attack: 0.005, decay: 0.11 },
       ],
     },
+    // The warning before the rush: a rising, ragged howl from inside the costume.
+    mascotHowl: {
+      volume: 0.7,
+      layers: [
+        { type: 'tone', wave: 'sawtooth', freq: 95, freqEnd: 260, gain: 0.5, attack: 0.08, decay: 0.5, delay: 0.1 },
+        { type: 'noise', filter: 'bandpass', freq: 700, q: 1.6, gain: 0.26, attack: 0.1, decay: 0.45, delay: 0.1 },
+      ],
+    },
     mascotHeadPop: {
       volume: 0.82,
       layers: [

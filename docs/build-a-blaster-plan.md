@@ -65,7 +65,7 @@ The kill count from the gauge sets the quality, stored on the build and printed 
 | Understuffed | Base effect |
 | Regular | Stronger effect |
 | Extra Stuffed | Strongest effect |
-| Overstuffed | Strongest effect, and the gun visibly bulges and leaks stuffing |
+| Overstuffed | Stronger again, its Heart recharges twice as fast, and the gun visibly bulges and leaks stuffing |
 
 Thresholds, multipliers and the maximum time go in `config/workshop.js`. Starting point: 45 s maximum, thresholds 4 / 9 / 15 kills.
 Tune them by playing.

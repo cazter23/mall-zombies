@@ -104,10 +104,13 @@ export class Zombie {
     this.slot = null;
     this.slotKey = null;
     this.onDeath = null; // optional callback(zombie), set by the manager
+    this.onHeadPop = null; // optional callback(zombie, { helmet, headshot, source }) for the Mascot, set by the manager
+    this.stuffedBy = null; // the Build-A-Blaster gun whose stuffing last touched it (its kill counts for that gun)
     if (type.mascot) {
       this.mascotHeadOff = false;
       this.mascotDropAge = null;
       this.mascotWalkPhase = 0;
+      this.mascotRage = 0; // seconds left of the warning before the rush
     }
 
     // Shootable interface
@@ -156,10 +159,12 @@ export class Zombie {
     if (this.health > 0) {
       const mascot = this.type.mascot;
       if (mascot && !this.mascotHeadOff && this.health <= this.maxHealth * mascot.healthFraction) {
-        this.model.releaseHead(this);
+        const helmet = this.model.releaseHead(this);
         this.mascotHeadOff = true;
-        this.speed = mascot.exposedSpeed;
+        this.mascotRage = mascot.rage.seconds; // (it speeds up when this runs out)
+        if (this.state === 'windup' || this.state === 'swing') this.setState('chasing');
         this.updateHitboxes(); // the next shot can already hit the exposed head
+        this.onHeadPop?.(this, { helmet, headshot: part === 'head', source });
       }
       // Physical stagger knockback & brief micro-hitstop on live chasing zombies
       if (impact && direction && this.state === 'chasing' && this.speed > 0) {
@@ -298,7 +303,10 @@ export class Zombie {
     if (this.type.mascot) {
       this.mascotWalkPhase += this.horizontalSpeed * dt * this.type.mascot.pose.radiansPerMeter;
       if (this.mascotHeadOff) {
-        if (this.mascotDropAge === null) this.playSound(this.type.sounds.headPop, ctx);
+        if (this.mascotDropAge === null) {
+          this.playSound(this.type.sounds.headPop, ctx);
+          this.playSound(this.type.sounds.howl, ctx);
+        }
         this.mascotDropAge = (this.mascotDropAge ?? 0) + dt;
       }
     }
@@ -343,6 +351,16 @@ export class Zombie {
       this.velocity.z *= Math.exp(-this.staggerDrag * dt);
       this.velocity.y = Math.max(this.velocity.y - feel.movement.gravity * dt, -feel.movement.maxFallSpeed);
       moveAndCollide(this.position, this.velocity, dt, this.type.radius, this.type.height, ctx.colliders, feel.movement.stepTolerance);
+      this.updateHitboxes();
+      return;
+    }
+
+    // The Mascot's warning: it stands and shakes, then rushes at full speed.
+    if (this.mascotRage > 0 && this.isAlive && this.state !== 'spawning') {
+      this.mascotRage -= dt;
+      if (this.mascotRage <= 0) this.speed = this.type.mascot.exposedSpeed;
+      this.standStill(dt, ctx);
+      this.faceToward(ctx.player.position, dt);
       this.updateHitboxes();
       return;
     }

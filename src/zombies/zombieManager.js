@@ -15,6 +15,7 @@ import { zombieTypes, zombieCrowd, zombieFailsafe, zombieSpawn } from '../config
 import { economy, zombieHealthFor } from '../config/economy.js';
 import { createNavigation } from './navigation.js';
 import { overlapsSolid } from '../world/collision.js';
+import { castShot } from '../weapons/hitscan.js';
 import { Zombie } from './zombie.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
@@ -31,6 +32,7 @@ const UP = new THREE.Vector3(0, 1, 0);
  * @param canAttack    () => false once the player is dead
  * @param onPlayerHit  (damage, zombie) => apply a landed zombie hit to the player
  * @param onKill       optional (zombie) => called when a zombie dies (run stats, later points)
+ * @param onHeadPop    optional (zombie, { headshot, source }) => the Mascot's helmet came off
  * @param onSound      optional (name, volume) => play a zombie sound (Mall Walker squeaks, huffs, pants)
  * @param navigation   optional { floors, links } for maps with more than one floor (zombies/navigation.js)
  */
@@ -46,6 +48,7 @@ export function createZombieManager({
   canAttack,
   onPlayerHit,
   onKill = null,
+  onHeadPop = null,
   onSound = null,
   navigation = undefined,
 }) {
@@ -138,6 +141,31 @@ export function createZombieManager({
     });
     if (!zombie.type.plastic) effects.pool(zombie.position.x, zombie.position.z); // (red splatter only)
     if (onKill) onKill(zombie);
+  }
+
+  // Sir Waffles' fallen helmets: on the floor until the round ends, whatever became of the body.
+  const helmets = []; // [{ helmet, round }]
+  const helmetRay = new THREE.Vector3();
+  function keepHelmet(zombie, { helmet, headshot, source }) {
+    const { leftHelmets } = zombie.type.mascot;
+    // It lands short of any wall in the way, or it would sit half inside it for the rest of the round.
+    scratch.copy(zombie.position).setY(zombie.position.y + leftHelmets.rayHeight);
+    helmetRay.copy(helmet.landing).setY(scratch.y).sub(scratch);
+    const length = helmetRay.length();
+    if (length > 1e-3) {
+      const { worldHit, end } = castShot(scratch, helmetRay.normalize(), length, colliders, []);
+      if (worldHit) helmet.setReach(Math.max(0, (end.distanceTo(scratch) - leftHelmets.wallMargin) / length));
+    }
+    helmets.push({ helmet, round: getRound() });
+    while (helmets.length > leftHelmets.max) helmets.shift().helmet.dispose();
+    if (onHeadPop) onHeadPop(zombie, { headshot, source });
+  }
+  function updateHelmets(dt) {
+    const round = getRound();
+    for (let i = helmets.length - 1; i >= 0; i--) {
+      if (helmets[i].round === round) helmets[i].helmet.update(dt, player.position);
+      else helmets.splice(i, 1)[0].helmet.dispose();
+    }
   }
 
   const stepTol = feel.movement.stepTolerance;
@@ -386,6 +414,7 @@ export function createZombieManager({
       const speed = pickGaitSpeed(type, round);
       const zombie = new Zombie({ type, health: zombieHealthFor(typeId, round), position, yaw, speed, round });
       zombie.onDeath = onZombieDeath;
+      zombie.onHeadPop = keepHelmet;
       zombie.stuckTimer = 0; // failsafe bookkeeping (see rescueStuckZombies)
       zombie.stuckFrom = { x: position.x, z: position.z };
       scene.add(zombie.model.root);
@@ -420,6 +449,8 @@ export function createZombieManager({
       zombies.length = 0;
       lastSpawnAt.clear();
       spawnClock = 0;
+      for (const { helmet } of helmets) helmet.dispose();
+      helmets.length = 0;
     },
 
     // Fixed-tick update.
@@ -432,6 +463,7 @@ export function createZombieManager({
       for (const z of zombies) z.update(dt, ctx);
       partyDeaths.update(dt);
       tankDeaths.update(dt);
+      updateHelmets(dt);
       resolveZombieOverlaps();
       keepPlayerOutOfZombies();
       rescueStuckZombies(dt);

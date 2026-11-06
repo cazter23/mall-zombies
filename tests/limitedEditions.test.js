@@ -198,3 +198,25 @@ test('both Limited Editions name a gun that exists, and the drop numbers are san
   assert.ok(cfg.dropChance > 0 && cfg.dropChance < 1);
   assert.ok(cfg.fromRound >= 1);
 });
+
+test('the HUD marker points at the bag, says how far, on which floor and how long', (ctx) => {
+  const t = fixture(), { g, drops } = t;
+  assert.equal(drops.status, null);
+  const near = (a, b) => assert.ok(Math.abs(a - b) < 1e-6, `${a} vs ${b}`);
+  g.player.teleport({ position: new THREE.Vector3(0, 0, 12), yaw: 0 }); // facing -Z
+  drops.debugDrop('clearanceRack', new THREE.Vector3(0, 0, 4));
+  near(drops.status.bearing, 0);
+  assert.equal(drops.status.meters, 8);
+  assert.equal(drops.status.floor, null);
+  assert.equal(drops.status.name, 'Clearance Rack');
+  assert.equal(drops.status.seconds, cfg.lifetimeSeconds);
+
+  drops.debugDrop('clearanceRack', new THREE.Vector3(5, 0, 12));
+  near(drops.status.bearing, Math.PI / 2); // on your right
+  g.player.yaw = Math.PI / 2; // now facing -X, with it directly behind you
+  near(Math.abs(drops.status.bearing), Math.PI);
+
+  drops.debugDrop('clearanceRack', new THREE.Vector3(0, 6.3, 12));
+  assert.equal(drops.status.floor, cfg.marker.up);
+  g.map.dispose();
+});

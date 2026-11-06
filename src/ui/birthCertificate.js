@@ -13,13 +13,15 @@ export function createBirthCertificate() {
     <div class="certificate-name"></div>
     <div class="certificate-gun"></div>
     <dl class="certificate-lines">
+      <dt>Model</dt><dd data-field="combo"></dd>
       <dt>Stuffing</dt><dd data-field="stuffing"></dd>
       <dt>Heart</dt><dd data-field="heart"></dd>
       <dt>Condition</dt><dd data-field="quality"></dd>
       <dt>Weight</dt><dd data-field="kills"></dd>
       <dt>Born</dt><dd data-field="round"></dd>
     </dl>
-    <div class="certificate-remark"></div>`;
+    <div class="certificate-remark"></div>
+    <div class="certificate-note"></div>`;
   const put = (selector, text) => { element.querySelector(selector).textContent = text; };
   let timer = null;
 
@@ -31,15 +33,18 @@ export function createBirthCertificate() {
   return {
     element,
     hide,
-    show({ name, gunName, stuffing, heart, quality, kills, round, remark }) {
+    show({ name, gunName, combo, stuffing, heart, quality, kills, round, remark, note = '' }) {
       put('.certificate-name', name);
       put('.certificate-gun', certificateSubtitle(quality, gunName));
+      put('[data-field="combo"]', combo);
       put('[data-field="stuffing"]', stuffing);
       put('[data-field="heart"]', heart);
       put('[data-field="quality"]', quality);
       put('[data-field="kills"]', `${kills} ${kills === 1 ? 'shopper' : 'shoppers'}`);
       put('[data-field="round"]', `Round ${round}`);
       put('.certificate-remark', remark);
+      put('.certificate-note', note);
+      element.querySelector('.certificate-note').hidden = !note;
       element.hidden = false;
       clearTimeout(timer);
       timer = setTimeout(hide, ui.certificateSeconds * 1000);

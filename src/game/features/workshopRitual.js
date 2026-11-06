@@ -20,10 +20,10 @@
 import { buildWeaponDisplay } from '../../weapons/models/index.js';
 import { buildModifiers } from '../../weapons/upgrades.js';
 import { weapons } from '../../config/weapons.js';
-import { workshopRitual as cfg, workshopStuffings, workshopHearts, workshopNames, todayCount, buildOf, qualityFor, nextQualityFor, stageFor, paLine } from '../../config/workshop.js';
+import { workshopRitual as cfg, workshopStuffings, workshopHearts, workshopNames, todayCount, buildOf, comboName, qualityFor, nextQualityFor, stageFor, paLine } from '../../config/workshop.js';
 import * as THREE from 'three';
 
-const copyWithName = (def, name) => ({ ...def, name });
+const asLoaner = (def, name) => ({ ...def, name, loaner: true }); // (loaner: the gun model shows the security tag)
 const scratch = new THREE.Vector3();
 
 /** The point `fraction` of the way along a polyline ({ points, lengths, total }). */
@@ -125,7 +125,8 @@ export function createWorkshopRitual({ bench, map, gun, pricing, interactions, e
       elapsed: 0, kills: 0, stage: cfg.stages[0], reason: null, quality: null };
     pick = { stuffing: null, heart: null };
     const loaner = gun.slots.length === 1;
-    gun.handOver(copyWithName(weapons[cfg.loaner.weapon], cfg.loaner.name));
+    gun.handOver(asLoaner(weapons[cfg.loaner.weapon], cfg.loaner.name));
+    order.loaner = loaner;
     phase = 'running';
     showGun(def);
     const pa = paLine(restuff ? cfg.pa.restuff : cfg.pa.start, { gun: def.name, name });
@@ -143,13 +144,15 @@ export function createWorkshopRitual({ bench, map, gun, pricing, interactions, e
 
   function collect() {
     const name = order.name ?? newName();
-    const build = { name, stuffing: order.stuffing, heart: order.heart, quality: order.quality.id, kills: order.kills };
+    const confirmed = buildOf(gun.away.mods)?.confirmed ?? 0; // a re-stuffed gun keeps its record
+    const build = { name, stuffing: order.stuffing, heart: order.heart, quality: order.quality.id, kills: order.kills, confirmed };
+    const note = !order.loaner ? '' : gun.hasLoaner ? cfg.loanerNotes.returned : cfg.loanerNotes.lost;
     const modifiers = buildModifiers(gun.away.def.base, workshopStuffings[order.stuffing].color); // its shots streak in the stuffing's colour
     gun.collect((mods) => [...mods.filter((m) => m.id !== 'build'), { id: 'build', build, modifiers }]);
     hideGun();
     const certificate = {
-      name, gunName: order.gunName, stuffing: workshopStuffings[order.stuffing].name, heart: workshopHearts[order.heart].name,
-      quality: order.quality.name, kills: order.kills, round: rounds.round, remark: cfg.remarks[order.quality.id],
+      name, gunName: order.gunName, combo: comboName(build), stuffing: workshopStuffings[order.stuffing].name, heart: workshopHearts[order.heart].name,
+      quality: order.quality.name, kills: order.kills, round: rounds.round, remark: cfg.remarks[order.quality.id], note,
     };
     const pa = paLine(order.name ? cfg.pa.collectAgain : cfg.pa.collect, { gun: order.gunName, name });
     const { gunId } = order;

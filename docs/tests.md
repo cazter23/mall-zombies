@@ -179,3 +179,7 @@ the model and debris and disposes their shared geometry and materials.
 
 - `fontsReady.test.js`: startup waits for canvas fonts, never hangs on a stuck network or failed font, and the page boots through the wait.
 - `workshopRitual.test.js`, `mascot.test.js` also guard where the two meet: nothing fills the gauge after death, a rescued zombie rises normally, and the Mascot falls out of the Returns Chute with its hitboxes.
+- `workshopNames.test.js`: every Stuffing and Heart pair has its own model name; a named gun's record counts its own and its stuffing's kills, survives a re-stuff, and stops at death.
+- `workshopBuilds.test.js`: Overstuffed is stronger than Extra Stuffed and recharges its Heart twice as fast. `workshopRitual.test.js`: the certificate's Courtesy Loaner line, returned or lost.
+- `limitedEditions.test.js`: the HUD marker's bearing, distance, floor and time. `weaponModels.test.js`: only the Loaner wears the security tag.
+- `mascot.test.js`: the warning before the rush, which also cancels a swing; the helmet-pop bonus (gun or melee headshot only, once, never after death); helmets outlive the body, face the player, stop short of walls, go with the round, and are capped.

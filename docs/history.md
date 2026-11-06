@@ -1,5 +1,13 @@
 # Sunset Galleria: build history ("Current state")
 
+## 6 November 2026 — Build-A-Blaster and Mascot polish
+
+Overstuffed now earns its extra kills: 2.1 power against Extra Stuffed's 1.7, and a Heart cooldown at half. Named guns keep a confirmed-kill record (their own kills and their stuffing's,
+through a re-stuff), and all 24 Stuffing and Heart pairs have a model name, both on the receipt ("Mildred (Last Sip), 2 confirmed"); the name is on the Birth Certificate too. The Courtesy
+Loaner wears a security tag (weapons/models/loanerTag.js) and gets a line on the certificate, kinder if you bring it back. A dropped Limited Edition has a HUD arrow with distance, floor and time
+(ui/bagMarker.js). Sir Waffles now stands and shakes for 0.6 s before he rushes, which also cancels a swing in progress. A gun or box cutter headshot that knocks the helmet off pays 100.
+The helmet stays on the floor until the round ends, sits up and turns to face the player. At most 3 stay, because each is a couple of dozen draw calls. The zombie manager owns them, so they outlive the body.
+
 ## 6 November 2026 — Build-A-Blaster and the Mascot merged
 
 The rebuilt workshop, Sir Waffles and the Wardrobe and claw machine plans reached main together. Testing the two features side by side found three edge cases: a chute zombie

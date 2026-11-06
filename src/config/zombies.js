@@ -291,6 +291,7 @@ const mascot = {
   sounds: {
     step: { name: 'mascotThump', interval: 0.58, chance: 1, maxDistance: 18 },
     headPop: { name: 'mascotHeadPop', maxDistance: 26 },
+    howl: { name: 'mascotHowl', maxDistance: 26 },
   },
   mascot: {
     healthFraction: 0.5,
@@ -298,6 +299,11 @@ const mascot = {
     exposedAcceleration: 15,
     exposedTurnSpeed: 8,
     hitKnockbackScale: 0.35,
+    // The warning: when the helmet comes off it stands and shakes with its arms up, then rushes.
+    rage: { seconds: 0.6, shake: 0.14, shakeRate: 42 },
+    // The fallen helmet sits on the floor until the round ends, turning to face you. Only so many stay: each is a couple of dozen draw calls.
+    leftHelmets: { max: 3, turnSpeed: 1.2, settleSeconds: 0.35, wallMargin: 0.55, rayHeight: 0.5 },
+    helmetPopLine: { kicker: 'Lost property', text: 'A customer has lost their head. It may be claimed at Customer Service.' },
     // Model dimensions in meters. Each solid piece supplies its own hitbox.
     spawnDepth: 2.36,
     hipY: mascotHipY,
@@ -348,7 +354,7 @@ const mascot = {
     },
     drop: {
       velocity: [1.55, 2.55, 0.95], gravity: 11, spin: [7, 3.6, 6.3],
-      tumbleSeconds: 0.86, seconds: 1.65, floorClearance: 0.5,
+      tumbleSeconds: 0.86, floorClearance: 0.44,
       stuffingCount: 22, stuffingSeconds: 0.65, stuffingSize: 0.095, stuffingSpeed: 3.2,
       stuffingUp: 1.6,
     },

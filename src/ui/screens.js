@@ -22,6 +22,7 @@
 
 import { economy } from '../config/economy.js';
 import { menuFeel } from '../config/settings.js';
+import { survivorLine } from '../config/workshop.js';
 
 function el(tag, className, html) {
   const node = document.createElement(tag);
@@ -43,7 +44,7 @@ export function receiptLinesFor(r) {
     ['  Box cutter', r.meleeKills],
     ['Accuracy', `${Math.round(r.accuracy * 100)}%`],
   ];
-  if (r.survivedBy?.length) lines.push(['Survived by', r.survivedBy.join(' and ')]);
+  if (r.survivedBy?.length) lines.push(['Survived by', r.survivedBy.map(survivorLine).join(' and ')]);
   return lines;
 }
 

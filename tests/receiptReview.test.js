@@ -86,6 +86,7 @@ test('the receipt reads out the guns you named at Build-A-Blaster, and says noth
   const label = (r) => receiptLinesFor(r).find(([name]) => name === 'Survived by');
   assert.equal(label({ ...base, survivedBy: [] }), undefined);
   assert.equal(label(base), undefined);
-  assert.deepEqual(label({ ...base, survivedBy: ['Gerald'] }), ['Survived by', 'Gerald']);
-  assert.deepEqual(label({ ...base, survivedBy: ['Gerald', 'Doris'] }), ['Survived by', 'Gerald and Doris']);
+  const gerald = { name: 'Gerald', combo: 'Grand Finale', confirmed: 212 }, doris = { name: 'Doris', combo: 'Cold Snap', confirmed: 3 };
+  assert.deepEqual(label({ ...base, survivedBy: [gerald] }), ['Survived by', 'Gerald (Grand Finale), 212 confirmed']);
+  assert.deepEqual(label({ ...base, survivedBy: [gerald, doris] }), ['Survived by', 'Gerald (Grand Finale), 212 confirmed and Doris (Cold Snap), 3 confirmed']);
 });

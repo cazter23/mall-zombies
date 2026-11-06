@@ -120,7 +120,7 @@ test('kills fill the gauge only in the room, and the kill count sets the quality
   t.collect();
   const build = buildOf(g.gun.modsFor('nailGun'));
   assert.equal(typeof build.name, 'string');
-  assert.deepEqual({ ...build, name: undefined }, { name: undefined, stuffing: 'smoothie', heart: 'headshot', quality: 'extraStuffed', kills: 10 });
+  assert.deepEqual({ ...build, name: undefined }, { name: undefined, stuffing: 'smoothie', heart: 'headshot', quality: 'extraStuffed', kills: 10, confirmed: 0 });
   g.map.dispose();
 });
 
@@ -452,5 +452,40 @@ test('a chute zombie sent back by the failsafe rises from the floor like any oth
   assert.equal(zombie.dropHeight, cfg.chuteDropHeight);
   zombie.respawnAt(new THREE.Vector3(0, 0, 12), 0);
   assert.equal(zombie.dropHeight, 0);
+  g.map.dispose();
+});
+
+test('the Birth Certificate has a word about the Courtesy Loaner, and only if you had one', () => {
+  const notes = (t) => t.hud.calls.filter(c => c[0] === 'showCertificate').map(c => c[1].note);
+  const finish = (t) => { t.pullLever(); t.collect(); };
+
+  const returned = fixture({ guns: [] }), first = returned.g;
+  returned.startRitual();
+  assert.equal(first.gun.isLoaner, true);
+  assert.equal(first.gun.def.loaner, true, 'the gun model shows the security tag');
+  finish(returned);
+  assert.deepEqual(notes(returned), [cfg.loanerNotes.returned]);
+  first.map.dispose();
+
+  const none = fixture({ guns: [weapons.nailGun] });
+  none.startRitual();
+  finish(none);
+  assert.deepEqual(notes(none), ['']);
+  none.g.map.dispose();
+});
+
+test('a Courtesy Loaner replaced by a bought gun is reported lost', () => {
+  const t = fixture({ guns: [] }), { g } = t;
+  t.startRitual();
+  g.gun.give(weapons.nailGun); t.tick(50); // fills the free slot; the Loaner is still carried
+  assert.equal(g.gun.hasLoaner, true);
+  const swap = g.gun.slots.indexOf('stapleGun');
+  t.press(swap === 0 ? 'Digit1' : 'Digit2'); t.tick(50);
+  assert.equal(g.gun.isLoaner, true);
+  g.gun.give(weapons.rivetRifle); t.tick(50); // replaces the gun in hand: the Loaner
+  assert.equal(g.gun.hasLoaner, false);
+  t.pullLever(); t.collect();
+  const [certificate] = t.hud.calls.filter(c => c[0] === 'showCertificate');
+  assert.equal(certificate[1].note, cfg.loanerNotes.lost);
   g.map.dispose();
 });

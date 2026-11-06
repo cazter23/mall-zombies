@@ -118,6 +118,10 @@ export function createMascotModel(type, random) {
       for (const arm of arms) arm.rotation.x = Math.PI / 2 + attack.armsSlammedRadians;
       upper.rotation.x -= tuning.attackLean;
     }
+    if (zombie.mascotRage > 0 && zombie.isAlive) {
+      upper.rotation.z = Math.sin(zombie.mascotRage * cfg.rage.shakeRate) * cfg.rage.shake;
+      for (const arm of arms) arm.rotation.x = Math.PI / 2 + attack.armsRaisedRadians;
+    }
 
     body.rotation.x = 0;
     if (zombie.state === 'spawning') {
@@ -140,7 +144,16 @@ export function createMascotModel(type, random) {
   const velocity = new THREE.Vector3();
   const initialSpin = new THREE.Euler();
   const stuffing = [];
+  let restYaw = 0;
   let floor = 0;
+  let owners = 1; // the body, and the fallen helmet once there is one: they share a geometry and materials
+  const free = () => {
+    owners -= 1;
+    if (owners > 0) return;
+    geometry.dispose();
+    for (const material of materials.values()) material.dispose();
+  };
+  const smooth = (t) => t * t * (3 - 2 * t);
 
   function releaseHead(zombie) {
     pose(zombie, 1);
@@ -161,16 +174,48 @@ export function createMascotModel(type, random) {
       scatter.y += drop.stuffingUp;
       stuffing.push({ mesh, scatter });
     }
+    return fallenHelmet();
   }
 
-  function animateDebris(age) {
-    if (age >= drop.seconds) {
-      debris.removeFromParent();
-      return;
-    }
+  // The helmet after it comes off. It outlives the body, so the zombie manager owns it: update() each tick, dispose() when the round ends.
+  function fallenHelmet() {
+    owners += 1;
+    let age = 0, reach = 1;
+    const seen = new THREE.Vector3();
+    const landing = launch.clone().addScaledVector(velocity, drop.tumbleSeconds);
+    return {
+      landing, // where it would come down (the manager checks the way there for walls)
+      setReach(fraction) { reach = fraction; },
+      update(dt, target) {
+        age += dt;
+        animateDebris(age, reach);
+        if (age < drop.tumbleSeconds) {
+          restYaw = helmet.rotation.y;
+          return;
+        }
+        // Down: it sits up and slowly turns to look at you.
+        const settle = smooth(Math.min(1, (age - drop.tumbleSeconds) / cfg.leftHelmets.settleSeconds));
+        helmet.rotation.x *= 1 - settle;
+        helmet.rotation.z *= 1 - settle;
+        helmet.getWorldPosition(seen);
+        const wanted = Math.atan2(-(target.x - seen.x), -(target.z - seen.z));
+        const turn = Math.atan2(Math.sin(wanted - restYaw), Math.cos(wanted - restYaw));
+        restYaw += Math.sign(turn) * Math.min(Math.abs(turn), cfg.leftHelmets.turnSpeed * dt);
+        helmet.rotation.y = restYaw;
+      },
+      dispose() {
+        debris.removeFromParent();
+        free();
+      },
+    };
+  }
+
+  function animateDebris(age, reach) {
     const t = Math.min(age, drop.tumbleSeconds);
     helmet.position.copy(velocity).multiplyScalar(t);
     helmet.position.y = Math.max(floor - launch.y, helmet.position.y - drop.gravity * t * t / 2);
+    helmet.position.x *= reach;
+    helmet.position.z *= reach;
     helmet.rotation.set(initialSpin.x + drop.spin[0] * t, initialSpin.y + drop.spin[1] * t, initialSpin.z + drop.spin[2] * t);
 
     const scale = drop.stuffingSize * Math.max(0, 1 - age / drop.stuffingSeconds);
@@ -199,13 +244,10 @@ export function createMascotModel(type, random) {
     },
     update(_frameTime, zombie, alpha) {
       pose(zombie, alpha);
-      if (zombie.mascotHeadOff) animateDebris(zombie.mascotDropAge ?? 0);
     },
     dispose() {
       root.removeFromParent();
-      debris.removeFromParent();
-      geometry.dispose();
-      for (const material of materials.values()) material.dispose();
+      free();
     },
   };
 }

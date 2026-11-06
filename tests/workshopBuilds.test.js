@@ -326,7 +326,7 @@ test('stuffings stay on their floor', () => {
   g.map.dispose();
 });
 
-test('quality scales a stuffing: Extra Stuffed beats Understuffed, and Overstuffed matches Extra Stuffed', () => {
+test('quality scales a stuffing, all the way up to Overstuffed', () => {
   const dealt = (quality) => {
     const t = fixture(), { g } = t;
     t.fit('neonTube', 'headshot', quality);
@@ -337,9 +337,24 @@ test('quality scales a stuffing: Extra Stuffed beats Understuffed, and Overstuff
     return result;
   };
   const low = dealt('understuffed'), regular = dealt('regular'), high = dealt('extraStuffed'), over = dealt('overstuffed');
-  assert.ok(low < regular && regular < high, `${low} < ${regular} < ${high}`);
-  assert.equal(over, high);
-  assert.equal(workshopRitual.qualities.at(-1).bulge, true, 'Overstuffed differs by looking it');
+  assert.ok(low < regular && regular < high && high < over, `${low} < ${regular} < ${high} < ${over}`);
+  assert.equal(workshopRitual.qualities.at(-1).bulge, true, 'Overstuffed looks it, too');
+});
+
+test('Overstuffed recharges its Heart twice as fast', () => {
+  const procs = (quality) => {
+    const t = fixture(), { g } = t;
+    t.fit('neonTube', 'headshot', quality);
+    const [target] = t.row([0, 3]);
+    let fired = 0;
+    g.events.on('buildFired', () => { fired += 1; });
+    t.shoot(target, 'head');
+    t.shoot(target, 'head'); // about half a second later: past Overstuffed's cooldown, inside anyone else's
+    g.map.dispose();
+    return fired;
+  };
+  assert.equal(procs('extraStuffed'), 1);
+  assert.equal(procs('overstuffed'), 2);
 });
 
 test('picking: a build needs a Stuffing and a Heart, the bench says so, and a real order goes through', () => {

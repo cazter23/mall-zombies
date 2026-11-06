@@ -70,6 +70,13 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border-top: 3px solid var(--plum); background: var(--paper); color: var(--plum); font-size: 10px; box-shadow: 2px 3px 0 #39294066;
 }
 .ritual-hud[hidden], .hud.dead .ritual-hud { display: none; }
+.bag-marker {
+  position: absolute; top: 174px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 7px; padding: 4px 11px;
+  border-bottom: 3px solid var(--raspberry); background: var(--paper); color: var(--plum);
+  font: 700 11px var(--font-ui); text-transform: uppercase; letter-spacing: .06em; white-space: nowrap; box-shadow: 2px 3px 0 #39294066;
+}
+.bag-marker[hidden], .hud.dead .bag-marker { display: none; }
+.bag-arrow { display: inline-block; width: 13px; height: 15px; background: var(--raspberry); clip-path: polygon(50% 0, 100% 100%, 50% 72%, 0 100%); } /* (notched: a plain triangle reads the same three ways round) */
 .ritual-heading { font: 700 10px var(--font-ui); text-transform: uppercase; letter-spacing: .08em; border-bottom: 1px dashed var(--print-rule); padding-bottom: 5px; margin-bottom: 6px; }
 .ritual-stage { font-weight: 700; margin-bottom: 2px; }
 .birth-certificate {
@@ -85,6 +92,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .certificate-lines { display: grid; grid-template-columns: auto 1fr; gap: 1px 10px; margin: 9px 0 7px; font: 600 10px var(--font-ui); text-align: left; }
 .certificate-lines dt { opacity: .7; }
 .certificate-lines dd { margin: 0; text-align: right; }
+.certificate-note { padding-top: 5px; font: 600 9px/1.25 var(--font-ui); opacity: .8; }
+.certificate-note[hidden] { display: none; }
 .certificate-remark { padding-top: 6px; border-top: 1px dashed var(--print-rule); font: 700 16px/1.1 'Caveat', cursive; }
 .incentive-progress { width: 100%; height: 8px; border: 1px solid var(--plum); border-radius: 0; background: #d4c9b8; accent-color: var(--raspberry); }
 .incentive-progress::-webkit-progress-bar { background: repeating-linear-gradient(90deg, #ded3c1 0 8%, var(--paper) 8% 10%); }

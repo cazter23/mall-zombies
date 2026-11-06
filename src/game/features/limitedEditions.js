@@ -7,6 +7,7 @@
 //   const drops = createLimitedEditionDrops({ events, gun, player, scene, rounds, state, sound })
 //   drops.update(dt) / drops.reset()
 //   drops.bag               null, or { id, position, remaining }
+//   drops.status            for the HUD: null, or { name, seconds, meters, bearing (radians, 0 = dead ahead, + = to your right), floor ('upstairs' or null) }
 //   drops.debugDrop(id, at) put a bag down now (browser console: for trying it out)
 // =============================================================================
 
@@ -72,6 +73,20 @@ export function createLimitedEditionDrops({ events, gun, player, scene, rounds, 
 
   return {
     get bag() { return bag; },
+    get status() {
+      if (!bag) return null;
+      const dx = bag.position.x - player.position.x, dz = bag.position.z - player.position.z, dy = bag.position.y - player.position.y;
+      const sin = Math.sin(player.yaw), cos = Math.cos(player.yaw);
+      const ahead = -dx * sin - dz * cos, right = dx * cos - dz * sin;
+      const { floorGap, up, down } = cfg.marker;
+      return {
+        name: workshopBuilds[bag.id].name,
+        seconds: Math.ceil(bag.remaining),
+        meters: Math.round(Math.hypot(dx, dz)),
+        bearing: Math.atan2(right, ahead),
+        floor: dy > floorGap ? up : dy < -floorGap ? down : null,
+      };
+    },
     debugDrop(id, at = player.position) { put(id, at); },
 
     update(dt) {

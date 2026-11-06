@@ -236,3 +236,18 @@ test('workshop builds change the housing and silhouette reversibly, with Party T
     assert.equal(housing.material, original);
   }
 });
+
+test('the Courtesy Loaner wears a security tag, and only the Loaner', () => {
+  const model = buildWeaponModel(weapons.stapleGun);
+  const visuals = createUpgradeVisuals(model);
+  const tag = model.root.getObjectByName('loanerTag');
+  visuals.show();
+  assert.equal(tag.visible, false);
+  visuals.show({ loaner: true, time: .2 });
+  assert.equal(tag.visible, true);
+  const swung = tag.getObjectByName('loanerCard').parent.rotation.z;
+  visuals.show({ loaner: true, time: .6 });
+  assert.notEqual(tag.getObjectByName('loanerCard').parent.rotation.z, swung, 'the card swings');
+  visuals.show();
+  assert.equal(tag.visible, false, 'your own gun comes back without it');
+});

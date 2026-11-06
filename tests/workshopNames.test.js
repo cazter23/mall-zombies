@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { headlessGame } from './helpers/headlessGame.js';
 import { LAYOUT } from '../src/maps/mall/mall.js';
 import { weapons } from '../src/config/weapons.js';
+import { comboName, workshopHearts, workshopStuffings } from '../src/config/workshop.js';
 import { workshopRitual as cfg, workshopNames, buildOf, gunLabel, paLine, certificateSubtitle } from '../src/config/workshop.js';
 import { resolveGun } from '../src/weapons/gunStats.js';
 
@@ -38,8 +39,8 @@ test('a finished gun is named from the list, and the Birth Certificate carries t
   const certificates = t.hud.calls.filter(c => c[0] === 'showCertificate');
   assert.equal(certificates.length, 1);
   assert.deepEqual(certificates[0][1], {
-    name: build.name, gunName: weapons.nailGun.name, stuffing: 'Smoothie', heart: 'Headshot', quality: 'Understuffed',
-    kills: 0, round: g.rounds.round, remark: cfg.remarks.understuffed,
+    name: build.name, gunName: weapons.nailGun.name, combo: 'Brain Freeze', stuffing: 'Smoothie', heart: 'Headshot', quality: 'Understuffed',
+    kills: 0, round: g.rounds.round, remark: cfg.remarks.understuffed, note: '',
   });
   g.map.dispose();
 });
@@ -113,7 +114,7 @@ test('Survived by: the run summary names your guns, even one still at the worksh
   assert.equal(g.gun.owns('nailGun'), false);
   g.health.invulnerable = false;
   g.health.takeDamage(1e6);
-  assert.deepEqual(g.death.summary.survivedBy, [name]);
+  assert.deepEqual(g.death.summary.survivedBy, [{ name, combo: 'Brain Freeze', confirmed: 0 }]);
   g.map.dispose();
 });
 
@@ -129,6 +130,45 @@ test('Play again frees the names', () => {
   const t = fixture(), { g } = t;
   t.fullRitual();
   g.resetRun(); t.tick();
-  assert.deepEqual(g.gun.buildNames, []);
+  assert.deepEqual(g.gun.namedBuilds, []);
+  g.map.dispose();
+});
+
+test('every Stuffing and Heart pair has its own model name', () => {
+  const names = [];
+  for (const stuffing of Object.keys(workshopStuffings)) {
+    for (const heart of Object.keys(workshopHearts)) {
+      const name = comboName({ stuffing, heart });
+      assert.ok(name, `${stuffing} + ${heart}`);
+      names.push(name);
+    }
+  }
+  assert.equal(names.length, 24);
+  assert.equal(new Set(names).size, names.length, 'no two pairs share a name');
+  assert.equal(comboName({ stuffing: 'glitter', heart: 'lastRound' }), 'Grand Finale');
+});
+
+test('a named gun keeps a record: its kills and its stuffing\'s, through a re-stuff, and none after you die', () => {
+  const t = fixture(), { g } = t;
+  t.fullRitual();
+  const record = () => buildOf(g.gun.modsFor('nailGun')).confirmed;
+  const zombie = () => { const z = g.zombies.spawn('shopper', new THREE.Vector3(0, 0, 12)); z.setState('chasing'); return z; };
+  assert.equal(record(), 0);
+  zombie().takeHit({ damage: 1e6, part: 'body' }); // the gun in hand
+  assert.equal(record(), 1);
+  const burned = zombie();
+  burned.stuffedBy = 'nailGun';
+  burned.takeHit({ damage: 1e6, part: 'body', source: 'build' }); // a burn finishing later
+  assert.equal(record(), 2);
+  zombie().takeHit({ damage: 1e6, part: 'body', source: 'build' }); // nobody's stuffing
+  zombie().takeHit({ damage: 1e6, part: 'body', source: 'hazard' });
+  assert.equal(record(), 2);
+
+  t.fullRitual(); // re-stuffed: same gun, same record
+  assert.equal(record(), 2);
+  g.health.invulnerable = false;
+  g.health.takeDamage(1e6);
+  zombie().takeHit({ damage: 1e6, part: 'body' });
+  assert.equal(g.death.summary.survivedBy[0].confirmed, 2);
   g.map.dispose();
 });

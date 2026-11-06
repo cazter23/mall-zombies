@@ -52,6 +52,7 @@ import { createRounds } from './rounds.js';
 import { createInteractions } from './interactions.js';
 import { buildFeatures, featuresOf } from './features/index.js';
 import { ownsAttachment } from './features/attachmentCounter.js';
+import { comboName } from '../config/workshop.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 
@@ -206,7 +207,8 @@ export function createGame({
       meleeKills: runStats.meleeKills,
       accuracy: runStats.accuracy,
       assisted: state.assisted || health.invulnerable,
-      survivedBy: gun.buildNames, // the guns you named at Build-A-Blaster (the receipt reads them out)
+      // The guns you named at Build-A-Blaster (the receipt reads them out).
+      survivedBy: gun.namedBuilds.map((build) => ({ name: build.name, combo: comboName(build), confirmed: build.confirmed ?? 0 })),
     });
   }
 
@@ -249,6 +251,7 @@ export function createGame({
       melee: zombie.killedByMelee,
       source: zombie.killedBy,
     }),
+    onHeadPop: (zombie, { headshot, source }) => events.emit('mascotHeadPop', { zombie, headshot, source }),
     onSound: (name, volume) => sound.play(name, { volume }), // Mall Walker squeaks, huffs and pants
     navigation: map.navigation, // floors + the ramps between them (undefined = one ground floor)
   });
@@ -279,6 +282,12 @@ export function createGame({
   });
   events.on('kill', ({ zombie }) => {
     if (!state.over) runStats.recordKill(zombie);
+  });
+  // Knocking Sir Waffles' helmet off with a headshot pays a bonus: stuffings and hazards don't aim.
+  events.on('mascotHeadPop', ({ zombie, headshot, source }) => {
+    if (state.over || !headshot || (source !== 'gun' && source !== 'melee')) return;
+    wallet.earn(economy.payouts.helmetPopBonus);
+    hud.showAnnouncement({ ...zombie.type.mascot.helmetPopLine, priority: 0 });
   });
   events.on('playerHit', ({ damage, knockback }) => {
     health.takeDamage(damage);

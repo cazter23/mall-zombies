@@ -12,6 +12,7 @@ export const economy = {
     nonLethalHit: 10,
     headshotKillBonus: 40, // added on top of the zombie's kill value
     meleeKillBonus: 70, // added on top of the zombie's kill value
+    helmetPopBonus: 100, // a gun or box cutter headshot that knocks Sir Waffles' helmet off
   },
 
   // Base points for killing each zombie type

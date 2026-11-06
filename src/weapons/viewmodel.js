@@ -243,7 +243,7 @@ export function createViewmodel(weaponDefs, meleeDef) {
       // Show this gun's upgrades (shownDef is the resolved gun: its mods say which tier and attachments).
       const mods = shownDef.modList ?? [];
       active.upgrades.show({ tier: tierOf(mods), attachments: attachmentsOf(mods), workshop: workshopModOf(mods),
-        workshopCount: weapon.def.id === shownDef.id ? weapon.clearanceTagCount : 0, build: buildOf(mods), time });
+        workshopCount: weapon.def.id === shownDef.id ? weapon.clearanceTagCount : 0, build: buildOf(mods), loaner: !!shownDef.loaner, time });
       const look = active.def.viewmodel;
       const ads = active.def.ads.offset;
       rig.position.copy(worldCamera.position);
