@@ -64,7 +64,8 @@ src/
                         wall-buy prices, ammoCache.price (400, flat, any gun), round timing, wave scaling + helpers
                         (zombieHealthForRound, zombieCountForRound, spawnDelayForRound, maxAliveForRound).
                         zombieMix: special types per round (mallWalker: from round 4, share 15% / 25% from 6 / 30% from 9,
-                        healthMultiplier 0.65, introSpawnIndex) + zombieHealthFor(typeId, round), zombieTypeForRound(round)
+                        healthMultiplier 0.65, introSpawnIndex) + zombieHealthFor(typeId, round), zombieTypeForRound(round).
+                        Mascot enters at round 10 with 5x Shopper health and a two-alive cap.
     weapons.js          stapleGun (start pistol, semi), priceGun (wall buy, full auto), nailGun (wall buy, semi,
                         piercing: `pierce: { maxTargets, damageFalloff }`), foamDartBlaster (Mega Mart, burst),
                         confettiCannon (Service Corridor, 12 pellets, pellets pierce 2 zombies, six-shell tube, shell-by-shell
@@ -239,6 +240,8 @@ src/
   zombies/
     observation.js     Fixed-tick head/chest sight rays against world colliders with base FOV/aspect and edge hysteresis.
     mannequinModel.js  Articulated faceless plastic model, joint seams/inventory tag, frozen pose retention and owned disposal.
+    mascotModel.js      Sir Waffles' articulated foam costume and smaller zombie head. Places fixed-tick hitboxes from the
+                        posed pieces. Owns the detached helmet, stuffing burst and their cleanup.
     navigation.js       createNavigation(colliders, agent, { floors, links }): flow field on a 0.5m grid built from colliders, one LAYER per floor
                         (floors = their walking heights, default [0]: walkable where a box top sits at that height, blocked by anything solid
                         between ankle and head above it) joined by LINKS (a ramp/stairs: { lower: {x,z,floor}, upper: {x,z,floor}, halfWidth }):
@@ -264,7 +267,8 @@ src/
                         Types with `winded` (Mall Walker): after every swing windedTimer = stand + slow seconds; it stays
                         'chasing' but windedSpeedScale() is 0 then slowSpeedFraction, and attackCooldown >= standSeconds.
                         Types with `sounds`: chaseSounds() (step squeaks / huffs on timers) + playSound(): volume by
-                        distance through ctx.onSound
+                        distance through ctx.onSound. The Mascot sheds its helmet at half health, immediately swaps head
+                        hitboxes, and accelerates into a rush.
     shopperAppearance.js  Weighted, coordinated Shopper wardrobe selection; optional seeded random for tests, one look per spawn
     cartModel.js        buildCart(cfg, mat): the Cart Pusher's shopping cart (wire basket, chassis, casters, red handle, shopping
                         inside), merged by material; on the model's root so it stays upright when the zombie dies
@@ -499,7 +503,8 @@ src/
                         across instanced signature pools. Skips shutters/unsupported edges; follows rigid surface transforms,
                         removes marks when surfaces unload, clears on restart. prepare(renderer,camera) warms shared graphics.
     impactModels.js     Small shared staple/nail/dart/confetti meshes with vertex colours; three procedural price-sticker textures
-    effects.js          Tracers (pooled) + particle bursts (one InstancedMesh): splat(), puff(), clear() (new run)
+    effects.js          Tracers (pooled) + particle bursts (one InstancedMesh): splat(), puff(), clear() (new run).
+                        The Mascot's foam palette bypasses flesh splatter settings.
   (tools/)              Dev scripts (not bundled): buildSingle.mjs = `npm run build:single` (a normal Vite build into dist-single/, then the JS, CSS and
                         the music worker (as a Blob worker) pasted into ONE html file; the Google Fonts link loads non-blocking so a blocked
                         network just falls back to system fonts; tests/singleFile.test.js builds it and checks it is self-contained); balance.js = gun balance maths shared with the tests (seeded Monte Carlo of each

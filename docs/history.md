@@ -32,6 +32,14 @@ Phase 6, Limited Edition drops: Party Trap and Clearance Rack left the shelf, as
 
 Phase 6, Glitter: zombies/confusion.js. A confused zombie runs that module instead of its normal update, using the existing windup and swing states so the model animates by itself. It walks straight at its target rather than using the flow field, which only ever routes to the player: short range makes this fine, and a wall simply stops it. Immunity afterwards stops a fast gun locking a crowd for good.
 
+## 4 November 2026 — Sir Waffles, the Mascot
+
+The Food Court's foam breakfast knight completes the regular zombie roster. Sir Waffles joins waves at round 10
+with 5x Shopper health and a two-alive cap. The costume shambles at 1.35 m/s and absorbs most hit knockback. At
+half health the helmet pops off in a burst of cream-colored stuffing, exposing the smaller head as the zombie rushes
+at 5.6 m/s. Shots use boxes derived from the posed model. The walking collider stays at the Cart Pusher's radius.
+A kill pays 300 base points through the regular kill event. Hits and kills shed foam even with Red splatter selected.
+
 ## 4 November 2026 — tenant branding and font loading
 
 Mega Mart and Hoffman's got their own tenant branding (config/look.js, zoneLooks.js, hallwayLook.js, textures.js).

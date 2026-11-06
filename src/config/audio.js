@@ -397,6 +397,23 @@ export const audio = {
       ],
     },
 
+    // Sir Waffles: soft boot thumps and the rip, hollow pop and flop of a foam helmet coming loose.
+    mascotThump: {
+      volume: 0.48,
+      layers: [
+        { type: 'tone', wave: 'sine', freq: 112, freqEnd: 54, gain: 0.52, attack: 0.004, decay: 0.14 },
+        { type: 'noise', filter: 'lowpass', freq: 420, gain: 0.34, attack: 0.005, decay: 0.11 },
+      ],
+    },
+    mascotHeadPop: {
+      volume: 0.82,
+      layers: [
+        { type: 'noise', filter: 'bandpass', freq: 1850, q: 1.3, gain: 0.64, attack: 0.003, decay: 0.15 },
+        { type: 'tone', wave: 'triangle', freq: 530, freqEnd: 150, gain: 0.72, attack: 0.003, decay: 0.24 },
+        { type: 'noise', filter: 'lowpass', freq: 360, gain: 0.47, attack: 0.008, decay: 0.16, delay: 0.68 },
+      ],
+    },
+
     // Mall PA "ding-dong" before an announcement (a new zombie type showing up).
     paChime: {
       volume: 0.55,
