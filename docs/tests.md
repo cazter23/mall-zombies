@@ -178,3 +178,4 @@ Shot rays cover the helmet and torso, the smaller exposed head, and a miss throu
 the model and debris and disposes their shared geometry and materials.
 
 - `fontsReady.test.js`: startup waits for canvas fonts, never hangs on a stuck network or failed font, and the page boots through the wait.
+- `workshopRitual.test.js`, `mascot.test.js` also guard where the two meet: nothing fills the gauge after death, a rescued zombie rises normally, and the Mascot falls out of the Returns Chute with its hitboxes.

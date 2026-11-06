@@ -205,6 +205,8 @@ During a ritual the hall peaks at 244 calls. Carrying a built gun adds about 10 
 
 **Merging.** A dry-run merge with current main (738e7f5) has no conflicts. Main has only gained docs/boss-zombies-plan.md since this branch was cut. Nothing is merged and nothing is pushed.
 
+**After review (6 November).** Merged with the Mascot. Fixed on the way in: a zombie the failsafe rescued kept its chute drop, a burn finishing after the player died still filled the gauge, and the Mascot rose through the floor at the chute. Hardcoded stuffing and trap numbers moved to config, and How to Play now mentions Build-A-Blaster. A second soak with Mascots ran 60 rituals, 6 deaths and every reset with no broken invariants, and the head pop and a tank kill were checked in the browser.
+
 **Shared files changed** (from the CLAUDE.md rule): mall.js, levelTwo.js, promenade.js, economy.js, CLAUDE.md, zombie.js, zombieManager.js, zombieModel.js, playerGun.js, createGame.js, events.js, interactions.js, hud.js, main.js, screens.js. shutters.js was not touched.
 
 **Unfinished or unverified.**
@@ -214,5 +216,4 @@ During a ritual the hall peaks at 244 calls. Carrying a built gun adds about 10 
 - Antifreeze has not been looked at on screen. It is covered by tests and the soak run.
 - The stitched look was only inspected on the Staple Gun. The tests check it is anchored and gun-sized on all 8 guns, but the others may need a nudge.
 - A Glitter-confused zombie does not path-find round walls.
-- The How to Play screen doesn't mention Build-A-Blaster yet.
 - The Party Trap and Clearance Rack prices sit unused in economy.js, kept as you asked.

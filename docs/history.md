@@ -1,5 +1,11 @@
 # Sunset Galleria: build history ("Current state")
 
+## 6 November 2026 — Build-A-Blaster and the Mascot merged
+
+The rebuilt workshop, Sir Waffles and the Wardrobe and claw machine plans reached main together. Testing the two features side by side found three edge cases: a chute zombie
+sent back by the failsafe kept its drop, a burn outliving the player still filled the gauge, and the Mascot's model ignored the chute. All three have tests. Prices are still
+placeholders because the economy report has not been written.
+
 ## November 2026 — Build-A-Blaster rebuild (branch build-a-blaster)
 
 Plan: docs/build-a-blaster-plan.md. Running log with every decision: docs/build-a-blaster-log.md.
