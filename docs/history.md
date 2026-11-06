@@ -1,5 +1,17 @@
 # Sunset Galleria: build history ("Current state")
 
+## 6 November 2026 — Boss framework and the Janitor
+
+Mopwater Murray joins once per run in round 5 or 7, with six times a Shopper's health and a 300-point base payout.
+The director spawns him partway through the wave in addition to its usual quota, retries a blocked spawn and waits
+for him before advancing. He uses regular mall markers even during the Build-A-Blaster ritual. His health bar and
+PA sting announce the encounter, and the end-of-run receipt counts bosses defeated.
+
+Murray swings a 60-damage mop and leaves up to six puddles on clear floor. They slow grounded players by 30% for as
+long as they stand in them and expire after 12 seconds. He mops up Spill Cleanup and drops a guaranteed Spill
+Cleanup incentive on defeat. Bosses ignore stagger, hitstop, Glitter and incentive marks. Antifreeze refreshes their
+resisted slow without shattering them. Cross-floor chases now keep following the route even directly below the player.
+
 ## 6 November 2026 — Build-A-Blaster and the Mascot merged
 
 The rebuilt workshop, Sir Waffles and the Wardrobe and claw machine plans reached main together. Testing the two features side by side found three edge cases: a chute zombie

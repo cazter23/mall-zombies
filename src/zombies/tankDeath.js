@@ -27,6 +27,7 @@ export function createTankDeaths() {
       active.set(zombie, { from: zombie.position.clone(), mouth, age: 0, previousAge: 0 });
     },
     has: (zombie) => active.has(zombie),
+    remove: (zombie) => active.delete(zombie),
     update(dt) {
       for (const [zombie, state] of active) {
         state.previousAge = state.age;

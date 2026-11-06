@@ -162,7 +162,7 @@ export class Zombie {
         this.updateHitboxes(); // the next shot can already hit the exposed head
       }
       // Physical stagger knockback & brief micro-hitstop on live chasing zombies
-      if (impact && direction && this.state === 'chasing' && this.speed > 0) {
+      if (!this.type.boss && impact && direction && this.state === 'chasing' && this.speed > 0) {
         const weight = mascot && !this.mascotHeadOff ? mascot.hitKnockbackScale : 1;
         const kb = (impact.knockback ?? 0) * (part === 'head' ? 1.25 : 1) * weight;
         if (kb > 0) {
@@ -193,7 +193,7 @@ export class Zombie {
 
   // Security Sweep interrupts attacks/charges without invoking damage or kill events.
   staggerAway(origin, { seconds, knockback, drag }) {
-    if (!this.isAlive || this.state === 'spawning') return false;
+    if (this.type.boss || !this.isAlive || this.state === 'spawning') return false;
     this.setState('chasing');
     this.staggerTimer = seconds;
     this.staggerDrag = drag;
@@ -214,6 +214,7 @@ export class Zombie {
   // Hitboxes are axis-aligned boxes that follow the zombie (and rise with it while spawning).
   applySlow(seconds, fraction) {
     if (!this.isAlive || this.state === 'spawning') return;
+    if (this.type.boss) fraction = 1 - (1 - fraction) * this.type.slowStrength;
     this.slowFraction = this.slowTimer > 0 ? Math.min(this.slowFraction, fraction) : fraction;
     this.slowTimer = Math.max(this.slowTimer, seconds);
   }
@@ -221,7 +222,7 @@ export class Zombie {
   // Glitter: for `seconds` it fights other zombies instead of you, hitting for `damage`. Refused while it rises, while a mannequin is frozen, and
   // for a while after the last dose. Returns whether it took.
   applyConfusion(seconds, damage) {
-    if (!this.isAlive || this.state === 'spawning' || this.frozen || this.confusionImmune > 0) return false;
+    if (this.type.boss || !this.isAlive || this.state === 'spawning' || this.frozen || this.confusionImmune > 0) return false;
     this.confusion = { left: seconds, damage, target: null, retarget: 0 };
     this.setState('chasing'); // whatever it was doing to you, it has forgotten
     this.chargeLeft = 0;
@@ -561,6 +562,7 @@ export class Zombie {
     const dx = player.position.x - this.position.x;
     const dz = player.position.z - this.position.z;
     const distToPlayer = Math.hypot(dx, dz);
+    const sameFloor = nav.layerOf?.(this.position.y) === nav.layerOf?.(player.position.y);
     const contact = type.radius + feel.player.radius + crowd.contactGap;
 
     // 1) Where to go: mid-attack, straight at the player (braking only just before touching them);
@@ -588,17 +590,18 @@ export class Zombie {
         this.circleAroundPlayer(player, contact, sx, sz, toSlot);
       }
       arrive = clamp01(toSlot / crowd.arriveDistance);
-    } else if (distToPlayer > contact) {
+    } else if (!sameFloor || distToPlayer > contact) {
       const laneFade = clamp01((distToPlayer - crowd.surroundRadius) / crowd.laneFadeDistance);
       hasPath = nav.directionTo(this.position, player.position, desired, {
         laneOffset: this.laneOffset,
         laneFade,
         lookAhead: this.lookAhead,
       });
-      arrive = clamp01((distToPlayer - contact) / crowd.arriveDistance);
+      // Horizontal proximity is irrelevant until the route has reached the player's floor.
+      arrive = sameFloor ? clamp01((distToPlayer - contact) / crowd.arriveDistance) : 1;
     }
     // Never walk on into the player's body, whatever the slot says.
-    if (hasPath && distToPlayer <= contact && desired.x * dx + desired.z * dz > 0) arrive = 0;
+    if (hasPath && sameFloor && distToPlayer <= contact && desired.x * dx + desired.z * dz > 0) arrive = 0;
 
     // 2) Spacing: push away from nearby zombies, much harder the closer they are.
     let pushX = 0;
@@ -676,7 +679,7 @@ export class Zombie {
     // 5) Face where I'm TRYING to go (not where shoves push me, which looked like skating sideways);
     //    face the player when attacking, settled in my slot, at arm's length, or with nowhere to go.
     if (facePlayer) this.faceToward(player.position, dt, type.attack.turnSpeed); // locked on mid-attack
-    else if (!hasPath || arrive < 0.5 || distToPlayer < contact * 2) this.faceToward(player.position, dt);
+    else if (!hasPath || arrive < 0.5 || (sameFloor && distToPlayer < contact * 2)) this.faceToward(player.position, dt);
     else this.faceDirection(desired.x, desired.z, dt);
   }
 

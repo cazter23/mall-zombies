@@ -4,6 +4,8 @@
 // game/rounds.js, the zombie manager, and buyable things (doors, wall buys).
 // =============================================================================
 
+import { bossTypes } from './bosses.js';
+
 export const economy = {
   startingPoints: 500,
 
@@ -21,6 +23,7 @@ export const economy = {
     mannequin: 100,
     cartPusher: 130, // 1.8x a Shopper's health (an even per-bullet payout would be 108), a little extra for how dangerous it is
     mascot: 300,
+    janitor: 300,
   },
 
   // Special zombie types mixed into the waves (every other spawn is a Shopper).
@@ -191,7 +194,7 @@ export function zombieHealthForRound(round) {
 
 // Health of one zombie of `typeId` in `round` (special types scale the round's health; see zombieMix).
 export function zombieHealthFor(typeId, round) {
-  const multiplier = economy.zombieMix[typeId]?.healthMultiplier ?? 1;
+  const multiplier = economy.zombieMix[typeId]?.healthMultiplier ?? bossTypes[typeId]?.healthMultiplier ?? 1;
   return Math.round(zombieHealthForRound(round) * multiplier);
 }
 

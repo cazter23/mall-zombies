@@ -26,12 +26,16 @@
 //   'powerUpDrop' { id, position, seconds }               earned incentive appeared on clear floor
 //   'powerUpCollect' { id, name, pa, sound }              walk-through collection (instant effect or zone start)
 //   'powerUpStart' { id, position, remaining, radius, ... } zone or temporary employee benefit began
-//   'powerUpEnd'  { id, reason }                         benefit ended: expired | reset | death | spent | completed | targetLost | replaced
+//   'powerUpEnd'  { id, reason }                         benefit ended (including mopped by the Janitor or roundDiscard)
 //   'incentiveComplete' { id, text }                     marked-target bonus earned (PA/HUD feedback)
 //   'incentiveBurst' { position, radius, color }          deferred liquidation burst (visual/sound feedback)
 //   'powerUpExpire' { id }                               uncollected incentive timed out
 //   'roundStart'  { round }                              the round number flipped (game/rounds.js)
+//   'roundDiscard' {}                                    a debug skip cleared the current wave
 //   'typeIntro'   { typeId }                             a zombie type's first appearance this run
+//   'bossSpawn'   { zombie, round }                      a scheduled or debug-summoned boss entered the wave
+//   'bossPhase'   { zombie, phase, round }               an encounter mechanic began (Janitor: wetFloor)
+//   'bossDefeated' { zombie, round }                     an active boss died through the regular kill path
 //   'purchase'    { label, cost, kind, id }              something was bought; kind 'door' | 'weapon' | 'ammo' |
 //                                                        'ammoCache' | 'tier' | 'attachment' | 'other', id = door / gun / tier / attachment id (as it was BEFORE
 //                                                        the purchase: buying a gun is kind 'weapon', not its ammo)

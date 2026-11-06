@@ -41,6 +41,7 @@ export function receiptLinesFor(r) {
     ['Zombies cleared', r.kills],
     ['  Headshots', r.headshotKills],
     ['  Box cutter', r.meleeKills],
+    ['Bosses defeated', r.bossesDefeated ?? 0],
     ['Accuracy', `${Math.round(r.accuracy * 100)}%`],
   ];
   if (r.survivedBy?.length) lines.push(['Survived by', r.survivedBy.join(' and ')]);

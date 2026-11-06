@@ -10,6 +10,7 @@ export function createRunStats() {
     kills: 0,
     headshotKills: 0,
     meleeKills: 0,
+    bossesDefeated: 0,
     shotsFired: 0,
     shotsHit: 0, // shots that hit something shootable
 
@@ -34,6 +35,7 @@ export function createRunStats() {
       this.kills = 0;
       this.headshotKills = 0;
       this.meleeKills = 0;
+      this.bossesDefeated = 0;
       this.shotsFired = 0;
       this.shotsHit = 0;
     },

@@ -10,7 +10,7 @@ export function createIncentiveEffects({ events, player, gun, zombies, stats, pr
   const living = () => (zombies.zombies ?? []).filter(z => z.isAlive && z.state !== 'spawning');
   const near = (a, b, radius) => Math.abs(a.y - b.y) <= config.floorTolerance
     && Math.hypot(a.x - b.x, a.z - b.z) <= radius && clearLine(a, b);
-  const candidates = (radius) => living().filter(z => near(player.position, z.position, radius))
+  const candidates = (radius) => living().filter(z => !z.type.boss && near(player.position, z.position, radius))
     .sort((a, b) => a.position.distanceToSquared(player.position) - b.position.distanceToSquared(player.position));
 
   function end(id, reason = 'expired') {
@@ -30,10 +30,10 @@ export function createIncentiveEffects({ events, player, gun, zombies, stats, pr
     return true;
   }
 
-  function start(id, position) {
+  function start(id, position, bossReward = false) {
     const def = config.types[id];
     end(id, 'replaced');
-    const effect = { id, position: position.clone(), remaining: def.seconds, elapsed: 0, charges: def.charges, radius: def.radius };
+    const effect = { id, position: position.clone(), remaining: def.seconds, elapsed: 0, charges: def.charges, radius: def.radius, bossReward };
     if (id === 'expressCheckout') effect.modifiers = { reloadSpeed: def.reloadMultiplier, switchSpeed: def.switchMultiplier };
     if (id === 'overtimeApproved') effect.modifiers = { walkSpeed: def.speedMultiplier, sprintSpeed: def.speedMultiplier };
     if (id === 'lossPrevention') effect.modifiers = { meleeDamageMultiplier: def.damageMultiplier };
@@ -111,6 +111,15 @@ export function createIncentiveEffects({ events, player, gun, zombies, stats, pr
   return {
     get active() { return [...effects.values()]; },
     useful, start,
+    cleanSpill(position) {
+      const spill = effects.get('spillCleanup');
+      if (!spill || !near(position, spill.position, spill.radius)) return false;
+      end(spill.id, 'mopped');
+      return true;
+    },
+    clearBossRewards() {
+      for (const effect of effects.values()) if (effect.bossReward) end(effect.id, 'roundDiscard');
+    },
     update(dt) {
       for (const effect of [...effects.values()]) {
         const def = config.types[effect.id];
