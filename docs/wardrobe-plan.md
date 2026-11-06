@@ -1,8 +1,8 @@
 # Wardrobe: plan
 
 Status: outline, nothing built yet. Numbers here are starting points, to be tuned by playing. Prices are suggestions only: the economy report
-(`npm run sim:economy`, which is still in the `economy-sim` worktree and not yet on main) confirms them. Checked against main at 738e7f5 and the `build-a-blaster` branch at 37f99d5 (its phase 2).
-Start only after `build-a-blaster` is merged: this work touches `createGame.js`, `events.js` and `main.js`, which that branch has also changed, and it
+(not written yet: the `economy-sim` branch has no work on it, so `tools/economySim.mjs` and `npm run sim:economy` still need doing) confirms them. Checked against the `build-a-blaster` branch at its phase 2; it is now merged, with all six phases and the Mascot.
+This work touches `createGame.js`, `events.js` and `main.js`, and it
 reuses the branch's free-action prompt (`priceLabel`). Build one phase at a time, in its own git worktree, and test before the next.
 
 ## The idea
@@ -169,7 +169,7 @@ The existing rule "a reserve above the cap is never cut" means taking off the Fa
 | Faster walking | Ties or beats the Mall Walker at x1.08 | Sprint and slide items |
 | Extra magazine | Magazine size lives in the gun (`def`, layer 2 in `gunStats.js`) and is fixed per slot. It's a mod, not a player stat | The Fanny Pack changes the reserve cap, which can be read live |
 | Mascot Head disguise (zombies ignore you) | There's no aggro or noise system. Every zombie always chases the player | Dropped. Revisit if bosses or Glitter add targeting |
-| Flat gun damage up | `stats.damageMultiplier` only reaches `hitDamage`, so it skips Party Trap, Clearance Rack, Inventory Liquidation and Build-A-Blaster stuffings. It would also compete with tiers | 3D Glasses raise headshots only, which rewards aim and stays in `hitDamage` |
+| Flat gun damage up | `stats.damageMultiplier` reaches `hitDamage` and Build-A-Blaster stuffings (through `gunPower`), but skips Party Trap, Clearance Rack and Inventory Liquidation. It would also compete with tiers | 3D Glasses raise headshots only, which rewards aim and stays in `hitDamage` |
 | Items with triggered effects ("every 10th kill...") | Needs listeners per item, which breaks "everything through the stats object" | Left for Later. All twelve are plain numbers |
 | Walk-in changing booths | The HOFFMAN'S booths are one solid block 2.4 m deep | You change at the mirror on the front face |
 | A menu of four hooks, one per slot | Focus goes to the nearest item, and a booth has no room to step between four hooks | One mirror, one button |

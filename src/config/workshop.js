@@ -5,7 +5,8 @@ export const workshopBuilds = {
     instructions: 'Aim down sights and shoot the floor to plant a charge.',
     aimAmount: 0.8, placementRange: 6, armSeconds: 0.5, lifetimeSeconds: 35,
     maxActive: 2, triggerRadius: 0.7, blastRadius: 2.3, damage: 650, maxTargets: 5,
-    footTolerance: 0.5, blastHeight: 0.16,
+    footTolerance: 0.5, blastHeight: 0.16, soundRange: 12,
+    blastPop: { count: 24, speed: 3.4 }, // the charge itself going off (a kill adds `pop`)
     pop: { delaySeconds: .36, ribbonSeconds: .52, pullMeters: .46, liftMeters: .27, count: 54, speed: 5.6, size: .083,
       colors: [0xff4e92, 0xffcf51, 0x54e4cd, 0x8b79fd, 0xfff3d4] },
   },
@@ -98,6 +99,13 @@ export const workshopRitual = {
   },
 };
 
+// Where a stuffing goes off, in metres (game/features/workshopStuffings.js).
+export const workshopReach = {
+  chestHeight: 1.1, // above a zombie's feet: its line of sight, and where its pops appear
+  missOffset: .15, // out from a wall, for a Last Round that missed
+  floorSearch: 5, // below a spot, for the floor under a puddle
+};
+
 // STUFFINGS: what a build does. Each round the bins offer todayCount of what is stocked. stockedBy = the zone that has to be owned (null = always).
 // gunSeconds = damage as seconds of the gun's own fire (weapons/gunStats.js gunPower), scaled again by the build's power.
 export const workshopStuffings = {
@@ -120,7 +128,7 @@ export const workshopStuffings = {
   popcornButter: {
     name: 'Popcorn Butter', stockedBy: 'cinema', color: 0xffd24a, sound: 'stuffingButter', blurb: 'Leaves a slippery puddle',
     // Spill Cleanup's zone, per proc: anything on it keeps being slowed while it stands there.
-    puddle: { radius: 1.8, seconds: 6, slowFraction: .35, slowSeconds: .2, maxPuddles: 3, lift: .03 },
+    puddle: { radius: 1.8, seconds: 6, slowFraction: .35, slowSeconds: .2, maxPuddles: 3, lift: .03, opacity: .55 },
     pop: { colors: [0xffd24a, 0xfff1a8, 0xe0a526], count: 8, speed: 1.4, size: .05 },
   },
   antifreeze: {

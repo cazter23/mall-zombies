@@ -174,3 +174,17 @@ test('hits follow the visible costume, miss the fallen helmet and find the expos
   assert.equal(shoot(aimAt(head, 0, 0)).part, 'head');
   assert.equal(shoot(aimAt(torso, 0, 0)).part, 'body');
 });
+
+test('out of the Returns Chute the Mascot falls in, like everyone else, and its hitboxes come with it', (t) => {
+  const { g } = fixture(t);
+  const zombie = g.zombies.spawn('mascot', new THREE.Vector3(0, 0, 12));
+  zombie.dropHeight = 1.5;
+  zombie.updateHitboxes();
+  zombie.model.update(0, zombie, 1);
+  assert.equal(zombie.state, 'spawning');
+  assert.equal(zombie.model.root.position.y, zombie.position.y + 1.5, 'it starts in the air, not under the floor');
+  assert.ok(zombie.hitboxes[0].box.min.y > zombie.position.y + 1.5, 'and the hitboxes are up there with it');
+  zombie.stateTime = type.spawnSeconds;
+  zombie.model.update(0, zombie, 1);
+  assert.equal(zombie.model.root.position.y, zombie.position.y);
+});

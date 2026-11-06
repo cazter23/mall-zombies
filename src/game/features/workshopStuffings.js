@@ -10,15 +10,13 @@
 // =============================================================================
 
 import * as THREE from 'three';
-import { workshopHearts, workshopStuffings, buildOf, qualityById } from '../../config/workshop.js';
+import { workshopHearts, workshopReach, workshopStuffings, buildOf, qualityById } from '../../config/workshop.js';
 import { castShot } from '../../weapons/hitscan.js';
 import { gunPower } from '../../weapons/gunStats.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
-const CHEST_HEIGHT = 1.1; // where a stuffing's line of sight is measured, above a zombie's feet
-const MISS_OFFSET = .15; // metres out from a wall a missed Last Round goes off
 const DOWN = new THREE.Vector3(0, -1, 0);
-const FLOOR_SEARCH = 5; // how far below a spot a puddle looks for the floor
+const { chestHeight: CHEST_HEIGHT, missOffset: MISS_OFFSET, floorSearch: FLOOR_SEARCH } = workshopReach;
 
 export function createBuildEffects({ events, gun, player, zombies, colliders, effects, stats, state, sound, scene }) {
   const heartCooldowns = new Map(); // weapon id -> seconds until its Heart can fire again
@@ -48,7 +46,7 @@ export function createBuildEffects({ events, gun, player, zombies, colliders, ef
   // Popcorn Butter's puddles: a small fixed pool of flat discs, so a proc allocates nothing.
   const { puddle: puddleConfig } = workshopStuffings.popcornButter;
   const puddleGeometry = new THREE.CircleGeometry(1, 24).rotateX(-Math.PI / 2);
-  const puddleMaterial = new THREE.MeshBasicMaterial({ color: workshopStuffings.popcornButter.color, transparent: true, opacity: .55, depthWrite: false });
+  const puddleMaterial = new THREE.MeshBasicMaterial({ color: workshopStuffings.popcornButter.color, transparent: true, opacity: puddleConfig.opacity, depthWrite: false });
   const puddles = Array.from({ length: puddleConfig.maxPuddles }, () => {
     const mesh = new THREE.Mesh(puddleGeometry, puddleMaterial);
     mesh.name = 'butterPuddle';

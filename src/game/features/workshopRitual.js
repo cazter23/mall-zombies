@@ -41,7 +41,7 @@ function measured(points) {
   return { points, lengths, total: lengths.reduce((a, b) => a + b, 0) };
 }
 
-export function createWorkshopRitual({ bench, map, gun, pricing, interactions, events, player, zombies, rounds, scene }) {
+export function createWorkshopRitual({ bench, map, gun, pricing, interactions, events, player, zombies, rounds, scene, state }) {
   const { stations } = bench;
   const path = measured(stations.path);
   let phase = 'idle'; // 'idle' | 'running' | 'ready'
@@ -243,7 +243,7 @@ export function createWorkshopRitual({ bench, map, gun, pricing, interactions, e
   rollToday();
   events.on('roundStart', rollToday);
   events.on('kill', ({ zombie }) => {
-    if (phase !== 'running' || !inside(zombie.position)) return;
+    if (state.over || phase !== 'running' || !inside(zombie.position)) return; // (a burn can outlive the player)
     const before = qualityFor(order.kills);
     order.kills += 1;
     const quality = qualityFor(order.kills);

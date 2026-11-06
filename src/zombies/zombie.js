@@ -713,6 +713,7 @@ export class Zombie {
   // keeping its health.
   respawnAt(position, yaw) {
     this.confusion = null;
+    this.dropHeight = 0; // (a rescued zombie rises like any other, wherever it first came from)
     this.observed = this.frozen = false;
     this.observationHold = 0;
     this.position.copy(position);

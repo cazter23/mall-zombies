@@ -122,7 +122,10 @@ export function createMascotModel(type, random) {
     body.rotation.x = 0;
     if (zombie.state === 'spawning') {
       const t = Math.min(1, zombie.stateTime / type.spawnSeconds);
-      root.position.y -= cfg.spawnDepth * (1 - t * t * (3 - 2 * t));
+      const left = 1 - t * t * (3 - 2 * t);
+      // Out of the Returns Chute it falls in, tumbling, instead of rising through the floor.
+      root.position.y += zombie.dropHeight > 0 ? zombie.dropHeight * left : -cfg.spawnDepth * left;
+      if (zombie.dropHeight > 0) body.rotation.x = left * tuning.dropTumble;
     } else if (!zombie.isAlive) {
       body.rotation.x = tuning.deathTip * Math.min(1, zombie.stateTime / type.fallSeconds);
       const sink = (zombie.stateTime - type.fallSeconds - type.corpseSeconds) / type.sinkSeconds;

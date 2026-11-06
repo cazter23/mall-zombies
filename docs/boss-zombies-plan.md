@@ -1,7 +1,6 @@
 # Boss zombies: plan
 
-Status: outline, nothing built yet. Numbers here are starting points, to be tuned by playing. Start only after the `build-a-blaster` branch
-is merged: this work touches `createGame.js`, `zombieManager.js`, `zombie.js` and `events.js`, which that branch is also using.
+Status: outline, nothing built yet. Numbers here are starting points, to be tuned by playing. Build-A-Blaster and the Mascot are merged, so this can start.
 Build one phase at a time, in its own git worktree, and test before the next.
 
 ## The idea
@@ -27,7 +26,8 @@ A boss is not a bigger zombie. Each one is a mall employee who changes the rules
 - **One boss per round, maximum.** A boss never shares a round with a new zombie type's first appearance.
 - **Bosses show a health bar** at the top of the screen, with their name and job title.
 - **Bosses resist control effects.** Stagger is ignored and slows are halved, so Security Sweep, Staff Entrance, Loss Prevention and Product Recall
-  can't stun-lock them. Mystery Shopper and Product Recall never mark one.
+  can't stun-lock them. Mystery Shopper and Product Recall never mark one. `applyConfusion` refuses a boss, so Glitter can't switch one off, and Antifreeze's shatter
+  doesn't count a boss's halved slow as a chill.
 - **Full damage from everything else**, including attachments, upgrades, Inventory Liquidation and Build-A-Blaster stuffings.
 
 ## When they appear
@@ -39,7 +39,7 @@ A boss is not a bigger zombie. Each one is a mall employee who changes the rules
 | Mall Manager | Rounds 12 to 14 | 10 | About 10,000 at round 13 | 1,000 |
 | Influencer | Round 15 or 17 | 8 | About 9,250 at round 15 | 1,000 |
 
-The windows avoid round 8 (Mannequin) and round 10 (the Mascot, once it exists). Each run picks from the window, so bosses aren't memorised.
+The windows avoid round 8 (Mannequin) and round 10 (the Mascot). Each run picks from the window, so bosses aren't memorised.
 After round 17, a boss comes every 3 rounds, rotating, never the same one twice in a row. Health scales with the round automatically.
 Target fight lengths with a gun that suits the round: Janitor 15 s, Guard 30 s, Manager 35 s, Influencer 25 s.
 
@@ -81,7 +81,7 @@ Ring light, selfie stick, always filming. She doesn't chase you. She moves betwe
 - **Fans are paid nothing.** They are the only zombies added on top of a round, so they give no points and no incentive credit. Otherwise she'd be a points farm.
   They have half health and still count against the round's maximum alive.
 - **Phone flash:** a short, mild white flash if you get within 5 m, with a wind-up so you can look away.
-- **Reward:** the **Discount Code**, 50% off your next purchase, saving up to 2,000.
+- **Reward:** the **Discount Code**, 50% off your next purchase, saving up to 2,000. It doesn't work on the claw machine (docs/claw-machine-plan.md).
 
 ## Rewards
 
@@ -93,8 +93,8 @@ points instead. `pricing.js` needs a voucher slot of its own: its existing coupo
 - **New `config/bosses.js`:** schedule, health multipliers, attack numbers, rewards, PA lines. Kill values go in `economy.killValues`.
 - **Not in `economy.zombieMix`:** `zombieTypeForRound` and `nextType` expect the fields every regular type has, and bosses must never be picked at random.
   `zombieHealthFor` is taught to read the boss table too.
-- **New `game/bossDirector.js`** (built in createGame, DOM-free): chooses each run's schedule on 'roundStart', spawns the boss partway through the round, retries if
-  no spawn point is free, and notices a boss that vanished without a kill (the debug round skip calls `zombies.clear()`).
+- **New `game/bossDirector.js`** (built in createGame, DOM-free): chooses each run's schedule on 'roundStart', spawns the boss partway through the round, ignores the Returns
+  Chute's spawn steering so a boss never falls out of the hatch, retries if no spawn point is free, and notices a boss that vanished without a kill (the debug round skip calls `zombies.clear()`).
 - **New `zombies/bosses/`:** one behaviour module and one model file per boss. `zombie.js` gets one small hook that hands control to the behaviour,
   so it doesn't grow four more sets of states.
 - **Big look, normal body:** every zombie shares one navigation grid sized for the Shopper, so a boss's `radius` stays at or below the Cart Pusher's 0.42.

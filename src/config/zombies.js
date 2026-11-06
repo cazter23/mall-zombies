@@ -344,7 +344,7 @@ const mascot = {
     ],
     pose: {
       radiansPerMeter: 4.4, shambleStride: 0.46, rushStride: 0.74, shambleArm: 0.24, rushArm: 0.55,
-      sway: 0.065, rushLean: 0.21, recoil: 0.15, attackLean: 0.17, deathTip: 1.48, sinkDepth: 0.75,
+      sway: 0.065, rushLean: 0.21, recoil: 0.15, attackLean: 0.17, deathTip: 1.48, sinkDepth: 0.75, dropTumble: 1.2,
     },
     drop: {
       velocity: [1.55, 2.55, 0.95], gravity: 11, spin: [7, 3.6, 6.3],
@@ -417,9 +417,6 @@ export const zombieSpawn = {
   reuseCooldownSeconds: 3, // prefer other local markers; relax only if all safe local ones are cooling
 };
 
-// Flow-field pathfinding on a flat grid (ground floor only, until the navmesh in step 7).
-// Stuck-zombie failsafe (like BO3's round_spawn_failsafe): a zombie far from the player that has
-// barely moved, or can't reach them, rises again at a spawn point with the same health.
 // Build-A-Blaster's Glitter (zombies/confusion.js). How long and how hard come from the stuffing (config/workshop.js).
 export const zombieConfusion = {
   rangeMeters: 6, // how far it looks for another zombie to fight
@@ -429,6 +426,9 @@ export const zombieConfusion = {
   immuneSeconds: 4, // after it wears off, so a fast gun can't keep a crowd confused for ever
 };
 
+// Flow-field pathfinding on a flat grid (ground floor only, until the navmesh in step 7).
+// Stuck-zombie failsafe (like BO3's round_spawn_failsafe): a zombie far from the player that has
+// barely moved, or can't reach them, rises again at a spawn point with the same health.
 export const zombieFailsafe = {
   checkSeconds: 10, // how often each zombie is checked
   minMoveMeters: 1.0, // moved less than this since the last check = stuck

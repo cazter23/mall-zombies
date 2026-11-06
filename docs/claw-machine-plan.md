@@ -1,8 +1,8 @@
 # Claw machine: plan
 
 Status: outline, nothing built yet. Numbers here are starting points, to be tuned by playing. Prices are suggestions only: the economy report
-(`npm run sim:economy`, which is still in the `economy-sim` worktree and not yet on main) confirms them. Checked against main at 738e7f5 and the `build-a-blaster` branch at 37f99d5 (its phase 2).
-Start only after `build-a-blaster` is merged: this work relies on its `gun.away`, `gun.isLoaner` and `priceLabel`, and touches `createGame.js`, `interactions.js` and `mall.js`, which that branch has also changed.
+(not written yet: the `economy-sim` branch has no work on it, so `tools/economySim.mjs` and `npm run sim:economy` still need doing) confirms them. Checked against the `build-a-blaster` branch at its phase 2; it is now merged, with all six phases and the Mascot.
+This work relies on its `gun.away`, `gun.isLoaner` and `priceLabel`, and touches `createGame.js`, `interactions.js` and `mall.js`.
 Build one phase at a time, in its own git worktree, and test before the next.
 
 ## The idea

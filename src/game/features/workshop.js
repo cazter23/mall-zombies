@@ -8,7 +8,7 @@ import { createWorkshopSpectacle } from './workshopSpectacle.js';
 import { createLimitedEditionDrops } from './limitedEditions.js';
 
 export function buildWorkshop(bench, { map, gun, pricing, interactions, events, player, scene, zombies, rounds, colliders, effects, sound, stats, state }) {
-  const ritual = createWorkshopRitual({ bench, map, gun, pricing, interactions, events, player, zombies, rounds, scene });
+  const ritual = createWorkshopRitual({ bench, map, gun, pricing, interactions, events, player, zombies, rounds, scene, state });
   const buildEffects = createBuildEffects({ events, gun, player, zombies, colliders, effects, stats, state, sound, scene });
   const spectacle = createWorkshopSpectacle({ bench, ritual, events, zombies, player, sound });
   const drops = createLimitedEditionDrops({ events, gun, player, scene, rounds, state, sound });
@@ -60,8 +60,8 @@ export function buildWorkshop(bench, { map, gun, pricing, interactions, events, 
       const { position } = charge;
       if (!zombies.zombies.some(z => nearby(z, position, trap.triggerRadius) && clearPath(z, position))) continue;
       removeTrap(i);
-      effects.confetti(position, up, { ...trap.pop, count: 24, speed: 3.4 });
-      if (player.position.distanceTo(position) <= trap.placementRange * 2) sound?.play('confettiShot');
+      effects.confetti(position, up, { ...trap.pop, ...trap.blastPop });
+      if (player.position.distanceTo(position) <= trap.soundRange) sound?.play('confettiShot');
       const targets = zombies.zombies.filter(z => nearby(z, position, trap.blastRadius) && clearPath(z, position));
       targets.sort((a, b) => a.position.distanceToSquared(position) - b.position.distanceToSquared(position));
       for (const target of targets.slice(0, trap.maxTargets)) {

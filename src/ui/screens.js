@@ -236,7 +236,7 @@ export function createScreens() {
         <div><b>Survive</b><p>Zombies come in rounds. Every round brings more of them, and tougher. You have one life.</p></div>
         <div><b>Earn</b><p>+${pay.nonLethalHit} for every hit, +${kill} for a kill. Headshot kills +${pay.headshotKillBonus} more, box cutter kills +${pay.meleeKillBonus}.</p></div>
         <div><b>Spend</b><p>Hold <kbd>F</kbd> / <kbd>X</kbd> to buy: shutters open new parts of the mall, guns hang on the walls, the RESTOCK-O-MATIC refills ammo.</p></div>
-        <div><b>Upgrade</b><p>Customer Service sells Extended Warranties (more damage). The Food Court stores fit attachments to the gun in your hand.</p></div>
+        <div><b>Upgrade</b><p>Customer Service sells Extended Warranties (more damage). The Food Court stores fit attachments to the gun in your hand. Build-A-Blaster on the Promenade stuffs it: pick a Stuffing and a Heart, hand it over, then fight in the room to fill the tank.</p></div>
         <div><b>Listen</b><p>The PA announces Flash Sales: one kind of item gets 25-50% cheaper for a short time.</p></div>
         <div><b>Move</b><p>Sprint, slide (<kbd>C</kbd>), vault counters (<kbd>Space</kbd>), go prone (<kbd>Ctrl</kbd> / <kbd>LB</kbd>), slash with the box cutter (<kbd>V</kbd>). Space / A gets you up from prone. Stand still and they surround you.</p></div>
       </div>

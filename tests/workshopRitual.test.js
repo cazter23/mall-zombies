@@ -424,3 +424,33 @@ test('the debug command puts you at the bench', () => {
   assert.equal(g.interactions.prompt?.id, 'ritual');
   g.map.dispose();
 });
+
+test('a burn that finishes after the player dies adds nothing to the gauge', () => {
+  const t = fixture(), { g, ritual, bench } = t;
+  t.startRitual();
+  const { x, z } = bench.stations.lever;
+  t.atLever();
+  const zombie = g.zombies.spawn('shopper', new THREE.Vector3(x - 3, 0, z));
+  zombie.position.y = Y;
+  zombie.setState('chasing');
+  zombie.applyBurn(zombie.health * 2, 1, .1);
+  g.health.invulnerable = false;
+  g.health.takeDamage(g.stats.maxHealth * 2);
+  assert.equal(g.state.over, true);
+  t.tick(90);
+  assert.equal(zombie.isAlive, false);
+  assert.equal(ritual.status.kills, 0);
+  g.map.dispose();
+});
+
+test('a chute zombie sent back by the failsafe rises from the floor like any other', () => {
+  const t = fixture(), { g, ritual } = t;
+  t.startRitual();
+  t.atLever();
+  assert.equal(ritual.steering, true);
+  const zombie = g.zombies.spawn('shopper');
+  assert.equal(zombie.dropHeight, cfg.chuteDropHeight);
+  zombie.respawnAt(new THREE.Vector3(0, 0, 12), 0);
+  assert.equal(zombie.dropHeight, 0);
+  g.map.dispose();
+});
