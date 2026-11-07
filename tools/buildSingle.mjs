@@ -52,7 +52,8 @@ const worker = readFileSync(workerPath, 'utf8');
 // The worker file itself is a self-contained script, so a classic Blob worker runs it fine.
 const workerCall = /new Worker\((?:(?!new Worker)[\s\S]){0,300}?musicWorker[\s\S]{0,200}?\{type:["']module["']\}\)/;
 if (!workerCall.test(js)) throw new Error('single build: could not find the music worker call in the bundle');
-js = js.replace(workerCall, `new Worker(URL.createObjectURL(new Blob([${JSON.stringify(worker)}],{type:"text/javascript"})))`);
+// (Pasted through a function here and below: in a replacement STRING, $& and $' mean "the matched text" and "the rest", and the bundle contains them.)
+js = js.replace(workerCall, () => `new Worker(URL.createObjectURL(new Blob([${JSON.stringify(worker)}],{type:"text/javascript"})))`);
 
 // src/boot.js imports main.js dynamically: the code is all inlined, so the import helper needs no address.
 js = js.replace(/,void 0,import\.meta\.url\)/g, ',void 0)');
@@ -65,8 +66,8 @@ html = html
   .replace(/<link[^>]*rel="stylesheet"[^>]*href="\.\/assets\/[^"]*"[^>]*>\s*/i, '')
   // fonts: don't block the first paint if the network is slow or blocked
   .replace(/<link href="(https:\/\/fonts\.googleapis\.com[^"]*)" rel="stylesheet" \/>/, '<link href="$1" rel="stylesheet" media="print" onload="this.media=\'all\'" />')
-  .replace('</head>', `    <style>${safe(css)}</style>\n  </head>`)
-  .replace('</body>', `    <script type="module">${safe(js)}</script>\n  </body>`);
+  .replace('</head>', () => `    <style>${safe(css)}</style>\n  </head>`)
+  .replace('</body>', () => `    <script type="module">${safe(js)}</script>\n  </body>`);
 
 if (/src="\.?\/?assets\//.test(html) || /href="\.?\/?assets\//.test(html)) throw new Error('single build: a file reference was left in the html');
 mkdirSync(OUT, { recursive: true });

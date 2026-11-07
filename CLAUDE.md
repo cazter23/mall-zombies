@@ -20,6 +20,7 @@ npm run dev           # Vite dev server (hot reload)
 npm run build         # production build into dist/; run after every change to catch errors (it only bundles: it does not run the game)
 npm run preview       # serve the built dist/
 npm run build:single  # dist-single/sunset-galleria.html: the WHOLE game in one file (no server, no Node, no internet)
+npm run play          # JUST PLAYING: rebuilds that file only if the code changed, opens it in Firefox (play.cmd = the same by double-click)
 npm run balance       # gun balance report (tools/gunReport.mjs): dps by range, pulls to kill by round, cannon blast table
 ```
 There is no linter. What each test file covers: docs/tests.md (relationships and rules, not exact values).
@@ -65,7 +66,7 @@ There is no linter. What each test file covers: docs/tests.md (relationships and
 
 ## Folder map (short; every module is described in docs/folder-structure.md)
 ```
-index.html, package.json
+index.html, package.json, vite.config.js (dev server only), play.cmd
 src/main.js          BROWSER SIDE ONLY: renderer, scene, camera, input + gamepad, HUD, sound, viewmodel, menus, pointer lock, loop, window.__mall test hook
 src/game/            ALL gameplay wiring, DOM-free so it runs headless in tests: createGame.js (builds + ticks every system), rounds, wallet, pricing,
                      events (the bus), interactions (buying), features/ (map features by kind: wall buys, ammo cache, upgrade desk, attachment

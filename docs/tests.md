@@ -183,3 +183,4 @@ the model and debris and disposes their shared geometry and materials.
 - `workshopBuilds.test.js`: Overstuffed is stronger than Extra Stuffed and recharges its Heart twice as fast. `workshopRitual.test.js`: the certificate's Courtesy Loaner line, returned or lost.
 - `limitedEditions.test.js`: the HUD marker's bearing, distance, floor and time. `weaponModels.test.js`: only the Loaner wears the security tag.
 - `mascot.test.js`: the warning before the rush, which also cancels a swing; the helmet-pop bonus (gun or melee headshot only, once, never after death); helmets outlive the body, face the player, stop short of walls, go with the round, and are capped.
+- `play.test.js`: the launcher rebuilds only for newer source and watches all of it; the dev server skips folders the game never loads from, but not this checkout's own code, even in a worktree. `singleFile.test.js` now also parses the inline script.

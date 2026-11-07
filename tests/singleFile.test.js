@@ -3,8 +3,10 @@
 // references left, the music worker inlined as a Blob worker, and the only network thing is the (non-blocking) font link.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
-import { readFileSync, existsSync, readdirSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { readFileSync, existsSync, readdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 test('npm run build:single writes one self-contained sunset-galleria.html', { timeout: 120_000 }, () => {
   execFileSync(process.execPath, ['tools/buildSingle.mjs'], { stdio: 'pipe' });
@@ -14,6 +16,10 @@ test('npm run build:single writes one self-contained sunset-galleria.html', { ti
   assert.match(html, /<title>Sunset Galleria<\/title>/);
   assert.equal((html.match(/<script/g) ?? []).length, 1, 'one script');
   assert.match(html, /<script type="module">/, 'inline, so it runs from file://');
+  assert.equal(html.split('</body>').length, 2, 'the code went in unaltered: pasting it must not expand the $& in the bundle');
+  const code = join(mkdtempSync(join(tmpdir(), 'single-')), 'inline.mjs');
+  writeFileSync(code, html.match(/<script type="module">([\s\S]*)<\/script>/)[1]);
+  assert.equal(spawnSync(process.execPath, ['--check', code]).status, 0, 'and the inline script is valid JavaScript');
   assert.equal((html.match(/<style>/g) ?? []).length, 1, 'one inline style block');
   assert.doesNotMatch(html, /(?:src|href)="\.{0,2}\/?assets\//, 'no reference to a separate file');
   assert.doesNotMatch(html, /import\.meta\.url/, 'no URLs resolved against the page address');

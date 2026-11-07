@@ -1,5 +1,18 @@
 # Sunset Galleria: build history ("Current state")
 
+## 6 November 2026 — One-click play, and the single file finally boots
+
+`npm run play` / play.cmd (tools/play.mjs) opens the single-file build in Firefox with no server, rebuilding only when the source is newer and falling back to the last good build. The
+user kept hitting "Unable to connect" on localhost:5173: that only means no dev server was running (the app itself stopped one), never the network.
+
+The single file had not been opening at all: tools/buildSingle.mjs pasted the bundle in with a replacement STRING, so every `$&` in three.js became a stray `</body>` inside the code
+(SyntaxError in Firefox). singleFile.test.js only checked the file's shape; it now parses the inline script. This was also the first real run through file://: headless Firefox boots it in
+about 7.5 s with no console errors, and localStorage survives a browser restart and a rebuild. Saves are separate from localhost:5173 (a different origin).
+
+Measured, because the first reading misled: a cold dev load took 74 s of files in a hidden pane with very little free RAM, yet about 1 s of files and 7 s to game ready in headless Firefox with 4 GB free,
+with or without vite.config.js (6.9 and 7.1 s without it; 7.2, 7.0 and 6.8 s with it). So the config's warmup and watcher rules are tidying, not a measured speed-up, and memory pressure is the likely
+cause of the long waits. The 7 s that remains is the game's own startup, in every mode.
+
 ## 6 November 2026 — Build-A-Blaster and Mascot polish
 
 Overstuffed now earns its extra kills: 2.1 power against Extra Stuffed's 1.7, and a Heart cooldown at half. Named guns keep a confirmed-kill record (their own kills and their stuffing's,

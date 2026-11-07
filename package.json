@@ -10,6 +10,7 @@
     "build": "vite build",
     "build:single": "node tools/buildSingle.mjs",
     "preview": "vite preview",
+    "play": "node tools/play.mjs",
     "balance": "node tools/gunReport.mjs"
   },
   "dependencies": {
