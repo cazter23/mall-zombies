@@ -96,9 +96,12 @@ export function createPartyTrapDeaths({ scene, effects, playPop }) {
     render(alpha) {
       for (const [zombie, state] of active) draw(state, zombie, THREE.MathUtils.lerp(state.previousAge, state.age, alpha));
     },
-    clear() {
-      for (const state of active.values()) remove(state);
-      active.clear();
+    clear(matches = () => true) {
+      for (const [zombie, state] of active) {
+        if (!matches(zombie)) continue;
+        remove(state);
+        active.delete(zombie);
+      }
     },
   };
 }

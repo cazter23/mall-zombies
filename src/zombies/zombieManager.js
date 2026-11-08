@@ -12,6 +12,7 @@ import { createPartyTrapDeaths } from './partyTrapDeath.js';
 import { createTankDeaths } from './tankDeath.js';
 import { feel } from '../config/feel.js';
 import { zombieTypes, zombieCrowd, zombieFailsafe, zombieSpawn } from '../config/zombies.js';
+import { bossTypes } from '../config/bosses.js';
 import { economy, zombieHealthFor } from '../config/economy.js';
 import { createNavigation } from './navigation.js';
 import { overlapsSolid } from '../world/collision.js';
@@ -323,7 +324,7 @@ export function createZombieManager({
     const candidates = [];
     for (const z of zombies) {
       z.slot = null;
-      if (!z.isAlive || z.state === 'spawning') continue;
+      if (!z.isAlive || z.type.boss || z.state === 'spawning') continue;
       const d = z.distanceTo(player);
       if (d > crowd.surroundRadius) continue;
       if (nav.layerOf(z.position.y) !== nav.layerOf(p.y)) continue; // (a zombie on another floor takes the route to you, not a slot)
@@ -371,6 +372,13 @@ export function createZombieManager({
     for (const z of zombies) if (!z.slot) z.slotKey = null;
   }
 
+  function removeActor(index) {
+    const [zombie] = zombies.splice(index, 1);
+    zombie.model.dispose();
+    const target = shootables.indexOf(zombie);
+    if (target !== -1) shootables.splice(target, 1);
+  }
+
   return {
     zombies,
     nav,
@@ -404,8 +412,9 @@ export function createZombieManager({
     spawn(typeId = 'shopper', at = null) {
       const cap = economy.zombieMix[typeId]?.maxAlive;
       if (cap && zombies.filter(z => z.isAlive && z.type.id === typeId).length >= cap) typeId = 'shopper';
-      const type = zombieTypes[typeId];
-      const point = at ? null : (steered && pickSpawnPoint(type, null, steered)) || pickSpawnPoint(type);
+      const type = bossTypes[typeId] ?? zombieTypes[typeId];
+      const chute = type.boss ? null : steered;
+      const point = at ? null : (chute && pickSpawnPoint(type, null, chute)) || pickSpawnPoint(type);
       if (!at && !point) return null;
       const position = at ? at.clone() : point.position.clone();
       position.y = point ? point.position.y : 0; // (a spawn marker stands on its own floor; an explicit spot goes on the ground)
@@ -422,7 +431,7 @@ export function createZombieManager({
       shootables.push(zombie);
       if (point) lastSpawnAt.set(point, spawnClock);
       // Out of the Returns Chute: it falls out of the hatch rather than rising through the floor (no dust).
-      if (point && steered?.includes(point)) {
+      if (point && chute?.includes(point)) {
         zombie.dropHeight = chuteDrop;
         zombie.updateHitboxes();
         onChuteDrop?.(zombie);
@@ -435,18 +444,22 @@ export function createZombieManager({
       return zombie;
     },
 
+    clearBosses() {
+      partyDeaths.clear(zombie => zombie.type.boss); // ribbons can outlive the corpse
+      for (let i = zombies.length - 1; i >= 0; i--) {
+        if (!zombies[i].type.boss) continue;
+        tankDeaths.remove(zombies[i]);
+        removeActor(i);
+      }
+    },
+
     // Remove every zombie immediately (debug).
     playPartyTrapDeath: partyDeaths.start,
 
     clear() {
       partyDeaths.clear();
       tankDeaths.clear();
-      for (const z of zombies) {
-        z.model.dispose();
-        const i = shootables.indexOf(z);
-        if (i !== -1) shootables.splice(i, 1);
-      }
-      zombies.length = 0;
+      for (let i = zombies.length - 1; i >= 0; i--) removeActor(i);
       lastSpawnAt.clear();
       spawnClock = 0;
       for (const { helmet } of helmets) helmet.dispose();
@@ -475,10 +488,7 @@ export function createZombieManager({
       for (let i = zombies.length - 1; i >= 0; i--) {
         const z = zombies[i];
         if (!z.removed) continue;
-        z.model.dispose();
-        zombies.splice(i, 1);
-        const s = shootables.indexOf(z);
-        if (s !== -1) shootables.splice(s, 1);
+        removeActor(i);
       }
     },
 

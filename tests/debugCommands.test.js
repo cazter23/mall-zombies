@@ -52,7 +52,7 @@ test('keys resolve to commands, with Shift as an exact match', () => {
   assert.equal(d.resolve('KeyN', true).id, 'jumpRounds');
   assert.equal(d.resolve('Backquote', false).id, 'panel');
   assert.equal(d.resolve('KeyO', true), null, 'Shift+O is nothing');
-  assert.equal(d.resolve('KeyJ', false), null);
+  assert.equal(d.resolve('KeyJ', false).id, 'summonBoss');
 });
 
 test('zombies: cycle through every type, spawn the selected one, kill them for points, clear them', () => {

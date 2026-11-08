@@ -122,6 +122,15 @@ export function createHud() {
   roundBanner.style.setProperty('--round-seconds', `${ui.roundSeconds}s`);
   hud.append(roundBanner);
 
+  const bossBar = el('section', 'boss-bar');
+  bossBar.hidden = true;
+  const bossName = el('strong', 'boss-name');
+  const bossTitle = el('span', 'hud-label');
+  const bossHealth = el('progress', 'boss-health');
+  bossBar.append(bossName, bossTitle, bossHealth);
+  hud.append(bossBar);
+  let displayedBoss = null;
+
   // A small intercom unit: permanent station identification above the current message.
   const announceBanner = el('div', 'announce-banner');
   announceBanner.style.animationDuration = `${ui.announcementSeconds}s`;
@@ -206,6 +215,20 @@ export function createHud() {
   return {
     // The title / pause / results screens (ui/screens.js): show(), on(action), padNav(), current.
     screens,
+
+    setBoss(zombie) {
+      if (zombie !== displayedBoss) {
+        displayedBoss = zombie;
+        bossBar.hidden = !zombie;
+        if (zombie) {
+          bossName.textContent = zombie.type.name;
+          bossTitle.textContent = zombie.type.title;
+          bossHealth.setAttribute('aria-label', `${zombie.type.name} health`);
+          bossHealth.max = zombie.maxHealth;
+        }
+      }
+      if (zombie) bossHealth.value = Math.max(0, zombie.health);
+    },
 
     // Peripheral feedback listens to the existing event bus; no purchase callbacks in gameplay.
     connectEvents(events) {

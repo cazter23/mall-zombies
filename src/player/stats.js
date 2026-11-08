@@ -19,6 +19,7 @@ export function createPlayerStats() {
 
     walkSpeed: feel.movement.walkSpeed,
     sprintSpeed: feel.movement.sprintSpeed,
+    surfaceSpeed: 1,
     jumpVelocity: feel.movement.jumpVelocity,
 
     crouchSpeed: feel.crouch.speed,

@@ -25,6 +25,16 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .round-value { display: block; font: 600 64px/.95 var(--font-hud); font-variant-numeric: tabular-nums; }
 .round-counter.flashing { animation: directory-break 1.6s ease-in-out infinite; }
 @keyframes directory-break { 50% { border-color: var(--mall-yellow); color: var(--mall-yellow); } }
+.boss-bar {
+  position: absolute; top: 18px; left: 50%; transform: translateX(-50%);
+  box-sizing: border-box; width: min(46vw, 390px); padding: 7px 12px;
+  color: var(--paper-light); background: var(--plum);
+  border: 2px solid var(--paper); box-shadow: 3px 3px 0 var(--raspberry);
+  text-align: center;
+}
+.boss-name { display: block; font: 700 clamp(14px, 2.2vw, 21px)/1.1 var(--font-ui); }
+.boss-bar .hud-label { color: var(--mall-yellow); }
+.boss-health { display: block; width: 100%; height: 8px; margin-top: 5px; accent-color: var(--mall-yellow); }
 .points {
   bottom: 145px; right: 28px; padding: 5px 0 5px 14px;
   border: 0; border-right: 0; border-left: 3px solid var(--mint); border-radius: 0;

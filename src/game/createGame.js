@@ -25,6 +25,8 @@ import { feel } from '../config/feel.js';
 import { Vector3 } from 'three';
 import { powerUps as incentiveConfig } from '../config/powerUps.js';
 import { economy } from '../config/economy.js';
+import { bossTiming } from '../config/bosses.js';
+import { createBossDirector } from './bossDirector.js';
 import { createShutterSounds } from './shutterSounds.js';
 import { zombieTypes } from '../config/zombies.js';
 import { weapons, melee as meleeWeapons } from '../config/weapons.js';
@@ -205,6 +207,7 @@ export function createGame({
       kills: runStats.kills,
       headshotKills: runStats.headshotKills,
       meleeKills: runStats.meleeKills,
+      bossesDefeated: runStats.bossesDefeated,
       accuracy: runStats.accuracy,
       assisted: state.assisted || health.invulnerable,
       // The guns you named at Build-A-Blaster (the receipt reads them out).
@@ -260,6 +263,7 @@ export function createGame({
     zombies,
     onRoundStart: (round) => events.emit('roundStart', { round }),
     onTypeIntro: (typeId) => events.emit('typeIntro', { typeId }),
+    onRoundDiscard: () => events.emit('roundDiscard'),
   });
   let powerUps = null;
 
@@ -324,6 +328,26 @@ export function createGame({
     events, player, gun, zombies, colliders, state, stats, pricing, wallet,
     view: createPowerUpView(scene, colliders),
   });
+  const bosses = createBossDirector({ events, rounds, zombies, scene, colliders, player, stats, powerUps, state });
+  let displayedBoss = null, displayedBossHealth;
+  function updateBossBar(zombie) {
+    const hp = zombie?.health;
+    if (displayedBoss === zombie && displayedBossHealth === hp) return;
+    displayedBoss = zombie;
+    displayedBossHealth = hp;
+    hud.setBoss(zombie);
+  }
+  events.on('bossSpawn', ({ zombie }) => {
+    updateBossBar(zombie);
+    hud.showAnnouncement({ ...zombie.type.introBanner, priority: bossTiming.introPriority });
+    sound.play(zombie.type.introSound);
+  });
+  events.on('bossDefeated', () => {
+    runStats.bossesDefeated += 1;
+    updateBossBar(null);
+  });
+  events.on('roundDiscard', () => updateBossBar(null));
+  events.on('playerDeath', () => updateBossBar(null));
   events.on('powerUpCollect', ({ pa, sound: name }) => {
     hud.showAnnouncement({ ...pa, priority: 1 });
     sound.play(name);
@@ -364,7 +388,7 @@ export function createGame({
   });
   // Developer shortcuts (config/debug.js lists the keys; main.js turns key presses into debug.run(id)).
   const debugCommands = createDebugCommands({
-    map, zombies, rounds, wallet, gun, health, player, arena, flashSales,
+    map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses,
     onUse: (id) => {
       // Merely showing the panel or choosing the next spawn type changes no run outcome.
       if (id !== 'panel' && id !== 'cycleZombie' && id !== 'benchmark') state.assisted = true;
@@ -385,6 +409,7 @@ export function createGame({
   // run state = one line here. (tests/fullRun.test.js plays a messy run, resets, and checks the game
   // equals a freshly built one, so anything forgotten here shows up as a failing test.)
   const resetSteps = [
+    ['bosses', () => bosses.reset()],
     ['powerUps', () => powerUps.reset()],
     ['zombies', () => zombies.clear()],
     ['stats', () => resetPlayerStats(stats)], // perks / wardrobe / skill-tree changes don't carry over
@@ -413,6 +438,7 @@ export function createGame({
       death.summary = null;
     }],
     ['hud', () => {
+      updateBossBar(null);
       hud.setRound(0);
       hud.setRoundFlashing(false);
       hud.setDead(false);
@@ -463,7 +489,12 @@ export function createGame({
     gun.update(dt, melee.isBusy || player.vault.active, player.vault.active);
     zombies.update(dt);
     // Rounds pause while you're off in the debug test range (zombies can't reach you there).
-    if (!(arena && arena.contains(player.position))) rounds.update(dt);
+    const inMall = !arena?.contains(player.position);
+    if (!state.over) {
+      bosses.update(dt, inMall);
+      if (inMall) rounds.update(dt, !bosses.pending);
+      updateBossBar(bosses.active);
+    }
     health.update(dt);
     map.update(dt);
     shutterSounds.update(dt);
@@ -483,6 +514,7 @@ export function createGame({
     features,
     flashSales,
     powerUps,
+    bosses,
     debug: debugCommands,
     colliders,
     arena,
