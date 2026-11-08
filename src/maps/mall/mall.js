@@ -894,6 +894,7 @@ export function buildMall(scene, colliders) {
   const hallwayClear = [
     ...spawnPoints.map((s) => around(s.position, 1.2)),
     ...features.map((f) => around(f.position, 2.0)),
+    ...clawSites.map((s) => around(s.cabinet.position, 2.0)), // (every GRAB-A-GUN site, not only the feature's first)
     ...doors.map((d) => around(d.position, 2.6)),
     around({ x: escalator.foot.x + 1, z: escalator.foot.z }, 2.5),
     { minX: D.minX - 1, maxX: D.maxX + 1, minZ: H.maxZ - 3, maxZ: H.maxZ }, // the start door's approach

@@ -89,12 +89,14 @@ src/
                         bindings: tests check) + enabled (master switch), showMarkers, testArena, addPointsAmount, jumpRounds, panel,
                         dummies, exposeToWindow, keyLabel(). They work in a normal game (no debug mode): Z spawn the selected
                         zombie / Shift+Z next type / X clear / K kill all (pays), N next round / Shift+N +5 rounds / L Flash Sale,
-                        P +5000 / ' points to 0, G god mode / H next wall gun / U free tier, O all doors / T test range / Shift+T Level 2, ` window
+                        P +5000 / ' points to 0, G god mode / H next wall gun / U free tier, O all doors / T test range / Shift+T Level 2, ` window,
+                        E Sunny in the next GRAB-A-GUN grab / Shift+E move GRAB-A-GUN to another open area now
     ui.js               Presentation timing, PA queue limit and brief weapon-role copy (no gameplay tuning)
     attachmentVisuals.js Per-weapon attachment sizing, near-side rail placement, short-barrel spans and held reload copies.
     retailUnease.js     Rare atrium display changes and localized back-room sound timings/ranges; no gameplay tuning.
     clawMachine.js      GRAB-A-GUN, the claw machine: the prize weights and capsule colours, the sweep (2.4 s, 0.2 s quicker a grab, 1.4 s
-                        floor), auto-drop, lift and take times, the cabinet's size and its sites. Price: economy.claw (through g.pricing 'claw').
+                        floor), auto-drop, lift and take times, stock (6 a site) and plush odds, the cabinet's size, its six sites and the
+                        PA lines. Price: economy.claw (through g.pricing 'claw').
     workshop.js         Build-A-Blaster: Limited Edition numbers (workshopBuilds), the ritual (workshopRitual: time, qualities, stages, loaner, PA), Stuffings and Hearts, buildOf reads a gun's finished build.
     decor.js            Decoration kit + clutter scatter numbers (world/decor.js, world/scatter.js). Cosmetic only.
     look.js             Art direction, "Grand Opening, Forever": palette, zone grading, the horror layer, set pieces.
@@ -415,7 +417,11 @@ src/
                         drop (an `instant` interaction: a fresh press, never a held button, never a reload on controller X), the capsule under
                         the claw at the press is the prize; it drops by itself after 6 s and the prize leaves the chute after 15 s, so a grab
                         can't hang. Pure helpers: rollCapsules (by weight, no repeats), sweepPosition / laneAt / sweepSeconds, prizePool
-                        (never the Staple Gun, a carried gun or one at Build-A-Blaster), describeCarried. Events 'clawGrab' / 'clawDrop' / 'clawPrize'.
+                        (never the Staple Gun, a carried gun or one at Build-A-Blaster), plushChanceFor, describeCarried. Stock and relocation:
+                        6 grabs a site; a plush (Sunny) refunds that grab's actual charge (wallet.refund) and closes it, with the next site picked
+                        right then; a sell-out closes once the last prize is gone; it reopens at the next 'roundStart' at another open-zone site
+                        (or restocks in place). Only one cabinet is live; the others are dust-sheeted. Events 'clawGrab' / 'clawDrop' /
+                        'clawPrize' / 'clawClosed' / 'clawMoved' (the last two are PA lines, played by createGame). forcePlush / moveNow (debug).
       horror.js         Feature kind 'horror': the mall decays as the rounds climb (config/look.js horror). Visual only, never gameplay.
     debugCommands.js    createDebugCommands(game parts): the debug shortcuts as functions run(id) (spawn, cycleZombie, clearZombies,
                         killZombies, nextRound, jumpRounds, flashSale, addPoints, zeroPoints, god, giveGun, upgradeGun, doors, arena, panel,
@@ -546,7 +552,7 @@ src/
     mall/clawCabinet.js buildClawCabinet({ kit, back, faces, floorY }) -> { position, normal, screen, rig }: GRAB-A-GUN's cabinet,
                         world-space boxes facing any of the four ways: base (screen, button, prize chute and tray), glass case with three lanes,
                         header. ONE collider, 2.2 m. The rig (claw parts and capsules, flagged dynamic on its group) moves: setCapsule,
-                        setClaw(u, drop), carry(lane), chute, reset.
+                        setClaw(u, drop), carry(lane), setLive(live) (the "BACK SOON" dust sheet), chute, reset.
     mall/startRoomDetails.js Clearance-store dressing relative to the start room: register, receipt, bags, stock remnants,
                         vent frames/boards, sale remnants, pricing station, floor wear, damaged light fitting and lamps.
                         Decoration only (no collision or interactions); static boxes merged by material; map kit disposes resources.

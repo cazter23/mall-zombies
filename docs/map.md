@@ -187,9 +187,13 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   (body centre x 30.5, back z 30.4, facing south), and Cinema lobby's north wall beside the projection-passage entrance
   (body centre x -25.7, back z 5.3, floor y 6.3, facing south). Each requires its own area's ownership, has an independent
   live screen and solid tall body, and leaves its front approach clear. No Parking or Promenade machine was added.
-- GRAB-A-GUN, the claw machine (config/clawMachine.js sites, mall/clawCabinet.js, game/features/clawMachine.js): a 1.3 x 1.0 x 2.2 m
-  cabinet, one collider. Hallway site: back on the south wall at x 8 (z -2), facing north, between the Food Court gate and the Nail Gun;
-  the machine starts there every run and waits until the Hallway is owned. Interact point (8, 1.25, -0.96).
+- GRAB-A-GUN, the claw machine (config/clawMachine.js sites, mall/clawCabinet.js, game/features/clawMachine.js): six 1.3 x 1.0 x 2.2 m
+  cabinets, one collider each, always there; only the live one is uncovered (the others wear a "BACK SOON" dust sheet). Backs on the wall:
+  Hallway (8, -2) facing north, between the Food Court gate and the Nail Gun (every run starts here; it waits until the Hallway is owned);
+  Food Court (8.5, -2.3) facing south, between the RESTOCK-O-MATIC and Byte Me; Mega Mart (28, 6) facing south, past the checkouts;
+  Grand Atrium (27, 6.6) facing north, the south arcade; Cinema lobby (-34.1, -10.5, floor y 6.3) facing north, clear of the screen door's
+  jamb; Customer Parking (34.43, -8) facing east, on the Mart's outside facade. Each keeps clutter 2 m away (mall.js hallwayClear).
+  Rejected: Hallway x 15 / x -12 (vent spawns), Mega Mart x 23 (the Atrium link), the Promenade, HOFFMAN'S and the Service Corridor.
 - Wall-buy spots: start room east wall (5, 1.5, 10) = Price Gun; hallway south wall (11, 1.5, -2) = Nail Gun;
   Mega Mart north wall (31.5, 1.5, 6) = Foam Dart Blaster, Service Corridor west wall near the dead end
   (-23.28, 1.5, -12.2) = Confetti Cannon; Grand Atrium west arcade wall (8.02, 1.5, 21.5) = Rivet Rifle;

@@ -1,6 +1,6 @@
 # Sunset Galleria: build history ("Current state")
 
-## 9 November 2026 - GRAB-A-GUN, phase 1: the claw machine, plain
+## 8 November 2026 - GRAB-A-GUN, phases 1 and 2: the claw machine, its six sites and Sunny
 
 The mystery box you work (docs/claw-machine-plan.md). One cabinet on the Hallway's south wall at x 8. Hold F to pay 1,000 (g.pricing 'claw' 'grab'): three
 coloured capsules fall into the pit and the screen names them. The claw sweeps the lanes; PRESS F once to drop it, and the capsule under it is your gun.
@@ -8,7 +8,14 @@ It lifts to the chute, where the gun waits 15 s (hold F to take it). It drops by
 Prizes: the seven wall guns by weight, never the Staple Gun, never a gun you carry or have at Build-A-Blaster (Refurbished prizes come in phase 3).
 Engine pieces: interactions.js `instant` items (fire on a fresh press, set the controller-X "used" flag so a drop isn't a reload) and `use(purchase)`
 (the actual charge, for a refund); wallet.refund (lowers totalSpent, not income); the 'claw' pricing category (the Discount Code already excludes it).
-Checked headless (tests/clawMachine.test.js), not yet in the browser.
+Phase 2, the same day: all six cabinets (Hallway, Food Court, Mega Mart, Atrium, Cinema lobby, Parking), dust-sheeted "BACK SOON" unless live; no collider
+ever moves. Six grabs of stock a site; from the third a plush (Sunny) may take a lane (20/40/60/80%). Landing on him refunds what that grab actually charged
+(a sale or the Employee Discount included) and closes the machine, picking the next site right then (phase 7's Sunny walks there). Selling out closes it
+once the last prize is gone. It reopens at the next round at another site in an open zone, with a PA line, or restocks in place if none. HUD: a small pink
+tag under the Flash Sale tag says where it is. Debug: E = Sunny in the next grab, Shift+E = move it now. Two site changes from the plan: Parking's back is
+x 34.43 (the facade's face, not 34.5), and the Cinema's is x -34.1 (the cabinet clipped the screen door's jamb at -34).
+Checked in the browser pane (preview build): the Hallway cabinet, a grab (capsules, claw, the prize in the chute) and a dust-sheeted Food Court cabinet; no
+console errors. Not checked in the browser: the other four sites up close, the HUD tag.
 
 ## 9 November 2026 - Gun upgrades you can see, and the Extended Warranty rework
 

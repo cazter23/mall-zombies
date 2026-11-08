@@ -196,6 +196,10 @@ export function createHud() {
   const saleTag = el('div', 'sale-tag');
   hud.append(saleTag);
   let lastSaleKey = '';
+  // Under it: where GRAB-A-GUN is while it's open (game/features/clawMachine.js status).
+  const clawTag = el('div', 'sale-tag claw-tag');
+  hud.append(clawTag);
+  let lastClawKey = '';
 
   // Bottom-right: ammo counter.
   const ammo = el('div', 'ammo');
@@ -243,7 +247,7 @@ export function createHud() {
   const topStack = el('div', 'hud-top-stack');
   topStack.append(bossBar, roundBanner, bagMarker.element);
   const rightStack = el('div', 'hud-right-stack');
-  rightStack.append(saleTag, announceBanner, certificate.element);
+  rightStack.append(saleTag, clawTag, announceBanner, certificate.element);
   hud.append(leftStack, topStack, rightStack);
   // A workshop order starts below any active boss display. Measure its real
   // height, including wrapped names and the player's chosen text size.
@@ -549,6 +553,15 @@ export function createHud() {
       lastSaleKey = text;
       saleTag.classList.toggle('show', !!sale);
       saleTag.textContent = text;
+    },
+
+    // GRAB-A-GUN's whereabouts: null (or a closed machine) hides it.
+    setClawMachine(status) {
+      const text = status?.open ? `GRAB-A-GUN · ${status.area} · ${status.stock} left` : '';
+      if (text === lastClawKey) return;
+      lastClawKey = text;
+      clawTag.classList.toggle('show', !!text);
+      clawTag.textContent = text;
     },
 
     // Buy prompt: null hides it, else { label, verb, cost, canAfford, progress, denied, sale }.

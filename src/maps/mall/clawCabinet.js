@@ -17,6 +17,7 @@
 //     rig.setClaw(u, drop)                 the claw over local position u (rig.laneU[lane] = over that lane), drop 0 (up) .. 1 (down)
 //     rig.carry(lane | null)               that lane's capsule rides with the claw
 //     rig.chute                            { position, normal }: where the won gun sits, and the way it faces
+//     rig.setLive(live)                    false: a dust sheet over it, "BACK SOON" (the machine is at another site)
 //     rig.reset()                          no capsules, claw parked over the first lane
 // =============================================================================
 
@@ -35,6 +36,7 @@ export const CLAW_CABINET = {
     button: 0xff2a2a,
     tray: 0x14101a,
     glass: 0xbfe8ff,
+    sheet: 0xd9d2c3, // the dust sheet over a machine that isn't here right now
   },
   laneU: [-0.38, 0, 0.38], // capsule lanes across the pit (local metres from the middle)
   capsuleRadius: 0.12,
@@ -127,8 +129,9 @@ export function buildClawCabinet({ kit, back, faces = '+z', floorY = 0, spec = C
   }
 
   // --- The base: body, kick plate, the screen, the drop button and the prize chute ---
-  place(-half, 0.12, half, 0.9, -0.01, depth, solid(colors.body), { collide: false, name: 'claw_base' });
-  place(-half - 0.02, 0, half + 0.02, 0.12, -0.01, depth + 0.02, solid(colors.trim));
+  // (Every back face sits exactly on the wall's face, where the wall hides it; the kick plate's top clears skirting boards.)
+  place(-half, 0.135, half, 0.9, 0, depth, solid(colors.body), { collide: false, name: 'claw_base' });
+  place(-half - 0.02, 0, half + 0.02, 0.135, 0, depth + 0.02, solid(colors.trim));
   const screen = createScreen();
   place(-0.58, 0.52, 0.16, 0.88, depth, depth + 0.01, solid(colors.trim)); // bezel
   place(-0.55, 0.55, 0.13, 0.85, depth + 0.01, depth + 0.012, new THREE.MeshBasicMaterial({ map: screen.texture }));
@@ -146,7 +149,7 @@ export function buildClawCabinet({ kit, back, faces = '+z', floorY = 0, spec = C
   sign('PRIZE ▾', 0.0, 0.42, depth + 0.012, { width: 0.4, height: 0.08, background: '#14101a', color: '#ff9fd2' });
 
   // --- The glass case: back panel, a front post at each corner, glass on three sides, the pit and its lane dividers ---
-  place(-half, 0.9, half, 1.95, -0.01, 0.04, solid(colors.bodyDark)); // back
+  place(-half, 0.9, half, 1.95, 0, 0.04, solid(colors.bodyDark)); // back
   place(-0.6, 0.95, 0.6, 1.9, 0.04, 0.05, glow(colors.backdrop)); // a lit backdrop
   for (const side of [-1, 1]) {
     place(side < 0 ? -half : half - 0.05, 0.9, side < 0 ? -half + 0.05 : half, 1.95, depth - 0.05, depth, solid(colors.trim)); // front post
@@ -160,7 +163,7 @@ export function buildClawCabinet({ kit, back, faces = '+z', floorY = 0, spec = C
   place(-0.6, 1.88, 0.6, 1.91, depth / 2 - 0.04, depth / 2 + 0.04, solid(colors.rail)); // the gantry rail
 
   // --- The header: the name, and the small print ---
-  place(-half - 0.02, 1.95, half + 0.02, height, -0.01, depth + 0.03, solid(colors.trim));
+  place(-half - 0.02, 1.95, half + 0.02, height, 0, depth + 0.03, solid(colors.trim));
   sign(clawMachine.name, 0, 2.075, depth + 0.04, { width: 1.2, height: 0.2, background: '#1d1626', color: '#ff7ac4' });
   sign('*Not everyone', -0.21, 0.3, depth + 0.02, { width: 0.42, height: 0.07, background: '#b8236f', color: '#ffe3f1' });
 
@@ -197,6 +200,14 @@ export function buildClawCabinet({ kit, back, faces = '+z', floorY = 0, spec = C
     rig.add(mesh);
     return { mesh, u };
   });
+
+  // The dust sheet (shown while the machine is at another site): a cloth box over the whole cabinet and its tray, a note pinned on.
+  // Visual only: the collider is the same either way.
+  const sheet = [
+    place(-half - 0.04, 0.035, half + 0.04, height + 0.05, 0, depth + 0.28, new THREE.MeshStandardMaterial({ color: colors.sheet, roughness: 1 }), { collide: false, name: 'claw_sheet' }),
+    sign('BACK SOON', 0, 1.35, depth + 0.29, { width: 0.7, height: 0.32, background: '#fff6d8', color: '#b8236f' }),
+  ];
+  for (const mesh of sheet) rig.add(mesh); // (into the dynamic group: it is shown and hidden at runtime)
 
   let clawU = spec.laneU[0];
   let clawDrop = 0;
@@ -241,7 +252,11 @@ export function buildClawCabinet({ kit, back, faces = '+z', floorY = 0, spec = C
       setClaw(clawU, clawDrop);
     },
     setClaw,
-    chute: { position: world(0, 0.2, depth + 0.11, new THREE.Vector3()), normal: normal.clone() },
+    setLive(live) {
+      for (const mesh of sheet) mesh.visible = !live;
+    },
+    get live() { return !sheet[0].visible; },
+    chute: { position: world(0, 0.34, depth + 0.12, new THREE.Vector3()) /* resting on the tray, above its lip */, normal: normal.clone() },
     reset() {
       carried = null;
       capsules.forEach((_, lane) => api.setCapsule(lane, null));

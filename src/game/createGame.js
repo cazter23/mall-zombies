@@ -354,8 +354,8 @@ export function createGame({
     sound.play('paChime');
   });
 
-  // Build-A-Blaster's PA lines (game/features/workshopRitual.js).
-  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualWaiting', 'ritualCollect', 'limitedEditionDrop', 'limitedEditionFitted']) {
+  // Build-A-Blaster's PA lines (game/features/workshopRitual.js), and GRAB-A-GUN's (game/features/clawMachine.js).
+  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualWaiting', 'ritualCollect', 'limitedEditionDrop', 'limitedEditionFitted', 'clawClosed', 'clawMoved']) {
     events.on(name, ({ pa }) => {
       hud.showAnnouncement({ ...pa, priority: 1 });
       sound.play('paChime');
@@ -444,7 +444,7 @@ export function createGame({
   });
   // Developer shortcuts (config/debug.js lists the keys; main.js turns key presses into debug.run(id)).
   const debugCommands = createDebugCommands({
-    map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses,
+    map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses, features,
     onUse: (id) => {
       // Merely showing the panel or choosing the next spawn type changes no run outcome.
       if (id !== 'panel' && id !== 'cycleZombie' && id !== 'cycleBoss' && id !== 'benchmark') state.assisted = true;

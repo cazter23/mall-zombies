@@ -5,7 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { headlessGame, snapshot, dt } from './helpers/headlessGame.js';
-import { rollCapsules, sweepPosition, laneAt, sweepSeconds, prizePool, describeCarried } from '../src/game/features/clawMachine.js';
+import { rollCapsules, sweepPosition, laneAt, sweepSeconds, prizePool, describeCarried, plushChanceFor } from '../src/game/features/clawMachine.js';
 import { clawMachine as cfg } from '../src/config/clawMachine.js';
 import { economy } from '../src/config/economy.js';
 import { weapons } from '../src/config/weapons.js';
@@ -50,6 +50,8 @@ function standAtMachine({ t, g, claw }, distance = 1.3) {
 }
 
 const pay = (t, code = 'KeyF') => t.press(code, 20); // a hold (feel.interact.holdSeconds is 0.25 s)
+// Restock where it stands (the debug move to its own site): the next grab is this site's first, so no plush can come up.
+const restock = (claw) => assert.ok(claw.moveNow(claw.site.id));
 
 test('the odds: capsules follow the weights, never repeat in a grab, and never offer the Staple Gun, a carried gun or one at Build-A-Blaster', () => {
   const fresh = { owns: (id) => id === 'stapleGun', away: null };
@@ -94,6 +96,7 @@ test('a grab through real keyboard input: hold to pay, a fresh press drops, the 
   assert.equal(g.interactions.prompt?.kind, 'claw');
   assert.equal(g.interactions.prompt.cost, economy.claw.grab);
   for (const wait of [5, 30, 55, 80, 100]) {
+    restock(claw);
     const before = g.wallet.points;
     pay(t);
     assert.equal(claw.phase, 'sweeping');
@@ -203,6 +206,7 @@ test('payment: a sale and the Employee Discount lower the charge; the Discount C
   const s = setup(), { t, g, claw } = s;
   standAtMachine(s);
   g.pricing.setDiscount('claw', 0.5);
+  restock(claw);
   let before = g.wallet.points;
   pay(t);
   assert.equal(before - g.wallet.points, economy.claw.grab / 2);
@@ -218,6 +222,7 @@ test('payment: a sale and the Employee Discount lower the charge; the Discount C
   assert.ok(g.pricing.voucher?.excludedCategories?.includes('claw'));
   assert.equal(g.pricing.priceOf('claw', 'grab'), economy.claw.grab, 'the Discount Code does not apply to the claw');
   t.tick(5);
+  restock(claw);
   before = g.wallet.points;
   pay(t);
   assert.equal(before - g.wallet.points, economy.claw.grab);
@@ -226,6 +231,7 @@ test('payment: a sale and the Employee Discount lower the charge; the Discount C
   t.tick(Math.ceil((cfg.autoDropSeconds + cfg.liftSeconds + cfg.takeSeconds) / dt) + 4);
 
   g.pricing.setCoupon({ fraction: 0.2, maxSaving: 500 });
+  restock(claw);
   before = g.wallet.points;
   pay(t);
   assert.equal(before - g.wallet.points, economy.claw.grab * 0.8);
@@ -264,23 +270,226 @@ test('a full loadout: the take ticket names what it replaces (tier, attachments,
     'Platinum Rivet Rifle with 1 attachment');
 });
 
-test('the Hallway cabinet: one collider at least 2.1 m tall, a clear stand point zombies can reach, and nothing before the Hallway is owned', () => {
+test('every cabinet: one collider at least 2.1 m tall, a clear stand point zombies can reach, a real prompt there; the start waits for the Hallway', () => {
   const t = headlessGame(), { g } = t;
   t.tick();
   const claw = g.features.list.find((f) => f.feature.kind === 'clawMachine').instance;
   assert.equal(claw.status.open, false, 'waits until you own the Hallway');
+  assert.deepEqual(claw.sites.map((x) => x.cabinet.rig.live), claw.sites.map((_, i) => i === 0), 'only the live one is uncovered');
+  openAll(t, g);
+  const nav = createNavigation(g.colliders, zombieTypes.shopper, g.map.navigation);
+  nav.update(dt, new THREE.Vector3(0, 0, 2)); // (the hub)
   for (const site of cfg.sites) {
-    const { position, normal } = g.features.list.find((f) => f.feature.kind === 'clawMachine').feature.sites.find((x) => x.id === site.id).cabinet;
+    const { position, normal } = claw.sites.find((x) => x.id === site.id).cabinet;
     const inside = new THREE.Vector3(position.x - normal.x * 0.5, site.floorY + 1, position.z - normal.z * 0.5);
     const solids = g.colliders.filter((b) => b.containsPoint(inside));
     assert.equal(solids.length, 1, `${site.id}: one collider`);
     assert.ok(solids[0].max.y - solids[0].min.y >= 2.1, `${site.id}: too tall to stand on`);
     const stand = new THREE.Vector3(position.x + normal.x * 1.2, site.floorY, position.z + normal.z * 1.2);
     assert.equal(overlapsSolid(stand, 0.35, 1.8, g.colliders, 0.3), false, `${site.id}: clear stand point`);
-    for (const id of Object.keys(g.map.zones)) g.map.areaUnlocks.unlock(id);
-    t.tick(120);
-    const nav = createNavigation(g.colliders, zombieTypes.shopper, g.map.navigation);
-    nav.update(dt, stand);
-    assert.ok(Number.isFinite(nav.distanceToTarget(-15, 3, 0)), `${site.id}: zombies reach the front`);
+    assert.ok(Number.isFinite(nav.distanceToTarget(stand.x, stand.z, stand.y)), `${site.id}: zombies reach the front`);
+    if (claw.site.id !== site.id) assert.ok(claw.moveNow(site.id));
+    standAtMachine({ t, g, claw });
+    assert.equal(g.interactions.prompt?.kind, 'claw', `${site.id}: the machine has focus from its stand point`);
+    assert.equal(claw.status.area, g.map.zones[site.zone].label);
   }
+});
+
+// --- Phase 2: plush, stock and relocation ---
+
+const ticks = (seconds) => Math.ceil(seconds / dt) + 1;
+// Wait (at most two sweeps) until the claw is over a capsule that passes `wanted`, then press.
+function dropOn(t, claw, wanted) {
+  for (let i = 0; i < ticks(cfg.sweep.firstSeconds * 2) && !wanted(claw.grab.capsules[claw.lane]); i++) t.tick();
+  assert.ok(wanted(claw.grab.capsules[claw.lane]), 'the claw came over the wanted lane');
+  t.press('KeyF', 1);
+}
+const isGun = (c) => !!c && !c.plush;
+const isPlush = (c) => !!c?.plush;
+function openAll(t, g) {
+  for (const id of Object.keys(g.map.zones)) g.map.areaUnlocks.unlock(id);
+  t.tick(120);
+}
+const roundStart = (g) => g.events.emit('roundStart', { round: g.rounds.round + 1 });
+
+test('the plush odds rise with the grabs at a site, and a plush takes exactly one lane', () => {
+  assert.deepEqual([1, 2, 3, 4, 5, 6].map((n) => plushChanceFor(n)), cfg.plushChance);
+  assert.deepEqual(cfg.plushChance, [0, 0, 0.2, 0.4, 0.6, 0.8]);
+  const pool = prizePool({ owns: (id) => id === 'stapleGun', away: null });
+  const random = seeded(3);
+  const lanes = [0, 0, 0];
+  for (let i = 0; i < 3000; i++) {
+    const always = rollCapsules(pool, 1, random);
+    assert.equal(always.filter(isPlush).length, 1);
+    assert.equal(new Set(always.filter(isGun).map((c) => c.id)).size, 2);
+    lanes[always.findIndex(isPlush)] += 1;
+    assert.equal(rollCapsules(pool, 0, random).filter(isPlush).length, 0);
+  }
+  assert.ok(lanes.every((n) => n > 800), `the plush lands in any lane: ${lanes}`);
+});
+
+test('a plush refunds exactly what that grab charged (sale + coupon), not income, closes the machine and picks the next open site then', () => {
+  const s = setup(), { t, g, claw } = s;
+  openAll(t, g);
+  g.map.zones.parkingLot.open = false; // (a locked area is never picked)
+  standAtMachine(s);
+  const pa = [];
+  g.events.on('clawClosed', (e) => pa.push(['closed', e]));
+  g.events.on('clawMoved', (e) => pa.push(['moved', e]));
+  g.pricing.setDiscount('claw', 0.5);
+  g.pricing.setCoupon({ fraction: 0.2, maxSaving: 500 });
+  const before = { points: g.wallet.points, spent: g.wallet.totalSpent, earned: g.wallet.totalEarned };
+  g.debug.run('clawPlush');
+  pay(t);
+  const charged = before.points - g.wallet.points;
+  assert.equal(charged, 400, '1000, half off, then 20% off');
+  assert.equal(claw.grab.capsules.filter(isPlush).length, 1);
+  dropOn(t, claw, isPlush);
+  t.tick(ticks(cfg.liftSeconds));
+  assert.equal(claw.phase, 'closed');
+  assert.equal(g.wallet.points, before.points, 'exactly the 400 back, not the 1000 shelf price');
+  assert.equal(g.wallet.totalSpent, before.spent, 'the payment no longer counts as spent');
+  assert.equal(g.wallet.totalEarned, before.earned, 'and the refund is not income');
+  assert.equal(g.interactions.prompt?.blocked, 'Out of service · Back next round');
+  const next = claw.nextSite;
+  assert.ok(next && next !== claw.site && g.map.zones[next.zone].open, 'the next site is known the moment Sunny lands');
+  assert.equal(pa[0][0], 'closed');
+  assert.equal(pa[0][1].reason, 'plush');
+  assert.equal(pa[0][1].nextSiteId, next.id);
+  assert.match(pa[0][1].pa.text, /Sunny/);
+  roundStart(g);
+  assert.equal(claw.site, next);
+  assert.equal(claw.phase, 'idle');
+  assert.equal(claw.stock, cfg.stock);
+  assert.equal(pa[1][0], 'moved');
+  assert.equal(pa[1][1].pa.text, `GRAB-A-GUN is now in ${g.map.zones[next.zone].label}. We don't know how either.`);
+  assert.ok(next.cabinet.rig.live && !claw.sites[0].cabinet.rig.live, 'the dust sheet moved too');
+});
+
+test('six grabs sell a site out: it closes only once the last prize is gone, then reopens elsewhere at the next round', () => {
+  const s = setup(), { t, g, claw } = s;
+  openAll(t, g);
+  standAtMachine(s);
+  for (let n = 1; n <= cfg.stock; n++) {
+    assert.equal(claw.phase, 'idle', `grab ${n}`);
+    assert.equal(claw.stock, cfg.stock - n + 1);
+    pay(t);
+    assert.ok(Math.abs(claw.grab.period - sweepSeconds(n)) < 1e-9, 'quicker each grab');
+    dropOn(t, claw, isGun);
+    t.tick(ticks(cfg.liftSeconds));
+    assert.equal(claw.phase, 'ready', 'the last prize waits like any other');
+    t.press('KeyF', 20);
+  }
+  assert.equal(claw.phase, 'closed');
+  assert.equal(claw.nextSite, null, 'a sell-out picks its site at the round');
+  const from = claw.site;
+  t.tick(600);
+  assert.equal(claw.site, from, 'closed until the round starts');
+  roundStart(g);
+  assert.notEqual(claw.site, from);
+  assert.equal(claw.phase, 'idle');
+  assert.equal(claw.stock, cfg.stock);
+});
+
+test('a sold-out machine whose last prize times out still closes; with no other open site it restocks where it stands', () => {
+  const s = setup(), { t, g, claw } = s; // (only the start room and the Hallway are open)
+  standAtMachine(s);
+  for (let n = 1; n <= cfg.stock; n++) {
+    pay(t);
+    dropOn(t, claw, isGun);
+    t.tick(ticks(cfg.liftSeconds));
+    if (n < cfg.stock) t.press('KeyF', 20);
+  }
+  assert.equal(claw.phase, 'ready');
+  t.tick(ticks(cfg.takeSeconds));
+  assert.equal(claw.phase, 'closed');
+  const moved = [];
+  g.events.on('clawMoved', (e) => moved.push(e));
+  roundStart(g);
+  assert.equal(claw.site.id, 'hallway');
+  assert.equal(claw.phase, 'idle');
+  assert.equal(claw.stock, cfg.stock);
+  assert.equal(moved[0].moved, false);
+  assert.match(moved[0].pa.text, /restocked in Main Hallway/);
+});
+
+test('the machine only ever opens in an open zone: 40 relocations with part of the mall locked', () => {
+  const s = setup(), { t, g, claw } = s;
+  g.map.areaUnlocks.unlock('foodCourt');
+  g.map.areaUnlocks.unlock('megaMart');
+  t.tick(120);
+  const seen = new Set();
+  for (let i = 0; i < 40; i++) {
+    const before = claw.site;
+    if (i % 2) { // half by plush (the site picked when he lands, opened at the round), half by the debug move
+      g.debug.run('clawPlush');
+      standAtMachine(s);
+      pay(t);
+      dropOn(t, claw, isPlush);
+      t.tick(ticks(cfg.liftSeconds));
+      assert.equal(claw.phase, 'closed');
+      roundStart(g);
+    } else {
+      g.debug.run('clawMove');
+    }
+    assert.ok(g.map.zones[claw.site.zone].open, `${claw.site.id} is open`);
+    assert.notEqual(claw.site, before, 'always a different site when one is open');
+    seen.add(claw.site.id);
+  }
+  assert.deepEqual([...seen].sort(), ['foodCourt', 'hallway', 'megaMart']);
+});
+
+test('it never moves during a grab: the debug move is refused until the grab is over', () => {
+  const s = setup(), { t, g, claw } = s;
+  openAll(t, g);
+  standAtMachine(s);
+  pay(t);
+  assert.match(g.debug.run('clawMove'), /^Not moved/);
+  assert.equal(claw.site.id, 'hallway');
+  t.tick(ticks(cfg.autoDropSeconds + cfg.liftSeconds));
+  assert.match(g.debug.run('clawMove'), /^Not moved/);
+  t.tick(ticks(cfg.takeSeconds));
+  assert.match(g.debug.run('clawMove'), /^GRAB-A-GUN moved to /);
+});
+
+test('Play again after the machine moved: back at the Hallway, every other cabinet sheeted, full stock, same as a fresh game', () => {
+  const fresh = snapshot(headlessGame().g);
+  const s = setup(), { t, g, claw } = s;
+  openAll(t, g);
+  g.debug.run('clawMove');
+  standAtMachine(s);
+  pay(t);
+  t.tick(ticks(cfg.autoDropSeconds + cfg.liftSeconds));
+  g.health.takeDamage(10_000);
+  g.resetRun();
+  assert.equal(claw.site.id, 'hallway');
+  assert.equal(claw.stock, cfg.stock);
+  assert.deepEqual(claw.sites.map((x) => x.cabinet.rig.live), claw.sites.map((_, i) => i === 0));
+  assert.equal(g.map.group.parent.getObjectByName('clawPrize'), undefined);
+  assert.deepEqual(snapshot(g), fresh);
+});
+
+test('the six cabinets leave zombie routes alone: every spawn and stand point still reaches the hub, none more than 3 m longer', () => {
+  const t = headlessGame(), { g } = t;
+  openAll(t, g);
+  const claw = g.features.list.find((f) => f.feature.kind === 'clawMachine');
+  const cabinets = claw.feature.sites.map((site) => {
+    const { position, normal } = site.cabinet;
+    const floorY = cfg.sites.find((x) => x.id === site.id).floorY;
+    const inside = new THREE.Vector3(position.x - normal.x * 0.5, floorY + 1, position.z - normal.z * 0.5);
+    return { box: g.colliders.find((b) => b.containsPoint(inside)), stand: new THREE.Vector3(position.x + normal.x * 1.2, floorY, position.z + normal.z * 1.2) };
+  });
+  assert.equal(new Set(cabinets.map((c) => c.box)).size, cfg.sites.length, 'one collider each');
+  const without = Object.assign(g.colliders.filter((b) => !cabinets.some((c) => c.box === b)), { ramps: g.colliders.ramps });
+  const hub = new THREE.Vector3(0, 0, 2);
+  const routes = (colliders) => {
+    const nav = createNavigation(colliders, zombieTypes.shopper, g.map.navigation);
+    nav.update(dt, hub);
+    return [...g.map.spawnPoints.map((p) => p.position), ...cabinets.map((c) => c.stand)].map((p) => nav.distanceToTarget(p.x, p.z, p.y));
+  };
+  const before = routes(without), after = routes(g.colliders);
+  after.forEach((d, i) => {
+    assert.ok(Number.isFinite(d), `route ${i} reaches the hub`);
+    assert.ok(d - before[i] <= 3, `route ${i}: ${before[i].toFixed(1)} -> ${d.toFixed(1)} m`);
+  });
 });

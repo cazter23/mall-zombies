@@ -151,7 +151,11 @@ bought across its shortcut, the Nail Gun can't be bought through its wall, other
 `clawMachine.test.js` GRAB-A-GUN through real input: the odds (by weight, no repeats, never the Staple Gun / a carried gun / one at
 Build-A-Blaster), sweep timing, the press decides the prize, a held button never drops it, controller X never reloads, walking away
 and death never hang it or leave a display, Play again equals a fresh game, sales / Employee Discount charge less and the Discount Code
-doesn't apply, wallet.refund isn't income, the replace ticket, and each cabinet: one tall collider, clear stand point, reachable front.
+doesn't apply, wallet.refund isn't income, the replace ticket, and each cabinet: one tall collider, clear stand point, reachable front,
+a prompt from it. Relocation: plush odds by grab, a plush refunds exactly the charge (sale + coupon) and picks the next open site at
+once, a sell-out closes only after its last prize, it reopens at a different open site at 'roundStart' (or restocks in place), never
+in a locked zone (40 moves), never mid-grab, Play again after a move, and zombie routes from every spawn and stand point unchanged
+(within 3 m) with all six cabinets in.
 `ammoCache.test.js` the vending machine (refills any gun in hand, flat price, label follows the gun, needs its area open, not
 through the wall, solid + too tall to climb, zombies can reach its front; Atrium/Cinema machines also exercise real F purchases,
 correct floor height, ownership and run reset), `balance.test.js` GUN ROLES on real measured numbers
