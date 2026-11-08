@@ -1,6 +1,6 @@
 // Contact sheet for gun upgrade looks: `npm run dev`, then open /tools/gunSheet.html?gun=nailGun&view=left
 // One gun in eight states: plain, the three Extended Warranty tiers (+ Renewals), a Regular and an Overstuffed build, all four attachments, and everything at once.
-// gun = any id in config/weapons.js; view = left | right | front | top; stuffing = a stuffing id (the build's colour); all = 1 for every gun in turn.
+// gun = any id in config/weapons.js; view = left | right | front | top; stuffing = a stuffing id (the build's colour); heart = a Heart id (its badge).
 import * as THREE from 'three';
 import { weapons } from '../src/config/weapons.js';
 import { buildWeaponModel } from '../src/weapons/models/index.js';
@@ -11,6 +11,7 @@ const params = new URLSearchParams(location.search);
 const gunId = params.get('gun') ?? 'stapleGun';
 const view = params.get('view') ?? 'left';
 const stuffing = params.get('stuffing') ?? 'fryerOil';
+const heart = params.get('heart') ?? 'headshot'; // headshot | lastRound | reload | everyTenth
 const ATTACHMENTS = { barrel: 'extendedNozzle', sight: 'zoomLens', magazine: 'jumboPack', grip: 'gripTape' };
 
 const STATES = [
@@ -18,10 +19,10 @@ const STATES = [
   { label: 'Deluxe', show: { tier: 'deluxe' } },
   { label: 'Premium', show: { tier: 'premium' } },
   { label: 'Platinum + 3 renewals', show: { tier: 'platinum', renewals: 3 } },
-  { label: 'Build: Regular', show: { build: { stuffing, quality: 'regular' } } },
-  { label: 'Build: Overstuffed', show: { build: { stuffing, quality: 'overstuffed' } } },
+  { label: 'Build: Regular', show: { build: { stuffing, heart, quality: 'regular' } } },
+  { label: 'Build: Overstuffed', show: { build: { stuffing, heart, quality: 'overstuffed' } } },
   { label: 'Attachments', show: { attachments: ATTACHMENTS } },
-  { label: 'ALL THREE', show: { tier: 'platinum', renewals: 3, build: { stuffing, quality: 'extraStuffed' }, attachments: ATTACHMENTS } },
+  { label: 'ALL THREE', show: { tier: 'platinum', renewals: 3, build: { stuffing, heart, quality: 'extraStuffed' }, attachments: ATTACHMENTS } },
 ];
 
 const hud = document.getElementById('hud');

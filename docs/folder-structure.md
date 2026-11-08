@@ -491,7 +491,7 @@ src/
                         delivery notices. Scenic geometry only; uses config/parkingDetails.js alongside parkingLot.js.
     mall/parkingDetailKit.js Shared boxes, rods, signs, planes and canvas decal materials; all resources owned by mapKit.
     config/parkingDetails.js Authored wear/scene/service/street locations, RV labels, haze/sway settings, ambient loops/events.
-    config/gunStyle.js  How upgrades change a gun's shape: attachment scale, the warranty collar and tag sizes per tier, the build's pillows per quality, the seam glow. Looks only.
+    config/gunStyle.js  How upgrades change a gun's shape and colour: attachment scale, the warranty collar and tag sizes and METAL finish per tier (Platinum shimmers), the build's pillows, quality vividness and glow, the Heart badge colours and shapes, the seam glow. Looks only.
     mall/mallExterior.js Opaque outer Atrium facades, roof and returns close the building beyond Mega Mart. Meshes opt into
                         userData.alwaysVisible so room culling preserves the building silhouette while hiding its interior.
     mall/promenadeShop.js SHOE-PER SALE interior: two entrances, perimeter shoe shelves, fitting mirror/bench, shoe boxes and a low

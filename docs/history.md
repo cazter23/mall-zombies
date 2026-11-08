@@ -1,5 +1,16 @@
 # Sunset Galleria: build history ("Current state")
 
+## 9 November 2026 - Upgrade colours: warranties are metal, builds are candy
+
+The old palette clashed: Premium purple was nearly Glitter, Platinum gold nearly Popcorn Butter (6 apart in Lab delta-E), Deluxe blue near Neon Tube, and the Standard
+green near Antifreeze. Now each system has its own colour language (config/gunStyle.js): the Extended Warranty is METAL (Deluxe steel, Premium gold, Platinum pearl that
+slowly shimmers between pearl tints; Renewal studs copper; the collar and tag are metallic with a sheen, and the HUD name, the seal and the Customer Service post-its follow
+the tier colours); the Build-A-Blaster is CANDY (the stuffing colour, with Fryer Oil moved to a red-orange and Popcorn Butter to cream); the quality sets how vivid and lit
+the pillow is (Understuffed washed out, Overstuffed saturated, glowing, with a hot white seam); and the Heart shows as a badge on the patch, a coloured plate with a cream
+shape (Headshot crosshair/crimson, Last Round bullet/blue, Reload ring/green, Every 5th star/amber), also on the order form and as a dot on the HUD chip.
+tests/upgradeColors.test.js keeps every warranty colour at least 30 delta-E from every stuffing (closest now 36), the stuffings 35 apart and the Heart badges 40 apart.
+Not done: the Attachments keep their store colours (they were already distinct), and the muzzle flash only takes the stuffing colour (no gold glint for a warranty).
+
 ## 9 November 2026 - Gun upgrades you can see, and the Extended Warranty rework
 
 Looked at from behind the gun, a Warranty seal and a Build-A-Blaster patch were tiny stickers on the face you rarely see, and the build's patch covered the warranty seal
