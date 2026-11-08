@@ -8,7 +8,11 @@ stretch in the air, from the highest point to the landing, so stairs, benches an
 The glass rails on the Promenade and the Grand Atrium are no longer a hard wall to a jump: props.railing marks them `ledge`, and jumping at one while moving climbs over and lets go (player/vault.js).
 Only where the way down is bare floor: the vault checks the floor under the release point and every 0.75 m out to the furthest your air control could carry you (about 7 m), so it never offers a
 drop onto a fountain, a kiosk or the escalator. Of the rails, the Atrium's court sides and the Promenade's two small voids qualify; the long escalator-well rails refuse, and the HUD vault prompt only shows where it will work.
-It counts the fall from the floor you stood on, not from the climb. The tests that once insisted nobody could cross a rail by jumping now say: you cannot walk in, and a jump ends on the upper floor or on the floor below, never stuck in between.
+It counts the fall from the floor you stood on, not from the climb.
+
+Fix, same day: sprinting at a rail often just jumped. The landing check reached as far as your air control could carry you, which scales with speed (about 7 m at a sprint, 4 m walking), so a sprint was refused wherever a bench or kiosk stood
+inside that distance, silently. The drop now caps its sideways speed for the whole fall (airSpeedCap 3 m/s), the check reaches only that far, and a bench or counter (up to 1.1 m) is a fine landing. The check also used to ignore a box that only partly
+overlapped the column, so an escalator's side could be missed; anything touching the column counts now. Result: the same six places work walking, jogging or sprinting, and from any press distance within the usual vault reach. The tests that once insisted nobody could cross a rail by jumping now say: you cannot walk in, and a jump ends on the upper floor or on the floor below, never stuck in between.
 
 ## 8 November 2026 — Department boss bars
 

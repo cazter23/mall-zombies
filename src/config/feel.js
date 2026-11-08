@@ -134,8 +134,9 @@ export const feel = {
     ledge: {
       maxHeight: 1.6, // the rails are 1.5 m (taller than a jump peaks), so this is what stops you climbing anything taller
       dropSpeed: 2, // m/s outward when you let go: nearly straight down, not a leap
+      airSpeedCap: 3, // m/s: sideways speed is capped for the whole drop, so a sprint can't carry you far (and the vault works the same walking or sprinting)
       checkSpacing: 0.75, // meters between the spots checked along the way out
-      landingMaxY: 0.35, // the highest thing under where you'd land must be bare ground floor (no bench, fountain, kiosk or escalator)
+      landingMaxY: 1.1, // the highest thing under where you'd land: a bench or a counter is fine; a fountain, kiosk or escalator is not
     },
   },
 

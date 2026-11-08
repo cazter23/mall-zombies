@@ -408,6 +408,16 @@ export class PlayerController {
       if (fromSlide) this.endSlide(); // jumping out of a slide keeps the momentum
     }
 
+    // Letting go over a balcony rail (feel.vault.ledge): a gentle drop, whatever speed you ran at it, so the vault can check its landing.
+    if (this.fallBase !== null && !this.grounded) {
+      const cap = feel.vault.ledge.airSpeedCap;
+      const speed = Math.hypot(this.velocity.x, this.velocity.z);
+      if (speed > cap) {
+        this.velocity.x *= cap / speed;
+        this.velocity.z *= cap / speed;
+      }
+    }
+
     // --- Gravity ---
     if (vaulted) {
       this.vault.update(dt);

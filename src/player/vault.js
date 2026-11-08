@@ -134,28 +134,29 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
     return best ?? { reason };
   }
 
-  // The top of the highest thing under a standing circle at (x, z), looking down from `fromY` (-Infinity: nothing).
-  // Everything on the way down counts (an escalator's side, a kiosk roof), so only bare floor passes the caller's check.
+  // The top of the highest thing anywhere under a standing circle at (x, z), looking down from `fromY` (-Infinity: nothing).
+  // Anything touching the column counts, however small or high up (an escalator's side, a kiosk roof, an awning): you would
+  // hit it on the way down. So only bare floor passes the caller's check.
   function groundBelow(x, z, fromY) {
     const r = feel.player.radius;
     let result = -Infinity;
     for (const box of colliders) {
       if (box.max.y >= fromY) continue;
-      if (x - r < box.min.x || x + r > box.max.x || z - r < box.min.z || z + r > box.max.z) continue;
+      if (x + r <= box.min.x || x - r >= box.max.x || z + r <= box.min.z || z - r >= box.max.z) continue;
       result = Math.max(result, box.max.y);
     }
     return result;
   }
 
-  // Is there open floor to drop onto? Straight under the release point, and all the way out to the furthest you could carry
-  // yourself by holding forward through the fall (air control), so the drop can't be steered onto a fountain or an escalator.
+  // Is there open floor to drop onto? Straight under the release point, and all the way out to the furthest the capped air
+  // speed (feel.vault.ledge.airSpeedCap, however fast you ran at it) could carry you, so it can't be steered onto a fountain.
   function dropClear(plan) {
     const L = cfg.ledge;
     const release = plan.far + plan.landingDistance;
     const ground = groundBelow(plan.start.x + plan.dx * release, plan.start.z + plan.dz * release, plan.top);
     if (!Number.isFinite(ground)) return false;
     const fallSeconds = Math.sqrt(2 * (plan.top - ground) / feel.movement.gravity);
-    const reach = Math.min(plan.speed * fallSeconds, L.dropSpeed * fallSeconds + 0.5 * feel.movement.airAcceleration * fallSeconds ** 2);
+    const reach = L.airSpeedCap * fallSeconds;
     const distances = [];
     for (let along = 0; along < reach; along += L.checkSpacing) distances.push(release + along);
     distances.push(release + reach);

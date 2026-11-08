@@ -101,12 +101,13 @@ test('jumping at a balcony rail climbs over it and drops to the floor below, and
   const spot = ledgeSpot(g);
   assert.ok(spot, 'at least one rail can be climbed');
   assert.equal(spot.y, Y, 'an upper-floor balcony');
-  g.player.teleport({ position: new THREE.Vector3(spot.x, spot.y, spot.z), yaw: Math.atan2(-spot.dx, -spot.dz) });
+  // A real run-up: start 3 m back (the balconies are about that deep), sprint, and press jump while still some way off.
+  g.player.teleport({ position: new THREE.Vector3(spot.x - spot.dx * 1.6, spot.y, spot.z - spot.dz * 1.6), yaw: Math.atan2(-spot.dx, -spot.dz) });
   t.tick(2);
   const start = g.player.position.clone();
   t.input.held.add('KeyW');
   t.input.held.add('ShiftLeft');
-  t.tick(10);
+  t.tick(4);
   t.press('Space', 2);
   let airborne = false;
   for (let i = 0; i < 400 && !(airborne && g.player.grounded); i++) {
@@ -121,6 +122,32 @@ test('jumping at a balcony rail climbs over it and drops to the floor below, and
   assert.ok(Math.abs(g.stats.health - (g.stats.maxHealth - expected(Y))) < 1, `about ${expected(Y).toFixed(0)} damage (${g.stats.health})`);
   const across = (g.player.position.x - start.x) * spot.dx + (g.player.position.z - start.z) * spot.dz;
   assert.ok(across > 1.4, `beyond the rail, not straight down its foot (${across.toFixed(2)} m)`);
+  g.map.dispose();
+});
+
+test('a rail works the same walking or sprinting: how fast you run at it does not change whether you can go over', () => {
+  const { g } = fixture();
+  const spots = (speed) => {
+    const found = [];
+    for (const [index, rail] of g.colliders.filter((b) => b.ledge).entries()) {
+      const thinX = rail.max.x - rail.min.x < rail.max.z - rail.min.z;
+      const cx = (rail.min.x + rail.max.x) / 2, cz = (rail.min.z + rail.max.z) / 2;
+      for (const side of [-1, 1]) {
+        const x = thinX ? cx + side * 1.4 : cx, z = thinX ? cz : cz + side * 1.4;
+        if (!g.colliders.some((b) => b !== rail && Math.abs(b.max.y - rail.min.y) < 0.06 && x > b.min.x && x < b.max.x && z > b.min.z && z < b.max.z)) continue;
+        g.player.teleport({ position: new THREE.Vector3(x, rail.min.y, z), yaw: Math.atan2(thinX ? side : 0, thinX ? 0 : side) });
+        g.player.grounded = true;
+        g.player.velocity.set(thinX ? -side * speed : 0, 0, thinX ? 0 : -side * speed);
+        if (g.player.vault.tryStart()) found.push(`${index}/${side}`);
+        g.player.vault.reset();
+      }
+    }
+    return found;
+  };
+  const walking = spots(feel.movement.walkSpeed);
+  assert.ok(walking.length >= 6, `several rails can be climbed (${walking.length})`);
+  assert.deepEqual(spots(feel.movement.sprintSpeed), walking);
+  assert.deepEqual(spots(feel.vault.minSpeed + 0.5), walking);
   g.map.dispose();
 });
 
