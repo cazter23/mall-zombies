@@ -21,6 +21,7 @@ import { COLORS } from './palette.js';
 import { buildAtriumDetails } from './atriumDetails.js';
 import { atriumShopOpenings } from './atriumStorefronts.js';
 import { atriumDetails } from '../../config/atrium.js';
+import { wayfinding } from '../../config/concourse.js';
 import { shutters } from '../../config/shutters.js';
 import { retailUnease } from '../../config/retailUnease.js';
 
@@ -51,6 +52,7 @@ export function buildAtrium({ kit, props, layout, upperY }) {
   const E = layout.escalator;
   const escalator = props.escalator({
     bottomX: E.bottomX, dir: 1, minZ: E.minZ, maxZ: E.maxZ, upperY, ceilingY: upperY - 0.3, sealed: false, hangingSign: false,
+    skirtSign: { text: 'LEVEL 2 · UPPER RING ↑', width: 2.4, height: 0.5, ...wayfinding },
   });
 
   // --- The upper ring: a slab with the court and the escalator's notch cut out, a tiled skin, glass railings --------------------

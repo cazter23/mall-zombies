@@ -31,6 +31,7 @@
 import * as THREE from 'three';
 import { COLORS } from './palette.js';
 import { atmosphere } from '../../config/environment.js';
+import { concourse } from '../../config/concourse.js';
 import { seededRandom } from '../../world/textures.js';
 import { buildAttachmentPart } from '../../weapons/models/upgradeParts.js';
 import { buildClerkFigure } from '../../zombies/zombieModel.js';
@@ -101,6 +102,8 @@ export function createMallProps(kit) {
   /** A full-height pillar centered at (x, z). The collider includes the wider base. */
   function pillar(x, z, height) {
     box(x - 0.4, 0.3, z - 0.4, x + 0.4, height, z + 0.4, mat(COLORS.pillar), { collide: false, name: 'pillar' });
+    const wrap = concourse.fixtures.pillarWraps; // a mirrored wrap at eye level (2 cm proud), very 1986
+    box(x - 0.42, wrap.from, z - 0.42, x + 0.42, wrap.to, z + 0.42, kit.mat(wrap.color, atmosphere.surfaces.metal), { collide: false, name: 'pillar_wrap' });
     box(x - 0.45, 0, z - 0.45, x + 0.45, 0.3, z + 0.45, mat(COLORS.pillarBase), { collide: false });
     addCollider(x - 0.45, 0, z - 0.45, x + 0.45, height, z + 0.45);
   }
@@ -164,7 +167,9 @@ export function createMallProps(kit) {
   }
 
   /** A ceiling light panel spanning x0..x1 / z0..z1, just under a ceiling at `ceilingY`. */
+  const panels = []; // every light panel built (the concourse pass paints a soft pool on the floor under the lit ones)
   function lightPanel(x0, z0, x1, z1, ceilingY, { dead = false, tint = COLORS.lightPanel, glow = 1.35 } = {}) {
+    panels.push({ x0, z0, x1, z1, ceilingY, dead, tint });
     const material = dead
       ? mat(COLORS.deadLightPanel, { roughness: 0.45, metalness: 0.15 })
       : mat(tint, { emissive: tint, emissiveIntensity: glow, roughness: 0.2 });
@@ -248,13 +253,17 @@ export function createMallProps(kit) {
    * A checkout counter running along X (vaultable across its short side, like the start room's
    * counter) with a belt, a register at the +X end and a numbered lane light.
    */
-  function checkout(x0, z0, x1, z1, lane) {
+  function checkout(x0, z0, x1, z1, lane, { drawerOpen = false } = {}) {
     box(x0, 0, z0, x1, 0.95, z1, mat(COLORS.checkoutBody), { name: 'checkout', vaultable: true });
     box(x0 - 0.04, 0.95, z0 - 0.04, x1 + 0.04, 1.0, z1 + 0.04, mat(COLORS.checkoutTop), { collide: false });
     box(x0 + 0.1, 1.0, z0 + 0.15, x1 - 0.7, 1.015, z1 - 0.15, mat(COLORS.checkoutBelt), { collide: false });
     // Register + screen (decorative: the vault only checks colliders)
     box(x1 - 0.55, 1.0, z0 + 0.2, x1 - 0.13, 1.28, z1 - 0.2, mat(COLORS.register), { collide: false });
     box(x1 - 0.5, 1.28, z0 + 0.3, x1 - 0.42, 1.48, z1 - 0.3, mat(COLORS.registerScreen, { emissive: COLORS.registerScreen, emissiveIntensity: 0.6 }), { collide: false });
+    if (drawerOpen) { // the cash drawer, left open mid-sale, a few notes still in it
+      box(x1 - 0.52, 1.02, z0 - 0.1, x1 - 0.16, 1.1, z0 + 0.2, mat(COLORS.register), { collide: false, name: 'register_drawer' });
+      for (let i = 0; i < 3; i++) box(x1 - 0.49 + i * 0.11, 1.1, z0 - 0.06, x1 - 0.4 + i * 0.11, 1.106, z0 + 0.14, mat(0x7fb07a), { collide: false, name: 'register_notes' });
+    }
     // Lane light: a thin pole with the lane number on top, readable from both sides.
     const px = x1 - 0.08;
     const pz = (z0 + z1) / 2;
@@ -915,7 +924,7 @@ export function createMallProps(kit) {
 
   return {
     shopFront, pillar, bench, planter, lightPanel, gondola, checkout, wallDoor, boardedVent, wallStripe,
-    escalator, railing, elevatorDoors, foodStall, tableSet, trashCan, lockerBank, electricalPanel, pipeRun, vendingMachine,
+    panels, escalator, railing, elevatorDoors, foodStall, tableSet, trashCan, lockerBank, electricalPanel, pipeRun, vendingMachine,
     serviceDesk, clerk, attachmentDisplay,
   };
 }

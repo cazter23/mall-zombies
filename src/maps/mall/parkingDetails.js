@@ -4,13 +4,17 @@ import { parkingLot as P } from '../../config/parkingLot.js';
 import { atmosphere } from '../../config/environment.js';
 import { seededRandom } from '../../world/textures.js';
 import { createParkingDetailKit } from './parkingDetailKit.js';
+import { paintAccessible, paintCampaign } from '../../world/paintedInteriors.js';
+import { concourse } from '../../config/concourse.js';
+import { zombieTypes } from '../../config/zombies.js';
+import { buildCart } from '../../zombies/cartModel.js';
 
 export function buildParkingDetails({ kit, looks }) {
   const d = createParkingDetailKit(kit), { box, rod, sign, plane, mat } = d;
   const metal = mat(0x8f989e, { roughness: .55, metalness: .4 }), dark = mat(0x343741);
   const cream = mat(0xd5c4a7), rust = mat(0x806354), paper = mat(0xdacdb6), teal = mat(0x739c96);
   const random = seededRandom(D.seed);
-  surfaceWear(); facadeDetails(); P.vehicles.forEach(vehicleDetails); abandonedScenes();
+  surfaceWear(); facadeDetails(); P.vehicles.forEach(vehicleDetails); abandonedScenes(); realism();
 
   // Painted light follows the existing Neon glow setting and needs no extra lamps.
   for (const l of P.lamps) {
@@ -252,4 +256,80 @@ export function buildParkingDetails({ kit, looks }) {
       rod('bag_handle', [bx - .08, bottom + .47, bz], [bx + .08, bottom + .47, bz], .01, rust);
     }
   }
+  // What makes it a real mall car park (config/parkingDetails.js realism).
+  function realism() {
+    const Rz = D.realism, bays = P.bays;
+    const canvasOf = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
+    const textureOf = (c) => { const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; };
+    // The accessible bay nearest the door: painted blue, the symbol at the aisle end (canvas top = the south end).
+    const bx0 = bays.fromX + Rz.accessibleBay * bays.spacing + .15, bx1 = bx0 + bays.spacing - .3;
+    const bayCanvas = canvasOf(128, 300), bc = bayCanvas.getContext('2d');
+    bc.fillStyle = '#2f62b0'; bc.fillRect(0, 0, 128, 300);
+    bc.save(); bc.translate(14, 190); paintAccessible(bc, 100); bc.restore();
+    plane('accessible_bay', (bx0 + bx1) / 2, Rz.accessibleY, (bays.minZ + bays.maxZ) / 2, bx1 - bx0, bays.maxZ - bays.minZ - .1,
+      new THREE.MeshStandardMaterial({ map: textureOf(bayCanvas), roughness: .9 }));
+    // The cart corral: a three-sided rail pen, one cart in it and one stray (both solid to waist height).
+    const K = Rz.corral, cx = bays.fromX + (K.bay + .5) * bays.spacing, cz = (bays.minZ + bays.maxZ) / 2;
+    const cx0 = cx - K.width / 2, cx1 = cx + K.width / 2, cz0 = cz - K.length / 2, cz1 = cz + K.length / 2;
+    for (const y of [.5, K.height]) {
+      rod('corral_rail', [cx0, y, cz0], [cx0, y, cz1], .03, metal);
+      rod('corral_rail', [cx1, y, cz0], [cx1, y, cz1], .03, metal);
+      rod('corral_rail', [cx0, y, cz0], [cx1, y, cz0], .03, metal);
+    }
+    for (const [x, z] of [[cx0, cz0], [cx1, cz0], [cx0, cz1], [cx1, cz1]]) rod('corral_post', [x, 0, z], [x, K.height, z], .035, metal);
+    box('corral_sign', cx, K.height + .22, cz0, K.width - .1, .34, .03, mat(0x264653));
+    sign('corral_sign_text', 'RETURN CARTS HERE', { x: cx, y: K.height + .22, z: cz0 - .02, width: K.width - .16, height: .28, facing: -1, background: '#264653', color: '#ffe2a3' });
+    kit.addCollider(cx0 - .04, 0, cz0 - .04, cx1 + .04, K.height, cz1 + .04).vaultable = true;
+    const cartRandom = seededRandom(D.seed + 7);
+    for (const [x, z, yaw] of K.carts) {
+      const cart = buildCart(zombieTypes.cartPusher.cart, (color) => mat(color), cartRandom);
+      cart.position.set(x, 0, z);
+      cart.rotation.y = yaw;
+      cart.name = 'parking_cart';
+      kit.group.add(cart);
+      const inPen = x > cx0 && x < cx1 && z > cz0 && z < cz1;
+      if (!inPen) kit.addCollider(x - .45, 0, z - .45, x + .45, 1.0, z + .45).vaultable = true;
+    }
+    // Row letters and campaign banners on the light poles.
+    const campaignCanvas = canvasOf(256, 512);
+    paintCampaign(campaignCanvas.getContext('2d'), 256, 512, concourse.campaign);
+    const bannerMaterial = new THREE.MeshBasicMaterial({ map: textureOf(campaignCanvas), toneMapped: false });
+    const B = Rz.poleBanner;
+    P.lamps.forEach((l, i) => {
+      for (const facing of ['x+', 'x-']) {
+        const side = facing === 'x+' ? 1 : -1;
+        sign('row_letter', `ROW ${Rz.rowLetters[i] ?? 'A'}`, { x: l.x + side * .12, y: 2.6, z: l.z, width: .5, height: .5, facing,
+          background: '#264653', color: '#ffe2a3' });
+      }
+      const bx = l.x - .11 - B.out - B.width / 2;
+      rod('banner_arm', [l.x - .11, B.y + B.height / 2, l.z], [bx - B.width / 2, B.y + B.height / 2, l.z], .02, metal);
+      plane('pole_banner', bx, B.y, l.z + .006, B.width, B.height, bannerMaterial, 'z'); // (two faces, back to back: no mirrored text)
+      plane('pole_banner', bx, B.y, l.z - .006, B.width, B.height, bannerMaterial, 'z').rotation.y = Math.PI;
+    });
+    // A planted kerb island at the west end of the row (a 0.15 m step), with a young tree.
+    const I = Rz.island;
+    kit.box(I.minX, 0, I.minZ, I.maxX, I.kerb, I.maxZ, mat(0xb8a4a2), { name: 'parking_detail_island_kerb', collide: false });
+    kit.addCollider(I.minX, 0, I.minZ, I.maxX, I.kerb, I.maxZ);
+    kit.box(I.minX + .12, I.kerb, I.minZ + .12, I.maxX - .12, I.kerb + .02, I.maxZ - .12, mat(0x5f7a48), { name: 'parking_detail_island_grass', collide: false });
+    const [tx, tz] = I.tree;
+    kit.box(tx - .09, I.kerb, tz - .09, tx + .09, I.kerb + 2.2, tz + .09, mat(0x6e4a26), { name: 'parking_detail_island_tree', collide: true });
+    for (const [r, dy, color] of [[.9, 2.7, 0x3f6e3a], [.6, 3.3, 0x4f8a46]]) {
+      const crown = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 0), mat(color));
+      crown.position.set(tx, I.kerb + dy, tz); crown.name = 'parking_detail_island_crown'; kit.group.add(crown);
+    }
+    // The entrance vestibule: glass sides (solid), a canopy roof, an open front.
+    const V = Rz.vestibule, glass = mat(0x9fc6d8, { transparent: true, opacity: .25, roughness: .05, depthWrite: false });
+    const frame = mat(0x3a4250);
+    for (const z of [V.minZ, V.maxZ]) {
+      kit.box(V.minX, 0, z - .025, V.maxX, V.height, z + .025, glass, { name: 'parking_detail_vestibule_glass', collide: false });
+      kit.addCollider(V.minX, 0, z - .04, V.maxX, V.height, z + .04);
+      kit.box(V.maxX - .06, 0, z - .05, V.maxX + .02, V.height, z + .05, frame, { name: 'parking_detail_vestibule_post', collide: false });
+      kit.box(V.minX + .01, V.height - .08, z - .05, V.maxX - .06, V.height, z + .05, frame, { name: 'parking_detail_vestibule_rail', collide: false });
+    }
+    kit.box(V.minX, V.height, V.minZ - .1, V.maxX + .15, V.height + V.roof, V.maxZ + .1, mat(0x628c8c), { name: 'parking_detail_vestibule_roof', collide: false });
+    kit.box(V.maxX - .06, V.height - .3, V.minZ, V.maxX + .02, V.height, V.maxZ, frame, { name: 'parking_detail_vestibule_header', collide: false });
+    sign('vestibule_sign', 'MEGA MART · ENTRANCE', { x: V.maxX + .025, y: V.height - .15, z: (V.minZ + V.maxZ) / 2, width: 2.2, height: .24, facing: 'x+',
+      background: '#264653', color: '#ffe2a3' });
+  }
+
 }

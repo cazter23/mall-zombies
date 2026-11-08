@@ -47,6 +47,8 @@ import { buildLevelTwo } from './levelTwo.js';
 import { buildAtrium } from './atrium.js';
 import { buildHallwayLook } from './hallwayLook.js';
 import { createLookKit } from './lookKit.js';
+import { buildConcourse } from './concourse.js';
+import { concourse } from '../../config/concourse.js';
 import { buildSetPieces } from './setPieces.js';
 import { buildFoodCourtLook, buildMegaMartLook, buildServiceCorridorLook, buildStartRoomLook, buildLevelTwoLook, buildAtriumLook, buildDepartmentStoreLook } from './zoneLooks.js';
 import { look } from '../../config/look.js';
@@ -666,7 +668,7 @@ export function buildMall(scene, colliders) {
 
   // Front of the store: four checkout lanes (vaultable counters) facing the entrance. You walk in
   // at z 0..4 and the lanes are 2m wide; the ends stay open, so you can run round the row.
-  MART_FIXTURES.checkoutZs.forEach((z, i) => props.checkout(24.5, z - 0.4, 27.5, z + 0.4, i + 1));
+  MART_FIXTURES.checkoutZs.forEach((z, i) => props.checkout(24.5, z - 0.4, 27.5, z + 0.4, i + 1, { drawerOpen: concourse.stories.registerDrawer && i === 1 }));
 
   // Back of the store: three long shelf aisles (gondolas) running north-south. Aisles are 2.5m
   // (the west one 3.2m, meeting the Food Court shortcut), with a 4.5m
@@ -936,6 +938,10 @@ export function buildMall(scene, colliders) {
   buildCinemaServiceDetails({ kit, looks, cinema: LAYOUT.cinema, stairs: LAYOUT.cinemaStairs, floorY: upperY });
   buildAtriumLook({ looks, layout: LAYOUT, upperY, keepClear: hallwayClear.slice(0, -2) });
   buildDepartmentStoreLook({ looks, kit, layout: LAYOUT, keepClear: hallwayClear.slice(0, -2) });
+
+  // The concourse pass (maps/mall/concourse.js, config/concourse.js): shopfronts, the mall section, floor patterns, painted
+  // light under panels and neon, fixtures, stories, the campaign and wayfinding. Last, so every neon sign is already placed.
+  buildConcourse({ kit, looks, props, layout: LAYOUT, upperY });
 
   // The horror layer (game/features/horror.js, config/look.js horror): which lamps and neon it may kill, area by area
   // (areas are zone lighting's grades, so a power cut darkens the same space its grade covers).

@@ -95,6 +95,9 @@ src/
     retailUnease.js     Rare atrium display changes and localized back-room sound timings/ranges; no gameplay tuning.
     workshop.js         Build-A-Blaster: Limited Edition numbers (workshopBuilds), the ritual (workshopRitual: time, qualities, stages, loaner, PA), Stuffings and Hearts, buildOf reads a gun's finished build.
     decor.js            Decoration kit + clutter scatter numbers (world/decor.js, world/scatter.js). Cosmetic only.
+    concourse.js        The real-mall pass as data (maps/mall/concourse.js): Level 2 shopfronts, hallway display windows, soffits and
+                        cornice, floor bands / medallions / worn lanes, painted light under panels and neon, fixtures, little stories,
+                        the FALL INTO SAVINGS '86 campaign, a directory totem; `wayfinding` = the one style for new direction signs.
     look.js             Art direction, "Grand Opening, Forever": palette, zone grading, the horror layer, set pieces.
     music.js            The 16-bar lounge loop "After Closing" as data (pitches, beats, timbres).
     neon.js             Neon tube builder tuning (world/neon.js): palette, tube sizes, flicker.
@@ -559,7 +562,12 @@ src/
     mall/cinemaStoryDetails.js The cinema's story props.
     mall/cinemaDecorKit.js Small primitives for cinema dressing (world coordinates, no collision).
     mall/hallwayLook.js The hallway's dressing, the reference room of the visual overhaul (neon, slogans, wall bands, posters).
-    mall/lookKit.js     The visual overhaul's shared tools (wall bands, neon, light pools), used by every area's Look.
+    mall/lookKit.js     The visual overhaul's shared tools (wall bands, neon, light pools), used by every area's Look. glowSet(name, kind):
+                        many glows merged into ONE additive mesh; parts.neonPlacements records every neon sign placed.
+    mall/concourse.js   The concourse pass (config/concourse.js), built last in mall.js: a shopfront run on Level 2 (painted interiors
+                        and signs on one atlas, one glass mesh, blade signs, light spill), display windows, soffits with the trim on their
+                        edge and a ceiling cove, the hallway cornice, floor bands and medallions, panel pools and neon reflections (two
+                        glow meshes in all), ceiling fixtures, fountain, ATM, fire pulls, urns, kiddie ride, gumball, stories, campaign.
     mall/setPieces.js   One signature scene per area (dead arcade cabinets in the hallway, and so on).
     testRange/          Debug add-on (not a map): testRange.js buildTestRange(scene, colliders) with own lights,
                         dummy.js practice mannequins (shootables)
@@ -638,7 +646,10 @@ src/
     atmosphereTextures.js Soft footprint alpha and deterministic tile roughness (no image downloads)
                         seededRandom(seed): deterministic random (also used for shelf stock)
     neonDemo.js         Debug only: a sample wall of everything world/neon.js can make.
-    posterTextures.js   The mall's posters, drawn on canvas (upbeat slogans, something wrong in each).
+    posterTextures.js   The mall's posters, drawn on canvas (upbeat slogans, something wrong in each); 'ghost' = a faded advert painted on a wall.
+    canvasAtlas.js      Many painted panels on one canvas texture (createCanvasAtlas, atlasQuad), so an area's signs draw as one mesh.
+    paintedInteriors.js Flat canvas art for the concourse pass: shop interiors in one-point perspective by kind, shop signs, the campaign
+                        art, the floor medallion, the accessible-bay symbol.
     scatter.js          Places decor-kit clutter on a floor area, deterministic per seed, merged into one mesh per material.
     staticBatch.js      Merges still, opaque map meshes into a few big ones (fewer draw calls); userData.dynamic opts a mesh out.
   ui/

@@ -17,6 +17,7 @@
 // =============================================================================
 
 import * as THREE from 'three';
+import { concourse } from '../../config/concourse.js';
 import { slabPiecesWithHoles } from '../../world/mapKit.js';
 import { COLORS } from './palette.js';
 import { buildPromenadeShop } from './promenadeShop.js';
@@ -198,8 +199,9 @@ export function buildLevelTwo({ kit, props, floorY, supportRect, supportRects = 
     x: hole.maxX + edge - 0.03, y: y(0.55), z: (hole.minZ + hole.maxZ) / 2, width: 1.2, height: 0.35, facing: 'x+',
     background: '#ffd23f', color: '#1d1626', font: 'Arial, "Helvetica Neue", sans-serif',
   });
+  // (on the south soffit's face: the shopfront run sits under it, maps/mall/concourse.js)
   sign('Sunset Galleria · Level 2', {
-    x: 2, y: y(2.55), z: rect.minZ + 0.02, width: 7, height: 0.8, facing: 1,
+    x: 2, y: y((concourse.soffits.level2.bottom + layout.height) / 2), z: rect.minZ + concourse.soffits.level2.depth + 0.012, width: 7, height: 0.5, facing: 1,
     background: '#6b3f5e', color: '#ffd9a8', font: 'Georgia, "Times New Roman", serif',
   });
   sign('Restrooms → Not anymore', {

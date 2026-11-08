@@ -7,6 +7,7 @@
 
 import { look } from '../../config/look.js';
 import { promenade } from '../../config/promenade.js';
+import { concourse } from '../../config/concourse.js';
 
 // A 1 cm paint panel over the face of a wall the area shares with a neighbour (whose paint is on both faces), with holes for
 // its openings. along 'x': a wall at z = wallAt; 'z': a wall at x = wallAt. holes: [{ from, to, top }] (top = the opening's height).
@@ -274,15 +275,17 @@ export function buildLevelTwoLook({ looks, layout, floorY, hole, keepClear = [] 
   const neon = looks.neon('level2');
   neon.sign({ text: sat.sunset, x: -12, y: y(2.75), z: south, facing: 1, height: 0.24, color: S.sunset, backing, border: L.trim, flickerLetters: [8] });
   neon.sign({ text: sat.leasing, x: -15, y: y(2.75), z: north, facing: -1, height: 0.26, color: S.leasing, backing, flickerLetters: [11] });
-  const tY = y(L.trimY);
-  neon.tube([[H.minX + 0.4, tY, north], [H.maxX - 0.4, tY, north]], { color: L.trim });
-  neon.tube([[H.minX + 0.4, tY, south], [-1, tY, south]], { color: L.trim, flicker: true });
-  neon.tube([[1, tY, south], [H.maxX - 0.4, tY, south]], { color: L.trim });
+  // The pink trim runs along the soffits' front edges (config/concourse.js soffits.level2: the lowered bulkheads over the
+  // shopfronts), so the middle of the Promenade reads raised; the south run keeps its flickering west half.
+  const SO = concourse.soffits.level2;
+  const tY = y(SO.bottom - SO.trimInset);
+  const edgeNorth = H.maxZ - SO.depth - 0.02, edgeSouth = H.minZ + SO.depth + 0.02;
+  for (const [a, b] of SO.north) neon.tube([[Math.max(a, H.minX + 0.4), tY, edgeNorth], [Math.min(b, H.maxX - 0.4), tY, edgeNorth]], { color: L.trim });
+  neon.tube([[H.minX + 0.4, tY, edgeSouth], [-1, tY, edgeSouth]], { color: L.trim, flicker: true });
+  neon.tube([[1, tY, edgeSouth], [H.maxX - 0.4, tY, edgeSouth]], { color: L.trim });
 
-  // Painted light: washes under the trim (behind the shop facades), glows behind the two signs.
+  // Painted light: glows behind the two signs (the trim's own wash is the soffits' cove light: maps/mall/concourse.js).
   const P = look.hallway.pools;
-  looks.pool(0, tY - 0.45, H.maxZ - 0.01, H.maxX - H.minX - 1, 0.9, -1, L.trim, P.trimOpacity, { wash: true });
-  looks.pool(0, tY - 0.45, H.minZ + 0.01, H.maxX - H.minX - 1, 0.9, 1, L.trim, P.trimOpacity, { wash: true });
   looks.pool(-12, y(2.75), H.minZ + 0.026, 7.5, 1.1, 1, S.sunset, P.wallOpacity);
   looks.pool(-15, y(2.75), H.maxZ - 0.026, 4.6, 1.1, -1, S.leasing, P.wallOpacity);
 

@@ -12,6 +12,10 @@
 //   looks.pool(x, y, z, w, h, facing, color, opacity, { wash })   facing: 1 | -1 | 'x+' | 'x-' | 'floor'
 //   looks.poster(kind, options, x, y, z, w, h, facing)            world/posterTextures.js, facing as for signs
 //   looks.clutter({ name, area, kinds, seed, perSquareMeter, keepClear })
+//   looks.glowSet(name, 'soft' | 'streak')   many painted glows merged into ONE additive mesh (one draw call):
+//                 .add({ x, y, z, width, depth, dir: [dx, dz], color, strength, ceiling }) a horizontal patch on a floor (or
+//                 a ceiling), `dir` pointing away from its bright edge (streak: bright where it starts, fading along dir); .finish()
+//   looks.parts.neonPlacements   every neon sign / text placed ({ area, x, y, z, facing, width, color }): floor reflections
 //   looks.update(dt), looks.reset(), looks.parts (parts.neonsByName: each area's neon builder)
 // =============================================================================
 
@@ -21,6 +25,7 @@ import { createDecorKit } from '../../world/decor.js';
 import { scatter } from '../../world/scatter.js';
 import { makeSoftFootprint } from '../../world/atmosphereTextures.js';
 import { makePosterTexture } from '../../world/posterTextures.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { look } from '../../config/look.js';
 import { atmosphere } from '../../config/environment.js';
 
@@ -94,8 +99,16 @@ export function createLookKit({ kit, colliders }) {
     }
   }
 
+  const neonPlacements = []; // where every neon sign and text went (the concourse pass reflects them on shiny floors)
   function neon(name) {
     const n = createNeon({ group: dynamicGroup(`look_neon_${name}`) });
+    const record = (opts, made) => {
+      if (opts?.x == null || opts?.y == null || opts?.z == null || !made?.width) return;
+      neonPlacements.push({ area: name, x: opts.x, y: opts.y, z: opts.z, facing: opts.facing ?? 1, width: made.width, color: opts.color });
+    };
+    const { sign, text } = n;
+    n.sign = (opts = {}) => { const made = sign(opts); record(opts, made); return made; };
+    n.text = (string, opts = {}) => { const made = text(string, opts); record(opts, made); return made; };
     neons.push(n);
     neonsByName[name] = n;
     return n;
@@ -136,6 +149,58 @@ export function createLookKit({ kit, colliders }) {
     return m;
   }
 
+  // A streak's texture: bright along its starting edge (v = 0), fading out along it, soft at both sides.
+  function makeStreakTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 32; canvas.height = 64;
+    const c = canvas.getContext('2d');
+    const along = c.createLinearGradient(0, 64, 0, 0); // canvas bottom = v 0 (CanvasTexture flips Y)
+    along.addColorStop(0, 'rgba(255,255,255,1)'); along.addColorStop(0.35, 'rgba(255,255,255,0.45)'); along.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = along; c.fillRect(0, 0, 32, 64);
+    c.globalCompositeOperation = 'destination-in';
+    const across = c.createLinearGradient(0, 0, 32, 0);
+    across.addColorStop(0, 'rgba(0,0,0,0)'); across.addColorStop(0.25, 'rgba(0,0,0,1)'); across.addColorStop(0.75, 'rgba(0,0,0,1)'); across.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = across; c.fillRect(0, 0, 32, 64);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    return texture;
+  }
+  let streak = null;
+  /** Many glows as one additive, vertex-coloured mesh in the light-pool group (so Neon glow switches them). */
+  function glowSet(name, kind = 'soft') {
+    const quads = [];
+    const tint = new THREE.Color();
+    return {
+      add({ x, y, z, width, depth, dir = [0, 1], color, strength = 0.2, ceiling = false }) {
+        const [dx, dz] = dir, tx = -dz, tz = dx; // along the glow / across it
+        const p = (a, b) => [x + tx * a + dx * b, y, z + tz * a + dz * b];
+        const corners = [p(-width / 2, -depth / 2), p(width / 2, -depth / 2), p(width / 2, depth / 2), p(-width / 2, depth / 2)];
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.Float32BufferAttribute(corners.flat(), 3));
+        g.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 1, 0, 1, 1, 0, 1], 2));
+        tint.set(color).multiplyScalar(strength);
+        g.setAttribute('color', new THREE.Float32BufferAttribute([0, 1, 2, 3].flatMap(() => [tint.r, tint.g, tint.b]), 3));
+        // (winding: up-facing for floors; flipped for a ceiling)
+        const up = (corners[1][0] - corners[0][0]) * (corners[3][2] - corners[0][2]) - (corners[1][2] - corners[0][2]) * (corners[3][0] - corners[0][0]) < 0;
+        g.setIndex(up !== ceiling ? [0, 1, 2, 0, 2, 3] : [0, 2, 1, 0, 3, 2]);
+        quads.push(g.toNonIndexed());
+      },
+      finish() {
+        if (!quads.length) return null;
+        const geometry = mergeGeometries(quads, false);
+        geometry.computeBoundingSphere();
+        const map = kind === 'streak' ? (streak ??= makeStreakTexture()) : soft;
+        const mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
+          map, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+          polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
+        }));
+        mesh.name = `glow_${name}`;
+        poolGroup.add(mesh);
+        return mesh;
+      },
+    };
+  }
+
   let decorKit = null;
   function clutter({ name, area, kinds, seed, perSquareMeter, keepClear = [] }) {
     decorKit ??= createDecorKit();
@@ -162,8 +227,8 @@ export function createLookKit({ kit, colliders }) {
   }
 
   return {
-    bands, neon, pool, poster, clutter,
-    parts: { neons, neonsByName, clutters, posters, pools: poolGroup },
+    bands, neon, pool, poster, clutter, glowSet,
+    parts: { neons, neonsByName, clutters, posters, pools: poolGroup, neonPlacements },
     update(dt) {
       follow();
       for (const n of neons) n.update(dt);

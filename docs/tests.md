@@ -220,6 +220,7 @@ the two-alive cap, one kill payout, foam splatter in Red mode, and the one-time 
 Shot rays cover the helmet and torso, the smaller exposed head, and a miss through the fallen helmet. Reset removes
 the model and debris and disposes their shared geometry and materials.
 
+- `concourse.test.js`: the concourse pass stays cheap (painted panels one mesh per area on one atlas, one glass mesh, one mesh per glow set, campaign and lanes), its floor pieces obey the standable rule and keep clear of spawns, and the canvas atlas gives each cell its own pixels.
 - `fontsReady.test.js`: startup waits for canvas fonts, never hangs on a stuck network or failed font, and the page boots through the wait.
 - `workshopRitual.test.js`, `mascot.test.js` also guard where the two meet: nothing fills the gauge after death, a rescued zombie rises normally, and the Mascot falls out of the Returns Chute with its hitboxes.
 - `workshopNames.test.js`: every Stuffing and Heart pair has its own model name; a named gun's record counts its own and its stuffing's kills, survives a re-stuff, and stops at death.
