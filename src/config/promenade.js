@@ -2,6 +2,9 @@
 // sections/rooms and declare their shared wall openings when extending the wing.
 export const promenade = {
   rect: { minX: -20, maxX: 20, minZ: -4.5, maxZ: 6 },
+  // The Promenade's own floor: a dusk-mauve terrazzo with plum grout (the upper floor is where the sunset goes purple;
+  // the hallway below is cream), a little matte.
+  floor: { base: '#dcbcc4', grout: '#8a5f86', variation: 14, seed: 51, roughness: 0.5 },
   slabThickness: .3,
   wallThickness: .3,
   seating: {

@@ -323,6 +323,8 @@ src/
                         Crowd shoves never move anyone into a wall (overlapsSolid); a pinned player pushes the
                         zombie back instead. Options canAttack(), onPlayerHit(damage), onKill(zombie)
     statusTint.js       What a Build-A-Blaster effect on a zombie looks like: the glow (flames, ice, goo, butter, rainbow) the model gets, read by zombieModel.js each frame. Looks in config/workshop.js stuffingLook.
+    zombieRim.js        The soft edge glow round each zombie (config/look.js zombieRim; colour by kind, bosses their own): a few lines added to
+                        the standard shader once per material, no draw calls, unaffected by hit flashes.
     confusion.js        Glitter's AI: a confused zombie forgets the player and fights the nearest other zombie with its normal attack.
     tankDeath.js        A kill in the room flying into the Stuffing Tank (visual; the kill is already paid).
     partyTrapDeath.js   The pose, ribbon and confetti after a trap kill. The kill is paid on impact; this is visual only.

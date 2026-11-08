@@ -22,7 +22,9 @@ export const departmentStore = {
   colors: {
     wall: 0xf1e4d0, // warm cream
     ceiling: 0xfbf3e8,
-    floor: { base: '#e8d9c4', grout: '#c3a78a', variation: 9, seed: 61 }, // pale marble-look tile
+    // Deep burgundy carpet tiles (matte: carpet doesn't shine), so HOFFMAN'S reads apart from the cream concourse at a glance;
+    // the brass rails and gold trim carry the class.
+    floor: { base: '#6e2636', grout: '#561c2a', variation: 8, seed: 61, roughness: 0.95 },
     serviceDoor: 0x8c2f45, // burgundy
   },
 

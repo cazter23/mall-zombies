@@ -262,7 +262,8 @@ the model and debris and disposes their shared geometry and materials.
 - `uiReadability.test.js`: the run's notice history (kept, bounded, reset apart from PA visibility) and UI/text scale saved independently of render resolution.
 - `vhsFilter.test.js`: the VHS filter: off by default, untouched by Graphics presets, and its pass runs only when on (even with Visual effects Off).
 - `visualEffects.test.js`: Visual effects High / Low / Off on a stand-in renderer (Off skips the composer), and the Video presets that set it.
-- `zoneGrading.test.js`: each area's colour grade, easing between areas, late hours multiplying onto a grade (a dark room only gets darker), the setting, and every Graphics preset deciding it.
+- `zoneGrading.test.js`: each area's colour grade and haze, easing between areas, late hours multiplying onto a grade (a dark room only gets darker), the setting, and every Graphics preset deciding it.
+- `zombieRim.test.js`: the edge glow's colour per kind (bosses, every mascot costume, mannequins), applied once to opaque standard materials, one shared shader program.
 - `docs.test.js`: every file in src/ has an entry in docs/folder-structure.md, every test file is described here, and every doc CLAUDE.md links to exists.
 
 `tests/uiInformationPriority.test.js` checks exhausted reward visibility, first-activation benefit teaching, live timers/charges on repeat pickups, run reset, and workshop countdown/quality priority.

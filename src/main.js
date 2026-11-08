@@ -139,7 +139,14 @@ const lightPool = createLightPool({ scene, sources: collectPointLights(map.group
 // Zone lighting: the view eases to the colour grade of the area the camera is in (fx/zoneGrading.js, config/look.js grading).
 const zoneGrading = createZoneGrading({ zones: map.gradeZones, ...look.grading });
 // (map.horror.state: the horror layer's round darkness and power cuts, game/features/horror.js)
-const gradeAt = (frameTime) => zoneGrading.update(frameTime, camera.position, look.runtime.zoneGrading, map.horror?.state);
+// The haze (config/look.js grading fog): built once (so no shader recompiles later), its colour and density follow the grade.
+scene.fog = new THREE.FogExp2(0xffffff, 0);
+const gradeAt = (frameTime) => {
+  const grade = zoneGrading.update(frameTime, camera.position, look.runtime.zoneGrading, map.horror?.state);
+  scene.fog.density = grade.fog;
+  scene.fog.color.setRGB(grade.fogColor[0], grade.fogColor[1], grade.fogColor[2], THREE.SRGBColorSpace);
+  return grade;
+};
 const firstLaunch = !hasSavedSettings(); // (read before anything is saved)
 const settings = createSettings({ renderer, sound, hud, postProcessing, lightPool, haptics });
 // First launch: pick a Graphics preset that suits this computer from the title flyover's frame rate (game/autoGraphics.js).
@@ -210,7 +217,7 @@ const roomCulling = createRoomCulling({
 });
 const cullingOn = !new URLSearchParams(location.search).has('noculling');
 if (cullingOn) roomCulling.tag(map.group);
-if (!new URLSearchParams(location.search).has('nobatch')) batchStatic(map.group); // (?nobatch: off, to compare)
+if (!new URLSearchParams(location.search).has('nobatch')) batchStatic(map.group, { shade: look.bakedShade }); // (?nobatch: off, to compare)
 // Metal sheen (fx/metalSheen.js): a tiny baked gradient for metal materials only, after batching so the merged ones get it.
 const metalSheen = sheenEnvironment(renderer, look.metalSheen);
 for (const root of [map.group, g.arena?.group].filter(Boolean)) applyMetalSheen(root, metalSheen, look.metalSheen);

@@ -195,6 +195,19 @@ export function buildCuffedArmSegment(parent, wristPos, elbowPos, shoulderPos, f
   block(c.shirtStripe, .024, .003, .001, 0, -.009, .002, badge);
   block(c.uniformGold, .018, .002, .001, 0, -.014, .002, badge);
 
+  // The left wrist wears the staff-issue digital watch: the one bit of the uniform that is always in frame.
+  if (side < 0 && c.watchBand != null) {
+    const band = makeFacetedLimbMesh(c.watchBand, 1.0, 1.0, 0.9);
+    placeLimb(band, wristPos.clone().lerp(elbowPos, 0.07), wristPos.clone().lerp(elbowPos, 0.15), forearmW * 1.16, forearmD * 1.16);
+    band.name = 'staffWatch';
+    parent.add(band);
+    const face = makeBoxMesh(c.watchFace);
+    face.scale.set(0.022, 0.006, 0.02);
+    face.position.copy(wristPos).lerp(elbowPos, 0.11).add(V(0, forearmD * 0.62, 0).applyQuaternion(band.quaternion));
+    face.quaternion.copy(band.quaternion);
+    parent.add(face);
+  }
+
   return { forearm, sleeve, cuff, stripe };
 }
 

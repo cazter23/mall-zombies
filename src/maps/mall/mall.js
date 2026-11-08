@@ -726,7 +726,29 @@ export function buildMall(scene, colliders) {
   // --- Lighting --------------------------------------------------------------
 
   // All lights live in the map's group, so unloading the map removes them too.
-  group.add(new THREE.HemisphereLight(atmosphere.hemisphere.sky, atmosphere.hemisphere.ground, atmosphere.hemisphere.intensity));
+  const skyLight = new THREE.HemisphereLight(atmosphere.hemisphere.sky, atmosphere.hemisphere.ground, atmosphere.hemisphere.intensity);
+  group.add(skyLight);
+
+  // The sun goes down over a run (config/look.js dusk; the horror director calls this with 0..1 each round): the sky light,
+  // the Atrium skylight and sun shafts, and the parking sky go from golden hour to a purple night. Colours only.
+  const DUSK = look.dusk;
+  const day = {
+    sky: new THREE.Color(atmosphere.hemisphere.sky), skylight: atrium.skylight.color.clone(), skylightGlow: atrium.skylight.emissive.clone(),
+    skylightIntensity: atrium.skylight.emissiveIntensity,
+  };
+  const night = { sky: new THREE.Color(DUSK.hemisphere.sky), skylight: new THREE.Color(DUSK.skylight.color), skylightGlow: new THREE.Color(DUSK.skylight.emissive),
+    parkingSky: new THREE.Color(DUSK.parkingSky) };
+  const white = new THREE.Color(0xffffff);
+  function setDusk(t) {
+    const k = Math.min(1, Math.max(0, t));
+    skyLight.color.copy(day.sky).lerp(night.sky, k);
+    skyLight.intensity = atmosphere.hemisphere.intensity + (DUSK.hemisphere.intensity - atmosphere.hemisphere.intensity) * k;
+    atrium.skylight.color.copy(day.skylight).lerp(night.skylight, k);
+    atrium.skylight.emissive.copy(day.skylightGlow).lerp(night.skylightGlow, k);
+    atrium.skylight.emissiveIntensity = day.skylightIntensity + (DUSK.skylight.emissiveIntensity - day.skylightIntensity) * k;
+    atrium.shafts.material.opacity = atrium.shafts.opacity + (DUSK.shafts - atrium.shafts.opacity) * k;
+    parking.sky.material.color.copy(white).lerp(night.parkingSky, k);
+  }
 
   const sun = new THREE.DirectionalLight(atmosphere.sun.color, atmosphere.sun.intensity);
   sun.position.set(6, 20, 8);
@@ -918,7 +940,8 @@ export function buildMall(scene, colliders) {
   // The horror layer (game/features/horror.js, config/look.js horror): which lamps and neon it may kill, area by area
   // (areas are zone lighting's grades, so a power cut darkens the same space its grade covers).
   const horror = {
-    state: { exposure: 1, decay: 0, cut: null }, // read by zone lighting (main.js)
+    state: { exposure: 1, decay: 0, dusk: 0, cut: null }, // read by zone lighting (main.js)
+    setDusk, // the sun going down over a run (look.dusk)
     lamps,
     neons: looks.parts.neonsByName,
     areas: [

@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import './helpers/headlessGame.js'; // (stubs the browser globals the mall reads)
 import { buildMall } from '../src/maps/mall/mall.js';
-import { batchStatic } from '../src/world/staticBatch.js';
+import { batchStatic, shadeAt } from '../src/world/staticBatch.js';
 
 const meshes = (root) => { const out = []; root.traverse((o) => { if (o.isMesh) out.push(o); }); return out; };
 const triangles = (list) => list.reduce((n, m) => {
@@ -79,4 +79,26 @@ test('a raycast (bullet marks) still hits a merged wall at the same point', () =
   assert.ok(Math.abs(before.z - 6) < 0.05, 'the wall (before)');
   assert.ok(hit(map.group).point.distanceTo(before) < 1e-4, 'same point after');
   map.dispose();
+});
+
+test('baked grounding: darkest at each floor, gone by `fade` up, measured from the floor level below', () => {
+  const shade = { strength: 0.2, fade: 1.6, minHeight: 0.35, floors: [0, 6.3] };
+  assert.ok(Math.abs(shadeAt(0, shade) - 0.8) < 1e-9);
+  assert.ok(Math.abs(shadeAt(0.8, shade) - 0.9) < 1e-9);
+  assert.equal(shadeAt(3, shade), 1, 'a door lintel 3 m up is not darkened');
+  assert.ok(Math.abs(shadeAt(6.3, shade) - 0.8) < 1e-9, 'the upper floor has its own grounding');
+  assert.equal(shadeAt(-1, shade), 1, 'below every floor: untouched');
+  const brightness = (options) => { // the sum of every vertex colour in the colour-merged batches
+    const map = buildMall(new THREE.Scene(), []);
+    batchStatic(map.group, options);
+    let sum = 0;
+    map.group.traverse((o) => {
+      const c = o.isMesh && o.userData.staticBatch && o.geometry.attributes.color;
+      if (c) for (let i = 0; i < c.count; i++) sum += c.getX(i) + c.getY(i) + c.getZ(i);
+    });
+    map.dispose();
+    return sum;
+  };
+  const plain = brightness({}), shaded = brightness({ shade });
+  assert.ok(shaded < plain && shaded > plain * 0.8, `darker, but only a little (${(shaded / plain).toFixed(3)})`);
 });

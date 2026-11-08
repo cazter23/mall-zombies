@@ -4,6 +4,7 @@
 //   round mood    past fromRound the whole mall darkens a little every round (state.exposure, read by zone lighting)
 //   neon failure  a growing share of the flickering neon letters and tubes dies for good (slogans lose letters), and every
 //                 tube, steady ones too, loses some brightness (brownout)
+//   the sun sets  golden hour at the start of a run to a purple night by look.dusk.toRound (state.dusk; map.horror.setDusk)
 //   late hours    the view drifts towards the `lateHours` grade (state.decay 0..1, read by zone lighting): greyer, harder,
 //                 the screen edges closing in, on top of each area's own grade
 //   dying lamps   one more lamp flickers out every few rounds, for the rest of the run
@@ -12,7 +13,7 @@
 // Listens to 'roundStart'; Play again (reset) puts every light back. Comfort > Horror lighting (look.runtime.horror) off
 // = none of it. Random choices are seeded per run (feature.seed), so tests can follow them.
 //
-// map.horror = { state: { exposure, decay, cut }, lamps: [PointLight], neons: { name: neon builder },
+// map.horror = { state: { exposure, decay, dusk, cut }, setDusk(t), lamps: [PointLight], neons: { name: neon builder },
 //               areas: [{ id, grades: [zone lighting grade ids], neons: [names] }] }   (a lamp's area = the grade where it hangs)
 // =============================================================================
 
@@ -85,6 +86,9 @@ export function buildHorror(feature, { map, events, rounds, player }) {
       n.setBrownout?.(brownout);
     }
     state.decay = Math.min(cfg.decay.max, steps * cfg.decay.perRound);
+    const D = look.dusk; // the sun goes down from the start of the run (not just past fromRound)
+    state.dusk = Math.min(1, Math.max(0, (round - D.fromRound) / (D.toRound - D.fromRound)));
+    hooks.setDusk?.(state.dusk);
     const deadTarget = steps > 0
       ? Math.min(Math.floor(lamps.length * cfg.lampDeaths.maxShare), 1 + Math.floor((steps - 1) / cfg.lampDeaths.everyRounds))
       : 0;
@@ -98,6 +102,8 @@ export function buildHorror(feature, { map, events, rounds, player }) {
     pendingCut = null;
     state.exposure = 1;
     state.decay = 0;
+    state.dusk = 0;
+    hooks.setDusk?.(0);
     for (const n of neons) {
       n.setFailures(0);
       n.setBrownout?.(0);

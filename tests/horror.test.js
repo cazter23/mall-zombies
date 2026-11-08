@@ -38,6 +38,7 @@ test('nothing before round 5; then darker every round, neon letters die for good
   tick(Math.ceil(look.horror.lampDeaths.flickerSeconds * 60) + 5);
   assert.equal(g.map.horror.state.exposure, 1 - look.horror.darkness.max, 'darkness is capped');
   assert.equal(g.map.horror.state.decay, look.horror.decay.max, 'late hours are capped');
+  assert.equal(g.map.horror.state.dusk, 1, 'by round 30 the sun has set');
   assert.ok(neonsOf(g).every((n) => n.brownout === look.horror.neonBrownout.max), 'brownout is capped');
   assert.ok(deadLamps(g) >= dead9, 'dead lamps stay dead');
   assert.ok(deadLamps(g) <= Math.floor(g.map.horror.lamps.length * look.horror.lampDeaths.maxShare), 'never more than the cap');
@@ -102,8 +103,29 @@ test('Horror lighting off puts everything back at once; Play again restores ever
   assert.equal(failedParts(g), 0);
   assert.equal(g.map.horror.state.exposure, 1);
   assert.equal(g.map.horror.state.decay, 0);
+  assert.equal(g.map.horror.state.dusk, 0, 'Play again: golden hour');
   assert.ok(neonsOf(g).every((n) => n.brownout === 0), 'every tube back to full brightness');
   assert.equal(director(g).state.round, 0);
   const fresh = headlessGame();
   assert.deepEqual(snapshot(g), snapshot(fresh.g));
+});
+
+test('the sun goes down over a run: golden hour on round 1, dusk midway, night by look.dusk.toRound', () => {
+  const { g, tick } = headlessGame();
+  tick(5);
+  const sky = () => g.map.group.children.find((o) => o.isHemisphereLight);
+  const dayColor = sky().color.getHex(), dayIntensity = sky().intensity;
+  assert.equal(g.map.horror.state.dusk, 0);
+  g.rounds.jumpTo(Math.round((look.dusk.fromRound + look.dusk.toRound) / 2));
+  tick(1);
+  const mid = g.map.horror.state.dusk;
+  assert.ok(mid > 0.3 && mid < 0.7, `about half way (${mid})`);
+  g.rounds.jumpTo(look.dusk.toRound + 3);
+  tick(1);
+  assert.equal(g.map.horror.state.dusk, 1);
+  assert.notEqual(sky().color.getHex(), dayColor, 'the sky light changed colour');
+  assert.ok(Math.abs(sky().intensity - look.dusk.hemisphere.intensity) < 1e-6);
+  g.resetRun();
+  assert.equal(sky().color.getHex(), dayColor, 'Play again: back to golden hour');
+  assert.equal(sky().intensity, dayIntensity);
 });

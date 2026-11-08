@@ -46,7 +46,7 @@ export function buildLevelTwo({ kit, props, floorY, supportRect, supportRects = 
   for (const section of layout.sections) for (const piece of slabPiecesWithHoles(section, [hole, ...voids])) {
     if (section.id.startsWith('workshop')) continue; // checkerboard skin belongs to the workshop
     kit.tiledFloor(piece.minX, piece.minZ, piece.maxX, piece.maxZ,
-      section.id === 'shoePer' ? layout.shoeStore.floor : { base: '#f0d2b0', grout: '#c9a47c', variation: 10, seed: 51 },
+      section.id === 'shoePer' ? layout.shoeStore.floor : layout.floor, // (config/promenade.js floor)
       { top: floorY + 0.012, thickness: 0.012, collide: false });
   }
 

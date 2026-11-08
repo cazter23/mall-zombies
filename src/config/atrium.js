@@ -3,6 +3,10 @@
 // Shops have real interiors behind sealed glazing; they are scenery, never walkable rooms.
 export const atriumDetails = {
   restockMachine: { x: 30.5, wallInset: .2 }, // ground-floor northeast corner, facing the court
+  // Sun shafts from the skylight: soft additive planes leaning west (the sun is setting), merged into one mesh. at = [x, z]
+  // where each shaft meets the court floor; the dusk fades them (config/look.js dusk.shafts).
+  sunShafts: { at: [[15.2, 14.5], [19, 21.5], [22.5, 16.2], [24.5, 23.2]], width: 1.7, lean: .2, // (lean: tops stay inside the open court)
+     opacity: .11, color: 0xffc48a },
   palette: { cream: 0xf3e3bf, plum: 0x4b304e, mint: 0x84b9a7, coral: 0xdd7e85,
     gold: 0xd1ae62, blue: 0x689bb1, ink: 0x28303c, chrome: 0xa4b4b7, paper: 0xe5d4b2 },
   shopInterior: {
