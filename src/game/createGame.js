@@ -28,7 +28,7 @@ import { economy } from '../config/economy.js';
 import { bossTiming } from '../config/bosses.js';
 import { createBossDirector } from './bossDirector.js';
 import { createShutterSounds } from './shutterSounds.js';
-import { mascotTypes, zombieTypes } from '../config/zombies.js';
+import { mascotGold, mascotTypes, zombieTypes } from '../config/zombies.js';
 import { weapons, melee as meleeWeapons } from '../config/weapons.js';
 import { loadMap } from '../maps/index.js';
 import { createPlayerStats, resetPlayerStats } from '../player/stats.js';
@@ -261,6 +261,7 @@ export function createGame({
     // (`again`: the helmet came off a second time, after Captain Coupon put it back on)
     onHeadPop: (zombie, { headshot, source }) => events.emit('mascotHeadPop', { zombie, headshot, source, again: zombie.mascotReclaims > 0 }),
     onReclaim: (zombie) => events.emit('mascotReclaim', { zombie }),
+    onGold: (zombie) => events.emit('mascotGold', { zombie }),
     onSound: (name, volume) => sound.play(name, { volume }), // Mall Walker squeaks, huffs and pants
     navigation: map.navigation, // floors + the ramps between them (undefined = one ground floor)
   });
@@ -303,6 +304,11 @@ export function createGame({
   });
   events.on('mascotReclaim', ({ zombie }) => {
     hud.showAnnouncement({ ...zombie.type.mascot.reclaim.line, priority: 1 });
+    sound.play('paChime');
+  });
+  // An Employee of the Month on the floor (its guaranteed drop: game/powerUps.js).
+  events.on('mascotGold', () => {
+    hud.showAnnouncement({ ...mascotGold.spawnLine, priority: 1 });
     sound.play('paChime');
   });
   // The costume twists that reach past the zombie (Poppy Corn's blast...): game/mascotCostumes.js.

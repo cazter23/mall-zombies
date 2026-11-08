@@ -212,6 +212,31 @@ function drawPriceTagPrint(ctx, w, h, head) {
   ctx.fillText(print.symbol, toX(print.symbolAt[0]), toY(print.symbolAt[1]));
 }
 
+// Employee of the Month's name badge (config/zombies.js mascotGold.badge): a card on the chest with its print in front.
+export function buildMascotBadge(badge, parent, { block, shape, material, colors }) {
+  const group = new THREE.Group();
+  group.name = 'mascotBadge';
+  group.position.set(...badge.at);
+  parent.add(group);
+  block(group, colors[badge.color], badge.size, [0, 0, 0]);
+  const { print } = badge;
+  const map = canvasPrint('badge.print', print.pixels[0], print.pixels[1], (ctx, w, h) => {
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = print.star;
+    ctx.fillRect(0, 0, w, h * 0.16); // a gold band across the top
+    ctx.fillStyle = print.ink;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `700 ${Math.round(h * 0.3)}px "Space Grotesk", Arial, sans-serif`;
+    ctx.fillText(print.lines[0], w / 2, h * 0.42, w * 0.9);
+    ctx.font = `700 ${Math.round(h * 0.2)}px "Space Grotesk", Arial, sans-serif`;
+    ctx.fillText(print.lines[1], w / 2, h * 0.74, w * 0.9);
+  });
+  if (!map) return;
+  const plane = sharedOnce('badge.plane', () => new THREE.PlaneGeometry(badge.size[0], badge.size[1]));
+  shape(group, plane, material({ map, alphaTest: 0.5 }), [0, 0, -badge.size[2] / 2 - print.lift], [0, Math.PI, 0]);
+}
+
 /** Fill the (empty) helmet group with the costume's head. */
 export function buildMascotHead(head, group, kit) {
   const build = HEADS[head.kind];

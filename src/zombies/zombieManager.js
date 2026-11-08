@@ -11,7 +11,7 @@ import * as THREE from 'three';
 import { createPartyTrapDeaths } from './partyTrapDeath.js';
 import { createTankDeaths } from './tankDeath.js';
 import { feel } from '../config/feel.js';
-import { mascotTypes, zombieTypes, zombieCrowd, zombieFailsafe, zombieSpawn } from '../config/zombies.js';
+import { mascotGold, mascotGoldTypes, mascotTypes, zombieTypes, zombieCrowd, zombieFailsafe, zombieSpawn } from '../config/zombies.js';
 import { pickMascotVariant } from './mascotVariants.js';
 import { bossTypes } from '../config/bosses.js';
 import { economy, zombieHealthFor } from '../config/economy.js';
@@ -36,6 +36,7 @@ const UP = new THREE.Vector3(0, 1, 0);
  * @param onKill       optional (zombie) => called when a zombie dies (run stats, later points)
  * @param onHeadPop    optional (zombie, { headshot, source }) => the Mascot's helmet came off
  * @param onReclaim    optional (zombie) => Captain Coupon put his helmet back on
+ * @param onGold       optional (zombie) => an Employee of the Month (a gold Mascot) just spawned
  * @param onSound      optional (name, volume) => play a zombie sound (Mall Walker squeaks, huffs, pants)
  * @param navigation   optional { floors, links } for maps with more than one floor (zombies/navigation.js)
  */
@@ -53,6 +54,7 @@ export function createZombieManager({
   onKill = null,
   onHeadPop = null,
   onReclaim = null,
+  onGold = null,
   onSound = null,
   navigation = undefined,
 }) {
@@ -427,9 +429,10 @@ export function createZombieManager({
 
     // Spawn one zombie of `typeId` at a good spawn point (or at `at`, a Vector3, if given).
     // Returns the zombie, or null if no spawn point is usable right now.
-    // Options: `variant` = the Mascot costume to wear (otherwise picked here, see below); `nearest` = the safe spawn
-    // point closest to the player instead of a random nearby one (debug).
-    spawn(typeId = 'shopper', at = null, { variant = null, nearest = false } = {}) {
+    // Options: `variant` = the Mascot costume to wear (otherwise picked here, see below); `gold` = true / false for an
+    // Employee of the Month or not (otherwise rolled here); `nearest` = the safe spawn point closest to the player
+    // instead of a random nearby one (debug).
+    spawn(typeId = 'shopper', at = null, { variant = null, gold = null, nearest = false } = {}) {
       const cap = economy.zombieMix[typeId]?.maxAlive;
       if (cap && zombies.filter(z => z.isAlive && z.type.id === typeId).length >= cap) typeId = 'shopper';
       let type = bossTypes[typeId] ?? zombieTypes[typeId];
@@ -443,9 +446,16 @@ export function createZombieManager({
       const round = getRound();
       // A Mascot's costume, now the spot is known: a costume's home zones make it likelier there (no bias out of the
       // Returns Chute or at an explicit spot). Every costume shares the Mascot's size, so the spot suits them all.
-      if (type.mascot) type = mascotTypes[variant ?? pickMascotVariant(round, point && !chutePoint ? point.zone : null)];
+      // Then, from mascotGold.fromRound, maybe the gold version of it: never while another one is alive.
+      if (type.mascot) {
+        const costume = variant ?? pickMascotVariant(round, point && !chutePoint ? point.zone : null);
+        const golden = (gold ?? (round >= mascotGold.fromRound && Math.random() < mascotGold.chance))
+          && !zombies.some((z) => z.isAlive && z.type.gold);
+        type = golden ? mascotGoldTypes[costume] : mascotTypes[costume];
+      }
       const speed = pickGaitSpeed(type, round);
-      const zombie = new Zombie({ type, health: zombieHealthFor(typeId, round), position, yaw, speed, round });
+      const health = type.gold ? Math.round(zombieHealthFor(typeId, round) * mascotGold.healthMultiplier) : zombieHealthFor(typeId, round);
+      const zombie = new Zombie({ type, health, position, yaw, speed, round });
       zombie.onDeath = onZombieDeath;
       zombie.onHeadPop = keepHelmet;
       if (type.mascot) zombie.onReclaim = reclaimHelmet;
@@ -455,6 +465,7 @@ export function createZombieManager({
       zombies.push(zombie);
       shootables.push(zombie);
       if (point) lastSpawnAt.set(point, spawnClock);
+      if (type.gold) onGold?.(zombie);
       // Out of the Returns Chute: it falls out of the hatch rather than rising through the floor (no dust).
       if (point && chute?.includes(point)) {
         zombie.dropHeight = chuteDrop;

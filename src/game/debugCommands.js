@@ -26,14 +26,24 @@ const WALL_GUN_IDS = Object.keys(weapons).filter((id) => id !== 'stapleGun');
 const nameOf = (id) => id.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
 
 export function createDebugCommands({ map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses, commands = debug.commands, onUse = null }) {
-  const state = { panelOpen: debug.panel.startOpen, zombieIndex: 0, gunIndex: 0, mascotIndex: 0, last: '' };
+  const state = { panelOpen: debug.panel.startOpen, zombieIndex: 0, gunIndex: 0, mascotIndex: 0, goldIndex: 0, last: '' };
   const selectedZombie = () => ZOMBIE_IDS[state.zombieIndex];
 
-  // Spawn a Mascot in a chosen costume at the open spawn point nearest you (the Mascot cap still applies).
-  function spawnMascot(variant) {
-    const zombie = zombies.spawn('mascot', null, { variant, nearest: true });
+  // Spawn a Mascot in a chosen costume at the open spawn point nearest you (the Mascot cap, and one Employee of the
+  // Month at a time, still apply). `gold`: true / false, never rolled.
+  function spawnMascot(variant, gold) {
+    const zombie = zombies.spawn('mascot', null, { variant, gold, nearest: true });
     if (!zombie) return 'No safe spawn point right now';
-    return zombie.type.mascot ? `Spawned ${mascotTypes[variant].name}` : 'Two Mascots are already out: spawned a Shopper';
+    if (!zombie.type.mascot) return 'Two Mascots are already out: spawned a Shopper';
+    if (gold && !zombie.type.gold) return `An Employee of the Month is already out: spawned a plain ${zombie.type.name}`;
+    return `Spawned ${mascotTypes[variant].name}${zombie.type.gold ? ', Employee of the Month' : ''}`;
+  }
+  // Each press: the next costume in turn (Sir Waffles, Captain Coupon, ...), whatever the round.
+  function nextMascot(counter, gold) {
+    const variant = MASCOT_VARIANT_IDS[state[counter] % MASCOT_VARIANT_IDS.length];
+    const message = spawnMascot(variant, gold);
+    if (message.startsWith('Spawned ')) state[counter] += 1;
+    return message;
   }
 
   const run = {
@@ -41,13 +51,8 @@ export function createDebugCommands({ map, zombies, rounds, wallet, gun, health,
       const id = selectedZombie();
       return zombies.spawn(id) ? `Spawned ${nameOf(id)}` : 'No safe spawn point right now';
     },
-    // Each press: the next costume in turn (Sir Waffles, Captain Coupon, ...), whatever the round.
-    spawnMascot() {
-      const variant = MASCOT_VARIANT_IDS[state.mascotIndex % MASCOT_VARIANT_IDS.length];
-      const message = spawnMascot(variant);
-      if (message.startsWith('Spawned ')) state.mascotIndex += 1;
-      return message;
-    },
+    spawnMascot: () => nextMascot('mascotIndex', false),
+    spawnGoldMascot: () => nextMascot('goldIndex', true),
     summonBoss() {
       if (!rounds.started) rounds.start();
       const zombie = bosses.summon();

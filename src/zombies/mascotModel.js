@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { buildMascotHead } from './mascotHeads.js';
+import { buildMascotBadge, buildMascotHead } from './mascotHeads.js';
 
 // Each articulated foam piece supplies the same local box to the model and the
 // shot test. The fixed tick places hitboxes, while render can interpolate the root.
@@ -82,14 +82,16 @@ export function createMascotModel(type, random) {
     return { part, box: new THREE.Box3(), localBox, group, toWorld: new THREE.Matrix4(), toLocal: new THREE.Matrix4() };
   }
 
+  const kit = { block, shape, decorate, material: ownMaterial, colors: cfg.colors };
   const torso = piece(upper, 'mascotTorso', cfg.torso, cfg.colors.suit);
   decorate(torso, cfg.uniform);
+  if (cfg.badge) buildMascotBadge(cfg.badge, torso, kit); // (Employee of the Month)
   const bodyBoxes = [track(torso, 'body')];
   const helmet = new THREE.Group();
   helmet.name = 'mascotHelmet';
   helmet.position.set(...cfg.helmet.at);
   upper.add(helmet);
-  buildMascotHead(cfg.head, helmet, { block, shape, decorate, material: ownMaterial, colors: cfg.colors });
+  buildMascotHead(cfg.head, helmet, kit);
   const head = piece(upper, 'mascotHead', cfg.exposedHead, cfg.colors.skin);
   decorate(head, cfg.zombieFace);
   head.visible = false;

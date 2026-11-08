@@ -570,6 +570,36 @@ function resolveMascot(id, { name, unlockRound: _unlock, homeZones: _home, intro
 }
 export const mascotTypes = Object.fromEntries(Object.entries(mascotVariants).map(([id, costume]) => [id, resolveMascot(id, costume)]));
 
+// EMPLOYEE OF THE MONTH: from fromRound each Mascot has `chance` to come as the gold version of its costume (the zombie
+// manager rolls it after the costume; never two alive at once). Tougher (healthMultiplier on top of the Mascot's 5x),
+// announced on the PA (spawnLine) and it always drops one power-up at its body: `guaranteedDrop`, which game/powerUps.js
+// pays through the same queue as a boss's reward, outside the drop meter.
+// The gold version of a costume: suit gold, trim and boots black, the helmet's foam gold, every other costume colour bright
+// gold if it is light (luminance >= brightAbove) or black, plus the name badge on its chest. The green zombie inside stays.
+export const mascotGold = {
+  fromRound: 15,
+  chance: 0.08,
+  healthMultiplier: 1.5,
+  palette: { gold: 0xe0aa22, bright: 0xffd65a, black: 0x1d1626 },
+  brightAbove: 0.6,
+  spawnLine: { kicker: 'Staff announcement', text: 'Our Employee of the Month is on the floor. Please congratulate them. From a distance.' },
+  // A card on the left of the chest (torso metres, >= 1 cm proud of everything a costume wears there) with a canvas print.
+  badge: { size: [0.2, 0.12, 0.02], at: [-0.24, 0.2, -0.29], color: 'badge', card: 0xfff6dc,
+    print: { pixels: [256, 154], lift: 0.006, ink: '#1d1626', star: '#e0aa22', lines: ['EMPLOYEE', 'OF THE MONTH'] } },
+};
+const zombieColors = new Set(Object.keys(mascotBase.mascot.colors)); // (the face under the helmet)
+const luminance = (hex) => (0.2126 * ((hex >> 16) & 255) + 0.7152 * ((hex >> 8) & 255) + 0.0722 * (hex & 255)) / 255;
+function gild(type) {
+  const { palette, brightAbove, badge } = mascotGold;
+  const colors = {};
+  for (const [name, hex] of Object.entries(type.mascot.colors)) {
+    if (!zombieColors.has(name)) colors[name] = luminance(hex) >= brightAbove ? palette.bright : palette.black;
+  }
+  Object.assign(colors, { suit: palette.gold, trim: palette.black, boot: palette.black, [badge.color]: badge.card });
+  return mergeDeep(type, { gold: true, guaranteedDrop: true, mascot: { colors, head: { color: palette.gold }, badge } });
+}
+export const mascotGoldTypes = Object.fromEntries(Object.entries(mascotTypes).map(([id, type]) => [id, gild(type)]));
+
 // zombieTypes.mascot is Sir Waffles (the round-10 costume): what an unpicked Mascot wears, and the type's intro banner.
 export const zombieTypes = { shopper, mallWalker, cartPusher, mannequin, mascot: mascotTypes.sirWaffles };
 
