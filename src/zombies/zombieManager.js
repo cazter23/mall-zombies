@@ -397,6 +397,8 @@ export function createZombieManager({
     for (const z of zombies) if (!z.slot) z.slotKey = null;
   }
 
+  let updating = false; // true while update() walks the zombie list
+
   function removeActor(index) {
     const [zombie] = zombies.splice(index, 1);
     zombie.clearBossEffects();
@@ -499,12 +501,17 @@ export function createZombieManager({
       }
     },
 
+    // Mid-update (the boss's own blow killed you) the array is being walked: splicing it would skip the next zombie's tick and
+    // dispose the boss's model under its own update. So there the boss only leaves the shootables and is swept at the end.
     clearBosses() {
       partyDeaths.clear(zombie => zombie.type.boss); // ribbons can outlive the corpse
       for (let i = zombies.length - 1; i >= 0; i--) {
         if (!zombies[i].type.boss) continue;
         tankDeaths.remove(zombies[i]);
-        removeActor(i);
+        if (!updating) { removeActor(i); continue; }
+        zombies[i].removed = true;
+        const target = shootables.indexOf(zombies[i]);
+        if (target !== -1) shootables.splice(target, 1);
       }
     },
 
@@ -523,6 +530,7 @@ export function createZombieManager({
 
     // Fixed-tick update.
     update(dt) {
+      updating = true; // (clearBosses mid-update only marks; the sweep below removes)
       spawnClock += dt;
       soundClock += dt;
       nav.update(dt, player.position);
@@ -551,6 +559,7 @@ export function createZombieManager({
         if (!z.removed) continue;
         removeActor(i);
       }
+      updating = false;
     },
 
     // Every rendered frame: animate and interpolate the models.

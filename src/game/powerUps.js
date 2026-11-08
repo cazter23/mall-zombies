@@ -247,7 +247,10 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
         if (pickup.remaining <= 0) {
           const id = pickup.id;
           pickup = null;
-          events.emit('powerUpExpire', { id });
+          // A boss voucher left on the floor because you were still holding another one: it pays its points instead of vanishing.
+          const voucher = bossVouchers[id];
+          if (voucher && !state.over) wallet.earn(voucher.pointsInstead);
+          events.emit('powerUpExpire', { id, pointsInstead: voucher?.pointsInstead ?? 0 });
         } else {
           // Swept collection: a fast slide must not jump over a small pickup between ticks.
           const a = player.prevPosition ?? player.position;

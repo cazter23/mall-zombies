@@ -105,6 +105,7 @@ export const feel = {
     minHeight: 0.25,
     maxHeight: 1.1,
     maxDepth: 1.4, // crossed along the approach direction; long sides of benches aren't vaults
+    approachFraction: 0.9, // the jump prompt judges the landing from this share of `reach` out (where you will be when the magnet brings you in)
     reach: 1.7, // jump this close to the obstacle (gap from your body to it) and you vault it
     minSpeed: 1.5, // m/s; a slow walk is enough
     maxApproachDegrees: 75, // how far off straight-on your path can cross it (steeper runs along a long side)
@@ -144,6 +145,7 @@ export const feel = {
       pathClearance: 0.1, // meters: what's under you must stay this far below your feet on the way down
       landingMargin: 0.1, // meters wider than your body for those checks (the real fall can end a little off the prediction)
       minDrop: 2, // a landing less than this far below the balcony floor isn't a drop (the escalator's top end)
+      minClosing: 0.2, // an angled run at a rail closes its gap at least this fast (a share of straight-on), so the preview stays finite
       railMargin: 0.2, // another rail this close to where you let go, or on the way down, could catch your feet
       landingMaxY: 1.1, // you can land on bare floor, a bench or a counter, or an escalator's walkway; not on a kiosk, a lamp post or a fountain
     },

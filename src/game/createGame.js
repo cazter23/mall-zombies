@@ -111,7 +111,7 @@ export function createGame({
   // Points. Every gain/spend shows a "+60" / "-500" pop-up by the counter.
   const wallet = createWallet({ onChange: (amount) => hud.pointsPopup(amount) });
   const runStats = createRunStats();
-  events.on('purchase', ({ kind, id }) => pricing.spendVoucher(kind, id));
+  events.on('purchase', ({ kind, id, cost }) => pricing.spendVoucher(kind, id, cost));
   events.on('playerDeath', () => {
     pricing.clearVoucher();
     for (const zombie of zombies.zombies) zombie.clearBossEffects();

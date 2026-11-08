@@ -69,7 +69,12 @@ export function createPricing() {
       update();
       return true;
     },
-    spendVoucher(category, id) { if (applies(category, id)) voucher = null; update(); },
+    // `paid`: what the purchase cost. A free refit (paid 0) is not a discounted payment, so a part-price voucher (Discount Code)
+    // survives it; a full-price-off voucher (fraction 1: Master Key, Signed Approval) is the one that makes things free.
+    spendVoucher(category, id, paid = Infinity) {
+      if (applies(category, id) && (paid > 0 || voucher.fraction >= 1)) voucher = null;
+      update();
+    },
     update,
     basePriceOf, // crossed-out shelf price; uses the same source and validation as the charged price
     priceOf(category, id) {

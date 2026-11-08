@@ -29,10 +29,10 @@ export function buildWorkshop(bench, { map, gun, pricing, interactions, events, 
   events.on('shot', ({ workshopPlacement: position }) => {
     if (!position) return;
     if (traps.length >= trap.maxActive) removeTrap(0);
-    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(.15, .19, .065, 8),
-      new THREE.MeshStandardMaterial({ color: trap.color, emissive: trap.color, emissiveIntensity: .2 }));
+    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(trap.marker.topRadius, trap.marker.bottomRadius, trap.marker.height, trap.marker.segments),
+      new THREE.MeshStandardMaterial({ color: trap.color, emissive: trap.color, emissiveIntensity: trap.marker.glowIdle }));
     mesh.name = 'partyTrap';
-    mesh.position.copy(position).addScaledVector(up, .05);
+    mesh.position.copy(position).addScaledVector(up, trap.marker.lift);
     scene.add(mesh);
     traps.push({ position: position.clone(), mesh, age: 0 });
   });
@@ -56,7 +56,7 @@ export function buildWorkshop(bench, { map, gun, pricing, interactions, events, 
       charge.age += dt;
       if (charge.age >= trap.lifetimeSeconds) { removeTrap(i); continue; }
       if (charge.age < trap.armSeconds) continue;
-      charge.mesh.material.emissiveIntensity = .85;
+      charge.mesh.material.emissiveIntensity = trap.marker.glowArmed;
       const { position } = charge;
       if (!zombies.zombies.some(z => nearby(z, position, trap.triggerRadius) && clearPath(z, position))) continue;
       removeTrap(i);

@@ -367,8 +367,8 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
       if (!found.box) return false;
       // Where you'll be when it comes into reach (keep going straight until then). A rail's gap is measured straight at it,
       // so an angled run covers more ground to close it.
-      const closing = found.box.ledge ? Math.max(0.2, t.dx * found.dx + t.dz * found.dz) : 1;
-      const advance = Math.max(0, found.near - cfg.reach * 0.9) / closing;
+      const closing = found.box.ledge ? Math.max(cfg.ledge.minClosing, t.dx * found.dx + t.dz * found.dz) : 1;
+      const advance = Math.max(0, found.near - cfg.reach * cfg.approachFraction) / closing;
       projected.set(player.position.x + t.dx * advance, player.position.y, player.position.z + t.dz * advance);
       if (advance > 0 && !clearAt(projected)) return false;
       return !!searchPlan(projected, ready.floorY, t).plan;

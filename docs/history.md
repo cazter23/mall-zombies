@@ -1,5 +1,18 @@
 # Sunset Galleria: build history ("Current state")
 
+## 8 November 2026 — Review fixes: vouchers, boss rewards, boss removal
+
+A review of the week's boss / Build-A-Blaster / voucher work found five bugs, fixed here (tests/reviewFixes.test.js):
+- A free attachment refit used up the Discount Code. `pricing.spendVoucher(kind, id, paid)` now takes what was paid: a payment of 0 spares a part-price voucher
+  (a full-discount one, Master Key / Signed Approval, is what makes things free, so it is still used).
+- A second boss voucher on the floor while you held one expired with nothing. It now pays its `pointsInstead` when it runs out ('powerUpExpire' carries `pointsInstead`).
+- Signed Approval turned into points while the gun it would upgrade was at Build-A-Blaster; the eligibility check now counts `gun.away`.
+- A boss landing the killing blow removed itself from the zombie list mid-update, so the next zombie skipped a tick and the boss's model was disposed under its own
+  update. `clearBosses()` now only marks it removed (and takes it out of the shootables) while `update()` is running; the end-of-update sweep removes it.
+- Hardcoded numbers moved to config: the Party Trap puck (`workshopBuilds.partyTrap.marker`) and the vault preview's `approachFraction` / `ledge.minClosing`.
+Not changed, on purpose: a sprint-jump off the top of the Atrium escalator or the cinema stairs costs about a third of your health. That is a real 5.7 m airborne fall
+(the jump carries you over most of the flight), so the fall rule is doing what feel.fall says; making it free would be a design change.
+
 ## 8 November 2026 â€” Box cutter helmet pops pay
 
 Knocking a Mascot's helmet off with the box cutter never paid the 100-point helmet-pop bonus: the listener wanted a headshot, and melee always reports a body hit (it ignores

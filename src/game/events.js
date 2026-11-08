@@ -38,7 +38,7 @@
 //   'powerUpEnd'  { id, reason }                         benefit ended (including mopped by the Janitor or roundDiscard)
 //   'incentiveComplete' { id, text }                     marked-target bonus earned (PA/HUD feedback)
 //   'incentiveBurst' { position, radius, color }          deferred liquidation burst (visual/sound feedback)
-//   'powerUpExpire' { id }                               uncollected incentive timed out
+//   'powerUpExpire' { id, pointsInstead }                uncollected incentive timed out (a boss voucher left on the floor pays pointsInstead)
 //   'roundStart'  { round }                              the round number flipped (game/rounds.js)
 //   'roundDiscard' {}                                    a debug skip cleared the current wave
 //   'typeIntro'   { typeId, zombie }                     a zombie type's first appearance this run (zombie = that spawn)
