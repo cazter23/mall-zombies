@@ -1,5 +1,7 @@
 # Bosses 2 delivery report
 
+> Archived: this work is finished and merged into main. Kept as a record; the code and docs/folder-structure.md are the current truth.
+
 Implemented the Manager, Guard and Influencer, shared controls/buffs/holds/vouchers, approved encores, costumes, unique stings, cartoon deaths and balance rows. Murray retains his original wet-floor and combat behavior.
 
 Branch: `codex/bosses-2`. Worktree: `.claude/worktrees/bosses-2`. At initial delivery, nothing was merged into main. Main was integrated before phase 2; both conflicts preserved the concurrent order-form feature. Later phase boundaries checked main and found no further changes.
@@ -42,7 +44,7 @@ Explicit browser console calls: `__mall.g.debug.run('summonBoss', 'manager')`, `
 
 The following existing files were authored on this branch. Files brought in unchanged by the main merge are excluded.
 
-- `docs/boss-zombies-plan.md`
+- `docs/archive/boss-zombies-plan.md`
 - `docs/folder-structure.md`
 - `docs/history.md`
 - `docs/tests.md`
@@ -82,7 +84,7 @@ The following existing files were authored on this branch. Files brought in unch
 
 ## New files
 
-- `docs/bosses-2-report.md`
+- `docs/archive/bosses-2-report.md`
 - `src/game/bossVouchers.js`
 - `src/maps/areaBarriers.js`
 - `src/ui/bossFlash.js`

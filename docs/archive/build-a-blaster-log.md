@@ -1,6 +1,8 @@
 # Build-A-Blaster rebuild: running log
 
-Branch `build-a-blaster`, worktree `.claude/worktrees/build-a-blaster`, cut from main at ee5a58a. The plan is docs/build-a-blaster-plan.md.
+> Archived: this work is finished and merged into main. Kept as a record; the code and docs/folder-structure.md are the current truth.
+
+Branch `build-a-blaster`, worktree `.claude/worktrees/build-a-blaster`, cut from main at ee5a58a. The plan is docs/archive/build-a-blaster-plan.md.
 Baseline before any change: 623 tests, all passing.
 
 ## Phase 1: the room
@@ -203,7 +205,7 @@ During a ritual the hall peaks at 244 calls. Carrying a built gun adds about 10 
 
 **Soak run.** A bot played all 24 pairs across the 8 guns through live rounds: a real order, 30 s of fighting through the ritual, collection, 40 s with the finished gun, then death and Play again. 24 rituals, 241 stuffing procs, 705 kills, no exceptions, no stuck rounds. The script was throwaway and is not in the repo.
 
-**Merging.** A dry-run merge with current main (738e7f5) has no conflicts. Main has only gained docs/boss-zombies-plan.md since this branch was cut. Nothing is merged and nothing is pushed.
+**Merging.** A dry-run merge with current main (738e7f5) has no conflicts. Main has only gained docs/archive/boss-zombies-plan.md since this branch was cut. Nothing is merged and nothing is pushed.
 
 **After review (6 November).** Merged with the Mascot. Fixed on the way in: a zombie the failsafe rescued kept its chute drop, a burn finishing after the player died still filled the gauge, and the Mascot rose through the floor at the chute. Hardcoded stuffing and trap numbers moved to config, and How to Play now mentions Build-A-Blaster. A second soak with Mascots ran 60 rituals, 6 deaths and every reset with no broken invariants, and the head pop and a tank kill were checked in the browser.
 

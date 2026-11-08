@@ -1,24 +1,13 @@
 # Sunset Galleria: folder structure (every module)
 
-Skylar's appearance: config/influencerLook.js owns her outfit, palette, ponytail, accessories, phone rig and pose tuning.
-zombies/bosses/influencerModel.js dresses and poses the shared zombie skeleton, with zombieModel owning batching and disposal.
-The influencer behavior exposes its existing phone wind-up to the visual pose through phoneFlashWindup.
-
-Boss spectacle: bossSpectacle in config/bosses.js owns death confetti and employee poses; audio.js owns unique synthesized stings. zombieManager emits the same single kill event after the cartoon boss death burst. zombieModel applies bone poses and disposes costume geometry. debugCommands/debugPanel expose the next selected boss. tools/gunReport.mjs includes a boss encounter table.
-
-Boss scheduling: bossDirector exports bossIntroRounds/isEncoreRound, skips optional mascotVariants.unlockRound values in both debut/encore choices, and remembers actual encounters until reset. Cadence is bossTiming.encores.
-
-Influencer: bosses/influencer.js owns filming movement, follower thresholds, fan requests/departure and phone windup. bosses/filmingSpots.js selects reachable shootable cell centres; navigation.pathTo uses an independent breadth-first route without replacing the shared horde flow field. ui/bossFlash.js presents the event, obeys the Comfort setting, and cancels on death/reset. Fans use zombieManager spawn metadata and delayed no-kill dismissal.
-
-Guard: zombies/bosses/guard.js owns alarm, physical shutter closure, radio headshots, reinforcement retries and taser slowdown. maps/areaBarriers.js supplies areaAt and barriersAround through loadMap. Shutters expose kind; ownership is never reset by lockdown. rounds.spawnBackup consumes the existing toSpawn budget and respects maxAlive.
-
-Boss encounters: bosses/manager.js owns meetings/reports; bosses/employeeModel.js mounts configured costume parts and owns the temporary whiteboard. game/bossVouchers.js wires carried-gun/area eligibility and points conversion into pricing. powerUps.js and powerUpView.js deliver voucher pickups through the existing reward queue.
-
 > Moved out of CLAUDE.md (verbatim) so the file every session loads stays small. One entry per module: what it is for and its interface. Read the entries for the modules you are about to change (grep for the file name).
 
+Each module has one entry under its folder (grep for the file name). Notes that span several modules are at the end.
+tests/docs.test.js checks that every file in src/ has an entry here.
+
 ```
-index.html              Entry page; loads /src/main.js and the Bungee Google Font
-package.json            scripts: dev / build / preview
+index.html              Entry page: the web fonts (Google Fonts; list kept in step with config/fonts.js) and src/boot.js
+package.json            scripts: test, test:quick, dev, build, build:single, play, preview, balance (see CLAUDE.md Commands)
 src/
   main.js               Entry, BROWSER SIDE ONLY: renderer, scene, camera, Input + gamepad, HUD, sound, viewmodel, player body,
                         settings/controls menus, controller menus (handleControllerMenus), pointer lock, debug keys
@@ -26,42 +15,7 @@ src/
                         Its tick = gamepad.poll + controller menus + g.update(dt). Exposes window.__mall (same names as
                         before, plus `g` = the game) when debug.exposeToWindow
   style.css             HUD (crosshair, hit marker, health/stamina bars, ammo, prompt), start/pause overlay
-  ui/retail.css         Retail presentation layer loaded after style.css: mall directory, distinct combat signs,
-                        shelf tickets, personnel paperwork, facilities settings and handbook. Responsive + reduced motion.
-  config/ui.js          Presentation timing, PA queue limit and brief weapon-role copy (no gameplay tuning)
-  config/attachmentVisuals.js Per-weapon attachment sizing, near-side rail placement, short-barrel spans and held reload copies.
-  weapons/attachmentComparison.js Compares fully resolved builds: magazine, reload, damage, range, accuracy, aim time and recoil.
-  weapons/models/shortBarrel.js Reversible front-segment geometry variants, preserving moving-parent transforms and owning both variants.
-  config/retailUnease.js Rare atrium display changes and localized back-room sound timings/ranges; no gameplay tuning.
-  game/features/retailUnease.js Called by the existing horror feature: unseen mannequin turn, shared empty-concourse TV feed,
-                        distant upstairs silhouette. Quiet intervals, comfort gates, reset and static-batching-safe hooks.
   boot.js               The page's entry point: waits for the web fonts (core/fontsReady.js, list and time limit in config/fonts.js), then imports main.js.
-  config/workshop.js    Build-A-Blaster: Limited Edition numbers (workshopBuilds), the ritual (workshopRitual: time, qualities, stages, loaner, PA), Stuffings and Hearts, buildOf reads a gun's finished build.
-  ui/bagMarker.js       The HUD arrow to a dropped Limited Edition: name, distance, floor, time left.
-  weapons/models/loanerTag.js The Courtesy Loaner's security tag and swinging card (reversible, like the other upgrade visuals).
-  game/features/workshop.js The workshop feature: builds the ritual, its effects and the Limited Edition drops, runs Party Trap charges.
-  game/features/limitedEditions.js The bag a shopping-bag zombie sometimes drops: walk over it and Party Trap or Clearance Rack fits a gun you carry, free.
-  game/features/workshopRitual.js The Build-A-Blaster ritual: idle, running, ready. Bench opens the order form, gun on the conveyor, gauge (kills also shorten the clock), maximum time, the gun coming back by itself, chute steering. Built by workshop.js.
-  zombies/statusTint.js  What a Build-A-Blaster effect on a zombie looks like: the glow (flames, ice, goo, butter, rainbow) the model gets, read by zombieModel.js each frame. Looks in config/workshop.js stuffingLook.
-  game/features/workshopStuffings.js What a finished build does (and its looks: flashes, flames, ice, drips, hearts): one function per Stuffing, one per Heart. Hearts read 'shot' and hand off to the stuffing; nothing here emits 'shot', so a stuffing's kills can't fire a Heart.
-  game/features/workshopSpectacle.js Ritual mode: tank fill, party colours on the hall's two lamps, bulb string, belt, arm, flap, lever, jingle. Show only; reset() puts every part back.
-  zombies/confusion.js  Glitter's AI: a confused zombie forgets the player and fights the nearest other zombie with its normal attack.
-  zombies/tankDeath.js  A kill in the room flying into the Stuffing Tank (visual; the kill is already paid).
-  weapons/models/buildVisual.js A finished gun's look: seam, patch and stitches in the stuffing's colour, lumps and leaking tufts when Overstuffed. Instanced, placed from the sticker and top mounts.
-  ui/birthCertificate.js The Birth Certificate notice at collection. Clears itself; nothing pauses.
-  game/features/workshopOrderForm.js The bench's order form: every Stuffing and Heart on one sheet, pre-filled, driven by menu actions. Sets state.menu while open (the player stands still, the world doesn't).
-  ui/orderForm.js       Draws the order form from its view. Only draws: choices come in on the fixed tick. Sized from the screen height (retail.css --order-base,
-                        everything in em), left of centre; keys drawn as keycaps (keycaps()), one line on what the order does (orderSummary()), stuffings
-                        you can't pick folded into a short "Not in stock" list.
-  ui/ritualHud.js       The order ticket on the HUD: the gun's stage, one progress bar, the gauge and time (reads the ritual's status).
-  game/features/clearanceRack.js Clearance Rack tags on up to three zombies; a headshot on a tagged zombie pops them all.
-  game/features/clearanceSticker.js The canvas sticker drawn on tagged zombies.
-  zombies/partyTrapDeath.js The pose, ribbon and confetti after a trap kill. The kill is paid on impact; this is visual only.
-  weapons/models/workshopBuilds.js The reversible model changes for each workshop build.
-  maps/mall/workshopDetails.js Build-A-Blaster's detail pass: skins wall, heart shelf, till, footprints, window, plush, ceiling grid (storefront); hoppers and pipes, QC desk, rollers, booth props, portraits, lockers, safety signs, corner clutter, floor markings, beams, wainscot, neon (hall). Numbers: config/promenade.js workshop.details.
-  maps/mall/workshopRoom.js The Build-A-Blaster storefront and back hall (island, booth, lever, chute) and their dressing. Layout numbers: config/promenade.js workshop.
-  ui/announcements.js   Bounded PA queue: type introductions priority 2, incentives 1, routine messages 0;
-                        clear on pause/death/reset; wall-clock presentation timers only
   config/
     haptics.js          Controller vibration intensity and per-gun/damage/pickup durations, motor strengths and priorities
     bosses.js           Boss debut windows, wave timing, combat and control tuning, PA lines, and the Janitor's costume
@@ -135,6 +89,14 @@ src/
                         dummies, exposeToWindow, keyLabel(). They work in a normal game (no debug mode): Z spawn the selected
                         zombie / Shift+Z next type / X clear / K kill all (pays), N next round / Shift+N +5 rounds / L Flash Sale,
                         P +5000 / ' points to 0, G god mode / H next wall gun / U free tier, O all doors / T test range / Shift+T Level 2, ` window
+    ui.js               Presentation timing, PA queue limit and brief weapon-role copy (no gameplay tuning)
+    attachmentVisuals.js Per-weapon attachment sizing, near-side rail placement, short-barrel spans and held reload copies.
+    retailUnease.js     Rare atrium display changes and localized back-room sound timings/ranges; no gameplay tuning.
+    workshop.js         Build-A-Blaster: Limited Edition numbers (workshopBuilds), the ritual (workshopRitual: time, qualities, stages, loaner, PA), Stuffings and Hearts, buildOf reads a gun's finished build.
+    decor.js            Decoration kit + clutter scatter numbers (world/decor.js, world/scatter.js). Cosmetic only.
+    look.js             Art direction, "Grand Opening, Forever": palette, zone grading, the horror layer, set pieces.
+    music.js            The 16-bar lounge loop "After Closing" as data (pitches, beats, timbres).
+    neon.js             Neon tube builder tuning (world/neon.js): palette, tube sizes, flicker.
   core/
     loop.js             startLoop(): fixed-timestep accumulator; each frame calls beforeUpdate(frameTime) (look
                         input), then update(dt) per tick, then render(alpha, frameTime)
@@ -156,8 +118,13 @@ src/
                         only) + yawKickSpring (sideways, part of the aim; `viewKickYaw`). addRecoil(pitch, roll, yaw)
                         for shots, addViewKick() for instant jolts (hits, melee),
                         updateView(dt) at the END of each tick; syncCamera interpolates both
-    vault.js            Opt-in low-obstacle vault: jump on approach, full-cylinder path/headroom/landing. Also balcony rails (collider.ledge, set by props.railing): climb over and let go above bare ground floor (dropClear checks everything touching the fall column out to the capped reach), (you always climb straight over the rail, along its normal, whatever angle you ran at it; pushing into it from a standstill counts; the drop can't be steered, controller.dropVelocity; chooseDrop picks how far out to land, 0 to 3 m, on floor, a bench, a counter or an escalator's walkway, with the whole fall line clear, cached per release point), then controller.trackFall applies feel.fall damage
+    vault.js            Opt-in low-obstacle vault: jump on approach, full-cylinder path/headroom/landing
                         checks (including live shootables), entry momentum on exit, interrupt on crowd shove
+                        Balcony rails (collider.ledge, set by props.railing): always climbed straight over along the rail's
+                        normal (up to 70 degrees off; pushing into it from a standstill counts), then a drop with no steering
+                        (controller.dropVelocity). chooseDrop picks how far out to land (0 to 3 m) on floor, a bench, a counter
+                        or an escalator's walkway with the whole fall line clear, cached per release point; feel.vault.ledge.
+                        controller.trackFall then applies feel.fall damage.
     stats.js            createPlayerStats(): the single stats object (health, speeds, jump, sprint, crouch/slide/prone,
                         regenDelay/regenRate, adsMoveSpeed, damageMultiplier, meleeDamageMultiplier,
                         reloadSpeed); resetPlayerStats(stats) puts every stat back to base (same object) on a new run and DELETES
@@ -235,6 +202,7 @@ src/
                         resetting its animation; fire/dryFire also sync stats before the next rendered frame. Wiggles scale way down in ADS.
                         update(frameTime, camera, { weapon, shownDef, switchLower, aimAmount, meleeProgress, player }); `worldLight`
                         (added to the world scene by main); getMuzzleWorldPosition(); reset()
+    attachmentComparison.js Compares fully resolved builds: magazine, reload, damage, range, accuracy, aim time and recoil.
     models/             First-person weapon models. index.js = registry (viewmodel.model -> { model, display }
                         builders) + the model interface ({ root, muzzle, animate({ sinceFire, reloadProgress,
                         reloadWeight }), leftHandVisible }); buildWeaponDisplay(def) = the gun alone (wall buys).
@@ -260,14 +228,18 @@ src/
                         terrycloth wristband with woven tag) and createUpgradeVisuals(model): every part + a branded Extended Warranty service
                         seal built up front (hidden), show({ tier, attachments }) per frame; the Extended Nozzle moves the muzzle (and flash) to its tip.
                         New gun = new file + 1 line (+ its mounts)
+      shortBarrel.js    Reversible front-segment geometry variants, preserving moving-parent transforms and owning both variants.
+      loanerTag.js      The Courtesy Loaner's security tag and swinging card (reversible, like the other upgrade visuals).
+      buildVisual.js    A finished gun's look: seam, patch and stitches in the stuffing's colour, lumps and leaking tufts when Overstuffed. Instanced, placed from the sticker and top mounts.
+      workshopBuilds.js The reversible model changes for each workshop build.
     muzzleFlash.js      createMuzzleFlash(cfg): 2 sprites (normal-blended orange burst + additive core, random
                         twist/size), hand light + world light (always in the scene at 0 so no shader recompile).
                         Always depth-tested (the hands and gun hide whatever part of the burst is behind them),
                         sits 9cm in front of the muzzle so it shows past the left hand at the hip; in ADS it
                         goes wide/flat so the rays poke out around the gun, below the crosshair
   zombies/
-    observation.js     Fixed-tick head/chest sight rays against world colliders with base FOV/aspect and edge hysteresis.
-    mannequinModel.js  Articulated faceless plastic model, joint seams/inventory tag, frozen pose retention and owned disposal.
+    observation.js      Fixed-tick head/chest sight rays against world colliders with base FOV/aspect and edge hysteresis.
+    mannequinModel.js   Articulated faceless plastic model, joint seams/inventory tag, frozen pose retention and owned disposal.
     mascotModel.js      The Mascot's articulated foam body (every costume) and smaller zombie head; the helmet comes from
                         mascotHeads.js. Places fixed-tick hitboxes from the posed pieces (any mesh, nested). Owns the detached
                         helmet, stuffing burst and their cleanup; a helmet can come off more than once, and beginReclaim /
@@ -278,7 +250,7 @@ src/
                         no dice with one costume; mascotDebutIn(round). Both take an optional costume table (tests)
     bosses/janitor.js   Places, ages and disposes Wet Floor patches on clear floor. Slows the player on contact and
                         calls into the incentive system to mop Spill Cleanup.
-    bosses/janitorModel.js  Adds Murray's uniform, bucket, wet floor sign and animated mop to the standard skeleton.
+    bosses/janitorModel.js Adds Murray's uniform, bucket, wet floor sign and animated mop to the standard skeleton.
     navigation.js       createNavigation(colliders, agent, { floors, links }): flow field on a 0.5m grid built from colliders, one LAYER per floor
                         (floors = their walking heights, default [0]: walkable where a box top sits at that height, blocked by anything solid
                         between ankle and head above it) joined by LINKS (a ramp/stairs: { lower: {x,z,floor}, upper: {x,z,floor}, halfWidth }):
@@ -308,7 +280,7 @@ src/
                         hitboxes, and accelerates into a rush. Captain Coupon (type.mascot.reclaim): updateReclaim walks back
                         to mascotHelmet.rest, lifts it on (mascotLift), restores health once; gives up when it is gone, guarded
                         or too slow (mascotWantsHelmet = still going back for it)
-    shopperAppearance.js  Weighted, coordinated Shopper wardrobe selection; optional seeded random for tests, one look per spawn
+    shopperAppearance.js Weighted, coordinated Shopper wardrobe selection; optional seeded random for tests, one look per spawn
     cartModel.js        buildCart(cfg, mat): the Cart Pusher's shopping cart (wire basket, chassis, casters, red handle, shopping
                         inside), merged by material; on the model's root so it stays upright when the zombie dies
     zombieModel.js      Faceted low-poly zombie model built from the type: Shopper (config/shoppers.js wardrobe + 5 cartoon-undead
@@ -341,6 +313,11 @@ src/
                         the sector widens to the full circle over wrapSeconds and they surround you.
                         Crowd shoves never move anyone into a wall (overlapsSolid); a pinned player pushes the
                         zombie back instead. Options canAttack(), onPlayerHit(damage), onKill(zombie)
+    statusTint.js       What a Build-A-Blaster effect on a zombie looks like: the glow (flames, ice, goo, butter, rainbow) the model gets, read by zombieModel.js each frame. Looks in config/workshop.js stuffingLook.
+    confusion.js        Glitter's AI: a confused zombie forgets the player and fights the nearest other zombie with its normal attack.
+    tankDeath.js        A kill in the room flying into the Stuffing Tank (visual; the kill is already paid).
+    partyTrapDeath.js   The pose, ribbon and confetti after a trap kill. The kill is paid on impact; this is visual only.
+    cartPose.js         The Cart Pusher's pose drives its hitboxes (hunched, telegraph, charge, slumped).
   game/
     pricing.js          createPricing(): priceOf('door'|'weapon'|'ammo'|'ammoCache'|'tier'|'attachment', id) = economy.js base price with any
                         discount applied (setDiscount(category, 0..1), rounded to the nearest economy.discountRoundTo (10); discountOf; reset() on a new
@@ -393,6 +370,10 @@ src/
                         and calls use(), else red prompt + 'denied'. Buttons bound to both interact and reload
                         (controller X): the press is hidden from the gun near a buyable; let go before it buys =
                         onReloadTap (gun.requestReload()). `prompt` for the HUD; reset()
+    autoGraphics.js     First launch only: measures frame times during the title flyover and picks a Graphics preset.
+    flashSales.js       Flash Sales: a random PA-announced discount on one category, set through pricing so every price in it drops.
+    runIntro.js         The PA's opening announcement on a run's first round (listens to 'roundStart').
+    shutterSounds.js    Purchase sounds that follow the real shutter motion; pausing stops them, death and reset cancel them.
     features/           MAP FEATURES by kind. index.js = the registry (kind -> build(feature, ctx) returning optional
                         { update(dt), reset() }), buildFeatures(map, ctx) (unknown kind throws; createGame ticks/resets them),
                         featuresOf(map, kind), FEATURE_KINDS (own entries only). Built AFTER createGame's core event wiring (payouts/stats
@@ -409,6 +390,17 @@ src/
                         already fitted, when it doesn't fit (Extended Nozzle on the Nail Gun), area closed or busy. First purchase
                         unlocks free refitting across compatible carried/replacement guns for the run; reset clears ownership.
                         Counters display resolved comparisons and preserve ammunition. Fully owned attachments are ineligible for Flash Sales.
+      retailUnease.js   Called by the existing horror feature: unseen mannequin turn, shared empty-concourse TV feed,
+                        distant upstairs silhouette. Quiet intervals, comfort gates, reset and static-batching-safe hooks.
+      workshop.js       The workshop feature: builds the ritual, its effects and the Limited Edition drops, runs Party Trap charges.
+      limitedEditions.js The bag a shopping-bag zombie sometimes drops: walk over it and Party Trap or Clearance Rack fits a gun you carry, free.
+      workshopRitual.js The Build-A-Blaster ritual: idle, running, ready. Bench opens the order form, gun on the conveyor, gauge (kills also shorten the clock), maximum time, the gun coming back by itself, chute steering. Built by workshop.js.
+      workshopStuffings.js What a finished build does (and its looks: flashes, flames, ice, drips, hearts): one function per Stuffing, one per Heart. Hearts read 'shot' and hand off to the stuffing; nothing here emits 'shot', so a stuffing's kills can't fire a Heart.
+      workshopSpectacle.js Ritual mode: tank fill, party colours on the hall's two lamps, bulb string, belt, arm, flap, lever, jingle. Show only; reset() puts every part back.
+      workshopOrderForm.js The bench's order form: every Stuffing and Heart on one sheet, pre-filled, driven by menu actions. Sets state.menu while open (the player stands still, the world doesn't).
+      clearanceRack.js  Clearance Rack tags on up to three zombies; a headshot on a tagged zombie pops them all.
+      clearanceSticker.js The canvas sticker drawn on tagged zombies.
+      horror.js         Feature kind 'horror': the mall decays as the rounds climb (config/look.js horror). Visual only, never gameplay.
     debugCommands.js    createDebugCommands(game parts): the debug shortcuts as functions run(id) (spawn, cycleZombie, clearZombies,
                         killZombies, nextRound, jumpRounds, flashSale, addPoints, zeroPoints, god, giveGun, upgradeGun, doors, arena, panel,
                         spawnMascot / spawnGoldMascot: each costume in turn at the spawn point nearest you);
@@ -470,9 +462,9 @@ src/
                         zombie spawn just inside the door. buildStores({ kit, props, court, thickness, stores }) -> { spots, spawns }
     mall/atrium.js      buildAtrium({ kit, props, layout, upperY }) -> { spawns, lamps, link, ramp, emitters, update, reset }: THE GRAND ATRIUM (walls, ring
                         slab + skin + railings, escalator, fountain, kiosks, planters, benches, signs, vents). Doors are built by mall.js
-    mall/atriumDetails.js  Authored shop interiors, kiosk merchandise, fountain/floor details, overhead decorations and small scenes.
+    mall/atriumDetails.js Authored shop interiors, kiosk merchandise, fountain/floor details, overhead decorations and small scenes.
                         Uses config/atrium.js; no colliders/lights/interactions. Only ripples/mobile animate; kit owns disposal.
-    mall/atriumStorefronts.js  Twelve sealed shops with real shells behind wall openings, glazing/locked doors, themed stock and
+    mall/atriumStorefronts.js Twelve sealed shops with real shells behind wall openings, glazing/locked doors, themed stock and
                         fixtures on both floors. Shared lettering atlas; returns wall-opening data to atrium.js, which seals each with a collider.
     mall/levelTwo.js    buildLevelTwo({ kit, props, floorY, supportRects, hole, layout }) -> { spawns, lamps }: LEVEL 2 shell,
                         independently sized by config/promenade.js (merged into LAYOUT.level2); floor sections use existing downstairs
@@ -481,20 +473,20 @@ src/
     mall/parkingLot.js  Customer Parking through Mega Mart's former emergency exit. config/parkingLot.js holds its footprint,
                         entrance, vehicle row, fences, lamps, spawns, sky, ambience and benchmark shot. Builder returns its shutter,
                         spawns, lamps and culling room/portal; mall.js wires ownership, grades, horror and reset. Kit owns disposal.
-    mall/parkingSurroundings.js  Scenic intersection, sidewalks, planted verges, roadside shops, distant buildings/cars,
+    mall/parkingSurroundings.js Scenic intersection, sidewalks, planted verges, roadside shops, distant buildings/cars,
                         utility poles/wires and mall pylon. Uses config/parkingLot.js; no colliders or additional real lights.
-    mall/parkingDetails.js  Worn asphalt/paint, repairs, engine stains, puddles, drains/weeds; RV fittings, wall services and
+    mall/parkingDetails.js Worn asphalt/paint, repairs, engine stains, puddles, drains/weeds; RV fittings, wall services and
                         three abandoned scenes. Adds solid vaultable trolley/chair collision and a tall electrical cabinet.
                         Painted light uses lookKit; local haze and a gently moving sign respect ambient-effects settings/reset.
-    mall/parkingStreetDetails.js  Bus shelter/timetable, bins, street names, roadworks, stopped car, warm shop windows and
+    mall/parkingStreetDetails.js Bus shelter/timetable, bins, street names, roadworks, stopped car, warm shop windows and
                         delivery notices. Scenic geometry only; uses config/parkingDetails.js alongside parkingLot.js.
-    mall/parkingDetailKit.js  Shared boxes, rods, signs, planes and canvas decal materials; all resources owned by mapKit.
-    config/parkingDetails.js  Authored wear/scene/service/street locations, RV labels, haze/sway settings, ambient loops/events.
-    mall/mallExterior.js  Opaque outer Atrium facades, roof and returns close the building beyond Mega Mart. Meshes opt into
+    mall/parkingDetailKit.js Shared boxes, rods, signs, planes and canvas decal materials; all resources owned by mapKit.
+    config/parkingDetails.js Authored wear/scene/service/street locations, RV labels, haze/sway settings, ambient loops/events.
+    mall/mallExterior.js Opaque outer Atrium facades, roof and returns close the building beyond Mega Mart. Meshes opt into
                         userData.alwaysVisible so room culling preserves the building silhouette while hiding its interior.
-    mall/promenadeShop.js  SHOE-PER SALE interior: two entrances, perimeter shoe shelves, fitting mirror/bench, shoe boxes and a low
+    mall/promenadeShop.js SHOE-PER SALE interior: two entrances, perimeter shoe shelves, fitting mirror/bench, shoe boxes and a low
                         island with a clear momentum-vault crossing. Shares upper-floor unlock/navigation/reset/disposal.
-    mall/departmentStore.js  HOFFMAN'S room (floor, walls, roof, panels, stockroom door + west vent, spawns); config/departmentStore.js
+    mall/departmentStore.js HOFFMAN'S room (floor, walls, roof, panels, stockroom door + west vent, spawns); config/departmentStore.js
                         has every number. mall/departmentStoreFixtures.js: vaultable cosmetics/fragrance/layaway counters, round
                         clothing racks (see-through topper colliders), mannequins on plinths, fitting rooms, shoe wall. Its look:
                         zoneLooks.js buildDepartmentStoreLook + look.departmentStore. mall/departmentStoreDetails.js (data: config/
@@ -502,48 +494,60 @@ src/
                         scenes, fitting-room scene, wall mirror + busts, brass beams + hung banner + sprinklers, interrupted-shopping litter, ambience
                         emitters. mall/seamDetails.js: the receiving door on the stair connector's east wall and the Promenade side of the cinema's
                         front (now-showing one-sheets, ticket stubs).
-    mall/promenadeDetails.js  Fixed upper-floor dressing: low sunset medallion, perimeter upholstery, directory/phones/magazines,
+    mall/promenadeDetails.js Fixed upper-floor dressing: low sunset medallion, perimeter upholstery, directory/phones/magazines,
                         overhead signs/diffuser, Build-A-Blaster renovation frontage, closed Pretzel Palace counter and shoe tickets.
                         Called with the existing look kit; no new collision/lights/purchases/timers. Kit owns resources; static parts batch.
-    config/promenade.js  Independent upstairs bounds/sections, slab/wall dimensions, shoe-store geometry/finish data and three
+    config/promenade.js Independent upstairs bounds/sections, slab/wall dimensions, shoe-store geometry/finish data and three
                         expansion connections (west/east wings, COMING SOON workshop). West connects to the live cinema door;
                         the east wing and workshop remain solid reserved closures.
-    config/cinema.js     Independent upstairs lobby, Screen 1, passage, seat blocks, future sealed connections, spawn markers,
+    config/cinema.js    Independent upstairs lobby, Screen 1, passage, seat blocks, future sealed connections, spawn markers,
                         colors, two pooled lamps, spatial ambience and procedural slide data. Entrance price: economy.doors.cinema.
-    mall/cinema.js       Physical cinema wing, shutter, upper-floor spawns and room/portal/grade/ambience metadata. The Promenade
+    mall/cinema.js      Physical cinema wing, shutter, upper-floor spawns and room/portal/grade/ambience metadata. The Promenade
                         owns their shared wall. Lobby -> auditorium -> projection passage -> lobby is a flat-floor fighting loop.
-    mall/cinemaDetails.js  Patterned carpet on the actual floor, velvet curtains, concessions/box office cases, exit signs,
+    mall/cinemaDetails.js Patterned carpet on the actual floor, velvet curtains, concessions/box office cases, exit signs,
                         acoustic panels and one reusable slide texture/projector beam. Orchestrates cinemaArchitecture,
                         cinemaLobbyDetails, cinemaAuditoriumDetails and cinemaStoryDetails; shared geometry/canvas helpers
                         live in cinemaDecorKit, authored cosmetic data in config/cinemaDetails.js. No colliders or real lights.
                         Ambient extras freezes slides/poster motion and hides beam/dust; screen animation uploads at most
                         five times per second while rendered. Clutter controls litter. Map owns update/reset/disposal;
                         static parts batch by room. cinemaServiceDetails dresses the passage/stairs/return without collision.
-    config/cinemaFinish.js  Second cinema pass: service runs, equipment landmarks, lobby entrances, carpet bounds and fabric bays.
-    mall/cinemaPublicFinish.js  Lobby carpet borders, waiting seats, premiere banners, concession frontage/packaging, usher station,
+    config/cinemaFinish.js Second cinema pass: service runs, equipment landmarks, lobby entrances, carpet bounds and fabric bays.
+    mall/cinemaPublicFinish.js Lobby carpet borders, waiting seats, premiere banners, concession frontage/packaging, usher station,
                         poster cases and letter-board showtimes; auditorium fabric panels, aisle strips, pelmet and chamfered seats.
-    mall/cinemaServiceFinish.js  Projection tile/dado, conduit, guarded lights, rewind bench/transport cases and access cabinet;
+    mall/cinemaServiceFinish.js Projection tile/dado, conduit, guarded lights, rewind bench/transport cases and access cabinet;
                         return blockwork, meter bank, delivery/checklist scenes, overhead channels and stair concrete joints.
-    mall/cinemaPrint.js  Map-local canvas print sheet shared by row letters, forms, packaging and cinema identity signs so they
+    mall/cinemaPrint.js Map-local canvas print sheet shared by row letters, forms, packaging and cinema identity signs so they
                         batch with the existing static system. Each map owns its sheet/material; no runtime canvas updates.
-    config/cinemaStairs.js  West stairwell/return-passage bounds, ramp plateaus, tread count, lower door opening and painted light.
-    mall/cinemaStairs.js  Physical service stairs with a smooth ramp under visible treads, solid supports, handrails, two culling
+    config/cinemaStairs.js West stairwell/return-passage bounds, ramp plateaus, tread count, lower door opening and painted light.
+    mall/cinemaStairs.js Physical service stairs with a smooth ramp under visible treads, solid supports, handrails, two culling
                         rooms and the floor-to-floor nav link. Lower shutter (1500) opens cinema + serviceCorridor; the original
                         cinema shutter now opens cinema + upstairs. No real lights, guns or spawn markers added.
-    mall/restockMachine.js  buildRestockMachine({ kit, center, wallAt, facing, floorY = 0 }) -> { position, normal, screen }: the RESTOCK-O-MATIC
+    mall/restockMachine.js buildRestockMachine({ kit, center, wallAt, facing, floorY = 0 }) -> { position, normal, screen }: the RESTOCK-O-MATIC
                         (north/south walls): body + hazard kick plate + glowing header and tagline, a lit window of ammo boxes, keypad,
                         card reader, live canvas screen (screen.show({ title, line, note, tone })), side signs, the AMMO blade sign, the
                         hazard stand pad and glow pool on the floor. One collider. (props.vendingMachine is the old RESTOCK-O-MATIC, unused)
-    mall/startRoomDetails.js  Clearance-store dressing relative to the start room: register, receipt, bags, stock remnants,
+    mall/startRoomDetails.js Clearance-store dressing relative to the start room: register, receipt, bags, stock remnants,
                         vent frames/boards, sale remnants, pricing station, floor wear, damaged light fitting and lamps.
                         Decoration only (no collision or interactions); static boxes merged by material; map kit disposes resources.
-    mall/megaMartDetails.js  Department stock and interrupted-shopping detail (batched static meshes), checkout groceries,
+    mall/megaMartDetails.js Department stock and interrupted-shopping detail (batched static meshes), checkout groceries,
                         receiving hardware/signs, Foam Dart promotion, perimeter trolley, fluorescent housings and the two Mart lamps.
                         MART_FIXTURES shares gondola positions and checkout lanes with mall.js. Only the parked trolley adds collision.
-    mall/martProducts.js  Low-poly shelf product models: Outdoor, Snacks, Holidays and Housewares (31 types).
+    mall/martProducts.js Low-poly shelf product models: Outdoor, Snacks, Holidays and Housewares (31 types).
                         The arranger fits whole models into irregular runs: crowded stock, disturbed patches, isolated leftovers and bare stretches;
                         geometry is merged by material alongside the rest of the Mart dressing (no per-product draw calls).
     mall/palette.js     COLORS shared by the mall's rooms and props
+    mall/workshopDetails.js Build-A-Blaster's detail pass: skins wall, heart shelf, till, footprints, window, plush, ceiling grid (storefront); hoppers and pipes, QC desk, rollers, booth props, portraits, lockers, safety signs, corner clutter, floor markings, beams, wainscot, neon (hall). Numbers: config/promenade.js workshop.details.
+    mall/workshopRoom.js The Build-A-Blaster storefront and back hall (island, booth, lever, chute) and their dressing. Layout numbers: config/promenade.js workshop.
+    mall/atmosphere.js  Cosmetic map dressing, batched by material; adds no colliders.
+    mall/cinemaArchitecture.js buildCinemaArchitecture: the cinema's shell (walls, floors, openings, structure).
+    mall/cinemaAuditoriumDetails.js The cinema auditorium's detail pass.
+    mall/cinemaLobbyDetails.js The cinema lobby's detail pass.
+    mall/cinemaServiceDetails.js The cinema's service passage and stairs detail pass.
+    mall/cinemaStoryDetails.js The cinema's story props.
+    mall/cinemaDecorKit.js Small primitives for cinema dressing (world coordinates, no collision).
+    mall/hallwayLook.js The hallway's dressing, the reference room of the visual overhaul (neon, slogans, wall bands, posters).
+    mall/lookKit.js     The visual overhaul's shared tools (wall bands, neon, light pools), used by every area's Look.
+    mall/setPieces.js   One signature scene per area (dead arcade cabinets in the hallway, and so on).
     testRange/          Debug add-on (not a map): testRange.js buildTestRange(scene, colliders) with own lights,
                         dummy.js practice mannequins (shootables)
   audio/
@@ -551,8 +555,11 @@ src/
                         unlock() (also on the first pointerdown/keydown; browsers block audio before that),
                         setMasterVolume(v) (used by Settings > Audio), setAmbience(mix) (up to three continuous spatial voices,
                         short crossfades), playAmbient(name, {volume, pan}); faded sources stop and disconnect
-    game/ambience.js     Spatial loop selection with optional emitter gain/smooth pulses; local map.ambientEvents play
+    game/ambience.js    Spatial loop selection with optional emitter gain/smooth pulses; local map.ambientEvents play
                         occasional one-shots only in audible unlocked areas. Timers freeze on pause and restart on reset.
+    ambientPulse.js     Sparse mechanical ticks mixed into a looping ambience buffer (reuses the noise grain: no gameplay random draws).
+    mallMusic.js        Pure, deterministic PCM composition of the lounge loop; used by the music worker and the export/preview tests.
+    musicWorker.js      Web Worker that renders mallMusic once, off the main thread (inlined as a Blob worker in the single-file build).
   fx/
     powerUpView.js      Reusable delivery carton, blue beacon and security badge (no lights/colliders); bob/spin/blink,
                         floor-projected Blue Light ring clipped at walls/voids, hide on reset/death, owned-resource disposal
@@ -564,6 +571,11 @@ src/
     impactModels.js     Small shared staple/nail/dart/confetti meshes with vertex colours; three procedural price-sticker textures
     effects.js          Tracers (pooled) + particle bursts (one InstancedMesh): splat(), puff(), clear() (new run).
                         The Mascot's foam palette bypasses flesh splatter settings.
+    benchmark.js        Times a fixed camera route (map.benchmarkShots) so a visual change can say what it costs (Shift+B on the title or pause screen).
+    lightPool.js        A fixed number of real point lights shared out among the map's lamps.
+    postProcessing.js   The render pipeline: the world pass, then the depth-cleared first-person viewmodel pass, plus post effects.
+    roomCulling.js      Skips drawing rooms the camera can't see (the map's cullAreas / cullPortals).
+    zoneGrading.js      Per-area colour grade (exposure, tint, saturation, contrast; config/look.js grading), eased as the camera moves.
   vite.config.js        Dev server only: compiles the game at server start (warmup) and skips .claude, dist, dist-single, references and scratch. Paths are absolute from this checkout, so a worktree keeps its own hot reload.
   play.cmd              Double-click version of `npm run play`. tools/play.mjs rebuilds the single file if the source is newer, keeps the last good build if that fails, and opens it in Firefox (the Windows default for .html may be another browser).
   (tools/)              Dev scripts (not bundled): buildSingle.mjs = `npm run build:single` (a normal Vite build into dist-single/, then the JS, CSS and
@@ -608,6 +620,10 @@ src/
     textures.js         Procedural canvas textures (floor tile, shop sign, shutter, muzzle flash burst, wall-buy chalk). No image files.
     atmosphereTextures.js Soft footprint alpha and deterministic tile roughness (no image downloads)
                         seededRandom(seed): deterministic random (also used for shelf stock)
+    neonDemo.js         Debug only: a sample wall of everything world/neon.js can make.
+    posterTextures.js   The mall's posters, drawn on canvas (upbeat slogans, something wrong in each).
+    scatter.js          Places decor-kit clutter on a floor area, deterministic per seed, merged into one mesh per material.
+    staticBatch.js      Merges still, opaque map meshes into a few big ones (fewer draw calls); userData.dynamic opts a mesh out.
   ui/
     incentiveHud.js     Small employee punch card (drop progress), uncollected incentive countdown and Blue Light timer
     modal.js            Shared Settings/Controls dialog behavior: inert background, focus trap, Escape, restores focus on close
@@ -637,6 +653,119 @@ src/
                         Controls (right) buttons (onOpenSettings/onOpenControls); FPS counter top right (setFpsVisible/setFps);
                         setAmmoTier(tier): "<Tier> warranty" in the tier's color under the gun name
                         (hidden at Standard; main.js feeds it from tierOf(gun.modsFor(...))); showAnnouncement({ kicker, text }): PA-style banner under the round banner (new zombie types)
+    retail.css          Retail presentation layer loaded after style.css: mall directory, distinct combat signs,
+                        shelf tickets, personnel paperwork, facilities settings and handbook. Responsive + reduced motion.
+    bagMarker.js        The HUD arrow to a dropped Limited Edition: name, distance, floor, time left.
+    birthCertificate.js The Birth Certificate notice at collection. Clears itself; nothing pauses.
+    orderForm.js        Draws the order form from its view. Only draws: choices come in on the fixed tick. Sized from the screen height (retail.css --order-base,
+                        everything in em), left of centre; keys drawn as keycaps (keycaps()), one line on what the order does (orderSummary()), stuffings
+                        you can't pick folded into a short "Not in stock" list.
+    ritualHud.js        The order ticket on the HUD: the gun's stage, one progress bar, the gauge and time (reads the ritual's status).
+    announcements.js    Bounded PA queue: type introductions priority 2, incentives 1, routine messages 0;
+                        clear on pause/death/reset; wall-clock presentation timers only
+    noticeHistory.js    The run's PA notices, kept for the Notices menu (queued and pre-empted ones too); pausing never clears it.
+    noticesMenu.js      createNoticesMenu(history): the pause screen's list of this run's PA notices.
+    readability.css     Readability and layout over retail.css: text sizes, the corner lanes, the centred boss/round lane.
+    screens.js          The menus around a run (title, statistics, pause, results) as plain DOM over the canvas.
+    titleCamera.js      The title flyover: plays map.titleShots forever behind the main menu.
 ```
+
+## How the pieces connect (moved from CLAUDE.md)
+- `main.js` owns the loop. Every frame starts with `applyLookInput(frameTime)` (mouse + stick look, aim-assist
+  slowdown) BEFORE the ticks, so shots/movement in this frame's ticks use where you're looking now.
+  Each tick main polls the controller, runs the controller menus, then `g.update(dt)` (game/createGame.js).
+  `g.update(dt)` (60Hz): if `game.over` (dead) only zombies/health/death timer run (checked
+  first: the mouse is released on death); if not running (pointer unlocked) it freezes the player; otherwise debug
+  keys (main's handleDebugKeys via the debugTick hook), `player.update`, `interactions.update` (before the gun, so a controller-X hold near a buyable buys instead
+  of reloading), `melee.update` (no new swing while switching/vaulting),
+  `gun.update(dt, melee.isBusy || player.vault.active)` (after the player so shots use this tick's
+  eye), `zombies.update`, `rounds.update` (paused while in the test range), `health.update`, `map.update`,
+  `features.update`, `arena.update`, `player.updateView` (recoil springs last, so a shot's kick shows on the very next frame),
+  `input.endTick()`. `rounds.start()` happens the first tick the game actually runs.
+- Buying: createGame adds every `map.doors` entry to `interactions` (verb 'unlock', cost pricing.priceOf('door', destinationAreaId), use =
+  map.areaUnlocks.unlock(destinationAreaId), which owns only that destination and opens all barriers between owned areas;
+  zombies start spawning there and the nav grid rebuilds when each shutter's collider goes), and builds every `map.features` entry by kind (game/features/): wall buys (display + "buy <Gun>" / "<Gun> ammo",
+  hidden when its zone is closed or you own it with full ammo; use = gun.give(def)) and the ammo cache. Melee gets `getWeapon: () => gun.weapon` (the gun in hand).
+- Map: createGame does `loadMap(mapId, scene, colliders)` and only uses the map interface (maps/index.js).
+  The zombie manager gets `map.spawnPoints` + `isZoneOpen`, so zombies only spawn in opened zones.
+- Zombie types: rounds picks each spawn's type (economy.zombieMix) and calls `zombies.spawn(typeId)`; health is
+  `zombieHealthFor(typeId, round)`, kill value `economy.killValues[typeId]`. A type's first spawn in a run ->
+  'typeIntro' event -> createGame shows the spawned zombie's `type.introBanner` (hud.showAnnouncement) + plays 'paChime'. Zombie sounds:
+  zombie -> ctx.onSound -> manager (dedupe) -> createGame `sound.play(name, { volume })`.
+- Points: gun and melee call `onHit({ target, killed, headshot, melee })` -> createGame emits 'hit' (non-lethal zombie hit:
+  +10); a zombie dying (zombie.takeHit records `killedBy`; the manager's onKill) -> 'kill' -> kill value + head/melee bonus
+  (`pointsForHit`) and run stats. Same totals as COD, whatever made the kill.
+  HUD: points above the ammo with +N pop-ups, round number top-left (blinks in the break), "ROUND N" banner.
+- Death flow: `onPlayerDeath()` (createGame.js) sets `game.over`, hides the combat HUD, and main's hook releases the mouse. Render then runs the
+  death camera (drop + roll) and skips the gun pass; after `feel.death.resultsDelay` the results screen shows.
+  Play again -> `resetRun()` (createGame's resetSteps: zombies, player stats, health, run stats, guns + upgrades, interactions,
+  viewmodel, effects, melee, aim assist, wallet, rounds, player position, doors/zones, death state, HUD) -> re-lock.
+- Testing hook: `window.__mall.step(n)` advances the real loop n ticks and draws a frame (use with
+  `game.forceRun = true`; set it back to false before screenshots, or the live loop keeps playing).
+  `step` also applies pending look first. `render(alpha, frameTime)`: interpolates the camera, updates effects + viewmodel, updates the
+  HUD, then draws two passes: the world, then (after `clearDepth`) the viewmodel scene. `renderer.autoClear` is false.
+- Settings/Controls menus: `main.js` creates `createSettings({ renderer, sound, hud })` (loads saved values, applies all) and the two
+  menus after the HUD + sound exist. While either menu is open, `handleControllerMenus()` hands controller input to its `padNav`
+  and returns (so A/Start don't start the game). On the pause screen, controller Y opens Settings and X opens Controls. Settings
+  write straight into the config objects (feel/controls/audio), so everything that reads config each frame picks them up live.
+  `render()` also feeds the FPS counter.
+- Input: mouse buttons are tracked like keys as `Mouse0`/`Mouse1`/`Mouse2`, only while pointer-locked.
+  Controller buttons are `PadA`.. codes written by `gamepad.poll()` (first thing in `update`).
+- Controller flow: `game.running` = pointer locked OR `game.padPlaying` OR forceRun. `handleControllerMenus()`
+  in main: A/Start starts or resumes (no pointer lock needed; also tries `sound.unlock()`), Start pauses, A on the
+  results screen plays again, unplugging the controller mid-game pauses. Stick look is applied per frame in
+  render (`player.applyStickLook`) x `aimAssist.slowdown`.
+- Render timing: while paused (not running, not dead) render uses alpha = 1 and zero visual time, so nothing
+  twitches; after death visual time keeps flowing (zombies animate, particles fall, the flash fades).
+- Shooting: `player.getAim()` gives eye + direction including view kick; `aim.applySpread()` then randomizes it
+  inside the spread cone. The crosshair gap is computed in `main.js` render from `aim.spreadDegrees` and the
+  current camera FOV (gap px = tan(spread) / tan(fov/2) * screenHeight/2), so every shot lands inside the lines.
+- Recoil/feel: camera pitch kick is in the aim (and springs back to exactly where you aimed, no permanent climb);
+  camera roll, gun kick, sway, bob and the muzzle flash are visual only (shots never come from the gun model).
+  Audio starts on the first click/key (main also calls `sound.unlock()` on Click to play).
+- ADS: `aim` sets `player.isAiming` / `player.aimAmount` each tick (blocks sprint, scales walk speed by
+  `stats.adsMoveSpeed`). Render zooms `camera.fov` by `def.ads.fovMultiplier` and sets `player.lookScale`.
+  `main.js` keeps a `shootables` array (test-range dummies now; zombies should be pushed into it). A collider
+  Box3 with `ignoreShots = true` blocks walking but not bullets.
+- The game only runs while the pointer is locked; Esc pauses and shows the overlay. An in-game menu a feature opens (`state.menu`, e.g. the Build-A-Blaster
+  order form) stops the player (no moving, shooting or buying) but not the world; the feature reads menu actions (config/controls.js menu*) in features.update.
+- Collision: one shared flat array `colliders` of `THREE.Box3` (created in main, filled by the map and the
+  test range). `box(..., {collide})` in `mall.js`
+  makes a mesh and (optionally) a collider; some visuals use `collide:false` with a separate hand-sized
+  `addCollider` (pillars, benches). Shutter adds/removes its own collider from the same array.
+  Player is a cylinder (radius, height, feet position). Boxes whose top is within `stepTolerance`
+  of the feet count as floor, not walls.
+- Coordinates: meters, +Y up. Camera looks down -Z at yaw 0.
+- Markers (invisible; shown if `debug.showMarkers`; wall-buy markers come from the 'wallBuy' features): `map.spawnPoints`
+  (38: 2 start-room, 3 hallway, 5 Atrium, 4 Food Court, 4 Promenade, 3 HOFFMAN'S, 6 cinema, 4 Mega Mart, 4 Parking, 3 Service Corridor;
+  each tagged with its zone and actual floor height). The service stairs add no markers.
+  The seven 'wallBuy' features have outward `normal` + `weapon` id: Price Gun, Nail Gun, Foam Dart Blaster, Confetti Cannon,
+  Rivet Rifle, Heavy Coil Nailer and Barcode Scanner; prices in economy.wallBuys via g.pricing.
+
+## The movement test range (debug only; moved from CLAUDE.md)
+- Built when `debug.testArena` is true; press **T** in-game to teleport between the mall and the range
+  (`player.teleport({ position, yaw })`). Its colliders go into the same shared `colliders` list.
+- 60x60m open floor centered at (0, -100), far south of the mall, 2m border walls, 1m floor tiles.
+- Shooting range: 5 practice dummies (3 at local z=17 near spawn, 2 at (+-9, 0)) with round-1 zombie health.
+- Contents: runway with a line every 5m; slide bars + an 8m low tunnel (underside 1.2m: crouch fits,
+  standing doesn't); pillars; stairs (0.5m steps) to a 2m platform; jump boxes 0.3-1.2m (1.2 is
+  deliberately unreachable); 0.6m platforms with 2/3/4/5m gaps for sprint-jumps.
+- Turn `debug.testArena` off before shipping. Don't build game features into it.
+
+## Notes by system
+
+Skylar's appearance: config/influencerLook.js owns her outfit, palette, ponytail, accessories, phone rig and pose tuning.
+zombies/bosses/influencerModel.js dresses and poses the shared zombie skeleton, with zombieModel owning batching and disposal.
+The influencer behavior exposes its existing phone wind-up to the visual pose through phoneFlashWindup.
+
+Boss spectacle: bossSpectacle in config/bosses.js owns death confetti and employee poses; audio.js owns unique synthesized stings. zombieManager emits the same single kill event after the cartoon boss death burst. zombieModel applies bone poses and disposes costume geometry. debugCommands/debugPanel expose the next selected boss. tools/gunReport.mjs includes a boss encounter table.
+
+Boss scheduling: bossDirector exports bossIntroRounds/isEncoreRound, skips optional mascotVariants.unlockRound values in both debut/encore choices, and remembers actual encounters until reset. Cadence is bossTiming.encores.
+
+Influencer: bosses/influencer.js owns filming movement, follower thresholds, fan requests/departure and phone windup. bosses/filmingSpots.js selects reachable shootable cell centres; navigation.pathTo uses an independent breadth-first route without replacing the shared horde flow field. ui/bossFlash.js presents the event, obeys the Comfort setting, and cancels on death/reset. Fans use zombieManager spawn metadata and delayed no-kill dismissal.
+
+Guard: zombies/bosses/guard.js owns alarm, physical shutter closure, radio headshots, reinforcement retries and taser slowdown. maps/areaBarriers.js supplies areaAt and barriersAround through loadMap. Shutters expose kind; ownership is never reset by lockdown. rounds.spawnBackup consumes the existing toSpawn budget and respects maxAlive.
+
+Boss encounters: bosses/manager.js owns meetings/reports; bosses/employeeModel.js mounts configured costume parts and owns the temporary whiteboard. game/bossVouchers.js wires carried-gun/area eligibility and points conversion into pricing. powerUps.js and powerUpView.js deliver voucher pickups through the existing reward queue.
 
 Boss groundwork: zombie.js owns timed buffs, source-bound holds and a behavior control function. pricing.js owns a separate one-use voucher, eligibility conversion and sale/coupon/voucher order. debug.run('summonBoss', id) selects a boss explicitly.

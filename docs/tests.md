@@ -226,3 +226,32 @@ the model and debris and disposes their shared geometry and materials.
 - `play.test.js`: the launcher rebuilds only for newer source and watches all of it; the dev server skips folders the game never loads from, but not this checkout's own code, even in a worktree. `singleFile.test.js` now also parses the inline script.
 
 `tests/bossGroundwork.test.js` covers timed speed/damage buffs, hold timeout/source death/player death/reset, voucher stacking and immediate points conversion. Existing Janitor tests guard unchanged behavior.
+
+## Files not described above (filled in 8 November 2026)
+
+- `autoGraphics.test.js`: the first-launch preset pick: tiers by frame rate, measured once after a warm-up, hidden windows and hitches ignored, never on a later launch.
+- `benchmark.test.js`: the benchmark report maths, a whole route driven frame by frame (warm-up skipped, every shot visited, renderer put back), cancel, Shift+B.
+- `cartPusher.test.js`: the Cart Pusher from round 6 (mix, health, value, its intro), the telegraph then a straight charge, standing still gets you run over.
+- `coilAndScanner.test.js`: the Heavy Coil Nailer (rate, drum, reload, piercing two, model animation) and the Barcode Scanner.
+- `decor.test.js`: every decoration model builds valid floor-standing geometry within budget; scatter is deterministic per seed and keeps off colliders and keep-clear areas.
+- `escalatorWalk.test.js`: the escalator is a real way up once repaired (a player walks up and down, zombies path both ways) and blocked while its barrier is up.
+- `flashSales.test.js`: Flash Sale timing, discounts in 5% steps from 25 to 50% across a category group, PA lines, prices restored, reset; then in the real game.
+- `levelTwo.test.js`: the Promenade: closed in, a standable floor, the well fenced, vents sealed until the escalator is repaired, balcony voids you cannot walk into.
+- `lightPool.test.js`: N real lights follow the camera to the nearest lamps, fading rather than popping, copying flicker, skipping lamps that are off.
+- `navFloors.test.js`: zombie navigation over several floors and stairs on small synthetic maps (a floor with no link is unreachable).
+- `neon.test.js`: the neon stroke font (every character), text sizing and multi-line, facing like kit.sign.
+- `newGuns.test.js`: burst fire (Foam Dart Blaster) and the Confetti Cannon's shells and reload, plus upgrades on a carried gun through resolveGun.
+- `posterTextures.test.js`: every poster kind builds (unknown kinds throw); the hallway hangs them 3 cm proud with their copy in config.
+- `ramps.test.js`: walkable ramps: surface height, walking up and down without falls, jumping off, walking under, switched off.
+- `rivetRifle.test.js`: the Rivet Rifle's auto fire, magazine and reserve, its role against the Foam Dart Blaster, hip bloom and tighter ADS.
+- `roomCulling.test.js`: rooms and portals are consistent, what is drawn follows doors and the view, room meshes on their layers, batching keeps rooms apart.
+- `runIntro.test.js`: the PA's run-opening line on round 1 only, every run including Play again; it changes nothing else.
+- `setPieces.test.js`: each solid set piece is one collider, too tall to climb and clear of spawns, buy spots and doors; the TV wall and arcade animate and hold still when switched off.
+- `settingsPresets.test.js`: every preset sets real settings of its own tab to valid values; Standard comfort is the defaults; Graphics presets differ in resolution.
+- `staticBatch.test.js`: batching the real mall: far fewer meshes, every triangle kept, nothing dynamic or see-through merged, the escalator barrier still hides, dispose frees it.
+- `titleCamera.test.js`: the title flyover plays shots in order and loops, glides and looks where each shot says, fades only at cuts; a map without shots is an error.
+- `uiReadability.test.js`: the run's notice history (kept, bounded, reset apart from PA visibility) and UI/text scale saved independently of render resolution.
+- `vhsFilter.test.js`: the VHS filter: off by default, untouched by Graphics presets, and its pass runs only when on (even with Visual effects Off).
+- `visualEffects.test.js`: Visual effects High / Low / Off on a stand-in renderer (Off skips the composer), and the Video presets that set it.
+- `zoneGrading.test.js`: each area's colour grade, easing between areas, the setting, and every Graphics preset deciding it.
+- `docs.test.js`: every file in src/ has an entry in docs/folder-structure.md, every test file is described here, and every doc CLAUDE.md links to exists.
