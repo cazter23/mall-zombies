@@ -385,6 +385,57 @@ export const mascotVariants = {
       ],
     },
   },
+
+  // Mega Mart's discount superhero. THE TWIST, after the pop and the shake: instead of rushing he hurries back to HIS
+  // fallen helmet and puts it back on (zombie.js updateReclaim). Shoot him while he's bent over it: the head is bare.
+  captainCoupon: {
+    name: 'Captain Coupon',
+    unlockRound: 13,
+    homeZones: ['megaMart'],
+    introBanner: { kicker: 'Attention shoppers', text: 'Captain Coupon is patrolling Mega Mart. His coupons are expired. So is he.' },
+    helmetPopLine: { kicker: 'Price drop', text: 'Captain Coupon has been reduced to clear. He will be back for it.' },
+    colors: { suit: 0xd8262e, trim: 0xffd23f, boot: 0x2b2b33, cape: 0xffc21a, ink: 0xd8262e, string: 0xf4efe6 },
+    uniform: [
+      { color: 'cape', size: [0.5, 0.5, 0.035], at: [0, -0.06, 0.272] }, // the cape
+      { color: 'trim', size: [0.22, 0.22, 0.027], at: [0, 0.07, -0.275], tilt: Math.PI / 4 }, // a yellow chest badge...
+      { color: 'ink', size: [0.11, 0.11, 0.02], at: [0, 0.07, -0.295], tilt: Math.PI / 4 }, // ...with a red heart to it
+      { color: 'trim', size: [0.74, 0.07, 0.56], at: [0, -0.24, 0] }, // a utility belt
+    ],
+    head: {
+      kind: 'priceTag',
+      helmet: { size: [0.96, 0.84, 0.38], at: [0, 1.07, 0] }, // a thick foam card: it hides the green head
+      color: 0xfff1b8,
+      tilt: 0.2, // radians: the hole corner up, as if hung from the string
+      bevel: 0.03,
+      cornerRadius: 0.16,
+      // Positions on the card are in its own metres: +x is the hole's side (his right: your left as you face him).
+      hole: { at: [0.3, 0.24], radius: 0.065 },
+      string: { color: 'string', radius: 0.12, tube: 0.02, stretch: 1.9, sink: 0.03 },
+      // The canvas print in front of the card: SALE clear of the hole, a big "%" for a mouth.
+      print: { size: [0.86, 0.74], pixels: [512, 440], lift: 0.012, ink: '#d8262e',
+        text: 'SALE', textAt: [-0.07, 0.24], symbol: '%', symbolAt: [0, -0.2] },
+      face: [
+        { color: 'eyes', size: [0.16, 0.19, 0.03], at: [0.17, 0.0, -0.215] },
+        { color: 'eyes', size: [0.16, 0.19, 0.03], at: [-0.17, 0.0, -0.215] },
+        { color: 'dark', size: [0.065, 0.095, 0.02], at: [0.15, -0.02, -0.235] },
+        { color: 'dark', size: [0.065, 0.095, 0.02], at: [-0.15, -0.02, -0.235] },
+        { color: 'dark', size: [0.17, 0.035, 0.02], at: [0.17, 0.12, -0.235], tilt: -0.3 }, // stern brows
+        { color: 'dark', size: [0.17, 0.035, 0.02], at: [-0.17, 0.12, -0.235], tilt: 0.3 },
+      ],
+    },
+    reclaim: {
+      walkSpeed: 2.4, // m/s back to his helmet: hurrying, not rushing
+      reachRadius: 0.8, // within this of it he stops and picks it up...
+      reclaimSeconds: 1.2, // ...standing still this long (bent over, then lifting it over his head)...
+      reclaimHealthFraction: 0.75, // ...and it's on: health back to this much of max, suited speed again
+      maxReclaims: 1, // per Coupon. The second pop pays no helmet bonus.
+      guardRadius: 1.5, // he gives up (and rushes you) if you stand this close to his helmet...
+      giveUpSeconds: 6, // ...or he hasn't got it by now, or it's gone (round over, swept up)
+      line: { kicker: 'Customer service', text: 'Captain Coupon has found his head. Offer still valid.' },
+      // The lift (visual only): bent over it for the first reachShare, then up over his head and down onto his shoulders.
+      lift: { reachShare: 0.35, bend: 0.75, armsReach: 1.2, armsHold: 2.75, rise: 0.45 },
+    },
+  },
 };
 
 // One resolved zombie type per costume, built ONCE here: the shared type deep-merged with the costume (id stays 'mascot',

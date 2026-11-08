@@ -184,6 +184,36 @@ test('the real game: the round-10 Mascot is Sir Waffles with his banner, and a d
   assert.deepEqual(variantIntros, MASCOT_VARIANT_IDS.filter((id) => id !== 'sirWaffles'));
 });
 
+test('in the real manager the spawn point\'s zone sets the bias, and the Returns Chute has none', (t) => {
+  const { g, tick, standAt } = fixture(t);
+  const round = mascotVariants.captainCoupon.unlockRound; // (Sir Waffles and Captain Coupon to choose from)
+  assert.ok(Object.values(mascotVariants).filter((v) => v.unlockRound <= round).length === 2);
+  assert.ok(mascotVariants.captainCoupon.homeZones.includes('megaMart') && !mascotVariants.sirWaffles.homeZones.includes('megaMart'));
+  g.rounds.jumpTo(round);
+  g.rounds.update = () => {};
+  for (const zone of Object.values(g.map.zones)) zone.open = false;
+  g.map.zones.megaMart.open = true;
+  standAt(29, -22); // Mega Mart's back walkway
+  tick(30);
+  t.mock.method(Math, 'random', seededRandom(12)); // (after the map is built)
+  const couponShare = (options, n = 120) => {
+    let coupons = 0;
+    for (let i = 0; i < n; i++) {
+      const zombie = g.zombies.spawn('mascot', null, options);
+      assert.ok(zombie?.type.mascot, 'a Mascot every time');
+      if (zombie.type.variant === 'captainCoupon') coupons += 1;
+      g.zombies.clear();
+    }
+    return coupons / n;
+  };
+  const home = mascotPicking.homeWeight / (mascotPicking.homeWeight + 1);
+  const atHome = couponShare({ nearest: true });
+  assert.ok(Math.abs(atHome - home) < 0.12, `Mega Mart spawns: ${atHome} Coupons, expected about ${home}`);
+  g.zombies.steerSpawns([{ zone: 'megaMart', position: new THREE.Vector3(22, 0, -22) }]);
+  const chute = couponShare({});
+  assert.ok(Math.abs(chute - 0.5) < 0.12, `out of the chute: ${chute} Coupons, expected about 0.5`);
+});
+
 test('the debug key spawns each costume in turn at the spawn point nearest you, and the Mascot cap still holds', (t) => {
   const { g, tick } = fixture(t);
   tick(1);

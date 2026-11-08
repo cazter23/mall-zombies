@@ -35,6 +35,7 @@ const UP = new THREE.Vector3(0, 1, 0);
  * @param onPlayerHit  (damage, zombie) => apply a landed zombie hit to the player
  * @param onKill       optional (zombie) => called when a zombie dies (run stats, later points)
  * @param onHeadPop    optional (zombie, { headshot, source }) => the Mascot's helmet came off
+ * @param onReclaim    optional (zombie) => Captain Coupon put his helmet back on
  * @param onSound      optional (name, volume) => play a zombie sound (Mall Walker squeaks, huffs, pants)
  * @param navigation   optional { floors, links } for maps with more than one floor (zombies/navigation.js)
  */
@@ -51,6 +52,7 @@ export function createZombieManager({
   onPlayerHit,
   onKill = null,
   onHeadPop = null,
+  onReclaim = null,
   onSound = null,
   navigation = undefined,
 }) {
@@ -147,8 +149,9 @@ export function createZombieManager({
     if (onKill) onKill(zombie);
   }
 
-  // Sir Waffles' fallen helmets: on the floor until the round ends, whatever became of the body.
-  const helmets = []; // [{ helmet, round }]
+  // Mascots' fallen helmets: on the floor until the round ends, whatever became of the body. Each knows its owner, so
+  // Captain Coupon can come back for his (and the cap never sweeps up a helmet he still means to fetch).
+  const helmets = []; // [{ helmet, round, owner }]
   const helmetRay = new THREE.Vector3();
   function keepHelmet(zombie, { helmet, headshot, source }) {
     const { leftHelmets } = zombie.type.mascot;
@@ -160,9 +163,21 @@ export function createZombieManager({
       const { worldHit, end } = castShot(scratch, helmetRay.normalize(), length, colliders, []);
       if (worldHit) helmet.setReach(Math.max(0, (end.distanceTo(scratch) - leftHelmets.wallMargin) / length));
     }
-    helmets.push({ helmet, round: getRound() });
-    while (helmets.length > leftHelmets.max) helmets.shift().helmet.dispose();
+    helmets.push({ helmet, round: getRound(), owner: zombie });
+    zombie.mascotHelmet = helmet;
+    // Over the cap: the oldest helmet nobody is coming back for goes (the oldest of all if every one is wanted).
+    while (helmets.length > leftHelmets.max) {
+      const i = helmets.findIndex(({ owner }) => !owner.mascotWantsHelmet);
+      helmets.splice(Math.max(0, i), 1)[0].helmet.dispose();
+    }
     if (onHeadPop) onHeadPop(zombie, { headshot, source });
+  }
+  // Captain Coupon picked his helmet up ('lift': it is in his hands, off the floor) or has it on again ('done').
+  function reclaimHelmet(zombie, phase) {
+    if (phase === 'lift') {
+      const i = helmets.findIndex(({ owner, helmet }) => owner === zombie && helmet === zombie.mascotHelmet);
+      if (i !== -1) helmets.splice(i, 1)[0].helmet.dispose();
+    } else if (onReclaim) onReclaim(zombie);
   }
   function updateHelmets(dt) {
     const round = getRound();
@@ -433,6 +448,7 @@ export function createZombieManager({
       const zombie = new Zombie({ type, health: zombieHealthFor(typeId, round), position, yaw, speed, round });
       zombie.onDeath = onZombieDeath;
       zombie.onHeadPop = keepHelmet;
+      if (type.mascot) zombie.onReclaim = reclaimHelmet;
       zombie.stuckTimer = 0; // failsafe bookkeeping (see rescueStuckZombies)
       zombie.stuckFrom = { x: position.x, z: position.z };
       scene.add(zombie.model.root);

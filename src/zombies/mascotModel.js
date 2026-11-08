@@ -4,6 +4,9 @@ import { buildMascotHead } from './mascotHeads.js';
 // Each articulated foam piece supplies the same local box to the model and the
 // shot test. The fixed tick places hitboxes, while render can interpolate the root.
 // The body is shared by every costume; the helmet comes from the costume's head (zombies/mascotHeads.js).
+// A helmet can come off more than once (Captain Coupon puts his back on: beginReclaim / finishReclaim).
+const smooth = (t) => t * t * (3 - 2 * t);
+
 export function createMascotModel(type, random) {
   const cfg = type.mascot;
   const root = new THREE.Group();
@@ -17,16 +20,34 @@ export function createMascotModel(type, random) {
   const geometry = new THREE.BoxGeometry();
   geometry.computeBoundingBox();
   const materials = new Map();
-  function block(parent, color, size, at, tilt = 0) {
+  const ownMaterials = []; // a head's own materials (textured print...), freed with the colour ones
+  function colorMaterial(color) {
     if (!materials.has(color)) {
       materials.set(color, new THREE.MeshStandardMaterial({ color, roughness: type.plastic.roughness }));
     }
-    const mesh = new THREE.Mesh(geometry, materials.get(color));
+    return materials.get(color);
+  }
+  function block(parent, color, size, at, tilt = 0) {
+    const mesh = new THREE.Mesh(geometry, colorMaterial(color));
     mesh.scale.set(...size);
     mesh.position.set(...at);
     mesh.rotation.z = tilt;
     parent.add(mesh);
     return mesh;
+  }
+  // Any other shape a head needs. `material` is a colour (shared like the blocks) or a material made with kit.material.
+  function shape(parent, shapeGeometry, material, at = [0, 0, 0], rotation = [0, 0, 0], scale = [1, 1, 1]) {
+    const mesh = new THREE.Mesh(shapeGeometry, typeof material === 'number' ? colorMaterial(material) : material);
+    mesh.position.set(...at);
+    mesh.rotation.set(...rotation);
+    mesh.scale.set(...scale);
+    parent.add(mesh);
+    return mesh;
+  }
+  function ownMaterial(params) {
+    const made = new THREE.MeshStandardMaterial({ roughness: type.plastic.roughness, ...params });
+    ownMaterials.push(made);
+    return made;
   }
 
   function piece(parent, name, { size, at }, color) {
@@ -64,8 +85,11 @@ export function createMascotModel(type, random) {
   const torso = piece(upper, 'mascotTorso', cfg.torso, cfg.colors.suit);
   decorate(torso, cfg.uniform);
   const bodyBoxes = [track(torso, 'body')];
-  const helmet = piece(upper, 'mascotHelmet', cfg.helmet, cfg.head.color);
-  buildMascotHead(cfg.head, helmet, { block, decorate, colors: cfg.colors });
+  const helmet = new THREE.Group();
+  helmet.name = 'mascotHelmet';
+  helmet.position.set(...cfg.helmet.at);
+  upper.add(helmet);
+  buildMascotHead(cfg.head, helmet, { block, shape, decorate, material: ownMaterial, colors: cfg.colors });
   const head = piece(upper, 'mascotHead', cfg.exposedHead, cfg.colors.skin);
   decorate(head, cfg.zombieFace);
   head.visible = false;
@@ -93,6 +117,27 @@ export function createMascotModel(type, random) {
   }
   const covered = [track(helmet, 'head'), ...bodyBoxes];
   const exposed = [track(head, 'head'), ...bodyBoxes];
+
+  // Putting the helmet back on (Captain Coupon): it is held in the root's space while it travels from the floor to
+  // the shoulders, then goes back into its own place on the upper body.
+  const liftFrom = new THREE.Vector3();
+  const liftFromTurn = new THREE.Quaternion();
+  const socket = new THREE.Vector3(cfg.helmet.at[0], cfg.hipY + cfg.helmet.at[1], cfg.helmet.at[2]);
+  const upright = new THREE.Quaternion();
+
+  function poseLift(zombie) {
+    const lift = cfg.reclaim.lift;
+    const t = 1 - zombie.mascotLift / cfg.reclaim.reclaimSeconds; // 0 -> 1 over the lift
+    const reaching = t < lift.reachShare;
+    const k = reaching ? 0 : smooth((t - lift.reachShare) / (1 - lift.reachShare));
+    const bend = reaching ? smooth(t / lift.reachShare) : 1 - k;
+    upper.rotation.set(-bend * lift.bend, 0, 0);
+    for (const arm of arms) arm.rotation.x = reaching ? bend * lift.armsReach : THREE.MathUtils.lerp(lift.armsReach, lift.armsHold, Math.sin(k * Math.PI));
+    if (helmet.parent !== root) return; // (only while it is in his hands)
+    helmet.position.lerpVectors(liftFrom, socket, k);
+    helmet.position.y += Math.sin(k * Math.PI) * lift.rise; // up over the head, then down onto it
+    helmet.quaternion.slerpQuaternions(liftFromTurn, upright, k);
+  }
 
   function pose(zombie, alpha) {
     root.position.lerpVectors(zombie.prevPosition, zombie.position, alpha);
@@ -131,6 +176,7 @@ export function createMascotModel(type, random) {
       upper.rotation.z = Math.sin(zombie.mascotRage * cfg.rage.shakeRate) * cfg.rage.shake;
       for (const arm of arms) arm.rotation.x = Math.PI / 2 + attack.armsRaisedRadians;
     }
+    if (zombie.mascotLift > 0 && zombie.isAlive) poseLift(zombie);
 
     body.rotation.x = 0;
     if (zombie.state === 'spawning') {
@@ -161,8 +207,8 @@ export function createMascotModel(type, random) {
     if (owners > 0) return;
     geometry.dispose();
     for (const material of materials.values()) material.dispose();
+    for (const material of ownMaterials) material.dispose();
   };
-  const smooth = (t) => t * t * (3 - 2 * t);
 
   function releaseHead(zombie) {
     pose(zombie, 1);
@@ -176,12 +222,16 @@ export function createMascotModel(type, random) {
     floor = zombie.position.y + drop.floorClearance;
     velocity.set(...drop.velocity).applyAxisAngle(THREE.Object3D.DEFAULT_UP, zombie.yaw);
 
+    // The stuffing burst (the same pieces again if the helmet comes off a second time).
     for (let i = 0; i < drop.stuffingCount; i++) {
-      const color = type.splatColors[i % type.splatColors.length];
-      const mesh = block(debris, color, [drop.stuffingSize, drop.stuffingSize, drop.stuffingSize], [0, 0, 0]);
-      const scatter = new THREE.Vector3(random() * 2 - 1, random(), random() * 2 - 1).multiplyScalar(drop.stuffingSpeed);
+      if (!stuffing[i]) {
+        const color = type.splatColors[i % type.splatColors.length];
+        const mesh = block(debris, color, [drop.stuffingSize, drop.stuffingSize, drop.stuffingSize], [0, 0, 0]);
+        stuffing.push({ mesh, scatter: new THREE.Vector3() });
+      }
+      const { scatter } = stuffing[i];
+      scatter.set(random() * 2 - 1, random(), random() * 2 - 1).multiplyScalar(drop.stuffingSpeed);
       scatter.y += drop.stuffingUp;
-      stuffing.push({ mesh, scatter });
     }
     return fallenHelmet();
   }
@@ -192,9 +242,15 @@ export function createMascotModel(type, random) {
     let age = 0, reach = 1;
     const seen = new THREE.Vector3();
     const landing = launch.clone().addScaledVector(velocity, drop.tumbleSeconds);
-    return {
+    const rest = landing.clone().setY(floor); // where it ends up lying (short of a wall: setReach)
+    const handle = {
       landing, // where it would come down (the manager checks the way there for walls)
-      setReach(fraction) { reach = fraction; },
+      rest,
+      gone: false, // true once disposed (the round ended, a newer helmet took its place, it was picked up)
+      setReach(fraction) {
+        reach = fraction;
+        rest.set(launch.x + (landing.x - launch.x) * reach, floor, launch.z + (landing.z - launch.z) * reach);
+      },
       update(dt, target) {
         age += dt;
         animateDebris(age, reach);
@@ -213,19 +269,24 @@ export function createMascotModel(type, random) {
         helmet.rotation.y = restYaw;
       },
       dispose() {
+        if (handle.gone) return;
+        handle.gone = true;
         debris.removeFromParent();
         free();
       },
     };
+    return handle;
   }
 
   function animateDebris(age, reach) {
     const t = Math.min(age, drop.tumbleSeconds);
-    helmet.position.copy(velocity).multiplyScalar(t);
-    helmet.position.y = Math.max(floor - launch.y, helmet.position.y - drop.gravity * t * t / 2);
-    helmet.position.x *= reach;
-    helmet.position.z *= reach;
-    helmet.rotation.set(initialSpin.x + drop.spin[0] * t, initialSpin.y + drop.spin[1] * t, initialSpin.z + drop.spin[2] * t);
+    if (helmet.parent === debris) {
+      helmet.position.copy(velocity).multiplyScalar(t);
+      helmet.position.y = Math.max(floor - launch.y, helmet.position.y - drop.gravity * t * t / 2);
+      helmet.position.x *= reach;
+      helmet.position.z *= reach;
+      helmet.rotation.set(initialSpin.x + drop.spin[0] * t, initialSpin.y + drop.spin[1] * t, initialSpin.z + drop.spin[2] * t);
+    }
 
     const scale = drop.stuffingSize * Math.max(0, 1 - age / drop.stuffingSeconds);
     for (const { mesh, scatter } of stuffing) {
@@ -240,6 +301,27 @@ export function createMascotModel(type, random) {
   return {
     root,
     releaseHead,
+    // Captain Coupon picks his helmet up off the floor: from here it rides in his hands (poseLift) until finishReclaim.
+    beginReclaim(zombie) {
+      pose(zombie, 1);
+      root.updateWorldMatrix(true, true);
+      root.attach(helmet); // (keeps it exactly where it lies)
+      liftFrom.copy(helmet.position);
+      liftFromTurn.copy(helmet.quaternion);
+    },
+    // ...and it is on again: back in its place, the green head hidden.
+    finishReclaim() {
+      upper.add(helmet);
+      helmet.position.set(...cfg.helmet.at);
+      helmet.quaternion.identity();
+      head.visible = false;
+    },
+    // He died with it in his hands: it falls with the body (and goes when the body does).
+    dropReclaim() {
+      if (helmet.parent !== root) return;
+      root.updateWorldMatrix(true, true);
+      upper.attach(helmet);
+    },
     updateHitboxes(zombie) {
       pose(zombie, 1);
       root.updateWorldMatrix(true, true);

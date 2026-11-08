@@ -254,7 +254,9 @@ export function createGame({
       melee: zombie.killedByMelee,
       source: zombie.killedBy,
     }),
-    onHeadPop: (zombie, { headshot, source }) => events.emit('mascotHeadPop', { zombie, headshot, source }),
+    // (`again`: the helmet came off a second time, after Captain Coupon put it back on)
+    onHeadPop: (zombie, { headshot, source }) => events.emit('mascotHeadPop', { zombie, headshot, source, again: zombie.mascotReclaims > 0 }),
+    onReclaim: (zombie) => events.emit('mascotReclaim', { zombie }),
     onSound: (name, volume) => sound.play(name, { volume }), // Mall Walker squeaks, huffs and pants
     navigation: map.navigation, // floors + the ramps between them (undefined = one ground floor)
   });
@@ -288,11 +290,16 @@ export function createGame({
   events.on('kill', ({ zombie }) => {
     if (!state.over) runStats.recordKill(zombie);
   });
-  // Knocking a Mascot's helmet off with a headshot pays a bonus: stuffings and hazards don't aim. Every costume has its own PA line.
-  events.on('mascotHeadPop', ({ zombie, headshot, source }) => {
-    if (state.over || !headshot || (source !== 'gun' && source !== 'melee')) return;
+  // Knocking a Mascot's helmet off with a headshot pays a bonus: stuffings and hazards don't aim. Every costume has its own
+  // PA line. A helmet Captain Coupon put back on pays nothing the second time (no farming him).
+  events.on('mascotHeadPop', ({ zombie, headshot, source, again }) => {
+    if (state.over || again || !headshot || (source !== 'gun' && source !== 'melee')) return;
     wallet.earn(economy.payouts.helmetPopBonus);
     hud.showAnnouncement({ ...zombie.type.mascot.helmetPopLine, priority: 0 });
+  });
+  events.on('mascotReclaim', ({ zombie }) => {
+    hud.showAnnouncement({ ...zombie.type.mascot.reclaim.line, priority: 1 });
+    sound.play('paChime');
   });
   events.on('playerHit', ({ damage, knockback }) => {
     health.takeDamage(damage);

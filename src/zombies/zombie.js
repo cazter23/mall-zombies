@@ -21,6 +21,8 @@
 //   charging        -> straight line at charge speed; hits the player once (damage + knockback) ->
 //   chargeRecover   -> stands a moment, then chasing again
 //   crashed         -> the cart's nose hit something or it ran out of charge: stunned, takes extra damage
+//   Mascots (type.mascot), still 'chasing': at half health the helmet pops (mascotHeadOff), it shakes (mascotRage),
+//   then rushes. Captain Coupon (mascot.reclaim) first walks back for his helmet (mascotSeek) and puts it on (mascotLift).
 //   dead     -> tips over, lies there, sinks away, then `removed` is set
 // =============================================================================
 
@@ -111,6 +113,15 @@ export class Zombie {
       this.mascotDropAge = null;
       this.mascotWalkPhase = 0;
       this.mascotRage = 0; // seconds left of the warning before the rush
+      this.mascotSuitedSpeed = this.speed; // (back to this when a helmet goes back on)
+      this.mascotHelmet = null; // its fallen helmet (the manager's handle: { rest, gone }) while one lies on the floor
+      // Captain Coupon (type.mascot.reclaim): seconds spent walking back to the helmet (-1 = not), seconds left of
+      // putting it back on (0 = not), helmets put back so far, and whether he gave up on this one.
+      this.mascotSeek = -1;
+      this.mascotLift = 0;
+      this.mascotReclaims = 0;
+      this.mascotGaveUp = false;
+      this.onReclaim = null; // optional callback(zombie, 'lift' | 'done'), set by the manager
     }
 
     // Shootable interface
@@ -131,6 +142,12 @@ export class Zombie {
 
   get horizontalSpeed() {
     return Math.hypot(this.velocity.x, this.velocity.z);
+  }
+
+  // Captain Coupon with his head off who still means to go back for it (his helmet must not be swept up meanwhile).
+  get mascotWantsHelmet() {
+    const reclaim = this.type.mascot?.reclaim;
+    return !!reclaim && this.isAlive && this.mascotHeadOff && !this.mascotGaveUp && this.mascotReclaims < reclaim.maxReclaims;
   }
 
   setState(state) {
@@ -193,6 +210,11 @@ export class Zombie {
   die() {
     this.setState('dead');
     this.velocity.set(0, 0, 0);
+    if (this.type.mascot) {
+      this.mascotSeek = -1;
+      if (this.mascotLift > 0) this.model.dropReclaim(); // (killed with his helmet in his hands: it goes down with him)
+      this.mascotLift = 0;
+    }
     if (this.onDeath) this.onDeath(this);
   }
 
@@ -356,12 +378,20 @@ export class Zombie {
       return;
     }
 
-    // The Mascot's warning: it stands and shakes, then rushes at full speed.
+    // The Mascot's warning: it stands and shakes, then rushes at full speed (Captain Coupon goes for his helmet instead).
     if (this.mascotRage > 0 && this.isAlive && this.state !== 'spawning') {
       this.mascotRage -= dt;
-      if (this.mascotRage <= 0) this.speed = this.type.mascot.exposedSpeed;
+      if (this.mascotRage <= 0) {
+        if (this.mascotWantsHelmet) this.mascotSeek = 0; // (updateReclaim gives up at once if the helmet has gone)
+        else this.speed = this.type.mascot.exposedSpeed;
+      }
       this.standStill(dt, ctx);
       this.faceToward(ctx.player.position, dt);
+      this.updateHitboxes();
+      return;
+    }
+    if ((this.mascotSeek >= 0 || this.mascotLift > 0) && this.isAlive && this.state !== 'spawning') {
+      this.updateReclaim(dt, ctx);
       this.updateHitboxes();
       return;
     }
@@ -527,6 +557,79 @@ export class Zombie {
   endCharge() {
     this.setState('chasing');
     this.chargeCooldown = this.type.charge.cooldownSeconds;
+  }
+
+  // --- Reclaim (Captain Coupon) ------------------------------------------------------
+  // After the pop and the shake he walks back to his fallen helmet (mascotHelmet.rest, kept on the floor by the
+  // manager). Within reachRadius he stops and spends reclaimSeconds putting it back on, then he's suited again with
+  // reclaimHealthFraction of his health. No attacks meanwhile. He gives up and rushes if the helmet is gone, if the
+  // player stands guard by it, or after giveUpSeconds. Only maxReclaims times.
+  updateReclaim(dt, ctx) {
+    const reclaim = this.type.mascot.reclaim;
+    if (this.mascotLift > 0) {
+      this.standStill(dt, ctx);
+      this.mascotLift = Math.max(0, this.mascotLift - dt);
+      if (this.mascotLift === 0) this.finishReclaim();
+      return;
+    }
+    const helmet = this.mascotHelmet;
+    this.mascotSeek += dt;
+    const p = ctx.player.position;
+    const guarded = helmet && Math.hypot(p.x - helmet.rest.x, p.z - helmet.rest.z) <= reclaim.guardRadius;
+    if (!helmet || helmet.gone || guarded || this.mascotSeek >= reclaim.giveUpSeconds) {
+      this.giveUpHelmet();
+      return;
+    }
+    const dx = helmet.rest.x - this.position.x;
+    const dz = helmet.rest.z - this.position.z;
+    const d = Math.hypot(dx, dz);
+    if (d <= reclaim.reachRadius) {
+      this.standStill(dt, ctx);
+      this.faceDirection(dx, dz, dt, Infinity);
+      this.mascotSeek = -1;
+      this.mascotLift = reclaim.reclaimSeconds;
+      this.model.beginReclaim(this); // (the helmet leaves the floor: it is in his hands now)
+      this.onReclaim?.(this, 'lift');
+      return;
+    }
+    this.walkToward(dx / d, dz / d, reclaim.walkSpeed * this.slowFraction, dt, ctx);
+    this.chaseSounds(dt, ctx);
+  }
+
+  finishReclaim() {
+    this.mascotHeadOff = false;
+    this.mascotDropAge = null; // (a second pop plays its sounds again)
+    this.mascotReclaims += 1;
+    this.mascotHelmet = null;
+    this.health = this.maxHealth * this.type.mascot.reclaim.reclaimHealthFraction;
+    this.speed = this.mascotSuitedSpeed;
+    this.model.finishReclaim();
+    this.setState('chasing');
+    this.onReclaim?.(this, 'done');
+  }
+
+  // Back to the normal Mascot: the rush (his helmet stays where it lies, like anyone else's).
+  giveUpHelmet() {
+    this.mascotSeek = -1;
+    this.mascotGaveUp = true;
+    this.speed = this.type.mascot.exposedSpeed;
+  }
+
+  // Straight at a spot (no route, no crowd: the helmet lies a step or two away, thrown short of walls).
+  walkToward(dirX, dirZ, speed, dt, { colliders }) {
+    let ax = dirX * speed - this.velocity.x;
+    let az = dirZ * speed - this.velocity.z;
+    const aLen = Math.hypot(ax, az);
+    const maxChange = this.type.mascot.exposedAcceleration * dt;
+    if (aLen > maxChange) {
+      ax *= maxChange / aLen;
+      az *= maxChange / aLen;
+    }
+    this.velocity.x += ax;
+    this.velocity.z += az;
+    this.velocity.y = Math.max(this.velocity.y - feel.movement.gravity * dt, -feel.movement.maxFallSpeed);
+    moveAndCollide(this.position, this.velocity, dt, this.type.radius, this.type.height, colliders, feel.movement.stepTolerance);
+    this.faceDirection(dirX, dirZ, dt);
   }
 
   // Stop where it stands (still falls if in the air): telegraphing, recovering, crashed.
@@ -733,6 +836,7 @@ export class Zombie {
   // Start over at another spot (the stuck-zombie failsafe): rise out of the floor again,
   // keeping its health.
   respawnAt(position, yaw) {
+    if (this.mascotSeek >= 0) this.giveUpHelmet(); // (a rescued Coupon is too far from his helmet to go back for it)
     this.confusion = null;
     this.dropHeight = 0; // (a rescued zombie rises like any other, wherever it first came from)
     this.observed = this.frozen = false;
