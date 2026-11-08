@@ -24,6 +24,29 @@ Cost, measured as an A/B against main's build at 42 fixed cameras (each benchmar
 main 317 calls / 46,632 triangles on average, this 317 / 46,657. Per view 0 to +4 calls (cinema stairs and workshop hall the most),
 the Food Court hedge saves one. The env map adds no calls (checked by removing it). Benchmark route runs in a hidden pane vary by
 up to ~140 calls per shot between runs, so they can't show differences this small.
+## 9 November 2026 - Upgrade colours: warranties are metal, builds are candy
+
+The old palette clashed: Premium purple was nearly Glitter, Platinum gold nearly Popcorn Butter (6 apart in Lab delta-E), Deluxe blue near Neon Tube, and the Standard
+green near Antifreeze. Now each system has its own colour language (config/gunStyle.js): the Extended Warranty is METAL (Deluxe steel, Premium gold, Platinum pearl that
+slowly shimmers between pearl tints; Renewal studs copper; the collar and tag are metallic with a sheen, and the HUD name, the seal and the Customer Service post-its follow
+the tier colours); the Build-A-Blaster is CANDY (the stuffing colour, with Fryer Oil moved to a red-orange and Popcorn Butter to cream); the quality sets how vivid and lit
+the pillow is (Understuffed washed out, Overstuffed saturated, glowing, with a hot white seam); and the Heart shows as a badge on the patch, a coloured plate with a cream
+shape (Headshot crosshair/crimson, Last Round bullet/blue, Reload ring/green, Every 5th star/amber), also on the order form and as a dot on the HUD chip.
+tests/upgradeColors.test.js keeps every warranty colour at least 30 delta-E from every stuffing (closest now 36), the stuffings 35 apart and the Heart badges 40 apart.
+Not done: the Attachments keep their store colours (they were already distinct), and the muzzle flash only takes the stuffing colour (no gold glint for a warranty).
+
+## 9 November 2026 - Gun upgrades you can see, and the Extended Warranty rework
+
+Looked at from behind the gun, a Warranty seal and a Build-A-Blaster patch were tiny stickers on the face you rarely see, and the build's patch covered the warranty seal
+(both sat on the same mount). Now each system has its own zone on the gun, all readable at once (config/gunStyle.js): the WARRANTY is the barrel collar (one blue ring, two
+purple, then a wide gold block with two dark stripes and a gem, a gold stud on top per Renewal) plus a tag swinging off the grip; the BUILD puffs the body (a stuffed pillow each
+side, bigger with the quality, the patch riding on it, a glowing seam on top, and the muzzle flash in the stuffing's colour); ATTACHMENTS are drawn 1.2x chunkier.
+The HUD shows the same under the gun's name: Renewal stars, a swatch with the build's quality and stuffing, and a pip per attachment slot.
+tools/gunSheet.html (npm run dev, then /tools/gunSheet.html?gun=nailGun&view=left) shows one gun in eight states side by side.
+Warranties reworked (game/warranty.js): Deluxe is handling (x1.1 damage, +25% magazine, -15% reload, 1,000), Premium is damage (x1.45, 3,000), Platinum is the most damage
+(x1.65) and a CLAIM: a completely dry gun gets its ammo replaced once per round (6,000). Past Platinum the desk sells Warranty Renewals (5, each x1.06 damage and x1.03
+magazine, 3,000 up to 10,000). A replaced gun leaves its warranty on file; the desk moves it onto the gun in hand for a quarter of that tier's price. Not done: a visible
+cue on the gun for the build's quality beyond the pillow size, and the other seven guns' collars were only checked on a contact sheet, not in hand.
 
 ## 8 November 2026 — Idle saver (focus mode)
 

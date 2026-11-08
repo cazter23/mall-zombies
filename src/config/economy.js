@@ -103,7 +103,8 @@ export const economy = {
     // PLACEHOLDER PRICES: ritual and restuff are not decided yet (the economy simulation sets them). Limited Editions keep their old prices here for
     // that decision, but nothing charges them now: since phase 6 they drop free (game/features/limitedEditions.js).
     workshop: { partyTrap: 1500, clearanceRack: 1000, ritual: 1500, restuff: 750 },
-    tiers: { deluxe: 1500, premium: 3000, platinum: 6000 }, // (the support upgrade: a build, 1500, hits harder than any single tier)
+    tiers: { deluxe: 1000, premium: 3000, platinum: 6000 },
+    renewals: [3000, 4000, 5500, 7500, 10000], // Warranty Renewals past Platinum (config/upgrades.js renewals), each dearer than the last // (the support upgrade: a build, 1500, hits harder than any single tier)
     attachments: {
       extendedNozzle: 1000, sawnOff: 1000, // barrel (Mega Mart hardware)
       laserPointer: 750, zoomLens: 750, // sight (Byte Me Electronics)

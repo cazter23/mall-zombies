@@ -17,13 +17,22 @@
 // =============================================================================
 
 import { economy } from '../config/economy.js';
+import { upgrades } from '../config/upgrades.js';
 
 const BASE = {
   door: (id) => economy.doors[id],
   weapon: (id) => economy.wallBuys[id]?.weapon,
   ammo: (id) => economy.wallBuys[id]?.ammo,
   ammoCache: () => economy.ammoCache.price,
-  tier: (id) => (Object.hasOwn(economy.upgrades.tiers, id) ? economy.upgrades.tiers[id] : undefined),
+  // A tier ('deluxe'), a Warranty Renewal ('renewal1'..), or moving a warranty on file onto the gun in hand ('transfer:premium': a share of that tier's price).
+  tier: (id) => {
+    if (Object.hasOwn(economy.upgrades.tiers, id)) return economy.upgrades.tiers[id];
+    const renewal = /^renewal(\d+)$/.exec(id);
+    if (renewal) return economy.upgrades.renewals[Number(renewal[1]) - 1];
+    const transfer = /^transfer:(\w+)$/.exec(id);
+    if (transfer && Object.hasOwn(economy.upgrades.tiers, transfer[1])) return Math.round(economy.upgrades.tiers[transfer[1]] * upgrades.transfer.feeFraction);
+    return undefined;
+  },
   workshop: (id) => (Object.hasOwn(economy.upgrades.workshop, id) ? economy.upgrades.workshop[id] : undefined),
   attachment: (id) => (Object.hasOwn(economy.upgrades.attachments, id) ? economy.upgrades.attachments[id] : undefined),
 };

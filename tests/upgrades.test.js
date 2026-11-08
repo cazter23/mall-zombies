@@ -53,7 +53,7 @@ test('every tier works on every gun: whole magazines (whole bursts), the cannon 
   assert.equal(at(foamDartBlaster, 'platinum').magazineSize, 36); // 30 x 1.2, in whole bursts of 3
   const cannon = at(confettiCannon, 'platinum');
   assert.ok(Math.abs(cannon.shellReload.shellSeconds - confettiCannon.shellReload.shellSeconds * fx('platinum').reload) < 1e-9);
-  assert.ok(Math.abs(at(nailGun, 'premium').reloadTime - nailGun.reloadTime * fx('premium').reload) < 1e-9);
+  assert.ok(Math.abs(at(nailGun, 'deluxe').reloadTime - nailGun.reloadTime * fx('deluxe').reload) < 1e-9);
 });
 
 test('each tier keeps a gun killing in round-8 shot counts until its holdsUntilRound (and is priced)', () => {

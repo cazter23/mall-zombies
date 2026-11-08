@@ -22,6 +22,8 @@
 import * as THREE from 'three';
 import { createWorkshopVisual } from './workshopBuilds.js';
 import { createBuildVisual } from './buildVisual.js';
+import { createWarrantyTrim } from './warrantyTrim.js';
+import { gunStyle } from '../../config/gunStyle.js';
 import { createLoanerTag } from './loanerTag.js';
 import { upgrades } from '../../config/upgrades.js';
 import { attachmentVisuals } from '../../config/attachmentVisuals.js';
@@ -421,7 +423,7 @@ export function createUpgradeVisuals(model, gun = model.root) {
     if (mount) {
       const adjusted = { ...mount, position: [...mount.position] };
       const scale = profile ? (id === 'zoomLens' ? profile.optic : id === 'laserPointer' ? profile.laser : ['jumboPack', 'speedLoader'].includes(id) ? profile.pack : 1) : 1;
-      adjusted.scale = (mount.scale ?? 1) * scale;
+      adjusted.scale = (mount.scale ?? 1) * scale * gunStyle.attachmentScale; // (very stylized: chunkier than the shop designs)
       if (id === 'zoomLens' && profile?.opticX) adjusted.position[0] = profile.opticX;
       if (id === 'laserPointer') adjusted.position[0] = profile?.laserX ?? -mount.position[0]; // visible near-side rail
       const part = buildAttachmentPart(id, mount);
@@ -468,25 +470,28 @@ export function createUpgradeVisuals(model, gun = model.root) {
 
   const workshopVisual = createWorkshopVisual(model, gun);
   const buildVisual = createBuildVisual(gun, mounts);
+  const warrantyTrim = createWarrantyTrim(gun, mounts);
   const loanerTag = createLoanerTag(gun, mounts);
 
   // The Extended Nozzle carries the muzzle (and its flash) forward to its tip.
   const muzzleHome = model.muzzle.position.clone();
-  const nozzleScale = mounts.barrel?.scale ?? 1;
+  const nozzleScale = (mounts.barrel?.scale ?? 1) * gunStyle.attachmentScale;
   const nozzleMovesMuzzle = (mounts.barrel?.parent ?? gun) === model.muzzle.parent;
   let shownKey = null;
 
   return {
     parts,
-    show({ tier = 'standard', attachments = {}, workshop, workshopCount = 0, build = null, loaner = false, time = 0 } = {}) {
+    show({ tier = 'standard', renewals = 0, attachments = {}, workshop, workshopCount = 0, build = null, loaner = false, time = 0 } = {}) {
       workshopVisual?.setCount(workshopCount);
       buildVisual.animate(time);
+      warrantyTrim.animate(time);
       loanerTag.animate(time);
-      const key = `${tier}|${Object.values(attachments).join(',')}|${workshop ?? ''}|${build?.stuffing ?? ''}|${build?.quality ?? ''}|${loaner}`;
+      const key = `${tier}|${renewals}|${Object.values(attachments).join(',')}|${workshop ?? ''}|${build?.stuffing ?? ''}|${build?.quality ?? ''}|${loaner}`;
       if (key === shownKey) return;
       shownKey = key;
       workshopVisual?.show(workshop === workshopVisual.id);
       buildVisual.show(build);
+      warrantyTrim.show(tier, renewals);
       loanerTag.show(loaner);
       const fitted = new Set(Object.values(attachments));
       for (const [id, holder] of Object.entries(parts)) holder.visible = fitted.has(id);

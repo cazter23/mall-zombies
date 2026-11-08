@@ -32,9 +32,9 @@ import { createSpring, createSpring3 } from '../core/spring.js';
 import { samplePose } from '../core/keyframes.js';
 import { buildWeaponModel } from './models/index.js';
 import { createMuzzleFlash } from './muzzleFlash.js';
-import { workshopModOf, buildOf } from '../config/workshop.js';
+import { workshopModOf, buildOf, workshopStuffings } from '../config/workshop.js';
 import { createUpgradeVisuals } from './models/upgradeParts.js';
-import { tierOf, attachmentsOf } from './upgrades.js';
+import { tierOf, attachmentsOf, renewalsOf } from './upgrades.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 const clamp = (v, max) => Math.max(-max, Math.min(max, v));
@@ -209,7 +209,7 @@ export function createViewmodel(weaponDefs, meleeDef) {
         rk.yawDegrees * DEG_TO_RAD * m * randomSide(),
         rk.rollDegrees * DEG_TO_RAD * m * randomSide(),
       );
-      active.flash.trigger(aimAmount);
+      active.flash.trigger(aimAmount, workshopStuffings[buildOf(def.modList ?? [])?.stuffing]?.color ?? null); // (a built gun's flash is its stuffing's colour)
       sinceFire = 0;
       // A shot ends any reload pose at once (a shell-by-shell gun fired mid-reload: barrels snap shut
       // for the shot instead of easing closed over reloadBlendOutSeconds with the flash showing open).
@@ -242,7 +242,7 @@ export function createViewmodel(weaponDefs, meleeDef) {
       const { model, flash } = active;
       // Show this gun's upgrades (shownDef is the resolved gun: its mods say which tier and attachments).
       const mods = shownDef.modList ?? [];
-      active.upgrades.show({ tier: tierOf(mods), attachments: attachmentsOf(mods), workshop: workshopModOf(mods),
+      active.upgrades.show({ tier: tierOf(mods), renewals: renewalsOf(mods), attachments: attachmentsOf(mods), workshop: workshopModOf(mods),
         workshopCount: weapon.def.id === shownDef.id ? weapon.clearanceTagCount : 0, build: buildOf(mods), loaner: !!shownDef.loaner, time });
       const look = active.def.viewmodel;
       const ads = active.def.ads.offset;

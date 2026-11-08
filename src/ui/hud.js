@@ -203,11 +203,14 @@ export function createHud() {
     <div class="ammo-count"><span class="ammo-mag"></span><span class="ammo-reserve"></span></div>
     <div class="ammo-name"></div>
     <div class="ammo-tier"></div>
+    <div class="ammo-upgrades"></div>
   `;
   const ammoMag = ammo.querySelector('.ammo-mag');
   const ammoReserve = ammo.querySelector('.ammo-reserve');
   const ammoName = ammo.querySelector('.ammo-name');
   const ammoTier = ammo.querySelector('.ammo-tier');
+  const ammoUpgrades = ammo.querySelector('.ammo-upgrades');
+  let lastUpgradeKey = null;
   let lastTierKey = null;
   hud.append(ammo);
   let lastAmmoKey = '';
@@ -480,7 +483,38 @@ export function createHud() {
       ammoTier.classList.toggle('show', show);
       if (!show) return;
       ammoTier.textContent = tier.name;
+      ammoTier.dataset.tier = tier.id; // (Platinum shimmers: retail.css)
       ammoTier.style.color = `#${tier.color.toString(16).padStart(6, '0')}`;
+    },
+
+    // The held gun's upgrades as a row of chips under its name, so you never need to inspect it: Warranty Renewals (gold stars), the Build-A-Blaster
+    // build (a swatch in the stuffing's colour and its quality) and one pip per attachment slot (lit when fitted). Called every frame; only touches the DOM on a change.
+    // info: { renewals, build: { color, label } | null, slots: [{ name, fitted }] }
+    // build.accent: the Heart's colour (config/gunStyle.js heart), a second dot after the stuffing's swatch.
+    setUpgradeRow(info) {
+      const key = info ? `${info.renewals}|${info.build?.color}|${info.build?.accent}|${info.build?.label}|${info.slots.map((x) => (x.fitted ? 1 : 0)).join('')}` : '';
+      if (key === lastUpgradeKey) return;
+      lastUpgradeKey = key;
+      const chips = [];
+      const chipOf = (className, text) => { const chip = el('span', className); if (text) chip.textContent = text; return chip; };
+      if (info?.renewals) chips.push(chipOf('upgrade-chip upgrade-stars', '★'.repeat(info.renewals)));
+      if (info?.build) {
+        const chip = chipOf('upgrade-chip upgrade-build', info.build.label);
+        chip.style.setProperty('--swatch', `#${info.build.color.toString(16).padStart(6, '0')}`);
+        if (info.build.accent !== null) chip.style.setProperty('--accent', `#${info.build.accent.toString(16).padStart(6, '0')}`); // the Heart's badge colour
+        chips.push(chip);
+      }
+      if (info?.slots.some((x) => x.fitted)) {
+        const pips = chipOf('upgrade-chip upgrade-pips');
+        for (const slot of info.slots) {
+          const pip = el('i', slot.fitted ? 'on' : '');
+          pip.title = slot.name;
+          pips.append(pip);
+        }
+        chips.push(pips);
+      }
+      ammoUpgrades.replaceChildren(...chips);
+      ammoUpgrades.classList.toggle('show', chips.length > 0);
     },
 
     // Called every frame with the held weapon; only touches the DOM when something changed.
@@ -536,7 +570,7 @@ export function createHud() {
       interactOriginal.hidden = !info.sale || !(info.originalCost > info.cost);
       interactOriginal.textContent = `${(info.originalCost ?? info.cost).toLocaleString('en-US')}`;
       // Ordinary purchases need one line. Keep the terms only where they affect an upgrade decision.
-      const detail = ['attachment', 'workshop', 'ritual'].includes(info.kind) ? info.detail ?? '' : info.kind === 'tier' ? 'Ammo not included' : '';
+      const detail = ['attachment', 'workshop', 'ritual', 'tier'].includes(info.kind) ? info.detail ?? '' : '';
       if (detail !== lastInteractDetail) {
         lastInteractDetail = detail;
         interactDetail.replaceChildren(...detail.split(' · ').filter(Boolean).map(term => {

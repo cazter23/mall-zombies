@@ -9,7 +9,7 @@ import { featuresOf } from '../src/game/features/index.js';
 import { economy } from '../src/config/economy.js';
 import { weapons } from '../src/config/weapons.js';
 import { upgrades } from '../src/config/upgrades.js';
-import { tierOf } from '../src/weapons/upgrades.js';
+import { tierOf, renewalsOf } from '../src/weapons/upgrades.js';
 import { LAYOUT } from '../src/maps/mall/mall.js';
 import { overlapsSolid } from '../src/world/collision.js';
 
@@ -83,7 +83,18 @@ test('buying tiers at the desk: one at a time, charged from pricing, gun in hand
   assert.equal(g.gun.def.damage, weapons.stapleGun.damage * upgrades.tiers.at(-1).effects.damage);
   stand();
   t.tick(2);
-  assert.equal(g.interactions.prompt, null, 'no prompt once Platinum');
+  assert.equal(g.interactions.prompt.label, 'Staple Gun → Renewal 1', 'past Platinum the desk sells Warranty Renewals');
+  g.wallet.earn(40_000);
+  points = g.wallet.points;
+  for (let n = 1; n <= upgrades.renewals.max; n++) {
+    buy();
+    assert.equal(renewalsOf(g.gun.modsFor('stapleGun')), n, `renewal ${n} bought`);
+    assert.equal(points - g.wallet.points, economy.upgrades.renewals[n - 1], `renewal ${n} price`);
+    points = g.wallet.points;
+  }
+  stand();
+  t.tick(2);
+  assert.equal(g.interactions.prompt, null, 'no prompt once every renewal is bought');
   buy();
   assert.equal(g.wallet.points, points, 'and nothing more to pay');
 });
@@ -118,7 +129,7 @@ test('the Platinum purchase frame and a switch to a Platinum gun have no stale d
   t.input.held.delete('KeyF');
   assert.equal(tierOf(g.gun.modsFor('stapleGun')), 'platinum');
   assert.equal(before - g.wallet.points, economy.upgrades.tiers.platinum);
-  assert.equal(g.interactions.prompt, null, 'safe to render immediately after buying the final tier');
+  assert.equal(g.interactions.prompt?.label, 'Staple Gun → Renewal 1', 'safe to render immediately after buying the final tier: the next offer, not the tier just bought');
 
   g.gun.give(weapons.priceGun); t.tick(40);
   stand();
@@ -127,7 +138,7 @@ test('the Platinum purchase frame and a switch to a Platinum gun have no stale d
   assert.equal(g.interactions.prompt, null, 'safe to render the first switching frame');
   t.tick(40);
   assert.equal(g.gun.def.id, 'stapleGun');
-  assert.equal(g.interactions.prompt, null, 'Platinum gun is not upgradeable');
+  assert.equal(g.interactions.prompt.label, 'Staple Gun → Renewal 1', 'a Platinum gun is offered a Renewal, not a tier');
   t.press('Digit2'); t.tick(40); stand();
   assert.equal(g.interactions.prompt.label, 'Price Gun → Deluxe', 'the other gun remains upgradeable');
 });
