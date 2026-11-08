@@ -255,3 +255,5 @@ the model and debris and disposes their shared geometry and materials.
 - `visualEffects.test.js`: Visual effects High / Low / Off on a stand-in renderer (Off skips the composer), and the Video presets that set it.
 - `zoneGrading.test.js`: each area's colour grade, easing between areas, the setting, and every Graphics preset deciding it.
 - `docs.test.js`: every file in src/ has an entry in docs/folder-structure.md, every test file is described here, and every doc CLAUDE.md links to exists.
+
+`tests/uiInformationPriority.test.js` checks exhausted reward visibility, first-activation benefit teaching, live timers/charges on repeat pickups, run reset, and workshop countdown/quality priority.

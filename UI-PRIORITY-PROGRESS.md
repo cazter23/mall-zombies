@@ -25,3 +25,5 @@ Resume/review: work in this worktree on codex/ui-information-priority. Run npm r
 with an unused port for manual review. Do not merge into main unless requested.
 
 Dependencies: node_modules junction uses the existing main checkout installation (no dependency installation required).
+
+Merged into main in 4f829b7. The earlier do-not-merge note described the pre-approval checkpoint; the user subsequently authorized the merge.
