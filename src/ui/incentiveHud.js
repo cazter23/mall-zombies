@@ -20,12 +20,27 @@ export function createIncentiveHud() {
   heading.textContent = 'Employee rewards';
   element.append(heading, label, progress, drop, zone);
   let lastKey = '';
+  const taught = new Set();
+  let activeIds = new Set(), teaching = new Set();
   return {
     element,
+    reset() { taught.clear(); activeIds.clear(); teaching.clear(); lastKey = ''; element.hidden = true; },
     update(status) {
       element.hidden = !status;
       if (!status) return;
       const { pickup, active, available, effects = [] } = status;
+      const ids = new Set(effects.map(effect => effect.id));
+      if (active) ids.add('blueLightSpecial');
+      for (const id of ids) if (!activeIds.has(id)) {
+        if (!taught.has(id)) { teaching.add(id); taught.add(id); } else teaching.delete(id);
+      }
+      for (const id of activeIds) if (!ids.has(id)) teaching.delete(id);
+      activeIds = ids;
+      const showProgress = available && status.round >= powerUps.firstRound;
+      element.hidden = !showProgress && !pickup && !active && !effects.length;
+      heading.hidden = !showProgress;
+      label.hidden = !showProgress;
+      progress.hidden = !showProgress;
       const percent = Math.floor(status.progress * 100);
       const benefitText = effects.map(effect => {
         const def = powerUps.types[effect.id];
@@ -42,13 +57,13 @@ export function createIncentiveHud() {
       const rows = effects.map(effect => {
         const def = powerUps.types[effect.id];
         const count = effect.charges != null ? ` · ${effect.charges} LEFT` : effect.healing != null ? ` · ${Math.ceil(effect.healing)} HP LEFT` : '';
-        return { title: `${def.name} · ${Math.ceil(effect.remaining)}s${count}`, hint: def.hint };
+        return { title: `${def.name} · ${Math.ceil(effect.remaining)}s${count}`, hint: def.hint, teach: teaching.has(effect.id) };
       });
-      if (active) rows.unshift({ title: `BLUE LIGHT SPECIAL · ${Math.ceil(active.remaining)}s`, hint: 'DOUBLE KILL CREDIT IN BLUE ZONE' });
-      zone.replaceChildren(...rows.map(({ title, hint }) => {
+      if (active) rows.unshift({ title: `BLUE LIGHT SPECIAL · ${Math.ceil(active.remaining)}s`, hint: 'DOUBLE KILL CREDIT IN BLUE ZONE', teach: teaching.has('blueLightSpecial') });
+      zone.replaceChildren(...rows.map(({ title, hint, teach }) => {
         const row = document.createElement('div'); row.className = 'incentive-effect';
         const name = document.createElement('strong'); name.textContent = title;
-        const detail = document.createElement('span'); detail.textContent = hint;
+        const detail = document.createElement('span'); detail.textContent = hint; detail.hidden = !teach;
         row.append(name, detail);
         return row;
       }));
