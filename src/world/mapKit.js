@@ -154,15 +154,18 @@ export function createMapKit(group, colliders) {
   /**
    * A 0.2m floor slab (top at y = 0) with a procedural tile texture (1 texture repeat = 2m).
    * `top`, `thickness` and `collide` place it elsewhere: a thin tiled skin over an existing floor (collide: false).
+   * `textureOptions.roughness` overrides the shared tile surface's (a matte floor has softer lamp glare).
    */
   function tiledFloor(minX, minZ, maxX, maxZ, textureOptions, { top = 0, thickness = 0.2, collide = true } = {}) {
-    const texture = makeTileTexture(textureOptions);
+    const { roughness, ...tileOptions } = textureOptions ?? {};
+    const texture = makeTileTexture(tileOptions);
     texture.repeat.set((maxX - minX) / 2, (maxZ - minZ) / 2);
     const roughnessMap = makeTileRoughness();
     roughnessMap.repeat.copy(texture.repeat);
     const bumpMap = makeTileBump();
     bumpMap.repeat.copy(texture.repeat);
-    const material = new THREE.MeshStandardMaterial({ map: texture, roughnessMap, bumpMap, ...atmosphere.surfaces.tile });
+    const material = new THREE.MeshStandardMaterial({ map: texture, roughnessMap, bumpMap, ...atmosphere.surfaces.tile,
+      ...(roughness != null ? { roughness } : {}) });
     return box(minX, top - thickness, minZ, maxX, top, maxZ, material, { name: 'floor', collide });
   }
 

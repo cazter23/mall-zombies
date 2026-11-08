@@ -2,14 +2,17 @@
 // THE HORROR LAYER (map feature kind 'horror'): the mall falls apart as the rounds climb. Visual only: it never touches
 // zombies, points or collision. From config/look.js `horror`, reading the map's hooks (map.horror):
 //   round mood    past fromRound the whole mall darkens a little every round (state.exposure, read by zone lighting)
-//   neon failure  a growing share of the flickering neon letters and tubes dies for good (slogans lose letters)
+//   neon failure  a growing share of the flickering neon letters and tubes dies for good (slogans lose letters), and every
+//                 tube, steady ones too, loses some brightness (brownout)
+//   late hours    the view drifts towards the `lateHours` grade (state.decay 0..1, read by zone lighting): greyer, harder,
+//                 the screen edges closing in, on top of each area's own grade
 //   dying lamps   one more lamp flickers out every few rounds, for the rest of the run
 //   power cuts    now and then the area you're in loses power for a few seconds: its lamps and neon go dark and zone
 //                 lighting drops it to emergency red (state.cut), then the power stutters back
 // Listens to 'roundStart'; Play again (reset) puts every light back. Comfort > Horror lighting (look.runtime.horror) off
 // = none of it. Random choices are seeded per run (feature.seed), so tests can follow them.
 //
-// map.horror = { state: { exposure, cut }, lamps: [PointLight], neons: { name: neon builder },
+// map.horror = { state: { exposure, decay, cut }, lamps: [PointLight], neons: { name: neon builder },
 //               areas: [{ id, grades: [zone lighting grade ids], neons: [names] }] }   (a lamp's area = the grade where it hangs)
 // =============================================================================
 
@@ -76,7 +79,12 @@ export function buildHorror(feature, { map, events, rounds, player }) {
     const steps = past();
     state.exposure = 1 - Math.min(cfg.darkness.max, steps * cfg.darkness.perRound);
     const failure = Math.min(cfg.neonFailure.max, steps * cfg.neonFailure.perRound);
-    for (const n of neons) n.setFailures(failure);
+    const brownout = Math.min(cfg.neonBrownout.max, steps * cfg.neonBrownout.perRound);
+    for (const n of neons) {
+      n.setFailures(failure);
+      n.setBrownout?.(brownout);
+    }
+    state.decay = Math.min(cfg.decay.max, steps * cfg.decay.perRound);
     const deadTarget = steps > 0
       ? Math.min(Math.floor(lamps.length * cfg.lampDeaths.maxShare), 1 + Math.floor((steps - 1) / cfg.lampDeaths.everyRounds))
       : 0;
@@ -89,8 +97,10 @@ export function buildHorror(feature, { map, events, rounds, player }) {
     endCut();
     pendingCut = null;
     state.exposure = 1;
+    state.decay = 0;
     for (const n of neons) {
       n.setFailures(0);
+      n.setBrownout?.(0);
       n.setPower(1);
     }
     for (const l of lamps) {

@@ -22,6 +22,10 @@ export const parkingDetails = {
     notices: [{ z: -17, text: 'DELIVERIES 06:00–08:00', sub: 'DRIVERS MUST SIGN IN' },
       { z: -.2, text: 'CCTV IN OPERATION', sub: 'MANAGEMENT IS ALWAYS WATCHING' }],
     roofUnits: [[34.65, 5.8, -19.4], [34.65, 5.8, -14.2]],
+    // A faded painted advert from opening year, between the vents and the downpipe. Posters are unlit, so these are the
+    // wall's colour AT DUSK (as rendered), barely lighter: paint that has nearly gone, not a lit billboard.
+    ghostSign: { z: -11.4, y: 2.45, width: 8, height: 2, text: 'SUNSET GALLERIA', sub: 'GRAND OPENING · FALL 1986',
+      wall: '#806b5e', ink: '#a08878' },
   },
   vehicle: {
     plates: ['SUN-086', 'SAME-DAY', 'RV-4EVER'],

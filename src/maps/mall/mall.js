@@ -315,7 +315,11 @@ export function buildMall(scene, colliders) {
   // boarded-up landing you can see up there.
   const E = LAYOUT.escalator;
   const upperY = H.height + 0.3; // level 2 floor = top of the hallway ceiling
-  const escalator = props.escalator({ ...E, upperY, ceilingY: H.height });
+  const escalator = props.escalator({
+    ...E, upperY, ceilingY: H.height, cladding: COLORS.escalatorCladding,
+    skirtSign: { text: look.hallway.satire.escalator[0], subtext: look.hallway.satire.escalator[1], width: 2.4, height: 0.8,
+      background: look.hallway.backing, color: '#ffd6ec' },
+  });
   const ceilingHoles = [escalator.hole, ...LAYOUT.level2.voids]; // the escalator well + the balcony voids
   kit.slab({ minX: H.minX - T, maxX: H.maxX + T, minZ: H.minZ - T, maxZ: H.maxZ + T }, H.height, upperY, mat(look.hallway.ceiling), {
     holes: ceilingHoles, name: 'ceiling',
@@ -501,7 +505,7 @@ export function buildMall(scene, colliders) {
   props.bench(-8, FZ + 3.9, -5.6, FZ + 4.5);
   props.bench(5.6, FZ + 3.9, 8, FZ + 4.5);
 
-  props.planter(-1.8, FZ - 2.8, 1.8, FZ - 1.2, { tree: true });
+  props.planter(-1.8, FZ - 2.8, 1.8, FZ - 1.2, { hedge: true }); // (low: a tree here hid FRESH MEAT DAILY and WOK THIS WAY)
   props.planter(-19.4, FZ - 0.7, -18, FZ + 0.7);
   // Two end planters frame the shortcut, leaving its full width and approaches clear.
   props.planter(18, FM.minZ - 2.0, 19.4, FM.minZ - 0.6);
@@ -906,7 +910,7 @@ export function buildMall(scene, colliders) {
   buildWorkshopDetails({ kit, looks, layout: LAYOUT.level2, floorY: upperY }); // (Build-A-Blaster's shop and hall dressing)
   buildSeamDetails({ kit, looks, props, floorY: upperY }); // where HOFFMAN'S meets the cinema (the connector's receiving door, the cinema's Promenade front)
   const cinemaDetails = buildCinemaDetails({ kit, looks, layout: LAYOUT.cinema, floorY: upperY });
-  dressCinemaStairs({ looks, layout: LAYOUT.cinemaStairs });
+  dressCinemaStairs({ kit, looks, layout: LAYOUT.cinemaStairs, floorY: upperY });
   buildCinemaServiceDetails({ kit, looks, cinema: LAYOUT.cinema, stairs: LAYOUT.cinemaStairs, floorY: upperY });
   buildAtriumLook({ looks, layout: LAYOUT, upperY, keepClear: hallwayClear.slice(0, -2) });
   buildDepartmentStoreLook({ looks, kit, layout: LAYOUT, keepClear: hallwayClear.slice(0, -2) });
@@ -914,7 +918,7 @@ export function buildMall(scene, colliders) {
   // The horror layer (game/features/horror.js, config/look.js horror): which lamps and neon it may kill, area by area
   // (areas are zone lighting's grades, so a power cut darkens the same space its grade covers).
   const horror = {
-    state: { exposure: 1, cut: null }, // read by zone lighting (main.js)
+    state: { exposure: 1, decay: 0, cut: null }, // read by zone lighting (main.js)
     lamps,
     neons: looks.parts.neonsByName,
     areas: [

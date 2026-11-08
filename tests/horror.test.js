@@ -30,9 +30,15 @@ test('nothing before round 5; then darker every round, neon letters die for good
   assert.ok(dead9 >= 1, 'a lamp has gone out');
   assert.ok(dead9 <= Math.floor(g.map.horror.lamps.length * look.horror.lampDeaths.maxShare));
 
+  const decay9 = g.map.horror.state.decay;
+  assert.ok(decay9 > 0 && decay9 < 1, `round 9 drifts towards the late-hours grade (${decay9})`);
+  assert.ok(neonsOf(g).every((n) => n.brownout > 0), 'every area\'s neon has dimmed, steady tubes too');
+
   g.rounds.jumpTo(30);
   tick(Math.ceil(look.horror.lampDeaths.flickerSeconds * 60) + 5);
   assert.equal(g.map.horror.state.exposure, 1 - look.horror.darkness.max, 'darkness is capped');
+  assert.equal(g.map.horror.state.decay, look.horror.decay.max, 'late hours are capped');
+  assert.ok(neonsOf(g).every((n) => n.brownout === look.horror.neonBrownout.max), 'brownout is capped');
   assert.ok(deadLamps(g) >= dead9, 'dead lamps stay dead');
   assert.ok(deadLamps(g) <= Math.floor(g.map.horror.lamps.length * look.horror.lampDeaths.maxShare), 'never more than the cap');
 });
@@ -95,6 +101,8 @@ test('Horror lighting off puts everything back at once; Play again restores ever
   assert.equal(deadLamps(g), 0);
   assert.equal(failedParts(g), 0);
   assert.equal(g.map.horror.state.exposure, 1);
+  assert.equal(g.map.horror.state.decay, 0);
+  assert.ok(neonsOf(g).every((n) => n.brownout === 0), 'every tube back to full brightness');
   assert.equal(director(g).state.round, 0);
   const fresh = headlessGame();
   assert.deepEqual(snapshot(g), snapshot(fresh.g));

@@ -126,6 +126,9 @@ export function buildParkingDetails({ kit, looks }) {
         box('vent_louvre', wallX + .18, y, v.z, .06, .025, v.width - .05, metal, [0, 0, -.2]);
       }
     }
+    // The ghost sign: a faded painted advert, 2.5 cm in front of the weathering.
+    const g = D.facade.ghostSign;
+    looks.poster('ghost', { text: g.text, sub: g.sub, wall: g.wall, ink: g.ink }, wallX + .05, g.y, g.z, g.width, g.height, 'x+');
     const b = D.facade.cabinet;
     box('power_cabinet', b.x, b.height / 2, b.z, b.width, b.height, b.depth, mat(0x82918b));
     kit.addCollider(b.x - b.width / 2, 0, b.z - b.depth / 2, b.x + b.width / 2, b.height, b.z + b.depth / 2);

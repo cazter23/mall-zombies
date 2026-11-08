@@ -1,5 +1,30 @@
 # Sunset Galleria: build history ("Current state")
 
+## 8 November 2026 - Visual review pass: metal, rails, late rounds, bare walls
+
+A visual review of every area (screenshots at eye height, High graphics) found a few cheap, mall-wide problems, fixed here:
+- Metal rendered nearly black: the scene has no environment map, so steel, chrome and brass had nothing to reflect (the hallway
+  escalator read as a charcoal column). fx/metalSheen.js bakes a 64 x 32 gradient once (config/look.js metalSheen) and gives it to
+  metal materials only (296 meshes), after static batching. Lighting the whole scene with it washed every wall out instead.
+- Balcony handrails used the escalator's black rubber colour and drew a black bar across the view over every balcony; they are
+  brass now (palette balustradeRail; escalator handrails stay black). The hallway escalator is clad in the wainscot lavender with a
+  RIDE AT YOUR OWN RISK panel on each side.
+- The horror layer barely showed at round 21 (only real lamps and flickering letters changed; painted light hid it). Now every
+  neon tube browns out too (neon.setBrownout, look.horror.neonBrownout) and the view drifts to a lateHours grade (look.horror.decay),
+  MULTIPLIED onto each area's grade so dark back-of-house rooms only get darker.
+- Sightlines: the Food Court tree hid FRESH MEAT DAILY and WOK THIS WAY (now a low hedge); the Atrium court trees hid the kiosks
+  (now tall: canopy above the signs, at the ring's level); the hallway's FOOD COURT sign sat behind the start door's lintel seen
+  from the back of the start room (4.3 -> 3.9 m). Planters turn and size their foliage by position, so repeats don't look copied.
+- Bare walls dressed: cinema stairwell (two wayfinding stripes that follow the flight, LEVEL marks, a notice and Dale), the
+  workshop hall's side walls (a banner, Dale, two notices), two Level 2 banners, and a ghost sign painted on the parking facade
+  (new poster kind 'ghost': unlit, so its colours are the wall's at dusk). The hallway terrazzo is matter, with more tile variation.
+- Checked and left alone: the PA card looked faint in screenshots, but a hidden pane does not advance CSS animations (it is opaque
+  in play); the receipt's buttons are sticky by design and the whole receipt scrolls clear of them.
+Cost, measured as an A/B against main's build at 42 fixed cameras (each benchmark shot's start, middle and end, culling updated):
+main 317 calls / 46,632 triangles on average, this 317 / 46,657. Per view 0 to +4 calls (cinema stairs and workshop hall the most),
+the Food Court hedge saves one. The env map adds no calls (checked by removing it). Benchmark route runs in a hidden pane vary by
+up to ~140 calls per shot between runs, so they can't show differences this small.
+
 ## 8 November 2026 — Idle saver (focus mode)
 
 The title screen draws a full post-processed flyover every frame, so a tab left open on the menu kept a CPU core and the GPU busy all day. Now, while the game is

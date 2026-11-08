@@ -16,6 +16,12 @@ export const promenade = {
     colors: { brass: 0xbba16f, plum: 0x56415d, cream: 0xe6d7bd, dark: 0x302d3c,
       peach: 0xcc947b, teal: 0x638e90, paper: 0xf2e6ce, glass: 0xbdd6d4, ink: 0x44404a },
     directory: { x: 10.3, height: 1.7, width: 1.35 },
+    // Banners on the north wall's bare stretches (west of YOUR STORE HERE, and between the Atrium link and the lounge
+    // bench); text: config/look.js level2.satire[line].
+    wallBanners: [
+      { line: 'comingSoon', x: -18.7, y: 1.95, width: 2.2, height: .9, colors: ['#9fd3c7', '#c9b6e4'] },
+      { line: 'hiring', x: 15.85, y: 1.95, width: 2.2, height: .9, colors: ['#ffd23f', '#ffb38a'] },
+    ],
     phones: { z: [2.55, 3.05], y: 1.55 },
     magazineRack: { x: 16.25, width: 1.05 },
     skylight: { minX: 16.5, maxX: 19, minZ: -.8, maxZ: 2.2 },
@@ -78,6 +84,16 @@ export const promenade = {
       qc: { x0: -1.05, x1: -.45, z0: 18.4, z1: 19.6 }, // inside the island, east of the tank
       portraits: { z0: 23.5, z1: 26.2, bottom: 1.25 },
       safetyBoardX: -6.6, extinguisherZ: 14.2, returnsPolicyZ: 23.8, timeClockZ: 14.3,
+      // Posters on the hall's bare stretches (wall 'west' faces east, 'east' faces west; z = centre, y above the hall floor).
+      wallPosters: [
+        { wall: 'west', z: 18.3, y: 2.3, width: 5, height: 1.2, kind: 'banner',
+          options: { text: 'EVERY BLASTER NEEDS A HEART', sub: 'Ours come from the Returns Chute.', colors: ['#ffd1a1', '#f4a7c0'], ink: '#253c87' } },
+        { wall: 'west', z: 22.2, y: 1.85, width: 1.05, height: .7, kind: 'employee', options: { months: ['MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG'] } },
+        { wall: 'east', z: 15.35, y: 2.0, width: 1.1, height: .82, kind: 'notice',
+          options: { title: 'Overtime policy', body: 'Overtime is its own reward. So is time. Clock out never.', header: '#f2c230', typeface: 'utility' } },
+        { wall: 'east', z: 18.5, y: 1.95, width: 1.1, height: .82, kind: 'notice',
+          options: { title: 'Quality Control', body: '1 in 3 blasters must pass inspection. The other 2 must also pass.', header: '#7fe0c4', typeface: 'handwritten' } },
+      ],
       lockers: { depth: .45, height: 2.2, z1: 13.4 },
       bales: { x1: -8.75, z1: 13.1, height: 2.2 },
       cart: { x1: -8.75, z0: 25.55, height: 2.2 },

@@ -6,6 +6,7 @@
 // =============================================================================
 
 import { look } from '../../config/look.js';
+import { promenade } from '../../config/promenade.js';
 
 // A 1 cm paint panel over the face of a wall the area shares with a neighbour (whose paint is on both faces), with holes for
 // its openings. along 'x': a wall at z = wallAt; 'z': a wall at x = wallAt. holes: [{ from, to, top }] (top = the opening's height).
@@ -289,6 +290,9 @@ export function buildLevelTwoLook({ looks, layout, floorY, hole, keepClear = [] 
   looks.poster('notice', { title: sat.leasingNote[0], body: sat.leasingNote[1], header: '#22c3d6', typeface: 'utility' }, -15, y(1.8), H.maxZ - 0.03, 1.2, 0.9, -1);
   looks.poster('banner', { text: sat.top[0], sub: sat.top[1], colors: ['#ffb38a', '#c9b6e4'] }, -6.7, y(1.9), H.minZ + 0.03, 3.4, 0.9, 1);
   looks.poster('sunny', { text: sat.view[0], sub: sat.view[1] }, H.maxX - 0.03, y(1.9), 0, 1.0, 1.5, 'x-');
+  for (const b of promenade.details.wallBanners) { // the north wall's bare stretches
+    looks.poster('banner', { text: sat[b.line][0], sub: sat[b.line][1], colors: b.colors }, b.x, y(b.y), H.maxZ - 0.03, b.width, b.height, -1);
+  }
 
   // Clutter (never over the escalator well or the balcony voids, spawns, doors).
   const pad = (r) => ({ minX: r.minX - 0.3, maxX: r.maxX + 0.3, minZ: r.minZ - 0.3, maxZ: r.maxZ + 0.3 });

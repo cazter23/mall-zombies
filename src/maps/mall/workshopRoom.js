@@ -205,7 +205,7 @@ export function buildWorkshopRoom({ kit, props, floorY, layout }) {
     [I.minX, I.minZ + rail, I.minX + rail, I.maxZ - rail], [I.maxX - rail, I.minZ + rail, I.maxX, I.maxZ - rail]]) {
     const thinX = x1 - x0 < z1 - z0;
     box('guard_glass', x0 + (thinX ? .04 : 0), .05, z0 + (thinX ? 0 : .04), x1 - (thinX ? .04 : 0), 1, z1 - (thinX ? 0 : .04), COLORS.balustradeGlass, guardGlass);
-    box('guard_rail', x0 - .02, 1, z0 - .02, x1 + .02, 1.08, z1 + .02, COLORS.handrail);
+    box('guard_rail', x0 - .02, 1, z0 - .02, x1 + .02, 1.08, z1 + .02, COLORS.balustradeRail);
   }
   const belt = H.conveyor, bx0 = I.minX + belt.inset, bx1 = I.maxX - belt.inset, bz0 = I.minZ + belt.inset, bz1 = I.maxZ - belt.inset;
   box('conveyor_south', bx0, 0, bz0, bx1, belt.height, bz0 + belt.width, c.metal, solid);

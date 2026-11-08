@@ -240,6 +240,7 @@ the model and debris and disposes their shared geometry and materials.
 - `flashSales.test.js`: Flash Sale timing, discounts in 5% steps from 25 to 50% across a category group, PA lines, prices restored, reset; then in the real game.
 - `levelTwo.test.js`: the Promenade: closed in, a standable floor, the well fenced, vents sealed until the escalator is repaired, balcony voids you cannot walk into.
 - `lightPool.test.js`: N real lights follow the camera to the nearest lamps, fading rather than popping, copying flicker, skipping lamps that are off.
+- `metalSheen.test.js`: only metal materials without a reflection of their own get the shared sheen, each once; paint and mirrors are left alone.
 - `navFloors.test.js`: zombie navigation over several floors and stairs on small synthetic maps (a floor with no link is unreachable).
 - `neon.test.js`: the neon stroke font (every character), text sizing and multi-line, facing like kit.sign.
 - `newGuns.test.js`: burst fire (Foam Dart Blaster) and the Confetti Cannon's shells and reload, plus upgrades on a carried gun through resolveGun.
@@ -255,7 +256,7 @@ the model and debris and disposes their shared geometry and materials.
 - `uiReadability.test.js`: the run's notice history (kept, bounded, reset apart from PA visibility) and UI/text scale saved independently of render resolution.
 - `vhsFilter.test.js`: the VHS filter: off by default, untouched by Graphics presets, and its pass runs only when on (even with Visual effects Off).
 - `visualEffects.test.js`: Visual effects High / Low / Off on a stand-in renderer (Off skips the composer), and the Video presets that set it.
-- `zoneGrading.test.js`: each area's colour grade, easing between areas, the setting, and every Graphics preset deciding it.
+- `zoneGrading.test.js`: each area's colour grade, easing between areas, late hours multiplying onto a grade (a dark room only gets darker), the setting, and every Graphics preset deciding it.
 - `docs.test.js`: every file in src/ has an entry in docs/folder-structure.md, every test file is described here, and every doc CLAUDE.md links to exists.
 
 `tests/uiInformationPriority.test.js` checks exhausted reward visibility, first-activation benefit teaching, live timers/charges on repeat pickups, run reset, and workshop countdown/quality priority.

@@ -247,6 +247,11 @@ export function buildWorkshopDetails({ kit, looks, layout, floorY }) {
   box('extinguisher_glass', west + .16, 1.06, fx - .16, west + .166, 1.59, fx + .16, c.glass, { roughness: .1 });
   sign('extinguisher_sign', 'FIRE', west + .025, 1.82, fx, .36, .14, 'x+', '#c64140', '#ffffff');
   sign('returns_policy', 'RETURN POLICY: NO QUESTIONS ASKED. NONE.', west + .025, 1.75, d.returnsPolicyZ, 1.5, .18, 'x+', '#fff6e6', '#c64140');
+  // Posters on the bare stretches of the side walls, 3 cm proud.
+  for (const p of d.wallPosters) {
+    const onWest = p.wall === 'west';
+    looks.poster(p.kind, p.options, onWest ? west + .03 : east - .03, floorY + p.y, p.z, p.width, p.height, onWest ? 'x+' : 'x-');
+  }
 
   // Lockers and the time clock (east wall, south end): one collider, solid to the top (nothing to perch on).
   const lk = d.lockers;

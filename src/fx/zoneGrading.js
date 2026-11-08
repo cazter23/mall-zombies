@@ -7,8 +7,8 @@
 //                   outside every zone = grading.fallback
 //   const grading = createZoneGrading({ zones, grades, fallback, blendSeconds })
 //   grading.update(dt, position, enabled, mood) -> the current grade (eased; NEUTRAL_GRADE while disabled)
-//     mood (the horror layer, map.horror.state): { exposure (x every grade), cut: { grades, level } (those areas blend
-//     towards the `powerCut` grade by level) }
+//     mood (the horror layer, map.horror.state): { exposure (x every grade), decay (0..1: the `lateHours` grade multiplied
+//     on by that much), cut: { grades, level } (those areas blend towards the `powerCut` grade by level) }
 //   grading.snap(position)   jump straight to that spot's grade (no easing)
 // fx/postProcessing.js applies a grade: exposure through the tone mapping, tint / saturation / contrast in its grade pass.
 // =============================================================================
@@ -45,6 +45,18 @@ export function createZoneGrading({ zones = [], grades, fallback, blendSeconds =
   const targetAt = (position, mood) => {
     const id = gradeZoneAt(zones, position) ?? fallback;
     const target = gradeFor(id);
+    // Late hours (mood.decay 0..1): the `lateHours` grade multiplied onto this area's own (vignette added), so a dark
+    // back-of-house room gets darker too instead of being pulled towards an average.
+    const decay = mood?.decay ?? 0;
+    if (decay > 0 && grades.lateHours) {
+      const late = gradeFor('lateHours');
+      const toward = (value) => 1 + (value - 1) * decay;
+      target.exposure *= toward(late.exposure);
+      target.saturation *= toward(late.saturation);
+      target.contrast *= toward(late.contrast);
+      target.vignette += late.vignette * decay;
+      for (let i = 0; i < 3; i++) target.tint[i] *= toward(late.tint[i]);
+    }
     const cut = mood?.cut;
     if (cut && cut.level > 0 && grades.powerCut && cut.grades.includes(id)) {
       const red = gradeFor('powerCut');

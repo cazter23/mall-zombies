@@ -409,6 +409,7 @@ src/
       clearanceRack.js  Clearance Rack tags on up to three zombies; a headshot on a tagged zombie pops them all.
       clearanceSticker.js The canvas sticker drawn on tagged zombies.
       horror.js         Feature kind 'horror': the mall decays as the rounds climb (config/look.js horror). Visual only, never gameplay.
+                        Darker every round, flickering neon dies, every tube browns out, lamps die, the view drifts to the lateHours grade, power cuts.
     debugCommands.js    createDebugCommands(game parts): the debug shortcuts as functions run(id) (spawn, cycleZombie, clearZombies,
                         killZombies, nextRound, jumpRounds, flashSale, addPoints, zeroPoints, god, giveGun, upgradeGun, doors, arena, panel,
                         spawnMascot / spawnGoldMascot: each costume in turn at the spawn point nearest you);
@@ -581,9 +582,12 @@ src/
                         The Mascot's foam palette bypasses flesh splatter settings.
     benchmark.js        Times a fixed camera route (map.benchmarkShots) so a visual change can say what it costs (Shift+B on the title or pause screen).
     lightPool.js        A fixed number of real point lights shared out among the map's lamps.
+    metalSheen.js       Something for metal to reflect: a tiny gradient (config/look.js metalSheen) baked once and given to metal materials only
+                        (metalness >= minMetalness, no envMap of their own), after static batching. Without it steel, chrome and brass render nearly black.
     postProcessing.js   The render pipeline: the world pass, then the depth-cleared first-person viewmodel pass, plus post effects.
     roomCulling.js      Skips drawing rooms the camera can't see (the map's cullAreas / cullPortals).
     zoneGrading.js      Per-area colour grade (exposure, tint, saturation, contrast; config/look.js grading), eased as the camera moves.
+                        The horror layer's mood darkens it (exposure), multiplies the lateHours grade on by its decay, and turns a cut area red.
   vite.config.js        Dev server only: compiles the game at server start (warmup) and skips .claude, dist, dist-single, references and scratch. Paths are absolute from this checkout, so a worktree keeps its own hot reload.
   play.cmd              Double-click version of `npm run play`. tools/play.mjs rebuilds the single file if the source is newer, keeps the last good build if that fails, and opens it in Firefox (the Windows default for .html may be another browser).
   (tools/)              Dev scripts (not bundled): buildSingle.mjs = `npm run build:single` (a normal Vite build into dist-single/, then the JS, CSS and

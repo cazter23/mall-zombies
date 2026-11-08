@@ -45,6 +45,27 @@ test('the grade eases to the area the camera is in, snaps on request and goes ne
   assert.throws(() => createZoneGrading({ zones: [{ grade: 'nope', minX: 0, maxX: 1, minZ: 0, maxZ: 1 }], grades, fallback: 'front' }), /unknown grade/);
 });
 
+test('late hours (the horror layer\'s decay) multiply onto each area\'s grade: a dark room gets darker, never lighter', () => {
+  const zones = [{ grade: 'back', minX: 0, maxX: 10, minZ: 0, maxZ: 10 }];
+  const grades = {
+    front: { exposure: 1, tint: [1, 1, 1], saturation: 1, contrast: 1 },
+    back: { exposure: 0.4, tint: [1, 1, 1], saturation: 0.6, contrast: 1.2, vignette: 0.3 },
+    lateHours: { exposure: 0.8, tint: [1, 1, 0.9], saturation: 0.7, contrast: 1.1, vignette: 0.2 },
+  };
+  const g = createZoneGrading({ zones, grades, fallback: 'front' });
+  const at = (p, decay) => { // settled grade at p
+    for (let i = 0; i < 600; i++) g.update(1 / 60, p, true, { exposure: 1, decay });
+    return { ...g.current, tint: [...g.current.tint] };
+  };
+  const back = { x: 5, y: 1, z: 5 }, front = { x: 50, y: 1, z: 5 };
+  const backNow = at(back, 0), backLate = at(back, 1), frontHalf = at(front, 0.5);
+  assert.ok(Math.abs(backNow.exposure - 0.4) < 1e-3, 'decay 0 changes nothing');
+  assert.ok(Math.abs(backLate.exposure - 0.32) < 1e-3 && backLate.saturation < backNow.saturation, 'the dark room got darker and greyer');
+  assert.ok(Math.abs(backLate.vignette - 0.5) < 1e-3, 'vignette is added');
+  assert.ok(Math.abs(frontHalf.exposure - 0.9) < 1e-3 && Math.abs(frontHalf.tint[2] - 0.95) < 1e-3, 'half decay goes half way');
+  assert.ok(look.grading.grades.lateHours, 'the real config has a late-hours grade');
+});
+
 test('Zone lighting is a costed Graphics setting every preset sets, and it writes look.runtime', async () => {
   const { settingDefs, settingPresets } = await import('../src/config/settings.js');
   const entry = settingDefs.find((s) => s.id === 'zoneGrading');

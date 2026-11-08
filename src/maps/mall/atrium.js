@@ -200,7 +200,8 @@ export function buildAtrium({ kit, props, layout, upperY }) {
     }
     box(k.x - 0.85, 2.56, k.z - 0.005, k.x + 0.85, 2.94, k.z + 0.005, mat(0x1f1a24), { collide: false }); // (the sign's backing)
   }
-  for (const [x, z] of layout.planters) props.planter(x - 0.7, z - 0.7, x + 0.7, z + 0.7, { tree: true });
+  // Tall trees: the court is open to the skylight, so the canopy sits above the kiosk signs instead of in front of them.
+  for (const [x, z] of layout.planters) props.planter(x - 0.7, z - 0.7, x + 0.7, z + 0.7, { tree: 'tall' });
   for (const [x0, z0, x1, z1] of layout.benches) props.bench(x0, z0, x1, z1);
 
   // --- Signs ---------------------------------------------------------------------------------------------------------------------

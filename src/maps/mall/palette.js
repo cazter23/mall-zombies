@@ -45,7 +45,9 @@ export const COLORS = {
   escalatorPlate: 0x8d949c,
   safetyYellow: 0xffd23f,
   balustradeGlass: 0x9fd3e6,
-  handrail: 0x1d1d22,
+  handrail: 0x1d1d22, // escalator rubber
+  balustradeRail: 0xd9b86a, // the brass cap on glass balconies (black read as a bar across the view when looking over one)
+  escalatorCladding: 0xb9a6dc, // the hallway escalator's painted side (lavender, the hallway's wainscot)
   rope: 0x8b1e2d,
   plywood: 0xc9a26b,
   elevatorSteel: 0xc4c9ce,

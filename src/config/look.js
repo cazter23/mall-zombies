@@ -30,6 +30,8 @@ export const look = {
     fromRound: 5, // nothing before this round
     darkness: { perRound: 0.025, max: 0.2 }, // the whole mall's exposure falls this much per round past fromRound
     neonFailure: { perRound: 0.08, max: 0.6 }, // share of flickering neon (letters, tubes) that dies for good, per round
+    neonBrownout: { perRound: 0.035, max: 0.5 }, // share of brightness EVERY tube loses (steady ones too), per round
+    decay: { perRound: 0.07, max: 1 }, // how far the view drifts towards grading.grades.lateHours, per round (1 = all the way)
     lampDeaths: { everyRounds: 2, maxShare: 0.4, flickerSeconds: 2.5 }, // one more lamp dies every N rounds (it flickers first)
     powerCuts: {
       fromRound: 6,
@@ -39,6 +41,10 @@ export const look = {
       stutterSeconds: 0.8, // the power stutters back on at the end
     },
   },
+
+  // METAL SHEEN (fx/metalSheen.js): without anything to reflect, metal renders nearly black. Metal materials (metalness
+  // >= minMetalness) get a tiny baked gradient: warm-white ceiling above, a lavender horizon, a dusk floor below.
+  metalSheen: { ceiling: 0xf7f3ee, horizon: 0xd9cfe2, floor: 0x7d7290, intensity: 0.9, minMetalness: 0.3, size: 64 },
 
   // THE VHS FILTER (fx/postProcessing.js VhsShader): a worn rental tape. Each number is at 'full'; 'subtle' scales them all.
   vhs: {
@@ -71,6 +77,9 @@ export const look = {
       cinemaService: { exposure: .70, tint: [.98, 1.03, 1.03], saturation: .85, contrast: 1.06 },
       atrium: { exposure: 1.03, tint: [1.05, 0.99, 0.92], saturation: 1.06, contrast: 1 }, // under the sunset skylight
       departmentStore: { exposure: 1.01, tint: [1.04, 1, 0.95], saturation: 1, contrast: 1.02 }, // HOFFMAN'S: warm, a little upscale
+      // The horror layer's late rounds (horror.decay): MULTIPLIED onto each area's own grade (vignette added), so dark
+      // rooms get darker rather than brighter: dimmer, greyer, harder, a little sick.
+      lateHours: { exposure: 0.84, tint: [0.97, 1.0, 0.9], saturation: 0.7, contrast: 1.14, vignette: 0.28 },
       powerCut: { exposure: 0.3, tint: [1.3, 0.5, 0.45], saturation: 0.55, contrast: 1.2, vignette: 0.35 }, // the horror layer: emergency red
     },
   },
@@ -98,7 +107,9 @@ export const look = {
     rail: 0xd8dce4, // chrome rail on top of the wainscot
     stripe: { color: 0xf7b39b, y0: 1.32, y1: 1.5 }, // a peach band above the rail
     ceiling: 0xf7f3ee,
-    floor: { base: '#f1e7da', grout: '#ec9fc4', variation: 16, seed: 5 }, // cream terrazzo, pink grout lines
+    // cream terrazzo, pink grout lines; more tile-to-tile variation and a matter finish than the shared tile surface, so
+    // the hub's long floor has some value contrast and the lamps don't burn white hot spots into it
+    floor: { base: '#efe3d4', grout: '#e893bd', variation: 24, seed: 5, roughness: 0.55 },
     lamp: { color: 0xfff0dc, intensity: 22, distance: 22 }, // warm white: the mall is OPEN
     panel: 0xfff8ee, // ceiling light panels: warm white (one is dead)
     panelGlow: 1.3,
@@ -132,6 +143,7 @@ export const look = {
       rewards: ['Galleria Rewards', 'Earn points for every shopper you serve!'],
       lostChildren: ['Lost Children', 'will be kept at Customer Service. Forever.'],
       wetFloor: ['Caution: Wet Floor', "Please don't ask what it is."],
+      escalator: ['RIDE AT YOUR OWN RISK', 'Management is not responsible for where it takes you.'],
     },
 
     // Clutter along the walls (world/scatter.js): kinds + weights, density per m2 at 'full'.
@@ -230,6 +242,8 @@ export const look = {
       leasingNote: ['Now leasing', 'Ask about our lifetime lease. Our very literal lifetime lease.'],
       top: ['WELCOME TO THE TOP!', '(PLEASE ENJOY IT. YOU ARE NOT LEAVING.)'],
       view: ['ENJOY THE VIEW!', 'Please do not feed the shoppers below.'],
+      comingSoon: ['COMING SOON!', 'A brand-new store. Any day now. Since 1987.'],
+      hiring: ['NOW HIRING: EVERYONE', 'Experience required: being here.'],
     },
     clutter: {
       seed: 1990,

@@ -35,6 +35,7 @@ import { createTitleCamera } from './ui/titleCamera.js';
 import { createBenchmark } from './fx/benchmark.js';
 import { createLightPool, collectPointLights } from './fx/lightPool.js';
 import { batchStatic } from './world/staticBatch.js';
+import { sheenEnvironment, applyMetalSheen } from './fx/metalSheen.js';
 import { createAutoGraphics } from './game/autoGraphics.js';
 import { wireRunIntro } from './game/runIntro.js';
 import { atmosphere } from './config/environment.js';
@@ -207,6 +208,9 @@ const roomCulling = createRoomCulling({
 const cullingOn = !new URLSearchParams(location.search).has('noculling');
 if (cullingOn) roomCulling.tag(map.group);
 if (!new URLSearchParams(location.search).has('nobatch')) batchStatic(map.group); // (?nobatch: off, to compare)
+// Metal sheen (fx/metalSheen.js): a tiny baked gradient for metal materials only, after batching so the merged ones get it.
+const metalSheen = sheenEnvironment(renderer, look.metalSheen);
+for (const root of [map.group, g.arena?.group].filter(Boolean)) applyMetalSheen(root, metalSheen, look.metalSheen);
 effects.prepare(renderer, camera); // shared impact graphics warmed before the first shot
 
 // --- Menus and the run's flow ------------------------------------------------------
