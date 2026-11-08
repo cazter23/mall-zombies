@@ -156,6 +156,13 @@ export const economy = {
         start: { kicker: 'Flash sale', text: 'Gun attachments are {pct}% off in every store! Today only. (Today is all there is.)' },
         end: { kicker: 'Sale over', text: 'The attachment sale has ended. Please remove your shopping from the zombies.' },
       },
+      {
+        // GRAB-A-GUN (game/features/clawMachine.js). No eligibility rule: a sale while the machine is closed is simply wasted.
+        // A plush refunds the sale price you paid, never the shelf price. (The Discount Code never applies to the claw.)
+        id: 'claw', label: 'GRAB-A-GUN', categories: ['claw'], weight: 1,
+        start: { kicker: 'Flash sale', text: 'GRAB-A-GUN is {pct}% off! Everyone\'s a winner.* (*See small print. Small print is out of stock.)' },
+        end: { kicker: 'Sale over', text: 'The GRAB-A-GUN sale has ended. The claw is back to its usual grip.' },
+      },
     ],
   },
 

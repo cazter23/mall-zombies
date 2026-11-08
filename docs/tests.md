@@ -162,6 +162,10 @@ offered, the take refills and fits it in hand or not (and refits are free), neve
 changes (bought off the wall meanwhile: refill + spare; no longer carried: plain copy; handed to Build-A-Blaster: plain copy that the
 finished gun replaces); Build-A-Blaster: grabs during a ritual, with the Courtesy Loaner (which never gets a Refurbished prize and still
 goes back), a Refurbished attachment stacking with a build, and while the finished gun waits at the booth.
+`clawSim.test.js` GRAB-A-GUN's odds (tools/clawOdds.js): the wall stays the cheaper way to every specific gun even at perfect
+timing, a site lasts 5 to 6 grabs, perfect timing never meets the plush while a random lane often does, better timing wins dearer guns,
+and a plush grab costs nothing. clawMachine.test.js also plays the 'claw' Flash Sale (the PA, the sale price charged and refunded, the
+Discount Code still kept out).
 `ammoCache.test.js` the vending machine (refills any gun in hand, flat price, label follows the gun, needs its area open, not
 through the wall, solid + too tall to climb, zombies can reach its front; Atrium/Cinema machines also exercise real F purchases,
 correct floor height, ownership and run reset), `balance.test.js` GUN ROLES on real measured numbers

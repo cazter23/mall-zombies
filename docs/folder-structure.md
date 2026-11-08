@@ -613,7 +613,9 @@ src/
                         the music worker (as a Blob worker) pasted into ONE html file; the Google Fonts link loads non-blocking so a blocked
                         network just falls back to system fonts; tests/singleFile.test.js builds it and checks it is self-contained); balance.js = gun balance maths shared with the tests (seeded Monte Carlo of each
                         gun's real spread + pellets vs a Shopper's hitboxes at a range: expectedShotDamage, sustainedDps, burstDps,
-                        shotsToKill); gunReport.mjs = `npm run balance`; gunSheet.html/.js = a contact sheet of one gun in eight upgrade states (`npm run dev`, /tools/gunSheet.html?gun=nailGun&view=left); babReport.mjs = `npm run balance:bab` (headless horde bot: plain gun vs warranty tiers vs builds)
+                        shotsToKill); gunReport.mjs = `npm run balance`; gunSheet.html/.js = a contact sheet of one gun in eight upgrade states (`npm run dev`, /tools/gunSheet.html?gun=nailGun&view=left); babReport.mjs = `npm run balance:bab` (headless horde bot: plain gun vs warranty tiers vs builds); clawOdds.js = GRAB-A-GUN's odds
+                        simulation (seeded; the game's own roll; perfect / 3-in-4 / random / timed presses; sites, plush closes, wall value,
+                        points per specific gun vs its cheapest wall route); clawSim.mjs = `npm run sim:claw [price]` prints it (the plan's odds tables)
   world/                Shared building blocks for maps
     mapKit.js           createMapKit(group, colliders): mat, addCollider, box, sign, tiledFloor, wall({ along, from, to,
                         at0, at1, height, openings: [{ from, to, top }] }) (doorways get lintels), shutterDoor({ id, label,

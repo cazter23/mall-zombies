@@ -1,8 +1,8 @@
 # Claw machine: plan
 
-Status: phases 1 to 3 built (8 November 2026, branch claude/claw-machine; see docs/history.md). Two sites moved from the table below:
+Status: phases 1 to 4 built (8 November 2026, branch claude/claw-machine; see docs/history.md; phase 4 recommends 1,250 a grab, not applied). Two sites moved from the table below:
 Parking's back is x 34.43 (the facade's face) and the Cinema's x -34.1 (clear of the screen door's jamb). A gun bought off the wall between
-the roll and the take gets a SPARE attachment rolled with the capsule, so the take adds nothing random. Phases 4 to 10 are not started.
+the roll and the take gets a SPARE attachment rolled with the capsule, so the take adds nothing random. Phases 5 to 10 are not started.
 Numbers here are starting points, to be tuned by playing. Prices are suggestions only: the economy report
 (not written yet: the `economy-sim` branch has no work on it, so `tools/economySim.mjs` and `npm run sim:economy` still need doing) confirms them. Checked against the `build-a-blaster` branch at its phase 2; it is now merged, with all six phases and the Mascot.
 This work relies on its `gun.away`, `gun.isLoaner` and `priceLabel`, and touches `createGame.js`, `interactions.js` and `mall.js`.
@@ -82,27 +82,63 @@ Each capsule is drawn by weight from the pool, with no repeats in one grab.
 | Tennis Ball Launcher | 6 | Purple | claw only |
 | The wonder weapon | 2 | Rainbow | claw only |
 
-The simulation below was run before the claw-only guns were added, so it is out of date: the economy report re-runs it with them (phase 4) and sets their weights.
-The starting weights above put a claw-only gun in about 1 capsule in 8, and the wonder weapon in about 1 in 60.
+The claw-only guns aren't in config yet (phases 8 to 10), so the numbers below are the seven wall guns only. When they join the pool, re-run
+`npm run sim:claw`: the starting weights above put a claw-only gun in about 1 capsule in 8, and the wonder weapon in about 1 in 60.
 
-Simulated at 400,000 grabs, with nothing carried. The player aims for the lane with the highest wall price and avoids a plush. A miss lands on a neighbouring lane.
+**`npm run sim:claw`** (tools/clawSim.mjs, the simulation in tools/clawOdds.js; tests/clawSim.test.js guards the rules below). Run on
+8 November 2026 at 1,000 a grab: 400,000 grabs per timing, nothing carried, shelf price, the walk between sites free. The player aims
+for the lane with the highest wall price and away from the plush. Timing: **perfect**; **3-in-4** (a miss lands on a neighbouring lane,
+the old model); **random** lane (mashing, or the auto-drop); **timed**, a press aimed at the middle of the lane's real window with a
+0.12 s error, so the middle lane and the 1.4 s late sweeps are harder.
 
-| Won per grab | Perfect timing | Hits 3 in 4 | Random lane |
-|---|---|---|---|
-| Price Gun | 0.0% | 7.7% | 20.5% |
-| Nail Gun | 4.3% | 9.4% | 18.7% |
-| Foam Dart Blaster | 16.4% | 16.2% | 16.4% |
-| Confetti Cannon | 24.3% | 19.6% | 11.8% |
-| Rivet Rifle | 24.3% | 19.8% | 12.0% |
-| Barcode Scanner | 20.8% | 15.9% | 7.5% |
-| Heavy Coil Nailer | 9.9% | 7.4% | 3.3% |
-| Plush | 0.0% | 4.0% | 9.7% |
-| Average wall value of a prize | 1,581 | 1,438 | 1,172 |
+| Won per grab | In the pit | Perfect | 3-in-4 | Random | Timed |
+|---|---|---|---|---|---|
+| Price Gun | 61.7% | 0.0% | 7.8% | 20.8% | 2.2% |
+| Nail Gun | 55.5% | 5.0% | 10.0% | 18.9% | 6.1% |
+| Foam Dart Blaster | 48.6% | 16.9% | 16.6% | 16.3% | 16.5% |
+| Confetti Cannon | 34.9% | 24.1% | 19.5% | 11.8% | 22.8% |
+| Rivet Rifle | 34.8% | 24.1% | 19.5% | 11.9% | 22.7% |
+| Barcode Scanner | 21.5% | 20.3% | 15.5% | 7.3% | 19.0% |
+| Heavy Coil Nailer | 9.6% | 9.6% | 7.3% | 3.3% | 8.9% |
+| Plush (refunded) | | 0.0% | 3.9% | 9.6% | 1.8% |
+| Average wall value of a gun won | | 1,571 | 1,431 | 1,168 | 1,535 |
+| Grabs per site | | 6.00 | 5.76 | 5.39 | 5.92 |
+| Sites closed by the plush | | 0% | 22% | 52% | 11% |
+| A site's first grab: Blue or better | | 100% | 84% | 57% | 98% |
+| A site's first grab: average wall value | | 1,624 | 1,456 | 1,173 | 1,604 |
 
-A Coil Nailer appears in the pit on about 1 grab in 10.
+**One specific gun** (points of grabs per copy, aiming for it whenever it's in the pit, plush grabs refunded) against the wall (the
+cheapest doors from the start room plus the gun). The claw also needs the Hallway (500), included in the last column:
 
-**The wall stays the cheap way to get one specific gun.** At 3-in-4 timing, a Coil Nailer takes about 13,500 points of grabs, against 5,250 for the cheapest route to its wall spot. A Rivet Rifle takes about 5,050, against 3,250 for
-Hallway, Atrium and the gun. The claw is for an early jump in power and for luck. The risk is that early jump: 1,500 points buys Hallway and a grab, which is a Blue or better about 4 times in 5. The economy report must look at this first.
+| Gun | Wall route | Claw 3-in-4 | Claw timed | Claw random | Claw perfect + Hallway |
+|---|---|---|---|---|---|
+| Price Gun | 500 | 2,066 | 1,716 | 4,319 | 2,120 |
+| Nail Gun | 1,500 | 2,291 | 1,903 | 4,776 | 2,295 |
+| Foam Dart Blaster | 2,450 | 2,625 | 2,185 | 5,517 | 2,575 |
+| Confetti Cannon | 3,000 | 3,642 | 3,034 | 7,641 | 3,363 |
+| Rivet Rifle | 3,250 | 3,658 | 3,027 | 7,679 | 3,378 |
+| Barcode Scanner | 3,000 | 5,900 | 4,891 | 12,427 | 5,117 |
+| Heavy Coil Nailer | 5,250 | 13,173 | 10,996 | 27,548 | 10,855 |
+
+**The wall stays the cheaper way to any one gun**, even with perfect timing, but only just for the mid guns: the Rivet Rifle is 1.04x its
+wall route at perfect timing, the Foam Dart Blaster 1.05x (the claw's grabs win other guns on the way, which these numbers don't count).
+
+**The early jump is the problem.** After the 500 start shutter, the next 1,000 buys either the Nail Gun off the wall or a grab whose
+first prize is Blue or better 84% of the time (98% for a decent timer), worth 1.46x its price in wall value (1.60x timed). At 1,000
+the grab is the obvious second purchase, which is the must-buy the plan wanted to avoid.
+
+| Grab price | First grab value / price (3-in-4) | (timed) | Value per point, whole site (3-in-4) | Hallway + one grab | Closest gun, claw perfect / wall |
+|---|---|---|---|---|---|
+| 1,000 | 1.46 | 1.60 | 1.43 | 1,500 | 1.04 |
+| 1,250 | 1.16 | 1.28 | 1.15 | 1,750 | 1.26 |
+| 1,500 | 0.97 | 1.07 | 0.95 | 2,000 | 1.47 |
+| 1,750 | 0.83 | 0.92 | 0.82 | 2,250 | 1.69 |
+
+**Recommendation: 1,250 a grab, weights unchanged** (not applied: economy.claw.grab is still 1,000, since no rule in this plan is
+strictly broken). At 1,250 the first grab still feels like a win (1.16x, 1.28x timed: a gamble should), it takes a round or two more
+saving after the start shutter, and every gun stays at least 1.26x cheaper on its wall. Go to 1,500 once prize tickets (phase 6: a free
+grab about every 7) and the claw-only guns (phases 8 to 10) add their value; re-run `npm run sim:claw -- 1500` then. The weights do their
+job: perfect timing never takes a Price Gun, and the Coil Nailer is in the pit about 1 grab in 10.
 
 ## Guns you already own
 

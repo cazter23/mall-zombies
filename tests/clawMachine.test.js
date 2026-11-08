@@ -11,6 +11,7 @@ import { economy } from '../src/config/economy.js';
 import { weapons } from '../src/config/weapons.js';
 import { bossVouchers } from '../src/config/bosses.js';
 import { createWallet } from '../src/game/wallet.js';
+import { createFlashSales } from '../src/game/flashSales.js';
 import { overlapsSolid } from '../src/world/collision.js';
 import { createNavigation } from '../src/zombies/navigation.js';
 import { zombieTypes } from '../src/config/zombies.js';
@@ -214,6 +215,30 @@ test('death freezes a grab (nothing paid or given), and Play again leaves no mac
     assert.equal(claw.site.id, cfg.sites[0].id);
     assert.deepEqual(snapshot(g), fresh);
   }
+});
+
+test('the GRAB-A-GUN Flash Sale: the PA announces it, the grab charges the sale price, a plush refunds exactly that, and the Discount Code still stays out', () => {
+  const s = setup(), { t, g, claw } = s;
+  const group = economy.flashSales.groups.find((x) => x.id === 'claw');
+  assert.deepEqual(group.categories, ['claw']);
+  const sales = createFlashSales({ events: g.events, pricing: g.pricing, random: () => 0.99, config: { ...economy.flashSales, groups: [group] } });
+  const started = [];
+  g.events.on('flashSaleStart', (e) => started.push(e));
+  assert.equal(sales.startNow(), true);
+  assert.equal(started[0].id, 'claw');
+  assert.match(started[0].pa.text, /^GRAB-A-GUN is 50% off!/);
+  g.pricing.setVoucher(bossVouchers.discountCode);
+  assert.equal(g.pricing.priceOf('claw', 'grab'), economy.claw.grab / 2, 'the sale only: the Discount Code adds nothing');
+  standAtMachine(s);
+  const before = { points: g.wallet.points, spent: g.wallet.totalSpent };
+  g.debug.run('clawPlush');
+  pay(t);
+  assert.equal(before.points - g.wallet.points, economy.claw.grab / 2);
+  assert.ok(g.pricing.voucher, 'the voucher was not spent on the claw');
+  dropOn(t, claw, isPlush);
+  t.tick(ticks(cfg.liftSeconds));
+  assert.equal(g.wallet.points, before.points, 'refunded the sale price, not the shelf price');
+  assert.equal(g.wallet.totalSpent, before.spent);
 });
 
 test('payment: a sale and the Employee Discount lower the charge; the Discount Code neither applies nor gets spent; free steps cost nothing', () => {

@@ -1,5 +1,13 @@
 # Sunset Galleria: build history ("Current state")
 
+## 8 November 2026 - GRAB-A-GUN, phase 4: sales and odds
+
+The 'claw' Flash Sale group (economy.flashSales.groups; no eligibility rule, as the plan says); the Discount Code still never applies to a grab and
+isn't spent by one (tested with a sale running). `npm run sim:claw` (tools/clawSim.mjs + tools/clawOdds.js) reproduces the plan's odds from config and
+the game's own roll, adding a "timed" model (0.12 s press error against the real lane windows). The wall stays the cheaper way to every specific
+gun, but the first grab after the start shutter is worth 1.46x its price (84% Blue or better): a must-buy at 1,000. Recommended 1,250 (not applied:
+no rule strictly broken); the tables are in docs/claw-machine-plan.md.
+
 ## 8 November 2026 - GRAB-A-GUN, phases 1 to 3: the claw machine, its six sites, Sunny and Refurbished prizes
 
 The mystery box you work (docs/claw-machine-plan.md). One cabinet on the Hallway's south wall at x 8. Hold F to pay 1,000 (g.pricing 'claw' 'grab'): three
