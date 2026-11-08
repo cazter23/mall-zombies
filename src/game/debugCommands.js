@@ -33,9 +33,9 @@ export function createDebugCommands({ map, zombies, rounds, wallet, gun, health,
       const id = selectedZombie();
       return zombies.spawn(id) ? `Spawned ${nameOf(id)}` : 'No safe spawn point right now';
     },
-    summonBoss() {
+    summonBoss(id) {
       if (!rounds.started) rounds.start();
-      const zombie = bosses.summon();
+      const zombie = bosses.summon(id);
       return zombie ? `Summoned ${zombie.type.name}` : 'Boss unavailable this round or no safe spawn point';
     },
     cycleZombie() {
@@ -144,10 +144,10 @@ export function createDebugCommands({ map, zombies, rounds, wallet, gun, health,
     state,
     commands,
     /** Run a command by id; the returned message is also kept as the "last result" for the window. */
-    run(id) {
+    run(id, ...args) {
       if (!Object.hasOwn(run, id)) throw new Error(`debug: unknown command "${id}"`);
       if (onUse) onUse(id);
-      state.last = run[id]();
+      state.last = run[id](...args);
       return state.last;
     },
     /** The command bound to this key code and Shift state (an exact match), or null. */

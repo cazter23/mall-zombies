@@ -346,6 +346,18 @@ export function createHud() {
     },
 
     // Called every frame; only touches the DOM when something changed.
+    setVoucher(voucher) {
+      let ticket = hud.querySelector('.boss-voucher');
+      if (!ticket) {
+        ticket = document.createElement('div');
+        ticket.className = 'boss-voucher';
+        ticket.style.cssText = 'position:absolute;right:24px;top:110px;color:#ffe4a0;background:#20202ccc;padding:10px;border:1px solid #e7c773';
+        hud.appendChild(ticket);
+      }
+      ticket.hidden = !voucher;
+      ticket.textContent = voucher ? `Voucher: ${voucher.name}` : '';
+    },
+
     setHealth(fraction) {
       const rounded = Math.round(Math.max(0, Math.min(1, fraction)) * 200) / 200;
       if (rounded !== lastHealth) {

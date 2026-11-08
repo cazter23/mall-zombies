@@ -990,3 +990,5 @@ Ammo cache done (first of the "flesh out the new areas" items): the vending mach
 in the browser (real held F refills the staple gun for 400; no prompt when full, far away, or from the Service Corridor side of
 the wall). Cover/funnels remain optional; loop shortcuts and the two new guns are in (see the top of Current state).
 Step 6 done: loop shortcuts (Food Court <-> Mega Mart, Service Corridor <-> Food Court); see Map and the top of Current state.
+
+Bosses phase 1: isolated codex/bosses-2 worktree. Added behavior movement control, independent timed buffs and meeting holds, separate voucher pricing/HUD, and debug summon by id. Murray keeps his existing wet-floor behavior.

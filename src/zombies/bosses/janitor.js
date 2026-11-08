@@ -16,6 +16,7 @@ export function createJanitorBehavior({ zombie, scene, colliders, player, powerU
   const patches = [];
   const feet = new THREE.Vector3();
   let last = null;
+  let surfaceSpeed = 1;
 
   function leavePatch() {
     const { x, y, z } = zombie.position;
@@ -42,6 +43,7 @@ export function createJanitorBehavior({ zombie, scene, colliders, player, powerU
   }
 
   return {
+    get surfaceSpeed() { return surfaceSpeed; },
     get patches() { return patches; },
     update(dt) {
       for (let i = patches.length - 1; i >= 0; i--) {
@@ -58,7 +60,8 @@ export function createJanitorBehavior({ zombie, scene, colliders, player, powerU
       const { x, y, z } = player.position;
       const wet = player.grounded && patches.some(({ position }) => Math.abs(y - position.y) <= cfg.floorTolerance
         && Math.hypot(x - position.x, z - position.z) <= cfg.radius);
-      return wet ? cfg.speedFraction : 1;
+      surfaceSpeed = wet ? cfg.speedFraction : 1;
+      return surfaceSpeed; // legacy callers may still read the return value
     },
     dispose() {
       group.removeFromParent();

@@ -64,11 +64,12 @@ export function createBossDirector({ events, rounds, zombies, scene, colliders, 
     get pending() { return pending(); },
     get patches() { return behavior?.patches ?? []; },
     get scheduledRound() { return [...(schedule?.keys() ?? [])][0] ?? null; },
-    summon() { return spawn(schedule?.get(rounds.round) ?? Object.keys(bossTypes)[0]); },
+    summon(id = schedule?.get(rounds.round) ?? Object.keys(bossTypes)[0]) { return bossTypes[id] ? spawn(id) : null; },
     update(dt, allowSpawn = true) {
       if (active && !zombies.zombies.includes(active)) clear();
       if (active) {
-        stats.surfaceSpeed = behavior.update(dt);
+        behavior.update(dt);
+        stats.surfaceSpeed = behavior.surfaceSpeed ?? 1;
         return;
       }
       if (!allowSpawn || !pending() || rounds.state !== 'active') return;

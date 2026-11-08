@@ -205,7 +205,7 @@ export function createZombieManager({
       const nx = dx / len;
       const nz = dz / len;
       if (!shoveIfClear(p, nx * push, nz * push, feel.player.radius, player.height)) {
-        if (!z.frozen) shoveIfClear(z.position, -nx * push, -nz * push, z.type.radius, z.type.height);
+        if (!z.frozen && !z.hold) shoveIfClear(z.position, -nx * push, -nz * push, z.type.radius, z.type.height);
       }
     }
   }
@@ -234,8 +234,8 @@ export function createZombieManager({
           const nz = dz / d;
           const overlap = minSpacing - Math.min(d, minSpacing);
           const half = overlap / 2;
-          const aMoved = !a.frozen && shoveIfClear(a.position, -nx * half, -nz * half, a.type.radius, a.type.height);
-          const bMoved = !b.frozen && shoveIfClear(b.position, nx * (aMoved ? half : overlap), nz * (aMoved ? half : overlap), b.type.radius, b.type.height);
+          const aMoved = !a.frozen && !a.hold && shoveIfClear(a.position, -nx * half, -nz * half, a.type.radius, a.type.height);
+          const bMoved = !b.frozen && !b.hold && shoveIfClear(b.position, nx * (aMoved ? half : overlap), nz * (aMoved ? half : overlap), b.type.radius, b.type.height);
           if (!bMoved && aMoved) shoveIfClear(a.position, -nx * half, -nz * half, a.type.radius, a.type.height);
         }
       }
@@ -251,7 +251,7 @@ export function createZombieManager({
     const fs = zombieFailsafe;
     for (const z of zombies) {
       if (!z.isAlive || z.state === 'spawning') continue;
-      if (z.frozen && z.position.y >= fs.fallOutHeight) {
+      if ((z.frozen || z.hold || z.controlled) && z.position.y >= fs.fallOutHeight) {
         z.stuckTimer = 0; z.stuckFrom.x = z.position.x; z.stuckFrom.z = z.position.z; continue;
       }
       if (z.position.y < fs.fallOutHeight) {
@@ -374,6 +374,7 @@ export function createZombieManager({
 
   function removeActor(index) {
     const [zombie] = zombies.splice(index, 1);
+    zombie.clearBossEffects();
     zombie.model.dispose();
     const target = shootables.indexOf(zombie);
     if (target !== -1) shootables.splice(target, 1);

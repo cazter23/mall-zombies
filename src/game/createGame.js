@@ -105,6 +105,9 @@ export function createGame({
   // Points. Every gain/spend shows a "+60" / "-500" pop-up by the counter.
   const wallet = createWallet({ onChange: (amount) => hud.pointsPopup(amount) });
   const runStats = createRunStats();
+  events.on('playerDeath', () => {
+    for (const zombie of zombies.zombies) zombie.clearBossEffects();
+  });
   // A player attack (gun or box cutter) hit something: announce it.
   const announceHit = (hit) => events.emit('hit', hit);
   const effects = createEffects(scene, { surfaces: [map.group, ...(arena ? [arena.group] : [])] });
@@ -133,7 +136,10 @@ export function createGame({
     sound,
     colliders, // buy spots must be in plain sight (no buying through walls)
     onReloadTap: () => gun.requestReload(), // controller X tapped next to a buyable: it was a reload
-    onPurchase: (purchase) => events.emit('purchase', purchase),
+    onPurchase: (purchase, pricingId) => {
+      pricing.spendVoucher(purchase.kind, pricingId);
+      events.emit('purchase', purchase);
+    },
   });
   const shutterSounds = createShutterSounds({ events, doors: map.doors, sound });
   for (const door of map.doors) {
@@ -479,6 +485,8 @@ export function createGame({
 
     if (debugTick) debugTick();
 
+    pricing.update();
+    hud.setVoucher?.(pricing.voucher);
     player.update(dt);
     powerUps.update(dt); // collect escape rewards before this tick's zombie attacks; paused/dead timers freeze
     // "[Space] Vault" prompt: would a jump press now end in a vault? (checked per tick, shown in render)

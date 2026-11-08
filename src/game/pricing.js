@@ -32,6 +32,8 @@ export const PRICE_CATEGORIES = Object.keys(BASE);
 
 export function createPricing() {
   const discounts = new Map(); // category -> fraction off (0..1)
+  let voucher = null;
+  let voucherOptions = {};
   let coupon = null; // One employee coupon, applied after category sales.
 
   function check(category) {
@@ -45,14 +47,38 @@ export function createPricing() {
     return base;
   }
 
+  function applies(category, id) {
+    return voucher && !voucher.excludedCategories?.includes(category)
+      && (!voucher.category || voucher.category === category)
+      && (!voucher.ids || voucher.ids.includes(id));
+  }
+  function update() {
+    if (!voucher || !voucherOptions.eligible || voucherOptions.eligible(voucher)) return;
+    const value = voucher;
+    voucher = null;
+    voucherOptions.onPoints?.(value.pointsInstead);
+  }
+
   return {
+    get voucher() { return voucher; },
+    configureVouchers(options) { voucherOptions = options; },
+    setVoucher(value) {
+      if (voucher) return false;
+      voucher = value;
+      update();
+      return true;
+    },
+    spendVoucher(category, id) { if (applies(category, id)) voucher = null; update(); },
+    update,
     basePriceOf, // crossed-out shelf price; uses the same source and validation as the charged price
     priceOf(category, id) {
       const base = basePriceOf(category, id);
       const off = discounts.get(category) ?? 0;
       const step = economy.discountRoundTo;
       const salePrice = off > 0 ? Math.round((base * (1 - off)) / step) * step : base;
-      return coupon ? salePrice - Math.min(coupon.maxSaving, Math.floor(salePrice * coupon.fraction / step) * step) : salePrice;
+      const couponPrice = coupon ? salePrice - Math.min(coupon.maxSaving, Math.floor(salePrice * coupon.fraction / step) * step) : salePrice;
+      return applies(category, id) ? couponPrice - Math.min(voucher.maxSaving ?? Infinity,
+        Math.floor(couponPrice * voucher.fraction / step) * step) : couponPrice;
     },
 
     setCoupon(value) { coupon = value; },
@@ -71,6 +97,7 @@ export function createPricing() {
     },
 
     reset() {
+      voucher = null;
       discounts.clear();
       coupon = null;
     },
