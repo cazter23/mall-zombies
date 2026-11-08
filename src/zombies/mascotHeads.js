@@ -130,12 +130,66 @@ export const HEADS = {
       const distance = radiusAt(y) + stripes.proud + proud + size[2] / 2;
       const around = Math.asin(x / distance);
       const piece = block(group, colors[color], size, [Math.sin(around) * distance, y, -Math.cos(around) * distance], tilt);
-      piece.rotation.order = 'YXZ';
-      piece.rotation.y = -around;
-      piece.rotation.x = -lean;
+      faceAlong(piece, Math.sin(around), Math.sin(-lean), -Math.cos(around));
+    }
+  },
+
+  // Scoops: a strawberry scoop in a short, wide waffle cone (faceted, two darker bands), drips running over the rim,
+  // sprinkles, a cherry, and a face on the scoop.
+  iceCreamCone(head, group, { block, shape, colors }) {
+    const { cone, scoop, drips, sprinkles, cherry } = head;
+    const coneGeometry = sharedOnce('iceCreamCone.cone', () => {
+      const geometry = new THREE.CylinderGeometry(cone.radiusTop, cone.radiusBottom, cone.height, cone.segments).toNonIndexed();
+      geometry.computeVertexNormals(); // (flat facets: it reads as waffle)
+      return geometry;
+    });
+    shape(group, coneGeometry, colors[cone.color], [0, cone.y, 0]);
+    const { bands } = cone;
+    const slope = (cone.radiusTop - cone.radiusBottom) / cone.height;
+    for (let i = 0; i < bands.count; i++) {
+      const y = cone.height * ((i + 1) / (bands.count + 1) - 0.5); // (in the cone's own space)
+      const radius = cone.radiusBottom + slope * (y + cone.height / 2) + bands.proud;
+      const band = sharedOnce(`iceCreamCone.band${i}`, () => new THREE.CylinderGeometry(
+        radius + (slope * bands.height) / 2, radius - (slope * bands.height) / 2, bands.height, cone.segments, 1, true));
+      shape(group, band, colors[bands.color], [0, cone.y + y, 0]);
+    }
+
+    const ball = sharedOnce('iceCreamCone.scoop', () => new THREE.IcosahedronGeometry(scoop.radius, 2));
+    shape(group, ball, head.color, [0, scoop.y, 0]);
+    const rim = cone.y + cone.height / 2;
+    const drip = sharedOnce('iceCreamCone.drip', () => new THREE.IcosahedronGeometry(1, 1));
+    for (const [angle, length] of drips.pieces) {
+      const r = cone.radiusTop + 0.01; // (angle 0 = the front, -z)
+      shape(group, drip, colors[drips.color], [Math.sin(angle) * r, rim - length * 0.4, -Math.cos(angle) * r], [0, -angle, 0], [0.065, length, 0.065]);
+    }
+    // Sprinkles and the face: placed on the scoop's surface, along the line out from its centre.
+    const onScoop = (x, y, z, out) => {
+      const length = Math.hypot(x, y - scoop.y, z) || 1;
+      const k = (scoop.radius + out) / length;
+      return [x * k, scoop.y + (y - scoop.y) * k, z * k];
+    };
+    sprinkles.pieces.forEach(([x, y, z, color], i) => {
+      const piece = block(group, colors[color], sprinkles.size, onScoop(x, y, z, sprinkles.size[1] / 2), i * 0.7);
+      piece.rotation.y = i * 1.1;
+    });
+    const cherryGeometry = sharedOnce('iceCreamCone.cherry', () => new THREE.IcosahedronGeometry(cherry.radius, 1));
+    shape(group, cherryGeometry, colors[cherry.color], [0, cherry.y, 0]);
+    for (const { color, size, at: [x, y], proud = 0.01, tilt = 0 } of head.face) {
+      const up = y - scoop.y;
+      const z = -Math.sqrt(Math.max(0, scoop.radius ** 2 - x * x - up * up));
+      const [px, py, pz] = onScoop(x, y, z, proud + size[2] / 2);
+      const piece = block(group, colors[color], size, [px, py, pz], tilt);
+      faceAlong(piece, x / scoop.radius, up / scoop.radius, z / scoop.radius);
     }
   },
 };
+
+// Turn a block so its front (-z) points along the outward normal (nx, ny, nz) of the surface it sits on.
+function faceAlong(piece, nx, ny, nz) {
+  piece.rotation.order = 'YXZ';
+  piece.rotation.y = Math.atan2(-nx, -nz);
+  piece.rotation.x = Math.asin(Math.max(-1, Math.min(1, ny)));
+}
 
 // SALE across the top (clear of the hole), a dashed coupon border, and a big "%" for a mouth.
 function drawPriceTagPrint(ctx, w, h, head) {

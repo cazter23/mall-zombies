@@ -1,0 +1,37 @@
+// =============================================================================
+// SURFACE SLOWS: what the floor under the player does to their speed (stats.surfaceSpeed, read by player/controller.js
+// for walking and sliding). Several things can make a floor slow, the Janitor's wet floor and Scoops' melt puddles so
+// far, so no system writes the stat itself: each SOURCE reports its own factor (1 = no effect) every tick it runs, and
+// the stat is the lowest of them. Two slow floors never stack below the worst one.
+// A source that stops (its boss gone, its puddles cleared) clears its slot. createGame owns one; Play again resets it.
+//   surfaces.set('janitor', 0.7)   surfaces.clear('janitor')   surfaces.reset()
+//   surfaces.factorOf('melt')      what one source reports now (1 if nothing)
+// =============================================================================
+
+export function createSurfaceSlows(stats) {
+  const factors = new Map(); // source -> its factor this tick
+
+  function apply() {
+    let lowest = 1;
+    for (const factor of factors.values()) if (factor < lowest) lowest = factor;
+    stats.surfaceSpeed = lowest;
+  }
+
+  return {
+    set(source, factor) {
+      factors.set(source, factor);
+      apply();
+    },
+    clear(source) {
+      factors.delete(source);
+      apply();
+    },
+    factorOf(source) {
+      return factors.get(source) ?? 1;
+    },
+    reset() {
+      factors.clear();
+      apply();
+    },
+  };
+}

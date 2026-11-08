@@ -495,6 +495,64 @@ export const mascotVariants = {
       burst: { colors: [0xfff1c9, 0xfff9ee, 0xffe28a, 0xffcf3f], count: 36 }, // popcorn everywhere
     },
   },
+
+  // The Atrium's soda-fountain mascot, melting. THE TWIST, on the approach: he leaves a trail of melt puddles that
+  // slow you down (game/meltTrail.js, through game/surfaceSlows.js), and drips twice as fast once his cone is off.
+  scoops: {
+    name: 'Scoops',
+    unlockRound: 19,
+    homeZones: ['atrium', 'foodCourt'],
+    introBanner: { kicker: 'Attention shoppers', text: 'Scoops is melting through the mall. Mind the floor. It is mostly strawberry.' },
+    helmetPopLine: { kicker: 'Clean-up on every aisle', text: 'Scoops has lost his cone. Please do not lick the floor.' },
+    colors: { suit: 0x9fe3c9, trim: 0xfff8f0, boot: 0xd29a55, apron: 0xfff8f0, stripe: 0xff9fc0, bow: 0xff7fae,
+      cone: 0xd8a05a, coneDark: 0xa86f32, scoop: 0xffb3cf, cherry: 0xe0283c, sprinkleA: 0xffe14a, sprinkleB: 0x7fd2ff, sprinkleC: 0xb58cff },
+    uniform: [ // a soda jerk: white apron with a pink stripe, a pink bow tie
+      { color: 'apron', size: [0.5, 0.5, 0.03], at: [0, -0.08, -0.272] },
+      { color: 'stripe', size: [0.5, 0.06, 0.02], at: [0, 0.13, -0.29] },
+      { color: 'bow', size: [0.1, 0.09, 0.035], at: [-0.06, 0.28, -0.272], tilt: 0.35 },
+      { color: 'bow', size: [0.1, 0.09, 0.035], at: [0.06, 0.28, -0.272], tilt: -0.35 },
+    ],
+    head: {
+      kind: 'iceCreamCone',
+      helmet: { size: [0.9, 1.04, 0.9], at: [0, 1.06, 0] }, // the whole cone and scoop (it hides the green head)
+      color: 0xffb3cf, // the scoop's strawberry
+      // A short, wide waffle cone (point cut off: it sits on his shoulders), in the head's metres (y = 0 is its middle).
+      cone: { color: 'cone', radiusTop: 0.42, radiusBottom: 0.25, height: 0.46, y: -0.24, segments: 10,
+        bands: { color: 'coneDark', count: 2, height: 0.035, proud: 0.012 } },
+      scoop: { radius: 0.43, y: 0.14 },
+      // Drips over the rim: [angle around (0 = front), length]; sprinkles on top: [x, y, z, colour name]
+      drips: { color: 'scoop', pieces: [[0.35, 0.16], [1.3, 0.11], [2.2, 0.19], [3.1, 0.13], [4.1, 0.17], [5.2, 0.12]] },
+      sprinkles: { size: [0.07, 0.022, 0.022], pieces: [
+        [0.1, 0.5, 0.12, 'sprinkleA'], [-0.14, 0.48, 0.05, 'sprinkleB'], [0.02, 0.52, -0.12, 'sprinkleC'], [-0.06, 0.47, 0.22, 'sprinkleA'],
+        [0.2, 0.44, -0.08, 'sprinkleB'], [-0.22, 0.42, -0.14, 'sprinkleC'], [0.24, 0.42, 0.18, 'sprinkleC'], [-0.25, 0.4, 0.2, 'sprinkleB'],
+      ] },
+      cherry: { color: 'cherry', radius: 0.07, y: 0.6 },
+      // The face sits on the scoop: [x, y] on its front (head metres), `proud` off the surface (back face).
+      face: [
+        { color: 'eyes', size: [0.14, 0.17, 0.03], at: [0.14, 0.2], proud: 0.008 },
+        { color: 'eyes', size: [0.14, 0.17, 0.03], at: [-0.14, 0.2], proud: 0.008 },
+        { color: 'dark', size: [0.06, 0.085, 0.02], at: [0.12, 0.18], proud: 0.03 },
+        { color: 'dark', size: [0.06, 0.085, 0.02], at: [-0.12, 0.18], proud: 0.03 },
+        { color: 'dark', size: [0.1, 0.05, 0.03], at: [0.07, 0.03], proud: 0.008, tilt: 0.35 }, // a wobbly little smile
+        { color: 'dark', size: [0.1, 0.05, 0.03], at: [-0.07, 0.03], proud: 0.008, tilt: -0.35 },
+        { color: 'bow', size: [0.07, 0.05, 0.02], at: [0.2, 0.07], proud: 0.008 }, // rosy cheeks
+        { color: 'bow', size: [0.07, 0.05, 0.02], at: [-0.2, 0.07], proud: 0.008 },
+      ],
+    },
+    melt: {
+      dropEvery: 0.5, // seconds between puddles while suited...
+      exposedDropEvery: 0.25, // ...and once his cone is off (twice as often)
+      minSpacing: 0.35, // metres: no new puddle within this of his last one (standing still doesn't pile them up)
+      radius: 0.8,
+      lifeSeconds: 6,
+      fadeSeconds: 1.5, // (the last part of its life: it fades out)
+      maxPuddles: 14, // ONE pool for every Scoops in the mall: the oldest puddle gives way
+      slowFactor: 0.6, // your speed standing in one (zombies don't care). With the Janitor's wet floor: the lowest wins.
+      floorTolerance: 0.12, // (a puddle needs flat floor under it: none on a ramp or an escalator)
+      lift: 0.022, opacity: 0.78, segments: 20,
+      colors: [0xffb3cf, 0xaef0d4], // strawberry and mint, in turn
+    },
+  },
 };
 
 // One resolved zombie type per costume, built ONCE here: the shared type deep-merged with the costume (id stays 'mascot',

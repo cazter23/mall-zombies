@@ -44,6 +44,7 @@ import { createMelee } from '../weapons/melee.js';
 import { createAimAssist } from '../weapons/aimAssist.js';
 import { createZombieManager } from '../zombies/zombieManager.js';
 import { createMascotCostumes } from './mascotCostumes.js';
+import { createSurfaceSlows } from './surfaceSlows.js';
 import { createEvents } from './events.js';
 import { createPricing } from './pricing.js';
 import { createFlashSales } from './flashSales.js';
@@ -91,6 +92,8 @@ export function createGame({
   // Live combat bodies also block a vault's path and landing, even without a world collider.
   const shootables = [...(arena ? arena.shootables : [])];
   const stats = createPlayerStats();
+  // Slow floors (the Janitor's wet floor, Scoops' melt): each reports its factor here, the lowest becomes stats.surfaceSpeed.
+  const surfaces = createSurfaceSlows(stats);
   const player = new PlayerController({
     camera,
     input,
@@ -303,7 +306,7 @@ export function createGame({
     sound.play('paChime');
   });
   // The costume twists that reach past the zombie (Poppy Corn's blast...): game/mascotCostumes.js.
-  const mascotCostumes = createMascotCostumes({ events, zombies, player, colliders, effects, state });
+  const mascotCostumes = createMascotCostumes({ events, scene, zombies, player, colliders, effects, surfaces, state });
   events.on('playerHit', ({ damage, knockback }) => {
     health.takeDamage(damage);
     if (knockback) { // a Cart Pusher's charge shoves you along it (m/s, horizontal)
@@ -344,7 +347,7 @@ export function createGame({
     events, player, gun, zombies, colliders, state, stats, pricing, wallet,
     view: createPowerUpView(scene, colliders),
   });
-  const bosses = createBossDirector({ events, rounds, zombies, scene, colliders, player, stats, powerUps, state });
+  const bosses = createBossDirector({ events, rounds, zombies, scene, colliders, player, surfaces, powerUps, state });
   let displayedBoss = null, displayedBossHealth;
   function updateBossBar(zombie) {
     const hp = zombie?.health;
@@ -430,6 +433,7 @@ export function createGame({
     ['zombies', () => zombies.clear()],
     ['mascotCostumes', () => mascotCostumes.reset()],
     ['stats', () => resetPlayerStats(stats)], // perks / wardrobe / skill-tree changes don't carry over
+    ['surfaces', () => surfaces.reset()], // no slow floor left over
     ['health', () => health.reset()], // (after stats: back to the base max health)
     ['runStats', () => runStats.reset()],
     ['gun', () => gun.reset()], // just the staple gun again, no upgrades
@@ -551,6 +555,7 @@ export function createGame({
     health,
     zombies,
     mascotCostumes,
+    surfaces,
     rounds,
     get vaultPromptVisible() {
       return vaultPromptVisible;

@@ -19,7 +19,9 @@ export function chooseBossSchedule(random = Math.random) {
   return schedule;
 }
 
-export function createBossDirector({ events, rounds, zombies, scene, colliders, player, stats, powerUps, state }) {
+// `surfaces`: game/surfaceSlows.js. The Janitor's wet floor reports its factor there as 'janitor' (never the stat itself:
+// other slow floors, Scoops' melt, report theirs too and the lowest wins).
+export function createBossDirector({ events, rounds, zombies, scene, colliders, player, surfaces, powerUps, state }) {
   let schedule = null;
   let active = null;
   let behavior = null;
@@ -31,7 +33,7 @@ export function createBossDirector({ events, rounds, zombies, scene, colliders, 
     active = null;
     behavior?.dispose();
     behavior = null;
-    stats.surfaceSpeed = 1;
+    surfaces.clear('janitor');
   }
 
   function spawn(id) {
@@ -73,7 +75,7 @@ export function createBossDirector({ events, rounds, zombies, scene, colliders, 
     update(dt, allowSpawn = true) {
       if (active && !zombies.zombies.includes(active)) clear();
       if (active) {
-        stats.surfaceSpeed = behavior.update(dt);
+        surfaces.set('janitor', behavior.update(dt));
         return;
       }
       if (!allowSpawn || !pending() || rounds.state !== 'active') return;

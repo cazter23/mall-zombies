@@ -5,18 +5,22 @@
 //   Poppy Corn (popBlast)  the pop is a blast: zombies close by are flung and stunned (no damage, so nothing is paid),
 //                          the player close by is shoved away and buttered (the HUD shows the splat). Announces
 //                          'mascotPopBlast' { zombie, position, butter, butterSeconds, flung }.
+//   Scoops (melt)          a trail of melt puddles that slow the player (game/meltTrail.js, `melt` here), cleared when
+//                          the round ends, when the player dies and on Play again.
 // Listens on the event bus only.
 // =============================================================================
 
 import * as THREE from 'three';
 import { castShot } from '../weapons/hitscan.js';
+import { createMeltTrail } from './meltTrail.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
 
-export function createMascotCostumes({ events, zombies, player, colliders, effects, state }) {
+export function createMascotCostumes({ events, scene, zombies, player, colliders, effects, surfaces, state }) {
   const head = new THREE.Vector3();
   const target = new THREE.Vector3();
   const direction = new THREE.Vector3();
+  const melt = createMeltTrail({ scene, zombies, player, colliders, surfaces });
 
   // Nothing solid between the popping head and a body (the blast doesn't go through walls).
   function clearLine(from, to) {
@@ -63,13 +67,23 @@ export function createMascotCostumes({ events, zombies, player, colliders, effec
     events.on('mascotHeadPop', ({ zombie }) => {
       if (zombie.type.mascot?.popBlast) popBlast(zombie);
     }),
+    // The round is over (the number flips as the last zombie dies), a debug skip, or you died: the floor is mopped.
+    events.on('roundStart', () => melt.clear()),
+    events.on('roundDiscard', () => melt.clear()),
+    events.on('playerDeath', () => melt.clear()),
   ];
 
   return {
-    update() {},
-    reset() {},
+    melt,
+    update(dt) {
+      melt.update(dt);
+    },
+    reset() {
+      melt.reset();
+    },
     dispose() {
       for (const unsubscribe of off) unsubscribe();
+      melt.dispose();
     },
   };
 }
