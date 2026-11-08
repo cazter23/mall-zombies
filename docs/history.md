@@ -32,7 +32,15 @@ Third pass ("the prompt only shows half the time; angles rarely work"). Measured
 The climb followed your run direction, so an angled run let go somewhere else and checked a diagonal strip that was often blocked. Now a rail is always climbed straight over along its normal (up to 70 degrees off),
 pushing into one from a standstill counts (controller.moveWish, feel.vault.ledge.pushSpeed), and the drop holds a fixed outward velocity with no steering (controller.dropVelocity), so the check is one exact line and
 the corridor and speed cap are gone. Result: 100% at every angle and speed wherever head-on works, the prompt shows exactly when a jump vaults (tested), and no landing above 1.2 m in 497 real-input runs.
-The places that still refuse are fixed spots: lamp posts, kiosks and the escalator under the drop, and the last half metre at a corner. The tests that once insisted nobody could cross a rail by jumping now say: you cannot walk in, and a jump ends on the upper floor or on the floor below, never stuck in between.
+The places that still refuse are fixed spots: lamp posts, kiosks and the escalator under the drop, and the last half metre at a corner.
+
+Fourth pass ("it only appears half the time"): it did. Measured along the whole length of every rail, only 47% of the railing offered the climb, because the check refused any spot whose one landing
+point was blocked (the escalator runs under most of the Promenade's railing and the Atrium's north side; lamp posts stand along the court edge). Now the vault CHOOSES how far out to drop
+(vault.chooseDrop: candidate landings 0 to 3 m out, nearest to 1.5 m first) and takes the first one you can stand on whose whole fall line is clear: bare floor, a bench, a counter or an escalator's
+walkway, never a lamp post, kiosk, fountain or an escalator's side. Landing checks are 10 cm wider than your body, because the real tick-by-tick fall can end a few centimetres off the prediction
+(tests/fallAndLedge.test.js caught one landing on an escalator balustrade that way). Coverage: 75% of all railing (the Atrium court all round, both Promenade voids); the escalator's top opening
+still refuses (narrow, lined with its sides), and so do the corners. Cached per release point (5 cm), cleared when doors change the colliders; a check costs about 0.85 ms a tick near a rail,
+less than a counter vault's preview. The tests that once insisted nobody could cross a rail by jumping now say: you cannot walk in, and a jump ends on the upper floor or on the floor below, never stuck in between.
 
 ## 8 November 2026 — Department boss bars
 

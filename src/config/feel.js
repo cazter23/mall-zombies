@@ -135,10 +135,17 @@ export const feel = {
       maxHeight: 1.6, // the rails are 1.5 m (taller than a jump peaks), so this is what stops you climbing anything taller
       maxApproachDegrees: 70, // run at a rail up to this far off straight-on and you still climb straight over it
       pushSpeed: 3, // m/s: standing against a rail and pushing into it climbs it at this pace
-      dropSpeed: 2, // m/s straight out from the rail for the whole drop (no steering: you land exactly where the vault checked)
-      railMargin: 0.2, // another rail this close to where you let go (or the way out) could catch your feet: the vault refuses, or stops looking further
-      checkSpacing: 0.75, // meters between the spots checked along the way out
-      landingMaxY: 1.1, // the highest thing under where you'd land: a bench or a counter is fine; a fountain, kiosk or escalator is not
+      // You drop straight out from the rail with no steering, and the vault picks HOW FAR out (so a lamp post or an escalator's side
+      // under the usual spot moves the landing instead of refusing the climb).
+      preferredOut: 1.5, // meters past where you let go, if that spot is clear
+      maxOut: 3, // the furthest out it will place you
+      landingStep: 0.25, // candidate landing spots are this far apart
+      pathStep: 0.1, // the fall line is checked this often
+      pathClearance: 0.1, // meters: what's under you must stay this far below your feet on the way down
+      landingMargin: 0.1, // meters wider than your body for those checks (the real fall can end a little off the prediction)
+      minDrop: 2, // a landing less than this far below the balcony floor isn't a drop (the escalator's top end)
+      railMargin: 0.2, // another rail this close to where you let go, or on the way down, could catch your feet
+      landingMaxY: 1.1, // you can land on bare floor, a bench or a counter, or an escalator's walkway; not on a kiosk, a lamp post or a fountain
     },
   },
 
