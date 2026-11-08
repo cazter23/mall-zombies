@@ -37,6 +37,15 @@ their own status fields. Shorter labels distinguish clearing enemies from killin
 Janitor's once-per-round limit. Responsive layouts fit narrow screens and short landscape windows.
 The panel still opens with backtick, and its visibility is exposed to assistive technology.
 
+## 8 November 2026 — Build-A-Blaster's order form, readable mid-fight
+
+Played by hand, the order form was hard to read: a fixed 560 px sheet with 10-13 px text, faded descriptions, key hints as 11 px text, and an Order "button"
+that was only a price. Now the form (and the progress ticket and Birth Certificate) take their size from the screen height: about 16 px base at 1080p,
+names ~19 px, keycaps 17 px, the Order button's key 22 px and its price 28 px, up to double that at 4K. The column you are moving in has a solid highlight
+(the other column's pick is only outlined), stuffings not in stock fold into a short list under the stuffings, a "Your blaster" line says what the order does,
+and the price always shows, with "Need N more points" under it when you're short. The form sits left of centre (never under the round counter), so you can
+see down the middle while it's open. Below about 650 px of window height it reaches the health bar.
+
 ## 7 November 2026 — Build-A-Blaster's detail pass
 
 The workshop read as a blockout, so maps/mall/workshopDetails.js dresses it (numbers in config/promenade.js workshop.details). Storefront: a slatwall of limp, unstuffed gun

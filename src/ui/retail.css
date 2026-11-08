@@ -148,8 +148,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 .incentive-heading { font: 700 10px var(--font-ui); text-transform: uppercase; letter-spacing: .08em; border-bottom: 1px dashed var(--print-rule); padding-bottom: 5px; margin-bottom: 5px; }
 .ritual-hud {
-  position: absolute; top: 250px; left: 18px; width: 182px; max-width: 27vw; padding: 8px 11px;
-  border-top: 3px solid var(--plum); background: var(--paper); color: var(--plum); font-size: 10px; box-shadow: 2px 3px 0 #39294066;
+  position: absolute; top: 250px; left: 18px; width: 16em; max-width: 30vw; padding: .6em .8em; box-sizing: border-box;
+  border-top: 3px solid var(--plum); background: var(--paper); color: var(--plum); font: 600 clamp(13px, 1.35vh, 26px)/1.3 var(--font-ui); box-shadow: 2px 3px 0 #39294066;
 }
 .ritual-hud[hidden], .hud.dead .ritual-hud { display: none; }
 .bag-marker {
@@ -159,52 +159,80 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 .bag-marker[hidden], .hud.dead .bag-marker { display: none; }
 .bag-arrow { display: inline-block; width: 13px; height: 15px; background: var(--raspberry); clip-path: polygon(50% 0, 100% 100%, 50% 72%, 0 100%); } /* (notched: a plain triangle reads the same three ways round) */
-.ritual-heading { font: 700 10px var(--font-ui); text-transform: uppercase; letter-spacing: .08em; border-bottom: 1px dashed var(--print-rule); padding-bottom: 5px; margin-bottom: 6px; }
-.ritual-bar { height: 7px; margin: 3px 0 4px; background: #d4c9b8; border: 1px solid var(--plum); overflow: hidden; }
+.ritual-heading { font: 700 .85em var(--font-ui); text-transform: uppercase; letter-spacing: .08em; border-bottom: 1px dashed var(--print-rule); padding-bottom: .35em; margin-bottom: .45em; }
+.ritual-bar { height: .6em; margin: .25em 0 .3em; background: #d4c9b8; border: 1px solid var(--plum); overflow: hidden; }
 .ritual-bar i { display: block; height: 100%; background: var(--raspberry); transform-origin: left; transform: scaleX(0); transition: transform .2s linear; }
 .ritual-done .ritual-bar i { background: #3d9a6b; }
+/* Build-A-Blaster's order form. One base size that follows the screen height (15px at 900p, ~16px at 1080p, up to 30px at 4K); everything
+   inside is in em. It sits left of centre so the middle of the screen (where zombies come from) stays visible. */
 .order-form {
-  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -54%); width: min(560px, 92vw); padding: 14px 16px 12px; box-sizing: border-box;
-  background: var(--paper-light); color: var(--plum); border-top: 5px solid var(--raspberry); box-shadow: 4px 6px 0 #39294099; font: 600 11px var(--font-ui);
+  --order-base: clamp(14px, 1.5vh, 30px);
+  position: absolute; left: max(3vw, 24px); top: max(140px, calc(50% - 18em)); width: min(40em, calc(100vw - 48px)); max-height: calc(100vh - 160px); overflow: hidden; /* (centred, but never under the round counter) */
+  padding: 1em 1.15em .9em; box-sizing: border-box;
+  background: var(--paper-light); color: var(--plum); border-top: .35em solid var(--raspberry); box-shadow: .3em .4em 0 #39294099;
+  font: 600 var(--order-base)/1.3 var(--font-ui);
 }
 .order-form[hidden], .hud.dead .order-form { display: none; }
 .hud.menu-open .crosshair { display: none; }
-.order-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; border-bottom: 1px dashed var(--print-rule); padding-bottom: 7px; margin-bottom: 9px; }
-.order-kicker { text-transform: uppercase; letter-spacing: .12em; font-size: 10px; opacity: .8; }
-.order-title { font: 700 15px var(--font-ui); }
-.order-columns { display: grid; grid-template-columns: 1.25fr 1fr; gap: 14px; }
-.order-label { text-transform: uppercase; letter-spacing: .12em; font-size: 10px; margin-bottom: 5px; opacity: .65; }
+.order-head { display: flex; justify-content: space-between; align-items: baseline; gap: .8em; border-bottom: 1px dashed var(--print-rule); padding-bottom: .5em; margin-bottom: .7em; }
+.order-kicker { text-transform: uppercase; letter-spacing: .1em; font-size: .8em; }
+.order-title { font: 700 1.35em/1.1 var(--font-ui); text-align: right; }
+.order-columns { display: grid; grid-template-columns: 1.15fr 1fr; gap: 1em; }
+.order-label { display: flex; align-items: center; gap: .5em; min-height: 1.7em; text-transform: uppercase; letter-spacing: .1em; font-size: .85em; font-weight: 700; margin-bottom: .35em; opacity: .55; }
 .order-column.active .order-label { opacity: 1; color: var(--raspberry); }
+.order-hint { display: inline-flex; gap: .2em; font-size: .95em; letter-spacing: 0; }
 .order-list { list-style: none; margin: 0; padding: 0; }
-.order-row { display: grid; gap: 1px; padding: 5px 8px 5px 18px; margin-bottom: 3px; border-left: 4px solid var(--swatch, var(--plum)); background: #efe4cf; position: relative; }
-.order-row b { font-size: 13px; }
-.order-row span { font-weight: 500; opacity: .75; }
-.order-row.out { opacity: .38; }
-.order-row.selected { background: #fff; outline: 2px solid var(--plum); }
-.order-column.active .order-row.selected::before { content: '▶'; position: absolute; left: 4px; top: 6px; font-size: 9px; color: var(--raspberry); }
-.order-foot { display: flex; justify-content: space-between; gap: 12px; margin-top: 9px; padding-top: 7px; border-top: 1px dashed var(--print-rule); }
-.order-keys { opacity: .75; }
-.order-price { font: 700 16px var(--font-receipt, var(--font-ui)); }
-.order-form.cant .order-price { color: var(--raspberry); }
+.order-row { display: grid; gap: .1em; padding: .4em .6em .45em .75em; margin-bottom: .25em; border-left: .3em solid var(--swatch, var(--plum)); background: #efe4cf; }
+.order-row b { font-size: 1.15em; font-weight: 700; }
+.order-row span { font-size: .95em; font-weight: 500; }
+/* The pick in the other column: outlined. The pick in the column you are moving in: solid. */
+.order-row.selected { background: #fff; outline: 2px solid var(--plum); outline-offset: -2px; }
+.order-column.active .order-row.selected { background: var(--plum); color: var(--paper-light); outline: 0; box-shadow: inset .3em 0 0 var(--swatch, var(--raspberry)); }
+.order-column.active .order-row.selected b::before { content: '▶ '; color: var(--swatch, var(--mint)); }
+.order-column:not(.active) .order-row:not(.selected) { opacity: .7; }
+.order-out { margin-top: .5em; padding-top: .4em; border-top: 1px dashed var(--print-rule); font-size: .85em; }
+.order-out[hidden] { display: none; }
+.order-out-heading { text-transform: uppercase; letter-spacing: .1em; font-weight: 700; opacity: .6; margin-bottom: .2em; }
+.order-out-row { display: flex; gap: .5em; align-items: baseline; padding-left: .5em; border-left: .25em solid var(--swatch, var(--plum)); margin-bottom: .15em; color: #6b5a68; }
+.order-out-row b { white-space: nowrap; }
+.order-summary { display: grid; gap: .1em; margin-top: .7em; padding: .5em .7em; background: #efe4cf; border-left: .3em solid var(--raspberry); }
+.order-summary-label { text-transform: uppercase; letter-spacing: .1em; font-size: .75em; font-weight: 700; opacity: .7; }
+.order-summary-text { font-size: 1.05em; font-weight: 700; }
+.order-foot { display: flex; justify-content: space-between; align-items: center; gap: .8em; margin-top: .7em; padding-top: .7em; border-top: 1px dashed var(--print-rule); }
+.order-keys { display: flex; flex-wrap: wrap; gap: .4em 1em; }
+.order-keyhint { display: inline-flex; align-items: center; gap: .3em; font-weight: 700; }
+/* Keys drawn as keycaps, readable from the couch. */
+.order-key { display: inline-block; min-width: 1.7em; padding: .15em .45em .1em; box-sizing: border-box; text-align: center; font: 700 calc(var(--order-base) * 1.05)/1.2 var(--font-ui); letter-spacing: 0;
+  color: var(--plum); background: #fff; border: 2px solid var(--plum); border-bottom-width: .22em; border-radius: .25em; }
+/* The order button: the biggest thing on the form. */
+.order-button { display: flex; align-items: center; gap: .55em; padding: .45em .8em .45em .5em; background: var(--raspberry); color: var(--paper-light); box-shadow: .18em .18em 0 var(--plum); }
+.order-button .order-key { font-size: calc(var(--order-base) * 1.35); color: var(--raspberry); border-color: var(--plum); }
+.order-action { display: flex; flex-direction: column; align-items: flex-end; gap: .3em; }
+.order-need { font-weight: 700; color: var(--raspberry); }
+.order-need[hidden] { display: none; }
+.order-button-text { font: 800 1.25em/1 var(--font-ui); text-transform: uppercase; letter-spacing: .06em; }
+.order-price { font: calc(var(--order-base) * 1.7)/1 var(--font-receipt, var(--font-ui)); font-variant-numeric: tabular-nums; }
+.order-form.cant .order-button { background: #8a7f86; box-shadow: .18em .18em 0 #5a4d57; }
+.order-form.cant .order-button .order-key { color: #6b5a68; }
 .order-form.denied { animation: order-shake .25s; }
-@keyframes order-shake { 25% { transform: translate(-51%, -54%); } 75% { transform: translate(-49%, -54%); } }
-.ritual-stage { font-weight: 700; margin-bottom: 2px; }
+@keyframes order-shake { 25% { transform: translateX(-1%); } 75% { transform: translateX(1%); } }
+.ritual-stage { font-weight: 700; font-size: 1.1em; margin-bottom: .1em; }
 .birth-certificate {
-  position: absolute; top: 96px; right: 28px; width: 268px; max-width: 42vw; padding: 12px 16px 13px; box-sizing: border-box;
+  position: absolute; top: 96px; right: 28px; width: 21em; max-width: 42vw; padding: .9em 1.2em 1em; box-sizing: border-box; font-size: clamp(13px, 1.35vh, 26px);
   background: var(--paper-light); color: var(--plum); border: 2px solid var(--plum); outline: 1px solid var(--plum); outline-offset: -6px;
   box-shadow: 3px 4px 0 #39294088; transform: rotate(1.2deg); text-align: center;
 }
 .birth-certificate[hidden], .hud.dead .birth-certificate { display: none; }
-.certificate-title { font: 700 13px var(--font-ui); text-transform: uppercase; letter-spacing: .14em; }
-.certificate-sub { font: 600 9px var(--font-ui); letter-spacing: .06em; opacity: .75; }
-.certificate-name { margin-top: 6px; font: 700 40px/1 'Caveat', cursive; color: var(--raspberry); }
-.certificate-gun { font: 600 10px var(--font-ui); text-transform: uppercase; letter-spacing: .08em; }
-.certificate-lines { display: grid; grid-template-columns: auto 1fr; gap: 1px 10px; margin: 9px 0 7px; font: 600 10px var(--font-ui); text-align: left; }
+.certificate-title { font: 700 1.05em var(--font-ui); text-transform: uppercase; letter-spacing: .14em; }
+.certificate-sub { font: 600 .75em var(--font-ui); letter-spacing: .06em; opacity: .75; }
+.certificate-name { margin-top: .4em; font: 700 3.1em/1 'Caveat', cursive; color: var(--raspberry); }
+.certificate-gun { font: 600 .85em var(--font-ui); text-transform: uppercase; letter-spacing: .08em; }
+.certificate-lines { display: grid; grid-template-columns: auto 1fr; gap: .1em .8em; margin: .7em 0 .5em; font: 600 .9em var(--font-ui); text-align: left; }
 .certificate-lines dt { opacity: .7; }
 .certificate-lines dd { margin: 0; text-align: right; }
-.certificate-note { padding-top: 5px; font: 600 9px/1.25 var(--font-ui); opacity: .8; }
+.certificate-note { padding-top: .4em; font: 600 .8em/1.25 var(--font-ui); opacity: .85; }
 .certificate-note[hidden] { display: none; }
-.certificate-remark { padding-top: 6px; border-top: 1px dashed var(--print-rule); font: 700 16px/1.1 'Caveat', cursive; }
+.certificate-remark { padding-top: .45em; border-top: 1px dashed var(--print-rule); font: 700 1.3em/1.1 'Caveat', cursive; }
 .incentive-progress { width: 100%; height: 8px; border: 1px solid var(--plum); border-radius: 0; background: #d4c9b8; accent-color: var(--raspberry); }
 .incentive-progress::-webkit-progress-bar { background: repeating-linear-gradient(90deg, #ded3c1 0 8%, var(--paper) 8% 10%); }
 .incentive-progress::-webkit-progress-value { background: var(--raspberry); }

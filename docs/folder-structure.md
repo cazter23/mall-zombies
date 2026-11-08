@@ -45,7 +45,9 @@ src/
   weapons/models/buildVisual.js A finished gun's look: seam, patch and stitches in the stuffing's colour, lumps and leaking tufts when Overstuffed. Instanced, placed from the sticker and top mounts.
   ui/birthCertificate.js The Birth Certificate notice at collection. Clears itself; nothing pauses.
   game/features/workshopOrderForm.js The bench's order form: every Stuffing and Heart on one sheet, pre-filled, driven by menu actions. Sets state.menu while open (the player stands still, the world doesn't).
-  ui/orderForm.js       Draws the order form from its view. Only draws: choices come in on the fixed tick.
+  ui/orderForm.js       Draws the order form from its view. Only draws: choices come in on the fixed tick. Sized from the screen height (retail.css --order-base,
+                        everything in em), left of centre; keys drawn as keycaps (keycaps()), one line on what the order does (orderSummary()), stuffings
+                        you can't pick folded into a short "Not in stock" list.
   ui/ritualHud.js       The order ticket on the HUD: the gun's stage, one progress bar, the gauge and time (reads the ritual's status).
   game/features/clearanceRack.js Clearance Rack tags on up to three zombies; a headshot on a tagged zombie pops them all.
   game/features/clearanceSticker.js The canvas sticker drawn on tagged zombies.
