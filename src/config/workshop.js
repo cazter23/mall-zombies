@@ -133,7 +133,7 @@ export const workshopStuffings = {
     pop: { colors: [0xff7fb2, 0xffd1e3, 0xfff3d4], count: 8, speed: 1.6, size: .05 },
   },
   fryerOil: {
-    name: 'Fryer Oil', stockedBy: 'foodCourt', defaultHeart: 'lastRound', color: 0xf0a020, sound: 'stuffingFryer', blurb: 'Sets the target burning',
+    name: 'Fryer Oil', stockedBy: 'foodCourt', defaultHeart: 'lastRound', color: 0xff5a1a, sound: 'stuffingFryer', blurb: 'Sets the target burning',
     burn: { gunSeconds: .35, seconds: 3, tickSeconds: .5, radius: 1.2, emberSeconds: .25,
       ember: { colors: [0xff8a1f, 0xffd24a], count: 3, speed: 1.1, size: .035 } },
     pop: { colors: [0xff8a1f, 0xffd24a, 0xff4d1f], count: 8, speed: 2, size: .05 },
@@ -144,7 +144,7 @@ export const workshopStuffings = {
     pop: { colors: [0x4fe0ff, 0xc9f5ff, 0xff4fd8], count: 8, speed: 2.4, size: .045 },
   },
   popcornButter: {
-    name: 'Popcorn Butter', stockedBy: 'cinema', defaultHeart: 'reload', color: 0xffd24a, sound: 'stuffingButter', blurb: 'Zombies slip and fall; headshots on a fallen one do double',
+    name: 'Popcorn Butter', stockedBy: 'cinema', defaultHeart: 'reload', color: 0xfff2b8, sound: 'stuffingButter', blurb: 'Zombies slip and fall; headshots on a fallen one do double',
     // Spill Cleanup's zone, per proc: anything on it keeps being slowed while it stands there, and slips. slip*: a zombie crossing the puddle slides and
     // falls for slipSeconds (steering lost, speed kept; drag = how fast the slide dies), then can't slip again for slipImmuneSeconds. While it's down,
     // headshots do fallenHeadshotMultiplier. slipAngle: how far back it lies.

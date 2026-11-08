@@ -3,6 +3,7 @@
 // all, and the model itself is never changed.
 // Placed from the gun's sticker mount, which sits on its left face on every gun. (Not from the model's bounds: model.root holds the hands and arms too.)
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { workshopStuffings, qualityById } from '../../config/workshop.js';
 import { gunStyle } from '../../config/gunStyle.js';
 
@@ -13,6 +14,22 @@ const LUMPS = [[.02, .012, -.024, .017], [.024, -.012, -.006, .021], [.02, .014,
 const TUFTS = 3, TUFT_SIZE = .005, TUFT_FALL = .05, TUFT_DRIFT = .012, TUFT_SPEED = .5;
 
 const WHITE = new THREE.Color(0xffffff);
+const hsl = { h: 0, s: 0, l: 0 };
+
+// The Heart badge's shapes, each ONE merged geometry (so a built gun stays cheap): bars lying on the plate, in the plate's (up, along-the-gun) plane.
+const INK = gunStyle.heart.thickness * 0.7;
+const bar = (up, along, h, l, turn = 0) => {
+  const geometry = new THREE.BoxGeometry(INK, h, l);
+  if (turn) geometry.rotateX(turn);
+  return geometry.translate(0, up, along);
+};
+const HEART_SHAPES = {
+  crosshair: [bar(.0075, 0, .006, .002), bar(-.0075, 0, .006, .002), bar(0, .0075, .002, .006), bar(0, -.0075, .002, .006), bar(0, 0, .002, .002)],
+  bullet: [bar(-.0015, 0, .01, .005), bar(.0055, 0, .004, .003), bar(-.0085, 0, .0018, .009)],
+  ring: [bar(.007, 0, .002, .015), bar(-.007, 0, .002, .015), bar(0, .007, .015, .002), bar(0, -.007, .015, .002)],
+  star: [bar(0, 0, .016, .002), bar(0, 0, .002, .016), bar(0, 0, .015, .002, Math.PI / 4), bar(0, 0, .015, .002, -Math.PI / 4)],
+};
+const heartGeometries = Object.fromEntries(Object.entries(HEART_SHAPES).map(([name, parts]) => [name, mergeGeometries(parts)]));
 
 export function createBuildVisual(gun, mounts = {}) {
   const anchor = mounts.sticker;
@@ -51,6 +68,22 @@ export function createBuildVisual(gun, mounts = {}) {
     }
   }
   face.add(stitches);
+
+  // The HEART BADGE: a coloured plate on the patch with the Heart's shape in cream on it (config/gunStyle.js heart).
+  const badgeStyle = gunStyle.heart;
+  const plateMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .7, flatShading: true });
+  const inkMaterial = new THREE.MeshBasicMaterial({ color: badgeStyle.ink });
+  const badge = new THREE.Group();
+  badge.name = 'buildBadge';
+  badge.position.x = outward * (PATCH.thickness + badgeStyle.thickness / 2 + .001);
+  const plate = new THREE.Mesh(new THREE.BoxGeometry(badgeStyle.thickness, badgeStyle.plate, badgeStyle.plate), plateMaterial);
+  plate.name = 'buildBadgePlate';
+  const shape = new THREE.Mesh(heartGeometries.crosshair, inkMaterial);
+  shape.name = 'buildBadgeShape';
+  shape.position.x = outward * (badgeStyle.thickness / 2 + INK / 2 + .0004);
+  badge.add(plate, shape);
+  badge.visible = false;
+  face.add(badge);
 
   // The seam along the top, in the stuffing's colour.
   const seamMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff }); // unlit: the seam GLOWS (config/gunStyle.js glow)
@@ -118,7 +151,22 @@ export function createBuildVisual(gun, mounts = {}) {
       leaking = !!qualityById(build.quality)?.bulge;
       bulge.visible = leaking;
       const puff = puffStyle[build.quality] ?? puffStyle.regular;
-      pillowMaterial.color.setHex(color).lerp(WHITE, puffStyle.tint);
+      // The pillow's colour: the stuffing's, more or less vivid and lit from within by the quality (config/gunStyle.js quality).
+      const look = gunStyle.quality[build.quality] ?? gunStyle.quality.regular;
+      pillowMaterial.color.setHex(color);
+      if (look.saturation !== 1) {
+        pillowMaterial.color.getHSL(hsl);
+        pillowMaterial.color.setHSL(hsl.h, Math.min(1, hsl.s * look.saturation), hsl.l);
+      }
+      pillowMaterial.emissive.copy(pillowMaterial.color).multiplyScalar(look.glow);
+      pillowMaterial.color.lerp(WHITE, puffStyle.tint);
+      seamMaterial.color.setHex(color).lerp(WHITE, look.seamHot); // (the best builds' seams run hot)
+      const heart = badgeStyle.shapes[build.heart];
+      badge.visible = !!heart;
+      if (heart) {
+        shape.geometry = heartGeometries[heart];
+        plateMaterial.color.setHex(badgeStyle.colors[build.heart]);
+      }
       for (const { pillow, side } of pillows) {
         const left = side === outward;
         const k = left ? 1 : puffStyle.rightScale;

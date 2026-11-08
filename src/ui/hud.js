@@ -487,14 +487,16 @@ export function createHud() {
       ammoTier.classList.toggle('show', show);
       if (!show) return;
       ammoTier.textContent = tier.name;
+      ammoTier.dataset.tier = tier.id; // (Platinum shimmers: retail.css)
       ammoTier.style.color = `#${tier.color.toString(16).padStart(6, '0')}`;
     },
 
     // The held gun's upgrades as a row of chips under its name, so you never need to inspect it: Warranty Renewals (gold stars), the Build-A-Blaster
     // build (a swatch in the stuffing's colour and its quality) and one pip per attachment slot (lit when fitted). Called every frame; only touches the DOM on a change.
     // info: { renewals, build: { color, label } | null, slots: [{ name, fitted }] }
+    // build.accent: the Heart's colour (config/gunStyle.js heart), a second dot after the stuffing's swatch.
     setUpgradeRow(info) {
-      const key = info ? `${info.renewals}|${info.build?.color}|${info.build?.label}|${info.slots.map((x) => (x.fitted ? 1 : 0)).join('')}` : '';
+      const key = info ? `${info.renewals}|${info.build?.color}|${info.build?.accent}|${info.build?.label}|${info.slots.map((x) => (x.fitted ? 1 : 0)).join('')}` : '';
       if (key === lastUpgradeKey) return;
       lastUpgradeKey = key;
       const chips = [];
@@ -503,6 +505,7 @@ export function createHud() {
       if (info?.build) {
         const chip = chipOf('upgrade-chip upgrade-build', info.build.label);
         chip.style.setProperty('--swatch', `#${info.build.color.toString(16).padStart(6, '0')}`);
+        if (info.build.accent !== null) chip.style.setProperty('--accent', `#${info.build.accent.toString(16).padStart(6, '0')}`); // the Heart's badge colour
         chips.push(chip);
       }
       if (info?.slots.some((x) => x.fitted)) {

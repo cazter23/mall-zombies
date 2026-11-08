@@ -1,6 +1,6 @@
 # Sunset Galleria: build history ("Current state")
 
-## 8 November 2026 - GRAB-A-GUN, phases 1 and 2: the claw machine, its six sites and Sunny
+## 8 November 2026 - GRAB-A-GUN, phases 1 to 3: the claw machine, its six sites, Sunny and Refurbished prizes
 
 The mystery box you work (docs/claw-machine-plan.md). One cabinet on the Hallway's south wall at x 8. Hold F to pay 1,000 (g.pricing 'claw' 'grab'): three
 coloured capsules fall into the pit and the screen names them. The claw sweeps the lanes; PRESS F once to drop it, and the capsule under it is your gun.
@@ -21,6 +21,17 @@ it refills that gun and fits the attachment, in hand or not, and the attachment 
 with no empty slot that fits, and a gun at Build-A-Blaster, aren't offered. The take checks again (takeOutcome): bought off the wall meanwhile = refill plus
 its spare attachment (rolled with it, so nothing random happens after the press) if that slot is free; a Refurbished gun no longer carried, or handed to
 Build-A-Blaster, comes as a plain copy (collection then replaces the copy). It never replaces a fitted attachment and waits while the gun in hand reloads.
+
+## 9 November 2026 - Upgrade colours: warranties are metal, builds are candy
+
+The old palette clashed: Premium purple was nearly Glitter, Platinum gold nearly Popcorn Butter (6 apart in Lab delta-E), Deluxe blue near Neon Tube, and the Standard
+green near Antifreeze. Now each system has its own colour language (config/gunStyle.js): the Extended Warranty is METAL (Deluxe steel, Premium gold, Platinum pearl that
+slowly shimmers between pearl tints; Renewal studs copper; the collar and tag are metallic with a sheen, and the HUD name, the seal and the Customer Service post-its follow
+the tier colours); the Build-A-Blaster is CANDY (the stuffing colour, with Fryer Oil moved to a red-orange and Popcorn Butter to cream); the quality sets how vivid and lit
+the pillow is (Understuffed washed out, Overstuffed saturated, glowing, with a hot white seam); and the Heart shows as a badge on the patch, a coloured plate with a cream
+shape (Headshot crosshair/crimson, Last Round bullet/blue, Reload ring/green, Every 5th star/amber), also on the order form and as a dot on the HUD chip.
+tests/upgradeColors.test.js keeps every warranty colour at least 30 delta-E from every stuffing (closest now 36), the stuffings 35 apart and the Heart badges 40 apart.
+Not done: the Attachments keep their store colours (they were already distinct), and the muzzle flash only takes the stuffing colour (no gold glint for a warranty).
 
 ## 9 November 2026 - Gun upgrades you can see, and the Extended Warranty rework
 

@@ -30,6 +30,7 @@ import { createControlsMenu } from './ui/controlsMenu.js';
 import { createGame } from './game/createGame.js';
 import { tierById, tierOf, renewalsOf, attachmentsOf } from './weapons/upgrades.js';
 import { upgrades } from './config/upgrades.js';
+import { gunStyle } from './config/gunStyle.js';
 import { buildOf, qualityById, workshopStuffings } from './config/workshop.js';
 import { PRICE_CATEGORIES } from './game/pricing.js';
 import { createDebugPanel } from './ui/debugPanel.js';
@@ -415,7 +416,7 @@ function render(alpha, frameTime) {
     const build = buildOf(mods), fitted = attachmentsOf(mods);
     hud.setUpgradeRow({
       renewals: renewalsOf(mods),
-      build: build && { color: workshopStuffings[build.stuffing]?.color ?? 0xffffff, label: `${qualityById(build.quality)?.name ?? ''} ${workshopStuffings[build.stuffing]?.name ?? ''}`.trim() },
+      build: build && { color: workshopStuffings[build.stuffing]?.color ?? 0xffffff, accent: gunStyle.heart.colors[build.heart] ?? null, label: `${qualityById(build.quality)?.name ?? ''} ${workshopStuffings[build.stuffing]?.name ?? ''}`.trim() },
       slots: Object.entries(upgrades.attachmentSlots).map(([slot, def]) => ({ name: def.name, fitted: !!fitted[slot] })),
     });
   }

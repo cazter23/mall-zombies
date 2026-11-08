@@ -28,8 +28,18 @@ function ring(group, w, h, depth, bar, mat, z = 0) {
   }
 }
 
+/** The metal a tier is made of (config/gunStyle.js finish): its own material, so a shimmering Platinum never changes another gun's. */
+function metalMaterial(tierId, color) {
+  const f = gunStyle.finish[tierId] ?? gunStyle.finish.deluxe;
+  const paint = new THREE.MeshStandardMaterial({ color, roughness: f.rough, metalness: f.metal, flatShading: true });
+  paint.emissive.setHex(color).multiplyScalar(f.sheen); // (no reflections here, so the metal gives off a little of its own colour)
+  return paint;
+}
+
 export function createWarrantyTrim(gun, mounts = {}) {
   const style = gunStyle;
+  const shimmers = []; // the Platinum materials, which drift between pearl tints (animate())
+  const shimmerOf = (tierId, materialToShimmer, emissive = true) => { if (gunStyle.finish[tierId]?.shimmer) shimmers.push({ tierId, material: materialToShimmer, emissive }); return materialToShimmer; };
   const c = style.collar;
   const barrel = mounts.barrel, grip = mounts.grip;
   const collars = new Map(); // tier id -> its group
@@ -49,7 +59,7 @@ export function createWarrantyTrim(gun, mounts = {}) {
       if (!spec) continue;
       const group = new THREE.Group();
       group.visible = false;
-      const paint = material(tier.color, { metal: tier.id === 'platinum' });
+      const paint = shimmerOf(tier.id, metalMaterial(tier.id, tier.color));
       const rings = spec.rings ?? 1;
       for (let i = 0; i < rings; i++) ring(group, w, h, spec.ringDepth, c.bar, paint, i * (spec.ringDepth + (spec.gap ?? 0)));
       if (spec.stripes) {
@@ -68,7 +78,7 @@ export function createWarrantyTrim(gun, mounts = {}) {
       collars.set(tier.id, group);
     }
     // Renewal studs: small gold blocks on top of the collar, one per renewal.
-    const studMaterial = material(upgrades.renewals.color, { metal: true });
+    const studMaterial = metalMaterial('renewal', upgrades.renewals.color);
     for (let i = 0; i < upgrades.renewals.max; i++) {
       const stud = new THREE.Mesh(new THREE.BoxGeometry(c.stud.size, c.stud.size, c.stud.size * 1.6), studMaterial);
       stud.position.set((i - (upgrades.renewals.max - 1) / 2) * c.stud.spacing, collarTop + c.stud.size / 2 + (c.gem + 0.012), -0.004);
@@ -84,6 +94,7 @@ export function createWarrantyTrim(gun, mounts = {}) {
   const pivot = new THREE.Group();
   pivot.name = 'warrantyTag';
   pivot.visible = false;
+  const cardMaterials = new Map(upgrades.tiers.map((t) => [t.id, shimmerOf(t.id, new THREE.MeshBasicMaterial({ color: t.color }), false)]));
   const card = new THREE.Mesh(new THREE.BoxGeometry(t.size[0], t.size[1], t.thickness), material(0xffffff, { basic: true }));
   const string = new THREE.Mesh(new THREE.BoxGeometry(0.0016, t.string, 0.0016), material(t.stringColor, { basic: true }));
   string.position.y = -t.string / 2;
@@ -108,11 +119,17 @@ export function createWarrantyTrim(gun, mounts = {}) {
       const cfg = upgrades.tiers.find((x) => x.id === tier);
       pivot.visible = !!grip && !!cfg && tier !== 'standard';
       if (!pivot.visible) return;
-      card.material = material(cfg.color, { basic: true });
+      card.material = cardMaterials.get(tier);
       pivot.scale.setScalar(tier === 'platinum' ? t.platinumScale : 1);
     },
-    /** The tag swings. `time` in seconds. */
+    /** The tag swings, and Platinum shimmers. `time` in seconds. */
     animate(time) {
+      for (const { tierId, material: m, emissive } of shimmers) {
+        const { speed, hue, saturation, lightness } = gunStyle.finish[tierId].shimmer;
+        const wave = (Math.sin(time * speed) + 1) / 2;
+        m.color.setHSL(hue[0] + (hue[1] - hue[0]) * wave, saturation, lightness);
+        if (emissive) m.emissive.copy(m.color).multiplyScalar(gunStyle.finish[tierId].sheen);
+      }
       if (!pivot.visible) return;
       pivot.rotation.z = Math.sin(time * t.speed) * t.sway;
       pivot.rotation.x = Math.cos(time * t.speed * 0.7) * t.sway * 0.5;

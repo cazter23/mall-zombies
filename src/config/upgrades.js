@@ -27,15 +27,15 @@ export const upgrades = {
   // Each tier has a JOB: Deluxe is handling (a bigger magazine and a quicker reload), Premium is damage, Platinum is more damage plus a claim.
   // `claim`: once per round, a gun that runs completely dry gets its ammo replaced for free (game/warranty.js).
   tiers: [
-    { id: 'standard', name: 'Standard', color: 0x5fd068, effects: {}, holdsUntilRound: 8 }, // every gun starts here
-    { id: 'deluxe', name: 'Deluxe', job: 'Handling', color: 0x4aa3ff, effects: { damage: 1.1, magazine: 1.25, reload: 0.85 }, holdsUntilRound: 9 },
-    { id: 'premium', name: 'Premium', job: 'Damage', color: 0xb36bff, effects: { damage: 1.45, magazine: 1.1 }, holdsUntilRound: 12 },
-    { id: 'platinum', name: 'Platinum', job: 'Damage and claims', color: 0xffc83d, effects: { damage: 1.65, magazine: 1.15, reload: 0.9 }, holdsUntilRound: 14, claim: true },
+    { id: 'standard', name: 'Standard', color: 0x6b7280, effects: {}, holdsUntilRound: 8 }, // every gun starts here
+    { id: 'deluxe', name: 'Deluxe', job: 'Handling', color: 0xb9bec6, effects: { damage: 1.1, magazine: 1.25, reload: 0.85 }, holdsUntilRound: 9 },
+    { id: 'premium', name: 'Premium', job: 'Damage', color: 0xdf9f1f, effects: { damage: 1.45, magazine: 1.1 }, holdsUntilRound: 12 },
+    { id: 'platinum', name: 'Platinum', job: 'Damage and claims', color: 0xf2eefc, effects: { damage: 1.65, magazine: 1.15, reload: 0.9 }, holdsUntilRound: 14, claim: true },
   ],
 
   // WARRANTY RENEWALS: past Platinum, bought again and again at the Customer Service desk (prices: economy.js upgrades.renewals). Each one multiplies
   // the gun's damage and magazine a little more, so points still matter late in a run.
-  renewals: { max: 5, effects: { damage: 1.06, magazine: 1.03 }, color: 0xfff1a8 },
+  renewals: { max: 5, effects: { damage: 1.06, magazine: 1.03 }, color: 0xd9885a },
 
   // TRANSFER: a warranty left behind by a gun you replaced stays on file; the desk moves it onto the gun in hand for this share of that tier's price.
   transfer: { feeFraction: 0.25 },
