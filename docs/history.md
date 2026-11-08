@@ -1,5 +1,36 @@
 # Sunset Galleria: build history ("Current state")
 
+## 9 November 2026 - Look and real-mall pass: grounding, haze, sunset, shopfronts, mall section, fixtures, stories
+
+Twenty proposals from a visual review, in two passes (look better; look like a real mall). Numbers: config/look.js (bakedShade,
+grading fog, zombieRim, dusk), config/concourse.js (everything in the concourse pass), config/parkingDetails.js realism.
+- Look: walls and counters darken towards their floor, baked into the static batches' vertex colours (staticBatch shadeAt);
+  a per-area haze rides on zone grading (fog / fogColor, one FogExp2 in main.js; the parking sky opts out); zombies get a soft
+  rim of light by kind (zombies/zombieRim.js); the sun goes down over a run (horror director state.dusk -> map.horror.setDusk:
+  sky light, Atrium skylight and new sun shafts, parking sky), part of Comfort > Horror lighting; HOFFMAN'S has burgundy carpet,
+  the Promenade a dusk-mauve terrazzo; a staff watch on the left wrist (the polo sleeves were already there, just out of frame).
+- Real mall (maps/mall/concourse.js, built last in mall.js so every neon sign is placed): a shopfront run on Level 2's south
+  wall (CASSETTE CITY, GLAMOUR PORTRAITS, EAR-RESISTIBLE) and a KEYS CUT kiosk on the north wall, each with a painted interior,
+  header, blade sign and its own light spill; display windows from the hallway into BYTE ME and PLAY TIME TOYS; Level 2 soffits
+  with the pink trim on their edge and a ceiling cove (the "Sunset Galleria - Level 2" sign moved onto the south soffit); a
+  hallway cornice; border bands, sunburst medallions and worn lanes on the floors; a pool under every lit panel and a
+  reflection under every neon sign on a shiny floor; PA speakers, smoke detectors and sprinklers; a drinking fountain with
+  RESTROOMS ->, an ATM, fire pulls, mirrored pillar wraps, ashtray urns, a kiddie ride and a gumball machine in the Atrium;
+  trays, a stroller, a mop bucket, balloons under the skylight, an open till; FALL INTO SAVINGS '86 pennants and poster;
+  garland on the balcony rails; a directory totem; a level mark on the Atrium escalator. Parking: an accessible bay, a cart
+  corral, row letters and banners on the poles, a planted kerb island, an entrance vestibule.
+- Cheap by construction: plain materials merge into the existing batches; every painted panel (interiors, signs) sits on one
+  canvas atlas (world/canvasAtlas.js, world/paintedInteriors.js), all shop glass is one mesh, each glow set is one mesh
+  (lookKit.glowSet), the campaign is one mesh.
+- Placement lessons: the first kiddie ride stood on the Atrium's west vent spawn (z 16), the cart corral sat in a combat lane
+  between two vans (tests/parkingLot.test.js), a blade sign bracket and a vestibule rail shared planes (tests/coplanar.test.js),
+  and a directly flagged userData.dynamic mesh (the sun shafts) is taken for an escalator part by tests/staticBatch.test.js.
+- Cost, A/B against main's build at 42 fixed cameras (each benchmark shot's start, middle, end), fresh pages: every door closed
+  main 263 calls / 43.3k triangles, this 270 / 44.3k; every door open main 340 / 69.0k, this 351 / 70.8k. The hallway and
+  Level 2 views rise most (about +25 calls each: signs, bands and new batches); the env map and fog add no calls.
+- Measuring: open doors change the counts by ~80 calls on average (culling sees through them), and a hidden pane's benchmark
+  route varies by up to ~140 per shot between runs, so compare builds only at fixed cameras with the same doors open.
+
 ## 9 November 2026 - Upgrade colours: warranties are metal, builds are candy
 
 The old palette clashed: Premium purple was nearly Glitter, Platinum gold nearly Popcorn Butter (6 apart in Lab delta-E), Deluxe blue near Neon Tube, and the Standard

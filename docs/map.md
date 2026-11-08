@@ -35,6 +35,11 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   new wall; all four existing upstairs spawn markers remain (east z 4.2, north x 16). The west connection (z -4.1..-1.7)
   now leads through the 1250-point Cinema area entrance. The east connection remains sealed for expansion.
   Main floor and annex are sections in config/promenade.js, independent of the hallway; navigation/grade follow the upper sections.
+  Concourse pass (config/concourse.js): a shopfront run on the south wall, CASSETTE CITY x -4.1..1.0, GLAMOUR PORTRAITS 1.4..7.2,
+  EAR-RESISTIBLE 17.0..19.8 (gate shut), and KEYS CUT x -12.5..-10.25 on the north wall; fronts stand 0.26 m off the wall, no colliders.
+  Soffits (bulkheads) along both long walls from 3.0 m, 1.0 m deep (north gap x -3.7..3.7 for the Build-A-Blaster front), the pink
+  trim on their front edge; the "Sunset Galleria - Level 2" sign is on the south soffit face. Ashtray urns (solid, 0.63 m) at
+  x -9.3, -6.7 and 14.9 by the south benches; a mop bucket (solid, 0.45 m) at (-19.2, 5.2); garland on the void rails' walkway side.
   BUILD-A-BLASTER is a walk-in workshop, part of the Promenade zone. Storefront: interior x -3.35..3.35, z 6.3..11.7, two entrances flanking a solid
   glass display, parts cubbies down both walls (west: the Stuffing bins on the bottom shelf, lit while in today's stock; east: the Heart wall), the order bench in the middle (x 0, z 9.4..10.28; prompt z 9.25) with a 1.8 m lane either side.
   Back hall (section 'workshopHall'): interior x -9.5..4.9, z 12..26.5, 4.8 m high, reached through a 6.7 m wide, 3.2 m high mouth. It sits on its
@@ -93,6 +98,8 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   Screen 1 adds broad fabric panels, continuous side-wall aisle strips, a curtain pelmet and chamfered seat silhouettes.
   All are map-owned decoration. Existing movement/vent/vault clearances, collision, lighting pool and purchases are retained.
 - The Grand Atrium (zone 'atrium'): x 8..32, z 6.6..30.6, behind a 5m gate (area unlock 1250) in the hallway's north wall at x 13..18 under a
+  Concourse pass: a kiddie ride (solid, vaultable 1.1 m) at (9.3, 18.6) and a gumball machine (solid 1.1 m) at (9.3, 19.75), between
+  the west vent (z 16) and the Rivet Rifle; a directory totem (2.2 m) at (10.6, 8.4) inside the gate; sun shafts from the skylight.
   GRAND ATRIUM sign. Two storeys (roof 9.9 under a big warm skylight): an open court x 11.5..28.5, z 10.1..27.1 with a square
   fountain (glass guard, solid to 2.2m) in the middle, CELL-OUT and SHADE SHACK kiosks, four tree planters, three benches; a 3.5m arcade
   round the edge under the UPPER RING (y 6.3), which is railed all round the court. A second escalator rises east from the court
@@ -125,6 +132,9 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   a solid parked trolley by the east wall at x 33.43..33.91, z -5.90..-5.08, framed fluorescent fittings. The two lamps now
   separate warm checkouts from cool aisles; no flashing. Entrances, crossings, spawn spaces and four main aisles stay clear.
 - Customer Parking (zone `parkingLot`, 1250): outside Mega Mart's east wall, x 34.3..62.3, z -24..6, ground y 0.
+  Realism (config/parkingDetails.js realism): accessible bay = bay 1 (x 43..46.5), cart corral in bay 5 (solid, vaultable 1.0 m;
+  the gaps between the vans are combat lanes), a stray cart (solid), row letters and banners on the two light poles, a kerb island
+  x 37.6..39.3, z -14.9..-7.2 (0.15 m step) with a young tree, an entrance vestibule x 34.45..36.25, z 0.3..4.7 (solid glass sides).
   The former emergency exit is a real 3m shutter at x 34..34.3, z 1..4. A flush sidewalk connects it to the asphalt;
   one parking row has three abandoned family/delivery vans, empty bays and broad lanes around both ends and sides.
   Vehicle bodies are solid to their visible tall roofs, preventing an unreachable camping spot. A 3.4m metal fence
