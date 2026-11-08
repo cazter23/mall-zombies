@@ -10,6 +10,7 @@ import { feel } from '../config/feel.js';
 import { createScreens } from './screens.js';
 import { createIncentiveHud } from './incentiveHud.js';
 import { createRitualHud } from './ritualHud.js';
+import { createOrderFormView } from './orderForm.js';
 import { createBagMarker } from './bagMarker.js';
 import { createBirthCertificate } from './birthCertificate.js';
 import { gunLabel } from '../config/workshop.js';
@@ -29,6 +30,8 @@ export function createHud() {
   hud.append(incentives.element);
   const ritualTicket = createRitualHud();
   hud.append(ritualTicket.element);
+  const orderFormView = createOrderFormView();
+  hud.append(orderFormView.element);
   const bagMarker = createBagMarker();
   hud.append(bagMarker.element);
   const certificate = createBirthCertificate();
@@ -228,6 +231,12 @@ export function createHud() {
     // Build-A-Blaster's order ticket: null hides it (game/features/workshopRitual.js status).
     setRitual(status) {
       ritualTicket.update(status);
+    },
+
+    // Build-A-Blaster's order form: null hides it. labels = button names for the device in use.
+    setOrderForm(view, labels) {
+      orderFormView.update(view, labels);
+      hud.classList.toggle('menu-open', !!view); // (no crosshair over the form)
     },
 
     // A dropped Limited Edition's direction: null hides it (game/features/limitedEditions.js status).

@@ -1,5 +1,5 @@
 // The Build-A-Blaster ritual in the real game (game/features/workshopRitual.js): handing a gun over, the Courtesy Loaner, the gauge,
-// the lever, the maximum time, collection, and the Returns Chute taking its zombies from the round's budget.
+// kills speeding it up, the maximum time, the gun coming back by itself, and the Returns Chute taking its zombies from the round's budget.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
@@ -34,11 +34,16 @@ function fixture({ guns = [weapons.nailGun], points = 10000, liveRounds = false 
     ...t, bench, ritual,
     /** Stand at the bench and hold interact. */
     atBench() { face(bench.position, bench.position.x, bench.position.z - 1, Math.PI); },
-    startRitual() { ritual.choose('smoothie', 'headshot'); this.atBench(); hold(); },
+    /** Hold interact at the bench: the order form opens. */
+    openForm() { this.atBench(); hold(); },
+    /** A real order: form filled with this, opened at the bench, confirmed. */
+    startRitual(stuffing = 'smoothie', heart = 'headshot') { ritual.choose(stuffing, heart); this.openForm(); t.press('KeyF'); t.tick(); },
+    finish() { ritual.finishNow(); t.tick(); },
+    /** Stand by the lever (scenery now: a spot in the hall). */
     atLever() { const s = bench.stations.lever; face(s, s.x - 1, s.z, -Math.PI / 2); },
-    pullLever() { this.atLever(); hold(); },
     atBooth() { const s = bench.stations.booth; face(s, s.x - 1, s.z, -Math.PI / 2); },
-    collect() { this.atBooth(); hold(); },
+    /** Wait for it to come back; if it waits at the booth (it would cost you a gun), collect it there. */
+    collect() { t.tick(Math.ceil(cfg.catchUpSeconds * 60) + 3); if (ritual.phase === 'ready') { this.atBooth(); hold(); } },
     away() { g.player.teleport({ position: new THREE.Vector3(0, 0, 12), yaw: 0 }); t.tick(); },
     /** A zombie dying at a spot (killed by a hazard, like any non-gun kill). */
     killAt(x, y, z) {
@@ -55,12 +60,15 @@ test('the bench charges the live price, takes the gun in hand and brings up your
   assert.deepEqual(g.gun.slots, ['stapleGun', 'nailGun']);
   ritual.choose('smoothie', 'headshot');
   t.atBench();
-  assert.equal(g.interactions.prompt?.id, 'ritual');
-  assert.equal(g.interactions.prompt.cost, economy.upgrades.workshop.ritual);
+  assert.equal(g.interactions.prompt?.id, 'orderForm');
+  assert.equal(g.interactions.prompt.priceLabel, economy.upgrades.workshop.ritual.toLocaleString('en-US'), 'the ticket shows the price');
   const before = g.wallet.points;
   let started = null;
   g.events.on('ritualStart', e => { started = e; });
   t.press('KeyF', 20);
+  assert.equal(g.wallet.points, before, 'opening the form is free');
+  assert.equal(ritual.form.cost, economy.upgrades.workshop.ritual);
+  t.press('KeyF'); t.tick();
   assert.equal(g.wallet.points, before - economy.upgrades.workshop.ritual);
   assert.equal(ritual.phase, 'running');
   assert.deepEqual(g.gun.slots, ['stapleGun']);
@@ -87,7 +95,7 @@ test('a player with one gun gets the Courtesy Loaner, cannot upgrade it, and it 
   const desk = g.map.features.find(f => f.kind === 'upgradeDesk');
   g.player.teleport({ position: new THREE.Vector3(desk.position.x, 0, desk.position.z - 1), yaw: Math.PI }); t.tick();
   assert.notEqual(g.interactions.prompt?.kind, 'tier', 'no warranty on a loaner');
-  t.pullLever();
+  t.finish();
   assert.equal(ritual.phase, 'ready');
   t.collect();
   assert.equal(ritual.phase, 'idle');
@@ -114,7 +122,7 @@ test('kills fill the gauge only in the room, and the kill count sets the quality
   assert.equal(ritual.status.kills, 10);
   assert.equal(ritual.status.quality.id, 'extraStuffed');
   assert.equal(ritual.status.next.id, 'overstuffed');
-  t.pullLever();
+  t.finish();
   t.killAt(x, Y, z);
   assert.equal(ritual.status.kills, 10, 'the tank is sealed once the ritual ends');
   t.collect();
@@ -128,26 +136,27 @@ test('quality thresholds run Understuffed, Regular, Extra Stuffed, Overstuffed',
   assert.deepEqual([0, 3, 4, 8, 9, 14, 15, 40].map(k => qualityFor(k).id), ['understuffed', 'understuffed', 'regular', 'regular',
     'extraStuffed', 'extraStuffed', 'overstuffed', 'overstuffed']);
   assert.deepEqual(cfg.qualities.map(q => q.minKills), [0, 4, 9, 15]);
-  assert.equal(cfg.maxSeconds, 45);
+  assert.equal(cfg.maxSeconds, 30);
 });
 
-test('the maximum time ends it, walking away and coming back works, and the gun waits as long as it takes', () => {
+test('the maximum time ends it, and the gun comes back to you by itself, even on the other side of the mall', () => {
   const t = fixture(), { g, ritual, tick } = t;
   t.startRitual();
-  let ready = null;
+  let ready = null, collected = null;
   g.events.on('ritualReady', e => { ready = e; });
+  g.events.on('ritualCollect', e => { collected = e; });
   t.away();
   assert.equal(ritual.phase, 'running', 'doors stay open: leaving does not stop it');
   tick(Math.ceil(cfg.maxSeconds * 60));
   assert.equal(ritual.phase, 'ready');
   assert.equal(ready.reason, 'time');
   assert.equal(ready.quality.id, 'understuffed');
-  tick(60 * 120);
-  assert.equal(ritual.phase, 'ready', 'no deadline on collecting');
-  assert.deepEqual(g.gun.slots, ['stapleGun']);
-  t.collect();
+  assert.deepEqual(g.gun.slots, ['stapleGun'], 'still on its way');
+  tick(Math.ceil(cfg.catchUpSeconds * 60) + 3);
   assert.equal(ritual.phase, 'idle');
-  assert.equal(g.gun.def.id, 'nailGun');
+  assert.ok(collected, 'collected without going back');
+  t.tick(30);
+  assert.equal(g.gun.def.id, 'nailGun', 'and in your hand');
   g.map.dispose();
 });
 
@@ -165,61 +174,71 @@ test('the conveyor carries the gun through every stage and it reaches the end of
   assert.ok(middle.distanceTo(bench.stations.path[0]) > 2, 'it moved along the belt');
   tick(Math.ceil(cfg.maxSeconds * 30) + 2);
   assert.deepEqual(stages, cfg.stages.slice(1).map(s => s.id));
-  tick(Math.ceil(cfg.catchUpSeconds * 60) + 2);
-  assert.ok(gunOnBelt.position.distanceTo(bench.stations.path.at(-1)) < .01, 'and waits at the end');
-  t.collect();
-  assert.equal(scene.getObjectByName('ritualGun'), undefined, 'gone once collected');
+  tick(Math.ceil(cfg.catchUpSeconds * 60) - 4);
+  assert.ok(gunOnBelt.position.distanceTo(bench.stations.path.at(-1)) < .3, 'over the lane to the booth');
+  tick(8);
+  assert.equal(scene.getObjectByName('ritualGun'), undefined, 'gone once it is back in your hands');
   assert.ok(ritual.status === null);
   g.map.dispose();
 });
 
-test('the lever hurries the gun to the end of the belt', () => {
-  const t = fixture(), { g, bench, tick } = t;
+test('a busy room finishes it sooner: each kill in the room takes time off the clock', () => {
+  const t = fixture(), { ritual, bench } = t;
   t.startRitual();
-  t.pullLever();
-  tick(Math.ceil(cfg.catchUpSeconds * 60) + 2);
-  const gunOnBelt = g.features.context.scene.getObjectByName('ritualGun');
-  assert.ok(gunOnBelt.position.distanceTo(bench.stations.path.at(-1)) < .01);
-  g.map.dispose();
+  const left = ritual.status.secondsLeft;
+  const hall = bench.stations.rooms[1];
+  for (let i = 0; i < 5; i++) t.killAt((hall.minX + hall.maxX) / 2 + 5, Y, hall.maxZ - 1);
+  assert.ok(Math.abs(left - ritual.status.secondsLeft - 5 * cfg.secondsPerKill) < .05, `${left} -> ${ritual.status.secondsLeft}`);
+  t.killAt(0, Y, 2); // outside: no help
+  assert.ok(Math.abs(left - ritual.status.secondsLeft - 5 * cfg.secondsPerKill) < .05);
+  for (let i = 0; i < 40 && ritual.phase === 'running'; i++) t.killAt((hall.minX + hall.maxX) / 2 + 5, Y, hall.maxZ - 1);
+  t.tick();
+  assert.equal(ritual.phase, 'ready', 'enough kills finish it outright');
+  assert.ok(ritual.status.kills >= cfg.qualities.at(-1).minKills, 'and a room that busy is Overstuffed by then');
+  t.g.map.dispose();
 });
 
-test('the lever and booth only answer at the right time, and the bench takes one gun at a time', () => {
+test('the bench takes one gun at a time, and the booth only asks when taking the gun would cost you one', () => {
   const t = fixture(), { g } = t;
-  t.atLever();
-  assert.equal(g.interactions.prompt, null, 'nothing to pull before a ritual');
+  const lever = g.map.features.find(f => f.kind === 'workshop').stations.lever;
+  g.player.teleport({ position: new THREE.Vector3(lever.x - 1, Y, lever.z), yaw: -Math.PI / 2 }); t.tick();
+  assert.equal(g.interactions.prompt, null, 'the lever is scenery now');
   t.atBooth();
   assert.equal(g.interactions.prompt, null, 'nothing to collect before a ritual');
   t.startRitual();
   t.atBench();
   assert.equal(g.interactions.prompt, null, 'the bench is busy');
-  t.atLever();
-  assert.equal(g.interactions.prompt?.id, 'lever');
-  t.atBooth();
-  assert.equal(g.interactions.prompt, null, 'not ready yet');
-  t.pullLever();
+  t.finish();
   t.atBench();
-  assert.equal(g.interactions.prompt, null, 'still busy until it is collected');
+  assert.equal(g.interactions.prompt, null, 'still busy until it is back');
   t.atBooth();
-  assert.equal(g.interactions.prompt?.id, 'collect');
-  t.collect();
+  t.tick(Math.ceil(cfg.catchUpSeconds * 60) + 3);
+  assert.equal(t.ritual.phase, 'idle', 'it came back without a prompt');
   t.tick(30);
   t.atBench();
-  assert.equal(g.interactions.prompt?.id, 'restuff', 'free again, and this gun now has a build');
+  assert.equal(g.interactions.prompt?.id, 'orderForm', 'free again');
+  assert.match(g.interactions.prompt.title, /Re-stuff/, 'and this gun now has a build');
   g.map.dispose();
 });
 
-test('free actions cost nothing, and a player who cannot afford the bench gets a refusal', () => {
+test('a player who cannot afford it can still look, gets a refusal, and can order once they can', () => {
   const t = fixture({ points: 0 }), { g, ritual } = t;
   g.wallet.spend(g.wallet.points);
-  t.startRitual();
+  t.openForm();
+  assert.ok(ritual.form, 'the form opens anyway');
+  assert.equal(ritual.form.canAfford, false);
+  assert.equal(ritual.form.shortfall, economy.upgrades.workshop.ritual);
+  t.press('KeyF'); t.tick();
   assert.equal(ritual.phase, 'idle', 'no points, no ritual');
+  assert.ok(ritual.form, 'the form stays open');
+  assert.ok(t.sounds.includes('denied'));
   g.wallet.earn(economy.upgrades.workshop.ritual);
-  t.startRitual();
+  t.press('KeyF'); t.tick();
   assert.equal(ritual.phase, 'running');
   assert.equal(g.wallet.points, 0);
-  t.pullLever();
+  t.finish();
   t.collect();
-  assert.equal(g.wallet.points, 0);
+  assert.equal(g.wallet.points, 0, 'getting it back costs nothing');
   g.map.dispose();
 });
 
@@ -227,9 +246,9 @@ test('a bench discount reaches the ritual price', () => {
   const t = fixture(), { g } = t;
   g.pricing.setDiscount('workshop', .5);
   t.ritual.choose('smoothie', 'headshot');
-  t.atBench();
-  assert.equal(g.interactions.prompt.cost, g.pricing.priceOf('workshop', 'ritual'));
-  assert.ok(g.interactions.prompt.cost < economy.upgrades.workshop.ritual);
+  t.openForm();
+  assert.equal(t.ritual.form.cost, g.pricing.priceOf('workshop', 'ritual'));
+  assert.ok(t.ritual.form.cost < economy.upgrades.workshop.ritual);
   g.map.dispose();
 });
 
@@ -239,7 +258,7 @@ test('gun purchases mid-ritual: the finished gun takes the loaner, a free slot, 
   t.startRitual(); t.tick(30);
   g.gun.give(weapons.nailGun); t.tick(30);
   assert.deepEqual(g.gun.slots, ['stapleGun', 'nailGun']);
-  t.pullLever(); t.collect(); t.tick(30);
+  t.finish(); t.collect(); t.tick(30);
   assert.deepEqual([...g.gun.slots].sort(), ['nailGun', 'stapleGun']);
   assert.equal(g.gun.def.id, 'stapleGun', 'the finished gun comes up in your hand');
   assert.ok(buildOf(g.gun.modsFor('stapleGun')));
@@ -251,7 +270,12 @@ test('gun purchases mid-ritual: the finished gun takes the loaner, a free slot, 
   t.startRitual(); t.tick(30);
   g.gun.give(weapons.foamDartBlaster); t.tick(30);
   assert.deepEqual(g.gun.slots, ['stapleGun', 'foamDartBlaster']);
-  t.pullLever();
+  t.finish();
+  let waiting = null;
+  g.events.on('ritualWaiting', e => { waiting = e; });
+  t.tick(Math.ceil(cfg.catchUpSeconds * 60) + 3 + 60);
+  assert.equal(t.ritual.phase, 'ready', 'it would cost you a gun, so it waits at the booth');
+  assert.match(waiting.pa.text, /Foam Dart Blaster/, 'and the PA says why');
   t.atBooth();
   assert.match(g.interactions.prompt.detail, /Replaces your Foam Dart Blaster/, 'the ticket warns you first');
   t.press('KeyF', 20); t.tick(30);
@@ -264,7 +288,7 @@ test('gun purchases mid-ritual: the finished gun takes the loaner, a free slot, 
   t.startRitual(); t.tick(30);
   g.gun.give(weapons.nailGun); t.tick(30);
   assert.deepEqual(g.gun.slots, ['stapleGun', 'nailGun']);
-  t.pullLever(); t.collect(); t.tick(30);
+  t.finish(); t.collect(); t.tick(30);
   assert.deepEqual([...g.gun.slots].sort(), ['nailGun', 'stapleGun']);
   assert.ok(buildOf(g.gun.modsFor('nailGun')), 'the finished one, not the copy');
   g.map.dispose();
@@ -277,7 +301,7 @@ test('a loaner replaced by a bought gun does not cost you anything at collection
   g.gun.give(weapons.foamDartBlaster); t.tick(30); // hand is the nail gun; the loaner stays in the other slot
   assert.deepEqual(g.gun.slots, ['stapleGun', 'foamDartBlaster']);
   assert.equal(g.gun.def.id, 'foamDartBlaster');
-  t.pullLever(); t.collect(); t.tick(30);
+  t.finish(); t.collect(); t.tick(30);
   assert.deepEqual([...g.gun.slots].sort(), ['foamDartBlaster', 'stapleGun']);
   assert.equal(g.gun.isLoaner, false);
   assert.equal(g.gun.def.id, 'stapleGun');
@@ -292,7 +316,7 @@ test('upgrades stay on the gun while it is away, and it comes back loaded with i
   g.gun.weapon.magazine = 3;
   const reserve = g.gun.weapon.reserve;
   t.startRitual();
-  t.pullLever();
+  t.finish();
   t.collect(); t.tick(30);
   assert.equal(g.gun.def.id, 'nailGun');
   assert.deepEqual(g.gun.modsFor('nailGun').map(m => m.id), ['tier', 'build']);
@@ -307,9 +331,9 @@ test('a Limited Edition and a ritual sit on one gun without getting in each othe
   t.atBench();
   t.ritual.choose('smoothie', 'lastRound');
   t.atBench();
-  assert.equal(g.interactions.prompt?.id, 'ritual', 'same gun, at the bench');
-  t.press('KeyF', 20);
-  t.pullLever(); t.collect(); t.tick(30);
+  assert.equal(g.interactions.prompt?.id, 'orderForm', 'same gun, at the bench');
+  t.press('KeyF', 20); t.press('KeyF'); t.tick();
+  t.finish(); t.collect(); t.tick(30);
   assert.deepEqual(g.gun.modsFor('priceGun').map(m => m.id), ['workshop', 'build']);
   g.map.dispose();
 });
@@ -319,7 +343,7 @@ test('Play again mid-ritual: nothing survives, and the game equals a fresh one',
     const t = fixture({ guns: [] }), { g, ritual } = t;
     const scene = g.features.context.scene;
     t.startRitual();
-    if (finish) t.pullLever();
+    if (finish) t.finish();
     g.resetRun();
     t.tick();
     assert.equal(ritual.phase, 'idle');
@@ -368,7 +392,7 @@ test('the Returns Chute: spawns steer to it only while a ritual runs and you are
   assert.ok(atChute(g.zombies.spawn()));
   g.zombies.clear();
   // Finished: back to normal for good.
-  t.pullLever();
+  t.finish();
   g.player.teleport({ position: new THREE.Vector3(1, Y, 14), yaw: 0 }); t.tick();
   for (let i = 0; i < 12; i++) { const z = g.zombies.spawn(); assert.equal(atChute(z), false); g.zombies.clear(); t.tick(); }
   assert.equal(ritual.phase, 'ready');
@@ -410,7 +434,7 @@ test('a full round played through a ritual: the chute adds no zombies and the ro
   assert.equal(g.rounds.round, round + 1, 'the round ended');
   assert.equal(seen.size, budget, 'exactly the round\'s budget spawned');
   assert.ok(viaChute > 0, `${viaChute} came through the chute`);
-  assert.ok(['running', 'ready'].includes(ritual.phase));
+  assert.ok(['running', 'ready', 'idle'].includes(ritual.phase), 'it may well have finished and come back by now');
   g.map.dispose();
 });
 
@@ -421,7 +445,7 @@ test('the debug command puts you at the bench', () => {
   g.debug.run('workshop');
   t.tick();
   assert.equal(g.map.zones.upstairs.open, true);
-  assert.equal(g.interactions.prompt?.id, 'ritual');
+  assert.equal(g.interactions.prompt?.id, 'orderForm');
   g.map.dispose();
 });
 
@@ -457,7 +481,7 @@ test('a chute zombie sent back by the failsafe rises from the floor like any oth
 
 test('the Birth Certificate has a word about the Courtesy Loaner, and only if you had one', () => {
   const notes = (t) => t.hud.calls.filter(c => c[0] === 'showCertificate').map(c => c[1].note);
-  const finish = (t) => { t.pullLever(); t.collect(); };
+  const finish = (t) => { t.finish(); t.collect(); };
 
   const returned = fixture({ guns: [] }), first = returned.g;
   returned.startRitual();
@@ -484,7 +508,7 @@ test('a Courtesy Loaner replaced by a bought gun is reported lost', () => {
   assert.equal(g.gun.isLoaner, true);
   g.gun.give(weapons.rivetRifle); t.tick(50); // replaces the gun in hand: the Loaner
   assert.equal(g.gun.hasLoaner, false);
-  t.pullLever(); t.collect();
+  t.finish(); t.collect();
   const [certificate] = t.hud.calls.filter(c => c[0] === 'showCertificate');
   assert.equal(certificate[1].note, cfg.loanerNotes.lost);
   g.map.dispose();

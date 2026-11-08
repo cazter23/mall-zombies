@@ -1,5 +1,17 @@
 # Sunset Galleria: build history ("Current state")
 
+## 7 November 2026 — Build-A-Blaster's order form
+
+Playing it by hand, the ritual took too many stops in the middle of a fight: bins, Heart wall, bench, lever, booth. Now: hold F at the bench and an order form
+opens with every Stuffing and Heart on one sheet, already filled in (your last order, else today's first stuffing and its usual Heart, config defaultHeart), so F again
+orders. W/S, the wheel, the stick or the D-pad choose; A/D switch column; F / controller A order; Q / B cancel. The world keeps going while it's open: the player
+stands still and can't shoot or buy (createGame's new state.menu gate), zombies keep swinging. Kills in the room now also take 1 s each off a 30 s clock (was 45 s,
+with a lever), and the gun comes back to your hands by itself once the gantry reaches the booth, wherever you are. It only waits at the booth when taking it would
+replace a gun you bought meanwhile, and the PA says so. The bins, Heart wall and lever stay as scenery.
+
+Found while testing: the gun used to ride the whole path (belt and gantry) during the run, which was invisible with a lever but meant a finished order arrived
+instantly. It now rides only the belt while running, then always takes catchUpSeconds to reach the booth.
+
 ## 6 November 2026 — One-click play, and the single file finally boots
 
 `npm run play` / play.cmd (tools/play.mjs) opens the single-file build in Firefox with no server, rebuilding only when the source is newer and falling back to the last good build. The

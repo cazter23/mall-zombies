@@ -7,8 +7,8 @@ import { createBuildEffects } from './workshopStuffings.js';
 import { createWorkshopSpectacle } from './workshopSpectacle.js';
 import { createLimitedEditionDrops } from './limitedEditions.js';
 
-export function buildWorkshop(bench, { map, gun, pricing, interactions, events, player, scene, zombies, rounds, colliders, effects, sound, stats, state }) {
-  const ritual = createWorkshopRitual({ bench, map, gun, pricing, interactions, events, player, zombies, rounds, scene, state });
+export function buildWorkshop(bench, { map, gun, pricing, interactions, events, player, scene, zombies, rounds, colliders, effects, sound, stats, state, input, wallet }) {
+  const ritual = createWorkshopRitual({ bench, map, gun, pricing, interactions, events, player, zombies, rounds, scene, state, input, wallet, sound });
   const buildEffects = createBuildEffects({ events, gun, player, zombies, colliders, effects, stats, state, sound, scene });
   const spectacle = createWorkshopSpectacle({ bench, ritual, events, zombies, player, sound });
   const drops = createLimitedEditionDrops({ events, gun, player, scene, rounds, state, sound });

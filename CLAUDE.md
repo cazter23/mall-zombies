@@ -147,7 +147,8 @@ docs/                history.md, folder-structure.md, map.md, tests.md + older p
   `stats.adsMoveSpeed`). Render zooms `camera.fov` by `def.ads.fovMultiplier` and sets `player.lookScale`.
   `main.js` keeps a `shootables` array (test-range dummies now; zombies should be pushed into it). A collider
   Box3 with `ignoreShots = true` blocks walking but not bullets.
-- The game only runs while the pointer is locked; Esc pauses and shows the overlay.
+- The game only runs while the pointer is locked; Esc pauses and shows the overlay. An in-game menu a feature opens (`state.menu`, e.g. the Build-A-Blaster
+  order form) stops the player (no moving, shooting or buying) but not the world; the feature reads menu actions (config/controls.js menu*) in features.update.
 - Collision: one shared flat array `colliders` of `THREE.Box3` (created in main, filled by the map and the
   test range). `box(..., {collide})` in `mall.js`
   makes a mesh and (optionally) a collider; some visuals use `collide:false` with a separate hand-sized
@@ -175,7 +176,7 @@ adjoining areas are owned. No cascading unlocks. Nine area purchases total 9500;
 - **Level 2 / Sunset Promenade** x -20..20, z -4.5..6 (+ shoe annex), floor y 6.3, zone 'upstairs'.
 - **HOFFMAN'S department store** x -20..-5.3, z 6.3..26, 5 m (counters vaultable; everything else >= 2.1 m).
 - **Sunset Cinema** upstairs x -42..-20.3: 1250 area unlock off the Promenade's west wall or Service Corridor's north end; the other connection opens free when its neighbouring area is owned.
-- **Build-A-Blaster:** storefront + back hall off the Promenade (numbers: config/workshop.js, config/promenade.js workshop; docs/map.md). Pick a Stuffing and a Heart, hand a gun over, fight in the room, collect it named at the Naming Booth: game/features/workshop*.js. Party Trap and Clearance Rack drop from zombies with shopping bags (limitedEditions.js).
+- **Build-A-Blaster:** storefront + back hall off the Promenade (numbers: config/workshop.js, config/promenade.js workshop; docs/map.md). Hold F at the bench: an order form (pre-filled; F orders), fight in the room to fill the tank and finish it sooner, and the gun comes back to you named: game/features/workshop*.js. Party Trap and Clearance Rack drop from zombies with shopping bags (limitedEditions.js).
 - **Wall buys:** Price Gun (start room), Nail Gun (hallway), Foam Dart Blaster (Mega Mart), Confetti Cannon (Service Corridor), Rivet Rifle (Atrium),
   Heavy Coil Nailer (Cinema projection passage, 2500), Barcode Scanner (HOFFMAN'S). Door count: 15.
 - **Customer Parking** x 34.3..62.3, z -24..6, y 0: 1250 through Mega Mart's former east emergency exit (z 1..4).

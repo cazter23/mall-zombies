@@ -23,9 +23,9 @@ function fixture() {
   const ritual = g.features.list.find(f => f.feature.kind === 'workshop').instance.ritual;
   const bench = g.map.features.find(f => f.kind === 'workshop');
   const stand = (x, z, yaw) => { g.player.teleport({ position: new THREE.Vector3(x, Y, z), yaw }); g.player.pitch = 0; t.tick(); };
-  const order = () => { ritual.choose('smoothie', 'headshot'); stand(0, bench.position.z - 1, Math.PI); t.press('KeyF', 20); t.tick(30); };
-  const lever = () => { const s = bench.stations.lever; stand(s.x - 1, s.z, -Math.PI / 2); t.press('KeyF', 20); t.tick(); };
-  const collect = () => { const s = bench.stations.booth; stand(s.x - 1, s.z, -Math.PI / 2); t.press('KeyF', 20); t.tick(30); };
+  const order = () => { ritual.choose('smoothie', 'headshot'); stand(0, bench.position.z - 1, Math.PI); t.press('KeyF', 20); t.press('KeyF'); t.tick(30); };
+  const lever = () => { ritual.finishNow(); t.tick(); }; // (finish now, as running out of time would)
+  const collect = () => { t.tick(Math.ceil(cfg.catchUpSeconds * 60) + 30); }; // it comes back by itself
   const fullRitual = () => { order(); lever(); collect(); };
   const announcements = () => t.hud.calls.filter(c => c[0] === 'showAnnouncement').map(c => c[1].text);
   return { ...t, ritual, bench, order, lever, collect, fullRitual, announcements };

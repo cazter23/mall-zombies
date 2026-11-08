@@ -179,6 +179,7 @@ export function createGame({
     forceRun: false, // debug: run without pointer lock (used by automated tests)
     over: false, // true once the player has died
     padPlaying: false, // started/resumed with a controller
+    menu: null, // an in-game menu a feature has open (Build-A-Blaster's 'orderForm'): the player stands still, the world doesn't
     assisted: false, // gameplay-changing debug command used; career records ignore this run
     get running() {
       return input.locked || this.padPlaying || this.forceRun;
@@ -310,7 +311,7 @@ export function createGame({
   });
 
   // Build-A-Blaster's PA lines (game/features/workshopRitual.js).
-  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualCollect', 'limitedEditionDrop', 'limitedEditionFitted']) {
+  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualWaiting', 'ritualCollect', 'limitedEditionDrop', 'limitedEditionFitted']) {
     events.on(name, ({ pa }) => {
       hud.showAnnouncement({ ...pa, priority: 1 });
       sound.play('paChime');
@@ -344,7 +345,7 @@ export function createGame({
   // feature might need (game/features/index.js lists the context).
   const features = buildFeatures(map, {
     scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state,
-    colliders, effects, sound,
+    colliders, effects, sound, input,
   });
 
   // FLASH SALES: the mall PA discounts one group of prices for a while (game/flashSales.js). A group is only picked
@@ -453,14 +454,23 @@ export function createGame({
 
     if (debugTick) debugTick();
 
-    player.update(dt);
+    // An in-game menu (state.menu, set by a feature): the player stands still and can't shoot or buy, but zombies, rounds and
+    // everything else carry on. The feature reads the menu's input in features.update. (The gun is skipped, not just blocked,
+    // so it doesn't eat the mouse wheel the menu scrolls with.)
+    const inMenu = !!state.menu;
+    if (inMenu) {
+      player.velocity.x = player.velocity.z = 0;
+      player.freeze();
+    } else {
+      player.update(dt);
+    }
     powerUps.update(dt); // collect escape rewards before this tick's zombie attacks; paused/dead timers freeze
     // "[Space] Vault" prompt: would a jump press now end in a vault? (checked per tick, shown in render)
-    vaultPromptVisible = player.grounded && !player.vault.active && player.vault.preview();
-    interactions.update(dt); // before the gun: on controller X, a hold near a buyable buys instead of reloading
-    melee.update(dt, !gun.isSwitching);
+    vaultPromptVisible = !inMenu && player.grounded && !player.vault.active && player.vault.preview();
+    if (!inMenu) interactions.update(dt); // before the gun: on controller X, a hold near a buyable buys instead of reloading
+    if (!inMenu) melee.update(dt, !gun.isSwitching);
     // Hands busy with a slash or a vault: no shooting. A vault only pauses a reload (it carries on after).
-    gun.update(dt, melee.isBusy || player.vault.active, player.vault.active);
+    if (!inMenu) gun.update(dt, melee.isBusy || player.vault.active, player.vault.active);
     zombies.update(dt);
     // Rounds pause while you're off in the debug test range (zombies can't reach you there).
     if (!(arena && arena.contains(player.position))) rounds.update(dt);

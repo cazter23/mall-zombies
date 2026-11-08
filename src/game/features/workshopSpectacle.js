@@ -83,10 +83,10 @@ export function createWorkshopSpectacle({ bench, ritual, events, zombies, player
   });
   events.on('ritualReady', ({ reason }) => {
     setParty(false);
-    if (reason === 'lever') {
-      leverTarget = leverDown;
-      sound?.play('leverClunk');
-    }
+    // (Nobody pulls it any more: it drops by itself with a clunk when the order is done.)
+    leverTarget = leverDown;
+    sound?.play('leverClunk');
+    void reason;
   });
   events.on('ritualCollect', () => {
     clearTank();

@@ -29,6 +29,13 @@ export const bindings = {
   melee: ['KeyV', 'PadRB', 'PadR3'],
   inspect: ['KeyI', 'PadDown'],
   pause: ['PadStart'],
+  // Build-A-Blaster's order form (the player stands still while it is open, so these can share keys with moving and buying).
+  menuUp: ['KeyW', 'ArrowUp', 'WheelUp', 'PadUp'],
+  menuDown: ['KeyS', 'ArrowDown', 'WheelDown', 'PadDown'],
+  menuLeft: ['KeyA', 'ArrowLeft', 'PadLeft'],
+  menuRight: ['KeyD', 'ArrowRight', 'PadRight'],
+  menuConfirm: ['KeyF', 'Enter', 'PadA'],
+  menuBack: ['KeyQ', 'Backspace', 'PadB'],
   confirm: ['PadA', 'PadStart'], // controller menus: start, resume, play again
   settings: ['PadY'], // controller: open Settings from the pause screen
   controlsScreen: ['PadX'], // controller: open the Controls screen from the pause screen
@@ -72,9 +79,9 @@ export const controlsHelp = {
 
 // Button names shown in on-screen prompts, per device.
 export const buttonLabels = {
-  keyboard: { reload: 'R', melee: 'V', confirm: 'Click', interact: 'F', jump: 'Space' },
-  xbox: { reload: 'X', melee: 'RB', confirm: 'A', interact: 'X', jump: 'A' },
-  playstation: { reload: '□', melee: 'R1', confirm: '✕', interact: '□', jump: '✕' },
+  keyboard: { reload: 'R', melee: 'V', confirm: 'Click', interact: 'F', jump: 'Space', menuConfirm: 'F', menuBack: 'Q', menuMove: 'W/S', menuSwitch: 'A/D' },
+  xbox: { reload: 'X', melee: 'RB', confirm: 'A', interact: 'X', jump: 'A', menuConfirm: 'A', menuBack: 'B', menuMove: 'D-pad', menuSwitch: '◀ ▶' },
+  playstation: { reload: '□', melee: 'R1', confirm: '✕', interact: '□', jump: '✕', menuConfirm: '✕', menuBack: '○', menuMove: 'D-pad', menuSwitch: '◀ ▶' },
 };
 
 export const gamepad = {

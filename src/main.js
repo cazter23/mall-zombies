@@ -397,7 +397,7 @@ function render(alpha, frameTime) {
   hud.setSprint(player.sprintFraction, player.sprintExhausted, player.isSprinting);
   hud.setAmmo(gun.weapon, buttonLabel('reload'));
   hud.setAmmoTier(tierById(tierOf(gun.modsFor(gun.def.id) ?? [])));
-  const prompt = game.over ? null : interactions.prompt;
+  const prompt = game.over || game.menu ? null : interactions.prompt; // (no shelf ticket behind an open menu)
   // A Flash Sale shows as a SALE mark on the price of whatever it discounted.
   hud.setInteract(prompt && {
     ...prompt,
@@ -407,6 +407,8 @@ function render(alpha, frameTime) {
   hud.setFlashSale(game.over ? null : flashSales.active);
   hud.setPowerUps(game.over ? null : g.powerUps);
   hud.setRitual(game.over ? null : ritual?.status ?? null);
+  hud.setOrderForm(game.over ? null : ritual?.form ?? null,
+    { confirm: buttonLabel('menuConfirm'), back: buttonLabel('menuBack'), move: buttonLabel('menuMove'), switch: buttonLabel('menuSwitch') });
   hud.setLimitedEdition(game.over ? null : limitedEditions?.status ?? null);
   hud.setVaultPrompt(game.running && !game.over && g.vaultPromptVisible, buttonLabel('jump'));
   hud.setPoints(wallet.points);

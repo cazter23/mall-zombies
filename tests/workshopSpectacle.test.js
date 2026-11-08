@@ -26,9 +26,9 @@ function fixture() {
   const bench = g.map.features.find(f => f.kind === 'workshop');
   const { ritual } = instance;
   const stand = (x, z, yaw) => { g.player.teleport({ position: new THREE.Vector3(x, Y, z), yaw }); g.player.pitch = 0; t.tick(); };
-  const order = (stuffing = 'fryerOil') => { ritual.choose(stuffing, 'headshot'); stand(0, bench.position.z - 1, Math.PI); t.press('KeyF', 20); t.tick(); };
-  const lever = () => { const s = bench.stations.lever; stand(s.x - 1, s.z, -Math.PI / 2); t.press('KeyF', 20); t.tick(); };
-  const collect = () => { const s = bench.stations.booth; stand(s.x - 1, s.z, -Math.PI / 2); t.press('KeyF', 20); t.tick(30); };
+  const order = (stuffing = 'fryerOil') => { ritual.choose(stuffing, 'headshot'); stand(0, bench.position.z - 1, Math.PI); t.press('KeyF', 20); t.press('KeyF'); t.tick(); };
+  const lever = () => { ritual.finishNow(); t.tick(); }; // (the order finishing, as time running out would)
+  const collect = () => { t.tick(Math.ceil(cfg.catchUpSeconds * 60) + 30); }; // it comes back by itself
   const hall = bench.stations.rooms[1];
   const killInRoom = () => {
     const zombie = g.zombies.spawn('shopper', new THREE.Vector3(hall.maxX - 2, 0, hall.minZ + 1));
@@ -148,7 +148,7 @@ test('a return falls out of the chute, the flap swings, and it lands like any zo
   g.map.dispose();
 });
 
-test('the lever drops when pulled and is back up for the next order', () => {
+test('the lever drops by itself when the order is done, and is back up for the next one', () => {
   const t = fixture(), { g, st, tick } = t;
   const up = st.leverHandle.rotation.z;
   t.order();
@@ -162,14 +162,14 @@ test('the lever drops when pulled and is back up for the next order', () => {
   g.map.dispose();
 });
 
-test('running out of time does not pull the lever', () => {
+test('running out of time drops the lever too: it marks the order done however it ends', () => {
   const t = fixture(), { g, st, tick } = t;
-  const up = st.leverHandle.rotation.z;
   t.order();
   tick(Math.ceil(cfg.maxSeconds * 60) + 2);
   assert.equal(t.ritual.phase, 'ready');
-  assert.ok(Math.abs(st.leverHandle.rotation.z - up) < .05);
-  assert.ok(!t.sounds.includes('leverClunk'));
+  tick(90); // (the lever eases down)
+  assert.ok(Math.abs(st.leverHandle.rotation.z - st.leverAngles.down) < .05);
+  assert.ok(t.sounds.includes('leverClunk'));
   g.map.dispose();
 });
 
@@ -177,10 +177,11 @@ test('the arm lifts the gun off the belt and carries it over the lane to the boo
   const t = fixture(), { g, st, tick, ritual } = t;
   t.order();
   t.lever();
-  tick(Math.ceil(cfg.catchUpSeconds * 60) + 2);
+  tick(Math.ceil(cfg.catchUpSeconds * 60) - 3); // (just before it lands: then it comes back to you)
   const last = st.path.at(-1);
-  assert.ok(ritual.gunPosition.distanceTo(last) < .01, 'on the counter');
-  assert.ok(Math.abs(st.arm.group.position.x - st.arm.maxX) < .01, 'the arm followed it');
+  assert.ok(Math.abs(ritual.gunPosition.x - last.x) < .05 && Math.abs(ritual.gunPosition.z - last.z) < .05, 'over the counter');
+  assert.ok(ritual.gunPosition.y < st.path.at(-2).y, 'and being lowered onto it');
+  assert.ok(Math.abs(st.arm.group.position.x - st.arm.maxX) < .3, 'the arm followed it');
   const lane = st.path.at(-2);
   assert.ok(lane.y - Y > 2.2, 'above anyone walking the lane');
   g.map.dispose();
