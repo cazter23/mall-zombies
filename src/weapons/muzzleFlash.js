@@ -58,8 +58,9 @@ export function createMuzzleFlash(cfg, lights = null) {
 
     // A shot just fired. `aimAmount` 0..1: down the sights the burst is wide and flat, so it
     // blasts out both sides of the gun's nose and stays below the crosshair.
-    trigger(aimAmount = 0) {
+    trigger(aimAmount = 0, tint = null) {
       life = cfg.seconds;
+      outer.material.color.setHex(tint ?? cfg.outerColor); // (a Build-A-Blaster gun's flash takes its stuffing's colour)
       handLight.color.setHex(cfg.lightColor);
       handLight.distance = cfg.handLightRange;
       worldLight.color.setHex(cfg.lightColor);

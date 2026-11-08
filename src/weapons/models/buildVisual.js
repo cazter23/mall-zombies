@@ -4,12 +4,15 @@
 // Placed from the gun's sticker mount, which sits on its left face on every gun. (Not from the model's bounds: model.root holds the hands and arms too.)
 import * as THREE from 'three';
 import { workshopStuffings, qualityById } from '../../config/workshop.js';
+import { gunStyle } from '../../config/gunStyle.js';
 
 const PATCH = { height: .03, length: .05, thickness: .002 };
 const STITCH = { count: 5, spacing: .0115, length: .012, width: .0016, offsetY: .02, proud: .0018 };
-const SEAM = { count: 6, spacing: .017, length: .017, width: .003, lift: .0035 }; // thread down the top of the gun, the face you look at
+const SEAM = { count: 6, spacing: .017, length: .017, width: gunStyle.glow.width, lift: .0035 }; // thread down the top of the gun, the face you look at
 const LUMPS = [[.02, .012, -.024, .017], [.024, -.012, -.006, .021], [.02, .014, .014, .016], [.018, -.014, .028, .015]]; // out, up, along, radius
 const TUFTS = 3, TUFT_SIZE = .005, TUFT_FALL = .05, TUFT_DRIFT = .012, TUFT_SPEED = .5;
+
+const WHITE = new THREE.Color(0xffffff);
 
 export function createBuildVisual(gun, mounts = {}) {
   const anchor = mounts.sticker;
@@ -25,7 +28,10 @@ export function createBuildVisual(gun, mounts = {}) {
   const patch = new THREE.Mesh(new THREE.BoxGeometry(PATCH.thickness, PATCH.height, PATCH.length), patchMaterial);
   patch.name = 'buildPatch';
   patch.position.x = outward * PATCH.thickness;
-  root.add(patch);
+  const face = new THREE.Group(); // the patch and its stitches: they ride out on the pillow (see show())
+  face.name = 'buildFace';
+  root.add(face);
+  face.add(patch);
 
   const stitchGeometry = new THREE.BoxGeometry(STITCH.width, STITCH.length, STITCH.width);
   const stitchMaterial = new THREE.MeshStandardMaterial({ color: 0x1d1626, roughness: .7 });
@@ -44,10 +50,10 @@ export function createBuildVisual(gun, mounts = {}) {
       }
     }
   }
-  root.add(stitches);
+  face.add(stitches);
 
   // The seam along the top, in the stuffing's colour.
-  const seamMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .6 });
+  const seamMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff }); // unlit: the seam GLOWS (config/gunStyle.js glow)
   if (mounts.top) {
     const [tx, ty, tz] = mounts.top.position;
     const threads = new THREE.InstancedMesh(new THREE.BoxGeometry(SEAM.length, SEAM.width, SEAM.width), seamMaterial, 2 * SEAM.count);
@@ -64,6 +70,18 @@ export function createBuildVisual(gun, mounts = {}) {
     }
     root.add(threads);
   }
+
+  // The PUFF: a stuffed pillow on each side of the body, bigger with the quality (config/gunStyle.js puff). The left one carries the patch.
+  const puffStyle = gunStyle.puff;
+  const pillowMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .95, flatShading: true });
+  const pillowGeometry = new THREE.IcosahedronGeometry(1, 1);
+  const pillows = [outward, -outward].map((side) => {
+    const pillow = new THREE.Mesh(pillowGeometry, pillowMaterial);
+    pillow.name = 'buildPuff';
+    pillow.scale.setScalar(.001); // (sized by show())
+    root.add(pillow);
+    return { pillow, side };
+  });
 
   const bulge = new THREE.Group();
   bulge.name = 'buildBulge';
@@ -99,6 +117,16 @@ export function createBuildVisual(gun, mounts = {}) {
       seamMaterial.color.setHex(color);
       leaking = !!qualityById(build.quality)?.bulge;
       bulge.visible = leaking;
+      const puff = puffStyle[build.quality] ?? puffStyle.regular;
+      pillowMaterial.color.setHex(color).lerp(WHITE, puffStyle.tint);
+      for (const { pillow, side } of pillows) {
+        const left = side === outward;
+        const k = left ? 1 : puffStyle.rightScale;
+        pillow.position.set(left ? 0 : -2 * ax, puff.rise, left ? 0 : puffStyle.rightBack);
+        pillow.scale.set(puff.out * k, puff.h / 2 * k, puff.len / 2 * k);
+      }
+      face.position.x = outward * puff.out * .85; // on the pillow's outer face
+      face.position.y = puff.rise;
     },
     /** Tufts of stuffing drift down out of the seam. `time` in seconds. */
     animate(time) {

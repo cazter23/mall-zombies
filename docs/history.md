@@ -1,5 +1,18 @@
 # Sunset Galleria: build history ("Current state")
 
+## 9 November 2026 - Gun upgrades you can see, and the Extended Warranty rework
+
+Looked at from behind the gun, a Warranty seal and a Build-A-Blaster patch were tiny stickers on the face you rarely see, and the build's patch covered the warranty seal
+(both sat on the same mount). Now each system has its own zone on the gun, all readable at once (config/gunStyle.js): the WARRANTY is the barrel collar (one blue ring, two
+purple, then a wide gold block with two dark stripes and a gem, a gold stud on top per Renewal) plus a tag swinging off the grip; the BUILD puffs the body (a stuffed pillow each
+side, bigger with the quality, the patch riding on it, a glowing seam on top, and the muzzle flash in the stuffing's colour); ATTACHMENTS are drawn 1.2x chunkier.
+The HUD shows the same under the gun's name: Renewal stars, a swatch with the build's quality and stuffing, and a pip per attachment slot.
+tools/gunSheet.html (npm run dev, then /tools/gunSheet.html?gun=nailGun&view=left) shows one gun in eight states side by side.
+Warranties reworked (game/warranty.js): Deluxe is handling (x1.1 damage, +25% magazine, -15% reload, 1,000), Premium is damage (x1.45, 3,000), Platinum is the most damage
+(x1.65) and a CLAIM: a completely dry gun gets its ammo replaced once per round (6,000). Past Platinum the desk sells Warranty Renewals (5, each x1.06 damage and x1.03
+magazine, 3,000 up to 10,000). A replaced gun leaves its warranty on file; the desk moves it onto the gun in hand for a quarter of that tier's price. Not done: a visible
+cue on the gun for the build's quality beyond the pillow size, and the other seven guns' collars were only checked on a contact sheet, not in hand.
+
 ## 8 November 2026 — Idle saver (focus mode)
 
 The title screen draws a full post-processed flyover every frame, so a tab left open on the menu kept a CPU core and the GPU busy all day. Now, while the game is

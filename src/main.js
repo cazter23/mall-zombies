@@ -28,7 +28,9 @@ import { settingPresets } from './config/settings.js';
 import { createSettingsMenu } from './ui/settingsMenu.js';
 import { createControlsMenu } from './ui/controlsMenu.js';
 import { createGame } from './game/createGame.js';
-import { tierById, tierOf } from './weapons/upgrades.js';
+import { tierById, tierOf, renewalsOf, attachmentsOf } from './weapons/upgrades.js';
+import { upgrades } from './config/upgrades.js';
+import { buildOf, qualityById, workshopStuffings } from './config/workshop.js';
 import { PRICE_CATEGORIES } from './game/pricing.js';
 import { createDebugPanel } from './ui/debugPanel.js';
 import { createTitleCamera } from './ui/titleCamera.js';
@@ -407,6 +409,15 @@ function render(alpha, frameTime) {
   hud.setSprint(player.sprintFraction, player.sprintExhausted, player.isSprinting);
   hud.setAmmo(gun.weapon, buttonLabel('reload'));
   hud.setAmmoTier(tierById(tierOf(gun.modsFor(gun.def.id) ?? [])));
+  {
+    const mods = gun.modsFor(gun.def.id) ?? [];
+    const build = buildOf(mods), fitted = attachmentsOf(mods);
+    hud.setUpgradeRow({
+      renewals: renewalsOf(mods),
+      build: build && { color: workshopStuffings[build.stuffing]?.color ?? 0xffffff, label: `${qualityById(build.quality)?.name ?? ''} ${workshopStuffings[build.stuffing]?.name ?? ''}`.trim() },
+      slots: Object.entries(upgrades.attachmentSlots).map(([slot, def]) => ({ name: def.name, fitted: !!fitted[slot] })),
+    });
+  }
   const prompt = game.over || game.menu ? null : interactions.prompt; // (no shelf ticket behind an open menu)
   // A Flash Sale shows as a SALE mark on the price of whatever it discounted.
   hud.setInteract(prompt && {

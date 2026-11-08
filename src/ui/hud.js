@@ -203,11 +203,14 @@ export function createHud() {
     <div class="ammo-count"><span class="ammo-mag"></span><span class="ammo-reserve"></span></div>
     <div class="ammo-name"></div>
     <div class="ammo-tier"></div>
+    <div class="ammo-upgrades"></div>
   `;
   const ammoMag = ammo.querySelector('.ammo-mag');
   const ammoReserve = ammo.querySelector('.ammo-reserve');
   const ammoName = ammo.querySelector('.ammo-name');
   const ammoTier = ammo.querySelector('.ammo-tier');
+  const ammoUpgrades = ammo.querySelector('.ammo-upgrades');
+  let lastUpgradeKey = null;
   let lastTierKey = null;
   hud.append(ammo);
   let lastAmmoKey = '';
@@ -481,6 +484,34 @@ export function createHud() {
       if (!show) return;
       ammoTier.textContent = tier.name;
       ammoTier.style.color = `#${tier.color.toString(16).padStart(6, '0')}`;
+    },
+
+    // The held gun's upgrades as a row of chips under its name, so you never need to inspect it: Warranty Renewals (gold stars), the Build-A-Blaster
+    // build (a swatch in the stuffing's colour and its quality) and one pip per attachment slot (lit when fitted). Called every frame; only touches the DOM on a change.
+    // info: { renewals, build: { color, label } | null, slots: [{ name, fitted }] }
+    setUpgradeRow(info) {
+      const key = info ? `${info.renewals}|${info.build?.color}|${info.build?.label}|${info.slots.map((x) => (x.fitted ? 1 : 0)).join('')}` : '';
+      if (key === lastUpgradeKey) return;
+      lastUpgradeKey = key;
+      const chips = [];
+      const chipOf = (className, text) => { const chip = el('span', className); if (text) chip.textContent = text; return chip; };
+      if (info?.renewals) chips.push(chipOf('upgrade-chip upgrade-stars', '★'.repeat(info.renewals)));
+      if (info?.build) {
+        const chip = chipOf('upgrade-chip upgrade-build', info.build.label);
+        chip.style.setProperty('--swatch', `#${info.build.color.toString(16).padStart(6, '0')}`);
+        chips.push(chip);
+      }
+      if (info?.slots.some((x) => x.fitted)) {
+        const pips = chipOf('upgrade-chip upgrade-pips');
+        for (const slot of info.slots) {
+          const pip = el('i', slot.fitted ? 'on' : '');
+          pip.title = slot.name;
+          pips.append(pip);
+        }
+        chips.push(pips);
+      }
+      ammoUpgrades.replaceChildren(...chips);
+      ammoUpgrades.classList.toggle('show', chips.length > 0);
     },
 
     // Called every frame with the held weapon; only touches the DOM when something changed.

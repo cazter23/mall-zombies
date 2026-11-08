@@ -235,6 +235,7 @@ src/
                         parts, weapon-suited Jumbo Pack reservoirs/drums/packs via mount.gunId, Speed Loader cam latch + ribbed finger loop,
                         terrycloth wristband with woven tag) and createUpgradeVisuals(model): every part + a branded Extended Warranty service
                         seal built up front (hidden), show({ tier, attachments }) per frame; the Extended Nozzle moves the muzzle (and flash) to its tip.
+                        warrantyTrim.js = the Extended Warranty on the gun: barrel collar (rings that get chunkier by tier, studs for Renewals) and a swinging grip tag; buildVisual.js also puffs the body (pillows). Sizes: config/gunStyle.js.
                         New gun = new file + 1 line (+ its mounts)
       shortBarrel.js    Reversible front-segment geometry variants, preserving moving-parent transforms and owning both variants.
       loanerTag.js      The Courtesy Loaner's security tag and swinging card (reversible, like the other upgrade visuals).
@@ -490,6 +491,7 @@ src/
                         delivery notices. Scenic geometry only; uses config/parkingDetails.js alongside parkingLot.js.
     mall/parkingDetailKit.js Shared boxes, rods, signs, planes and canvas decal materials; all resources owned by mapKit.
     config/parkingDetails.js Authored wear/scene/service/street locations, RV labels, haze/sway settings, ambient loops/events.
+    config/gunStyle.js  How upgrades change a gun's shape: attachment scale, the warranty collar and tag sizes per tier, the build's pillows per quality, the seam glow. Looks only.
     mall/mallExterior.js Opaque outer Atrium facades, roof and returns close the building beyond Mega Mart. Meshes opt into
                         userData.alwaysVisible so room culling preserves the building silhouette while hiding its interior.
     mall/promenadeShop.js SHOE-PER SALE interior: two entrances, perimeter shoe shelves, fitting mirror/bench, shoe boxes and a low
@@ -564,6 +566,7 @@ src/
                         setMasterVolume(v) (used by Settings > Audio), setAmbience(mix) (up to three continuous spatial voices,
                         short crossfades), playAmbient(name, {volume, pan}); faded sources stop and disconnect
     game/ambience.js    Spatial loop selection with optional emitter gain/smooth pulses; local map.ambientEvents play
+    game/warranty.js    The Extended Warranty rules that are not a stat change: what the Customer Service desk offers (next tier, a Renewal past Platinum, or a warranty on file moved onto this gun for a fee), the warranty a replaced gun leaves on file, and the Platinum claim (a dry gun gets its ammo back once per round). Numbers: config/upgrades.js.
                         occasional one-shots only in audible unlocked areas. Timers freeze on pause and restart on reset.
     ambientPulse.js     Sparse mechanical ticks mixed into a looping ambience buffer (reuses the noise grain: no gameplay random draws).
     mallMusic.js        Pure, deterministic PCM composition of the lounge loop; used by the music worker and the export/preview tests.
@@ -590,7 +593,7 @@ src/
                         the music worker (as a Blob worker) pasted into ONE html file; the Google Fonts link loads non-blocking so a blocked
                         network just falls back to system fonts; tests/singleFile.test.js builds it and checks it is self-contained); balance.js = gun balance maths shared with the tests (seeded Monte Carlo of each
                         gun's real spread + pellets vs a Shopper's hitboxes at a range: expectedShotDamage, sustainedDps, burstDps,
-                        shotsToKill); gunReport.mjs = `npm run balance`; babReport.mjs = `npm run balance:bab` (headless horde bot: plain gun vs warranty tiers vs builds)
+                        shotsToKill); gunReport.mjs = `npm run balance`; gunSheet.html/.js = a contact sheet of one gun in eight upgrade states (`npm run dev`, /tools/gunSheet.html?gun=nailGun&view=left); babReport.mjs = `npm run balance:bab` (headless horde bot: plain gun vs warranty tiers vs builds)
   world/                Shared building blocks for maps
     mapKit.js           createMapKit(group, colliders): mat, addCollider, box, sign, tiledFloor, wall({ along, from, to,
                         at0, at1, height, openings: [{ from, to, top }] }) (doorways get lintels), shutterDoor({ id, label,

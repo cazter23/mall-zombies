@@ -46,6 +46,10 @@ reachable by zombies, a zombie following round each side, the hall as its own cu
 walking away and coming back, conveyor stages, the lever and booth only answering at the right time, gun purchases mid-ritual, upgrades staying on the gun, Play again and death
 mid-ritual, the chute steering spawns only while you are in the room, a full round where the chute adds no zombies and the round still ends, and the debug shortcut.
 
+`tests/warranty.test.js` covers the Extended Warranty rules (game/warranty.js): each tier's job, Renewals (compounding, priced one by one, capped), a replaced gun's warranty on file and moved onto the gun in hand for a share of the price, a gun away at Build-A-Blaster leaving nothing, the Platinum claim once per round, and Play again clearing it.
+
+`tests/gunStyle.test.js` covers how upgrades change a gun's shape (config/gunStyle.js): on every gun the warranty collar is chunkier tier by tier with a swinging tag, Renewals add studs on Platinum only, a build puffs the body with a pillow each side that grows with the quality and a glowing seam, all three show at once within a draw budget, and attachments are drawn chunkier.
+
 `tests/workshopPower.test.js` covers the power rework: a build powers the gun up by its quality and beats any warranty tier, the two stack, the gun returns loaded and refilled, Smoothie's extra damage, Popcorn Butter's slip (and its hitboxes, double headshots, immunity, bosses), Antifreeze's shatter and shards, Reload's only-with-a-zombie-close, the status glow, and the proc flash.
 
 `tests/workshopBuilds.test.js` covers finished builds: every Stuffing + Heart pair set off for real, a Last Round miss, Reload's blast and cooldown, Every 10th counting only that gun's kills, puddles, Antifreeze's chill then shatter, Hearts per gun, burn ticks and no stacking, kills paying once, stuffing kills not firing a Heart, the Heart cooldown, walls and floors

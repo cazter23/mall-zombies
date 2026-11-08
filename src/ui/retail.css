@@ -232,6 +232,14 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   letter-spacing: .12em; line-height: 1.2; text-shadow: none;
   box-shadow: 2px 2px 0 #160f18a6;
 }
+.ammo-upgrades { display: none; justify-content: flex-end; align-items: center; gap: 5px; margin-top: 3px; flex-wrap: wrap; }
+.ammo-upgrades.show { display: flex; }
+.upgrade-chip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 6px; font: 700 var(--ui-caption, 11px)/1.4 var(--font-ui); letter-spacing: .04em; background: #241929ed; color: #fff8e8; border: 1px solid #fff8e855; text-shadow: none; }
+.upgrade-stars { color: #fff1a8; letter-spacing: 0; }
+.upgrade-build::before { content: ''; width: 9px; height: 9px; background: var(--swatch, #fff); border: 1px solid #fff8e8aa; }
+.upgrade-pips { gap: 3px; padding: 3px 5px; }
+.upgrade-pips i { width: 8px; height: 8px; background: #fff8e822; border: 1px solid #fff8e888; }
+.upgrade-pips i.on { background: #ffb800; border-color: #fff8e8; }
 .ammo-tier { margin: 3px 0 0 auto; padding: 0; width: fit-content; max-width: 100%; box-sizing: border-box; background: none; border: 0; text-shadow: 0 1px 3px #000, 0 0 2px #000; font-size: 9px; transform: none; }
 .ammo.low .ammo-mag { color: #ffba87; text-shadow: 0 2px 3px #000, 1px 0 2px #000; }
 .vitals {
