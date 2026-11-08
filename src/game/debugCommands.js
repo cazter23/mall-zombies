@@ -16,7 +16,8 @@
 
 import { debug } from '../config/debug.js';
 import { weapons } from '../config/weapons.js';
-import { zombieTypes } from '../config/zombies.js';
+import { mascotTypes, zombieTypes } from '../config/zombies.js';
+import { MASCOT_VARIANT_IDS } from '../zombies/mascotVariants.js';
 import { toggleDoors } from '../world/door.js';
 import { nextTier, withTier, tierById } from '../weapons/upgrades.js';
 
@@ -25,13 +26,27 @@ const WALL_GUN_IDS = Object.keys(weapons).filter((id) => id !== 'stapleGun');
 const nameOf = (id) => id.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
 
 export function createDebugCommands({ map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses, commands = debug.commands, onUse = null }) {
-  const state = { panelOpen: debug.panel.startOpen, zombieIndex: 0, gunIndex: 0, last: '' };
+  const state = { panelOpen: debug.panel.startOpen, zombieIndex: 0, gunIndex: 0, mascotIndex: 0, last: '' };
   const selectedZombie = () => ZOMBIE_IDS[state.zombieIndex];
+
+  // Spawn a Mascot in a chosen costume at the open spawn point nearest you (the Mascot cap still applies).
+  function spawnMascot(variant) {
+    const zombie = zombies.spawn('mascot', null, { variant, nearest: true });
+    if (!zombie) return 'No safe spawn point right now';
+    return zombie.type.mascot ? `Spawned ${mascotTypes[variant].name}` : 'Two Mascots are already out: spawned a Shopper';
+  }
 
   const run = {
     spawn() {
       const id = selectedZombie();
       return zombies.spawn(id) ? `Spawned ${nameOf(id)}` : 'No safe spawn point right now';
+    },
+    // Each press: the next costume in turn (Sir Waffles, Captain Coupon, ...), whatever the round.
+    spawnMascot() {
+      const variant = MASCOT_VARIANT_IDS[state.mascotIndex % MASCOT_VARIANT_IDS.length];
+      const message = spawnMascot(variant);
+      if (message.startsWith('Spawned ')) state.mascotIndex += 1;
+      return message;
     },
     summonBoss() {
       if (!rounds.started) rounds.start();

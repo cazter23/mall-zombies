@@ -19,7 +19,8 @@
 //                                                        future 'hazard' / 'effect'...). ALL kill payouts and kill
 //                                                        stats come from this one event. After the player's death
 //                                                        events still fire, but nothing more is paid or counted.
-//   'mascotHeadPop' { zombie, headshot, source }         Sir Waffles' helmet came off at half health (whatever hit him)
+//   'mascotHeadPop' { zombie, headshot, source }         a Mascot's helmet came off at half health (whatever hit it;
+//                                                        zombie.type.variant = the costume)
 //   'playerHit'   { damage, zombie, knockback }          a zombie's swing (or a cart charge) landed;
 //                                                        knockback = { x, z } m/s shove or null
 //   'playerDeath' {}                                     after the death is registered (onPlayerDeath)
@@ -33,7 +34,9 @@
 //   'powerUpExpire' { id }                               uncollected incentive timed out
 //   'roundStart'  { round }                              the round number flipped (game/rounds.js)
 //   'roundDiscard' {}                                    a debug skip cleared the current wave
-//   'typeIntro'   { typeId }                             a zombie type's first appearance this run
+//   'typeIntro'   { typeId, zombie }                     a zombie type's first appearance this run (zombie = that spawn)
+//   'mascotVariantIntro' { variant, zombie }             a Mascot costume's first appearance this run, after the type's
+//                                                        own intro (game/rounds.js; banner: config/zombies.js mascotVariants)
 //   'bossSpawn'   { zombie, round }                      a scheduled or debug-summoned boss entered the wave
 //   'bossPhase'   { zombie, phase, round }               an encounter mechanic began (Janitor: wetFloor)
 //   'bossDefeated' { zombie, round }                     an active boss died through the regular kill path

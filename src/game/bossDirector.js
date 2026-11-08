@@ -1,11 +1,16 @@
 import { bossTiming, bossTypes } from '../config/bosses.js';
 import { economy, maxAliveForRound, zombieCountForRound } from '../config/economy.js';
+import { mascotVariants } from '../config/zombies.js';
 import { createJanitorBehavior } from '../zombies/bosses/janitor.js';
 
 const behaviors = { janitor: createJanitorBehavior };
 
 export function chooseBossSchedule(random = Math.random) {
-  const intros = new Set(Object.values(economy.zombieMix).map(({ fromRound }) => fromRound));
+  // A boss never shares a round with a zombie type's or a Mascot costume's debut.
+  const intros = new Set([
+    ...Object.values(economy.zombieMix).map(({ fromRound }) => fromRound),
+    ...Object.values(mascotVariants).map(({ unlockRound }) => unlockRound),
+  ]);
   const schedule = new Map();
   for (const [id, type] of Object.entries(bossTypes)) {
     const rounds = type.firstRounds.filter(round => !intros.has(round) && !schedule.has(round));

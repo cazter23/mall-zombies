@@ -268,11 +268,14 @@ const mannequin = {
     release: { name: 'mannequinClick', maxDistance: 20 } },
   introBanner: { kicker: 'Display advisory', text: 'Mannequins move when you look away. Keep them in sight.' },
 };
-// Round 10+: Sir Waffles, the Food Court's foam breakfast knight.
+// Round 10+: the MASCOT. One zombie slot (economy.zombieMix.mascot: share, maxAlive, intro) wearing one of several
+// costumes (mascotVariants below). Every costume shares this foam body, its rig and the three beats: an armoured
+// approach -> the helmet pops off at half health -> it shakes, then rushes. A costume brings its own looks and lines,
+// and changes ONE beat (its tuning block: reclaim, popBlast, melt). Shared numbers live here; a costume's own in its entry.
 export const mascotFoamColors = [0xfff1cd, 0xfff9eb, 0xe6d9b9];
 const mascotHipY = 0.72;
 const mascotTorso = { size: [0.72, 0.68, 0.52], at: [0, 0.34, 0] };
-const mascot = {
+const mascotBase = {
   ...shopper,
   id: 'mascot',
   speed: 1.35,
@@ -284,10 +287,9 @@ const mascot = {
   radius: cartPusher.radius, // keep the shared navigation clearance; the foam extends beyond the collider
   hitbox: { bodyTop: mascotHipY + mascotTorso.at[1] + mascotTorso.size[1] / 2 }, // death burst origin
   attack: { ...shopper.attack, damage: 50, windupSeconds: 0.55, minWindupSeconds: 0.45 },
-  plastic: { color: 0xe8a037, roughness: 0.95 }, // EVA foam, uses the existing non-flesh death effects
+  plastic: { roughness: 0.95 }, // EVA foam, uses the existing non-flesh death effects (each head brings its foam colour)
   splatColors: mascotFoamColors,
   deathSplatCount: 42,
-  introBanner: { kicker: 'Attention shoppers', text: 'Sir Waffles is loose in the mall. Please keep syrup at a safe distance.' },
   sounds: {
     step: { name: 'mascotThump', interval: 0.58, chance: 1, maxDistance: 18 },
     headPop: { name: 'mascotHeadPop', maxDistance: 26 },
@@ -303,37 +305,19 @@ const mascot = {
     rage: { seconds: 0.6, shake: 0.14, shakeRate: 42 },
     // The fallen helmet sits on the floor until the round ends, turning to face you. Only so many stay: each is a couple of dozen draw calls.
     leftHelmets: { max: 3, turnSpeed: 1.2, settleSeconds: 0.35, wallMargin: 0.55, rayHeight: 0.5 },
-    helmetPopLine: { kicker: 'Lost property', text: 'A customer has lost their head. It may be claimed at Customer Service.' },
-    // Model dimensions in meters. Each solid piece supplies its own hitbox.
+    // Model dimensions in meters. Each solid piece supplies its own hitbox. (The helmet is the costume's `head`.)
     spawnDepth: 2.36,
     hipY: mascotHipY,
     legX: 0.19,
     shoulder: [0.43, 0.55, 0],
-    helmet: { size: [0.95, 0.88, 0.79], at: [0, 1.09, 0] },
     exposedHead: { size: [0.32, 0.37, 0.32], at: [0, 0.865, 0] },
     torso: mascotTorso,
     thigh: { size: [0.30, 0.62, 0.32], at: [0, -0.31, 0] },
     boot: { size: [0.35, 0.21, 0.53], at: [0, -0.615, -0.08] },
     sleeve: { size: [0.23, 0.38, 0.28], at: [0, -0.16, 0] },
     mitt: { size: [0.28, 0.25, 0.32], at: [0, -0.42, -0.02] },
-    colors: {
-      suit: 0x6a3393, trim: 0xffd365, cape: 0xb83946, crust: 0xad5f2b, toast: 0xc87b32,
-      butter: 0xffe278, eyes: 0xfff7dc, dark: 0x34202a, skin: 0x91a869, hair: 0x40312d,
-    },
-    // Front-facing pieces on the waffle and the smaller, green head.
-    grid: { centers: [-0.33, -0.11, 0.11, 0.33], rows: [-0.31, -0.105, 0.10, 0.305],
-      size: [0.17, 0.157, 0.018], z: -0.399 },
-    waffleFace: [
-      { color: 'butter', size: [0.24, 0.14, 0.06], at: [-0.25, 0.29, -0.41], tilt: 0.22 },
-      { color: 'eyes', size: [0.15, 0.20, 0.044], at: [-0.20, 0.10, -0.422], tilt: 0.13 },
-      { color: 'eyes', size: [0.15, 0.20, 0.044], at: [0.20, 0.10, -0.422], tilt: -0.13 },
-      { color: 'dark', size: [0.062, 0.092, 0.024], at: [-0.184, 0.075, -0.449] },
-      { color: 'dark', size: [0.062, 0.092, 0.024], at: [0.184, 0.075, -0.449] },
-      { color: 'dark', size: [0.32, 0.081, 0.032], at: [0, -0.20, -0.421] },
-      { color: 'dark', size: [0.076, 0.079, 0.032], at: [-0.17, -0.17, -0.421], tilt: 0.45 },
-      { color: 'dark', size: [0.076, 0.079, 0.032], at: [0.17, -0.17, -0.421], tilt: -0.45 },
-      { color: 'eyes', size: [0.23, 0.03, 0.016], at: [0, -0.18, -0.442] },
-    ],
+    // The smaller, green head under every costume's helmet (a costume's `colors` add the suit's).
+    colors: { eyes: 0xfff7dc, dark: 0x34202a, skin: 0x91a869, hair: 0x40312d },
     zombieFace: [
       { color: 'hair', size: [0.32, 0.075, 0.32], at: [0, 0.148, 0.004] },
       { color: 'dark', size: [0.067, 0.047, 0.022], at: [-0.076, 0.035, -0.169], tilt: -0.12 },
@@ -341,12 +325,6 @@ const mascot = {
       { color: 'eyes', size: [0.028, 0.02, 0.012], at: [-0.079, 0.034, -0.183] },
       { color: 'dark', size: [0.14, 0.04, 0.023], at: [-0.013, -0.096, -0.169], tilt: 0.12 },
       { color: 'eyes', size: [0.036, 0.024, 0.012], at: [-0.045, -0.089, -0.183] },
-    ],
-    uniform: [
-      { color: 'cape', size: [0.5, 0.48, 0.035], at: [0, -0.07, 0.272] },
-      { color: 'cape', size: [0.45, 0.37, 0.025], at: [0, -0.04, -0.264] },
-      { color: 'trim', size: [0.20, 0.20, 0.027], at: [0, 0.07, -0.285], tilt: Math.PI / 4 },
-      { color: 'crust', size: [0.097, 0.097, 0.02], at: [0, 0.07, -0.305], tilt: Math.PI / 4 },
     ],
     pose: {
       radiansPerMeter: 4.4, shambleStride: 0.46, rushStride: 0.74, shambleArm: 0.24, rushArm: 0.55,
@@ -360,7 +338,72 @@ const mascot = {
     },
   },
 };
-export const zombieTypes = { shopper, mallWalker, cartPusher, mannequin, mascot };
+
+// THE COSTUMES. Each Mascot that spawns wears one the player has unlocked (unlockRound <= the round), picked by
+// zombies/mascotVariants.js once the spawn point is known: weight 1 each, x mascotPicking.homeWeight when the point's
+// zone is one of its homeZones. A costume's first appearance gets its own PA banner ('mascotVariantIntro'); in its
+// unlock round the first Mascot is forced to wear it (game/rounds.js). Entry fields:
+//   name, unlockRound, homeZones, introBanner, helmetPopLine (the PA line when the helmet comes off)
+//   colors   the suit: suit, trim, boot, plus any named in `uniform` and the head's decorations
+//   uniform  extra blocks on the torso ({ color, size, at, tilt }, colors by name)
+//   head     the helmet: kind (zombies/mascotHeads.js builds it), helmet { size, at } (the main block; its meshes are the
+//            head hitbox), color (its foam) and that kind's own pieces
+//   + the costume's own tuning block (the one beat it changes), read as zombie.type.mascot.<block>
+export const mascotPicking = { homeWeight: 3 };
+export const mascotVariants = {
+  // The Food Court's foam breakfast knight: the baseline, no twist.
+  sirWaffles: {
+    name: 'Sir Waffles',
+    unlockRound: 10,
+    homeZones: ['foodCourt'],
+    introBanner: { kicker: 'Attention shoppers', text: 'Sir Waffles is loose in the mall. Please keep syrup at a safe distance.' },
+    helmetPopLine: { kicker: 'Lost property', text: 'A customer has lost their head. It may be claimed at Customer Service.' },
+    colors: { suit: 0x6a3393, trim: 0xffd365, boot: 0xad5f2b, cape: 0xb83946, crust: 0xad5f2b, toast: 0xc87b32, butter: 0xffe278 },
+    uniform: [
+      { color: 'cape', size: [0.5, 0.48, 0.035], at: [0, -0.07, 0.272] },
+      { color: 'cape', size: [0.45, 0.37, 0.025], at: [0, -0.04, -0.264] },
+      { color: 'trim', size: [0.20, 0.20, 0.027], at: [0, 0.07, -0.285], tilt: Math.PI / 4 },
+      { color: 'crust', size: [0.097, 0.097, 0.02], at: [0, 0.07, -0.305], tilt: Math.PI / 4 },
+    ],
+    head: {
+      kind: 'waffle',
+      helmet: { size: [0.95, 0.88, 0.79], at: [0, 1.09, 0] },
+      color: 0xe8a037,
+      // The square dents (toast colour) and the face on the front.
+      grid: { centers: [-0.33, -0.11, 0.11, 0.33], rows: [-0.31, -0.105, 0.10, 0.305],
+        size: [0.17, 0.157, 0.018], z: -0.399, color: 'toast' },
+      face: [
+        { color: 'butter', size: [0.24, 0.14, 0.06], at: [-0.25, 0.29, -0.41], tilt: 0.22 },
+        { color: 'eyes', size: [0.15, 0.20, 0.044], at: [-0.20, 0.10, -0.422], tilt: 0.13 },
+        { color: 'eyes', size: [0.15, 0.20, 0.044], at: [0.20, 0.10, -0.422], tilt: -0.13 },
+        { color: 'dark', size: [0.062, 0.092, 0.024], at: [-0.184, 0.075, -0.449] },
+        { color: 'dark', size: [0.062, 0.092, 0.024], at: [0.184, 0.075, -0.449] },
+        { color: 'dark', size: [0.32, 0.081, 0.032], at: [0, -0.20, -0.421] },
+        { color: 'dark', size: [0.076, 0.079, 0.032], at: [-0.17, -0.17, -0.421], tilt: 0.45 },
+        { color: 'dark', size: [0.076, 0.079, 0.032], at: [0.17, -0.17, -0.421], tilt: -0.45 },
+        { color: 'eyes', size: [0.23, 0.03, 0.016], at: [0, -0.18, -0.442] },
+      ],
+    },
+  },
+};
+
+// One resolved zombie type per costume, built ONCE here: the shared type deep-merged with the costume (id stays 'mascot',
+// plus `variant: '<id>'` and `name`), so every zombie.type.mascot.* read works whatever the costume. Nothing per spawn.
+const isPlainObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
+function mergeDeep(base, over) {
+  const out = { ...base };
+  for (const [key, value] of Object.entries(over)) {
+    out[key] = isPlainObject(value) && isPlainObject(base[key]) ? mergeDeep(base[key], value) : value;
+  }
+  return out;
+}
+function resolveMascot(id, { name, unlockRound: _unlock, homeZones: _home, introBanner, ...costume }) {
+  return mergeDeep(mascotBase, { variant: id, name, introBanner, mascot: { ...costume, helmet: costume.head.helmet } });
+}
+export const mascotTypes = Object.fromEntries(Object.entries(mascotVariants).map(([id, costume]) => [id, resolveMascot(id, costume)]));
+
+// zombieTypes.mascot is Sir Waffles (the round-10 costume): what an unpicked Mascot wears, and the type's intro banner.
+export const zombieTypes = { shopper, mallWalker, cartPusher, mannequin, mascot: mascotTypes.sirWaffles };
 
 // How a crowd moves together: spacing, queueing, spreading out, surrounding the player.
 export const zombieCrowd = {

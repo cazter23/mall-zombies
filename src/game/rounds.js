@@ -9,6 +9,9 @@
 // Zombie health and gait mix scale with the round (see the zombie manager). Each spawn's TYPE comes
 // from economy.zombieMix (Mall Walkers from round 4); the first time a type shows up in a run,
 // onTypeIntro fires (the "Mall Walkers have entered the building" banner).
+// Mascot costumes (zombies/mascotVariants.js): the manager picks which costume a Mascot wears. In a costume's
+// unlock round its debut is forced here: the round's first Mascot wears it, and if no Mascot has come by the
+// Mascot's introSpawnIndex, that spawn is one. A costume's first appearance after the type's own fires onVariantIntro.
 // =============================================================================
 
 import {
@@ -18,14 +21,17 @@ import {
   maxAliveForRound,
   zombieTypeForRound,
 } from '../config/economy.js';
+import { mascotDebutIn } from '../zombies/mascotVariants.js';
 
 /**
  * @param zombies       zombie manager (spawn, aliveCount, clear)
  * @param onRoundStart  (round) => void   the round number just went up: show the "ROUND 3" banner
  *                                        (happens at the START of the break before that round)
- * @param onTypeIntro   (typeId) => void   a zombie type spawned for the first time this run
+ * @param onTypeIntro   (typeId, zombie) => void   a zombie type spawned for the first time this run
+ * @param onVariantIntro (variant, zombie) => void a Mascot costume's first appearance this run (not the Mascot's very
+ *                                        first: that one is the type's own intro)
  */
-export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null, onRoundDiscard = null }) {
+export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null, onVariantIntro = null, onRoundDiscard = null }) {
   const cfg = economy.rounds;
   let started = false;
   let round = 0;
@@ -35,6 +41,13 @@ export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null,
   let breakTimer = 0;
   let spawnedThisRound = 0;
   const seenTypes = new Set(); // zombie types that have spawned this run
+  const seenVariants = new Set(); // Mascot costumes that have spawned this run
+
+  // The costume debuting this round that hasn't appeared yet (so the round's next Mascot must wear it), or null.
+  function pendingDebut() {
+    const id = mascotDebutIn(round);
+    return id && !seenVariants.has(id) ? id : null;
+  }
 
   // The type of the next spawn. In the first round a special type can appear, its
   // introSpawnIndex-th spawn is forced to be one (if none has come yet), so it always shows up.
@@ -42,7 +55,11 @@ export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null,
     for (const [typeId, mix] of Object.entries(economy.zombieMix)) {
       if (!seenTypes.has(typeId) && round >= mix.fromRound && spawnedThisRound >= mix.introSpawnIndex) return typeId;
     }
-    return zombieTypeForRound(round);
+    // A costume's debut works the same way. The forced spawn still rolls its dice (and ignores them), so every
+    // other spawn of the round is what it would have been: the Mascot's share is unchanged.
+    const roll = Math.random();
+    if (pendingDebut() && spawnedThisRound >= economy.zombieMix.mascot.introSpawnIndex) return 'mascot';
+    return zombieTypeForRound(round, roll);
   }
 
   // Announce round n now; its zombies start spawning after `delay` seconds.
@@ -91,14 +108,21 @@ export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null,
         spawnTimer -= dt;
         if (toSpawn > 0 && spawnTimer <= 0 && zombies.aliveCount < maxAliveForRound(round)) {
           let typeId = nextType();
-          const spawned = zombies.spawn(typeId);
+          const debut = typeId === 'mascot' ? pendingDebut() : null;
+          const spawned = debut ? zombies.spawn(typeId, null, { variant: debut }) : zombies.spawn(typeId);
           if (spawned) {
             typeId = spawned.type?.id ?? typeId;
             toSpawn -= 1;
             spawnedThisRound += 1;
-            if (!seenTypes.has(typeId)) {
+            const firstOfType = !seenTypes.has(typeId);
+            if (firstOfType) {
               seenTypes.add(typeId);
-              if (onTypeIntro) onTypeIntro(typeId);
+              if (onTypeIntro) onTypeIntro(typeId, spawned);
+            }
+            const variant = spawned.type?.variant;
+            if (variant && !seenVariants.has(variant)) {
+              seenVariants.add(variant);
+              if (!firstOfType && onVariantIntro) onVariantIntro(variant, spawned);
             }
             spawnTimer = spawnDelayForRound(round);
           } else {
@@ -142,6 +166,7 @@ export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null,
       breakTimer = 0;
       spawnedThisRound = 0;
       seenTypes.clear();
+      seenVariants.clear();
     },
   };
 }

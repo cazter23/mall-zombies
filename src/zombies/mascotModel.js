@@ -1,7 +1,9 @@
 import * as THREE from 'three';
+import { buildMascotHead } from './mascotHeads.js';
 
 // Each articulated foam piece supplies the same local box to the model and the
 // shot test. The fixed tick places hitboxes, while render can interpolate the root.
+// The body is shared by every costume; the helmet comes from the costume's head (zombies/mascotHeads.js).
 export function createMascotModel(type, random) {
   const cfg = type.mascot;
   const root = new THREE.Group();
@@ -40,23 +42,30 @@ export function createMascotModel(type, random) {
     for (const { color, size, at, tilt } of parts) block(parent, cfg.colors[color], size, at, tilt);
   }
 
+  // The union of the group's meshes, in the group's own space. A head may nest groups and use more than boxes,
+  // so each mesh brings its own geometry's bounds through the transforms between it and the group.
   function track(group, part) {
     const localBox = new THREE.Box3();
-    for (const mesh of group.children) {
-      mesh.updateMatrix();
-      localBox.union(geometry.boundingBox.clone().applyMatrix4(mesh.matrix));
-    }
+    const addMeshes = (node, toGroup) => {
+      for (const child of node.children) {
+        child.updateMatrix();
+        const matrix = toGroup ? new THREE.Matrix4().multiplyMatrices(toGroup, child.matrix) : child.matrix;
+        if (child.isMesh) {
+          if (!child.geometry.boundingBox) child.geometry.computeBoundingBox();
+          localBox.union(child.geometry.boundingBox.clone().applyMatrix4(matrix));
+        }
+        if (child.children.length) addMeshes(child, matrix);
+      }
+    };
+    addMeshes(group, null);
     return { part, box: new THREE.Box3(), localBox, group, toWorld: new THREE.Matrix4(), toLocal: new THREE.Matrix4() };
   }
 
   const torso = piece(upper, 'mascotTorso', cfg.torso, cfg.colors.suit);
   decorate(torso, cfg.uniform);
   const bodyBoxes = [track(torso, 'body')];
-  const helmet = piece(upper, 'mascotHelmet', cfg.helmet, type.plastic.color);
-  for (const x of cfg.grid.centers) {
-    for (const y of cfg.grid.rows) block(helmet, cfg.colors.toast, cfg.grid.size, [x, y, cfg.grid.z]);
-  }
-  decorate(helmet, cfg.waffleFace);
+  const helmet = piece(upper, 'mascotHelmet', cfg.helmet, cfg.head.color);
+  buildMascotHead(cfg.head, helmet, { block, decorate, colors: cfg.colors });
   const head = piece(upper, 'mascotHead', cfg.exposedHead, cfg.colors.skin);
   decorate(head, cfg.zombieFace);
   head.visible = false;
@@ -69,7 +78,7 @@ export function createMascotModel(type, random) {
     legs.push(leg);
     bodyBoxes.push(
       track(piece(leg, 'mascotLeg', cfg.thigh, cfg.colors.suit), 'body'),
-      track(piece(leg, 'mascotBoot', cfg.boot, cfg.colors.crust), 'body'),
+      track(piece(leg, 'mascotBoot', cfg.boot, cfg.colors.boot), 'body'),
     );
 
     const arm = new THREE.Group();

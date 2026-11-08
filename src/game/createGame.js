@@ -28,7 +28,7 @@ import { economy } from '../config/economy.js';
 import { bossTiming } from '../config/bosses.js';
 import { createBossDirector } from './bossDirector.js';
 import { createShutterSounds } from './shutterSounds.js';
-import { zombieTypes } from '../config/zombies.js';
+import { mascotTypes, zombieTypes } from '../config/zombies.js';
 import { weapons, melee as meleeWeapons } from '../config/weapons.js';
 import { loadMap } from '../maps/index.js';
 import { createPlayerStats, resetPlayerStats } from '../player/stats.js';
@@ -262,7 +262,8 @@ export function createGame({
   rounds = createRounds({
     zombies,
     onRoundStart: (round) => events.emit('roundStart', { round }),
-    onTypeIntro: (typeId) => events.emit('typeIntro', { typeId }),
+    onTypeIntro: (typeId, zombie) => events.emit('typeIntro', { typeId, zombie }),
+    onVariantIntro: (variant, zombie) => events.emit('mascotVariantIntro', { variant, zombie }),
     onRoundDiscard: () => events.emit('roundDiscard'),
   });
   let powerUps = null;
@@ -287,7 +288,7 @@ export function createGame({
   events.on('kill', ({ zombie }) => {
     if (!state.over) runStats.recordKill(zombie);
   });
-  // Knocking Sir Waffles' helmet off with a headshot pays a bonus: stuffings and hazards don't aim.
+  // Knocking a Mascot's helmet off with a headshot pays a bonus: stuffings and hazards don't aim. Every costume has its own PA line.
   events.on('mascotHeadPop', ({ zombie, headshot, source }) => {
     if (state.over || !headshot || (source !== 'gun' && source !== 'melee')) return;
     wallet.earn(economy.payouts.helmetPopBonus);
@@ -305,11 +306,16 @@ export function createGame({
     hud.setRound(round);
     hud.showRoundBanner(round);
   });
-  // A zombie type's first appearance this run (Mall Walkers, round 4): PA chime + banner.
-  events.on('typeIntro', ({ typeId }) => {
-    const intro = zombieTypes[typeId]?.introBanner;
+  // A zombie type's first appearance this run (Mall Walkers, round 4): PA chime + banner. (A Mascot announces the
+  // costume it came in: Sir Waffles in round 10.) Each later costume's first appearance gets its own.
+  events.on('typeIntro', ({ typeId, zombie }) => {
+    const intro = (zombie?.type ?? zombieTypes[typeId])?.introBanner;
     if (!intro) return;
     hud.showAnnouncement({ ...intro, priority: 2 });
+    sound.play('paChime');
+  });
+  events.on('mascotVariantIntro', ({ variant }) => {
+    hud.showAnnouncement({ ...mascotTypes[variant].introBanner, priority: 2 });
     sound.play('paChime');
   });
 

@@ -21,6 +21,7 @@ export const debug = {
   commands: [
     { id: 'spawn', key: 'KeyZ', group: 'Zombies', label: 'Spawn the selected zombie' },
     { id: 'summonBoss', key: 'KeyJ', group: 'Zombies', label: 'Summon the Janitor at a normal spawn point' },
+    { id: 'spawnMascot', key: 'KeyM', group: 'Zombies', label: 'Spawn the next Mascot costume at the spawn point nearest you' },
     { id: 'cycleZombie', key: 'KeyZ', shift: true, group: 'Zombies', label: 'Select the next zombie type' },
     { id: 'clearZombies', key: 'KeyX', group: 'Zombies', label: 'Remove every zombie' },
     { id: 'killZombies', key: 'KeyK', group: 'Zombies', label: 'Kill every zombie (pays points)' },
