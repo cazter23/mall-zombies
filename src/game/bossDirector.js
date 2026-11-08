@@ -3,8 +3,9 @@ import { economy, maxAliveForRound, zombieCountForRound } from '../config/econom
 import { createJanitorBehavior } from '../zombies/bosses/janitor.js';
 import { createManagerBehavior } from '../zombies/bosses/manager.js';
 import { createGuardBehavior } from '../zombies/bosses/guard.js';
+import { createInfluencerBehavior } from '../zombies/bosses/influencer.js';
 
-const behaviors = { janitor: createJanitorBehavior, manager: createManagerBehavior, guard: createGuardBehavior };
+const behaviors = { janitor: createJanitorBehavior, manager: createManagerBehavior, guard: createGuardBehavior, influencer: createInfluencerBehavior };
 
 export function chooseBossSchedule(random = Math.random) {
   const intros = new Set(Object.values(economy.zombieMix).map(({ fromRound }) => fromRound));
@@ -24,9 +25,9 @@ export function createBossDirector({ events, rounds, zombies, scene, colliders, 
   let retry = 0;
   const pending = () => !spawned && !!schedule?.has(rounds.round);
 
-  function clear() {
+  function clear(reason = 'clear') {
     active = null;
-    behavior?.dispose();
+    behavior?.dispose(reason);
     behavior = null;
     stats.surfaceSpeed = 1;
   }
@@ -38,7 +39,7 @@ export function createBossDirector({ events, rounds, zombies, scene, colliders, 
     active = zombie;
     spawned = true;
     behavior = behaviors[id]({
-      zombie, scene, colliders, player, powerUps, zombies, rounds, map,
+      zombie, scene, colliders, player, powerUps, zombies, rounds, map, events,
       onPhase: (phase) => events.emit('bossPhase', { zombie, phase, round: rounds.round }),
     });
     events.emit('bossSpawn', { zombie, round: rounds.round });
@@ -50,16 +51,16 @@ export function createBossDirector({ events, rounds, zombies, scene, colliders, 
     spawned = false;
     retry = 0;
   });
-  events.on('roundDiscard', clear);
+  events.on('roundDiscard', () => clear('discard'));
   events.on('hit', hit => { if (hit.target === active) behavior?.onHit?.(hit); });
   events.on('playerHit', hit => { if (hit.zombie === active) behavior?.onPlayerHit?.(hit); });
   events.on('playerDeath', () => {
-    clear();
+    clear('death');
     zombies.clearBosses();
   });
   events.on('kill', ({ zombie }) => {
     if (state.over || zombie !== active) return;
-    clear();
+    clear('defeated');
     events.emit('bossDefeated', { zombie, round: rounds.round });
   });
 
@@ -70,7 +71,7 @@ export function createBossDirector({ events, rounds, zombies, scene, colliders, 
     get scheduledRound() { return [...(schedule?.keys() ?? [])][0] ?? null; },
     summon(id = schedule?.get(rounds.round) ?? 'janitor') { return bossTypes[id] ? spawn(id) : null; },
     update(dt, allowSpawn = true) {
-      if (active && !zombies.zombies.includes(active)) clear();
+      if (active && !zombies.zombies.includes(active)) clear('vanished');
       if (active) {
         behavior.update(dt);
         stats.surfaceSpeed = behavior.surfaceSpeed ?? 1;
@@ -84,7 +85,7 @@ export function createBossDirector({ events, rounds, zombies, scene, colliders, 
       if (retry <= 0 && !spawn(schedule.get(rounds.round))) retry = bossTiming.retrySeconds;
     },
     reset() {
-      clear();
+      clear('reset');
       schedule = null;
       spawned = false;
       retry = 0;

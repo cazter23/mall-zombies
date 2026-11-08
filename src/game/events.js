@@ -37,6 +37,8 @@
 //   'bossSpawn'   { zombie, round }                      a scheduled or debug-summoned boss entered the wave
 //   'bossPhase'   { zombie, phase, round }               an encounter mechanic began (Janitor: wetFloor)
 //   'bossDefeated' { zombie, round }                     an active boss died through the regular kill path
+//   'bossFlash' { zombie, seconds, opacity, dimOpacity } telegraphed phone flash; browser presentation respects Comfort settings
+//   Fan actors carry noRewards: all hit/kill payouts, incentive and workshop credit ignore them.
 //   'purchase'    { label, cost, kind, id }              something was bought; kind 'door' | 'weapon' | 'ammo' |
 //                                                        'ammoCache' | 'tier' | 'attachment' | 'other', id = door / gun / tier / attachment id (as it was BEFORE
 //                                                        the purchase: buying a gun is kind 'weapon', not its ammo)

@@ -367,7 +367,7 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
   }
 
   if (type.id === 'janitor') dressJanitor(type, { upper, neck, arms, mat, block });
-  if (type.costume) dressEmployee(type, { upper, neck, arms, mat, block });
+  if (type.costume) dressEmployee(type, { upper, neck, arms, mat, block, ownedGeometry });
 
   // Batch meshes of the same material on each rigid bone across all zombie types.
   // Bones remain separate so clothes, bags and hair inherit the original walk/attack/death animation.

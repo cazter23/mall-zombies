@@ -106,6 +106,7 @@ export function createGame({
   // Points. Every gain/spend shows a "+60" / "-500" pop-up by the counter.
   const wallet = createWallet({ onChange: (amount) => hud.pointsPopup(amount) });
   const runStats = createRunStats();
+  events.on('purchase', ({ kind, id }) => pricing.spendVoucher(kind, id));
   events.on('playerDeath', () => {
     for (const zombie of zombies.zombies) zombie.clearBossEffects();
   });
@@ -137,10 +138,7 @@ export function createGame({
     sound,
     colliders, // buy spots must be in plain sight (no buying through walls)
     onReloadTap: () => gun.requestReload(), // controller X tapped next to a buyable: it was a reload
-    onPurchase: (purchase, pricingId) => {
-      pricing.spendVoucher(purchase.kind, pricingId);
-      events.emit('purchase', purchase);
-    },
+    onPurchase: (purchase) => events.emit('purchase', purchase),
   });
   const shutterSounds = createShutterSounds({ events, doors: map.doors, sound });
   for (const door of map.doors) {
@@ -338,12 +336,14 @@ export function createGame({
   });
   configureBossVouchers({ pricing, wallet, map, gun, state });
   const bosses = createBossDirector({ events, rounds, zombies, scene, colliders, player, stats, powerUps, state, map });
-  let displayedBoss = null, displayedBossHealth;
+  let displayedBoss = null, displayedBossHealth, displayedFollowers;
   function updateBossBar(zombie) {
     const hp = zombie?.health;
-    if (displayedBoss === zombie && displayedBossHealth === hp) return;
+    const followers = zombie?.followers === undefined ? undefined : Math.floor(zombie.followers);
+    if (displayedBoss === zombie && displayedBossHealth === hp && displayedFollowers === followers) return;
     displayedBoss = zombie;
     displayedBossHealth = hp;
+    displayedFollowers = followers;
     hud.setBoss(zombie);
   }
   events.on('bossSpawn', ({ zombie }) => {

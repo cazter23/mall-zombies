@@ -13,7 +13,7 @@ import { createTankDeaths } from './tankDeath.js';
 import { feel } from '../config/feel.js';
 import { zombieTypes, zombieCrowd, zombieFailsafe, zombieSpawn } from '../config/zombies.js';
 import { bossTypes } from '../config/bosses.js';
-import { economy, zombieHealthFor } from '../config/economy.js';
+import { economy, zombieHealthFor, maxAliveForRound } from '../config/economy.js';
 import { createNavigation } from './navigation.js';
 import { overlapsSolid } from '../world/collision.js';
 import { castShot } from '../weapons/hitscan.js';
@@ -410,19 +410,22 @@ export function createZombieManager({
 
     // Spawn one zombie of `typeId` at a good spawn point (or at `at`, a Vector3, if given).
     // Returns the zombie, or null if no spawn point is usable right now.
-    spawn(typeId = 'shopper', at = null) {
+    spawn(typeId = 'shopper', at = null, { fanOwner = null, healthMultiplier = 1 } = {}) {
+      if (fanOwner && zombies.filter(z => z.isAlive).length >= maxAliveForRound(getRound())) return null;
       const cap = economy.zombieMix[typeId]?.maxAlive;
       if (cap && zombies.filter(z => z.isAlive && z.type.id === typeId).length >= cap) typeId = 'shopper';
       const type = bossTypes[typeId] ?? zombieTypes[typeId];
-      const chute = type.boss ? null : steered;
+      const chute = type.boss || fanOwner ? null : steered;
       const point = at ? null : (chute && pickSpawnPoint(type, null, chute)) || pickSpawnPoint(type);
       if (!at && !point) return null;
       const position = at ? at.clone() : point.position.clone();
-      position.y = point ? point.position.y : 0; // (a spawn marker stands on its own floor; an explicit spot goes on the ground)
+      position.y = point ? point.position.y : at.y;
       const yaw = Math.atan2(-(player.position.x - position.x), -(player.position.z - position.z));
       const round = getRound();
       const speed = pickGaitSpeed(type, round);
-      const zombie = new Zombie({ type, health: zombieHealthFor(typeId, round), position, yaw, speed, round });
+      const zombie = new Zombie({ type, health: zombieHealthFor(typeId, round) * healthMultiplier, position, yaw, speed, round });
+      zombie.fanOwner = fanOwner;
+      zombie.noRewards = !!fanOwner;
       zombie.onDeath = onZombieDeath;
       zombie.onHeadPop = keepHelmet;
       zombie.stuckTimer = 0; // failsafe bookkeeping (see rescueStuckZombies)
@@ -443,6 +446,15 @@ export function createZombieManager({
       scratch.y += 0.05;
       effects.splat(scratch, UP, zombieCrowd.spawnDustColors, zombieCrowd.spawnDustCount);
       return zombie;
+    },
+
+    dismissFans(owner, seconds) {
+      for (const z of zombies) if (z.fanOwner === owner && z.isAlive) {
+        z.leaveTimer = seconds;
+        z.controlled = true;
+        z.control = (dt, ctx) => { z.standStill(dt, ctx); return true; };
+        if (seconds === 0) z.removed = true;
+      }
     },
 
     clearBosses() {
@@ -474,7 +486,13 @@ export function createZombieManager({
       nav.update(dt, player.position);
       ctx.canAttack = canAttack();
       assignSurroundSlots(dt);
-      for (const z of zombies) z.update(dt, ctx);
+      for (const z of zombies) {
+        if (z.leaveTimer !== undefined) {
+          z.leaveTimer -= dt;
+          if (z.leaveTimer <= 1e-9) z.removed = true;
+        }
+        if (!z.removed) z.update(dt, ctx);
+      }
       partyDeaths.update(dt);
       tankDeaths.update(dt);
       updateHelmets(dt);

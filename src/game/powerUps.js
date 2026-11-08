@@ -133,7 +133,7 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
     events.on('roundStart', (event) => { round = event.round; dropped = 0; }),
     events.on('kill', ({ zombie, headshot, melee, source }) => {
       if (state.over || round < config.firstRound || dropped >= config.maxPerRound || pickup || pendingPosition) return;
-      if ((source !== 'gun' && source !== 'melee') || !zombie?.type || zombie.type.boss || seen.has(zombie)) return;
+      if ((source !== 'gun' && source !== 'melee') || !zombie?.type || zombie.noRewards || zombie.type.boss || seen.has(zombie)) return;
       seen.add(zombie);
       earned += melee ? config.credit.melee : headshot ? config.credit.headshot : config.credit.kill;
       if (clock - lastKillAt <= config.credit.multiKillSeconds) earned += config.credit.multiKillBonus;

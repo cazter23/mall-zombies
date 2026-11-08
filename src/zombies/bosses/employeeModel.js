@@ -1,12 +1,18 @@
 import * as THREE from 'three';
 
 // Costume parts share the skeleton's materials/geometry ownership and animated bones.
-export function dressEmployee(type, { upper, neck, arms, mat, block }) {
+export function dressEmployee(type, { upper, neck, arms, mat, block, ownedGeometry }) {
   for (const [key, bone] of [['torso', upper], ['head', neck], ['hand', arms[1].elbow]]) {
     for (const p of type.costume?.[key] ?? []) {
       const mesh = block(mat(p.color), ...p.size, ...p.at, bone);
       mesh.rotation.z = p.tilt ?? 0;
     }
+  }
+  const ring = type.costume?.ring;
+  if (ring) {
+    const geometry = new THREE.TorusGeometry(ring.radius, ring.tube, ring.radialSegments, ring.segments);
+    ownedGeometry.push(geometry);
+    block(mat(ring.color),1,1,1,...ring.at,arms[1].elbow,geometry);
   }
 }
 

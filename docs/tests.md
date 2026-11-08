@@ -1,5 +1,7 @@
 # Sunset Galleria: what each test file covers
 
+`tests/influencer.test.js` covers follower crossings/headshots/viral reset, half-health fans and cap/queue/departure/round completion, no hit or kill rewards, filming cells in every open zone and workshop, physical routing upstairs without rescue, flash windup/looking away/Comfort, and voucher ordering/savings cap.
+
 `tests/guard.test.js` covers lockdowns in every area, occupancy waiting, ownership preservation, three radio headshots, expiry and cleanup on every exit, quota-funded backup and round completion, taser telegraph/damage/movement/slow expiry/miss vulnerability, and Master Key door redemption/conversion.
 
 `tests/manager.test.js` covers exact meeting cancellation, failure buff expiry, report target cap/visibility, every meeting cleanup path, reward collection, booth redemption and automatic conversion at the voucher tier cap.

@@ -105,7 +105,6 @@ export function createInteractions({ input, player, wallet, sound = null, onRelo
     }
     // What is being bought, as it is NOW (use() can change it: a bought gun's prompt becomes its ammo).
     const purchase = { label: item.label, cost: item.cost, kind: item.kind ?? 'other', id: item.id ?? null };
-    const pricingId = item.pricingId ?? purchase.id;
     if (wallet.spend(purchase.cost)) {
       const result = item.use();
       if (result?.areaId) {
@@ -113,7 +112,7 @@ export function createInteractions({ input, player, wallet, sound = null, onRelo
         purchase.openedDoorIds = result.openedDoorIds;
       }
       if (!item.quiet && sound) sound.play('purchase');
-      if (!item.quiet && onPurchase) onPurchase(purchase, pricingId);
+      if (!item.quiet && onPurchase) onPurchase(purchase);
     } else {
       deniedTimer = cfg.deniedSeconds;
       if (sound) sound.play('denied');

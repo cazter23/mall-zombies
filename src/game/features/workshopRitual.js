@@ -235,7 +235,7 @@ export function createWorkshopRitual({ bench, map, gun, pricing, interactions, e
   events.on('roundStart', rollToday);
   events.on('playerDeath', () => form.close());
   events.on('kill', ({ zombie }) => {
-    if (state.over || phase !== 'running' || !inside(zombie.position)) return; // (a burn can outlive the player)
+    if (state.over || zombie.noRewards || phase !== 'running' || !inside(zombie.position)) return; // (a burn can outlive the player)
     const before = qualityFor(order.kills);
     order.kills += 1;
     order.elapsed += cfg.secondsPerKill; // a busy room finishes it sooner

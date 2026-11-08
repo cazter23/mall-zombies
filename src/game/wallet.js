@@ -46,7 +46,7 @@ export function createWallet({ onChange = null } = {}) {
  * zombie's kill value plus a headshot or melee bonus. Returns 0 for non-zombies (practice dummies).
  */
 export function pointsForHit({ target, killed, headshot, melee, killMultiplier = 1 }) {
-  if (!target.type) return 0; // only zombies pay
+  if (!target.type || target.noRewards) return 0; // only reward-eligible zombies pay, including hit bonuses
   const p = economy.payouts;
   if (!killed) return p.nonLethalHit;
   let points = (economy.killValues[target.type.id] ?? 0) * killMultiplier;

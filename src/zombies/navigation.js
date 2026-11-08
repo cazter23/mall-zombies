@@ -514,6 +514,53 @@ export function createNavigation(colliders, agent, { floors = [0], links = [] } 
 
     isWalkableAt,
     clearLine,
+
+    // Independent spot-to-spot routes for filming bosses. Never replaces the
+    // shared player flow field used by the horde.
+    reachablePoints(y) {
+      const result=[];
+      const layer=layerOf(y), base=layer*cells;
+      for (let i=base;i<base+cells;i++) if (hasField && walkable[i] && dist[i]<Infinity) {
+        result.push({x:cellX(i),y:floors[layer],z:cellZ(i)});
+      }
+      return result;
+    },
+    pathTo(from,to) {
+      if (!hasField) return null;
+      const start=bestCellNear(from.x,from.z,layerOf(from.y));
+      const goal=cellIndex(layerOf(to.y),to.x,to.z);
+      if (start<0 || goal<0 || !walkable[goal] || dist[goal]===Infinity) return null;
+      const previous=new Int32Array(walkable.length).fill(-1);
+      const queue=[start]; previous[start]=start;
+      for (let cursor=0;cursor<queue.length && previous[goal]===-1;cursor++) {
+        const i=queue[cursor], base=Math.floor(i/cells)*cells, local=i-base;
+        const c=local%cols,r=Math.floor(local/cols);
+        const visit=ni=>{ if (previous[ni]===-1 && walkable[ni]) { previous[ni]=i; queue.push(ni); } };
+        for (const [dc,dr] of NEIGHBORS) {
+          const nc=c+dc,nr=r+dr;
+          if (!inside(nc,nr)) continue;
+          if (dc!==0 && dr!==0 && (!walkable[base+r*cols+nc] || !walkable[base+nr*cols+c])) continue;
+          visit(base+nr*cols+nc);
+        }
+        for (const edge of linkEdges.get(i)??[]) visit(edge.to);
+      }
+      if (previous[goal]===-1) return null;
+      const indices=[];
+      for (let i=goal;;i=previous[i]) { indices.push(i); if (i===start) break; }
+      indices.reverse();
+      const path=[];
+      for (let k=0;k<indices.length;k++) {
+        const i=indices[k],last=indices[k-1];
+        if (last!==undefined && Math.floor(last/cells)!==Math.floor(i/cells)) {
+          const edge=linkEdges.get(last).find(e=>e.to===i);
+          const lower=edge.link.lowerCell===last;
+          const a=lower?edge.link.lower:edge.link.upper,b=lower?edge.link.upper:edge.link.lower;
+          path.push({x:a.x,y:floors[a.floor],z:a.z},{x:b.x,y:floors[b.floor],z:b.z});
+        }
+        path.push({x:cellX(i),y:floors[Math.floor(i/cells)],z:cellZ(i)});
+      }
+      return path;
+    },
   };
 }
 

@@ -17,6 +17,7 @@ import { gunLabel } from '../config/workshop.js';
 import { createAnnouncements } from './announcements.js';
 import { ui } from '../config/ui.js';
 import { upgrades } from '../config/upgrades.js';
+import { createBossFlashView } from './bossFlash.js';
 
 function el(tag, className) {
   const node = document.createElement(tag);
@@ -26,6 +27,8 @@ function el(tag, className) {
 
 export function createHud() {
   const hud = el('div', 'hud');
+  const phoneFlash = createBossFlashView();
+  hud.append(phoneFlash.element);
   const incentives = createIncentiveHud();
   hud.append(incentives.element);
   const ritualTicket = createRitualHud();
@@ -240,11 +243,15 @@ export function createHud() {
           bossHealth.max = zombie.maxHealth;
         }
       }
-      if (zombie) bossHealth.value = Math.max(0, zombie.health);
+      if (zombie) {
+        bossHealth.value = Math.max(0, zombie.health);
+        if (zombie.followers !== undefined) bossNotice.textContent = `Followers: ${Math.floor(zombie.followers)}%`;
+      }
     },
 
     // Peripheral feedback listens to the existing event bus; no purchase callbacks in gameplay.
     connectEvents(events) {
+      phoneFlash.connect(events);
       events.on('purchase', ({ label, kind, id, cost }) => {
         clearTimeout(purchaseTimer);
         purchaseStamp.textContent = kind === 'workshop' || kind === 'ritual' ? label : `${kind === 'attachment' && cost === 0 ? 'Refitted' : 'Purchased'}: ${kind === 'attachment' ? upgrades.attachments[id]?.name ?? label : label}`;

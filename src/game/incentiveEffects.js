@@ -10,7 +10,7 @@ export function createIncentiveEffects({ events, player, gun, zombies, stats, pr
   const living = () => (zombies.zombies ?? []).filter(z => z.isAlive && z.state !== 'spawning');
   const near = (a, b, radius) => Math.abs(a.y - b.y) <= config.floorTolerance
     && Math.hypot(a.x - b.x, a.z - b.z) <= radius && clearLine(a, b);
-  const candidates = (radius) => living().filter(z => !z.type.boss && near(player.position, z.position, radius))
+  const candidates = (radius) => living().filter(z => !z.type.boss && !z.noRewards && near(player.position, z.position, radius))
     .sort((a, b) => a.position.distanceToSquared(player.position) - b.position.distanceToSquared(player.position));
 
   function end(id, reason = 'expired') {
@@ -63,7 +63,7 @@ export function createIncentiveEffects({ events, player, gun, zombies, stats, pr
 
   const off = [
     events.on('kill', ({ zombie, source }) => {
-      if (state.over) return;
+      if (state.over || zombie.noRewards) return;
       const mystery = effects.get('mysteryShopper');
       if (mystery?.targets.includes(zombie)) {
         if (direct(source)) {
@@ -97,7 +97,7 @@ export function createIncentiveEffects({ events, player, gun, zombies, stats, pr
       }
     }),
     events.on('hit', ({ target, melee }) => {
-      if (state.over || !melee || !target?.type) return;
+      if (state.over || !melee || !target?.type || target.noRewards) return;
       const loss = effects.get('lossPrevention');
       if (!loss) return;
       stagger(target.position, config.types.lossPrevention);

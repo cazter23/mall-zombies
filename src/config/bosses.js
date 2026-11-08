@@ -1,6 +1,7 @@
 import { zombieTypes } from './zombies.js';
 
 const { shopper } = zombieTypes;
+export const bossComfort = { dimPhoneFlash: false };
 
 export const bossTiming = {
   waveFraction: 1 / 3, // after this share of regular spawns, without spending any of their quota
@@ -9,6 +10,11 @@ export const bossTiming = {
 };
 
 export const bossVouchers = {
+  discountCode: {
+    name: 'Discount Code', fraction: 0.5, maxSaving: 2000, excludedCategories: ['clawMachine', 'claw'], pointsInstead: 1500,
+    color: 0xe7a3ed, icon: 'ticket', sound: 'incentiveRestock',
+    pa: { kicker: 'Sponsored content', text: 'Half off your next purchase, saving up to 2,000. The claw machine has declined to participate.' },
+  },
   masterKey: {
     name: 'Master Key', category: 'door', fraction: 1, pointsInstead: 1250,
     color: 0x9adbd7, icon: 'door', sound: 'incentiveRestock',
@@ -22,6 +28,38 @@ export const bossVouchers = {
 };
 
 export const bossTypes = {
+  influencer: {
+    ...shopper, id: 'influencer', boss: true, name: 'Skylar Sparkle', title: 'Content Creator',
+    barNotice: 'Followers', firstRounds: [15, 17], healthMultiplier: 8, slowStrength: 0.5,
+    speed: 3.2, speedVariation: 0, gaits: null, gaitsByRound: null, bagChance: 0,
+    shirtColors: [0xc65eaf], pantsColors: [0x403452], shoeColor: 0xf1e5dc,
+    modelScale: { width: 1.04, height: 1.08 },
+    filming: { minRange: 10, maxRange: 16, preferredRange: 13, relocateSeconds: 5,
+      minRelocate: 3, arriveMeters: 0.35, floorTolerance: 0.3, lookAhead: 8, sightHeight: 1.4 },
+    followers: { perSecond: 5, hit: 7, headshot: 18, thresholds: [25, 50, 75], viral: 100, resetTo: 50 },
+    fans: { type: 'mallWalker', healthFraction: 0.5, perThreshold: 3, viralCount: 8, maxPending: 17, leaveSeconds: 2 },
+    flash: { range: 5, windupSeconds: 0.75, cooldownSeconds: 7, seconds: 0.3, opacity: 0.24, dimOpacity: 0.35 },
+    introBanner: { kicker: 'Live from the Galleria', text: 'Skylar Sparkle is filming. Dislike and unsubscribe with your weapon.' },
+    introSound: 'paChime', reward: 'discountCode',
+    phases: {
+      followers: { kicker: 'Fan meet-up', text: 'Three valued followers have arrived. Their engagement has no cash value.' },
+      viral: { kicker: 'Going viral', text: 'Eight more followers. No refunds on popularity.' },
+      flashWindup: { kicker: 'Phone flash charging', text: 'Look away. This content is about to be overexposed.' },
+    },
+    costume: {
+      torso: [
+        { color: 0xf3cf55, size: [0.07, 0.34, 0.035], at: [0, 0.36, -0.17] },
+        { color: 0xf3cf55, size: [0.26, 0.035, 0.035], at: [0, 0.43, -0.17] },
+      ],
+      head: [{ color: 0xb057b6, size: [0.43, 0.07, 0.34], at: [0, 0.31, 0] }],
+      hand: [
+        { color: 0x73778b, size: [0.035, 0.035, 0.9], at: [0, 0, -0.55] },
+        { color: 0x30293f, size: [0.16, 0.27, 0.04], at: [0, 0, -1] },
+        { color: 0xb2edf0, size: [0.13, 0.22, 0.015], at: [0, 0, -1.03] },
+      ],
+      ring: { color: 0xfff2d5, radius: 0.25, tube: 0.035, radialSegments: 6, segments: 24, at: [0, 0, -1] },
+    },
+  },
   guard: {
     ...shopper, id: 'guard', boss: true, name: 'Officer Doug Kettle', title: 'Loss Prevention',
     barNotice: 'Headshots void this lockdown', firstRounds: [9, 11], healthMultiplier: 10,
