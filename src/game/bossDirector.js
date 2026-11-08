@@ -4,11 +4,22 @@ import { createJanitorBehavior } from '../zombies/bosses/janitor.js';
 import { createManagerBehavior } from '../zombies/bosses/manager.js';
 import { createGuardBehavior } from '../zombies/bosses/guard.js';
 import { createInfluencerBehavior } from '../zombies/bosses/influencer.js';
+import * as zombieConfig from '../config/zombies.js';
 
 const behaviors = { janitor: createJanitorBehavior, manager: createManagerBehavior, guard: createGuardBehavior, influencer: createInfluencerBehavior };
 
+export function bossIntroRounds(variants = zombieConfig.mascotVariants ?? {}) {
+  return new Set([...Object.values(economy.zombieMix).map(({ fromRound }) => fromRound),
+    ...Object.values(variants).map(({ unlockRound }) => unlockRound)]);
+}
+
+export function isEncoreRound(round, intros = bossIntroRounds()) {
+  const cfg = bossTiming.encores;
+  return round >= cfg.fromRound && (round-cfg.fromRound)%cfg.everyRounds === 0 && !intros.has(round);
+}
+
 export function chooseBossSchedule(random = Math.random) {
-  const intros = new Set(Object.values(economy.zombieMix).map(({ fromRound }) => fromRound));
+  const intros = bossIntroRounds();
   const schedule = new Map();
   for (const [id, type] of Object.entries(bossTypes)) {
     const rounds = type.firstRounds.filter(round => !intros.has(round) && !schedule.has(round));
@@ -23,6 +34,8 @@ export function createBossDirector({ events, rounds, zombies, scene, colliders, 
   let behavior = null;
   let spawned = false;
   let retry = 0;
+  const met = new Set();
+  let lastBoss = null;
   const pending = () => !spawned && !!schedule?.has(rounds.round);
 
   function clear(reason = 'clear') {
@@ -37,6 +50,8 @@ export function createBossDirector({ events, rounds, zombies, scene, colliders, 
     const zombie = zombies.spawn(id);
     if (!zombie) return null;
     active = zombie;
+    met.add(id);
+    lastBoss = id;
     spawned = true;
     behavior = behaviors[id]({
       zombie, scene, colliders, player, powerUps, zombies, rounds, map, events,
@@ -48,6 +63,11 @@ export function createBossDirector({ events, rounds, zombies, scene, colliders, 
 
   events.on('roundStart', () => {
     schedule ??= chooseBossSchedule();
+    if (isEncoreRound(rounds.round) && !schedule.has(rounds.round) && met.size) {
+      const alternatives = [...met].filter(id => id !== lastBoss);
+      const pool = alternatives.length ? alternatives : [...met];
+      schedule.set(rounds.round, pool[Math.floor(Math.random()*pool.length)]);
+    }
     spawned = false;
     retry = 0;
   });
@@ -89,6 +109,8 @@ export function createBossDirector({ events, rounds, zombies, scene, colliders, 
       schedule = null;
       spawned = false;
       retry = 0;
+      met.clear();
+      lastBoss = null;
     },
   };
 }

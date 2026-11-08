@@ -7,6 +7,7 @@ export const bossTiming = {
   waveFraction: 1 / 3, // after this share of regular spawns, without spending any of their quota
   retrySeconds: 0.3,
   introPriority: 3,
+  encores: { fromRound: 20, everyRounds: 4 },
 };
 
 export const bossVouchers = {
