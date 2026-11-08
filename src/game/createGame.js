@@ -50,7 +50,7 @@ import { createEvents } from './events.js';
 import { createPricing } from './pricing.js';
 import { createFlashSales } from './flashSales.js';
 import { createDebugCommands } from './debugCommands.js';
-import { nextTier } from '../weapons/upgrades.js';
+import { createWarranty } from './warranty.js';
 import { createRunStats } from './runStats.js';
 import { createWallet, pointsForHit } from './wallet.js';
 import { createRounds } from './rounds.js';
@@ -363,6 +363,11 @@ export function createGame({
   }
 
   events.on('ritualCollect', ({ certificate }) => hud.showCertificate(certificate));
+  // A Platinum warranty claim (game/warranty.js).
+  events.on('warrantyClaim', ({ pa }) => {
+    hud.showAnnouncement({ ...pa, priority: 1 });
+    sound.play('paChime');
+  });
   events.on('ritualStage', ({ pa }) => hud.showAnnouncement({ ...pa, priority: 0, archiveOnly: true })); // (narration: quality and ready lines beat it)
 
   powerUps = createPowerUps({
@@ -415,8 +420,10 @@ export function createGame({
   // hazards...): map.features, built by kind (game/features/). Built AFTER the core wiring above, so
   // payouts and stats always run before any feature's own event listeners, and with every system a
   // feature might need (game/features/index.js lists the context).
+  // EXTENDED WARRANTY rules (game/warranty.js): the desk's offers, a warranty left on file by a replaced gun, and a Platinum claim.
+  const warranty = createWarranty({ gun, events, rounds });
   const features = buildFeatures(map, {
-    scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state,
+    scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state, warranty,
     colliders, effects, sound, input,
   });
 
@@ -430,7 +437,7 @@ export function createGame({
         ? Object.keys(economy.doors).some(id => !map.zones[id].open)
         : map.doors.some((d) => !d.isOpen);
       if (group.id === 'weapons') return featuresOf(map, 'wallBuy').some((w) => !gun.owns(w.weapon));
-      if (group.id === 'tiers') return gun.slots.some((id) => nextTier(gun.modsFor(id)));
+      if (group.id === 'tiers') return gun.slots.some((id) => warranty.offer(id));
       if (group.id === 'attachments') return featuresOf(map, 'attachmentCounter').some(s => !ownsAttachment(gun, s.attachment));
       return true;
     },
@@ -481,6 +488,7 @@ export function createGame({
     ['player', () => player.teleport(map.playerSpawn)],
     ['map', () => map.reset()], // doors closed, zones locked
     ['features', () => features.reset()],
+    ['warranty', () => warranty.reset()], // no warranty on file in a new run
     ['death', () => {
       state.over = false;
       state.assisted = false;
@@ -550,6 +558,7 @@ export function createGame({
     if (!inMenu) melee.update(dt, !gun.isSwitching);
     // Hands busy with a slash or a vault: no shooting. A vault only pauses a reload (it carries on after).
     if (!inMenu) gun.update(dt, melee.isBusy || player.vault.active, player.vault.active);
+    warranty.update(dt); // (a replaced gun's warranty goes on file; a dry Platinum gun makes its claim)
     zombies.update(dt);
     mascotCostumes.update(dt);
     // Rounds pause while you're off in the debug test range (zombies can't reach you there).

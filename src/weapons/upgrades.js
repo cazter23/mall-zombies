@@ -41,6 +41,11 @@ export function nextTier(mods = []) {
   return i + 1 < TIER_IDS.length ? TIER_IDS[i + 1] : null;
 }
 
+/** How many Warranty Renewals (past Platinum) a gun has. */
+export function renewalsOf(mods = []) {
+  return mods.find((m) => m.id === 'renewal')?.count ?? 0;
+}
+
 export function attachmentsOf(mods = []) {
   const fitted = {};
   for (const m of mods) if (m.attachment) fitted[attachmentById(m.attachment).slot] = m.attachment;
@@ -119,6 +124,17 @@ export function withTier(base, mods, tierId) {
     throw new Error(`upgrades: tier "${tier.id}" effect "${effect}" does nothing on ${base.id}`);
   });
   return [...rest, { id: 'tier', tier: tier.id, modifiers }];
+}
+
+/** A NEW mod list with the gun at `count` Warranty Renewals: the renewal effects, compounded once per renewal. */
+export function withRenewals(base, mods, count) {
+  const rest = mods.filter((m) => m.id !== 'renewal');
+  if (count <= 0) return rest;
+  const effects = Object.fromEntries(Object.entries(upgrades.renewals.effects).map(([effect, value]) => [effect, value ** count]));
+  const modifiers = modifiersFor(base, effects, (effect) => {
+    throw new Error(`upgrades: renewal effect "${effect}" does nothing on ${base.id}`);
+  });
+  return [...rest, { id: 'renewal', count, modifiers }];
 }
 
 export function withAttachment(base, mods, id) {

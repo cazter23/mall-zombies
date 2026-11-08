@@ -9,7 +9,7 @@
 // createGame never changes for a new kind.
 //
 // ctx (from createGame, built after its core event wiring, so a feature's listeners run after payouts/stats):
-//   { scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state }
+//   { scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state, warranty }
 // =============================================================================
 
 import { buildWallBuy } from './wallBuy.js';
