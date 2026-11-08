@@ -36,7 +36,7 @@ export const bossVouchers = {
 export const bossTypes = {
   influencer: {
     ...shopper, id: 'influencer', boss: true, name: 'Skylar Sparkle', title: 'Content Creator',
-    barNotice: 'Followers', firstRounds: [15, 17], healthMultiplier: 8, slowStrength: 0.5,
+    barNotice: 'LIVE · Followers', barSymbol: '●', firstRounds: [15, 17], healthMultiplier: 8, slowStrength: 0.5,
     speed: 3.2, speedVariation: 0, gaits: null, gaitsByRound: null, bagChance: 0,
     shirtColors: [0xc65eaf], pantsColors: [0x403452], shoeColor: 0xf1e5dc,
     modelScale: { width: 1.04, height: 1.08 },
@@ -70,7 +70,7 @@ export const bossTypes = {
   },
   guard: {
     ...shopper, id: 'guard', boss: true, name: 'Officer Doug Kettle', title: 'Loss Prevention',
-    barNotice: 'Headshots void this lockdown', firstRounds: [9, 11], healthMultiplier: 10,
+    barNotice: 'Headshots void this lockdown', barSymbol: '★', firstRounds: [9, 11], healthMultiplier: 10,
     slowStrength: 0.5, speed: 3, speedVariation: 0, gaits: null, gaitsByRound: null, bagChance: 0,
     shirtColors: [0x496782], pantsColors: [0x24334b], shoeColor: 0x1b1c26,
     modelScale: { width: 1.3, height: 1.06 },
@@ -111,7 +111,7 @@ export const bossTypes = {
   },
   manager: {
     ...shopper, id: 'manager', boss: true, name: 'Dennis Fairweather', title: 'General Manager',
-    barNotice: 'Mandatory all-staff attendance', firstRounds: [12, 13, 14], healthMultiplier: 10,
+    barNotice: 'Mandatory all-staff attendance', barSymbol: '✓', firstRounds: [12, 13, 14], healthMultiplier: 10,
     slowStrength: 0.5, speed: 2.4, speedVariation: 0, gaits: null, gaitsByRound: null, bagChance: 0,
     shirtColors: [0x45425d], pantsColors: [0x292638], shoeColor: 0x171821,
     modelScale: { width: 1.16, height: 1.1 },
