@@ -75,6 +75,9 @@
 //   'clawMoved'   { siteId, area, moved, pa }            reopened at the next 'roundStart' (moved false: restocked where it stood)
 //   'ticketsWon'  { amount, total, reason }              prize tickets paid out (game/tickets.js; reason 'prize' | 'plush' | 'sunny'): never points
 //   'prizeRedeemed' { id, tickets }                      a Prize Counter prize was taken (game/features/prizeCounter.js)
+//   'sunnyEscape' { fromId, toId, lap }                  the plush climbed out and is walking to the next site (game/features/clawSunny.js)
+//   'sunnyArrived' { siteId }                            he climbed into that cabinet (it shakes)
+//   'sunnyPopped' { siteId }                             shot or slashed: stuffing everywhere, tickets paid, the next site re-picked
 //   'runReset'    {}                                     after Play again reset everything
 // =============================================================================
 

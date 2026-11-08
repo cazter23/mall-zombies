@@ -53,6 +53,7 @@ import { attachmentById, attachmentFits, attachmentsOf, tierById, tierOf, withAt
 import { upgrades } from '../../config/upgrades.js';
 import { buildOf, paLine } from '../../config/workshop.js';
 import { unlockAttachment } from './attachmentCounter.js';
+import { createClawSunny } from './clawSunny.js';
 
 /** The plush's capsule. */
 export const PLUSH = Object.freeze({ plush: true, id: null, capsule: 'plush' });
@@ -155,7 +156,8 @@ const prizeName = (capsule) => (!capsule ? 'Empty' : capsule.plush ? cfg.plush.n
 
 const pick = (list) => (Array.isArray(list) ? list[Math.floor(Math.random() * list.length)] : list);
 
-export function buildClawMachine(feature, { scene, map, events, pricing, interactions, gun, wallet, state, sound, player, tickets = null }) {
+export function buildClawMachine(feature, { scene, map, events, pricing, interactions, gun, wallet, state, sound, player, tickets = null,
+  zombies = null, shootables = [], effects = null }) {
   const sites = feature.sites;
   let site = sites[0];
   let phase = 'idle'; // 'idle' | 'sweeping' | 'lifting' | 'ready' | 'closed'
@@ -321,7 +323,19 @@ export function buildClawMachine(feature, { scene, map, events, pricing, interac
     cabinet().rig.reset();
     grab = null;
     close('plush');
+    // ...and Sunny makes a run for the next site (picked just now), or walks a lap if there's nowhere else to go.
+    sunny.start({ from: site, to: nextSite ?? site, floorOf, onPop: repick });
   }
+
+  // SUNNY (game/features/clawSunny.js): he walks to where the machine will reopen. Popping him re-picks that site, among the other
+  // open sites besides his (if there are any), as long as the machine hasn't reopened there already.
+  const floorOf = (s) => cfg.sites.find((x) => x.id === s.id)?.floorY ?? 0;
+  function repick(walkingTo) {
+    if (phase !== 'closed' || nextSite !== walkingTo) return;
+    const options = sites.filter((s) => s !== site && s !== walkingTo && zoneOpen(s));
+    if (options.length) nextSite = options[Math.floor(Math.random() * options.length)];
+  }
+  const sunny = createClawSunny({ scene, nav: zombies?.nav ?? null, shootables, effects, tickets, sound, events });
 
   // The lift, for show: down with the prongs open, grip, up with the capsule swinging, over to the chute, let go.
   function updateLift(dt) {
@@ -458,6 +472,7 @@ export function buildClawMachine(feature, { scene, map, events, pricing, interac
   });
 
   function setUp() {
+    sunny.reset();
     hideDisplay();
     flapTimer = Infinity;
     lastLane = null;
@@ -494,6 +509,8 @@ export function buildClawMachine(feature, { scene, map, events, pricing, interac
       return { siteId: site.id, zone: site.zone, area: map.zones[site.zone].label, open: zoneOpen() && phase !== 'closed', phase, stock };
     },
 
+    /** Sunny (game/features/clawSunny.js): .active, .target (his shootable), .shaking. */
+    sunny,
     /** Debug: the next grab has a plush in one lane. */
     forcePlush() { forcePlush = true; },
     /**
@@ -511,6 +528,7 @@ export function buildClawMachine(feature, { scene, map, events, pricing, interac
     // (features only tick while playing and alive: a grab freezes with the game, and death can't pay anyone)
     update(dt) {
       if (state.over) return;
+      sunny.update(dt);
       if (phase === 'idle') attract += dt;
       if (phase === 'sweeping') {
         grab.t += dt;

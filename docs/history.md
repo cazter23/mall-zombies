@@ -1,5 +1,16 @@
 # Sunset Galleria: build history ("Current state")
 
+## 8 November 2026 - GRAB-A-GUN, phase 7: Sunny runs away
+
+Land a grab on the plush and, after the refund and the close, Sunny climbs out of the chute, looks round, and waddles (2 m/s) to wherever the machine will
+reopen, along the zombies' grid (g.zombies.nav.pathTo: only through open areas, escalators and stairs included), then climbs into that cabinet and it
+shakes. Follow him to learn where it's going before the PA says. If no other site is open he walks a lap round his own machine and climbs back in; if the
+round starts first, the machine opens there anyway and he finishes his walk. Shoot or slash him and he pops in stuffing and confetti: 25 tickets, and the
+machine re-picks its next site (not the one he was heading for). He is a shootable but not a zombie: no kill, no +10, no power-up or Heart credit; aim
+assist and the vault skip him (assistable / blocksVault, flags ignoreAimAssist / ignoreVault); his splat is stuffing even in Red splatter mode. One small
+low-poly model (world/sunnyModel.js), no collider. Checked in the browser pane (renders saved from the page): the Prize Counter with its teen, Sunny climbing out,
+looking round and walking to the Parking site; no console errors.
+
 ## 8 November 2026 - GRAB-A-GUN, phase 6: prize tickets and the Prize Counter
 
 Every grab now prints arcade tickets (game/tickets.js, g.tickets): 40 for a Green prize, 25 Blue, 15 Purple, 5 Gold, 10 for Sunny (the points still come back

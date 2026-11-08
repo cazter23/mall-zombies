@@ -226,8 +226,9 @@ export function createEffects(scene, { surfaces = [] } = {}) {
     splat(point, normal, colors, count, { flesh = false, speedScale = 1, direction = null } = {}) {
       const speed = fx.splatSpeed * speedScale;
       // Gun and melee impacts carry the shootable's palette. Foam keeps its
-      // material colors even when the player's Splatter setting is Red.
-      if (!flesh || colors === mascotFoamColors) {
+      // material colors even when the player's Splatter setting is Red (a Mascot's costume, or any palette
+      // flagged `foam`: Sunny's stuffing, game/features/clawSunny.js).
+      if (!flesh || colors === mascotFoamColors || colors?.foam) {
         burst(point, normal, colors, count, speed, fx.particleSize, 0, direction);
         return;
       }

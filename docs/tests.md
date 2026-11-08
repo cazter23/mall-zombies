@@ -162,6 +162,11 @@ offered, the take refills and fits it in hand or not (and refits are free), neve
 changes (bought off the wall meanwhile: refill + spare; no longer carried: plain copy; handed to Build-A-Blaster: plain copy that the
 finished gun replaces); Build-A-Blaster: grabs during a ritual, with the Courtesy Loaner (which never gets a Refurbished prize and still
 goes back), a Refurbished attachment stacking with a build, and while the finished gun waits at the booth.
+`clawSunny.test.js` Sunny runs away in the real game: from every site the next site is picked at the plush and he walks a real route on the
+zombies' grid (only open floor) there, climbs in and the cabinet shakes and comes back to rest; with part of the mall locked his route stays
+on open floor; with no other site open he walks a lap and climbs back in; a round starting first opens the machine there and he still
+arrives; shooting him (real input) pops him for 25 tickets and re-picks the site, with no kill, no +10, no power-up credit and no kill stats;
+the box cutter pops him too; aim assist (assistable) and the vault (blocksVault) skip him; Play again mid-walk equals a fresh game.
 `prizeCounter.test.js` GRAB-A-GUN's prize tickets (game/tickets.js) and the Prize Counter through real input: tickets are their
 own count (paid only while alive, spent only when enough, tokens, reset); every prize refuses without enough tickets (nothing spent) and
 costs exactly its tickets and no points; each prize works (refill, Slow Claw doubles the next sweep, an attachment for an empty slot and

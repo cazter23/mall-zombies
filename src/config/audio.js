@@ -206,6 +206,10 @@ export const audio = {
     clawWin: { volume: .34, layers: [
       ...[[784, 0], [988, .08], [1175, .16], [1568, .27]].map(([freq, delay]) => ({ type: 'tone', wave: 'triangle', freq, gain: .55, attack: .004, decay: delay > .2 ? .5 : .14, delay })),
     ] },
+    sunnyPop: { volume: .5, layers: [ // Sunny shot: a soft pomf and a squeak
+      { type: 'noise', filter: 'lowpass', freq: 700, q: .8, gain: .8, attack: .002, decay: .14 },
+      { type: 'tone', wave: 'sine', freq: 1500, freqEnd: 2600, gain: .3, attack: .005, decay: .12, delay: .03 },
+    ] },
     clawPlush: { volume: .4, layers: [
       { type: 'tone', wave: 'sine', freq: 1250, freqEnd: 330, gain: .5, attack: .02, decay: .75 },
       { type: 'tone', wave: 'sine', freq: 190, freqEnd: 520, gain: .35, attack: .01, decay: .22, delay: .8 },

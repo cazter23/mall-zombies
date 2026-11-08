@@ -69,6 +69,25 @@ export const clawMachine = {
     ],
   },
 
+  // SUNNY RUNS AWAY (game/features/clawSunny.js; his model: world/sunnyModel.js). When a grab lands on him he climbs out of the chute,
+  // looks around, and waddles to the machine's next site along the zombies' grid (only through open areas), then climbs into the
+  // cabinet and it shakes. Shoot or slash him and he pops (stuffing and confetti): tickets.popSunny, and the next site is picked
+  // again. He is not a zombie: no kill, no +10, no power-up credit, no aim assist pull, never blocks a vault, no collider.
+  sunny: {
+    speed: 2, // m/s, a waddle
+    climbOutSeconds: 0.9, // out of the chute and down to the floor
+    lookSeconds: 0.8, // a look left and right before setting off
+    climbInSeconds: 0.6, // into the cabinet at the far end
+    shake: { seconds: 0.6, metres: 0.035, hz: 9 }, // the cabinet (its moving parts and sheet) shakes once he's in
+    standOff: 1.1, // m in front of a cabinet: where he walks to (and starts from)
+    lap: 1.3, // m: no other site open, so he walks a lap this far round the front of the machine and climbs back in
+    size: 0.62, // m tall
+    hitbox: { radius: 0.26, height: 0.6 },
+    waddle: { hz: 3.2, sway: 0.2, bob: 0.035 },
+    pop: { count: 48, speed: 4.2, size: 0.07, colors: [0xfff6e0, 0xffd23f, 0xffb21a, 0xff9fd2, 0x3a86ff] }, // stuffing and confetti
+    stuffing: [0xfff6e0, 0xf3ead2, 0xffd23f], // the splat colours of a hit (fluff, not blood)
+  },
+
   // THE SHOW: how the lift looks and sounds. None of it changes the prize, which was settled at the press.
   show: {
     lift: { down: 0.28, grip: 0.4, up: 0.68 }, // fractions of liftSeconds: down (prongs open), grip (they close), up, then over to the chute

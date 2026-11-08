@@ -130,7 +130,7 @@ src/
                         only) + yawKickSpring (sideways, part of the aim; `viewKickYaw`). addRecoil(pitch, roll, yaw)
                         for shots, addViewKick() for instant jolts (hits, melee),
                         updateView(dt) at the END of each tick; syncCamera interpolates both
-    vault.js            Opt-in low-obstacle vault: jump on approach, full-cylinder path/headroom/landing
+    vault.js            (blocksVault(body): a live body blocks a vault unless flagged ignoreVault, like Sunny.) Opt-in low-obstacle vault: jump on approach, full-cylinder path/headroom/landing
                         checks (including live shootables), entry momentum on exit, interrupt on crowd shove
                         Balcony rails (collider.ledge, set by props.railing): always climbed straight over along the rail's
                         normal (up to 70 degrees off; pushing into it from a standstill counts), then a drop with no steering
@@ -164,7 +164,7 @@ src/
                         applySpread() picks a random direction inside the cone; applyConeSpread() also samples pellets;
                         pelletSpreadDegrees() blends their independent ADS cone. reset() (new run: hip, base spread).
                         update(dt, allowAim) (false mid weapon switch). One aim per carried gun
-    aimAssist.js        createAimAssist(): controller-only (input.device). Picks the visible target nearest the
+    aimAssist.js        (assistable(shootable): never a dead or spawning one, or one flagged ignoreAimAssist, like Sunny.) createAimAssist(): controller-only (input.device). Picks the visible target nearest the
                         crosshair (sticky), aims at its chest. Slowdown multiplier (read per frame for stick
                         look), rotational follow of the target's angular motion while a stick is in use, and
                         a 40% ADS snap within 5 deg with a cooldown. Runs inside playerGun.update after aim
@@ -431,6 +431,11 @@ src/
                         forcePlush / moveNow (debug). The show (cfg.show, never the prize): prongs open and shut, the carried capsule swings,
                         the chute flap, an attract screen, sounds that fade with distance (jingle, a tick into each lane, motor, grab,
                         fanfare, Sunny's slide whistle) and a hum: an emitter it adds to map.ambience that follows the live machine.
+      clawSunny.js      Sunny runs away (built by clawMachine.js): out of the chute, a look round, a waddle along g.zombies.nav.pathTo to the
+                        next site's front (open areas only; a lap round his own machine if no other site is open), into that cabinet, which
+                        shakes (its rig group; colliders never move). His shootable (one body box) pops on any hit: stuffing and confetti,
+                        tickets.popSunny, and the machine re-picks its next site. Flags: ignoreAimAssist, ignoreVault, noRewards; no collider.
+                        Events 'sunnyEscape' / 'sunnyArrived' / 'sunnyPopped'.
       prizeCounter.js   Feature kind 'prizeCounter', REDEMPTION: five prizes paid in tickets (an ammo refill, a Slow Claw token, an attachment
                         voucher for an empty slot of the gun in hand, a free grab token, a Sunny keychain). Normal hold-to-buy items costing 0
                         points with a "100 tickets" label, quiet (not a 'purchase'), refused like too few points when you're short.
@@ -617,7 +622,8 @@ src/
                         across instanced signature pools. Skips shutters/unsupported edges; follows rigid surface transforms,
                         removes marks when surfaces unload, clears on restart. prepare(renderer,camera) warms shared graphics.
     impactModels.js     Small shared staple/nail/dart/confetti meshes with vertex colours; three procedural price-sticker textures
-    effects.js          Tracers (pooled) + particle bursts (one InstancedMesh): splat(), puff(), clear() (new run).
+    effects.js          Tracers (pooled) + particle bursts (one InstancedMesh): splat(), puff(), clear() (new run). A splat palette flagged
+                        `foam` (or the Mascot's) keeps its colours in Red splatter mode (Sunny is stuffing, not blood).
                         The Mascot's foam palette bypasses flesh splatter settings.
     benchmark.js        Times a fixed camera route (map.benchmarkShots) so a visual change can say what it costs (Shift+B on the title or pause screen).
     lightPool.js        A fixed number of real point lights shared out among the map's lamps.
@@ -656,6 +662,8 @@ src/
     door.js             createDoor(): physical barrier wrapping open/close/update/collider. Raw open/reset retains
                         legacy zone-holder behavior for standalone maps and geometry tests. Mall gameplay purchases
                         go through areaUnlocks, never directly through door.open. toggleDoors delegates to area ownership.
+    sunnyModel.js       buildSunnyModel(size) -> { root, legs, body }: Sunny the plush, low-poly (body, merged rays, a staring eye, a button
+                        eye, a crooked smile, two legs), feet at the origin, facing -Z; disposeSunnyModel(root).
     wallBuy.js          createWallBuyDisplay(): chalk outline (textures.makeChalkTexture) + the gun on two pegs, side on
     collision.js        RAMPS (addRamp / removeRamp / rampHeightAt, `colliders.ramps`): a walkable slope that is only a SURFACE the feet follow
                         (never a wall or ceiling; add boxes beside/under it): up within rampStep 0.5 m, down within rampSnap 0.4 m, not while
