@@ -22,6 +22,8 @@ export const debug = {
     { id: 'spawn', key: 'KeyZ', group: 'Enemies', label: 'Spawn selected enemy' },
     { id: 'summonBoss', key: 'KeyJ', group: 'Enemies', label: 'Summon selected boss (once per round)' },
     { id: 'cycleBoss', key: 'KeyJ', shift: true, group: 'Enemies', label: 'Select next boss' },
+    { id: 'spawnMascot', key: 'KeyM', group: 'Enemies', label: 'Spawn next Mascot costume, nearest spot' },
+    { id: 'spawnGoldMascot', key: 'KeyM', shift: true, group: 'Enemies', label: 'Spawn next costume as Employee of the Month' },
     { id: 'cycleZombie', key: 'KeyZ', shift: true, group: 'Enemies', label: 'Select next enemy type' },
     { id: 'clearZombies', key: 'KeyX', group: 'Enemies', label: 'Clear enemies (no points)' },
     { id: 'killZombies', key: 'KeyK', group: 'Enemies', label: 'Kill enemies (pays points)' },

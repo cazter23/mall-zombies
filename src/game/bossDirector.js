@@ -19,7 +19,7 @@ export function isEncoreRound(round, intros = bossIntroRounds()) {
 }
 
 export function chooseBossSchedule(random = Math.random) {
-  const intros = bossIntroRounds();
+  const intros = bossIntroRounds(); // (never a zombie type's or a Mascot costume's debut)
   const schedule = new Map();
   for (const [id, type] of Object.entries(bossTypes)) {
     const rounds = type.firstRounds.filter(round => !intros.has(round) && !schedule.has(round));
@@ -28,7 +28,9 @@ export function chooseBossSchedule(random = Math.random) {
   return new Map([...schedule].sort(([a], [b]) => a - b));
 }
 
-export function createBossDirector({ events, rounds, zombies, scene, colliders, player, stats, powerUps, state, map }) {
+// `surfaces`: game/surfaceSlows.js. The active boss's slow (behavior.surfaceSpeed: the Janitor's wet floor, the Guard's
+// taser) is reported there as 'boss', never written to the stat itself: Scoops' melt reports too and the lowest wins.
+export function createBossDirector({ events, rounds, zombies, scene, colliders, player, surfaces, powerUps, state, map }) {
   let schedule = null;
   let active = null;
   let behavior = null;
@@ -42,7 +44,7 @@ export function createBossDirector({ events, rounds, zombies, scene, colliders, 
     active = null;
     behavior?.dispose(reason);
     behavior = null;
-    stats.surfaceSpeed = 1;
+    surfaces.clear('boss');
   }
 
   function spawn(id) {
@@ -94,7 +96,7 @@ export function createBossDirector({ events, rounds, zombies, scene, colliders, 
       if (active && !zombies.zombies.includes(active)) clear('vanished');
       if (active) {
         behavior.update(dt);
-        stats.surfaceSpeed = behavior.surfaceSpeed ?? 1;
+        surfaces.set('boss', behavior.surfaceSpeed ?? 1);
         return;
       }
       if (!allowSpawn || !pending() || rounds.state !== 'active') return;

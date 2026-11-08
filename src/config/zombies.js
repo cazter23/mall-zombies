@@ -268,11 +268,14 @@ const mannequin = {
     release: { name: 'mannequinClick', maxDistance: 20 } },
   introBanner: { kicker: 'Display advisory', text: 'Mannequins move when you look away. Keep them in sight.' },
 };
-// Round 10+: Sir Waffles, the Food Court's foam breakfast knight.
+// Round 10+: the MASCOT. One zombie slot (economy.zombieMix.mascot: share, maxAlive, intro) wearing one of several
+// costumes (mascotVariants below). Every costume shares this foam body, its rig and the three beats: an armoured
+// approach -> the helmet pops off at half health -> it shakes, then rushes. A costume brings its own looks and lines,
+// and changes ONE beat (its tuning block: reclaim, popBlast, melt). Shared numbers live here; a costume's own in its entry.
 export const mascotFoamColors = [0xfff1cd, 0xfff9eb, 0xe6d9b9];
 const mascotHipY = 0.72;
 const mascotTorso = { size: [0.72, 0.68, 0.52], at: [0, 0.34, 0] };
-const mascot = {
+const mascotBase = {
   ...shopper,
   id: 'mascot',
   speed: 1.35,
@@ -284,10 +287,9 @@ const mascot = {
   radius: cartPusher.radius, // keep the shared navigation clearance; the foam extends beyond the collider
   hitbox: { bodyTop: mascotHipY + mascotTorso.at[1] + mascotTorso.size[1] / 2 }, // death burst origin
   attack: { ...shopper.attack, damage: 50, windupSeconds: 0.55, minWindupSeconds: 0.45 },
-  plastic: { color: 0xe8a037, roughness: 0.95 }, // EVA foam, uses the existing non-flesh death effects
+  plastic: { roughness: 0.95 }, // EVA foam, uses the existing non-flesh death effects (each head brings its foam colour)
   splatColors: mascotFoamColors,
   deathSplatCount: 42,
-  introBanner: { kicker: 'Attention shoppers', text: 'Sir Waffles is loose in the mall. Please keep syrup at a safe distance.' },
   sounds: {
     step: { name: 'mascotThump', interval: 0.58, chance: 1, maxDistance: 18 },
     headPop: { name: 'mascotHeadPop', maxDistance: 26 },
@@ -303,37 +305,19 @@ const mascot = {
     rage: { seconds: 0.6, shake: 0.14, shakeRate: 42 },
     // The fallen helmet sits on the floor until the round ends, turning to face you. Only so many stay: each is a couple of dozen draw calls.
     leftHelmets: { max: 3, turnSpeed: 1.2, settleSeconds: 0.35, wallMargin: 0.55, rayHeight: 0.5 },
-    helmetPopLine: { kicker: 'Lost property', text: 'A customer has lost their head. It may be claimed at Customer Service.' },
-    // Model dimensions in meters. Each solid piece supplies its own hitbox.
+    // Model dimensions in meters. Each solid piece supplies its own hitbox. (The helmet is the costume's `head`.)
     spawnDepth: 2.36,
     hipY: mascotHipY,
     legX: 0.19,
     shoulder: [0.43, 0.55, 0],
-    helmet: { size: [0.95, 0.88, 0.79], at: [0, 1.09, 0] },
     exposedHead: { size: [0.32, 0.37, 0.32], at: [0, 0.865, 0] },
     torso: mascotTorso,
     thigh: { size: [0.30, 0.62, 0.32], at: [0, -0.31, 0] },
     boot: { size: [0.35, 0.21, 0.53], at: [0, -0.615, -0.08] },
     sleeve: { size: [0.23, 0.38, 0.28], at: [0, -0.16, 0] },
     mitt: { size: [0.28, 0.25, 0.32], at: [0, -0.42, -0.02] },
-    colors: {
-      suit: 0x6a3393, trim: 0xffd365, cape: 0xb83946, crust: 0xad5f2b, toast: 0xc87b32,
-      butter: 0xffe278, eyes: 0xfff7dc, dark: 0x34202a, skin: 0x91a869, hair: 0x40312d,
-    },
-    // Front-facing pieces on the waffle and the smaller, green head.
-    grid: { centers: [-0.33, -0.11, 0.11, 0.33], rows: [-0.31, -0.105, 0.10, 0.305],
-      size: [0.17, 0.157, 0.018], z: -0.399 },
-    waffleFace: [
-      { color: 'butter', size: [0.24, 0.14, 0.06], at: [-0.25, 0.29, -0.41], tilt: 0.22 },
-      { color: 'eyes', size: [0.15, 0.20, 0.044], at: [-0.20, 0.10, -0.422], tilt: 0.13 },
-      { color: 'eyes', size: [0.15, 0.20, 0.044], at: [0.20, 0.10, -0.422], tilt: -0.13 },
-      { color: 'dark', size: [0.062, 0.092, 0.024], at: [-0.184, 0.075, -0.449] },
-      { color: 'dark', size: [0.062, 0.092, 0.024], at: [0.184, 0.075, -0.449] },
-      { color: 'dark', size: [0.32, 0.081, 0.032], at: [0, -0.20, -0.421] },
-      { color: 'dark', size: [0.076, 0.079, 0.032], at: [-0.17, -0.17, -0.421], tilt: 0.45 },
-      { color: 'dark', size: [0.076, 0.079, 0.032], at: [0.17, -0.17, -0.421], tilt: -0.45 },
-      { color: 'eyes', size: [0.23, 0.03, 0.016], at: [0, -0.18, -0.442] },
-    ],
+    // The smaller, green head under every costume's helmet (a costume's `colors` add the suit's).
+    colors: { eyes: 0xfff7dc, dark: 0x34202a, skin: 0x91a869, hair: 0x40312d },
     zombieFace: [
       { color: 'hair', size: [0.32, 0.075, 0.32], at: [0, 0.148, 0.004] },
       { color: 'dark', size: [0.067, 0.047, 0.022], at: [-0.076, 0.035, -0.169], tilt: -0.12 },
@@ -341,12 +325,6 @@ const mascot = {
       { color: 'eyes', size: [0.028, 0.02, 0.012], at: [-0.079, 0.034, -0.183] },
       { color: 'dark', size: [0.14, 0.04, 0.023], at: [-0.013, -0.096, -0.169], tilt: 0.12 },
       { color: 'eyes', size: [0.036, 0.024, 0.012], at: [-0.045, -0.089, -0.183] },
-    ],
-    uniform: [
-      { color: 'cape', size: [0.5, 0.48, 0.035], at: [0, -0.07, 0.272] },
-      { color: 'cape', size: [0.45, 0.37, 0.025], at: [0, -0.04, -0.264] },
-      { color: 'trim', size: [0.20, 0.20, 0.027], at: [0, 0.07, -0.285], tilt: Math.PI / 4 },
-      { color: 'crust', size: [0.097, 0.097, 0.02], at: [0, 0.07, -0.305], tilt: Math.PI / 4 },
     ],
     pose: {
       radiansPerMeter: 4.4, shambleStride: 0.46, rushStride: 0.74, shambleArm: 0.24, rushArm: 0.55,
@@ -360,7 +338,278 @@ const mascot = {
     },
   },
 };
-export const zombieTypes = { shopper, mallWalker, cartPusher, mannequin, mascot };
+
+// THE COSTUMES. Each Mascot that spawns wears one the player has unlocked (unlockRound <= the round), picked by
+// zombies/mascotVariants.js once the spawn point is known: weight 1 each, x mascotPicking.homeWeight when the point's
+// zone is one of its homeZones. A costume's first appearance gets its own PA banner ('mascotVariantIntro'); in its
+// unlock round the first Mascot is forced to wear it (game/rounds.js). Entry fields:
+//   name, unlockRound, homeZones, introBanner, helmetPopLine (the PA line when the helmet comes off)
+//   colors   the suit: suit, trim, boot, plus any named in `uniform` and the head's decorations
+//   uniform  extra blocks on the torso ({ color, size, at, tilt }, colors by name)
+//   head     the helmet: kind (zombies/mascotHeads.js builds it), helmet { size, at } (the main block; its meshes are the
+//            head hitbox), color (its foam) and that kind's own pieces
+//   + the costume's own tuning block (the one beat it changes), read as zombie.type.mascot.<block>
+export const mascotPicking = { homeWeight: 3 };
+export const mascotVariants = {
+  // The Food Court's foam breakfast knight: the baseline, no twist.
+  sirWaffles: {
+    name: 'Sir Waffles',
+    unlockRound: 10,
+    homeZones: ['foodCourt'],
+    introBanner: { kicker: 'Attention shoppers', text: 'Sir Waffles is loose in the mall. Please keep syrup at a safe distance.' },
+    helmetPopLine: { kicker: 'Lost property', text: 'A customer has lost their head. It may be claimed at Customer Service.' },
+    colors: { suit: 0x6a3393, trim: 0xffd365, boot: 0xad5f2b, cape: 0xb83946, crust: 0xad5f2b, toast: 0xc87b32, butter: 0xffe278 },
+    uniform: [
+      { color: 'cape', size: [0.5, 0.48, 0.035], at: [0, -0.07, 0.272] },
+      { color: 'cape', size: [0.45, 0.37, 0.025], at: [0, -0.04, -0.264] },
+      { color: 'trim', size: [0.20, 0.20, 0.027], at: [0, 0.07, -0.285], tilt: Math.PI / 4 },
+      { color: 'crust', size: [0.097, 0.097, 0.02], at: [0, 0.07, -0.305], tilt: Math.PI / 4 },
+    ],
+    head: {
+      kind: 'waffle',
+      helmet: { size: [0.95, 0.88, 0.79], at: [0, 1.09, 0] },
+      color: 0xe8a037,
+      // The square dents (toast colour) and the face on the front.
+      grid: { centers: [-0.33, -0.11, 0.11, 0.33], rows: [-0.31, -0.105, 0.10, 0.305],
+        size: [0.17, 0.157, 0.018], z: -0.399, color: 'toast' },
+      face: [
+        { color: 'butter', size: [0.24, 0.14, 0.06], at: [-0.25, 0.29, -0.41], tilt: 0.22 },
+        { color: 'eyes', size: [0.15, 0.20, 0.044], at: [-0.20, 0.10, -0.422], tilt: 0.13 },
+        { color: 'eyes', size: [0.15, 0.20, 0.044], at: [0.20, 0.10, -0.422], tilt: -0.13 },
+        { color: 'dark', size: [0.062, 0.092, 0.024], at: [-0.184, 0.075, -0.449] },
+        { color: 'dark', size: [0.062, 0.092, 0.024], at: [0.184, 0.075, -0.449] },
+        { color: 'dark', size: [0.32, 0.081, 0.032], at: [0, -0.20, -0.421] },
+        { color: 'dark', size: [0.076, 0.079, 0.032], at: [-0.17, -0.17, -0.421], tilt: 0.45 },
+        { color: 'dark', size: [0.076, 0.079, 0.032], at: [0.17, -0.17, -0.421], tilt: -0.45 },
+        { color: 'eyes', size: [0.23, 0.03, 0.016], at: [0, -0.18, -0.442] },
+      ],
+    },
+  },
+
+  // Mega Mart's discount superhero. THE TWIST, after the pop and the shake: instead of rushing he hurries back to HIS
+  // fallen helmet and puts it back on (zombie.js updateReclaim). Shoot him while he's bent over it: the head is bare.
+  captainCoupon: {
+    name: 'Captain Coupon',
+    unlockRound: 13,
+    homeZones: ['megaMart'],
+    introBanner: { kicker: 'Attention shoppers', text: 'Captain Coupon is patrolling Mega Mart. His coupons are expired. So is he.' },
+    helmetPopLine: { kicker: 'Price drop', text: 'Captain Coupon has been reduced to clear. He will be back for it.' },
+    colors: { suit: 0xd8262e, trim: 0xffd23f, boot: 0x2b2b33, cape: 0xffc21a, ink: 0xd8262e, string: 0xf4efe6 },
+    uniform: [
+      { color: 'cape', size: [0.5, 0.5, 0.035], at: [0, -0.06, 0.272] }, // the cape
+      { color: 'trim', size: [0.22, 0.22, 0.027], at: [0, 0.07, -0.275], tilt: Math.PI / 4 }, // a yellow chest badge...
+      { color: 'ink', size: [0.11, 0.11, 0.02], at: [0, 0.07, -0.295], tilt: Math.PI / 4 }, // ...with a red heart to it
+      { color: 'trim', size: [0.74, 0.07, 0.56], at: [0, -0.24, 0] }, // a utility belt
+    ],
+    head: {
+      kind: 'priceTag',
+      helmet: { size: [0.96, 0.84, 0.38], at: [0, 1.07, 0] }, // a thick foam card: it hides the green head
+      color: 0xfff1b8,
+      tilt: 0.2, // radians: the hole corner up, as if hung from the string
+      bevel: 0.03,
+      cornerRadius: 0.16,
+      // Positions on the card are in its own metres: +x is the hole's side (his right: your left as you face him).
+      hole: { at: [0.3, 0.24], radius: 0.065 },
+      string: { color: 'string', radius: 0.12, tube: 0.02, stretch: 1.9, sink: 0.03 },
+      // The canvas print in front of the card: SALE clear of the hole, a big "%" for a mouth.
+      // (text sizes are fractions of the canvas height)
+      print: { size: [0.86, 0.74], pixels: [512, 440], lift: 0.012, ink: '#d8262e',
+        text: 'SALE', textAt: [-0.07, 0.262], textSize: 0.19, symbol: '%', symbolAt: [0, -0.215], symbolSize: 0.34 },
+      face: [ // (front faces at least 1 cm apart: card -0.19, print -0.202, rims -0.212, whites -0.23, pupils and brows -0.245)
+        { color: 'dark', size: [0.19, 0.22, 0.012], at: [0.17, 0.02, -0.206] }, // dark rims so the eyes read on the cream card
+        { color: 'dark', size: [0.19, 0.22, 0.012], at: [-0.17, 0.02, -0.206] },
+        { color: 'eyes', size: [0.16, 0.19, 0.03], at: [0.17, 0.02, -0.215] },
+        { color: 'eyes', size: [0.16, 0.19, 0.03], at: [-0.17, 0.02, -0.215] },
+        { color: 'dark', size: [0.065, 0.095, 0.02], at: [0.15, 0.0, -0.235] },
+        { color: 'dark', size: [0.065, 0.095, 0.02], at: [-0.15, 0.0, -0.235] },
+        { color: 'dark', size: [0.17, 0.035, 0.02], at: [0.17, 0.155, -0.235], tilt: -0.3 }, // stern brows
+        { color: 'dark', size: [0.17, 0.035, 0.02], at: [-0.17, 0.155, -0.235], tilt: 0.3 },
+      ],
+    },
+    reclaim: {
+      walkSpeed: 2.4, // m/s back to his helmet: hurrying, not rushing
+      reachRadius: 0.8, // within this of it he stops and picks it up...
+      reclaimSeconds: 1.2, // ...standing still this long (bent over, then lifting it over his head)...
+      reclaimHealthFraction: 0.75, // ...and it's on: health back to this much of max, suited speed again
+      maxReclaims: 1, // per Coupon. The second pop pays no helmet bonus.
+      guardRadius: 1.5, // he gives up (and rushes you) if you stand this close to his helmet...
+      giveUpSeconds: 6, // ...or he hasn't got it by now, or it's gone (round over, swept up)
+      line: { kicker: 'Customer service', text: 'Captain Coupon has found his head. Offer still valid.' },
+      // The lift (visual only): bent over it for the first reachShare, then up over his head and down onto his shoulders.
+      lift: { reachShare: 0.35, bend: 0.75, armsReach: 1.2, armsHold: 2.75, rise: 0.45 },
+    },
+  },
+
+  // The Sunset Cinema's usher in a popcorn bucket. THE TWIST: the pop is a blast (game/mascotCostumes.js). Zombies
+  // close by are flung and stunned (no damage, so no points), and if you're close you're shoved away and buttered.
+  poppyCorn: {
+    name: 'Poppy Corn',
+    unlockRound: 16,
+    homeZones: ['cinema'],
+    introBanner: { kicker: 'Now showing', text: 'Poppy Corn has left the Sunset Cinema. Please silence your screaming.' },
+    helmetPopLine: { kicker: 'Concessions', text: 'Poppy Corn has popped. Butter is complimentary. And everywhere.' },
+    colors: { suit: 0xa3172b, trim: 0xf2c14e, boot: 0x2a1b14, bow: 0x1d1626, stripe: 0xd62839, kernel: 0xfff1c9, butter: 0xffcf3f },
+    uniform: [ // an usher's jacket: gold buttons, a bow tie, gold epaulettes
+      { color: 'trim', size: [0.06, 0.06, 0.03], at: [0, 0.12, -0.27] },
+      { color: 'trim', size: [0.06, 0.06, 0.03], at: [0, -0.02, -0.27] },
+      { color: 'trim', size: [0.06, 0.06, 0.03], at: [0, -0.16, -0.27] },
+      { color: 'bow', size: [0.1, 0.09, 0.035], at: [-0.06, 0.27, -0.272], tilt: 0.35 },
+      { color: 'bow', size: [0.1, 0.09, 0.035], at: [0.06, 0.27, -0.272], tilt: -0.35 },
+      { color: 'trim', size: [0.2, 0.05, 0.36], at: [-0.27, 0.355, 0] },
+      { color: 'trim', size: [0.2, 0.05, 0.36], at: [0.27, 0.355, 0] },
+    ],
+    head: {
+      kind: 'popcornBucket',
+      helmet: { size: [0.9, 0.74, 0.9], at: [0, 1.04, 0] }, // the bucket: top width, height (it hides the green head)
+      color: 0xfff6e6, // the bucket's white
+      radiusTop: 0.45,
+      radiusBottom: 0.33,
+      segments: 16,
+      stripes: { count: 8, color: 'stripe', proud: 0.012 }, // red bands, equal to the white ones
+      rim: { color: 'stripe', height: 0.07, proud: 0.024 },
+      // Lumpy puffs heaped on top: [x, y, z, size, buttered?] in the bucket's metres (y = 0 is its middle).
+      puffs: { color: 'kernel', buttered: 'butter', pieces: [
+        [0, 0.48, 0, 0.17], [0.2, 0.43, 0.1, 0.14], [-0.2, 0.43, 0.12, 0.15, true], [0.05, 0.42, -0.25, 0.14],
+        [-0.18, 0.44, -0.16, 0.13, true], [0.26, 0.41, -0.13, 0.13], [0.12, 0.44, 0.27, 0.13, true], [-0.3, 0.41, -0.02, 0.12],
+        [0.3, 0.4, 0.2, 0.11], [-0.05, 0.54, 0.12, 0.12, true], [0.1, 0.56, -0.08, 0.11], [-0.14, 0.42, 0.3, 0.11],
+      ] },
+      // The face sits on the bucket's curve: at [x, y] on its front, `proud` metres off the stripes (back face).
+      // (front faces at least 1.5 cm apart: rims 0.024, whites and mouth 0.04, pupils, teeth and tongue 0.055)
+      face: [
+        { color: 'dark', size: [0.18, 0.22, 0.02], at: [0.15, 0.07], proud: 0.004 }, // dark rims: the stripes behind are white too
+        { color: 'dark', size: [0.18, 0.22, 0.02], at: [-0.15, 0.07], proud: 0.004 },
+        { color: 'eyes', size: [0.15, 0.19, 0.03], at: [0.15, 0.07], proud: 0.01 },
+        { color: 'eyes', size: [0.15, 0.19, 0.03], at: [-0.15, 0.07], proud: 0.01 },
+        { color: 'dark', size: [0.06, 0.09, 0.02], at: [0.13, 0.05], proud: 0.035 },
+        { color: 'dark', size: [0.06, 0.09, 0.02], at: [-0.13, 0.05], proud: 0.035 },
+        { color: 'dark', size: [0.26, 0.07, 0.03], at: [0, -0.14], proud: 0.01 }, // a big open grin...
+        { color: 'dark', size: [0.16, 0.06, 0.03], at: [0, -0.19], proud: 0.01 },
+        { color: 'eyes', size: [0.2, 0.03, 0.02], at: [0, -0.12], proud: 0.035 }, // ...with teeth...
+        { color: 'butter', size: [0.1, 0.035, 0.02], at: [0, -0.2], proud: 0.035 }, // ...and butter on its tongue
+      ],
+    },
+    popBlast: {
+      zombieRadius: 4, // zombies within this (metres, flat) are knocked away...
+      stunSeconds: 1.2, // ...and stunned this long (the Security Sweep's stagger)...
+      knockback: 7, // ...starting at this many m/s (a Cart Pusher's shove)...
+      drag: 5, // ...slowing with this drag (about knockback / drag metres)
+      playerRadius: 3, // you, within this: shoved away at playerShove m/s (horizontal), no damage...
+      playerShove: 7,
+      butterSeconds: 1, // ...and buttered (the HUD's splat fades over this)
+      floorTolerance: 1.2, // only bodies on its own floor (metres of height difference)...
+      chestHeight: 1.1, // ...with nothing solid between the bucket and their chest
+      burst: { colors: [0xfff1c9, 0xfff9ee, 0xffe28a, 0xffcf3f], count: 36 }, // popcorn everywhere
+    },
+  },
+
+  // The Atrium's soda-fountain mascot, melting. THE TWIST, on the approach: he leaves a trail of melt puddles that
+  // slow you down (game/meltTrail.js, through game/surfaceSlows.js), and drips twice as fast once his cone is off.
+  scoops: {
+    name: 'Scoops',
+    unlockRound: 19,
+    homeZones: ['atrium', 'foodCourt'],
+    introBanner: { kicker: 'Attention shoppers', text: 'Scoops is melting through the mall. Mind the floor. It is mostly strawberry.' },
+    helmetPopLine: { kicker: 'Clean-up on every aisle', text: 'Scoops has lost his cone. Please do not lick the floor.' },
+    colors: { suit: 0x9fe3c9, trim: 0xfff8f0, boot: 0xd29a55, apron: 0xfff8f0, stripe: 0xff9fc0, bow: 0xff7fae,
+      cone: 0xd8a05a, coneDark: 0xa86f32, scoop: 0xffb3cf, cherry: 0xe0283c, sprinkleA: 0xffe14a, sprinkleB: 0x7fd2ff, sprinkleC: 0xb58cff },
+    uniform: [ // a soda jerk: white apron with a pink stripe, a pink bow tie
+      { color: 'apron', size: [0.5, 0.5, 0.03], at: [0, -0.08, -0.272] },
+      { color: 'stripe', size: [0.5, 0.06, 0.02], at: [0, 0.13, -0.29] },
+      { color: 'bow', size: [0.1, 0.09, 0.035], at: [-0.06, 0.28, -0.272], tilt: 0.35 },
+      { color: 'bow', size: [0.1, 0.09, 0.035], at: [0.06, 0.28, -0.272], tilt: -0.35 },
+    ],
+    head: {
+      kind: 'iceCreamCone',
+      helmet: { size: [0.9, 1.04, 0.9], at: [0, 1.06, 0] }, // the whole cone and scoop (it hides the green head)
+      color: 0xffb3cf, // the scoop's strawberry
+      // A short, wide waffle cone (point cut off: it sits on his shoulders), in the head's metres (y = 0 is its middle).
+      cone: { color: 'cone', radiusTop: 0.42, radiusBottom: 0.25, height: 0.46, y: -0.24, segments: 10,
+        bands: { color: 'coneDark', count: 2, height: 0.035, proud: 0.012 } },
+      scoop: { radius: 0.43, y: 0.14 },
+      // Drips over the rim: [angle around (0 = front), length], kept off the face and the sides (they read as ears there);
+      // sprinkles on top: [x, y, z, colour name]
+      drips: { color: 'scoop', width: 0.05, pieces: [[0.75, 0.11], [2.5, 0.09], [3.8, 0.12], [5.5, 0.1]] },
+      sprinkles: { size: [0.07, 0.022, 0.022], pieces: [
+        [0.1, 0.5, 0.12, 'sprinkleA'], [-0.14, 0.48, 0.05, 'sprinkleB'], [0.02, 0.52, -0.12, 'sprinkleC'], [-0.06, 0.47, 0.22, 'sprinkleA'],
+        [0.2, 0.44, -0.08, 'sprinkleB'], [-0.22, 0.42, -0.14, 'sprinkleC'], [0.24, 0.42, 0.18, 'sprinkleC'], [-0.25, 0.4, 0.2, 'sprinkleB'],
+      ] },
+      cherry: { color: 'cherry', radius: 0.07, y: 0.6 },
+      // The face sits on the scoop: [x, y] on its front (head metres), `proud` off the surface (back face).
+      face: [
+        { color: 'eyes', size: [0.14, 0.17, 0.03], at: [0.14, 0.2], proud: 0.008 },
+        { color: 'eyes', size: [0.14, 0.17, 0.03], at: [-0.14, 0.2], proud: 0.008 },
+        { color: 'dark', size: [0.06, 0.085, 0.02], at: [0.12, 0.18], proud: 0.03 },
+        { color: 'dark', size: [0.06, 0.085, 0.02], at: [-0.12, 0.18], proud: 0.03 },
+        { color: 'dark', size: [0.12, 0.045, 0.03], at: [0, 0.025], proud: 0.008 }, // a little U of a smile
+        { color: 'dark', size: [0.045, 0.06, 0.03], at: [0.075, 0.05], proud: 0.008 },
+        { color: 'dark', size: [0.045, 0.06, 0.03], at: [-0.075, 0.05], proud: 0.008 },
+        { color: 'bow', size: [0.07, 0.05, 0.02], at: [0.2, 0.07], proud: 0.008 }, // rosy cheeks
+        { color: 'bow', size: [0.07, 0.05, 0.02], at: [-0.2, 0.07], proud: 0.008 },
+      ],
+    },
+    melt: {
+      dropEvery: 0.5, // seconds between puddles while suited...
+      exposedDropEvery: 0.25, // ...and once his cone is off (twice as often)
+      minSpacing: 0.35, // metres: no new puddle within this of his last one (standing still doesn't pile them up)
+      radius: 0.8,
+      lifeSeconds: 6,
+      fadeSeconds: 1.5, // (the last part of its life: it fades out)
+      maxPuddles: 14, // ONE pool for every Scoops in the mall: the oldest puddle gives way
+      slowFactor: 0.6, // your speed standing in one (zombies don't care). With the Janitor's wet floor: the lowest wins.
+      floorTolerance: 0.12, // (a puddle needs flat floor under it: none on a ramp or an escalator)
+      lift: 0.022, opacity: 0.78, segments: 20,
+      colors: [0xffb3cf, 0xaef0d4], // strawberry and mint, in turn
+    },
+  },
+};
+
+// One resolved zombie type per costume, built ONCE here: the shared type deep-merged with the costume (id stays 'mascot',
+// plus `variant: '<id>'` and `name`), so every zombie.type.mascot.* read works whatever the costume. Nothing per spawn.
+const isPlainObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
+function mergeDeep(base, over) {
+  const out = { ...base };
+  for (const [key, value] of Object.entries(over)) {
+    out[key] = isPlainObject(value) && isPlainObject(base[key]) ? mergeDeep(base[key], value) : value;
+  }
+  return out;
+}
+function resolveMascot(id, { name, unlockRound: _unlock, homeZones: _home, introBanner, ...costume }) {
+  return mergeDeep(mascotBase, { variant: id, name, introBanner, mascot: { ...costume, helmet: costume.head.helmet } });
+}
+export const mascotTypes = Object.fromEntries(Object.entries(mascotVariants).map(([id, costume]) => [id, resolveMascot(id, costume)]));
+
+// EMPLOYEE OF THE MONTH: from fromRound each Mascot has `chance` to come as the gold version of its costume (the zombie
+// manager rolls it after the costume; never two alive at once). Tougher (healthMultiplier on top of the Mascot's 5x),
+// announced on the PA (spawnLine) and it always drops one power-up at its body: `guaranteedDrop`, which game/powerUps.js
+// pays through the same queue as a boss's reward, outside the drop meter.
+// The gold version of a costume: suit gold, trim and boots black, the helmet's foam gold, every other costume colour bright
+// gold if it is light (luminance >= brightAbove) or black, plus the name badge on its chest. The green zombie inside stays.
+export const mascotGold = {
+  fromRound: 15,
+  chance: 0.08,
+  healthMultiplier: 1.5,
+  palette: { gold: 0xe0aa22, bright: 0xffd65a, black: 0x1d1626 },
+  brightAbove: 0.6,
+  spawnLine: { kicker: 'Staff announcement', text: 'Our Employee of the Month is on the floor. Please congratulate them. From a distance.' },
+  // A card on the left of the chest (torso metres, >= 1 cm proud of everything a costume wears there) with a canvas print.
+  badge: { size: [0.2, 0.12, 0.02], at: [-0.24, 0.2, -0.29], color: 'badge', card: 0xfff6dc,
+    print: { pixels: [256, 154], lift: 0.006, ink: '#1d1626', star: '#e0aa22', lines: ['EMPLOYEE', 'OF THE MONTH'] } },
+};
+const zombieColors = new Set(Object.keys(mascotBase.mascot.colors)); // (the face under the helmet)
+const luminance = (hex) => (0.2126 * ((hex >> 16) & 255) + 0.7152 * ((hex >> 8) & 255) + 0.0722 * (hex & 255)) / 255;
+function gild(type) {
+  const { palette, brightAbove, badge } = mascotGold;
+  const colors = {};
+  for (const [name, hex] of Object.entries(type.mascot.colors)) {
+    if (!zombieColors.has(name)) colors[name] = luminance(hex) >= brightAbove ? palette.bright : palette.black;
+  }
+  Object.assign(colors, { suit: palette.gold, trim: palette.black, boot: palette.black, [badge.color]: badge.card });
+  return mergeDeep(type, { gold: true, guaranteedDrop: true, mascot: { colors, head: { color: palette.gold }, badge } });
+}
+export const mascotGoldTypes = Object.fromEntries(Object.entries(mascotTypes).map(([id, type]) => [id, gild(type)]));
+
+// zombieTypes.mascot is Sir Waffles (the round-10 costume): what an unpicked Mascot wears, and the type's intro banner.
+export const zombieTypes = { shopper, mallWalker, cartPusher, mannequin, mascot: mascotTypes.sirWaffles };
 
 // How a crowd moves together: spacing, queueing, spreading out, surrounding the player.
 export const zombieCrowd = {

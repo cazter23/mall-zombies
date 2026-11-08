@@ -11,7 +11,8 @@ import * as THREE from 'three';
 import { createPartyTrapDeaths } from './partyTrapDeath.js';
 import { createTankDeaths } from './tankDeath.js';
 import { feel } from '../config/feel.js';
-import { zombieTypes, zombieCrowd, zombieFailsafe, zombieSpawn } from '../config/zombies.js';
+import { mascotGold, mascotGoldTypes, mascotTypes, zombieTypes, zombieCrowd, zombieFailsafe, zombieSpawn } from '../config/zombies.js';
+import { pickMascotVariant } from './mascotVariants.js';
 import { bossTypes, bossSpectacle } from '../config/bosses.js';
 import { economy, zombieHealthFor, maxAliveForRound } from '../config/economy.js';
 import { createNavigation } from './navigation.js';
@@ -34,6 +35,8 @@ const UP = new THREE.Vector3(0, 1, 0);
  * @param onPlayerHit  (damage, zombie) => apply a landed zombie hit to the player
  * @param onKill       optional (zombie) => called when a zombie dies (run stats, later points)
  * @param onHeadPop    optional (zombie, { headshot, source }) => the Mascot's helmet came off
+ * @param onReclaim    optional (zombie) => Captain Coupon put his helmet back on
+ * @param onGold       optional (zombie) => an Employee of the Month (a gold Mascot) just spawned
  * @param onSound      optional (name, volume) => play a zombie sound (Mall Walker squeaks, huffs, pants)
  * @param navigation   optional { floors, links } for maps with more than one floor (zombies/navigation.js)
  */
@@ -50,6 +53,8 @@ export function createZombieManager({
   onPlayerHit,
   onKill = null,
   onHeadPop = null,
+  onReclaim = null,
+  onGold = null,
   onSound = null,
   navigation = undefined,
 }) {
@@ -76,7 +81,8 @@ export function createZombieManager({
 
   // Hard safety checks first. A rising zombie reserves its full ground-level body,
   // and a rescue ignores only the zombie being relocated. No safe point => retry later.
-  function pickSpawnPoint(type, ignoredZombie = null, points = spawnPoints) {
+  // `nearest`: the safe point with the shortest route to the player, no dice (a debug spawn "near you").
+  function pickSpawnPoint(type, ignoredZombie = null, points = spawnPoints, nearest = false) {
     const candidates = [];
     for (const point of points) {
       if (!isZoneOpen(point.zone)) continue;
@@ -95,6 +101,7 @@ export function createZombieManager({
     }
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => a.cost - b.cost);
+    if (nearest) return candidates[0].point;
     // The field includes wall penalties: cost is a route ranking, not literal walking meters.
     const maxCost = candidates[0].cost + zombieSpawn.neighbourhoodCostAllowance;
     const neighbourhood = candidates.filter((c) => c.cost <= maxCost);
@@ -149,8 +156,9 @@ export function createZombieManager({
     if (onKill) onKill(zombie);
   }
 
-  // Sir Waffles' fallen helmets: on the floor until the round ends, whatever became of the body.
-  const helmets = []; // [{ helmet, round }]
+  // Mascots' fallen helmets: on the floor until the round ends, whatever became of the body. Each knows its owner, so
+  // Captain Coupon can come back for his (and the cap never sweeps up a helmet he still means to fetch).
+  const helmets = []; // [{ helmet, round, owner }]
   const helmetRay = new THREE.Vector3();
   function keepHelmet(zombie, { helmet, headshot, source }) {
     const { leftHelmets } = zombie.type.mascot;
@@ -162,9 +170,21 @@ export function createZombieManager({
       const { worldHit, end } = castShot(scratch, helmetRay.normalize(), length, colliders, []);
       if (worldHit) helmet.setReach(Math.max(0, (end.distanceTo(scratch) - leftHelmets.wallMargin) / length));
     }
-    helmets.push({ helmet, round: getRound() });
-    while (helmets.length > leftHelmets.max) helmets.shift().helmet.dispose();
+    helmets.push({ helmet, round: getRound(), owner: zombie });
+    zombie.mascotHelmet = helmet;
+    // Over the cap: the oldest helmet nobody is coming back for goes (the oldest of all if every one is wanted).
+    while (helmets.length > leftHelmets.max) {
+      const i = helmets.findIndex(({ owner }) => !owner.mascotWantsHelmet);
+      helmets.splice(Math.max(0, i), 1)[0].helmet.dispose();
+    }
     if (onHeadPop) onHeadPop(zombie, { headshot, source });
+  }
+  // Captain Coupon picked his helmet up ('lift': it is in his hands, off the floor) or has it on again ('done').
+  function reclaimHelmet(zombie, phase) {
+    if (phase === 'lift') {
+      const i = helmets.findIndex(({ owner, helmet }) => owner === zombie && helmet === zombie.mascotHelmet);
+      if (i !== -1) helmets.splice(i, 1)[0].helmet.dispose();
+    } else if (onReclaim) onReclaim(zombie);
   }
   function updateHelmets(dt) {
     const round = getRound();
@@ -415,30 +435,47 @@ export function createZombieManager({
 
     // Spawn one zombie of `typeId` at a good spawn point (or at `at`, a Vector3, if given).
     // Returns the zombie, or null if no spawn point is usable right now.
-    spawn(typeId = 'shopper', at = null, { fanOwner = null, healthMultiplier = 1 } = {}) {
+    // Options: `variant` = the Mascot costume to wear (otherwise picked here, see below); `gold` = true / false for an
+    // Employee of the Month or not (otherwise rolled here); `nearest` = the safe spawn point closest to the player
+    // instead of a random nearby one (debug); `fanOwner` / `healthMultiplier` = a boss's summoned fan (no rewards, never
+    // past the round's max alive, never out of the chute).
+    spawn(typeId = 'shopper', at = null, { variant = null, gold = null, nearest = false, fanOwner = null, healthMultiplier = 1 } = {}) {
       if (fanOwner && zombies.filter(z => z.isAlive).length >= maxAliveForRound(getRound())) return null;
       const cap = economy.zombieMix[typeId]?.maxAlive;
       if (cap && zombies.filter(z => z.isAlive && z.type.id === typeId).length >= cap) typeId = 'shopper';
-      const type = bossTypes[typeId] ?? zombieTypes[typeId];
+      let type = bossTypes[typeId] ?? zombieTypes[typeId];
       const chute = type.boss || fanOwner ? null : steered;
-      const point = at ? null : (chute && pickSpawnPoint(type, null, chute)) || pickSpawnPoint(type);
+      const chutePoint = at || !chute ? null : pickSpawnPoint(type, null, chute, nearest);
+      const point = at ? null : chutePoint || pickSpawnPoint(type, null, spawnPoints, nearest);
       if (!at && !point) return null;
       const position = at ? at.clone() : point.position.clone();
       position.y = point ? point.position.y : at.y;
       const yaw = Math.atan2(-(player.position.x - position.x), -(player.position.z - position.z));
       const round = getRound();
+      // A Mascot's costume, now the spot is known: a costume's home zones make it likelier there (no bias out of the
+      // Returns Chute or at an explicit spot). Every costume shares the Mascot's size, so the spot suits them all.
+      // Then, from mascotGold.fromRound, maybe the gold version of it: never while another one is alive.
+      if (type.mascot) {
+        const costume = variant ?? pickMascotVariant(round, point && !chutePoint ? point.zone : null);
+        const golden = (gold ?? (round >= mascotGold.fromRound && Math.random() < mascotGold.chance))
+          && !zombies.some((z) => z.isAlive && z.type.gold);
+        type = golden ? mascotGoldTypes[costume] : mascotTypes[costume];
+      }
       const speed = pickGaitSpeed(type, round);
-      const zombie = new Zombie({ type, health: zombieHealthFor(typeId, round) * healthMultiplier, position, yaw, speed, round });
+      const health = zombieHealthFor(typeId, round) * healthMultiplier;
+      const zombie = new Zombie({ type, health: type.gold ? Math.round(health * mascotGold.healthMultiplier) : health, position, yaw, speed, round });
       zombie.fanOwner = fanOwner;
       zombie.noRewards = !!fanOwner;
       zombie.onDeath = onZombieDeath;
       zombie.onHeadPop = keepHelmet;
+      if (type.mascot) zombie.onReclaim = reclaimHelmet;
       zombie.stuckTimer = 0; // failsafe bookkeeping (see rescueStuckZombies)
       zombie.stuckFrom = { x: position.x, z: position.z };
       scene.add(zombie.model.root);
       zombies.push(zombie);
       shootables.push(zombie);
       if (point) lastSpawnAt.set(point, spawnClock);
+      if (type.gold) onGold?.(zombie);
       // Out of the Returns Chute: it falls out of the hatch rather than rising through the floor (no dust).
       if (point && chute?.includes(point)) {
         zombie.dropHeight = chuteDrop;

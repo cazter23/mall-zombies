@@ -45,6 +45,17 @@ export function createHud() {
   hud.append(hurt);
   let lastHurt = -1;
 
+  // Poppy Corn's butter on the screen ('mascotPopBlast' with butter): greasy blobs that fade away.
+  const butter = el('div', 'butter-splat');
+  hud.append(butter);
+  function splatButter(seconds) {
+    butter.style.transition = 'none';
+    butter.style.opacity = '1';
+    void butter.offsetWidth; // (restart the fade)
+    butter.style.transition = `opacity ${seconds}s ease-in`;
+    butter.style.opacity = '0';
+  }
+
   // Cartoon speed lines at the screen edges while sprinting.
   const speedLines = el('div', 'speed-lines');
   hud.append(speedLines);
@@ -264,6 +275,9 @@ export function createHud() {
       });
       events.on('runReset', clearNotices);
       events.on('playerDeath', clearNotices);
+      events.on('mascotPopBlast', ({ butter: buttered, butterSeconds }) => {
+        if (buttered) splatButter(butterSeconds);
+      });
     },
 
     setPowerUps(status) {

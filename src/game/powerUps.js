@@ -16,7 +16,7 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
   let clock = 0;
   let lastKillAt = -Infinity;
   let pendingPosition = null;
-  const bossRewards = [];
+  const bossRewards = []; // rewards outside the meter, waiting for clear floor: a boss's, an Employee of the Month's
   let seen = new WeakSet();
   let rotation = [];
   const ray = new THREE.Ray();
@@ -99,6 +99,19 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
     return id;
   }
 
+  // A reward outside the meter (an Employee of the Month's): any useful type by weight, without touching the meter's
+  // rotation or its "not the same twice" rule.
+  function chooseRewardType() {
+    const pool = Object.keys(config.types).filter(useful);
+    if (!pool.length) return null;
+    let pick = random() * pool.reduce((sum, id) => sum + config.types[id].weight, 0);
+    for (const id of pool) {
+      pick -= config.types[id].weight;
+      if (pick <= 0) return id;
+    }
+    return pool.at(-1);
+  }
+
   const benefits = createIncentiveEffects({ events, player, gun, zombies, stats, pricing, wallet, state, config, clearLine, findPosition });
 
   function endZone(reason) {
@@ -150,6 +163,13 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
     }),
     events.on('bossDefeated', ({ zombie }) => {
       if (zombie.type.reward) bossRewards.push({ id: zombie.type.reward, position: zombie.position.clone() });
+    }),
+    // A zombie whose type promises a drop (zombie.type.guaranteedDrop: the Employee of the Month) leaves one at its body,
+    // whatever killed it, through the same queue as a boss's reward: it never counts against maxPerRound or the meter.
+    events.on('kill', ({ zombie }) => {
+      if (state.over || !zombie?.type?.guaranteedDrop || zombie.noRewards) return;
+      const id = chooseRewardType();
+      if (id) bossRewards.push({ id, position: zombie.position.clone() });
     }),
     events.on('roundDiscard', () => {
       bossRewards.length = 0;

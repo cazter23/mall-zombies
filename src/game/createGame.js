@@ -18,7 +18,7 @@
 //   g.flashSales   the mall PA's timed discounts (game/flashSales.js); .active = the sale running now (or null)
 //   g.debug        the developer shortcuts (game/debugCommands.js): run(id), resolve(key, shift), status()
 //   g.<system>     map, colliders, arena, shootables, stats, player, wallet, runStats, effects, aimAssist,
-//                  gun, interactions, melee, health, zombies, rounds, death
+//                  gun, interactions, melee, health, zombies, mascotCostumes, rounds, death
 // =============================================================================
 
 import { feel } from '../config/feel.js';
@@ -29,7 +29,7 @@ import { bossTiming } from '../config/bosses.js';
 import { createBossDirector } from './bossDirector.js';
 import { configureBossVouchers } from './bossVouchers.js';
 import { createShutterSounds } from './shutterSounds.js';
-import { zombieTypes } from '../config/zombies.js';
+import { mascotGold, mascotTypes, zombieTypes } from '../config/zombies.js';
 import { weapons, melee as meleeWeapons } from '../config/weapons.js';
 import { loadMap } from '../maps/index.js';
 import { createPlayerStats, resetPlayerStats } from '../player/stats.js';
@@ -44,6 +44,8 @@ import { createPlayerGun } from '../weapons/playerGun.js';
 import { createMelee } from '../weapons/melee.js';
 import { createAimAssist } from '../weapons/aimAssist.js';
 import { createZombieManager } from '../zombies/zombieManager.js';
+import { createMascotCostumes } from './mascotCostumes.js';
+import { createSurfaceSlows } from './surfaceSlows.js';
 import { createEvents } from './events.js';
 import { createPricing } from './pricing.js';
 import { createFlashSales } from './flashSales.js';
@@ -91,6 +93,9 @@ export function createGame({
   // Live combat bodies also block a vault's path and landing, even without a world collider.
   const shootables = [...(arena ? arena.shootables : [])];
   const stats = createPlayerStats();
+  // Player slows (a boss's: the Janitor's wet floor, the Guard's taser; Scoops' melt): each reports its factor here, the
+  // lowest becomes stats.surfaceSpeed.
+  const surfaces = createSurfaceSlows(stats);
   const player = new PlayerController({
     camera,
     input,
@@ -261,7 +266,10 @@ export function createGame({
       melee: zombie.killedByMelee,
       source: zombie.killedBy,
     }),
-    onHeadPop: (zombie, { headshot, source }) => events.emit('mascotHeadPop', { zombie, headshot, source }),
+    // (`again`: the helmet came off a second time, after Captain Coupon put it back on)
+    onHeadPop: (zombie, { headshot, source }) => events.emit('mascotHeadPop', { zombie, headshot, source, again: zombie.mascotReclaims > 0 }),
+    onReclaim: (zombie) => events.emit('mascotReclaim', { zombie }),
+    onGold: (zombie) => events.emit('mascotGold', { zombie }),
     onSound: (name, volume) => sound.play(name, { volume }), // Mall Walker squeaks, huffs and pants
     navigation: map.navigation, // floors + the ramps between them (undefined = one ground floor)
   });
@@ -269,7 +277,8 @@ export function createGame({
   rounds = createRounds({
     zombies,
     onRoundStart: (round) => events.emit('roundStart', { round }),
-    onTypeIntro: (typeId) => events.emit('typeIntro', { typeId }),
+    onTypeIntro: (typeId, zombie) => events.emit('typeIntro', { typeId, zombie }),
+    onVariantIntro: (variant, zombie) => events.emit('mascotVariantIntro', { variant, zombie }),
     onRoundDiscard: () => events.emit('roundDiscard'),
   });
   let powerUps = null;
@@ -294,9 +303,10 @@ export function createGame({
   events.on('kill', ({ zombie }) => {
     if (!state.over) runStats.recordKill(zombie);
   });
-  // Knocking Sir Waffles' helmet off with a headshot pays a bonus: stuffings and hazards don't aim.
-  events.on('mascotHeadPop', ({ zombie, headshot, source }) => {
-    if (state.over || !headshot || (source !== 'gun' && source !== 'melee')) return;
+  // Knocking a Mascot's helmet off with a headshot pays a bonus: stuffings and hazards don't aim. Every costume has its own
+  // PA line. A helmet Captain Coupon put back on pays nothing the second time (no farming him).
+  events.on('mascotHeadPop', ({ zombie, headshot, source, again }) => {
+    if (state.over || again || zombie.noRewards || !headshot || (source !== 'gun' && source !== 'melee')) return;
     wallet.earn(economy.payouts.helmetPopBonus);
     hud.showAnnouncement({ ...zombie.type.mascot.helmetPopLine, priority: 0 });
   });
@@ -306,6 +316,17 @@ export function createGame({
     health.takeDamage(damage);
     player.addViewKick(-feel.fall.viewJoltDegrees * DEG_TO_RAD);
   };
+  events.on('mascotReclaim', ({ zombie }) => {
+    hud.showAnnouncement({ ...zombie.type.mascot.reclaim.line, priority: 1 });
+    sound.play('paChime');
+  });
+  // An Employee of the Month on the floor (its guaranteed drop: game/powerUps.js).
+  events.on('mascotGold', () => {
+    hud.showAnnouncement({ ...mascotGold.spawnLine, priority: 1 });
+    sound.play('paChime');
+  });
+  // The costume twists that reach past the zombie (Poppy Corn's blast...): game/mascotCostumes.js.
+  const mascotCostumes = createMascotCostumes({ events, scene, zombies, player, colliders, effects, surfaces, state });
   events.on('playerHit', ({ damage, knockback }) => {
     health.takeDamage(damage);
     if (knockback) { // a Cart Pusher's charge shoves you along it (m/s, horizontal)
@@ -318,11 +339,16 @@ export function createGame({
     hud.setRound(round);
     hud.showRoundBanner(round);
   });
-  // A zombie type's first appearance this run (Mall Walkers, round 4): PA chime + banner.
-  events.on('typeIntro', ({ typeId }) => {
-    const intro = zombieTypes[typeId]?.introBanner;
+  // A zombie type's first appearance this run (Mall Walkers, round 4): PA chime + banner. (A Mascot announces the
+  // costume it came in: Sir Waffles in round 10.) Each later costume's first appearance gets its own.
+  events.on('typeIntro', ({ typeId, zombie }) => {
+    const intro = (zombie?.type ?? zombieTypes[typeId])?.introBanner;
     if (!intro) return;
     hud.showAnnouncement({ ...intro, priority: 2 });
+    sound.play('paChime');
+  });
+  events.on('mascotVariantIntro', ({ variant }) => {
+    hud.showAnnouncement({ ...mascotTypes[variant].introBanner, priority: 2 });
     sound.play('paChime');
   });
 
@@ -342,7 +368,7 @@ export function createGame({
     view: createPowerUpView(scene, colliders),
   });
   configureBossVouchers({ pricing, wallet, map, gun, state });
-  const bosses = createBossDirector({ events, rounds, zombies, scene, colliders, player, stats, powerUps, state, map });
+  const bosses = createBossDirector({ events, rounds, zombies, scene, colliders, player, surfaces, powerUps, state, map });
   let displayedBoss = null, displayedBossHealth, displayedFollowers;
   function updateBossBar(zombie) {
     const hp = zombie?.health;
@@ -433,7 +459,9 @@ export function createGame({
     ['bosses', () => bosses.reset()],
     ['powerUps', () => powerUps.reset()],
     ['zombies', () => zombies.clear()],
+    ['mascotCostumes', () => mascotCostumes.reset()],
     ['stats', () => resetPlayerStats(stats)], // perks / wardrobe / skill-tree changes don't carry over
+    ['surfaces', () => surfaces.reset()], // no slow floor left over
     ['health', () => health.reset()], // (after stats: back to the base max health)
     ['runStats', () => runStats.reset()],
     ['gun', () => gun.reset()], // just the staple gun again, no upgrades
@@ -521,6 +549,7 @@ export function createGame({
     // Hands busy with a slash or a vault: no shooting. A vault only pauses a reload (it carries on after).
     if (!inMenu) gun.update(dt, melee.isBusy || player.vault.active, player.vault.active);
     zombies.update(dt);
+    mascotCostumes.update(dt);
     // Rounds pause while you're off in the debug test range (zombies can't reach you there).
     const inMall = !arena?.contains(player.position);
     if (!state.over) {
@@ -565,6 +594,8 @@ export function createGame({
     melee,
     health,
     zombies,
+    mascotCostumes,
+    surfaces,
     rounds,
     get vaultPromptVisible() {
       return vaultPromptVisible;

@@ -19,7 +19,14 @@
 //                                                        future 'hazard' / 'effect'...). ALL kill payouts and kill
 //                                                        stats come from this one event. After the player's death
 //                                                        events still fire, but nothing more is paid or counted.
-//   'mascotHeadPop' { zombie, headshot, source }         Sir Waffles' helmet came off at half health (whatever hit him)
+//   'mascotHeadPop' { zombie, headshot, source, again }  a Mascot's helmet came off at half health (whatever hit it;
+//                                                        zombie.type.variant = the costume; again = a second time,
+//                                                        after Captain Coupon put it back on: no bonus)
+//   'mascotReclaim' { zombie }                           Captain Coupon put his helmet back on (health restored)
+//   'mascotPopBlast' { zombie, position, butter, butterSeconds, flung }   Poppy Corn's pop flung `flung` zombies;
+//                                                        butter = the player was shoved too (the HUD's butter splat)
+//   'mascotGold'  { zombie }                             an Employee of the Month (a gold Mascot) spawned; its kill
+//                                                        always drops a power-up (game/powerUps.js, type.guaranteedDrop)
 //   'playerHit'   { damage, zombie, knockback }          a zombie's swing (or a cart charge) landed;
 //                                                        knockback = { x, z } m/s shove or null
 //   'playerFall'  { drop, damage }                       a landing from a height hurt (feel.fall); damage is already taken
@@ -34,7 +41,9 @@
 //   'powerUpExpire' { id }                               uncollected incentive timed out
 //   'roundStart'  { round }                              the round number flipped (game/rounds.js)
 //   'roundDiscard' {}                                    a debug skip cleared the current wave
-//   'typeIntro'   { typeId }                             a zombie type's first appearance this run
+//   'typeIntro'   { typeId, zombie }                     a zombie type's first appearance this run (zombie = that spawn)
+//   'mascotVariantIntro' { variant, zombie }             a Mascot costume's first appearance this run, after the type's
+//                                                        own intro (game/rounds.js; banner: config/zombies.js mascotVariants)
 //   'bossSpawn'   { zombie, round }                      a scheduled or debug-summoned boss entered the wave
 //   'bossPhase'   { zombie, phase, round }               an encounter mechanic began (Janitor: wetFloor)
 //   'bossDefeated' { zombie, round }                     an active boss died through the regular kill path
