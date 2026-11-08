@@ -31,9 +31,22 @@ export function createEffects(scene, { surfaces = [] } = {}) {
     mesh.visible = false;
     mesh.frustumCulled = false;
     scene.add(mesh);
-    tracers.push({ mesh, life: 0, length: 1 });
+    tracers.push({ mesh, life: 0, length: 1, width: fx.tracerWidth, seconds: fx.tracerSeconds, flicker: 0 });
   }
   let nextTracer = 0;
+
+  // --- Flashes: a few additive balls of light that swell and fade (a Build-A-Blaster proc), so no real light is needed ---
+  const flashGeometry = new THREE.SphereGeometry(1, 12, 8);
+  const flashes = [];
+  for (let i = 0; i < 8; i++) {
+    const material = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+    const mesh = new THREE.Mesh(flashGeometry, material);
+    mesh.visible = false;
+    mesh.frustumCulled = false;
+    scene.add(mesh);
+    flashes.push({ mesh, life: 0, seconds: 1, size: 1, opacity: 1 });
+  }
+  let nextFlash = 0;
   const tracerDir = new THREE.Vector3();
 
   // --- Particles: one instanced mesh of little cubes ----------------------------
@@ -176,7 +189,8 @@ export function createEffects(scene, { surfaces = [] } = {}) {
     // Persistent, gun-specific world aftermath. Pure decoration: no colliders or damage.
     impact(gunId, origin, worldHit) { return marks.add(gunId, origin, worldHit); },
     // Staple streak from `from` (gun muzzle) to `to` (where the shot landed).
-    tracer(from, to, hexColor) {
+    // `options` (all optional): width (metres), seconds (how long it stays) and flicker (flashes per second), for a fatter, longer arc than a bullet's streak.
+    tracer(from, to, hexColor, { width = fx.tracerWidth, seconds = fx.tracerSeconds, flicker = 0 } = {}) {
       const t = tracers[nextTracer];
       nextTracer = (nextTracer + 1) % tracers.length;
       tracerDir.subVectors(to, from);
@@ -185,11 +199,26 @@ export function createEffects(scene, { surfaces = [] } = {}) {
       t.length = length;
       t.mesh.position.copy(from).addScaledVector(tracerDir, 0.5);
       t.mesh.quaternion.setFromUnitVectors(UP, tracerDir.normalize());
-      t.mesh.scale.set(fx.tracerWidth, length, fx.tracerWidth);
+      t.width = width;
+      t.seconds = seconds;
+      t.flicker = flicker;
+      t.mesh.scale.set(width, length, width);
       t.mesh.material.color.setHex(hexColor);
       t.mesh.material.opacity = 1;
       t.mesh.visible = true;
-      t.life = fx.tracerSeconds;
+      t.life = seconds;
+    },
+
+    // A ball of light at a point that swells and fades: where a Build-A-Blaster effect goes off.
+    flash(point, hexColor, { size = 1.2, seconds = .2, opacity = .8 } = {}) {
+      const f = flashes[nextFlash];
+      nextFlash = (nextFlash + 1) % flashes.length;
+      f.mesh.position.copy(point);
+      f.mesh.material.color.setHex(hexColor);
+      f.mesh.visible = true;
+      f.life = f.seconds = seconds;
+      f.size = size;
+      f.opacity = opacity;
     },
 
     // Colored splatter when a shot hits something squishy. `flesh: true` = a zombie's body: it follows the Splatter
@@ -237,6 +266,10 @@ export function createEffects(scene, { surfaces = [] } = {}) {
         t.life = 0;
         t.mesh.visible = false;
       }
+      for (const f of flashes) {
+        f.life = 0;
+        f.mesh.visible = false;
+      }
       alive = 0;
       particles.count = 0;
       poolCount = 0;
@@ -256,11 +289,21 @@ export function createEffects(scene, { surfaces = [] } = {}) {
       for (const t of tracers) {
         if (t.life <= 0) continue;
         t.life -= dt;
-        const ratio = Math.max(0, t.life / fx.tracerSeconds);
-        t.mesh.material.opacity = ratio;
-        const w = fx.tracerWidth * (0.35 + 0.65 * ratio);
+        const ratio = Math.max(0, t.life / t.seconds);
+        // (A flickering arc blinks off and on as it fades.)
+        const blink = t.flicker && Math.floor((t.seconds - t.life) * t.flicker * 2) % 2 ? .45 : 1;
+        t.mesh.material.opacity = ratio * blink;
+        const w = t.width * (0.35 + 0.65 * ratio);
         t.mesh.scale.set(w, t.length, w);
         if (t.life <= 0) t.mesh.visible = false;
+      }
+      for (const f of flashes) {
+        if (f.life <= 0) continue;
+        f.life -= dt;
+        const ratio = Math.max(0, f.life / f.seconds);
+        f.mesh.material.opacity = f.opacity * ratio;
+        f.mesh.scale.setScalar(f.size * (0.35 + 0.65 * (1 - ratio)));
+        if (f.life <= 0) f.mesh.visible = false;
       }
 
       let i = 0;

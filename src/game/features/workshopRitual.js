@@ -154,7 +154,7 @@ export function createWorkshopRitual({ bench, map, gun, pricing, interactions, e
     const confirmed = buildOf(gun.away.mods)?.confirmed ?? 0; // a re-stuffed gun keeps its record
     const build = { name, stuffing: order.stuffing, heart: order.heart, quality: order.quality.id, kills: order.kills, confirmed };
     const note = !order.loaner ? '' : gun.hasLoaner ? cfg.loanerNotes.returned : cfg.loanerNotes.lost;
-    const modifiers = buildModifiers(gun.away.def.base, workshopStuffings[order.stuffing].color); // its shots streak in the stuffing's colour
+    const modifiers = buildModifiers(gun.away.def.base, workshopStuffings[order.stuffing].color, order.quality.gun); // its shots streak in the stuffing's colour; the quality powers the gun up
     gun.collect((mods) => [...mods.filter((m) => m.id !== 'build'), { id: 'build', build, modifiers }]);
     hideGun();
     const certificate = {

@@ -1,5 +1,24 @@
 # Sunset Galleria: build history ("Current state")
 
+## 8 November 2026 — Build-A-Blaster becomes the big power-up
+
+Playtested with a headless horde bot (tools/babReport.mjs, `npm run balance:bab`: Nail Gun and Rivet Rifle, rounds 8-16, 14 shoppers walking at a bot that aims
+down sights): a 1,500 build gave +0-30% (Fryer Oil and Glitter did the work; Smoothie, Popcorn Butter, Neon Tube and Every 10th did about nothing), while a
+2,000 Deluxe warranty gave +25-38%. Now the BUILD powers the gun up itself, by its quality (config/workshop.js qualities[].gun): damage x1.5 / 1.7 / 1.9 / 2.2
+and magazine +20% / +20% / +30% / +30%, and the gun comes back with a full magazine and a full reserve. Extended Warranties are the support upgrade: damage
+x1.2 / 1.4 / 1.65 (was 1.4 / 2.1 / 3.5), prices 1,500 / 3,000 / 6,000 (was 2,000 / 4,000 / 8,000); they stack with a build.
+Stuffings got jobs: Neon Tube arcs about 3x harder with more jumps (an arc never takes more than 60% of a zombie's health); Antifreeze shatters hit harder and
+the shards hit and chill what stands round; Smoothie makes slowed zombies take +25% from everything; Popcorn Butter makes zombies slip and fall (steering lost,
+flat on their back, headshots on a fallen one x2, 2.5 s before they can slip again); Reload is the panic button (strength x2.5, only with a zombie within 6 m);
+Every 10th is now Every 5th at x2.5 (the id stays everyTenth). Every effect is now visible (config/workshop.js stuffingLook, zombies/statusTint.js): burning zombies
+flicker orange with flames, chilled ones glow icy blue and burst into ice, Smoothie goo is pink and drips, Glitter cycles through the rainbow with hearts floating up,
+butter bubbles, a neon arc is fatter (5 cm, 0.25 s, flickering) with a flash at each zombie, and every proc leaves a small ball of light.
+Measured after (bot, round 12, builds at 1,500 vs a plain gun): +40% to +95% faster and far less damage taken; Platinum (10,500 in total) +39-55%. Antifreeze first came
+out near +95%, an outlier next to Popcorn Butter (+40%), so its shatter was trimmed (0.5 -> 0.32 gun-seconds, splash 0.2 -> 0.12); that trim was not re-measured.
+Tests that pinned old numbers now read config instead (tiers, Every Nth) or state the new envelope (neon best case under 2.5 gun-fires per second, antifreeze under
+one gun-second per zombie); tests/workshopPower.test.js covers the new rules. Not done: re-stuff levels (a second build level that grows a stuffing), and a bot
+that moves (slows and butter are undervalued by a bot that stands still).
+
 ## 8 November 2026 — Skylar's influencer makeover
 
 Skylar now wears a cropped pink jacket, cream top, high-waisted dark trousers, chunky trainers and a crossbody bag.

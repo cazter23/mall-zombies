@@ -10,7 +10,7 @@
 // =============================================================================
 
 import * as THREE from 'three';
-import { workshopHearts, workshopReach, workshopStuffings, buildOf, qualityById } from '../../config/workshop.js';
+import { workshopHearts, workshopReach, workshopStuffings, stuffingLook, buildOf, qualityById } from '../../config/workshop.js';
 import { castShot } from '../../weapons/hitscan.js';
 import { gunPower } from '../../weapons/gunStats.js';
 
@@ -23,6 +23,7 @@ export function createBuildEffects({ events, gun, player, zombies, colliders, ef
   let firing = null; // the weapon id whose stuffing is going off right now (its instant kills belong to that gun)
   const killCounts = new Map(); // weapon id -> kills for Every 10th
   let emberTimer = 0;
+  let bubbleTimer = 0;
   const chest = (zombie) => from.copy(zombie.position).setY(zombie.position.y + CHEST_HEIGHT);
   const from = new THREE.Vector3(), to = new THREE.Vector3(), direction = new THREE.Vector3();
   const arcFrom = new THREE.Vector3(), arcTo = new THREE.Vector3();
@@ -70,7 +71,9 @@ export function createBuildEffects({ events, gun, player, zombies, colliders, ef
     puddle.mesh.scale.setScalar(radius);
     puddle.mesh.visible = true;
   }
+  const bubbleSpot = new THREE.Vector3();
   function updatePuddles(dt) {
+    bubbleTimer -= dt;
     for (const puddle of puddles) {
       if (puddle.remaining <= 0) continue;
       puddle.remaining -= dt;
@@ -82,20 +85,27 @@ export function createBuildEffects({ events, gun, player, zombies, colliders, ef
       for (const zombie of zombies.zombies) {
         if (canBeHit(zombie) && Math.abs(zombie.position.y - position.y) < 1
           && Math.hypot(zombie.position.x - position.x, zombie.position.z - position.z) <= puddle.radius) {
-          zombie.applySlow(puddleConfig.slowSeconds, puddleConfig.slowFraction);
+          zombie.applySlow(puddleConfig.slowSeconds, puddleConfig.slowFraction, 'butter');
+          zombie.applySlip(puddleConfig.slipSeconds, puddleConfig.slipDrag); // (refused while it's down or just got up)
         }
       }
+      // Bubbles pop on the butter, so the puddle looks alive.
+      if (bubbleTimer <= 0) effects.confetti(bubbleSpot.set(position.x + (Math.random() - .5) * puddle.radius * 1.4, position.y + .04, position.z + (Math.random() - .5) * puddle.radius * 1.4), UP, stuffingLook.bubble);
     }
+    if (bubbleTimer <= 0) bubbleTimer = puddleConfig.bubbleSeconds;
   }
 
   const STUFFINGS = {
     // Everything round the hit slows down.
     smoothie({ spot, target, power }) {
-      const { slow } = workshopStuffings.smoothie;
+      const { slow, vulnerable } = workshopStuffings.smoothie;
       const seconds = slow.seconds * power;
       const hit = new Set(nearby(spot, slow.radius * Math.sqrt(power)));
       if (target && canBeHit(target)) hit.add(target);
-      for (const zombie of hit) zombie.applySlow(seconds, slow.fraction);
+      for (const zombie of hit) {
+        zombie.applySlow(seconds, slow.fraction, 'smoothie');
+        zombie.applyVulnerable(seconds, vulnerable.multiplier); // (slowed zombies take more from everything)
+      }
       return hit;
     },
 
@@ -118,8 +128,9 @@ export function createBuildEffects({ events, gun, player, zombies, colliders, ef
         const next = nearby(at, chain.range, hit)[0];
         if (!next) break;
         hit.add(next);
-        effects.tracer(arcFrom.copy(at).setY(at.y + CHEST_HEIGHT), arcTo.copy(next.position).setY(next.position.y + CHEST_HEIGHT), workshopStuffings.neonTube.color);
-        next.takeHit({ damage, part: 'body', source: 'build' });
+        effects.tracer(arcFrom.copy(at).setY(at.y + CHEST_HEIGHT), arcTo.copy(next.position).setY(next.position.y + CHEST_HEIGHT), workshopStuffings.neonTube.color, { width: chain.width, seconds: chain.seconds, flicker: 24 });
+        effects.flash(arcTo, workshopStuffings.neonTube.color, { size: .5, seconds: chain.seconds });
+        next.takeHit({ damage: Math.min(damage, next.maxHealth * chain.maxFraction), part: 'body', source: 'build' });
         damage *= chain.falloff;
         at = next.position;
       }
@@ -137,18 +148,34 @@ export function createBuildEffects({ events, gun, player, zombies, colliders, ef
     const { chill, shatter } = workshopStuffings.antifreeze;
     const hit = new Set(nearby(spot, chill.radius * Math.sqrt(power)));
     if (target && canBeHit(target)) hit.add(target);
-    let shattered = 0;
+    // Decide first, act after: a zombie the shards chill must not then shatter in the same proc.
+    const shatterList = [], chillList = [];
     for (const zombie of hit) {
-      if (zombie.type.boss) {
-        zombie.applySlow(chill.seconds * power, chill.fraction);
-      } else if (zombie.slowTimer > 0 && shattered < shatter.maxTargets) {
-        shattered += 1;
-        zombie.clearSlow();
-        zombie.takeHit({ damage: gunSecond * shatter.gunSeconds * power, part: 'body', source: 'build' });
-      } else if (zombie.slowTimer <= 0) {
-        zombie.applySlow(chill.seconds * power, chill.fraction);
+      if (zombie.type.boss) chillList.push(zombie);
+      else if (zombie.slowTimer > 0 && shatterList.length < shatter.maxTargets) shatterList.push(zombie);
+      else if (zombie.slowTimer <= 0) chillList.push(zombie);
+    }
+    for (const zombie of chillList) zombie.applySlow(chill.seconds * power, chill.fraction, 'antifreeze');
+    const spots = shatterList.map((zombie) => zombie.position.clone());
+    const shards = new Set(shatterList);
+    for (const zombie of shatterList) {
+      zombie.clearSlow();
+      effects.confetti(chest(zombie), UP, stuffingLook.frost); // the ice bursts apart
+      effects.flash(arcFrom.copy(zombie.position).setY(zombie.position.y + CHEST_HEIGHT), workshopStuffings.antifreeze.color,
+        { size: stuffingLook.flash.size, seconds: stuffingLook.flash.seconds });
+      zombie.takeHit({ damage: gunSecond * shatter.gunSeconds * power, part: 'body', source: 'build' });
+    }
+    // The shards hit, and chill, whatever stands round each one that shattered.
+    const splashed = new Set();
+    for (const spot of spots) {
+      for (const other of nearby(spot, shatter.splashRadius, shards)) {
+        if (splashed.has(other)) continue;
+        splashed.add(other);
+        other.applySlow(chill.seconds * power, chill.fraction, 'antifreeze');
+        other.takeHit({ damage: gunSecond * shatter.splashGunSeconds * power, part: 'body', source: 'build' });
       }
     }
+    for (const zombie of splashed) hit.add(zombie);
     return hit;
   };
 
@@ -177,7 +204,12 @@ export function createBuildEffects({ events, gun, player, zombies, colliders, ef
       return hit ? { target: hit.target } : { point: shot.end.clone().addScaledVector(shot.endNormal, MISS_OFFSET) };
     } },
     // A blast around you, wherever you are.
-    reload: { reload: () => ({ point: player.position.clone().setY(player.position.y + CHEST_HEIGHT), burst: true }) },
+    // (Only with a zombie close: it's the panic button, so a reload in a quiet moment saves its cooldown.)
+    reload: { reload: () => {
+      const { nearRange } = workshopHearts.reload, p = player.position;
+      const close = zombies.zombies.some((z) => canBeHit(z) && Math.abs(z.position.y - p.y) < 2 && Math.hypot(z.position.x - p.x, z.position.z - p.z) <= nearRange);
+      return close ? { point: player.position.clone().setY(player.position.y + CHEST_HEIGHT), burst: true } : null;
+    } },
     // Counts the kills this gun makes. It fires at the tenth corpse, which is why the stuffing has to cope with a dead target.
     everyTenth: { kill({ zombie }, weaponId) {
       const count = (killCounts.get(weaponId) ?? 0) + 1;
@@ -201,6 +233,9 @@ export function createBuildEffects({ events, gun, player, zombies, colliders, ef
       effects.confetti(chest(zombie), UP, stuffing.pop);
     }
     if (burst) effects.confetti(chest({ position: spot }), UP, stuffing.pop);
+    // A burst of light where it goes off, in the stuffing's colour (bigger for a stronger build), so a proc reads even in a crowd.
+    const { flash } = stuffingLook;
+    effects.flash(arcTo.copy(spot).setY(spot.y + CHEST_HEIGHT), stuffing.color, { size: flash.size * Math.min(1.6, Math.sqrt(power)), seconds: flash.seconds, opacity: flash.opacity });
     sound?.play(stuffing.sound);
     events.emit('buildFired', { stuffing: build.stuffing, heart: build.heart, weaponId, hit: [...hit] });
   }
@@ -235,17 +270,25 @@ export function createBuildEffects({ events, gun, player, zombies, colliders, ef
       emberTimer -= dt;
       if (emberTimer > 0) return;
       const { burn } = workshopStuffings.fryerOil, { sparkle } = workshopStuffings.glitter.confuse;
-      emberTimer = burn.emberSeconds;
+      emberTimer = Math.min(burn.emberSeconds, stuffingLook.statusSeconds);
       for (const zombie of zombies.zombies) {
         if (!zombie.isAlive) continue;
-        if (zombie.burn) effects.confetti(chest(zombie), UP, burn.ember);
-        if (zombie.confusion) effects.confetti(chest(zombie), UP, sparkle);
+        if (zombie.burn) {
+          effects.confetti(chest(zombie), UP, stuffingLook.flame); // flames lick up the burning zombie
+          effects.confetti(chest(zombie), UP, burn.ember);
+        }
+        if (zombie.confusion) {
+          effects.confetti(chest(zombie), UP, sparkle);
+          effects.confetti(chest(zombie), UP, stuffingLook.hearts); // hearts float up off a confused one
+        }
+        if (zombie.slowTimer > 0 && zombie.slowKind === 'smoothie') effects.confetti(chest(zombie), DOWN, stuffingLook.drip); // goo drips
       }
     },
     reset() {
       heartCooldowns.clear();
       killCounts.clear();
       emberTimer = 0;
+      bubbleTimer = 0;
       for (const puddle of puddles) {
         puddle.remaining = 0;
         puddle.mesh.visible = false;

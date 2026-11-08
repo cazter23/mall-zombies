@@ -20,14 +20,15 @@
 // =============================================================================
 
 export const upgrades = {
-  // EXTENDED WARRANTY: bought one tier at a time at the Customer Service desk, for the gun in your hand.
+  // EXTENDED WARRANTY: bought one tier at a time at the Customer Service desk, for the gun in your hand. The SUPPORT upgrade: a Build-A-Blaster build
+  // (config/workshop.js qualities) is the big one, so a warranty keeps any gun relevant and stacks with a build.
   // Each tier lets a gun kill in the same number of shots as a plain gun does at round 8, up to
   // `holdsUntilRound` (tests/upgrades.test.js checks that against economy's zombie health).
   tiers: [
     { id: 'standard', name: 'Standard', color: 0x5fd068, effects: {}, holdsUntilRound: 8 }, // every gun starts here
-    { id: 'deluxe', name: 'Deluxe', color: 0x4aa3ff, effects: { damage: 1.4, magazine: 1.15 }, holdsUntilRound: 12 },
-    { id: 'premium', name: 'Premium', color: 0xb36bff, effects: { damage: 2.1, magazine: 1.15, reload: 0.9 }, holdsUntilRound: 17 },
-    { id: 'platinum', name: 'Platinum', color: 0xffc83d, effects: { damage: 3.5, magazine: 1.3, reload: 0.8 }, holdsUntilRound: 24 },
+    { id: 'deluxe', name: 'Deluxe', color: 0x4aa3ff, effects: { damage: 1.2, magazine: 1.1 }, holdsUntilRound: 10 },
+    { id: 'premium', name: 'Premium', color: 0xb36bff, effects: { damage: 1.4, magazine: 1.15, reload: 0.92 }, holdsUntilRound: 12 },
+    { id: 'platinum', name: 'Platinum', color: 0xffc83d, effects: { damage: 1.65, magazine: 1.2, reload: 0.85 }, holdsUntilRound: 14 },
   ],
 
   // STORE ATTACHMENTS: one per slot. First purchase unlocks free fitting at that store for the run;

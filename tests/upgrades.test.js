@@ -15,6 +15,8 @@ import { createPricing } from '../src/game/pricing.js';
 import { sustainedDps } from '../tools/balance.js';
 import { headlessGame } from './helpers/headlessGame.js';
 
+const fx = (id) => upgrades.tiers.find((t) => t.id === id).effects; // (the numbers live in config/upgrades.js: tests read them, never copy them)
+
 const guns = Object.values(weapons).filter((d) => d.fireMode); // (the box cutter isn't a gun)
 const { stapleGun, priceGun, nailGun, foamDartBlaster, confettiCannon } = weapons;
 const ATTACHMENTS = Object.keys(upgrades.attachments);
@@ -47,11 +49,11 @@ test('every tier works on every gun: whole magazines (whole bursts), the cannon 
       if (base.burst) assert.equal(g.magazineSize % base.burst.count, 0, `${base.id} ${tierId}: whole bursts`);
     }
   }
-  assert.equal(at(stapleGun, 'deluxe').magazineSize, 14); // 12 x 1.15 = 13.8
-  assert.equal(at(foamDartBlaster, 'platinum').magazineSize, 39); // 30 x 1.3 -> 13 whole bursts
+  assert.equal(at(stapleGun, 'deluxe').magazineSize, Math.round(stapleGun.magazineSize * fx('deluxe').magazine));
+  assert.equal(at(foamDartBlaster, 'platinum').magazineSize, 36); // 30 x 1.2, in whole bursts of 3
   const cannon = at(confettiCannon, 'platinum');
-  assert.ok(Math.abs(cannon.shellReload.shellSeconds - confettiCannon.shellReload.shellSeconds * 0.8) < 1e-9);
-  assert.ok(Math.abs(at(nailGun, 'premium').reloadTime - nailGun.reloadTime * 0.9) < 1e-9);
+  assert.ok(Math.abs(cannon.shellReload.shellSeconds - confettiCannon.shellReload.shellSeconds * fx('platinum').reload) < 1e-9);
+  assert.ok(Math.abs(at(nailGun, 'premium').reloadTime - nailGun.reloadTime * fx('premium').reload) < 1e-9);
 });
 
 test('each tier keeps a gun killing in round-8 shot counts until its holdsUntilRound (and is priced)', () => {
@@ -155,8 +157,8 @@ test('the real game: upgrades stay through an ammo buy, go with a replaced gun, 
   const up = (fn) => g.gun.setMods('priceGun', fn(g.gun.def.base, g.gun.modsFor('priceGun')));
   up((b, m) => withTier(b, m, 'premium'));
   up((b, m) => withAttachment(b, m, 'jumboPack'));
-  assert.equal(g.gun.def.damage, priceGun.damage * 2.1);
-  assert.equal(g.gun.def.magazineSize, Math.round(priceGun.magazineSize * 1.15 * 1.5));
+  assert.equal(g.gun.def.damage, priceGun.damage * fx('premium').damage);
+  assert.equal(g.gun.def.magazineSize, Math.round(priceGun.magazineSize * fx('premium').magazine * 1.5));
   g.gun.weapon.magazine = 1;
   g.gun.give(priceGun); // ammo buy
   assert.equal(g.gun.weapon.magazine, g.gun.def.magazineSize, 'refilled to the UPGRADED magazine');

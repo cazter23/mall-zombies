@@ -29,12 +29,14 @@
 import * as THREE from 'three';
 import { feel } from '../config/feel.js';
 import { zombieConfusion, zombieCrowd } from '../config/zombies.js';
+import { workshopStuffings } from '../config/workshop.js';
 import { moveAndCollide } from '../world/collision.js';
 import { createZombieModel } from './zombieModel.js';
 import { isObserved } from './observation.js';
 import { applyCartHitboxes } from './cartPose.js';
 import { updateConfusion } from './confusion.js';
 
+const SLIP_ANGLE = workshopStuffings.popcornButter.puddle.slipAngle; // how far back a slipping zombie lies (radians)
 const ease = (t) => t * t * (3 - 2 * t);
 const clamp01 = (v) => Math.max(0, Math.min(1, v));
 const desired = { x: 0, z: 0 };
@@ -72,6 +74,12 @@ export class Zombie {
     this.staggerDrag = 0;
     this.slowTimer = 0;
     this.slowFraction = 1;
+    this.slowKind = null; // what slowed it ('smoothie', 'antifreeze', 'butter'...): only for how it looks (zombies/statusTint.js)
+    this.vulnerableTimer = 0; // Smoothie: seconds it takes extra damage from everything
+    this.vulnerableMultiplier = 1;
+    this.slipTimer = 0; // Popcorn Butter: seconds it lies on the floor (headshots do extra); slipTotal = how long this fall is
+    this.slipTotal = 0;
+    this.slipImmune = 0; // seconds before it can slip again, so a puddle can't pin it down
     this.buffs = new Map(); // independent timers; strongest multiplier wins, never compounds
     this.hold = null; // { source, seconds, point }, independent of Mannequin observation
     this.control = null; // behavior-owned function(dt, ctx): true when it handled movement
@@ -166,6 +174,8 @@ export class Zombie {
   takeHit({ damage, part, melee = false, source = melee ? 'melee' : 'gun', direction = null, impact = null }) {
     if (!this.isAlive) return { killed: false };
     damage *= this.damageTakenMultiplier;
+    if (this.vulnerableTimer > 0) damage *= this.vulnerableMultiplier; // (Smoothie: slowed zombies take more from everything)
+    if (this.slipTimer > 0 && part === 'head') damage *= workshopStuffings.popcornButter.puddle.fallenHeadshotMultiplier; // (Popcorn Butter: it's down)
     // A crashed Cart Pusher is wide open: hits do extra damage.
     if (this.state === 'crashed') damage *= this.type.charge.crashDamageTakenMultiplier;
     this.health -= damage;
@@ -213,6 +223,7 @@ export class Zombie {
   }
 
   die() {
+    this.slipTimer = 0;
     this.clearBossEffects();
     this.setState('dead');
     this.velocity.set(0, 0, 0);
@@ -222,6 +233,12 @@ export class Zombie {
       this.mascotLift = 0;
     }
     if (this.onDeath) this.onDeath(this);
+  }
+
+  /** 0..1: how far down it is while it slips (eases in as it falls and out as it gets up). The model and the hitboxes both read it. */
+  get slipPose() {
+    if (this.slipTimer <= 0) return 0;
+    return Math.max(0, Math.min(1, (this.slipTotal - this.slipTimer) / 0.2, this.slipTimer / 0.3));
   }
 
   get speedMultiplier() { return Math.max(1, ...[...this.buffs.values()].map(b => b.speed)); }
@@ -268,11 +285,33 @@ export class Zombie {
   }
 
   // Hitboxes are axis-aligned boxes that follow the zombie (and rise with it while spawning).
-  applySlow(seconds, fraction) {
+  applySlow(seconds, fraction, kind = null) {
     if (!this.isAlive || this.state === 'spawning') return;
     if (this.type.boss) fraction = 1 - (1 - fraction) * this.type.slowStrength;
+    if (this.slowTimer <= 0 || fraction <= this.slowFraction) this.slowKind = kind; // (the strongest slow decides how it looks)
     this.slowFraction = this.slowTimer > 0 ? Math.min(this.slowFraction, fraction) : fraction;
     this.slowTimer = Math.max(this.slowTimer, seconds);
+  }
+
+  // Smoothie: for `seconds` every hit on it does `multiplier` times the damage (the strongest wins, never compounds).
+  applyVulnerable(seconds, multiplier) {
+    if (!this.isAlive || this.state === 'spawning') return;
+    this.vulnerableMultiplier = this.vulnerableTimer > 0 ? Math.max(this.vulnerableMultiplier, multiplier) : multiplier;
+    this.vulnerableTimer = Math.max(this.vulnerableTimer, seconds);
+  }
+
+  // Popcorn Butter: it slips and slides for `seconds` (steering lost, like a stagger, but it keeps its speed), flat on its back. Refused
+  // for bosses, while it rises, while it's already down or just got up.
+  applySlip(seconds, drag) {
+    if (this.type.boss || !this.isAlive || this.state === 'spawning' || this.slipTimer > 0 || this.slipImmune > 0) return false;
+    this.setState('chasing');
+    this.staggerTimer = this.slipTimer = this.slipTotal = seconds;
+    this.staggerDrag = drag;
+    this.attackCooldown = Math.max(this.attackCooldown, seconds);
+    this.chargeCooldown = Math.max(this.chargeCooldown, seconds);
+    this.chargeLeft = 0;
+    this.updateHitboxes();
+    return true;
   }
 
   // Glitter: for `seconds` it fights other zombies instead of you, hitting for `damage`. Refused while it rises, while a mannequin is frozen, and
@@ -295,6 +334,7 @@ export class Zombie {
   clearSlow() {
     this.slowTimer = 0;
     this.slowFraction = 1;
+    this.slowKind = null;
   }
 
   // Burning: `damage` in total over `seconds`, paid in ticks through takeHit, so a kill counts like any other. A new burn
@@ -337,10 +377,15 @@ export class Zombie {
       rise = this.dropHeight > 0 ? this.dropHeight * left : -this.type.height * left;
     }
     const y = p.y + rise;
-    this.hitboxes[0].box.min.set(p.x - hb.headHalfSize, y + hb.headBottom, p.z - hb.headHalfSize);
-    this.hitboxes[0].box.max.set(p.x + hb.headHalfSize, y + hb.headTop, p.z + hb.headHalfSize);
-    this.hitboxes[1].box.min.set(p.x - hb.bodyHalfWidth, y, p.z - hb.bodyHalfWidth);
-    this.hitboxes[1].box.max.set(p.x + hb.bodyHalfWidth, y + hb.bodyTop, p.z + hb.bodyHalfWidth);
+    // A zombie down on the butter lies back along its facing: the head box follows the head, the body box covers the whole body.
+    const lean = this.slipPose * SLIP_ANGLE;
+    const headMid = (hb.headBottom + hb.headTop) / 2, backX = -Math.sin(this.yaw), backZ = -Math.cos(this.yaw);
+    const headY = lean ? headMid * Math.cos(lean) - headMid : 0, headBack = lean ? headMid * Math.sin(lean) : 0;
+    this.hitboxes[0].box.min.set(p.x + backX * headBack - hb.headHalfSize, y + hb.headBottom + headY, p.z + backZ * headBack - hb.headHalfSize);
+    this.hitboxes[0].box.max.set(p.x + backX * headBack + hb.headHalfSize, y + hb.headTop + headY, p.z + backZ * headBack + hb.headHalfSize);
+    const reach = hb.bodyTop * Math.sin(lean);
+    this.hitboxes[1].box.min.set(p.x - hb.bodyHalfWidth + Math.min(0, backX * reach), y, p.z - hb.bodyHalfWidth + Math.min(0, backZ * reach));
+    this.hitboxes[1].box.max.set(p.x + hb.bodyHalfWidth + Math.max(0, backX * reach), y + Math.max(hb.bodyHalfWidth * 2, hb.bodyTop * Math.cos(lean)), p.z + hb.bodyHalfWidth + Math.max(0, backZ * reach));
     if (this.type.cartHitbox) applyCartHitboxes(this, y); // the Cart Pusher leans: its boxes follow the pose
   }
 
@@ -372,7 +417,16 @@ export class Zombie {
     this.windedTimer = Math.max(0, this.windedTimer - dt);
     this.chargeCooldown = Math.max(0, this.chargeCooldown - dt);
     this.slowTimer = Math.max(0, this.slowTimer - dt);
-    if (this.slowTimer === 0) this.slowFraction = 1;
+    if (this.slowTimer === 0) {
+      this.slowFraction = 1;
+      this.slowKind = null;
+    }
+    this.vulnerableTimer = Math.max(0, this.vulnerableTimer - dt);
+    this.slipImmune = Math.max(0, this.slipImmune - dt);
+    if (this.slipTimer > 0) {
+      this.slipTimer = Math.max(0, this.slipTimer - dt);
+      if (this.slipTimer === 0) this.slipImmune = workshopStuffings.popcornButter.puddle.slipImmuneSeconds;
+    }
     this.updateBurn(dt);
     this.confusionImmune = Math.max(0, this.confusionImmune - dt);
     if (this.confusion) {

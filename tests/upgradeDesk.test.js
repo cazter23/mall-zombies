@@ -8,6 +8,7 @@ import { headlessGame } from './helpers/headlessGame.js';
 import { featuresOf } from '../src/game/features/index.js';
 import { economy } from '../src/config/economy.js';
 import { weapons } from '../src/config/weapons.js';
+import { upgrades } from '../src/config/upgrades.js';
 import { tierOf } from '../src/weapons/upgrades.js';
 import { LAYOUT } from '../src/maps/mall/mall.js';
 import { overlapsSolid } from '../src/world/collision.js';
@@ -78,8 +79,8 @@ test('buying tiers at the desk: one at a time, charged from pricing, gun in hand
     points = g.wallet.points;
   }
   assert.equal(g.gun.weapon.magazine, 3, 'buying a tier does NOT refill the magazine');
-  assert.equal(g.gun.def.magazineSize, Math.round(weapons.stapleGun.magazineSize * 1.3), 'but the magazine is bigger now');
-  assert.equal(g.gun.def.damage, weapons.stapleGun.damage * 3.5);
+  assert.equal(g.gun.def.magazineSize, Math.round(weapons.stapleGun.magazineSize * upgrades.tiers.at(-1).effects.magazine), 'but the magazine is bigger now');
+  assert.equal(g.gun.def.damage, weapons.stapleGun.damage * upgrades.tiers.at(-1).effects.damage);
   stand();
   t.tick(2);
   assert.equal(g.interactions.prompt, null, 'no prompt once Platinum');

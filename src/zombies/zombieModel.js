@@ -26,6 +26,8 @@ import { dressEmployee } from './bosses/employeeModel.js';
 import { dressInfluencer, poseInfluencer } from './bosses/influencerModel.js';
 import { bossSpectacle } from '../config/bosses.js';
 import { cartLean } from './cartPose.js';
+import { statusGlow } from './statusTint.js';
+import { workshopStuffings } from '../config/workshop.js';
 
 function deformIndexedBox(segX, segY, segZ, fn) {
   const geo = new THREE.BoxGeometry(1, 1, 1, segX, segY, segZ);
@@ -399,6 +401,9 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
   // --- Animation state ---
   let walkPhase = random() * Math.PI * 2; // random start so a crowd isn't in sync
   let lastFlash = -1;
+  let clock = 0; // seconds this model has been drawn: flames flicker and glitter cycles on it
+  let lastGlow = 0;
+  const glowColor = new THREE.Color();
 
   // Cart Pusher poses on top of the shamble: pushing (arms on the handle, leaning in), the telegraph (cart
   // rattling side to side, crouching lower, head down), the charge (leaning hard), crashed (cart tipped onto two
@@ -566,11 +571,18 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
         arms[0].shoulder.rotation.z -= snap * 0.15 * strength;
         arms[1].shoulder.rotation.z += snap * 0.15 * strength;
       }
+      // A hit flashes white; otherwise a Build-A-Blaster effect on it (burning, chilled, goo, glitter) tints the whole model (zombies/statusTint.js).
+      clock += frameTime;
       const flash = flinch > 0 ? 0.5 : 0;
-      if (flash !== lastFlash) {
+      const glow = flash ? 0 : statusGlow(zombie, clock, glowColor);
+      if (glow > 0) {
+        for (const m of materials) m.emissive.copy(glowColor).multiplyScalar(glow);
+        lastFlash = -1;
+      } else if (flash !== lastFlash || lastGlow > 0) {
         for (const m of materials) m.emissive.setScalar(flash);
         lastFlash = flash;
       }
+      lastGlow = glow;
 
       // Spawning: rise up out of the floor.
       if (zombie.state === 'spawning') {
@@ -594,7 +606,8 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
         const sink = Math.max(0, Math.min(1, (t - sinkStart) / type.sinkSeconds));
         root.position.y -= sink * 0.6;
       } else if (zombie.state !== 'spawning') {
-        fall.rotation.x = 0;
+        // Down on Popcorn Butter: flat on its back, easing in as it falls and out as it gets up (the hitboxes follow: zombie.slipPose).
+        fall.rotation.x = (zombie.slipPose ?? 0) * workshopStuffings.popcornButter.puddle.slipAngle;
         fall.rotation.y = 0;
       }
     },

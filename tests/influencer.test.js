@@ -126,8 +126,8 @@ test('phone flash is telegraphed, emits only when facing the phone, and Comfort 
 test('Discount Code stacks after sale and coupon, caps savings and survives Employee Discount ending',t=>{
   const {g}=fixture(t);
   g.pricing.setVoucher(bossVouchers.discountCode);
-  g.pricing.setDiscount('tier',0.5);g.pricing.setCoupon({fraction:0.5,maxSaving:2000});
-  assert.equal(g.pricing.priceOf('tier','platinum'),1000,'sale to 4000, coupon to 2000, then voucher to 1000');
+  g.pricing.setDiscount('tier',0.5);g.pricing.setCoupon({fraction:0.5,maxSaving:1000});
+  assert.equal(g.pricing.priceOf('tier','platinum'),1000,'sale to 3000, coupon (capped at 1000 off) to 2000, then voucher to 1000');
   g.pricing.clearCoupon();g.pricing.setDiscount('tier',0);
   assert.equal(g.pricing.voucher,bossVouchers.discountCode);
   assert.equal(g.pricing.priceOf('tier','platinum'),g.pricing.basePriceOf('tier','platinum')-2000);

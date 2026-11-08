@@ -358,7 +358,7 @@ export function createPlayerGun({
       slot.def = resolveGun(slot.base, slot.mods);
       slot.weapon.setDef(slot.def);
       slot.aim.setDef(slot.def);
-      slot.weapon.loadMagazine();
+      slot.weapon.refill(); // (a build's bigger magazine comes loaded, and the reserve is topped up)
       const previous = slots[current];
       previous.weapon.cancelFire();
       previous.weapon.cancelReload();

@@ -40,10 +40,12 @@ export const workshopRitual = {
   secondsPerKill: 1, // each kill in the room takes this much off the clock (it still fills the gauge)
   // The gauge: kills in the room set the quality. Listed lowest first; the last one reached wins.
   qualities: [
-    { id: 'understuffed', name: 'Understuffed', minKills: 0, power: 1 },
-    { id: 'regular', name: 'Regular', minKills: 4, power: 1.35 },
-    { id: 'extraStuffed', name: 'Extra Stuffed', minKills: 9, power: 1.7 },
-    { id: 'overstuffed', name: 'Overstuffed', minKills: 15, power: 2.1, heartCooldown: .5, bulge: true }, // heartCooldown: x the Heart's cooldown
+    // power: how hard the stuffing's effect hits. gun: what the BUILD does to the gun itself (config/upgrades.js effects), so a build is the big
+    // power-up (more than an Extended Warranty tier) and the stuffing and Heart are what make it yours.
+    { id: 'understuffed', name: 'Understuffed', minKills: 0, power: 1, gun: { damage: 1.5, magazine: 1.2 } },
+    { id: 'regular', name: 'Regular', minKills: 4, power: 1.35, gun: { damage: 1.7, magazine: 1.2 } },
+    { id: 'extraStuffed', name: 'Extra Stuffed', minKills: 9, power: 1.7, gun: { damage: 1.9, magazine: 1.3 } },
+    { id: 'overstuffed', name: 'Overstuffed', minKills: 15, power: 2.1, gun: { damage: 2.2, magazine: 1.3 }, heartCooldown: .5, bulge: true }, // heartCooldown: x the Heart's cooldown
   ],
   // Where your gun is along the conveyor (fraction of maxSeconds).
   stages: [
@@ -123,8 +125,9 @@ export const workshopReach = {
 // gunSeconds = damage as seconds of the gun's own fire (weapons/gunStats.js gunPower), scaled again by the build's power.
 export const workshopStuffings = {
   smoothie: {
-    name: 'Smoothie', stockedBy: null, defaultHeart: 'headshot', color: 0xff7fb2, sound: 'stuffingSmoothie', blurb: 'Slows everything round the hit',
+    name: 'Smoothie', stockedBy: null, defaultHeart: 'headshot', color: 0xff7fb2, sound: 'stuffingSmoothie', blurb: 'Slows zombies, and they take 25% more from everything',
     slow: { seconds: 3, fraction: .55, radius: 2.5 },
+    vulnerable: { multiplier: 1.25 }, // while slowed, every hit on it (any gun, any source) does this much more
     pop: { colors: [0xff7fb2, 0xffd1e3, 0xfff3d4], count: 8, speed: 1.6, size: .05 },
   },
   fryerOil: {
@@ -134,21 +137,24 @@ export const workshopStuffings = {
     pop: { colors: [0xff8a1f, 0xffd24a, 0xff4d1f], count: 8, speed: 2, size: .05 },
   },
   neonTube: {
-    name: 'Neon Tube', stockedBy: 'megaMart', defaultHeart: 'headshot', color: 0x4fe0ff, sound: 'stuffingNeon', blurb: 'Arcs to nearby zombies',
-    chain: { gunSeconds: .08, jumps: 2, maxJumps: 5, range: 5, falloff: .8 },
+    name: 'Neon Tube', stockedBy: 'megaMart', defaultHeart: 'headshot', color: 0x4fe0ff, sound: 'stuffingNeon', blurb: 'Arcs from zombie to zombie, hard',
+    chain: { gunSeconds: .25, jumps: 3, maxJumps: 6, range: 6, falloff: .85, width: .05, seconds: .25, maxFraction: .6 }, // width, seconds: how fat the arc is and how long it stays. maxFraction: one arc never takes more than this share of a zombie's health, so a big gun's arc can't delete one
     pop: { colors: [0x4fe0ff, 0xc9f5ff, 0xff4fd8], count: 8, speed: 2.4, size: .045 },
   },
   popcornButter: {
-    name: 'Popcorn Butter', stockedBy: 'cinema', defaultHeart: 'reload', color: 0xffd24a, sound: 'stuffingButter', blurb: 'Leaves a slippery puddle',
-    // Spill Cleanup's zone, per proc: anything on it keeps being slowed while it stands there.
-    puddle: { radius: 1.8, seconds: 6, slowFraction: .35, slowSeconds: .2, maxPuddles: 3, lift: .03, opacity: .55 },
+    name: 'Popcorn Butter', stockedBy: 'cinema', defaultHeart: 'reload', color: 0xffd24a, sound: 'stuffingButter', blurb: 'Zombies slip and fall; headshots on a fallen one do double',
+    // Spill Cleanup's zone, per proc: anything on it keeps being slowed while it stands there, and slips. slip*: a zombie crossing the puddle slides and
+    // falls for slipSeconds (steering lost, speed kept; drag = how fast the slide dies), then can't slip again for slipImmuneSeconds. While it's down,
+    // headshots do fallenHeadshotMultiplier. slipAngle: how far back it lies.
+    puddle: { radius: 1.8, seconds: 6, slowFraction: .35, slowSeconds: .2, maxPuddles: 3, lift: .03, opacity: .55,
+      slipSeconds: 1.1, slipDrag: .8, slipImmuneSeconds: 2.5, fallenHeadshotMultiplier: 2, slipAngle: Math.PI / 2 - .15, bubbleSeconds: .3 },
     pop: { colors: [0xffd24a, 0xfff1a8, 0xe0a526], count: 8, speed: 1.4, size: .05 },
   },
   antifreeze: {
-    name: 'Antifreeze', stockedBy: 'parkingLot', defaultHeart: 'headshot', color: 0x7dff9a, sound: 'stuffingFreeze', blurb: 'Chills zombies, then shatters the chilled',
-    // A slowed zombie (by anything) shatters and loses the slow; one that isn't slowed is chilled.
+    name: 'Antifreeze', stockedBy: 'parkingLot', defaultHeart: 'headshot', color: 0x7dff9a, sound: 'stuffingFreeze', blurb: 'Chills zombies, then a second proc shatters them',
+    // A slowed zombie (by anything) shatters and loses the slow; one that isn't slowed is chilled. A shatter also hits (and chills) what stands round it.
     chill: { seconds: 3, fraction: .5, radius: 2.2 },
-    shatter: { gunSeconds: .12, maxTargets: 3 },
+    shatter: { gunSeconds: .32, maxTargets: 4, splashRadius: 2.2, splashGunSeconds: .12 },
     pop: { colors: [0x7dff9a, 0xd7ffe6, 0x49c9ff], count: 10, speed: 2.8, size: .05 },
   },
   glitter: {
@@ -161,12 +167,29 @@ export const workshopStuffings = {
 };
 export const todayCount = 3; // bins open per round
 
+// What a stuffing's effect LOOKS like (zombies/statusTint.js, and the fx in game/features/workshopStuffings.js). Pure looks: nothing here changes play.
+// tint: the glow a zombie's whole model gets while the effect is on it (emissive colour x strength). flicker: how fast it flickers, per second.
+export const stuffingLook = {
+  burn: { color: 0xff5a1a, strength: .8, flicker: 13 },
+  antifreeze: { color: 0x8fe8ff, strength: .6 },
+  smoothie: { color: 0xff6fb0, strength: .5 },
+  butter: { color: 0xffd24a, strength: .35 },
+  glitter: { strength: .65, hueSpeed: .9 }, // a rainbow that cycles
+  flame: { colors: [0xff5a1a, 0xffb02e, 0xffe27a], count: 2, speed: 1.6, size: .06 }, // flames licking up a burning zombie
+  frost: { colors: [0xeafcff, 0x8fe8ff, 0xffffff], count: 18, speed: 3.4, size: .07 }, // the ice burst when one shatters
+  drip: { colors: [0xff6fb0, 0xffd1e3], count: 2, speed: .6, size: .05 }, // pink goo dripping off a slowed zombie
+  bubble: { colors: [0xffe27a, 0xfff6c4], count: 2, speed: 1, size: .045 }, // bubbles popping on the butter
+  hearts: { colors: [0xff8bd8, 0xffffff, 0x8bd8ff], count: 2, speed: 1.2, size: .05 }, // glitter's hearts floating up
+  flash: { seconds: .18, size: .55, opacity: .5 }, // the burst of light where a build fires
+  statusSeconds: .15, // how often the ongoing looks (flames, drips, hearts) puff
+};
+
 // HEARTS: when a build fires. strength multiplies the stuffing; cooldownSeconds stops a fast gun firing it every shot.
 export const workshopHearts = {
   headshot: { name: 'Headshot', blurb: 'Fires on a headshot', strength: 1, cooldownSeconds: .75 },
   lastRound: { name: 'Last Round', blurb: 'Fires on the last round in the magazine', strength: 1.5, cooldownSeconds: 0 },
-  reload: { name: 'Reload', blurb: 'Fires a blast around you when you reload', strength: 1, cooldownSeconds: 4 },
-  everyTenth: { name: 'Every 10th', blurb: 'Fires on every 10th kill with this gun', strength: 2, cooldownSeconds: 0, everyKills: 10 },
+  reload: { name: 'Reload', blurb: 'Fires a big blast when you reload with zombies close', strength: 2.5, cooldownSeconds: 3, nearRange: 6 }, // nearRange: a living zombie this close (metres)
+  everyTenth: { name: 'Every 5th', blurb: 'Fires on every 5th kill with this gun', strength: 2.5, cooldownSeconds: 0, everyKills: 5 }, // (the id keeps its old name: saved names and combos use it)
 };
 
 // Every finished gun gets a name at the Naming Booth, and keeps it through a re-stuff. A run uses each name once while any are left.
