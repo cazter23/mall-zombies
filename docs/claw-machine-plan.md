@@ -18,7 +18,9 @@ The machine is GRAB-A-GUN ("EVERYONE'S A WINNER*", and the small print says "*No
 | What decides the prize | The roll | The roll offers three, and your timing picks one |
 | Your own gun comes up | Removed from the odds | Comes back Refurbished, with a free attachment |
 | Time to move on | A hidden roll | The plush is in the pit where you can see it |
-| Where it goes next | Announced on the spot | Closed until the next round, then the PA says where |
+| Where it goes next | Announced on the spot | Sunny climbs out and waddles there: follow him, or pop him and it goes somewhere else |
+| The jackpot | The Ray Gun and the wonder weapons | Three claw-only guns, one of them a rare wonder weapon |
+| A bad spin | Nothing | Prize tickets, spent at the Prize Counter |
 
 ## Decided
 
@@ -26,6 +28,11 @@ From the design notes and the brief:
 - Pay, get a random gun, and sometimes a plush appears and the machine relocates.
 - It's the mystery box equivalent, and it should feel different from COD.
 - Every price comes from `g.pricing`.
+
+Added by the user, 8 November 2026:
+- **Claw-only guns.** Some guns are never on a wall and only come from the machine, so it has a jackpot: the Leaf Blower, the Tennis Ball Launcher, and a rare wonder weapon.
+- **Prize tickets and a Prize Counter.** Every grab prints tickets, and a bad grab prints more. Tickets buy small things at a fixed Prize Counter. A losing grab still moves you forward.
+- **Sunny runs away.** When the plush comes up, Sunny climbs out and waddles to the machine's next site, so you can follow him to learn where it's going. Pop him and it goes somewhere else instead.
 
 ## Assumed (say if you disagree)
 
@@ -36,7 +43,7 @@ From the design notes and the brief:
 - **One machine at a time, six possible sites,** starting in the Hallway every run.
 - **A plush refunds what you paid.** A sold-out machine doesn't refund, because you got your prize.
 - **Guns you carry stay in the odds as Refurbished prizes** (see below).
-- **Only the seven wall guns are prizes.** There are no claw-only guns in this plan, and the Staple Gun is left out.
+- **The seven wall guns and three claw-only guns are prizes** (see Claw-only guns). The Staple Gun is left out.
 - **Flash Sales and Employee Discount work here. The Discount Code doesn't** (see Boss vouchers).
 - **No round gate.** A Heavy Coil Nailer can come up on round 2, if the luck is there. The economy report decides whether that stays.
 
@@ -68,6 +75,12 @@ Each capsule is drawn by weight from the pool, with no repeats in one grab.
 | Rivet Rifle | 12 | Blue | 1,500 |
 | Barcode Scanner | 7 | Purple | 1,750 |
 | Heavy Coil Nailer | 3 | Gold | 2,500 |
+| Leaf Blower | 6 | Purple | claw only |
+| Tennis Ball Launcher | 6 | Purple | claw only |
+| The wonder weapon | 2 | Rainbow | claw only |
+
+The simulation below was run before the claw-only guns were added, so it is out of date: the economy report re-runs it with them (phase 4) and sets their weights.
+The starting weights above put a claw-only gun in about 1 capsule in 8, and the wonder weapon in about 1 in 60.
 
 Simulated at 400,000 grabs, with nothing carried. The player aims for the lane with the highest wall price and avoids a plush. A miss lands on a neighbouring lane.
 
@@ -137,12 +150,68 @@ The cabinets also leave zombies' routes alone. With all six in place and every d
 - **Land on the plush** and Sunny comes up the chute, the machine refunds what you paid, and it closes. At perfect timing you can always dodge it, and a miss or an auto-drop can land on it.
 - **Sell out** on grab 6 and the machine closes after you've taken or lost the prize.
 - **It reopens at the next 'roundStart'** at a random other site whose zone is open, and the PA names the area. If no other site is open, it restocks where it stands.
+  After a plush, the next site is picked the moment Sunny comes up (not at 'roundStart'), so he knows where to walk (see Sunny runs away).
 - **It never moves during a grab,** and never into a locked area, so it can always be reached. The one exception is the start: it waits in the Hallway until you own the Hallway.
 
 In the simulation a site lasts 5.8 grabs at 3-in-4 timing, ending by plush 23% of the time and by selling out 77% of the time. With a random lane, it's 5.4 grabs and 52% by plush.
 Machines don't go to whichever site the player is far from: a uniform pick is easier to reason about and to test.
 
 Suggested PA lines: "Attention shoppers: GRAB-A-GUN is temporarily out of service. Sunny has been informed." and "GRAB-A-GUN is now in {area}. We don't know how either."
+
+## Claw-only guns
+
+Three guns that are never on a wall. Each one does something no wall gun does, so it's a reason to grab, not just a stronger number.
+
+| Gun | Capsule | What it does | New in the engine |
+|---|---|---|---|
+| **Leaf Blower** (Garden Centre) | Purple | A wide cone that blows zombies back and knocks them down, with little damage. Crowd control for a corridor or a doorway. Runs on a fuel tank that refills slowly when you stop. | A cone attack with knockback (the Cart Pusher's shove, aimed outward), and a fuel meter instead of a magazine |
+| **Tennis Ball Launcher** (Sporting Goods) | Purple | Lobbed balls that bounce off walls and floors and between zombies, each bounce a hit. Best in tight spaces: the Service Corridor, the cinema stairs. | A slow, visible projectile with bounces (the guns are all hitscan today), capped per shot |
+| **The wonder weapon** | Rainbow (rare) | The jackpot, a mall joke you can't buy anywhere. Working idea: **RETURN TO SENDER**, a returns-desk scanner whose beam boxes a zombie and "returns it to the manufacturer": an instant kill for normal zombies, heavy damage to Mascots and bosses, which it can't return. Small magazine, slow reload. | An instant-kill rule with a boss and Mascot exception, in gunStats.js |
+
+- **Each is a normal gun** in `config/weapons.js` with `clawOnly: true`, so wall buys, the Customer Service tiers and Build-A-Blaster treat it like any other. A wall-buy feature must refuse a `clawOnly` gun (test it).
+- **A stuffed wonder weapon** is the late-game peak. Its Build-A-Blaster effects need their own balance rows, and `tests/balance.test.js` must show it is the strongest gun without making rounds 25+ trivial (zombie health is about 2,400 at round 25 and 3,400 at round 30).
+- **Ammo:** claw guns refill at a RESTOCK-O-MATIC like any gun, and from a Refurbished grab. The wonder weapon refills at half the rate (config), so it stays special.
+- **One at a time,** each with `npm run balance` before it joins the pool: Leaf Blower, then the Tennis Ball Launcher, then the wonder weapon.
+
+## Prize tickets and the Prize Counter
+
+Every grab prints arcade tickets from a slot on the cabinet, and a bad grab prints more. Tickets are a second, small currency for the run.
+
+| Outcome | Tickets |
+|---|---|
+| Green capsule (Price Gun, Nail Gun) | 40 |
+| Blue capsule | 25 |
+| Purple capsule | 15 |
+| Gold or Rainbow capsule | 5 |
+| Plush (the money comes back) | 10 |
+| A prize left in the chute until it timed out | 0 |
+
+The **Prize Counter** is one fixed booth ("REDEMPTION", with a bored teenage animatronic behind the glass). It never moves. Its site is picked in phase 6 with the same headless checks the cabinet sites passed (clear stand point, no spawn within 5 m, routes unchanged): the Hallway near the first machine, or the Atrium's arcade. Starting prices:
+
+| Prize | Tickets | What it does |
+|---|---|---|
+| Ammo refill (the gun in hand) | 60 | A full refill, like a RESTOCK-O-MATIC |
+| Slow Claw | 100 | Your next grab's sweep runs at half speed |
+| Attachment voucher | 150 | A random attachment that fits the gun in hand, free (the attachment counter's checks apply) |
+| Free grab token | 200 | Your next grab costs nothing |
+| Sunny plush keychain | 300 | A Wardrobe accessory once the Wardrobe exists; until then a joke item for the results receipt |
+
+- At these numbers a player earns a free grab about every 7 grabs and something small every 2 or 3. The economy report checks it.
+- **Tickets are not points.** They don't go through `g.pricing` (Flash Sales and vouchers don't touch them), aren't paid on 'kill', and never count as income on the results screen. They are lost on death and reset on Play again. Career stats can count "tickets won".
+- **The HUD** shows the ticket count beside the points, only once you have some.
+
+## Sunny runs away
+
+The plush is Sunny, the Galleria's sun mascot. When a grab lands on him, he doesn't just sit in the chute:
+
+1. The machine refunds what you paid and closes, as before. **The next site is picked now**, among the other sites whose zone is open.
+2. Sunny climbs out of the chute, looks around, and **waddles to that site** along the zombies' navigation, at walking pace (config, about 2 m/s). Anyone who follows him knows where the machine is going before the PA says so.
+3. When he arrives he climbs into the dust-sheeted cabinet, and it shakes once. The machine still opens at the next 'roundStart' as before, and the PA still names the area.
+4. **Shoot or slash him** and he pops in a puff of stuffing and confetti. That pays a small ticket bonus (25) and re-picks the next site at random (it can't be the one he was walking to, if another is open). Then you won't know where it's going until the PA.
+
+- **He is not a zombie.** No kill event, no points, no +10 for hitting him, and no power-up credit. Zombies ignore him and he walks through them. He has no collider, so the player walks through him too.
+- **If the round starts before he arrives,** the machine opens anyway and he finishes his walk and climbs in. If no other site is open, he walks a lap around the machine and climbs back in.
+- **He's only for a plush,** never for a sold-out close: then the machine just closes, as before.
 
 ## How it fits the code
 
@@ -165,6 +234,13 @@ Suggested PA lines: "Attention shoppers: GRAB-A-GUN is temporarily out of servic
 - **Features freeze when they should.** `features.update` doesn't run while paused or dead, so a grab stops with the game, and death can't pay anyone. `features.reset()` runs after the map step and only needs to clear the machine's own state.
 - **Clutter only knows `feature.position`.** `hallwayClear` keeps scatter 2 m from each feature's one position, so the five other sites need their own entries in that list.
 - **`createGame` doesn't need to know much.** The feature context already holds everything needed except PA playback: 'clawClosed' and 'clawMoved' join the ritual's PA event list, which is one line.
+
+- **Sunny must be shootable without being a target for anything else.** Shots and melee find targets in `shootables`, but createGame also hands that list to aim assist
+  and to the vault as bodies. So Sunny needs flags both skip (no aim slowdown towards him, no blocking a vault), and the 'hit' listener must pay its +10 only for zombies.
+- **Sunny walks the zombies' grid:** `navigation.pathTo` (the Influencer uses it), only through open zones, so he can always arrive. One small model, one mover, no collider.
+- **Tickets are their own currency:** not the wallet, not pricing. A small `game/tickets.js` with a reset step, events 'ticketsWon' `{ amount, total, reason }` and 'prizeRedeemed' `{ id }`.
+- **The Prize Counter is a feature kind** ('prizeCounter'), one entry in `map.features`, using the normal hold-to-buy with its own cost label ("100 tickets"), not `kind: 'claw'`.
+- **New guns need engine work** (see Claw-only guns): a cone attack and a fuel meter, a bouncing projectile, and an instant-kill rule with exceptions. Each is its own small system, tested alone first.
 
 ### What needs to change
 
@@ -192,7 +268,8 @@ Suggested PA lines: "Attention shoppers: GRAB-A-GUN is temporarily out of servic
 | A hidden plush, as in COD | With lanes on show, a surprise would feel random, and the machine couldn't show its own wear | The plush is visible, and stock forces a move anyway |
 | Plush chance rising forever | A good player dodges it and the machine never moves | Six grabs of stock |
 | Random starting site | `tests/fullRun.test.js` compares a reset game to a fresh one, and a closed-off start would hide the machine for half a run | Always the Hallway, then random |
-| New claw-only guns from the design notes | Each needs a model, viewmodel, sounds and a balance role | Later. Refurbished prizes give the claw its own reward for now |
+| New claw-only guns from the design notes | Each needs a model, viewmodel, sounds and a balance role | Kept out at first, then added by the user (8 November): three of them, after the machine works, one at a time |
+| Bumping the cabinet to nudge the claw (TILT if you overdo it) | A second input during the sweep makes the timing design riskier | Not now. Maybe later, if timing alone feels thin |
 
 ## Working with other systems
 
@@ -237,9 +314,23 @@ Done when: the report shows the early jump isn't a must-buy, and the wall is sti
 ### 5. Spectacle (Sonnet or Luna)
 The finished cabinet, claw and chute, capsule wobble, Sunny, jingle and sweep sounds, a hum from the live machine, and a humour pass. Keep the machine unlit and flicker-free, like the RESTOCK-O-MATIC.
 
+### 6. Prize tickets and the Prize Counter (Sonnet or Luna)
+`game/tickets.js`, tickets from every grab, the counter's site check and booth, the five prizes, the HUD count, the reset step.
+Done when: every outcome pays its tickets, every prize works and can't be bought without enough tickets, and tickets never touch points, pricing or the results income.
+
+### 7. Sunny runs away (Opus or Sol)
+Picking the next site at the plush, Sunny's model and walk, arriving and climbing in, popping him (bonus and re-pick), and the shootable flags.
+Done when: he always arrives (or loops when no site is open), popping him re-picks, and he never pays a kill, a +10 or power-up credit, never pulls aim assist and never blocks a vault.
+
+### 8. The Leaf Blower (Opus or Sol for the cone and fuel; Sonnet or Luna for the model and sounds)
+### 9. The Tennis Ball Launcher (Opus or Sol for the bouncing projectile)
+### 10. The wonder weapon (Opus or Sol)
+Each: the engine piece alone first, then the gun, its balance row, `npm run balance`, and only then into the pool.
+Done when: `tests/balance.test.js` shows each one's job, no wall sells it, and the wonder weapon is the strongest gun without trivialising rounds 25+.
+
 ### Later
-- **Claw-only guns** from the design notes (leaf blower, water cannon and so on), one at a time, each with `npm run balance`.
-- **Plush Keychain** with the Wardrobe, and "Plush toys won" on the results receipt.
+- **Plush Keychain** in the Wardrobe (it's already a Prize Counter prize), and "Plush toys won" on the results receipt.
+- **Bumping the cabinet** to nudge the claw, with TILT if you overdo it.
 - **A round gate on rare guns,** with an optional `fromRound` per gun, if the report asks for it.
 
 ## Tests to add
@@ -254,6 +345,9 @@ The finished cabinet, claw and chute, capsule wobble, Sunny, jingle and sweep so
 - Build-A-Blaster: the machine works during each ritual phase and with the loaner in hand, and a gun taken during a ritual doesn't break collection.
 - Cabinets: each is at least 2.1 m tall with one collider, navigation stays connected, and the coplanar test covers each site.
 - Reset: Play again equals a fresh game (`tests/fullRun.test.js`), and the display in the chute is removed and disposed of.
+- Tickets: each outcome pays its amount; each prize works, costs its tickets and refuses without enough; tickets are lost on death and reset on Play again; points, pricing and the results income never move.
+- Sunny: the next site is picked at the plush; he reaches it from every site (or loops when none is open); popping him pays 25 tickets and re-picks; no kill, +10 or power-up credit; aim assist and the vault ignore him.
+- Claw-only guns: no wall buy sells one; each has a balance row; the wonder weapon's instant kill skips bosses and Mascots.
 
 ## Rules to keep
 
