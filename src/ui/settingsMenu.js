@@ -62,18 +62,21 @@ export function createSettingsMenu(settings) {
     if (def.cost) label.append(el('span', `settings-cost cost-${def.cost}`, `${def.cost} cost`)); // (how much it costs to run)
     const control = el('div', 'settings-control');
     node.append(label, control);
+    if (def.hint) node.append(el('p', 'settings-row-hint', def.hint));
     const show = (v) => (def.format ? def.format(v) : String(v));
     let refresh;
 
     if (def.type === 'toggle') {
       const box = el('input');
       box.type = 'checkbox';
+      box.setAttribute('aria-label', def.label);
       box.addEventListener('change', () => settings.set(def.id, box.checked));
       control.append(box);
       refresh = () => { box.checked = settings.get(def.id); };
     } else if (def.type === 'slider') {
       const slider = el('input');
       slider.type = 'range';
+      slider.setAttribute('aria-label', def.label);
       slider.min = def.min;
       slider.max = def.max;
       slider.step = def.step;
@@ -86,6 +89,7 @@ export function createSettingsMenu(settings) {
       };
     } else {
       const select = el('select');
+      select.setAttribute('aria-label', def.label);
       for (const option of def.options) {
         const o = el('option', null, option.label);
         o.value = String(option.value);

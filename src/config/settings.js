@@ -200,6 +200,18 @@ export const settingDefs = [
 
   // ---- Comfort ----
   {
+    id: 'uiScale', tab: 'Comfort', label: 'UI scale', type: 'slider',
+    min: 0.85, max: 1.35, step: 0.05, default: 1, format: percent,
+    hint: 'Size of menus and HUD panels. Independent of 3D render resolution.',
+    apply: (v, ctx) => ctx.hud?.setUiScale?.(v),
+  },
+  {
+    id: 'textSize', tab: 'Comfort', label: 'Text size', type: 'slider',
+    min: 1, max: 1.5, step: 0.05, default: 1, format: percent,
+    hint: 'Enlarges readable text; panels wrap and scroll to fit.',
+    apply: (v, ctx) => ctx.hud?.setTextSize?.(v),
+  },
+  {
     id: 'dimPhoneFlash', tab: 'Comfort', label: 'Dim instead of phone flashes', type: 'toggle', default: false,
     apply: v => { bossComfort.dimPhoneFlash = v; },
   },

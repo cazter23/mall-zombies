@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createAnnouncements } from '../src/ui/announcements.js';
+import { createAnnouncements, announcementSeconds } from '../src/ui/announcements.js';
 import { ui } from '../src/config/ui.js';
 import { headlessGame } from './helpers/headlessGame.js';
 import { featuresOf } from '../src/game/features/index.js';
@@ -12,7 +12,7 @@ function notices() {
   let next = 0, hidden = 0;
   const board = createAnnouncements({
     show: (m) => shown.push(m), hide: () => hidden++,
-    schedule: (fn, ms) => { assert.equal(ms, ui.announcementSeconds * 1000); jobs.set(++next, fn); return next; },
+    schedule: (fn, ms) => { assert.ok(ms >= ui.announcementSeconds * 1000 && ms <= ui.announcementMaxSeconds * 1000); jobs.set(++next, fn); return next; },
     cancel: (id) => jobs.delete(id),
   });
   return { board, shown, jobs, get hidden() { return hidden; },
@@ -36,6 +36,18 @@ test('PA queues same-tick messages, suppresses duplicates, and introduces threat
   assert.equal(n.shown.at(-1).text, 'Another sale');
   n.advance();
   assert.equal(n.hidden, 1);
+});
+
+test('long PA instructions get reading time and the display and queue use the same duration', () => {
+  const short = { text: 'Your shift has begun.' };
+  const long = { text: 'Important instructions '.repeat(25) };
+  assert.equal(announcementSeconds(short), ui.announcementSeconds);
+  assert.equal(announcementSeconds(long), ui.announcementMaxSeconds);
+  let visibleSeconds, scheduledMs;
+  const board = createAnnouncements({ show: (_, seconds) => { visibleSeconds = seconds; }, hide() {},
+    schedule: (_, ms) => { scheduledMs = ms; }, cancel() {} });
+  board.push(long);
+  assert.equal(scheduledMs, visibleSeconds * 1000);
 });
 
 test('PA backlog is bounded and reset/death/pause cleanup cancels pending messages', () => {

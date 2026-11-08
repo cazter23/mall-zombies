@@ -19,6 +19,25 @@ Tests that pinned old numbers now read config instead (tiers, Every Nth) or stat
 one gun-second per zombie); tests/workshopPower.test.js covers the new rules. Not done: re-stuff levels (a second build level that grows a stuffing), and a bot
 that moves (slows and butter are undervalued by a bot that stands still).
 
+## 8 November 2026 � Review fixes: vouchers, boss rewards, boss removal
+
+A review of the week's boss / Build-A-Blaster / voucher work found five bugs, fixed here (tests/reviewFixes.test.js):
+- A free attachment refit used up the Discount Code. `pricing.spendVoucher(kind, id, paid)` now takes what was paid: a payment of 0 spares a part-price voucher
+  (a full-discount one, Master Key / Signed Approval, is what makes things free, so it is still used).
+- A second boss voucher on the floor while you held one expired with nothing. It now pays its `pointsInstead` when it runs out ('powerUpExpire' carries `pointsInstead`).
+- Signed Approval turned into points while the gun it would upgrade was at Build-A-Blaster; the eligibility check now counts `gun.away`.
+- A boss landing the killing blow removed itself from the zombie list mid-update, so the next zombie skipped a tick and the boss's model was disposed under its own
+  update. `clearBosses()` now only marks it removed (and takes it out of the shootables) while `update()` is running; the end-of-update sweep removes it.
+- Hardcoded numbers moved to config: the Party Trap puck (`workshopBuilds.partyTrap.marker`) and the vault preview's `approachFraction` / `ledge.minClosing`.
+Not changed, on purpose: a sprint-jump off the top of the Atrium escalator or the cinema stairs costs about a third of your health. That is a real 5.7 m airborne fall
+(the jump carries you over most of the flight), so the fall rule is doing what feel.fall says; making it free would be a design change.
+
+## 8 November 2026 — Box cutter helmet pops pay
+
+Knocking a Mascot's helmet off with the box cutter never paid the 100-point helmet-pop bonus: the listener wanted a headshot, and melee always reports a body hit (it ignores
+headshots, COD-style). The test passed because it faked a melee head hit. Now a box-cutter pop always pays (getting that close is the risk); a gun still needs the headshot.
+tests/mascot.test.js swings the real knife.
+
 ## 8 November 2026 — Skylar's influencer makeover
 
 Skylar now wears a cropped pink jacket, cream top, high-waisted dark trousers, chunky trainers and a crossbody bag.
@@ -51,7 +70,15 @@ Third pass ("the prompt only shows half the time; angles rarely work"). Measured
 The climb followed your run direction, so an angled run let go somewhere else and checked a diagonal strip that was often blocked. Now a rail is always climbed straight over along its normal (up to 70 degrees off),
 pushing into one from a standstill counts (controller.moveWish, feel.vault.ledge.pushSpeed), and the drop holds a fixed outward velocity with no steering (controller.dropVelocity), so the check is one exact line and
 the corridor and speed cap are gone. Result: 100% at every angle and speed wherever head-on works, the prompt shows exactly when a jump vaults (tested), and no landing above 1.2 m in 497 real-input runs.
-The places that still refuse are fixed spots: lamp posts, kiosks and the escalator under the drop, and the last half metre at a corner. The tests that once insisted nobody could cross a rail by jumping now say: you cannot walk in, and a jump ends on the upper floor or on the floor below, never stuck in between.
+The places that still refuse are fixed spots: lamp posts, kiosks and the escalator under the drop, and the last half metre at a corner.
+
+Fourth pass ("it only appears half the time"): it did. Measured along the whole length of every rail, only 47% of the railing offered the climb, because the check refused any spot whose one landing
+point was blocked (the escalator runs under most of the Promenade's railing and the Atrium's north side; lamp posts stand along the court edge). Now the vault CHOOSES how far out to drop
+(vault.chooseDrop: candidate landings 0 to 3 m out, nearest to 1.5 m first) and takes the first one you can stand on whose whole fall line is clear: bare floor, a bench, a counter or an escalator's
+walkway, never a lamp post, kiosk, fountain or an escalator's side. Landing checks are 10 cm wider than your body, because the real tick-by-tick fall can end a few centimetres off the prediction
+(tests/fallAndLedge.test.js caught one landing on an escalator balustrade that way). Coverage: 75% of all railing (the Atrium court all round, both Promenade voids); the escalator's top opening
+still refuses (narrow, lined with its sides), and so do the corners. Cached per release point (5 cm), cleared when doors change the colliders; a check costs about 0.85 ms a tick near a rail,
+less than a counter vault's preview. The tests that once insisted nobody could cross a rail by jumping now say: you cannot walk in, and a jump ends on the upper floor or on the floor below, never stuck in between.
 
 ## 8 November 2026 — Department boss bars
 

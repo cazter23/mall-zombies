@@ -12,7 +12,7 @@
 //   - lastResult: why the last attempt failed or "vaulted" (handy when testing in the console).
 import * as THREE from 'three';
 import { feel } from '../config/feel.js';
-import { overlapsSolid, rampHeightAt } from '../world/collision.js';
+import { colliderSignature, overlapsSolid, rampHeightAt } from '../world/collision.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 const ease = (t) => t * t * (3 - 2 * t);
@@ -161,59 +161,88 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
     return best ?? { reason };
   }
 
-  // The top of the highest thing anywhere under a standing circle at (x, z), looking down from `fromY` (-Infinity: nothing).
-  // Anything touching the column counts, however small or high up (an escalator's side, a kiosk roof, an awning): you would
-  // hit it on the way down. So only bare floor passes the caller's check.
-  function groundBelow(x, z, fromY) {
-    const r = feel.player.radius;
-    let result = -Infinity;
-    for (const box of colliders) {
-      if (box.max.y >= fromY || box.ledge) continue; // (another rail is a wall you'd stop at, not ground: a narrow void has one on the far side)
-      if (x + r <= box.min.x || x - r >= box.max.x || z + r <= box.min.z || z - r >= box.max.z) continue;
-      result = Math.max(result, box.max.y);
+  // What's under a standing circle at (x, z), looking down from `fromY`: the highest box top and the highest escalator (ramp)
+  // height touching it. Another balcony rail doesn't count: it is a wall you'd stop at, not something you'd land on.
+  function under(x, z, fromY, margin = 0) {
+    const r = feel.player.radius + margin;
+    let box = -Infinity;
+    for (const b of colliders) {
+      if (b.max.y >= fromY || b.ledge) continue;
+      if (x + r <= b.min.x || x - r >= b.max.x || z + r <= b.min.z || z - r >= b.max.z) continue;
+      box = Math.max(box, b.max.y);
     }
-    // An escalator is a ramp, not a box: landing on one counts as something in the way too.
-    for (const ramp of colliders.ramps ?? []) {
+    let ramp = -Infinity;
+    for (const q of colliders.ramps ?? []) {
       for (const [dx, dz] of [[0, 0], [r, 0], [-r, 0], [0, r], [0, -r]]) {
-        const height = rampHeightAt(ramp, x + dx, z + dz);
-        if (height !== null && height < fromY) result = Math.max(result, height);
+        const height = rampHeightAt(q, x + dx, z + dz);
+        if (height !== null && height < fromY) ramp = Math.max(ramp, height);
       }
     }
-    return result;
+    return { box, ramp, top: Math.max(box, ramp) };
   }
 
-  // Is a balcony rail (other than the one being climbed) within `margin` of a standing circle at (x, z)? You drift sideways
-  // for the moment it takes to fall past a rail top (about a tenth of a second), so a rail that close could catch your feet.
+  // Is a balcony rail (other than the one being climbed) within `railMargin` of a standing circle at (x, z)?
   function railAt(x, z, climbed) {
     const reach = feel.player.radius + cfg.ledge.railMargin;
     return colliders.some((box) => box.ledge && box !== climbed && x + reach > box.min.x && x - reach < box.max.x && z + reach > box.min.z && z - reach < box.max.z);
   }
 
-  // Is there open floor to drop onto? The drop can't be steered (controller: dropVelocity), so this checks the one line you will
-  // fall along, from where you let go to where you land, and the landing itself.
-  function dropClear(plan) {
-    const L = cfg.ledge;
+  // Where would you stand after landing at (x, z)? Bare floor, a bench or a counter (up to landingMaxY), or an escalator's walkway
+  // (when the ramp is the highest thing there, not its side). Returns the surface height, or null (a kiosk, a lamp post, a fountain).
+  function landingAt(x, z, fromY) {
+    // (checked a little wider than your body: the real fall, tick by tick, can end a few centimetres from the prediction)
+    const { box, ramp, top } = under(x, z, fromY, cfg.ledge.landingMargin);
+    if (!Number.isFinite(top)) return null;
+    const onRamp = Number.isFinite(ramp) && ramp >= box - cfg.ledge.pathClearance;
+    if (!onRamp && box > cfg.ledge.landingMaxY) return null;
+    sample.set(x, top, z);
+    return clearAt(sample) ? top : null;
+  }
+
+  // How far out to drop, straight out from the rail (the drop can't be steered: controller.dropVelocity). Tries landing spots from
+  // the preferred distance outward, and takes the first one you can stand on whose whole fall line is clear: at every point on the
+  // way down, nothing under you is higher than your feet will be then (no landing on a lamp post or an escalator's side), and no
+  // other rail is in the way. Returns the outward speed, or null if nowhere along the line works.
+  // The answer only depends on the map and WHERE YOU LET GO (the same point all the way along a straight run at the rail), and the
+  // prompt asks every tick near a rail: cache it per 5 cm of that point, dropped whenever a door or shutter changes the colliders.
+  const dropCache = new Map();
+  let dropCacheSignature = '';
+  function chooseDrop(plan) {
+    const signature = colliderSignature(colliders);
+    if (signature !== dropCacheSignature) { dropCache.clear(); dropCacheSignature = signature; }
     const release = plan.far + plan.landingDistance;
-    const ground = groundBelow(plan.start.x + plan.dx * release, plan.start.z + plan.dz * release, plan.top);
-    if (!Number.isFinite(ground)) return false;
-    const fallSeconds = Math.sqrt(2 * (plan.top - ground) / feel.movement.gravity);
-    const reach = L.dropSpeed * fallSeconds;
-    const distances = [];
-    for (let along = 0; along < reach; along += L.checkSpacing) distances.push(release + along);
-    distances.push(release + reach);
-    for (const along of distances) {
-      const x = plan.start.x + plan.dx * along;
-      const z = plan.start.z + plan.dz * along;
-      if (railAt(x, z, plan.box)) {
-        if (along === release) return false; // (letting go against the next rail: nowhere to drop)
-        break; // the far side of a narrow void: that rail stops the drop drifting further
-      }
-      const floor = groundBelow(x, z, plan.top);
-      if (!Number.isFinite(floor) || floor > L.landingMaxY) return false;
-      sample.set(x, floor, z);
-      if (!clearAt(sample)) return false;
+    const key = `${Math.round((plan.start.x + plan.dx * release) * 20)},${Math.round((plan.start.z + plan.dz * release) * 20)},${Math.round(plan.top * 20)},${plan.dx},${plan.dz}`;
+    if (!dropCache.has(key)) {
+      if (dropCache.size > 4096) dropCache.clear();
+      dropCache.set(key, findDrop(plan));
     }
-    return true;
+    return dropCache.get(key);
+  }
+
+  function findDrop(plan) {
+    const L = cfg.ledge;
+    const g = feel.movement.gravity;
+    const release = plan.far + plan.landingDistance;
+    const at = (along) => [plan.start.x + plan.dx * along, plan.start.z + plan.dz * along];
+    if (railAt(...at(release), plan.box)) return null;
+    const outs = [];
+    for (let out = 0; out <= L.maxOut + 1e-6; out += L.landingStep) outs.push(out);
+    outs.sort((a, b) => Math.abs(a - L.preferredOut) - Math.abs(b - L.preferredOut));
+    for (const out of outs) {
+      const landY = landingAt(...at(release + out), plan.top);
+      if (landY === null || plan.start.y - landY < L.minDrop) continue; // (the escalator's top end, just under the balcony: not a drop)
+      const seconds = Math.sqrt(2 * (plan.top - landY) / g);
+      const steps = Math.max(1, Math.ceil(out / L.pathStep));
+      let clear = true;
+      for (let i = 0; i < steps && clear; i++) {
+        const f = i / steps;
+        const [x, z] = at(release + out * f);
+        if (railAt(x, z, plan.box)) clear = false;
+        else if (under(x, z, plan.top, L.landingMargin).top > plan.top - 0.5 * g * (f * seconds) ** 2 - L.pathClearance) clear = false;
+      }
+      if (clear) return out / seconds;
+    }
+    return null;
   }
 
   // A full vault plan from `start` (feet) heading (dx, dz) at `speed`, or { reason } it can't work.
@@ -260,7 +289,8 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
     if (plan.duration > cfg.maxSeconds) return { reason: 'moving too slowly' };
     if (!clearAt(plan.start)) return { reason: 'no room to start' };
     if (!pathClear(plan, 0, plan.duration)) return { reason: 'path blocked' };
-    if (!dropClear(plan)) return { reason: 'nowhere safe to drop' };
+    plan.dropSpeed = chooseDrop(plan);
+    if (plan.dropSpeed === null) return { reason: 'nowhere safe to drop' };
     return { plan };
   }
 
@@ -337,8 +367,8 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
       if (!found.box) return false;
       // Where you'll be when it comes into reach (keep going straight until then). A rail's gap is measured straight at it,
       // so an angled run covers more ground to close it.
-      const closing = found.box.ledge ? Math.max(0.2, t.dx * found.dx + t.dz * found.dz) : 1;
-      const advance = Math.max(0, found.near - cfg.reach * 0.9) / closing;
+      const closing = found.box.ledge ? Math.max(cfg.ledge.minClosing, t.dx * found.dx + t.dz * found.dz) : 1;
+      const advance = Math.max(0, found.near - cfg.reach * cfg.approachFraction) / closing;
       projected.set(player.position.x + t.dx * advance, player.position.y, player.position.z + t.dz * advance);
       if (advance > 0 && !clearAt(projected)) return false;
       return !!searchPlan(projected, ready.floorY, t).plan;
@@ -393,7 +423,7 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
       plan.time = nextTime;
       if (plan.time >= plan.duration && plan.ledge) {
         // Let go over the edge: nearly straight down, falling from the floor you stood on.
-        player.velocity.set(plan.dx * cfg.ledge.dropSpeed, 0, plan.dz * cfg.ledge.dropSpeed);
+        player.velocity.set(plan.dx * plan.dropSpeed, 0, plan.dz * plan.dropSpeed);
         player.dropVelocity = { x: player.velocity.x, z: player.velocity.z }; // (held for the whole drop: no steering)
         player.fallBase = plan.start.y;
         player.grounded = false;

@@ -6,6 +6,8 @@
 
 import './style.css';
 import './ui/retail.css';
+import './ui/readability.css';
+import { createNoticesMenu } from './ui/noticesMenu.js';
 import * as THREE from 'three';
 import { feel } from './config/feel.js';
 import { debug } from './config/debug.js';
@@ -73,6 +75,7 @@ window.addEventListener('resize', () => {
 const input = new Input(renderer.domElement);
 const gamepad = createGamepad(input); // feeds controller buttons/sticks into `input`
 const hud = createHud();
+const noticesMenu = createNoticesMenu(hud.history);
 const sound = createSound(); // synthesized sound effects (starts on the first click/key press)
 const viewmodel = createViewmodel(Object.values(weapons), meleeWeapons.boxCutter); // a model for every gun
 const postProcessing = createPostProcessing({ renderer, scene, camera, viewmodel });
@@ -219,6 +222,7 @@ function enterPlaying() {
   // Playing must remove every overlay, including its backdrop-filter layer.
   settingsMenu.close();
   controlsMenu.close();
+  noticesMenu.close();
   screens.show(null);
   hud.setDimmed(false);
 }
@@ -271,6 +275,7 @@ screens.on('clearStats', () => screens.show('stats', careerStats.reset()));
 screens.on('statsBack', () => screens.show('title'));
 wireRunIntro({ events: g.events, hud, sound }); // the PA's opening line as round 1 begins
 screens.on('controls', () => controlsMenu.open());
+screens.on('notices', () => noticesMenu.open());
 
 input.onLockChange((locked) => {
   if (locked) {
@@ -286,6 +291,10 @@ goToTitle(); // the game opens on the main menu
 // (otherwise the zombies keep going with nobody playing).
 let padWasConnected = false;
 function handleControllerMenus() {
+  if (noticesMenu.isOpen) {
+    noticesMenu.padNav(input);
+    return;
+  }
   if (controlsMenu.isOpen) {
     controlsMenu.padNav(input);
     return;

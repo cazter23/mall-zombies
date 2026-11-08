@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { headlessGame } from './helpers/headlessGame.js';
 import { feel } from '../src/config/feel.js';
+import { rampHeightAt } from '../src/world/collision.js';
 
 const Y = 6.3;
 
@@ -26,7 +27,13 @@ function dropFrom(t, g, height) {
   t.tick(2);
 }
 
-const expected = (drop) => (drop - feel.fall.safeDrop) * feel.fall.damagePerMeter;
+const expected = (drop) => Math.max(0, drop - feel.fall.safeDrop) * feel.fall.damagePerMeter;
+
+// Somewhere you can stand after a drop: the ground floor (a bench or counter is fine) or an escalator's walkway.
+function standable(g, p) {
+  if (p.y <= feel.vault.ledge.landingMaxY + 1e-6) return true;
+  return (g.colliders.ramps ?? []).some((ramp) => { const h = rampHeightAt(ramp, p.x, p.z); return h !== null && Math.abs(h - p.y) < 0.06; });
+}
 
 test('a short drop is free; past the safe drop, every extra metre costs health', () => {
   const { t, g, falls } = fixture();
@@ -116,10 +123,13 @@ test('jumping at a balcony rail climbs over it and drops to the floor below, and
   }
   t.input.clear();
   assert.ok(airborne && g.player.grounded, 'went over and landed');
-  assert.ok(g.player.position.y <= feel.vault.ledge.landingMaxY, `on the ground floor (${g.player.position.y})`);
-  assert.equal(falls.length, 1, 'one hard landing');
-  assert.ok(Math.abs(falls[0].drop - (Y - g.player.position.y)) < 0.1, `measured from the balcony floor, not the climb (${falls[0].drop})`);
-  assert.ok(Math.abs(g.stats.health - (g.stats.maxHealth - expected(Y))) < 1, `about ${expected(Y).toFixed(0)} damage (${g.stats.health})`);
+  const landed = g.player.position.y;
+  assert.ok(standable(g, g.player.position) && landed <= Y - feel.vault.ledge.minDrop, `on the floor below or an escalator's walkway (${landed})`);
+  if (Y - landed > feel.fall.safeDrop) {
+    assert.equal(falls.length, 1, 'one hard landing');
+    assert.ok(Math.abs(falls[0].drop - (Y - landed)) < 0.1, `measured from the balcony floor, not the climb (${falls[0].drop})`);
+  }
+  assert.ok(Math.abs(g.stats.health - (g.stats.maxHealth - expected(Y - landed))) < 1, `about ${expected(Y - landed).toFixed(0)} damage (${g.stats.health})`);
   const across = (g.player.position.x - start.x) * spot.dx + (g.player.position.z - start.z) * spot.dz;
   assert.ok(across > 1.4, `beyond the rail, not straight down its foot (${across.toFixed(2)} m)`);
   g.map.dispose();
@@ -207,21 +217,39 @@ test('a rail only lets you over where there is open floor to land on, and never 
     refused++;
   }
   assert.equal(refused, rails.length);
-  // Somewhere the landing is blocked (fountain, kiosk, escalator): the vault refuses and says why.
-  let blocked = 0;
-  for (const rail of rails) {
+  g.map.dispose();
+});
+
+test('along every rail, a climb is offered along most of it, and every drop it offers ends somewhere you can stand', () => {
+  const { t, g } = fixture();
+  g.health.invulnerable = true;
+  const P = g.player;
+  let spots = 0, offered = 0, dropped = 0;
+  for (const rail of g.colliders.filter((b) => b.ledge)) {
     const thinX = rail.max.x - rail.min.x < rail.max.z - rail.min.z;
-    const cx = (rail.min.x + rail.max.x) / 2, cz = (rail.min.z + rail.max.z) / 2;
+    const lo = thinX ? rail.min.z : rail.min.x, hi = thinX ? rail.max.z : rail.max.x;
+    const c = thinX ? (rail.min.x + rail.max.x) / 2 : (rail.min.z + rail.max.z) / 2;
     for (const side of [-1, 1]) {
-      const x = thinX ? cx + side * 1.4 : cx, z = thinX ? cz : cz + side * 1.4;
-      if (!g.colliders.some((b) => b !== rail && Math.abs(b.max.y - rail.min.y) < 0.06 && x > b.min.x && x < b.max.x && z > b.min.z && z < b.max.z)) continue;
-      g.player.teleport({ position: new THREE.Vector3(x, rail.min.y, z), yaw: Math.atan2(thinX ? side : 0, thinX ? 0 : side) });
-      g.player.grounded = true;
-      g.player.velocity.set(thinX ? -side * 5 : 0, 0, thinX ? 0 : -side * 5);
-      if (!g.player.vault.tryStart() && g.player.vault.lastResult === 'nowhere safe to drop') blocked++;
-      g.player.vault.reset();
+      const nx = thinX ? -side : 0, nz = thinX ? 0 : -side;
+      for (let u = lo + 0.25; u <= hi - 0.25; u += 0.75) {
+        const x = thinX ? c + side : u, z = thinX ? u : c + side;
+        if (!g.colliders.some((b) => b !== rail && !b.ledge && Math.abs(b.max.y - rail.min.y) < 0.06 && x > b.min.x && x < b.max.x && z > b.min.z && z < b.max.z)) continue;
+        spots++;
+        P.teleport({ position: new THREE.Vector3(x, rail.min.y, z), yaw: Math.atan2(-nx, -nz) });
+        P.grounded = true;
+        P.velocity.set(nx * 6, 0, nz * 6);
+        if (!P.vault.tryStart()) continue;
+        offered++;
+        let landed = false;
+        for (let i = 0; i < 200 && !landed; i++) { t.tick(); landed = P.grounded && !P.vault.active; }
+        assert.ok(landed, 'the drop ends');
+        assert.ok(standable(g, P.position) && P.position.y <= rail.min.y - feel.vault.ledge.minDrop,
+          `a drop from (${x.toFixed(1)}, ${z.toFixed(1)}) ends standing on the floor or an escalator, not on top of something (${P.position.toArray().map((v) => v.toFixed(2))})`);
+        dropped++;
+      }
     }
   }
-  assert.ok(blocked >= 1, 'some rails look down onto things you must not land on');
+  assert.ok(offered / spots >= 0.7, `offered along most of the railing (${offered}/${spots})`);
+  assert.equal(dropped, offered);
   g.map.dispose();
 });

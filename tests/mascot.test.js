@@ -213,6 +213,7 @@ test('a headshot that knocks the helmet off pays a bonus; other ways of knocking
   assert.ok(bonus > 0);
   assert.equal(gain('head', 'gun'), bonus);
   assert.equal(gain('head', 'melee'), bonus);
+  assert.equal(gain('body', 'melee'), bonus, 'the box cutter always reports a body hit, and still earns it');
   assert.equal(gain('body', 'gun'), 0);
   assert.equal(gain('head', 'build'), 0, 'a stuffing does not aim');
   assert.equal(gain('head', 'hazard'), 0);
@@ -301,4 +302,27 @@ test('only so many helmets stay, a helmet stops short of a wall, and Play again 
   assert.ok(helmet.getWorldPosition(new THREE.Vector3()).x < 5 - 0.3, 'it is in the room, not in the wall');
   g.resetRun();
   assert.equal(count(), 0);
+});
+
+test('knocking the helmet off with the real box cutter pays the helmet-pop bonus', (t) => {
+  const game = headlessGame();
+  const { g } = game;
+  t.after(() => { g.zombies.clear(); g.map.dispose(); });
+  g.health.invulnerable = true;
+  g.rounds.update = () => {};
+  game.tick();
+  g.zombies.clear();
+  game.standAt(0, 10, 0); // looking -Z
+  const zombie = g.zombies.spawn('mascot', new THREE.Vector3(0, 0, 8.9));
+  zombie.setState('chasing');
+  zombie.speed = 0;
+  zombie.health = zombie.maxHealth * zombie.type.mascot.healthFraction + 1; // one slash from popping
+  const pops = [];
+  g.events.on('mascotHeadPop', (pop) => pops.push(pop));
+  const before = g.wallet.points;
+  game.press('KeyV', 2);
+  game.tick(30);
+  assert.equal(pops.length, 1, 'the slash knocked the helmet off');
+  assert.equal(pops[0].source, 'melee');
+  assert.ok(g.wallet.points - before >= economy.payouts.helmetPopBonus, `paid the bonus (${g.wallet.points - before})`);
 });

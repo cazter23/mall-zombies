@@ -111,7 +111,7 @@ export function createGame({
   // Points. Every gain/spend shows a "+60" / "-500" pop-up by the counter.
   const wallet = createWallet({ onChange: (amount) => hud.pointsPopup(amount) });
   const runStats = createRunStats();
-  events.on('purchase', ({ kind, id }) => pricing.spendVoucher(kind, id));
+  events.on('purchase', ({ kind, id, cost }) => pricing.spendVoucher(kind, id, cost));
   events.on('playerDeath', () => {
     pricing.clearVoucher();
     for (const zombie of zombies.zombies) zombie.clearBossEffects();
@@ -303,10 +303,12 @@ export function createGame({
   events.on('kill', ({ zombie }) => {
     if (!state.over) runStats.recordKill(zombie);
   });
-  // Knocking a Mascot's helmet off with a headshot pays a bonus: stuffings and hazards don't aim. Every costume has its own
-  // PA line. A helmet Captain Coupon put back on pays nothing the second time (no farming him).
+  // Knocking a Mascot's helmet off with a gun headshot or the box cutter pays a bonus: stuffings and hazards don't aim. (Melee
+  // never reports a head hit, COD-style, so the knife counts however it lands: getting that close is the risk.) Every costume
+  // has its own PA line. A helmet Captain Coupon put back on pays nothing the second time (no farming him).
   events.on('mascotHeadPop', ({ zombie, headshot, source, again }) => {
-    if (state.over || again || zombie.noRewards || !headshot || (source !== 'gun' && source !== 'melee')) return;
+    const earned = source === 'melee' || (source === 'gun' && headshot);
+    if (state.over || again || zombie.noRewards || !earned) return;
     wallet.earn(economy.payouts.helmetPopBonus);
     hud.showAnnouncement({ ...zombie.type.mascot.helmetPopLine, priority: 0 });
   });

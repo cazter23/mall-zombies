@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { headlessGame } from './helpers/headlessGame.js'; // (first: it stubs the browser globals)
 import { LAYOUT } from '../src/maps/mall/mall.js';
 import { feel } from '../src/config/feel.js';
+import { rampHeightAt } from '../src/world/collision.js';
 
 const AT = LAYOUT.atrium;
 const A = AT.rect;
@@ -130,7 +131,8 @@ test('the ring: railed all round the court; you cannot walk in, and a jump is a 
     for (let i = 0; i < 3; i++) { g.player.input.pressed.add('Space'); hold(t, ['KeyW', 'ShiftLeft'], 0.5); }
     t.tick(120);
     const y = g.player.position.y;
-    assert.ok(y === UPPER_Y || y <= feel.vault.maxHeight, `jumping at the rail from (${x}, ${z}) ends on the ring or on the court floor (a bench is fine), never stuck in between (y ${y})`);
+    const onEscalator = (g.colliders.ramps ?? []).some((ramp) => { const h = rampHeightAt(ramp, g.player.position.x, g.player.position.z); return h !== null && Math.abs(h - y) < 0.06; });
+    assert.ok(y === UPPER_Y || y <= feel.vault.maxHeight || onEscalator, `jumping at the rail from (${x}, ${z}) ends on the ring, the court floor (a bench is fine) or the escalator, never stuck in between (y ${y})`);
   }
 });
 
