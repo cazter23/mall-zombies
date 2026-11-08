@@ -54,6 +54,7 @@ import { atmosphere } from '../../config/environment.js';
 import { atriumDetails } from '../../config/atrium.js';
 import { promenade } from '../../config/promenade.js';
 import { buildPromenadeDetails } from './promenadeDetails.js';
+import { buildWorkshopDetails } from './workshopDetails.js';
 import { buildDepartmentStore } from './departmentStore.js';
 import { buildSeamDetails } from './seamDetails.js';
 import { departmentStore } from '../../config/departmentStore.js';
@@ -902,6 +903,7 @@ export function buildMall(scene, colliders) {
   buildServiceCorridorLook({ looks, kit, layout: LAYOUT, corridor: service, keepClear: hallwayClear.slice(0, -2) });
   buildLevelTwoLook({ looks, layout: LAYOUT, floorY: upperY, hole: escalator.hole, keepClear: hallwayClear.slice(0, -2) });
   buildPromenadeDetails({ kit, looks, layout: LAYOUT.level2, floorY: upperY });
+  buildWorkshopDetails({ kit, looks, layout: LAYOUT.level2, floorY: upperY }); // (Build-A-Blaster's shop and hall dressing)
   buildSeamDetails({ kit, looks, props, floorY: upperY }); // where HOFFMAN'S meets the cinema (the connector's receiving door, the cinema's Promenade front)
   const cinemaDetails = buildCinemaDetails({ kit, looks, layout: LAYOUT.cinema, floorY: upperY });
   dressCinemaStairs({ looks, layout: LAYOUT.cinemaStairs });
