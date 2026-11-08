@@ -30,6 +30,8 @@ reachable by zombies, a zombie following round each side, the hall as its own cu
 
 `tests/workshopBuilds.test.js` also covers the order form: everything listed, today's first and the rest with a reason, pre-filled, keys / wheel / stick / D-pad, unavailable rows skipped, Q and B cancel, the last order remembered, standing still but still getting hit, death closing it.
 
+`tests/workshopDetails.test.js` covers the room's detail pass: solid pieces only in corners (a lane of 2.5 m kept round the island), each solid piece too tall to stand on or a vaultable counter, entrances / bench / booth / lever / chute landings clear, every piece inside the shop or hall culling rooms, no added lights, and a triangle and draw budget.
+
 `tests/workshopRitual.test.js` covers the ritual in the real game: the price, handing over, the Courtesy Loaner, kills counting only in the room, quality thresholds, the maximum time,
 walking away and coming back, conveyor stages, the lever and booth only answering at the right time, gun purchases mid-ritual, upgrades staying on the gun, Play again and death
 mid-ritual, the chute steering spawns only while you are in the room, a full round where the chute adds no zombies and the round still ends, and the debug shortcut.

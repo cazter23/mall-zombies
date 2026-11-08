@@ -2,7 +2,9 @@
 
 Implemented the Manager, Guard and Influencer, shared controls/buffs/holds/vouchers, approved encores, costumes, unique stings, cartoon deaths and balance rows. Murray retains his original wet-floor and combat behavior.
 
-Branch: `codex/bosses-2`. Worktree: `.claude/worktrees/bosses-2`. Nothing was merged into main. Main was integrated before phase 2; both conflicts preserved the concurrent order-form feature. Later phase boundaries checked main and found no further changes.
+Branch: `codex/bosses-2`. Worktree: `.claude/worktrees/bosses-2`. At initial delivery, nothing was merged into main. Main was integrated before phase 2; both conflicts preserved the concurrent order-form feature. Later phase boundaries checked main and found no further changes.
+
+After delivery, the user requested the merge. Main's subsequent Build-A-Blaster detail pass (`3fed655`) integrated without conflicts; the combined result passed all 812 tests and the production build before updating main.
 
 ## Verification
 

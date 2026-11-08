@@ -41,6 +41,9 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   own slab over HOFFMAN'S and the start room; the east wall stops at x 5.2 because the Atrium's exterior wall starts at 5.27. The island
   (x -6.1..0.5, z 15.7..22.3) is the Stuffing Tank (centre -2.8, 19) plus a U-shaped conveyor open to the east, behind a glass guard: one
   bullet-through collider 2.2 m high, so nothing inside can be reached. A gantry carries the gun from the end of the belt over the east lane to the booth's counter, above head height, and it comes back to your hands from there.
+  Detail pass (maps/mall/workshopDetails.js): storefront skins wall (west) and heart shelf (east), till on the bench, footprints, window decals and balloons;
+  hall hoppers on the north wall piped to the tank, QC desk inside the island, lockers + time clock (east wall, z 12..13.4), bales (SW corner), laundry cart (NW corner),
+  returns bin (x -5.3..-4.7 under the hoppers), plush pile and portraits (NE). Solid: lockers, bales, cart (2.2 m) and the bin (0.7 m, vaultable).
   Hold F at the bench for the order form; the bins, Heart wall and lever are scenery now (the bins still light up for today's stock, the lever drops when an order is done). Lanes round it are >= 3 m. Naming Booth on the east wall (z 20..23.2), lever
   further south on the same wall (z 16.8), Returns Chute hatch in the north wall (x -7; its three spawn spots are not in map.spawnPoints, the ritual steers to them). The Limited Editions
   shelf behind the display window is empty: they drop from zombies now. Debug Y teleports to the bench. Pretzel Palace remains closed but has a scenic warmer/counter/menu/grille. Shoe-store

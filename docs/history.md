@@ -37,6 +37,17 @@ their own status fields. Shorter labels distinguish clearing enemies from killin
 Janitor's once-per-round limit. Responsive layouts fit narrow screens and short landscape windows.
 The panel still opens with backtick, and its visibility is exposed to assistive technology.
 
+## 7 November 2026 — Build-A-Blaster's detail pass
+
+The workshop read as a blockout, so maps/mall/workshopDetails.js dresses it (numbers in config/promenade.js workshop.details). Storefront: a slatwall of limp, unstuffed gun
+skins, the heart-ceremony shelf, a till, footprints to the bench, window decals and balloons, plush mascots, ceiling grid, sprinklers and exit signs. Hall: six stuffing
+hoppers piped into the tank, a QC desk, belt rollers, a typewriter and name-tag board at the booth, family portraits, a safety board, lockers and a time clock, an
+extinguisher, a wainscot, beams, floor safety lines and hazard stripes, bales, a laundry cart, a returns bin, a plush pile, stray tufts and a neon thank-you.
+The two side signs in the storefront now read CHOOSE YOUR BLASTER and THE HEART CEREMONY.
+Measured in the built game (calls / triangles): hall 189-253 / 33-37k, storefront 244 / 38k, Promenade at the window 305 / 49k, north lane looking out 942 / 125k;
+hallway 1086 / 175k and Level 2 1432 / 268k for comparison. Found on the way: lookKit.bands always built at floor 0 (fixed with a floorY option), so a wainscot meant
+for the hall was first built inside HOFFMAN'S; the returns bin first sat on a chute landing spot.
+
 ## 7 November 2026 — Build-A-Blaster's order form
 
 Playing it by hand, the ritual took too many stops in the middle of a fight: bins, Heart wall, bench, lever, booth. Now: hold F at the bench and an order form
