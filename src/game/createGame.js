@@ -300,6 +300,12 @@ export function createGame({
     wallet.earn(economy.payouts.helmetPopBonus);
     hud.showAnnouncement({ ...zombie.type.mascot.helmetPopLine, priority: 0 });
   });
+  // A hard landing (feel.fall): the same hurt as a zombie's swing, without a zombie.
+  player.onFall = ({ drop, damage }) => {
+    events.emit('playerFall', { drop, damage });
+    health.takeDamage(damage);
+    player.addViewKick(-feel.fall.viewJoltDegrees * DEG_TO_RAD);
+  };
   events.on('playerHit', ({ damage, knockback }) => {
     health.takeDamage(damage);
     if (knockback) { // a Cart Pusher's charge shoves you along it (m/s, horizontal)

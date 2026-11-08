@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { headlessGame } from './helpers/headlessGame.js'; // (first: it stubs the browser globals)
 import { LAYOUT } from '../src/maps/mall/mall.js';
+import { feel } from '../src/config/feel.js';
 
 const AT = LAYOUT.atrium;
 const A = AT.rect;
@@ -114,7 +115,7 @@ test('fountain and kiosks are cover, not platforms: sprint-jumping at them leave
   }
 });
 
-test('the ring: railed all round the court, nobody falls in from any side', () => {
+test('the ring: railed all round the court; you cannot walk in, and a jump is a deliberate climb to the bare floor (or nothing)', () => {
   const t = everythingOpen();
   const { g } = t;
   const rails = g.colliders.filter((b) => b.ignoreShots && Math.abs(b.min.y - UPPER_Y) < 1e-6 && b.min.z > LAYOUT.hallway.maxZ);
@@ -122,9 +123,14 @@ test('the ring: railed all round the court, nobody falls in from any side', () =
   for (const b of rails) assert.ok(b.max.y - UPPER_Y >= 1.4, 'taller than a jump');
   for (const [x, z, yaw] of [[cx, A.minZ + 1.5, Math.PI], [cx, A.maxZ - 1.5, 0], [A.minX + 1.5, cz, -Math.PI / 2], [A.maxX - 1.5, cz - 4, Math.PI / 2]]) {
     g.player.teleport({ position: new THREE.Vector3(x, UPPER_Y, z), yaw });
-    for (let i = 0; i < 3; i++) { g.player.input.pressed.add('Space'); hold(t, ['KeyW', 'ShiftLeft'], 0.5); }
+    hold(t, ['KeyW', 'ShiftLeft'], 1.5);
     t.tick(60);
     assert.equal(g.player.position.y, UPPER_Y, `still on the ring after running at the court from (${x}, ${z})`);
+    g.player.teleport({ position: new THREE.Vector3(x, UPPER_Y, z), yaw });
+    for (let i = 0; i < 3; i++) { g.player.input.pressed.add('Space'); hold(t, ['KeyW', 'ShiftLeft'], 0.5); }
+    t.tick(120);
+    const y = g.player.position.y;
+    assert.ok(y === UPPER_Y || y <= feel.vault.maxHeight, `jumping at the rail from (${x}, ${z}) ends on the ring or on the court floor (a bench is fine), never stuck in between (y ${y})`);
   }
 });
 

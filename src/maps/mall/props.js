@@ -484,9 +484,12 @@ export function createMallProps(kit) {
   /**
    * A glass balustrade standing on a floor at `floorY`, filling x0..x1 / z0..z1 (thin along one axis): solid to walking
    * (1.5m: taller than a jump peaks), see-through, and bullets pass (ignoreShots). Used round escalator wells and balconies.
+   * `ledge`: a jump at it climbs over and drops to the floor below (player/vault.js), if there is open floor to land on.
    */
   function railing(x0, z0, x1, z1, floorY) {
-    addCollider(x0, floorY, z0, x1, floorY + 1.5, z1).ignoreShots = true;
+    const collider = addCollider(x0, floorY, z0, x1, floorY + 1.5, z1);
+    collider.ignoreShots = true;
+    collider.ledge = true;
     const thinX = x1 - x0 < z1 - z0; // the glass is inset on the thin side
     const glass = mat(COLORS.balustradeGlass, { transparent: true, opacity: 0.3, roughness: 0.1, depthWrite: false });
     box(x0 + (thinX ? 0.04 : 0), floorY + 0.05, z0 + (thinX ? 0 : 0.04), x1 - (thinX ? 0.04 : 0), floorY + 1.0, z1 - (thinX ? 0 : 0.04), glass, { collide: false });

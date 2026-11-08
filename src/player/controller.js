@@ -43,6 +43,10 @@ export class PlayerController {
     this.grounded = false;
     this.timeSinceGrounded = 0;
     this.jumpBuffer = 0;
+    // Fall damage (feel.fall): the highest point of this unbroken fall, or the floor a ledge vault started from.
+    this.fallPeakY = -Infinity;
+    this.fallBase = null;
+    this.onFall = null; // optional callback({ drop, damage }) when a landing hurts; the game wires it to health
 
     this.sprintMeter = stats.sprintDuration; // seconds of sprint left
     this.timeSinceSprint = 0;
@@ -99,6 +103,8 @@ export class PlayerController {
 
   // Instantly move to { position, yaw }, standing still and upright.
   teleport({ position, yaw }) {
+    this.fallPeakY = -Infinity;
+    this.fallBase = null;
     this.position.copy(position);
     this.prevPosition.copy(this.position);
     this.velocity.set(0, 0, 0);
@@ -260,6 +266,7 @@ export class PlayerController {
       this.slideCooldownTimer = Math.max(0, this.slideCooldownTimer - dt);
       this.updateSprint(dt, this.isSprinting && input.actionDown('sprint') && !this.isAiming);
       this.vault.update(dt);
+      this.fallPeakY = -Infinity; // (a ledge vault sets fallBase as it lets go)
       this.updateMovementEffects(dt);
       return;
     }
@@ -419,12 +426,29 @@ export class PlayerController {
       );
       this.grounded = result.grounded;
       this.timeSinceGrounded = this.grounded ? 0 : this.timeSinceGrounded + dt;
+      this.trackFall();
     }
 
     this.updateMovementEffects(dt);
 
     // Safety net: if we ever fall out of the world, put the player back.
     if (this.position.y < feel.movement.fallOutHeight) this.respawn();
+  }
+
+  // Landing from a height hurts (feel.fall). Measures each unbroken stretch in the air; a landing past safeDrop calls onFall.
+  trackFall() {
+    if (!this.grounded) {
+      this.fallPeakY = Math.max(this.fallPeakY, this.position.y);
+      return;
+    }
+    const from = this.fallBase ?? this.fallPeakY;
+    this.fallPeakY = -Infinity;
+    this.fallBase = null;
+    const drop = from - this.position.y;
+    const fall = feel.fall;
+    if (!(drop > fall.safeDrop)) return;
+    const damage = (drop - fall.safeDrop) * fall.damagePerMeter * this.stats.fallDamageScale;
+    if (damage > 0) this.onFall?.({ drop, damage });
   }
 
   updateMovementEffects(dt) {

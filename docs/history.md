@@ -1,5 +1,15 @@
 # Sunset Galleria: build history ("Current state")
 
+## 8 November 2026 — Fall damage, and climbing over balcony rails
+
+Landing from a height now hurts (feel.fall: free up to 3 m, then 12 per metre; the 6.3 m drop from an upper floor costs about 40, health regenerates). controller.trackFall measures each unbroken
+stretch in the air, from the highest point to the landing, so stairs, benches and an ordinary jump are free; god mode and `stats.fallDamageScale` (for a future perk) scale it. 'playerFall' is the event.
+
+The glass rails on the Promenade and the Grand Atrium are no longer a hard wall to a jump: props.railing marks them `ledge`, and jumping at one while moving climbs over and lets go (player/vault.js).
+Only where the way down is bare floor: the vault checks the floor under the release point and every 0.75 m out to the furthest your air control could carry you (about 7 m), so it never offers a
+drop onto a fountain, a kiosk or the escalator. Of the rails, the Atrium's court sides and the Promenade's two small voids qualify; the long escalator-well rails refuse, and the HUD vault prompt only shows where it will work.
+It counts the fall from the floor you stood on, not from the climb. The tests that once insisted nobody could cross a rail by jumping now say: you cannot walk in, and a jump ends on the upper floor or on the floor below, never stuck in between.
+
 ## Bosses phase 6: spectacle and verification
 
 Finished employee costumes and filming/meeting poses, aligned enlarged head hitboxes, added a distinct sting and corporate defeat line per boss, and use a colored confetti death burst with no boss gore. Shift+J selects a boss, J summons it; explicit debug ids remain supported. Added boss health/reward/theoretical Nail Gun time rows to npm run balance. Health and damage stay at the requested starting values pending player feedback. Headless browser inspection prompted a raised ring-light pose and a rotated whiteboard beside Dennis so it cannot hide his head from the front. Vouchers now clear on death, and order-form purchases consume them through g.events. Shared-file and validation details: docs/bosses-2-report.md.

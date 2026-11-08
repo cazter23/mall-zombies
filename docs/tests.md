@@ -32,6 +32,7 @@ reachable by zombies, a zombie following round each side, the hall as its own cu
 
 `tests/orderFormView.test.js` covers the order form's summary line: every stuffing and heart pair reads as one short sentence.
 
+`tests/fallAndLedge.test.js` covers fall damage (free short drops, damage per metre past the safe drop, god mode and the damage scale, stairs and jumps free) and the balcony rail climb (over the rail, onto the floor below, about 40 damage, measured from the balcony floor; refused from below and where the landing is blocked).
 `tests/workshopDetails.test.js` covers the room's detail pass: solid pieces only in corners (a lane of 2.5 m kept round the island), each solid piece too tall to stand on or a vaultable counter, entrances / bench / booth / lever / chute landings clear, every piece inside the shop or hall culling rooms, no added lights, and a triangle and draw budget.
 
 `tests/workshopRitual.test.js` covers the ritual in the real game: the price, handing over, the Courtesy Loaner, kills counting only in the room, quality thresholds, the maximum time,

@@ -111,11 +111,11 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
     let best = null;
     let reason = 'nothing to vault ahead';
     for (const box of colliders) {
-      if (!box.vaultable) continue;
+      if (!box.vaultable && !box.ledge) continue;
       const raw = crossing(start, dx, dz, box);
       if (!raw || raw.near < 0) continue;
       const height = box.max.y - floorY;
-      if (height < cfg.minHeight || height > player.stats.vaultMaxHeight) {
+      if (height < cfg.minHeight || height > (box.ledge ? cfg.ledge.maxHeight : player.stats.vaultMaxHeight)) {
         reason = 'wrong height';
         continue;
       }
@@ -134,10 +134,47 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
     return best ?? { reason };
   }
 
+  // The top of the highest thing under a standing circle at (x, z), looking down from `fromY` (-Infinity: nothing).
+  // Everything on the way down counts (an escalator's side, a kiosk roof), so only bare floor passes the caller's check.
+  function groundBelow(x, z, fromY) {
+    const r = feel.player.radius;
+    let result = -Infinity;
+    for (const box of colliders) {
+      if (box.max.y >= fromY) continue;
+      if (x - r < box.min.x || x + r > box.max.x || z - r < box.min.z || z + r > box.max.z) continue;
+      result = Math.max(result, box.max.y);
+    }
+    return result;
+  }
+
+  // Is there open floor to drop onto? Straight under the release point, and all the way out to the furthest you could carry
+  // yourself by holding forward through the fall (air control), so the drop can't be steered onto a fountain or an escalator.
+  function dropClear(plan) {
+    const L = cfg.ledge;
+    const release = plan.far + plan.landingDistance;
+    const ground = groundBelow(plan.start.x + plan.dx * release, plan.start.z + plan.dz * release, plan.top);
+    if (!Number.isFinite(ground)) return false;
+    const fallSeconds = Math.sqrt(2 * (plan.top - ground) / feel.movement.gravity);
+    const reach = Math.min(plan.speed * fallSeconds, L.dropSpeed * fallSeconds + 0.5 * feel.movement.airAcceleration * fallSeconds ** 2);
+    const distances = [];
+    for (let along = 0; along < reach; along += L.checkSpacing) distances.push(release + along);
+    distances.push(release + reach);
+    for (const along of distances) {
+      const x = plan.start.x + plan.dx * along;
+      const z = plan.start.z + plan.dz * along;
+      const floor = groundBelow(x, z, plan.top);
+      if (!Number.isFinite(floor) || floor > L.landingMaxY) return false;
+      sample.set(x, floor, z);
+      if (!clearAt(sample)) return false;
+    }
+    return true;
+  }
+
   // A full vault plan from `start` (feet) heading (dx, dz) at `speed`, or { reason } it can't work.
   function makePlan(start, floorY, dx, dz, speed) {
     const found = findObstacle(start, floorY, dx, dz, cfg.reach);
     if (!found.box) return found;
+    if (found.box.ledge) return makeLedgePlan(start, dx, dz, speed, found);
     // Horizontal speed never changes during a vault: the drop on the far side takes as long as covering
     // landingDistance at your speed (a quicker drop when you're fast), never a slowed-down minimum time.
     const landingDistance = cfg.landingDistance;
@@ -157,6 +194,27 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
     if (plan.duration > cfg.maxSeconds) return { reason: 'moving too slowly' };
     if (!clearAt(plan.start)) return { reason: 'no room to start' };
     if (!pathClear(plan, 0, plan.duration)) return { reason: 'path or landing blocked' };
+    return { plan };
+  }
+
+  // Over a balcony rail: the usual lift and cross, then you let go in the air above the open floor (the controller's gravity
+  // does the fall, and the landing hurts: feel.fall). Nothing is lowered, so `landingY` stays at the top.
+  function makeLedgePlan(start, dx, dz, speed, found) {
+    const plan = {
+      ...found, start: start.clone(), dx, dz, speed, ledge: true,
+      top: Math.max(found.box.max.y + cfg.clearance, start.y),
+      landingDistance: cfg.landingDistance,
+      liftTime: Math.max(cfg.minLiftSeconds, found.near / speed),
+      crossTime: (found.far - found.near) / speed,
+      lowerTime: cfg.landingDistance / speed,
+      time: 0,
+    };
+    plan.landingY = plan.top;
+    plan.duration = plan.liftTime + plan.crossTime + plan.lowerTime;
+    if (plan.duration > cfg.maxSeconds) return { reason: 'moving too slowly' };
+    if (!clearAt(plan.start)) return { reason: 'no room to start' };
+    if (!pathClear(plan, 0, plan.duration)) return { reason: 'path blocked' };
+    if (!dropClear(plan)) return { reason: 'nowhere safe to drop' };
     return { plan };
   }
 
@@ -259,7 +317,7 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
       const plan = state;
       const nextTime = Math.min(plan.duration, plan.time + dt);
       const endDistance = plan.far + plan.landingDistance;
-      const supported = landingHeight(
+      const supported = plan.ledge || landingHeight(
         plan.start.x + plan.dx * endDistance, plan.start.z + plan.dz * endDistance, plan.landingY,
       ) === plan.landingY;
       // A moving body, closing door, or crowd shove cancels the motion at the last safe position.
@@ -274,7 +332,14 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
       player.position.copy(sample);
       previous.copy(sample);
       plan.time = nextTime;
-      if (plan.time >= plan.duration) {
+      if (plan.time >= plan.duration && plan.ledge) {
+        // Let go over the edge: nearly straight down, falling from the floor you stood on.
+        player.velocity.set(plan.dx * cfg.ledge.dropSpeed, 0, plan.dz * cfg.ledge.dropSpeed);
+        player.fallBase = plan.start.y;
+        player.grounded = false;
+        player.timeSinceGrounded = feel.movement.coyoteTime;
+        state = null;
+      } else if (plan.time >= plan.duration) {
         const keep = Math.max(0, Math.min(1, player.stats.vaultMomentumRetention));
         player.velocity.set(plan.dx * plan.speed * keep, 0, plan.dz * plan.speed * keep);
         player.grounded = true;

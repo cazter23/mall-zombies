@@ -57,6 +57,7 @@ export function createHaptics({ gamepad, input, state, health, events, config = 
     events.on('playerHit', ({ damage }) => {
       if (damage > 0 && !health.invulnerable && !health.isDead) pulse(config.damage);
     }),
+    events.on('playerFall', () => { if (!health.invulnerable && !health.isDead) pulse(config.damage); }),
     events.on('powerUpCollect', () => pulse(config.pickup)),
     events.on('playerDeath', stop),
     events.on('runReset', stop),

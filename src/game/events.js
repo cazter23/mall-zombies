@@ -22,6 +22,7 @@
 //   'mascotHeadPop' { zombie, headshot, source }         Sir Waffles' helmet came off at half health (whatever hit him)
 //   'playerHit'   { damage, zombie, knockback }          a zombie's swing (or a cart charge) landed;
 //                                                        knockback = { x, z } m/s shove or null
+//   'playerFall'  { drop, damage }                       a landing from a height hurt (feel.fall); damage is already taken
 //   'playerDeath' {}                                     after the death is registered (onPlayerDeath)
 //   'runEnd'      { summary }                            immutable final run totals, emitted once on player death
 //   'powerUpDrop' { id, position, seconds }               earned incentive appeared on clear floor

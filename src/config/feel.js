@@ -47,6 +47,15 @@ export const feel = {
     fallOutHeight: -20, // safety net: falling below this height (meters) puts you back at the spawn
   },
 
+  // Landing from a height hurts. The drop is measured from the highest point of one unbroken fall (a jump's peak counts)
+  // to where you land, so stairs, benches, counters and a jump off a 2 m platform are free. A vault over a balcony rail
+  // counts from the floor you stood on, not from the climb. Health regenerates, so even the big drops are survivable.
+  fall: {
+    safeDrop: 3, // meters you can fall for free
+    damagePerMeter: 12, // per meter beyond that: the 6.3 m drop off an upper floor costs ~40, a Shopper's hit
+    viewJoltDegrees: 5, // the view slams down on a damaging landing
+  },
+
   sprint: {
     duration: 4, // seconds of sprint in a full meter
     refillDelay: 1, // seconds after you stop sprinting before the meter refills
@@ -120,6 +129,14 @@ export const feel = {
     // it dips to look over the obstacle and tilts toward the side your legs swing out to.
     cameraDipDegrees: 16,
     cameraRollDegrees: 7,
+    // Balcony rails (glass barriers on an upper floor, props.railing): jump at one and you climb over and drop to the floor below.
+    // Only offered when there is open floor to land on, so you can't climb into a fountain, a kiosk or the escalator well.
+    ledge: {
+      maxHeight: 1.6, // the rails are 1.5 m (taller than a jump peaks), so this is what stops you climbing anything taller
+      dropSpeed: 2, // m/s outward when you let go: nearly straight down, not a leap
+      checkSpacing: 0.75, // meters between the spots checked along the way out
+      landingMaxY: 0.35, // the highest thing under where you'd land must be bare ground floor (no bench, fountain, kiosk or escalator)
+    },
   },
 
   look: {

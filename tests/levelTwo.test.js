@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { headlessGame } from './helpers/headlessGame.js'; // (first: it stubs the browser globals)
 import { LAYOUT } from '../src/maps/mall/mall.js';
+import { feel } from '../src/config/feel.js';
 
 const H = LAYOUT.hallway;
 const L2 = LAYOUT.level2;
@@ -297,7 +298,7 @@ test('debug Shift+T: to level 2 (repairing the escalator for free) and back down
   assert.ok(g.player.position.y < 0.01, 'back on the ground');
 });
 
-test('balcony: the voids look down into the hallway, nobody falls in from any side, and you can shoot down through the rails', () => {
+test('balcony: the voids look down into the hallway; you cannot walk in, a jump is a deliberate climb to the floor (or nothing), and you can shoot down through the rails', () => {
   const t = fixture({ repaired: true });
   const { g } = t;
   for (const v of L2.voids) {
@@ -307,9 +308,14 @@ test('balcony: the voids look down into the hallway, nobody falls in from any si
     // Sprint at it from all four sides (yaw: 0 faces -Z, PI/2 -X, PI +Z, -PI/2 +X)
     for (const [x, z, yaw] of [[cx, v.maxZ + 1.5, 0], [cx, v.minZ - 1.5, Math.PI], [v.maxX + 1.0, cz, Math.PI / 2], [v.minX - 1.0, cz, -Math.PI / 2]]) {
       g.player.teleport({ position: new THREE.Vector3(x, UPPER_Y, z), yaw });
-      for (let i = 0; i < 3; i++) { g.player.input.pressed.add('Space'); hold(t, ['KeyW', 'ShiftLeft'], 0.5); }
-      t.tick(60); // (land)
+      hold(t, ['KeyW', 'ShiftLeft'], 1.5);
+      t.tick(60);
       assert.equal(g.player.position.y, UPPER_Y, `still on level 2 after running at the void from (${x}, ${z})`);
+      g.player.teleport({ position: new THREE.Vector3(x, UPPER_Y, z), yaw });
+      for (let i = 0; i < 3; i++) { g.player.input.pressed.add('Space'); hold(t, ['KeyW', 'ShiftLeft'], 0.5); }
+      t.tick(120); // (land)
+      const y = g.player.position.y;
+      assert.ok(y === UPPER_Y || y <= feel.vault.maxHeight, `jumping at the void from (${x}, ${z}) ends on level 2 or on the hallway floor (furniture is fine), never stuck in between (y ${y})`);
     }
     // The rails stop walkers, not bullets: they are all ignoreShots.
     const rails = g.colliders.filter((b) => b.ignoreShots && b.min.x >= v.minX - 0.2 && b.max.x <= v.maxX + 0.2 && Math.abs(b.min.y - UPPER_Y) < 1e-6);

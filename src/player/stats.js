@@ -28,6 +28,7 @@ export function createPlayerStats() {
     slideDuration: feel.slide.duration,
     slideCooldown: feel.slide.cooldown,
 
+    fallDamageScale: 1, // landing damage multiplier (a future perk can lower it)
     vaultMaxHeight: feel.vault.maxHeight,
     vaultMomentumRetention: feel.vault.momentumRetention,
     meleeLungeMomentumRetention: feel.melee.entryMomentumKeep,
