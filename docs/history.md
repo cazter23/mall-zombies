@@ -1,5 +1,11 @@
 # Sunset Galleria: build history ("Current state")
 
+## 8 November 2026 — Box cutter helmet pops pay
+
+Knocking a Mascot's helmet off with the box cutter never paid the 100-point helmet-pop bonus: the listener wanted a headshot, and melee always reports a body hit (it ignores
+headshots, COD-style). The test passed because it faked a melee head hit. Now a box-cutter pop always pays (getting that close is the risk); a gun still needs the headshot.
+tests/mascot.test.js swings the real knife.
+
 ## 8 November 2026 — Skylar's influencer makeover
 
 Skylar now wears a cropped pink jacket, cream top, high-waisted dark trousers, chunky trainers and a crossbody bag.
