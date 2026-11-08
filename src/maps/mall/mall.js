@@ -43,6 +43,8 @@ import { buildStartRoomDetails } from './startRoomDetails.js';
 import { buildMegaMartDetails, MART_FIXTURES } from './megaMartDetails.js';
 import { buildMallAtmosphere } from './atmosphere.js';
 import { buildRestockMachine } from './restockMachine.js';
+import { buildClawCabinet } from './clawCabinet.js';
+import { clawMachine } from '../../config/clawMachine.js';
 import { buildLevelTwo } from './levelTwo.js';
 import { buildAtrium } from './atrium.js';
 import { buildHallwayLook } from './hallwayLook.js';
@@ -544,6 +546,9 @@ export function buildMall(scene, colliders) {
   const cinemaAmmo = buildRestockMachine({ kit, center: LAYOUT.cinema.restockMachine.x,
     wallAt: LAYOUT.cinema.lobby.maxZ - LAYOUT.cinema.restockMachine.wallInset, facing: -1, floorY: upperY });
 
+  // GRAB-A-GUN (game/features/clawMachine.js): its cabinets (mall/clawCabinet.js), one per site in config/clawMachine.js.
+  const clawSites = clawMachine.sites.map((s) => ({ id: s.id, zone: s.zone, cabinet: buildClawCabinet({ kit, back: s.back, faces: s.faces, floorY: s.floorY }) }));
+
   sign('EXIT  ·  MAIN HALL', {
     x: 0, y: 3.6, z: F.maxZ - 0.02, width: 3, height: 0.5, facing: -1,
     background: '#1d1626', color: '#63e6be',
@@ -859,6 +864,8 @@ export function buildMall(scene, colliders) {
     { kind: 'upgradeDesk', name: 'upgradedesk_hallway', zone: deskZone, position: serviceDesk.position, normal: serviceDesk.normal },
     // Store attachment counters: fit that attachment to the gun in your hand (g.pricing 'attachment').
     ...stores.spots.map((s) => ({ kind: 'attachmentCounter', name: `attachment_${s.id}`, zone: s.zone, attachment: s.id, position: s.position, normal: s.normal })),
+    // GRAB-A-GUN: one machine, live at one of its sites (it starts at the first every run).
+    { kind: 'clawMachine', name: 'clawMachine', zone: clawSites[0].zone, position: clawSites[0].cabinet.position, normal: clawSites[0].cabinet.normal, sites: clawSites },
   ];
 
   const doors = [startDoor, megaMartDoor, foodCourtDoor, serviceCorridorDoor, foodCourtMegaMartDoor, serviceCorridorFoodCourtDoor, escalatorDoor, atriumDoor, atriumPromenadeDoor, atriumMegaMartDoor, cinemaWing.door, cinemaConnection.door, departmentStoreDoor, departmentStoreStartRoomDoor, parking.door];

@@ -94,6 +94,9 @@ export const economy = {
     barcodeScanner: { weapon: 1750, ammo: 900 }, // weak sustained dps (180) but pierces 4 in a line, ~3x (Byte Me Electronics)
   },
 
+  // GRAB-A-GUN, the claw machine (config/clawMachine.js): one grab. A placeholder until the economy report checks it.
+  claw: { grab: 1000 },
+
   // Discounted prices (Flash Sales, game/pricing.js) are rounded to the nearest multiple of this.
   discountRoundTo: 10,
 

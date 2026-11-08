@@ -148,6 +148,10 @@ never overlap, walls never intrude into the walkway, sealed except where asked, 
 nav grid end to end and through a branch doorway), `interactions.test.js` buying against the real mall (every door and wall buy
 works from where you stand, both shortcuts buy from either side but not through adjacent walls, the cannon cannot be
 bought across its shortcut, the Nail Gun can't be bought through its wall, other floors are out of reach, facing matters),
+`clawMachine.test.js` GRAB-A-GUN through real input: the odds (by weight, no repeats, never the Staple Gun / a carried gun / one at
+Build-A-Blaster), sweep timing, the press decides the prize, a held button never drops it, controller X never reloads, walking away
+and death never hang it or leave a display, Play again equals a fresh game, sales / Employee Discount charge less and the Discount Code
+doesn't apply, wallet.refund isn't income, the replace ticket, and each cabinet: one tall collider, clear stand point, reachable front.
 `ammoCache.test.js` the vending machine (refills any gun in hand, flat price, label follows the gun, needs its area open, not
 through the wall, solid + too tall to climb, zombies can reach its front; Atrium/Cinema machines also exercise real F purchases,
 correct floor height, ownership and run reset), `balance.test.js` GUN ROLES on real measured numbers

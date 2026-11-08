@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { buildMall, LAYOUT } from '../src/maps/mall/mall.js';
 import { storeRoom } from '../src/maps/mall/stores.js';
+import { clawMachine } from '../src/config/clawMachine.js';
 
 const ctx = new Proxy({}, {
   get: (target, key) => (key in target ? target[key] : (target[key] = () => ctx)),
@@ -66,6 +67,11 @@ test('no coplanar (flickering) surfaces inside the stores, the Customer Service 
     maxZ: LAYOUT.parkingLot.rect.maxZ + .4 });
   regions.push({ name: 'booth', minX: desk.center - 2.1, maxX: desk.center + 2.1, minZ: desk.wallAt - 2.3, maxZ: desk.wallAt + 0.1 });
   const restock = LAYOUT.restockMachine; // the RESTOCK-O-MATIC, its pad and its signs
+  for (const site of clawMachine.sites) { // GRAB-A-GUN's cabinets (mall/clawCabinet.js), with a margin round each
+    const r = 1.9;
+    regions.push({ name: `claw_${site.id}`, minX: site.back.x - r, maxX: site.back.x + r, minZ: site.back.z - r, maxZ: site.back.z + r,
+      minY: site.floorY - 0.1, maxY: site.floorY + 2.6 });
+  }
   regions.push({ name: 'restock', minX: restock.x - 1.2, maxX: restock.x + 1.2, minZ: LAYOUT.foodCourt.maxZ - 2.4, maxZ: LAYOUT.foodCourt.maxZ + 0.1 });
   const at = LAYOUT.atrium.rect; // the Grand Atrium, its fountain, kiosks and both floors
   regions.push({ name: 'atrium', minX: at.minX - 0.4, maxX: at.maxX + 0.4, minZ: at.minZ - 0.7, maxZ: at.maxZ + 0.4 });

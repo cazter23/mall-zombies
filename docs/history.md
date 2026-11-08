@@ -1,5 +1,15 @@
 # Sunset Galleria: build history ("Current state")
 
+## 9 November 2026 - GRAB-A-GUN, phase 1: the claw machine, plain
+
+The mystery box you work (docs/claw-machine-plan.md). One cabinet on the Hallway's south wall at x 8. Hold F to pay 1,000 (g.pricing 'claw' 'grab'): three
+coloured capsules fall into the pit and the screen names them. The claw sweeps the lanes; PRESS F once to drop it, and the capsule under it is your gun.
+It lifts to the chute, where the gun waits 15 s (hold F to take it). It drops by itself after 6 s, so walking away never hangs it.
+Prizes: the seven wall guns by weight, never the Staple Gun, never a gun you carry or have at Build-A-Blaster (Refurbished prizes come in phase 3).
+Engine pieces: interactions.js `instant` items (fire on a fresh press, set the controller-X "used" flag so a drop isn't a reload) and `use(purchase)`
+(the actual charge, for a refund); wallet.refund (lowers totalSpent, not income); the 'claw' pricing category (the Discount Code already excludes it).
+Checked headless (tests/clawMachine.test.js), not yet in the browser.
+
 ## 9 November 2026 - Gun upgrades you can see, and the Extended Warranty rework
 
 Looked at from behind the gun, a Warranty seal and a Build-A-Blaster patch were tiny stickers on the face you rarely see, and the build's patch covered the warranty seal
@@ -13,7 +23,7 @@ Warranties reworked (game/warranty.js): Deluxe is handling (x1.1 damage, +25% ma
 magazine, 3,000 up to 10,000). A replaced gun leaves its warranty on file; the desk moves it onto the gun in hand for a quarter of that tier's price. Not done: a visible
 cue on the gun for the build's quality beyond the pillow size, and the other seven guns' collars were only checked on a contact sheet, not in hand.
 
-## 8 November 2026 — Idle saver (focus mode)
+## 8 November 2026 ï¿½ Idle saver (focus mode)
 
 The title screen draws a full post-processed flyover every frame, so a tab left open on the menu kept a CPU core and the GPU busy all day. Now, while the game is
 not running (title, pause and results screens), it goes easy when nobody is there: after 30 s with nothing pressed (or the window unfocused) it draws 10 frames a

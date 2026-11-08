@@ -106,6 +106,11 @@ export function snapshot(g) {
     zombies: g.shootables.length,
     zombiesInWorld: g.zombies.zombies.length,
     features: g.features.list.map(({ feature }) => feature.name),
+    // GRAB-A-GUN: where it is, what it's doing, and whether a grab or a prize in the chute is left over.
+    clawMachine: (() => {
+      const claw = g.features.list.find(({ feature }) => feature.kind === 'clawMachine')?.instance;
+      return claw ? { ...claw.status, grab: !!claw.grab, display: !!claw.display } : null;
+    })(),
     interactPrompt: g.interactions.prompt,
     reloading: g.gun.weapon.isReloading,
     discounts: PRICE_CATEGORIES.map((c) => g.pricing.discountOf(c)),

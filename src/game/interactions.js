@@ -17,7 +17,10 @@
 //   position     THREE.Vector3 the player interacts with (distance + facing are measured to it)
 //   seeThrough   optional [Box3]: solids that don't block the line of sight to it (a door's own shutter)
 //   available()  false once it can't be used any more (an opened door)
-//   use()        do the thing (points are already spent)
+//   use(purchase) do the thing (points are already spent). purchase = { label, cost, kind, id }: cost is what was ACTUALLY
+//                charged (after any sale or coupon), for a feature that may give it back (GRAB-A-GUN's plush). Most ignore it.
+//   instant      optional: fires on the PRESS, with no hold (GRAB-A-GUN's claw drop is a timed press). Still needs a fresh press
+//                while looking at it, and on controller X it never turns into a reload.
 //   kind, id     optional, for the 'purchase' event ('door' / 'weapon' / 'ammo' / 'ammoCache', the thing's id);
 //                read BEFORE use(), like the label (buying a gun turns its prompt into "<Gun> ammo")
 //
@@ -106,7 +109,7 @@ export function createInteractions({ input, player, wallet, sound = null, onRelo
     // What is being bought, as it is NOW (use() can change it: a bought gun's prompt becomes its ammo).
     const purchase = { label: item.label, cost: item.cost, kind: item.kind ?? 'other', id: item.id ?? null };
     if (wallet.spend(purchase.cost)) {
-      const result = item.use();
+      const result = item.use(purchase);
       if (result?.areaId) {
         purchase.areaId = result.areaId;
         purchase.openedDoorIds = result.openedDoorIds;
@@ -140,6 +143,7 @@ export function createInteractions({ input, player, wallet, sound = null, onRelo
         detail: focused.detail ?? '',
         owned: focused.owned ?? false,
         priceLabel: focused.priceLabel ?? null, // shown instead of the number ("Free")
+        instant: focused.instant ?? false, // a press, not a hold
         blocked: focused.blocked ?? null,
         shortfall: Math.max(0, focused.cost - wallet.points),
         cost: focused.cost,
@@ -176,7 +180,19 @@ export function createInteractions({ input, player, wallet, sound = null, onRelo
       // Nothing to buy: leave the presses alone (controller X must still reach the gun as reload).
       if (!focused) return;
 
-      if (input.consumeAction('interact') || sharedPressedNow) armed = true;
+      const pressedNow = input.consumeAction('interact') || sharedPressedNow;
+      // An instant item: the fresh press itself is the purchase (no hold, no progress bar). On a shared button (controller X)
+      // it counts as used, so letting go doesn't reload.
+      if (focused.instant) {
+        armed = false;
+        holdTime = 0;
+        if (pressedNow) {
+          tryBuy(focused);
+          if (sharedHeld) sharedUsed = true;
+        }
+        return;
+      }
+      if (pressedNow) armed = true;
       if (armed && input.actionDown('interact')) {
         holdTime += dt;
         if (holdTime >= cfg.holdSeconds) {

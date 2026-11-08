@@ -567,7 +567,7 @@ export function createHud() {
       interactOriginal.hidden = !info.sale || !(info.originalCost > info.cost);
       interactOriginal.textContent = `${(info.originalCost ?? info.cost).toLocaleString('en-US')}`;
       // Ordinary purchases need one line. Keep the terms only where they affect an upgrade decision.
-      const detail = ['attachment', 'workshop', 'ritual', 'tier'].includes(info.kind) ? info.detail ?? '' : '';
+      const detail = ['attachment', 'workshop', 'ritual', 'tier', 'claw', 'clawAction'].includes(info.kind) ? info.detail ?? '' : '';
       if (detail !== lastInteractDetail) {
         lastInteractDetail = detail;
         interactDetail.replaceChildren(...detail.split(' · ').filter(Boolean).map(term => {

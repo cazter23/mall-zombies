@@ -18,6 +18,7 @@ import { buildUpgradeDesk } from './upgradeDesk.js';
 import { buildAttachmentCounter } from './attachmentCounter.js';
 import { buildWorkshop } from './workshop.js';
 import { buildHorror } from './horror.js';
+import { buildClawMachine } from './clawMachine.js';
 
 const builders = {
   wallBuy: buildWallBuy, // buy a gun off the wall, or its ammo once you own it
@@ -26,6 +27,7 @@ const builders = {
   attachmentCounter: buildAttachmentCounter, // a store's attachment: fit it to the gun in your hand
   workshop: buildWorkshop,
   horror: buildHorror, // the horror layer: lights die and the power cuts out as the rounds climb (visual only)
+  clawMachine: buildClawMachine, // GRAB-A-GUN: pay, time the drop, take the gun from the chute
 };
 
 export const FEATURE_KINDS = Object.keys(builders);

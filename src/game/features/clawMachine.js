@@ -1,0 +1,300 @@
+// =============================================================================
+// GRAB-A-GUN, the claw machine (map feature kind 'clawMachine'; numbers in config/clawMachine.js; the plan:
+// docs/claw-machine-plan.md). The mystery box, but you work it:
+//   idle      hold interact to pay (g.pricing 'claw' 'grab'). Three capsules fall into the pit, one per lane, each named on
+//             the screen and the ticket.
+//   sweeping  the claw travels across the lanes and back. PRESS interact once (an `instant` item: a timed press can't wait
+//             for a hold) and it drops on the lane it's over. Nothing pressed after autoDropSeconds: it drops by itself.
+//             The capsule under it at that moment IS the prize: nothing after the press changes it.
+//   lifting   liftSeconds of claw going down, up and over to the chute (for show).
+//   ready     the gun sits in the chute for takeSeconds: hold interact to take it, or it's gone.
+// Then it's idle again. You keep moving and shooting the whole time; walking away never hangs it (it drops and times out).
+//
+// The prize pool: the wall guns (never the Staple Gun: the Courtesy Loaner relies on it never being bought again), minus any
+// gun you carry or have away at Build-A-Blaster.
+//
+// DOM-free: it announces on g.events ('clawGrab', 'clawDrop', 'clawPrize'), main.js reads .status. Its only runtime objects
+// are the capsules and claw (the cabinet's rig) and the won gun's display in the chute; reset() clears them.
+//
+// feature: { kind: 'clawMachine', name, zone, position, normal, sites: [{ id, zone, cabinet: { position, normal, screen, rig } }] }
+//   (zone/position/normal: the first site's, where every run starts)
+//
+//   rollCapsules(pool, plushChance, random) -> one entry per lane (a pool entry, or null if the pool ran dry)
+//   sweepPosition(t, period) -> 0..1 across the lanes;  laneAt(position) -> lane index;  sweepSeconds(grabNumber) -> period
+//   prizePool(gun) -> [{ id, weight, capsule }]
+// =============================================================================
+
+import * as THREE from 'three';
+import { clawMachine as cfg } from '../../config/clawMachine.js';
+import { weapons } from '../../config/weapons.js';
+import { buildWeaponDisplay } from '../../weapons/models/index.js';
+import { attachmentsOf, tierById, tierOf } from '../../weapons/upgrades.js';
+import { buildOf } from '../../config/workshop.js';
+
+/**
+ * Draw one capsule per lane by weight from `pool` ([{ id, weight, ... }]), with no repeats in one grab. `random` is
+ * Math.random or a seeded stand-in. A lane the pool can't fill (fewer guns than lanes) stays null.
+ */
+export function rollCapsules(pool, plushChance = 0, random = Math.random, lanes = cfg.lanes) {
+  const left = pool.filter((p) => p.weight > 0);
+  const out = [];
+  for (let lane = 0; lane < lanes; lane++) {
+    const total = left.reduce((sum, p) => sum + p.weight, 0);
+    if (!(total > 0)) { out.push(null); continue; }
+    let roll = random() * total;
+    let index = 0;
+    while (index < left.length - 1 && roll >= left[index].weight) roll -= left[index++].weight;
+    out.push({ ...left[index] });
+    left.splice(index, 1);
+  }
+  return out;
+}
+
+/** Where the claw is across the lanes at `t` seconds into a sweep: 0 (first lane's edge) .. 1 (last lane's edge) and back. */
+export function sweepPosition(t, period) {
+  const phase = ((t % period) + period) % period / period;
+  return phase < 0.5 ? phase * 2 : 2 - phase * 2;
+}
+
+/** The lane under the claw at a sweep position (each lane is an equal share of the travel). */
+export const laneAt = (position, lanes = cfg.lanes) => Math.min(lanes - 1, Math.max(0, Math.floor(position * lanes)));
+
+/** One trip there and back, on this site's `grabNumber`-th grab (1 = the first): quicker each grab, down to minSeconds. */
+export function sweepSeconds(grabNumber) {
+  const { firstSeconds, stepSeconds, minSeconds } = cfg.sweep;
+  return Math.max(minSeconds, firstSeconds - stepSeconds * (grabNumber - 1));
+}
+
+/** The guns a grab can offer you right now: every prize gun you don't carry and haven't handed to Build-A-Blaster. */
+export function prizePool(gun) {
+  return Object.entries(cfg.prizes)
+    .filter(([id]) => weapons[id] && id !== 'stapleGun' && !gun.owns(id) && gun.away?.def.id !== id)
+    .map(([id, prize]) => ({ id, weight: prize.weight, capsule: prize.capsule }));
+}
+
+/** "Platinum Rivet Rifle with 2 attachments", '"Gerald" (Nail Gun)': what taking a prize would cost you. */
+export function describeCarried(def, mods = []) {
+  const tier = tierOf(mods);
+  const name = `${tier === 'standard' ? '' : `${tierById(tier).name} `}${def.name}`;
+  const fitted = Object.keys(attachmentsOf(mods)).length;
+  const build = buildOf(mods)?.name;
+  const withParts = fitted ? `${name} with ${fitted} attachment${fitted === 1 ? '' : 's'}` : name;
+  return build ? `"${build}" (${withParts})` : withParts;
+}
+
+const capsuleColor = (capsule) => (capsule ? cfg.capsules[capsule.capsule].color : null);
+const prizeName = (capsule) => (capsule ? weapons[capsule.id].name : 'Empty');
+
+export function buildClawMachine(feature, { scene, map, events, pricing, interactions, gun, state, sound }) {
+  const sites = feature.sites;
+  let site = sites[0];
+  let phase = 'idle'; // 'idle' | 'sweeping' | 'lifting' | 'ready'
+  let grab = null; // { number, capsules, paid, t, period, lane, prize, timer }
+  let grabsHere = 0; // grabs paid for at this site
+  let display = null; // the won gun, in the chute
+
+  const cabinet = () => site.cabinet;
+  const open = () => map.zones[site.zone].open;
+  const lanePosition = () => sweepPosition(grab.t, grab.period);
+  const currentLane = () => laneAt(lanePosition());
+  const laneU = (position) => {
+    const { laneU: us } = cabinet().rig;
+    const first = us[0] - (us[1] - us[0]) / 2; // the travel runs from the first lane's outer edge to the last's
+    const last = us[us.length - 1] + (us[1] - us[0]) / 2;
+    return first + (last - first) * position;
+  };
+
+  function showDisplay(id) {
+    const { chute } = cabinet().rig;
+    const holder = new THREE.Group();
+    holder.name = 'clawPrize';
+    holder.position.copy(chute.position);
+    holder.lookAt(chute.position.x + chute.normal.x, chute.position.y, chute.position.z + chute.normal.z);
+    const model = buildWeaponDisplay(weapons[id]);
+    model.rotation.y = Math.PI / 2; // lying along the tray, its side to you
+    model.scale.setScalar(cfg.cabinet.prizeScale);
+    holder.add(model);
+    scene.add(holder);
+    display = holder;
+  }
+
+  function hideDisplay() {
+    if (!display) return;
+    display.removeFromParent();
+    display.traverse((o) => {
+      o.geometry?.dispose?.();
+      if (Array.isArray(o.material)) o.material.forEach((m) => m.dispose?.());
+      else o.material?.dispose?.();
+    });
+    display = null;
+  }
+
+  function clearRig() {
+    cabinet().rig.reset();
+  }
+
+  function pay(purchase) {
+    grabsHere += 1;
+    const capsules = rollCapsules(prizePool(gun));
+    grab = { number: grabsHere, capsules, paid: purchase?.cost ?? 0, t: 0, period: sweepSeconds(grabsHere), lane: null, prize: null, timer: 0 };
+    phase = 'sweeping';
+    capsules.forEach((capsule, lane) => cabinet().rig.setCapsule(lane, capsuleColor(capsule)));
+    sound?.play('ritualJingle');
+    events.emit('clawGrab', { siteId: site.id, capsules: capsules.map((c) => (c ? { gunId: c.id, capsule: c.capsule } : null)) });
+  }
+
+  function drop(reason) {
+    grab.lane = currentLane();
+    grab.prize = grab.capsules[grab.lane];
+    grab.timer = 0;
+    phase = 'lifting';
+    sound?.play('leverClunk');
+    events.emit('clawDrop', { lane: grab.lane, gunId: grab.prize?.id ?? null, reason });
+  }
+
+  // The prize is gone (taken or timed out) or there was none: ready for the next grab.
+  function finish() {
+    hideDisplay();
+    clearRig();
+    grab = null;
+    phase = 'idle';
+  }
+
+  function take() {
+    const { id } = grab.prize;
+    gun.give(weapons[id]); // (the base gun: already carried = a refill, a free slot = added, else it replaces the gun in hand)
+    sound?.play('purchase');
+    events.emit('clawPrize', { gunId: id, refurbished: null });
+    finish();
+  }
+
+  function updateLift(dt) {
+    grab.timer += dt;
+    const f = Math.min(1, grab.timer / cfg.liftSeconds);
+    const { rig } = cabinet();
+    const over = rig.laneU[grab.lane];
+    if (f < 0.3) rig.setClaw(over, f / 0.3);
+    else if (f < 0.4) {
+      if (f >= 0.35 && grab.prize) rig.carry(grab.lane);
+      rig.setClaw(over, 1);
+    } else if (f < 0.7) rig.setClaw(over, 1 - (f - 0.4) / 0.3);
+    else rig.setClaw(over + (rig.chuteU - over) * ((f - 0.7) / 0.3), 0);
+    if (f < 1) return;
+    clearRig();
+    if (!grab.prize) { finish(); return; }
+    phase = 'ready';
+    grab.timer = 0;
+    showDisplay(grab.prize.id);
+    sound?.play('chuteThunk');
+  }
+
+  // --- The screen ---
+  function screenText() {
+    if (!open()) return { title: cfg.name, lines: ['', 'CLOSED', ''], note: map.zones[site.zone].label.toUpperCase() };
+    if (phase === 'idle') {
+      const price = pricing.priceOf('claw', 'grab');
+      return { title: cfg.name, lines: ['EVERYONE\'S', 'A WINNER*', `${price} PTS`], highlight: 2, note: cfg.screen.idle,
+        tone: pricing.discountOf('claw') > 0 ? '#ffd23f' : '#ff7ac4' };
+    }
+    const lines = grab.capsules.map((c) => prizeName(c).toUpperCase());
+    if (phase === 'sweeping') {
+      return { title: 'DROP NOW!', lines, highlight: currentLane(), note: `${Math.ceil(Math.max(0, cfg.autoDropSeconds - grab.t))}`, tone: '#7dffb0' };
+    }
+    if (phase === 'lifting') return { title: cfg.screen.lifting, lines, highlight: grab.lane, note: '...', tone: '#ffd23f' };
+    return { title: cfg.screen.prize, lines: ['', prizeName(grab.prize).toUpperCase(), ''], highlight: 1,
+      note: `${Math.ceil(Math.max(0, cfg.takeSeconds - grab.timer))}`, tone: '#7dffb0' };
+  }
+  const refreshScreen = () => cabinet().screen.show(screenText());
+
+  // --- The three interactions, one per step (only one is ever available, all at the glass front) ---
+  const replaces = () => {
+    if (!grab?.prize || gun.owns(grab.prize.id)) return null;
+    if (gun.slots.length < 2) return null; // a free slot (with the Courtesy Loaner in hand too, like a wall buy)
+    return describeCarried(gun.def, gun.modsFor(gun.def.id));
+  };
+  interactions.add({
+    label: cfg.name,
+    title: `${cfg.name} · Win a gun`,
+    get detail() { return 'Three capsules · You choose when to drop'; },
+    verb: 'play',
+    kind: 'claw', // (the only claw step with a price: the drop and the take are free 'clawAction's)
+    id: 'grab',
+    get cost() { return pricing.priceOf('claw', 'grab'); },
+    get position() { return cabinet().position; },
+    available: () => phase === 'idle' && open(),
+    use: pay,
+  });
+  interactions.add({
+    get label() { return `Drop the claw · ${prizeName(grab.capsules[currentLane()])}`; },
+    get title() { return this.label; },
+    get detail() { return grab.capsules.map((c, lane) => `${lane === currentLane() ? '▸ ' : ''}${prizeName(c)}`).join(' · '); },
+    verb: 'drop',
+    kind: 'clawAction',
+    id: 'drop',
+    cost: 0,
+    priceLabel: 'Press',
+    instant: true, // the press IS the drop: no hold
+    quiet: true, // (not a purchase)
+    get position() { return cabinet().position; },
+    available: () => phase === 'sweeping',
+    use: () => drop('press'),
+  });
+  interactions.add({
+    get label() { return `${prizeName(grab.prize)} won`; },
+    get title() { return `Take the ${prizeName(grab.prize)}`; },
+    get detail() {
+      const lost = replaces();
+      return gun.owns(grab.prize.id) ? 'You have one · Refills it' : lost ? `Replaces your ${lost}` : 'Fills your free slot';
+    },
+    verb: 'take',
+    kind: 'clawAction',
+    id: 'take',
+    cost: 0,
+    priceLabel: 'Free',
+    quiet: true,
+    get position() { return cabinet().position; },
+    available: () => phase === 'ready',
+    use: take,
+  });
+
+  refreshScreen();
+
+  return {
+    get phase() { return phase; },
+    get site() { return site; },
+    get grab() { return grab; },
+    get display() { return display; },
+    /** The lane under the claw right now (null unless sweeping). */
+    get lane() { return phase === 'sweeping' ? currentLane() : null; },
+    /** For the HUD: where the machine is and what it's doing. */
+    get status() {
+      return { siteId: site.id, zone: site.zone, area: map.zones[site.zone].label, open: open(), phase };
+    },
+
+    // (features only tick while playing and alive: a grab freezes with the game, and death can't pay anyone)
+    update(dt) {
+      if (state.over) return;
+      if (phase === 'sweeping') {
+        grab.t += dt;
+        cabinet().rig.setClaw(laneU(lanePosition()), 0);
+        if (grab.t >= cfg.autoDropSeconds) drop('time');
+      } else if (phase === 'lifting') {
+        updateLift(dt);
+      } else if (phase === 'ready') {
+        grab.timer += dt;
+        if (grab.timer >= cfg.takeSeconds) finish(); // (no refund: you won it and walked away)
+      }
+      refreshScreen();
+    },
+
+    reset() {
+      hideDisplay();
+      for (const s of sites) s.cabinet.rig.reset();
+      site = sites[0];
+      phase = 'idle';
+      grab = null;
+      grabsHere = 0;
+      refreshScreen();
+    },
+  };
+}

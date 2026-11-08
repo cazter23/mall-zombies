@@ -67,6 +67,9 @@
 //   'buildFired'  { stuffing, heart, weaponId, hit: [zombie] }  a finished build's Heart fired its stuffing (game/features/workshopStuffings.js)
 //   'limitedEditionDrop'   { id, position, pa }           a bag-carrying zombie dropped a Limited Edition (game/features/limitedEditions.js)
 //   'limitedEditionFitted' { id, weapon, pa }             the player walked over it
+//   'clawGrab'    { siteId, capsules: [{ gunId, capsule } | null] }   GRAB-A-GUN was paid: the capsules in its lanes (game/features/clawMachine.js)
+//   'clawDrop'    { lane, gunId, reason 'press' | 'time' }  the claw dropped; gunId = the prize (null: an empty lane)
+//   'clawPrize'   { gunId, refurbished }                 the player took the prize from the chute (refurbished = the attachment, or null)
 //   'runReset'    {}                                     after Play again reset everything
 // =============================================================================
 
