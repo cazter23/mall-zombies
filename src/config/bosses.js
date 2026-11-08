@@ -9,6 +9,11 @@ export const bossTiming = {
 };
 
 export const bossVouchers = {
+  masterKey: {
+    name: 'Master Key', category: 'door', fraction: 1, pointsInstead: 1250,
+    color: 0x9adbd7, icon: 'door', sound: 'incentiveRestock',
+    pa: { kicker: 'Access granted', text: 'One free area unlock. Please return the key to a member of staff who is still alive.' },
+  },
   signedApproval: {
     name: 'Signed Approval', category: 'tier', ids: ['deluxe', 'premium'], fraction: 1,
     pointsInstead: 1500, color: 0xe4c779, icon: 'ticket', sound: 'incentiveRestock',
@@ -17,6 +22,45 @@ export const bossVouchers = {
 };
 
 export const bossTypes = {
+  guard: {
+    ...shopper, id: 'guard', boss: true, name: 'Officer Doug Kettle', title: 'Loss Prevention',
+    barNotice: 'Headshots void this lockdown', firstRounds: [9, 11], healthMultiplier: 10,
+    slowStrength: 0.5, speed: 3, speedVariation: 0, gaits: null, gaitsByRound: null, bagChance: 0,
+    shirtColors: [0x496782], pantsColors: [0x24334b], shoeColor: 0x1b1c26,
+    modelScale: { width: 1.3, height: 1.06 },
+    attack: { ...shopper.attack, damage: 40, windupSeconds: 0.7, minWindupSeconds: 0.7, windupShrinkPerRound: 0 },
+    charge: { ...zombieTypes.cartPusher.charge, minRange: 3, maxRange: 9, laneHalfWidth: 0.4,
+      telegraphSeconds: 0.8, speed: 10, maxMeters: 8, overshootMeters: 1.5, noseReach: 0.45,
+      hitHalfWidth: 0.35, damage: 40, knockback: 0, crashSeconds: 2, crashDamageTakenMultiplier: 1.5, cooldownSeconds: 5 },
+    taserSlow: { seconds: 1, speed: 0.65 },
+    sounds: { telegraph: { name: 'paChime', maxDistance: 24 } },
+    lockdown: { thresholds: [0.75, 0.35], alarmSeconds: 3, seconds: 25, headshots: 3, backup: 2, backupType: 'mallWalker' },
+    introBanner: { kicker: 'Loss Prevention advisory', text: 'Officer Kettle has mistaken survival for suspicious behaviour.' },
+    introSound: 'paChime', reward: 'masterKey',
+    phases: {
+      alarm: { kicker: 'Lockdown in three seconds', text: 'For your safety, your exits are being removed. Three headshots cancel this service.' },
+      lockdown: { kicker: 'Area secured', text: 'Please remain calm and available for questioning.' },
+      radioBroken: { kicker: 'Radio disconnected', text: 'Loss Prevention is experiencing a loss of reception.' },
+      released: { kicker: 'Lockdown lifted', text: 'Thank you for your patience during this avoidable inconvenience.' },
+    },
+    costume: {
+      torso: [
+        { color: 0x212433, size: [0.5, 0.09, 0.32], at: [0, 0.12, 0] },
+        { color: 0xe8c86a, size: [0.12, 0.14, 0.035], at: [-0.12, 0.43, -0.15] },
+        { color: 0x1d202e, size: [0.12, 0.2, 0.08], at: [0.16, 0.36, -0.16] },
+        { color: 0x1d202e, size: [0.025, 0.16, 0.025], at: [0.19, 0.53, -0.16] },
+      ],
+      head: [
+        { color: 0x26364b, size: [0.38, 0.13, 0.34], at: [0, 0.34, 0] },
+        { color: 0x26364b, size: [0.36, 0.035, 0.19], at: [0, 0.28, -0.2] },
+        { color: 0xe8c86a, size: [0.08, 0.09, 0.02], at: [0, 0.34, -0.18] },
+      ],
+      hand: [
+        { color: 0x292e3d, size: [0.09, 0.09, 0.4], at: [0, 0, -0.25] },
+        { color: 0xd5f8e8, size: [0.13, 0.13, 0.08], at: [0, 0, -0.48] },
+      ],
+    },
+  },
   manager: {
     ...shopper, id: 'manager', boss: true, name: 'Dennis Fairweather', title: 'General Manager',
     barNotice: 'Mandatory all-staff attendance', firstRounds: [12, 13, 14], healthMultiplier: 10,

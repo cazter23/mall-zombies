@@ -1,5 +1,7 @@
 # Sunset Galleria: folder structure (every module)
 
+Guard: zombies/bosses/guard.js owns alarm, physical shutter closure, radio headshots, reinforcement retries and taser slowdown. maps/areaBarriers.js supplies areaAt and barriersAround through loadMap. Shutters expose kind; ownership is never reset by lockdown. rounds.spawnBackup consumes the existing toSpawn budget and respects maxAlive.
+
 Boss encounters: bosses/manager.js owns meetings/reports; bosses/employeeModel.js mounts configured costume parts and owns the temporary whiteboard. game/bossVouchers.js wires carried-gun/area eligibility and points conversion into pricing. powerUps.js and powerUpView.js deliver voucher pickups through the existing reward queue.
 
 > Moved out of CLAUDE.md (verbatim) so the file every session loads stays small. One entry per module: what it is for and its interface. Read the entries for the modules you are about to change (grep for the file name).

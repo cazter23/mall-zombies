@@ -43,6 +43,8 @@ test('uninterrupted meeting buffs every ordinary survivor, then expires', t => {
     assert.equal(z.hold, null); assert.equal(z.speedMultiplier, cfg.meeting.speed); assert.equal(z.damageMultiplier, cfg.meeting.damage);
   }
   assert.equal(boss.damageMultiplier, 1);
+  tick(Math.ceil(cfg.report.interval / dt) + 1);
+  assert.equal(staff.damageMultiplier, cfg.meeting.damage, 'a Direct Report cannot replace the longer meeting damage buff');
   // Stop further reports; this checks the existing buff's own timer.
   boss.takeHit({ damage: boss.health, part: 'body' });
   tick(Math.ceil(cfg.meeting.buffSeconds / dt) + 1);

@@ -1,5 +1,7 @@
 # Sunset Galleria: what each test file covers
 
+`tests/guard.test.js` covers lockdowns in every area, occupancy waiting, ownership preservation, three radio headshots, expiry and cleanup on every exit, quota-funded backup and round completion, taser telegraph/damage/movement/slow expiry/miss vulnerability, and Master Key door redemption/conversion.
+
 `tests/manager.test.js` covers exact meeting cancellation, failure buff expiry, report target cap/visibility, every meeting cleanup path, reward collection, booth redemption and automatic conversion at the voucher tier cap.
 
 `tests/debugCommands.test.js` also checks the overlay's grouped commands, selected next gun, active boss,

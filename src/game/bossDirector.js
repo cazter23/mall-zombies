@@ -2,8 +2,9 @@ import { bossTiming, bossTypes } from '../config/bosses.js';
 import { economy, maxAliveForRound, zombieCountForRound } from '../config/economy.js';
 import { createJanitorBehavior } from '../zombies/bosses/janitor.js';
 import { createManagerBehavior } from '../zombies/bosses/manager.js';
+import { createGuardBehavior } from '../zombies/bosses/guard.js';
 
-const behaviors = { janitor: createJanitorBehavior, manager: createManagerBehavior };
+const behaviors = { janitor: createJanitorBehavior, manager: createManagerBehavior, guard: createGuardBehavior };
 
 export function chooseBossSchedule(random = Math.random) {
   const intros = new Set(Object.values(economy.zombieMix).map(({ fromRound }) => fromRound));
@@ -15,7 +16,7 @@ export function chooseBossSchedule(random = Math.random) {
   return new Map([...schedule].sort(([a], [b]) => a - b));
 }
 
-export function createBossDirector({ events, rounds, zombies, scene, colliders, player, stats, powerUps, state }) {
+export function createBossDirector({ events, rounds, zombies, scene, colliders, player, stats, powerUps, state, map }) {
   let schedule = null;
   let active = null;
   let behavior = null;
@@ -37,7 +38,7 @@ export function createBossDirector({ events, rounds, zombies, scene, colliders, 
     active = zombie;
     spawned = true;
     behavior = behaviors[id]({
-      zombie, scene, colliders, player, powerUps, zombies,
+      zombie, scene, colliders, player, powerUps, zombies, rounds, map,
       onPhase: (phase) => events.emit('bossPhase', { zombie, phase, round: rounds.round }),
     });
     events.emit('bossSpawn', { zombie, round: rounds.round });
@@ -50,6 +51,8 @@ export function createBossDirector({ events, rounds, zombies, scene, colliders, 
     retry = 0;
   });
   events.on('roundDiscard', clear);
+  events.on('hit', hit => { if (hit.target === active) behavior?.onHit?.(hit); });
+  events.on('playerHit', hit => { if (hit.zombie === active) behavior?.onPlayerHit?.(hit); });
   events.on('playerDeath', () => {
     clear();
     zombies.clearBosses();

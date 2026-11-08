@@ -337,7 +337,7 @@ export function createGame({
     view: createPowerUpView(scene, colliders),
   });
   configureBossVouchers({ pricing, wallet, map, gun, state });
-  const bosses = createBossDirector({ events, rounds, zombies, scene, colliders, player, stats, powerUps, state });
+  const bosses = createBossDirector({ events, rounds, zombies, scene, colliders, player, stats, powerUps, state, map });
   let displayedBoss = null, displayedBossHealth;
   function updateBossBar(zombie) {
     const hp = zombie?.health;

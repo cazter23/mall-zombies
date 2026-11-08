@@ -26,6 +26,7 @@ export const economy = {
     mascot: 300,
     janitor: 300,
     manager: 1000,
+    guard: 750,
   },
 
   // Special zombie types mixed into the waves (every other spawn is a Shopper).

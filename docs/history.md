@@ -1,5 +1,9 @@
 # Sunset Galleria: build history ("Current state")
 
+## Bosses phase 3: Officer Doug Kettle
+
+Added a telegraphed taser lunge, miss vulnerability, short player slowdown, radio lockdowns and quota-funded Mall Walker backup. The map interface finds surrounding shutters without touching area ownership; occupied shutters wait, and cleanup runs before map reset. Three headshots during a call permanently break the radio for that encounter. Master Key vouchers redeem through normal door pricing or convert to 1250 points. Also separated Manager report/meeting buff timers so a report cannot shorten meeting damage buffs.
+
 ## Bosses phase 2: Dennis Fairweather
 
 Added Direct Report, interruptible Staff Meetings, visible whiteboard and Signed Approval pickups. The voucher grants one carried-gun tier through Premium; if all carried guns have reached that limit, it converts to 1500 points. The separate voucher slot survives sales and Employee Discount. Merged the concurrent order-form work and preserved its quiet interactions/menu handling. Phase 1 passed 780 tests and the production build.
