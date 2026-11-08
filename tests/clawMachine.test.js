@@ -5,7 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { headlessGame, snapshot, dt } from './helpers/headlessGame.js';
-import { rollCapsules, sweepPosition, laneAt, sweepSeconds, prizePool, describeCarried, plushChanceFor } from '../src/game/features/clawMachine.js';
+import { rollCapsules, sweepPosition, laneAt, sweepSeconds, prizePool, describeCarried, plushChanceFor, takeOutcome } from '../src/game/features/clawMachine.js';
 import { clawMachine as cfg } from '../src/config/clawMachine.js';
 import { economy } from '../src/config/economy.js';
 import { weapons } from '../src/config/weapons.js';
@@ -14,6 +14,10 @@ import { createWallet } from '../src/game/wallet.js';
 import { overlapsSolid } from '../src/world/collision.js';
 import { createNavigation } from '../src/zombies/navigation.js';
 import { zombieTypes } from '../src/config/zombies.js';
+import { upgrades } from '../src/config/upgrades.js';
+import { attachmentFits, attachmentsOf, withAttachment } from '../src/weapons/upgrades.js';
+import { ownsAttachment } from '../src/game/features/attachmentCounter.js';
+import { workshopRitual, buildOf } from '../src/config/workshop.js';
 
 // A small seeded random (tests pass it to the pure functions; Math.random is never seeded).
 function seeded(seed) {
@@ -50,11 +54,20 @@ function standAtMachine({ t, g, claw }, distance = 1.3) {
 }
 
 const pay = (t, code = 'KeyF') => t.press(code, 20); // a hold (feel.interact.holdSeconds is 0.25 s)
+// A mod list with every attachment slot this gun can use filled (the first attachment that fits each slot).
+function fullOfAttachments(id) {
+  let mods = [];
+  for (const slot of Object.keys(upgrades.attachmentSlots)) {
+    const fits = Object.keys(upgrades.attachments).find((a) => upgrades.attachments[a].slot === slot && attachmentFits(weapons[id], a));
+    if (fits) mods = withAttachment(weapons[id], mods, fits);
+  }
+  return mods;
+}
 // Restock where it stands (the debug move to its own site): the next grab is this site's first, so no plush can come up.
 const restock = (claw) => assert.ok(claw.moveNow(claw.site.id));
 
-test('the odds: capsules follow the weights, never repeat in a grab, and never offer the Staple Gun, a carried gun or one at Build-A-Blaster', () => {
-  const fresh = { owns: (id) => id === 'stapleGun', away: null };
+test('the odds: capsules follow the weights, never repeat in a grab, and never offer the Staple Gun, a full carried gun or one at Build-A-Blaster', () => {
+  const fresh = { owns: (id) => id === 'stapleGun', modsFor: () => [], away: null };
   const pool = prizePool(fresh);
   assert.deepEqual(pool.map((p) => p.id).sort(), Object.keys(cfg.prizes).sort());
   assert.ok(!pool.some((p) => p.id === 'stapleGun'));
@@ -70,8 +83,9 @@ test('the odds: capsules follow the weights, never repeat in a grab, and never o
   const total = pool.reduce((s, p) => s + p.weight, 0);
   for (const p of pool) assert.ok(Math.abs(firsts[p.id] / rolls - p.weight / total) < 0.01, `${p.id}: ${firsts[p.id] / rolls} vs ${p.weight / total}`);
 
-  // Carried guns and the gun on the conveyor are left out; with two carried and one away, at least four remain.
-  const busy = { owns: (id) => ['stapleGun', 'coilNailer', 'rivetRifle'].includes(id), away: { def: weapons.barcodeScanner } };
+  // Two carried guns full of attachments and a third on the conveyor are left out, and at least four remain.
+  const mods = { coilNailer: fullOfAttachments('coilNailer'), rivetRifle: fullOfAttachments('rivetRifle') };
+  const busy = { owns: (id) => ['stapleGun', 'coilNailer', 'rivetRifle'].includes(id), modsFor: (id) => mods[id] ?? [], away: { def: weapons.barcodeScanner } };
   const left = prizePool(busy).map((p) => p.id);
   assert.ok(!left.includes('coilNailer') && !left.includes('rivetRifle') && !left.includes('barcodeScanner'));
   assert.ok(left.length >= 4);
@@ -113,7 +127,7 @@ test('a grab through real keyboard input: hold to pay, a fresh press drops, the 
     t.tick(Math.ceil(cfg.liftSeconds / dt) + 1);
     assert.equal(claw.phase, 'ready');
     assert.equal(g.interactions.prompt?.id, 'take');
-    if (g.gun.slots.length === 2) assert.match(g.interactions.prompt.detail, /^Replaces your /);
+    if (g.gun.slots.length === 2 && takeOutcome(g.gun, claw.grab.prize).kind === 'new') assert.match(g.interactions.prompt.detail, /^Replaces your /);
     const won = capsule.id;
     t.press('KeyF', 20);
     assert.equal(claw.phase, 'idle');
@@ -260,9 +274,10 @@ test('a full loadout: the take ticket names what it replaces (tier, attachments,
   assert.equal(g.gun.def.id, 'priceGun');
   standAtMachine(s);
   pay(t);
+  rig(g, claw, 'nailGun'); // (a gun you don't carry: a carried one would come up Refurbished, which replaces nothing)
   t.tick(Math.ceil((cfg.autoDropSeconds + cfg.liftSeconds) / dt) + 2);
   const won = claw.grab.prize.id;
-  assert.notEqual(won, 'priceGun');
+  assert.equal(won, 'nailGun');
   assert.equal(g.interactions.prompt?.detail, 'Replaces your Price Gun');
   t.press('KeyF', 20);
   assert.deepEqual(g.gun.slots, ['stapleGun', won]);
@@ -492,4 +507,227 @@ test('the six cabinets leave zombie routes alone: every spawn and stand point st
     assert.ok(Number.isFinite(d), `route ${i} reaches the hub`);
     assert.ok(d - before[i] <= 3, `route ${i}: ${before[i].toFixed(1)} -> ${d.toFixed(1)} m`);
   });
+});
+
+// --- Phase 3: Refurbished prizes, late changes, Build-A-Blaster ---
+
+// The prize the claw will land on: every lane holds this capsule (built by the REAL pool and roll from the loadout as it is).
+// Rigging all three lanes keeps the test about the take, not about timing the drop.
+function rig(g, claw, id, { refurbished, spare } = {}) {
+  const entry = prizePool(g.gun).find((p) => p.id === id);
+  assert.ok(entry, `${id} is in the pool`);
+  const capsule = { ...rollCapsules([entry], 0, seeded(5))[0] };
+  if (refurbished !== undefined) capsule.refurbished = refurbished;
+  if (spare !== undefined) capsule.spare = spare;
+  claw.grab.capsules = [capsule, capsule, capsule];
+  return capsule;
+}
+// Pay at the machine, rig the prize, and let it drop and come to the chute.
+function grabUntilReady(s, id, options) {
+  const { t, g, claw } = s;
+  restock(claw);
+  standAtMachine(s);
+  pay(t);
+  const capsule = rig(g, claw, id, options);
+  t.tick(ticks(cfg.autoDropSeconds + cfg.liftSeconds));
+  assert.equal(claw.phase, 'ready');
+  return capsule;
+}
+const takePrize = (t) => t.press('KeyF', 20);
+const switchTo = (t, g, id) => { if (g.gun.def.id !== id) { t.press(g.gun.slots.indexOf(id) === 0 ? 'Digit1' : 'Digit2', 1); t.tick(60); } };
+
+test('the pool: a carried gun comes up Refurbished with an attachment for one of its empty slots; full, or at Build-A-Blaster, it does not come up', () => {
+  const s = setup(), { t, g } = s;
+  g.gun.give(weapons.nailGun);
+  t.tick(40);
+  let entry = prizePool(g.gun).find((p) => p.id === 'nailGun');
+  const fits = Object.keys(upgrades.attachments).filter((a) => attachmentFits(weapons.nailGun, a));
+  assert.deepEqual(entry.attachments, fits, 'a bare carried gun: any attachment that fits');
+  g.gun.setMods('nailGun', withAttachment(weapons.nailGun, [], 'gripTape'));
+  entry = prizePool(g.gun).find((p) => p.id === 'nailGun');
+  assert.ok(!entry.attachments.some((a) => upgrades.attachments[a].slot === 'grip'), 'never for a slot that is already fitted');
+  const random = seeded(11);
+  for (let i = 0; i < 500; i++) {
+    for (const c of rollCapsules(prizePool(g.gun), 0, random)) {
+      if (c.id === 'nailGun') assert.ok(entry.attachments.includes(c.refurbished), 'its attachment is rolled with it');
+      else assert.equal(c.refurbished, null, `${c.id} is not carried: a plain prize`);
+      assert.ok(attachmentFits(weapons[c.id], c.spare), 'a spare that fits, in case you buy it before you take it');
+    }
+  }
+  g.gun.setMods('nailGun', fullOfAttachments('nailGun'));
+  assert.ok(!prizePool(g.gun).some((p) => p.id === 'nailGun'), 'carried with nothing that fits: not offered');
+});
+
+test('taking a Refurbished prize refills that gun and fits its attachment, in hand or not; the attachment then refits free', () => {
+  const s = setup(), { t, g, claw } = s;
+  g.gun.give(weapons.nailGun);
+  t.tick(40);
+  switchTo(t, g, 'stapleGun');
+  const nail = g.gun.weaponFor('nailGun');
+  nail.magazine = 1; nail.reserve = 0;
+  grabUntilReady(s, 'nailGun', { refurbished: 'gripTape' });
+  assert.equal(g.interactions.prompt?.title, 'Take the Nail Gun + Grip Tape');
+  assert.match(g.interactions.prompt.detail, /^Refurbished · Refills your Nail Gun · Fits Grip Tape free/);
+  const prizes = [];
+  g.events.on('clawPrize', (e) => prizes.push(e));
+  takePrize(t);
+  assert.deepEqual(prizes, [{ gunId: 'nailGun', refurbished: 'gripTape', outcome: 'refurbish' }]);
+  assert.deepEqual(g.gun.slots, ['stapleGun', 'nailGun'], 'no gun replaced');
+  assert.equal(g.gun.def.id, 'stapleGun', 'still the gun in your hand');
+  assert.equal(attachmentsOf(g.gun.modsFor('nailGun')).grip, 'gripTape');
+  assert.ok(g.gun.weaponFor('nailGun').isFull);
+  assert.ok(ownsAttachment(g.gun, 'gripTape'), 'owned for the run: refits are free');
+});
+
+test('a Refurbished take never replaces a fitted attachment, and waits while the gun in hand is reloading', () => {
+  const s = setup(), { t, g, claw } = s;
+  g.gun.give(weapons.nailGun);
+  t.tick(40);
+  grabUntilReady(s, 'nailGun', { refurbished: 'gripTape' });
+  g.gun.weapon.magazine = 1;
+  t.press('KeyR', 1); // reloading the Nail Gun in hand
+  assert.ok(g.gun.weapon.isReloading);
+  assert.equal(g.interactions.prompt?.blocked, 'Busy · Finish reloading first');
+  takePrize(t);
+  assert.equal(claw.phase, 'ready', 'refused while reloading');
+  t.tick(ticks(weapons.nailGun.reloadSeconds ?? 3));
+  assert.equal(g.gun.weapon.isReloading, false);
+  g.gun.setMods('nailGun', withAttachment(weapons.nailGun, g.gun.modsFor('nailGun'), 'wristband')); // the grip slot filled meanwhile
+  assert.equal(g.interactions.prompt?.blocked, null);
+  assert.equal(g.interactions.prompt.title, 'Take the Nail Gun', 'now just a refill');
+  takePrize(t);
+  assert.equal(claw.phase, 'idle');
+  assert.equal(attachmentsOf(g.gun.modsFor('nailGun')).grip, 'wristband', 'the fitted attachment stays');
+  assert.equal(ownsAttachment(g.gun, 'gripTape'), false);
+});
+
+test('late change: the rolled gun bought off the wall before the take becomes a refill plus its spare attachment (if that slot is free)', () => {
+  for (const [spare, expect] of [['gripTape', 'refurbish'], ['speedLoader', 'refill']]) {
+    const s = setup(), { t, g, claw } = s;
+    const capsule = grabUntilReady(s, 'priceGun', { spare });
+    assert.equal(capsule.refurbished, null, 'rolled as a plain prize');
+    g.gun.give(weapons.priceGun); // (the wall buy's own call)
+    t.tick(40);
+    if (expect === 'refill') g.gun.setMods('priceGun', withAttachment(weapons.priceGun, [], 'jumboPack')); // its magazine slot is taken
+    g.gun.weaponFor('priceGun').reserve = 0;
+    assert.equal(takeOutcome(g.gun, claw.grab.prize).kind, expect);
+    takePrize(t);
+    assert.deepEqual(g.gun.slots, ['stapleGun', 'priceGun'], 'no second copy');
+    assert.ok(g.gun.weaponFor('priceGun').isFull);
+    if (expect === 'refurbish') assert.equal(attachmentsOf(g.gun.modsFor('priceGun')).grip, 'gripTape');
+    else assert.equal(attachmentsOf(g.gun.modsFor('priceGun')).magazine, 'jumboPack');
+  }
+});
+
+test('late change: a Refurbished gun you no longer carry comes as a plain copy', () => {
+  const s = setup(), { t, g, claw } = s;
+  g.gun.give(weapons.nailGun);
+  t.tick(40);
+  g.gun.setMods('nailGun', withAttachment(weapons.nailGun, [], 'wristband'));
+  grabUntilReady(s, 'nailGun', { refurbished: 'jumboPack' });
+  switchTo(t, g, 'nailGun');
+  g.gun.give(weapons.priceGun); // replaces the Nail Gun in hand
+  t.tick(40);
+  assert.deepEqual(g.gun.slots, ['stapleGun', 'priceGun']);
+  assert.equal(g.interactions.prompt?.title, 'Take the Nail Gun');
+  assert.equal(g.interactions.prompt.detail, 'Replaces your Price Gun');
+  takePrize(t);
+  assert.deepEqual(g.gun.slots, ['stapleGun', 'nailGun']);
+  assert.deepEqual(g.gun.modsFor('nailGun'), [], 'plain: neither its old attachment nor the rolled one');
+});
+
+// Build-A-Blaster, for real: the bench upstairs, the order form, the conveyor, collection.
+function workshop(s) {
+  const { t, g } = s;
+  g.map.areaUnlocks.openAll();
+  t.tick(120);
+  const bench = g.map.features.find((f) => f.kind === 'workshop');
+  const ritual = g.features.list.find((f) => f.feature.kind === 'workshop').instance.ritual;
+  const upper = g.map.navigation.floors[1];
+  const face = (spot, x, z, yaw) => { g.player.teleport({ position: new THREE.Vector3(x, upper, z), yaw }); g.player.pitch = 0; t.tick(); };
+  return {
+    ritual,
+    start() {
+      ritual.choose('smoothie', 'headshot');
+      face(bench.position, bench.position.x, bench.position.z - 1, Math.PI);
+      t.press('KeyF', 20); t.tick();
+      t.press('KeyF'); t.tick();
+      assert.equal(ritual.phase, 'running');
+    },
+    finish() {
+      ritual.finishNow();
+      t.tick(ticks(workshopRitual.catchUpSeconds) + 2);
+      if (ritual.phase === 'ready') { // (it waits at the booth when taking it would cost you a gun)
+        const b = bench.stations.booth;
+        face(b, b.x - 1, b.z, -Math.PI / 2);
+        t.press('KeyF', 20); t.tick();
+      }
+      assert.equal(ritual.phase, 'idle');
+    },
+  };
+}
+
+test('late change: a rolled gun handed to Build-A-Blaster comes as a plain copy, and the finished gun replaces that copy at collection', () => {
+  const s = setup(), { t, g, claw } = s;
+  g.gun.give(weapons.nailGun);
+  t.tick(40);
+  const bab = workshop(s);
+  grabUntilReady(s, 'nailGun', { refurbished: 'gripTape' });
+  switchTo(t, g, 'nailGun');
+  bab.start(); // the Nail Gun rides the conveyor
+  assert.equal(g.gun.away.def.id, 'nailGun');
+  standAtMachine(s);
+  assert.equal(g.interactions.prompt?.title, 'Take the Nail Gun');
+  takePrize(t);
+  assert.deepEqual(g.gun.slots, ['stapleGun', 'nailGun'], 'a plain copy in the free slot');
+  assert.deepEqual(g.gun.modsFor('nailGun'), []);
+  bab.finish();
+  assert.deepEqual(g.gun.slots, ['stapleGun', 'nailGun'], 'the finished gun took the copy\'s place');
+  assert.ok(buildOf(g.gun.modsFor('nailGun')), 'with its build');
+});
+
+test('Build-A-Blaster: the machine works during a ritual and with the Courtesy Loaner (no Refurbished prize for it); the loaner still goes back', () => {
+  const s = setup(), { t, g, claw } = s;
+  const bab = workshop(s);
+  bab.start(); // only the Staple Gun: it goes, and the loaner comes up
+  assert.ok(g.gun.isLoaner);
+  assert.ok(prizePool(g.gun).every((p) => !p.attachments), 'nothing you carry can come up Refurbished');
+  const capsule = grabUntilReady(s, 'rivetRifle');
+  assert.equal(g.interactions.prompt?.detail, 'Fills your free slot');
+  takePrize(t);
+  assert.equal(g.gun.slots.length, 2);
+  assert.ok(g.gun.hasLoaner);
+  assert.ok(g.gun.owns(capsule.id));
+  bab.finish(); // the Staple Gun comes back over the loaner
+  assert.equal(g.gun.hasLoaner, false);
+  assert.deepEqual([...g.gun.slots].sort(), ['rivetRifle', 'stapleGun']);
+  assert.ok(buildOf(g.gun.modsFor('stapleGun')));
+});
+
+test('Build-A-Blaster: a Refurbished attachment stacks with a finished build, and a grab works while the gun waits at the booth', () => {
+  const s = setup(), { t, g, claw } = s;
+  g.gun.give(weapons.nailGun);
+  t.tick(40);
+  const bab = workshop(s);
+  switchTo(t, g, 'nailGun');
+  bab.start();
+  bab.finish();
+  const build = buildOf(g.gun.modsFor('nailGun'));
+  assert.ok(build);
+  grabUntilReady(s, 'nailGun', { refurbished: 'laserPointer' });
+  takePrize(t);
+  assert.deepEqual(buildOf(g.gun.modsFor('nailGun')), build, 'the build stays');
+  assert.equal(attachmentsOf(g.gun.modsFor('nailGun')).sight, 'laserPointer');
+
+  // Another ritual, then a second gun bought meanwhile: the finished gun waits at the booth. The machine still works.
+  bab.start();
+  g.gun.give(weapons.priceGun);
+  t.tick(40);
+  bab.ritual.finishNow();
+  t.tick(ticks(workshopRitual.catchUpSeconds) + 2);
+  assert.equal(bab.ritual.phase, 'ready');
+  const won = grabUntilReady(s, 'confettiCannon');
+  takePrize(t);
+  assert.ok(g.gun.owns(won.id));
+  assert.equal(bab.ritual.phase, 'ready', 'still waiting for you at the booth');
 });

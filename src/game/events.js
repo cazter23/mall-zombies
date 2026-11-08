@@ -69,7 +69,8 @@
 //   'limitedEditionFitted' { id, weapon, pa }             the player walked over it
 //   'clawGrab'    { siteId, capsules: [{ gunId, capsule } | null] }   GRAB-A-GUN was paid: the capsules in its lanes (game/features/clawMachine.js)
 //   'clawDrop'    { lane, gunId, plush, reason 'press' | 'time' }  the claw dropped; gunId = the prize (null: the plush or an empty lane)
-//   'clawPrize'   { gunId, refurbished }                 the player took the prize from the chute (refurbished = the attachment, or null)
+//   'clawPrize'   { gunId, refurbished, outcome }        the player took the prize from the chute: outcome 'new' | 'refill' | 'refurbish'
+//                                                        (game/features/clawMachine.js takeOutcome); refurbished = the attachment fitted, or null
 //   'clawClosed'  { reason 'plush' | 'soldOut', siteId, nextSiteId, pa }   out of service (a plush refunds; nextSiteId: picked at the plush)
 //   'clawMoved'   { siteId, area, moved, pa }            reopened at the next 'roundStart' (moved false: restocked where it stood)
 //   'runReset'    {}                                     after Play again reset everything

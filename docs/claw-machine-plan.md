@@ -1,6 +1,9 @@
 # Claw machine: plan
 
-Status: outline, nothing built yet. Numbers here are starting points, to be tuned by playing. Prices are suggestions only: the economy report
+Status: phases 1 to 3 built (8 November 2026, branch claude/claw-machine; see docs/history.md). Two sites moved from the table below:
+Parking's back is x 34.43 (the facade's face) and the Cinema's x -34.1 (clear of the screen door's jamb). A gun bought off the wall between
+the roll and the take gets a SPARE attachment rolled with the capsule, so the take adds nothing random. Phases 4 to 10 are not started.
+Numbers here are starting points, to be tuned by playing. Prices are suggestions only: the economy report
 (not written yet: the `economy-sim` branch has no work on it, so `tools/economySim.mjs` and `npm run sim:economy` still need doing) confirms them. Checked against the `build-a-blaster` branch at its phase 2; it is now merged, with all six phases and the Mascot.
 This work relies on its `gun.away`, `gun.isLoaner` and `priceLabel`, and touches `createGame.js`, `interactions.js` and `mall.js`.
 Build one phase at a time, in its own git worktree, and test before the next.

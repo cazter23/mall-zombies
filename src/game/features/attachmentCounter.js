@@ -19,6 +19,8 @@ function inventoryFor(gun) {
   return inventories.get(gun);
 }
 export const ownsAttachment = (gun, id) => inventoryFor(gun).has(id);
+/** Count an attachment as owned for the run (free refits), as if bought here: GRAB-A-GUN's Refurbished prizes. */
+export const unlockAttachment = (gun, id) => { inventoryFor(gun).add(id); };
 
 export function buildAttachmentCounter(spot, { map, gun, pricing, interactions }) {
   interactions.add(attachmentCounterItem({ spot, zones: map.zones, gun, pricing }));

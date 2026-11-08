@@ -18,8 +18,13 @@
 // It never moves during a grab and never into a locked area. Every run starts at the first site, which waits for its zone.
 // No cabinet ever moves: every site's cabinet is always there, dust-sheeted while the machine is elsewhere.
 //
-// The prize pool: the wall guns (never the Staple Gun: the Courtesy Loaner relies on it never being bought again), minus any
-// gun you carry or have away at Build-A-Blaster.
+// The prize pool: the wall guns (never the Staple Gun: the Courtesy Loaner relies on it never being bought again). A gun you
+// CARRY comes up REFURBISHED, named with a free attachment for one of its empty slots ("Nail Gun + Grip Tape"): taking it refills
+// that gun and fits the attachment, in hand or not, and the attachment counts as owned for the run (free refits). A carried gun
+// with no empty slot that fits, and a gun away at Build-A-Blaster, are left out of that grab. Things can change between the roll
+// and the take, so the take checks again (takeOutcome): a gun bought meanwhile becomes a refill (plus its spare attachment if that
+// slot is free), a Refurbished gun no longer carried (replaced, or handed to Build-A-Blaster) comes as a plain copy. A Refurbished
+// take never replaces a fitted attachment, and waits while the gun in hand is switching, reloading, bursting or charging.
 //
 // DOM-free: it announces on g.events ('clawGrab', 'clawDrop', 'clawPrize', 'clawClosed', 'clawMoved'), main.js reads .status.
 // Its only runtime objects are the capsules and claw (each cabinet's rig) and the won gun's display in the chute; reset()
@@ -30,15 +35,18 @@
 //
 //   rollCapsules(pool, plushChance, random) -> one entry per lane: a pool entry, PLUSH, or null if the pool ran dry
 //   sweepPosition(t, period) -> 0..1 across the lanes;  laneAt(position) -> lane index;  sweepSeconds(grabNumber) -> period
-//   plushChanceFor(grabNumber), prizePool(gun) -> [{ id, weight, capsule }], describeCarried(def, mods)
+//   plushChanceFor(grabNumber), prizePool(gun) -> [{ id, weight, capsule, attachments?, spares }], describeCarried(def, mods)
+//   takeOutcome(gun, prize) -> { kind: 'new' | 'refill' | 'refurbish', attachment }
 // =============================================================================
 
 import * as THREE from 'three';
 import { clawMachine as cfg } from '../../config/clawMachine.js';
 import { weapons } from '../../config/weapons.js';
 import { buildWeaponDisplay } from '../../weapons/models/index.js';
-import { attachmentsOf, tierById, tierOf } from '../../weapons/upgrades.js';
+import { attachmentById, attachmentFits, attachmentsOf, tierById, tierOf, withAttachment } from '../../weapons/upgrades.js';
+import { upgrades } from '../../config/upgrades.js';
 import { buildOf, paLine } from '../../config/workshop.js';
+import { unlockAttachment } from './attachmentCounter.js';
 
 /** The plush's capsule. */
 export const PLUSH = Object.freeze({ plush: true, id: null, capsule: 'plush' });
@@ -46,7 +54,8 @@ export const PLUSH = Object.freeze({ plush: true, id: null, capsule: 'plush' });
 /**
  * Draw one capsule per lane by weight from `pool` ([{ id, weight, ... }]), with no repeats in one grab. With chance
  * `plushChance` one random lane holds the plush instead. `random` is Math.random or a seeded stand-in. A lane the pool
- * can't fill (fewer guns than lanes) stays null.
+ * can't fill (fewer guns than lanes) stays null. A drawn gun gets its attachment now (nothing after the press is random):
+ * `refurbished` (a carried gun: one of its free-slot attachments) and `spare` (any that fits: used if you buy the gun meanwhile).
  */
 export function rollCapsules(pool, plushChance = 0, random = Math.random, lanes = cfg.lanes) {
   const plushLane = plushChance > 0 && random() < plushChance ? Math.floor(random() * lanes) : -1;
@@ -59,7 +68,9 @@ export function rollCapsules(pool, plushChance = 0, random = Math.random, lanes 
     let roll = random() * total;
     let index = 0;
     while (index < left.length - 1 && roll >= left[index].weight) roll -= left[index++].weight;
-    out.push({ ...left[index] });
+    const { attachments = null, spares = [], ...entry } = left[index];
+    const pick = (list) => (list?.length ? list[Math.floor(random() * list.length)] : null);
+    out.push({ ...entry, refurbished: pick(attachments), spare: pick(spares) });
     left.splice(index, 1);
   }
   return out;
@@ -83,11 +94,43 @@ export function sweepSeconds(grabNumber) {
 /** The chance a plush is in the pit on this site's `grabNumber`-th grab. */
 export const plushChanceFor = (grabNumber) => cfg.plushChance[Math.min(cfg.plushChance.length, grabNumber) - 1] ?? 0;
 
-/** The guns a grab can offer you right now: every prize gun you don't carry and haven't handed to Build-A-Blaster. */
+const ATTACHMENT_IDS = Object.keys(upgrades.attachments);
+/** The attachments that fit this gun (by its config entry), and of those, the ones whose slot is empty in `mods`. */
+const fitting = (id) => ATTACHMENT_IDS.filter((a) => attachmentFits(weapons[id], a));
+const freeFor = (id, mods) => fitting(id).filter((a) => !attachmentsOf(mods)[attachmentById(a).slot]);
+
+/**
+ * The guns a grab can offer you right now: every prize gun, never the Staple Gun or one at Build-A-Blaster. A gun you carry is
+ * offered Refurbished (`attachments`: the ones it could come with), or not at all if no empty slot fits. `spares`: every
+ * attachment that fits the gun (a late change at the take may need one).
+ */
 export function prizePool(gun) {
-  return Object.entries(cfg.prizes)
-    .filter(([id]) => weapons[id] && id !== 'stapleGun' && !gun.owns(id) && gun.away?.def.id !== id)
-    .map(([id, prize]) => ({ id, weight: prize.weight, capsule: prize.capsule }));
+  const pool = [];
+  for (const [id, prize] of Object.entries(cfg.prizes)) {
+    if (!weapons[id] || id === 'stapleGun' || gun.away?.def.id === id) continue;
+    const entry = { id, weight: prize.weight, capsule: prize.capsule, spares: fitting(id) };
+    if (gun.owns(id)) {
+      const free = freeFor(id, gun.modsFor(id));
+      if (!free.length) continue; // carried with nothing that fits: not offered this grab
+      entry.attachments = free;
+    }
+    pool.push(entry);
+  }
+  return pool;
+}
+
+/**
+ * What taking `prize` gives you NOW (the loadout may have changed since the roll):
+ *   'new'        not carried (any more): the gun, a plain copy (gun.give: a free slot, or it replaces the gun in hand)
+ *   'refurbish'  carried, and the attachment's slot is still empty: a full refill plus that attachment
+ *   'refill'     carried with that slot filled meanwhile (never replaced), or nothing to fit: a full refill
+ */
+export function takeOutcome(gun, prize) {
+  const { id } = prize;
+  if (!gun.owns(id)) return { kind: 'new', attachment: null };
+  const free = freeFor(id, gun.modsFor(id));
+  const attachment = prize.refurbished ?? prize.spare; // (rolled Refurbished: only its own; a gun bought meanwhile: its spare)
+  return attachment && free.includes(attachment) ? { kind: 'refurbish', attachment } : { kind: 'refill', attachment: null };
 }
 
 /** "Platinum Rivet Rifle with 2 attachments", '"Gerald" (Nail Gun)': what taking a prize would cost you. */
@@ -101,7 +144,8 @@ export function describeCarried(def, mods = []) {
 }
 
 const capsuleColor = (capsule) => (!capsule ? null : capsule.plush ? cfg.plush.color : cfg.capsules[capsule.capsule].color);
-const prizeName = (capsule) => (!capsule ? 'Empty' : capsule.plush ? cfg.plush.name : weapons[capsule.id].name);
+const prizeName = (capsule) => (!capsule ? 'Empty' : capsule.plush ? cfg.plush.name
+  : capsule.refurbished ? `${weapons[capsule.id].name} + ${attachmentById(capsule.refurbished).name}` : weapons[capsule.id].name);
 
 export function buildClawMachine(feature, { scene, map, events, pricing, interactions, gun, wallet, state, sound }) {
   const sites = feature.sites;
@@ -192,7 +236,7 @@ export function buildClawMachine(feature, { scene, map, events, pricing, interac
     phase = 'sweeping';
     capsules.forEach((capsule, lane) => cabinet().rig.setCapsule(lane, capsuleColor(capsule)));
     sound?.play('ritualJingle');
-    events.emit('clawGrab', { siteId: site.id, stock, capsules: capsules.map((c) => (!c ? null : c.plush ? { plush: true } : { gunId: c.id, capsule: c.capsule })) });
+    events.emit('clawGrab', { siteId: site.id, stock, capsules: capsules.map((c) => (!c ? null : c.plush ? { plush: true } : { gunId: c.id, capsule: c.capsule, refurbished: c.refurbished })) });
   }
 
   function drop(reason) {
@@ -213,11 +257,24 @@ export function buildClawMachine(feature, { scene, map, events, pricing, interac
     else phase = 'idle';
   }
 
+  // A Refurbished take changes a carried gun's mods (setMods cancels a reload or burst), so like the attachment counter it waits
+  // while the gun in hand is switching, reloading, bursting or charging.
+  const busy = (id) => gun.isSwitching || (gun.def.id === id && (gun.weapon.isReloading || gun.weapon.isBursting || gun.weapon.isCharging));
+
   function take() {
     const { id } = grab.prize;
-    gun.give(weapons[id]); // (the base gun: already carried = a refill, a free slot = added, else it replaces the gun in hand)
+    const outcome = takeOutcome(gun, grab.prize); // (checked again now: see the header)
+    if (outcome.kind === 'new') {
+      gun.give(weapons[id]); // (the base gun: a free slot = added, else it replaces the gun in hand; never the loaner rule's Staple Gun)
+    } else {
+      if (outcome.kind === 'refurbish') {
+        gun.setMods(id, withAttachment(gun.defOf(id).base, gun.modsFor(id), outcome.attachment)); // (other mods, a build included, stay)
+        unlockAttachment(gun, outcome.attachment); // owned for the run: refits are free, like a bought one
+      }
+      gun.weaponFor(id).refill(); // (after the attachment: a Jumbo Pack's bigger magazine comes full)
+    }
     sound?.play('purchase');
-    events.emit('clawPrize', { gunId: id, refurbished: null });
+    events.emit('clawPrize', { gunId: id, refurbished: outcome.attachment, outcome: outcome.kind });
     finish();
   }
 
@@ -308,13 +365,22 @@ export function buildClawMachine(feature, { scene, map, events, pricing, interac
     available: () => phase === 'sweeping',
     use: () => drop('press'),
   });
+  // The take ticket says what you'd get NOW (takeOutcome), not what was rolled.
+  const outcomeName = () => {
+    const { kind, attachment } = takeOutcome(gun, grab.prize);
+    return kind === 'refurbish' ? `${weapons[grab.prize.id].name} + ${attachmentById(attachment).name}` : weapons[grab.prize.id].name;
+  };
   interactions.add({
-    get label() { return `${prizeName(grab.prize)} won`; },
-    get title() { return `Take the ${prizeName(grab.prize)}`; },
+    get label() { return `${outcomeName()} won`; },
+    get title() { return `Take the ${outcomeName()}`; },
     get detail() {
+      const { kind, attachment } = takeOutcome(gun, grab.prize);
+      if (kind === 'refurbish') return `Refurbished · Refills your ${weapons[grab.prize.id].name} · Fits ${attachmentById(attachment).name} free · Free refits this run`;
+      if (kind === 'refill') return 'You have one · Refills it';
       const lost = replaces();
-      return gun.owns(grab.prize.id) ? 'You have one · Refills it' : lost ? `Replaces your ${lost}` : 'Fills your free slot';
+      return lost ? `Replaces your ${lost}` : 'Fills your free slot';
     },
+    get blocked() { return takeOutcome(gun, grab.prize).kind === 'refurbish' && busy(grab.prize.id) ? 'Busy · Finish reloading first' : null; },
     verb: 'take',
     kind: 'clawAction',
     id: 'take',

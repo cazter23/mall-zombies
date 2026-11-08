@@ -16,6 +16,11 @@ tag under the Flash Sale tag says where it is. Debug: E = Sunny in the next grab
 x 34.43 (the facade's face, not 34.5), and the Cinema's is x -34.1 (the cabinet clipped the screen door's jamb at -34).
 Checked in the browser pane (preview build): the Hallway cabinet, a grab (capsules, claw, the prize in the chute) and a dust-sheeted Food Court cabinet; no
 console errors. Not checked in the browser: the other four sites up close, the HUD tag.
+Phase 3, Refurbished prizes: a gun you carry stays in the odds, named with a free attachment for one of its empty slots ("Nail Gun + Grip Tape"). Taking
+it refills that gun and fits the attachment, in hand or not, and the attachment is owned for the run (attachmentCounter.js unlockAttachment). A carried gun
+with no empty slot that fits, and a gun at Build-A-Blaster, aren't offered. The take checks again (takeOutcome): bought off the wall meanwhile = refill plus
+its spare attachment (rolled with it, so nothing random happens after the press) if that slot is free; a Refurbished gun no longer carried, or handed to
+Build-A-Blaster, comes as a plain copy (collection then replaces the copy). It never replaces a fitted attachment and waits while the gun in hand reloads.
 
 ## 9 November 2026 - Gun upgrades you can see, and the Extended Warranty rework
 

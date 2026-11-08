@@ -402,6 +402,7 @@ src/
                         (g.pricing 'attachment', purchase kind 'attachment'), replaces that slot on the gun in hand; no prompt when
                         already fitted, when it doesn't fit (Extended Nozzle on the Nail Gun), area closed or busy. First purchase
                         unlocks free refitting across compatible carried/replacement guns for the run; reset clears ownership.
+                        unlockAttachment(gun, id) marks one owned from outside (GRAB-A-GUN's Refurbished prizes).
                         Counters display resolved comparisons and preserve ammunition. Fully owned attachments are ineligible for Flash Sales.
       retailUnease.js   Called by the existing horror feature: unseen mannequin turn, shared empty-concourse TV feed,
                         distant upstairs silhouette. Quiet intervals, comfort gates, reset and static-batching-safe hooks.
@@ -416,8 +417,10 @@ src/
       clawMachine.js    Feature kind 'clawMachine', GRAB-A-GUN: idle -> sweeping -> lifting -> ready. Hold to pay ('claw' 'grab'), PRESS to
                         drop (an `instant` interaction: a fresh press, never a held button, never a reload on controller X), the capsule under
                         the claw at the press is the prize; it drops by itself after 6 s and the prize leaves the chute after 15 s, so a grab
-                        can't hang. Pure helpers: rollCapsules (by weight, no repeats), sweepPosition / laneAt / sweepSeconds, prizePool
-                        (never the Staple Gun, a carried gun or one at Build-A-Blaster), plushChanceFor, describeCarried. Stock and relocation:
+                        can't hang. Pure helpers: rollCapsules (by weight, no repeats; each gun's attachment is rolled with it), sweepPosition /
+                        laneAt / sweepSeconds, prizePool (never the Staple Gun or a gun at Build-A-Blaster; a CARRIED gun comes Refurbished with
+                        a free attachment for an empty slot, or not at all), takeOutcome (the take checks again: 'new' plain copy, 'refurbish'
+                        refill + attachment, or 'refill'; never replaces a fitted attachment), plushChanceFor, describeCarried. Stock and relocation:
                         6 grabs a site; a plush (Sunny) refunds that grab's actual charge (wallet.refund) and closes it, with the next site picked
                         right then; a sell-out closes once the last prize is gone; it reopens at the next 'roundStart' at another open-zone site
                         (or restocks in place). Only one cabinet is live; the others are dust-sheeted. Events 'clawGrab' / 'clawDrop' /

@@ -155,7 +155,11 @@ doesn't apply, wallet.refund isn't income, the replace ticket, and each cabinet:
 a prompt from it. Relocation: plush odds by grab, a plush refunds exactly the charge (sale + coupon) and picks the next open site at
 once, a sell-out closes only after its last prize, it reopens at a different open site at 'roundStart' (or restocks in place), never
 in a locked zone (40 moves), never mid-grab, Play again after a move, and zombie routes from every spawn and stand point unchanged
-(within 3 m) with all six cabinets in.
+(within 3 m) with all six cabinets in. Refurbished: a carried gun's attachment is for an empty slot and rolled with it, a full one isn't
+offered, the take refills and fits it in hand or not (and refits are free), never over a fitted attachment, waits while reloading; late
+changes (bought off the wall meanwhile: refill + spare; no longer carried: plain copy; handed to Build-A-Blaster: plain copy that the
+finished gun replaces); Build-A-Blaster: grabs during a ritual, with the Courtesy Loaner (which never gets a Refurbished prize and still
+goes back), a Refurbished attachment stacking with a build, and while the finished gun waits at the booth.
 `ammoCache.test.js` the vending machine (refills any gun in hand, flat price, label follows the gun, needs its area open, not
 through the wall, solid + too tall to climb, zombies can reach its front; Atrium/Cinema machines also exercise real F purchases,
 correct floor height, ownership and run reset), `balance.test.js` GUN ROLES on real measured numbers
