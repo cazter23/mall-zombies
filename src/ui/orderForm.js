@@ -28,11 +28,12 @@ export function createOrderFormView() {
   element.hidden = true;
   element.innerHTML = `
     <div class="order-head"><span class="order-kicker">Build-A-Blaster · Order form</span><span class="order-title"></span></div>
-    <div class="order-columns">
+    <div class="order-scroll"><div class="order-columns">
       <div class="order-column" data-column="0"><div class="order-label">Stuffing <span class="order-hint" data-hint="move"></span></div><ul class="order-list" data-list="stuffings"></ul><div class="order-out"></div></div>
       <div class="order-column" data-column="1"><div class="order-label">Heart <span class="order-hint" data-hint="move"></span></div><ul class="order-list" data-list="hearts"></ul></div>
     </div>
     <div class="order-summary"><span class="order-summary-label">Your blaster</span><span class="order-summary-text"></span></div>
+    </div>
     <div class="order-foot">
       <div class="order-keys">
         <span class="order-keyhint" data-hint="switch"></span>
@@ -116,6 +117,9 @@ export function createOrderFormView() {
       columns.forEach((c, i) => c.classList.toggle('active', i === view.column));
       // The up/down keys show on the column you are in.
       moveHints.forEach((h, i) => (i === view.column ? h.replaceChildren(...keycaps(labels.move)) : h.replaceChildren()));
+      // Keep keyboard/controller selection readable inside the bounded scroll
+      // area; the order/cancel footer stays outside it on short displays.
+      lists[view.column === 0 ? 'stuffings' : 'hearts'].querySelector('.selected')?.scrollIntoView({ block: 'nearest' });
       hint(switchHint, labels.switch, view.column === 0 ? 'Heart' : 'Stuffing');
       hint(backHint, labels.back, 'Cancel');
       buttonKeys.replaceChildren(...keycaps(labels.confirm));

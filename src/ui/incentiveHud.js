@@ -35,12 +35,23 @@ export function createIncentiveHud() {
       const key = `${status.round}|${available}|${percent}|${pickup?.id}|${Math.ceil(pickup?.remaining ?? 0)}|${Math.ceil(active?.remaining ?? 0)}|${benefitText}`;
       if (key === lastKey) return;
       lastKey = key;
-      label.textContent = available ? `EMPLOYEE INCENTIVES · ${percent}%`
-        : status.round < powerUps.firstRound ? `INCENTIVES BEGIN ROUND ${powerUps.firstRound}` : 'ROUND INCENTIVE ALLOWANCE USED';
+      label.textContent = available ? `PROGRESS · ${percent}%`
+        : status.round < powerUps.firstRound ? `BEGINS ROUND ${powerUps.firstRound}` : 'ROUND ALLOWANCE USED';
       progress.value = status.progress;
       drop.textContent = pickup ? `${powerUps.types[pickup.id].name} · COLLECT · ${Math.ceil(pickup.remaining)}s` : '';
-      zone.textContent = [active ? `BLUE LIGHT SPECIAL · ${Math.ceil(active.remaining)}s · DOUBLE KILL CREDIT IN BLUE ZONE` : '', benefitText].filter(Boolean).join('\n');
-      zone.setAttribute('style', 'white-space: pre-line');
+      const rows = effects.map(effect => {
+        const def = powerUps.types[effect.id];
+        const count = effect.charges != null ? ` · ${effect.charges} LEFT` : effect.healing != null ? ` · ${Math.ceil(effect.healing)} HP LEFT` : '';
+        return { title: `${def.name} · ${Math.ceil(effect.remaining)}s${count}`, hint: def.hint };
+      });
+      if (active) rows.unshift({ title: `BLUE LIGHT SPECIAL · ${Math.ceil(active.remaining)}s`, hint: 'DOUBLE KILL CREDIT IN BLUE ZONE' });
+      zone.replaceChildren(...rows.map(({ title, hint }) => {
+        const row = document.createElement('div'); row.className = 'incentive-effect';
+        const name = document.createElement('strong'); name.textContent = title;
+        const detail = document.createElement('span'); detail.textContent = hint;
+        row.append(name, detail);
+        return row;
+      }));
     },
   };
 }

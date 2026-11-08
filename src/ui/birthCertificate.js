@@ -3,7 +3,7 @@
 import { ui } from '../config/ui.js';
 import { certificateSubtitle } from '../config/workshop.js';
 
-export function createBirthCertificate() {
+export function createBirthCertificate({ autoHide = true } = {}) {
   const element = document.createElement('div');
   element.className = 'birth-certificate';
   element.hidden = true;
@@ -47,7 +47,7 @@ export function createBirthCertificate() {
       element.querySelector('.certificate-note').hidden = !note;
       element.hidden = false;
       clearTimeout(timer);
-      timer = setTimeout(hide, ui.certificateSeconds * 1000);
+      if (autoHide) timer = setTimeout(hide, ui.certificateSeconds * 1000);
     },
   };
 }

@@ -18,6 +18,7 @@ import { createAnnouncements } from './announcements.js';
 import { ui } from '../config/ui.js';
 import { upgrades } from '../config/upgrades.js';
 import { createBossFlashView } from './bossFlash.js';
+import { createNoticeHistory } from './noticeHistory.js';
 
 function el(tag, className) {
   const node = document.createElement(tag);
@@ -27,6 +28,7 @@ function el(tag, className) {
 
 export function createHud() {
   const hud = el('div', 'hud');
+  const history = createNoticeHistory();
   const phoneFlash = createBossFlashView();
   hud.append(phoneFlash.element);
   const incentives = createIncentiveHud();
@@ -108,6 +110,7 @@ export function createHud() {
   interact.append(interactText, interactBar);
   hud.append(interact);
   let lastInteractKey = '';
+  let lastInteractDetail = '';
   const purchaseStamp = el('div', 'purchase-stamp');
   purchaseStamp.setAttribute('role', 'status');
   hud.append(purchaseStamp);
@@ -137,6 +140,7 @@ export function createHud() {
   // Middle of the screen: "ROUND 3" announcement when a round starts.
   const roundBanner = el('div', 'round-banner');
   roundBanner.style.setProperty('--round-seconds', `${ui.roundSeconds}s`);
+  roundBanner.addEventListener('animationend', () => roundBanner.classList.remove('show'));
   hud.append(roundBanner);
 
   const bossBar = el('section', 'boss-bar');
@@ -174,7 +178,8 @@ export function createHud() {
   announceBanner.append(announceSpeaker, announceDisplay);
   announceBanner.setAttribute('role', 'status');
   const announcements = createAnnouncements({
-    show({ kicker = '', text }) {
+    show({ kicker = '', text }, seconds) {
+      announceBanner.style.animationDuration = `${seconds}s`;
       announceKicker.textContent = kicker || 'Galleria public address';
       announceText.textContent = text;
       announceBanner.classList.remove('show');
@@ -227,6 +232,18 @@ export function createHud() {
   hud.append(fpsCounter);
   let lastFps = -1;
 
+  // Flowing lanes keep growing rewards/PA copy clear of other tickets and bosses.
+  const leftStack = el('div', 'hud-left-stack');
+  leftStack.append(roundCounter, incentives.element, ritualTicket.element);
+  const topStack = el('div', 'hud-top-stack');
+  topStack.append(bossBar, roundBanner, bagMarker.element);
+  const rightStack = el('div', 'hud-right-stack');
+  rightStack.append(saleTag, announceBanner, certificate.element);
+  hud.append(leftStack, topStack, rightStack);
+  // A workshop order starts below any active boss display. Measure its real
+  // height, including wrapped names and the player's chosen text size.
+  const updateOrderTop = () => hud.style.setProperty('--hud-order-top', `${Math.ceil(topStack.offsetTop + topStack.offsetHeight + 12)}px`);
+  if (typeof ResizeObserver === 'function') new ResizeObserver(updateOrderTop).observe(topStack);
   // The menus around a run (title / pause / results receipt): ui/screens.js.
   const screens = createScreens();
   document.body.append(hud);
@@ -235,10 +252,16 @@ export function createHud() {
   let lastFraction = -1;
   let lastExhausted = null;
   let lastFull = null;
+  let uiScale = 1, textSize = 1;
+  const refreshTextLayout = () => document.documentElement.classList.toggle('ui-expanded', uiScale * textSize > 1.35);
 
   return {
     // The title / pause / results screens (ui/screens.js): show(), on(action), padNav(), current.
     screens,
+    history,
+
+    setUiScale(value) { uiScale = value; document.documentElement.style.setProperty('--ui-scale', value); refreshTextLayout(); },
+    setTextSize(value) { textSize = value; document.documentElement.style.setProperty('--ui-text-scale', value); refreshTextLayout(); },
 
     setBoss(zombie) {
       if (zombie !== displayedBoss) {
@@ -274,6 +297,7 @@ export function createHud() {
         purchaseTimer = setTimeout(() => purchaseStamp.classList.remove('show'), ui.purchaseSeconds * 1000);
       });
       events.on('runReset', clearNotices);
+      events.on('runReset', () => history.clear());
       events.on('playerDeath', clearNotices);
       events.on('mascotPopBlast', ({ butter: buttered, butterSeconds }) => {
         if (buttered) splatButter(butterSeconds);
@@ -302,6 +326,7 @@ export function createHud() {
 
     // The Birth Certificate, at collection: { name, gunName, combo, stuffing, heart, quality, kills, round, remark, note }.
     showCertificate(fields) {
+      history.addCertificate(fields);
       certificate.show(fields);
     },
 
@@ -352,6 +377,7 @@ export function createHud() {
 
     // A PA-style announcement: { kicker, text, priority? }. Queue/preempt rather than overwrite.
     showAnnouncement(message) {
+      history.addMessage(message);
       announcements.push(message);
     },
 
@@ -383,7 +409,7 @@ export function createHud() {
       if (!ticket) {
         ticket = document.createElement('div');
         ticket.className = 'boss-voucher';
-        hud.appendChild(ticket);
+        rightStack.insertBefore(ticket, announceBanner);
       }
       ticket.hidden = !voucher;
       ticket.textContent = voucher ? `Voucher: ${voucher.name}` : '';
@@ -508,7 +534,15 @@ export function createHud() {
       interactOriginal.hidden = !info.sale || !(info.originalCost > info.cost);
       interactOriginal.textContent = `${(info.originalCost ?? info.cost).toLocaleString('en-US')}`;
       // Ordinary purchases need one line. Keep the terms only where they affect an upgrade decision.
-      interactDetail.textContent = (info.kind === 'attachment' || info.kind === 'workshop' || info.kind === 'ritual') ? info.detail ?? '' : info.kind === 'tier' ? 'Ammo not included' : '';
+      const detail = ['attachment', 'workshop', 'ritual'].includes(info.kind) ? info.detail ?? '' : info.kind === 'tier' ? 'Ammo not included' : '';
+      if (detail !== lastInteractDetail) {
+        lastInteractDetail = detail;
+        interactDetail.replaceChildren(...detail.split(' · ').filter(Boolean).map(term => {
+          const line = el('span', term.includes('→') ? 'interact-term interact-change' : 'interact-term');
+          line.textContent = term;
+          return line;
+        }));
+      }
       interactButton.textContent = button;
       interactStatus.textContent = info.blocked ?? (!info.canAfford ? `Need ${(info.shortfall ?? 0).toLocaleString('en-US')} more` : '');
       interact.classList.toggle('cant', !info.canAfford || !!info.blocked);

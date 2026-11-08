@@ -1,10 +1,14 @@
 // Presentation only. Timers never affect purchases, round pacing or player input.
 export const ui = {
   announcementSeconds: 4.5,
+  announcementMaxSeconds: 12,
+  announcementWordsPerSecond: 3,
   announcementQueueSize: 3,
-  purchaseSeconds: 1.6,
+  noticeHistorySize: 30,
+  certificateHistorySize: 8,
+  purchaseSeconds: 3,
   roundSeconds: 2.2,
-  certificateSeconds: 6, // the Birth Certificate clears itself: you are mid-fight
+  certificateSeconds: 12, // also retained in the pause menu's notices archive
   weaponRoles: {
     stapleGun: 'Precision sidearm · Aim for heads',
     priceGun: 'Close-range automatic · Fast reload',
