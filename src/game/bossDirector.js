@@ -1,8 +1,9 @@
 import { bossTiming, bossTypes } from '../config/bosses.js';
 import { economy, maxAliveForRound, zombieCountForRound } from '../config/economy.js';
 import { createJanitorBehavior } from '../zombies/bosses/janitor.js';
+import { createManagerBehavior } from '../zombies/bosses/manager.js';
 
-const behaviors = { janitor: createJanitorBehavior };
+const behaviors = { janitor: createJanitorBehavior, manager: createManagerBehavior };
 
 export function chooseBossSchedule(random = Math.random) {
   const intros = new Set(Object.values(economy.zombieMix).map(({ fromRound }) => fromRound));
@@ -11,7 +12,7 @@ export function chooseBossSchedule(random = Math.random) {
     const rounds = type.firstRounds.filter(round => !intros.has(round) && !schedule.has(round));
     if (rounds.length) schedule.set(rounds[Math.floor(random() * rounds.length)], id);
   }
-  return schedule;
+  return new Map([...schedule].sort(([a], [b]) => a - b));
 }
 
 export function createBossDirector({ events, rounds, zombies, scene, colliders, player, stats, powerUps, state }) {
@@ -36,7 +37,7 @@ export function createBossDirector({ events, rounds, zombies, scene, colliders, 
     active = zombie;
     spawned = true;
     behavior = behaviors[id]({
-      zombie, scene, colliders, player, powerUps,
+      zombie, scene, colliders, player, powerUps, zombies,
       onPhase: (phase) => events.emit('bossPhase', { zombie, phase, round: rounds.round }),
     });
     events.emit('bossSpawn', { zombie, round: rounds.round });
@@ -64,7 +65,7 @@ export function createBossDirector({ events, rounds, zombies, scene, colliders, 
     get pending() { return pending(); },
     get patches() { return behavior?.patches ?? []; },
     get scheduledRound() { return [...(schedule?.keys() ?? [])][0] ?? null; },
-    summon(id = schedule?.get(rounds.round) ?? Object.keys(bossTypes)[0]) { return bossTypes[id] ? spawn(id) : null; },
+    summon(id = schedule?.get(rounds.round) ?? 'janitor') { return bossTypes[id] ? spawn(id) : null; },
     update(dt, allowSpawn = true) {
       if (active && !zombies.zombies.includes(active)) clear();
       if (active) {

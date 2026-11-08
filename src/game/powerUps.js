@@ -1,6 +1,7 @@
 // Earned dynamic drops. No DOM/WebGL: the optional view only receives state.
 import * as THREE from 'three';
 import { powerUps as defaults } from '../config/powerUps.js';
+import { bossVouchers } from '../config/bosses.js';
 import { overlapsSolid, rampHeightAt } from '../world/collision.js';
 import { createIncentiveEffects } from './incentiveEffects.js';
 
@@ -109,7 +110,9 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
 
   function collect() {
     const item = pickup;
-    const def = config.types[item.id];
+    const voucher = bossVouchers[item.id];
+    const def = voucher ?? config.types[item.id];
+    if (voucher && !pricing.setVoucher(voucher)) return; // keep the pickup while the previous voucher is held
     pickup = null; // remove first: listeners cannot collect the same reward twice
     if (item.id === 'stockroomDelivery') gun.restock(def.magazineFraction);
     if (item.id === 'securitySweep') zombies.securitySweep(player.position, def);
@@ -117,7 +120,7 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
       active = { id: item.id, position: item.position.clone(), remaining: def.seconds, radius: def.radius };
       events.emit('powerUpStart', { ...active, position: active.position.clone() });
     }
-    if (!['stockroomDelivery', 'securitySweep', 'blueLightSpecial'].includes(item.id)) {
+    if (!voucher && !['stockroomDelivery', 'securitySweep', 'blueLightSpecial'].includes(item.id)) {
       if (!benefits.start(item.id, item.position, item.bossReward)) {
         events.emit('powerUpExpire', { id: item.id });
         return;

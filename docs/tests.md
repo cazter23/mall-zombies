@@ -1,5 +1,7 @@
 # Sunset Galleria: what each test file covers
 
+`tests/manager.test.js` covers exact meeting cancellation, failure buff expiry, report target cap/visibility, every meeting cleanup path, reward collection, booth redemption and automatic conversion at the voucher tier cap.
+
 `tests/debugCommands.test.js` also checks the overlay's grouped commands, selected next gun, active boss,
 god mode, refresh timing and accessible visibility.
 
@@ -17,6 +19,8 @@ zone and up to Build-A-Blaster from directly below the player, without a rescue 
 
 `tests/workshopRoom.test.js` covers the Build-A-Blaster room: plot limits, lanes of at least 3 m round the island, a player lap both ways, every floor point
 reachable by zombies, a zombie following round each side, the hall as its own culling room and its grade.
+
+`tests/workshopBuilds.test.js` also covers the order form: everything listed, today's first and the rest with a reason, pre-filled, keys / wheel / stick / D-pad, unavailable rows skipped, Q and B cancel, the last order remembered, standing still but still getting hit, death closing it.
 
 `tests/workshopRitual.test.js` covers the ritual in the real game: the price, handing over, the Courtesy Loaner, kills counting only in the room, quality thresholds, the maximum time,
 walking away and coming back, conveyor stages, the lever and booth only answering at the right time, gun purchases mid-ritual, upgrades staying on the gun, Play again and death

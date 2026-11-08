@@ -20,7 +20,9 @@ test('a run picks one Janitor round from 5 or 7 and leaves the Mascot and other 
   const intros = Object.values(economy.zombieMix).map(({ fromRound }) => fromRound);
   for (const [roll, expected] of [[0, 5], [0.99, 7]]) {
     const schedule = chooseBossSchedule(() => roll);
-    assert.deepEqual([...schedule], [[expected, 'janitor']]);
+    assert.equal(schedule.get(expected), 'janitor');
+    assert.equal(schedule.size, Object.keys(bossTypes).length);
+    for (const [round, id] of schedule) assert.ok(bossTypes[id].firstRounds.includes(round) && !intros.includes(round));
     assert.ok(!intros.includes(expected));
   }
   assert.equal(economy.zombieMix.mascot.fromRound, 10);
@@ -82,7 +84,8 @@ test('a boss uses normal markers even during a live Returns Chute ritual', (t) =
   ritual.choose('smoothie', 'headshot');
   g.player.teleport({ position: new THREE.Vector3(bench.position.x, g.map.levelTwo.workshop.position.y, bench.position.z - 1), yaw: Math.PI });
   tick();
-  press('KeyF', 20);
+  press('KeyF', 20); // opens the order form (filled in with the choice above)...
+  press('KeyF'); // ...and F orders
   assert.equal(ritual.phase, 'running');
   let drops = 0;
   g.events.on('chuteDrop', () => { drops += 1; });

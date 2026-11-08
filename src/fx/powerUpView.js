@@ -1,6 +1,7 @@
 // Reusable low-poly incentive props. Emissive materials, no dynamic lights or colliders.
 import * as THREE from 'three';
 import { powerUps as config } from '../config/powerUps.js';
+import { bossVouchers } from '../config/bosses.js';
 import { rampHeightAt } from '../world/collision.js';
 
 export function createPowerUpView(scene, colliders) {
@@ -25,7 +26,7 @@ export function createPowerUpView(scene, colliders) {
     return mesh;
   }
   const props = {};
-  for (const [id, def] of Object.entries(config.types)) {
+  for (const [id, def] of Object.entries({ ...config.types, ...bossVouchers })) {
     const group = new THREE.Group();
     group.name = id;
     group.visible = false;

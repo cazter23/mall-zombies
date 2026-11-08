@@ -1,0 +1,30 @@
+import * as THREE from 'three';
+
+// Costume parts share the skeleton's materials/geometry ownership and animated bones.
+export function dressEmployee(type, { upper, neck, arms, mat, block }) {
+  for (const [key, bone] of [['torso', upper], ['head', neck], ['hand', arms[1].elbow]]) {
+    for (const p of type.costume?.[key] ?? []) {
+      const mesh = block(mat(p.color), ...p.size, ...p.at, bone);
+      mesh.rotation.z = p.tilt ?? 0;
+    }
+  }
+}
+
+export function createWhiteboard(scene, cfg) {
+  const root = new THREE.Group();
+  root.name = 'managerWhiteboard';
+  root.userData.dynamic = true;
+  root.visible = false;
+  for (const p of cfg.pieces) {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(...p.size), new THREE.MeshStandardMaterial({ color: p.color }));
+    mesh.position.set(...p.at);
+    mesh.rotation.z = p.tilt ?? 0;
+    root.add(mesh);
+  }
+  scene.add(root);
+  return {
+    show(position) { root.position.copy(position).add(new THREE.Vector3(...cfg.offset)); root.visible = true; },
+    hide() { root.visible = false; },
+    dispose() { root.removeFromParent(); root.traverse(o => { o.geometry?.dispose(); o.material?.dispose(); }); },
+  };
+}

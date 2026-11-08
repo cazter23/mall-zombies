@@ -1,5 +1,7 @@
 # Sunset Galleria: folder structure (every module)
 
+Boss encounters: bosses/manager.js owns meetings/reports; bosses/employeeModel.js mounts configured costume parts and owns the temporary whiteboard. game/bossVouchers.js wires carried-gun/area eligibility and points conversion into pricing. powerUps.js and powerUpView.js deliver voucher pickups through the existing reward queue.
+
 > Moved out of CLAUDE.md (verbatim) so the file every session loads stays small. One entry per module: what it is for and its interface. Read the entries for the modules you are about to change (grep for the file name).
 
 ```
@@ -27,14 +29,16 @@ src/
   weapons/models/loanerTag.js The Courtesy Loaner's security tag and swinging card (reversible, like the other upgrade visuals).
   game/features/workshop.js The workshop feature: builds the ritual, its effects and the Limited Edition drops, runs Party Trap charges.
   game/features/limitedEditions.js The bag a shopping-bag zombie sometimes drops: walk over it and Party Trap or Clearance Rack fits a gun you carry, free.
-  game/features/workshopRitual.js The Build-A-Blaster ritual: idle, running, ready. Bench, gun on the conveyor, gauge, lever, maximum time, Naming Booth, chute steering. Built by workshop.js.
+  game/features/workshopRitual.js The Build-A-Blaster ritual: idle, running, ready. Bench opens the order form, gun on the conveyor, gauge (kills also shorten the clock), maximum time, the gun coming back by itself, chute steering. Built by workshop.js.
   game/features/workshopStuffings.js What a finished build does: one function per Stuffing, one per Heart. Hearts read 'shot' and hand off to the stuffing; nothing here emits 'shot', so a stuffing's kills can't fire a Heart.
   game/features/workshopSpectacle.js Ritual mode: tank fill, party colours on the hall's two lamps, bulb string, belt, arm, flap, lever, jingle. Show only; reset() puts every part back.
   zombies/confusion.js  Glitter's AI: a confused zombie forgets the player and fights the nearest other zombie with its normal attack.
   zombies/tankDeath.js  A kill in the room flying into the Stuffing Tank (visual; the kill is already paid).
   weapons/models/buildVisual.js A finished gun's look: seam, patch and stitches in the stuffing's colour, lumps and leaking tufts when Overstuffed. Instanced, placed from the sticker and top mounts.
   ui/birthCertificate.js The Birth Certificate notice at collection. Clears itself; nothing pauses.
-  ui/ritualHud.js       The order ticket on the HUD: your picks, then the gun's stage, gauge and time (reads the ritual's status).
+  game/features/workshopOrderForm.js The bench's order form: every Stuffing and Heart on one sheet, pre-filled, driven by menu actions. Sets state.menu while open (the player stands still, the world doesn't).
+  ui/orderForm.js       Draws the order form from its view. Only draws: choices come in on the fixed tick.
+  ui/ritualHud.js       The order ticket on the HUD: the gun's stage, one progress bar, the gauge and time (reads the ritual's status).
   game/features/clearanceRack.js Clearance Rack tags on up to three zombies; a headshot on a tagged zombie pops them all.
   game/features/clearanceSticker.js The canvas sticker drawn on tagged zombies.
   zombies/partyTrapDeath.js The pose, ribbon and confetti after a trap kill. The kill is paid on impact; this is visual only.

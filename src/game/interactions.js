@@ -12,6 +12,7 @@
 //   cost         points (number)
 //   title/detail optional shelf-ticket heading and explanation (strings or getters); label remains the purchase-event text
 //   priceLabel   optional text instead of the number on the ticket (a free action: "Free")
+//   quiet        optional: use() isn't a purchase (it opens a menu): no 'purchase' sound or event
 //   blocked      optional text (string or getter): shown on the ticket instead of being bought, and refused like too few points
 //   position     THREE.Vector3 the player interacts with (distance + facing are measured to it)
 //   seeThrough   optional [Box3]: solids that don't block the line of sight to it (a door's own shutter)
@@ -111,8 +112,8 @@ export function createInteractions({ input, player, wallet, sound = null, onRelo
         purchase.areaId = result.areaId;
         purchase.openedDoorIds = result.openedDoorIds;
       }
-      if (sound) sound.play('purchase');
-      if (onPurchase) onPurchase(purchase, pricingId);
+      if (!item.quiet && sound) sound.play('purchase');
+      if (!item.quiet && onPurchase) onPurchase(purchase, pricingId);
     } else {
       deniedTimer = cfg.deniedSeconds;
       if (sound) sound.play('denied');

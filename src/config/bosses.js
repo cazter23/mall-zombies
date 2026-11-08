@@ -8,7 +8,56 @@ export const bossTiming = {
   introPriority: 3,
 };
 
+export const bossVouchers = {
+  signedApproval: {
+    name: 'Signed Approval', category: 'tier', ids: ['deluxe', 'premium'], fraction: 1,
+    pointsInstead: 1500, color: 0xe4c779, icon: 'ticket', sound: 'incentiveRestock',
+    pa: { kicker: 'Approval received', text: 'One warranty tier, through Premium. Management accepts no responsibility for your aim.' },
+  },
+};
+
 export const bossTypes = {
+  manager: {
+    ...shopper, id: 'manager', boss: true, name: 'Dennis Fairweather', title: 'General Manager',
+    barNotice: 'Mandatory all-staff attendance', firstRounds: [12, 13, 14], healthMultiplier: 10,
+    slowStrength: 0.5, speed: 2.4, speedVariation: 0, gaits: null, gaitsByRound: null, bagChance: 0,
+    shirtColors: [0x45425d], pantsColors: [0x292638], shoeColor: 0x171821,
+    modelScale: { width: 1.16, height: 1.1 },
+    attack: { ...shopper.attack, damage: 60, windupSeconds: 0.9, minWindupSeconds: 0.9, windupShrinkPerRound: 0, moveSpeedFraction: 0.45 },
+    introBanner: { kicker: 'Management is on the floor', text: 'Dennis Fairweather would like a quick word. Please budget the rest of your life.' },
+    introSound: 'paChime', reward: 'signedApproval',
+    report: { interval: 8, radius: 14, maxTargets: 6, seconds: 5, speed: 1.3 },
+    meeting: { thresholds: [0.66, 0.33], seconds: 8, radius: 12, damageTaken: 1.5, cancelFraction: 0.15,
+      stunSeconds: 3, buffSeconds: 20, speed: 1.25, damage: 1.25 },
+    phases: {
+      report: { kicker: 'Direct Report', text: 'Management has identified six employees with spare capacity.' },
+      meeting: { kicker: 'Staff Meeting', text: 'Attendance is mandatory. Shoot the presenter to submit feedback.' },
+      cancelled: { kicker: 'Meeting cancelled', text: 'Your feedback has been received at considerable velocity.' },
+      failed: { kicker: 'Action items assigned', text: 'Productivity is up twenty-five percent. Morale remains unmeasured.' },
+    },
+    costume: {
+      torso: [
+        { color: 0xf8e9cb, size: [0.16, 0.4, 0.025], at: [0, 0.36, -0.135] },
+        { color: 0xae4e59, size: [0.06, 0.3, 0.03], at: [0, 0.34, -0.16] },
+        { color: 0xeac66b, size: [0.15, 0.07, 0.035], at: [-0.13, 0.45, -0.155] },
+      ],
+      hand: [
+        { color: 0x947043, size: [0.3, 0.4, 0.045], at: [0, -0.1, -0.25] },
+        { color: 0xffefcd, size: [0.25, 0.31, 0.015], at: [0, -0.1, -0.28] },
+        { color: 0xaaaeb7, size: [0.13, 0.05, 0.04], at: [0, 0.08, -0.28] },
+      ],
+    },
+    whiteboard: { offset: [0.7, 0, 0.4], pieces: [
+      { color: 0xf4eedc, size: [1.4, 0.9, 0.08], at: [0, 1.35, 0] },
+      { color: 0x485663, size: [1.48, 0.06, 0.12], at: [0, 1.82, 0] },
+      { color: 0x485663, size: [0.06, 1.6, 0.08], at: [-0.63, 0.85, 0] },
+      { color: 0x485663, size: [0.06, 1.6, 0.08], at: [0.63, 0.85, 0] },
+      { color: 0x292633, size: [0.18, 0.18, 0.28], at: [-0.63, 0.09, 0] },
+      { color: 0x292633, size: [0.18, 0.18, 0.28], at: [0.63, 0.09, 0] },
+      { color: 0xc75364, size: [0.9, 0.035, 0.015], at: [0, 1.55, -0.055], tilt: 0.1 },
+      { color: 0x42697a, size: [0.7, 0.035, 0.015], at: [0, 1.3, -0.055] },
+    ] },
+  },
   janitor: {
     ...shopper,
     id: 'janitor',

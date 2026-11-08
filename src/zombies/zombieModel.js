@@ -22,6 +22,7 @@ import { buildCart } from './cartModel.js';
 import { createMannequinModel } from './mannequinModel.js';
 import { createMascotModel } from './mascotModel.js';
 import { dressJanitor } from './bosses/janitorModel.js';
+import { dressEmployee } from './bosses/employeeModel.js';
 import { cartLean } from './cartPose.js';
 
 function deformIndexedBox(segX, segY, segZ, fn) {
@@ -366,6 +367,7 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
   }
 
   if (type.id === 'janitor') dressJanitor(type, { upper, neck, arms, mat, block });
+  if (type.costume) dressEmployee(type, { upper, neck, arms, mat, block });
 
   // Batch meshes of the same material on each rigid bone across all zombie types.
   // Bones remain separate so clothes, bags and hair inherit the original walk/attack/death animation.

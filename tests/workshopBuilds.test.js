@@ -357,40 +357,106 @@ test('Overstuffed recharges its Heart twice as fast', () => {
   assert.equal(procs('overstuffed'), 2);
 });
 
-test('picking: a build needs a Stuffing and a Heart, the bench says so, and a real order goes through', () => {
+test('the order form: everything on one sheet, filled in, moved with keys, wheel or stick, confirmed in one press', () => {
   const t = fixture({ gun: null }), { g, ritual, bench } = t;
-  const front = (spot, facing) => {
-    g.player.teleport({ position: new THREE.Vector3(spot.x + facing, Y, spot.z), yaw: facing > 0 ? Math.PI / 2 : -Math.PI / 2 });
-    g.player.pitch = 0; t.tick();
-  };
-  const atBench = () => { g.player.teleport({ position: new THREE.Vector3(0, Y, bench.position.z - 1), yaw: Math.PI }); t.tick(); };
-  atBench();
-  assert.equal(g.interactions.prompt.blocked, 'Pick a Stuffing');
+  g.player.teleport({ position: new THREE.Vector3(0, Y, bench.position.z - 1), yaw: Math.PI }); t.tick();
+  assert.equal(g.interactions.prompt?.id, 'orderForm');
   const points = g.wallet.points;
   t.press('KeyF', 20); t.tick();
-  assert.equal(ritual.phase, 'idle', 'refused');
-  assert.equal(g.wallet.points, points, 'and nothing charged');
+  const form = ritual.form;
+  assert.ok(form, 'open');
+  assert.equal(g.state.menu, 'orderForm');
+  assert.equal(g.wallet.points, points, 'looking is free');
+  assert.equal(form.stuffings.length, Object.keys(workshopStuffings).length, 'every stuffing listed');
+  assert.equal(form.hearts.length, Object.keys(workshopHearts).length, 'every Heart listed');
+  const available = form.stuffings.filter(s => s.available).map(s => s.id);
+  assert.deepEqual([...available].sort(), [...ritual.today].sort(), 'today\'s are the ones you can pick');
+  assert.ok(form.stuffings.slice(0, available.length).every(s => s.available), 'and they come first');
+  assert.ok(form.stuffings.filter(s => !s.available).every(s => s.note), 'the rest say why not');
+  const filled = form.stuffings.find(s => s.selected);
+  assert.equal(filled.id, ritual.today[0], 'filled in with today\'s first');
+  assert.equal(form.hearts.find(h => h.selected).id, workshopStuffings[filled.id].defaultHeart, 'and its usual Heart');
 
-  const bin = bench.stations.bins.find(b => b.id === ritual.today[0]);
-  front(bin.position, 1);
-  assert.equal(g.interactions.prompt?.id, `stuffing:${bin.id}`);
-  t.press('KeyF', 20); t.tick();
-  assert.equal(ritual.pick.stuffing, bin.id);
-  atBench();
-  assert.equal(g.interactions.prompt.blocked, 'Pick a Heart');
+  // Down a row (keys), across to the Heart column, down two (wheel and stick).
+  t.press('KeyS'); t.tick();
+  const second = ritual.form.stuffings.find(s => s.selected).id;
+  assert.equal(second, available[1]);
+  t.press('KeyD'); t.tick();
+  assert.equal(ritual.form.column, 1);
+  const hearts = Object.keys(workshopHearts);
+  const startHeart = hearts.indexOf(ritual.form.hearts.find(h => h.selected).id);
+  t.press('WheelDown'); t.tick();
+  t.input.padMove.y = -1; t.tick(3); t.input.padMove.y = 0; t.tick(3); // one push of the stick is one step
+  const heart = hearts[(startHeart + 2) % hearts.length];
+  assert.equal(ritual.form.hearts.find(h => h.selected).id, heart);
+  // Unavailable stuffings are skipped.
+  t.press('KeyA'); t.tick();
+  for (let i = 0; i < 8; i++) { t.press('KeyS'); t.tick(); assert.ok(ritual.form.stuffings.find(s => s.selected).available); }
 
-  const heart = bench.stations.hearts.find(h => h.id === 'lastRound');
-  front(heart.position, -1);
-  assert.equal(g.interactions.prompt?.id, 'heart:lastRound');
+  // Q backs out without charging; reopening remembers nothing new (it was never ordered).
+  t.press('KeyQ'); t.tick();
+  assert.equal(ritual.form, null);
+  assert.equal(g.state.menu, null);
+  assert.equal(g.wallet.points, points);
+
   t.press('KeyF', 20); t.tick();
-  assert.equal(ritual.status.phase, 'picking');
-  assert.equal(ritual.status.heart, workshopHearts.lastRound.name);
-  atBench();
-  assert.equal(g.interactions.prompt.blocked, null);
-  t.press('KeyF', 20); t.tick();
+  t.press('KeyS'); t.tick(); t.press('KeyD'); t.tick(); t.press('KeyS'); t.tick();
+  const order = { stuffing: ritual.form.stuffings.find(s => s.selected).id, heart: ritual.form.hearts.find(h => h.selected).id };
+  t.press('KeyF'); t.tick();
   assert.equal(ritual.phase, 'running');
+  assert.equal(ritual.form, null);
   assert.equal(g.wallet.points, points - economy.upgrades.workshop.ritual);
-  assert.equal(ritual.pick.stuffing, null, 'the picks went into the order');
+  assert.equal(ritual.status.stuffingName, workshopStuffings[order.stuffing].name);
+  assert.equal(ritual.status.heartName, workshopHearts[order.heart].name);
+  g.map.dispose();
+});
+
+test('the order form remembers your last order, and a controller works it with the D-pad, A and B', () => {
+  const t = fixture({ gun: null }), { g, ritual, bench } = t;
+  const atBench = () => { g.player.teleport({ position: new THREE.Vector3(0, Y, bench.position.z - 1), yaw: Math.PI }); t.tick(); };
+  t.tick(); // (the bins fill for the areas the fixture opened)
+  ritual.choose(ritual.today[1], 'everyTenth');
+  atBench();
+  t.press('KeyF', 20); t.tick();
+  assert.equal(ritual.form.stuffings.find(s => s.selected).id, ritual.today[1]);
+  assert.equal(ritual.form.hearts.find(h => h.selected).id, 'everyTenth');
+  t.press('PadB'); t.tick();
+  assert.equal(ritual.form, null, 'B backs out');
+  t.press('KeyF', 20); t.tick();
+  t.press('PadRight'); t.tick(); t.press('PadUp'); t.tick();
+  const heart = ritual.form.hearts.find(h => h.selected).id;
+  t.press('PadA'); t.tick();
+  assert.equal(ritual.phase, 'running');
+  ritual.finishNow(); t.tick(Math.ceil(workshopRitual.catchUpSeconds * 60) + 30);
+  assert.equal(buildOf(g.gun.modsFor('stapleGun')).heart, heart);
+  g.gun.weapon.cancelReload();
+  atBench();
+  t.press('KeyF', 20); t.tick();
+  assert.equal(ritual.form.hearts.find(h => h.selected).id, heart, 'the last order is the default');
+  g.map.dispose();
+});
+
+test('the world keeps going while the form is open: you stand still, can\'t shoot, and still get hit', () => {
+  const t = fixture({ gun: null }), { g, ritual, bench } = t;
+  g.health.invulnerable = false;
+  g.player.teleport({ position: new THREE.Vector3(0, Y, bench.position.z - 1), yaw: Math.PI }); t.tick();
+  t.press('KeyF', 20); t.tick();
+  const at = g.player.position.clone();
+  const shots = g.runStats.shotsFired;
+  t.input.held.add('KeyW'); t.press('Mouse0', 10); t.input.held.delete('KeyW');
+  assert.ok(g.player.position.distanceTo(at) < 1e-6, 'standing still');
+  assert.equal(g.runStats.shotsFired, shots, 'not shooting');
+  assert.ok(ritual.form, 'W moved the selection, not you');
+  const zombie = g.zombies.spawn('shopper', new THREE.Vector3(at.x, 0, at.z - .9));
+  zombie.position.y = Y; zombie.setState('chasing'); zombie.updateHitboxes();
+  const health = g.stats.health;
+  t.tick(120);
+  assert.ok(g.stats.health < health, 'zombies still swing at you');
+  assert.ok(ritual.form, 'and the form stays open');
+  g.health.takeDamage(1e6);
+  assert.equal(g.state.over, true);
+  assert.equal(ritual.form, null, 'dying closes it');
+  assert.equal(g.state.menu, null);
   g.map.dispose();
 });
 
@@ -414,14 +480,19 @@ test('today\'s stuffings: Smoothie alone with nothing else owned, up to three on
   g.map.dispose();
 });
 
-test('a bin that closes takes its pick with it', () => {
-  const t = fixture({ gun: null }), { g, ritual } = t;
+test('a remembered stuffing no longer in the bins is swapped for one that is, and the Heart is kept', () => {
+  const t = fixture({ gun: null }), { g, ritual, bench } = t;
   ritual.choose('fryerOil', 'headshot');
   g.map.zones.foodCourt.open = false;
   g.rounds.jumpTo(5);
   t.tick();
-  assert.equal(ritual.pick.stuffing, null);
-  assert.equal(ritual.pick.heart, 'headshot');
+  g.player.teleport({ position: new THREE.Vector3(0, Y, bench.position.z - 1), yaw: Math.PI }); t.tick();
+  t.press('KeyF', 20); t.tick();
+  const filled = ritual.form.stuffings.find(s => s.selected);
+  assert.notEqual(filled.id, 'fryerOil');
+  assert.ok(filled.available);
+  assert.equal(ritual.form.hearts.find(h => h.selected).id, 'headshot');
+  assert.match(ritual.form.stuffings.find(s => s.id === 'fryerOil').note, /Food Court/, 'and it says where to stock it');
   g.map.dispose();
 });
 
@@ -430,17 +501,16 @@ test('re-stuffing: a built gun costs less, and the new build replaces the old', 
   t.fit('smoothie', 'headshot', 'regular');
   ritual.choose('neonTube', 'lastRound');
   g.player.teleport({ position: new THREE.Vector3(0, Y, bench.position.z - 1), yaw: Math.PI }); t.tick();
-  assert.equal(g.interactions.prompt.id, 'restuff');
-  assert.equal(g.interactions.prompt.cost, economy.upgrades.workshop.restuff);
+  assert.equal(g.interactions.prompt.id, 'orderForm');
+  assert.equal(g.interactions.prompt.priceLabel, economy.upgrades.workshop.restuff.toLocaleString('en-US'));
   assert.match(g.interactions.prompt.title, /Re-stuff your Nail Gun/);
   const points = g.wallet.points;
   t.press('KeyF', 20); t.tick();
+  assert.match(ritual.form.title, /Re-stuff/);
+  t.press('KeyF'); t.tick();
   assert.equal(g.wallet.points, points - economy.upgrades.workshop.restuff);
-  const lever = bench.stations.lever, booth = bench.stations.booth;
-  g.player.teleport({ position: new THREE.Vector3(lever.x - 1, Y, lever.z), yaw: -Math.PI / 2 }); t.tick();
-  t.press('KeyF', 20); t.tick();
-  g.player.teleport({ position: new THREE.Vector3(booth.x - 1, Y, booth.z), yaw: -Math.PI / 2 }); t.tick();
-  t.press('KeyF', 20); t.tick(30);
+  ritual.finishNow();
+  t.tick(Math.ceil(workshopRitual.catchUpSeconds * 60) + 30);
   const build = buildOf(g.gun.modsFor('nailGun'));
   assert.equal(build.stuffing, 'neonTube');
   assert.equal(build.heart, 'lastRound');

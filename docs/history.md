@@ -1,5 +1,9 @@
 # Sunset Galleria: build history ("Current state")
 
+## Bosses phase 2: Dennis Fairweather
+
+Added Direct Report, interruptible Staff Meetings, visible whiteboard and Signed Approval pickups. The voucher grants one carried-gun tier through Premium; if all carried guns have reached that limit, it converts to 1500 points. The separate voucher slot survives sales and Employee Discount. Merged the concurrent order-form work and preserved its quiet interactions/menu handling. Phase 1 passed 780 tests and the production build.
+
 ## 7 November 2026 — Murray's maintenance sign
 
 The Janitor's boss bar is a worn yellow caution placard with black striped edges, a warning triangle and
@@ -12,6 +16,18 @@ The debug overlay now groups shortcuts in columns and gives the selected enemy, 
 their own status fields. Shorter labels distinguish clearing enemies from killing them for points and explain the
 Janitor's once-per-round limit. Responsive layouts fit narrow screens and short landscape windows.
 The panel still opens with backtick, and its visibility is exposed to assistive technology.
+
+## 7 November 2026 — Build-A-Blaster's order form
+
+Playing it by hand, the ritual took too many stops in the middle of a fight: bins, Heart wall, bench, lever, booth. Now: hold F at the bench and an order form
+opens with every Stuffing and Heart on one sheet, already filled in (your last order, else today's first stuffing and its usual Heart, config defaultHeart), so F again
+orders. W/S, the wheel, the stick or the D-pad choose; A/D switch column; F / controller A order; Q / B cancel. The world keeps going while it's open: the player
+stands still and can't shoot or buy (createGame's new state.menu gate), zombies keep swinging. Kills in the room now also take 1 s each off a 30 s clock (was 45 s,
+with a lever), and the gun comes back to your hands by itself once the gantry reaches the booth, wherever you are. It only waits at the booth when taking it would
+replace a gun you bought meanwhile, and the PA says so. The bins, Heart wall and lever stay as scenery.
+
+Found while testing: the gun used to ride the whole path (belt and gantry) during the run, which was invisible with a lever but meant a finished order arrived
+instantly. It now rides only the belt while running, then always takes catchUpSeconds to reach the booth.
 
 ## 6 November 2026 — One-click play, and the single file finally boots
 
