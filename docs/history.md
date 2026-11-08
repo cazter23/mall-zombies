@@ -1,5 +1,19 @@
 # Sunset Galleria: build history ("Current state")
 
+## 8 November 2026 — Idle saver (focus mode)
+
+The title screen draws a full post-processed flyover every frame, so a tab left open on the menu kept a CPU core and the GPU busy all day. Now, while the game is
+not running (title, pause and results screens), it goes easy when nobody is there: after 30 s with nothing pressed (or the window unfocused) it draws 10 frames a
+second, after 2 minutes it stops drawing and suspends the audio, and any key, click, mouse move over the focused window, controller input or the window gaining
+focus wakes it at once. Never during a live run, a benchmark, or the first launch's graphics measurement (autoGraphics). Numbers: config/idle.js; settings:
+Graphics > Save power when idle, Idle delay (short / normal / long), Audio > Mute when asleep. A hidden tab was already stopped by the browser; this covers the tab
+that is visible but not the one in use.
+Checked in the browser pane (a hidden pane throttles frames, so only states and frame counters mean anything): dim at 15 s and asleep at 60 s on the short delay,
+0 frames drawn in 5 s asleep, awake again on focus with 62 frames in 3 s. Not measured: Firefox / the GPU saving itself (use about:processes). The audio suspend
+is only covered by the test double (the pane never got a click to start audio).
+Files: core/loop.js (the handle), core/idleGovernor.js (decisions, pure), core/idleSaver.js (listeners, controller poll), audio/sound.js setSleeping, main.js
+(builds it; eligible = not running, no benchmark, graphics measured or window hidden), tests/idleSaver.test.js.
+
 ## 8 November 2026 â€” Build-A-Blaster becomes the big power-up
 
 Playtested with a headless horde bot (tools/babReport.mjs, `npm run balance:bab`: Nail Gun and Rivet Rifle, rounds 8-16, 14 shoppers walking at a bot that aims

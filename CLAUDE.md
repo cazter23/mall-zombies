@@ -73,7 +73,7 @@ src/game/            ALL gameplay wiring, DOM-free so it runs headless in tests:
                      counters, Build-A-Blaster's ritual and builds, horror director), powerUps, careerStats, settings, debugCommands, ambience, shutterSounds
 src/config/          EVERY tunable number: feel, economy (prices), weapons, zombies, controls, audio, settings, debug, look (art direction),
                      environment, plus one file per area (promenade, cinema, cinemaStairs, departmentStore, departmentStoreDetails, atrium...)
-src/core/            fixed-step loop, input, gamepad, haptics, springs, keyframes
+src/core/            fixed-step loop, input, gamepad, haptics, springs, keyframes, idle saver (title/pause screens draw slowly then stop: config/idle.js)
 src/player/          controller (movement/stances/camera), vault, stats (THE stats object), health, body (first-person legs)
 src/weapons/         weapon (ammo/fire state), aim, aimAssist, hitscan, melee, gunStats (THE damage maths), upgrades, playerGun (2-slot loadout), viewmodel,
                      models/ (one file per gun + upgradeParts), muzzleFlash

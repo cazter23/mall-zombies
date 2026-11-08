@@ -12,6 +12,7 @@ import * as THREE from 'three';
 import { feel } from './config/feel.js';
 import { debug } from './config/debug.js';
 import { startLoop } from './core/loop.js';
+import { createIdleSaver } from './core/idleSaver.js';
 import { Input } from './core/input.js';
 import { createGamepad } from './core/gamepad.js';
 import { createHaptics } from './core/haptics.js';
@@ -459,12 +460,21 @@ function applyDeathCamera(alpha) {
   );
 }
 
-startLoop({
+const loop = startLoop({
   tickRate: feel.simulation.tickRate,
   maxFrameTime: feel.simulation.maxFrameTime,
   beforeUpdate: applyLookInput,
   update,
   render,
+});
+
+// Idle saver (core/idleSaver.js, config/idle.js): while nobody is playing (title, pause and results screens) the game draws
+// slowly, then stops, and suspends its audio. Never during a live run, a benchmark, or the first launch's graphics measurement
+// (unless that window is hidden, when the measurement is skipping frames anyway).
+const idleSaver = createIdleSaver({
+  loop, sound,
+  eligible: () => !game.running && !benchmark.active
+    && (autoGraphics.done || !(document.visibilityState === 'visible' && document.hasFocus())),
 });
 
 if (debug.exposeToWindow) {
@@ -474,7 +484,7 @@ if (debug.exposeToWindow) {
     gamepad, aimAssist, wallet, rounds, sound, interactions, g, screens, titleCamera, roomCulling,
     menus: { play, pauseRun, freshRun, goToTitle }, // the menu flow, for testing
     benchmark: runBenchmark, // await __mall.benchmark() -> the report (title or pause screen)
-    settings, lightPool, // (settings.set(id, value) as the menu would; the light pool)
+    settings, lightPool, loop, idleSaver, // (settings.set(id, value) as the menu would; the light pool)
   };
   // Advance the real game loop by `ticks` fixed steps and draw one frame. For automated
   // testing when the browser isn't animating (e.g. a hidden tab). Pair with game.forceRun.

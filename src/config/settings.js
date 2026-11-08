@@ -33,6 +33,7 @@ import { gamepad, aimAssist } from './controls.js';
 import { atmosphere } from './environment.js';
 import { look } from './look.js';
 import { bossComfort } from './bosses.js';
+import { idle } from './idle.js';
 
 export const settingsTabs = ['Graphics', 'Mouse', 'Controller', 'Audio', 'Comfort'];
 export const menuFeel = { confirmSeconds: 3 };
@@ -67,6 +68,20 @@ export const settingDefs = [
   {
     id: 'showFps', tab: 'Graphics', label: 'FPS counter', type: 'toggle', default: false,
     apply: (v, ctx) => ctx.hud.setFpsVisible(v),
+  },
+  {
+    id: 'idleSaver', tab: 'Graphics', label: 'Save power when idle', type: 'toggle', default: idle.enabled,
+    hint: 'On the title, pause and results screens: draws slowly, then stops, when nothing is pressed. Any key, click or controller button wakes it. Never touches a live run.',
+    apply: (v) => { idle.enabled = v; }, // the idle saver reads config/idle.js every check
+  },
+  {
+    id: 'idleDelay', tab: 'Graphics', label: 'Idle delay', type: 'select', default: idle.delay,
+    options: [
+      { value: 'short', label: 'Short (15 s, then 1 min)' },
+      { value: 'normal', label: 'Normal (30 s, then 2 min)' },
+      { value: 'long', label: 'Long (1 min, then 5 min)' },
+    ],
+    apply: (v) => { idle.delay = v; },
   },
   {
     id: 'renderScale', tab: 'Graphics', label: 'Render resolution', type: 'slider',
@@ -196,6 +211,11 @@ export const settingDefs = [
     id: 'musicVolume', tab: 'Audio', label: 'Background music', type: 'slider',
     min: 0, max: 1, step: 0.05, default: audio.musicVolume, format: percent,
     apply: (v, ctx) => { audio.musicVolume = v; ctx.sound.setMusicVolume?.(v); },
+  },
+  {
+    id: 'idleMute', tab: 'Audio', label: 'Mute when asleep', type: 'toggle', default: idle.muteWhenAsleep,
+    hint: 'When Save power when idle has put the game to sleep, the sound stops too, and carries on when you come back.',
+    apply: (v) => { idle.muteWhenAsleep = v; },
   },
 
   // ---- Comfort ----

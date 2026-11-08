@@ -212,6 +212,12 @@ export function createSound({ renderMusic = renderMusicInWorker } = {}) {
     stopDeathMusic,
     setAmbience,
     resetMusic() { musicCursor = 0; },
+    // The idle saver (core/idleSaver.js): the whole audio graph stops while nobody is there, and carries on from the same spot.
+    setSleeping(sleeping) {
+      if (!ctx) return;
+      if (sleeping) ctx.suspend();
+      else if (ctx.state === 'suspended') ctx.resume();
+    },
     setMusicVolume(volume) {
       audio.musicVolume = volume;
       if (deathVoice) deathVoice.gain.gain.value = deathMusic.volume * volume;

@@ -63,6 +63,7 @@ src/
   ui/announcements.js   Bounded PA queue: type introductions priority 2, incentives 1, routine messages 0;
                         clear on pause/death/reset; wall-clock presentation timers only
   config/
+    idle.js             Idle saver numbers: delays (short / normal / long: dim and sleep seconds), dimFps, muteWhenAsleep, pollSeconds
     haptics.js          Controller vibration intensity and per-gun/damage/pickup durations, motor strengths and priorities
     bosses.js           Boss debut windows, wave timing, combat and control tuning, PA lines, and the Janitor's costume
                         and Wet Floor settings. Boss kill values and health scaling go through economy.js.
@@ -137,7 +138,14 @@ src/
                         P +5000 / ' points to 0, G god mode / H next wall gun / U free tier, O all doors / T test range / Shift+T Level 2, ` window
   core/
     loop.js             startLoop(): fixed-timestep accumulator; each frame calls beforeUpdate(frameTime) (look
-                        input), then update(dt) per tick, then render(alpha, frameTime)
+                        input), then update(dt) per tick, then render(alpha, frameTime). Returns a handle:
+                        setMaxFps(n|null), pause(), resume() (the clock restarts), paused, maxFps
+    idleGovernor.js     createIdleGovernor(): pure. Which stage ('awake' | 'dim' | 'asleep') the game should be in from
+                        activity, focus and the time; thresholds read live from config/idle.js. Always awake while
+                        eligible() is false (a live run)
+    idleSaver.js        createIdleSaver(): the browser half (main.js builds one). Listens for keys / clicks / pointer /
+                        wheel / focus / visibility and polls the controller; dim = loop.setMaxFps(dimFps), asleep =
+                        loop.pause() + sound.setSleeping(true); any input wakes it at once
     spring.js           createSpring / createSpring3: damped springs back to 0 (exact solution, frame-rate
                         independent). kick(peak) (impulse sized so it peaks at `peak`), displace(), update(dt)
     keyframes.js        samplePose(keys, t, outPos, outRot): eased pose keyframes ({ t, pos: [m], rot: [deg] })
