@@ -412,15 +412,18 @@ export const mascotVariants = {
       hole: { at: [0.3, 0.24], radius: 0.065 },
       string: { color: 'string', radius: 0.12, tube: 0.02, stretch: 1.9, sink: 0.03 },
       // The canvas print in front of the card: SALE clear of the hole, a big "%" for a mouth.
+      // (text sizes are fractions of the canvas height)
       print: { size: [0.86, 0.74], pixels: [512, 440], lift: 0.012, ink: '#d8262e',
-        text: 'SALE', textAt: [-0.07, 0.24], symbol: '%', symbolAt: [0, -0.2] },
-      face: [
-        { color: 'eyes', size: [0.16, 0.19, 0.03], at: [0.17, 0.0, -0.215] },
-        { color: 'eyes', size: [0.16, 0.19, 0.03], at: [-0.17, 0.0, -0.215] },
-        { color: 'dark', size: [0.065, 0.095, 0.02], at: [0.15, -0.02, -0.235] },
-        { color: 'dark', size: [0.065, 0.095, 0.02], at: [-0.15, -0.02, -0.235] },
-        { color: 'dark', size: [0.17, 0.035, 0.02], at: [0.17, 0.12, -0.235], tilt: -0.3 }, // stern brows
-        { color: 'dark', size: [0.17, 0.035, 0.02], at: [-0.17, 0.12, -0.235], tilt: 0.3 },
+        text: 'SALE', textAt: [-0.07, 0.262], textSize: 0.19, symbol: '%', symbolAt: [0, -0.215], symbolSize: 0.34 },
+      face: [ // (front faces at least 1 cm apart: card -0.19, print -0.202, rims -0.212, whites -0.23, pupils and brows -0.245)
+        { color: 'dark', size: [0.19, 0.22, 0.012], at: [0.17, 0.02, -0.206] }, // dark rims so the eyes read on the cream card
+        { color: 'dark', size: [0.19, 0.22, 0.012], at: [-0.17, 0.02, -0.206] },
+        { color: 'eyes', size: [0.16, 0.19, 0.03], at: [0.17, 0.02, -0.215] },
+        { color: 'eyes', size: [0.16, 0.19, 0.03], at: [-0.17, 0.02, -0.215] },
+        { color: 'dark', size: [0.065, 0.095, 0.02], at: [0.15, 0.0, -0.235] },
+        { color: 'dark', size: [0.065, 0.095, 0.02], at: [-0.15, 0.0, -0.235] },
+        { color: 'dark', size: [0.17, 0.035, 0.02], at: [0.17, 0.155, -0.235], tilt: -0.3 }, // stern brows
+        { color: 'dark', size: [0.17, 0.035, 0.02], at: [-0.17, 0.155, -0.235], tilt: 0.3 },
       ],
     },
     reclaim: {
@@ -471,15 +474,18 @@ export const mascotVariants = {
         [0.3, 0.4, 0.2, 0.11], [-0.05, 0.54, 0.12, 0.12, true], [0.1, 0.56, -0.08, 0.11], [-0.14, 0.42, 0.3, 0.11],
       ] },
       // The face sits on the bucket's curve: at [x, y] on its front, `proud` metres off the stripes (back face).
+      // (front faces at least 1.5 cm apart: rims 0.024, whites and mouth 0.04, pupils, teeth and tongue 0.055)
       face: [
+        { color: 'dark', size: [0.18, 0.22, 0.02], at: [0.15, 0.07], proud: 0.004 }, // dark rims: the stripes behind are white too
+        { color: 'dark', size: [0.18, 0.22, 0.02], at: [-0.15, 0.07], proud: 0.004 },
         { color: 'eyes', size: [0.15, 0.19, 0.03], at: [0.15, 0.07], proud: 0.01 },
         { color: 'eyes', size: [0.15, 0.19, 0.03], at: [-0.15, 0.07], proud: 0.01 },
         { color: 'dark', size: [0.06, 0.09, 0.02], at: [0.13, 0.05], proud: 0.035 },
         { color: 'dark', size: [0.06, 0.09, 0.02], at: [-0.13, 0.05], proud: 0.035 },
-        { color: 'dark', size: [0.13, 0.07, 0.03], at: [0.11, -0.15], proud: 0.01, tilt: 0.3 }, // a big grin...
-        { color: 'dark', size: [0.13, 0.07, 0.03], at: [0, -0.18], proud: 0.01 },
-        { color: 'dark', size: [0.13, 0.07, 0.03], at: [-0.11, -0.15], proud: 0.01, tilt: -0.3 },
-        { color: 'butter', size: [0.09, 0.04, 0.02], at: [0.03, -0.19], proud: 0.035 }, // ...with butter on its tongue
+        { color: 'dark', size: [0.26, 0.07, 0.03], at: [0, -0.14], proud: 0.01 }, // a big open grin...
+        { color: 'dark', size: [0.16, 0.06, 0.03], at: [0, -0.19], proud: 0.01 },
+        { color: 'eyes', size: [0.2, 0.03, 0.02], at: [0, -0.12], proud: 0.035 }, // ...with teeth...
+        { color: 'butter', size: [0.1, 0.035, 0.02], at: [0, -0.2], proud: 0.035 }, // ...and butter on its tongue
       ],
     },
     popBlast: {
@@ -520,8 +526,9 @@ export const mascotVariants = {
       cone: { color: 'cone', radiusTop: 0.42, radiusBottom: 0.25, height: 0.46, y: -0.24, segments: 10,
         bands: { color: 'coneDark', count: 2, height: 0.035, proud: 0.012 } },
       scoop: { radius: 0.43, y: 0.14 },
-      // Drips over the rim: [angle around (0 = front), length]; sprinkles on top: [x, y, z, colour name]
-      drips: { color: 'scoop', pieces: [[0.35, 0.16], [1.3, 0.11], [2.2, 0.19], [3.1, 0.13], [4.1, 0.17], [5.2, 0.12]] },
+      // Drips over the rim: [angle around (0 = front), length], kept off the face and the sides (they read as ears there);
+      // sprinkles on top: [x, y, z, colour name]
+      drips: { color: 'scoop', width: 0.05, pieces: [[0.75, 0.11], [2.5, 0.09], [3.8, 0.12], [5.5, 0.1]] },
       sprinkles: { size: [0.07, 0.022, 0.022], pieces: [
         [0.1, 0.5, 0.12, 'sprinkleA'], [-0.14, 0.48, 0.05, 'sprinkleB'], [0.02, 0.52, -0.12, 'sprinkleC'], [-0.06, 0.47, 0.22, 'sprinkleA'],
         [0.2, 0.44, -0.08, 'sprinkleB'], [-0.22, 0.42, -0.14, 'sprinkleC'], [0.24, 0.42, 0.18, 'sprinkleC'], [-0.25, 0.4, 0.2, 'sprinkleB'],
@@ -533,8 +540,9 @@ export const mascotVariants = {
         { color: 'eyes', size: [0.14, 0.17, 0.03], at: [-0.14, 0.2], proud: 0.008 },
         { color: 'dark', size: [0.06, 0.085, 0.02], at: [0.12, 0.18], proud: 0.03 },
         { color: 'dark', size: [0.06, 0.085, 0.02], at: [-0.12, 0.18], proud: 0.03 },
-        { color: 'dark', size: [0.1, 0.05, 0.03], at: [0.07, 0.03], proud: 0.008, tilt: 0.35 }, // a wobbly little smile
-        { color: 'dark', size: [0.1, 0.05, 0.03], at: [-0.07, 0.03], proud: 0.008, tilt: -0.35 },
+        { color: 'dark', size: [0.12, 0.045, 0.03], at: [0, 0.025], proud: 0.008 }, // a little U of a smile
+        { color: 'dark', size: [0.045, 0.06, 0.03], at: [0.075, 0.05], proud: 0.008 },
+        { color: 'dark', size: [0.045, 0.06, 0.03], at: [-0.075, 0.05], proud: 0.008 },
         { color: 'bow', size: [0.07, 0.05, 0.02], at: [0.2, 0.07], proud: 0.008 }, // rosy cheeks
         { color: 'bow', size: [0.07, 0.05, 0.02], at: [-0.2, 0.07], proud: 0.008 },
       ],

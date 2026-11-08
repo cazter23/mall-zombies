@@ -1,5 +1,24 @@
 # Sunset Galleria: build history ("Current state")
 
+## 7 November 2026 — Mascot costumes (branch codex/mascot-variants)
+
+The Mascot keeps exactly its slot: share, cap of two and the round-10 intro, all still from economy.zombieMix.mascot. Each Mascot now wears one
+of the costumes unlocked so far (config/zombies.js mascotVariants). The zombie manager picks the costume after the spawn point, weighted 3x in a
+costume's home zones. Every costume resolves once into its own type (id 'mascot', plus variant and name), so the existing type.mascot reads and
+tests needed no change, and zombieTypes.mascot is Sir Waffles. Each costume changes one beat:
+- **Captain Coupon** (13, Mega Mart): after the shake he goes back for his helmet and puts it on, once, back to 3/4 health. The second pop pays no bonus. He gives up
+  when it is gone, when you stand guard by it, or after 6 s. Fallen helmets now know their owner, and the cap never evicts the one he still wants.
+- **Poppy Corn** (16, Cinema): the pop is a blast. Zombies within 4 m get the Security Sweep's stagger (no damage, no pay), and a player within 3 m is shoved and buttered (HUD splat).
+- **Scoops** (19, Atrium, Food Court): melt puddles every 0.5 s (0.25 bare-headed) slow the player to 0.6. They come from one pool of 14 discs and clear at round end, death and Play again.
+- **Employee of the Month** (15+, 8%): the gold version of any costume. It has 1.5x health and a PA line, and it always drops a power-up through the boss-reward queue, outside the meter.
+
+Decisions. A costume's debut round forces its first Mascot. That forced spawn still rolls its dice, so a seeded wave is identical with or without costumes outside
+debut rounds (tested). With only one costume unlocked nothing extra is rolled, so rounds 10-12 play exactly as before. stats.surfaceSpeed now has one writer, game/surfaceSlows.js:
+each source keeps its own slot and the lowest wins. The spec said "reset to 1 each tick", but sources report after the player moves, so a per-tick reset would
+have hidden every slow. Bosses no longer take a costume's debut round. The in-game look check found faces lost against the popcorn stripes and the cream price
+tag (now dark-rimmed eyes), and drips that read as ears. Per-costume posters were skipped; the PA lines carry the flavour. Note for debugging: a Mascot with speed 0 poses as NaN
+(the stride divides by speed). Nothing in the game does that; hold one in place with a long stagger instead.
+
 ## 6 November 2026 — One-click play, and the single file finally boots
 
 `npm run play` / play.cmd (tools/play.mjs) opens the single-file build in Firefox with no server, rebuilding only when the source is newer and falling back to the last good build. The

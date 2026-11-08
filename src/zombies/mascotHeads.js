@@ -160,7 +160,7 @@ export const HEADS = {
     const drip = sharedOnce('iceCreamCone.drip', () => new THREE.IcosahedronGeometry(1, 1));
     for (const [angle, length] of drips.pieces) {
       const r = cone.radiusTop + 0.01; // (angle 0 = the front, -z)
-      shape(group, drip, colors[drips.color], [Math.sin(angle) * r, rim - length * 0.4, -Math.cos(angle) * r], [0, -angle, 0], [0.065, length, 0.065]);
+      shape(group, drip, colors[drips.color], [Math.sin(angle) * r, rim - length * 0.4, -Math.cos(angle) * r], [0, -angle, 0], [drips.width, length, drips.width]);
     }
     // Sprinkles and the face: placed on the scoop's surface, along the line out from its centre.
     const onScoop = (x, y, z, out) => {
@@ -206,9 +206,9 @@ function drawPriceTagPrint(ctx, w, h, head) {
   ctx.fillStyle = print.ink;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = `400 ${Math.round(h * 0.25)}px "Anton", Impact, sans-serif`;
+  ctx.font = `400 ${Math.round(h * print.textSize)}px "Anton", Impact, sans-serif`;
   ctx.fillText(print.text, toX(print.textAt[0]), toY(print.textAt[1]), w * 0.55);
-  ctx.font = `400 ${Math.round(h * 0.42)}px "Anton", Impact, sans-serif`;
+  ctx.font = `400 ${Math.round(h * print.symbolSize)}px "Anton", Impact, sans-serif`;
   ctx.fillText(print.symbol, toX(print.symbolAt[0]), toY(print.symbolAt[1]));
 }
 

@@ -69,7 +69,7 @@ src/
                         (zombieHealthForRound, zombieCountForRound, spawnDelayForRound, maxAliveForRound).
                         zombieMix: special types per round (mallWalker: from round 4, share 15% / 25% from 6 / 30% from 9,
                         healthMultiplier 0.65, introSpawnIndex) + zombieHealthFor(typeId, round), zombieTypeForRound(round).
-                        Mascot enters at round 10 with 5x Shopper health and a two-alive cap.
+                        Mascot enters at round 10 with 5x Shopper health and a two-alive cap (every costume shares that slot).
     weapons.js          stapleGun (start pistol, semi), priceGun (wall buy, full auto), nailGun (wall buy, semi,
                         piercing: `pierce: { maxTargets, damageFalloff }`), foamDartBlaster (Mega Mart, burst),
                         confettiCannon (Service Corridor, 12 pellets, pellets pierce 2 zombies, six-shell tube, shell-by-shell
@@ -97,7 +97,11 @@ src/
                         (spacing, lanes, queueing, surround rings + sector/still-wrap/circling, contact gap,
                         spawn dust, min spawn distance, soundMinGapSeconds),
                         zombieSpawn (local route-cost neighbourhood, nearest/random mix, body clearance + marker cooldown),
-                        zombieNav (grid, soft wall clearance + wall penalty), zombieFailsafe (stuck-zombie rescue)
+                        zombieNav (grid, soft wall clearance + wall penalty), zombieFailsafe (stuck-zombie rescue).
+                        The Mascot is a shared base type plus `mascotVariants` (the costumes: name, unlockRound, homeZones,
+                        introBanner, helmetPopLine, colors, uniform, head, + one tuning block: reclaim / popBlast / melt),
+                        `mascotPicking` (home weight) and `mascotGold` (Employee of the Month). Each costume resolves ONCE into
+                        `mascotTypes[id]` (id 'mascot', variant, name) and `mascotGoldTypes[id]`; zombieTypes.mascot = Sir Waffles
     controls.js         bindings (action -> keyboard/mouse + Pad* codes; interact = F / X; switchWeapon = wheel / Y,
                         weapon1/weapon2 = 1/2; menu-only: settings = Y, controlsScreen = X on the pause screen), buttonLabels
                         (prompts per device), controlsHelp (what the Controls screen shows; keep in sync with bindings),
@@ -244,8 +248,14 @@ src/
   zombies/
     observation.js     Fixed-tick head/chest sight rays against world colliders with base FOV/aspect and edge hysteresis.
     mannequinModel.js  Articulated faceless plastic model, joint seams/inventory tag, frozen pose retention and owned disposal.
-    mascotModel.js      Sir Waffles' articulated foam costume and smaller zombie head. Places fixed-tick hitboxes from the
-                        posed pieces. Owns the detached helmet, stuffing burst and their cleanup.
+    mascotModel.js      The Mascot's articulated foam body (every costume) and smaller zombie head; the helmet comes from
+                        mascotHeads.js. Places fixed-tick hitboxes from the posed pieces (any mesh, nested). Owns the detached
+                        helmet, stuffing burst and their cleanup; a helmet can come off more than once, and beginReclaim /
+                        finishReclaim / dropReclaim carry it from the floor back onto the shoulders (Captain Coupon)
+    mascotHeads.js      HEADS[kind] fills a costume's helmet group (waffle, priceTag, popcornBucket, iceCreamCone; face pieces
+                        follow a curved surface) + buildMascotBadge; shared geometry and canvas prints made once (sharedOnce)
+    mascotVariants.js   pickMascotVariant(round, zone, random): weight 1 per unlocked costume, x homeWeight in a home zone,
+                        no dice with one costume; mascotDebutIn(round). Both take an optional costume table (tests)
     bosses/janitor.js   Places, ages and disposes Wet Floor patches on clear floor. Slows the player on contact and
                         calls into the incentive system to mop Spill Cleanup.
     bosses/janitorModel.js  Adds Murray's uniform, bucket, wet floor sign and animated mop to the standard skeleton.
@@ -275,7 +285,9 @@ src/
                         'chasing' but windedSpeedScale() is 0 then slowSpeedFraction, and attackCooldown >= standSeconds.
                         Types with `sounds`: chaseSounds() (step squeaks / huffs on timers) + playSound(): volume by
                         distance through ctx.onSound. The Mascot sheds its helmet at half health, immediately swaps head
-                        hitboxes, and accelerates into a rush.
+                        hitboxes, and accelerates into a rush. Captain Coupon (type.mascot.reclaim): updateReclaim walks back
+                        to mascotHelmet.rest, lifts it on (mascotLift), restores health once; gives up when it is gone, guarded
+                        or too slow (mascotWantsHelmet = still going back for it)
     shopperAppearance.js  Weighted, coordinated Shopper wardrobe selection; optional seeded random for tests, one look per spawn
     cartModel.js        buildCart(cfg, mat): the Cart Pusher's shopping cart (wire basket, chassis, casters, red handle, shopping
                         inside), merged by material; on the model's root so it stays upright when the zombie dies
@@ -289,7 +301,11 @@ src/
                         Arms have shoulder + elbow joints. Code animation (numbers in zombieTypes.<type>.walkAnimation):
                         shamble or style 'powerWalk' (bent arms pumping, hips twisting), arms-overhead wind-up, slam,
                         recovery, winded pose (bent over, hands at knees, breathing), flinch/flash, rise from floor, tip over and sink
-    zombieManager.js    createZombieManager(): spawn(typeId) (open + reachable spawn points >= minSpawnDistance horizontally
+    zombieManager.js    createZombieManager(): spawn(typeId, at, { variant, gold, nearest }): a Mascot's costume is picked AFTER
+                        the spawn point (its zone sets the home bias; none out of the chute), then the gold roll (never two
+                        alive), health x mascotGold.healthMultiplier for gold. Fallen helmets know their owner (eviction
+                        skips a helmet its Coupon still wants); onHeadPop / onReclaim / onGold callbacks.
+                        spawn(typeId) (open + reachable spawn points >= minSpawnDistance horizontally
                         away, clear of live bodies including risers; local pool <= cheapest eligible route cost + 30;
                         50% nearest 4 / 50% random local, prefer markers off their 3s reuse cooldown; returns null if none
                         safe, the round waits; health = zombieHealthFor(typeId, round)), onSound option (zombie
@@ -313,6 +329,7 @@ src/
                         are in its header: shot, hit (player attack hit; +10 if not lethal), kill (any zombie death, with
                         headshot / melee / source: 'gun' | 'melee' | future 'hazard'...; ALL kill payouts + kill stats),
                         playerHit, playerDeath, runEnd ({ summary }, one immutable final snapshot), roundStart, typeIntro,
+                        the Mascot's (mascotHeadPop, mascotVariantIntro, mascotReclaim, mascotPopBlast, mascotGold),
                         purchase ({ label, cost, kind, id }, read before use()), runReset. 'shot' = one per staple / sticker / nail / dart / whole blast
     createGame.js       createGame({ scene, camera, input, hud, sound, viewmodel, mapId, buildTestRange, debugTick,
                         onPlayerDeath }): builds and wires EVERY gameplay system (map, stats, player, wallet, run stats,
@@ -327,13 +344,23 @@ src/
     settings.js         createSettings(ctx): current value of every setting, saved in localStorage ('mallZombies.settings',
                         values are sanitized on load), applies them all at startup; get/set/reset(tab)/onChange. ctx = { renderer, sound, hud }
     runStats.js         createRunStats(): time alive, kills, headshot/melee kills, bosses defeated, shots fired/hit, accuracy
-    bossDirector.js     Picks debut rounds, retries a normal-marker spawn partway through the wave, and blocks round
-                        completion while a boss is pending. Owns encounter behavior and emits boss lifecycle events.
+    bossDirector.js     Picks debut rounds (never a zombie type's or a Mascot costume's), retries a normal-marker spawn partway
+                        through the wave, and blocks round completion while a boss is pending. Owns encounter behavior and
+                        emits boss lifecycle events. The Janitor's wet floor reports 'janitor' to surfaceSlows.js.
+    surfaceSlows.js     createSurfaceSlows(stats): the ONLY writer of stats.surfaceSpeed. Each slow floor reports its own factor
+                        (set / clear by source id); the stat is the lowest, so two never stack. g.surfaces; reset on Play again
+    mascotCostumes.js   createMascotCostumes(): the costume twists past the zombie itself, on the bus. Poppy Corn's pop blast
+                        (staggers zombies, shoves + butters the player, 'mascotPopBlast'); owns meltTrail (cleared at round
+                        end, death, Play again). g.mascotCostumes
+    meltTrail.js        Scoops' puddles: one fixed pool for every Scoops (oldest gives way, own material to fade), drops every
+                        dropEvery where he walks; a grounded player in one reports 'melt' to surfaceSlows
     powerUps.js         createPowerUps(): listens to kill/round/death events; earned dynamic pickups on clear floor,
                         swept walk-through collection, 15s expiry, no repeats, per-round caps. Blue Light multiplies only
                         base kill credit, within its 4m radius, same floor and line of sight. reset/dispose; debugDrop(id, at)
                         marks the run assisted. Boss rewards wait for the pickup slot, survive natural wave progression
                         and clear on death, Play again or debug skips. createGame builds/ticks/resets it as g.powerUps.
+                        A kill whose type has guaranteedDrop (Employee of the Month) queues a reward the same way, any
+                        useful type by weight, outside the meter and its rotation.
     incentiveEffects.js Temporary employee benefits: concurrent timers, reversible stat modifiers, finite healing,
                         deferred non-recursive liquidation damage, one-purchase coupons, target marks, slow patches,
                         overtime extensions, melee charges and sprint pulses. Owned/reset/disposed by powerUps.js.
@@ -363,15 +390,17 @@ src/
                         unlocks free refitting across compatible carried/replacement guns for the run; reset clears ownership.
                         Counters display resolved comparisons and preserve ammunition. Fully owned attachments are ineligible for Flash Sales.
     debugCommands.js    createDebugCommands(game parts): the debug shortcuts as functions run(id) (spawn, cycleZombie, clearZombies,
-                        killZombies, nextRound, jumpRounds, flashSale, addPoints, zeroPoints, god, giveGun, upgradeGun, doors, arena, panel);
+                        killZombies, nextRound, jumpRounds, flashSale, addPoints, zeroPoints, god, giveGun, upgradeGun, doors, arena, panel,
+                        spawnMascot / spawnGoldMascot: each costume in turn at the spawn point nearest you);
                         resolve(code, shift), status(). g.debug. A new command = a table entry in config/debug.js + a function here.
                         God mode is health.invulnerable; debug state is not part of a run (Play again keeps it)
     rounds.js           createRounds(): announce(n, delay) flips the round number (and fires onRoundStart) the
                         moment the last zombie dies, then 'break' (6s, inBreak) -> 'active' (spawn quota at
                         spawnDelay, capped by maxAlive; quota only used when a zombie actually spawned, else retry
                         after spawnRetrySeconds). Each spawn's type: zombieTypeForRound, except a special type's
-                        first possible round forces its introSpawnIndex-th spawn to be one. onTypeIntro(typeId) fires
-                        the first time a type spawns in a run. start() on first play, skipRound() (debug), reset()
+                        first possible round forces its introSpawnIndex-th spawn to be one. onTypeIntro(typeId, zombie) fires
+                        the first time a type spawns in a run. A Mascot costume's unlock round forces its debut the same way
+                        (the forced spawn still rolls, so the rest of the wave is unchanged); onVariantIntro for each later costume. start() on first play, skipRound() (debug), reset()
   maps/
     index.js            Map registry + loadMap(id, scene, colliders) + THE MAP INTERFACE (id, group, zones, doors,
                         spawnPoints, features (wall buys, ammo cache... by kind), playerSpawn, update, reset, dispose).

@@ -110,7 +110,7 @@ docs/                history.md, folder-structure.md, map.md, tests.md + older p
   The zombie manager gets `map.spawnPoints` + `isZoneOpen`, so zombies only spawn in opened zones.
 - Zombie types: rounds picks each spawn's type (economy.zombieMix) and calls `zombies.spawn(typeId)`; health is
   `zombieHealthFor(typeId, round)`, kill value `economy.killValues[typeId]`. A type's first spawn in a run ->
-  'typeIntro' event -> createGame shows `zombieTypes[id].introBanner` (hud.showAnnouncement) + plays 'paChime'. Zombie sounds:
+  'typeIntro' event -> createGame shows the spawned zombie's `type.introBanner` (hud.showAnnouncement) + plays 'paChime'. Zombie sounds:
   zombie -> ctx.onSound -> manager (dedupe) -> createGame `sound.play(name, { volume })`.
 - Points: gun and melee call `onHit({ target, killed, headshot, melee })` -> createGame emits 'hit' (non-lethal zombie hit:
   +10); a zombie dying (zombie.takeHit records `killedBy`; the manager's onKill) -> 'kill' -> kill value + head/melee bonus
@@ -226,7 +226,10 @@ adjoining areas are owned. No cascading unlocks. Nine area purchases total 9500;
 
 ## Design reference (decisions made so far)
 - **Zombie roster, with intro rounds:** Shopper (round 1), Mall Walker (4, fast, low HP),
-  Cart Pusher (6, telegraphed charge), Mannequin (8, frozen while looked at; implemented), Mascot (10, tanky, 5x HP; implemented as Sir Waffles).
+  Cart Pusher (6, telegraphed charge), Mannequin (8, frozen while looked at; implemented), Mascot (10, tanky, 5x HP; implemented).
+  The Mascot is ONE slot in several costumes (config/zombies.js mascotVariants, each changing one beat): Sir Waffles (10, baseline),
+  Captain Coupon (13, puts his head back on), Poppy Corn (16, the pop is a blast), Scoops (19, slowing melt trail), plus the
+  rare gold Employee of the Month (15+, guaranteed power-up). A new costume = a config entry + a head kind in zombies/mascotHeads.js.
 - **Weapons by store:** start with a staple gun pistol; wall buys like baseball bat, nail gun,
   foam dart blaster, confetti cannon, leaf blower, water cannon, taser rifle, condiment cannon,
   balloon launcher, tennis ball launcher.
