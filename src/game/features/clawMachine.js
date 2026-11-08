@@ -155,7 +155,7 @@ const prizeName = (capsule) => (!capsule ? 'Empty' : capsule.plush ? cfg.plush.n
 
 const pick = (list) => (Array.isArray(list) ? list[Math.floor(Math.random() * list.length)] : list);
 
-export function buildClawMachine(feature, { scene, map, events, pricing, interactions, gun, wallet, state, sound, player }) {
+export function buildClawMachine(feature, { scene, map, events, pricing, interactions, gun, wallet, state, sound, player, tickets = null }) {
   const sites = feature.sites;
   let site = sites[0];
   let phase = 'idle'; // 'idle' | 'sweeping' | 'lifting' | 'ready' | 'closed'
@@ -261,7 +261,10 @@ export function buildClawMachine(feature, { scene, map, events, pricing, interac
     stock -= 1;
     const capsules = rollCapsules(prizePool(gun), forcePlush ? 1 : plushChanceFor(grabsHere));
     forcePlush = false;
-    grab = { number: grabsHere, capsules, paid: purchase?.cost ?? 0, t: 0, period: sweepSeconds(grabsHere), lane: null, prize: null, timer: 0 };
+    // Prize Counter tokens (game/tickets.js): a free grab was already priced at 0 (see the pay item); a Slow Claw slows this sweep.
+    if (purchase?.cost === 0) tickets?.use('freeGrab');
+    const slow = tickets?.use('slowClaw') ? cfg.slowClawFactor : 1;
+    grab = { number: grabsHere, capsules, paid: purchase?.cost ?? 0, t: 0, period: sweepSeconds(grabsHere) * slow, slow: slow > 1, lane: null, prize: null, timer: 0 };
     phase = 'sweeping';
     capsules.forEach((capsule, lane) => cabinet().rig.setCapsule(lane, capsuleColor(capsule)));
     lastLane = null;
@@ -304,6 +307,7 @@ export function buildClawMachine(feature, { scene, map, events, pricing, interac
       gun.weaponFor(id).refill(); // (after the attachment: a Jumbo Pack's bigger magazine comes full)
     }
     sound?.play('purchase');
+    tickets?.add(cfg.tickets.capsules[grab.prize.capsule] ?? 0, 'prize'); // (a bad grab prints more)
     events.emit('clawPrize', { gunId: id, refurbished: outcome.attachment, outcome: outcome.kind });
     finish();
   }
@@ -311,6 +315,7 @@ export function buildClawMachine(feature, { scene, map, events, pricing, interac
   // Sunny: the money back (exactly what this grab charged, never the shelf price), and out of service.
   function landPlush() {
     if (!state.over) wallet.refund(grab.paid);
+    tickets?.add(cfg.tickets.plush, 'plush');
     play('clawPlush');
     hideDisplay();
     cabinet().rig.reset();
@@ -389,12 +394,17 @@ export function buildClawMachine(feature, { scene, map, events, pricing, interac
   interactions.add({
     label: cfg.name,
     title: `${cfg.name} · Win a gun`,
-    get detail() { return phase === 'closed' ? '' : `Three capsules · You choose when to drop · ${stock} left here`; },
+    get detail() {
+      if (phase === 'closed') return '';
+      const tokens = [tickets?.has('freeGrab') && 'Free grab token', tickets?.has('slowClaw') && 'Slow Claw'].filter(Boolean);
+      return `Three capsules · You choose when to drop · ${stock} left here${tokens.length ? ` · Using: ${tokens.join(', ')}` : ''}`;
+    },
+    get priceLabel() { return tickets?.has('freeGrab') ? 'Free grab' : null; }, // (a Prize Counter token: this grab costs nothing)
     get blocked() { return phase === 'closed' ? 'Out of service · Back next round' : null; },
     verb: 'play',
     kind: 'claw', // (the only claw step with a price: the drop and the take are free 'clawAction's)
     id: 'grab',
-    get cost() { return pricing.priceOf('claw', 'grab'); },
+    get cost() { return tickets?.has('freeGrab') ? 0 : pricing.priceOf('claw', 'grab'); },
     get position() { return cabinet().position; },
     available: () => (phase === 'idle' || phase === 'closed') && zoneOpen(),
     use: pay,

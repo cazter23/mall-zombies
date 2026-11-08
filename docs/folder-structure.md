@@ -384,6 +384,9 @@ src/
                         (controller X): the press is hidden from the gun near a buyable; let go before it buys =
                         onReloadTap (gun.requestReload()). `prompt` for the HUD; reset()
     autoGraphics.js     First launch only: measures frame times during the title flyover and picks a Graphics preset.
+    tickets.js          GRAB-A-GUN's prize tickets (g.tickets): their own currency, never the wallet, pricing or income. add(amount, reason)
+                        (nothing once dead; 'ticketsWon'), spend, won (the receipt), and the Prize Counter's tokens (slowClaw, freeGrab,
+                        keychain: hold / has / use). A resetStep ('tickets'), so Play again starts at 0.
     flashSales.js       Flash Sales: a random PA-announced discount on one category, set through pricing so every price in it drops.
     runIntro.js         The PA's opening announcement on a run's first round (listens to 'roundStart').
     shutterSounds.js    Purchase sounds that follow the real shutter motion; pausing stops them, death and reset cancel them.
@@ -428,6 +431,10 @@ src/
                         forcePlush / moveNow (debug). The show (cfg.show, never the prize): prongs open and shut, the carried capsule swings,
                         the chute flap, an attract screen, sounds that fade with distance (jingle, a tick into each lane, motor, grab,
                         fanfare, Sunny's slide whistle) and a hum: an emitter it adds to map.ambience that follows the live machine.
+      prizeCounter.js   Feature kind 'prizeCounter', REDEMPTION: five prizes paid in tickets (an ammo refill, a Slow Claw token, an attachment
+                        voucher for an empty slot of the gun in hand, a free grab token, a Sunny keychain). Normal hold-to-buy items costing 0
+                        points with a "100 tickets" label, quiet (not a 'purchase'), refused like too few points when you're short.
+                        voucherChoices(gun). 'prizeRedeemed'.
       horror.js         Feature kind 'horror': the mall decays as the rounds climb (config/look.js horror). Visual only, never gameplay.
     debugCommands.js    createDebugCommands(game parts): the debug shortcuts as functions run(id) (spawn, cycleZombie, clearZombies,
                         killZombies, nextRound, jumpRounds, flashSale, addPoints, zeroPoints, god, giveGun, upgradeGun, doors, arena, panel,
@@ -562,6 +569,10 @@ src/
                         standing on top). Canvas art drawn once and shared (drawSunny: the mascot). ONE collider, 2.2 m; unlit, no real
                         lights. The rig (dynamic group) moves: setCapsule, setClaw(u, drop, open, sway), carry(lane), setFlap(open),
                         setLive(live) (a stepped cloth dust sheet with a taped "BACK SOON" note; the claw hides under it), chute, reset.
+                        Exports wallFrame (building against a wall in local u / a coordinates, any facing) and drawSunny (the mascot).
+    mall/prizeCounter.js buildPrizeCounter({ kit, back, faces, floorY }) -> { position, normal, slots }: the Prize Counter's booth,
+                        2.6 m of counter with five prize cards and ticket tags, a wall of display-only plush, a bored teenage animatronic
+                        (static), the REDEMPTION header. One collider, 2.3 m. Built with clawCabinet.js's wallFrame.
     mall/startRoomDetails.js Clearance-store dressing relative to the start room: register, receipt, bags, stock remnants,
                         vent frames/boards, sale remnants, pricing station, floor wear, damaged light fitting and lamps.
                         Decoration only (no collision or interactions); static boxes merged by material; map kit disposes resources.

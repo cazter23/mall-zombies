@@ -1,5 +1,16 @@
 # Sunset Galleria: build history ("Current state")
 
+## 8 November 2026 - GRAB-A-GUN, phase 6: prize tickets and the Prize Counter
+
+Every grab now prints arcade tickets (game/tickets.js, g.tickets): 40 for a Green prize, 25 Blue, 15 Purple, 5 Gold, 10 for Sunny (the points still come back
+too), nothing for a prize left in the chute. Tickets are their own currency: not the wallet, not g.pricing, not income, lost on death, gone on Play again. The
+HUD shows them under the points once you have some, and the receipt gets "Prize tickets won" and "Sunny keychains" lines. The Prize Counter ("REDEMPTION",
+feature kind 'prizeCounter') stands on the Hallway's north wall at x 3.65, between the start shutter and Customer Service: an ammo refill (60), a Slow Claw
+(100: the next sweep at half speed), an attachment voucher (150: an empty slot of the gun in hand), a free grab token (200) and a Sunny keychain (300). Each
+prize is its own hold-to-buy spot along the counter, refused when you're short. Behind the glass, a bored teenage animatronic who has not moved since the mall
+opened. The site was picked with the cabinets' checks (one 2.3 m collider, clear spots, no spawn within 10 m, routes unchanged, coplanar); x 10.6 would have
+covered the sealed elevator doors.
+
 ## 8 November 2026 - GRAB-A-GUN, phase 5: the show
 
 The finished cabinet (maps/mall/clawCabinet.js): a marquee board with painted bulbs (they never blink), "EVERYONE'S A WINNER*" under it, Sunny standing on top

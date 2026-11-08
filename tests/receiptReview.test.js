@@ -90,3 +90,12 @@ test('the receipt reads out the guns you named at Build-A-Blaster, and says noth
   assert.deepEqual(label({ ...base, survivedBy: [gerald] }), ['Survived by', 'Gerald (Grand Finale), 212 confirmed']);
   assert.deepEqual(label({ ...base, survivedBy: [gerald, doris] }), ['Survived by', 'Gerald (Grand Finale), 212 confirmed and Doris (Cold Snap), 3 confirmed']);
 });
+
+test('GRAB-A-GUN on the receipt: prize tickets and Sunny keychains get their own lines, only when there are some', () => {
+  const base = { timeAlive: 60, round: 3, kills: 10, headshotKills: 2, meleeKills: 1, accuracy: 0.5 };
+  const names = (r) => receiptLinesFor(r).map(([name]) => name);
+  assert.ok(!names(base).includes('Prize tickets won') && !names(base).includes('Sunny keychains'));
+  const lines = Object.fromEntries(receiptLinesFor({ ...base, ticketsWon: 340, keychains: 1 }));
+  assert.equal(lines['Prize tickets won'], 340);
+  assert.equal(lines['Sunny keychains'], '1 (non-refundable)');
+});

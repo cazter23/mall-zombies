@@ -876,3 +876,33 @@ test('the idle screen takes turns with its attract lines; every PA list has a fe
     }
   }
 });
+
+// --- Phase 6: prize tickets from every grab ---
+
+test('every outcome prints its tickets: by the prize capsule, 10 for the plush, nothing for a prize left to time out; never points', () => {
+  const s = setup(), { t, g, claw } = s;
+  for (const [id, colour] of [['priceGun', 'green'], ['foamDartBlaster', 'blue'], ['barcodeScanner', 'purple'], ['coilNailer', 'gold']]) {
+    const before = g.tickets.count, earned = g.wallet.totalEarned;
+    const capsule = grabUntilReady(s, id);
+    assert.equal(capsule.capsule, colour);
+    takePrize(t);
+    assert.equal(g.tickets.count - before, cfg.tickets.capsules[colour], `${id}: ${colour}`);
+    assert.equal(g.wallet.totalEarned, earned, 'tickets are not income');
+    t.tick(40);
+  }
+  let before = g.tickets.count;
+  grabUntilReady(s, 'nailGun');
+  t.tick(ticks(cfg.takeSeconds));
+  assert.equal(claw.phase, 'idle');
+  assert.equal(g.tickets.count, before, 'a prize left in the chute prints nothing');
+  restock(claw);
+  before = g.tickets.count;
+  const won = [];
+  g.events.on('ticketsWon', (e) => won.push(e));
+  g.debug.run('clawPlush');
+  pay(t);
+  dropOn(t, claw, isPlush);
+  t.tick(ticks(cfg.liftSeconds));
+  assert.equal(g.tickets.count - before, cfg.tickets.plush);
+  assert.deepEqual(won.at(-1), { amount: cfg.tickets.plush, total: g.tickets.count, reason: 'plush' });
+});

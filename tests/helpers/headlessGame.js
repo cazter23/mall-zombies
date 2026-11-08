@@ -106,6 +106,7 @@ export function snapshot(g) {
     zombies: g.shootables.length,
     zombiesInWorld: g.zombies.zombies.length,
     features: g.features.list.map(({ feature }) => feature.name),
+    tickets: { count: g.tickets.count, won: g.tickets.won, tokens: g.tickets.tokens }, // GRAB-A-GUN's prize tickets
     // GRAB-A-GUN: where it is, what it's doing, and whether a grab or a prize in the chute is left over.
     clawMachine: (() => {
       const claw = g.features.list.find(({ feature }) => feature.kind === 'clawMachine')?.instance;

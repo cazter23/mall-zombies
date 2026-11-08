@@ -261,36 +261,59 @@ const FRAMES = {
 // A plane facing one of the four ways (kit.sign's rule: 1 = +z, -1 = -z, 'x+' / 'x-').
 const ROTATION_Y = { 1: 0, '-1': Math.PI, 'x+': Math.PI / 2, 'x-': -Math.PI / 2 };
 
-export function buildClawCabinet({ kit, back, faces = '+z', floorY = 0, spec = CLAW_CABINET }) {
+/**
+ * Building against a wall in local coordinates (u along the wall, + = the viewer's right as they face it; a out from the wall; y up
+ * from floorY), for any of the four facings, in world-space axis-aligned boxes (the coplanar test reads them as they are).
+ * Shared by the claw cabinet and the Prize Counter booth (mall/prizeCounter.js).
+ *   -> { frame, normal, wx, wz, world(u, y, a, out?), place(u0, y0, u1, y1, a0, a1, material, options), sign(text, u, y, a, options),
+ *        picture(material, u, y, a, w, h, facing?, name?), collider(u0, y0, u1, y1, a0, a1) }
+ */
+export function wallFrame({ kit, back, faces = '+z', floorY = 0 }) {
   const frame = FRAMES[faces];
-  if (!frame) throw new Error(`claw cabinet: unknown facing "${faces}"`);
+  if (!frame) throw new Error(`wall frame: unknown facing "${faces}"`);
+  const wx = (u, a) => (frame.alongZ ? frame.x(back, a) : frame.x(back, u));
+  const wz = (u, a) => (frame.alongZ ? frame.z(back, u) : frame.z(back, a));
+  const world = (u, y, a, out = new THREE.Vector3()) => out.set(wx(u, a), floorY + y, wz(u, a));
+  const bounds = (u0, a0, u1, a1) => {
+    const xs = [wx(u0, a0), wx(u1, a1)];
+    const zs = [wz(u0, a0), wz(u1, a1)];
+    return [Math.min(...xs), Math.min(...zs), Math.max(...xs), Math.max(...zs)];
+  };
+  return {
+    frame,
+    normal: new THREE.Vector3(frame.normal[0], 0, frame.normal[1]),
+    wx, wz, world,
+    place(u0, y0, u1, y1, a0, a1, material, options = { collide: false }) {
+      const [x0, z0, x1, z1] = bounds(u0, a0, u1, a1);
+      return kit.box(x0, floorY + y0, z0, x1, floorY + y1, z1, material, options);
+    },
+    collider(u0, y0, u1, y1, a0, a1) {
+      const [x0, z0, x1, z1] = bounds(u0, a0, u1, a1);
+      return kit.addCollider(x0, floorY + y0, z0, x1, floorY + y1, z1);
+    },
+    sign: (text, u, y, a, options) => kit.sign(text, { x: wx(u, a), y: floorY + y, z: wz(u, a), facing: frame.sign, ...options }),
+    // A flat picture (any material), facing `facing` (frame.sign = out of the front).
+    picture(material, u, y, a, w, h, facing = frame.sign, name = 'wall_art') {
+      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), material);
+      world(u, y, a, mesh.position);
+      mesh.rotation.y = ROTATION_Y[facing];
+      mesh.name = name;
+      kit.group.add(mesh);
+      return mesh;
+    },
+  };
+}
+
+export function buildClawCabinet({ kit, back, faces = '+z', floorY = 0, spec = CLAW_CABINET }) {
+  const { frame, normal, wx, wz, world, place, sign, picture: placePicture } = wallFrame({ kit, back, faces, floorY });
   const { width, depth, height } = clawMachine.cabinet;
   const { colors } = spec;
   const half = width / 2;
   const looks = cabinetArt();
-  // World x / z of a local (u, a).
-  const wx = (u, a) => (frame.alongZ ? frame.x(back, a) : frame.x(back, u));
-  const wz = (u, a) => (frame.alongZ ? frame.z(back, u) : frame.z(back, a));
-  const world = (u, y, a, out = new THREE.Vector3()) => out.set(wx(u, a), floorY + y, wz(u, a));
-  const place = (u0, y0, u1, y1, a0, a1, material, options = { collide: false }) => {
-    const xs = [wx(u0, a0), wx(u1, a1)];
-    const zs = [wz(u0, a0), wz(u1, a1)];
-    return kit.box(Math.min(...xs), floorY + y0, Math.min(...zs), Math.max(...xs), floorY + y1, Math.max(...zs), material, options);
-  };
-  const sign = (text, u, y, a, options) => kit.sign(text, { x: wx(u, a), y: floorY + y, z: wz(u, a), facing: frame.sign, ...options });
-  // A flat picture (one of the shared art materials), facing `facing` (frame.sign = out of the front).
-  const picture = (material, u, y, a, w, h, facing = frame.sign, name = 'claw_art') => {
-    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), material);
-    world(u, y, a, mesh.position);
-    mesh.rotation.y = ROTATION_Y[facing];
-    mesh.name = name;
-    kit.group.add(mesh);
-    return mesh;
-  };
+  const picture = (material, u, y, a, w, h, facing = frame.sign, name = 'claw_art') => placePicture(material, u, y, a, w, h, facing, name);
   const solid = (hex, options = {}) => kit.mat(hex, { roughness: 0.55, flatShading: false, ...options });
   const glow = (hex) => new THREE.MeshBasicMaterial({ color: hex });
   const glass = new THREE.MeshStandardMaterial({ color: colors.glass, transparent: true, opacity: 0.15, roughness: 0.1 });
-  const normal = new THREE.Vector3(frame.normal[0], 0, frame.normal[1]);
 
   // --- The one collider: the whole cabinet, 2.2 m tall (can't be stood on), its back just inside the wall ---
   {

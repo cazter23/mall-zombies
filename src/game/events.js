@@ -73,6 +73,8 @@
 //                                                        (game/features/clawMachine.js takeOutcome); refurbished = the attachment fitted, or null
 //   'clawClosed'  { reason 'plush' | 'soldOut', siteId, nextSiteId, pa }   out of service (a plush refunds; nextSiteId: picked at the plush)
 //   'clawMoved'   { siteId, area, moved, pa }            reopened at the next 'roundStart' (moved false: restocked where it stood)
+//   'ticketsWon'  { amount, total, reason }              prize tickets paid out (game/tickets.js; reason 'prize' | 'plush' | 'sunny'): never points
+//   'prizeRedeemed' { id, tickets }                      a Prize Counter prize was taken (game/features/prizeCounter.js)
 //   'runReset'    {}                                     after Play again reset everything
 // =============================================================================
 

@@ -162,6 +162,13 @@ offered, the take refills and fits it in hand or not (and refits are free), neve
 changes (bought off the wall meanwhile: refill + spare; no longer carried: plain copy; handed to Build-A-Blaster: plain copy that the
 finished gun replaces); Build-A-Blaster: grabs during a ritual, with the Courtesy Loaner (which never gets a Refurbished prize and still
 goes back), a Refurbished attachment stacking with a build, and while the finished gun waits at the booth.
+`prizeCounter.test.js` GRAB-A-GUN's prize tickets (game/tickets.js) and the Prize Counter through real input: tickets are their
+own count (paid only while alive, spent only when enough, tokens, reset); every prize refuses without enough tickets (nothing spent) and
+costs exactly its tickets and no points; each prize works (refill, Slow Claw doubles the next sweep, an attachment for an empty slot and
+owned, a free grab, a keychain in the run summary); the voucher keeps the counter's rules (not mid-reload, never over a fitted slot, not
+for the Courtesy Loaner); tickets never touch points, pricing or income, are lost on death and gone on Play again; the booth has one
+tall collider, a clear reachable spot at every prize, no spawn within 5 m and unchanged zombie routes. clawMachine.test.js checks
+every grab outcome's tickets; receiptReview.test.js the receipt's ticket and keychain lines.
 `clawSim.test.js` GRAB-A-GUN's odds (tools/clawOdds.js): the wall stays the cheaper way to every specific gun even at perfect
 timing, a site lasts 5 to 6 grabs, perfect timing never meets the plush while a random lane often does, better timing wins dearer guns,
 and a plush grab costs nothing. clawMachine.test.js also plays the 'claw' Flash Sale (the PA, the sale price charged and refunded, the

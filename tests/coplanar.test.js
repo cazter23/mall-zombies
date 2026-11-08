@@ -72,6 +72,10 @@ test('no coplanar (flickering) surfaces inside the stores, the Customer Service 
     regions.push({ name: `claw_${site.id}`, minX: site.back.x - r, maxX: site.back.x + r, minZ: site.back.z - r, maxZ: site.back.z + r,
       minY: site.floorY - 0.1, maxY: site.floorY + 2.6 });
   }
+  { // the Prize Counter booth (mall/prizeCounter.js)
+    const { back } = clawMachine.prizeCounter.site, r = 1.9;
+    regions.push({ name: 'prizeCounter', minX: back.x - r, maxX: back.x + r, minZ: back.z - r, maxZ: back.z + r, maxY: 2.8 });
+  }
   regions.push({ name: 'restock', minX: restock.x - 1.2, maxX: restock.x + 1.2, minZ: LAYOUT.foodCourt.maxZ - 2.4, maxZ: LAYOUT.foodCourt.maxZ + 0.1 });
   const at = LAYOUT.atrium.rect; // the Grand Atrium, its fountain, kiosks and both floors
   regions.push({ name: 'atrium', minX: at.minX - 0.4, maxX: at.maxX + 0.4, minZ: at.minZ - 0.7, maxZ: at.maxZ + 0.4 });

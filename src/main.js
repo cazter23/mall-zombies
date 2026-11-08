@@ -436,6 +436,7 @@ function render(alpha, frameTime) {
   hud.setClawMachine?.(game.over ? null : clawMachine?.status ?? null);
   hud.setVaultPrompt(game.running && !game.over && g.vaultPromptVisible, buttonLabel('jump'));
   hud.setPoints(wallet.points);
+  hud.setTickets?.(g.tickets.count); // (GRAB-A-GUN's prize tickets: shown only once you have some)
   hud.setRoundFlashing(rounds.inBreak && rounds.round > 1); // counter blinks in the break between rounds
 
   // Render world + viewmodel through HDR post-processing (UnrealBloom + lens vignette/aberration + ACES tone mapping).

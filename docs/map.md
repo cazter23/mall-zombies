@@ -193,6 +193,11 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   Food Court (8.5, -2.3) facing south, between the RESTOCK-O-MATIC and Byte Me; Mega Mart (28, 6) facing south, past the checkouts;
   Grand Atrium (27, 6.6) facing north, the south arcade; Cinema lobby (-34.1, -10.5, floor y 6.3) facing north, clear of the screen door's
   jamb; Customer Parking (34.43, -8) facing east, on the Mart's outside facade. Each keeps clutter 2 m away (mall.js hallwayClear).
+  THE PRIZE COUNTER ("REDEMPTION", mall/prizeCounter.js, config/clawMachine.js prizeCounter.site): one fixed 2.6 x 0.9 x 2.3 m booth on the
+  Hallway's north wall at x 3.65 (z 6, facing south), between the start shutter (ends x 2) and Customer Service (starts x 5.2): you see it
+  coming out of the start room, 9 m from the first claw site, no spawn within 10 m. Five prizes at 0.52 m along its front (interaction
+  points y 1.1, 0.99 m out from the wall). Rejected: x 10.6 on the same wall (it would cover the sealed elevator doors), the south wall at
+  x 5.3 (a bench) and x 13.4 (a vent spawn 2.8 m away), the west of the hallway (spawns within 5 m), the Atrium (opens too late).
   Sunny's topper stands 0.5 m above each header (2.24..2.74 m, no collision), and peeks over the dust sheet too.
   Rejected: Hallway x 15 / x -12 (vent spawns), Mega Mart x 23 (the Atrium link), the Promenade, HOFFMAN'S and the Service Corridor.
 - Wall-buy spots: start room east wall (5, 1.5, 10) = Price Gun; hallway south wall (11, 1.5, -2) = Nail Gun;

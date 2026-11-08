@@ -55,6 +55,7 @@ import { createRunStats } from './runStats.js';
 import { createWallet, pointsForHit } from './wallet.js';
 import { createRounds } from './rounds.js';
 import { createInteractions } from './interactions.js';
+import { createTickets } from './tickets.js';
 import { buildFeatures, featuresOf } from './features/index.js';
 import { ownsAttachment } from './features/attachmentCounter.js';
 import { comboName } from '../config/workshop.js';
@@ -198,6 +199,8 @@ export function createGame({
       return input.locked || this.padPlaying || this.forceRun;
     },
   };
+  // GRAB-A-GUN's prize tickets (game/tickets.js): their own currency, never points, pricing or income.
+  const tickets = createTickets({ events, state });
   const ambience = createAmbience({ map, player, sound, colliders });
   const contactShadows = createContactShadows(scene, colliders);
   events.on('playerDeath', () => ambience.silence());
@@ -224,6 +227,8 @@ export function createGame({
       assisted: state.assisted || health.invulnerable,
       // The guns you named at Build-A-Blaster (the receipt reads them out).
       survivedBy: gun.namedBuilds.map((build) => ({ name: build.name, combo: comboName(build), confirmed: build.confirmed ?? 0 })),
+      ticketsWon: tickets.won, // (GRAB-A-GUN's prize tickets: not points, not income)
+      keychains: tickets.tokens.keychain, // Sunny plush keychains redeemed (a joke for the receipt until the Wardrobe exists)
     });
   }
 
@@ -424,7 +429,7 @@ export function createGame({
   const warranty = createWarranty({ gun, events, rounds });
   const features = buildFeatures(map, {
     scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state, warranty,
-    colliders, effects, sound, input,
+    colliders, effects, sound, input, tickets, shootables, aimAssist,
   });
 
   // FLASH SALES: the mall PA discounts one group of prices for a while (game/flashSales.js). A group is only picked
@@ -482,6 +487,7 @@ export function createGame({
     ['melee', () => melee.reset()],
     ['aimAssist', () => aimAssist.reset()],
     ['wallet', () => wallet.reset()],
+    ['tickets', () => tickets.reset()], // (prize tickets and tokens are lost with the run)
     ['flashSales', () => flashSales.reset()], // (before pricing: it puts back the discounts it set)
     ['pricing', () => pricing.reset()], // no discounts carried into a new run
     ['rounds', () => rounds.reset()],
@@ -595,6 +601,7 @@ export function createGame({
     stats,
     player,
     wallet,
+    tickets,
     runStats,
     effects,
     ambience,

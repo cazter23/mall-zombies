@@ -45,6 +45,30 @@ export const clawMachine = {
   plushChance: [0, 0, 0.2, 0.4, 0.6, 0.8],
   plush: { name: 'Sunny', color: 0xffc21a, label: 'SUNNY' },
 
+  // PRIZE TICKETS (game/tickets.js): what a grab prints. A bad grab prints more; a prize left in the chute until it's gone prints
+  // nothing. By the prize's capsule (a Refurbished prize counts by its colour too).
+  tickets: {
+    capsules: { green: 40, blue: 25, purple: 15, gold: 5, rainbow: 5 },
+    plush: 10, // (the money comes back as well)
+    popSunny: 25, // shooting Sunny as he runs off (phase 7)
+  },
+  slowClawFactor: 2, // a Slow Claw token: the next grab's sweep takes this many times as long
+
+  // THE PRIZE COUNTER (game/features/prizeCounter.js; its booth: maps/mall/prizeCounter.js). One fixed booth, five prizes, paid in
+  // tickets (never points, never g.pricing). `site` passed the same headless checks as the cabinets (tests/prizeCounter.test.js).
+  prizeCounter: {
+    name: 'REDEMPTION',
+    site: { zone: 'hallway', back: { x: 3.65, z: 6 }, faces: '-z', floorY: 0 }, // the Hallway's north wall, between the start shutter and Customer Service
+    size: { width: 2.6, depth: 0.9, height: 2.3 },
+    prizes: [ // left to right as you face it
+      { id: 'ammo', name: 'Ammo refill', tickets: 60, blurb: 'Refills the gun in your hand, like a RESTOCK-O-MATIC' },
+      { id: 'slowClaw', name: 'Slow Claw', tickets: 100, blurb: 'Your next grab sweeps at half speed' },
+      { id: 'attachment', name: 'Attachment voucher', tickets: 150, blurb: 'A random attachment for an empty slot on the gun in your hand' },
+      { id: 'freeGrab', name: 'Free grab token', tickets: 200, blurb: 'Your next grab costs nothing' },
+      { id: 'keychain', name: 'Sunny plush keychain', tickets: 300, blurb: 'Purely decorative. Sunny disagrees' },
+    ],
+  },
+
   // THE SHOW: how the lift looks and sounds. None of it changes the prize, which was settled at the press.
   show: {
     lift: { down: 0.28, grip: 0.4, up: 0.68 }, // fractions of liftSeconds: down (prongs open), grip (they close), up, then over to the chute
