@@ -11,6 +11,7 @@ export function createInfluencerBehavior({ zombie, zombies, rounds, player, coll
   let moveIn = 0, spot = null, path = [], waypoint = 0, pending = 0, flashIn = 0, windup = null;
   let triggered = new Set();
   zombie.followers = 0;
+  zombie.phoneFlashWindup = null;
   function request(count, phase) { pending = Math.min(fans.maxPending,pending+count); onPhase(phase); }
   zombie.control = (dt, ctx) => {
     // Advance close waypoints, then look ahead only across clear cells on the same floor.
@@ -74,9 +75,10 @@ export function createInfluencerBehavior({ zombie, zombies, rounds, player, coll
       } else if (flashIn===0 && zombie.distanceTo(player)<=flash.range && !zombie.wallBetween(player,colliders)) {
         windup=flash.windupSeconds; onPhase('flashWindup');
       }
+      zombie.phoneFlashWindup = windup;
     },
     dispose(reason) {
-      pending=0; zombie.control=null; zombie.controlled=false; zombie.filmingSpot=null;
+      pending=0; zombie.control=null; zombie.controlled=false; zombie.filmingSpot=null; zombie.phoneFlashWindup=null;
       zombies.dismissFans(zombie,reason==='defeated'?fans.leaveSeconds:0);
     },
   };

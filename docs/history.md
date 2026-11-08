@@ -1,5 +1,13 @@
 # Sunset Galleria: build history ("Current state")
 
+## 8 November 2026 — Skylar's influencer makeover
+
+Skylar now wears a cropped pink jacket, cream top, high-waisted dark trousers, chunky trainers and a crossbody bag.
+Platinum hair with pink tips, a high ponytail, perched sunglasses, gold hoops, a heart necklace and smeared makeup
+give her a distinct silhouette. Her compact phone/ring-light rig stays beside her face. She poses with a hand on her
+hip, glances toward the phone, and adjusts it during the existing flash wind-up. Clothing is batched onto the normal
+skeleton and all added geometry follows the model's disposal path.
+
 ## 8 November 2026 — Fall damage, and climbing over balcony rails
 
 Landing from a height now hurts (feel.fall: free up to 3 m, then 12 per metre; the 6.3 m drop from an upper floor costs about 40, health regenerates). controller.trackFall measures each unbroken

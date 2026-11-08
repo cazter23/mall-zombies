@@ -1,11 +1,12 @@
 import { zombieTypes } from './zombies.js';
+import { influencerLook } from './influencerLook.js';
 
 const { shopper } = zombieTypes;
 export const bossComfort = { dimPhoneFlash: false };
 
 export const bossSpectacle = {
   death: { count: 100, speed: 5.5, size: 0.08, colors: [0xffc95b, 0x63d9d0, 0xf284ca, 0xffefc9] },
-  pose: { filmingArm: 0.15, filmingElbow: 0.1, pointingArm: 0.35, pointingElbow: -0.2, radioArm: 0.8, radioElbow: -1.4 },
+  pose: { pointingArm: 0.35, pointingElbow: -0.2, radioArm: 0.8, radioElbow: -1.4 },
 };
 
 export const bossTiming = {
@@ -38,7 +39,9 @@ export const bossTypes = {
     ...shopper, id: 'influencer', boss: true, name: 'Skylar Sparkle', title: 'Content Creator',
     barNotice: 'LIVE · Followers', barSymbol: '●', firstRounds: [15, 17], healthMultiplier: 8, slowStrength: 0.5,
     speed: 3.2, speedVariation: 0, gaits: null, gaitsByRound: null, bagChance: 0,
-    shirtColors: [0xc65eaf], pantsColors: [0x403452], shoeColor: 0xf1e5dc,
+    shirtColors: [influencerLook.colors.top], pantsColors: [influencerLook.colors.trousers], shoeColor: influencerLook.colors.shoe,
+    skinColors: [influencerLook.colors.skin], hairColors: [influencerLook.colors.blonde],
+    walkAnimation: { ...shopper.walkAnimation, hunch: 0.02, headLoll: 0.04, torsoSway: 0.025, runLean: 0 },
     modelScale: { width: 1.04, height: 1.08 },
     hitbox: { bodyHalfWidth: 0.28, bodyTop: 1.51, headHalfSize: 0.20, headBottom: 1.51, headTop: 1.93 },
     filming: { minRange: 10, maxRange: 16, preferredRange: 13, relocateSeconds: 5,
@@ -54,19 +57,7 @@ export const bossTypes = {
       viral: { kicker: 'Going viral', text: 'Eight more followers. No refunds on popularity.' },
       flashWindup: { kicker: 'Phone flash charging', text: 'Look away. This content is about to be overexposed.' },
     },
-    costume: {
-      torso: [
-        { color: 0xf3cf55, size: [0.07, 0.34, 0.035], at: [0, 0.36, -0.17] },
-        { color: 0xf3cf55, size: [0.26, 0.035, 0.035], at: [0, 0.43, -0.17] },
-      ],
-      head: [{ color: 0xb057b6, size: [0.43, 0.07, 0.34], at: [0, 0.31, 0] }],
-      hand: [
-        { color: 0x73778b, size: [0.035, 0.035, 0.9], at: [0, 0, -0.55] },
-        { color: 0x30293f, size: [0.16, 0.27, 0.04], at: [0, 0, -1] },
-        { color: 0xb2edf0, size: [0.13, 0.22, 0.015], at: [0, 0, -1.03] },
-      ],
-      ring: { color: 0xfff2d5, radius: 0.25, tube: 0.035, radialSegments: 6, segments: 24, at: [0, 0, -1] },
-    },
+    appearance: influencerLook,
   },
   guard: {
     ...shopper, id: 'guard', boss: true, name: 'Officer Doug Kettle', title: 'Loss Prevention',

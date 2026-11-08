@@ -1,5 +1,8 @@
 # Sunset Galleria: what each test file covers
 
+`tests/influencerModel.test.js` shoots the visible face during idle, movement and flash poses, checks that the compact
+filming rig stays beside the head, verifies ponytail/phone animation, and checks costume buffer/material disposal.
+
 `tests/bossPolish.test.js` walks Manager/Guard from every open zone and into the workshop without rescue; checks unique stings, death feedback, direct order-form voucher consumption, fans excluded from ritual credit, actual Employee Discount expiry, death/reset voucher cleanup and debug ids. Isolated headless Chrome captured all four models with zero browser exceptions; no real browser tabs were opened.
 
 `tests/bossEncores.test.js` checks configurable cadence, type/Mascot debut exclusions, known-boss selection, one boss per round, alternatives and Play again.

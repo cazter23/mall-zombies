@@ -23,6 +23,7 @@ import { createMannequinModel } from './mannequinModel.js';
 import { createMascotModel } from './mascotModel.js';
 import { dressJanitor } from './bosses/janitorModel.js';
 import { dressEmployee } from './bosses/employeeModel.js';
+import { dressInfluencer, poseInfluencer } from './bosses/influencerModel.js';
 import { bossSpectacle } from '../config/bosses.js';
 import { cartLean } from './cartPose.js';
 
@@ -337,7 +338,7 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
   neck.position.y = S.neckY;
   upper.add(neck);
   const h = S.head;
-  const faceProfile = shoppers.faceProfiles.find((fp) => fp.id === look?.face) ?? pick(shoppers.faceProfiles);
+  const faceProfile = shoppers.faceProfiles.find((fp) => fp.id === (look?.face ?? type.appearance?.face)) ?? pick(shoppers.faceProfiles);
   const [jx, jy, jz] = faceProfile.jawOffset;
   block(skin, 0.11, 0.065, 0.11, 0, 0.005, 0.01, neck, limbBoxY); // tapered neck
   block(skin, h, h * 0.76, h * 0.98, 0, h * 0.62 + 0.02, 0.003, neck, craniumBox); // upper cranium & cheekbones
@@ -349,7 +350,7 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
   block(skin, 0.028, 0.064, 0.044, h / 2 + 0.004, h * 0.56, 0.01, neck, jawBox);
 
   if (look) addParts(neck, shoppers.hair[look.hair]);
-  else {
+  else if (!type.appearance) {
     block(hair, h + 0.02, 0.07, h + 0.02, 0, h + 0.04, 0.01, neck, craniumBox); // hair on top
     block(hair, h + 0.01, h * 0.55, 0.05, 0, h * 0.68, h / 2, neck, jawBox); // hair at the back
   }
@@ -369,6 +370,7 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
 
   if (type.id === 'janitor') dressJanitor(type, { upper, neck, arms, mat, block });
   if (type.costume) dressEmployee(type, { upper, neck, arms, mat, block, ownedGeometry });
+  const influencerRig = type.appearance ? dressInfluencer(type, { upper, neck, arms, legs, mat, block, ownedGeometry }) : null;
 
   // Batch meshes of the same material on each rigid bone across all zombie types.
   // Bones remain separate so clothes, bags and hair inherit the original walk/attack/death animation.
@@ -536,8 +538,7 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
       if (type.boss && zombie.isAlive && armPose === null) {
         const pose = bossSpectacle.pose;
         if (type.id === 'influencer') {
-          arms[1].shoulder.rotation.x = pose.filmingArm;
-          arms[1].elbow.rotation.x = pose.filmingElbow;
+          poseInfluencer(type, zombie, influencerRig, { upper, neck, arms }, walkPhase);
         } else if (type.id === 'manager' && zombie.controlled) {
           arms[0].shoulder.rotation.x = pose.pointingArm;
           arms[0].elbow.rotation.x = pose.pointingElbow;

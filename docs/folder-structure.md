@@ -1,5 +1,9 @@
 # Sunset Galleria: folder structure (every module)
 
+Skylar's appearance: config/influencerLook.js owns her outfit, palette, ponytail, accessories, phone rig and pose tuning.
+zombies/bosses/influencerModel.js dresses and poses the shared zombie skeleton, with zombieModel owning batching and disposal.
+The influencer behavior exposes its existing phone wind-up to the visual pose through phoneFlashWindup.
+
 Boss spectacle: bossSpectacle in config/bosses.js owns death confetti and employee poses; audio.js owns unique synthesized stings. zombieManager emits the same single kill event after the cartoon boss death burst. zombieModel applies bone poses and disposes costume geometry. debugCommands/debugPanel expose the next selected boss. tools/gunReport.mjs includes a boss encounter table.
 
 Boss scheduling: bossDirector exports bossIntroRounds/isEncoreRound, skips optional mascotVariants.unlockRound values in both debut/encore choices, and remembers actual encounters until reset. Cadence is bossTiming.encores.
