@@ -3,6 +3,11 @@ import { zombieTypes } from './zombies.js';
 const { shopper } = zombieTypes;
 export const bossComfort = { dimPhoneFlash: false };
 
+export const bossSpectacle = {
+  death: { count: 100, speed: 5.5, size: 0.08, colors: [0xffc95b, 0x63d9d0, 0xf284ca, 0xffefc9] },
+  pose: { filmingArm: 0.15, filmingElbow: 0.1, pointingArm: 0.35, pointingElbow: -0.2, radioArm: 0.8, radioElbow: -1.4 },
+};
+
 export const bossTiming = {
   waveFraction: 1 / 3, // after this share of regular spawns, without spending any of their quota
   retrySeconds: 0.3,
@@ -35,13 +40,15 @@ export const bossTypes = {
     speed: 3.2, speedVariation: 0, gaits: null, gaitsByRound: null, bagChance: 0,
     shirtColors: [0xc65eaf], pantsColors: [0x403452], shoeColor: 0xf1e5dc,
     modelScale: { width: 1.04, height: 1.08 },
+    hitbox: { bodyHalfWidth: 0.28, bodyTop: 1.51, headHalfSize: 0.20, headBottom: 1.51, headTop: 1.93 },
     filming: { minRange: 10, maxRange: 16, preferredRange: 13, relocateSeconds: 5,
       minRelocate: 3, arriveMeters: 0.35, floorTolerance: 0.3, lookAhead: 8, sightHeight: 1.4 },
     followers: { perSecond: 5, hit: 7, headshot: 18, thresholds: [25, 50, 75], viral: 100, resetTo: 50 },
     fans: { type: 'mallWalker', healthFraction: 0.5, perThreshold: 3, viralCount: 8, maxPending: 17, leaveSeconds: 2 },
     flash: { range: 5, windupSeconds: 0.75, cooldownSeconds: 7, seconds: 0.3, opacity: 0.24, dimOpacity: 0.35 },
     introBanner: { kicker: 'Live from the Galleria', text: 'Skylar Sparkle is filming. Dislike and unsubscribe with your weapon.' },
-    introSound: 'paChime', reward: 'discountCode',
+    introSound: 'influencerSting', reward: 'discountCode',
+    defeatBanner: { kicker: 'Stream ended', text: 'Skylar has logged off. Her followers have discovered another channel.' },
     phases: {
       followers: { kicker: 'Fan meet-up', text: 'Three valued followers have arrived. Their engagement has no cash value.' },
       viral: { kicker: 'Going viral', text: 'Eight more followers. No refunds on popularity.' },
@@ -67,6 +74,7 @@ export const bossTypes = {
     slowStrength: 0.5, speed: 3, speedVariation: 0, gaits: null, gaitsByRound: null, bagChance: 0,
     shirtColors: [0x496782], pantsColors: [0x24334b], shoeColor: 0x1b1c26,
     modelScale: { width: 1.3, height: 1.06 },
+    hitbox: { bodyHalfWidth: 0.34, bodyTop: 1.48, headHalfSize: 0.23, headBottom: 1.48, headTop: 1.94 },
     attack: { ...shopper.attack, damage: 40, windupSeconds: 0.7, minWindupSeconds: 0.7, windupShrinkPerRound: 0 },
     charge: { ...zombieTypes.cartPusher.charge, minRange: 3, maxRange: 9, laneHalfWidth: 0.4,
       telegraphSeconds: 0.8, speed: 10, maxMeters: 8, overshootMeters: 1.5, noseReach: 0.45,
@@ -75,7 +83,8 @@ export const bossTypes = {
     sounds: { telegraph: { name: 'paChime', maxDistance: 24 } },
     lockdown: { thresholds: [0.75, 0.35], alarmSeconds: 3, seconds: 25, headshots: 3, backup: 2, backupType: 'mallWalker' },
     introBanner: { kicker: 'Loss Prevention advisory', text: 'Officer Kettle has mistaken survival for suspicious behaviour.' },
-    introSound: 'paChime', reward: 'masterKey',
+    introSound: 'guardSting', reward: 'masterKey',
+    defeatBanner: { kicker: 'Loss reported', text: 'Officer Kettle has clocked out. This incident has been filed under Loss Prevention.' },
     phases: {
       alarm: { kicker: 'Lockdown in three seconds', text: 'For your safety, your exits are being removed. Three headshots cancel this service.' },
       lockdown: { kicker: 'Area secured', text: 'Please remain calm and available for questioning.' },
@@ -106,9 +115,11 @@ export const bossTypes = {
     slowStrength: 0.5, speed: 2.4, speedVariation: 0, gaits: null, gaitsByRound: null, bagChance: 0,
     shirtColors: [0x45425d], pantsColors: [0x292638], shoeColor: 0x171821,
     modelScale: { width: 1.16, height: 1.1 },
+    hitbox: { bodyHalfWidth: 0.31, bodyTop: 1.54, headHalfSize: 0.21, headBottom: 1.54, headTop: 1.97 },
     attack: { ...shopper.attack, damage: 60, windupSeconds: 0.9, minWindupSeconds: 0.9, windupShrinkPerRound: 0, moveSpeedFraction: 0.45 },
     introBanner: { kicker: 'Management is on the floor', text: 'Dennis Fairweather would like a quick word. Please budget the rest of your life.' },
-    introSound: 'paChime', reward: 'signedApproval',
+    introSound: 'managerSting', reward: 'signedApproval',
+    defeatBanner: { kicker: 'Position vacant', text: 'Dennis Fairweather is no longer pursuing this opportunity. Internal applications are welcome.' },
     report: { interval: 8, radius: 14, maxTargets: 6, seconds: 5, speed: 1.3 },
     meeting: { thresholds: [0.66, 0.33], seconds: 8, radius: 12, damageTaken: 1.5, cancelFraction: 0.15,
       stunSeconds: 3, buffSeconds: 20, speed: 1.25, damage: 1.25 },
@@ -130,7 +141,7 @@ export const bossTypes = {
         { color: 0xaaaeb7, size: [0.13, 0.05, 0.04], at: [0, 0.08, -0.28] },
       ],
     },
-    whiteboard: { offset: [0.7, 0, 0.4], pieces: [
+    whiteboard: { offset: [1.2, 0, 0.4], pieces: [
       { color: 0xf4eedc, size: [1.4, 0.9, 0.08], at: [0, 1.35, 0] },
       { color: 0x485663, size: [1.48, 0.06, 0.12], at: [0, 1.82, 0] },
       { color: 0x485663, size: [0.06, 1.6, 0.08], at: [-0.63, 0.85, 0] },
@@ -166,6 +177,7 @@ export const bossTypes = {
     shoeColor: 0x27232d,
     introBanner: { kicker: 'Maintenance advisory', text: 'Mopwater Murray is on duty. Please walk, do not run. Murray will run.' },
     introSound: 'janitorSting',
+    defeatBanner: { kicker: 'Cleaning completed', text: 'Murray has left a vacancy on the rota and a substantial mess on the floor.' },
     reward: 'spillCleanup',
     wetFloor: {
       maxPatches: 6, seconds: 12, speedFraction: 0.7, radius: 1.12, spacing: 2.05,

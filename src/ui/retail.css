@@ -468,3 +468,17 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   .round-banner.show, .announce-banner.show { animation-name: compact-pa; }
   .announce-banner.show .pa-indicator::before { animation: none; }
 }
+
+.boss-voucher {
+  position: absolute;
+  right: 24px;
+  top: 110px;
+  max-width: 260px;
+  padding: 10px 14px;
+  color: var(--mall-yellow);
+  background: #20202ce8;
+  border: 1px solid #e7c773;
+  font: 700 13px var(--font-label, sans-serif);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}

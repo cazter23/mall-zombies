@@ -8,7 +8,8 @@
 import { weapons } from '../src/config/weapons.js';
 import { workshopRitual, workshopStuffings, workshopHearts } from '../src/config/workshop.js';
 import { gunPower } from '../src/weapons/gunStats.js';
-import { economy, zombieHealthForRound } from '../src/config/economy.js';
+import { economy, zombieHealthForRound, zombieHealthFor } from '../src/config/economy.js';
+import { bossTypes, bossVouchers } from '../src/config/bosses.js';
 import {
   cycleSeconds, magazineSeconds, reloadSeconds, expectedShotDamage, burstDps, sustainedDps, shotsToKill,
 } from './balance.js';
@@ -19,6 +20,17 @@ const r1 = (n) => (Number.isFinite(n) ? n.toFixed(1) : '-');
 const RANGES = [2, 5, 10, 15, 20, 30];
 // Pellet guns are fired from the hip up close; everything else is measured aimed down sights.
 const playStyle = (d) => ({ ads: !d.pellets });
+
+console.log('\nBOSS ENCOUNTERS (base Nail Gun body damage at 10 m; no upgrades, headshots, misses or wave pressure)');
+console.table(Object.values(bossTypes).sort((a,b)=>a.firstRounds[0]-b.firstRounds[0]).map(type=>({
+  boss: type.name,
+  debut: type.firstRounds.join('/'),
+  'debut hp': zombieHealthFor(type.id,type.firstRounds[0]),
+  'round 20 hp': zombieHealthFor(type.id,20),
+  'kill points': economy.killValues[type.id],
+  'base Nail Gun seconds': r1(zombieHealthFor(type.id,type.firstRounds[0])/sustainedDps(weapons.nailGun,10,{ads:true})),
+  reward: bossVouchers[type.reward]?.name ?? type.reward,
+})));
 
 console.log('\nGUN OVERVIEW (dps measured at 5 m; ADS except pellet guns)');
 console.table(guns.map((d) => ({

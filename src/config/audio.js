@@ -432,6 +432,32 @@ export const audio = {
       ],
     },
 
+    managerSting: {
+      volume: 0.7,
+      layers: [
+        { type: 'tone', wave: 'triangle', freq: 330, freqEnd: 294, gain: 0.5, attack: 0.01, decay: 0.5 },
+        { type: 'tone', wave: 'triangle', freq: 440, freqEnd: 392, gain: 0.5, attack: 0.01, decay: 0.5, delay: 0.18 },
+        { type: 'tone', wave: 'sawtooth', freq: 196, freqEnd: 165, gain: 0.14, attack: 0.02, decay: 0.8, delay: 0.36 },
+      ],
+    },
+    guardSting: {
+      volume: 0.6,
+      layers: [
+        { type: 'noise', filter: 'bandpass', freq: 1400, q: 2, gain: 0.35, attack: 0.01, decay: 0.18 },
+        { type: 'tone', wave: 'square', freq: 880, freqEnd: 660, gain: 0.18, attack: 0.01, decay: 0.25, delay: 0.1 },
+        { type: 'tone', wave: 'square', freq: 660, freqEnd: 440, gain: 0.18, attack: 0.01, decay: 0.35, delay: 0.4 },
+      ],
+    },
+    influencerSting: {
+      volume: 0.6,
+      layers: [
+        { type: 'tone', wave: 'sine', freq: 659, gain: 0.35, attack: 0.006, decay: 0.3 },
+        { type: 'tone', wave: 'sine', freq: 831, gain: 0.35, attack: 0.006, decay: 0.3, delay: 0.12 },
+        { type: 'tone', wave: 'sine', freq: 988, gain: 0.35, attack: 0.006, decay: 0.6, delay: 0.24 },
+        { type: 'noise', filter: 'highpass', freq: 6000, gain: 0.12, attack: 0.005, decay: 0.1, delay: 0.24 },
+      ],
+    },
+
     // Mall PA "ding-dong" before an announcement (a new zombie type showing up).
     paChime: {
       volume: 0.55,

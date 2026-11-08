@@ -108,6 +108,7 @@ export function createGame({
   const runStats = createRunStats();
   events.on('purchase', ({ kind, id }) => pricing.spendVoucher(kind, id));
   events.on('playerDeath', () => {
+    pricing.clearVoucher();
     for (const zombie of zombies.zombies) zombie.clearBossEffects();
   });
   // A player attack (gun or box cutter) hit something: announce it.
@@ -351,9 +352,10 @@ export function createGame({
     hud.showAnnouncement({ ...zombie.type.introBanner, priority: bossTiming.introPriority });
     sound.play(zombie.type.introSound);
   });
-  events.on('bossDefeated', () => {
+  events.on('bossDefeated', ({ zombie }) => {
     runStats.bossesDefeated += 1;
     updateBossBar(null);
+    if (zombie.type.defeatBanner) hud.showAnnouncement({ ...zombie.type.defeatBanner, priority: bossTiming.introPriority });
   });
   events.on('bossPhase', ({ zombie, phase }) => {
     const pa = zombie.type.phases?.[phase];
@@ -404,7 +406,7 @@ export function createGame({
     map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses,
     onUse: (id) => {
       // Merely showing the panel or choosing the next spawn type changes no run outcome.
-      if (id !== 'panel' && id !== 'cycleZombie' && id !== 'benchmark') state.assisted = true;
+      if (id !== 'panel' && id !== 'cycleZombie' && id !== 'cycleBoss' && id !== 'benchmark') state.assisted = true;
     },
   });
 
@@ -451,6 +453,7 @@ export function createGame({
       death.summary = null;
     }],
     ['hud', () => {
+      hud.setVoucher?.(null);
       updateBossBar(null);
       hud.setRound(0);
       hud.setRoundFlashing(false);

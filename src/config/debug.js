@@ -20,7 +20,8 @@ export const debug = {
   // Keys must not clash with a gameplay binding (config/controls.js) or each other: tests/debugCommands.test.js checks.
   commands: [
     { id: 'spawn', key: 'KeyZ', group: 'Enemies', label: 'Spawn selected enemy' },
-    { id: 'summonBoss', key: 'KeyJ', group: 'Enemies', label: 'Summon Janitor (once per round)' },
+    { id: 'summonBoss', key: 'KeyJ', group: 'Enemies', label: 'Summon selected boss (once per round)' },
+    { id: 'cycleBoss', key: 'KeyJ', shift: true, group: 'Enemies', label: 'Select next boss' },
     { id: 'cycleZombie', key: 'KeyZ', shift: true, group: 'Enemies', label: 'Select next enemy type' },
     { id: 'clearZombies', key: 'KeyX', group: 'Enemies', label: 'Clear enemies (no points)' },
     { id: 'killZombies', key: 'KeyK', group: 'Enemies', label: 'Kill enemies (pays points)' },

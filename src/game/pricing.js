@@ -61,6 +61,7 @@ export function createPricing() {
 
   return {
     get voucher() { return voucher; },
+    clearVoucher() { voucher = null; },
     configureVouchers(options) { voucherOptions = options; },
     setVoucher(value) {
       if (voucher) return false;

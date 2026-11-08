@@ -41,6 +41,7 @@ export function createDebugPanel({ commands = debug.commands, status, config = d
   const gun = statusField('H gives next');
   const god = statusField('G toggles');
   const boss = statusField('Boss in play');
+  const nextBoss = statusField('J summons');
   root.append(selections);
   const columns = document.createElement('div');
   columns.className = 'debug-groups';
@@ -86,6 +87,7 @@ export function createDebugPanel({ commands = debug.commands, status, config = d
     god.textContent = s.god ? 'GOD ON' : 'God off';
     god.classList.toggle('debug-on', s.god);
     boss.textContent = s.boss ?? 'None';
+    nextBoss.textContent = s.nextBoss ?? 'None';
     last.textContent = s.last ? `> ${s.last}` : '';
   }
 

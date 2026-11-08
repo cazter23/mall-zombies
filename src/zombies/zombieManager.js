@@ -12,7 +12,7 @@ import { createPartyTrapDeaths } from './partyTrapDeath.js';
 import { createTankDeaths } from './tankDeath.js';
 import { feel } from '../config/feel.js';
 import { zombieTypes, zombieCrowd, zombieFailsafe, zombieSpawn } from '../config/zombies.js';
-import { bossTypes } from '../config/bosses.js';
+import { bossTypes, bossSpectacle } from '../config/bosses.js';
 import { economy, zombieHealthFor, maxAliveForRound } from '../config/economy.js';
 import { createNavigation } from './navigation.js';
 import { overlapsSolid } from '../world/collision.js';
@@ -135,6 +135,11 @@ export function createZombieManager({
     // A final burst of splatter from the chest, carrying the killing blow's directional momentum.
     scratch.copy(zombie.position);
     scratch.y += zombie.type.hitbox.bodyTop * 0.75;
+    if (zombie.type.boss) {
+      effects.confetti(scratch, UP, bossSpectacle.death);
+      if (onKill) onKill(zombie);
+      return;
+    }
     effects.splat(scratch, UP, zombie.type.splatColors, zombie.type.deathSplatCount, {
       flesh: !zombie.type.plastic,
       speedScale: zombie.deathImpulse ?? 1,

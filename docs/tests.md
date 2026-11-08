@@ -1,5 +1,7 @@
 # Sunset Galleria: what each test file covers
 
+`tests/bossPolish.test.js` walks Manager/Guard from every open zone and into the workshop without rescue; checks unique stings, death feedback, direct order-form voucher consumption, fans excluded from ritual credit, actual Employee Discount expiry, death/reset voucher cleanup and debug ids. Isolated headless Chrome captured all four models with zero browser exceptions; no real browser tabs were opened.
+
 `tests/bossEncores.test.js` checks configurable cadence, type/Mascot debut exclusions, known-boss selection, one boss per round, alternatives and Play again.
 
 `tests/influencer.test.js` covers follower crossings/headshots/viral reset, half-health fans and cap/queue/departure/round completion, no hit or kill rewards, filming cells in every open zone and workshop, physical routing upstairs without rescue, flash windup/looking away/Comfort, and voucher ordering/savings cap.
@@ -206,4 +208,4 @@ the model and debris and disposes their shared geometry and materials.
 - `mascot.test.js`: the warning before the rush, which also cancels a swing; the helmet-pop bonus (gun or melee headshot only, once, never after death); helmets outlive the body, face the player, stop short of walls, go with the round, and are capped.
 - `play.test.js`: the launcher rebuilds only for newer source and watches all of it; the dev server skips folders the game never loads from, but not this checkout's own code, even in a worktree. `singleFile.test.js` now also parses the inline script.
 
- bossGroundwork.test.js covers timed speed/damage buffs, hold timeout/source death/player death/reset, voucher stacking and immediate points conversion. Existing Janitor tests guard unchanged behavior.
+`tests/bossGroundwork.test.js` covers timed speed/damage buffs, hold timeout/source death/player death/reset, voucher stacking and immediate points conversion. Existing Janitor tests guard unchanged behavior.

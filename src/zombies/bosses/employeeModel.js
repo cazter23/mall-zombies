@@ -29,7 +29,11 @@ export function createWhiteboard(scene, cfg) {
   }
   scene.add(root);
   return {
-    show(position) { root.position.copy(position).add(new THREE.Vector3(...cfg.offset)); root.visible = true; },
+    show(position, yaw) {
+      root.position.copy(position).add(new THREE.Vector3(...cfg.offset).applyAxisAngle(new THREE.Vector3(0,1,0),yaw));
+      root.rotation.y = yaw;
+      root.visible = true;
+    },
     hide() { root.visible = false; },
     dispose() { root.removeFromParent(); root.traverse(o => { o.geometry?.dispose(); o.material?.dispose(); }); },
   };

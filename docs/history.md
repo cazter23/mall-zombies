@@ -1,5 +1,9 @@
 # Sunset Galleria: build history ("Current state")
 
+## Bosses phase 6: spectacle and verification
+
+Finished employee costumes and filming/meeting poses, aligned enlarged head hitboxes, added a distinct sting and corporate defeat line per boss, and use a colored confetti death burst with no boss gore. Shift+J selects a boss, J summons it; explicit debug ids remain supported. Added boss health/reward/theoretical Nail Gun time rows to npm run balance. Health and damage stay at the requested starting values pending player feedback. Headless browser inspection prompted a raised ring-light pose and a rotated whiteboard beside Dennis so it cannot hide his head from the front. Vouchers now clear on death, and order-form purchases consume them through g.events. Shared-file and validation details: docs/bosses-2-report.md.
+
 ## Bosses phase 5: approved encores
 
 At round 20 and every four rounds thereafter, one actually encountered boss returns. Type and Mascot variant debut rounds are skipped; alternate known bosses are preferred, with repeats allowed if only one has been met. Play again clears encounter knowledge.
@@ -15,6 +19,10 @@ Added a telegraphed taser lunge, miss vulnerability, short player slowdown, radi
 ## Bosses phase 2: Dennis Fairweather
 
 Added Direct Report, interruptible Staff Meetings, visible whiteboard and Signed Approval pickups. The voucher grants one carried-gun tier through Premium; if all carried guns have reached that limit, it converts to 1500 points. The separate voucher slot survives sales and Employee Discount. Merged the concurrent order-form work and preserved its quiet interactions/menu handling. Phase 1 passed 780 tests and the production build.
+
+## Bosses phase 1: shared groundwork
+
+Bosses phase 1: isolated codex/bosses-2 worktree. Added behavior movement control, independent timed buffs and meeting holds, separate voucher pricing/HUD, and debug summon by id. Murray keeps his existing wet-floor behavior.
 
 ## 7 November 2026 — Murray's maintenance sign
 
@@ -1018,5 +1026,3 @@ Ammo cache done (first of the "flesh out the new areas" items): the vending mach
 in the browser (real held F refills the staple gun for 400; no prompt when full, far away, or from the Service Corridor side of
 the wall). Cover/funnels remain optional; loop shortcuts and the two new guns are in (see the top of Current state).
 Step 6 done: loop shortcuts (Food Court <-> Mega Mart, Service Corridor <-> Food Court); see Map and the top of Current state.
-
-Bosses phase 1: isolated codex/bosses-2 worktree. Added behavior movement control, independent timed buffs and meeting holds, separate voucher pricing/HUD, and debug summon by id. Murray keeps his existing wet-floor behavior.

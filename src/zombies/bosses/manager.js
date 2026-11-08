@@ -50,7 +50,7 @@ export function createManagerBehavior({ zombie, scene, zombies, colliders, playe
         zombie.controlled = true;
         zombie.damageTakenMultiplier = cfg.damageTaken;
         for (const z of visible(cfg.radius)) z.applyHold(zombie, cfg.seconds);
-        board.show(zombie.position); onPhase('meeting');
+        board.show(zombie.position, zombie.yaw); onPhase('meeting');
         return;
       }
       reportIn -= dt;

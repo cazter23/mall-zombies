@@ -367,7 +367,6 @@ export function createHud() {
       if (!ticket) {
         ticket = document.createElement('div');
         ticket.className = 'boss-voucher';
-        ticket.style.cssText = 'position:absolute;right:24px;top:110px;color:#ffe4a0;background:#20202ccc;padding:10px;border:1px solid #e7c773';
         hud.appendChild(ticket);
       }
       ticket.hidden = !voucher;
