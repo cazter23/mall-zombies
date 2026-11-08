@@ -124,10 +124,17 @@ export function createHud() {
 
   const bossBar = el('section', 'boss-bar');
   bossBar.hidden = true;
+  const bossKicker = el('div', 'boss-kicker');
+  bossKicker.hidden = true;
+  const bossWarning = el('span', 'boss-warning');
+  bossWarning.textContent = '!';
+  bossWarning.setAttribute('aria-hidden', 'true');
+  const bossNotice = el('span', 'boss-notice');
+  bossKicker.append(bossWarning, bossNotice);
   const bossName = el('strong', 'boss-name');
   const bossTitle = el('span', 'hud-label');
   const bossHealth = el('progress', 'boss-health');
-  bossBar.append(bossName, bossTitle, bossHealth);
+  bossBar.append(bossKicker, bossName, bossTitle, bossHealth);
   hud.append(bossBar);
   let displayedBoss = null;
 
@@ -220,7 +227,10 @@ export function createHud() {
       if (zombie !== displayedBoss) {
         displayedBoss = zombie;
         bossBar.hidden = !zombie;
+        bossBar.classList.toggle('boss-bar-janitor', zombie?.type.id === 'janitor');
+        bossKicker.hidden = !zombie?.type.barNotice;
         if (zombie) {
+          bossNotice.textContent = zombie.type.barNotice ?? '';
           bossName.textContent = zombie.type.name;
           bossTitle.textContent = zombie.type.title;
           bossHealth.setAttribute('aria-label', `${zombie.type.name} health`);

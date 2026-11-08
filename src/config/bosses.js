@@ -15,6 +15,7 @@ export const bossTypes = {
     boss: true,
     name: 'Mopwater Murray',
     title: 'Night Janitor',
+    barNotice: 'Cleaning in progress',
     firstRounds: [5, 7],
     healthMultiplier: 6,
     slowStrength: 0.5,

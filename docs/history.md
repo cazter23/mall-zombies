@@ -1,5 +1,11 @@
 # Sunset Galleria: build history ("Current state")
 
+## 7 November 2026 — Murray's maintenance sign
+
+The Janitor's boss bar is a worn yellow caution placard with black striped edges, a warning triangle and
+Cleaning in progress above his name. A turquoise water gauge drains with his health. The notice lives with his
+boss config; the HUD applies the treatment for his encounter and clears it when the bar is hidden.
+
 ## 7 November 2026 — Debug overlay cleanup
 
 The debug overlay now groups shortcuts in columns and gives the selected enemy, next gun, god mode and active boss
