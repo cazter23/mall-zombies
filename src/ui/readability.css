@@ -45,7 +45,7 @@
   max-width: 100%; min-width: 0;
 }
 .hud-left-stack .round-counter { align-self: flex-start; padding: 8px 14px 5px; }
-.round-value { font-size: calc(64 * var(--ui-space)); }
+.round-value { font-size: calc(44 * var(--ui-space)); }
 .hud-left-stack .incentive-hud, .hud-left-stack .ritual-hud { width: 100%; }
 .incentive-hud { font-size: var(--ui-caption); letter-spacing: .015em; padding: .65em .8em; }
 .incentive-heading { font-size: var(--ui-small); letter-spacing: .05em; }
@@ -54,8 +54,8 @@
 .incentive-zone { color: #17505b; }
 .incentive-effect { padding-top: .55em; margin-top: .55em; border-top: 1px solid var(--print-rule); }
 .incentive-effect strong, .incentive-effect span { display: block; line-height: 1.4; }
-.incentive-effect strong { font-size: var(--ui-small); letter-spacing: 0; }
-.incentive-effect span { font-size: var(--ui-caption); margin-top: .2em; letter-spacing: 0; }
+.incentive-effect strong { font-size: var(--ui-action); letter-spacing: 0; }
+.incentive-effect span { font-size: var(--ui-body); margin-top: .2em; letter-spacing: 0; }
 .ritual-hud { font-size: var(--ui-small); line-height: 1.4; }
 .ritual-heading { font-size: var(--ui-caption); letter-spacing: .04em; }
 .ritual-stage { font-size: var(--ui-body); }
@@ -68,9 +68,9 @@
 .hud-top-stack .round-banner { font-size: calc(38 * var(--ui-type)); text-align: center; }
 .hud-top-stack .round-banner:not(.show) { display: none; }
 .hud-top-stack .round-banner.show { animation-name: compact-pa; }
-.bag-marker { font-size: var(--ui-small); white-space: normal; line-height: 1.4; letter-spacing: .02em; }
+.bag-marker { font-size: var(--ui-body); white-space: normal; line-height: 1.4; letter-spacing: .02em; }
 .bag-arrow { flex: none; }
-.hud-right-stack .sale-tag { width: auto; max-width: 100%; font-size: var(--ui-small); padding: .55em .75em; }
+.hud-right-stack .sale-tag { width: auto; max-width: 100%; font-size: var(--ui-body); padding: .55em .75em; }
 .hud-right-stack .boss-voucher { font-size: var(--ui-small); margin: 0; }
 .hud-right-stack .announce-banner { width: 100%; grid-template-columns: 30px minmax(0, 1fr); gap: 8px; padding: 8px; }
 .hud-right-stack .announce-banner:not(.show) { display: none; }
@@ -78,7 +78,7 @@
 .ui-expanded .hud-right-stack .announce-banner { grid-template-columns: minmax(0, 1fr); }
 .ui-expanded .pa-speaker { display: none; }
 .ui-expanded .announce-text { font-size: var(--ui-body); }
-.ui-expanded .incentive-effect span { display: none; } /* full instructions remain in PA archive */
+.ui-expanded .incentive-effect span { font-size: var(--ui-small); }
 .pa-display { padding: 10px; }
 .pa-header { font-size: calc(11 * var(--ui-type)); letter-spacing: .06em; flex-wrap: wrap; gap: 4px 8px; }
 .pa-indicator { font-size: calc(10 * var(--ui-type)); }
@@ -121,9 +121,9 @@
 .ui-expanded .interact { top: auto; bottom: var(--hud-margin); }
 .interact-text { gap: .3em .65em; }
 .interact-title, .interact-price, .interact .cost { font-size: var(--ui-action); font-weight: 700; line-height: 1.4; }
-.interact-action, .interact-status { font-size: var(--ui-small); line-height: 1.4; }
+.interact-action, .interact-status { font-size: var(--ui-body); line-height: 1.4; }
 .interact-original { font-size: var(--ui-small); }
-.interact-detail { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .3em 1em; font-size: var(--ui-small); line-height: 1.5; }
+.interact-detail { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .3em 1em; font-size: var(--ui-body); line-height: 1.5; }
 .interact-detail:empty { display: none; }
 .interact-term { min-width: 0; overflow-wrap: anywhere; }
 .interact-change { color: var(--paper-light); font-variant-numeric: tabular-nums; }
@@ -260,7 +260,7 @@ kbd { font-size: .9em; }
   .hud-top-stack { left: 32vw; right: 38vw; }
   .hud-right-stack .birth-certificate { display: none; } /* retained in pause archive */
   .hud-left-stack .round-counter { padding: 6px 10px; }
-  .round-value { font-size: calc(50 * var(--ui-space)); }
+  .round-value { font-size: calc(38 * var(--ui-space)); }
   .boss-bar .boss-name, .boss-bar[data-boss] .boss-name { font-size: calc(25 * var(--ui-type)); }
   .boss-kicker:not([hidden]) { flex-wrap: wrap; }
   .settings-card { padding: 16px; }
@@ -338,3 +338,21 @@ kbd { font-size: .9em; }
   .interact-detail { font-size: var(--ui-caption); }
   .debug-panel { top: 12px; max-height: calc(100dvh - 24px); }
 }
+
+/* Information priority: identity remains, actionable content gets the emphasis. */
+.hud-right-stack .certificate-name { font-size: 1.6em; }
+.hud-right-stack .certificate-gun { font-size: 1.1em; font-weight: 700; }
+.hud-right-stack .certificate-remark { font-size: .85em; }
+.announce-banner[data-flavor='true'] .announce-text { font-size: var(--ui-small); }
+.announce-kicker[hidden], .incentive-label[hidden], .incentive-progress[hidden], .incentive-heading[hidden], .incentive-effect span[hidden] { display: none; }
+.ritual-stage { font-size: var(--ui-action); }
+.ritual-gauge { font-size: var(--ui-body); font-weight: 700; }
+.ritual-heading { letter-spacing: 0; }
+.interact-status { font-weight: 700; }
+.interact-term:not(.interact-change) { font-size: var(--ui-caption); }
+
+.pa-header { display: none; } /* category and housing identify the notice */
+.ritual-hud { padding: .45em .65em; }
+
+.ui-expanded .hud-left-stack { gap: 8px; }
+.ui-expanded .ritual-heading { display: none; } /* timer and quality take priority over the repeated gun label */

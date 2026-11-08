@@ -1,6 +1,6 @@
 # Boss zombies: plan
 
-Status: all four bosses, shared controls/vouchers, approved encores, spectacle and balance rows are implemented on `codex/bosses-2`.
+Status: all four bosses built and merged into main (November 2026). Kept for the reasoning and the "Later" ideas (Food Court Karen, Santa); the code and docs/folder-structure.md are the current truth.
 Each phase was tested and committed separately. Health/attack numbers remain starting values pending player balance feedback.
 
 ## The idea

@@ -1,6 +1,6 @@
 # Build-A-Blaster rebuild: plan
 
-Status: all six phases built on branch `build-a-blaster`; docs/build-a-blaster-log.md has what was done and every decision made. Prices are still placeholders.
+Status: built and merged into main (6 November 2026; the power-up rework followed on 8 November). Kept for the reasoning; the code and docs/folder-structure.md are the current truth.
 
 ## The idea
 

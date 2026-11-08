@@ -12,7 +12,7 @@ export function wireRunIntro({ events, hud, sound, random = Math.random, config 
   return events.on('roundStart', ({ round }) => {
     if (round !== 1 || !config.lines.length) return;
     const text = config.lines[Math.floor(random() * config.lines.length) % config.lines.length];
-    hud.showAnnouncement({ kicker: config.kicker, text });
+    hud.showAnnouncement({ kicker: config.kicker, text, flavor: true });
     sound.play('paChime');
   });
 }

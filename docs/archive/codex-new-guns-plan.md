@@ -1,5 +1,7 @@
 # Plan for Codex: two new wall-buy guns (Foam Dart Blaster + Confetti Cannon)
 
+> Archived: this work is finished and merged into main. Kept as a record; the code and docs/folder-structure.md are the current truth.
+
 Read `CLAUDE.md` first (folder structure + "How the pieces connect"). Existing guns to copy the style of:
 `stapleGun`, `priceGun`, `nailGun` in `src/config/weapons.js`, their models in `src/weapons/models/`, their
 sounds in `src/config/audio.js`.

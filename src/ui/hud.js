@@ -167,9 +167,9 @@ export function createHud() {
   const announceDisplay = el('div', 'pa-display');
   const announceHeader = el('div', 'pa-header');
   const announceStation = el('span', 'pa-station');
-  announceStation.textContent = 'Galleria public address';
+  announceStation.textContent = 'SG · Public address';
   const announceIndicator = el('span', 'pa-indicator');
-  announceIndicator.textContent = 'On air';
+  announceIndicator.textContent = ''; // the existing lamp indicates transmission
   announceIndicator.setAttribute('aria-hidden', 'true');
   announceHeader.append(announceStation, announceIndicator);
   const announceKicker = el('div', 'announce-kicker');
@@ -178,9 +178,11 @@ export function createHud() {
   announceBanner.append(announceSpeaker, announceDisplay);
   announceBanner.setAttribute('role', 'status');
   const announcements = createAnnouncements({
-    show({ kicker = '', text }, seconds) {
+    show({ kicker = '', text, flavor = false }, seconds) {
+      announceBanner.setAttribute('data-flavor', String(flavor));
+      announceKicker.hidden = !kicker || kicker.toLowerCase() === 'galleria public address';
       announceBanner.style.animationDuration = `${seconds}s`;
-      announceKicker.textContent = kicker || 'Galleria public address';
+      announceKicker.textContent = kicker;
       announceText.textContent = text;
       announceBanner.classList.remove('show');
       void announceBanner.offsetWidth;
@@ -297,7 +299,7 @@ export function createHud() {
         purchaseTimer = setTimeout(() => purchaseStamp.classList.remove('show'), ui.purchaseSeconds * 1000);
       });
       events.on('runReset', clearNotices);
-      events.on('runReset', () => history.clear());
+      events.on('runReset', () => { history.clear(); incentives.reset(); });
       events.on('playerDeath', clearNotices);
       events.on('mascotPopBlast', ({ butter: buttered, butterSeconds }) => {
         if (buttered) splatButter(butterSeconds);
@@ -378,7 +380,7 @@ export function createHud() {
     // A PA-style announcement: { kicker, text, priority? }. Queue/preempt rather than overwrite.
     showAnnouncement(message) {
       history.addMessage(message);
-      announcements.push(message);
+      if (!message.archiveOnly) announcements.push(message);
     },
 
     showRoundBanner(n) {
