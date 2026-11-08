@@ -1,5 +1,12 @@
 # Sunset Galleria: build history ("Current state")
 
+## 7 November 2026 — Debug overlay cleanup
+
+The debug overlay now groups shortcuts in columns and gives the selected enemy, next gun, god mode and active boss
+their own status fields. Shorter labels distinguish clearing enemies from killing them for points and explain the
+Janitor's once-per-round limit. Responsive layouts fit narrow screens and short landscape windows.
+The panel still opens with backtick, and its visibility is exposed to assistive technology.
+
 ## 6 November 2026 — One-click play, and the single file finally boots
 
 `npm run play` / play.cmd (tools/play.mjs) opens the single-file build in Firefox with no server, rebuilding only when the source is newer and falling back to the last good build. The

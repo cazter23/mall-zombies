@@ -567,7 +567,9 @@ src/
                         Esc / Back / B closes. padNav(input): D-pad moves + changes, A toggles, LB/RB tabs, B back
                         (main.js routes controller input to it while it's open)
     debugPanel.js       createDebugPanel({ status }): the small read-only debug window (the ` key): every debug key by group, live
-                        round / points / zombies / spawn type / GOD / sale, and the last result; never takes clicks
+                        round / points / enemies / sale, selected spawn type, next gun, god mode and active boss.
+                        Commands are grouped into columns with a responsive layout; the last result stays at the bottom.
+                        Visibility is mirrored to aria-hidden. The overlay never takes clicks.
     controlsMenu.js     createControlsMenu(): the Controls screen (pause screen > Controls, controller X): tabs Keyboard & mouse /
                         Controller, each as a Diagram (default) or List (controller Y toggles), from `controlsHelp` (config/controls.js:
                         { keys, text, short, anchors }; update it when bindings change) + debug-key hints

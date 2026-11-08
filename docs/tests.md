@@ -1,5 +1,8 @@
 # Sunset Galleria: what each test file covers
 
+`tests/debugCommands.test.js` also checks the overlay's grouped commands, selected next gun, active boss,
+god mode, refresh timing and accessible visibility.
+
 `tests/bosses.test.js` covers the round 5/7 schedule, the regular wave budget, safe-spawn retries and the round
 waiting for Murray. It checks the active Build-A-Blaster ritual, boss intro, kill payouts from several sources,
 guaranteed incentive, receipt counter, control resistance and exclusion from incentive marks.
