@@ -104,8 +104,112 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   background: linear-gradient(to bottom, #b4f4e3 0 2px, #5bc5ba 2px, #36978f 100%);
   box-shadow: inset -1px 0 #c7fff1;
 }
+/* Employee departments issue their own encounter signage. The native progress
+   element supplies the same accessible health value in every treatment. */
+.boss-bar[data-boss='guard'], .boss-bar[data-boss='manager'], .boss-bar[data-boss='influencer'] {
+  padding: 9px 16px 11px;
+}
+.boss-bar[data-boss='guard'] .boss-name,
+.boss-bar[data-boss='manager'] .boss-name,
+.boss-bar[data-boss='influencer'] .boss-name {
+  font: 700 clamp(15px, 2.2vw, 23px)/1.05 var(--font-hud);
+  letter-spacing: .035em;
+  text-transform: uppercase;
+}
+.boss-bar[data-boss='guard'] .boss-warning,
+.boss-bar[data-boss='manager'] .boss-warning,
+.boss-bar[data-boss='influencer'] .boss-warning {
+  clip-path: none;
+  width: auto; height: auto; padding: 0;
+  background: none;
+  font-size: 12px;
+}
+.boss-bar[data-boss='guard'] .boss-health,
+.boss-bar[data-boss='manager'] .boss-health,
+.boss-bar[data-boss='influencer'] .boss-health {
+  appearance: none;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+  height: 12px; margin-top: 7px;
+  border-radius: 1px;
+  border: 1px solid var(--boss-track-edge);
+  background: var(--boss-track);
+  overflow: hidden;
+}
+.boss-bar[data-boss] .boss-health::-webkit-progress-bar { background: var(--boss-track, #243b36); }
+.boss-bar[data-boss='guard'] .boss-health::-webkit-progress-value,
+.boss-bar[data-boss='manager'] .boss-health::-webkit-progress-value,
+.boss-bar[data-boss='influencer'] .boss-health::-webkit-progress-value { background: var(--boss-fill); }
+.boss-bar[data-boss='guard'] .boss-health::-moz-progress-bar,
+.boss-bar[data-boss='manager'] .boss-health::-moz-progress-bar,
+.boss-bar[data-boss='influencer'] .boss-health::-moz-progress-bar { background: var(--boss-fill); }
+
+/* Officer Kettle's brass-trimmed security badge and incident tape. */
+.boss-bar[data-boss='guard'] {
+  --boss-track: #101b2a;
+  --boss-track-edge: #9daebd;
+  --boss-fill: linear-gradient(to bottom, #e2f6ff, #8cbad8);
+  color: #f4f1dd;
+  background: linear-gradient(125deg, #31475e, #1c2a3e 65%);
+  border: 2px solid #d5b967;
+  border-radius: 3px 3px 17px 17px;
+  box-shadow: inset 0 0 0 2px #65798b, 3px 4px 0 #101923aa;
+}
+.boss-bar[data-boss='guard']::before {
+  content: '';
+  position: absolute; top: -2px; left: 18px; right: 18px; height: 4px;
+  background: repeating-linear-gradient(125deg, #ad4150 0 12px, #e6e0ca 12px 24px);
+}
+.boss-bar[data-boss='guard'] .boss-kicker { color: #e5cd88; border-color: #b4bdc14d; }
+.boss-bar[data-boss='guard'] .boss-warning { color: #efd283; }
+.boss-bar[data-boss='guard'] .hud-label { color: #c0d8e9; margin-top: 3px; }
+
+/* Dennis's clipboard, ruled memo paper and stamped job title. */
+.boss-bar[data-boss='manager'] {
+  --boss-track: #ddd0b8;
+  --boss-track-edge: #7b5c55;
+  --boss-fill: linear-gradient(to bottom, #a64f62, #773248);
+  color: #4a2e3a;
+  background: repeating-linear-gradient(to bottom, transparent 0 19px, #a18c6a18 19px 20px), #f5ead2;
+  border: 4px solid #907047;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px #fff9e8, 3px 4px 0 #32263499;
+}
+.boss-bar[data-boss='manager']::before {
+  content: '';
+  position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
+  width: 48px; height: 9px;
+  border: 1px solid #525c60; border-radius: 3px;
+  background: linear-gradient(to bottom, #d8dedb, #8d9698);
+  box-shadow: 0 2px 2px #382d3566;
+}
+.boss-bar[data-boss='manager'] .boss-kicker { color: #755e57; border-color: #ac958177; }
+.boss-bar[data-boss='manager'] .boss-warning { color: #874453; }
+.boss-bar[data-boss='manager'] .hud-label {
+  display: inline-block; margin-top: 4px; padding: 1px 5px;
+  color: #894255; border: 1px solid #89425599; transform: rotate(-2deg);
+  font-size: 8px;
+}
+
+/* Skylar's phone-shaped livestream frame. The notice remains the live follower count. */
+.boss-bar[data-boss='influencer'] {
+  --boss-track: #32213e;
+  --boss-track-edge: #79e3e7;
+  --boss-fill: linear-gradient(90deg, #e765b2, #f59ada 65%, #95e9eb);
+  color: #fff3ff;
+  background: radial-gradient(ellipse at top right, #713a6b88, transparent 70%), #251c35;
+  border: 2px solid #f190d7;
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 2px #5c4e76, 3px 3px 0 #63d9e0b3;
+}
+.boss-bar[data-boss='influencer'] .boss-kicker { color: #ffbade; border-color: #ed9edb44; }
+.boss-bar[data-boss='influencer'] .boss-warning { color: #ff6ba6; font-size: 10px; }
+.boss-bar[data-boss='influencer'] .hud-label { color: #9ee7eb; margin-top: 3px; letter-spacing: .16em; }
+.boss-bar[data-boss='influencer'] .boss-health { border-radius: 5px; }
 @media (max-width: 600px) {
-  .boss-bar-janitor { left: auto; right: 12px; transform: none; width: calc(100vw - 150px); }
+  .boss-bar[data-boss]:not([data-boss='']) {
+    left: auto; right: 12px; transform: none; width: calc(100vw - 150px);
+  }
 }
 .points {
   bottom: 145px; right: 28px; padding: 5px 0 5px 14px;

@@ -233,9 +233,11 @@ export function createHud() {
       if (zombie !== displayedBoss) {
         displayedBoss = zombie;
         bossBar.hidden = !zombie;
+        bossBar.setAttribute('data-boss', zombie?.type.id ?? '');
         bossBar.classList.toggle('boss-bar-janitor', zombie?.type.id === 'janitor');
         bossKicker.hidden = !zombie?.type.barNotice;
         if (zombie) {
+          bossWarning.textContent = zombie.type.barSymbol ?? '!';
           bossNotice.textContent = zombie.type.barNotice ?? '';
           bossName.textContent = zombie.type.name;
           bossTitle.textContent = zombie.type.title;
@@ -245,7 +247,7 @@ export function createHud() {
       }
       if (zombie) {
         bossHealth.value = Math.max(0, zombie.health);
-        if (zombie.followers !== undefined) bossNotice.textContent = `Followers: ${Math.floor(zombie.followers)}%`;
+        if (zombie.followers !== undefined) bossNotice.textContent = `${zombie.type.barNotice}: ${Math.floor(zombie.followers)}%`;
       }
     },
 

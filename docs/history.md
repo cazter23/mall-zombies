@@ -1,5 +1,12 @@
 # Sunset Galleria: build history ("Current state")
 
+## 8 November 2026 — Department boss bars
+
+The three new bosses had individual notices but shared the purple health-bar frame. Officer Kettle now has a navy
+and brass security badge with incident tape and a blue gauge. Dennis Fairweather has a cream clipboard, metal clip,
+stamped title and burgundy gauge. Skylar Sparkle has a pink-and-cyan livestream frame with a LIVE follower count.
+The HUD switches its department styling with the active boss and clears it on encounter cleanup.
+
 ## Bosses phase 6: spectacle and verification
 
 Finished employee costumes and filming/meeting poses, aligned enlarged head hitboxes, added a distinct sting and corporate defeat line per boss, and use a colored confetti death burst with no boss gore. Shift+J selects a boss, J summons it; explicit debug ids remain supported. Added boss health/reward/theoretical Nail Gun time rows to npm run balance. Health and damage stay at the requested starting values pending player feedback. Headless browser inspection prompted a raised ring-light pose and a rotated whiteboard beside Dennis so it cannot hide his head from the front. Vouchers now clear on death, and order-form purchases consume them through g.events. Shared-file and validation details: docs/bosses-2-report.md.

@@ -593,8 +593,9 @@ src/
                         drawn on top to the first of each entry's `anchors` (ids of drawn parts: key names, 'mouse', 'lmb', 'ls', 'rt'...);
                         all anchors get tinted. New part = id + slot there, then list it in controlsHelp
     hud.js              createHud(): 4-line crosshair whose gap = spread cone (dot in ADS) + hit marker (white body, big yellow head, red kill),
-                        boss name, job title and health bar while an encounter is active. Murray's bar uses caution
-                        stripes, a Cleaning in progress notice and a turquoise water gauge (retail.css),
+                        boss name, job title and health bar while an encounter is active. retail.css gives each employee
+                        a department design: Murray's caution sign, Kettle's security badge, Dennis's clipboard and
+                        Skylar's livestream frame. data-boss changes and clears with the encounter; follower text updates live,
                         bottom-left health (white) + stamina (green) bars, bottom-right ammo counter,
                         reload prompt under the crosshair, buy prompt below it (setInteract: "Hold F to open X 500",
                         red cost when unaffordable, shake when denied, hold-progress bar), red hurt edges, click-to-play/paused overlay,
