@@ -19,10 +19,11 @@ export const debug = {
   // group, label }. A new command = an entry here + a function with the same id in game/debugCommands.js.
   // Keys must not clash with a gameplay binding (config/controls.js) or each other: tests/debugCommands.test.js checks.
   commands: [
-    { id: 'spawn', key: 'KeyZ', group: 'Zombies', label: 'Spawn the selected zombie' },
-    { id: 'cycleZombie', key: 'KeyZ', shift: true, group: 'Zombies', label: 'Select the next zombie type' },
-    { id: 'clearZombies', key: 'KeyX', group: 'Zombies', label: 'Remove every zombie' },
-    { id: 'killZombies', key: 'KeyK', group: 'Zombies', label: 'Kill every zombie (pays points)' },
+    { id: 'spawn', key: 'KeyZ', group: 'Enemies', label: 'Spawn selected enemy' },
+    { id: 'summonBoss', key: 'KeyJ', group: 'Enemies', label: 'Summon Janitor (once per round)' },
+    { id: 'cycleZombie', key: 'KeyZ', shift: true, group: 'Enemies', label: 'Select next enemy type' },
+    { id: 'clearZombies', key: 'KeyX', group: 'Enemies', label: 'Clear enemies (no points)' },
+    { id: 'killZombies', key: 'KeyK', group: 'Enemies', label: 'Kill enemies (pays points)' },
 
     { id: 'nextRound', key: 'KeyN', group: 'Round', label: 'Skip to the next round' },
     { id: 'jumpRounds', key: 'KeyN', shift: true, group: 'Round', label: 'Jump ahead 5 rounds' },
@@ -32,13 +33,13 @@ export const debug = {
     { id: 'zeroPoints', key: 'Quote', group: 'Economy', label: 'Points to 0' },
 
     { id: 'god', key: 'KeyG', group: 'Player', label: 'God mode on / off' },
-    { id: 'giveGun', key: 'KeyH', group: 'Player', label: 'Give the next wall gun (or refill it)' },
-    { id: 'upgradeGun', key: 'KeyU', group: 'Player', label: 'Upgrade the gun in hand one tier (free)' },
+    { id: 'giveGun', key: 'KeyH', group: 'Player', label: 'Give next gun / refill if owned' },
+    { id: 'upgradeGun', key: 'KeyU', group: 'Player', label: 'Upgrade held gun one tier (free)' },
 
-    { id: 'doors', key: 'KeyO', group: 'Map', label: 'Open every door (press again to close them)' },
-    { id: 'arena', key: 'KeyT', group: 'Map', label: 'Teleport to the test range and back' },
-    { id: 'upstairs', key: 'KeyT', shift: true, group: 'Map', label: 'Teleport to Level 2 and back (repairs the escalator)' },
-    { id: 'workshop', key: 'KeyY', group: 'Map', label: 'Teleport to the Build-A-Blaster bench (opens the Promenade)' },
+    { id: 'doors', key: 'KeyO', group: 'Map', label: 'Toggle all doors open / closed' },
+    { id: 'arena', key: 'KeyT', group: 'Map', label: 'Test range / return to mall' },
+    { id: 'upstairs', key: 'KeyT', shift: true, group: 'Map', label: 'Level 2 / return downstairs' },
+    { id: 'workshop', key: 'KeyY', group: 'Map', label: 'Go to Build-A-Blaster' },
 
     { id: 'panel', key: 'Backquote', group: 'Debug', label: 'Show / hide this window' },
     { id: 'benchmark', key: 'KeyB', shift: true, group: 'Debug', label: 'Benchmark: time a camera route (title or pause screen)' },

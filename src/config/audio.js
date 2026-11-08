@@ -422,6 +422,16 @@ export const audio = {
       ],
     },
 
+    // A detuned closing bell and a low bucket clang for the Night Janitor.
+    janitorSting: {
+      volume: 0.8,
+      layers: [
+        { type: 'tone', wave: 'triangle', freq: 440, freqEnd: 416, gain: 0.56, attack: 0.009, decay: 0.65 },
+        { type: 'tone', wave: 'triangle', freq: 293, freqEnd: 262, gain: 0.52, attack: 0.009, decay: 0.8, delay: 0.24 },
+        { type: 'noise', filter: 'bandpass', freq: 460, q: 1.7, gain: 0.55, attack: 0.006, decay: 0.42, delay: 0.24 },
+      ],
+    },
+
     // Mall PA "ding-dong" before an announcement (a new zombie type showing up).
     paChime: {
       volume: 0.55,

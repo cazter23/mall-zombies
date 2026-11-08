@@ -125,6 +125,22 @@ export function createHud() {
   roundBanner.style.setProperty('--round-seconds', `${ui.roundSeconds}s`);
   hud.append(roundBanner);
 
+  const bossBar = el('section', 'boss-bar');
+  bossBar.hidden = true;
+  const bossKicker = el('div', 'boss-kicker');
+  bossKicker.hidden = true;
+  const bossWarning = el('span', 'boss-warning');
+  bossWarning.textContent = '!';
+  bossWarning.setAttribute('aria-hidden', 'true');
+  const bossNotice = el('span', 'boss-notice');
+  bossKicker.append(bossWarning, bossNotice);
+  const bossName = el('strong', 'boss-name');
+  const bossTitle = el('span', 'hud-label');
+  const bossHealth = el('progress', 'boss-health');
+  bossBar.append(bossKicker, bossName, bossTitle, bossHealth);
+  hud.append(bossBar);
+  let displayedBoss = null;
+
   // A small intercom unit: permanent station identification above the current message.
   const announceBanner = el('div', 'announce-banner');
   announceBanner.style.animationDuration = `${ui.announcementSeconds}s`;
@@ -209,6 +225,23 @@ export function createHud() {
   return {
     // The title / pause / results screens (ui/screens.js): show(), on(action), padNav(), current.
     screens,
+
+    setBoss(zombie) {
+      if (zombie !== displayedBoss) {
+        displayedBoss = zombie;
+        bossBar.hidden = !zombie;
+        bossBar.classList.toggle('boss-bar-janitor', zombie?.type.id === 'janitor');
+        bossKicker.hidden = !zombie?.type.barNotice;
+        if (zombie) {
+          bossNotice.textContent = zombie.type.barNotice ?? '';
+          bossName.textContent = zombie.type.name;
+          bossTitle.textContent = zombie.type.title;
+          bossHealth.setAttribute('aria-label', `${zombie.type.name} health`);
+          bossHealth.max = zombie.maxHealth;
+        }
+      }
+      if (zombie) bossHealth.value = Math.max(0, zombie.health);
+    },
 
     // Peripheral feedback listens to the existing event bus; no purchase callbacks in gameplay.
     connectEvents(events) {

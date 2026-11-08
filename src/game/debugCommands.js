@@ -24,7 +24,7 @@ const ZOMBIE_IDS = Object.keys(zombieTypes);
 const WALL_GUN_IDS = Object.keys(weapons).filter((id) => id !== 'stapleGun');
 const nameOf = (id) => id.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
 
-export function createDebugCommands({ map, zombies, rounds, wallet, gun, health, player, arena, flashSales, commands = debug.commands, onUse = null }) {
+export function createDebugCommands({ map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses, commands = debug.commands, onUse = null }) {
   const state = { panelOpen: debug.panel.startOpen, zombieIndex: 0, gunIndex: 0, last: '' };
   const selectedZombie = () => ZOMBIE_IDS[state.zombieIndex];
 
@@ -32,6 +32,11 @@ export function createDebugCommands({ map, zombies, rounds, wallet, gun, health,
     spawn() {
       const id = selectedZombie();
       return zombies.spawn(id) ? `Spawned ${nameOf(id)}` : 'No safe spawn point right now';
+    },
+    summonBoss() {
+      if (!rounds.started) rounds.start();
+      const zombie = bosses.summon();
+      return zombie ? `Summoned ${zombie.type.name}` : 'Boss unavailable this round or no safe spawn point';
     },
     cycleZombie() {
       state.zombieIndex = (state.zombieIndex + 1) % ZOMBIE_IDS.length;
@@ -155,6 +160,8 @@ export function createDebugCommands({ map, zombies, rounds, wallet, gun, health,
         points: wallet.points,
         alive: zombies.aliveCount,
         zombieType: nameOf(selectedZombie()),
+        nextGun: weapons[WALL_GUN_IDS[state.gunIndex % WALL_GUN_IDS.length]].name,
+        boss: bosses?.active?.type.name ?? null,
         god: health.invulnerable,
         panelOpen: state.panelOpen,
         last: state.last,

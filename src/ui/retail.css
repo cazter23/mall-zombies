@@ -25,6 +25,88 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .round-value { display: block; font: 600 64px/.95 var(--font-hud); font-variant-numeric: tabular-nums; }
 .round-counter.flashing { animation: directory-break 1.6s ease-in-out infinite; }
 @keyframes directory-break { 50% { border-color: var(--mall-yellow); color: var(--mall-yellow); } }
+.boss-bar {
+  position: absolute; top: 18px; left: 50%; transform: translateX(-50%);
+  box-sizing: border-box; width: min(46vw, 390px); padding: 7px 12px;
+  color: var(--paper-light); background: var(--plum);
+  border: 2px solid var(--paper); box-shadow: 3px 3px 0 var(--raspberry);
+  text-align: center;
+}
+.boss-name { display: block; font: 700 clamp(14px, 2.2vw, 21px)/1.1 var(--font-ui); }
+.boss-bar .hud-label { color: var(--mall-yellow); }
+.boss-health { display: block; width: 100%; height: 8px; margin-top: 5px; accent-color: var(--mall-yellow); }
+.boss-bar-janitor {
+  padding: 8px 22px 10px;
+  color: #28291e;
+  background:
+    linear-gradient(167deg, transparent 24%, #fff4 24.3%, transparent 24.8%),
+    linear-gradient(8deg, transparent 73%, #785d1938 73.4%, transparent 74%),
+    #edc84c;
+  border: 2px solid #292b24;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 2px #ffe99a, 3px 4px 0 #161b20a6;
+}
+.boss-bar-janitor::before, .boss-bar-janitor::after {
+  content: '';
+  position: absolute;
+  top: 4px; bottom: 4px;
+  width: 8px;
+  background: repeating-linear-gradient(-40deg, #292b24 0 6px, #edc84c 6px 12px);
+  opacity: .9;
+}
+.boss-bar-janitor::before { left: 4px; }
+.boss-bar-janitor::after { right: 4px; }
+.boss-kicker:not([hidden]) {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 4px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid #6c622c88;
+  font: 800 clamp(8px, 1.4vw, 10px)/1.2 var(--font-ui);
+  text-transform: uppercase;
+  letter-spacing: .1em;
+}
+.boss-warning {
+  flex: none;
+  width: 15px; height: 14px;
+  padding-top: 3px;
+  box-sizing: border-box;
+  background: #292b24;
+  color: #ffe17b;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  font: 900 10px/1 var(--font-ui);
+}
+.boss-bar-janitor .boss-name {
+  font: 700 clamp(15px, 2.2vw, 23px)/1 var(--font-hud);
+  text-transform: uppercase;
+  letter-spacing: .025em;
+}
+.boss-bar-janitor .hud-label { margin-top: 3px; color: #424431; font-size: 9px; }
+.boss-bar-janitor .boss-health {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 13px;
+  margin-top: 7px;
+  box-sizing: border-box;
+  border: 2px solid #313e34;
+  border-radius: 2px;
+  background: #243b36;
+  overflow: hidden;
+}
+.boss-bar-janitor .boss-health::-webkit-progress-bar { background: #243b36; }
+.boss-bar-janitor .boss-health::-webkit-progress-value {
+  background: linear-gradient(to bottom, #b4f4e3 0 2px, #5bc5ba 2px, #36978f 100%);
+  box-shadow: inset -1px 0 #c7fff1;
+}
+.boss-bar-janitor .boss-health::-moz-progress-bar {
+  background: linear-gradient(to bottom, #b4f4e3 0 2px, #5bc5ba 2px, #36978f 100%);
+  box-shadow: inset -1px 0 #c7fff1;
+}
+@media (max-width: 600px) {
+  .boss-bar-janitor { left: auto; right: 12px; transform: none; width: calc(100vw - 150px); }
+}
 .points {
   bottom: 145px; right: 28px; padding: 5px 0 5px 14px;
   border: 0; border-right: 0; border-left: 3px solid var(--mint); border-radius: 0;

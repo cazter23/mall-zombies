@@ -14,6 +14,8 @@ export function createDebugPanel({ commands = debug.commands, status, config = d
   const root = document.createElement('div');
   root.className = 'debug-panel';
   root.setAttribute('aria-hidden', 'true');
+  root.setAttribute('role', 'region');
+  root.setAttribute('aria-label', 'Debug shortcuts');
 
   const title = document.createElement('div');
   title.className = 'debug-title';
@@ -23,12 +25,35 @@ export function createDebugPanel({ commands = debug.commands, status, config = d
   live.className = 'debug-live';
   root.append(live);
 
+  const selections = document.createElement('div');
+  selections.className = 'debug-selections';
+  function statusField(label) {
+    const field = document.createElement('div');
+    field.className = 'debug-selection';
+    const heading = document.createElement('span');
+    heading.textContent = label;
+    const value = document.createElement('strong');
+    field.append(heading, value);
+    selections.append(field);
+    return value;
+  }
+  const enemy = statusField('Z spawns');
+  const gun = statusField('H gives next');
+  const god = statusField('G toggles');
+  const boss = statusField('Boss in play');
+  root.append(selections);
+  const columns = document.createElement('div');
+  columns.className = 'debug-groups';
+  root.append(columns);
+
   const groups = [...new Set(commands.map((c) => c.group))];
   for (const group of groups) {
     const heading = document.createElement('div');
     heading.className = 'debug-group';
     heading.textContent = group;
-    root.append(heading);
+    const section = document.createElement('section');
+    section.append(heading);
+    columns.append(section);
     for (const c of commands.filter((cmd) => cmd.group === group)) {
       const row = document.createElement('div');
       row.className = 'debug-row';
@@ -37,21 +62,30 @@ export function createDebugPanel({ commands = debug.commands, status, config = d
       const text = document.createElement('span');
       text.textContent = c.label;
       row.append(key, text);
-      root.append(row);
+      section.append(row);
     }
   }
   const last = document.createElement('div');
   last.className = 'debug-last';
   root.append(last);
+  const hint = document.createElement('div');
+  hint.className = 'debug-hint-line';
+  hint.textContent = 'Shortcuts run during play. The panel and benchmark also work while paused.';
+  root.append(hint);
 
   let visible = false;
   let timer = Infinity; // refresh on the first frame it is shown
   function refresh() {
     const s = status();
-    title.textContent = `DEBUG  (${keyLabel('Backquote')} hides)`;
+    title.textContent = `Debug shortcuts · ${keyLabel('Backquote')} to hide`;
     live.textContent =
-      `Round ${s.round} · ${s.points} pts · ${s.alive} zombies · spawn: ${s.zombieType}` +
-      (s.god ? ' · GOD' : '') + (s.sale ? ` · SALE ${s.sale}` : '');
+      `Round ${s.round} · ${s.points} pts · ${s.alive} alive` +
+      (s.sale ? ` · SALE ${s.sale}` : '');
+    enemy.textContent = s.zombieType;
+    gun.textContent = s.nextGun;
+    god.textContent = s.god ? 'GOD ON' : 'God off';
+    god.classList.toggle('debug-on', s.god);
+    boss.textContent = s.boss ?? 'None';
     last.textContent = s.last ? `> ${s.last}` : '';
   }
 
@@ -66,6 +100,7 @@ export function createDebugPanel({ commands = debug.commands, status, config = d
       if (open !== visible) {
         visible = open;
         root.classList.toggle('show', open);
+        root.setAttribute('aria-hidden', String(!open));
         timer = Infinity;
       }
       if (!visible) return;

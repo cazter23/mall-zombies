@@ -46,6 +46,8 @@ src/
                         clear on pause/death/reset; wall-clock presentation timers only
   config/
     haptics.js          Controller vibration intensity and per-gun/damage/pickup durations, motor strengths and priorities
+    bosses.js           Boss debut windows, wave timing, combat and control tuning, PA lines, and the Janitor's costume
+                        and Wet Floor settings. Boss kill values and health scaling go through economy.js.
     deathMusic.js       End of Shift: original seven-second death composition (piano/pad/bell/noise layers), gain and
                         stop fade. Bell anchors to feel.death.resultsDelay; played once through sound's music/master buses
     powerUps.js         Employee-incentive drop tuning, skill credit, round caps, pickup/zone durations, ammo top-up,
@@ -246,6 +248,9 @@ src/
     mannequinModel.js  Articulated faceless plastic model, joint seams/inventory tag, frozen pose retention and owned disposal.
     mascotModel.js      Sir Waffles' articulated foam costume and smaller zombie head. Places fixed-tick hitboxes from the
                         posed pieces. Owns the detached helmet, stuffing burst and their cleanup.
+    bosses/janitor.js   Places, ages and disposes Wet Floor patches on clear floor. Slows the player on contact and
+                        calls into the incentive system to mop Spill Cleanup.
+    bosses/janitorModel.js  Adds Murray's uniform, bucket, wet floor sign and animated mop to the standard skeleton.
     navigation.js       createNavigation(colliders, agent, { floors, links }): flow field on a 0.5m grid built from colliders, one LAYER per floor
                         (floors = their walking heights, default [0]: walkable where a box top sits at that height, blocked by anything solid
                         between ankle and head above it) joined by LINKS (a ramp/stairs: { lower: {x,z,floor}, upper: {x,z,floor}, halfWidth }):
@@ -323,11 +328,14 @@ src/
                         failures fall back to memory. main.js supplies localStorage and records the runEnd event
     settings.js         createSettings(ctx): current value of every setting, saved in localStorage ('mallZombies.settings',
                         values are sanitized on load), applies them all at startup; get/set/reset(tab)/onChange. ctx = { renderer, sound, hud }
-    runStats.js         createRunStats(): time alive, kills, headshot/melee kills, shots fired/hit, accuracy
+    runStats.js         createRunStats(): time alive, kills, headshot/melee kills, bosses defeated, shots fired/hit, accuracy
+    bossDirector.js     Picks debut rounds, retries a normal-marker spawn partway through the wave, and blocks round
+                        completion while a boss is pending. Owns encounter behavior and emits boss lifecycle events.
     powerUps.js         createPowerUps(): listens to kill/round/death events; earned dynamic pickups on clear floor,
                         swept walk-through collection, 15s expiry, no repeats, per-round caps. Blue Light multiplies only
                         base kill credit, within its 4m radius, same floor and line of sight. reset/dispose; debugDrop(id, at)
-                        marks the run assisted. createGame builds/ticks/resets it; exposed as g.powerUps
+                        marks the run assisted. Boss rewards wait for the pickup slot, survive natural wave progression
+                        and clear on death, Play again or debug skips. createGame builds/ticks/resets it as g.powerUps.
     incentiveEffects.js Temporary employee benefits: concurrent timers, reversible stat modifiers, finite healing,
                         deferred non-recursive liquidation damage, one-purchase coupons, target marks, slow patches,
                         overtime extensions, melee charges and sprint pulses. Owned/reset/disposed by powerUps.js.
@@ -561,7 +569,9 @@ src/
                         Esc / Back / B closes. padNav(input): D-pad moves + changes, A toggles, LB/RB tabs, B back
                         (main.js routes controller input to it while it's open)
     debugPanel.js       createDebugPanel({ status }): the small read-only debug window (the ` key): every debug key by group, live
-                        round / points / zombies / spawn type / GOD / sale, and the last result; never takes clicks
+                        round / points / enemies / sale, selected spawn type, next gun, god mode and active boss.
+                        Commands are grouped into columns with a responsive layout; the last result stays at the bottom.
+                        Visibility is mirrored to aria-hidden. The overlay never takes clicks.
     controlsMenu.js     createControlsMenu(): the Controls screen (pause screen > Controls, controller X): tabs Keyboard & mouse /
                         Controller, each as a Diagram (default) or List (controller Y toggles), from `controlsHelp` (config/controls.js:
                         { keys, text, short, anchors }; update it when bindings change) + debug-key hints
@@ -570,6 +580,8 @@ src/
                         drawn on top to the first of each entry's `anchors` (ids of drawn parts: key names, 'mouse', 'lmb', 'ls', 'rt'...);
                         all anchors get tinted. New part = id + slot there, then list it in controlsHelp
     hud.js              createHud(): 4-line crosshair whose gap = spread cone (dot in ADS) + hit marker (white body, big yellow head, red kill),
+                        boss name, job title and health bar while an encounter is active. Murray's bar uses caution
+                        stripes, a Cleaning in progress notice and a turquoise water gauge (retail.css),
                         bottom-left health (white) + stamina (green) bars, bottom-right ammo counter,
                         reload prompt under the crosshair, buy prompt below it (setInteract: "Hold F to open X 500",
                         red cost when unaffordable, shake when denied, hold-progress bar), red hurt edges, click-to-play/paused overlay,

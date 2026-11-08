@@ -139,7 +139,9 @@ export function createBuildEffects({ events, gun, player, zombies, colliders, ef
     if (target && canBeHit(target)) hit.add(target);
     let shattered = 0;
     for (const zombie of hit) {
-      if (zombie.slowTimer > 0 && shattered < shatter.maxTargets) {
+      if (zombie.type.boss) {
+        zombie.applySlow(chill.seconds * power, chill.fraction);
+      } else if (zombie.slowTimer > 0 && shattered < shatter.maxTargets) {
         shattered += 1;
         zombie.clearSlow();
         zombie.takeHit({ damage: gunSecond * shatter.gunSeconds * power, part: 'body', source: 'build' });

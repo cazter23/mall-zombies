@@ -52,7 +52,7 @@ test('keys resolve to commands, with Shift as an exact match', () => {
   assert.equal(d.resolve('KeyN', true).id, 'jumpRounds');
   assert.equal(d.resolve('Backquote', false).id, 'panel');
   assert.equal(d.resolve('KeyO', true), null, 'Shift+O is nothing');
-  assert.equal(d.resolve('KeyJ', false), null);
+  assert.equal(d.resolve('KeyJ', false).id, 'summonBoss');
 });
 
 test('zombies: cycle through every type, spawn the selected one, kill them for points, clear them', () => {
@@ -212,6 +212,7 @@ test('the debug window lists every key by group, shows/hides with the game state
   const text = () => panel.element.textContent;
 
   assert.equal(panel.visible, false);
+  assert.equal(panel.element.getAttribute('aria-hidden'), 'true');
   panel.update(1 / 60);
   assert.equal(panel.element.classList.contains('show'), debug.panel.startOpen);
   if (debug.panel.startOpen) d.run('panel'); // start from hidden
@@ -219,6 +220,7 @@ test('the debug window lists every key by group, shows/hides with the game state
   d.run('panel');
   panel.update(1 / 60);
   assert.equal(panel.visible, true);
+  assert.equal(panel.element.getAttribute('aria-hidden'), 'false');
   assert.ok(panel.element.classList.contains('show'));
   const rows = panel.element.querySelectorAll('.debug-row');
   assert.equal(rows.length, debug.commands.length, 'one row per command');
@@ -228,6 +230,16 @@ test('the debug window lists every key by group, shows/hides with the game state
   }
   for (const group of new Set(debug.commands.map((c) => c.group))) assert.ok(text().includes(group), group);
   assert.ok(text().includes(`Round ${t.g.rounds.round}`), 'live numbers');
+  assert.equal(panel.element.querySelectorAll('section').length, new Set(debug.commands.map(c => c.group)).size);
+  assert.ok(text().includes(d.status().nextGun), 'the next gun is visible before pressing H');
+  const previousGun = d.status().nextGun;
+  d.run('giveGun');
+  panel.update(debug.panel.refreshSeconds);
+  assert.notEqual(d.status().nextGun, previousGun);
+  assert.ok(text().includes(d.status().nextGun));
+  d.run('summonBoss');
+  panel.update(debug.panel.refreshSeconds);
+  assert.ok(text().includes(t.g.bosses.active.type.name), 'an active boss is named');
 
   d.run('addPoints');
   d.run('god');
@@ -241,5 +253,6 @@ test('the debug window lists every key by group, shows/hides with the game state
   d.run('panel');
   panel.update(1 / 60);
   assert.equal(panel.visible, false);
+  assert.equal(panel.element.getAttribute('aria-hidden'), 'true');
   assert.ok(!panel.element.classList.contains('show'));
 });

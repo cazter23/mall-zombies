@@ -1,5 +1,16 @@
 # Sunset Galleria: what each test file covers
 
+`tests/debugCommands.test.js` also checks the overlay's grouped commands, selected next gun, active boss,
+god mode, refresh timing and accessible visibility.
+
+`tests/bosses.test.js` covers the round 5/7 schedule, the regular wave budget, safe-spawn retries and the round
+waiting for Murray. It checks the active Build-A-Blaster ritual, boss intro, kill payouts from several sources,
+guaranteed incentive, receipt counter, control resistance and exclusion from incentive marks.
+
+`tests/janitor.test.js` covers the mop wind-up and hit, puddle lifetime and cap, floor-specific slowdown,
+Spill Cleanup removal, Antifreeze, and death, Play again and debug skip cleanup. It walks Murray from every open
+zone and up to Build-A-Blaster from directly below the player, without a rescue teleport.
+
 `tests/workshop.test.js` covers workshop purchases, ammo conservation during slides, trap arming, target shielding and run reset.
 
 `tests/workshop.test.js` covers Promenade purchase gating and pricing, retaining upgrades, reserve-fed slides, and real trap shots, arming, damage and reset.

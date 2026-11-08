@@ -15,6 +15,7 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
   let clock = 0;
   let lastKillAt = -Infinity;
   let pendingPosition = null;
+  const bossRewards = [];
   let seen = new WeakSet();
   let rotation = [];
   const ray = new THREE.Ray();
@@ -117,7 +118,7 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
       events.emit('powerUpStart', { ...active, position: active.position.clone() });
     }
     if (!['stockroomDelivery', 'securitySweep', 'blueLightSpecial'].includes(item.id)) {
-      if (!benefits.start(item.id, item.position)) {
+      if (!benefits.start(item.id, item.position, item.bossReward)) {
         events.emit('powerUpExpire', { id: item.id });
         return;
       }
@@ -129,7 +130,7 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
     events.on('roundStart', (event) => { round = event.round; dropped = 0; }),
     events.on('kill', ({ zombie, headshot, melee, source }) => {
       if (state.over || round < config.firstRound || dropped >= config.maxPerRound || pickup || pendingPosition) return;
-      if ((source !== 'gun' && source !== 'melee') || !zombie?.type || seen.has(zombie)) return;
+      if ((source !== 'gun' && source !== 'melee') || !zombie?.type || zombie.type.boss || seen.has(zombie)) return;
       seen.add(zombie);
       earned += melee ? config.credit.melee : headshot ? config.credit.headshot : config.credit.kill;
       if (clock - lastKillAt <= config.credit.multiKillSeconds) earned += config.credit.multiKillBonus;
@@ -139,9 +140,19 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
     events.on('playerDeath', () => {
       pickup = null;
       pendingPosition = null;
+      bossRewards.length = 0;
       endZone('death');
       benefits.reset('death');
       view?.update(null, null, 0);
+    }),
+    events.on('bossDefeated', ({ zombie }) => {
+      if (zombie.type.reward) bossRewards.push({ id: zombie.type.reward, position: zombie.position.clone() });
+    }),
+    events.on('roundDiscard', () => {
+      bossRewards.length = 0;
+      if (pickup?.bossReward) pickup = null;
+      benefits.clearBossRewards();
+      view?.update(pickup, active, 0, benefits.active);
     }),
   ];
 
@@ -153,6 +164,10 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
     get dropsThisRound() { return dropped; },
     get round() { return round; },
     get available() { return round >= config.firstRound && dropped < config.maxPerRound; },
+
+    cleanSpill(position) {
+      if (benefits.cleanSpill(position)) view?.update(pickup, active, 0, benefits.active);
+    },
 
     // Explicit testing hook; cannot silently create a career-record-eligible run.
     debugDrop(id, at = player.position) {
@@ -181,7 +196,16 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
         active.remaining -= dt;
         if (active.remaining <= 0) endZone('expired');
       }
-      if (pendingPosition && !pickup) {
+      if (!pickup && bossRewards.length) {
+        const reward = bossRewards[0];
+        const position = findPosition(reward.position) ?? findPosition(player.position);
+        if (position) {
+          bossRewards.shift();
+          pickup = { id: reward.id, position, remaining: config.lifetime, age: 0, bossReward: true };
+          events.emit('powerUpDrop', { id: reward.id, position: position.clone(), seconds: config.lifetime });
+        }
+      }
+      if (pendingPosition && !pickup && !bossRewards.length) {
         const position = findPosition(pendingPosition);
         const id = chooseType();
         pendingPosition = null;
@@ -231,6 +255,7 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
       clock = 0;
       pickup = null;
       pendingPosition = null;
+      bossRewards.length = 0;
       seen = new WeakSet();
       view?.update(null, null, 0);
     },

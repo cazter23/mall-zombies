@@ -1,5 +1,18 @@
 # Sunset Galleria: build history ("Current state")
 
+## 7 November 2026 — Murray's maintenance sign
+
+The Janitor's boss bar is a worn yellow caution placard with black striped edges, a warning triangle and
+Cleaning in progress above his name. A turquoise water gauge drains with his health. The notice lives with his
+boss config; the HUD applies the treatment for his encounter and clears it when the bar is hidden.
+
+## 7 November 2026 — Debug overlay cleanup
+
+The debug overlay now groups shortcuts in columns and gives the selected enemy, next gun, god mode and active boss
+their own status fields. Shorter labels distinguish clearing enemies from killing them for points and explain the
+Janitor's once-per-round limit. Responsive layouts fit narrow screens and short landscape windows.
+The panel still opens with backtick, and its visibility is exposed to assistive technology.
+
 ## 7 November 2026 — Build-A-Blaster's order form
 
 Playing it by hand, the ritual took too many stops in the middle of a fight: bins, Heart wall, bench, lever, booth. Now: hold F at the bench and an order form
@@ -32,6 +45,18 @@ through a re-stuff), and all 24 Stuffing and Heart pairs have a model name, both
 Loaner wears a security tag (weapons/models/loanerTag.js) and gets a line on the certificate, kinder if you bring it back. A dropped Limited Edition has a HUD arrow with distance, floor and time
 (ui/bagMarker.js). Sir Waffles now stands and shakes for 0.6 s before he rushes, which also cancels a swing in progress. A gun or box cutter headshot that knocks the helmet off pays 100.
 The helmet stays on the floor until the round ends, sits up and turns to face the player. At most 3 stay, because each is a couple of dozen draw calls. The zombie manager owns them, so they outlive the body.
+
+## 6 November 2026 — Boss framework and the Janitor
+
+Mopwater Murray joins once per run in round 5 or 7, with six times a Shopper's health and a 300-point base payout.
+The director spawns him partway through the wave in addition to its usual quota, retries a blocked spawn and waits
+for him before advancing. He uses regular mall markers even during the Build-A-Blaster ritual. His health bar and
+PA sting announce the encounter, and the end-of-run receipt counts bosses defeated.
+
+Murray swings a 60-damage mop and leaves up to six puddles on clear floor. They slow grounded players by 30% for as
+long as they stand in them and expire after 12 seconds. He mops up Spill Cleanup and drops a guaranteed Spill
+Cleanup incentive on defeat. Bosses ignore stagger, hitstop, Glitter and incentive marks. Antifreeze refreshes their
+resisted slow without shattering them. Cross-floor chases now keep following the route even directly below the player.
 
 ## 6 November 2026 — Build-A-Blaster and the Mascot merged
 

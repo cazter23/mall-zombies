@@ -25,7 +25,7 @@ import {
  *                                        (happens at the START of the break before that round)
  * @param onTypeIntro   (typeId) => void   a zombie type spawned for the first time this run
  */
-export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null }) {
+export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null, onRoundDiscard = null }) {
   const cfg = economy.rounds;
   let started = false;
   let round = 0;
@@ -86,7 +86,7 @@ export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null 
       announce(1, cfg.firstRoundDelay);
     },
 
-    update(dt) {
+    update(dt, canFinish = true) {
       if (state === 'active') {
         spawnTimer -= dt;
         if (toSpawn > 0 && spawnTimer <= 0 && zombies.aliveCount < maxAliveForRound(round)) {
@@ -106,7 +106,7 @@ export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null 
           }
         }
         // Round over: the next round number goes up right away, then the short break.
-        if (toSpawn === 0 && zombies.aliveCount === 0) announce(round + 1, cfg.breakSeconds);
+        if (canFinish && toSpawn === 0 && zombies.aliveCount === 0) announce(round + 1, cfg.breakSeconds);
       } else if (state === 'break') {
         breakTimer -= dt;
         if (breakTimer <= 0) {
@@ -120,6 +120,7 @@ export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null 
     skipRound() {
       if (!started) return this.start();
       zombies.clear();
+      onRoundDiscard?.();
       announce(round + 1, 0);
     },
 
@@ -127,6 +128,7 @@ export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null 
     jumpTo(n) {
       if (!started) started = true;
       zombies.clear();
+      onRoundDiscard?.();
       announce(Math.max(1, Math.round(n)), 0);
     },
 

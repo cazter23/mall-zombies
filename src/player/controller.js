@@ -316,7 +316,7 @@ export class PlayerController {
     } else if (this.stance === 'slide') {
       // Fast at first, then drops off toward endSpeed. Direction is locked at slide start.
       const t = 1 - this.slideTimer / stats.slideDuration;
-      const startSpeed = stats.slideSpeed * this.slideSpeedScale; // chained slides start slower
+      const startSpeed = stats.slideSpeed * this.slideSpeedScale * stats.surfaceSpeed; // chained slides start slower
       const speed = feel.slide.endSpeed + (startSpeed - feel.slide.endSpeed) * (1 - t * t);
       this.velocity.x = this.slideDirX * speed;
       this.velocity.z = this.slideDirZ * speed;
@@ -324,6 +324,7 @@ export class PlayerController {
       let targetSpeed = this.isSprinting ? stats.sprintSpeed : stats.walkSpeed;
       if (this.stance === 'crouch') targetSpeed = stats.crouchSpeed;
       if (this.stance === 'prone') targetSpeed = stats.proneSpeed;
+      targetSpeed *= stats.surfaceSpeed;
       targetSpeed *= 1 + (stats.adsMoveSpeed * this.aimMoveMultiplier - 1) * this.aimAmount;
       if (!this.isSprinting) targetSpeed *= moveStrength * directionSpeed; // stick tilt, backpedal/strafe
       // In the air you keep your momentum: you can steer, but holding a direction never slows
