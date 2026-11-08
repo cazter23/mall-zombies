@@ -396,13 +396,15 @@ test('a plush refunds exactly what that grab charged (sale + coupon), not income
   assert.equal(pa[0][0], 'closed');
   assert.equal(pa[0][1].reason, 'plush');
   assert.equal(pa[0][1].nextSiteId, next.id);
-  assert.match(pa[0][1].pa.text, /Sunny/);
+  assert.ok(cfg.pa.plush.some((line) => line.text === pa[0][1].pa.text), 'one of the plush PA lines');
   roundStart(g);
   assert.equal(claw.site, next);
   assert.equal(claw.phase, 'idle');
   assert.equal(claw.stock, cfg.stock);
   assert.equal(pa[1][0], 'moved');
-  assert.equal(pa[1][1].pa.text, `GRAB-A-GUN is now in ${g.map.zones[next.zone].label}. We don't know how either.`);
+  const area = g.map.zones[next.zone].label;
+  assert.ok(cfg.pa.moved.some((line) => line.text.replace('{area}', area) === pa[1][1].pa.text), 'one of the moved PA lines, naming the area');
+  assert.ok(pa[1][1].pa.text.includes(area));
   assert.ok(next.cabinet.rig.live && !claw.sites[0].cabinet.rig.live, 'the dust sheet moved too');
 });
 
@@ -450,7 +452,7 @@ test('a sold-out machine whose last prize times out still closes; with no other 
   assert.equal(claw.phase, 'idle');
   assert.equal(claw.stock, cfg.stock);
   assert.equal(moved[0].moved, false);
-  assert.match(moved[0].pa.text, /restocked in Main Hallway/);
+  assert.ok(cfg.pa.restocked.some((line) => line.text.replace('{area}', 'Main Hallway') === moved[0].pa.text));
 });
 
 test('the machine only ever opens in an open zone: 40 relocations with part of the mall locked', () => {
@@ -755,4 +757,122 @@ test('Build-A-Blaster: a Refurbished attachment stacks with a finished build, an
   takePrize(t);
   assert.ok(g.gun.owns(won.id));
   assert.equal(bab.ritual.phase, 'ready', 'still waiting for you at the booth');
+});
+
+// --- Phase 5: the show (looks and sounds only) ---
+
+test('the lift is only a show: prongs open on the way down and shut on the capsule, it swings, and the prize is still the one pressed', () => {
+  const s = setup(), { t, g, claw } = s;
+  standAtMachine(s);
+  const { rig } = claw.site.cabinet;
+  for (let i = 0; i < 4; i++) {
+    restock(claw);
+    pay(t);
+    t.tick(17 * (i + 1));
+    const pressed = claw.grab.capsules[claw.lane];
+    t.press('KeyF', 1);
+    let opened = 0, carried = false, swung = false;
+    const capsules = rig.group.userData.capsules;
+    const rest = capsules.map((m) => m.position.clone());
+    for (let k = 0; k < ticks(cfg.liftSeconds) - 2; k++) {
+      t.tick();
+      opened = Math.max(opened, rig.clawOpen);
+      const lane = claw.grab.lane;
+      if (capsules[lane].position.distanceTo(rest[lane]) > 0.2) carried = true;
+      if (Math.abs(capsules[lane].rotation.z) > 0.01) swung = true;
+    }
+    assert.ok(opened > 0.8, 'the prongs opened wide');
+    assert.ok(carried, 'the capsule left the pit with the claw');
+    assert.ok(swung, 'and swung on the way');
+    t.tick(4);
+    assert.equal(claw.grab.prize, pressed, 'the prize is the capsule under the claw at the press');
+    takePrize(t);
+  }
+});
+
+test('the chute flap swings out as the prize lands and comes back to rest exactly where it was built', () => {
+  const s = setup(), { t, claw } = s;
+  standAtMachine(s);
+  const { flap } = claw.site.cabinet.rig;
+  const rest = flap.position.clone();
+  pay(t);
+  t.tick(ticks(cfg.autoDropSeconds + cfg.liftSeconds) - 1);
+  let widest = 0;
+  for (let k = 0; k < ticks(cfg.show.flapSeconds) + 2; k++) {
+    t.tick();
+    widest = Math.max(widest, Math.abs(flap.rotation.x) + Math.abs(flap.rotation.z));
+  }
+  assert.equal(claw.phase, 'ready');
+  assert.ok(widest > 0.5, 'it swung');
+  t.tick(30);
+  assert.equal(flap.rotation.x + flap.rotation.z, 0);
+  assert.ok(flap.position.distanceTo(rest) < 1e-9);
+});
+
+test('the sounds: a jingle on paying, a tick into each lane, the motor, a fanfare; nothing from across the mall', () => {
+  const s = setup(), { t, g, claw } = s;
+  standAtMachine(s);
+  const from = t.sounds.length;
+  pay(t);
+  t.tick(ticks(cfg.sweep.firstSeconds));
+  const sweep = t.sounds.slice(from);
+  assert.ok(sweep.includes('clawJingle'));
+  assert.ok(sweep.filter((n) => n === 'clawTick').length >= 4, 'a tick at each lane change (four in one sweep there and back)');
+  t.press('KeyF', 1);
+  t.tick(ticks(cfg.liftSeconds));
+  for (const name of ['clawMotorDown', 'clawGrab', 'clawMotorUp', 'clawWin']) assert.ok(t.sounds.slice(from).includes(name), name);
+  takePrize(t);
+  // Far away, the machine is silent (its sounds fade out by cfg.show.soundRange).
+  restock(claw);
+  standAtMachine(s);
+  pay(t);
+  g.player.teleport({ position: new THREE.Vector3(-17, 0, 3), yaw: 0 });
+  const quiet = t.sounds.length;
+  t.tick(ticks(cfg.autoDropSeconds + cfg.liftSeconds));
+  assert.deepEqual(t.sounds.slice(quiet).filter((n) => n.startsWith('claw')), []);
+});
+
+test('the hum follows the live machine and goes quiet while it is closed; a dust-sheeted cabinet hides its claw', () => {
+  const s = setup(), { t, g, claw } = s;
+  const hum = g.map.ambience.find((e) => e.id === 'claw_hum');
+  assert.equal(hum.kind, 'clawHum');
+  assert.equal(hum.zone, 'hallway');
+  assert.deepEqual(hum.position, claw.site.cabinet.position.toArray());
+  for (const site of claw.sites.slice(1)) {
+    assert.equal(site.cabinet.rig.live, false);
+    assert.ok(site.cabinet.rig.group.children.filter((m) => m.name === 'claw_part' || m.name === 'claw_capsule').every((m) => !m.visible), `${site.id}: nothing to draw under the sheet`);
+    assert.ok(site.cabinet.rig.group.children.filter((m) => m.name === 'claw_sheet').every((m) => m.visible));
+  }
+  openAll(t, g);
+  claw.moveNow('megaMart');
+  assert.equal(hum.zone, 'megaMart');
+  assert.deepEqual(hum.position, claw.site.cabinet.position.toArray());
+  assert.ok(claw.site.cabinet.rig.group.children.filter((m) => m.name === 'claw_part').every((m) => m.visible));
+  standAtMachine(s);
+  g.debug.run('clawPlush');
+  pay(t);
+  dropOn(t, claw, isPlush);
+  t.tick(ticks(cfg.liftSeconds));
+  assert.equal(claw.phase, 'closed');
+  assert.equal(hum.zone, null, 'silent while out of order');
+  assert.ok(t.sounds.includes('clawPlush'));
+});
+
+test('the idle screen takes turns with its attract lines; every PA list has a few lines and names the area where it should', () => {
+  const s = setup(), { t, claw } = s;
+  const shown = [];
+  const screen = claw.site.cabinet.screen;
+  const original = screen.show;
+  screen.show = (text) => { shown.push(text.lines.join(' ')); original(text); };
+  t.tick(ticks(cfg.show.attractSeconds * cfg.screen.attract.length));
+  screen.show = original;
+  assert.equal(new Set(shown).size, cfg.screen.attract.length);
+  assert.ok(shown.some((l) => l.includes(`${economy.claw.grab} PTS`)), 'the price is one of them');
+  for (const [reason, lines] of Object.entries(cfg.pa)) {
+    assert.ok(lines.length >= 2, reason);
+    for (const line of lines) {
+      assert.ok(line.kicker && line.text.includes('GRAB-A-GUN'), `${reason}: ${line.text}`);
+      if (reason === 'moved' || reason === 'restocked') assert.ok(line.text.includes('{area}'), line.text);
+    }
+  }
 });

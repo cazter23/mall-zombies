@@ -193,6 +193,7 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   Food Court (8.5, -2.3) facing south, between the RESTOCK-O-MATIC and Byte Me; Mega Mart (28, 6) facing south, past the checkouts;
   Grand Atrium (27, 6.6) facing north, the south arcade; Cinema lobby (-34.1, -10.5, floor y 6.3) facing north, clear of the screen door's
   jamb; Customer Parking (34.43, -8) facing east, on the Mart's outside facade. Each keeps clutter 2 m away (mall.js hallwayClear).
+  Sunny's topper stands 0.5 m above each header (2.24..2.74 m, no collision), and peeks over the dust sheet too.
   Rejected: Hallway x 15 / x -12 (vent spawns), Mega Mart x 23 (the Atrium link), the Promenade, HOFFMAN'S and the Service Corridor.
 - Wall-buy spots: start room east wall (5, 1.5, 10) = Price Gun; hallway south wall (11, 1.5, -2) = Nail Gun;
   Mega Mart north wall (31.5, 1.5, 6) = Foam Dart Blaster, Service Corridor west wall near the dead end

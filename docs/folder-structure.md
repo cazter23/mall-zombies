@@ -424,7 +424,10 @@ src/
                         6 grabs a site; a plush (Sunny) refunds that grab's actual charge (wallet.refund) and closes it, with the next site picked
                         right then; a sell-out closes once the last prize is gone; it reopens at the next 'roundStart' at another open-zone site
                         (or restocks in place). Only one cabinet is live; the others are dust-sheeted. Events 'clawGrab' / 'clawDrop' /
-                        'clawPrize' / 'clawClosed' / 'clawMoved' (the last two are PA lines, played by createGame). forcePlush / moveNow (debug).
+                        'clawPrize' / 'clawClosed' / 'clawMoved' (the last two are PA lines, picked from cfg.pa's lists, played by createGame).
+                        forcePlush / moveNow (debug). The show (cfg.show, never the prize): prongs open and shut, the carried capsule swings,
+                        the chute flap, an attract screen, sounds that fade with distance (jingle, a tick into each lane, motor, grab,
+                        fanfare, Sunny's slide whistle) and a hum: an emitter it adds to map.ambience that follows the live machine.
       horror.js         Feature kind 'horror': the mall decays as the rounds climb (config/look.js horror). Visual only, never gameplay.
     debugCommands.js    createDebugCommands(game parts): the debug shortcuts as functions run(id) (spawn, cycleZombie, clearZombies,
                         killZombies, nextRound, jumpRounds, flashSale, addPoints, zeroPoints, god, giveGun, upgradeGun, doors, arena, panel,
@@ -553,9 +556,12 @@ src/
                         card reader, live canvas screen (screen.show({ title, line, note, tone })), side signs, the AMMO blade sign, the
                         hazard stand pad and glow pool on the floor. One collider. (props.vendingMachine is the old RESTOCK-O-MATIC, unused)
     mall/clawCabinet.js buildClawCabinet({ kit, back, faces, floorY }) -> { position, normal, screen, rig }: GRAB-A-GUN's cabinet,
-                        world-space boxes facing any of the four ways: base (screen, button, prize chute and tray), glass case with three lanes,
-                        header. ONE collider, 2.2 m. The rig (claw parts and capsules, flagged dynamic on its group) moves: setCapsule,
-                        setClaw(u, drop), carry(lane), setLive(live) (the "BACK SOON" dust sheet), chute, reset.
+                        world-space boxes facing any of the four ways: base (live screen with capsule dots, DROP button, coin door, prize
+                        chute with a hinged flap and a tray, small print on the chrome kick plate, Sunny on both sides), glass case (three
+                        lanes, rail, a lit strip, a printed backdrop), header (a marquee with painted bulbs, "EVERYONE'S A WINNER*", Sunny
+                        standing on top). Canvas art drawn once and shared (drawSunny: the mascot). ONE collider, 2.2 m; unlit, no real
+                        lights. The rig (dynamic group) moves: setCapsule, setClaw(u, drop, open, sway), carry(lane), setFlap(open),
+                        setLive(live) (a stepped cloth dust sheet with a taped "BACK SOON" note; the claw hides under it), chute, reset.
     mall/startRoomDetails.js Clearance-store dressing relative to the start room: register, receipt, bags, stock remnants,
                         vent frames/boards, sale remnants, pricing station, floor wear, damaged light fitting and lamps.
                         Decoration only (no collision or interactions); static boxes merged by material; map kit disposes resources.

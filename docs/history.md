@@ -1,5 +1,19 @@
 # Sunset Galleria: build history ("Current state")
 
+## 8 November 2026 - GRAB-A-GUN, phase 5: the show
+
+The finished cabinet (maps/mall/clawCabinet.js): a marquee board with painted bulbs (they never blink), "EVERYONE'S A WINNER*" under it, Sunny standing on top
+and on both sides (one button eye, one stare), a printed "WIN! WIN! WIN! (results may vary)" backdrop, a lit strip, chrome, a DROP button, a coin door, small
+print on the kick plate, a chute with a hinged flap. The claw's prongs open on the way down and shut on the capsule, which swings on the way up (it nearly
+slips; it never does, and the prize is still settled at the press), and the flap swings as the prize lands. The dust sheet keeps the machine's stepped shape,
+with soft folds and a taped "BACK SOON - Mgmt." note; the claw hides under it. Sounds (config/audio.js claw*): a jingle on paying, a tick each time the claw
+crosses into a lane (something to time against), the motor down and up, the grab, a fanfare, Sunny's slide whistle; they fade with distance. The live
+machine hums (an ambience emitter that follows it, silent while closed). PA lines are now lists, one picked at random; the screen cycles attract lines.
+Cost, measured in the browser pane with the benchmark's own draw path (the pane was hidden, so the camera was posed by hand along map.benchmarkShots and at
+each cabinet): the whole route 5,081 -> 5,106 draw calls (+25 summed over 14 shots) and 953,977 -> 954,211 triangles; looking at a live cabinet +6 or +7
+calls and about +150 triangles, at a dust-sheeted one +1 or +2 calls (the claw and capsules are no longer drawn under the sheet). Frame times not measured
+(a hidden pane draws no frames). All six sites checked in renders, no console errors.
+
 ## 8 November 2026 - GRAB-A-GUN, phase 4: sales and odds
 
 The 'claw' Flash Sale group (economy.flashSales.groups; no eligibility rule, as the plan says); the Discount Code still never applies to a grab and

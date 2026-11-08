@@ -165,7 +165,10 @@ goes back), a Refurbished attachment stacking with a build, and while the finish
 `clawSim.test.js` GRAB-A-GUN's odds (tools/clawOdds.js): the wall stays the cheaper way to every specific gun even at perfect
 timing, a site lasts 5 to 6 grabs, perfect timing never meets the plush while a random lane often does, better timing wins dearer guns,
 and a plush grab costs nothing. clawMachine.test.js also plays the 'claw' Flash Sale (the PA, the sale price charged and refunded, the
-Discount Code still kept out).
+Discount Code still kept out). The show: prongs open and shut and the capsule swings but the prize is still the one pressed,
+the chute flap swings and rests exactly where it was built, the sounds (jingle, lane ticks, motor, fanfare; nothing from across the mall),
+the hum follows the live machine and is silent while closed, a dust-sheeted cabinet hides its claw, the attract screen takes turns, and
+every PA list has a few lines naming the area where it should.
 `ammoCache.test.js` the vending machine (refills any gun in hand, flat price, label follows the gun, needs its area open, not
 through the wall, solid + too tall to climb, zombies can reach its front; Atrium/Cinema machines also exercise real F purchases,
 correct floor height, ownership and run reset), `balance.test.js` GUN ROLES on real measured numbers

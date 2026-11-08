@@ -45,6 +45,16 @@ export const clawMachine = {
   plushChance: [0, 0, 0.2, 0.4, 0.6, 0.8],
   plush: { name: 'Sunny', color: 0xffc21a, label: 'SUNNY' },
 
+  // THE SHOW: how the lift looks and sounds. None of it changes the prize, which was settled at the press.
+  show: {
+    lift: { down: 0.28, grip: 0.4, up: 0.68 }, // fractions of liftSeconds: down (prongs open), grip (they close), up, then over to the chute
+    wobble: { amplitude: 0.035, hz: 5.5, scare: 0.6 }, // the carried capsule swings, worst just after `scare` (it nearly slips: it never does)
+    flapSeconds: 0.5, // the chute flap swings open and shut as the prize lands
+    soundRange: 14, // m: the machine's own sounds (jingle, lane ticks, motor) fade to nothing this far away
+    hum: { range: 9, gain: 1 }, // the live machine's hum: an ambience voice (config/environment.js clawHum) that follows the machine
+    attractSeconds: 3.5, // the idle screen's lines take turns
+  },
+
   // The cabinet (maps/mall/clawCabinet.js): one solid collider, at least 2.1 m tall so it can't be stood on.
   cabinet: {
     width: 1.3, depth: 1.0, height: 2.2,
@@ -64,21 +74,47 @@ export const clawMachine = {
     { id: 'parkingLot', zone: 'parkingLot', back: { x: 34.43, z: -8 }, faces: '+x', floorY: 0 }, // against the Mart's outside wall (its facade), in the sunset
   ],
 
-  // The mall PA ({area} = the new site's area). (game/features/clawMachine.js emits them as 'clawClosed' / 'clawMoved'.)
+  // The mall PA ({area} = the new site's area): one line of each list, at random. (game/features/clawMachine.js emits them as
+  // 'clawClosed' / 'clawMoved'; createGame plays them with the chime.)
   pa: {
-    plush: { kicker: 'Attention shoppers', text: 'GRAB-A-GUN is temporarily out of service. Sunny has been informed.' },
-    soldOut: { kicker: 'Attention shoppers', text: 'GRAB-A-GUN is sold out. A restock is on its way. Nobody knows where.' },
-    moved: { kicker: 'Attention shoppers', text: "GRAB-A-GUN is now in {area}. We don't know how either." },
-    restocked: { kicker: 'Attention shoppers', text: 'GRAB-A-GUN has been restocked in {area}. Same machine. Same odds.' },
+    plush: [
+      { kicker: 'Attention shoppers', text: 'GRAB-A-GUN is temporarily out of service. Sunny has been informed.' },
+      { kicker: 'Attention shoppers', text: 'A shopper has won Sunny. Sunny did not agree to this. GRAB-A-GUN is closed while we talk it through.' },
+      { kicker: 'Attention shoppers', text: 'GRAB-A-GUN is out of order. Please do not make eye contact with the plush.' },
+    ],
+    soldOut: [
+      { kicker: 'Attention shoppers', text: 'GRAB-A-GUN is sold out. A restock is on its way. Nobody knows where.' },
+      { kicker: 'Attention shoppers', text: 'GRAB-A-GUN has run out of prizes. It still has plenty of claw.' },
+      { kicker: 'Attention shoppers', text: 'GRAB-A-GUN is empty. Management thanks you for your enthusiasm, and for your points.' },
+    ],
+    moved: [
+      { kicker: 'Attention shoppers', text: "GRAB-A-GUN is now in {area}. We don't know how either." },
+      { kicker: 'Attention shoppers', text: 'GRAB-A-GUN has relocated to {area}. It did not take the escalator. It does not have legs.' },
+      { kicker: 'Attention shoppers', text: 'Shoppers who enjoyed losing to GRAB-A-GUN can now do so in {area}.' },
+    ],
+    restocked: [
+      { kicker: 'Attention shoppers', text: 'GRAB-A-GUN has been restocked in {area}. Same machine. Same odds.' },
+      { kicker: 'Attention shoppers', text: 'GRAB-A-GUN in {area} has been restocked and the claw tightened. (The claw has not been tightened.)' },
+    ],
   },
 
+  // The machine's screen (three lines). The idle lines take turns ({price} = the grab's price right now).
   screen: {
     idle: 'HOLD TO PLAY',
-    closed: 'OUT OF SERVICE',
+    attract: [
+      ["EVERYONE'S", 'A WINNER*', '{price} PTS'],
+      ["TODAY'S", 'LUCKY', 'SHOPPER?'],
+      ['NO REFUNDS', '(EXCEPT', 'SUNNY)'],
+      ['THE CLAW', 'BELIEVES', 'IN YOU'],
+    ],
+    sweeping: 'DROP NOW!',
+    lifting: 'HOLD ON...',
+    prize: 'WINNER!*',
+    closed: 'OUT OF ORDER',
+    closedNote: 'SUNNY HAS BEEN INFORMED',
     soldOut: 'SOLD OUT',
+    soldOutNote: 'RESTOCKING ELSEWHERE',
     away: 'BACK SOON',
-    lifting: 'GOOD LUCK',
-    prize: 'TAKE IT',
     empty: 'BETTER LUCK',
   },
 };

@@ -178,6 +178,38 @@ export const audio = {
           { type: 'tone', wave: 'sine', freq: freq * 2, gain: .12, attack: .004, decay: .16, delay },
         ]),
     ] },
+    // GRAB-A-GUN (game/features/clawMachine.js): the pay jingle, a tick as the claw crosses into each lane (timing help), the
+    // motor down and up, the grab, the prize's little fanfare, and Sunny's sad slide whistle.
+    clawJingle: { volume: .32, layers: [
+      ...[[523, 0], [659, .09], [784, .18], [1047, .27], [988, .4], [1047, .5], [1319, .62]]
+        .flatMap(([freq, delay]) => [
+          { type: 'tone', wave: 'triangle', freq, gain: .5, attack: .004, decay: .2, delay },
+          { type: 'tone', wave: 'square', freq: freq / 2, gain: .06, attack: .004, decay: .12, delay },
+        ]),
+    ] },
+    clawTick: { volume: .3, layers: [
+      { type: 'tone', wave: 'square', freq: 1700, gain: .3, attack: .001, decay: .03 },
+      { type: 'noise', filter: 'bandpass', freq: 3200, q: 2, gain: .2, attack: .001, decay: .02 },
+    ] },
+    clawMotorDown: { volume: .38, layers: [
+      { type: 'tone', wave: 'sawtooth', freq: 190, freqEnd: 120, gain: .22, attack: .02, decay: .42 },
+      { type: 'noise', filter: 'bandpass', freq: 650, q: 1.2, gain: .18, attack: .02, decay: .38 },
+    ] },
+    clawGrab: { volume: .55, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 2400, q: 2, gain: .8, attack: .001, decay: .04 },
+      { type: 'tone', wave: 'square', freq: 320, gain: .25, attack: .001, decay: .05 },
+    ] },
+    clawMotorUp: { volume: .38, layers: [
+      { type: 'tone', wave: 'sawtooth', freq: 120, freqEnd: 210, gain: .22, attack: .02, decay: .5 },
+      { type: 'noise', filter: 'bandpass', freq: 650, q: 1.2, gain: .18, attack: .02, decay: .45 },
+    ] },
+    clawWin: { volume: .34, layers: [
+      ...[[784, 0], [988, .08], [1175, .16], [1568, .27]].map(([freq, delay]) => ({ type: 'tone', wave: 'triangle', freq, gain: .55, attack: .004, decay: delay > .2 ? .5 : .14, delay })),
+    ] },
+    clawPlush: { volume: .4, layers: [
+      { type: 'tone', wave: 'sine', freq: 1250, freqEnd: 330, gain: .5, attack: .02, decay: .75 },
+      { type: 'tone', wave: 'sine', freq: 190, freqEnd: 520, gain: .35, attack: .01, decay: .22, delay: .8 },
+    ] },
     tankGulp: { volume: .5, layers: [
       { type: 'tone', wave: 'sine', freq: 180, freqEnd: 520, gain: .7, attack: .01, decay: .22 },
       { type: 'noise', filter: 'lowpass', freq: 800, q: .7, gain: .25, attack: .01, decay: .12 },

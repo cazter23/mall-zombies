@@ -26,6 +26,12 @@
 // slot is free), a Refurbished gun no longer carried (replaced, or handed to Build-A-Blaster) comes as a plain copy. A Refurbished
 // take never replaces a fitted attachment, and waits while the gun in hand is switching, reloading, bursting or charging.
 //
+// THE SHOW (cfg.show, all visual or sound, never the prize): the prongs open on the way down and close on the capsule, which swings
+// on the way up (it nearly slips; it never does), the chute flap swings as the prize lands, a tick as the claw crosses into each
+// lane (it helps with timing), the motor, a jingle, a fanfare, Sunny's slide whistle, and a hum from the live machine (an emitter
+// it adds to map.ambience that follows it, silent while it's closed). Its own sounds fade with distance. The idle screen cycles
+// attract lines; the PA picks one line of each list.
+//
 // DOM-free: it announces on g.events ('clawGrab', 'clawDrop', 'clawPrize', 'clawClosed', 'clawMoved'), main.js reads .status.
 // Its only runtime objects are the capsules and claw (each cabinet's rig) and the won gun's display in the chute; reset()
 // clears them and puts the machine back at the first site.
@@ -147,7 +153,9 @@ const capsuleColor = (capsule) => (!capsule ? null : capsule.plush ? cfg.plush.c
 const prizeName = (capsule) => (!capsule ? 'Empty' : capsule.plush ? cfg.plush.name
   : capsule.refurbished ? `${weapons[capsule.id].name} + ${attachmentById(capsule.refurbished).name}` : weapons[capsule.id].name);
 
-export function buildClawMachine(feature, { scene, map, events, pricing, interactions, gun, wallet, state, sound }) {
+const pick = (list) => (Array.isArray(list) ? list[Math.floor(Math.random() * list.length)] : list);
+
+export function buildClawMachine(feature, { scene, map, events, pricing, interactions, gun, wallet, state, sound, player }) {
   const sites = feature.sites;
   let site = sites[0];
   let phase = 'idle'; // 'idle' | 'sweeping' | 'lifting' | 'ready' | 'closed'
@@ -158,6 +166,27 @@ export function buildClawMachine(feature, { scene, map, events, pricing, interac
   let nextSite = null; // after a plush: where it reopens (picked when he lands)
   let forcePlush = false; // debug: the next grab has a plush in it
   let display = null; // the won gun, in the chute
+  let flapTimer = Infinity; // seconds since the prize landed (the flap swings for cfg.show.flapSeconds)
+  let lastLane = null; // the lane the claw was over last tick (a tick sound on each change)
+  let attract = 0; // seconds on the idle screen (its lines take turns)
+  const show = cfg.show;
+
+  // The machine's own sounds, quieter with distance (a sweep you walked away from shouldn't tick in your ear).
+  function play(name) {
+    if (!sound) return;
+    const d = player ? player.position.distanceTo(cabinet().position) : 0;
+    const volume = Math.max(0, 1 - d / show.soundRange);
+    if (volume > 0) sound.play(name, { volume });
+  }
+
+  // The live machine hums: an ambience emitter that follows it (game/ambience.js mixes it by distance and walls). Closed or not yet
+  // reachable, its zone is none, so it's silent.
+  const hum = {
+    id: 'claw_hum', kind: 'clawHum', range: show.hum.range, gain: show.hum.gain,
+    get zone() { return phase === 'closed' ? null : site.zone; },
+    get position() { const p = cabinet().position; return [p.x, p.y, p.z]; },
+  };
+  if (Array.isArray(map.ambience)) map.ambience.push(hum);
 
   const cabinet = () => site.cabinet;
   const zoneOpen = (s = site) => map.zones[s.zone].open;
@@ -217,14 +246,14 @@ export function buildClawMachine(feature, { scene, map, events, pricing, interac
     nextSite = null;
     phase = 'idle';
     const area = map.zones[site.zone].label;
-    events.emit('clawMoved', { siteId: site.id, area, moved, pa: paLine(moved ? cfg.pa.moved : cfg.pa.restocked, { area }) });
+    events.emit('clawMoved', { siteId: site.id, area, moved, pa: paLine(pick(moved ? cfg.pa.moved : cfg.pa.restocked), { area }) });
   }
 
   function close(reason) {
     phase = 'closed';
     closedReason = reason;
     nextSite = reason === 'plush' ? pickSite() : null; // (after a plush the next site is known now: Sunny will walk there)
-    events.emit('clawClosed', { reason, siteId: site.id, nextSiteId: nextSite?.id ?? null, pa: cfg.pa[reason] });
+    events.emit('clawClosed', { reason, siteId: site.id, nextSiteId: nextSite?.id ?? null, pa: pick(cfg.pa[reason]) });
   }
 
   function pay(purchase) {
@@ -235,7 +264,8 @@ export function buildClawMachine(feature, { scene, map, events, pricing, interac
     grab = { number: grabsHere, capsules, paid: purchase?.cost ?? 0, t: 0, period: sweepSeconds(grabsHere), lane: null, prize: null, timer: 0 };
     phase = 'sweeping';
     capsules.forEach((capsule, lane) => cabinet().rig.setCapsule(lane, capsuleColor(capsule)));
-    sound?.play('ritualJingle');
+    lastLane = null;
+    play('clawJingle');
     events.emit('clawGrab', { siteId: site.id, stock, capsules: capsules.map((c) => (!c ? null : c.plush ? { plush: true } : { gunId: c.id, capsule: c.capsule, refurbished: c.refurbished })) });
   }
 
@@ -244,7 +274,7 @@ export function buildClawMachine(feature, { scene, map, events, pricing, interac
     grab.prize = grab.capsules[grab.lane];
     grab.timer = 0;
     phase = 'lifting';
-    sound?.play('leverClunk');
+    play('clawMotorDown');
     events.emit('clawDrop', { lane: grab.lane, gunId: grab.prize?.id ?? null, plush: !!grab.prize?.plush, reason });
   }
 
@@ -281,24 +311,37 @@ export function buildClawMachine(feature, { scene, map, events, pricing, interac
   // Sunny: the money back (exactly what this grab charged, never the shelf price), and out of service.
   function landPlush() {
     if (!state.over) wallet.refund(grab.paid);
-    sound?.play('chuteThunk');
+    play('clawPlush');
     hideDisplay();
     cabinet().rig.reset();
     grab = null;
     close('plush');
   }
 
+  // The lift, for show: down with the prongs open, grip, up with the capsule swinging, over to the chute, let go.
   function updateLift(dt) {
+    const before = grab.timer / cfg.liftSeconds;
     grab.timer += dt;
     const f = Math.min(1, grab.timer / cfg.liftSeconds);
+    const { down, grip, up } = show.lift;
     const { rig } = cabinet();
     const over = rig.laneU[grab.lane];
-    if (f < 0.3) rig.setClaw(over, f / 0.3);
-    else if (f < 0.4) {
-      if (f >= 0.35 && grab.prize) rig.carry(grab.lane);
-      rig.setClaw(over, 1);
-    } else if (f < 0.7) rig.setClaw(over, 1 - (f - 0.4) / 0.3);
-    else rig.setClaw(over + (rig.chuteU - over) * ((f - 0.7) / 0.3), 0);
+    const crossed = (at) => before < at && f >= at;
+    if (f < down) rig.setClaw(over, f / down, 0.3 + 0.7 * (f / down));
+    else if (f < grip) {
+      const closing = (f - down) / (grip - down);
+      if (crossed(down)) play('clawGrab');
+      if (closing >= 0.5 && grab.prize) rig.carry(grab.lane);
+      rig.setClaw(over, 1, 1 - closing);
+    } else {
+      if (crossed(grip)) play('clawMotorUp');
+      // The swing: grows to its worst just past `scare`, then settles over the chute.
+      const t = grab.timer;
+      const fear = Math.max(0, 1 - Math.abs(f - show.wobble.scare) / 0.25);
+      const sway = grab.prize ? show.wobble.amplitude * (0.35 + fear) * Math.sin(t * show.wobble.hz * Math.PI * 2) * (1 - f) * 2 : 0;
+      if (f < up) rig.setClaw(over, 1 - (f - grip) / (up - grip), 0, sway);
+      else rig.setClaw(over + (rig.chuteU - over) * ((f - up) / (1 - up)), 0, 0, sway);
+    }
     if (f < 1) return;
     if (!grab.prize) { finish(); return; }
     if (grab.prize.plush) { landPlush(); return; }
@@ -306,27 +349,33 @@ export function buildClawMachine(feature, { scene, map, events, pricing, interac
     phase = 'ready';
     grab.timer = 0;
     showDisplay(grab.prize.id);
-    sound?.play('chuteThunk');
+    flapTimer = 0;
+    play('chuteThunk');
+    play('clawWin');
   }
 
   // --- The screen ---
   function screenText() {
+    const text = cfg.screen;
     if (!zoneOpen()) return { title: cfg.name, lines: ['', 'CLOSED', ''], note: map.zones[site.zone].label.toUpperCase() };
     if (phase === 'closed') {
-      return { title: cfg.name, lines: ['', closedReason === 'soldOut' ? cfg.screen.soldOut : cfg.screen.closed, ''], highlight: 1,
-        note: 'BACK NEXT ROUND', tone: '#ff6b6b' };
+      const soldOut = closedReason === 'soldOut';
+      return { title: cfg.name, lines: ['', soldOut ? text.soldOut : text.closed, ''], highlight: 1,
+        note: soldOut ? text.soldOutNote : text.closedNote, tone: '#ff6b6b' };
     }
     if (phase === 'idle') {
       const price = pricing.priceOf('claw', 'grab');
-      return { title: cfg.name, lines: ['EVERYONE\'S', 'A WINNER*', `${price} PTS`], highlight: 2, note: `${stock} LEFT · ${cfg.screen.idle}`,
+      const lines = text.attract[Math.floor(attract / show.attractSeconds) % text.attract.length].map((l) => l.replace('{price}', price));
+      return { title: cfg.name, lines, highlight: lines.findIndex((l) => l.endsWith(' PTS')), note: `${stock} LEFT · ${text.idle}`,
         tone: pricing.discountOf('claw') > 0 ? '#ffd23f' : '#ff7ac4' };
     }
     const lines = grab.capsules.map((c) => prizeName(c).toUpperCase());
+    const dots = grab.capsules.map(capsuleColor);
     if (phase === 'sweeping') {
-      return { title: 'DROP NOW!', lines, highlight: currentLane(), note: `${Math.ceil(Math.max(0, cfg.autoDropSeconds - grab.t))}`, tone: '#7dffb0' };
+      return { title: text.sweeping, lines, dots, highlight: currentLane(), note: `${Math.ceil(Math.max(0, cfg.autoDropSeconds - grab.t))}`, tone: '#7dffb0' };
     }
-    if (phase === 'lifting') return { title: cfg.screen.lifting, lines, highlight: grab.lane, note: '...', tone: '#ffd23f' };
-    return { title: cfg.screen.prize, lines: ['', prizeName(grab.prize).toUpperCase(), ''], highlight: 1,
+    if (phase === 'lifting') return { title: text.lifting, lines, dots, highlight: grab.lane, note: '...', tone: '#ffd23f' };
+    return { title: text.prize, lines: ['', prizeName(grab.prize).toUpperCase(), ''], dots: [null, capsuleColor(grab.prize), null], highlight: 1,
       note: `${Math.ceil(Math.max(0, cfg.takeSeconds - grab.timer))}`, tone: '#7dffb0' };
   }
   const refreshScreen = () => cabinet().screen.show(screenText());
@@ -400,6 +449,9 @@ export function buildClawMachine(feature, { scene, map, events, pricing, interac
 
   function setUp() {
     hideDisplay();
+    flapTimer = Infinity;
+    lastLane = null;
+    attract = 0;
     for (const s of sites) {
       s.cabinet.rig.reset();
       s.cabinet.rig.setLive(s === sites[0]);
@@ -449,15 +501,22 @@ export function buildClawMachine(feature, { scene, map, events, pricing, interac
     // (features only tick while playing and alive: a grab freezes with the game, and death can't pay anyone)
     update(dt) {
       if (state.over) return;
+      if (phase === 'idle') attract += dt;
       if (phase === 'sweeping') {
         grab.t += dt;
-        cabinet().rig.setClaw(laneU(lanePosition()), 0);
+        cabinet().rig.setClaw(laneU(lanePosition()), 0, 0.3);
+        const lane = currentLane();
+        if (lane !== lastLane) { if (lastLane !== null) play('clawTick'); lastLane = lane; } // a tick into each lane: something to time against
         if (grab.t >= cfg.autoDropSeconds) drop('time');
       } else if (phase === 'lifting') {
         updateLift(dt);
       } else if (phase === 'ready') {
         grab.timer += dt;
         if (grab.timer >= cfg.takeSeconds) finish(); // (no refund: you won it and walked away)
+      }
+      if (flapTimer < show.flapSeconds) { // the flap swings out as the prize lands, and back
+        flapTimer += dt;
+        cabinet().rig.setFlap(flapTimer >= show.flapSeconds ? 0 : Math.sin(Math.PI * flapTimer / show.flapSeconds)); // (exactly shut at the end)
       }
       refreshScreen();
     },

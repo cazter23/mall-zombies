@@ -71,6 +71,7 @@ export const atmosphere = {
       projectorRelay: { noise: true, frequency: 110, filterHz: 1700, gain: .012, clickEverySeconds: 7, clickSeconds: .018 },
       refrigerator: { noise: false, frequency: 60, gain: 0.035 },
       fluorescentBuzz: { noise: false, wave: 'sawtooth', frequency: 120, gain: 0.038 },
+      clawHum: { noise: false, wave: 'triangle', frequency: 110, filterHz: 420, gain: 0.03 }, // GRAB-A-GUN, while it's live (it follows the machine)
     },
   },
 };
