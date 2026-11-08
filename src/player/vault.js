@@ -106,12 +106,39 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
 
   // The vaultable obstacle you'd cross going from `start` along (dx, dz), if one is within `maxReach`.
   // Returns { box, near, far } or { reason }.
-  function findObstacle(start, floorY, dx, dz, maxReach) {
+  // A balcony rail ahead: you always climb STRAIGHT over it (along its normal), whatever angle you ran at it, so where you let
+  // go, and so whether it is allowed, depends only on where along the rail you are. { box, near, far, dx, dz } or { reason }.
+  function ledgeAhead(start, floorY, dx, dz, box) {
+    const thinX = box.max.x - box.min.x < box.max.z - box.min.z;
+    const centre = thinX ? (box.min.x + box.max.x) / 2 : (box.min.z + box.max.z) / 2;
+    const nx = thinX ? Math.sign(centre - start.x) : 0;
+    const nz = thinX ? 0 : Math.sign(centre - start.z);
+    if (dx * nx + dz * nz < Math.cos(cfg.ledge.maxApproachDegrees * DEG_TO_RAD)) return { reason: 'too steep an angle (along its long side)' };
+    const height = box.max.y - floorY;
+    if (height < cfg.minHeight || height > cfg.ledge.maxHeight) return { reason: 'wrong height' };
+    const raw = crossing(start, nx, nz, box); // (null past either end of the rail)
+    if (!raw || raw.near < 0) return { reason: 'nothing to vault ahead' };
+    const expanded = crossing(start, nx, nz, box, feel.player.radius + cfg.clearance);
+    return { box, near: Math.max(0, expanded.near), far: expanded.far, dx: nx, dz: nz };
+  }
+
+  function findObstacle(start, floorY, dx, dz, maxReach, ledgeOnly = false) {
     const minApproach = Math.cos(cfg.maxApproachDegrees * DEG_TO_RAD);
     let best = null;
     let reason = 'nothing to vault ahead';
     for (const box of colliders) {
-      if (!box.vaultable && !box.ledge) continue;
+      if (box.ledge) {
+        const ledge = ledgeAhead(start, floorY, dx, dz, box);
+        if (ledge.reason) {
+          if (ledge.reason !== 'nothing to vault ahead') reason = ledge.reason;
+        } else if (ledge.near > maxReach) {
+          reason = 'too far away';
+        } else if (!best || ledge.near < best.near) {
+          best = ledge;
+        }
+        continue;
+      }
+      if (!box.vaultable || ledgeOnly) continue;
       const raw = crossing(start, dx, dz, box);
       if (!raw || raw.near < 0) continue;
       const height = box.max.y - floorY;
@@ -162,44 +189,38 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
     return colliders.some((box) => box.ledge && box !== climbed && x + reach > box.min.x && x - reach < box.max.x && z + reach > box.min.z && z - reach < box.max.z);
   }
 
-  // Is there open floor to drop onto? Straight under the release point, and all the way out to the furthest the capped air
-  // speed (feel.vault.ledge.airSpeedCap, however fast you ran at it) could carry you, so it can't be steered onto a fountain.
+  // Is there open floor to drop onto? The drop can't be steered (controller: dropVelocity), so this checks the one line you will
+  // fall along, from where you let go to where you land, and the landing itself.
   function dropClear(plan) {
     const L = cfg.ledge;
     const release = plan.far + plan.landingDistance;
     const ground = groundBelow(plan.start.x + plan.dx * release, plan.start.z + plan.dz * release, plan.top);
     if (!Number.isFinite(ground)) return false;
     const fallSeconds = Math.sqrt(2 * (plan.top - ground) / feel.movement.gravity);
-    const reach = L.airSpeedCap * fallSeconds;
+    const reach = L.dropSpeed * fallSeconds;
     const distances = [];
     for (let along = 0; along < reach; along += L.checkSpacing) distances.push(release + along);
     distances.push(release + reach);
-    // A corridor, not a line: you steer toward where you look, which can be a little off the path you climbed along.
     for (const along of distances) {
-      let walledOff = false;
-      for (const side of [0, -L.sideCheck, L.sideCheck]) {
-        const x = plan.start.x + plan.dx * along - plan.dz * side;
-        const z = plan.start.z + plan.dz * along + plan.dx * side;
-        if (railAt(x, z, plan.box)) {
-          if (side === 0 && along === release) return false; // (an angled path that runs into the next rail has nowhere to let go)
-          if (side === 0) walledOff = true; // the far side of a narrow void: that rail stops the drift, so nothing past it can be reached
-          continue;
-        }
-        const floor = groundBelow(x, z, plan.top);
-        if (!Number.isFinite(floor) || floor > L.landingMaxY) return false;
-        sample.set(x, floor, z);
-        if (!clearAt(sample)) return false;
+      const x = plan.start.x + plan.dx * along;
+      const z = plan.start.z + plan.dz * along;
+      if (railAt(x, z, plan.box)) {
+        if (along === release) return false; // (letting go against the next rail: nowhere to drop)
+        break; // the far side of a narrow void: that rail stops the drop drifting further
       }
-      if (walledOff) break;
+      const floor = groundBelow(x, z, plan.top);
+      if (!Number.isFinite(floor) || floor > L.landingMaxY) return false;
+      sample.set(x, floor, z);
+      if (!clearAt(sample)) return false;
     }
     return true;
   }
 
   // A full vault plan from `start` (feet) heading (dx, dz) at `speed`, or { reason } it can't work.
-  function makePlan(start, floorY, dx, dz, speed) {
-    const found = findObstacle(start, floorY, dx, dz, cfg.reach);
+  function makePlan(start, floorY, dx, dz, speed, ledgeOnly = false) {
+    const found = findObstacle(start, floorY, dx, dz, cfg.reach, ledgeOnly);
     if (!found.box) return found;
-    if (found.box.ledge) return makeLedgePlan(start, dx, dz, speed, found);
+    if (found.box.ledge) return { ...makeLedgePlan(start, found.dx, found.dz, speed, found), ledge: true };
     // Horizontal speed never changes during a vault: the drop on the far side takes as long as covering
     // landingDistance at your speed (a quicker drop when you're fast), never a slowed-down minimum time.
     const landingDistance = cfg.landingDistance;
@@ -244,15 +265,26 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
   }
 
   // Your travel direction, if it's fast enough and roughly where you're looking. { dx, dz, speed } or { reason }.
+  // Standing still against a balcony rail and pushing into it counts too, for rails only (feel.vault.ledge.pushSpeed).
   function travel() {
     const speed = Math.hypot(player.velocity.x, player.velocity.z);
-    if (speed < cfg.minSpeed) return { reason: 'moving too slowly' };
-    const dx = player.velocity.x / speed;
-    const dz = player.velocity.z / speed;
+    let dx, dz, ledgeOnly = false, moving = speed;
+    if (speed >= cfg.minSpeed) {
+      dx = player.velocity.x / speed;
+      dz = player.velocity.z / speed;
+    } else {
+      const wish = player.moveWish;
+      const length = wish ? Math.hypot(wish.x, wish.z) : 0;
+      if (length < 0.5) return { reason: 'moving too slowly' };
+      dx = wish.x / length;
+      dz = wish.z / length;
+      ledgeOnly = true;
+      moving = cfg.ledge.pushSpeed;
+    }
     if (-Math.sin(player.yaw) * dx - Math.cos(player.yaw) * dz < Math.cos(cfg.maxLookDegrees * DEG_TO_RAD)) {
       return { reason: 'not looking where you are going' };
     }
-    return { dx, dz, speed };
+    return { dx, dz, speed: moving, ledgeOnly };
   }
 
   // Try straight ahead, then a few slightly angled paths (a blocked landing can often be dodged).
@@ -262,8 +294,8 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
       const a = degrees * DEG_TO_RAD;
       const dx = t.dx * Math.cos(a) - t.dz * Math.sin(a);
       const dz = t.dx * Math.sin(a) + t.dz * Math.cos(a);
-      const result = makePlan(start, floorY, dx, dz, t.speed);
-      if (result.plan) return result;
+      const result = makePlan(start, floorY, dx, dz, t.speed, t.ledgeOnly);
+      if (result.plan || result.ledge) return result; // (a rail is always climbed straight over: turning the path changes nothing)
       firstReason ??= result.reason;
     }
     return { reason: firstReason };
@@ -292,7 +324,7 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
       if (ready.reason) return false;
       const t = travel();
       if (t.reason) return false;
-      return !!findObstacle(player.position, ready.floorY, t.dx, t.dz, cfg.magnetRange).box;
+      return !!findObstacle(player.position, ready.floorY, t.dx, t.dz, cfg.magnetRange, t.ledgeOnly).box;
     },
 
     // Would a jump press now end in a vault (now, or once the magnet brings you into reach)?
@@ -301,10 +333,12 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
       if (ready.reason || !player.grounded) return false;
       const t = travel();
       if (t.reason) return false;
-      const found = findObstacle(player.position, ready.floorY, t.dx, t.dz, cfg.magnetRange);
+      const found = findObstacle(player.position, ready.floorY, t.dx, t.dz, cfg.magnetRange, t.ledgeOnly);
       if (!found.box) return false;
-      // Where you'll be when it comes into reach (keep going straight until then).
-      const advance = Math.max(0, found.near - cfg.reach * 0.9);
+      // Where you'll be when it comes into reach (keep going straight until then). A rail's gap is measured straight at it,
+      // so an angled run covers more ground to close it.
+      const closing = found.box.ledge ? Math.max(0.2, t.dx * found.dx + t.dz * found.dz) : 1;
+      const advance = Math.max(0, found.near - cfg.reach * 0.9) / closing;
       projected.set(player.position.x + t.dx * advance, player.position.y, player.position.z + t.dz * advance);
       if (advance > 0 && !clearAt(projected)) return false;
       return !!searchPlan(projected, ready.floorY, t).plan;
@@ -360,6 +394,7 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
       if (plan.time >= plan.duration && plan.ledge) {
         // Let go over the edge: nearly straight down, falling from the floor you stood on.
         player.velocity.set(plan.dx * cfg.ledge.dropSpeed, 0, plan.dz * cfg.ledge.dropSpeed);
+        player.dropVelocity = { x: player.velocity.x, z: player.velocity.z }; // (held for the whole drop: no steering)
         player.fallBase = plan.start.y;
         player.grounded = false;
         player.timeSinceGrounded = feel.movement.coyoteTime;

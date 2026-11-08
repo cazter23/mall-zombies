@@ -26,7 +26,13 @@ Second pass, after it still felt patchy in play: mapping success along the whole
 "something to land on", so the Promenade's 3 m wide void refused from its long sides; another rail now stops the look-ahead instead (it would stop your drift too). (2) An angled path that ended against the next rail was accepted
 unchecked, and a drop could end standing on a rail top (7.8 m up): the release point must now be clear of every other rail, and the way out is checked as a corridor (feel.vault.ledge.sideCheck) because you steer toward where you look.
 (3) Escalators are ramps, not boxes, so they were invisible to the check; they count now. What still refuses, on purpose: the long rails over the escalator (the Promenade's well, and its western void, which sits on the escalator's steps),
-the Atrium's north side (escalator) and the last 1.5 m before a corner. Working: the Promenade's eastern void on all four sides, and the Atrium's court on its south, west and east sides. The tests that once insisted nobody could cross a rail by jumping now say: you cannot walk in, and a jump ends on the upper floor or on the floor below, never stuck in between.
+the Atrium's north side (escalator) and the last 1.5 m before a corner. Working: the Promenade's eastern void on all four sides, and the Atrium's court on its south, west and east sides.
+
+Third pass ("the prompt only shows half the time; angles rarely work"). Measured at every spot that works head-on: 90% at 20 degrees, 80% at 40, 59% at 60, and 0% pushing into the rail from a standstill.
+The climb followed your run direction, so an angled run let go somewhere else and checked a diagonal strip that was often blocked. Now a rail is always climbed straight over along its normal (up to 70 degrees off),
+pushing into one from a standstill counts (controller.moveWish, feel.vault.ledge.pushSpeed), and the drop holds a fixed outward velocity with no steering (controller.dropVelocity), so the check is one exact line and
+the corridor and speed cap are gone. Result: 100% at every angle and speed wherever head-on works, the prompt shows exactly when a jump vaults (tested), and no landing above 1.2 m in 497 real-input runs.
+The places that still refuse are fixed spots: lamp posts, kiosks and the escalator under the drop, and the last half metre at a corner. The tests that once insisted nobody could cross a rail by jumping now say: you cannot walk in, and a jump ends on the upper floor or on the floor below, never stuck in between.
 
 ## 8 November 2026 — Department boss bars
 

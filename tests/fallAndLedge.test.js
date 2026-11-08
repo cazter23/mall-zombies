@@ -151,6 +151,45 @@ test('a rail works the same walking or sprinting: how fast you run at it does no
   g.map.dispose();
 });
 
+test('the angle you run at a rail, and whether you are moving at all, does not change whether you go over', () => {
+  const { g } = fixture();
+  const P = g.player;
+  let spots = 0;
+  for (const rail of g.colliders.filter((b) => b.ledge)) {
+    const thinX = rail.max.x - rail.min.x < rail.max.z - rail.min.z;
+    const lo = thinX ? rail.min.z : rail.min.x, hi = thinX ? rail.max.z : rail.max.x;
+    const c = thinX ? (rail.min.x + rail.max.x) / 2 : (rail.min.z + rail.max.z) / 2;
+    for (const side of [-1, 1]) {
+      const nx = thinX ? -side : 0, nz = thinX ? 0 : -side;
+      for (let u = lo + 1; u <= hi - 1; u += 1.5) {
+        const x = thinX ? c + side * 1 : u, z = thinX ? u : c + side * 1;
+        if (!g.colliders.some((b) => b !== rail && !b.ledge && Math.abs(b.max.y - rail.min.y) < 0.06 && x > b.min.x && x < b.max.x && z > b.min.z && z < b.max.z)) continue;
+        const attempt = (degrees, speed) => {
+          const a = degrees * Math.PI / 180;
+          const dx = nx * Math.cos(a) - nz * Math.sin(a), dz = nx * Math.sin(a) + nz * Math.cos(a);
+          P.teleport({ position: new THREE.Vector3(x, rail.min.y, z), yaw: Math.atan2(-dx, -dz) });
+          P.grounded = true;
+          P.velocity.set(dx * speed, 0, dz * speed);
+          P.moveWish.x = dx;
+          P.moveWish.z = dz;
+          const prompt = P.vault.preview();
+          const vaulted = P.vault.tryStart();
+          P.vault.reset();
+          assert.equal(prompt, vaulted, 'the Vault prompt shows exactly when a jump would vault');
+          return vaulted;
+        };
+        const headOn = attempt(0, feel.movement.sprintSpeed);
+        if (headOn) spots++;
+        for (const degrees of [-60, -35, 35, 60]) for (const speed of [feel.movement.sprintSpeed, feel.movement.walkSpeed, 0]) {
+          assert.equal(attempt(degrees, speed), headOn, `same answer at ${degrees} degrees and ${speed} m/s (${x.toFixed(1)}, ${z.toFixed(1)})`);
+        }
+      }
+    }
+  }
+  assert.ok(spots >= 10, `plenty of places to go over (${spots})`);
+  g.map.dispose();
+});
+
 test('a rail only lets you over where there is open floor to land on, and never from the floor below', () => {
   const { g } = fixture();
   const rails = g.colliders.filter((b) => b.ledge);

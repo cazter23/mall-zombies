@@ -46,6 +46,8 @@ export class PlayerController {
     // Fall damage (feel.fall): the highest point of this unbroken fall, or the floor a ledge vault started from.
     this.fallPeakY = -Infinity;
     this.fallBase = null;
+    this.moveWish = { x: 0, z: 0 }; // this tick's held move direction (world, unit or zero)
+    this.dropVelocity = null; // { x, z } while dropping from a balcony rail (set by the vault, cleared on landing)
     this.onFall = null; // optional callback({ drop, damage }) when a landing hurts; the game wires it to health
 
     this.sprintMeter = stats.sprintDuration; // seconds of sprint left
@@ -105,6 +107,7 @@ export class PlayerController {
   teleport({ position, yaw }) {
     this.fallPeakY = -Infinity;
     this.fallBase = null;
+    this.dropVelocity = null;
     this.position.copy(position);
     this.prevPosition.copy(this.position);
     this.velocity.set(0, 0, 0);
@@ -299,6 +302,8 @@ export class PlayerController {
       wishX /= wishLength;
       wishZ /= wishLength;
     }
+    this.moveWish.x = wishX; // (the vault reads it: pushing into a balcony rail from a standstill climbs it)
+    this.moveWish.z = wishZ;
 
     // --- Sprint meter (only while standing and not aiming: crouch, slide or ADS cancels a sprint) ---
     this.sprintBlockTimer = Math.max(0, this.sprintBlockTimer - dt);
@@ -408,14 +413,11 @@ export class PlayerController {
       if (fromSlide) this.endSlide(); // jumping out of a slide keeps the momentum
     }
 
-    // Letting go over a balcony rail (feel.vault.ledge): a gentle drop, whatever speed you ran at it, so the vault can check its landing.
-    if (this.fallBase !== null && !this.grounded) {
-      const cap = feel.vault.ledge.airSpeedCap;
-      const speed = Math.hypot(this.velocity.x, this.velocity.z);
-      if (speed > cap) {
-        this.velocity.x *= cap / speed;
-        this.velocity.z *= cap / speed;
-      }
+    // Letting go over a balcony rail (feel.vault.ledge): no steering on the way down. You drop straight out from the rail at a fixed
+    // pace, so where you land is exactly where the vault checked, whatever speed or angle you ran at it.
+    if (this.dropVelocity && !this.grounded) {
+      this.velocity.x = this.dropVelocity.x;
+      this.velocity.z = this.dropVelocity.z;
     }
 
     // --- Gravity ---
@@ -454,6 +456,7 @@ export class PlayerController {
     const from = this.fallBase ?? this.fallPeakY;
     this.fallPeakY = -Infinity;
     this.fallBase = null;
+    this.dropVelocity = null;
     const drop = from - this.position.y;
     const fall = feel.fall;
     if (!(drop > fall.safeDrop)) return;
