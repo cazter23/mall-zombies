@@ -111,6 +111,7 @@ export function createShutter({ name, minX, maxX, minZ, maxZ, minY = 0, height, 
   }
 
   return {
+    kind: 'shutter',
     name,
     mesh,
     frame,

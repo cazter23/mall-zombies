@@ -1622,17 +1622,18 @@ kbd {
 /* Debug window (config/debug.js, ui/debugPanel.js): a small read-only list of the debug keys, never takes clicks */
 .debug-panel {
   position: fixed;
-  top: 76px;
-  left: 12px;
+  top: 108px;
+  right: 16px;
   z-index: 40;
   display: none;
-  min-width: 250px;
-  max-width: 340px;
-  padding: 8px 10px;
-  border-radius: 6px;
-  background: rgba(10, 8, 18, 0.78);
-  color: #c8c0d4;
-  font: 12px/1.5 monospace;
+  width: min(510px, calc(100vw - 32px));
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 2px solid #b5e1cf;
+  box-shadow: 4px 4px 0 #392940;
+  background: rgba(28, 22, 33, 0.96);
+  color: #f4ebd6;
+  font: 11px/1.45 var(--font-ui);
   pointer-events: none;
   user-select: none;
 }
@@ -1640,16 +1641,48 @@ kbd {
   display: block;
 }
 .debug-title {
-  color: #9ef0b5;
+  color: #b5e1cf;
   font-weight: bold;
+  font-size: 14px;
 }
 .debug-live {
-  margin: 2px 0 4px;
+  margin: 3px 0 10px;
+  color: #c8c0d4;
+}
+.debug-selections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.debug-selection {
+  padding: 5px 8px;
+  border-left: 2px solid #74667e;
+  background: #ffffff08;
+}
+.debug-selection span, .debug-selection strong {
+  display: block;
+}
+.debug-selection span {
+  color: #b4a8bd;
+  font-size: 10px;
+}
+.debug-selection strong {
+  font-size: 12px;
+}
+.debug-on {
   color: #ffd23f;
 }
+.debug-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 14px;
+}
 .debug-group {
-  margin-top: 4px;
-  color: #8f86a0;
+  margin-bottom: 3px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid #ffffff24;
+  color: #b5e1cf;
   text-transform: uppercase;
   font-size: 10px;
   letter-spacing: 0.08em;
@@ -1661,14 +1694,31 @@ kbd {
 }
 .debug-row kbd {
   flex: none;
-  min-width: 64px;
-  text-align: right;
-  color: #fff;
+  min-width: 49px;
+  color: #ffd23f;
+  font: 11px/1.45 monospace;
 }
 .debug-last {
-  margin-top: 6px;
-  color: #9ef0b5;
+  margin-top: 10px;
+  padding-top: 6px;
+  border-top: 1px solid #ffffff24;
+  color: #b5e1cf;
   min-height: 1.5em;
+}
+.debug-hint-line {
+  margin-top: 4px;
+  color: #b4a8bd;
+  font-size: 10px;
+}
+@media (max-height: 600px) and (min-width: 800px) {
+  .debug-panel { top: 12px; width: min(700px, calc(100vw - 160px)); }
+  .debug-groups { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .debug-selections { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
+  .debug-panel { top: 12px; right: 8px; width: calc(100vw - 16px); padding: 8px; }
+  .debug-row { gap: 4px; }
+  .debug-groups { gap: 6px 8px; }
 }
 
 /* Graphics settings: a small tag saying how much each one costs to run */

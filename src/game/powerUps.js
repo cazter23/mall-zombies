@@ -1,6 +1,7 @@
 // Earned dynamic drops. No DOM/WebGL: the optional view only receives state.
 import * as THREE from 'three';
 import { powerUps as defaults } from '../config/powerUps.js';
+import { bossVouchers } from '../config/bosses.js';
 import { overlapsSolid, rampHeightAt } from '../world/collision.js';
 import { createIncentiveEffects } from './incentiveEffects.js';
 
@@ -122,7 +123,9 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
 
   function collect() {
     const item = pickup;
-    const def = config.types[item.id];
+    const voucher = bossVouchers[item.id];
+    const def = voucher ?? config.types[item.id];
+    if (voucher && !pricing.setVoucher(voucher)) return; // keep the pickup while the previous voucher is held
     pickup = null; // remove first: listeners cannot collect the same reward twice
     if (item.id === 'stockroomDelivery') gun.restock(def.magazineFraction);
     if (item.id === 'securitySweep') zombies.securitySweep(player.position, def);
@@ -130,7 +133,7 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
       active = { id: item.id, position: item.position.clone(), remaining: def.seconds, radius: def.radius };
       events.emit('powerUpStart', { ...active, position: active.position.clone() });
     }
-    if (!['stockroomDelivery', 'securitySweep', 'blueLightSpecial'].includes(item.id)) {
+    if (!voucher && !['stockroomDelivery', 'securitySweep', 'blueLightSpecial'].includes(item.id)) {
       if (!benefits.start(item.id, item.position, item.bossReward)) {
         events.emit('powerUpExpire', { id: item.id });
         return;
@@ -143,7 +146,7 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
     events.on('roundStart', (event) => { round = event.round; dropped = 0; }),
     events.on('kill', ({ zombie, headshot, melee, source }) => {
       if (state.over || round < config.firstRound || dropped >= config.maxPerRound || pickup || pendingPosition) return;
-      if ((source !== 'gun' && source !== 'melee') || !zombie?.type || zombie.type.boss || seen.has(zombie)) return;
+      if ((source !== 'gun' && source !== 'melee') || !zombie?.type || zombie.noRewards || zombie.type.boss || seen.has(zombie)) return;
       seen.add(zombie);
       earned += melee ? config.credit.melee : headshot ? config.credit.headshot : config.credit.kill;
       if (clock - lastKillAt <= config.credit.multiKillSeconds) earned += config.credit.multiKillBonus;
@@ -164,7 +167,7 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
     // A zombie whose type promises a drop (zombie.type.guaranteedDrop: the Employee of the Month) leaves one at its body,
     // whatever killed it, through the same queue as a boss's reward: it never counts against maxPerRound or the meter.
     events.on('kill', ({ zombie }) => {
-      if (state.over || !zombie?.type?.guaranteedDrop) return;
+      if (state.over || !zombie?.type?.guaranteedDrop || zombie.noRewards) return;
       const id = chooseRewardType();
       if (id) bossRewards.push({ id, position: zombie.position.clone() });
     }),

@@ -13,8 +13,8 @@ import { createTankDeaths } from './tankDeath.js';
 import { feel } from '../config/feel.js';
 import { mascotGold, mascotGoldTypes, mascotTypes, zombieTypes, zombieCrowd, zombieFailsafe, zombieSpawn } from '../config/zombies.js';
 import { pickMascotVariant } from './mascotVariants.js';
-import { bossTypes } from '../config/bosses.js';
-import { economy, zombieHealthFor } from '../config/economy.js';
+import { bossTypes, bossSpectacle } from '../config/bosses.js';
+import { economy, zombieHealthFor, maxAliveForRound } from '../config/economy.js';
 import { createNavigation } from './navigation.js';
 import { overlapsSolid } from '../world/collision.js';
 import { castShot } from '../weapons/hitscan.js';
@@ -142,6 +142,11 @@ export function createZombieManager({
     // A final burst of splatter from the chest, carrying the killing blow's directional momentum.
     scratch.copy(zombie.position);
     scratch.y += zombie.type.hitbox.bodyTop * 0.75;
+    if (zombie.type.boss) {
+      effects.confetti(scratch, UP, bossSpectacle.death);
+      if (onKill) onKill(zombie);
+      return;
+    }
     effects.splat(scratch, UP, zombie.type.splatColors, zombie.type.deathSplatCount, {
       flesh: !zombie.type.plastic,
       speedScale: zombie.deathImpulse ?? 1,
@@ -225,7 +230,7 @@ export function createZombieManager({
       const nx = dx / len;
       const nz = dz / len;
       if (!shoveIfClear(p, nx * push, nz * push, feel.player.radius, player.height)) {
-        if (!z.frozen) shoveIfClear(z.position, -nx * push, -nz * push, z.type.radius, z.type.height);
+        if (!z.frozen && !z.hold) shoveIfClear(z.position, -nx * push, -nz * push, z.type.radius, z.type.height);
       }
     }
   }
@@ -254,8 +259,8 @@ export function createZombieManager({
           const nz = dz / d;
           const overlap = minSpacing - Math.min(d, minSpacing);
           const half = overlap / 2;
-          const aMoved = !a.frozen && shoveIfClear(a.position, -nx * half, -nz * half, a.type.radius, a.type.height);
-          const bMoved = !b.frozen && shoveIfClear(b.position, nx * (aMoved ? half : overlap), nz * (aMoved ? half : overlap), b.type.radius, b.type.height);
+          const aMoved = !a.frozen && !a.hold && shoveIfClear(a.position, -nx * half, -nz * half, a.type.radius, a.type.height);
+          const bMoved = !b.frozen && !b.hold && shoveIfClear(b.position, nx * (aMoved ? half : overlap), nz * (aMoved ? half : overlap), b.type.radius, b.type.height);
           if (!bMoved && aMoved) shoveIfClear(a.position, -nx * half, -nz * half, a.type.radius, a.type.height);
         }
       }
@@ -271,7 +276,7 @@ export function createZombieManager({
     const fs = zombieFailsafe;
     for (const z of zombies) {
       if (!z.isAlive || z.state === 'spawning') continue;
-      if (z.frozen && z.position.y >= fs.fallOutHeight) {
+      if ((z.frozen || z.hold || z.controlled) && z.position.y >= fs.fallOutHeight) {
         z.stuckTimer = 0; z.stuckFrom.x = z.position.x; z.stuckFrom.z = z.position.z; continue;
       }
       if (z.position.y < fs.fallOutHeight) {
@@ -394,6 +399,7 @@ export function createZombieManager({
 
   function removeActor(index) {
     const [zombie] = zombies.splice(index, 1);
+    zombie.clearBossEffects();
     zombie.model.dispose();
     const target = shootables.indexOf(zombie);
     if (target !== -1) shootables.splice(target, 1);
@@ -431,17 +437,19 @@ export function createZombieManager({
     // Returns the zombie, or null if no spawn point is usable right now.
     // Options: `variant` = the Mascot costume to wear (otherwise picked here, see below); `gold` = true / false for an
     // Employee of the Month or not (otherwise rolled here); `nearest` = the safe spawn point closest to the player
-    // instead of a random nearby one (debug).
-    spawn(typeId = 'shopper', at = null, { variant = null, gold = null, nearest = false } = {}) {
+    // instead of a random nearby one (debug); `fanOwner` / `healthMultiplier` = a boss's summoned fan (no rewards, never
+    // past the round's max alive, never out of the chute).
+    spawn(typeId = 'shopper', at = null, { variant = null, gold = null, nearest = false, fanOwner = null, healthMultiplier = 1 } = {}) {
+      if (fanOwner && zombies.filter(z => z.isAlive).length >= maxAliveForRound(getRound())) return null;
       const cap = economy.zombieMix[typeId]?.maxAlive;
       if (cap && zombies.filter(z => z.isAlive && z.type.id === typeId).length >= cap) typeId = 'shopper';
       let type = bossTypes[typeId] ?? zombieTypes[typeId];
-      const chute = type.boss ? null : steered;
+      const chute = type.boss || fanOwner ? null : steered;
       const chutePoint = at || !chute ? null : pickSpawnPoint(type, null, chute, nearest);
       const point = at ? null : chutePoint || pickSpawnPoint(type, null, spawnPoints, nearest);
       if (!at && !point) return null;
       const position = at ? at.clone() : point.position.clone();
-      position.y = point ? point.position.y : 0; // (a spawn marker stands on its own floor; an explicit spot goes on the ground)
+      position.y = point ? point.position.y : at.y;
       const yaw = Math.atan2(-(player.position.x - position.x), -(player.position.z - position.z));
       const round = getRound();
       // A Mascot's costume, now the spot is known: a costume's home zones make it likelier there (no bias out of the
@@ -454,8 +462,10 @@ export function createZombieManager({
         type = golden ? mascotGoldTypes[costume] : mascotTypes[costume];
       }
       const speed = pickGaitSpeed(type, round);
-      const health = type.gold ? Math.round(zombieHealthFor(typeId, round) * mascotGold.healthMultiplier) : zombieHealthFor(typeId, round);
-      const zombie = new Zombie({ type, health, position, yaw, speed, round });
+      const health = zombieHealthFor(typeId, round) * healthMultiplier;
+      const zombie = new Zombie({ type, health: type.gold ? Math.round(health * mascotGold.healthMultiplier) : health, position, yaw, speed, round });
+      zombie.fanOwner = fanOwner;
+      zombie.noRewards = !!fanOwner;
       zombie.onDeath = onZombieDeath;
       zombie.onHeadPop = keepHelmet;
       if (type.mascot) zombie.onReclaim = reclaimHelmet;
@@ -478,6 +488,15 @@ export function createZombieManager({
       scratch.y += 0.05;
       effects.splat(scratch, UP, zombieCrowd.spawnDustColors, zombieCrowd.spawnDustCount);
       return zombie;
+    },
+
+    dismissFans(owner, seconds) {
+      for (const z of zombies) if (z.fanOwner === owner && z.isAlive) {
+        z.leaveTimer = seconds;
+        z.controlled = true;
+        z.control = (dt, ctx) => { z.standStill(dt, ctx); return true; };
+        if (seconds === 0) z.removed = true;
+      }
     },
 
     clearBosses() {
@@ -509,7 +528,13 @@ export function createZombieManager({
       nav.update(dt, player.position);
       ctx.canAttack = canAttack();
       assignSurroundSlots(dt);
-      for (const z of zombies) z.update(dt, ctx);
+      for (const z of zombies) {
+        if (z.leaveTimer !== undefined) {
+          z.leaveTimer -= dt;
+          if (z.leaveTimer <= 1e-9) z.removed = true;
+        }
+        if (!z.removed) z.update(dt, ctx);
+      }
       partyDeaths.update(dt);
       tankDeaths.update(dt);
       updateHelmets(dt);

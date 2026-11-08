@@ -27,6 +27,7 @@ import { powerUps as incentiveConfig } from '../config/powerUps.js';
 import { economy } from '../config/economy.js';
 import { bossTiming } from '../config/bosses.js';
 import { createBossDirector } from './bossDirector.js';
+import { configureBossVouchers } from './bossVouchers.js';
 import { createShutterSounds } from './shutterSounds.js';
 import { mascotGold, mascotTypes, zombieTypes } from '../config/zombies.js';
 import { weapons, melee as meleeWeapons } from '../config/weapons.js';
@@ -92,7 +93,8 @@ export function createGame({
   // Live combat bodies also block a vault's path and landing, even without a world collider.
   const shootables = [...(arena ? arena.shootables : [])];
   const stats = createPlayerStats();
-  // Slow floors (the Janitor's wet floor, Scoops' melt): each reports its factor here, the lowest becomes stats.surfaceSpeed.
+  // Player slows (a boss's: the Janitor's wet floor, the Guard's taser; Scoops' melt): each reports its factor here, the
+  // lowest becomes stats.surfaceSpeed.
   const surfaces = createSurfaceSlows(stats);
   const player = new PlayerController({
     camera,
@@ -109,6 +111,11 @@ export function createGame({
   // Points. Every gain/spend shows a "+60" / "-500" pop-up by the counter.
   const wallet = createWallet({ onChange: (amount) => hud.pointsPopup(amount) });
   const runStats = createRunStats();
+  events.on('purchase', ({ kind, id }) => pricing.spendVoucher(kind, id));
+  events.on('playerDeath', () => {
+    pricing.clearVoucher();
+    for (const zombie of zombies.zombies) zombie.clearBossEffects();
+  });
   // A player attack (gun or box cutter) hit something: announce it.
   const announceHit = (hit) => events.emit('hit', hit);
   const effects = createEffects(scene, { surfaces: [map.group, ...(arena ? [arena.group] : [])] });
@@ -185,6 +192,7 @@ export function createGame({
     forceRun: false, // debug: run without pointer lock (used by automated tests)
     over: false, // true once the player has died
     padPlaying: false, // started/resumed with a controller
+    menu: null, // an in-game menu a feature has open (Build-A-Blaster's 'orderForm'): the player stands still, the world doesn't
     assisted: false, // gameplay-changing debug command used; career records ignore this run
     get running() {
       return input.locked || this.padPlaying || this.forceRun;
@@ -298,7 +306,7 @@ export function createGame({
   // Knocking a Mascot's helmet off with a headshot pays a bonus: stuffings and hazards don't aim. Every costume has its own
   // PA line. A helmet Captain Coupon put back on pays nothing the second time (no farming him).
   events.on('mascotHeadPop', ({ zombie, headshot, source, again }) => {
-    if (state.over || again || !headshot || (source !== 'gun' && source !== 'melee')) return;
+    if (state.over || again || zombie.noRewards || !headshot || (source !== 'gun' && source !== 'melee')) return;
     wallet.earn(economy.payouts.helmetPopBonus);
     hud.showAnnouncement({ ...zombie.type.mascot.helmetPopLine, priority: 0 });
   });
@@ -339,7 +347,7 @@ export function createGame({
   });
 
   // Build-A-Blaster's PA lines (game/features/workshopRitual.js).
-  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualCollect', 'limitedEditionDrop', 'limitedEditionFitted']) {
+  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualWaiting', 'ritualCollect', 'limitedEditionDrop', 'limitedEditionFitted']) {
     events.on(name, ({ pa }) => {
       hud.showAnnouncement({ ...pa, priority: 1 });
       sound.play('paChime');
@@ -353,13 +361,16 @@ export function createGame({
     events, player, gun, zombies, colliders, state, stats, pricing, wallet,
     view: createPowerUpView(scene, colliders),
   });
-  const bosses = createBossDirector({ events, rounds, zombies, scene, colliders, player, surfaces, powerUps, state });
-  let displayedBoss = null, displayedBossHealth;
+  configureBossVouchers({ pricing, wallet, map, gun, state });
+  const bosses = createBossDirector({ events, rounds, zombies, scene, colliders, player, surfaces, powerUps, state, map });
+  let displayedBoss = null, displayedBossHealth, displayedFollowers;
   function updateBossBar(zombie) {
     const hp = zombie?.health;
-    if (displayedBoss === zombie && displayedBossHealth === hp) return;
+    const followers = zombie?.followers === undefined ? undefined : Math.floor(zombie.followers);
+    if (displayedBoss === zombie && displayedBossHealth === hp && displayedFollowers === followers) return;
     displayedBoss = zombie;
     displayedBossHealth = hp;
+    displayedFollowers = followers;
     hud.setBoss(zombie);
   }
   events.on('bossSpawn', ({ zombie }) => {
@@ -367,9 +378,14 @@ export function createGame({
     hud.showAnnouncement({ ...zombie.type.introBanner, priority: bossTiming.introPriority });
     sound.play(zombie.type.introSound);
   });
-  events.on('bossDefeated', () => {
+  events.on('bossDefeated', ({ zombie }) => {
     runStats.bossesDefeated += 1;
     updateBossBar(null);
+    if (zombie.type.defeatBanner) hud.showAnnouncement({ ...zombie.type.defeatBanner, priority: bossTiming.introPriority });
+  });
+  events.on('bossPhase', ({ zombie, phase }) => {
+    const pa = zombie.type.phases?.[phase];
+    if (pa) { hud.showAnnouncement({ ...pa, priority: bossTiming.introPriority }); sound.play('paChime'); }
   });
   events.on('roundDiscard', () => updateBossBar(null));
   events.on('playerDeath', () => updateBossBar(null));
@@ -393,7 +409,7 @@ export function createGame({
   // feature might need (game/features/index.js lists the context).
   const features = buildFeatures(map, {
     scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state,
-    colliders, effects, sound,
+    colliders, effects, sound, input,
   });
 
   // FLASH SALES: the mall PA discounts one group of prices for a while (game/flashSales.js). A group is only picked
@@ -416,7 +432,7 @@ export function createGame({
     map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses,
     onUse: (id) => {
       // Merely showing the panel or choosing the next spawn type changes no run outcome.
-      if (id !== 'panel' && id !== 'cycleZombie' && id !== 'benchmark') state.assisted = true;
+      if (id !== 'panel' && id !== 'cycleZombie' && id !== 'cycleBoss' && id !== 'benchmark') state.assisted = true;
     },
   });
 
@@ -465,6 +481,7 @@ export function createGame({
       death.summary = null;
     }],
     ['hud', () => {
+      hud.setVoucher?.(null);
       updateBossBar(null);
       hud.setRound(0);
       hud.setRoundFlashing(false);
@@ -506,14 +523,25 @@ export function createGame({
 
     if (debugTick) debugTick();
 
-    player.update(dt);
+    pricing.update();
+    hud.setVoucher?.(pricing.voucher);
+    // An in-game menu (state.menu, set by a feature): the player stands still and can't shoot or buy, but zombies, rounds and
+    // everything else carry on. The feature reads the menu's input in features.update. (The gun is skipped, not just blocked,
+    // so it doesn't eat the mouse wheel the menu scrolls with.)
+    const inMenu = !!state.menu;
+    if (inMenu) {
+      player.velocity.x = player.velocity.z = 0;
+      player.freeze();
+    } else {
+      player.update(dt);
+    }
     powerUps.update(dt); // collect escape rewards before this tick's zombie attacks; paused/dead timers freeze
     // "[Space] Vault" prompt: would a jump press now end in a vault? (checked per tick, shown in render)
-    vaultPromptVisible = player.grounded && !player.vault.active && player.vault.preview();
-    interactions.update(dt); // before the gun: on controller X, a hold near a buyable buys instead of reloading
-    melee.update(dt, !gun.isSwitching);
+    vaultPromptVisible = !inMenu && player.grounded && !player.vault.active && player.vault.preview();
+    if (!inMenu) interactions.update(dt); // before the gun: on controller X, a hold near a buyable buys instead of reloading
+    if (!inMenu) melee.update(dt, !gun.isSwitching);
     // Hands busy with a slash or a vault: no shooting. A vault only pauses a reload (it carries on after).
-    gun.update(dt, melee.isBusy || player.vault.active, player.vault.active);
+    if (!inMenu) gun.update(dt, melee.isBusy || player.vault.active, player.vault.active);
     zombies.update(dt);
     mascotCostumes.update(dt);
     // Rounds pause while you're off in the debug test range (zombies can't reach you there).

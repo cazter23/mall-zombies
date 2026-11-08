@@ -97,9 +97,9 @@ export function buildWorkshopRoom({ kit, props, floorY, layout }) {
   for (const side of [-1, 1]) {
     const x = side < 0 ? from + .035 : to - .035;
     const facing = side < 0 ? 'x+' : 'x-';
-    sign(side < 0 ? 'TODAY’S BUILD CLUB' : 'MADE AT SUNSET GALLERIA', x, 2.03,
+    sign(side < 0 ? 'CHOOSE YOUR BLASTER' : 'THE HEART CEREMONY', x, 2.03,
       front + 1.28, 1.16, .32, '#294679', '#fff0cb', facing);
-    sign(side < 0 ? 'PICK  /  STUFF  /  STAMP' : 'TAKE HOME SOMETHING LOUD', x, 1.69,
+    sign(side < 0 ? 'EVERY ONE NEEDS A HOME' : 'WARM IT · MAKE A WISH', x, 1.69,
       front + 1.28, 1.16, .23, '#ffe39b', '#253c87', facing);
   }
 

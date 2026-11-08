@@ -72,6 +72,10 @@ export class Zombie {
     this.staggerDrag = 0;
     this.slowTimer = 0;
     this.slowFraction = 1;
+    this.buffs = new Map(); // independent timers; strongest multiplier wins, never compounds
+    this.hold = null; // { source, seconds, point }, independent of Mannequin observation
+    this.control = null; // behavior-owned function(dt, ctx): true when it handled movement
+    this.damageTakenMultiplier = 1;
     this.burn = null; // Fryer Oil: { perTick, tickSeconds, nextTick, left }, or null
     this.confusion = null; // Glitter: { left, damage, target, retarget }, or null (zombies/confusion.js)
     this.confusionImmune = 0; // seconds before it can be confused again
@@ -161,6 +165,7 @@ export class Zombie {
   // later 'hazard' / 'effect'...). Read as zombie.killedBy by the 'kill' event (game/events.js).
   takeHit({ damage, part, melee = false, source = melee ? 'melee' : 'gun', direction = null, impact = null }) {
     if (!this.isAlive) return { killed: false };
+    damage *= this.damageTakenMultiplier;
     // A crashed Cart Pusher is wide open: hits do extra damage.
     if (this.state === 'crashed') damage *= this.type.charge.crashDamageTakenMultiplier;
     this.health -= damage;
@@ -208,6 +213,7 @@ export class Zombie {
   }
 
   die() {
+    this.clearBossEffects();
     this.setState('dead');
     this.velocity.set(0, 0, 0);
     if (this.type.mascot) {
@@ -216,6 +222,29 @@ export class Zombie {
       this.mascotLift = 0;
     }
     if (this.onDeath) this.onDeath(this);
+  }
+
+  get speedMultiplier() { return Math.max(1, ...[...this.buffs.values()].map(b => b.speed)); }
+  get damageMultiplier() { return Math.max(1, ...[...this.buffs.values()].map(b => b.damage)); }
+
+  applyBuff(source, { seconds, speed = 1, damage = 1 }) {
+    if (!this.isAlive || this.type.boss) return false;
+    this.buffs.set(source, { seconds, speed, damage });
+    return true;
+  }
+
+  applyHold(source, seconds, point = source.position) {
+    if (!this.isAlive || this.type.boss) return false;
+    this.hold = { source, seconds, point };
+    this.setState('chasing');
+    this.chargeLeft = 0;
+    this.velocity.x = this.velocity.z = 0;
+    return true;
+  }
+
+  clearBossEffects() {
+    this.hold = null;
+    this.buffs.clear();
   }
 
   // Security Sweep interrupts attacks/charges without invoking damage or kill events.
@@ -279,7 +308,11 @@ export class Zombie {
   updateBurn(dt) {
     if (!this.burn) return;
     if (!this.isAlive) {
-      this.burn = null;
+      this.buffs = new Map(); // independent timers; strongest multiplier wins, never compounds
+    this.hold = null; // { source, seconds, point }, independent of Mannequin observation
+    this.control = null; // behavior-owned function(dt, ctx): true when it handled movement
+    this.damageTakenMultiplier = 1;
+    this.burn = null;
       return;
     }
     this.burn.left -= dt;
@@ -345,6 +378,24 @@ export class Zombie {
     if (this.confusion) {
       this.confusion.left -= dt;
       if (this.confusion.left <= 0) this.endConfusion();
+    }
+    for (const [source, buff] of this.buffs) {
+      buff.seconds -= dt;
+      if (!ctx.canAttack || buff.seconds <= 1e-9) this.buffs.delete(source);
+    }
+    if (this.hold) {
+      this.hold.seconds -= dt;
+      if (!ctx.canAttack || !this.hold.source.isAlive || this.hold.source.removed || this.hold.seconds <= 1e-9) this.hold = null;
+      else if (this.isAlive && this.state !== 'spawning') {
+        this.standStill(dt, ctx);
+        this.faceToward(this.hold.point, dt);
+        this.updateHitboxes();
+        return;
+      }
+    }
+    if (this.isAlive && this.state !== 'spawning' && this.control?.(dt, ctx)) {
+      this.updateHitboxes();
+      return;
     }
     const attack = this.type.attack;
     const charge = this.type.charge;
@@ -448,7 +499,7 @@ export class Zombie {
       if (this.stateTime >= this.windupSeconds) {
         this.setState('swing');
         this.swingHit = ctx.canAttack && this.canHit(ctx.player) && !this.wallBetween(ctx.player, ctx.colliders);
-        if (this.swingHit) ctx.onPlayerHit(attack.damage, this);
+        if (this.swingHit) ctx.onPlayerHit(attack.damage * this.damageMultiplier, this);
       }
     } else if (this.state === 'swing') {
       this.chase(dt, ctx, attack.moveSpeedFraction, true);
@@ -526,7 +577,7 @@ export class Zombie {
     this.faceDirection(dir.x, dir.z, dt, Infinity);
 
     if (ctx.canAttack && this.chargeCatches(ctx.player)) {
-      ctx.onPlayerHit(charge.damage, this, { x: dir.x * charge.knockback, z: dir.z * charge.knockback });
+      ctx.onPlayerHit(charge.damage * this.damageMultiplier, this, { x: dir.x * charge.knockback, z: dir.z * charge.knockback });
       this.velocity.set(0, 0, 0);
       this.setState('chargeRecover');
     } else if (this.chargeLeft <= 0 || (this.stateTime > 0.2 && moved < step * 0.3)) {
@@ -677,7 +728,7 @@ export class Zombie {
   // Move toward the player. `speedScale` slows the walking part (e.g. mid-attack); `facePlayer`
   // keeps it turned toward the player (locked on while attacking).
   chase(dt, { nav, player, colliders, zombies }, speedScale = 1, facePlayer = false) {
-    speedScale *= this.slowFraction;
+    speedScale *= this.slowFraction * this.speedMultiplier;
     const type = this.type;
     const crowd = zombieCrowd;
     const dx = player.position.x - this.position.x;

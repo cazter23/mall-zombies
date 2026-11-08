@@ -25,6 +25,7 @@ export function createRunStats() {
     },
 
     recordKill(zombie) {
+      if (zombie.noRewards) return;
       this.kills += 1;
       if (zombie.killedByHeadshot) this.headshotKills += 1;
       if (zombie.killedByMelee) this.meleeKills += 1;

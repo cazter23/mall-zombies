@@ -15,9 +15,80 @@ tests needed no change, and zombieTypes.mascot is Sir Waffles. Each costume chan
 Decisions. A costume's debut round forces its first Mascot. That forced spawn still rolls its dice, so a seeded wave is identical with or without costumes outside
 debut rounds (tested). With only one costume unlocked nothing extra is rolled, so rounds 10-12 play exactly as before. stats.surfaceSpeed now has one writer, game/surfaceSlows.js:
 each source keeps its own slot and the lowest wins. The spec said "reset to 1 each tick", but sources report after the player moves, so a per-tick reset would
-have hidden every slow. Bosses no longer take a costume's debut round. The in-game look check found faces lost against the popcorn stripes and the cream price
+have hidden every slow. After merging the boss work from main, the director reports the active boss's behavior.surfaceSpeed (the Janitor's wet floor, the Guard's
+taser) as 'boss' and the melt reports 'melt'. Fan actors (noRewards) get no helmet bonus or guaranteed drop either. Bosses no longer take a costume's debut round
+(main's bossIntroRounds already counted costumes). The in-game look check found faces lost against the popcorn stripes and the cream price
 tag (now dark-rimmed eyes), and drips that read as ears. Per-costume posters were skipped; the PA lines carry the flavour. Note for debugging: a Mascot with speed 0 poses as NaN
 (the stride divides by speed). Nothing in the game does that; hold one in place with a long stagger instead.
+
+## Bosses phase 6: spectacle and verification
+
+Finished employee costumes and filming/meeting poses, aligned enlarged head hitboxes, added a distinct sting and corporate defeat line per boss, and use a colored confetti death burst with no boss gore. Shift+J selects a boss, J summons it; explicit debug ids remain supported. Added boss health/reward/theoretical Nail Gun time rows to npm run balance. Health and damage stay at the requested starting values pending player feedback. Headless browser inspection prompted a raised ring-light pose and a rotated whiteboard beside Dennis so it cannot hide his head from the front. Vouchers now clear on death, and order-form purchases consume them through g.events. Shared-file and validation details: docs/bosses-2-report.md.
+
+## Bosses phase 5: approved encores
+
+At round 20 and every four rounds thereafter, one actually encountered boss returns. Type and Mascot variant debut rounds are skipped; alternate known bosses are preferred, with repeats allowed if only one has been met. Play again clears encounter knowledge.
+
+## Bosses phase 4: Skylar Sparkle
+
+Added independent grid-cell filming routes, a follower meter, capped half-health fan reinforcements, telegraphed phone flashes and Discount Code vouchers. Fans carry noRewards across points, stats, incentives, Limited Editions and workshop credit; after Skylar dies they leave without kill events. Comfort offers dimming instead of white flashes, included in Calm. Small rooms use the best reachable shootable cell if the preferred 10–16 m band is impossible. Follower starting tuning: 5/s, hit -7, headshot -18; each threshold triggers once per viral cycle, queued fans cap at 17. Direct order-form purchases consume vouchers through the purchase event.
+
+## Bosses phase 3: Officer Doug Kettle
+
+Added a telegraphed taser lunge, miss vulnerability, short player slowdown, radio lockdowns and quota-funded Mall Walker backup. The map interface finds surrounding shutters without touching area ownership; occupied shutters wait, and cleanup runs before map reset. Three headshots during a call permanently break the radio for that encounter. Master Key vouchers redeem through normal door pricing or convert to 1250 points. Also separated Manager report/meeting buff timers so a report cannot shorten meeting damage buffs.
+
+## Bosses phase 2: Dennis Fairweather
+
+Added Direct Report, interruptible Staff Meetings, visible whiteboard and Signed Approval pickups. The voucher grants one carried-gun tier through Premium; if all carried guns have reached that limit, it converts to 1500 points. The separate voucher slot survives sales and Employee Discount. Merged the concurrent order-form work and preserved its quiet interactions/menu handling. Phase 1 passed 780 tests and the production build.
+
+## Bosses phase 1: shared groundwork
+
+Bosses phase 1: isolated codex/bosses-2 worktree. Added behavior movement control, independent timed buffs and meeting holds, separate voucher pricing/HUD, and debug summon by id. Murray keeps his existing wet-floor behavior.
+
+## 7 November 2026 — Murray's maintenance sign
+
+The Janitor's boss bar is a worn yellow caution placard with black striped edges, a warning triangle and
+Cleaning in progress above his name. A turquoise water gauge drains with his health. The notice lives with his
+boss config; the HUD applies the treatment for his encounter and clears it when the bar is hidden.
+
+## 7 November 2026 — Debug overlay cleanup
+
+The debug overlay now groups shortcuts in columns and gives the selected enemy, next gun, god mode and active boss
+their own status fields. Shorter labels distinguish clearing enemies from killing them for points and explain the
+Janitor's once-per-round limit. Responsive layouts fit narrow screens and short landscape windows.
+The panel still opens with backtick, and its visibility is exposed to assistive technology.
+
+## 8 November 2026 — Build-A-Blaster's order form, readable mid-fight
+
+Played by hand, the order form was hard to read: a fixed 560 px sheet with 10-13 px text, faded descriptions, key hints as 11 px text, and an Order "button"
+that was only a price. Now the form (and the progress ticket and Birth Certificate) take their size from the screen height: about 16 px base at 1080p,
+names ~19 px, keycaps 17 px, the Order button's key 22 px and its price 28 px, up to double that at 4K. The column you are moving in has a solid highlight
+(the other column's pick is only outlined), stuffings not in stock fold into a short list under the stuffings, a "Your blaster" line says what the order does,
+and the price always shows, with "Need N more points" under it when you're short. The form sits left of centre (never under the round counter), so you can
+see down the middle while it's open. Below about 650 px of window height it reaches the health bar.
+
+## 7 November 2026 — Build-A-Blaster's detail pass
+
+The workshop read as a blockout, so maps/mall/workshopDetails.js dresses it (numbers in config/promenade.js workshop.details). Storefront: a slatwall of limp, unstuffed gun
+skins, the heart-ceremony shelf, a till, footprints to the bench, window decals and balloons, plush mascots, ceiling grid, sprinklers and exit signs. Hall: six stuffing
+hoppers piped into the tank, a QC desk, belt rollers, a typewriter and name-tag board at the booth, family portraits, a safety board, lockers and a time clock, an
+extinguisher, a wainscot, beams, floor safety lines and hazard stripes, bales, a laundry cart, a returns bin, a plush pile, stray tufts and a neon thank-you.
+The two side signs in the storefront now read CHOOSE YOUR BLASTER and THE HEART CEREMONY.
+Measured in the built game (calls / triangles): hall 189-253 / 33-37k, storefront 244 / 38k, Promenade at the window 305 / 49k, north lane looking out 942 / 125k;
+hallway 1086 / 175k and Level 2 1432 / 268k for comparison. Found on the way: lookKit.bands always built at floor 0 (fixed with a floorY option), so a wainscot meant
+for the hall was first built inside HOFFMAN'S; the returns bin first sat on a chute landing spot.
+
+## 7 November 2026 — Build-A-Blaster's order form
+
+Playing it by hand, the ritual took too many stops in the middle of a fight: bins, Heart wall, bench, lever, booth. Now: hold F at the bench and an order form
+opens with every Stuffing and Heart on one sheet, already filled in (your last order, else today's first stuffing and its usual Heart, config defaultHeart), so F again
+orders. W/S, the wheel, the stick or the D-pad choose; A/D switch column; F / controller A order; Q / B cancel. The world keeps going while it's open: the player
+stands still and can't shoot or buy (createGame's new state.menu gate), zombies keep swinging. Kills in the room now also take 1 s each off a 30 s clock (was 45 s,
+with a lever), and the gun comes back to your hands by itself once the gantry reaches the booth, wherever you are. It only waits at the booth when taking it would
+replace a gun you bought meanwhile, and the PA says so. The bins, Heart wall and lever stay as scenery.
+
+Found while testing: the gun used to ride the whole path (belt and gantry) during the run, which was invisible with a lever but meant a finished order arrived
+instantly. It now rides only the belt while running, then always takes catchUpSeconds to reach the booth.
 
 ## 6 November 2026 — One-click play, and the single file finally boots
 

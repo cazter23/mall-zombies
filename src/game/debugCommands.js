@@ -17,16 +17,18 @@
 import { debug } from '../config/debug.js';
 import { weapons } from '../config/weapons.js';
 import { mascotTypes, zombieTypes } from '../config/zombies.js';
+import { bossTypes } from '../config/bosses.js';
 import { MASCOT_VARIANT_IDS } from '../zombies/mascotVariants.js';
 import { toggleDoors } from '../world/door.js';
 import { nextTier, withTier, tierById } from '../weapons/upgrades.js';
 
 const ZOMBIE_IDS = Object.keys(zombieTypes);
+const BOSS_IDS = Object.keys(bossTypes).sort((a,b)=>bossTypes[a].firstRounds[0]-bossTypes[b].firstRounds[0]);
 const WALL_GUN_IDS = Object.keys(weapons).filter((id) => id !== 'stapleGun');
 const nameOf = (id) => id.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
 
 export function createDebugCommands({ map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses, commands = debug.commands, onUse = null }) {
-  const state = { panelOpen: debug.panel.startOpen, zombieIndex: 0, gunIndex: 0, mascotIndex: 0, goldIndex: 0, last: '' };
+  const state = { panelOpen: debug.panel.startOpen, zombieIndex: 0, bossIndex: 0, gunIndex: 0, mascotIndex: 0, goldIndex: 0, last: '' };
   const selectedZombie = () => ZOMBIE_IDS[state.zombieIndex];
 
   // Spawn a Mascot in a chosen costume at the open spawn point nearest you (the Mascot cap, and one Employee of the
@@ -53,10 +55,14 @@ export function createDebugCommands({ map, zombies, rounds, wallet, gun, health,
     },
     spawnMascot: () => nextMascot('mascotIndex', false),
     spawnGoldMascot: () => nextMascot('goldIndex', true),
-    summonBoss() {
+    summonBoss(id = BOSS_IDS[state.bossIndex]) {
       if (!rounds.started) rounds.start();
-      const zombie = bosses.summon();
+      const zombie = bosses.summon(id);
       return zombie ? `Summoned ${zombie.type.name}` : 'Boss unavailable this round or no safe spawn point';
+    },
+    cycleBoss() {
+      state.bossIndex = (state.bossIndex + 1) % BOSS_IDS.length;
+      return `Boss selected: ${bossTypes[BOSS_IDS[state.bossIndex]].name}`;
     },
     cycleZombie() {
       state.zombieIndex = (state.zombieIndex + 1) % ZOMBIE_IDS.length;
@@ -164,10 +170,10 @@ export function createDebugCommands({ map, zombies, rounds, wallet, gun, health,
     state,
     commands,
     /** Run a command by id; the returned message is also kept as the "last result" for the window. */
-    run(id) {
+    run(id, ...args) {
       if (!Object.hasOwn(run, id)) throw new Error(`debug: unknown command "${id}"`);
       if (onUse) onUse(id);
-      state.last = run[id]();
+      state.last = run[id](...args);
       return state.last;
     },
     /** The command bound to this key code and Shift state (an exact match), or null. */
@@ -180,6 +186,9 @@ export function createDebugCommands({ map, zombies, rounds, wallet, gun, health,
         points: wallet.points,
         alive: zombies.aliveCount,
         zombieType: nameOf(selectedZombie()),
+        nextGun: weapons[WALL_GUN_IDS[state.gunIndex % WALL_GUN_IDS.length]].name,
+        boss: bosses?.active?.type.name ?? null,
+        nextBoss: bossTypes[BOSS_IDS[state.bossIndex]].name,
         god: health.invulnerable,
         panelOpen: state.panelOpen,
         last: state.last,

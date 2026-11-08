@@ -32,6 +32,7 @@ import { haptics } from './haptics.js';
 import { gamepad, aimAssist } from './controls.js';
 import { atmosphere } from './environment.js';
 import { look } from './look.js';
+import { bossComfort } from './bosses.js';
 
 export const settingsTabs = ['Graphics', 'Mouse', 'Controller', 'Audio', 'Comfort'];
 export const menuFeel = { confirmSeconds: 3 };
@@ -199,6 +200,10 @@ export const settingDefs = [
 
   // ---- Comfort ----
   {
+    id: 'dimPhoneFlash', tab: 'Comfort', label: 'Dim instead of phone flashes', type: 'toggle', default: false,
+    apply: v => { bossComfort.dimPhoneFlash = v; },
+  },
+  {
     id: 'headBob', tab: 'Comfort', label: 'Head bob', type: 'slider',
     min: 0, max: 1.5, step: 0.05, default: 1, format: percent,
     apply: (v) => {
@@ -252,7 +257,7 @@ export const settingPresets = {
     { label: 'High', values: { renderScale: nativeRatio, visualEffects: 'high', ambientEffects: true, lampCount: 'all', neonGlow: true, clutter: 'full', zoneGrading: true } }, // native, capped at 2x for performance
   ],
   Comfort: [
-    { label: 'Calm', values: { headBob: 0, speedLines: false, horrorLighting: false } }, // for motion sickness (and no flicker)
-    { label: 'Standard', values: { headBob: 1, speedLines: true, horrorLighting: true } },
+    { label: 'Calm', values: { headBob: 0, speedLines: false, horrorLighting: false, dimPhoneFlash: true } }, // for motion sickness (and no flicker)
+    { label: 'Standard', values: { headBob: 1, speedLines: true, horrorLighting: true, dimPhoneFlash: false } },
   ],
 };

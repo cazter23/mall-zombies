@@ -91,6 +91,18 @@ export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null,
       return toSpawn;
     },
 
+    // Reserved reinforcements spend the existing wave budget. Failed safe spawns
+    // and a full living cap keep the request pending in the encounter.
+    spawnBackup(typeId) {
+      if (state !== 'active' || toSpawn <= 0 || zombies.aliveCount >= maxAliveForRound(round)) return null;
+      const zombie = zombies.spawn(typeId);
+      if (!zombie) return null;
+      toSpawn -= 1;
+      spawnedThisRound += 1;
+      if (!seenTypes.has(typeId)) { seenTypes.add(typeId); onTypeIntro?.(typeId); }
+      return zombie;
+    },
+
     // True during the pause before a round's zombies arrive (the HUD blinks the counter).
     get inBreak() {
       return state === 'break';

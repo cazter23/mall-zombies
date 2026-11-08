@@ -223,6 +223,7 @@ export function createBuildEffects({ events, gun, player, zombies, colliders, ef
     if (build) build.confirmed = (build.confirmed ?? 0) + 1;
   }
   events.on('kill', (kill) => {
+    if (kill.zombie.noRewards) return;
     confirmKill(kill);
     if (kill.source === 'gun') offer('kill', kill, gun.def.id);
   });

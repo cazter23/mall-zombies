@@ -25,6 +25,9 @@ export const economy = {
     cartPusher: 130, // 1.8x a Shopper's health (an even per-bullet payout would be 108), a little extra for how dangerous it is
     mascot: 300,
     janitor: 300,
+    manager: 1000,
+    guard: 750,
+    influencer: 1000,
   },
 
   // Special zombie types mixed into the waves (every other spawn is a Shopper).

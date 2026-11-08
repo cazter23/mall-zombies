@@ -1,5 +1,15 @@
 # Sunset Galleria: folder structure (every module)
 
+Boss spectacle: bossSpectacle in config/bosses.js owns death confetti and employee poses; audio.js owns unique synthesized stings. zombieManager emits the same single kill event after the cartoon boss death burst. zombieModel applies bone poses and disposes costume geometry. debugCommands/debugPanel expose the next selected boss. tools/gunReport.mjs includes a boss encounter table.
+
+Boss scheduling: bossDirector exports bossIntroRounds/isEncoreRound, skips optional mascotVariants.unlockRound values in both debut/encore choices, and remembers actual encounters until reset. Cadence is bossTiming.encores.
+
+Influencer: bosses/influencer.js owns filming movement, follower thresholds, fan requests/departure and phone windup. bosses/filmingSpots.js selects reachable shootable cell centres; navigation.pathTo uses an independent breadth-first route without replacing the shared horde flow field. ui/bossFlash.js presents the event, obeys the Comfort setting, and cancels on death/reset. Fans use zombieManager spawn metadata and delayed no-kill dismissal.
+
+Guard: zombies/bosses/guard.js owns alarm, physical shutter closure, radio headshots, reinforcement retries and taser slowdown. maps/areaBarriers.js supplies areaAt and barriersAround through loadMap. Shutters expose kind; ownership is never reset by lockdown. rounds.spawnBackup consumes the existing toSpawn budget and respects maxAlive.
+
+Boss encounters: bosses/manager.js owns meetings/reports; bosses/employeeModel.js mounts configured costume parts and owns the temporary whiteboard. game/bossVouchers.js wires carried-gun/area eligibility and points conversion into pricing. powerUps.js and powerUpView.js deliver voucher pickups through the existing reward queue.
+
 > Moved out of CLAUDE.md (verbatim) so the file every session loads stays small. One entry per module: what it is for and its interface. Read the entries for the modules you are about to change (grep for the file name).
 
 ```
@@ -27,18 +37,23 @@ src/
   weapons/models/loanerTag.js The Courtesy Loaner's security tag and swinging card (reversible, like the other upgrade visuals).
   game/features/workshop.js The workshop feature: builds the ritual, its effects and the Limited Edition drops, runs Party Trap charges.
   game/features/limitedEditions.js The bag a shopping-bag zombie sometimes drops: walk over it and Party Trap or Clearance Rack fits a gun you carry, free.
-  game/features/workshopRitual.js The Build-A-Blaster ritual: idle, running, ready. Bench, gun on the conveyor, gauge, lever, maximum time, Naming Booth, chute steering. Built by workshop.js.
+  game/features/workshopRitual.js The Build-A-Blaster ritual: idle, running, ready. Bench opens the order form, gun on the conveyor, gauge (kills also shorten the clock), maximum time, the gun coming back by itself, chute steering. Built by workshop.js.
   game/features/workshopStuffings.js What a finished build does: one function per Stuffing, one per Heart. Hearts read 'shot' and hand off to the stuffing; nothing here emits 'shot', so a stuffing's kills can't fire a Heart.
   game/features/workshopSpectacle.js Ritual mode: tank fill, party colours on the hall's two lamps, bulb string, belt, arm, flap, lever, jingle. Show only; reset() puts every part back.
   zombies/confusion.js  Glitter's AI: a confused zombie forgets the player and fights the nearest other zombie with its normal attack.
   zombies/tankDeath.js  A kill in the room flying into the Stuffing Tank (visual; the kill is already paid).
   weapons/models/buildVisual.js A finished gun's look: seam, patch and stitches in the stuffing's colour, lumps and leaking tufts when Overstuffed. Instanced, placed from the sticker and top mounts.
   ui/birthCertificate.js The Birth Certificate notice at collection. Clears itself; nothing pauses.
-  ui/ritualHud.js       The order ticket on the HUD: your picks, then the gun's stage, gauge and time (reads the ritual's status).
+  game/features/workshopOrderForm.js The bench's order form: every Stuffing and Heart on one sheet, pre-filled, driven by menu actions. Sets state.menu while open (the player stands still, the world doesn't).
+  ui/orderForm.js       Draws the order form from its view. Only draws: choices come in on the fixed tick. Sized from the screen height (retail.css --order-base,
+                        everything in em), left of centre; keys drawn as keycaps (keycaps()), one line on what the order does (orderSummary()), stuffings
+                        you can't pick folded into a short "Not in stock" list.
+  ui/ritualHud.js       The order ticket on the HUD: the gun's stage, one progress bar, the gauge and time (reads the ritual's status).
   game/features/clearanceRack.js Clearance Rack tags on up to three zombies; a headshot on a tagged zombie pops them all.
   game/features/clearanceSticker.js The canvas sticker drawn on tagged zombies.
   zombies/partyTrapDeath.js The pose, ribbon and confetti after a trap kill. The kill is paid on impact; this is visual only.
   weapons/models/workshopBuilds.js The reversible model changes for each workshop build.
+  maps/mall/workshopDetails.js Build-A-Blaster's detail pass: skins wall, heart shelf, till, footprints, window, plush, ceiling grid (storefront); hoppers and pipes, QC desk, rollers, booth props, portraits, lockers, safety signs, corner clutter, floor markings, beams, wainscot, neon (hall). Numbers: config/promenade.js workshop.details.
   maps/mall/workshopRoom.js The Build-A-Blaster storefront and back hall (island, booth, lever, chute) and their dressing. Layout numbers: config/promenade.js workshop.
   ui/announcements.js   Bounded PA queue: type introductions priority 2, incentives 1, routine messages 0;
                         clear on pause/death/reset; wall-clock presentation timers only
@@ -346,7 +361,7 @@ src/
     runStats.js         createRunStats(): time alive, kills, headshot/melee kills, bosses defeated, shots fired/hit, accuracy
     bossDirector.js     Picks debut rounds (never a zombie type's or a Mascot costume's), retries a normal-marker spawn partway
                         through the wave, and blocks round completion while a boss is pending. Owns encounter behavior and
-                        emits boss lifecycle events. The Janitor's wet floor reports 'janitor' to surfaceSlows.js.
+                        emits boss lifecycle events. The active boss's slow (behavior.surfaceSpeed) reports 'boss' to surfaceSlows.js.
     surfaceSlows.js     createSurfaceSlows(stats): the ONLY writer of stats.surfaceSpeed. Each slow floor reports its own factor
                         (set / clear by source id); the stat is the lowest, so two never stack. g.surfaces; reset on Play again
     mascotCostumes.js   createMascotCostumes(): the costume twists past the zombie itself, on the bus. Poppy Corn's pop blast
@@ -596,7 +611,9 @@ src/
                         Esc / Back / B closes. padNav(input): D-pad moves + changes, A toggles, LB/RB tabs, B back
                         (main.js routes controller input to it while it's open)
     debugPanel.js       createDebugPanel({ status }): the small read-only debug window (the ` key): every debug key by group, live
-                        round / points / zombies / spawn type / GOD / sale, and the last result; never takes clicks
+                        round / points / enemies / sale, selected spawn type, next gun, god mode and active boss.
+                        Commands are grouped into columns with a responsive layout; the last result stays at the bottom.
+                        Visibility is mirrored to aria-hidden. The overlay never takes clicks.
     controlsMenu.js     createControlsMenu(): the Controls screen (pause screen > Controls, controller X): tabs Keyboard & mouse /
                         Controller, each as a Diagram (default) or List (controller Y toggles), from `controlsHelp` (config/controls.js:
                         { keys, text, short, anchors }; update it when bindings change) + debug-key hints
@@ -605,7 +622,8 @@ src/
                         drawn on top to the first of each entry's `anchors` (ids of drawn parts: key names, 'mouse', 'lmb', 'ls', 'rt'...);
                         all anchors get tinted. New part = id + slot there, then list it in controlsHelp
     hud.js              createHud(): 4-line crosshair whose gap = spread cone (dot in ADS) + hit marker (white body, big yellow head, red kill),
-                        boss name, job title and health bar while an encounter is active,
+                        boss name, job title and health bar while an encounter is active. Murray's bar uses caution
+                        stripes, a Cleaning in progress notice and a turquoise water gauge (retail.css),
                         bottom-left health (white) + stamina (green) bars, bottom-right ammo counter,
                         reload prompt under the crosshair, buy prompt below it (setInteract: "Hold F to open X 500",
                         red cost when unaffordable, shake when denied, hold-progress bar), red hurt edges, click-to-play/paused overlay,
@@ -614,3 +632,5 @@ src/
                         setAmmoTier(tier): "<Tier> warranty" in the tier's color under the gun name
                         (hidden at Standard; main.js feeds it from tierOf(gun.modsFor(...))); showAnnouncement({ kicker, text }): PA-style banner under the round banner (new zombie types)
 ```
+
+Boss groundwork: zombie.js owns timed buffs, source-bound holds and a behavior control function. pricing.js owns a separate one-use voucher, eligibility conversion and sale/coupon/voucher order. debug.run('summonBoss', id) selects a boss explicitly.

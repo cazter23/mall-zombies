@@ -36,7 +36,8 @@ export const limitedEditionDrops = {
 
 // THE RITUAL (game/features/workshopRitual.js): hand a gun over, fight for it, collect it at the Naming Booth.
 export const workshopRitual = {
-  maxSeconds: 45, // the longest a ritual runs; the lever ends it sooner
+  maxSeconds: 30, // how long a ritual runs with nobody fighting
+  secondsPerKill: 1, // each kill in the room takes this much off the clock (it still fills the gauge)
   // The gauge: kills in the room set the quality. Listed lowest first; the last one reached wins.
   qualities: [
     { id: 'understuffed', name: 'Understuffed', minKills: 0, power: 1 },
@@ -51,7 +52,7 @@ export const workshopRitual = {
     { id: 'heart', at: .55, label: 'Getting its heart' },
     { id: 'stitching', at: .8, label: 'Being stitched up' },
   ],
-  catchUpSeconds: 2.5, // how long the gun takes to run to the end of the belt when the lever is pulled
+  catchUpSeconds: 2.5, // once it's done: how long the gun takes from the belt to the Naming Booth (then it comes back to you)
   gunScale: 1.6, // the gun on the conveyor
   // RITUAL MODE (game/features/workshopSpectacle.js). Party colours go on the hall's two existing lamps, so it adds no lights.
   spectacle: {
@@ -91,8 +92,9 @@ export const workshopRitual = {
       heart: { kicker: 'Build-A-Blaster', text: 'Fitting the heart. Everyone make a wish.' },
       stitching: { kicker: 'Build-A-Blaster', text: 'Stitching up. Nearly there.' },
     },
-    ready: { kicker: 'Build-A-Blaster', text: 'Your {gun} is ready at the Naming Booth.' },
-    readyAgain: { kicker: 'Build-A-Blaster', text: '{name} is ready at the Naming Booth.' },
+    ready: { kicker: 'Build-A-Blaster', text: 'Your {gun} is done. Coming back to you now.' },
+    readyAgain: { kicker: 'Build-A-Blaster', text: '{name} is done. Coming back to you now.' },
+    waiting: { kicker: 'Build-A-Blaster', text: 'Your order is waiting at the Naming Booth. Collecting it would replace your {gun}.' },
     collect: { kicker: 'Build-A-Blaster', text: 'Please welcome {name} to the family.' },
     collectAgain: { kicker: 'Build-A-Blaster', text: '{name} has been altered. Please do not tell them.' },
   },
@@ -103,6 +105,11 @@ export const workshopRitual = {
     extraStuffed: 'A big one. Mind the seams.',
     overstuffed: 'The doctors are concerned.',
   },
+};
+
+// The order form at the bench (game/features/workshopOrderForm.js, ui/orderForm.js).
+export const orderForm = {
+  deniedSeconds: .6, // how long "not enough points" shows
 };
 
 // Where a stuffing goes off, in metres (game/features/workshopStuffings.js).
@@ -116,36 +123,36 @@ export const workshopReach = {
 // gunSeconds = damage as seconds of the gun's own fire (weapons/gunStats.js gunPower), scaled again by the build's power.
 export const workshopStuffings = {
   smoothie: {
-    name: 'Smoothie', stockedBy: null, color: 0xff7fb2, sound: 'stuffingSmoothie', blurb: 'Slows everything round the hit',
+    name: 'Smoothie', stockedBy: null, defaultHeart: 'headshot', color: 0xff7fb2, sound: 'stuffingSmoothie', blurb: 'Slows everything round the hit',
     slow: { seconds: 3, fraction: .55, radius: 2.5 },
     pop: { colors: [0xff7fb2, 0xffd1e3, 0xfff3d4], count: 8, speed: 1.6, size: .05 },
   },
   fryerOil: {
-    name: 'Fryer Oil', stockedBy: 'foodCourt', color: 0xf0a020, sound: 'stuffingFryer', blurb: 'Sets the target burning',
+    name: 'Fryer Oil', stockedBy: 'foodCourt', defaultHeart: 'lastRound', color: 0xf0a020, sound: 'stuffingFryer', blurb: 'Sets the target burning',
     burn: { gunSeconds: .35, seconds: 3, tickSeconds: .5, radius: 1.2, emberSeconds: .25,
       ember: { colors: [0xff8a1f, 0xffd24a], count: 3, speed: 1.1, size: .035 } },
     pop: { colors: [0xff8a1f, 0xffd24a, 0xff4d1f], count: 8, speed: 2, size: .05 },
   },
   neonTube: {
-    name: 'Neon Tube', stockedBy: 'megaMart', color: 0x4fe0ff, sound: 'stuffingNeon', blurb: 'Arcs to nearby zombies',
+    name: 'Neon Tube', stockedBy: 'megaMart', defaultHeart: 'headshot', color: 0x4fe0ff, sound: 'stuffingNeon', blurb: 'Arcs to nearby zombies',
     chain: { gunSeconds: .08, jumps: 2, maxJumps: 5, range: 5, falloff: .8 },
     pop: { colors: [0x4fe0ff, 0xc9f5ff, 0xff4fd8], count: 8, speed: 2.4, size: .045 },
   },
   popcornButter: {
-    name: 'Popcorn Butter', stockedBy: 'cinema', color: 0xffd24a, sound: 'stuffingButter', blurb: 'Leaves a slippery puddle',
+    name: 'Popcorn Butter', stockedBy: 'cinema', defaultHeart: 'reload', color: 0xffd24a, sound: 'stuffingButter', blurb: 'Leaves a slippery puddle',
     // Spill Cleanup's zone, per proc: anything on it keeps being slowed while it stands there.
     puddle: { radius: 1.8, seconds: 6, slowFraction: .35, slowSeconds: .2, maxPuddles: 3, lift: .03, opacity: .55 },
     pop: { colors: [0xffd24a, 0xfff1a8, 0xe0a526], count: 8, speed: 1.4, size: .05 },
   },
   antifreeze: {
-    name: 'Antifreeze', stockedBy: 'parkingLot', color: 0x7dff9a, sound: 'stuffingFreeze', blurb: 'Chills zombies, then shatters the chilled',
+    name: 'Antifreeze', stockedBy: 'parkingLot', defaultHeart: 'headshot', color: 0x7dff9a, sound: 'stuffingFreeze', blurb: 'Chills zombies, then shatters the chilled',
     // A slowed zombie (by anything) shatters and loses the slow; one that isn't slowed is chilled.
     chill: { seconds: 3, fraction: .5, radius: 2.2 },
     shatter: { gunSeconds: .12, maxTargets: 3 },
     pop: { colors: [0x7dff9a, 0xd7ffe6, 0x49c9ff], count: 10, speed: 2.8, size: .05 },
   },
   glitter: {
-    name: 'Glitter', stockedBy: 'departmentStore', color: 0xe08bff, sound: 'stuffingGlitter', blurb: 'Confused zombies fight each other',
+    name: 'Glitter', stockedBy: 'departmentStore', defaultHeart: 'lastRound', color: 0xe08bff, sound: 'stuffingGlitter', blurb: 'Confused zombies fight each other',
     // gunSeconds = how hard a confused zombie hits. Its behaviour is zombies/confusion.js (numbers: config/zombies.js zombieConfusion).
     confuse: { seconds: 3, maxSeconds: 6, radius: 2.2, maxTargets: 3, gunSeconds: .06, sparkleSeconds: .3,
       sparkle: { colors: [0xe08bff, 0xfff3d4, 0x8bd8ff], count: 3, speed: .9, size: .03 } },

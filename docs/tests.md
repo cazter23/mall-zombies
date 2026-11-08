@@ -1,5 +1,18 @@
 # Sunset Galleria: what each test file covers
 
+`tests/bossPolish.test.js` walks Manager/Guard from every open zone and into the workshop without rescue; checks unique stings, death feedback, direct order-form voucher consumption, fans excluded from ritual credit, actual Employee Discount expiry, death/reset voucher cleanup and debug ids. Isolated headless Chrome captured all four models with zero browser exceptions; no real browser tabs were opened.
+
+`tests/bossEncores.test.js` checks configurable cadence, type/Mascot debut exclusions, known-boss selection, one boss per round, alternatives and Play again.
+
+`tests/influencer.test.js` covers follower crossings/headshots/viral reset, half-health fans and cap/queue/departure/round completion, no hit or kill rewards, filming cells in every open zone and workshop, physical routing upstairs without rescue, flash windup/looking away/Comfort, and voucher ordering/savings cap.
+
+`tests/guard.test.js` covers lockdowns in every area, occupancy waiting, ownership preservation, three radio headshots, expiry and cleanup on every exit, quota-funded backup and round completion, taser telegraph/damage/movement/slow expiry/miss vulnerability, and Master Key door redemption/conversion.
+
+`tests/manager.test.js` covers exact meeting cancellation, failure buff expiry, report target cap/visibility, every meeting cleanup path, reward collection, booth redemption and automatic conversion at the voucher tier cap.
+
+`tests/debugCommands.test.js` also checks the overlay's grouped commands, selected next gun, active boss,
+god mode, refresh timing and accessible visibility.
+
 `tests/bosses.test.js` covers the round 5/7 schedule, the regular wave budget, safe-spawn retries and the round
 waiting for Murray. It checks the active Build-A-Blaster ritual, boss intro, kill payouts from several sources,
 guaranteed incentive, receipt counter, control resistance and exclusion from incentive marks.
@@ -14,6 +27,12 @@ zone and up to Build-A-Blaster from directly below the player, without a rescue 
 
 `tests/workshopRoom.test.js` covers the Build-A-Blaster room: plot limits, lanes of at least 3 m round the island, a player lap both ways, every floor point
 reachable by zombies, a zombie following round each side, the hall as its own culling room and its grade.
+
+`tests/workshopBuilds.test.js` also covers the order form: everything listed, today's first and the rest with a reason, pre-filled, keys / wheel / stick / D-pad, unavailable rows skipped, Q and B cancel, the last order remembered, standing still but still getting hit, death closing it.
+
+`tests/orderFormView.test.js` covers the order form's summary line: every stuffing and heart pair reads as one short sentence.
+
+`tests/workshopDetails.test.js` covers the room's detail pass: solid pieces only in corners (a lane of 2.5 m kept round the island), each solid piece too tall to stand on or a vaultable counter, entrances / bench / booth / lever / chute landings clear, every piece inside the shop or hall culling rooms, no added lights, and a triangle and draw budget.
 
 `tests/workshopRitual.test.js` covers the ritual in the real game: the price, handing over, the Courtesy Loaner, kills counting only in the room, quality thresholds, the maximum time,
 walking away and coming back, conveyor stages, the lever and booth only answering at the right time, gun purchases mid-ritual, upgrades staying on the gun, Play again and death
@@ -197,3 +216,5 @@ the model and debris and disposes their shared geometry and materials.
 - `scoops.test.js`: puddles every dropEvery while walking, twice as often bare-headed, none piled up standing still; the slow (player only, really slower walking); the surface collector (lowest factor wins) alone and with the real Janitor's wet floor; the pool never grows; round end, death and Play again clear it. `janitor.test.js` still guards the wet floor through the collector.
 - `employeeOfTheMonth.test.js`: every costume's gold version (palette, badge, guaranteedDrop); the round gate and the exact chance threshold, never two alive; health x1.5, the PA line and chime; the guaranteed drop at the body outside the meter (any killer), none after death; the debug key.
 - `play.test.js`: the launcher rebuilds only for newer source and watches all of it; the dev server skips folders the game never loads from, but not this checkout's own code, even in a worktree. `singleFile.test.js` now also parses the inline script.
+
+`tests/bossGroundwork.test.js` covers timed speed/damage buffs, hold timeout/source death/player death/reset, voucher stacking and immediate points conversion. Existing Janitor tests guard unchanged behavior.

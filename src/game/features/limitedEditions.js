@@ -65,7 +65,7 @@ export function createLimitedEditionDrops({ events, gun, player, scene, rounds, 
   }
 
   events.on('kill', ({ zombie }) => {
-    if (state.over || bag || !zombie.model?.hasBag || rounds.round < cfg.fromRound) return;
+    if (state.over || zombie.noRewards || bag || !zombie.model?.hasBag || rounds.round < cfg.fromRound) return;
     if (Math.random() >= cfg.dropChance) return;
     const options = wanted();
     if (options.length) put(options[Math.floor(Math.random() * options.length)], zombie.position);

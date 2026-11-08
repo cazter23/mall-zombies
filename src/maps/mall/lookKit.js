@@ -67,8 +67,8 @@ export function createLookKit({ kit, colliders }) {
   };
   const poolGroup = dynamicGroup('look_light_pools');
 
-  /** Wainscot (0 .. heights.wainscot), a chrome rail on top and a colour band, 2 cm proud of a wall, round its `gaps` ([from, to]). */
-  function bands({ along, from, to, wallAt, facing, gaps = [], colors, heights = {}, name = 'look_wainscot' }) {
+  /** Wainscot (0 .. heights.wainscot), a chrome rail on top and a colour band, 2 cm proud of a wall, round its `gaps` ([from, to]). `floorY`: an upper floor. */
+  function bands({ along, from, to, wallAt, facing, gaps = [], colors, heights = {}, name = 'look_wainscot', floorY = 0 }) {
     const h = { wainscot: 1.1, rail: 0.05, band: [1.32, 1.5], ...heights };
     const wainscot = colors.wainscot != null ? mat(colors.wainscot, { roughness: 0.6 }) : null;
     const rail = colors.rail != null ? mat(colors.rail, { roughness: 0.25, metalness: 0.8 }) : null;
@@ -86,8 +86,8 @@ export function createLookKit({ kit, colliders }) {
     for (const [u0, u1] of pieces) {
       if (u1 - u0 < 0.05) continue;
       const place = (y0, y1, d0, d1, m) => (along === 'x'
-        ? box(u0, y0, Math.min(d0, d1), u1, y1, Math.max(d0, d1), m, { collide: false, name })
-        : box(Math.min(d0, d1), y0, u0, Math.max(d0, d1), y1, u1, m, { collide: false, name }));
+        ? box(u0, floorY + y0, Math.min(d0, d1), u1, floorY + y1, Math.max(d0, d1), m, { collide: false, name })
+        : box(Math.min(d0, d1), floorY + y0, u0, Math.max(d0, d1), floorY + y1, u1, m, { collide: false, name }));
       if (wainscot) place(0, h.wainscot, a, b, wainscot);
       if (rail) place(h.wainscot, h.wainscot + h.rail, a, c, rail);
       if (band) place(h.band[0], h.band[1], a, b, band);

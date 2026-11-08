@@ -22,6 +22,8 @@ import { buildCart } from './cartModel.js';
 import { createMannequinModel } from './mannequinModel.js';
 import { createMascotModel } from './mascotModel.js';
 import { dressJanitor } from './bosses/janitorModel.js';
+import { dressEmployee } from './bosses/employeeModel.js';
+import { bossSpectacle } from '../config/bosses.js';
 import { cartLean } from './cartPose.js';
 
 function deformIndexedBox(segX, segY, segZ, fn) {
@@ -366,6 +368,7 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
   }
 
   if (type.id === 'janitor') dressJanitor(type, { upper, neck, arms, mat, block });
+  if (type.costume) dressEmployee(type, { upper, neck, arms, mat, block, ownedGeometry });
 
   // Batch meshes of the same material on each rigid bone across all zombie types.
   // Bones remain separate so clothes, bags and hair inherit the original walk/attack/death animation.
@@ -530,6 +533,19 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
 
       // Cart Pusher: hands on the handle (unless slamming), and the charge poses.
       if (cart) poseCart(zombie, type, armPose !== null);
+      if (type.boss && zombie.isAlive && armPose === null) {
+        const pose = bossSpectacle.pose;
+        if (type.id === 'influencer') {
+          arms[1].shoulder.rotation.x = pose.filmingArm;
+          arms[1].elbow.rotation.x = pose.filmingElbow;
+        } else if (type.id === 'manager' && zombie.controlled) {
+          arms[0].shoulder.rotation.x = pose.pointingArm;
+          arms[0].elbow.rotation.x = pose.pointingElbow;
+        } else if (type.id === 'guard' && zombie.state === 'chargeTelegraph') {
+          arms[1].shoulder.rotation.x = pose.radioArm;
+          arms[1].elbow.rotation.x = pose.radioElbow;
+        }
+      }
 
       // Flinch: jolt the upper body, shoulders and head back when shot, and flash white.
       const flinchDur = zombie.flinchDuration || type.flinchSeconds;

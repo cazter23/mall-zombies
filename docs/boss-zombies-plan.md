@@ -1,7 +1,7 @@
 # Boss zombies: plan
 
-Status: outline, nothing built yet. Numbers here are starting points, to be tuned by playing. Build-A-Blaster and the Mascot are merged, so this can start.
-Build one phase at a time, in its own git worktree, and test before the next.
+Status: all four bosses, shared controls/vouchers, approved encores, spectacle and balance rows are implemented on `codex/bosses-2`.
+Each phase was tested and committed separately. Health/attack numbers remain starting values pending player balance feedback.
 
 ## The idea
 
@@ -24,11 +24,19 @@ A boss is not a bigger zombie. Each one is a mall employee who changes the rules
 
 - **A boss is one extra zombie on a normal round.** The round's zombies still come. It counts as alive, so the round can't end until it dies.
 - **One boss per round, maximum.** A boss never shares a round with a new zombie type's first appearance.
+  Optional Mascot variant unlock rounds are also excluded from both debuts and encores.
 - **Bosses show a health bar** at the top of the screen, with their name and job title.
 - **Bosses resist control effects.** Stagger is ignored and slows are halved, so Security Sweep, Staff Entrance, Loss Prevention and Product Recall
   can't stun-lock them. Mystery Shopper and Product Recall never mark one. `applyConfusion` refuses a boss, so Glitter can't switch one off, and Antifreeze's shatter
   doesn't count a boss's halved slow as a chill.
 - **Full damage from everything else**, including attachments, upgrades, Inventory Liquidation and Build-A-Blaster stuffings.
+- **Fans are unpaid extras:** half-health Mall Walkers count against max alive. They give no hit/kill points, stats, incentives,
+  Limited Editions or workshop credit. Surviving fans leave without kill events two seconds after Skylar dies.
+- **Vouchers have one independent slot.** A second pickup waits while it is occupied; coupons and sales cannot clear it.
+  Signed Approval applies through Premium on carried guns. It converts to 1,500 points when none can use it; Master Key converts to
+  1,250 points when all areas are owned. Conversion is immediate on pickup or when eligibility is exhausted. Death/reset clear the slot.
+- **Filming prioritises reachable, shootable cells.** Small rooms may not permit 10–16 m separation, so Skylar uses the best visible reachable cell.
+  Her independent route includes stairs and escalators and does not replace the horde's flow field.
 
 ## When they appear
 
@@ -40,7 +48,8 @@ A boss is not a bigger zombie. Each one is a mall employee who changes the rules
 | Influencer | Round 15 or 17 | 8 | About 9,250 at round 15 | 1,000 |
 
 The windows avoid round 8 (Mannequin) and round 10 (the Mascot). Each run picks from the window, so bosses aren't memorised.
-After round 17, a boss comes every 3 rounds, rotating, never the same one twice in a row. Health scales with the round automatically.
+From round 20, every four rounds an already encountered boss returns, skipping type and Mascot debut rounds. A different known boss is
+preferred; if only one has been met, it can return again. Health scales with the round automatically. Cadence lives in `bossTiming.encores`.
 Target fight lengths with a gun that suits the round: Janitor 15 s, Guard 30 s, Manager 35 s, Influencer 25 s.
 
 ## The bosses
@@ -60,6 +69,7 @@ Slow (2.2 m/s) and tanky, with a mop, a bucket and a yellow wet floor sign.
   extra damage. A hit does 40 damage and slows the player for 1 s, without taking away control.
 - **Lockdown:** at 75% and 35% health he radios in. After a 3 s alarm, the shutters around the player's area come down for up to 25 s.
   Three headshots break the radio and lift the lockdown early. Only shutters close, so an escalator exit stays open.
+  A broken radio stays broken for that encounter. Occupied shutters wait until both the player and zombies are clear. Ownership never changes.
 - **Backup:** calls 2 Mall Walkers once per lockdown. They come out of the round's remaining zombies, not on top of them.
 - **Reward:** the **Master Key**, one free area unlock.
 
@@ -77,10 +87,13 @@ Suit, name badge, clipboard. Walks at 2.4 m/s.
 
 Ring light, selfie stick, always filming. She doesn't chase you. She moves between spots and keeps 10 to 16 m away.
 - **Followers:** a counter on the boss bar climbs over time. A hit lowers it, and a headshot lowers it more.
+  Starting tuning is 5/s, minus 7 per hit or 18 per headshot. Each threshold triggers once per viral cycle; after viral, the lower two
+  thresholds remain spent. Pending fans are capped at 17 while safe spawns and living capacity are unavailable.
 - **Fans:** at 25%, 50% and 75% of the counter, 3 fans rush in. At 100% she goes viral: 8 fans arrive and the counter falls back to 50%.
 - **Fans are paid nothing.** They are the only zombies added on top of a round, so they give no points and no incentive credit. Otherwise she'd be a points farm.
   They have half health and still count against the round's maximum alive.
 - **Phone flash:** a short, mild white flash if you get within 5 m, with a wind-up so you can look away.
+  Settings → Comfort → Dim instead of phone flashes substitutes a dark overlay; the Calm preset enables it.
 - **Reward:** the **Discount Code**, 50% off your next purchase, saving up to 2,000. It doesn't work on the claw machine (docs/claw-machine-plan.md).
 
 ## Rewards

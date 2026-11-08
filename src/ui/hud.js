@@ -10,12 +10,14 @@ import { feel } from '../config/feel.js';
 import { createScreens } from './screens.js';
 import { createIncentiveHud } from './incentiveHud.js';
 import { createRitualHud } from './ritualHud.js';
+import { createOrderFormView } from './orderForm.js';
 import { createBagMarker } from './bagMarker.js';
 import { createBirthCertificate } from './birthCertificate.js';
 import { gunLabel } from '../config/workshop.js';
 import { createAnnouncements } from './announcements.js';
 import { ui } from '../config/ui.js';
 import { upgrades } from '../config/upgrades.js';
+import { createBossFlashView } from './bossFlash.js';
 
 function el(tag, className) {
   const node = document.createElement(tag);
@@ -25,10 +27,14 @@ function el(tag, className) {
 
 export function createHud() {
   const hud = el('div', 'hud');
+  const phoneFlash = createBossFlashView();
+  hud.append(phoneFlash.element);
   const incentives = createIncentiveHud();
   hud.append(incentives.element);
   const ritualTicket = createRitualHud();
   hud.append(ritualTicket.element);
+  const orderFormView = createOrderFormView();
+  hud.append(orderFormView.element);
   const bagMarker = createBagMarker();
   hud.append(bagMarker.element);
   const certificate = createBirthCertificate();
@@ -135,10 +141,17 @@ export function createHud() {
 
   const bossBar = el('section', 'boss-bar');
   bossBar.hidden = true;
+  const bossKicker = el('div', 'boss-kicker');
+  bossKicker.hidden = true;
+  const bossWarning = el('span', 'boss-warning');
+  bossWarning.textContent = '!';
+  bossWarning.setAttribute('aria-hidden', 'true');
+  const bossNotice = el('span', 'boss-notice');
+  bossKicker.append(bossWarning, bossNotice);
   const bossName = el('strong', 'boss-name');
   const bossTitle = el('span', 'hud-label');
   const bossHealth = el('progress', 'boss-health');
-  bossBar.append(bossName, bossTitle, bossHealth);
+  bossBar.append(bossKicker, bossName, bossTitle, bossHealth);
   hud.append(bossBar);
   let displayedBoss = null;
 
@@ -231,18 +244,25 @@ export function createHud() {
       if (zombie !== displayedBoss) {
         displayedBoss = zombie;
         bossBar.hidden = !zombie;
+        bossBar.classList.toggle('boss-bar-janitor', zombie?.type.id === 'janitor');
+        bossKicker.hidden = !zombie?.type.barNotice;
         if (zombie) {
+          bossNotice.textContent = zombie.type.barNotice ?? '';
           bossName.textContent = zombie.type.name;
           bossTitle.textContent = zombie.type.title;
           bossHealth.setAttribute('aria-label', `${zombie.type.name} health`);
           bossHealth.max = zombie.maxHealth;
         }
       }
-      if (zombie) bossHealth.value = Math.max(0, zombie.health);
+      if (zombie) {
+        bossHealth.value = Math.max(0, zombie.health);
+        if (zombie.followers !== undefined) bossNotice.textContent = `Followers: ${Math.floor(zombie.followers)}%`;
+      }
     },
 
     // Peripheral feedback listens to the existing event bus; no purchase callbacks in gameplay.
     connectEvents(events) {
+      phoneFlash.connect(events);
       events.on('purchase', ({ label, kind, id, cost }) => {
         clearTimeout(purchaseTimer);
         purchaseStamp.textContent = kind === 'workshop' || kind === 'ritual' ? label : `${kind === 'attachment' && cost === 0 ? 'Refitted' : 'Purchased'}: ${kind === 'attachment' ? upgrades.attachments[id]?.name ?? label : label}`;
@@ -265,6 +285,12 @@ export function createHud() {
     // Build-A-Blaster's order ticket: null hides it (game/features/workshopRitual.js status).
     setRitual(status) {
       ritualTicket.update(status);
+    },
+
+    // Build-A-Blaster's order form: null hides it. labels = button names for the device in use.
+    setOrderForm(view, labels) {
+      orderFormView.update(view, labels);
+      hud.classList.toggle('menu-open', !!view); // (no crosshair over the form)
     },
 
     // A dropped Limited Edition's direction: null hides it (game/features/limitedEditions.js status).
@@ -350,6 +376,17 @@ export function createHud() {
     },
 
     // Called every frame; only touches the DOM when something changed.
+    setVoucher(voucher) {
+      let ticket = hud.querySelector('.boss-voucher');
+      if (!ticket) {
+        ticket = document.createElement('div');
+        ticket.className = 'boss-voucher';
+        hud.appendChild(ticket);
+      }
+      ticket.hidden = !voucher;
+      ticket.textContent = voucher ? `Voucher: ${voucher.name}` : '';
+    },
+
     setHealth(fraction) {
       const rounded = Math.round(Math.max(0, Math.min(1, fraction)) * 200) / 200;
       if (rounded !== lastHealth) {

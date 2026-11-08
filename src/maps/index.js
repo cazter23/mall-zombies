@@ -11,6 +11,7 @@
 //   zones         { [zoneId]: { label, open } }   the starting zone is open
 //   doors         [door]   physical barriers (world/door.js), with stable ids and animation/collision hooks
 //   areaUnlocks   optional controller (world/areaUnlocks.js): destination(door), unlock(areaId), openAll(), reset().
+//   areaAt(point), barriersAround(areaOrPoint)  spatial area and its physical shutters (excluding escalators)
 //                 Purchases unlock one destination; connections open free when both endpoints are owned.
 //                 Maps without this controller retain individual door purchases and opensZones behavior.
 //   spawnPoints   [{ name, zone, position }]      zombie spawns, tagged by zone
@@ -33,6 +34,7 @@
 // =============================================================================
 
 import { buildMall } from './mall/mall.js';
+import { createAreaQueries } from './areaBarriers.js';
 
 export const maps = {
   mall: buildMall,
@@ -41,5 +43,7 @@ export const maps = {
 export function loadMap(id, scene, colliders) {
   const build = maps[id];
   if (!build) throw new Error(`Unknown map "${id}". Known maps: ${Object.keys(maps).join(', ')}`);
-  return build(scene, colliders);
+  const map = build(scene, colliders);
+  Object.assign(map, createAreaQueries(map));
+  return map;
 }
