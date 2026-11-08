@@ -20,7 +20,13 @@ It counts the fall from the floor you stood on, not from the climb.
 
 Fix, same day: sprinting at a rail often just jumped. The landing check reached as far as your air control could carry you, which scales with speed (about 7 m at a sprint, 4 m walking), so a sprint was refused wherever a bench or kiosk stood
 inside that distance, silently. The drop now caps its sideways speed for the whole fall (airSpeedCap 3 m/s), the check reaches only that far, and a bench or counter (up to 1.1 m) is a fine landing. The check also used to ignore a box that only partly
-overlapped the column, so an escalator's side could be missed; anything touching the column counts now. Result: the same six places work walking, jogging or sprinting, and from any press distance within the usual vault reach. The tests that once insisted nobody could cross a rail by jumping now say: you cannot walk in, and a jump ends on the upper floor or on the floor below, never stuck in between.
+overlapped the column, so an escalator's side could be missed; anything touching the column counts now. Result: the same places work walking, jogging or sprinting, and from any press distance within the usual vault reach.
+
+Second pass, after it still felt patchy in play: mapping success along the whole length of every rail (not just the middle) found three more causes. (1) On a narrow void the far rail and the slab behind it counted as
+"something to land on", so the Promenade's 3 m wide void refused from its long sides; another rail now stops the look-ahead instead (it would stop your drift too). (2) An angled path that ended against the next rail was accepted
+unchecked, and a drop could end standing on a rail top (7.8 m up): the release point must now be clear of every other rail, and the way out is checked as a corridor (feel.vault.ledge.sideCheck) because you steer toward where you look.
+(3) Escalators are ramps, not boxes, so they were invisible to the check; they count now. What still refuses, on purpose: the long rails over the escalator (the Promenade's well, and its western void, which sits on the escalator's steps),
+the Atrium's north side (escalator) and the last 1.5 m before a corner. Working: the Promenade's eastern void on all four sides, and the Atrium's court on its south, west and east sides. The tests that once insisted nobody could cross a rail by jumping now say: you cannot walk in, and a jump ends on the upper floor or on the floor below, never stuck in between.
 
 ## 8 November 2026 — Department boss bars
 

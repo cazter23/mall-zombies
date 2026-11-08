@@ -12,7 +12,7 @@
 //   - lastResult: why the last attempt failed or "vaulted" (handy when testing in the console).
 import * as THREE from 'three';
 import { feel } from '../config/feel.js';
-import { overlapsSolid } from '../world/collision.js';
+import { overlapsSolid, rampHeightAt } from '../world/collision.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 const ease = (t) => t * t * (3 - 2 * t);
@@ -141,11 +141,25 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
     const r = feel.player.radius;
     let result = -Infinity;
     for (const box of colliders) {
-      if (box.max.y >= fromY) continue;
+      if (box.max.y >= fromY || box.ledge) continue; // (another rail is a wall you'd stop at, not ground: a narrow void has one on the far side)
       if (x + r <= box.min.x || x - r >= box.max.x || z + r <= box.min.z || z - r >= box.max.z) continue;
       result = Math.max(result, box.max.y);
     }
+    // An escalator is a ramp, not a box: landing on one counts as something in the way too.
+    for (const ramp of colliders.ramps ?? []) {
+      for (const [dx, dz] of [[0, 0], [r, 0], [-r, 0], [0, r], [0, -r]]) {
+        const height = rampHeightAt(ramp, x + dx, z + dz);
+        if (height !== null && height < fromY) result = Math.max(result, height);
+      }
+    }
     return result;
+  }
+
+  // Is a balcony rail (other than the one being climbed) within `margin` of a standing circle at (x, z)? You drift sideways
+  // for the moment it takes to fall past a rail top (about a tenth of a second), so a rail that close could catch your feet.
+  function railAt(x, z, climbed) {
+    const reach = feel.player.radius + cfg.ledge.railMargin;
+    return colliders.some((box) => box.ledge && box !== climbed && x + reach > box.min.x && x - reach < box.max.x && z + reach > box.min.z && z - reach < box.max.z);
   }
 
   // Is there open floor to drop onto? Straight under the release point, and all the way out to the furthest the capped air
@@ -160,13 +174,23 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
     const distances = [];
     for (let along = 0; along < reach; along += L.checkSpacing) distances.push(release + along);
     distances.push(release + reach);
+    // A corridor, not a line: you steer toward where you look, which can be a little off the path you climbed along.
     for (const along of distances) {
-      const x = plan.start.x + plan.dx * along;
-      const z = plan.start.z + plan.dz * along;
-      const floor = groundBelow(x, z, plan.top);
-      if (!Number.isFinite(floor) || floor > L.landingMaxY) return false;
-      sample.set(x, floor, z);
-      if (!clearAt(sample)) return false;
+      let walledOff = false;
+      for (const side of [0, -L.sideCheck, L.sideCheck]) {
+        const x = plan.start.x + plan.dx * along - plan.dz * side;
+        const z = plan.start.z + plan.dz * along + plan.dx * side;
+        if (railAt(x, z, plan.box)) {
+          if (side === 0 && along === release) return false; // (an angled path that runs into the next rail has nowhere to let go)
+          if (side === 0) walledOff = true; // the far side of a narrow void: that rail stops the drift, so nothing past it can be reached
+          continue;
+        }
+        const floor = groundBelow(x, z, plan.top);
+        if (!Number.isFinite(floor) || floor > L.landingMaxY) return false;
+        sample.set(x, floor, z);
+        if (!clearAt(sample)) return false;
+      }
+      if (walledOff) break;
     }
     return true;
   }
