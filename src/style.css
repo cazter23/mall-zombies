@@ -111,6 +111,22 @@ canvas {
   background: radial-gradient(ellipse at center, rgba(200, 0, 20, 0) 45%, rgba(200, 0, 20, 0.85) 100%);
 }
 
+/* Poppy Corn's butter (ui/hud.js splatButter): greasy blobs, kept off the crosshair; JS sets opacity and its fade */
+.butter-splat {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 17% 28%, rgba(255, 214, 80, 0.88) 0 6%, rgba(255, 214, 80, 0) 7.5%),
+    radial-gradient(circle at 24% 36%, rgba(255, 236, 150, 0.8) 0 2.5%, rgba(255, 236, 150, 0) 3.5%),
+    radial-gradient(circle at 76% 20%, rgba(255, 226, 120, 0.85) 0 8%, rgba(255, 226, 120, 0) 9.5%),
+    radial-gradient(circle at 66% 78%, rgba(255, 205, 60, 0.85) 0 5.5%, rgba(255, 205, 60, 0) 7%),
+    radial-gradient(circle at 29% 82%, rgba(255, 230, 140, 0.78) 0 9%, rgba(255, 230, 140, 0) 10.5%),
+    radial-gradient(circle at 88% 58%, rgba(255, 214, 80, 0.8) 0 4%, rgba(255, 214, 80, 0) 5.5%),
+    radial-gradient(ellipse at center, rgba(255, 200, 60, 0) 50%, rgba(255, 200, 60, 0.5) 100%);
+}
+
 /* Sprint speed lines: a few thin rays, only at the outer edges of the screen.
    They drift slowly between rotations, which reads as gentle streaking motion. */
 .speed-lines {

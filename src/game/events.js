@@ -23,6 +23,8 @@
 //                                                        zombie.type.variant = the costume; again = a second time,
 //                                                        after Captain Coupon put it back on: no bonus)
 //   'mascotReclaim' { zombie }                           Captain Coupon put his helmet back on (health restored)
+//   'mascotPopBlast' { zombie, position, butter, butterSeconds, flung }   Poppy Corn's pop flung `flung` zombies;
+//                                                        butter = the player was shoved too (the HUD's butter splat)
 //   'playerHit'   { damage, zombie, knockback }          a zombie's swing (or a cart charge) landed;
 //                                                        knockback = { x, z } m/s shove or null
 //   'playerDeath' {}                                     after the death is registered (onPlayerDeath)

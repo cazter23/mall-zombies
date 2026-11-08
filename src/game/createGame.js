@@ -18,7 +18,7 @@
 //   g.flashSales   the mall PA's timed discounts (game/flashSales.js); .active = the sale running now (or null)
 //   g.debug        the developer shortcuts (game/debugCommands.js): run(id), resolve(key, shift), status()
 //   g.<system>     map, colliders, arena, shootables, stats, player, wallet, runStats, effects, aimAssist,
-//                  gun, interactions, melee, health, zombies, rounds, death
+//                  gun, interactions, melee, health, zombies, mascotCostumes, rounds, death
 // =============================================================================
 
 import { feel } from '../config/feel.js';
@@ -43,6 +43,7 @@ import { createPlayerGun } from '../weapons/playerGun.js';
 import { createMelee } from '../weapons/melee.js';
 import { createAimAssist } from '../weapons/aimAssist.js';
 import { createZombieManager } from '../zombies/zombieManager.js';
+import { createMascotCostumes } from './mascotCostumes.js';
 import { createEvents } from './events.js';
 import { createPricing } from './pricing.js';
 import { createFlashSales } from './flashSales.js';
@@ -301,6 +302,8 @@ export function createGame({
     hud.showAnnouncement({ ...zombie.type.mascot.reclaim.line, priority: 1 });
     sound.play('paChime');
   });
+  // The costume twists that reach past the zombie (Poppy Corn's blast...): game/mascotCostumes.js.
+  const mascotCostumes = createMascotCostumes({ events, zombies, player, colliders, effects, state });
   events.on('playerHit', ({ damage, knockback }) => {
     health.takeDamage(damage);
     if (knockback) { // a Cart Pusher's charge shoves you along it (m/s, horizontal)
@@ -425,6 +428,7 @@ export function createGame({
     ['bosses', () => bosses.reset()],
     ['powerUps', () => powerUps.reset()],
     ['zombies', () => zombies.clear()],
+    ['mascotCostumes', () => mascotCostumes.reset()],
     ['stats', () => resetPlayerStats(stats)], // perks / wardrobe / skill-tree changes don't carry over
     ['health', () => health.reset()], // (after stats: back to the base max health)
     ['runStats', () => runStats.reset()],
@@ -501,6 +505,7 @@ export function createGame({
     // Hands busy with a slash or a vault: no shooting. A vault only pauses a reload (it carries on after).
     gun.update(dt, melee.isBusy || player.vault.active, player.vault.active);
     zombies.update(dt);
+    mascotCostumes.update(dt);
     // Rounds pause while you're off in the debug test range (zombies can't reach you there).
     const inMall = !arena?.contains(player.position);
     if (!state.over) {
@@ -545,6 +550,7 @@ export function createGame({
     melee,
     health,
     zombies,
+    mascotCostumes,
     rounds,
     get vaultPromptVisible() {
       return vaultPromptVisible;

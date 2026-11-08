@@ -98,6 +98,43 @@ export const HEADS = {
     }
     decorate(tag, head.face);
   },
+
+  // Poppy Corn: a tapered red-and-white striped popcorn bucket with a red rim, lumpy puffs heaped on top and a face
+  // that follows the bucket's curve.
+  popcornBucket(head, group, { block, shape, colors }) {
+    const { radiusTop, radiusBottom, segments, stripes, rim, puffs } = head;
+    const height = head.helmet.size[1];
+    const radiusAt = (y) => radiusBottom + (radiusTop - radiusBottom) * (y / height + 0.5);
+    const lean = Math.atan((radiusTop - radiusBottom) / height); // the side faces this far down
+
+    const bucket = sharedOnce('popcornBucket.bucket', () => new THREE.CylinderGeometry(radiusTop, radiusBottom, height, segments));
+    shape(group, bucket, head.color);
+    // Each red band is a thin open slice of a slightly bigger bucket; the front middle is white (the mouth sits there).
+    const band = Math.PI / stripes.count; // (count red + count white bands round the bucket)
+    const stripe = sharedOnce('popcornBucket.stripe', () => new THREE.CylinderGeometry(
+      radiusTop + stripes.proud, radiusBottom + stripes.proud, height, 2, 1, true, band / 2, band));
+    for (let i = 0; i < stripes.count; i++) shape(group, stripe, colors[stripes.color], [0, 0, 0], [0, i * band * 2, 0]);
+    const rimGeometry = sharedOnce('popcornBucket.rim', () => {
+      const top = radiusTop + rim.proud;
+      return new THREE.CylinderGeometry(top, top - (radiusTop - radiusBottom) * (rim.height / height), rim.height, segments, 1, true);
+    });
+    shape(group, rimGeometry, colors[rim.color], [0, height / 2 - rim.height / 2, 0]);
+
+    const puff = sharedOnce('popcornBucket.puff', () => new THREE.IcosahedronGeometry(1, 0));
+    puffs.pieces.forEach(([x, y, z, size, buttered], i) => {
+      shape(group, puff, colors[buttered ? puffs.buttered : puffs.color], [x, y, z], [i * 1.3, i * 0.7, i * 2.1], [size, size * 0.85, size]);
+    });
+
+    // Flat face pieces turned to sit tangent to the curve (and tipped down with the bucket's taper).
+    for (const { color, size, at: [x, y], proud = 0.01, tilt = 0 } of head.face) {
+      const distance = radiusAt(y) + stripes.proud + proud + size[2] / 2;
+      const around = Math.asin(x / distance);
+      const piece = block(group, colors[color], size, [Math.sin(around) * distance, y, -Math.cos(around) * distance], tilt);
+      piece.rotation.order = 'YXZ';
+      piece.rotation.y = -around;
+      piece.rotation.x = -lean;
+    }
+  },
 };
 
 // SALE across the top (clear of the hole), a dashed coupon border, and a big "%" for a mouth.

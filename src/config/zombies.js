@@ -436,6 +436,65 @@ export const mascotVariants = {
       lift: { reachShare: 0.35, bend: 0.75, armsReach: 1.2, armsHold: 2.75, rise: 0.45 },
     },
   },
+
+  // The Sunset Cinema's usher in a popcorn bucket. THE TWIST: the pop is a blast (game/mascotCostumes.js). Zombies
+  // close by are flung and stunned (no damage, so no points), and if you're close you're shoved away and buttered.
+  poppyCorn: {
+    name: 'Poppy Corn',
+    unlockRound: 16,
+    homeZones: ['cinema'],
+    introBanner: { kicker: 'Now showing', text: 'Poppy Corn has left the Sunset Cinema. Please silence your screaming.' },
+    helmetPopLine: { kicker: 'Concessions', text: 'Poppy Corn has popped. Butter is complimentary. And everywhere.' },
+    colors: { suit: 0xa3172b, trim: 0xf2c14e, boot: 0x2a1b14, bow: 0x1d1626, stripe: 0xd62839, kernel: 0xfff1c9, butter: 0xffcf3f },
+    uniform: [ // an usher's jacket: gold buttons, a bow tie, gold epaulettes
+      { color: 'trim', size: [0.06, 0.06, 0.03], at: [0, 0.12, -0.27] },
+      { color: 'trim', size: [0.06, 0.06, 0.03], at: [0, -0.02, -0.27] },
+      { color: 'trim', size: [0.06, 0.06, 0.03], at: [0, -0.16, -0.27] },
+      { color: 'bow', size: [0.1, 0.09, 0.035], at: [-0.06, 0.27, -0.272], tilt: 0.35 },
+      { color: 'bow', size: [0.1, 0.09, 0.035], at: [0.06, 0.27, -0.272], tilt: -0.35 },
+      { color: 'trim', size: [0.2, 0.05, 0.36], at: [-0.27, 0.355, 0] },
+      { color: 'trim', size: [0.2, 0.05, 0.36], at: [0.27, 0.355, 0] },
+    ],
+    head: {
+      kind: 'popcornBucket',
+      helmet: { size: [0.9, 0.74, 0.9], at: [0, 1.04, 0] }, // the bucket: top width, height (it hides the green head)
+      color: 0xfff6e6, // the bucket's white
+      radiusTop: 0.45,
+      radiusBottom: 0.33,
+      segments: 16,
+      stripes: { count: 8, color: 'stripe', proud: 0.012 }, // red bands, equal to the white ones
+      rim: { color: 'stripe', height: 0.07, proud: 0.024 },
+      // Lumpy puffs heaped on top: [x, y, z, size, buttered?] in the bucket's metres (y = 0 is its middle).
+      puffs: { color: 'kernel', buttered: 'butter', pieces: [
+        [0, 0.48, 0, 0.17], [0.2, 0.43, 0.1, 0.14], [-0.2, 0.43, 0.12, 0.15, true], [0.05, 0.42, -0.25, 0.14],
+        [-0.18, 0.44, -0.16, 0.13, true], [0.26, 0.41, -0.13, 0.13], [0.12, 0.44, 0.27, 0.13, true], [-0.3, 0.41, -0.02, 0.12],
+        [0.3, 0.4, 0.2, 0.11], [-0.05, 0.54, 0.12, 0.12, true], [0.1, 0.56, -0.08, 0.11], [-0.14, 0.42, 0.3, 0.11],
+      ] },
+      // The face sits on the bucket's curve: at [x, y] on its front, `proud` metres off the stripes (back face).
+      face: [
+        { color: 'eyes', size: [0.15, 0.19, 0.03], at: [0.15, 0.07], proud: 0.01 },
+        { color: 'eyes', size: [0.15, 0.19, 0.03], at: [-0.15, 0.07], proud: 0.01 },
+        { color: 'dark', size: [0.06, 0.09, 0.02], at: [0.13, 0.05], proud: 0.035 },
+        { color: 'dark', size: [0.06, 0.09, 0.02], at: [-0.13, 0.05], proud: 0.035 },
+        { color: 'dark', size: [0.13, 0.07, 0.03], at: [0.11, -0.15], proud: 0.01, tilt: 0.3 }, // a big grin...
+        { color: 'dark', size: [0.13, 0.07, 0.03], at: [0, -0.18], proud: 0.01 },
+        { color: 'dark', size: [0.13, 0.07, 0.03], at: [-0.11, -0.15], proud: 0.01, tilt: -0.3 },
+        { color: 'butter', size: [0.09, 0.04, 0.02], at: [0.03, -0.19], proud: 0.035 }, // ...with butter on its tongue
+      ],
+    },
+    popBlast: {
+      zombieRadius: 4, // zombies within this (metres, flat) are knocked away...
+      stunSeconds: 1.2, // ...and stunned this long (the Security Sweep's stagger)...
+      knockback: 7, // ...starting at this many m/s (a Cart Pusher's shove)...
+      drag: 5, // ...slowing with this drag (about knockback / drag metres)
+      playerRadius: 3, // you, within this: shoved away at playerShove m/s (horizontal), no damage...
+      playerShove: 7,
+      butterSeconds: 1, // ...and buttered (the HUD's splat fades over this)
+      floorTolerance: 1.2, // only bodies on its own floor (metres of height difference)...
+      chestHeight: 1.1, // ...with nothing solid between the bucket and their chest
+      burst: { colors: [0xfff1c9, 0xfff9ee, 0xffe28a, 0xffcf3f], count: 36 }, // popcorn everywhere
+    },
+  },
 };
 
 // One resolved zombie type per costume, built ONCE here: the shared type deep-merged with the costume (id stays 'mascot',
