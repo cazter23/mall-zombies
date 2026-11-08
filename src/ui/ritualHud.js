@@ -27,7 +27,7 @@ export function createRitualHud() {
       const key = `${phase}|${gunName}|${status.stage}|${kills}|${quality.id}|${Math.ceil(secondsLeft)}|${status.waiting}|${Math.round(status.progress * 100)}`;
       if (key === lastKey) return;
       lastKey = key;
-      heading.textContent = `Build-A-Blaster · ${gunName}`;
+      heading.textContent = gunName;
       // One bar: how far along it is. Kills in the room push it on, and fill the tank.
       fill.style.transform = `scaleX(${status.progress})`;
       element.classList.toggle('ritual-done', phase === 'ready');
@@ -36,8 +36,8 @@ export function createRitualHud() {
         gauge.textContent = `${quality.name} · ${kills} in the tank`;
         return;
       }
-      stage.textContent = `${status.stage} · ${Math.ceil(secondsLeft)}s`;
-      gauge.textContent = next ? `${kills} in the tank · ${next.minKills} for ${next.name}` : `${kills} in the tank · ${quality.name}`;
+      stage.textContent = `${Math.ceil(secondsLeft)}s remaining`;
+      gauge.textContent = next ? `${quality.name} · ${kills}/${next.minKills} → ${next.name}` : `${kills} in the tank · ${quality.name}`;
     },
   };
 }

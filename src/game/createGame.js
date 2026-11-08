@@ -363,7 +363,7 @@ export function createGame({
   }
 
   events.on('ritualCollect', ({ certificate }) => hud.showCertificate(certificate));
-  events.on('ritualStage', ({ pa }) => hud.showAnnouncement({ ...pa, priority: 0 })); // (narration: quality and ready lines beat it)
+  events.on('ritualStage', ({ pa }) => hud.showAnnouncement({ ...pa, priority: 0, archiveOnly: true })); // (narration: quality and ready lines beat it)
 
   powerUps = createPowerUps({
     events, player, gun, zombies, colliders, state, stats, pricing, wallet,

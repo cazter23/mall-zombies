@@ -23,7 +23,7 @@ test('round 1 starts: the PA chimes and reads a configured line; later rounds sa
   const f = fake();
   wireRunIntro({ events, hud: f.hud, sound: f.sound, random: () => 0.99 });
   events.emit('roundStart', { round: 1 });
-  assert.deepEqual(f.banners, [{ kicker: feel.runIntro.kicker, text: feel.runIntro.lines.at(-1) }]);
+  assert.deepEqual(f.banners, [{ kicker: feel.runIntro.kicker, text: feel.runIntro.lines.at(-1), flavor: true }]);
   assert.deepEqual(f.sounds, ['paChime']);
   events.emit('roundStart', { round: 2 });
   events.emit('roundStart', { round: 7 });
