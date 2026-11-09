@@ -27,7 +27,7 @@ const BOSS_IDS = Object.keys(bossTypes).sort((a,b)=>bossTypes[a].firstRounds[0]-
 const WALL_GUN_IDS = Object.keys(weapons).filter((id) => id !== 'stapleGun');
 const nameOf = (id) => id.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
 
-export function createDebugCommands({ map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses, commands = debug.commands, onUse = null }) {
+export function createDebugCommands({ map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses, wardrobe, commands = debug.commands, onUse = null }) {
   const state = { panelOpen: debug.panel.startOpen, zombieIndex: 0, bossIndex: 0, gunIndex: 0, mascotIndex: 0, goldIndex: 0, last: '' };
   const selectedZombie = () => ZOMBIE_IDS[state.zombieIndex];
 
@@ -122,6 +122,13 @@ export function createDebugCommands({ map, zombies, rounds, wallet, gun, health,
       if (!next) return `The ${gun.def.name} is already ${tierById('platinum').name}`;
       gun.setMods(id, withTier(weapons[id], gun.modsFor(id), next));
       return `${gun.def.name}: ${tierById(next).name}`;
+    },
+    // Every Wardrobe item, free. What you already wear stays on; change at a fitting room.
+    wardrobe() {
+      const before = wardrobe.status.owned.length;
+      wardrobe.grantAll();
+      const added = wardrobe.status.owned.length - before;
+      return added ? `Gave ${added} Wardrobe item${added === 1 ? '' : 's'}` : 'You already own every Wardrobe item';
     },
 
     doors() {

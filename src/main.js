@@ -104,6 +104,7 @@ scene.add(viewmodel.worldLight); // the muzzle flash lights up the room
 const { state: game, death, map, player, gun, melee, zombies, rounds, health, wallet, effects, aimAssist, interactions, pricing, flashSales } = g;
 const workshop = g.features.list.find(({ feature }) => feature.kind === 'workshop')?.instance; // Build-A-Blaster (the HUD reads its status)
 const { ritual, drops: limitedEditions } = workshop ?? {};
+const fittingRooms = g.features.list.filter(({ feature }) => feature.kind === 'fittingRoom').map(({ instance }) => instance); // (the HUD draws the open picker)
 const resetRun = g.resetRun;
 hud.connectEvents(g.events);
 const haptics = createHaptics({ gamepad, input, state: game, health, events: g.events });
@@ -429,8 +430,9 @@ function render(alpha, frameTime) {
   hud.setFlashSale(game.over ? null : flashSales.active);
   hud.setPowerUps(game.over ? null : g.powerUps);
   hud.setRitual(game.over ? null : ritual?.status ?? null);
-  hud.setOrderForm(game.over ? null : ritual?.form ?? null,
-    { confirm: buttonLabel('menuConfirm'), back: buttonLabel('menuBack'), move: buttonLabel('menuMove'), switch: buttonLabel('menuSwitch') });
+  const menuLabels = { confirm: buttonLabel('menuConfirm'), back: buttonLabel('menuBack'), move: buttonLabel('menuMove'), switch: buttonLabel('menuSwitch') };
+  hud.setOrderForm(game.over ? null : ritual?.form ?? null, menuLabels);
+  hud.setFittingRoom(game.over ? null : fittingRooms.find((room) => room.view)?.view ?? null, menuLabels);
   hud.setLimitedEdition(game.over ? null : limitedEditions?.status ?? null);
   hud.setVaultPrompt(game.running && !game.over && g.vaultPromptVisible, buttonLabel('jump'));
   hud.setPoints(wallet.points);

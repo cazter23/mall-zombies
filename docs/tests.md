@@ -177,7 +177,14 @@ prop + collider + buy spot, solid and too tall to climb, tiers one at a time at 
 nothing past Platinum (including the exact purchase frame and switching back to a Platinum gun), Flash Sale applies,
 no prompt while closed / switching / facing away, Play again resets),
 `tests/wardrobe.test.js` exercises all 12 racks and three fitting rooms with real input, fixture clearance, PadX tap vs. hold,
-apparel discounts, outfit order and reset, stat stacking and clamps, live ammo and combat modifiers, and Gold Card payouts.
+apparel discounts, reset, stat stacking and clamps, live ammo and combat modifiers, and Gold Card payouts.
+The fitting-room picker: every one of the 81 outfits is put on through key presses (two at most inside a slot), it is free and spends
+neither the Discount Code nor Employee Discount, the player stands still while it is open, and it closes on back, a zombie hit, being moved
+away, death and Play again. Tickets: every factor has a label, every rack ticket carries numbers with an upside and a downside, and the
+generated lines equal the stats before and after wearing, with incentives running and against the item being replaced.
+Limits: no item raises jump, vault height or walk speed, and the fastest outfit sprints slower than a Cart charge. Clothes scale a
+'playerHit' but not a fall; 'regenStart' fires once per recovery; the debug command grants everything without undressing you; the
+aim-assist multiplier scales the rotational follow on a controller only.
 The Wardrobe test also checks solid clearance, label sightlines and room culling from four angles per display.
 `tests/coplanar.test.js` checks the new signs and axis-aligned display faces against nearby surfaces.
 

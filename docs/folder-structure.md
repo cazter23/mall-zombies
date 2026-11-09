@@ -25,7 +25,8 @@ src/
                         stop fade. Bell anchors to feel.death.resultsDelay; played once through sound's music/master buses
     powerUps.js         Employee-incentive drop tuning, skill credit, round caps, pickup/zone durations, ammo top-up,
                         sweep strength, colors and PA lines. First round 2, 12-16 credit per drop, maximum 3 per round
-    wardrobe.js         Apparel items, four slots, stat multipliers, rack locations and fitting-room placards.
+    wardrobe.js         Apparel items, four slots, stat multipliers, joke line, signature colour and icon id per item, `statLabels` (how each stat
+                        reads on a ticket), rack locations, fitting-room placards and the picker's close distance.
     shoppers.js         Cosmetic-only Shopper wardrobe: coordinated palettes/profiles, shirts/layers, bottoms, hair,
                         modest width variations, accessories and wear. Parts are data; combat never reads this file.
     impacts.js          Cosmetic impact cap (200), Cannon budget (2 clusters), projection/edge tolerances and gun signatures
@@ -139,7 +140,8 @@ src/
                         reloadSpeed); resetPlayerStats(stats) puts every stat back to base (same object) on a new run and DELETES
                         anything not declared in createPlayerStats() (so a new stat must be declared there with its default)
     health.js           createPlayerHealth(): takeDamage, regen after a delay, `overlay` strength for the red
-                        hurt edges (grows with damage, pulses when low, flashes on hit), calls onDeath once
+                        hurt edges (grows with damage, pulses when low, flashes on hit), calls onDeath once and onRegenStart
+                        once per recovery ('regenStart'). takeDamage takes the final amount: clothes scale zombie hits in createGame's 'playerHit'.
     body.js             createPlayerBody(): first-person legs + lower torso in the world scene (visual only).
                         Tapered faceted waist/pelvis, belt buckle, tapered thighs/shins and faceted sneakers with tongue accent.
                         Hip height follows eye height; feet posed for walk cycle / slide (V) / air tuck, knees
@@ -368,7 +370,8 @@ src/
                         and clear on death, Play again or debug skips. createGame builds/ticks/resets it as g.powerUps.
                         A kill whose type has guaranteedDrop (Employee of the Month) queues a reward the same way, any
                         useful type by weight, outside the meter and its rotation.
-    wardrobe.js         g.wardrobe: per-run ownership, equipped slots, ordered bag and reversible player stat factors.
+    wardrobe.js         g.wardrobe: per-run ownership, equipped slots and reversible player stat factors. buy(id), wear(id) (anything owned),
+                        ownedIn(slot), grantAll() (debug), and the ticket formatter: statLines(id) / ticketDetail(id) from the stats as they are now.
     incentiveEffects.js Temporary employee benefits: concurrent timers, reversible stat modifiers, finite healing,
                         deferred non-recursive liquidation damage, one-purchase coupons, target marks, slow patches,
                         overtime extensions, melee charges and sprint pulses. Owned/reset/disposed by powerUps.js.
@@ -411,7 +414,9 @@ src/
       workshopOrderForm.js The bench's order form: every Stuffing and Heart on one sheet, pre-filled, driven by menu actions. Sets state.menu while open (the player stands still, the world doesn't).
       clearanceRack.js  Clearance Rack tags on up to three zombies; a headshot on a tagged zombie pops them all.
       clearanceSticker.js The canvas sticker drawn on tagged zombies.
-      wardrobeFixtures.js Wardrobe racks and free fitting rooms use the same hold interaction as other mall fixtures.
+      wardrobeFixtures.js Wardrobe racks (buy: the generated ticket) and fitting rooms (free: the hold opens that room's picker; its instance has `view`).
+      fittingRoomPicker.js The fitting-room picker: slots side by side, menu actions pick a slot and an owned item, confirm wears it (wardrobe.wear).
+                        Sets state.menu while open; closes on back, a 'playerHit', being moved away, death, reset. DOM-free; `view` is what the UI draws.
       horror.js         Feature kind 'horror': the mall decays as the rounds climb (config/look.js horror). Visual only, never gameplay.
     debugCommands.js    createDebugCommands(game parts): the debug shortcuts as functions run(id) (spawn, cycleZombie, clearZombies,
                         killZombies, nextRound, jumpRounds, flashSale, addPoints, zeroPoints, god, giveGun, upgradeGun, doors, arena, panel,
@@ -675,6 +680,8 @@ src/
     orderForm.js        Draws the order form from its view. Only draws: choices come in on the fixed tick. Sized from the screen height (retail.css --order-base,
                         everything in em), left of centre; keys drawn as keycaps (keycaps()), one line on what the order does (orderSummary()), stuffings
                         you can't pick folded into a short "Not in stock" list.
+    fittingRoomPicker.js Draws the fitting-room picker from its view (hud.setFittingRoom): four slot columns on the order form's paper and keycaps, the
+                        highlighted item's stat lines in green and red. Only draws.
     ritualHud.js        The order ticket on the HUD: the gun's stage, one progress bar, the gauge and time (reads the ritual's status).
     announcements.js    Bounded PA queue: type introductions priority 2, incentives 1, routine messages 0;
                         clear on pause/death/reset; wall-clock presentation timers only

@@ -306,7 +306,24 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   font: 600 var(--order-base)/1.3 var(--font-ui);
 }
 .order-form[hidden], .hud.dead .order-form { display: none; }
-.hud.menu-open .crosshair { display: none; }
+.hud.menu-open .crosshair, .hud.fitting-open .crosshair { display: none; }
+/* The fitting-room picker (ui/fittingRoomPicker.js): the order form's paper with four slot columns. */
+.fitting-form { border-top-color: var(--mint); }
+.fitting-form .order-columns { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .6em; }
+.fitting-form .order-row { padding: .35em .45em .4em .55em; min-height: 2.6em; align-content: center; }
+.fitting-form .order-row b { font-size: 1em; }
+.fitting-form .order-row span { font-size: .8em; text-transform: uppercase; letter-spacing: .08em; }
+.fitting-form .order-row span:empty { display: none; }
+.fitting-empty { padding: .4em .55em; font-size: .9em; font-weight: 500; opacity: .55; border-left: .3em dashed var(--print-rule); }
+.fitting-joke { font-style: italic; font-weight: 500; }
+.fitting-joke:empty, .fitting-form .order-summary-label:empty { display: none; }
+.fitting-lines { display: flex; flex-wrap: wrap; gap: .25em 1.1em; margin-top: .25em; font-size: 1.05em; font-weight: 700; }
+.fitting-line.good { color: #1f7a4d; }
+.fitting-line.bad { color: #b3263e; }
+.fitting-line.good::before { content: '▲ '; font-size: .7em; }
+.fitting-line.bad::before { content: '▼ '; font-size: .7em; }
+.interact-term.interact-good { color: #9be8b0; }
+.interact-term.interact-bad { color: #ff9aa8; }
 .order-head { display: flex; justify-content: space-between; align-items: baseline; gap: .8em; border-bottom: 1px dashed var(--print-rule); padding-bottom: .5em; margin-bottom: .7em; }
 .order-kicker { text-transform: uppercase; letter-spacing: .1em; font-size: .8em; }
 .order-title { font: 700 1.35em/1.1 var(--font-ui); text-align: right; }

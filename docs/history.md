@@ -1,5 +1,33 @@
 # Sunset Galleria: build history ("Current state")
 
+## 9 November 2026 - Wardrobe showroom rework, phase 1: the picker, numbers on tickets, new numbers
+
+Phase 1 of docs/wardrobe-showroom-plan.md (the logic and data; no showpieces, outfit rail or on-body visuals yet).
+
+- **Fitting rooms open a picker, not a queue.** Hold interact at a mirror: four slot columns with everything you own (game/features/fittingRoomPicker.js,
+  drawn by ui/fittingRoomPicker.js on the order form's paper). A/D or ◀ ▶ picks the slot, W/S or the D-pad the item, F / A wears it, Q / B closes. It stays
+  open while you change several slots. Like the Build-A-Blaster order form it freezes you while the world carries on, so "walking away" can only be a shove
+  or a teleport (it closes past 3 m, config/wardrobe.js fittingRoomPicker); a zombie hit, death and Play again close it too. `g.wardrobe.wear(id)` replaces
+  the bag and `wearNext`. All 81 outfits are reached through real key presses in a test, each item in at most two presses within its slot.
+- **Tickets are generated, with numbers** (`g.wardrobe.statLines(id)`, labels in config/wardrobe.js `statLabels`): the joke line, then what would change if
+  you put the item on now, from the stats as they are (other clothes and running incentives included), then what it replaces. Upsides are green and
+  downsides red on the shelf ticket and in the picker. Example, wearing the Hi-Vis Vest at the Sandwich Board: "Zombie hits hurt 36% less · Knockback 50%
+  weaker · Strafing 15% slower · Reload 20% slower · Replaces Hi-Vis Vest".
+- **Numbers (section 6 of the plan).** Hi-Vis Vest reload x1.25 and damage taken x1.25: a Shopper hit is 50 (measured), two hits down you. Sandwich Board
+  damage taken x0.8: a Shopper hit is 32 (measured). Light-Ups sprint x1.1 for x0.9 as long (8.8 m/s for 3.6 s, 31.7 m against 32 m barefoot; still under the
+  Cart's 9 m/s, and a test keeps it so). 3D Glasses headshots x1.25. Aviators aim time x0.7 plus a new stat `aimAssistMultiplier` x1.2, keeping the switch
+  x0.85 downside. Orthopedics is the short name (the Mall Walker is a zombie).
+- **Clothes scale zombie hits only.** `stats.damageTakenMultiplier` moved from `health.takeDamage` to createGame's 'playerHit' listener, so a fall does the
+  same damage in any outfit.
+- **'regenStart'** fires once each time health begins to climb back (player/health.js `onRegenStart`), for the rail's Paper Hat tag in phase 3.
+- Items carry a signature `color`, an `icon` id and their `ticket` joke line in config. Debug: Shift+H gives every item (free; what you wear stays on).
+
+`npm run balance` with no items matched main byte for byte. Not done, or not checked: the Aviators' aim-assist factor only strengthens the rotational
+follow at the default dial, because slowdown and the ADS snap already cap strength at 1 (left alone; raise the cap or drop the factor after playing with a
+controller). The picker was only looked at in an 800x600 preview pane with the keyboard: there its top edge slides under the round counter when the stat
+block is tall, and rows change height when the "Wearing" mark moves. Nothing was played by hand, so whether the new numbers feel right is still open.
+The HUD strip is still v1's four chips (phase 3).
+
 ## 9 November 2026 - Wardrobe displays and clipping audit
 
 Twelve static, low-poly apparel displays now mark the purchases. The three fitting rooms share a lit TRY ON badge. The visual mounts and interaction anchors are separate, and the displays add no collision.

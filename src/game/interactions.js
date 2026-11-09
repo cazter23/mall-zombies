@@ -138,6 +138,7 @@ export function createInteractions({ input, player, wallet, sound = null, onRelo
         id: focused.id ?? null,
         pricingId: focused.pricingId ?? focused.id ?? null,
         detail: focused.detail ?? '',
+        detailLines: focused.detailLines ?? null, // optional [{ text, good }]: which detail terms are upsides (the Wardrobe)
         owned: focused.owned ?? false,
         priceLabel: focused.priceLabel ?? null, // shown instead of the number ("Free")
         blocked: focused.blocked ?? null,
