@@ -1,7 +1,8 @@
 # Wardrobe: the showroom rework (plan)
 
-Status: plan, nothing built. It reworks Codex's Wardrobe v1 (uncommitted in `.claude/worktrees/wardrobe`, branch codex/wardrobe; the design it
-follows is docs/wardrobe-plan.md). Build it on top of v1 once v1 is merged. Numbers are starting points, to be tuned by playing.
+Status: phase 1 is built (9 November 2026: the picker, generated tickets, section 6's numbers, 'regenStart', colours and icons in config, the debug
+command and the limits test; see docs/history.md). Phases 2-4 are not started. It reworks Wardrobe v1 (the design that follows is
+docs/wardrobe-plan.md). Numbers are starting points, to be tuned by playing.
 
 ## Why
 

@@ -249,7 +249,7 @@ export function createGame({
     hud.showResults(death.summary);
   }
 
-  const health = createPlayerHealth({ stats, onDeath: onPlayerDeath });
+  const health = createPlayerHealth({ stats, onDeath: onPlayerDeath, onRegenStart: () => events.emit('regenStart') });
 
   const zombies = createZombieManager({
     scene,
@@ -333,7 +333,7 @@ export function createGame({
   // The costume twists that reach past the zombie (Poppy Corn's blast...): game/mascotCostumes.js.
   const mascotCostumes = createMascotCostumes({ events, scene, zombies, player, colliders, effects, surfaces, state });
   events.on('playerHit', ({ damage, knockback }) => {
-    health.takeDamage(damage);
+    health.takeDamage(damage * stats.damageTakenMultiplier); // (clothes scale zombie hits only: a fall goes straight to health)
     if (knockback) { // a Cart Pusher's charge shoves you along it (m/s, horizontal)
       player.velocity.x += knockback.x * stats.knockbackMultiplier;
       player.velocity.z += knockback.z * stats.knockbackMultiplier;
@@ -449,7 +449,7 @@ export function createGame({
   });
   // Developer shortcuts (config/debug.js lists the keys; main.js turns key presses into debug.run(id)).
   const debugCommands = createDebugCommands({
-    map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses,
+    map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses, wardrobe,
     onUse: (id) => {
       // Merely showing the panel or choosing the next spawn type changes no run outcome.
       if (id !== 'panel' && id !== 'cycleZombie' && id !== 'cycleBoss' && id !== 'benchmark') state.assisted = true;

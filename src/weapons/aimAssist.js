@@ -93,7 +93,7 @@ export function createAimAssist({ player, input, shootables, colliders }) {
     /** aim: { amount (0..1 ADS), justStartedAiming } */
     update(dt, aim) {
       snapCooldown = Math.max(0, snapCooldown - dt);
-      const strength = cfg.strength;
+      const strength = cfg.strength * (player.stats?.aimAssistMultiplier ?? 1); // (the Aviators: game/wardrobe.js)
       if (input.device !== 'gamepad' || strength <= 0) {
         clear();
         return;

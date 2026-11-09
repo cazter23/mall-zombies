@@ -10,8 +10,9 @@
 
 import { feel } from '../config/feel.js';
 
-export function createPlayerHealth({ stats, onDeath }) {
+export function createPlayerHealth({ stats, onDeath, onRegenStart = null }) {
   let sinceHit = Infinity; // seconds since the last hit (regen waits for stats.regenDelay)
+  let regenerating = false; // health is climbing back (onRegenStart fires once each time that begins)
   let flash = 0; // seconds left on the red hit flash
   let time = 0; // for the low-health pulse
   let dead = false;
@@ -28,10 +29,12 @@ export function createPlayerHealth({ stats, onDeath }) {
       return stats.health / stats.maxHealth;
     },
 
+    // The amount is final: clothes scale ZOMBIE hits in the 'playerHit' listener (game/createGame.js), never a fall.
     takeDamage(amount) {
       if (dead || amount <= 0 || this.invulnerable) return;
-      stats.health = Math.max(0, stats.health - amount * (stats.damageTakenMultiplier ?? 1));
+      stats.health = Math.max(0, stats.health - amount);
       sinceHit = 0;
+      regenerating = false;
       flash = feel.health.hitFlashSeconds;
       if (stats.health <= 0) {
         dead = true;
@@ -45,7 +48,13 @@ export function createPlayerHealth({ stats, onDeath }) {
       if (dead) return;
       sinceHit += dt;
       if (sinceHit >= stats.regenDelay && stats.health < stats.maxHealth) {
+        if (!regenerating) {
+          regenerating = true;
+          if (onRegenStart) onRegenStart();
+        }
         stats.health = Math.min(stats.maxHealth, stats.health + stats.regenRate * dt);
+      } else if (stats.health >= stats.maxHealth) {
+        regenerating = false;
       }
     },
 
@@ -68,6 +77,7 @@ export function createPlayerHealth({ stats, onDeath }) {
     reset() {
       stats.health = stats.maxHealth;
       sinceHit = Infinity;
+      regenerating = false;
       flash = 0;
       dead = false;
     },

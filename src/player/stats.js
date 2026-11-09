@@ -48,6 +48,7 @@ export function createPlayerStats() {
     reloadSpeed: weaponStatDefaults.reloadSpeed,
     switchSpeed: 1,
     adsTimeMultiplier: 1,
+    aimAssistMultiplier: 1, // controller aim-assist strength (weapons/aimAssist.js)
     headshotDamageMultiplier: 1,
     reserveMultiplier: 1,
     killPayMultiplier: 1,

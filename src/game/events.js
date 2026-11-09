@@ -29,8 +29,10 @@
 //   'mascotGold'  { zombie }                             an Employee of the Month (a gold Mascot) spawned; its kill
 //                                                        always drops a power-up (game/powerUps.js, type.guaranteedDrop)
 //   'playerHit'   { damage, zombie, knockback }          a zombie's swing (or a cart charge) landed;
-//                                                        knockback = { x, z } m/s shove or null
+//                                                        knockback = { x, z } m/s shove or null. damage is BEFORE clothes:
+//                                                        createGame's listener applies stats.damageTakenMultiplier
 //   'playerFall'  { drop, damage }                       a landing from a height hurt (feel.fall); damage is already taken
+//   'regenStart'  {}                                     health began climbing back (once per recovery: player/health.js)
 //   'playerDeath' {}                                     after the death is registered (onPlayerDeath)
 //   'runEnd'      { summary }                            immutable final run totals, emitted once on player death
 //   'powerUpDrop' { id, position, seconds }               earned incentive appeared on clear floor
@@ -52,7 +54,7 @@
 //   Fan actors carry noRewards: all hit/kill payouts, incentive and workshop credit ignore them.
 //   'purchase'    { label, cost, kind, id }              something was bought; kind 'door' | 'weapon' | 'ammo' |
 //                                                        'ammoCache' | 'tier' | 'attachment' | 'wardrobe' | 'fittingRoom' | 'other', id as it was BEFORE
-//                                                        the purchase (buying a gun is kind 'weapon'; a fitting room emits the id of the item equipped)
+//                                                        the purchase (buying a gun is kind 'weapon'; a fitting room emits the id of the item put on, cost 0)
 //                                                        Area purchases also include areaId and openedDoorIds (one charge, many barriers).
 //   'wardrobeChange' { slot, worn, removed }              apparel equipped, item ids (removed is null for an empty slot)
 //   'flashSaleStart' { id, label, categories, discount, seconds, pa: { kicker, text } }   a Flash Sale began (game/flashSales.js)

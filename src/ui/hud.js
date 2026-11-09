@@ -11,6 +11,7 @@ import { createScreens } from './screens.js';
 import { createIncentiveHud } from './incentiveHud.js';
 import { createRitualHud } from './ritualHud.js';
 import { createOrderFormView } from './orderForm.js';
+import { createFittingRoomView } from './fittingRoomPicker.js';
 import { createBagMarker } from './bagMarker.js';
 import { createBirthCertificate } from './birthCertificate.js';
 import { gunLabel } from '../config/workshop.js';
@@ -38,6 +39,8 @@ export function createHud() {
   hud.append(ritualTicket.element);
   const orderFormView = createOrderFormView();
   hud.append(orderFormView.element);
+  const fittingRoomView = createFittingRoomView();
+  hud.append(fittingRoomView.element);
   const bagMarker = createBagMarker();
   hud.append(bagMarker.element);
   const certificate = createBirthCertificate();
@@ -351,6 +354,12 @@ export function createHud() {
       hud.classList.toggle('menu-open', !!view); // (no crosshair over the form)
     },
 
+    // The fitting-room picker: null hides it (game/features/fittingRoomPicker.js view). Same labels as the order form.
+    setFittingRoom(view, labels) {
+      fittingRoomView.update(view, labels);
+      hud.classList.toggle('fitting-open', !!view);
+    },
+
     // A dropped Limited Edition's direction: null hides it (game/features/limitedEditions.js status).
     setLimitedEdition(status) {
       bagMarker.update(status);
@@ -600,8 +609,10 @@ export function createHud() {
       const detail = ['attachment', 'workshop', 'ritual', 'tier', 'wardrobe', 'fittingRoom'].includes(info.kind) ? info.detail ?? '' : '';
       if (detail !== lastInteractDetail) {
         lastInteractDetail = detail;
+        // (detailLines: the Wardrobe's generated stat lines, each an upside or a downside)
+        const tone = new Map((info.detailLines ?? []).map(({ text, good }) => [text, good ? ' interact-good' : ' interact-bad']));
         interactDetail.replaceChildren(...detail.split(' · ').filter(Boolean).map(term => {
-          const line = el('span', term.includes('→') ? 'interact-term interact-change' : 'interact-term');
+          const line = el('span', `${term.includes('→') ? 'interact-term interact-change' : 'interact-term'}${tone.get(term) ?? ''}`);
           line.textContent = term;
           return line;
         }));

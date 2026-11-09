@@ -38,6 +38,7 @@ export const debug = {
     { id: 'god', key: 'KeyG', group: 'Player', label: 'God mode on / off' },
     { id: 'giveGun', key: 'KeyH', group: 'Player', label: 'Give next gun / refill if owned' },
     { id: 'upgradeGun', key: 'KeyU', group: 'Player', label: 'Upgrade held gun one tier (free)' },
+    { id: 'wardrobe', key: 'KeyH', shift: true, group: 'Player', label: 'Give every Wardrobe item' },
 
     { id: 'doors', key: 'KeyO', group: 'Map', label: 'Toggle all doors open / closed' },
     { id: 'arena', key: 'KeyT', group: 'Map', label: 'Test range / return to mall' },
