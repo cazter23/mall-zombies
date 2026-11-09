@@ -7,6 +7,9 @@
 // store the same idea differently (the Confetti Cannon reloads shell by shell, the Nail Gun has no
 // falloff...). weapons/upgrades.js turns effects into the exact stat changes for one gun.
 //
+// WORDS ONLY: the multipliers below are never shown. What a tier or attachment does is told in `lines` next to it (one short line per upside
+// or downside; `effect` says which multiplier sizes the {size} token, bands in config/effectWords.js).
+//
 // EFFECTS (all multipliers; 1 = unchanged):
 //   damage        damage per hit (per pellet / dart / nail)
 //   magazine      magazine size (rounded to a whole number; burst guns to whole bursts)
@@ -27,15 +30,19 @@ export const upgrades = {
   // Each tier has a JOB: Deluxe is handling (a bigger magazine and a quicker reload), Premium is damage, Platinum is more damage plus a claim.
   // `claim`: once per round, a gun that runs completely dry gets its ammo replaced for free (game/warranty.js).
   tiers: [
-    { id: 'standard', name: 'Standard', color: 0x6b7280, effects: {}, holdsUntilRound: 8 }, // every gun starts here
-    { id: 'deluxe', name: 'Deluxe', job: 'Handling', color: 0xb9bec6, effects: { damage: 1.1, magazine: 1.25, reload: 0.85 }, holdsUntilRound: 9 },
-    { id: 'premium', name: 'Premium', job: 'Damage', color: 0xdf9f1f, effects: { damage: 1.45, magazine: 1.1 }, holdsUntilRound: 12 },
-    { id: 'platinum', name: 'Platinum', job: 'Damage and claims', color: 0xf2eefc, effects: { damage: 1.65, magazine: 1.15, reload: 0.9 }, holdsUntilRound: 14, claim: true },
+    { id: 'standard', name: 'Standard', color: 0x6b7280, effects: {}, lines: [], holdsUntilRound: 8 }, // every gun starts here
+    { id: 'deluxe', name: 'Deluxe', job: 'Handling', color: 0xb9bec6, effects: { damage: 1.1, magazine: 1.25, reload: 0.85 }, holdsUntilRound: 9,
+      lines: [{ effect: 'magazine', text: '{Size} bigger magazine' }, { effect: 'reload', text: 'Reloads {size} faster' }, { effect: 'damage', text: '{Size} more damage' }] },
+    { id: 'premium', name: 'Premium', job: 'Damage', color: 0xdf9f1f, effects: { damage: 1.45, magazine: 1.1 }, holdsUntilRound: 12,
+      lines: [{ effect: 'damage', text: '{Size} more damage' }, { effect: 'magazine', text: '{Size} bigger magazine' }] },
+    { id: 'platinum', name: 'Platinum', job: 'Damage and claims', color: 0xf2eefc, effects: { damage: 1.65, magazine: 1.15, reload: 0.9 }, holdsUntilRound: 14, claim: true,
+      lines: [{ effect: 'damage', text: '{Size} more damage' }, { effect: 'magazine', text: '{Size} bigger magazine' }, { effect: 'reload', text: 'Reloads {size} faster' }, { text: 'Run dry? Ammo replaced free, once a round' }] },
   ],
 
   // WARRANTY RENEWALS: past Platinum, bought again and again at the Customer Service desk (prices: economy.js upgrades.renewals). Each one multiplies
   // the gun's damage and magazine a little more, so points still matter late in a run.
-  renewals: { max: 5, effects: { damage: 1.06, magazine: 1.03 }, color: 0xd9885a },
+  renewals: { max: 5, effects: { damage: 1.06, magazine: 1.03 }, color: 0xd9885a,
+    lines: [{ effect: 'damage', text: '{Size} more damage' }, { effect: 'magazine', text: '{Size} bigger magazine' }] },
 
   // TRANSFER: a warranty left behind by a gun you replaced stays on file; the desk moves it onto the gun in hand for this share of that tier's price.
   transfer: { feeFraction: 0.25 },
@@ -54,38 +61,38 @@ export const upgrades = {
   },
   attachments: {
     extendedNozzle: {
-      slot: 'barrel', name: 'Extended Nozzle', blurb: 'Hits hard further out; slower to aim',
-      effects: { falloffRange: 1.6, adsTime: 1.1 },
+      slot: 'barrel', name: 'Extended Nozzle', effects: { falloffRange: 1.6, adsTime: 1.1 },
+      lines: [{ effect: 'falloffRange', text: 'Damage carries {size} further' }, { effect: 'adsTime', good: false, text: 'Aims {size} slower' }],
     },
     sawnOff: {
-      slot: 'barrel', name: 'Sawn-Off', blurb: 'More damage up close; drops off sooner',
-      effects: { damage: 1.2, falloffRange: 0.65 },
+      slot: 'barrel', name: 'Sawn-Off', effects: { damage: 1.2, falloffRange: 0.65 },
+      lines: [{ effect: 'damage', text: '{Size} more damage' }, { effect: 'falloffRange', good: false, text: 'Damage fades {size} sooner' }],
       // On a gun with no falloff (the Nail Gun) it adds this one instead.
       falloffIfNone: { start: 8, end: 22, minMultiplier: 0.65 },
     },
     laserPointer: {
-      slot: 'sight', name: 'Laser Pointer', blurb: 'Tighter hip fire; aimed accuracy unchanged',
-      effects: { hipSpread: 0.65 },
+      slot: 'sight', name: 'Laser Pointer', effects: { hipSpread: 0.65 },
+      lines: [{ effect: 'hipSpread', text: 'Hip fire {size} tighter' }],
     },
     zoomLens: {
-      slot: 'sight', name: 'Zoom Lens', blurb: 'More zoom, tighter aim; slower to aim',
-      effects: { zoom: 0.9, adsSpread: 0.65, adsTime: 1.1 },
+      slot: 'sight', name: 'Zoom Lens', effects: { zoom: 0.9, adsSpread: 0.65, adsTime: 1.1 },
+      lines: [{ effect: 'zoom', text: '{Size} more zoom' }, { effect: 'adsSpread', text: 'Aimed shots {size} tighter' }, { effect: 'adsTime', good: false, text: 'Aims {size} slower' }],
     },
     gripTape: {
-      slot: 'grip', name: 'Grip Tape', blurb: 'Less recoil for controlled sustained fire',
-      effects: { recoil: 0.65 },
+      slot: 'grip', name: 'Grip Tape', effects: { recoil: 0.65 },
+      lines: [{ effect: 'recoil', text: '{Size} less recoil' }],
     },
     wristband: {
-      slot: 'grip', name: 'Wristband', blurb: 'Faster to aim; more recoil',
-      effects: { adsTime: 0.7, recoil: 1.1 },
+      slot: 'grip', name: 'Wristband', effects: { adsTime: 0.7, recoil: 1.1 },
+      lines: [{ effect: 'adsTime', text: 'Aims {size} faster' }, { effect: 'recoil', good: false, text: '{Size} more recoil' }],
     },
     jumboPack: {
-      slot: 'magazine', name: 'Jumbo Pack', blurb: 'Bigger magazine; slower reload',
-      effects: { magazine: 1.5, reload: 1.2 },
+      slot: 'magazine', name: 'Jumbo Pack', effects: { magazine: 1.5, reload: 1.2 },
+      lines: [{ effect: 'magazine', text: '{Size} bigger magazine' }, { effect: 'reload', good: false, text: 'Reloads {size} slower' }],
     },
     speedLoader: {
-      slot: 'magazine', name: 'Speed Loader', blurb: 'Faster reload; smaller magazine',
-      effects: { reload: 0.65, magazine: 0.9 },
+      slot: 'magazine', name: 'Speed Loader', effects: { reload: 0.65, magazine: 0.9 },
+      lines: [{ effect: 'reload', text: 'Reloads {size} faster' }, { effect: 'magazine', good: false, text: '{Size} smaller magazine' }],
     },
   },
 };

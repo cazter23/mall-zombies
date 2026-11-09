@@ -25,8 +25,10 @@ src/
                         stop fade. Bell anchors to feel.death.resultsDelay; played once through sound's music/master buses
     powerUps.js         Employee-incentive drop tuning, skill credit, round caps, pickup/zone durations, ammo top-up,
                         sweep strength, colors and PA lines. First round 2, 12-16 credit per drop, maximum 3 per round
-    wardrobe.js         Apparel items, four slots, stat multipliers, joke line, signature colour and icon id per item, `statLabels` (how each stat
-                        reads on a ticket), rack locations, fitting-room placards and the picker's close distance.
+    effectWords.js      THE WORDS-ONLY RULE: players never see an upgrade's effect as a number. The fixed size bands (a little / noticeably / much), sizeWord / fillSize
+                        for the `{size}` / `{Size}` tokens in a config line, describeEffects, discountWord (sales) and hasStatNumber (the detector the tests use).
+    wardrobe.js         Apparel items, four slots, stat multipliers, joke line, signature colour, icon id and `lines` (the words for each upside / downside) per item,
+                        `statBetter` (which direction of a stat is good), rack locations, fitting-room placards and the picker's close distance.
     shoppers.js         Cosmetic-only Shopper wardrobe: coordinated palettes/profiles, shirts/layers, bottoms, hair,
                         modest width variations, accessories and wear. Parts are data; combat never reads this file.
     impacts.js          Cosmetic impact cap (200), Cannon budget (2 clusters), projection/edge tolerances and gun signatures
@@ -176,7 +178,7 @@ src/
                         nearest target in a 40deg cone within 1.8m (walls block); cancels reload; isBusy blocks
                         the gun; takeHit({ melee: true }) so kills count as melee. Attack heading is committed
                         until impact; hit recovery 0.22s, miss recovery 0.5s (total 0.37/0.65s)
-    upgrades.js         Upgrades -> mods (pure): withTier(base, mods, tierId) / withAttachment(base, mods, id) return a NEW
+    upgrades.js         Upgrades -> mods (pure); attachmentLines(id) / tierLines(id) / renewalLines() = what an upgrade does in words; withTier(base, mods, tierId) / withAttachment(base, mods, id) return a NEW
                         mod list (mod ids 'tier' and 'attachment:<slot>'; other mods such as Build-A-Blaster untouched),
                         tierOf / nextTier / attachmentsOf read them back, attachmentFits(base, id) (Extended Nozzle doesn't
                         fit the Nail Gun). EFFECTS turns each effect into this gun's stat changes (shell-by-shell reload
@@ -213,7 +215,6 @@ src/
                         resetting its animation; fire/dryFire also sync stats before the next rendered frame. Wiggles scale way down in ADS.
                         update(frameTime, camera, { weapon, shownDef, switchLower, aimAmount, meleeProgress, player }); `worldLight`
                         (added to the world scene by main); getMuzzleWorldPosition(); reset()
-    attachmentComparison.js Compares fully resolved builds: magazine, reload, damage, range, accuracy, aim time and recoil.
     models/             First-person weapon models. index.js = registry (viewmodel.model -> { model, display }
                         builders) + the model interface ({ root, muzzle, animate({ sinceFire, reloadProgress,
                         reloadWeight }), leftHandVisible }); buildWeaponDisplay(def) = the gun alone (wall buys).
@@ -371,8 +372,8 @@ src/
                         A kill whose type has guaranteedDrop (Employee of the Month) queues a reward the same way, any
                         useful type by weight, outside the meter and its rotation.
     wardrobe.js         g.wardrobe: per-run ownership, equipped slots and reversible player stat factors. buy(id), wear(id) (anything owned),
-                        ownedIn(slot), grantAll() (debug), and the ticket formatter: statLines(id) / ticketDetail(id) from the stats as they are now;
-                        wornLines(id) = what a WORN item is doing (before = the stat without it), for the pause screen's rail.
+                        ownedIn(slot), grantAll() (debug), and the ticket words: statLines(id) / ticketDetail(id) from the item's own `lines` (no numbers);
+                        wornLines(id) = the same words for a WORN item, for the pause screen's rail.
     outfitRail.js       g.outfitRail: the DOM-free half of the outfit rail. Decides when a WORN item's tag pulses (each item names its trigger in
                         config/wardrobe.js `pulse`; `triggers` lists the ten: regenStart, playerHit, hitCushioned, payingKill, meleeHit, headshot,
                         sprintStart, slideStart, aimStart, ammoRefill), counts pulses (pulseCount / pulses), announces 'outfitPulse', and gives

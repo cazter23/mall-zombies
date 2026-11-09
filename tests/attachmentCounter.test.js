@@ -81,7 +81,7 @@ test('no prompt for an attachment the gun already has, one that does nothing on 
   standAt('laserPointer'); t.tick(1);
   assert.equal(g.interactions.prompt, null, 'mid switch');
   t.tick(40);
-  assert.equal(g.interactions.prompt?.label, 'Laser Pointer on the Price Gun · Tighter hip fire; aimed accuracy unchanged', 'names the gun in hand');
+  assert.equal(g.interactions.prompt?.label, 'Laser Pointer on the Price Gun', 'names the gun in hand');
   assert.equal(g.interactions.prompt.verb, 'fit');
   // A fresh game: the Food Court is shut.
   const fresh = headlessGame();

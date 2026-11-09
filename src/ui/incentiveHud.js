@@ -59,7 +59,7 @@ export function createIncentiveHud() {
         const count = effect.charges != null ? ` · ${effect.charges} LEFT` : effect.healing != null ? ` · ${Math.ceil(effect.healing)} HP LEFT` : '';
         return { title: `${def.name} · ${Math.ceil(effect.remaining)}s${count}`, hint: def.hint, teach: teaching.has(effect.id) };
       });
-      if (active) rows.unshift({ title: `BLUE LIGHT SPECIAL · ${Math.ceil(active.remaining)}s`, hint: 'DOUBLE KILL CREDIT IN BLUE ZONE', teach: teaching.has('blueLightSpecial') });
+      if (active) rows.unshift({ title: `BLUE LIGHT SPECIAL · ${Math.ceil(active.remaining)}s`, hint: 'BONUS KILL CREDIT IN BLUE ZONE', teach: teaching.has('blueLightSpecial') });
       zone.replaceChildren(...rows.map(({ title, hint, teach }) => {
         const row = document.createElement('div'); row.className = 'incentive-effect';
         const name = document.createElement('strong'); name.textContent = title;

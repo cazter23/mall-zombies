@@ -102,12 +102,14 @@ test('attachment tickets name replacements and tradeoffs; warranty tickets follo
   t.standAt(spot.position.x + spot.normal.x * 1.3, spot.position.z + spot.normal.z * 1.3,
     Math.atan2(spot.normal.x, spot.normal.z) * 180 / Math.PI);
   assert.equal(g.interactions.prompt.title, 'Grip Tape');
-  assert.match(g.interactions.prompt.detail, /Kick:.*→/);
+  assert.match(g.interactions.prompt.detail, /less recoil/i);
+  assert.ok(!/\d/.test(g.interactions.prompt.detail), 'words only: ' + g.interactions.prompt.detail);
   assert.match(g.interactions.prompt.detail, /Replaces Wristband/);
   assert.ok(!g.interactions.prompt.detail.includes(g.gun.def.name), 'compact terms omit redundant weapon name');
   const desk = featuresOf(g.map, 'upgradeDesk')[0];
   t.standAt(desk.position.x, desk.position.z - 1.4, 180);
-  assert.match(g.interactions.prompt.detail, /Standard → Deluxe/);
+  assert.match(g.interactions.prompt.detail, /Standard → Deluxe warranty · .*bigger magazine.*Reloads .* faster/);
+  assert.ok(!/\d/.test(g.interactions.prompt.detail), 'words only: ' + g.interactions.prompt.detail);
   assert.equal(g.interactions.prompt.title, 'Standard → Deluxe');
   t.press('KeyF', 30);
   assert.match(g.interactions.prompt.detail, /Deluxe → Premium/);

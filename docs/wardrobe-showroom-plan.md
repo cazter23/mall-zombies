@@ -84,15 +84,21 @@ Sleeves: `weapons/models/arms.js` builds the polo sleeve per gun model (`buildCu
 Tag those meshes (`userData.sleevePart`) and give the viewmodel one `setSleeves(style)` that swaps their material across every gun model.
 Legs and shoes: `player/body.js` already has `shoeMat` and `soleMat`; add a `setShoes(style)`.
 
-## 3. Clarity: tickets that say what happens
+## 3. Clarity: tickets that say what happens (WORDS ONLY)
 
-- **Generated stat lines with numbers**, never hand-written: a formatter in `game/wardrobe.js` (DOM-free) turns each factor into
-  "Max health 100 → 125", "Sprint 4.0 s → 3.2 s", "Reload 15% faster", using the player's CURRENT stats, so it's right with other items and
-  incentives on. Labels and units per stat live in `config/wardrobe.js` (`statLabels`).
+Design decision (9 November 2026): the player never sees what an upgrade does as a number. No percentages, multipliers, "100 → 125", seconds or damage
+values in any ticket, prompt, pause line or receipt (prices, points, ammo counts, round, the health and sprint bars and countdown timers stay).
+The rule and its one set of size words live in `config/effectWords.js`.
+
+- **One short line per upside and downside, written in the item's own config entry** (`lines` in `config/wardrobe.js`): "Reloads {size} faster",
+  "{Size} more health", "Sprints {size} shorter". Never built from the numbers. Where the size matters the line carries `{size}` / `{Size}`, filled from
+  FIXED BANDS defined once (a little / noticeably / much, by how big the factor's change is), so retuning a factor moves the word with it. Whether a line
+  is an upside (green) or a downside (red) follows the factor's direction (`statBetter`). `g.wardrobe.statLines(id)` / `wornLines(id)` return them.
 - The ticket title is the item, then one line of joke (the ticket line from the original plan), then the green upsides and red downsides.
-- At a fitting room or a showpiece of the same slot, the ticket compares: "replaces Hi-Vis Vest: Reload 15% faster → Max health 125".
-- The buying moment's PA line and a one-time card "NEW LOOK: Cardigan · Max health 125 · Sprint 3.2 s" (the announcement queue) so the first
-  purchase teaches what the item does even if you skipped the ticket.
+- At a fitting room or a showpiece of the same slot, the ticket says "Replaces Hi-Vis Vest" (no number comparison: the new item's own lines are what you get).
+- The buying moment's PA line says what the item is, so the first purchase teaches what it does even if you skipped the ticket (no numbers there either).
+- The same rule covers the rest of the game's upgrades: attachment counters, Extended Warranty tiers and the upgrade desk, Build-A-Blaster blurbs,
+  incentive hints and Flash Sale lines ("much cheaper"). tests/effectWords.test.js fails on a digit followed by %, x, s, m, ° or an arrow in any of them.
 
 ## 4. The outfit rail (HUD)
 
@@ -106,7 +112,7 @@ Replaces the four grey chips, bottom left above the health bar.
   'kill' that paid, Paper Hat when health starts regenerating, Foam Finger on a melee hit, Light-Ups/Orthopedics/Wheelies on sprint/slide start,
   Fanny Pack on a refill above the base cap, Aviators when aiming starts, 3D Glasses on a headshot. You learn what an item does by seeing it work.
   Needs one new event, 'regenStart' (player/health.js, listed in events.js); the others already exist or are read from the player.
-- **Tag hover / pause screen**: the pause screen shows the rail large with each tag's stat lines (the same formatter as 3).
+- **Tag hover / pause screen**: the pause screen shows the rail large with each tag's lines (the same words as 3).
 - **Death receipt**: the results screen prints "DIED WEARING:" with the four tags (phase 4 of the original plan).
 
 ## 5. Fitting rooms: a picker, not a queue
@@ -136,9 +142,9 @@ Check each with `npm run balance` (no change with no items) and a headless measu
 ## Phases
 
 ### 1. Fitting-room picker, numbers and the rail's data (Opus or Sol)
-`wear(id)`, the picker in the fitting-room feature, the stat formatter and `statLabels`, the number changes, the damage-multiplier move,
+`wear(id)`, the picker in the fitting-room feature, the ticket lines (words only, see 3: first built as numbers, changed to words by the same day's decision), the number changes, the damage-multiplier move,
 'regenStart', colours and icon ids in config, and the missing v1 pieces: a debug command that grants every item, and the limits test.
-Done when: every one of the 81 outfits is reachable (test), tickets show correct numbers with incentives running, Play again is clean.
+Done when: every one of the 81 outfits is reachable (test), tickets say what each item does in words only, Play again is clean.
 
 ### 2. Showpieces (Sonnet or Luna; one area at a time)
 Survey spots headless (clear approach, no spawn lane, prompt focus, coplanar), then build the twelve showpieces with idle, sold-out state,
@@ -155,7 +161,7 @@ Done when: every item shows on the player in first person or the HUD, and swappi
 
 ## Tests to add
 - Picker: all 81 outfits reachable; picker closes on a hit or walking away; it never costs points or spends a discount.
-- Formatter: every factor in config has a label; the lines match the stats before and after wearing, with an incentive running.
+- Words: every factor has a direction and exactly one line in its item; no ticket, pause line or rail line carries a number (tests/effectWords.test.js, tests/wardrobe.test.js).
 - Rail triggers: each event pulses only its item's tag (DOM-free: the HUD reads a `g.wardrobe.pulses` list or listens; test the list).
 - Showpieces: coplanar and standable rules, sold-out state on purchase, back to unsold on Play again.
 - Limits (from v1's plan): no item raises `jumpVelocity`, `vaultMaxHeight` or `walkSpeed`; sprint stays under the Cart charge.

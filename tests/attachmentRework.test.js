@@ -4,9 +4,8 @@ import { headlessGame } from './helpers/headlessGame.js';
 import { attachmentCounterItem } from '../src/game/features/attachmentCounter.js';
 import { weapons } from '../src/config/weapons.js';
 import { upgrades } from '../src/config/upgrades.js';
-import { attachmentFits, withAttachment, withTier } from '../src/weapons/upgrades.js';
+import { attachmentFits, attachmentLines, withAttachment, withTier } from '../src/weapons/upgrades.js';
 import { resolveGun } from '../src/weapons/gunStats.js';
-import { attachmentComparison } from '../src/weapons/attachmentComparison.js';
 import { Weapon } from '../src/weapons/weapon.js';
 import { economy } from '../src/config/economy.js';
 
@@ -42,7 +41,7 @@ test('real counter purchases unlock for the run; swaps and replacement weapons r
     g.pricing.setDiscount('attachment', 0);
     assert.equal(fit('speedLoader'), 1000);
     assert.equal(counter('jumboPack').cost, 0);
-    assert.match(counter('jumboPack').detail, /Owned this run.*Magazine:.*→/);
+    assert.match(counter('jumboPack').detail, /Owned this run.*bigger magazine.*Reloads .* slower/);
     const total = g.gun.weapon.magazine + g.gun.weapon.reserve;
     assert.equal(fit('jumboPack'), 0); assert.equal(g.gun.weapon.magazine + g.gun.weapon.reserve, total);
     g.gun.give(weapons.priceGun); t.tick(40);
@@ -76,6 +75,6 @@ test('all four-slot builds resolve with whole counts and meaningful comparisons 
     const gun = resolveGun(base, mods);
     assert.ok(Number.isInteger(gun.magazineSize) && gun.magazineSize > 0);
     assert.ok(gun.damage > 0 && gun.ads.seconds > 0 && gun.recoil.pitchDegrees > 0);
-    for (const id of choices[3]) assert.ok(typeof attachmentComparison(gun, mods, id) === 'string');
+    for (const id of choices[3]) assert.ok(attachmentLines(id).length > 0, `${id} says what it does`);
   }
 });
