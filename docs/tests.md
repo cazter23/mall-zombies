@@ -186,6 +186,12 @@ Limits: no item raises jump, vault height or walk speed, and the fastest outfit 
 'playerHit' but not a fall; 'regenStart' fires once per recovery; the debug command grants everything without undressing you; the
 aim-assist multiplier scales the rotational follow on a controller only.
 The Wardrobe test also checks solid clearance, label sightlines and room culling from four angles per display.
+`tests/showpieces.test.js` covers the Food Court showpieces: a clear 2.4 m approach (in or along the front), the shop door lane free of their solids,
+no spawn within 2.5 m, prompts 1.2 m apart and each its own item's, the standable rule (step / vaultable / 2.1 m, nothing climbable on the roof),
+a clear sight line from across the entrance doorway to each one's tallest part (the burger lid, the NO RUNNING sign, the fingertip), the burger
+under the 6 m ceiling at the top of its bob and its pose with the duct gap above Burger Barn leaving it room,
+no coplanar faces against each other or the mall, idle motion while unsold, the buying pose (still lit, PA line, 'wardrobeBuy') then still + dim +
+SOLD OUT card and banner, Play again unsold, and the motif only within range while unsold.
 `tests/coplanar.test.js` checks the new signs and axis-aligned display faces against nearby surfaces.
 
 `attachmentCounter.test.js` the store counters in the real game/mall (every attachment at its store, real F buys fit the gun in

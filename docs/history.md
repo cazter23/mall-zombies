@@ -1,5 +1,21 @@
 # Sunset Galleria: build history ("Current state")
 
+## 9 November 2026 - Wardrobe showroom, phase 2 sample: the three Food Court showpieces
+
+The first three showpieces of docs/wardrobe-showroom-plan.md section 1, built as the sample to approve before the other nine.
+
+- **Paper Hat burger** on Burger Barn's roof (lid bobs, steam puffs, a neon strip + PAPER HATS sign) with a hat chute: hats drop into a tray on the counter
+  where you buy. **Wheelie Sneakers ramp** on the court floor (a vaultable 0.9 m wedge, skid marks, hazard apron, giant sneaker with spinning heel wheels,
+  NO RUNNING sign on a post with a neon frame). **Foam Finger**: a 3 m finger waggling out of a pennant bin with a neon ring sliding up it.
+- The Wheelies and Foam Finger moved from INSIDE Good Sports (invisible from the court) to the court floor (the Wheelies at its east window, the Foam Finger out on the open court floor: a pillar hides its west half from the entrance).
+- Shared behaviour in showpiece.js: idle motion while unsold; on a buy the motion snaps to a pose for 1.1 s with a spotlight cone on the buyer and the PA
+  line ('wardrobeBuy' event, read by createGame's PA wiring); then it goes still, glows and signs dim, and a card reads SOLD OUT · IN YOUR SIZE. Play again
+  brings it back. A 2-3 note motif per item (config/audio.js motifPaperHat / motifWheelie / motifFoamFinger) hums within 8 m while unsold.
+- Survey findings: a 6 m pillar at (-13, -11.3) in front of Good Sports' door hides that shop's west half from the entrance, so the Foam Finger stands on the open court
+  floor north of it (a sight-line test guards every showpiece). The Food Court's exhaust duct (y 5.5-5.85) ran through the roof burger's space: atmosphere.js now
+  leaves a 2.3 m gap in it over Burger Barn (x -6.9..-4.6) and drops that stall's riser. Sold-out = still, dim glow and signs, greyed moving parts, a red SOLD OUT banner.
+- Numbers: config/wardrobe.js `showpieces`. Not built yet: the other nine showpieces, the on-you looks, the rail.
+
 ## 9 November 2026 - Wardrobe showroom rework, phase 1: the picker, numbers on tickets, new numbers
 
 Phase 1 of docs/wardrobe-showroom-plan.md (the logic and data; no showpieces, outfit rail or on-body visuals yet).

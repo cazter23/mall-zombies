@@ -549,7 +549,8 @@ test('apparel displays clear the solid map and stay visible from their aisle vie
   const ray = new Raycaster();
   ray.layers.enableAll();
 
-  for (const spot of g.map.features.filter(f => f.kind === 'wardrobeRack' || f.kind === 'fittingRoom')) {
+  // (Showpieces are checked in tests/showpieces.test.js.)
+  for (const spot of g.map.features.filter(f => (f.kind === 'wardrobeRack' && !f.showpiece) || f.kind === 'fittingRoom')) {
     const display = group.getObjectByName(spot.name);
     const labels = display.children.filter(mesh => mesh.geometry.type === 'PlaneGeometry');
     assert.ok(labels.length > 0, spot.name);

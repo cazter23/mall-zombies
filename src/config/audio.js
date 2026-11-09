@@ -480,6 +480,33 @@ export const audio = {
       ],
     },
 
+    // Wardrobe showpiece motifs (config/wardrobe.js showpieces): the mall chime family, 2-3 soft bell notes per item, hummed while the item is unsold.
+    motifPaperHat: { // order-up bell: two quick dings and a lower one
+      volume: 0.4,
+      layers: [
+        { type: 'tone', wave: 'sine', freq: 1175, gain: 0.4, attack: 0.004, decay: 0.3 },
+        { type: 'tone', wave: 'sine', freq: 1175, gain: 0.4, attack: 0.004, decay: 0.3, delay: 0.16 },
+        { type: 'tone', wave: 'triangle', freq: 880, gain: 0.35, attack: 0.004, decay: 0.5, delay: 0.34 },
+      ],
+    },
+    motifWheelie: { // a rising whirr into a ding
+      volume: 0.4,
+      layers: [
+        { type: 'tone', wave: 'triangle', freq: 523, freqEnd: 1047, gain: 0.3, attack: 0.01, decay: 0.26 },
+        { type: 'noise', filter: 'bandpass', freq: 2600, q: 1.5, gain: 0.12, attack: 0.01, decay: 0.24 },
+        { type: 'tone', wave: 'sine', freq: 1568, gain: 0.4, attack: 0.004, decay: 0.45, delay: 0.26 },
+      ],
+    },
+    motifFoamFinger: { // a stadium fanfare: da-da-DAA
+      volume: 0.4,
+      layers: [
+        { type: 'tone', wave: 'triangle', freq: 659, gain: 0.35, attack: 0.006, decay: 0.16 },
+        { type: 'tone', wave: 'triangle', freq: 784, gain: 0.35, attack: 0.006, decay: 0.16, delay: 0.17 },
+        { type: 'tone', wave: 'triangle', freq: 1047, gain: 0.45, attack: 0.006, decay: 0.6, delay: 0.34 },
+        { type: 'tone', wave: 'sine', freq: 2093, gain: 0.08, attack: 0.006, decay: 0.4, delay: 0.34 },
+      ],
+    },
+
     // Bought something: a cash-register "ka-ching" (drawer clunk + two bell tones).
     purchase: {
       volume: 0.6,

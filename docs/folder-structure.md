@@ -415,6 +415,8 @@ src/
       clearanceRack.js  Clearance Rack tags on up to three zombies; a headshot on a tagged zombie pops them all.
       clearanceSticker.js The canvas sticker drawn on tagged zombies.
       wardrobeFixtures.js Wardrobe racks (buy: the generated ticket) and fitting rooms (free: the hold opens that room's picker; its instance has `view`).
+                          A rack with a `showpiece` also syncs the sold-out state to its fixture each tick, hums its motif (config/audio.js) while you are within
+                          config/wardrobe.js showpieces.motifRange, and on a buy strikes the pose and emits 'wardrobeBuy' (the PA line).
       fittingRoomPicker.js The fitting-room picker: slots side by side, menu actions pick a slot and an owned item, confirm wears it (wardrobe.wear).
                         Sets state.menu while open; closes on back, a 'playerHit', being moved away, death, reset. DOM-free; `view` is what the UI draws.
       horror.js         Feature kind 'horror': the mall decays as the rounds climb (config/look.js horror). Visual only, never gameplay.
@@ -555,6 +557,8 @@ src/
                         geometry is merged by material alongside the rest of the Mart dressing (no per-product draw calls).
     mall/palette.js     COLORS shared by the mall's rooms and props
     mall/wardrobeDisplays.js Twelve static apparel displays and three fitting badges. Visual mounts are separate from the buy and swap anchors.
+    mall/wardrobeShowpieces/showpiece.js  The base every Wardrobe showpiece shares: a Group named after the map feature with a `still` half (merged by the static batcher) and a `live` half (userData.dynamic: idle motion, own glow materials, signs, the buying cone); returns a handle (update / setSold / pose / reset) that game/features/wardrobeFixtures.js drives.
+    mall/wardrobeShowpieces/foodCourt.js  The first three showpieces: Paper Hat (burger on Burger Barn's roof + a hat chute), Wheelie Sneakers (skate ramp with spinning heels, in front of Good Sports' east window) and Giant Foam Finger (waggling out of a pennant bin on the open court floor). mall.js uses them instead of the plain rack display (wardrobeSpot).
     mall/workshopDetails.js Build-A-Blaster's detail pass: skins wall, heart shelf, till, footprints, window, plush, ceiling grid (storefront); hoppers and pipes, QC desk, rollers, booth props, portraits, lockers, safety signs, corner clutter, floor markings, beams, wainscot, neon (hall). Numbers: config/promenade.js workshop.details.
     mall/workshopRoom.js The Build-A-Blaster storefront and back hall (island, booth, lever, chute) and their dressing. Layout numbers: config/promenade.js workshop.
     mall/atmosphere.js  Cosmetic map dressing, batched by material; adds no colliders.
