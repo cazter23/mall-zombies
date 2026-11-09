@@ -73,8 +73,8 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
     if (id !== 'stockroomDelivery') return true;
     return gun.slots.some((id) => {
       const w = gun.weaponFor(id);
-      const max = w.def.magazineSize + w.def.startingReserve;
-      const canAdd = w.reserve < w.def.startingReserve || (w === gun.weapon && !w.isReloading && !w.isShellReload
+      const max = w.def.magazineSize + w.reserveCap;
+      const canAdd = w.reserve < w.reserveCap || (w === gun.weapon && !w.isReloading && !w.isShellReload
         && w.magazine < Math.ceil(w.def.magazineSize * config.types.stockroomDelivery.magazineFraction));
       return canAdd && w.magazine + w.reserve < max * config.nearFullFraction;
     });
@@ -204,7 +204,7 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
       return true;
     },
 
-    // The only payout modifier: just the base kill value, never hit/head/melee bonuses.
+    // Blue Light Special boosts just the base kill value, never hit/head/melee bonuses.
     killMultiplier(position) {
       if (!active || state.over || Math.abs(position.y - active.position.y) > config.floorTolerance) return 1;
       if (Math.hypot(position.x - active.position.x, position.z - active.position.z) > active.radius) return 1;

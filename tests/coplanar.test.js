@@ -28,7 +28,12 @@ function facesOf(mesh) {
   const p = mesh.position;
   const out = [];
   if (g.type === 'BoxGeometry') {
-    const { width: w, height: h, depth: d } = g.parameters;
+    if (mesh.rotation.x || mesh.rotation.z) return out;
+    const { width, height: h, depth } = g.parameters;
+    const turns = mesh.rotation.y / (Math.PI / 2);
+    if (Math.abs(turns - Math.round(turns)) > 1e-6) return out;
+    const sideways = Math.abs(Math.round(turns)) % 2 === 1;
+    const [w, d] = sideways ? [depth, width] : [width, depth];
     const min = [p.x - w / 2, p.y - h / 2, p.z - d / 2];
     const max = [p.x + w / 2, p.y + h / 2, p.z + d / 2];
     for (let a = 0; a < 3; a++) {
@@ -81,7 +86,8 @@ test('no coplanar (flickering) surfaces inside the stores, the Customer Service 
     minZ: LAYOUT.cinemaStairs.shaft.minZ - .4, maxZ: LAYOUT.cinemaStairs.shaft.maxZ + .4 });
   regions.push({ name: 'cinemaReturn', minX: LAYOUT.cinemaStairs.returnHall.minX - .4, maxX: LAYOUT.cinemaStairs.connector.maxX + .4,
     minZ: LAYOUT.cinemaStairs.connector.minZ, maxZ: LAYOUT.cinemaStairs.returnHall.maxZ + .4 });
-  const inRegion = (m) => regions.some((r) => m.position.x > r.minX && m.position.x < r.maxX && m.position.z > r.minZ && m.position.z < r.maxZ
+  const apparelSigns = new Set(map.features.filter((f) => f.kind === 'wardrobeRack' || f.kind === 'fittingRoom').map((f) => f.name));
+  const inRegion = (m) => apparelSigns.has(m.parent?.name) || regions.some((r) => m.position.x > r.minX && m.position.x < r.maxX && m.position.z > r.minZ && m.position.z < r.maxZ
     && (r.minY === undefined || m.position.y >= r.minY) && (r.maxY === undefined || m.position.y < r.maxY));
 
   const all = [];

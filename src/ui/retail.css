@@ -250,6 +250,23 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   left: 24px; bottom: 32px; padding: 0; gap: 6px; border: 0;
   border-radius: 0; background: none; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none;
 }
+.wardrobe-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: min(220px, 40vw);
+  gap: 2px;
+}
+.wardrobe-strip[hidden] { display: none; }
+.wardrobe-slot {
+  padding: 2px 5px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font: 700 var(--ui-caption, 11px)/1.4 var(--font-ui);
+  background: #241929ed;
+  color: #d3c1d3;
+}
+.wardrobe-slot.equipped { color: #fff1d7; }
 .health, .sprint { width: 220px; border-radius: 0; background: #1a111db3; box-shadow: 0 0 0 1px #100c15b3, 0 1px 3px #0006; }
 .health { height: 7px; }
 .sprint { height: 3px; }

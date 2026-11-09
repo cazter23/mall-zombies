@@ -17,6 +17,7 @@ import { gunLabel } from '../config/workshop.js';
 import { createAnnouncements } from './announcements.js';
 import { ui } from '../config/ui.js';
 import { upgrades } from '../config/upgrades.js';
+import { wardrobeItems, wardrobeSlots } from '../config/wardrobe.js';
 import { createBossFlashView } from './bossFlash.js';
 import { createNoticeHistory } from './noticeHistory.js';
 
@@ -229,7 +230,27 @@ export function createHud() {
   sprint.setAttribute('role', 'meter');
   sprint.setAttribute('aria-valuemin', '0'); sprint.setAttribute('aria-valuemax', '100');
   sprint.append(sprintFill);
-  vitals.append(health, sprint);
+  const outfit = el('div', 'wardrobe-strip');
+  outfit.setAttribute('role', 'group');
+  outfit.setAttribute('aria-label', 'Equipped wardrobe');
+  const outfitSlots = Object.fromEntries(Object.keys(wardrobeSlots).map((slot) => {
+    const chip = el('span', 'wardrobe-slot');
+    outfit.append(chip);
+    return [slot, chip];
+  }));
+  function setOutfitSlot(slot, id) {
+    const item = wardrobeItems[id];
+    const chip = outfitSlots[slot];
+    chip.textContent = item?.shortName ?? `${wardrobeSlots[slot]} —`;
+    chip.title = `${wardrobeSlots[slot]}: ${item?.name ?? 'Empty'}`;
+    chip.classList.toggle('equipped', !!item);
+  }
+  function clearOutfit() {
+    outfit.hidden = true;
+    for (const slot of Object.keys(outfitSlots)) setOutfitSlot(slot, null);
+  }
+  clearOutfit();
+  vitals.append(outfit, health, sprint);
   hud.append(vitals);
 
   // FPS counter (Settings > Video), top right.
@@ -295,12 +316,18 @@ export function createHud() {
       phoneFlash.connect(events);
       events.on('purchase', ({ label, kind, id, cost }) => {
         clearTimeout(purchaseTimer);
-        purchaseStamp.textContent = kind === 'workshop' || kind === 'ritual' ? label : `${kind === 'attachment' && cost === 0 ? 'Refitted' : 'Purchased'}: ${kind === 'attachment' ? upgrades.attachments[id]?.name ?? label : label}`;
+        purchaseStamp.textContent = kind === 'fittingRoom' ? `Changed into ${label}`
+          : kind === 'workshop' || kind === 'ritual' ? label : `${kind === 'attachment' && cost === 0 ? 'Refitted' : 'Purchased'}: ${kind === 'attachment' ? upgrades.attachments[id]?.name ?? label : label}`;
         purchaseStamp.classList.remove('show');
         void purchaseStamp.offsetWidth;
         purchaseStamp.classList.add('show');
         purchaseTimer = setTimeout(() => purchaseStamp.classList.remove('show'), ui.purchaseSeconds * 1000);
       });
+      events.on('wardrobeChange', ({ slot, worn }) => {
+        setOutfitSlot(slot, worn);
+        outfit.hidden = false;
+      });
+      events.on('runReset', clearOutfit);
       events.on('runReset', clearNotices);
       events.on('runReset', () => { history.clear(); incentives.reset(); });
       events.on('playerDeath', clearNotices);
@@ -570,7 +597,7 @@ export function createHud() {
       interactOriginal.hidden = !info.sale || !(info.originalCost > info.cost);
       interactOriginal.textContent = `${(info.originalCost ?? info.cost).toLocaleString('en-US')}`;
       // Ordinary purchases need one line. Keep the terms only where they affect an upgrade decision.
-      const detail = ['attachment', 'workshop', 'ritual', 'tier'].includes(info.kind) ? info.detail ?? '' : '';
+      const detail = ['attachment', 'workshop', 'ritual', 'tier', 'wardrobe', 'fittingRoom'].includes(info.kind) ? info.detail ?? '' : '';
       if (detail !== lastInteractDetail) {
         lastInteractDetail = detail;
         interactDetail.replaceChildren(...detail.split(' · ').filter(Boolean).map(term => {

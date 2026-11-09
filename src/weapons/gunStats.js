@@ -43,7 +43,7 @@ export function damageFalloff(distance, falloff) {
  *   chargeScale: optional charge damage multiplier (1 by default)
  */
 export function hitDamage(def, hit, index, stats, chargeScale = 1) {
-  const head = hit.part === 'head' ? def.headshotMultiplier : 1;
+  const head = hit.part === 'head' ? def.headshotMultiplier * (stats.headshotDamageMultiplier ?? 1) : 1;
   const pierce = def.pierce ? def.pierce.damageFalloff[Math.min(index, def.pierce.damageFalloff.length - 1)] : 1;
   return def.damage * chargeScale * head * damageFalloff(hit.distance, def.falloff) * pierce * stats.damageMultiplier;
 }

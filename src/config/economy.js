@@ -113,6 +113,13 @@ export const economy = {
     },
   },
 
+  wardrobe: {
+    paperHat: 750, aviators: 1250, glasses: 1500,
+    cardigan: 2500, sandwichBoard: 1500, hiVisVest: 1250,
+    lightUpSneakers: 1250, orthopedicWalkers: 1000, wheelieSneakers: 1000,
+    fannyPack: 1500, foamFinger: 750, goldCard: 2000,
+  },
+
   // Ammo cache (the vending machine in the Food Court): refills the gun in your hand, any gun, one flat price.
   ammoCache: { price: 400 },
 
@@ -152,6 +159,11 @@ export const economy = {
         id: 'attachments', label: 'Gun attachments', categories: ['attachment'], weight: 1,
         start: { kicker: 'Flash sale', text: 'Gun attachments are {pct}% off in every store! Today only. (Today is all there is.)' },
         end: { kicker: 'Sale over', text: 'The attachment sale has ended. Please remove your shopping from the zombies.' },
+      },
+      {
+        id: 'apparel', label: 'Apparel', categories: ['wardrobe'], weight: 1,
+        start: { kicker: 'Flash sale', text: 'Apparel is {pct}% off! Try before you die.' },
+        end: { kicker: 'Sale over', text: 'The apparel sale has ended. Fitting rooms are still free.' },
       },
     ],
   },

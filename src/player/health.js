@@ -30,7 +30,7 @@ export function createPlayerHealth({ stats, onDeath }) {
 
     takeDamage(amount) {
       if (dead || amount <= 0 || this.invulnerable) return;
-      stats.health = Math.max(0, stats.health - amount);
+      stats.health = Math.max(0, stats.health - amount * (stats.damageTakenMultiplier ?? 1));
       sinceHit = 0;
       flash = feel.health.hitFlashSeconds;
       if (stats.health <= 0) {

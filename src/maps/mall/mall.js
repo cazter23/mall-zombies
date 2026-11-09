@@ -36,6 +36,8 @@ import { createMallProps } from './props.js';
 import { COLORS } from './palette.js';
 import { debug } from '../../config/debug.js';
 import { economy } from '../../config/economy.js';
+import { fittingRooms, wardrobeItems, wardrobeAnchor } from '../../config/wardrobe.js';
+import { buildWardrobeDisplay } from './wardrobeDisplays.js';
 import { upgrades } from '../../config/upgrades.js';
 import { shutters } from '../../config/shutters.js';
 import { buildStores, storeOpenings } from './stores.js';
@@ -844,8 +846,18 @@ export function buildMall(scene, colliders) {
   ];
 
   // Everything (besides doors) the player interacts with, by kind: game/features/ builds each one.
-  // New kinds (claw machine, fitting room, hazard switch...) are more entries here.
+  function wardrobeSpot(kind, id, { at: [x, z], zone, facing }, title) {
+    const floorY = zone === 'upstairs' || zone === 'cinema' ? upperY : 0;
+    const { heightAboveFloor, standOff } = wardrobeAnchor;
+    const normal = new THREE.Vector3(facing === 'x+' ? 1 : facing === 'x-' ? -1 : 0, 0, typeof facing === 'number' ? facing : 0);
+    const position = new THREE.Vector3(x, floorY + heightAboveFloor, z).addScaledVector(normal, standOff);
+    const spot = { kind, name: `${kind}_${id}`, zone, item: id, position, normal };
+    buildWardrobeDisplay(kit, spot, facing, floorY, title);
+    return spot;
+  }
   const features = [
+    ...Object.entries(wardrobeItems).map(([id, item]) => wardrobeSpot('wardrobeRack', id, item, item.shortName)),
+    ...Object.entries(fittingRooms).map(([id, room]) => wardrobeSpot('fittingRoom', id, room, 'Fitting room')),
     { kind: 'workshop', name: 'buildABlaster', zone: 'upstairs',
       position: levelTwo.workshop.purchasePosition,
       normal: new THREE.Vector3(0, 0, -1),

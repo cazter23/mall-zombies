@@ -12,6 +12,8 @@ import { weaponStatDefaults } from '../config/weapons.js';
 
 export function createPlayerStats() {
   return {
+    damageTakenMultiplier: 1,
+    knockbackMultiplier: 1,
     maxHealth: feel.player.maxHealth,
     health: feel.player.maxHealth,
     regenDelay: feel.health.regenDelay, // seconds after a hit before health regenerates
@@ -45,6 +47,10 @@ export function createPlayerStats() {
     meleeDamageMultiplier: weaponStatDefaults.meleeDamageMultiplier,
     reloadSpeed: weaponStatDefaults.reloadSpeed,
     switchSpeed: 1,
+    adsTimeMultiplier: 1,
+    headshotDamageMultiplier: 1,
+    reserveMultiplier: 1,
+    killPayMultiplier: 1,
   };
 }
 

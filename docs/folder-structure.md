@@ -25,6 +25,7 @@ src/
                         stop fade. Bell anchors to feel.death.resultsDelay; played once through sound's music/master buses
     powerUps.js         Employee-incentive drop tuning, skill credit, round caps, pickup/zone durations, ammo top-up,
                         sweep strength, colors and PA lines. First round 2, 12-16 credit per drop, maximum 3 per round
+    wardrobe.js         Apparel items, four slots, stat multipliers, rack locations and fitting-room placards.
     shoppers.js         Cosmetic-only Shopper wardrobe: coordinated palettes/profiles, shirts/layers, bottoms, hair,
                         modest width variations, accessories and wear. Parts are data; combat never reads this file.
     impacts.js          Cosmetic impact cap (200), Cannon budget (2 clusters), projection/edge tolerances and gun signatures
@@ -367,6 +368,7 @@ src/
                         and clear on death, Play again or debug skips. createGame builds/ticks/resets it as g.powerUps.
                         A kill whose type has guaranteedDrop (Employee of the Month) queues a reward the same way, any
                         useful type by weight, outside the meter and its rotation.
+    wardrobe.js         g.wardrobe: per-run ownership, equipped slots, ordered bag and reversible player stat factors.
     incentiveEffects.js Temporary employee benefits: concurrent timers, reversible stat modifiers, finite healing,
                         deferred non-recursive liquidation damage, one-purchase coupons, target marks, slow patches,
                         overtime extensions, melee charges and sprint pulses. Owned/reset/disposed by powerUps.js.
@@ -409,6 +411,7 @@ src/
       workshopOrderForm.js The bench's order form: every Stuffing and Heart on one sheet, pre-filled, driven by menu actions. Sets state.menu while open (the player stands still, the world doesn't).
       clearanceRack.js  Clearance Rack tags on up to three zombies; a headshot on a tagged zombie pops them all.
       clearanceSticker.js The canvas sticker drawn on tagged zombies.
+      wardrobeFixtures.js Wardrobe racks and free fitting rooms use the same hold interaction as other mall fixtures.
       horror.js         Feature kind 'horror': the mall decays as the rounds climb (config/look.js horror). Visual only, never gameplay.
     debugCommands.js    createDebugCommands(game parts): the debug shortcuts as functions run(id) (spawn, cycleZombie, clearZombies,
                         killZombies, nextRound, jumpRounds, flashSale, addPoints, zeroPoints, god, giveGun, upgradeGun, doors, arena, panel,
@@ -546,6 +549,7 @@ src/
                         The arranger fits whole models into irregular runs: crowded stock, disturbed patches, isolated leftovers and bare stretches;
                         geometry is merged by material alongside the rest of the Mart dressing (no per-product draw calls).
     mall/palette.js     COLORS shared by the mall's rooms and props
+    mall/wardrobeDisplays.js Twelve static apparel displays and three fitting badges. Visual mounts are separate from the buy and swap anchors.
     mall/workshopDetails.js Build-A-Blaster's detail pass: skins wall, heart shelf, till, footprints, window, plush, ceiling grid (storefront); hoppers and pipes, QC desk, rollers, booth props, portraits, lockers, safety signs, corner clutter, floor markings, beams, wainscot, neon (hall). Numbers: config/promenade.js workshop.details.
     mall/workshopRoom.js The Build-A-Blaster storefront and back hall (island, booth, lever, chute) and their dressing. Layout numbers: config/promenade.js workshop.
     mall/atmosphere.js  Cosmetic map dressing, batched by material; adds no colliders.

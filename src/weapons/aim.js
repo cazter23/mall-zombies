@@ -81,7 +81,7 @@ export function createAim({ def, input, player }) {
       this.isAiming = held && !cancelledBySprint;
       this.justStartedAiming = this.isAiming && !wasAiming; // for aim assist's ADS snap
       prevAmount = amount;
-      amount += ((this.isAiming ? 1 : -1) * dt) / def.ads.seconds;
+      amount += ((this.isAiming ? 1 : -1) * dt) / (def.ads.seconds * (player.stats.adsTimeMultiplier ?? 1));
       amount = Math.max(0, Math.min(1, amount));
 
       // The controller reads these on its next tick (blocks sprint, slows walking).

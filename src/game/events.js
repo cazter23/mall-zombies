@@ -51,9 +51,10 @@
 //   'bossFlash' { zombie, seconds, opacity, dimOpacity } telegraphed phone flash; browser presentation respects Comfort settings
 //   Fan actors carry noRewards: all hit/kill payouts, incentive and workshop credit ignore them.
 //   'purchase'    { label, cost, kind, id }              something was bought; kind 'door' | 'weapon' | 'ammo' |
-//                                                        'ammoCache' | 'tier' | 'attachment' | 'other', id = door / gun / tier / attachment id (as it was BEFORE
-//                                                        the purchase: buying a gun is kind 'weapon', not its ammo)
+//                                                        'ammoCache' | 'tier' | 'attachment' | 'wardrobe' | 'fittingRoom' | 'other', id as it was BEFORE
+//                                                        the purchase (buying a gun is kind 'weapon'; a fitting room emits the id of the item equipped)
 //                                                        Area purchases also include areaId and openedDoorIds (one charge, many barriers).
+//   'wardrobeChange' { slot, worn, removed }              apparel equipped, item ids (removed is null for an empty slot)
 //   'flashSaleStart' { id, label, categories, discount, seconds, pa: { kicker, text } }   a Flash Sale began (game/flashSales.js)
 //   'flashSaleEnd'   { id, label, reason 'expired' | 'reset', pa }                         it ended (no banner on 'reset')
 //   'ritualStart' { gunId, gunName, loaner, restuff, pa }  Build-A-Blaster took a gun (game/features/workshopRitual.js)

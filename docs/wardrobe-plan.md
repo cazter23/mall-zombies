@@ -1,9 +1,6 @@
 # Wardrobe: plan
 
-Status: outline, nothing built yet. Numbers here are starting points, to be tuned by playing. Prices are suggestions only: the economy report
-(not written yet: the `economy-sim` branch has no work on it, so `tools/economySim.mjs` and `npm run sim:economy` still need doing) confirms them. Checked against the `build-a-blaster` branch at its phase 2; it is now merged, with all six phases and the Mascot.
-This work touches `createGame.js`, `events.js` and `main.js`, and it
-reuses the branch's free-action prompt (`priceLabel`). Build one phase at a time, in its own git worktree, and test before the next.
+Status: playable v1 implemented at the prices below. This document records the original design. For shipped behavior and playtest notes, see [the build history](history.md#9-november-2026---wardrobe-v1).
 
 ## The idea
 
