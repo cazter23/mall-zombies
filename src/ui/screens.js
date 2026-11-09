@@ -21,6 +21,8 @@
 // =============================================================================
 
 import { economy } from '../config/economy.js';
+import { createOutfitRail } from './outfitRail.js';
+import { outfitRail as outfitCfg } from '../config/wardrobe.js';
 import { menuFeel } from '../config/settings.js';
 import { survivorLine } from '../config/workshop.js';
 
@@ -167,6 +169,7 @@ export function createScreens() {
       <div class="kicker pause-kicker">Paused</div>
       <h1 class="pause-title">On break</h1>
       <div class="pause-stats"></div>
+      <div class="pause-outfit"><div class="outfit-head">ON YOU</div></div>
       <p class="paper-note">Your absence has been noted. Please return to the sales floor.</p>
       <div class="menu-list">
         <button class="menu-btn primary" data-action="resume" type="button">Resume</button>
@@ -182,6 +185,9 @@ export function createScreens() {
   const pauseKicker = pause.querySelector('.pause-kicker');
   const pauseTitle = pause.querySelector('.pause-title');
   const pauseStats = pause.querySelector('.pause-stats');
+  const pauseOutfit = pause.querySelector('.pause-outfit');
+  const pauseRail = createOutfitRail({ variant: 'pause' });
+  pauseOutfit.append(pauseRail.el);
   const resumeButton = pause.querySelector('[data-action="resume"]');
 
   // --- Results (the receipt) ---------------------------------------------------------
@@ -194,6 +200,7 @@ export function createScreens() {
         <div class="receipt-sub">Cashier: YOU (deceased)</div>
         <div class="receipt-rule"></div>
         <div class="receipt-lines"></div>
+        <div class="receipt-wearing"><div class="receipt-wearing-head"></div></div>
         <div class="receipt-rule"></div>
         <div class="receipt-total"><span>Points earned</span><span class="receipt-total-value"></span></div>
         <div class="receipt-rule"></div>
@@ -221,6 +228,10 @@ export function createScreens() {
   `);
   const receiptDate = results.querySelector('.receipt-date');
   const receiptLines = results.querySelector('.receipt-lines');
+  const receiptWearing = results.querySelector('.receipt-wearing');
+  const wearingRail = createOutfitRail({ variant: 'receipt' });
+  receiptWearing.append(wearingRail.el);
+  receiptWearing.querySelector('.receipt-wearing-head').textContent = outfitCfg.diedWearing;
   const receiptTotal = results.querySelector('.receipt-total-value');
   const barcode = results.querySelector('.receipt-barcode');
   const evalTitle = results.querySelector('.receipt-eval-title');
@@ -334,7 +345,9 @@ export function createScreens() {
   const percent = (value) => `${Math.round((value ?? 0) * 100)}%`;
   const statCards = (items) => items.map(([label, value]) => `<div><span>${label}</span><b>${value}</b></div>`).join('');
 
-  function fillPause({ fresh = false, round = 0, points = 0, time = 0, kills = 0 } = {}) {
+  function fillPause({ fresh = false, round = 0, points = 0, time = 0, kills = 0, outfit = [] } = {}) {
+    pauseOutfit.hidden = fresh;
+    pauseRail.set(outfit);
     pauseKicker.textContent = fresh ? 'Fresh shift' : 'Paused';
     pauseTitle.textContent = fresh ? 'Back to work' : 'On break';
     resumeButton.textContent = fresh ? 'Start shift' : 'Resume';
@@ -350,6 +363,8 @@ export function createScreens() {
     receiptLines.innerHTML = lines
       .map(([label, value]) => `<div class="receipt-line"><span>${label.replace(/^ {2}/, '&nbsp;&nbsp;')}</span><i></i><span>${value}</span></div>`)
       .join('');
+    receiptWearing.hidden = !r.wearing; // (older summaries have none)
+    wearingRail.set(Object.entries(r.wearing ?? {}).map(([slot, id]) => ({ slot, id })));
     receiptTotal.textContent = r.pointsEarned.toLocaleString('en-US');
     const review = evaluatePerformance(r);
     evalTitle.textContent = review.title;

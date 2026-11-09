@@ -7,6 +7,7 @@
 //   wear(id)       put on something you own, any slot (the fitting-room picker); false if not owned or already on
 //   ownedIn(slot)  owned ids of a slot, in config order
 //   statLines(id)  what would change if you put `id` on NOW: [{ stat, text, good }], from the current stats
+//   wornLines(id)  what a WORN item is doing right now (the same lines, before = stats without it): the pause screen's rail; [] if not worn
 //   ticketDetail(id)  the shelf ticket's text: joke line · stat lines · what it replaces
 //   grantAll()     own everything (debug command); only empty slots get dressed
 //   reset()        a new run: clears the lists and never touches stats (resetPlayerStats does that, right after)
@@ -59,6 +60,16 @@ export function createWardrobe({ stats, player, events }) {
     return lines.sort((a, b) => b.good - a.good); // upsides first
   }
 
+  // What a worn item is doing right now: each factor's before (the stat without it) and after (the stat as it is).
+  function wornLines(id) {
+    const item = wardrobeItems[id];
+    if (!item || worn[item.slot] !== id) return [];
+    return Object.entries(item.factors)
+      .filter(([, factor]) => Math.abs(factor - 1) > 1e-9)
+      .map(([stat, factor]) => line(stat, stats[stat] / factor, stats[stat]))
+      .sort((a, b) => b.good - a.good);
+  }
+
   return {
     owns: (id) => owned.has(id),
     wearing: (slot) => worn[slot],
@@ -89,6 +100,7 @@ export function createWardrobe({ stats, player, events }) {
     },
 
     statLines,
+    wornLines,
 
     /** What this item replaces if put on now: "Replaces Hi-Vis Vest", or "Torso slot" when the slot is empty. */
     replaces(id) {

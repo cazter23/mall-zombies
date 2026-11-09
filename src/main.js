@@ -241,7 +241,7 @@ function play({ pad }) {
   }
 }
 function runSoFar() {
-  return { round: rounds.round, points: wallet.points, time: g.runStats.timeAlive, kills: g.runStats.kills };
+  return { round: rounds.round, points: wallet.points, time: g.runStats.timeAlive, kills: g.runStats.kills, outfit: g.outfitRail.snapshot() };
 }
 function pauseRun() {
   haptics.stop();
