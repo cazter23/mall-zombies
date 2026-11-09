@@ -47,7 +47,8 @@ export function buildHallwayLook({ looks, kit, layout, keepClear = [] }) {
   const north = H.maxZ - 0.04;
   const south = H.minZ + 0.04;
   const backing = L.backing; // dark sign panels: neon needs them to pop on the bright pastel walls
-  neon.sign({ text: 'FOOD COURT', x: (FD.minX + FD.maxX) / 2, y: 4.3, z: south, facing: 1, height: 0.55, color: S.foodCourt, border: S.foodCourt, flickerLetters: [7] });
+  // (y 3.9, not higher: seen from the back of the start room, the start door's 3 m lintel hid a sign at 4.3)
+  neon.sign({ text: 'FOOD COURT', x: (FD.minX + FD.maxX) / 2, y: 3.9, z: south, facing: 1, height: 0.55, color: S.foodCourt, border: S.foodCourt, flickerLetters: [7] });
   // A big-box fascia with printed price cards, separate from the landlord's neon.
   const martZ = (MD.minZ + MD.maxZ) / 2;
   kit.box(H.maxX - .24, 3.72, MD.minZ - .68, H.maxX - .023, 4.93, MD.maxZ + .68,
@@ -89,7 +90,7 @@ export function buildHallwayLook({ looks, kit, layout, keepClear = [] }) {
   // --- Painted light: soft glows behind the signs and on the floor in front (sign glows 6 mm in front of the trim wash) -
   const P = L.pools;
   const wallIn = 0.015;
-  looks.pool(0, 4.3, H.minZ + wallIn + 0.006, 7.5, 2.6, 1, S.foodCourt, P.wallOpacity);
+  looks.pool(0, 3.9, H.minZ + wallIn + 0.006, 7.5, 2.6, 1, S.foodCourt, P.wallOpacity);
   looks.pool(0, 0.012, H.minZ + 2.2, 7, 4, 'floor', S.foodCourt, P.floorOpacity);
   looks.pool(H.maxX - 2.2, 0.012, martZ, 4, 6.5, 'floor', '#e9f2ff', P.floorOpacity);
   looks.pool((gate.from + gate.to) / 2, 4.3, H.maxZ - wallIn - 0.006, 6, 2.2, -1, S.atrium, P.wallOpacity);

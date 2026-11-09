@@ -31,6 +31,7 @@
 import * as THREE from 'three';
 import { COLORS } from './palette.js';
 import { atmosphere } from '../../config/environment.js';
+import { concourse } from '../../config/concourse.js';
 import { seededRandom } from '../../world/textures.js';
 import { buildAttachmentPart } from '../../weapons/models/upgradeParts.js';
 import { buildClerkFigure } from '../../zombies/zombieModel.js';
@@ -101,6 +102,8 @@ export function createMallProps(kit) {
   /** A full-height pillar centered at (x, z). The collider includes the wider base. */
   function pillar(x, z, height) {
     box(x - 0.4, 0.3, z - 0.4, x + 0.4, height, z + 0.4, mat(COLORS.pillar), { collide: false, name: 'pillar' });
+    const wrap = concourse.fixtures.pillarWraps; // a mirrored wrap at eye level (2 cm proud), very 1986
+    box(x - 0.42, wrap.from, z - 0.42, x + 0.42, wrap.to, z + 0.42, kit.mat(wrap.color, atmosphere.surfaces.metal), { collide: false, name: 'pillar_wrap' });
     box(x - 0.45, 0, z - 0.45, x + 0.45, 0.3, z + 0.45, mat(COLORS.pillarBase), { collide: false });
     addCollider(x - 0.45, 0, z - 0.45, x + 0.45, height, z + 0.45);
   }
@@ -120,31 +123,53 @@ export function createMallProps(kit) {
     addCollider(x0, 0, z0, x1, 0.45, z1).vaultable = true;
   }
 
-  /** A planter box (0.6m) with low-poly greenery: a bush, or a tree with { tree: true }. */
-  function planter(x0, z0, x1, z1, { tree = false } = {}) {
+  /**
+   * A planter box (0.6m) with low-poly greenery: a bush; a tree with { tree: true }; a TALL tree ({ tree: 'tall' }: the
+   * canopy above eye-level signage, for courts open to a high roof); or a hedge ({ hedge: true }: a row of bushes along
+   * the long side, low enough to see the signs beyond). Each planter turns and sizes its foliage a little by where it
+   * stands (no Math.random: the map must build the same every time), so repeated trees don't read as copies.
+   */
+  function planter(x0, z0, x1, z1, { tree = false, hedge = false } = {}) {
     const h = 0.6;
     box(x0, 0, z0, x1, h, z1, mat(COLORS.planter), { name: 'planter' });
     box(x0 + 0.12, h, z0 + 0.12, x1 - 0.12, h + 0.02, z1 - 0.12, mat(COLORS.soil), { collide: false });
     const cx = (x0 + x1) / 2;
     const cz = (z0 + z1) / 2;
+    const vary = seededRandom(Math.abs(Math.round(cx * 73 + cz * 151)) + 1);
+    const leafy = (radius, color, x, y, z) => {
+      const m = new THREE.Mesh(new THREE.IcosahedronGeometry(radius, 0), mat(color));
+      m.position.set(x, y, z);
+      m.rotation.set(vary() * Math.PI, vary() * Math.PI, 0);
+      m.scale.setScalar(0.9 + vary() * 0.2);
+      group.add(m);
+      return m;
+    };
     if (tree) {
-      box(cx - 0.15, h, cz - 0.15, cx + 0.15, h + 2.1, cz + 0.15, mat(COLORS.woodDark), { name: 'tree_trunk' });
-      const foliage = new THREE.Mesh(new THREE.IcosahedronGeometry(1.25, 0), mat(COLORS.leaves));
-      foliage.position.set(cx, h + 2.9, cz);
-      group.add(foliage);
-      const top = new THREE.Mesh(new THREE.IcosahedronGeometry(0.8, 0), mat(COLORS.leavesDark));
-      top.position.set(cx + 0.3, h + 3.7, cz - 0.2);
-      group.add(top);
+      const tall = tree === 'tall';
+      const trunkTop = tall ? 4.0 : 2.1;
+      box(cx - 0.15, h, cz - 0.15, cx + 0.15, h + trunkTop, cz + 0.15, mat(COLORS.woodDark), { name: 'tree_trunk' });
+      const [main, top] = vary() < 0.5 ? [COLORS.leaves, COLORS.leavesDark] : [COLORS.leavesDark, COLORS.leaves];
+      leafy(1.25, main, cx, h + trunkTop + 0.8, cz);
+      leafy(0.8, top, cx + 0.3, h + trunkTop + 1.6, cz - 0.2);
+    } else if (hedge) {
+      const alongX = x1 - x0 >= z1 - z0;
+      const length = alongX ? x1 - x0 : z1 - z0;
+      const count = Math.max(1, Math.round(length / 1.1));
+      for (let i = 0; i < count; i++) {
+        const u = -length / 2 + (i + 0.5) * (length / count);
+        const bush = leafy(0.55, i % 2 ? COLORS.leavesDark : COLORS.leaves, alongX ? cx + u : cx, h + 0.35, alongX ? cz : cz + u);
+        bush.scale.y *= 0.8;
+      }
     } else {
-      const bush = new THREE.Mesh(new THREE.IcosahedronGeometry(0.55, 0), mat(COLORS.leaves));
-      bush.position.set(cx, h + 0.35, cz);
-      bush.scale.y = 0.8;
-      group.add(bush);
+      const bush = leafy(0.55, COLORS.leaves, cx, h + 0.35, cz);
+      bush.scale.y *= 0.8;
     }
   }
 
   /** A ceiling light panel spanning x0..x1 / z0..z1, just under a ceiling at `ceilingY`. */
+  const panels = []; // every light panel built (the concourse pass paints a soft pool on the floor under the lit ones)
   function lightPanel(x0, z0, x1, z1, ceilingY, { dead = false, tint = COLORS.lightPanel, glow = 1.35 } = {}) {
+    panels.push({ x0, z0, x1, z1, ceilingY, dead, tint });
     const material = dead
       ? mat(COLORS.deadLightPanel, { roughness: 0.45, metalness: 0.15 })
       : mat(tint, { emissive: tint, emissiveIntensity: glow, roughness: 0.2 });
@@ -228,13 +253,17 @@ export function createMallProps(kit) {
    * A checkout counter running along X (vaultable across its short side, like the start room's
    * counter) with a belt, a register at the +X end and a numbered lane light.
    */
-  function checkout(x0, z0, x1, z1, lane) {
+  function checkout(x0, z0, x1, z1, lane, { drawerOpen = false } = {}) {
     box(x0, 0, z0, x1, 0.95, z1, mat(COLORS.checkoutBody), { name: 'checkout', vaultable: true });
     box(x0 - 0.04, 0.95, z0 - 0.04, x1 + 0.04, 1.0, z1 + 0.04, mat(COLORS.checkoutTop), { collide: false });
     box(x0 + 0.1, 1.0, z0 + 0.15, x1 - 0.7, 1.015, z1 - 0.15, mat(COLORS.checkoutBelt), { collide: false });
     // Register + screen (decorative: the vault only checks colliders)
     box(x1 - 0.55, 1.0, z0 + 0.2, x1 - 0.13, 1.28, z1 - 0.2, mat(COLORS.register), { collide: false });
     box(x1 - 0.5, 1.28, z0 + 0.3, x1 - 0.42, 1.48, z1 - 0.3, mat(COLORS.registerScreen, { emissive: COLORS.registerScreen, emissiveIntensity: 0.6 }), { collide: false });
+    if (drawerOpen) { // the cash drawer, left open mid-sale, a few notes still in it
+      box(x1 - 0.52, 1.02, z0 - 0.1, x1 - 0.16, 1.1, z0 + 0.2, mat(COLORS.register), { collide: false, name: 'register_drawer' });
+      for (let i = 0; i < 3; i++) box(x1 - 0.49 + i * 0.11, 1.1, z0 - 0.06, x1 - 0.4 + i * 0.11, 1.106, z0 + 0.14, mat(0x7fb07a), { collide: false, name: 'register_notes' });
+    }
     // Lane light: a thin pole with the lane number on top, readable from both sides.
     const px = x1 - 0.08;
     const pz = (z0 + z1) / 2;
@@ -304,7 +333,7 @@ export function createMallProps(kit) {
    * zombie routes), overhead where it's high. Returns { hole, topLanding }: the rect the ceiling
    * must leave open above it, and the x range of the flat top landing (over the upper floor).
    */
-  function escalator({ bottomX, dir = -1, minZ, maxZ, upperY, ceilingY, landing = 1.4, angleDegrees = 30, walkUnder = 2.0, headroom = 2.1, sealed = true, hangingSign = true }) {
+  function escalator({ bottomX, dir = -1, minZ, maxZ, upperY, ceilingY, landing = 1.4, angleDegrees = 30, walkUnder = 2.0, headroom = 2.1, sealed = true, hangingSign = true, cladding = null, skirtSign = null }) {
     const tan = Math.tan((angleDegrees * Math.PI) / 180);
     const plate = 0.12; // bottom landing plate height (the steps start here)
     const truss = 1.0; // depth of the structure under the steps
@@ -326,10 +355,27 @@ export function createMallProps(kit) {
       [length, upperY], [slopeEnd, upperY], [landing, plate], [0, plate],
     ];
     points.forEach(([u, y], i) => (i === 0 ? profile.moveTo(xAt(u), y) : profile.lineTo(xAt(u), y)));
-    const body = new THREE.Mesh(new THREE.ExtrudeGeometry(profile, { depth: width, bevelEnabled: false }), mat(COLORS.escalatorBody));
+    // `cladding`: a painted (matte) colour for the body instead of bare steel, so a big side reads as part of the room.
+    const body = new THREE.Mesh(new THREE.ExtrudeGeometry(profile, { depth: width, bevelEnabled: false }), mat(cladding ?? COLORS.escalatorBody));
     body.position.z = minZ;
     body.name = 'escalator';
     group.add(body);
+
+    // `skirtSign` { text, subtext, width, height, background, color }: one sign on each side of the solid skirt, just short
+    // of where you can walk under, sized to stay below the slope. Both sides share one texture (one material to batch).
+    if (skirtSign) {
+      const u1 = uOpen - 0.25, u0 = u1 - skirtSign.width;
+      const top = surface(u0) - 0.12, y = top - skirtSign.height / 2;
+      if (u0 > 0 && y - skirtSign.height / 2 > 0.15) {
+        const [sx0, sx1] = span(u0, u1);
+        const { text, ...style } = skirtSign;
+        const south = sign(text, { ...style, x: (sx0 + sx1) / 2, y, z: minZ - 0.025, facing: -1 });
+        const north = south.clone();
+        north.rotation.y = 0;
+        north.position.z = maxZ + 0.025;
+        group.add(north);
+      }
+    }
 
     // A band following the escalator's top surface, from `low` to `high` above it (glass, handrails).
     function band(u0, u1, low, high, z0, thickness, material) {
@@ -493,7 +539,7 @@ export function createMallProps(kit) {
     const thinX = x1 - x0 < z1 - z0; // the glass is inset on the thin side
     const glass = mat(COLORS.balustradeGlass, { transparent: true, opacity: 0.3, roughness: 0.1, depthWrite: false });
     box(x0 + (thinX ? 0.04 : 0), floorY + 0.05, z0 + (thinX ? 0 : 0.04), x1 - (thinX ? 0.04 : 0), floorY + 1.0, z1 - (thinX ? 0 : 0.04), glass, { collide: false });
-    box(x0 - 0.02, floorY + 1.0, z0 - 0.02, x1 + 0.02, floorY + 1.08, z1 + 0.02, mat(COLORS.handrail), { collide: false, name: 'handrail' });
+    box(x0 - 0.02, floorY + 1.0, z0 - 0.02, x1 + 0.02, floorY + 1.08, z1 + 0.02, mat(COLORS.balustradeRail), { collide: false, name: 'handrail' });
   }
 
   /**
@@ -878,7 +924,7 @@ export function createMallProps(kit) {
 
   return {
     shopFront, pillar, bench, planter, lightPanel, gondola, checkout, wallDoor, boardedVent, wallStripe,
-    escalator, railing, elevatorDoors, foodStall, tableSet, trashCan, lockerBank, electricalPanel, pipeRun, vendingMachine,
+    panels, escalator, railing, elevatorDoors, foodStall, tableSet, trashCan, lockerBank, electricalPanel, pipeRun, vendingMachine,
     serviceDesk, clerk, attachmentDisplay,
   };
 }

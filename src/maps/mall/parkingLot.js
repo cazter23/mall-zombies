@@ -119,9 +119,9 @@ export function buildParkingLot(kit, { zones, mallWallX, wallThickness }) {
     const litter = detail('litter', x, .025, z, .12 + random() * .18, .018, .14, mat(0xc6b29d));
     litter.rotation.y = random() * Math.PI;
   }
-  buildSky();
+  const sky = buildSky();
 
-  return { door, lamps,
+  return { door, lamps, sky, // (sky: the sunset dome; the dusk recolours it, maps/mall/mall.js setDusk)
     spawns: P.spawns.map(s => ({ name: `spawn_parkingLot_${s.id}`, zone: 'parkingLot', position: new THREE.Vector3(s.x, 0, s.z) })),
     room: { id: 'parkingLot', ...R, minY: -.3, maxY: 12 },
     portal: { a: 'megaMart', b: 'parkingLot', door: door.id, minX: mallWallX, maxX: R.minX + .14,
@@ -149,9 +149,11 @@ export function buildParkingLot(kit, { zones, mallWallX, wallThickness }) {
       colors.push(color.r, color.g, color.b);
     }
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-    const sky = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, depthWrite: false }));
+    const sky = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, depthWrite: false, fog: false }));
+    // (fog: false: the haze would wash a sky 135 m away to a flat colour)
     sky.name = 'parking_sunset_sky'; sky.position.fromArray(P.sky.center); sky.renderOrder = -100;
     // Preserve the authored vertex gradient through static batching.
     sky.userData.dynamic = true; group.add(sky);
+    return sky;
   }
 }

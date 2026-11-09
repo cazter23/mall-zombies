@@ -99,6 +99,43 @@ export function buildCinemaStairs({ kit, layout: c, cinema, floorY: Y, zones, pr
   return { door, ramp, link, rooms, portals, grades: rooms.map(r => ({ ...r, grade: 'cinemaService' })) };
 }
 
-export function dressCinemaStairs({ looks, layout }) {
-  for (const l of layout.lightPools) looks.pool(l.x, l.y, l.z, l.width, l.height, l.facing, l.color, l.opacity);
+export function dressCinemaStairs({ kit, looks, layout: c, floorY: Y }) {
+  for (const l of c.lightPools) looks.pool(l.x, l.y, l.z, l.width, l.height, l.facing, l.color, l.opacity);
+  if (!kit) return;
+
+  // The flight's west wall (x = shaft.minX, facing +X). Tread height along the flight, z -> y: flat on each landing,
+  // straight between (the same profile as the ramp in buildCinemaStairs).
+  const S = c.shaft, D = c.dressing, wallX = S.minX;
+  const upper = c.upperLandingEnd, lower = c.lowerLandingStart, plateau = c.landingRun;
+  const low = lower - plateau, high = upper + plateau; // where the slope starts (floor) and ends (Y)
+  const floorAt = (z) => Y * Math.min(1, Math.max(0, (low - z) / (low - high)));
+
+  // Wayfinding stripes: one ribbon each, following the treads from the bottom landing to the top one. A shape in the
+  // wall's plane (shape x = -z, shape y = height), extruded 15 mm from 4 cm out: clear of the wall and of the painted
+  // light pool on it (3 cm out), so no two faces share a plane.
+  const along = [[lower, 0], [low, 0], [high, Y], [upper, Y]];
+  for (const s of D.stripes) {
+    const shape = new THREE.Shape();
+    along.forEach(([z, y], i) => (i === 0 ? shape.moveTo(-z, y + s.low) : shape.lineTo(-z, y + s.low)));
+    for (const [z, y] of [...along].reverse()) shape.lineTo(-z, y + s.high);
+    const mesh = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: .015, bevelEnabled: false }), kit.mat(s.color, { roughness: .5 }));
+    mesh.rotation.y = Math.PI / 2; // shape x -> world -z, extrusion -> world +x
+    mesh.position.x = wallX + .04;
+    mesh.name = 'cinema_stairs_stripe';
+    kit.group.add(mesh);
+  }
+
+  // A level mark on each landing's end wall.
+  const midX = (S.minX + S.maxX) / 2;
+  for (const l of D.levels) {
+    const top = l.wall === 'south';
+    kit.sign(l.text, { x: midX, y: (top ? Y : 0) + l.height, z: top ? S.minZ + .03 : S.maxZ - .03, facing: top ? 1 : -1,
+      width: l.width, height: .5, background: '#2b2233', color: '#ffd6ec' });
+  }
+
+  // Notices, high enough to clear the stripes under their lower (uphill) corner, 2 cm in front of the light pool.
+  for (const p of D.posters) {
+    const y = floorAt(p.z - p.width / 2) + D.posterClearance + p.height / 2;
+    looks.poster(p.kind, p.options, wallX + .05, y, p.z, p.width, p.height, 'x+');
+  }
 }

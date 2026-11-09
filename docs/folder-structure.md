@@ -99,6 +99,9 @@ src/
     retailUnease.js     Rare atrium display changes and localized back-room sound timings/ranges; no gameplay tuning.
     workshop.js         Build-A-Blaster: Limited Edition numbers (workshopBuilds), the ritual (workshopRitual: time, qualities, stages, loaner, PA), Stuffings and Hearts, buildOf reads a gun's finished build.
     decor.js            Decoration kit + clutter scatter numbers (world/decor.js, world/scatter.js). Cosmetic only.
+    concourse.js        The real-mall pass as data (maps/mall/concourse.js): Level 2 shopfronts, hallway display windows, soffits and
+                        cornice, floor bands / medallions / worn lanes, painted light under panels and neon, fixtures, little stories,
+                        the FALL INTO SAVINGS '86 campaign, a directory totem; `wayfinding` = the one style for new direction signs.
     look.js             Art direction, "Grand Opening, Forever": palette, zone grading, the horror layer, set pieces.
     music.js            The 16-bar lounge loop "After Closing" as data (pitches, beats, timbres).
     neon.js             Neon tube builder tuning (world/neon.js): palette, tube sizes, flicker.
@@ -327,6 +330,8 @@ src/
                         Crowd shoves never move anyone into a wall (overlapsSolid); a pinned player pushes the
                         zombie back instead. Options canAttack(), onPlayerHit(damage), onKill(zombie)
     statusTint.js       What a Build-A-Blaster effect on a zombie looks like: the glow (flames, ice, goo, butter, rainbow) the model gets, read by zombieModel.js each frame. Looks in config/workshop.js stuffingLook.
+    zombieRim.js        The soft edge glow round each zombie (config/look.js zombieRim; colour by kind, bosses their own): a few lines added to
+                        the standard shader once per material, no draw calls, unaffected by hit flashes.
     confusion.js        Glitter's AI: a confused zombie forgets the player and fights the nearest other zombie with its normal attack.
     tankDeath.js        A kill in the room flying into the Stuffing Tank (visual; the kill is already paid).
     partyTrapDeath.js   The pose, ribbon and confetti after a trap kill. The kill is paid on impact; this is visual only.
@@ -426,6 +431,7 @@ src/
       fittingRoomPicker.js The fitting-room picker: slots side by side, menu actions pick a slot and an owned item, confirm wears it (wardrobe.wear).
                         Sets state.menu while open; closes on back, a 'playerHit', being moved away, death, reset. DOM-free; `view` is what the UI draws.
       horror.js         Feature kind 'horror': the mall decays as the rounds climb (config/look.js horror). Visual only, never gameplay.
+                        Darker every round, flickering neon dies, every tube browns out, lamps die, the view drifts to the lateHours grade, power cuts.
     debugCommands.js    createDebugCommands(game parts): the debug shortcuts as functions run(id) (spawn, cycleZombie, clearZombies,
                         killZombies, nextRound, jumpRounds, flashSale, addPoints, zeroPoints, god, giveGun, upgradeGun, doors, arena, panel,
                         spawnMascot / spawnGoldMascot: each costume in turn at the spawn point nearest you);
@@ -575,7 +581,12 @@ src/
     mall/cinemaStoryDetails.js The cinema's story props.
     mall/cinemaDecorKit.js Small primitives for cinema dressing (world coordinates, no collision).
     mall/hallwayLook.js The hallway's dressing, the reference room of the visual overhaul (neon, slogans, wall bands, posters).
-    mall/lookKit.js     The visual overhaul's shared tools (wall bands, neon, light pools), used by every area's Look.
+    mall/lookKit.js     The visual overhaul's shared tools (wall bands, neon, light pools), used by every area's Look. glowSet(name, kind):
+                        many glows merged into ONE additive mesh; parts.neonPlacements records every neon sign placed.
+    mall/concourse.js   The concourse pass (config/concourse.js), built last in mall.js: a shopfront run on Level 2 (painted interiors
+                        and signs on one atlas, one glass mesh, blade signs, light spill), display windows, soffits with the trim on their
+                        edge and a ceiling cove, the hallway cornice, floor bands and medallions, panel pools and neon reflections (two
+                        glow meshes in all), ceiling fixtures, fountain, ATM, fire pulls, urns, kiddie ride, gumball, stories, campaign.
     mall/setPieces.js   One signature scene per area (dead arcade cabinets in the hallway, and so on).
     testRange/          Debug add-on (not a map): testRange.js buildTestRange(scene, colliders) with own lights,
                         dummy.js practice mannequins (shootables)
@@ -603,9 +614,12 @@ src/
                         The Mascot's foam palette bypasses flesh splatter settings.
     benchmark.js        Times a fixed camera route (map.benchmarkShots) so a visual change can say what it costs (Shift+B on the title or pause screen).
     lightPool.js        A fixed number of real point lights shared out among the map's lamps.
+    metalSheen.js       Something for metal to reflect: a tiny gradient (config/look.js metalSheen) baked once and given to metal materials only
+                        (metalness >= minMetalness, no envMap of their own), after static batching. Without it steel, chrome and brass render nearly black.
     postProcessing.js   The render pipeline: the world pass, then the depth-cleared first-person viewmodel pass, plus post effects.
     roomCulling.js      Skips drawing rooms the camera can't see (the map's cullAreas / cullPortals).
     zoneGrading.js      Per-area colour grade (exposure, tint, saturation, contrast; config/look.js grading), eased as the camera moves.
+                        The horror layer's mood darkens it (exposure), multiplies the lateHours grade on by its decay, and turns a cut area red.
   vite.config.js        Dev server only: compiles the game at server start (warmup) and skips .claude, dist, dist-single, references and scratch. Paths are absolute from this checkout, so a worktree keeps its own hot reload.
   play.cmd              Double-click version of `npm run play`. tools/play.mjs rebuilds the single file if the source is newer, keeps the last good build if that fails, and opens it in Firefox (the Windows default for .html may be another browser).
   (tools/)              Dev scripts (not bundled): buildSingle.mjs = `npm run build:single` (a normal Vite build into dist-single/, then the JS, CSS and
@@ -651,7 +665,10 @@ src/
     atmosphereTextures.js Soft footprint alpha and deterministic tile roughness (no image downloads)
                         seededRandom(seed): deterministic random (also used for shelf stock)
     neonDemo.js         Debug only: a sample wall of everything world/neon.js can make.
-    posterTextures.js   The mall's posters, drawn on canvas (upbeat slogans, something wrong in each).
+    posterTextures.js   The mall's posters, drawn on canvas (upbeat slogans, something wrong in each); 'ghost' = a faded advert painted on a wall.
+    canvasAtlas.js      Many painted panels on one canvas texture (createCanvasAtlas, atlasQuad), so an area's signs draw as one mesh.
+    paintedInteriors.js Flat canvas art for the concourse pass: shop interiors in one-point perspective by kind, shop signs, the campaign
+                        art, the floor medallion, the accessible-bay symbol.
     scatter.js          Places decor-kit clutter on a floor area, deterministic per seed, merged into one mesh per material.
     staticBatch.js      Merges still, opaque map meshes into a few big ones (fewer draw calls); userData.dynamic opts a mesh out.
   ui/

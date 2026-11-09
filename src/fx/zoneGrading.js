@@ -7,13 +7,18 @@
 //                   outside every zone = grading.fallback
 //   const grading = createZoneGrading({ zones, grades, fallback, blendSeconds })
 //   grading.update(dt, position, enabled, mood) -> the current grade (eased; NEUTRAL_GRADE while disabled)
-//     mood (the horror layer, map.horror.state): { exposure (x every grade), cut: { grades, level } (those areas blend
-//     towards the `powerCut` grade by level) }
+//     mood (the horror layer, map.horror.state): { exposure (x every grade), decay (0..1: the `lateHours` grade multiplied
+//     on by that much), cut: { grades, level } (those areas blend towards the `powerCut` grade by level) }
 //   grading.snap(position)   jump straight to that spot's grade (no easing)
-// fx/postProcessing.js applies a grade: exposure through the tone mapping, tint / saturation / contrast in its grade pass.
+// fx/postProcessing.js applies a grade: exposure through the tone mapping, tint / saturation / contrast in its grade pass;
+// main.js turns fog / fogColor into the scene's haze (0 while switched off).
 // =============================================================================
 
-export const NEUTRAL_GRADE = Object.freeze({ exposure: 1, tint: Object.freeze([1, 1, 1]), saturation: 1, contrast: 1, vignette: 0 });
+export const NEUTRAL_GRADE = Object.freeze({ exposure: 1, tint: Object.freeze([1, 1, 1]), saturation: 1, contrast: 1, vignette: 0,
+  fog: 0, fogColor: Object.freeze([1, 1, 1]) });
+
+// A grade's fogColor is a hex colour in the config; the grade carries it as [r, g, b] (0..1, sRGB) so it can ease.
+const rgbOf = (c) => (Array.isArray(c) ? [...c] : [((c >> 16) & 255) / 255, ((c >> 8) & 255) / 255, (c & 255) / 255]);
 
 /** The id of the grade for a position (the first zone containing it), or null. */
 export function gradeZoneAt(zones, p) {
@@ -26,7 +31,7 @@ export function gradeZoneAt(zones, p) {
 }
 
 export function createZoneGrading({ zones = [], grades, fallback, blendSeconds = 0.8 }) {
-  const full = (g) => ({ ...NEUTRAL_GRADE, ...g, tint: [...(g?.tint ?? NEUTRAL_GRADE.tint)] });
+  const full = (g) => ({ ...NEUTRAL_GRADE, ...g, tint: [...(g?.tint ?? NEUTRAL_GRADE.tint)], fogColor: rgbOf(g?.fogColor ?? NEUTRAL_GRADE.fogColor) });
   const gradeFor = (id) => {
     const g = id != null ? grades[id] : null;
     if (id != null && !g) throw new Error(`zoneGrading: unknown grade "${id}"`);
@@ -40,11 +45,25 @@ export function createZoneGrading({ zones = [], grades, fallback, blendSeconds =
     current.saturation = from.saturation;
     current.contrast = from.contrast;
     current.vignette = from.vignette;
-    for (let i = 0; i < 3; i++) current.tint[i] = from.tint[i];
+    current.fog = from.fog;
+    for (let i = 0; i < 3; i++) { current.tint[i] = from.tint[i]; current.fogColor[i] = from.fogColor[i]; }
   };
   const targetAt = (position, mood) => {
     const id = gradeZoneAt(zones, position) ?? fallback;
     const target = gradeFor(id);
+    // Late hours (mood.decay 0..1): the `lateHours` grade multiplied onto this area's own (vignette added), so a dark
+    // back-of-house room gets darker too instead of being pulled towards an average.
+    const decay = mood?.decay ?? 0;
+    if (decay > 0 && grades.lateHours) {
+      const late = gradeFor('lateHours');
+      const toward = (value) => 1 + (value - 1) * decay;
+      target.exposure *= toward(late.exposure);
+      target.saturation *= toward(late.saturation);
+      target.contrast *= toward(late.contrast);
+      target.vignette += late.vignette * decay;
+      target.fog += late.fog * decay;
+      for (let i = 0; i < 3; i++) target.tint[i] *= toward(late.tint[i]);
+    }
     const cut = mood?.cut;
     if (cut && cut.level > 0 && grades.powerCut && cut.grades.includes(id)) {
       const red = gradeFor('powerCut');
@@ -53,7 +72,11 @@ export function createZoneGrading({ zones = [], grades, fallback, blendSeconds =
       target.saturation += (red.saturation - target.saturation) * k;
       target.contrast += (red.contrast - target.contrast) * k;
       target.vignette += (red.vignette - target.vignette) * k;
-      for (let i = 0; i < 3; i++) target.tint[i] += (red.tint[i] - target.tint[i]) * k;
+      target.fog += (red.fog - target.fog) * k;
+      for (let i = 0; i < 3; i++) {
+        target.tint[i] += (red.tint[i] - target.tint[i]) * k;
+        target.fogColor[i] += (red.fogColor[i] - target.fogColor[i]) * k;
+      }
     }
     target.exposure *= mood?.exposure ?? 1;
     return target;
@@ -71,7 +94,11 @@ export function createZoneGrading({ zones = [], grades, fallback, blendSeconds =
       current.saturation += (target.saturation - current.saturation) * k;
       current.contrast += (target.contrast - current.contrast) * k;
       current.vignette += (target.vignette - current.vignette) * k;
-      for (let i = 0; i < 3; i++) current.tint[i] += (target.tint[i] - current.tint[i]) * k;
+      current.fog += (target.fog - current.fog) * k;
+      for (let i = 0; i < 3; i++) {
+        current.tint[i] += (target.tint[i] - current.tint[i]) * k;
+        current.fogColor[i] += (target.fogColor[i] - current.fogColor[i]) * k;
+      }
       return current;
     },
     snap(position) {

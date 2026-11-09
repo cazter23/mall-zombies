@@ -7,6 +7,7 @@
 //     'mallMap'    the mall directory: pastel floor plan, a red YOU ARE HERE dot and a caption
 //     'banner'     a pastel fabric banner with a slogan (and an optional small second line)
 //     'notice'     a printed notice: a coloured header bar + body text
+//     'ghost'      a faded advert painted straight on a wall: the wall's own colour, worn lettering, no frame
 // =============================================================================
 
 import * as THREE from 'three';
@@ -265,6 +266,35 @@ const draw = {
       ctx.font = `34px ${BODY}`;
       ctx.fillText(sub, 512, 190);
     }
+    return canvas;
+  },
+
+  // `wall` = the wall's colour as it renders (the poster is unlit), `ink` a little lighter: paint that has nearly gone.
+  ghost({ text, sub = '', wall = '#857063', ink = '#a58c7c' }) {
+    const { canvas, ctx } = canvasOf(1024, 256);
+    ctx.fillStyle = wall;
+    ctx.fillRect(0, 0, 1024, 256);
+    ctx.strokeStyle = ink; // the painted border, mostly gone
+    ctx.lineWidth = 6;
+    ctx.globalAlpha = 0.55;
+    ctx.strokeRect(18, 18, 988, 220);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = ink;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    fitText(ctx, text, 512, sub ? 104 : 128, 940, 96, TYPOGRAPHY.heritage.display, '700');
+    if (sub) {
+      ctx.font = `600 32px ${TYPOGRAPHY.heritage.body}`;
+      ctx.fillText(sub, 512, 192);
+    }
+    // Weather: flecks of bare wall through the paint, and streaks running down (a fixed pattern, so it builds the same).
+    let seed = 1986;
+    const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    ctx.fillStyle = wall;
+    for (let i = 0; i < 900; i++) ctx.fillRect(rand() * 1024, rand() * 256, 2 + rand() * 7, 2 + rand() * 4);
+    ctx.globalAlpha = 0.35;
+    for (let i = 0; i < 40; i++) ctx.fillRect(rand() * 1024, rand() * 120, 2 + rand() * 3, 60 + rand() * 140);
+    ctx.globalAlpha = 1;
     return canvas;
   },
 

@@ -50,6 +50,8 @@ import { buildLevelTwo } from './levelTwo.js';
 import { buildAtrium } from './atrium.js';
 import { buildHallwayLook } from './hallwayLook.js';
 import { createLookKit } from './lookKit.js';
+import { buildConcourse } from './concourse.js';
+import { concourse } from '../../config/concourse.js';
 import { buildSetPieces } from './setPieces.js';
 import { buildFoodCourtLook, buildMegaMartLook, buildServiceCorridorLook, buildStartRoomLook, buildLevelTwoLook, buildAtriumLook, buildDepartmentStoreLook } from './zoneLooks.js';
 import { look } from '../../config/look.js';
@@ -318,7 +320,11 @@ export function buildMall(scene, colliders) {
   // boarded-up landing you can see up there.
   const E = LAYOUT.escalator;
   const upperY = H.height + 0.3; // level 2 floor = top of the hallway ceiling
-  const escalator = props.escalator({ ...E, upperY, ceilingY: H.height });
+  const escalator = props.escalator({
+    ...E, upperY, ceilingY: H.height, cladding: COLORS.escalatorCladding,
+    skirtSign: { text: look.hallway.satire.escalator[0], subtext: look.hallway.satire.escalator[1], width: 2.4, height: 0.8,
+      background: look.hallway.backing, color: '#ffd6ec' },
+  });
   const ceilingHoles = [escalator.hole, ...LAYOUT.level2.voids]; // the escalator well + the balcony voids
   kit.slab({ minX: H.minX - T, maxX: H.maxX + T, minZ: H.minZ - T, maxZ: H.maxZ + T }, H.height, upperY, mat(look.hallway.ceiling), {
     holes: ceilingHoles, name: 'ceiling',
@@ -504,7 +510,7 @@ export function buildMall(scene, colliders) {
   props.bench(-8, FZ + 3.9, -5.6, FZ + 4.5);
   props.bench(5.6, FZ + 3.9, 8, FZ + 4.5);
 
-  props.planter(-1.8, FZ - 2.8, 1.8, FZ - 1.2, { tree: true });
+  props.planter(-1.8, FZ - 2.8, 1.8, FZ - 1.2, { hedge: true }); // (low: a tree here hid FRESH MEAT DAILY and WOK THIS WAY)
   props.planter(-19.4, FZ - 0.7, -18, FZ + 0.7);
   // Two end planters frame the shortcut, leaving its full width and approaches clear.
   props.planter(18, FM.minZ - 2.0, 19.4, FM.minZ - 0.6);
@@ -665,7 +671,7 @@ export function buildMall(scene, colliders) {
 
   // Front of the store: four checkout lanes (vaultable counters) facing the entrance. You walk in
   // at z 0..4 and the lanes are 2m wide; the ends stay open, so you can run round the row.
-  MART_FIXTURES.checkoutZs.forEach((z, i) => props.checkout(24.5, z - 0.4, 27.5, z + 0.4, i + 1));
+  MART_FIXTURES.checkoutZs.forEach((z, i) => props.checkout(24.5, z - 0.4, 27.5, z + 0.4, i + 1, { drawerOpen: concourse.stories.registerDrawer && i === 1 }));
 
   // Back of the store: three long shelf aisles (gondolas) running north-south. Aisles are 2.5m
   // (the west one 3.2m, meeting the Food Court shortcut), with a 4.5m
@@ -725,7 +731,29 @@ export function buildMall(scene, colliders) {
   // --- Lighting --------------------------------------------------------------
 
   // All lights live in the map's group, so unloading the map removes them too.
-  group.add(new THREE.HemisphereLight(atmosphere.hemisphere.sky, atmosphere.hemisphere.ground, atmosphere.hemisphere.intensity));
+  const skyLight = new THREE.HemisphereLight(atmosphere.hemisphere.sky, atmosphere.hemisphere.ground, atmosphere.hemisphere.intensity);
+  group.add(skyLight);
+
+  // The sun goes down over a run (config/look.js dusk; the horror director calls this with 0..1 each round): the sky light,
+  // the Atrium skylight and sun shafts, and the parking sky go from golden hour to a purple night. Colours only.
+  const DUSK = look.dusk;
+  const day = {
+    sky: new THREE.Color(atmosphere.hemisphere.sky), skylight: atrium.skylight.color.clone(), skylightGlow: atrium.skylight.emissive.clone(),
+    skylightIntensity: atrium.skylight.emissiveIntensity,
+  };
+  const night = { sky: new THREE.Color(DUSK.hemisphere.sky), skylight: new THREE.Color(DUSK.skylight.color), skylightGlow: new THREE.Color(DUSK.skylight.emissive),
+    parkingSky: new THREE.Color(DUSK.parkingSky) };
+  const white = new THREE.Color(0xffffff);
+  function setDusk(t) {
+    const k = Math.min(1, Math.max(0, t));
+    skyLight.color.copy(day.sky).lerp(night.sky, k);
+    skyLight.intensity = atmosphere.hemisphere.intensity + (DUSK.hemisphere.intensity - atmosphere.hemisphere.intensity) * k;
+    atrium.skylight.color.copy(day.skylight).lerp(night.skylight, k);
+    atrium.skylight.emissive.copy(day.skylightGlow).lerp(night.skylightGlow, k);
+    atrium.skylight.emissiveIntensity = day.skylightIntensity + (DUSK.skylight.emissiveIntensity - day.skylightIntensity) * k;
+    atrium.shafts.material.opacity = atrium.shafts.opacity + (DUSK.shafts - atrium.shafts.opacity) * k;
+    parking.sky.material.color.copy(white).lerp(night.parkingSky, k);
+  }
 
   const sun = new THREE.DirectionalLight(atmosphere.sun.color, atmosphere.sun.intensity);
   sun.position.set(6, 20, 8);
@@ -921,15 +949,20 @@ export function buildMall(scene, colliders) {
   buildWorkshopDetails({ kit, looks, layout: LAYOUT.level2, floorY: upperY }); // (Build-A-Blaster's shop and hall dressing)
   buildSeamDetails({ kit, looks, props, floorY: upperY }); // where HOFFMAN'S meets the cinema (the connector's receiving door, the cinema's Promenade front)
   const cinemaDetails = buildCinemaDetails({ kit, looks, layout: LAYOUT.cinema, floorY: upperY });
-  dressCinemaStairs({ looks, layout: LAYOUT.cinemaStairs });
+  dressCinemaStairs({ kit, looks, layout: LAYOUT.cinemaStairs, floorY: upperY });
   buildCinemaServiceDetails({ kit, looks, cinema: LAYOUT.cinema, stairs: LAYOUT.cinemaStairs, floorY: upperY });
   buildAtriumLook({ looks, layout: LAYOUT, upperY, keepClear: hallwayClear.slice(0, -2) });
   buildDepartmentStoreLook({ looks, kit, layout: LAYOUT, keepClear: hallwayClear.slice(0, -2) });
 
+  // The concourse pass (maps/mall/concourse.js, config/concourse.js): shopfronts, the mall section, floor patterns, painted
+  // light under panels and neon, fixtures, stories, the campaign and wayfinding. Last, so every neon sign is already placed.
+  buildConcourse({ kit, looks, props, layout: LAYOUT, upperY });
+
   // The horror layer (game/features/horror.js, config/look.js horror): which lamps and neon it may kill, area by area
   // (areas are zone lighting's grades, so a power cut darkens the same space its grade covers).
   const horror = {
-    state: { exposure: 1, cut: null }, // read by zone lighting (main.js)
+    state: { exposure: 1, decay: 0, dusk: 0, cut: null }, // read by zone lighting (main.js)
+    setDusk, // the sun going down over a run (look.dusk)
     lamps,
     neons: looks.parts.neonsByName,
     areas: [

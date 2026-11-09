@@ -30,6 +30,8 @@ export const look = {
     fromRound: 5, // nothing before this round
     darkness: { perRound: 0.025, max: 0.2 }, // the whole mall's exposure falls this much per round past fromRound
     neonFailure: { perRound: 0.08, max: 0.6 }, // share of flickering neon (letters, tubes) that dies for good, per round
+    neonBrownout: { perRound: 0.035, max: 0.5 }, // share of brightness EVERY tube loses (steady ones too), per round
+    decay: { perRound: 0.07, max: 1 }, // how far the view drifts towards grading.grades.lateHours, per round (1 = all the way)
     lampDeaths: { everyRounds: 2, maxShare: 0.4, flickerSeconds: 2.5 }, // one more lamp dies every N rounds (it flickers first)
     powerCuts: {
       fromRound: 6,
@@ -38,6 +40,32 @@ export const look = {
       seconds: [4, 6.5], // how long the area stays dark
       stutterSeconds: 0.8, // the power stutters back on at the end
     },
+  },
+
+  // METAL SHEEN (fx/metalSheen.js): without anything to reflect, metal renders nearly black. Metal materials (metalness
+  // >= minMetalness) get a tiny baked gradient: warm-white ceiling above, a lavender horizon, a dusk floor below.
+  metalSheen: { ceiling: 0xf7f3ee, horizon: 0xd9cfe2, floor: 0x7d7290, intensity: 0.9, minMetalness: 0.3, size: 64 },
+
+  // BAKED GROUNDING (world/staticBatch.js shadeAt): walls, counters and shelves darken towards the floor they stand on,
+  // baked into the batched vertex colours at load (free to draw). floors = the floor levels (ground, upper floor).
+  bakedShade: { strength: 0.2, fade: 1.6, minHeight: 0.35, floors: [0, 6.3] },
+
+  // ZOMBIE EDGE GLOW (zombies/zombieRim.js): a soft rim of light round each zombie so it reads against the pastel walls,
+  // tinted by kind. power = how tight the rim is (higher = thinner), strength = how bright.
+  zombieRim: {
+    power: 2.6, strength: 0.55,
+    colors: { default: 0xffe6c8, mallWalker: 0xc8f0ff, cartPusher: 0xffd27a, mannequin: 0xd8e4ff, mascot: 0xffb26b, boss: 0xff8fb0 },
+  },
+
+  // THE SUN GOES DOWN (game/features/horror.js state.dusk, maps/mall/mall.js setDusk): golden hour at the start of a run,
+  // dusk by the middle, a purple night by `toRound`. The skylight, the parking sky, the sky light and the Atrium's sun
+  // shafts follow. Part of Comfort > Horror lighting (off = it stays golden hour).
+  dusk: {
+    fromRound: 2, toRound: 20,
+    hemisphere: { sky: 0x5c5684, intensity: 0.38 }, // the mall's sky light at full night (day: config/environment.js)
+    skylight: { color: 0x5a4a8c, emissive: 0x3a2a6a, emissiveIntensity: 0.9 }, // the Atrium skylight at night
+    parkingSky: 0x5b5280, // multiplies the parking sky's gradient at night
+    shafts: 0, // the Atrium sun shafts' opacity at night (they fade out)
   },
 
   // THE VHS FILTER (fx/postProcessing.js VhsShader): a worn rental tape. Each number is at 'full'; 'subtle' scales them all.
@@ -54,24 +82,28 @@ export const look = {
   // ZONE LIGHTING (fx/zoneGrading.js): each area's grade; the view eases to the grade of the area the camera is in
   // (map.gradeZones says where they are). exposure scales the light (1 = as lit), tint multiplies the colour,
   // saturation 0 = grey / 1 = as is, contrast > 1 = deeper shadows, vignette = extra darkening at the screen edges (High only). Front of house stays bright; back of house goes dark.
+  // fog / fogColor: a light per-area haze (three's exponential-squared fog: about 15% at 40 m for 0.01), eased like the rest.
   grading: {
     blendSeconds: 0.8, // how long a change of area takes to settle
     fallback: 'front', // anywhere outside every zone (the hallway)
     grades: {
-      parkingLot: { exposure: 1.05, tint: [1.06, .98, .96], saturation: .94, contrast: 1.04 },
-      front: { exposure: 1, tint: [1, 1, 1], saturation: 1.04, contrast: 1 },
-      startRoom: { exposure: 0.97, tint: [1.03, 1, 0.94], saturation: 0.92, contrast: 1 }, // faded clearance store
-      foodCourt: { exposure: 1.02, tint: [1.04, 1, 0.95], saturation: 1.06, contrast: 1 }, // warm and hungry
-      megaMart: { exposure: 1, tint: [0.97, 1, 1.04], saturation: 0.98, contrast: 1.02 }, // cool fluorescent
-      martBack: { exposure: 0.55, tint: [1.1, 0.88, 0.85], saturation: 0.8, contrast: 1.15, vignette: 0.2 }, // the stockroom walkway: dim, red
-      serviceCorridor: { exposure: 0.42, tint: [0.88, 1.05, 0.8], saturation: 0.6, contrast: 1.2, vignette: 0.3 }, // back of house: dark, sick green
-      level2: { exposure: 1, tint: [1.05, 0.98, 0.92], saturation: 1.03, contrast: 1 }, // the Sunset Promenade
-      cinemaLobby: { exposure: 1.02, tint: [1.06, 1, .98], saturation: 1.02, contrast: 1.02 },
-      cinemaScreen: { exposure: .82, tint: [.99, .96, 1.08], saturation: .94, contrast: 1.04 },
-      cinemaService: { exposure: .70, tint: [.98, 1.03, 1.03], saturation: .85, contrast: 1.06 },
-      atrium: { exposure: 1.03, tint: [1.05, 0.99, 0.92], saturation: 1.06, contrast: 1 }, // under the sunset skylight
-      departmentStore: { exposure: 1.01, tint: [1.04, 1, 0.95], saturation: 1, contrast: 1.02 }, // HOFFMAN'S: warm, a little upscale
-      powerCut: { exposure: 0.3, tint: [1.3, 0.5, 0.45], saturation: 0.55, contrast: 1.2, vignette: 0.35 }, // the horror layer: emergency red
+      parkingLot: { exposure: 1.05, tint: [1.06, .98, .96], saturation: .94, contrast: 1.04, fog: .011, fogColor: 0xb58a8e },
+      front: { exposure: 1, tint: [1, 1, 1], saturation: 1.04, contrast: 1, fog: .010, fogColor: 0xf3e2dc },
+      startRoom: { exposure: 0.97, tint: [1.03, 1, 0.94], saturation: 0.92, contrast: 1, fog: .008, fogColor: 0xf0e2c8 }, // faded clearance store
+      foodCourt: { exposure: 1.02, tint: [1.04, 1, 0.95], saturation: 1.06, contrast: 1, fog: .009, fogColor: 0xfbe0cc }, // warm and hungry
+      megaMart: { exposure: 1, tint: [0.97, 1, 1.04], saturation: 0.98, contrast: 1.02, fog: .009, fogColor: 0xe2ebf2 }, // cool fluorescent
+      martBack: { exposure: 0.55, tint: [1.1, 0.88, 0.85], saturation: 0.8, contrast: 1.15, vignette: 0.2, fog: .022, fogColor: 0x5a2e2c }, // the stockroom walkway: dim, red
+      serviceCorridor: { exposure: 0.42, tint: [0.88, 1.05, 0.8], saturation: 0.6, contrast: 1.2, vignette: 0.3, fog: .03, fogColor: 0x3d4a38 }, // back of house: dark, sick green
+      level2: { exposure: 1, tint: [1.05, 0.98, 0.92], saturation: 1.03, contrast: 1, fog: .012, fogColor: 0xf2d4c8 }, // the Sunset Promenade
+      cinemaLobby: { exposure: 1.02, tint: [1.06, 1, .98], saturation: 1.02, contrast: 1.02, fog: .012, fogColor: 0x3f2a3c },
+      cinemaScreen: { exposure: .82, tint: [.99, .96, 1.08], saturation: .94, contrast: 1.04, fog: .02, fogColor: 0x221a2c },
+      cinemaService: { exposure: .70, tint: [.98, 1.03, 1.03], saturation: .85, contrast: 1.06, fog: .02, fogColor: 0x3a4440 },
+      atrium: { exposure: 1.03, tint: [1.05, 0.99, 0.92], saturation: 1.06, contrast: 1, fog: .008, fogColor: 0xf6dcc0 }, // under the sunset skylight
+      departmentStore: { exposure: 1.01, tint: [1.04, 1, 0.95], saturation: 1, contrast: 1.02, fog: .010, fogColor: 0xe9d6c4 }, // HOFFMAN'S: warm, a little upscale
+      // The horror layer's late rounds (horror.decay): MULTIPLIED onto each area's own grade (vignette and fog added), so
+      // dark rooms get darker rather than brighter: dimmer, greyer, harder, a little sick, hazier.
+      lateHours: { exposure: 0.84, tint: [0.97, 1.0, 0.9], saturation: 0.7, contrast: 1.14, vignette: 0.28, fog: .006 },
+      powerCut: { exposure: 0.3, tint: [1.3, 0.5, 0.45], saturation: 0.55, contrast: 1.2, vignette: 0.35, fog: .03, fogColor: 0x2a0c0c }, // the horror layer: emergency red
     },
   },
 
@@ -98,7 +130,9 @@ export const look = {
     rail: 0xd8dce4, // chrome rail on top of the wainscot
     stripe: { color: 0xf7b39b, y0: 1.32, y1: 1.5 }, // a peach band above the rail
     ceiling: 0xf7f3ee,
-    floor: { base: '#f1e7da', grout: '#ec9fc4', variation: 16, seed: 5 }, // cream terrazzo, pink grout lines
+    // cream terrazzo, pink grout lines; more tile-to-tile variation and a matter finish than the shared tile surface, so
+    // the hub's long floor has some value contrast and the lamps don't burn white hot spots into it
+    floor: { base: '#efe3d4', grout: '#e893bd', variation: 24, seed: 5, roughness: 0.55 },
     lamp: { color: 0xfff0dc, intensity: 22, distance: 22 }, // warm white: the mall is OPEN
     panel: 0xfff8ee, // ceiling light panels: warm white (one is dead)
     panelGlow: 1.3,
@@ -132,6 +166,7 @@ export const look = {
       rewards: ['Galleria Rewards', 'Earn points for every shopper you serve!'],
       lostChildren: ['Lost Children', 'will be kept at Customer Service. Forever.'],
       wetFloor: ['Caution: Wet Floor', "Please don't ask what it is."],
+      escalator: ['RIDE AT YOUR OWN RISK', 'Management is not responsible for where it takes you.'],
     },
 
     // Clutter along the walls (world/scatter.js): kinds + weights, density per m2 at 'full'.
@@ -230,6 +265,8 @@ export const look = {
       leasingNote: ['Now leasing', 'Ask about our lifetime lease. Our very literal lifetime lease.'],
       top: ['WELCOME TO THE TOP!', '(PLEASE ENJOY IT. YOU ARE NOT LEAVING.)'],
       view: ['ENJOY THE VIEW!', 'Please do not feed the shoppers below.'],
+      comingSoon: ['COMING SOON!', 'A brand-new store. Any day now. Since 1987.'],
+      hiring: ['NOW HIRING: EVERYONE', 'Experience required: being here.'],
     },
     clutter: {
       seed: 1990,

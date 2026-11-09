@@ -14,7 +14,8 @@
 // shutters (userData.kind 'shutter'), hidden meshes (debug markers), transparent materials (glass: they need their
 // own sort), instanced / skinned meshes, and materials used by only one mesh (nothing to merge).
 //
-//   batchStatic(root, { cellSize, upperY }) -> { merged: n meshes removed, batches: n meshes added }
+//   batchStatic(root, { cellSize, upperY, shade }) -> { merged: n meshes removed, batches: n meshes added }
+//   shade (optional, config/look.js bakedShade): darkens the colour-merged batches near each floor (shadeAt), for free.
 // Browser-side only (main.js); headless tests and the map's own tests see the meshes exactly as built.
 // =============================================================================
 
@@ -40,16 +41,37 @@ function eligible(mesh, root) {
   return !!(g?.isBufferGeometry && g.attributes.position && g.attributes.normal && !g.morphAttributes?.position);
 }
 
+/**
+ * Baked grounding (config/look.js bakedShade): how much light a vertex keeps, from its height above the floor level
+ * below it. 1 - strength at the floor, back to 1 by `fade` metres up. Only for things at least `minHeight` tall (walls,
+ * counters, shelves), so floors, ceilings and slabs never darken. Vertex-coloured batches only: it costs nothing to draw.
+ */
+export function shadeAt(y, { strength, fade, floors }) {
+  let floor = -Infinity;
+  for (const f of floors) if (f <= y + 1e-3 && f > floor) floor = f;
+  if (floor === -Infinity) return 1;
+  return 1 - strength * Math.min(1, Math.max(0, 1 - (y - floor) / fade));
+}
+
 // A world-space, non-indexed copy with exactly position / normal / uv (so any mix of shapes merges).
-function bakedCopy(mesh, colour = null) {
+function bakedCopy(mesh, colour = null, shade = null) {
   let g = mesh.geometry.index ? mesh.geometry.toNonIndexed() : mesh.geometry.clone();
   for (const name of Object.keys(g.attributes)) if (!['position', 'normal', 'uv'].includes(name)) g.deleteAttribute(name);
   if (!g.attributes.uv) g.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
   g.clearGroups();
   g.applyMatrix4(mesh.matrixWorld);
   if (colour) { // (the material's colour, per vertex, for a shared vertex-coloured material)
-    const rgb = new Float32Array(g.attributes.position.count * 3);
-    for (let i = 0; i < rgb.length; i += 3) { rgb[i] = colour.r; rgb[i + 1] = colour.g; rgb[i + 2] = colour.b; }
+    const pos = g.attributes.position;
+    let shaded = false;
+    if (shade) {
+      g.computeBoundingBox();
+      shaded = g.boundingBox.max.y - g.boundingBox.min.y >= shade.minHeight;
+    }
+    const rgb = new Float32Array(pos.count * 3);
+    for (let i = 0, v = 0; i < rgb.length; i += 3, v++) {
+      const k = shaded ? shadeAt(pos.getY(v), shade) : 1;
+      rgb[i] = colour.r * k; rgb[i + 1] = colour.g * k; rgb[i + 2] = colour.b * k;
+    }
     g.setAttribute('color', new THREE.Float32BufferAttribute(rgb, 3));
   }
   return g;
@@ -64,7 +86,7 @@ function colourKey(m) {
   return ['std', m.roughness, m.metalness, m.emissive.getHexString(), m.emissiveIntensity, m.flatShading, m.side, m.opacity].join('|');
 }
 
-export function batchStatic(root, { cellSize = 12, upperY = 6 } = {}) {
+export function batchStatic(root, { cellSize = 12, upperY = 6, shade = null } = {}) {
   root.updateWorldMatrix(true, true);
   const inverseRoot = root.matrixWorld.clone().invert();
   const groups = new Map(); // key -> { material, meshes: [] }
@@ -98,7 +120,7 @@ export function batchStatic(root, { cellSize = 12, upperY = 6 } = {}) {
       }
       batchMaterial = shared.get(look);
     }
-    const geometry = mergeGeometries(meshes.map((m) => bakedCopy(m, look ? m.material.color : null)), false);
+    const geometry = mergeGeometries(meshes.map((m) => bakedCopy(m, look ? m.material.color : null, shade)), false);
     if (!geometry) continue;
     geometry.applyMatrix4(inverseRoot); // (back into the root's own space)
     geometry.computeBoundingBox();

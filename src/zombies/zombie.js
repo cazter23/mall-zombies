@@ -32,6 +32,7 @@ import { zombieConfusion, zombieCrowd } from '../config/zombies.js';
 import { workshopStuffings } from '../config/workshop.js';
 import { moveAndCollide } from '../world/collision.js';
 import { createZombieModel } from './zombieModel.js';
+import { applyZombieRim } from './zombieRim.js';
 import { isObserved } from './observation.js';
 import { applyCartHitboxes } from './cartPose.js';
 import { updateConfusion } from './confusion.js';
@@ -145,6 +146,7 @@ export class Zombie {
 
     if (type.cartHitbox) this.hitboxes.push({ part: 'body', box: new THREE.Box3() }); // the tipped cart (zombies/cartPose.js)
     this.model = createZombieModel(type);
+    applyZombieRim(this.model.root, type); // (the soft edge glow: zombies/zombieRim.js)
     this.updateHitboxes();
   }
 

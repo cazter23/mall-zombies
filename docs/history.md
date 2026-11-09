@@ -91,6 +91,37 @@ Twelve pieces of apparel are sold across the mall. A purchase equips the item, a
 
 Controlled checks at the draft prices gave the Cardigan 125 max health, enough for one more 40-damage Shopper hit after healing to full, in exchange for 20% shorter sprints. The Fanny Pack raised the starting staple gun's reserve capacity from 60 to 75, with extra rounds supplied by the next refill. The Gold Card increased an ordinary Shopper kill from 60 to 70, so it takes 200 such kills to repay a full-price 2,000-point purchase. For comparison, the Cardigan costs the same as a first Build-A-Blaster order plus Deluxe Warranty, and the Fanny Pack costs the same as the workshop order. The empty-outfit gun balance report matched main byte for byte.
 
+## 9 November 2026 - Look and real-mall pass: grounding, haze, sunset, shopfronts, mall section, fixtures, stories
+
+Twenty proposals from a visual review, in two passes (look better; look like a real mall). Numbers: config/look.js (bakedShade,
+grading fog, zombieRim, dusk), config/concourse.js (everything in the concourse pass), config/parkingDetails.js realism.
+- Look: walls and counters darken towards their floor, baked into the static batches' vertex colours (staticBatch shadeAt);
+  a per-area haze rides on zone grading (fog / fogColor, one FogExp2 in main.js; the parking sky opts out); zombies get a soft
+  rim of light by kind (zombies/zombieRim.js); the sun goes down over a run (horror director state.dusk -> map.horror.setDusk:
+  sky light, Atrium skylight and new sun shafts, parking sky), part of Comfort > Horror lighting; HOFFMAN'S has burgundy carpet,
+  the Promenade a dusk-mauve terrazzo; a staff watch on the left wrist (the polo sleeves were already there, just out of frame).
+- Real mall (maps/mall/concourse.js, built last in mall.js so every neon sign is placed): a shopfront run on Level 2's south
+  wall (CASSETTE CITY, GLAMOUR PORTRAITS, EAR-RESISTIBLE) and a KEYS CUT kiosk on the north wall, each with a painted interior,
+  header, blade sign and its own light spill; display windows from the hallway into BYTE ME and PLAY TIME TOYS; Level 2 soffits
+  with the pink trim on their edge and a ceiling cove (the "Sunset Galleria - Level 2" sign moved onto the south soffit); a
+  hallway cornice; border bands, sunburst medallions and worn lanes on the floors; a pool under every lit panel and a
+  reflection under every neon sign on a shiny floor; PA speakers, smoke detectors and sprinklers; a drinking fountain with
+  RESTROOMS ->, an ATM, fire pulls, mirrored pillar wraps, ashtray urns, a kiddie ride and a gumball machine in the Atrium;
+  trays, a stroller, a mop bucket, balloons under the skylight, an open till; FALL INTO SAVINGS '86 pennants and poster;
+  garland on the balcony rails; a directory totem; a level mark on the Atrium escalator. Parking: an accessible bay, a cart
+  corral, row letters and banners on the poles, a planted kerb island, an entrance vestibule.
+- Cheap by construction: plain materials merge into the existing batches; every painted panel (interiors, signs) sits on one
+  canvas atlas (world/canvasAtlas.js, world/paintedInteriors.js), all shop glass is one mesh, each glow set is one mesh
+  (lookKit.glowSet), the campaign is one mesh.
+- Placement lessons: the first kiddie ride stood on the Atrium's west vent spawn (z 16), the cart corral sat in a combat lane
+  between two vans (tests/parkingLot.test.js), a blade sign bracket and a vestibule rail shared planes (tests/coplanar.test.js),
+  and a directly flagged userData.dynamic mesh (the sun shafts) is taken for an escalator part by tests/staticBatch.test.js.
+- Cost, A/B against main's build at 42 fixed cameras (each benchmark shot's start, middle, end), fresh pages: every door closed
+  main 263 calls / 43.3k triangles, this 270 / 44.3k; every door open main 340 / 69.0k, this 351 / 70.8k. The hallway and
+  Level 2 views rise most (about +25 calls each: signs, bands and new batches); the env map and fog add no calls.
+- Measuring: open doors change the counts by ~80 calls on average (culling sees through them), and a hidden pane's benchmark
+  route varies by up to ~140 per shot between runs, so compare builds only at fixed cameras with the same doors open.
+
 ## 9 November 2026 - Upgrade colours: warranties are metal, builds are candy
 
 The old palette clashed: Premium purple was nearly Glitter, Platinum gold nearly Popcorn Butter (6 apart in Lab delta-E), Deluxe blue near Neon Tube, and the Standard
@@ -115,6 +146,30 @@ Warranties reworked (game/warranty.js): Deluxe is handling (x1.1 damage, +25% ma
 magazine, 3,000 up to 10,000). A replaced gun leaves its warranty on file; the desk moves it onto the gun in hand for a quarter of that tier's price. Not done: a visible
 cue on the gun for the build's quality beyond the pillow size, and the other seven guns' collars were only checked on a contact sheet, not in hand.
 
+## 8 November 2026 - Visual review pass: metal, rails, late rounds, bare walls
+
+A visual review of every area (screenshots at eye height, High graphics) found a few cheap, mall-wide problems, fixed here:
+- Metal rendered nearly black: the scene has no environment map, so steel, chrome and brass had nothing to reflect (the hallway
+  escalator read as a charcoal column). fx/metalSheen.js bakes a 64 x 32 gradient once (config/look.js metalSheen) and gives it to
+  metal materials only (296 meshes), after static batching. Lighting the whole scene with it washed every wall out instead.
+- Balcony handrails used the escalator's black rubber colour and drew a black bar across the view over every balcony; they are
+  brass now (palette balustradeRail; escalator handrails stay black). The hallway escalator is clad in the wainscot lavender with a
+  RIDE AT YOUR OWN RISK panel on each side.
+- The horror layer barely showed at round 21 (only real lamps and flickering letters changed; painted light hid it). Now every
+  neon tube browns out too (neon.setBrownout, look.horror.neonBrownout) and the view drifts to a lateHours grade (look.horror.decay),
+  MULTIPLIED onto each area's grade so dark back-of-house rooms only get darker.
+- Sightlines: the Food Court tree hid FRESH MEAT DAILY and WOK THIS WAY (now a low hedge); the Atrium court trees hid the kiosks
+  (now tall: canopy above the signs, at the ring's level); the hallway's FOOD COURT sign sat behind the start door's lintel seen
+  from the back of the start room (4.3 -> 3.9 m). Planters turn and size their foliage by position, so repeats don't look copied.
+- Bare walls dressed: cinema stairwell (two wayfinding stripes that follow the flight, LEVEL marks, a notice and Dale), the
+  workshop hall's side walls (a banner, Dale, two notices), two Level 2 banners, and a ghost sign painted on the parking facade
+  (new poster kind 'ghost': unlit, so its colours are the wall's at dusk). The hallway terrazzo is matter, with more tile variation.
+- Checked and left alone: the PA card looked faint in screenshots, but a hidden pane does not advance CSS animations (it is opaque
+  in play); the receipt's buttons are sticky by design and the whole receipt scrolls clear of them.
+Cost, measured as an A/B against main's build at 42 fixed cameras (each benchmark shot's start, middle and end, culling updated):
+main 317 calls / 46,632 triangles on average, this 317 / 46,657. Per view 0 to +4 calls (cinema stairs and workshop hall the most),
+the Food Court hedge saves one. The env map adds no calls (checked by removing it). Benchmark route runs in a hidden pane vary by
+up to ~140 calls per shot between runs, so they can't show differences this small.
 ## 8 November 2026 � Idle saver (focus mode)
 
 The title screen draws a full post-processed flyover every frame, so a tab left open on the menu kept a CPU core and the GPU busy all day. Now, while the game is

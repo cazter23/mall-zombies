@@ -14,6 +14,19 @@ export const parkingDetails = {
     delivery: { x: 48.1, z: -15.7, width: 1.3, depth: 1.2 },
     waiting: { x: 56.1, z: -15.7, width: 1.5, depth: 1.5 },
   },
+  // What makes it a real mall car park (maps/mall/parkingDetails.js realism): the accessible bay nearest the door, a cart
+  // corral with two strays, row letters and campaign banners on the light poles, a planted kerb island at the row's end,
+  // and a glass entrance vestibule round the Mega Mart door (side walls solid, the front open).
+  realism: {
+    accessibleBay: 1, // bay index (0 = the westmost); painted at y
+    accessibleY: .004,
+    // (bay 5: the empty east bay; the gaps between the vans are combat lanes, tests/parkingLot.test.js)
+    corral: { bay: 5, length: 2.8, width: 1.1, height: 1.0, carts: [[58.6, -10.4, Math.PI], [57.5, -13.4, 2.6]] },
+    rowLetters: ['C', 'A'], // on the two light poles, in order
+    poleBanner: { width: .55, height: 1.25, y: 4.1, out: .18 },
+    island: { minX: 37.6, maxX: 39.3, minZ: -14.9, maxZ: -7.2, kerb: .15, tree: [38.45, -11] },
+    vestibule: { minX: 34.45, maxX: 36.25, minZ: .3, maxZ: 4.7, height: 2.8, roof: .15 },
+  },
   facade: {
     downpipes: [-22.6, -6.5, 5.4],
     vents: [{ z: -18.8, y: 3, width: 1.2, height: .6 }, { z: -4.5, y: 2.6, width: .8, height: .5 }],
@@ -22,6 +35,10 @@ export const parkingDetails = {
     notices: [{ z: -17, text: 'DELIVERIES 06:00–08:00', sub: 'DRIVERS MUST SIGN IN' },
       { z: -.2, text: 'CCTV IN OPERATION', sub: 'MANAGEMENT IS ALWAYS WATCHING' }],
     roofUnits: [[34.65, 5.8, -19.4], [34.65, 5.8, -14.2]],
+    // A faded painted advert from opening year, between the vents and the downpipe. Posters are unlit, so these are the
+    // wall's colour AT DUSK (as rendered), barely lighter: paint that has nearly gone, not a lit billboard.
+    ghostSign: { z: -11.4, y: 2.45, width: 8, height: 2, text: 'SUNSET GALLERIA', sub: 'GRAND OPENING · FALL 1986',
+      wall: '#806b5e', ink: '#a08878' },
   },
   vehicle: {
     plates: ['SUN-086', 'SAME-DAY', 'RV-4EVER'],

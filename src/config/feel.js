@@ -319,6 +319,8 @@ export const feel = {
       shirtTrim: 0x990b22, // ribbed cuff / hem trim
       shirtStripe: 0xf4e8d1, // cream uniform cuff tipping stripe
       uniformGold: 0xe9ae50,
+      watchBand: 0x2b2b30, // the staff-issue digital watch on the left wrist (always reads closing time)
+      watchFace: 0x9fd8a8,
       pants: 0xc3a57a, // khaki
       pantsShade: 0xa88b60, // khaki cuff / seam shade
       shoes: 0xf2f2f2, // white sneakers

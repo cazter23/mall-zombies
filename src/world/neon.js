@@ -9,6 +9,7 @@
 //   neon.shape('palm' | 'bolt' | 'arrow' | 'star' | 'heart' | 'sun' | 'rect', { x, y, z, facing, size, color, ... })
 //   neon.sign({ text, x, y, z, facing, height, color, backing, border, deadLetters, flickerLetters })
 //   neon.update(dt)                       animates the flickering parts (call each tick)
+//   neon.setPower(level) / setFailures(share) / setBrownout(share)   the horror layer: cuts, dead letters, dimmed tubes
 //   neon.setQuality({ halo, flicker })    the graphics quality system: hide halos / freeze flicker (steady on)
 //   neon.stats()                          { meshes, triangles } (draw calls it adds)
 //   neon.dispose()                        removes and frees EVERYTHING it created
@@ -367,6 +368,7 @@ export function createNeon(kit, { seed = cfg.flicker.seed } = {}) {
   const quality = { halo: true, flicker: true };
   let power = 1; // the area's power (setPower: 0 = a power cut)
   let failure = 0; // the share of flickering parts that have died for good (setFailures)
+  let brownout = 0; // the share of brightness every tube has lost (setBrownout)
   let partCount = 0;
   let disposed = false;
 
@@ -584,19 +586,32 @@ export function createNeon(kit, { seed = cfg.flicker.seed } = {}) {
     return min + (max - min) * rand();
   }
 
+  const supply = () => power * (1 - brownout); // what reaches the tubes: the area's power, less the brownout
+
   function applyLevel(part, level) {
     part.level = level;
-    const shown = part.failed ? 0 : level * power;
+    const shown = part.failed ? 0 : level * supply();
     part.litMat.color.copy(part.baseColor).multiplyScalar(Math.max(shown, part.failed ? cfg.flicker.offLevel * 0.25 : 0));
     part.haloMat.opacity = cfg.halo.opacity * shown;
+  }
+
+  function relight() {
+    const s = supply();
+    for (const m of shared.lit.values()) m.color.copy(m.userData.baseColor).multiplyScalar(s);
+    for (const m of shared.halo.values()) m.opacity = cfg.halo.opacity * s;
+    for (const part of flickers) applyLevel(part, part.level);
   }
 
   /** The area's power, 0..1 (the horror layer's power cuts): scales every lit tube and halo, steady and flickering alike. */
   function setPower(level) {
     power = Math.min(1, Math.max(0, level));
-    for (const m of shared.lit.values()) m.color.copy(m.userData.baseColor).multiplyScalar(power);
-    for (const m of shared.halo.values()) m.opacity = cfg.halo.opacity * power;
-    for (const part of flickers) applyLevel(part, part.level);
+    relight();
+  }
+
+  /** A share (0..1) of brightness every tube loses for good, steady ones too (the horror layer's late rounds); 0 = full. */
+  function setBrownout(fraction) {
+    brownout = Math.min(1, Math.max(0, fraction));
+    relight();
   }
 
   /** Lets a share (0..1) of the flickering parts die for good, always the same ones first (slogans lose letters); 0 = all back. */
@@ -663,8 +678,9 @@ export function createNeon(kit, { seed = cfg.flicker.seed } = {}) {
   return {
     group: root,
     tube, text, shape, sign,
-    update, setQuality, setPower, setFailures, stats, dispose,
+    update, setQuality, setPower, setFailures, setBrownout, stats, dispose,
     get power() { return power; },
+    get brownout() { return brownout; },
     get failure() { return failure; },
     /** Read-only view of the flickering parts ({ style, level, on }), for tests and debugging. */
     get flickers() { return flickers.map(({ style, level, on, failed }) => ({ style, level, on, failed })); },

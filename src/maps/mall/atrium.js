@@ -15,11 +15,13 @@
 // =============================================================================
 
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { slabPiecesWithHoles } from '../../world/mapKit.js';
 import { COLORS } from './palette.js';
 import { buildAtriumDetails } from './atriumDetails.js';
 import { atriumShopOpenings } from './atriumStorefronts.js';
 import { atriumDetails } from '../../config/atrium.js';
+import { wayfinding } from '../../config/concourse.js';
 import { shutters } from '../../config/shutters.js';
 import { retailUnease } from '../../config/retailUnease.js';
 
@@ -50,6 +52,7 @@ export function buildAtrium({ kit, props, layout, upperY }) {
   const E = layout.escalator;
   const escalator = props.escalator({
     bottomX: E.bottomX, dir: 1, minZ: E.minZ, maxZ: E.maxZ, upperY, ceilingY: upperY - 0.3, sealed: false, hangingSign: false,
+    skirtSign: { text: 'LEVEL 2 · UPPER RING ↑', width: 2.4, height: 0.5, ...wayfinding },
   });
 
   // --- The upper ring: a slab with the court and the escalator's notch cut out, a tiled skin, glass railings --------------------
@@ -124,6 +127,7 @@ export function buildAtrium({ kit, props, layout, upperY }) {
   trims(upperY, [link]);
   // The skylight: one big warm glowing panel over the court, crossed by beams
   const glow = mat(0xffc58a, { emissive: 0xffa24d, emissiveIntensity: 1.25, roughness: 0.3 });
+  glow.userData.animated = true; // (the dusk recolours it: maps/mall/mall.js setDusk; batching must keep this material)
   box(V.minX + 0.4, roofY - 0.05, V.minZ + 0.4, V.maxX - 0.4, roofY, V.maxZ - 0.4, glow, { collide: false, name: 'atrium_skylight' });
   const beam = mat(COLORS.pillar);
   for (let i = 0; i <= 3; i++) {
@@ -131,6 +135,8 @@ export function buildAtrium({ kit, props, layout, upperY }) {
     box(x - 0.15, roofY - 0.25, A.minZ, x + 0.15, roofY, A.maxZ, beam, { collide: false });
   }
   box(A.minX, roofY - 0.25, cz - 0.15, A.maxX, roofY, cz + 0.15, beam, { collide: false });
+  const shafts = buildSunShafts();
+
   // Light panels under the ring, lighting the arcade
   for (const [x, z] of [[cx - 6, A.minZ + d / 2], [cx + 6, A.minZ + d / 2], [cx - 6, A.maxZ - d / 2], [cx + 6, A.maxZ - d / 2],
     [A.minX + d / 2, cz], [A.maxX - d / 2, cz - 6]]) {
@@ -200,7 +206,8 @@ export function buildAtrium({ kit, props, layout, upperY }) {
     }
     box(k.x - 0.85, 2.56, k.z - 0.005, k.x + 0.85, 2.94, k.z + 0.005, mat(0x1f1a24), { collide: false }); // (the sign's backing)
   }
-  for (const [x, z] of layout.planters) props.planter(x - 0.7, z - 0.7, x + 0.7, z + 0.7, { tree: true });
+  // Tall trees: the court is open to the skylight, so the canopy sits above the kiosk signs instead of in front of them.
+  for (const [x, z] of layout.planters) props.planter(x - 0.7, z - 0.7, x + 0.7, z + 0.7, { tree: 'tall' });
   for (const [x0, z0, x1, z1] of layout.benches) props.bench(x0, z0, x1, z1);
 
   // --- Signs ---------------------------------------------------------------------------------------------------------------------
@@ -242,7 +249,43 @@ export function buildAtrium({ kit, props, layout, upperY }) {
   }
 
   const details = buildAtriumDetails(kit, layout, upperY);
+  // Sun shafts: tall additive planes from the skylight to the court, leaning west, one merged mesh (one draw call).
+  function buildSunShafts() {
+    const S = atriumDetails.sunShafts;
+    const canvas = document.createElement('canvas');
+    canvas.width = 4; canvas.height = 128;
+    const c = canvas.getContext('2d');
+    const fade = c.createLinearGradient(0, 0, 0, 128); // bright under the skylight, gone by the floor
+    fade.addColorStop(0, 'rgba(255,255,255,0.9)'); fade.addColorStop(0.6, 'rgba(255,255,255,0.35)'); fade.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = fade; c.fillRect(0, 0, 4, 128);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    const height = roofY - 0.3;
+    const planes = [];
+    for (const [x, z] of S.at) for (const turn of [0, Math.PI / 2]) { // two crossed planes per shaft: a volume from any side
+      const p = new THREE.PlaneGeometry(S.width, height);
+      p.rotateY(turn);
+      const pos = p.attributes.position;
+      for (let i = 0; i < pos.count; i++) { // lean the top towards the east: the light falls from the east, westwards
+        const yy = pos.getY(i) + height / 2;
+        pos.setX(i, pos.getX(i) + yy * S.lean);
+        pos.setY(i, yy);
+      }
+      p.translate(x, 0, z);
+      planes.push(p);
+    }
+    const geometry = mergeGeometries(planes, false);
+    const material = new THREE.MeshBasicMaterial({ map: texture, color: S.color, transparent: true, opacity: S.opacity,
+      blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.name = 'atrium_sun_shafts';
+    mesh.renderOrder = 2; // (see-through, so static batching leaves it alone; no dynamic flag needed)
+    kit.group.add(mesh);
+    return { material, opacity: S.opacity };
+  }
+
   return {
+    skylight: glow, shafts, // (for the dusk: maps/mall/mall.js setDusk)
     update: details.update,
     reset: details.reset,
     spawns,
