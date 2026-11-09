@@ -57,6 +57,7 @@
 //                                                        the purchase (buying a gun is kind 'weapon'; a fitting room emits the id of the item put on, cost 0)
 //                                                        Area purchases also include areaId and openedDoorIds (one charge, many barriers).
 //   'wardrobeChange' { slot, worn, removed }              apparel equipped, item ids (removed is null for an empty slot)
+//   'wardrobeBuy' { id, pa: { kicker, text } }            an item was bought from a showpiece (game/features/wardrobeFixtures.js): the mall PA reads `pa`
 //   'flashSaleStart' { id, label, categories, discount, seconds, pa: { kicker, text } }   a Flash Sale began (game/flashSales.js)
 //   'flashSaleEnd'   { id, label, reason 'expired' | 'reset', pa }                         it ended (no banner on 'reset')
 //   'ritualStart' { gunId, gunName, loaner, restuff, pa }  Build-A-Blaster took a gun (game/features/workshopRitual.js)

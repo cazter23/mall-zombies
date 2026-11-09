@@ -10,6 +10,9 @@ export const wardrobeItems = {
     factors: { regenDelay: 0.8, reloadSpeed: 0.92 }, ticket: 'You smell like a shift you survived.',
     color: 0xf2542d, icon: 'hat',
     zone: 'foodCourt', at: [-5.75, -13], facing: 1,
+    // Showpiece (maps/mall/wardrobeShowpieces/): its mall PA line when bought, and the audio.js sound it hums while unsold.
+    pa: { kicker: 'Attention shoppers', text: 'Someone just bought the Burger Barn Paper Hat. Burger Barn would like the hat back.' },
+    motif: 'motifPaperHat',
   },
   aviators: {
     slot: 'head', name: 'Mirrored Aviators', shortName: 'Aviators',
@@ -60,7 +63,9 @@ export const wardrobeItems = {
     factors: { slideSpeed: 1.15, slideCooldown: 0.7, backpedalSpeed: 0.85 },
     ticket: 'Stopping sold separately.',
     color: 0xff8a1f, icon: 'wheelie',
-    zone: 'foodCourt', at: [-9, -16.4], facing: 'x-',
+    zone: 'foodCourt', at: [-10.1, -12], facing: 1, // (the court floor in front of Good Sports' east window: the old spot was inside the shop)
+    pa: { kicker: 'Attention shoppers', text: 'Someone just bought the Wheelie Sneakers. Walking is now optional. Stopping is not offered.' },
+    motif: 'motifWheelie',
   },
   fannyPack: {
     slot: 'accessory', name: 'Fanny Pack', shortName: 'Fanny Pack',
@@ -72,7 +77,9 @@ export const wardrobeItems = {
     slot: 'accessory', name: 'Giant Foam Finger', shortName: 'Foam Finger',
     factors: { meleeDamageMultiplier: 1.5, reloadSpeed: 0.9 }, ticket: "You're number one. Your hand is unavailable.",
     color: 0x2f6bff, icon: 'finger',
-    zone: 'foodCourt', at: [-9, -15], facing: 'x-',
+    zone: 'foodCourt', at: [-15, -9.6], facing: 1, // (open court floor NW of the pillar at (-13, -11.3) that hides Good Sports' west half from the entrance; 5.7 m from the Wheelies)
+    pa: { kicker: 'Attention shoppers', text: 'Someone just bought the Giant Foam Finger. We are number one. Please stop pointing.' },
+    motif: 'motifFoamFinger',
   },
   goldCard: {
     slot: 'accessory', name: 'Galleria Gold Card', shortName: 'Gold Card',
@@ -116,6 +123,17 @@ export const fittingRooms = {
 };
 
 export const wardrobeAnchor = { heightAboveFloor: 1.4, standOff: 0.03 };
+
+// Showpieces (maps/mall/wardrobeShowpieces/, driven by game/features/wardrobeFixtures.js): the big themed fixtures an item is sold from.
+export const showpieces = {
+  motifRange: 8, // metres: an unsold showpiece hums its motif (config/audio.js) while you are this close...
+  motifSeconds: 6, // ...once every this many seconds
+  motifVolume: 0.5,
+  poseSeconds: 1.1, // the buying moment: the idle motion snaps to a pose and a spotlight cone flashes for this long
+  soldGlow: 0.12, // an owned item's showpiece keeps this share of its glow...
+  soldSign: 0.35, // ...and of its signs' brightness
+  soldTint: 0.45, // ...and its moving pieces' colours are greyed to this share
+};
 
 // The fitting-room picker (game/features/fittingRoomPicker.js): it closes by itself once you are this far from the mirror (metres).
 export const fittingRoomPicker = { closeDistance: 3 };

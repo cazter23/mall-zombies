@@ -63,9 +63,13 @@ export function buildMallAtmosphere(kit, layout, { service, ceilingHole, ceiling
     box('hvac_flange', x, 5.72, 5.35, 0.06, 0.32, 0.46, dark);
     box('hvac_strap', x, 5.88, 5.35, 0.03, 0.22, 0.46, dark);
   }
-  box('food_exhaust_duct', 0, 5.68, -13.55, 17, 0.34, 0.48, metal);
+  // (The duct has a 2.3 m gap over Burger Barn, x -6.9..-4.6, and no riser there: the Paper Hat showpiece's burger stands in it,
+  // maps/mall/wardrobeShowpieces/foodCourt.js.)
+  box('food_exhaust_duct', -7.7, 5.68, -13.55, 1.6, 0.34, 0.48, metal);
+  box('food_exhaust_duct', 1.95, 5.68, -13.55, 13.1, 0.34, 0.48, metal);
   for (let x = -7; x <= 7; x += 3.5) box('food_duct_flange', x, 5.68, -13.55, 0.06, 0.38, 0.52, dark);
-  for (const x of [-5.75, 0, 5.75]) box('stall_exhaust_riser', x, 5.15, -13.55, 0.36, 0.75, 0.36, metal);
+  box('food_duct_flange', -4.6, 5.68, -13.55, 0.06, 0.38, 0.52, dark);
+  for (const x of [0, 5.75]) box('stall_exhaust_riser', x, 5.15, -13.55, 0.36, 0.75, 0.36, metal);
   for (const [sx, sy, sz, ry] of [[-5.5, 4.85, 5.88, 0], [12.5, 4.85, 5.88, 0], [-12.6, 4.6, -8.3, 0.4], [12.6, 4.6, -8.3, -0.4]]) {
     box('pa_speaker_mount', sx, sy, sz, 0.08, 0.14, 0.12, dark, [0, ry, 0]);
     box('pa_speaker_horn', sx, sy - 0.02, sz + ( sz > 0 ? -0.14 : 0.14), 0.22, 0.18, 0.2, cream, [0.18, ry, 0]);

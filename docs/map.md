@@ -174,8 +174,12 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   zombie clerk behind a full-width counter, two attachments per counter (one buy spot each), a zombie spawn just inside each door. Each
   store is ONE entry in LAYOUT.stores (mall.js). Map features of kind 'attachmentCounter' (one per attachment). The Mega Mart's aisle
   4 is HOUSEWARES again (the barrels moved from the old hardware pegboard to Nuts & Bolts).
-- **Wardrobe** has 12 apparel displays and three fitting rooms. In the Food Court, Burger Barn sells the Paper Hat and Good Sports sells
-  the Wheelies and Foam Finger. Find Aviators at SHADE SHACK in the Atrium and 3D Glasses at the Cinema concessions.
+- **Wardrobe** has 12 apparel displays and three fitting rooms. In the Food Court three are SHOWPIECES (maps/mall/wardrobeShowpieces/foodCourt.js):
+  a burger on Burger Barn's roof sells the Paper Hat (buy at the counter, x -5.75); a skate ramp on the court floor in front of Good Sports' east
+  window sells the Wheelies (x -11.05..-9.15, z -13.3..-12, 0.9 m, vaultable; buy at its front edge, x -10.1) and a 3 m foam finger in a pennant bin
+  on the open court floor sells the Foam Finger (bin x -15.5..-14.5, z -10.4..-9.6; buy at its front, z -8.8; the 6 m pillar at (-13, -11.3) hides
+  Good Sports' west half from the entrance, so it stands north of it). The ramp keeps Good Sports' 3 m door
+  (x -14.5..-11.5) clear; the surveyed spots are in config/wardrobe.js `at`. Find Aviators at SHADE SHACK in the Atrium and 3D Glasses at the Cinema concessions.
   The Cardigan is in KNITS at HOFFMAN'S, with a fitting room by the curtained booths. Mega Mart has the Sandwich Board at checkout
   and the Fanny Pack by the outdoor aisle. The Service Corridor has the Hi-Vis Vest and a fitting room by the staff lockers.
   Shoe-Per Sale has two sneaker racks and a fitting room. The Gold Card is beside Customer Service in the Hallway.
