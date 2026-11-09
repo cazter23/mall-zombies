@@ -16,7 +16,7 @@ export class Weapon {
     this.def = def; // entry from config/weapons.js
     this.stats = stats; // player stats (damageMultiplier, reloadSpeed)
     this.magazine = def.magazineSize;
-    this.reserve = def.startingReserve;
+    this.reserve = this.reserveCap;
 
     this.cooldown = 0; // seconds until the next shot is allowed
     this.fireRequest = 0; // > 0 while a click is waiting to be fired (click buffer)
@@ -79,16 +79,20 @@ export class Weapon {
     return a + (b - a) * t;
   }
 
+  get reserveCap() {
+    return Math.round(this.def.startingReserve * (this.stats.reserveMultiplier ?? 1));
+  }
+
   // Magazine and reserve both full (nothing an ammo buy would add).
   get isFull() {
-    return this.magazine === this.def.magazineSize && this.reserve >= this.def.startingReserve;
+    return this.magazine === this.def.magazineSize && this.reserve >= this.reserveCap;
   }
 
   // Ammo buy: magazine and reserve back to full. Any reload in progress is finished off.
   refill() {
     this.cancelFire();
     this.magazine = this.def.magazineSize;
-    this.reserve = Math.max(this.reserve, this.def.startingReserve);
+    this.reserve = Math.max(this.reserve, this.reserveCap);
     this.reloadTimer = 0;
     this.reloadPhase = null;
   }
@@ -104,7 +108,7 @@ export class Weapon {
   // Stockroom Delivery: reserve ammo, with a small ready-magazine top-up.
   // Never bypass a running reload or the Cannon's individual shell loading.
   restock(magazineFraction = 0) {
-    this.reserve = Math.max(this.reserve, this.def.startingReserve);
+    this.reserve = Math.max(this.reserve, this.reserveCap);
     if (!this.isReloading && !this.isShellReload) {
       this.magazine = Math.max(this.magazine, Math.ceil(this.def.magazineSize * magazineFraction));
     }
@@ -142,7 +146,7 @@ export class Weapon {
   reset() {
     this.cancelFire();
     this.magazine = this.def.magazineSize;
-    this.reserve = this.def.startingReserve;
+    this.reserve = this.reserveCap;
     this.cooldown = 0;
     this.fireRequest = 0;
     this.reloadTimer = 0;

@@ -174,6 +174,12 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   zombie clerk behind a full-width counter, two attachments per counter (one buy spot each), a zombie spawn just inside each door. Each
   store is ONE entry in LAYOUT.stores (mall.js). Map features of kind 'attachmentCounter' (one per attachment). The Mega Mart's aisle
   4 is HOUSEWARES again (the barrels moved from the old hardware pegboard to Nuts & Bolts).
+- **Wardrobe** has 12 apparel displays and three fitting rooms. In the Food Court, Burger Barn sells the Paper Hat and Good Sports sells
+  the Wheelies and Foam Finger. Find Aviators at SHADE SHACK in the Atrium and 3D Glasses at the Cinema concessions.
+  The Cardigan is in KNITS at HOFFMAN'S, with a fitting room by the curtained booths. Mega Mart has the Sandwich Board at checkout
+  and the Fanny Pack by the outdoor aisle. The Service Corridor has the Hi-Vis Vest and a fitting room by the staff lockers.
+  Shoe-Per Sale has two sneaker racks and a fitting room. The Gold Card is beside Customer Service in the Hallway.
+  Interaction anchors are in `config/wardrobe.js`. Visual mounts are in `mall/wardrobeDisplays.js`.
 - Ammo cache: the RESTOCK-O-MATIC, a big hot-orange vending machine on the Food Court's NORTH wall just inside the door,
   east side (x 4.1..5.8, front at z -3.15 facing south; LAYOUT.restockMachine.x moves it along the wall), clear of the door
   lane, the east bench and the Byte Me pod. Hold F/X for 400 points to refill the gun in your hand (any gun, including the

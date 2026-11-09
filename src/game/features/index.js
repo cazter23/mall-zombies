@@ -9,7 +9,7 @@
 // createGame never changes for a new kind.
 //
 // ctx (from createGame, built after its core event wiring, so a feature's listeners run after payouts/stats):
-//   { scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state, warranty }
+//   { scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state, warranty, wardrobe }
 // =============================================================================
 
 import { buildWallBuy } from './wallBuy.js';
@@ -18,6 +18,7 @@ import { buildUpgradeDesk } from './upgradeDesk.js';
 import { buildAttachmentCounter } from './attachmentCounter.js';
 import { buildWorkshop } from './workshop.js';
 import { buildHorror } from './horror.js';
+import { buildWardrobeRack, buildFittingRoom } from './wardrobeFixtures.js';
 
 const builders = {
   wallBuy: buildWallBuy, // buy a gun off the wall, or its ammo once you own it
@@ -25,6 +26,8 @@ const builders = {
   upgradeDesk: buildUpgradeDesk, // Customer Service: the next Extended Warranty tier for the gun in your hand
   attachmentCounter: buildAttachmentCounter, // a store's attachment: fit it to the gun in your hand
   workshop: buildWorkshop,
+  wardrobeRack: buildWardrobeRack,
+  fittingRoom: buildFittingRoom,
   horror: buildHorror, // the horror layer: lights die and the power cuts out as the rounds climb (visual only)
 };
 

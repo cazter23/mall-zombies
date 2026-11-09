@@ -54,8 +54,9 @@ export function createMascotCostumes({ events, scene, zombies, player, colliders
       // Shoved straight away from it (along its facing if you're right on top of it), like a Cart Pusher's charge.
       const nx = d > 1e-4 ? dx / d : -Math.sin(zombie.yaw);
       const nz = d > 1e-4 ? dz / d : -Math.cos(zombie.yaw);
-      player.velocity.x += nx * blast.playerShove;
-      player.velocity.z += nz * blast.playerShove;
+      const shove = blast.playerShove * (player.stats?.knockbackMultiplier ?? 1);
+      player.velocity.x += nx * shove;
+      player.velocity.z += nz * shove;
       butter = true;
     }
 

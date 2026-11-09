@@ -45,11 +45,13 @@ export function createWallet({ onChange = null } = {}) {
  * COD-style points for one hit on a zombie: +10 for a hit that doesn't kill; a kill pays the
  * zombie's kill value plus a headshot or melee bonus. Returns 0 for non-zombies (practice dummies).
  */
-export function pointsForHit({ target, killed, headshot, melee, killMultiplier = 1 }) {
+export function pointsForHit({ target, killed, headshot, melee, killMultiplier = 1, killPayMultiplier = 1 }) {
   if (!target.type || target.noRewards) return 0; // only reward-eligible zombies pay, including hit bonuses
   const p = economy.payouts;
   if (!killed) return p.nonLethalHit;
   let points = (economy.killValues[target.type.id] ?? 0) * killMultiplier;
+  // Apparel boosts base kill credit, with combat bonuses added afterward.
+  if (killPayMultiplier !== 1) points = Math.round(points * killPayMultiplier / p.nonLethalHit) * p.nonLethalHit;
   if (melee) points += p.meleeKillBonus;
   else if (headshot) points += p.headshotKillBonus;
   return points;

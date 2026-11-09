@@ -15,6 +15,7 @@
 //   g.state        { forceRun, over, padPlaying, running }  (window.__mall.game)
 //   g.events       the event bus (game/events.js lists every event): systems announce, features listen
 //   g.pricing      every price the player pays (game/pricing.js): config base price + any discount
+//   g.wardrobe     the current outfit and bag (game/wardrobe.js)
 //   g.flashSales   the mall PA's timed discounts (game/flashSales.js); .active = the sale running now (or null)
 //   g.debug        the developer shortcuts (game/debugCommands.js): run(id), resolve(key, shift), status()
 //   g.<system>     map, colliders, arena, shootables, stats, player, wallet, runStats, effects, aimAssist,
@@ -51,6 +52,7 @@ import { createPricing } from './pricing.js';
 import { createFlashSales } from './flashSales.js';
 import { createDebugCommands } from './debugCommands.js';
 import { createWarranty } from './warranty.js';
+import { createWardrobe } from './wardrobe.js';
 import { createRunStats } from './runStats.js';
 import { createWallet, pointsForHit } from './wallet.js';
 import { createRounds } from './rounds.js';
@@ -295,6 +297,7 @@ export function createGame({
     if (!state.over) wallet.earn(pointsForHit({
       target: zombie, killed: true, headshot, melee,
       killMultiplier: powerUps?.killMultiplier(zombie.position) ?? 1,
+      killPayMultiplier: stats.killPayMultiplier,
     }));
   });
   events.on('shot', (shot) => {
@@ -332,8 +335,8 @@ export function createGame({
   events.on('playerHit', ({ damage, knockback }) => {
     health.takeDamage(damage);
     if (knockback) { // a Cart Pusher's charge shoves you along it (m/s, horizontal)
-      player.velocity.x += knockback.x;
-      player.velocity.z += knockback.z;
+      player.velocity.x += knockback.x * stats.knockbackMultiplier;
+      player.velocity.z += knockback.z * stats.knockbackMultiplier;
     }
     player.addViewKick(-feel.health.hitJoltDegrees * DEG_TO_RAD); // jolt the view down
   });
@@ -422,8 +425,9 @@ export function createGame({
   // feature might need (game/features/index.js lists the context).
   // EXTENDED WARRANTY rules (game/warranty.js): the desk's offers, a warranty left on file by a replaced gun, and a Platinum claim.
   const warranty = createWarranty({ gun, events, rounds });
+  const wardrobe = createWardrobe({ stats, player, events });
   const features = buildFeatures(map, {
-    scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state, warranty,
+    scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state, warranty, wardrobe,
     colliders, effects, sound, input,
   });
 
@@ -439,6 +443,7 @@ export function createGame({
       if (group.id === 'weapons') return featuresOf(map, 'wallBuy').some((w) => !gun.owns(w.weapon));
       if (group.id === 'tiers') return gun.slots.some((id) => warranty.offer(id));
       if (group.id === 'attachments') return featuresOf(map, 'attachmentCounter').some(s => !ownsAttachment(gun, s.attachment));
+      if (group.id === 'apparel') return featuresOf(map, 'wardrobeRack').some(r => map.zones[r.zone].open && !wardrobe.owns(r.item));
       return true;
     },
   });
@@ -469,6 +474,7 @@ export function createGame({
     ['powerUps', () => powerUps.reset()],
     ['zombies', () => zombies.clear()],
     ['mascotCostumes', () => mascotCostumes.reset()],
+    ['wardrobe', () => wardrobe.reset()],
     ['stats', () => resetPlayerStats(stats)], // perks / wardrobe / skill-tree changes don't carry over
     ['surfaces', () => surfaces.reset()], // no slow floor left over
     ['health', () => health.reset()], // (after stats: back to the base max health)
@@ -585,6 +591,7 @@ export function createGame({
     death,
     map,
     features,
+    wardrobe,
     flashSales,
     powerUps,
     bosses,

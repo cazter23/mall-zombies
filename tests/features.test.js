@@ -10,7 +10,7 @@ import { economy } from '../src/config/economy.js';
 
 test('the mall lists its wall buys, the ammo cache, the upgrade desk and the attachment counters as features, each fully described', () => {
   const { g } = headlessGame();
-  assert.deepEqual(FEATURE_KINDS, ['wallBuy', 'ammoCache', 'upgradeDesk', 'attachmentCounter', 'workshop', 'horror']);
+  assert.deepEqual(FEATURE_KINDS, ['wallBuy', 'ammoCache', 'upgradeDesk', 'attachmentCounter', 'workshop', 'wardrobeRack', 'fittingRoom', 'horror']);
   assert.equal(featuresOf(g.map, 'horror').length, 1);
   assert.equal(featuresOf(g.map, 'attachmentCounter').length, 8);
   assert.equal(featuresOf(g.map, 'upgradeDesk').length, 1);
@@ -85,7 +85,7 @@ test('the real game gives features its systems, and ticks/resets them like the r
   const t = headlessGame();
   const { g } = t;
   const ctx = g.features.context;
-  for (const [name, system] of Object.entries({ events: g.events, pricing: g.pricing, interactions: g.interactions, gun: g.gun, player: g.player, stats: g.stats, wallet: g.wallet, health: g.health, zombies: g.zombies, rounds: g.rounds, state: g.state, map: g.map })) {
+  for (const [name, system] of Object.entries({ events: g.events, pricing: g.pricing, interactions: g.interactions, gun: g.gun, player: g.player, stats: g.stats, wallet: g.wallet, health: g.health, zombies: g.zombies, rounds: g.rounds, state: g.state, map: g.map, wardrobe: g.wardrobe })) {
     assert.equal(ctx[name], system, name);
   }
   // A probe feature (what a hazard would be): counts its ticks and resets.

@@ -1,5 +1,17 @@
 # Sunset Galleria: build history ("Current state")
 
+## 9 November 2026 - Wardrobe displays and clipping audit
+
+Twelve static, low-poly apparel displays now mark the purchases. The three fitting rooms share a lit TRY ON badge. The visual mounts and interaction anchors are separate, and the displays add no collision.
+
+The aisle sweep checked four views per location. HOFFMAN’S badge moved above the curtain and mirror dressing. At Shoe-Per Sale, the Light-Ups sit above the mirror and the Comfort Center header clears the shoe. Mega Mart’s two displays mount on the checkout surfaces. The concessions cabinet and checkout supports were adjusted to separate coplanar faces. The useful approaches to KNITS, the Foam Finger and the staff lockers turn around a rack, stay inside the shop glass and stay within the corridor, respectively. The two Good Sports purchases and the Gold Card and warranty desk can each be targeted from their own interaction spot.
+
+## 9 November 2026 - Wardrobe v1
+
+Twelve pieces of apparel are sold across the mall. A purchase equips the item, and the piece it replaces goes to the back of the bag. Hold interact at HOFFMAN'S, Shoe-Per Sale or the staff lockers to swap in the next bag item for free. The ticket shows the tradeoff, the HUD shows the four equipped slots, and Play Again starts with an empty outfit. Apparel sales, Employee Discount and the Discount Code use the existing pricing system.
+
+Controlled checks at the draft prices gave the Cardigan 125 max health, enough for one more 40-damage Shopper hit after healing to full, in exchange for 20% shorter sprints. The Fanny Pack raised the starting staple gun's reserve capacity from 60 to 75, with extra rounds supplied by the next refill. The Gold Card increased an ordinary Shopper kill from 60 to 70, so it takes 200 such kills to repay a full-price 2,000-point purchase. For comparison, the Cardigan costs the same as a first Build-A-Blaster order plus Deluxe Warranty, and the Fanny Pack costs the same as the workshop order. The empty-outfit gun balance report matched main byte for byte.
+
 ## 9 November 2026 - Upgrade colours: warranties are metal, builds are candy
 
 The old palette clashed: Premium purple was nearly Glitter, Platinum gold nearly Popcorn Butter (6 apart in Lab delta-E), Deluxe blue near Neon Tube, and the Standard
@@ -24,7 +36,7 @@ Warranties reworked (game/warranty.js): Deluxe is handling (x1.1 damage, +25% ma
 magazine, 3,000 up to 10,000). A replaced gun leaves its warranty on file; the desk moves it onto the gun in hand for a quarter of that tier's price. Not done: a visible
 cue on the gun for the build's quality beyond the pillow size, and the other seven guns' collars were only checked on a contact sheet, not in hand.
 
-## 8 November 2026 � Idle saver (focus mode)
+## 8 November 2026 � Idle saver (focus mode)
 
 The title screen draws a full post-processed flyover every frame, so a tab left open on the menu kept a CPU core and the GPU busy all day. Now, while the game is
 not running (title, pause and results screens), it goes easy when nobody is there: after 30 s with nothing pressed (or the window unfocused) it draws 10 frames a

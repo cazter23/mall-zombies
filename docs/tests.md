@@ -176,6 +176,11 @@ with the carried gun in the real game), `upgradeDesk.test.js` the Customer Servi
 prop + collider + buy spot, solid and too tall to climb, tiers one at a time at pricing's price, gun in hand only, no refill,
 nothing past Platinum (including the exact purchase frame and switching back to a Platinum gun), Flash Sale applies,
 no prompt while closed / switching / facing away, Play again resets),
+`tests/wardrobe.test.js` exercises all 12 racks and three fitting rooms with real input, fixture clearance, PadX tap vs. hold,
+apparel discounts, outfit order and reset, stat stacking and clamps, live ammo and combat modifiers, and Gold Card payouts.
+The Wardrobe test also checks solid clearance, label sightlines and room culling from four angles per display.
+`tests/coplanar.test.js` checks the new signs and axis-aligned display faces against nearby surfaces.
+
 `attachmentCounter.test.js` the store counters in the real game/mall (every attachment at its store, real F buys fit the gun in
 hand + replace its slot at pricing's price, no prompt when fitted / doesn't fit / area closed / mid switch, cases solid + too tall,
 visible glass matches bullet collision, the four stores are real rooms (walls, solid wall-to-wall counter so nobody reaches the
