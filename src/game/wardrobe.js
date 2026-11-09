@@ -6,13 +6,14 @@
 //   buy(id)        own it and put it on (a rack: game/features/wardrobeFixtures.js)
 //   wear(id)       put on something you own, any slot (the fitting-room picker); false if not owned or already on
 //   ownedIn(slot)  owned ids of a slot, in config order
-//   statLines(id)  what would change if you put `id` on NOW: [{ stat, text, good }], from the current stats
-//   wornLines(id)  what a WORN item is doing right now (the same lines, before = stats without it): the pause screen's rail; [] if not worn
+//   statLines(id)  what putting `id` on does, in words: [{ stat, text, good }] (config/wardrobe.js `lines`; no numbers, config/effectWords.js)
+//   wornLines(id)  the same words for a WORN item: the pause screen's rail; [] if not worn
 //   ticketDetail(id)  the shelf ticket's text: joke line · stat lines · what it replaces
 //   grantAll()     own everything (debug command); only empty slots get dressed
 //   reset()        a new run: clears the lists and never touches stats (resetPlayerStats does that, right after)
 // =============================================================================
-import { wardrobeItems, wardrobeSlots, statLabels } from '../config/wardrobe.js';
+import { wardrobeItems, wardrobeSlots, statBetter } from '../config/wardrobe.js';
+import { fillSize } from '../config/effectWords.js';
 
 const emptyOutfit = () => Object.fromEntries(Object.keys(wardrobeSlots).map((slot) => [slot, null]));
 const ITEM_IDS = Object.keys(wardrobeItems);
@@ -34,40 +35,24 @@ export function createWardrobe({ stats, player, events }) {
     events.emit('wardrobeChange', { slot, worn: id, removed });
   }
 
-  // One ticket line for a stat going from `before` to `after`.
-  function line(stat, before, after) {
-    const label = statLabels[stat];
-    const good = (after > before) === (label.better === 'higher');
-    if (label.kind === 'value') {
-      const show = (value) => `${value.toFixed(label.decimals)}${label.unit}`;
-      return { stat, good, text: `${label.label} ${show(before)} → ${show(after)}` };
-    }
-    const pct = Math.round(Math.abs(after / before - 1) * 100);
-    return { stat, good, text: (after > before ? label.up : label.down).replace('{pct}', pct) };
-  }
-
-  function statLines(id) {
+  // What an item does, in words: its own `lines` (config/wardrobe.js), upsides first. The size word comes from the factor's size, in the fixed bands of
+  // config/effectWords.js; whether a line is an upside follows the factor's direction. No number is ever shown.
+  function wordsOf(id) {
     const item = wardrobeItems[id];
-    const current = worn[item.slot];
-    if (current === id) return [];
-    const off = current ? wardrobeItems[current].factors : {};
-    const lines = [];
-    for (const stat of new Set([...Object.keys(item.factors), ...Object.keys(off)])) {
-      const change = (item.factors[stat] ?? 1) / (off[stat] ?? 1);
-      if (Math.abs(change - 1) < 1e-9) continue;
-      lines.push(line(stat, stats[stat], stats[stat] * change));
-    }
-    return lines.sort((a, b) => b.good - a.good); // upsides first
+    return item.lines
+      .map(({ effect, text }) => ({ stat: effect, text: fillSize(text, item.factors[effect]), good: (item.factors[effect] > 1) === (statBetter[effect] === 'higher') }))
+      .sort((a, b) => b.good - a.good);
   }
 
-  // What a worn item is doing right now: each factor's before (the stat without it) and after (the stat as it is).
+  // What putting `id` on would do (the shelf ticket, the fitting room); [] when it is already on.
+  function statLines(id) {
+    return worn[wardrobeItems[id].slot] === id ? [] : wordsOf(id);
+  }
+
+  // What a worn item is doing (the pause screen's rail); [] when it is not worn.
   function wornLines(id) {
     const item = wardrobeItems[id];
-    if (!item || worn[item.slot] !== id) return [];
-    return Object.entries(item.factors)
-      .filter(([, factor]) => Math.abs(factor - 1) > 1e-9)
-      .map(([stat, factor]) => line(stat, stats[stat] / factor, stats[stat]))
-      .sort((a, b) => b.good - a.good);
+    return item && worn[item.slot] === id ? wordsOf(id) : [];
   }
 
   return {

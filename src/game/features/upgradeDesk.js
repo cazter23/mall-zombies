@@ -9,7 +9,7 @@
 // feature: { kind: 'upgradeDesk', name, zone, position (the buy spot), normal }
 // =============================================================================
 
-import { tierById, tierOf } from '../../weapons/upgrades.js';
+import { renewalLines, tierById, tierLines, tierOf } from '../../weapons/upgrades.js';
 
 export function buildUpgradeDesk(desk, { map, gun, pricing, interactions, warranty }) {
   interactions.add(upgradeDeskItem({ desk, zones: map.zones, gun, pricing, warranty }));
@@ -18,6 +18,9 @@ export function buildUpgradeDesk(desk, { map, gun, pricing, interactions, warran
 
 /** What the offer is called: 'Deluxe', 'Renewal 2', 'Premium (on file)'. */
 const nameOf = (offer) => (offer.kind === 'renewal' ? `Renewal ${offer.count}` : offer.kind === 'transfer' ? `${tierById(offer.tier).name} (on file)` : tierById(offer.tier).name);
+
+/** What the offer does, in words (config/upgrades.js `lines`): a tier, a renewal, or the tier on file being moved. */
+const linesOf = (offer) => (offer.kind === 'renewal' ? renewalLines() : tierLines(offer.tier));
 
 export function upgradeDeskItem({ desk, zones, gun, pricing, warranty }) {
   const offer = () => warranty.offer(gun.def.id);
@@ -33,9 +36,10 @@ export function upgradeDeskItem({ desk, zones, gun, pricing, warranty }) {
     },
     get detail() {
       const o = shown();
-      const job = o.kind === 'tier' ? tierById(o.tier).job : o.kind === 'renewal' ? 'A little more damage' : 'Keeps your warranty';
-      return `${tierById(tierOf(gun.modsFor(gun.def.id))).name} → ${nameOf(o)} warranty · ${job} · Ammo not included`;
+      const words = linesOf(o).map((line) => line.text);
+      return `${tierById(tierOf(gun.modsFor(gun.def.id))).name} → ${nameOf(o)} warranty · ${words.length ? words.join(' · ') : 'Keeps your warranty'} · Ammo not included`;
     },
+    get detailLines() { return linesOf(shown()); }, // (the HUD colours each line)
     kind: 'tier',
     get id() {
       return offer()?.pricingId ?? null; // what is being bought, for pricing

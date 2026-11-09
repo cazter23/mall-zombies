@@ -10,8 +10,7 @@
 // =============================================================================
 
 import { upgrades } from '../../config/upgrades.js';
-import { attachmentById, attachmentFits, attachmentsOf, withAttachment } from '../../weapons/upgrades.js';
-import { attachmentComparison } from '../../weapons/attachmentComparison.js';
+import { attachmentById, attachmentFits, attachmentLines, attachmentsOf, withAttachment } from '../../weapons/upgrades.js';
 
 const inventories = new WeakMap();
 function inventoryFor(gun) {
@@ -32,15 +31,16 @@ export function attachmentCounterItem({ spot, zones, gun, pricing }) {
   const fitted = () => attachmentsOf(gun.modsFor(gun.def.id))[attachment.slot] === id;
   return {
     get label() {
-      return `${attachment.name} on the ${gun.def.name} · ${attachment.blurb}`;
+      return `${attachment.name} on the ${gun.def.name}`;
     },
     get verb() { return owned.has(id) ? 'refit' : 'fit'; },
     get owned() { return owned.has(id); },
     title: attachment.name,
     get detail() {
       const current = attachmentsOf(gun.modsFor(gun.def.id))[attachment.slot];
-      return `${owned.has(id) ? 'Owned this run · Free refit' : 'Unlocks for this run'} · ${current ? `Replaces ${attachmentById(current).name}` : `${upgrades.attachmentSlots[attachment.slot].name} slot`} · ${attachmentComparison(gun.def, gun.modsFor(gun.def.id), id)}`;
+      return `${owned.has(id) ? 'Owned this run · Free refit' : 'Unlocks for this run'} · ${current ? `Replaces ${attachmentById(current).name}` : `${upgrades.attachmentSlots[attachment.slot].name} slot`} · ${attachmentLines(id).map((line) => line.text).join(' · ')}`;
     },
+    get detailLines() { return attachmentLines(id); }, // (the HUD colours each upside and downside)
     kind: 'attachment',
     id,
     get cost() {

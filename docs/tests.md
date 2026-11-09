@@ -176,6 +176,9 @@ with the carried gun in the real game), `upgradeDesk.test.js` the Customer Servi
 prop + collider + buy spot, solid and too tall to climb, tiers one at a time at pricing's price, gun in hand only, no refill,
 nothing past Platinum (including the exact purchase frame and switching back to a Platinum gun), Flash Sale applies,
 no prompt while closed / switching / facing away, Play again resets),
+`tests/effectWords.test.js` guards the words-only rule: the size bands (fixed, ordered, symmetric, {size}/{Size} fill), the number detector, and a scan of every tier,
+renewal, attachment, wardrobe, stuffing, heart, incentive, Flash Sale and boss string plus the real prompts built from them (every attachment counter, every Customer Service
+offer, every wardrobe ticket and rail line) for a digit followed by %, x, s, m, ° or an arrow, and spelled-out percentages.
 `tests/outfitRail.test.js` covers the outfit rail's brain: every item names a known trigger, icon and colour (and every slot a silhouette); each trigger,
 driven through the real game (events, real keys for sprint / slide / aim, real zombies, a real refill), pulses only the worn items that name it,
 all 12 items across three outfits; the Cardigan only when the hit landed above the base max health; an owned-but-not-worn item never pulses; a gun swap is
@@ -185,8 +188,8 @@ lines are right (upsides first, numbers equal the live stat).
 apparel discounts, reset, stat stacking and clamps, live ammo and combat modifiers, and Gold Card payouts.
 The fitting-room picker: every one of the 81 outfits is put on through key presses (two at most inside a slot), it is free and spends
 neither the Discount Code nor Employee Discount, the player stands still while it is open, and it closes on back, a zombie hit, being moved
-away, death and Play again. Tickets: every factor has a label, every rack ticket carries numbers with an upside and a downside, and the
-generated lines equal the stats before and after wearing, with incentives running and against the item being replaced.
+away, death and Play again. Tickets are WORDS ONLY: every factor has a direction and exactly one line in its item, every rack ticket has an upside and a downside with no digit in it, the size words
+follow the fixed bands and do not move with running incentives, and a replacement is named.
 Limits: no item raises jump, vault height or walk speed, and the fastest outfit sprints slower than a Cart charge. Clothes scale a
 'playerHit' but not a fall; 'regenStart' fires once per recovery; the debug command grants everything without undressing you; the
 aim-assist multiplier scales the rotational follow on a controller only.

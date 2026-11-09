@@ -1,3 +1,4 @@
+import { fillSize } from './effectWords.js';
 // Limited Editions: one per carried gun, separate from tiers, attachments and finished builds. They can't be bought: bag-carrying zombies drop them.
 export const workshopBuilds = {
   partyTrap: {
@@ -125,11 +126,14 @@ export const workshopReach = {
 
 // STUFFINGS: what a build does. Each round the bins offer todayCount of what is stocked. stockedBy = the zone that has to be owned (null = always).
 // gunSeconds = damage as seconds of the gun's own fire (weapons/gunStats.js gunPower), scaled again by the build's power.
+// (WORDS ONLY, config/effectWords.js: a blurb's {size} is filled from `blurbRatio`, the multiplier it describes, which is never shown.)
+const SMOOTHIE_VULNERABLE = 1.25;
+const BUTTER_FALLEN_HEADSHOT = 2;
 export const workshopStuffings = {
   smoothie: {
-    name: 'Smoothie', stockedBy: null, defaultHeart: 'headshot', color: 0xff7fb2, sound: 'stuffingSmoothie', blurb: 'Slows zombies, and they take 25% more from everything',
+    name: 'Smoothie', stockedBy: null, defaultHeart: 'headshot', color: 0xff7fb2, sound: 'stuffingSmoothie', blurb: 'Slows zombies, and they take {size} more from everything', blurbRatio: SMOOTHIE_VULNERABLE,
     slow: { seconds: 3, fraction: .55, radius: 2.5 },
-    vulnerable: { multiplier: 1.25 }, // while slowed, every hit on it (any gun, any source) does this much more
+    vulnerable: { multiplier: SMOOTHIE_VULNERABLE }, // while slowed, every hit on it (any gun, any source) does this much more
     pop: { colors: [0xff7fb2, 0xffd1e3, 0xfff3d4], count: 8, speed: 1.6, size: .05 },
   },
   fryerOil: {
@@ -144,12 +148,12 @@ export const workshopStuffings = {
     pop: { colors: [0x4fe0ff, 0xc9f5ff, 0xff4fd8], count: 8, speed: 2.4, size: .045 },
   },
   popcornButter: {
-    name: 'Popcorn Butter', stockedBy: 'cinema', defaultHeart: 'reload', color: 0xfff2b8, sound: 'stuffingButter', blurb: 'Zombies slip and fall; headshots on a fallen one do double',
+    name: 'Popcorn Butter', stockedBy: 'cinema', defaultHeart: 'reload', color: 0xfff2b8, sound: 'stuffingButter', blurb: 'Zombies slip and fall; headshots on a fallen one do {size} more', blurbRatio: BUTTER_FALLEN_HEADSHOT,
     // Spill Cleanup's zone, per proc: anything on it keeps being slowed while it stands there, and slips. slip*: a zombie crossing the puddle slides and
     // falls for slipSeconds (steering lost, speed kept; drag = how fast the slide dies), then can't slip again for slipImmuneSeconds. While it's down,
     // headshots do fallenHeadshotMultiplier. slipAngle: how far back it lies.
     puddle: { radius: 1.8, seconds: 6, slowFraction: .35, slowSeconds: .2, maxPuddles: 3, lift: .03, opacity: .55,
-      slipSeconds: 1.1, slipDrag: .8, slipImmuneSeconds: 2.5, fallenHeadshotMultiplier: 2, slipAngle: Math.PI / 2 - .15, bubbleSeconds: .3 },
+      slipSeconds: 1.1, slipDrag: .8, slipImmuneSeconds: 2.5, fallenHeadshotMultiplier: BUTTER_FALLEN_HEADSHOT, slipAngle: Math.PI / 2 - .15, bubbleSeconds: .3 },
     pop: { colors: [0xffd24a, 0xfff1a8, 0xe0a526], count: 8, speed: 1.4, size: .05 },
   },
   antifreeze: {
@@ -168,6 +172,9 @@ export const workshopStuffings = {
   },
 };
 export const todayCount = 3; // bins open per round
+
+/** A stuffing's blurb for the order form, its {size} filled from the bands in config/effectWords.js. */
+export const stuffingBlurb = (id) => fillSize(workshopStuffings[id].blurb, workshopStuffings[id].blurbRatio);
 
 // What a stuffing's effect LOOKS like (zombies/statusTint.js, and the fx in game/features/workshopStuffings.js). Pure looks: nothing here changes play.
 // tint: the glow a zombie's whole model gets while the effect is on it (emissive colour x strength). flicker: how fast it flickers, per second.

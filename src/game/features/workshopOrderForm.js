@@ -16,7 +16,7 @@
 //   form.open() / form.close() / form.update(dt) / form.isOpen / form.view
 // =============================================================================
 
-import { workshopStuffings, workshopHearts, orderForm as cfg } from '../../config/workshop.js';
+import { workshopStuffings, workshopHearts, stuffingBlurb, orderForm as cfg } from '../../config/workshop.js';
 import { gunStyle } from '../../config/gunStyle.js';
 
 const STICK_ON = .6, STICK_OFF = .3; // stick deflection that counts as a press, and that re-arms it
@@ -114,7 +114,7 @@ export function createOrderForm({ input, state, wallet, events, sound, price, op
         shortfall: Math.max(0, cost - wallet.points),
         denied: denied > 0,
         stuffings: stuffings.map((s) => ({
-          id: s.id, name: workshopStuffings[s.id].name, blurb: workshopStuffings[s.id].blurb, color: workshopStuffings[s.id].color,
+          id: s.id, name: workshopStuffings[s.id].name, blurb: stuffingBlurb(s.id), color: workshopStuffings[s.id].color,
           available: s.available, note: s.note, selected: s.id === stuffing,
         })),
         hearts: hearts.map((id) => ({ id, name: workshopHearts[id].name, blurb: workshopHearts[id].blurb, color: gunStyle.heart.colors[id], selected: id === heart })), // (color: its badge on the gun)

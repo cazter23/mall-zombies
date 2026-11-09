@@ -7,7 +7,8 @@ import { economy } from '../src/config/economy.js';
 import { feel } from '../src/config/feel.js';
 import { bossVouchers } from '../src/config/bosses.js';
 import { powerUps } from '../src/config/powerUps.js';
-import { wardrobeItems, statLabels } from '../src/config/wardrobe.js';
+import { wardrobeItems, statBetter } from '../src/config/wardrobe.js';
+import { hasStatNumber } from '../src/config/effectWords.js';
 import { weapons } from '../src/config/weapons.js';
 import { zombieTypes } from '../src/config/zombies.js';
 import { aimAssist as assistCfg } from '../src/config/controls.js';
@@ -81,7 +82,7 @@ function choose(game, room, id) {
   return presses;
 }
 
-test('all 12 racks sell through mall input with numbers on the ticket, the three fitting rooms open the picker, and it all resets with the run', (t) => {
+test('all 12 racks sell through mall input with words on the ticket, the three fitting rooms open the picker, and it all resets with the run', (t) => {
   const game = scenario(t), { g } = game;
   const racks = g.map.features.filter(f => f.kind === 'wardrobeRack');
   const rooms = g.map.features.filter(f => f.kind === 'fittingRoom');
@@ -126,7 +127,7 @@ test('all 12 racks sell through mall input with numbers on the ticket, the three
     assert.ok(prompt.detailLines.some(l => l.good) && prompt.detailLines.some(l => !l.good), id);
     for (const { text } of prompt.detailLines) {
       assert.ok(terms.includes(text), `${id}: "${text}" on the ticket`);
-      assert.match(text, /\d/, `${id}: "${text}" has a number`);
+      assert.ok(!/\d/.test(text), `${id}: "${text}" shows a number`);
     }
     assert.equal(terms.at(-1), previous ? `Replaces ${wardrobeItems[previous].name}` : `${slot[0].toUpperCase()}${slot.slice(1)} slot`);
     const before = g.wallet.points;
@@ -268,7 +269,7 @@ test('Apparel Flash Sales require an available rack and stack with a coupon and 
   g.debug.run('doors');
   assert.equal(g.flashSales.startNow(), true);
   assert.equal(g.flashSales.active.id, 'apparel');
-  assert.match(game.hud.calls.find(([method, pa]) => method === 'showAnnouncement' && pa.text.startsWith('Apparel'))[1].text, /off/);
+  assert.match(game.hud.calls.find(([method, pa]) => method === 'showAnnouncement' && pa.text.startsWith('Apparel'))[1].text, /cheaper/);
   g.wardrobe.buy('paperHat');
   g.wardrobe.buy('aviators');
 
@@ -348,17 +349,17 @@ test('clothing stacks with live incentives, caps health and sprint, and scales z
   near(stats.health, base.health - 10 - 32 - 50 - 5, 'nor does a vest worsen one');
 });
 
-test('ticket lines are generated from the stats as they are now: values, percentages, comparisons, with an incentive running', (t) => {
+test('ticket lines are words only: each factor has a direction and one line, sizes come from the fixed bands, and no player-facing text carries a number', (t) => {
   const game = scenario(t), { g } = game;
   const { stats, wardrobe } = g;
   for (const [id, item] of Object.entries(wardrobeItems)) {
     for (const stat of Object.keys(item.factors)) {
-      const label = statLabels[stat];
-      assert.ok(label, `${id}: ${stat} has a label`);
-      assert.ok(['higher', 'lower'].includes(label.better), stat);
-      assert.ok(label.kind === 'value' ? label.label && Number.isInteger(label.decimals) : label.up.includes('{pct}') && label.down.includes('{pct}'), stat);
+      assert.ok(['higher', 'lower'].includes(statBetter[stat]), `${id}: ${stat} has a direction`);
       assert.ok(stat in stats, `${id}: ${stat} is a declared stat`);
+      assert.equal(item.lines.filter((l) => l.effect === stat).length, 1, `${id}: exactly one line for ${stat}`);
     }
+    for (const line of item.lines) assert.ok(line.effect in item.factors, `${id}: a line for a factor it has`);
+    assert.equal(item.lines.length, Object.keys(item.factors).length, id);
     assert.ok(item.ticket && Number.isInteger(item.color) && item.icon, `${id}: joke line, colour and icon`);
   }
   assert.equal(new Set(Object.values(wardrobeItems).map(i => i.color)).size, 12, 'a signature colour each');
@@ -366,34 +367,36 @@ test('ticket lines are generated from the stats as they are now: values, percent
 
   const texts = (id) => wardrobe.statLines(id).map(l => l.text);
   assert.deepEqual(wardrobe.statLines('cardigan'), [
-    { stat: 'maxHealth', good: true, text: 'Max health 100 → 125' },
-    { stat: 'sprintDuration', good: false, text: 'Sprint 4.0 s → 3.2 s' },
+    { stat: 'maxHealth', good: true, text: 'Noticeably more health' },
+    { stat: 'sprintDuration', good: false, text: 'Sprints noticeably shorter' },
   ]);
-  assert.deepEqual(texts('hiVisVest'), ['Reload 25% faster', 'Zombie hits hurt 25% more']);
-  assert.equal(wardrobe.ticketDetail('hiVisVest'), `${wardrobeItems.hiVisVest.ticket} · Reload 25% faster · Zombie hits hurt 25% more · Torso slot`);
+  assert.deepEqual(texts('hiVisVest'), ['Reloads noticeably faster', 'Zombie hits hurt noticeably more']);
+  assert.equal(wardrobe.ticketDetail('hiVisVest'), `${wardrobeItems.hiVisVest.ticket} · Reloads noticeably faster · Zombie hits hurt noticeably more · Torso slot`);
+  for (const id of Object.keys(wardrobeItems)) {
+    for (const line of wardrobe.statLines(id)) assert.ok(!hasStatNumber(line.text) && !/\d/.test(line.text), `${id}: "${line.text}"`);
+    assert.ok(!hasStatNumber(wardrobe.ticketDetail(id)), id);
+    // an upside is a factor that moves its stat the good way
+    for (const line of wardrobe.statLines(id)) {
+      const factor = wardrobeItems[id].factors[line.stat];
+      assert.equal(line.good, (factor > 1) === (statBetter[line.stat] === 'higher'), `${id}: ${line.stat}`);
+    }
+    assert.ok(wardrobe.statLines(id).some((l) => l.good) && wardrobe.statLines(id).some((l) => !l.good), `${id}: an upside and a downside`);
+  }
 
-  // With Overtime Approved and Express Checkout running, the numbers are the ones you'd really get.
+  // Running incentives change the stats but not the words: the lines are about the item.
   collect(game, 'overtimeApproved');
   collect(game, 'expressCheckout');
+  const before = texts('lightUpSneakers');
+  assert.deepEqual(before, ['Sprints a little faster', 'Sprints a little shorter']);
   const quick = stats.sprintSpeed;
-  assert.ok(quick > feel.movement.sprintSpeed);
-  assert.deepEqual(texts('lightUpSneakers'), [`Sprint speed ${quick.toFixed(1)} m/s → ${(quick * 1.1).toFixed(1)} m/s`, 'Sprint 4.0 s → 3.6 s']);
   wardrobe.buy('lightUpSneakers');
-  near(stats.sprintSpeed, quick * 1.1, 'what the ticket said');
-  near(stats.sprintDuration, 3.6, 'what the ticket said');
+  near(stats.sprintSpeed, quick * 1.1, 'the item still does what its words say');
   assert.deepEqual(texts('lightUpSneakers'), [], 'nothing changes for what you wear');
-  // Against what it replaces: Light-Ups (x1.1, x0.9) -> Orthopedics (x0.95, x1.35, refill x0.7).
-  assert.deepEqual(texts('orthopedicWalkers'), [
-    'Sprint 3.6 s → 5.4 s',
-    `Sprint recovers after ${stats.sprintRefillDelay.toFixed(1)} s → ${(stats.sprintRefillDelay * 0.7).toFixed(1)} s`,
-    `Sprint speed ${stats.sprintSpeed.toFixed(1)} m/s → ${(stats.sprintSpeed * 0.95 / 1.1).toFixed(1)} m/s`,
-  ]);
+  assert.deepEqual(wardrobe.wornLines('lightUpSneakers').map((l) => l.text), before, 'the pause screen says the same words');
+  assert.deepEqual(texts('orthopedicWalkers'), ['Sprints noticeably longer', 'Sprint recovers much sooner', 'Sprints a little slower']);
   wardrobe.buy('hiVisVest');
-  assert.deepEqual(texts('sandwichBoard'), ['Zombie hits hurt 36% less', 'Knockback 50% weaker', 'Strafing 15% slower', 'Reload 20% slower']);
+  assert.deepEqual(texts('sandwichBoard'), ['Zombie hits hurt noticeably less', 'Shoved much less', 'Strafes noticeably slower']);
   assert.ok(wardrobe.ticketDetail('sandwichBoard').endsWith('Replaces Hi-Vis Vest'));
-  const reload = stats.reloadSpeed;
-  wardrobe.buy('sandwichBoard');
-  near(stats.reloadSpeed, reload * 0.8, 'the comparison was right');
 });
 
 test('limits: no item raises jump, vault height or walk speed, and the fastest outfit still sprints slower than a Cart charge', () => {

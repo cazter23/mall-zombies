@@ -20,7 +20,7 @@ export const bossVouchers = {
   discountCode: {
     name: 'Discount Code', fraction: 0.5, maxSaving: 2000, excludedCategories: ['clawMachine', 'claw'], pointsInstead: 1500,
     color: 0xe7a3ed, icon: 'ticket', sound: 'incentiveRestock',
-    pa: { kicker: 'Sponsored content', text: 'Half off your next purchase, saving up to 2,000. The claw machine has declined to participate.' },
+    pa: { kicker: 'Sponsored content', text: 'A discount on your next purchase. The claw machine has declined to participate.' },
   },
   masterKey: {
     name: 'Master Key', category: 'door', fraction: 1, pointsInstead: 1250,
@@ -118,7 +118,7 @@ export const bossTypes = {
       report: { kicker: 'Direct Report', text: 'Management has identified six employees with spare capacity.' },
       meeting: { kicker: 'Staff Meeting', text: 'Attendance is mandatory. Shoot the presenter to submit feedback.' },
       cancelled: { kicker: 'Meeting cancelled', text: 'Your feedback has been received at considerable velocity.' },
-      failed: { kicker: 'Action items assigned', text: 'Productivity is up twenty-five percent. Morale remains unmeasured.' },
+      failed: { kicker: 'Action items assigned', text: 'Productivity is up. Morale remains unmeasured.' },
     },
     costume: {
       torso: [

@@ -193,14 +193,12 @@ test('the rail snapshot lists four slots with the worn item and what it is doing
   assert.equal(tags.torso.icon, 'vest');
   assert.equal(tags.head.id, null);
   const text = tags.torso.lines.map((l) => l.text);
-  assert.ok(text.includes('Reload 25% faster'), text.join(' | '));
-  assert.ok(text.includes('Zombie hits hurt 25% more'));
-  assert.equal(tags.torso.lines.find((l) => l.text.startsWith('Reload')).good, true);
+  assert.ok(text.includes('Reloads noticeably faster'), text.join(' | '));
+  assert.ok(text.includes('Zombie hits hurt noticeably more'));
+  assert.equal(tags.torso.lines.find((l) => l.text.startsWith('Reloads')).good, true);
   assert.equal(tags.torso.lines.find((l) => l.text.startsWith('Zombie hits')).good, false);
   assert.equal(tags.torso.lines[0].good, true, 'upsides first');
-  assert.ok(tags.feet.lines.some((l) => /^Sprint speed \d+\.\d m\/s → \d+\.\d m\/s$/.test(l.text)), tags.feet.lines.map((l) => l.text).join(' | '));
-  // the lines describe the item as worn: the stat after equals the live stat
-  const after = Number(tags.feet.lines.find((l) => l.text.startsWith('Sprint speed')).text.match(/→ ([\d.]+)/)[1]);
-  assert.equal(after, Number(g.stats.sprintSpeed.toFixed(1)));
+  assert.deepEqual(tags.feet.lines.map((l) => l.text), ['Sprints a little faster', 'Sprints a little shorter']);
+  assert.ok(tags.feet.lines.every((l) => !/\d/.test(l.text)), 'words only');
   assert.deepEqual(g.wardrobe.wornLines('cardigan'), [], 'an item that is not worn has no lines');
 });

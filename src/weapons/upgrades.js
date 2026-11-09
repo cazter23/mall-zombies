@@ -18,6 +18,7 @@
 // =============================================================================
 
 import { upgrades } from '../config/upgrades.js';
+import { describeEffects } from '../config/effectWords.js';
 
 export const TIER_IDS = upgrades.tiers.map((t) => t.id);
 
@@ -30,6 +31,23 @@ export function tierById(id) {
 export function attachmentById(id) {
   if (!Object.hasOwn(upgrades.attachments, id)) throw new Error(`upgrades: unknown attachment "${id}"`);
   return upgrades.attachments[id];
+}
+
+/** What an attachment does, in words: [{ text, good }] (upsides first). The numbers behind it are never shown (config/effectWords.js). */
+export function attachmentLines(id) {
+  const a = attachmentById(id);
+  return describeEffects(a.lines, a.effects);
+}
+
+/** What a warranty tier does, in words. */
+export function tierLines(id) {
+  const t = tierById(id);
+  return describeEffects(t.lines, t.effects);
+}
+
+/** What a Warranty Renewal adds, in words. */
+export function renewalLines() {
+  return describeEffects(upgrades.renewals.lines, upgrades.renewals.effects);
 }
 
 export function tierOf(mods = []) {
