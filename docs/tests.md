@@ -177,7 +177,7 @@ prop + collider + buy spot, solid and too tall to climb, tiers one at a time at 
 nothing past Platinum (including the exact purchase frame and switching back to a Platinum gun), Flash Sale applies,
 no prompt while closed / switching / facing away, Play again resets),
 `tests/effectWords.test.js` guards the words-only rule: the size bands (fixed, ordered, symmetric, {size}/{Size} fill), the number detector, and a scan of every tier,
-renewal, attachment, wardrobe, stuffing, heart, incentive, Flash Sale and boss string plus the real prompts built from them (every attachment counter, every Customer Service
+renewal, attachment, wardrobe, stuffing, heart, incentive and boss string (and a Flash Sale line's words around its percentage) plus the real prompts built from them (every attachment counter, every Customer Service
 offer, every wardrobe ticket and rail line) for a digit followed by %, x, s, m, ° or an arrow, and spelled-out percentages.
 `tests/outfitRail.test.js` covers the outfit rail's brain: every item names a known trigger, icon and colour (and every slot a silhouette); each trigger,
 driven through the real game (events, real keys for sprint / slide / aim, real zombies, a real refill), pulses only the worn items that name it,

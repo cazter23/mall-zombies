@@ -46,8 +46,5 @@ export function describeEffects(lines = [], effects = {}) {
     .sort((a, b) => Number(b.good) - Number(a.good));
 }
 
-/** The size word for a sale: a discount of 0.25 (a quarter off) makes prices a third cheaper, which is "noticeably cheaper". */
-export const discountWord = (discount) => sizeWord(1 / Math.max(1 - discount, 1e-6));
-
 /** Would a player-facing string show a stat number? A digit followed by %, x, s, m, ° or an arrow ("25%", "1.2x", "3.4 s", "10m", "100 →"). */
 export const hasStatNumber = (text) => /\d(?:\.\d+)?\s?(?:%|×|x\b|s\b|m\b|°|→)/i.test(String(text));

@@ -26,7 +26,7 @@ src/
     powerUps.js         Employee-incentive drop tuning, skill credit, round caps, pickup/zone durations, ammo top-up,
                         sweep strength, colors and PA lines. First round 2, 12-16 credit per drop, maximum 3 per round
     effectWords.js      THE WORDS-ONLY RULE: players never see an upgrade's effect as a number. The fixed size bands (a little / noticeably / much), sizeWord / fillSize
-                        for the `{size}` / `{Size}` tokens in a config line, describeEffects, discountWord (sales) and hasStatNumber (the detector the tests use).
+                        for the `{size}` / `{Size}` tokens in a config line, describeEffects and hasStatNumber (the detector the tests use).
     wardrobe.js         Apparel items, four slots, stat multipliers, joke line, signature colour, icon id and `lines` (the words for each upside / downside) per item,
                         `statBetter` (which direction of a stat is good), rack locations, fitting-room placards and the picker's close distance.
     shoppers.js         Cosmetic-only Shopper wardrobe: coordinated palettes/profiles, shirts/layers, bottoms, hair,

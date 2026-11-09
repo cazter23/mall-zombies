@@ -18,8 +18,8 @@ const cfg = (over = {}) => ({
   retrySeconds: 3,
   discounts: { min: 0.25, max: 0.5, step: 0.05 },
   groups: [
-    { id: 'doors', label: 'Doors', categories: ['door'], weight: 1, start: { kicker: 'K', text: 'Doors {size} cheaper' }, end: { kicker: 'E', text: 'over' } },
-    { id: 'ammo', label: 'Ammo', categories: ['ammo', 'ammoCache'], weight: 1, start: { kicker: 'K', text: 'Ammo {size} cheaper' }, end: { kicker: 'E', text: 'over' } },
+    { id: 'doors', label: 'Doors', categories: ['door'], weight: 1, start: { kicker: 'K', text: 'Doors {pct}% off' }, end: { kicker: 'E', text: 'over' } },
+    { id: 'ammo', label: 'Ammo', categories: ['ammo', 'ammoCache'], weight: 1, start: { kicker: 'K', text: 'Ammo {pct}% off' }, end: { kicker: 'E', text: 'over' } },
   ],
   ...over,
 });
@@ -73,10 +73,10 @@ test('a sale discounts every category in its group, in steps of 5% between 25 an
   }
 });
 
-test('the PA lines say how much cheaper in words, never a percentage, and the end line comes with reason "expired"', () => {
+test('the PA lines say the real percentage, and the end line comes with reason "expired"', () => {
   const { log, run } = setup({}, dice(0.0, 0.2));
   run(15);
-  assert.equal(log[0][1].pa.text, 'Doors much cheaper'); // (that sale makes prices a lot cheaper: the top band)
+  assert.equal(log[0][1].pa.text, 'Doors 30% off');
   assert.equal(log[0][1].pa.kicker, 'K');
   assert.equal(log[0][1].seconds, 5);
   assert.deepEqual(log[1][1].pa, { kicker: 'E', text: 'over' });
@@ -159,7 +159,7 @@ test('the real game: the PA banner + chime, the sale price in the prompt and in 
     const sale = g.flashSales.active;
     assert.ok(sale && sale.id === 'doors', 'the door sale started after the first delay');
     const banner = t.hud.calls.find(([name]) => name === 'showAnnouncement');
-    assert.ok(banner && banner[1].kicker === 'Flash sale' && !/\d/.test(banner[1].text) && /cheaper/.test(banner[1].text), 'the PA banner says how much cheaper, in words');
+    assert.ok(banner && banner[1].kicker === 'Flash sale' && banner[1].text.includes(`${Math.round(sale.discount * 100)}%`), 'the PA banner says the real discount');
     assert.ok(t.sounds.includes('paChime'));
     const price = g.pricing.priceOf('door', 'hallway');
     assert.ok(price < economy.doors.hallway, `sale price ${price}`);
