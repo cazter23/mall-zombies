@@ -98,7 +98,7 @@ The rule and its one set of size words live in `config/effectWords.js`.
 - At a fitting room or a showpiece of the same slot, the ticket says "Replaces Hi-Vis Vest" (no number comparison: the new item's own lines are what you get).
 - The buying moment's PA line says what the item is, so the first purchase teaches what it does even if you skipped the ticket (no numbers there either).
 - The same rule covers the rest of the game's upgrades: attachment counters, Extended Warranty tiers and the upgrade desk, Build-A-Blaster blurbs,
-  incentive hints and Flash Sale lines ("much cheaper"). tests/effectWords.test.js fails on a digit followed by %, x, s, m, ° or an arrow in any of them.
+  incentive hints and boss vouchers (Flash Sales keep their percentage: a sale is a price). tests/effectWords.test.js fails on a digit followed by %, x, s, m, ° or an arrow in any of them.
 
 ## 4. The outfit rail (HUD)
 

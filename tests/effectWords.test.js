@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { headlessGame } from './helpers/headlessGame.js';
-import { sizeBands, sizeWord, changeOf, fillSize, describeEffects, discountWord, hasStatNumber } from '../src/config/effectWords.js';
+import { sizeBands, sizeWord, changeOf, fillSize, describeEffects, hasStatNumber } from '../src/config/effectWords.js';
 import { upgrades } from '../src/config/upgrades.js';
 import { wardrobeItems } from '../src/config/wardrobe.js';
 import { workshopStuffings, workshopHearts, stuffingBlurb } from '../src/config/workshop.js';
@@ -36,8 +36,6 @@ test('the size bands are fixed, ordered, symmetric, and fill {size} / {Size}', (
   assert.equal(fillSize('Run dry? Ammo replaced free', undefined), 'Run dry? Ammo replaced free', 'a line with no token is left alone');
   assert.deepEqual(describeEffects([{ effect: 'damage', text: '{Size} more damage' }, { effect: 'adsTime', good: false, text: 'Aims {size} slower' }, { effect: 'recoil', text: '{Size} less recoil' }], { damage: 1.1, adsTime: 1.1, recoil: 0.65 }),
     [{ text: 'A little more damage', good: true }, { text: 'Much less recoil', good: true }, { text: 'Aims a little slower', good: false }], 'upsides first');
-  assert.equal(discountWord(0.25), 'noticeably');
-  assert.equal(discountWord(0.5), 'much');
 });
 
 test('the detector catches stat numbers and leaves counts and names alone', () => {
@@ -70,8 +68,9 @@ test('every effect line in config is words: tiers, renewals, attachments, wardro
     clean(type.pa?.text ?? '', `incentive ${id} PA`);
   }
   for (const group of economy.flashSales.groups) {
-    assert.match(group.start.text, /\{size\}/, `${group.id}: the sale line says how much cheaper in words`);
-    clean(group.start.text.replace('{size}', 'much'), `sale ${group.id}`);
+    // (a sale is a price, so its line keeps the percentage: {pct}% off. Only the words around it are checked)
+    assert.match(group.start.text, /\{pct\}%/, `${group.id}: a sale says its percentage`);
+    clean(group.start.text.replace('{pct}%', 'a discount'), `sale ${group.id}`);
     clean(group.end.text, `sale ${group.id} end`);
   }
   clean(bossVouchers.discountCode.pa.text, 'Discount Code PA');

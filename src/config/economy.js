@@ -125,7 +125,7 @@ export const economy = {
 
   // FLASH SALES (game/flashSales.js): the mall PA announces a discount on one group of prices for a while. Times are
   // play time (not while paused or dead). `groups`: id, label, categories (pricing categories, game/pricing.js),
-  // weight (how likely), and the PA lines ({size} = how much cheaper, in words: config/effectWords.js). A group is skipped when it would be useless right
+  // weight (how likely), and the PA lines ({pct} = the discount). A sale is a PRICE, so it is the one place a percentage is still shown (the words-only rule covers what upgrades DO: config/effectWords.js). A group is skipped when it would be useless right
   // now (every door already open, every wall gun owned, every gun already Platinum).
   flashSales: {
     enabled: true,
@@ -133,36 +133,36 @@ export const economy = {
     gapSeconds: { min: 120, max: 240 }, // quiet time after a sale ends
     durationSeconds: 45,
     retrySeconds: 30, // when nothing was worth discounting, look again this soon
-    discounts: { min: 0.25, max: 0.5, step: 0.05 }, // a quarter to a half off (never shown as a number: the PA and the HUD say how much cheaper in words)
+    discounts: { min: 0.25, max: 0.5, step: 0.05 }, // "25-50% off"
     groups: [
       {
         id: 'doors', label: 'Security shutters', categories: ['door'], weight: 1,
-        start: { kicker: 'Flash sale', text: 'Security shutters are {size} cheaper! Please do not ask what is behind them.' },
+        start: { kicker: 'Flash sale', text: 'Security shutters are {pct}% off! Please do not ask what is behind them.' },
         end: { kicker: 'Sale over', text: 'The shutter sale has ended. Thank you for shopping. Please stop.' },
       },
       {
         id: 'weapons', label: 'Wall guns', categories: ['weapon'], weight: 1,
-        start: { kicker: 'Flash sale', text: 'Wall guns are {size} cheaper! Limited stock. Unlimited shoppers.' },
+        start: { kicker: 'Flash sale', text: 'Wall guns are {pct}% off! Limited stock. Unlimited shoppers.' },
         end: { kicker: 'Sale over', text: 'The gun sale has ended. All sales are final. So are you.' },
       },
       {
         id: 'ammo', label: 'Ammo', categories: ['ammo', 'ammoCache'], weight: 1.3,
-        start: { kicker: 'Flash sale', text: 'Ammo is {size} cheaper! Please shoot responsibly. Or do not.' },
+        start: { kicker: 'Flash sale', text: 'Ammo is {pct}% off! Please shoot responsibly. Or do not.' },
         end: { kicker: 'Sale over', text: 'The ammo sale has ended. We regret nothing.' },
       },
       {
         id: 'tiers', label: 'Extended Warranties', categories: ['tier'], weight: 1,
-        start: { kicker: 'Flash sale', text: 'Extended Warranties are {size} cheaper at Customer Service! Dying is not covered.' },
+        start: { kicker: 'Flash sale', text: 'Extended Warranties are {pct}% off at Customer Service! Dying is not covered.' },
         end: { kicker: 'Sale over', text: 'The warranty sale has ended. Your gun is now only a little bit covered.' },
       },
       {
         id: 'attachments', label: 'Gun attachments', categories: ['attachment'], weight: 1,
-        start: { kicker: 'Flash sale', text: 'Gun attachments are {size} cheaper in every store! Today only. (Today is all there is.)' },
+        start: { kicker: 'Flash sale', text: 'Gun attachments are {pct}% off in every store! Today only. (Today is all there is.)' },
         end: { kicker: 'Sale over', text: 'The attachment sale has ended. Please remove your shopping from the zombies.' },
       },
       {
         id: 'apparel', label: 'Apparel', categories: ['wardrobe'], weight: 1,
-        start: { kicker: 'Flash sale', text: 'Apparel is {size} cheaper! Try before you die.' },
+        start: { kicker: 'Flash sale', text: 'Apparel is {pct}% off! Try before you die.' },
         end: { kicker: 'Sale over', text: 'The apparel sale has ended. Fitting rooms are still free.' },
       },
     ],

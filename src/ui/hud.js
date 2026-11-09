@@ -19,7 +19,6 @@ import { createAnnouncements } from './announcements.js';
 import { ui } from '../config/ui.js';
 import { upgrades } from '../config/upgrades.js';
 import { createOutfitRail } from './outfitRail.js';
-import { discountWord } from '../config/effectWords.js';
 import { createBossFlashView } from './bossFlash.js';
 import { createNoticeHistory } from './noticeHistory.js';
 
@@ -564,7 +563,7 @@ export function createHud() {
 
     // The running Flash Sale ({ label, discount 0..1, remaining seconds }) or null. Only touches the DOM when the text changes.
     setFlashSale(sale) {
-      const text = sale ? `Flash sale · ${sale.label} ${discountWord(sale.discount)} cheaper · ${Math.ceil(sale.remaining)}s` : '';
+      const text = sale ? `Flash sale · ${sale.label} ${Math.round(sale.discount * 100)}% off · ${Math.ceil(sale.remaining)}s` : '';
       if (text === lastSaleKey) return;
       lastSaleKey = text;
       saleTag.classList.toggle('show', !!sale);

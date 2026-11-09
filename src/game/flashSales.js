@@ -24,7 +24,6 @@
 // =============================================================================
 
 import { economy } from '../config/economy.js';
-import { discountWord } from '../config/effectWords.js';
 
 export function createFlashSales({ events, pricing, random = Math.random, config = economy.flashSales, eligible = () => true }) {
   let active = null;
@@ -50,7 +49,7 @@ export function createFlashSales({ events, pricing, random = Math.random, config
     return options[options.length - 1];
   }
 
-  const say = (template, discount) => ({ kicker: template.kicker, text: template.text.replace('{size}', discountWord(discount)) }); // (words only: config/effectWords.js)
+  const say = (template, discount) => ({ kicker: template.kicker, text: template.text.replace('{pct}', String(Math.round(discount * 100))) });
 
   function start() {
     const group = pickGroup();

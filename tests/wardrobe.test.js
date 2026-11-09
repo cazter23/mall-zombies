@@ -269,7 +269,7 @@ test('Apparel Flash Sales require an available rack and stack with a coupon and 
   g.debug.run('doors');
   assert.equal(g.flashSales.startNow(), true);
   assert.equal(g.flashSales.active.id, 'apparel');
-  assert.match(game.hud.calls.find(([method, pa]) => method === 'showAnnouncement' && pa.text.startsWith('Apparel'))[1].text, /cheaper/);
+  assert.match(game.hud.calls.find(([method, pa]) => method === 'showAnnouncement' && pa.text.startsWith('Apparel'))[1].text, /off/);
   g.wardrobe.buy('paperHat');
   g.wardrobe.buy('aviators');
 

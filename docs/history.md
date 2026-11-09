@@ -2,6 +2,9 @@
 
 ## 9 November 2026 - Design change: effect numbers are gone from the UI (words only)
 
+Flash Sales are the exception, by decision: a sale is a PRICE, so its PA lines, the HUD banner and the help screen keep the percentage ("25% off"). They were changed to
+"much cheaper" at first and put back the same day.
+
 Decision: players never see what an upgrade does as a number. No percentages, multipliers, "x1.25", "100 → 125", seconds or damage values describing an effect, anywhere
 in the UI. Effects are short plain lines with a rough size where it matters. Kept: prices, points, ammo counts, the round, the health and sprint bars, countdown timers
 (a sale's seconds, an incentive's time left), charges left, and records of what happened (accuracy, "212 confirmed", the tank's kill count).
@@ -10,12 +13,11 @@ Gameplay numbers are unchanged; the debug panel and tools/gunReport.mjs still pr
 - **Where the numbers were**: the attachment counters' comparison line (magazine, reload seconds, damage, metres, degrees, FOV %: weapons/attachmentComparison.js, now deleted);
   Warranty tier jobs; the Smoothie blurb ("25% more") and Popcorn Butter ("double"); the Wardrobe's generated tickets ("Max health 100 → 125", "Reload 25% faster": the
   `statLabels` formatter) and so the fitting-room picker and the pause screen's ON YOU lines; incentive hints and PA lines ("30% OFF · SAVE UP TO 300", "Thirty percent off",
-  "twenty-four seconds", "DOUBLE DAMAGE", "Double clearance credit"); Flash Sale PA lines, the HUD banner and the help screen ("25% off", "25-50% cheaper"); two boss PA lines
+  "twenty-four seconds", "DOUBLE DAMAGE", "Double clearance credit"); two boss PA lines
   ("Half off… up to 2,000", "twenty-five percent").
 - **How it works now** (config/effectWords.js): one fixed set of size bands (a little / noticeably / much, by how big the change is, the same either way round), a
   `{size}` / `{Size}` token in a line, and the wording lives next to each item in config: `lines` on every warranty tier, renewal, attachment and wardrobe item (one short
-  line per upside / downside, `effect` = the multiplier that sizes the token), `blurbRatio` on stuffings, and plain hand-written hints for incentives. Sale lines say
-  "much cheaper" (`{size}` from the discount). `statLabels` became `statBetter` (which direction of a stat is good).
+  line per upside / downside, `effect` = the multiplier that sizes the token), `blurbRatio` on stuffings, and plain hand-written hints for incentives. `statLabels` became `statBetter` (which direction of a stat is good).
 - **Guard**: tests/effectWords.test.js scans every tier, attachment, wardrobe, stuffing, incentive, sale and boss string, and the real prompts built from them, for a digit followed
   by %, x, s, m, ° or an arrow (and spelled-out percentages). Tests that asserted numbers were rewritten.
 
