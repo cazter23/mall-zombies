@@ -18,7 +18,7 @@ import { gunLabel } from '../config/workshop.js';
 import { createAnnouncements } from './announcements.js';
 import { ui } from '../config/ui.js';
 import { upgrades } from '../config/upgrades.js';
-import { wardrobeItems, wardrobeSlots } from '../config/wardrobe.js';
+import { createOutfitRail } from './outfitRail.js';
 import { createBossFlashView } from './bossFlash.js';
 import { createNoticeHistory } from './noticeHistory.js';
 
@@ -233,27 +233,9 @@ export function createHud() {
   sprint.setAttribute('role', 'meter');
   sprint.setAttribute('aria-valuemin', '0'); sprint.setAttribute('aria-valuemax', '100');
   sprint.append(sprintFill);
-  const outfit = el('div', 'wardrobe-strip');
-  outfit.setAttribute('role', 'group');
-  outfit.setAttribute('aria-label', 'Equipped wardrobe');
-  const outfitSlots = Object.fromEntries(Object.keys(wardrobeSlots).map((slot) => {
-    const chip = el('span', 'wardrobe-slot');
-    outfit.append(chip);
-    return [slot, chip];
-  }));
-  function setOutfitSlot(slot, id) {
-    const item = wardrobeItems[id];
-    const chip = outfitSlots[slot];
-    chip.textContent = item?.shortName ?? `${wardrobeSlots[slot]} —`;
-    chip.title = `${wardrobeSlots[slot]}: ${item?.name ?? 'Empty'}`;
-    chip.classList.toggle('equipped', !!item);
-  }
-  function clearOutfit() {
-    outfit.hidden = true;
-    for (const slot of Object.keys(outfitSlots)) setOutfitSlot(slot, null);
-  }
-  clearOutfit();
-  vitals.append(outfit, health, sprint);
+  // The outfit rail (ui/outfitRail.js): four price tags over the health bar, empty silhouettes from round 1.
+  const outfitRail = createOutfitRail({ variant: 'hud' });
+  vitals.append(outfitRail.el, health, sprint);
   hud.append(vitals);
 
   // FPS counter (Settings > Video), top right.
@@ -326,11 +308,9 @@ export function createHud() {
         purchaseStamp.classList.add('show');
         purchaseTimer = setTimeout(() => purchaseStamp.classList.remove('show'), ui.purchaseSeconds * 1000);
       });
-      events.on('wardrobeChange', ({ slot, worn }) => {
-        setOutfitSlot(slot, worn);
-        outfit.hidden = false;
-      });
-      events.on('runReset', clearOutfit);
+      events.on('wardrobeChange', ({ slot, worn }) => outfitRail.setSlot(slot, worn));
+      events.on('outfitPulse', ({ slot }) => outfitRail.pulse(slot)); // (game/outfitRail.js: the item just did its job)
+      events.on('runReset', () => outfitRail.clear());
       events.on('runReset', clearNotices);
       events.on('runReset', () => { history.clear(); incentives.reset(); });
       events.on('playerDeath', clearNotices);

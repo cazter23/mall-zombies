@@ -176,6 +176,11 @@ with the carried gun in the real game), `upgradeDesk.test.js` the Customer Servi
 prop + collider + buy spot, solid and too tall to climb, tiers one at a time at pricing's price, gun in hand only, no refill,
 nothing past Platinum (including the exact purchase frame and switching back to a Platinum gun), Flash Sale applies,
 no prompt while closed / switching / facing away, Play again resets),
+`tests/outfitRail.test.js` covers the outfit rail's brain: every item names a known trigger, icon and colour (and every slot a silhouette); each trigger,
+driven through the real game (events, real keys for sprint / slide / aim, real zombies, a real refill), pulses only the worn items that name it,
+all 12 items across three outfits; the Cardigan only when the hit landed above the base max health; an owned-but-not-worn item never pulses; a gun swap is
+not a refill and a fan actor's kill is not a paid kill; nothing pulses after death; the death summary's `wearing`; Play again clears the rail; the snapshot's
+lines are right (upsides first, numbers equal the live stat).
 `tests/wardrobe.test.js` exercises all 12 racks and three fitting rooms with real input, fixture clearance, PadX tap vs. hold,
 apparel discounts, reset, stat stacking and clamps, live ammo and combat modifiers, and Gold Card payouts.
 The fitting-room picker: every one of the 81 outfits is put on through key presses (two at most inside a slot), it is free and spends

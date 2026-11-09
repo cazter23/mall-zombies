@@ -371,7 +371,12 @@ src/
                         A kill whose type has guaranteedDrop (Employee of the Month) queues a reward the same way, any
                         useful type by weight, outside the meter and its rotation.
     wardrobe.js         g.wardrobe: per-run ownership, equipped slots and reversible player stat factors. buy(id), wear(id) (anything owned),
-                        ownedIn(slot), grantAll() (debug), and the ticket formatter: statLines(id) / ticketDetail(id) from the stats as they are now.
+                        ownedIn(slot), grantAll() (debug), and the ticket formatter: statLines(id) / ticketDetail(id) from the stats as they are now;
+                        wornLines(id) = what a WORN item is doing (before = the stat without it), for the pause screen's rail.
+    outfitRail.js       g.outfitRail: the DOM-free half of the outfit rail. Decides when a WORN item's tag pulses (each item names its trigger in
+                        config/wardrobe.js `pulse`; `triggers` lists the ten: regenStart, playerHit, hitCushioned, payingKill, meleeHit, headshot,
+                        sprintStart, slideStart, aimStart, ammoRefill), counts pulses (pulseCount / pulses), announces 'outfitPulse', and gives
+                        snapshot() (four slots with the worn item, its colour/icon and its lines). Nothing pulses once you are dead.
     incentiveEffects.js Temporary employee benefits: concurrent timers, reversible stat modifiers, finite healing,
                         deferred non-recursive liquidation damage, one-purchase coupons, target marks, slow patches,
                         overtime extensions, melee charges and sprint pulses. Owned/reset/disposed by powerUps.js.
@@ -692,6 +697,10 @@ src/
     noticeHistory.js    The run's PA notices, kept for the Notices menu (queued and pre-empted ones too); pausing never clears it.
     noticesMenu.js      createNoticesMenu(history): the pause screen's list of this run's PA notices.
     readability.css     Readability and layout over retail.css: text sizes, the corner lanes, the centred boss/round lane.
+    outfitRail.js       Draws the outfit rail (createOutfitRail({ variant })): a chrome hanger rail with four price tags in the items' colours, dashed
+                        silhouettes for empty slots, a swing + glow on pulse. Variants: 'hud' (over the health bar, from round 1), 'pause' (large, with each item's
+                        lines) and 'receipt' (the death receipt's DIED WEARING row).
+    outfitIcons.js      The rail's SVG pictures: one icon per item (`icon` ids in config/wardrobe.js) and one dashed silhouette per slot.
     screens.js          The menus around a run (title, statistics, pause, results) as plain DOM over the canvas.
     titleCamera.js      The title flyover: plays map.titleShots forever behind the main menu.
 ```

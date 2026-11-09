@@ -53,6 +53,7 @@ import { createFlashSales } from './flashSales.js';
 import { createDebugCommands } from './debugCommands.js';
 import { createWarranty } from './warranty.js';
 import { createWardrobe } from './wardrobe.js';
+import { createOutfitRail } from './outfitRail.js';
 import { createRunStats } from './runStats.js';
 import { createWallet, pointsForHit } from './wallet.js';
 import { createRounds } from './rounds.js';
@@ -224,6 +225,8 @@ export function createGame({
       bossesDefeated: runStats.bossesDefeated,
       accuracy: runStats.accuracy,
       assisted: state.assisted || health.invulnerable,
+      // What you were wearing (slot -> item id or null): the receipt's DIED WEARING line.
+      wearing: Object.freeze(Object.fromEntries(outfitRail.snapshot().map(({ slot, id }) => [slot, id]))),
       // The guns you named at Build-A-Blaster (the receipt reads them out).
       survivedBy: gun.namedBuilds.map((build) => ({ name: build.name, combo: comboName(build), confirmed: build.confirmed ?? 0 })),
     });
@@ -431,6 +434,9 @@ export function createGame({
     colliders, effects, sound, input,
   });
 
+  // The outfit rail's brain: which worn item's tag pulses when (game/outfitRail.js; the HUD draws it).
+  const outfitRail = createOutfitRail({ events, wardrobe, stats, player, gun, state });
+
   // FLASH SALES: the mall PA discounts one group of prices for a while (game/flashSales.js). A group is only picked
   // when it would be of use right now.
   const flashSales = createFlashSales({
@@ -494,6 +500,7 @@ export function createGame({
     ['player', () => player.teleport(map.playerSpawn)],
     ['map', () => map.reset()], // doors closed, zones locked
     ['features', () => features.reset()],
+    ['outfitRail', () => outfitRail.reset()],
     ['warranty', () => warranty.reset()], // no warranty on file in a new run
     ['death', () => {
       state.over = false;
@@ -578,6 +585,7 @@ export function createGame({
     map.update(dt);
     shutterSounds.update(dt);
     features.update(dt);
+    outfitRail.update(dt);
     flashSales.update(dt);
     if (arena) arena.update(dt);
     player.updateView(dt); // recoil/jolt springs last, so this tick's kicks show on the next frame
@@ -592,6 +600,7 @@ export function createGame({
     map,
     features,
     wardrobe,
+    outfitRail,
     flashSales,
     powerUps,
     bosses,

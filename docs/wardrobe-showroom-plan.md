@@ -1,8 +1,8 @@
 # Wardrobe: the showroom rework (plan)
 
 Status: phase 1 is built (9 November 2026: the picker, generated tickets, section 6's numbers, 'regenStart', colours and icons in config, the debug
-command and the limits test; see docs/history.md). Phase 2 has its sample built (9 November 2026: the three Food Court showpieces, waiting for the look to be approved; docs/history.md); the other nine showpieces
-and phases 3-4 are not started. It reworks Wardrobe v1 (the design that follows is
+command and the limits test; see docs/history.md). Phase 2 has its sample built and merged (9 November 2026: the three Food Court showpieces; docs/history.md); the other nine showpieces
+are not started. Phase 3, the outfit rail, is built (9 November 2026; docs/history.md), and phase 4 is not started. It reworks Wardrobe v1 (the design that follows is
 docs/wardrobe-plan.md). Numbers are starting points, to be tuned by playing.
 
 ## Why

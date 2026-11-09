@@ -1,5 +1,19 @@
 # Sunset Galleria: build history ("Current state")
 
+## 9 November 2026 - Wardrobe showroom, phase 3: the outfit rail
+
+Phase 3 of docs/wardrobe-showroom-plan.md (sections 3-4). The four grey text chips are gone.
+
+- **The rail** (ui/outfitRail.js, ui/outfitIcons.js, retail.css): a chrome hanger rail over the health bar with four price tags, one per slot, in the item's colour with its
+  SVG icon and short name. Empty slots are dashed silhouettes (HEAD / TORSO / FEET / EXTRA), visible from round 1 (v1 hid the strip until the first buy).
+- **Tags react when the item works** (game/outfitRail.js; each item's trigger is its `pulse` in config/wardrobe.js): Paper Hat on 'regenStart'; Sandwich Board and Hi-Vis Vest on
+  'playerHit'; Cardigan on a hit that landed above the base 100 health (the knit took it); Gold Card on a kill that paid; Foam Finger on a box-cutter hit; 3D Glasses on a gun
+  headshot; Light-Ups and Orthopedics on a sprint start; Wheelies on a slide start; Aviators on aiming start; Fanny Pack on a refill that takes the reserve above the gun's base.
+  Only the WORN item pulses, only on its own trigger, never after death. The bus event is 'outfitPulse' { id, slot }.
+- **Pause screen**: an ON YOU row, the rail large with each worn item's lines (the ticket formatter's `wornLines`: "Max health 100 → 125", upsides green, downsides red).
+- **Death receipt**: a DIED WEARING: row with the four tags (an empty slot dashed); the run summary carries `wearing` (slot -> item id).
+- Not built: the hover detail on the HUD rail (the pause screen is where the lines live), and phase 4 (what you look like on yourself).
+
 ## 9 November 2026 - Wardrobe showroom, phase 2 sample: the three Food Court showpieces
 
 The first three showpieces of docs/wardrobe-showroom-plan.md section 1, built as the sample to approve before the other nine.
