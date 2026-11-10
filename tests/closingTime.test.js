@@ -522,6 +522,22 @@ test('the PA introduces the checklist once per run, shortly after the opening li
   assert.equal(briefings.length, 2, 'once per run');
 });
 
+test('line-opening and line-complete PA lines are marked to be kept by the PA queue; the others are not', (t) => {
+  const { g, hud, standAt } = fixture(t);
+  const at = new Vector3(2, 0, 12);
+  g.events.emit('bossDefeated', { zombie: { type: { id: 'manager' }, position: at } });
+  standAt(at.x, at.z);
+  g.events.emit('ritualCollect', {});
+  const said = Object.fromEntries(hud.calls.filter(([name]) => name === 'showAnnouncement').map(([, notice]) => [notice.text, notice]));
+  const { key } = closingTime.lines.manager;
+  assert.equal(said[closingTime.pa.openLastOrders(key).text].keep, true);
+  assert.equal(said[closingTime.pa.completeLastOrders.text].keep, true);
+  assert.equal(said[closingTime.pa.drop(key).text].keep, undefined);
+  assert.equal(closingTime.pa.briefing.keep, undefined);
+  for (const pa of [closingTime.pa.completeFountain, closingTime.pa.completeNightSafe, closingTime.pa.vanKeys('k'),
+    closingTime.pa.openFountain('k', 1), closingTime.pa.openNightSafe('k', 1)]) assert.equal(pa.keep, true);
+});
+
 test('Statistics shows career wins, the fastest win (a dash when none) and marks won shifts', () => {
   const { document } = menuDom();
   const screens = createScreens();

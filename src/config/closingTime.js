@@ -39,13 +39,14 @@ export const closingTime = {
     },
     drop: (key) => ({ kicker: 'Closing time', text: key + ' is on the floor. Associates, please collect it for the closing checklist.' }),
     // The Van Keys tick nothing by themselves: line 4 is ticked by the win (game/createGame.js onRunWon).
-    vanKeys: (key) => ({ kicker: 'Closing time', text: key + ' collected. Start the van to finish closing.' }),
-    openFountain: (key, needed) => ({ kicker: 'Closing time', text: `${key} collected. Use the Electrified Fountain in the Grand Atrium to take out ${needed} zombies.` }),
-    openNightSafe: (key, needed) => ({ kicker: 'Closing time', text: `${key} collected. Make ${needed} deposits at the Night Safe beside Customer Service.` }),
-    completeNightSafe: { kicker: 'Closing time', text: 'Takings banked is checked off. Thank you, associates.' },
-    completeFountain: { kicker: 'Closing time', text: 'Water features off is checked off. Thank you, associates.' },
-    openLastOrders: (key) => ({ kicker: 'Closing time', text: `${key} collected. Collect a build or Restuff from Build-A-Blaster’s Naming Booth.` }),
-    completeLastOrders: { kicker: 'Closing time', text: 'Last orders signed off. Thank you, associates.' },
+    // keep: these line-opening and line-complete messages are never dropped from the PA queue (ui/announcements.js).
+    vanKeys: (key) => ({ kicker: 'Closing time', keep: true, text: key + ' collected. Start the van to finish closing.' }),
+    openFountain: (key, needed) => ({ kicker: 'Closing time', keep: true, text: `${key} collected. Use the Electrified Fountain in the Grand Atrium to take out ${needed} zombies.` }),
+    openNightSafe: (key, needed) => ({ kicker: 'Closing time', keep: true, text: `${key} collected. Make ${needed} deposits at the Night Safe beside Customer Service.` }),
+    completeNightSafe: { kicker: 'Closing time', keep: true, text: 'Takings banked is checked off. Thank you, associates.' },
+    completeFountain: { kicker: 'Closing time', keep: true, text: 'Water features off is checked off. Thank you, associates.' },
+    openLastOrders: (key) => ({ kicker: 'Closing time', keep: true, text: `${key} collected. Collect a build or Restuff from Build-A-Blaster’s Naming Booth.` }),
+    completeLastOrders: { kicker: 'Closing time', keep: true, text: 'Last orders signed off. Thank you, associates.' },
   },
   // The Statistics screen (ui/screens.js): career wins, the fastest win, and the mark on a won shift in the recent list.
   stats: { wins: 'Shifts completed', fastestWin: 'Fastest close', noWin: '—', wonMark: 'CLOSED', wonTitle: 'Shift completed: the mall was closed' },
