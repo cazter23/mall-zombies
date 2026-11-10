@@ -13,6 +13,7 @@ export function createClosingTime({ events, player, colliders, state, view }) {
   const progressDuties = {
     janitor: { open: config.pa.openFountain, complete: config.pa.completeFountain },
     guard: { open: config.pa.openNightSafe, complete: config.pa.completeNightSafe },
+    manager: { open: config.pa.openLastOrders, complete: config.pa.completeLastOrders },
   };
 
   function place(bossId, position) {
@@ -67,6 +68,7 @@ export function createClosingTime({ events, player, colliders, state, view }) {
   }
 
   events.on('fountainKill', () => advance('janitor'));
+  events.on('ritualCollect', () => advance('manager'));
   events.on('purchase', ({ kind, id }) => {
     if (kind === 'closing' && id === 'nightSafe') advance('guard');
   });

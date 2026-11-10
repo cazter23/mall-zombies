@@ -26,7 +26,7 @@ export const closingTime = {
   lines: {
     janitor: { duty: 'Water features off', key: "Murray's Key Ring", needed: 12 },
     guard: { duty: 'Takings banked', key: "Kettle's Safe Key", needed: 4 },
-    manager: { duty: 'Last orders signed off', key: "Fairweather's Signature" },
+    manager: { duty: 'Last orders signed off', key: "Fairweather's Signature", needed: 1 },
     influencer: { duty: 'Car park cleared', key: "Skylar's Van Keys" },
   },
   pa: {
@@ -36,6 +36,8 @@ export const closingTime = {
     openNightSafe: (key, needed) => ({ kicker: 'Closing time', text: `${key} collected. Make ${needed} deposits at the Night Safe beside Customer Service.` }),
     completeNightSafe: { kicker: 'Closing time', text: 'Takings banked is checked off. Thank you, associates.' },
     completeFountain: { kicker: 'Closing time', text: 'Water features off is checked off. Thank you, associates.' },
+    openLastOrders: (key) => ({ kicker: 'Closing time', text: `${key} collected. Collect a build or Restuff from Build-A-Blaster’s Naming Booth.` }),
+    completeLastOrders: { kicker: 'Closing time', text: 'Last orders signed off. Thank you, associates.' },
   },
   lineProgress: (count, needed) => `${count}/${needed}`,
   receiptProgress: (done, total) => done + ' of ' + total,

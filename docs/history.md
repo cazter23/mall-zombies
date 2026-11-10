@@ -765,3 +765,10 @@ The Promenade workbench installs Party Trap on the Confetti Cannon and Clearance
 - The safe charges 1,000 points per hold through the new closing price category. The Discount Code and Employee Discount apply to deposits. Flash Sales have no closing group.
 - Production Chrome preview showed the locked prompt, the 1/4 HUD count, and the Done prompt with the 4/4 tick. Four full-price holds charged 4,000 points. The prompt and coplanar tests cover the safe alongside both Customer Service windows and the Prize Counter.
 - Shared files changed include the Closing Time config and game system, the economy and pricing tables, the map and feature registry, and their test expectations.
+
+## 10 November 2026 - Closing Time phase 6, Line 3 (last orders)
+
+- Fairweather's Signature opens Last orders signed off. The next Build-A-Blaster collection, including a Restuff or an order already running at pickup, ticks the line once. Collections before pickup do not count. Play again resets the duty.
+- Chrome production preview confirmed the 0/1 and 1/1 HUD states, both PA messages, and reset. The build charged 1,500 points and the Restuff charged 750, with no extra charge at collection.
+- When the preview script forced the entire Restuff through while the opening PA was still up, the shared three-message PA queue dropped the completion banner. Letting the opening PA finish before the Restuff made the completion banner visible.
+- Shared edits were limited to the Closing Time system and config, its existing test file, and the plan, history, folder guide and test guide.

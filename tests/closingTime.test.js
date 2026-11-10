@@ -10,6 +10,7 @@ import { feel } from '../src/config/feel.js';
 import { hazards } from '../src/config/hazards.js';
 import { dealHazardDamage } from '../src/game/features/hazards.js';
 import { weapons } from '../src/config/weapons.js';
+import { workshopRitual } from '../src/config/workshop.js';
 import { menuDom } from './helpers/menuDom.js';
 import { closingChecklistFor, createScreens, receiptLinesFor } from '../src/ui/screens.js';
 
@@ -52,7 +53,7 @@ for (const id of bossIds) {
     g.rounds.skipRound();
     defeat(g, id, at); // Nor can it duplicate a held key.
     assert.equal(drops.length, 1);
-    assert.equal(g.closing.done, ['janitor', 'guard'].includes(id) ? 0 : 1);
+    assert.equal(g.closing.done, closingTime.lines[id].needed ? 0 : 1);
   });
 }
 
@@ -304,10 +305,10 @@ test('win presentation checks the fourth box only at the van and keeps the headl
   grantKeys(g);
   assert.deepEqual(g.closing.missingKeys, []);
   assert.deepEqual(closingChecklistFor(g.closing.checklist, g.state.won).map(({ done }) => done),
-    [false, false, true, false]);
+    [false, false, false, false]);
   press('KeyF', holdTicks);
   assert.deepEqual(closingChecklistFor(g.closing.checklist, g.state.won).map(({ done }) => done),
-    [false, false, true, true]);
+    [false, false, false, true]);
 });
 
 test('win receipt offers both choices, then restores the death receipt for an overtime death', (t) => {
@@ -556,4 +557,97 @@ test('four priced deposits honor both discounts, tick the duty once and reset on
   assert.equal(line().count, 0);
   g.wallet.earn(base);
   deposit(1);
+});
+
+
+// Phase 6: Line 3, last orders
+function atBuildABlaster(t) {
+  const game = fixture(t);
+  const { g, press, tick } = game;
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  g.map.areaUnlocks.openAll();
+  const { feature: bench, instance: { ritual } } = g.features.list.find(({ feature }) => feature.kind === 'workshop');
+  g.wallet.earn(g.pricing.priceOf('workshop', 'ritual') + g.pricing.priceOf('workshop', 'restuff'));
+
+  function order(kind = 'ritual') {
+    const { x, y, z } = bench.position;
+    g.player.teleport({ position: new Vector3(x, y - 1, z - 1), yaw: Math.PI });
+    tick();
+    assert.equal(g.interactions.prompt?.id, 'orderForm');
+    press('KeyF', holdTicks);
+    tick();
+    const points = g.wallet.points;
+    const price = g.pricing.priceOf('workshop', kind);
+    assert.equal(ritual.form.cost, price);
+    press('KeyF');
+    tick();
+    assert.equal(ritual.phase, 'running');
+    assert.equal(g.wallet.points, points - price);
+  }
+
+  function collect() {
+    ritual.finishNow();
+    tick(Math.ceil(workshopRitual.catchUpSeconds / dt) + 3);
+    assert.equal(ritual.phase, 'idle');
+  }
+
+  return { ...game, order, collect };
+}
+
+test('a build collected before the Signature is ignored, then a Restuff ticks Last orders once and Play again resets it', (t) => {
+  const { g, tick, standAt, order, collect, hud } = atBuildABlaster(t);
+  const { key, needed } = closingTime.lines.manager;
+  const { openLastOrders, completeLastOrders } = closingTime.pa;
+  const collections = [], completed = [];
+  g.events.on('ritualCollect', (event) => collections.push(event));
+  g.events.on('closingLine', (event) => completed.push(event));
+
+  order();
+  collect();
+  assert.equal(collections.length, 1);
+  assert.equal(g.closing.isDone('manager'), false);
+
+  const pickup = new Vector3(2, 0, 12);
+  defeat(g, 'manager', pickup);
+  standAt(pickup.x, pickup.z);
+  assert.ok(g.closing.hasKey('manager'));
+  assert.equal(g.closing.isDone('manager'), false);
+  assert.deepEqual(completed, []);
+
+  tick(30); // Let the returned gun finish switching before placing the Restuff.
+  order('restuff');
+  assert.equal(g.closing.isDone('manager'), false);
+  const points = g.wallet.points;
+  collect();
+  assert.equal(g.wallet.points, points);
+  assert.equal(collections.length, 2);
+  assert.equal(collections[1].build.name, collections[0].build.name);
+  assert.ok(g.closing.isDone('manager'));
+  assert.equal(g.closing.checklist.find(({ bossId }) => bossId === 'manager').count, needed);
+
+  g.events.emit('ritualCollect', collections[1]);
+  assert.deepEqual(completed, [{ line: 'manager', done: 1, total: bossIds.length, pa: completeLastOrders }]);
+  const announcements = hud.calls.filter(([name]) => name === 'showAnnouncement').map(([, notice]) => notice.text);
+  assert.equal(announcements.filter((text) => text === openLastOrders(key).text).length, 1);
+  assert.equal(announcements.filter((text) => text === completeLastOrders.text).length, 1);
+
+  g.resetRun();
+  assert.equal(g.closing.hasKey('manager'), false);
+  assert.equal(g.closing.isDone('manager'), false);
+  assert.equal(g.closing.checklist.find(({ bossId }) => bossId === 'manager').count, undefined);
+  g.events.emit('ritualCollect', collections[1]);
+  assert.equal(completed.length, 1);
+  grantKeys(g, ['manager']);
+  g.events.emit('ritualCollect', collections[1]);
+  assert.equal(completed.length, 2);
+});
+
+test('an order already running at Signature pickup ticks Last orders when the build is collected', (t) => {
+  const { g, order, collect } = atBuildABlaster(t);
+  order();
+  grantKeys(g, ['manager']);
+  assert.equal(g.closing.isDone('manager'), false);
+  collect();
+  assert.ok(g.closing.isDone('manager'));
 });
