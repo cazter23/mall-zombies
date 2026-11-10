@@ -24,7 +24,7 @@ src/
     deathMusic.js       End of Shift: original seven-second death composition (piano/pad/bell/noise layers), gain and
                         stop fade. Bell anchors to feel.death.resultsDelay; played once through sound's music/master buses
     careerStats.js      Career schema versions, recent-run limit and accuracy record threshold.
-    closingTime.js      Four closing duties and their keys, fountain, night-safe and last-orders targets, PA and receipt copy, key marker and prop tuning, and escape van prompt data.
+    closingTime.js      Four closing duties and their keys, fountain, night-safe and last-orders targets, PA copy (the once-per-run briefing and its delay; `keep` marks the lines the PA queue never drops), the win receipt's words, the OVERTIME tag, Statistics labels, key marker and prop tuning, and escape van prompt data.
     powerUps.js         Employee-incentive drop tuning, skill credit, round caps, pickup/zone durations, ammo top-up,
                         sweep strength, colors and PA lines. First round 2, 12-16 credit per drop, maximum 3 per round
     effectWords.js      THE WORDS-ONLY RULE: players never see an upgrade's effect as a number. The fixed size bands (a little / noticeably / much), sizeWord / fillSize
@@ -401,7 +401,7 @@ src/
                         No DOM: the browser parts are passed in
     careerStats.js      createCareerStats({ storage }): versioned persistent employee record with lifetime totals,
                         personal bests and the last 12 completed shifts. Assisted/debug runs are rejected; storage
-                        failures fall back to memory. main.js supplies localStorage and records the runEnd event
+                        failures fall back to memory. A save from a newer version is never written over (blank ledger for the session). main.js supplies localStorage and records the runEnd event
     settings.js         createSettings(ctx): current value of every setting, saved in localStorage ('mallZombies.settings',
                         values are sanitized on load), applies them all at startup; get/set/reset(tab)/onChange. ctx = { renderer, sound, hud }
     runStats.js         createRunStats(): time alive, kills, headshot/melee kills, bosses defeated, shots fired/hit, accuracy
@@ -416,6 +416,8 @@ src/
     meltTrail.js        Scoops' puddles: one fixed pool for every Scoops (oldest gives way, own material to fade), drops every
                         dropEvery where he walks; a grounded player in one reports 'melt' to surfaceSlows
     closingTime.js      g.closing owns persistent boss key drops, collection, checklist progress (fountain kills, night-safe purchases and workshop collections) and Play again reset.
+                        A key never ticks a line: lines 1 to 3 tick on their duty, line 4 on the win (completeLeaving, called by onRunWon). readyToLeave = four keys and
+                        lines 1 to 3 (what the van asks for); missingKeys / missingDuties say what is left. Emits the once-per-run 'closingBriefing'.
     floorPickups.js     Shared clear-floor placement and swept collection for incentives and closing keys; direction for HUD markers.
     powerUps.js         createPowerUps(): listens to kill/round/death events; earned dynamic pickups on clear floor,
                         swept walk-through collection, 15s expiry, no repeats, per-round caps. Blue Light multiplies only
@@ -473,7 +475,7 @@ src/
                         distant upstairs silhouette. Quiet intervals, comfort gates, reset and static-batching-safe hooks.
       workshop.js       The workshop feature: builds the ritual, its effects and the Limited Edition drops, runs Party Trap charges.
       nightSafe.js      Customer Service deposit prompt. Gates payments on Kettle’s Safe Key and completion, and charges the live closing price.
-      escapeVan.js      Customer Parking hold prompt. Lists missing keys and announces the start of the van when all are held.
+      escapeVan.js      Customer Parking hold prompt. Blocked until g.closing.readyToLeave: lists missing keys, then the unfinished duties whose key is held (vanNeeds). Emits the van start.
       limitedEditions.js The bag a shopping-bag zombie sometimes drops: walk over it and Party Trap or Clearance Rack fits a gun you carry, free.
       workshopRitual.js The Build-A-Blaster ritual: idle, running, ready. Bench opens the order form, gun on the conveyor, gauge (kills also shorten the clock), maximum time, the gun coming back by itself, chute steering. Built by workshop.js.
       workshopStuffings.js What a finished build does (and its looks: flashes, flames, ice, drips, hearts): one function per Stuffing, one per Heart. Hearts read 'shot' and hand off to the stuffing; nothing here emits 'shot', so a stuffing's kills can't fire a Heart.
@@ -823,7 +825,7 @@ src/
     fittingRoomPicker.js Draws the fitting-room picker from its view (hud.setFittingRoom): four slot columns on the order form's paper and keycaps, the
                         highlighted item's stat lines in green and red. Only draws.
     ritualHud.js        The order ticket on the HUD: the gun's stage, one progress bar, the gauge and time (reads the ritual's status).
-    announcements.js    Bounded PA queue: type introductions priority 2, incentives 1, routine messages 0;
+    announcements.js    Bounded PA queue: type introductions priority 2, incentives 1, routine messages 0; a message flagged `keep` is never trimmed and is re-queued if cut off;
                         clear on pause/death/reset; wall-clock presentation timers only
     noticeHistory.js    The run's PA notices, kept for the Notices menu (queued and pre-empted ones too); pausing never clears it.
     noticesMenu.js      createNoticesMenu(history): the pause screen's list of this run's PA notices.

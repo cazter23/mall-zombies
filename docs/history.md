@@ -1,5 +1,48 @@
 # Sunset Galleria: build history ("Current state")
 
+## 10 November 2026 - Closing Time fix pass (phases 1 to 6, after review)
+
+- **The van needs the duties.** Starting the van takes all four keys and lines 1 to 3 ticked (`g.closing.readyToLeave`, checked in `onRunWon` and at the prompt). The prompt lists missing keys first, then the unfinished duties whose key is held, by name. Still no round gate.
+- **The game owns line 4.** The Van Keys tick nothing; their pickup has its own PA line. The win ticks "Car park cleared" (`closing.completeLeaving()` from `onRunWon`, before the summary), so `g.closing.done`, 'closingLine' and `summary.closingDone` are right headless and a win receipt reads 4 of 4. The three browser corrections are gone (`closingChecklistFor`, the PA text comparison and `setReceiptClosingDone`).
+- **A won run is never lost.** `g.leaveRun()` records a won run that is left by Quit to title or Restart run (the win plus what overtime added), once; main.js calls it before `resetRun()`. A run that was never won is still not recorded. Not covered: closing the browser tab in overtime.
+- **A win in the break keeps its round.** `rounds.startOvertime()` in a break restarts the full break and plays the announced round; mid-wave it discards and moves on as before. The summary carries `overtimeRounds` (from the first overtime round), which the receipt reads.
+- **A boss reward on the floor survives Stay for overtime.** 'roundDiscard' carries a reason; for 'overtime' game/powerUps.js leaves the uncollected reward, which can still be collected or expire and pay `pointsInstead`. A debug skip deletes it, as before.
+- **Statistics** shows career wins, the fastest win (a dash when none) and marks won shifts.
+- **The PA introduces the checklist** once per run, 8 s after round 1 is announced ('closingBriefing').
+- **The dropped completion line** (noted under phase 6) is fixed with a queue rule, not a priority: a PA message flagged `keep` does not count against the three-message queue, is never trimmed, and returns to the head of the queue if a more important message cuts it off. Only the checklist's line-opening and line-complete lines carry the flag.
+- **Career saves:** a stored version higher than this build knows is left untouched; the session uses a blank ledger and writes nothing (Clear records included).
+- **Words** for the win receipt, the OVERTIME tag and the Night Safe's "Requires" moved to `config/closingTime.js`.
+- Tests: tests/closingTime.test.js covers each of these, plus a key from a boss killed on an escalator ramp or against a wall, the mid-air drop, Play again against a fresh game (the headless `snapshot()` now includes the checklist, keys, pickups and win flags) and the HUD's boxes and markers. tests/retailUi.test.js covers the queue rule.
+- Shared files changed: `createGame.js`, `rounds.js`, `powerUps.js`, `careerStats.js`, `events.js`, `main.js`, `config/economy.js` (a comment), `ui/announcements.js`, `ui/hud.js`, `ui/screens.js`, `ui/retail.css`, `tests/helpers/headlessGame.js` and the docs.
+
+## 10 November 2026 - Closing Time phase 6, Line 3 (last orders)
+
+- Fairweather's Signature opens Last orders signed off. The next Build-A-Blaster collection, including a Restuff or an order already running at pickup, ticks the line once. Collections before pickup do not count. Play again resets the duty.
+- Chrome production preview confirmed the 0/1 and 1/1 HUD states, both PA messages, and reset. The build charged 1,500 points and the Restuff charged 750, with no extra charge at collection.
+- When the preview script forced the entire Restuff through while the opening PA was still up, the shared three-message PA queue dropped the completion banner. Letting the opening PA finish before the Restuff made the completion banner visible.
+- Shared edits were limited to the Closing Time system and config, its existing test file, and the plan, history, folder guide and test guide.
+
+## 10 November 2026 - Closing Time phase 5, Line 2 (the night safe)
+
+- Kettle’s Safe Key opens Takings banked. Hold interact at the Night Safe on Customer Service’s east wall to make one deposit. Each deposit updates the checklist, and the PA announces the opening and the tick after four deposits. Play again clears the key and progress.
+- The safe charges 1,000 points per hold through the new closing price category. The Discount Code and Employee Discount apply to deposits. Flash Sales have no closing group.
+- Production Chrome preview showed the locked prompt, the 1/4 HUD count, and the Done prompt with the 4/4 tick. Four full-price holds charged 4,000 points. The prompt and coplanar tests cover the safe alongside both Customer Service windows and the Prize Counter.
+- Shared files changed include the Closing Time config and game system, the economy and pricing tables, the map and feature registry, and their test expectations.
+
+## 10 November 2026 - Closing Time phase 4, Line 1: the fountain
+
+- Murray's Key Ring opens “Water features off.” Only kills dealt by the active Electrified Fountain count. The HUD and pause list show the count, and the PA announces the opening and the tick at 12. Bosses and Mascots count. Play again clears the duty.
+- The breaker keeps its normal hazard behavior and price. The interim van still requires the four keys until parking validation is built in phase 7.
+- With seed 42 and a stationary invulnerable lure in the real headless wave, the paid breaker took two activations in round 6 (11 then 8 kills), one in round 10 (15 kills) and one in round 15 (13 kills). A controlled run staging six full-health enemies at a time took two activations at each round. The measured price was 750 per activation.
+- Shared files changed include the Closing Time config and game system, `createGame.js`, `events.js`, the van and fountain features, the HUD and pause UI, and `tests/closingTime.test.js`.
+
+## 10 November 2026 - Closing Time phase 3, The win (browser)
+
+- The existing receipt opens as SHIFT COMPLETE after the van starts. Clock out keeps the completed receipt available. Stay for overtime resumes on the controller or requests mouse lock with a Resume screen as a fallback.
+- The fourth checklist box ticks at the van. The HUD shows OVERTIME after continuing. An overtime death uses the regular incident receipt and adds the win round, win time and number of completed overtime waves.
+- The win releases pointer lock and stops rumble. The paused receipt is eligible for idle saving. Death alone starts the death music and camera.
+- Shared files changed include `main.js`, `ui/screens.js`, `ui/hud.js`, `ui/readability.css` and `tests/closingTime.test.js`.
+
 ## 10 November 2026 - Closing Time phase 2, The win (headless)
 
 - The mauve van's east-side hold prompt lists any missing keys. Four keys unlock the free start, even in round 1.
@@ -742,33 +785,3 @@ The Promenade workbench installs Party Trap on the Confetti Cannon and Clearance
 
 
 > Older entries (October 2026 and before): docs/archive/history-2026-10.md
-
-
-## 10 November 2026 - Closing Time phase 3, The win (browser)
-
-- The existing receipt opens as SHIFT COMPLETE after the van starts. Clock out keeps the completed receipt available. Stay for overtime resumes on the controller or requests mouse lock with a Resume screen as a fallback.
-- The fourth checklist box ticks at the van. The HUD shows OVERTIME after continuing. An overtime death uses the regular incident receipt and adds the win round, win time and number of completed overtime waves.
-- The win releases pointer lock and stops rumble. The paused receipt is eligible for idle saving. Death alone starts the death music and camera.
-- Shared files changed include `main.js`, `ui/screens.js`, `ui/hud.js`, `ui/readability.css` and `tests/closingTime.test.js`.
-
-
-## 10 November 2026 - Closing Time phase 4, Line 1: the fountain
-
-- Murray's Key Ring opens “Water features off.” Only kills dealt by the active Electrified Fountain count. The HUD and pause list show the count, and the PA announces the opening and the tick at 12. Bosses and Mascots count. Play again clears the duty.
-- The breaker keeps its normal hazard behavior and price. The interim van still requires the four keys until parking validation is built in phase 7.
-- With seed 42 and a stationary invulnerable lure in the real headless wave, the paid breaker took two activations in round 6 (11 then 8 kills), one in round 10 (15 kills) and one in round 15 (13 kills). A controlled run staging six full-health enemies at a time took two activations at each round. The measured price was 750 per activation.
-- Shared files changed include the Closing Time config and game system, `createGame.js`, `events.js`, the van and fountain features, the HUD and pause UI, and `tests/closingTime.test.js`.
-
-## 10 November 2026 - Closing Time phase 5, Line 2 (the night safe)
-
-- Kettle’s Safe Key opens Takings banked. Hold interact at the Night Safe on Customer Service’s east wall to make one deposit. Each deposit updates the checklist, and the PA announces the opening and the tick after four deposits. Play again clears the key and progress.
-- The safe charges 1,000 points per hold through the new closing price category. The Discount Code and Employee Discount apply to deposits. Flash Sales have no closing group.
-- Production Chrome preview showed the locked prompt, the 1/4 HUD count, and the Done prompt with the 4/4 tick. Four full-price holds charged 4,000 points. The prompt and coplanar tests cover the safe alongside both Customer Service windows and the Prize Counter.
-- Shared files changed include the Closing Time config and game system, the economy and pricing tables, the map and feature registry, and their test expectations.
-
-## 10 November 2026 - Closing Time phase 6, Line 3 (last orders)
-
-- Fairweather's Signature opens Last orders signed off. The next Build-A-Blaster collection, including a Restuff or an order already running at pickup, ticks the line once. Collections before pickup do not count. Play again resets the duty.
-- Chrome production preview confirmed the 0/1 and 1/1 HUD states, both PA messages, and reset. The build charged 1,500 points and the Restuff charged 750, with no extra charge at collection.
-- When the preview script forced the entire Restuff through while the opening PA was still up, the shared three-message PA queue dropped the completion banner. Letting the opening PA finish before the Restuff made the completion banner visible.
-- Shared edits were limited to the Closing Time system and config, its existing test file, and the plan, history, folder guide and test guide.
