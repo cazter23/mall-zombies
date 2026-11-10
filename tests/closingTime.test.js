@@ -495,6 +495,30 @@ test('career version 1 migrates old records and saves the fastest win by time at
   assert.equal(reloaded.bests.fastestWin, 40);
 });
 
+test('Statistics shows career wins, the fastest win (a dash when none) and marks won shifts', () => {
+  const { document } = menuDom();
+  const screens = createScreens();
+  const career = createCareerStats({ storage: { getItem: () => null, setItem() {} } });
+  const cards = (selector) => Object.fromEntries(document.querySelector(selector).children
+    .map((card) => card.children.map((node) => node.textContent)));
+  const { stats } = closingTime;
+
+  career.recordRun({ round: 6, timeAlive: 300, kills: 40 });
+  screens.show('stats', career.snapshot());
+  assert.equal(cards('.stats-totals')[stats.wins], '0');
+  assert.equal(cards('.stats-bests')[stats.fastestWin], stats.noWin);
+  assert.equal(document.querySelectorAll('.stats-won').length, 0);
+
+  career.recordRun({ round: 19, timeAlive: 1500, kills: 400, won: true, winTime: 1385 });
+  career.recordRun({ round: 3, timeAlive: 90, kills: 9 });
+  screens.show('stats', career.snapshot());
+  assert.equal(cards('.stats-totals')[stats.wins], '1');
+  assert.equal(cards('.stats-bests')[stats.fastestWin], '23:05');
+  const rows = document.querySelectorAll('.stats-run'); // newest first
+  assert.deepEqual(rows.map((row) => row.classList.contains('won')), [false, true, false]);
+  assert.deepEqual(rows.map((row) => row.querySelectorAll('.stats-won').length), [0, 1, 0]);
+  assert.equal(rows[1].querySelector('.stats-won').textContent, stats.wonMark);
+});
 
 // Line 4 belongs to the game: the win ticks it, with no browser code involved.
 test('the Van Keys tick nothing; the win itself ticks line 4, so the game reads 3 before the van and 4 after', (t) => {

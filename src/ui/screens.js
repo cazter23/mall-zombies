@@ -460,6 +460,7 @@ export function createScreens() {
     if (empty) return;
     statsTotals.innerHTML = statCards([
       ['Shifts worked', totals.runs.toLocaleString('en-US')],
+      [closingTime.stats.wins, (totals.wins ?? 0).toLocaleString('en-US')],
       ['Time employed', clock(totals.timeAlive)],
       ['Zombies cleared', totals.kills.toLocaleString('en-US')],
       ['Headshots', totals.headshotKills.toLocaleString('en-US')],
@@ -475,10 +476,13 @@ export function createScreens() {
       ['Most headshots', bests.headshotKills],
       ['Most points', bests.pointsEarned.toLocaleString('en-US')],
       ['Best accuracy', bests.accuracy === null ? '—' : percent(bests.accuracy)],
+      [closingTime.stats.fastestWin, bests.fastestWin == null ? closingTime.stats.noWin : clock(bests.fastestWin)],
     ]);
     statsRecent.innerHTML = recent.map((run) => {
       const date = run.endedAt ? new Date(run.endedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Unknown';
-      return `<tr class="stats-run"><td>${date}</td><td><b>${run.round}</b></td><td>${clock(run.timeAlive)}</td><td>${run.kills}</td><td>${percent(run.accuracy)}</td></tr>`;
+      // A won shift carries a mark beside its round (and the row a class, for the style).
+      const won = run.won ? ` <span class="stats-won" title="${closingTime.stats.wonTitle}">${closingTime.stats.wonMark}</span>` : '';
+      return `<tr class="stats-run${run.won ? ' won' : ''}"><td>${date}</td><td><b>${run.round}</b>${won}</td><td>${clock(run.timeAlive)}</td><td>${run.kills}</td><td>${percent(run.accuracy)}</td></tr>`;
     }).join('');
   }
 

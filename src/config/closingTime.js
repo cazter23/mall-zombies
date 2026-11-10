@@ -40,6 +40,8 @@ export const closingTime = {
     openLastOrders: (key) => ({ kicker: 'Closing time', text: `${key} collected. Collect a build or Restuff from Build-A-Blaster’s Naming Booth.` }),
     completeLastOrders: { kicker: 'Closing time', text: 'Last orders signed off. Thank you, associates.' },
   },
+  // The Statistics screen (ui/screens.js): career wins, the fastest win, and the mark on a won shift in the recent list.
+  stats: { wins: 'Shifts completed', fastestWin: 'Fastest close', noWin: '—', wonMark: 'CLOSED', wonTitle: 'Shift completed: the mall was closed' },
   lineProgress: (count, needed) => `${count}/${needed}`,
   receiptProgress: (done, total) => done + ' of ' + total,
   marker: { floorGap: 2, up: 'upstairs', down: 'downstairs' },
