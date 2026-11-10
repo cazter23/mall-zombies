@@ -83,6 +83,10 @@
 //   'sunnyEscape' { fromId, toId, lap }                  the plush climbed out and is walking to the next site (game/features/clawSunny.js)
 //   'sunnyArrived' { siteId }                            he climbed into that cabinet (it shakes)
 //   'sunnyPopped' { siteId }                             shot or slashed: stuffing everywhere, tickets paid, the next site re-picked
+//   'equipmentThrown' { id, pocket, left }               a pocket's item was thrown (game/equipment.js; pocket 'lethal' | 'tactical',
+//                                                        left = charges still in it)
+//   'equipmentBurst'  { id, position, radius, hit }      a thrown Soda Bomb burst; hit = [{ target, damage, killed }]. Equipment
+//                                                        damage never emits 'hit' (no +10): its kills pay through 'kill', source 'equipment'
 //   'runReset'    {}                                     after Play again reset everything
 // =============================================================================
 

@@ -1,5 +1,32 @@
 # Sunset Galleria: build history ("Current state")
 
+## 9 November 2026 - Kiosk Kevin, phase 1: two pockets, the buttons and the Soda Bomb
+
+The first piece of docs/kiosk-kevin-plan.md, built in the claude/kiosk-kevin-1 worktree: no Kevin, no cart, no Bubble Wrap, no tacticals, no Sentry yet.
+
+- **The buttons** (config/controls.js): `lethal` = G / RB, `tactical` = middle click (Mouse1) / D-pad right. The box cutter loses RB and keeps V and R3 (COD's
+  layout), so prompts say R3 on a controller. God mode's debug key moved from G to plain B (Shift+B is still the benchmark). A middle mousedown is always
+  preventDefault'ed in core/input.js, so it can't start the browser's autoscroll before the pointer lock. The Controls screen has lines for both throws
+  (new diagram anchors: G, the middle button, R3 and D-pad right).
+- **game/equipment.js** (g.equipment, built and ticked in createGame after melee and before the gun): two pockets, each one product with charges;
+  give(id, count) adds to the same kind and replaces another. A tap throws; isBusy (kiosk.throw.blockSeconds 0.4) joins gun.update's `blocked` and
+  holds off the box cutter; a throw cancels a reload; refused while switching, vaulting, swinging, in a menu or dead. In a menu the buttons are not
+  read at all, so the order form and fitting room keep D-pad right. A new 'equipment' reset step right after 'balls'; death clears thrown things.
+- **Throwables:** weapons/ballistics.js got `zombies: 'bounce'` (a zombie is bounced off, never hit), and createGame makes a second instance
+  (g.throwables) ticked right after `balls`. fx/throwableView.js draws the bottles (main.js).
+- **The Soda Bomb** (config/kiosk.js; damage in game/equipment/equipmentDamage.js): 3 charges, lobbed 14 degrees over the crosshair, bounces, bursts
+  1.8 s after the throw (a bottle that stops rolling waits for its fuse). 4 m blast, 850 x equipmentPower(round) at the centre, 0.3 of that at the
+  edge, nothing through a wall; a boss takes 6% of its max health at the centre (same falloff). Distance is to a zombie's nearest hitbox, so a
+  bottle at its feet is a centre hit. takeHit source 'equipment': it pays only through 'kill', never 'hit' (no +10, no boss onHit reactions, no
+  power-up credit, which counts only 'gun' and 'melee'). Anything without a zombie type or with noRewards (Sunny, fans, test-range dummies) is skipped.
+- **Measured** (tests/equipment.test.js on real Shoppers): equipmentPower is 0.54 / 1.00 / 1.50 / 1.71 at rounds 1 / 10 / 25 / 30, as the plan's table;
+  a centre hit kills a Shopper at rounds 1 and 10 and takes 40 to 60% of one at round 25 (1,273 of 2,386).
+- **HUD:** hud.setPockets: two pocket icons with their count and button left of the ammo count (a red bottle for the Soda Bomb); an empty pocket is a
+  faint dashed outline. New events 'equipmentThrown' and 'equipmentBurst' (game/events.js). A keyless debug command fills the pockets:
+  `window.__mall.g.debug.run('pockets')` (debugCommands.js `keyless`, so the key table and its tests are unchanged). The burst sound is 'sodaBurst'.
+- Not checked: any of it by hand in the browser (the throw's feel, the arc, the bottle and HUD icons, the sound by ear); there is no throw animation
+  on the viewmodel yet (the gun just can't fire for 0.4 s; phase 8 is spectacle).
+
 ## 9 November 2026 - GRAB-A-GUN, phase 10: RETURN TO SENDER, the wonder weapon (claw-only)
 
 Settled with you before it was built: the plan's working idea, name and all, and bosses and Mascots take a BIG FIXED HIT (not just a normal hit). A returns-desk scanner whose

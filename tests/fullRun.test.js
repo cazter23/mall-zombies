@@ -107,6 +107,10 @@ test('Play again puts EVERYTHING back: the game equals a freshly built one', () 
   t.tick(60 * 8);
   g.rounds.skipRound();
   t.tick(60 * 4);
+  // Kiosk Kevin's equipment: full pockets, one Soda Bomb thrown and still on its fuse when you die.
+  g.debug.run('pockets');
+  t.press('KeyG', 1);
+  assert.equal(g.equipment.live.length, 1);
   g.health.takeDamage(10_000);
   t.tick(60 * 5);
   assert.equal(g.state.over, true);

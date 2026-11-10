@@ -6,6 +6,7 @@
 //
 //   const dbg = createDebugCommands({ map, zombies, rounds, wallet, gun, health, player, arena, flashSales })
 //   dbg.run(id)       do it; returns a short message ("Spawned Cart Pusher") that the window shows as the last result
+//                     (a few commands have no key: dbg.keylessIds, e.g. 'pockets' fills Kiosk Kevin's equipment pockets)
 //   dbg.resolve(code, shift)   the command bound to this key (and Shift state), or null
 //   dbg.status()      live numbers for the window: { round, points, alive, zombieType, god, panelOpen, last }
 //   dbg.state         { panelOpen, zombieIndex, gunIndex, last }; god mode lives on health.invulnerable
@@ -27,7 +28,7 @@ const BOSS_IDS = Object.keys(bossTypes).sort((a,b)=>bossTypes[a].firstRounds[0]-
 const WALL_GUN_IDS = Object.keys(weapons).filter((id) => id !== 'stapleGun');
 const nameOf = (id) => id.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
 
-export function createDebugCommands({ map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses, wardrobe, features = null, commands = debug.commands, onUse = null }) {
+export function createDebugCommands({ map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses, wardrobe, features = null, equipment = null, commands = debug.commands, onUse = null }) {
   const clawMachine = () => features?.list.find(({ feature }) => feature.kind === 'clawMachine')?.instance ?? null; // GRAB-A-GUN
   const state = { panelOpen: debug.panel.startOpen, zombieIndex: 0, bossIndex: 0, gunIndex: 0, mascotIndex: 0, goldIndex: 0, last: '' };
   const selectedZombie = () => ZOMBIE_IDS[state.zombieIndex];
@@ -188,14 +189,26 @@ export function createDebugCommands({ map, zombies, rounds, wallet, gun, health,
     },
   };
 
+  // Commands with NO key (the keyboard has none left to spare): run them from the browser console,
+  // window.__mall.g.debug.run('pockets'), or from a test. Not in the key table or the debug window.
+  const keyless = {
+    // Kiosk Kevin's equipment (game/equipment.js): every pocket that has a product, full.
+    pockets() {
+      if (!equipment) return 'This game has no equipment';
+      const filled = equipment.fill();
+      return filled.length ? `Pockets full: ${filled.map((p) => `${p.charges} ${p.name}s`).join(', ')}` : 'Nothing to put in the pockets';
+    },
+  };
+
   return {
     state,
     commands,
     /** Run a command by id; the returned message is also kept as the "last result" for the window. */
     run(id, ...args) {
-      if (!Object.hasOwn(run, id)) throw new Error(`debug: unknown command "${id}"`);
+      const table = Object.hasOwn(run, id) ? run : Object.hasOwn(keyless, id) ? keyless : null;
+      if (!table) throw new Error(`debug: unknown command "${id}"`);
       if (onUse) onUse(id);
-      state.last = run[id](...args);
+      state.last = table[id](...args);
       return state.last;
     },
     /** The command bound to this key code and Shift state (an exact match), or null. */
@@ -217,6 +230,7 @@ export function createDebugCommands({ map, zombies, rounds, wallet, gun, health,
         sale: flashSales.active ? `${flashSales.active.label} -${Math.round(flashSales.active.discount * 100)}%` : '',
       };
     },
-    ids: Object.keys(run),
+    ids: Object.keys(run), // (the keyed commands: one per entry in config/debug.js)
+    keylessIds: Object.keys(keyless), // (run by id only: 'pockets')
   };
 }

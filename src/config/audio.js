@@ -255,6 +255,12 @@ export const audio = {
       { type: 'noise', filter: 'highpass', freq: 5200, q: .7, gain: .35, attack: .001, decay: .09 },
     ] },
 
+    // Kiosk Kevin's Soda Bomb bursting (config/kiosk.js): a deep pop, a fizzing spray, a hiss that trails off.
+    sodaBurst: { volume: .9, layers: [
+      { type: 'tone', wave: 'sine', freq: 140, freqEnd: 40, gain: 1, attack: .001, decay: .22 },
+      { type: 'noise', filter: 'lowpass', freq: 1100, q: .7, gain: .85, attack: .001, decay: .16 },
+      { type: 'noise', filter: 'highpass', freq: 4200, q: .7, gain: .45, attack: .01, decay: .6 },
+    ] },
     partySnap: { volume: .8, layers: [
       { type: 'noise', filter: 'bandpass', freq: 3300, q: .8, gain: .9, attack: .001, decay: .045 },
       { type: 'noise', filter: 'lowpass', freq: 920, q: .7, gain: .48, attack: .002, decay: .075 },

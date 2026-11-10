@@ -18,6 +18,8 @@
 //   g.wardrobe     the current outfit and bag (game/wardrobe.js)
 //   g.flashSales   the mall PA's timed discounts (game/flashSales.js); .active = the sale running now (or null)
 //   g.debug        the developer shortcuts (game/debugCommands.js): run(id), resolve(key, shift), status()
+//   g.equipment    Kiosk Kevin's equipment: the Lethal and Tactical pockets and the throw (game/equipment.js);
+//                  g.throwables = the thrown things in the air (weapons/ballistics.js, bouncing off zombies)
 //   g.<system>     map, colliders, arena, shootables, stats, player, wallet, runStats, effects, aimAssist,
 //                  gun, interactions, melee, health, zombies, mascotCostumes, rounds, death
 // =============================================================================
@@ -45,6 +47,7 @@ import { createPlayerGun } from '../weapons/playerGun.js';
 import { createMelee } from '../weapons/melee.js';
 import { createAimAssist } from '../weapons/aimAssist.js';
 import { createBalls } from '../weapons/ballistics.js';
+import { createEquipment } from './equipment.js';
 import { createZombieManager } from '../zombies/zombieManager.js';
 import { createMascotCostumes } from './mascotCostumes.js';
 import { createSurfaceSlows } from './surfaceSlows.js';
@@ -263,6 +266,13 @@ export function createGame({
 
   const health = createPlayerHealth({ stats, onDeath: onPlayerDeath, onRegenStart: () => events.emit('regenStart') });
 
+  // Kiosk Kevin's equipment (game/equipment.js): the two pockets and the throw. Thrown things fly on their own ballistics
+  // instance that bounces off zombies without hurting them (they only hurt where they burst); main.js draws them.
+  const throwables = createBalls({ colliders, shootables, zombies: 'bounce' });
+  const equipment = createEquipment({
+    input, player, gun, melee, health, state, shootables, colliders, effects, sound, events, throwables, getRound,
+  });
+
   const zombies = createZombieManager({
     scene,
     colliders,
@@ -464,7 +474,7 @@ export function createGame({
   });
   // Developer shortcuts (config/debug.js lists the keys; main.js turns key presses into debug.run(id)).
   const debugCommands = createDebugCommands({
-    map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses, wardrobe, features,
+    map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses, wardrobe, features, equipment,
     onUse: (id) => {
       // Merely showing the panel or choosing the next spawn type changes no run outcome.
       if (id !== 'panel' && id !== 'cycleZombie' && id !== 'cycleBoss' && id !== 'benchmark') state.assisted = true;
@@ -495,6 +505,7 @@ export function createGame({
     ['health', () => health.reset()], // (after stats: back to the base max health)
     ['runStats', () => runStats.reset()],
     ['balls', () => balls.clear()], // (before the gun: a ball in the air reports to it)
+    ['equipment', () => equipment.reset()], // empty pockets, nothing thrown left in the air or on the floor
     ['gun', () => gun.reset()], // just the staple gun again, no upgrades
     ['interactions', () => interactions.reset()],
     ['viewmodel', () => viewmodel.reset()],
@@ -546,6 +557,7 @@ export function createGame({
     if (state.over) {
       death.timer += dt;
       balls.clear(); // (a ball in the air when you died is gone: nothing more is paid or counted)
+      equipment.clearThrown(); // (so is a Soda Bomb on its fuse)
       zombies.update(dt);
       health.update(dt);
       if (!death.resultsShown && death.timer >= feel.death.resultsDelay) showResults();
@@ -580,12 +592,16 @@ export function createGame({
     // "[Space] Vault" prompt: would a jump press now end in a vault? (checked per tick, shown in render)
     vaultPromptVisible = !inMenu && player.grounded && !player.vault.active && player.vault.preview();
     if (!inMenu) interactions.update(dt); // before the gun: on controller X, a hold near a buyable buys instead of reloading
-    if (!inMenu) melee.update(dt, !gun.isSwitching);
-    // Hands busy with a slash or a vault: no shooting. A vault only pauses a reload (it carries on after).
-    if (!inMenu) gun.update(dt, melee.isBusy || player.vault.active, player.vault.active);
+    if (!inMenu) melee.update(dt, !gun.isSwitching && !equipment.isBusy);
+    // Equipment (G / middle mouse): after melee, so a swing that started this tick refuses the throw. In a menu only its timer runs.
+    equipment.update(dt, { inMenu });
+    // Hands busy with a slash, a throw or a vault: no shooting. A vault only pauses a reload (it carries on after).
+    if (!inMenu) gun.update(dt, melee.isBusy || equipment.isBusy || player.vault.active, player.vault.active);
     warranty.update(dt); // (a replaced gun's warranty goes on file; a dry Platinum gun makes its claim)
     zombies.update(dt);
     balls.update(dt); // after the zombies moved: a ball hits them where they are now
+    throwables.update(dt); // (same for a thrown Soda Bomb)
+    equipment.updateThrown(dt); // fuses run out and burst where the bottle is now
     mascotCostumes.update(dt);
     // Rounds pause while you're off in the debug test range (zombies can't reach you there).
     const inMall = !arena?.contains(player.position);
@@ -632,6 +648,8 @@ export function createGame({
     aimAssist,
     gun,
     balls,
+    throwables,
+    equipment,
     interactions,
     melee,
     health,

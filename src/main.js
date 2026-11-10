@@ -37,6 +37,7 @@ import { createDebugPanel } from './ui/debugPanel.js';
 import { createTitleCamera } from './ui/titleCamera.js';
 import { createBenchmark } from './fx/benchmark.js';
 import { createBallView } from './fx/ballView.js';
+import { createThrowableView } from './fx/throwableView.js';
 import { createLightPool, collectPointLights } from './fx/lightPool.js';
 import { batchStatic } from './world/staticBatch.js';
 import { sheenEnvironment, applyMetalSheen } from './fx/metalSheen.js';
@@ -226,6 +227,7 @@ const metalSheen = sheenEnvironment(renderer, look.metalSheen);
 for (const root of [map.group, g.arena?.group].filter(Boolean)) applyMetalSheen(root, metalSheen, look.metalSheen);
 effects.prepare(renderer, camera); // shared impact graphics warmed before the first shot
 const ballView = createBallView(scene, g.balls); // the Tennis Ball Launcher's balls in the air
+const throwableView = createThrowableView(scene, g.equipment); // Kiosk Kevin's thrown equipment (a Soda Bomb on its fuse)
 
 // --- Menus and the run's flow ------------------------------------------------------
 // title (live flyover) -> playing <-> paused -> dead -> results receipt -> playing again / title.
@@ -405,6 +407,7 @@ function render(alpha, frameTime) {
   g.contactShadows.update(zombies.zombies, alpha);
   effects.update(visualTime);
   ballView.update(alpha); // the Tennis Ball Launcher's balls in the air
+  throwableView.update(alpha);
   viewmodel.update(visualTime, camera, {
     weapon: gun.weapon,
     shownDef: gun.shownDef, // mid-switch: the old gun while it drops away
@@ -450,6 +453,7 @@ function render(alpha, frameTime) {
   hud.setFittingRoom(game.over ? null : fittingRooms.find((room) => room.view)?.view ?? null, menuLabels);
   hud.setLimitedEdition(game.over ? null : limitedEditions?.status ?? null);
   hud.setClawMachine?.(game.over ? null : clawMachine?.status ?? null);
+  hud.setPockets(game.over ? null : g.equipment.status, { lethal: buttonLabel('lethal'), tactical: buttonLabel('tactical') });
   hud.setVaultPrompt(game.running && !game.over && g.vaultPromptVisible, buttonLabel('jump'));
   hud.setPoints(wallet.points);
   hud.setTickets?.(g.tickets.count); // (GRAB-A-GUN's prize tickets: shown only once you have some)

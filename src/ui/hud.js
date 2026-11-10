@@ -211,8 +211,15 @@ export function createHud() {
 
   // Bottom-right: ammo counter.
   const ammo = el('div', 'ammo');
+  // (left of the count: Kiosk Kevin's two equipment pockets, game/equipment.js; setPockets fills them)
   ammo.innerHTML = `
-    <div class="ammo-count"><span class="ammo-mag"></span><span class="ammo-reserve"></span></div>
+    <div class="ammo-row">
+      <div class="pockets">
+        <div class="pocket empty" data-pocket="lethal"><i class="pocket-icon"></i><b class="pocket-count"></b><kbd class="pocket-key"></kbd></div>
+        <div class="pocket empty" data-pocket="tactical"><i class="pocket-icon"></i><b class="pocket-count"></b><kbd class="pocket-key"></kbd></div>
+      </div>
+      <div class="ammo-count"><span class="ammo-mag"></span><span class="ammo-reserve"></span></div>
+    </div>
     <div class="ammo-name"></div>
     <div class="ammo-tier"></div>
     <div class="ammo-upgrades"></div>
@@ -226,6 +233,10 @@ export function createHud() {
   let lastTierKey = null;
   hud.append(ammo);
   let lastAmmoKey = '';
+  const pocketViews = Object.fromEntries([...ammo.querySelectorAll('.pocket')].map((node) => [node.dataset.pocket, {
+    node, count: node.querySelector('.pocket-count'), key: node.querySelector('.pocket-key'),
+  }]));
+  let lastPocketKey = '';
 
   // Bottom-left: health bar on top, stamina (sprint) bar underneath.
   const vitals = el('div', 'vitals');
@@ -568,6 +579,24 @@ export function createHud() {
       else if (weapon.magazine === 0 && weapon.reserve === 0) text = 'No ammo';
       else if (weapon.magazine === 0) text = `Press ${reloadLabel} to reload`;
       prompt.textContent = text;
+    },
+
+    // Kiosk Kevin's pockets beside the ammo: `status` = g.equipment.status ({ lethal: { id, name, count }, tactical }) or null
+    // (dead: hidden); `keys` = { lethal, tactical } button labels for the device in use. An empty pocket is a faint outline.
+    setPockets(status, keys = {}) {
+      const key = status ? ['lethal', 'tactical'].map((p) => `${status[p].id}:${status[p].count}:${keys[p] ?? ''}`).join('|') : 'none';
+      if (key === lastPocketKey) return;
+      lastPocketKey = key;
+      for (const [pocket, view] of Object.entries(pocketViews)) {
+        const held = status?.[pocket];
+        const empty = !held || !held.id || held.count <= 0;
+        view.node.classList.toggle('empty', empty);
+        view.node.dataset.item = empty ? '' : held.id;
+        view.node.title = empty ? `${pocket === 'lethal' ? 'Lethal' : 'Tactical'} pocket: empty` : `${held.count} ${held.name}`;
+        view.count.textContent = empty ? '' : held.count;
+        view.key.textContent = keys[pocket] ?? '';
+      }
+      ammo.querySelector('.pockets').hidden = !status;
     },
 
     // Vault prompt: shown while `show`; `button` = the jump button for the device ("Space", "A", "✕").

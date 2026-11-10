@@ -45,6 +45,8 @@ export class Input {
     // Mouse buttons are tracked like keys: 'Mouse0' = left, 'Mouse1' = middle, 'Mouse2' = right.
     // Only while locked, so the click that starts the game doesn't also fire a shot.
     document.addEventListener('mousedown', (e) => {
+      // Middle click is the Tactical throw: never let it start the browser's autoscroll (or paste), locked or not.
+      if (e.button === 1) e.preventDefault();
       if (!this.locked) return;
       const code = `Mouse${e.button}`;
       this.pressed.add(code);
