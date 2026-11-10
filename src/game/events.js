@@ -99,6 +99,8 @@
 //   'equipmentBurst'  { id, position, radius, hit }      a thrown Soda Bomb burst; hit = [{ target, damage, killed }]. Equipment
 //                                                        damage never emits 'hit' (no +10): its kills pay through 'kill', source 'equipment'
 //   'runReset'    {}                                     after Play again reset everything
+//   'runSaved'    { round }                              Save & Quit wrote the slot (game/saveGame.js); the run ends next (main.js)
+//   'runLoaded'   { round }                              a save was loaded: the run resumes at that round's break (horror relights, the PA welcomes you back)
 // =============================================================================
 
 export function createEvents() {

@@ -607,6 +607,30 @@ export function createPlayerGun({
       reloadRequested = true;
     },
 
+    // Save & Quit (game/saveGame.js): each carried gun (and one away at Build-A-Blaster) as its config id, its mods (plain
+    // data) and its ammo. restore(data, defs) rebuilds them from `defs` (config/weapons.js), in hand, with no switch.
+    serialize() {
+      const slotData = (s) => ({
+        id: s.base.id, loanerName: s.loaner ? s.base.name : null, mods: structuredClone(s.mods),
+        magazine: s.weapon.magazine, reserve: s.weapon.reserve,
+      });
+      return { slots: slots.map(slotData), current, away: away ? slotData(away) : null };
+    },
+    restore(data, defs) {
+      const slotFrom = (d) => {
+        const base = d.loanerName ? { ...defs[d.id], name: d.loanerName, loaner: true } : defs[d.id];
+        const slot = makeSlot(base, d.mods);
+        if (d.loanerName) slot.loaner = true;
+        slot.weapon.magazine = d.magazine;
+        slot.weapon.reserve = d.reserve;
+        return slot;
+      };
+      this.reset();
+      slots = data.slots.map(slotFrom);
+      current = Math.min(data.current, slots.length - 1);
+      away = data.away ? slotFrom(data.away) : null;
+    },
+
     // New run: just the starting gun, full ammo, hip fire.
     reset() {
       slots = [makeSlot(startDef)];

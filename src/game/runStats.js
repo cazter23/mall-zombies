@@ -31,6 +31,15 @@ export function createRunStats() {
       if (zombie.killedByMelee) this.meleeKills += 1;
     },
 
+    // Save & Quit (game/saveGame.js): the counters as plain data, and back.
+    serialize() {
+      const { timeAlive, kills, headshotKills, meleeKills, bossesDefeated, shotsFired, shotsHit } = this;
+      return { timeAlive, kills, headshotKills, meleeKills, bossesDefeated, shotsFired, shotsHit };
+    },
+    restore(data) {
+      Object.assign(this, data);
+    },
+
     reset() {
       this.timeAlive = 0;
       this.kills = 0;

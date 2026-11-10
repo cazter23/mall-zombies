@@ -224,6 +224,14 @@ export function createEquipment({
       throwables.clear();
     },
 
+    // Save & Quit (game/saveGame.js): what is in each pocket.
+    serialize() {
+      return { pockets: Object.fromEntries(kiosk.pockets.map((p) => [p, { ...pockets[p] }])) };
+    },
+    restore(data) {
+      for (const pocketId of kiosk.pockets) Object.assign(pockets[pocketId], emptyPocket(), data.pockets[pocketId]);
+    },
+
     reset() {
       for (const pocketId of kiosk.pockets) Object.assign(pockets[pocketId], emptyPocket());
       busyTimer = 0;

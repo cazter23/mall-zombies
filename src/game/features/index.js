@@ -64,6 +64,16 @@ export function buildFeatures(map, ctx, kinds = builders) {
     reset() {
       for (const { instance } of list) instance.reset?.();
     },
+    // Save & Quit (game/saveGame.js): each feature with run state worth keeping has serialize() / restore(data); the data
+    // is keyed by the feature's place in map.features (a save from another map version is dropped by its version number).
+    serialize() {
+      const out = {};
+      list.forEach(({ instance }, i) => { if (instance.serialize) out[i] = instance.serialize(); });
+      return out;
+    },
+    restore(data) {
+      list.forEach(({ instance }, i) => { if (instance.restore && data[i] !== undefined) instance.restore(data[i]); });
+    },
   };
 }
 

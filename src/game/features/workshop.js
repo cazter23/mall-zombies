@@ -82,6 +82,13 @@ export function buildWorkshop(bench, { map, gun, pricing, interactions, events, 
       spectacle.update(dt);
       drops.update(dt);
     },
+    // Save & Quit (game/saveGame.js): only the order and the run's names (traps, puddles and bags on the floor are not kept).
+    serialize() {
+      return { ritual: ritual.serialize() };
+    },
+    restore(data) {
+      ritual.restore(data.ritual);
+    },
     reset() {
       while (traps.length) removeTrap(traps.length - 1);
       clearance.reset();

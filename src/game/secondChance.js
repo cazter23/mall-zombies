@@ -41,6 +41,14 @@ export function createSecondChance({ health, zombies, player, events }) {
       return true;
     },
 
+    // Save & Quit (game/saveGame.js): held / used carry over (the 'secondChance' event redraws the HUD tag).
+    serialize() {
+      return { status };
+    },
+    restore(data) {
+      set(data.status);
+    },
+
     reset() {
       set('available');
     },

@@ -43,6 +43,15 @@ export function createWallet({ onChange = null } = {}) {
       if (onChange) onChange(back, this.points);
     },
 
+    // Save & Quit (game/saveGame.js): the wallet as plain data, and back.
+    serialize() {
+      return { points: this.points, totalEarned: this.totalEarned, totalSpent: this.totalSpent };
+    },
+    restore(data) {
+      Object.assign(this, data);
+      if (onChange) onChange(0, this.points);
+    },
+
     reset() {
       this.points = economy.startingPoints;
       this.totalEarned = 0;

@@ -306,6 +306,30 @@ export function createWorkshopRitual({ bench, map, gun, pricing, interactions, e
       }
     },
 
+    // Save & Quit (game/saveGame.js): an order in progress (its gun is saved as the gun away, game/playerGun.js), the form's
+    // last pick, today's bins and the names already given. Stage and quality are config objects: saved by what decides them.
+    serialize() {
+      return {
+        phase, riding, catchFrom, pick: { ...pick }, today: [...today], namesUsed: [...namesUsed],
+        order: order && { ...order, stage: null, quality: null, finished: order.quality !== null },
+      };
+    },
+    restore(data) {
+      this.reset();
+      pick = { ...data.pick };
+      setToday([...data.today]);
+      for (const name of data.namesUsed) namesUsed.add(name);
+      if (data.phase === 'idle' || !data.order || !gun.away) return;
+      const { finished, ...saved } = data.order;
+      order = { ...saved, stage: stageFor(Math.min(1, saved.elapsed / cfg.maxSeconds)), quality: finished ? qualityFor(saved.kills) : null };
+      phase = data.phase;
+      riding = data.riding;
+      catchFrom = data.catchFrom;
+      showGun(gun.away.def);
+      riding = data.riding; // (showGun starts it at the belt's start)
+      pointAlong(path, riding, display.position);
+    },
+
     reset() {
       phase = 'idle';
       order = null;

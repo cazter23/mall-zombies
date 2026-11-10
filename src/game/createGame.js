@@ -68,7 +68,9 @@ import { createClockIn } from './clockIn.js';
 import { createInteractions } from './interactions.js';
 import { createTickets } from './tickets.js';
 import { buildFeatures, featuresOf } from './features/index.js';
-import { ownsAttachment } from './features/attachmentCounter.js';
+import { ownsAttachment, ownedAttachments, unlockAttachment } from './features/attachmentCounter.js';
+import { createSaveGame } from './saveGame.js';
+import { save as saveConfig } from '../config/save.js';
 import { comboName } from '../config/workshop.js';
 
 const DEG_TO_RAD = Math.PI / 180;
@@ -95,6 +97,7 @@ export function createGame({
   buildTestRange = null,
   debugTick = null,
   onPlayerDeath: afterDeath = null,
+  saveStorage = undefined, // Save & Quit's slot (game/saveGame.js): localStorage in the browser; tests pass their own
 }) {
   // One shared list of solid boxes: the map, debug add-ons and doors all write into it;
   // the player, zombies and bullets all read it.
@@ -608,6 +611,7 @@ export function createGame({
       hud.setDead(false);
       hud.hideResults();
     }],
+    ['saveGame', () => saveGame.reset()], // (no round-start snapshot yet; the slot itself is untouched)
   ];
 
   // Fresh run: everything back to the start without reloading the page.
@@ -615,6 +619,67 @@ export function createGame({
     for (const [, reset] of resetSteps) reset();
     events.emit('runReset');
   }
+
+  // SAVE & QUIT (game/saveGame.js): what a save keeps, as [name, serialize, restore], in RESTORE order (a load runs
+  // resetRun first). Every reset step above is either here or in transientSteps; tests/saveGame.test.js fails otherwise,
+  // so a new system with run state decides whether a save keeps it.
+  const saveSteps = [
+    // The stats as they are (clothes, box cutter tiers and health included): nothing is re-applied on top.
+    ['stats', () => ({ ...stats }), (data) => {
+      Object.assign(stats, data);
+      if (stats.meleeTier > 0) viewmodel.setMeleeColors?.(upgrades.melee[stats.meleeTier - 1].colors);
+    }],
+    ['wardrobe', () => wardrobe.serialize(), (data) => wardrobe.restore(data)],
+    ['secondChance', () => secondChance.serialize(), (data) => secondChance.restore(data)],
+    ['runStats', () => runStats.serialize(), (data) => runStats.restore(data)],
+    ['equipment', () => equipment.serialize(), (data) => equipment.restore(data)],
+    ['gun', () => ({ ...gun.serialize(), attachments: ownedAttachments(gun) }), (data) => {
+      gun.restore(data, weapons);
+      for (const id of data.attachments) unlockAttachment(gun, id);
+    }],
+    ['wallet', () => wallet.serialize(), (data) => wallet.restore(data)],
+    ['tickets', () => tickets.serialize(), (data) => tickets.restore(data)],
+    ['pricing', () => pricing.serialize(), (data) => pricing.restore(data)],
+    ['flashSales', () => flashSales.serialize(), (data) => flashSales.restore(data)],
+    ['rounds', () => rounds.serialize(), (data) => {
+      rounds.restore(data);
+      hud.setRound(data.round);
+      hud.showRoundBanner(data.round);
+    }],
+    ['bosses', () => bosses.serialize(), (data) => bosses.restore(data)],
+    ['powerUps', () => powerUps.serialize(), (data) => powerUps.restore(data)],
+    ['player', () => ({ position: player.position.toArray(), yaw: player.yaw }), (data) => {
+      player.teleport({ position: new Vector3().fromArray(data.position), yaw: data.yaw });
+    }],
+    // Owned areas (an area unlock reopens the free connections) and any door opened outside the area system.
+    ['map', () => ({
+      zones: Object.keys(map.zones).filter((id) => map.zones[id].open),
+      doors: map.doors.filter((d) => d.isOpen).map((d) => d.id),
+    }), (data) => {
+      for (const id of data.zones) {
+        if (!Object.hasOwn(map.zones, id) || map.zones[id].open) continue;
+        if (map.areaUnlocks) map.areaUnlocks.unlock(id);
+        else map.zones[id].open = true;
+      }
+      for (const door of map.doors) if (data.doors.includes(door.id) && !door.isOpen) door.open();
+    }],
+    ['features', () => features.serialize(), (data) => features.restore(data)], // (after the gun and map: an order needs its gun away)
+    ['outfitRail', () => outfitRail.serialize(), (data) => outfitRail.restore(data)],
+    ['warranty', () => warranty.serialize(), (data) => warranty.restore(data)], // (after the gun)
+    ['death', () => ({ assisted: state.assisted }), (data) => { state.assisted = data.assisted; }], // (a debug run stays one)
+  ];
+  // Reset steps a save does not keep: nothing in them outlasts a round's start that matters (zombies, effects, timers).
+  const transientSteps = [
+    'zombies', 'mascotCostumes', 'surfaces', 'health', 'balls', 'interactions', 'viewmodel', 'effects', 'contactShadows',
+    'ambience', 'melee', 'aimAssist', 'clockIn', 'hud', 'saveGame',
+  ];
+  const saveGame = createSaveGame({ steps: saveSteps, events, stats, state, rounds, resetRun, storage: saveStorage });
+  events.on('roundStart', () => saveGame.markRoundStart()); // (the snapshot waits for the end of the tick: see update)
+  // The PA welcomes you back after a load.
+  events.on('runLoaded', ({ round }) => {
+    hud.showAnnouncement({ ...saveConfig.loadedPa, text: saveConfig.loadedPa.text.replace('{round}', String(round)), priority: 2 });
+    sound.play('paChime');
+  });
 
   let vaultPromptVisible = false;
 
@@ -688,6 +753,7 @@ export function createGame({
     flashSales.update(dt);
     if (arena) arena.update(dt);
     player.updateView(dt); // recoil/jolt springs last, so this tick's kicks show on the next frame
+    saveGame.update(); // a round began this tick: snapshot it now, after every 'roundStart' listener rolled its draws
     input.endTick();
   }
 
@@ -736,5 +802,8 @@ export function createGame({
     update,
     resetRun,
     resetSteps: resetSteps.map(([name]) => name), // (read-only list, for tests / debugging)
+    saveGame, // Save & Quit's one slot (game/saveGame.js)
+    saveSteps: saveSteps.map(([name]) => name), // (read-only lists, for tests: every reset step is saved or transient)
+    transientSteps: [...transientSteps],
   };
 }

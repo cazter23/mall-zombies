@@ -194,6 +194,27 @@ export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null,
     },
 
     // New run: back to "not started" (round 1 begins when play starts).
+    // Save & Quit (game/saveGame.js). A save is always the START of a round, so it keeps only the round number and what this
+    // run has already seen; restore() puts the run at the start of that round's break (the full break, no 'roundStart': the
+    // systems that roll on it restore their own rolls).
+    serialize() {
+      return { round, seenTypes: [...seenTypes], seenVariants: [...seenVariants] };
+    },
+    restore(data) {
+      started = true;
+      round = data.round;
+      toSpawn = zombieCountForRound(round);
+      spawnedThisRound = 0;
+      waveEndingEmitted = false;
+      state = 'break';
+      breakTimer = round === 1 ? cfg.firstRoundDelay : cfg.breakSeconds;
+      spawnTimer = 0;
+      seenTypes.clear();
+      for (const id of data.seenTypes) seenTypes.add(id);
+      seenVariants.clear();
+      for (const id of data.seenVariants) seenVariants.add(id);
+    },
+
     reset() {
       started = false;
       round = 0;

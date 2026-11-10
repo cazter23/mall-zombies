@@ -106,6 +106,20 @@ export function createBossDirector({ events, rounds, zombies, scene, colliders, 
       retry -= dt;
       if (retry <= 0 && !spawn(schedule.get(rounds.round))) retry = bossTiming.retrySeconds;
     },
+    // Save & Quit (game/saveGame.js): the run's boss schedule (encores included), who you have met, and the last one. The boss
+    // of the saved round is still to come, so a replay meets the same boss.
+    serialize() {
+      return { schedule: schedule ? [...schedule] : null, met: [...met], lastBoss };
+    },
+    restore(data) {
+      schedule = data.schedule ? new Map(data.schedule) : null;
+      met.clear();
+      for (const id of data.met) met.add(id);
+      lastBoss = data.lastBoss;
+      spawned = false;
+      retry = 0;
+    },
+
     reset() {
       clear('reset');
       schedule = null;

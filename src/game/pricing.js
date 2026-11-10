@@ -120,6 +120,17 @@ export function createPricing() {
       return discounts.get(category) ?? 0;
     },
 
+    // Save & Quit (game/saveGame.js): the discounts in force (a Flash Sale's included), the boss voucher and the coupon.
+    serialize() {
+      return { discounts: [...discounts], voucher, coupon };
+    },
+    restore(data) {
+      discounts.clear();
+      for (const [category, fraction] of data.discounts) discounts.set(category, fraction);
+      voucher = data.voucher;
+      coupon = data.coupon;
+    },
+
     reset() {
       voucher = null;
       discounts.clear();

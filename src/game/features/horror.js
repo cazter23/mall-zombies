@@ -132,6 +132,13 @@ export function buildHorror(feature, { map, events, rounds, player }) {
     pendingCut = enabled && n >= cfg.powerCuts.fromRound && rand() < cfg.powerCuts.chance ? between(rand, cfg.powerCuts.delay) : null;
   });
 
+  // A loaded save (game/saveGame.js) starts mid-run without a 'roundStart': darken to the saved round (no power cut pending).
+  events.on('runLoaded', ({ round: n }) => {
+    round = n;
+    apply();
+    pendingCut = null;
+  });
+
   function newRun() {
     unease.reset();
     restore();
