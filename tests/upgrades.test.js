@@ -18,6 +18,7 @@ import { headlessGame } from './helpers/headlessGame.js';
 const fx = (id) => upgrades.tiers.find((t) => t.id === id).effects; // (the numbers live in config/upgrades.js: tests read them, never copy them)
 
 const guns = Object.values(weapons).filter((d) => d.fireMode); // (the box cutter isn't a gun)
+const wallGuns = guns.filter((d) => !d.clawOnly); // the role comparisons are between the guns of the wall; a claw-only gun has its own job (tests/balance.test.js)
 const { stapleGun, priceGun, nailGun, foamDartBlaster, confettiCannon } = weapons;
 const ATTACHMENTS = Object.keys(upgrades.attachments);
 const at = (base, tierId, ...attachments) => {
@@ -118,8 +119,8 @@ const TIE = 1.03;
 
 test('roles hold at EVERY tier when guns are compared at the same tier (near-ties allowed)', () => {
   for (const tierId of TIER_IDS) {
-    const t = Object.fromEntries(guns.map((b) => [b.id, at(b, tierId)]));
-    const others = (id) => guns.filter((b) => b.id !== id).map((b) => t[b.id]);
+    const t = Object.fromEntries(wallGuns.map((b) => [b.id, at(b, tierId)]));
+    const others = (id) => wallGuns.filter((b) => b.id !== id).map((b) => t[b.id]);
     const msg = (what) => `${tierId}: ${what}`;
     for (const d of others('confettiCannon')) assert.ok(dps(t.confettiCannon, 2) > dps(d, 2), msg(`cannon vs ${d.name} at 2 m`));
     assert.ok(dps(t.priceGun, 5) > dps(t.stapleGun, 5), msg('price beats the starter at 5 m'));
@@ -135,7 +136,7 @@ test('roles hold at EVERY tier when guns are compared at the same tier (near-tie
 });
 
 test('one attachment shifts a gun while the Cannon keeps its close advantage and the starter stays weakest', () => {
-  for (const base of guns) {
+  for (const base of wallGuns) {
     for (const id of ATTACHMENTS.filter((a) => attachmentFits(base, a))) {
       const g = at(base, 'standard', id);
       const name = `${base.name} + ${id}`;

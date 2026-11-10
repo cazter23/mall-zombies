@@ -272,6 +272,12 @@ export const audio = {
       { type: 'noise', filter: 'bandpass', freq: 1800, q: 0.8, gain: 0.2, attack: 0.008, decay: 0.16, delay: 0.055 },
       { type: 'noise', filter: 'highpass', freq: 3500, q: 0.7, gain: 0.15, attack: 0.012, decay: 0.18, delay: 0.065 },
     ] },
+    // One pulse of the Leaf Blower's stream (every 0.15 s): wind and a motor, long enough to run into the next one so it reads as one roar.
+    leafBlowerPuff: { volume: 0.5, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 900, q: 0.5, gain: 0.7, attack: 0.025, decay: 0.2 },
+      { type: 'noise', filter: 'lowpass', freq: 380, q: 0.7, gain: 0.8, attack: 0.02, decay: 0.2 },
+      { type: 'tone', wave: 'sawtooth', freq: 96, freqEnd: 88, gain: 0.16, attack: 0.02, decay: 0.19 },
+    ] },
     confettiReloadOut: { volume: 0.6, layers: [
       { type: 'noise', filter: 'bandpass', freq: 1900, q: 1.5, gain: 0.7, attack: 0.001, decay: 0.06 },
       { type: 'tone', wave: 'triangle', freq: 300, freqEnd: 140, gain: 0.4, attack: 0.001, decay: 0.08 },

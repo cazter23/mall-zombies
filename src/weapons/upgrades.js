@@ -78,11 +78,14 @@ const mul = (stat, value) => ({ stat, op: 'mul', value });
 const EFFECTS = {
   damage: (v) => [mul('damage', v)],
   magazine: (v) => [mul('magazineSize', v)],
+  // (a gun with a tank has nothing to reload: a quicker "reload" refills the tank quicker. A gun with a cone carries it further with its falloff.)
   reload: (v, g) =>
-    g.shellReload
-      ? [mul('shellReload.startSeconds', v), mul('shellReload.shellSeconds', v), mul('shellReload.endSeconds', v)]
-      : [mul('reloadTime', v)],
-  falloffRange: (v, g) => (g.falloff ? [mul('falloff.start', v), mul('falloff.end', v)] : null),
+    g.fuel
+      ? [mul('fuel.regenPerSecond', 1 / v)]
+      : g.shellReload
+        ? [mul('shellReload.startSeconds', v), mul('shellReload.shellSeconds', v), mul('shellReload.endSeconds', v)]
+        : [mul('reloadTime', v)],
+  falloffRange: (v, g) => (g.falloff ? [mul('falloff.start', v), mul('falloff.end', v), ...(g.cone ? [mul('cone.range', v)] : [])] : null),
   hipSpread: (v, g) => [
     // Scale recovery with bloom too: otherwise the smaller hip cone also recovers faster in ADS.
     ...['base', 'moving', 'airborne', 'perShot', 'maxBloom', 'bloomRecovery'].map((k) => mul(`spread.${k}`, v)),

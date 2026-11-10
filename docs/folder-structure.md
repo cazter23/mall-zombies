@@ -156,6 +156,14 @@ src/
                         Hip height follows eye height; feet posed for walk cycle / slide (V) / air tuck, knees
                         solved with two-bone IK. Exports placeLimb()/makeBoxMesh()/makeFacetedLimbMesh()/buildDeformedBoxGeometry() (also used for the arms)
   weapons/
+    fuel.js             The fuel tank of a gun with `fuel` (the Leaf Blower): createFuel(), tickFuel(state, cfg, dt, { fired, level, capacity }) -> units to add
+                        (it refills by itself regenDelay after the last pulse, at regenPerSecond; running dry LOCKS the trigger until the tank holds restartAt),
+                        resetFuel(). Pure timing: the tank's LEVEL is the weapon's `magazine`, so the HUD, RESTOCK-O-MATIC, Refurbished grabs and
+                        Build-A-Blaster work on it unchanged. weapon.js owns one (`weapon.fuel`) and runs updateFuel instead of the magazine/reload path.
+    coneBlast.js        The cone attack of a gun with `cone` (the Leaf Blower): findInCone(origin, dir, cone, colliders, shootables) (in range, inside the
+                        angle, no wall between, height forgiving: it aims at the height the aim line passes the body), blowAway(zombie, origin, cone,
+                        distance) (the zombies' own staggerAway, plus applySlip close up; bosses refuse both, a Mascot is shoved at mascotScale, a zombie
+                        already sliding is left alone), createBlastPay(everyPulses) (the +10 hit points once per payEverySeconds per zombie, not per pulse).
     weapon.js           Weapon class: ammo, fire cooldown + click buffer, reload. Pure state; update({ triggerPressed,
                         triggerHeld, reloadPressed, blocked }) returns 'fire' | 'empty' | null. fireMode 'auto' fires
                         while held (dry-clicks only on a fresh press; runs dry while held = reloads itself).
@@ -241,6 +249,7 @@ src/
                         coilNailer.js = heavy automatic pneumatic coil nailer with round wire-collated drum. barcodeScanner.js =
                         charge-beam retail laser scanner with capacitor coils and Li-Ion battery pack. confettiCannon.js = pink/purple
                         double barrels, gold rims, PARTY POP! stock label and striped shells; hinge open, a shell per cycle, snap shut.
+                        leafBlower.js = orange motor housing, red fuel tank with a level window, ribbed flared nozzle (the claw-only Leaf Blower).
                         Each model also returns `mounts` (barrel / top / side / grip / magazine / sticker: where upgrade parts go).
                         upgradeParts.js = what upgrades LOOK like: buildAttachmentPart(id, mount) (mounting brackets/adapters on universal
                         parts, weapon-suited Jumbo Pack reservoirs/drums/packs via mount.gunId, Speed Loader cam latch + ribbed finger loop,

@@ -185,7 +185,7 @@ every PA list has a few lines naming the area where it should.
 through the wall, solid + too tall to climb, zombies can reach its front; Atrium/Cinema machines also exercise real F purchases,
 correct floor height, ownership and run reset), `balance.test.js` GUN ROLES on real measured numbers
 (Cannon strongest up close / weakest at range, round-8 close-blast reliability, Price below premium automatics, Foam's
-mid-range advantage, Nail's no-falloff penetration, Staple weakest, and round-8 body-shot targets).
+mid-range advantage, Nail's no-falloff penetration, Staple weakest, and round-8 body-shot targets; those compare the guns of the WALL, so a `clawOnly` gun is left out of them and has its own job test: the Leaf Blower only tickles, shoves harder than any bullet, reaches a few metres, runs its tank 4-8 s and refills in 4-9 s).
 `weaponProgression.test.js` runs real aimed shots, bloom, reloads and upgrades against
 stationary round-8/10 targets through helpers/weaponTrial.js (perfect tracking; not a human survival playtest).
 `gunStats.test.js` checks the per-hit formula + resolveGun (upgrades as data),
@@ -322,6 +322,8 @@ the model and debris and disposes their shared geometry and materials.
 - `visualEffects.test.js`: Visual effects High / Low / Off on a stand-in renderer (Off skips the composer), and the Video presets that set it.
 - `zoneGrading.test.js`: each area's colour grade and haze, easing between areas, late hours multiplying onto a grade (a dark room only gets darker), the setting, and every Graphics preset deciding it.
 - `zombieRim.test.js`: the edge glow's colour per kind (bosses, every mascot costume, mannequins), applied once to opaque standard materials, one shared shader program.
+- `fuel.test.js` / `coneBlast.test.js`: the Leaf Blower's two engine pieces alone. The tank refills by itself after a delay, running dry locks the trigger until `restartAt`, a Weapon on a tank has no reload, a refill or new run unlocks it, a plain gun is untouched. The cone finds only living targets inside its range and angle (a wide body at the edge counts, height is forgiving), a wall blocks it (an `ignoreShots` box does not), the shove is stronger up close and gentler on a Mascot, a close zombie goes down, a boss or a zombie already sliding is left alone, the +10 pay ledger, and real zombies pushed down the hallway.
+- `leafBlower.test.js`: the gun in the real game: claw-only (no wall price, the wall-buy feature refuses it even with a price), holding fire pulses and burns fuel, pushes and drops a close Shopper and only tickles it, pays the +10 only now and then and a kill when it kills, a boss isn't moved, the tank runs dry / locks / refills / unlocks, no reload, upgrades (Jumbo Pack = bigger tank, Speed Loader = quicker refill, Extended Nozzle = longer reach), a refill and Play again put everything back.
 - `docs.test.js`: every file in src/ has an entry in docs/folder-structure.md, every test file is described here, and every doc CLAUDE.md links to exists.
 
 `tests/uiInformationPriority.test.js` checks exhausted reward visibility, first-activation benefit teaching, live timers/charges on repeat pickups, run reset, and workshop countdown/quality priority.

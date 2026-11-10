@@ -35,7 +35,7 @@ console.table(Object.values(bossTypes).sort((a,b)=>a.firstRounds[0]-b.firstRound
 console.log('\nGUN OVERVIEW (dps measured at 5 m; ADS except pellet guns)');
 console.table(guns.map((d) => ({
   gun: d.name,
-  price: d.debugOnly ? 'debug only' : economy.wallBuys[d.id]?.weapon ?? 'start',
+  price: d.debugOnly ? 'debug only' : d.clawOnly ? 'claw only' : economy.wallBuys[d.id]?.weapon ?? 'start',
   'ammo price': economy.wallBuys[d.id]?.ammo ?? '-',
   'max per shot': d.damage * (d.pellets?.count ?? 1),
   'shots/s': r1(1 / (cycleSeconds(d) / (d.burst?.count ?? 1))),
@@ -48,6 +48,25 @@ console.table(guns.map((d) => ({
   'sustained dps': r0(sustainedDps(d, 5, playStyle(d))),
   falloff: d.falloff ? `full to ${d.falloff.start}m, ${Math.round(d.falloff.minMultiplier * 100)}% at ${d.falloff.end}m` : 'none',
 })));
+
+// A gun with a fuel tank or a cone is judged by what it DOES, not by its damage: how long it blows, how long it refills, and how far and wide it pushes.
+const pushers = guns.filter((d) => d.cone);
+if (pushers.length) {
+  console.log('\nCONE GUNS (a wide push and a fuel tank; the damage above is only a tickle)');
+  console.table(pushers.map((d) => ({
+    gun: d.name,
+    'tank (pulses)': d.magazineSize,
+    'blows for s': r1(d.magazineSize * d.fireInterval),
+    'refills in s': r1(d.fuel ? d.fuel.regenDelay + d.magazineSize / d.fuel.regenPerSecond : 0),
+    'unlocks at': d.fuel?.restartAt ?? '-',
+    'range m': d.cone.range,
+    'half angle': d.cone.halfAngleDegrees,
+    'shove m/s (near)': d.cone.knockback,
+    'knocked down within m': d.cone.knockdownRange,
+    'damage per tank': d.magazineSize * d.damage,
+    'strongest wall-gun shove': Math.max(...guns.filter((g) => !g.clawOnly).map((g) => g.impact.knockback)),
+  })));
+}
 
 console.log('\nSUSTAINED DPS BY RANGE (magazine + reload; ADS except pellet guns, which are hip)');
 console.table(guns.map((d) => Object.fromEntries([['gun', d.name], ...RANGES.map((m) => [`${m} m`, r0(sustainedDps(d, m, playStyle(d)))])])));

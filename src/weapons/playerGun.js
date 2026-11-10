@@ -26,6 +26,7 @@ import { workshopBuilds, workshopModOf, buildOf } from '../config/workshop.js';
 import { castShot } from './hitscan.js';
 import { createAim, applyConeSpread, pelletSpreadDegrees } from './aim.js';
 import { hitDamage, resolveGun } from './gunStats.js';
+import { findInCone, blowAway, createBlastPay } from './coneBlast.js';
 import { impacts } from '../config/impacts.js';
 
 const DEG_TO_RAD = Math.PI / 180;
@@ -97,7 +98,72 @@ export function createPlayerGun({
     return slots.length < MAX_SLOTS ? slots.length : current;
   }
 
+  // The feedback every shot shares: camera recoil (moves the crosshair, springs back), the gun model's kick and muzzle flash, and the sound.
+  // Uses the aim from before the kick. `kickScale`: a charged shot kicks harder the longer it was charged. Returns the ADS amount.
+  function kick(d, aim, kickScale = 1) {
+    const r = d.recoil;
+    const ads = aim.amount;
+    const cameraScale = (1 + (r.adsMultiplier - 1) * ads) * kickScale;
+    const side = () => (Math.random() < 0.5 ? -1 : 1);
+    player.addRecoil(
+      r.pitchDegrees * DEG_TO_RAD * cameraScale,
+      side() * r.rollDegrees * DEG_TO_RAD * cameraScale,
+      side() * (r.yawDegrees ?? 0) * DEG_TO_RAD * cameraScale * (0.5 + Math.random() * 0.5),
+    );
+    viewmodel.fire(ads, d); // gun kick + muzzle flash using this shot's resolved stats (visual only)
+    if (sound) sound.play(d.sounds.fire);
+    return ads;
+  }
+
+  // A gun with a cone (the Leaf Blower): one PULSE of wind instead of a ray. Everything in the cone is shoved back (and the close ones laid down),
+  // takes a tickle of damage, and the leaves fly. Points: a zombie that keeps being blown pays the hit +10 only now and then (createBlastPay).
+  const blastPay = new Map(); // gun id -> its pulse ledger
+  function fireCone(slot) {
+    const { def: d, aim, weapon } = slot;
+    const cone = d.cone;
+    player.getAim(origin, direction);
+    aim.onShot();
+    kick(d, aim);
+    const pay = blastPay.get(d.id) ?? blastPay.set(d.id, createBlastPay(Math.max(1, Math.ceil(cone.payEverySeconds / d.fireInterval)))).get(d.id);
+    pay.pulse();
+    const found = findInCone(origin, direction, cone, colliders, shootables);
+    const hits = [];
+    const resolved = [];
+    for (const { target, distance, point } of found) {
+      if (!target.isAlive) continue; // (killed earlier this pulse by a kill listener)
+      const hit = { target, part: 'body', point: point.clone(), normal: direction.clone().negate(), distance };
+      hits.push(hit);
+      const { killed } = target.takeHit({ damage: hitDamage(d, hit, 0, stats), part: 'body', point: hit.point, direction, impact: d.impact });
+      if (!killed) blowAway(target, origin, cone, distance);
+      resolved.push({ hit, killed, paid: killed || pay.take(target) });
+    }
+    const end = origin.clone().addScaledVector(direction, cone.range);
+    const gust = cone.gust;
+    effects.confetti(origin.clone().addScaledVector(direction, cone.range * 0.55), direction, gust);
+    let paidAny = false;
+    let anyKilled = false;
+    for (const { hit, killed, paid } of resolved) {
+      anyKilled ||= killed;
+      if (killed) effects.splat(hit.point, hit.normal, hit.target.splatColors, feel.effects.splatCount, { flesh: true, speedScale: 1, direction });
+      if (paid) {
+        paidAny = true;
+        if (onHit) onHit({ target: hit.target, killed, headshot: false, melee: false });
+      }
+    }
+    if (paidAny) {
+      hud.showHitMarker({ headshot: false, killed: anyKilled });
+      if (sound) { sound.play('hitBody'); if (anyKilled) sound.play('killConfirm'); }
+    }
+    const shot = { origin: origin.clone(), end, endNormal: direction.clone().negate(), point: end.clone(), normal: direction.clone().negate(), distance: cone.range,
+      target: hits[0]?.target ?? null, part: hits[0] ? 'body' : null, hits, worldHit: null, cone: true };
+    shot.weaponId = d.id;
+    shot.magazineLeft = weapon.magazine;
+    if (onShot) onShot(shot);
+    return shot;
+  }
+
   function fire(slot) {
+    if (slot.def.cone) return fireCone(slot);
     const { def: d, aim, weapon } = slot;
     player.getAim(origin, direction);
     const chargeRatio = d.charge ? (weapon.lastChargeRatio ?? 1) : 1;
@@ -136,18 +202,7 @@ export function createPlayerGun({
 
     // Feedback, all this tick. Camera recoil (moves the crosshair, springs back) uses the aim
     // from before the kick, so this shot lands exactly where you were looking.
-    const r = d.recoil;
-    const ads = aim.amount;
-    const kickChargeScale = d.charge ? 0.55 + 0.45 * chargeRatio : 1;
-    const cameraScale = (1 + (r.adsMultiplier - 1) * ads) * kickChargeScale;
-    const side = () => (Math.random() < 0.5 ? -1 : 1);
-    player.addRecoil(
-      r.pitchDegrees * DEG_TO_RAD * cameraScale,
-      side() * r.rollDegrees * DEG_TO_RAD * cameraScale,
-      side() * (r.yawDegrees ?? 0) * DEG_TO_RAD * cameraScale * (0.5 + Math.random() * 0.5),
-    );
-    viewmodel.fire(ads, d); // gun kick + muzzle flash using this shot's resolved stats (visual only)
-    if (sound) sound.play(d.sounds.fire);
+    kick(d, aim, d.charge ? 0.55 + 0.45 * chargeRatio : 1);
     const muzzlePosition = viewmodel.getMuzzleWorldPosition(muzzle);
     const targets = new Map();
     let puffs = 0;
@@ -498,6 +553,7 @@ export function createPlayerGun({
       inspectTimer = 0;
       lastReloadProgress = null;
       this.lastShot = null;
+      blastPay.clear(); // (a stream's pay ledgers start over with the run)
     },
   };
 }

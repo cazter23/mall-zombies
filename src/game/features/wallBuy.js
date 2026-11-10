@@ -2,7 +2,7 @@
 // WALL BUY (map feature kind 'wallBuy'): a gun on the wall (chalk outline + the gun on pegs).
 // Hold interact to buy the gun, or (once you own it) to refill its ammo. Prices come from
 // g.pricing ('weapon' / 'ammo'). Only in an opened area, and hidden when you own it with full ammo.
-// A marker for a gun that doesn't exist yet in config/weapons.js (or has no price) is inert.
+// A marker for a gun that doesn't exist yet in config/weapons.js (or has no price) is inert, and so is one for a `clawOnly` gun.
 //
 // feature: { kind: 'wallBuy', name, zone, weapon (config/weapons.js id), position, normal (out of the wall) }
 // =============================================================================
@@ -17,6 +17,7 @@ import { createWallBuyDisplay } from '../../world/wallBuy.js';
 export function buildWallBuy(wb, { scene, map, gun, pricing, interactions }) {
   const def = weapons[wb.weapon];
   if (!def || !economy.wallBuys[wb.weapon]) return null; // reserved spot for a future gun
+  if (def.clawOnly) return null; // GRAB-A-GUN's guns are never on a wall, whatever a map or an economy entry says
   scene.add(
     createWallBuyDisplay({
       position: wb.position,

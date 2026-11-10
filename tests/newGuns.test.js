@@ -260,7 +260,8 @@ test('every gun builds a model/display and refers to real sounds; wall guns have
     const model=buildWeaponModel(d), display=buildWeaponDisplay(d);
     assert.ok(model.root.isObject3D && model.muzzle.isObject3D && display.isObject3D);
     for(const name of [d.sounds.fire,d.sounds.dryFire,...d.viewmodel.reload.events.map(e=>e.sound)]) assert.ok(audio.sounds[name],name);
-    if(d.id!=='stapleGun' && !d.debugOnly) assert.ok(economy.wallBuys[d.id]);
+    if(d.id!=='stapleGun' && !d.debugOnly && !d.clawOnly) assert.ok(economy.wallBuys[d.id]);
+    if(d.clawOnly) assert.equal(economy.wallBuys[d.id], undefined, d.id + ' is never sold on a wall');
     for(const progress of [0,0.2,0.45,0.6,0.8,1]) model.animate({sinceFire:Infinity,reloadProgress:progress,reloadWeight:1});
     model.animate({sinceFire:0.01,reloadProgress:0.4,reloadWeight:0});
     model.root.traverse(o=>assert.ok([...o.position.toArray(),...o.quaternion.toArray()].every(Number.isFinite)));

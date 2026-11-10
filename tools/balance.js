@@ -13,7 +13,7 @@
 //   cycleSeconds(def)              one trigger cycle (a burst counts as one cycle)
 //   magazineSeconds(def)           emptying a full magazine: first shot to last shot (the last shot's recovery
 //                                  overlaps the reload, as in weapon.js)
-//   reloadSeconds(def)             a full reload from empty (shell-by-shell aware)
+//   reloadSeconds(def)             a full reload from empty (shell-by-shell aware; a fuel tank: the time to refill it)
 //   expectedShotDamage(def, m, o)  average damage of one trigger pull (all pellets) at m meters
 //   sustainedDps(def, m, o)        damage per second over magazine + reload, at m meters
 //   burstDps(def, m, o)            damage per second while the magazine lasts (no reload)
@@ -50,6 +50,7 @@ export function magazineSeconds(def) {
 }
 
 export function reloadSeconds(def) {
+  if (def.fuel) return def.fuel.regenDelay + def.magazineSize / def.fuel.regenPerSecond; // a tank: the time to refill it completely (nothing is reloaded)
   const sr = def.shellReload;
   return sr ? sr.startSeconds + def.magazineSize * sr.shellSeconds + sr.endSeconds : def.reloadTime;
 }

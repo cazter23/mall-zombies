@@ -18,6 +18,7 @@
 
 import { clawMachine as cfg } from '../src/config/clawMachine.js';
 import { economy } from '../src/config/economy.js';
+import { weapons } from '../src/config/weapons.js';
 import { rollCapsules, prizePool, plushChanceFor, sweepSeconds, sweepPosition, laneAt } from '../src/game/features/clawMachine.js';
 
 export const TIMED_ERROR_SECONDS = 0.12;
@@ -37,7 +38,8 @@ export function seeded(seed = 1) {
 
 // The pool with nothing carried (the Staple Gun is never a prize anyway).
 export const POOL = prizePool({ owns: (id) => id === 'stapleGun', modsFor: () => [], away: null });
-export const wallPrice = (id) => economy.wallBuys[id]?.weapon ?? 0;
+// What a gun is worth in the report: its wall price, or for a claw-only gun (on no wall) the nominal `value` its prize entry carries.
+export const wallPrice = (id) => economy.wallBuys[id]?.weapon ?? cfg.prizes[id]?.value ?? 0;
 
 // The cheapest area unlocks from the start room to each wall gun (docs/map.md): Hallway first for most; HOFFMAN'S has its own
 // side door off the start room; the Cinema is reached through the Service Corridor's stairs.
@@ -50,7 +52,8 @@ export const WALL_ROUTES = {
   coilNailer: ['hallway', 'serviceCorridor', 'cinema'],
   barcodeScanner: ['departmentStore'],
 };
-export const wallRouteCost = (id) => WALL_ROUTES[id].reduce((sum, area) => sum + economy.doors[area], 0) + wallPrice(id);
+// (a claw-only gun has no wall route: the claw is the only way to it, so the wall can never be the cheaper one)
+export const wallRouteCost = (id) => weapons[id]?.clawOnly ? Infinity : WALL_ROUTES[id].reduce((sum, area) => sum + economy.doors[area], 0) + wallPrice(id);
 // What the claw needs before the first grab: it waits in the Hallway until you own it.
 export const CLAW_ENTRY = economy.doors[cfg.sites[0].zone];
 

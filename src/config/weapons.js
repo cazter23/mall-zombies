@@ -11,6 +11,9 @@
 //            straight line to `minMultiplier` at `end` and beyond. No falloff = full damage at any range.
 //   pierce:  { maxTargets, damageFalloff: [1, 0.8, ...] }  a shot/pellet goes through zombies
 //   pellets: { count, spreadDegrees, adsMultiplier }      several rays per trigger pull (shotgun)
+//   clawOnly: true  never sold on a wall (the wall-buy feature refuses it); it only comes out of GRAB-A-GUN (game/features/clawMachine.js)
+//   fuel:  { regenDelay, regenPerSecond, restartAt }  a tank instead of a reload: `magazineSize` is the tank (weapons/fuel.js)
+//   cone:  { range, halfAngleDegrees, ... }  a wide push instead of a ray (weapons/coneBlast.js; playerGun.js fires it)
 // Upgrades (Build-A-Blaster...) never edit these entries: they are applied on top as data
 // (gunStats.js resolveGun). Check the effect of any change with `npm run balance`.
 // =============================================================================
@@ -773,6 +776,63 @@ export const weapons = {
           { at: 0.65, sound: 'scannerReloadIn', jolt: { up: -0.01, pitchDegrees: -3, rollDegrees: 2 } },
           { at: 0.84, sound: 'scannerReloadReady', jolt: { back: 0.006, pitchDegrees: 2 } },
         ],
+      },
+    },
+  },
+  // CLAW-ONLY (GRAB-A-GUN, phase 8): no wall sells it (clawOnly), it only comes out of the machine. Purple capsule.
+  // ROLE: crowd control, not damage. A wide cone of wind that shoves everything in it back and lays the close ones flat, for a corridor or a
+  // doorway. Next to nothing in damage (the weakest gun at every range, tests/balance.test.js), and it only reaches a few metres.
+  // It runs on a FUEL TANK, not a magazine: hold the trigger and it pulses (each pulse costs a unit of fuel); let go and the tank refills by
+  // itself; run it dry and the trigger stays locked until it holds a little again. No reload. (weapons/fuel.js, weapons/coneBlast.js)
+  // `magazineSize` = the tank (the HUD, refills and Build-A-Blaster read it as the magazine); `startingReserve` is 0 (nothing to reload from).
+  leafBlower: {
+    id: 'leafBlower', name: 'Leaf Blower', fireMode: 'auto', clawOnly: true,
+    damage: 2, headshotMultiplier: 1.2, // a pulse tickles: a Shopper takes ~20 s of it, and a Mascot much longer
+    falloff: { start: 3, end: 7, minMultiplier: 0.5 }, // (the damage; the push has its own fade, cone.farFraction)
+    magazineSize: 40, startingReserve: 0, // 40 pulses of fuel: about 6 s of blowing
+    fuel: { regenDelay: 0.8, regenPerSecond: 7, restartAt: 10 }, // refills 0.8 s after you stop, at 7 units a second; a dry tank waits for 10
+    fireInterval: 0.15, fireBuffer: 0.1, reloadTime: 1, range: 8, // (reloadTime is unused with a tank)
+    // The gust: everything within `range` and the angle, with no wall between, is shoved away from you. A zombie within knockdownRange also goes
+    // down for knockdownSeconds (the zombies' own slip). Bosses are unmoved. A Mascot is shoved at mascotScale. It pays the +10 hit points for a
+    // zombie once every payEverySeconds, not every pulse.
+    cone: {
+      range: 7, halfAngleDegrees: 28, targetRadius: 0.35,
+      knockback: 7.5, farFraction: 0.45, staggerSeconds: 0.3, drag: 2.4, mascotScale: 0.5,
+      knockdownRange: 3.2, knockdownSeconds: 1.1, knockdownDrag: 1.6,
+      payEverySeconds: 1.2,
+      gust: { count: 6, speed: 6, size: 0.05, colors: [0x7bc96f, 0xc9d94a, 0xe8a23b, 0xb9783a] }, // the leaves it kicks up, per pulse
+    },
+    recoil: {
+      pitchDegrees: 0.25, yawDegrees: 0.15, rollDegrees: 0.2, adsMultiplier: 0.7,
+      model: { back: 0.012, up: 0.003, pitchDegrees: 1.6, yawDegrees: 0.8, rollDegrees: 1.2,
+        adsMultiplier: 0.5, frequency: 9, damping: 0.6 },
+    },
+    impact: { flinch: 0.3, knockback: 0, hitstopSeconds: 0, deathImpulse: 1 }, // (the cone shoves; the pulse's own hit doesn't)
+    spread: {
+      base: 0.2, moving: 0.4, maxMovingFactor: 1.4, airborne: 0.8,
+      perShot: 0.1, maxBloom: 0.4, bloomRecoveryDelay: 0.15, bloomRecovery: 3,
+      smoothing: 10, adsMultiplier: 0.6,
+    },
+    ads: { seconds: 0.25, fovMultiplier: 0.92, offset: { x: 0, y: -0.07, z: -0.4 } },
+    muzzleFlash: {
+      seconds: 0.05, size: 0.16, coreSize: 0.07, outerOpacity: 0.5, sizeJitter: 0.3,
+      forwardOffset: 0.05, outerColor: 0xbfe8c8, coreColor: 0xffffff,
+      adsWidth: 1.4, adsHeight: 0.6, adsTwistFraction: 0.1,
+      lightColor: 0xcfeedd, handLightIntensity: 0.15, handLightRange: 0.6,
+      worldLightIntensity: 2, worldLightRange: 4,
+    },
+    sounds: { fire: 'leafBlowerPuff', dryFire: 'dryClick' },
+    tracerColor: 0xbfe8c8,
+    viewmodel: {
+      model: 'leafBlower', hipOffset: { x: 0.17, y: -0.165, z: -0.43 },
+      aimYawDegrees: 6, hipPitchDegrees: 1, hipRollDegrees: 3,
+      bodyColor: 0xf0a31c, accentColor: 0x2f6f3a, metalColor: 0xbfc5cc, // a garden-centre orange, with green trim
+      darkColor: 0x2b2f33, sightColor: 0xfff0b0, tankColor: 0xe8531f,
+      fire: { triggerDegrees: 22, pressSeconds: 0.04, releaseSeconds: 0.1 },
+      // (no reload: the tank refills itself. A gun with a tank never plays these; the keys keep the model's reload sampling valid.)
+      reload: {
+        gunKeys: [{ t: 0, pos: [0, 0, 0], rot: [0, 0, 0] }, { t: 1, pos: [0, 0, 0], rot: [0, 0, 0] }],
+        events: [],
       },
     },
   },

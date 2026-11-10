@@ -1,8 +1,8 @@
 # Claw machine: plan
 
-Status: phases 1 to 7 built (8 November 2026, branch claude/claw-machine; see docs/history.md; phase 4 recommends 1,250 a grab, not applied). Two sites moved from the table below:
+Status: phases 1 to 8 built (phase 8, the Leaf Blower, 9 November 2026; phases 1 to 7: 8 November 2026, branch claude/claw-machine; see docs/history.md; phase 4 recommends 1,250 a grab, not applied). Two sites moved from the table below:
 Parking's back is x 34.43 (the facade's face) and the Cinema's x -34.1 (clear of the screen door's jamb). A gun bought off the wall between
-the roll and the take gets a SPARE attachment rolled with the capsule, so the take adds nothing random. Phases 8 to 10 (the claw-only guns) are not started. The Prize Counter is on the Hallway's north wall at x -13 (it was x 3.65 until the Gold Card rack took that stretch).
+the roll and the take gets a SPARE attachment rolled with the capsule, so the take adds nothing random. Phase 8 (the Leaf Blower) is built and in the pool; phases 9 and 10 (the Tennis Ball Launcher and the wonder weapon) are not started. The Prize Counter is on the Hallway's north wall at x -13 (it was x 3.65 until the Gold Card rack took that stretch).
 Numbers here are starting points, to be tuned by playing. Prices are suggestions only: the economy report
 (not written yet: the `economy-sim` branch has no work on it, so `tools/economySim.mjs` and `npm run sim:economy` still need doing) confirms them. Checked against the `build-a-blaster` branch at its phase 2; it is now merged, with all six phases and the Mascot.
 This work relies on its `gun.away`, `gun.isLoaner` and `priceLabel`, and touches `createGame.js`, `interactions.js` and `mall.js`.
@@ -361,7 +361,7 @@ Done when: every outcome pays its tickets, every prize works and can't be bought
 Picking the next site at the plush, Sunny's model and walk, arriving and climbing in, popping him (bonus and re-pick), and the shootable flags.
 Done when: he always arrives (or loops when no site is open), popping him re-picks, and he never pays a kill, a +10 or power-up credit, never pulls aim assist and never blocks a vault.
 
-### 8. The Leaf Blower (Opus or Sol for the cone and fuel; Sonnet or Luna for the model and sounds)
+### 8. The Leaf Blower (Opus or Sol for the cone and fuel; Sonnet or Luna for the model and sounds) (BUILT, 9 November: weapons/fuel.js + weapons/coneBlast.js alone, then the gun; see docs/history.md)
 ### 9. The Tennis Ball Launcher (Opus or Sol for the bouncing projectile)
 ### 10. The wonder weapon (Opus or Sol)
 Each: the engine piece alone first, then the gun, its balance row, `npm run balance`, and only then into the pool.

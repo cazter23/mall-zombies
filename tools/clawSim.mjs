@@ -55,11 +55,12 @@ console.log('(the same points on a wall: the Hallway + the Nail Gun is 1,500; Bl
 console.log('\nONE SPECIFIC GUN: points of grabs per copy (aiming for it when it\'s in the pit; plush grabs refunded) vs the wall');
 console.log(`(the claw also needs the Hallway, ${CLAW_ENTRY}; the wall route is the cheapest doors from the start room plus the gun)`);
 console.table(POOL.map((p) => {
-  const row = { gun: name(p.id), 'wall route': wallRouteCost(p.id) };
+  const clawOnly = weapons[p.id]?.clawOnly;
+  const row = { gun: name(p.id), 'wall route': clawOnly ? 'none: claw only' : wallRouteCost(p.id) };
   for (const m of ['3-in-4', 'timed', 'random']) row[`claw ${m}`] = r0(clawCostPerGun(p.id, { mode: m, grabs: GRABS / 2, price }));
   const perfect = clawCostPerGun(p.id, { mode: 'perfect', grabs: GRABS / 2, price }) + CLAW_ENTRY;
   row['claw perfect + Hallway'] = r0(perfect);
-  row['claw cheaper?'] = perfect < wallRouteCost(p.id) ? 'YES: rule broken' : 'no';
+  row['claw cheaper?'] = clawOnly ? 'the only way' : perfect < wallRouteCost(p.id) ? 'YES: rule broken' : 'no';
   return row;
 }));
 
@@ -72,5 +73,5 @@ console.table([1000, 1250, 1500, 1750].map((p) => ({
   'first grab value / price (timed)': (firstValue('timed') / p).toFixed(2),
   'value per point, whole site (3-in-4)': ((runs['3-in-4'].valueSum / runs['3-in-4'].netSpent) * (price / p)).toFixed(2),
   'Hallway + one grab': CLAW_ENTRY + p,
-  'closest gun: claw (perfect) / wall': (Math.min(...POOL.map((g) => (clawCostPerGun(g.id, { mode: 'perfect', grabs: GRABS / 4, price: p }) + CLAW_ENTRY) / wallRouteCost(g.id)))).toFixed(2),
+  'closest gun: claw (perfect) / wall': (Math.min(...POOL.filter((g) => !weapons[g.id]?.clawOnly).map((g) => (clawCostPerGun(g.id, { mode: 'perfect', grabs: GRABS / 4, price: p }) + CLAW_ENTRY) / wallRouteCost(g.id)))).toFixed(2),
 })));

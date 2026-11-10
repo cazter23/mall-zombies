@@ -1,5 +1,29 @@
 # Sunset Galleria: build history ("Current state")
 
+## 9 November 2026 - GRAB-A-GUN, phase 8: the Leaf Blower (the first claw-only gun)
+
+A wide cone of wind that shoves everything in front of you back and lays the close ones flat, for a corridor or a doorway. It is crowd control, not damage: a pulse
+does 2 (a full 40-pulse tank is 80, less than a round-1 Shopper's 150), and it only reaches 7 m. Claw-only: `clawOnly: true` in config/weapons.js, no wall price, and
+the wall-buy feature refuses a clawOnly gun even if a map names it. Purple capsule, weight 7 beside the Barcode Scanner (config/clawMachine.js prizes).
+
+- **Engine first, each with its own test.** weapons/fuel.js: a fuel TANK instead of a magazine. Holding the trigger pulses every 0.15 s and burns a unit each (40 = 6 s of
+  blowing); let go and it refills itself after 0.8 s at 7 a second (6.5 s to full); run it dry and the trigger LOCKS until it holds 10 again (no sputter), with no reload. The
+  tank's level is the weapon's `magazine`, so the HUD ("40 fuel", "Out of fuel"), RESTOCK-O-MATIC, Refurbished grabs, Build-A-Blaster and the Stockroom Delivery work on it
+  unchanged. weapons/coneBlast.js: who is in the cone (range, 28 degrees each side, a wall blocks it, height forgiving so a zombie at your feet is caught), what the blast does
+  (the zombies' OWN stagger and slip, so no new zombie state: stronger up close, a Mascot shoved at half, bosses and a zombie already sliding untouched), and a ledger so a stream
+  pays the +10 hit once per 1.2 s per zombie, not every pulse (a kill still pays in full). playerGun.js fires a cone gun through fireCone; the kick/sound code is shared (kick()).
+- **The gun** (config/weapons.js leafBlower, weapons/models/leafBlower.js: orange motor, red fuel tank with a level window, ribbed flared nozzle; sound leafBlowerPuff). Upgrades
+  mean something sensible: Jumbo Pack / the tier magazine = a bigger tank, Speed Loader / the tier "reload" = a quicker refill (upgrades.js EFFECTS: reload -> fuel.regenPerSecond),
+  Extended Nozzle / Sawn-Off move the cone's reach with the damage falloff. `npm run balance` has a CONE GUNS table (tank, blow and refill seconds, shove, knockdown range).
+- **Tests.** tests/balance.test.js: the role tests compare the guns of the wall only (`clawOnly` filtered out of them and of tests/upgrades.test.js's role checks), and the Leaf
+  Blower has its own job test. tests/impactMarks.test.js skips cone guns (wind marks no wall), tests/newGuns.test.js lets a clawOnly gun have no price. New: fuel.test.js,
+  coneBlast.test.js, leafBlower.test.js.
+- **Odds** (`npm run sim:claw`, tools/clawOdds.js gives a claw-only gun a nominal `value` of 1500 and no wall route): per grab at 3-in-4 timing the Leaf Blower is won 10.3% of
+  grabs (perfect 12.5%, timed 11.7%, random 6.7%), in the pit 19.7%; the wall is still the cheaper way to every WALL gun, and the first grab after the shutter is worth 1.46x its
+  price (84.7% Blue or better), as before. Specific copy: about 6,400 points of grabs at 3-in-4 timing (5,500 with perfect timing and the Hallway): the only way to it.
+- Checked in the browser pane (preview build): the viewmodel, a stream pushing a crowd back (hit marker, fuel count), the dry tank. Not checked: a Build-A-Blaster build on it
+  by hand (only the tests that loop over every gun cover it; its Heart triggers fire per pulse, with their own cooldowns), the sound by ear.
+
 ## 9 November 2026 - GRAB-A-GUN (phases 1-7) lands in main
 
 The claw machine branch (claude/claw-machine) was merged into main through a fresh branch (claw-into-main): 8 commits, 45 files, behind main by the Wardrobe showroom, the

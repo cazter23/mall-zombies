@@ -5,13 +5,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { weapons } from '../src/config/weapons.js';
-import { zombieHealthForRound } from '../src/config/economy.js';
+import { zombieHealthForRound, economy } from '../src/config/economy.js';
 import { sustainedDps, expectedShotDamage, shotsToKill } from '../tools/balance.js';
 import { seededRandom } from '../src/world/textures.js';
 
 const style = (d) => ({ ads: !d.pellets, samples: 1500 });
 const dps = (d, m) => sustainedDps(d, m, style(d));
-const all = Object.values(weapons);
+// The role tests below compare the guns of the WALL. A claw-only gun (GRAB-A-GUN) has its own job, checked at the end of this file.
+const all = Object.values(weapons).filter((d) => !d.clawOnly);
+const clawGuns = Object.values(weapons).filter((d) => d.clawOnly);
 const others = (gun) => all.filter((d) => d !== gun);
 const { stapleGun, priceGun, nailGun, foamDartBlaster, confettiCannon } = weapons;
 
@@ -112,4 +114,32 @@ test('Staple Gun: the free starter is the weakest gun at every range (the cannon
 test('Staple Gun, Foam Dart Blaster: full damage across a room (falloff starts past 10 m)', () => {
   for (const d of [stapleGun, foamDartBlaster]) assert.ok(d.falloff.start >= 10, d.id);
   assert.equal(nailGun.falloff, undefined, 'the Nail Gun has no falloff');
+});
+
+// --- Claw-only guns (GRAB-A-GUN): each does a job no wall gun does, and none is ever sold ---
+
+test('claw-only guns are never on a wall: no price, and none is among the wall buys', () => {
+  assert.ok(clawGuns.length >= 1);
+  for (const d of clawGuns) assert.equal(economy.wallBuys[d.id], undefined, `${d.id} has a wall price`);
+});
+
+test('Leaf Blower: crowd control, not damage. The weakest hitter, the strongest shove, a few metres of reach, a tank that runs a few seconds', () => {
+  const blower = weapons.leafBlower;
+  assert.equal(blower.clawOnly, true);
+  for (const d of all) {
+    for (const m of [2, 5]) assert.ok(dps(blower, m) < 0.3 * dps(d, m), `blower vs ${d.name} at ${m} m: it must only tickle`);
+  }
+  const hp1 = zombieHealthForRound(1);
+  assert.ok(blower.magazineSize * blower.damage < hp1, 'one whole tank cannot kill even a round-1 Shopper');
+  const mostKnockback = Math.max(...all.map((d) => d.impact.knockback));
+  assert.ok(blower.cone.knockback > 1.5 * mostKnockback, 'it shoves much harder than any bullet');
+  assert.ok(blower.cone.halfAngleDegrees >= 20, 'a wide cone');
+  assert.ok(blower.cone.range >= 5 && blower.cone.range <= 10, 'a few metres of reach');
+  assert.ok(blower.cone.range < weapons.stapleGun.falloff.end, 'a short reach: past it, every wall gun does more');
+  const blowSeconds = blower.magazineSize * blower.fireInterval; // a full tank, held down
+  assert.ok(blowSeconds >= 4 && blowSeconds <= 8, `the tank runs ${blowSeconds.toFixed(1)} s`);
+  const refillSeconds = blower.fuel.regenDelay + blower.magazineSize / blower.fuel.regenPerSecond;
+  assert.ok(refillSeconds >= 4 && refillSeconds <= 9, `and refills in ${refillSeconds.toFixed(1)} s`);
+  assert.equal(blower.startingReserve, 0, 'nothing to reload from');
+  assert.ok(blower.cone.knockdownRange < blower.cone.range, 'only the close ones go down');
 });

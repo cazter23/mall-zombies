@@ -6,11 +6,13 @@ import assert from 'node:assert/strict';
 import { POOL, MODES, simulate, clawCostPerGun, wallRouteCost, CLAW_ENTRY, seeded } from '../tools/clawOdds.js';
 import { clawMachine as cfg } from '../src/config/clawMachine.js';
 import { economy } from '../src/config/economy.js';
+import { weapons } from '../src/config/weapons.js';
 
 const GRABS = 60_000;
 
 test('the wall stays the cheaper way to every specific gun, even with perfect timing (and the Hallway the claw needs)', () => {
   for (const { id } of POOL) {
+    if (weapons[id].clawOnly) { assert.equal(wallRouteCost(id), Infinity, `${id}: no wall route, the claw is the only way`); continue; }
     const claw = clawCostPerGun(id, { mode: 'perfect', grabs: GRABS, random: seeded(4) }) + CLAW_ENTRY;
     assert.ok(claw > wallRouteCost(id), `${id}: claw ${Math.round(claw)} vs wall ${wallRouteCost(id)}`);
   }

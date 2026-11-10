@@ -23,6 +23,7 @@ import { buildBarcodeScannerModel, buildBarcodeScannerDisplay } from './barcodeS
 
 import { buildFoamDartBlasterModel, buildFoamDartBlasterDisplay } from './foamDartBlaster.js';
 import { buildConfettiCannonModel, buildConfettiCannonDisplay } from './confettiCannon.js';
+import { buildLeafBlowerModel, buildLeafBlowerDisplay } from './leafBlower.js';
 
 const builders = {
   rivetRifle: { model: buildRivetRifleModel, display: buildRivetRifleDisplay },
@@ -30,6 +31,7 @@ const builders = {
   barcodeScanner: { model: buildBarcodeScannerModel, display: buildBarcodeScannerDisplay },
   foamDartBlaster: { model: buildFoamDartBlasterModel, display: buildFoamDartBlasterDisplay },
   confettiCannon: { model: buildConfettiCannonModel, display: buildConfettiCannonDisplay },
+  leafBlower: { model: buildLeafBlowerModel, display: buildLeafBlowerDisplay },
   stapleGun: { model: buildStapleGunModel, display: buildStapleGunDisplay },
   priceGun: { model: buildPriceGunModel, display: buildPriceGunDisplay },
   nailGun: { model: buildNailGunModel, display: buildNailGunDisplay },

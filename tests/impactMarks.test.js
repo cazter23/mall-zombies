@@ -139,7 +139,7 @@ test('Cannon caps projection attempts even when every visible surface rejects re
 });
 
 test('real guns leave world signatures without paying points/hits; Cannon is capped and Play again clears them', ctx => {
-  for (const def of Object.values(weapons)) {
+  for (const def of Object.values(weapons).filter((d) => !d.cone)) { // (a cone of wind, the Leaf Blower, marks nothing)
     const t = headlessGame(), { g } = t;
     t.tick(); g.zombies.clear(); g.rounds.update = () => {};
     if (def.id !== 'stapleGun') { g.gun.give(def); t.tick(40); }

@@ -553,16 +553,18 @@ export function createHud() {
     // `reloadLabel`: the reload button for the device in use ("R", "X", "□").
     setAmmo(weapon, reloadLabel = 'R') {
       const name = gunLabel(weapon.def);
-      const key = `${name}|${weapon.magazine}|${weapon.reserve}|${weapon.isReloading}|${reloadLabel}`;
+      const tank = weapon.def.fuel ? (weapon.fuel.locked ? 'dry' : 'tank') : null; // a gun with a fuel tank (the Leaf Blower): its level is the count, no reserve
+      const key = `${name}|${weapon.magazine}|${weapon.reserve}|${weapon.isReloading}|${reloadLabel}|${tank}`;
       if (key === lastAmmoKey) return;
       lastAmmoKey = key;
       ammoMag.textContent = weapon.magazine;
-      ammoReserve.textContent = ` / ${weapon.reserve}`;
+      ammoReserve.textContent = tank ? ' fuel' : ` / ${weapon.reserve}`;
       ammoName.textContent = name;
       ammo.classList.toggle('low', weapon.magazine <= feel.effects.lowAmmoThreshold);
 
       let text = '';
-      if (weapon.isReloading) text = 'Reloading...';
+      if (tank) text = tank === 'dry' ? 'Out of fuel' : '';
+      else if (weapon.isReloading) text = 'Reloading...';
       else if (weapon.magazine === 0 && weapon.reserve === 0) text = 'No ammo';
       else if (weapon.magazine === 0) text = `Press ${reloadLabel} to reload`;
       prompt.textContent = text;

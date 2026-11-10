@@ -18,5 +18,6 @@ export const ui = {
     rivetRifle: 'Steady automatic · Controlled body fire',
     coilNailer: 'Heavy automatic · Sustained crowd pressure',
     barcodeScanner: 'Charge and release · Piercing precision laser',
+    leafBlower: 'Crowd control · Blows zombies back and knocks them down · Runs on a tank that refills',
   },
 };

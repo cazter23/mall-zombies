@@ -20,6 +20,7 @@ export const clawMachine = {
     confettiCannon: { weight: 12, capsule: 'blue' },
     rivetRifle: { weight: 12, capsule: 'blue' },
     barcodeScanner: { weight: 7, capsule: 'purple' },
+    leafBlower: { weight: 7, capsule: 'purple', value: 1500 }, // CLAW-ONLY (config/weapons.js clawOnly): it is on no wall, this is the only way to it. `value`: a nominal worth for tools/clawOdds.js only (a wall gun's is its wall price); the game never reads it
     coilNailer: { weight: 3, capsule: 'gold' },
   },
   capsules: {
