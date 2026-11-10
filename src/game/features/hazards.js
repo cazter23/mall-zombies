@@ -8,20 +8,23 @@ import * as THREE from 'three';
 import { hazards } from '../../config/hazards.js';
 
 const DEG_TO_RAD = Math.PI / 180;
+const UP = new THREE.Vector3(0, 1, 0);
 
 /**
  * Deals hazard damage to a zombie through `zombie.takeHit({ ..., source: 'hazard' })`.
- * Bosses and Mascots cap per-pulse damage to `zombie.maxHealth * cfg.maxHealthCap` so a single
- * switch softens a Boss or Mascot without melting a boss fight.
+ * Normal zombies take at least `baseDamage` or `zombie.maxHealth * cfg.normalHealthFraction`
+ * so hazards stay lethal at any round. Bosses and Mascots cap per-pulse damage to
+ * `zombie.maxHealth * cfg.maxHealthCap` so a single switch softens a Boss or Mascot without melting a boss fight.
  */
 export function dealHazardDamage(zombie, baseDamage, cfg) {
   if (!zombie || !zombie.isAlive || baseDamage <= 0) return false;
-  const capped = (zombie.type?.boss || zombie.type?.mascot) && cfg?.maxHealthCap
-    ? Math.min(baseDamage, zombie.maxHealth * cfg.maxHealthCap)
-    : baseDamage;
-  if (capped <= 0) return false;
+  const isBig = Boolean(zombie.type?.boss || zombie.type?.mascot);
+  const damage = isBig && cfg?.maxHealthCap
+    ? Math.min(Math.max(baseDamage, zombie.maxHealth * cfg.maxHealthCap), zombie.maxHealth * cfg.maxHealthCap)
+    : Math.max(baseDamage, zombie.maxHealth * (cfg?.normalHealthFraction ?? 0));
+  if (damage <= 0) return false;
   return zombie.takeHit({
-    damage: capped,
+    damage,
     part: 'body',
     point: zombie.position,
     source: 'hazard',
@@ -29,7 +32,7 @@ export function dealHazardDamage(zombie, baseDamage, cfg) {
 }
 
 /**
- * Builds the 3D breaker/switch box at `position` facing `normal`.
+ * Builds the 3D industrial breaker/switch box at `position` facing `normal`.
  * Marked `userData.dynamic = true` on the parent Group (never on child meshes).
  */
 export function buildHazardSwitchBox({ position, normal, postBottomY }) {
@@ -42,10 +45,14 @@ export function buildHazardSwitchBox({ position, normal, postBottomY }) {
 
   const cabinetMat = new THREE.MeshLambertMaterial({ color: boxCfg.cabinetColor });
   const trimMat = new THREE.MeshLambertMaterial({ color: boxCfg.trimColor });
+  const darkMat = new THREE.MeshLambertMaterial({ color: boxCfg.stripeDarkColor });
+  const metalMat = new THREE.MeshLambertMaterial({ color: boxCfg.metalColor });
+  const meterBgMat = new THREE.MeshBasicMaterial({ color: boxCfg.meterBgColor });
+  const needleMat = new THREE.MeshBasicMaterial({ color: boxCfg.needleColor });
   const handleMat = new THREE.MeshLambertMaterial({ color: boxCfg.handleColor });
   const lampMat = new THREE.MeshBasicMaterial({ color: boxCfg.readyColor });
 
-  // Support post down to the rim or floor when mounted above a low wall.
+  // Support post + conduit pipe down to the rim or floor when mounted above a low wall.
   if (typeof postBottomY === 'number' && position.y - boxCfg.height / 2 > postBottomY + 0.02) {
     const postH = position.y - boxCfg.height / 2 - postBottomY;
     const post = new THREE.Mesh(
@@ -64,43 +71,76 @@ export function buildHazardSwitchBox({ position, normal, postBottomY }) {
   cabinet.position.set(0, 0, -boxCfg.depth / 2);
   rig.add(cabinet);
 
-  // Warning header strip proud of the front face by 2.5 cm.
-  const header = new THREE.Mesh(
-    new THREE.BoxGeometry(boxCfg.width - 0.04, 0.06, 0.02),
-    trimMat,
-  );
-  header.position.set(0, boxCfg.height / 2 - 0.06, 0.025);
-  rig.add(header);
+  // Top & bottom yellow/black hazard warning bars (proud of the front face by 2.5 cm).
+  const barW = boxCfg.width - 0.04;
+  for (const ySign of [1, -1]) {
+    const barY = ySign * (boxCfg.height / 2 - 0.045);
+    const yellowBar = new THREE.Mesh(new THREE.BoxGeometry(barW, 0.05, 0.02), trimMat);
+    yellowBar.position.set(0, barY, 0.025);
+    rig.add(yellowBar);
+    for (let i = -2; i <= 2; i += 2) {
+      const tick = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.052, 0.015), darkMat);
+      tick.position.set(i * 0.055, barY, 0.045);
+      rig.add(tick);
+    }
+  }
 
-  // Status indicator lamp proud of the front face by 3 cm.
+  // Top beacon dome (glows in the current status color).
+  const beaconBase = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.03, 0.11), metalMat);
+  beaconBase.position.set(0, boxCfg.height / 2 + 0.015, -boxCfg.depth / 2);
+  rig.add(beaconBase);
+  const beaconDome = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.07, 0.08), lampMat);
+  beaconDome.position.set(0, boxCfg.height / 2 + 0.065, -boxCfg.depth / 2);
+  rig.add(beaconDome);
+
+  // Analog voltage gauge on the upper-left front face + rotating needle.
+  const meterFace = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.09, 0.02), meterBgMat);
+  meterFace.position.set(-0.085, 0.075, 0.025);
+  rig.add(meterFace);
+  const needlePivot = new THREE.Group();
+  needlePivot.position.set(-0.085, 0.045, 0.045);
+  const needle = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.055, 0.01), needleMat);
+  needle.position.set(0, 0.024, 0);
+  needlePivot.add(needle);
+  rig.add(needlePivot);
+
+  // Status indicator lamp on the lower-left front face (proud by 3 cm).
   const lamp = new THREE.Mesh(
-    new THREE.BoxGeometry(0.07, 0.07, 0.03),
+    new THREE.BoxGeometry(0.075, 0.075, 0.03),
     lampMat,
   );
-  lamp.position.set(-0.07, 0.02, 0.03);
+  lamp.position.set(-0.085, -0.055, 0.03);
   rig.add(lamp);
 
-  // Throw lever pivot proud of the front face.
+  // Heavy twin-blade knife switch on the right half of the box.
   const handlePivot = new THREE.Group();
-  handlePivot.position.set(0.06, 0.02, 0.025);
-  const handle = new THREE.Mesh(
-    new THREE.BoxGeometry(0.04, 0.14, 0.04),
+  handlePivot.position.set(0.075, 0.01, 0.03);
+  for (const dx of [-0.035, 0.035]) {
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.16, 0.025), metalMat);
+    blade.position.set(dx, 0.06, 0.02);
+    handlePivot.add(blade);
+  }
+  const crossbar = new THREE.Mesh(
+    new THREE.BoxGeometry(0.11, 0.042, 0.045),
     handleMat,
   );
-  handle.position.set(0, 0.05, 0.02);
-  handlePivot.add(handle);
+  crossbar.position.set(0, 0.13, 0.035);
+  handlePivot.add(crossbar);
   rig.add(handlePivot);
 
   function setPhaseVisual(phase) {
     if (phase === 'active') {
       lampMat.color.setHex(boxCfg.activeColor);
-      handlePivot.rotation.x = 0.85;
+      handlePivot.rotation.x = 2.15;
+      needlePivot.rotation.z = -0.65;
     } else if (phase === 'cooldown') {
       lampMat.color.setHex(boxCfg.cooldownColor);
-      handlePivot.rotation.x = 0.35;
+      handlePivot.rotation.x = 0.45;
+      needlePivot.rotation.z = 0.25;
     } else {
       lampMat.color.setHex(boxCfg.readyColor);
       handlePivot.rotation.x = -0.35;
+      needlePivot.rotation.z = 0.55;
     }
   }
 
@@ -121,7 +161,7 @@ export function createHazard({
   onTick,
   onStop,
 }) {
-  const { scene, map, events, pricing, interactions, player, stats, health, state, sound } = ctx;
+  const { scene, map, events, pricing, interactions, player, stats, health, state, sound, effects } = ctx;
   const { rig, setPhaseVisual } = buildHazardSwitchBox({
     position: feature.position,
     normal: feature.normal,
@@ -145,9 +185,9 @@ export function createHazard({
     }
   }
 
-  function runPulse() {
+  function runPulse(isOpening = false) {
     if (state.over) return;
-    onPulse?.();
+    onPulse?.(isOpening);
     if (cfg.playerDamage > 0 && isPlayerInside?.(player.position) && !health.isDead) {
       health.takeDamage(cfg.playerDamage);
       if (cfg.playerViewJoltDegrees) {
@@ -163,9 +203,11 @@ export function createHazard({
     pulseTimer = cfg.pulseInterval;
     setPhaseVisual(phase);
     if (cfg.triggerSound) sound?.play(cfg.triggerSound);
+    effects?.splat?.(feature.position, UP, hazards.switchBox.sparkColors, hazards.switchBox.sparkCount);
+    effects?.flash?.(feature.position, hazards.switchBox.activeColor, 1.1, 0.15);
     onActivate?.();
     applyPlayerSlow(Boolean(isPlayerInside?.(player.position)));
-    runPulse();
+    runPulse(true);
     return true;
   }
 
@@ -205,7 +247,7 @@ export function createHazard({
       pulseTimer -= dt;
       if (pulseTimer <= 1e-9 && timer > -1e-9) {
         pulseTimer += cfg.pulseInterval;
-        runPulse();
+        runPulse(false);
       }
       if (timer <= 1e-9) {
         applyPlayerSlow(false);
