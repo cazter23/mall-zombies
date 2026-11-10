@@ -131,6 +131,7 @@ It checks one drop per boss alongside the usual rewards, persistence through rou
 It also checks the real van's hold and missing-key prompt, the paused win, Clock out, normal next-round overtime with the same loadout,
 career credit on overtime death, and version 1 career migration with fastest-win persistence.
 Phase 3 checks receipt modes and controller choice, the fourth box's presentation, and the clocked-out and completed-overtime lines on a death receipt.
+Phase 4 checks that the key opens the fountain count, only fountain kills advance it (including bosses and Mascots), the tick and PA fire once, and Play again resets the duty.
 
 `tests/powerUps.test.js` checks earned incentive thresholds, skill credit, single drops, caps/repeats, expiry, safe floor/ramp
 placement, swept slide collection, wall/storey rejection, Blue Light payouts/timers, reserve delivery without bypassing

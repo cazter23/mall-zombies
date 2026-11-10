@@ -6,6 +6,8 @@ import { closingTime } from '../src/config/closingTime.js';
 import { CAREER_STATS_KEY, CAREER_STATS_VERSION, createCareerStats } from '../src/game/careerStats.js';
 import { economy, zombieCountForRound } from '../src/config/economy.js';
 import { feel } from '../src/config/feel.js';
+import { hazards } from '../src/config/hazards.js';
+import { dealHazardDamage } from '../src/game/features/hazards.js';
 import { weapons } from '../src/config/weapons.js';
 import { menuDom } from './helpers/menuDom.js';
 import { closingChecklistFor, createScreens, receiptLinesFor } from '../src/ui/screens.js';
@@ -49,7 +51,7 @@ for (const id of bossIds) {
     g.rounds.skipRound();
     defeat(g, id, at); // Nor can it duplicate a held key.
     assert.equal(drops.length, 1);
-    assert.equal(g.closing.done, 1);
+    assert.equal(g.closing.done, id === 'janitor' ? 0 : 1);
   });
 }
 
@@ -73,18 +75,18 @@ test('two keys stay through round changes and cleanup; collecting one checks off
   assert.equal(g.closing.markers.janitor.bearing, Math.PI / 2);
   assert.equal(g.closing.markers.guard.bearing, -Math.PI / 2);
 
-  standAt(ring.x, ring.z);
+  standAt(safe.x, safe.z);
   assert.equal(g.closing.done, 1);
-  assert.deepEqual(g.closing.checklist.filter(({ done }) => done).map(({ bossId }) => bossId), ['janitor']);
-  assert.deepEqual(g.closing.pickups, [{ bossId: 'guard', position: safe }]);
-  assert.ok(!props.getObjectByName('janitor').visible);
-  assert.ok(props.getObjectByName('guard').visible);
-  assert.equal(g.closing.markers.janitor, undefined);
-  const { key, duty } = closingTime.lines.janitor;
+  assert.deepEqual(g.closing.checklist.filter(({ done }) => done).map(({ bossId }) => bossId), ['guard']);
+  assert.deepEqual(g.closing.pickups, [{ bossId: 'janitor', position: ring }]);
+  assert.ok(props.getObjectByName('janitor').visible);
+  assert.ok(!props.getObjectByName('guard').visible);
+  assert.equal(g.closing.markers.guard, undefined);
+  const { key, duty } = closingTime.lines.guard;
   const pa = closingTime.pa.collect(key, duty);
   assert.deepEqual(notices, [
-    ['closingKey', { bossId: 'janitor', pa }],
-    ['closingLine', { line: 'janitor', done: 1, total: bossIds.length, pa }],
+    ['closingKey', { bossId: 'guard', pa }],
+    ['closingLine', { line: 'guard', done: 1, total: bossIds.length }],
   ]);
   const announcements = hud.calls.filter(([name]) => name === 'showAnnouncement').map(([, notice]) => notice.text);
   assert.ok(announcements.includes(closingTime.pa.drop(key).text));
@@ -95,8 +97,8 @@ test('death freezes checklist progress and Play again clears the held and floor 
   const { g, standAt, props } = fixture(t);
   assert.ok(g.debug.keylessIds.includes('closing'));
   assert.ok(!g.debug.commands.some(({ id }) => id === 'closing'));
-  assert.match(g.debug.run('closing', 'grant', 'janitor'), /Granted/);
-  assert.match(g.debug.run('closing', 'drop', 'guard', new Vector3(2, 0, 12)), /Dropped/);
+  assert.match(g.debug.run('closing', 'grant', 'guard'), /Granted/);
+  assert.match(g.debug.run('closing', 'drop', 'janitor', new Vector3(2, 0, 12)), /Dropped/);
   assert.ok(g.state.assisted);
 
   const events = [];
@@ -302,11 +304,12 @@ test('win presentation checks the fourth box only at the van and keeps the headl
   const { g, press } = game;
   approachVan(game);
   grantKeys(g);
-  assert.ok(g.closing.checklist.every(({ done }) => done));
+  assert.deepEqual(g.closing.missingKeys, []);
   assert.deepEqual(closingChecklistFor(g.closing.checklist, g.state.won).map(({ done }) => done),
-    [true, true, true, false]);
+    [false, true, true, false]);
   press('KeyF', holdTicks);
-  assert.ok(closingChecklistFor(g.closing.checklist, g.state.won).every(({ done }) => done));
+  assert.deepEqual(closingChecklistFor(g.closing.checklist, g.state.won).map(({ done }) => done),
+    [false, true, true, true]);
 });
 
 test('win receipt offers both choices, then restores the death receipt for an overtime death', (t) => {
@@ -353,4 +356,88 @@ test('win receipt offers both choices, then restores the death receipt for an ov
   assert.equal(lines['Overtime rounds survived'], 1);
   assert.equal(Object.fromEntries(receiptLinesFor(win))['CLOCKED OUT'], undefined);
   assert.equal(Object.fromEntries(receiptLinesFor({ ...g.death.summary, round: 2 }))['Overtime rounds survived'], 0);
+});
+
+
+// Phase 4: Line 1, the fountain
+test('the fountain duty opens with the key, counts only its killing blows, ticks once and resets', (t) => {
+  const { g, tick, hud } = fixture(t);
+  const cfg = hazards.fountain;
+  const { key, needed } = closingTime.lines.janitor;
+  const at = new Vector3(cfg.center.x + cfg.innerRadius + 1, 0, cfg.center.z);
+  const fountain = g.features.list.find(({ feature }) => feature.kind === 'fountainHazard').instance;
+  const line = () => g.closing.checklist.find(({ bossId }) => bossId === 'janitor');
+  const spawn = (id) => {
+    const zombie = g.zombies.spawn(id, at, { gold: false });
+    zombie.health = cfg.zombieDamage * cfg.maxHealthCap;
+    return zombie;
+  };
+  const progress = [], completed = [], fountainKills = [];
+  g.events.on('closingProgress', (event) => progress.push(event));
+  g.events.on('closingLine', (event) => completed.push(event));
+  g.events.on('fountainKill', ({ zombie }) => fountainKills.push(zombie));
+  g.rounds.update = () => {};
+
+  const beforeKey = spawn('shopper');
+  assert.ok(fountain.trigger());
+  assert.ok(!beforeKey.isAlive);
+  assert.deepEqual(progress, []);
+  assert.equal(line().count, undefined);
+
+  grantKeys(g, ['janitor']);
+  assert.equal(line().count, 0);
+  assert.equal(line().done, false);
+  assert.deepEqual(completed, []);
+
+  const gunKill = spawn('shopper');
+  gunKill.takeHit({ damage: gunKill.health, part: 'body', source: 'gun' });
+  assert.ok(dealHazardDamage(spawn('shopper'), cfg.zombieDamage, cfg).killed);
+  assert.deepEqual(progress, [], 'gun kills and generic hazard kills are ignored even during a fountain activation');
+
+  const boss = g.bosses.summon('guard');
+  assert.ok(boss);
+  boss.position.copy(at);
+  boss.health = boss.maxHealth * cfg.maxHealthCap / 2;
+  const mascot = spawn('mascot');
+  const pulseTicks = Math.ceil(cfg.pulseInterval / dt) + 1;
+  tick(pulseTicks);
+  assert.ok(fountainKills.includes(boss));
+  assert.ok(fountainKills.includes(mascot));
+  assert.equal(progress.length, 2);
+
+  for (let i = progress.length; i < needed - 1; i++) spawn('shopper');
+  tick(pulseTicks);
+  assert.equal(line().count, needed - 1);
+  assert.equal(line().done, false);
+
+  spawn('shopper');
+  tick(pulseTicks);
+  assert.equal(line().done, true);
+  assert.equal(g.closing.done, 1);
+  assert.deepEqual(progress, Array.from({ length: needed }, (_, i) => ({ line: 'janitor', count: i + 1, needed })));
+  assert.deepEqual(completed, [{ line: 'janitor', done: 1, total: bossIds.length, pa: closingTime.pa.completeFountain }]);
+  const announcements = hud.calls.filter(([name]) => name === 'showAnnouncement').map(([, notice]) => notice.text);
+  assert.equal(announcements.filter((text) => text === closingTime.pa.openFountain(key, needed).text).length, 1);
+  assert.equal(announcements.filter((text) => text === closingTime.pa.completeFountain.text).length, 1);
+
+  tick(Math.ceil((cfg.durationSeconds + cfg.cooldownSeconds) / dt));
+  const extra = spawn('shopper');
+  assert.ok(fountain.trigger(), 'the breaker still works after the box is checked');
+  assert.ok(!extra.isAlive);
+  assert.equal(progress.length, needed);
+  assert.equal(completed.length, 1);
+
+  g.resetRun();
+  assert.equal(line().done, false);
+  assert.equal(line().count, undefined);
+  assert.ok(g.closing.missingKeys.includes(key));
+  grantKeys(g, ['janitor']);
+  assert.equal(line().count, 0);
+  spawn('shopper');
+  assert.ok(fountain.trigger());
+  assert.equal(line().count, 1);
+
+  g.health.takeDamage(g.stats.maxHealth);
+  g.events.emit('fountainKill', { zombie: extra });
+  assert.equal(line().count, 1, 'nothing more counts after death');
 });

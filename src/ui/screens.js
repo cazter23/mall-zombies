@@ -391,9 +391,11 @@ export function createScreens() {
   const statCards = (items) => items.map(([label, value]) => `<div><span>${label}</span><b>${value}</b></div>`).join('');
 
   function fillPause({ fresh = false, round = 0, points = 0, time = 0, kills = 0, outfit = [], closing = [] } = {}) {
-    closingList.innerHTML = Object.values(closingTime.lines).map(({ duty, key }, index) =>
-      `<li><span>${closing[index]?.done ? '✓' : '□'} ${duty}</span><small>${key}</small></li>`
-    ).join('');
+    closingList.innerHTML = Object.values(closingTime.lines).map(({ duty, key }, index) => {
+      const { done, count, needed } = closing[index] ?? {};
+      const progress = count == null ? '' : ` ${closingTime.lineProgress(count, needed)}`;
+      return `<li><span>${done ? '✓' : '□'} ${duty}${progress}</span><small>${key}</small></li>`;
+    }).join('');
     pauseOutfit.hidden = fresh;
     pauseRail.set(outfit);
     pauseKicker.textContent = fresh ? 'Fresh shift' : 'Paused';

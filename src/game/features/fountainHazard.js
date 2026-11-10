@@ -14,7 +14,7 @@ const UP = new THREE.Vector3(0, 1, 0);
 
 export function buildFountainHazard(feature, ctx) {
   const cfg = hazards.fountain;
-  const { scene, zombies, effects, sound } = ctx;
+  const { scene, zombies, effects, sound, events } = ctx;
   const fx = cfg.center.x;
   const fz = cfg.center.z;
   const r = cfg.innerRadius;
@@ -220,7 +220,9 @@ export function buildFountainHazard(feature, ctx) {
           zombie.staggerAway?.(centerGround, cfg.openingSurge);
         }
         zombie.applySlow?.(cfg.slowDuration, cfg.slowFactor, 'shock');
-        dealHazardDamage(zombie, cfg.zombieDamage, cfg);
+        if (dealHazardDamage(zombie, cfg.zombieDamage, cfg)?.killed) {
+          events.emit('fountainKill', { zombie });
+        }
       }
     },
     onStop() {

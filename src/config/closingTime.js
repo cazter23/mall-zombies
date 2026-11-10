@@ -6,7 +6,7 @@ export const closingTime = {
     promptHeight: 1.2, clearance: 0.12,
   },
   lines: {
-    janitor: { duty: 'Water features off', key: "Murray's Key Ring" },
+    janitor: { duty: 'Water features off', key: "Murray's Key Ring", needed: 12 },
     guard: { duty: 'Takings banked', key: "Kettle's Safe Key" },
     manager: { duty: 'Last orders signed off', key: "Fairweather's Signature" },
     influencer: { duty: 'Car park cleared', key: "Skylar's Van Keys" },
@@ -14,7 +14,10 @@ export const closingTime = {
   pa: {
     drop: (key) => ({ kicker: 'Closing time', text: key + ' is on the floor. Associates, please collect it for the closing checklist.' }),
     collect: (key, duty) => ({ kicker: 'Closing time', text: key + ' collected. ' + duty + ' is checked off.' }),
+    openFountain: (key, needed) => ({ kicker: 'Closing time', text: `${key} collected. Use the Electrified Fountain in the Grand Atrium to take out ${needed} zombies.` }),
+    completeFountain: { kicker: 'Closing time', text: 'Water features off is checked off. Thank you, associates.' },
   },
+  lineProgress: (count, needed) => `${count}/${needed}`,
   receiptProgress: (done, total) => done + ' of ' + total,
   marker: { floorGap: 2, up: 'upstairs', down: 'downstairs' },
   visual: {

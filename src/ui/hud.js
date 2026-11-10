@@ -468,11 +468,15 @@ export function createHud() {
 
     setClosing(checklist, markers) {
       for (const [index, { id, box, marker }] of closingLines.entries()) {
-        const { done } = checklist[index];
+        const { duty, done, count, needed } = checklist[index];
+        const progress = count == null ? '' : closingTime.lineProgress(count, needed);
+        const text = [done ? '✓' : '', progress].filter(Boolean).join(' ');
         const checked = String(done);
-        if (box.getAttribute('aria-checked') !== checked) {
+        if (box.textContent !== text || box.getAttribute('aria-checked') !== checked) {
           box.setAttribute('aria-checked', checked);
-          box.textContent = done ? '✓' : '';
+          box.setAttribute('aria-label', progress ? `${duty} ${progress}` : duty);
+          box.classList.toggle('has-progress', Boolean(progress));
+          box.textContent = text;
         }
         marker.update(markers[id] ?? null);
       }

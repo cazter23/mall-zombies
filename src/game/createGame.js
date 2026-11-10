@@ -43,7 +43,6 @@ import { createEffects } from '../fx/effects.js';
 import { createContactShadows } from '../fx/contactShadows.js';
 import { createAmbience } from './ambience.js';
 import { createPowerUps } from './powerUps.js';
-import { closingTime } from '../config/closingTime.js';
 import { createClosingTime } from './closingTime.js';
 import { createClosingKeyView } from '../fx/closingKeyView.js';
 import { createPowerUpView } from '../fx/powerUpView.js';
@@ -277,7 +276,7 @@ export function createGame({
   }
 
   function onRunWon() {
-    if (state.over || state.won || closing.done !== Object.keys(closingTime.lines).length) return;
+    if (state.over || state.won || closing.missingKeys.length) return;
     state.won = true;
     state.winPending = true;
     winSummary = buildRunSummary();
@@ -462,9 +461,10 @@ export function createGame({
     sound.play('paChime');
   });
 
-  // PA notices from workshop orders, shop events and closing keys.
-  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualWaiting', 'ritualCollect', 'limitedEditionDrop', 'limitedEditionFitted', 'wardrobeBuy', 'clawClosed', 'clawMoved', 'closingKeyDrop', 'closingKey']) {
+  // PA notices from workshop orders, shop events and closing duties.
+  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualWaiting', 'ritualCollect', 'limitedEditionDrop', 'limitedEditionFitted', 'wardrobeBuy', 'clawClosed', 'clawMoved', 'closingKeyDrop', 'closingKey', 'closingLine']) {
     events.on(name, ({ pa }) => {
+      if (!pa) return;
       hud.showAnnouncement({ ...pa, priority: 1 });
       sound.play('paChime');
     });

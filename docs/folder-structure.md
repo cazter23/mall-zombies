@@ -24,7 +24,7 @@ src/
     deathMusic.js       End of Shift: original seven-second death composition (piano/pad/bell/noise layers), gain and
                         stop fade. Bell anchors to feel.death.resultsDelay; played once through sound's music/master buses
     careerStats.js      Career schema versions, recent-run limit and accuracy record threshold.
-    closingTime.js      Four closing duties and their keys, PA and receipt copy, key marker and prop tuning, and escape van prompt data.
+    closingTime.js      Four closing duties and their keys, fountain kill target, PA and receipt copy, key marker and prop tuning, and escape van prompt data.
     powerUps.js         Employee-incentive drop tuning, skill credit, round caps, pickup/zone durations, ammo top-up,
                         sweep strength, colors and PA lines. First round 2, 12-16 credit per drop, maximum 3 per round
     effectWords.js      THE WORDS-ONLY RULE: players never see an upgrade's effect as a number. The fixed size bands (a little / noticeably / much), sizeWord / fillSize
@@ -415,7 +415,7 @@ src/
                         end, death, Play again). g.mascotCostumes
     meltTrail.js        Scoops' puddles: one fixed pool for every Scoops (oldest gives way, own material to fade), drops every
                         dropEvery where he walks; a grounded player in one reports 'melt' to surfaceSlows
-    closingTime.js      g.closing owns persistent boss key drops, collection, checklist progress and Play again reset.
+    closingTime.js      g.closing owns persistent boss key drops, collection, checklist progress (including fountain kills) and Play again reset.
     floorPickups.js     Shared clear-floor placement and swept collection for incentives and closing keys; direction for HUD markers.
     powerUps.js         createPowerUps(): listens to kill/round/death events; earned dynamic pickups on clear floor,
                         swept walk-through collection, 15s expiry, no repeats, per-round caps. Blue Light multiplies only
@@ -512,7 +512,7 @@ src/
                         Darker every round, flickering neon dies, every tube browns out, lamps die, the view drifts to the lateHours grade, power cuts.
       hazards.js        Shared environmental hazard lifecycle (docs/hazards-plan.md): buildHazardSwitchBox (dynamic parent group, status lamp + throw lever),
                         createHazard (ready -> active -> cooldown, 'hazard' pricing prompt, player-inside slow/hurt, reset), dealHazardDamage (source 'hazard', boss/Mascot maxHealthCap).
-      fountainHazard.js Feature kind 'fountainHazard': Grand Atrium center fountain breaker switch; energizes the basin and conductive floor ring, pulsing electric arcs (source 'hazard') and slows.
+      fountainHazard.js Feature kind 'fountainHazard': Grand Atrium center fountain breaker switch; energizes the basin and conductive floor ring, pulsing electric arcs (source 'hazard') and slows. Emits 'fountainKill' for each killing blow.
     debugCommands.js    createDebugCommands(game parts): the debug shortcuts as functions run(id) (spawn, cycleZombie, clearZombies,
                         killZombies, nextRound, jumpRounds, flashSale, addPoints, zeroPoints, god, giveGun, upgradeGun, doors, arena, panel,
                         spawnMascot / spawnGoldMascot: each costume in turn at the spawn point nearest you);

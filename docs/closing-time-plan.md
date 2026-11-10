@@ -1,6 +1,6 @@
 # Closing Time: plan for a run goal, an ending and a final boss
 
-Status: PHASES 1–3 BUILT (10 November 2026, Phase 3 on `codex/closing-time-3`). Phases 4–12 are planned. The ten decisions below are made.
+Status: PHASES 1–4 BUILT (10 November 2026, Phase 4 on `codex/closing-time-4`). Phases 5–12 are planned. The ten decisions below are made.
 Every number is a starting point for `src/config/closingTime.js` and `config/economy.js`, to be tuned in phase 11. Build one phase at a
 time, each in its own worktree.
 
@@ -190,7 +190,7 @@ second deposit without changing the rest.
 - **`src/config/closingTime.js`** (new): the lines, keys, counts, hold times, overtime numbers, PA lines and receipt words.
   **`economy.closing`**: `{ nightSafe: 1000, validation: 5000, returnsDesk: 10000, returnsAmmo: 2500 }`, read through `g.pricing.priceOf('closing', id)`.
 - **`src/game/closingTime.js`** (new, `g.closing`): built and ticked in createGame.js; one new `resetSteps` entry. It listens: 'bossDefeated'
-  drops a key, 'kill' with source 'hazard' counts line 1, 'ritualCollect' ticks line 3, 'purchase' counts the deposits. It owns the key
+  drops a key, 'fountainKill' counts line 1, 'ritualCollect' ticks line 3, 'purchase' counts the deposits. It owns the key
   pickups (drop, pointer status, collection, reset).
 - **Events it announces** (to add to game/events.js): 'closingKeyDrop' { bossId, position, pa }, 'closingKey' { bossId, pa } (picked up),
   'closingProgress' { line, count, needed }, 'closingLine' { line, done, total, pa }, 'closingValidated' { round, pa }, 'runWon' { summary },
