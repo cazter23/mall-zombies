@@ -104,9 +104,11 @@ test('Play again puts EVERYTHING back: the game equals a freshly built one', () 
   g.pricing.setDiscount('weapon', 0.5); // a Flash Sale running when you die
   g.stats.perkCharges = 4; // a perk's own counter: not a declared stat, must not survive a new run
   g.runStats.headshotKills += 2; g.runStats.meleeKills += 1; g.runStats.shotsHit += 5; // (every run stat matters)
-  t.tick(60 * 8);
-  g.rounds.skipRound();
+  g.zombies.clear();
   t.tick(60 * 4);
+  g.rounds.skipRound();
+  g.zombies.clear();
+  t.tick(60 * 2);
   // Kiosk Kevin's equipment: full pockets, one Soda Bomb thrown and still on its fuse when you die.
   g.debug.run('pockets');
   t.press('KeyG', 1);
