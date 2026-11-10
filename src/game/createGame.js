@@ -755,6 +755,7 @@ export function createGame({
     pricing,
     death,
     get winSummary() { return winSummary; },
+    get overtimeFrom() { return overtimeFrom; }, // the first overtime round, or null (tests compare it after Play again)
     clockOut,
     stayForOvertime,
     leaveRun,

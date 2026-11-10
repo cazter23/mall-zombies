@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Scene, Vector3 } from 'three';
-import { dt, headlessGame } from './helpers/headlessGame.js';
+import { dt, headlessGame, snapshot } from './helpers/headlessGame.js';
 import { bossVouchers } from '../src/config/bosses.js';
 import { closingTime } from '../src/config/closingTime.js';
 import { CAREER_STATS_KEY, CAREER_STATS_VERSION, createCareerStats } from '../src/game/careerStats.js';
@@ -11,6 +11,9 @@ import { hazards } from '../src/config/hazards.js';
 import { dealHazardDamage } from '../src/game/features/hazards.js';
 import { weapons } from '../src/config/weapons.js';
 import { workshopRitual } from '../src/config/workshop.js';
+import { powerUps as pickupConfig } from '../src/config/powerUps.js';
+import { overlapsSolid, rampHeightAt } from '../src/world/collision.js';
+import { createHud } from '../src/ui/hud.js';
 import { menuDom } from './helpers/menuDom.js';
 import { createScreens, receiptLinesFor } from '../src/ui/screens.js';
 
@@ -123,6 +126,83 @@ test('death freezes checklist progress and Play again clears the held and floor 
   assert.deepEqual(g.closing.pickups, []);
   assert.deepEqual(g.closing.markers, {});
   assert.ok(props.children.every((prop) => !prop.visible));
+});
+
+// Is this spot floor a player can stand on and collect from? A floor or ramp surface right under it, and room for the pickup.
+function assertOnClearFloor(g, position, label) {
+  const { x, y, z } = position;
+  const tops = g.colliders.filter((box) => x >= box.min.x && x <= box.max.x && z >= box.min.z && z <= box.max.z).map((box) => box.max.y);
+  const ramps = g.colliders.ramps.map((ramp) => rampHeightAt(ramp, x, z)).filter((height) => height !== null);
+  assert.ok([...tops, ...ramps].some((height) => Math.abs(height - y) < 1e-6), label + ': it rests on a floor or ramp surface');
+  assert.ok(!overlapsSolid(position, pickupConfig.clearRadius, pickupConfig.clearHeight, g.colliders, 0), label + ': nothing solid in it');
+}
+
+test('a key from a boss killed on an escalator ramp, and one killed against a wall, both land on floor the player can reach', (t) => {
+  const { g, tick } = fixture(t);
+  g.map.areaUnlocks.openAll(); // (the hallway escalator is repaired and walkable)
+  g.rounds.update = () => {};
+  tick();
+
+  // Halfway up the hallway escalator.
+  const ramp = g.colliders.ramps.find(({ id }) => id === 'escalator');
+  const rampX = (ramp.minX + ramp.maxX) / 2, rampZ = (ramp.minZ + ramp.maxZ) / 2;
+  const onRamp = new Vector3(rampX, rampHeightAt(ramp, rampX, rampZ), rampZ);
+  assert.ok(onRamp.y > 1 && onRamp.y < 5, 'mid-ramp, well off both floors');
+  defeat(g, 'janitor', onRamp);
+  // Pressed against the start room's east wall (x 5).
+  const wallX = g.map.playerSpawn.position.x + 5;
+  const atWall = new Vector3(wallX - 0.05, 0, 12);
+  assert.ok(overlapsSolid(atWall, pickupConfig.clearRadius, pickupConfig.clearHeight, g.colliders, 0), 'the body lies in the wall');
+  g.rounds.skipRound(); // (one boss a round)
+  defeat(g, 'guard', atWall);
+
+  const pickups = Object.fromEntries(g.closing.pickups.map(({ bossId, position }) => [bossId, position]));
+  assert.deepEqual(Object.keys(pickups), ['janitor', 'guard'], 'both keys dropped at once, neither is waiting for floor');
+  assertOnClearFloor(g, pickups.janitor, 'ramp key');
+  assert.ok(Math.abs(pickups.janitor.y - onRamp.y) <= pickupConfig.floorTolerance, 'on the escalator, not on the floor under it');
+  assertOnClearFloor(g, pickups.guard, 'wall key');
+  assert.ok(pickups.guard.x < wallX && pickups.guard.distanceTo(atWall) <= pickupConfig.placementRadii.at(-1) + 1e-6, 'inside the room, beside the body');
+
+  // The player walks onto each spot and collects it.
+  for (const id of ['janitor', 'guard']) {
+    g.player.teleport({ position: pickups[id].clone(), yaw: 0 });
+    tick(2);
+    assert.ok(g.closing.hasKey(id), id + ' collected where it lay');
+    assert.ok(Math.abs(g.player.position.y - pickups[id].y) <= pickupConfig.floorTolerance, 'the player stands at its height');
+  }
+  assert.deepEqual(g.closing.pickups, []);
+});
+
+test('a boss that vanishes while the player is mid-jump drops its key once they come down', (t) => {
+  const { g, tick, input } = fixture(t);
+  g.rounds.update = () => {};
+  const drops = [];
+  g.events.on('closingKeyDrop', ({ position }) => drops.push(position));
+  assert.ok(g.bosses.summon('janitor'));
+  g.health.invulnerable = true;
+  tick();
+  input.pressed.add('Space');
+  input.held.add('Space');
+  for (let i = 0; i < 60 && g.player.position.y <= pickupConfig.floorTolerance + 0.1; i++) tick();
+  input.held.delete('Space');
+  assert.ok(!g.player.grounded && g.player.position.y > pickupConfig.floorTolerance, 'in the air, too high for any floor to count');
+
+  g.zombies.clear(); // the boss is gone without a kill: the director reports it vanished
+  tick();
+  assert.equal(g.bosses.active, null);
+  assert.deepEqual(drops, [], 'no floor under a jumping player: the key waits');
+  assert.deepEqual(g.closing.pickups, []);
+  assert.ok(!g.closing.hasKey('janitor'));
+
+  for (let i = 0; i < 120 && !g.player.grounded; i++) tick();
+  tick(2);
+  assert.ok(g.player.grounded);
+  assert.equal(drops.length, 1, 'dropped once');
+  assert.ok(Math.abs(drops[0].y) < 1e-6, 'on the floor');
+  assert.ok(Math.hypot(drops[0].x - g.player.position.x, drops[0].z - g.player.position.z) <= pickupConfig.placementRadii.at(-1) + 0.5);
+  assert.ok(g.closing.hasKey('janitor'), 'and collected, since it fell at their feet');
+  tick(30);
+  assert.equal(drops.length, 1);
 });
 
 test('a vanished boss drops its key at the player through the director', (t) => {
@@ -562,6 +642,126 @@ test('Statistics shows career wins, the fastest win (a dash when none) and marks
   assert.deepEqual(rows.map((row) => row.querySelectorAll('.stats-won').length), [0, 1, 0]);
   assert.equal(rows[1].querySelector('.stats-won').textContent, stats.wonMark);
 });
+test('Play again after win + overtime + death, and after Clock out, equals a fresh game including Closing Time state', (t) => {
+  const untouched = headlessGame(); // (built before the fixture mocks Math.random)
+  const fresh = snapshot(untouched.g);
+  t.after(() => untouched.g.map.dispose());
+  assert.deepEqual(fresh.closing, {
+    checklist: bossIds.map((id) => [id, false, null]), keys: [], pickups: [], markers: [], readyToLeave: false,
+  });
+  assert.deepEqual([fresh.won, fresh.winPending, fresh.winSummary, fresh.overtimeFrom], [false, false, null, null]);
+
+  const game = fixture(t);
+  const { g, tick, press } = game;
+  const again = () => { g.resetRun(); return snapshot(g); };
+  assert.deepEqual(again(), fresh);
+
+  // A lost run with a key on the floor, a key held and a duty part done.
+  tick();
+  g.events.emit('bossDefeated', { zombie: { type: { id: 'guard' }, position: new Vector3(3, 0, 13) } });
+  grantKeys(g, ['janitor']);
+  g.events.emit('fountainKill', {});
+  let now = snapshot(g);
+  assert.deepEqual(now.closing.pickups, [['guard', 3, 0, 13]]);
+  assert.deepEqual(now.closing.keys, ['janitor']);
+  assert.deepEqual(now.closing.checklist[0], ['janitor', false, 1]);
+  g.health.takeDamage(g.stats.maxHealth);
+  assert.deepEqual(again(), fresh);
+
+  // Win, stay for overtime, play on, die.
+  tick();
+  approachVan(game);
+  readyToLeave(g);
+  tick(Math.ceil(economy.rounds.firstRoundDelay / dt) + 1);
+  press('KeyF', holdTicks);
+  assert.ok(g.stayForOvertime());
+  g.rounds.skipRound();
+  tick(20);
+  g.health.takeDamage(g.stats.maxHealth);
+  tick(Math.ceil(feel.death.resultsDelay / dt) + 1);
+  now = snapshot(g);
+  assert.deepEqual([now.over, now.won, now.winPending, now.overtimeFrom], [true, true, false, 2]);
+  assert.ok(now.winSummary && now.closing.checklist.every(([, done]) => done) && now.closing.keys.length === 4);
+  assert.deepEqual(again(), fresh);
+
+  // Win and Clock out.
+  tick();
+  approachVan(game);
+  readyToLeave(g);
+  press('KeyF', holdTicks);
+  assert.ok(snapshot(g).winPending);
+  assert.ok(g.clockOut());
+  now = snapshot(g);
+  assert.deepEqual([now.over, now.won, now.winPending, now.overtimeFrom], [true, true, false, null]);
+  assert.equal(now.closing.checklist.filter(([, done]) => done).length, 4);
+  assert.deepEqual(again(), fresh);
+
+  // Win, overtime, then leaving from the menu (Quit to title / Restart run).
+  tick();
+  approachVan(game);
+  readyToLeave(g);
+  press('KeyF', holdTicks);
+  assert.ok(g.stayForOvertime());
+  tick(5);
+  assert.ok(g.leaveRun());
+  assert.deepEqual(again(), fresh);
+});
+
+test('the HUD draws the four boxes (tick, count) from the game checklist and points to a key on the floor', (t) => {
+  const { g, standAt } = fixture(t);
+  const { document } = menuDom();
+  const hud = createHud();
+  const boxes = document.querySelectorAll('.closing-box');
+  const shownMarkers = () => document.querySelectorAll('.bag-marker').filter((node) => !node.hidden);
+  const show = () => hud.setClosing(g.closing.checklist, g.closing.markers);
+  assert.equal(boxes.length, 4);
+  assert.equal(document.querySelector('.closing-boxes').getAttribute('aria-label'), closingTime.title);
+
+  show();
+  assert.deepEqual(boxes.map((box) => [box.textContent, box.getAttribute('aria-checked')]), Array(4).fill(['', 'false']));
+  assert.deepEqual(shownMarkers(), []);
+
+  // A key on the floor gets a marker with its name; picking it up removes the marker and opens the line's count.
+  const { key, duty, needed } = closingTime.lines.janitor;
+  g.events.emit('bossDefeated', { zombie: { type: { id: 'janitor' }, position: new Vector3(3, 0, 13) } });
+  standAt(-3, 10);
+  show();
+  assert.equal(shownMarkers().length, 1);
+  assert.ok(shownMarkers()[0].textContent.includes(key));
+  assert.ok(shownMarkers()[0].textContent.includes(String(g.closing.markers.janitor.meters)));
+  standAt(3, 13);
+  show();
+  assert.deepEqual(shownMarkers(), []);
+  assert.equal(boxes[0].textContent, closingTime.lineProgress(0, needed));
+  assert.equal(boxes[0].getAttribute('aria-label'), duty + ' ' + closingTime.lineProgress(0, needed));
+  assert.ok(boxes[0].classList.contains('has-progress'));
+
+  g.events.emit('fountainKill', {});
+  show();
+  assert.equal(boxes[0].textContent, closingTime.lineProgress(1, needed));
+  finishDuties(g, ['janitor']);
+  show();
+  assert.equal(boxes[0].textContent, '✓ ' + closingTime.lineProgress(needed, needed));
+  assert.equal(boxes[0].getAttribute('aria-checked'), 'true');
+  assert.deepEqual(boxes.slice(1).map((box) => box.getAttribute('aria-checked')), ['false', 'false', 'false']);
+
+  // The fourth box is the game's too: unticked with the Van Keys, ticked by the win.
+  grantKeys(g, ['guard', 'manager', 'influencer']);
+  finishDuties(g);
+  show();
+  assert.deepEqual(boxes.map((box) => box.getAttribute('aria-checked')), ['true', 'true', 'true', 'false']);
+  g.events.emit('escapeVanStart');
+  show();
+  assert.equal(boxes[3].getAttribute('aria-checked'), 'true');
+  assert.equal(boxes[3].textContent, '✓');
+
+  const tag = document.querySelector('.overtime-tag');
+  assert.equal(tag.textContent, closingTime.overtimeTag);
+  assert.equal(tag.hidden, true);
+  hud.setOvertime(true);
+  assert.equal(tag.hidden, false);
+});
+
 test('a career save from a newer version is left untouched: a blank ledger for the session, nothing written', () => {
   const newer = JSON.stringify({
     version: CAREER_STATS_VERSION + 1,
