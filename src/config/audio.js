@@ -272,6 +272,30 @@ export const audio = {
       { type: 'noise', filter: 'bandpass', freq: 1800, q: 0.8, gain: 0.2, attack: 0.008, decay: 0.16, delay: 0.055 },
       { type: 'noise', filter: 'highpass', freq: 3500, q: 0.7, gain: 0.15, attack: 0.012, decay: 0.18, delay: 0.065 },
     ] },
+    // RETURN TO SENDER: a rising scanner beep-zap, the rubber stamp that boxes a zombie, and the reload (a battery pack slapped in).
+    returnBeam: { volume: 0.8, layers: [
+      { type: 'tone', wave: 'sawtooth', freq: 520, freqEnd: 1900, gain: 0.35, attack: 0.001, decay: 0.12 },
+      { type: 'tone', wave: 'sine', freq: 140, freqEnd: 60, gain: 0.9, attack: 0.001, decay: 0.18 },
+      { type: 'noise', filter: 'bandpass', freq: 3400, q: 0.9, gain: 0.5, attack: 0.001, decay: 0.05 },
+      { type: 'tone', wave: 'triangle', freq: 1760, freqEnd: 1760, gain: 0.18, attack: 0.001, decay: 0.07, delay: 0.1 },
+    ] },
+    returnStamp: { volume: 0.7, layers: [
+      { type: 'noise', filter: 'lowpass', freq: 700, q: 0.8, gain: 0.9, attack: 0.001, decay: 0.07 },
+      { type: 'tone', wave: 'sine', freq: 190, freqEnd: 90, gain: 0.8, attack: 0.001, decay: 0.1 },
+      { type: 'tone', wave: 'sine', freq: 1320, freqEnd: 1320, gain: 0.2, attack: 0.001, decay: 0.2, delay: 0.06 },
+    ] },
+    returnReloadOut: { volume: 0.5, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 1500, q: 1.4, gain: 0.6, attack: 0.001, decay: 0.06 },
+      { type: 'tone', wave: 'square', freq: 360, freqEnd: 180, gain: 0.18, attack: 0.001, decay: 0.07 },
+    ] },
+    returnReloadIn: { volume: 0.6, layers: [
+      { type: 'noise', filter: 'lowpass', freq: 1100, q: 0.8, gain: 0.7, attack: 0.001, decay: 0.07 },
+      { type: 'tone', wave: 'sine', freq: 300, freqEnd: 140, gain: 0.55, attack: 0.001, decay: 0.09 },
+    ] },
+    returnReloadReady: { volume: 0.6, layers: [
+      { type: 'tone', wave: 'sine', freq: 880, freqEnd: 880, gain: 0.3, attack: 0.002, decay: 0.12 },
+      { type: 'tone', wave: 'sine', freq: 1320, freqEnd: 1320, gain: 0.3, attack: 0.002, decay: 0.16, delay: 0.09 },
+    ] },
     // The Tennis Ball Launcher: a hollow air-cannon thump, a ball's dull pok on every bounce, and the reload (a ball dropped in the port).
     tennisLaunch: { volume: 0.8, layers: [
       { type: 'tone', wave: 'sine', freq: 170, freqEnd: 52, gain: 1, attack: 0.001, decay: 0.16 },

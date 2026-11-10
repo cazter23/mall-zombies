@@ -16,5 +16,6 @@ export const impacts = {
     nailGun: { kind: 'nail', radius: 0.028, variants: 2 },
     foamDartBlaster: { kind: 'dart', radius: 0.025, variants: 3 },
     confettiCannon: { kind: 'confetti', radius: 0.075, variants: 3 },
+    returnToSender: { kind: 'returnStamp', radius: 0.045, variants: 2 }, // a red RETURNED stamp on the wall
   },
 };

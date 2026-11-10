@@ -20,6 +20,7 @@ export const clawMachine = {
     confettiCannon: { weight: 12, capsule: 'blue' },
     rivetRifle: { weight: 12, capsule: 'blue' },
     barcodeScanner: { weight: 7, capsule: 'purple' },
+    returnToSender: { weight: 1, capsule: 'rainbow', value: 4000 }, // THE WONDER WEAPON (claw-only, instant kill): about one capsule in a hundred
     tennisBallLauncher: { weight: 7, capsule: 'purple', value: 1500 }, // CLAW-ONLY, like the Leaf Blower
     leafBlower: { weight: 7, capsule: 'purple', value: 1500 }, // CLAW-ONLY (config/weapons.js clawOnly): it is on no wall, this is the only way to it. `value`: a nominal worth for tools/clawOdds.js only (a wall gun's is its wall price); the game never reads it
     coilNailer: { weight: 3, capsule: 'gold' },
@@ -29,6 +30,7 @@ export const clawMachine = {
     blue: { color: 0x3a86ff, label: 'BLUE' },
     purple: { color: 0x9b6bff, label: 'PURPLE' },
     gold: { color: 0xffc83d, label: 'GOLD' },
+    rainbow: { color: 0xff4fd8, label: 'RAINBOW' }, // (the wonder weapon: the rarest capsule, hot pink and nothing else is)
   },
 
   // The sweep: the claw travels across the lanes and back. One trip there and back takes firstSeconds on a site's first

@@ -18,6 +18,7 @@ export const ui = {
     rivetRifle: 'Steady automatic · Controlled body fire',
     coilNailer: 'Heavy automatic · Sustained crowd pressure',
     barcodeScanner: 'Charge and release · Piercing precision laser',
+    returnToSender: 'The wonder weapon · Boxes one zombie and returns it: an instant kill · Bosses and Mascots only take a big hit',
     tennisBallLauncher: 'Tight spaces · Lobbed balls bounce off walls and between zombies, each bounce a hit',
     leafBlower: 'Crowd control · Blows zombies back and knocks them down · Runs on a tank that refills',
   },

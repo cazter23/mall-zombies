@@ -14,6 +14,8 @@
 //   clawOnly: true  never sold on a wall (the wall-buy feature refuses it); it only comes out of GRAB-A-GUN (game/features/clawMachine.js)
 //   fuel:  { regenDelay, regenPerSecond, restartAt }  a tank instead of a reload: `magazineSize` is the tank (weapons/fuel.js)
 //   cone:  { range, halfAngleDegrees, ... }  a wide push instead of a ray (weapons/coneBlast.js; playerGun.js fires it)
+//   instantKill: { bigFraction, box }  kills any zombie outright; bosses and Mascots take bigFraction of their max health instead (weapons/gunStats.js hitDamage)
+//   refillFraction: 0.5  a refill (RESTOCK-O-MATIC, Refurbished) fills only this share of the reserve (weapon.js)
 //   projectile: { speed, gravity, restitution, maxBounces, ... }  a lobbed, bouncing ball instead of a ray (weapons/ballistics.js; each zombie it touches is a hit)
 // Upgrades (Build-A-Blaster...) never edit these entries: they are applied on top as data
 // (gunStats.js resolveGun). Check the effect of any change with `npm run balance`.
@@ -906,6 +908,76 @@ export const weapons = {
           { at: 0.2, sound: 'tennisReloadOut' },
           { at: 0.72, sound: 'tennisReloadIn', jolt: { up: -0.006, pitchDegrees: -2 } },
           { at: 0.9, sound: 'tennisReloadReady', jolt: { back: 0.012, pitchDegrees: 3 } },
+        ],
+      },
+    },
+  },
+  // THE WONDER WEAPON (GRAB-A-GUN, phase 10): clawOnly, a RAINBOW capsule, the rarest prize in the machine, a mall joke you cannot buy anywhere.
+  // RETURN TO SENDER: a returns-desk scanner. Its beam BOXES one zombie and sends it back to the manufacturer: an INSTANT KILL, whatever the round (a round-30
+  // Shopper has 3,400 HP). The instant kill (weapons/gunStats.js hitDamage, `instantKill`) skips bosses and Mascots: they can't be returned, so they take a big
+  // fixed hit instead (`bigFraction` of their health, scaled by the gun's tiers), never a one-shot.
+  // It is the strongest gun in the game (kills a round-30 zombie as fast as a round-1 one: tests/balance.test.js), kept from trivialising the late rounds by its
+  // small magazine, slow reload and slow refill: a RESTOCK-O-MATIC or a Refurbished grab fills the magazine but only HALF the reserve (`refillFraction`), so
+  // a crowd of 60+ zombies costs more rounds than you carry. One zombie a shot: no pierce, no splash.
+  returnToSender: {
+    id: 'returnToSender', name: 'Return to Sender', fireMode: 'semi', clawOnly: true,
+    // (damage: a nominal 'what a hit is worth' for Build-A-Blaster's stuffings (weapons/gunStats.js gunPower) and the tiers; the instant kill ignores it on a zombie.)
+    damage: 150, headshotMultiplier: 1.5,
+    instantKill: {
+      bigFraction: 0.12, // bosses and Mascots (they can't be returned): each beam takes this share of their MAX health (x the gun's tier damage)
+      box: { colors: [0xc9954f, 0xe2b676, 0xf2e1b8, 0xa9772e], count: 36, speed: 4.2, size: 0.07 }, // the zombie is boxed: cardboard and packing tape fly
+    },
+    magazineSize: 5, startingReserve: 14, // a five-round magazine, 19 returns in all
+    refillFraction: 0.5, // a refill (RESTOCK-O-MATIC, a Refurbished grab) fills the magazine and only HALF the reserve: it stays special
+    fireInterval: 0.7, fireBuffer: 0.12, reloadTime: 3.0, range: 60,
+    recoil: {
+      pitchDegrees: 1.6, yawDegrees: 0.3, rollDegrees: 0.5, adsMultiplier: 0.6,
+      model: { back: 0.05, up: 0.01, pitchDegrees: 7, yawDegrees: 1.2, rollDegrees: 2.5,
+        adsMultiplier: 0.45, frequency: 5.6, damping: 0.5 },
+    },
+    impact: { flinch: 1, knockback: 0, hitstopSeconds: 0, deathImpulse: 0.6 }, // (a boxed zombie drops where it stands)
+    spread: {
+      base: 0.15, moving: 1.4, maxMovingFactor: 1.5, airborne: 2.5,
+      perShot: 0.4, maxBloom: 1, bloomRecoveryDelay: 0.3, bloomRecovery: 3,
+      smoothing: 10, adsMultiplier: 0.05,
+    },
+    ads: { seconds: 0.22, fovMultiplier: 0.7, offset: { x: 0, y: -0.07, z: -0.38 } },
+    muzzleFlash: {
+      seconds: 0.07, size: 0.26, coreSize: 0.1, outerOpacity: 0.85, sizeJitter: 0.15,
+      forwardOffset: 0.06, outerColor: 0xff59a9, coreColor: 0xffffff,
+      adsWidth: 1.5, adsHeight: 0.5, adsTwistFraction: 0.05,
+      lightColor: 0xffb3dc, handLightIntensity: 0.6, handLightRange: 1,
+      worldLightIntensity: 10, worldLightRange: 9,
+    },
+    sounds: { fire: 'returnBeam', dryFire: 'dryClick' },
+    tracerColor: 0xff59a9,
+    viewmodel: {
+      model: 'returnToSender', hipOffset: { x: 0.17, y: -0.16, z: -0.43 },
+      aimYawDegrees: 6, hipPitchDegrees: 1.5, hipRollDegrees: 3,
+      bodyColor: 0x4a5bd8, accentColor: 0xf6f6e6, metalColor: 0xbfc5cc, // returns-desk blue and white
+      darkColor: 0x20242b, sightColor: 0xff59a9, screenColor: 0x7bffb0, batteryColor: 0xffd23f,
+      fire: { triggerDegrees: 26, pressSeconds: 0.03, releaseSeconds: 0.14 },
+      // Reload: the gun tips, the support hand slaps a fresh battery pack into the grip's slot, and the screen reboots.
+      reload: {
+        gunKeys: [
+          { t: 0, pos: [0, 0, 0], rot: [0, 0, 0] },
+          { t: 0.18, pos: [0.012, -0.025, 0.03], rot: [14, 8, 12] },
+          { t: 0.82, pos: [0.012, -0.025, 0.03], rot: [14, 8, 12] },
+          { t: 1, pos: [0, 0, 0], rot: [0, 0, 0] },
+        ],
+        handKeys: [
+          { t: 0, pos: [0, 0, 0] },
+          { t: 0.2, pos: [-0.05, -0.15, 0.1], rot: [-20, 0, 0] }, // down, to the battery bin
+          { t: 0.38, pos: [-0.05, -0.15, 0.1], rot: [-20, 0, 0] }, // grabs a pack
+          { t: 0.58, pos: [-0.02, -0.07, 0.06] }, // brings it up under the grip
+          { t: 0.7, pos: [-0.015, -0.055, 0.045] }, // slaps it in
+          { t: 0.9, pos: [0, 0, 0] },
+        ],
+        batteryVisible: [[0.38, 0.7]], // the battery pack in the hand, from the grab to the slot
+        events: [
+          { at: 0.2, sound: 'returnReloadOut' },
+          { at: 0.7, sound: 'returnReloadIn', jolt: { up: -0.006, pitchDegrees: -2 } },
+          { at: 0.9, sound: 'returnReloadReady', jolt: { back: 0.012, pitchDegrees: 3 } },
         ],
       },
     },

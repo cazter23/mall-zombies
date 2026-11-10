@@ -67,7 +67,16 @@ function seeded(seed, fn) {
 }
 
 /** Average damage of ONE shot (one dart of a burst; all pellets of a blast) at `distance` m. */
-export function expectedShotDamage(def, distance, { ads = false, samples = 2000, seed = 7 } = {}) {
+export function expectedShotDamage(def, distance, options) {
+  return measureShots(def, distance, options).damage;
+}
+
+/** How often a ray of this gun lands on the Shopper (head or body) at `distance` m: the chance one shot connects. */
+export function hitChance(def, distance, options) {
+  return measureShots(def, distance, options).hitChance;
+}
+
+function measureShots(def, distance, { ads = false, samples = 2000, seed = 7 } = {}) {
   const origin = new THREE.Vector3(0, EYE, 0);
   const body = new THREE.Box3(
     new THREE.Vector3(-hb.bodyHalfWidth, 0, -distance - hb.bodyHalfWidth),
@@ -83,6 +92,7 @@ export function expectedShotDamage(def, distance, { ads = false, samples = 2000,
   const point = new THREE.Vector3();
   return seeded(seed, () => {
     let total = 0;
+    let hits = 0;
     for (let n = 0; n < samples; n++) {
       for (let i = 0; i < rays; i++) {
         const dir = new THREE.Vector3(0, CHEST - EYE, -distance).normalize();
@@ -93,10 +103,10 @@ export function expectedShotDamage(def, distance, { ads = false, samples = 2000,
         let dist = Infinity;
         if (ray.intersectBox(head, point)) { part = 'head'; dist = point.distanceTo(origin); }
         if (ray.intersectBox(body, point) && point.distanceTo(origin) < dist) { part = 'body'; dist = point.distanceTo(origin); }
-        if (part) total += hitDamage(def, { part, distance: dist }, 0, NO_STATS);
+        if (part) { total += hitDamage(def, { part, distance: dist }, 0, NO_STATS); hits += 1; }
       }
     }
-    return total / samples;
+    return { damage: total / samples, hitChance: hits / (samples * rays) };
   });
 }
 
@@ -110,8 +120,21 @@ export function sustainedDps(def, distance, options) {
   return magDamage / (magazineSeconds(def) + reloadSeconds(def));
 }
 
-/** Shots (darts / nails / blasts) for an average kill of `hp`. Burst guns: divide by burst.count for trigger pulls. */
+/**
+ * Shots (darts / nails / blasts) for an average kill of `hp`. Burst guns: divide by burst.count for trigger pulls.
+ * A gun with an instant kill (Return to Sender) needs one shot that connects, whatever `hp` is.
+ */
 export function shotsToKill(def, hp, distance, options) {
+  if (def.instantKill) return Math.ceil(1 / Math.max(hitChance(def, distance, options), 1e-6));
   const perShot = expectedShotDamage(def, distance, options);
   return perShot > 0 ? Math.ceil(hp / perShot) : Infinity;
+}
+
+/**
+ * Zombies of `hp` health killed per second of sustained fire (magazine + reload) at `distance` m, one target, no overkill. A gun with an instant kill kills
+ * one per shot that connects, at any `hp`, so this is what makes it the strongest gun late and what its ammo and reload hold back.
+ */
+export function killsPerSecond(def, hp, distance, options) {
+  if (def.instantKill) return (def.magazineSize * hitChance(def, distance, options)) / (magazineSeconds(def) + reloadSeconds(def));
+  return sustainedDps(def, distance, options) / hp;
 }

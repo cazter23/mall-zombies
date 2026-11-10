@@ -1,5 +1,33 @@
 # Sunset Galleria: build history ("Current state")
 
+## 9 November 2026 - GRAB-A-GUN, phase 10: RETURN TO SENDER, the wonder weapon (claw-only)
+
+Settled with you before it was built: the plan's working idea, name and all, and bosses and Mascots take a BIG FIXED HIT (not just a normal hit). A returns-desk scanner whose
+beam boxes one zombie and returns it to the manufacturer: an INSTANT KILL, at any round, one zombie a beam (no pierce). Rainbow capsule (hot pink), weight 1 of 115: the
+rarest prize, a mall joke you cannot buy anywhere (clawOnly). Five-round magazine, 14 in reserve, a beam every 0.7 s, a 3 s reload.
+
+- **The instant-kill rule** (weapons/gunStats.js hitDamage gets the target): a returnable zombie takes INSTANT_KILL_DAMAGE (more than any health; takeHit's own damage-taken
+  factors still apply, so it stays lethal); a boss or a Mascot (type.boss / type.mascot, isReturnable) takes 12% of its MAX health per beam, times the gun's tier damage and the
+  player's damage stat: 8 beams for a boss, never a one-shot. Nothing else changes for any other gun (the new argument is optional). A returned zombie is boxed in cardboard and tape
+  (confetti in cardboard colours, the 'returnStamp' thump) instead of the usual splatter, and the wall it hits gets a red RETURNED stamp (impactModels 'returnStamp').
+- **The half-rate refill** (weapon.js refillFraction 0.5, refillReserve): a refill (RESTOCK-O-MATIC, an ammo buy, a Refurbished grab, a Stockroom Delivery) fills the magazine
+  and only HALF the reserve, never takes ammo away, and "full" (isFull, which ammo machines read) means that. It starts with all 19 rounds; a refill gives 5 + 7 = 12.
+- **Balance, measured** (tools/balance.js killsPerSecond; npm run balance has an INSTANT-KILL GUNS table): 0.86 kills a second, sustained, at any round (one target, 5 m).
+  The best other gun is the Heavy Coil Nailer: it kills faster until about round 10 (64-round drum), then Return to Sender is 1.2x at round 12, 1.5x at 15, 2.2x at 20, 3.2x at 25,
+  4.6x at 30 (0.27 and 0.19 kills a second for the Coil Nailer there). Held back by what it carries: 19 rounds against a round-25 wave of 66 zombies, a refill under a fifth of one,
+  never more than a kill every 1.2 s. tests/balance.test.js checks all of that. A first cut (4 rounds, 0.8 s, 3.2 s reload) was only 1.27x at round 15: tightened to the above.
+- **Build-A-Blaster rows** (node tools/babReport.mjs returnToSender 25,30 14 2: the real game, a pack of 14 Shoppers, a bot that never moves; run on both the first cut, 4 rounds and 0.8 s, and
+  the final 5 and 0.7 s, with identical rows: the clear time is set by the pack walking up to the bot, since every beam kills): a plain Return to Sender clears the pack in 26.4 s at round 25 (26.8 s at 30), and NO build changes that by more than 5% either way (Deluxe 26.1, Platinum 26.3, every
+  stuffing + heart 27.5, Overstuffed fryer oil 25.5, Deluxe + fryer oil 25.2; round 30: 25.6 to 27.9): it already kills in one shot, so a stuffing adds nothing to the clear time; what
+  the builds change is damage TAKEN (Popcorn Butter 380 against 1,080 plain at round 25, Glitter 280). The stuffings scale from the gun's nominal damage (150: gunPower under half a Price
+  Gun's), so procs are a mid gun's, not a wonder weapon's; a test checks that and that the Last Round heart fires on the round that empties it.
+- **Odds** (npm run sim:claw, nominal value 4000, no wall route): per grab at 3-in-4 timing Return to Sender is won 2.0% of grabs (perfect 2.7%, timed 2.5%, random 0.9%), in the pit
+  2.7%: about 50 grabs or 47,600 points of grabs per copy at 1,000 a grab (71,400 at 1,500). With the three claw guns in (weights total 115) the first grab after the shutter is worth
+  1.52x its price at 1,000 (85.7% Blue or better; 1.01x at 1,500), up from 1.46x, because the nominal 4000 lifts the average: the same must-buy at 1,000 phase 4 flagged, still not
+  applied; and the wall is still the cheaper way to every wall gun. npm run sim:claw -- 1500 has the 1,500 tables (value per point 1.00 at 3-in-4 timing).
+- Not checked: any of it by hand (no playtest of a round 25+ with it: the numbers above say what it does, not whether it feels right); the rainbow capsule is one hot-pink
+  colour, not a shimmer; the sound by ear.
+
 ## 9 November 2026 - GRAB-A-GUN, phase 9: the Tennis Ball Launcher
 
 The second claw-only gun, and the first thing in the game that is not hitscan: the trigger THROWS a ball that flies, bounces and hits later. Purple capsule, weight 7 beside the

@@ -25,7 +25,7 @@ import { Weapon } from './weapon.js';
 import { workshopBuilds, workshopModOf, buildOf } from '../config/workshop.js';
 import { castShot } from './hitscan.js';
 import { createAim, applyConeSpread, pelletSpreadDegrees } from './aim.js';
-import { hitDamage, resolveGun } from './gunStats.js';
+import { hitDamage, resolveGun, isReturnable } from './gunStats.js';
 import { findInCone, blowAway, createBlastPay } from './coneBlast.js';
 import { impacts } from '../config/impacts.js';
 
@@ -264,7 +264,7 @@ export function createPlayerGun({
         if (targets.get(hit.target)?.killed || !hit.target.isAlive) return;
         const headshot = hit.part === 'head';
         // Headshot x distance falloff x pass-through (pierce) falloff x player stats: gunStats.js.
-        const damage = hitDamage(d, hit, i, stats, chargeScale);
+        const damage = hitDamage(d, hit, i, stats, chargeScale, hit.target);
         const { killed } = hit.target.takeHit({
           damage,
           part: hit.part,
@@ -297,12 +297,18 @@ export function createPlayerGun({
       const { hit, killed, headshot } = result;
       anyKilled ||= killed;
       anyHeadshot ||= headshot;
-      effects.splat(hit.point, hit.normal, target.splatColors,
-        headshot ? feel.effects.headshotSplatCount : feel.effects.splatCount, {
-          flesh: true,
-          speedScale: baseImpulse * (headshot ? 1.2 : 1),
-          direction,
-        });
+      if (killed && d.instantKill && isReturnable(target)) {
+        // Returned to sender: boxed up in cardboard and tape instead of the usual splatter.
+        effects.confetti(hit.point, hit.normal, d.instantKill.box);
+        if (sound) sound.play('returnStamp');
+      } else {
+        effects.splat(hit.point, hit.normal, target.splatColors,
+          headshot ? feel.effects.headshotSplatCount : feel.effects.splatCount, {
+            flesh: true,
+            speedScale: baseImpulse * (headshot ? 1.2 : 1),
+            direction,
+          });
+      }
       if (onHit) onHit({ target, killed, headshot, melee: false });
     }
     if (targets.size > 0) {

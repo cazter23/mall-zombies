@@ -8,10 +8,10 @@
 import { weapons } from '../src/config/weapons.js';
 import { workshopRitual, workshopStuffings, workshopHearts } from '../src/config/workshop.js';
 import { gunPower } from '../src/weapons/gunStats.js';
-import { economy, zombieHealthForRound, zombieHealthFor } from '../src/config/economy.js';
+import { economy, zombieHealthForRound, zombieHealthFor, zombieCountForRound } from '../src/config/economy.js';
 import { bossTypes, bossVouchers } from '../src/config/bosses.js';
 import {
-  cycleSeconds, magazineSeconds, reloadSeconds, expectedShotDamage, burstDps, sustainedDps, shotsToKill,
+  cycleSeconds, magazineSeconds, reloadSeconds, expectedShotDamage, burstDps, sustainedDps, shotsToKill, killsPerSecond,
 } from './balance.js';
 
 const guns = Object.values(weapons);
@@ -82,6 +82,24 @@ if (throwers.length) {
     'balls a second': r1(1 / d.fireInterval),
     'sustained dps, 1 hit a ball': r0(sustainedDps(d, 5, playStyle(d))),
     'sustained dps, all bounces hit': r0((d.magazineSize * d.damage * d.projectile.maxBounces) / (magazineSeconds(d) + reloadSeconds(d))),
+  })));
+}
+
+// An instant-kill gun (the wonder weapon) kills one zombie per shot that connects, at any health: judged by kills a second against the best other gun, and by
+// the ammo it carries against a wave. The Build-A-Blaster playtest (npm run balance:bab -- returnToSender 25,30) is its builds' rows.
+const instantGuns = guns.filter((d) => d.instantKill);
+if (instantGuns.length) {
+  const waveSize = zombieCountForRound(25);
+  console.log('INSTANT-KILL GUNS (kills a second, one target, sustained over magazine + reload, against the best other gun)');
+  console.table(instantGuns.flatMap((d) => [10, 15, 20, 25, 30].map((round) => {
+    const hp = zombieHealthForRound(round);
+    const mine = killsPerSecond(d, hp, 5, playStyle(d));
+    const best = Math.max(...guns.filter((g) => g !== d).map((g) => killsPerSecond(g, hp, 5, playStyle(g))));
+    return {
+      gun: d.name, round, 'zombie hp': r0(hp), 'kills/s': mine.toFixed(2), 'best other gun': best.toFixed(2), 'x the best': (mine / best).toFixed(1),
+      carries: d.magazineSize + d.startingReserve, 'a refill gives': d.magazineSize + Math.round(d.startingReserve * (d.refillFraction ?? 1)),
+      'wave 25': waveSize, 'beams for a boss': r1(1 / d.instantKill.bigFraction),
+    };
   })));
 }
 

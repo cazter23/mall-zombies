@@ -99,6 +99,14 @@ export function buildImpactModel(kind, variant) {
     // Curled party streamers alongside the paper flecks.
     for (let i = 0; i < 6; i++) box(0.0065, 0.019, 0.0012, colors[(variant + i) % colors.length],
       -0.016 + Math.sin(i * 1.35) * 0.011, -0.042 + i * 0.014, 0.006, [0, 0, Math.cos(i * 1.35) * 0.55]);
+  } else if (kind === 'returnStamp') {
+    // A red rubber-stamp box (RETURNED), a little crooked, with a strip of brown packing tape across a corner.
+    const tilt = [0, 0, (variant ? 0.14 : -0.1)];
+    const red = 0xd23a3a;
+    for (const y of [-0.014, 0.014]) box(0.068, 0.004, 0.0012, red, 0, y, 0.0012, tilt);
+    for (const x of [-0.034, 0.034]) box(0.004, 0.032, 0.0012, red, x, 0, 0.0012, tilt);
+    for (let i = 0; i < 3; i++) box(0.016, 0.005, 0.0012, red, -0.018 + i * 0.018, 0, 0.0014, tilt); // the lettering, as dashes
+    box(0.03, 0.012, 0.001, 0xc9954f, 0.03, 0.02, 0.0022, [0, 0, 0.6 + variant * 0.3]);
   } else throw new Error(`Unknown impact signature: ${kind}`);
   const geometry = mergeGeometries(parts); parts.forEach((g) => g.dispose());
   return { geometry, material: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.45, metalness: 0.22,

@@ -35,14 +35,29 @@ export function damageFalloff(distance, falloff) {
   return 1 + (falloff.minMultiplier - 1) * (distance - falloff.start) / (falloff.end - falloff.start);
 }
 
+/** What an instant kill deals: more than any zombie has (takeHit multiplies it by the zombie's own damage-taken factors, so it stays lethal). */
+export const INSTANT_KILL_DAMAGE = 1e9;
+
+/** Can a gun with an `instantKill` return this target? Bosses and Mascots can't be returned: they take a big fixed hit instead (see hitDamage). */
+export function isReturnable(target) {
+  return !(target?.type?.boss || target?.type?.mascot);
+}
+
 /**
  * Damage of ONE hit (one bullet, dart, nail or pellet on one zombie).
  *   hit:         { part: 'head' | 'body', distance }   (distance from the eye, meters)
  *   index:       0 for the first zombie this ray hit, 1 for the one behind it (pierce), ...
  *   stats:       the player's stats object (stats.damageMultiplier)
  *   chargeScale: optional charge damage multiplier (1 by default)
+ *   target:      optional, the zombie hit. A gun with `instantKill` (Return to Sender) kills a returnable target outright, whatever its health; a boss or a
+ *                Mascot takes def.instantKill.bigFraction of its max health instead, times the gun's tier damage and the player's damage stat.
  */
-export function hitDamage(def, hit, index, stats, chargeScale = 1) {
+export function hitDamage(def, hit, index, stats, chargeScale = 1, target = null) {
+  if (def.instantKill && target) {
+    if (isReturnable(target)) return INSTANT_KILL_DAMAGE;
+    const tier = def.base ? def.damage / def.base.damage : 1; // (an Extended Warranty's damage helps against bosses too)
+    return target.maxHealth * def.instantKill.bigFraction * tier * stats.damageMultiplier;
+  }
   const head = hit.part === 'head' ? def.headshotMultiplier * (stats.headshotDamageMultiplier ?? 1) : 1;
   const pierce = def.pierce ? def.pierce.damageFalloff[Math.min(index, def.pierce.damageFalloff.length - 1)] : 1;
   return def.damage * chargeScale * head * damageFalloff(hit.distance, def.falloff) * pierce * stats.damageMultiplier;

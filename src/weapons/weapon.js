@@ -86,16 +86,21 @@ export class Weapon {
     return Math.round(this.def.startingReserve * (this.stats.reserveMultiplier ?? 1));
   }
 
-  // Magazine and reserve both full (nothing an ammo buy would add).
+  // Magazine full and the reserve at least what a refill would give it (nothing an ammo buy would add).
   get isFull() {
-    return this.magazine === this.def.magazineSize && this.reserve >= this.reserveCap;
+    return this.magazine === this.def.magazineSize && this.reserve >= this.refillReserve;
   }
 
   // Ammo buy: magazine and reserve back to full. Any reload in progress is finished off.
+  // `def.refillFraction` (the wonder weapon): a refill fills the magazine but only this share of the reserve (default: all of it).
+  get refillReserve() {
+    return Math.round(this.reserveCap * (this.def.refillFraction ?? 1));
+  }
+
   refill() {
     this.cancelFire();
     this.magazine = this.def.magazineSize;
-    this.reserve = Math.max(this.reserve, this.reserveCap);
+    this.reserve = Math.max(this.reserve, this.refillReserve);
     this.reloadTimer = 0;
     this.reloadPhase = null;
     resetFuel(this.fuel);
@@ -113,7 +118,7 @@ export class Weapon {
   // Stockroom Delivery: reserve ammo, with a small ready-magazine top-up.
   // Never bypass a running reload or the Cannon's individual shell loading.
   restock(magazineFraction = 0) {
-    this.reserve = Math.max(this.reserve, this.reserveCap);
+    this.reserve = Math.max(this.reserve, this.refillReserve);
     if (!this.isReloading && !this.isShellReload) {
       this.magazine = Math.max(this.magazine, Math.ceil(this.def.magazineSize * magazineFraction));
     }
