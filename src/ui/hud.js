@@ -161,6 +161,19 @@ export function createHud() {
   occupancyCounter.classList.add('closed');
   roundCounter.append(roundLabel, roundValue, occupancyCounter);
   hud.append(roundCounter);
+  // Under the round box, during the break: "[I] Hold to clock in" with a fill bar (its own element, so it doesn't blink
+  // with the counter).
+  const clockIn = el('div', 'clock-in');
+  const clockInText = el('div', 'clock-in-text');
+  const clockInKey = document.createElement('kbd');
+  const clockInLabel = el('span', 'clock-in-label'); clockInLabel.textContent = 'Hold to clock in';
+  clockInText.append(clockInKey, clockInLabel);
+  const clockInBar = el('div', 'clock-in-bar');
+  const clockInFill = el('div', 'clock-in-fill');
+  clockInBar.append(clockInFill);
+  clockIn.append(clockInText, clockInBar);
+  hud.append(clockIn);
+  let lastClockInKey = '';
   // Middle of the screen: "ROUND 3" announcement when a round starts.
   const roundBanner = el('div', 'round-banner');
   roundBanner.style.setProperty('--round-seconds', `${ui.roundSeconds}s`);
@@ -299,7 +312,7 @@ export function createHud() {
 
   // Flowing lanes keep growing rewards/PA copy clear of other tickets and bosses.
   const leftStack = el('div', 'hud-left-stack');
-  leftStack.append(roundCounter, incentives.element, ritualTicket.element);
+  leftStack.append(roundCounter, clockIn, incentives.element, ritualTicket.element);
   const topStack = el('div', 'hud-top-stack');
   topStack.append(bossBar, roundBanner, bagMarker.element);
   const rightStack = el('div', 'hud-right-stack');
@@ -515,6 +528,17 @@ export function createHud() {
         occupancyCounter.textContent = '';
         occupancyCounter.classList.remove('closed');
       }
+    },
+
+    // The shopping window's "Clock in" prompt: { progress 0..1 } (game/clockIn.js) or null, and the button's name.
+    setClockIn(prompt, button = 'I') {
+      const key = prompt ? button : '';
+      if (key !== lastClockInKey) {
+        lastClockInKey = key;
+        clockIn.classList.toggle('show', !!prompt);
+        if (prompt) clockInKey.textContent = button;
+      }
+      if (prompt) clockInFill.style.width = `${Math.round(prompt.progress * 100)}%`;
     },
 
     // Death: the run's receipt ({ timeAlive (s), round, pointsEarned, kills, headshotKills, meleeKills, accuracy 0..1 }).

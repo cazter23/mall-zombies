@@ -63,6 +63,7 @@ import { createOutfitRail } from './outfitRail.js';
 import { createRunStats } from './runStats.js';
 import { createWallet, pointsForHit } from './wallet.js';
 import { createRounds } from './rounds.js';
+import { createClockIn } from './clockIn.js';
 import { createInteractions } from './interactions.js';
 import { createTickets } from './tickets.js';
 import { buildFeatures, featuresOf } from './features/index.js';
@@ -328,6 +329,8 @@ export function createGame({
     onRoundDiscard: () => events.emit('roundDiscard'),
     onWaveEnding: (data) => events.emit('waveEnding', data),
   });
+  // The shopping window: hold Clock in during the break to call the next round early (announces 'clockIn').
+  const clockIn = createClockIn({ input, rounds, events });
   let powerUps = null;
 
   // --- Who reacts to what (the event bus; game/events.js lists the events) ---
@@ -521,6 +524,10 @@ export function createGame({
     },
   });
 
+  events.on('clockIn', () => {
+    hud.showAnnouncement(economy.rounds.clockIn.pa);
+    sound.play('paChime');
+  });
   events.on('flashSaleStart', ({ pa }) => {
     hud.showAnnouncement(pa);
     sound.play('paChime');
@@ -559,6 +566,7 @@ export function createGame({
     ['flashSales', () => flashSales.reset()], // (before pricing: it puts back the discounts it set)
     ['pricing', () => pricing.reset()], // no discounts carried into a new run
     ['rounds', () => rounds.reset()],
+    ['clockIn', () => clockIn.reset()],
     ['player', () => player.teleport(map.playerSpawn)],
     ['map', () => map.reset()], // doors closed, zones locked
     ['features', () => features.reset()],
@@ -648,6 +656,7 @@ export function createGame({
     const inMall = !arena?.contains(player.position);
     if (!state.over) {
       bosses.update(dt, inMall);
+      if (inMall) clockIn.update(dt, !inMenu); // before the rounds: a finished hold shortens this tick's break
       if (inMall) rounds.update(dt, !bosses.pending);
       updateBossBar(bosses.active);
     }
@@ -699,6 +708,7 @@ export function createGame({
     mascotCostumes,
     surfaces,
     rounds,
+    clockIn,
     get vaultPromptVisible() {
       return vaultPromptVisible;
     },

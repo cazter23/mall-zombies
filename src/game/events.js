@@ -47,6 +47,8 @@
 //   'incentiveBurst' { position, radius, color }          deferred liquidation burst (visual/sound feedback)
 //   'powerUpExpire' { id, pointsInstead }                uncollected incentive timed out (a boss voucher left on the floor pays pointsInstead)
 //   'roundStart'  { round }                              the round number flipped (game/rounds.js)
+//   'clockIn'     { round, skipped }                     the player ended the break before `round` early (game/clockIn.js);
+//                                                        skipped = seconds of the break given up
 //   'waveEnding'  { round, remaining }                   no spawns left and 2 or fewer zombies alive (final clearance cue)
 //   'roundDiscard' {}                                    a debug skip cleared the current wave
 //   'typeIntro'   { typeId, zombie }                     a zombie type's first appearance this run (zombie = that spawn)

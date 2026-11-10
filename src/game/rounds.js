@@ -4,8 +4,9 @@
 //   active -> zombies spawn one at a time (count, pace and max-alive from
 //             economy.js) until the round's quota is out; when every zombie
 //             is dead the round is over
-//   break  -> the round number goes up IMMEDIATELY (banner + counter), a short
-//             pause (BO2-style), then the new round's zombies start trickling in
+//   break  -> the round number goes up IMMEDIATELY (banner + counter), a pause
+//             (the shopping window: economy.rounds.breakSeconds), then the new round's zombies
+//             start trickling in. endBreak() cuts it short (the player "clocks in": game/clockIn.js)
 // Zombie health and gait mix scale with the round (see the zombie manager). Each spawn's TYPE comes
 // from economy.zombieMix (Mall Walkers from round 4); the first time a type shows up in a run,
 // onTypeIntro fires (the "Mall Walkers have entered the building" banner).
@@ -112,6 +113,20 @@ export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null,
     // True during the pause before a round's zombies arrive (the HUD blinks the counter).
     get inBreak() {
       return state === 'break';
+    },
+
+    // Seconds left of the current break (0 outside one).
+    get breakRemaining() {
+      return state === 'break' ? Math.max(0, breakTimer) : 0;
+    },
+
+    // Cut the current break short: the zombies come in `lead` seconds (or when the break would have ended anyway,
+    // whichever is sooner). Returns the seconds skipped, or null outside a break.
+    endBreak(lead = 0) {
+      if (state !== 'break') return null;
+      const before = Math.max(0, breakTimer);
+      breakTimer = Math.min(before, Math.max(0, lead));
+      return before - breakTimer;
     },
 
     // Kick off round 1 (call when the player first starts playing).

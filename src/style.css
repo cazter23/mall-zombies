@@ -679,6 +679,50 @@ kbd {
 .round-occupancy.closed {
   color: var(--mall-yellow);
 }
+/* "[I] Hold to clock in": under the round box during the break between rounds */
+.clock-in {
+  align-self: flex-start; /* (a child of the HUD's left stack: it sits right under the round box) */
+  display: none;
+  color: #fff;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 5px 10px 6px;
+  background: var(--ink-glass);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-radius: 5px;
+  border: 1px solid var(--ink-border);
+  border-left: 3px solid var(--mall-yellow);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+.clock-in.show {
+  display: block;
+}
+.clock-in kbd {
+  display: inline-block;
+  padding: 0 0.4em;
+  margin-right: 0.4em;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-bottom: 2px solid #000;
+  border-radius: 4px;
+  font-family: inherit;
+}
+.clock-in-bar {
+  margin-top: 5px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.clock-in-fill {
+  width: 0;
+  height: 100%;
+  background: var(--mall-yellow);
+}
 @keyframes round-flash {
   50% {
     opacity: 0.2;

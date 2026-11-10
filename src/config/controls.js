@@ -63,7 +63,7 @@ export const controlsHelp = {
     { keys: 'V', text: 'Box cutter', short: 'Box cutter', anchors: ['V'] },
     { keys: 'G', text: 'Throw Lethal (Soda Bomb...)', short: 'Throw Lethal', anchors: ['G'] },
     { keys: 'Middle click', text: 'Throw Tactical', short: 'Throw Tactical', anchors: ['mmb'] },
-    { keys: 'I', text: 'Inspect weapon', short: 'Inspect', anchors: ['I'] },
+    { keys: 'I', text: 'Inspect weapon / clock in (hold between rounds)', short: 'Inspect / clock in', anchors: ['I'] },
     { keys: 'Esc', text: 'Pause', short: 'Pause', anchors: ['Esc'] },
   ],
   gamepad: [
@@ -85,9 +85,9 @@ export const controlsHelp = {
 
 // Button names shown in on-screen prompts, per device.
 export const buttonLabels = {
-  keyboard: { reload: 'R', melee: 'V', lethal: 'G', tactical: 'MMB', confirm: 'Click', interact: 'F', jump: 'Space', menuConfirm: 'F', menuBack: 'Q', menuMove: 'W/S', menuSwitch: 'A/D' },
-  xbox: { reload: 'X', melee: 'R3', lethal: 'RB', tactical: '▶', confirm: 'A', interact: 'X', jump: 'A', menuConfirm: 'A', menuBack: 'B', menuMove: 'D-pad', menuSwitch: '◀ ▶' },
-  playstation: { reload: '□', melee: 'R3', lethal: 'R1', tactical: '▶', confirm: '✕', interact: '□', jump: '✕', menuConfirm: '✕', menuBack: '○', menuMove: 'D-pad', menuSwitch: '◀ ▶' },
+  keyboard: { reload: 'R', melee: 'V', lethal: 'G', tactical: 'MMB', confirm: 'Click', interact: 'F', inspect: 'I', jump: 'Space', menuConfirm: 'F', menuBack: 'Q', menuMove: 'W/S', menuSwitch: 'A/D' },
+  xbox: { reload: 'X', melee: 'R3', lethal: 'RB', tactical: '▶', confirm: 'A', interact: 'X', inspect: '▼', jump: 'A', menuConfirm: 'A', menuBack: 'B', menuMove: 'D-pad', menuSwitch: '◀ ▶' },
+  playstation: { reload: '□', melee: 'R3', lethal: 'R1', tactical: '▶', confirm: '✕', interact: '□', inspect: '▼', jump: '✕', menuConfirm: '✕', menuBack: '○', menuMove: 'D-pad', menuSwitch: '◀ ▶' },
 };
 
 export const gamepad = {

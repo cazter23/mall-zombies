@@ -5,6 +5,9 @@ import { zombieCountForRound, economy } from '../src/config/economy.js';
 import { menuDom } from './helpers/menuDom.js';
 import { headlessGame } from './helpers/headlessGame.js';
 import { hasStatNumber } from '../src/config/effectWords.js';
+import { bindings, buttonLabels } from '../src/config/controls.js';
+import { createClockIn } from '../src/game/clockIn.js';
+import { createEvents } from '../src/game/events.js';
 
 test('remainingInWave tracks remaining zombies accurately and reflects break quota', () => {
   let aliveCount = 0;
@@ -201,4 +204,211 @@ test('real game createGame wiring: waveEnding triggers PA announcement and chime
   assert.equal(announcement[1].kicker, 'Attention shoppers');
   assert.equal(announcement[1].text, 'Final clearance — registers closing shortly!');
   assert.equal(announcement[1].priority, 1);
+});
+
+// ---------------------------------------------------------------------------------------------------------
+// THE SHOPPING WINDOW: the break between rounds is long enough to shop, and the player can end it early
+// ("Clock in": game/clockIn.js).
+// ---------------------------------------------------------------------------------------------------------
+
+// A zombie manager stand-in with nobody in the mall (spawnBackup "spawns" without anyone staying alive).
+function emptyMall() {
+  return { aliveCount: 0, spawn() { return { type: { id: 'shopper' } }; }, clear() {} };
+}
+
+// Fresh rounds plus a clock-in system on a fake button.
+function clockInRig() {
+  const rounds = createRounds({ zombies: emptyMall() });
+  const events = createEvents();
+  const clockIns = [];
+  events.on('clockIn', (e) => clockIns.push(e));
+  const button = { down: false };
+  const input = { actionDown: (action) => action === economy.rounds.clockIn.action && button.down };
+  const clockIn = createClockIn({ input, rounds, events });
+  return { rounds, clockIn, clockIns, button };
+}
+
+// Use up the current round's spawns: with nobody alive it ends on the next update.
+function emptyTheRound(rounds) {
+  while (rounds.remainingToSpawn > 0) rounds.spawnBackup('shopper');
+}
+
+test('shopping window: the break is long enough to shop, and clocking in is quicker than waiting', () => {
+  const { breakSeconds, clockIn } = economy.rounds;
+  assert.ok(breakSeconds >= 15, 'a break long enough to reach a shop and buy');
+  assert.ok(clockIn.holdSeconds + clockIn.leadSeconds < breakSeconds / 2, 'clocking in saves most of the break');
+  assert.ok(clockIn.holdSeconds >= 0.5, 'a deliberate hold, not a tap');
+  assert.ok(clockIn.action !== 'interact', 'not the buy button: a missed Hold F must not end the break');
+  assert.ok(bindings[clockIn.action]?.length > 0, 'bound to an existing action');
+  for (const device of Object.values(buttonLabels)) assert.ok(device[clockIn.action], 'the prompt has a button name on every device');
+});
+
+test('rounds.endBreak cuts the break to the lead time and reports the seconds skipped', () => {
+  const rounds = createRounds({ zombies: emptyMall() });
+  assert.equal(rounds.endBreak(1), null, 'nothing to end before the game starts');
+  rounds.start();
+  rounds.update(economy.rounds.firstRoundDelay + 0.1);
+  assert.equal(rounds.endBreak(1), null, 'nothing to end during a round');
+  emptyTheRound(rounds);
+  rounds.update(0.1);
+  assert.equal(rounds.state, 'break');
+  assert.equal(rounds.breakRemaining, economy.rounds.breakSeconds);
+
+  rounds.update(5);
+  const skipped = rounds.endBreak(1);
+  assert.ok(Math.abs(skipped - (economy.rounds.breakSeconds - 6)) < 1e-9);
+  assert.equal(rounds.breakRemaining, 1);
+  assert.equal(rounds.round, 2, 'the round number does not change');
+  rounds.update(0.5);
+  assert.equal(rounds.state, 'break', 'still the lead time');
+  rounds.update(0.6);
+  assert.equal(rounds.state, 'active');
+  assert.equal(rounds.breakRemaining, 0);
+
+  // A lead longer than what is left never makes the break longer.
+  const late = createRounds({ zombies: emptyMall() });
+  late.start();
+  late.update(economy.rounds.firstRoundDelay - 0.5);
+  assert.equal(late.endBreak(10), 0);
+  assert.ok(Math.abs(late.breakRemaining - 0.5) < 1e-9);
+});
+
+test('clock in: a fresh hold during the break ends it once and announces clockIn', () => {
+  const { rounds, clockIn, clockIns, button } = clockInRig();
+  const cfg = economy.rounds.clockIn;
+  const step = 1 / 60;
+  const hold = (seconds) => { for (let t = 0; t < seconds; t += step) { clockIn.update(step); rounds.update(step); } };
+
+  // Not offered before round 1 or during a round.
+  rounds.start();
+  assert.equal(clockIn.prompt, null, 'the wait before round 1 is not a shopping window');
+  rounds.update(economy.rounds.firstRoundDelay + 0.1);
+  assert.equal(clockIn.prompt, null);
+
+  // A button already held when the break starts does nothing: it takes a fresh press.
+  button.down = true;
+  clockIn.update(step);
+  emptyTheRound(rounds);
+  rounds.update(step);
+  assert.equal(rounds.state, 'break');
+  assert.deepEqual(clockIn.prompt, { action: cfg.action, progress: 0 });
+  hold(cfg.holdSeconds + 0.5);
+  assert.equal(clockIns.length, 0);
+  assert.equal(rounds.state, 'break');
+
+  // A tap is not enough, and letting go starts the hold over.
+  button.down = false;
+  hold(0.1);
+  button.down = true;
+  hold(cfg.holdSeconds / 2);
+  assert.ok(clockIn.prompt.progress > 0.3 && clockIn.prompt.progress < 1);
+  button.down = false;
+  hold(0.1);
+  assert.equal(clockIn.prompt.progress, 0);
+  assert.equal(clockIns.length, 0);
+
+  // The full hold: the break is cut to the lead time, one event, and the offer is gone.
+  const before = rounds.breakRemaining;
+  button.down = true;
+  hold(cfg.holdSeconds + 2 * step);
+  assert.equal(clockIns.length, 1);
+  assert.equal(clockIns[0].round, 2);
+  assert.ok(clockIns[0].skipped > 0 && clockIns[0].skipped < before);
+  assert.ok(rounds.breakRemaining <= cfg.leadSeconds);
+  assert.equal(clockIn.prompt, null, 'once per break');
+  hold(cfg.leadSeconds + 0.1); // (still holding: nothing more happens)
+  assert.equal(rounds.state, 'active');
+  assert.equal(rounds.round, 2);
+  assert.equal(clockIns.length, 1);
+});
+
+test('clock in: ignored while not allowed (an open menu), offered again in the next break, reset clears it', () => {
+  const { rounds, clockIn, clockIns, button } = clockInRig();
+  const cfg = economy.rounds.clockIn;
+  const step = 1 / 60;
+  rounds.start();
+  rounds.update(economy.rounds.firstRoundDelay + 0.1);
+  emptyTheRound(rounds);
+  rounds.update(step);
+  assert.equal(rounds.state, 'break');
+
+  button.down = true;
+  for (let t = 0; t < cfg.holdSeconds + 0.5; t += step) clockIn.update(step, false);
+  assert.equal(clockIns.length, 0, 'a menu is open: the button belongs to the menu');
+  assert.ok(clockIn.prompt, 'the offer itself stays');
+
+  // Closing the menu with the button still down counts as a fresh press from then on.
+  for (let t = 0; t < cfg.holdSeconds + 2 * step; t += step) clockIn.update(step, true);
+  assert.equal(clockIns.length, 1);
+
+  // Round 2 plays out; its break is offered again.
+  button.down = false;
+  rounds.update(cfg.leadSeconds + 0.1);
+  assert.equal(rounds.state, 'active');
+  emptyTheRound(rounds);
+  rounds.update(step);
+  assert.equal(rounds.round, 3);
+  clockIn.update(step);
+  assert.ok(clockIn.prompt, 'offered in the next break');
+
+  clockIn.reset();
+  rounds.reset();
+  assert.equal(clockIn.prompt, null);
+});
+
+test('real game: holding Clock in during the break brings the next round early, with a PA line', () => {
+  const t = headlessGame();
+  const cfg = economy.rounds.clockIn;
+  t.tick(1);
+  assert.ok(t.g.resetSteps.includes('clockIn'), 'Play again forgets a used clock in');
+
+  // Straight to the break before round 2: round 1 with nobody left.
+  t.g.rounds.jumpTo(1);
+  for (let i = 0; i < 3000 && !(t.g.rounds.inBreak && t.g.rounds.round === 2); i++) {
+    t.g.zombies.clear(); // (every spawn leaves at once: the round runs out of zombies)
+    t.tick(1);
+  }
+  assert.equal(t.g.rounds.inBreak, true);
+  assert.equal(t.g.rounds.round, 2);
+  assert.ok(t.g.clockIn.prompt, 'the break offers Clock in');
+
+  const events = [];
+  t.g.events.on('clockIn', (e) => events.push(e));
+  const soundsBefore = t.sounds.length;
+  t.press(bindings[cfg.action][0], Math.ceil(cfg.holdSeconds * 60) + 2);
+  assert.equal(events.length, 1);
+  assert.equal(events[0].round, 2);
+  assert.ok(events[0].skipped > economy.rounds.breakSeconds / 2, 'most of the break was skipped');
+  assert.ok(t.sounds.slice(soundsBefore).includes('paChime'));
+  const pa = t.hud.calls.filter(([name]) => name === 'showAnnouncement').at(-1);
+  assert.equal(pa[1].text, cfg.pa.text);
+  assert.equal(hasStatNumber(pa[1].text), false);
+  assert.equal(t.g.clockIn.prompt, null);
+
+  // The zombies come after the lead time, long before the full break would have ended.
+  t.tick(Math.ceil(cfg.leadSeconds * 60) + 2);
+  assert.equal(t.g.rounds.state, 'active');
+  assert.equal(t.g.rounds.round, 2);
+
+  // Play again: nothing carries over.
+  t.g.resetRun();
+  assert.equal(t.g.clockIn.prompt, null);
+});
+
+test('HUD clock-in prompt shows the button and the hold progress, and hides', async () => {
+  menuDom();
+  const { createHud } = await import('../src/ui/hud.js');
+  const hud = createHud();
+  const box = hud.element.querySelector('.clock-in');
+  assert.ok(box, 'clock-in element exists in HUD');
+  assert.equal(box.classList.contains('show'), false);
+
+  hud.setClockIn({ progress: 0.5 }, 'I');
+  assert.equal(box.classList.contains('show'), true);
+  assert.equal(box.querySelector('.clock-in-text').textContent, 'IHold to clock in'); // (the key cap, then the words)
+  assert.equal(box.querySelector('.clock-in-fill').style.width, '50%');
+  assert.equal(hasStatNumber('Hold to clock in'), false);
+
+  hud.setClockIn(null);
+  assert.equal(box.classList.contains('show'), false);
 });

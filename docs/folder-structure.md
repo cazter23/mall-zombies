@@ -515,12 +515,17 @@ src/
                         KEYLESS commands (no key to spare; keylessIds): 'pockets' fills Kiosk Kevin's equipment pockets (window.__mall.g.debug.run('pockets')).
                         God mode is health.invulnerable; debug state is not part of a run (Play again keeps it)
     rounds.js           createRounds(): announce(n, delay) flips the round number (and fires onRoundStart) the
-                        moment the last zombie dies, then 'break' (6s, inBreak) -> 'active' (spawn quota at
+                        moment the last zombie dies, then 'break' (economy.rounds.breakSeconds, inBreak; breakRemaining; endBreak(lead) cuts it short) -> 'active' (spawn quota at
                         spawnDelay, capped by maxAlive; quota only used when a zombie actually spawned, else retry
                         after spawnRetrySeconds). Each spawn's type: zombieTypeForRound, except a special type's
                         first possible round forces its introSpawnIndex-th spawn to be one. onTypeIntro(typeId, zombie) fires
                         the first time a type spawns in a run. A Mascot costume's unlock round forces its debut the same way
                         (the forced spawn still rolls, so the rest of the wave is unchanged); onVariantIntro for each later costume. start() on first play, skipRound() (debug), reset()
+    clockIn.js          createClockIn({ input, rounds, events }): the SHOPPING WINDOW's early exit. During the break before round 2 and later
+                        (economy.rounds.clockIn: action, holdSeconds, leadSeconds, fromRound, pa) a fresh hold of the Clock in action
+                        (Inspect: I / D-pad down; read with actionDown only, so a tap still inspects the gun) calls rounds.endBreak(leadSeconds)
+                        and emits 'clockIn' { round, skipped }. Once per break; ignored behind a menu; prompt = { action, progress } for the
+                        HUD (hud.setClockIn, under the round box). createGame's 'clockIn' listener reads the PA line. Reset step 'clockIn'
   maps/
     index.js            Map registry + loadMap(id, scene, colliders) + THE MAP INTERFACE (id, group, zones, doors,
                         spawnPoints, features (wall buys, ammo cache... by kind), playerSpawn, update, reset, dispose).
