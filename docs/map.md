@@ -178,6 +178,8 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   and the elevator), 1.6m deep + a 0.3m counter ledge; you buy at its service window (spot z ~4.1). Hold F/X to buy the next Extended
   Warranty tier for the gun in your hand. Its spot is ONE entry, LAYOUT.serviceDesk in mall.js (along/center/wallAt/facing/zone):
   change it to move the booth. A map feature of kind 'upgradeDesk'.
+  The booth has a SECOND window 1.25 m along the counter (LAYOUT.serviceDesk.meleeOffset; feature.meleePosition, a SHARPENING sign above it):
+  hold F/X there to buy the box cutter tiers (Sharpened Blade 1500, Box Cutter Pro 4000; economy.upgrades.melee).
 - The four Food Court STORES (gun attachments; see mall/stores.js): GOOD SPORTS (grips) x -17..-9 and NUTS & BOLTS (barrels) x 9..17
   are rooms 6m deep behind the south wall; PLAY TIME TOYS (magazines) x -16.4..-10.6 and BYTE ME ELECTRONICS (sights) x 10.6..16.4 are
   4.5m-deep pods against the hallway wall (the two north pillars are gone: the pods hold the ceiling up). 3m doors, glass windows, a

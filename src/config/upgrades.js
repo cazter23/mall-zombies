@@ -47,6 +47,20 @@ export const upgrades = {
   // TRANSFER: a warranty left behind by a gun you replaced stays on file; the desk moves it onto the gun in hand for this share of that tier's price.
   transfer: { feeFraction: 0.25 },
 
+  // BOX CUTTER TIERS: bought one at a time at the Customer Service desk's second window (prices: economy.js upgrades.melee). The box cutter does a flat
+  // 150 while zombie health climbs past 1,000, so these keep it a real weapon late. They are their OWN stats (game/meleeUpgrades.js writes
+  // stats.meleeUpgradeDamage / meleeHalfAngleDegrees / meleeMaxTargets), so Loss Prevention and the wardrobe's melee bonus still multiply on top.
+  //   damage        multiplier on the box cutter's damage (words only to the player, like the gun tiers)
+  //   halfAngle     degrees either side of centre a target can be hit (the base is config/weapons.js melee.boxCutter.hitHalfAngleDegrees)
+  //   maxTargets    zombies one swing can hit
+  //   blade/handle  the viewmodel's colours at this tier
+  melee: [
+    { id: 'sharpened', name: 'Sharpened Blade', damage: 3, maxTargets: 1, colors: { blade: 0xf2f6fa, handle: 0xffd23f },
+      lines: [{ effect: 'damage', text: '{Size} more damage' }] },
+    { id: 'pro', name: 'Box Cutter Pro', damage: 5, halfAngle: 70, maxTargets: 2, colors: { blade: 0xffd9a0, handle: 0xd62839 },
+      lines: [{ effect: 'damage', text: '{Size} more damage' }, { text: 'A much wider swing' }, { text: 'Hits two zombies at once' }] },
+  ],
+
   // What the warranty says (PA lines; {gun} is the gun's name).
   claimPa: { kicker: 'Customer Service', text: 'Warranty claim approved for your {gun}. Ammunition has been replaced. Terms apply.' },
 

@@ -3,8 +3,10 @@
 // Tap the melee key: a quick slash at whatever is right in front of you.
 //   - If a target is just out of reach (but within lunge range), you lurch at it.
 //   - The hit lands partway through the swing and strikes the nearest target in
-//     a cone in front of you (walls block it). One target per swing.
-//   - Melee ignores headshots, like COD. Damage x stats.meleeDamageMultiplier.
+//     a cone in front of you (walls block it). One target per swing, or the nearest
+//     stats.meleeMaxTargets of them after the Box Cutter Pro (game/meleeUpgrades.js).
+//   - Melee ignores headshots, like COD. Damage x stats.meleeDamageMultiplier x
+//     stats.meleeUpgradeDamage (the Customer Service tiers); the cone is stats.meleeHalfAngleDegrees.
 //   - Commit the attack direction until impact; misses recover more slowly than hits.
 //   - Swinging cancels a reload, and the gun can't fire mid-swing/recovery.
 // Runs on the fixed tick. The slash animation lives in viewmodel.js.
@@ -29,17 +31,18 @@ export function createMelee({ def, stats, player, input, getWeapon, shootables, 
   const normal = new THREE.Vector3();
 
   /**
-   * Nearest live target within `maxRange` of the eye, inside the cone in front
-   * of the player (horizontal angle), with no wall in between.
-   * Returns { target, point, distance } or null.
+   * Every live target within `maxRange` of the eye, inside the cone in front of the player (horizontal angle),
+   * with no wall in between, nearest first. One entry per target (its nearest part).
+   * Returns [{ target, point, distance }].
    */
-  function findTarget(maxRange) {
+  function findTargets(maxRange) {
     player.getAim(eye, aimDir);
-    const minCos = Math.cos(def.hitHalfAngleDegrees * DEG_TO_RAD);
-    let best = null;
+    const minCos = Math.cos(stats.meleeHalfAngleDegrees * DEG_TO_RAD);
+    const found = [];
 
     for (const target of shootables) {
       if (!target.isAlive) continue;
+      let best = null;
       for (const hitbox of target.hitboxes) {
         // Closest point on the box in its own space for articulated parts.
         if (hitbox.localBox) {
@@ -67,8 +70,9 @@ export function createMelee({ def, stats, player, input, getWeapon, shootables, 
         }
         best = { target, point: point.clone(), distance };
       }
+      if (best) found.push(best);
     }
-    return best;
+    return found.sort((a, b) => a.distance - b.distance);
   }
 
   function startSwing() {
@@ -87,7 +91,7 @@ export function createMelee({ def, stats, player, input, getWeapon, shootables, 
 
     // Lunge at a target that's just out of reach (not while sliding, prone or airborne).
     if (player.stance === 'slide' || player.stance === 'prone' || !player.grounded) return;
-    const found = findTarget(def.lungeRange);
+    const found = findTargets(def.lungeRange)[0];
     if (!found || found.distance <= def.range * def.lungeStopFraction) return;
     const dx = found.point.x - eye.x;
     const dz = found.point.z - eye.z;
@@ -99,10 +103,8 @@ export function createMelee({ def, stats, player, input, getWeapon, shootables, 
     player.lunge(dx / len, dz / len, speed, seconds);
   }
 
-  function strike() {
-    const found = findTarget(def.range);
-    if (!found) return null;
-    const damage = def.damage * stats.meleeDamageMultiplier;
+  /** One target struck: damage, splatter, hit marker, 'hit' event. Returns whether it died. */
+  function hitOne(found, damage) {
     const dir = { x: facingX, y: 0, z: facingZ };
     const { killed } = found.target.takeHit({
       damage,
@@ -119,13 +121,31 @@ export function createMelee({ def, stats, player, input, getWeapon, shootables, 
       direction: dir,
     });
     hud.showHitMarker({ headshot: false, killed });
+    if (onHit) onHit({ target: found.target, killed, headshot: false, melee: true });
+    return killed;
+  }
+
+  function strike() {
+    // The nearest stats.meleeMaxTargets in the cone (1 for the plain box cutter).
+    const hits = findTargets(def.range).slice(0, stats.meleeMaxTargets);
+    if (hits.length === 0) return null;
+    const damage = def.damage * stats.meleeDamageMultiplier * stats.meleeUpgradeDamage;
+    let first = null;
+    let anyKilled = false;
+    for (const found of hits) {
+      if (!found.target.isAlive) continue; // already dead this swing (a kill listener got it): no hit on a corpse
+      const killed = hitOne(found, damage);
+      first ??= { target: found.target, killed, hits: 0 };
+      first.hits++;
+      anyKilled ||= killed;
+    }
+    if (!first) return null;
     if (sound) {
       sound.play('hitBody');
-      if (killed) sound.play('killConfirm');
+      if (anyKilled) sound.play('killConfirm');
     }
-    if (onHit) onHit({ target: found.target, killed, headshot: false, melee: true });
     player.addViewKick(-def.impactJoltDegrees * DEG_TO_RAD);
-    return { target: found.target, killed };
+    return first;
   }
 
   return {

@@ -1,5 +1,29 @@
 # Sunset Galleria: build history ("Current state")
 
+## 9 November 2026 - Box cutter tiers at Customer Service
+
+The box cutter did a flat 150 forever while Shopper health climbs to 1,157 by round 15 and 1,662 by round 20, so melee stopped mattering around round 4. Two tiers now sell at the
+Customer Service booth's SECOND window (1.25 m along the counter, a SHARPENING sign; the gun window is unchanged and the nearest window wins the prompt):
+
+- **Sharpened Blade** (1,500): damage x3. **Box Cutter Pro** (4,000): damage x5, a 140 degree cone instead of 80, and the nearest TWO zombies a swing, each with its own hit,
+  splatter, +10 / kill and 70-point melee bonus. Numbers: config/upgrades.js `melee`, prices economy.upgrades.melee through `g.pricing.priceOf('melee', id)`.
+- **How it is wired:** four new stats (meleeTier, meleeUpgradeDamage, meleeHalfAngleDegrees, meleeMaxTargets) in the stats object, written by game/meleeUpgrades.js, so Play again's stats
+  reset puts them back and Loss Prevention (meleeDamageMultiplier) still stacks on top. melee.js: `findTargets` (every live target in the cone, nearest first) replaces `findTarget`; the
+  strike hits the first meleeMaxTargets and skips one already dead. The viewmodel recolours the cutter per tier. No headshots, as before.
+- **Swings to kill a Shopper** (`npm run melee`, tools/meleeReport.mjs; 0.37 s a connected swing). Before = the plain column:
+
+  | round | Shopper hp | plain | Sharpened | Pro | plain +50% | Sharpened +50% | Pro +50% |
+  |---|---|---|---|---|---|---|---|
+  | 1 | 150 | 1 | 1 | 1 | 1 | 1 | 1 |
+  | 5 | 450 | 3 | 1 | 1 | 2 | 1 | 1 |
+  | 10 | 806 | 6 | 2 | 2 | 4 | 2 | 1 |
+  | 15 | 1157 | 8 | 3 | 2 | 6 | 2 | 2 |
+  | 20 | 1662 | 12 | 4 | 3 | 8 | 3 | 2 |
+
+  (+50% = Loss Prevention / the wardrobe's melee bonus.) Kills a second against one target at round 20: 0.23 plain, 0.68 Sharpened, 0.90 Pro; against two in the cone the Pro doubles that.
+- Not checked: any of it by hand in a browser (the second window's placement, the sign, the cutter's tint, the prompt when standing between the two windows); numbers and prices were set
+  from the table above, not from a playtest.
+
 ## 9 November 2026 - GRAB-A-GUN, phase 10: RETURN TO SENDER, the wonder weapon (claw-only)
 
 Settled with you before it was built: the plan's working idea, name and all, and bosses and Mascots take a BIG FIXED HIT (not just a normal hit). A returns-desk scanner whose

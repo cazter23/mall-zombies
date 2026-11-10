@@ -9,7 +9,7 @@
 // createGame never changes for a new kind.
 //
 // ctx (from createGame, built after its core event wiring, so a feature's listeners run after payouts/stats):
-//   { scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state, warranty, wardrobe,
+//   { scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state, warranty, meleeUpgrades, wardrobe,
 //     colliders, effects, sound, input, tickets, shootables, aimAssist }
 // =============================================================================
 

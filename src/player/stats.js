@@ -45,6 +45,10 @@ export function createPlayerStats() {
 
     damageMultiplier: weaponStatDefaults.damageMultiplier,
     meleeDamageMultiplier: weaponStatDefaults.meleeDamageMultiplier,
+    meleeTier: weaponStatDefaults.meleeTier, // box cutter tier bought at Customer Service (game/meleeUpgrades.js)
+    meleeUpgradeDamage: weaponStatDefaults.meleeUpgradeDamage,
+    meleeHalfAngleDegrees: weaponStatDefaults.meleeHalfAngleDegrees,
+    meleeMaxTargets: weaponStatDefaults.meleeMaxTargets,
     reloadSpeed: weaponStatDefaults.reloadSpeed,
     switchSpeed: 1,
     adsTimeMultiplier: 1,

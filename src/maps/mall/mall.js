@@ -123,7 +123,7 @@ export const LAYOUT = {
   },
   // Customer Service desk (Extended Warranty tiers): on the hallway's north wall between the start doorway
   // and the elevator. Move it by changing this one entry (the prop, its collider and its buy spot follow).
-  serviceDesk: { along: 'x', center: 7, wallAt: 6, facing: -1, zone: 'hallway' },
+  serviceDesk: { along: 'x', center: 7, wallAt: 6, facing: -1, meleeOffset: 1.25, zone: 'hallway' }, // meleeOffset: the box cutter window's spot along the counter
   // The four Food Court stores, each a real walk-in room selling one gun-attachment slot (see maps/mall/stores.js
   // for the fields). Two are RECESSED into the south wall (rooms behind it), two are PODS standing against the
   // hallway wall (3.5-4.5m into the Food Court). Move or resize a store by changing its entry.
@@ -907,8 +907,8 @@ export function buildMall(scene, colliders) {
     { kind: 'ammoCache', name: 'ammocache_foodCourt', zone: 'foodCourt', position: foodCourtAmmo.position, normal: foodCourtAmmo.normal, screen: foodCourtAmmo.screen },
     { kind: 'ammoCache', name: 'ammocache_atrium', zone: 'atrium', position: atriumAmmo.position, normal: atriumAmmo.normal, screen: atriumAmmo.screen },
     { kind: 'ammoCache', name: 'ammocache_cinema', zone: 'cinema', position: cinemaAmmo.position, normal: cinemaAmmo.normal, screen: cinemaAmmo.screen },
-    // Customer Service: upgrade the gun in your hand one Extended Warranty tier (g.pricing 'tier').
-    { kind: 'upgradeDesk', name: 'upgradedesk_hallway', zone: deskZone, position: serviceDesk.position, normal: serviceDesk.normal },
+    // Customer Service: upgrade the gun in your hand one Extended Warranty tier (g.pricing 'tier'); the second window sells box cutter tiers (g.pricing 'melee').
+    { kind: 'upgradeDesk', name: 'upgradedesk_hallway', zone: deskZone, position: serviceDesk.position, normal: serviceDesk.normal, meleePosition: serviceDesk.meleePosition },
     // Store attachment counters: fit that attachment to the gun in your hand (g.pricing 'attachment').
     ...stores.spots.map((s) => ({ kind: 'attachmentCounter', name: `attachment_${s.id}`, zone: s.zone, attachment: s.id, position: s.position, normal: s.normal })),
     // GRAB-A-GUN: one machine, live at one of its sites (it starts at the first every run).

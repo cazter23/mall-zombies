@@ -94,7 +94,9 @@ test('buying tiers at the desk: one at a time, charged from pricing, gun in hand
   }
   stand();
   t.tick(2);
-  assert.equal(g.interactions.prompt, null, 'no prompt once every renewal is bought');
+  assert.notEqual(g.interactions.prompt?.kind, 'tier', 'no gun prompt once every renewal is bought (the box cutter window may still show its own)');
+  g.stats.meleeTier = 2; // (the box cutter window is reachable from here too: take its tiers out of the way)
+  g.meleeUpgrades.accept({ tier: 2 });
   buy();
   assert.equal(g.wallet.points, points, 'and nothing more to pay');
 });

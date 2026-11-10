@@ -7,7 +7,7 @@ tests/docs.test.js checks that every file in src/ has an entry here.
 
 ```
 index.html              Entry page: the web fonts (Google Fonts; list kept in step with config/fonts.js) and src/boot.js
-package.json            scripts: test, test:quick, dev, build, build:single, play, preview, balance (see CLAUDE.md Commands)
+package.json            scripts: test, test:quick, dev, build, build:single, play, preview, balance, melee (see CLAUDE.md Commands)
 src/
   main.js               Entry, BROWSER SIDE ONLY: renderer, scene, camera, Input + gamepad, HUD, sound, viewmodel, player body,
                         settings/controls menus, controller menus (handleControllerMenus), pointer lock, debug keys
@@ -196,7 +196,9 @@ src/
                         the tracer stops) and `endNormal`. Defines the "shootable" interface (hitboxes, isAlive,
                         takeHit, splatColors)
     melee.js            createMelee(): box cutter. V = swing; lunges at a target 1.08-3m away; hit at 0.15s on the
-                        nearest target in a 40deg cone within 1.8m (walls block); cancels reload; isBusy blocks
+                        nearest target in a 40deg cone within 1.8m (walls block; stats.meleeHalfAngleDegrees, wider after the
+                        Box Cutter Pro, which also hits the nearest stats.meleeMaxTargets = 2, each with its own hit/kill; damage =
+                        150 x meleeDamageMultiplier x meleeUpgradeDamage); cancels reload; isBusy blocks
                         the gun; takeHit({ melee: true }) so kills count as melee. Attack heading is committed
                         until impact; hit recovery 0.22s, miss recovery 0.5s (total 0.37/0.65s)
     upgrades.js         Upgrades -> mods (pure); attachmentLines(id) / tierLines(id) / renewalLines() = what an upgrade does in words; withTier(base, mods, tierId) / withAttachment(base, mods, id) return a NEW
@@ -434,6 +436,8 @@ src/
                         isn't full, use = gun.weapon.refill() (mag + reserve, ANY gun incl. the staple gun). upgradeDesk.js = Customer Service:
                         "upgrade <Gun> → <next tier>" (g.pricing 'tier', purchase kind 'tier'), gun in hand only, not while
                         switching, nothing past Platinum, NO ammo refill (the bigger magazine fills on the next reload/buy).
+                        meleeDeskItem = the desk's SECOND window (feature.meleePosition, 1.25 m along the counter, a SHARPENING sign):
+                        "Box Cutter → <tier>" (g.pricing 'melee', purchase kind 'melee'), not tied to the gun in hand, not while switching.
                         attachmentCounter.js = one attachment on a store counter: "fit <Attachment> on the <Gun> · <blurb>"
                         (g.pricing 'attachment', purchase kind 'attachment'), replaces that slot on the gun in hand; no prompt when
                         already fitted, when it doesn't fit (Extended Nozzle on the Nail Gun), area closed or busy. First purchase
@@ -520,11 +524,11 @@ src/
                         trashCan, lockerBank (solid 1.9m), electricalPanel (+ DANGER sign; a future power switch spot),
                         pipeRun (exposed pipes), vendingMachine({ along, center, wallAt, facing }) (the ammo cache: solid 1.95m,
                         lit product window, keypad, header "RESTOCK-O-MATIC"; returns { position, normal } = its buy spot),
-                        serviceDesk({ along, center, wallAt, facing, tierColors }) (the Customer Service BOOTH: a walled office
+                        serviceDesk({ along, center, wallAt, facing, meleeOffset, tierColors }) (the Customer Service BOOTH: a walled office
                         with a service window + counter, a zombie clerk, computer/cabinets/clock visible through the glass, a
                         CUSTOMER SERVICE sign on the roof, NOW SERVING above the window, a sticker per tier on the counter; ONE solid
                         full-height collider wall-to-counter, so nobody gets inside and moving it needs no room behind; returns its
-                        buy spot), clerk({ along, center, wallAt, facing, depth, apron }) (a zombie in an apron behind a counter,
+                        buy spot and the box cutter window's meleePosition), clerk({ along, center, wallAt, facing, depth, apron }) (a zombie in an apron behind a counter,
                         decoration), attachmentDisplay({ along, center, wallAt,
                         facing, style 'case'|'pegboard', items, title }) (a store's attachment counter: glass case in front of a
                         shopfront, visible top and ONE solid collider sharing height (default 1.25m), or a flat pegboard on a wall; shows each attachment as a big copy of the
@@ -655,6 +659,7 @@ src/
                         setMasterVolume(v) (used by Settings > Audio), setAmbience(mix) (up to three continuous spatial voices,
                         short crossfades), playAmbient(name, {volume, pan}); faded sources stop and disconnect
     game/ambience.js    Spatial loop selection with optional emitter gain/smooth pulses; local map.ambientEvents play
+    game/meleeUpgrades.js  The box cutter tiers sold at Customer Service's second window (config/upgrades.js melee: Sharpened Blade x3 damage, Box Cutter Pro x5 + a wider cone + two targets): offer() = the next tier or null, accept() writes stats.meleeTier / meleeUpgradeDamage / meleeHalfAngleDegrees / meleeMaxTargets and announces 'meleeUpgrade' (the viewmodel recolours the cutter). Nothing run-scoped lives here: Play again's stats reset puts it back. Prices: economy.upgrades.melee through g.pricing 'melee'. createGame exposes g.meleeUpgrades.
     game/warranty.js    The Extended Warranty rules that are not a stat change: what the Customer Service desk offers (next tier, a Renewal past Platinum, or a warranty on file moved onto this gun for a fee), the warranty a replaced gun leaves on file, and the Platinum claim (a dry gun gets its ammo back once per round). Numbers: config/upgrades.js.
                         occasional one-shots only in audible unlocked areas. Timers freeze on pause and restart on reset.
     ambientPulse.js     Sparse mechanical ticks mixed into a looping ambience buffer (reuses the noise grain: no gameplay random draws).
@@ -687,7 +692,7 @@ src/
                         the music worker (as a Blob worker) pasted into ONE html file; the Google Fonts link loads non-blocking so a blocked
                         network just falls back to system fonts; tests/singleFile.test.js builds it and checks it is self-contained); balance.js = gun balance maths shared with the tests (seeded Monte Carlo of each
                         gun's real spread + pellets vs a Shopper's hitboxes at a range: expectedShotDamage, sustainedDps, burstDps,
-                        shotsToKill); gunReport.mjs = `npm run balance`; gunSheet.html/.js = a contact sheet of one gun in eight upgrade states (`npm run dev`, /tools/gunSheet.html?gun=nailGun&view=left); babReport.mjs = `npm run balance:bab` (headless horde bot: plain gun vs warranty tiers vs builds); clawOdds.js = GRAB-A-GUN's odds
+                        shotsToKill); gunReport.mjs = `npm run balance`; meleeReport.mjs = `npm run melee` (swings to kill by round, plain box cutter vs the Customer Service tiers); gunSheet.html/.js = a contact sheet of one gun in eight upgrade states (`npm run dev`, /tools/gunSheet.html?gun=nailGun&view=left); babReport.mjs = `npm run balance:bab` (headless horde bot: plain gun vs warranty tiers vs builds); clawOdds.js = GRAB-A-GUN's odds
                         simulation (seeded; the game's own roll; perfect / 3-in-4 / random / timed presses; sites, plush closes, wall value,
                         points per specific gun vs its cheapest wall route); clawSim.mjs = `npm run sim:claw [price]` prints it (the plan's odds tables)
   world/                Shared building blocks for maps

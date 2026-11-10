@@ -95,10 +95,15 @@ function buildMeleeArm(meleeColors) {
     cutter.add(mesh);
     return mesh;
   };
-  part(meleeColors.handle, 0.034, 0.032, 0.132, 0, 0.012, -0.07, meleeFistGeo, 0.1, 0.42);
+  const handleMesh = part(meleeColors.handle, 0.034, 0.032, 0.132, 0, 0.012, -0.07, meleeFistGeo, 0.1, 0.42);
   part(meleeColors.grip, 0.036, 0.01, 0.095, 0, -0.002, -0.068, null, 0.1, 0.8); // lower rubber grip insert
   part(meleeColors.grip, 0.014, 0.01, 0.035, 0, 0.031, -0.05, null, 0.2, 0.7); // thumb slider
-  part(meleeColors.blade, 0.005, 0.03, 0.062, 0, 0.008, -0.165, meleeBladeGeo, 0.78, 0.25);
+  const bladeMesh = part(meleeColors.blade, 0.005, 0.03, 0.062, 0, 0.008, -0.165, meleeBladeGeo, 0.78, 0.25);
+  // The Customer Service tiers recolour the handle and blade (config/upgrades.js melee colors; createGame calls setMeleeColors).
+  arm.userData.setColors = ({ handle, blade }) => {
+    handleMesh.material.color.setHex(handle);
+    bladeMesh.material.color.setHex(blade);
+  };
 
   arm.visible = false;
   return arm;
@@ -419,7 +424,13 @@ export function createViewmodel(weaponDefs, meleeDef) {
     },
 
     // New run: everything settled.
+    /** Recolour the box cutter: { handle, blade } (a Customer Service tier). reset() puts the plain colours back. */
+    setMeleeColors(colors) {
+      meleeArm.userData.setColors(colors);
+    },
+
     reset() {
+      meleeArm.userData.setColors(meleeDef.colors);
       kickPos.reset();
       kickRot.reset();
       landY.reset();

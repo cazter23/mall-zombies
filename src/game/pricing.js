@@ -8,7 +8,8 @@
 //   priceOf('ammo', gunId)         economy.wallBuys[gunId].ammo
 //   priceOf('ammoCache')           economy.ammoCache.price
 //   priceOf('tier', tierId)        economy.upgrades.tiers[tierId] (Extended Warranty: deluxe / premium / platinum)
-//   priceOf('attachment', id)      economy.upgrades.attachments[id]
+//   priceOf('melee', tierId)       economy.upgrades.melee[tierId] (box cutter tiers: sharpened / pro)
+//   priceOf('attachment', id)     economy.upgrades.attachments[id]
 //   priceOf('wardrobe', id)      economy.wardrobe[id]
 //   priceOf('claw', 'grab')        economy.claw.grab (GRAB-A-GUN; the Discount Code excludes this category: config/bosses.js)
 //   basePriceOf(category, id)      original shelf price before a discount (same validation/source)
@@ -35,6 +36,7 @@ const BASE = {
     if (transfer && Object.hasOwn(economy.upgrades.tiers, transfer[1])) return Math.round(economy.upgrades.tiers[transfer[1]] * upgrades.transfer.feeFraction);
     return undefined;
   },
+  melee: (id) => (Object.hasOwn(economy.upgrades.melee, id) ? economy.upgrades.melee[id] : undefined), // box cutter tiers: sharpened / pro
   workshop: (id) => (Object.hasOwn(economy.upgrades.workshop, id) ? economy.upgrades.workshop[id] : undefined),
   attachment: (id) => (Object.hasOwn(economy.upgrades.attachments, id) ? economy.upgrades.attachments[id] : undefined),
   wardrobe: (id) => (Object.hasOwn(economy.wardrobe, id) ? economy.wardrobe[id] : undefined),
