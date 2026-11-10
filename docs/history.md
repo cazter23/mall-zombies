@@ -1,5 +1,11 @@
 # Sunset Galleria: build history ("Current state")
 
+## 9 November 2026 - Hallway directory flicker
+
+The hallway directory (north wall, x -6.9) hangs over the boarded vent, and its lowest row (Cinema · Upstairs, West) shared a plane (z 5.94) with the vent's top plank (y 1.15-1.35), so a brown
+streak flickered across the text. The directory is raised 0.25 m (atmosphere.js `directoryRise`). It slipped past tests/coplanar.test.js because atmosphere.js signs carry flipped Euler angles and
+the test skips any rotated mesh; a new test there checks every flat sign by its world normal.
+
 ## 9 November 2026 - GRAB-A-GUN, phase 9: the Tennis Ball Launcher
 
 The second claw-only gun, and the first thing in the game that is not hitscan: the trigger THROWS a ball that flies, bounces and hits later. Purple capsule, weight 7 beside the
