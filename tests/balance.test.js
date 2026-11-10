@@ -143,3 +143,15 @@ test('Leaf Blower: crowd control, not damage. The weakest hitter, the strongest 
   assert.equal(blower.startingReserve, 0, 'nothing to reload from');
   assert.ok(blower.cone.knockdownRange < blower.cone.range, 'only the close ones go down');
 });
+
+test('Tennis Ball Launcher: the corridor gun. One hit a ball in the open (weak: below the Price Gun at every range), a few bounces, no more than a cannon blast a ball', () => {
+  const launcher = weapons.tennisBallLauncher;
+  assert.equal(launcher.clawOnly, true);
+  for (const m of [2, 5, 10, 20]) assert.ok(dps(launcher, m) < dps(priceGun, m), `launcher ${Math.round(dps(launcher, m))} vs Price Gun ${Math.round(dps(priceGun, m))} at ${m} m (one hit a ball)`);
+  const p = launcher.projectile;
+  assert.ok(p.maxBounces >= 4 && p.maxBounces <= 6, 'a few bounces');
+  assert.ok(p.seekRange >= 2 && p.seekRange <= 6, 'it only finds zombies close together');
+  assert.ok(p.restitution > 0.7 && p.restitution < 1, 'a bounce keeps most of the speed, never all of it');
+  assert.ok(launcher.damage * p.maxBounces < expectedShotDamage(confettiCannon, 2), 'the best a ball can do is below a point-blank cannon blast');
+  assert.ok(launcher.magazineSize >= 4 && launcher.magazineSize <= 10);
+});

@@ -148,3 +148,14 @@ test('in the real mall the floor is solid to a ball: dropped in the hallway it b
   assert.ok(Math.abs(log.bounces[0].point.y) < 0.3, `on the floor (y ${log.bounces[0].point.y.toFixed(2)})`);
   assert.equal(log.bounces[0].normal.y, 1);
 });
+
+test('zombies standing in a line: the ball goes on through the first to the one right behind it, and the first is hit once, not again on the way out', () => {
+  const first = target(4, 0), second = target(5.5, 0);
+  const balls = createBalls({ colliders: [], shootables: [first, second] });
+  const { log, ...cb } = record();
+  balls.launch({ position: v(0, 1, 0), direction: v(1, 0, 0), projectile: flat({ gravity: 0, seekRange: 6, maxBounces: 2 }), damageOf: () => 40, ...cb });
+  run(balls, 0.6);
+  assert.deepEqual(log.hits.slice(0, 2).map((h) => [first, second].indexOf(h.target)), [0, 1]);
+  assert.equal(first.damageTaken.length, 1, 'hit once');
+  assert.ok(second.damageTaken.length >= 1);
+});

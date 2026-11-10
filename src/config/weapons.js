@@ -14,6 +14,7 @@
 //   clawOnly: true  never sold on a wall (the wall-buy feature refuses it); it only comes out of GRAB-A-GUN (game/features/clawMachine.js)
 //   fuel:  { regenDelay, regenPerSecond, restartAt }  a tank instead of a reload: `magazineSize` is the tank (weapons/fuel.js)
 //   cone:  { range, halfAngleDegrees, ... }  a wide push instead of a ray (weapons/coneBlast.js; playerGun.js fires it)
+//   projectile: { speed, gravity, restitution, maxBounces, ... }  a lobbed, bouncing ball instead of a ray (weapons/ballistics.js; each zombie it touches is a hit)
 // Upgrades (Build-A-Blaster...) never edit these entries: they are applied on top as data
 // (gunStats.js resolveGun). Check the effect of any change with `npm run balance`.
 // =============================================================================
@@ -833,6 +834,79 @@ export const weapons = {
       reload: {
         gunKeys: [{ t: 0, pos: [0, 0, 0], rot: [0, 0, 0] }, { t: 1, pos: [0, 0, 0], rot: [0, 0, 0] }],
         events: [],
+      },
+    },
+  },
+  // CLAW-ONLY (GRAB-A-GUN, phase 9): no wall sells it (clawOnly), it only comes out of the machine. Purple capsule.
+  // ROLE: the corridor gun. It THROWS a ball (weapons/ballistics.js) instead of firing a ray: the ball is lobbed, bounces off walls, the floor and
+  // every zombie it hits, and each zombie it touches is a hit; after a zombie it is sent on at the nearest other zombie in view. In the open it is one
+  // lobbed hit a shot, slow, with a drop at range (a weak gun: below the Price Gun at every range, tests/balance.test.js). In a tight space, the
+  // Service Corridor or the cinema stairs, one ball hits two or three zombies, and that is where it beats the guns of the wall.
+  // The damage is per HIT, with a falloff over the distance the BALL has flown (bounces included), so a long chain fades out.
+  tennisBallLauncher: {
+    id: 'tennisBallLauncher', name: 'Tennis Ball Launcher', fireMode: 'semi', clawOnly: true,
+    damage: 50, headshotMultiplier: 1.5, // one ball hit is a third of a round-1 Shopper (150)
+    falloff: { start: 14, end: 36, minMultiplier: 0.5 }, // by metres the ball has FLOWN
+    magazineSize: 6, startingReserve: 30,
+    fireInterval: 0.45, fireBuffer: 0.12, reloadTime: 2.3, range: 40, // (range: for the balance tools; the ball ends by bounces and lifeSeconds)
+    // The ball. speed m/s at the muzzle, gravity m/s^2 (the lob), restitution = speed kept by a bounce, maxBounces = every bounce counts (wall, floor, zombie),
+    // lifeSeconds in the air, radius m, minSpeed = slower than this and it has stopped, rehitSeconds = the same zombie can't be hit twice in a row inside
+    // this, seekRange m = after a zombie it is thrown on at the nearest OTHER zombie this close and in view (0 = it only reflects), startOffset / startDrop =
+    // where it leaves, in front of and below the eye. look: the colours (fx/ballView.js).
+    projectile: {
+      speed: 21, gravity: 6.5, restitution: 0.84, maxBounces: 5, lifeSeconds: 3.2, radius: 0.07, minSpeed: 2.2, rehitSeconds: 0.35, seekRange: 3.5,
+      startOffset: 0.55, startDrop: -0.08, bounceSound: 'tennisBounce',
+      look: { color: 0xcfe23a, seamColor: 0xf6f6e6 },
+    },
+    recoil: {
+      pitchDegrees: 2.2, yawDegrees: 0.3, rollDegrees: 0.6, adsMultiplier: 0.7,
+      model: { back: 0.07, up: 0.015, pitchDegrees: 11, yawDegrees: 1.6, rollDegrees: 3.5,
+        adsMultiplier: 0.5, frequency: 5.2, damping: 0.5 },
+    },
+    impact: { flinch: 1.5, knockback: 1.6, hitstopSeconds: 0.02, deathImpulse: 1.4 },
+    spread: {
+      base: 0.5, moving: 1.2, maxMovingFactor: 1.5, airborne: 2,
+      perShot: 0.6, maxBloom: 1.5, bloomRecoveryDelay: 0.2, bloomRecovery: 3,
+      smoothing: 10, adsMultiplier: 0.25,
+    },
+    ads: { seconds: 0.24, fovMultiplier: 0.86, offset: { x: 0, y: -0.075, z: -0.42 } },
+    muzzleFlash: {
+      seconds: 0.06, size: 0.22, coreSize: 0.09, outerOpacity: 0.7, sizeJitter: 0.2,
+      forwardOffset: 0.06, outerColor: 0xe9f27a, coreColor: 0xffffff,
+      adsWidth: 1.4, adsHeight: 0.6, adsTwistFraction: 0.08,
+      lightColor: 0xf4f7b8, handLightIntensity: 0.4, handLightRange: 0.8,
+      worldLightIntensity: 6, worldLightRange: 6,
+    },
+    sounds: { fire: 'tennisLaunch', dryFire: 'dryClick' },
+    tracerColor: 0xe9f27a,
+    viewmodel: {
+      model: 'tennisBallLauncher', hipOffset: { x: 0.17, y: -0.16, z: -0.44 },
+      aimYawDegrees: 7, hipPitchDegrees: 1.5, hipRollDegrees: 3,
+      bodyColor: 0x2d6fd6, accentColor: 0xf6f6e6, metalColor: 0xbfc5cc, // sporting-goods blue, with white trim
+      darkColor: 0x24282d, sightColor: 0xffd23f, ballColor: 0xcfe23a,
+      fire: { triggerDegrees: 24, pressSeconds: 0.03, releaseSeconds: 0.12 },
+      // Reload: the gun tips back, the support hand fetches a ball from the hopper's top and drops it in the port, then it comes level.
+      reload: {
+        gunKeys: [
+          { t: 0, pos: [0, 0, 0], rot: [0, 0, 0] },
+          { t: 0.2, pos: [0.01, -0.02, 0.03], rot: [12, 6, 10] },
+          { t: 0.8, pos: [0.01, -0.02, 0.03], rot: [12, 6, 10] },
+          { t: 1, pos: [0, 0, 0], rot: [0, 0, 0] },
+        ],
+        handKeys: [
+          { t: 0, pos: [0, 0, 0] },
+          { t: 0.18, pos: [-0.04, -0.12, 0.08], rot: [-15, 0, 0] }, // down, to the ball bin
+          { t: 0.4, pos: [-0.05, -0.12, 0.08], rot: [-15, 0, 0] }, // grabs a ball
+          { t: 0.62, pos: [0.022, 0.1, 0.02] }, // up over the loading port on top
+          { t: 0.74, pos: [0.022, 0.09, 0.02] }, // drops it in
+          { t: 0.9, pos: [0, 0, 0] },
+        ],
+        ballVisible: [[0.4, 0.72]], // the ball in the hand, from the grab to the drop
+        events: [
+          { at: 0.2, sound: 'tennisReloadOut' },
+          { at: 0.72, sound: 'tennisReloadIn', jolt: { up: -0.006, pitchDegrees: -2 } },
+          { at: 0.9, sound: 'tennisReloadReady', jolt: { back: 0.012, pitchDegrees: 3 } },
+        ],
       },
     },
   },

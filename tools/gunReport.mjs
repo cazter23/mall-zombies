@@ -68,6 +68,23 @@ if (pushers.length) {
   })));
 }
 
+const throwers = guns.filter((d) => d.projectile);
+if (throwers.length) {
+  console.log('\nBALL GUNS (a thrown, bouncing ball; the dps above counts ONE hit a ball: in a clump or off a wall it is hit again, up to maxBounces)');
+  console.table(throwers.map((d) => ({
+    gun: d.name,
+    'damage per hit': d.damage,
+    'most a ball can do': d.damage * d.projectile.maxBounces,
+    'max bounces': d.projectile.maxBounces,
+    'finds zombies within m': d.projectile.seekRange,
+    'speed m/s': d.projectile.speed,
+    'speed kept': d.projectile.restitution,
+    'balls a second': r1(1 / d.fireInterval),
+    'sustained dps, 1 hit a ball': r0(sustainedDps(d, 5, playStyle(d))),
+    'sustained dps, all bounces hit': r0((d.magazineSize * d.damage * d.projectile.maxBounces) / (magazineSeconds(d) + reloadSeconds(d))),
+  })));
+}
+
 console.log('\nSUSTAINED DPS BY RANGE (magazine + reload; ADS except pellet guns, which are hip)');
 console.table(guns.map((d) => Object.fromEntries([['gun', d.name], ...RANGES.map((m) => [`${m} m`, r0(sustainedDps(d, m, playStyle(d)))])])));
 

@@ -44,6 +44,7 @@ import { createPowerUpView } from '../fx/powerUpView.js';
 import { createPlayerGun } from '../weapons/playerGun.js';
 import { createMelee } from '../weapons/melee.js';
 import { createAimAssist } from '../weapons/aimAssist.js';
+import { createBalls } from '../weapons/ballistics.js';
 import { createZombieManager } from '../zombies/zombieManager.js';
 import { createMascotCostumes } from './mascotCostumes.js';
 import { createSurfaceSlows } from './surfaceSlows.js';
@@ -124,6 +125,7 @@ export function createGame({
   const announceHit = (hit) => events.emit('hit', hit);
   const effects = createEffects(scene, { surfaces: [map.group, ...(arena ? [arena.group] : [])] });
   const aimAssist = createAimAssist({ player, input, shootables, colliders });
+  const balls = createBalls({ colliders, shootables }); // the Tennis Ball Launcher's balls in the air (weapons/ballistics.js); the gun throws them, main.js draws them
   const gun = createPlayerGun({
     def: weapons.stapleGun,
     stats,
@@ -135,6 +137,8 @@ export function createGame({
     viewmodel,
     hud,
     sound,
+    balls,
+    onProjectileHit: () => { if (!state.over) runStats.shotsHit += 1; }, // a thrown ball's first hit makes its shot a hit
     onShot: (shot) => events.emit('shot', shot),
     onHit: announceHit,
     onReload: (reload) => events.emit('reload', reload),
@@ -490,6 +494,7 @@ export function createGame({
     ['surfaces', () => surfaces.reset()], // no slow floor left over
     ['health', () => health.reset()], // (after stats: back to the base max health)
     ['runStats', () => runStats.reset()],
+    ['balls', () => balls.clear()], // (before the gun: a ball in the air reports to it)
     ['gun', () => gun.reset()], // just the staple gun again, no upgrades
     ['interactions', () => interactions.reset()],
     ['viewmodel', () => viewmodel.reset()],
@@ -540,6 +545,7 @@ export function createGame({
     // Checked before the pause check, because the mouse is released on death.
     if (state.over) {
       death.timer += dt;
+      balls.clear(); // (a ball in the air when you died is gone: nothing more is paid or counted)
       zombies.update(dt);
       health.update(dt);
       if (!death.resultsShown && death.timer >= feel.death.resultsDelay) showResults();
@@ -579,6 +585,7 @@ export function createGame({
     if (!inMenu) gun.update(dt, melee.isBusy || player.vault.active, player.vault.active);
     warranty.update(dt); // (a replaced gun's warranty goes on file; a dry Platinum gun makes its claim)
     zombies.update(dt);
+    balls.update(dt); // after the zombies moved: a ball hits them where they are now
     mascotCostumes.update(dt);
     // Rounds pause while you're off in the debug test range (zombies can't reach you there).
     const inMall = !arena?.contains(player.position);
@@ -624,6 +631,7 @@ export function createGame({
     contactShadows,
     aimAssist,
     gun,
+    balls,
     interactions,
     melee,
     health,

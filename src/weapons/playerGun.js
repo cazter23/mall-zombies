@@ -47,6 +47,8 @@ export function createPlayerGun({
   onHit = null, // ({ target, killed, headshot, melee }) after any hit on a shootable (points)
   onReload = null, // ({ weaponId }) a reload just began
   aimAssist = null, // optional (weapons/aimAssist.js): controller aim help, applied before each shot
+  balls = null, // optional (weapons/ballistics.js): the bouncing balls of a gun with a `projectile` (the Tennis Ball Launcher)
+  onProjectileHit = null, // () a ball touched its first zombie (run accuracy: the throw was a shot, this makes it a hit)
 }) {
   const startDef = def;
   const origin = new THREE.Vector3();
@@ -162,7 +164,52 @@ export function createPlayerGun({
     return shot;
   }
 
+  // A gun with a projectile (the Tennis Ball Launcher): the trigger THROWS a ball (weapons/ballistics.js) that flies, bounces and hits later: each
+  // zombie it touches is a hit (+10, hit marker, splat, and a kill pays as usual). The throw is the shot (one pulse, one shot counted); the ball's first
+  // hit on a zombie makes it a hit for the run's accuracy (onProjectileHit).
+  function fireProjectile(slot) {
+    const { def: d, aim, weapon } = slot;
+    const projectile = d.projectile;
+    player.getAim(origin, direction);
+    const throwDirection = direction.clone();
+    aim.applySpread(throwDirection);
+    aim.onShot();
+    kick(d, aim);
+    const start = origin.clone().addScaledVector(throwDirection, projectile.startOffset);
+    start.y += projectile.startDrop;
+    const ahead = start.clone().addScaledVector(throwDirection, 6);
+    const shot = { origin: start.clone(), end: ahead, endNormal: throwDirection.clone().negate(), point: ahead.clone(), normal: throwDirection.clone().negate(),
+      distance: 6, target: null, part: null, hits: [], worldHit: null, projectile: true, weaponId: d.id, magazineLeft: weapon.magazine };
+    let counted = false;
+    balls.launch({
+      position: start,
+      direction: throwDirection,
+      projectile,
+      impact: d.impact,
+      damageOf: ({ part, distance }) => hitDamage(d, { part, distance }, 0, stats),
+      onHit({ target, part, point, normal, killed, direction: hitDirection }) {
+        const headshot = part === 'head';
+        if (!counted) { counted = true; onProjectileHit?.(); }
+        effects.splat(point, normal, target.splatColors, headshot ? feel.effects.headshotSplatCount : feel.effects.splatCount,
+          { flesh: true, speedScale: Math.sqrt(Math.max(1, d.impact?.deathImpulse ?? 1)) * (headshot ? 1.2 : 1), direction: hitDirection });
+        if (onHit) onHit({ target, killed, headshot, melee: false });
+        hud.showHitMarker({ headshot, killed });
+        if (sound) {
+          sound.play(headshot ? 'hitHead' : 'hitBody');
+          if (killed) sound.play('killConfirm');
+        }
+      },
+      onBounce({ point, normal, target }) {
+        if (sound) sound.play(projectile.bounceSound);
+        if (!target) effects.puff(point, normal);
+      },
+    });
+    if (onShot) onShot(shot);
+    return shot;
+  }
+
   function fire(slot) {
+    if (slot.def.projectile && balls) return fireProjectile(slot);
     if (slot.def.cone) return fireCone(slot);
     const { def: d, aim, weapon } = slot;
     player.getAim(origin, direction);

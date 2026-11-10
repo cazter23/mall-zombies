@@ -14,7 +14,8 @@
 //       lifeSeconds    in the air at most this long
 //       radius         m: how far off a surface it rests after a bounce
 //       minSpeed       a ball that slows below this has stopped: it ends
-//       rehitSeconds   the same zombie can't be hit twice in a row inside this (the ball would hit it every tick as it bounces off)
+//       rehitSeconds   the zombie it just hit is passed THROUGH for this long (no second hit, no bounce off it): the ball is sent on at the next zombie, which
+//                      may be standing right behind this one, and must not hit this one again on its way out
 //       seekRange      after a zombie, the ball is sent on at the nearest OTHER zombie this close and in view (0 = it only reflects)
 //     damageOf({ part, distance }) -> damage of ONE hit on a zombie (the gun's own maths: weapons/gunStats.js hitDamage)
 //     onHit({ target, part, point, normal, killed, direction, ball })     a zombie was hit
@@ -81,7 +82,9 @@ export function createBalls({ colliders, shootables }) {
     if (ball.age >= p.lifeSeconds || speed < p.minSpeed || ball.position.y < -20) { end(ball); return; }
     const distance = speed * dt;
     const direction = move.copy(ball.velocity).divideScalar(speed);
-    const result = castShot(ball.position, direction, distance + p.radius, colliders, shootables, 1);
+    // (the zombie it just hit is not in the way for a moment: it passes through, on towards the next)
+    const targets = ball.lastTarget && ball.sinceHit < p.rehitSeconds ? shootables.filter((t) => t !== ball.lastTarget) : shootables;
+    const result = castShot(ball.position, direction, distance + p.radius, colliders, targets, 1);
     if (result.target && ball.alive) {
       hitZombie(ball, result, direction);
     } else if (result.worldHit) {
@@ -106,19 +109,14 @@ export function createBalls({ colliders, shootables }) {
     const point = result.point.clone();
     const normal = result.normal.clone();
     ball.position.copy(point).addScaledVector(normal, p.radius * 1.05);
-    // The same zombie, just hit: the ball only bounces off it (it can't hit it again until it has hit something else or the time is up).
-    const rehit = target === ball.lastTarget && ball.sinceHit < p.rehitSeconds;
-    let killed = false;
-    if (!rehit) {
-      const damage = ball.damageOf({ part: result.part, distance: ball.travelled });
-      ({ killed } = target.takeHit({ damage, part: result.part, point, direction: direction.clone(), impact: ball.impact }));
-      ball.hits.push({ target, part: result.part, point, normal, distance: ball.travelled, killed });
-      ball.lastTarget = target;
-      ball.sinceHit = 0;
-      ball.onHit?.({ target, part: result.part, point, normal, killed, direction: direction.clone(), ball });
-    }
+    const damage = ball.damageOf({ part: result.part, distance: ball.travelled });
+    const { killed } = target.takeHit({ damage, part: result.part, point, direction: direction.clone(), impact: ball.impact });
+    ball.hits.push({ target, part: result.part, point, normal, distance: ball.travelled, killed });
+    ball.lastTarget = target;
+    ball.sinceHit = 0;
+    ball.onHit?.({ target, part: result.part, point, normal, killed, direction: direction.clone(), ball });
     // Where to next: on at the nearest other zombie in view (a lob up and across), else it just bounces off this one.
-    const next = !rehit && p.seekRange > 0 ? nextTarget(ball.position, target, p.seekRange) : null;
+    const next = p.seekRange > 0 ? nextTarget(ball.position, target, p.seekRange) : null;
     const speed = ball.velocity.length() * p.restitution;
     if (next) {
       bodyCentre(next, chest);

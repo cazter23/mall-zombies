@@ -156,6 +156,11 @@ src/
                         Hip height follows eye height; feet posed for walk cycle / slide (V) / air tuck, knees
                         solved with two-bone IK. Exports placeLimb()/makeBoxMesh()/makeFacetedLimbMesh()/buildDeformedBoxGeometry() (also used for the arms)
   weapons/
+    ballistics.js       The bouncing projectile of a gun with `projectile` (the Tennis Ball Launcher): createBalls({ colliders, shootables }) -> { list, launch({ position,
+                        direction, projectile, damageOf, impact, onHit, onBounce, onEnd }), update(dt), clear() }. A ball flies under gravity and is swept against the world and the
+                        zombies (castShot); every wall, floor or zombie contact is a BOUNCE (spent at maxBounces, lifeSeconds, or slower than minSpeed); a zombie it touches is hit
+                        (damageOf) and the ball is thrown on, lifted for gravity, at the nearest OTHER zombie within seekRange in view, passing through the one it just hit for rehitSeconds.
+                        DOM-free: createGame ticks it (after the zombies) and clears it on death and Play again ('balls' reset step); fx/ballView.js draws it.
     fuel.js             The fuel tank of a gun with `fuel` (the Leaf Blower): createFuel(), tickFuel(state, cfg, dt, { fired, level, capacity }) -> units to add
                         (it refills by itself regenDelay after the last pulse, at regenPerSecond; running dry LOCKS the trigger until the tank holds restartAt),
                         resetFuel(). Pure timing: the tank's LEVEL is the weapon's `magazine`, so the HUD, RESTOCK-O-MATIC, Refurbished grabs and
@@ -249,6 +254,7 @@ src/
                         coilNailer.js = heavy automatic pneumatic coil nailer with round wire-collated drum. barcodeScanner.js =
                         charge-beam retail laser scanner with capacitor coils and Li-Ion battery pack. confettiCannon.js = pink/purple
                         double barrels, gold rims, PARTY POP! stock label and striped shells; hinge open, a shell per cycle, snap shut.
+                        tennisBallLauncher.js = sporting-goods blue pump launcher: fat ringed barrel, loading port, clear hopper with balls, a support hand that fetches a ball to reload.
                         leafBlower.js = orange motor housing, red fuel tank with a level window, ribbed flared nozzle (the claw-only Leaf Blower).
                         Each model also returns `mounts` (barrel / top / side / grip / magazine / sticker: where upgrade parts go).
                         upgradeParts.js = what upgrades LOOK like: buildAttachmentPart(id, mount) (mounting brackets/adapters on universal
@@ -653,6 +659,7 @@ src/
     mallMusic.js        Pure, deterministic PCM composition of the lounge loop; used by the music worker and the export/preview tests.
     musicWorker.js      Web Worker that renders mallMusic once, off the main thread (inlined as a Blob worker in the single-file build).
   fx/
+    ballView.js         Browser side only: draws `balls.list` (the Tennis Ball Launcher's balls) as a pool of tumbling tennis balls between last tick's and this tick's position (alpha).
     powerUpView.js      Reusable delivery carton, blue beacon and security badge (no lights/colliders); bob/spin/blink,
                         floor-projected Blue Light ring clipped at walls/voids, hide on reset/death, owned-resource disposal
     contactShadows.js   One instanced draw for soft zombie grounding; interpolates feet and finds supporting collider tops.

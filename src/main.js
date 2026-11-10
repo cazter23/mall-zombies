@@ -36,6 +36,7 @@ import { PRICE_CATEGORIES } from './game/pricing.js';
 import { createDebugPanel } from './ui/debugPanel.js';
 import { createTitleCamera } from './ui/titleCamera.js';
 import { createBenchmark } from './fx/benchmark.js';
+import { createBallView } from './fx/ballView.js';
 import { createLightPool, collectPointLights } from './fx/lightPool.js';
 import { batchStatic } from './world/staticBatch.js';
 import { sheenEnvironment, applyMetalSheen } from './fx/metalSheen.js';
@@ -224,6 +225,7 @@ if (!new URLSearchParams(location.search).has('nobatch')) batchStatic(map.group,
 const metalSheen = sheenEnvironment(renderer, look.metalSheen);
 for (const root of [map.group, g.arena?.group].filter(Boolean)) applyMetalSheen(root, metalSheen, look.metalSheen);
 effects.prepare(renderer, camera); // shared impact graphics warmed before the first shot
+const ballView = createBallView(scene, g.balls); // the Tennis Ball Launcher's balls in the air
 
 // --- Menus and the run's flow ------------------------------------------------------
 // title (live flyover) -> playing <-> paused -> dead -> results receipt -> playing again / title.
@@ -402,6 +404,7 @@ function render(alpha, frameTime) {
   zombies.render(visualTime, alpha);
   g.contactShadows.update(zombies.zombies, alpha);
   effects.update(visualTime);
+  ballView.update(alpha); // the Tennis Ball Launcher's balls in the air
   viewmodel.update(visualTime, camera, {
     weapon: gun.weapon,
     shownDef: gun.shownDef, // mid-switch: the old gun while it drops away

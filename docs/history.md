@@ -1,5 +1,29 @@
 # Sunset Galleria: build history ("Current state")
 
+## 9 November 2026 - GRAB-A-GUN, phase 9: the Tennis Ball Launcher
+
+The second claw-only gun, and the first thing in the game that is not hitscan: the trigger THROWS a ball that flies, bounces and hits later. Purple capsule, weight 7 beside the
+Barcode Scanner and the Leaf Blower. A pump launcher: 6 balls a magazine, 30 in reserve, a ball every 0.45 s, 50 damage a hit (headshot x1.5), a reload with the support hand
+fetching a ball. In the open it is weak (one lobbed hit a ball: 66 sustained dps, below the Price Gun at every range); in a clump or off a wall one ball hits again and again.
+
+- **Engine first, with its own test** (weapons/ballistics.js, tests/ballistics.test.js): a ball under gravity (6.5 m/s2, 21 m/s out), swept against the world and the zombies
+  (castShot) every 60 Hz tick; every wall, floor or zombie contact is a BOUNCE (it keeps 84% of its speed; spent at 5 bounces, 3.2 s, or slower than 2.2 m/s). A zombie it
+  touches is hit (the gun's own damage maths, falloff by the metres the BALL has flown), and the ball is thrown on, lifted for gravity, at the nearest OTHER zombie within 3.5 m
+  in view (not through a wall), passing straight through the zombie it just hit (so zombies in a line are chained, not hit twice). DOM-free; createGame ticks it after the zombies,
+  clears it on death and on Play again (the 'balls' reset step). fx/ballView.js (browser only) draws the balls between last tick's position and this one's.
+- **Counting.** One pull is one shot (counted at the throw; haptics and Build-A-Blaster hearts see it at once); the ball's FIRST hit on a zombie makes it a hit for the run's
+  accuracy, however many it touches after. Each zombie touched is a hit: +10, hit marker, splat, and a kill pays as usual.
+- **The role, measured in the real game** (tests/tennisBallLauncher.test.js; frozen Shoppers, seeded spread): a lone zombie in the open is 1 hit a ball; three Shoppers in a line
+  1.5 m apart 5 hits a ball (the cap); three spread 5 m apart 1; a lone zombie at the Service Corridor's mouth 2 (the walls send it back). So a ball can do at most 250 (5 x 50),
+  330 sustained dps if every bounce hits, against 66 with one hit a ball. A first attempt at damage 55 / 6 bounces / 5.5 m of seeking chained everything everywhere (6 hits a
+  ball even across the open hallway): the numbers above are the retune.
+- **Odds** (`npm run sim:claw`, nominal value 1500, no wall route): per grab at 3-in-4 timing the Tennis Ball Launcher is won 9.2% (perfect 11.0%, timed 10.5%, random 6.2%), in the
+  pit 18.1%; about 7,000 points of grabs per copy at 3-in-4 timing (about 6,000 with perfect timing and the Hallway): the only way to it. Weights now total 114; the wall is
+  still the cheaper way to every wall gun, and the first grab after the shutter is 1.46x its price (85.6% Blue or better).
+- Also: tests/impactMarks.test.js skips projectile guns (a ball marks no wall the way a ray does), the balance report has a BALL GUNS table, tests/balance.test.js has the job test.
+- Checked in the browser pane (preview build): the viewmodel, a throw with its splat and points, a clump chained for five hits. The pane was hidden, so zombies were drawn part-risen
+  (stale frames): the ball in the air was not seen in a frame, only in the game state. Not checked: the sounds by ear, a Build-A-Blaster build on it, a controller.
+
 ## 9 November 2026 - GRAB-A-GUN, phase 8: the Leaf Blower (the first claw-only gun)
 
 A wide cone of wind that shoves everything in front of you back and lays the close ones flat, for a corridor or a doorway. It is crowd control, not damage: a pulse
