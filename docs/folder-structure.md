@@ -723,7 +723,12 @@ src/
                         gun's real spread + pellets vs a Shopper's hitboxes at a range: expectedShotDamage, sustainedDps, burstDps,
                         shotsToKill); gunReport.mjs = `npm run balance`; meleeReport.mjs = `npm run melee` (swings to kill by round, plain box cutter vs the Customer Service tiers); gunSheet.html/.js = a contact sheet of one gun in eight upgrade states (`npm run dev`, /tools/gunSheet.html?gun=nailGun&view=left); babReport.mjs = `npm run balance:bab` (headless horde bot: plain gun vs warranty tiers vs builds); clawOdds.js = GRAB-A-GUN's odds
                         simulation (seeded; the game's own roll; perfect / 3-in-4 / random / timed presses; sites, plush closes, wall value,
-                        points per specific gun vs its cheapest wall route); clawSim.mjs = `npm run sim:claw [price]` prints it (the plan's odds tables)
+                        points per specific gun vs its cheapest wall route); clawSim.mjs = `npm run sim:claw [price]` prints it (the plan's odds tables);
+                        economySim.mjs = `npm run sim:economy` (docs/economy-report.md is written from its tables): plays the real game headless, many seeds in parallel
+                        child processes, with economyBot.js (the bot: aims with error, kites, shops by TELEPORT from a buy order, immortal or mortal; records income by
+                        source, purchases and the loadout each round) following economyPlans.js (PLANS = buy orders; PROPOSALS = config changes applied in memory only,
+                        so a before/after is measured without touching src/config), beside economyModel.js (the maths: wave mix, points a zombie, the upgrade ladder);
+                        finished runs are kept in scratch/economy-sim/ (git-ignored) until the game's code or that plan changes; --quick for a short, noisy look
   world/                Shared building blocks for maps
     mapKit.js           createMapKit(group, colliders): mat, addCollider, box, sign, tiledFloor, wall({ along, from, to,
                         at0, at1, height, openings: [{ from, to, top }] }) (doorways get lintels), shutterDoor({ id, label,

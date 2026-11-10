@@ -23,6 +23,7 @@ npm run build:single  # dist-single/sunset-galleria.html: the WHOLE game in one 
 npm run play          # JUST PLAYING: rebuilds that file only if the code changed, opens it in Firefox (play.cmd = the same by double-click)
 npm run balance       # gun balance report (tools/gunReport.mjs): dps by range, pulls to kill by round, cannon blast table
 npm run melee         # box cutter report (tools/meleeReport.mjs): swings to kill by round, plain vs the Customer Service tiers
+npm run sim:economy   # economy report (tools/economySim.mjs, ~90 min from an empty cache; --quick for a short look): a headless bot's income by round, what it can afford when, proposals before/after
 ```
 There is no linter. Docs-only changes need no tests. What each test file covers: docs/tests.md (relationships and rules, not exact values).
 tests/docs.test.js fails if a new src/ file or test file isn't described in the docs.
@@ -66,6 +67,7 @@ tests/docs.test.js fails if a new src/ file or test file isn't described in the 
 | plan the next big system | docs/wardrobe-plan.md, docs/wardrobe-showroom-plan.md (its rework), docs/claw-machine-plan.md (finished plans are in docs/archive/) |
 | touch behaviour and want to know which test guards it | docs/tests.md |
 | change a gun | docs/weapon-balance-pass.md and `npm run balance` |
+| change a price, a payout or how strong an upgrade is | docs/economy-report.md and `npm run sim:economy` |
 
 ## Folder map (short; every module is described in docs/folder-structure.md)
 ```

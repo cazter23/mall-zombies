@@ -2,8 +2,8 @@
 
 Status: PHASE 1 BUILT (9 November 2026, branch `claude/kiosk-kevin-1`: the two pockets, the buttons and the Soda Bomb; docs/history.md has what was built and measured).
 Phases 2 to 8 are still a plan (the plan itself: branch `claude/kiosk-kevin-plan`; the five decisions below were answered the same day). Numbers are starting points to tune by playing, and prices are
-suggestions: the economy report the claw and Wardrobe plans wait for still doesn't exist (`docs/economy-report.md` and `tools/economySim.mjs` aren't
-written), so phase 7 checks them with a small report of its own. Checked against main at 753aafd (all ten GRAB-A-GUN phases, Wardrobe v1 and showroom
+suggestions: the economy report now exists (`docs/economy-report.md`, 10 November 2026, from `npm run sim:economy`; its last section prices a purchase in
+"rounds of income"), so phase 7 checks Kevin's prices against it and adds a kiosk step to the bot in `tools/economyPlans.js`. Checked against main at 753aafd (all ten GRAB-A-GUN phases, Wardrobe v1 and showroom
 phases 1 and 3). Build one phase at a time, in its own worktree, and test before the next.
 
 ## The five decisions (made by the user, 9 November 2026)

@@ -178,6 +178,11 @@ owned, a free grab, a keychain in the run summary); the voucher keeps the counte
 for the Courtesy Loaner); tickets never touch points, pricing or income, are lost on death and gone on Play again; the booth has one
 tall collider, a clear reachable spot at every prize, no spawn within 5 m and unchanged zombie routes. clawMachine.test.js checks
 every grab outcome's tickets; receiptReview.test.js the receipt's ticket and keychain lines.
+`economySim.test.js` the economy sim (npm run sim:economy; tools/economyBot.js, economyPlans.js, economyModel.js): the bot plays two rounds headless, buys its
+list in order at the shelf price, and its books balance (every point earned has a round and a source, every point spent a logged purchase);
+a proposal changes config numbers in memory only and puts them back, and a typo in a proposal's path is an error; every proposal and every
+buy order points at config that exists (a renamed door, gun or tier fails here, not in a 40-minute run); the maths side reads config (wave
+shares add up, a weaker gun earns more from the same wave, the ladder's prices are the shop's); the claw step only wants guns the bot can fire.
 `clawSim.test.js` GRAB-A-GUN's odds (tools/clawOdds.js): the wall stays the cheaper way to every specific gun even at perfect
 timing, a site lasts 5 to 6 grabs, perfect timing never meets the plush while a random lane often does, better timing wins dearer guns,
 and a plush grab costs nothing. clawMachine.test.js also plays the 'claw' Flash Sale (the PA, the sale price charged and refunded, the
