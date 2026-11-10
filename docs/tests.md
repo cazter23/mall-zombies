@@ -143,6 +143,7 @@ that a boss voucher on the floor survives Stay for overtime and still pays on ex
 that a newer-version career save is left untouched; that a key from a boss killed on an escalator ramp or against a wall rests on clear floor and is collected there;
 that a boss vanishing while the player is mid-jump drops its key once they come down; that Play again after a lost run, win + overtime + death, Clock out and leaving from the menu
 equals a fresh game (`snapshot()` in tests/helpers/headlessGame.js includes the checklist, keys, pickups and win flags); and the HUD's four boxes, counts and key markers.
+`tests/powerUps.test.js` also checks that the incentive HUD names a boss voucher lying on the floor and never throws on a pickup id it does not know (a throw in render stops the frame loop).
 `tests/retailUi.test.js` also covers the PA queue's `keep` rule: a kept message survives a full queue and a preemption, and other messages trim and preempt as before.
 Phase 4 checks that the key opens the fountain count, only fountain kills advance it (including bosses and Mascots), the tick and PA fire once, and Play again resets the duty.
 Phase 5 checks the night safe’s prompt alongside both Customer Service windows and the Prize Counter. It covers refusals,
