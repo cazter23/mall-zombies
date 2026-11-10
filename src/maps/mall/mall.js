@@ -41,6 +41,7 @@ import { buildWardrobeDisplay } from './wardrobeDisplays.js';
 import { foodCourtShowpieces } from './wardrobeShowpieces/foodCourt.js';
 import { upgrades } from '../../config/upgrades.js';
 import { shutters } from '../../config/shutters.js';
+import { hazards } from '../../config/hazards.js';
 import { buildStores, storeOpenings } from './stores.js';
 import { buildStartRoomDetails } from './startRoomDetails.js';
 import { buildMegaMartDetails, MART_FIXTURES } from './megaMartDetails.js';
@@ -914,6 +915,8 @@ export function buildMall(scene, colliders) {
     // GRAB-A-GUN: one machine, live at one of its sites (it starts at the first every run).
     { kind: 'clawMachine', name: 'clawMachine', zone: clawSites[0].zone, position: clawSites[0].cabinet.position, normal: clawSites[0].cabinet.normal, sites: clawSites },
     { kind: 'prizeCounter', name: 'prizeCounter', zone: counterSite.zone, position: prizeBooth.position, normal: prizeBooth.normal, slots: prizeBooth.slots },
+    // Environmental hazards (docs/hazards-plan.md): Grand Atrium Electrified Fountain breaker switch.
+    { kind: 'fountainHazard', name: 'hazard_fountain', zone: hazards.fountain.zone, position: new THREE.Vector3(hazards.fountain.position.x, hazards.fountain.position.y, hazards.fountain.position.z), normal: new THREE.Vector3(hazards.fountain.normal.x, hazards.fountain.normal.y, hazards.fountain.normal.z) },
   ];
 
   const doors = [startDoor, megaMartDoor, foodCourtDoor, serviceCorridorDoor, foodCourtMegaMartDoor, serviceCorridorFoodCourtDoor, escalatorDoor, atriumDoor, atriumPromenadeDoor, atriumMegaMartDoor, cinemaWing.door, cinemaConnection.door, departmentStoreDoor, departmentStoreStartRoomDoor, parking.door];

@@ -101,6 +101,8 @@ src/
     clawMachine.js      GRAB-A-GUN, the claw machine: the prize weights and capsule colours, the sweep (2.4 s, 0.2 s quicker a grab, 1.4 s
                         floor), auto-drop, lift and take times, stock (6 a site) and plush odds, the cabinet's size, its six sites and the
                         PA lines. Price: economy.claw (through g.pricing 'claw').
+    hazards.js          Environmental hazards (docs/hazards-plan.md): switch box sizing/colours, status labels, and tuning for the Grand Atrium
+                        Electrified Fountain (plus planned fryer, sprinkler and PA lure hazards). Prices: economy.hazards (through g.pricing 'hazard').
     workshop.js         Build-A-Blaster: Limited Edition numbers (workshopBuilds), the ritual (workshopRitual: time, qualities, stages, loaner, PA), Stuffings and Hearts, buildOf reads a gun's finished build.
     decor.js            Decoration kit + clutter scatter numbers (world/decor.js, world/scatter.js). Cosmetic only.
     concourse.js        The real-mall pass as data (maps/mall/concourse.js): Level 2 shopfronts, hallway display windows, soffits and
@@ -479,6 +481,9 @@ src/
                         voucherChoices(gun). 'prizeRedeemed'.
       horror.js         Feature kind 'horror': the mall decays as the rounds climb (config/look.js horror). Visual only, never gameplay.
                         Darker every round, flickering neon dies, every tube browns out, lamps die, the view drifts to the lateHours grade, power cuts.
+      hazards.js        Shared environmental hazard lifecycle (docs/hazards-plan.md): buildHazardSwitchBox (dynamic parent group, status lamp + throw lever),
+                        createHazard (ready -> active -> cooldown, 'hazard' pricing prompt, player-inside slow/hurt, reset), dealHazardDamage (source 'hazard', boss/Mascot maxHealthCap).
+      fountainHazard.js Feature kind 'fountainHazard': Grand Atrium center fountain breaker switch; energizes the basin and conductive floor ring, pulsing electric arcs (source 'hazard') and slows.
     debugCommands.js    createDebugCommands(game parts): the debug shortcuts as functions run(id) (spawn, cycleZombie, clearZombies,
                         killZombies, nextRound, jumpRounds, flashSale, addPoints, zeroPoints, god, giveGun, upgradeGun, doors, arena, panel,
                         spawnMascot / spawnGoldMascot: each costume in turn at the spawn point nearest you);

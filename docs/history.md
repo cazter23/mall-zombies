@@ -1,5 +1,9 @@
 # Sunset Galleria: build history ("Current state")
 
+## 9 November 2026 - Environmental hazards, phase 1: the plan and the Electrified Fountain
+
+Planned four pay-to-trigger mall hazards in `docs/hazards-plan.md` (**Electrified Fountain** in the Grand Atrium, **Fryer Blast** at Corn Dog Corral in the Food Court, **Fire Sprinklers** in the Main Hallway, and **PA System Lure** in the Service Corridor; dropped **Toppling Shelves** and **Escalator Reversal** to avoid runtime navigation rebuilds, unbatching Mega Mart's static product shelves, and escalator dynamic-mesh invariants). Built the shared hazard framework (`src/config/hazards.js`, `src/game/features/hazards.js`, `hazard` pricing category in `src/game/pricing.js` and `src/config/economy.js` with a `'hazards'` Flash Sale group) and the first hazard, the **Electrified Fountain** (`src/game/features/fountainHazard.js`, `fountainHazard` on the south fountain rim in the Grand Atrium): 750 points, 8 s active pulsing cyan electric arcs (`source: 'hazard'`, capped per pulse against Bosses and Mascots, shocking and slowing a player standing inside the ring), 25 s recharging cooldown, and clean Play-again reset without changes to `createGame.js`. Tested in `tests/hazards.test.js`.
+
 ## 9 November 2026 - GRAB-A-GUN, phase 10: RETURN TO SENDER, the wonder weapon (claw-only)
 
 Settled with you before it was built: the plan's working idea, name and all, and bosses and Mascots take a BIG FIXED HIT (not just a normal hit). A returns-desk scanner whose
