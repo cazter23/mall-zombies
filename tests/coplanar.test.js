@@ -130,3 +130,48 @@ test('no coplanar (flickering) surfaces inside the stores, the Customer Service 
   map.dispose();
   assert.deepEqual([...problems.entries()].map(([k, v]) => `${k}: ${v.toFixed(3)} m2`), [], 'these surfaces share a plane and would flicker');
 });
+
+// The test above reads each mesh's Euler angles, so a sign hung with a flipped rotation (atmosphere.js signs are rotated by pi round X and Z, which is
+// the same as a turn round Y) is skipped, and it only looks inside listed regions. This one takes the planes' real world normals and checks EVERY
+// flat sign in the mall against every axis-aligned box face: the hallway directory once flickered against a boarded vent's planks this way.
+test('no sign anywhere shares a plane with a box face that faces the same way (whatever Euler angles the sign was hung with)', () => {
+  const scene = new THREE.Scene();
+  const map = buildMall(scene, []);
+  scene.updateMatrixWorld(true);
+  const boxes = [];
+  const planes = [];
+  const normal = new THREE.Vector3();
+  const bounds = new THREE.Box3();
+  map.group.traverse((o) => {
+    if (!o.isMesh || !o.geometry) return;
+    for (let p = o; p; p = p.parent) if (!p.visible) return; // (a cabinet's live model is switched off while the machine is at another site)
+    if (o.geometry.type === 'BoxGeometry' && !o.rotation.x && !o.rotation.z) boxes.push(...facesOf(o));
+    if (o.geometry.type !== 'PlaneGeometry' || o.material.transparent) return;
+    o.getWorldDirection(normal);
+    const axis = [Math.abs(normal.x), Math.abs(normal.y), Math.abs(normal.z)].findIndex((v) => v > 0.999);
+    if (axis < 0 || axis === 1) return; // (only upright signs facing along x or z)
+    bounds.setFromObject(o);
+    const others = [0, 1, 2].filter((a) => a !== axis);
+    planes.push({ axis, c: (bounds.min.getComponent(axis) + bounds.max.getComponent(axis)) / 2, dir: Math.sign(normal.getComponent(axis)),
+      lo: others.map((a) => bounds.min.getComponent(a)), hi: others.map((a) => bounds.max.getComponent(a)), mesh: o });
+  });
+  const problems = [];
+  for (const sign of planes) {
+    for (const face of boxes) {
+      if (face.axis !== sign.axis || face.dir !== sign.dir || Math.abs(face.c - sign.c) > EPS) continue;
+      const ox = overlap(sign, face);
+      if (ox[0] <= 0 || ox[1] <= 0 || ox[0] * ox[1] < MIN_AREA) continue;
+      // Hidden behind something (a cabinet stood in front of a wall poster): nobody sees the two fight. A ray from 3 m out (clear of a cabinet's depth), onto the middle of the overlap.
+      const others = [0, 1, 2].filter((a) => a !== sign.axis);
+      const centre = new THREE.Vector3();
+      others.forEach((a, i) => centre.setComponent(a, (Math.max(sign.lo[i], face.lo[i]) + Math.min(sign.hi[i], face.hi[i])) / 2));
+      centre.setComponent(sign.axis, sign.c);
+      const out = new THREE.Vector3().setComponent(sign.axis, sign.dir);
+      const hit = new THREE.Raycaster(centre.clone().addScaledVector(out, 3), out.clone().negate(), 0, 3 - 0.02).intersectObject(map.group, true).find((h) => h.object.visible && !h.object.material?.transparent);
+      if (hit) continue;
+      problems.push(`${sign.mesh.name || 'sign'} at (${sign.mesh.position.x.toFixed(1)}, ${sign.mesh.position.y.toFixed(2)}, ${sign.mesh.position.z.toFixed(1)}) vs ${face.mesh.name || 'box'} (${face.mesh.material.color?.getHexString?.()} at ${face.mesh.position.toArray().map((n) => n.toFixed(2))}, parent ${face.mesh.parent?.name}) on ${'xyz'[face.axis]}=${face.c.toFixed(3)}: ${(ox[0] * ox[1]).toFixed(3)} m2`);
+    }
+  }
+  map.dispose();
+  assert.deepEqual([...new Set(problems)], [], 'these signs share a plane with a box face and would flicker');
+});
