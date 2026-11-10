@@ -1,5 +1,6 @@
 // Model colour keys use shared skin roles. Defaults here were literals in the models.
 export const gunPaletteKeys = {
+  foamDartBlaster: { muzzleColor: 'accent', dartColor: 'ammo' },
   nailGun: { bodyShadeColor: 'dark', brassColor: 'accent' },
   priceGun: { bodyShadeColor: 'dark', saleColor: 'accent', labelColor: 'ammo' },
 };
