@@ -189,11 +189,14 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   window sells the Wheelies (x -11.05..-9.15, z -13.3..-12, 0.9 m, vaultable; buy at its front edge, x -10.1) and a 3 m foam finger in a pennant bin
   on the open court floor sells the Foam Finger (bin x -15.5..-14.5, z -10.4..-9.6; buy at its front, z -8.8; the 6 m pillar at (-13, -11.3) hides
   Good Sports' west half from the entrance, so it stands north of it). The ramp keeps Good Sports' 3 m door
-  (x -14.5..-11.5) clear; the surveyed spots are in config/wardrobe.js `at`. Find Aviators at SHADE SHACK in the Atrium and 3D Glasses at the Cinema concessions.
-  The Cardigan is in KNITS at HOFFMAN'S, with a fitting room by the curtained booths. Mega Mart has the Sandwich Board at checkout
-  and the Fanny Pack by the outdoor aisle. The Service Corridor has the Hi-Vis Vest and a fitting room by the staff lockers.
-  Shoe-Per Sale has two sneaker racks and a fitting room. The Gold Card is beside Customer Service in the Hallway.
-  Interaction anchors are in `config/wardrobe.js`. Visual mounts are in `mall/wardrobeDisplays.js`.
+  (x -14.5..-11.5) clear. The prompt coordinates for the other six ground-floor showpieces are in metres (x/z).
+  Gold Card (4.03, 5.04) faces west toward the start shutter, just west of Customer Service. Mega Mart’s Sandwich Board (24.10, 2.75) and
+  Fanny Pack (23.90, -3.16) face west from the gaps at the checkout ends. The Hi-Vis locker (-22.81, -8.46) faces east between the staff
+  lockers and the z -7 vent lane, with a blade sign facing the hallway and room to approach along the corridor.
+  HOFFMAN’S Cardigan (-15.50, 11.45) faces the gate from the front floor between the west wall and the cosmetics counters. The Mirrored
+  Aviators (25.62, 14.52) face west from beside SHADE SHACK, with the fountain loop and kiosk footprint clear.
+  The Cinema concessions and Shoe-Per Sale still have racks. Fitting rooms are by the curtained booths in HOFFMAN’S, at Shoe-Per Sale
+  and by the Service Corridor lockers. Anchors are in `config/wardrobe.js` and plain visual mounts are in `mall/wardrobeDisplays.js`.
 - Ammo cache: the RESTOCK-O-MATIC, a big hot-orange vending machine on the Food Court's NORTH wall just inside the door,
   east side (x 4.1..5.8, front at z -3.15 facing south; LAYOUT.restockMachine.x moves it along the wall), clear of the door
   lane, the east bench and the Byte Me pod. Hold F/X for 400 points to refill the gun in your hand (any gun, including the

@@ -39,6 +39,7 @@ import { economy } from '../../config/economy.js';
 import { fittingRooms, wardrobeItems, wardrobeAnchor } from '../../config/wardrobe.js';
 import { buildWardrobeDisplay } from './wardrobeDisplays.js';
 import { foodCourtShowpieces } from './wardrobeShowpieces/foodCourt.js';
+import { groundFloorShowpieces } from './wardrobeShowpieces/groundFloor.js';
 import { upgrades } from '../../config/upgrades.js';
 import { shutters } from '../../config/shutters.js';
 import { buildStores, storeOpenings } from './stores.js';
@@ -77,6 +78,8 @@ import { buildParkingLot } from './parkingLot.js';
 import { buildMallExterior } from './mallExterior.js';
 import { buildParkingDetails } from './parkingDetails.js';
 import { parkingDetails } from '../../config/parkingDetails.js';
+
+const wardrobeShowpieces = { ...foodCourtShowpieces, ...groundFloorShowpieces };
 
 export const LAYOUT = {
   parkingLot,
@@ -891,7 +894,7 @@ export function buildMall(scene, colliders) {
     const position = new THREE.Vector3(x, floorY + heightAboveFloor, z).addScaledVector(normal, standOff);
     const spot = { kind, name: `${kind}_${id}`, zone, item: id, position, normal };
     // A showpiece (maps/mall/wardrobeShowpieces/) replaces the plain rack; its handle rides on the feature for the rack builder.
-    if (kind === 'wardrobeRack' && foodCourtShowpieces[id]) spot.showpiece = foodCourtShowpieces[id](kit, spot, floorY);
+    if (kind === 'wardrobeRack' && wardrobeShowpieces[id]) spot.showpiece = wardrobeShowpieces[id](kit, spot, floorY);
     else buildWardrobeDisplay(kit, spot, facing, floorY, title);
     return spot;
   }

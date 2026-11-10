@@ -231,6 +231,8 @@ a clear sight line from across the entrance doorway to each one's tallest part (
 under the 6 m ceiling at the top of its bob and its pose with the duct gap above Burger Barn leaving it room,
 no coplanar faces against each other or the mall, idle motion while unsold, the buying pose (still lit, PA line, 'wardrobeBuy') then still + dim +
 SOLD OUT card and banner, Play again unsold, and the motif only within range while unsold.
+The six ground-floor fixtures add continuous 2 m approaches, clear bases and spawn/door lanes, entrance-facing signs, independent Customer Service
+and fitting-room prompts, coplanar checks on rotated fixtures, and the same idle, register, PA, sold-out, reset and motif checks.
 `tests/coplanar.test.js` checks the new signs and axis-aligned display faces against nearby surfaces. A second test there checks EVERY flat sign in the mall (by its real world normal,
 so a sign hung with flipped Euler angles, like atmosphere.js's, is not skipped) against every box face that faces the same way and shares its plane, ignoring anything hidden behind a
 solid or in a switched-off group; it caught the hallway directory flickering against the boarded vent's planks.

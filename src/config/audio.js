@@ -569,6 +569,53 @@ export const audio = {
     },
 
     // Wardrobe showpiece motifs (config/wardrobe.js showpieces): the mall chime family, 2-3 soft bell notes per item, hummed while the item is unsold.
+    motifAviators: { // an airy rising pair
+      volume: 0.4,
+      layers: [
+        { type: 'tone', wave: 'sine', freq: 784, gain: 0.4, attack: 0.005, decay: 0.24 },
+        { type: 'tone', wave: 'triangle', freq: 1175, gain: 0.4, attack: 0.005, decay: 0.44, delay: 0.17 },
+      ],
+    },
+    motifCardigan: { // a low three-note waltz
+      volume: 0.4,
+      layers: [
+        { type: 'tone', wave: 'sine', freq: 392, gain: 0.4, attack: 0.005, decay: 0.24 },
+        { type: 'tone', wave: 'triangle', freq: 494, gain: 0.4, attack: 0.005, decay: 0.24, delay: 0.17 },
+        { type: 'tone', wave: 'sine', freq: 587, gain: 0.4, attack: 0.005, decay: 0.44, delay: 0.34 },
+      ],
+    },
+    motifSandwichBoard: { // two short sale bells and a final call
+      volume: 0.4,
+      layers: [
+        { type: 'tone', wave: 'sine', freq: 988, gain: 0.4, attack: 0.005, decay: 0.24 },
+        { type: 'tone', wave: 'triangle', freq: 988, gain: 0.4, attack: 0.005, decay: 0.24, delay: 0.17 },
+        { type: 'tone', wave: 'sine', freq: 1319, gain: 0.4, attack: 0.005, decay: 0.44, delay: 0.34 },
+      ],
+    },
+    motifHiVisVest: { // a rising staff alert
+      volume: 0.4,
+      layers: [
+        { type: 'tone', wave: 'sine', freq: 659, gain: 0.4, attack: 0.005, decay: 0.24 },
+        { type: 'tone', wave: 'triangle', freq: 880, gain: 0.4, attack: 0.005, decay: 0.24, delay: 0.17 },
+        { type: 'tone', wave: 'sine', freq: 988, gain: 0.4, attack: 0.005, decay: 0.44, delay: 0.34 },
+      ],
+    },
+    motifFannyPack: { // a bright descending TV jingle
+      volume: 0.4,
+      layers: [
+        { type: 'tone', wave: 'sine', freq: 1319, gain: 0.4, attack: 0.005, decay: 0.24 },
+        { type: 'tone', wave: 'triangle', freq: 1047, gain: 0.4, attack: 0.005, decay: 0.24, delay: 0.17 },
+        { type: 'tone', wave: 'sine', freq: 784, gain: 0.4, attack: 0.005, decay: 0.44, delay: 0.34 },
+      ],
+    },
+    motifGoldCard: { // a high three-note flourish
+      volume: 0.4,
+      layers: [
+        { type: 'tone', wave: 'sine', freq: 880, gain: 0.4, attack: 0.005, decay: 0.24 },
+        { type: 'tone', wave: 'triangle', freq: 1109, gain: 0.4, attack: 0.005, decay: 0.24, delay: 0.17 },
+        { type: 'tone', wave: 'sine', freq: 1568, gain: 0.4, attack: 0.005, decay: 0.44, delay: 0.34 },
+      ],
+    },
     motifPaperHat: { // order-up bell: two quick dings and a lower one
       volume: 0.4,
       layers: [

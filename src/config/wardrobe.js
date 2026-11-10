@@ -23,7 +23,9 @@ export const wardrobeItems = {
     factors: { adsTimeMultiplier: 0.7, aimAssistMultiplier: 1.2, switchSpeed: 0.85 }, ticket: 'Too cool to hurry.',
     color: 0xbfd4e6, icon: 'aviators', pulse: 'aimStart',
     lines: [{ effect: 'adsTimeMultiplier', text: 'Aims {size} faster' }, { effect: 'aimAssistMultiplier', text: 'Aim assist {size} stronger' }, { effect: 'switchSpeed', text: 'Swaps weapons {size} slower' }],
-    zone: 'atrium', at: [26.5, 14.5], facing: 'x-',
+    zone: 'atrium', at: [25.65, 14.52], facing: 'x-',
+    pa: { kicker: 'Attention shoppers', text: 'Someone just bought the Mirrored Aviators. Please aim those things away from the skylight.' },
+    motif: 'motifAviators',
   },
   glasses: {
     slot: 'head', name: '3D Glasses', shortName: '3D Glasses',
@@ -37,7 +39,9 @@ export const wardrobeItems = {
     factors: { maxHealth: 1.25, sprintDuration: 0.8 }, ticket: 'Some are still warm.',
     color: 0xa8553a, icon: 'cardigan', pulse: 'hitCushioned',
     lines: [{ effect: 'maxHealth', text: '{Size} more health' }, { effect: 'sprintDuration', text: 'Sprints {size} shorter' }],
-    zone: 'departmentStore', at: [-12.6, 17.6], facing: -1,
+    zone: 'departmentStore', at: [-15.5, 11.48], facing: -1,
+    pa: { kicker: 'Attention shoppers', text: 'Someone just bought the Heirloom Cardigan. Some are still warm.' },
+    motif: 'motifCardigan',
   },
   sandwichBoard: {
     slot: 'torso', name: 'EVERYTHING MUST GO Sandwich Board', shortName: 'Sandwich Board',
@@ -45,14 +49,18 @@ export const wardrobeItems = {
     ticket: 'Covers the front and back. The sides are your problem.',
     color: 0xff3ea5, icon: 'board', pulse: 'playerHit',
     lines: [{ effect: 'damageTakenMultiplier', text: 'Zombie hits hurt {size} less' }, { effect: 'knockbackMultiplier', text: 'Shoved {size} less' }, { effect: 'strafeSpeed', text: 'Strafes {size} slower' }],
-    zone: 'megaMart', at: [24.4, 3.5], facing: 'x-',
+    zone: 'megaMart', at: [24.13, 2.75], facing: 'x-',
+    pa: { kicker: 'Attention shoppers', text: 'Someone just bought the Sandwich Board. Please advertise responsibly.' },
+    motif: 'motifSandwichBoard',
   },
   hiVisVest: {
     slot: 'torso', name: 'Hi-Vis Vest', shortName: 'Hi-Vis Vest',
     factors: { reloadSpeed: 1.25, damageTakenMultiplier: 1.25 }, ticket: 'Nobody questions a vest. Everybody can see one.',
     color: 0xd7ff2f, icon: 'vest', pulse: 'playerHit',
     lines: [{ effect: 'reloadSpeed', text: 'Reloads {size} faster' }, { effect: 'damageTakenMultiplier', text: 'Zombie hits hurt {size} more' }],
-    zone: 'serviceCorridor', at: [-23.3, -8], facing: 'x+',
+    zone: 'serviceCorridor', at: [-22.84, -8.46], facing: 'x+',
+    pa: { kicker: 'Attention shoppers', text: 'Someone just bought the Hi-Vis Vest. Management can see you now.' },
+    motif: 'motifHiVisVest',
   },
   lightUpSneakers: {
     slot: 'feet', name: 'Light-Up Sneakers', shortName: 'Light-Ups',
@@ -84,7 +92,9 @@ export const wardrobeItems = {
     factors: { reserveMultiplier: 1.25, switchSpeed: 0.9 }, ticket: "Fashion's last line of defence.",
     color: 0x19c9a3, icon: 'pack', pulse: 'ammoRefill',
     lines: [{ effect: 'reserveMultiplier', text: '{Size} more reserve ammo' }, { effect: 'switchSpeed', text: 'Swaps weapons {size} slower' }],
-    zone: 'megaMart', at: [23.9, -4], facing: 'x-',
+    zone: 'megaMart', at: [23.93, -3.16], facing: 'x-',
+    pa: { kicker: 'Attention shoppers', text: 'Someone just bought the Fanny Pack. More pockets, fewer excuses.' },
+    motif: 'motifFannyPack',
   },
   foamFinger: {
     slot: 'accessory', name: 'Giant Foam Finger', shortName: 'Foam Finger',
@@ -100,7 +110,9 @@ export const wardrobeItems = {
     factors: { killPayMultiplier: 1.1, regenDelay: 1.2 }, ticket: 'Earn points. Lose sleep.',
     color: 0xffc61a, icon: 'card', pulse: 'payingKill',
     lines: [{ effect: 'killPayMultiplier', text: '{Size} more points per kill' }, { effect: 'regenDelay', text: 'Healing starts {size} later' }],
-    zone: 'hallway', at: [4.7, 5.1], facing: -1,
+    zone: 'hallway', at: [4.06, 5.04], facing: 'x-',
+    pa: { kicker: 'Attention shoppers', text: 'Someone just bought the Galleria Gold Card. Please keep earning points. We insist.' },
+    motif: 'motifGoldCard',
   },
 };
 
@@ -124,6 +136,7 @@ export const wardrobeAnchor = { heightAboveFloor: 1.4, standOff: 0.03 };
 
 // Showpieces (maps/mall/wardrobeShowpieces/, driven by game/features/wardrobeFixtures.js): the big themed fixtures an item is sold from.
 export const showpieces = {
+  groundFloorIdle: { glint: 2.1, chase: 6, bounce: 2.4, beacon: 4, turn: 0.75, spin: 1.3 },
   motifRange: 8, // metres: an unsold showpiece hums its motif (config/audio.js) while you are this close...
   motifSeconds: 6, // ...once every this many seconds
   motifVolume: 0.5,

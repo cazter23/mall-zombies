@@ -1,5 +1,18 @@
 # Sunset Galleria: build history ("Current state")
 
+## 9 November 2026 - Wardrobe showroom, phase 2: six ground-floor showpieces
+
+- **Hallway and Mega Mart.** The MEMBERS ONLY kiosk faces the start shutter with a glinting Gold Card, red carpet and velvet rope. The front checkout
+  gaps hold the megaphone mannequin with chasing sale bulbs and the AS SEEN ON TV bin with a bouncing Fanny Pack.
+- **Service Corridor, HOFFMAN’S and Atrium.** An open locker with a rotating beacon stands beside the staff lockers, clear of the vent lane.
+  The Heirloom Cardigan turns on a roped-off plinth on the front floor, clear of the KNITS racks and main gate. The mirrored glasses spin
+  above a chrome tower beside SHADE SHACK, with sweeping floor decals.
+- The Food Court purchase flow drives all six. Each has its own motif and PA line, strikes a pose on purchase and settles with a dimmed SOLD OUT
+  display until Play Again. Placement and prompt checks are in tests/showpieces.test.js. Anchors are listed in docs/map.md.
+- Headless draw-call estimate using the benchmark route, room culling and static batches (4:3, all shutters open). The Food Court sample added
+  70 calls summed across the shot averages, with a largest increase of 28 on one shot. The six fixtures add an estimated 57 summed and 18 on
+  the highest-delta shot (atrium ring). Route-average map calls rose from 322 to 326.
+
 ## 9 November 2026 - GRAB-A-GUN, phase 10: RETURN TO SENDER, the wonder weapon (claw-only)
 
 Settled with you before it was built: the plan's working idea, name and all, and bosses and Mascots take a BIG FIXED HIT (not just a normal hit). A returns-desk scanner whose
