@@ -29,7 +29,14 @@ export const closingTime = {
     manager: { duty: 'Last orders signed off', key: "Fairweather's Signature", needed: 1 },
     influencer: { duty: 'Car park cleared', key: "Skylar's Van Keys" },
   },
+  // The PA introduces the checklist once per run, this long after round 1 is announced: after the run's opening line
+  // (game/runIntro.js, feel.runIntro), whose longest line stays up about 7 s.
+  briefing: { delaySeconds: 8 },
   pa: {
+    briefing: {
+      kicker: 'Closing time',
+      text: 'Attention associates. The mall cannot close until the closing checklist is done. The key for each line is carried by a member of staff.',
+    },
     drop: (key) => ({ kicker: 'Closing time', text: key + ' is on the floor. Associates, please collect it for the closing checklist.' }),
     // The Van Keys tick nothing by themselves: line 4 is ticked by the win (game/createGame.js onRunWon).
     vanKeys: (key) => ({ kicker: 'Closing time', text: key + ' collected. Start the van to finish closing.' }),

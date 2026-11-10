@@ -64,6 +64,7 @@
 //   'bossPhase'   { zombie, phase, round }               an encounter mechanic began (Janitor: wetFloor)
 //   'bossDefeated' { zombie, round }                     an active boss died through the regular kill path
 //   'bossVanished' { zombie, round }                     an active boss disappeared without a kill or an explicit round discard
+//   'closingBriefing' { pa }                              once per run, shortly after round 1 is announced: the PA introduces the checklist
 //   'closingKeyDrop' { bossId, position, pa }             a boss's checklist key appeared on clear floor
 //   'closingKey' { bossId, pa }                           the player took a checklist key
 //   'fountainKill' { zombie }                            the Electrified Fountain dealt a killing blow during a pulse

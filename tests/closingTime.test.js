@@ -495,6 +495,33 @@ test('career version 1 migrates old records and saves the fastest win by time at
   assert.equal(reloaded.bests.fastestWin, 40);
 });
 
+test('the PA introduces the checklist once per run, shortly after the opening line, through the quest PA listener', (t) => {
+  const { g, tick, hud, sounds } = fixture(t);
+  const briefings = [];
+  g.events.on('closingBriefing', (event) => briefings.push(event));
+  const said = () => hud.calls.filter(([name, notice]) => name === 'showAnnouncement' && notice.text === closingTime.pa.briefing.text);
+  const wait = Math.ceil(closingTime.briefing.delaySeconds / dt);
+
+  tick(wait - 10); // (the fixture already ran the tick that announced round 1)
+  assert.deepEqual(briefings, []);
+  sounds.length = 0;
+  tick(12);
+  assert.deepEqual(briefings, [{ pa: closingTime.pa.briefing }]);
+  assert.match(briefings[0].pa.text, /cannot close until the closing checklist is done/);
+  assert.match(briefings[0].pa.text, /carried by a member of staff/);
+  assert.equal(said().length, 1);
+  assert.equal(said()[0][1].priority, 1);
+  assert.ok(sounds.includes('paChime'));
+
+  g.rounds.jumpTo(1); // round 1 announced again in the same run: no second briefing
+  tick(wait + 5);
+  assert.equal(briefings.length, 1);
+
+  g.resetRun();
+  tick(wait + 5);
+  assert.equal(briefings.length, 2, 'once per run');
+});
+
 test('Statistics shows career wins, the fastest win (a dash when none) and marks won shifts', () => {
   const { document } = menuDom();
   const screens = createScreens();

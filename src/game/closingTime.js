@@ -11,6 +11,8 @@ export function createClosingTime({ events, player, colliders, state, view }) {
   const held = new Set();
   const completed = new Set();
   const counts = new Map(); // opened duties that take more than a key
+  let briefingIn = null; // seconds until the PA introduces the checklist (null: not waiting)
+  let briefed = false; // once per run
   const progressDuties = {
     janitor: { open: config.pa.openFountain, complete: config.pa.completeFountain },
     guard: { open: config.pa.openNightSafe, complete: config.pa.completeNightSafe },
@@ -62,6 +64,11 @@ export function createClosingTime({ events, player, colliders, state, view }) {
     }
   }
 
+  // The PA introduces the checklist once per run, shortly after the run's opening line (round 1's announcement).
+  events.on('roundStart', ({ round }) => {
+    if (round === 1 && !briefed && briefingIn === null) briefingIn = config.briefing.delaySeconds;
+  });
+
   events.on('fountainKill', () => advance('janitor'));
   events.on('ritualCollect', () => advance('manager'));
   events.on('purchase', ({ kind, id }) => {
@@ -105,6 +112,11 @@ export function createClosingTime({ events, player, colliders, state, view }) {
     },
     update(dt) {
       if (state.over) return;
+      if (briefingIn !== null && (briefingIn -= dt) <= 0) {
+        briefingIn = null;
+        briefed = true;
+        events.emit('closingBriefing', { pa: config.pa.briefing });
+      }
       for (const [bossId, position] of drops) {
         if (position) {
           if (floor.reached(player, position)) collect(bossId);
@@ -121,6 +133,8 @@ export function createClosingTime({ events, player, colliders, state, view }) {
       held.clear();
       completed.clear();
       counts.clear();
+      briefingIn = null;
+      briefed = false;
     },
     debug(mode = 'drop', bossId, at = player.position) {
       if (state.over) return 'The shift has ended';

@@ -483,7 +483,7 @@ export function createGame({
   });
 
   // PA notices from workshop orders, shop events and closing duties.
-  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualWaiting', 'ritualCollect', 'limitedEditionDrop', 'limitedEditionFitted', 'wardrobeBuy', 'clawClosed', 'clawMoved', 'closingKeyDrop', 'closingKey', 'closingLine']) {
+  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualWaiting', 'ritualCollect', 'limitedEditionDrop', 'limitedEditionFitted', 'wardrobeBuy', 'clawClosed', 'clawMoved', 'closingBriefing', 'closingKeyDrop', 'closingKey', 'closingLine']) {
     events.on(name, ({ pa }) => {
       if (!pa) return;
       hud.showAnnouncement({ ...pa, priority: 1 });
