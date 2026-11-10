@@ -63,7 +63,7 @@ tests/docs.test.js fails if a new src/ file or test file isn't described in the 
 | change or add a module | its entry in docs/folder-structure.md (search for the file name) |
 | work in an area or add a door/spawn/buy spot | its entry in docs/map.md |
 | want the background of a past decision, a measured number, or how an area was built | docs/history.md (newest first; older: docs/archive/) |
-| plan the next big system | docs/wardrobe-plan.md, docs/wardrobe-showroom-plan.md (its rework), docs/claw-machine-plan.md (finished plans are in docs/archive/) |
+| plan the next big system | docs/wardrobe-plan.md, docs/wardrobe-showroom-plan.md (its rework), docs/claw-machine-plan.md, docs/closing-time-plan.md (the run goal and ending) (finished plans are in docs/archive/) |
 | touch behaviour and want to know which test guards it | docs/tests.md |
 | change a gun | docs/weapon-balance-pass.md and `npm run balance` |
 
@@ -161,7 +161,7 @@ Built when `debug.testArena` is true (it still is: turn it off before shipping);
 6. Build-A-Blaster and Flash Sales (done); Wardrobe and claw machine (planned: docs/); Kiosk Kevin vendor and hazards (not planned yet)
 7. Second floor, escalators, stairs, multi-floor navigation (done); elevators (dropped: escalators and stairs do the job)
 8. Audio and UI polish (ongoing)
-9. Meta progression and skill tree (not started); a run goal / ending (proposed: a "Closing Time" quest with a final boss)
+9. Meta progression and skill tree (not started); a run goal / ending (planned, not built: docs/closing-time-plan.md, a "Closing Time" checklist with a final boss)
 
 ## Design reference (decisions made so far)
 - **Zombie roster, with intro rounds:** Shopper (round 1), Mall Walker (4, fast, low HP),

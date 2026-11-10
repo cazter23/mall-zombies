@@ -1,5 +1,21 @@
 # Sunset Galleria: build history ("Current state")
 
+## 10 November 2026 - Closing Time: the plan (document only)
+
+docs/closing-time-plan.md plans a run goal with an ending, from the fun review's step G. No code changed.
+
+- **The shape.** A closing checklist of four lines, one per boss: each boss's death gives a key (never a pickup, never missable), and the key opens a duty that costs
+  points: 12 kills with the Electrified Fountain, a 4,000 deposit in a night safe, one more Build-A-Blaster order, and a 5,000 parking validation. The exit is Skylar's
+  van in Customer Parking. The final boss, the Last Customer, is built from the Cart Pusher charge and Kettle's backup, with ONE new mechanic: her bar cannot be emptied
+  to death, she has to be returned (a Return to Sender beam, or a hand stamp). A Returns Desk sells Return to Sender for 10,000 once three lines are ticked.
+- **Eleven phases**, each leaving the game working; an ending exists after the third. Phase 2 (the first time a run ends without a death) is the risky one.
+- **From the review bot's saved runs** (summarised with its report.mjs, not re-run): the end of round 20 comes at 30.3 min for the good bot and 39.2 for the average one, with
+  about 95,000 points earned; the required quest costs 12,000 (12.5% of that). The bot's surplus only starts at round 24, after the win, and in 40 runs where it could
+  die it never got past round 11. Both are listed as risks.
+- The plan lists which side systems the quest uses (bosses, the fountain, Build-A-Blaster, the parking lot, the receipt, Return to Sender) and which it does not
+  (power-ups, attachments, prize tickets, Limited Editions, the claw, the wardrobe, Kevin), and ends with ten decisions for the user. Nothing is to be built before those.
+- Shared files changed: docs/history.md and CLAUDE.md (the docs index row and build-order line 9 now point at the plan).
+
 ## 9 November 2026 - Wardrobe showroom: upstairs showpieces and on-player looks
 
 - **Three upstairs fixtures.** A cardboard B-movie monster with a waving arm sells 3D Glasses beside Concessions. Shoe-Per Sale’s light-up
