@@ -232,6 +232,7 @@ export function createGame({
       bossesDefeated: runStats.bossesDefeated,
       accuracy: runStats.accuracy,
       assisted: state.assisted || health.invulnerable,
+      killedBy: health.killedBy,
       // What you were wearing (slot -> item id or null): the receipt's DIED WEARING line.
       wearing: Object.freeze(Object.fromEntries(outfitRail.snapshot().map(({ slot, id }) => [slot, id]))),
       // The guns you named at Build-A-Blaster (the receipt reads them out).
@@ -330,7 +331,7 @@ export function createGame({
   // A hard landing (feel.fall): the same hurt as a zombie's swing, without a zombie.
   player.onFall = ({ drop, damage }) => {
     events.emit('playerFall', { drop, damage });
-    health.takeDamage(damage);
+    health.takeDamage(damage, { type: 'fall', fall: true });
     player.addViewKick(-feel.fall.viewJoltDegrees * DEG_TO_RAD);
   };
   events.on('mascotReclaim', ({ zombie }) => {
@@ -344,8 +345,15 @@ export function createGame({
   });
   // The costume twists that reach past the zombie (Poppy Corn's blast...): game/mascotCostumes.js.
   const mascotCostumes = createMascotCostumes({ events, scene, zombies, player, colliders, effects, surfaces, state });
-  events.on('playerHit', ({ damage, knockback }) => {
-    health.takeDamage(damage * stats.damageTakenMultiplier); // (clothes scale zombie hits only: a fall goes straight to health)
+  events.on('playerHit', ({ damage, zombie, knockback }) => {
+    const isBoss = Boolean(zombie?.type?.boss);
+    const source = zombie ? {
+      type: 'zombie',
+      id: zombie.type?.id ?? 'shopper',
+      ...(zombie.type?.variant ? { variant: zombie.type.variant } : {}),
+      ...(isBoss ? { boss: zombie.type.id } : {}),
+    } : { type: 'zombie', id: 'shopper' };
+    health.takeDamage(damage * stats.damageTakenMultiplier, source); // (clothes scale zombie hits only: a fall goes straight to health)
     if (knockback) { // a Cart Pusher's charge shoves you along it (m/s, horizontal)
       player.velocity.x += knockback.x * stats.knockbackMultiplier;
       player.velocity.z += knockback.z * stats.knockbackMultiplier;

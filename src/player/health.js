@@ -16,6 +16,7 @@ export function createPlayerHealth({ stats, onDeath, onRegenStart = null }) {
   let flash = 0; // seconds left on the red hit flash
   let time = 0; // for the low-health pulse
   let dead = false;
+  let killedBy = null; // source of the lethal blow ({ type, id, variant, boss, fall })
 
   return {
     // Debug god mode (game/debugCommands.js): no damage at all while true. Not part of a run, so it survives Play again.
@@ -25,12 +26,16 @@ export function createPlayerHealth({ stats, onDeath, onRegenStart = null }) {
       return dead;
     },
 
+    get killedBy() {
+      return killedBy;
+    },
+
     get fraction() {
       return stats.health / stats.maxHealth;
     },
 
     // The amount is final: clothes scale ZOMBIE hits in the 'playerHit' listener (game/createGame.js), never a fall.
-    takeDamage(amount) {
+    takeDamage(amount, source = null) {
       if (dead || amount <= 0 || this.invulnerable) return;
       stats.health = Math.max(0, stats.health - amount);
       sinceHit = 0;
@@ -38,7 +43,8 @@ export function createPlayerHealth({ stats, onDeath, onRegenStart = null }) {
       flash = feel.health.hitFlashSeconds;
       if (stats.health <= 0) {
         dead = true;
-        onDeath();
+        killedBy = source;
+        onDeath(killedBy);
       }
     },
 
@@ -80,6 +86,7 @@ export function createPlayerHealth({ stats, onDeath, onRegenStart = null }) {
       regenerating = false;
       flash = 0;
       dead = false;
+      killedBy = null;
     },
   };
 }
