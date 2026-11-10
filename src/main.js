@@ -19,6 +19,7 @@ import { createHaptics } from './core/haptics.js';
 import { buttonLabels } from './config/controls.js';
 import { buildTestRange } from './maps/testRange/testRange.js';
 import { createHud } from './ui/hud.js';
+import { createDamageIndicatorQueue } from './ui/damageDirection.js';
 import { weapons, melee as meleeWeapons } from './config/weapons.js';
 import { createViewmodel } from './weapons/viewmodel.js';
 import { createPlayerBody } from './player/body.js';
@@ -110,6 +111,12 @@ const fittingRooms = g.features.list.filter(({ feature }) => feature.kind === 'f
 const clawMachine = g.features.list.find(({ feature }) => feature.kind === 'clawMachine')?.instance; // GRAB-A-GUN (the HUD reads its status)
 const resetRun = g.resetRun;
 hud.connectEvents(g.events);
+const damageIndicators = createDamageIndicatorQueue({
+  events: g.events,
+  hud,
+  getCameraYaw: () => camera.rotation.y,
+  getPlayerPosition: () => player.position,
+});
 const haptics = createHaptics({ gamepad, input, state: game, health, events: g.events });
 
 // Button name for prompts on whichever device was used last ("R" vs "X" vs "□").
@@ -422,6 +429,7 @@ function render(alpha, frameTime) {
 
   hud.setHealth(health.fraction);
   hud.setHurt(health.overlay);
+  damageIndicators.flush();
   hud.setSpeedLines(game.over ? 0 : player.sprintAmount * feel.sprintFx.speedLinesOpacity);
   hud.setSprint(player.sprintFraction, player.sprintExhausted, player.isSprinting);
   hud.setAmmo(gun.weapon, buttonLabel('reload'));

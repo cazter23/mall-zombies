@@ -12,7 +12,13 @@ export function menuDom() {
       this.inert = false;
       this.hidden = false;
       this.disabled = false;
+      this.dataset = {};
       this.tabIndex = ['BUTTON', 'INPUT', 'SELECT'].includes(this.tagName) ? 0 : -1;
+      this.style = {
+        setProperty: (k, v) => { this.style[k] = String(v); },
+        getPropertyValue: (k) => this.style[k] ?? '',
+        removeProperty: (k) => { delete this.style[k]; },
+      };
       this.classList = {
         contains: (name) => this.className.split(' ').includes(name),
         add: (...names) => names.forEach((name) => this.classList.toggle(name, true)),
@@ -33,15 +39,51 @@ export function menuDom() {
       this.children = [];
       this.append(...nodes);
     }
+    remove() {
+      if (this.parentElement) {
+        const idx = this.parentElement.children.indexOf(this);
+        if (idx !== -1) this.parentElement.children.splice(idx, 1);
+        this.parentElement = null;
+      }
+    }
     set textContent(text) { this.replaceChildren(); this.text = text; }
     get textContent() { return String(this.text ?? '') + this.children.map((node) => node.textContent).join(''); }
+    set innerHTML(html) {
+      this.replaceChildren();
+      const tokens = html.matchAll(/<\/?([a-zA-Z0-9]+)([^>]*)>/g);
+      const stack = [this];
+      const voidTags = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr']);
+      for (const match of tokens) {
+        const [full, tag, rest] = match;
+        const lower = tag.toLowerCase();
+        if (full.startsWith('</')) {
+          if (stack.length > 1 && stack[stack.length - 1].tagName.toLowerCase() === lower) {
+            stack.pop();
+          }
+        } else {
+          const child = new Node(tag);
+          const classMatch = rest.match(/class=["']([^"']+)["']/);
+          if (classMatch) child.className = classMatch[1];
+          const attrMatches = rest.matchAll(/([a-zA-Z0-9_-]+)=["']([^"']+)["']/g);
+          for (const attr of attrMatches) child.setAttribute(attr[1], attr[2]);
+          stack[stack.length - 1].append(child);
+          if (!voidTags.has(lower) && !rest.trim().endsWith('/')) {
+            stack.push(child);
+          }
+        }
+      }
+    }
     setAttribute(key, value) { this.attributes.set(key, String(value)); }
     getAttribute(key) { return this.attributes.get(key) ?? null; }
     matches(selector) {
       return selector.split(',').some((part) => {
         const s = part.trim();
         if (s === '[inert]') return this.inert;
-        if (s === '[tabindex]') return this.attributes.has('tabindex');
+        if (s.startsWith('[') && s.endsWith(']')) {
+          const [attr, val] = s.slice(1, -1).split('=');
+          const cleanVal = val?.replace(/['"]/g, '');
+          return cleanVal !== undefined ? this.getAttribute(attr) === cleanVal : this.attributes.has(attr);
+        }
         if (s.startsWith('.')) return this.classList.contains(s.slice(1));
         return this.tagName === s.toUpperCase();
       });

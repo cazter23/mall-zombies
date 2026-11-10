@@ -702,3 +702,58 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   letter-spacing: .06em;
   text-transform: uppercase;
 }
+
+/* Damage direction indicator: COD Zombies-style curved red neon arc centered around the crosshair */
+.damage-indicators {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+.hud.menu-open .damage-indicators,
+.hud.fitting-open .damage-indicators,
+.hud.dead .damage-indicators {
+  display: none;
+}
+
+.damage-arc {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 170px;
+  height: 170px;
+  pointer-events: none;
+  transform-origin: center center;
+  animation: damage-arc-fade 0.6s cubic-bezier(0.12, 0.9, 0.25, 1) forwards;
+}
+
+.damage-arc-wedge {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 5px solid transparent;
+  border-top: 6px solid #ff2a55;
+  clip-path: polygon(25% 0%, 75% 0%, 50% 50%);
+  filter: drop-shadow(0 0 6px rgba(255, 42, 85, 0.95)) drop-shadow(0 0 14px rgba(255, 30, 74, 0.7));
+}
+
+@keyframes damage-arc-fade {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(var(--damage-angle, 0deg)) scale(0.95);
+  }
+  30% {
+    opacity: 0.95;
+    transform: translate(-50%, -50%) rotate(var(--damage-angle, 0deg)) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--damage-angle, 0deg)) scale(1.05);
+  }
+}

@@ -273,7 +273,25 @@ export function createGame({
     isZoneOpen: (zone) => map.zones[zone].open,
     getRound,
     canAttack: () => !health.isDead,
-    onPlayerHit: (damage, zombie, knockback = null) => events.emit('playerHit', { damage, zombie, knockback }),
+    onPlayerHit: (damage, zombie, knockback = null, attackerPosition = null) => {
+      const pos = attackerPosition || (zombie?.position ? { x: zombie.position.x, z: zombie.position.z } : null);
+      let hitDirection = null;
+      if (pos && player?.position) {
+        const dx = pos.x - player.position.x;
+        const dz = pos.z - player.position.z;
+        const len = Math.hypot(dx, dz);
+        if (len > 1e-4) {
+          hitDirection = { x: dx / len, z: dz / len };
+        }
+      }
+      events.emit('playerHit', {
+        damage,
+        zombie,
+        knockback,
+        attackerPosition: pos,
+        hitDirection,
+      });
+    },
     onKill: (zombie) => events.emit('kill', {
       zombie,
       headshot: zombie.killedByHeadshot,

@@ -84,6 +84,10 @@ export function createHud() {
   hud.append(hitMarker);
   let hitMarkerTimeout = null;
 
+  // Damage direction indicator: COD Zombies-style curved red neon arc centered around the crosshair.
+  const damageIndicators = el('div', 'damage-indicators');
+  hud.append(damageIndicators);
+
   // Small prompt under the crosshair ("Reload", "No ammo").
   const prompt = el('div', 'prompt');
   hud.append(prompt);
@@ -125,6 +129,7 @@ export function createHud() {
     purchaseStamp.classList.remove('show');
     roundBanner.classList.remove('show');
     certificate.hide();
+    damageIndicators.replaceChildren();
   }
 
   // Bottom-right, above the ammo: points, with "+60" pop-ups floating up from it.
@@ -275,6 +280,7 @@ export function createHud() {
   const refreshTextLayout = () => document.documentElement.classList.toggle('ui-expanded', uiScale * textSize > 1.35);
 
   return {
+    element: hud,
     // The title / pause / results screens (ui/screens.js): show(), on(action), padNav(), current.
     screens,
     history,
@@ -503,6 +509,28 @@ export function createHud() {
       if (killed) hitMarker.classList.add('kill');
       clearTimeout(hitMarkerTimeout);
       hitMarkerTimeout = setTimeout(() => { hitMarker.className = 'hitmarker'; }, feel.effects.hitMarkerSeconds * 1000);
+    },
+
+    // Damage direction indicator: show a curved neon red arc at angleDeg (0° = front, 90° = right, 180° = behind, 270° = left).
+    showDamageDirection(angleDeg) {
+      if (typeof angleDeg !== 'number' || Number.isNaN(angleDeg)) return;
+      const normalized = ((angleDeg % 360) + 360) % 360;
+      const arc = el('div', 'damage-arc');
+      arc.setAttribute('data-angle', String(Math.round(normalized)));
+      if (arc.style?.setProperty) {
+        arc.style.setProperty('--damage-angle', `${normalized}deg`);
+      }
+      if (arc.style) {
+        arc.style.transform = `translate(-50%, -50%) rotate(${normalized}deg)`;
+      }
+      const wedge = el('div', 'damage-arc-wedge');
+      arc.append(wedge);
+      damageIndicators.append(arc);
+      const onEnd = () => arc.remove();
+      if (arc.addEventListener) {
+        arc.addEventListener('animationend', onEnd, { once: true });
+      }
+      setTimeout(onEnd, 700);
     },
 
     // The held gun's Extended Warranty tier under its name ({ id, name, color } from config/upgrades.js),
