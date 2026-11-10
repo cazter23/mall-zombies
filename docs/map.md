@@ -156,7 +156,8 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   Data: config/parkingDetails.js; builders parkingDetails.js / parkingStreetDetails.js with shared parkingDetailKit.js.
   Sunset sky, exterior facade/return signs, two pooled pole lights, painted bays/crosswalk, wind and electrical buzz.
   Includes a culling room/portal, color grade, horror area and benchmark shot; Play again relocks it and map unload
-  frees its geometry, textures, lights and colliders. No additional weapon or station. Data: config/parkingLot.js;
+  frees its geometry, textures, lights and colliders. The mauve van's east-side hold prompt is near (56.57, 1.2, -11.05).
+  In Phase 2, holding all four keys lets you start it for free. Data: config/parkingLot.js and config/closingTime.js;
   builder: maps/mall/parkingLot.js.
 - Service Corridor: behind the 1000 area entrance, a 3m-wide back-of-house corridor built from a data spec with the
   corridor builder: in through the hallway's west wall (floor reaches under the doorway), a 1.5m run west, then 16m

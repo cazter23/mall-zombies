@@ -10,7 +10,7 @@
 //
 // ctx (from createGame, built after its core event wiring, so a feature's listeners run after payouts/stats):
 //   { scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state, warranty, meleeUpgrades, wardrobe,
-//     colliders, effects, sound, input, tickets, shootables, aimAssist }
+//     colliders, effects, sound, input, tickets, shootables, aimAssist, closing }
 // =============================================================================
 
 import { buildWallBuy } from './wallBuy.js';
@@ -22,6 +22,7 @@ import { buildHorror } from './horror.js';
 import { buildWardrobeRack, buildFittingRoom } from './wardrobeFixtures.js';
 import { buildClawMachine } from './clawMachine.js';
 import { buildPrizeCounter } from './prizeCounter.js';
+import { buildEscapeVan } from './escapeVan.js';
 import { buildFountainHazard } from './fountainHazard.js';
 
 const builders = {
@@ -36,6 +37,7 @@ const builders = {
   clawMachine: buildClawMachine, // GRAB-A-GUN: pay, time the drop, take the gun from the chute
   prizeCounter: buildPrizeCounter, // REDEMPTION: GRAB-A-GUN's prize tickets for small things
   fountainHazard: buildFountainHazard, // Grand Atrium fountain breaker switch (docs/hazards-plan.md)
+  escapeVan: buildEscapeVan,
 };
 
 export const FEATURE_KINDS = Object.keys(builders);

@@ -43,6 +43,7 @@ import { createEffects } from '../fx/effects.js';
 import { createContactShadows } from '../fx/contactShadows.js';
 import { createAmbience } from './ambience.js';
 import { createPowerUps } from './powerUps.js';
+import { closingTime } from '../config/closingTime.js';
 import { createClosingTime } from './closingTime.js';
 import { createClosingKeyView } from '../fx/closingKeyView.js';
 import { createPowerUpView } from '../fx/powerUpView.js';
@@ -146,7 +147,7 @@ export function createGame({
     hud,
     sound,
     balls,
-    onProjectileHit: () => { if (!state.over) runStats.shotsHit += 1; }, // a thrown ball's first hit makes its shot a hit
+    onProjectileHit: () => { if (!runFrozen()) runStats.shotsHit += 1; }, // a thrown ball's first hit makes its shot a hit
     onShot: (shot) => events.emit('shot', shot),
     onHit: announceHit,
     onReload: (reload) => events.emit('reload', reload),
@@ -206,14 +207,17 @@ export function createGame({
   // (Start pauses). A controller doesn't need the mouse locked.
   const state = {
     forceRun: false, // debug: run without pointer lock (used by automated tests)
-    over: false, // true once the player has died
+    over: false, // death or Clock out
+    won: false,
+    winPending: false, // waiting for Clock out or Stay for overtime
     padPlaying: false, // started/resumed with a controller
     menu: null, // an in-game menu a feature has open (Build-A-Blaster's 'orderForm'): the player stands still, the world doesn't
     assisted: false, // gameplay-changing debug command used; career records ignore this run
     get running() {
-      return input.locked || this.padPlaying || this.forceRun;
+      return !this.over && !this.winPending && (input.locked || this.padPlaying || this.forceRun);
     },
   };
+  const runFrozen = () => state.over || state.winPending;
   // GRAB-A-GUN's prize tickets (game/tickets.js): their own currency, never points, pricing or income.
   const tickets = createTickets({ events, state });
   const ambience = createAmbience({ map, player, sound, colliders });
@@ -224,6 +228,7 @@ export function createGame({
   let rounds = null; // created below, once the zombie manager exists
   const getRound = () => Math.max(1, rounds ? rounds.round : 1);
   const death = { timer: 0, resultsShown: false, summary: null };
+  let winSummary = null;
 
   function buildRunSummary() {
     return Object.freeze({
@@ -247,6 +252,9 @@ export function createGame({
       survivedBy: gun.namedBuilds.map((build) => ({ name: build.name, combo: comboName(build), confirmed: build.confirmed ?? 0 })),
       ticketsWon: tickets.won, // (GRAB-A-GUN's prize tickets: not points, not income)
       closingDone: closing.done,
+      won: state.won,
+      winTime: state.won ? winSummary?.timeAlive ?? runStats.timeAlive : null,
+      winRound: state.won ? winSummary?.round ?? rounds.round : null,
       keychains: tickets.tokens.keychain, // Sunny plush keychains redeemed (a joke for the receipt until the Wardrobe exists)
     });
   }
@@ -254,7 +262,9 @@ export function createGame({
   // THE single place the player dies. A downed/revive system would hook in here later
   // (e.g. go "downed" instead, and only call the rest of this if nobody revives you).
   function onPlayerDeath() {
+    if (state.over) return;
     state.over = true;
+    state.winPending = false;
     death.timer = 0;
     death.resultsShown = false;
     const summary = buildRunSummary();
@@ -264,6 +274,34 @@ export function createGame({
     if (afterDeath) afterDeath(); // main.js frees the mouse now, so it's usable by the results screen
     events.emit('playerDeath');
     events.emit('runEnd', { summary });
+  }
+
+  function onRunWon() {
+    if (state.over || state.won || closing.done !== Object.keys(closingTime.lines).length) return;
+    state.won = true;
+    state.winPending = true;
+    winSummary = buildRunSummary();
+    ambience.silence();
+    events.emit('runWon', { summary: winSummary });
+  }
+  events.on('escapeVanStart', onRunWon);
+
+  function clockOut() {
+    if (!state.winPending) return false;
+    state.over = true;
+    state.winPending = false;
+    state.padPlaying = false;
+    events.emit('runEnd', { summary: winSummary });
+    return true;
+  }
+
+  function stayForOvertime() {
+    if (!state.winPending) return false;
+    state.winPending = false;
+    interactions.reset();
+    rounds.startOvertime();
+    events.emit('overtimeStart', { round: rounds.round });
+    return true;
   }
 
   function showResults() {
@@ -342,27 +380,27 @@ export function createGame({
   // Once you're dead nothing more is paid or counted (a burning zombie dying later doesn't change
   // the results screen).
   events.on('hit', (hit) => {
-    if (!state.over && !hit.killed) wallet.earn(pointsForHit(hit));
+    if (!runFrozen() && !hit.killed) wallet.earn(pointsForHit(hit));
   });
   events.on('kill', ({ zombie, headshot, melee }) => {
-    if (!state.over) wallet.earn(pointsForHit({
+    if (!runFrozen()) wallet.earn(pointsForHit({
       target: zombie, killed: true, headshot, melee,
       killMultiplier: powerUps?.killMultiplier(zombie.position) ?? 1,
       killPayMultiplier: stats.killPayMultiplier,
     }), wardrobe.wearing('accessory') === 'goldCard' ? 'goldCard' : undefined);
   });
   events.on('shot', (shot) => {
-    if (!state.over) runStats.recordShot(shot);
+    if (!runFrozen()) runStats.recordShot(shot);
   });
   events.on('kill', ({ zombie }) => {
-    if (!state.over) runStats.recordKill(zombie);
+    if (!runFrozen()) runStats.recordKill(zombie);
   });
   // Knocking a Mascot's helmet off with a gun headshot or the box cutter pays a bonus: stuffings and hazards don't aim. (Melee
   // never reports a head hit, COD-style, so the knife counts however it lands: getting that close is the risk.) Every costume
   // has its own PA line. A helmet Captain Coupon put back on pays nothing the second time (no farming him).
   events.on('mascotHeadPop', ({ zombie, headshot, source, again }) => {
     const earned = source === 'melee' || (source === 'gun' && headshot);
-    if (state.over || again || zombie.noRewards || !earned) return;
+    if (runFrozen() || again || zombie.noRewards || !earned) return;
     wallet.earn(economy.payouts.helmetPopBonus);
     hud.showAnnouncement({ ...zombie.type.mascot.helmetPopLine, priority: 0 });
   });
@@ -384,6 +422,7 @@ export function createGame({
   // The costume twists that reach past the zombie (Poppy Corn's blast...): game/mascotCostumes.js.
   const mascotCostumes = createMascotCostumes({ events, scene, zombies, player, colliders, effects, surfaces, state });
   events.on('playerHit', ({ damage, zombie, knockback }) => {
+    if (runFrozen()) return;
     const isBoss = Boolean(zombie?.type?.boss);
     const source = zombie ? {
       type: 'zombie',
@@ -498,7 +537,7 @@ export function createGame({
   const wardrobe = createWardrobe({ stats, player, events });
   const features = buildFeatures(map, {
     scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state, warranty, meleeUpgrades, wardrobe,
-    colliders, effects, sound, input, tickets, shootables, aimAssist,
+    colliders, effects, sound, input, tickets, shootables, aimAssist, closing,
   });
 
   // The outfit rail's brain: which worn item's tag pulses when (game/outfitRail.js; the HUD draws it).
@@ -578,8 +617,11 @@ export function createGame({
     ['features', () => features.reset()],
     ['outfitRail', () => outfitRail.reset()],
     ['warranty', () => warranty.reset()], // no warranty on file in a new run
-    ['death', () => {
+    ['runOutcome', () => {
       state.over = false;
+      state.won = false;
+      state.winPending = false;
+      winSummary = null;
       state.assisted = false;
       death.timer = 0;
       death.resultsShown = false;
@@ -609,7 +651,7 @@ export function createGame({
     ambience.update(dt, state.running && !state.over);
     // Dead: the world keeps going (zombies wander to the body), the player doesn't.
     // Checked before the pause check, because the mouse is released on death.
-    if (state.over) {
+    if (death.summary) {
       death.timer += dt;
       balls.clear(); // (a ball in the air when you died is gone: nothing more is paid or counted)
       equipment.clearThrown(); // (so is a Soda Bomb on its fuse)
@@ -647,7 +689,14 @@ export function createGame({
     closing.update(dt);
     // "[Space] Vault" prompt: would a jump press now end in a vault? (checked per tick, shown in render)
     vaultPromptVisible = !inMenu && player.grounded && !player.vault.active && player.vault.preview();
+    const alreadyWon = state.won;
     if (!inMenu) interactions.update(dt); // before the gun: on controller X, a hold near a buyable buys instead of reloading
+    // Stop this tick at the van, even if a runWon listener makes its choice synchronously.
+    if (!alreadyWon && state.won) {
+      player.freeze();
+      input.endTick();
+      return;
+    }
     if (!inMenu) melee.update(dt, !gun.isSwitching && !equipment.isBusy);
     // Equipment (G / middle mouse): after melee, so a swing that started this tick refuses the throw. In a menu only its timer runs.
     equipment.update(dt, { inMenu });
@@ -683,6 +732,9 @@ export function createGame({
     events,
     pricing,
     death,
+    get winSummary() { return winSummary; },
+    clockOut,
+    stayForOvertime,
     map,
     features,
     wardrobe,

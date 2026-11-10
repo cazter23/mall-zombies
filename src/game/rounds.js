@@ -81,6 +81,11 @@ export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null,
     if (onRoundStart) onRoundStart(n);
   }
 
+  function discardWave() {
+    zombies.clear();
+    onRoundDiscard?.();
+  }
+
   return {
     get round() {
       return round;
@@ -177,19 +182,22 @@ export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null,
       }
     },
 
+    startOvertime() {
+      discardWave();
+      announce(round + 1, cfg.breakSeconds);
+    },
+
     // Debug: end the current round right now and jump straight into the next one (no break).
     skipRound() {
       if (!started) return this.start();
-      zombies.clear();
-      onRoundDiscard?.();
+      discardWave();
       announce(round + 1, 0);
     },
 
     // Debug: clear the zombies and jump straight to round `n` (no break).
     jumpTo(n) {
       if (!started) started = true;
-      zombies.clear();
-      onRoundDiscard?.();
+      discardWave();
       announce(Math.max(1, Math.round(n)), 0);
     },
 

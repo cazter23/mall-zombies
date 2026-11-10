@@ -1,0 +1,4 @@
+export const CAREER_STATS_VERSION = 2;
+export const PREVIOUS_CAREER_STATS_VERSION = 1;
+export const RECENT_RUN_LIMIT = 12;
+export const ACCURACY_RECORD_MIN_SHOTS = 25;

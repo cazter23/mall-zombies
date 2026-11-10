@@ -1,5 +1,10 @@
 export const closingTime = {
   title: 'Closing checklist',
+  van: {
+    name: "Skylar's van", verb: 'start the van', priceLabel: 'Free',
+    blockedPrefix: 'Still needed: ',
+    promptHeight: 1.2, clearance: 0.12,
+  },
   lines: {
     janitor: { duty: 'Water features off', key: "Murray's Key Ring" },
     guard: { duty: 'Takings banked', key: "Kettle's Safe Key" },

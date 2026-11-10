@@ -38,7 +38,10 @@
 //   'playerFall'  { drop, damage }                       a landing from a height hurt (feel.fall); damage is already taken
 //   'regenStart'  {}                                     health began climbing back (once per recovery: player/health.js)
 //   'playerDeath' {}                                     after the death is registered (onPlayerDeath)
-//   'runEnd'      { summary }                            immutable final run totals, emitted once on player death
+//   'escapeVanStart' {}                                  the player finished the van's hold interaction
+//   'runWon'      { summary }                            immutable win snapshot; simulation pauses for the choice
+//   'overtimeStart' { round }                            the player chose to continue at the next round
+//   'runEnd'      { summary }                            final run totals, emitted once on death or Clock out
 //   'powerUpDrop' { id, position, seconds }               earned incentive appeared on clear floor
 //   'powerUpCollect' { id, name, pa, sound }              walk-through collection (instant effect or zone start)
 //   'powerUpStart' { id, position, remaining, radius, ... } zone or temporary employee benefit began
@@ -50,7 +53,7 @@
 //   'clockIn'     { round, skipped }                     the player ended the break before `round` early (game/clockIn.js);
 //                                                        skipped = seconds of the break given up
 //   'waveEnding'  { round, remaining }                   no spawns left and 2 or fewer zombies alive (final clearance cue)
-//   'roundDiscard' {}                                    a debug skip cleared the current wave
+//   'roundDiscard' {}                                    a debug skip or overtime transition cleared the current wave
 //   'typeIntro'   { typeId, zombie }                     a zombie type's first appearance this run (zombie = that spawn)
 //   'mascotVariantIntro' { variant, zombie }             a Mascot costume's first appearance this run, after the type's
 //                                                        own intro (game/rounds.js; banner: config/zombies.js mascotVariants)

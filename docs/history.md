@@ -1,5 +1,13 @@
 # Sunset Galleria: build history ("Current state")
 
+## 10 November 2026 - Closing Time phase 2, The win (headless)
+
+- The mauve van's east-side hold prompt lists any missing keys. Four keys unlock the free start, even in round 1.
+- `runWon` publishes the win snapshot and freezes the simulation. `g.clockOut()` ends the shift. `g.stayForOvertime()` discards the current wave and starts the next round with its normal break and scaling, preserving points and equipment.
+- The career ledger records one run on `runEnd`, at Clock out or death in overtime. Version 2 preserves the version 1 history and adds wins and fastest win, measured when the van starts.
+- Death events still own the music, cleanup and delayed receipt. The win pauses via `state.running`, which the idle saver already reads. Phase 3 owns pointer lock, receipt controls and changing the browser's death camera check to distinguish death from Clock out.
+- Shared files changed include `createGame.js`, `events.js`, `rounds.js`, `careerStats.js`, the feature registry and `mall.js`.
+
 ## 10 November 2026 - Closing Time phase 1, Keys and the checklist
 
 - The first defeat of each boss drops its closing key on clear floor alongside its usual reward. If the boss vanishes, its key drops at the player's feet.

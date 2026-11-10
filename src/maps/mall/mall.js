@@ -75,6 +75,7 @@ import { buildCinemaDetails } from './cinemaDetails.js';
 import { cinemaStairs } from '../../config/cinemaStairs.js';
 import { buildCinemaStairs, dressCinemaStairs } from './cinemaStairs.js';
 import { buildCinemaServiceDetails } from './cinemaServiceDetails.js';
+import { closingTime } from '../../config/closingTime.js';
 import { parkingLot } from '../../config/parkingLot.js';
 import { buildParkingLot } from './parkingLot.js';
 import { buildMallExterior } from './mallExterior.js';
@@ -900,6 +901,10 @@ export function buildMall(scene, colliders) {
     else buildWardrobeDisplay(kit, spot, facing, floorY, title);
     return spot;
   }
+  const van = parkingLot.vehicles.find(({ id }) => id === 'abandoned');
+  const escapeVanPosition = new THREE.Vector3(
+    van.x + van.width / 2 + closingTime.van.clearance, closingTime.van.promptHeight, van.z,
+  );
   const features = [
     ...Object.entries(wardrobeItems).map(([id, item]) => wardrobeSpot('wardrobeRack', id, item, item.shortName)),
     ...Object.entries(fittingRooms).map(([id, room]) => wardrobeSpot('fittingRoom', id, room, 'Fitting room')),
@@ -920,6 +925,7 @@ export function buildMall(scene, colliders) {
     { kind: 'clawMachine', name: 'clawMachine', zone: clawSites[0].zone, position: clawSites[0].cabinet.position, normal: clawSites[0].cabinet.normal, sites: clawSites },
     { kind: 'prizeCounter', name: 'prizeCounter', zone: counterSite.zone, position: prizeBooth.position, normal: prizeBooth.normal, slots: prizeBooth.slots },
     // Environmental hazards (docs/hazards-plan.md): Grand Atrium Electrified Fountain breaker switch.
+    { kind: 'escapeVan', name: 'escape_van', zone: 'parkingLot', position: escapeVanPosition, normal: new THREE.Vector3(1, 0, 0) },
     { kind: 'fountainHazard', name: 'hazard_fountain', zone: hazards.fountain.zone, position: new THREE.Vector3(hazards.fountain.position.x, hazards.fountain.position.y, hazards.fountain.position.z), normal: new THREE.Vector3(hazards.fountain.normal.x, hazards.fountain.normal.y, hazards.fountain.normal.z) },
   ];
 
