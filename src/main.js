@@ -437,7 +437,13 @@ function render(alpha, frameTime) {
   damageIndicators.flush();
   hud.setSpeedLines(game.over ? 0 : player.sprintAmount * feel.sprintFx.speedLinesOpacity);
   hud.setSprint(player.sprintFraction, player.sprintExhausted, player.isSprinting);
-  hud.setAmmo(gun.weapon, buttonLabel('reload'));
+  {
+    const secondary = gun.inactiveSlot;
+    const switchKey = device === 'keyboard'
+      ? (secondary?.index === 0 ? '1' : '2')
+      : (buttonLabel('switchWeapon') ?? (device === 'playstation' ? '△' : 'Y'));
+    hud.setAmmo(gun.weapon, buttonLabel('reload'), secondary, switchKey);
+  }
   hud.setAmmoTier(tierById(tierOf(gun.modsFor(gun.def.id) ?? [])));
   {
     const mods = gun.modsFor(gun.def.id) ?? [];

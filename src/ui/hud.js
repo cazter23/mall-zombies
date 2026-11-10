@@ -14,7 +14,8 @@ import { createOrderFormView } from './orderForm.js';
 import { createFittingRoomView } from './fittingRoomPicker.js';
 import { createBagMarker } from './bagMarker.js';
 import { createBirthCertificate } from './birthCertificate.js';
-import { gunLabel } from '../config/workshop.js';
+import { gunLabel, buildOf, workshopStuffings } from '../config/workshop.js';
+import { tierById, tierOf } from '../weapons/upgrades.js';
 import { createAnnouncements } from './announcements.js';
 import { ui } from '../config/ui.js';
 import { upgrades } from '../config/upgrades.js';
@@ -228,6 +229,13 @@ export function createHud() {
   const ammo = el('div', 'ammo');
   // (left of the count: Kiosk Kevin's two equipment pockets, game/equipment.js; setPockets fills them)
   ammo.innerHTML = `
+    <div class="ammo-secondary" hidden>
+      <span class="ammo-secondary-pip"></span>
+      <kbd class="ammo-secondary-key"></kbd>
+      <span class="ammo-secondary-name"></span>
+      <span class="ammo-secondary-sep">·</span>
+      <span class="ammo-secondary-ammo"></span>
+    </div>
     <div class="ammo-row">
       <div class="pockets">
         <div class="pocket empty" data-pocket="lethal"><i class="pocket-icon"></i><b class="pocket-count"></b><kbd class="pocket-key"></kbd></div>
@@ -239,6 +247,14 @@ export function createHud() {
     <div class="ammo-tier"></div>
     <div class="ammo-upgrades"></div>
   `;
+  const ammoSecondary = ammo.querySelector('.ammo-secondary');
+  ammoSecondary.hidden = true;
+  const ammoSecondaryPip = ammo.querySelector('.ammo-secondary-pip');
+  const ammoSecondaryKey = ammo.querySelector('.ammo-secondary-key');
+  const ammoSecondaryName = ammo.querySelector('.ammo-secondary-name');
+  const ammoSecondaryAmmo = ammo.querySelector('.ammo-secondary-ammo');
+  let lastSecondaryKey = '';
+  let lastActiveGunId = null;
   const ammoPouch = ammo.querySelector('.ammo-pouch');
   const ammoMag = ammo.querySelector('.ammo-mag');
   const ammoReserve = ammo.querySelector('.ammo-reserve');
@@ -368,6 +384,11 @@ export function createHud() {
         clearTimeout(fringeTimer);
         eyewear.classList.remove('headshot');
         lastAmmoKey = '';
+        lastSecondaryKey = '';
+        lastActiveGunId = null;
+        ammoSecondary.hidden = true;
+        ammoSecondary.classList.remove('show');
+        ammoSecondary.classList.remove('switched');
       });
       events.on('runReset', clearNotices);
       events.on('runReset', () => { history.clear(); incentives.reset(); });
@@ -644,9 +665,71 @@ export function createHud() {
       ammoUpgrades.classList.toggle('show', chips.length > 0);
     },
 
+    // Called every frame with the inactive secondary weapon (or null if only 1 gun is carried).
+    setSecondaryAmmo(secondary = null, switchKey = null) {
+      if (!secondary) {
+        if (lastSecondaryKey === 'none') return;
+        lastSecondaryKey = 'none';
+        ammoSecondary.hidden = true;
+        ammoSecondary.classList.remove('show');
+        ammoSecondary.classList.remove('switched');
+        return;
+      }
+
+      const secDef = secondary.def;
+      const secWeapon = secondary.weapon;
+      const secMods = secondary.mods ?? [];
+      const secName = gunLabel(secDef);
+      const secAmmoCount = secDef.fuel ? `${secWeapon.magazine} fuel` : `${secWeapon.reserve}`;
+      const tierId = tierOf(secMods);
+      const build = buildOf(secMods);
+      const stuffingColor = build ? (workshopStuffings[build.stuffing]?.color ?? null) : null;
+      const tierObj = tierId !== 'standard' ? tierById(tierId) : null;
+      const tierColor = tierObj?.color ?? null;
+      const pipColor = stuffingColor !== null
+        ? `#${stuffingColor.toString(16).padStart(6, '0')}`
+        : tierColor !== null
+          ? `#${tierColor.toString(16).padStart(6, '0')}`
+          : '';
+
+      const rawKey = switchKey ?? (secondary.index === 0 ? '1' : '2');
+      const keyText = String(rawKey).startsWith('[') ? String(rawKey) : `[${rawKey}]`;
+
+      const cacheKey = `${secDef.id}|${secName}|${secAmmoCount}|${keyText}|${pipColor}`;
+      if (cacheKey === lastSecondaryKey) return;
+      lastSecondaryKey = cacheKey;
+
+      ammoSecondaryKey.textContent = keyText;
+      ammoSecondaryName.textContent = secName;
+      ammoSecondaryAmmo.textContent = secAmmoCount;
+
+      if (pipColor) {
+        ammoSecondaryPip.style.display = 'inline-block';
+        ammoSecondaryPip.style.backgroundColor = pipColor;
+      } else {
+        ammoSecondaryPip.style.display = 'none';
+      }
+
+      ammoSecondary.hidden = false;
+      ammoSecondary.classList.add('show');
+    },
+
     // Called every frame with the held weapon; only touches the DOM when something changed.
     // `reloadLabel`: the reload button for the device in use ("R", "X", "□").
-    setAmmo(weapon, reloadLabel = 'R') {
+    // `secondary`: carried gun not in hand { def, mods, weapon, index } or null.
+    // `switchKey`: button label for switching weapons ("2", "1", "Y", "△").
+    setAmmo(weapon, reloadLabel = 'R', secondary = undefined, switchKey = null) {
+      if (secondary !== undefined) {
+        this.setSecondaryAmmo(secondary, switchKey);
+      }
+
+      if (lastActiveGunId && lastActiveGunId !== weapon.def.id && secondary) {
+        ammoSecondary.classList.remove('switched');
+        void ammoSecondary.offsetWidth;
+        ammoSecondary.classList.add('switched');
+      }
+      lastActiveGunId = weapon.def.id;
+
       const name = gunLabel(weapon.def);
       const tank = weapon.def.fuel ? (weapon.fuel.locked ? 'dry' : 'tank') : null; // a gun with a fuel tank (the Leaf Blower): its level is the count, no reserve
       const key = `${name}|${weapon.magazine}|${weapon.reserve}|${weapon.isReloading}|${reloadLabel}|${tank}`;

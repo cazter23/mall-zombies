@@ -360,6 +360,18 @@ export function createPlayerGun({
       return slots.map((s) => s.def.id);
     },
 
+    // The carried gun not currently in hand (or null if only 1 gun is carried).
+    get inactiveSlot() {
+      if (slots.length <= 1) return null;
+      const other = current === 0 ? 1 : 0;
+      const s = slots[other];
+      if (!s) return null;
+      return { def: s.def, mods: s.mods, weapon: s.weapon, index: other };
+    },
+    get secondaryDef() {
+      return this.inactiveSlot;
+    },
+
     // Match the displayed cone to gameplay, using interpolated ADS for the pellet portion.
     spreadDegreesForDisplay(aimAmount = slots[current].aim.amount) {
       return slots[current].aim.spreadDegrees + pelletSpreadDegrees(slots[current].def, aimAmount);
