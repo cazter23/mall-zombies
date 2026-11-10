@@ -1,10 +1,8 @@
 # Wardrobe: the showroom rework (plan)
 
-Status: phase 1 is built (9 November 2026: the picker, generated tickets, section 6's numbers, 'regenStart', colours and icons in config, the debug
-command and the limits test; see docs/history.md). Phase 2 has nine showpieces built (9 November 2026: the Food Court sample and six ground-floor fixtures). See docs/history.md.
-The Cinema 3D Glasses and the two Shoe-Per Sale fixtures remain. Phase 3, the outfit rail, is built (9 November 2026; docs/history.md), and phase 4 is not started.
-It reworks Wardrobe v1 (the design that follows is
-docs/wardrobe-plan.md). Numbers are starting points, to be tuned by playing.
+Status (9 November 2026). Phase 1 has the fitting-room picker, words-only tickets and balance changes. Phase 2 has all twelve showpieces.
+Phase 3 has the outfit rail, and phase 4 has the first-person apparel and HUD looks. See docs/history.md for the placements and checks.
+This reworks Wardrobe v1 (docs/wardrobe-plan.md). Numbers are starting points, to be tuned by playing.
 
 ## Why
 

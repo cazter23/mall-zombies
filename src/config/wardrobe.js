@@ -32,7 +32,9 @@ export const wardrobeItems = {
     factors: { headshotDamageMultiplier: 1.25, adsMoveSpeed: 0.85 }, ticket: 'The floor is closer than it appears.',
     color: 0x29c4f0, icon: 'glasses3d', pulse: 'headshot',
     lines: [{ effect: 'headshotDamageMultiplier', text: '{Size} more headshot damage' }, { effect: 'adsMoveSpeed', text: 'Moves {size} slower while aiming' }],
-    zone: 'cinema', at: [-40.9, 0.5], facing: 'x+',
+    zone: 'cinema', at: [-40.41, -3.48], facing: 'x+',
+    pa: { kicker: 'Attention shoppers', text: 'Someone just bought the 3D Glasses. Please keep both feet in this dimension.' },
+    motif: 'motifGlasses',
   },
   cardigan: {
     slot: 'torso', name: "Hoffman's Heirloom Cardigan", shortName: 'Cardigan',
@@ -67,7 +69,9 @@ export const wardrobeItems = {
     factors: { sprintSpeed: 1.1, sprintDuration: 0.9 }, ticket: "Every step says you're here.",
     color: 0xb44dff, icon: 'sneaker', pulse: 'sprintStart',
     lines: [{ effect: 'sprintSpeed', text: 'Sprints {size} faster' }, { effect: 'sprintDuration', text: 'Sprints {size} shorter' }],
-    zone: 'upstairs', at: [-10, 8.5], facing: 'x+',
+    zone: 'upstairs', at: [-9.55, 9.43], facing: -1,
+    pa: { kicker: 'Attention shoppers', text: 'Someone just bought the Light-Up Sneakers. The dance floor is wherever you are.' },
+    motif: 'motifLightUps',
   },
   orthopedicWalkers: {
     slot: 'feet', name: 'Orthopedic Mall Walkers', shortName: 'Orthopedics', // (not "Mall Walkers": that is a zombie)
@@ -75,7 +79,9 @@ export const wardrobeItems = {
     ticket: 'Recommended by the people chasing you.',
     color: 0xd8cbb0, icon: 'walker', pulse: 'sprintStart',
     lines: [{ effect: 'sprintDuration', text: 'Sprints {size} longer' }, { effect: 'sprintRefillDelay', text: 'Sprint recovers {size} sooner' }, { effect: 'sprintSpeed', text: 'Sprints {size} slower' }],
-    zone: 'upstairs', at: [-4, 8.5], facing: 'x-',
+    zone: 'upstairs', at: [-4.75, 10.06], facing: 'x-',
+    pa: { kicker: 'Attention shoppers', text: 'Someone just bought the Orthopedics. The mall opens early for a reason.' },
+    motif: 'motifOrthopedics',
   },
   wheelieSneakers: {
     slot: 'feet', name: 'Wheelie Sneakers', shortName: 'Wheelies',
@@ -136,7 +142,9 @@ export const wardrobeAnchor = { heightAboveFloor: 1.4, standOff: 0.03 };
 
 // Showpieces (maps/mall/wardrobeShowpieces/, driven by game/features/wardrobeFixtures.js): the big themed fixtures an item is sold from.
 export const showpieces = {
+  upperFloorIdle: { monster: 2.5, disco: 2.8, treadmill: 5, stride: 4 },
   groundFloorIdle: { glint: 2.1, chase: 6, bounce: 2.4, beacon: 4, turn: 0.75, spin: 1.3 },
+  motifFloorTolerance: 2.2, // the chime stays on the display’s floor
   motifRange: 8, // metres: an unsold showpiece hums its motif (config/audio.js) while you are this close...
   motifSeconds: 6, // ...once every this many seconds
   motifVolume: 0.5,
@@ -154,4 +162,20 @@ export const outfitRail = {
   pulseSeconds: 0.9, // a tag swings and flashes this long after its item does its job
   emptyLabels: { head: 'HEAD', torso: 'TORSO', feet: 'FEET', accessory: 'EXTRA' }, // what an empty slot's dashed silhouette says
   diedWearing: 'DIED WEARING:', // the results receipt's heading
+};
+
+// First-person apparel and HUD presentation. These values never affect gameplay.
+export const wardrobeLook = {
+  lookDownPitch: -0.52,
+  knit: { wool: 0xb36648, cuff: 0x774035, trim: 0xe9c396 },
+  vest: { cloth: 0xb7d62b, tape: 0xe6f1e8 },
+  shoes: {
+    lightUpSneakers: { upper: 0x554188, sole: 0x8f51ff, accent: 0x79cffa, scale: 1 },
+    orthopedicWalkers: { upper: 0xfffaf1, sole: 0xe2d1b0, accent: 0xd7c7ab, scale: 1.15 },
+    wheelieSneakers: { upper: 0x294963, sole: 0xf2ad5e, accent: 0xff8a1f, scale: 1 },
+  },
+  shoeGlow: { resting: 0.35, footfall: 1.5 },
+  slideSparks: { interval: 0.095, colors: [0xffb347, 0xfff0a5], count: 4, speed: 1.1, size: 0.024 },
+  foamDrop: 0.19,
+  headshotFringeSeconds: 0.24,
 };

@@ -114,7 +114,7 @@ export function createGame({
   // Every price the player pays goes through here (base price from config/economy.js + any discount).
   const pricing = createPricing();
   // Points. Every gain/spend shows a "+60" / "-500" pop-up by the counter.
-  const wallet = createWallet({ onChange: (amount) => hud.pointsPopup(amount) });
+  const wallet = createWallet({ onChange: (amount, points, style) => style ? hud.pointsPopup(amount, style) : hud.pointsPopup(amount) });
   const runStats = createRunStats();
   events.on('purchase', ({ kind, id, cost }) => pricing.spendVoucher(kind, id, cost));
   events.on('playerDeath', () => {
@@ -311,7 +311,7 @@ export function createGame({
       target: zombie, killed: true, headshot, melee,
       killMultiplier: powerUps?.killMultiplier(zombie.position) ?? 1,
       killPayMultiplier: stats.killPayMultiplier,
-    }));
+    }), wardrobe.wearing('accessory') === 'goldCard' ? 'goldCard' : undefined);
   });
   events.on('shot', (shot) => {
     if (!state.over) runStats.recordShot(shot);

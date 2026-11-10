@@ -19,6 +19,9 @@ export function createPlayerHealth({ stats, onDeath, onRegenStart = null }) {
   let killedBy = null; // source of the lethal blow ({ type, id, variant, boss, fall })
 
   return {
+    get regenWaitFraction() {
+      return dead || stats.health >= stats.maxHealth ? null : Math.min(1, sinceHit / stats.regenDelay);
+    },
     // Debug god mode (game/debugCommands.js): no damage at all while true. Not part of a run, so it survives Play again.
     invulnerable: false,
 

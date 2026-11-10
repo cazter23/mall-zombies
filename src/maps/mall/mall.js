@@ -40,6 +40,7 @@ import { fittingRooms, wardrobeItems, wardrobeAnchor } from '../../config/wardro
 import { buildWardrobeDisplay } from './wardrobeDisplays.js';
 import { foodCourtShowpieces } from './wardrobeShowpieces/foodCourt.js';
 import { groundFloorShowpieces } from './wardrobeShowpieces/groundFloor.js';
+import { upperFloorShowpieces } from './wardrobeShowpieces/upperFloor.js';
 import { upgrades } from '../../config/upgrades.js';
 import { shutters } from '../../config/shutters.js';
 import { buildStores, storeOpenings } from './stores.js';
@@ -79,7 +80,7 @@ import { buildMallExterior } from './mallExterior.js';
 import { buildParkingDetails } from './parkingDetails.js';
 import { parkingDetails } from '../../config/parkingDetails.js';
 
-const wardrobeShowpieces = { ...foodCourtShowpieces, ...groundFloorShowpieces };
+const wardrobeShowpieces = { ...foodCourtShowpieces, ...groundFloorShowpieces, ...upperFloorShowpieces };
 
 export const LAYOUT = {
   parkingLot,

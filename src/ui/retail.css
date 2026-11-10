@@ -702,3 +702,57 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   letter-spacing: .06em;
   text-transform: uppercase;
 }
+
+
+/* Wardrobe styling lives within the existing HUD bounds and below the crosshair and prompts. */
+.wardrobe-eyewear { position: absolute; inset: 0; pointer-events: none; }
+.hud[data-wardrobe-head="aviators"] .wardrobe-eyewear {
+  opacity: var(--wardrobe-aim, 0);
+  background: radial-gradient(ellipse at center, #d48a2908 40%, #c4803022 94%);
+}
+.hud[data-wardrobe-head="aviators"] .wardrobe-eyewear::before,
+.hud[data-wardrobe-head="aviators"] .wardrobe-eyewear::after {
+  content: ''; position: absolute; top: 6%; bottom: 6%; width: 16%;
+  border: 1px solid #f3c88142;
+}
+.hud[data-wardrobe-head="aviators"] .wardrobe-eyewear::before { left: -9%; border-radius: 0 52% 58% 0; }
+.hud[data-wardrobe-head="aviators"] .wardrobe-eyewear::after { right: -9%; border-radius: 52% 0 0 58%; }
+.hud[data-wardrobe-head="glasses"] .wardrobe-eyewear {
+  box-shadow: inset 1px 0 #ff4578a0, inset -1px 0 #36daffa0, inset 0 1px #36daff80, inset 0 -1px #ff457880;
+}
+.hud[data-wardrobe-head="glasses"] .wardrobe-eyewear.headshot {
+  box-shadow: inset 2px 0 #ff4578e0, inset -2px 0 #36daffe0, inset 0 2px #36daffa0, inset 0 -2px #ff4578a0;
+}
+.wardrobe-regen {
+  display: none; position: absolute; left: calc(5px + (100% - 12px) * var(--regen, 0)); top: 0;
+  width: 2px; height: 100%; background: #ffe5bb; box-shadow: 0 0 3px #311f32;
+}
+.hud[data-wardrobe-head="paperHat"] .health { position: relative; }
+.hud[data-wardrobe-head="paperHat"] .wardrobe-regen { display: block; }
+.wardrobe-regen.ready { background: #a9ffc7; }
+.hud[data-wardrobe-torso="cardigan"] .health { width: min(275px, 38vw); }
+.hud[data-wardrobe-torso="cardigan"] .health-fill {
+  background: repeating-linear-gradient(55deg, #ba674b 0 3px, #f1b997 3px 5px, #ad553d 5px 7px);
+}
+.hud[data-wardrobe-torso="cardigan"] .health { border-right: 8px solid #845445; }
+.hud[data-wardrobe-torso="sandwichBoard"] .health {
+  outline: 2px solid #c49c69; box-shadow: 0 0 0 3px #4f2d21, inset 0 -1px #925e35;
+}
+.hud[data-wardrobe-feet="orthopedicWalkers"] .sprint { width: min(297px, 40vw); }
+.hud[data-wardrobe-feet="orthopedicWalkers"] .sprint.full,
+.hud[data-wardrobe-feet="lightUpSneakers"] .sprint.full { opacity: .65; }
+.hud[data-wardrobe-feet="orthopedicWalkers"] .sprint-fill { background: #e1d2b0; }
+.hud[data-wardrobe-feet="lightUpSneakers"] .sprint-fill { background: #c06aff; box-shadow: 0 0 5px #be78ff; }
+.hud[data-wardrobe-feet="lightUpSneakers"] .sprint.active .sprint-fill { animation: wardrobe-soles .7s ease-in-out infinite alternate; }
+@keyframes wardrobe-soles { to { filter: brightness(1.45); } }
+.ammo-pouch { display: none; color: #61dec5; vertical-align: middle; margin-right: .34rem; }
+.ammo-pouch.show { display: inline-block; }
+.ammo-pouch .tag-icon { width: 18px; height: 18px; }
+.points-pop.gain.gold-card { color: #ffd667; text-shadow: 0 0 6px #de9721, 0 1px 2px #381a0b; }
+@media (max-width: 700px) {
+  .hud[data-wardrobe-torso="cardigan"] .health { width: min(169px, 36vw); }
+  .hud[data-wardrobe-feet="orthopedicWalkers"] .sprint { width: min(182px, 36vw); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hud[data-wardrobe-feet="lightUpSneakers"] .sprint.active .sprint-fill { animation: none; }
+}

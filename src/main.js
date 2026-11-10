@@ -22,6 +22,7 @@ import { createHud } from './ui/hud.js';
 import { weapons, melee as meleeWeapons } from './config/weapons.js';
 import { createViewmodel } from './weapons/viewmodel.js';
 import { createPlayerBody } from './player/body.js';
+import { connectWardrobeAppearance } from './player/wardrobeAppearance.js';
 import { createSound } from './audio/sound.js';
 import { createSettings, hasSavedSettings } from './game/settings.js';
 import { settingPresets } from './config/settings.js';
@@ -85,7 +86,6 @@ const noticesMenu = createNoticesMenu(hud.history);
 const sound = createSound(); // synthesized sound effects (starts on the first click/key press)
 const viewmodel = createViewmodel(Object.values(weapons), meleeWeapons.boxCutter); // a model for every gun
 const postProcessing = createPostProcessing({ renderer, scene, camera, viewmodel });
-const body = createPlayerBody(scene); // legs + torso you see when looking down
 
 const g = createGame({
   scene,
@@ -104,6 +104,8 @@ const g = createGame({
 });
 scene.add(viewmodel.worldLight); // the muzzle flash lights up the room
 const { state: game, death, map, player, gun, melee, zombies, rounds, health, wallet, effects, aimAssist, interactions, pricing, flashSales } = g;
+const body = createPlayerBody(scene, effects); // legs + torso you see when looking down
+connectWardrobeAppearance(g.events, { body, viewmodel });
 const workshop = g.features.list.find(({ feature }) => feature.kind === 'workshop')?.instance; // Build-A-Blaster (the HUD reads its status)
 const { ritual, drops: limitedEditions } = workshop ?? {};
 const fittingRooms = g.features.list.filter(({ feature }) => feature.kind === 'fittingRoom').map(({ instance }) => instance); // (the HUD draws the open picker)
@@ -420,7 +422,7 @@ function render(alpha, frameTime) {
   const gapPx = (Math.tan(halfSpread) / Math.tan((fov * DEG_TO_RAD) / 2)) * (window.innerHeight / 2);
   hud.setCrosshair(gapPx, aimAmount);
 
-  hud.setHealth(health.fraction);
+  hud.setHealth(health.fraction, health.regenWaitFraction);
   hud.setHurt(health.overlay);
   hud.setSpeedLines(game.over ? 0 : player.sprintAmount * feel.sprintFx.speedLinesOpacity);
   hud.setSprint(player.sprintFraction, player.sprintExhausted, player.isSprinting);

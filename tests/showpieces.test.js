@@ -5,20 +5,23 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { headlessGame, dt } from './helpers/headlessGame.js';
 import { feel } from '../src/config/feel.js';
-import { showpieces as cfg, wardrobeItems } from '../src/config/wardrobe.js';
+import { showpieces as cfg, wardrobeItems, wardrobeAnchor } from '../src/config/wardrobe.js';
 import { overlapsSolid } from '../src/world/collision.js';
 
 const IDS = ['paperHat', 'wheelieSneakers', 'foamFinger'];
-const groundFloorEntrances = {
+const floorEntrances = {
   goldCard: [0, 5.7],
   sandwichBoard: [20.85, 2],
   fannyPack: [20.85, 2],
   hiVisVest: [-21.7, 1.9],
   cardigan: [-17.5, 6.95],
   aviators: [15.5, 6.9],
+  glasses: [-20.8, -2.9],
+  lightUpSneakers: [-8.78, 6.48],
+  orthopedicWalkers: [-5.26, 6.48],
 };
-const groundFloorIds = Object.keys(groundFloorEntrances);
-const allIds = [...IDS, ...groundFloorIds];
+const floorIds = Object.keys(floorEntrances);
+const allIds = [...IDS, ...floorIds];
 const holdTicks = Math.ceil(feel.interact.holdSeconds / dt) + 1;
 
 function scenario(t) {
@@ -31,8 +34,9 @@ function scenario(t) {
 }
 
 const spotOf = (g, id) => g.map.features.find((f) => f.kind === 'wardrobeRack' && f.item === id);
+const floorAt = (spot) => spot.showpiece?.root.position.y ?? (spot.zone === 'upstairs' ? spot.position.y - wardrobeAnchor.heightAboveFloor : 0);
 function standAt(game, spot, distance = 0.8) {
-  const position = spot.position.clone().addScaledVector(spot.normal, distance).setY(0);
+  const position = spot.position.clone().addScaledVector(spot.normal, distance).setY(floorAt(spot));
   game.g.player.teleport({ position, yaw: Math.atan2(spot.normal.x, spot.normal.z) });
   game.tick();
   return position;
@@ -119,13 +123,10 @@ test('each showpiece is readable from the Food Court entrance: a clear line from
   }
 });
 
-test('the six ground-floor displays have clear approaches, prompts, spawn lanes and entrance sightlines', (t) => {
+test('the floor displays have clear approaches, prompts, spawn lanes and entrance sightlines', (t) => {
   const game = scenario(t), { g } = game;
   g.debug.run('doors');
   game.tick(240);
-  // Two owned items in one slot make the staff fitting room available while checking both prompts.
-  g.wardrobe.buy('paperHat');
-  g.wardrobe.buy('glasses');
   g.wallet.earn(20000);
   g.map.group.updateMatrixWorld(true);
 
@@ -137,12 +138,16 @@ test('the six ground-floor displays have clear approaches, prompts, spawn lanes 
     [-22.2, -20, -13.4, -11], // Service Corridor to Food Court
     [-19.5, -15.5, 6, 8.6], // HOFFMAN'S main gate
     [13, 18, 6, 9.3], // Atrium main gate
-  ].map(([x0, x1, z0, z1]) => new THREE.Box3(new THREE.Vector3(x0, 0, z0), new THREE.Vector3(x1, 2.1, z1)));
+    [-9.8, -7.7, 6, 7.7, 6.3], // Shoe-Per Sale's west entrance
+    [-6.3, -4.2, 6, 7.7, 6.3], // Shoe-Per Sale's east entrance
+    [-21.8, -20, -4.1, -1.7, 6.3], // Cinema gate
+  ].map(([x0, x1, z0, z1, y = 0]) => new THREE.Box3(new THREE.Vector3(x0, y, z0), new THREE.Vector3(x1, y + 2.1, z1)));
   const { player, vault } = feel;
   const hit = new THREE.Vector3();
-  for (const id of groundFloorIds) {
+  for (const id of floorIds) {
     const spot = spotOf(g, id);
     const root = spot.showpiece.root;
+    const floor = floorAt(spot);
     const base = new THREE.Box3().setFromObject(root.getObjectByName(`${spot.name}_base`));
     const baseCollider = g.colliders.find((b) => b.min.distanceTo(base.min) < 1e-5 && b.max.distanceTo(base.max) < 1e-5);
     assert.ok(baseCollider, `${id}: solid base`);
@@ -150,11 +155,11 @@ test('the six ground-floor displays have clear approaches, prompts, spawn lanes 
     assert.ok(size.y <= 0.35 || size.y >= 2.1 || (baseCollider.vaultable && size.y <= vault.maxHeight
       && Math.min(size.x, size.z) <= vault.maxDepth), `${id}: standable base`);
     assert.ok(!doorLanes.some((lane) => lane.intersectsBox(base)), `${id}: the base stays out of doorways`);
-    assert.ok(!g.colliders.some((b) => b !== baseCollider && b.max.y > 0.05 && b.intersectsBox(base)), `${id}: base clears existing solids`);
+    assert.ok(!g.colliders.some((b) => b !== baseCollider && b.max.y > floor + 0.05 && b.intersectsBox(base)), `${id}: base clears existing solids`);
     assert.ok(!root.getObjectByProperty('isLight', true), `${id}: emissive and decals only`);
     assert.equal(root.getObjectByName(`${spot.name}_live`).userData.dynamic, true, `${id}: live group survives batching`);
 
-    for (const spawn of g.map.spawnPoints.filter((p) => p.zone === spot.zone && p.position.y < 1)) {
+    for (const spawn of g.map.spawnPoints.filter((p) => p.zone === spot.zone && Math.abs(p.position.y - floor) < 1)) {
       if (spawn.name === 'spawn_serviceCorridor_ventSouth') {
         // The vent ejects across the aisle at z -7. Keep that strip clear the full corridor width.
         const lane = new THREE.Box3(new THREE.Vector3(-23.3, 0, spawn.position.z - 0.8),
@@ -173,8 +178,8 @@ test('the six ground-floor displays have clear approaches, prompts, spawn lanes 
     assert.ok(approach, `${id}: clear 2 m approach to buying position`);
     assert.equal(g.interactions.prompt?.id, id, `${id}: owns its prompt`);
 
-    const [x, z] = groundFloorEntrances[id];
-    const eye = new THREE.Vector3(x, player.eyeHeight, z);
+    const [x, z] = floorEntrances[id];
+    const eye = new THREE.Vector3(x, floor + player.eyeHeight, z);
     const header = root.getObjectByName(`${spot.name}_header`);
     const target = header.getWorldPosition(new THREE.Vector3());
     const toHeader = target.clone().sub(eye);
@@ -183,10 +188,21 @@ test('the six ground-floor displays have clear approaches, prompts, spawn lanes 
     const ray = new THREE.Ray(eye, toHeader.clone().normalize());
     assert.ok(!g.colliders.some((b) => ray.intersectBox(b, hit) && hit.distanceTo(eye) < toHeader.length() - 0.04),
       `${id}: unobstructed entrance sightline`);
-    assert.ok(new THREE.Box3().setFromObject(root.getObjectByName(`${spot.name}_still`)).max.y >= 2
-      || target.y >= 2, `${id}: tall silhouette`);
+    assert.ok(new THREE.Box3().setFromObject(root.getObjectByName(`${spot.name}_still`)).max.y >= floor + 2
+      || target.y >= floor + 2, `${id}: tall silhouette`);
   }
 
+  assert.ok(spotOf(g, 'lightUpSneakers').position.distanceTo(spotOf(g, 'orthopedicWalkers').position) > 1.2,
+    'the two Shoe-Per Sale prompts are separate');
+  // Two owned items in one slot make the fitting rooms available while checking the nearby prompts.
+  g.wardrobe.buy('paperHat');
+  g.wardrobe.buy('glasses');
+  for (const id of ['lightUpSneakers', 'orthopedicWalkers']) {
+    standAt(game, spotOf(g, id));
+    assert.equal(g.interactions.prompt?.id, id, `${id}: owns its prompt with the fitting room open`);
+  }
+  standAt(game, g.map.features.find((f) => f.name === 'fittingRoom_shoePerSale'));
+  assert.equal(g.interactions.prompt?.id, 'picker', 'the shoe-store fitting room still has its own prompt');
   standAt(game, g.map.features.find((f) => f.kind === 'upgradeDesk'));
   assert.equal(g.interactions.prompt?.kind, 'tier', 'Customer Service still has its own prompt');
   standAt(game, g.map.features.find((f) => f.name === 'fittingRoom_staffLockers'));
@@ -388,16 +404,21 @@ test('an unsold showpiece hums its motif within range every few seconds, and goe
   for (const id of IDS) assert.ok(audioHas(motif(id)), `${motif(id)} is defined in config/audio.js`);
 });
 
-test('each ground-floor showpiece has its own motif that sounds nearby until bought', (t) => {
+test('each floor showpiece has its own motif that sounds nearby until bought', (t) => {
   const game = scenario(t), { g } = game;
   g.debug.run('doors');
   game.tick(240);
-  const motifs = groundFloorIds.map((id) => wardrobeItems[id].motif);
-  assert.equal(new Set(motifs).size, groundFloorIds.length);
+  const motifs = floorIds.map((id) => wardrobeItems[id].motif);
+  assert.equal(new Set(motifs).size, floorIds.length);
+  const before = game.sounds.length;
   game.standAt(15, -9);
   game.tick();
-  assert.ok(!game.sounds.some((sound) => motifs.includes(sound)), 'all ground-floor motifs are out of range here');
-  for (const id of groundFloorIds) {
+  assert.ok(!game.sounds.slice(before).some((sound) => motifs.includes(sound)), 'all fixture motifs are out of range here');
+  const shoes = spotOf(g, 'lightUpSneakers');
+  const below = game.sounds.length;
+  game.standAt(shoes.position.x, shoes.position.z);
+  assert.ok(!game.sounds.slice(below).includes(wardrobeItems.lightUpSneakers.motif), 'the disco motif stays upstairs');
+  for (const id of floorIds) {
     const { motif } = wardrobeItems[id];
     assert.ok(audioHas(motif), `${id}: motif is in the audio config`);
     const spot = spotOf(g, id);

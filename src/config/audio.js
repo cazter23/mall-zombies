@@ -569,6 +569,29 @@ export const audio = {
     },
 
     // Wardrobe showpiece motifs (config/wardrobe.js showpieces): the mall chime family, 2-3 soft bell notes per item, hummed while the item is unsold.
+    motifGlasses: {
+      volume: 0.4,
+      layers: [
+        { type: 'tone', wave: 'sine', freq: 392, gain: 0.4, attack: 0.005, decay: 0.24 },
+        { type: 'tone', wave: 'triangle', freq: 740, gain: 0.4, attack: 0.005, decay: 0.24, delay: 0.18 },
+        { type: 'tone', wave: 'sine', freq: 494, gain: 0.4, attack: 0.005, decay: 0.45, delay: 0.36 },
+      ],
+    },
+    motifLightUps: {
+      volume: 0.4,
+      layers: [
+        { type: 'tone', wave: 'sine', freq: 698, gain: 0.4, attack: 0.005, decay: 0.24 },
+        { type: 'tone', wave: 'triangle', freq: 932, gain: 0.4, attack: 0.005, decay: 0.24, delay: 0.18 },
+        { type: 'tone', wave: 'sine', freq: 1397, gain: 0.4, attack: 0.005, decay: 0.45, delay: 0.36 },
+      ],
+    },
+    motifOrthopedics: {
+      volume: 0.4,
+      layers: [
+        { type: 'tone', wave: 'sine', freq: 440, gain: 0.4, attack: 0.005, decay: 0.24 },
+        { type: 'tone', wave: 'triangle', freq: 554, gain: 0.4, attack: 0.005, decay: 0.45, delay: 0.18 },
+      ],
+    },
     motifAviators: { // an airy rising pair
       volume: 0.4,
       layers: [

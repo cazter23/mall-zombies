@@ -36,6 +36,7 @@ export function buildWardrobeRack(spot, { map, pricing, interactions, wardrobe, 
       if (!motif || wardrobe.owns(id)) return;
       motifIn -= dt;
       if (motifIn > 0 || !map.zones[zone].open) return;
+      if (Math.abs(player.position.y - showpiece.root.position.y) > showpieces.motifFloorTolerance) return;
       const away = Math.hypot(player.position.x - position.x, player.position.z - position.z);
       if (away > showpieces.motifRange) return;
       motifIn = showpieces.motifSeconds;

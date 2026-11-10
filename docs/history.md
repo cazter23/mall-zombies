@@ -1,5 +1,18 @@
 # Sunset Galleria: build history ("Current state")
 
+## 9 November 2026 - Wardrobe showroom: upstairs showpieces and on-player looks
+
+- **Three upstairs fixtures.** A cardboard B-movie monster with a waving arm sells 3D Glasses beside Concessions. Shoe-Per Sale’s light-up
+  disco tile and giant sneaker face its west entrance. The walking-club mannequin and moving treadmill face its east entrance. Each
+  uses the Food Court purchase, PA and sold-out flow. The two shoe prompts and the mirror each have a separate approach.
+- **First person.** Knit sleeves and reflective tape follow every gun and workshop build. Looking down shows the cardboard board, belt pouch,
+  and the shoes with glowing soles, broad white uppers or heel wheels. The wheels spark during a slide. The foam finger rides the box-cutter swing.
+- **HUD and eyewear.** Paper Hat gets a regen pip. Cardigan and Sandwich Board style the health bar. Light-Ups and Orthopedics style stamina.
+  The Fanny Pack marks the actual reserve count, Gold Card marks paid kills, and both kinds of glasses tint or fringe the screen at its edges.
+  Equip changes and Play Again update the visuals through the existing events.
+- The headless 4:3 benchmark route with static batches and room culling estimates 326 to 327 average map calls. The shot averages sum to
+  three added calls, with a peak increase of five in the hallway. The Food Court sample’s three-piece reference added 70 summed and 28 at peak.
+
 ## 9 November 2026 - Wardrobe showroom, phase 2: six ground-floor showpieces
 
 - **Hallway and Mega Mart.** The MEMBERS ONLY kiosk faces the start shutter with a glinting Gold Card, red carpet and velvet rope. The front checkout

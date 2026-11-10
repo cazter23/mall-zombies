@@ -195,8 +195,10 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   lockers and the z -7 vent lane, with a blade sign facing the hallway and room to approach along the corridor.
   HOFFMAN’S Cardigan (-15.50, 11.45) faces the gate from the front floor between the west wall and the cosmetics counters. The Mirrored
   Aviators (25.62, 14.52) face west from beside SHADE SHACK, with the fountain loop and kiosk footprint clear.
-  The Cinema concessions and Shoe-Per Sale still have racks. Fitting rooms are by the curtained booths in HOFFMAN’S, at Shoe-Per Sale
-  and by the Service Corridor lockers. Anchors are in `config/wardrobe.js` and plain visual mounts are in `mall/wardrobeDisplays.js`.
+  Upstairs at y 6.3, the 3D Glasses monster faces east from beside Concessions (-40.38, -3.48). At Shoe-Per Sale the Light-Up Sneakers disco
+  plinth (-9.55, 9.40) faces the west entrance. The Orthopedic Walkers treadmill (-4.78, 10.06) faces west with its sign toward the east entrance. Their prompts sit on
+  opposite sides of the display island, with a separate prompt at the back-wall mirror. Fitting rooms also sit by the curtained booths in HOFFMAN’S
+  and the Service Corridor lockers. Anchors are in `config/wardrobe.js`.
 - Ammo cache: the RESTOCK-O-MATIC, a big hot-orange vending machine on the Food Court's NORTH wall just inside the door,
   east side (x 4.1..5.8, front at z -3.15 facing south; LAYOUT.restockMachine.x moves it along the wall), clear of the door
   lane, the east bench and the Byte Me pod. Hold F/X for 400 points to refill the gun in your hand (any gun, including the

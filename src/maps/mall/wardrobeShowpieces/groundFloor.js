@@ -1,8 +1,8 @@
 // Ground-floor showpieces. Local +Z faces the buyer, with the solid base behind the prompt.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { showpieces, wardrobeItems } from '../../../config/wardrobe.js';
-import { createShowpiece } from './showpiece.js';
+import { showpieces } from '../../../config/wardrobe.js';
+import { createFloorShowpiece } from './showpiece.js';
 
 const ink = 0x302536;
 const cream = 0xffedca;
@@ -21,38 +21,9 @@ function joined(...parts) {
 }
 
 function begin(kit, spot, floorY) {
-  const { color } = wardrobeItems[spot.item];
-  const position = spot.position.clone().setY(floorY);
-  const yaw = Math.atan2(spot.normal.x, spot.normal.z);
-  const s = createShowpiece({ kit, name: spot.name, color, position, yaw });
-  const { still, root } = s;
+  const s = createFloorShowpiece(kit, spot, floorY);
   return {
     ...s,
-    color,
-    // Match the one plain solid to the display's base, even when the fixture faces across an aisle.
-    base(width, height, depth, hex, z = -depth / 2) {
-      const base = s.solid(box(width, height, depth), hex, [0, height / 2, z]);
-      base.name = `${spot.name}_base`;
-      root.updateWorldMatrix(true, true);
-      const { min, max } = new THREE.Box3().setFromObject(base);
-      kit.addCollider(min.x, min.y, min.z, max.x, max.y, max.z).vaultable = height > 0.35 && height <= 1.1;
-      return base;
-    },
-    group(y, z) {
-      const group = new THREE.Group();
-      group.position.set(0, y, z);
-      s.live.add(group);
-      return group;
-    },
-    header(text, width, y, z, x = 0, yaw = 0) {
-      s.glow(box(width, 0.3, 0.055), color, [x, y, z], [0, yaw, 0], { intensity: 0.95 });
-      const signs = s.card(text, 'SOLD OUT', width - 0.08, 0.235, [x + 0.052 * Math.sin(yaw), y, z + 0.052 * Math.cos(yaw)]);
-      for (const sign of signs) sign.rotation.y = yaw;
-      signs[0].name = `${spot.name}_header`;
-    },
-    ticket(text, y, z, width = 0.76) {
-      s.card(text, 'SOLD OUT · IN YOUR SIZE', width, 0.155, [0, y, z]);
-    },
     rope(width, z) {
       for (const x of [-width / 2, width / 2]) {
         s.solid(drum(0.092, 0.035), ink, [x, 0.018, z]);
@@ -64,7 +35,7 @@ function begin(kit, spot, floorY) {
         new THREE.Vector3(0, 0.34, z + 0.055),
         new THREE.Vector3(width / 2, 0.57, z),
       );
-      s.solid(new THREE.TubeGeometry(rope, 10, 0.023, 6, false), velvet, [0, 0, 0], undefined, still);
+      s.solid(new THREE.TubeGeometry(rope, 10, 0.023, 6, false), velvet, [0, 0, 0], undefined, s.still);
     },
   };
 }
