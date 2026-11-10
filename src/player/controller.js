@@ -54,6 +54,7 @@ export class PlayerController {
     this.timeSinceSprint = 0;
     this.isSprinting = false;
     this.sprintExhausted = false;
+    this.sprintLatched = false;
 
     // Stance: 'stand' | 'crouch' | 'slide' | 'prone'. Crouch/slide are unchanged; prone is a toggle.
     this.stance = 'stand';
@@ -133,6 +134,7 @@ export class PlayerController {
     this.chainResetTimer = 0;
     this.slideSpeedScale = 1;
     this.sprintBlockTimer = 0;
+    this.sprintLatched = false;
     this.vaultHold = 0;
     this.timeSinceJump = Infinity;
     this.lungeTimer = 0;
@@ -267,7 +269,7 @@ export class PlayerController {
       input.consumeAction('prone'); // no prone/dive queued across a vault
       if (input.consumeAction('crouch')) this.slideChainQueued = true;
       this.slideCooldownTimer = Math.max(0, this.slideCooldownTimer - dt);
-      this.updateSprint(dt, this.isSprinting && input.actionDown('sprint') && !this.isAiming);
+      this.updateSprint(dt, this.isSprinting && (feel.sprint.toggle ? this.sprintLatched : input.actionDown('sprint')) && !this.isAiming);
       this.vault.update(dt);
       this.fallPeakY = -Infinity; // (a ledge vault sets fallBase as it lets go)
       this.updateMovementEffects(dt);
@@ -307,13 +309,32 @@ export class PlayerController {
 
     // --- Sprint meter (only while standing and not aiming: crouch, slide or ADS cancels a sprint) ---
     this.sprintBlockTimer = Math.max(0, this.sprintBlockTimer - dt);
-    const wantsSprint =
-      this.sprintBlockTimer <= 0 && // just fired the gun: walking
-      input.actionDown('sprint') &&
-      this.stance === 'stand' &&
-      !this.isAiming &&
-      wishLength > 0 &&
-      (!feel.sprint.requiresForward || forwardInput >= feel.sprint.minForwardInput);
+
+    let wantsSprint = false;
+    if (feel.sprint.toggle) {
+      if (input.consumeAction('sprint')) {
+        this.sprintLatched = !this.sprintLatched;
+      }
+      const canSprint =
+        this.sprintBlockTimer <= 0 &&
+        this.stance === 'stand' &&
+        !this.isAiming &&
+        wishLength > 0 &&
+        (!feel.sprint.requiresForward || forwardInput >= feel.sprint.minForwardInput);
+
+      if (!canSprint || this.sprintExhausted || this.sprintMeter <= 0) {
+        this.sprintLatched = false;
+      }
+      wantsSprint = this.sprintLatched;
+    } else {
+      wantsSprint =
+        this.sprintBlockTimer <= 0 && // just fired the gun: walking
+        input.actionDown('sprint') &&
+        this.stance === 'stand' &&
+        !this.isAiming &&
+        wishLength > 0 &&
+        (!feel.sprint.requiresForward || forwardInput >= feel.sprint.minForwardInput);
+    }
     this.updateSprint(dt, wantsSprint);
 
     // --- Stance: crouch / slide / stand ---
@@ -568,6 +589,27 @@ export class PlayerController {
     ) {
       // Tap C while sprinting: start a slide in the direction we're moving.
       this.startSlide(wishX, wishZ);
+    } else if (feel.crouch.toggle) {
+      const jumpPressed = input.actionPressed('jump') && !this.meleeCommitted;
+      if (this.stance === 'stand' && cPressed && !this.slideChainQueued) {
+        this.stance = 'crouch';
+      } else if (this.stance === 'crouch' && (cPressed || jumpPressed)) {
+        const roomToStand = hasHeadroom(
+          this.position,
+          feel.player.radius,
+          feel.crouch.height,
+          feel.player.height,
+          this.colliders,
+          feel.crouch.headroomMargin,
+        );
+        if (roomToStand) {
+          this.stance = 'stand';
+          if (jumpPressed) {
+            input.consumeAction('jump');
+            this.jumpBuffer = 0;
+          }
+        }
+      }
     } else if (this.stance === 'stand' && cHeld && !this.slideChainQueued) {
       this.stance = 'crouch';
     } else if (this.stance === 'crouch' && !cHeld) {
@@ -603,6 +645,7 @@ export class PlayerController {
   blockSprint(seconds) {
     this.sprintBlockTimer = Math.max(this.sprintBlockTimer, seconds);
     this.isSprinting = false;
+    this.sprintLatched = false;
   }
 
   // Slide in the direction we're moving (or want to move, if nearly stopped). `chained`: a landing
@@ -648,6 +691,7 @@ export class PlayerController {
       if (this.sprintMeter === 0) {
         this.sprintExhausted = true;
         this.isSprinting = false;
+        this.sprintLatched = false;
       }
     } else {
       this.timeSinceSprint += dt;

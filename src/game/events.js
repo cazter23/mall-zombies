@@ -29,9 +29,12 @@
 //                                                        butter = the player was shoved too (the HUD's butter splat)
 //   'mascotGold'  { zombie }                             an Employee of the Month (a gold Mascot) spawned; its kill
 //                                                        always drops a power-up (game/powerUps.js, type.guaranteedDrop)
-//   'playerHit'   { damage, zombie, knockback }          a zombie's swing (or a cart charge) landed;
-//                                                        knockback = { x, z } m/s shove or null. damage is BEFORE clothes:
-//                                                        createGame's listener applies stats.damageTakenMultiplier
+//   'playerHit'   { damage, zombie, knockback, attackerPosition, hitDirection }
+//                                                        a zombie's swing (or a cart charge) landed;
+//                                                        knockback = { x, z } m/s shove or null.
+//                                                        attackerPosition = { x, z } world coords or null.
+//                                                        hitDirection = { x, z } normalized vector from player toward attack source or null.
+//                                                        damage is BEFORE clothes: createGame's listener applies stats.damageTakenMultiplier
 //   'playerFall'  { drop, damage }                       a landing from a height hurt (feel.fall); damage is already taken
 //   'regenStart'  {}                                     health began climbing back (once per recovery: player/health.js)
 //   'playerDeath' {}                                     after the death is registered (onPlayerDeath)

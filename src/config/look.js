@@ -53,7 +53,7 @@ export const look = {
   // ZOMBIE EDGE GLOW (zombies/zombieRim.js): a soft rim of light round each zombie so it reads against the pastel walls,
   // tinted by kind. power = how tight the rim is (higher = thinner), strength = how bright.
   zombieRim: {
-    power: 2.6, strength: 0.55,
+    power: 3.6, strength: 0.28,
     colors: { default: 0xffe6c8, mallWalker: 0xc8f0ff, cartPusher: 0xffd27a, mannequin: 0xd8e4ff, mascot: 0xffb26b, boss: 0xff8fb0 },
   },
 

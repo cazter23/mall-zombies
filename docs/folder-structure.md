@@ -778,6 +778,7 @@ src/
                         Controls (right) buttons (onOpenSettings/onOpenControls); FPS counter top right (setFpsVisible/setFps);
                         setAmmoTier(tier): "<Tier> warranty" in the tier's color under the gun name
                         (hidden at Standard; main.js feeds it from tierOf(gun.modsFor(...))); showAnnouncement({ kicker, text }): PA-style banner under the round banner (new zombie types)
+    damageDirection.js  Computes relative damage angle (0° = front, 90° = right, 180° = behind, 270° = left) and queues damage indicators for the HUD.
     retail.css          Retail presentation layer loaded after style.css: mall directory, distinct combat signs,
                         shelf tickets, personnel paperwork, facilities settings and handbook. Responsive + reduced motion.
     bagMarker.js        The HUD arrow to a dropped Limited Edition: name, distance, floor, time left.

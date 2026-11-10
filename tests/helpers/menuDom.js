@@ -13,6 +13,7 @@ export function menuDom() {
       this.inert = false;
       this.hidden = false;
       this.disabled = false;
+      this.dataset = {};
       this.tabIndex = ['BUTTON', 'INPUT', 'SELECT'].includes(this.tagName) ? 0 : -1;
       this.style = {
         setProperty: (k, v) => { this.style[k] = String(v); },
