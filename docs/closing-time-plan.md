@@ -75,12 +75,19 @@ the bot for this plan. The bot does not do the quest, so the times are for reach
 - **No arena lock in the first version.** The Last Customer chases the player like every zombie; the van is in the lot, so the fight ends there.
 - **No driving.** "Drive off" is a fade to the receipt.
 
-## Run modes (decision after phase 6)
+## Run modes (added after phase 6)
 
-Play opens a mode choice with Classic focused. Classic keeps the physical pickups and local interactions, with terse prompts.
-Directed shows the HUD and pause checklists, dropped-key directions, quest PA and its Notices entries, and death-receipt progress.
-Both use the same quest, economy, ending, overtime and career credit. Restart run and Play again keep the chosen mode.
-Returning to the title lets the player choose again. This split applies to the existing phases 1–6.
+Added by the user on 10 November 2026, after phase 6 was built. It is not one of the ten decisions and changes none of them.
+
+- **Directed is the default.** It is the game as decision 10 describes it: the four boxes always on the HUD, the full checklist on the pause
+  screen, a pointer to a dropped key, the quest PA with its Notices entries, and checklist progress on the receipts. It is listed first and
+  focused first on the chooser, and it is the engine's own default.
+- **Classic is an opt-in.** It hides the checklist (HUD boxes, pause list, receipt line), the key pointers and the quest PA. The keys still lie
+  on the floor and the duties are still done at their places; short prompts there say what is true ("Needs Kettle's Safe Key", "Unfinished:
+  Fountain"), a key pickup and a finished duty each play a sound, and the fountain switch shows its count.
+- Both modes use the same quest, prices, ending, overtime and career credit. Play opens the chooser; the mode chosen last is remembered between
+  sessions and focused. Restart run and Play again keep the mode; returning to the title lets the player choose again.
+- The split applies to phases 1 to 6 as built. Each later phase says what Classic shows in place of its checklist, pointer or PA line.
 
 ## The checklist
 

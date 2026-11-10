@@ -1,5 +1,16 @@
 # Sunset Galleria: build history ("Current state")
 
+## 10 November 2026 - Classic and Directed runs: fixes after review
+
+- **Directed is the default**: listed first and focused first on the chooser; the engine default was already 'directed'. Mode names, descriptions and order are config (`closingTime.modes`).
+- **Classic is not silent.** A key pickup plays `closingKey` and a ticked line plays `closingDuty` in both modes (config/audio.js); Classic still shows no quest PA. Its prompts say what is true instead of "Locked": the safe and the van say "Needs <key>", and with every key held the van names one unfinished duty by its place ("Unfinished: Fountain"). The fountain switch's own prompt shows "Shocked n/12" in both modes while the Key Ring is held and the line is open.
+- **Starting from the title** no longer leaves a "Fresh shift" pause screen when the mouse lock is refused and no longer resets twice: `ui/runStart.js` stores the mode and asks to play, the chooser stays up until play starts, and a pointer lock that arrives late (after Back) is given back.
+- **One value for "no checklist line on this receipt"**: `closingDone: null`, set by the game (`g.receiptFor`) for the death and win receipts. ui/hud.js keeps no receipt state.
+- **The last chosen mode is remembered** between sessions through game/settings.js (`closingMode`: no tab, in no preset, kept by Reset everything) and focused on the chooser.
+- The plan's "Run modes" section is rewritten: added by the user after phase 6, Directed is the default and is what decision 10 describes, Classic is the opt-in. The ten decisions are unchanged.
+- This branch also contains the fix pass on phases 1 to 6 (merged from `codex/closing-time-6`), so a Classic run needs the duties as well as the keys.
+- Shared files changed here: `createGame.js`, `main.js`, `config/audio.js`, `config/settings.js`, `game/settings.js`, `ui/hud.js`, `ui/screens.js`, `features/hazards.js` and the docs.
+
 ## 10 November 2026 - Closing Time fix pass (phases 1 to 6, after review)
 
 - **The van needs the duties.** Starting the van takes all four keys and lines 1 to 3 ticked (`g.closing.readyToLeave`, checked in `onRunWon` and at the prompt). The prompt lists missing keys first, then the unfinished duties whose key is held, by name. Still no round gate.
