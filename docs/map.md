@@ -101,7 +101,7 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   Concourse pass: a kiddie ride (solid, vaultable 1.1 m) at (9.3, 18.6) and a gumball machine (solid 1.1 m) at (9.3, 19.75), between
   the west vent (z 16) and the Rivet Rifle; a directory totem (2.2 m) at (10.6, 8.4) inside the gate; sun shafts from the skylight.
   GRAND ATRIUM sign. Two storeys (roof 9.9 under a big warm skylight): an open court x 11.5..28.5, z 10.1..27.1 with a square
-  fountain (glass guard, solid to 2.2m) in the middle, CELL-OUT and SHADE SHACK kiosks, four tree planters, three benches; a 3.5m arcade
+  fountain (glass guard, solid to 2.2m, with the pay-to-trigger Electrified Fountain breaker switch `fountainHazard` on its south rim at (20, 1.28, 15.92), 750 via `g.pricing`) in the middle, CELL-OUT and SHADE SHACK kiosks, four tree planters, three benches; a 3.5m arcade
   round the edge under the UPPER RING (y 6.3), which is railed all round the court. A second escalator rises east from the court
   (x 16.5) to the ring's east side. The ring's south wall has the 'atriumPromenade' shutter (destination price,  x 11.5..14.5) into level 2.
   Five spawns: four ground vents (north x 13 / 27, west z 16, east z 12) and one on the ring's north wall. Data: LAYOUT.atrium.

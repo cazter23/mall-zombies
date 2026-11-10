@@ -41,6 +41,7 @@ const BASE = {
   attachment: (id) => (Object.hasOwn(economy.upgrades.attachments, id) ? economy.upgrades.attachments[id] : undefined),
   wardrobe: (id) => (Object.hasOwn(economy.wardrobe, id) ? economy.wardrobe[id] : undefined),
   claw: (id) => (Object.hasOwn(economy.claw, id) ? economy.claw[id] : undefined), // GRAB-A-GUN ('grab': the pay step only)
+  hazard: (id) => (Object.hasOwn(economy.hazards, id) ? economy.hazards[id] : undefined), // Environmental hazards (config/hazards.js)
 };
 
 export const PRICE_CATEGORIES = Object.keys(BASE);

@@ -127,6 +127,14 @@ export const economy = {
   // Ammo cache (the vending machine in the Food Court): refills the gun in your hand, any gun, one flat price.
   ammoCache: { price: 400 },
 
+  // Environmental hazards (docs/hazards-plan.md, config/hazards.js): pay-to-trigger mall traps with cooldowns.
+  hazards: {
+    fountain: 750,
+    fryer: 750,
+    sprinklers: 600,
+    paLure: 500,
+  },
+
   // FLASH SALES (game/flashSales.js): the mall PA announces a discount on one group of prices for a while. Times are
   // play time (not while paused or dead). `groups`: id, label, categories (pricing categories, game/pricing.js),
   // weight (how likely), and the PA lines ({pct} = the discount). A sale is a PRICE, so it is the one place a percentage is still shown (the words-only rule covers what upgrades DO: config/effectWords.js). A group is skipped when it would be useless right
@@ -175,6 +183,11 @@ export const economy = {
         id: 'claw', label: 'GRAB-A-GUN', categories: ['claw'], weight: 1,
         start: { kicker: 'Flash sale', text: 'GRAB-A-GUN is {pct}% off! Everyone\'s a winner.* (*See small print. Small print is out of stock.)' },
         end: { kicker: 'Sale over', text: 'The GRAB-A-GUN sale has ended. The claw is back to its usual grip.' },
+      },
+      {
+        id: 'hazards', label: 'Mall hazards', categories: ['hazard'], weight: 0.8,
+        start: { kicker: 'Flash sale', text: 'Mall hazard switches are {pct}% off! Please stand clear of the wet floor.' },
+        end: { kicker: 'Sale over', text: 'The hazard switch sale has ended. Management assumes no liability.' },
       },
     ],
   },

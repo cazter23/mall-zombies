@@ -1,5 +1,7 @@
 # Sunset Galleria: what each test file covers
 
+`tests/hazards.test.js` covers environmental hazards (docs/hazards-plan.md): Grand Atrium Electrified Fountain triggering, `g.pricing` ('hazard') and Flash Sale discounts, active/recharging cooldowns, `source: 'hazard'` kill payouts, Mascot helmet pop and regular power-up meter exclusions, Gold Mascot drops, boss/Mascot damage cap, player self-shock and surface slow while standing in the ring, nothing paid after death, Play again (`resetRun`) snapshot equality, and words-only prompt checks.
+
 `tests/rounds.test.js` covers round flow, remaining wave occupancy tracking, waveEnding event firing, HUD occupancy presentation, and the Last Shopper acceleration.
 
 `tests/influencerModel.test.js` shoots the visible face during idle, movement and flash poses, checks that the compact
