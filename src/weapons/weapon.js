@@ -5,8 +5,11 @@
 // Runs on the fixed game tick.
 // =============================================================================
 
+import { createFuel, tickFuel, resetFuel } from './fuel.js';
+
 export class Weapon {
   constructor(def, stats) {
+    this.fuel = createFuel(); // timing for a gun with a tank (def.fuel: the Leaf Blower), see fuel.js; its level is `magazine`
     this.burstRemaining = 0;
     this.chargeTimer = 0; // seconds spent charging the current shot (fireMode: 'charge')
     this.lastChargeRatio = 1; // 0..1 charge level of the most recently fired shot
@@ -95,6 +98,7 @@ export class Weapon {
     this.reserve = Math.max(this.reserve, this.reserveCap);
     this.reloadTimer = 0;
     this.reloadPhase = null;
+    resetFuel(this.fuel);
   }
 
   // Build-A-Blaster: a gun comes back from the Naming Booth loaded. The reserve is untouched.
@@ -103,6 +107,7 @@ export class Weapon {
     this.reloadTimer = 0;
     this.reloadPhase = null;
     this.magazine = this.def.magazineSize;
+    resetFuel(this.fuel);
   }
 
   // Stockroom Delivery: reserve ammo, with a small ready-magazine top-up.
@@ -115,7 +120,7 @@ export class Weapon {
   }
 
   get canReload() {
-    return !this.isBursting && !this.isCharging && !this.isReloading && this.magazine < this.def.magazineSize && this.reserve > 0;
+    return !this.def.fuel && !this.isBursting && !this.isCharging && !this.isReloading && this.magazine < this.def.magazineSize && this.reserve > 0;
   }
 
   startReload() {
@@ -151,6 +156,7 @@ export class Weapon {
     this.fireRequest = 0;
     this.reloadTimer = 0;
     this.reloadPhase = null;
+    resetFuel(this.fuel);
   }
 
   // A shell-by-shell reload's current phase ran out: put the shell in (after a 'shell' phase), then start
@@ -214,6 +220,8 @@ export class Weapon {
         else this.finishReload();
       }
     }
+
+    if (this.def.fuel) return this.updateFuel(dt, { triggerPressed, triggerHeld, blocked });
 
     if (blocked) {
       this.cancelFire();
@@ -288,6 +296,30 @@ export class Weapon {
     this.magazine -= 1;
     this.cooldown += this.def.fireInterval; // carries the leftover (cooldown is <= 0 here)
     return 'fire';
+  }
+
+  /**
+   * A gun with a tank (def.fuel, see fuel.js): holding the trigger fires a pulse every fireInterval, each one costs a unit of fuel, and the tank
+   * refills by itself once you let go. Running it dry locks the trigger until it holds def.fuel.restartAt again. There is no reload.
+   * Returns 'fire' on a pulse, 'empty' on a click while dry or locked, else null.
+   */
+  updateFuel(dt, { triggerPressed, triggerHeld, blocked }) {
+    let result = null;
+    if (blocked) {
+      this.cancelFire();
+    } else if (triggerPressed || triggerHeld) {
+      if (this.magazine > 0 && !this.fuel.locked) {
+        if (this.cooldown <= 0) {
+          this.magazine -= 1;
+          this.cooldown += this.def.fireInterval; // carries the leftover (cooldown is <= 0 here)
+          result = 'fire';
+        }
+      } else if (triggerPressed) {
+        result = 'empty'; // (only a fresh press clicks: holding a dry trigger is quiet)
+      }
+    }
+    this.magazine += tickFuel(this.fuel, this.def.fuel, dt, { fired: result === 'fire', level: this.magazine, capacity: this.def.magazineSize });
+    return result;
   }
 
   fireChargedShot(ratio) {
