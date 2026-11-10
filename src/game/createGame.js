@@ -387,7 +387,7 @@ export function createGame({
     onRoundStart: (round) => events.emit('roundStart', { round }),
     onTypeIntro: (typeId, zombie) => events.emit('typeIntro', { typeId, zombie }),
     onVariantIntro: (variant, zombie) => events.emit('mascotVariantIntro', { variant, zombie }),
-    onRoundDiscard: () => events.emit('roundDiscard'),
+    onRoundDiscard: (reason) => events.emit('roundDiscard', { reason }),
     onWaveEnding: (data) => events.emit('waveEnding', data),
   });
   // The shopping window: hold Clock in during the break to call the next round early (announces 'clockIn').

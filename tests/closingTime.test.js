@@ -298,6 +298,49 @@ test('a win in the break keeps the announced round: overtime restarts its full b
   assert.equal(g.death.summary.overtimeRounds, 0, 'died in the first overtime round');
 });
 
+test('a boss voucher on the floor stays through Stay for overtime and still pays on expiry; a debug skip deletes it', (t) => {
+  const game = fixture(t);
+  const { g, tick, press } = game;
+  const expired = [];
+  g.events.on('powerUpExpire', (event) => expired.push(event));
+  approachVan(game);
+  readyToLeave(g);
+  tick(Math.ceil(economy.rounds.firstRoundDelay / dt) + 1);
+  assert.equal(g.rounds.state, 'active', 'a wave is live, so Stay for overtime discards it');
+
+  const far = new Vector3(2, 0, 12);
+  const boss = defeat(g, 'influencer', far);
+  const voucher = bossVouchers[boss.type.reward];
+  assert.ok(voucher?.pointsInstead > 0);
+  tick();
+  assert.equal(g.powerUps.pickup?.id, boss.type.reward);
+  const lying = g.powerUps.pickup.position.clone();
+
+  press('KeyF', holdTicks);
+  assert.ok(g.state.winPending);
+  assert.ok(g.stayForOvertime());
+  assert.equal(g.rounds.round, g.winSummary.round + 1);
+  assert.equal(g.powerUps.pickup?.id, boss.type.reward, 'the voucher is still on the floor');
+  assert.deepEqual(g.powerUps.pickup.position, lying);
+
+  g.rounds.update = () => {}; // (no overtime zombies while its timer runs out)
+  const before = g.wallet.points;
+  tick(Math.ceil(g.powerUps.pickup.remaining / dt) + 1);
+  assert.equal(g.powerUps.pickup, null);
+  assert.deepEqual(expired, [{ id: boss.type.reward, pointsInstead: voucher.pointsInstead }]);
+  assert.equal(g.wallet.points - before, voucher.pointsInstead, 'it pays its pointsInstead as any expiry does');
+
+  // Debug skipRound / jumpTo keep their behaviour: the uncollected boss reward goes with the wave and pays nothing.
+  const next = defeat(g, 'guard', far);
+  tick();
+  assert.equal(g.powerUps.pickup?.id, next.type.reward);
+  const points = g.wallet.points;
+  g.rounds.skipRound();
+  assert.equal(g.powerUps.pickup, null);
+  assert.equal(g.wallet.points, points);
+  assert.equal(expired.length, 1);
+});
+
 test('overtime starts a normal next round with the same wallet and loadout; death records the win once', (t) => {
   const game = fixture(t);
   const { g, tick, press, hud } = game;
