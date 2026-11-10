@@ -279,6 +279,7 @@ export function createGame({
     if (state.over || state.won || !closing.readyToLeave) return; // (all four keys and lines 1 to 3; no round gate)
     state.won = true;
     state.winPending = true;
+    closing.completeLeaving(); // line 4 is the win itself: ticked here, before the summary, so the receipt reads 4 of 4
     winSummary = buildRunSummary();
     ambience.silence();
     events.emit('runWon', { summary: winSummary });

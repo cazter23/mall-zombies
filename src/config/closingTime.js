@@ -31,7 +31,8 @@ export const closingTime = {
   },
   pa: {
     drop: (key) => ({ kicker: 'Closing time', text: key + ' is on the floor. Associates, please collect it for the closing checklist.' }),
-    collect: (key, duty) => ({ kicker: 'Closing time', text: key + ' collected. ' + duty + ' is checked off.' }),
+    // The Van Keys tick nothing by themselves: line 4 is ticked by the win (game/createGame.js onRunWon).
+    vanKeys: (key) => ({ kicker: 'Closing time', text: key + ' collected. Start the van to finish closing.' }),
     openFountain: (key, needed) => ({ kicker: 'Closing time', text: `${key} collected. Use the Electrified Fountain in the Grand Atrium to take out ${needed} zombies.` }),
     openNightSafe: (key, needed) => ({ kicker: 'Closing time', text: `${key} collected. Make ${needed} deposits at the Night Safe beside Customer Service.` }),
     completeNightSafe: { kicker: 'Closing time', text: 'Takings banked is checked off. Thank you, associates.' },

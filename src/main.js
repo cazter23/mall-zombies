@@ -18,7 +18,6 @@ import { createGamepad } from './core/gamepad.js';
 import { createHaptics } from './core/haptics.js';
 import { buttonLabels } from './config/controls.js';
 import { buildTestRange } from './maps/testRange/testRange.js';
-import { closingChecklistFor } from './ui/screens.js';
 import { createHud } from './ui/hud.js';
 import { createDamageIndicatorQueue } from './ui/damageDirection.js';
 import { weapons, melee as meleeWeapons } from './config/weapons.js';
@@ -249,11 +248,7 @@ const throwableView = createThrowableView(scene, g.equipment); // Kiosk Kevin's 
 const screens = hud.screens;
 const titleCamera = createTitleCamera(map.titleShots, feel.titleScreen);
 const careerStats = createCareerStats();
-const closingChecklist = () => closingChecklistFor(g.closing.checklist, game.won);
-g.events.on('runEnd', ({ summary }) => {
-  hud.setReceiptClosingDone(closingChecklist().filter(({ done }) => done).length);
-  screens.setCareerResult(careerStats.recordRun(summary));
-});
+g.events.on('runEnd', ({ summary }) => screens.setCareerResult(careerStats.recordRun(summary)));
 function showWin(summary, clockedOut = false) {
   hud.setDimmed(true);
   screens.show('results', { ...summary, shiftComplete: true, clockedOut });
@@ -286,7 +281,7 @@ function play({ pad }) {
 function runSoFar() {
   return {
     round: rounds.round, points: wallet.points, time: g.runStats.timeAlive, kills: g.runStats.kills,
-    outfit: g.outfitRail.snapshot(), closing: closingChecklist(),
+    outfit: g.outfitRail.snapshot(), closing: g.closing.checklist,
   };
 }
 function pauseRun() {
@@ -503,7 +498,7 @@ function render(alpha, frameTime) {
   hud.setOrderForm(game.over ? null : ritual?.form ?? null, menuLabels);
   hud.setFittingRoom(game.over ? null : fittingRooms.find((room) => room.view)?.view ?? null, menuLabels);
   hud.setLimitedEdition(game.over ? null : limitedEditions?.status ?? null);
-  hud.setClosing(closingChecklist(), game.over ? {} : g.closing.markers);
+  hud.setClosing(g.closing.checklist, game.over ? {} : g.closing.markers);
   hud.setOvertime(game.won && !game.winPending && !game.over);
   hud.setClawMachine?.(game.over ? null : clawMachine?.status ?? null);
   hud.setPockets(game.over ? null : g.equipment.status, { lethal: buttonLabel('lethal'), tactical: buttonLabel('tactical') });

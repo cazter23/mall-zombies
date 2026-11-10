@@ -40,10 +40,6 @@ function el(tag, className, html) {
 const pad2 = (n) => String(n).padStart(2, '0');
 const clock = (seconds) => `${Math.floor(seconds / 60)}:${pad2(Math.floor(seconds % 60))}`;
 
-export function closingChecklistFor(checklist, won) {
-  return checklist.map((line) => line.bossId === 'influencer' ? { ...line, done: won } : line);
-}
-
 /** The lines above the receipt's total: [label, value]. "Survived by" only appears if you named a gun at Build-A-Blaster. */
 export function receiptLinesFor(r) {
   const lines = [

@@ -12,7 +12,7 @@ import { dealHazardDamage } from '../src/game/features/hazards.js';
 import { weapons } from '../src/config/weapons.js';
 import { workshopRitual } from '../src/config/workshop.js';
 import { menuDom } from './helpers/menuDom.js';
-import { closingChecklistFor, createScreens, receiptLinesFor } from '../src/ui/screens.js';
+import { createScreens, receiptLinesFor } from '../src/ui/screens.js';
 
 const bossIds = Object.keys(closingTime.lines);
 
@@ -53,7 +53,8 @@ for (const id of bossIds) {
     g.rounds.skipRound();
     defeat(g, id, at); // Nor can it duplicate a held key.
     assert.equal(drops.length, 1);
-    assert.equal(g.closing.done, closingTime.lines[id].needed ? 0 : 1);
+    assert.ok(g.closing.hasKey(id));
+    assert.equal(g.closing.done, 0, 'a key never ticks a line by itself');
   });
 }
 
@@ -111,8 +112,9 @@ test('death freezes checklist progress and Play again clears the held and floor 
   assert.match(g.debug.run('closing', 'grant', 'manager'), /ended/);
   assert.match(g.debug.run('closing', 'drop', 'influencer'), /ended/);
   assert.deepEqual(events, []);
-  assert.equal(g.closing.done, 1);
-  assert.ok(receiptLinesFor(g.death.summary).some(([label, value]) => label === 'Closing checklist' && value === '1 of 4'));
+  assert.ok(g.closing.hasKey('influencer'));
+  assert.equal(g.closing.done, 0);
+  assert.ok(receiptLinesFor(g.death.summary).some(([label, value]) => label === 'Closing checklist' && value === '0 of 4'));
 
   g.resetRun();
   assert.equal(g.closing.done, 0);
@@ -131,9 +133,10 @@ test('a vanished boss drops its key at the player through the director', (t) => 
   tick();
   assert.equal(g.bosses.active, null);
   assert.deepEqual(g.closing.pickups, [{ bossId: 'influencer', position: feet }]);
-  assert.equal(g.closing.done, 0);
+  assert.ok(!g.closing.hasKey('influencer'));
   tick();
-  assert.equal(g.closing.done, 1);
+  assert.ok(g.closing.hasKey('influencer'));
+  assert.equal(g.closing.done, 0, 'the Van Keys do not tick line 4');
   assert.deepEqual(g.closing.pickups, []);
 });
 
@@ -337,18 +340,39 @@ test('career version 1 migrates old records and saves the fastest win by time at
 });
 
 
-// Phase 3: The win, browser side
-test('win presentation checks the fourth box only at the van and keeps the headless keys intact', (t) => {
+// Line 4 belongs to the game: the win ticks it, with no browser code involved.
+test('the Van Keys tick nothing; the win itself ticks line 4, so the game reads 3 before the van and 4 after', (t) => {
   const game = fixture(t);
-  const { g, press } = game;
+  const { g, press, standAt, hud } = game;
+  const keyNotices = [], ticked = [];
+  g.events.on('closingKey', (event) => keyNotices.push(event));
+  g.events.on('closingLine', (event) => ticked.push(event));
+  const at = new Vector3(2, 0, 12);
+  g.events.emit('bossDefeated', { zombie: { type: { id: 'influencer' }, position: at } });
+  standAt(at.x, at.z);
+  const { key } = closingTime.lines.influencer;
+  assert.deepEqual(keyNotices, [{ bossId: 'influencer', pa: closingTime.pa.vanKeys(key) }]);
+  assert.equal(keyNotices[0].pa.text, key + ' collected. Start the van to finish closing.');
+  assert.ok(hud.calls.some(([name, notice]) => name === 'showAnnouncement' && notice.text === keyNotices[0].pa.text));
+  assert.deepEqual(ticked, []);
+
   approachVan(game);
-  readyToLeave(g);
+  grantKeys(g, dutyIds);
+  finishDuties(g);
   assert.deepEqual(g.closing.missingKeys, []);
-  assert.deepEqual(closingChecklistFor(g.closing.checklist, g.state.won).map(({ done }) => done),
-    [true, true, true, false]);
+  assert.equal(g.closing.done, 3);
+  assert.deepEqual(g.closing.checklist.map(({ done }) => done), [true, true, true, false]);
+  ticked.length = 0;
+
   press('KeyF', holdTicks);
-  assert.deepEqual(closingChecklistFor(g.closing.checklist, g.state.won).map(({ done }) => done),
-    [true, true, true, true]);
+  assert.ok(g.state.won);
+  assert.equal(g.closing.done, 4);
+  assert.deepEqual(g.closing.checklist.map(({ done }) => done), [true, true, true, true]);
+  assert.deepEqual(ticked, [{ line: 'influencer', done: 4, total: 4 }]);
+  assert.equal(g.winSummary.closingDone, 4);
+  assert.equal(Object.fromEntries(receiptLinesFor({ ...g.winSummary, shiftComplete: true }))[closingTime.title], '4 of 4');
+  assert.equal(g.closing.completeLeaving(), false, 'line 4 is ticked once');
+  assert.equal(ticked.length, 1);
 });
 
 test('win receipt offers both choices, then restores the death receipt for an overtime death', (t) => {
