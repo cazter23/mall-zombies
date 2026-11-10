@@ -108,6 +108,7 @@ export function createOrderForm({ input, state, wallet, events, sound, price, op
       const cost = price();
       return {
         title: label(),
+        buildBlurb: cfg.buildBlurb,
         column,
         cost,
         canAfford: wallet.canAfford(cost),

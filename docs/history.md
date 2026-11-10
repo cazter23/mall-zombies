@@ -1,5 +1,9 @@
 # Sunset Galleria: build history ("Current state")
 
+## 10 November 2026 - Build-A-Blaster order form
+
+**Your Blaster** now tells shoppers that a built blaster hits much harder and holds more ammo. The summary stays visible below the scrolling choices.
+
 ## 9 November 2026 - Wardrobe showroom: upstairs showpieces and on-player looks
 
 - **Three upstairs fixtures.** A cardboard B-movie monster with a waving arm sells 3D Glasses beside Concessions. Shoe-Per Sale’s light-up

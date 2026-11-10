@@ -232,6 +232,7 @@ kbd { font-size: .9em; }
 .order-action { margin-left: auto; }
 .order-out-row { flex-wrap: wrap; gap: 0 .5em; }
 .order-form.cant .order-button { background: #645462; color: var(--paper-light); }
+.hud.menu-open .outfit-hud,
 .hud.menu-open .hud-left-stack, .hud.menu-open .interact, .hud.menu-open .prompt, .hud.menu-open .vault-prompt { display: none; }
 .hud.menu-open .hud-top-stack .bag-marker, .hud.menu-open .hud-top-stack .round-banner { display: none; }
 
