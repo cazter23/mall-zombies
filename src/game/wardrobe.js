@@ -98,6 +98,18 @@ export function createWardrobe({ stats, player, events }) {
       return [wardrobeItems[id].ticket, ...statLines(id).map((l) => l.text), this.replaces(id)].join(' · ');
     },
 
+    // Save & Quit (game/saveGame.js). The clothes' factors are already in the saved stats, so restore() puts them on WITHOUT
+    // multiplying again; 'wardrobeChange' redraws the HUD rail and the body.
+    serialize() {
+      return { owned: [...owned], worn: { ...worn } };
+    },
+    restore(data) {
+      owned.clear();
+      for (const id of data.owned) if (Object.hasOwn(wardrobeItems, id)) owned.add(id);
+      worn = { ...emptyOutfit(), ...data.worn };
+      for (const [slot, id] of Object.entries(worn)) if (id) events.emit('wardrobeChange', { slot, worn: id, removed: null });
+    },
+
     reset() {
       // Play Again resets the shared stats separately.
       owned.clear();

@@ -5,6 +5,8 @@
 //   'pause'    PAUSED + this run so far (round, points, time, kills): Resume / Restart run / Settings /
 //              Controls / Quit to title. Restart and Quit ask twice ("click again to confirm"): they end the run.
 //              show('pause', { fresh: true }) = "Back to work" (after Play again, if the mouse lock was refused)
+//              Save & quit (asks twice) shows with data.canSave ({ ok, reason }: greyed with the reason when it can't save).
+//              The title shows "Continue · Round N" above Play while a save exists: setContinue({ round } | null).
 //   'help'     How to play: the core loop on one page (numbers read from config, so it never goes stale); Back
 //              returns to the screen it was opened from
 //   'stats'    persistent employee record: career totals, personal bests and recent completed runs
@@ -13,10 +15,10 @@
 // One at a time: show(name, data) (null hides them all), `current`.
 // Buttons emit ACTIONS: on(action, fn) with fn({ pad }) where pad = true when a controller pressed it (main.js
 // then plays with the controller instead of asking for the mouse lock).
-//   actions: 'play' 'resume' 'restart' 'quit' 'settings' 'controls' 'stats' 'clearStats' 'statsBack'
+//   actions: 'play' 'continue' 'resume' 'restart' 'saveQuit' 'quit' 'settings' 'controls' 'stats' 'clearStats' 'statsBack'
 //            'playAgain' 'mainMenu' ('help' / 'back' are handled here)
-// padNav(input): D-pad up/down moves, A presses, B / Start = Resume on the pause screen, Start = Play on the
-// title, Y = Settings and X = Controls on the title and pause screens.
+// padNav(input): D-pad up/down moves (skipping hidden and greyed buttons), A presses, B / Start = Resume on the pause
+// screen, Start = Play (or Continue, with a save) on the title, Y = Settings and X = Controls on the title and pause screens.
 // setFade(0..1): a black fade over the title flyover (between camera shots).
 // =============================================================================
 
@@ -157,6 +159,7 @@ export function createScreens() {
       <p class="tagline">The mall is closed. The shoppers didn't get the memo.</p>
       <div class="directory-heading">Galleria directory <span>You are here ↓</span></div>
       <div class="menu-list directory-list">
+        <button class="menu-btn primary save-continue" data-action="continue" type="button" hidden>Continue</button>
         <button class="menu-btn primary" data-action="play" type="button">Play</button>
         <button class="menu-btn" data-action="help" type="button">How to play</button>
         <button class="menu-btn" data-action="stats" type="button">Statistics</button>
@@ -184,8 +187,10 @@ export function createScreens() {
         <button class="menu-btn" data-action="notices" type="button">Notices &amp; certificates</button>
         <button class="menu-btn" data-action="settings" type="button">Settings</button>
         <button class="menu-btn" data-action="controls" type="button">Controls</button>
+        <button class="menu-btn save-quit" data-action="saveQuit" data-confirm="Save &amp; quit? Click again" type="button">Save &amp; quit</button>
         <button class="menu-btn danger" data-action="quit" data-confirm="Quit? Click again" type="button">Quit to title</button>
       </div>
+      <p class="paper-note save-note">Saves your shift as it was when this round began. One save; it is used up when you continue.</p>
       <p class="pad-hint">Controller: D-pad + <kbd>A</kbd> · <kbd>B</kbd> / <kbd>Start</kbd> resume · <kbd>Y</kbd> settings · <kbd>X</kbd> controls</p>
     </div>
   `);
@@ -196,6 +201,10 @@ export function createScreens() {
   const pauseRail = createOutfitRail({ variant: 'pause' });
   pauseOutfit.append(pauseRail.el);
   const resumeButton = pause.querySelector('[data-action="resume"]');
+  const saveQuitButton = pause.querySelector('[data-action="saveQuit"]');
+  const saveNote = pause.querySelector('.save-note');
+  const continueButton = title.querySelector('[data-action="continue"]');
+  const playButton = title.querySelector('[data-action="play"]');
 
   // --- Results (the receipt) ---------------------------------------------------------
   const results = el('div', 'screen results-screen hidden', `
@@ -326,6 +335,7 @@ export function createScreens() {
   // Buttons: click (or A) runs the action. A "confirm" button needs a second press within a few seconds.
   const armed = new Map(); // button -> timeout id
   function press(button, pad) {
+    if (button.disabled || button.hidden) return;
     const confirmText = button.dataset.confirm;
     if (confirmText && !armed.has(button)) {
       const label = button.textContent;
@@ -357,7 +367,7 @@ export function createScreens() {
     }));
   }
 
-  const buttonsOf = (name) => [...screens[name].querySelectorAll('[data-action]')];
+  const buttonsOf = (name) => [...screens[name].querySelectorAll('[data-action]')].filter((b) => !b.hidden && !b.disabled);
   function markFocus(show) {
     if (!current) return;
     buttonsOf(current).forEach((b, i) => b.classList.toggle('focused', show && i === focus));
@@ -366,8 +376,13 @@ export function createScreens() {
   const percent = (value) => `${Math.round((value ?? 0) * 100)}%`;
   const statCards = (items) => items.map(([label, value]) => `<div><span>${label}</span><b>${value}</b></div>`).join('');
 
-  function fillPause({ fresh = false, round = 0, points = 0, time = 0, kills = 0, outfit = [] } = {}) {
+  function fillPause({ fresh = false, round = 0, points = 0, time = 0, kills = 0, outfit = [], canSave = null } = {}) {
     pauseOutfit.hidden = fresh;
+    // Save & quit (game/saveGame.js): hidden on a fresh shift; greyed out, with the reason, when it can't save now.
+    saveQuitButton.hidden = fresh || !canSave;
+    saveNote.hidden = saveQuitButton.hidden;
+    saveQuitButton.disabled = !canSave?.ok;
+    saveQuitButton.textContent = canSave?.ok ? 'Save & quit' : `Save & quit · ${canSave?.reason ?? ''}`;
     pauseRail.set(outfit);
     pauseKicker.textContent = fresh ? 'Fresh shift' : 'Paused';
     pauseTitle.textContent = fresh ? 'Back to work' : 'On break';
@@ -483,6 +498,16 @@ export function createScreens() {
       fade.style.opacity = String(opacity);
     },
 
+    // Save & Quit's slot on the title (game/saveGame.js peek()): { round } shows "Continue · Round N" and makes Play ask
+    // twice (it discards the save); null hides it.
+    setContinue(saved) {
+      continueButton.hidden = !saved;
+      continueButton.textContent = saved ? `Continue · Round ${saved.round}` : 'Continue';
+      playButton.classList.toggle('primary', !saved);
+      if (saved) playButton.dataset.confirm = 'New shift? Your save is discarded';
+      else delete playButton.dataset.confirm;
+    },
+
     setCareerResult(result) {
       careerResult = result;
     },
@@ -499,7 +524,7 @@ export function createScreens() {
       if (current === 'help' && input.consumePress('PadB')) return api.show(helpReturn);
       if (current === 'stats' && input.consumePress('PadB')) return emit('statsBack', true);
       if (current === 'pause' && (input.consumePress('PadB') || input.consumePress('PadStart'))) return emit('resume', true);
-      if (current === 'title' && input.consumePress('PadStart')) return emit('play', true);
+      if (current === 'title' && input.consumePress('PadStart')) return emit(continueButton.hidden ? 'play' : 'continue', true);
       if ((current === 'title' || current === 'pause') && input.consumePress('PadY')) return emit('settings', true);
       if ((current === 'title' || current === 'pause') && input.consumePress('PadX')) return emit('controls', true);
       if (input.consumePress('PadA')) {

@@ -883,3 +883,21 @@ button:focus-visible, input:focus-visible, select:focus-visible {
     transform: translate(-50%, -50%) rotate(var(--damage-angle, 0deg)) scale(1.05);
   }
 }
+
+/* Save & Quit (game/saveGame.js): Continue on the title, Save & quit on the pause card. */
+.menu-btn[hidden],
+.paper-note[hidden] {
+  display: none;
+}
+.menu-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.menu-btn:disabled:hover {
+  background: inherit;
+  color: inherit;
+}
+.pause-card .save-note {
+  margin-top: 0.4rem;
+  font-size: 0.78em;
+}

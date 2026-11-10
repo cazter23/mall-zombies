@@ -101,7 +101,9 @@ docs/                history.md, folder-structure.md, map.md, tests.md, weapon-b
 - Buying: `map.doors` and `map.features` become interactions; every price comes from `g.pricing`; an area unlock owns one destination
   and opens every barrier between owned areas.
 - Points: gun and melee `onHit` -> 'hit' (+10); a death -> 'kill' (every payout). Death: `onPlayerDeath`; Play again = `resetRun()`
-  through createGame's `resetSteps` (a new system with per-run state adds a step there).
+  through createGame's `resetSteps` (a new system with per-run state adds a step there). Save & Quit (game/saveGame.js) saves the run
+  as of the round's start: every reset step is also in `saveSteps` (serialize/restore) or `transientSteps`, or tests/saveGame.test.js fails.
+  Bump `config/save.js` version when what a step saves changes shape.
 - Collision: one shared `colliders` array of Box3 (+ `colliders.ramps` for escalators/stairs). The player is a cylinder. `ignoreShots`
   boxes block walking, not bullets; `ledge` boxes are balcony rails you can climb over (player/vault.js).
 - Coordinates: metres, +Y up, yaw 0 faces -Z. Test hook: `window.__mall.step(n)` with `game.forceRun`; tests use

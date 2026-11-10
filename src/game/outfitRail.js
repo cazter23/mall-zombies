@@ -90,6 +90,14 @@ export function createOutfitRail({ events, wardrobe, stats, player, gun, state }
       reserve = weapon.reserve;
     },
 
+    // Save & Quit (game/saveGame.js): how often each worn item has pulsed this run.
+    serialize() {
+      return { counts: { ...counts } };
+    },
+    restore(data) {
+      counts = { ...data.counts };
+    },
+
     reset() {
       counts = {};
       edge.sprint = edge.slide = edge.aim = false;

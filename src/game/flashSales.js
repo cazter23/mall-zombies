@@ -108,6 +108,23 @@ export function createFlashSales({ events, pricing, random = Math.random, config
       return active !== null;
     },
 
+    // Save & Quit (game/saveGame.js): the sale running at the round's start, and the wait for the next one. The discount itself
+    // is in pricing's own save; restore() only takes the sale back on, so it ends (and puts the old prices back) as usual.
+    serialize() {
+      return {
+        untilNext,
+        active: active && { id: active.id, discount: active.discount, remaining: active.remaining, previous: active.previous },
+      };
+    },
+    restore(data) {
+      untilNext = data.untilNext;
+      const group = data.active && config.groups.find((g) => g.id === data.active.id);
+      active = group ? {
+        id: group.id, label: group.label, categories: group.categories, discount: data.active.discount,
+        duration: config.durationSeconds, remaining: data.active.remaining, previous: data.active.previous, group,
+      } : null;
+    },
+
     reset() {
       if (active) end('reset');
       untilNext = config.firstDelaySeconds;

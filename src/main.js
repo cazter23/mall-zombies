@@ -10,6 +10,7 @@ import './ui/readability.css';
 import { createNoticesMenu } from './ui/noticesMenu.js';
 import * as THREE from 'three';
 import { feel } from './config/feel.js';
+import { save as saveConfig } from './config/save.js';
 import { debug } from './config/debug.js';
 import { startLoop } from './core/loop.js';
 import { createIdleSaver } from './core/idleSaver.js';
@@ -269,7 +270,10 @@ function play({ pad }) {
   }
 }
 function runSoFar() {
-  return { round: rounds.round, points: wallet.points, time: g.runStats.timeAlive, kills: g.runStats.kills, outfit: g.outfitRail.snapshot() };
+  return {
+    round: rounds.round, points: wallet.points, time: g.runStats.timeAlive, kills: g.runStats.kills, outfit: g.outfitRail.snapshot(),
+    canSave: g.saveGame.canSave(), // Save & quit: greyed with the reason when it can't save now
+  };
 }
 function pauseRun() {
   haptics.stop();
@@ -291,12 +295,35 @@ function goToTitle() {
   if (document.pointerLockElement) document.exitPointerLock();
   resetRun();
   screens.setCareerResult(null);
+  screens.setContinue(g.saveGame.peek()); // "Continue · Round N" while a save exists
+  if (g.saveGame.dropped) hud.showAnnouncement({ kicker: 'Save & quit', text: saveConfig.droppedNotice });
   titleCamera.restart();
   screens.show('title');
   hud.setDimmed(true);
 }
+// SAVE & QUIT (game/saveGame.js): the run ends at the title with its round-start snapshot in the one slot.
+function saveAndQuit() {
+  if (g.saveGame.saveAndQuit()) goToTitle();
+}
+// Continue: the save is used up, and the run resumes at the start of its round's break.
+function continueRun(how) {
+  screens.setCareerResult(null);
+  if (!g.saveGame.load()) return goToTitle(); // (an unreadable save is dropped: back to a title without Continue)
+  screens.setContinue(null);
+  screens.show('pause', { fresh: true });
+  hud.setDimmed(true);
+  play(how);
+}
+// Play from the title starts a new shift: a save left in the slot is discarded (the button asked twice).
+function newShift(how) {
+  g.saveGame.discard();
+  screens.setContinue(null);
+  play(how);
+}
 
-screens.on('play', play);
+screens.on('play', newShift);
+screens.on('continue', continueRun);
+screens.on('saveQuit', saveAndQuit);
 screens.on('resume', play);
 screens.on('restart', freshRun);
 screens.on('playAgain', freshRun);

@@ -268,6 +268,16 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
       view?.update(pickup, active, dt, benefits.active);
     },
 
+    // Save & Quit (game/saveGame.js): the drop meter and its rotation. Anything on the floor or running at the round's start is
+    // not kept (a save restarts the round's break with no power-up out).
+    serialize() {
+      return { round, earned, threshold, dropped, lastType, rotation: [...rotation] };
+    },
+    restore(data) {
+      ({ round, earned, threshold, dropped, lastType } = data);
+      rotation = [...data.rotation];
+    },
+
     reset() {
       benefits.reset();
       endZone('reset');

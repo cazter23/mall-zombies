@@ -1,5 +1,33 @@
 # Sunset Galleria: build history ("Current state")
 
+## 10 November 2026 - Save & Quit (Black Ops 6 style)
+
+- **The rules (the user's).** One save slot. Saving ENDS the run (to the title). You can save any time while alive, but only at full health.
+  The save is the run as it stood at the START of the current round: points, purchases and (later) Closing Time progress made during the
+  round are not kept. Continue deletes the slot and replays that round from its break, with the same draws (boss schedule, Flash Sale,
+  claw site, today's Build-A-Blaster bins). Play from the title with a save present asks twice and discards it. A save from an older
+  version (config/save.js `version`) is dropped with a notice.
+- **How.** game/saveGame.js. Each 'roundStart' raises a flag; createGame's update() takes the snapshot at the end of that tick, after every
+  roundStart listener has rolled. createGame keeps `saveSteps` ([name, serialize, restore], in restore order) beside `resetSteps`, and
+  `transientSteps` for what a save drops (zombies, effects, power-ups on the floor, traps, hazard cooldowns, a claw grab under way). A load
+  is resetRun + every restore; rounds.restore puts the run at the start of the break without a 'roundStart'. 'runSaved' / 'runLoaded'
+  are new events (horror relights on runLoaded; the PA welcomes you back). Saving is not a death: no runEnd, no career record.
+- **Decisions.** Stats are saved as they are and the wardrobe restores without re-applying its factors (no double clothes). The run's
+  'assisted' flag is kept (a debug run stays one). A gun away at Build-A-Blaster and its order are kept; the loaner too.
+- **Checked.** tests/saveGame.test.js (7 tests): coverage of every reset step, the round-start rollback, an exact round trip (what the loaded
+  game would save equals the save), same draws, the gun away + loaner, the full-health / alive / started rules, the old-version drop, no
+  runEnd. In the browser (worktree build): Save & quit on the pause card asks twice and lands on the title with "Continue · Round 3";
+  Continue resumes at round 3's break with the round-start 500 points (5,000 earned mid-round gone), the hallway owned, and the slot
+  empty; the round's wave then spawned normally; hurt, the button reads "Save & quit · Full health needed" and does nothing. No console errors.
+- **Not checked.** A real save mid-Build-A-Blaster order in the browser (the order's restore is covered only by the gun/feature data
+  round trip), the controller's Start = Continue, and saves across a page reload (localStorage persistence itself was not reloaded).
+- **For later work.** Every new system with per-run state (each Closing Time phase) must add a save step or a transient entry, or
+  saveGame.test.js fails; bump config/save.js `version` when a step's saved data changes shape.
+- Shared files changed: src/game/createGame.js, src/game/events.js, src/main.js, src/ui/screens.js, src/ui/retail.css, CLAUDE.md, and a
+  serialize()/restore() pair in wallet, runStats, tickets, secondChance, rounds, pricing, flashSales, bossDirector, powerUps, wardrobe,
+  warranty, outfitRail, equipment, weapons/playerGun, features/index, workshop, workshopRitual, clawMachine (+ attachmentCounter's
+  ownedAttachments, horror's runLoaded listener); docs (history, folder-structure, tests).
+
 ## 10 November 2026 - Second Chance: review of step H (one self-revive per run)
 
 - **What it is.** Customer Service's third window (SECOND CHANCE, opposite Sharpening) sells one automatic self-revive for 2,000
