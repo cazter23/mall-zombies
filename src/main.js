@@ -475,6 +475,8 @@ function render(alpha, frameTime) {
   hud.setTickets?.(g.tickets.count); // (GRAB-A-GUN's prize tickets: shown only once you have some)
   hud.setRoundFlashing(rounds.inBreak && rounds.round > 1); // counter blinks in the break between rounds
   hud.setOccupancy?.(rounds.remainingInWave, rounds.inBreak);
+  const clockInPrompt = game.over || game.menu ? null : g.clockIn.prompt; // the shopping window: hold to call the next round
+  hud.setClockIn?.(clockInPrompt, clockInPrompt && buttonLabel(clockInPrompt.action));
 
   // Render world + viewmodel through HDR post-processing (UnrealBloom + lens vignette/aberration + ACES tone mapping).
   roomCulling.update(cullingOn);

@@ -1,5 +1,25 @@
 # Sunset Galleria: build history ("Current state")
 
+## 10 November 2026 - Shopping window: a 20 s break and "Clock in"
+
+- **Why.** The fun review's headless bot found no calm moment to use the shops: the break was 10 s and the last two zombies of a round
+  already run. The last-two rule is unchanged.
+- **The break is 20 s** (economy.rounds.breakSeconds, was 10). At the 5 m/s walk that is 100 m of mall instead of 50; the wait before
+  round 1 (firstRoundDelay, 3 s) is unchanged.
+- **Clock in.** During the break before round 2 and later, a prompt under the round box reads "[I] Hold to clock in" with a fill bar,
+  below CLOSED FOR RESTOCK. Holding Inspect (I / D-pad down) for 0.8 s brings the zombies after a 1.5 s lead: 2.3 s instead of the
+  rest of the break. It takes a fresh press made while the prompt is up, works once per break and is ignored behind an open menu. A
+  tap still inspects the gun. The PA says "An associate has clocked in early. Doors are opening now!" with the chime.
+- **Why Inspect and not F.** Hold F is the buy button, and the break is for buying: a hold that just misses a shop item must not end
+  the break. Inspect was the one existing action with no hold meaning. The action is a config value (economy.rounds.clockIn.action).
+- **How it is wired.** game/clockIn.js is created and ticked in createGame (just before the rounds), calls rounds.endBreak(lead) and
+  emits 'clockIn' { round, skipped } on g.events; the PA line is a listener. No new callback goes through createGame. Play again:
+  reset step 'clockIn'.
+- **Measured headless (the real game, 60 Hz).** Last zombie gone to first spawn of round 2: 20.0 s untouched, 2.3 s with the hold
+  started at once. Not measured: the review bot was not re-run (it never clocks in, so it would only show longer runs).
+- Shared files changed: src/config/economy.js, src/config/controls.js, src/game/createGame.js, src/game/events.js, src/game/rounds.js,
+  src/main.js, src/ui/hud.js, src/style.css, tests/rounds.test.js, docs (history, folder-structure, tests).
+
 ## 9 November 2026 - Wardrobe showroom: upstairs showpieces and on-player looks
 
 - **Three upstairs fixtures.** A cardboard B-movie monster with a waving arm sells 3D Glasses beside Concessions. Shoe-Per Sale’s light-up

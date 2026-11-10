@@ -197,7 +197,18 @@ export const economy = {
     firstRoundDelay: 3, // seconds after the game starts before round 1's zombies begin spawning
     // When a round's last zombie dies, the next round number goes up immediately, then this
     // short break, then its zombies start trickling in.
-    breakSeconds: 10,
+    // 20 s = the SHOPPING WINDOW: time to walk to a shop and buy something (it was 10, with the last two zombies
+    // of a round already running: there was no calm moment). The player can end it early: clockIn below.
+    breakSeconds: 20,
+    // "Clock in": hold this action during the break to call the next round now (game/clockIn.js). Not interact:
+    // that one is busy buying things, and a missed Hold F at a shop must never end the break by accident.
+    clockIn: {
+      action: 'inspect', // an existing action (config/controls.js): I / D-pad down. A tap still inspects the gun
+      holdSeconds: 0.8, // how long it must be held
+      leadSeconds: 1.5, // the zombies come this long after clocking in (never later than the break would have ended)
+      pa: { kicker: 'Attention shoppers', text: 'An associate has clocked in early. Doors are opening now!' },
+      fromRound: 2, // offered in the break BEFORE this round and later (the short wait before round 1 is not a break)
+    },
     spawnRetrySeconds: 0.5, // no usable spawn point (none open/reachable)? try again this soon
   },
 
