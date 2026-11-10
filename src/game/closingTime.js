@@ -3,6 +3,7 @@ import { createFloorPickups, pickupDirection } from './floorPickups.js';
 
 const lines = Object.entries(config.lines);
 const total = lines.length;
+const leavingLine = lines.find(([, line]) => !line.needed)[0]; // line 4: no duty count, it is ticked by the win
 
 export function createClosingTime({ events, player, colliders, state, view }) {
   const floor = createFloorPickups(colliders);
@@ -10,6 +11,8 @@ export function createClosingTime({ events, player, colliders, state, view }) {
   const held = new Set();
   const completed = new Set();
   const counts = new Map(); // opened duties that take more than a key
+  let briefingIn = null; // seconds until the PA introduces the checklist (null: not waiting)
+  let briefed = false; // once per run
   const progressDuties = {
     janitor: { open: config.pa.openFountain, complete: config.pa.completeFountain },
     guard: { open: config.pa.openNightSafe, complete: config.pa.completeNightSafe },
@@ -36,20 +39,14 @@ export function createClosingTime({ events, player, colliders, state, view }) {
 
   function collect(bossId) {
     if (state.over || held.has(bossId)) return false;
-    const { key, duty } = config.lines[bossId];
+    const { key, needed } = config.lines[bossId];
     drops.delete(bossId);
     view.remove(bossId);
     held.add(bossId);
     const progress = progressDuties[bossId];
-    if (progress) {
-      counts.set(bossId, 0);
-      events.emit('closingKey', { bossId, pa: progress.open(key, config.lines[bossId].needed) });
-    } else {
-      // Until its duty exists, holding the key completes the line.
-      completed.add(bossId);
-      events.emit('closingKey', { bossId, pa: config.pa.collect(key, duty) });
-      events.emit('closingLine', { line: bossId, done: completed.size, total });
-    }
+    if (progress) counts.set(bossId, 0);
+    // A key never ticks a line by itself: lines 1 to 3 have a duty, and line 4 (the Van Keys) is ticked by the win.
+    events.emit('closingKey', { bossId, pa: progress ? progress.open(key, needed) : config.pa.vanKeys(key) });
     return true;
   }
 
@@ -67,6 +64,11 @@ export function createClosingTime({ events, player, colliders, state, view }) {
     }
   }
 
+  // The PA introduces the checklist once per run, shortly after the run's opening line (round 1's announcement).
+  events.on('roundStart', ({ round }) => {
+    if (round === 1 && !briefed && briefingIn === null) briefingIn = config.briefing.delaySeconds;
+  });
+
   events.on('fountainKill', () => advance('janitor'));
   events.on('ritualCollect', () => advance('manager'));
   events.on('purchase', ({ kind, id }) => {
@@ -78,6 +80,20 @@ export function createClosingTime({ events, player, colliders, state, view }) {
     hasKey(bossId) { return held.has(bossId); },
     isDone(bossId) { return completed.has(bossId); },
     get missingKeys() { return lines.filter(([id]) => !held.has(id)).map(([, { key }]) => key); },
+    // Lines 1 to 3 that are not ticked yet (line 4 is leaving itself, so it is never "missing").
+    get missingDuties() {
+      return lines.filter(([id, line]) => line.needed && !completed.has(id)).map(([bossId, line]) => ({ bossId, ...line }));
+    },
+    // What the van asks for: all four keys and lines 1 to 3 ticked. There is no round gate.
+    get readyToLeave() { return held.size === total && this.missingDuties.length === 0; },
+    // Line 4 ("Car park cleared") is the win itself: createGame's onRunWon ticks it here, once, so `done`, the
+    // 'closingLine' event and the run summary are right without any help from the browser side.
+    completeLeaving() {
+      if (completed.has(leavingLine)) return false;
+      completed.add(leavingLine);
+      events.emit('closingLine', { line: leavingLine, done: completed.size, total });
+      return true;
+    },
     get checklist() {
       return lines.map(([bossId, line]) => ({
         bossId, ...line, done: completed.has(bossId),
@@ -96,6 +112,11 @@ export function createClosingTime({ events, player, colliders, state, view }) {
     },
     update(dt) {
       if (state.over) return;
+      if (briefingIn !== null && (briefingIn -= dt) <= 0) {
+        briefingIn = null;
+        briefed = true;
+        events.emit('closingBriefing', { pa: config.pa.briefing });
+      }
       for (const [bossId, position] of drops) {
         if (position) {
           if (floor.reached(player, position)) collect(bossId);
@@ -112,6 +133,8 @@ export function createClosingTime({ events, player, colliders, state, view }) {
       held.clear();
       completed.clear();
       counts.clear();
+      briefingIn = null;
+      briefed = false;
     },
     debug(mode = 'drop', bossId, at = player.position) {
       if (state.over) return 'The shift has ended';

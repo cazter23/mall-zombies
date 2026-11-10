@@ -42,10 +42,6 @@ function el(tag, className, html) {
 const pad2 = (n) => String(n).padStart(2, '0');
 const clock = (seconds) => `${Math.floor(seconds / 60)}:${pad2(Math.floor(seconds % 60))}`;
 
-export function closingChecklistFor(checklist, won) {
-  return checklist.map((line) => line.bossId === 'influencer' ? { ...line, done: won } : line);
-}
-
 /** The lines above the receipt's total: [label, value]. "Survived by" only appears if you named a gun at Build-A-Blaster. */
 export function receiptLinesFor(r) {
   const lines = [
@@ -59,8 +55,8 @@ export function receiptLinesFor(r) {
   ];
   if (r.closingDone != null) lines.push([closingTime.title, closingTime.receiptProgress(r.closingDone, Object.keys(closingTime.lines).length)]);
   if (r.won && !r.shiftComplete) {
-    lines.push(['CLOCKED OUT', `Round ${r.winRound} · ${clock(r.winTime)}`]);
-    lines.push(['Overtime rounds survived', Math.max(0, r.round - r.winRound - 1)]);
+    lines.push([closingTime.receipt.clockedOut, `Round ${r.winRound} · ${clock(r.winTime)}`]);
+    lines.push([closingTime.receipt.overtimeRounds, r.overtimeRounds ?? 0]);
   }
   if (r.survivedBy?.length) lines.push(['Survived by', r.survivedBy.map(survivorLine).join(' and ')]);
   // GRAB-A-GUN (game/tickets.js): tickets aren't points, so they're a line of their own, never in the totals.
@@ -248,7 +244,7 @@ export function createScreens() {
         <div class="receipt-store">SUNSET GALLERIA</div>
         <div class="receipt-sub">Store #013 · Register 4</div>
         <div class="receipt-sub receipt-date"></div>
-        <h1 class="receipt-shift-heading" hidden="hidden">SHIFT COMPLETE</h1>
+        <h1 class="receipt-shift-heading" hidden="hidden">${closingTime.receipt.shiftComplete}</h1>
         <div class="receipt-sub receipt-cashier">Cashier: YOU (deceased)</div>
         <div class="receipt-rule"></div>
         <div class="receipt-lines"></div>
@@ -442,10 +438,11 @@ export function createScreens() {
   function fillResults(r) {
     const shiftComplete = Boolean(r.shiftComplete);
     shiftHeading.hidden = !shiftComplete;
-    cashier.textContent = shiftComplete ? 'Cashier: YOU' : 'Cashier: YOU (deceased)';
-    receiptStamp.textContent = shiftComplete && !r.clockedOut ? 'Complete' : 'Clocked out';
-    receiptThanks.innerHTML = shiftComplete ? 'Thank you for closing Sunset Galleria.' : deathThanks;
-    receiptWearing.querySelector('.receipt-wearing-head').textContent = shiftComplete ? 'WORE ON SHIFT' : outfitCfg.diedWearing;
+    const words = closingTime.receipt;
+    cashier.textContent = shiftComplete ? words.cashier : 'Cashier: YOU (deceased)';
+    receiptStamp.textContent = shiftComplete && !r.clockedOut ? words.stampComplete : 'Clocked out';
+    receiptThanks.innerHTML = shiftComplete ? words.thanks : deathThanks;
+    receiptWearing.querySelector('.receipt-wearing-head').textContent = shiftComplete ? words.woreOnShift : outfitCfg.diedWearing;
     for (const section of deathSections) section.hidden = shiftComplete;
     for (const button of resultButtons) {
       const choice = button.dataset.action === 'clockOut' || button.dataset.action === 'overtime';
@@ -497,6 +494,7 @@ export function createScreens() {
     if (empty) return;
     statsTotals.innerHTML = statCards([
       ['Shifts worked', totals.runs.toLocaleString('en-US')],
+      [closingTime.stats.wins, (totals.wins ?? 0).toLocaleString('en-US')],
       ['Time employed', clock(totals.timeAlive)],
       ['Zombies cleared', totals.kills.toLocaleString('en-US')],
       ['Headshots', totals.headshotKills.toLocaleString('en-US')],
@@ -512,10 +510,13 @@ export function createScreens() {
       ['Most headshots', bests.headshotKills],
       ['Most points', bests.pointsEarned.toLocaleString('en-US')],
       ['Best accuracy', bests.accuracy === null ? '—' : percent(bests.accuracy)],
+      [closingTime.stats.fastestWin, bests.fastestWin == null ? closingTime.stats.noWin : clock(bests.fastestWin)],
     ]);
     statsRecent.innerHTML = recent.map((run) => {
       const date = run.endedAt ? new Date(run.endedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Unknown';
-      return `<tr class="stats-run"><td>${date}</td><td><b>${run.round}</b></td><td>${clock(run.timeAlive)}</td><td>${run.kills}</td><td>${percent(run.accuracy)}</td></tr>`;
+      // A won shift carries a mark beside its round (and the row a class, for the style).
+      const won = run.won ? ` <span class="stats-won" title="${closingTime.stats.wonTitle}">${closingTime.stats.wonMark}</span>` : '';
+      return `<tr class="stats-run${run.won ? ' won' : ''}"><td>${date}</td><td><b>${run.round}</b>${won}</td><td>${clock(run.timeAlive)}</td><td>${run.kills}</td><td>${percent(run.accuracy)}</td></tr>`;
     }).join('');
   }
 

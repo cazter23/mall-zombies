@@ -126,9 +126,14 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
       const id = chooseRewardType();
       if (id) bossRewards.push({ id, position: zombie.position.clone() });
     }),
-    events.on('roundDiscard', () => {
-      bossRewards.length = 0;
-      if (pickup?.bossReward) pickup = null;
+    events.on('roundDiscard', ({ reason } = {}) => {
+      // Stay for overtime discards the wave, not what a boss already paid out: its uncollected reward stays on the floor
+      // (and one still waiting for clear floor stays queued). It is picked up, or it expires and a voucher pays its
+      // pointsInstead, as always. A debug skip deletes it and pays nothing, as before.
+      if (reason !== 'overtime') {
+        bossRewards.length = 0;
+        if (pickup?.bossReward) pickup = null;
+      }
       benefits.clearBossRewards();
       view?.update(pickup, active, 0, benefits.active);
     }),

@@ -10,6 +10,7 @@ export const closingTime = {
     verb: 'deposit',
     done: 'Done',
     complete: 'Takings banked',
+    requires: 'Requires ', // + the key's name, while the Safe Key is not held
     mountOffset: 1.8, // east wall of Customer Service, measured from the booth center
     insetFromHallWall: 0.88,
     promptOffset: 0.32,
@@ -29,16 +30,38 @@ export const closingTime = {
     manager: { duty: 'Last orders signed off', key: "Fairweather's Signature", needed: 1 },
     influencer: { duty: 'Car park cleared', key: "Skylar's Van Keys" },
   },
+  // The PA introduces the checklist once per run, this long after round 1 is announced: after the run's opening line
+  // (game/runIntro.js, feel.runIntro), whose longest line stays up about 7 s.
+  briefing: { delaySeconds: 8 },
   pa: {
+    briefing: {
+      kicker: 'Closing time',
+      text: 'Attention associates. The mall cannot close until the closing checklist is done. The key for each line is carried by a member of staff.',
+    },
     drop: (key) => ({ kicker: 'Closing time', text: key + ' is on the floor. Associates, please collect it for the closing checklist.' }),
-    collect: (key, duty) => ({ kicker: 'Closing time', text: key + ' collected. ' + duty + ' is checked off.' }),
-    openFountain: (key, needed) => ({ kicker: 'Closing time', text: `${key} collected. Use the Electrified Fountain in the Grand Atrium to take out ${needed} zombies.` }),
-    openNightSafe: (key, needed) => ({ kicker: 'Closing time', text: `${key} collected. Make ${needed} deposits at the Night Safe beside Customer Service.` }),
-    completeNightSafe: { kicker: 'Closing time', text: 'Takings banked is checked off. Thank you, associates.' },
-    completeFountain: { kicker: 'Closing time', text: 'Water features off is checked off. Thank you, associates.' },
-    openLastOrders: (key) => ({ kicker: 'Closing time', text: `${key} collected. Collect a build or Restuff from Build-A-Blaster’s Naming Booth.` }),
-    completeLastOrders: { kicker: 'Closing time', text: 'Last orders signed off. Thank you, associates.' },
+    // The Van Keys tick nothing by themselves: line 4 is ticked by the win (game/createGame.js onRunWon).
+    // keep: these line-opening and line-complete messages are never dropped from the PA queue (ui/announcements.js).
+    vanKeys: (key) => ({ kicker: 'Closing time', keep: true, text: key + ' collected. Start the van to finish closing.' }),
+    openFountain: (key, needed) => ({ kicker: 'Closing time', keep: true, text: `${key} collected. Use the Electrified Fountain in the Grand Atrium to take out ${needed} zombies.` }),
+    openNightSafe: (key, needed) => ({ kicker: 'Closing time', keep: true, text: `${key} collected. Make ${needed} deposits at the Night Safe beside Customer Service.` }),
+    completeNightSafe: { kicker: 'Closing time', keep: true, text: 'Takings banked is checked off. Thank you, associates.' },
+    completeFountain: { kicker: 'Closing time', keep: true, text: 'Water features off is checked off. Thank you, associates.' },
+    openLastOrders: (key) => ({ kicker: 'Closing time', keep: true, text: `${key} collected. Collect a build or Restuff from Build-A-Blaster’s Naming Booth.` }),
+    completeLastOrders: { kicker: 'Closing time', keep: true, text: 'Last orders signed off. Thank you, associates.' },
   },
+  // The win receipt, and the two lines a later death receipt gains after a win (ui/screens.js).
+  receipt: {
+    shiftComplete: 'SHIFT COMPLETE',
+    cashier: 'Cashier: YOU',
+    stampComplete: 'Complete',
+    woreOnShift: 'WORE ON SHIFT',
+    thanks: 'Thank you for closing Sunset Galleria.',
+    clockedOut: 'CLOCKED OUT',
+    overtimeRounds: 'Overtime rounds survived',
+  },
+  overtimeTag: 'OVERTIME', // beside the round counter while overtime is played (ui/hud.js)
+  // The Statistics screen (ui/screens.js): career wins, the fastest win, and the mark on a won shift in the recent list.
+  stats: { wins: 'Shifts completed', fastestWin: 'Fastest close', noWin: '—', wonMark: 'CLOSED', wonTitle: 'Shift completed: the mall was closed' },
   lineProgress: (count, needed) => `${count}/${needed}`,
   receiptProgress: (done, total) => done + ' of ' + total,
   marker: { floorGap: 2, up: 'upstairs', down: 'downstairs' },

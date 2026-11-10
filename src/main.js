@@ -18,7 +18,6 @@ import { createGamepad } from './core/gamepad.js';
 import { createHaptics } from './core/haptics.js';
 import { buttonLabels } from './config/controls.js';
 import { buildTestRange } from './maps/testRange/testRange.js';
-import { closingChecklistFor } from './ui/screens.js';
 import { createHud } from './ui/hud.js';
 import { createDamageIndicatorQueue } from './ui/damageDirection.js';
 import { weapons, melee as meleeWeapons } from './config/weapons.js';
@@ -249,9 +248,8 @@ const throwableView = createThrowableView(scene, g.equipment); // Kiosk Kevin's 
 const screens = hud.screens;
 const titleCamera = createTitleCamera(map.titleShots, feel.titleScreen);
 const careerStats = createCareerStats();
-const closingChecklist = () => closingChecklistFor(g.closing.checklist, game.won);
 g.events.on('runEnd', ({ summary }) => {
-  hud.setReceiptClosingDone(game.showClosingGuidance ? closingChecklist().filter(({ done }) => done).length : null);
+  hud.setReceiptClosingDone(game.showClosingGuidance ? undefined : null); // (Classic: no checklist line on the death receipt)
   screens.setCareerResult(careerStats.recordRun(summary));
 });
 function showWin(summary, clockedOut = false) {
@@ -289,7 +287,7 @@ function play({ pad }) {
 function runSoFar() {
   return {
     round: rounds.round, points: wallet.points, time: g.runStats.timeAlive, kills: g.runStats.kills,
-    outfit: g.outfitRail.snapshot(), closing: game.showClosingGuidance ? closingChecklist() : null,
+    outfit: g.outfitRail.snapshot(), closing: game.showClosingGuidance ? g.closing.checklist : null,
   };
 }
 function pauseRun() {
@@ -301,6 +299,7 @@ function pauseRun() {
 }
 // A fresh run: everything reset, then straight into play (if the mouse lock is refused, "Back to work" waits).
 function freshRun(how) {
+  g.leaveRun(); // (a won run left by Restart run is recorded first)
   screens.setCareerResult(null);
   resetRun();
   screens.show('pause', { fresh: true, closing: game.showClosingGuidance ? [] : null });
@@ -310,6 +309,7 @@ function freshRun(how) {
 function goToTitle() {
   game.padPlaying = false;
   if (document.pointerLockElement) document.exitPointerLock();
+  g.leaveRun(); // (a won run left by Quit to title is recorded first)
   resetRun();
   screens.setCareerResult(null);
   titleCamera.restart();
@@ -510,7 +510,7 @@ function render(alpha, frameTime) {
   hud.setFittingRoom(game.over ? null : fittingRooms.find((room) => room.view)?.view ?? null, menuLabels);
   hud.setLimitedEdition(game.over ? null : limitedEditions?.status ?? null);
   hud.setClosing(
-    game.showClosingGuidance ? closingChecklist() : null,
+    game.showClosingGuidance ? g.closing.checklist : null,
     game.showClosingGuidance && !game.over ? g.closing.markers : {},
   );
   hud.setOvertime(game.won && !game.winPending && !game.over);

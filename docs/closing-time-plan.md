@@ -1,6 +1,6 @@
 # Closing Time: plan for a run goal, an ending and a final boss
 
-Status: PHASES 1–6 BUILT (10 November 2026, Phase 6 on `codex/closing-time-6`). Phases 7–12 are planned. The ten decisions below are made.
+Status: PHASES 1–6 BUILT AND REVIEWED (10 November 2026; the review's fix pass is on `codex/closing-time-6`). Phases 7–12 are planned. The ten decisions below are made.
 Every number is a starting point for `src/config/closingTime.js` and `config/economy.js`, to be tuned in phase 11. Build one phase at a
 time, each in its own worktree.
 
@@ -234,6 +234,8 @@ Each phase leaves the game working and is worth having without the later ones. A
 
 Notes for whoever builds a phase:
 
+- **Phase 7: the van already needs lines 1 to 3.** The fix pass after phase 6 built that part early (`g.closing.readyToLeave`; the van's prompt names what is
+  missing). Phase 7 adds the ticket machine, its 5,000 and the PA's call for the Closing Time round.
 - **Phases 4, 5 and 6 are independent** of each other and of phases 2 and 3, and can be built in any order or in parallel worktrees. Until a
   line's duty is built, holding its key ticks its box. So after phase 3 the ending is: four bosses, their keys, the van.
 - **Phase 1**: the key must land on floor the player can reach (a boss can die on an escalator, on a counter or against a wall; power-ups

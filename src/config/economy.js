@@ -127,9 +127,10 @@ export const economy = {
   // Ammo cache (the vending machine in the Food Court): refills the gun in your hand, any gun, one flat price.
   ammoCache: { price: 400 },
 
-  // Environmental hazards (docs/hazards-plan.md, config/hazards.js): pay-to-trigger mall traps with cooldowns.
+  // Closing Time's quest prices (docs/closing-time-plan.md): one Night Safe deposit. Read through g.pricing.priceOf('closing', id).
   closing: { nightSafe: 1000 },
 
+  // Environmental hazards (docs/hazards-plan.md, config/hazards.js): pay-to-trigger mall traps with cooldowns.
   hazards: {
     fountain: 750,
     fryer: 750,

@@ -40,8 +40,10 @@
 //   'playerDeath' {}                                     after the death is registered (onPlayerDeath)
 //   'escapeVanStart' {}                                  the player finished the van's hold interaction
 //   'runWon'      { summary }                            immutable win snapshot; simulation pauses for the choice
-//   'overtimeStart' { round }                            the player chose to continue at the next round
-//   'runEnd'      { summary }                            final run totals, emitted once on death or Clock out
+//   'overtimeStart' { round }                            the player chose Stay for overtime; round = the first overtime round (the next
+//                                                        round after a win mid-wave, the already announced one after a win in the break)
+//   'runEnd'      { summary }                            final run totals, emitted once per recorded run: on death, on Clock out,
+//                                                        or when a won run is left from a menu (createGame's leaveRun)
 //   'powerUpDrop' { id, position, seconds }               earned incentive appeared on clear floor
 //   'powerUpCollect' { id, name, pa, sound }              walk-through collection (instant effect or zone start)
 //   'powerUpStart' { id, position, remaining, radius, ... } zone or temporary employee benefit began
@@ -53,7 +55,8 @@
 //   'clockIn'     { round, skipped }                     the player ended the break before `round` early (game/clockIn.js);
 //                                                        skipped = seconds of the break given up
 //   'waveEnding'  { round, remaining }                   no spawns left and 2 or fewer zombies alive (final clearance cue)
-//   'roundDiscard' {}                                    a debug skip or overtime transition cleared the current wave
+//   'roundDiscard' { reason }                            the current wave was cleared: reason 'debug' (skipRound / jumpTo) or
+//                                                        'overtime' (Stay for overtime with a wave live; an uncollected boss reward stays)
 //   'typeIntro'   { typeId, zombie }                     a zombie type's first appearance this run (zombie = that spawn)
 //   'mascotVariantIntro' { variant, zombie }             a Mascot costume's first appearance this run, after the type's
 //                                                        own intro (game/rounds.js; banner: config/zombies.js mascotVariants)
@@ -61,6 +64,7 @@
 //   'bossPhase'   { zombie, phase, round }               an encounter mechanic began (Janitor: wetFloor)
 //   'bossDefeated' { zombie, round }                     an active boss died through the regular kill path
 //   'bossVanished' { zombie, round }                     an active boss disappeared without a kill or an explicit round discard
+//   'closingBriefing' { pa }                              once per run, shortly after round 1 is announced: the PA introduces the checklist
 //   'closingKeyDrop' { bossId, position, pa }             a boss's checklist key appeared on clear floor
 //   'closingKey' { bossId, pa }                           the player took a checklist key
 //   'fountainKill' { zombie }                            the Electrified Fountain dealt a killing blow during a pulse

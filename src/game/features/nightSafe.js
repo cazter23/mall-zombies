@@ -1,7 +1,7 @@
 import { closingTime } from '../../config/closingTime.js';
 
 export function buildNightSafe(feature, { map, closing, interactions, pricing, state }) {
-  const { name, verb, done, complete } = closingTime.nightSafe;
+  const { name, verb, done, complete, requires } = closingTime.nightSafe;
   const { key } = closingTime.lines.guard;
   const id = 'nightSafe';
   const isDone = () => closing.isDone('guard');
@@ -17,7 +17,7 @@ export function buildNightSafe(feature, { map, closing, interactions, pricing, s
     get blocked() {
       if (isDone()) return state.showClosingGuidance ? complete : done;
       if (closing.hasKey('guard')) return null;
-      return state.showClosingGuidance ? 'Requires ' + key : 'Locked';
+      return state.showClosingGuidance ? requires + key : 'Locked';
     },
     use() {}, // The normal purchase event advances the checklist after payment.
   });

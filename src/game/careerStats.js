@@ -86,14 +86,21 @@ const clone = (data) => JSON.parse(JSON.stringify(data));
 export function createCareerStats({ storage, key = CAREER_STATS_KEY, now = () => new Date() } = {}) {
   let targetStorage = storage;
   let data;
+  // A save written by a NEWER build than this one (its version is higher than this build knows): its records must not
+  // be wiped. This session keeps a blank ledger in memory and never writes over the stored save. (Unknown or corrupt
+  // older data is replaced by a blank ledger at the next save, as before.)
+  let newerSave = false;
   try {
     targetStorage ??= globalThis.localStorage;
-    data = normalize(JSON.parse(targetStorage?.getItem(key) ?? 'null'));
+    const raw = JSON.parse(targetStorage?.getItem(key) ?? 'null');
+    newerSave = Number.isFinite(raw?.version) && raw.version > CAREER_STATS_VERSION;
+    data = normalize(raw);
   } catch {
     data = blank();
   }
 
   function save() {
+    if (newerSave) return false;
     try {
       targetStorage?.setItem(key, JSON.stringify(data));
       return true;

@@ -230,6 +230,7 @@ export function createGame({
   const getRound = () => Math.max(1, rounds ? rounds.round : 1);
   const death = { timer: 0, resultsShown: false, summary: null };
   let winSummary = null;
+  let overtimeFrom = null; // the first overtime round (set by Stay for overtime), or null
 
   function buildRunSummary() {
     return Object.freeze({
@@ -256,6 +257,9 @@ export function createGame({
       won: state.won,
       winTime: state.won ? winSummary?.timeAlive ?? runStats.timeAlive : null,
       winRound: state.won ? winSummary?.round ?? rounds.round : null,
+      // Whole overtime rounds survived, or null before overtime. (Not round - winRound: after a win in the break,
+      // overtime starts with the round the win happened in.)
+      overtimeRounds: overtimeFrom === null ? null : Math.max(0, rounds.round - overtimeFrom),
       keychains: tickets.tokens.keychain, // Sunny plush keychains redeemed (a joke for the receipt until the Wardrobe exists)
     });
   }
@@ -278,9 +282,10 @@ export function createGame({
   }
 
   function onRunWon() {
-    if (state.over || state.won || closing.missingKeys.length) return;
+    if (state.over || state.won || !closing.readyToLeave) return; // (all four keys and lines 1 to 3; no round gate)
     state.won = true;
     state.winPending = true;
+    closing.completeLeaving(); // line 4 is the win itself: ticked here, before the summary, so the receipt reads 4 of 4
     winSummary = buildRunSummary();
     ambience.silence();
     events.emit('runWon', { summary: winSummary });
@@ -296,11 +301,27 @@ export function createGame({
     return true;
   }
 
+  // Leaving a run from a menu (Quit to title, Restart run): main.js calls this BEFORE it resets. A won run that is
+  // still on the clock (the receipt's choice is pending, or overtime is being played) is recorded here, exactly once:
+  // the win plus whatever overtime added. A run that was never won is not recorded, and a run that already ended
+  // (death, Clock out) was recorded when it ended.
+  function leaveRun() {
+    if (state.over || !state.won) return false;
+    const summary = state.winPending ? winSummary : buildRunSummary();
+    state.over = true;
+    state.winPending = false;
+    state.padPlaying = false;
+    events.emit('runEnd', { summary });
+    return true;
+  }
+
   function stayForOvertime() {
     if (!state.winPending) return false;
     state.winPending = false;
     interactions.reset();
     rounds.startOvertime();
+    clockIn.reset(); // the fresh break can be cut short like any other
+    overtimeFrom = rounds.round;
     events.emit('overtimeStart', { round: rounds.round });
     return true;
   }
@@ -368,7 +389,7 @@ export function createGame({
     onRoundStart: (round) => events.emit('roundStart', { round }),
     onTypeIntro: (typeId, zombie) => events.emit('typeIntro', { typeId, zombie }),
     onVariantIntro: (variant, zombie) => events.emit('mascotVariantIntro', { variant, zombie }),
-    onRoundDiscard: () => events.emit('roundDiscard'),
+    onRoundDiscard: (reason) => events.emit('roundDiscard', { reason }),
     onWaveEnding: (data) => events.emit('waveEnding', data),
   });
   // The shopping window: hold Clock in during the break to call the next round early (announces 'clockIn').
@@ -472,7 +493,7 @@ export function createGame({
     });
   }
 
-  for (const name of ['closingKeyDrop', 'closingKey', 'closingLine']) {
+  for (const name of ['closingBriefing', 'closingKeyDrop', 'closingKey', 'closingLine']) {
     events.on(name, ({ pa }) => {
       if (!state.showClosingGuidance || !pa) return;
       hud.showAnnouncement({ ...pa, priority: 1 });
@@ -632,6 +653,7 @@ export function createGame({
       state.won = false;
       state.winPending = false;
       winSummary = null;
+      overtimeFrom = null;
       state.assisted = false;
       death.timer = 0;
       death.resultsShown = false;
@@ -743,8 +765,10 @@ export function createGame({
     pricing,
     death,
     get winSummary() { return winSummary; },
+    get overtimeFrom() { return overtimeFrom; }, // the first overtime round, or null (tests compare it after Play again)
     clockOut,
     stayForOvertime,
+    leaveRun,
     map,
     features,
     wardrobe,

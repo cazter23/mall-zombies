@@ -26,9 +26,6 @@ import { createOutfitRail } from './outfitRail.js';
 import { createBossFlashView } from './bossFlash.js';
 import { createNoticeHistory } from './noticeHistory.js';
 
-const vanLine = closingTime.lines.influencer;
-const vanKeyNotice = closingTime.pa.collect(vanLine.key, vanLine.duty).text;
-
 function el(tag, className) {
   const node = document.createElement(tag);
   if (className) node.className = className;
@@ -164,7 +161,7 @@ export function createHud() {
   occupancyCounter.textContent = 'CLOSED FOR RESTOCK';
   occupancyCounter.classList.add('closed');
   const overtimeTag = el('div', 'overtime-tag');
-  overtimeTag.textContent = 'OVERTIME';
+  overtimeTag.textContent = closingTime.overtimeTag;
   overtimeTag.hidden = true;
   roundCounter.append(roundLabel, roundValue, occupancyCounter, overtimeTag);
   hud.append(roundCounter);
@@ -547,10 +544,6 @@ export function createHud() {
 
     // A PA-style announcement: { kicker, text, priority? }. Queue/preempt rather than overwrite.
     showAnnouncement(message) {
-      // Phase 1's PA copy checked off the last line when the key was collected.
-      if (message.text === vanKeyNotice) {
-        message = { ...message, text: `${vanLine.key} collected. Start the van to finish closing.` };
-      }
       history.addMessage(message);
       if (!message.archiveOnly) announcements.push(message);
     },
