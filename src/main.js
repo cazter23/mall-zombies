@@ -122,10 +122,13 @@ const damageIndicators = createDamageIndicatorQueue({
 });
 const haptics = createHaptics({ gamepad, input, state: game, health, events: g.events });
 
+// Which button set prompts show: the device used last ('keyboard', or the controller's type: 'xbox', 'playstation'...).
+function promptDevice() {
+  return input.device === 'gamepad' ? gamepad.type : 'keyboard';
+}
 // Button name for prompts on whichever device was used last ("R" vs "X" vs "□").
 function buttonLabel(action) {
-  const device = input.device === 'gamepad' ? gamepad.type : 'keyboard';
-  return buttonLabels[device][action];
+  return buttonLabels[promptDevice()][action];
 }
 
 const DEG_TO_RAD = Math.PI / 180;
@@ -439,6 +442,7 @@ function render(alpha, frameTime) {
   hud.setSprint(player.sprintFraction, player.sprintExhausted, player.isSprinting);
   {
     const secondary = gun.inactiveSlot;
+    const device = promptDevice();
     const switchKey = device === 'keyboard'
       ? (secondary?.index === 0 ? '1' : '2')
       : (buttonLabel('switchWeapon') ?? (device === 'playstation' ? '△' : 'Y'));
