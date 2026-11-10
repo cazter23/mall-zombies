@@ -10,7 +10,7 @@ phases 1 and 3). Build one phase at a time, in its own worktree, and test before
 1. **Two pockets.** A **Lethal** pocket (Soda Bomb, Sparkler Cake, Sentry) and a **Tactical** pocket (Air Horn, Glitter Bomb). Each holds one kind at
    a time, and buying a different kind for the same pocket replaces what's in it. So the choice is now inside each pocket, not between them.
 2. **Buttons: G and middle mouse.** Read as: **Lethal on G, Tactical on middle mouse** (`Mouse1`, which `core/input.js` already tracks). G is god mode in
-   `config/debug.js` today, so god mode moves to a free key (B, say; only Shift+B is taken) in phase 1. **Controller (my suggestion, not yet confirmed):**
+   `config/debug.js` today, so god mode moves to a free key (B, say; only Shift+B is taken) in phase 1. **Controller (confirmed by the user):**
    Lethal on **RB** with melee on R3 only (COD's own layout), Tactical on **D-pad right** (the only free buttons are the D-pad's up, left and right).
 3. **Kevin moves** at each 'roundStart' to a random open-zone site among five, with the PA naming the area, and **ducks under the counter** while a
    zombie is within 3 m.
