@@ -17,6 +17,8 @@ src/
   style.css             HUD (crosshair, hit marker, health/stamina bars, ammo, prompt), start/pause overlay
   boot.js               The page's entry point: waits for the web fonts (core/fontsReady.js, list and time limit in config/fonts.js), then imports main.js.
   config/
+    skins.js            Per-gun skin arrays, gunSkin lookup, Mastery kill challenges, save key/version and unlock/debug words.
+                        Preserves Phase 1's Night Shift/Carbon Copy palettes; the other nine skins carry names and challenges for now.
     idle.js             Idle saver numbers: delays (short / normal / long: dim and sleep seconds), dimFps, muteWhenAsleep, pollSeconds
     haptics.js          Controller vibration intensity and per-gun/damage/pickup durations, motor strengths and priorities
     bosses.js           Boss debut windows, wave timing, combat and control tuning, PA lines, and the Janitor's costume
@@ -397,6 +399,12 @@ src/
                         per-run state = one line there), onPlayerDeath, showResults, state { forceRun, over,
                         padPlaying, assisted, running }, death (including the frozen run summary), vaultPromptVisible.
                         No DOM: the browser parts are passed in
+    skinSave.js         createSkinSave({ storage, key }): the permanent { version, progress, unlocked, equipped } record.
+                        Counts and unlocks are keyed by gun and skin; memory updates flush on unlock/runEnd. Safe with
+                        missing/corrupt/blocked storage; newer versions are protected from all writes. Debug clear can relock one challenge.
+    challenges.js       createChallenges({ events, state, save }): g.challenges, DOM-free event counter factories by challenge.kind.
+                        Mastery counts kill.weaponId, ignores assisted/dead/fan kills, emits challengeProgress and skinUnlocked.
+                        update/reset/snapshot cover per-run counters; finish handlers can finalize later round/run feats before saving.
     careerStats.js      createCareerStats({ storage }): versioned persistent employee record with lifetime totals,
                         personal bests and the last 12 completed shifts. Assisted/debug runs are rejected; storage
                         failures fall back to memory. main.js supplies localStorage and records the runEnd event
@@ -511,6 +519,7 @@ src/
     debugCommands.js    createDebugCommands(game parts): the debug shortcuts as functions run(id) (spawn, cycleZombie, clearZombies,
                         killZombies, nextRound, jumpRounds, flashSale, addPoints, zeroPoints, god, giveGun, upgradeGun, doors, arena, panel,
                         spawnMascot / spawnGoldMascot: each costume in turn at the spawn point nearest you);
+                        Keyless 'challenge' adds/completes/clears one permanent challenge, marking assistance; clear relocks only its target.
                         resolve(code, shift), status(). g.debug. A new command = a table entry in config/debug.js + a function here.
                         KEYLESS commands (no key to spare; keylessIds): 'pockets' fills Kiosk Kevin's equipment pockets (window.__mall.g.debug.run('pockets')).
                         God mode is health.invulnerable; debug state is not part of a run (Play again keeps it)
@@ -803,6 +812,7 @@ src/
                         red cost when unaffordable, shake when denied, hold-progress bar), red hurt edges, click-to-play/paused overlay,
                         "Clocked Out" results screen with Play again (plain DOM). Pause screen: Click to play + Settings (left) /
                         Controls (right) buttons (onOpenSettings/onOpenControls); FPS counter top right (setFpsVisible/setFps);
+                        skinUnlocked displays an independent skin-unlock-toast in the right HUD stack, cleared on pause/death/reset.
                         setAmmoTier(tier): "<Tier> warranty" in the tier's color under the gun name
                         (hidden at Standard; main.js feeds it from tierOf(gun.modsFor(...))); showAnnouncement({ kicker, text }): PA-style banner under the round banner (new zombie types)
     damageDirection.js  Computes relative damage angle (0° = front, 90° = right, 180° = behind, 270° = left) and queues damage indicators for the HUD.

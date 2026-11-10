@@ -1,5 +1,16 @@
 # Sunset Galleria: build history ("Current state")
 
+## 10 November 2026 - Weapon skins phase 4: Challenges and the save
+
+- Each of the eleven guns has a named Mastery challenge in config/skins.js. Kills earn its skin at 400, or 150 for Return to Sender. Phase 1's Night Shift and Carbon Copy entries and palettes are retained for the later merge.
+- g.challenges listens to the Phase 3 kill.weaponId, including delayed build/projectile kills. Assisted play, kills after death and Skylar's noRewards fans earn nothing. Eligible progress earned before assistance stays.
+- game/skinSave.js owns the versioned permanent record under sunsetGalleria.skins. It writes on unlock and runEnd, tolerates missing/corrupt/blocked storage, merges counts upward and unlocks by union, and protects newer save versions. main.js only creates and injects the browser-backed save.
+- skinUnlocked drives the existing PA banner/chime and an independent HUD toast. All new words and challenge thresholds live in config. Counter factories expose event/lifecycle, update/reset/snapshot hooks for later role challenges and feats.
+- The keyless challenge debug command can add, complete or clear one challenge and persists explicitly. Clear resets and relocks only that challenge. It marks assistance, so debug to 399 then Play again before a real earning kill.
+- Verified: full suite 1175 passed (22 new challenge tests), production build passed, balance output identical to Phase 3. The existing equipment test now checks that pockets remains keyless alongside the new challenge command.
+- Production preview: debug to 399, Play again, one real Staple Gun shot unlocked Night Shift. PA and toast captured together; reload retained the unlock; the temporary skin save was removed.
+- Shared edits are createGame.js, events.js, debugCommands.js, main.js, ui/hud.js, ui/retail.css, tests/equipment.test.js and docs. Gameplay verification retains the Phase 3 kill payout baseline.
+
 ## 10 November 2026 - Weapon skins phase 3: Kills name their gun
 
 - The kill event carries the gun ID from the lethal hit, projectile, or build effect. Burns, Glitter, and Party Trap keep their gun ID after a loadout change.

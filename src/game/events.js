@@ -94,6 +94,8 @@
 //                                                        left = charges still in it)
 //   'equipmentBurst'  { id, position, radius, hit }      a thrown Soda Bomb burst; hit = [{ target, damage, killed }]. Equipment
 //                                                        damage never emits 'hit' (no +10): its kills pay through 'kill', source 'equipment'
+//   'challengeProgress' { gunId, skinId, count, needed }  a challenge counter changed (game/challenges.js)
+//   'skinUnlocked' { gunId, skinId, pa }                  a skin was earned; PA and HUD toast listen here
 //   'runReset'    {}                                     after Play again reset everything
 // =============================================================================
 

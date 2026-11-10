@@ -61,6 +61,8 @@ import { createMeleeUpgrades } from './meleeUpgrades.js';
 import { createWardrobe } from './wardrobe.js';
 import { createOutfitRail } from './outfitRail.js';
 import { createRunStats } from './runStats.js';
+import { createSkinSave } from './skinSave.js';
+import { createChallenges } from './challenges.js';
 import { createWallet, pointsForHit } from './wallet.js';
 import { createRounds } from './rounds.js';
 import { createClockIn } from './clockIn.js';
@@ -76,6 +78,7 @@ const DEG_TO_RAD = Math.PI / 180;
  * @param scene, camera   three.js scene (the map, zombies and effects go in it) and the world camera
  * @param input           core/input.js Input (or a test double with the same calls)
  * @param hud, sound, viewmodel  browser parts (see the header)
+ * @param skinSave        optional permanent skin record (memory by default; main.js supplies browser storage)
  * @param mapId           which map (maps/index.js)
  * @param buildTestRange  optional (scene, colliders) => arena: the debug movement/shooting range
  * @param debugTick       optional () => void, run each live tick just before the player moves
@@ -90,6 +93,7 @@ export function createGame({
   hud,
   sound,
   viewmodel,
+  skinSave = createSkinSave({ storage: null }),
   mapId = 'mall',
   buildTestRange = null,
   debugTick = null,
@@ -212,6 +216,7 @@ export function createGame({
       return input.locked || this.padPlaying || this.forceRun;
     },
   };
+  const challenges = createChallenges({ events, state, save: skinSave });
   // GRAB-A-GUN's prize tickets (game/tickets.js): their own currency, never points, pricing or income.
   const tickets = createTickets({ events, state });
   const ambience = createAmbience({ map, player, sound, colliders });
@@ -422,7 +427,7 @@ export function createGame({
   });
 
   // Build-A-Blaster's PA lines (game/features/workshopRitual.js), and GRAB-A-GUN's (game/features/clawMachine.js).
-  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualWaiting', 'ritualCollect', 'limitedEditionDrop', 'limitedEditionFitted', 'wardrobeBuy', 'clawClosed', 'clawMoved']) {
+  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualWaiting', 'ritualCollect', 'limitedEditionDrop', 'limitedEditionFitted', 'wardrobeBuy', 'clawClosed', 'clawMoved', 'skinUnlocked']) {
     events.on(name, ({ pa }) => {
       hud.showAnnouncement({ ...pa, priority: 1 });
       sound.play('paChime');
@@ -518,7 +523,7 @@ export function createGame({
   });
   // Developer shortcuts (config/debug.js lists the keys; main.js turns key presses into debug.run(id)).
   const debugCommands = createDebugCommands({
-    map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses, wardrobe, features, equipment,
+    map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses, wardrobe, features, equipment, challenges,
     onUse: (id) => {
       // Merely showing the panel or choosing the next spawn type changes no run outcome.
       if (id !== 'panel' && id !== 'cycleZombie' && id !== 'cycleBoss' && id !== 'benchmark') state.assisted = true;
@@ -552,6 +557,7 @@ export function createGame({
     ['surfaces', () => surfaces.reset()], // no slow floor left over
     ['health', () => health.reset()], // (after stats: back to the base max health)
     ['runStats', () => runStats.reset()],
+    ['challenges', () => challenges.reset()],
     ['balls', () => balls.clear()], // (before the gun: a ball in the air reports to it)
     ['equipment', () => equipment.reset()], // empty pockets, nothing thrown left in the air or on the floor
     ['gun', () => gun.reset()], // just the staple gun again, no upgrades
@@ -666,6 +672,7 @@ export function createGame({
     shutterSounds.update(dt);
     features.update(dt);
     outfitRail.update(dt);
+    challenges.update(dt);
     flashSales.update(dt);
     if (arena) arena.update(dt);
     player.updateView(dt); // recoil/jolt springs last, so this tick's kicks show on the next frame
@@ -686,6 +693,7 @@ export function createGame({
     powerUps,
     bosses,
     debug: debugCommands,
+    challenges,
     colliders,
     arena,
     shootables,

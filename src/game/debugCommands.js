@@ -16,6 +16,7 @@
 // =============================================================================
 
 import { debug } from '../config/debug.js';
+import { challengeDebug } from '../config/skins.js';
 import { weapons } from '../config/weapons.js';
 import { mascotTypes, zombieTypes } from '../config/zombies.js';
 import { bossTypes } from '../config/bosses.js';
@@ -28,7 +29,7 @@ const BOSS_IDS = Object.keys(bossTypes).sort((a,b)=>bossTypes[a].firstRounds[0]-
 const WALL_GUN_IDS = Object.keys(weapons).filter((id) => id !== 'stapleGun');
 const nameOf = (id) => id.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
 
-export function createDebugCommands({ map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses, wardrobe, features = null, equipment = null, commands = debug.commands, onUse = null }) {
+export function createDebugCommands({ map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses, wardrobe, features = null, equipment = null, challenges = null, commands = debug.commands, onUse = null }) {
   const clawMachine = () => features?.list.find(({ feature }) => feature.kind === 'clawMachine')?.instance ?? null; // GRAB-A-GUN
   const state = { panelOpen: debug.panel.startOpen, zombieIndex: 0, bossIndex: 0, gunIndex: 0, mascotIndex: 0, goldIndex: 0, last: '' };
   const selectedZombie = () => ZOMBIE_IDS[state.zombieIndex];
@@ -192,6 +193,9 @@ export function createDebugCommands({ map, zombies, rounds, wallet, gun, health,
   // Commands with NO key (the keyboard has none left to spare): run them from the browser console,
   // window.__mall.g.debug.run('pockets'), or from a test. Not in the key table or the debug window.
   const keyless = {
+    challenge(...args) {
+      return challenges ? challenges.debug(...args) : challengeDebug.unavailable;
+    },
     // Kiosk Kevin's equipment (game/equipment.js): every pocket that has a product, full.
     pockets() {
       if (!equipment) return 'This game has no equipment';

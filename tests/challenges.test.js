@@ -1,0 +1,400 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import * as THREE from 'three';
+import { skins, skinStorage, skinNotices, gunSkin } from '../src/config/skins.js';
+import { weapons } from '../src/config/weapons.js';
+import { createEvents } from '../src/game/events.js';
+import { createSkinSave } from '../src/game/skinSave.js';
+import { createChallenges } from '../src/game/challenges.js';
+import { headlessGame, snapshot } from './helpers/headlessGame.js';
+import { menuDom } from './helpers/menuDom.js';
+
+const staple = skins.stapleGun[0];
+const nail = skins.nailGun[0];
+const blank = () => ({ version: skinStorage.version, progress: {}, unlocked: {}, equipped: {} });
+
+function memoryStorage(record = null) {
+  const values = new Map(record === null ? [] : [[skinStorage.key, record]]);
+  let writes = 0;
+  return {
+    getItem: key => values.get(key) ?? null,
+    setItem(key, value) { writes += 1; values.set(key, value); },
+    get writes() { return writes; },
+    get record() { return JSON.parse(values.get(skinStorage.key) ?? 'null'); },
+    replace: value => values.set(skinStorage.key, value),
+  };
+}
+
+function counters(storage = memoryStorage()) {
+  const events = createEvents();
+  const state = { assisted: false, over: false };
+  const save = createSkinSave({ storage });
+  const challenges = createChallenges({ events, state, save });
+  const kill = (weaponId = 'stapleGun', extra = {}) => events.emit('kill', { weaponId, zombie: {}, ...extra });
+  return { events, state, save, challenges, kill, storage };
+}
+
+function realGame(context, storage = memoryStorage()) {
+  const save = createSkinSave({ storage });
+  const t = headlessGame({ skinSave: save });
+  context.after(() => t.g.map.dispose());
+  t.g.rounds.update = () => {};
+  t.tick();
+  return { ...t, save, storage };
+}
+
+function shopper(t, health = 1000) {
+  const z = t.g.zombies.spawn('shopper', new THREE.Vector3(0, 0, 9));
+  z.setState('chasing');
+  z.speed = 0;
+  z.attackCooldown = 99;
+  z.health = health;
+  z.updateHitboxes();
+  return z;
+}
+
+test('all eleven guns have a named mastery challenge; Phase 1 IDs and palettes survive', () => {
+  assert.deepEqual(Object.keys(skins).sort(), Object.keys(weapons).sort());
+  assert.equal(skins.stapleGun[0].id, 'night-shift');
+  assert.equal(skins.rivetRifle[0].id, 'carbon-copy');
+  assert.equal(skins.stapleGun[0].palette.body, 0x303e74);
+  assert.equal(skins.rivetRifle[0].palette.body, 0x404a4d);
+  for (const [gunId, [skin]] of Object.entries(skins)) {
+    assert.equal(skin.slot, 1);
+    assert.equal(skin.challenge.kind, 'kills');
+    assert.equal(skin.challenge.count, gunId === 'returnToSender' ? 150 : 400);
+    assert.equal(gunSkin(gunId, skin.id), skin);
+  }
+});
+
+test('kills advance only their gun; melee, hazards, equipment and unknown guns advance none', () => {
+  const t = counters();
+  t.kill('stapleGun');
+  t.kill('nailGun');
+  t.kill('nailGun');
+  for (const source of ['melee', 'hazard', 'equipment']) t.kill(null, { source });
+  t.kill('not-a-gun');
+  assert.deepEqual(t.save.snapshot().progress, {
+    stapleGun: { 'night-shift': 1 },
+    nailGun: { aftermarket: 2 },
+  });
+  assert.equal(t.storage.writes, 0);
+});
+
+test('the 400th kill saves first and emits progress then exactly one unlock with its PA line', () => {
+  const t = counters();
+  const progress = [], unlocks = [], order = [];
+  t.events.on('challengeProgress', event => { progress.push(event); order.push('progress'); });
+  t.events.on('skinUnlocked', event => {
+    unlocks.push(event);
+    order.push('unlock');
+    assert.equal(t.storage.record.unlocked.stapleGun['night-shift'], true, 'durable before feedback');
+  });
+  for (let i = 0; i < 399; i++) t.kill();
+  assert.equal(t.storage.writes, 0);
+  assert.equal(unlocks.length, 0);
+  t.kill();
+  assert.deepEqual(order.slice(-2), ['progress', 'unlock']);
+  assert.deepEqual(progress.at(-1), { gunId: 'stapleGun', skinId: staple.id, count: 400, needed: 400 });
+  assert.deepEqual(unlocks, [{
+    gunId: 'stapleGun', skinId: staple.id, pa: skinNotices.pa(weapons.stapleGun.name, staple.name),
+  }]);
+  t.kill();
+  assert.equal(t.save.progress('stapleGun', staple.id), 400);
+  assert.equal(unlocks.length, 1);
+  assert.equal(t.storage.writes, 1);
+});
+
+test('Return to Sender unlocks on its 150th eligible kill', () => {
+  const t = counters();
+  for (let i = 0; i < 149; i++) t.kill('returnToSender');
+  assert.equal(t.save.unlocked('returnToSender', 'final-notice'), false);
+  t.kill('returnToSender');
+  assert.equal(t.save.unlocked('returnToSender', 'final-notice'), true);
+  assert.equal(t.save.progress('stapleGun', staple.id), 0);
+});
+
+test('assistance keeps prior earnings, stops later earnings, and still flushes prior progress at runEnd', () => {
+  const t = counters();
+  t.kill();
+  t.state.assisted = true;
+  t.kill();
+  t.kill('nailGun');
+  t.challenges.update(10);
+  assert.equal(t.save.progress('stapleGun', staple.id), 1);
+  assert.equal(t.save.progress('nailGun', nail.id), 0);
+  t.events.emit('runEnd');
+  assert.equal(t.storage.record.progress.stapleGun['night-shift'], 1);
+  const assisted = counters();
+  assisted.state.assisted = true;
+  assisted.kill();
+  assert.deepEqual(assisted.save.snapshot(), blank());
+});
+
+test('post-death and noRewards fan kills earn nothing', () => {
+  const t = counters();
+  t.kill('stapleGun', { zombie: { noRewards: true } });
+  t.state.over = true;
+  t.kill();
+  assert.deepEqual(t.save.snapshot(), blank());
+});
+
+test('a 50-kill run without an unlock writes exactly once, at runEnd', () => {
+  const t = counters();
+  for (let i = 0; i < 50; i++) t.kill();
+  assert.equal(t.storage.writes, 0);
+  t.state.over = true;
+  t.events.emit('runEnd');
+  assert.equal(t.storage.writes, 1);
+  assert.equal(t.storage.record.progress.stapleGun['night-shift'], 50);
+});
+
+test('a real build burn still advances gun A after switching to B', context => {
+  const t = realGame(context), { g } = t;
+  g.gun.give(weapons.nailGun);
+  t.tick(40);
+  g.gun.setMods('nailGun', [{ id: 'build', build: { stuffing: 'fryerOil', heart: 'headshot', quality: 'understuffed' } }]);
+  const z = shopper(t);
+  t.standAt(0, 12);
+  const head = z.hitboxes.find(h => h.part === 'head').box.getCenter(new THREE.Vector3());
+  g.player.pitch = Math.atan2(head.y - g.player.eyeHeight, 3);
+  t.input.held.add('Mouse2');
+  t.tick(30);
+  t.press('Mouse0');
+  t.input.held.delete('Mouse2');
+  assert.ok(z.burn);
+  z.health = 1;
+  t.press('Digit1');
+  assert.equal(g.gun.def.id, 'stapleGun');
+  t.tick(35);
+  assert.equal(z.isAlive, false);
+  assert.equal(t.save.progress('nailGun', nail.id), 1);
+  assert.equal(t.save.progress('stapleGun', staple.id), 0);
+});
+
+test('progress survives resetRun and a fresh game using the same storage', context => {
+  const storage = memoryStorage();
+  const t = realGame(context, storage);
+  shopper(t).takeHit({ damage: 10000, part: 'body', weaponId: 'stapleGun' });
+  t.g.resetRun();
+  assert.equal(t.save.progress('stapleGun', staple.id), 1);
+  assert.equal(storage.writes, 0);
+  t.g.health.takeDamage(10000);
+  assert.equal(storage.writes, 1);
+  const fresh = realGame(context, storage);
+  assert.equal(fresh.save.progress('stapleGun', staple.id), 1);
+});
+
+test('Play again clears counter state and matches a fresh game with the same permanent record', context => {
+  const storage = memoryStorage();
+  const t = realGame(context, storage);
+  t.g.debug.run('challenge', 'stapleGun', staple.id, 'add', 12);
+  t.g.gun.give(weapons.nailGun);
+  t.tick(40);
+  t.g.health.takeDamage(10000);
+  t.g.resetRun();
+  const freshSave = createSkinSave({ storage });
+  const fresh = headlessGame({ skinSave: freshSave });
+  context.after(() => fresh.g.map.dispose());
+  assert.deepEqual(t.g.challenges.snapshot(), fresh.g.challenges.snapshot());
+  assert.deepEqual(t.g.challenges.snapshot().run, {});
+  assert.ok(t.g.resetSteps.includes('challenges'));
+  assert.deepEqual(snapshot(t.g), snapshot(fresh.g));
+});
+
+test('unlock feedback uses the existing PA listener and one chime in the real game', context => {
+  const t = realGame(context);
+  t.g.debug.run('challenge', 'stapleGun', staple.id, 'add', 399);
+  t.g.resetRun();
+  const before = t.sounds.length;
+  shopper(t, 1).takeHit({ damage: 10, part: 'body', weaponId: 'stapleGun' });
+  assert.deepEqual(t.hud.calls.filter(([name]) => name === 'showAnnouncement').at(-1), [
+    'showAnnouncement', { ...skinNotices.pa(weapons.stapleGun.name, staple.name), priority: 1 },
+  ]);
+  assert.equal(t.sounds.slice(before).filter(name => name === 'paChime').length, 1);
+  assert.equal(t.save.unlocked('stapleGun', staple.id), true);
+});
+
+test('debug add, complete and clear persist and affect only their challenge', context => {
+  const t = realGame(context), { g, save, storage } = t;
+  assert.ok(g.debug.keylessIds.includes('challenge'));
+  assert.ok(!g.debug.commands.some(command => command.id === 'challenge'));
+  g.debug.run('challenge', 'stapleGun', staple.id, 'add', 399);
+  assert.equal(g.state.assisted, true);
+  assert.equal(save.progress('stapleGun', staple.id), 399);
+  assert.equal(storage.record.progress.stapleGun[staple.id], 399);
+  g.debug.run('challenge', 'stapleGun', staple.id, 'complete');
+  assert.equal(storage.record.unlocked.stapleGun[staple.id], true);
+  g.debug.run('challenge', 'nailGun', nail.id, 'add', 7);
+  storage.replace(JSON.stringify({ ...storage.record, equipped: { stapleGun: staple.id } }));
+  g.debug.run('challenge', 'stapleGun', staple.id, 'clear');
+  assert.equal(save.progress('stapleGun', staple.id), 0);
+  assert.equal(save.unlocked('stapleGun', staple.id), false);
+  assert.equal(storage.record.equipped.stapleGun, undefined);
+  assert.equal(storage.record.progress.nailGun[nail.id], 7);
+  const before = save.snapshot(), writes = storage.writes;
+  for (const amount of [-1, 1.5, NaN, Infinity, '5']) g.debug.run('challenge', 'nailGun', nail.id, 'add', amount);
+  g.debug.run('challenge', 'unknown', 'unknown', 'complete');
+  assert.deepEqual(save.snapshot(), before);
+  assert.equal(storage.writes, writes);
+});
+
+test('save recovers from absent, malformed, incomplete and invalid data', () => {
+  for (const raw of [null, '{broken', 'null', '[]', '{}', '{"version":1}', '{"version":0}']) {
+    const save = createSkinSave({ storage: memoryStorage(raw) });
+    assert.deepEqual(save.snapshot(), blank(), String(raw));
+    assert.doesNotThrow(() => save.flush());
+  }
+  const save = createSkinSave({ storage: memoryStorage(JSON.stringify({
+    version: skinStorage.version,
+    progress: { stapleGun: { good: 12, negative: -4, string: '8', fractional: 2.5 }, invalid: [] },
+    unlocked: { stapleGun: { good: true, invalid: 'yes' } },
+    equipped: { stapleGun: 'good', invalid: 5 },
+  })) });
+  assert.equal(save.progress('stapleGun', 'good'), 12);
+  for (const id of ['negative', 'string', 'fractional']) assert.equal(save.progress('stapleGun', id), 0);
+  assert.deepEqual(save.snapshot().unlocked, { stapleGun: { good: true } });
+  assert.deepEqual(save.snapshot().equipped, { stapleGun: 'good' });
+});
+
+test('save progress never decreases and unlocks survive subsequent lower records and stale saves', () => {
+  const storage = memoryStorage();
+  const first = createSkinSave({ storage }), stale = createSkinSave({ storage });
+  first.record('stapleGun', staple.id, 400, true);
+  first.flush();
+  stale.record('stapleGun', staple.id, 7);
+  stale.record('nailGun', nail.id, 5);
+  stale.flush();
+  first.record('stapleGun', staple.id, 3, false);
+  first.flush();
+  assert.equal(storage.record.progress.stapleGun[staple.id], 400);
+  assert.equal(storage.record.unlocked.stapleGun[staple.id], true);
+  assert.equal(storage.record.progress.nailGun[nail.id], 5);
+  const snapshot = first.snapshot();
+  snapshot.progress.stapleGun[staple.id] = 0;
+  assert.equal(first.progress('stapleGun', staple.id), 400);
+});
+
+test('save preserves equipped choices and entries introduced by other challenge data', () => {
+  const record = {
+    ...blank(), progress: { futureGun: { futureSkin: 9 } },
+    unlocked: { futureGun: { futureSkin: true } }, equipped: { futureGun: 'futureSkin' },
+  };
+  const storage = memoryStorage(JSON.stringify(record));
+  const save = createSkinSave({ storage });
+  save.record('stapleGun', staple.id, 5);
+  save.flush();
+  assert.deepEqual(storage.record.equipped, record.equipped);
+  assert.deepEqual(storage.record.progress.futureGun, record.progress.futureGun);
+  assert.deepEqual(storage.record.unlocked.futureGun, record.unlocked.futureGun);
+});
+
+test('a newer version starts blank and is protected from normal and debug writes', () => {
+  const raw = JSON.stringify({ ...blank(), version: skinStorage.version + 1, future: 'keep this exact text' });
+  const storage = memoryStorage(raw);
+  const t = counters(storage);
+  assert.deepEqual(t.save.snapshot(), blank());
+  t.kill();
+  t.challenges.debug('stapleGun', staple.id, 'complete');
+  t.challenges.debug('stapleGun', staple.id, 'clear');
+  t.events.emit('runEnd');
+  assert.equal(storage.writes, 0);
+  assert.equal(storage.getItem(skinStorage.key), raw);
+});
+
+test('a newer save appearing while the game is open is also protected', () => {
+  const t = counters();
+  t.kill();
+  const raw = JSON.stringify({ version: skinStorage.version + 1, future: true });
+  t.storage.replace(raw);
+  t.events.emit('runEnd');
+  t.challenges.debug('stapleGun', staple.id, 'complete');
+  assert.equal(t.storage.writes, 0);
+  assert.equal(t.storage.getItem(skinStorage.key), raw);
+});
+
+test('blocked reads, blocked writes and unavailable storage never stop counting', () => {
+  for (const storage of [
+    { getItem() { throw new Error('blocked read'); }, setItem() { throw new Error('blocked write'); } },
+    { getItem: () => null, setItem() { throw new Error('full'); } },
+    null,
+  ]) {
+    const t = counters(storage);
+    for (let i = 0; i < 400; i++) t.kill();
+    assert.equal(t.save.unlocked('stapleGun', staple.id), true);
+    assert.doesNotThrow(() => t.events.emit('runEnd'));
+  }
+});
+
+test('debug clear retries safely after a failed write', () => {
+  const storage = memoryStorage(JSON.stringify({
+    ...blank(), progress: { stapleGun: { [staple.id]: 400 } },
+    unlocked: { stapleGun: { [staple.id]: true } },
+  }));
+  const write = storage.setItem;
+  storage.setItem = () => { throw new Error('full'); };
+  const t = counters(storage);
+  t.challenges.debug('stapleGun', staple.id, 'clear');
+  assert.equal(t.save.unlocked('stapleGun', staple.id), false);
+  t.kill();
+  storage.setItem = write;
+  t.events.emit('runEnd');
+  assert.equal(storage.record.progress.stapleGun[staple.id], 1);
+  assert.equal(storage.record.unlocked.stapleGun?.[staple.id], undefined);
+});
+
+test('unlock toast shows the skin and gun, expires, and clears on pause, death and reset', async context => {
+  menuDom();
+  const { createHud } = await import('../src/ui/hud.js');
+  context.mock.timers.enable({ apis: ['setTimeout'] });
+  const hud = createHud();
+  const events = createEvents();
+  hud.connectEvents(events);
+  const toast = hud.element.querySelector('.skin-unlock-toast');
+  const unlock = () => events.emit('skinUnlocked', { gunId: 'stapleGun', skinId: staple.id, pa: {} });
+  assert.equal(toast.hidden, true);
+  unlock();
+  assert.equal(toast.hidden, false);
+  assert.equal(toast.textContent, skinNotices.toastTitle + skinNotices.toastText(weapons.stapleGun.name, staple.name));
+  context.mock.timers.tick(skinNotices.toastSeconds * 1000);
+  assert.equal(toast.hidden, true);
+  for (const clear of [
+    () => hud.setDimmed(true),
+    () => hud.setDead(true),
+    () => events.emit('runReset'),
+  ]) {
+    unlock();
+    assert.equal(toast.hidden, false);
+    clear();
+    assert.equal(toast.hidden, true);
+  }
+});
+
+test('a persisted unlock stays unlocked and emits no second unlock in a fresh session', () => {
+  const first = counters();
+  first.challenges.debug('stapleGun', staple.id, 'complete');
+  const fresh = counters(first.storage);
+  const unlocks = [];
+  fresh.events.on('skinUnlocked', event => unlocks.push(event));
+  fresh.kill();
+  assert.equal(fresh.save.unlocked('stapleGun', staple.id), true);
+  assert.equal(fresh.save.progress('stapleGun', staple.id), 400);
+  assert.deepEqual(unlocks, []);
+});
+
+test('a throwing global localStorage accessor falls back safely; headless injection stays in memory', context => {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true, get() { throw new Error('storage disabled'); },
+  });
+  context.after(() => {
+    if (descriptor) Object.defineProperty(globalThis, 'localStorage', descriptor);
+    else delete globalThis.localStorage;
+  });
+  const save = createSkinSave();
+  save.record('stapleGun', staple.id, 1);
+  assert.equal(save.progress('stapleGun', staple.id), 1);
+  assert.equal(save.flush(), false);
+  const t = realGame(context);
+  assert.equal(t.g.challenges.snapshot().progress.stapleGun, undefined);
+});
