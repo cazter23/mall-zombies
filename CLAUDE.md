@@ -63,7 +63,7 @@ tests/docs.test.js fails if a new src/ file or test file isn't described in the 
 | change or add a module | its entry in docs/folder-structure.md (search for the file name) |
 | work in an area or add a door/spawn/buy spot | its entry in docs/map.md |
 | want the background of a past decision, a measured number, or how an area was built | docs/history.md (newest first; older: docs/archive/) |
-| plan the next big system | docs/wardrobe-plan.md, docs/wardrobe-showroom-plan.md (its rework), docs/claw-machine-plan.md, docs/closing-time-plan.md (the run goal and ending) (finished plans are in docs/archive/) |
+| plan the next big system | docs/wardrobe-plan.md, docs/wardrobe-showroom-plan.md (its rework), docs/claw-machine-plan.md, docs/closing-time-plan.md (the run goal and ending), docs/weapon-skins-plan.md (per-gun skins earned by challenges) (finished plans are in docs/archive/) |
 | touch behaviour and want to know which test guards it | docs/tests.md |
 | change a gun | docs/weapon-balance-pass.md and `npm run balance` |
 
