@@ -311,9 +311,11 @@ test('the Mega Mart is reachable from the hallway without the Food Court (and vi
 test('the Mega Mart checkout counters are vaultable; the shelves are not', () => {
   const { colliders } = setup();
   const inMart = (b) => b.min.x >= 20.3 && b.max.x <= 34 && b.min.z >= -24 && b.max.z <= 6;
-  const counters = colliders.filter((b) => inMart(b) && b.vaultable);
+  // Check the four long checkout bodies separately from the compact wardrobe fixtures.
+  const counters = colliders.filter((b) => inMart(b) && b.min.x === 24.5 && b.max.x === 27.5);
   assert.equal(counters.length, 4);
   for (const b of counters) {
+    assert.ok(b.vaultable, 'counter allows vaulting');
     assert.ok(b.max.y <= feel.vault.maxHeight && b.max.y >= feel.vault.minHeight, 'counter height is vaultable');
     assert.ok(b.max.z - b.min.z <= feel.vault.maxDepth, 'short side fits the vault depth');
   }

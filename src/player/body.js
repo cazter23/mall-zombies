@@ -12,6 +12,7 @@
 
 import * as THREE from 'three';
 import { feel } from '../config/feel.js';
+import { wardrobeLook, wardrobeItems } from '../config/wardrobe.js';
 
 const Z_AXIS = new THREE.Vector3(0, 0, 1);
 const KNEE_POLE = new THREE.Vector3(0, 0, -1); // knees bend forward (the body faces -Z)
@@ -150,7 +151,7 @@ function solveKnee(hip, foot, l1, l2, outKnee, proneAmount = 0) {
   outKnee.copy(hip).addScaledVector(tmpDir, along).addScaledVector(tmpPole, out);
 }
 
-export function createPlayerBody(scene) {
+export function createPlayerBody(scene, effects = null) {
   const b = feel.body;
   const c = b.colors;
 
@@ -184,6 +185,32 @@ export function createPlayerBody(scene) {
     parent.add(detail);
     return detail;
   };
+  const pack = new THREE.Group();
+  pack.name = 'wardrobeFannyPack';
+  pack.position.set(-.172, -.043, -.31);
+  pack.rotation.x = -.26;
+  addDetail(pack, c.belt, [.36, .036, .028], [.172, 0, .10]);
+  const pouch = new THREE.Mesh(unitSneakerGeo,
+    new THREE.MeshStandardMaterial({ color: wardrobeItems.fannyPack.color, roughness: .8, flatShading: true }));
+  pouch.scale.set(.22, .123, .147);
+  pack.add(pouch);
+  addDetail(pack, 0x21464c, [.178, .013, .024], [0, .051, -.041]);
+  addDetail(pack, c.shirtStripe, [.024, .017, .01], [.059, .057, -.054]);
+  pack.visible = false;
+
+  const board = new THREE.Group();
+  board.name = 'wardrobeSandwichBoard';
+  board.position.set(0, .25, -.28);
+  board.rotation.x = -.19;
+  addDetail(board, 0xb97e43, [.41, .41, .039], [0, 0, 0]);
+  addDetail(board, 0xe0b97c, [.377, .378, .01], [0, -.003, -.024]);
+  addDetail(board, 0x6c4833, [.38, .026, .013], [0, .15, -.026]);
+  for (const x of [-.128, .128]) {
+    const strap = addDetail(board, 0x8b352b, [.042, .23, .025], [x, .22, .04]);
+    strap.rotation.x = -.56;
+  }
+  board.visible = false;
+
   // The shift card peeks over the waistband, where it can be seen from above.
   const card = addDetail(torso, c.shirtStripe, [.19, .25, .025], [.24, -.26, -.49]);
   card.name = 'shiftCard';
@@ -241,7 +268,6 @@ export function createPlayerBody(scene) {
   head.visible = false;
 
   const shoeMat = new THREE.MeshStandardMaterial({ color: c.shoes, roughness: 0.72, flatShading: true });
-  const soleMat = new THREE.MeshStandardMaterial({ color: c.soles, roughness: 0.85, flatShading: true });
   const accentMat = new THREE.MeshStandardMaterial({ color: c.shoeAccent ?? c.shirt, roughness: 0.65, flatShading: true });
 
   const legs = [-1, 1].map((side) => {
@@ -256,16 +282,31 @@ export function createPlayerBody(scene) {
     shoe.add(tongue);
     for (const edge of [-1, 1]) {
       const panel = addDetail(shoe, c.shoeAccent, [.055, .31, .39], [edge * .47, -.11, .12]);
+      panel.material = accentMat;
       panel.rotation.x = -.12;
     }
-    for (const [y, z] of [[.38, -.04], [.32, -.14], [.26, -.24]]) {
-      addDetail(shoe, c.shirtStripe, [.45, .055, .045], [0, y, z]);
-    }
+    const laces = [[.38, -.04], [.32, -.14], [.26, -.24]].map(([y, z]) =>
+      addDetail(shoe, c.shirtStripe, [.45, .055, .045], [0, y, z]));
+    const straps = [[.36, -.08], [.29, -.22]].map(([y, z]) => {
+      const strap = addDetail(shoe, 0xf4ebdb, [.66, .06, .092], [0, y, z]);
+      strap.visible = false;
+      return strap;
+    });
     addDetail(shoe, c.uniformGold, [.22, .36, .055], [0, .24, .49]);
     const kneeFold = addDetail(shin, c.pantsShade, [.62, .045, .052], [0, -.47, -.29]);
     kneeFold.rotation.y = .10 * side;
     addDetail(shin, c.pantsShade, [.62, .045, .040], [0, -.39, .37]);
-    const sole = new THREE.Mesh(unitSoleGeo, soleMat);
+    const wheel = new THREE.Mesh(
+      new THREE.CylinderGeometry(.14, .14, .17, 12).rotateZ(Math.PI / 2),
+      new THREE.MeshStandardMaterial({ color: 0x432e3d, roughness: .75 }),
+    );
+    wheel.name = 'wardrobeHeelWheel';
+    wheel.scale.set(1, 2.55, .8);
+    wheel.position.set(side * .48, -.3, .36);
+    addDetail(wheel, wardrobeItems.wheelieSneakers.color, [.043, .156, .156], [side * .095, 0, 0]);
+    wheel.visible = false;
+    shoe.add(wheel);
+    const sole = new THREE.Mesh(unitSoleGeo, new THREE.MeshStandardMaterial({ color: c.soles, roughness: .85, flatShading: true }));
     root.add(thigh, shin, shoe, sole);
     return {
       side, // -1 = left, +1 = right
@@ -273,11 +314,26 @@ export function createPlayerBody(scene) {
       shin,
       shoe,
       sole,
+      wheel, laces, straps,
       hip: new THREE.Vector3(),
       knee: new THREE.Vector3(),
       foot: new THREE.Vector3(),
     };
   });
+
+  // Look-down props only join the body while visible, keeping its prone bounds compact.
+  function showClothes(mesh, visible) {
+    if (mesh.visible === visible) return;
+    mesh.visible = visible;
+    if (visible) upperBody.add(mesh);
+    else mesh.removeFromParent();
+  }
+
+  let shoeItem = null;
+  let torsoItem = null;
+  let accessoryItem = null;
+  let sparkIn = 0;
+  const sparkPoint = new THREE.Vector3();
 
   // Animation state
   let walkPhase = 0;
@@ -312,6 +368,25 @@ export function createPlayerBody(scene) {
 
   return {
     root,
+    setClothes(slot, item) {
+      if (slot === 'torso') torsoItem = item;
+      if (slot === 'accessory') accessoryItem = item;
+    },
+    setShoes(item) {
+      shoeItem = item;
+      const style = wardrobeLook.shoes[item];
+      shoeMat.color.setHex(style?.upper ?? c.shoes);
+      accentMat.color.setHex(style?.accent ?? c.shoeAccent);
+      for (const { sole, wheel, laces, straps } of legs) {
+        sole.material.color.setHex(style?.sole ?? c.soles);
+        sole.material.emissive.setHex(item === 'lightUpSneakers' ? style.sole : 0);
+        sole.material.emissiveIntensity = wardrobeLook.shoeGlow.resting;
+        wheel.visible = item === 'wheelieSneakers';
+        for (const lace of laces) lace.visible = item !== 'orthopedicWalkers';
+        for (const strap of straps) strap.visible = item === 'orthopedicWalkers';
+      }
+      sparkIn = 0;
+    },
 
     // Call every rendered frame (after the player has updated).
     update(frameTime, player, alpha, { firstPerson = true } = {}) {
@@ -356,6 +431,9 @@ export function createPlayerBody(scene) {
         Math.sin(walkPhase) * b.run.twist * runAmount, 0);
       head.visible = !firstPerson;
       sleeves.visible = !firstPerson;
+      const showApparel = player.stance !== 'prone' && (!firstPerson || player.pitch < wardrobeLook.lookDownPitch);
+      showClothes(pack, showApparel && accessoryItem === 'fannyPack');
+      showClothes(board, showApparel && torsoItem === 'sandwichBoard');
       torso.position.set(0, 0.05 + b.torsoHeight / 2, 0);
       torso.scale.set(b.waistWidth, b.torsoHeight, b.waistDepth);
       belt.position.set(0, hipY + 0.035, b.backOffset);
@@ -363,6 +441,8 @@ export function createPlayerBody(scene) {
       pelvis.position.set(0, hipY - 0.01, b.backOffset);
       pelvis.scale.set(b.waistWidth - 0.01, 0.1, b.waistDepth - 0.01);
 
+      const shoeScale = wardrobeLook.shoes[shoeItem]?.scale ?? 1;
+      const lightUp = shoeItem === 'lightUpSneakers';
       // --- Legs ---
       for (const leg of legs) {
         const x = leg.side * b.hipWidth;
@@ -417,11 +497,27 @@ export function createPlayerBody(scene) {
         leg.shoe.position.set(leg.foot.x, leg.foot.y - .03 * cosPitch - toeOffset * sinPitch,
           leg.foot.z + toeOffset * cosPitch - .03 * sinPitch);
         leg.shoe.rotation.set(pitch, proneAmount * Math.PI, 0);
-        leg.shoe.scale.set(0.12, 0.08, 0.27);
+        leg.shoe.scale.set(0.12, 0.08, 0.27).multiplyScalar(shoeScale);
         leg.sole.position.set(leg.foot.x, leg.foot.y - .075 * cosPitch - toeOffset * sinPitch,
           leg.foot.z + toeOffset * cosPitch - .075 * sinPitch);
         leg.sole.rotation.set(pitch, proneAmount * Math.PI, 0);
-        leg.sole.scale.set(0.125, 0.02, 0.28);
+        leg.sole.scale.set(0.125 * shoeScale, 0.02, 0.28 * shoeScale);
+        if (lightUp) {
+          const { resting, footfall } = wardrobeLook.shoeGlow;
+          const pulse = Math.pow(Math.max(0, -Math.sin(phase)), 8) * Math.min(1, moveAmount);
+          leg.sole.material.emissiveIntensity = resting + (footfall - resting) * pulse;
+        }
+      }
+
+      if (effects && shoeItem === 'wheelieSneakers' && player.stance === 'slide' && player.grounded && frameTime > 0) {
+        sparkIn -= frameTime;
+        if (sparkIn <= 0) {
+          const { interval, colors, count, speed, size } = wardrobeLook.slideSparks;
+          sparkIn = interval;
+          for (const { wheel } of legs) effects.confetti(wheel.getWorldPosition(sparkPoint), UP, { colors, count, speed, size });
+        }
+      } else if (player.stance !== 'slide') {
+        sparkIn = 0;
       }
     },
   };

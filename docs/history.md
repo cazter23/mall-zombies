@@ -1,5 +1,31 @@
 # Sunset Galleria: build history ("Current state")
 
+## 9 November 2026 - Wardrobe showroom: upstairs showpieces and on-player looks
+
+- **Three upstairs fixtures.** A cardboard B-movie monster with a waving arm sells 3D Glasses beside Concessions. Shoe-Per Sale’s light-up
+  disco tile and giant sneaker face its west entrance. The walking-club mannequin and moving treadmill face its east entrance. Each
+  uses the Food Court purchase, PA and sold-out flow. The two shoe prompts and the mirror each have a separate approach.
+- **First person.** Knit sleeves and reflective tape follow every gun and workshop build. Looking down shows the cardboard board, belt pouch,
+  and the shoes with glowing soles, broad white uppers or heel wheels. The wheels spark during a slide. The foam finger rides the box-cutter swing.
+- **HUD and eyewear.** Paper Hat gets a regen pip. Cardigan and Sandwich Board style the health bar. Light-Ups and Orthopedics style stamina.
+  The Fanny Pack marks the actual reserve count, Gold Card marks paid kills, and both kinds of glasses tint or fringe the screen at its edges.
+  Equip changes and Play Again update the visuals through the existing events.
+- The headless 4:3 benchmark route with static batches and room culling estimates 326 to 327 average map calls. The shot averages sum to
+  three added calls, with a peak increase of five in the hallway. The Food Court sample’s three-piece reference added 70 summed and 28 at peak.
+
+## 9 November 2026 - Wardrobe showroom, phase 2: six ground-floor showpieces
+
+- **Hallway and Mega Mart.** The MEMBERS ONLY kiosk faces the start shutter with a glinting Gold Card, red carpet and velvet rope. The front checkout
+  gaps hold the megaphone mannequin with chasing sale bulbs and the AS SEEN ON TV bin with a bouncing Fanny Pack.
+- **Service Corridor, HOFFMAN’S and Atrium.** An open locker with a rotating beacon stands beside the staff lockers, clear of the vent lane.
+  The Heirloom Cardigan turns on a roped-off plinth on the front floor, clear of the KNITS racks and main gate. The mirrored glasses spin
+  above a chrome tower beside SHADE SHACK, with sweeping floor decals.
+- The Food Court purchase flow drives all six. Each has its own motif and PA line, strikes a pose on purchase and settles with a dimmed SOLD OUT
+  display until Play Again. Placement and prompt checks are in tests/showpieces.test.js. Anchors are listed in docs/map.md.
+- Headless draw-call estimate using the benchmark route, room culling and static batches (4:3, all shutters open). The Food Court sample added
+  70 calls summed across the shot averages, with a largest increase of 28 on one shot. The six fixtures add an estimated 57 summed and 18 on
+  the highest-delta shot (atrium ring). Route-average map calls rose from 322 to 326.
+
 ## 9 November 2026 - Box cutter tiers at Customer Service
 
 The box cutter did a flat 150 forever while Shopper health climbs to 1,157 by round 15 and 1,662 by round 20, so melee stopped mattering around round 4. Two tiers now sell at the

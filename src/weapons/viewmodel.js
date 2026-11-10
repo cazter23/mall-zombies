@@ -27,6 +27,8 @@
 import * as THREE from 'three';
 import { feel } from '../config/feel.js';
 import { makeBoxMesh, buildDeformedBoxGeometry } from '../player/body.js';
+import { wardrobeLook, wardrobeItems } from '../config/wardrobe.js';
+import { createSleeveStyler } from '../player/wardrobeAppearance.js';
 import { buildCuffedArmSegment } from './models/arms.js';
 import { createSpring, createSpring3 } from '../core/spring.js';
 import { samplePose } from '../core/keyframes.js';
@@ -64,7 +66,9 @@ function buildMeleeArm(meleeColors) {
   const c = feel.body.colors;
   const arm = new THREE.Group();
   const V = (x, y, z) => new THREE.Vector3(x, y, z);
-  const add = (mesh) => (arm.add(mesh), mesh);
+  const fist = new THREE.Group();
+  arm.add(fist);
+  const add = (mesh) => (fist.add(mesh), mesh);
 
   // Faceted fist + curled fingers + thumb bracing the cutter spine
   const skinMat = new THREE.MeshStandardMaterial({ color: c.skin, roughness: 0.76, flatShading: true });
@@ -85,7 +89,7 @@ function buildMeleeArm(meleeColors) {
   // Box cutter angled up and forward out of the fist: faceted yellow handle, dark guide channel & slider, trapezoid blade.
   const cutter = new THREE.Group();
   cutter.rotation.x = 1.0;
-  arm.add(cutter);
+  fist.add(cutter);
   const part = (color, sx, sy, sz, x, y, z, geo = null, metalness = 0.15, roughness = 0.55) => {
     const mesh = geo
       ? new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color, roughness, metalness, flatShading: true }))
@@ -105,8 +109,28 @@ function buildMeleeArm(meleeColors) {
     bladeMesh.material.color.setHex(blade);
   };
 
+  const outline = new THREE.Shape([
+    [-.076, -.08], [-.083, .033], [-.055, .09], [-.022, .073], [-.022, .192],
+    [-.012, .213], [.017, .216], [.034, .197], [.033, .066], [.064, .063],
+    [.083, .027], [.076, -.083],
+  ].map(([x, y]) => new THREE.Vector2(x, y)));
+  const foam = new THREE.Mesh(
+    new THREE.ExtrudeGeometry(outline, { depth: .048, bevelEnabled: true, bevelSegments: 1, bevelThickness: .008, bevelSize: .008 }),
+    new THREE.MeshStandardMaterial({ color: wardrobeItems.foamFinger.color, roughness: 1, flatShading: true }),
+  );
+  foam.name = 'wardrobeFoamFinger';
+  foam.position.set(0, -.045, -.022);
+  for (const [x, y, w, h, roll] of [[.005, .127, .018, .1, 0], [-.02, .165, .03, .014, .6], [0, -.026, .091, .013, 0]]) {
+    const stripe = makeBoxMesh(0xe7edff);
+    stripe.scale.set(w, h, .005);
+    stripe.position.set(x, y, .058);
+    stripe.rotation.z = roll;
+    foam.add(stripe);
+  }
+  arm.add(foam);
+  foam.visible = false;
   arm.visible = false;
-  return arm;
+  return { arm, setFoam(worn) { foam.visible = worn; fist.visible = !worn; } };
 }
 
 /**
@@ -147,8 +171,10 @@ export function createViewmodel(weaponDefs, meleeDef) {
   active.model.root.visible = true;
   active.flash.object.add(handLight);
 
-  const meleeArm = buildMeleeArm(meleeDef.colors);
+  const { arm: meleeArm, setFoam } = buildMeleeArm(meleeDef.colors);
   rig.add(meleeArm);
+  const setSleeves = createSleeveStyler(rig);
+  let wearingFoam = false;
 
   const vm = feel.viewmodel;
   const camera = new THREE.PerspectiveCamera(vm.fov, 1, 0.01, 10);
@@ -201,6 +227,11 @@ export function createViewmodel(weaponDefs, meleeDef) {
     scene,
     camera, // render the viewmodel scene with this, not the world camera
     worldLight, // add to the world scene: the muzzle flash lights up the room
+    setSleeves,
+    setMeleeWear(item) {
+      wearingFoam = item === 'foamFinger';
+      setFoam(wearingFoam);
+    },
 
     // A shot just fired. `aimAmount` 0..1 (ADS kicks the model much less).
     fire(aimAmount = 0, def = active.def) {
@@ -409,6 +440,7 @@ export function createViewmodel(weaponDefs, meleeDef) {
         else [a, b, t] = [mel.slashTo, mel.exitTo, (p - mel.slashEnd) / (1 - mel.slashEnd)];
         const e = t * t * (3 - 2 * t);
         meleeArm.position.set(a.x + (b.x - a.x) * e, a.y + (b.y - a.y) * e, a.z + (b.z - a.z) * e);
+        if (wearingFoam) meleeArm.position.y -= wardrobeLook.foamDrop;
         // Blade angled along the slash (down and to the right), turning through it.
         meleeArm.rotation.set(0.15, 0.3 - 0.6 * Math.min(1, p / mel.slashEnd), -0.5);
       }

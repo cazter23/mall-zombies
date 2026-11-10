@@ -19,7 +19,7 @@
 // =============================================================================
 import * as THREE from 'three';
 import { makeSignTexture } from '../../../world/textures.js';
-import { showpieces as cfg } from '../../../config/wardrobe.js';
+import { showpieces as cfg, wardrobeItems } from '../../../config/wardrobe.js';
 
 export function createShowpiece({ kit, name, color, position, yaw }) {
   const root = new THREE.Group();
@@ -178,4 +178,40 @@ export function createShowpiece({ kit, name, color, position, yaw }) {
   };
 
   return { root, still, live, handle, solid, glow, moving, sign, card, banner, neonFrame, place, animate: (fn) => anims.push(fn) };
+}
+
+export function createFloorShowpiece(kit, spot, floorY) {
+  const { color } = wardrobeItems[spot.item];
+  const position = spot.position.clone().setY(floorY);
+  const yaw = Math.atan2(spot.normal.x, spot.normal.z);
+  const s = createShowpiece({ kit, name: spot.name, color, position, yaw });
+  const { root } = s;
+  return {
+    ...s,
+    color,
+    // Match the one plain solid to the display's base, even when the fixture faces across an aisle.
+    base(width, height, depth, hex, z = -depth / 2) {
+      const base = s.solid(new THREE.BoxGeometry(width, height, depth), hex, [0, height / 2, z]);
+      base.name = `${spot.name}_base`;
+      root.updateWorldMatrix(true, true);
+      const { min, max } = new THREE.Box3().setFromObject(base);
+      kit.addCollider(min.x, min.y, min.z, max.x, max.y, max.z).vaultable = height > 0.35 && height <= 1.1;
+      return base;
+    },
+    group(y, z) {
+      const group = new THREE.Group();
+      group.position.set(0, y, z);
+      s.live.add(group);
+      return group;
+    },
+    header(text, width, y, z, x = 0, yaw = 0) {
+      s.glow(new THREE.BoxGeometry(width, 0.3, 0.055), color, [x, y, z], [0, yaw, 0], { intensity: 0.95 });
+      const signs = s.card(text, 'SOLD OUT', width - 0.08, 0.235, [x + 0.052 * Math.sin(yaw), y, z + 0.052 * Math.cos(yaw)]);
+      for (const sign of signs) sign.rotation.y = yaw;
+      signs[0].name = `${spot.name}_header`;
+    },
+    ticket(text, y, z, width = 0.76) {
+      s.card(text, 'SOLD OUT · IN YOUR SIZE', width, 0.155, [0, y, z]);
+    },
+  };
 }

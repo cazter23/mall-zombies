@@ -18,6 +18,8 @@ import { gunLabel } from '../config/workshop.js';
 import { createAnnouncements } from './announcements.js';
 import { ui } from '../config/ui.js';
 import { upgrades } from '../config/upgrades.js';
+import { iconSvg } from './outfitIcons.js';
+import { wardrobeLook } from '../config/wardrobe.js';
 import { createOutfitRail } from './outfitRail.js';
 import { createBossFlashView } from './bossFlash.js';
 import { createNoticeHistory } from './noticeHistory.js';
@@ -30,6 +32,11 @@ function el(tag, className) {
 
 export function createHud() {
   const hud = el('div', 'hud');
+  const eyewear = el('div', 'wardrobe-eyewear');
+  eyewear.setAttribute('aria-hidden', 'true');
+  hud.append(eyewear);
+  let fringeTimer;
+  const wardrobeKeys = { head: 'wardrobeHead', torso: 'wardrobeTorso', feet: 'wardrobeFeet', accessory: 'wardrobeAccessory' };
   const history = createNoticeHistory();
   const phoneFlash = createBossFlashView();
   hud.append(phoneFlash.element);
@@ -215,11 +222,12 @@ export function createHud() {
   // Bottom-right: ammo counter.
   const ammo = el('div', 'ammo');
   ammo.innerHTML = `
-    <div class="ammo-count"><span class="ammo-mag"></span><span class="ammo-reserve"></span></div>
+    <div class="ammo-count"><span class="ammo-pouch">${iconSvg('pack')}</span><span class="ammo-mag"></span><span class="ammo-reserve"></span></div>
     <div class="ammo-name"></div>
     <div class="ammo-tier"></div>
     <div class="ammo-upgrades"></div>
   `;
+  const ammoPouch = ammo.querySelector('.ammo-pouch');
   const ammoMag = ammo.querySelector('.ammo-mag');
   const ammoReserve = ammo.querySelector('.ammo-reserve');
   const ammoName = ammo.querySelector('.ammo-name');
@@ -237,7 +245,10 @@ export function createHud() {
   health.setAttribute('aria-label', 'Health');
   health.setAttribute('role', 'meter');
   health.setAttribute('aria-valuemin', '0'); health.setAttribute('aria-valuemax', '100');
-  health.append(healthFill);
+  const regen = el('span', 'wardrobe-regen');
+  regen.setAttribute('aria-hidden', 'true');
+  health.append(healthFill, regen);
+  let lastRegen = -1;
   const sprint = el('div', 'sprint');
   const sprintFill = el('div', 'sprint-fill');
   sprint.setAttribute('aria-label', 'Stamina');
@@ -273,6 +284,7 @@ export function createHud() {
   let lastHealth = -1;
   let lastFraction = -1;
   let lastExhausted = null;
+  let lastSprintActive;
   let lastFull = null;
   let uiScale = 1, textSize = 1;
   const refreshTextLayout = () => document.documentElement.classList.toggle('ui-expanded', uiScale * textSize > 1.35);
@@ -320,9 +332,27 @@ export function createHud() {
         purchaseStamp.classList.add('show');
         purchaseTimer = setTimeout(() => purchaseStamp.classList.remove('show'), ui.purchaseSeconds * 1000);
       });
-      events.on('wardrobeChange', ({ slot, worn }) => outfitRail.setSlot(slot, worn));
-      events.on('outfitPulse', ({ slot }) => outfitRail.pulse(slot)); // (game/outfitRail.js: the item just did its job)
-      events.on('runReset', () => outfitRail.clear());
+      events.on('wardrobeChange', ({ slot, worn }) => {
+        outfitRail.setSlot(slot, worn);
+        hud.dataset[wardrobeKeys[slot]] = worn ?? '';
+        if (slot === 'head') eyewear.classList.remove('headshot');
+        if (slot === 'accessory') lastAmmoKey = '';
+      });
+      events.on('outfitPulse', ({ id, slot }) => {
+        outfitRail.pulse(slot);
+        if (id === 'glasses') {
+          clearTimeout(fringeTimer);
+          eyewear.classList.add('headshot');
+          fringeTimer = setTimeout(() => eyewear.classList.remove('headshot'), wardrobeLook.headshotFringeSeconds * 1000);
+        }
+      });
+      events.on('runReset', () => {
+        outfitRail.clear();
+        for (const key of Object.values(wardrobeKeys)) delete hud.dataset[key];
+        clearTimeout(fringeTimer);
+        eyewear.classList.remove('headshot');
+        lastAmmoKey = '';
+      });
       events.on('runReset', clearNotices);
       events.on('runReset', () => { history.clear(); incentives.reset(); });
       events.on('playerDeath', clearNotices);
@@ -402,10 +432,12 @@ export function createHud() {
     },
 
     // A "+60" (or "-500") that floats up from the points counter and fades out.
-    pointsPopup(amount) {
+    pointsPopup(amount, style) {
       if (amount === 0) return;
       const pop = el('div', `points-pop ${amount > 0 ? 'gain' : 'spend'}`);
-      pop.textContent = `${amount > 0 ? '+' : '-'}${Math.abs(amount)}`;
+      const gold = style === 'goldCard' && amount > 0;
+      pop.classList.toggle('gold-card', gold);
+      pop.textContent = `${amount > 0 ? '+' : '-'}${Math.abs(amount)}${gold ? ' ★' : ''}`;
       pop.style.right = `${Math.round(Math.random() * 40)}px`; // a little scatter so pop-ups don't stack
       points.append(pop);
       pop.addEventListener('animationend', () => pop.remove());
@@ -470,7 +502,13 @@ export function createHud() {
       ticket.textContent = voucher ? `Voucher: ${voucher.name}` : '';
     },
 
-    setHealth(fraction) {
+    setHealth(fraction, regenWait = null) {
+      const tick = regenWait == null ? -1 : Math.round(regenWait * 20) / 20;
+      if (tick !== lastRegen) {
+        regen.style.setProperty('--regen', String(Math.max(0, tick)));
+        regen.classList.toggle('ready', tick === 1);
+        lastRegen = tick;
+      }
       const rounded = Math.round(Math.max(0, Math.min(1, fraction)) * 200) / 200;
       if (rounded !== lastHealth) {
         healthFill.style.transform = `scaleX(${rounded})`;
@@ -489,6 +527,7 @@ export function createHud() {
       }
       const aim = Math.round(aimAmount * 50) / 50;
       if (aim !== lastAim) {
+        eyewear.style.setProperty('--wardrobe-aim', String(aim));
         crosshairLines.style.opacity = String(1 - aim);
         crosshairDot.style.opacity = String(aim);
         lastAim = aim;
@@ -575,6 +614,7 @@ export function createHud() {
       const key = `${name}|${weapon.magazine}|${weapon.reserve}|${weapon.isReloading}|${reloadLabel}|${tank}`;
       if (key === lastAmmoKey) return;
       lastAmmoKey = key;
+      ammoPouch.classList.toggle('show', !tank && hud.dataset.wardrobeAccessory === 'fannyPack');
       ammoMag.textContent = weapon.magazine;
       ammoReserve.textContent = tank ? ' fuel' : ` / ${weapon.reserve}`;
       ammoName.textContent = name;
@@ -660,6 +700,10 @@ export function createHud() {
       if (exhausted !== lastExhausted) {
         sprint.classList.toggle('exhausted', exhausted);
         lastExhausted = exhausted;
+      }
+      if (active !== lastSprintActive) {
+        sprint.classList.toggle('active', !!active);
+        lastSprintActive = active;
       }
       const full = fraction >= 1 && !active;
       if (full !== lastFull) {

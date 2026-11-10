@@ -208,6 +208,15 @@ export function buildCuffedArmSegment(parent, wristPos, elbowPos, shoulderPos, f
     parent.add(face);
   }
 
+  const tape = makeFacetedLimbMesh(c.shirtStripe, 1, 1);
+  // Keep the cuff in frame at the wrist and leave the left watch unobstructed.
+  const [tapeStart, tapeEnd] = side < 0 ? [.16, .31] : [.03, .2];
+  placeLimb(tape, wristPos.clone().lerp(elbowPos, tapeStart), wristPos.clone().lerp(elbowPos, tapeEnd), forearmW * 1.09, forearmD * 1.09);
+  tape.visible = false;
+  parent.add(tape);
+  for (const [part, mesh] of Object.entries({ forearm, sleeve, cuff, stripe, gold, badge, tape })) {
+    mesh.userData.sleevePart = part;
+  }
   return { forearm, sleeve, cuff, stripe };
 }
 

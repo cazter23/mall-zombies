@@ -16,11 +16,11 @@ export function createWallet({ onChange = null } = {}) {
       return this.points >= cost;
     },
 
-    earn(amount) {
+    earn(amount, style) {
       if (amount <= 0) return;
       this.points += amount;
       this.totalEarned += amount;
-      if (onChange) onChange(amount, this.points);
+      if (onChange) onChange(amount, this.points, style);
     },
 
     // Returns true and deducts if affordable; false (and nothing changes) if not.

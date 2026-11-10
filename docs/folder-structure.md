@@ -153,6 +153,7 @@ src/
                         hurt edges (grows with damage, pulses when low, flashes on hit), calls onDeath once and onRegenStart
                         once per recovery ('regenStart'). takeDamage takes the final amount: clothes scale zombie hits in createGame's 'playerHit'.
     body.js             createPlayerBody(): first-person legs + lower torso in the world scene (visual only).
+    wardrobeAppearance.js  Browser equip and reset wiring for body and gun cosmetics. Tags the active sleeve style across all models and generates the cable-knit texture.
                         Tapered faceted waist/pelvis, belt buckle, tapered thighs/shins and faceted sneakers with tongue accent.
                         Hip height follows eye height; feet posed for walk cycle / slide (V) / air tuck, knees
                         solved with two-bone IK. Exports placeLimb()/makeBoxMesh()/makeFacetedLimbMesh()/buildDeformedBoxGeometry() (also used for the arms)
@@ -631,9 +632,11 @@ src/
                         The arranger fits whole models into irregular runs: crowded stock, disturbed patches, isolated leftovers and bare stretches;
                         geometry is merged by material alongside the rest of the Mart dressing (no per-product draw calls).
     mall/palette.js     COLORS shared by the mall's rooms and props
-    mall/wardrobeDisplays.js Twelve static apparel displays and three fitting badges. Visual mounts are separate from the buy and swap anchors.
+    mall/wardrobeDisplays.js Plain apparel and fitting-room badge builders. Showpiece spots use their own builders and keep the same wardrobe interactions.
     mall/wardrobeShowpieces/showpiece.js  The base every Wardrobe showpiece shares: a Group named after the map feature with a `still` half (merged by the static batcher) and a `live` half (userData.dynamic: idle motion, own glow materials, signs, the buying cone); returns a handle (update / setSold / pose / reset) that game/features/wardrobeFixtures.js drives.
     mall/wardrobeShowpieces/foodCourt.js  The first three showpieces: Paper Hat (burger on Burger Barn's roof + a hat chute), Wheelie Sneakers (skate ramp with spinning heels, in front of Good Sports' east window) and Giant Foam Finger (waggling out of a pennant bin on the open court floor). mall.js uses them instead of the plain rack display (wardrobeSpot).
+    mall/wardrobeShowpieces/groundFloor.js  Six showpieces for Hallway, Mega Mart, Service Corridor, HOFFMAN’S and the Atrium. Builds local +Z-facing geometry, transforms base colliders with the fixture, and keeps the live animations and emissive effects under the shared showpiece handle.
+    mall/wardrobeShowpieces/upperFloor.js  The Cinema monster cut-out and Shoe-Per Sale’s disco sneaker and walking treadmill. Shared floor showpiece helpers live in showpiece.js.
     mall/workshopDetails.js Build-A-Blaster's detail pass: skins wall, heart shelf, till, footprints, window, plush, ceiling grid (storefront); hoppers and pipes, QC desk, rollers, booth props, portraits, lockers, safety signs, corner clutter, floor markings, beams, wainscot, neon (hall). Numbers: config/promenade.js workshop.details.
     mall/workshopRoom.js The Build-A-Blaster storefront and back hall (island, booth, lever, chute) and their dressing. Layout numbers: config/promenade.js workshop.
     mall/atmosphere.js  Cosmetic map dressing, batched by material; adds no colliders.
