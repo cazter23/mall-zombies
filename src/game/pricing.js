@@ -7,6 +7,7 @@
 //   priceOf('weapon', gunId)       economy.wallBuys[gunId].weapon
 //   priceOf('ammo', gunId)         economy.wallBuys[gunId].ammo
 //   priceOf('ammoCache')           economy.ammoCache.price
+//   priceOf('secondChance')        economy.secondChance.price
 //   priceOf('tier', tierId)        economy.upgrades.tiers[tierId] (Extended Warranty: deluxe / premium / platinum)
 //   priceOf('melee', tierId)       economy.upgrades.melee[tierId] (box cutter tiers: sharpened / pro)
 //   priceOf('attachment', id)     economy.upgrades.attachments[id]
@@ -42,6 +43,7 @@ const BASE = {
   wardrobe: (id) => (Object.hasOwn(economy.wardrobe, id) ? economy.wardrobe[id] : undefined),
   claw: (id) => (Object.hasOwn(economy.claw, id) ? economy.claw[id] : undefined), // GRAB-A-GUN ('grab': the pay step only)
   hazard: (id) => (Object.hasOwn(economy.hazards, id) ? economy.hazards[id] : undefined), // Environmental hazards (config/hazards.js)
+  secondChance: () => economy.secondChance.price,
 };
 
 export const PRICE_CATEGORIES = Object.keys(BASE);

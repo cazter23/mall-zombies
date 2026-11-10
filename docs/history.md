@@ -1,5 +1,33 @@
 # Sunset Galleria: build history ("Current state")
 
+## 10 November 2026 - Second Chance: review of step H (one self-revive per run)
+
+- **What it is.** Customer Service's third window (SECOND CHANCE, opposite Sharpening) sells one automatic self-revive for 2,000
+  (g.pricing 'secondChance'). A lethal hit spends it in onPlayerDeath: full health where you stand, nearby zombies shoved (4 m, same
+  floor, in reach, never a boss; the Security Sweep's stagger), 3 s with no damage, a PA line. The receipt says "Second Chance · Used".
+- **The review's fixes.** (1) A swing that landed during the 3 s still announced 'playerHit': damage arrows, controller rumble, the
+  Sandwich Board / Hi-Vis tags and a boss's on-hit effect all reacted to hits that did nothing. Now nothing is announced while the
+  protection lasts (createGame's onPlayerHit and onFall), and a hazard pulse does not jolt the view. (2) The outfit rail read the revive
+  as the Cardigan soaking a hit (health after + damage > 100): measured 8 false pulses in one protected window, now 0. (3) The state
+  moved out of a createGame closure into game/secondChance.js (status / buy / redeem / reset, on g.secondChance) and announces
+  'secondChance' { status }; the HUD tag and PA line are listeners. The numbers got comments in config/feel.js (health.secondChance).
+- **Checked and left alone.** Prompt choice along the counter (a sweep every 0.4 m: Second Chance x <= 6.2, Warranty 6.6..7.4, Sharpening
+  from 7.8), a discounted price and a refused second purchase (it is in no Flash Sale group; vouchers and the Employee Discount apply), a lethal Cart Pusher charge, lethal fall
+  and fountain pulse, two lethal hits in one tick, pause, the final cause of death, Play again while held or protected.
+- **Measured (existing review-bot runs, not re-run).** In 60 saved mortal runs every bot had earned the 2,500 for the start shutter and
+  Second Chance during round 3 (1.5 min), and 54 first held 2,000 unspent at the end of round 4 with the bot's own shopping list. Deaths: rounds
+  6 to 11 for the good bot (9 of 20 in round 7), 4 to 10 for the average one, with 2,000 or more unspent in 38 of 60.
+- **Measured (headless, a bot that cannot shoot).** The shove moves a zombie 0.3 to 0.6 m. Standing still in a crowd of eight, the next
+  damage comes 3.0 to 3.8 s after the revive and the run ends about 3.7 s after it: the 2 s stun ends before the 3 s protection, so the
+  swings land as it runs out. 28 crowd layouts at walls and corners (8 or 13 Shoppers in two rows), sprinting for the widest gap: clear
+  of the crowd within 3 s in 12 with the shove as built, 16 with no shove, 3 with a 1.0 m shove, 0 with 1.4 m. Stunned zombies stand as
+  a wall and the player cannot push through one, so a stronger shove does not open a gap. The tuning was NOT changed on this.
+- **Open, for a playtest.** Whether a player with a gun gets out of a corner in the 3 s; whether the 3 s needs a visible cue; whether the
+  SECOND CHANCE sign is noticed. If cornered re-deaths show up, the lever is passing through zombies during the protection, not a
+  bigger shove.
+- Shared files changed: src/game/createGame.js, src/game/events.js, src/config/feel.js, src/config/economy.js, src/game/outfitRail.js,
+  src/game/features/hazards.js, src/game/features/upgradeDesk.js, tests/helpers/headlessGame.js, docs (history, folder-structure, map, tests).
+
 ## 10 November 2026 - Shopping window: a 20 s break and "Clock in"
 
 - **Why.** The fun review's headless bot found no calm moment to use the shops: the break was 10 s and the last two zombies of a round

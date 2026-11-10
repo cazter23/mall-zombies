@@ -52,8 +52,9 @@ export function createOutfitRail({ events, wardrobe, stats, player, gun, state }
   events.on('regenStart', () => fire('regenStart'));
   events.on('playerHit', ({ damage }) => {
     fire('playerHit');
-    // (createGame's listener has already applied the hit: health before it = now + what it took)
-    if (stats.health + damage * stats.damageTakenMultiplier > feel.player.maxHealth) fire('hitCushioned');
+    // (createGame's listener has already applied the hit: health before it = now + what it took. Back at FULL health means
+    // this hit just spent Second Chance: that sum says nothing about the cushion.)
+    if (stats.health < stats.maxHealth && stats.health + damage * stats.damageTakenMultiplier > feel.player.maxHealth) fire('hitCushioned');
   });
   events.on('kill', ({ zombie }) => { if (!zombie?.noRewards) fire('payingKill'); });
   events.on('hit', ({ headshot, melee }) => {

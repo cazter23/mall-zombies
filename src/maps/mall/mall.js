@@ -913,7 +913,7 @@ export function buildMall(scene, colliders) {
     { kind: 'ammoCache', name: 'ammocache_atrium', zone: 'atrium', position: atriumAmmo.position, normal: atriumAmmo.normal, screen: atriumAmmo.screen },
     { kind: 'ammoCache', name: 'ammocache_cinema', zone: 'cinema', position: cinemaAmmo.position, normal: cinemaAmmo.normal, screen: cinemaAmmo.screen },
     // Customer Service: upgrade the gun in your hand one Extended Warranty tier (g.pricing 'tier'); the second window sells box cutter tiers (g.pricing 'melee').
-    { kind: 'upgradeDesk', name: 'upgradedesk_hallway', zone: deskZone, position: serviceDesk.position, normal: serviceDesk.normal, meleePosition: serviceDesk.meleePosition },
+    { kind: 'upgradeDesk', name: 'upgradedesk_hallway', zone: deskZone, ...serviceDesk },
     // Store attachment counters: fit that attachment to the gun in your hand (g.pricing 'attachment').
     ...stores.spots.map((s) => ({ kind: 'attachmentCounter', name: `attachment_${s.id}`, zone: s.zone, attachment: s.id, position: s.position, normal: s.normal })),
     // GRAB-A-GUN: one machine, live at one of its sites (it starts at the first every run).

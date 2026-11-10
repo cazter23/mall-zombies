@@ -95,6 +95,7 @@ export function snapshot(g) {
     guns: g.gun.slots,
     inHand: g.gun.def.id,
     wardrobe: g.wardrobe.status,
+    secondChance: g.secondChance.status, // (the one self-revive: not held, and buyable again)
     mods: g.gun.slots.map((id) => g.gun.modsFor(id).map((m) => m.id)),
     ammo: [g.gun.weapon.magazine, g.gun.weapon.reserve],
     health: round(g.health.fraction),

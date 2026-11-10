@@ -2,9 +2,8 @@
 // PLAYER HEALTH
 // Taking damage, regenerating, and dying. Health itself lives in the stats
 // object (stats.health / stats.maxHealth) so perks can change it; so do the
-// regen delay and rate. At zero health this calls onDeath exactly once: the
-// game's single death path (onPlayerDeath in main.js), so a downed/revive
-// system can hook in there later.
+// regen delay and rate. A lethal hit calls the game's single death handler
+// in createGame.js, which can revive the player before ending the run.
 // Runs on the fixed tick.
 // =============================================================================
 
@@ -17,6 +16,7 @@ export function createPlayerHealth({ stats, onDeath, onRegenStart = null }) {
   let time = 0; // for the low-health pulse
   let dead = false;
   let killedBy = null; // source of the lethal blow ({ type, id, variant, boss, fall })
+  let reviveProtection = 0;
 
   return {
     get regenWaitFraction() {
@@ -24,6 +24,10 @@ export function createPlayerHealth({ stats, onDeath, onRegenStart = null }) {
     },
     // Debug god mode (game/debugCommands.js): no damage at all while true. Not part of a run, so it survives Play again.
     invulnerable: false,
+
+    get isReviveProtected() {
+      return reviveProtection > 1e-9;
+    },
 
     get isDead() {
       return dead;
@@ -39,7 +43,7 @@ export function createPlayerHealth({ stats, onDeath, onRegenStart = null }) {
 
     // The amount is final: clothes scale ZOMBIE hits in the 'playerHit' listener (game/createGame.js), never a fall.
     takeDamage(amount, source = null) {
-      if (dead || amount <= 0 || this.invulnerable) return;
+      if (dead || amount <= 0 || this.invulnerable || this.isReviveProtected) return;
       stats.health = Math.max(0, stats.health - amount);
       sinceHit = 0;
       regenerating = false;
@@ -54,6 +58,7 @@ export function createPlayerHealth({ stats, onDeath, onRegenStart = null }) {
     update(dt) {
       time += dt;
       flash = Math.max(0, flash - dt);
+      reviveProtection = Math.max(0, reviveProtection - dt);
       if (dead) return;
       sinceHit += dt;
       if (sinceHit >= stats.regenDelay && stats.health < stats.maxHealth) {
@@ -82,7 +87,12 @@ export function createPlayerHealth({ stats, onDeath, onRegenStart = null }) {
       return Math.min(1, Math.max(strength, hitFlash));
     },
 
-    // Back to full health for a new run.
+    revive(seconds) {
+      this.reset();
+      reviveProtection = seconds;
+    },
+
+    // Back to full health and clear damage from the previous life.
     reset() {
       stats.health = stats.maxHealth;
       sinceHit = Infinity;
@@ -90,6 +100,7 @@ export function createPlayerHealth({ stats, onDeath, onRegenStart = null }) {
       flash = 0;
       dead = false;
       killedBy = null;
+      reviveProtection = 0;
     },
   };
 }

@@ -37,6 +37,10 @@
 //                                                        damage is BEFORE clothes: createGame's listener applies stats.damageTakenMultiplier
 //   'playerFall'  { drop, damage }                       a landing from a height hurt (feel.fall); damage is already taken
 //   'regenStart'  {}                                     health began climbing back (once per recovery: player/health.js)
+//   'secondChance' { status }                            Second Chance changed (game/secondChance.js): 'held' = bought at Customer Service,
+//                                                        'used' = it just covered a lethal hit (the player is already back at full health,
+//                                                        protected, the shove done; no 'playerDeath' follows), 'available' = cleared by Play again.
+//                                                        While its protection lasts no 'playerHit' / 'playerFall' is announced at all.
 //   'playerDeath' {}                                     after the death is registered (onPlayerDeath)
 //   'runEnd'      { summary }                            immutable final run totals, emitted once on player death
 //   'powerUpDrop' { id, position, seconds }               earned incentive appeared on clear floor
@@ -60,7 +64,7 @@
 //   'bossFlash' { zombie, seconds, opacity, dimOpacity } telegraphed phone flash; browser presentation respects Comfort settings
 //   Fan actors carry noRewards: all hit/kill payouts, incentive and workshop credit ignore them.
 //   'purchase'    { label, cost, kind, id }              something was bought; kind 'door' | 'weapon' | 'ammo' |
-//                                                        'ammoCache' | 'tier' | 'attachment' | 'wardrobe' | 'fittingRoom' | 'other', id as it was BEFORE
+//                                                        'ammoCache' | 'tier' | 'attachment' | 'wardrobe' | 'fittingRoom' | 'secondChance' | 'other', id as it was BEFORE
 //                                                        the purchase (buying a gun is kind 'weapon'; a fitting room emits the id of the item put on, cost 0)
 //                                                        Area purchases also include areaId and openedDoorIds (one charge, many barriers).
 //   'wardrobeChange' { slot, worn, removed }              apparel equipped, item ids (removed is null for an empty slot)

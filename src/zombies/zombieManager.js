@@ -422,6 +422,16 @@ export function createZombieManager({
       return count;
     },
 
+    staggerNearby(player, tuning) {
+      const origin = player.position;
+      for (const zombie of zombies) {
+        if (!zombie.isAlive || zombie.type.boss || zombie.state === 'spawning') continue;
+        const { x, y, z } = zombie.position;
+        if (Math.abs(y - origin.y) > tuning.levelTolerance || Math.hypot(x - origin.x, z - origin.z) > tuning.radius) continue;
+        if (!zombie.wallBetween(player, colliders)) zombie.staggerAway(origin, tuning);
+      }
+    },
+
     // Steer new spawns to these markers ({ zone, position }) while they are usable; null = back to normal. Only WHERE
     // changes: rounds still decides how many, so this adds no zombies. A failsafe rescue ignores it.
     steerSpawns(points, { dropHeight = 0, onDrop = null } = {}) {

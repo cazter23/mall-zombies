@@ -302,7 +302,10 @@ export function createHud() {
   sprint.append(sprintFill);
   // The outfit rail (ui/outfitRail.js): four price tags over the health bar, empty silhouettes from round 1.
   const outfitRail = createOutfitRail({ variant: 'hud' });
-  vitals.append(outfitRail.el, health, sprint);
+  const secondChance = el('div', 'second-chance');
+  secondChance.hidden = true;
+  secondChance.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M6 1h4v5h5v4h-5v5H6v-5H1V6h5z"/></svg>Second Chance';
+  vitals.append(secondChance, outfitRail.el, health, sprint);
   hud.append(vitals);
 
   // FPS counter (Settings > Video), top right.
@@ -561,6 +564,10 @@ export function createHud() {
       }
       ticket.hidden = !voucher;
       ticket.textContent = voucher ? `Voucher: ${voucher.name}` : '';
+    },
+
+    setSecondChance(held) {
+      secondChance.hidden = !held;
     },
 
     setHealth(fraction, regenWait = null) {
@@ -834,7 +841,7 @@ export function createHud() {
       interactOriginal.hidden = !info.sale || !(info.originalCost > info.cost);
       interactOriginal.textContent = `${(info.originalCost ?? info.cost).toLocaleString('en-US')}`;
       // Ordinary purchases need one line. Keep the terms only where they affect an upgrade decision.
-      const detail = ['attachment', 'workshop', 'ritual', 'tier', 'melee', 'wardrobe', 'fittingRoom', 'claw', 'clawAction', 'prize'].includes(info.kind) ? info.detail ?? '' : '';
+      const detail = ['attachment', 'workshop', 'ritual', 'tier', 'melee', 'wardrobe', 'fittingRoom', 'claw', 'clawAction', 'prize', 'secondChance'].includes(info.kind) ? info.detail ?? '' : '';
       if (detail !== lastInteractDetail) {
         lastInteractDetail = detail;
         // (detailLines: the Wardrobe's generated stat lines, each an upside or a downside)

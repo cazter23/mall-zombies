@@ -126,6 +126,9 @@ export const economy = {
 
   // Ammo cache (the vending machine in the Food Court): refills the gun in your hand, any gun, one flat price.
   ammoCache: { price: 400 },
+  // Second Chance (Customer Service's third window; game/secondChance.js): one automatic self-revive per run. What the revive
+  // gives is in config/feel.js (health.secondChance). In no Flash Sale group; the Discount Code and Employee Discount apply.
+  secondChance: { price: 2000 },
 
   // Environmental hazards (docs/hazards-plan.md, config/hazards.js): pay-to-trigger mall traps with cooldowns.
   hazards: {

@@ -58,6 +58,7 @@ import { createFlashSales } from './flashSales.js';
 import { createDebugCommands } from './debugCommands.js';
 import { createWarranty } from './warranty.js';
 import { createMeleeUpgrades } from './meleeUpgrades.js';
+import { createSecondChance } from './secondChance.js';
 import { createWardrobe } from './wardrobe.js';
 import { createOutfitRail } from './outfitRail.js';
 import { createRunStats } from './runStats.js';
@@ -222,6 +223,7 @@ export function createGame({
   let rounds = null; // created below, once the zombie manager exists
   const getRound = () => Math.max(1, rounds ? rounds.round : 1);
   const death = { timer: 0, resultsShown: false, summary: null };
+  let secondChance = null; // the one self-revive per run (game/secondChance.js): created below, once the zombie manager exists
 
   function buildRunSummary() {
     return Object.freeze({
@@ -239,6 +241,7 @@ export function createGame({
       accuracy: runStats.accuracy,
       assisted: state.assisted || health.invulnerable,
       killedBy: health.killedBy,
+      secondChanceUsed: secondChance.status === 'used', // the receipt's "Second Chance · Used" line
       // What you were wearing (slot -> item id or null): the receipt's DIED WEARING line.
       wearing: Object.freeze(Object.fromEntries(outfitRail.snapshot().map(({ slot, id }) => [slot, id]))),
       // The guns you named at Build-A-Blaster (the receipt reads them out).
@@ -248,9 +251,10 @@ export function createGame({
     });
   }
 
-  // THE single place the player dies. A downed/revive system would hook in here later
-  // (e.g. go "downed" instead, and only call the rest of this if nobody revives you).
+  // THE single place the player dies (player/health.js calls it once per lethal hit). A held Second Chance covers the
+  // hit instead (game/secondChance.js: full health where you stand, a shove, a grace period) and the run goes on.
   function onPlayerDeath() {
+    if (secondChance.redeem()) return;
     state.over = true;
     death.timer = 0;
     death.resultsShown = false;
@@ -289,6 +293,9 @@ export function createGame({
     getRounds: () => rounds,
     canAttack: () => !health.isDead,
     onPlayerHit: (damage, zombie, knockback = null, attackerPosition = null) => {
+      // Second Chance's grace period: the swing lands on nothing, so nothing reacts to it (no damage arrow, rumble, outfit
+      // tag or boss effect for a hit that did no damage).
+      if (health.isReviveProtected) return;
       const pos = attackerPosition || (zombie?.position ? { x: zombie.position.x, z: zombie.position.z } : null);
       let hitDirection = null;
       if (pos && player?.position) {
@@ -319,6 +326,16 @@ export function createGame({
     onGold: (zombie) => events.emit('mascotGold', { zombie }),
     onSound: (name, volume) => sound.play(name, { volume }), // Mall Walker squeaks, huffs and pants
     navigation: map.navigation, // floors + the ramps between them (undefined = one ground floor)
+  });
+
+  // SECOND CHANCE (game/secondChance.js): bought at Customer Service, spent by onPlayerDeath. The HUD tag shows while it is
+  // held; the PA confirms the revive.
+  secondChance = createSecondChance({ health, zombies, player, events });
+  events.on('secondChance', ({ status }) => {
+    hud.setSecondChance?.(status === 'held');
+    if (status !== 'used') return;
+    hud.showAnnouncement({ kicker: 'Customer Service', text: 'Second Chance redeemed. Please return to your shift.', priority: 4 });
+    sound.play('paChime');
   });
 
   rounds = createRounds({
@@ -365,9 +382,10 @@ export function createGame({
   });
   // A hard landing (feel.fall): the same hurt as a zombie's swing, without a zombie.
   player.onFall = ({ drop, damage }) => {
+    if (health.isReviveProtected) return; // (Second Chance's grace period: this landing can't hurt, so it isn't announced)
     events.emit('playerFall', { drop, damage });
     health.takeDamage(damage, { type: 'fall', fall: true });
-    player.addViewKick(-feel.fall.viewJoltDegrees * DEG_TO_RAD);
+    if (!health.isReviveProtected) player.addViewKick(-feel.fall.viewJoltDegrees * DEG_TO_RAD); // (not when this fall just spent it)
   };
   events.on('mascotReclaim', ({ zombie }) => {
     hud.showAnnouncement({ ...zombie.type.mascot.reclaim.line, priority: 1 });
@@ -389,6 +407,7 @@ export function createGame({
       ...(isBoss ? { boss: zombie.type.id } : {}),
     } : { type: 'zombie', id: 'shopper' };
     health.takeDamage(damage * stats.damageTakenMultiplier, source); // (clothes scale zombie hits only: a fall goes straight to health)
+    if (health.isReviveProtected) return; // this hit just spent Second Chance: revived where you stand, no shove or jolt
     if (knockback) { // a Cart Pusher's charge shoves you along it (m/s, horizontal)
       player.velocity.x += knockback.x * stats.knockbackMultiplier;
       player.velocity.z += knockback.z * stats.knockbackMultiplier;
@@ -493,7 +512,7 @@ export function createGame({
   const wardrobe = createWardrobe({ stats, player, events });
   const features = buildFeatures(map, {
     scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state, warranty, meleeUpgrades, wardrobe,
-    colliders, effects, sound, input, tickets, shootables, aimAssist,
+    colliders, effects, sound, input, tickets, shootables, aimAssist, secondChance,
   });
 
   // The outfit rail's brain: which worn item's tag pulses when (game/outfitRail.js; the HUD draws it).
@@ -550,6 +569,7 @@ export function createGame({
     ['stats', () => resetPlayerStats(stats)], // perks / wardrobe / skill-tree changes don't carry over
     ['surfaces', () => surfaces.reset()], // no slow floor left over
     ['health', () => health.reset()], // (after stats: back to the base max health)
+    ['secondChance', () => secondChance.reset()], // not held, and buyable again (its 'secondChance' event hides the HUD tag)
     ['runStats', () => runStats.reset()],
     ['balls', () => balls.clear()], // (before the gun: a ball in the air reports to it)
     ['equipment', () => equipment.reset()], // empty pockets, nothing thrown left in the air or on the floor
@@ -680,6 +700,7 @@ export function createGame({
     features,
     wardrobe,
     meleeUpgrades,
+    secondChance,
     outfitRail,
     flashSales,
     powerUps,

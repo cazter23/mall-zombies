@@ -51,6 +51,7 @@ export function receiptLinesFor(r) {
     ['Accuracy', `${Math.round(r.accuracy * 100)}%`],
   ];
   if (r.survivedBy?.length) lines.push(['Survived by', r.survivedBy.map(survivorLine).join(' and ')]);
+  if (r.secondChanceUsed) lines.push(['Second Chance', 'Used']);
   // GRAB-A-GUN (game/tickets.js): tickets aren't points, so they're a line of their own, never in the totals.
   if (r.ticketsWon > 0) lines.push(['Prize tickets won', r.ticketsWon]);
   if (r.keychains > 0) lines.push(['Sunny keychains', `${r.keychains} (non-refundable)`]);

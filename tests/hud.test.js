@@ -18,6 +18,18 @@ test('createHud initializes with inactive secondary indicator hidden', () => {
   assert.equal(secondary.classList.contains('show'), false, 'does not have show class');
 });
 
+test('the Second Chance icon is visible only while held', () => {
+  menuDom();
+  const hud = createHud();
+  const icon = hud.element.querySelector('.vitals').querySelector('.second-chance');
+  assert.ok(icon);
+  assert.equal(icon.hidden, true);
+  hud.setSecondChance(true);
+  assert.equal(icon.hidden, false);
+  hud.setSecondChance(false);
+  assert.equal(icon.hidden, true);
+});
+
 test('playerGun inactiveSlot / secondaryDef returns null when carrying one gun, and slot data when carrying two', () => {
   const t = headlessGame();
   const { gun } = t.g;
