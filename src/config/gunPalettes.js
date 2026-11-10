@@ -1,5 +1,6 @@
 // Model colour keys use shared skin roles. Defaults here were literals in the models.
 export const gunPaletteKeys = {
+  tennisBallLauncher: { ballColor: 'ammo', glassColor: 'glass' },
   leafBlower: { tankColor: 'body' },
   barcodeScanner: { coilColor: 'accent', windowColor: 'emitter' },
   coilNailer: { drumColor: 'dark', coilColor: 'accent' },
@@ -10,6 +11,7 @@ export const gunPaletteKeys = {
 };
 
 export const gunPaletteDefaults = {
+  tennisBallLauncher: { glassColor: 0xcfe9f5 },
   confettiCannon: { shellColor: 0xffd166 },
   nailGun: { bodyShadeColor: 0xc89918, brassColor: 0xd4a437 },
   priceGun: { bodyShadeColor: 0xd95f0e, saleColor: 0xd62839 },
