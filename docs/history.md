@@ -1,5 +1,26 @@
 # Sunset Galleria: build history ("Current state")
 
+## 10 November 2026 - Soften round 7: gentle Shopper gait ramp
+
+Round 7 previously spiked deaths sharply: 30% of Shoppers spawned running at 4.6 m/s, outpacing the player's backpedal (3.9 m/s)
+and strafe (4.25 m/s). The run share now ramps in gradually across rounds 7, 9, 11, and 14 instead of an abrupt 30% jump at round 7.
+
+- **Gait progression:** `src/config/zombies.js` `shopper.gaitsByRound` updated:
+  - Round 1: 100% walk (2.0 m/s)
+  - Round 3: 70% walk, 30% jog (3.4 m/s)
+  - Round 5: 35% walk, 65% jog
+  - Round 7: 25% walk, 65% jog, 10% run (4.6 m/s) [previously: 15% walk, 55% jog, 30% run]
+  - Round 9: 15% walk, 55% jog, 30% run
+  - Round 11: 40% jog, 60% run [previously: round 10]
+  - Round 14: 15% jog, 85% run [previously: round 13]
+- **Measured results (20-seed mortal bot batch, `node scratch/batch.mjs SENSIBLE good mortal 1 20 40`):**
+  - Before death-round distribution: round 6: 3 (15%), round 7: 8 (40%), round 9: 5 (25%), round 10: 1 (5%), round 11: 2 (10%), round 12: 1 (5%).
+    Mean death round: 8.15. Mean survival time: 329.3 s. 7 of the 8 round-7 deaths were killed by Shoppers.
+  - After death-round distribution: round 6: 3 (15%), round 7: 5 (25%), round 9: 1 (5%), round 10: 7 (35%), round 11: 2 (10%), round 12: 2 (10%).
+    Mean death round: 8.90. Mean survival time: 398.1 s. Round-7 deaths dropped from 8 (40%) to 5 (25%), with 11 of 20 runs reaching round 10+.
+- **Shared files changed:** `src/config/zombies.js`, `docs/history.md`.
+- **Not checked by hand:** manual browser play-feel of the transition into round 7; verified headlessly via 20-seed bot simulations, `npm run test:quick`, `npm test` (1,123 tests passing), and `npm run build`.
+
 ## 9 November 2026 - Wardrobe showroom: upstairs showpieces and on-player looks
 
 - **Three upstairs fixtures.** A cardboard B-movie monster with a waving arm sells 3D Glasses beside Concessions. Shoe-Per Sale’s light-up
