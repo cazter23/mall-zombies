@@ -143,7 +143,10 @@ export function createHud() {
   const roundCounter = el('div', 'round-counter');
   const roundLabel = el('span', 'hud-label'); roundLabel.textContent = 'Round';
   const roundValue = el('strong', 'round-value');
-  roundCounter.append(roundLabel, roundValue);
+  const occupancyCounter = el('div', 'round-occupancy');
+  occupancyCounter.textContent = 'CLOSED FOR RESTOCK';
+  occupancyCounter.classList.add('closed');
+  roundCounter.append(roundLabel, roundValue, occupancyCounter);
   hud.append(roundCounter);
   // Middle of the screen: "ROUND 3" announcement when a round starts.
   const roundBanner = el('div', 'round-banner');
@@ -275,6 +278,7 @@ export function createHud() {
   const refreshTextLayout = () => document.documentElement.classList.toggle('ui-expanded', uiScale * textSize > 1.35);
 
   return {
+    element: hud,
     // The title / pause / results screens (ui/screens.js): show(), on(action), padNav(), current.
     screens,
     history,
@@ -428,6 +432,20 @@ export function createHud() {
     // The counter blinks during the break between rounds.
     setRoundFlashing(flashing) {
       roundCounter.classList.toggle('flashing', flashing);
+    },
+
+    // Retail store occupancy / wave progress tracker.
+    setOccupancy(count, inBreak = false) {
+      if (inBreak) {
+        occupancyCounter.textContent = 'CLOSED FOR RESTOCK';
+        occupancyCounter.classList.add('closed');
+      } else if (typeof count === 'number' && count >= 0) {
+        occupancyCounter.textContent = `STORE OCCUPANCY: ${count}`;
+        occupancyCounter.classList.remove('closed');
+      } else {
+        occupancyCounter.textContent = '';
+        occupancyCounter.classList.remove('closed');
+      }
     },
 
     // Death: the run's receipt ({ timeAlive (s), round, pointsEarned, kills, headshotKills, meleeKills, accuracy 0..1 }).

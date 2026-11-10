@@ -43,6 +43,7 @@
 //   'incentiveBurst' { position, radius, color }          deferred liquidation burst (visual/sound feedback)
 //   'powerUpExpire' { id, pointsInstead }                uncollected incentive timed out (a boss voucher left on the floor pays pointsInstead)
 //   'roundStart'  { round }                              the round number flipped (game/rounds.js)
+//   'waveEnding'  { round, remaining }                   no spawns left and 2 or fewer zombies alive (final clearance cue)
 //   'roundDiscard' {}                                    a debug skip cleared the current wave
 //   'typeIntro'   { typeId, zombie }                     a zombie type's first appearance this run (zombie = that spawn)
 //   'mascotVariantIntro' { variant, zombie }             a Mascot costume's first appearance this run, after the type's

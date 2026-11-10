@@ -665,6 +665,20 @@ kbd {
 .round-counter.flashing {
   animation: round-flash 0.7s steps(1) infinite;
 }
+.round-occupancy {
+  margin-top: 6px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #c9c2d1;
+  text-transform: uppercase;
+  text-shadow: none;
+  white-space: nowrap;
+}
+.round-occupancy.closed {
+  color: var(--mall-yellow);
+}
 @keyframes round-flash {
   50% {
     opacity: 0.2;

@@ -1,5 +1,7 @@
 # Sunset Galleria: what each test file covers
 
+`tests/rounds.test.js` covers round flow, remaining wave occupancy tracking, waveEnding event firing, HUD occupancy presentation, and the Last Shopper acceleration.
+
 `tests/influencerModel.test.js` shoots the visible face during idle, movement and flash poses, checks that the compact
 filming rig stays beside the head, verifies ponytail/phone animation, and checks costume buffer/material disposal.
 

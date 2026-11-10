@@ -49,6 +49,7 @@ export function createZombieManager({
   spawnPoints,
   isZoneOpen = () => true,
   getRound,
+  getRounds = null,
   canAttack,
   onPlayerHit,
   onKill = null,
@@ -549,6 +550,20 @@ export function createZombieManager({
       resolveZombieOverlaps();
       keepPlayerOutOfZombies();
       rescueStuckZombies(dt);
+      // When only 1 or 2 zombies remain in an active round with no pending spawns,
+      // force their movement style to a jog/sprint so the player does not have to hunt slow crawlers down.
+      const r = getRounds?.();
+      if (r && r.state === 'active' && r.remainingToSpawn === 0) {
+        const alive = zombies.filter((z) => z.isAlive);
+        if (alive.length > 0 && alive.length <= 2) {
+          for (const z of alive) {
+            if (!z.type.boss && z.type.gaits) {
+              const fastSpeed = z.type.gaits.run ?? z.type.gaits.jog ?? z.speed;
+              if (z.speed < fastSpeed) z.speed = fastSpeed;
+            }
+          }
+        }
+      }
       // The shoves above move zombies after they placed their hitboxes: move the hitboxes too,
       // or a shot at a shoved zombie's head could miss what you see.
       for (const z of zombies) if (z.isAlive) z.updateHitboxes();

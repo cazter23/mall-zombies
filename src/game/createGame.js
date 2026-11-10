@@ -273,6 +273,7 @@ export function createGame({
     spawnPoints: map.spawnPoints,
     isZoneOpen: (zone) => map.zones[zone].open,
     getRound,
+    getRounds: () => rounds,
     canAttack: () => !health.isDead,
     onPlayerHit: (damage, zombie, knockback = null) => events.emit('playerHit', { damage, zombie, knockback }),
     onKill: (zombie) => events.emit('kill', {
@@ -295,6 +296,7 @@ export function createGame({
     onTypeIntro: (typeId, zombie) => events.emit('typeIntro', { typeId, zombie }),
     onVariantIntro: (variant, zombie) => events.emit('mascotVariantIntro', { variant, zombie }),
     onRoundDiscard: () => events.emit('roundDiscard'),
+    onWaveEnding: (data) => events.emit('waveEnding', data),
   });
   let powerUps = null;
 
@@ -363,6 +365,14 @@ export function createGame({
   events.on('roundStart', ({ round }) => {
     hud.setRound(round);
     hud.showRoundBanner(round);
+  });
+  events.on('waveEnding', () => {
+    hud.showAnnouncement({
+      kicker: 'Attention shoppers',
+      text: 'Final clearance — registers closing shortly!',
+      priority: 1,
+    });
+    sound.play('paChime');
   });
   // A zombie type's first appearance this run (Mall Walkers, round 4): PA chime + banner. (A Mascot announces the
   // costume it came in: Sir Waffles in round 10.) Each later costume's first appearance gets its own.
@@ -533,6 +543,7 @@ export function createGame({
       updateBossBar(null);
       hud.setRound(0);
       hud.setRoundFlashing(false);
+      hud.setOccupancy?.(0, true);
       hud.setDead(false);
       hud.hideResults();
     }],

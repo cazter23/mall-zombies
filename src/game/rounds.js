@@ -30,8 +30,9 @@ import { mascotDebutIn } from '../zombies/mascotVariants.js';
  * @param onTypeIntro   (typeId, zombie) => void   a zombie type spawned for the first time this run
  * @param onVariantIntro (variant, zombie) => void a Mascot costume's first appearance this run (not the Mascot's very
  *                                        first: that one is the type's own intro)
+ * @param onWaveEnding  ({ round, remaining }) => void wave has no pending spawns and <= 2 zombies alive
  */
-export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null, onVariantIntro = null, onRoundDiscard = null }) {
+export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null, onVariantIntro = null, onRoundDiscard = null, onWaveEnding = null }) {
   const cfg = economy.rounds;
   let started = false;
   let round = 0;
@@ -40,6 +41,7 @@ export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null,
   let spawnTimer = 0;
   let breakTimer = 0;
   let spawnedThisRound = 0;
+  let waveEndingEmitted = false;
   const seenTypes = new Set(); // zombie types that have spawned this run
   const seenVariants = new Set(); // Mascot costumes that have spawned this run
 
@@ -67,6 +69,7 @@ export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null,
     round = n;
     toSpawn = zombieCountForRound(n);
     spawnedThisRound = 0;
+    waveEndingEmitted = false;
     if (delay > 0) {
       state = 'break';
       breakTimer = delay;
@@ -89,6 +92,9 @@ export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null,
     },
     get remainingToSpawn() {
       return toSpawn;
+    },
+    get remainingInWave() {
+      return toSpawn + zombies.aliveCount;
     },
 
     // Reserved reinforcements spend the existing wave budget. Failed safe spawns
@@ -141,6 +147,10 @@ export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null,
             spawnTimer = cfg.spawnRetrySeconds; // no usable spawn point right now: try again shortly
           }
         }
+        if (!waveEndingEmitted && toSpawn === 0 && zombies.aliveCount > 0 && zombies.aliveCount <= 2) {
+          waveEndingEmitted = true;
+          if (onWaveEnding) onWaveEnding({ round, remaining: zombies.aliveCount });
+        }
         // Round over: the next round number goes up right away, then the short break.
         if (canFinish && toSpawn === 0 && zombies.aliveCount === 0) announce(round + 1, cfg.breakSeconds);
       } else if (state === 'break') {
@@ -177,6 +187,7 @@ export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null,
       spawnTimer = 0;
       breakTimer = 0;
       spawnedThisRound = 0;
+      waveEndingEmitted = false;
       seenTypes.clear();
       seenVariants.clear();
     },
