@@ -434,6 +434,7 @@ function milestones(runs, planId) {
 }
 // --- The proposals' config side (pure maths) ---
 const PRICE_GUN_DAMAGES = [70, 62, 58, 56, 52];
+const PRICE_GUN_NOW = weapons.priceGun.damage;
 function priceGunTable() {
   out('### A. Price Gun damage: candidates');
   out('Sustained dps aimed at a still Shopper (tools/balance.js). Body shots to kill at 5 m. Points a Shopper = +10 a non-lethal hit and the 60 kill value, body shots only.');
@@ -443,7 +444,7 @@ function priceGunTable() {
     try {
       const d = weapons.priceGun, dps = (g, m) => sustainedDps(g, m, { ads: true });
       const p5 = dps(d, 5);
-      return [damage === 70 ? '70 (today)' : damage, n0(p5), n0(dps(d, 15)), n0(dps(d, 30)), n2(p5 / dps(weapons.stapleGun, 5)), n2(dps(weapons.nailGun, 5) / p5),
+      return [damage === PRICE_GUN_NOW ? `${damage} (today)` : damage, n0(p5), n0(dps(d, 15)), n0(dps(d, 30)), n2(p5 / dps(weapons.stapleGun, 5)), n2(dps(weapons.nailGun, 5) / p5),
         n2(dps(weapons.foamDartBlaster, 5) / p5), n2(dps(weapons.rivetRifle, 5) / p5), n2(dps(weapons.coilNailer, 5) / p5),
         ...[1, 5, 8, 10].map((round) => shotsToKill(d, zombieHealthForRound(round), 5, { ads: true })),
         ...[5, 10].map((round) => n0(pointsPerZombie(resolveBase(d), 'shopper', round)))];

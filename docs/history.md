@@ -1,5 +1,23 @@
 # Sunset Galleria: build history ("Current state")
 
+## 10 November 2026 - Economy proposals A, C and D applied (B is not)
+
+Approved from docs/economy-report.md section 6, on the claude/economy-report branch. Build-A-Blaster (B) is unchanged: 1,500, any gun.
+
+- **A. Price Gun** damage 70 -> 58 (config/weapons.js): 434 sustained dps instead of 524; the Rivet Rifle is 1.34x it, the Foam Dart Blaster 1.31x, the Heavy
+  Coil Nailer 1.49x. Round-8 Shopper: 12 body shots, was 10 (tests/balance.test.js).
+- **C. Platinum** damage x1.65 -> x1.9, holdsUntilRound 14 -> 16; **Renewals** x1.06 -> x1.09 each, prices 3,000 / 4,000 / 5,500 / 7,500 / 10,000 ->
+  4,000 / 5,000 / 6,500 / 8,000 / 10,000 (config/upgrades.js, economy.upgrades.renewals).
+- **D. Claw grab** 1,000 -> 1,500 (economy.claw.grab).
+- **A design rule changed with C, and it was not in the report**: tests/workshopPower.test.js said "a Regular build beats Platinum alone". Platinum (x1.9, 10,000
+  in all) now passes a Regular build (x1.7, 1,500). The test now says a Regular build beats Premium and an Overstuffed one beats Platinum. If the old rule
+  matters more than Platinum's value, Platinum has to stay under x1.7.
+- tests/clawMachine.test.js pinned a 400-point sale grab; it reads the price from config now.
+- The report's "today" columns are the numbers BEFORE this change. Its "after" columns were played with exactly these numbers, on 7d633bf (before the
+  20-second break). tools/economyPlans.js still lists A, C and D as proposals; they now equal the game's numbers.
+- Not checked: nothing played by hand; no new bot runs after applying (the played "after" runs are the evidence); docs/claw-machine-plan.md and
+  docs/weapon-balance-pass.md still quote the old numbers in their tables.
+
 ## 10 November 2026 - Economy report and power-curve proposal (no gameplay changes)
 
 The report four plans were waiting for: docs/economy-report.md, written from `npm run sim:economy` (tools/economySim.mjs). Nothing in src/ changed;

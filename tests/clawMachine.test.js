@@ -382,7 +382,7 @@ test('a plush refunds exactly what that grab charged (sale + coupon), not income
   g.debug.run('clawPlush');
   pay(t);
   const charged = before.points - g.wallet.points;
-  assert.equal(charged, 400, '1000, half off, then 20% off');
+  assert.equal(charged, economy.claw.grab * 0.5 * 0.8, 'the grab price, half off, then 20% off');
   assert.equal(claw.grab.capsules.filter(isPlush).length, 1);
   dropOn(t, claw, isPlush);
   t.tick(ticks(cfg.liftSeconds));

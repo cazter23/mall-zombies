@@ -83,7 +83,9 @@ export const NOTHING = [{ type: 'door', area: 'hallway' }];
 export const PLANS = { SENSIBLE, PRICE_GUN_ONLY, NO_BAB, BAB_AFTER_PREMIUM, CLAW_FIRST, NOTHING };
 
 // ---------------------------------------------------------------------------------------------------------------------------------
-// PROPOSALS (docs/economy-report.md, "Proposals"). NOT applied to the game: change the numbers here to try others.
+// PROPOSALS (docs/economy-report.md, "Proposals"). Change the numbers here to try others.
+// A (58), C and D WERE APPLIED on 10 November 2026: their entries now equal the game's own numbers, so their "after" runs are the
+// baseline again until someone puts new candidates in. The B options are still only proposals.
 // ---------------------------------------------------------------------------------------------------------------------------------
 export const PROPOSALS = {
   none: { label: 'Today', overrides: {} },

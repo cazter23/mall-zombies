@@ -172,7 +172,7 @@ export const weapons = {
     id: 'priceGun',
     name: 'Price Gun',
     fireMode: 'auto',
-    damage: 70, // round-1 Shopper (150 HP): 3 body shots or 2 headshots
+    damage: 58, // round-1 Shopper (150 HP): 3 body shots or 2 headshots (was 70: within 11% of the Rivet Rifle for a sixth of its route; docs/economy-report.md, A)
     headshotMultiplier: 1.5,
     magazineSize: 24,
     startingReserve: 144, // six magazines; also the reserve cap for ammo buys
