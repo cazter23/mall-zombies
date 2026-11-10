@@ -86,7 +86,9 @@ const gamepad = createGamepad(input); // feeds controller buttons/sticks into `i
 const hud = createHud();
 const noticesMenu = createNoticesMenu(hud.history);
 const sound = createSound(); // synthesized sound effects (starts on the first click/key press)
-const viewmodel = createViewmodel(Object.values(weapons), meleeWeapons.boxCutter); // a model for every gun
+const viewmodel = createViewmodel(Object.values(weapons), meleeWeapons.boxCutter, {
+  skinFor: (gunId) => g.debug.skinFor(gunId),
+});
 const postProcessing = createPostProcessing({ renderer, scene, camera, viewmodel });
 
 const g = createGame({

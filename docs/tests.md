@@ -52,6 +52,8 @@ mid-ritual, the chute steering spawns only while you are in the room, a full rou
 
 `tests/warranty.test.js` covers the Extended Warranty rules (game/warranty.js): each tier's job, Renewals (compounding, priced one by one, capped), a replaced gun's warranty on file and moved onto the gun in hand for a share of the price, a gun away at Build-A-Blaster leaving nothing, the Platinum claim once per round, and Play again clearing it.
 
+`tests/skins.test.js` compares every Staple Gun and Rivet Rifle material colour with the pre-skin models, checks role placement and fallback, and exercises the debug override and the visual layers on skinned guns.
+
 `tests/upgradeColors.test.js` covers the colour languages of upgrades: every warranty colour (steel, gold, pearl, Renewal copper) is far from every stuffing colour in Lab delta-E, the tiers and the stuffings and the Heart badges are told apart, every Heart has a badge colour and shape, every tier is metal and Platinum shimmers, and a better quality is more vivid and glows more.
 
 `tests/gunStyle.test.js` covers how upgrades change a gun's shape (config/gunStyle.js): on every gun the warranty collar is chunkier tier by tier with a swinging tag, Renewals add studs on Platinum only, a build puffs the body with a pillow each side that grows with the quality and a glowing seam, all three show at once within a draw budget, and attachments are drawn chunkier.

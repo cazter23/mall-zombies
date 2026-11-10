@@ -126,7 +126,10 @@ export const weapons = {
       hipPitchDegrees: 2,
       hipRollDegrees: 4,
       bodyColor: 0xd62839, // classic red staple gun
+      darkColor: 0xa31b28, // stamped ribs
       metalColor: 0x9aa0a8,
+      accentColor: 0xd8dde4, // bright chrome and staples
+      brandLabel: { paper: '#f1faee', stripe: '#d62839', title: '#ffffff', ink: '#1d1626', fallbackColor: 0xd8dde4 },
       gripColor: 0x2b2b2b,
       sightColor: 0xffd23f,
       // Squeeze lever on each shot: snaps in, springs back out.

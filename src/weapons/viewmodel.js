@@ -26,6 +26,7 @@
 
 import * as THREE from 'three';
 import { feel } from '../config/feel.js';
+import { skins } from '../config/skins.js';
 import { makeBoxMesh, buildDeformedBoxGeometry } from '../player/body.js';
 import { wardrobeLook, wardrobeItems } from '../config/wardrobe.js';
 import { createSleeveStyler } from '../player/wardrobeAppearance.js';
@@ -136,8 +137,9 @@ function buildMeleeArm(meleeColors) {
 /**
  * @param weaponDefs every gun the player can hold (config/weapons.js entries); a model is built for each
  * @param meleeDef   the box cutter
+ * @param options.skinFor read the debug-selected base coat for a gun (checked when it becomes active)
  */
-export function createViewmodel(weaponDefs, meleeDef) {
+export function createViewmodel(weaponDefs, meleeDef, { skinFor = () => undefined } = {}) {
   const scene = new THREE.Scene();
   scene.add(new THREE.HemisphereLight(0xfff6e6, 0x4a3f55, 1.6));
 
@@ -156,16 +158,19 @@ export function createViewmodel(weaponDefs, meleeDef) {
   const handLight = new THREE.PointLight(0xffffff, 0, 1, 1);
   const worldLight = new THREE.PointLight(0xffffff, 0, 1, 2);
 
-  // One model + flash per gun; only the active one is visible.
+  // Build all base coats before the sleeve styler scans the rig.
   const guns = new Map();
+  const variantKey = (gunId, skinId) => skinId ? `${gunId}:${skinId}` : gunId;
   for (const def of weaponDefs) {
-    const model = buildWeaponModel(def);
-    model.root.visible = false;
-    holder.add(model.root);
-    const flash = createMuzzleFlash(def.muzzleFlash, { handLight, worldLight });
-    model.muzzle.add(flash.object);
-    const upgrades = createUpgradeVisuals(model); // attachment parts + tier sticker, all hidden for now
-    guns.set(def.id, { def, model, flash, upgrades });
+    for (const skinId of [undefined, ...(skins[def.id] ?? []).map((skin) => skin.id)]) {
+      const model = buildWeaponModel(def, skinId);
+      model.root.visible = false;
+      holder.add(model.root);
+      const flash = createMuzzleFlash(def.muzzleFlash, { handLight, worldLight });
+      model.muzzle.add(flash.object);
+      const upgrades = createUpgradeVisuals(model); // attachment parts + tier sticker, all hidden for now
+      guns.set(variantKey(def.id, skinId), { def, model, flash, upgrades });
+    }
   }
   let active = guns.get(weaponDefs[0].id);
   active.model.root.visible = true;
@@ -205,7 +210,7 @@ export function createViewmodel(weaponDefs, meleeDef) {
 
   // Reuse the model, but keep its stats current when upgrades re-resolve the same gun.
   function setActive(def) {
-    const next = guns.get(def.id);
+    const next = guns.get(variantKey(def.id, skinFor(def.id))) ?? guns.get(def.id);
     if (!next || (next === active && active.def === def)) return;
     if (next !== active) {
       active.model.root.visible = false;

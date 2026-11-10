@@ -1,5 +1,15 @@
 # Sunset Galleria: build history ("Current state")
 
+## 10 November 2026 - Weapon skins phase 1 - The base coat on two guns
+
+- Night Shift (Staple Gun) and Carbon Copy (Rivet Rifle) recolour the held models by role. The default colours, brand label and wall displays match main.
+- In the browser console, use `__mall.g.debug.run('skin', 'stapleGun', 'night-shift')` or `__mall.g.debug.run('skin', 'rivetRifle', 'carbon-copy')`. Pass `'default'` as the last argument to clear that gun. The command marks the run assisted, and Play again clears the overrides.
+- The viewmodel selects the base coat and applies the existing build, warranty, loaner tag and attachment layers to it. Tests compare the original material colours and exercise all six stuffings and all tiers on both coats.
+- Production-preview checks used `window.__mall` in headless Chrome at 1440 x 900 with SwiftShader. Both guns wore all six stuffings, every warranty tier and an Extended Nozzle. The combined inspect frames distinguish the base coat, patch/seam, collar and nozzle. Screenshots and the check log are under `scratch/skins-1-qa/` in this worktree. Physical-GPU, controller and combat play were outside this visual check.
+- The phase table also needs these integration points. The browser supplies the debug selection through `main.js`, the model registry forwards the skin id, and `createGame.js` clears overrides on the existing `runReset` event. The Staple Gun's fixed colour literals now live in `config/weapons.js`.
+- Validation passed. The full `npm test -- --test-concurrency=4` run has 1136 tests, 1136 passes, zero failures and zero skips. `npm run build` transforms 300 modules with zero errors and the existing large-chunk warning. `npm run balance` completes. The equipment test's keyless-command list now includes `skin`.
+- Shared files changed include `src/config/weapons.js`, `src/game/debugCommands.js`, `src/game/createGame.js`, `src/main.js`, the model registry and the viewmodel. The reset subscription clears debug coats with the rest of the run.
+
 ## 10 November 2026 - Shopping window: a 20 s break and "Clock in"
 
 - **Why.** The fun review's headless bot found no calm moment to use the shops: the break was 10 s and the last two zombies of a round

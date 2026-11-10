@@ -90,6 +90,7 @@ src/
     settings.js         THE LIST of player settings (options menu): { id, tab, label, type toggle|slider|select, default,
                         min/max/step, format, apply(value, ctx) }. Most apply() functions write into the config objects the
                         game reads every frame (feel, controls, audio). New setting = one entry here (new tab = add to settingsTabs)
+    skins.js            Per-gun base coats (Staple Gun and Rivet Rifle), written in palette roles. Phase 1 uses a keyless debug override.
     debug.js            THE DEBUG KEYS as a table (`commands`: id, key, shift, group, label; keys must not clash with gameplay
                         bindings: tests check) + enabled (master switch), showMarkers, testArena, addPointsAmount, jumpRounds, panel,
                         dummies, exposeToWindow, keyLabel(). They work in a normal game (no debug mode): Z spawn the selected
@@ -237,8 +238,9 @@ src/
                         (scaled by ADS), viewmodel.fire (gun kick + flash), shot sound, tracer, splatter, hit
                         marker. 'empty' -> viewmodel.dryFire + dry click. Runs viewmodel.reload.events as the
                         reload clock passes them (sound + viewmodel.jolt), so sounds match the animation
+    skinPalette.js      resolveGunColors(def, skinId) maps palette roles to model colour keys, with the gun's own colours as fallback.
     viewmodel.js        Shared first-person rig in its own scene + own fixed-FOV camera (drawn after the world
-                        with depth cleared). createViewmodel(allWeaponDefs, meleeDef) builds every gun's model up
+                        with depth cleared). createViewmodel(allWeaponDefs, meleeDef, { skinFor }) builds every gun's base coats up
                         front (only the shown one visible; one shared hand light + world light that each gun's
                         flash recolors, so lights never come and go), attaches each muzzle flash,
                         and adds up layers on a `holder` each frame: hip->ADS rest pose, reload pose
@@ -513,7 +515,8 @@ src/
                         spawnMascot / spawnGoldMascot: each costume in turn at the spawn point nearest you);
                         resolve(code, shift), status(). g.debug. A new command = a table entry in config/debug.js + a function here.
                         KEYLESS commands (no key to spare; keylessIds): 'pockets' fills Kiosk Kevin's equipment pockets (window.__mall.g.debug.run('pockets')).
-                        God mode is health.invulnerable; debug state is not part of a run (Play again keeps it)
+                        'skin' takes gunId and skinId ('default' clears); it marks the run assisted. Play again clears skin overrides.
+                        God mode is health.invulnerable; Play again keeps it and the window state.
     rounds.js           createRounds(): announce(n, delay) flips the round number (and fires onRoundStart) the
                         moment the last zombie dies, then 'break' (economy.rounds.breakSeconds, inBreak; breakRemaining; endBreak(lead) cuts it short) -> 'active' (spawn quota at
                         spawnDelay, capped by maxAlive; quota only used when a zombie actually spawned, else retry

@@ -524,6 +524,8 @@ export function createGame({
     },
   });
 
+  events.on('runReset', debugCommands.clearSkinOverrides);
+
   events.on('clockIn', () => {
     hud.showAnnouncement(economy.rounds.clockIn.pa);
     sound.play('paChime');
