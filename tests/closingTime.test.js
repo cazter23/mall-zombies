@@ -562,6 +562,44 @@ test('Statistics shows career wins, the fastest win (a dash when none) and marks
   assert.deepEqual(rows.map((row) => row.querySelectorAll('.stats-won').length), [0, 1, 0]);
   assert.equal(rows[1].querySelector('.stats-won').textContent, stats.wonMark);
 });
+test('a career save from a newer version is left untouched: a blank ledger for the session, nothing written', () => {
+  const newer = JSON.stringify({
+    version: CAREER_STATS_VERSION + 1,
+    totals: { runs: 40, wins: 6, kills: 9000, somethingNew: 3 },
+    bests: { round: 31, fastestWin: 1200 },
+    recentRuns: [{ round: 31, won: true, winTime: 1200, endedAt: '2027-01-02' }],
+  });
+  let stored = newer;
+  const writes = [];
+  const storage = {
+    getItem: (key) => key === CAREER_STATS_KEY ? stored : null,
+    setItem: (key, value) => { writes.push(key); stored = value; },
+  };
+  const career = createCareerStats({ storage });
+  assert.equal(career.snapshot().totals.runs, 0, 'a blank ledger for this session');
+  assert.equal(career.snapshot().bests.fastestWin, null);
+
+  const result = career.recordRun({ round: 4, timeAlive: 120, kills: 12, won: true, winTime: 100 });
+  assert.equal(result.saved, true);
+  assert.equal(career.snapshot().totals.runs, 1, 'the session still counts its own runs');
+  assert.equal(career.snapshot().totals.wins, 1);
+  career.reset();
+  assert.equal(career.snapshot().totals.runs, 0);
+  assert.deepEqual(writes, []);
+  assert.equal(stored, newer, 'the stored save is exactly as it was');
+
+  // Unknown or corrupt OLDER data behaves as before: blank, and replaced at the next save.
+  for (const old of [JSON.stringify({ version: 0, totals: { runs: 9 } }), '{not json', JSON.stringify({ totals: { runs: 9 } })]) {
+    stored = old;
+    writes.length = 0;
+    const fresh = createCareerStats({ storage });
+    assert.equal(fresh.snapshot().totals.runs, 0);
+    fresh.recordRun({ round: 2, timeAlive: 30 });
+    assert.equal(writes.length, 1);
+    assert.equal(JSON.parse(stored).version, CAREER_STATS_VERSION);
+    assert.equal(JSON.parse(stored).totals.runs, 1);
+  }
+});
 
 // Line 4 belongs to the game: the win ticks it, with no browser code involved.
 test('the Van Keys tick nothing; the win itself ticks line 4, so the game reads 3 before the van and 4 after', (t) => {
