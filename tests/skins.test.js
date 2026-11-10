@@ -1,4 +1,6 @@
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 import { PerspectiveCamera } from 'three';
 import { skins } from '../src/config/skins.js';
@@ -169,4 +171,136 @@ test('the keyless debug override selects the held model, marks assistance and re
   assert.equal(g.state.assisted, false);
   assert.equal(debug.skinFor('rivetRifle'), undefined);
   assert.equal(heldColor('stapleHousing'), weapons.stapleGun.viewmodel.bodyColor);
+});
+
+const phaseTwoGuns = ['priceGun'];
+const testPalette = {
+  body: 0x293e70, dark: 0x182131, metal: 0x90a9bb, grip: 0x45312b, accent: 0xd5a24c,
+  sight: 0xb7e753, ammo: 0xe77fa8, emitter: 0x5ce4dc, screen: 0xc7a2ed, glass: 0x8cbbd4,
+};
+export const testRecolours = Object.fromEntries(phaseTwoGuns.map((id) => [
+  id, [{ id: 'test-' + id, name: 'Palette test', palette: { ...testPalette } }],
+]));
+
+// These are expected assignments from the original models, independent of the resolver.
+// Grip indices distinguish contact surfaces from structural parts sharing their old paint.
+const expectedRoles = {
+  priceGun: {
+    colors: { ff7a1a: 'body', d95f0e: 'dark', '8d939c': 'metal', '2b2b2b': 'dark',
+      f6f2e6: 'ammo', d62839: 'accent', ffe14a: 'sight' },
+    grips: [22],
+  },
+  nailGun: {
+    colors: { f2c12e: 'body', c89918: 'dark', '232323': 'dark', a7adb5: 'metal', d4a437: 'accent', ff5a2e: 'sight' },
+    grips: [42],
+  },
+  foamDartBlaster: {
+    colors: { '1d4e89': 'body', ffb800: 'accent', '28303b': 'dark', ff7a1a: 'accent', '63baff': 'ammo' },
+    grips: [12, 24], sights: [20],
+  },
+  confettiCannon: {
+    colors: { ff62bb: 'body', '8544c8': 'accent', ffd23f: 'metal', '312438': 'dark', ffee8a: 'sight', fff1d9: 'ammo' },
+    grips: [2],
+  },
+  coilNailer: {
+    colors: { d96b27: 'body', '22262b': 'dark', '9ea6b0': 'metal', d8a24a: 'accent', ffd23f: 'sight', '3a3f47': 'dark' },
+    grips: [17, 18],
+  },
+  barcodeScanner: {
+    colors: { d8dadf: 'body', '262930': 'dark', '8f98a3': 'metal', e07a2e: 'accent', ff1e2e: 'emitter', '5fd068': 'sight' },
+    grips: [21],
+  },
+  leafBlower: {
+    colors: { f0a31c: 'body', '2f6f3a': 'accent', '2b2f33': 'dark', e8531f: 'body', bfc5cc: 'metal', fff0b0: 'sight' },
+    grips: [17],
+  },
+  tennisBallLauncher: {
+    colors: { '2d6fd6': 'body', f6f6e6: 'accent', '24282d': 'dark', bfc5cc: 'metal', cfe9f5: 'glass', cfe23a: 'ammo', ffd23f: 'sight' },
+    grips: [14],
+  },
+  returnToSender: {
+    colors: { '4a5bd8': 'body', f6f6e6: 'accent', '20242b': 'dark', '7bffb0': 'screen', bfc5cc: 'metal',
+      ff59a9: 'sight', ffd23f: 'accent', ff4d4d: 'accent', ffa733: 'accent', ffe14a: 'accent',
+      '59d36c': 'accent', '4aa8ff': 'accent', a06bff: 'accent' },
+    grips: [15], emitters: [12],
+  },
+};
+
+const materialFixture = JSON.parse(readFileSync(new URL('./fixtures/weapon-materials-phase-1.json', import.meta.url), 'utf8'));
+const captures = new Map();
+function capture(request) {
+  const key = JSON.stringify(request);
+  if (!captures.has(key)) {
+    const result = spawnSync(process.execPath, ['tests/helpers/gunMaterials.js'], {
+      input: key, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024,
+    });
+    assert.equal(result.status, 0, result.stderr);
+    captures.set(key, JSON.parse(result.stdout));
+  }
+  return captures.get(key);
+}
+
+function expectedRecolour(id, original, palette) {
+  const expected = structuredClone(original);
+  const assignment = expectedRoles[id];
+  let index = 0;
+  for (const node of expected.model) {
+    if (!node.materials) continue;
+    for (const material of node.materials) {
+      let role = material.texture ? undefined : assignment.colors[material.color];
+      if (assignment.grips.includes(index)) role = 'grip';
+      if (assignment.sights?.includes(index)) role = 'sight';
+      if (assignment.emitters?.includes(index)) role = 'emitter';
+      if (!role) continue;
+      material.color = hex(palette[role]);
+      if (material.emissive && material.emissive !== '000000') material.emissive = hex(palette[role]);
+    }
+    index += 1;
+  }
+  return expected;
+}
+
+for (const canvas of [false, true]) {
+  const mode = canvas ? 'canvas' : 'headless';
+  test('all eleven default models and displays match the Phase 1 fixture (' + mode + ')', () => {
+    const actual = capture({ canvas });
+    for (const id of Object.keys(weapons)) {
+      assert.deepEqual(actual[id], materialFixture[mode][id], id);
+    }
+  });
+
+  for (const id of phaseTwoGuns) {
+    test(id + ': roles change colour and emission without changing other surfaces (' + mode + ')', () => {
+      const before = JSON.stringify(weapons);
+      const actual = capture({ canvas, recolours: testRecolours });
+      assert.deepEqual(actual[id], expectedRecolour(id, materialFixture[mode][id], testPalette));
+      assert.equal(JSON.stringify(weapons), before);
+    });
+    test(id + ': identical role colours preserve material finishes (' + mode + ')', () => {
+      const palette = Object.fromEntries(Object.keys(testPalette).map((role) => [role, 0x385e91]));
+      const recolours = Object.fromEntries(phaseTwoGuns.map((gunId) => [
+        gunId, [{ ...testRecolours[gunId][0], palette }],
+      ]));
+      const actual = capture({ canvas, recolours });
+      assert.deepEqual(actual[id], expectedRecolour(id, materialFixture[mode][id], palette));
+    });
+  }
+}
+
+const canvasFunctions = {
+  priceGun: 'getBrandTexture',
+  nailGun: 'getWarningTexture',
+  foamDartBlaster: 'getToyBrandTexture',
+  confettiCannon: 'getPartyBrandTexture',
+};
+test('converted models contain colour literals only in their canvas drawing functions', () => {
+  for (const id of phaseTwoGuns) {
+    let source = readFileSync(new URL('../src/weapons/models/' + id + '.js', import.meta.url), 'utf8');
+    if (canvasFunctions[id]) {
+      const drawing = new RegExp('function ' + canvasFunctions[id] + '\\([^]*?^\\}', 'm');
+      assert.ok(drawing.test(source), id + ' canvas function');
+      source = source.replace(drawing, '');
+    }
+    assert.doesNotMatch(source, /0x[\da-f]+\b|#[\da-f]{3,8}\b|\b(?:color|emissive)\s*:\s*(?:\d|['"])|\b(?:rgb|rgba|hsl|hsla)\s*\(/i, id);
+  }
 });

@@ -90,6 +90,7 @@ src/
     settings.js         THE LIST of player settings (options menu): { id, tab, label, type toggle|slider|select, default,
                         min/max/step, format, apply(value, ctx) }. Most apply() functions write into the config objects the
                         game reads every frame (feel, controls, audio). New setting = one entry here (new tab = add to settingsTabs)
+    gunPalettes.js      Shared role bindings for each model colour key and the defaults moved out of model files.
     skins.js            Per-gun base coats (Staple Gun and Rivet Rifle), written in palette roles. Phase 1 uses a keyless debug override.
     debug.js            THE DEBUG KEYS as a table (`commands`: id, key, shift, group, label; keys must not clash with gameplay
                         bindings: tests check) + enabled (master switch), showMarkers, testArena, addPointsAmount, jumpRounds, panel,
