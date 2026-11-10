@@ -10,10 +10,14 @@
 // =============================================================================
 
 import { renewalLines, tierById, tierLines, tierOf } from '../../weapons/upgrades.js';
+import { describeEffects } from '../../config/effectWords.js';
+import { upgrades } from '../../config/upgrades.js';
+import { meleeTierConfig } from '../meleeUpgrades.js';
 
-export function buildUpgradeDesk(desk, { map, gun, pricing, interactions, warranty }) {
+export function buildUpgradeDesk(desk, { map, gun, pricing, interactions, warranty, meleeUpgrades }) {
   interactions.add(upgradeDeskItem({ desk, zones: map.zones, gun, pricing, warranty }));
-  return null; // nothing to tick or reset (upgrades live on the carried guns)
+  if (desk.meleePosition) interactions.add(meleeDeskItem({ desk, zones: map.zones, gun, pricing, meleeUpgrades })); // the second window
+  return null; // nothing to tick or reset (gun upgrades live on the carried guns, box cutter tiers in the stats)
 }
 
 /** What the offer is called: 'Deluxe', 'Renewal 2', 'Premium (on file)'. */
@@ -50,5 +54,38 @@ export function upgradeDeskItem({ desk, zones, gun, pricing, warranty }) {
     position: desk.position,
     available: () => zones[desk.zone].open && !gun.isSwitching && !gun.isLoaner && offer() !== null,
     use: () => warranty.accept(gun.def.id, offer()),
+  };
+}
+
+/**
+ * The desk's second window: the box cutter tiers (config/upgrades.js melee; game/meleeUpgrades.js). Priced through g.pricing ('melee').
+ * Not tied to the gun in your hand: it upgrades the box cutter, so it is there while a tier remains (and no prompt mid gun switch).
+ */
+export function meleeDeskItem({ desk, zones, gun, pricing, meleeUpgrades }) {
+  const offer = () => meleeUpgrades.offer();
+  const shown = () => meleeTierConfig(offer()?.tier ?? upgrades.melee.length); // (the last tier's label while nothing is for sale)
+  const nowName = () => (meleeUpgrades.tier === 0 ? 'Box Cutter' : meleeTierConfig(meleeUpgrades.tier).name);
+  return {
+    get label() {
+      return `Box Cutter → ${shown().name}`;
+    },
+    verb: 'upgrade',
+    get title() {
+      return `${nowName()} → ${shown().name}`;
+    },
+    get detail() {
+      return describeEffects(shown().lines, { damage: shown().damage }).map((line) => line.text).join(' · ');
+    },
+    get detailLines() { return describeEffects(shown().lines, { damage: shown().damage }); }, // (the HUD colours each line)
+    kind: 'melee',
+    get id() {
+      return offer()?.pricingId ?? null;
+    },
+    get cost() {
+      return pricing.priceOf('melee', offer()?.pricingId);
+    },
+    position: desk.meleePosition,
+    available: () => zones[desk.zone].open && !gun.isSwitching && offer() !== null, // (no prompt mid gun switch, like the gun window)
+    use: () => meleeUpgrades.accept(offer()),
   };
 }

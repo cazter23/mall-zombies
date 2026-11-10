@@ -16,7 +16,7 @@ test('no discount: every price is exactly the config price', () => {
   for (const [id, price] of Object.entries(economy.upgrades.tiers)) assert.equal(p.priceOf('tier', id), price, id);
   for (const [id, price] of Object.entries(economy.upgrades.attachments)) assert.equal(p.priceOf('attachment', id), price, id);
   assert.equal(p.priceOf('claw', 'grab'), economy.claw.grab);
-  assert.deepEqual(PRICE_CATEGORIES, ['door', 'weapon', 'ammo', 'ammoCache', 'tier', 'workshop', 'attachment', 'wardrobe', 'claw']);
+  assert.deepEqual(PRICE_CATEGORIES, ['door', 'weapon', 'ammo', 'ammoCache', 'tier', 'melee', 'workshop', 'attachment', 'wardrobe', 'claw']);
 });
 
 test('a discount hits only its category, rounds to the nearest 10, and can be removed', () => {

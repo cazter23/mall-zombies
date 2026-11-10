@@ -203,7 +203,7 @@ nothing paid or counted after death), `pricing.test.js` prices = config exactly,
 charges + shows the sale price for doors, guns, ammo and the cache, a sale starting mid-hold charges the price at completion, a new run clears it),
 `upgrades.test.js` gun upgrades (tiers + attachments on every gun, whole magazines/bursts, each tier holds until its round,
 one attachment per slot, what fits, roles hold at every tier (near-ties within 3%) and with any one attachment, upgrades live
-with the carried gun in the real game), `upgradeDesk.test.js` the Customer Service desk in the real game/mall (one desk in the hallway, LAYOUT.serviceDesk moves
+with the carried gun in the real game), `meleeUpgrades.test.js` the box cutter tiers (the desk's second window, tiers one at a time at pricing's price, damage x1/x3/x5 stacking with meleeDamageMultiplier, Sharpened keeps one target and the plain cone, the Pro hits the nearest two and reaches wider, walls still block, the 70-point melee bonus per kill and the helmet-pop bonus at every tier, Play again), `upgradeDesk.test.js` the Customer Service desk in the real game/mall (one desk in the hallway, LAYOUT.serviceDesk moves
 prop + collider + buy spot, solid and too tall to climb, tiers one at a time at pricing's price, gun in hand only, no refill,
 nothing past Platinum (including the exact purchase frame and switching back to a Platinum gun), Flash Sale applies,
 no prompt while closed / switching / facing away, Play again resets),

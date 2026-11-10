@@ -1017,5 +1017,11 @@ export const melee = {
 export const weaponStatDefaults = {
   damageMultiplier: 1, // all gun damage is multiplied by this
   meleeDamageMultiplier: 1, // box cutter damage is multiplied by this
+  // The Customer Service box cutter tiers (config/upgrades.js melee; game/meleeUpgrades.js) write these. Separate from the multiplier above so
+  // power-ups and the wardrobe still stack on top.
+  meleeTier: 0, // 0 = plain box cutter, then one per tier bought
+  meleeUpgradeDamage: 1, // box cutter damage is multiplied by this too
+  meleeHalfAngleDegrees: melee.boxCutter.hitHalfAngleDegrees, // how far off-centre a target can be hit
+  meleeMaxTargets: 1, // zombies one swing can hit
   reloadSpeed: 1, // reload time is divided by this (2 = twice as fast)
 };

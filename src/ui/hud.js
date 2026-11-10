@@ -613,7 +613,7 @@ export function createHud() {
       interactOriginal.hidden = !info.sale || !(info.originalCost > info.cost);
       interactOriginal.textContent = `${(info.originalCost ?? info.cost).toLocaleString('en-US')}`;
       // Ordinary purchases need one line. Keep the terms only where they affect an upgrade decision.
-      const detail = ['attachment', 'workshop', 'ritual', 'tier', 'wardrobe', 'fittingRoom', 'claw', 'clawAction', 'prize'].includes(info.kind) ? info.detail ?? '' : '';
+      const detail = ['attachment', 'workshop', 'ritual', 'tier', 'melee', 'wardrobe', 'fittingRoom', 'claw', 'clawAction', 'prize'].includes(info.kind) ? info.detail ?? '' : '';
       if (detail !== lastInteractDetail) {
         lastInteractDetail = detail;
         // (detailLines: the Wardrobe's generated stat lines, each an upside or a downside)

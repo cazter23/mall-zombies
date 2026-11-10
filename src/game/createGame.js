@@ -26,6 +26,7 @@ import { feel } from '../config/feel.js';
 import { Vector3 } from 'three';
 import { powerUps as incentiveConfig } from '../config/powerUps.js';
 import { economy } from '../config/economy.js';
+import { upgrades } from '../config/upgrades.js';
 import { bossTiming } from '../config/bosses.js';
 import { createBossDirector } from './bossDirector.js';
 import { configureBossVouchers } from './bossVouchers.js';
@@ -53,6 +54,7 @@ import { createPricing } from './pricing.js';
 import { createFlashSales } from './flashSales.js';
 import { createDebugCommands } from './debugCommands.js';
 import { createWarranty } from './warranty.js';
+import { createMeleeUpgrades } from './meleeUpgrades.js';
 import { createWardrobe } from './wardrobe.js';
 import { createOutfitRail } from './outfitRail.js';
 import { createRunStats } from './runStats.js';
@@ -437,9 +439,11 @@ export function createGame({
   // feature might need (game/features/index.js lists the context).
   // EXTENDED WARRANTY rules (game/warranty.js): the desk's offers, a warranty left on file by a replaced gun, and a Platinum claim.
   const warranty = createWarranty({ gun, events, rounds });
+  const meleeUpgrades = createMeleeUpgrades({ stats, events }); // box cutter tiers (the desk's second window; tiers live in stats)
+  events.on('meleeUpgrade', ({ tier }) => viewmodel.setMeleeColors?.(upgrades.melee[tier - 1].colors)); // (the headless test viewmodel has no hands)
   const wardrobe = createWardrobe({ stats, player, events });
   const features = buildFeatures(map, {
-    scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state, warranty, wardrobe,
+    scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state, warranty, meleeUpgrades, wardrobe,
     colliders, effects, sound, input, tickets, shootables, aimAssist,
   });
 
@@ -613,6 +617,7 @@ export function createGame({
     map,
     features,
     wardrobe,
+    meleeUpgrades,
     outfitRail,
     flashSales,
     powerUps,

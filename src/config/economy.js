@@ -108,6 +108,7 @@ export const economy = {
     workshop: { partyTrap: 1500, clearanceRack: 1000, ritual: 1500, restuff: 750 },
     tiers: { deluxe: 1000, premium: 3000, platinum: 6000 },
     renewals: [3000, 4000, 5500, 7500, 10000], // Warranty Renewals past Platinum (config/upgrades.js renewals), each dearer than the last // (the support upgrade: a build, 1500, hits harder than any single tier)
+    melee: { sharpened: 1500, pro: 4000 }, // Box cutter tiers at the Customer Service desk's second window (config/upgrades.js melee)
     attachments: {
       extendedNozzle: 1000, sawnOff: 1000, // barrel (Mega Mart hardware)
       laserPointer: 750, zoomLens: 750, // sight (Byte Me Electronics)
