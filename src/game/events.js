@@ -40,7 +40,8 @@
 //   'playerDeath' {}                                     after the death is registered (onPlayerDeath)
 //   'escapeVanStart' {}                                  the player finished the van's hold interaction
 //   'runWon'      { summary }                            immutable win snapshot; simulation pauses for the choice
-//   'overtimeStart' { round }                            the player chose to continue at the next round
+//   'overtimeStart' { round }                            the player chose Stay for overtime; round = the first overtime round (the next
+//                                                        round after a win mid-wave, the already announced one after a win in the break)
 //   'runEnd'      { summary }                            final run totals, emitted once per recorded run: on death, on Clock out,
 //                                                        or when a won run is left from a menu (createGame's leaveRun)
 //   'powerUpDrop' { id, position, seconds }               earned incentive appeared on clear floor

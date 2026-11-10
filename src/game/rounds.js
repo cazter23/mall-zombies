@@ -182,7 +182,15 @@ export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null,
       }
     },
 
+    // Stay for overtime (createGame's stayForOvertime). A win in the break, when the announced round has spawned
+    // nothing yet: overtime continues with THAT round after a fresh full break, so no round is skipped (nothing is
+    // discarded and the round is not announced a second time). A win with a wave live: the wave is discarded and the
+    // next round is announced.
     startOvertime() {
+      if (state === 'break') {
+        breakTimer = cfg.breakSeconds;
+        return;
+      }
       discardWave();
       announce(round + 1, cfg.breakSeconds);
     },

@@ -246,6 +246,58 @@ test('the van explains missing keys and duties, then a hold wins once and Clock 
   assert.equal(career.snapshot().totals.wins, 1);
 });
 
+// A real break: the wave is fought down, so the next round is announced and nothing of it has spawned yet.
+function playToBreak(game, round) {
+  const { g, tick } = game;
+  for (let i = 0; i < 6000 && !(g.rounds.inBreak && g.rounds.round === round); i++) {
+    tick();
+    for (const zombie of [...g.zombies.zombies]) zombie.takeHit({ damage: zombie.health, part: 'body', source: 'gun' });
+  }
+  assert.ok(g.rounds.inBreak, 'in the break');
+  assert.equal(g.rounds.round, round);
+  assert.equal(g.zombies.aliveCount, 0);
+}
+
+test('a win in the break keeps the announced round: overtime restarts its full break and skips nothing', (t) => {
+  const game = fixture(t);
+  const { g, tick, press, standAt } = game;
+  const starts = [], announced = [], discards = [];
+  g.events.on('overtimeStart', ({ round }) => starts.push(round));
+  g.events.on('roundStart', ({ round }) => announced.push(round));
+  g.events.on('roundDiscard', () => discards.push(g.rounds.round));
+  approachVan(game);
+  readyToLeave(g);
+  g.health.invulnerable = true; // (the wave is only here to be fought down)
+  playToBreak(game, 2);
+  tick(Math.round(economy.rounds.breakSeconds / dt / 4)); // part of the break has gone
+  assert.ok(g.rounds.breakRemaining < economy.rounds.breakSeconds);
+  const van = g.map.features.find(({ kind }) => kind === 'escapeVan');
+  standAt(van.position.x + 1, van.position.z, 90);
+  announced.length = 0;
+
+  press('KeyF', holdTicks);
+  const win = g.winSummary;
+  assert.equal(win.round, 2);
+  assert.ok(g.stayForOvertime());
+  assert.equal(g.rounds.round, 2, 'round 2 was announced and has spawned nothing: overtime plays it');
+  assert.ok(g.rounds.inBreak);
+  assert.equal(g.rounds.breakRemaining, economy.rounds.breakSeconds, 'a fresh full break');
+  assert.equal(g.rounds.remainingToSpawn, zombieCountForRound(2));
+  assert.deepEqual(starts, [2]);
+  assert.deepEqual(announced, [], 'the round is not announced a second time');
+  assert.deepEqual(discards, [], 'there was no wave to discard');
+
+  g.rounds.endBreak(0);
+  tick(3);
+  assert.equal(g.rounds.state, 'active');
+  assert.ok(g.zombies.aliveCount > 0, 'round 2 arrives after the break');
+  assert.equal(g.rounds.round, 2);
+  g.health.invulnerable = false;
+  g.health.takeDamage(g.stats.maxHealth * 10);
+  assert.equal(g.death.summary.winRound, 2);
+  assert.equal(g.death.summary.overtimeRounds, 0, 'died in the first overtime round');
+});
+
 test('overtime starts a normal next round with the same wallet and loadout; death records the win once', (t) => {
   const game = fixture(t);
   const { g, tick, press, hud } = game;
@@ -259,6 +311,8 @@ test('overtime starts a normal next round with the same wallet and loadout; deat
   const slots = [...g.gun.slots];
   approachVan(game);
   readyToLeave(g);
+  tick(Math.ceil(economy.rounds.firstRoundDelay / dt) + 1);
+  assert.equal(g.rounds.state, 'active', 'a wave is live');
   assert.ok(g.zombies.spawn('shopper'));
   press('KeyF', holdTicks);
   const win = g.winSummary;
@@ -466,7 +520,8 @@ test('win receipt offers both choices, then restores the death receipt for an ov
   assert.equal(button('playAgain').hidden, false);
   assert.equal(heading.hidden, false);
 
-  g.rounds.skipRound(); // round 2 was the first overtime round; die in round 3
+  assert.equal(g.rounds.round, 1); // (won in round 1's opening break: round 1 is the first overtime round)
+  g.rounds.skipRound(); // die in round 2: one overtime round survived
   g.health.takeDamage(g.stats.maxHealth);
   screens.show('results', g.death.summary);
   assert.equal(heading.hidden, true);
@@ -477,7 +532,8 @@ test('win receipt offers both choices, then restores the death receipt for an ov
   assert.match(lines['CLOCKED OUT'], /Round 1/);
   assert.equal(lines['Overtime rounds survived'], 1);
   assert.equal(Object.fromEntries(receiptLinesFor(win))['CLOCKED OUT'], undefined);
-  assert.equal(Object.fromEntries(receiptLinesFor({ ...g.death.summary, round: 2 }))['Overtime rounds survived'], 0);
+  assert.equal(g.death.summary.overtimeRounds, 1);
+  assert.equal(Object.fromEntries(receiptLinesFor({ ...g.death.summary, overtimeRounds: 0 }))['Overtime rounds survived'], 0);
 });
 
 

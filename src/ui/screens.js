@@ -54,7 +54,7 @@ export function receiptLinesFor(r) {
   if (r.closingDone != null) lines.push([closingTime.title, closingTime.receiptProgress(r.closingDone, Object.keys(closingTime.lines).length)]);
   if (r.won && !r.shiftComplete) {
     lines.push(['CLOCKED OUT', `Round ${r.winRound} · ${clock(r.winTime)}`]);
-    lines.push(['Overtime rounds survived', Math.max(0, r.round - r.winRound - 1)]);
+    lines.push(['Overtime rounds survived', r.overtimeRounds ?? 0]);
   }
   if (r.survivedBy?.length) lines.push(['Survived by', r.survivedBy.map(survivorLine).join(' and ')]);
   // GRAB-A-GUN (game/tickets.js): tickets aren't points, so they're a line of their own, never in the totals.

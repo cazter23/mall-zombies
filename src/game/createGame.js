@@ -228,6 +228,7 @@ export function createGame({
   const getRound = () => Math.max(1, rounds ? rounds.round : 1);
   const death = { timer: 0, resultsShown: false, summary: null };
   let winSummary = null;
+  let overtimeFrom = null; // the first overtime round (set by Stay for overtime), or null
 
   function buildRunSummary() {
     return Object.freeze({
@@ -254,6 +255,9 @@ export function createGame({
       won: state.won,
       winTime: state.won ? winSummary?.timeAlive ?? runStats.timeAlive : null,
       winRound: state.won ? winSummary?.round ?? rounds.round : null,
+      // Whole overtime rounds survived, or null before overtime. (Not round - winRound: after a win in the break,
+      // overtime starts with the round the win happened in.)
+      overtimeRounds: overtimeFrom === null ? null : Math.max(0, rounds.round - overtimeFrom),
       keychains: tickets.tokens.keychain, // Sunny plush keychains redeemed (a joke for the receipt until the Wardrobe exists)
     });
   }
@@ -314,6 +318,8 @@ export function createGame({
     state.winPending = false;
     interactions.reset();
     rounds.startOvertime();
+    clockIn.reset(); // the fresh break can be cut short like any other
+    overtimeFrom = rounds.round;
     events.emit('overtimeStart', { round: rounds.round });
     return true;
   }
@@ -637,6 +643,7 @@ export function createGame({
       state.won = false;
       state.winPending = false;
       winSummary = null;
+      overtimeFrom = null;
       state.assisted = false;
       death.timer = 0;
       death.resultsShown = false;
