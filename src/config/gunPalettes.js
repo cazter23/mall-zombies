@@ -1,5 +1,6 @@
 // Model colour keys use shared skin roles. Defaults here were literals in the models.
 export const gunPaletteKeys = {
+  leafBlower: { tankColor: 'body' },
   barcodeScanner: { coilColor: 'accent', windowColor: 'emitter' },
   coilNailer: { drumColor: 'dark', coilColor: 'accent' },
   confettiCannon: { shellColor: 'ammo' },
