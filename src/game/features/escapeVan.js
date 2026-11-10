@@ -13,7 +13,8 @@ export function buildEscapeVan(feature, { map, closing, interactions, events, st
     available: () => map.zones[feature.zone].open && !state.over && !state.won,
     get blocked() {
       const missing = closing.missingKeys;
-      return missing.length ? blockedPrefix + missing.join(', ') : null;
+      if (!missing.length) return null;
+      return state.showClosingGuidance ? blockedPrefix + missing.join(', ') : 'Locked';
     },
     use: () => events.emit('escapeVanStart'),
   });

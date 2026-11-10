@@ -251,12 +251,15 @@ const titleCamera = createTitleCamera(map.titleShots, feel.titleScreen);
 const careerStats = createCareerStats();
 const closingChecklist = () => closingChecklistFor(g.closing.checklist, game.won);
 g.events.on('runEnd', ({ summary }) => {
-  hud.setReceiptClosingDone(closingChecklist().filter(({ done }) => done).length);
+  hud.setReceiptClosingDone(game.showClosingGuidance ? closingChecklist().filter(({ done }) => done).length : null);
   screens.setCareerResult(careerStats.recordRun(summary));
 });
 function showWin(summary, clockedOut = false) {
   hud.setDimmed(true);
-  screens.show('results', { ...summary, shiftComplete: true, clockedOut });
+  screens.show('results', {
+    ...summary, shiftComplete: true, clockedOut,
+    closingDone: game.showClosingGuidance ? summary.closingDone : null,
+  });
 }
 g.events.on('runWon', ({ summary }) => {
   haptics.stop();
@@ -286,7 +289,7 @@ function play({ pad }) {
 function runSoFar() {
   return {
     round: rounds.round, points: wallet.points, time: g.runStats.timeAlive, kills: g.runStats.kills,
-    outfit: g.outfitRail.snapshot(), closing: closingChecklist(),
+    outfit: g.outfitRail.snapshot(), closing: game.showClosingGuidance ? closingChecklist() : null,
   };
 }
 function pauseRun() {
@@ -300,7 +303,7 @@ function pauseRun() {
 function freshRun(how) {
   screens.setCareerResult(null);
   resetRun();
-  screens.show('pause', { fresh: true });
+  screens.show('pause', { fresh: true, closing: game.showClosingGuidance ? [] : null });
   hud.setDimmed(true);
   play(how);
 }
@@ -314,7 +317,10 @@ function goToTitle() {
   hud.setDimmed(true);
 }
 
-screens.on('play', play);
+screens.on('startRun', ({ mode, pad }) => {
+  game.closingMode = mode;
+  freshRun({ pad });
+});
 screens.on('resume', play);
 screens.on('restart', freshRun);
 screens.on('playAgain', freshRun);
@@ -339,7 +345,7 @@ screens.on('notices', () => noticesMenu.open());
 
 input.onLockChange((locked) => {
   if (locked) {
-    if (game.winPending || game.over) {
+    if (game.winPending || game.over || screens.current === 'title' || screens.current === 'runMode') {
       document.exitPointerLock();
       return;
     }
@@ -503,7 +509,10 @@ function render(alpha, frameTime) {
   hud.setOrderForm(game.over ? null : ritual?.form ?? null, menuLabels);
   hud.setFittingRoom(game.over ? null : fittingRooms.find((room) => room.view)?.view ?? null, menuLabels);
   hud.setLimitedEdition(game.over ? null : limitedEditions?.status ?? null);
-  hud.setClosing(closingChecklist(), game.over ? {} : g.closing.markers);
+  hud.setClosing(
+    game.showClosingGuidance ? closingChecklist() : null,
+    game.showClosingGuidance && !game.over ? g.closing.markers : {},
+  );
   hud.setOvertime(game.won && !game.winPending && !game.over);
   hud.setClawMachine?.(game.over ? null : clawMachine?.status ?? null);
   hud.setPockets(game.over ? null : g.equipment.status, { lethal: buttonLabel('lethal'), tactical: buttonLabel('tactical') });

@@ -55,7 +55,7 @@
   border: 1px solid var(--plum); line-height: 1;
 }
 .closing-box.has-progress { inline-size: auto; white-space: nowrap; }
-.hud.dead .closing-boxes { display: none; }
+.closing-boxes[hidden], .hud.dead .closing-boxes { display: none; }
 .overtime-tag:not([hidden]) {
   display: block;
   color: var(--mall-yellow);

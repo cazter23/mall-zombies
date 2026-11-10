@@ -2,6 +2,7 @@
 // SCREENS: the menus around a run (plain DOM over the canvas).
 //   'title'    the main menu: logo + Play / Statistics / Settings / Controls over a live 3D flyover of the mall
 //              (main.js renders it with ui/titleCamera.js while this screen is up)
+//   'runMode' Classic / Directed choice over the title flyover
 //   'pause'    PAUSED + this run so far (round, points, time, kills): Resume / Restart run / Settings /
 //              Controls / Quit to title. Restart and Quit ask twice ("click again to confirm"): they end the run.
 //              show('pause', { fresh: true }) = "Back to work" (after Play again, if the mouse lock was refused)
@@ -13,7 +14,8 @@
 // One at a time: show(name, data) (null hides them all), `current`.
 // Buttons emit ACTIONS: on(action, fn) with fn({ pad }) where pad = true when a controller pressed it (main.js
 // then plays with the controller instead of asking for the mouse lock).
-//   actions: 'play' 'resume' 'restart' 'quit' 'settings' 'controls' 'stats' 'clearStats' 'statsBack'
+//   'startRun' also carries { mode }. 'play' opens the chooser here.
+//   actions: 'startRun' 'resume' 'restart' 'quit' 'settings' 'controls' 'stats' 'clearStats' 'statsBack'
 //            'playAgain' 'mainMenu' ('help' / 'back' are handled here)
 // padNav(input): D-pad up/down moves, A presses, B / Start = Resume on the pause screen, Start = Play on the
 // title, Y = Settings and X = Controls on the title and pause screens.
@@ -176,7 +178,33 @@ export function createScreens() {
     </div>
     <div class="title-footer"><b>OPEN UNTIL FURTHER NOTICE</b><span>Notice will not be provided. · Now hiring · Must provide own staples</span></div>
   `);
-  const fade = title.querySelector('.title-fade');
+  const runMode = el('div', 'screen title-screen hidden', `
+    <div class="title-fade"></div>
+    <div class="title-shade"></div>
+    <div class="title-panel">
+      <div class="kicker">Closing Time</div>
+      <h1>Choose a run mode</h1>
+      <div class="menu-list">
+        <button class="menu-btn primary" data-action="classic" aria-describedby="classic-description" type="button">Classic</button>
+        <p id="classic-description">Discover the quest through the mall and its local clues.</p>
+        <button class="menu-btn" data-action="directed" aria-describedby="directed-description" type="button">Directed</button>
+        <p id="directed-description">Follow the checklist, key markers, and mall PA instructions.</p>
+        <button class="menu-btn" data-action="modeBack" type="button">Back</button>
+      </div>
+      <p class="pad-hint">Controller: D-pad + <kbd>A</kbd> · <kbd>B</kbd> back</p>
+    </div>
+  `);
+  const fades = [title, runMode].map((screen) => screen.querySelector('.title-fade'));
+  function backFromMode() {
+    api.show('title');
+    buttonsOf('title')[0].focus({ preventScroll: true });
+  }
+
+  document.addEventListener('keydown', (event) => {
+    if (current !== 'runMode' || event.code !== 'Escape') return;
+    event.preventDefault();
+    backFromMode();
+  });
 
   // --- Pause -----------------------------------------------------------------------
   const pause = el('div', 'screen pause-screen hidden', `
@@ -206,6 +234,7 @@ export function createScreens() {
   const pauseTitle = pause.querySelector('.pause-title');
   const pauseStats = pause.querySelector('.pause-stats');
   const pauseOutfit = pause.querySelector('.pause-outfit');
+  const pauseClosing = pause.querySelector('.pause-closing');
   const closingList = pause.querySelector('.closing-list');
   const pauseRail = createOutfitRail({ variant: 'pause' });
   pauseOutfit.append(pauseRail.el);
@@ -341,7 +370,7 @@ export function createScreens() {
   const statsBests = stats.querySelector('.stats-bests');
   const statsRecent = stats.querySelector('.stats-recent');
 
-  const screens = { title, pause, results, help, stats };
+  const screens = { title, runMode, pause, results, help, stats };
   for (const node of Object.values(screens)) document.body.append(node);
   let current = null;
   let focus = 0;
@@ -370,6 +399,9 @@ export function createScreens() {
       button.classList.remove('armed');
     }
     const action = button.dataset.action;
+    if (action === 'play') return api.show('runMode');
+    if (action === 'modeBack') return backFromMode();
+    if (action === 'classic' || action === 'directed') return handlers.startRun?.({ mode: action, pad });
     if (action === 'help') return api.show('help', { from: current });
     if (action === 'back') return api.show(helpReturn);
     emit(action, pad);
@@ -391,7 +423,8 @@ export function createScreens() {
   const statCards = (items) => items.map(([label, value]) => `<div><span>${label}</span><b>${value}</b></div>`).join('');
 
   function fillPause({ fresh = false, round = 0, points = 0, time = 0, kills = 0, outfit = [], closing = [] } = {}) {
-    closingList.innerHTML = Object.values(closingTime.lines).map(({ duty, key }, index) => {
+    pauseClosing.hidden = closing === null;
+    closingList.innerHTML = closing === null ? '' : Object.values(closingTime.lines).map(({ duty, key }, index) => {
       const { done, count, needed } = closing[index] ?? {};
       const progress = count == null ? '' : ` ${closingTime.lineProgress(count, needed)}`;
       return `<li><span>${done ? '✓' : '□'} ${duty}${progress}</span><small>${key}</small></li>`;
@@ -495,7 +528,7 @@ export function createScreens() {
 
     // Should the title flyover be drawn behind? (the title itself, or How to play opened from it)
     get showsFlyover() {
-      return current === 'title' || current === 'stats' || (current === 'help' && helpReturn === 'title');
+      return current === 'title' || current === 'runMode' || current === 'stats' || (current === 'help' && helpReturn === 'title');
     },
 
     on(action, fn) {
@@ -512,6 +545,7 @@ export function createScreens() {
       armed.clear();
       current = name ?? null;
       focus = 0;
+      if (name === 'runMode') buttonsOf(name)[0].focus({ preventScroll: true });
       if (name === 'pause') fillPause(data);
       if (name === 'results') {
         fillResults(data);
@@ -524,7 +558,7 @@ export function createScreens() {
     },
 
     setFade(opacity) {
-      fade.style.opacity = String(opacity);
+      for (const fade of fades) fade.style.opacity = String(opacity);
     },
 
     setCareerResult(result) {
@@ -538,13 +572,14 @@ export function createScreens() {
         - (input.consumePress('PadUp') || input.consumePress('PadLeft') ? 1 : 0);
       if (step) {
         focus = (focus + step + buttons.length) % buttons.length;
-        if (current === 'results') buttons[focus]?.focus?.({ preventScroll: true });
+        if (current === 'results' || current === 'runMode') buttons[focus]?.focus?.({ preventScroll: true });
         markFocus(true);
       }
+      if (current === 'runMode' && input.consumePress('PadB')) return backFromMode();
       if (current === 'help' && input.consumePress('PadB')) return api.show(helpReturn);
       if (current === 'stats' && input.consumePress('PadB')) return emit('statsBack', true);
       if (current === 'pause' && (input.consumePress('PadB') || input.consumePress('PadStart'))) return emit('resume', true);
-      if (current === 'title' && input.consumePress('PadStart')) return emit('play', true);
+      if (current === 'title' && input.consumePress('PadStart')) return api.show('runMode');
       if ((current === 'title' || current === 'pause') && input.consumePress('PadY')) return emit('settings', true);
       if ((current === 'title' || current === 'pause') && input.consumePress('PadX')) return emit('controls', true);
       if (input.consumePress('PadA')) {

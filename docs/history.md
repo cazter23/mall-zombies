@@ -772,3 +772,9 @@ The Promenade workbench installs Party Trap on the Confetti Cannon and Clearance
 - Chrome production preview confirmed the 0/1 and 1/1 HUD states, both PA messages, and reset. The build charged 1,500 points and the Restuff charged 750, with no extra charge at collection.
 - When the preview script forced the entire Restuff through while the opening PA was still up, the shared three-message PA queue dropped the completion banner. Letting the opening PA finish before the Restuff made the completion banner visible.
 - Shared edits were limited to the Closing Time system and config, its existing test file, and the plan, history, folder guide and test guide.
+
+## 10 November 2026 - Classic and Directed runs
+
+- Play opens a choice with Classic focused. Restart run and Play again retain the confirmed mode. Back returns to the title.
+- Classic keeps the physical keys and local interactions, with terse van and safe prompts. Directed retains the checklists, key directions, quest PA and receipt progress. Classic filters quest PA before it reaches the Notices archive.
+- Both modes share phase 6 quest progress, pricing, win, overtime and career credit.

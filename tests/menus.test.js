@@ -4,6 +4,7 @@ import { menuDom } from './helpers/menuDom.js';
 import { createModal } from '../src/ui/modal.js';
 
 menuDom(); // config/settings reads the display density once when imported
+const { createScreens } = await import('../src/ui/screens.js');
 const { createSettingsMenu } = await import('../src/ui/settingsMenu.js');
 const { settingDefs, settingPresets } = await import('../src/config/settings.js');
 
@@ -137,4 +138,42 @@ test('Graphics reports native percentage and both pixel sizes, while preserving 
     def.apply(1.25, { renderer: { setPixelRatio: (value) => { ratio = value; } } });
     assert.equal(ratio, 1.25, 'existing stored values keep their original resolution');
   } finally { t.menu.close(); }
+});
+
+test('Play opens the mode chooser with Classic focused; Back leaves the run unselected', () => {
+  const { document, key } = menuDom();
+  const screens = createScreens();
+  const choices = [];
+  const button = (action) => document.querySelector('[data-action="' + action + '"]');
+  const pad = (code) => screens.padNav({ consumePress: (key) => key === code });
+  screens.on('startRun', (choice) => { choices.push(choice); screens.show(null); });
+  screens.show('title');
+
+  button('play').click();
+  assert.equal(screens.current, 'runMode');
+  assert.equal(screens.showsFlyover, true);
+  assert.equal(document.activeElement, button('classic'));
+  assert.equal(key('Escape').defaultPrevented, true);
+  assert.equal(screens.current, 'title');
+  assert.equal(document.activeElement, button('play'));
+
+  pad('PadStart');
+  pad('PadDown');
+  assert.equal(document.activeElement, button('directed'));
+  pad('PadB');
+  assert.equal(screens.current, 'title');
+  button('play').click();
+  button('modeBack').click();
+  assert.equal(screens.current, 'title');
+  assert.deepEqual(choices, []);
+
+  pad('PadStart');
+  assert.equal(document.activeElement, button('classic'));
+  pad('PadA');
+  assert.deepEqual(choices, [{ mode: 'classic', pad: true }]);
+
+  screens.show('title');
+  button('play').click();
+  button('directed').click();
+  assert.deepEqual(choices.at(-1), { mode: 'directed', pad: false });
 });

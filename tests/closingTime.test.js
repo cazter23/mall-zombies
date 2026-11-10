@@ -11,6 +11,7 @@ import { hazards } from '../src/config/hazards.js';
 import { dealHazardDamage } from '../src/game/features/hazards.js';
 import { weapons } from '../src/config/weapons.js';
 import { workshopRitual } from '../src/config/workshop.js';
+import { createHud } from '../src/ui/hud.js';
 import { menuDom } from './helpers/menuDom.js';
 import { closingChecklistFor, createScreens, receiptLinesFor } from '../src/ui/screens.js';
 
@@ -561,8 +562,7 @@ test('four priced deposits honor both discounts, tick the duty once and reset on
 
 
 // Phase 6: Line 3, last orders
-function atBuildABlaster(t) {
-  const game = fixture(t);
+function atBuildABlaster(t, game = fixture(t)) {
   const { g, press, tick } = game;
   g.rounds.update = () => {};
   g.zombies.clear();
@@ -650,4 +650,112 @@ test('an order already running at Signature pickup ticks Last orders when the bu
   assert.equal(g.closing.isDone('manager'), false);
   collect();
   assert.ok(g.closing.isDone('manager'));
+});
+
+test('Classic collects the physical keys, completes the built duties and earns the same win and overtime credit', (t) => {
+  const game = fixture(t);
+  const { g, standAt, press, tick } = game;
+  g.state.closingMode = 'classic';
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  approachVan(game);
+  assert.equal(g.interactions.prompt.blocked, 'Locked');
+
+  const safe = g.map.features.find(({ kind }) => kind === 'nightSafe');
+  const approachSafe = () => standAt(safe.position.x + 1.2, safe.position.z, 90);
+  approachSafe();
+  assert.equal(g.interactions.prompt.id, 'nightSafe');
+  assert.equal(g.interactions.prompt.blocked, 'Locked');
+
+  const at = new Vector3(2, 0, 12);
+  for (const id of bossIds) {
+    g.events.emit('bossDefeated', { zombie: { type: { id }, position: at } });
+    assert.ok(game.props.getObjectByName(id).visible);
+  }
+  standAt(at.x, at.z);
+  assert.deepEqual(g.closing.missingKeys, []);
+  assert.equal(g.closing.pickups.length, 0);
+
+  for (let i = 0; i < closingTime.lines.janitor.needed; i++) g.events.emit('fountainKill');
+  const deposit = g.pricing.priceOf('closing', 'nightSafe');
+  g.wallet.earn(deposit * closingTime.lines.guard.needed);
+  approachSafe();
+  const before = g.wallet.points;
+  for (let i = 0; i < closingTime.lines.guard.needed; i++) press('KeyF', holdTicks);
+  assert.equal(before - g.wallet.points, deposit * closingTime.lines.guard.needed);
+  assert.equal(g.interactions.prompt.blocked, 'Done');
+
+  const { order, collect } = atBuildABlaster(t, game);
+  order();
+  collect();
+  assert.equal(g.closing.done, bossIds.length);
+
+  const career = createCareerStats();
+  g.events.on('runEnd', ({ summary }) => career.recordRun(summary));
+  const van = g.map.features.find(({ kind }) => kind === 'escapeVan');
+  standAt(van.position.x + 1, van.position.z, 90);
+  assert.equal(g.interactions.prompt.blocked, null);
+  press('KeyF', holdTicks);
+  assert.ok(g.winSummary?.won);
+  assert.ok(g.stayForOvertime());
+  assert.equal(g.rounds.round, g.winSummary.round + 1);
+  g.health.takeDamage(g.stats.maxHealth);
+  assert.equal(career.snapshot().totals.wins, 1);
+  assert.equal(g.death.summary.won, true);
+  g.resetRun(); // Restart run and Play again both use this reset.
+  assert.equal(g.state.closingMode, 'classic');
+  assert.deepEqual(g.closing.missingKeys, bossIds.map((id) => closingTime.lines[id].key));
+  tick();
+});
+
+test('quest PA and chimes reach presentation only in Directed while ordinary PA and quest events work in both', (t) => {
+  const { g, hud, sounds, standAt } = fixture(t);
+  const pa = { kicker: 'Workshop', text: 'Your order is ready.' };
+  const at = new Vector3(2, 0, 12);
+  const messages = [];
+  g.events.on('closingKeyDrop', ({ pa }) => messages.push(pa.text));
+
+  for (const mode of ['directed', 'classic']) {
+    g.resetRun();
+    g.state.closingMode = mode;
+    standAt(0, 12);
+    hud.calls.length = sounds.length = 0;
+    g.events.emit('bossDefeated', { zombie: { type: { id: 'manager' }, position: at } });
+    standAt(at.x, at.z);
+    g.events.emit('ritualCollect', { pa });
+    const notices = hud.calls.filter(([name]) => name === 'showAnnouncement').map(([, notice]) => notice);
+    assert.ok(notices.some((notice) => notice.text === pa.text));
+    assert.equal(notices.filter((notice) => notice.kicker === 'Closing time').length, mode === 'directed' ? 3 : 0);
+    assert.equal(sounds.filter((sound) => sound === 'paChime').length, mode === 'directed' ? 4 : 1);
+  }
+  assert.deepEqual(messages, Array(2).fill(closingTime.pa.drop(closingTime.lines.manager.key).text));
+});
+
+test('HUD, pause and death receipt can clear Directed guidance for a Classic shift', () => {
+  const { document } = menuDom();
+  const hud = createHud();
+  const checklist = Object.values(closingTime.lines).map((line) => ({ ...line, done: false }));
+  const key = closingTime.lines.janitor.key;
+  const markers = { janitor: { name: key, meters: 4, bearing: 0 } };
+  const receipt = { round: 1, pointsEarned: 0, kills: 0, timeAlive: 0, closingDone: 2 };
+  const receiptStats = document.querySelector('.receipt-lines');
+
+  hud.setClosing(checklist, markers);
+  assert.equal(document.querySelector('.closing-boxes').hidden, false);
+  assert.ok(document.querySelectorAll('.bag-marker').some((node) => !node.hidden && node.textContent.includes(key)));
+  hud.screens.show('pause', { closing: checklist });
+  assert.ok(document.querySelector('.closing-list').textContent.includes(key));
+  hud.setReceiptClosingDone(0);
+  hud.showResults(receipt);
+  assert.ok(receiptStats.textContent.includes(closingTime.title));
+
+  hud.setClosing(null, {});
+  assert.equal(document.querySelector('.closing-boxes').hidden, true);
+  assert.ok(document.querySelectorAll('.bag-marker').every((node) => node.hidden));
+  hud.screens.show('pause', { closing: null });
+  assert.equal(document.querySelector('.pause-closing').hidden, true);
+  assert.equal(document.querySelector('.closing-list').textContent, '');
+  hud.setReceiptClosingDone(null);
+  hud.showResults(receipt);
+  assert.ok(!receiptStats.textContent.includes(closingTime.title));
 });

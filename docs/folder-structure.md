@@ -472,8 +472,8 @@ src/
       retailUnease.js   Called by the existing horror feature: unseen mannequin turn, shared empty-concourse TV feed,
                         distant upstairs silhouette. Quiet intervals, comfort gates, reset and static-batching-safe hooks.
       workshop.js       The workshop feature: builds the ritual, its effects and the Limited Edition drops, runs Party Trap charges.
-      nightSafe.js      Customer Service deposit prompt. Gates payments on Kettle’s Safe Key and completion, and charges the live closing price.
-      escapeVan.js      Customer Parking hold prompt. Lists missing keys and announces the start of the van when all are held.
+      nightSafe.js      Customer Service deposit prompt. Gates payments on Kettle’s Safe Key and completion, and charges the live closing price. Classic uses terse lock and completion prompts.
+      escapeVan.js      Customer Parking hold prompt. Shows missing keys in Directed or Locked in Classic. Emits the van start when all keys are held.
       limitedEditions.js The bag a shopping-bag zombie sometimes drops: walk over it and Party Trap or Clearance Rack fits a gun you carry, free.
       workshopRitual.js The Build-A-Blaster ritual: idle, running, ready. Bench opens the order form, gun on the conveyor, gauge (kills also shorten the clock), maximum time, the gun coming back by itself, chute steering. Built by workshop.js.
       workshopStuffings.js What a finished build does (and its looks: flashes, flames, ice, drips, hearts): one function per Stuffing, one per Heart. Hearts read 'shot' and hand off to the stuffing; nothing here emits 'shot', so a stuffing's kills can't fire a Heart.
@@ -832,7 +832,7 @@ src/
                         silhouettes for empty slots, a swing + glow on pulse. Variants: 'hud' (over the health bar, from round 1), 'pause' (large, with each item's
                         lines) and 'receipt' (the death receipt's DIED WEARING row).
     outfitIcons.js      The rail's SVG pictures: one icon per item (`icon` ids in config/wardrobe.js) and one dashed silhouette per slot.
-    screens.js          The menus around a run (title, statistics, pause, results) as plain DOM over the canvas.
+    screens.js          The menus around a run (title, run mode, statistics, pause, results) as plain DOM over the canvas.
     titleCamera.js      The title flyover: plays map.titleShots forever behind the main menu.
 ```
 

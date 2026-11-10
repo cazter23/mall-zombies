@@ -205,6 +205,8 @@ export function createGame({
   // The game runs while the mouse is locked (Esc pauses) or while playing on a controller
   // (Start pauses). A controller doesn't need the mouse locked.
   const state = {
+    closingMode: 'directed', // Title confirmation selects the mode; fresh-run resets keep it.
+    get showClosingGuidance() { return this.closingMode === 'directed'; },
     forceRun: false, // debug: run without pointer lock (used by automated tests)
     over: false, // death or Clock out
     won: false,
@@ -462,9 +464,17 @@ export function createGame({
   });
 
   // PA notices from workshop orders, shop events and closing duties.
-  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualWaiting', 'ritualCollect', 'limitedEditionDrop', 'limitedEditionFitted', 'wardrobeBuy', 'clawClosed', 'clawMoved', 'closingKeyDrop', 'closingKey', 'closingLine']) {
+  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualWaiting', 'ritualCollect', 'limitedEditionDrop', 'limitedEditionFitted', 'wardrobeBuy', 'clawClosed', 'clawMoved']) {
     events.on(name, ({ pa }) => {
       if (!pa) return;
+      hud.showAnnouncement({ ...pa, priority: 1 });
+      sound.play('paChime');
+    });
+  }
+
+  for (const name of ['closingKeyDrop', 'closingKey', 'closingLine']) {
+    events.on(name, ({ pa }) => {
+      if (!state.showClosingGuidance || !pa) return;
       hud.showAnnouncement({ ...pa, priority: 1 });
       sound.play('paChime');
     });

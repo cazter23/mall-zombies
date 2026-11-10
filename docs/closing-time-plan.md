@@ -75,6 +75,13 @@ the bot for this plan. The bot does not do the quest, so the times are for reach
 - **No arena lock in the first version.** The Last Customer chases the player like every zombie; the van is in the lot, so the fight ends there.
 - **No driving.** "Drive off" is a fade to the receipt.
 
+## Run modes (decision after phase 6)
+
+Play opens a mode choice with Classic focused. Classic keeps the physical pickups and local interactions, with terse prompts.
+Directed shows the HUD and pause checklists, dropped-key directions, quest PA and its Notices entries, and death-receipt progress.
+Both use the same quest, economy, ending, overtime and career credit. Restart run and Play again keep the chosen mode.
+Returning to the title lets the player choose again. This split applies to the existing phases 1–6.
+
 ## The checklist
 
 | # | Line on the checklist | Key (from) | Debut round | Where | What you do | Points |

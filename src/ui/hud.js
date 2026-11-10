@@ -330,7 +330,7 @@ export function createHud() {
     checklist.append(box);
     return { id, box, marker: createBagMarker() };
   });
-  let receiptClosingDone = null;
+  let receiptClosingDone;
   const leftStack = el('div', 'hud-left-stack');
   leftStack.append(roundCounter, checklist, clockIn, incentives.element, ritualTicket.element);
   const topStack = el('div', 'hud-top-stack');
@@ -424,7 +424,7 @@ export function createHud() {
         ammoSecondary.classList.remove('switched');
       });
       events.on('runReset', clearNotices);
-      events.on('runReset', () => { receiptClosingDone = null; overtimeTag.hidden = true; });
+      events.on('runReset', () => { receiptClosingDone = undefined; overtimeTag.hidden = true; });
       events.on('runReset', () => { history.clear(); incentives.reset(); });
       events.on('playerDeath', clearNotices);
       events.on('mascotPopBlast', ({ butter: buttered, butterSeconds }) => {
@@ -466,9 +466,12 @@ export function createHud() {
       receiptClosingDone = done;
     },
 
-    setClosing(checklist, markers) {
+    setClosing(lines, markers) {
+      checklist.hidden = lines === null;
       for (const [index, { id, box, marker }] of closingLines.entries()) {
-        const { duty, done, count, needed } = checklist[index];
+        marker.update(lines ? markers[id] ?? null : null);
+        if (!lines) continue;
+        const { duty, done, count, needed } = lines[index];
         const progress = count == null ? '' : closingTime.lineProgress(count, needed);
         const text = [done ? '✓' : '', progress].filter(Boolean).join(' ');
         const checked = String(done);
@@ -478,7 +481,6 @@ export function createHud() {
           box.classList.toggle('has-progress', Boolean(progress));
           box.textContent = text;
         }
-        marker.update(markers[id] ?? null);
       }
     },
 
@@ -593,7 +595,7 @@ export function createHud() {
     // Death: the run's receipt ({ timeAlive (s), round, pointsEarned, kills, headshotKills, meleeKills, accuracy 0..1 }).
     showResults(r) {
       hud.classList.add('dimmed');
-      screens.show('results', receiptClosingDone === null ? r : { ...r, closingDone: receiptClosingDone });
+      screens.show('results', receiptClosingDone === undefined ? r : { ...r, closingDone: receiptClosingDone });
     },
 
     hideResults() {

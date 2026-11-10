@@ -15,8 +15,9 @@ export function buildNightSafe(feature, { map, closing, interactions, pricing, s
     get cost() { return isDone() ? 0 : pricing.priceOf('closing', id); },
     get priceLabel() { return isDone() ? done : null; },
     get blocked() {
-      if (isDone()) return complete;
-      return closing.hasKey('guard') ? null : 'Requires ' + key;
+      if (isDone()) return state.showClosingGuidance ? complete : done;
+      if (closing.hasKey('guard')) return null;
+      return state.showClosingGuidance ? 'Requires ' + key : 'Locked';
     },
     use() {}, // The normal purchase event advances the checklist after payment.
   });
