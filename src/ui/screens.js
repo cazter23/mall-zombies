@@ -2,7 +2,9 @@
 // SCREENS: the menus around a run (plain DOM over the canvas).
 //   'title'    the main menu: logo + Play / Statistics / Settings / Controls over a live 3D flyover of the mall
 //              (main.js renders it with ui/titleCamera.js while this screen is up)
-//   'runMode' Classic / Directed choice over the title flyover
+//   'runMode' Directed / Classic choice over the title flyover (config/closingTime.js modes). The remembered mode is focused
+//              (setRunMode). A mode button emits 'startRun' and the chooser STAYS UP until play really starts: `startRequested`
+//              is true from that press until the next show() (ui/runStart.js)
 //   'pause'    PAUSED + this run so far (round, points, time, kills): Resume / Restart run / Settings /
 //              Controls / Quit to title. Restart and Quit ask twice ("click again to confirm"): they end the run.
 //              show('pause', { fresh: true }) = "Back to work" (after Play again, if the mouse lock was refused)
@@ -174,22 +176,28 @@ export function createScreens() {
     </div>
     <div class="title-footer"><b>OPEN UNTIL FURTHER NOTICE</b><span>Notice will not be provided. · Now hiring · Must provide own staples</span></div>
   `);
+  const modeCfg = closingTime.modes;
+  const modeIds = modeCfg.list.map(({ id }) => id);
+  let preferredMode = modeCfg.default; // focused on the chooser and drawn as its primary button (setRunMode: the remembered choice)
+  let startRequested = false; // a mode was confirmed and play has not started yet (the mouse lock can be refused)
   const runMode = el('div', 'screen title-screen hidden', `
     <div class="title-fade"></div>
     <div class="title-shade"></div>
     <div class="title-panel">
-      <div class="kicker">Closing Time</div>
-      <h1>Choose a run mode</h1>
-      <div class="menu-list">
-        <button class="menu-btn primary" data-action="classic" aria-describedby="classic-description" type="button">Classic</button>
-        <p id="classic-description">Discover the quest through the mall and its local clues.</p>
-        <button class="menu-btn" data-action="directed" aria-describedby="directed-description" type="button">Directed</button>
-        <p id="directed-description">Follow the checklist, key markers, and mall PA instructions.</p>
-        <button class="menu-btn" data-action="modeBack" type="button">Back</button>
+      <div class="kicker">${modeCfg.kicker}</div>
+      <h1>${modeCfg.title}</h1>
+      <div class="menu-list">${modeCfg.list.map(({ id, label, description }) => `
+        <button class="menu-btn" data-action="${id}" aria-describedby="${id}-description" type="button">${label}</button>
+        <p id="${id}-description">${description}</p>`).join('')}
+        <button class="menu-btn" data-action="modeBack" type="button">${modeCfg.back}</button>
       </div>
       <p class="pad-hint">Controller: D-pad + <kbd>A</kbd> · <kbd>B</kbd> back</p>
     </div>
   `);
+  function markPreferredMode() {
+    for (const id of modeIds) runMode.querySelector(`[data-action="${id}"]`).classList.toggle('primary', id === preferredMode);
+  }
+  markPreferredMode();
   const fades = [title, runMode].map((screen) => screen.querySelector('.title-fade'));
   function backFromMode() {
     api.show('title');
@@ -397,7 +405,10 @@ export function createScreens() {
     const action = button.dataset.action;
     if (action === 'play') return api.show('runMode');
     if (action === 'modeBack') return backFromMode();
-    if (action === 'classic' || action === 'directed') return handlers.startRun?.({ mode: action, pad });
+    if (modeIds.includes(action)) {
+      startRequested = true; // (stays true while the chooser waits for play to start; any show() clears it)
+      return handlers.startRun?.({ mode: action, pad });
+    }
     if (action === 'help') return api.show('help', { from: current });
     if (action === 'back') return api.show(helpReturn);
     emit(action, pad);
@@ -545,8 +556,12 @@ export function createScreens() {
       }
       armed.clear();
       current = name ?? null;
+      startRequested = false;
       focus = 0;
-      if (name === 'runMode') buttonsOf(name)[0].focus({ preventScroll: true });
+      if (name === 'runMode') {
+        focus = Math.max(0, modeIds.indexOf(preferredMode));
+        buttonsOf(name)[focus].focus({ preventScroll: true });
+      }
       if (name === 'pause') fillPause(data);
       if (name === 'results') {
         fillResults(data);
@@ -556,6 +571,17 @@ export function createScreens() {
       if (name === 'help') helpReturn = data?.from ?? 'title';
       if (name === 'stats') fillStats(data);
       markFocus(false);
+    },
+
+    // A mode was confirmed on the chooser and play has not started yet (ui/runStart.js lets that pointer lock through).
+    get startRequested() {
+      return startRequested;
+    },
+
+    // The mode the chooser focuses: the one chosen last time (unknown ids are ignored).
+    setRunMode(mode) {
+      if (modeIds.includes(mode)) preferredMode = mode;
+      markPreferredMode();
     },
 
     setFade(opacity) {

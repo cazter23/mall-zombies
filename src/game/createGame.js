@@ -326,9 +326,13 @@ export function createGame({
     return true;
   }
 
+  // A summary as its receipt shows it. Classic has no checklist line on a receipt, and closingDone: null is the ONE
+  // value that says so (ui/screens.js receiptLinesFor). The death receipt below and main.js's win receipt both use this.
+  const receiptFor = (summary) => (state.showClosingGuidance ? summary : { ...summary, closingDone: null });
+
   function showResults() {
     death.resultsShown = true;
-    hud.showResults(death.summary);
+    hud.showResults(receiptFor(death.summary));
   }
 
   const health = createPlayerHealth({ stats, onDeath: onPlayerDeath, onRegenStart: () => events.emit('regenStart') });
@@ -493,6 +497,9 @@ export function createGame({
     });
   }
 
+  // Closing Time's own sounds, in both run modes (Classic has no PA text): a key picked up, a checklist line ticked.
+  events.on('closingKey', () => sound.play('closingKey'));
+  events.on('closingLine', () => sound.play('closingDuty'));
   for (const name of ['closingBriefing', 'closingKeyDrop', 'closingKey', 'closingLine']) {
     events.on(name, ({ pa }) => {
       if (!state.showClosingGuidance || !pa) return;
@@ -765,6 +772,7 @@ export function createGame({
     pricing,
     death,
     get winSummary() { return winSummary; },
+    receiptFor,
     get overtimeFrom() { return overtimeFrom; }, // the first overtime round, or null (tests compare it after Play again)
     clockOut,
     stayForOvertime,

@@ -74,7 +74,9 @@ ownership reset, reload blocking, ammo conservation/full-reserve overflow, fully
 
 > Moved out of CLAUDE.md (verbatim) so the file every session loads stays small. Read it to find the test that guards something before you change it, or to see where a new test belongs.
 
-The title mode chooser is tested for Classic default focus, Back by button, Escape or controller, and mode confirmation.
+The title mode chooser is tested for its order (Directed first) and default focus, focus on the remembered mode, Back by button, Escape or controller, and mode confirmation.
+`tests/menus.test.js` also checks that the run mode is remembered through game/settings.js (no tab, in no preset, kept by Reset everything), and that starting from the chooser
+(ui/runStart.js) stores the mode and plays once with no reset and no Fresh shift screen, the chooser staying up until play starts and a late pointer lock after Back being refused.
 Menu regressions: `tests/menus.test.js` covers modal inert/focus isolation, Tab/Escape, controller presets including
 equal/custom values, reset buttons/confirmation and native-resolution readout. `tests/blood.test.js` also changes
 splatter while paused, clearing flesh effects/pools immediately without removing dust or tracers.
@@ -128,7 +130,9 @@ debug-run exclusion, reset, corrupt saves and unavailable browser storage.
 `tests/music.test.js` also covers the End of Shift death sting: receipt-timed bell, music volume, cancellation of future
 notes, replacement-voice cleanup, and real-game death/reset wiring.
 `tests/closingTime.test.js` follows boss keys from defeat or disappearance to clear-floor drops and collection.
-It also covers Classic completion and career credit, run mode retention on reset, and mode-dependent PA, markers, checklists and receipts.
+It also covers a Classic run that wins with every duty done: its short prompts (the safe and the van name the missing key, the van then names an unfinished duty by its place),
+the key and duty sounds in both modes with no quest PA in Classic, career credit, run mode retention on reset, the fountain switch's count in both modes,
+and mode-dependent markers, checklists and receipts (closingDone null from g.receiptFor is the one value for "no checklist line").
 It checks one drop per boss alongside the usual rewards, persistence through round changes and cleanup, simultaneous drops, checklist events and PA, the death receipt, and Play again.
 It also checks the real van's hold and missing-key prompt, the paused win, Clock out, normal next-round overtime with the same loadout,
 career credit on overtime death, and version 1 career migration with fastest-win persistence.

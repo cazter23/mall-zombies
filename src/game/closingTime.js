@@ -86,6 +86,11 @@ export function createClosingTime({ events, player, colliders, state, view }) {
     },
     // What the van asks for: all four keys and lines 1 to 3 ticked. There is no round gate.
     get readyToLeave() { return held.size === total && this.missingDuties.length === 0; },
+    // A duty's count as text ("3/12") while its key is held and its line is still open, else null (the fountain switch's prompt).
+    dutyProgress(bossId) {
+      if (!counts.has(bossId) || completed.has(bossId)) return null;
+      return config.lineProgress(counts.get(bossId), config.lines[bossId].needed);
+    },
     // Line 4 ("Car park cleared") is the win itself: createGame's onRunWon ticks it here, once, so `done`, the
     // 'closingLine' event and the run summary are right without any help from the browser side.
     completeLeaving() {

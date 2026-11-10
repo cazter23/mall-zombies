@@ -8,6 +8,7 @@
 
 import * as THREE from 'three';
 import { hazards } from '../../config/hazards.js';
+import { closingTime } from '../../config/closingTime.js';
 import { createHazard, dealHazardDamage } from './hazards.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
@@ -173,6 +174,11 @@ export function buildFountainHazard(feature, ctx) {
     ctx,
     cfg,
     isPlayerInside: isInside,
+    // Closing Time's line 1: while Murray's Key Ring is held and the line is open, the switch shows the count (both run modes).
+    note: () => {
+      const progress = ctx.closing?.dutyProgress('janitor');
+      return progress ? closingTime.lines.janitor.promptCount(progress) : null;
+    },
     onActivate() {
       fieldGroup.visible = true;
       rippleAge = 0;

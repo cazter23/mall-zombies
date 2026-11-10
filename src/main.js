@@ -37,6 +37,7 @@ import { buildOf, qualityById, workshopStuffings } from './config/workshop.js';
 import { PRICE_CATEGORIES } from './game/pricing.js';
 import { createDebugPanel } from './ui/debugPanel.js';
 import { createTitleCamera } from './ui/titleCamera.js';
+import { createRunStart } from './ui/runStart.js';
 import { createBenchmark } from './fx/benchmark.js';
 import { createBallView } from './fx/ballView.js';
 import { createThrowableView } from './fx/throwableView.js';
@@ -248,16 +249,10 @@ const throwableView = createThrowableView(scene, g.equipment); // Kiosk Kevin's 
 const screens = hud.screens;
 const titleCamera = createTitleCamera(map.titleShots, feel.titleScreen);
 const careerStats = createCareerStats();
-g.events.on('runEnd', ({ summary }) => {
-  hud.setReceiptClosingDone(game.showClosingGuidance ? undefined : null); // (Classic: no checklist line on the death receipt)
-  screens.setCareerResult(careerStats.recordRun(summary));
-});
+g.events.on('runEnd', ({ summary }) => screens.setCareerResult(careerStats.recordRun(summary)));
 function showWin(summary, clockedOut = false) {
   hud.setDimmed(true);
-  screens.show('results', {
-    ...summary, shiftComplete: true, clockedOut,
-    closingDone: game.showClosingGuidance ? summary.closingDone : null,
-  });
+  screens.show('results', { ...g.receiptFor(summary), shiftComplete: true, clockedOut }); // (Classic: no checklist line)
 }
 g.events.on('runWon', ({ summary }) => {
   haptics.stop();
@@ -317,10 +312,9 @@ function goToTitle() {
   hud.setDimmed(true);
 }
 
-screens.on('startRun', ({ mode, pad }) => {
-  game.closingMode = mode;
-  freshRun({ pad });
-});
+// The title's mode chooser (ui/runStart.js): stores the mode and plays. The title already reset the run, so nothing is
+// reset again, and the chooser stays up until play really starts.
+const runStart = createRunStart({ game, screens, settings, play });
 screens.on('resume', play);
 screens.on('restart', freshRun);
 screens.on('playAgain', freshRun);
@@ -345,7 +339,7 @@ screens.on('notices', () => noticesMenu.open());
 
 input.onLockChange((locked) => {
   if (locked) {
-    if (game.winPending || game.over || screens.current === 'title' || screens.current === 'runMode') {
+    if (game.winPending || game.over || !runStart.acceptsLock()) {
       document.exitPointerLock();
       return;
     }

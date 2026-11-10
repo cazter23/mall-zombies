@@ -116,6 +116,17 @@ export const audio = {
       { type: 'tone', wave: 'triangle', freq: 2150, freqEnd: 2150, gain: 0.24, attack: 0.001, decay: 0.045, delay: 0.045 },
     ] },
     // Three distinct employee incentives, all routed through the existing master-volume bus.
+    // Closing Time, in both run modes (game/createGame.js): a checklist key picked up (a bright jingle of keys), and a
+    // checklist line ticked (a short two-note confirmation). Classic has no PA text, so these are its feedback.
+    closingKey: { volume: 0.5, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 5200, q: 3, gain: 0.22, attack: 0.001, decay: 0.05 },
+      { type: 'tone', wave: 'triangle', freq: 1568, freqEnd: 1568, gain: 0.3, attack: 0.002, decay: 0.12 },
+      { type: 'tone', wave: 'triangle', freq: 2093, freqEnd: 2093, gain: 0.26, attack: 0.002, decay: 0.2, delay: 0.07 },
+    ] },
+    closingDuty: { volume: 0.5, layers: [
+      { type: 'tone', wave: 'sine', freq: 784, freqEnd: 784, gain: 0.34, attack: 0.004, decay: 0.14 },
+      { type: 'tone', wave: 'sine', freq: 1175, freqEnd: 1175, gain: 0.3, attack: 0.004, decay: 0.3, delay: 0.11 },
+    ] },
     incentiveRestock: { volume: 0.55, layers: [
       { type: 'noise', filter: 'bandpass', freq: 1200, q: 1, gain: 0.35, attack: 0.002, decay: 0.08 },
       { type: 'tone', wave: 'triangle', freq: 440, freqEnd: 440, gain: 0.3, attack: 0.005, decay: 0.13 },

@@ -327,7 +327,6 @@ export function createHud() {
     checklist.append(box);
     return { id, box, marker: createBagMarker() };
   });
-  let receiptClosingDone;
   const leftStack = el('div', 'hud-left-stack');
   leftStack.append(roundCounter, checklist, clockIn, incentives.element, ritualTicket.element);
   const topStack = el('div', 'hud-top-stack');
@@ -421,7 +420,7 @@ export function createHud() {
         ammoSecondary.classList.remove('switched');
       });
       events.on('runReset', clearNotices);
-      events.on('runReset', () => { receiptClosingDone = undefined; overtimeTag.hidden = true; });
+      events.on('runReset', () => { overtimeTag.hidden = true; });
       events.on('runReset', () => { history.clear(); incentives.reset(); });
       events.on('playerDeath', clearNotices);
       events.on('mascotPopBlast', ({ butter: buttered, butterSeconds }) => {
@@ -457,10 +456,6 @@ export function createHud() {
 
     setOvertime(active) {
       if (overtimeTag.hidden === active) overtimeTag.hidden = !active;
-    },
-
-    setReceiptClosingDone(done) {
-      receiptClosingDone = done;
     },
 
     setClosing(lines, markers) {
@@ -588,7 +583,7 @@ export function createHud() {
     // Death: the run's receipt ({ timeAlive (s), round, pointsEarned, kills, headshotKills, meleeKills, accuracy 0..1 }).
     showResults(r) {
       hud.classList.add('dimmed');
-      screens.show('results', receiptClosingDone === undefined ? r : { ...r, closingDone: receiptClosingDone });
+      screens.show('results', r);
     },
 
     hideResults() {

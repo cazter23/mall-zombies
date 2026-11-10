@@ -72,7 +72,7 @@ export function createSettings(ctx) {
     // Put every setting (or just one tab's) back to its default.
     reset(tab = null) {
       for (const def of settingDefs) {
-        if (tab && def.tab !== tab) continue;
+        if (!def.tab || (tab && def.tab !== tab)) continue; // (a remembered choice with no tab is not a menu setting: kept)
         values[def.id] = def.default;
         applyOne(def);
       }

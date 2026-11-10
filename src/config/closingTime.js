@@ -1,5 +1,21 @@
 export const closingTime = {
   title: 'Closing checklist',
+  // RUN MODES, chosen on the title (ui/screens.js): listed in this order. `default` is focused the first time (after
+  // that, the mode last chosen: the 'closingMode' setting) and is the engine's own default (game/createGame.js).
+  // Directed is the game as decision 10 describes it. Classic is the opt-in: no checklist, key pointers or quest PA.
+  modes: {
+    default: 'directed',
+    kicker: 'Closing Time',
+    title: 'Choose a run mode',
+    back: 'Back',
+    list: [
+      { id: 'directed', label: 'Directed', description: 'Follow the checklist, key markers, and mall PA instructions.' },
+      { id: 'classic', label: 'Classic', description: 'Discover the quest through the mall and its local clues.' },
+    ],
+  },
+  // Classic's prompts stay short but say what is true: "Needs <key>" at the safe and the van; with every key held the
+  // van names an unfinished duty by its place ("Unfinished: Fountain").
+  classic: { needs: 'Needs ', unfinished: 'Unfinished: ' },
   van: {
     name: "Skylar's van", verb: 'start the van', priceLabel: 'Free',
     blockedPrefix: 'Still needed: ',
@@ -25,9 +41,11 @@ export const closingTime = {
     sign: { text: 'NIGHT SAFE', offset: 0.29, y: 1.59, width: 0.52, height: 0.19, background: '#243042', color: '#ffe4a0' },
   },
   lines: {
-    janitor: { duty: 'Water features off', key: "Murray's Key Ring", needed: 12 },
-    guard: { duty: 'Takings banked', key: "Kettle's Safe Key", needed: 4 },
-    manager: { duty: 'Last orders signed off', key: "Fairweather's Signature", needed: 1 },
+    // place: where the duty is done (Classic's van prompt names it). promptCount: the count on the fountain switch's own
+    // prompt while the Key Ring is held and the line is open, in both run modes.
+    janitor: { duty: 'Water features off', key: "Murray's Key Ring", needed: 12, place: 'Fountain', promptCount: (progress) => 'Shocked ' + progress },
+    guard: { duty: 'Takings banked', key: "Kettle's Safe Key", needed: 4, place: 'Night Safe' },
+    manager: { duty: 'Last orders signed off', key: "Fairweather's Signature", needed: 1, place: 'Build-A-Blaster' },
     influencer: { duty: 'Car park cleared', key: "Skylar's Van Keys" },
   },
   // The PA introduces the checklist once per run, this long after round 1 is announced: after the run's opening line

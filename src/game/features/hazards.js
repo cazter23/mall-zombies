@@ -160,6 +160,7 @@ export function createHazard({
   onPulse,
   onTick,
   onStop,
+  note = null, // optional () => text | null: one more term on the switch's own prompt (the fountain's closing-duty count)
 }) {
   const { scene, map, events, pricing, interactions, player, stats, health, state, sound, effects } = ctx;
   const { rig, setPhaseVisual } = buildHazardSwitchBox({
@@ -215,7 +216,10 @@ export function createHazard({
     label: cfg.label,
     title: cfg.title,
     verb: cfg.verb ?? 'trigger',
-    detail: cfg.detail,
+    get detail() {
+      const extra = note?.();
+      return extra ? [cfg.detail, extra].filter(Boolean).join(' · ') : cfg.detail;
+    },
     kind: 'hazard',
     id: cfg.id,
     get cost() {

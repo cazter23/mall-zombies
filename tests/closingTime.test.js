@@ -1178,21 +1178,31 @@ test('an order already running at Signature pickup ticks Last orders when the bu
   assert.ok(g.closing.isDone('manager'));
 });
 
-test('Classic collects the physical keys, completes the built duties and earns the same win and overtime credit', (t) => {
+// Run modes: Directed (the default) and Classic (no checklist, key pointers or quest PA).
+const closingNotices = (hud) => hud.calls.filter(([name, notice]) => name === 'showAnnouncement' && notice.kicker === 'Closing time');
+const played = (sounds, id) => sounds.filter((sound) => sound === id).length;
+
+test('a Classic run: short prompts that say what is true, key and duty sounds with no quest PA, and a win that needs the duties', (t) => {
   const game = fixture(t);
-  const { g, standAt, press, tick } = game;
+  const { g, standAt, press, tick, hud, sounds } = game;
+  const { lines, classic } = closingTime;
   g.state.closingMode = 'classic';
   g.rounds.update = () => {};
   g.zombies.clear();
+  const van = g.map.features.find(({ kind }) => kind === 'escapeVan');
+  const atVan = () => { standAt(van.position.x + 1, van.position.z, 90); return g.interactions.prompt.blocked; };
   approachVan(game);
-  assert.equal(g.interactions.prompt.blocked, 'Locked');
+  assert.equal(g.interactions.prompt.blocked, "Needs Murray's Key Ring", 'the van names the first missing key');
 
   const safe = g.map.features.find(({ kind }) => kind === 'nightSafe');
   const approachSafe = () => standAt(safe.position.x + 1.2, safe.position.z, 90);
   approachSafe();
   assert.equal(g.interactions.prompt.id, 'nightSafe');
-  assert.equal(g.interactions.prompt.blocked, 'Locked');
+  assert.equal(g.interactions.prompt.blocked, "Needs Kettle's Safe Key");
+  assert.equal(g.interactions.prompt.blocked, classic.needs + lines.guard.key);
 
+  // The physical keys: each pickup plays the key sound; Classic shows no quest PA and plays no PA chime for it.
+  hud.calls.length = sounds.length = 0;
   const at = new Vector3(2, 0, 12);
   for (const id of bossIds) {
     g.events.emit('bossDefeated', { zombie: { type: { id }, position: at } });
@@ -1201,29 +1211,47 @@ test('Classic collects the physical keys, completes the built duties and earns t
   standAt(at.x, at.z);
   assert.deepEqual(g.closing.missingKeys, []);
   assert.equal(g.closing.pickups.length, 0);
+  assert.equal(played(sounds, 'closingKey'), bossIds.length);
+  assert.equal(played(sounds, 'paChime'), 0);
+  assert.deepEqual(closingNotices(hud), []);
 
-  for (let i = 0; i < closingTime.lines.janitor.needed; i++) g.events.emit('fountainKill');
+  // Every key held is not enough (A1): the van names an unfinished duty by its place, one at a time.
+  assert.equal(atVan(), 'Unfinished: Fountain');
+  assert.equal(atVan(), classic.unfinished + lines.janitor.place);
+  press('KeyF', holdTicks);
+  assert.equal(g.state.won, false);
+
+  for (let i = 0; i < lines.janitor.needed; i++) g.events.emit('fountainKill', {});
+  assert.equal(played(sounds, 'closingDuty'), 1, 'a finished duty plays its confirmation sound');
+  assert.equal(atVan(), 'Unfinished: Night Safe');
+
   const deposit = g.pricing.priceOf('closing', 'nightSafe');
-  g.wallet.earn(deposit * closingTime.lines.guard.needed);
+  g.wallet.earn(deposit * lines.guard.needed);
   approachSafe();
+  assert.equal(g.interactions.prompt.blocked, null);
   const before = g.wallet.points;
-  for (let i = 0; i < closingTime.lines.guard.needed; i++) press('KeyF', holdTicks);
-  assert.equal(before - g.wallet.points, deposit * closingTime.lines.guard.needed);
+  for (let i = 0; i < lines.guard.needed; i++) press('KeyF', holdTicks);
+  assert.equal(before - g.wallet.points, deposit * lines.guard.needed);
   assert.equal(g.interactions.prompt.blocked, 'Done');
+  assert.equal(played(sounds, 'closingDuty'), 2);
+  assert.equal(atVan(), 'Unfinished: Build-A-Blaster');
+  assert.deepEqual(closingNotices(hud), [], 'still no quest PA');
+  assert.equal(played(sounds, 'paChime'), 0);
 
   const { order, collect } = atBuildABlaster(t, game);
   order();
   collect();
+  assert.equal(played(sounds, 'closingDuty'), 3);
   assert.equal(g.closing.done, dutyIds.length, 'lines 1 to 3: the win ticks line 4');
 
-  const career = createCareerStats();
+  const career = createCareerStats({ storage: { getItem: () => null, setItem() {} } });
   g.events.on('runEnd', ({ summary }) => career.recordRun(summary));
-  const van = g.map.features.find(({ kind }) => kind === 'escapeVan');
-  standAt(van.position.x + 1, van.position.z, 90);
-  assert.equal(g.interactions.prompt.blocked, null);
+  assert.equal(atVan(), null);
   press('KeyF', holdTicks);
   assert.ok(g.winSummary?.won);
   assert.equal(g.closing.done, bossIds.length);
+  assert.equal(played(sounds, 'closingDuty'), 4);
+  assert.deepEqual(closingNotices(hud), []);
   assert.ok(g.stayForOvertime());
   assert.equal(g.rounds.round, g.winSummary.round, 'won in the opening break: overtime plays that round');
   g.health.takeDamage(g.stats.maxHealth);
@@ -1235,12 +1263,13 @@ test('Classic collects the physical keys, completes the built duties and earns t
   tick();
 });
 
-test('quest PA and chimes reach presentation only in Directed while ordinary PA and quest events work in both', (t) => {
-  const { g, hud, sounds, standAt } = fixture(t);
+test('quest PA and chimes reach presentation only in Directed; the key and duty sounds, ordinary PA and quest events work in both', (t) => {
+  const { g, hud, sounds, standAt, tick } = fixture(t);
   const pa = { kicker: 'Workshop', text: 'Your order is ready.' };
   const at = new Vector3(2, 0, 12);
-  const messages = [];
+  const messages = [], briefings = [];
   g.events.on('closingKeyDrop', ({ pa }) => messages.push(pa.text));
+  g.events.on('closingBriefing', () => briefings.push(g.state.closingMode));
 
   for (const mode of ['directed', 'classic']) {
     g.resetRun();
@@ -1252,19 +1281,98 @@ test('quest PA and chimes reach presentation only in Directed while ordinary PA 
     g.events.emit('ritualCollect', { pa });
     const notices = hud.calls.filter(([name]) => name === 'showAnnouncement').map(([, notice]) => notice);
     assert.ok(notices.some((notice) => notice.text === pa.text));
-    assert.equal(notices.filter((notice) => notice.kicker === 'Closing time').length, mode === 'directed' ? 3 : 0);
-    assert.equal(sounds.filter((sound) => sound === 'paChime').length, mode === 'directed' ? 4 : 1);
+    assert.equal(closingNotices(hud).length, mode === 'directed' ? 3 : 0);
+    assert.equal(played(sounds, 'paChime'), mode === 'directed' ? 4 : 1);
+    assert.equal(played(sounds, 'closingKey'), 1, mode + ': the key pickup sound');
+    assert.equal(played(sounds, 'closingDuty'), 1, mode + ': the finished duty sound');
+
+    // The once-per-run briefing is quest PA too: the event fires in both modes, the PA reads it only in Directed.
+    hud.calls.length = 0;
+    tick(Math.ceil(closingTime.briefing.delaySeconds / dt) + 2);
+    assert.equal(closingNotices(hud).filter(([, notice]) => notice.text === closingTime.pa.briefing.text).length, mode === 'directed' ? 1 : 0);
   }
+  assert.deepEqual(briefings, ['directed', 'classic']);
   assert.deepEqual(messages, Array(2).fill(closingTime.pa.drop(closingTime.lines.manager.key).text));
 });
 
-test('HUD, pause and death receipt can clear Directed guidance for a Classic shift', () => {
+test('the fountain switch shows the count in its own prompt while the Key Ring is held and the line is open, in both modes', (t) => {
+  const { g, tick, standAt } = fixture(t);
+  const { needed, promptCount } = closingTime.lines.janitor;
+  const { feature } = g.features.list.find(({ feature }) => feature.kind === 'fountainHazard');
+  const note = (count) => promptCount(closingTime.lineProgress(count, needed));
+  assert.equal(note(3), 'Shocked 3/12');
+  const atSwitch = () => {
+    const { x, z } = feature.position, n = feature.normal;
+    standAt(x + n.x, z + n.z, Math.atan2(n.x, n.z) * 180 / Math.PI); // one step out from the wall, facing the switch
+    assert.equal(g.interactions.prompt?.kind, 'hazard');
+    return g.interactions.prompt.detail;
+  };
+
+  for (const mode of ['directed', 'classic']) {
+    g.resetRun();
+    g.state.closingMode = mode;
+    g.rounds.update = () => {};
+    tick();
+    g.map.areaUnlocks.openAll();
+    assert.equal(atSwitch(), hazards.fountain.detail, mode + ': no count before the key');
+    grantKeys(g, ['janitor']);
+    assert.equal(atSwitch(), hazards.fountain.detail + ' · ' + note(0), mode);
+    for (let i = 0; i < 3; i++) g.events.emit('fountainKill', {});
+    assert.equal(atSwitch(), hazards.fountain.detail + ' · ' + note(3), mode);
+    finishDuties(g, ['janitor']);
+    assert.equal(atSwitch(), hazards.fountain.detail, mode + ': no count once the line is ticked');
+  }
+});
+
+test('a Classic receipt has no checklist line: closingDone null is the one value, set by the game for the death and win receipts', (t) => {
+  const game = fixture(t);
+  const { g, tick, press, hud } = game;
+  const dieAndShow = () => {
+    g.health.takeDamage(g.stats.maxHealth);
+    tick(Math.ceil(feel.death.resultsDelay / dt) + 1);
+    return hud.calls.filter(([name]) => name === 'showResults').at(-1)[1];
+  };
+  const checklistLine = (receipt) => Object.fromEntries(receiptLinesFor(receipt))[closingTime.title];
+
+  // Directed: the receipt IS the summary, with its number.
+  let shown = dieAndShow();
+  assert.equal(shown, g.death.summary);
+  assert.equal(shown.closingDone, 0);
+  assert.equal(checklistLine(shown), '0 of 4');
+  assert.equal(g.receiptFor(g.death.summary), g.death.summary);
+
+  // Classic: the same summary (the number stays in it), shown with closingDone null.
+  g.resetRun();
+  g.state.closingMode = 'classic';
+  tick();
+  grantKeys(g, ['janitor']);
+  finishDuties(g, ['janitor']);
+  shown = dieAndShow();
+  assert.equal(g.death.summary.closingDone, 1);
+  assert.equal(shown.closingDone, null);
+  assert.equal(checklistLine(shown), undefined);
+  assert.deepEqual({ ...shown, closingDone: 1 }, { ...g.death.summary });
+
+  // The win receipt goes through the same function (main.js showWin).
+  g.resetRun();
+  tick();
+  approachVan(game);
+  readyToLeave(g);
+  press('KeyF', holdTicks);
+  assert.equal(g.winSummary.closingDone, 4);
+  assert.equal(g.receiptFor(g.winSummary).closingDone, null);
+  assert.equal(checklistLine({ ...g.receiptFor(g.winSummary), shiftComplete: true }), undefined);
+  g.state.closingMode = 'directed';
+  assert.equal(checklistLine({ ...g.receiptFor(g.winSummary), shiftComplete: true }), '4 of 4');
+});
+
+test('the HUD and pause screen hide the checklist and key markers for a Classic shift, and the HUD keeps no receipt state', () => {
   const { document } = menuDom();
   const hud = createHud();
   const checklist = Object.values(closingTime.lines).map((line) => ({ ...line, done: false }));
   const key = closingTime.lines.janitor.key;
   const markers = { janitor: { name: key, meters: 4, bearing: 0 } };
-  const receipt = { round: 1, pointsEarned: 0, kills: 0, timeAlive: 0, closingDone: 2 };
+  const receipt = { round: 1, pointsEarned: 0, kills: 0, timeAlive: 0, accuracy: 0, closingDone: 2 };
   const receiptStats = document.querySelector('.receipt-lines');
 
   hud.setClosing(checklist, markers);
@@ -1272,7 +1380,6 @@ test('HUD, pause and death receipt can clear Directed guidance for a Classic shi
   assert.ok(document.querySelectorAll('.bag-marker').some((node) => !node.hidden && node.textContent.includes(key)));
   hud.screens.show('pause', { closing: checklist });
   assert.ok(document.querySelector('.closing-list').textContent.includes(key));
-  hud.setReceiptClosingDone(0);
   hud.showResults(receipt);
   assert.ok(receiptStats.textContent.includes(closingTime.title));
 
@@ -1282,7 +1389,10 @@ test('HUD, pause and death receipt can clear Directed guidance for a Classic shi
   hud.screens.show('pause', { closing: null });
   assert.equal(document.querySelector('.pause-closing').hidden, true);
   assert.equal(document.querySelector('.closing-list').textContent, '');
-  hud.setReceiptClosingDone(null);
-  hud.showResults(receipt);
+  hud.showResults({ ...receipt, closingDone: null });
   assert.ok(!receiptStats.textContent.includes(closingTime.title));
+  // The receipt shows what it is given: nothing is remembered from the last one.
+  hud.showResults(receipt);
+  assert.ok(receiptStats.textContent.includes(closingTime.title));
+  assert.equal(hud.setReceiptClosingDone, undefined);
 });

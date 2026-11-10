@@ -17,7 +17,7 @@ export function buildNightSafe(feature, { map, closing, interactions, pricing, s
     get blocked() {
       if (isDone()) return state.showClosingGuidance ? complete : done;
       if (closing.hasKey('guard')) return null;
-      return state.showClosingGuidance ? requires + key : 'Locked';
+      return (state.showClosingGuidance ? requires : closingTime.classic.needs) + key;
     },
     use() {}, // The normal purchase event advances the checklist after payment.
   });
