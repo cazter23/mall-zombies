@@ -1552,6 +1552,44 @@ kbd {
   margin-top: 4px;
   padding: 0 4px;
 }
+.receipt-incident {
+  margin: 4px 0;
+  text-align: center;
+  font-family: var(--font-receipt);
+}
+.receipt-incident-header {
+  font-family: var(--font-receipt);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  color: #6b6375;
+}
+.receipt-incident-block {
+  margin-top: 4px;
+  padding: 0 4px;
+}
+.receipt-incident-label {
+  font-family: var(--font-receipt);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: #8b3a4a;
+  text-transform: uppercase;
+}
+.receipt-incident-cause {
+  font-family: var(--font-receipt);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #2a2530;
+  line-height: 1.15;
+  margin-top: 1px;
+}
+.receipt-incident-tip {
+  font-family: var(--font-receipt);
+  font-size: 14px;
+  line-height: 1.25;
+  color: #4a4454;
+  margin-top: 1px;
+}
 .receipt-barcode {
   display: flex;
   justify-content: center;

@@ -25,6 +25,9 @@ import { createOutfitRail } from './outfitRail.js';
 import { outfitRail as outfitCfg } from '../config/wardrobe.js';
 import { menuFeel } from '../config/settings.js';
 import { survivorLine } from '../config/workshop.js';
+import { getDeathReport } from '../config/deathReports.js';
+
+export { getDeathReport };
 
 function el(tag, className, html) {
   const node = document.createElement(tag);
@@ -213,6 +216,18 @@ export function createScreens() {
           <div class="receipt-eval-rating"></div>
           <div class="receipt-eval-comment"></div>
         </div>
+        <div class="receipt-rule"></div>
+        <div class="receipt-incident">
+          <div class="receipt-incident-header">*** INCIDENT REPORT / FORM 109-C ***</div>
+          <div class="receipt-incident-block">
+            <div class="receipt-incident-label">CAUSE OF TERMINATION:</div>
+            <div class="receipt-incident-cause"></div>
+          </div>
+          <div class="receipt-incident-block">
+            <div class="receipt-incident-label">LOSS PREVENTION TIP:</div>
+            <div class="receipt-incident-tip"></div>
+          </div>
+        </div>
         <div class="receipt-career"></div>
         <div class="receipt-rule"></div>
         <div class="receipt-validation">
@@ -240,6 +255,8 @@ export function createScreens() {
   const evalTitle = results.querySelector('.receipt-eval-title');
   const evalRating = results.querySelector('.receipt-eval-rating');
   const evalComment = results.querySelector('.receipt-eval-comment');
+  const incidentCause = results.querySelector('.receipt-incident-cause');
+  const incidentTip = results.querySelector('.receipt-incident-tip');
   const receiptCareer = results.querySelector('.receipt-career');
 
   // --- How to play ---------------------------------------------------------------------
@@ -373,6 +390,9 @@ export function createScreens() {
     evalTitle.textContent = review.title;
     evalRating.textContent = review.rating;
     evalComment.textContent = review.comment;
+    const incident = getDeathReport(r.killedBy);
+    incidentCause.textContent = incident.cause;
+    incidentTip.textContent = incident.tip;
     if (!careerResult) {
       receiptCareer.textContent = '';
       receiptCareer.classList.remove('show');

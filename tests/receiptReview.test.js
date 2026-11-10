@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import { menuDom } from './helpers/menuDom.js';
 
 menuDom(); // window mock for module imports
-const { evaluatePerformance, receiptLinesFor } = await import('../src/ui/screens.js');
+const { evaluatePerformance, receiptLinesFor, getDeathReport, createScreens } = await import('../src/ui/screens.js');
+const { deathReports } = await import('../src/config/deathReports.js');
+const { hasStatNumber } = await import('../src/config/effectWords.js');
+const { createPlayerHealth } = await import('../src/player/health.js');
 
 test('evaluatePerformance assigns UNAUTHORIZED OVERTIME on high round or long duration', () => {
   const byRound = evaluatePerformance({ round: 8, timeAlive: 100 });
@@ -98,4 +101,192 @@ test('GRAB-A-GUN on the receipt: prize tickets and Sunny keychains get their own
   const lines = Object.fromEntries(receiptLinesFor({ ...base, ticketsWon: 340, keychains: 1 }));
   assert.equal(lines['Prize tickets won'], 340);
   assert.equal(lines['Sunny keychains'], '1 (non-refundable)');
+});
+
+test('createPlayerHealth records lethal source and clears it on reset', () => {
+  const stats = { health: 100, maxHealth: 100, regenDelay: 5, regenRate: 10 };
+  let deathSource = null;
+  const health = createPlayerHealth({ stats, onDeath: (source) => { deathSource = source; } });
+
+  // Non-lethal damage does not set killedBy
+  health.takeDamage(40, { type: 'zombie', id: 'shopper' });
+  assert.equal(health.killedBy, null);
+  assert.equal(deathSource, null);
+
+  // Lethal damage records source
+  const lethalSource = { type: 'zombie', id: 'cartPusher' };
+  health.takeDamage(70, lethalSource);
+  assert.equal(health.isDead, true);
+  assert.equal(health.killedBy, lethalSource);
+  assert.equal(deathSource, lethalSource);
+
+  // Reset clears killedBy
+  health.reset();
+  assert.equal(health.isDead, false);
+  assert.equal(health.killedBy, null);
+});
+
+test('getDeathReport resolves causes and survival tips for various lethal sources', () => {
+  // Standard zombie
+  const shopper = getDeathReport({ type: 'zombie', id: 'shopper' });
+  assert.equal(shopper.cause, deathReports.zombies.shopper.cause);
+  assert.match(shopper.tip, /Associate Tip/);
+
+  // Cart Pusher
+  const cart = getDeathReport({ type: 'zombie', id: 'cartPusher' });
+  assert.equal(cart.cause, deathReports.zombies.cartPusher.cause);
+  assert.match(cart.tip, /Space/);
+
+  // Mall Walker
+  const walker = getDeathReport({ type: 'zombie', id: 'mallWalker' });
+  assert.equal(walker.cause, deathReports.zombies.mallWalker.cause);
+
+  // Mannequin
+  const mannequin = getDeathReport({ type: 'zombie', id: 'mannequin' });
+  assert.equal(mannequin.cause, deathReports.zombies.mannequin.cause);
+
+  // Mascot variants
+  for (const variant of ['sirWaffles', 'captainCoupon', 'poppyCorn', 'scoops']) {
+    const mascot = getDeathReport({ type: 'zombie', id: 'mascot', variant });
+    assert.equal(mascot.cause, deathReports.mascots[variant].cause);
+    assert.equal(mascot.tip, deathReports.mascots[variant].tip);
+  }
+
+  // Bosses (via boss or id)
+  for (const boss of ['janitor', 'guard', 'manager', 'influencer']) {
+    const report1 = getDeathReport({ type: 'zombie', id: boss, boss });
+    assert.equal(report1.cause, deathReports.bosses[boss].cause);
+    assert.equal(report1.tip, deathReports.bosses[boss].tip);
+
+    const report2 = getDeathReport({ type: 'zombie', id: boss });
+    assert.equal(report2.cause, deathReports.bosses[boss].cause);
+  }
+
+  // Fall
+  assert.equal(getDeathReport({ fall: true }).cause, deathReports.fall.cause);
+  assert.equal(getDeathReport({ type: 'fall', fall: true }).cause, deathReports.fall.cause);
+
+  // Fallback / unknown
+  assert.equal(getDeathReport(null).cause, deathReports.default.cause);
+  assert.equal(getDeathReport(undefined).cause, deathReports.default.cause);
+  assert.equal(getDeathReport({}).cause, deathReports.default.cause);
+  assert.equal(getDeathReport({ type: 'unknown' }).cause, deathReports.default.cause);
+});
+
+test('every death report cause and tip complies with the words-only rule', () => {
+  const allReports = [
+    deathReports.fall,
+    ...Object.values(deathReports.zombies),
+    ...Object.values(deathReports.mascots),
+    ...Object.values(deathReports.bosses),
+    deathReports.default,
+  ];
+
+  for (const report of allReports) {
+    assert.ok(report.cause && typeof report.cause === 'string', 'has cause string');
+    assert.ok(report.tip && typeof report.tip === 'string', 'has tip string');
+    assert.equal(hasStatNumber(report.cause), false, `cause must not have stat numbers: ${report.cause}`);
+    assert.equal(hasStatNumber(report.tip), false, `tip must not have stat numbers: ${report.tip}`);
+  }
+});
+
+test('Incident Report (Form 109-C) renders into the receipt DOM with cause and survival tip', () => {
+  const screens = createScreens();
+  const baseSummary = {
+    timeAlive: 120,
+    round: 4,
+    kills: 15,
+    headshotKills: 5,
+    meleeKills: 2,
+    accuracy: 0.45,
+    pointsEarned: 2400,
+    pointsRemaining: 300,
+    shotsFired: 50,
+  };
+
+  // Cart Pusher death
+  screens.show('results', { ...baseSummary, killedBy: { type: 'zombie', id: 'cartPusher' } });
+  const causeEl = document.querySelector('.receipt-incident-cause');
+  const tipEl = document.querySelector('.receipt-incident-tip');
+  const headerEl = document.querySelector('.receipt-incident-header');
+
+  assert.ok(headerEl, 'has incident header');
+  assert.match(headerEl.textContent, /INCIDENT REPORT \/ FORM 109-C/);
+  assert.equal(causeEl.textContent, deathReports.zombies.cartPusher.cause);
+  assert.equal(tipEl.textContent, deathReports.zombies.cartPusher.tip);
+
+  // Boss death (Janitor)
+  screens.show('results', { ...baseSummary, killedBy: { type: 'zombie', id: 'janitor', boss: 'janitor' } });
+  assert.equal(causeEl.textContent, deathReports.bosses.janitor.cause);
+  assert.equal(tipEl.textContent, deathReports.bosses.janitor.tip);
+
+  // Fall death
+  screens.show('results', { ...baseSummary, killedBy: { type: 'fall', fall: true } });
+  assert.equal(causeEl.textContent, deathReports.fall.cause);
+  assert.equal(tipEl.textContent, deathReports.fall.tip);
+
+  // Standard zombie death
+  screens.show('results', { ...baseSummary, killedBy: { type: 'zombie', id: 'shopper' } });
+  assert.equal(causeEl.textContent, deathReports.zombies.shopper.cause);
+  assert.equal(tipEl.textContent, deathReports.zombies.shopper.tip);
+});
+
+test('headless game records lethal blow source in summary and renders in receipt DOM', async () => {
+  const { headlessGame } = await import('./helpers/headlessGame.js');
+
+  // 1. Zombie kill
+  {
+    const t = headlessGame();
+    let endedSummary = null;
+    t.g.events.on('runEnd', ({ summary }) => { endedSummary = summary; });
+
+    const mockZombie = { type: { id: 'cartPusher' } };
+    t.g.events.emit('playerHit', { damage: 200, zombie: mockZombie, knockback: null });
+
+    assert.ok(endedSummary, 'runEnd emitted');
+    assert.deepEqual(endedSummary.killedBy, { type: 'zombie', id: 'cartPusher' });
+
+    document.body.replaceChildren();
+    const screens = createScreens();
+    screens.show('results', endedSummary);
+    assert.equal(document.querySelector('.receipt-incident-cause').textContent, deathReports.zombies.cartPusher.cause);
+    assert.equal(document.querySelector('.receipt-incident-tip').textContent, deathReports.zombies.cartPusher.tip);
+  }
+
+  // 2. Boss kill
+  {
+    const t = headlessGame();
+    let endedSummary = null;
+    t.g.events.on('runEnd', ({ summary }) => { endedSummary = summary; });
+
+    const mockBoss = { type: { id: 'janitor', boss: true } };
+    t.g.events.emit('playerHit', { damage: 200, zombie: mockBoss, knockback: null });
+
+    assert.ok(endedSummary, 'runEnd emitted');
+    assert.deepEqual(endedSummary.killedBy, { type: 'zombie', id: 'janitor', boss: 'janitor' });
+
+    document.body.replaceChildren();
+    const screens = createScreens();
+    screens.show('results', endedSummary);
+    assert.equal(document.querySelector('.receipt-incident-cause').textContent, deathReports.bosses.janitor.cause);
+    assert.equal(document.querySelector('.receipt-incident-tip').textContent, deathReports.bosses.janitor.tip);
+  }
+
+  // 3. Fall kill
+  {
+    const t = headlessGame();
+    let endedSummary = null;
+    t.g.events.on('runEnd', ({ summary }) => { endedSummary = summary; });
+
+    t.g.player.onFall({ drop: 10, damage: 200 });
+
+    assert.ok(endedSummary, 'runEnd emitted');
+    assert.deepEqual(endedSummary.killedBy, { type: 'fall', fall: true });
+
+    document.body.replaceChildren();
+    const screens = createScreens();
+    screens.show('results', endedSummary);
+    assert.equal(document.querySelector('.receipt-incident-cause').textContent, deathReports.fall.cause);
+    assert.equal(document.querySelector('.receipt-incident-tip').textContent, deathReports.fall.tip);
+  }
 });
