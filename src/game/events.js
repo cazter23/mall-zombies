@@ -41,7 +41,8 @@
 //   'escapeVanStart' {}                                  the player finished the van's hold interaction
 //   'runWon'      { summary }                            immutable win snapshot; simulation pauses for the choice
 //   'overtimeStart' { round }                            the player chose to continue at the next round
-//   'runEnd'      { summary }                            final run totals, emitted once on death or Clock out
+//   'runEnd'      { summary }                            final run totals, emitted once per recorded run: on death, on Clock out,
+//                                                        or when a won run is left from a menu (createGame's leaveRun)
 //   'powerUpDrop' { id, position, seconds }               earned incentive appeared on clear floor
 //   'powerUpCollect' { id, name, pa, sound }              walk-through collection (instant effect or zone start)
 //   'powerUpStart' { id, position, remaining, radius, ... } zone or temporary employee benefit began

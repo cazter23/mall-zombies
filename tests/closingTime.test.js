@@ -307,6 +307,65 @@ test('overtime starts a normal next round with the same wallet and loadout; deat
   assert.deepEqual(g.gun.slots, ['stapleGun']);
 });
 
+test('a won run left from the menu in overtime is recorded once; a run that was never won is not', (t) => {
+  const game = fixture(t);
+  const { g, tick, press } = game;
+  const career = createCareerStats({ storage: { getItem: () => null, setItem() {} } });
+  const ends = [];
+  g.events.on('runEnd', ({ summary }) => { ends.push(summary); career.recordRun(summary); });
+
+  tick(30);
+  assert.equal(g.leaveRun(), false, 'quitting a run that was never won records nothing');
+  assert.equal(g.state.over, false);
+  assert.deepEqual(ends, []);
+
+  approachVan(game);
+  readyToLeave(g);
+  press('KeyF', holdTicks);
+  const win = g.winSummary;
+  assert.ok(g.stayForOvertime());
+  tick(120);
+  g.events.emit('kill', { zombie: { type: { id: 'shopper' }, position: g.player.position }, source: 'gun' });
+  assert.equal(g.runStats.kills, win.kills + 1);
+
+  // Quit to title / Restart run: main.js calls leaveRun() before resetRun().
+  assert.equal(g.leaveRun(), true);
+  assert.equal(ends.length, 1);
+  assert.equal(ends[0].won, true);
+  assert.equal(ends[0].winTime, win.timeAlive);
+  assert.equal(ends[0].winRound, win.round);
+  assert.equal(ends[0].kills, win.kills + 1, 'the win summary plus what overtime added');
+  assert.ok(ends[0].timeAlive > win.timeAlive);
+  assert.equal(g.state.over, true);
+  assert.equal(g.leaveRun(), false, 'a second call records nothing');
+  assert.equal(ends.length, 1);
+  assert.equal(career.snapshot().totals.runs, 1);
+  assert.equal(career.snapshot().totals.wins, 1);
+  assert.equal(career.snapshot().bests.fastestWin, win.timeAlive);
+
+  g.resetRun();
+  assert.equal(g.leaveRun(), false);
+
+  // While the receipt's choice is still pending, leaving records the win summary itself.
+  approachVan(game);
+  readyToLeave(g);
+  press('KeyF', holdTicks);
+  assert.ok(g.state.winPending);
+  assert.equal(g.leaveRun(), true);
+  assert.equal(ends[1], g.winSummary);
+  assert.equal(g.clockOut(), false);
+  assert.equal(career.snapshot().totals.wins, 2);
+
+  // Every other ending still records exactly once: a death, then leaving, adds nothing.
+  g.resetRun();
+  tick();
+  g.health.takeDamage(g.stats.maxHealth);
+  assert.equal(ends.length, 3);
+  assert.equal(g.leaveRun(), false);
+  assert.equal(ends.length, 3);
+  assert.equal(career.snapshot().totals.runs, 3);
+});
+
 test('career version 1 migrates old records and saves the fastest win by time at the van', () => {
   let saved = JSON.stringify({
     version: 1,

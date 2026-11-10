@@ -293,6 +293,7 @@ function pauseRun() {
 }
 // A fresh run: everything reset, then straight into play (if the mouse lock is refused, "Back to work" waits).
 function freshRun(how) {
+  g.leaveRun(); // (a won run left by Restart run is recorded first)
   screens.setCareerResult(null);
   resetRun();
   screens.show('pause', { fresh: true });
@@ -302,6 +303,7 @@ function freshRun(how) {
 function goToTitle() {
   game.padPlaying = false;
   if (document.pointerLockElement) document.exitPointerLock();
+  g.leaveRun(); // (a won run left by Quit to title is recorded first)
   resetRun();
   screens.setCareerResult(null);
   titleCamera.restart();

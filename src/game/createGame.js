@@ -295,6 +295,20 @@ export function createGame({
     return true;
   }
 
+  // Leaving a run from a menu (Quit to title, Restart run): main.js calls this BEFORE it resets. A won run that is
+  // still on the clock (the receipt's choice is pending, or overtime is being played) is recorded here, exactly once:
+  // the win plus whatever overtime added. A run that was never won is not recorded, and a run that already ended
+  // (death, Clock out) was recorded when it ended.
+  function leaveRun() {
+    if (state.over || !state.won) return false;
+    const summary = state.winPending ? winSummary : buildRunSummary();
+    state.over = true;
+    state.winPending = false;
+    state.padPlaying = false;
+    events.emit('runEnd', { summary });
+    return true;
+  }
+
   function stayForOvertime() {
     if (!state.winPending) return false;
     state.winPending = false;
@@ -736,6 +750,7 @@ export function createGame({
     get winSummary() { return winSummary; },
     clockOut,
     stayForOvertime,
+    leaveRun,
     map,
     features,
     wardrobe,
