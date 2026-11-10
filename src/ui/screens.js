@@ -53,8 +53,8 @@ export function receiptLinesFor(r) {
   ];
   if (r.closingDone != null) lines.push([closingTime.title, closingTime.receiptProgress(r.closingDone, Object.keys(closingTime.lines).length)]);
   if (r.won && !r.shiftComplete) {
-    lines.push(['CLOCKED OUT', `Round ${r.winRound} · ${clock(r.winTime)}`]);
-    lines.push(['Overtime rounds survived', r.overtimeRounds ?? 0]);
+    lines.push([closingTime.receipt.clockedOut, `Round ${r.winRound} · ${clock(r.winTime)}`]);
+    lines.push([closingTime.receipt.overtimeRounds, r.overtimeRounds ?? 0]);
   }
   if (r.survivedBy?.length) lines.push(['Survived by', r.survivedBy.map(survivorLine).join(' and ')]);
   // GRAB-A-GUN (game/tickets.js): tickets aren't points, so they're a line of their own, never in the totals.
@@ -215,7 +215,7 @@ export function createScreens() {
         <div class="receipt-store">SUNSET GALLERIA</div>
         <div class="receipt-sub">Store #013 · Register 4</div>
         <div class="receipt-sub receipt-date"></div>
-        <h1 class="receipt-shift-heading" hidden="hidden">SHIFT COMPLETE</h1>
+        <h1 class="receipt-shift-heading" hidden="hidden">${closingTime.receipt.shiftComplete}</h1>
         <div class="receipt-sub receipt-cashier">Cashier: YOU (deceased)</div>
         <div class="receipt-rule"></div>
         <div class="receipt-lines"></div>
@@ -405,10 +405,11 @@ export function createScreens() {
   function fillResults(r) {
     const shiftComplete = Boolean(r.shiftComplete);
     shiftHeading.hidden = !shiftComplete;
-    cashier.textContent = shiftComplete ? 'Cashier: YOU' : 'Cashier: YOU (deceased)';
-    receiptStamp.textContent = shiftComplete && !r.clockedOut ? 'Complete' : 'Clocked out';
-    receiptThanks.innerHTML = shiftComplete ? 'Thank you for closing Sunset Galleria.' : deathThanks;
-    receiptWearing.querySelector('.receipt-wearing-head').textContent = shiftComplete ? 'WORE ON SHIFT' : outfitCfg.diedWearing;
+    const words = closingTime.receipt;
+    cashier.textContent = shiftComplete ? words.cashier : 'Cashier: YOU (deceased)';
+    receiptStamp.textContent = shiftComplete && !r.clockedOut ? words.stampComplete : 'Clocked out';
+    receiptThanks.innerHTML = shiftComplete ? words.thanks : deathThanks;
+    receiptWearing.querySelector('.receipt-wearing-head').textContent = shiftComplete ? words.woreOnShift : outfitCfg.diedWearing;
     for (const section of deathSections) section.hidden = shiftComplete;
     for (const button of resultButtons) {
       const choice = button.dataset.action === 'clockOut' || button.dataset.action === 'overtime';

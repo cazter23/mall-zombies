@@ -10,6 +10,7 @@ export const closingTime = {
     verb: 'deposit',
     done: 'Done',
     complete: 'Takings banked',
+    requires: 'Requires ', // + the key's name, while the Safe Key is not held
     mountOffset: 1.8, // east wall of Customer Service, measured from the booth center
     insetFromHallWall: 0.88,
     promptOffset: 0.32,
@@ -48,6 +49,17 @@ export const closingTime = {
     openLastOrders: (key) => ({ kicker: 'Closing time', keep: true, text: `${key} collected. Collect a build or Restuff from Build-A-Blaster’s Naming Booth.` }),
     completeLastOrders: { kicker: 'Closing time', keep: true, text: 'Last orders signed off. Thank you, associates.' },
   },
+  // The win receipt, and the two lines a later death receipt gains after a win (ui/screens.js).
+  receipt: {
+    shiftComplete: 'SHIFT COMPLETE',
+    cashier: 'Cashier: YOU',
+    stampComplete: 'Complete',
+    woreOnShift: 'WORE ON SHIFT',
+    thanks: 'Thank you for closing Sunset Galleria.',
+    clockedOut: 'CLOCKED OUT',
+    overtimeRounds: 'Overtime rounds survived',
+  },
+  overtimeTag: 'OVERTIME', // beside the round counter while overtime is played (ui/hud.js)
   // The Statistics screen (ui/screens.js): career wins, the fastest win, and the mark on a won shift in the recent list.
   stats: { wins: 'Shifts completed', fastestWin: 'Fastest close', noWin: '—', wonMark: 'CLOSED', wonTitle: 'Shift completed: the mall was closed' },
   lineProgress: (count, needed) => `${count}/${needed}`,

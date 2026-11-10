@@ -161,7 +161,7 @@ export function createHud() {
   occupancyCounter.textContent = 'CLOSED FOR RESTOCK';
   occupancyCounter.classList.add('closed');
   const overtimeTag = el('div', 'overtime-tag');
-  overtimeTag.textContent = 'OVERTIME';
+  overtimeTag.textContent = closingTime.overtimeTag;
   overtimeTag.hidden = true;
   roundCounter.append(roundLabel, roundValue, occupancyCounter, overtimeTag);
   hud.append(roundCounter);
