@@ -276,7 +276,7 @@ export function createGame({
   }
 
   function onRunWon() {
-    if (state.over || state.won || closing.missingKeys.length) return;
+    if (state.over || state.won || !closing.readyToLeave) return; // (all four keys and lines 1 to 3; no round gate)
     state.won = true;
     state.winPending = true;
     winSummary = buildRunSummary();

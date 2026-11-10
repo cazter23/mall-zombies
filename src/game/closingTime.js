@@ -78,6 +78,12 @@ export function createClosingTime({ events, player, colliders, state, view }) {
     hasKey(bossId) { return held.has(bossId); },
     isDone(bossId) { return completed.has(bossId); },
     get missingKeys() { return lines.filter(([id]) => !held.has(id)).map(([, { key }]) => key); },
+    // Lines 1 to 3 that are not ticked yet (line 4 is leaving itself, so it is never "missing").
+    get missingDuties() {
+      return lines.filter(([id, line]) => line.needed && !completed.has(id)).map(([bossId, line]) => ({ bossId, ...line }));
+    },
+    // What the van asks for: all four keys and lines 1 to 3 ticked. There is no round gate.
+    get readyToLeave() { return held.size === total && this.missingDuties.length === 0; },
     get checklist() {
       return lines.map(([bossId, line]) => ({
         bossId, ...line, done: completed.has(bossId),

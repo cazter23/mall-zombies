@@ -154,23 +154,63 @@ function grantKeys(g, ids = bossIds) {
   g.state.assisted = false; // stand in for earned keys in the career integration tests
 }
 
-test('the van explains missing keys, then a hold wins once and Clock out freezes the run', (t) => {
+// Lines 1 to 3, finished through the events the real duties send (the fountain, the Night Safe, the Naming Booth).
+const dutyIds = bossIds.filter((id) => closingTime.lines[id].needed);
+function finishDuties(g, ids = dutyIds) {
+  const dutyEvents = {
+    janitor: () => g.events.emit('fountainKill', {}),
+    guard: () => g.events.emit('purchase', { label: closingTime.nightSafe.name, cost: 0, kind: 'closing', id: 'nightSafe' }),
+    manager: () => g.events.emit('ritualCollect', {}),
+  };
+  for (const id of ids) {
+    const done = g.closing.checklist.find(({ bossId }) => bossId === id).count ?? 0;
+    for (let i = done; i < closingTime.lines[id].needed; i++) dutyEvents[id]();
+    assert.ok(g.closing.isDone(id), id);
+  }
+}
+
+// Everything the van asks for: the four keys and lines 1 to 3.
+function readyToLeave(g) {
+  grantKeys(g);
+  finishDuties(g);
+  assert.ok(g.closing.readyToLeave);
+}
+
+test('the van explains missing keys and duties, then a hold wins once and Clock out freezes the run', (t) => {
   const game = fixture(t);
   const { g, tick, press, hud } = game;
   const wins = [], ends = [];
   let deaths = 0;
   const career = createCareerStats();
+  const { lines, van } = closingTime;
   g.events.on('runWon', ({ summary }) => wins.push(summary));
   g.events.on('runEnd', ({ summary }) => { ends.push(summary); career.recordRun(summary); });
   g.events.on('playerDeath', () => deaths++);
   approachVan(game);
+  assert.equal(g.interactions.prompt.blocked, van.blockedPrefix + bossIds.map((id) => lines[id].key).join(', '));
 
-  grantKeys(g, bossIds.slice(0, -1));
+  // Keys first, then the duty whose key is held but which is not done.
+  grantKeys(g, ['janitor']);
+  assert.equal(g.interactions.prompt.blocked,
+    van.blockedPrefix + [lines.guard.key, lines.manager.key, lines.influencer.key, lines.janitor.duty].join(', '));
+
+  grantKeys(g, ['guard', 'manager']);
   assert.match(g.interactions.prompt.blocked, /Skylar's Van Keys/);
   press('KeyF', holdTicks);
   assert.equal(g.state.won, false);
 
-  grantKeys(g, bossIds.slice(-1));
+  // Four keys are not enough: the van refuses and names each unfinished duty.
+  grantKeys(g, ['influencer']);
+  assert.deepEqual(g.closing.missingKeys, []);
+  assert.equal(g.interactions.prompt.blocked, van.blockedPrefix + dutyIds.map((id) => lines[id].duty).join(', '));
+  finishDuties(g, ['janitor', 'guard']);
+  assert.equal(g.interactions.prompt.blocked, van.blockedPrefix + lines.manager.duty);
+  press('KeyF', holdTicks);
+  g.events.emit('escapeVanStart');
+  assert.equal(g.state.won, false, 'four keys and an unfinished duty do not start the van');
+  assert.equal(wins.length, 0);
+
+  finishDuties(g, ['manager']);
   assert.equal(g.interactions.prompt.blocked, null);
   press('KeyF', holdTicks);
   assert.equal(g.state.won, true);
@@ -215,7 +255,7 @@ test('overtime starts a normal next round with the same wallet and loadout; deat
   const points = g.wallet.points;
   const slots = [...g.gun.slots];
   approachVan(game);
-  grantKeys(g);
+  readyToLeave(g);
   assert.ok(g.zombies.spawn('shopper'));
   press('KeyF', holdTicks);
   const win = g.winSummary;
@@ -302,20 +342,20 @@ test('win presentation checks the fourth box only at the van and keeps the headl
   const game = fixture(t);
   const { g, press } = game;
   approachVan(game);
-  grantKeys(g);
+  readyToLeave(g);
   assert.deepEqual(g.closing.missingKeys, []);
   assert.deepEqual(closingChecklistFor(g.closing.checklist, g.state.won).map(({ done }) => done),
-    [false, false, false, false]);
+    [true, true, true, false]);
   press('KeyF', holdTicks);
   assert.deepEqual(closingChecklistFor(g.closing.checklist, g.state.won).map(({ done }) => done),
-    [false, false, false, true]);
+    [true, true, true, true]);
 });
 
 test('win receipt offers both choices, then restores the death receipt for an overtime death', (t) => {
   const game = fixture(t);
   const { g, press } = game;
   approachVan(game);
-  grantKeys(g);
+  readyToLeave(g);
   press('KeyF', holdTicks);
 
   const { document } = menuDom();
