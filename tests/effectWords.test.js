@@ -15,6 +15,10 @@ import { attachmentCounterItem } from '../src/game/features/attachmentCounter.js
 import { upgradeDeskItem } from '../src/game/features/upgradeDesk.js';
 import { TIER_IDS, attachmentLines, tierLines, renewalLines } from '../src/weapons/upgrades.js';
 import { ui } from '../src/config/ui.js';
+import * as THREE from 'three';
+import { clawMachine } from '../src/config/clawMachine.js';
+import { weapons } from '../src/config/weapons.js';
+import { dt } from './helpers/headlessGame.js';
 
 const clean = (text, where) => {
   assert.ok(!hasStatNumber(text), `${where}: "${text}" shows a stat number`);
@@ -111,4 +115,69 @@ test('every real prompt the game builds from them is words: attachment counters,
     for (const { text } of g.wardrobe.wornLines(id)) clean(text, `${id} worn`);
   }
   for (const slot of ['head', 'torso', 'feet', 'accessory']) for (const tag of g.outfitRail.snapshot().filter((x) => x.slot === slot)) for (const { text } of tag.lines) clean(text, `rail ${tag.id}`);
+});
+
+// --- GRAB-A-GUN (docs/claw-machine-plan.md): everything the claw machine and the Prize Counter SAY is words too. Prices, points, ticket counts,
+// "N left" and countdown seconds stay numbers (the clean() check only rejects a digit with %, x, s, m, a degree sign or an arrow, and percentages).
+// A Flash Sale keeps its percentage (the claw sale group is checked with the others, above).
+
+test('every claw machine line in config is words: prizes, screens, PA lines, the Prize Counter', () => {
+  const strings = (value, out = []) => { if (typeof value === 'string') out.push(value); else if (value && typeof value === 'object') for (const v of Object.values(value)) strings(v, out); return out; };
+  const multiplierWords = /\b(half|twice|double|triple|quadruple|times)\b/i; // (a multiplier in words is still a multiplier)
+  for (const text of strings([clawMachine.name, clawMachine.capsules, clawMachine.plush, clawMachine.screen, clawMachine.pa])) { clean(text.replace('{price}', 'a price').replace('{area}', 'an area'), 'claw text'); assert.ok(!multiplierWords.test(text), `claw text: "${text}" says a multiplier in words`); }
+  for (const prize of clawMachine.prizeCounter.prizes) { clean(prize.name, `${prize.id} name`); clean(prize.blurb, `${prize.id} blurb`); assert.ok(!multiplierWords.test(prize.blurb), `${prize.id} blurb says a multiplier in words`); }
+  for (const id of Object.keys(clawMachine.prizes)) clean(weapons[id].name, `${id} name`);
+  const claw = economy.flashSales.groups.find((group) => group.id === 'claw');
+  assert.match(claw.start.text, /\{pct\}%/, 'the claw sale says its percentage, like every sale');
+  clean(claw.start.text.replace('{pct}%', 'a discount'), 'claw sale');
+  clean(claw.end.text, 'claw sale end');
+});
+
+test('every real prompt the claw machine and the Prize Counter build is words: pay, drop, take (new and Refurbished), each prize card', () => {
+  const t = headlessGame(), { g } = t;
+  t.tick();
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  g.wallet.earn(500_000);
+  g.map.areaUnlocks.unlock('hallway');
+  t.tick(60);
+  const realRandom = Math.random;
+  process.once("beforeExit", () => { Math.random = realRandom; });
+  let a = 11; // (seeded AFTER the map was built: Three.js makes object ids with Math.random)
+  Math.random = () => { a = (a * 1664525 + 1013904223) >>> 0; return a / 2 ** 32; };
+  const stand = (position, normal, floorY = 0, distance = 1.3) => {
+    g.player.teleport({ position: new THREE.Vector3(position.x + normal.x * distance, floorY, position.z + normal.z * distance), yaw: Math.atan2(normal.x, normal.z) });
+    g.player.pitch = 0;
+    t.tick();
+  };
+  const seen = (what) => { const p = g.interactions.prompt; if (!p) return null; for (const key of ['label', 'title', 'detail', 'priceLabel', 'blocked']) if (p[key]) clean(p[key], `${what} ${key}`); return p; };
+  // The prize cards: with no tickets (refused: "Need more tickets"), then rich enough.
+  const counter = g.map.features.find((f) => f.kind === 'prizeCounter');
+  for (const withTickets of [false, true]) {
+    g.tickets.spend(g.tickets.count);
+    if (withTickets) g.tickets.add(1000, 'test');
+    for (const slot of counter.slots) {
+      stand(slot.position, counter.normal, 0, 0.9);
+      assert.equal(seen(`prize ${slot.id}`)?.id, slot.id);
+    }
+  }
+  // The machine: carry a gun with a free attachment slot so a Refurbished prize can come up, and grab until one has (or 40 grabs).
+  g.gun.give(weapons.nailGun);
+  const claw = g.features.list.find((f) => f.feature.kind === 'clawMachine').instance;
+  let refurbished = false;
+  for (let grab = 0; grab < 40 && !refurbished; grab++) {
+    claw.moveNow(claw.site.id);
+    const { position, normal } = claw.site.cabinet;
+    stand(position, normal, clawMachine.sites.find((s) => s.id === claw.site.id).floorY);
+    assert.equal(seen('pay')?.kind, 'claw');
+    t.press('KeyF', 20);
+    assert.equal(seen('drop')?.id, 'drop');
+    t.tick(Math.floor(Math.random() * 100));
+    t.press('KeyF', 1);
+    t.tick(Math.ceil(clawMachine.liftSeconds / dt) + 1);
+    const take = seen('take');
+    if (take?.id === 'take') { refurbished = /^Refurbished/.test(take.detail); t.press('KeyF', 20); }
+    else t.tick(Math.ceil(clawMachine.takeSeconds / dt) + 5); // (a plush: the machine closed; wait it out)
+  }
+  assert.ok(refurbished, 'a Refurbished take prompt came up and was checked');
 });

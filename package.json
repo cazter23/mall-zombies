@@ -12,6 +12,7 @@
     "preview": "vite preview",
     "play": "node tools/play.mjs",
     "balance": "node tools/gunReport.mjs",
+    "sim:claw": "node tools/clawSim.mjs",
     "balance:bab": "node tools/babReport.mjs"
   },
   "dependencies": {

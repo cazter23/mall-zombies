@@ -27,7 +27,8 @@ const BOSS_IDS = Object.keys(bossTypes).sort((a,b)=>bossTypes[a].firstRounds[0]-
 const WALL_GUN_IDS = Object.keys(weapons).filter((id) => id !== 'stapleGun');
 const nameOf = (id) => id.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
 
-export function createDebugCommands({ map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses, wardrobe, commands = debug.commands, onUse = null }) {
+export function createDebugCommands({ map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses, wardrobe, features = null, commands = debug.commands, onUse = null }) {
+  const clawMachine = () => features?.list.find(({ feature }) => feature.kind === 'clawMachine')?.instance ?? null; // GRAB-A-GUN
   const state = { panelOpen: debug.panel.startOpen, zombieIndex: 0, bossIndex: 0, gunIndex: 0, mascotIndex: 0, goldIndex: 0, last: '' };
   const selectedZombie = () => ZOMBIE_IDS[state.zombieIndex];
 
@@ -160,6 +161,20 @@ export function createDebugCommands({ map, zombies, rounds, wallet, gun, health,
       spots.repair.open();
       player.teleport(spots.workshop);
       return 'At the Build-A-Blaster bench';
+    },
+
+    // GRAB-A-GUN (game/features/clawMachine.js): Sunny in the next grab, or the machine moved now.
+    clawPlush() {
+      const claw = clawMachine();
+      if (!claw) return 'This map has no claw machine';
+      claw.forcePlush();
+      return 'The next grab has Sunny in it';
+    },
+    clawMove() {
+      const claw = clawMachine();
+      if (!claw) return 'This map has no claw machine';
+      const site = claw.moveNow();
+      return site ? `GRAB-A-GUN moved to ${map.zones[site.zone].label}` : 'Not moved: mid-grab, or no other open area';
     },
 
     // The benchmark itself is browser-side (fx/benchmark.js, run by main.js on Shift+B); headless it only says so.

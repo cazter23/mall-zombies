@@ -44,6 +44,8 @@ export const debug = {
     { id: 'arena', key: 'KeyT', group: 'Map', label: 'Test range / return to mall' },
     { id: 'upstairs', key: 'KeyT', shift: true, group: 'Map', label: 'Level 2 / return downstairs' },
     { id: 'workshop', key: 'KeyY', group: 'Map', label: 'Go to Build-A-Blaster' },
+    { id: 'clawPlush', key: 'KeyE', group: 'Map', label: 'GRAB-A-GUN: Sunny in the next grab' },
+    { id: 'clawMove', key: 'KeyE', shift: true, group: 'Map', label: 'GRAB-A-GUN: move it to another open area now' },
 
     { id: 'panel', key: 'Backquote', group: 'Debug', label: 'Show / hide this window' },
     { id: 'benchmark', key: 'KeyB', shift: true, group: 'Debug', label: 'Benchmark: time a camera route (title or pause screen)' },

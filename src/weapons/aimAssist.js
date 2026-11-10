@@ -18,6 +18,9 @@ import { castShot } from './hitscan.js';
 const DEG_TO_RAD = Math.PI / 180;
 const wrapAngle = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 
+/** Can aim assist ever help toward this shootable? Not a dead or spawning one, and never one flagged ignoreAimAssist (Sunny). */
+export const assistable = (shootable) => shootable.isAlive && shootable.state !== 'spawning' && !shootable.ignoreAimAssist;
+
 export function createAimAssist({ player, input, shootables, colliders }) {
   let target = null; // the shootable currently being assisted
   let prevYaw = 0; // that target's direction last tick (to measure its movement across the view)
@@ -42,7 +45,7 @@ export function createAimAssist({ player, input, shootables, colliders }) {
 
   // How assistable is this target right now? null if not at all.
   function evaluate(shootable) {
-    if (!shootable.isAlive || shootable.state === 'spawning') return null;
+    if (!assistable(shootable)) return null;
     chestOf(shootable, chest);
     toChest.subVectors(chest, eye);
     const distance = toChest.length();

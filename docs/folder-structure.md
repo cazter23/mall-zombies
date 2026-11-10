@@ -93,10 +93,14 @@ src/
                         bindings: tests check) + enabled (master switch), showMarkers, testArena, addPointsAmount, jumpRounds, panel,
                         dummies, exposeToWindow, keyLabel(). They work in a normal game (no debug mode): Z spawn the selected
                         zombie / Shift+Z next type / X clear / K kill all (pays), N next round / Shift+N +5 rounds / L Flash Sale,
-                        P +5000 / ' points to 0, G god mode / H next wall gun / U free tier, O all doors / T test range / Shift+T Level 2, ` window
+                        P +5000 / ' points to 0, G god mode / H next wall gun / U free tier, O all doors / T test range / Shift+T Level 2, ` window,
+                        E Sunny in the next GRAB-A-GUN grab / Shift+E move GRAB-A-GUN to another open area now
     ui.js               Presentation timing, PA queue limit and brief weapon-role copy (no gameplay tuning)
     attachmentVisuals.js Per-weapon attachment sizing, near-side rail placement, short-barrel spans and held reload copies.
     retailUnease.js     Rare atrium display changes and localized back-room sound timings/ranges; no gameplay tuning.
+    clawMachine.js      GRAB-A-GUN, the claw machine: the prize weights and capsule colours, the sweep (2.4 s, 0.2 s quicker a grab, 1.4 s
+                        floor), auto-drop, lift and take times, stock (6 a site) and plush odds, the cabinet's size, its six sites and the
+                        PA lines. Price: economy.claw (through g.pricing 'claw').
     workshop.js         Build-A-Blaster: Limited Edition numbers (workshopBuilds), the ritual (workshopRitual: time, qualities, stages, loaner, PA), Stuffings and Hearts, buildOf reads a gun's finished build.
     decor.js            Decoration kit + clutter scatter numbers (world/decor.js, world/scatter.js). Cosmetic only.
     concourse.js        The real-mall pass as data (maps/mall/concourse.js): Level 2 shopfronts, hallway display windows, soffits and
@@ -133,7 +137,7 @@ src/
                         only) + yawKickSpring (sideways, part of the aim; `viewKickYaw`). addRecoil(pitch, roll, yaw)
                         for shots, addViewKick() for instant jolts (hits, melee),
                         updateView(dt) at the END of each tick; syncCamera interpolates both
-    vault.js            Opt-in low-obstacle vault: jump on approach, full-cylinder path/headroom/landing
+    vault.js            (blocksVault(body): a live body blocks a vault unless flagged ignoreVault, like Sunny.) Opt-in low-obstacle vault: jump on approach, full-cylinder path/headroom/landing
                         checks (including live shootables), entry momentum on exit, interrupt on crowd shove
                         Balcony rails (collider.ledge, set by props.railing): always climbed straight over along the rail's
                         normal (up to 70 degrees off; pushing into it from a standstill counts), then a drop with no steering
@@ -168,7 +172,7 @@ src/
                         applySpread() picks a random direction inside the cone; applyConeSpread() also samples pellets;
                         pelletSpreadDegrees() blends their independent ADS cone. reset() (new run: hip, base spread).
                         update(dt, allowAim) (false mid weapon switch). One aim per carried gun
-    aimAssist.js        createAimAssist(): controller-only (input.device). Picks the visible target nearest the
+    aimAssist.js        (assistable(shootable): never a dead or spawning one, or one flagged ignoreAimAssist, like Sunny.) createAimAssist(): controller-only (input.device). Picks the visible target nearest the
                         crosshair (sticky), aims at its chest. Slowdown multiplier (read per frame for stick
                         look), rotational follow of the target's angular motion while a stick is in use, and
                         a 40% ADS snap within 5 deg with a cooldown. Runs inside playerGun.update after aim
@@ -396,6 +400,9 @@ src/
                         (controller X): the press is hidden from the gun near a buyable; let go before it buys =
                         onReloadTap (gun.requestReload()). `prompt` for the HUD; reset()
     autoGraphics.js     First launch only: measures frame times during the title flyover and picks a Graphics preset.
+    tickets.js          GRAB-A-GUN's prize tickets (g.tickets): their own currency, never the wallet, pricing or income. add(amount, reason)
+                        (nothing once dead; 'ticketsWon'), spend, won (the receipt), and the Prize Counter's tokens (slowClaw, freeGrab,
+                        keychain: hold / has / use). A resetStep ('tickets'), so Play again starts at 0.
     flashSales.js       Flash Sales: a random PA-announced discount on one category, set through pricing so every price in it drops.
     runIntro.js         The PA's opening announcement on a run's first round (listens to 'roundStart').
     shutterSounds.js    Purchase sounds that follow the real shutter motion; pausing stops them, death and reset cancel them.
@@ -414,6 +421,7 @@ src/
                         (g.pricing 'attachment', purchase kind 'attachment'), replaces that slot on the gun in hand; no prompt when
                         already fitted, when it doesn't fit (Extended Nozzle on the Nail Gun), area closed or busy. First purchase
                         unlocks free refitting across compatible carried/replacement guns for the run; reset clears ownership.
+                        unlockAttachment(gun, id) marks one owned from outside (GRAB-A-GUN's Refurbished prizes).
                         Counters display resolved comparisons and preserve ammunition. Fully owned attachments are ineligible for Flash Sales.
       retailUnease.js   Called by the existing horror feature: unseen mannequin turn, shared empty-concourse TV feed,
                         distant upstairs silhouette. Quiet intervals, comfort gates, reset and static-batching-safe hooks.
@@ -430,6 +438,29 @@ src/
                           config/wardrobe.js showpieces.motifRange, and on a buy strikes the pose and emits 'wardrobeBuy' (the PA line).
       fittingRoomPicker.js The fitting-room picker: slots side by side, menu actions pick a slot and an owned item, confirm wears it (wardrobe.wear).
                         Sets state.menu while open; closes on back, a 'playerHit', being moved away, death, reset. DOM-free; `view` is what the UI draws.
+      clawMachine.js    Feature kind 'clawMachine', GRAB-A-GUN: idle -> sweeping -> lifting -> ready. Hold to pay ('claw' 'grab'), PRESS to
+                        drop (an `instant` interaction: a fresh press, never a held button, never a reload on controller X), the capsule under
+                        the claw at the press is the prize; it drops by itself after 6 s and the prize leaves the chute after 15 s, so a grab
+                        can't hang. Pure helpers: rollCapsules (by weight, no repeats; each gun's attachment is rolled with it), sweepPosition /
+                        laneAt / sweepSeconds, prizePool (never the Staple Gun or a gun at Build-A-Blaster; a CARRIED gun comes Refurbished with
+                        a free attachment for an empty slot, or not at all), takeOutcome (the take checks again: 'new' plain copy, 'refurbish'
+                        refill + attachment, or 'refill'; never replaces a fitted attachment), plushChanceFor, describeCarried. Stock and relocation:
+                        6 grabs a site; a plush (Sunny) refunds that grab's actual charge (wallet.refund) and closes it, with the next site picked
+                        right then; a sell-out closes once the last prize is gone; it reopens at the next 'roundStart' at another open-zone site
+                        (or restocks in place). Only one cabinet is live; the others are dust-sheeted. Events 'clawGrab' / 'clawDrop' /
+                        'clawPrize' / 'clawClosed' / 'clawMoved' (the last two are PA lines, picked from cfg.pa's lists, played by createGame).
+                        forcePlush / moveNow (debug). The show (cfg.show, never the prize): prongs open and shut, the carried capsule swings,
+                        the chute flap, an attract screen, sounds that fade with distance (jingle, a tick into each lane, motor, grab,
+                        fanfare, Sunny's slide whistle) and a hum: an emitter it adds to map.ambience that follows the live machine.
+      clawSunny.js      Sunny runs away (built by clawMachine.js): out of the chute, a look round, a waddle along g.zombies.nav.pathTo to the
+                        next site's front (open areas only; a lap round his own machine if no other site is open), into that cabinet, which
+                        shakes (its rig group; colliders never move). His shootable (one body box) pops on any hit: stuffing and confetti,
+                        tickets.popSunny, and the machine re-picks its next site. Flags: ignoreAimAssist, ignoreVault, noRewards; no collider.
+                        Events 'sunnyEscape' / 'sunnyArrived' / 'sunnyPopped'.
+      prizeCounter.js   Feature kind 'prizeCounter', REDEMPTION: five prizes paid in tickets (an ammo refill, a Slow Claw token, an attachment
+                        voucher for an empty slot of the gun in hand, a free grab token, a Sunny keychain). Normal hold-to-buy items costing 0
+                        points with a "100 tickets" label, quiet (not a 'purchase'), refused like too few points when you're short.
+                        voucherChoices(gun). 'prizeRedeemed'.
       horror.js         Feature kind 'horror': the mall decays as the rounds climb (config/look.js horror). Visual only, never gameplay.
                         Darker every round, flickering neon dies, every tube browns out, lamps die, the view drifts to the lateHours grade, power cuts.
     debugCommands.js    createDebugCommands(game parts): the debug shortcuts as functions run(id) (spawn, cycleZombie, clearZombies,
@@ -558,6 +589,17 @@ src/
                         (north/south walls): body + hazard kick plate + glowing header and tagline, a lit window of ammo boxes, keypad,
                         card reader, live canvas screen (screen.show({ title, line, note, tone })), side signs, the AMMO blade sign, the
                         hazard stand pad and glow pool on the floor. One collider. (props.vendingMachine is the old RESTOCK-O-MATIC, unused)
+    mall/clawCabinet.js buildClawCabinet({ kit, back, faces, floorY }) -> { position, normal, screen, rig }: GRAB-A-GUN's cabinet,
+                        world-space boxes facing any of the four ways: base (live screen with capsule dots, DROP button, coin door, prize
+                        chute with a hinged flap and a tray, small print on the chrome kick plate, Sunny on both sides), glass case (three
+                        lanes, rail, a lit strip, a printed backdrop), header (a marquee with painted bulbs, "EVERYONE'S A WINNER*", Sunny
+                        standing on top). Canvas art drawn once and shared (drawSunny: the mascot). ONE collider, 2.2 m; unlit, no real
+                        lights. The rig (dynamic group) moves: setCapsule, setClaw(u, drop, open, sway), carry(lane), setFlap(open),
+                        setLive(live) (a stepped cloth dust sheet with a taped "BACK SOON" note; the claw hides under it), chute, reset.
+                        Exports wallFrame (building against a wall in local u / a coordinates, any facing) and drawSunny (the mascot).
+    mall/prizeCounter.js buildPrizeCounter({ kit, back, faces, floorY }) -> { position, normal, slots }: the Prize Counter's booth,
+                        2.6 m of counter with five prize cards and ticket tags, a wall of display-only plush, a bored teenage animatronic
+                        (static), the REDEMPTION header. One collider, 2.3 m. Built with clawCabinet.js's wallFrame.
     mall/startRoomDetails.js Clearance-store dressing relative to the start room: register, receipt, bags, stock remnants,
                         vent frames/boards, sale remnants, pricing station, floor wear, damaged light fitting and lamps.
                         Decoration only (no collision or interactions); static boxes merged by material; map kit disposes resources.
@@ -610,7 +652,8 @@ src/
                         across instanced signature pools. Skips shutters/unsupported edges; follows rigid surface transforms,
                         removes marks when surfaces unload, clears on restart. prepare(renderer,camera) warms shared graphics.
     impactModels.js     Small shared staple/nail/dart/confetti meshes with vertex colours; three procedural price-sticker textures
-    effects.js          Tracers (pooled) + particle bursts (one InstancedMesh): splat(), puff(), clear() (new run).
+    effects.js          Tracers (pooled) + particle bursts (one InstancedMesh): splat(), puff(), clear() (new run). A splat palette flagged
+                        `foam` (or the Mascot's) keeps its colours in Red splatter mode (Sunny is stuffing, not blood).
                         The Mascot's foam palette bypasses flesh splatter settings.
     benchmark.js        Times a fixed camera route (map.benchmarkShots) so a visual change can say what it costs (Shift+B on the title or pause screen).
     lightPool.js        A fixed number of real point lights shared out among the map's lamps.
@@ -626,7 +669,9 @@ src/
                         the music worker (as a Blob worker) pasted into ONE html file; the Google Fonts link loads non-blocking so a blocked
                         network just falls back to system fonts; tests/singleFile.test.js builds it and checks it is self-contained); balance.js = gun balance maths shared with the tests (seeded Monte Carlo of each
                         gun's real spread + pellets vs a Shopper's hitboxes at a range: expectedShotDamage, sustainedDps, burstDps,
-                        shotsToKill); gunReport.mjs = `npm run balance`; gunSheet.html/.js = a contact sheet of one gun in eight upgrade states (`npm run dev`, /tools/gunSheet.html?gun=nailGun&view=left); babReport.mjs = `npm run balance:bab` (headless horde bot: plain gun vs warranty tiers vs builds)
+                        shotsToKill); gunReport.mjs = `npm run balance`; gunSheet.html/.js = a contact sheet of one gun in eight upgrade states (`npm run dev`, /tools/gunSheet.html?gun=nailGun&view=left); babReport.mjs = `npm run balance:bab` (headless horde bot: plain gun vs warranty tiers vs builds); clawOdds.js = GRAB-A-GUN's odds
+                        simulation (seeded; the game's own roll; perfect / 3-in-4 / random / timed presses; sites, plush closes, wall value,
+                        points per specific gun vs its cheapest wall route); clawSim.mjs = `npm run sim:claw [price]` prints it (the plan's odds tables)
   world/                Shared building blocks for maps
     mapKit.js           createMapKit(group, colliders): mat, addCollider, box, sign, tiledFloor, wall({ along, from, to,
                         at0, at1, height, openings: [{ from, to, top }] }) (doorways get lintels), shutterDoor({ id, label,
@@ -650,6 +695,8 @@ src/
     door.js             createDoor(): physical barrier wrapping open/close/update/collider. Raw open/reset retains
                         legacy zone-holder behavior for standalone maps and geometry tests. Mall gameplay purchases
                         go through areaUnlocks, never directly through door.open. toggleDoors delegates to area ownership.
+    sunnyModel.js       buildSunnyModel(size) -> { root, legs, body }: Sunny the plush, low-poly (body, merged rays, a staring eye, a button
+                        eye, a crooked smile, two legs), feet at the origin, facing -Z; disposeSunnyModel(root).
     wallBuy.js          createWallBuyDisplay(): chalk outline (textures.makeChalkTexture) + the gun on two pegs, side on
     collision.js        RAMPS (addRamp / removeRamp / rampHeightAt, `colliders.ramps`): a walkable slope that is only a SURFACE the feet follow
                         (never a wall or ceiling; add boxes beside/under it): up within rampStep 0.5 m, down within rampSnap 0.4 m, not while

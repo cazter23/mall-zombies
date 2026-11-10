@@ -106,6 +106,7 @@ const { state: game, death, map, player, gun, melee, zombies, rounds, health, wa
 const workshop = g.features.list.find(({ feature }) => feature.kind === 'workshop')?.instance; // Build-A-Blaster (the HUD reads its status)
 const { ritual, drops: limitedEditions } = workshop ?? {};
 const fittingRooms = g.features.list.filter(({ feature }) => feature.kind === 'fittingRoom').map(({ instance }) => instance); // (the HUD draws the open picker)
+const clawMachine = g.features.list.find(({ feature }) => feature.kind === 'clawMachine')?.instance; // GRAB-A-GUN (the HUD reads its status)
 const resetRun = g.resetRun;
 hud.connectEvents(g.events);
 const haptics = createHaptics({ gamepad, input, state: game, health, events: g.events });
@@ -445,8 +446,10 @@ function render(alpha, frameTime) {
   hud.setOrderForm(game.over ? null : ritual?.form ?? null, menuLabels);
   hud.setFittingRoom(game.over ? null : fittingRooms.find((room) => room.view)?.view ?? null, menuLabels);
   hud.setLimitedEdition(game.over ? null : limitedEditions?.status ?? null);
+  hud.setClawMachine?.(game.over ? null : clawMachine?.status ?? null);
   hud.setVaultPrompt(game.running && !game.over && g.vaultPromptVisible, buttonLabel('jump'));
   hud.setPoints(wallet.points);
+  hud.setTickets?.(g.tickets.count); // (GRAB-A-GUN's prize tickets: shown only once you have some)
   hud.setRoundFlashing(rounds.inBreak && rounds.round > 1); // counter blinks in the break between rounds
 
   // Render world + viewmodel through HDR post-processing (UnrealBloom + lens vignette/aberration + ACES tone mapping).

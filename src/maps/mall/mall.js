@@ -46,6 +46,9 @@ import { buildStartRoomDetails } from './startRoomDetails.js';
 import { buildMegaMartDetails, MART_FIXTURES } from './megaMartDetails.js';
 import { buildMallAtmosphere } from './atmosphere.js';
 import { buildRestockMachine } from './restockMachine.js';
+import { buildClawCabinet } from './clawCabinet.js';
+import { buildPrizeCounter } from './prizeCounter.js';
+import { clawMachine } from '../../config/clawMachine.js';
 import { buildLevelTwo } from './levelTwo.js';
 import { buildAtrium } from './atrium.js';
 import { buildHallwayLook } from './hallwayLook.js';
@@ -553,6 +556,12 @@ export function buildMall(scene, colliders) {
   const cinemaAmmo = buildRestockMachine({ kit, center: LAYOUT.cinema.restockMachine.x,
     wallAt: LAYOUT.cinema.lobby.maxZ - LAYOUT.cinema.restockMachine.wallInset, facing: -1, floorY: upperY });
 
+  // GRAB-A-GUN (game/features/clawMachine.js): its cabinets (mall/clawCabinet.js), one per site in config/clawMachine.js.
+  const clawSites = clawMachine.sites.map((s) => ({ id: s.id, zone: s.zone, cabinet: buildClawCabinet({ kit, back: s.back, faces: s.faces, floorY: s.floorY }) }));
+  // Its Prize Counter (game/features/prizeCounter.js): one fixed booth (mall/prizeCounter.js) where prize tickets buy small things.
+  const counterSite = clawMachine.prizeCounter.site;
+  const prizeBooth = buildPrizeCounter({ kit, back: counterSite.back, faces: counterSite.faces, floorY: counterSite.floorY });
+
   sign('EXIT  ·  MAIN HALL', {
     x: 0, y: 3.6, z: F.maxZ - 0.02, width: 3, height: 0.5, facing: -1,
     background: '#1d1626', color: '#63e6be',
@@ -902,6 +911,9 @@ export function buildMall(scene, colliders) {
     { kind: 'upgradeDesk', name: 'upgradedesk_hallway', zone: deskZone, position: serviceDesk.position, normal: serviceDesk.normal },
     // Store attachment counters: fit that attachment to the gun in your hand (g.pricing 'attachment').
     ...stores.spots.map((s) => ({ kind: 'attachmentCounter', name: `attachment_${s.id}`, zone: s.zone, attachment: s.id, position: s.position, normal: s.normal })),
+    // GRAB-A-GUN: one machine, live at one of its sites (it starts at the first every run).
+    { kind: 'clawMachine', name: 'clawMachine', zone: clawSites[0].zone, position: clawSites[0].cabinet.position, normal: clawSites[0].cabinet.normal, sites: clawSites },
+    { kind: 'prizeCounter', name: 'prizeCounter', zone: counterSite.zone, position: prizeBooth.position, normal: prizeBooth.normal, slots: prizeBooth.slots },
   ];
 
   const doors = [startDoor, megaMartDoor, foodCourtDoor, serviceCorridorDoor, foodCourtMegaMartDoor, serviceCorridorFoodCourtDoor, escalatorDoor, atriumDoor, atriumPromenadeDoor, atriumMegaMartDoor, cinemaWing.door, cinemaConnection.door, departmentStoreDoor, departmentStoreStartRoomDoor, parking.door];
@@ -930,6 +942,7 @@ export function buildMall(scene, colliders) {
   const hallwayClear = [
     ...spawnPoints.map((s) => around(s.position, 1.2)),
     ...features.map((f) => around(f.position, 2.0)),
+    ...clawSites.map((s) => around(s.cabinet.position, 2.0)), // (every GRAB-A-GUN site, not only the feature's first)
     ...doors.map((d) => around(d.position, 2.6)),
     around({ x: escalator.foot.x + 1, z: escalator.foot.z }, 2.5),
     { minX: D.minX - 1, maxX: D.maxX + 1, minZ: H.maxZ - 3, maxZ: H.maxZ }, // the start door's approach

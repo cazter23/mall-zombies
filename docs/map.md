@@ -207,6 +207,19 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   (body centre x 30.5, back z 30.4, facing south), and Cinema lobby's north wall beside the projection-passage entrance
   (body centre x -25.7, back z 5.3, floor y 6.3, facing south). Each requires its own area's ownership, has an independent
   live screen and solid tall body, and leaves its front approach clear. No Parking or Promenade machine was added.
+- GRAB-A-GUN, the claw machine (config/clawMachine.js sites, mall/clawCabinet.js, game/features/clawMachine.js): six 1.3 x 1.0 x 2.2 m
+  cabinets, one collider each, always there; only the live one is uncovered (the others wear a "BACK SOON" dust sheet). Backs on the wall:
+  Hallway (8, -2) facing north, between the Food Court gate and the Nail Gun (every run starts here; it waits until the Hallway is owned);
+  Food Court (8.5, -2.3) facing south, between the RESTOCK-O-MATIC and Byte Me; Mega Mart (28, 6) facing south, past the checkouts;
+  Grand Atrium (27, 6.6) facing north, the south arcade; Cinema lobby (-34.1, -10.5, floor y 6.3) facing north, clear of the screen door's
+  jamb; Customer Parking (34.43, -8) facing east, on the Mart's outside facade. Each keeps clutter 2 m away (mall.js hallwayClear).
+  THE PRIZE COUNTER ("REDEMPTION", mall/prizeCounter.js, config/clawMachine.js prizeCounter.site): one fixed 2.6 x 0.9 x 2.3 m booth on the
+  Hallway's north wall at x -13 (z 6, facing south), between the boarded vent (x -7) and HOFFMAN'S gate (starts x -15.5), no spawn within 5 m. It was at x 3.65
+  (between the start shutter and Customer Service) until the Wardrobe's Gold Card rack took x 4.7 of the same wall (merge of 9 November); the booth moved, the rack didn't. Five prizes at 0.52 m along its front (interaction
+  points y 1.1, 0.99 m out from the wall). Rejected: x 10.6 on the same wall (it would cover the sealed elevator doors), the south wall at
+  x 5.3 (a bench) and x 13.4 (a vent spawn 2.8 m away), the west of the hallway (spawns within 5 m), the Atrium (opens too late).
+  Sunny's topper stands 0.5 m above each header (2.24..2.74 m, no collision), and peeks over the dust sheet too.
+  Rejected: Hallway x 15 / x -12 (vent spawns), Mega Mart x 23 (the Atrium link), the Promenade, HOFFMAN'S and the Service Corridor.
 - Wall-buy spots: start room east wall (5, 1.5, 10) = Price Gun; hallway south wall (11, 1.5, -2) = Nail Gun;
   Mega Mart north wall (31.5, 1.5, 6) = Foam Dart Blaster, Service Corridor west wall near the dead end
   (-23.28, 1.5, -12.2) = Confetti Cannon; Grand Atrium west arcade wall (8.02, 1.5, 21.5) = Rivet Rifle;

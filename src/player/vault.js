@@ -41,6 +41,9 @@ function crossing(position, dx, dz, box, padding = 0) {
   return far > Math.max(0, near) ? { near, far, approach } : null;
 }
 
+/** Does this live body block a vault's path or landing? Not a dead one, and never one flagged ignoreVault (Sunny). */
+export const blocksVault = (body) => body.isAlive && !body.ignoreVault;
+
 export function createVault({ player, colliders, getBodies = () => [] }) {
   const cfg = feel.vault;
   const sample = new THREE.Vector3();
@@ -50,7 +53,7 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
   function clearAt(position) {
     if (overlapsSolid(position, feel.player.radius, feel.player.height, colliders, 0, 0)) return false;
     for (const body of getBodies()) {
-      if (!body.isAlive) continue;
+      if (!blocksVault(body)) continue;
       for (const hitbox of body.hitboxes) {
         if (overlapsSolid(position, feel.player.radius, feel.player.height, [hitbox.box], 0, 0)) return false;
       }

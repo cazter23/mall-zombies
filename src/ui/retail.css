@@ -217,6 +217,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   background: #261e2bed; box-shadow: 10px 0 0 #261e2bed; backdrop-filter: none; -webkit-backdrop-filter: none;
 }
 .points .hud-label { color: var(--mint); font-size: 9px; }
+.points-tickets { margin-top: 3px; color: #ffc4e1; font: 700 13px/1 var(--font-receipt); letter-spacing: .04em; } /* GRAB-A-GUN prize tickets */
+.points-tickets[hidden] { display: none; }
 .points-value { padding-top: 4px; color: #e4ffe8; font: 36px/.95 var(--font-receipt); text-shadow: none; font-variant-numeric: tabular-nums; }
 .ammo {
   bottom: 24px; right: 24px; min-width: 175px; max-width: min(280px, 42vw); padding: 0;
@@ -490,6 +492,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 @keyframes pa-indicator { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
 .announce-kicker { margin-top: 9px; color: #d6ae62; font: 600 10px/1.3 var(--font-ui); text-shadow: none; letter-spacing: .08em; text-transform: uppercase; }
 .announce-text { margin-top: 4px; color: #f4e7c8; font: 400 18px/1.35 var(--font-ui); letter-spacing: .005em; text-transform: none; text-shadow: none; overflow-wrap: anywhere; }
+.claw-tag { background: #ffc4e1; border-bottom-color: #b8236f; } /* GRAB-A-GUN's whereabouts, under the sale tag */
 .sale-tag { left: auto; right: 24px; top: 24px; transform: none; width: 155px; box-sizing: border-box; white-space: normal; padding: 9px 12px; color: #422731; font: 700 11px/1.5 var(--font-ui); letter-spacing: .03em; background: #f3c66e; border-radius: 0; border-bottom: 3px dashed #a14759; box-shadow: 3px 3px 0 #39294088; }
 
 /* Directory: luminous sign typography, arrow selection, ruled entries. */

@@ -94,6 +94,9 @@ export const economy = {
     barcodeScanner: { weapon: 1750, ammo: 900 }, // weak sustained dps (180) but pierces 4 in a line, ~3x (Byte Me Electronics)
   },
 
+  // GRAB-A-GUN, the claw machine (config/clawMachine.js): one grab. A placeholder until the economy report checks it.
+  claw: { grab: 1000 },
+
   // Discounted prices (Flash Sales, game/pricing.js) are rounded to the nearest multiple of this.
   discountRoundTo: 10,
 
@@ -164,6 +167,13 @@ export const economy = {
         id: 'apparel', label: 'Apparel', categories: ['wardrobe'], weight: 1,
         start: { kicker: 'Flash sale', text: 'Apparel is {pct}% off! Try before you die.' },
         end: { kicker: 'Sale over', text: 'The apparel sale has ended. Fitting rooms are still free.' },
+      },
+      {
+        // GRAB-A-GUN (game/features/clawMachine.js). No eligibility rule: a sale while the machine is closed is simply wasted.
+        // A plush refunds the sale price you paid, never the shelf price. (The Discount Code never applies to the claw.)
+        id: 'claw', label: 'GRAB-A-GUN', categories: ['claw'], weight: 1,
+        start: { kicker: 'Flash sale', text: 'GRAB-A-GUN is {pct}% off! Everyone\'s a winner.* (*See small print. Small print is out of stock.)' },
+        end: { kicker: 'Sale over', text: 'The GRAB-A-GUN sale has ended. The claw is back to its usual grip.' },
       },
     ],
   },

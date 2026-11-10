@@ -1,5 +1,20 @@
 # Sunset Galleria: build history ("Current state")
 
+## 9 November 2026 - GRAB-A-GUN (phases 1-7) lands in main
+
+The claw machine branch (claude/claw-machine) was merged into main through a fresh branch (claw-into-main): 8 commits, 45 files, behind main by the Wardrobe showroom, the
+words-only rule and the look pass. Both sides of every shared file were kept (createGame.js, pricing.js, features/index.js, economy.js, hud.js, main.js, debugCommands.js,
+tests/pricing.test.js, tests/features.test.js, the docs).
+
+- **Words only.** The Slow Claw card said "half speed": now "sweeps slowly" (a multiplier in words is still a multiplier). Prices, points, ticket counts, "N left" and the
+  grab's countdown stay numbers, and the claw Flash Sale keeps its percentage like every sale. tests/effectWords.test.js now scans every claw machine string in config
+  (names, screens, PA lines, the Prize Counter's cards, the sale) and every real prompt the machine and the counter build (pay, drop, take, Refurbished take, each prize card,
+  refused and affordable), and also rejects half / twice / double / triple / times in them.
+- **The Prize Counter moved** from the Hallway's north wall at x 3.65 to x -13: the Wardrobe's Gold Card rack took x 4.7 of the same stretch (it showed up as the rack's display
+  intersecting the booth). x -13 keeps the booth's own checks (a clear stand point 5 m from the boarded vent at x -7, routes unchanged, no coplanar faces). tests/staticBatch.test.js's
+  wall ray moved from x -12 to x -9.5 (it now hit the booth); tests/features.test.js's "unknown kind" placeholder is a made-up kind, since fittingRoom and clawMachine are real now.
+- Checked in the browser pane (preview build): the Hallway machine, a grab to the take prompt, the moved REDEMPTION booth and a card prompt; no console errors.
+
 ## 9 November 2026 - Design change: effect numbers are gone from the UI (words only)
 
 Flash Sales are the exception, by decision: a sale is a PRICE, so its PA lines, the HUD banner and the help screen keep the percentage ("25% off"). They were changed to
@@ -122,6 +137,73 @@ grading fog, zombieRim, dusk), config/concourse.js (everything in the concourse 
 - Measuring: open doors change the counts by ~80 calls on average (culling sees through them), and a hidden pane's benchmark
   route varies by up to ~140 per shot between runs, so compare builds only at fixed cameras with the same doors open.
 
+## 8 November 2026 - GRAB-A-GUN, phase 7: Sunny runs away
+
+Land a grab on the plush and, after the refund and the close, Sunny climbs out of the chute, looks round, and waddles (2 m/s) to wherever the machine will
+reopen, along the zombies' grid (g.zombies.nav.pathTo: only through open areas, escalators and stairs included), then climbs into that cabinet and it
+shakes. Follow him to learn where it's going before the PA says. If no other site is open he walks a lap round his own machine and climbs back in; if the
+round starts first, the machine opens there anyway and he finishes his walk. Shoot or slash him and he pops in stuffing and confetti: 25 tickets, and the
+machine re-picks its next site (not the one he was heading for). He is a shootable but not a zombie: no kill, no +10, no power-up or Heart credit; aim
+assist and the vault skip him (assistable / blocksVault, flags ignoreAimAssist / ignoreVault); his splat is stuffing even in Red splatter mode. One small
+low-poly model (world/sunnyModel.js), no collider. Checked in the browser pane (renders saved from the page): the Prize Counter with its teen, Sunny climbing out,
+looking round and walking to the Parking site; no console errors.
+
+## 8 November 2026 - GRAB-A-GUN, phase 6: prize tickets and the Prize Counter
+
+Every grab now prints arcade tickets (game/tickets.js, g.tickets): 40 for a Green prize, 25 Blue, 15 Purple, 5 Gold, 10 for Sunny (the points still come back
+too), nothing for a prize left in the chute. Tickets are their own currency: not the wallet, not g.pricing, not income, lost on death, gone on Play again. The
+HUD shows them under the points once you have some, and the receipt gets "Prize tickets won" and "Sunny keychains" lines. The Prize Counter ("REDEMPTION",
+feature kind 'prizeCounter') stood on the Hallway's north wall at x 3.65, between the start shutter and Customer Service (now x -13: see the 9 November merge entry): an ammo refill (60), a Slow Claw
+(100: the next sweep runs slowly), an attachment voucher (150: an empty slot of the gun in hand), a free grab token (200) and a Sunny keychain (300). Each
+prize is its own hold-to-buy spot along the counter, refused when you're short. Behind the glass, a bored teenage animatronic who has not moved since the mall
+opened. The site was picked with the cabinets' checks (one 2.3 m collider, clear spots, no spawn within 10 m, routes unchanged, coplanar); x 10.6 would have
+covered the sealed elevator doors.
+
+## 8 November 2026 - GRAB-A-GUN, phase 5: the show
+
+The finished cabinet (maps/mall/clawCabinet.js): a marquee board with painted bulbs (they never blink), "EVERYONE'S A WINNER*" under it, Sunny standing on top
+and on both sides (one button eye, one stare), a printed "WIN! WIN! WIN! (results may vary)" backdrop, a lit strip, chrome, a DROP button, a coin door, small
+print on the kick plate, a chute with a hinged flap. The claw's prongs open on the way down and shut on the capsule, which swings on the way up (it nearly
+slips; it never does, and the prize is still settled at the press), and the flap swings as the prize lands. The dust sheet keeps the machine's stepped shape,
+with soft folds and a taped "BACK SOON - Mgmt." note; the claw hides under it. Sounds (config/audio.js claw*): a jingle on paying, a tick each time the claw
+crosses into a lane (something to time against), the motor down and up, the grab, a fanfare, Sunny's slide whistle; they fade with distance. The live
+machine hums (an ambience emitter that follows it, silent while closed). PA lines are now lists, one picked at random; the screen cycles attract lines.
+Cost, measured in the browser pane with the benchmark's own draw path (the pane was hidden, so the camera was posed by hand along map.benchmarkShots and at
+each cabinet): the whole route 5,081 -> 5,106 draw calls (+25 summed over 14 shots) and 953,977 -> 954,211 triangles; looking at a live cabinet +6 or +7
+calls and about +150 triangles, at a dust-sheeted one +1 or +2 calls (the claw and capsules are no longer drawn under the sheet). Frame times not measured
+(a hidden pane draws no frames). All six sites checked in renders, no console errors.
+
+## 8 November 2026 - GRAB-A-GUN, phase 4: sales and odds
+
+The 'claw' Flash Sale group (economy.flashSales.groups; no eligibility rule, as the plan says); the Discount Code still never applies to a grab and
+isn't spent by one (tested with a sale running). `npm run sim:claw` (tools/clawSim.mjs + tools/clawOdds.js) reproduces the plan's odds from config and
+the game's own roll, adding a "timed" model (0.12 s press error against the real lane windows). The wall stays the cheaper way to every specific
+gun, but the first grab after the start shutter is worth 1.46x its price (84% Blue or better): a must-buy at 1,000. Recommended 1,250 (not applied:
+no rule strictly broken); the tables are in docs/claw-machine-plan.md.
+
+## 8 November 2026 - GRAB-A-GUN, phases 1 to 3: the claw machine, its six sites, Sunny and Refurbished prizes
+
+The mystery box you work (docs/claw-machine-plan.md). One cabinet on the Hallway's south wall at x 8. Hold F to pay 1,000 (g.pricing 'claw' 'grab'): three
+coloured capsules fall into the pit and the screen names them. The claw sweeps the lanes; PRESS F once to drop it, and the capsule under it is your gun.
+It lifts to the chute, where the gun waits 15 s (hold F to take it). It drops by itself after 6 s, so walking away never hangs it.
+Prizes: the seven wall guns by weight, never the Staple Gun, never a gun you carry or have at Build-A-Blaster (Refurbished prizes come in phase 3).
+Engine pieces: interactions.js `instant` items (fire on a fresh press, set the controller-X "used" flag so a drop isn't a reload) and `use(purchase)`
+(the actual charge, for a refund); wallet.refund (lowers totalSpent, not income); the 'claw' pricing category (the Discount Code already excludes it).
+Phase 2, the same day: all six cabinets (Hallway, Food Court, Mega Mart, Atrium, Cinema lobby, Parking), dust-sheeted "BACK SOON" unless live; no collider
+ever moves. Six grabs of stock a site; from the third a plush (Sunny) may take a lane (20/40/60/80%). Landing on him refunds what that grab actually charged
+(a sale or the Employee Discount included) and closes the machine, picking the next site right then (phase 7's Sunny walks there). Selling out closes it
+once the last prize is gone. It reopens at the next round at another site in an open zone, with a PA line, or restocks in place if none. HUD: a small pink
+tag under the Flash Sale tag says where it is. Debug: E = Sunny in the next grab, Shift+E = move it now. Two site changes from the plan: Parking's back is
+x 34.43 (the facade's face, not 34.5), and the Cinema's is x -34.1 (the cabinet clipped the screen door's jamb at -34).
+Checked in the browser pane (preview build): the Hallway cabinet, a grab (capsules, claw, the prize in the chute) and a dust-sheeted Food Court cabinet; no
+console errors. Not checked in the browser: the other four sites up close, the HUD tag.
+Phase 3, Refurbished prizes: a gun you carry stays in the odds, named with a free attachment for one of its empty slots ("Nail Gun + Grip Tape"). Taking
+it refills that gun and fits the attachment, in hand or not, and the attachment is owned for the run (attachmentCounter.js unlockAttachment). A carried gun
+with no empty slot that fits, and a gun at Build-A-Blaster, aren't offered. The take checks again (takeOutcome): bought off the wall meanwhile = refill plus
+its spare attachment (rolled with it, so nothing random happens after the press) if that slot is free; a Refurbished gun no longer carried, or handed to
+Build-A-Blaster, comes as a plain copy (collection then replaces the copy). It never replaces a fitted attachment and waits while the gun in hand reloads.
+
+
 ## 9 November 2026 - Upgrade colours: warranties are metal, builds are candy
 
 The old palette clashed: Premium purple was nearly Glitter, Platinum gold nearly Popcorn Butter (6 apart in Lab delta-E), Deluxe blue near Neon Tube, and the Standard
@@ -170,6 +252,8 @@ Cost, measured as an A/B against main's build at 42 fixed cameras (each benchmar
 main 317 calls / 46,632 triangles on average, this 317 / 46,657. Per view 0 to +4 calls (cinema stairs and workshop hall the most),
 the Food Court hedge saves one. The env map adds no calls (checked by removing it). Benchmark route runs in a hidden pane vary by
 up to ~140 calls per shot between runs, so they can't show differences this small.
+
+
 ## 8 November 2026 � Idle saver (focus mode)
 
 The title screen draws a full post-processed flyover every frame, so a tab left open on the menu kept a CPU core and the GPU busy all day. Now, while the game is

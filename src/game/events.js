@@ -72,6 +72,17 @@
 //   'buildFired'  { stuffing, heart, weaponId, hit: [zombie] }  a finished build's Heart fired its stuffing (game/features/workshopStuffings.js)
 //   'limitedEditionDrop'   { id, position, pa }           a bag-carrying zombie dropped a Limited Edition (game/features/limitedEditions.js)
 //   'limitedEditionFitted' { id, weapon, pa }             the player walked over it
+//   'clawGrab'    { siteId, capsules: [{ gunId, capsule } | null] }   GRAB-A-GUN was paid: the capsules in its lanes (game/features/clawMachine.js)
+//   'clawDrop'    { lane, gunId, plush, reason 'press' | 'time' }  the claw dropped; gunId = the prize (null: the plush or an empty lane)
+//   'clawPrize'   { gunId, refurbished, outcome }        the player took the prize from the chute: outcome 'new' | 'refill' | 'refurbish'
+//                                                        (game/features/clawMachine.js takeOutcome); refurbished = the attachment fitted, or null
+//   'clawClosed'  { reason 'plush' | 'soldOut', siteId, nextSiteId, pa }   out of service (a plush refunds; nextSiteId: picked at the plush)
+//   'clawMoved'   { siteId, area, moved, pa }            reopened at the next 'roundStart' (moved false: restocked where it stood)
+//   'ticketsWon'  { amount, total, reason }              prize tickets paid out (game/tickets.js; reason 'prize' | 'plush' | 'sunny'): never points
+//   'prizeRedeemed' { id, tickets }                      a Prize Counter prize was taken (game/features/prizeCounter.js)
+//   'sunnyEscape' { fromId, toId, lap }                  the plush climbed out and is walking to the next site (game/features/clawSunny.js)
+//   'sunnyArrived' { siteId }                            he climbed into that cabinet (it shakes)
+//   'sunnyPopped' { siteId }                             shot or slashed: stuffing everywhere, tickets paid, the next site re-picked
 //   'runReset'    {}                                     after Play again reset everything
 // =============================================================================
 

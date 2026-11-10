@@ -150,6 +150,37 @@ never overlap, walls never intrude into the walkway, sealed except where asked, 
 nav grid end to end and through a branch doorway), `interactions.test.js` buying against the real mall (every door and wall buy
 works from where you stand, both shortcuts buy from either side but not through adjacent walls, the cannon cannot be
 bought across its shortcut, the Nail Gun can't be bought through its wall, other floors are out of reach, facing matters),
+`clawMachine.test.js` GRAB-A-GUN through real input: the odds (by weight, no repeats, never the Staple Gun / a carried gun / one at
+Build-A-Blaster), sweep timing, the press decides the prize, a held button never drops it, controller X never reloads, walking away
+and death never hang it or leave a display, Play again equals a fresh game, sales / Employee Discount charge less and the Discount Code
+doesn't apply, wallet.refund isn't income, the replace ticket, and each cabinet: one tall collider, clear stand point, reachable front,
+a prompt from it. Relocation: plush odds by grab, a plush refunds exactly the charge (sale + coupon) and picks the next open site at
+once, a sell-out closes only after its last prize, it reopens at a different open site at 'roundStart' (or restocks in place), never
+in a locked zone (40 moves), never mid-grab, Play again after a move, and zombie routes from every spawn and stand point unchanged
+(within 3 m) with all six cabinets in. Refurbished: a carried gun's attachment is for an empty slot and rolled with it, a full one isn't
+offered, the take refills and fits it in hand or not (and refits are free), never over a fitted attachment, waits while reloading; late
+changes (bought off the wall meanwhile: refill + spare; no longer carried: plain copy; handed to Build-A-Blaster: plain copy that the
+finished gun replaces); Build-A-Blaster: grabs during a ritual, with the Courtesy Loaner (which never gets a Refurbished prize and still
+goes back), a Refurbished attachment stacking with a build, and while the finished gun waits at the booth.
+`clawSunny.test.js` Sunny runs away in the real game: from every site the next site is picked at the plush and he walks a real route on the
+zombies' grid (only open floor) there, climbs in and the cabinet shakes and comes back to rest; with part of the mall locked his route stays
+on open floor; with no other site open he walks a lap and climbs back in; a round starting first opens the machine there and he still
+arrives; shooting him (real input) pops him for 25 tickets and re-picks the site, with no kill, no +10, no power-up credit and no kill stats;
+the box cutter pops him too; aim assist (assistable) and the vault (blocksVault) skip him; Play again mid-walk equals a fresh game.
+`prizeCounter.test.js` GRAB-A-GUN's prize tickets (game/tickets.js) and the Prize Counter through real input: tickets are their
+own count (paid only while alive, spent only when enough, tokens, reset); every prize refuses without enough tickets (nothing spent) and
+costs exactly its tickets and no points; each prize works (refill, Slow Claw doubles the next sweep, an attachment for an empty slot and
+owned, a free grab, a keychain in the run summary); the voucher keeps the counter's rules (not mid-reload, never over a fitted slot, not
+for the Courtesy Loaner); tickets never touch points, pricing or income, are lost on death and gone on Play again; the booth has one
+tall collider, a clear reachable spot at every prize, no spawn within 5 m and unchanged zombie routes. clawMachine.test.js checks
+every grab outcome's tickets; receiptReview.test.js the receipt's ticket and keychain lines.
+`clawSim.test.js` GRAB-A-GUN's odds (tools/clawOdds.js): the wall stays the cheaper way to every specific gun even at perfect
+timing, a site lasts 5 to 6 grabs, perfect timing never meets the plush while a random lane often does, better timing wins dearer guns,
+and a plush grab costs nothing. clawMachine.test.js also plays the 'claw' Flash Sale (the PA, the sale price charged and refunded, the
+Discount Code still kept out). The show: prongs open and shut and the capsule swings but the prize is still the one pressed,
+the chute flap swings and rests exactly where it was built, the sounds (jingle, lane ticks, motor, fanfare; nothing from across the mall),
+the hum follows the live machine and is silent while closed, a dust-sheeted cabinet hides its claw, the attract screen takes turns, and
+every PA list has a few lines naming the area where it should.
 `ammoCache.test.js` the vending machine (refills any gun in hand, flat price, label follows the gun, needs its area open, not
 through the wall, solid + too tall to climb, zombies can reach its front; Atrium/Cinema machines also exercise real F purchases,
 correct floor height, ownership and run reset), `balance.test.js` GUN ROLES on real measured numbers
@@ -176,7 +207,7 @@ with the carried gun in the real game), `upgradeDesk.test.js` the Customer Servi
 prop + collider + buy spot, solid and too tall to climb, tiers one at a time at pricing's price, gun in hand only, no refill,
 nothing past Platinum (including the exact purchase frame and switching back to a Platinum gun), Flash Sale applies,
 no prompt while closed / switching / facing away, Play again resets),
-`tests/effectWords.test.js` guards the words-only rule: the size bands (fixed, ordered, symmetric, {size}/{Size} fill), the number detector, and a scan of every tier,
+`tests/effectWords.test.js` guards the words-only rule: the size bands (fixed, ordered, symmetric, {size}/{Size} fill), the number detector, and a scan of every tier, It also covers GRAB-A-GUN: every claw and Prize Counter string in config and the real prompts they build (pay, drop, take, Refurbished, each prize card) carry no stat number and no multiplier word; the claw sale keeps its percentage.
 renewal, attachment, wardrobe, stuffing, heart, incentive and boss string (and a Flash Sale line's words around its percentage) plus the real prompts built from them (every attachment counter, every Customer Service
 offer, every wardrobe ticket and rail line) for a digit followed by %, x, s, m, ° or an arrow, and spelled-out percentages.
 `tests/outfitRail.test.js` covers the outfit rail's brain: every item names a known trigger, icon and colour (and every slot a silhouette); each trigger,

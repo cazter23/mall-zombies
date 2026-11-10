@@ -32,6 +32,17 @@ export function createWallet({ onChange = null } = {}) {
       return true;
     },
 
+    // Give back (part of) a payment: the points return and it no longer counts as spent. NOT income: totalEarned doesn't move,
+    // so the results screen and the career stats see neither the payment nor the refund. (GRAB-A-GUN's plush refunds
+    // exactly what that grab charged.) Never more than was ever spent.
+    refund(amount) {
+      const back = Math.min(amount, this.totalSpent);
+      if (!(back > 0)) return;
+      this.points += back;
+      this.totalSpent -= back;
+      if (onChange) onChange(back, this.points);
+    },
+
     reset() {
       this.points = economy.startingPoints;
       this.totalEarned = 0;

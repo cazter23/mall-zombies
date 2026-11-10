@@ -131,9 +131,13 @@ export function createHud() {
   const points = el('div', 'points');
   const pointsValue = el('div', 'points-value');
   const pointsLabel = el('span', 'hud-label'); pointsLabel.textContent = 'Store credit';
-  points.append(pointsLabel, pointsValue);
+  // Under it, once you have some: GRAB-A-GUN's prize tickets (game/tickets.js; not points).
+  const ticketsValue = el('div', 'points-tickets');
+  ticketsValue.hidden = true;
+  points.append(pointsLabel, pointsValue, ticketsValue);
   hud.append(points);
   let lastPoints = null;
+  let lastTickets = null;
 
   // Top-left: the round number (flashes during the break between rounds).
   const roundCounter = el('div', 'round-counter');
@@ -200,6 +204,10 @@ export function createHud() {
   const saleTag = el('div', 'sale-tag');
   hud.append(saleTag);
   let lastSaleKey = '';
+  // Under it: where GRAB-A-GUN is while it's open (game/features/clawMachine.js status).
+  const clawTag = el('div', 'sale-tag claw-tag');
+  hud.append(clawTag);
+  let lastClawKey = '';
 
   // Bottom-right: ammo counter.
   const ammo = el('div', 'ammo');
@@ -249,7 +257,7 @@ export function createHud() {
   const topStack = el('div', 'hud-top-stack');
   topStack.append(bossBar, roundBanner, bagMarker.element);
   const rightStack = el('div', 'hud-right-stack');
-  rightStack.append(saleTag, announceBanner, certificate.element);
+  rightStack.append(saleTag, clawTag, announceBanner, certificate.element);
   hud.append(leftStack, topStack, rightStack);
   // A workshop order starts below any active boss display. Measure its real
   // height, including wrapped names and the player's chosen text size.
@@ -379,6 +387,14 @@ export function createHud() {
       if (value === lastPoints) return;
       pointsValue.textContent = value.toLocaleString('en-US');
       lastPoints = value;
+    },
+
+    // Prize tickets: hidden until you have some (and again at 0).
+    setTickets(count) {
+      if (count === lastTickets) return;
+      lastTickets = count;
+      ticketsValue.hidden = !(count > 0);
+      ticketsValue.textContent = `${count.toLocaleString('en-US')} ticket${count === 1 ? '' : 's'}`;
     },
 
     // A "+60" (or "-500") that floats up from the points counter and fades out.
@@ -570,6 +586,15 @@ export function createHud() {
       saleTag.textContent = text;
     },
 
+    // GRAB-A-GUN's whereabouts: null (or a closed machine) hides it.
+    setClawMachine(status) {
+      const text = status?.open ? `GRAB-A-GUN · ${status.area} · ${status.stock} left` : '';
+      if (text === lastClawKey) return;
+      lastClawKey = text;
+      clawTag.classList.toggle('show', !!text);
+      clawTag.textContent = text;
+    },
+
     // Buy prompt: null hides it, else { label, verb, cost, canAfford, progress, denied, sale }.
     // (`sale`: true while a Flash Sale has discounted this price: the cost turns green with a SALE mark.)
     // `button` is the interact button for the device in use ("F", "X", "□").
@@ -586,7 +611,7 @@ export function createHud() {
       interactOriginal.hidden = !info.sale || !(info.originalCost > info.cost);
       interactOriginal.textContent = `${(info.originalCost ?? info.cost).toLocaleString('en-US')}`;
       // Ordinary purchases need one line. Keep the terms only where they affect an upgrade decision.
-      const detail = ['attachment', 'workshop', 'ritual', 'tier', 'wardrobe', 'fittingRoom'].includes(info.kind) ? info.detail ?? '' : '';
+      const detail = ['attachment', 'workshop', 'ritual', 'tier', 'wardrobe', 'fittingRoom', 'claw', 'clawAction', 'prize'].includes(info.kind) ? info.detail ?? '' : '';
       if (detail !== lastInteractDetail) {
         lastInteractDetail = detail;
         // (detailLines: the Wardrobe's generated stat lines, each an upside or a downside)

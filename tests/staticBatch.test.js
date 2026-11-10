@@ -72,7 +72,7 @@ test('a raycast (bullet marks) still hits a merged wall at the same point', () =
   const scene = new THREE.Scene();
   const map = buildMall(scene, []);
   map.group.updateWorldMatrix(true, true);
-  const ray = new THREE.Raycaster(new THREE.Vector3(-12, 1.5, 2), new THREE.Vector3(0, 0, 1), 0, 20); // toward the hallway's north wall
+  const ray = new THREE.Raycaster(new THREE.Vector3(-9.5, 1.5, 2), new THREE.Vector3(0, 0, 1), 0, 20); // toward the hallway's north wall
   const hit = (root) => ray.intersectObject(root, true).find((h) => h.object.isMesh && h.object.visible && !h.object.material.transparent);
   const before = hit(map.group).point.clone();
   batchStatic(map.group);
