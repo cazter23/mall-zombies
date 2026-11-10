@@ -128,6 +128,8 @@ export const economy = {
   ammoCache: { price: 400 },
 
   // Environmental hazards (docs/hazards-plan.md, config/hazards.js): pay-to-trigger mall traps with cooldowns.
+  closing: { nightSafe: 1000 },
+
   hazards: {
     fountain: 750,
     fryer: 750,

@@ -5,9 +5,27 @@ export const closingTime = {
     blockedPrefix: 'Still needed: ',
     promptHeight: 1.2, clearance: 0.12,
   },
+  nightSafe: {
+    name: 'Night Safe',
+    verb: 'deposit',
+    done: 'Done',
+    complete: 'Takings banked',
+    mountOffset: 1.8, // east wall of Customer Service, measured from the booth center
+    insetFromHallWall: 0.88,
+    promptOffset: 0.32,
+    promptHeight: 1.42,
+    // Bounds are local to the booth's east wall, centered on the safe along Z.
+    parts: [
+      { name: 'night_safe_housing', min: [0.02, 1.00, -0.36], max: [0.23, 1.82, 0.36], color: 0x343c50 },
+      { name: 'night_safe_door', min: [0.22, 1.07, -0.30], max: [0.27, 1.75, 0.30], color: 0x69788c },
+      { name: 'night_safe_slot', min: [0.26, 1.34, -0.21], max: [0.30, 1.43, 0.21], color: 0x161622 },
+      { name: 'night_safe_lock', min: [0.26, 1.15, 0.16], max: [0.30, 1.23, 0.24], color: 0xf7bd62 },
+    ],
+    sign: { text: 'NIGHT SAFE', offset: 0.29, y: 1.59, width: 0.52, height: 0.19, background: '#243042', color: '#ffe4a0' },
+  },
   lines: {
     janitor: { duty: 'Water features off', key: "Murray's Key Ring", needed: 12 },
-    guard: { duty: 'Takings banked', key: "Kettle's Safe Key" },
+    guard: { duty: 'Takings banked', key: "Kettle's Safe Key", needed: 4 },
     manager: { duty: 'Last orders signed off', key: "Fairweather's Signature" },
     influencer: { duty: 'Car park cleared', key: "Skylar's Van Keys" },
   },
@@ -15,6 +33,8 @@ export const closingTime = {
     drop: (key) => ({ kicker: 'Closing time', text: key + ' is on the floor. Associates, please collect it for the closing checklist.' }),
     collect: (key, duty) => ({ kicker: 'Closing time', text: key + ' collected. ' + duty + ' is checked off.' }),
     openFountain: (key, needed) => ({ kicker: 'Closing time', text: `${key} collected. Use the Electrified Fountain in the Grand Atrium to take out ${needed} zombies.` }),
+    openNightSafe: (key, needed) => ({ kicker: 'Closing time', text: `${key} collected. Make ${needed} deposits at the Night Safe beside Customer Service.` }),
+    completeNightSafe: { kicker: 'Closing time', text: 'Takings banked is checked off. Thank you, associates.' },
     completeFountain: { kicker: 'Closing time', text: 'Water features off is checked off. Thank you, associates.' },
   },
   lineProgress: (count, needed) => `${count}/${needed}`,

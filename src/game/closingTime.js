@@ -9,7 +9,11 @@ export function createClosingTime({ events, player, colliders, state, view }) {
   const drops = new Map(); // boss id -> floor position (null while waiting for safe floor)
   const held = new Set();
   const completed = new Set();
-  let fountainKills = 0;
+  const counts = new Map(); // opened duties that take more than a key
+  const progressDuties = {
+    janitor: { open: config.pa.openFountain, complete: config.pa.completeFountain },
+    guard: { open: config.pa.openNightSafe, complete: config.pa.completeNightSafe },
+  };
 
   function place(bossId, position) {
     drops.set(bossId, position);
@@ -35,8 +39,10 @@ export function createClosingTime({ events, player, colliders, state, view }) {
     drops.delete(bossId);
     view.remove(bossId);
     held.add(bossId);
-    if (bossId === 'janitor') {
-      events.emit('closingKey', { bossId, pa: config.pa.openFountain(key, config.lines.janitor.needed) });
+    const progress = progressDuties[bossId];
+    if (progress) {
+      counts.set(bossId, 0);
+      events.emit('closingKey', { bossId, pa: progress.open(key, config.lines[bossId].needed) });
     } else {
       // Until its duty exists, holding the key completes the line.
       completed.add(bossId);
@@ -48,25 +54,32 @@ export function createClosingTime({ events, player, colliders, state, view }) {
 
   events.on('bossDefeated', ({ zombie }) => drop(zombie.type.id, zombie.position));
   events.on('bossVanished', ({ zombie }) => drop(zombie.type.id, player.position));
-  events.on('fountainKill', () => {
-    const line = 'janitor';
-    if (state.over || !held.has(line) || completed.has(line)) return;
+  function advance(line) {
+    if (state.over || !counts.has(line) || completed.has(line)) return;
     const { needed } = config.lines[line];
-    const count = ++fountainKills;
+    const count = counts.get(line) + 1;
+    counts.set(line, count);
     if (count === needed) completed.add(line);
     events.emit('closingProgress', { line, count, needed });
     if (count === needed) {
-      events.emit('closingLine', { line, done: completed.size, total, pa: config.pa.completeFountain });
+      events.emit('closingLine', { line, done: completed.size, total, pa: progressDuties[line].complete });
     }
+  }
+
+  events.on('fountainKill', () => advance('janitor'));
+  events.on('purchase', ({ kind, id }) => {
+    if (kind === 'closing' && id === 'nightSafe') advance('guard');
   });
 
   return {
     get done() { return completed.size; },
+    hasKey(bossId) { return held.has(bossId); },
+    isDone(bossId) { return completed.has(bossId); },
     get missingKeys() { return lines.filter(([id]) => !held.has(id)).map(([, { key }]) => key); },
     get checklist() {
       return lines.map(([bossId, line]) => ({
         bossId, ...line, done: completed.has(bossId),
-        ...(bossId === 'janitor' && held.has(bossId) ? { count: fountainKills } : {}),
+        ...(counts.has(bossId) ? { count: counts.get(bossId) } : {}),
       }));
     },
     get pickups() {
@@ -96,7 +109,7 @@ export function createClosingTime({ events, player, colliders, state, view }) {
       drops.clear();
       held.clear();
       completed.clear();
-      fountainKills = 0;
+      counts.clear();
     },
     debug(mode = 'drop', bossId, at = player.position) {
       if (state.over) return 'The shift has ended';

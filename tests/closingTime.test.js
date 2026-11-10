@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Scene, Vector3 } from 'three';
 import { dt, headlessGame } from './helpers/headlessGame.js';
+import { bossVouchers } from '../src/config/bosses.js';
 import { closingTime } from '../src/config/closingTime.js';
 import { CAREER_STATS_KEY, CAREER_STATS_VERSION, createCareerStats } from '../src/game/careerStats.js';
 import { economy, zombieCountForRound } from '../src/config/economy.js';
@@ -51,11 +52,11 @@ for (const id of bossIds) {
     g.rounds.skipRound();
     defeat(g, id, at); // Nor can it duplicate a held key.
     assert.equal(drops.length, 1);
-    assert.equal(g.closing.done, id === 'janitor' ? 0 : 1);
+    assert.equal(g.closing.done, ['janitor', 'guard'].includes(id) ? 0 : 1);
   });
 }
 
-test('two keys stay through round changes and cleanup; collecting one checks off just its line', (t) => {
+test('two keys stay through round changes and cleanup; collecting one opens just its duty', (t) => {
   const { g, tick, standAt, hud, props } = fixture(t);
   const ring = new Vector3(2, 0, 12);
   const safe = new Vector3(-2, 0, 12);
@@ -76,18 +77,15 @@ test('two keys stay through round changes and cleanup; collecting one checks off
   assert.equal(g.closing.markers.guard.bearing, -Math.PI / 2);
 
   standAt(safe.x, safe.z);
-  assert.equal(g.closing.done, 1);
-  assert.deepEqual(g.closing.checklist.filter(({ done }) => done).map(({ bossId }) => bossId), ['guard']);
+  assert.equal(g.closing.done, 0);
+  assert.deepEqual(g.closing.checklist.filter(({ count }) => count === 0).map(({ bossId }) => bossId), ['guard']);
   assert.deepEqual(g.closing.pickups, [{ bossId: 'janitor', position: ring }]);
   assert.ok(props.getObjectByName('janitor').visible);
   assert.ok(!props.getObjectByName('guard').visible);
   assert.equal(g.closing.markers.guard, undefined);
-  const { key, duty } = closingTime.lines.guard;
-  const pa = closingTime.pa.collect(key, duty);
-  assert.deepEqual(notices, [
-    ['closingKey', { bossId: 'guard', pa }],
-    ['closingLine', { line: 'guard', done: 1, total: bossIds.length }],
-  ]);
+  const { key, needed } = closingTime.lines.guard;
+  const pa = closingTime.pa.openNightSafe(key, needed);
+  assert.deepEqual(notices, [['closingKey', { bossId: 'guard', pa }]]);
   const announcements = hud.calls.filter(([name]) => name === 'showAnnouncement').map(([, notice]) => notice.text);
   assert.ok(announcements.includes(closingTime.pa.drop(key).text));
   assert.ok(announcements.includes(pa.text));
@@ -97,7 +95,7 @@ test('death freezes checklist progress and Play again clears the held and floor 
   const { g, standAt, props } = fixture(t);
   assert.ok(g.debug.keylessIds.includes('closing'));
   assert.ok(!g.debug.commands.some(({ id }) => id === 'closing'));
-  assert.match(g.debug.run('closing', 'grant', 'guard'), /Granted/);
+  assert.match(g.debug.run('closing', 'grant', 'influencer'), /Granted/);
   assert.match(g.debug.run('closing', 'drop', 'janitor', new Vector3(2, 0, 12)), /Dropped/);
   assert.ok(g.state.assisted);
 
@@ -306,10 +304,10 @@ test('win presentation checks the fourth box only at the van and keeps the headl
   grantKeys(g);
   assert.deepEqual(g.closing.missingKeys, []);
   assert.deepEqual(closingChecklistFor(g.closing.checklist, g.state.won).map(({ done }) => done),
-    [false, true, true, false]);
+    [false, false, true, false]);
   press('KeyF', holdTicks);
   assert.deepEqual(closingChecklistFor(g.closing.checklist, g.state.won).map(({ done }) => done),
-    [false, true, true, true]);
+    [false, false, true, true]);
 });
 
 test('win receipt offers both choices, then restores the death receipt for an overtime death', (t) => {
@@ -440,4 +438,122 @@ test('the fountain duty opens with the key, counts only its killing blows, ticks
   g.health.takeDamage(g.stats.maxHealth);
   g.events.emit('fountainKill', { zombie: extra });
   assert.equal(line().count, 1, 'nothing more counts after death');
+});
+
+
+// Phase 5: Line 2, the night safe
+function atNightSafe(t) {
+  const game = fixture(t);
+  const { g, tick, standAt } = game;
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  const safe = g.map.features.find(({ kind }) => kind === 'nightSafe');
+  const approach = () => standAt(safe.position.x + 1.2, safe.position.z, 90);
+  approach();
+  assert.equal(g.interactions.prompt, null, 'requires the Main Hallway to be unlocked');
+  g.map.areaUnlocks.unlock('hallway');
+  tick();
+  assert.equal(g.interactions.prompt?.id, 'nightSafe');
+  return { ...game, safe, approach, line: () => g.closing.checklist.find(({ bossId }) => bossId === 'guard') };
+}
+
+test('the Night Safe and the three existing counters keep their own prompts', (t) => {
+  const { g, safe, approach, standAt } = atNightSafe(t);
+  const desk = g.map.features.find(({ kind }) => kind === 'upgradeDesk');
+  const prize = g.map.features.find(({ kind }) => kind === 'prizeCounter').slots[0];
+  for (const [spot, kind] of [[desk.position, 'tier'], [desk.meleePosition, 'melee'], [prize.position, 'prize']]) {
+    standAt(spot.x, spot.z - 1.4, 180);
+    assert.equal(g.interactions.prompt?.kind, kind);
+  }
+  approach();
+  assert.equal(g.interactions.prompt?.id, safe.name);
+});
+
+test('the Night Safe refuses without the key or enough points', (t) => {
+  const { g, press, line } = atNightSafe(t);
+  const { key } = closingTime.lines.guard;
+  const purchases = [], progress = [];
+  g.events.on('purchase', (event) => purchases.push(event));
+  g.events.on('closingProgress', (event) => progress.push(event));
+  const price = g.pricing.priceOf('closing', 'nightSafe');
+  g.wallet.earn(price);
+  assert.ok(g.interactions.prompt.blocked.includes(key));
+  const before = g.wallet.points;
+  press('KeyF', holdTicks);
+  assert.equal(g.wallet.points, before);
+  assert.equal(line().count, undefined);
+
+  grantKeys(g, ['guard']);
+  assert.equal(line().count, 0);
+  assert.equal(line().done, false);
+  assert.ok(g.wallet.spend(g.wallet.points - price + 1));
+  assert.equal(g.interactions.prompt.shortfall, 1);
+  press('KeyF', holdTicks);
+  assert.equal(g.wallet.points, price - 1);
+  assert.equal(g.interactions.prompt.denied, true);
+  assert.equal(line().count, 0);
+  assert.deepEqual(purchases, []);
+  assert.deepEqual(progress, []);
+});
+
+test('four priced deposits honor both discounts, tick the duty once and reset on Play again', (t) => {
+  const { g, press, tick, line, approach, hud } = atNightSafe(t);
+  const { key, needed } = closingTime.lines.guard;
+  const purchases = [], progress = [], completed = [];
+  g.events.on('purchase', (event) => purchases.push(event));
+  g.events.on('closingProgress', (event) => progress.push(event));
+  g.events.on('closingLine', (event) => completed.push(event));
+  grantKeys(g, ['guard']);
+  const base = g.pricing.priceOf('closing', 'nightSafe');
+  assert.equal(base, economy.closing.nightSafe);
+  assert.ok(economy.flashSales.groups.every(({ categories }) => !categories.includes('closing')));
+  g.wallet.earn(base * needed);
+
+  function deposit(count, hold = holdTicks) {
+    const price = g.pricing.priceOf('closing', 'nightSafe');
+    const before = g.wallet.points;
+    assert.equal(g.interactions.prompt.cost, price);
+    press('KeyF', hold);
+    assert.equal(before - g.wallet.points, price);
+    assert.deepEqual(purchases.at(-1), { kind: 'closing', id: 'nightSafe', label: closingTime.nightSafe.name, cost: price });
+    assert.equal(line().count, count);
+    assert.equal(line().done, count === needed);
+  }
+
+  deposit(1, holdTicks * 3); // Holding continuously still pays for one deposit.
+  assert.ok(g.pricing.setVoucher(bossVouchers.discountCode));
+  assert.ok(g.interactions.prompt.cost < base);
+  deposit(2);
+  assert.equal(g.pricing.voucher, null);
+  assert.ok(g.powerUps.debugDrop('employeeDiscount'));
+  tick();
+  assert.ok(g.interactions.prompt.cost < base);
+  deposit(3);
+  assert.equal(g.interactions.prompt.cost, base, 'the Employee Discount was consumed');
+  deposit(needed);
+  assert.equal(g.closing.done, 1);
+  assert.equal(g.interactions.prompt.priceLabel, 'Done');
+  assert.equal(g.interactions.prompt.blocked, closingTime.lines.guard.duty);
+
+  const remaining = g.wallet.points;
+  press('KeyF', holdTicks);
+  assert.equal(g.wallet.points, remaining);
+  assert.equal(purchases.length, needed);
+  assert.deepEqual(progress, Array.from({ length: needed }, (_, i) => ({ line: 'guard', count: i + 1, needed })));
+  assert.deepEqual(completed, [{ line: 'guard', done: 1, total: bossIds.length, pa: closingTime.pa.completeNightSafe }]);
+  const announcements = hud.calls.filter(([name]) => name === 'showAnnouncement').map(([, notice]) => notice.text);
+  assert.equal(announcements.filter((text) => text === closingTime.pa.openNightSafe(key, needed).text).length, 1);
+  assert.equal(announcements.filter((text) => text === closingTime.pa.completeNightSafe.text).length, 1);
+
+  g.resetRun();
+  assert.equal(line().count, undefined);
+  assert.equal(line().done, false);
+  assert.ok(g.closing.missingKeys.includes(key));
+  g.map.areaUnlocks.unlock('hallway');
+  approach();
+  assert.ok(g.interactions.prompt.blocked.includes(key));
+  grantKeys(g, ['guard']);
+  assert.equal(line().count, 0);
+  g.wallet.earn(base);
+  deposit(1);
 });

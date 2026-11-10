@@ -758,3 +758,10 @@ The Promenade workbench installs Party Trap on the Confetti Cannon and Clearance
 - The breaker keeps its normal hazard behavior and price. The interim van still requires the four keys until parking validation is built in phase 7.
 - With seed 42 and a stationary invulnerable lure in the real headless wave, the paid breaker took two activations in round 6 (11 then 8 kills), one in round 10 (15 kills) and one in round 15 (13 kills). A controlled run staging six full-health enemies at a time took two activations at each round. The measured price was 750 per activation.
 - Shared files changed include the Closing Time config and game system, `createGame.js`, `events.js`, the van and fountain features, the HUD and pause UI, and `tests/closingTime.test.js`.
+
+## 10 November 2026 - Closing Time phase 5, Line 2 (the night safe)
+
+- Kettle’s Safe Key opens Takings banked. Hold interact at the Night Safe on Customer Service’s east wall to make one deposit. Each deposit updates the checklist, and the PA announces the opening and the tick after four deposits. Play again clears the key and progress.
+- The safe charges 1,000 points per hold through the new closing price category. The Discount Code and Employee Discount apply to deposits. Flash Sales have no closing group.
+- Production Chrome preview showed the locked prompt, the 1/4 HUD count, and the Done prompt with the 4/4 tick. Four full-price holds charged 4,000 points. The prompt and coplanar tests cover the safe alongside both Customer Service windows and the Prize Counter.
+- Shared files changed include the Closing Time config and game system, the economy and pricing tables, the map and feature registry, and their test expectations.

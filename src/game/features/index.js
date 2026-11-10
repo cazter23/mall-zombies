@@ -22,6 +22,7 @@ import { buildHorror } from './horror.js';
 import { buildWardrobeRack, buildFittingRoom } from './wardrobeFixtures.js';
 import { buildClawMachine } from './clawMachine.js';
 import { buildPrizeCounter } from './prizeCounter.js';
+import { buildNightSafe } from './nightSafe.js';
 import { buildEscapeVan } from './escapeVan.js';
 import { buildFountainHazard } from './fountainHazard.js';
 
@@ -37,6 +38,7 @@ const builders = {
   clawMachine: buildClawMachine, // GRAB-A-GUN: pay, time the drop, take the gun from the chute
   prizeCounter: buildPrizeCounter, // REDEMPTION: GRAB-A-GUN's prize tickets for small things
   fountainHazard: buildFountainHazard, // Grand Atrium fountain breaker switch (docs/hazards-plan.md)
+  nightSafe: buildNightSafe,
   escapeVan: buildEscapeVan,
 };
 
