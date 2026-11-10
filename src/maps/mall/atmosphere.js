@@ -122,9 +122,11 @@ export function buildMallAtmosphere(kit, layout, { service, ceilingHole, ceiling
   // (North of HOFFMAN'S side door, which took the stretch of wall this notice hung on.)
   sign('TRADING HOURS: UNTIL FURTHER NOTICE', { x: -4.94, y: 2.65, z: 14.9, width: 2.0, height: 0.25, facing: 'x+' });
   // (The directory hung at x -18 until HOFFMAN'S gate took that stretch of wall: now over the hallway's north-west vent.)
-  sign('Sunset Galleria / Directory', { x: -6.9, y: 2.6, z: 5.95, width: 2.3, height: 0.34, facing: -1, font: 'Arial, "Helvetica Neue", sans-serif' });
+  // (Raised 0.25 m: that vent is boarded with planks up to y 1.35 at the same z as these rows, so the lowest row flickered against them.)
+  const directoryRise = 0.25;
+  sign('Sunset Galleria / Directory', { x: -6.9, y: 2.6 + directoryRise, z: 5.95, width: 2.3, height: 0.34, facing: -1, font: 'Arial, "Helvetica Neue", sans-serif' });
   for (const [i, text] of ['Food Court  ·  South', 'Mega Mart  ·  East', "Hoffman's  ·  North-West", 'Cinema  ·  Upstairs, West'].entries()) {
-    sign(text, { x: -6.9, y: 2.19 - i * 0.29, z: 5.94, width: 2.3, height: 0.25, facing: -1,
+    sign(text, { x: -6.9, y: 2.19 + directoryRise - i * 0.29, z: 5.94, width: 2.3, height: 0.25, facing: -1,
       background: '#eee1c1', color: '#2e5158', font: 'Arial, "Helvetica Neue", sans-serif' });
   }
   sign('Please enjoy your stay', { x: 18.8, y: 3.6, z: 5.95, width: 1.8, height: 0.28, facing: -1, font: 'Arial, "Helvetica Neue", sans-serif' });
