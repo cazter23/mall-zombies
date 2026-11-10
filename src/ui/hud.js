@@ -26,6 +26,9 @@ import { createOutfitRail } from './outfitRail.js';
 import { createBossFlashView } from './bossFlash.js';
 import { createNoticeHistory } from './noticeHistory.js';
 
+const vanLine = closingTime.lines.influencer;
+const vanKeyNotice = closingTime.pa.collect(vanLine.key, vanLine.duty).text;
+
 function el(tag, className) {
   const node = document.createElement(tag);
   if (className) node.className = className;
@@ -160,7 +163,10 @@ export function createHud() {
   const occupancyCounter = el('div', 'round-occupancy');
   occupancyCounter.textContent = 'CLOSED FOR RESTOCK';
   occupancyCounter.classList.add('closed');
-  roundCounter.append(roundLabel, roundValue, occupancyCounter);
+  const overtimeTag = el('div', 'overtime-tag');
+  overtimeTag.textContent = 'OVERTIME';
+  overtimeTag.hidden = true;
+  roundCounter.append(roundLabel, roundValue, occupancyCounter, overtimeTag);
   hud.append(roundCounter);
   // Under the round box, during the break: "[I] Hold to clock in" with a fill bar (its own element, so it doesn't blink
   // with the counter).
@@ -324,6 +330,7 @@ export function createHud() {
     checklist.append(box);
     return { id, box, marker: createBagMarker() };
   });
+  let receiptClosingDone = null;
   const leftStack = el('div', 'hud-left-stack');
   leftStack.append(roundCounter, checklist, clockIn, incentives.element, ritualTicket.element);
   const topStack = el('div', 'hud-top-stack');
@@ -417,6 +424,7 @@ export function createHud() {
         ammoSecondary.classList.remove('switched');
       });
       events.on('runReset', clearNotices);
+      events.on('runReset', () => { receiptClosingDone = null; overtimeTag.hidden = true; });
       events.on('runReset', () => { history.clear(); incentives.reset(); });
       events.on('playerDeath', clearNotices);
       events.on('mascotPopBlast', ({ butter: buttered, butterSeconds }) => {
@@ -448,6 +456,14 @@ export function createHud() {
     // A dropped Limited Edition's direction: null hides it (game/features/limitedEditions.js status).
     setLimitedEdition(status) {
       bagMarker.update(status);
+    },
+
+    setOvertime(active) {
+      if (overtimeTag.hidden === active) overtimeTag.hidden = !active;
+    },
+
+    setReceiptClosingDone(done) {
+      receiptClosingDone = done;
     },
 
     setClosing(checklist, markers) {
@@ -525,6 +541,10 @@ export function createHud() {
 
     // A PA-style announcement: { kicker, text, priority? }. Queue/preempt rather than overwrite.
     showAnnouncement(message) {
+      // Phase 1's PA copy checked off the last line when the key was collected.
+      if (message.text === vanKeyNotice) {
+        message = { ...message, text: `${vanLine.key} collected. Start the van to finish closing.` };
+      }
       history.addMessage(message);
       if (!message.archiveOnly) announcements.push(message);
     },
@@ -569,7 +589,7 @@ export function createHud() {
     // Death: the run's receipt ({ timeAlive (s), round, pointsEarned, kills, headshotKills, meleeKills, accuracy 0..1 }).
     showResults(r) {
       hud.classList.add('dimmed');
-      screens.show('results', r);
+      screens.show('results', receiptClosingDone === null ? r : { ...r, closingDone: receiptClosingDone });
     },
 
     hideResults() {

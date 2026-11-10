@@ -130,6 +130,7 @@ notes, replacement-voice cleanup, and real-game death/reset wiring.
 It checks one drop per boss alongside the usual rewards, persistence through round changes and cleanup, simultaneous drops, checklist events and PA, the death receipt, and Play again.
 It also checks the real van's hold and missing-key prompt, the paused win, Clock out, normal next-round overtime with the same loadout,
 career credit on overtime death, and version 1 career migration with fastest-win persistence.
+Phase 3 checks receipt modes and controller choice, the fourth box's presentation, and the clocked-out and completed-overtime lines on a death receipt.
 
 `tests/powerUps.test.js` checks earned incentive thresholds, skill credit, single drops, caps/repeats, expiry, safe floor/ramp
 placement, swept slide collection, wall/storey rejection, Blue Light payouts/timers, reserve delivery without bypassing

@@ -18,6 +18,7 @@ import { createGamepad } from './core/gamepad.js';
 import { createHaptics } from './core/haptics.js';
 import { buttonLabels } from './config/controls.js';
 import { buildTestRange } from './maps/testRange/testRange.js';
+import { closingChecklistFor } from './ui/screens.js';
 import { createHud } from './ui/hud.js';
 import { createDamageIndicatorQueue } from './ui/damageDirection.js';
 import { weapons, melee as meleeWeapons } from './config/weapons.js';
@@ -248,7 +249,21 @@ const throwableView = createThrowableView(scene, g.equipment); // Kiosk Kevin's 
 const screens = hud.screens;
 const titleCamera = createTitleCamera(map.titleShots, feel.titleScreen);
 const careerStats = createCareerStats();
-g.events.on('runEnd', ({ summary }) => screens.setCareerResult(careerStats.recordRun(summary)));
+const closingChecklist = () => closingChecklistFor(g.closing.checklist, game.won);
+g.events.on('runEnd', ({ summary }) => {
+  hud.setReceiptClosingDone(closingChecklist().filter(({ done }) => done).length);
+  screens.setCareerResult(careerStats.recordRun(summary));
+});
+function showWin(summary, clockedOut = false) {
+  hud.setDimmed(true);
+  screens.show('results', { ...summary, shiftComplete: true, clockedOut });
+}
+g.events.on('runWon', ({ summary }) => {
+  haptics.stop();
+  game.padPlaying = false;
+  showWin(summary);
+  if (document.pointerLockElement) document.exitPointerLock();
+});
 
 function enterPlaying() {
   // A delayed pointer-lock grant can arrive after another menu was opened.
@@ -271,7 +286,7 @@ function play({ pad }) {
 function runSoFar() {
   return {
     round: rounds.round, points: wallet.points, time: g.runStats.timeAlive, kills: g.runStats.kills,
-    outfit: g.outfitRail.snapshot(), closing: g.closing.checklist,
+    outfit: g.outfitRail.snapshot(), closing: closingChecklist(),
   };
 }
 function pauseRun() {
@@ -303,6 +318,15 @@ screens.on('play', play);
 screens.on('resume', play);
 screens.on('restart', freshRun);
 screens.on('playAgain', freshRun);
+screens.on('clockOut', () => {
+  if (g.clockOut()) showWin(g.winSummary, true);
+});
+screens.on('overtime', (how) => {
+  if (!g.stayForOvertime()) return;
+  // A browser can refuse a quick re-lock. Leave Resume available until it grants the lock.
+  screens.show('pause', runSoFar());
+  play(how);
+});
 screens.on('quit', goToTitle);
 screens.on('mainMenu', goToTitle);
 screens.on('settings', () => settingsMenu.open());
@@ -315,6 +339,10 @@ screens.on('notices', () => noticesMenu.open());
 
 input.onLockChange((locked) => {
   if (locked) {
+    if (game.winPending || game.over) {
+      document.exitPointerLock();
+      return;
+    }
     game.padPlaying = false; // the mouse took over
     if (!game.over) enterPlaying();
   } else if (!game.over && !game.padPlaying && !screens.current) {
@@ -398,7 +426,7 @@ function render(alpha, frameTime) {
   // While paused nothing ticks, so interpolating between the last two ticks would make things
   // twitch: show the latest tick instead. Visual time keeps flowing after death (the world goes
   // on around the death camera) but stops while paused.
-  const paused = !game.running && !game.over;
+  const paused = !game.running && !death.summary;
   if (paused) alpha = 1;
   const visualTime = paused ? 0 : frameTime;
 
@@ -415,8 +443,8 @@ function render(alpha, frameTime) {
 
   player.syncCamera(alpha);
   lightPool.update(camera.position, frameTime);
-  if (game.over) applyDeathCamera(alpha);
-  body.root.visible = !game.over;
+  if (death.summary) applyDeathCamera(alpha);
+  body.root.visible = !death.summary;
   body.update(visualTime, player, alpha);
   zombies.render(visualTime, alpha);
   g.contactShadows.update(zombies.zombies, alpha);
@@ -475,7 +503,8 @@ function render(alpha, frameTime) {
   hud.setOrderForm(game.over ? null : ritual?.form ?? null, menuLabels);
   hud.setFittingRoom(game.over ? null : fittingRooms.find((room) => room.view)?.view ?? null, menuLabels);
   hud.setLimitedEdition(game.over ? null : limitedEditions?.status ?? null);
-  hud.setClosing(g.closing.checklist, game.over ? {} : g.closing.markers);
+  hud.setClosing(closingChecklist(), game.over ? {} : g.closing.markers);
+  hud.setOvertime(game.won && !game.winPending && !game.over);
   hud.setClawMachine?.(game.over ? null : clawMachine?.status ?? null);
   hud.setPockets(game.over ? null : g.equipment.status, { lethal: buttonLabel('lethal'), tactical: buttonLabel('tactical') });
   hud.setVaultPrompt(game.running && !game.over && g.vaultPromptVisible, buttonLabel('jump'));
@@ -488,7 +517,7 @@ function render(alpha, frameTime) {
 
   // Render world + viewmodel through HDR post-processing (UnrealBloom + lens vignette/aberration + ACES tone mapping).
   roomCulling.update(cullingOn);
-  postProcessing.render({ showViewmodel: !game.over, speedAmount, grade: gradeAt(frameTime) });
+  postProcessing.render({ showViewmodel: !death.summary, speedAmount, grade: gradeAt(frameTime) });
 }
 
 // The main menu's backdrop: the camera glides through the mall (map.titleShots), fading through black at each cut.

@@ -7,7 +7,8 @@ import { CAREER_STATS_KEY, CAREER_STATS_VERSION, createCareerStats } from '../sr
 import { economy, zombieCountForRound } from '../src/config/economy.js';
 import { feel } from '../src/config/feel.js';
 import { weapons } from '../src/config/weapons.js';
-import { receiptLinesFor } from '../src/ui/screens.js';
+import { menuDom } from './helpers/menuDom.js';
+import { closingChecklistFor, createScreens, receiptLinesFor } from '../src/ui/screens.js';
 
 const bossIds = Object.keys(closingTime.lines);
 
@@ -292,4 +293,64 @@ test('career version 1 migrates old records and saves the fastest win by time at
   assert.equal(reloaded.totals.runs, 5);
   assert.equal(reloaded.totals.wins, 2);
   assert.equal(reloaded.bests.fastestWin, 40);
+});
+
+
+// Phase 3: The win, browser side
+test('win presentation checks the fourth box only at the van and keeps the headless keys intact', (t) => {
+  const game = fixture(t);
+  const { g, press } = game;
+  approachVan(game);
+  grantKeys(g);
+  assert.ok(g.closing.checklist.every(({ done }) => done));
+  assert.deepEqual(closingChecklistFor(g.closing.checklist, g.state.won).map(({ done }) => done),
+    [true, true, true, false]);
+  press('KeyF', holdTicks);
+  assert.ok(closingChecklistFor(g.closing.checklist, g.state.won).every(({ done }) => done));
+});
+
+test('win receipt offers both choices, then restores the death receipt for an overtime death', (t) => {
+  const game = fixture(t);
+  const { g, press } = game;
+  approachVan(game);
+  grantKeys(g);
+  press('KeyF', holdTicks);
+
+  const { document } = menuDom();
+  const screens = createScreens();
+  const button = (action) => document.querySelector(`[data-action="${action}"]`);
+  const heading = document.querySelector('.receipt-shift-heading');
+  const incident = document.querySelector('.receipt-incident');
+  const win = { ...g.winSummary, shiftComplete: true };
+  const picks = [];
+  screens.on('clockOut', () => picks.push('clockOut'));
+  screens.on('overtime', ({ pad }) => { picks.push(pad); g.stayForOvertime(); });
+  screens.show('results', win);
+  assert.equal(heading.textContent, 'SHIFT COMPLETE');
+  assert.equal(heading.hidden, false);
+  assert.equal(incident.hidden, true);
+  assert.equal(button('playAgain').hidden, true);
+  assert.equal(document.activeElement, button('clockOut'));
+  button('clockOut').click();
+  const presses = new Set(['PadDown', 'PadA']);
+  screens.padNav({ consumePress: (code) => presses.delete(code) });
+  assert.deepEqual(picks, ['clockOut', true]);
+
+  screens.show('results', { ...win, clockedOut: true });
+  assert.equal(button('overtime').hidden, true);
+  assert.equal(button('playAgain').hidden, false);
+  assert.equal(heading.hidden, false);
+
+  g.rounds.skipRound(); // round 2 was the first overtime round; die in round 3
+  g.health.takeDamage(g.stats.maxHealth);
+  screens.show('results', g.death.summary);
+  assert.equal(heading.hidden, true);
+  assert.equal(incident.hidden, false);
+  assert.equal(button('clockOut').hidden, true);
+  assert.equal(button('playAgain').hidden, false);
+  const lines = Object.fromEntries(receiptLinesFor(g.death.summary));
+  assert.match(lines['CLOCKED OUT'], /Round 1/);
+  assert.equal(lines['Overtime rounds survived'], 1);
+  assert.equal(Object.fromEntries(receiptLinesFor(win))['CLOCKED OUT'], undefined);
+  assert.equal(Object.fromEntries(receiptLinesFor({ ...g.death.summary, round: 2 }))['Overtime rounds survived'], 0);
 });

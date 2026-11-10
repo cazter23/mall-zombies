@@ -742,3 +742,11 @@ The Promenade workbench installs Party Trap on the Confetti Cannon and Clearance
 
 
 > Older entries (October 2026 and before): docs/archive/history-2026-10.md
+
+
+## 10 November 2026 - Closing Time phase 3, The win (browser)
+
+- The existing receipt opens as SHIFT COMPLETE after the van starts. Clock out keeps the completed receipt available. Stay for overtime resumes on the controller or requests mouse lock with a Resume screen as a fallback.
+- The fourth checklist box ticks at the van. The HUD shows OVERTIME after continuing. An overtime death uses the regular incident receipt and adds the win round, win time and number of completed overtime waves.
+- The win releases pointer lock and stops rumble. The paused receipt is eligible for idle saving. Death alone starts the death music and camera.
+- Shared files changed include `main.js`, `ui/screens.js`, `ui/hud.js`, `ui/readability.css` and `tests/closingTime.test.js`.

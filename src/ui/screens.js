@@ -40,6 +40,10 @@ function el(tag, className, html) {
 const pad2 = (n) => String(n).padStart(2, '0');
 const clock = (seconds) => `${Math.floor(seconds / 60)}:${pad2(Math.floor(seconds % 60))}`;
 
+export function closingChecklistFor(checklist, won) {
+  return checklist.map((line) => line.bossId === 'influencer' ? { ...line, done: won } : line);
+}
+
 /** The lines above the receipt's total: [label, value]. "Survived by" only appears if you named a gun at Build-A-Blaster. */
 export function receiptLinesFor(r) {
   const lines = [
@@ -52,6 +56,10 @@ export function receiptLinesFor(r) {
     ['Accuracy', `${Math.round(r.accuracy * 100)}%`],
   ];
   if (r.closingDone != null) lines.push([closingTime.title, closingTime.receiptProgress(r.closingDone, Object.keys(closingTime.lines).length)]);
+  if (r.won && !r.shiftComplete) {
+    lines.push(['CLOCKED OUT', `Round ${r.winRound} · ${clock(r.winTime)}`]);
+    lines.push(['Overtime rounds survived', Math.max(0, r.round - r.winRound - 1)]);
+  }
   if (r.survivedBy?.length) lines.push(['Survived by', r.survivedBy.map(survivorLine).join(' and ')]);
   // GRAB-A-GUN (game/tickets.js): tickets aren't points, so they're a line of their own, never in the totals.
   if (r.ticketsWon > 0) lines.push(['Prize tickets won', r.ticketsWon]);
@@ -204,26 +212,28 @@ export function createScreens() {
   const resumeButton = pause.querySelector('[data-action="resume"]');
 
   // --- Results (the receipt) ---------------------------------------------------------
+  const deathThanks = 'Thank you for shopping with us<br />All sales final · No refunds · No respawns';
   const results = el('div', 'screen results-screen hidden', `
     <div class="receipt-wrap">
       <div class="receipt">
         <div class="receipt-store">SUNSET GALLERIA</div>
         <div class="receipt-sub">Store #013 · Register 4</div>
         <div class="receipt-sub receipt-date"></div>
-        <div class="receipt-sub">Cashier: YOU (deceased)</div>
+        <h1 class="receipt-shift-heading" hidden="hidden">SHIFT COMPLETE</h1>
+        <div class="receipt-sub receipt-cashier">Cashier: YOU (deceased)</div>
         <div class="receipt-rule"></div>
         <div class="receipt-lines"></div>
         <div class="receipt-wearing"><div class="receipt-wearing-head"></div></div>
         <div class="receipt-rule"></div>
         <div class="receipt-total"><span>Points earned</span><span class="receipt-total-value"></span></div>
-        <div class="receipt-rule"></div>
+        <div class="receipt-rule receipt-death-rule"></div>
         <div class="receipt-review">
           <div class="receipt-eval-header">*** PERFORMANCE REVIEW ***</div>
           <div class="receipt-eval-title"></div>
           <div class="receipt-eval-rating"></div>
           <div class="receipt-eval-comment"></div>
         </div>
-        <div class="receipt-rule"></div>
+        <div class="receipt-rule receipt-death-rule"></div>
         <div class="receipt-incident">
           <div class="receipt-incident-header">*** INCIDENT REPORT / FORM 109-C ***</div>
           <div class="receipt-incident-block">
@@ -241,9 +251,11 @@ export function createScreens() {
           <div class="receipt-barcode"></div>
           <div class="receipt-stamp">Clocked out</div>
         </div>
-        <div class="receipt-thanks">Thank you for shopping with us<br />All sales final · No refunds · No respawns</div>
+        <div class="receipt-thanks">${deathThanks}</div>
       </div>
       <div class="menu-list menu-row">
+        <button class="menu-btn primary" data-action="clockOut" type="button">Clock out</button>
+        <button class="menu-btn" data-action="overtime" type="button">Stay for overtime</button>
         <button class="menu-btn primary" data-action="playAgain" type="button">Play again</button>
         <button class="menu-btn" data-action="notices" type="button">Notices &amp; certificates</button>
         <button class="menu-btn" data-action="mainMenu" type="button">Main menu</button>
@@ -251,6 +263,12 @@ export function createScreens() {
       <p class="pad-hint">Controller: D-pad + <kbd>A</kbd></p>
     </div>
   `);
+  const shiftHeading = results.querySelector('.receipt-shift-heading');
+  const cashier = results.querySelector('.receipt-cashier');
+  const receiptStamp = results.querySelector('.receipt-stamp');
+  const receiptThanks = results.querySelector('.receipt-thanks');
+  const deathSections = results.querySelectorAll('.receipt-review, .receipt-incident, .receipt-death-rule');
+  const resultButtons = [...results.querySelectorAll('[data-action]')];
   const receiptDate = results.querySelector('.receipt-date');
   const receiptLines = results.querySelector('.receipt-lines');
   const receiptWearing = results.querySelector('.receipt-wearing');
@@ -363,7 +381,7 @@ export function createScreens() {
     }));
   }
 
-  const buttonsOf = (name) => [...screens[name].querySelectorAll('[data-action]')];
+  const buttonsOf = (name) => [...screens[name].querySelectorAll('[data-action]')].filter((button) => !button.hidden);
   function markFocus(show) {
     if (!current) return;
     buttonsOf(current).forEach((b, i) => b.classList.toggle('focused', show && i === focus));
@@ -387,6 +405,17 @@ export function createScreens() {
   }
 
   function fillResults(r) {
+    const shiftComplete = Boolean(r.shiftComplete);
+    shiftHeading.hidden = !shiftComplete;
+    cashier.textContent = shiftComplete ? 'Cashier: YOU' : 'Cashier: YOU (deceased)';
+    receiptStamp.textContent = shiftComplete && !r.clockedOut ? 'Complete' : 'Clocked out';
+    receiptThanks.innerHTML = shiftComplete ? 'Thank you for closing Sunset Galleria.' : deathThanks;
+    receiptWearing.querySelector('.receipt-wearing-head').textContent = shiftComplete ? 'WORE ON SHIFT' : outfitCfg.diedWearing;
+    for (const section of deathSections) section.hidden = shiftComplete;
+    for (const button of resultButtons) {
+      const choice = button.dataset.action === 'clockOut' || button.dataset.action === 'overtime';
+      button.hidden = choice !== (shiftComplete && !r.clockedOut);
+    }
     const now = new Date();
     receiptDate.textContent = `${now.toLocaleDateString('en-US')} ${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
     const lines = receiptLinesFor(r);
@@ -482,7 +511,11 @@ export function createScreens() {
       current = name ?? null;
       focus = 0;
       if (name === 'pause') fillPause(data);
-      if (name === 'results') fillResults(data);
+      if (name === 'results') {
+        fillResults(data);
+        results.scrollTop = 0;
+        buttonsOf(name)[0]?.focus?.({ preventScroll: true });
+      }
       if (name === 'help') helpReturn = data?.from ?? 'title';
       if (name === 'stats') fillStats(data);
       markFocus(false);
@@ -503,6 +536,7 @@ export function createScreens() {
         - (input.consumePress('PadUp') || input.consumePress('PadLeft') ? 1 : 0);
       if (step) {
         focus = (focus + step + buttons.length) % buttons.length;
+        if (current === 'results') buttons[focus]?.focus?.({ preventScroll: true });
         markFocus(true);
       }
       if (current === 'help' && input.consumePress('PadB')) return api.show(helpReturn);
