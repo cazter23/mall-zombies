@@ -172,11 +172,14 @@ test('the real game: the PA banner + chime, the sale price in the prompt and in 
     t.press('KeyF', 30);
     assert.equal(before - g.wallet.points, price, 'charged the sale price');
     // It runs out.
-    const bannersBefore = t.hud.calls.filter(([name]) => name === 'showAnnouncement').length;
+    // (Only the sale's own banners: other PA lines, like the closing checklist's briefing, come in the same seconds.)
+    const saleBanners = () => t.hud.calls.filter(([name, notice]) => name === 'showAnnouncement' && /sale/i.test(notice.kicker ?? ''));
+    const bannersBefore = saleBanners().length;
     t.tick(60 * 7);
     assert.equal(g.flashSales.active, null, 'the sale ended');
     assert.equal(g.pricing.priceOf('door', 'megaMart'), economy.doors.megaMart, 'prices are back to normal');
-    assert.equal(t.hud.calls.filter(([name]) => name === 'showAnnouncement').length, bannersBefore + 1, 'with an end announcement');
+    assert.equal(saleBanners().length, bannersBefore + 1, 'with an end announcement');
+    assert.equal(saleBanners().at(-1)[1].kicker, 'Sale over');
   });
 });
 
