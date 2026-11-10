@@ -269,7 +269,10 @@ function play({ pad }) {
   }
 }
 function runSoFar() {
-  return { round: rounds.round, points: wallet.points, time: g.runStats.timeAlive, kills: g.runStats.kills, outfit: g.outfitRail.snapshot() };
+  return {
+    round: rounds.round, points: wallet.points, time: g.runStats.timeAlive, kills: g.runStats.kills,
+    outfit: g.outfitRail.snapshot(), closing: g.closing.checklist,
+  };
 }
 function pauseRun() {
   haptics.stop();
@@ -472,6 +475,7 @@ function render(alpha, frameTime) {
   hud.setOrderForm(game.over ? null : ritual?.form ?? null, menuLabels);
   hud.setFittingRoom(game.over ? null : fittingRooms.find((room) => room.view)?.view ?? null, menuLabels);
   hud.setLimitedEdition(game.over ? null : limitedEditions?.status ?? null);
+  hud.setClosing(g.closing.checklist, game.over ? {} : g.closing.markers);
   hud.setClawMachine?.(game.over ? null : clawMachine?.status ?? null);
   hud.setPockets(game.over ? null : g.equipment.status, { lethal: buttonLabel('lethal'), tactical: buttonLabel('tactical') });
   hud.setVaultPrompt(game.running && !game.over && g.vaultPromptVisible, buttonLabel('jump'));

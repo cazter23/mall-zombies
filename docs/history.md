@@ -1,5 +1,13 @@
 # Sunset Galleria: build history ("Current state")
 
+## 10 November 2026 - Closing Time phase 1, Keys and the checklist
+
+- The first defeat of each boss drops its closing key on clear floor alongside its usual reward. If the boss vanishes, its key drops at the player's feet.
+- Keys stay through wave changes and Murray's cleanup. Collect a key to check off its duty. Play again resets the checklist and clears the drops.
+- The HUD shows four boxes and a pointer for each dropped key. The PA calls out drops and pickups. Pause lists the duties and their keys, and the death receipt records how many were checked off.
+- Browser console testing uses `__mall.g.debug.run('closing', 'drop', 'janitor')` and `__mall.g.debug.run('closing', 'grant', 'guard')`. Omit the boss ID to use the next eligible key.
+- Shared files changed include `createGame.js`, `events.js`, `main.js`, `debugCommands.js`, `bossDirector.js`, and the power-up and HUD modules.
+
 ## 10 November 2026 - Shopping window: a 20 s break and "Clock in"
 
 - **Why.** The fun review's headless bot found no calm moment to use the shops: the break was 10 s and the last two zombies of a round

@@ -21,6 +21,7 @@
 // =============================================================================
 
 import { economy } from '../config/economy.js';
+import { closingTime } from '../config/closingTime.js';
 import { createOutfitRail } from './outfitRail.js';
 import { outfitRail as outfitCfg } from '../config/wardrobe.js';
 import { menuFeel } from '../config/settings.js';
@@ -50,6 +51,7 @@ export function receiptLinesFor(r) {
     ['Bosses defeated', r.bossesDefeated ?? 0],
     ['Accuracy', `${Math.round(r.accuracy * 100)}%`],
   ];
+  if (r.closingDone != null) lines.push([closingTime.title, closingTime.receiptProgress(r.closingDone, Object.keys(closingTime.lines).length)]);
   if (r.survivedBy?.length) lines.push(['Survived by', r.survivedBy.map(survivorLine).join(' and ')]);
   // GRAB-A-GUN (game/tickets.js): tickets aren't points, so they're a line of their own, never in the totals.
   if (r.ticketsWon > 0) lines.push(['Prize tickets won', r.ticketsWon]);
@@ -176,6 +178,10 @@ export function createScreens() {
       <h1 class="pause-title">On break</h1>
       <div class="pause-stats"></div>
       <div class="pause-outfit"><div class="outfit-head">ON YOU</div></div>
+      <section class="pause-closing">
+        <h2 class="outfit-head">${closingTime.title}</h2>
+        <ul class="closing-list"></ul>
+      </section>
       <p class="paper-note">Your absence has been noted. Please return to the sales floor.</p>
       <div class="menu-list">
         <button class="menu-btn primary" data-action="resume" type="button">Resume</button>
@@ -192,6 +198,7 @@ export function createScreens() {
   const pauseTitle = pause.querySelector('.pause-title');
   const pauseStats = pause.querySelector('.pause-stats');
   const pauseOutfit = pause.querySelector('.pause-outfit');
+  const closingList = pause.querySelector('.closing-list');
   const pauseRail = createOutfitRail({ variant: 'pause' });
   pauseOutfit.append(pauseRail.el);
   const resumeButton = pause.querySelector('[data-action="resume"]');
@@ -365,7 +372,10 @@ export function createScreens() {
   const percent = (value) => `${Math.round((value ?? 0) * 100)}%`;
   const statCards = (items) => items.map(([label, value]) => `<div><span>${label}</span><b>${value}</b></div>`).join('');
 
-  function fillPause({ fresh = false, round = 0, points = 0, time = 0, kills = 0, outfit = [] } = {}) {
+  function fillPause({ fresh = false, round = 0, points = 0, time = 0, kills = 0, outfit = [], closing = [] } = {}) {
+    closingList.innerHTML = Object.values(closingTime.lines).map(({ duty, key }, index) =>
+      `<li><span>${closing[index]?.done ? '✓' : '□'} ${duty}</span><small>${key}</small></li>`
+    ).join('');
     pauseOutfit.hidden = fresh;
     pauseRail.set(outfit);
     pauseKicker.textContent = fresh ? 'Fresh shift' : 'Paused';

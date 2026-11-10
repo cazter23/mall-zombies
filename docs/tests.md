@@ -126,6 +126,9 @@ Promenade shutter from inside and receives natural upstairs spawns.
 debug-run exclusion, reset, corrupt saves and unavailable browser storage.
 `tests/music.test.js` also covers the End of Shift death sting: receipt-timed bell, music volume, cancellation of future
 notes, replacement-voice cleanup, and real-game death/reset wiring.
+`tests/closingTime.test.js` follows boss keys from defeat or disappearance to clear-floor drops and collection.
+It checks one drop per boss alongside the usual rewards, persistence through round changes and cleanup, simultaneous drops, checklist events and PA, the death receipt, and Play again.
+
 `tests/powerUps.test.js` checks earned incentive thresholds, skill credit, single drops, caps/repeats, expiry, safe floor/ramp
 placement, swept slide collection, wall/storey rejection, Blue Light payouts/timers, reserve delivery without bypassing
 reloads/upgrades, Security Sweep through all zombie attack/charge states, visuals/disposal and HUD. fullRun.test.js also

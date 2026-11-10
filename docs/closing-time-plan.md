@@ -1,6 +1,6 @@
 # Closing Time: plan for a run goal, an ending and a final boss
 
-Status: PLAN ONLY, DECISIONS MADE (10 November 2026, branch `claude/closing-time-plan`). Nothing here is built. Checked against main at 7d633bf.
+Status: PHASE 1 BUILT (10 November 2026, branch `claude/closing-time-1`). Phases 2–12 are planned. The ten decisions below are made.
 Every number is a starting point for `src/config/closingTime.js` and `config/economy.js`, to be tuned in phase 11. Build one phase at a
 time, each in its own worktree.
 

@@ -43,6 +43,8 @@ import { createEffects } from '../fx/effects.js';
 import { createContactShadows } from '../fx/contactShadows.js';
 import { createAmbience } from './ambience.js';
 import { createPowerUps } from './powerUps.js';
+import { createClosingTime } from './closingTime.js';
+import { createClosingKeyView } from '../fx/closingKeyView.js';
 import { createPowerUpView } from '../fx/powerUpView.js';
 import { createPlayerGun } from '../weapons/playerGun.js';
 import { createMelee } from '../weapons/melee.js';
@@ -244,6 +246,7 @@ export function createGame({
       // The guns you named at Build-A-Blaster (the receipt reads them out).
       survivedBy: gun.namedBuilds.map((build) => ({ name: build.name, combo: comboName(build), confirmed: build.confirmed ?? 0 })),
       ticketsWon: tickets.won, // (GRAB-A-GUN's prize tickets: not points, not income)
+      closingDone: closing.done,
       keychains: tickets.tokens.keychain, // Sunny plush keychains redeemed (a joke for the receipt until the Wardrobe exists)
     });
   }
@@ -420,8 +423,8 @@ export function createGame({
     sound.play('paChime');
   });
 
-  // Build-A-Blaster's PA lines (game/features/workshopRitual.js), and GRAB-A-GUN's (game/features/clawMachine.js).
-  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualWaiting', 'ritualCollect', 'limitedEditionDrop', 'limitedEditionFitted', 'wardrobeBuy', 'clawClosed', 'clawMoved']) {
+  // PA notices from workshop orders, shop events and closing keys.
+  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualWaiting', 'ritualCollect', 'limitedEditionDrop', 'limitedEditionFitted', 'wardrobeBuy', 'clawClosed', 'clawMoved', 'closingKeyDrop', 'closingKey']) {
     events.on(name, ({ pa }) => {
       hud.showAnnouncement({ ...pa, priority: 1 });
       sound.play('paChime');
@@ -462,6 +465,8 @@ export function createGame({
     updateBossBar(null);
     if (zombie.type.defeatBanner) hud.showAnnouncement({ ...zombie.type.defeatBanner, priority: bossTiming.introPriority });
   });
+  // Register after the defeat banner so the key-drop PA queues behind it.
+  const closing = createClosingTime({ events, player, colliders, state, view: createClosingKeyView(scene) });
   events.on('bossPhase', ({ zombie, phase }) => {
     const pa = zombie.type.phases?.[phase];
     if (pa) { hud.showAnnouncement({ ...pa, priority: bossTiming.introPriority }); sound.play('paChime'); }
@@ -517,7 +522,7 @@ export function createGame({
   });
   // Developer shortcuts (config/debug.js lists the keys; main.js turns key presses into debug.run(id)).
   const debugCommands = createDebugCommands({
-    map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses, wardrobe, features, equipment,
+    map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses, wardrobe, features, equipment, closing,
     onUse: (id) => {
       // Merely showing the panel or choosing the next spawn type changes no run outcome.
       if (id !== 'panel' && id !== 'cycleZombie' && id !== 'cycleBoss' && id !== 'benchmark') state.assisted = true;
@@ -544,6 +549,7 @@ export function createGame({
   const resetSteps = [
     ['bosses', () => bosses.reset()],
     ['powerUps', () => powerUps.reset()],
+    ['closing', () => closing.reset()],
     ['zombies', () => zombies.clear()],
     ['mascotCostumes', () => mascotCostumes.reset()],
     ['wardrobe', () => wardrobe.reset()],
@@ -638,6 +644,7 @@ export function createGame({
       player.update(dt);
     }
     powerUps.update(dt); // collect escape rewards before this tick's zombie attacks; paused/dead timers freeze
+    closing.update(dt);
     // "[Space] Vault" prompt: would a jump press now end in a vault? (checked per tick, shown in render)
     vaultPromptVisible = !inMenu && player.grounded && !player.vault.active && player.vault.preview();
     if (!inMenu) interactions.update(dt); // before the gun: on controller X, a hold near a buyable buys instead of reloading
@@ -683,6 +690,7 @@ export function createGame({
     outfitRail,
     flashSales,
     powerUps,
+    closing,
     bosses,
     debug: debugCommands,
     colliders,

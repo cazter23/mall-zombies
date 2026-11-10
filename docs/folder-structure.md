@@ -23,6 +23,7 @@ src/
                         and Wet Floor settings. Boss kill values and health scaling go through economy.js.
     deathMusic.js       End of Shift: original seven-second death composition (piano/pad/bell/noise layers), gain and
                         stop fade. Bell anchors to feel.death.resultsDelay; played once through sound's music/master buses
+    closingTime.js      Four closing duties and their keys, PA and receipt copy, key marker and prop tuning.
     powerUps.js         Employee-incentive drop tuning, skill credit, round caps, pickup/zone durations, ammo top-up,
                         sweep strength, colors and PA lines. First round 2, 12-16 credit per drop, maximum 3 per round
     effectWords.js      THE WORDS-ONLY RULE: players never see an upgrade's effect as a number. The fixed size bands (a little / noticeably / much), sizeWord / fillSize
@@ -413,6 +414,8 @@ src/
                         end, death, Play again). g.mascotCostumes
     meltTrail.js        Scoops' puddles: one fixed pool for every Scoops (oldest gives way, own material to fade), drops every
                         dropEvery where he walks; a grounded player in one reports 'melt' to surfaceSlows
+    closingTime.js      g.closing owns persistent boss key drops, collection, checklist progress and Play again reset.
+    floorPickups.js     Shared clear-floor placement and swept collection for incentives and closing keys; direction for HUD markers.
     powerUps.js         createPowerUps(): listens to kill/round/death events; earned dynamic pickups on clear floor,
                         swept walk-through collection, 15s expiry, no repeats, per-round caps. Blue Light multiplies only
                         base kill credit, within its 4m radius, same floor and line of sight. reset/dispose; debugDrop(id, at)
@@ -701,6 +704,7 @@ src/
     ballView.js         Browser side only: draws `balls.list` (the Tennis Ball Launcher's balls) as a pool of tumbling tennis balls between last tick's and this tick's position (alpha).
     throwableView.js    Browser side only: draws `equipment.live` (Kiosk Kevin's thrown things) as a pool of cola bottles: tumbling in the air, lying and
                         rattling on the floor, swelling as the fuse runs out; a mesh is hidden when its item is gone; dispose() frees the pool.
+    closingKeyView.js   Reusable spinning key and signature props for the four closing pickups.
     powerUpView.js      Reusable delivery carton, blue beacon and security badge (no lights/colliders); bob/spin/blink,
                         floor-projected Blue Light ring clipped at walls/voids, hide on reset/death, owned-resource disposal
     contactShadows.js   One instanced draw for soft zombie grounding; interpolates feet and finds supporting collider tops.
@@ -808,7 +812,7 @@ src/
     damageDirection.js  Computes relative damage angle (0° = front, 90° = right, 180° = behind, 270° = left) and queues damage indicators for the HUD.
     retail.css          Retail presentation layer loaded after style.css: mall directory, distinct combat signs,
                         shelf tickets, personnel paperwork, facilities settings and handbook. Responsive + reduced motion.
-    bagMarker.js        The HUD arrow to a dropped Limited Edition: name, distance, floor, time left.
+    bagMarker.js        The HUD arrow to a Limited Edition or closing key: name, distance, floor and time left when applicable.
     birthCertificate.js The Birth Certificate notice at collection. Clears itself; nothing pauses.
     orderForm.js        Draws the order form from its view. Only draws: choices come in on the fixed tick. Sized from the screen height (retail.css --order-base,
                         everything in em), left of centre; keys drawn as keycaps (keycaps()), one line on what the order does (orderSummary()), stuffings

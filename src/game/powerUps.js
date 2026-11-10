@@ -1,8 +1,7 @@
 // Earned dynamic drops. No DOM/WebGL: the optional view only receives state.
-import * as THREE from 'three';
 import { powerUps as defaults } from '../config/powerUps.js';
 import { bossVouchers } from '../config/bosses.js';
-import { overlapsSolid, rampHeightAt } from '../world/collision.js';
+import { createFloorPickups } from './floorPickups.js';
 import { createIncentiveEffects } from './incentiveEffects.js';
 
 export function createPowerUps({ events, player, gun, zombies, colliders, state, stats, pricing, wallet, config = defaults, random = Math.random, view = null }) {
@@ -19,53 +18,9 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
   const bossRewards = []; // rewards outside the meter, waiting for clear floor: a boss's, an Employee of the Month's
   let seen = new WeakSet();
   let rotation = [];
-  const ray = new THREE.Ray();
-  const intersection = new THREE.Vector3();
-  const probe = new THREE.Vector3();
-  const from = new THREE.Vector3();
-  const to = new THREE.Vector3();
+  const { findPosition, clearLine, reached } = createFloorPickups(colliders, config);
   const nextThreshold = () => config.threshold.min + random() * (config.threshold.max - config.threshold.min);
   threshold = nextThreshold();
-
-  // A floor close to the corpse's feet; never silently drop to the storey underneath.
-  function floorAt(x, z, nearY) {
-    let best = null;
-    for (const box of colliders) {
-      if (x < box.min.x || x > box.max.x || z < box.min.z || z > box.max.z) continue;
-      if (Math.abs(box.max.y - nearY) <= config.floorTolerance && (best === null || box.max.y > best)) best = box.max.y;
-    }
-    for (const ramp of colliders.ramps ?? []) {
-      const y = rampHeightAt(ramp, x, z);
-      if (y !== null && Math.abs(y - nearY) <= config.floorTolerance && (best === null || y > best)) best = y;
-    }
-    return best;
-  }
-
-  function clearLine(a, b) {
-    ray.origin.copy(a).y += config.sightHeight;
-    to.copy(b).y += config.sightHeight;
-    ray.direction.subVectors(to, ray.origin);
-    const distance = ray.direction.length();
-    if (distance < 1e-6) return true;
-    ray.direction.divideScalar(distance);
-    return !colliders.some((box) => ray.intersectBox(box, intersection) && intersection.distanceTo(ray.origin) < distance);
-  }
-
-  function findPosition(at) {
-    for (const radius of config.placementRadii) {
-      for (let i = 0; i < (radius === 0 ? 1 : config.placementDirections); i++) {
-        const angle = i * Math.PI * 2 / config.placementDirections;
-        probe.set(at.x + Math.cos(angle) * radius, at.y, at.z + Math.sin(angle) * radius);
-        const y = floorAt(probe.x, probe.z, at.y);
-        if (y === null) continue;
-        probe.y = y;
-        if (overlapsSolid(probe, config.clearRadius, config.clearHeight, colliders, 0)) continue;
-        if (!clearLine(at, probe)) continue;
-        return probe.clone();
-      }
-    }
-    return null;
-  }
 
   function useful(id) {
     if (!benefits.useful(id)) return false;
@@ -251,18 +206,8 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
           const voucher = bossVouchers[id];
           if (voucher && !state.over) wallet.earn(voucher.pointsInstead);
           events.emit('powerUpExpire', { id, pointsInstead: voucher?.pointsInstead ?? 0 });
-        } else {
-          // Swept collection: a fast slide must not jump over a small pickup between ticks.
-          const a = player.prevPosition ?? player.position;
-          const b = player.position;
-          const dx = b.x - a.x;
-          const dz = b.z - a.z;
-          const lengthSq = dx * dx + dz * dz;
-          const t = lengthSq > 0 ? Math.max(0, Math.min(1, ((pickup.position.x - a.x) * dx + (pickup.position.z - a.z) * dz) / lengthSq)) : 1;
-          from.lerpVectors(a, b, t);
-          if (Math.abs(from.y - pickup.position.y) <= config.floorTolerance
-              && Math.hypot(from.x - pickup.position.x, from.z - pickup.position.z) <= config.pickupRadius
-              && clearLine(from, pickup.position)) collect();
+        } else if (reached(player, pickup.position)) {
+          collect();
         }
       }
       view?.update(pickup, active, dt, benefits.active);

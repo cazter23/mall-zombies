@@ -7,6 +7,7 @@
 // =============================================================================
 
 import { feel } from '../config/feel.js';
+import { closingTime } from '../config/closingTime.js';
 import { createScreens } from './screens.js';
 import { createIncentiveHud } from './incentiveHud.js';
 import { createRitualHud } from './ritualHud.js';
@@ -311,10 +312,22 @@ export function createHud() {
   let lastFps = -1;
 
   // Flowing lanes keep growing rewards/PA copy clear of other tickets and bosses.
+  const checklist = el('div', 'closing-boxes');
+  checklist.setAttribute('role', 'group');
+  checklist.setAttribute('aria-label', closingTime.title);
+  const closingLines = Object.entries(closingTime.lines).map(([id, { duty }]) => {
+    const box = el('span', 'closing-box');
+    box.title = duty;
+    box.setAttribute('role', 'checkbox');
+    box.setAttribute('aria-label', duty);
+    box.setAttribute('aria-readonly', 'true');
+    checklist.append(box);
+    return { id, box, marker: createBagMarker() };
+  });
   const leftStack = el('div', 'hud-left-stack');
-  leftStack.append(roundCounter, clockIn, incentives.element, ritualTicket.element);
+  leftStack.append(roundCounter, checklist, clockIn, incentives.element, ritualTicket.element);
   const topStack = el('div', 'hud-top-stack');
-  topStack.append(bossBar, roundBanner, bagMarker.element);
+  topStack.append(bossBar, roundBanner, ...closingLines.map(({ marker }) => marker.element), bagMarker.element);
   const rightStack = el('div', 'hud-right-stack');
   rightStack.append(saleTag, clawTag, announceBanner, certificate.element);
   hud.append(leftStack, topStack, rightStack);
@@ -435,6 +448,18 @@ export function createHud() {
     // A dropped Limited Edition's direction: null hides it (game/features/limitedEditions.js status).
     setLimitedEdition(status) {
       bagMarker.update(status);
+    },
+
+    setClosing(checklist, markers) {
+      for (const [index, { id, box, marker }] of closingLines.entries()) {
+        const { done } = checklist[index];
+        const checked = String(done);
+        if (box.getAttribute('aria-checked') !== checked) {
+          box.setAttribute('aria-checked', checked);
+          box.textContent = done ? '✓' : '';
+        }
+        marker.update(markers[id] ?? null);
+      }
     },
 
     // The Birth Certificate, at collection: { name, gunName, combo, stuffing, heart, quality, kills, round, remark, note }.
