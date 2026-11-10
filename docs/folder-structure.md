@@ -98,6 +98,8 @@ src/
                         E Sunny in the next GRAB-A-GUN grab / Shift+E move GRAB-A-GUN to another open area now
     ui.js               Presentation timing, PA queue limit and brief weapon-role copy (no gameplay tuning)
     deathReports.js     Satirical OSHA / Mall HR incident reports and loss prevention survival tips per lethal source (Form 109-C).
+                        health.takeDamage(amount, source) records the killing blow: { type: 'zombie', id, variant?, boss? },
+                        { type: 'fall' } or { type: 'hazard', id } (a hazard that hurts the player needs a hazards entry).
     attachmentVisuals.js Per-weapon attachment sizing, near-side rail placement, short-barrel spans and held reload copies.
     retailUnease.js     Rare atrium display changes and localized back-room sound timings/ranges; no gameplay tuning.
     kiosk.js            Kiosk Kevin (docs/kiosk-kevin-plan.md; phase 1 built): the equipment power curve (power: baseHealth 800, exponent 0.37), the throw

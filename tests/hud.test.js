@@ -18,18 +18,16 @@ test('createHud initializes with inactive secondary indicator hidden', () => {
   assert.equal(secondary.classList.contains('show'), false, 'does not have show class');
 });
 
-test('playerGun inactiveSlot / secondaryDef returns null when carrying one gun, and slot data when carrying two', () => {
+test('playerGun inactiveSlot returns null when carrying one gun, and slot data when carrying two', () => {
   const t = headlessGame();
   const { gun } = t.g;
 
   // Single starting gun
   assert.equal(gun.inactiveSlot, null);
-  assert.equal(gun.secondaryDef, null);
 
   // Give second gun
   gun.give(weapons.priceGun);
   assert.ok(gun.inactiveSlot, 'inactiveSlot is populated');
-  assert.ok(gun.secondaryDef, 'secondaryDef is populated');
   assert.equal(gun.inactiveSlot.def.id, 'stapleGun', 'staple gun is now in reserve');
   assert.equal(gun.inactiveSlot.index, 0);
   assert.equal(gun.def.id, 'priceGun', 'price gun is in hand');
@@ -75,7 +73,7 @@ test('HUD setAmmo updates secondary weapon display on weapon pickup, switch, and
   assert.equal(secondaryEl.classList.contains('show'), true);
   assert.equal(nameEl.textContent, gunLabel(weapons.stapleGun));
   assert.equal(keyEl.textContent, '[1]');
-  assert.equal(ammoEl.textContent, String(gun.inactiveSlot.weapon.reserve));
+  assert.equal(ammoEl.textContent, `${gun.inactiveSlot.weapon.magazine}/${gun.inactiveSlot.weapon.reserve}`, 'loaded / spare');
   assert.equal(pipEl.style.display, 'none', 'plain gun has no upgrade pip');
 
   // 3. Upgrade inactive gun with warranty tier (Deluxe)
@@ -101,7 +99,7 @@ test('HUD setAmmo updates secondary weapon display on weapon pickup, switch, and
   hud.setAmmo(gun.weapon, 'R', gun.inactiveSlot, '2');
   assert.equal(nameEl.textContent, gunLabel(weapons.priceGun));
   assert.equal(keyEl.textContent, '[2]');
-  assert.equal(ammoEl.textContent, String(gun.inactiveSlot.weapon.reserve));
+  assert.equal(ammoEl.textContent, `${gun.inactiveSlot.weapon.magazine}/${gun.inactiveSlot.weapon.reserve}`, 'loaded / spare');
   assert.equal(secondaryEl.classList.contains('switched'), true, 'switched class triggered on weapon switch');
 
   // 6. Play again reset (runReset)

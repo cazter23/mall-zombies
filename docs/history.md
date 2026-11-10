@@ -1,5 +1,22 @@
 # Sunset Galleria: build history ("Current state")
 
+## 10 November 2026 - Review of the antigravity HUD and comfort commits
+
+A review of the six commits merged from antigravity/* (damage direction, comfort toggles, zombie glow, incident report, occupancy,
+spare-gun chip). Damage direction and the glow tweak were fine. Fixed:
+- **Play froze on the first frame** (the spare-gun chip read an undefined `device` in main.js render): fixed first, in a4cb9d2.
+- **Toggle ADS could never aim out of a sprint** (it dropped the sights whenever the player was sprinting, and the controller only stops
+  a sprint once you aim). Now it behaves like the held button: aiming ends the sprint.
+- **Toggle sprint consumed the sprint press**, so aim.js never saw it: a sprint press while aiming did nothing at all. The press is now
+  read, not consumed; it lowers the sights and the sprint starts on the next tick. A sprint press also stands you up from a toggled crouch.
+- **The Comfort "Standard" preset switched the three toggles off** (Calm didn't). They're a control choice, so no preset touches them.
+- **Spare-gun chip:** it showed the spare ammo only (a full magazine with nothing spare read "0"); now loaded/spare. Its button comes from
+  buttonLabels (weapon1/weapon2 on a keyboard, switchWeapon on a controller); the duplicate secondaryDef getter is gone.
+- **Last shoppers:** the "2 alive" threshold and the PA line were hardcoded in rounds.js, zombieManager.js and createGame.js; they're
+  economy.rounds.lastShoppers now, and the manager asks rounds.lastShoppers. The occupancy line only touches the DOM when it changes.
+- **Incident report:** a death from your own Electrified Fountain read "Unclassified workplace casualty". Hazards now pass their id,
+  with their own reports. The Cart Pusher tip named the [Space] key (wrong on a controller).
+
 ## 10 November 2026 - Shopping window: a 20 s break and "Clock in"
 
 - **Why.** The fun review's headless bot found no calm moment to use the shops: the break was 10 s and the last two zombies of a round

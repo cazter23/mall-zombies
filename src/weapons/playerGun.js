@@ -368,9 +368,6 @@ export function createPlayerGun({
       if (!s) return null;
       return { def: s.def, mods: s.mods, weapon: s.weapon, index: other };
     },
-    get secondaryDef() {
-      return this.inactiveSlot;
-    },
 
     // Match the displayed cone to gameplay, using interpolated ADS for the pellet portion.
     spreadDegreesForDisplay(aimAmount = slots[current].aim.amount) {

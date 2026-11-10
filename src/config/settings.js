@@ -305,6 +305,6 @@ export const settingPresets = {
   ],
   Comfort: [
     { label: 'Calm', values: { headBob: 0, speedLines: false, horrorLighting: false, dimPhoneFlash: true } }, // for motion sickness (and no flicker)
-    { label: 'Standard', values: { headBob: 1, speedLines: true, horrorLighting: true, dimPhoneFlash: false, toggleSprint: false, toggleCrouch: false, toggleAds: false } },
+    { label: 'Standard', values: { headBob: 1, speedLines: true, horrorLighting: true, dimPhoneFlash: false } }, // (the toggle controls are a choice, not comfort: no preset changes them)
   ],
 };
