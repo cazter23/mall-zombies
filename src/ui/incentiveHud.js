@@ -1,5 +1,11 @@
 // A small employee punch card, plus the incentive currently on the floor / active zone.
 import { powerUps } from '../config/powerUps.js';
+import { bossVouchers } from '../config/bosses.js';
+
+// What is lying on the floor: an incentive, or a boss's voucher (Master Key, Signed Approval, Discount Code), which
+// is not in powerUps.types. An id neither knows is shown as itself rather than throwing inside render (a throw there
+// stops the frame loop for good: core/loop.js).
+const pickupName = (id) => (powerUps.types[id] ?? bossVouchers[id])?.name ?? id;
 
 export function createIncentiveHud() {
   const element = document.createElement('div');
@@ -53,7 +59,7 @@ export function createIncentiveHud() {
       label.textContent = available ? `PROGRESS · ${percent}%`
         : status.round < powerUps.firstRound ? `BEGINS ROUND ${powerUps.firstRound}` : 'ROUND ALLOWANCE USED';
       progress.value = status.progress;
-      drop.textContent = pickup ? `${powerUps.types[pickup.id].name} · COLLECT · ${Math.ceil(pickup.remaining)}s` : '';
+      drop.textContent = pickup ? `${pickupName(pickup.id)} · COLLECT · ${Math.ceil(pickup.remaining)}s` : '';
       const rows = effects.map(effect => {
         const def = powerUps.types[effect.id];
         const count = effect.charges != null ? ` · ${effect.charges} LEFT` : effect.healing != null ? ` · ${Math.ceil(effect.healing)} HP LEFT` : '';
