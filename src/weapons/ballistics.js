@@ -21,6 +21,10 @@
 //     onHit({ target, part, point, normal, killed, direction, ball })     a zombie was hit
 //     onBounce({ point, normal, target, ball })                          every bounce (target null = a surface)
 //     onEnd({ ball, hits })                                              the ball is spent: all the hits it made
+//   createBalls({ colliders, shootables, zombies = 'hit' })
+//     zombies 'hit'      a zombie the ball touches is hit for damage (the Tennis Ball Launcher)
+//     zombies 'bounce'   it bounces off a zombie WITHOUT hitting it (no takeHit, no onHit, no damageOf needed): thrown equipment
+//                        (game/equipment.js, a second instance `throwables`), which only does its damage where it bursts
 //   balls.update(dt)    advance every ball one tick
 //   balls.list          the live balls: { position, previous, velocity, bounces, age, hits }   (previous = last tick's position, for drawing)
 //   balls.clear()       Play again
@@ -42,7 +46,7 @@ function bodyCentre(target, out) {
   return box ? box.getCenter(out) : null;
 }
 
-export function createBalls({ colliders, shootables }) {
+export function createBalls({ colliders, shootables, zombies = 'hit' }) {
   const list = [];
 
   /** The nearest other living zombie within `range` of `from` with nothing solid between: where the ball goes next. */
@@ -86,7 +90,8 @@ export function createBalls({ colliders, shootables }) {
     const targets = ball.lastTarget && ball.sinceHit < p.rehitSeconds ? shootables.filter((t) => t !== ball.lastTarget) : shootables;
     const result = castShot(ball.position, direction, distance + p.radius, colliders, targets, 1);
     if (result.target && ball.alive) {
-      hitZombie(ball, result, direction);
+      if (zombies === 'bounce') bounceOffZombie(ball, result);
+      else hitZombie(ball, result, direction);
     } else if (result.worldHit) {
       bounceOffSurface(ball, result);
     } else {
@@ -100,6 +105,18 @@ export function createBalls({ colliders, shootables }) {
     reflect(ball.velocity, result.normal, p.restitution);
     ball.bounces += 1;
     ball.onBounce?.({ point: result.point.clone(), normal: result.normal.clone(), target: null, ball });
+    if (ball.bounces >= p.maxBounces) end(ball);
+  }
+
+  // (zombies 'bounce') off a zombie as off a wall: the zombie isn't touched, and is passed through for rehitSeconds after.
+  function bounceOffZombie(ball, result) {
+    const p = ball.projectile;
+    ball.position.copy(result.point).addScaledVector(result.normal, p.radius * 1.05);
+    reflect(ball.velocity, result.normal, p.restitution);
+    ball.lastTarget = result.target;
+    ball.sinceHit = 0;
+    ball.bounces += 1;
+    ball.onBounce?.({ point: result.point.clone(), normal: result.normal.clone(), target: result.target, ball });
     if (ball.bounces >= p.maxBounces) end(ball);
   }
 

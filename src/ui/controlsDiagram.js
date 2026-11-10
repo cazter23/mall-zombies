@@ -72,6 +72,7 @@ function drawKeyboard(parent, anchors, slots) {
   anchors.lmb = point(mx + 20, my + 30);
   anchors.rmb = point(mx + 56, my + 30);
   anchors.wheel = point(mx + 38, my + 27);
+  anchors.mmb = point(mx + 38, my + 40); // middle click = pressing the wheel (its line meets the wheel's lower end)
   anchors.mouse = point(mx + 38, my + 96);
 
   Object.assign(slots, {
@@ -81,6 +82,7 @@ function drawKeyboard(parent, anchors, slots) {
     Shift: { x: 232, y: 264, align: 'end' }, // Sprint
     R: { x: 620, y: 192, align: 'start' }, // Reload
     F: { x: 620, y: 228, align: 'start' }, // Buy
+    G: { x: 620, y: 246, align: 'start' }, // Throw Lethal (its line runs in the gap under the H key)
     C: { x: 360, y: 420, align: 'middle' }, // Crouch / slide
     Ctrl: { x: 232, y: 330, align: 'end' }, // Prone
     Space: { x: 440, y: 360, align: 'middle' }, // Jump
@@ -88,6 +90,7 @@ function drawKeyboard(parent, anchors, slots) {
     lmb: { x: 805, y: 140, align: 'middle' }, // Shoot
     rmb: { x: 885, y: 140, align: 'middle' }, // Aim
     wheel: { x: 895, y: 227, align: 'start' }, // Switch weapon (wheel)
+    mmb: { x: 895, y: 262, align: 'start' }, // Throw Tactical (middle click)
     mouse: { x: 838, y: 380, align: 'middle' }, // Look
   });
 }
@@ -129,15 +132,24 @@ function drawController(parent, anchors, slots) {
   dot('a', 590, 194, 12, 'A');
   box('start', 512, 168, 16, 9);
   box('back', 472, 168, 16, 9);
-  parent.append(svg('path', {
+  const dpad = svg('path', {
     class: 'dg-key', transform: `translate(${OX} ${OY})`, d: 'M447 232 h12 v-12 h14 v12 h12 v14 h-12 v12 h-14 v-12 h-12 z',
-  }));
+  });
+  const dpadGroup = svg('g', { class: 'dg-keycap' });
+  dpadGroup.append(dpad);
+  parent.append(dpadGroup);
+  // D-pad right (Throw Tactical): its arm's bounds; tinting it tints the whole pad. R3 = clicking the right stick: the same
+  // circle as 'rs' with a label slot of its own (Look keeps 'rs').
+  anchors.dright = boundsOf(473 + OX, 232 + OY, 485 + OX, 246 + OY, { rect: dpad, group: dpadGroup });
+  anchors.r3 = { ...anchors.rs };
 
   Object.assign(slots, {
     lt: { x: 330, y: 166, align: 'end' }, // Aim
     lb: { x: 330, y: 190, align: 'end' }, // Prone
     rt: { x: 710, y: 166, align: 'start' }, // Shoot
-    rb: { x: 710, y: 190, align: 'start' }, // Box cutter
+    rb: { x: 710, y: 190, align: 'start' }, // Throw Lethal
+    r3: { x: 710, y: 298, align: 'start' }, // Box cutter (R3)
+    dright: { x: 499, y: 400, align: 'middle' }, // Throw Tactical (label below the pad, straight line up)
     ls: { x: 330, y: 250, align: 'end' }, // Move / sprint
     x: { x: 330, y: 290, align: 'end' }, // Reload / buy
     start: { x: 540, y: 100, align: 'middle' }, // Pause

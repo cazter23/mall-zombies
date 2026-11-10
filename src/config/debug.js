@@ -18,6 +18,7 @@ export const debug = {
   // THE DEBUG KEYS: one entry per command. { id, key (KeyboardEvent.code), shift (needs Shift held; default false),
   // group, label }. A new command = an entry here + a function with the same id in game/debugCommands.js.
   // Keys must not clash with a gameplay binding (config/controls.js) or each other: tests/debugCommands.test.js checks.
+  // Some commands have no key (game/debugCommands.js `keyless`): g.debug.run('pockets') fills the equipment pockets.
   commands: [
     { id: 'spawn', key: 'KeyZ', group: 'Enemies', label: 'Spawn selected enemy' },
     { id: 'summonBoss', key: 'KeyJ', group: 'Enemies', label: 'Summon selected boss (once per round)' },
@@ -35,7 +36,7 @@ export const debug = {
     { id: 'addPoints', key: 'KeyP', group: 'Economy', label: '+5000 points' },
     { id: 'zeroPoints', key: 'Quote', group: 'Economy', label: 'Points to 0' },
 
-    { id: 'god', key: 'KeyG', group: 'Player', label: 'God mode on / off' },
+    { id: 'god', key: 'KeyB', group: 'Player', label: 'God mode on / off' }, // (G throws a Lethal now; Shift+B is the benchmark)
     { id: 'giveGun', key: 'KeyH', group: 'Player', label: 'Give next gun / refill if owned' },
     { id: 'upgradeGun', key: 'KeyU', group: 'Player', label: 'Upgrade held gun one tier (free)' },
     { id: 'wardrobe', key: 'KeyH', shift: true, group: 'Player', label: 'Give every Wardrobe item' },

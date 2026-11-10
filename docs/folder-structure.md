@@ -85,7 +85,8 @@ src/
                         weapon1/weapon2 = 1/2; menu-only: settings = Y, controlsScreen = X on the pause screen), buttonLabels
                         (prompts per device), controlsHelp (what the Controls screen shows; keep in sync with bindings),
                         gamepad (deadzones, look speed/curve, turn ramp, triggers, click-to-sprint release),
-                        aimAssist (strength dial, range/cone, slowdown, rotational, ADS snap)
+                        aimAssist (strength dial, range/cone, slowdown, rotational, ADS snap). Equipment: lethal = G / RB, tactical = middle
+                        click (Mouse1) / D-pad right; melee = V / R3 (RB moved to the Lethal throw, COD's layout)
     settings.js         THE LIST of player settings (options menu): { id, tab, label, type toggle|slider|select, default,
                         min/max/step, format, apply(value, ctx) }. Most apply() functions write into the config objects the
                         game reads every frame (feel, controls, audio). New setting = one entry here (new tab = add to settingsTabs)
@@ -93,12 +94,15 @@ src/
                         bindings: tests check) + enabled (master switch), showMarkers, testArena, addPointsAmount, jumpRounds, panel,
                         dummies, exposeToWindow, keyLabel(). They work in a normal game (no debug mode): Z spawn the selected
                         zombie / Shift+Z next type / X clear / K kill all (pays), N next round / Shift+N +5 rounds / L Flash Sale,
-                        P +5000 / ' points to 0, G god mode / H next wall gun / U free tier, O all doors / T test range / Shift+T Level 2, ` window,
+                        P +5000 / ' points to 0, B god mode / H next wall gun / U free tier, O all doors / T test range / Shift+T Level 2, ` window,
                         E Sunny in the next GRAB-A-GUN grab / Shift+E move GRAB-A-GUN to another open area now
     ui.js               Presentation timing, PA queue limit and brief weapon-role copy (no gameplay tuning)
     deathReports.js     Satirical OSHA / Mall HR incident reports and loss prevention survival tips per lethal source (Form 109-C).
     attachmentVisuals.js Per-weapon attachment sizing, near-side rail placement, short-barrel spans and held reload copies.
     retailUnease.js     Rare atrium display changes and localized back-room sound timings/ranges; no gameplay tuning.
+    kiosk.js            Kiosk Kevin (docs/kiosk-kevin-plan.md; phase 1 built): the equipment power curve (power: baseHealth 800, exponent 0.37), the throw
+                        (blockSeconds 0.4, lob, start offset), the two pockets, and the products: so far the Soda Bomb (Lethal, 3 charges, 1.8 s fuse,
+                        4 m blast, 850 x power at the centre, 0.3 of that at the edge, a boss's share 6% of its max health, its bottle projectile and look). productOf(id).
     clawMachine.js      GRAB-A-GUN, the claw machine: the prize weights and capsule colours, the sweep (2.4 s, 0.2 s quicker a grab, 1.4 s
                         floor), auto-drop, lift and take times, stock (6 a site) and plush odds, the cabinet's size, its six sites and the
                         PA lines. Price: economy.claw (through g.pricing 'claw').
@@ -127,7 +131,8 @@ src/
     keyframes.js        samplePose(keys, t, outPos, outRot): eased pose keyframes ({ t, pos: [m], rot: [deg] })
     input.js            Input class: held keys/buttons, one-shot presses (mouse wheel = 'WheelUp'/'WheelDown'), actions (actionDown/consumeAction/
                         actionPressed), moveAxis() (WASD + left stick), padMove/padLook, `device`
-                        ('keyboard' | 'gamepad', last used), mouse delta, pointer lock
+                        ('keyboard' | 'gamepad', last used), mouse delta, pointer lock. A middle mousedown is always preventDefault'ed (the Tactical
+                        throw must never start the browser's autoscroll, even before the lock)
     gamepad.js          createGamepad(input): polls the first controller each tick (standard layout), writes
                         Pad* held/pressed codes + sticks (radial deadzones, look response curve) into input,
                         click-to-sprint latch (PadSprint; ended by stick release or a FRESH aim/crouch action
@@ -165,6 +170,8 @@ src/
                         zombies (castShot); every wall, floor or zombie contact is a BOUNCE (spent at maxBounces, lifeSeconds, or slower than minSpeed); a zombie it touches is hit
                         (damageOf) and the ball is thrown on, lifted for gravity, at the nearest OTHER zombie within seekRange in view, passing through the one it just hit for rehitSeconds.
                         DOM-free: createGame ticks it (after the zombies) and clears it on death and Play again ('balls' reset step); fx/ballView.js draws it.
+                        createBalls({ ..., zombies: 'bounce' }): a zombie is bounced off WITHOUT being hit (no takeHit, no onHit): the second instance
+                        createGame makes for thrown equipment (g.throwables, game/equipment.js).
     fuel.js             The fuel tank of a gun with `fuel` (the Leaf Blower): createFuel(), tickFuel(state, cfg, dt, { fired, level, capacity }) -> units to add
                         (it refills by itself regenDelay after the last pulse, at regenPerSecond; running dry LOCKS the trigger until the tank holds restartAt),
                         resetFuel(). Pure timing: the tank's LEVEL is the weapon's `magazine`, so the HUD, RESTOCK-O-MATIC, Refurbished grabs and
@@ -363,6 +370,17 @@ src/
     partyTrapDeath.js   The pose, ribbon and confetti after a trap kill. The kill is paid on impact; this is visual only.
     cartPose.js         The Cart Pusher's pose drives its hitboxes (hunched, telegraph, charge, slumped).
   game/
+    equipment.js        createEquipment(): Kiosk Kevin's equipment, a player system like melee (DOM-free, g.equipment). Two pockets (lethal: G / RB,
+                        tactical: middle click / D-pad right), each ONE product with charges; give(id, count) (same kind adds, another replaces), fill()
+                        (the 'pockets' debug command). A tap throws along the view with a lob on `throwables` (weapons/ballistics.js, zombies 'bounce');
+                        one throw at a time; isBusy blocks the gun (gun.update's `blocked`) and the box cutter for blockSeconds; a throw cancels a reload;
+                        refused while switching, vaulting, swinging, in a menu (the buttons aren't read there, so the menu keeps D-pad right) or dead.
+                        updateThrown(dt) runs the fuses: the Soda Bomb bursts on every zombie in range and in view (takeHit source 'equipment':
+                        pays only through 'kill', never 'hit'; skips anything without a type or with noRewards, so never Sunny). live (fx/throwableView.js
+                        draws it), status (HUD), detonate(id, position) (tests), clearThrown() (death), reset() (the 'equipment' step, right after 'balls').
+    equipment/
+      equipmentDamage.js equipmentPower(round) = (zombieHealthForRound / 800) ^ 0.37 (multiplies every equipment damage), blastFalloff (1 at
+                        the centre to edgeFraction at the radius), blastDamage(target, distance, blast, round) (a boss: its fixed share of max health).
     pricing.js          createPricing(): priceOf('door'|'weapon'|'ammo'|'ammoCache'|'tier'|'attachment', id) = economy.js base price with any
                         discount applied (setDiscount(category, 0..1), rounded to the nearest economy.discountRoundTo (10); discountOf; reset() on a new
                         run). Unknown category/id throws. PRICE_CATEGORIES
@@ -494,6 +512,7 @@ src/
                         killZombies, nextRound, jumpRounds, flashSale, addPoints, zeroPoints, god, giveGun, upgradeGun, doors, arena, panel,
                         spawnMascot / spawnGoldMascot: each costume in turn at the spawn point nearest you);
                         resolve(code, shift), status(). g.debug. A new command = a table entry in config/debug.js + a function here.
+                        KEYLESS commands (no key to spare; keylessIds): 'pockets' fills Kiosk Kevin's equipment pockets (window.__mall.g.debug.run('pockets')).
                         God mode is health.invulnerable; debug state is not part of a run (Play again keeps it)
     rounds.js           createRounds(): announce(n, delay) flips the round number (and fires onRoundStart) the
                         moment the last zombie dies, then 'break' (6s, inBreak) -> 'active' (spawn quota at
@@ -675,6 +694,8 @@ src/
     musicWorker.js      Web Worker that renders mallMusic once, off the main thread (inlined as a Blob worker in the single-file build).
   fx/
     ballView.js         Browser side only: draws `balls.list` (the Tennis Ball Launcher's balls) as a pool of tumbling tennis balls between last tick's and this tick's position (alpha).
+    throwableView.js    Browser side only: draws `equipment.live` (Kiosk Kevin's thrown things) as a pool of cola bottles: tumbling in the air, lying and
+                        rattling on the floor, swelling as the fuse runs out; a mesh is hidden when its item is gone; dispose() frees the pool.
     powerUpView.js      Reusable delivery carton, blue beacon and security badge (no lights/colliders); bob/spin/blink,
                         floor-projected Blue Light ring clipped at walls/voids, hide on reset/death, owned-resource disposal
     contactShadows.js   One instanced draw for soft zombie grounding; interpolates feet and finds supporting collider tops.
@@ -771,7 +792,8 @@ src/
                         boss name, job title and health bar while an encounter is active. retail.css gives each employee
                         a department design: Murray's caution sign, Kettle's security badge, Dennis's clipboard and
                         Skylar's livestream frame. data-boss changes and clears with the encounter; follower text updates live,
-                        bottom-left health (white) + stamina (green) bars, bottom-right ammo counter,
+                        bottom-left health (white) + stamina (green) bars, bottom-right ammo counter (with setPockets: Kiosk Kevin's two
+                        equipment pockets left of the count, icon + charges + button, an empty one a faint dashed outline),
                         reload prompt under the crosshair, buy prompt below it (setInteract: "Hold F to open X 500",
                         red cost when unaffordable, shake when denied, hold-progress bar), red hurt edges, click-to-play/paused overlay,
                         "Clocked Out" results screen with Play again (plain DOM). Pause screen: Click to play + Settings (left) /

@@ -225,6 +225,24 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   background: none; border: 0; border-radius: 0; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none;
 }
 .ammo-count { padding: 0 0 3px; text-shadow: 0 2px 3px #000, 1px 0 2px #000, -1px 0 2px #000; }
+/* Kiosk Kevin's two equipment pockets, left of the ammo count (hud.js setPockets). An empty pocket is a faint outline. */
+.ammo-row { display: flex; justify-content: flex-end; align-items: flex-end; gap: 12px; }
+.pockets { display: flex; gap: 6px; padding-bottom: 9px; }
+.pockets[hidden] { display: none; }
+.pocket {
+  position: relative; width: 30px; height: 34px; box-sizing: border-box;
+  background: #261e2bed; border: 1px solid #fff8e8aa; box-shadow: 2px 2px 0 #160f18a6;
+}
+.pocket.empty { background: none; border: 1px dashed #fff8e855; box-shadow: none; }
+.pocket-icon { position: absolute; left: 50%; top: 5px; width: 12px; height: 22px; transform: translateX(-50%); background: #fff8e8; }
+.pocket[data-pocket='lethal'] .pocket-icon { clip-path: polygon(38% 0, 62% 0, 62% 18%, 90% 34%, 90% 100%, 10% 100%, 10% 34%, 38% 18%); } /* a two-litre bottle */
+.pocket[data-pocket='tactical'] .pocket-icon { width: 18px; height: 14px; top: 9px; clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 0, 50% 55%, 100% 0, 0 0); } /* a greeting card */
+.pocket[data-item='sodaBomb'] .pocket-icon { background: #d8323a; }
+.pocket.empty .pocket-icon { background: #fff8e830; }
+.pocket-count { position: absolute; right: -5px; bottom: -6px; min-width: 15px; padding: 1px 3px; box-sizing: border-box; background: var(--paper); color: var(--plum); font: 700 11px/1.1 var(--font-ui); text-align: center; text-shadow: none; }
+.pocket.empty .pocket-count { display: none; }
+.pocket-key { position: absolute; left: -4px; top: -7px; padding: 0 3px; background: #160f18; color: #fff8e8cc; font: 700 8px/1.4 var(--font-ui); letter-spacing: .04em; }
+.pocket.empty .pocket-key { color: #fff8e866; }
 .ammo-mag { font-size: 52px; color: #fffcef; text-shadow: inherit; font-variant-numeric: tabular-nums; }
 .ammo-reserve { color: #c9c4c2; font-size: 24px; text-shadow: inherit; }
 .ammo-name {

@@ -26,7 +26,9 @@ export const bindings = {
   switchWeapon: ['WheelUp', 'WheelDown', 'PadY'], // swap to the other weapon slot
   weapon1: ['Digit1'], // straight to slot 1 / slot 2
   weapon2: ['Digit2'],
-  melee: ['KeyV', 'PadRB', 'PadR3'],
+  melee: ['KeyV', 'PadR3'], // (RB throws a Lethal now, COD's own layout: the box cutter is on R3)
+  lethal: ['KeyG', 'PadRB'], // throw what's in the Lethal pocket (Kiosk Kevin's Soda Bomb...: game/equipment.js)
+  tactical: ['Mouse1', 'PadRight'], // throw what's in the Tactical pocket (Mouse1 = middle click; D-pad right is menuRight in a menu)
   inspect: ['KeyI', 'PadDown'],
   pause: ['PadStart'],
   // Build-A-Blaster's order form (the player stands still while it is open, so these can share keys with moving and buying).
@@ -59,6 +61,8 @@ export const controlsHelp = {
     { keys: '1  2', text: 'Switch weapon', short: 'Switch weapon', anchors: ['1', '2'] },
     { keys: 'Wheel', text: 'Switch weapon', short: 'Switch weapon', anchors: ['wheel'] },
     { keys: 'V', text: 'Box cutter', short: 'Box cutter', anchors: ['V'] },
+    { keys: 'G', text: 'Throw Lethal (Soda Bomb...)', short: 'Throw Lethal', anchors: ['G'] },
+    { keys: 'Middle click', text: 'Throw Tactical', short: 'Throw Tactical', anchors: ['mmb'] },
     { keys: 'I', text: 'Inspect weapon', short: 'Inspect', anchors: ['I'] },
     { keys: 'Esc', text: 'Pause', short: 'Pause', anchors: ['Esc'] },
   ],
@@ -72,16 +76,18 @@ export const controlsHelp = {
     { keys: 'LT', text: 'Aim down sights', short: 'Aim', anchors: ['lt'] },
     { keys: 'X', text: 'Reload (hold near a shop item to buy)', short: 'Reload / buy (hold)', anchors: ['x'] },
     { keys: 'Y', text: 'Switch weapon', short: 'Switch weapon', anchors: ['y'] },
-    { keys: 'RB / R3', text: 'Box cutter', short: 'Box cutter', anchors: ['rb'] },
+    { keys: 'R3', text: 'Box cutter (click the right stick)', short: 'Box cutter (R3)', anchors: ['r3'] },
+    { keys: 'RB / R1', text: 'Throw Lethal (Soda Bomb...)', short: 'Throw Lethal', anchors: ['rb'] },
+    { keys: 'D-pad right', text: 'Throw Tactical', short: 'Throw Tactical', anchors: ['dright'] },
     { keys: 'Start', text: 'Pause', short: 'Pause', anchors: ['start'] },
   ],
 };
 
 // Button names shown in on-screen prompts, per device.
 export const buttonLabels = {
-  keyboard: { reload: 'R', melee: 'V', confirm: 'Click', interact: 'F', jump: 'Space', menuConfirm: 'F', menuBack: 'Q', menuMove: 'W/S', menuSwitch: 'A/D' },
-  xbox: { reload: 'X', melee: 'RB', confirm: 'A', interact: 'X', jump: 'A', menuConfirm: 'A', menuBack: 'B', menuMove: 'D-pad', menuSwitch: '◀ ▶' },
-  playstation: { reload: '□', melee: 'R1', confirm: '✕', interact: '□', jump: '✕', menuConfirm: '✕', menuBack: '○', menuMove: 'D-pad', menuSwitch: '◀ ▶' },
+  keyboard: { reload: 'R', melee: 'V', lethal: 'G', tactical: 'MMB', confirm: 'Click', interact: 'F', jump: 'Space', menuConfirm: 'F', menuBack: 'Q', menuMove: 'W/S', menuSwitch: 'A/D' },
+  xbox: { reload: 'X', melee: 'R3', lethal: 'RB', tactical: '▶', confirm: 'A', interact: 'X', jump: 'A', menuConfirm: 'A', menuBack: 'B', menuMove: 'D-pad', menuSwitch: '◀ ▶' },
+  playstation: { reload: '□', melee: 'R3', lethal: 'R1', tactical: '▶', confirm: '✕', interact: '□', jump: '✕', menuConfirm: '✕', menuBack: '○', menuMove: 'D-pad', menuSwitch: '◀ ▶' },
 };
 
 export const gamepad = {

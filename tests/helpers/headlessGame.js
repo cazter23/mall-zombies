@@ -113,6 +113,8 @@ export function snapshot(g) {
       const claw = g.features.list.find(({ feature }) => feature.kind === 'clawMachine')?.instance;
       return claw ? { ...claw.status, grab: !!claw.grab, display: !!claw.display } : null;
     })(),
+    // Kiosk Kevin's equipment: both pockets, whether a throw is under way, and anything thrown still out.
+    equipment: { ...g.equipment.status, thrown: g.equipment.live.length, inAir: g.throwables.list.length },
     interactPrompt: g.interactions.prompt,
     reloading: g.gun.weapon.isReloading,
     discounts: PRICE_CATEGORIES.map((c) => g.pricing.discountOf(c)),
