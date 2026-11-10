@@ -1,5 +1,7 @@
 # Sunset Galleria: what each test file covers
 
+`tests/killAttribution.test.js` checks the gun ID on the real kill event for direct fire, piercing hits, bosses, bouncing balls, all damaging builds, melee, hazards, equipment, Inventory Liquidation, and debug kills. It also checks out-of-world rescue, attribution after changing guns, and the scripted fight's wallet, counters, and receipt against the main baseline.
+
 `tests/hazards.test.js` covers environmental hazards (docs/hazards-plan.md): Grand Atrium Electrified Fountain triggering, `g.pricing` ('hazard') and Flash Sale discounts, active/recharging cooldowns, `source: 'hazard'` kill payouts, Mascot helmet pop and regular power-up meter exclusions, Gold Mascot drops, boss/Mascot damage cap, player self-shock and surface slow while standing in the ring, nothing paid after death, Play again (`resetRun`) snapshot equality, and words-only prompt checks.
 
 `tests/rounds.test.js` covers round flow, remaining wave occupancy tracking, waveEnding event firing, HUD occupancy presentation, the Last Shopper acceleration, and the shopping window: the break is long enough to shop and clocking in saves most of it, rounds.endBreak (lead time, seconds skipped, never lengthens a break), Clock in (a fresh full hold, once per break, not before round 1, not on the buy button, ignored behind a menu, offered again next break), the real game's PA line and early round, and the HUD prompt.

@@ -17,10 +17,10 @@
 //   'reload'      { weaponId }                           a reload began on the gun in hand
 //   'hit'         { target, killed, headshot, melee }    a PLAYER attack hit a shootable (one per target per shot
 //                                                        or swing). Non-lethal zombie hits pay +10 here.
-//   'kill'        { zombie, headshot, melee, source }    a zombie died, WHATEVER killed it ('gun', 'melee', or a
-//                                                        future 'hazard' / 'effect'...). ALL kill payouts and kill
-//                                                        stats come from this one event. After the player's death
-//                                                        events still fire, but nothing more is paid or counted.
+//   'kill'        { zombie, headshot, melee, source, weaponId }  a zombie died. weaponId is the gun that dealt the
+//                                                        lethal hit or supplied the projectile or build effect, or null.
+//                                                        All kill payouts and kill stats come from this event. After the
+//                                                        player's death it still fires, but nothing is paid or counted.
 //   'mascotHeadPop' { zombie, headshot, source, again }  a Mascot's helmet came off at half health (whatever hit it;
 //                                                        zombie.type.variant = the costume; again = a second time,
 //                                                        after Captain Coupon put it back on: no bonus)

@@ -312,6 +312,7 @@ export function createGame({
       headshot: zombie.killedByHeadshot,
       melee: zombie.killedByMelee,
       source: zombie.killedBy,
+      weaponId: zombie.killedByWeaponId,
     }),
     // (`again`: the helmet came off a second time, after Captain Coupon put it back on)
     onHeadPop: (zombie, { headshot, source }) => events.emit('mascotHeadPop', { zombie, headshot, source, again: zombie.mascotReclaims > 0 }),

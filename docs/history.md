@@ -1,5 +1,12 @@
 # Sunset Galleria: build history ("Current state")
 
+## 10 November 2026 - Weapon skins phase 3: Kills name their gun
+
+- The kill event carries the gun ID from the lethal hit, projectile, or build effect. Burns, Glitter, and Party Trap keep their gun ID after a loadout change.
+- The box cutter, hazards, Soda Bomb, Inventory Liquidation, and unowned zombie attacks give a null gun ID. Out-of-world zombies still use the existing rescue path.
+- The scripted fight on main at ec36907 recorded 870 points left, 370 earned, 4 kills, and 4 hits from 4 shots. The phase keeps those figures and the existing payout and workshop listeners.
+- Shared gameplay edits are the kill payload in createGame.js and the event contract in events.js.
+
 ## 10 November 2026 - Shopping window: a 20 s break and "Clock in"
 
 - **Why.** The fun review's headless bot found no calm moment to use the shops: the break was 10 s and the last two zombies of a round
