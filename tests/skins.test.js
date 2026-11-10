@@ -173,7 +173,7 @@ test('the keyless debug override selects the held model, marks assistance and re
   assert.equal(heldColor('stapleHousing'), weapons.stapleGun.viewmodel.bodyColor);
 });
 
-const phaseTwoGuns = ['priceGun', 'nailGun', 'foamDartBlaster'];
+const phaseTwoGuns = ['priceGun', 'nailGun', 'foamDartBlaster', 'confettiCannon'];
 const testPalette = {
   body: 0x293e70, dark: 0x182131, metal: 0x90a9bb, grip: 0x45312b, accent: 0xd5a24c,
   sight: 0xb7e753, ammo: 0xe77fa8, emitter: 0x5ce4dc, screen: 0xc7a2ed, glass: 0x8cbbd4,
@@ -199,7 +199,7 @@ const expectedRoles = {
     grips: [12, 24], sights: [20],
   },
   confettiCannon: {
-    colors: { ff62bb: 'body', '8544c8': 'accent', ffd23f: 'metal', '312438': 'dark', ffee8a: 'sight', fff1d9: 'ammo' },
+    colors: { ff62bb: 'body', '8544c8': 'accent', ffd23f: 'metal', '312438': 'dark', ffef8a: 'sight', fff1d9: 'ammo' },
     grips: [2],
   },
   coilNailer: {
