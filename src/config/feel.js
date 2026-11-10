@@ -57,6 +57,7 @@ export const feel = {
   },
 
   sprint: {
+    toggle: false, // accessibility setting: press once to sprint until stopped or fired
     duration: 4, // seconds of sprint in a full meter
     refillDelay: 1, // seconds after you stop sprinting before the meter refills
     refillRate: 1.25, // seconds of sprint regained per second (empty -> full in ~3.2s)
@@ -70,6 +71,7 @@ export const feel = {
   },
 
   crouch: {
+    toggle: false, // accessibility setting: press once to crouch; press again or jump to stand
     height: 1.1, // collision height while crouched or sliding (standing is player.height)
     eyeHeight: 0.95, // camera height above the feet while crouched
     speed: 2.5, // m/s walking while crouched
@@ -164,6 +166,7 @@ export const feel = {
   },
 
   ads: {
+    toggle: false, // accessibility setting: press once to zoom; press again or sprint to lower
     // (the aim button itself is in config/controls.js -> bindings.aim)
     moveSpeedMultiplier: 0.75, // walking speed while fully aimed (goes into the stats object)
     sensitivityFollowsZoom: true, // mouse turns slower when zoomed in, so aim feels the same

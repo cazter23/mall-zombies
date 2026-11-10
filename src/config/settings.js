@@ -232,6 +232,21 @@ export const settingDefs = [
     apply: (v, ctx) => ctx.hud?.setTextSize?.(v),
   },
   {
+    id: 'toggleSprint', tab: 'Comfort', label: 'Toggle sprint', type: 'toggle', default: false,
+    hint: 'Press sprint once to run until you stop moving or fire.',
+    apply: (v) => { feel.sprint.toggle = v; },
+  },
+  {
+    id: 'toggleCrouch', tab: 'Comfort', label: 'Toggle crouch', type: 'toggle', default: false,
+    hint: 'Press crouch once to crouch; press again or jump to stand.',
+    apply: (v) => { feel.crouch.toggle = v; },
+  },
+  {
+    id: 'toggleAds', tab: 'Comfort', label: 'Toggle aim down sights', type: 'toggle', default: false,
+    hint: 'Press aim once to zoom; press again or sprint to lower weapon.',
+    apply: (v) => { feel.ads.toggle = v; },
+  },
+  {
     id: 'dimPhoneFlash', tab: 'Comfort', label: 'Dim instead of phone flashes', type: 'toggle', default: false,
     apply: v => { bossComfort.dimPhoneFlash = v; },
   },
@@ -290,6 +305,6 @@ export const settingPresets = {
   ],
   Comfort: [
     { label: 'Calm', values: { headBob: 0, speedLines: false, horrorLighting: false, dimPhoneFlash: true } }, // for motion sickness (and no flicker)
-    { label: 'Standard', values: { headBob: 1, speedLines: true, horrorLighting: true, dimPhoneFlash: false } },
+    { label: 'Standard', values: { headBob: 1, speedLines: true, horrorLighting: true, dimPhoneFlash: false, toggleSprint: false, toggleCrouch: false, toggleAds: false } },
   ],
 };

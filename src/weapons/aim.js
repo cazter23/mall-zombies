@@ -72,13 +72,22 @@ export function createAim({ def, input, player }) {
     // `allowAim` false (e.g. mid weapon switch): hip fire this tick even if the aim button is held.
     update(dt, allowAim = true) {
       // --- ADS ---
-      const held = input.actionDown('aim') && allowAim;
-      if (input.consumeAction('aim') || !held) cancelledBySprint = false; // a fresh press re-enables aiming
-      const sprintPressed = input.actionPressed('sprint') && input.moveAxis().y > 0;
-      if (held && sprintPressed) cancelledBySprint = true;
-
       const wasAiming = this.isAiming;
-      this.isAiming = held && !cancelledBySprint;
+      if (feel.ads.toggle) {
+        if (input.consumeAction('aim') && allowAim) {
+          this.isAiming = !this.isAiming;
+        }
+        const sprintPressed = input.actionPressed('sprint') && input.moveAxis().y > 0;
+        if (!allowAim || player.isSprinting || sprintPressed) {
+          this.isAiming = false;
+        }
+      } else {
+        const held = input.actionDown('aim') && allowAim;
+        if (input.consumeAction('aim') || !held) cancelledBySprint = false; // a fresh press re-enables aiming
+        const sprintPressed = input.actionPressed('sprint') && input.moveAxis().y > 0;
+        if (held && sprintPressed) cancelledBySprint = true;
+        this.isAiming = held && !cancelledBySprint;
+      }
       this.justStartedAiming = this.isAiming && !wasAiming; // for aim assist's ADS snap
       prevAmount = amount;
       amount += ((this.isAiming ? 1 : -1) * dt) / (def.ads.seconds * (player.stats.adsTimeMultiplier ?? 1));
