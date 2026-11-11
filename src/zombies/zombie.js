@@ -317,10 +317,11 @@ export class Zombie {
   }
 
   // Glitter: for `seconds` it fights other zombies instead of you, hitting for `damage`. Refused while it rises, while a mannequin is frozen, and
-  // for a while after the last dose. Returns whether it took.
-  applyConfusion(seconds, damage) {
+  // for a while after the last dose. Returns whether it took. `source`: what its hits count as ('build': Build-A-Blaster's Glitter;
+  // 'equipment': Kiosk Kevin's Glitter Bomb).
+  applyConfusion(seconds, damage, source = 'build') {
     if (this.type.boss || !this.isAlive || this.state === 'spawning' || this.frozen || this.confusionImmune > 0) return false;
-    this.confusion = { left: seconds, damage, target: null, retarget: 0 };
+    this.confusion = { left: seconds, damage, source, target: null, retarget: 0 };
     this.setState('chasing'); // whatever it was doing to you, it has forgotten
     this.chargeLeft = 0;
     return true;
@@ -341,10 +342,11 @@ export class Zombie {
 
   // Burning: `damage` in total over `seconds`, paid in ticks through takeHit, so a kill counts like any other. A new burn
   // restarts the clock and never weakens one already burning. Burns don't stack: re-lighting a zombie doesn't add damage.
-  applyBurn(damage, seconds, tickSeconds) {
+  // `source`: what its ticks count as ('build': Fryer Oil; 'equipment': Kiosk Kevin's Sparkler Cake); the last to light it.
+  applyBurn(damage, seconds, tickSeconds, source = 'build') {
     if (!this.isAlive || this.state === 'spawning') return;
     const perTick = (damage * tickSeconds) / seconds;
-    this.burn = { perTick: Math.max(perTick, this.burn?.perTick ?? 0), tickSeconds, nextTick: this.burn?.nextTick ?? tickSeconds, left: seconds };
+    this.burn = { perTick: Math.max(perTick, this.burn?.perTick ?? 0), tickSeconds, nextTick: this.burn?.nextTick ?? tickSeconds, left: seconds, source };
   }
 
   updateBurn(dt) {
@@ -361,7 +363,7 @@ export class Zombie {
     this.burn.nextTick -= dt;
     if (this.burn.nextTick <= 1e-9) {
       this.burn.nextTick += this.burn.tickSeconds;
-      this.takeHit({ damage: this.burn.perTick, part: 'body', source: 'build' });
+      this.takeHit({ damage: this.burn.perTick, part: 'body', source: this.burn.source });
     }
     if (this.burn && this.burn.left <= 1e-9) this.burn = null;
   }

@@ -371,8 +371,16 @@ the model and debris and disposes their shared geometry and materials.
 - `instantKill.test.js`: Return to Sender, the wonder weapon: hitDamage's instant kill (any returnable zombie, at any health) and the big fixed hit on a boss or Mascot (tiers and the damage stat scale it, never a kill), a round-30 Shopper returned in one beam with the normal kill pay and only one zombie a beam, a boss takes the big hit twice over two beams, the half-rate refill (a refill fills the magazine and half the reserve, `isFull` agrees, nothing is taken away, other guns refill fully), claw-only, and a stuffed build still returns in one beam with the Last Round heart firing.
 - `equipment.test.js`: The Soda Bomb's damage curve, blast falloff and wall cover, fixed boss share, keyboard and
   controller pocket actions, shared lockout, reload cancellation, ballistics, payouts, debug controls and cleanup.
-- `kiosk.test.js`: Bubble Wrap's damage order, cap and reset. All three cart purchases through real input, fixed
-  stock, Pick bonuses, hiding, pricing and vouchers. Air Horn input, cover, charge interruption, Mascot weight,
+- `equipmentStatus.test.js`: Kiosk Kevin phase 5, the Glitter Bomb and the Sparkler Cake in the real game. The tickets are words
+  only and name bosses. The card confuses Shoppers, a charging Cart Pusher (the charge is called off) and a Mascot round it, through
+  applyConfusion with source 'equipment' and swings scaled by equipmentPower; a boss and anything out of reach are untouched, and the
+  card hurts and pays nobody. A confused zombie's kill pays the kill value through 'kill' only (no 'hit', no +10, no meter) and it never
+  turns on you. The cake lights Shoppers, a Cart Pusher and a Mascot with the round's burn (source 'equipment') and a boss at half
+  strength, sprays for its time then is gone; its kill pays through 'kill' only, nothing after death. The gold Mascot still drops its
+  power-up when a cake burn or a confused zombie kills it. Real input: G throws a cake that lands on the floor and sprays, middle click
+  a card that opens where it lands. Death and Play again leave no cake behind.
+- `kiosk.test.js`: Bubble Wrap's damage order, cap and reset. All five products bought through real input at the cart (the Lethal
+  and Tactical slots alternate round by round; a Sparkler Cake replaces the Soda Bombs in their pocket), Pick bonuses, hiding, pricing and vouchers. Air Horn input, cover, charge interruption, Mascot weight,
   boss immunity and zero payout. Kevin's five sites (phase 4): each has one collider (a vaultable counter or >= 2.1 m),
   a clear stand point zombies reach, no zombie spawn within `spawnClearance`, a real prompt there, and ducking measured
   from that cart; the carts leave every spawn's route to the hub alone (no more than 3 m longer); he opens first in

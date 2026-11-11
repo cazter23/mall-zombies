@@ -1,5 +1,36 @@
 # Sunset Galleria: build history ("Current state")
 
+## 10 November 2026 - Kiosk Kevin, phase 5: the Glitter Bomb and the Sparkler Cake
+
+Phase 5 of docs/kiosk-kevin-plan.md, built on `claude/kiosk-kevin-5` (cut from `claude/kiosk-kevin-4`, which it builds on). The Air Horn
+was already built; this adds the other two products.
+
+- **Selling them (the user's choice):** the cart keeps its three slots. The Lethal slot alternates Soda Bomb / Sparkler Cake round by
+  round from round 2, the Tactical slot Air Horn / Glitter Bomb, Bubble Wrap is always there (config/kiosk.js `slots`, stockFor,
+  pickFor). No randomness, so nothing new to save. Kevin's Pick moves along the slots, so every product is the Pick within six rounds.
+  The buy spots read their product live; the cart's product labels became one canvas strip in its dynamic rig, redrawn when the
+  stock changes. The PA line now names the round's three products. Prices: Sparkler Cake 400 (2), Glitter Bomb 750 (2): starting points.
+- **The Glitter Bomb** (game/equipment/glitterBomb.js): opens where it first touches anything; up to 8 zombies within 4 m (in sight,
+  nearest first) are confused for 6 s through `zombie.applyConfusion`, the SAME path as Build-A-Blaster's Glitter (zombies/confusion.js),
+  not a second one. Their swings at each other are 75 x equipmentPower(round). Bosses refuse it (the method's own boss check).
+- **The Sparkler Cake** (game/equipment/sparklerCake.js): lands on the floor and sprays for 4 s; every 0.5 s each zombie within 3 m (in
+  sight, on its floor) is lit through `zombie.applyBurn`, the Fryer Oil burn: 450 x power over 3 s, a boss at half (equipmentDamage.js
+  burnDamage). Burns don't stack, so standing in it keeps one burning.
+- **Shared change:** `applyConfusion` and `applyBurn` take an optional `source` (default 'build', so Build-A-Blaster is unchanged); the
+  products pass 'equipment', so their kills are equipment kills. Nothing pays 'hit' (no +10), the meter ignores them, and the gold Mascot's
+  guaranteed power-up already drops whatever kills it (powerUps.js reads only the type): checked for a cake burn and a confused zombie.
+- **Throwing:** equipment.js gained `opens` ('touch' / 'floor', or wherever it stops, or after landSeconds), targetsNear and a spraying
+  state; `detonate(id, position)` now opens or lands any thrown product (tests). Thrown things stay transient: only the pockets are saved.
+  fx/throwableView.js draws a pool per look.model (bottle, cake, card); the HUD has a cake icon and colours for both.
+- **Checked:** tests/equipmentStatus.test.js (9 new tests) and tests/kiosk.test.js (the purchase test now buys all five through real
+  input). In the browser (worktree build): the cart's labels and the PA show the round's three; a thrown cake lands and sprays, four
+  Shoppers burn down with only the kill value paid; a thrown card confuses four Shoppers; no console errors. Found while testing: a
+  card that opens in the air (on a zombie's chest) caught nobody, because the floor check compared feet to the card's height; it now
+  takes any point from a zombie's feet to its head (plus the tolerance), with a test for it. And a Mascot placed with speed 0 has NaN
+  hitboxes headless (its pose divides by its speed), so the tests place zombies at a crawl; a real Mascot always moves.
+- Shared files changed: src/zombies/zombie.js and src/zombies/confusion.js (the optional source), src/config/economy.js (two kiosk
+  prices), src/game/events.js (docs of two events), src/ui/retail.css, docs (folder-structure, tests, the plan).
+
 ## 10 November 2026 - Kiosk Kevin, phase 4: five carts and the move
 
 Phase 4 of docs/kiosk-kevin-plan.md, built on `claude/kiosk-kevin-4`. The stock is unchanged (always Soda Bomb, Bubble Wrap and Air Horn;

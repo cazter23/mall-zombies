@@ -4,13 +4,15 @@
 
 Phases 2 and 3 are built as Minimal Kiosk Kevin, with the Stadium Air Horn pulled forward from phase 5.
 Phase 4 is built (10 November 2026, `claude/kiosk-kevin-4`): five carts, and from round 3 Kevin moves at each
-'roundStart' to another open site (see "Where Kevin is"). He sells Soda Bomb, Bubble Wrap and Stadium Air Horn from round 2,
-starting at the Hallway site once the Hallway is open. Kevin still ducks within 3 m of a living zombie. Kevin's Pick cycles through those three
-products in that order and adds one charge or layer, subject to the armour cap. Soda Bomb now costs 300 for
-a refill to three, or four when featured. Bubble Wrap and Air Horn cost 500 each. There are no round-start
-grants. The random stock and 750-point Soda Bomb price below describe the original proposal (the stock does not
-re-roll: it is always those three, so phase 4's "stock re-rolls every 'roundStart'" means only the Pick moves on).
-The Sentry, Sparkler Cake and Glitter Bomb remain unbuilt.
+'roundStart' to another open site (see "Where Kevin is"). He sells from round 2, starting at the Hallway site once the Hallway
+is open. Kevin still ducks within 3 m of a living zombie.
+Phase 5 is built (10 November 2026, `claude/kiosk-kevin-5`): the Glitter Bomb and the Sparkler Cake. The cart keeps three slots
+(the user's choice: no random stock): a Lethal slot that ALTERNATES round by round between the Soda Bomb (round 2, 4, ...) and the
+Sparkler Cake (round 3, 5, ...), Bubble Wrap always, and a Tactical slot alternating the Air Horn and the Glitter Bomb the same way
+(config/kiosk.js `slots`). Kevin's Pick moves along the three slots one a round and adds one charge or layer, subject to the armour
+cap. The PA names the round's three products. Prices: Soda Bomb 300 (refill to three, four when featured), Bubble Wrap and Air Horn
+500, Sparkler Cake 400, Glitter Bomb 750 (starting points for phase 7). There are no round-start grants. The random stock and the
+750-point Soda Bomb below describe the original proposal. The Sentry remains unbuilt.
 
 Phase 1 was built on 9 November 2026 on `claude/kiosk-kevin-1` (the two pockets, the buttons and the Soda Bomb).
 The original proposal below was written on `claude/kiosk-kevin-plan` the same day. Its remaining phases and
@@ -315,7 +317,7 @@ Sale and the Employee Discount, and the cart is never buyable while a zombie is 
 The other four carts and their checks (stand point clear, no spawn within 5 m, routes unchanged, coplanar), the move rule, the clutter lists, PA.
 Done when: Kevin only ever opens in an open zone, never moves mid-purchase, and every site passes the navigation and coplanar tests.
 
-### 5. Air Horn, Glitter Bomb and Sparkler Cake (Sonnet or Luna)
+### 5. Air Horn, Glitter Bomb and Sparkler Cake (Sonnet or Luna) -- BUILT 10 November 2026 (tests/equipmentStatus.test.js, tests/kiosk.test.js)
 Each through the zombie's existing status methods, with boss tickets. Check the gold Mascot drop.
 Done when: each does its job on Shoppers, Cart Pushers and Mascots, does nothing (or half) to bosses as the table says, and pays only through 'kill'.
 

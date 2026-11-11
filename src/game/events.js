@@ -37,7 +37,8 @@
 //                                                        damage is BEFORE clothes: createGame's listener applies stats.damageTakenMultiplier
 //   'playerFall'  { drop, damage }                       a landing from a height hurt (feel.fall); damage is already taken
 //   'armourHit'   { absorbed, layers, popped }            Bubble Wrap absorbed damage from a zombie hit
-//   'kioskStock'  { siteId, pick, pa }                   Kevin's cart opened for the round (or after a move): where he is and his Pick
+//   'kioskStock'  { siteId, stock, pick, pa }            Kevin's cart opened for the round (or after a move): where he is, the round's
+//                                                        three products and his Pick
 //   'kioskMoved'  { siteId, area, moved }                Kevin's site at a 'roundStart' (moved false: he stays where he is); area = the PA's name
 //   'regenStart'  {}                                     health began climbing back (once per recovery: player/health.js)
 //   'secondChance' { status }                            Second Chance changed (game/secondChance.js): 'held' = bought at Customer Service,
@@ -112,7 +113,8 @@
 //   'sunnyPopped' { siteId }                             shot or slashed: stuffing everywhere, tickets paid, the next site re-picked
 //   'equipmentThrown' { id, pocket, left }               a pocket's item was thrown (game/equipment.js; pocket 'lethal' | 'tactical',
 //                                                        left = charges still in it)
-//   'equipmentBurst'  { id, position, radius, hit }      a thrown Soda Bomb burst; hit = [{ target, damage, killed }]. Equipment
+//   'equipmentBurst'  { id, position, radius, hit }      a thrown Soda Bomb burst, or a Glitter Bomb opened (damage 0: hit = the
+//                                                        zombies it confused); hit = [{ target, damage, killed }]. Equipment
 //                                                        damage never emits 'hit' (no +10): its kills pay through 'kill', source 'equipment'
 //   'runReset'    {}                                     after Play again reset everything
 //   'runSaved'    { round }                              Save & Quit wrote the slot (game/saveGame.js); the run ends next (main.js)
