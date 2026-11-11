@@ -37,6 +37,8 @@ export const skins = {
   priceGun: [{ id: 'red-tag', name: 'Red Tag', slot: 1,
     palette: { body: 0x612635, dark: 0x311922, metal: 0xb0a3aa, grip: 0x241c24, accent: 0xf6adbd, sight: 0xffe3a1, ammo: 0xf8ecd9 }, challenge: mastery(400) }, {
     id: 'doorbuster', name: 'Doorbuster', slot: 2,
+    palette: { body: 0x880812, dark: 0x4e050c, metal: 0xd7b8b8, grip: 0x24141a, accent: 0xffd84a, sight: 0xfff0a0, ammo: 0xfff4c8 },
+    pattern: { kind: 'text', ink: 0xffd84a, words: ['% OFF', 'SALE'], font: '"Anton"', height: 0.011, wordSpacing: 0.05, rowSpacing: 0.02 }, // sale banners
     challenge: { kind: 'quickKills', count: 150, seconds: 1,
       text: 'Mark down {count} zombies from full price to nothing in {seconds} second or less with the {gun}.' },
   }],
