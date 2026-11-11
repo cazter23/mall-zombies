@@ -161,6 +161,9 @@ export function createHud() {
   occupancyCounter.classList.add('closed');
   roundCounter.append(roundLabel, roundValue, occupancyCounter);
   hud.append(roundCounter);
+  const objectiveLine = el('div', 'hud-objective');
+  objectiveLine.hidden = true;
+  let lastObjectiveKey = null;
   // Under the round box, during the break: "[I] Hold to clock in" with a fill bar (its own element, so it doesn't blink
   // with the counter).
   const clockIn = el('div', 'clock-in');
@@ -236,7 +239,8 @@ export function createHud() {
   // Under it: where GRAB-A-GUN is while it's open (game/features/clawMachine.js status).
   const clawTag = el('div', 'sale-tag claw-tag');
   hud.append(clawTag);
-  let lastClawKey = '';
+  let lastClawSiteId = null;
+  let clawTimer = null; // seconds of play left on the banner (null = not showing)
 
   // Bottom-right: ammo counter.
   const ammo = el('div', 'ammo');
@@ -315,7 +319,7 @@ export function createHud() {
 
   // Flowing lanes keep growing rewards/PA copy clear of other tickets and bosses.
   const leftStack = el('div', 'hud-left-stack');
-  leftStack.append(roundCounter, clockIn, incentives.element, ritualTicket.element);
+  leftStack.append(roundCounter, objectiveLine, clockIn, incentives.element, ritualTicket.element);
   const topStack = el('div', 'hud-top-stack');
   topStack.append(bossBar, roundBanner, bagMarker.element);
   const rightStack = el('div', 'hud-right-stack');
@@ -407,7 +411,14 @@ export function createHud() {
         ammoSecondary.classList.remove('switched');
       });
       events.on('runReset', clearNotices);
-      events.on('runReset', () => { history.clear(); incentives.reset(); });
+      events.on('runReset', () => {
+        history.clear();
+        incentives.reset();
+        lastObjectiveKey = null;
+        clawTimer = null;
+        lastClawSiteId = null;
+        clawTag.classList.remove('show');
+      });
       events.on('playerDeath', clearNotices);
       events.on('mascotPopBlast', ({ butter: buttered, butterSeconds }) => {
         if (buttered) splatButter(butterSeconds);
@@ -816,13 +827,35 @@ export function createHud() {
       saleTag.textContent = text;
     },
 
-    // GRAB-A-GUN's whereabouts: null (or a closed machine) hides it.
-    setClawMachine(status) {
-      const text = status?.open ? `GRAB-A-GUN · ${status.area} · ${status.stock} left` : '';
-      if (text === lastClawKey) return;
-      lastClawKey = text;
-      clawTag.classList.toggle('show', !!text);
-      clawTag.textContent = text;
+    // The initial run objective: gone once the hallway is bought.
+    setObjective(text) {
+      if (text === lastObjectiveKey) return;
+      lastObjectiveKey = text;
+      objectiveLine.textContent = text ?? '';
+      objectiveLine.hidden = !text;
+    },
+
+    // GRAB-A-GUN's whereabouts: shown for ui.clawBannerSeconds of PLAY when the machine opens or moves (`seconds` = play
+    // time since the last call: main.js passes 0 while paused, so the banner waits for you).
+    setClawMachine(status, seconds = 0) {
+      if (!status?.open) {
+        lastClawSiteId = null;
+        clawTimer = null;
+        clawTag.classList.remove('show');
+        return;
+      }
+      if (status.siteId !== lastClawSiteId) {
+        lastClawSiteId = status.siteId;
+        clawTimer = ui.clawBannerSeconds;
+        clawTag.classList.add('show');
+      } else if (clawTimer !== null) {
+        clawTimer -= seconds;
+        if (clawTimer <= 0) {
+          clawTimer = null;
+          clawTag.classList.remove('show');
+        }
+      }
+      if (clawTimer !== null) clawTag.textContent = `GRAB-A-GUN · ${status.area} · ${status.stock} left`;
     },
 
     // Buy prompt: null hides it, else { label, verb, cost, canAfford, progress, denied, sale }.
@@ -837,7 +870,9 @@ export function createHud() {
       interact.classList.toggle('show', !!info);
       if (!info) return;
       interactTitle.textContent = info.title ?? info.label;
-      interactCost.textContent = info.priceLabel ?? (info.owned ? 'Owned · Free' : info.cost.toLocaleString('en-US'));
+      // (an instant, free action like the claw's drop shows no price: the "[F] Press" badge says it all)
+      interactCost.textContent = info.priceLabel
+        ?? (info.instant && !info.cost ? '' : info.owned ? 'Owned · Free' : info.cost.toLocaleString('en-US'));
       interactOriginal.hidden = !info.sale || !(info.originalCost > info.cost);
       interactOriginal.textContent = `${(info.originalCost ?? info.cost).toLocaleString('en-US')}`;
       // Ordinary purchases need one line. Keep the terms only where they affect an upgrade decision.
@@ -853,10 +888,12 @@ export function createHud() {
         }));
       }
       interactButton.textContent = button;
+      interactHold.textContent = info.instant ? 'Press' : 'Hold';
       interactStatus.textContent = info.blocked ?? (!info.canAfford ? `Need ${(info.shortfall ?? 0).toLocaleString('en-US')} more` : '');
       interact.classList.toggle('cant', !info.canAfford || !!info.blocked);
       interact.classList.toggle('sale', !!info.sale);
       interact.classList.toggle('denied', info.denied);
+      interactBar.hidden = !!info.instant;
       interactFill.style.transform = `scaleX(${info.progress})`;
     },
 

@@ -431,7 +431,7 @@ export function buildClawMachine(feature, { scene, map, events, pricing, interac
     kind: 'clawAction',
     id: 'drop',
     cost: 0,
-    priceLabel: 'Press',
+    priceLabel: '',
     instant: true, // the press IS the drop: no hold
     quiet: true, // (not a purchase)
     get position() { return cabinet().position; },

@@ -161,6 +161,7 @@ test('Mystery Shopper marks one real target, rewards only its direct kill, and e
 
 test('Spill Cleanup is placed behind the player, slows only zombies in the patch, and wears off', () => {
   const t = scenario(), { g } = t;
+  g.player.yaw = 0;
   const z = t.spawn(0, 13.4), far = t.spawn(4, 13.4);
   const speed = z.speed;
   t.collect('spillCleanup');

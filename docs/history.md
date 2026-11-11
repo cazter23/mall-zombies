@@ -55,6 +55,17 @@
   bigger shove.
 - Shared files changed: src/game/createGame.js, src/game/events.js, src/config/feel.js, src/config/economy.js, src/game/outfitRail.js,
   src/game/features/hazards.js, src/game/features/upgradeDesk.js, tests/helpers/headlessGame.js, docs (history, folder-structure, map, tests).
+## 10 November 2026 - First minute and HUD polish (Step C)
+
+- **Player spawn faces the room.** Rotated initial player spawn yaw from `0` (-Z, staring at the closed shutter) to `Math.PI` (+Z, facing into the clearance store), driven by `feel.player.spawnYaw = Math.PI` in `src/config/feel.js`. The player at `(0, 0, 12)` now immediately sees the CRT TV wall and the two round 1 zombie spawns emerging from the boarded vents at `z = 15.4`.
+- **Run objective line.** Config-driven objective text (`ui.startObjective: { text: 'Open the shutter · {price}', until: 'hallway' }` in `src/config/ui.js`; the price comes from g.pricing), rendered in the HUD left stack directly under the round counter. It hides once the `until` area is owned and comes back on Play again. (Review fix: the first draft said "Earn 500", but a run starts with 500 and the shutter costs 500.)
+- **Review fixes before merging.** The GRAB-A-GUN banner's 5 s now count play time only (main.js passes the frame time while running, 0 while paused; it was a wall-clock setTimeout that ran out during a pause). The prompt's price label logic was simplified (an instant, free action shows no price).
+- **HUD decluttering.** By minute 2, panels no longer overcrowd the screen:
+  - The **GRAB-A-GUN banner** is now shown only for a timed `ui.clawBannerSeconds` (5 s) window when the machine opens or relocates to another site, then automatically hides.
+  - The **Employee Rewards panel** remains hidden until its meter first gains progress (`status.progress > 0`), keeping an empty 0% progress bar from taking up screen space at the start of round 2.
+- **Fitting room picker overlap fix.** `.hud.fitting-open .hud-left-stack` is now set to `display: none` in `src/ui/readability.css` (matching `.hud.menu-open`), preventing the round counter and Employee Rewards panel from overlapping the top-left of the fitting room receipt picker.
+- **Claw drop instant prompt fix.** Fixed the claw drop prompt showing both "Hold" and "Press": `hud.setInteract` now inspects `info.instant` to display `[F] Press` instead of `Hold` on the verb key badge, suppresses redundant "Press" cost tags, and `clawMachine.js` cleans its drop interaction `priceLabel` to empty.
+- **Shared files changed:** `src/config/feel.js`, `src/config/ui.js`, `src/maps/mall/mall.js`, `src/game/features/clawMachine.js`, `src/ui/hud.js`, `src/ui/incentiveHud.js`, `src/ui/retail.css`, `src/ui/readability.css`, `src/main.js`, `docs/map.md`, `tests/hud.test.js`, `tests/powerUps.test.js`, `tests/uiReadability.test.js`, `tests/incentiveEffects.test.js`, `tests/janitor.test.js`.
 
 ## 10 November 2026 - Shopping window: a 20 s break and "Clock in"
 

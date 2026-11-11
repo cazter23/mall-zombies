@@ -12,6 +12,7 @@ import * as THREE from 'three';
 import { feel } from './config/feel.js';
 import { save as saveConfig } from './config/save.js';
 import { debug } from './config/debug.js';
+import { ui } from './config/ui.js';
 import { startLoop } from './core/loop.js';
 import { createIdleSaver } from './core/idleSaver.js';
 import { Input } from './core/input.js';
@@ -499,7 +500,10 @@ function render(alpha, frameTime) {
   hud.setOrderForm(game.over ? null : ritual?.form ?? null, menuLabels);
   hud.setFittingRoom(game.over ? null : fittingRooms.find((room) => room.view)?.view ?? null, menuLabels);
   hud.setLimitedEdition(game.over ? null : limitedEditions?.status ?? null);
-  hud.setClawMachine?.(game.over ? null : clawMachine?.status ?? null);
+  const objectiveArea = ui.startObjective.until;
+  hud.setObjective(game.over || g.map.zones[objectiveArea]?.open !== false ? null
+    : ui.startObjective.text.replace('{price}', g.pricing.priceOf('door', objectiveArea).toLocaleString('en-US')));
+  hud.setClawMachine?.(game.over ? null : clawMachine?.status ?? null, game.running ? frameTime : 0); // (its banner's clock stops while paused)
   hud.setPockets(game.over ? null : g.equipment.status, { lethal: buttonLabel('lethal'), tactical: buttonLabel('tactical') });
   hud.setVaultPrompt(game.running && !game.over && g.vaultPromptVisible, buttonLabel('jump'));
   hud.setPoints(wallet.points);

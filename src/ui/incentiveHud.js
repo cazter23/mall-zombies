@@ -22,9 +22,10 @@ export function createIncentiveHud() {
   let lastKey = '';
   const taught = new Set();
   let activeIds = new Set(), teaching = new Set();
+  let hasMeterProgress = false;
   return {
     element,
-    reset() { taught.clear(); activeIds.clear(); teaching.clear(); lastKey = ''; element.hidden = true; },
+    reset() { taught.clear(); activeIds.clear(); teaching.clear(); lastKey = ''; hasMeterProgress = false; element.hidden = true; },
     update(status) {
       element.hidden = !status;
       if (!status) return;
@@ -36,7 +37,8 @@ export function createIncentiveHud() {
       }
       for (const id of activeIds) if (!ids.has(id)) teaching.delete(id);
       activeIds = ids;
-      const showProgress = available && status.round >= powerUps.firstRound;
+      if (status.progress > 0) hasMeterProgress = true;
+      const showProgress = available && status.round >= powerUps.firstRound && hasMeterProgress;
       element.hidden = !showProgress && !pickup && !active && !effects.length;
       heading.hidden = !showProgress;
       label.hidden = !showProgress;

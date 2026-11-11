@@ -35,6 +35,7 @@ import { markCollidersChanged } from '../../world/collision.js';
 import { createMallProps } from './props.js';
 import { COLORS } from './palette.js';
 import { debug } from '../../config/debug.js';
+import { feel } from '../../config/feel.js';
 import { economy } from '../../config/economy.js';
 import { fittingRooms, wardrobeItems, wardrobeAnchor } from '../../config/wardrobe.js';
 import { buildWardrobeDisplay } from './wardrobeDisplays.js';
@@ -855,8 +856,8 @@ export function buildMall(scene, colliders) {
   ];
   kit.markers({ spawnPoints, wallBuys, visible: debug.showMarkers });
 
-  // Player start: middle of the start room, facing the shutter (-Z)
-  const playerSpawn = { position: new THREE.Vector3(0, 0, 12), yaw: 0 };
+  // Player start: middle of the start room, facing into the room (+Z) toward the vents
+  const playerSpawn = { position: new THREE.Vector3(0, 0, 12), yaw: feel.player.spawnYaw ?? Math.PI };
 
   // The main menu's flyover (ui/titleCamera.js): slow camera glides through the mall, one after another.
   // Each: from -> to (the camera), lookFrom -> lookTo (where it looks). Keep them clear of walls and shutters.

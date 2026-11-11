@@ -5,6 +5,7 @@ import { headlessGame } from './helpers/headlessGame.js';
 import { weapons } from '../src/config/weapons.js';
 import { gunLabel, workshopStuffings } from '../src/config/workshop.js';
 import { upgrades } from '../src/config/upgrades.js';
+import { ui } from '../src/config/ui.js';
 
 menuDom();
 const { createHud } = await import('../src/ui/hud.js');
@@ -138,4 +139,91 @@ test('createGame runs without DOM pollution', () => {
   t.g.resetRun();
   t.tick();
   assert.equal(t.g.gun.inactiveSlot, null);
+});
+
+test('playerSpawn faces +Z into the clearance room where round 1 zombies rise', () => {
+  const t = headlessGame();
+  assert.equal(t.g.map.playerSpawn.yaw, Math.PI);
+  assert.equal(t.g.map.playerSpawn.position.x, 0);
+  assert.equal(t.g.map.playerSpawn.position.z, 12);
+});
+
+test('HUD setObjective shows and updates objective line, and hides when null', () => {
+  menuDom();
+  const hud = createHud();
+  const objEl = hud.element.querySelector('.hud-objective');
+  assert.ok(objEl, 'objective element exists in HUD');
+  assert.equal(objEl.hidden, true);
+
+  hud.setObjective('Open the shutter · 500');
+  assert.equal(objEl.hidden, false);
+  assert.equal(objEl.textContent, 'Open the shutter · 500');
+
+  hud.setObjective(null);
+  assert.equal(objEl.hidden, true);
+});
+
+test('HUD setClawMachine shows banner on open/move and hides when closed', () => {
+  menuDom();
+  const hud = createHud();
+  const clawTag = hud.element.querySelector('.claw-tag');
+  assert.ok(clawTag, 'claw tag element exists');
+  assert.equal(clawTag.classList.contains('show'), false);
+
+  // When machine opens at a site, banner shows
+  hud.setClawMachine({ open: true, siteId: 'hallway', area: 'Main Hallway', stock: 3 });
+  assert.equal(clawTag.classList.contains('show'), true);
+  assert.match(clawTag.textContent, /Main Hallway/);
+
+  // When machine closes, banner immediately hides
+  hud.setClawMachine({ open: false, siteId: 'hallway', area: 'Main Hallway', stock: 3 });
+  assert.equal(clawTag.classList.contains('show'), false);
+});
+
+test('HUD claw banner counts down only in play time: a pause keeps it up, then it hides', () => {
+  menuDom();
+  const hud = createHud();
+  const clawTag = hud.element.querySelector('.claw-tag');
+  const open = { open: true, siteId: 'hallway', area: 'Main Hallway', stock: 3 };
+  hud.setClawMachine(open, 0);
+  for (let i = 0; i < 600; i++) hud.setClawMachine(open, 0); // paused: no time passes
+  assert.equal(clawTag.classList.contains('show'), true);
+  hud.setClawMachine(open, ui.clawBannerSeconds - 0.1);
+  assert.equal(clawTag.classList.contains('show'), true);
+  hud.setClawMachine(open, 0.2);
+  assert.equal(clawTag.classList.contains('show'), false);
+  hud.setClawMachine({ ...open, siteId: 'foodCourt', area: 'Food Court' }, 0.1); // moved: shows again
+  assert.equal(clawTag.classList.contains('show'), true);
+  assert.match(clawTag.textContent, /Food Court/);
+});
+
+test('HUD setInteract renders Press instead of Hold for instant interactions without duplicate Press label', () => {
+  menuDom();
+  const hud = createHud();
+  const actionEl = hud.element.querySelector('.interact-action');
+  const holdEl = actionEl.querySelector('span');
+  const costEl = hud.element.querySelector('.cost');
+
+  // Standard buy: Hold F
+  hud.setInteract({
+    label: 'Open Shutter',
+    cost: 500,
+    canAfford: true,
+    progress: 0,
+    instant: false,
+  }, 'F');
+  assert.equal(holdEl.textContent, 'Hold');
+  assert.equal(costEl.textContent, '500');
+
+  // Instant action (the claw drop: priceLabel ''): Press F
+  hud.setInteract({
+    label: 'Drop the claw',
+    cost: 0,
+    priceLabel: '',
+    instant: true,
+    canAfford: true,
+    progress: 0,
+  }, 'F');
+  assert.equal(holdEl.textContent, 'Press');
+  assert.equal(costEl.textContent, '', 'no duplicate Press text on the right');
 });

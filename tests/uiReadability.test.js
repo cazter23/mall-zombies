@@ -55,3 +55,11 @@ test('UI and text scales save independently of render resolution, clamp invalid 
     }
   } finally { globalThis.localStorage = savedStorage; }
 });
+
+test('readability CSS hides left HUD stack during both menu-open and fitting-open', async () => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const css = fs.readFileSync(path.resolve('src/ui/readability.css'), 'utf8');
+  assert.ok(css.includes('.hud.fitting-open .hud-left-stack'), 'fitting-open hides left stack');
+  assert.ok(css.includes('.hud.menu-open .hud-left-stack'), 'menu-open hides left stack');
+});
