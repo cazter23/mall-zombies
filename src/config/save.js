@@ -6,7 +6,7 @@
 //   reasons     why the pause menu's Save & Quit is greyed out (the button shows the text).
 // =============================================================================
 export const save = {
-  version: 3, // 3: Fryer Blast hazard (map.features gained an entry, so an older save's feature data no longer lines up)
+  version: 4, // 4: Fire Sprinklers hazard (map.features gained an entry, so an older save's feature data no longer lines up)
   storageKey: 'sunsetGalleria.save',
   reasons: {
     noRound: 'Not clocked in yet',

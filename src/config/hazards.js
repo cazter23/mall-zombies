@@ -153,8 +153,7 @@ export const hazards = {
     pulseSound: 'stuffingFryer',
   },
 
-  // --- Planned hazards (docs/hazards-plan.md; built in later phases) ---
-
+  // --- Phase 3: Main Hallway Fire Sprinklers (game/features/sprinklerHazard.js) ---
   sprinklers: {
     id: 'sprinklers',
     zone: 'hallway',
@@ -164,7 +163,9 @@ export const hazards = {
     detail: 'Drenches the concourse to chill and soak the horde',
     position: { x: -3.9, y: 1.35, z: -1.95 },
     normal: { x: 0, y: 0, z: 1 },
+    switchOffset: 0.13, // proud of the south hallway wall (z = -2.0)
     bounds: { minX: -12, maxX: 12, minZ: -2, maxZ: 6 },
+    maxHeight: 1.2,
     durationSeconds: 10,
     cooldownSeconds: 30,
     pulseInterval: 0.5,
@@ -173,11 +174,53 @@ export const hazards = {
     maxHealthCap: 0.06,
     slowDuration: 1.0,
     slowFactor: 0.45,
+    slowKind: 'smoothie',
     vulnerableDuration: 1.2,
     vulnerableMultiplier: 1.35,
     playerDamage: 0,
     playerSlowFactor: 0.9,
+    // Visuals & audio.
+    slickColor: 0x38b8ff,
+    slickEdgeColor: 0x8ef2ff,
+    waveColor: 0xc8faff,
+    slickOpacity: 0.24,
+    edgeOpacity: 0.72,
+    waveOpacity: 0.76,
+    nozzleGlowOpacity: 0.78,
+    slickY: 0.03,
+    edgeY: 0.035,
+    waveY: 0.04,
+    edgeWidth: 0.14,
+    waveDepth: 0.28,
+    nozzlePositions: [
+      { x: -10, y: 5.92, z: -0.8 },
+      { x: -5, y: 5.92, z: -0.8 },
+      { x: 0, y: 5.92, z: -0.8 },
+      { x: 5, y: 5.92, z: -0.8 },
+      { x: 10, y: 5.92, z: -0.8 },
+      { x: -10, y: 5.92, z: 4.8 },
+      { x: -5, y: 5.92, z: 4.8 },
+      { x: 0, y: 5.92, z: 4.8 },
+      { x: 5, y: 5.92, z: 4.8 },
+      { x: 10, y: 5.92, z: 4.8 },
+    ],
+    nozzleSize: { width: 0.18, height: 0.1, depth: 0.18 },
+    spraySegments: 3,
+    sprayJitter: 0.22,
+    idleStreakCount: 6,
+    zombieTargetYOffset: 0.9,
+    hitSparkColors: [0x6cf6ff, 0xc8faff, 0x38b8ff],
+    hitSparkCount: 8,
+    idleSparkCount: 4,
+    flashRadius: 1.5,
+    flashDuration: 0.14,
+    hitFlashRadius: 1.1,
+    hitFlashDuration: 0.11,
+    triggerSound: 'paChime',
+    pulseSound: 'stuffingFreeze',
   },
+
+  // --- Planned hazards (docs/hazards-plan.md; built in later phases) ---
 
   paLure: {
     id: 'paLure',
