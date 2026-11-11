@@ -12,6 +12,7 @@
 
 import * as THREE from 'three';
 import { samplePose } from '../../core/keyframes.js';
+import { resolveGunColors } from '../skinPalette.js';
 import { buildDeformedBoxGeometry } from '../../player/body.js';
 import { buildPistolArms } from './arms.js';
 
@@ -34,7 +35,7 @@ const stapleBodyGeo = buildDeformedBoxGeometry(2, 3, 4, (x, y, z) => {
 });
 
 let cachedOfficeTex = null;
-function getOfficeBrandTexture() {
+function getOfficeBrandTexture(label) {
   if (cachedOfficeTex) return cachedOfficeTex;
   if (typeof document === 'undefined') return null;
   const canvas = document.createElement('canvas');
@@ -42,14 +43,14 @@ function getOfficeBrandTexture() {
   canvas.height = 48;
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
-  ctx.fillStyle = '#f1faee';
+  ctx.fillStyle = label.paper;
   ctx.fillRect(0, 0, 128, 48);
-  ctx.fillStyle = '#d62839';
+  ctx.fillStyle = label.stripe;
   ctx.fillRect(0, 0, 128, 15);
-  ctx.fillStyle = '#ffffff';
+  ctx.fillStyle = label.title;
   ctx.font = 'bold 10px sans-serif';
   ctx.fillText('STAPLE-PRO T50', 7, 11);
-  ctx.fillStyle = '#1d1626';
+  ctx.fillStyle = label.ink;
   ctx.font = 'bold 9px monospace';
   ctx.fillText('OFFICE SUPPLY #12', 7, 30);
   ctx.fillText('USE 1/2" CROWN', 7, 42);
@@ -73,14 +74,14 @@ function buildStapleStrip(metalMat, crownMat) {
 }
 
 /** The gun itself. Points down -Z (the way the camera looks). */
-function buildGun(colors) {
+function buildGun(colors, brandLabel) {
   const gun = new THREE.Group();
   const mat = (color, opts = {}) =>
     new THREE.MeshStandardMaterial({ color, roughness: 0.34, metalness: 0.08, flatShading: true, ...opts });
   const body = mat(colors.bodyColor, { roughness: 0.32, metalness: 0.14 });
-  const bodyDark = mat(0xa31b28, { roughness: 0.4, metalness: 0.14 });
+  const bodyDark = mat(colors.darkColor, { roughness: 0.4, metalness: 0.14 });
   const metal = mat(colors.metalColor, { roughness: 0.22, metalness: 0.78 });
-  const chromeBright = mat(0xd8dde4, { roughness: 0.18, metalness: 0.85 });
+  const chromeBright = mat(colors.accentColor, { roughness: 0.18, metalness: 0.85 });
   const grip = mat(colors.gripColor, { roughness: 0.82, metalness: 0.04 });
   const sight = mat(colors.sightColor, { emissive: colors.sightColor, emissiveIntensity: 0.7, roughness: 0.2 });
 
@@ -162,10 +163,10 @@ function buildGun(colors) {
   part(0.018, 0.058, 0.008, 0, -0.004, -0.006, grip, null, lever); // rubberized finger pad on trigger lever
 
   // Office-supply inventory sticker on the right side of the housing
-  const brandTex = getOfficeBrandTexture();
+  const brandTex = getOfficeBrandTexture(brandLabel);
   const brandMat = brandTex
     ? new THREE.MeshStandardMaterial({ map: brandTex, roughness: 0.55, metalness: 0.06 })
-    : chromeBright;
+    : mat(brandLabel.fallbackColor, { roughness: chromeBright.roughness, metalness: chromeBright.metalness });
   part(0.002, 0.022, 0.058, 0.0282, 0.01, -0.042, brandMat);
 
   // Where tracers and the muzzle flash start: the bottom front of the nose plate.
@@ -187,12 +188,12 @@ function buildGun(colors) {
 
 /** Just the gun, no hands (for the wall-buy display). */
 export function buildStapleGunDisplay(def) {
-  return buildGun(def.viewmodel).gun;
+  return buildGun(resolveGunColors(def), def.viewmodel.brandLabel).gun;
 }
 
-export function buildStapleGunModel(def) {
+export function buildStapleGunModel(def, skinId) {
   const vm = def.viewmodel;
-  const { gun, muzzle, lever, upperLever, pusherRod, windowStaples, metal, chromeBright, mounts } = buildGun(vm);
+  const { gun, muzzle, lever, upperLever, pusherRod, windowStaples, metal, chromeBright, mounts } = buildGun(resolveGunColors(def, skinId), vm.brandLabel);
   const { leftArm } = buildPistolArms(gun);
   // A fresh U-channel strip of staples, only visible in the left hand mid-reload.
   const strip = buildStapleStrip(metal, chromeBright);

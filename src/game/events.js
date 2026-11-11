@@ -12,15 +12,23 @@
 //   'shot'        shot (including weaponId)              a gun fired (hitscan result): one per shot = one per staple /
 //                                                        sticker / nail / Foam dart (3 per burst) / whole shotgun blast
 //                workshopPlacement / clearanceHit carry the corresponding build's resolved shot data
+//                magazineLeft = rounds left after it; a cone gun's (Leaf Blower) hits each carry interrupted = the gust shoved
+//                that zombie out of an attack (zombie.isAttacking: a windup, a swing or a cart charge)
 //   'warrantyClaim' { weaponId, round, pa }              a Platinum gun ran completely dry and its ammo was replaced for free (game/warranty.js)
 //   'meleeUpgrade' { tier, id }                          a box cutter tier was bought at Customer Service (game/meleeUpgrades.js; 1 sharpened, 2 pro)
 //   'reload'      { weaponId }                           a reload began on the gun in hand
 //   'hit'         { target, killed, headshot, melee }    a PLAYER attack hit a shootable (one per target per shot
 //                                                        or swing). Non-lethal zombie hits pay +10 here.
-//   'kill'        { zombie, headshot, melee, source }    a zombie died, WHATEVER killed it ('gun', 'melee', or a
-//                                                        future 'hazard' / 'effect'...). ALL kill payouts and kill
-//                                                        stats come from this one event. After the player's death
-//                                                        events still fire, but nothing more is paid or counted.
+//   'kill'        { zombie, headshot, melee, source, weaponId }  a zombie died. weaponId is the gun that dealt the
+//                                                        lethal hit or supplied the projectile or build effect, or null.
+//                                                        Also distance, bounces, firstWound (for weapon skin challenges;
+//                                                        nothing pays by them): distance = metres the lethal shot travelled
+//                                                        (a ray to the hit, a ball's whole flight; null for burns, melee,
+//                                                        hazards...), bounces = a ball's bounces before the lethal hit (else
+//                                                        null), firstWound = { weaponId, seconds }: what first took health off
+//                                                        it and how long before this kill (null if nothing ever did).
+//                                                        All kill payouts and kill stats come from this event. After the
+//                                                        player's death it still fires, but nothing is paid or counted.
 //   'mascotHeadPop' { zombie, headshot, source, again }  a Mascot's helmet came off at half health (whatever hit it;
 //                                                        zombie.type.variant = the costume; again = a second time,
 //                                                        after Captain Coupon put it back on: no bonus)
@@ -114,6 +122,8 @@
 //                                                        left = charges still in it)
 //   'equipmentBurst'  { id, position, radius, hit }      a thrown Soda Bomb burst; hit = [{ target, damage, killed }]. Equipment
 //                                                        damage never emits 'hit' (no +10): its kills pay through 'kill', source 'equipment'
+//   'challengeProgress' { gunId, skinId, count, needed }  a challenge counter changed (game/challenges.js)
+//   'skinUnlocked' { gunId, skinId, pa }                  a skin was earned; PA and HUD toast listen here
 //   'runReset'    {}                                     after Play again reset everything
 //   'runSaved'    { round }                              Save & Quit wrote the slot (game/saveGame.js); the run ends next (main.js)
 //   'runLoaded'   { round }                              a save was loaded: the run resumes at that round's break (horror relights, the PA welcomes you back)

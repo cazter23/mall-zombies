@@ -127,7 +127,8 @@ export function createBalls({ colliders, shootables, zombies = 'hit' }) {
     const normal = result.normal.clone();
     ball.position.copy(point).addScaledVector(normal, p.radius * 1.05);
     const damage = ball.damageOf({ part: result.part, distance: ball.travelled });
-    const { killed } = target.takeHit({ damage, part: result.part, point, direction: direction.clone(), impact: ball.impact });
+    const { killed } = target.takeHit({ damage, part: result.part, point, direction: direction.clone(), impact: ball.impact, weaponId: ball.weaponId,
+      distance: ball.travelled, bounces: ball.bounces });
     ball.hits.push({ target, part: result.part, point, normal, distance: ball.travelled, killed });
     ball.lastTarget = target;
     ball.sinceHit = 0;
@@ -153,13 +154,13 @@ export function createBalls({ colliders, shootables, zombies = 'hit' }) {
   return {
     list,
 
-    launch({ position, direction, projectile, damageOf, impact = null, onHit = null, onBounce = null, onEnd = null }) {
+    launch({ position, direction, projectile, damageOf, weaponId = null, impact = null, onHit = null, onBounce = null, onEnd = null }) {
       const ball = {
         alive: true,
         position: position.clone(),
         previous: position.clone(),
         velocity: direction.clone().normalize().multiplyScalar(projectile.speed),
-        projectile, damageOf, impact, onHit, onBounce, onEnd,
+        projectile, damageOf, weaponId, impact, onHit, onBounce, onEnd,
         bounces: 0, age: 0, sinceHit: Infinity, travelled: 0, lastTarget: null, hits: [],
       };
       list.push(ball);

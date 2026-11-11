@@ -11,6 +11,7 @@
 
 import * as THREE from 'three';
 import { samplePose } from '../../core/keyframes.js';
+import { resolveGunColors } from '../skinPalette.js';
 import { buildPistolArms } from './arms.js';
 
 const DEG_TO_RAD = Math.PI / 180;
@@ -106,7 +107,7 @@ function buildGun(vm) {
   });
 
   // Ergonomic checkout grip & wide yellow squeeze trigger
-  const grip = box('pistolGrip', [0.042, 0.115, 0.048], [0, -0.088, 0.018], darkMat);
+  const grip = box('pistolGrip', [0.042, 0.115, 0.048], [0, -0.088, 0.018], mat(vm.gripColor, { roughness: darkMat.roughness, metalness: darkMat.metalness }));
   grip.rotation.x = 0.28;
   const trigger = box('trigger', [0.018, 0.048, 0.018], [0, -0.064, -0.02], coilMat);
   trigger.rotation.x = -0.15;
@@ -133,14 +134,15 @@ function buildGun(vm) {
 }
 
 export function buildBarcodeScannerDisplay(def) {
-  return buildGun(def.viewmodel).gun;
+  return buildGun(resolveGunColors(def)).gun;
 }
 
-export function buildBarcodeScannerModel(def) {
+export function buildBarcodeScannerModel(def, skinId) {
   const vm = def.viewmodel;
-  const { gun, muzzle, trigger, windowMat, coilGroup, chargeLeds, battery, mounts } = buildGun(vm);
+  const colors = resolveGunColors(def, skinId);
+  const { gun, muzzle, trigger, windowMat, coilGroup, chargeLeds, battery, mounts } = buildGun(colors);
   const { leftArm } = buildPistolArms(gun);
-  const heldBattery = buildBatteryPack(vm);
+  const heldBattery = buildBatteryPack(colors);
   heldBattery.name = 'heldScannerBattery';
   heldBattery.position.set(-0.02, -0.095, -0.05);
   heldBattery.visible = false;

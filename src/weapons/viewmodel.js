@@ -26,6 +26,7 @@
 
 import * as THREE from 'three';
 import { feel } from '../config/feel.js';
+import { gunSkin } from '../config/skins.js';
 import { makeBoxMesh, buildDeformedBoxGeometry } from '../player/body.js';
 import { wardrobeLook, wardrobeItems } from '../config/wardrobe.js';
 import { createSleeveStyler } from '../player/wardrobeAppearance.js';
@@ -136,8 +137,10 @@ function buildMeleeArm(meleeColors) {
 /**
  * @param weaponDefs every gun the player can hold (config/weapons.js entries); a model is built for each
  * @param meleeDef   the box cutter
+ * @param options.skinFor the base coat a gun wears (checked when it becomes active). A skinned model is built the first
+ *                        time its gun is held in that skin, not at start-up: only the default looks are built up front.
  */
-export function createViewmodel(weaponDefs, meleeDef) {
+export function createViewmodel(weaponDefs, meleeDef, { skinFor = () => undefined } = {}) {
   const scene = new THREE.Scene();
   scene.add(new THREE.HemisphereLight(0xfff6e6, 0x4a3f55, 1.6));
 
@@ -156,17 +159,21 @@ export function createViewmodel(weaponDefs, meleeDef) {
   const handLight = new THREE.PointLight(0xffffff, 0, 1, 1);
   const worldLight = new THREE.PointLight(0xffffff, 0, 1, 2);
 
-  // One model + flash per gun; only the active one is visible.
+  // One model + flash per gun in its default look, built now; a skinned one is added by variantFor() when first held.
   const guns = new Map();
-  for (const def of weaponDefs) {
-    const model = buildWeaponModel(def);
+  const variantKey = (gunId, skinId) => skinId ? `${gunId}:${skinId}` : gunId;
+  function addGun(def, skinId) {
+    const model = buildWeaponModel(def, skinId);
     model.root.visible = false;
     holder.add(model.root);
     const flash = createMuzzleFlash(def.muzzleFlash, { handLight, worldLight });
     model.muzzle.add(flash.object);
     const upgrades = createUpgradeVisuals(model); // attachment parts + tier sticker, all hidden for now
-    guns.set(def.id, { def, model, flash, upgrades });
+    const entry = { def, model, flash, upgrades };
+    guns.set(variantKey(def.id, skinId), entry);
+    return entry;
   }
+  for (const def of weaponDefs) addGun(def);
   let active = guns.get(weaponDefs[0].id);
   active.model.root.visible = true;
   active.flash.object.add(handLight);
@@ -203,9 +210,19 @@ export function createViewmodel(weaponDefs, meleeDef) {
   // Random left-or-right, 50..100% strength: every shot twists a little differently.
   const randomSide = () => (Math.random() < 0.5 ? -1 : 1) * (0.5 + Math.random() * 0.5);
 
+  // The model for this gun in the skin it wears: the default one, or its skinned twin (built once, on first use, and
+  // given the sleeves being worn: the styler only knew the models that existed when it scanned the rig).
+  function variantFor(def) {
+    const skinId = skinFor(def.id);
+    if (!skinId || !gunSkin(def.id, skinId)) return guns.get(def.id);
+    const key = variantKey(def.id, skinId);
+    if (!guns.has(key)) setSleeves.add(addGun(def, skinId).model.root);
+    return guns.get(key);
+  }
+
   // Reuse the model, but keep its stats current when upgrades re-resolve the same gun.
   function setActive(def) {
-    const next = guns.get(def.id);
+    const next = variantFor(def);
     if (!next || (next === active && active.def === def)) return;
     if (next !== active) {
       active.model.root.visible = false;

@@ -15,7 +15,10 @@ wardrobe, mods and hazards, repeat until you die. Death shows a results screen.
 ```
 npm install           # once
 npm run test:quick    # WHILE ITERATING and for small commits on your own branch: the tests your change touches + a fast core set (--list, --all)
-npm test              # the FULL suite (~2 min): before merging into main, and after changing a shared system (createGame, zombies, collision, vault)
+npm test              # the FULL suite: before merging into main, and after changing a shared system (createGame, zombies, collision, vault)
+npm test -- tests/x.test.js   # just these files. Always test through npm (tools/runTests.mjs caps files at once: 4, MALL_TEST_JOBS=n to change);
+                      # a bare `node --test` on many files runs 19 at once, ~9 GB, and freezes a 16 GB PC. A run of more than 8 files waits
+                      # for any other big run on this PC ("Waiting for the run from <worktree>..."): that is normal, give it a long timeout
 npm run dev           # Vite dev server (hot reload)
 npm run build         # production build into dist/; run after every change to catch errors (it only bundles: it does not run the game)
 npm run preview       # serve the built dist/
@@ -54,6 +57,9 @@ tests/docs.test.js fails if a new src/ file or test file isn't described in the 
 - Keep code modular, readable and commented. Prefer small, reviewable changes.
 - Build in small steps. Do only the step the user asks for. Test it, then tell them how to try it.
 - After changes, run `npm run build` to check for errors.
+- **Go easy on the PC (16 GB, several agents at once).** While fixing a failure, rerun only the failing file (`npm test -- tests/x.test.js`),
+  never the full suite. Run the full suite once, when you are done, not again to recheck one fix. Sub-agents never run the full suite.
+  One browser preview at a time: stop your preview server when the check is done.
 - Gameplay reads ACTIONS, never raw keys: `input.actionDown/consumeAction/actionPressed('jump')` and
   `input.moveAxis()`. Bindings (keyboard `KeyboardEvent.code` + controller `Pad*` codes) live in
   `config/controls.js`. Raw codes are only used for debug keys in `main.js`.

@@ -17,6 +17,8 @@ src/
   style.css             HUD (crosshair, hit marker, health/stamina bars, ammo, prompt), start/pause overlay
   boot.js               The page's entry point: waits for the web fonts (core/fontsReady.js, list and time limit in config/fonts.js), then imports main.js.
   config/
+    skins.js            Eleven mastery role palettes, gunSkin lookup, kill challenges, permanent save key/version, contrast threshold, locker/preview and unlock/debug words.
+                        Preserves Phase 1's Night Shift/Carbon Copy palettes; the other nine skins carry names and challenges for now.
     idle.js             Idle saver numbers: delays (short / normal / long: dim and sleep seconds), dimFps, muteWhenAsleep, pollSeconds
     haptics.js          Controller vibration intensity and per-gun/damage/pickup durations, motor strengths and priorities
     bosses.js           Boss debut windows (the booked-only Last Customer has none), parking entrance/backup markers, wave timing, combat and control tuning, PA lines, and the Janitor's costume
@@ -92,6 +94,7 @@ src/
     settings.js         THE LIST of player settings (options menu; an entry with tab null is a remembered choice that is never shown: closingMode, the run mode): { id, tab, label, type toggle|slider|select, default,
                         min/max/step, format, apply(value, ctx) }. Most apply() functions write into the config objects the
                         game reads every frame (feel, controls, audio). New setting = one entry here (new tab = add to settingsTabs)
+    gunPalettes.js      Shared role bindings for each model colour key and the defaults moved out of model files.
     debug.js            THE DEBUG KEYS as a table (`commands`: id, key, shift, group, label; keys must not clash with gameplay
                         bindings: tests check) + enabled (master switch), showMarkers, testArena, addPointsAmount, jumpRounds, panel,
                         dummies, exposeToWindow, keyLabel(). They work in a normal game (no debug mode): Z spawn the selected
@@ -166,7 +169,7 @@ src/
                         revive(seconds) = full health again plus that long with no damage at all (`isReviveProtected`; it counts down in update, so it pauses
                         with the game): Second Chance (game/secondChance.js) calls it from inside onDeath, so the death never registers.
     body.js             createPlayerBody(): first-person legs + lower torso in the world scene (visual only).
-    wardrobeAppearance.js  Browser equip and reset wiring for body and gun cosmetics. Tags the active sleeve style across all models and generates the cable-knit texture.
+    wardrobeAppearance.js  Browser equip and reset wiring for body and gun cosmetics. Tags the active sleeve style across all models and generates the cable-knit texture. The styler's add(root) styles a model added to the rig later (a skinned gun built on first use).
                         Tapered faceted waist/pelvis, belt buckle, tapered thighs/shins and faceted sneakers with tongue accent.
                         Hip height follows eye height; feet posed for walk cycle / slide (V) / air tuck, knees
                         solved with two-bone IK. Exports placeLimb()/makeBoxMesh()/makeFacetedLimbMesh()/buildDeformedBoxGeometry() (also used for the arms)
@@ -243,8 +246,9 @@ src/
                         (scaled by ADS), viewmodel.fire (gun kick + flash), shot sound, tracer, splatter, hit
                         marker. 'empty' -> viewmodel.dryFire + dry click. Runs viewmodel.reload.events as the
                         reload clock passes them (sound + viewmodel.jolt), so sounds match the animation
+    skinPalette.js      resolveGunColors(def, skinId) maps shared roles to every gun's model colour keys, with weapon config and gunPalettes.js defaults as fallback.
     viewmodel.js        Shared first-person rig in its own scene + own fixed-FOV camera (drawn after the world
-                        with depth cleared). createViewmodel(allWeaponDefs, meleeDef) builds every gun's model up
+                        with depth cleared). createViewmodel(allWeaponDefs, meleeDef, { skinFor }) builds every gun's base coats up
                         front (only the shown one visible; one shared hand light + world light that each gun's
                         flash recolors, so lights never come and go), attaches each muzzle flash,
                         and adds up layers on a `holder` each frame: hip->ADS rest pose, reload pose
@@ -283,6 +287,11 @@ src/
                         seal built up front (hidden), show({ tier, attachments }) per frame; the Extended Nozzle moves the muzzle (and flash) to its tip.
                         warrantyTrim.js = the Extended Warranty on the gun: barrel collar (rings that get chunkier by tier, studs for Renewals) and a swinging grip tag; buildVisual.js also puffs the body (pillows). Sizes: config/gunStyle.js.
                         New gun = new file + 1 line (+ its mounts)
+      skinPattern.js    applySkinPattern(root, def, skinId): a slot 2 skin's printed pattern (config/skins.js `pattern`, numbers in skinPatterns), applied by
+                        models/index.js after a build in that skin. Swaps the body material for ONE patterned clone (no draw call added) and rewrites the
+                        body meshes' UVs in the gun's frame: top and right faces take the print, every other face (the left one with the build patch,
+                        seal and loaner tag) samples a blank strip painted the body colour. One canvas per skin, made on first use and shared
+                        (userData.sharedSkinPattern: the locker's release skips it); none in Node.
       shortBarrel.js    Reversible front-segment geometry variants, preserving moving-parent transforms and owning both variants.
       loanerTag.js      The Courtesy Loaner's security tag and swinging card (reversible, like the other upgrade visuals).
       buildVisual.js    A finished gun's look: seam, patch and stitches in the stuffing's colour, lumps and leaking tufts when Overstuffed. Instanced, placed from the sticker and top mounts.
@@ -406,6 +415,12 @@ src/
                         per-run state = one line there), onPlayerDeath, showResults, state { forceRun, over,
                         padPlaying, assisted, running }, death (including the frozen run summary), vaultPromptVisible.
                         No DOM: the browser parts are passed in
+    skinSave.js         createSkinSave({ storage, key }): the permanent { version, progress, unlocked, equipped } record. Also `replay` (what the round a Save & Quit will replay has already been paid; written by Save & Quit only) and `dirty` (memory holds something storage does not).
+                        Counts and unlocks are keyed by gun and skin; memory updates flush on unlock/runEnd. Safe with
+                        missing/corrupt/blocked storage; newer versions are protected from all writes. Debug clear can relock one challenge.
+    challenges.js       createChallenges({ events, state, save }): g.challenges, DOM-free event counter factories by challenge.kind (config/skins.js lists the kinds: kills, the role kinds of phase 6, and cleanMagazines, the one with per-run state, saved with the run). A round replayed after Save & Quit pays only what goes beyond what it was already paid; unsaved progress is written on runEnd, runSaved, runReset and flush() (the page closing).
+                        Mastery counts kill.weaponId, ignores assisted/dead/fan kills, emits challengeProgress and skinUnlocked.
+                        update/reset/snapshot cover per-run counters; finish handlers can finalize later round/run feats before saving.
     careerStats.js      createCareerStats({ storage }): versioned persistent employee record with lifetime totals,
                         personal bests and the last 12 completed shifts. Assisted/debug runs are rejected; storage
                         failures fall back to memory. A save from a newer version is never written over (blank ledger for the session). main.js supplies localStorage and records the runEnd event
@@ -532,9 +547,11 @@ src/
     debugCommands.js    createDebugCommands(game parts): the debug shortcuts as functions run(id) (spawn, cycleZombie, clearZombies,
                         killZombies, nextRound, jumpRounds, flashSale, addPoints, zeroPoints, god, giveGun, upgradeGun, doors, arena, panel,
                         spawnMascot / spawnGoldMascot: each costume in turn at the spawn point nearest you);
+                        Keyless 'challenge' adds/completes/clears one permanent challenge, marking assistance; clear relocks only its target.
                         resolve(code, shift), status(). g.debug. A new command = a table entry in config/debug.js + a function here.
                         KEYLESS commands (no key to spare; keylessIds): 'pockets' fills Kiosk Kevin's equipment pockets (window.__mall.g.debug.run('pockets')).
-                        God mode is health.invulnerable; debug state is not part of a run (Play again keeps it)
+                        'skin' takes gunId and skinId ('default' clears); it marks the run assisted. Play again clears skin overrides.
+                        God mode is health.invulnerable; Play again keeps it and the window state.
     rounds.js           createRounds(): announce(n, delay) flips the round number (and fires onRoundStart) the
                         moment the last zombie dies, then 'break' (economy.rounds.breakSeconds, inBreak; breakRemaining; endBreak(lead) cuts it short) -> 'active' (spawn quota at
                         spawnDelay, capped by maxAlive; quota only used when a zombie actually spawned, else retry
@@ -749,7 +766,12 @@ src/
                         The horror layer's mood darkens it (exposure), multiplies the lateHours grade on by its decay, and turns a cut area red.
   vite.config.js        Dev server only: compiles the game at server start (warmup) and skips .claude, dist, dist-single, references and scratch. Paths are absolute from this checkout, so a worktree keeps its own hot reload.
   play.cmd              Double-click version of `npm run play`. tools/play.mjs rebuilds the single file if the source is newer, keeps the last good build if that fails, and opens it in Firefox (the Windows default for .html may be another browser).
-  (tools/)              Dev scripts (not bundled): buildSingle.mjs = `npm run build:single` (a normal Vite build into dist-single/, then the JS, CSS and
+  (tools/)              Dev scripts (not bundled): runTests.mjs = `npm test` (node --test with a cap on how many test files run at once: 4, or
+                        MALL_TEST_JOBS; `npm test -- tests/x.test.js` runs only those files; testQuick.mjs runs its selection through it too, so
+                        no test command starts node's default of one process per CPU thread, ~9 GB when every file builds the mall;
+                        a run of more than 8 files takes a lock file in the system temp folder, shared by every worktree and tool, and
+                        waits while another big run holds it; a dead or 30-min-old lock is taken over; tests/testRunner.test.js);
+                        buildSingle.mjs = `npm run build:single` (a normal Vite build into dist-single/, then the JS, CSS and
                         the music worker (as a Blob worker) pasted into ONE html file; the Google Fonts link loads non-blocking so a blocked
                         network just falls back to system fonts; tests/singleFile.test.js builds it and checks it is self-contained); balance.js = gun balance maths shared with the tests (seeded Monte Carlo of each
                         gun's real spread + pellets vs a Shopper's hitboxes at a range: expectedShotDamage, sustainedDps, burstDps,
@@ -835,6 +857,7 @@ src/
                         red cost when unaffordable, shake when denied, hold-progress bar), red hurt edges, click-to-play/paused overlay,
                         "Clocked Out" results screen with Play again (plain DOM). Pause screen: Click to play + Settings (left) /
                         Controls (right) buttons (onOpenSettings/onOpenControls); FPS counter top right (setFpsVisible/setFps);
+                        skinUnlocked displays an independent skin-unlock-toast in the right HUD stack, cleared on pause/death/reset.
                         setAmmoTier(tier): "<Tier> warranty" in the tier's color under the gun name
                         (hidden at Standard; main.js feeds it from tierOf(gun.modsFor(...))); showAnnouncement({ kicker, text }): PA-style banner under the round banner (new zombie types)
     damageDirection.js  Computes relative damage angle (0° = front, 90° = right, 180° = behind, 270° = left) and queues damage indicators for the HUD.
@@ -857,7 +880,7 @@ src/
                         silhouettes for empty slots, a swing + glow on pulse. Variants: 'hud' (over the health bar, from round 1), 'pause' (large, with each item's
                         lines) and 'receipt' (the death receipt's DIED WEARING row).
     outfitIcons.js      The rail's SVG pictures: one icon per item (`icon` ids in config/wardrobe.js) and one dashed silhouette per slot.
-    screens.js          The menus around a run (title, run mode, statistics, pause, results) as plain DOM over the canvas. The run mode chooser lists config/closingTime.js modes
+    screens.js          The menus around a run (title, run mode, statistics, weapon locker, pause, results) as plain DOM over the canvas. The run mode chooser lists config/closingTime.js modes
                         (Directed first), focuses the remembered mode (setRunMode) and stays up after a mode is confirmed until play starts (startRequested).
     runStart.js         createRunStart({ game, screens, settings, play }): a mode confirmed on the chooser is stored (game.closingMode, the 'closingMode' setting) and play() is
                         asked once. No reset (the title already reset the run) and no pause screen; acceptsLock() tells main.js whether an arriving pointer lock may start play.
@@ -963,3 +986,10 @@ Guard: zombies/bosses/guard.js owns alarm, physical shutter closure, radio heads
 Boss encounters: bosses/manager.js owns meetings/reports; bosses/employeeModel.js mounts configured costume parts and owns the temporary whiteboard. game/bossVouchers.js wires carried-gun/area eligibility and points conversion into pricing. powerUps.js and powerUpView.js deliver voucher pickups through the existing reward queue.
 
 Boss groundwork: zombie.js owns timed buffs, source-bound holds and a behavior control function. pricing.js owns a separate one-use voucher, eligibility conversion and sale/coupon/voucher order. debug.run('summonBoss', id) selects a boss explicitly.
+
+### Weapon locker (skins phase 5)
+
+- src/game/skins.js: DOM-free per-run equipped choices from skinSave; validates unlocks, resets from preferences, and serializes/restores the run coat for Save & Quit.
+- src/ui/locker.js: title locker DOM, mouse/keyboard/controller browsing, immediate equip persistence, and a turning buildWeaponDisplay preview. Its renderer, meshes, materials and textures exist only while open; main's idle-governed render loop drives it.
+- src/config/skins.js: eleven mastery role palettes, contrast threshold, locker words, preview settings and receipt copy.
+- src/game/challenges.js: also keeps this run's unlock list for the receipt, saved independently of permanent progress.
