@@ -9,6 +9,7 @@
 // =============================================================================
 
 import * as THREE from 'three';
+import { resolveGunColors } from '../skinPalette.js';
 import { samplePose } from '../../core/keyframes.js';
 import { buildPistolArms } from './arms.js';
 
@@ -53,13 +54,13 @@ function buildGun(vm) {
   const materials = new Map();
   const mat = (color) => {
     if (!materials.has(color)) {
-      const isMetal = color === vm.metalColor || color === vm.coilColor;
-      const isSight = color === vm.sightColor;
+      const isMetal = color === 'metalColor' || color === 'coilColor';
+      const isSight = color === 'sightColor';
       materials.set(color, new THREE.MeshStandardMaterial({
-        color,
+        color: vm[color],
         roughness: isSight ? 0.2 : isMetal ? 0.3 : 0.58,
         metalness: isMetal ? 0.68 : 0.12,
-        emissive: isSight ? color : 0x000000,
+        ...(isSight ? { emissive: vm[color] } : {}),
         emissiveIntensity: isSight ? 0.7 : 0,
         flatShading: true,
       }));
@@ -86,41 +87,41 @@ function buildGun(vm) {
   }
 
   // Heavy pneumatic body & upper cylinder housing
-  box('receiver', [0.078, 0.088, 0.23], [0, 0.008, -0.075], vm.bodyColor);
-  box('lowerChasis', [0.082, 0.022, 0.24], [0, -0.046, -0.075], vm.darkColor);
+  box('receiver', [0.078, 0.088, 0.23], [0, 0.008, -0.075], 'bodyColor');
+  box('lowerChasis', [0.082, 0.022, 0.24], [0, -0.046, -0.075], 'darkColor');
   for (const z of [-0.02, -0.06, -0.1, -0.14]) {
-    box('coolingRib', [0.084, 0.062, 0.01], [0, 0.012, z], vm.darkColor);
+    box('coolingRib', [0.084, 0.062, 0.01], [0, 0.012, z], 'darkColor');
   }
 
   // Top pneumatic piston dome (thumps slightly on each shot)
-  const pistonCap = tube('pistonDome', 0.046, 0.034, [0, 0.066, -0.035], vm.darkColor, gun, 'y');
-  tube('exhaustRing', 0.036, 0.012, [0, 0.086, -0.035], vm.metalColor, gun, 'y');
+  const pistonCap = tube('pistonDome', 0.046, 0.034, [0, 0.066, -0.035], 'darkColor', gun, 'y');
+  tube('exhaustRing', 0.036, 0.012, [0, 0.086, -0.035], 'metalColor', gun, 'y');
 
   // Side air reservoir tube & pressure bracket
-  tube('airReservoir', 0.022, 0.16, [0.05, -0.006, -0.085], vm.metalColor);
-  box('reservoirBand', [0.036, 0.028, 0.022], [0.042, -0.006, -0.13], vm.darkColor);
+  tube('airReservoir', 0.022, 0.16, [0.05, -0.006, -0.085], 'metalColor');
+  box('reservoirBand', [0.036, 0.028, 0.022], [0.042, -0.006, -0.13], 'darkColor');
 
   // Heavy front guide & reciprocating driver nose
-  box('frontBlock', [0.064, 0.072, 0.06], [0, 0.002, -0.215], vm.darkColor);
+  box('frontBlock', [0.064, 0.072, 0.06], [0, 0.002, -0.215], 'darkColor');
   const nose = new THREE.Group();
   nose.name = 'driverNose';
   nose.position.set(0, -0.002, -0.245);
   gun.add(nose);
-  box('noseGuide', [0.042, 0.048, 0.055], [0, 0, -0.02], vm.metalColor, nose);
-  tube('noseTip', 0.018, 0.038, [0, 0, -0.062], vm.metalColor, nose);
-  box('contactTrip', [0.012, 0.032, 0.045], [0, -0.022, -0.052], vm.coilColor, nose);
+  box('noseGuide', [0.042, 0.048, 0.055], [0, 0, -0.02], 'metalColor', nose);
+  tube('noseTip', 0.018, 0.038, [0, 0, -0.062], 'metalColor', nose);
+  box('contactTrip', [0.012, 0.032, 0.045], [0, -0.022, -0.052], 'coilColor', nose);
 
   // Iron sights (offset clear of the piston dome)
-  box('rearSightBase', [0.038, 0.022, 0.018], [0, 0.062, -0.105], vm.darkColor);
-  box('frontSightPost', [0.012, 0.044, 0.014], [0, 0.056, -0.225], vm.darkColor);
-  box('frontSightTip', [0.016, 0.01, 0.014], [0, 0.081, -0.225], vm.sightColor);
+  box('rearSightBase', [0.038, 0.022, 0.018], [0, 0.062, -0.105], 'darkColor');
+  box('frontSightPost', [0.012, 0.044, 0.014], [0, 0.056, -0.225], 'darkColor');
+  box('frontSightTip', [0.016, 0.01, 0.014], [0, 0.081, -0.225], 'sightColor');
 
   // Foregrip & rear handle
-  box('foregripBrace', [0.068, 0.042, 0.08], [0, -0.068, -0.19], vm.darkColor);
-  const grip = box('pistolGrip', [0.044, 0.12, 0.052], [0, -0.092, 0.022], vm.darkColor);
+  box('foregripBrace', [0.068, 0.042, 0.08], [0, -0.068, -0.19], 'gripColor');
+  const grip = box('pistolGrip', [0.044, 0.12, 0.052], [0, -0.092, 0.022], 'gripColor');
   grip.rotation.x = 0.28;
-  tube('airFitting', 0.012, 0.032, [0, -0.15, 0.042], vm.metalColor);
-  const trigger = box('trigger', [0.014, 0.03, 0.016], [0, -0.062, -0.02], vm.coilColor);
+  tube('airFitting', 0.012, 0.032, [0, -0.15, 0.042], 'metalColor');
+  const trigger = box('trigger', [0.014, 0.03, 0.016], [0, -0.062, -0.02], 'coilColor');
 
   // Round wire-collated nail drum beneath the frame
   const drum = buildDrum(vm);
@@ -144,18 +145,19 @@ function buildGun(vm) {
 }
 
 export function buildCoilNailerDisplay(def) {
-  return buildGun(def.viewmodel).gun;
+  return buildGun(resolveGunColors(def)).gun;
 }
 
-export function buildCoilNailerModel(def) {
+export function buildCoilNailerModel(def, skinId) {
   const vm = def.viewmodel;
-  const { gun, muzzle, trigger, nose, pistonCap, drum, mounts } = buildGun(vm);
+  const colors = resolveGunColors(def, skinId);
+  const { gun, muzzle, trigger, nose, pistonCap, drum, mounts } = buildGun(colors);
   const { leftArm } = buildPistolArms(gun, {
     leftOffset: new THREE.Vector3(-0.004, -0.058, -0.165),
     fingerSize: new THREE.Vector3(0.078, 0.024, 0.09),
     thumbOffset: new THREE.Vector3(0, -0.014, 0),
   });
-  const heldDrum = buildDrum(vm);
+  const heldDrum = buildDrum(colors);
   heldDrum.name = 'heldCoilDrum';
   heldDrum.position.set(-0.025, -0.12, -0.06);
   heldDrum.visible = false;

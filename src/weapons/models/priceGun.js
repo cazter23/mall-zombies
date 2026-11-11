@@ -12,6 +12,7 @@
 
 import * as THREE from 'three';
 import { samplePose } from '../../core/keyframes.js';
+import { resolveGunColors } from '../skinPalette.js';
 import { buildDeformedBoxGeometry } from '../../player/body.js';
 import { buildPistolArms } from './arms.js';
 
@@ -76,7 +77,7 @@ function buildRoll(colors, radius, width) {
   roll.add(labels);
 
   // Red "SALE / PRICE" retail stripe bands along both edges of the sticker roll
-  const bandMat = mat(0xd62839, 0.65);
+  const bandMat = mat(colors.saleColor, 0.65);
   for (const x of [-width * 0.36, width * 0.36]) {
     const band = new THREE.Mesh(new THREE.CylinderGeometry(radius + 0.0008, radius + 0.0008, width * 0.14, 12), bandMat);
     band.rotation.z = Math.PI / 2;
@@ -92,7 +93,7 @@ function buildRoll(colors, radius, width) {
   core.rotation.z = Math.PI / 2;
   const spindle = new THREE.Mesh(
     new THREE.CylinderGeometry(radius * 0.22, radius * 0.22, width * 1.16, 8),
-    mat(colors.gripColor, 0.75),
+    mat(colors.darkColor, 0.75),
   );
   spindle.rotation.z = Math.PI / 2;
   // Cross-bar on the spool so rotation is visually readable when firing
@@ -110,11 +111,11 @@ function buildGun(colors) {
   const mat = (color, opts = {}) =>
     new THREE.MeshStandardMaterial({ color, roughness: 0.34, metalness: 0.08, flatShading: true, ...opts });
   const body = mat(colors.bodyColor, { roughness: 0.34, metalness: 0.08 });
-  const bodyShade = mat(0xd95f0e, { roughness: 0.42, metalness: 0.08 });
+  const bodyShade = mat(colors.bodyShadeColor, { roughness: 0.42, metalness: 0.08 });
   const metal = mat(colors.metalColor, { roughness: 0.26, metalness: 0.72 });
-  const grip = mat(colors.gripColor, { roughness: 0.78, metalness: 0.06 });
+  const grip = mat(colors.darkColor, { roughness: 0.78, metalness: 0.06 });
   const labelMat = mat(colors.labelColor, { roughness: 0.7, metalness: 0.04 });
-  const saleRed = mat(0xd62839, { roughness: 0.55, metalness: 0.06 });
+  const saleRed = mat(colors.saleColor, { roughness: 0.55, metalness: 0.06 });
   const sight = mat(colors.sightColor, { emissive: colors.sightColor, emissiveIntensity: 0.7, roughness: 0.2 });
 
   function part(w, h, d, x, y, z, material, geo = null, parent = gun) {
@@ -195,7 +196,7 @@ function buildGun(colors) {
   part(0.016, 0.014, 0.012, 0, 0.112, -0.128, sight);
 
   // Contoured grip handle, enclosed trigger-guard bow & squeeze lever
-  const handle = part(0.042, 0.12, 0.05, 0, -0.09, 0.02, grip, housingGeo);
+  const handle = part(0.042, 0.12, 0.05, 0, -0.09, 0.02, mat(colors.gripColor, { roughness: grip.roughness, metalness: grip.metalness }), housingGeo);
   handle.rotation.x = 0.3;
   // Trigger guard bow looping from the bottom of the handle forward to the underside of the snout
   const guardBottom = part(0.026, 0.01, 0.095, 0, -0.132, -0.032, grip);
@@ -233,16 +234,17 @@ function buildGun(colors) {
 
 /** Just the gun, no hands (for the wall-buy display). */
 export function buildPriceGunDisplay(def) {
-  return buildGun(def.viewmodel).gun;
+  return buildGun(resolveGunColors(def)).gun;
 }
 
-export function buildPriceGunModel(def) {
+export function buildPriceGunModel(def, skinId) {
   const vm = def.viewmodel;
-  const { gun, muzzle, lever, roll, roller, emergingLabel, mounts } = buildGun(vm);
+  const colors = resolveGunColors(def, skinId);
+  const { gun, muzzle, lever, roll, roller, emergingLabel, mounts } = buildGun(colors);
   const { leftArm } = buildPistolArms(gun);
   // The fresh roll the left hand brings during a reload. Placed so that when the hand presses it on
   // (its handKeys pose at the "pressed on" moment) it sits exactly where the roll on the gun goes.
-  const newRoll = buildRoll(vm, 0.03, 0.036);
+  const newRoll = buildRoll(colors, 0.03, 0.036);
   newRoll.name = 'heldPriceRoll';
   const pressAt = vm.reload.rollGone[1];
   const pressed = vm.reload.handKeys.reduce((a, b) => (Math.abs(b.t - pressAt) < Math.abs(a.t - pressAt) ? b : a));

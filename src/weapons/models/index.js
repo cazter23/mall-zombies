@@ -4,7 +4,7 @@
 // A new gun = a new file here that exports a model builder and a display builder,
 // plus one line below.
 //
-// A model builder takes the weapon's config entry and returns:
+// A model builder takes the weapon's config entry and optional skin id and returns:
 //   root              THREE.Object3D: the gun + hands, pointing down -Z, origin = where it's held
 //   muzzle            Object3D on the gun where tracers and the muzzle flash start
 //   animate(state)    gun-specific animation every frame (trigger, hands during reload...);
@@ -26,6 +26,7 @@ import { buildConfettiCannonModel, buildConfettiCannonDisplay } from './confetti
 import { buildLeafBlowerModel, buildLeafBlowerDisplay } from './leafBlower.js';
 import { buildTennisBallLauncherModel, buildTennisBallLauncherDisplay } from './tennisBallLauncher.js';
 import { buildReturnToSenderModel, buildReturnToSenderDisplay } from './returnToSender.js';
+import { resolveGunColors } from '../skinPalette.js';
 
 const builders = {
   rivetRifle: { model: buildRivetRifleModel, display: buildRivetRifleDisplay },
@@ -47,10 +48,13 @@ function builderFor(def) {
   return b;
 }
 
-export function buildWeaponModel(def) {
-  return builderFor(def).model(def);
+export function buildWeaponModel(def, skinId) {
+  return builderFor(def).model(def, skinId);
 }
 
-export function buildWeaponDisplay(def) {
-  return builderFor(def).display(def);
+export function buildWeaponDisplay(def, skinId) {
+  // Display builders already resolve their defaults. Supply a copy of the chosen
+  // colour set only for the locker and YOUR conveyor gun; world displays omit it.
+  const painted = skinId ? { ...def, viewmodel: { ...def.viewmodel, ...resolveGunColors(def, skinId) } } : def;
+  return builderFor(def).display(painted);
 }

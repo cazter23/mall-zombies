@@ -44,7 +44,7 @@ function measured(points) {
   return { points, lengths, total: lengths.reduce((a, b) => a + b, 0) };
 }
 
-export function createWorkshopRitual({ bench, map, gun, pricing, interactions, events, player, zombies, rounds, scene, state, input, wallet, sound }) {
+export function createWorkshopRitual({ bench, map, gun, pricing, interactions, events, player, zombies, rounds, scene, state, input, wallet, sound, skins }) {
   const { stations } = bench;
   const path = measured(stations.path);
   // While it runs the gun only rides the belt (the path's first, level stretch); the gantry trip to the booth comes after.
@@ -102,7 +102,7 @@ export function createWorkshopRitual({ bench, map, gun, pricing, interactions, e
   }
 
   function showGun(def) {
-    display = buildWeaponDisplay(def);
+    display = buildWeaponDisplay(def, skins?.skinFor(def.id));
     display.name = 'ritualGun';
     display.scale.setScalar(cfg.gunScale);
     riding = 0;

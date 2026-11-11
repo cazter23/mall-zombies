@@ -1,5 +1,9 @@
 # Sunset Galleria: what each test file covers
 
+`tests/challenges.test.js` covers all eleven Mastery challenges, per-gun and burn attribution, single unlock/PA/toast feedback, the 150/400 thresholds, eligibility before/after assistance and death, fans, reset and new-game persistence, one write for 50 non-unlocking kills, monotonic save merging, corrupt/missing/newer/throwing storage, debug add/complete/clear (including retry), and toast cleanup. It also covers the review fixes: a round replayed after Save & Quit is paid once (unit and real game, including a second save part-way and an unlock earned before the save), and Quit to title, Restart run and a closing page write new progress exactly once.
+
+`tests/killAttribution.test.js` checks the gun ID on the real kill event for direct fire, piercing hits, bosses, bouncing balls, all damaging builds, melee, hazards, equipment, Inventory Liquidation, and debug kills. It also checks out-of-world rescue, attribution after changing guns, and the scripted fight's wallet, counters, and receipt against the main baseline.
+
 `tests/hazards.test.js` covers environmental hazards (docs/hazards-plan.md): Grand Atrium Electrified Fountain triggering, `g.pricing` ('hazard') and Flash Sale discounts, active/recharging cooldowns, `source: 'hazard'` kill payouts, Mascot helmet pop and regular power-up meter exclusions, Gold Mascot drops, boss/Mascot damage cap, player self-shock and surface slow while standing in the ring, nothing paid after death, Play again (`resetRun`) snapshot equality, and words-only prompt checks.
 
 `tests/rounds.test.js` covers round flow, remaining wave occupancy tracking, waveEnding event firing, HUD occupancy presentation, the Last Shopper acceleration, and the shopping window: the break is long enough to shop and clocking in saves most of it, rounds.endBreak (lead time, seconds skipped, never lengthens a break), Clock in (a fresh full hold, once per break, not before round 1, not on the buy button, ignored behind a menu, offered again next break), the real game's PA line and early round, and the HUD prompt.
@@ -51,6 +55,10 @@ walking away and coming back, conveyor stages, the lever and booth only answerin
 mid-ritual, the chute steering spawns only while you are in the room, a full round where the chute adds no zombies and the round still ends, and the debug shortcut.
 
 `tests/warranty.test.js` covers the Extended Warranty rules (game/warranty.js): each tier's job, Renewals (compounding, priced one by one, capped), a replaced gun's warranty on file and moved onto the gun in hand for a share of the price, a gun away at Build-A-Blaster leaving nothing, the Platinum claim once per round, and Play again clearing it.
+
+`tests/skins.test.js` uses the pre-edit `fixtures/weapon-materials-phase-1.json` baseline and the isolated `helpers/gunMaterials.js` capture runner to check material colours, emissive colours, names, finishes, geometry and canvas labels. It exercises test-only role palettes, including identical colours across roles, and rejects model colour literals outside canvas drawing.
+
+`tests/skins.test.js` compares every Staple Gun and Rivet Rifle material colour with the pre-skin models, checks role placement and fallback, and exercises the debug override and the visual layers on skinned guns.
 
 `tests/upgradeColors.test.js` covers the colour languages of upgrades: every warranty colour (steel, gold, pearl, Renewal copper) is far from every stuffing colour in Lab delta-E, the tiers and the stuffings and the Heart badges are told apart, every Heart has a badge colour and shape, every tier is metal and Platinum shimmers, and a better quality is more vivid and glows more.
 
@@ -383,3 +391,8 @@ the model and debris and disposes their shared geometry and materials.
 - `docs.test.js`: every file in src/ has an entry in docs/folder-structure.md, every test file is described here, and every doc CLAUDE.md links to exists.
 
 `tests/uiInformationPriority.test.js` checks exhausted reward visibility, first-activation benefit teaching, live timers/charges on repeat pickups, run reset, and workshop countdown/quality priority.
+
+
+Weapon locker (phase 5):
+- tests/locker.test.js covers all eleven guns, readable locked challenges/progress, immediate durable equip/Default, mouse, arrows, controller A/B, all Back paths, the unchanged Play mode chooser, rendering only while open, and disposal of real preview geometries/materials/label textures.
+- tests/skinEquipment.test.js covers real held models, mid-run wall purchases, the player's conveyor model and built return, default displays, invalid saved choices, Play again/fresh storage, exact Save & Quit round trips with skin/challenge state, run-only receipt names, all skin/stuffing/tier contrast pairs and concurrent preference writes. Maps are built before any random mocking. It also checks that only default gun models exist at start, that a skinned model is built once on first use, and that it wears and sheds the sleeves like the rest.
