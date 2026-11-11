@@ -47,7 +47,7 @@ export function createClearanceRack({ gun, zombies, effects, sound }) {
   }
 
   return {
-    hit({ hit, headshot, weapon, baseDamage }) {
+    hit({ hit, headshot, weapon, baseDamage }, weaponId) {
       const zombie = hit.target;
       if (!zombies.zombies.includes(zombie)) return;
       if (owner !== weapon) { reset(); owner = weapon; }
@@ -63,7 +63,7 @@ export function createClearanceRack({ gun, zombies, effects, sound }) {
       for (const target of marked) {
         point.copy(target.position); point.y += target.type.hitbox.bodyTop * .79;
         effects.confetti(point, up, cfg.pop);
-        if (target.isAlive) target.takeHit({ damage: baseDamage * cfg.damageMultiplier, part: 'body', source: 'clearanceRack' });
+        if (target.isAlive) target.takeHit({ damage: baseDamage * cfg.damageMultiplier, part: 'body', source: 'clearanceRack', weaponId });
       }
     },
     update() {

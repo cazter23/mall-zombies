@@ -529,6 +529,10 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .purchase-stamp.show { display: block; }
 .hud.dead .purchase-stamp { display: none; }
 
+.skin-unlock-toast { padding: 10px 14px; background: var(--plum); color: var(--paper); border-left: 3px solid var(--mint); font: 500 var(--ui-body, 13px)/1.4 var(--font-ui); overflow-wrap: anywhere; }
+.skin-unlock-toast strong, .skin-unlock-toast span { display: block; }
+.skin-unlock-toast strong { color: var(--mint); }
+
 /* PA, round and sale each get a lane. No full-width text across a player's aim. */
 .round-banner { top: 15%; font: 600 clamp(25px, 4vw, 42px)/1 var(--font-hud); color: var(--paper); background: var(--plum); padding: 7px 24px 3px; border-bottom: 3px solid var(--raspberry); letter-spacing: .07em; text-shadow: none; }
 .round-banner.show { animation: retail-round var(--round-seconds, 2.2s) ease-out forwards; }

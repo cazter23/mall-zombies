@@ -51,6 +51,7 @@ import { createZoneGrading } from './fx/zoneGrading.js';
 import { createRoomCulling } from './fx/roomCulling.js';
 import { look } from './config/look.js';
 import { createCareerStats } from './game/careerStats.js';
+import { createSkinSave } from './game/skinSave.js';
 
 // --- Renderer, scene, camera ---------------------------------------------------
 
@@ -92,6 +93,7 @@ const viewmodel = createViewmodel(Object.values(weapons), meleeWeapons.boxCutter
 const postProcessing = createPostProcessing({ renderer, scene, camera, viewmodel });
 
 const g = createGame({
+  skinSave: createSkinSave(),
   scene,
   camera,
   input,

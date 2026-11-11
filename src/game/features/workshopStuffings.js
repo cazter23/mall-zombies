@@ -110,16 +110,16 @@ export function createBuildEffects({ events, gun, player, zombies, colliders, ef
     },
 
     // The target burns, and anything right next to it catches.
-    fryerOil({ spot, target, power, gunSecond }) {
+    fryerOil({ spot, target, power, gunSecond, weaponId }) {
       const { burn } = workshopStuffings.fryerOil;
       const hit = new Set(nearby(spot, burn.radius));
       if (target && canBeHit(target)) hit.add(target);
-      for (const zombie of hit) zombie.applyBurn(gunSecond * burn.gunSeconds * power, burn.seconds, burn.tickSeconds);
+      for (const zombie of hit) zombie.applyBurn(gunSecond * burn.gunSeconds * power, burn.seconds, burn.tickSeconds, weaponId);
       return hit;
     },
 
     // An arc jumps from zombie to zombie, weaker each time.
-    neonTube({ spot, target, power, gunSecond }) {
+    neonTube({ spot, target, power, gunSecond, weaponId }) {
       const { chain } = workshopStuffings.neonTube;
       const jumps = Math.min(chain.maxJumps, Math.round(chain.jumps * power));
       const hit = new Set(target ? [target] : []);
@@ -130,7 +130,7 @@ export function createBuildEffects({ events, gun, player, zombies, colliders, ef
         hit.add(next);
         effects.tracer(arcFrom.copy(at).setY(at.y + CHEST_HEIGHT), arcTo.copy(next.position).setY(next.position.y + CHEST_HEIGHT), workshopStuffings.neonTube.color, { width: chain.width, seconds: chain.seconds, flicker: 24 });
         effects.flash(arcTo, workshopStuffings.neonTube.color, { size: .5, seconds: chain.seconds });
-        next.takeHit({ damage: Math.min(damage, next.maxHealth * chain.maxFraction), part: 'body', source: 'build' });
+        next.takeHit({ damage: Math.min(damage, next.maxHealth * chain.maxFraction), part: 'body', source: 'build', weaponId });
         damage *= chain.falloff;
         at = next.position;
       }
@@ -144,7 +144,7 @@ export function createBuildEffects({ events, gun, player, zombies, colliders, ef
   };
 
   // Chilled zombies shatter; anything else nearby is chilled, so a second proc finishes what the first began.
-  STUFFINGS.antifreeze = ({ spot, target, power, gunSecond }) => {
+  STUFFINGS.antifreeze = ({ spot, target, power, gunSecond, weaponId }) => {
     const { chill, shatter } = workshopStuffings.antifreeze;
     const hit = new Set(nearby(spot, chill.radius * Math.sqrt(power)));
     if (target && canBeHit(target)) hit.add(target);
@@ -163,7 +163,7 @@ export function createBuildEffects({ events, gun, player, zombies, colliders, ef
       effects.confetti(chest(zombie), UP, stuffingLook.frost); // the ice bursts apart
       effects.flash(arcFrom.copy(zombie.position).setY(zombie.position.y + CHEST_HEIGHT), workshopStuffings.antifreeze.color,
         { size: stuffingLook.flash.size, seconds: stuffingLook.flash.seconds });
-      zombie.takeHit({ damage: gunSecond * shatter.gunSeconds * power, part: 'body', source: 'build' });
+      zombie.takeHit({ damage: gunSecond * shatter.gunSeconds * power, part: 'body', source: 'build', weaponId });
     }
     // The shards hit, and chill, whatever stands round each one that shattered.
     const splashed = new Set();
@@ -172,7 +172,7 @@ export function createBuildEffects({ events, gun, player, zombies, colliders, ef
         if (splashed.has(other)) continue;
         splashed.add(other);
         other.applySlow(chill.seconds * power, chill.fraction, 'antifreeze');
-        other.takeHit({ damage: gunSecond * shatter.splashGunSeconds * power, part: 'body', source: 'build' });
+        other.takeHit({ damage: gunSecond * shatter.splashGunSeconds * power, part: 'body', source: 'build', weaponId });
       }
     }
     for (const zombie of splashed) hit.add(zombie);
@@ -180,12 +180,12 @@ export function createBuildEffects({ events, gun, player, zombies, colliders, ef
   };
 
   // The zombies round the hit forget you and turn on each other (zombies/confusion.js).
-  STUFFINGS.glitter = ({ spot, target, power, gunSecond }) => {
+  STUFFINGS.glitter = ({ spot, target, power, gunSecond, weaponId }) => {
     const { confuse } = workshopStuffings.glitter;
     const hit = new Set(target && canBeHit(target) ? [target] : []);
     for (const zombie of nearby(spot, confuse.radius * Math.sqrt(power))) if (hit.size < confuse.maxTargets) hit.add(zombie);
     const seconds = Math.min(confuse.maxSeconds, confuse.seconds * power);
-    for (const zombie of hit) if (!zombie.applyConfusion(seconds, gunSecond * confuse.gunSeconds * power)) hit.delete(zombie);
+    for (const zombie of hit) if (!zombie.applyConfusion(seconds, gunSecond * confuse.gunSeconds * power, weaponId)) hit.delete(zombie);
     return hit;
   };
 
@@ -226,10 +226,10 @@ export function createBuildEffects({ events, gun, player, zombies, colliders, ef
     const power = qualityById(build.quality).power * heart.strength;
     const gunSecond = gunPower(gun.defOf(weaponId), stats);
     firing = weaponId;
-    const hit = STUFFINGS[build.stuffing]({ spot, target, power, gunSecond });
+    const hit = STUFFINGS[build.stuffing]({ spot, target, power, gunSecond, weaponId });
     firing = null;
     for (const zombie of hit) {
-      zombie.stuffedBy = weaponId; // (a burn or a confused blow can finish it later)
+      zombie.stuffedBy = weaponId; // (legacy confirmed-kill credit for the named gun's receipt)
       effects.confetti(chest(zombie), UP, stuffing.pop);
     }
     if (burst) effects.confetti(chest({ position: spot }), UP, stuffing.pop);

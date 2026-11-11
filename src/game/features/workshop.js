@@ -14,7 +14,7 @@ export function buildWorkshop(bench, { map, gun, pricing, interactions, events, 
   const drops = createLimitedEditionDrops({ events, gun, player, scene, rounds, state, sound });
   const trap = workshopBuilds.partyTrap;
   const clearance = createClearanceRack({ gun, zombies, effects, sound });
-  events.on('shot', ({ clearanceHit }) => { if (clearanceHit) clearance.hit(clearanceHit); });
+  events.on('shot', ({ clearanceHit, weaponId }) => { if (clearanceHit) clearance.hit(clearanceHit, weaponId); });
   const traps = [];
   const up = new THREE.Vector3(0, 1, 0);
   const from = new THREE.Vector3(), direction = new THREE.Vector3();
@@ -26,7 +26,7 @@ export function buildWorkshop(bench, { map, gun, pricing, interactions, events, 
     mesh.material.dispose();
   }
 
-  events.on('shot', ({ workshopPlacement: position }) => {
+  events.on('shot', ({ workshopPlacement: position, weaponId }) => {
     if (!position) return;
     if (traps.length >= trap.maxActive) removeTrap(0);
     const mesh = new THREE.Mesh(new THREE.CylinderGeometry(trap.marker.topRadius, trap.marker.bottomRadius, trap.marker.height, trap.marker.segments),
@@ -34,7 +34,7 @@ export function buildWorkshop(bench, { map, gun, pricing, interactions, events, 
     mesh.name = 'partyTrap';
     mesh.position.copy(position).addScaledVector(up, trap.marker.lift);
     scene.add(mesh);
-    traps.push({ position: position.clone(), mesh, age: 0 });
+    traps.push({ position: position.clone(), mesh, age: 0, weaponId });
   });
 
   function nearby(zombie, position, radius) {
@@ -65,7 +65,7 @@ export function buildWorkshop(bench, { map, gun, pricing, interactions, events, 
       const targets = zombies.zombies.filter(z => nearby(z, position, trap.blastRadius) && clearPath(z, position));
       targets.sort((a, b) => a.position.distanceToSquared(position) - b.position.distanceToSquared(position));
       for (const target of targets.slice(0, trap.maxTargets)) {
-        const { killed } = target.takeHit({ damage: trap.damage, part: 'body', source: 'partyTrap' });
+        const { killed } = target.takeHit({ damage: trap.damage, part: 'body', source: 'partyTrap', weaponId: charge.weaponId });
         if (killed) zombies.playPartyTrapDeath(target, position);
       }
     }
