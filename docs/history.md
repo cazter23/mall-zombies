@@ -1,5 +1,43 @@
 # Sunset Galleria: build history ("Current state")
 
+## 11 November 2026 - Weapon skins phase 8: challenges measured and tuned
+
+- **tools/challengeReport.mjs** (`npm run sim:challenges`, ~38 min for 3 seeds x 6 guns to round 20 at 3 workers): the economy bot (new
+  `onGame` hook) plays each gun it can use as its main gun; in the playing process every challenge's target is lifted, so the game's own
+  counters show raw values. `--skill=sharp` aims every shot at the head; `--guns=` picks guns.
+- **Tuned** (table in docs/weapon-skins-plan.md "Phase 8"): mastery 400 -> 1000 (Return to Sender 150 -> 300), Doorbuster 150 -> 400, Rush
+  Order 40 -> 50, Double Shift 2 -> 4 bosses, Final Markdown only from round 9, Company Man round 15 -> 12, Gold Standard 20 -> 15. The
+  tests read these targets from config now.
+- **Not measurable by the bot:** the Confetti Cannon, Barcode Scanner, Leaf Blower, Tennis Ball Launcher and Return to Sender challenges
+  (pellets, charge, cone, ball, instant kill), and every "survive" feat (its runs are immortal). Their numbers are first guesses.
+
+## 11 November 2026 - Weapon skins phase 7: feats, glow treatments, the Challenges tab and tracker
+
+- **Eleven feats** (slot 3; game/challenges.js, data in config/skins.js): a run on the Staple Gun alone to round 15 (buying, winning or firing
+  another gun spoils it), a boss nothing but the Price Gun hurt, 40 Nail Gun kills in a round, a round from 12 on with every kill a Foam Dart
+  Blaster headshot, a popped Mascot finished with one Confetti Cannon blast, 20 Rivet Rifle headshot kills in a row, two bosses in a run with the
+  Heavy Coil Nailer, a round with 25+ Barcode Scanner shots and no miss, a round from 8 on unhurt with 10 attacks blown away by the Leaf Blower,
+  three kills with one tennis ball, and the Last Customer returned with Return to Sender. A feat's progress is its best attempt (best(), never a
+  sum: a replayed round cannot pay twice); round feats are decided as the next round is announced and void on a debug skip; run feats save
+  their state with Save & Quit (save version 6).
+- **New kill and hit facts** (nothing pays by them): the kill's `woundedBy` (every gun or source that hurt it) and `projectile` (the lethal
+  ball's id; balls now have ids), and `weaponId` on a gun's 'hit'. Changed from the plan's guesses where they could not work (the plan's
+  "As built in phase 7" note): the Leaf Blower does ~80 damage a tank, so its feat is about not being hurt; 60 Nail Gun kills a round needed
+  round 23.
+- **Treatments** (weapons/models/skinTreatments.js): pulse, edgeGlow, shimmer and drift light one palette role with emissive light from the
+  model's own animate() (the viewmodel passes its clock; the locker preview animates its display). No lights, no meshes, no draw calls;
+  shimmer is a 128-texel DataTexture band slid along UVs laid down the gun. A part that already glows (sights, the scanner's window) is
+  never touched; every peak is at most 0.45 of full unlit colour, well under a build's unlit seam. Feat skins use the light bodies the rims
+  allow (cream, brass, sale yellow, safety orange, pink, mint, sky, optic yellow).
+- **Challenges tab and tracker** (the user's call: pin up to three on a new title-screen tab that can list other unlockables later; the
+  tracker sits under the round box, shows for 4 s when a pinned one moves, strikes a lost attempt through with "Failed" and a soft sound,
+  then drops it until its next attempt; a Settings › Comfort toggle, OFF by default). game/challengeCatalog.js (DOM-free list),
+  game/challengePins.js (own storage key), ui/challengeBoard.js, ui/challengeTracker.js, config/challengeBoard.js.
+- Seen in the browser (production build, hidden pane driven through the DOM): the board pins three and refuses a fourth; with the tracker
+  on, a Staple Gun kill shows all three pins under the round box (the changed one edged yellow); a Rivet Rifle body shot strikes Gold
+  Standard through with "Failed"; Gold Standard's band moves between frames; Rush Order's trims glow; the locker previews Grand Opening.
+  Browser storage was left as found (empty).
+
 ## 11 November 2026 - Closing Time phases 7-10 integration
 
 - Integrated `claude/closing-time-9`, including phase 7 parking validation and phase 8's booked Last Customer, with current main. The history conflict preserves both the weapon-skin rules and phase 9 entries.

@@ -36,6 +36,7 @@ export function createLockerPreview(host, { makeRenderer = options => new THREE.
   host.append(renderer.domElement);
   let model = null;
   let width = 0, height = 0;
+  let time = 0; // (a feat skin's glow runs on it)
   return {
     show(gunId, skinId) {
       release(model);
@@ -58,6 +59,8 @@ export function createLockerPreview(host, { makeRenderer = options => new THREE.
         camera.updateProjectionMatrix();
       }
       pivot.rotation.y += dt * c.rotationSpeed;
+      time += dt;
+      model?.userData.skinTreatment?.animate(time);
       renderer.render(scene, camera);
     },
     dispose() {
@@ -126,7 +129,8 @@ export function createLocker({ save, onBack, createPreview = createLockerPreview
       const description = document.createElement('span');
       description.textContent = skin.challenge ? challengeText(skin.challenge, def.name) : cfg.defaultDescription;
       const status = document.createElement('small');
-      const progress = skin.challenge ? cfg.progress(save.progress(selectedGun, skin.id), skin.challenge.count) : '';
+      const shown = skin.slot === 3 ? cfg.featProgress : cfg.progress; // (a feat's progress is its best attempt)
+      const progress = skin.challenge ? shown(save.progress(selectedGun, skin.id), skin.challenge.count) : '';
       status.textContent = [progress, equipped === skin.id ? cfg.equipped : unlocked ? cfg.available : cfg.locked].filter(Boolean).join(' · ');
       row.append(name, description, status);
       row.addEventListener('mouseenter', () => highlight(skin.id));

@@ -117,7 +117,7 @@ test('equipped choices survive Play again and a new game on the same storage; de
 test('Continue restores the run coat and unlock receipt, flushes mastery, and matches the round-start state exactly', context => {
   const storage = memory(), save = createSkinSave({ storage });
   unlock(save, 'stapleGun');
-  save.record('priceGun', 'red-tag', 399); save.flush();
+  save.record('priceGun', 'red-tag', skins.priceGun[0].challenge.count - 1); save.flush();
   const t = game(context, storage), { g } = t;
   t.tick();
   g.events.emit('kill', { weaponId: 'priceGun', zombie: {} });
@@ -147,8 +147,8 @@ test('Continue restores the run coat and unlock receipt, flushes mastery, and ma
 test('receipt names only skins unlocked during this run, and combines multiple unlocks on one line', context => {
   const storage = memory(), t = game(context, storage), { g } = t;
   const receipt = () => receiptLinesFor(g.death.summary).filter(([label]) => label === locker.receiptLabel);
-  t.save.record('stapleGun', 'night-shift', 399);
-  t.save.record('priceGun', 'red-tag', 399);
+  t.save.record('stapleGun', 'night-shift', skins.stapleGun[0].challenge.count - 1);
+  t.save.record('priceGun', 'red-tag', skins.priceGun[0].challenge.count - 1);
   g.events.emit('kill', { weaponId: 'stapleGun', zombie: {} });
   g.events.emit('kill', { weaponId: 'priceGun', zombie: {} });
   g.health.takeDamage(10000);
@@ -176,7 +176,7 @@ test('every configured skin body reads against all six stuffings and every warra
   // What the rim opens up: a cream body, which fails against Popcorn Butter and Platinum directly, reads through the rim.
   assert.ok(ratio(0xf3e3b8, 0xfff2b8) < skinContrast.minimum && ratio(0xf3e3b8, gunStyle.rim.color) >= skinContrast.minimum);
   for (const [gunId, entries] of Object.entries(skins)) for (const skin of entries) {
-    assert.equal(entries.length, 2); assert.deepEqual(entries.map(entry => entry.slot), [1, 2]);
+    assert.equal(entries.length, 3); assert.deepEqual(entries.map(entry => entry.slot), [1, 2, 3]);
     assert.ok(Number.isInteger(skin.palette.body));
     for (const other of [...Object.values(workshopStuffings), ...upgrades.tiers]) {
       const direct = ratio(skin.palette.body, other.color);

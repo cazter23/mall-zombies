@@ -107,9 +107,13 @@ export class Zombie {
     // What the 'kill' event reports about the lethal hit and the first one (weapon skin role challenges read them; nothing pays by them):
     // distance = metres the lethal shot travelled (a ray to the hit, a ball's whole flight), bounces = a ball's bounces before it, or null;
     // firstWound = { weaponId, seconds }: what first took health off it and how long ago (its seconds run in update).
+    // woundedBy = every weaponId (or, with none, the source: 'melee', 'hazard', 'equipment'...) that took health off it;
+    // killedByProjectile = the id of the ball that made the lethal hit (weapons/ballistics.js), else null.
     this.killedAtDistance = null;
     this.killedAfterBounces = null;
+    this.killedByProjectile = null;
     this.firstWound = null;
+    this.woundedBy = new Set();
     this.removed = false;
     // Chase sounds (types with `sounds`): random start so a group doesn't squeak in unison.
     this.stepSoundTimer = Math.random() * (type.sounds?.step?.interval ?? 0);
@@ -187,9 +191,10 @@ export class Zombie {
   // later 'hazard' / 'effect'...). Read as zombie.killedBy by the 'kill' event (game/events.js).
   // `distance` / `bounces`: how far the shot travelled and a ball's bounces so far (reported on the kill only; they change no damage).
   takeHit({ damage, part, melee = false, source = melee ? 'melee' : 'gun', weaponId = null, direction = null, impact = null,
-    distance = null, bounces = null, returnHit = false }) {
+    distance = null, bounces = null, projectile = null, returnHit = false }) {
     if (!this.isAlive) return { killed: false };
     if (!this.firstWound && damage > 0) this.firstWound = { weaponId, seconds: 0 };
+    if (damage > 0) this.woundedBy.add(weaponId ?? source);
     damage *= this.damageTakenMultiplier;
     if (this.vulnerableTimer > 0) damage *= this.vulnerableMultiplier; // (Smoothie: slowed zombies take more from everything)
     if (this.slipTimer > 0 && part === 'head') damage *= workshopStuffings.popcornButter.puddle.fallenHeadshotMultiplier; // (Popcorn Butter: it's down)
@@ -238,6 +243,7 @@ export class Zombie {
     this.killedByWeaponId = weaponId;
     this.killedAtDistance = distance;
     this.killedAfterBounces = bounces;
+    this.killedByProjectile = projectile;
     this.returned = returned;
     this.deathImpulse = (impact?.deathImpulse ?? 1) * (this.killedByHeadshot ? 1.25 : 1);
     this.deathTwist = this.flinchSide * Math.min(0.42, 0.16 * this.deathImpulse);

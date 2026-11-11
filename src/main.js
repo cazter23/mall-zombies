@@ -56,6 +56,9 @@ import { look } from './config/look.js';
 import { createCareerStats } from './game/careerStats.js';
 import { createSkinSave } from './game/skinSave.js';
 import { createLocker } from './ui/locker.js';
+import { createChallengePins } from './game/challengePins.js';
+import { createChallengeBoard } from './ui/challengeBoard.js';
+import { connectChallengeTracker } from './ui/challengeTracker.js';
 import { createGuideSave } from './game/guideSave.js';
 import { createGuideScreen } from './ui/guide.js';
 import { guide as guideCfg } from './config/guide.js';
@@ -97,7 +100,13 @@ const guideSave = createGuideSave();
 const guideScreen = createGuideScreen({
   save: guideSave, onBack: () => hud.screens.show('title'), onTurn: () => sound.play(guideCfg.turnSound), // (sound is made just below)
 });
-const hud = createHud({ locker, guide: guideScreen });
+// The Challenges tab: every challenge, and the ones pinned for the tracker (settings and g are made below; read when the board opens).
+const challengePins = createChallengePins();
+const challengeBoard = createChallengeBoard({
+  save: skinSave, pins: challengePins, onBack: () => hud.screens.show('title'),
+  trackerEnabled: () => settings.get('challengeTracker'), getChallenges: () => g.challenges,
+});
+const hud = createHud({ locker, guide: guideScreen, challenges: challengeBoard });
 const noticesMenu = createNoticesMenu(hud.history);
 const sound = createSound(); // synthesized sound effects (starts on the first click/key press)
 const viewmodel = createViewmodel(Object.values(weapons), meleeWeapons.boxCutter, {
@@ -380,6 +389,8 @@ screens.on('clearStats', () => screens.show('stats', careerStats.reset()));
 screens.on('statsBack', () => screens.show('title'));
 screens.on('locker', () => screens.show('locker'));
 screens.on('guide', () => screens.show('guide'));
+screens.on('challenges', () => screens.show('challenges'));
+connectChallengeTracker({ events: g.events, tracker: hud.challengeTracker, pins: challengePins, save: skinSave, challenges: g.challenges, sound });
 window.addEventListener('pagehide', () => { g.challenges.flush(); g.guide.flush(); }); // closing the tab mid-run keeps the skin progress it earned
 wireRunIntro({ events: g.events, hud, sound }); // the PA's opening line as round 1 begins
 screens.on('controls', () => controlsMenu.open());

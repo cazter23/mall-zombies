@@ -17,8 +17,9 @@
 //   'warrantyClaim' { weaponId, round, pa }              a Platinum gun ran completely dry and its ammo was replaced for free (game/warranty.js)
 //   'meleeUpgrade' { tier, id }                          a box cutter tier was bought at Customer Service (game/meleeUpgrades.js; 1 sharpened, 2 pro)
 //   'reload'      { weaponId }                           a reload began on the gun in hand
-//   'hit'         { target, killed, headshot, melee }    a PLAYER attack hit a shootable (one per target per shot
-//                                                        or swing). Non-lethal zombie hits pay +10 here.
+//   'hit'         { target, killed, headshot, melee, weaponId }  a PLAYER attack hit a shootable (one per target per shot
+//                                                        or swing). Non-lethal zombie hits pay +10 here. weaponId = the gun (a
+//                                                        ball's: the gun that threw it); none for the box cutter.
 //   'kill'        { zombie, headshot, melee, source, weaponId }  a zombie died. weaponId is the gun that dealt the
 //                                                        lethal hit or supplied the projectile or build effect, or null.
 //                                                        Also distance, bounces, firstWound (for weapon skin challenges;
@@ -27,6 +28,8 @@
 //                                                        hazards...), bounces = a ball's bounces before the lethal hit (else
 //                                                        null), firstWound = { weaponId, seconds }: what first took health off
 //                                                        it and how long before this kill (null if nothing ever did).
+//                                                        woundedBy = every weaponId (or source, without one) that ever took
+//                                                        health off it; projectile = the lethal ball's id, else null.
 //                                                        All kill payouts and kill stats come from this event. After the
 //                                                        player's death it still fires, but nothing is paid or counted.
 //   'mascotHeadPop' { zombie, headshot, source, again }  a Mascot's helmet came off at half health (whatever hit it;
@@ -126,6 +129,9 @@
 //                                                        damage never emits 'hit' (no +10): its kills pay through 'kill', source 'equipment'
 //   'challengeProgress' { gunId, skinId, count, needed }  a challenge counter changed (game/challenges.js)
 //   'skinUnlocked' { gunId, skinId, pa }                  a skin was earned; PA and HUD toast listen here
+//   'challengeLive' { gunId, skinId, value, needed, failed }  a feat's attempt in progress changed (game/challenges.js): value = how it
+//                                                        stands (config/skins.js `track` words it), failed = it was just lost (the
+//                                                        challenge tracker strikes it through); the next attempt reports failed false
 //   'runReset'    {}                                     after Play again reset everything
 //   'runSaved'    { round }                              Save & Quit wrote the slot (game/saveGame.js); the run ends next (main.js)
 //   'runLoaded'   { round }                              a save was loaded: the run resumes at that round's break (horror relights, the PA welcomes you back)

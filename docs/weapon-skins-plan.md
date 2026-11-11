@@ -63,7 +63,7 @@ What is NOT uniform today, and is the real work:
 
 ## Starting challenges
 
-Slot 1 is the same shape on every gun: **400 kills with it across all runs** (Return to Sender: 150, it is rare). Slots 2 and 3 below are
+Slot 1 is the same shape on every gun: **400 kills with it across all runs** (Return to Sender: 150, it is rare; phase 8 made these 1000 and 300). Slots 2 and 3 below are
 first guesses written from each gun's name and place in the mall, NOT from its numbers. Phase 5 must check every one against
 docs/weapon-balance-pass.md and `npm run balance` so that each is possible, and hard in the way intended.
 
@@ -88,6 +88,39 @@ Rules for every challenge:
 - **Progress shows in the locker** as a count ("212 / 400") or, for a feat, as its best attempt.
 - **Nothing is hidden.** Every challenge is readable in the locker from the start, with the skin shown greyed out.
 - **A challenge that needs a system that may be cut** (hazards, the claw, Closing Time) is marked so in config and can be swapped.
+
+**As built in phase 7 (11 November 2026).** The feats in config/skins.js differ from the first guesses above where the guesses could not
+work: the Leaf Blower does about 80 damage per tank, so "kills with the blower only" is out; its feat is a round from round 8 on without
+being hurt, having blown 10 zombies out of an attack. The Nail Gun's 60 kills in a round needs round 23 and every kill; it starts at 40
+(phase 8 tunes). The Barcode Scanner's perfect round needs at least 25 shots, so an idle round does not count. The Confetti Cannon's
+"one blast's worth" is one blast after the helmet comes off with nothing else hurting it; a fully upgraded cannon at point blank can
+do it to about round 14 (an unupgraded one never can). The Staple Gun's "never get another gun" is kept (one skin that bends a run, as
+the risk below allows): buying, winning or firing another gun spoils it, a loaner never fired does not.
+**Feats show in play** through the challenge tracker (ui/challengeTracker.js): the player pins up to three challenges on the title
+screen's Challenges tab, and, with the tracker turned on in Settings › Comfort (off by default), they show under the round counter for a
+few seconds whenever one moves; a lost attempt is struck through with "Failed", then drops off until the next attempt.
+
+## Phase 8: measured and tuned (11 November 2026)
+
+`npm run sim:challenges` (tools/challengeReport.mjs) plays the economy bot with each gun it can use as its main gun, 3 seeds to round 20,
+immortal, the game's own challenge counters reading raw values. Per run to round 15 / 20 (means):
+
+| Challenge | Before | Measured | Now | Why |
+|---|---|---|---|---|
+| Mastery (kills) | 400 | 300 to 350 / 530 to 580 | 1000 (Return to Sender 300) | 400 fell in ~1.2 runs; the plan wants three to five |
+| Doorbuster (quick kills) | 150 | 176 / 224 | 400 | met in one run without trying |
+| Rush Order (kills in a round) | 40 | best 39 / 48.7 | 50 | met by accident about round 16 |
+| Double Shift (bosses in a run) | 2 | 2.3 / 3.7 | 4 | met by accident by round 15 |
+| Final Markdown (a boss, Price Gun only) | any boss | every Price Gun run | from round 9 (Officer Kettle on) | Murray fell to it every time |
+| Company Man (Staple Gun alone) | round 15 | an immortal bot stalls at rounds 8 to 10 | round 12 | 15 looked out of reach |
+| Gold Standard (headshot streak) | 20 | best 6; aiming every shot at the head, best 14 | 15 | 20 was never reached |
+| Bullseye (an all-headshot round, 12+) | - | aiming every shot at the head: 1 run in 3 by round 15 | kept | hard, and shown possible |
+
+Kept as they were: Measure Twice (10 / 23.7 a run: 2.4 runs), Aisle Fifteen (29 / 34: ~5 runs, the bot never aims for range), Hard Hat
+Area (22 / 28; 52 aiming for heads: ~3 runs), Loading Dock (51 / 93: ~2 runs). NOT measured (the bot cannot fire them): every Confetti
+Cannon, Barcode Scanner, Leaf Blower, Tennis Ball Launcher and Return to Sender challenge; their numbers stay first guesses, checked by
+hand against the balance report (a fully upgraded Confetti Cannon at point blank can one-blast a popped Mascot to about round 14).
+Read every number as "a run that ignores the challenge" by a bot with fixed aim error: a player who plays for one gets there sooner.
 
 ## The Closing Time rewards
 
@@ -157,8 +190,8 @@ Each phase leaves the game working. Phases 1 to 6 touch none of the files the Cl
 | 4 | Challenges and the save | `g.challenges`, the save, the two events, slot 1 (mastery) counting for every gun; a PA line and toast on unlock | game/challenges.js, game/skinSave.js, **createGame.js**, **events.js**, ui/hud.js | Medium |
 | 5 | The locker, and slot 1 skins | The locker screen; choosing a skin; eleven mastery recolours; the contrast test against stuffings and tiers | ui/locker.js, **ui/screens.js**, **main.js**, game/skins.js, config/skins.js | Medium: a new screen in the title flow |
 | 6 | Slot 2: role challenges and pattern skins | Eleven role challenges, checked against the balance report; eleven pattern skins | game/challenges.js, config/skins.js, weapons/models/ (pattern textures) | Medium: art time |
-| 7 | Slot 3: feats and treatments | The shared treatments; eleven feats; eleven feat skins | weapons/models/skinTreatments.js, game/challenges.js, config/skins.js | Medium |
-| 8 | Measure and tune | A bot or saved runs: how many runs each challenge takes, which are never met, which are met by accident. Numbers set from that | tools/, config only | Low |
+| 7 | Slot 3: feats and treatments (built) | The shared treatments; eleven feats; eleven feat skins; the Challenges tab and tracker | weapons/models/skinTreatments.js, game/challenges.js, config/skins.js | Medium |
+| 8 | Measure and tune (built) | A bot or saved runs: how many runs each challenge takes, which are never met, which are met by accident. Numbers set from that | tools/, config only | Low |
 | 9 | Closing Time rewards | `closingMode` on the run summary; the two treatments on every gun; unlocked by a win | **createGame.js**, game/challenges.js, config/skins.js | Low, but AFTER the Closing Time fix pass has merged |
 
 Notes for whoever builds a phase:
@@ -181,10 +214,10 @@ Notes for whoever builds a phase:
   Slot 1 alone (phase 5) is already a complete feature, and the plan can stop there.
 - **Readability in a fight.** The gun fills a corner of the screen all run. A loud skin under a loud build under a glowing seam can become
   noise. docs/ui-readability.md is the judge, and Comfort settings should be able to calm the treatments.
-- **Feats that cannot be seen failing.** "No missed shot this round" is lost on the first miss, and the player should know. Decide in
-  phase 7 whether a feat in progress shows on the HUD; the HUD is already full.
+- **Feats that cannot be seen failing.** "No missed shot this round" is lost on the first miss, and the player should know. (Decided in
+  phase 7: the opt-in challenge tracker, above. The HUD stays as it was unless the player pins something and turns the tracker on.)
 - **Challenges that bend play.** "Never buy another gun" asks for a bad run on purpose. That is fine for one skin per gun, not for all three.
-- **Grind.** 400 kills is about three to five runs with a main gun and far longer with a side gun. Phase 8 measures it.
+- **Grind.** Measured in phase 8 (below): a main gun clears 300 to 350 zombies in a run to round 15, so mastery is now 1000 (about three runs).
 - **The kill-path change** (phase 3), as said above.
 - **Performance.** A treatment that animates a material every frame on a gun that is always on screen must cost nothing measurable;
   check draw calls and the benchmark before and after.
