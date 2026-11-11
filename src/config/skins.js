@@ -32,6 +32,8 @@ export const skins = {
     challenge: mastery(400),
   }, {
     id: 'hard-hat-area', name: 'Hard Hat Area', slot: 2,
+    palette: { body: 0x7a2000, dark: 0x461400, metal: 0xd2c2b2, grip: 0x221a16, accent: 0xffcc2e, sight: 0xfff2a0 },
+    pattern: { kind: 'stripes', ink: 0xffcc2e, spacing: 0.03, width: 0.014, angle: 45 }, // hazard tape
     challenge: { kind: 'headshotKills', count: 150, minDistance: 10, text: 'Land {count} headshot kills from {minDistance} m or more with the {gun}.' },
   }],
   priceGun: [{ id: 'red-tag', name: 'Red Tag', slot: 1,
