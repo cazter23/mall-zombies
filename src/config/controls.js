@@ -85,9 +85,9 @@ export const controlsHelp = {
 
 // Button names shown in on-screen prompts, per device.
 export const buttonLabels = {
-  keyboard: { reload: 'R', melee: 'V', lethal: 'G', tactical: 'MMB', confirm: 'Click', interact: 'F', inspect: 'I', jump: 'Space', menuConfirm: 'F', menuBack: 'Q', menuMove: 'W/S', menuSwitch: 'A/D' },
-  xbox: { reload: 'X', melee: 'R3', lethal: 'RB', tactical: '▶', confirm: 'A', interact: 'X', inspect: '▼', jump: 'A', menuConfirm: 'A', menuBack: 'B', menuMove: 'D-pad', menuSwitch: '◀ ▶' },
-  playstation: { reload: '□', melee: 'R3', lethal: 'R1', tactical: '▶', confirm: '✕', interact: '□', inspect: '▼', jump: '✕', menuConfirm: '✕', menuBack: '○', menuMove: 'D-pad', menuSwitch: '◀ ▶' },
+  keyboard: { reload: 'R', melee: 'V', lethal: 'G', tactical: 'MMB', confirm: 'Click', interact: 'F', inspect: 'I', jump: 'Space', menuConfirm: 'F', menuBack: 'Q', menuMove: 'W/S', menuSwitch: 'A/D', weapon1: '1', weapon2: '2' },
+  xbox: { reload: 'X', melee: 'R3', lethal: 'RB', tactical: '▶', confirm: 'A', interact: 'X', inspect: '▼', jump: 'A', menuConfirm: 'A', menuBack: 'B', menuMove: 'D-pad', menuSwitch: '◀ ▶', switchWeapon: 'Y' },
+  playstation: { reload: '□', melee: 'R3', lethal: 'R1', tactical: '▶', confirm: '✕', interact: '□', inspect: '▼', jump: '✕', menuConfirm: '✕', menuBack: '○', menuMove: 'D-pad', menuSwitch: '◀ ▶', switchWeapon: '△' },
 };
 
 export const gamepad = {

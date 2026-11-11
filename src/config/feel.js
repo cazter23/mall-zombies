@@ -15,6 +15,7 @@ export const feel = {
     eyeHeight: 1.6, // camera height above the feet
     radius: 0.35, // collision radius
     maxHealth: 100, // a Shopper hits for 40, so 3 hits from full
+    spawnYaw: Math.PI, // faces +Z into the clearance room where round 1 zombies rise
   },
 
   // Health regen and the red "you're hurt" screen edges
@@ -29,6 +30,14 @@ export const feel = {
     lowHealthOpacity: 0.95, // in that mode the edges glow this strongly at the peak of each pulse...
     pulseAmount: 0.55, // ...and dim by this fraction at the low point, so it clearly throbs
     pulseSpeed: 7, // radians per second (about a heartbeat)
+    // SECOND CHANCE (game/secondChance.js; price: economy.secondChance): what the one self-revive gives on a lethal hit.
+    secondChance: {
+      protectionSeconds: 3, // no damage at all for this long after the revive (play time: it pauses with the game)
+      // Zombies shoved back from the player: within `radius` m (flat), no more than `levelTolerance` m higher or lower (the same
+      // floor), with a clear reach to the player. Each loses its attack or charge, is stunned for `seconds` and slides away
+      // from `knockback` m/s under `drag` (about knockback / drag metres: the Security Sweep's shove). Bosses are never shoved.
+      shove: { radius: 4, levelTolerance: 1, seconds: 2, knockback: 5, drag: 8 },
+    },
   },
 
   movement: {

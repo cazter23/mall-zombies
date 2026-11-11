@@ -19,6 +19,9 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   across from the start door, under a FOOD COURT sign, framed by two planters), Mega Mart (750, east end z -1..5, 6m,
   under a MEGA MART sign), Service Corridor (1000, west wall z 0.5..3.5, under a "SERVICE CORRIDOR · STAFF ONLY"
   sign; the escalator's high end runs overhead just short of it). 3 boarded vents (zombie spawns).
+- Kiosk Kevin has one fixed cart on the Hallway's south wall at x −8.5, z −1.96, facing +Z. Its 2.2 × 0.75 m
+  footprint has a single 1.05 m counter collider. The three labeled buy spots face the aisle, and the cart opens
+  from round 2 after the Hallway unlocks.
   Escalator (SEALED until Hallway and Promenade are owned): west half, z 1..3, bottom end at x -4 facing the hub, rising west at 30 deg through a hole in
   the ceiling (x ~-16.5..-11.95) to level 2 (y 6.3, the top of the ceiling slab; see Level 2 below). Rope barriers + OUT OF ORDER boards at both ends disappear automatically when Hallway and Promenade are owned, including access via Atrium or Cinema; every collider you could
   reach from the floor is taller than a jump. Its low end (x -4..-10.4) is solid to the floor; under its high end
@@ -156,7 +159,8 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   Data: config/parkingDetails.js; builders parkingDetails.js / parkingStreetDetails.js with shared parkingDetailKit.js.
   Sunset sky, exterior facade/return signs, two pooled pole lights, painted bays/crosswalk, wind and electrical buzz.
   Includes a culling room/portal, color grade, horror area and benchmark shot; Play again relocks it and map unload
-  frees its geometry, textures, lights and colliders. No additional weapon or station. Data: config/parkingLot.js;
+  frees its geometry, textures, lights and colliders. The mauve van's east-side hold prompt is near (56.57, 1.2, -11.05).
+  In Phase 2, holding all four keys lets you start it for free. Data: config/parkingLot.js and config/closingTime.js;
   builder: maps/mall/parkingLot.js.
 - Service Corridor: behind the 1000 area entrance, a 3m-wide back-of-house corridor built from a data spec with the
   corridor builder: in through the hallway's west wall (floor reaches under the doorway), a 1.5m run west, then 16m
@@ -174,6 +178,10 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   The west planter, RESTOCK-O-MATIC and cannon buy spots are unchanged. The cannon is out of buying range from the Food Court.
   Main loop: hallway -> Food Court -> Mega Mart -> hallway. West loop: hallway -> Service Corridor -> Food Court -> hallway.
   Area ownership controls spawns and shops; Play again closes every shutter and seals all outer areas.
+- Customer Service has three windows along its counter, each with its own sign and buy spot (the nearest one you face wins): Extended Warranty in the
+  middle (x 7), SHARPENING at x 8.25 (box cutter tiers) and SECOND CHANCE at x 5.75 (the start-doorway end: one self-revive per run, 2,000,
+  game/secondChance.js). The Second Chance ticket only shows on its own side of the middle and stays up once bought ("Already held" / "Used this run").
+- The Night Safe mounts 2 cm proud of Customer Service’s east wall at x 8.8, centered at z 5.12 and facing east. Approach from the elevator side.
 - Customer Service booth (gun tiers): a small walled office on the hallway's north wall at x 5.2..8.8 (between the start doorway
   and the elevator), 1.6m deep + a 0.3m counter ledge; you buy at its service window (spot z ~4.1). Hold F/X to buy the next Extended
   Warranty tier for the gun in your hand. Its spot is ONE entry, LAYOUT.serviceDesk in mall.js (along/center/wallAt/facing/zone):
@@ -249,4 +257,4 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   vignette/fringing, ACES tone mapping, MSAA) is fx/postProcessing.js with three levels, Settings > Video > Visual effects: High (default),
   Low (composer only: no bloom/lens/MSAA), Off (no composer: the world and the gun drawn straight to the screen). "Dust and
   flickering lights" (atmosphere.ambient.enabled) hides the dust motes and zeroes the flicker/emergency lights (kept in the scene).
-- Player spawns at (0, 0, 12) facing the shutter.
+- Player spawns at (0, 0, 12) facing into the room (+Z, yaw Math.PI).

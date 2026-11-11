@@ -1,7 +1,6 @@
 // =============================================================================
-// KIOSK KEVIN CONFIG: the equipment you carry in your two pockets, and (later) Kevin's cart.
-// Phase 1 (docs/kiosk-kevin-plan.md): the Lethal and Tactical pockets, the throw, and the Soda Bomb. Kevin, his cart,
-// the other products and their prices come in later phases (prices will live in config/economy.js economy.kiosk).
+// KIOSK KEVIN CONFIG: the fixed Hallway cart, its stock and the equipment in your pockets.
+// Prices live in config/economy.js and are applied by g.pricing.
 //
 // Every equipment damage is multiplied by ONE number, equipmentPower(round) (game/equipment/equipmentDamage.js):
 //   (zombieHealthForRound(round) / power.baseHealth) ^ power.exponent
@@ -9,6 +8,15 @@
 // =============================================================================
 
 export const kiosk = {
+  site: { zone: 'hallway', x: -8.5, backZ: -1.96, width: 2.2, depth: 0.75, height: 1.05, slotSpacing: 0.72 },
+  openingRound: 2,
+  duckRadius: 3,
+  stock: ['sodaBomb', 'bubbleWrap', 'airHorn'], // also the order of Kevin's Pick
+  bubbleWrap: {
+    name: 'Bubble Wrap',
+    detail: 'Absorbs zombie hits before they reach your health. FRAGILE. This side towards zombies.',
+  },
+
   // Equipment power (decision 4): 1.0 at round 10 (806 health), about 0.54 at round 1 and 1.7 at round 30.
   power: { baseHealth: 800, exponent: 0.37 },
 
@@ -31,6 +39,7 @@ export const kiosk = {
       name: 'Soda Bomb',
       pocket: 'lethal',
       charges: 3, // a full pocket
+      detail: 'A shaken bottle with a wide blast. Do not shake. Do shake.',
       fuseSeconds: 1.8,
       blast: {
         radius: 4, // m
@@ -50,6 +59,18 @@ export const kiosk = {
         bottle: 0x7a3b1c, label: 0xd8323a, cap: 0xf4f1e8, // the bottle drawn in the air (fx/throwableView.js)
         splat: [0x5a2a12, 0x7a3b1c, 0xf6efe0, 0xc98a4b], // the burst: cola, foam and caramel
         splatCount: 46,
+      },
+    },
+    airHorn: {
+      id: 'airHorn',
+      name: 'Stadium Air Horn',
+      pocket: 'tactical',
+      charges: 2,
+      detail: 'Pushes zombies back and interrupts charges. Bosses ignore it.',
+      horn: {
+        radius: 6, floorTolerance: 1.2, chestHeight: 1.1,
+        stagger: { seconds: 1.2, knockback: 7, drag: 5 },
+        sound: 'stadiumAirHorn',
       },
     },
   },

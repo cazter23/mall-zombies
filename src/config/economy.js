@@ -94,8 +94,9 @@ export const economy = {
     barcodeScanner: { weapon: 1750, ammo: 900 }, // weak sustained dps (180) but pierces 4 in a line, ~3x (Byte Me Electronics)
   },
 
-  // GRAB-A-GUN, the claw machine (config/clawMachine.js): one grab. A placeholder until the economy report checks it.
-  claw: { grab: 1000 },
+  // GRAB-A-GUN, the claw machine (config/clawMachine.js): one grab. 1,500 = what a site's first grab wins in wall value (it was 1,000 and
+  // won 1.52x that: docs/economy-report.md, D).
+  claw: { grab: 1500 },
 
   // Discounted prices (Flash Sales, game/pricing.js) are rounded to the nearest multiple of this.
   discountRoundTo: 10,
@@ -107,7 +108,7 @@ export const economy = {
     // that decision, but nothing charges them now: since phase 6 they drop free (game/features/limitedEditions.js).
     workshop: { partyTrap: 1500, clearanceRack: 1000, ritual: 1500, restuff: 750 },
     tiers: { deluxe: 1000, premium: 3000, platinum: 6000 },
-    renewals: [3000, 4000, 5500, 7500, 10000], // Warranty Renewals past Platinum (config/upgrades.js renewals), each dearer than the last // (the support upgrade: a build, 1500, hits harder than any single tier)
+    renewals: [4000, 5000, 6500, 8000, 10000], // Warranty Renewals past Platinum (config/upgrades.js renewals), each dearer than the last // (the support upgrade: a build, 1500, hits harder than any single tier)
     melee: { sharpened: 1500, pro: 4000 }, // Box cutter tiers at the Customer Service desk's second window (config/upgrades.js melee)
     attachments: {
       extendedNozzle: 1000, sawnOff: 1000, // barrel (Mega Mart hardware)
@@ -126,6 +127,13 @@ export const economy = {
 
   // Ammo cache (the vending machine in the Food Court): refills the gun in your hand, any gun, one flat price.
   ammoCache: { price: 400 },
+  // Second Chance (Customer Service's third window; game/secondChance.js): one automatic self-revive per run. What the revive
+  // gives is in config/feel.js (health.secondChance). In no Flash Sale group; the Discount Code and Employee Discount apply.
+  secondChance: { price: 2000 },
+  kiosk: { sodaBomb: 300, bubbleWrap: 500, airHorn: 500 },
+
+  // Closing Time's quest prices (docs/closing-time-plan.md): one Night Safe deposit. Read through g.pricing.priceOf('closing', id).
+  closing: { nightSafe: 1000 },
 
   // Environmental hazards (docs/hazards-plan.md, config/hazards.js): pay-to-trigger mall traps with cooldowns.
   hazards: {
@@ -185,6 +193,11 @@ export const economy = {
         end: { kicker: 'Sale over', text: 'The GRAB-A-GUN sale has ended. The claw is back to its usual grip.' },
       },
       {
+        id: 'kiosk', label: "Kevin's cart", categories: ['kiosk'], weight: 1,
+        start: { kicker: 'Flash sale', text: "Everything on Kevin's cart is {pct}% off. Kevin was not consulted." },
+        end: { kicker: 'Sale over', text: "Kevin's cart is back to regular prices. Kevin was consulted." },
+      },
+      {
         id: 'hazards', label: 'Mall hazards', categories: ['hazard'], weight: 0.8,
         start: { kicker: 'Flash sale', text: 'Mall hazard switches are {pct}% off! Please stand clear of the wet floor.' },
         end: { kicker: 'Sale over', text: 'The hazard switch sale has ended. Management assumes no liability.' },
@@ -210,6 +223,12 @@ export const economy = {
       fromRound: 2, // offered in the break BEFORE this round and later (the short wait before round 1 is not a break)
     },
     spawnRetrySeconds: 0.5, // no usable spawn point (none open/reachable)? try again this soon
+    // The last shoppers: once a round has nothing left to spawn and this many or fewer zombies are alive, the PA says so
+    // ('waveEnding') and the stragglers (not bosses) speed up to their fastest gait, so the end of a round isn't a hunt.
+    lastShoppers: {
+      count: 2,
+      pa: { kicker: 'Attention shoppers', text: 'Final clearance — registers closing shortly!', priority: 1 },
+    },
   },
 
   waves: {

@@ -43,6 +43,8 @@ import { createEffects } from '../fx/effects.js';
 import { createContactShadows } from '../fx/contactShadows.js';
 import { createAmbience } from './ambience.js';
 import { createPowerUps } from './powerUps.js';
+import { createClosingTime } from './closingTime.js';
+import { createClosingKeyView } from '../fx/closingKeyView.js';
 import { createPowerUpView } from '../fx/powerUpView.js';
 import { createPlayerGun } from '../weapons/playerGun.js';
 import { createMelee } from '../weapons/melee.js';
@@ -58,6 +60,7 @@ import { createFlashSales } from './flashSales.js';
 import { createDebugCommands } from './debugCommands.js';
 import { createWarranty } from './warranty.js';
 import { createMeleeUpgrades } from './meleeUpgrades.js';
+import { createSecondChance } from './secondChance.js';
 import { createWardrobe } from './wardrobe.js';
 import { createOutfitRail } from './outfitRail.js';
 import { createRunStats } from './runStats.js';
@@ -69,7 +72,9 @@ import { createClockIn } from './clockIn.js';
 import { createInteractions } from './interactions.js';
 import { createTickets } from './tickets.js';
 import { buildFeatures, featuresOf } from './features/index.js';
-import { ownsAttachment } from './features/attachmentCounter.js';
+import { ownsAttachment, ownedAttachments, unlockAttachment } from './features/attachmentCounter.js';
+import { createSaveGame } from './saveGame.js';
+import { save as saveConfig } from '../config/save.js';
 import { comboName } from '../config/workshop.js';
 
 const DEG_TO_RAD = Math.PI / 180;
@@ -98,6 +103,7 @@ export function createGame({
   buildTestRange = null,
   debugTick = null,
   onPlayerDeath: afterDeath = null,
+  saveStorage = undefined, // Save & Quit's slot (game/saveGame.js): localStorage in the browser; tests pass their own
 }) {
   // One shared list of solid boxes: the map, debug add-ons and doors all write into it;
   // the player, zombies and bullets all read it.
@@ -148,7 +154,7 @@ export function createGame({
     hud,
     sound,
     balls,
-    onProjectileHit: () => { if (!state.over) runStats.shotsHit += 1; }, // a thrown ball's first hit makes its shot a hit
+    onProjectileHit: () => { if (!runFrozen()) runStats.shotsHit += 1; }, // a thrown ball's first hit makes its shot a hit
     onShot: (shot) => events.emit('shot', shot),
     onHit: announceHit,
     onReload: (reload) => events.emit('reload', reload),
@@ -207,16 +213,21 @@ export function createGame({
   // The game runs while the mouse is locked (Esc pauses) or while playing on a controller
   // (Start pauses). A controller doesn't need the mouse locked.
   const state = {
+    closingMode: 'directed', // Title confirmation selects the mode; fresh-run resets keep it.
+    get showClosingGuidance() { return this.closingMode === 'directed'; },
     forceRun: false, // debug: run without pointer lock (used by automated tests)
-    over: false, // true once the player has died
+    over: false, // death or Clock out
+    won: false,
+    winPending: false, // waiting for Clock out or Stay for overtime
     padPlaying: false, // started/resumed with a controller
     menu: null, // an in-game menu a feature has open (Build-A-Blaster's 'orderForm'): the player stands still, the world doesn't
     assisted: false, // gameplay-changing debug command used; career records ignore this run
     get running() {
-      return input.locked || this.padPlaying || this.forceRun;
+      return !this.over && !this.winPending && (input.locked || this.padPlaying || this.forceRun);
     },
   };
   const challenges = createChallenges({ events, state, save: skinSave });
+  const runFrozen = () => state.over || state.winPending;
   // GRAB-A-GUN's prize tickets (game/tickets.js): their own currency, never points, pricing or income.
   const tickets = createTickets({ events, state });
   const ambience = createAmbience({ map, player, sound, colliders });
@@ -227,6 +238,9 @@ export function createGame({
   let rounds = null; // created below, once the zombie manager exists
   const getRound = () => Math.max(1, rounds ? rounds.round : 1);
   const death = { timer: 0, resultsShown: false, summary: null };
+  let secondChance = null; // the one self-revive per run (game/secondChance.js): created below, once the zombie manager exists
+  let winSummary = null;
+  let overtimeFrom = null; // the first overtime round (set by Stay for overtime), or null
 
   function buildRunSummary() {
     return Object.freeze({
@@ -244,19 +258,30 @@ export function createGame({
       accuracy: runStats.accuracy,
       assisted: state.assisted || health.invulnerable,
       killedBy: health.killedBy,
+      secondChanceUsed: secondChance.status === 'used', // the receipt's "Second Chance · Used" line
       // What you were wearing (slot -> item id or null): the receipt's DIED WEARING line.
       wearing: Object.freeze(Object.fromEntries(outfitRail.snapshot().map(({ slot, id }) => [slot, id]))),
       // The guns you named at Build-A-Blaster (the receipt reads them out).
       survivedBy: gun.namedBuilds.map((build) => ({ name: build.name, combo: comboName(build), confirmed: build.confirmed ?? 0 })),
       ticketsWon: tickets.won, // (GRAB-A-GUN's prize tickets: not points, not income)
+      closingDone: closing.done,
+      won: state.won,
+      winTime: state.won ? winSummary?.timeAlive ?? runStats.timeAlive : null,
+      winRound: state.won ? winSummary?.round ?? rounds.round : null,
+      // Whole overtime rounds survived, or null before overtime. (Not round - winRound: after a win in the break,
+      // overtime starts with the round the win happened in.)
+      overtimeRounds: overtimeFrom === null ? null : Math.max(0, rounds.round - overtimeFrom),
       keychains: tickets.tokens.keychain, // Sunny plush keychains redeemed (a joke for the receipt until the Wardrobe exists)
     });
   }
 
-  // THE single place the player dies. A downed/revive system would hook in here later
-  // (e.g. go "downed" instead, and only call the rest of this if nobody revives you).
+  // THE single place the player dies (player/health.js calls it once per lethal hit). A held Second Chance covers the
+  // hit instead (game/secondChance.js: full health where you stand, a shove, a grace period) and the run goes on.
   function onPlayerDeath() {
+    if (state.over) return;
+    if (secondChance.redeem()) return;
     state.over = true;
+    state.winPending = false;
     death.timer = 0;
     death.resultsShown = false;
     const summary = buildRunSummary();
@@ -268,9 +293,58 @@ export function createGame({
     events.emit('runEnd', { summary });
   }
 
+  function onRunWon() {
+    if (state.over || state.won || !closing.readyToLeave) return; // (all four keys and lines 1 to 3; no round gate)
+    state.won = true;
+    state.winPending = true;
+    closing.completeLeaving(); // line 4 is the win itself: ticked here, before the summary, so the receipt reads 4 of 4
+    winSummary = buildRunSummary();
+    ambience.silence();
+    events.emit('runWon', { summary: winSummary });
+  }
+  events.on('escapeVanStart', onRunWon);
+
+  function clockOut() {
+    if (!state.winPending) return false;
+    state.over = true;
+    state.winPending = false;
+    state.padPlaying = false;
+    events.emit('runEnd', { summary: winSummary });
+    return true;
+  }
+
+  // Leaving a run from a menu (Quit to title, Restart run): main.js calls this BEFORE it resets. A won run that is
+  // still on the clock (the receipt's choice is pending, or overtime is being played) is recorded here, exactly once:
+  // the win plus whatever overtime added. A run that was never won is not recorded, and a run that already ended
+  // (death, Clock out) was recorded when it ended.
+  function leaveRun() {
+    if (state.over || !state.won) return false;
+    const summary = state.winPending ? winSummary : buildRunSummary();
+    state.over = true;
+    state.winPending = false;
+    state.padPlaying = false;
+    events.emit('runEnd', { summary });
+    return true;
+  }
+
+  function stayForOvertime() {
+    if (!state.winPending) return false;
+    state.winPending = false;
+    interactions.reset();
+    rounds.startOvertime();
+    clockIn.reset(); // the fresh break can be cut short like any other
+    overtimeFrom = rounds.round;
+    events.emit('overtimeStart', { round: rounds.round });
+    return true;
+  }
+
+  // A summary as its receipt shows it. Classic has no checklist line on a receipt, and closingDone: null is the ONE
+  // value that says so (ui/screens.js receiptLinesFor). The death receipt below and main.js's win receipt both use this.
+  const receiptFor = (summary) => (state.showClosingGuidance ? summary : { ...summary, closingDone: null });
+
   function showResults() {
     death.resultsShown = true;
-    hud.showResults(death.summary);
+    hud.showResults(receiptFor(death.summary));
   }
 
   const health = createPlayerHealth({ stats, onDeath: onPlayerDeath, onRegenStart: () => events.emit('regenStart') });
@@ -294,6 +368,9 @@ export function createGame({
     getRounds: () => rounds,
     canAttack: () => !health.isDead,
     onPlayerHit: (damage, zombie, knockback = null, attackerPosition = null) => {
+      // Second Chance's grace period: the swing lands on nothing, so nothing reacts to it (no damage arrow, rumble, outfit
+      // tag or boss effect for a hit that did no damage).
+      if (health.isReviveProtected) return;
       const pos = attackerPosition || (zombie?.position ? { x: zombie.position.x, z: zombie.position.z } : null);
       let hitDirection = null;
       if (pos && player?.position) {
@@ -327,12 +404,22 @@ export function createGame({
     navigation: map.navigation, // floors + the ramps between them (undefined = one ground floor)
   });
 
+  // SECOND CHANCE (game/secondChance.js): bought at Customer Service, spent by onPlayerDeath. The HUD tag shows while it is
+  // held; the PA confirms the revive.
+  secondChance = createSecondChance({ health, zombies, player, events });
+  events.on('secondChance', ({ status }) => {
+    hud.setSecondChance?.(status === 'held');
+    if (status !== 'used') return;
+    hud.showAnnouncement({ kicker: 'Customer Service', text: 'Second Chance redeemed. Please return to your shift.', priority: 4 });
+    sound.play('paChime');
+  });
+
   rounds = createRounds({
     zombies,
     onRoundStart: (round) => events.emit('roundStart', { round }),
     onTypeIntro: (typeId, zombie) => events.emit('typeIntro', { typeId, zombie }),
     onVariantIntro: (variant, zombie) => events.emit('mascotVariantIntro', { variant, zombie }),
-    onRoundDiscard: () => events.emit('roundDiscard'),
+    onRoundDiscard: (reason) => events.emit('roundDiscard', { reason }),
     onWaveEnding: (data) => events.emit('waveEnding', data),
   });
   // The shopping window: hold Clock in during the break to call the next round early (announces 'clockIn').
@@ -345,35 +432,36 @@ export function createGame({
   // Once you're dead nothing more is paid or counted (a burning zombie dying later doesn't change
   // the results screen).
   events.on('hit', (hit) => {
-    if (!state.over && !hit.killed) wallet.earn(pointsForHit(hit));
+    if (!runFrozen() && !hit.killed) wallet.earn(pointsForHit(hit));
   });
   events.on('kill', ({ zombie, headshot, melee }) => {
-    if (!state.over) wallet.earn(pointsForHit({
+    if (!runFrozen()) wallet.earn(pointsForHit({
       target: zombie, killed: true, headshot, melee,
       killMultiplier: powerUps?.killMultiplier(zombie.position) ?? 1,
       killPayMultiplier: stats.killPayMultiplier,
     }), wardrobe.wearing('accessory') === 'goldCard' ? 'goldCard' : undefined);
   });
   events.on('shot', (shot) => {
-    if (!state.over) runStats.recordShot(shot);
+    if (!runFrozen()) runStats.recordShot(shot);
   });
   events.on('kill', ({ zombie }) => {
-    if (!state.over) runStats.recordKill(zombie);
+    if (!runFrozen()) runStats.recordKill(zombie);
   });
   // Knocking a Mascot's helmet off with a gun headshot or the box cutter pays a bonus: stuffings and hazards don't aim. (Melee
   // never reports a head hit, COD-style, so the knife counts however it lands: getting that close is the risk.) Every costume
   // has its own PA line. A helmet Captain Coupon put back on pays nothing the second time (no farming him).
   events.on('mascotHeadPop', ({ zombie, headshot, source, again }) => {
     const earned = source === 'melee' || (source === 'gun' && headshot);
-    if (state.over || again || zombie.noRewards || !earned) return;
+    if (runFrozen() || again || zombie.noRewards || !earned) return;
     wallet.earn(economy.payouts.helmetPopBonus);
     hud.showAnnouncement({ ...zombie.type.mascot.helmetPopLine, priority: 0 });
   });
   // A hard landing (feel.fall): the same hurt as a zombie's swing, without a zombie.
   player.onFall = ({ drop, damage }) => {
+    if (health.isReviveProtected) return; // (Second Chance's grace period: this landing can't hurt, so it isn't announced)
     events.emit('playerFall', { drop, damage });
     health.takeDamage(damage, { type: 'fall', fall: true });
-    player.addViewKick(-feel.fall.viewJoltDegrees * DEG_TO_RAD);
+    if (!health.isReviveProtected) player.addViewKick(-feel.fall.viewJoltDegrees * DEG_TO_RAD); // (not when this fall just spent it)
   };
   events.on('mascotReclaim', ({ zombie }) => {
     hud.showAnnouncement({ ...zombie.type.mascot.reclaim.line, priority: 1 });
@@ -387,6 +475,7 @@ export function createGame({
   // The costume twists that reach past the zombie (Poppy Corn's blast...): game/mascotCostumes.js.
   const mascotCostumes = createMascotCostumes({ events, scene, zombies, player, colliders, effects, surfaces, state });
   events.on('playerHit', ({ damage, zombie, knockback }) => {
+    if (runFrozen()) return;
     const isBoss = Boolean(zombie?.type?.boss);
     const source = zombie ? {
       type: 'zombie',
@@ -394,7 +483,13 @@ export function createGame({
       ...(zombie.type?.variant ? { variant: zombie.type.variant } : {}),
       ...(isBoss ? { boss: zombie.type.id } : {}),
     } : { type: 'zombie', id: 'shopper' };
-    health.takeDamage(damage * stats.damageTakenMultiplier, source); // (clothes scale zombie hits only: a fall goes straight to health)
+    // Clothes scale zombie hits only (a fall goes straight to health); Bubble Wrap (Kiosk Kevin) soaks what is left first.
+    const scaled = damage * stats.damageTakenMultiplier;
+    const { damage: remaining, popped } = health.absorb(scaled);
+    if (remaining < scaled) events.emit('armourHit', { absorbed: scaled - remaining, layers: health.armour.length, popped });
+    if (popped) sound.play('bubbleWrapPop');
+    health.takeDamage(remaining, source);
+    if (health.isReviveProtected) return; // this hit just spent Second Chance: revived where you stand, no shove or jolt
     if (knockback) { // a Cart Pusher's charge shoves you along it (m/s, horizontal)
       player.velocity.x += knockback.x * stats.knockbackMultiplier;
       player.velocity.z += knockback.z * stats.knockbackMultiplier;
@@ -406,11 +501,7 @@ export function createGame({
     hud.showRoundBanner(round);
   });
   events.on('waveEnding', () => {
-    hud.showAnnouncement({
-      kicker: 'Attention shoppers',
-      text: 'Final clearance — registers closing shortly!',
-      priority: 1,
-    });
+    hud.showAnnouncement(economy.rounds.lastShoppers.pa);
     sound.play('paChime');
   });
   // A zombie type's first appearance this run (Mall Walkers, round 4): PA chime + banner. (A Mascot announces the
@@ -427,8 +518,20 @@ export function createGame({
   });
 
   // Build-A-Blaster's PA lines (game/features/workshopRitual.js), and GRAB-A-GUN's (game/features/clawMachine.js).
-  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualWaiting', 'ritualCollect', 'limitedEditionDrop', 'limitedEditionFitted', 'wardrobeBuy', 'clawClosed', 'clawMoved', 'skinUnlocked']) {
+  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualWaiting', 'ritualCollect', 'limitedEditionDrop', 'limitedEditionFitted', 'wardrobeBuy', 'clawClosed', 'clawMoved', 'skinUnlocked', 'kioskStock']) {
     events.on(name, ({ pa }) => {
+      if (!pa) return;
+      hud.showAnnouncement({ ...pa, priority: 1 });
+      sound.play('paChime');
+    });
+  }
+
+  // Closing Time's own sounds, in both run modes (Classic has no PA text): a key picked up, a checklist line ticked.
+  events.on('closingKey', () => sound.play('closingKey'));
+  events.on('closingLine', () => sound.play('closingDuty'));
+  for (const name of ['closingBriefing', 'closingKeyDrop', 'closingKey', 'closingLine']) {
+    events.on(name, ({ pa }) => {
+      if (!state.showClosingGuidance || !pa) return;
       hud.showAnnouncement({ ...pa, priority: 1 });
       sound.play('paChime');
     });
@@ -468,6 +571,8 @@ export function createGame({
     updateBossBar(null);
     if (zombie.type.defeatBanner) hud.showAnnouncement({ ...zombie.type.defeatBanner, priority: bossTiming.introPriority });
   });
+  // Register after the defeat banner so the key-drop PA queues behind it.
+  const closing = createClosingTime({ events, player, colliders, state, view: createClosingKeyView(scene) });
   events.on('bossPhase', ({ zombie, phase }) => {
     const pa = zombie.type.phases?.[phase];
     if (pa) { hud.showAnnouncement({ ...pa, priority: bossTiming.introPriority }); sound.play('paChime'); }
@@ -499,8 +604,9 @@ export function createGame({
   const wardrobe = createWardrobe({ stats, player, events });
   const features = buildFeatures(map, {
     scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state, warranty, meleeUpgrades, wardrobe,
-    colliders, effects, sound, input, tickets, shootables, aimAssist,
+    colliders, effects, sound, input, tickets, shootables, aimAssist, secondChance, equipment, closing,
   });
+  const kevin = features.list.find(({ feature }) => feature.kind === 'kiosk')?.instance;
 
   // The outfit rail's brain: which worn item's tag pulses when (game/outfitRail.js; the HUD draws it).
   const outfitRail = createOutfitRail({ events, wardrobe, stats, player, gun, state });
@@ -518,12 +624,16 @@ export function createGame({
       if (group.id === 'tiers') return gun.slots.some((id) => warranty.offer(id));
       if (group.id === 'attachments') return featuresOf(map, 'attachmentCounter').some(s => !ownsAttachment(gun, s.attachment));
       if (group.id === 'apparel') return featuresOf(map, 'wardrobeRack').some(r => map.zones[r.zone].open && !wardrobe.owns(r.item));
+      if (group.id === 'kiosk') {
+        const status = kevin?.status;
+        return status?.open && !status.hiding;
+      }
       return true;
     },
   });
   // Developer shortcuts (config/debug.js lists the keys; main.js turns key presses into debug.run(id)).
   const debugCommands = createDebugCommands({
-    map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses, wardrobe, features, equipment, challenges,
+    map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses, wardrobe, features, equipment, challenges, closing,
     onUse: (id) => {
       // Merely showing the panel or choosing the next spawn type changes no run outcome.
       if (id !== 'panel' && id !== 'cycleZombie' && id !== 'cycleBoss' && id !== 'benchmark') state.assisted = true;
@@ -552,12 +662,14 @@ export function createGame({
   const resetSteps = [
     ['bosses', () => bosses.reset()],
     ['powerUps', () => powerUps.reset()],
+    ['closing', () => closing.reset()],
     ['zombies', () => zombies.clear()],
     ['mascotCostumes', () => mascotCostumes.reset()],
     ['wardrobe', () => wardrobe.reset()],
     ['stats', () => resetPlayerStats(stats)], // perks / wardrobe / skill-tree changes don't carry over
     ['surfaces', () => surfaces.reset()], // no slow floor left over
     ['health', () => health.reset()], // (after stats: back to the base max health)
+    ['secondChance', () => secondChance.reset()], // not held, and buyable again (its 'secondChance' event hides the HUD tag)
     ['runStats', () => runStats.reset()],
     ['challenges', () => challenges.reset()],
     ['balls', () => balls.clear()], // (before the gun: a ball in the air reports to it)
@@ -581,8 +693,12 @@ export function createGame({
     ['features', () => features.reset()],
     ['outfitRail', () => outfitRail.reset()],
     ['warranty', () => warranty.reset()], // no warranty on file in a new run
-    ['death', () => {
+    ['runOutcome', () => {
       state.over = false;
+      state.won = false;
+      state.winPending = false;
+      winSummary = null;
+      overtimeFrom = null;
       state.assisted = false;
       death.timer = 0;
       death.resultsShown = false;
@@ -597,6 +713,7 @@ export function createGame({
       hud.setDead(false);
       hud.hideResults();
     }],
+    ['saveGame', () => saveGame.reset()], // (no round-start snapshot yet; the slot itself is untouched)
   ];
 
   // Fresh run: everything back to the start without reloading the page.
@@ -605,6 +722,79 @@ export function createGame({
     events.emit('runReset');
   }
 
+  // SAVE & QUIT (game/saveGame.js): what a save keeps, as [name, serialize, restore], in RESTORE order (a load runs
+  // resetRun first). Every reset step above is either here or in transientSteps; tests/saveGame.test.js fails otherwise,
+  // so a new system with run state decides whether a save keeps it.
+  const saveSteps = [
+    // The stats as they are (clothes, box cutter tiers and health included): nothing is re-applied on top.
+    ['stats', () => ({ ...stats }), (data) => {
+      Object.assign(stats, data);
+      if (stats.meleeTier > 0) viewmodel.setMeleeColors?.(upgrades.melee[stats.meleeTier - 1].colors);
+    }],
+    ['wardrobe', () => wardrobe.serialize(), (data) => wardrobe.restore(data)],
+    ['secondChance', () => secondChance.serialize(), (data) => secondChance.restore(data)],
+    ['armour', () => health.armour, (layers) => health.restoreArmour(layers)], // Bubble Wrap (health itself is transient: stats.health is saved)
+    ['runStats', () => runStats.serialize(), (data) => runStats.restore(data)],
+    ['equipment', () => equipment.serialize(), (data) => equipment.restore(data)],
+    ['gun', () => ({ ...gun.serialize(), attachments: ownedAttachments(gun) }), (data) => {
+      gun.restore(data, weapons);
+      for (const id of data.attachments) unlockAttachment(gun, id);
+    }],
+    ['wallet', () => wallet.serialize(), (data) => wallet.restore(data)],
+    ['tickets', () => tickets.serialize(), (data) => tickets.restore(data)],
+    ['pricing', () => pricing.serialize(), (data) => pricing.restore(data)],
+    ['flashSales', () => flashSales.serialize(), (data) => flashSales.restore(data)],
+    ['rounds', () => rounds.serialize(), (data) => {
+      rounds.restore(data);
+      hud.setRound(data.round);
+      hud.showRoundBanner(data.round);
+    }],
+    ['bosses', () => bosses.serialize(), (data) => bosses.restore(data)],
+    ['powerUps', () => powerUps.serialize(), (data) => powerUps.restore(data)],
+    ['player', () => ({ position: player.position.toArray(), yaw: player.yaw }), (data) => {
+      player.teleport({ position: new Vector3().fromArray(data.position), yaw: data.yaw });
+    }],
+    // Owned areas (an area unlock reopens the free connections) and any door opened outside the area system.
+    ['map', () => ({
+      zones: Object.keys(map.zones).filter((id) => map.zones[id].open),
+      doors: map.doors.filter((d) => d.isOpen).map((d) => d.id),
+    }), (data) => {
+      for (const id of data.zones) {
+        if (!Object.hasOwn(map.zones, id) || map.zones[id].open) continue;
+        if (map.areaUnlocks) map.areaUnlocks.unlock(id);
+        else map.zones[id].open = true;
+      }
+      for (const door of map.doors) if (data.doors.includes(door.id) && !door.isOpen) door.open();
+    }],
+    ['features', () => features.serialize(), (data) => features.restore(data)], // (after the gun and map: an order needs its gun away)
+    ['outfitRail', () => outfitRail.serialize(), (data) => outfitRail.restore(data)],
+    ['warranty', () => warranty.serialize(), (data) => warranty.restore(data)], // (after the gun)
+    ['closing', () => closing.serialize(), (data) => closing.restore(data)], // the checklist and any key still on the floor
+    // The run's mode (Classic / Directed) and its outcome so far: a debug run stays one, and a run saved in overtime is still
+    // a won run (its win and overtime start are kept, so the receipt after Continue is right).
+    ['runOutcome', () => ({ assisted: state.assisted, closingMode: state.closingMode, won: state.won, winSummary, overtimeFrom }), (data) => {
+      state.assisted = data.assisted;
+      state.closingMode = data.closingMode ?? state.closingMode;
+      state.won = data.won ?? false;
+      winSummary = data.winSummary ?? null;
+      overtimeFrom = data.overtimeFrom ?? null;
+    }],
+  ];
+  // Reset steps a save does not keep: nothing in them outlasts a round's start that matters (zombies, effects, timers).
+  const transientSteps = [
+    'zombies', 'mascotCostumes', 'surfaces', 'health', 'balls', 'interactions', 'viewmodel', 'effects', 'contactShadows',
+    'ambience', 'melee', 'aimAssist', 'clockIn', 'hud', 'saveGame', 'challenges', // mastery counters live in the permanent skin save; no run counters yet
+  ];
+  const saveGame = createSaveGame({ steps: saveSteps, events, stats, state, rounds, resetRun, storage: saveStorage });
+  events.on('roundStart', () => saveGame.markRoundStart()); // (the snapshot waits for the end of the tick: see update)
+  // Stay for overtime in a break restarts the break without a 'roundStart': snapshot again, so a save there keeps the win.
+  events.on('overtimeStart', () => saveGame.markRoundStart());
+  // The PA welcomes you back after a load.
+  events.on('runLoaded', ({ round }) => {
+    hud.showAnnouncement({ ...saveConfig.loadedPa, text: saveConfig.loadedPa.text.replace('{round}', String(round)), priority: 2 });
+    sound.play('paChime');
+  });
+
   let vaultPromptVisible = false;
 
   // One fixed tick. (main.js polls the controller and runs its menus just before this.)
@@ -612,7 +802,7 @@ export function createGame({
     ambience.update(dt, state.running && !state.over);
     // Dead: the world keeps going (zombies wander to the body), the player doesn't.
     // Checked before the pause check, because the mouse is released on death.
-    if (state.over) {
+    if (death.summary) {
       death.timer += dt;
       balls.clear(); // (a ball in the air when you died is gone: nothing more is paid or counted)
       equipment.clearThrown(); // (so is a Soda Bomb on its fuse)
@@ -647,9 +837,17 @@ export function createGame({
       player.update(dt);
     }
     powerUps.update(dt); // collect escape rewards before this tick's zombie attacks; paused/dead timers freeze
+    closing.update(dt);
     // "[Space] Vault" prompt: would a jump press now end in a vault? (checked per tick, shown in render)
     vaultPromptVisible = !inMenu && player.grounded && !player.vault.active && player.vault.preview();
+    const alreadyWon = state.won;
     if (!inMenu) interactions.update(dt); // before the gun: on controller X, a hold near a buyable buys instead of reloading
+    // Stop this tick at the van, even if a runWon listener makes its choice synchronously.
+    if (!alreadyWon && state.won) {
+      player.freeze();
+      input.endTick();
+      return;
+    }
     if (!inMenu) melee.update(dt, !gun.isSwitching && !equipment.isBusy);
     // Equipment (G / middle mouse): after melee, so a swing that started this tick refuses the throw. In a menu only its timer runs.
     equipment.update(dt, { inMenu });
@@ -678,6 +876,7 @@ export function createGame({
     flashSales.update(dt);
     if (arena) arena.update(dt);
     player.updateView(dt); // recoil/jolt springs last, so this tick's kicks show on the next frame
+    saveGame.update(); // a round began this tick: snapshot it now, after every 'roundStart' listener rolled its draws
     input.endTick();
   }
 
@@ -686,13 +885,21 @@ export function createGame({
     events,
     pricing,
     death,
+    get winSummary() { return winSummary; },
+    receiptFor,
+    get overtimeFrom() { return overtimeFrom; }, // the first overtime round, or null (tests compare it after Play again)
+    clockOut,
+    stayForOvertime,
+    leaveRun,
     map,
     features,
     wardrobe,
     meleeUpgrades,
+    secondChance,
     outfitRail,
     flashSales,
     powerUps,
+    closing,
     bosses,
     debug: debugCommands,
     challenges,
@@ -726,5 +933,8 @@ export function createGame({
     update,
     resetRun,
     resetSteps: resetSteps.map(([name]) => name), // (read-only list, for tests / debugging)
+    saveGame, // Save & Quit's one slot (game/saveGame.js)
+    saveSteps: saveSteps.map(([name]) => name), // (read-only lists, for tests: every reset step is saved or transient)
+    transientSteps: [...transientSteps],
   };
 }

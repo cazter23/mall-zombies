@@ -349,7 +349,8 @@ test('controls: help lines and prompt labels for both throws; god mode off G; po
   assert.equal(god.key, 'KeyB');
   assert.ok(!debug.commands.some((c) => c.key === 'KeyG' || c.id === 'pockets'));
   const t = fixture({ fill: false });
-  assert.deepEqual(t.g.debug.keylessIds, ['skin', 'challenge', 'pockets']);
+  assert.ok(t.g.debug.keylessIds.includes('pockets'));
+  for (const id of ['skin', 'challenge', 'armour', 'closing']) assert.ok(t.g.debug.keylessIds.includes(id));
   assert.match(t.g.debug.run('pockets'), /3 Soda Bombs/);
   assert.deepEqual(lethal(t.g), { id: 'sodaBomb', count: soda.charges });
   assert.equal(t.g.state.assisted, true, 'a debug fill marks the run assisted');

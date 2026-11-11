@@ -25,6 +25,8 @@ src/
                         and Wet Floor settings. Boss kill values and health scaling go through economy.js.
     deathMusic.js       End of Shift: original seven-second death composition (piano/pad/bell/noise layers), gain and
                         stop fade. Bell anchors to feel.death.resultsDelay; played once through sound's music/master buses
+    careerStats.js      Career schema versions, recent-run limit and accuracy record threshold.
+    closingTime.js      Four closing duties and their keys, fountain, night-safe and last-orders targets, PA copy (the once-per-run briefing and its delay; `keep` marks the lines the PA queue never drops), the win receipt's words, the OVERTIME tag, Statistics labels, key marker and prop tuning, and escape van prompt data. Also the run modes (order, default, chooser words), Classic's prompt words, each duty's place and the fountain prompt's count.
     powerUps.js         Employee-incentive drop tuning, skill credit, round caps, pickup/zone durations, ammo top-up,
                         sweep strength, colors and PA lines. First round 2, 12-16 credit per drop, maximum 3 per round
     effectWords.js      THE WORDS-ONLY RULE: players never see an upgrade's effect as a number. The fixed size bands (a little / noticeably / much), sizeWord / fillSize
@@ -89,7 +91,7 @@ src/
                         gamepad (deadzones, look speed/curve, turn ramp, triggers, click-to-sprint release),
                         aimAssist (strength dial, range/cone, slowdown, rotational, ADS snap). Equipment: lethal = G / RB, tactical = middle
                         click (Mouse1) / D-pad right; melee = V / R3 (RB moved to the Lethal throw, COD's layout)
-    settings.js         THE LIST of player settings (options menu): { id, tab, label, type toggle|slider|select, default,
+    settings.js         THE LIST of player settings (options menu; an entry with tab null is a remembered choice that is never shown: closingMode, the run mode): { id, tab, label, type toggle|slider|select, default,
                         min/max/step, format, apply(value, ctx) }. Most apply() functions write into the config objects the
                         game reads every frame (feel, controls, audio). New setting = one entry here (new tab = add to settingsTabs)
     gunPalettes.js      Shared role bindings for each model colour key and the defaults moved out of model files.
@@ -102,6 +104,8 @@ src/
                         E Sunny in the next GRAB-A-GUN grab / Shift+E move GRAB-A-GUN to another open area now
     ui.js               Presentation timing, PA queue limit and brief weapon-role copy (no gameplay tuning)
     deathReports.js     Satirical OSHA / Mall HR incident reports and loss prevention survival tips per lethal source (Form 109-C).
+                        health.takeDamage(amount, source) records the killing blow: { type: 'zombie', id, variant?, boss? },
+                        { type: 'fall' } or { type: 'hazard', id } (a hazard that hurts the player needs a hazards entry).
     attachmentVisuals.js Per-weapon attachment sizing, near-side rail placement, short-barrel spans and held reload copies.
     retailUnease.js     Rare atrium display changes and localized back-room sound timings/ranges; no gameplay tuning.
     kiosk.js            Kiosk Kevin (docs/kiosk-kevin-plan.md; phase 1 built): the equipment power curve (power: baseHealth 800, exponent 0.37), the throw
@@ -163,6 +167,8 @@ src/
     health.js           createPlayerHealth(): takeDamage, regen after a delay, `overlay` strength for the red
                         hurt edges (grows with damage, pulses when low, flashes on hit), calls onDeath once and onRegenStart
                         once per recovery ('regenStart'). takeDamage takes the final amount: clothes scale zombie hits in createGame's 'playerHit'.
+                        revive(seconds) = full health again plus that long with no damage at all (`isReviveProtected`; it counts down in update, so it pauses
+                        with the game): Second Chance (game/secondChance.js) calls it from inside onDeath, so the death never registers.
     body.js             createPlayerBody(): first-person legs + lower torso in the world scene (visual only).
     wardrobeAppearance.js  Browser equip and reset wiring for body and gun cosmetics. Tags the active sleeve style across all models and generates the cable-knit texture.
                         Tapered faceted waist/pelvis, belt buckle, tapered thighs/shins and faceted sneakers with tongue accent.
@@ -386,7 +392,7 @@ src/
     equipment/
       equipmentDamage.js equipmentPower(round) = (zombieHealthForRound / 800) ^ 0.37 (multiplies every equipment damage), blastFalloff (1 at
                         the centre to edgeFraction at the radius), blastDamage(target, distance, blast, round) (a boss: its fixed share of max health).
-    pricing.js          createPricing(): priceOf('door'|'weapon'|'ammo'|'ammoCache'|'tier'|'attachment', id) = economy.js base price with any
+    pricing.js          createPricing(): priceOf('door'|'weapon'|'ammo'|'ammoCache'|'tier'|'attachment'|'closing', id) = economy.js base price with any
                         discount applied (setDiscount(category, 0..1), rounded to the nearest economy.discountRoundTo (10); discountOf; reset() on a new
                         run). Unknown category/id throws. PRICE_CATEGORIES
     events.js           createEvents(): tiny synchronous bus (on -> unsubscribe fn, emit, count). The event list + payloads
@@ -410,8 +416,8 @@ src/
                         update/reset/snapshot cover per-run counters; finish handlers can finalize later round/run feats before saving.
     careerStats.js      createCareerStats({ storage }): versioned persistent employee record with lifetime totals,
                         personal bests and the last 12 completed shifts. Assisted/debug runs are rejected; storage
-                        failures fall back to memory. main.js supplies localStorage and records the runEnd event
-    settings.js         createSettings(ctx): current value of every setting, saved in localStorage ('mallZombies.settings',
+                        failures fall back to memory. A save from a newer version is never written over (blank ledger for the session). main.js supplies localStorage and records the runEnd event
+    settings.js         createSettings(ctx): current value of every setting (and of remembered choices with no tab, like the run mode: "Reset everything" keeps those), saved in localStorage ('mallZombies.settings',
                         values are sanitized on load), applies them all at startup; get/set/reset(tab)/onChange. ctx = { renderer, sound, hud }
     runStats.js         createRunStats(): time alive, kills, headshot/melee kills, bosses defeated, shots fired/hit, accuracy
     bossDirector.js     Picks debut rounds (never a zombie type's or a Mascot costume's), retries a normal-marker spawn partway
@@ -424,6 +430,10 @@ src/
                         end, death, Play again). g.mascotCostumes
     meltTrail.js        Scoops' puddles: one fixed pool for every Scoops (oldest gives way, own material to fade), drops every
                         dropEvery where he walks; a grounded player in one reports 'melt' to surfaceSlows
+    closingTime.js      g.closing owns persistent boss key drops, collection, checklist progress (fountain kills, night-safe purchases and workshop collections) and Play again reset.
+                        A key never ticks a line: lines 1 to 3 tick on their duty, line 4 on the win (completeLeaving, called by onRunWon). readyToLeave = four keys and
+                        lines 1 to 3 (what the van asks for); missingKeys / missingDuties say what is left. Emits the once-per-run 'closingBriefing'.
+    floorPickups.js     Shared clear-floor placement and swept collection for incentives and closing keys; direction for HUD markers.
     powerUps.js         createPowerUps(): listens to kill/round/death events; earned dynamic pickups on clear floor,
                         swept walk-through collection, 15s expiry, no repeats, per-round caps. Blue Light multiplies only
                         base kill credit, within its 4m radius, same floor and line of sight. reset/dispose; debugDrop(id, at)
@@ -479,6 +489,8 @@ src/
       retailUnease.js   Called by the existing horror feature: unseen mannequin turn, shared empty-concourse TV feed,
                         distant upstairs silhouette. Quiet intervals, comfort gates, reset and static-batching-safe hooks.
       workshop.js       The workshop feature: builds the ritual, its effects and the Limited Edition drops, runs Party Trap charges.
+      nightSafe.js      Customer Service deposit prompt. Gates payments on Kettle’s Safe Key and completion, and charges the live closing price. Without the key: "Requires <key>" in Directed, "Needs <key>" in Classic.
+      escapeVan.js      Customer Parking hold prompt. Blocked until g.closing.readyToLeave: Directed lists missing keys, then the unfinished duties whose key is held (vanNeeds); Classic names one thing at a time, the first missing key or an unfinished duty by its place (vanNeedsClassic). Emits the van start.
       limitedEditions.js The bag a shopping-bag zombie sometimes drops: walk over it and Party Trap or Clearance Rack fits a gun you carry, free.
       workshopRitual.js The Build-A-Blaster ritual: idle, running, ready. Bench opens the order form, gun on the conveyor, gauge (kills also shorten the clock), maximum time, the gun coming back by itself, chute steering. Built by workshop.js.
       workshopStuffings.js What a finished build does (and its looks: flashes, flames, ice, drips, hearts): one function per Stuffing, one per Heart. Hearts read 'shot' and hand off to the stuffing; nothing here emits 'shot', so a stuffing's kills can't fire a Heart.
@@ -505,6 +517,7 @@ src/
                         forcePlush / moveNow (debug). The show (cfg.show, never the prize): prongs open and shut, the carried capsule swings,
                         the chute flap, an attract screen, sounds that fade with distance (jingle, a tick into each lane, motor, grab,
                         fanfare, Sunny's slide whistle) and a hum: an emitter it adds to map.ambience that follows the live machine.
+      kiosk.js          Kevin's fixed Hallway feature: three priced buy spots, round gating, Kevin's Pick, hiding and PA.
       clawSunny.js      Sunny runs away (built by clawMachine.js): out of the chute, a look round, a waddle along g.zombies.nav.pathTo to the
                         next site's front (open areas only; a lap round his own machine if no other site is open), into that cabinet, which
                         shakes (its rig group; colliders never move). His shootable (one body box) pops on any hit: stuffing and confetti,
@@ -518,7 +531,7 @@ src/
                         Darker every round, flickering neon dies, every tube browns out, lamps die, the view drifts to the lateHours grade, power cuts.
       hazards.js        Shared environmental hazard lifecycle (docs/hazards-plan.md): buildHazardSwitchBox (dynamic parent group, status lamp + throw lever),
                         createHazard (ready -> active -> cooldown, 'hazard' pricing prompt, player-inside slow/hurt, reset), dealHazardDamage (source 'hazard', boss/Mascot maxHealthCap).
-      fountainHazard.js Feature kind 'fountainHazard': Grand Atrium center fountain breaker switch; energizes the basin and conductive floor ring, pulsing electric arcs (source 'hazard') and slows.
+      fountainHazard.js Feature kind 'fountainHazard': Grand Atrium center fountain breaker switch; energizes the basin and conductive floor ring, pulsing electric arcs (source 'hazard') and slows. Emits 'fountainKill' for each killing blow.
     debugCommands.js    createDebugCommands(game parts): the debug shortcuts as functions run(id) (spawn, cycleZombie, clearZombies,
                         killZombies, nextRound, jumpRounds, flashSale, addPoints, zeroPoints, god, giveGun, upgradeGun, doors, arena, panel,
                         spawnMascot / spawnGoldMascot: each costume in turn at the spawn point nearest you);
@@ -608,6 +621,7 @@ src/
                         delivery notices. Scenic geometry only; uses config/parkingDetails.js alongside parkingLot.js.
     mall/parkingDetailKit.js Shared boxes, rods, signs, planes and canvas decal materials; all resources owned by mapKit.
     config/parkingDetails.js Authored wear/scene/service/street locations, RV labels, haze/sway settings, ambient loops/events.
+    config/save.js      Save & Quit: the save format's version (bump it when a step's saved data changes shape or map.features changes order: older saves are dropped), the localStorage key, the greyed-button reasons, the PA line on a load and the dropped-save notice.
     config/gunStyle.js  How upgrades change a gun's shape and colour: attachment scale, the warranty collar and tag sizes and METAL finish per tier (Platinum shimmers), the build's pillows, quality vividness and glow, the Heart badge colours and shapes, the seam glow. Looks only.
     mall/mallExterior.js Opaque outer Atrium facades, roof and returns close the building beyond Mega Mart. Meshes opt into
                         userData.alwaysVisible so room culling preserves the building silhouette while hiding its interior.
@@ -649,6 +663,7 @@ src/
     mall/cinemaStairs.js Physical service stairs with a smooth ramp under visible treads, solid supports, handrails, two culling
                         rooms and the floor-to-floor nav link. Lower shutter (1500) opens cinema + serviceCorridor; the original
                         cinema shutter now opens cinema + upstairs. No real lights, guns or spawn markers added.
+    mall/kioskCart.js   Kevin's low counter, vendor, three buy spots and changing notices.
     mall/restockMachine.js buildRestockMachine({ kit, center, wallAt, facing, floorY = 0 }) -> { position, normal, screen }: the RESTOCK-O-MATIC
                         (north/south walls): body + hazard kick plate + glowing header and tagline, a lit window of ammo boxes, keypad,
                         card reader, live canvas screen (screen.show({ title, line, note, tone })), side signs, the AMMO blade sign, the
@@ -704,6 +719,8 @@ src/
                         setMasterVolume(v) (used by Settings > Audio), setAmbience(mix) (up to three continuous spatial voices,
                         short crossfades), playAmbient(name, {volume, pan}); faded sources stop and disconnect
     game/ambience.js    Spatial loop selection with optional emitter gain/smooth pulses; local map.ambientEvents play
+    game/secondChance.js  The one automatic self-revive per run, sold at Customer Service's third window (upgradeDesk.js secondChanceItem, opposite Sharpening; economy.secondChance through g.pricing 'secondChance'). status 'available' | 'held' | 'used'; buy() (the desk has charged); redeem() is called by createGame's onPlayerDeath on every lethal hit: held = health.revive (full health in place, feel.health.secondChance.protectionSeconds of immunity) + zombies.staggerNearby (the shove: same floor, in reach, never a boss) and true, so the run goes on; otherwise false and the death stands. reset() is Play again's 'secondChance' step. Announces 'secondChance' { status } on every change: createGame's listener shows the HUD tag while held and reads the PA line on 'used'. While the protection lasts createGame announces no 'playerHit' or 'playerFall' (a swing that cannot hurt gets no arrow, rumble, outfit tag or boss effect). The receipt's "Second Chance · Used" line comes from summary.secondChanceUsed. createGame exposes g.secondChance.
+    game/saveGame.js  Save & Quit, Black Ops 6 style: one slot (localStorage in the browser, any { getItem, setItem, removeItem } in tests via createGame's saveStorage). Each 'roundStart' raises a flag and createGame's update() takes the snapshot at the END of that tick, after every roundStart listener rolled its draws (boss schedule, Flash Sale, claw site, today's bins): every createGame saveSteps entry's serialize(), as JSON. canSave() { ok, reason }: a round has started, alive, full health. saveAndQuit() writes { version, round, savedAt, data } and announces 'runSaved'; main.js then goes to the title (not a death: no runEnd, no career record). peek() for the title's Continue; a save of another version is removed and `dropped` turns true. load() removes the slot FIRST, runs resetRun, then each step's restore in order (rounds.restore puts the run at the start of that round's break without a 'roundStart'), and announces 'runLoaded' { round } (horror relights, the PA welcomes you back); a restore that throws drops the save and resets. Systems with saved state have serialize()/restore(data) next to reset(): wallet, runStats, tickets, secondChance, rounds, pricing, flashSales, bossDirector, powerUps, wardrobe (restores WITHOUT re-applying factors: the stats are saved as they are), warranty, outfitRail, equipment, playerGun (each slot as config id + mods + ammo, the gun away at Build-A-Blaster, the loaner), features/index.js (by feature index: workshop's ritual order, the claw machine's site and stock). Not kept: zombies, power-ups on the floor or running, traps, puddles, hazard cooldowns, a grab under way (createGame's transientSteps).
     game/meleeUpgrades.js  The box cutter tiers sold at Customer Service's second window (config/upgrades.js melee: Sharpened Blade x3 damage, Box Cutter Pro x5 + a wider cone + two targets): offer() = the next tier or null, accept() writes stats.meleeTier / meleeUpgradeDamage / meleeHalfAngleDegrees / meleeMaxTargets and announces 'meleeUpgrade' (the viewmodel recolours the cutter). Nothing run-scoped lives here: Play again's stats reset puts it back. Prices: economy.upgrades.melee through g.pricing 'melee'. createGame exposes g.meleeUpgrades.
     game/warranty.js    The Extended Warranty rules that are not a stat change: what the Customer Service desk offers (next tier, a Renewal past Platinum, or a warranty on file moved onto this gun for a fee), the warranty a replaced gun leaves on file, and the Platinum claim (a dry gun gets its ammo back once per round). Numbers: config/upgrades.js.
                         occasional one-shots only in audible unlocked areas. Timers freeze on pause and restart on reset.
@@ -714,6 +731,7 @@ src/
     ballView.js         Browser side only: draws `balls.list` (the Tennis Ball Launcher's balls) as a pool of tumbling tennis balls between last tick's and this tick's position (alpha).
     throwableView.js    Browser side only: draws `equipment.live` (Kiosk Kevin's thrown things) as a pool of cola bottles: tumbling in the air, lying and
                         rattling on the floor, swelling as the fuse runs out; a mesh is hidden when its item is gone; dispose() frees the pool.
+    closingKeyView.js   Reusable spinning key and signature props for the four closing pickups.
     powerUpView.js      Reusable delivery carton, blue beacon and security badge (no lights/colliders); bob/spin/blink,
                         floor-projected Blue Light ring clipped at walls/voids, hide on reset/death, owned-resource disposal
     contactShadows.js   One instanced draw for soft zombie grounding; interpolates feet and finds supporting collider tops.
@@ -741,7 +759,12 @@ src/
                         gun's real spread + pellets vs a Shopper's hitboxes at a range: expectedShotDamage, sustainedDps, burstDps,
                         shotsToKill); gunReport.mjs = `npm run balance`; meleeReport.mjs = `npm run melee` (swings to kill by round, plain box cutter vs the Customer Service tiers); gunSheet.html/.js = a contact sheet of one gun in eight upgrade states (`npm run dev`, /tools/gunSheet.html?gun=nailGun&view=left); babReport.mjs = `npm run balance:bab` (headless horde bot: plain gun vs warranty tiers vs builds); clawOdds.js = GRAB-A-GUN's odds
                         simulation (seeded; the game's own roll; perfect / 3-in-4 / random / timed presses; sites, plush closes, wall value,
-                        points per specific gun vs its cheapest wall route); clawSim.mjs = `npm run sim:claw [price]` prints it (the plan's odds tables)
+                        points per specific gun vs its cheapest wall route); clawSim.mjs = `npm run sim:claw [price]` prints it (the plan's odds tables);
+                        economySim.mjs = `npm run sim:economy` (docs/economy-report.md is written from its tables): plays the real game headless, many seeds in parallel
+                        child processes, with economyBot.js (the bot: aims with error, kites, shops by TELEPORT from a buy order, immortal or mortal; records income by
+                        source, purchases and the loadout each round) following economyPlans.js (PLANS = buy orders; PROPOSALS = config changes applied in memory only,
+                        so a before/after is measured without touching src/config), beside economyModel.js (the maths: wave mix, points a zombie, the upgrade ladder);
+                        finished runs are kept in scratch/economy-sim/ (git-ignored) until the game's code or that plan changes; --quick for a short, noisy look
   world/                Shared building blocks for maps
     mapKit.js           createMapKit(group, colliders): mat, addCollider, box, sign, tiledFloor, wall({ along, from, to,
                         at0, at1, height, openings: [{ from, to, top }] }) (doorways get lintels), shutterDoor({ id, label,
@@ -822,7 +845,7 @@ src/
     damageDirection.js  Computes relative damage angle (0° = front, 90° = right, 180° = behind, 270° = left) and queues damage indicators for the HUD.
     retail.css          Retail presentation layer loaded after style.css: mall directory, distinct combat signs,
                         shelf tickets, personnel paperwork, facilities settings and handbook. Responsive + reduced motion.
-    bagMarker.js        The HUD arrow to a dropped Limited Edition: name, distance, floor, time left.
+    bagMarker.js        The HUD arrow to a Limited Edition or closing key: name, distance, floor and time left when applicable.
     birthCertificate.js The Birth Certificate notice at collection. Clears itself; nothing pauses.
     orderForm.js        Draws the order form from its view. Only draws: choices come in on the fixed tick. Sized from the screen height (retail.css --order-base,
                         everything in em), left of centre; keys drawn as keycaps (keycaps()), one line on what the order does (orderSummary()), stuffings
@@ -830,7 +853,7 @@ src/
     fittingRoomPicker.js Draws the fitting-room picker from its view (hud.setFittingRoom): four slot columns on the order form's paper and keycaps, the
                         highlighted item's stat lines in green and red. Only draws.
     ritualHud.js        The order ticket on the HUD: the gun's stage, one progress bar, the gauge and time (reads the ritual's status).
-    announcements.js    Bounded PA queue: type introductions priority 2, incentives 1, routine messages 0;
+    announcements.js    Bounded PA queue: type introductions priority 2, incentives 1, routine messages 0; a message flagged `keep` is never trimmed and is re-queued if cut off;
                         clear on pause/death/reset; wall-clock presentation timers only
     noticeHistory.js    The run's PA notices, kept for the Notices menu (queued and pre-empted ones too); pausing never clears it.
     noticesMenu.js      createNoticesMenu(history): the pause screen's list of this run's PA notices.
@@ -839,7 +862,10 @@ src/
                         silhouettes for empty slots, a swing + glow on pulse. Variants: 'hud' (over the health bar, from round 1), 'pause' (large, with each item's
                         lines) and 'receipt' (the death receipt's DIED WEARING row).
     outfitIcons.js      The rail's SVG pictures: one icon per item (`icon` ids in config/wardrobe.js) and one dashed silhouette per slot.
-    screens.js          The menus around a run (title, statistics, pause, results) as plain DOM over the canvas.
+    screens.js          The menus around a run (title, run mode, statistics, pause, results) as plain DOM over the canvas. The run mode chooser lists config/closingTime.js modes
+                        (Directed first), focuses the remembered mode (setRunMode) and stays up after a mode is confirmed until play starts (startRequested).
+    runStart.js         createRunStart({ game, screens, settings, play }): a mode confirmed on the chooser is stored (game.closingMode, the 'closingMode' setting) and play() is
+                        asked once. No reset (the title already reset the run) and no pause screen; acceptsLock() tells main.js whether an arriving pointer lock may start play.
     titleCamera.js      The title flyover: plays map.titleShots forever behind the main menu.
 ```
 

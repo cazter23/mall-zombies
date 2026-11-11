@@ -1,9 +1,21 @@
 # Kiosk Kevin: plan
 
-Status: PHASE 1 BUILT (9 November 2026, branch `claude/kiosk-kevin-1`: the two pockets, the buttons and the Soda Bomb; docs/history.md has what was built and measured).
-Phases 2 to 8 are still a plan (the plan itself: branch `claude/kiosk-kevin-plan`; the five decisions below were answered the same day). Numbers are starting points to tune by playing, and prices are
-suggestions: the economy report the claw and Wardrobe plans wait for still doesn't exist (`docs/economy-report.md` and `tools/economySim.mjs` aren't
-written), so phase 7 checks them with a small report of its own. Checked against main at 753aafd (all ten GRAB-A-GUN phases, Wardrobe v1 and showroom
+## Built scope · 10 November 2026
+
+Phases 2 and 3 are built as Minimal Kiosk Kevin, with the Stadium Air Horn pulled forward from phase 5.
+The cart stays at one Hallway site and sells Soda Bomb, Bubble Wrap and Stadium Air Horn from round 2 when
+the Hallway is open. Kevin still ducks within 3 m of a living zombie. Kevin's Pick cycles through those three
+products in that order and adds one charge or layer, subject to the armour cap. Soda Bomb now costs 300 for
+a refill to three, or four when featured. Bubble Wrap and Air Horn cost 500 each. There are no round-start
+grants. The relocation, random stock and 750-point Soda Bomb price below describe the original proposal.
+The Sentry, Sparkler Cake and Glitter Bomb remain unbuilt.
+
+Phase 1 was built on 9 November 2026 on `claude/kiosk-kevin-1` (the two pockets, the buttons and the Soda Bomb).
+The original proposal below was written on `claude/kiosk-kevin-plan` the same day. Its remaining phases and
+balance suggestions are subject to the built scope above. Numbers are starting points to tune by playing, and prices are
+suggestions: the economy report now exists (`docs/economy-report.md`, 10 November 2026, from `npm run sim:economy`; its last section prices a purchase in
+"rounds of income"), so phase 7 checks Kevin's prices against it and adds a kiosk step to the bot in `tools/economyPlans.js`. Checked against main at 753aafd (all ten GRAB-A-GUN phases, Wardrobe v1 and showroom
+=======
 phases 1 and 3). Build one phase at a time, in its own worktree, and test before the next.
 
 ## The five decisions (made by the user, 9 November 2026)

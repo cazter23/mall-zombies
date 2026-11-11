@@ -268,7 +268,7 @@ export class Zombie {
     this.buffs.clear();
   }
 
-  // Security Sweep interrupts attacks/charges without invoking damage or kill events.
+  // Interrupt attacks and charges without invoking damage or kill events.
   staggerAway(origin, { seconds, knockback, drag }) {
     if (this.type.boss || !this.isAlive || this.state === 'spawning') return false;
     this.setState('chasing');
@@ -644,8 +644,11 @@ export class Zombie {
 
     if (ctx.canAttack && this.chargeCatches(ctx.player)) {
       ctx.onPlayerHit(charge.damage * this.damageMultiplier, this, { x: dir.x * charge.knockback, z: dir.z * charge.knockback });
-      this.velocity.set(0, 0, 0);
-      this.setState('chargeRecover');
+      // A revive can interrupt the charge from inside the hit callback.
+      if (this.state === 'charging') {
+        this.velocity.set(0, 0, 0);
+        this.setState('chargeRecover');
+      }
     } else if (this.chargeLeft <= 0 || (this.stateTime > 0.2 && moved < step * 0.3)) {
       this.crash(ctx);
     }

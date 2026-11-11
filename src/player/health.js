@@ -2,13 +2,13 @@
 // PLAYER HEALTH
 // Taking damage, regenerating, and dying. Health itself lives in the stats
 // object (stats.health / stats.maxHealth) so perks can change it; so do the
-// regen delay and rate. At zero health this calls onDeath exactly once: the
-// game's single death path (onPlayerDeath in main.js), so a downed/revive
-// system can hook in there later.
+// regen delay and rate. A lethal hit calls the game's single death handler
+// in createGame.js, which can revive the player before ending the run.
 // Runs on the fixed tick.
 // =============================================================================
 
 import { feel } from '../config/feel.js';
+import { armourDefaults } from './stats.js';
 
 export function createPlayerHealth({ stats, onDeath, onRegenStart = null }) {
   let sinceHit = Infinity; // seconds since the last hit (regen waits for stats.regenDelay)
@@ -17,6 +17,8 @@ export function createPlayerHealth({ stats, onDeath, onRegenStart = null }) {
   let time = 0; // for the low-health pulse
   let dead = false;
   let killedBy = null; // source of the lethal blow ({ type, id, variant, boss, fall })
+  let reviveProtection = 0;
+  const armour = [];
 
   return {
     get regenWaitFraction() {
@@ -24,6 +26,45 @@ export function createPlayerHealth({ stats, onDeath, onRegenStart = null }) {
     },
     // Debug god mode (game/debugCommands.js): no damage at all while true. Not part of a run, so it survives Play again.
     invulnerable: false,
+
+    get isReviveProtected() {
+      return reviveProtection > 1e-9;
+    },
+
+    get armour() {
+      return armour.slice();
+    },
+
+    get maxArmourLayers() {
+      return stats.maxArmourLayers ?? armourDefaults.maxArmourLayers;
+    },
+
+    addArmour(count = 1) {
+      const strength = stats.armourLayerStrength ?? armourDefaults.armourLayerStrength;
+      const added = Math.max(0, Math.min(count, this.maxArmourLayers - armour.length));
+      for (let i = 0; i < added; i++) armour.push(strength);
+      return added;
+    },
+
+    // Save & Quit (game/saveGame.js): the layers as they are (each one's strength left).
+    restoreArmour(layers) {
+      armour.length = 0;
+      armour.push(...layers.slice(0, this.maxArmourLayers));
+    },
+
+    absorb(amount) {
+      let popped = 0;
+      while (!dead && !this.invulnerable && amount > 0 && armour.length) {
+        const outer = armour.length - 1;
+        const absorbed = Math.min(amount, armour[outer]);
+        armour[outer] -= absorbed;
+        amount -= absorbed;
+        if (armour[outer] > 0) break;
+        armour.pop();
+        popped += 1;
+      }
+      return { damage: amount, popped };
+    },
 
     get isDead() {
       return dead;
@@ -39,7 +80,7 @@ export function createPlayerHealth({ stats, onDeath, onRegenStart = null }) {
 
     // The amount is final: clothes scale ZOMBIE hits in the 'playerHit' listener (game/createGame.js), never a fall.
     takeDamage(amount, source = null) {
-      if (dead || amount <= 0 || this.invulnerable) return;
+      if (dead || amount <= 0 || this.invulnerable || this.isReviveProtected) return;
       stats.health = Math.max(0, stats.health - amount);
       sinceHit = 0;
       regenerating = false;
@@ -54,6 +95,7 @@ export function createPlayerHealth({ stats, onDeath, onRegenStart = null }) {
     update(dt) {
       time += dt;
       flash = Math.max(0, flash - dt);
+      reviveProtection = Math.max(0, reviveProtection - dt);
       if (dead) return;
       sinceHit += dt;
       if (sinceHit >= stats.regenDelay && stats.health < stats.maxHealth) {
@@ -82,14 +124,21 @@ export function createPlayerHealth({ stats, onDeath, onRegenStart = null }) {
       return Math.min(1, Math.max(strength, hitFlash));
     },
 
-    // Back to full health for a new run.
+    revive(seconds) {
+      this.reset();
+      reviveProtection = seconds;
+    },
+
+    // Back to full health and clear damage from the previous life.
     reset() {
+      armour.length = 0;
       stats.health = stats.maxHealth;
       sinceHit = Infinity;
       regenerating = false;
       flash = 0;
       dead = false;
       killedBy = null;
+      reviveProtection = 0;
     },
   };
 }

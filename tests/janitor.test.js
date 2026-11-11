@@ -120,6 +120,7 @@ test('Antifreeze cannot shatter the Janitor based on his resisted slow', (t) => 
   const hits = [];
   g.events.on('buildFired', ({ hit }) => hits.push(hit));
   const aim = () => {
+    g.player.yaw = 0;
     g.player.pitch = Math.atan2((cfg.hitbox.headTop + cfg.hitbox.headBottom) / 2 - g.player.eyeHeight, 12 - boss.position.z);
   };
   input.held.add('Mouse2');

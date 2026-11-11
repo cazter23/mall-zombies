@@ -116,6 +116,17 @@ export const audio = {
       { type: 'tone', wave: 'triangle', freq: 2150, freqEnd: 2150, gain: 0.24, attack: 0.001, decay: 0.045, delay: 0.045 },
     ] },
     // Three distinct employee incentives, all routed through the existing master-volume bus.
+    // Closing Time, in both run modes (game/createGame.js): a checklist key picked up (a bright jingle of keys), and a
+    // checklist line ticked (a short two-note confirmation). Classic has no PA text, so these are its feedback.
+    closingKey: { volume: 0.5, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 5200, q: 3, gain: 0.22, attack: 0.001, decay: 0.05 },
+      { type: 'tone', wave: 'triangle', freq: 1568, freqEnd: 1568, gain: 0.3, attack: 0.002, decay: 0.12 },
+      { type: 'tone', wave: 'triangle', freq: 2093, freqEnd: 2093, gain: 0.26, attack: 0.002, decay: 0.2, delay: 0.07 },
+    ] },
+    closingDuty: { volume: 0.5, layers: [
+      { type: 'tone', wave: 'sine', freq: 784, freqEnd: 784, gain: 0.34, attack: 0.004, decay: 0.14 },
+      { type: 'tone', wave: 'sine', freq: 1175, freqEnd: 1175, gain: 0.3, attack: 0.004, decay: 0.3, delay: 0.11 },
+    ] },
     incentiveRestock: { volume: 0.55, layers: [
       { type: 'noise', filter: 'bandpass', freq: 1200, q: 1, gain: 0.35, attack: 0.002, decay: 0.08 },
       { type: 'tone', wave: 'triangle', freq: 440, freqEnd: 440, gain: 0.3, attack: 0.005, decay: 0.13 },
@@ -260,6 +271,14 @@ export const audio = {
       { type: 'tone', wave: 'sine', freq: 140, freqEnd: 40, gain: 1, attack: .001, decay: .22 },
       { type: 'noise', filter: 'lowpass', freq: 1100, q: .7, gain: .85, attack: .001, decay: .16 },
       { type: 'noise', filter: 'highpass', freq: 4200, q: .7, gain: .45, attack: .01, decay: .6 },
+    ] },
+    stadiumAirHorn: { volume: .72, layers: [
+      { type: 'tone', wave: 'sawtooth', freq: 415, freqEnd: 392, gain: .5, attack: .012, decay: .34 },
+      { type: 'tone', wave: 'sawtooth', freq: 508, freqEnd: 480, gain: .35, attack: .016, decay: .33 },
+    ] },
+    bubbleWrapPop: { volume: .65, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 2400, q: 1.1, gain: .9, attack: .001, decay: .035 },
+      { type: 'tone', wave: 'sine', freq: 260, freqEnd: 95, gain: .4, attack: .001, decay: .065 },
     ] },
     partySnap: { volume: .8, layers: [
       { type: 'noise', filter: 'bandpass', freq: 3300, q: .8, gain: .9, attack: .001, decay: .045 },

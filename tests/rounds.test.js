@@ -71,10 +71,12 @@ test('waveEnding fires once per round when no spawns remain and aliveCount is 2 
   // Alive is 3 (> 2): waveEnding must NOT fire yet
   rounds.update(0.1);
   assert.equal(waveEndingEvents.length, 0);
+  assert.equal(rounds.lastShoppers, false, 'three alive: not the last shoppers yet');
 
   // One zombie dies: alive drops to 2 (<= 2): waveEnding MUST fire
   aliveCount = 2;
   rounds.update(0.1);
+  assert.equal(rounds.lastShoppers, true, 'two alive, none to come: the last shoppers (the manager speeds them up)');
   assert.equal(waveEndingEvents.length, 1);
   assert.deepEqual(waveEndingEvents[0], { round: 1, remaining: 2 });
 
@@ -168,14 +170,13 @@ test('Last Shopper pacing acceleration: zombieManager speeds up remaining zombie
   const z1 = t.g.zombies.spawn('shopper');
   z1.speed = 2.0;
 
-  // With pending spawns remaining, speed is not forced
-  Object.defineProperty(t.g.rounds, 'remainingToSpawn', { value: 5, configurable: true });
-  Object.defineProperty(t.g.rounds, 'state', { value: 'active', configurable: true });
+  // Not the last shoppers (rounds.lastShoppers: more to spawn, or too many alive): speed is not forced
+  Object.defineProperty(t.g.rounds, 'lastShoppers', { value: false, configurable: true });
   t.g.zombies.update(1 / 60);
   assert.equal(z1.speed, 2.0);
 
-  // When no spawns remain and aliveCount <= 2, speed is forced to jog/sprint
-  Object.defineProperty(t.g.rounds, 'remainingToSpawn', { value: 0, configurable: true });
+  // The last shoppers: speed is forced to the type's fastest gait
+  Object.defineProperty(t.g.rounds, 'lastShoppers', { value: true, configurable: true });
   t.g.zombies.update(1 / 60);
   const fastSpeed = z1.type.gaits.run ?? z1.type.gaits.jog ?? 2.0;
   assert.ok(fastSpeed > 2.0, 'shopper has faster gait');

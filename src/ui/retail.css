@@ -25,6 +25,19 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .round-value { display: block; font: 600 64px/.95 var(--font-hud); font-variant-numeric: tabular-nums; }
 .round-counter.flashing { animation: directory-break 1.6s ease-in-out infinite; }
 @keyframes directory-break { 50% { border-color: var(--mall-yellow); color: var(--mall-yellow); } }
+.hud-objective {
+  margin-top: 4px;
+  padding: 6px 10px;
+  background: var(--plum);
+  color: var(--paper-light);
+  border: 1px solid var(--paper);
+  border-left: 4px solid var(--mint);
+  box-shadow: 3px 3px 0 var(--raspberry);
+  font: 700 11px/1.3 var(--font-ui);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.hud-objective[hidden] { display: none; }
 .boss-bar {
   position: absolute; top: 18px; left: 50%; transform: translateX(-50%);
   box-sizing: border-box; width: min(46vw, 390px); padding: 7px 12px;
@@ -285,6 +298,10 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .pocket[data-pocket='lethal'] .pocket-icon { clip-path: polygon(38% 0, 62% 0, 62% 18%, 90% 34%, 90% 100%, 10% 100%, 10% 34%, 38% 18%); } /* a two-litre bottle */
 .pocket[data-pocket='tactical'] .pocket-icon { width: 18px; height: 14px; top: 9px; clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 0, 50% 55%, 100% 0, 0 0); } /* a greeting card */
 .pocket[data-item='sodaBomb'] .pocket-icon { background: #d8323a; }
+.pocket[data-item='airHorn'] .pocket-icon { background: #ffb337; }
+.armour-layers { display: flex; gap: 3px; }
+.armour-layers:empty { display: none; }
+.armour-layer { width: 18px; height: 4px; border-radius: 2px; background: #f7f5ef; }
 .pocket.empty .pocket-icon { background: #fff8e830; }
 .pocket-count { position: absolute; right: -5px; bottom: -6px; min-width: 15px; padding: 1px 3px; box-sizing: border-box; background: var(--paper); color: var(--plum); font: 700 11px/1.1 var(--font-ui); text-align: center; text-shadow: none; }
 .pocket.empty .pocket-count { display: none; }
@@ -317,6 +334,13 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   left: 24px; bottom: 32px; padding: 0; gap: 6px; border: 0;
   border-radius: 0; background: none; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none;
 }
+.second-chance {
+  display: flex; align-items: center; align-self: flex-start; gap: 5px;
+  padding: 4px 7px; border: 1px solid #a4f3c4; border-radius: 4px;
+  color: #a4f3c4; background: #1d1626; font: 700 12px/1 var(--font-ui);
+}
+.second-chance[hidden] { display: none; }
+.second-chance svg { width: 14px; height: 14px; }
 /* THE OUTFIT RAIL (ui/outfitRail.js): a chrome hanger rail with four price tags, in the item's colour (--tag) with its ink (--ink).
    .empty = a dashed silhouette; .pulse = the item just did its job (swing + glow). Variants: hud (here), pause, receipt. */
 .outfit-rail { position: relative; display: flex; gap: 6px; width: min(268px, 46vw); padding-top: 8px; pointer-events: none; }
@@ -640,6 +664,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .stats-run { display: table-row; color: var(--plum); padding: 0; border: 0; border-radius: 0; background: none; }
 .stats-run td { padding: 8px; border-bottom: 1px solid var(--print-rule); }
 .stats-run b { color: var(--raspberry); }
+.stats-won { margin-left: 6px; padding: 1px 5px; border: 1px solid currentColor; border-radius: 3px; color: var(--raspberry); font-size: 9px; font-weight: 700; letter-spacing: .08em; white-space: nowrap; }
 
 /* Facilities console and illustrated handbook keep familiar, operable controls. */
 .settings { background: #23192db0; }
@@ -879,4 +904,22 @@ button:focus-visible, input:focus-visible, select:focus-visible {
     opacity: 0;
     transform: translate(-50%, -50%) rotate(var(--damage-angle, 0deg)) scale(1.05);
   }
+}
+
+/* Save & Quit (game/saveGame.js): Continue on the title, Save & quit on the pause card. */
+.menu-btn[hidden],
+.paper-note[hidden] {
+  display: none;
+}
+.menu-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.menu-btn:disabled:hover {
+  background: inherit;
+  color: inherit;
+}
+.pause-card .save-note {
+  margin-top: 0.4rem;
+  font-size: 0.78em;
 }

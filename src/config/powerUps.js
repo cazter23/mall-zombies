@@ -10,6 +10,7 @@ export const powerUps = {
   clearRadius: 0.38,
   clearHeight: 1.1,
   sightHeight: 0.5,
+  sightEpsilon: 1e-6,
   nearFullFraction: 0.9,
   placementRadii: [0, 0.7, 1.4],
   placementDirections: 8,

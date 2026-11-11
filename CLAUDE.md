@@ -23,6 +23,7 @@ npm run build:single  # dist-single/sunset-galleria.html: the WHOLE game in one 
 npm run play          # JUST PLAYING: rebuilds that file only if the code changed, opens it in Firefox (play.cmd = the same by double-click)
 npm run balance       # gun balance report (tools/gunReport.mjs): dps by range, pulls to kill by round, cannon blast table
 npm run melee         # box cutter report (tools/meleeReport.mjs): swings to kill by round, plain vs the Customer Service tiers
+npm run sim:economy   # economy report (tools/economySim.mjs, ~90 min from an empty cache; --quick for a short look): a headless bot's income by round, what it can afford when, proposals before/after
 ```
 There is no linter. Docs-only changes need no tests. What each test file covers: docs/tests.md (relationships and rules, not exact values).
 tests/docs.test.js fails if a new src/ file or test file isn't described in the docs.
@@ -66,6 +67,7 @@ tests/docs.test.js fails if a new src/ file or test file isn't described in the 
 | plan the next big system | docs/wardrobe-plan.md, docs/wardrobe-showroom-plan.md (its rework), docs/claw-machine-plan.md, docs/closing-time-plan.md (the run goal and ending), docs/weapon-skins-plan.md (per-gun skins earned by challenges) (finished plans are in docs/archive/) |
 | touch behaviour and want to know which test guards it | docs/tests.md |
 | change a gun | docs/weapon-balance-pass.md and `npm run balance` |
+| change a price, a payout or how strong an upgrade is | docs/economy-report.md and `npm run sim:economy` |
 
 ## Folder map (short; every module is described in docs/folder-structure.md)
 ```
@@ -101,7 +103,9 @@ docs/                history.md, folder-structure.md, map.md, tests.md, weapon-b
 - Buying: `map.doors` and `map.features` become interactions; every price comes from `g.pricing`; an area unlock owns one destination
   and opens every barrier between owned areas.
 - Points: gun and melee `onHit` -> 'hit' (+10); a death -> 'kill' (every payout). Death: `onPlayerDeath`; Play again = `resetRun()`
-  through createGame's `resetSteps` (a new system with per-run state adds a step there).
+  through createGame's `resetSteps` (a new system with per-run state adds a step there). Save & Quit (game/saveGame.js) saves the run
+  as of the round's start: every reset step is also in `saveSteps` (serialize/restore) or `transientSteps`, or tests/saveGame.test.js fails.
+  Bump `config/save.js` version when what a step saves changes shape.
 - Collision: one shared `colliders` array of Box3 (+ `colliders.ramps` for escalators/stairs). The player is a cylinder. `ignoreShots`
   boxes block walking, not bullets; `ledge` boxes are balcony rails you can climb over (player/vault.js).
 - Coordinates: metres, +Y up, yaw 0 faces -Z. Test hook: `window.__mall.step(n)` with `game.forceRun`; tests use

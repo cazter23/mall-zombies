@@ -35,6 +35,7 @@ import { markCollidersChanged } from '../../world/collision.js';
 import { createMallProps } from './props.js';
 import { COLORS } from './palette.js';
 import { debug } from '../../config/debug.js';
+import { feel } from '../../config/feel.js';
 import { economy } from '../../config/economy.js';
 import { fittingRooms, wardrobeItems, wardrobeAnchor } from '../../config/wardrobe.js';
 import { buildWardrobeDisplay } from './wardrobeDisplays.js';
@@ -51,6 +52,8 @@ import { buildMallAtmosphere } from './atmosphere.js';
 import { buildRestockMachine } from './restockMachine.js';
 import { buildClawCabinet } from './clawCabinet.js';
 import { buildPrizeCounter } from './prizeCounter.js';
+import { buildKioskCart } from './kioskCart.js';
+import { kiosk } from '../../config/kiosk.js';
 import { clawMachine } from '../../config/clawMachine.js';
 import { buildLevelTwo } from './levelTwo.js';
 import { buildAtrium } from './atrium.js';
@@ -75,6 +78,7 @@ import { buildCinemaDetails } from './cinemaDetails.js';
 import { cinemaStairs } from '../../config/cinemaStairs.js';
 import { buildCinemaStairs, dressCinemaStairs } from './cinemaStairs.js';
 import { buildCinemaServiceDetails } from './cinemaServiceDetails.js';
+import { closingTime } from '../../config/closingTime.js';
 import { parkingLot } from '../../config/parkingLot.js';
 import { buildParkingLot } from './parkingLot.js';
 import { buildMallExterior } from './mallExterior.js';
@@ -412,6 +416,15 @@ export function buildMall(scene, colliders) {
   // Customer Service desk (gun tiers; a map feature of kind 'upgradeDesk', below).
   const { zone: deskZone, ...deskSpot } = LAYOUT.serviceDesk;
   const serviceDesk = props.serviceDesk({ ...deskSpot, tierColors: upgrades.tiers.map((t) => t.color) });
+  const safe = closingTime.nightSafe;
+  const safeWallX = deskSpot.center + safe.mountOffset;
+  const safeZ = deskSpot.wallAt - safe.insetFromHallWall;
+  for (const { name, min, max, color } of safe.parts) {
+    kit.box(safeWallX + min[0], min[1], safeZ + min[2], safeWallX + max[0], max[1], safeZ + max[2],
+      kit.mat(color), { name, collide: false });
+  }
+  const { text, offset, ...safeSign } = safe.sign;
+  kit.sign(text, { ...safeSign, x: safeWallX + offset, z: safeZ, facing: 'x+' }).name = 'night_safe_sign';
 
   // --- Main hallway dressing ---------------------------------------------------
 
@@ -566,6 +579,7 @@ export function buildMall(scene, colliders) {
   // Its Prize Counter (game/features/prizeCounter.js): one fixed booth (mall/prizeCounter.js) where prize tickets buy small things.
   const counterSite = clawMachine.prizeCounter.site;
   const prizeBooth = buildPrizeCounter({ kit, back: counterSite.back, faces: counterSite.faces, floorY: counterSite.floorY });
+  const kioskCart = buildKioskCart(kit);
 
   sign('EXIT  ·  MAIN HALL', {
     x: 0, y: 3.6, z: F.maxZ - 0.02, width: 3, height: 0.5, facing: -1,
@@ -855,8 +869,8 @@ export function buildMall(scene, colliders) {
   ];
   kit.markers({ spawnPoints, wallBuys, visible: debug.showMarkers });
 
-  // Player start: middle of the start room, facing the shutter (-Z)
-  const playerSpawn = { position: new THREE.Vector3(0, 0, 12), yaw: 0 };
+  // Player start: middle of the start room, facing into the room (+Z) toward the vents
+  const playerSpawn = { position: new THREE.Vector3(0, 0, 12), yaw: feel.player.spawnYaw ?? Math.PI };
 
   // The main menu's flyover (ui/titleCamera.js): slow camera glides through the mall, one after another.
   // Each: from -> to (the camera), lookFrom -> lookTo (where it looks). Keep them clear of walls and shutters.
@@ -900,6 +914,10 @@ export function buildMall(scene, colliders) {
     else buildWardrobeDisplay(kit, spot, facing, floorY, title);
     return spot;
   }
+  const van = parkingLot.vehicles.find(({ id }) => id === 'abandoned');
+  const escapeVanPosition = new THREE.Vector3(
+    van.x + van.width / 2 + closingTime.van.clearance, closingTime.van.promptHeight, van.z,
+  );
   const features = [
     ...Object.entries(wardrobeItems).map(([id, item]) => wardrobeSpot('wardrobeRack', id, item, item.shortName)),
     ...Object.entries(fittingRooms).map(([id, room]) => wardrobeSpot('fittingRoom', id, room, 'Fitting room')),
@@ -913,13 +931,16 @@ export function buildMall(scene, colliders) {
     { kind: 'ammoCache', name: 'ammocache_atrium', zone: 'atrium', position: atriumAmmo.position, normal: atriumAmmo.normal, screen: atriumAmmo.screen },
     { kind: 'ammoCache', name: 'ammocache_cinema', zone: 'cinema', position: cinemaAmmo.position, normal: cinemaAmmo.normal, screen: cinemaAmmo.screen },
     // Customer Service: upgrade the gun in your hand one Extended Warranty tier (g.pricing 'tier'); the second window sells box cutter tiers (g.pricing 'melee').
-    { kind: 'upgradeDesk', name: 'upgradedesk_hallway', zone: deskZone, position: serviceDesk.position, normal: serviceDesk.normal, meleePosition: serviceDesk.meleePosition },
+    { kind: 'upgradeDesk', name: 'upgradedesk_hallway', zone: deskZone, ...serviceDesk },
+    { kind: 'nightSafe', name: 'nightSafe', zone: deskZone, position: new THREE.Vector3(safeWallX + safe.promptOffset, safe.promptHeight, safeZ), normal: new THREE.Vector3(1, 0, 0) },
     // Store attachment counters: fit that attachment to the gun in your hand (g.pricing 'attachment').
     ...stores.spots.map((s) => ({ kind: 'attachmentCounter', name: `attachment_${s.id}`, zone: s.zone, attachment: s.id, position: s.position, normal: s.normal })),
     // GRAB-A-GUN: one machine, live at one of its sites (it starts at the first every run).
     { kind: 'clawMachine', name: 'clawMachine', zone: clawSites[0].zone, position: clawSites[0].cabinet.position, normal: clawSites[0].cabinet.normal, sites: clawSites },
     { kind: 'prizeCounter', name: 'prizeCounter', zone: counterSite.zone, position: prizeBooth.position, normal: prizeBooth.normal, slots: prizeBooth.slots },
+    { kind: 'kiosk', name: 'kioskKevin', zone: kiosk.site.zone, ...kioskCart },
     // Environmental hazards (docs/hazards-plan.md): Grand Atrium Electrified Fountain breaker switch.
+    { kind: 'escapeVan', name: 'escape_van', zone: 'parkingLot', position: escapeVanPosition, normal: new THREE.Vector3(1, 0, 0) },
     { kind: 'fountainHazard', name: 'hazard_fountain', zone: hazards.fountain.zone, position: new THREE.Vector3(hazards.fountain.position.x, hazards.fountain.position.y, hazards.fountain.position.z), normal: new THREE.Vector3(hazards.fountain.normal.x, hazards.fountain.normal.y, hazards.fountain.normal.z) },
   ];
 

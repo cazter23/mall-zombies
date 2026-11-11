@@ -10,7 +10,9 @@ import './ui/readability.css';
 import { createNoticesMenu } from './ui/noticesMenu.js';
 import * as THREE from 'three';
 import { feel } from './config/feel.js';
+import { save as saveConfig } from './config/save.js';
 import { debug } from './config/debug.js';
+import { ui } from './config/ui.js';
 import { startLoop } from './core/loop.js';
 import { createIdleSaver } from './core/idleSaver.js';
 import { Input } from './core/input.js';
@@ -37,6 +39,7 @@ import { buildOf, qualityById, workshopStuffings } from './config/workshop.js';
 import { PRICE_CATEGORIES } from './game/pricing.js';
 import { createDebugPanel } from './ui/debugPanel.js';
 import { createTitleCamera } from './ui/titleCamera.js';
+import { createRunStart } from './ui/runStart.js';
 import { createBenchmark } from './fx/benchmark.js';
 import { createBallView } from './fx/ballView.js';
 import { createThrowableView } from './fx/throwableView.js';
@@ -253,6 +256,16 @@ const screens = hud.screens;
 const titleCamera = createTitleCamera(map.titleShots, feel.titleScreen);
 const careerStats = createCareerStats();
 g.events.on('runEnd', ({ summary }) => screens.setCareerResult(careerStats.recordRun(summary)));
+function showWin(summary, clockedOut = false) {
+  hud.setDimmed(true);
+  screens.show('results', { ...g.receiptFor(summary), shiftComplete: true, clockedOut }); // (Classic: no checklist line)
+}
+g.events.on('runWon', ({ summary }) => {
+  haptics.stop();
+  game.padPlaying = false;
+  showWin(summary);
+  if (document.pointerLockElement) document.exitPointerLock();
+});
 
 function enterPlaying() {
   // A delayed pointer-lock grant can arrive after another menu was opened.
@@ -273,7 +286,11 @@ function play({ pad }) {
   }
 }
 function runSoFar() {
-  return { round: rounds.round, points: wallet.points, time: g.runStats.timeAlive, kills: g.runStats.kills, outfit: g.outfitRail.snapshot() };
+  return {
+    round: rounds.round, points: wallet.points, time: g.runStats.timeAlive, kills: g.runStats.kills,
+    outfit: g.outfitRail.snapshot(), closing: game.showClosingGuidance ? g.closing.checklist : null,
+    canSave: g.saveGame.canSave(), // Save & quit: greyed with the reason when it can't save now
+  };
 }
 function pauseRun() {
   haptics.stop();
@@ -284,26 +301,65 @@ function pauseRun() {
 }
 // A fresh run: everything reset, then straight into play (if the mouse lock is refused, "Back to work" waits).
 function freshRun(how) {
+  g.leaveRun(); // (a won run left by Restart run is recorded first)
   screens.setCareerResult(null);
   resetRun();
-  screens.show('pause', { fresh: true });
+  screens.show('pause', { fresh: true, closing: game.showClosingGuidance ? [] : null });
   hud.setDimmed(true);
   play(how);
 }
-function goToTitle() {
+function goToTitle({ saved = false } = {}) {
   game.padPlaying = false;
   if (document.pointerLockElement) document.exitPointerLock();
+  // A won run left by Quit to title is recorded first. Not after Save & quit: that run goes on after Continue and is
+  // recorded once, when it really ends (a save that is never continued is never recorded, like any run left unwon).
+  if (!saved) g.leaveRun();
   resetRun();
   screens.setCareerResult(null);
+  screens.setContinue(g.saveGame.peek()); // "Continue · Round N" while a save exists
+  if (g.saveGame.dropped) hud.showAnnouncement({ kicker: 'Save & quit', text: saveConfig.droppedNotice });
   titleCamera.restart();
   screens.show('title');
   hud.setDimmed(true);
 }
+// SAVE & QUIT (game/saveGame.js): the run ends at the title with its round-start snapshot in the one slot.
+function saveAndQuit() {
+  if (g.saveGame.saveAndQuit()) goToTitle({ saved: true });
+}
+// Continue: the save is used up, and the run resumes at the start of its round's break.
+function continueRun(how) {
+  screens.setCareerResult(null);
+  if (!g.saveGame.load()) return goToTitle(); // (an unreadable save is dropped: back to a title without Continue)
+  screens.setContinue(null);
+  screens.show('pause', { fresh: true });
+  hud.setDimmed(true);
+  play(how);
+}
+// Play from the title starts a new shift: a save left in the slot is discarded (the button asked twice).
+function newShift(how) {
+  g.saveGame.discard();
+  screens.setContinue(null);
+  play(how);
+}
 
-screens.on('play', play);
+// The title's mode chooser (ui/runStart.js): stores the mode and plays. The title already reset the run, so nothing is
+// reset again, and the chooser stays up until play really starts.
+// Starting a new shift there discards a save left in the slot (newShift).
+const runStart = createRunStart({ game, screens, settings, play: newShift });
+screens.on('continue', continueRun);
+screens.on('saveQuit', saveAndQuit);
 screens.on('resume', play);
 screens.on('restart', freshRun);
 screens.on('playAgain', freshRun);
+screens.on('clockOut', () => {
+  if (g.clockOut()) showWin(g.winSummary, true);
+});
+screens.on('overtime', (how) => {
+  if (!g.stayForOvertime()) return;
+  // A browser can refuse a quick re-lock. Leave Resume available until it grants the lock.
+  screens.show('pause', runSoFar());
+  play(how);
+});
 screens.on('quit', goToTitle);
 screens.on('mainMenu', goToTitle);
 screens.on('settings', () => settingsMenu.open());
@@ -316,6 +372,10 @@ screens.on('notices', () => noticesMenu.open());
 
 input.onLockChange((locked) => {
   if (locked) {
+    if (game.winPending || game.over || !runStart.acceptsLock()) {
+      document.exitPointerLock();
+      return;
+    }
     game.padPlaying = false; // the mouse took over
     if (!game.over) enterPlaying();
   } else if (!game.over && !game.padPlaying && !screens.current) {
@@ -399,7 +459,7 @@ function render(alpha, frameTime) {
   // While paused nothing ticks, so interpolating between the last two ticks would make things
   // twitch: show the latest tick instead. Visual time keeps flowing after death (the world goes
   // on around the death camera) but stops while paused.
-  const paused = !game.running && !game.over;
+  const paused = !game.running && !death.summary;
   if (paused) alpha = 1;
   const visualTime = paused ? 0 : frameTime;
 
@@ -416,8 +476,8 @@ function render(alpha, frameTime) {
 
   player.syncCamera(alpha);
   lightPool.update(camera.position, frameTime);
-  if (game.over) applyDeathCamera(alpha);
-  body.root.visible = !game.over;
+  if (death.summary) applyDeathCamera(alpha);
+  body.root.visible = !death.summary;
   body.update(visualTime, player, alpha);
   zombies.render(visualTime, alpha);
   g.contactShadows.update(zombies.zombies, alpha);
@@ -440,17 +500,16 @@ function render(alpha, frameTime) {
   hud.setCrosshair(gapPx, aimAmount);
 
   hud.setHealth(health.fraction, health.regenWaitFraction);
+  hud.setArmour(game.over ? 0 : health.armour.length);
   hud.setHurt(health.overlay);
   damageIndicators.flush();
   hud.setSpeedLines(game.over ? 0 : player.sprintAmount * feel.sprintFx.speedLinesOpacity);
   hud.setSprint(player.sprintFraction, player.sprintExhausted, player.isSprinting);
   {
+    // The carried gun not in hand: its button is slot 1 / slot 2 on a keyboard, the swap button on a controller.
     const secondary = gun.inactiveSlot;
-    const device = promptDevice();
-    const switchKey = device === 'keyboard'
-      ? (secondary?.index === 0 ? '1' : '2')
-      : (buttonLabel('switchWeapon') ?? (device === 'playstation' ? '△' : 'Y'));
-    hud.setAmmo(gun.weapon, buttonLabel('reload'), secondary, switchKey);
+    const switchAction = promptDevice() !== 'keyboard' ? 'switchWeapon' : secondary?.index === 0 ? 'weapon1' : 'weapon2';
+    hud.setAmmo(gun.weapon, buttonLabel('reload'), secondary, buttonLabel(switchAction));
   }
   hud.setAmmoTier(tierById(tierOf(gun.modsFor(gun.def.id) ?? [])));
   {
@@ -476,7 +535,15 @@ function render(alpha, frameTime) {
   hud.setOrderForm(game.over ? null : ritual?.form ?? null, menuLabels);
   hud.setFittingRoom(game.over ? null : fittingRooms.find((room) => room.view)?.view ?? null, menuLabels);
   hud.setLimitedEdition(game.over ? null : limitedEditions?.status ?? null);
-  hud.setClawMachine?.(game.over ? null : clawMachine?.status ?? null);
+  const objectiveArea = ui.startObjective.until;
+  hud.setObjective(game.over || g.map.zones[objectiveArea]?.open !== false ? null
+    : ui.startObjective.text.replace('{price}', g.pricing.priceOf('door', objectiveArea).toLocaleString('en-US')));
+  hud.setClosing(
+    game.showClosingGuidance ? g.closing.checklist : null,
+    game.showClosingGuidance && !game.over ? g.closing.markers : {},
+  );
+  hud.setOvertime(game.won && !game.winPending && !game.over);
+  hud.setClawMachine?.(game.over ? null : clawMachine?.status ?? null, game.running ? frameTime : 0); // (its banner's clock stops while paused)
   hud.setPockets(game.over ? null : g.equipment.status, { lethal: buttonLabel('lethal'), tactical: buttonLabel('tactical') });
   hud.setVaultPrompt(game.running && !game.over && g.vaultPromptVisible, buttonLabel('jump'));
   hud.setPoints(wallet.points);
@@ -488,7 +555,7 @@ function render(alpha, frameTime) {
 
   // Render world + viewmodel through HDR post-processing (UnrealBloom + lens vignette/aberration + ACES tone mapping).
   roomCulling.update(cullingOn);
-  postProcessing.render({ showViewmodel: !game.over, speedAmount, grade: gradeAt(frameTime) });
+  postProcessing.render({ showViewmodel: !death.summary, speedAmount, grade: gradeAt(frameTime) });
 }
 
 // The main menu's backdrop: the camera glides through the mall (map.titleShots), fading through black at each cut.

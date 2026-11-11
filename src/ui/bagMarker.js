@@ -1,4 +1,4 @@
-// Where a dropped Limited Edition is: an arrow, its name, how far and how long is left. Bags only last a moment, and one dropped behind you is easy to miss.
+// Direction, name and distance for a floor pickup, with time remaining for Limited Editions.
 export function createBagMarker() {
   const element = document.createElement('div');
   element.className = 'bag-marker';
@@ -10,7 +10,7 @@ export function createBagMarker() {
   let lastText = '';
   return {
     element,
-    /** status: game/features/limitedEditions.js drops.status, or null to hide it. */
+    /** Null hides the marker. Persistent pickups omit seconds. */
     update(status) {
       element.hidden = !status;
       if (!status) {
@@ -18,7 +18,7 @@ export function createBagMarker() {
         return;
       }
       arrow.style.transform = `rotate(${status.bearing}rad)`;
-      const line = `${status.name} · ${status.meters} m${status.floor ? ` ${status.floor}` : ''} · ${status.seconds}s`;
+      const line = `${status.name} · ${status.meters} m${status.floor ? ` ${status.floor}` : ''}${status.seconds == null ? '' : ` · ${status.seconds}s`}`;
       if (line === lastText) return;
       lastText = line;
       text.textContent = line;

@@ -53,6 +53,7 @@ export function createChallenges({ events, state, save }) {
   });
   // Always flush prior eligible progress, including when the rest of the run became assisted.
   events.on('runEnd', () => save.flush());
+  events.on('runSaved', () => save.flush()); // quitting saves eligible mastery progress even without a runEnd
 
   return {
     snapshot() {

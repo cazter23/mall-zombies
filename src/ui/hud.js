@@ -7,6 +7,7 @@
 // =============================================================================
 
 import { feel } from '../config/feel.js';
+import { closingTime } from '../config/closingTime.js';
 import { createScreens } from './screens.js';
 import { createIncentiveHud } from './incentiveHud.js';
 import { createRitualHud } from './ritualHud.js';
@@ -169,10 +170,17 @@ export function createHud() {
   const roundLabel = el('span', 'hud-label'); roundLabel.textContent = 'Round';
   const roundValue = el('strong', 'round-value');
   const occupancyCounter = el('div', 'round-occupancy');
+  let lastOccupancy = 'break'; // (what it shows now: 'break' or the count)
   occupancyCounter.textContent = 'CLOSED FOR RESTOCK';
   occupancyCounter.classList.add('closed');
-  roundCounter.append(roundLabel, roundValue, occupancyCounter);
+  const overtimeTag = el('div', 'overtime-tag');
+  overtimeTag.textContent = closingTime.overtimeTag;
+  overtimeTag.hidden = true;
+  roundCounter.append(roundLabel, roundValue, occupancyCounter, overtimeTag);
   hud.append(roundCounter);
+  const objectiveLine = el('div', 'hud-objective');
+  objectiveLine.hidden = true;
+  let lastObjectiveKey = null;
   // Under the round box, during the break: "[I] Hold to clock in" with a fill bar (its own element, so it doesn't blink
   // with the counter).
   const clockIn = el('div', 'clock-in');
@@ -248,7 +256,8 @@ export function createHud() {
   // Under it: where GRAB-A-GUN is while it's open (game/features/clawMachine.js status).
   const clawTag = el('div', 'sale-tag claw-tag');
   hud.append(clawTag);
-  let lastClawKey = '';
+  let lastClawSiteId = null;
+  let clawTimer = null; // seconds of play left on the banner (null = not showing)
 
   // Bottom-right: ammo counter.
   const ammo = el('div', 'ammo');
@@ -314,7 +323,12 @@ export function createHud() {
   sprint.append(sprintFill);
   // The outfit rail (ui/outfitRail.js): four price tags over the health bar, empty silhouettes from round 1.
   const outfitRail = createOutfitRail({ variant: 'hud' });
-  vitals.append(outfitRail.el, health, sprint);
+  const secondChance = el('div', 'second-chance');
+  secondChance.hidden = true;
+  secondChance.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M6 1h4v5h5v4h-5v5H6v-5H1V6h5z"/></svg>Second Chance';
+  const armour = el('div', 'armour-layers'); // Bubble Wrap layers (Kiosk Kevin)
+  let lastArmourCount = 0;
+  vitals.append(secondChance, outfitRail.el, armour, health, sprint);
   hud.append(vitals);
 
   // FPS counter (Settings > Video), top right.
@@ -323,10 +337,22 @@ export function createHud() {
   let lastFps = -1;
 
   // Flowing lanes keep growing rewards/PA copy clear of other tickets and bosses.
+  const checklist = el('div', 'closing-boxes');
+  checklist.setAttribute('role', 'group');
+  checklist.setAttribute('aria-label', closingTime.title);
+  const closingLines = Object.entries(closingTime.lines).map(([id, { duty }]) => {
+    const box = el('span', 'closing-box');
+    box.title = duty;
+    box.setAttribute('role', 'checkbox');
+    box.setAttribute('aria-label', duty);
+    box.setAttribute('aria-readonly', 'true');
+    checklist.append(box);
+    return { id, box, marker: createBagMarker() };
+  });
   const leftStack = el('div', 'hud-left-stack');
-  leftStack.append(roundCounter, clockIn, incentives.element, ritualTicket.element);
+  leftStack.append(roundCounter, objectiveLine, checklist, clockIn, incentives.element, ritualTicket.element);
   const topStack = el('div', 'hud-top-stack');
-  topStack.append(bossBar, roundBanner, bagMarker.element);
+  topStack.append(bossBar, roundBanner, ...closingLines.map(({ marker }) => marker.element), bagMarker.element);
   const rightStack = el('div', 'hud-right-stack');
   rightStack.append(saleTag, clawTag, announceBanner, skinToast, certificate.element);
   hud.append(leftStack, topStack, rightStack);
@@ -424,7 +450,15 @@ export function createHud() {
         ammoSecondary.classList.remove('switched');
       });
       events.on('runReset', clearNotices);
-      events.on('runReset', () => { history.clear(); incentives.reset(); });
+      events.on('runReset', () => {
+        history.clear();
+        incentives.reset();
+        lastObjectiveKey = null;
+        clawTimer = null;
+        lastClawSiteId = null;
+        clawTag.classList.remove('show');
+      });
+      events.on('runReset', () => { overtimeTag.hidden = true; });
       events.on('playerDeath', clearNotices);
       events.on('mascotPopBlast', ({ butter: buttered, butterSeconds }) => {
         if (buttered) splatButter(butterSeconds);
@@ -455,6 +489,28 @@ export function createHud() {
     // A dropped Limited Edition's direction: null hides it (game/features/limitedEditions.js status).
     setLimitedEdition(status) {
       bagMarker.update(status);
+    },
+
+    setOvertime(active) {
+      if (overtimeTag.hidden === active) overtimeTag.hidden = !active;
+    },
+
+    setClosing(lines, markers) {
+      checklist.hidden = lines === null;
+      for (const [index, { id, box, marker }] of closingLines.entries()) {
+        marker.update(lines ? markers[id] ?? null : null);
+        if (!lines) continue;
+        const { duty, done, count, needed } = lines[index];
+        const progress = count == null ? '' : closingTime.lineProgress(count, needed);
+        const text = [done ? '✓' : '', progress].filter(Boolean).join(' ');
+        const checked = String(done);
+        if (box.textContent !== text || box.getAttribute('aria-checked') !== checked) {
+          box.setAttribute('aria-checked', checked);
+          box.setAttribute('aria-label', progress ? `${duty} ${progress}` : duty);
+          box.classList.toggle('has-progress', Boolean(progress));
+          box.textContent = text;
+        }
+      }
     },
 
     // The Birth Certificate, at collection: { name, gunName, combo, stuffing, heart, quality, kills, round, remark, note }.
@@ -537,7 +593,11 @@ export function createHud() {
     },
 
     // Retail store occupancy / wave progress tracker.
+    // Called every frame; only touches the DOM when the text changes.
     setOccupancy(count, inBreak = false) {
+      const key = inBreak ? 'break' : count;
+      if (key === lastOccupancy) return;
+      lastOccupancy = key;
       if (inBreak) {
         occupancyCounter.textContent = 'CLOSED FOR RESTOCK';
         occupancyCounter.classList.add('closed');
@@ -581,6 +641,10 @@ export function createHud() {
       }
       ticket.hidden = !voucher;
       ticket.textContent = voucher ? `Voucher: ${voucher.name}` : '';
+    },
+
+    setSecondChance(held) {
+      secondChance.hidden = !held;
     },
 
     setHealth(fraction, regenWait = null) {
@@ -724,7 +788,8 @@ export function createHud() {
       const secWeapon = secondary.weapon;
       const secMods = secondary.mods ?? [];
       const secName = gunLabel(secDef);
-      const secAmmoCount = secDef.fuel ? `${secWeapon.magazine} fuel` : `${secWeapon.reserve}`;
+      // (loaded / spare, like the main count: a full magazine with nothing spare is not an empty gun)
+      const secAmmoCount = secDef.fuel ? `${secWeapon.magazine} fuel` : `${secWeapon.magazine}/${secWeapon.reserve}`;
       const tierId = tierOf(secMods);
       const build = buildOf(secMods);
       const stuffingColor = build ? (workshopStuffings[build.stuffing]?.color ?? null) : null;
@@ -811,6 +876,13 @@ export function createHud() {
       ammo.querySelector('.pockets').hidden = !status;
     },
 
+    setArmour(count) {
+      if (count === lastArmourCount) return;
+      lastArmourCount = count;
+      armour.setAttribute('aria-label', `Bubble Wrap: ${count} layers`);
+      armour.replaceChildren(...Array.from({ length: count }, () => el('span', 'armour-layer')));
+    },
+
     // Vault prompt: shown while `show`; `button` = the jump button for the device ("Space", "A", "✕").
     setVaultPrompt(show, button = 'Space') {
       const key = show ? button : '';
@@ -829,13 +901,35 @@ export function createHud() {
       saleTag.textContent = text;
     },
 
-    // GRAB-A-GUN's whereabouts: null (or a closed machine) hides it.
-    setClawMachine(status) {
-      const text = status?.open ? `GRAB-A-GUN · ${status.area} · ${status.stock} left` : '';
-      if (text === lastClawKey) return;
-      lastClawKey = text;
-      clawTag.classList.toggle('show', !!text);
-      clawTag.textContent = text;
+    // The initial run objective: gone once the hallway is bought.
+    setObjective(text) {
+      if (text === lastObjectiveKey) return;
+      lastObjectiveKey = text;
+      objectiveLine.textContent = text ?? '';
+      objectiveLine.hidden = !text;
+    },
+
+    // GRAB-A-GUN's whereabouts: shown for ui.clawBannerSeconds of PLAY when the machine opens or moves (`seconds` = play
+    // time since the last call: main.js passes 0 while paused, so the banner waits for you).
+    setClawMachine(status, seconds = 0) {
+      if (!status?.open) {
+        lastClawSiteId = null;
+        clawTimer = null;
+        clawTag.classList.remove('show');
+        return;
+      }
+      if (status.siteId !== lastClawSiteId) {
+        lastClawSiteId = status.siteId;
+        clawTimer = ui.clawBannerSeconds;
+        clawTag.classList.add('show');
+      } else if (clawTimer !== null) {
+        clawTimer -= seconds;
+        if (clawTimer <= 0) {
+          clawTimer = null;
+          clawTag.classList.remove('show');
+        }
+      }
+      if (clawTimer !== null) clawTag.textContent = `GRAB-A-GUN · ${status.area} · ${status.stock} left`;
     },
 
     // Buy prompt: null hides it, else { label, verb, cost, canAfford, progress, denied, sale }.
@@ -850,11 +944,13 @@ export function createHud() {
       interact.classList.toggle('show', !!info);
       if (!info) return;
       interactTitle.textContent = info.title ?? info.label;
-      interactCost.textContent = info.priceLabel ?? (info.owned ? 'Owned · Free' : info.cost.toLocaleString('en-US'));
+      // (an instant, free action like the claw's drop shows no price: the "[F] Press" badge says it all)
+      interactCost.textContent = info.priceLabel
+        ?? (info.instant && !info.cost ? '' : info.owned ? 'Owned · Free' : info.cost.toLocaleString('en-US'));
       interactOriginal.hidden = !info.sale || !(info.originalCost > info.cost);
       interactOriginal.textContent = `${(info.originalCost ?? info.cost).toLocaleString('en-US')}`;
       // Ordinary purchases need one line. Keep the terms only where they affect an upgrade decision.
-      const detail = ['attachment', 'workshop', 'ritual', 'tier', 'melee', 'wardrobe', 'fittingRoom', 'claw', 'clawAction', 'prize'].includes(info.kind) ? info.detail ?? '' : '';
+      const detail = ['attachment', 'workshop', 'ritual', 'tier', 'melee', 'wardrobe', 'fittingRoom', 'claw', 'clawAction', 'prize', 'secondChance'].includes(info.kind) ? info.detail ?? '' : '';
       if (detail !== lastInteractDetail) {
         lastInteractDetail = detail;
         // (detailLines: the Wardrobe's generated stat lines, each an upside or a downside)
@@ -866,10 +962,12 @@ export function createHud() {
         }));
       }
       interactButton.textContent = button;
+      interactHold.textContent = info.instant ? 'Press' : 'Hold';
       interactStatus.textContent = info.blocked ?? (!info.canAfford ? `Need ${(info.shortfall ?? 0).toLocaleString('en-US')} more` : '');
       interact.classList.toggle('cant', !info.canAfford || !!info.blocked);
       interact.classList.toggle('sale', !!info.sale);
       interact.classList.toggle('denied', info.denied);
+      interactBar.hidden = !!info.instant;
       interactFill.style.transform = `scaleX(${info.progress})`;
     },
 

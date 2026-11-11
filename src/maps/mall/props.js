@@ -844,6 +844,7 @@ export function createMallProps(kit) {
     sign('CUSTOMER SERVICE', { ...signAt(center, H + 0.5, depth + 0.01), width: width + 0.1, height: 0.62, background: '#1f1a24', color: '#7fe3e8' });
     sign('NOW SERVING  000', { ...signAt(center, 2.66, depth + 0.01), width: 1.5, height: 0.28, background: '#1d1626', color: '#ff6b5b' });
     sign('SHARPENING', { ...signAt(center + meleeOffset, 2.66, depth + 0.011), width: 0.88, height: 0.28, background: '#1d1626', color: '#ffd23f' }); // the box cutter window (its buy spot is below)
+    sign('SECOND CHANCE', { ...signAt(center - meleeOffset, 2.66, depth + 0.011), width: 0.94, height: 0.28, background: '#1d1626', color: '#a4f3c4' });
     sign('EXTENDED WARRANTY · ASK HERE', { ...signAt(center, 0.4, depth + 0.011), width: width - 1.0, height: 0.26, background: '#f1faee', color: '#1d1626' }); // (below the tier stickers: nothing shares a plane)
     const n = tierColors.length;
     const rightward = along === 'x' ? facing : -facing; // +1 if "along the wall" runs left to right for a customer
@@ -853,11 +854,13 @@ export function createMallProps(kit) {
     });
     // Where the player buys: the middle of the counter front, at counter height.
     const front = d(depth + ledge + 0.1);
-    const position = along === 'x' ? new THREE.Vector3(center, 1.1, front) : new THREE.Vector3(front, 1.1, center);
+    const buySpot = (u) => along === 'x' ? new THREE.Vector3(u, 1.1, front) : new THREE.Vector3(front, 1.1, u);
     const normal = along === 'x' ? new THREE.Vector3(0, 0, facing) : new THREE.Vector3(facing, 0, 0);
-    // The box cutter window: a second spot further along the same counter (the nearest spot wins, so each has its own prompt).
-    const meleePosition = along === 'x' ? new THREE.Vector3(center + meleeOffset, 1.1, front) : new THREE.Vector3(front, 1.1, center + meleeOffset);
-    return { position, normal, meleePosition };
+    return {
+      position: buySpot(center), normal,
+      meleePosition: buySpot(center + meleeOffset),
+      secondChancePosition: buySpot(center - meleeOffset),
+    };
   }
 
   /**

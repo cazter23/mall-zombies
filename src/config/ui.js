@@ -9,6 +9,9 @@ export const ui = {
   purchaseSeconds: 3,
   roundSeconds: 2.2,
   certificateSeconds: 12, // also retained in the pause menu's notices archive
+  // The first-minute objective under the round box, shown until the `until` area is owned. {price} = its price now (g.pricing).
+  startObjective: { text: 'Open the shutter · {price}', until: 'hallway' },
+  clawBannerSeconds: 5,
   weaponRoles: {
     stapleGun: 'Precision sidearm · Aim for heads',
     priceGun: 'Close-range automatic · Fast reload',

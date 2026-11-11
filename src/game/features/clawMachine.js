@@ -431,7 +431,7 @@ export function buildClawMachine(feature, { scene, map, events, pricing, interac
     kind: 'clawAction',
     id: 'drop',
     cost: 0,
-    priceLabel: 'Press',
+    priceLabel: '',
     instant: true, // the press IS the drop: no hold
     quiet: true, // (not a purchase)
     get position() { return cabinet().position; },
@@ -546,6 +546,25 @@ export function buildClawMachine(feature, { scene, map, events, pricing, interac
         flapTimer += dt;
         cabinet().rig.setFlap(flapTimer >= show.flapSeconds ? 0 : Math.sin(Math.PI * flapTimer / show.flapSeconds)); // (exactly shut at the end)
       }
+      refreshScreen();
+    },
+
+    // Save & Quit (game/saveGame.js): where the machine stands and how much stock it has left. (A closed machine reopens at
+    // 'roundStart', before the save is taken, so a save never holds a closed one; a grab under way is not kept.)
+    serialize() {
+      return { siteId: site.id, grabsHere, stock };
+    },
+    restore(data) {
+      setUp();
+      const target = sites.find((s) => s.id === data.siteId);
+      if (target && target !== site) {
+        cabinet().rig.setLive(false);
+        cabinet().screen.show({ title: cfg.name, lines: ['', cfg.screen.away, ''], highlight: 1, note: '' });
+        site = target;
+        cabinet().rig.setLive(true);
+      }
+      grabsHere = data.grabsHere;
+      stock = data.stock;
       refreshScreen();
     },
 

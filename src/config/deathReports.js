@@ -18,7 +18,7 @@ export const deathReports = {
     },
     cartPusher: {
       cause: 'Unauthorized impact with moving shopping cart',
-      tip: 'Associate Tip: Jump ([Space]) to vault over counters to break charging lanes.',
+      tip: 'Associate Tip: A rattling cart is taking aim; sidestep as it charges, because it cannot turn.',
     },
     mallWalker: {
       cause: 'Aggressive pacing incident involving unsanctioned power-walking patron',
@@ -72,6 +72,22 @@ export const deathReports = {
     },
   },
 
+  // Your own hazard switch (config/hazards.js ids of hazards that hurt the player). Any other gets hazardDefault.
+  hazards: {
+    fountain: {
+      cause: 'Unscheduled immersion in electrified decorative water feature',
+      tip: 'Associate Tip: Throw the fountain breaker, then stand clear of the water until the current is off.',
+    },
+    fryer: {
+      cause: 'Hot oil exposure during unauthorized fryer venting',
+      tip: 'Associate Tip: Vented fryer oil does not check badges; vacate the spill zone before opening the valve.',
+    },
+  },
+  hazardDefault: {
+    cause: 'Self-inflicted facilities incident',
+    tip: 'Associate Tip: Mall hazards cannot tell staff from shoppers; stand clear before you pull the switch.',
+  },
+
   default: {
     cause: 'Unclassified workplace casualty under review by regional risk assessment',
     tip: 'Associate Tip: Report all unsafe retail floor hazards to Loss Prevention before expiring.',
@@ -86,6 +102,7 @@ export const deathReports = {
 export function getDeathReport(killedBy) {
   if (!killedBy) return deathReports.default;
   if (killedBy.fall || killedBy.type === 'fall') return deathReports.fall;
+  if (killedBy.type === 'hazard') return deathReports.hazards[killedBy.id] ?? deathReports.hazardDefault;
   if (killedBy.boss && deathReports.bosses[killedBy.boss]) {
     return deathReports.bosses[killedBy.boss];
   }

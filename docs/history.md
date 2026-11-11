@@ -1,5 +1,11 @@
 # Sunset Galleria: build history ("Current state")
 
+## 10 November 2026 - Weapon skins phase 5, Step 0: join the tracks
+
+- Isolated skins-5 starts at skins-1 (90ca748); both input suites passed 1175/1175 with no failures or skips. The skins-3 merge is d8c2fea; all eleven challenges, the two original palettes, storage, notices and both debug commands are retained.
+- Merged main f471af0, keeping the Directed/Classic title chooser and Save & Quit. Mastery counters are permanent, so the empty challenge run state is transient at this integration step. runSaved flushes eligible progress without ending or recording the run. No saved shape changed; save version remains 2.
+- Integrated validation: npm test passed 1295/1295, zero failures/skips; npm run build passed (316 modules). Balance baseline recorded for Phase 5 comparison.
+
 ## 10 November 2026 - Weapon skins phase 4: Challenges and the save
 
 - Each of the eleven guns has a named Mastery challenge in config/skins.js. Kills earn its skin at 400, or 150 for Return to Sender. Phase 1's Night Shift and Carbon Copy entries and palettes are retained for the later merge.
@@ -36,6 +42,199 @@
 - The phase table also needs these integration points. The browser supplies the debug selection through `main.js`, the model registry forwards the skin id, and `createGame.js` clears overrides on the existing `runReset` event. The Staple Gun's fixed colour literals now live in `config/weapons.js`.
 - Validation passed. The full `npm test -- --test-concurrency=4` run has 1136 tests, 1136 passes, zero failures and zero skips. `npm run build` transforms 300 modules with zero errors and the existing large-chunk warning. `npm run balance` completes. The equipment test's keyless-command list now includes `skin`.
 - Shared files changed include `src/config/weapons.js`, `src/game/debugCommands.js`, `src/game/createGame.js`, `src/main.js`, the model registry and the viewmodel. The reset subscription clears debug coats with the rest of the run.
+
+## 10 November 2026 - Save & Quit (Black Ops 6 style)
+
+- **The rules (the user's).** One save slot. Saving ENDS the run (to the title). You can save any time while alive, but only at full health.
+  The save is the run as it stood at the START of the current round: points, purchases and (later) Closing Time progress made during the
+  round are not kept. Continue deletes the slot and replays that round from its break, with the same draws (boss schedule, Flash Sale,
+  claw site, today's Build-A-Blaster bins). Play from the title with a save present asks twice and discards it. A save from an older
+  version (config/save.js `version`) is dropped with a notice.
+- **How.** game/saveGame.js. Each 'roundStart' raises a flag; createGame's update() takes the snapshot at the end of that tick, after every
+  roundStart listener has rolled. createGame keeps `saveSteps` ([name, serialize, restore], in restore order) beside `resetSteps`, and
+  `transientSteps` for what a save drops (zombies, effects, power-ups on the floor, traps, hazard cooldowns, a claw grab under way). A load
+  is resetRun + every restore; rounds.restore puts the run at the start of the break without a 'roundStart'. 'runSaved' / 'runLoaded'
+  are new events (horror relights on runLoaded; the PA welcomes you back). Saving is not a death: no runEnd, no career record.
+- **Decisions.** Stats are saved as they are and the wardrobe restores without re-applying its factors (no double clothes). The run's
+  'assisted' flag is kept (a debug run stays one). A gun away at Build-A-Blaster and its order are kept; the loaner too.
+- **Checked.** tests/saveGame.test.js (7 tests): coverage of every reset step, the round-start rollback, an exact round trip (what the loaded
+  game would save equals the save), same draws, the gun away + loaner, the full-health / alive / started rules, the old-version drop, no
+  runEnd. In the browser (worktree build): Save & quit on the pause card asks twice and lands on the title with "Continue · Round 3";
+  Continue resumes at round 3's break with the round-start 500 points (5,000 earned mid-round gone), the hallway owned, and the slot
+  empty; the round's wave then spawned normally; hurt, the button reads "Save & quit · Full health needed" and does nothing. No console errors.
+- **Not checked.** A real save mid-Build-A-Blaster order in the browser (the order's restore is covered only by the gun/feature data
+  round trip), the controller's Start = Continue, and saves across a page reload (localStorage persistence itself was not reloaded).
+- **For later work.** Every new system with per-run state (each Closing Time phase) must add a save step or a transient entry, or
+  saveGame.test.js fails; bump config/save.js `version` when a step's saved data changes shape.
+- Shared files changed: src/game/createGame.js, src/game/events.js, src/main.js, src/ui/screens.js, src/ui/retail.css, CLAUDE.md, and a
+  serialize()/restore() pair in wallet, runStats, tickets, secondChance, rounds, pricing, flashSales, bossDirector, powerUps, wardrobe,
+  warranty, outfitRail, equipment, weapons/playerGun, features/index, workshop, workshopRitual, clawMachine (+ attachmentCounter's
+  ownedAttachments, horror's runLoaded listener); docs (history, folder-structure, tests).
+
+## 10 November 2026 - Second Chance: review of step H (one self-revive per run)
+
+- **What it is.** Customer Service's third window (SECOND CHANCE, opposite Sharpening) sells one automatic self-revive for 2,000
+  (g.pricing 'secondChance'). A lethal hit spends it in onPlayerDeath: full health where you stand, nearby zombies shoved (4 m, same
+  floor, in reach, never a boss; the Security Sweep's stagger), 3 s with no damage, a PA line. The receipt says "Second Chance · Used".
+- **The review's fixes.** (1) A swing that landed during the 3 s still announced 'playerHit': damage arrows, controller rumble, the
+  Sandwich Board / Hi-Vis tags and a boss's on-hit effect all reacted to hits that did nothing. Now nothing is announced while the
+  protection lasts (createGame's onPlayerHit and onFall), and a hazard pulse does not jolt the view. (2) The outfit rail read the revive
+  as the Cardigan soaking a hit (health after + damage > 100): measured 8 false pulses in one protected window, now 0. (3) The state
+  moved out of a createGame closure into game/secondChance.js (status / buy / redeem / reset, on g.secondChance) and announces
+  'secondChance' { status }; the HUD tag and PA line are listeners. The numbers got comments in config/feel.js (health.secondChance).
+- **Checked and left alone.** Prompt choice along the counter (a sweep every 0.4 m: Second Chance x <= 6.2, Warranty 6.6..7.4, Sharpening
+  from 7.8), a discounted price and a refused second purchase (it is in no Flash Sale group; vouchers and the Employee Discount apply), a lethal Cart Pusher charge, lethal fall
+  and fountain pulse, two lethal hits in one tick, pause, the final cause of death, Play again while held or protected.
+- **Measured (existing review-bot runs, not re-run).** In 60 saved mortal runs every bot had earned the 2,500 for the start shutter and
+  Second Chance during round 3 (1.5 min), and 54 first held 2,000 unspent at the end of round 4 with the bot's own shopping list. Deaths: rounds
+  6 to 11 for the good bot (9 of 20 in round 7), 4 to 10 for the average one, with 2,000 or more unspent in 38 of 60.
+- **Measured (headless, a bot that cannot shoot).** The shove moves a zombie 0.3 to 0.6 m. Standing still in a crowd of eight, the next
+  damage comes 3.0 to 3.8 s after the revive and the run ends about 3.7 s after it: the 2 s stun ends before the 3 s protection, so the
+  swings land as it runs out. 28 crowd layouts at walls and corners (8 or 13 Shoppers in two rows), sprinting for the widest gap: clear
+  of the crowd within 3 s in 12 with the shove as built, 16 with no shove, 3 with a 1.0 m shove, 0 with 1.4 m. Stunned zombies stand as
+  a wall and the player cannot push through one, so a stronger shove does not open a gap. The tuning was NOT changed on this.
+- **Open, for a playtest.** Whether a player with a gun gets out of a corner in the 3 s; whether the 3 s needs a visible cue; whether the
+  SECOND CHANCE sign is noticed. If cornered re-deaths show up, the lever is passing through zombies during the protection, not a
+  bigger shove.
+- Shared files changed: src/game/createGame.js, src/game/events.js, src/config/feel.js, src/config/economy.js, src/game/outfitRail.js,
+  src/game/features/hazards.js, src/game/features/upgradeDesk.js, tests/helpers/headlessGame.js, docs (history, folder-structure, map, tests).
+## 10 November 2026 - First minute and HUD polish (Step C)
+
+- **Player spawn faces the room.** Rotated initial player spawn yaw from `0` (-Z, staring at the closed shutter) to `Math.PI` (+Z, facing into the clearance store), driven by `feel.player.spawnYaw = Math.PI` in `src/config/feel.js`. The player at `(0, 0, 12)` now immediately sees the CRT TV wall and the two round 1 zombie spawns emerging from the boarded vents at `z = 15.4`.
+- **Run objective line.** Config-driven objective text (`ui.startObjective: { text: 'Open the shutter · {price}', until: 'hallway' }` in `src/config/ui.js`; the price comes from g.pricing), rendered in the HUD left stack directly under the round counter. It hides once the `until` area is owned and comes back on Play again. (Review fix: the first draft said "Earn 500", but a run starts with 500 and the shutter costs 500.)
+- **Review fixes before merging.** The GRAB-A-GUN banner's 5 s now count play time only (main.js passes the frame time while running, 0 while paused; it was a wall-clock setTimeout that ran out during a pause). The prompt's price label logic was simplified (an instant, free action shows no price).
+- **HUD decluttering.** By minute 2, panels no longer overcrowd the screen:
+  - The **GRAB-A-GUN banner** is now shown only for a timed `ui.clawBannerSeconds` (5 s) window when the machine opens or relocates to another site, then automatically hides.
+  - The **Employee Rewards panel** remains hidden until its meter first gains progress (`status.progress > 0`), keeping an empty 0% progress bar from taking up screen space at the start of round 2.
+- **Fitting room picker overlap fix.** `.hud.fitting-open .hud-left-stack` is now set to `display: none` in `src/ui/readability.css` (matching `.hud.menu-open`), preventing the round counter and Employee Rewards panel from overlapping the top-left of the fitting room receipt picker.
+- **Claw drop instant prompt fix.** Fixed the claw drop prompt showing both "Hold" and "Press": `hud.setInteract` now inspects `info.instant` to display `[F] Press` instead of `Hold` on the verb key badge, suppresses redundant "Press" cost tags, and `clawMachine.js` cleans its drop interaction `priceLabel` to empty.
+- **Shared files changed:** `src/config/feel.js`, `src/config/ui.js`, `src/maps/mall/mall.js`, `src/game/features/clawMachine.js`, `src/ui/hud.js`, `src/ui/incentiveHud.js`, `src/ui/retail.css`, `src/ui/readability.css`, `src/main.js`, `docs/map.md`, `tests/hud.test.js`, `tests/powerUps.test.js`, `tests/uiReadability.test.js`, `tests/incentiveEffects.test.js`, `tests/janitor.test.js`.
+## 10 November 2026 - Review of the antigravity HUD and comfort commits
+
+A review of the six commits merged from antigravity/* (damage direction, comfort toggles, zombie glow, incident report, occupancy,
+spare-gun chip). Damage direction and the glow tweak were fine. Fixed:
+- **Play froze on the first frame** (the spare-gun chip read an undefined `device` in main.js render): fixed first, in a4cb9d2.
+- **Toggle ADS could never aim out of a sprint** (it dropped the sights whenever the player was sprinting, and the controller only stops
+  a sprint once you aim). Now it behaves like the held button: aiming ends the sprint.
+- **Toggle sprint consumed the sprint press**, so aim.js never saw it: a sprint press while aiming did nothing at all. The press is now
+  read, not consumed; it lowers the sights and the sprint starts on the next tick. A sprint press also stands you up from a toggled crouch.
+- **The Comfort "Standard" preset switched the three toggles off** (Calm didn't). They're a control choice, so no preset touches them.
+- **Spare-gun chip:** it showed the spare ammo only (a full magazine with nothing spare read "0"); now loaded/spare. Its button comes from
+  buttonLabels (weapon1/weapon2 on a keyboard, switchWeapon on a controller); the duplicate secondaryDef getter is gone.
+- **Last shoppers:** the "2 alive" threshold and the PA line were hardcoded in rounds.js, zombieManager.js and createGame.js; they're
+  economy.rounds.lastShoppers now, and the manager asks rounds.lastShoppers. The occupancy line only touches the DOM when it changes.
+- **Incident report:** a death from your own Electrified Fountain read "Unclassified workplace casualty". Hazards now pass their id,
+  with their own reports. The Cart Pusher tip named the [Space] key (wrong on a controller).
+## 10 November 2026 - Minimal Kiosk Kevin
+
+- **Phase 2.** Bubble Wrap has three layers of 40 damage each. Zombie and boss hits go through clothing before
+  the wrap. Partial damage stays on the outer layer, falls bypass it, and a broken layer pops. The HUD shows
+  remaining layers. The keyless `armour` debug command adds layers up to the cap.
+- **Phase 3.** One fixed Hallway cart opens from round 2. It always stocks Soda Bomb (300 points to refill to
+  three), Bubble Wrap (500 per layer), and Stadium Air Horn (500 to refill to two). Kevin's Pick cycles through
+  the three, adding one charge or layer. Kevin ducks near zombies. Purchases use the normal discounts and vouchers.
+- **Air Horn.** The Tactical button sounds it immediately. It staggers nearby zombies with a clear line and
+  interrupts Cart Pusher charges. Bosses ignore it. Play again clears the pockets, wrap and cart state.
+- **Merged into main (review).** Combined with Second Chance (a hit during the revive protection is not announced, so it never
+  reaches the wrap) and Save & Quit: the wrap is saved as its own step ('armour', each layer's strength left), since health is
+  transient; tests/saveGame.test.js checks a partly used layer survives a load. The cart itself keeps no saved state.
+## 10 November 2026 - Closing Time phases 1-6 merged into main (with Save & Quit, Kiosk Kevin, Second Chance)
+
+- **What came in.** `codex/closing-time-modes`: phases 1 to 6, the A1-A12 fix pass and Classic / Directed runs (the entries below).
+  Phases 7 to 12 (parking validation, the final boss...) are not built.
+- **Save & Quit now covers it.** New save steps: 'closing' (closingTime.serialize/restore: keys held, duties done and counted,
+  the briefing timer, and any key still on the floor, put back without its PA line; a key drops once per run, so a save must
+  never lose one) and 'runOutcome' (replaces 'death': the debug flag, the run mode, the win, its summary and the first
+  overtime round). Stay for overtime takes a fresh snapshot (a win in the break restarts the break with no 'roundStart', so the
+  old snapshot said "not won"). Saving is refused while the win receipt is up ("Shift complete"). Save & quit does not call
+  `g.leaveRun()`: a won run saved in overtime is recorded once, when it really ends after Continue (a save never continued is not
+  recorded, like any run left unwon). config/save.js version 2 (map.features gained the kiosk, night safe and van).
+- **Menus.** Play opens the mode chooser; starting a run there discards a save in the slot (main.js newShift); Continue keeps the
+  saved run's mode. Controller Start on the title continues when a save exists, else opens the chooser.
+- **Test fixes from the merge.** closingTime.test.js's key-marker bearings assumed the old spawn facing (-Z): the test now sets
+  yaw 0 (the start room spawns facing +Z since the first-minute HUD step). The title's Continue button is hidden from JS, not by
+  the markup's `hidden` attribute (the test DOM doesn't read it).
+- tests/saveGame.test.js: a floor key, a held key with its duty count and the run mode survive a load; a save in overtime keeps
+  the win and refuses while the receipt is up.
+- Shared files changed: createGame.js, closingTime.js, saveGame.js, config/save.js, main.js, ui/screens.js, mall.js (both features),
+  features/index.js, pricing.js, debugCommands.js, hud.js, tests (features, pricing, powerUps, closingTime, saveGame), docs.
+
+## 10 November 2026 - Classic and Directed runs: fixes after review
+
+- **Directed is the default**: listed first and focused first on the chooser; the engine default was already 'directed'. Mode names, descriptions and order are config (`closingTime.modes`).
+- **Classic is not silent.** A key pickup plays `closingKey` and a ticked line plays `closingDuty` in both modes (config/audio.js); Classic still shows no quest PA. Its prompts say what is true instead of "Locked": the safe and the van say "Needs <key>", and with every key held the van names one unfinished duty by its place ("Unfinished: Fountain"). The fountain switch's own prompt shows "Shocked n/12" in both modes while the Key Ring is held and the line is open.
+- **Starting from the title** no longer leaves a "Fresh shift" pause screen when the mouse lock is refused and no longer resets twice: `ui/runStart.js` stores the mode and asks to play, the chooser stays up until play starts, and a pointer lock that arrives late (after Back) is given back.
+- **One value for "no checklist line on this receipt"**: `closingDone: null`, set by the game (`g.receiptFor`) for the death and win receipts. ui/hud.js keeps no receipt state.
+- **The last chosen mode is remembered** between sessions through game/settings.js (`closingMode`: no tab, in no preset, kept by Reset everything) and focused on the chooser.
+- The plan's "Run modes" section is rewritten: added by the user after phase 6, Directed is the default and is what decision 10 describes, Classic is the opt-in. The ten decisions are unchanged.
+- This branch also contains the fix pass on phases 1 to 6 (merged from `codex/closing-time-6`), so a Classic run needs the duties as well as the keys.
+- Shared files changed here: `createGame.js`, `main.js`, `config/audio.js`, `config/settings.js`, `game/settings.js`, `ui/hud.js`, `ui/screens.js`, `features/hazards.js` and the docs.
+
+## 10 November 2026 - Closing Time fix pass (phases 1 to 6, after review)
+
+- **The van needs the duties.** Starting the van takes all four keys and lines 1 to 3 ticked (`g.closing.readyToLeave`, checked in `onRunWon` and at the prompt). The prompt lists missing keys first, then the unfinished duties whose key is held, by name. Still no round gate.
+- **The game owns line 4.** The Van Keys tick nothing; their pickup has its own PA line. The win ticks "Car park cleared" (`closing.completeLeaving()` from `onRunWon`, before the summary), so `g.closing.done`, 'closingLine' and `summary.closingDone` are right headless and a win receipt reads 4 of 4. The three browser corrections are gone (`closingChecklistFor`, the PA text comparison and `setReceiptClosingDone`).
+- **A won run is never lost.** `g.leaveRun()` records a won run that is left by Quit to title or Restart run (the win plus what overtime added), once; main.js calls it before `resetRun()`. A run that was never won is still not recorded. Not covered: closing the browser tab in overtime.
+- **A win in the break keeps its round.** `rounds.startOvertime()` in a break restarts the full break and plays the announced round; mid-wave it discards and moves on as before. The summary carries `overtimeRounds` (from the first overtime round), which the receipt reads.
+- **A boss reward on the floor survives Stay for overtime.** 'roundDiscard' carries a reason; for 'overtime' game/powerUps.js leaves the uncollected reward, which can still be collected or expire and pay `pointsInstead`. A debug skip deletes it, as before.
+- **Statistics** shows career wins, the fastest win (a dash when none) and marks won shifts.
+- **The PA introduces the checklist** once per run, 8 s after round 1 is announced ('closingBriefing').
+- **The dropped completion line** (noted under phase 6) is fixed with a queue rule, not a priority: a PA message flagged `keep` does not count against the three-message queue, is never trimmed, and returns to the head of the queue if a more important message cuts it off. Only the checklist's line-opening and line-complete lines carry the flag.
+- **Career saves:** a stored version higher than this build knows is left untouched; the session uses a blank ledger and writes nothing (Clear records included).
+- **Words** for the win receipt, the OVERTIME tag and the Night Safe's "Requires" moved to `config/closingTime.js`.
+- **Found while playing it, and fixed:** a boss voucher on the floor (Master Key, Signed Approval, Discount Code) froze the browser game. ui/incentiveHud.js looked its name up in `powerUps.types`, where vouchers are not, threw inside render, and core/loop.js then never scheduled another frame. The line dated from 23 October, before vouchers existed; headless tests never draw the HUD. The HUD now names vouchers from `bossVouchers` and never throws on an unknown id (tests/powerUps.test.js).
+- Tests: tests/closingTime.test.js covers each of these, plus a key from a boss killed on an escalator ramp or against a wall, the mid-air drop, Play again against a fresh game (the headless `snapshot()` now includes the checklist, keys, pickups and win flags) and the HUD's boxes and markers. tests/retailUi.test.js covers the queue rule.
+- Shared files changed: `createGame.js`, `rounds.js`, `powerUps.js`, `careerStats.js`, `events.js`, `main.js`, `config/economy.js` (a comment), `ui/announcements.js`, `ui/hud.js`, `ui/screens.js`, `ui/retail.css`, `tests/helpers/headlessGame.js` and the docs.
+
+## 10 November 2026 - Classic and Directed runs
+
+- Play opens a choice with Classic focused. Restart run and Play again retain the confirmed mode. Back returns to the title.
+- Classic keeps the physical keys and local interactions, with terse van and safe prompts. Directed retains the checklists, key directions, quest PA and receipt progress. Classic filters quest PA before it reaches the Notices archive.
+- Both modes share phase 6 quest progress, pricing, win, overtime and career credit.
+
+## 10 November 2026 - Closing Time phase 6, Line 3 (last orders)
+
+- Fairweather's Signature opens Last orders signed off. The next Build-A-Blaster collection, including a Restuff or an order already running at pickup, ticks the line once. Collections before pickup do not count. Play again resets the duty.
+- Chrome production preview confirmed the 0/1 and 1/1 HUD states, both PA messages, and reset. The build charged 1,500 points and the Restuff charged 750, with no extra charge at collection.
+- When the preview script forced the entire Restuff through while the opening PA was still up, the shared three-message PA queue dropped the completion banner. Letting the opening PA finish before the Restuff made the completion banner visible.
+- Shared edits were limited to the Closing Time system and config, its existing test file, and the plan, history, folder guide and test guide.
+
+## 10 November 2026 - Closing Time phase 5, Line 2 (the night safe)
+
+- Kettle’s Safe Key opens Takings banked. Hold interact at the Night Safe on Customer Service’s east wall to make one deposit. Each deposit updates the checklist, and the PA announces the opening and the tick after four deposits. Play again clears the key and progress.
+- The safe charges 1,000 points per hold through the new closing price category. The Discount Code and Employee Discount apply to deposits. Flash Sales have no closing group.
+- Production Chrome preview showed the locked prompt, the 1/4 HUD count, and the Done prompt with the 4/4 tick. Four full-price holds charged 4,000 points. The prompt and coplanar tests cover the safe alongside both Customer Service windows and the Prize Counter.
+- Shared files changed include the Closing Time config and game system, the economy and pricing tables, the map and feature registry, and their test expectations.
+
+## 10 November 2026 - Closing Time phase 4, Line 1: the fountain
+
+- Murray's Key Ring opens “Water features off.” Only kills dealt by the active Electrified Fountain count. The HUD and pause list show the count, and the PA announces the opening and the tick at 12. Bosses and Mascots count. Play again clears the duty.
+- The breaker keeps its normal hazard behavior and price. The interim van still requires the four keys until parking validation is built in phase 7.
+- With seed 42 and a stationary invulnerable lure in the real headless wave, the paid breaker took two activations in round 6 (11 then 8 kills), one in round 10 (15 kills) and one in round 15 (13 kills). A controlled run staging six full-health enemies at a time took two activations at each round. The measured price was 750 per activation.
+- Shared files changed include the Closing Time config and game system, `createGame.js`, `events.js`, the van and fountain features, the HUD and pause UI, and `tests/closingTime.test.js`.
+
+## 10 November 2026 - Closing Time phase 3, The win (browser)
+
+- The existing receipt opens as SHIFT COMPLETE after the van starts. Clock out keeps the completed receipt available. Stay for overtime resumes on the controller or requests mouse lock with a Resume screen as a fallback.
+- The fourth checklist box ticks at the van. The HUD shows OVERTIME after continuing. An overtime death uses the regular incident receipt and adds the win round, win time and number of completed overtime waves.
+- The win releases pointer lock and stops rumble. The paused receipt is eligible for idle saving. Death alone starts the death music and camera.
+- Shared files changed include `main.js`, `ui/screens.js`, `ui/hud.js`, `ui/readability.css` and `tests/closingTime.test.js`.
+
+## 10 November 2026 - Closing Time phase 2, The win (headless)
+
+- The mauve van's east-side hold prompt lists any missing keys. Four keys unlock the free start, even in round 1.
+- `runWon` publishes the win snapshot and freezes the simulation. `g.clockOut()` ends the shift. `g.stayForOvertime()` discards the current wave and starts the next round with its normal break and scaling, preserving points and equipment.
+- The career ledger records one run on `runEnd`, at Clock out or death in overtime. Version 2 preserves the version 1 history and adds wins and fastest win, measured when the van starts.
+- Death events still own the music, cleanup and delayed receipt. The win pauses via `state.running`, which the idle saver already reads. Phase 3 owns pointer lock, receipt controls and changing the browser's death camera check to distinguish death from Clock out.
+- Shared files changed include `createGame.js`, `events.js`, `rounds.js`, `careerStats.js`, the feature registry and `mall.js`.
+
+## 10 November 2026 - Closing Time phase 1, Keys and the checklist
+
+- The first defeat of each boss drops its closing key on clear floor alongside its usual reward. If the boss vanishes, its key drops at the player's feet.
+- Keys stay through wave changes and Murray's cleanup. Collect a key to check off its duty. Play again resets the checklist and clears the drops.
+- The HUD shows four boxes and a pointer for each dropped key. The PA calls out drops and pickups. Pause lists the duties and their keys, and the death receipt records how many were checked off.
+- Browser console testing uses `__mall.g.debug.run('closing', 'drop', 'janitor')` and `__mall.g.debug.run('closing', 'grant', 'guard')`. Omit the boss ID to use the next eligible key.
+- Shared files changed include `createGame.js`, `events.js`, `main.js`, `debugCommands.js`, `bossDirector.js`, and the power-up and HUD modules.
 
 ## 10 November 2026 - Shopping window: a 20 s break and "Clock in"
 
@@ -75,6 +274,84 @@ docs/closing-time-plan.md plans a run goal with an ending, from the fun review's
 - The plan lists which side systems the quest uses (bosses, the fountain, Build-A-Blaster, the parking lot, the receipt, Return to Sender) and which it does not
   (power-ups, attachments, prize tickets, Limited Editions, the claw, the wardrobe, Kevin).
 - Shared files changed: docs/history.md and CLAUDE.md (the docs index row and build-order line 9 now point at the plan).
+## 10 November 2026 - Build-A-Blaster order form
+
+**Your Blaster** now tells shoppers that a built blaster hits much harder and holds more ammo. The summary stays visible below the scrolling choices.
+## 10 November 2026 - Soften round 7: gentle Shopper gait ramp
+
+Round 7 previously spiked deaths sharply: 30% of Shoppers spawned running at 4.6 m/s, outpacing the player's backpedal (3.9 m/s)
+and strafe (4.25 m/s). The run share now ramps in gradually across rounds 7, 9, 11, and 14 instead of an abrupt 30% jump at round 7.
+
+- **Gait progression:** `src/config/zombies.js` `shopper.gaitsByRound` updated:
+  - Round 1: 100% walk (2.0 m/s)
+  - Round 3: 70% walk, 30% jog (3.4 m/s)
+  - Round 5: 35% walk, 65% jog
+  - Round 7: 25% walk, 65% jog, 10% run (4.6 m/s) [previously: 15% walk, 55% jog, 30% run]
+  - Round 9: 15% walk, 55% jog, 30% run
+  - Round 11: 40% jog, 60% run [previously: round 10]
+  - Round 14: 15% jog, 85% run [previously: round 13]
+- **Measured results (20-seed mortal bot batch, `node scratch/batch.mjs SENSIBLE good mortal 1 20 40`):**
+  - Before death-round distribution: round 6: 3 (15%), round 7: 8 (40%), round 9: 5 (25%), round 10: 1 (5%), round 11: 2 (10%), round 12: 1 (5%).
+    Mean death round: 8.15. Mean survival time: 329.3 s. 7 of the 8 round-7 deaths were killed by Shoppers.
+  - After death-round distribution: round 6: 3 (15%), round 7: 5 (25%), round 9: 1 (5%), round 10: 7 (35%), round 11: 2 (10%), round 12: 2 (10%).
+    Mean death round: 8.90. Mean survival time: 398.1 s. Round-7 deaths dropped from 8 (40%) to 5 (25%), with 11 of 20 runs reaching round 10+.
+- **Shared files changed:** `src/config/zombies.js`, `docs/history.md`.
+- **Not checked by hand:** manual browser play-feel of the transition into round 7; verified headlessly via 20-seed bot simulations, `npm run test:quick`, `npm test` (1,123 tests passing), and `npm run build`.
+## 10 November 2026 - Economy proposals A, C and D applied (B is not)
+
+Approved from docs/economy-report.md section 6, on the claude/economy-report branch. Build-A-Blaster (B) is unchanged: 1,500, any gun.
+
+- **A. Price Gun** damage 70 -> 58 (config/weapons.js): 434 sustained dps instead of 524; the Rivet Rifle is 1.34x it, the Foam Dart Blaster 1.31x, the Heavy
+  Coil Nailer 1.49x. Round-8 Shopper: 12 body shots, was 10 (tests/balance.test.js).
+- **C. Platinum** damage x1.65 -> x1.9, holdsUntilRound 14 -> 16; **Renewals** x1.06 -> x1.09 each, prices 3,000 / 4,000 / 5,500 / 7,500 / 10,000 ->
+  4,000 / 5,000 / 6,500 / 8,000 / 10,000 (config/upgrades.js, economy.upgrades.renewals).
+- **D. Claw grab** 1,000 -> 1,500 (economy.claw.grab).
+- **A design rule changed with C, and it was not in the report**: tests/workshopPower.test.js said "a Regular build beats Platinum alone". Platinum (x1.9, 10,000
+  in all) now passes a Regular build (x1.7, 1,500). The test now says a Regular build beats Premium and an Overstuffed one beats Platinum. If the old rule
+  matters more than Platinum's value, Platinum has to stay under x1.7.
+- tests/clawMachine.test.js pinned a 400-point sale grab; it reads the price from config now.
+- The report's "today" columns are the numbers BEFORE this change. Its "after" columns were played with exactly these numbers, on 7d633bf (before the
+  20-second break). tools/economyPlans.js still lists A, C and D as proposals; they now equal the game's numbers.
+- Not checked: nothing played by hand; no new bot runs after applying (the played "after" runs are the evidence); docs/claw-machine-plan.md and
+  docs/weapon-balance-pass.md still quote the old numbers in their tables.
+
+## 10 November 2026 - Economy report and power-curve proposal (no gameplay changes)
+
+The report four plans were waiting for: docs/economy-report.md, written from `npm run sim:economy` (tools/economySim.mjs). Nothing in src/ changed;
+the report PROPOSES numbers and they wait for approval. Built in the claude/economy-report worktree (.claude/worktrees/economy-sim).
+
+- **The tool.** tools/economyBot.js is the review's throwaway bot, kept: the real game headless, a bot that aims with error, kites, and shops by
+  teleport from a buy order (tools/economyPlans.js PLANS), immortal or with one life. New in it: income split by source (wallet.earn is wrapped and
+  each 'hit' / 'kill' claims what was just paid), every purchase with its round and cost, the loadout as each round begins, a claw step (pay, press
+  over the best capsule with a 0.12 s timing error, take it only if it beats the gun it would replace) and a give-up after 25 minutes in one round.
+  tools/economySim.mjs plays plan x skill x seeds in child processes (12 at a time here), keeps each finished run in scratch/economy-sim/ keyed by a
+  hash of src/, the bot and that plan, and prints every table as markdown. tools/economyModel.js is the maths beside it (wave mix, points a zombie,
+  the upgrade ladder, "rounds of zombie health" a multiplier buys back). PROPOSALS are config changes applied in memory in the process that plays the
+  run, so before/after is measured with src/config untouched. tests/economySim.test.js keeps it alive (two-round run, books balance, proposals and plans
+  point at real config).
+- **Measured, today's numbers** (8 immortal runs a skill to round 30, 40 one-life runs a set-up; 588 runs in all with the proposals):
+  216,000 points by round 30 for either skill (the review: 216,140); 600 / 2,000 / 5,200 / 9,500 / 15,400 in rounds 1 / 5 / 10 / 20 / 30. A quarter to
+  nearly half of it is +10 hits, so a weaker gun earns more (Price Gun only: +29%). The sensible buyer has the Rivet Rifle in round 5, the first build
+  in round 7, Platinum in 11 or 12 and the whole 106,500 list by round 23; then nothing to buy (104,000 unspent at round 30; ammo is 3% of income).
+  A Shopper takes 0.3 to 0.85 s of fire from round 1 to 23 while its health grows 14 times, then 1.4 s by round 30. One-life runs: the good bot is dead by
+  round 7 half the time and reaches round 10 in 38% of runs; the average bot dies in round 6 and never reaches 10; without builds 25% reach round 10.
+  The review's four findings are confirmed; one addition: a build on the Price Gun (shutter, Promenade, build: 3,750) is affordable in round 5.
+- **Proposed, not applied** (section 6 of the report, each with a played before/after): A. Price Gun 70 -> 58 damage (the Rivet Rifle goes from 1.11x
+  to 1.34x; no clear survival cost). B. Build-A-Blaster 1,500 -> 4,000 and only for a gun under Premium warranty (first build in round 9; needs a
+  rule in the order form), or 5,000 with no rule (round 8), or 3,000 (the mild one). C. Platinum x1.65 -> x1.9 and Renewals x1.06 -> x1.09 at 4,000
+  to 10,000 (Platinum 435 -> 193 points per +1% damage). D. Claw grab 1,000 -> 1,500 (the first grab wins 1.01x its price instead of 1.52x).
+  **B costs survival**: 15% (4,000 + Premium), 13% (5,000) and 28% (3,000) of good-skill one-life runs reach round 10, against 38 to 40% today.
+- **Two things learned the slow way.** (1) One-life results are very noisy: the first 20 runs on today's numbers had a median death round of 10, all
+  40 have 7, and proposal C (the same game until round 11) is the built-in noise check. (2) The same seed with the same numbers does not always
+  play the same run in the headless game (runs agree to about round 4, then drift). Not investigated; seeded tests may be exposed to it.
+- **Machine time**: round-30 runs are slow (about 17 minutes each with 12 running at once), so the whole set is roughly an hour and a half from an
+  empty cache. --quick (2 seeds to round 10, 4 one-life runs) took 6.5 minutes while another batch was running; it was not timed on an idle machine.
+- **Shared files changed**: package.json (the sim:economy script), CLAUDE.md (one command line, one docs-index row), docs/history.md,
+  docs/folder-structure.md, docs/tests.md, docs/claw-machine-plan.md and docs/kiosk-kevin-plan.md (one sentence each: the report exists now).
+- **Not checked**: nothing was played by a person; shopping is a teleport and builds were never fought for (Understuffed or Regular only); everything
+  past round 14 is from bots that cannot die; the proposals were played at good skill (average only for today's numbers and one-life runs with
+  everything in); the 3,000 build and a 62-damage Price Gun were played for survival only; the bot never uses hazards, the Soda Bomb, attachments, prize
+  tickets, the Confetti Cannon, the Barcode Scanner or a claw-only gun. npm test, npm run build and an unchanged npm run balance were run before the commit.
 
 ## 9 November 2026 - Wardrobe showroom: upstairs showpieces and on-player looks
 

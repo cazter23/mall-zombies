@@ -53,6 +53,16 @@ export function createTickets({ events, state }) {
       return true;
     },
 
+    // Save & Quit (game/saveGame.js).
+    serialize() {
+      return { count, won, tokens: { ...tokens } };
+    },
+    restore(data) {
+      count = data.count;
+      won = data.won;
+      for (const id of TOKENS) tokens[id] = data.tokens[id] ?? 0;
+    },
+
     reset() {
       count = 0;
       won = 0;

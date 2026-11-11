@@ -160,6 +160,7 @@ export function createHazard({
   onPulse,
   onTick,
   onStop,
+  note = null, // optional () => text | null: one more term on the switch's own prompt (the fountain's closing-duty count)
 }) {
   const { scene, map, events, pricing, interactions, player, stats, health, state, sound, effects } = ctx;
   const { rig, setPhaseVisual } = buildHazardSwitchBox({
@@ -188,8 +189,9 @@ export function createHazard({
   function runPulse(isOpening = false) {
     if (state.over) return;
     onPulse?.(isOpening);
-    if (cfg.playerDamage > 0 && isPlayerInside?.(player.position) && !health.isDead) {
-      health.takeDamage(cfg.playerDamage);
+    // (not during Second Chance's grace period: a pulse that can't hurt doesn't jolt the view either)
+    if (cfg.playerDamage > 0 && isPlayerInside?.(player.position) && !health.isDead && !health.isReviveProtected) {
+      health.takeDamage(cfg.playerDamage, { type: 'hazard', id: cfg.id }); // (the death receipt's incident report names it)
       if (cfg.playerViewJoltDegrees) {
         player.addViewKick(-cfg.playerViewJoltDegrees * DEG_TO_RAD);
       }
@@ -215,7 +217,10 @@ export function createHazard({
     label: cfg.label,
     title: cfg.title,
     verb: cfg.verb ?? 'trigger',
-    detail: cfg.detail,
+    get detail() {
+      const extra = note?.();
+      return extra ? [cfg.detail, extra].filter(Boolean).join(' · ') : cfg.detail;
+    },
     kind: 'hazard',
     id: cfg.id,
     get cost() {

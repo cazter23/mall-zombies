@@ -7,11 +7,13 @@
 //   priceOf('weapon', gunId)       economy.wallBuys[gunId].weapon
 //   priceOf('ammo', gunId)         economy.wallBuys[gunId].ammo
 //   priceOf('ammoCache')           economy.ammoCache.price
+//   priceOf('secondChance')        economy.secondChance.price
 //   priceOf('tier', tierId)        economy.upgrades.tiers[tierId] (Extended Warranty: deluxe / premium / platinum)
 //   priceOf('melee', tierId)       economy.upgrades.melee[tierId] (box cutter tiers: sharpened / pro)
 //   priceOf('attachment', id)     economy.upgrades.attachments[id]
 //   priceOf('wardrobe', id)      economy.wardrobe[id]
 //   priceOf('claw', 'grab')        economy.claw.grab (GRAB-A-GUN; the Discount Code excludes this category: config/bosses.js)
+//   priceOf('closing', id)       economy.closing[id] (closing duties)
 //   basePriceOf(category, id)      original shelf price before a discount (same validation/source)
 //   setDiscount(category, 0.25)    25% off everything in that category (0 = none); rounded to the nearest
 //                                  economy.discountRoundTo (10)
@@ -41,7 +43,10 @@ const BASE = {
   attachment: (id) => (Object.hasOwn(economy.upgrades.attachments, id) ? economy.upgrades.attachments[id] : undefined),
   wardrobe: (id) => (Object.hasOwn(economy.wardrobe, id) ? economy.wardrobe[id] : undefined),
   claw: (id) => (Object.hasOwn(economy.claw, id) ? economy.claw[id] : undefined), // GRAB-A-GUN ('grab': the pay step only)
+  kiosk: (id) => (Object.hasOwn(economy.kiosk, id) ? economy.kiosk[id] : undefined),
+  closing: (id) => (Object.hasOwn(economy.closing, id) ? economy.closing[id] : undefined),
   hazard: (id) => (Object.hasOwn(economy.hazards, id) ? economy.hazards[id] : undefined), // Environmental hazards (config/hazards.js)
+  secondChance: () => economy.secondChance.price,
 };
 
 export const PRICE_CATEGORIES = Object.keys(BASE);
@@ -116,6 +121,17 @@ export function createPricing() {
     discountOf(category) {
       check(category);
       return discounts.get(category) ?? 0;
+    },
+
+    // Save & Quit (game/saveGame.js): the discounts in force (a Flash Sale's included), the boss voucher and the coupon.
+    serialize() {
+      return { discounts: [...discounts], voucher, coupon };
+    },
+    restore(data) {
+      discounts.clear();
+      for (const [category, fraction] of data.discounts) discounts.set(category, fraction);
+      voucher = data.voucher;
+      coupon = data.coupon;
     },
 
     reset() {

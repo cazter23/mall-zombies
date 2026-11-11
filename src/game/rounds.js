@@ -81,6 +81,13 @@ export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null,
     if (onRoundStart) onRoundStart(n);
   }
 
+  // reason: 'overtime' (Stay for overtime) or 'debug' (skipRound / jumpTo). Listeners that delete what a wave left
+  // behind read it (game/powerUps.js keeps an earned boss reward through the overtime transition).
+  function discardWave(reason) {
+    zombies.clear();
+    onRoundDiscard?.(reason);
+  }
+
   return {
     get round() {
       return round;
@@ -93,6 +100,10 @@ export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null,
     },
     get remainingToSpawn() {
       return toSpawn;
+    },
+    // The last shoppers of the round (economy.rounds.lastShoppers): nothing left to spawn and only a few alive.
+    get lastShoppers() {
+      return state === 'active' && toSpawn === 0 && zombies.aliveCount > 0 && zombies.aliveCount <= cfg.lastShoppers.count;
     },
     get remainingInWave() {
       return toSpawn + zombies.aliveCount;
@@ -162,7 +173,7 @@ export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null,
             spawnTimer = cfg.spawnRetrySeconds; // no usable spawn point right now: try again shortly
           }
         }
-        if (!waveEndingEmitted && toSpawn === 0 && zombies.aliveCount > 0 && zombies.aliveCount <= 2) {
+        if (!waveEndingEmitted && toSpawn === 0 && zombies.aliveCount > 0 && zombies.aliveCount <= cfg.lastShoppers.count) {
           waveEndingEmitted = true;
           if (onWaveEnding) onWaveEnding({ round, remaining: zombies.aliveCount });
         }
@@ -177,23 +188,55 @@ export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null,
       }
     },
 
+    // Stay for overtime (createGame's stayForOvertime). A win in the break, when the announced round has spawned
+    // nothing yet: overtime continues with THAT round after a fresh full break, so no round is skipped (nothing is
+    // discarded and the round is not announced a second time). A win with a wave live: the wave is discarded and the
+    // next round is announced.
+    startOvertime() {
+      if (state === 'break') {
+        breakTimer = cfg.breakSeconds;
+        return;
+      }
+      discardWave('overtime');
+      announce(round + 1, cfg.breakSeconds);
+    },
+
     // Debug: end the current round right now and jump straight into the next one (no break).
     skipRound() {
       if (!started) return this.start();
-      zombies.clear();
-      onRoundDiscard?.();
+      discardWave('debug');
       announce(round + 1, 0);
     },
 
     // Debug: clear the zombies and jump straight to round `n` (no break).
     jumpTo(n) {
       if (!started) started = true;
-      zombies.clear();
-      onRoundDiscard?.();
+      discardWave('debug');
       announce(Math.max(1, Math.round(n)), 0);
     },
 
     // New run: back to "not started" (round 1 begins when play starts).
+    // Save & Quit (game/saveGame.js). A save is always the START of a round, so it keeps only the round number and what this
+    // run has already seen; restore() puts the run at the start of that round's break (the full break, no 'roundStart': the
+    // systems that roll on it restore their own rolls).
+    serialize() {
+      return { round, seenTypes: [...seenTypes], seenVariants: [...seenVariants] };
+    },
+    restore(data) {
+      started = true;
+      round = data.round;
+      toSpawn = zombieCountForRound(round);
+      spawnedThisRound = 0;
+      waveEndingEmitted = false;
+      state = 'break';
+      breakTimer = round === 1 ? cfg.firstRoundDelay : cfg.breakSeconds;
+      spawnTimer = 0;
+      seenTypes.clear();
+      for (const id of data.seenTypes) seenTypes.add(id);
+      seenVariants.clear();
+      for (const id of data.seenVariants) seenVariants.add(id);
+    },
+
     reset() {
       started = false;
       round = 0;

@@ -81,6 +81,19 @@ export function snapshot(g) {
   return {
     over: g.state.over,
     death: { ...g.death },
+    // The win: both flags, the frozen win summary and the first overtime round.
+    won: g.state.won,
+    winPending: g.state.winPending,
+    winSummary: g.winSummary,
+    overtimeFrom: g.overtimeFrom,
+    // Closing Time: every line (ticked, its count once its key is held), the keys held and the keys on the floor.
+    closing: {
+      checklist: g.closing.checklist.map(({ bossId, done, count }) => [bossId, done, count ?? null]),
+      keys: g.closing.checklist.filter(({ bossId }) => g.closing.hasKey(bossId)).map(({ bossId }) => bossId),
+      pickups: g.closing.pickups.map(({ bossId, position }) => [bossId, ...position.toArray().map(round)]),
+      markers: Object.keys(g.closing.markers),
+      readyToLeave: g.closing.readyToLeave,
+    },
     points: g.wallet.points,
     totalEarned: g.wallet.totalEarned,
     totalSpent: g.wallet.totalSpent,
@@ -95,9 +108,11 @@ export function snapshot(g) {
     guns: g.gun.slots,
     inHand: g.gun.def.id,
     wardrobe: g.wardrobe.status,
+    secondChance: g.secondChance.status, // (the one self-revive: not held, and buyable again)
     mods: g.gun.slots.map((id) => g.gun.modsFor(id).map((m) => m.id)),
     ammo: [g.gun.weapon.magazine, g.gun.weapon.reserve],
     health: round(g.health.fraction),
+    armour: g.health.armour,
     // Every field of the stats object (a stray one left by a perk would show up here too).
     stats: Object.fromEntries(Object.entries(g.stats).map(([k, v]) => [k, typeof v === 'number' ? round(v) : v])),
     runStats: {
@@ -115,6 +130,7 @@ export function snapshot(g) {
     })(),
     // Kiosk Kevin's equipment: both pockets, whether a throw is under way, and anything thrown still out.
     equipment: { ...g.equipment.status, thrown: g.equipment.live.length, inAir: g.throwables.list.length },
+    kiosk: g.features.list.find(({ feature }) => feature.kind === 'kiosk')?.instance.status ?? null,
     interactPrompt: g.interactions.prompt,
     reloading: g.gun.weapon.isReloading,
     discounts: PRICE_CATEGORIES.map((c) => g.pricing.discountOf(c)),

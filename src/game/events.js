@@ -36,9 +36,20 @@
 //                                                        hitDirection = { x, z } normalized vector from player toward attack source or null.
 //                                                        damage is BEFORE clothes: createGame's listener applies stats.damageTakenMultiplier
 //   'playerFall'  { drop, damage }                       a landing from a height hurt (feel.fall); damage is already taken
+//   'armourHit'   { absorbed, layers, popped }            Bubble Wrap absorbed damage from a zombie hit
+//   'kioskStock'  { pick, pa }                           Kevin's fixed cart opened or its Pick changed
 //   'regenStart'  {}                                     health began climbing back (once per recovery: player/health.js)
+//   'secondChance' { status }                            Second Chance changed (game/secondChance.js): 'held' = bought at Customer Service,
+//                                                        'used' = it just covered a lethal hit (the player is already back at full health,
+//                                                        protected, the shove done; no 'playerDeath' follows), 'available' = cleared by Play again.
+//                                                        While its protection lasts no 'playerHit' / 'playerFall' is announced at all.
 //   'playerDeath' {}                                     after the death is registered (onPlayerDeath)
-//   'runEnd'      { summary }                            immutable final run totals, emitted once on player death
+//   'escapeVanStart' {}                                  the player finished the van's hold interaction
+//   'runWon'      { summary }                            immutable win snapshot; simulation pauses for the choice
+//   'overtimeStart' { round }                            the player chose Stay for overtime; round = the first overtime round (the next
+//                                                        round after a win mid-wave, the already announced one after a win in the break)
+//   'runEnd'      { summary }                            final run totals, emitted once per recorded run: on death, on Clock out,
+//                                                        or when a won run is left from a menu (createGame's leaveRun)
 //   'powerUpDrop' { id, position, seconds }               earned incentive appeared on clear floor
 //   'powerUpCollect' { id, name, pa, sound }              walk-through collection (instant effect or zone start)
 //   'powerUpStart' { id, position, remaining, radius, ... } zone or temporary employee benefit began
@@ -50,17 +61,25 @@
 //   'clockIn'     { round, skipped }                     the player ended the break before `round` early (game/clockIn.js);
 //                                                        skipped = seconds of the break given up
 //   'waveEnding'  { round, remaining }                   no spawns left and 2 or fewer zombies alive (final clearance cue)
-//   'roundDiscard' {}                                    a debug skip cleared the current wave
+//   'roundDiscard' { reason }                            the current wave was cleared: reason 'debug' (skipRound / jumpTo) or
+//                                                        'overtime' (Stay for overtime with a wave live; an uncollected boss reward stays)
 //   'typeIntro'   { typeId, zombie }                     a zombie type's first appearance this run (zombie = that spawn)
 //   'mascotVariantIntro' { variant, zombie }             a Mascot costume's first appearance this run, after the type's
 //                                                        own intro (game/rounds.js; banner: config/zombies.js mascotVariants)
 //   'bossSpawn'   { zombie, round }                      a scheduled or debug-summoned boss entered the wave
 //   'bossPhase'   { zombie, phase, round }               an encounter mechanic began (Janitor: wetFloor)
 //   'bossDefeated' { zombie, round }                     an active boss died through the regular kill path
+//   'bossVanished' { zombie, round }                     an active boss disappeared without a kill or an explicit round discard
+//   'closingBriefing' { pa }                              once per run, shortly after round 1 is announced: the PA introduces the checklist
+//   'closingKeyDrop' { bossId, position, pa }             a boss's checklist key appeared on clear floor
+//   'closingKey' { bossId, pa }                           the player took a checklist key
+//   'fountainKill' { zombie }                            the Electrified Fountain dealt a killing blow during a pulse
+//   'closingProgress' { line, count, needed }            a closing duty advanced (line is the boss id)
+//   'closingLine' { line, done, total, pa? }              a checklist line was checked off; done counts completed lines
 //   'bossFlash' { zombie, seconds, opacity, dimOpacity } telegraphed phone flash; browser presentation respects Comfort settings
 //   Fan actors carry noRewards: all hit/kill payouts, incentive and workshop credit ignore them.
 //   'purchase'    { label, cost, kind, id }              something was bought; kind 'door' | 'weapon' | 'ammo' |
-//                                                        'ammoCache' | 'tier' | 'attachment' | 'wardrobe' | 'fittingRoom' | 'other', id as it was BEFORE
+//                                                        'ammoCache' | 'tier' | 'attachment' | 'wardrobe' | 'fittingRoom' | 'secondChance' | 'other', id as it was BEFORE
 //                                                        the purchase (buying a gun is kind 'weapon'; a fitting room emits the id of the item put on, cost 0)
 //                                                        Area purchases also include areaId and openedDoorIds (one charge, many barriers).
 //   'wardrobeChange' { slot, worn, removed }              apparel equipped, item ids (removed is null for an empty slot)
@@ -97,6 +116,8 @@
 //   'challengeProgress' { gunId, skinId, count, needed }  a challenge counter changed (game/challenges.js)
 //   'skinUnlocked' { gunId, skinId, pa }                  a skin was earned; PA and HUD toast listen here
 //   'runReset'    {}                                     after Play again reset everything
+//   'runSaved'    { round }                              Save & Quit wrote the slot (game/saveGame.js); the run ends next (main.js)
+//   'runLoaded'   { round }                              a save was loaded: the run resumes at that round's break (horror relights, the PA welcomes you back)
 // =============================================================================
 
 export function createEvents() {

@@ -1,7 +1,7 @@
 // Build-A-Blaster's order form, drawn from the game's view of it (game/features/workshopOrderForm.js). Only draws: the choices are made on
 // the fixed tick from actions, so the mouse stays locked and the game keeps running behind it.
 // It is read mid-fight, so: sizes follow the screen height (retail.css), the column you are moving in is the one with a solid highlight,
-// stuffings you can't pick fold into one short list, one line says what the order does, and the buttons are drawn as keycaps.
+// stuffings you can't pick fold into one short list, the summary explains the selected effect and the gun boost, and the buttons are drawn as keycaps.
 const hex = (color) => `#${color.toString(16).padStart(6, '0')}`;
 const lowerFirst = (text) => text.charAt(0).toLowerCase() + text.slice(1);
 
@@ -31,8 +31,11 @@ export function createOrderFormView() {
     <div class="order-scroll"><div class="order-columns">
       <div class="order-column" data-column="0"><div class="order-label">Stuffing <span class="order-hint" data-hint="move"></span></div><ul class="order-list" data-list="stuffings"></ul><div class="order-out"></div></div>
       <div class="order-column" data-column="1"><div class="order-label">Heart <span class="order-hint" data-hint="move"></span></div><ul class="order-list" data-list="hearts"></ul></div>
-    </div>
-    <div class="order-summary"><span class="order-summary-label">Your blaster</span><span class="order-summary-text"></span></div>
+    </div></div>
+    <div class="order-summary">
+      <span class="order-summary-label">Your blaster</span>
+      <span class="order-summary-text" data-summary="effect"></span>
+      <span data-summary="build"></span>
     </div>
     <div class="order-foot">
       <div class="order-keys">
@@ -49,7 +52,8 @@ export function createOrderFormView() {
   const lists = { stuffings: $('[data-list="stuffings"]'), hearts: $('[data-list="hearts"]') };
   const columns = [...element.querySelectorAll('.order-column')];
   const out = $('.order-out');
-  const summary = $('.order-summary-text');
+  const summary = $('[data-summary="effect"]');
+  const buildBlurb = $('[data-summary="build"]');
   const switchHint = $('[data-hint="switch"]');
   const backHint = $('[data-hint="back"]');
   const moveHints = [...element.querySelectorAll('.order-label [data-hint="move"]')];
@@ -124,6 +128,7 @@ export function createOrderFormView() {
       hint(backHint, labels.back, 'Cancel');
       buttonKeys.replaceChildren(...keycaps(labels.confirm));
       summary.textContent = orderSummary(view.stuffings.find((s) => s.selected), view.hearts.find((h) => h.selected));
+      buildBlurb.textContent = view.buildBlurb;
       price.textContent = view.cost.toLocaleString('en-US');
       need.textContent = view.canAfford ? '' : `Need ${view.shortfall.toLocaleString('en-US')} more points`;
       need.hidden = view.canAfford;

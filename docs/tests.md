@@ -69,7 +69,7 @@ mid-ritual, the chute steering spawns only while you are in the room, a full rou
 `tests/workshopBuilds.test.js` covers finished builds: every Stuffing + Heart pair set off for real, a Last Round miss, Reload's blast and cooldown, Every 10th counting only that gun's kills, puddles, Antifreeze's chill then shatter, Hearts per gun, burn ticks and no stacking, kills paying once, stuffing kills not firing a Heart, the Heart cooldown, walls and floors
 stopping stuffings, quality scaling, picking at the bins and the Heart wall, today's stock and area stocking, re-stuffing, stacking with tiers and attachments, and the round curve (a stuffing adds less than the gun itself, one proc never kills a full-health zombie from round 5).
 
-`tests/workshopNames.test.js` covers names (unique in a run until the list runs out, kept through a re-stuff), the Birth Certificate's fields and wording, the PA lines in order, the HUD label, and "Survived by" in the run summary, even for a gun still at the workshop. `tests/receiptReview.test.js` covers performance review evaluations, receipt lines, and the Form 109-C Incident Report cause of termination and loss prevention tip across all lethal sources.
+`tests/workshopNames.test.js` covers names (unique in a run until the list runs out, kept through a re-stuff), the Birth Certificate's fields and wording, the PA lines in order, the HUD label, and "Survived by" in the run summary, even for a gun still at the workshop. `tests/receiptReview.test.js` covers performance review evaluations, receipt lines, and the Form 109-C Incident Report cause of termination and loss prevention tip across all lethal sources (no keyboard keys in the tips; every hazard that can hurt you has its own report).
 
 `tests/workshopSpectacle.test.js` covers ritual mode: moving parts out of batching, no added lights, tank fill and colour, kills flying into the tank and paying once, returns tumbling out of the chute, the lever, the arm, the jingle, the belt, PA narration priority, stuffing-coloured tracers, and Play again putting every part back. `tests/weaponModels.test.js` checks the stitched look on every gun: anchored to the gun, gun-sized, cheap, reversible.
 
@@ -82,6 +82,9 @@ ownership reset, reload blocking, ammo conservation/full-reserve overflow, fully
 
 > Moved out of CLAUDE.md (verbatim) so the file every session loads stays small. Read it to find the test that guards something before you change it, or to see where a new test belongs.
 
+The title mode chooser is tested for its order (Directed first) and default focus, focus on the remembered mode, Back by button, Escape or controller, and mode confirmation.
+`tests/menus.test.js` also checks that the run mode is remembered through game/settings.js (no tab, in no preset, kept by Reset everything), and that starting from the chooser
+(ui/runStart.js) stores the mode and plays once with no reset and no Fresh shift screen, the chooser staying up until play starts and a late pointer lock after Back being refused.
 Menu regressions: `tests/menus.test.js` covers modal inert/focus isolation, Tab/Escape, controller presets including
 equal/custom values, reset buttons/confirmation and native-resolution readout. `tests/blood.test.js` also changes
 splatter while paused, clearing flesh effects/pools immediately without removing dust or tracers.
@@ -134,6 +137,28 @@ Promenade shutter from inside and receives natural upstairs spawns.
 debug-run exclusion, reset, corrupt saves and unavailable browser storage.
 `tests/music.test.js` also covers the End of Shift death sting: receipt-timed bell, music volume, cancellation of future
 notes, replacement-voice cleanup, and real-game death/reset wiring.
+`tests/closingTime.test.js` follows boss keys from defeat or disappearance to clear-floor drops and collection.
+It also covers a Classic run that wins with every duty done: its short prompts (the safe and the van name the missing key, the van then names an unfinished duty by its place),
+the key and duty sounds in both modes with no quest PA in Classic, career credit, run mode retention on reset, the fountain switch's count in both modes,
+and mode-dependent markers, checklists and receipts (closingDone null from g.receiptFor is the one value for "no checklist line").
+It checks one drop per boss alongside the usual rewards, persistence through round changes and cleanup, simultaneous drops, checklist events and PA, the death receipt, and Play again.
+It also checks the real van's hold and missing-key prompt, the paused win, Clock out, normal next-round overtime with the same loadout,
+career credit on overtime death, and version 1 career migration with fastest-win persistence.
+Phase 3 checks receipt modes and controller choice, and the clocked-out and completed-overtime lines on a death receipt.
+The fix pass checks that the van refuses with four keys and an unfinished duty and names it; that the Van Keys tick nothing and the win ticks line 4 (3 before the van, 4 after, headless);
+that a won run left from the menu is recorded once and a never-won one is not; that a win in the break keeps the announced round while a win mid-wave moves on;
+that a boss voucher on the floor survives Stay for overtime and still pays on expiry (a debug skip deletes it); the once-per-run PA briefing; the Statistics wins, fastest win and won mark;
+that a newer-version career save is left untouched; that a key from a boss killed on an escalator ramp or against a wall rests on clear floor and is collected there;
+that a boss vanishing while the player is mid-jump drops its key once they come down; that Play again after a lost run, win + overtime + death, Clock out and leaving from the menu
+equals a fresh game (`snapshot()` in tests/helpers/headlessGame.js includes the checklist, keys, pickups and win flags); and the HUD's four boxes, counts and key markers.
+`tests/powerUps.test.js` also checks that the incentive HUD names a boss voucher lying on the floor and never throws on a pickup id it does not know (a throw in render stops the frame loop).
+`tests/retailUi.test.js` also covers the PA queue's `keep` rule: a kept message survives a full queue and a preemption, and other messages trim and preempt as before.
+Phase 4 checks that the key opens the fountain count, only fountain kills advance it (including bosses and Mascots), the tick and PA fire once, and Play again resets the duty.
+Phase 5 checks the night safe’s prompt alongside both Customer Service windows and the Prize Counter. It covers refusals,
+priced deposits with both discounts, four-hold completion, PA, and reset.
+Phase 6 checks actual workshop collections before and after the Signature pickup, orders already running at pickup, Restuffs,
+ritual pricing, both PA announcements, one tick per run, and Play again.
+
 `tests/powerUps.test.js` checks earned incentive thresholds, skill credit, single drops, caps/repeats, expiry, safe floor/ramp
 placement, swept slide collection, wall/storey rejection, Blue Light payouts/timers, reserve delivery without bypassing
 reloads/upgrades, Security Sweep through all zombie attack/charge states, visuals/disposal and HUD. fullRun.test.js also
@@ -186,6 +211,11 @@ owned, a free grab, a keychain in the run summary); the voucher keeps the counte
 for the Courtesy Loaner); tickets never touch points, pricing or income, are lost on death and gone on Play again; the booth has one
 tall collider, a clear reachable spot at every prize, no spawn within 5 m and unchanged zombie routes. clawMachine.test.js checks
 every grab outcome's tickets; receiptReview.test.js the receipt's ticket and keychain lines.
+`economySim.test.js` the economy sim (npm run sim:economy; tools/economyBot.js, economyPlans.js, economyModel.js): the bot plays two rounds headless, buys its
+list in order at the shelf price, and its books balance (every point earned has a round and a source, every point spent a logged purchase);
+a proposal changes config numbers in memory only and puts them back, and a typo in a proposal's path is an error; every proposal and every
+buy order points at config that exists (a renamed door, gun or tier fails here, not in a 40-minute run); the maths side reads config (wave
+shares add up, a weaker gun earns more from the same wave, the ladder's prices are the shop's); the claw step only wants guns the bot can fire.
 `clawSim.test.js` GRAB-A-GUN's odds (tools/clawOdds.js): the wall stays the cheaper way to every specific gun even at perfect
 timing, a site lasts 5 to 6 grabs, perfect timing never meets the plush while a random lane often does, better timing wins dearer guns,
 and a plush grab costs nothing. clawMachine.test.js also plays the 'claw' Flash Sale (the PA, the sale price charged and refunded, the
@@ -219,6 +249,9 @@ with the carried gun in the real game), `meleeUpgrades.test.js` the box cutter t
 prop + collider + buy spot, solid and too tall to climb, tiers one at a time at pricing's price, gun in hand only, no refill,
 nothing past Platinum (including the exact purchase frame and switching back to a Platinum gun), Flash Sale applies,
 no prompt while closed / switching / facing away, Play again resets),
+`saveGame.test.js` covers Save & Quit: every Play again step is either saved or named transient (so a new system has to decide); a load gives back the run as it was at the START of the round (points earned and areas bought mid-round are gone), at that round's break, with the slot used up, and what the loaded game would save is exactly what was saved; a replay keeps the same boss schedule, Flash Sale and feature state; a gun away at Build-A-Blaster with the loaner in hand comes back the same; saving needs a started round, a live player and full health; an older version's save is dropped, never loaded; saving is not a death (no runEnd, no career record).
+
+`secondChance.test.js` covers the Customer Service purchase and shared pricing, the one-use limit, lethal Cart Pusher charges, falls and fountain shocks, the local shove, paused protection, the PA, the final receipt, and Play again; that a hit or a hard landing during the protection is not announced at all (no 'playerHit' / 'playerFall', no outfit tag, no shove of the player) and is an ordinary hit again afterwards; that the revive itself is not read as the Cardigan soaking a hit; and that 'secondChance' announces held / used / available once each, with Play again mid-protection leaving the new run unprotected.
 `tests/effectWords.test.js` guards the words-only rule: the size bands (fixed, ordered, symmetric, {size}/{Size} fill), the number detector, and a scan of every tier, It also covers GRAB-A-GUN: every claw and Prize Counter string in config and the real prompts they build (pay, drop, take, Refurbished, each prize card) carry no stat number and no multiplier word; the claw sale keeps its percentage.
 renewal, attachment, wardrobe, stuffing, heart, incentive and boss string (and a Flash Sale line's words around its percentage) plus the real prompts built from them (every attachment counter, every Customer Service
 offer, every wardrobe ticket and rail line) for a digit followed by %, x, s, m, ° or an arrow, and spelled-out percentages.
@@ -344,13 +377,17 @@ the model and debris and disposes their shared geometry and materials.
 - `zombieRim.test.js`: the edge glow's colour per kind (bosses, every mascot costume, mannequins), applied once to opaque standard materials, one shared shader program.
 - `fuel.test.js` / `coneBlast.test.js`: the Leaf Blower's two engine pieces alone. The tank refills by itself after a delay, running dry locks the trigger until `restartAt`, a Weapon on a tank has no reload, a refill or new run unlocks it, a plain gun is untouched. The cone finds only living targets inside its range and angle (a wide body at the edge counts, height is forgiving), a wall blocks it (an `ignoreShots` box does not), the shove is stronger up close and gentler on a Mascot, a close zombie goes down, a boss or a zombie already sliding is left alone, the +10 pay ledger, and real zombies pushed down the hallway.
 - `instantKill.test.js`: Return to Sender, the wonder weapon: hitDamage's instant kill (any returnable zombie, at any health) and the big fixed hit on a boss or Mascot (tiers and the damage stat scale it, never a kill), a round-30 Shopper returned in one beam with the normal kill pay and only one zombie a beam, a boss takes the big hit twice over two beams, the half-rate refill (a refill fills the magazine and half the reserve, `isFull` agrees, nothing is taken away, other guns refill fully), claw-only, and a stuffed build still returns in one beam with the Last Round heart firing.
-- `equipment.test.js`: Kiosk Kevin phase 1 in the real game (the pockets, their buttons and the Soda Bomb). The power curve rises every round, far slower than zombie health, and matches the plan's table; a Soda Bomb's centre kills a real Shopper at rounds 1 and 10 and takes 40 to 60% of one at round 25; the blast falls off with distance, stops at its radius and behind the closed start shutter; a boss takes only its fixed share; real G / RB throw from the Lethal pocket and middle click / D-pad right from the Tactical one (a stand-in product, since nothing tactical is on sale yet), on their own ballistics instance; one kind per pocket (same kind adds, another replaces, the other pocket untouched); a throw blocks the gun, cancels a reload, and one throw at a time; no throw while switching, swinging, vaulting (a real vault), in a menu (D-pad right left for the menu) or dead; the bottle bounces off a zombie without hurting it, bursts on its fuse and the kill pays only through 'kill' (source 'equipment', no 'hit', no +10, no power-up credit); a hit that doesn't kill pays nothing and nothing pays after death; Sunny and a dummy are never touched; melee is V and R3 and RB no longer swings; the help lines, prompt labels, god mode on B and the keyless 'pockets' command; a middle click never starts autoscroll; death and Play again remove every thrown thing and the view hides and disposes.
+- `equipment.test.js`: The Soda Bomb's damage curve, blast falloff and wall cover, fixed boss share, keyboard and
+  controller pocket actions, shared lockout, reload cancellation, ballistics, payouts, debug controls and cleanup.
+- `kiosk.test.js`: Bubble Wrap's damage order, cap and reset. All three cart purchases through real input, fixed
+  stock, Pick bonuses, hiding, pricing and vouchers. Air Horn input, cover, charge interruption, Mascot weight,
+  boss immunity and zero payout.
 - `ballistics.test.js`: the Tennis Ball Launcher's bouncing ball alone: gravity's arc, a spent ball (time, bounces, too slow, `clear()` silent), a wall and the floor reflect it at the restitution, a zombie is hit for the gun's damage (head or body), the ball is sent on at the nearest other zombie in view (not through a wall), passes through the zombie it just hit to the one right behind, skips corpses, and the real mall's floor is solid to it.
 - `tennisBallLauncher.test.js`: the gun in the real game: claw-only (no wall price, the wall-buy feature refuses it), one pull is one ball and one shot, each zombie a ball touches is a hit (+10 each, one accuracy hit per throw, a kill pays), a ball in the air when you die is gone, THE ROLE (a lone zombie in the open is one hit a ball, a clump in a line is three or more times that, a lone zombie in the Service Corridor is hit again off the walls), the reload, upgrades, Play again.
 - `leafBlower.test.js`: the gun in the real game: claw-only (no wall price, the wall-buy feature refuses it even with a price), holding fire pulses and burns fuel, pushes and drops a close Shopper and only tickles it, pays the +10 only now and then and a kill when it kills, a boss isn't moved, the tank runs dry / locks / refills / unlocks, no reload, upgrades (Jumbo Pack = bigger tank, Speed Loader = quicker refill, Extended Nozzle = longer reach), a refill and Play again put everything back.
-- `controls.test.js`: accessibility toggle settings registration (toggleSprint, toggleCrouch, toggleAds), Comfort tab presets, crouch flip with low-ceiling headroom checks, sprint latching on tap, and ADS toggle with sprint/switch cancellation.
+- `controls.test.js`: accessibility toggle settings registration (toggleSprint, toggleCrouch, toggleAds; no Comfort preset changes them), crouch flip with low-ceiling headroom checks, sprint latching on tap, ADS toggle with sprint/switch cancellation, and the toggles together in the game's tick order: toggle ADS can aim out of a sprint (which ends it), a toggle-sprint press while aiming lowers the sights and starts the sprint, and a sprint press stands up from a toggled crouch.
 - `damageDirection.test.js`: relative damage angle calculation across camera yaws (0° front, 90° right, 180° back, 270° left), headless createGame playerHit vector emission, and HUD multi-arc damage indicator presentation and cleanup.
-- `hud.test.js`: compact secondary weapon HUD indicator in the vitals area: inactive weapon name, switch key, reserve status, warranty tier dot / build swatch pip, update on weapon pickup and switch, cleanup on run reset, and DOM-free headless compatibility.
+- `hud.test.js`: compact secondary weapon HUD indicator in the vitals area: inactive weapon name, switch key, loaded / spare ammo, warranty tier dot / build swatch pip, update on weapon pickup and switch, cleanup on run reset, and DOM-free headless compatibility.
 - `docs.test.js`: every file in src/ has an entry in docs/folder-structure.md, every test file is described here, and every doc CLAUDE.md links to exists.
 
 `tests/uiInformationPriority.test.js` checks exhausted reward visibility, first-activation benefit teaching, live timers/charges on repeat pickups, run reset, and workshop countdown/quality priority.

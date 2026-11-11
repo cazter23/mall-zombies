@@ -67,6 +67,17 @@ export function createWarranty({ gun, events, rounds }) {
       }
     },
 
+    // Save & Quit (game/saveGame.js): the warranty on file and the Platinum claims made (by round).
+    serialize() {
+      return { onFile, claimed: [...claimed] };
+    },
+    restore(data) {
+      onFile = data.onFile;
+      claimed.clear();
+      for (const [id, round] of data.claimed) claimed.set(id, round);
+      carried = new Map(gun.slots.map((id) => [id, tierOf(gun.modsFor(id))])); // (the restored guns are not "replaced")
+    },
+
     reset() {
       onFile = null;
       carried = new Map();
