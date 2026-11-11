@@ -176,6 +176,8 @@ export const guideEntries = [
 export const guideSections = [
   { id: 'customers', name: 'Customers', blurb: 'Persons on the premises after closing.' },
   { id: 'management', name: 'Management', blurb: 'Colleagues. Approach with a prepared statement.' },
+  // (no guideEntries here: its pages are the items of config/lostFound.js and the summary they unlock)
+  { id: 'lostFound', name: 'Lost & Found', blurb: 'Property handed in. Owners have not come forward.' },
 ];
 
 const byId = new Map(guideEntries.map((entry) => [entry.id, entry]));
@@ -222,6 +224,20 @@ export const guide = {
   sheets: {
     customers: { heading: 'Customer incident report', form: 'SG / LOSS PREVENTION · FORM 109-C' },
     management: { heading: 'Personnel file', form: 'SG / HUMAN RESOURCES · FORM 22-P', status: ['Employment status', 'Ongoing, regrettably'] },
+    lostFound: { heading: 'Lost property log', form: 'SG / CUSTOMER SERVICE · FORM 7-L' },
+  },
+  // The Lost & Found pages. No hints, on purpose: an item not yet found shows only its number.
+  lost: {
+    unknownName: '— not recovered —', itemOf: (number, total) => `Lost property · item ${number} of ${total}`,
+    unknownBody: 'Not yet handed in. It is somewhere in the mall. No description is on file.',
+    blankFields: ['Item', 'Found in', 'Handed in by'],
+    facts: { area: 'Found in', owner: 'Claimed by' }, noOwner: 'Nobody, to date',
+    tagHeading: 'Property tag',
+    stamps: ['Not recovered', 'Logged'], reportStamps: ['Sealed', 'Case closed'],
+    exhibit: (number) => number ? `EXHIBIT ${String(number).padStart(2, '0')}` : '',
+    sealedName: '— sealed —', sealedTitle: 'Incident summary · restricted',
+    sealedBody: (found, total) => `This file opens when all ${total} items of lost property have been logged. ${found} of ${total} so far.`,
+    sectionCount: (done, total) => `${done} / ${total} recovered`,
   },
   letterhead: 'Sunset Galleria · Associate Handbook',
   pageOf: (page, total) => `Page ${page} of ${total}`,
@@ -253,7 +269,7 @@ export const guide = {
   },
   preview: {
     width: 250, height: 290, pixelRatio: 1.5, background: 0x1b1f24,
-    fov: 30, near: 0.05, far: 40, framing: 1.25, rotationSpeed: 0.5,
+    fov: 30, near: 0.05, far: 40, framing: 1.25, propFraming: 1.5, rotationSpeed: 0.5,
     initialYaw: 2.6, camera: [0, 0.18, 1],
     sky: 0xfff0d8, ground: 0x655474, ambientIntensity: 2,
     key: 0xffffff, keyIntensity: 3, keyPosition: [2, 3, 2],

@@ -4,6 +4,9 @@ import assert from 'node:assert/strict';
 import { menuDom } from './helpers/menuDom.js';
 import { createGuideSave } from '../src/game/guideSave.js';
 import { guide as cfg, guideEntries, guideEntry, guideSections } from '../src/config/guide.js';
+import { lostFound, lostItem } from '../src/config/lostFound.js';
+
+const PAGES = guideEntries.length + lostFound.items.length + 1; // zombies and bosses, lost property, the summary
 import { createGuideScreen, createGuidePreview } from '../src/ui/guide.js';
 
 menuDom();
@@ -40,7 +43,7 @@ test('the title opens the guide: every page is listed by section, unseen ones as
   const t = fixture();
   assert.equal(t.screens.current, 'guide');
   assert.equal(t.screens.showsFlyover, true);
-  assert.equal(t.guide.element.querySelectorAll('.guide-entry').length, guideEntries.length);
+  assert.equal(t.guide.element.querySelectorAll('.guide-entry').length, PAGES);
   assert.deepEqual(t.guide.element.querySelectorAll('.guide-section').map((node) => node.getAttribute('data-section')), guideSections.map((section) => section.id));
   // A new employee knows the Shopper and nothing else.
   assert.ok(t.row('shopper').textContent.includes('Shopper'));
@@ -174,7 +177,7 @@ test('the sheet is the right form for its section, stamped, with the photo capti
   const t = fixture((save) => { save.add('janitor', 1); });
   assert.equal(t.sheet().getAttribute('data-section'), 'customers');
   const letterhead = () => t.guide.element.querySelector('.guide-letterhead').textContent;
-  assert.ok(letterhead().includes(cfg.sheets.customers.heading) && letterhead().includes(cfg.pageOf(1, guideEntries.length)));
+  assert.ok(letterhead().includes(cfg.sheets.customers.heading) && letterhead().includes(cfg.pageOf(1, PAGES)));
   assert.equal(t.guide.element.querySelector('.guide-caption').textContent, 'Shopper');
   assert.equal(t.guide.element.querySelector('.guide-cctv').textContent, cfg.cctv(1));
 
@@ -226,4 +229,78 @@ test('a page turn is announced once per different page (the paper sound), never 
   t.pad('PadDown'); t.pad('PadDown'); // (focus was on the Shopper: the first step lands on the page already open)
   assert.equal(t.turns, 3);
   t.screens.show('title');
+});
+
+// --- Lost & Found ------------------------------------------------------------------------------------------------------
+
+test('lost property: an item not yet found gives nothing away; a found one shows its tag, its area and its model', () => {
+  const t = fixture((save) => save.find('badge'));
+  const count = () => t.guide.element.querySelector('[data-section="lostFound"]').querySelector('.guide-count').textContent;
+  assert.equal(count(), cfg.lost.sectionCount(1, lostFound.items.length));
+
+  const coin = lostItem('coin');
+  assert.ok(t.row('lost:coin').textContent.includes(cfg.lost.unknownName));
+  t.row('lost:coin').click();
+  assert.equal(t.sheet().getAttribute('data-section'), 'lostFound');
+  assert.equal(t.sheet().getAttribute('data-stage'), '0');
+  assert.equal(t.shown.at(-1), null, 'no model');
+  assert.equal(t.stamp(), cfg.lost.stamps[0]);
+  for (const secret of [coin.name, coin.tag, coin.area]) assert.ok(!t.page().includes(secret), 'no hint: ' + secret);
+  assert.ok(t.page().includes(cfg.lost.itemOf(lostFound.items.indexOf(coin) + 1, lostFound.items.length)));
+
+  const badge = lostItem('badge');
+  assert.ok(t.row('lost:badge').textContent.includes(badge.name));
+  t.row('lost:badge').click();
+  assert.equal(t.sheet().getAttribute('data-stage'), '3');
+  assert.equal(t.shown.at(-1), badge, 'the item itself is in the photo');
+  assert.equal(t.stamp(), cfg.lost.stamps[1]);
+  assert.equal(t.guide.element.querySelector('.guide-caption').textContent, badge.name);
+  for (const shown of [badge.name, badge.tag, badge.area]) assert.ok(t.page().includes(shown));
+  assert.equal(t.guide.element.querySelectorAll('.guide-proptag').length, 1);
+  assert.equal(t.writes, 0);
+  t.screens.show('title');
+});
+
+test('the incident summary stays sealed, counting what is left, until every item is logged', () => {
+  const report = lostFound.report;
+  const sealed = fixture((save) => { for (const item of lostFound.items.slice(1)) save.find(item.id); });
+  sealed.row('lost:report').click();
+  assert.equal(sealed.sheet().getAttribute('data-kind'), 'report');
+  assert.equal(sealed.stamp(), cfg.lost.reportStamps[0]);
+  assert.ok(sealed.page().includes(cfg.lost.sealedBody(lostFound.items.length - 1, lostFound.items.length)));
+  assert.ok(!sealed.page().includes(report.conclusion) && !sealed.page().includes(report.lines[0]));
+  assert.ok(sealed.row('lost:report').textContent.includes(cfg.lost.sealedName));
+  sealed.screens.show('title');
+
+  const done = fixture((save) => { for (const item of lostFound.items) save.find(item.id); });
+  assert.ok(done.row('lost:report').textContent.includes(report.title));
+  done.row('lost:report').click();
+  assert.equal(done.stamp(), cfg.lost.reportStamps[1]);
+  for (const line of [...report.lines, report.conclusion, report.signed]) assert.ok(done.page().includes(line));
+  assert.equal(done.shown.at(-1), null, 'a typed page, no photo');
+  // The summary is the prize, not a twelfth thing to find.
+  assert.equal(done.guide.element.querySelector('[data-section="lostFound"]').querySelector('.guide-count').textContent, cfg.lost.sectionCount(lostFound.items.length, lostFound.items.length));
+  done.screens.show('title');
+});
+
+test('the real preview shows and frees a piece of lost property like any other subject', () => {
+  menuDom();
+  const host = document.createElement('div');
+  let scene;
+  const renderer = { domElement: document.createElement('canvas'), setPixelRatio() {}, setSize() {}, render(value) { scene = value; }, dispose() {}, forceContextLoss() {} };
+  const preview = createGuidePreview(host, { makeRenderer: () => renderer });
+  const meshes = () => { let n = 0; scene.traverse((node) => { if (node.isMesh) n++; }); return n; };
+  for (const item of lostFound.items) {
+    preview.show(item);
+    preview.render(1 / 60);
+    assert.equal(preview.showing, item);
+    assert.equal(meshes(), item.parts.length + 2, item.id + ': its parts, the tag and its string');
+  }
+  preview.show(guideEntry('shopper').type);
+  preview.render(1 / 60);
+  assert.equal(preview.showing, guideEntry('shopper').type, 'and back to a zombie, with the item gone');
+  preview.show(null);
+  preview.render(1 / 60);
+  assert.equal(meshes(), 0);
+  preview.dispose();
 });

@@ -38,7 +38,8 @@ export const closingTime = {
   },
   returnsDesk: {
     name: 'Returns Desk', weaponId: 'returnToSender', ammoName: 'Return to Sender ammo',
-    buy: 'buy', refill: 'refill', gate: 'Unfinished: ', equip: 'Equip Return to Sender for ammo',
+    // (The desk no longer sells the gun or waits for the duties: the Return quest issues it, config/returnQuest.js.)
+    refill: 'refill', equip: 'Equip Return to Sender for ammo',
     busy: 'Finish switching weapons first', full: 'Ammo full',
     redirect: 'Return to Sender ammo is sold at the Returns Desk · Customer Service',
     screen: { line: 'RETURNS DESK', note: 'Customer Service', tone: '#ff9f43' },

@@ -134,6 +134,8 @@ export const economy = {
   kiosk: { sodaBomb: 300, bubbleWrap: 500, airHorn: 500 },
 
   // Closing Time's quest prices (docs/closing-time-plan.md): one Night Safe deposit. Read through g.pricing.priceOf('closing', id).
+  // returnsDesk: no longer a price anyone pays (the Return quest issues the gun free: config/returnQuest.js). It stays as the
+  // gun's nominal worth, which the claw machine's report reads.
   closing: { nightSafe: 1000, validation: 5000, returnsDesk: 10000, returnsAmmo: 2500 },
 
   // Environmental hazards (docs/hazards-plan.md, config/hazards.js): pay-to-trigger mall traps with cooldowns.

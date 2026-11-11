@@ -1,10 +1,13 @@
 // Every challenge the game offers, for the Challenges board and the tracker (DOM-free). One CATEGORY per kind of reward: today the weapon
 // finishes (config/skins.js, counted by game/challenges.js). Another unlockable adds its own category here, with entries of the same shape:
 //   { id, category, group, name, tag, text, done(ctx), progress(ctx), track(ctx) }
-// where ctx = { save, challenges }: the reward's permanent record and the run's live counters. `id` is what game/challengePins.js stores.
+// where ctx = { save, challenges, guideSave }: the skins' permanent record, the run's live counters, and the Survival Guide's record (which
+// holds lost property). `id` is what game/challengePins.js stores. An entry must cope with a ctx that lacks the record it reads.
 import { skins, challengeText, locker as lockerWords } from '../config/skins.js';
 import { weapons } from '../config/weapons.js';
 import { challengeBoard as cfg } from '../config/challengeBoard.js';
+import { lostFoundProgress } from './lostFound.js';
+import { lostFound } from '../config/lostFound.js';
 
 export const skinPinId = (gunId, skinId) => `skin:${gunId}/${skinId}`;
 
@@ -32,6 +35,23 @@ function skinEntry(gunId, skin) {
   };
 }
 
+export const LOST_FOUND_PIN = 'collection:lostFound';
+// Lost and Found: one entry for the whole collection (the items themselves are not listed: there are no hints).
+function lostFoundEntry() {
+  const words = cfg.lostFound;
+  const standing = ({ guideSave } = {}) => (guideSave ? lostFoundProgress(guideSave) : { found: 0, total: lostFound.items.length, complete: false });
+  return {
+    id: LOST_FOUND_PIN, category: 'collections', group: 'lostFound',
+    name: words.name, tag: words.tag, text: words.text(lostFound.items.length),
+    done: (ctx) => standing(ctx).complete,
+    progress: (ctx) => { const { found, total } = standing(ctx); return words.progress(found, total); },
+    track(ctx) {
+      const { found, total, complete } = standing(ctx);
+      return { id: LOST_FOUND_PIN, title: words.trackerTitle, value: complete ? cfg.done : words.progress(found, total), done: complete };
+    },
+  };
+}
+
 let catalog = null;
 /** [{ id, label, groups: [{ id, label, entries }] }], built once. */
 export function challengeCatalog() {
@@ -40,6 +60,9 @@ export function challengeCatalog() {
     groups: Object.entries(skins).map(([gunId, list]) => ({
       id: gunId, label: weapons[gunId].name, entries: list.filter(skin => skin.challenge).map(skin => skinEntry(gunId, skin)),
     })),
+  }, {
+    id: 'collections', label: cfg.categories.collections,
+    groups: [{ id: 'lostFound', label: cfg.lostFound.group, entries: [lostFoundEntry()] }],
   }];
   return catalog;
 }

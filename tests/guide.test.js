@@ -24,7 +24,7 @@ function memoryStorage(record = null) {
     get record() { return JSON.parse(values.get(guideStorage.key) ?? 'null'); },
   };
 }
-const stored = (data) => ({ version: guideStorage.version, seen: {}, kills: {}, ...data });
+const stored = (data) => ({ version: guideStorage.version, seen: {}, kills: {}, found: {}, ...data });
 
 function counters(storage = memoryStorage()) {
   const events = createEvents();

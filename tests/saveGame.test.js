@@ -315,7 +315,7 @@ test('a save in the break before Closing Time keeps the booking and reloads exac
   assert.ok(!loaded.g.bosses.serialize().met.includes('lastCustomer'));
 });
 
-test('a Returns Desk purchase uses the normal gun save step, retaining the held gun and its ammunition', (t) => {
+test('the gun the Returns Desk issues uses the normal gun save step, retaining the held gun and its ammunition', (t) => {
   const storage = memoryStorage();
   const run = game(t, storage);
   const { g } = run;
@@ -323,14 +323,10 @@ test('a Returns Desk purchase uses the normal gun save step, retaining the held 
   g.rounds.update = () => {};
   g.map.areaUnlocks.unlock('hallway');
   run.tick(120);
-  for (const line of ['janitor', 'guard', 'manager']) {
-    g.debug.run('closing', 'grant', line);
-    while (!g.closing.isDone(line)) g.events.emit(line === 'janitor' ? 'fountainKill' : line === 'manager' ? 'ritualCollect' : 'purchase', { kind: 'closing', id: 'nightSafe' });
-  }
+  g.returnQuest.debug('called'); // (the quest, up to "your number is called": tests/returnQuest.test.js)
   const desk = g.map.features.find(({ kind }) => kind === 'returnsDesk');
   run.standAt(desk.position.x + desk.normal.x * 1.2, desk.position.z + desk.normal.z * 1.2, Math.atan2(desk.normal.x, desk.normal.z) * 180 / Math.PI);
-  g.wallet.earn(g.pricing.priceOf('closing', 'returnsDesk'));
-  run.press('KeyF', Math.ceil(feel.interact.holdSeconds / dt) + 1);
+  run.press('KeyF', Math.ceil(0.5 / dt) + 2); // (the desk's own hold: config/returnQuest.js desk.holdSeconds)
   run.tick(60);
   assert.equal(g.gun.def.id, 'returnToSender');
   g.gun.weapon.magazine = 3; g.gun.weapon.reserve = 7;

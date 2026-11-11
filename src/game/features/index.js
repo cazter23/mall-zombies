@@ -10,7 +10,7 @@
 //
 // ctx (from createGame, built after its core event wiring, so a feature's listeners run after payouts/stats):
 //   { scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state, warranty, meleeUpgrades, wardrobe,
-//     colliders, effects, sound, input, tickets, shootables, aimAssist, secondChance, equipment, closing }
+//     colliders, effects, sound, input, tickets, shootables, aimAssist, secondChance, equipment, closing, skins, lostFound, returnQuest }
 // =============================================================================
 
 import { buildWallBuy } from './wallBuy.js';
@@ -27,6 +27,8 @@ import { buildNightSafe } from './nightSafe.js';
 import { buildEscapeVan } from './escapeVan.js';
 import { buildReturnsDesk } from './returnsDesk.js';
 import { buildFountainHazard } from './fountainHazard.js';
+import { buildLostProperty } from './lostProperty.js';
+import { buildRefundSign } from './refundSign.js';
 
 const builders = {
   wallBuy: buildWallBuy, // buy a gun off the wall, or its ammo once you own it
@@ -44,6 +46,8 @@ const builders = {
   nightSafe: buildNightSafe,
   escapeVan: buildEscapeVan,
   returnsDesk: buildReturnsDesk,
+  lostProperty: buildLostProperty, // one piece of lost property to find and log (config/lostFound.js)
+  refundSign: buildRefundSign, // a NO REFUNDS floor sign to shoot: step 1 of the Return to Sender quest (config/returnQuest.js)
 };
 
 export const FEATURE_KINDS = Object.keys(builders);

@@ -1,9 +1,12 @@
 // The Staff Survival Guide screen (off the title): every zombie type and boss, one page each, filled in from the
-// permanent record (game/guideSave.js). Plain DOM, driven by the main loop like the weapon locker, so the title's idle
+// permanent record (game/guideSave.js), then the lost property that has been logged and the summary it unlocks. Plain DOM, driven by the main loop like the weapon locker, so the title's idle
 // saver also stops the turning model. All words and numbers: config/guide.js.
 import * as THREE from 'three';
 import { guide as cfg, guideEntries, guideSections, guideStage } from '../config/guide.js';
 import { Zombie } from '../zombies/zombie.js';
+import { lostFound } from '../config/lostFound.js';
+import { lostFoundProgress } from '../game/lostFound.js';
+import { buildLostPropertyModel } from '../game/features/lostProperty.js';
 
 /**
  * The turning model beside a page: the real zombie (its own model and walk animation), walking on the spot.
@@ -25,12 +28,18 @@ export function createGuidePreview(host, { makeRenderer = (options) => new THREE
   renderer.domElement.setAttribute('aria-label', cfg.previewLabel);
   host.append(renderer.domElement);
   let subject = null; // a Zombie that is never ticked: only its model is posed
+  let prop = null; // or a piece of lost property: { item, group, materials }
   let width = 0, height = 0;
   const bounds = new THREE.Box3(), size = new THREE.Vector3(), centre = new THREE.Vector3();
 
   function clear() {
     subject?.model.dispose();
     subject = null;
+    if (prop) {
+      prop.group.removeFromParent();
+      for (const material of prop.materials) material.dispose();
+      prop = null;
+    }
   }
   function pose(dt) {
     // The Mascot's stride is advanced by its fixed tick, which never runs here.
@@ -38,25 +47,32 @@ export function createGuidePreview(host, { makeRenderer = (options) => new THREE
     subject.model.update(dt, subject, 1);
   }
   return {
-    /** Show this zombie type, or nothing (null: a page not seen yet). */
+    /** Show a zombie type, a piece of lost property (an item of config/lostFound.js), or nothing (null: not seen yet). */
     show(type) {
       clear();
       if (!type) return;
-      subject = new Zombie({ type, health: 1, position: new THREE.Vector3(), yaw: 0 });
-      subject.state = 'chasing';
-      subject.velocity.set(0, 0, -type.speed); // strolling, so the walk cycle plays
-      pivot.add(subject.model.root);
+      let root;
+      if (type.parts) { // lost property: its own small model, turning, nothing to animate
+        prop = { item: type, ...buildLostPropertyModel(type) };
+        root = prop.group;
+      } else {
+        subject = new Zombie({ type, health: 1, position: new THREE.Vector3(), yaw: 0 });
+        subject.state = 'chasing';
+        subject.velocity.set(0, 0, -type.speed); // strolling, so the walk cycle plays
+        root = subject.model.root;
+      }
+      pivot.add(root);
       pivot.rotation.set(0, c.initialYaw, 0);
-      pose(0);
+      if (subject) pose(0);
       pivot.updateMatrixWorld(true);
-      bounds.setFromObject(subject.model.root).getSize(size);
+      bounds.setFromObject(root).getSize(size);
       bounds.getCenter(centre);
-      const distance = size.length() * c.framing / (2 * Math.tan(THREE.MathUtils.degToRad(c.fov) / 2));
+      const distance = size.length() * (prop ? c.propFraming : c.framing) / (2 * Math.tan(THREE.MathUtils.degToRad(c.fov) / 2));
       camera.position.fromArray(c.camera).normalize().multiplyScalar(distance);
-      camera.position.y += size.y / 2;
-      camera.lookAt(0, size.y / 2, 0);
+      camera.position.y += centre.y;
+      camera.lookAt(0, centre.y, 0);
     },
-    get showing() { return subject?.type ?? null; },
+    get showing() { return subject?.type ?? prop?.item ?? null; },
     render(dt) {
       const w = host.clientWidth || c.width, h = host.clientHeight || c.height;
       if (w !== width || h !== height) {
@@ -83,6 +99,8 @@ export function createGuidePreview(host, { makeRenderer = (options) => new THREE
  * The binder. Left: the contents, under a divider tab per section. Right: one printed sheet on the rings, with the
  * subject's photo taped to it, a rubber stamp for how far the page has got, and the survivor's additions on top
  * (pen notes, tally marks, a sticky note). `onTurn` runs whenever a different page is shown (main.js: the paper sound).
+ * Three kinds of page: a zombie or boss ('entry'), a piece of lost property ('item', id 'lost:<id>') and the incident
+ * summary that opens once every item is logged ('report', id 'lost:report').
  */
 export function createGuideScreen({ save, onBack, onTurn = null, createPreview = createGuidePreview }) {
   const element = document.createElement('div');
@@ -118,14 +136,27 @@ export function createGuideScreen({ save, onBack, onTurn = null, createPreview =
   const stamp = element.querySelector('.guide-stamp');
   const page = element.querySelector('.guide-page');
   const back = element.querySelector('.guide-back');
+  // Every page of the binder, in order.
+  const pages = [
+    ...guideEntries.map((entry) => ({ id: entry.id, section: entry.section, kind: 'entry', entry })),
+    ...lostFound.items.map((item, at) => ({ id: 'lost:' + item.id, section: 'lostFound', kind: 'item', item, number: at + 1 })),
+    { id: 'lost:report', section: 'lostFound', kind: 'report' },
+  ];
   let open = false, preview = null;
-  let selected = guideEntries[0].id, shown = null;
+  let selected = pages[0].id, shown = null;
   let focus = 0;
   const buttons = () => [...element.querySelectorAll('button')];
   const standing = (entry) => {
     const seen = save.seen(entry.id) || !!entry.alwaysSeen, kills = save.kills(entry.id);
     return { seen, kills, stage: guideStage(entry, { seen, kills }) };
   };
+  // How far a page has got, 0..3, whatever its kind (the contents' ticks and the complete count read this).
+  const stageOf = (leaf) => leaf.kind === 'entry' ? standing(leaf.entry).stage
+    : leaf.kind === 'item' ? (save.found(leaf.item.id) ? 3 : 0)
+      : (lostFoundProgress(save).complete ? 3 : 0);
+  const titleOf = (leaf) => leaf.kind === 'entry' ? (stageOf(leaf) ? leaf.entry.name : cfg.unknownName)
+    : leaf.kind === 'item' ? (stageOf(leaf) ? leaf.item.name : cfg.lost.unknownName)
+      : (stageOf(leaf) ? lostFound.report.title : cfg.lost.sealedName);
   const add = (parent, tag, className, text) => {
     const node = document.createElement(tag);
     if (className) node.className = className;
@@ -143,33 +174,13 @@ export function createGuideScreen({ save, onBack, onTurn = null, createPreview =
     if (drawn % 5) add(row, 'span', 'guide-strokes').setAttribute('data-strokes', String(drawn % 5));
     if (kills > cfg.tallyMax) add(row, 'span', 'guide-tally-total', cfg.tallyTotal(kills));
   }
+  function facts(rows) {
+    const list = add(page, 'dl', 'guide-facts');
+    for (const [label, value] of rows) { add(list, 'dt', '', label); add(list, 'dd', '', value); }
+  }
 
-  function showPage(id) {
-    if (!open || shown === id) return;
-    shown = selected = id;
-    const at = guideEntries.findIndex((candidate) => candidate.id === id);
-    const entry = guideEntries[at];
-    const form = cfg.sheets[entry.section];
-    const { kills, stage } = standing(entry);
-    for (const row of element.querySelectorAll('.guide-entry')) row.setAttribute('aria-pressed', String(row.dataset.entry === id));
-
-    // The sheet: which form it is, how far it has got, and a flick as it turns over.
-    sheet.setAttribute('data-section', entry.section);
-    sheet.setAttribute('data-stage', String(stage));
-    sheet.classList.remove('turning');
-    void sheet.offsetWidth; // (restarts the turn animation)
-    sheet.classList.add('turning');
-    letterhead.replaceChildren();
-    add(letterhead, 'span', '', cfg.letterhead);
-    add(letterhead, 'b', '', form.heading);
-    add(letterhead, 'span', '', `${form.form} · ${cfg.pageOf(at + 1, guideEntries.length)}`);
-    stamp.textContent = cfg.stamps[stage];
-    cctv.textContent = cfg.cctv(at + 1);
-    caption.textContent = stage === 0 ? '' : entry.name;
-    preview.show(stage > 0 ? entry.type : null);
-    onTurn?.();
-
-    page.replaceChildren();
+  // A zombie or a boss.
+  function entryPage(entry, stage, kills, form) {
     if (stage === 0) { // a blank form, waiting for someone to come back and fill it in
       add(page, 'h2', '', cfg.unknownName);
       add(page, 'p', 'guide-title', cfg.unknownTitle);
@@ -181,11 +192,7 @@ export function createGuideScreen({ save, onBack, onTurn = null, createPreview =
     // The company's printed page.
     add(page, 'h2', '', entry.name);
     add(page, 'p', 'guide-title', entry.title);
-    const facts = add(page, 'dl', 'guide-facts');
-    for (const [label, value] of [[cfg.facts.health, cfg.health(entry.health)], [cfg.facts.firstSeen, entry.firstSeen], [cfg.facts.kills, String(kills)], ...(form.status ? [form.status] : [])]) {
-      add(facts, 'dt', '', label);
-      add(facts, 'dd', '', value);
-    }
+    facts([[cfg.facts.health, cfg.health(entry.health)], [cfg.facts.firstSeen, entry.firstSeen], [cfg.facts.kills, String(kills)], ...(form.status ? [form.status] : [])]);
     add(page, 'h3', '', cfg.memoHeading);
     add(page, 'p', 'guide-memo', entry.memo);
     // The survivor's pen, over the top of it.
@@ -202,28 +209,97 @@ export function createGuideScreen({ save, onBack, onTurn = null, createPreview =
       add(sticky, 'p', '', entry.tip);
     } else add(page, 'p', 'guide-pencil', cfg.lockedTip(entry.tipAt - kills));
   }
+  // A piece of lost property: the log entry, and its yellow property tag once it has been handed in. No hint before.
+  function itemPage({ item, number }, found) {
+    const total = lostFound.items.length;
+    if (!found) {
+      add(page, 'h2', '', cfg.lost.unknownName);
+      add(page, 'p', 'guide-title', cfg.lost.itemOf(number, total));
+      const blank = add(page, 'dl', 'guide-blank');
+      for (const field of cfg.lost.blankFields) { add(blank, 'dt', '', field); add(blank, 'dd'); }
+      add(page, 'p', 'guide-small-print', cfg.lost.unknownBody);
+      return;
+    }
+    add(page, 'h2', '', item.name);
+    add(page, 'p', 'guide-title', cfg.lost.itemOf(number, total));
+    facts([[cfg.lost.facts.area, item.area], [cfg.lost.facts.owner, cfg.lost.noOwner]]);
+    const tag = add(page, 'aside', 'guide-tip guide-proptag');
+    add(tag, 'h3', '', cfg.lost.tagHeading);
+    add(tag, 'p', '', item.tag);
+  }
+  // The incident summary: sealed until every item is logged.
+  function reportPage(complete) {
+    const { found, total } = lostFoundProgress(save);
+    const report = lostFound.report;
+    if (!complete) {
+      add(page, 'h2', '', cfg.lost.sealedName);
+      add(page, 'p', 'guide-title', cfg.lost.sealedTitle);
+      add(page, 'p', 'guide-small-print', cfg.lost.sealedBody(found, total));
+      return;
+    }
+    add(page, 'h2', '', report.title);
+    add(page, 'p', 'guide-title', report.subtitle);
+    const body = add(page, 'div', 'guide-report');
+    for (const line of report.lines) add(body, 'p', '', line);
+    add(body, 'p', 'guide-report-conclusion', report.conclusion);
+    add(body, 'p', 'guide-report-signed', report.signed);
+  }
+
+  function showPage(id) {
+    if (!open || shown === id) return;
+    shown = selected = id;
+    const at = pages.findIndex((candidate) => candidate.id === id);
+    const leaf = pages[at];
+    const form = cfg.sheets[leaf.section];
+    const stage = stageOf(leaf);
+    for (const row of element.querySelectorAll('.guide-entry')) row.setAttribute('aria-pressed', String(row.dataset.entry === id));
+
+    // The sheet: which form it is, how far it has got, and a flick as it turns over.
+    sheet.setAttribute('data-section', leaf.section);
+    sheet.setAttribute('data-kind', leaf.kind);
+    sheet.setAttribute('data-stage', String(stage));
+    sheet.classList.remove('turning');
+    void sheet.offsetWidth; // (restarts the turn animation)
+    sheet.classList.add('turning');
+    letterhead.replaceChildren();
+    add(letterhead, 'span', '', cfg.letterhead);
+    add(letterhead, 'b', '', form.heading);
+    add(letterhead, 'span', '', `${form.form} · ${cfg.pageOf(at + 1, pages.length)}`);
+    stamp.textContent = leaf.kind === 'entry' ? cfg.stamps[stage] : leaf.kind === 'item' ? cfg.lost.stamps[stage ? 1 : 0] : cfg.lost.reportStamps[stage ? 1 : 0];
+    cctv.textContent = leaf.kind === 'entry' ? cfg.cctv(at + 1) : cfg.lost.exhibit(leaf.number ?? 0);
+    caption.textContent = stage === 0 || leaf.kind === 'report' ? '' : titleOf(leaf);
+    preview.show(stage === 0 ? null : leaf.kind === 'entry' ? leaf.entry.type : leaf.kind === 'item' ? leaf.item : null);
+    onTurn?.();
+
+    page.replaceChildren();
+    if (leaf.kind === 'entry') entryPage(leaf.entry, stage, save.kills(leaf.entry.id), form);
+    else if (leaf.kind === 'item') itemPage(leaf, stage > 0);
+    else reportPage(stage > 0);
+  }
 
   // The contents are rebuilt each time the binder opens: the record may have changed during a shift.
   function fillIndex() {
     index.replaceChildren();
     for (const section of guideSections) {
-      const entries = guideEntries.filter((entry) => entry.section === section.id);
+      const leaves = pages.filter((leaf) => leaf.section === section.id);
       const group = add(index, 'section', 'guide-section');
       group.setAttribute('data-section', section.id);
       add(group, 'h2', 'guide-tab', section.name);
       add(group, 'p', 'guide-blurb', section.blurb);
-      add(group, 'small', 'guide-count', cfg.sectionCount(entries.filter((entry) => standing(entry).stage === 3).length, entries.length));
-      for (const entry of entries) {
-        const { stage } = standing(entry);
+      const counted = leaves.filter((leaf) => leaf.kind !== 'report'); // (the summary is the prize, not one of the things to find)
+      const done = counted.filter((leaf) => stageOf(leaf) === 3).length;
+      add(group, 'small', 'guide-count', section.id === 'lostFound' ? cfg.lost.sectionCount(done, counted.length) : cfg.sectionCount(done, counted.length));
+      for (const leaf of leaves) {
+        const stage = stageOf(leaf);
         const row = add(group, 'button', `guide-entry${stage === 0 ? ' unknown' : ''}`);
         row.type = 'button';
-        row.setAttribute('data-entry', entry.id);
+        row.setAttribute('data-entry', leaf.id);
         row.setAttribute('data-stage', String(stage));
-        add(row, 'span', '', stage === 0 ? cfg.unknownName : entry.name);
-        add(row, 'small', '', cfg.rowStatus(stage));
-        row.addEventListener('click', () => showPage(entry.id));
-        row.addEventListener('focus', () => showPage(entry.id));
-        row.addEventListener('mouseenter', () => showPage(entry.id));
+        add(row, 'span', '', titleOf(leaf));
+        add(row, 'small', '', leaf.kind === 'entry' ? cfg.rowStatus(stage) : stage ? cfg.rowStatus(1) : '');
+        row.addEventListener('click', () => showPage(leaf.id));
+        row.addEventListener('focus', () => showPage(leaf.id));
+        row.addEventListener('mouseenter', () => showPage(leaf.id));
       }
     }
   }
@@ -257,7 +333,7 @@ export function createGuideScreen({ save, onBack, onTurn = null, createPreview =
       fillIndex();
       shown = null;
       showPage(selected);
-      focus = guideEntries.findIndex((entry) => entry.id === selected);
+      focus = pages.findIndex((leaf) => leaf.id === selected);
       buttons()[focus].focus();
     },
     close() {

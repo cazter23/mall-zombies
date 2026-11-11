@@ -37,6 +37,8 @@ import { COLORS } from './palette.js';
 import { debug } from '../../config/debug.js';
 import { feel } from '../../config/feel.js';
 import { economy } from '../../config/economy.js';
+import { lostFound } from '../../config/lostFound.js';
+import { returnQuest } from '../../config/returnQuest.js';
 import { fittingRooms, wardrobeItems, wardrobeAnchor } from '../../config/wardrobe.js';
 import { buildWardrobeDisplay } from './wardrobeDisplays.js';
 import { foodCourtShowpieces } from './wardrobeShowpieces/foodCourt.js';
@@ -1031,6 +1033,14 @@ export function buildMall(scene, colliders) {
       { id: 'parkingLot', grades: ['parkingLot'], neons: [] },
     ],
   };
+  // The Return to Sender quest's NO REFUNDS floor signs (config/returnQuest.js).
+  for (const sign of returnQuest.signs) {
+    features.push({ kind: 'refundSign', name: `refundSign_${sign.id}`, zone: sign.zone, sign: sign.id, position: new THREE.Vector3(...sign.at), normal: new THREE.Vector3(0, 1, 0) });
+  }
+  // Lost and Found: one piece of lost property per area, at fixed spots (config/lostFound.js).
+  for (const item of lostFound.items) {
+    features.push({ kind: 'lostProperty', name: `lost_${item.id}`, zone: item.zone, item: item.id, position: new THREE.Vector3(...item.at), normal: new THREE.Vector3(0, 1, 0) });
+  }
   features.push({ kind: 'horror', name: 'horror_director', zone: 'startRoom', position: playerSpawn.position.clone(), normal: new THREE.Vector3(0, 0, -1), seed: 1986 });
 
   return {

@@ -3,8 +3,9 @@
 // Inject storage in Node; the browser supplies its own. Counting changes memory only: game/guide.js decides when to
 // write (a page gaining a paragraph, a run ending, Save & Quit, the page closing), never once per kill.
 import { guideStorage, guideEntry } from '../config/guide.js';
+import { lostItem } from '../config/lostFound.js';
 
-const blank = () => ({ version: guideStorage.version, seen: {}, kills: {} });
+const blank = () => ({ version: guideStorage.version, seen: {}, kills: {}, found: {} }); // found: lost property logged (game/lostFound.js)
 const object = (value) => (value && typeof value === 'object' && !Array.isArray(value) ? value : {});
 const whole = (value) => (Number.isSafeInteger(value) && value >= 0 ? value : 0);
 // Only pages the book has: an unknown id (a later build's page, or junk) is dropped, never trusted as a key.
@@ -16,6 +17,7 @@ function normalize(raw) {
   if (raw?.version !== guideStorage.version) return data;
   data.kills = counts(raw.kills);
   for (const [id, seen] of Object.entries(object(raw.seen))) if (guideEntry(id) && seen === true) data.seen[id] = true;
+  for (const [id, found] of Object.entries(object(raw.found))) if (lostItem(id) && found === true) data.found[id] = true; // (absent in a record from before Lost and Found: nothing found)
   // What the round a Save & Quit will replay has already been counted (game/guide.js), by page id.
   const replay = counts(raw.replay);
   if (Object.keys(replay).length) data.replay = replay;
@@ -27,6 +29,7 @@ export function createGuideSave({ storage, key = guideStorage.key } = {}) {
   let newer = false; // a later build's record is in storage: read nothing from it and never overwrite it
   let dirty = false; // memory holds something storage does not
   const cleared = new Set(); // pages the debug command emptied: a merge must not bring their old count back
+  const lost = new Set(); // lost property the debug command un-logged: likewise
 
   function read() {
     const raw = JSON.parse(storage?.getItem(key) ?? 'null');
@@ -57,8 +60,10 @@ export function createGuideSave({ storage, key = guideStorage.key } = {}) {
       if (newer) return false;
       for (const [id, count] of Object.entries(stored.kills)) if (!cleared.has(id)) data.kills[id] = Math.max(kills(id), count);
       for (const id of Object.keys(stored.seen)) if (!cleared.has(id)) data.seen[id] = true;
+      for (const id of Object.keys(stored.found)) if (!lost.has(id)) data.found[id] = true;
       storage.setItem(key, JSON.stringify(data));
       cleared.clear();
+      lost.clear();
       dirty = false;
       return true;
     } catch {
@@ -83,6 +88,21 @@ export function createGuideSave({ storage, key = guideStorage.key } = {}) {
       data.kills[id] = kills(id) + whole(amount);
       dirty = true;
       return data.kills[id];
+    },
+    /** Lost property: is this item logged? */
+    found: (id) => data.found[id] === true,
+    /** Log an item (memory only: game/lostFound.js writes at once). True when that is news. */
+    find(id) {
+      if (!lostItem(id) || data.found[id] === true) return false;
+      data.found[id] = true;
+      dirty = true;
+      return true;
+    },
+    /** Debug: un-log an item. */
+    lose(id) {
+      delete data.found[id];
+      lost.add(id);
+      dirty = true;
     },
     /** True while memory holds something storage does not. */
     get dirty() { return dirty; },

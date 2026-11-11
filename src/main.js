@@ -104,7 +104,7 @@ const guideScreen = createGuideScreen({
 const challengePins = createChallengePins();
 const challengeBoard = createChallengeBoard({
   save: skinSave, pins: challengePins, onBack: () => hud.screens.show('title'),
-  trackerEnabled: () => settings.get('challengeTracker'), getChallenges: () => g.challenges,
+  trackerEnabled: () => settings.get('challengeTracker'), getChallenges: () => g.challenges, guideSave,
 });
 const hud = createHud({ locker, guide: guideScreen, challenges: challengeBoard });
 const noticesMenu = createNoticesMenu(hud.history);
@@ -390,7 +390,7 @@ screens.on('statsBack', () => screens.show('title'));
 screens.on('locker', () => screens.show('locker'));
 screens.on('guide', () => screens.show('guide'));
 screens.on('challenges', () => screens.show('challenges'));
-connectChallengeTracker({ events: g.events, tracker: hud.challengeTracker, pins: challengePins, save: skinSave, challenges: g.challenges, sound });
+connectChallengeTracker({ events: g.events, tracker: hud.challengeTracker, pins: challengePins, save: skinSave, challenges: g.challenges, sound, guideSave });
 window.addEventListener('pagehide', () => { g.challenges.flush(); g.guide.flush(); }); // closing the tab mid-run keeps the skin progress it earned
 wireRunIntro({ events: g.events, hud, sound }); // the PA's opening line as round 1 begins
 screens.on('controls', () => controlsMenu.open());

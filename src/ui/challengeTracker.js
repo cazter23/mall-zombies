@@ -5,7 +5,7 @@
 //                               setEnabled(on). Timers are its own (setTimeout), like the HUD's other toasts.
 //   connectChallengeTracker({ events, tracker, pins, save, challenges, sound })   main.js: which events move which line (DOM-free logic)
 import { challengeBoard } from '../config/challengeBoard.js';
-import { catalogEntry, skinPinId } from '../game/challengeCatalog.js';
+import { catalogEntry, skinPinId, LOST_FOUND_PIN } from '../game/challengeCatalog.js';
 
 const cfg = challengeBoard.tracker;
 
@@ -46,11 +46,11 @@ export function createChallengeTracker({ setTimer = setTimeout, clearTimer = cle
   };
 }
 
-export function connectChallengeTracker({ events, tracker, pins, save, challenges, sound = null }) {
+export function connectChallengeTracker({ events, tracker, pins, save, challenges, sound = null, guideSave = null }) {
   const dropped = new Set(); // pinned feats whose attempt was lost: off the tracker until the next attempt starts
   const lines = (failed = null) => pins.ids.map(catalogEntry).filter(Boolean)
     .filter(entry => entry.id === failed || !dropped.has(entry.id))
-    .map(entry => entry.track({ save, challenges }));
+    .map(entry => entry.track({ save, challenges, guideSave }));
 
   const offs = [
     events.on('challengeProgress', ({ gunId, skinId }) => {
@@ -70,6 +70,8 @@ export function connectChallengeTracker({ events, tracker, pins, save, challenge
       }
     }),
   ];
+  // A piece of lost property logged: the collection's line moves.
+  offs.push(events.on('lostFound', () => { if (pins.has(LOST_FOUND_PIN)) tracker.show(lines(), { changed: LOST_FOUND_PIN }); }));
   const reset = () => { dropped.clear(); tracker.clear(); };
   offs.push(events.on('runReset', reset), events.on('runLoaded', reset));
   return { dispose: () => offs.forEach(off => off()) };
