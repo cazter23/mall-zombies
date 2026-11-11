@@ -845,8 +845,17 @@ export class Zombie {
       const d = Math.hypot(ox, oz);
       if (d >= sepR || d < 1e-4) continue;
       const w = Math.min(crowd.maxSeparationPush, ((sepR - d) / (sepR - crowd.minSpacing)) ** 2);
-      pushX += (ox / d) * w;
-      pushZ += (oz / d) * w;
+      let px = (ox / d) * w;
+      let pz = (oz / d) * w;
+      if (other.hold && hasPath) {
+        const back = px * desired.x + pz * desired.z;
+        if (back < 0) {
+          px -= desired.x * back;
+          pz -= desired.z * back;
+        }
+      }
+      pushX += px;
+      pushZ += pz;
     }
 
     // 3) Queueing: if another zombie is close ahead on my way, slow down and step around it
@@ -870,7 +879,7 @@ export class Zombie {
       }
       if (blocker) {
         const closeness = clamp01((crowd.queueDistance - blockerD) / (crowd.queueDistance - crowd.minSpacing));
-        walk = 1 - crowd.queueSlowdown * closeness;
+        walk = blocker.hold ? 1 : 1 - crowd.queueSlowdown * closeness;
         const ox = blocker.position.x - this.position.x;
         const oz = blocker.position.z - this.position.z;
         // Which side of my path is it on? Step to the other side (or my preferred side if dead ahead).

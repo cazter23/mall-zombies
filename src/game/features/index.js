@@ -28,6 +28,7 @@ import { buildEscapeVan } from './escapeVan.js';
 import { buildFountainHazard } from './fountainHazard.js';
 import { buildFryerHazard } from './fryerHazard.js';
 import { buildSprinklerHazard } from './sprinklerHazard.js';
+import { buildPaLureHazard } from './paLureHazard.js';
 
 const builders = {
   wallBuy: buildWallBuy, // buy a gun off the wall, or its ammo once you own it
@@ -44,6 +45,7 @@ const builders = {
   fountainHazard: buildFountainHazard, // Grand Atrium fountain breaker switch (docs/hazards-plan.md)
   fryerHazard: buildFryerHazard, // Food Court Corn Dog Corral fryer valve switch (docs/hazards-plan.md)
   sprinklerHazard: buildSprinklerHazard, // Main Hallway south fire alarm pull switch (docs/hazards-plan.md)
+  paLureHazard: buildPaLureHazard, // Service Corridor west wall paging panel switch (docs/hazards-plan.md)
   nightSafe: buildNightSafe,
   escapeVan: buildEscapeVan,
 };

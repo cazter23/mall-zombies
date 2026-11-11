@@ -259,7 +259,7 @@ export function createHazard({
       }
       if (timer <= 1e-9) {
         applyPlayerSlow(false);
-        onStop?.();
+        onStop?.({ finished: true });
         phase = 'cooldown';
         timer = cfg.cooldownSeconds;
         pulseTimer = 0;
@@ -277,7 +277,7 @@ export function createHazard({
 
   function reset() {
     applyPlayerSlow(false);
-    if (phase === 'active') onStop?.();
+    if (phase === 'active') onStop?.({ finished: false });
     phase = 'ready';
     timer = 0;
     pulseTimer = 0;
