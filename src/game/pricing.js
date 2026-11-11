@@ -13,6 +13,7 @@
 //   priceOf('attachment', id)     economy.upgrades.attachments[id]
 //   priceOf('wardrobe', id)      economy.wardrobe[id]
 //   priceOf('claw', 'grab')        economy.claw.grab (GRAB-A-GUN; the Discount Code excludes this category: config/bosses.js)
+//   priceOf('closing', id)       economy.closing[id] (closing duties)
 //   basePriceOf(category, id)      original shelf price before a discount (same validation/source)
 //   setDiscount(category, 0.25)    25% off everything in that category (0 = none); rounded to the nearest
 //                                  economy.discountRoundTo (10)
@@ -43,6 +44,7 @@ const BASE = {
   wardrobe: (id) => (Object.hasOwn(economy.wardrobe, id) ? economy.wardrobe[id] : undefined),
   claw: (id) => (Object.hasOwn(economy.claw, id) ? economy.claw[id] : undefined), // GRAB-A-GUN ('grab': the pay step only)
   kiosk: (id) => (Object.hasOwn(economy.kiosk, id) ? economy.kiosk[id] : undefined),
+  closing: (id) => (Object.hasOwn(economy.closing, id) ? economy.closing[id] : undefined),
   hazard: (id) => (Object.hasOwn(economy.hazards, id) ? economy.hazards[id] : undefined), // Environmental hazards (config/hazards.js)
   secondChance: () => economy.secondChance.price,
 };

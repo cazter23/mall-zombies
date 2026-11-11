@@ -95,6 +95,103 @@ spare-gun chip). Damage direction and the glow tweak were fine. Fixed:
 - **Merged into main (review).** Combined with Second Chance (a hit during the revive protection is not announced, so it never
   reaches the wrap) and Save & Quit: the wrap is saved as its own step ('armour', each layer's strength left), since health is
   transient; tests/saveGame.test.js checks a partly used layer survives a load. The cart itself keeps no saved state.
+## 10 November 2026 - Closing Time phases 1-6 merged into main (with Save & Quit, Kiosk Kevin, Second Chance)
+
+- **What came in.** `codex/closing-time-modes`: phases 1 to 6, the A1-A12 fix pass and Classic / Directed runs (the entries below).
+  Phases 7 to 12 (parking validation, the final boss...) are not built.
+- **Save & Quit now covers it.** New save steps: 'closing' (closingTime.serialize/restore: keys held, duties done and counted,
+  the briefing timer, and any key still on the floor, put back without its PA line; a key drops once per run, so a save must
+  never lose one) and 'runOutcome' (replaces 'death': the debug flag, the run mode, the win, its summary and the first
+  overtime round). Stay for overtime takes a fresh snapshot (a win in the break restarts the break with no 'roundStart', so the
+  old snapshot said "not won"). Saving is refused while the win receipt is up ("Shift complete"). Save & quit does not call
+  `g.leaveRun()`: a won run saved in overtime is recorded once, when it really ends after Continue (a save never continued is not
+  recorded, like any run left unwon). config/save.js version 2 (map.features gained the kiosk, night safe and van).
+- **Menus.** Play opens the mode chooser; starting a run there discards a save in the slot (main.js newShift); Continue keeps the
+  saved run's mode. Controller Start on the title continues when a save exists, else opens the chooser.
+- **Test fixes from the merge.** closingTime.test.js's key-marker bearings assumed the old spawn facing (-Z): the test now sets
+  yaw 0 (the start room spawns facing +Z since the first-minute HUD step). The title's Continue button is hidden from JS, not by
+  the markup's `hidden` attribute (the test DOM doesn't read it).
+- tests/saveGame.test.js: a floor key, a held key with its duty count and the run mode survive a load; a save in overtime keeps
+  the win and refuses while the receipt is up.
+- Shared files changed: createGame.js, closingTime.js, saveGame.js, config/save.js, main.js, ui/screens.js, mall.js (both features),
+  features/index.js, pricing.js, debugCommands.js, hud.js, tests (features, pricing, powerUps, closingTime, saveGame), docs.
+
+## 10 November 2026 - Classic and Directed runs: fixes after review
+
+- **Directed is the default**: listed first and focused first on the chooser; the engine default was already 'directed'. Mode names, descriptions and order are config (`closingTime.modes`).
+- **Classic is not silent.** A key pickup plays `closingKey` and a ticked line plays `closingDuty` in both modes (config/audio.js); Classic still shows no quest PA. Its prompts say what is true instead of "Locked": the safe and the van say "Needs <key>", and with every key held the van names one unfinished duty by its place ("Unfinished: Fountain"). The fountain switch's own prompt shows "Shocked n/12" in both modes while the Key Ring is held and the line is open.
+- **Starting from the title** no longer leaves a "Fresh shift" pause screen when the mouse lock is refused and no longer resets twice: `ui/runStart.js` stores the mode and asks to play, the chooser stays up until play starts, and a pointer lock that arrives late (after Back) is given back.
+- **One value for "no checklist line on this receipt"**: `closingDone: null`, set by the game (`g.receiptFor`) for the death and win receipts. ui/hud.js keeps no receipt state.
+- **The last chosen mode is remembered** between sessions through game/settings.js (`closingMode`: no tab, in no preset, kept by Reset everything) and focused on the chooser.
+- The plan's "Run modes" section is rewritten: added by the user after phase 6, Directed is the default and is what decision 10 describes, Classic is the opt-in. The ten decisions are unchanged.
+- This branch also contains the fix pass on phases 1 to 6 (merged from `codex/closing-time-6`), so a Classic run needs the duties as well as the keys.
+- Shared files changed here: `createGame.js`, `main.js`, `config/audio.js`, `config/settings.js`, `game/settings.js`, `ui/hud.js`, `ui/screens.js`, `features/hazards.js` and the docs.
+
+## 10 November 2026 - Closing Time fix pass (phases 1 to 6, after review)
+
+- **The van needs the duties.** Starting the van takes all four keys and lines 1 to 3 ticked (`g.closing.readyToLeave`, checked in `onRunWon` and at the prompt). The prompt lists missing keys first, then the unfinished duties whose key is held, by name. Still no round gate.
+- **The game owns line 4.** The Van Keys tick nothing; their pickup has its own PA line. The win ticks "Car park cleared" (`closing.completeLeaving()` from `onRunWon`, before the summary), so `g.closing.done`, 'closingLine' and `summary.closingDone` are right headless and a win receipt reads 4 of 4. The three browser corrections are gone (`closingChecklistFor`, the PA text comparison and `setReceiptClosingDone`).
+- **A won run is never lost.** `g.leaveRun()` records a won run that is left by Quit to title or Restart run (the win plus what overtime added), once; main.js calls it before `resetRun()`. A run that was never won is still not recorded. Not covered: closing the browser tab in overtime.
+- **A win in the break keeps its round.** `rounds.startOvertime()` in a break restarts the full break and plays the announced round; mid-wave it discards and moves on as before. The summary carries `overtimeRounds` (from the first overtime round), which the receipt reads.
+- **A boss reward on the floor survives Stay for overtime.** 'roundDiscard' carries a reason; for 'overtime' game/powerUps.js leaves the uncollected reward, which can still be collected or expire and pay `pointsInstead`. A debug skip deletes it, as before.
+- **Statistics** shows career wins, the fastest win (a dash when none) and marks won shifts.
+- **The PA introduces the checklist** once per run, 8 s after round 1 is announced ('closingBriefing').
+- **The dropped completion line** (noted under phase 6) is fixed with a queue rule, not a priority: a PA message flagged `keep` does not count against the three-message queue, is never trimmed, and returns to the head of the queue if a more important message cuts it off. Only the checklist's line-opening and line-complete lines carry the flag.
+- **Career saves:** a stored version higher than this build knows is left untouched; the session uses a blank ledger and writes nothing (Clear records included).
+- **Words** for the win receipt, the OVERTIME tag and the Night Safe's "Requires" moved to `config/closingTime.js`.
+- **Found while playing it, and fixed:** a boss voucher on the floor (Master Key, Signed Approval, Discount Code) froze the browser game. ui/incentiveHud.js looked its name up in `powerUps.types`, where vouchers are not, threw inside render, and core/loop.js then never scheduled another frame. The line dated from 23 October, before vouchers existed; headless tests never draw the HUD. The HUD now names vouchers from `bossVouchers` and never throws on an unknown id (tests/powerUps.test.js).
+- Tests: tests/closingTime.test.js covers each of these, plus a key from a boss killed on an escalator ramp or against a wall, the mid-air drop, Play again against a fresh game (the headless `snapshot()` now includes the checklist, keys, pickups and win flags) and the HUD's boxes and markers. tests/retailUi.test.js covers the queue rule.
+- Shared files changed: `createGame.js`, `rounds.js`, `powerUps.js`, `careerStats.js`, `events.js`, `main.js`, `config/economy.js` (a comment), `ui/announcements.js`, `ui/hud.js`, `ui/screens.js`, `ui/retail.css`, `tests/helpers/headlessGame.js` and the docs.
+
+## 10 November 2026 - Classic and Directed runs
+
+- Play opens a choice with Classic focused. Restart run and Play again retain the confirmed mode. Back returns to the title.
+- Classic keeps the physical keys and local interactions, with terse van and safe prompts. Directed retains the checklists, key directions, quest PA and receipt progress. Classic filters quest PA before it reaches the Notices archive.
+- Both modes share phase 6 quest progress, pricing, win, overtime and career credit.
+
+## 10 November 2026 - Closing Time phase 6, Line 3 (last orders)
+
+- Fairweather's Signature opens Last orders signed off. The next Build-A-Blaster collection, including a Restuff or an order already running at pickup, ticks the line once. Collections before pickup do not count. Play again resets the duty.
+- Chrome production preview confirmed the 0/1 and 1/1 HUD states, both PA messages, and reset. The build charged 1,500 points and the Restuff charged 750, with no extra charge at collection.
+- When the preview script forced the entire Restuff through while the opening PA was still up, the shared three-message PA queue dropped the completion banner. Letting the opening PA finish before the Restuff made the completion banner visible.
+- Shared edits were limited to the Closing Time system and config, its existing test file, and the plan, history, folder guide and test guide.
+
+## 10 November 2026 - Closing Time phase 5, Line 2 (the night safe)
+
+- Kettle’s Safe Key opens Takings banked. Hold interact at the Night Safe on Customer Service’s east wall to make one deposit. Each deposit updates the checklist, and the PA announces the opening and the tick after four deposits. Play again clears the key and progress.
+- The safe charges 1,000 points per hold through the new closing price category. The Discount Code and Employee Discount apply to deposits. Flash Sales have no closing group.
+- Production Chrome preview showed the locked prompt, the 1/4 HUD count, and the Done prompt with the 4/4 tick. Four full-price holds charged 4,000 points. The prompt and coplanar tests cover the safe alongside both Customer Service windows and the Prize Counter.
+- Shared files changed include the Closing Time config and game system, the economy and pricing tables, the map and feature registry, and their test expectations.
+
+## 10 November 2026 - Closing Time phase 4, Line 1: the fountain
+
+- Murray's Key Ring opens “Water features off.” Only kills dealt by the active Electrified Fountain count. The HUD and pause list show the count, and the PA announces the opening and the tick at 12. Bosses and Mascots count. Play again clears the duty.
+- The breaker keeps its normal hazard behavior and price. The interim van still requires the four keys until parking validation is built in phase 7.
+- With seed 42 and a stationary invulnerable lure in the real headless wave, the paid breaker took two activations in round 6 (11 then 8 kills), one in round 10 (15 kills) and one in round 15 (13 kills). A controlled run staging six full-health enemies at a time took two activations at each round. The measured price was 750 per activation.
+- Shared files changed include the Closing Time config and game system, `createGame.js`, `events.js`, the van and fountain features, the HUD and pause UI, and `tests/closingTime.test.js`.
+
+## 10 November 2026 - Closing Time phase 3, The win (browser)
+
+- The existing receipt opens as SHIFT COMPLETE after the van starts. Clock out keeps the completed receipt available. Stay for overtime resumes on the controller or requests mouse lock with a Resume screen as a fallback.
+- The fourth checklist box ticks at the van. The HUD shows OVERTIME after continuing. An overtime death uses the regular incident receipt and adds the win round, win time and number of completed overtime waves.
+- The win releases pointer lock and stops rumble. The paused receipt is eligible for idle saving. Death alone starts the death music and camera.
+- Shared files changed include `main.js`, `ui/screens.js`, `ui/hud.js`, `ui/readability.css` and `tests/closingTime.test.js`.
+
+## 10 November 2026 - Closing Time phase 2, The win (headless)
+
+- The mauve van's east-side hold prompt lists any missing keys. Four keys unlock the free start, even in round 1.
+- `runWon` publishes the win snapshot and freezes the simulation. `g.clockOut()` ends the shift. `g.stayForOvertime()` discards the current wave and starts the next round with its normal break and scaling, preserving points and equipment.
+- The career ledger records one run on `runEnd`, at Clock out or death in overtime. Version 2 preserves the version 1 history and adds wins and fastest win, measured when the van starts.
+- Death events still own the music, cleanup and delayed receipt. The win pauses via `state.running`, which the idle saver already reads. Phase 3 owns pointer lock, receipt controls and changing the browser's death camera check to distinguish death from Clock out.
+- Shared files changed include `createGame.js`, `events.js`, `rounds.js`, `careerStats.js`, the feature registry and `mall.js`.
+
+## 10 November 2026 - Closing Time phase 1, Keys and the checklist
+
+- The first defeat of each boss drops its closing key on clear floor alongside its usual reward. If the boss vanishes, its key drops at the player's feet.
+- Keys stay through wave changes and Murray's cleanup. Collect a key to check off its duty. Play again resets the checklist and clears the drops.
+- The HUD shows four boxes and a pointer for each dropped key. The PA calls out drops and pickups. Pause lists the duties and their keys, and the death receipt records how many were checked off.
+- Browser console testing uses `__mall.g.debug.run('closing', 'drop', 'janitor')` and `__mall.g.debug.run('closing', 'grant', 'guard')`. Omit the boss ID to use the next eligible key.
+- Shared files changed include `createGame.js`, `events.js`, `main.js`, `debugCommands.js`, `bossDirector.js`, and the power-up and HUD modules.
 
 ## 10 November 2026 - Shopping window: a 20 s break and "Clock in"
 

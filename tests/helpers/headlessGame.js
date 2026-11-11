@@ -81,6 +81,19 @@ export function snapshot(g) {
   return {
     over: g.state.over,
     death: { ...g.death },
+    // The win: both flags, the frozen win summary and the first overtime round.
+    won: g.state.won,
+    winPending: g.state.winPending,
+    winSummary: g.winSummary,
+    overtimeFrom: g.overtimeFrom,
+    // Closing Time: every line (ticked, its count once its key is held), the keys held and the keys on the floor.
+    closing: {
+      checklist: g.closing.checklist.map(({ bossId, done, count }) => [bossId, done, count ?? null]),
+      keys: g.closing.checklist.filter(({ bossId }) => g.closing.hasKey(bossId)).map(({ bossId }) => bossId),
+      pickups: g.closing.pickups.map(({ bossId, position }) => [bossId, ...position.toArray().map(round)]),
+      markers: Object.keys(g.closing.markers),
+      readyToLeave: g.closing.readyToLeave,
+    },
     points: g.wallet.points,
     totalEarned: g.wallet.totalEarned,
     totalSpent: g.wallet.totalSpent,

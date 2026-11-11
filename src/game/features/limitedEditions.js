@@ -14,6 +14,7 @@
 import * as THREE from 'three';
 import { limitedEditionDrops as cfg, paLine, workshopBuilds, workshopModOf } from '../../config/workshop.js';
 import { weapons } from '../../config/weapons.js';
+import { pickupDirection } from '../floorPickups.js';
 
 export function createLimitedEditionDrops({ events, gun, player, scene, rounds, state, sound }) {
   let bag = null;
@@ -75,16 +76,10 @@ export function createLimitedEditionDrops({ events, gun, player, scene, rounds, 
     get bag() { return bag; },
     get status() {
       if (!bag) return null;
-      const dx = bag.position.x - player.position.x, dz = bag.position.z - player.position.z, dy = bag.position.y - player.position.y;
-      const sin = Math.sin(player.yaw), cos = Math.cos(player.yaw);
-      const ahead = -dx * sin - dz * cos, right = dx * cos - dz * sin;
-      const { floorGap, up, down } = cfg.marker;
       return {
         name: workshopBuilds[bag.id].name,
         seconds: Math.ceil(bag.remaining),
-        meters: Math.round(Math.hypot(dx, dz)),
-        bearing: Math.atan2(right, ahead),
-        floor: dy > floorGap ? up : dy < -floorGap ? down : null,
+        ...pickupDirection(player, bag.position, cfg.marker),
       };
     },
     debugDrop(id, at = player.position) { put(id, at); },

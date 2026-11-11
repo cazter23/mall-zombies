@@ -2,6 +2,9 @@
 // SCREENS: the menus around a run (plain DOM over the canvas).
 //   'title'    the main menu: logo + Play / Statistics / Settings / Controls over a live 3D flyover of the mall
 //              (main.js renders it with ui/titleCamera.js while this screen is up)
+//   'runMode' Directed / Classic choice over the title flyover (config/closingTime.js modes). The remembered mode is focused
+//              (setRunMode). A mode button emits 'startRun' and the chooser STAYS UP until play really starts: `startRequested`
+//              is true from that press until the next show() (ui/runStart.js)
 //   'pause'    PAUSED + this run so far (round, points, time, kills): Resume / Restart run / Settings /
 //              Controls / Quit to title. Restart and Quit ask twice ("click again to confirm"): they end the run.
 //              show('pause', { fresh: true }) = "Back to work" (after Play again, if the mouse lock was refused)
@@ -15,7 +18,8 @@
 // One at a time: show(name, data) (null hides them all), `current`.
 // Buttons emit ACTIONS: on(action, fn) with fn({ pad }) where pad = true when a controller pressed it (main.js
 // then plays with the controller instead of asking for the mouse lock).
-//   actions: 'play' 'continue' 'resume' 'restart' 'saveQuit' 'quit' 'settings' 'controls' 'stats' 'clearStats' 'statsBack'
+//   'startRun' also carries { mode }. 'play' opens the chooser here.
+//   actions: 'startRun' 'continue' 'resume' 'restart' 'saveQuit' 'quit' 'settings' 'controls' 'stats' 'clearStats' 'statsBack'
 //            'playAgain' 'mainMenu' ('help' / 'back' are handled here)
 // padNav(input): D-pad up/down moves (skipping hidden and greyed buttons), A presses, B / Start = Resume on the pause
 // screen, Start = Play (or Continue, with a save) on the title, Y = Settings and X = Controls on the title and pause screens.
@@ -23,6 +27,7 @@
 // =============================================================================
 
 import { economy } from '../config/economy.js';
+import { closingTime } from '../config/closingTime.js';
 import { createOutfitRail } from './outfitRail.js';
 import { outfitRail as outfitCfg } from '../config/wardrobe.js';
 import { menuFeel } from '../config/settings.js';
@@ -52,6 +57,11 @@ export function receiptLinesFor(r) {
     ['Bosses defeated', r.bossesDefeated ?? 0],
     ['Accuracy', `${Math.round(r.accuracy * 100)}%`],
   ];
+  if (r.closingDone != null) lines.push([closingTime.title, closingTime.receiptProgress(r.closingDone, Object.keys(closingTime.lines).length)]);
+  if (r.won && !r.shiftComplete) {
+    lines.push([closingTime.receipt.clockedOut, `Round ${r.winRound} · ${clock(r.winTime)}`]);
+    lines.push([closingTime.receipt.overtimeRounds, r.overtimeRounds ?? 0]);
+  }
   if (r.survivedBy?.length) lines.push(['Survived by', r.survivedBy.map(survivorLine).join(' and ')]);
   if (r.secondChanceUsed) lines.push(['Second Chance', 'Used']);
   // GRAB-A-GUN (game/tickets.js): tickets aren't points, so they're a line of their own, never in the totals.
@@ -159,7 +169,7 @@ export function createScreens() {
       <p class="tagline">The mall is closed. The shoppers didn't get the memo.</p>
       <div class="directory-heading">Galleria directory <span>You are here ↓</span></div>
       <div class="menu-list directory-list">
-        <button class="menu-btn primary save-continue" data-action="continue" type="button" hidden>Continue</button>
+        <button class="menu-btn primary save-continue" data-action="continue" type="button">Continue</button>
         <button class="menu-btn primary" data-action="play" type="button">Play</button>
         <button class="menu-btn" data-action="help" type="button">How to play</button>
         <button class="menu-btn" data-action="stats" type="button">Statistics</button>
@@ -170,7 +180,39 @@ export function createScreens() {
     </div>
     <div class="title-footer"><b>OPEN UNTIL FURTHER NOTICE</b><span>Notice will not be provided. · Now hiring · Must provide own staples</span></div>
   `);
-  const fade = title.querySelector('.title-fade');
+  const modeCfg = closingTime.modes;
+  const modeIds = modeCfg.list.map(({ id }) => id);
+  let preferredMode = modeCfg.default; // focused on the chooser and drawn as its primary button (setRunMode: the remembered choice)
+  let startRequested = false; // a mode was confirmed and play has not started yet (the mouse lock can be refused)
+  const runMode = el('div', 'screen title-screen hidden', `
+    <div class="title-fade"></div>
+    <div class="title-shade"></div>
+    <div class="title-panel">
+      <div class="kicker">${modeCfg.kicker}</div>
+      <h1>${modeCfg.title}</h1>
+      <div class="menu-list">${modeCfg.list.map(({ id, label, description }) => `
+        <button class="menu-btn" data-action="${id}" aria-describedby="${id}-description" type="button">${label}</button>
+        <p id="${id}-description">${description}</p>`).join('')}
+        <button class="menu-btn" data-action="modeBack" type="button">${modeCfg.back}</button>
+      </div>
+      <p class="pad-hint">Controller: D-pad + <kbd>A</kbd> · <kbd>B</kbd> back</p>
+    </div>
+  `);
+  function markPreferredMode() {
+    for (const id of modeIds) runMode.querySelector(`[data-action="${id}"]`).classList.toggle('primary', id === preferredMode);
+  }
+  markPreferredMode();
+  const fades = [title, runMode].map((screen) => screen.querySelector('.title-fade'));
+  function backFromMode() {
+    api.show('title');
+    buttonsOf('title')[0].focus({ preventScroll: true });
+  }
+
+  document.addEventListener('keydown', (event) => {
+    if (current !== 'runMode' || event.code !== 'Escape') return;
+    event.preventDefault();
+    backFromMode();
+  });
 
   // --- Pause -----------------------------------------------------------------------
   const pause = el('div', 'screen pause-screen hidden', `
@@ -180,6 +222,10 @@ export function createScreens() {
       <h1 class="pause-title">On break</h1>
       <div class="pause-stats"></div>
       <div class="pause-outfit"><div class="outfit-head">ON YOU</div></div>
+      <section class="pause-closing">
+        <h2 class="outfit-head">${closingTime.title}</h2>
+        <ul class="closing-list"></ul>
+      </section>
       <p class="paper-note">Your absence has been noted. Please return to the sales floor.</p>
       <div class="menu-list">
         <button class="menu-btn primary" data-action="resume" type="button">Resume</button>
@@ -198,35 +244,40 @@ export function createScreens() {
   const pauseTitle = pause.querySelector('.pause-title');
   const pauseStats = pause.querySelector('.pause-stats');
   const pauseOutfit = pause.querySelector('.pause-outfit');
+  const pauseClosing = pause.querySelector('.pause-closing');
+  const closingList = pause.querySelector('.closing-list');
   const pauseRail = createOutfitRail({ variant: 'pause' });
   pauseOutfit.append(pauseRail.el);
   const resumeButton = pause.querySelector('[data-action="resume"]');
   const saveQuitButton = pause.querySelector('[data-action="saveQuit"]');
   const saveNote = pause.querySelector('.save-note');
   const continueButton = title.querySelector('[data-action="continue"]');
+  continueButton.hidden = true; // (until setContinue finds a save)
   const playButton = title.querySelector('[data-action="play"]');
 
   // --- Results (the receipt) ---------------------------------------------------------
+  const deathThanks = 'Thank you for shopping with us<br />All sales final · No refunds · No respawns';
   const results = el('div', 'screen results-screen hidden', `
     <div class="receipt-wrap">
       <div class="receipt">
         <div class="receipt-store">SUNSET GALLERIA</div>
         <div class="receipt-sub">Store #013 · Register 4</div>
         <div class="receipt-sub receipt-date"></div>
-        <div class="receipt-sub">Cashier: YOU (deceased)</div>
+        <h1 class="receipt-shift-heading" hidden="hidden">${closingTime.receipt.shiftComplete}</h1>
+        <div class="receipt-sub receipt-cashier">Cashier: YOU (deceased)</div>
         <div class="receipt-rule"></div>
         <div class="receipt-lines"></div>
         <div class="receipt-wearing"><div class="receipt-wearing-head"></div></div>
         <div class="receipt-rule"></div>
         <div class="receipt-total"><span>Points earned</span><span class="receipt-total-value"></span></div>
-        <div class="receipt-rule"></div>
+        <div class="receipt-rule receipt-death-rule"></div>
         <div class="receipt-review">
           <div class="receipt-eval-header">*** PERFORMANCE REVIEW ***</div>
           <div class="receipt-eval-title"></div>
           <div class="receipt-eval-rating"></div>
           <div class="receipt-eval-comment"></div>
         </div>
-        <div class="receipt-rule"></div>
+        <div class="receipt-rule receipt-death-rule"></div>
         <div class="receipt-incident">
           <div class="receipt-incident-header">*** INCIDENT REPORT / FORM 109-C ***</div>
           <div class="receipt-incident-block">
@@ -244,9 +295,11 @@ export function createScreens() {
           <div class="receipt-barcode"></div>
           <div class="receipt-stamp">Clocked out</div>
         </div>
-        <div class="receipt-thanks">Thank you for shopping with us<br />All sales final · No refunds · No respawns</div>
+        <div class="receipt-thanks">${deathThanks}</div>
       </div>
       <div class="menu-list menu-row">
+        <button class="menu-btn primary" data-action="clockOut" type="button">Clock out</button>
+        <button class="menu-btn" data-action="overtime" type="button">Stay for overtime</button>
         <button class="menu-btn primary" data-action="playAgain" type="button">Play again</button>
         <button class="menu-btn" data-action="notices" type="button">Notices &amp; certificates</button>
         <button class="menu-btn" data-action="mainMenu" type="button">Main menu</button>
@@ -254,6 +307,12 @@ export function createScreens() {
       <p class="pad-hint">Controller: D-pad + <kbd>A</kbd></p>
     </div>
   `);
+  const shiftHeading = results.querySelector('.receipt-shift-heading');
+  const cashier = results.querySelector('.receipt-cashier');
+  const receiptStamp = results.querySelector('.receipt-stamp');
+  const receiptThanks = results.querySelector('.receipt-thanks');
+  const deathSections = results.querySelectorAll('.receipt-review, .receipt-incident, .receipt-death-rule');
+  const resultButtons = [...results.querySelectorAll('[data-action]')];
   const receiptDate = results.querySelector('.receipt-date');
   const receiptLines = results.querySelector('.receipt-lines');
   const receiptWearing = results.querySelector('.receipt-wearing');
@@ -326,7 +385,7 @@ export function createScreens() {
   const statsBests = stats.querySelector('.stats-bests');
   const statsRecent = stats.querySelector('.stats-recent');
 
-  const screens = { title, pause, results, help, stats };
+  const screens = { title, runMode, pause, results, help, stats };
   for (const node of Object.values(screens)) document.body.append(node);
   let current = null;
   let focus = 0;
@@ -356,6 +415,12 @@ export function createScreens() {
       button.classList.remove('armed');
     }
     const action = button.dataset.action;
+    if (action === 'play') return api.show('runMode');
+    if (action === 'modeBack') return backFromMode();
+    if (modeIds.includes(action)) {
+      startRequested = true; // (stays true while the chooser waits for play to start; any show() clears it)
+      return handlers.startRun?.({ mode: action, pad });
+    }
     if (action === 'help') return api.show('help', { from: current });
     if (action === 'back') return api.show(helpReturn);
     emit(action, pad);
@@ -376,7 +441,13 @@ export function createScreens() {
   const percent = (value) => `${Math.round((value ?? 0) * 100)}%`;
   const statCards = (items) => items.map(([label, value]) => `<div><span>${label}</span><b>${value}</b></div>`).join('');
 
-  function fillPause({ fresh = false, round = 0, points = 0, time = 0, kills = 0, outfit = [], canSave = null } = {}) {
+  function fillPause({ fresh = false, round = 0, points = 0, time = 0, kills = 0, outfit = [], canSave = null, closing = [] } = {}) {
+    pauseClosing.hidden = closing === null;
+    closingList.innerHTML = closing === null ? '' : Object.values(closingTime.lines).map(({ duty, key }, index) => {
+      const { done, count, needed } = closing[index] ?? {};
+      const progress = count == null ? '' : ` ${closingTime.lineProgress(count, needed)}`;
+      return `<li><span>${done ? '✓' : '□'} ${duty}${progress}</span><small>${key}</small></li>`;
+    }).join('');
     pauseOutfit.hidden = fresh;
     // Save & quit (game/saveGame.js): hidden on a fresh shift; greyed out, with the reason, when it can't save now.
     saveQuitButton.hidden = fresh || !canSave;
@@ -393,6 +464,18 @@ export function createScreens() {
   }
 
   function fillResults(r) {
+    const shiftComplete = Boolean(r.shiftComplete);
+    shiftHeading.hidden = !shiftComplete;
+    const words = closingTime.receipt;
+    cashier.textContent = shiftComplete ? words.cashier : 'Cashier: YOU (deceased)';
+    receiptStamp.textContent = shiftComplete && !r.clockedOut ? words.stampComplete : 'Clocked out';
+    receiptThanks.innerHTML = shiftComplete ? words.thanks : deathThanks;
+    receiptWearing.querySelector('.receipt-wearing-head').textContent = shiftComplete ? words.woreOnShift : outfitCfg.diedWearing;
+    for (const section of deathSections) section.hidden = shiftComplete;
+    for (const button of resultButtons) {
+      const choice = button.dataset.action === 'clockOut' || button.dataset.action === 'overtime';
+      button.hidden = choice !== (shiftComplete && !r.clockedOut);
+    }
     const now = new Date();
     receiptDate.textContent = `${now.toLocaleDateString('en-US')} ${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
     const lines = receiptLinesFor(r);
@@ -439,6 +522,7 @@ export function createScreens() {
     if (empty) return;
     statsTotals.innerHTML = statCards([
       ['Shifts worked', totals.runs.toLocaleString('en-US')],
+      [closingTime.stats.wins, (totals.wins ?? 0).toLocaleString('en-US')],
       ['Time employed', clock(totals.timeAlive)],
       ['Zombies cleared', totals.kills.toLocaleString('en-US')],
       ['Headshots', totals.headshotKills.toLocaleString('en-US')],
@@ -454,10 +538,13 @@ export function createScreens() {
       ['Most headshots', bests.headshotKills],
       ['Most points', bests.pointsEarned.toLocaleString('en-US')],
       ['Best accuracy', bests.accuracy === null ? '—' : percent(bests.accuracy)],
+      [closingTime.stats.fastestWin, bests.fastestWin == null ? closingTime.stats.noWin : clock(bests.fastestWin)],
     ]);
     statsRecent.innerHTML = recent.map((run) => {
       const date = run.endedAt ? new Date(run.endedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Unknown';
-      return `<tr class="stats-run"><td>${date}</td><td><b>${run.round}</b></td><td>${clock(run.timeAlive)}</td><td>${run.kills}</td><td>${percent(run.accuracy)}</td></tr>`;
+      // A won shift carries a mark beside its round (and the row a class, for the style).
+      const won = run.won ? ` <span class="stats-won" title="${closingTime.stats.wonTitle}">${closingTime.stats.wonMark}</span>` : '';
+      return `<tr class="stats-run${run.won ? ' won' : ''}"><td>${date}</td><td><b>${run.round}</b>${won}</td><td>${clock(run.timeAlive)}</td><td>${run.kills}</td><td>${percent(run.accuracy)}</td></tr>`;
     }).join('');
   }
 
@@ -470,7 +557,7 @@ export function createScreens() {
 
     // Should the title flyover be drawn behind? (the title itself, or How to play opened from it)
     get showsFlyover() {
-      return current === 'title' || current === 'stats' || (current === 'help' && helpReturn === 'title');
+      return current === 'title' || current === 'runMode' || current === 'stats' || (current === 'help' && helpReturn === 'title');
     },
 
     on(action, fn) {
@@ -486,16 +573,36 @@ export function createScreens() {
       }
       armed.clear();
       current = name ?? null;
+      startRequested = false;
       focus = 0;
+      if (name === 'runMode') {
+        focus = Math.max(0, modeIds.indexOf(preferredMode));
+        buttonsOf(name)[focus].focus({ preventScroll: true });
+      }
       if (name === 'pause') fillPause(data);
-      if (name === 'results') fillResults(data);
+      if (name === 'results') {
+        fillResults(data);
+        results.scrollTop = 0;
+        buttonsOf(name)[0]?.focus?.({ preventScroll: true });
+      }
       if (name === 'help') helpReturn = data?.from ?? 'title';
       if (name === 'stats') fillStats(data);
       markFocus(false);
     },
 
+    // A mode was confirmed on the chooser and play has not started yet (ui/runStart.js lets that pointer lock through).
+    get startRequested() {
+      return startRequested;
+    },
+
+    // The mode the chooser focuses: the one chosen last time (unknown ids are ignored).
+    setRunMode(mode) {
+      if (modeIds.includes(mode)) preferredMode = mode;
+      markPreferredMode();
+    },
+
     setFade(opacity) {
-      fade.style.opacity = String(opacity);
+      for (const fade of fades) fade.style.opacity = String(opacity);
     },
 
     // Save & Quit's slot on the title (game/saveGame.js peek()): { round } shows "Continue · Round N" and makes Play ask
@@ -519,12 +626,14 @@ export function createScreens() {
         - (input.consumePress('PadUp') || input.consumePress('PadLeft') ? 1 : 0);
       if (step) {
         focus = (focus + step + buttons.length) % buttons.length;
+        if (current === 'results' || current === 'runMode') buttons[focus]?.focus?.({ preventScroll: true });
         markFocus(true);
       }
+      if (current === 'runMode' && input.consumePress('PadB')) return backFromMode();
       if (current === 'help' && input.consumePress('PadB')) return api.show(helpReturn);
       if (current === 'stats' && input.consumePress('PadB')) return emit('statsBack', true);
       if (current === 'pause' && (input.consumePress('PadB') || input.consumePress('PadStart'))) return emit('resume', true);
-      if (current === 'title' && input.consumePress('PadStart')) return emit(continueButton.hidden ? 'play' : 'continue', true);
+      if (current === 'title' && input.consumePress('PadStart')) return continueButton.hidden ? api.show('runMode') : emit('continue', true);
       if ((current === 'title' || current === 'pause') && input.consumePress('PadY')) return emit('settings', true);
       if ((current === 'title' || current === 'pause') && input.consumePress('PadX')) return emit('controls', true);
       if (input.consumePress('PadA')) {

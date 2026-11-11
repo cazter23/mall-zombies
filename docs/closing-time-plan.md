@@ -1,6 +1,6 @@
 # Closing Time: plan for a run goal, an ending and a final boss
 
-Status: PLAN ONLY, DECISIONS MADE (10 November 2026, branch `claude/closing-time-plan`). Nothing here is built. Checked against main at 7d633bf.
+Status: PHASES 1–6 BUILT AND REVIEWED (10 November 2026; the review's fix pass is on `codex/closing-time-6`). Phases 7–12 are planned. The ten decisions below are made.
 Every number is a starting point for `src/config/closingTime.js` and `config/economy.js`, to be tuned in phase 11. Build one phase at a
 time, each in its own worktree.
 
@@ -74,6 +74,20 @@ the bot for this plan. The bot does not do the quest, so the times are for reach
   Flash Sale group for them. Saving Skylar's Discount Code for the parking validation is a choice the player gets to make.
 - **No arena lock in the first version.** The Last Customer chases the player like every zombie; the van is in the lot, so the fight ends there.
 - **No driving.** "Drive off" is a fade to the receipt.
+
+## Run modes (added after phase 6)
+
+Added by the user on 10 November 2026, after phase 6 was built. It is not one of the ten decisions and changes none of them.
+
+- **Directed is the default.** It is the game as decision 10 describes it: the four boxes always on the HUD, the full checklist on the pause
+  screen, a pointer to a dropped key, the quest PA with its Notices entries, and checklist progress on the receipts. It is listed first and
+  focused first on the chooser, and it is the engine's own default.
+- **Classic is an opt-in.** It hides the checklist (HUD boxes, pause list, receipt line), the key pointers and the quest PA. The keys still lie
+  on the floor and the duties are still done at their places; short prompts there say what is true ("Needs Kettle's Safe Key", "Unfinished:
+  Fountain"), a key pickup and a finished duty each play a sound, and the fountain switch shows its count.
+- Both modes use the same quest, prices, ending, overtime and career credit. Play opens the chooser; the mode chosen last is remembered between
+  sessions and focused. Restart run and Play again keep the mode; returning to the title lets the player choose again.
+- The split applies to phases 1 to 6 as built. Each later phase says what Classic shows in place of its checklist, pointer or PA line.
 
 ## The checklist
 
@@ -190,7 +204,7 @@ second deposit without changing the rest.
 - **`src/config/closingTime.js`** (new): the lines, keys, counts, hold times, overtime numbers, PA lines and receipt words.
   **`economy.closing`**: `{ nightSafe: 1000, validation: 5000, returnsDesk: 10000, returnsAmmo: 2500 }`, read through `g.pricing.priceOf('closing', id)`.
 - **`src/game/closingTime.js`** (new, `g.closing`): built and ticked in createGame.js; one new `resetSteps` entry. It listens: 'bossDefeated'
-  drops a key, 'kill' with source 'hazard' counts line 1, 'ritualCollect' ticks line 3, 'purchase' counts the deposits. It owns the key
+  drops a key, 'fountainKill' counts line 1, 'ritualCollect' ticks line 3, 'purchase' counts the deposits. It owns the key
   pickups (drop, pointer status, collection, reset).
 - **Events it announces** (to add to game/events.js): 'closingKeyDrop' { bossId, position, pa }, 'closingKey' { bossId, pa } (picked up),
   'closingProgress' { line, count, needed }, 'closingLine' { line, done, total, pa }, 'closingValidated' { round, pa }, 'runWon' { summary },
@@ -227,6 +241,8 @@ Each phase leaves the game working and is worth having without the later ones. A
 
 Notes for whoever builds a phase:
 
+- **Phase 7: the van already needs lines 1 to 3.** The fix pass after phase 6 built that part early (`g.closing.readyToLeave`; the van's prompt names what is
+  missing). Phase 7 adds the ticket machine, its 5,000 and the PA's call for the Closing Time round.
 - **Phases 4, 5 and 6 are independent** of each other and of phases 2 and 3, and can be built in any order or in parallel worktrees. Until a
   line's duty is built, holding its key ticks its box. So after phase 3 the ending is: four bosses, their keys, the van.
 - **Phase 1**: the key must land on floor the player can reach (a boss can die on an escalator, on a counter or against a wall; power-ups

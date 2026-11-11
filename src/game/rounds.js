@@ -81,6 +81,13 @@ export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null,
     if (onRoundStart) onRoundStart(n);
   }
 
+  // reason: 'overtime' (Stay for overtime) or 'debug' (skipRound / jumpTo). Listeners that delete what a wave left
+  // behind read it (game/powerUps.js keeps an earned boss reward through the overtime transition).
+  function discardWave(reason) {
+    zombies.clear();
+    onRoundDiscard?.(reason);
+  }
+
   return {
     get round() {
       return round;
@@ -181,19 +188,30 @@ export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null,
       }
     },
 
+    // Stay for overtime (createGame's stayForOvertime). A win in the break, when the announced round has spawned
+    // nothing yet: overtime continues with THAT round after a fresh full break, so no round is skipped (nothing is
+    // discarded and the round is not announced a second time). A win with a wave live: the wave is discarded and the
+    // next round is announced.
+    startOvertime() {
+      if (state === 'break') {
+        breakTimer = cfg.breakSeconds;
+        return;
+      }
+      discardWave('overtime');
+      announce(round + 1, cfg.breakSeconds);
+    },
+
     // Debug: end the current round right now and jump straight into the next one (no break).
     skipRound() {
       if (!started) return this.start();
-      zombies.clear();
-      onRoundDiscard?.();
+      discardWave('debug');
       announce(round + 1, 0);
     },
 
     // Debug: clear the zombies and jump straight to round `n` (no break).
     jumpTo(n) {
       if (!started) started = true;
-      zombies.clear();
-      onRoundDiscard?.();
+      discardWave('debug');
       announce(Math.max(1, Math.round(n)), 0);
     },
 

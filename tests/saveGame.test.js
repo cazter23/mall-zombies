@@ -163,3 +163,48 @@ test('Bubble Wrap bought before the round survives a load, partly used layers in
   assert.deepEqual(loaded.g.health.armour, layers);
   assert.equal(layers.length, 2);
 });
+
+test('Closing Time survives a load: a key still on the floor, a held key and its duty count, and the run mode', (t) => {
+  const storage = memoryStorage();
+  const run = game(t, storage);
+  const { g } = run;
+  run.tick();
+  g.state.closingMode = 'classic';
+  g.debug.run('closing', 'grant', 'janitor'); // the Key Ring: opens the fountain duty (count 0)
+  g.debug.run('closing', 'drop', 'guard'); // the Safe Key, left on the floor at the player's feet
+  run.standAt(20, 4); // walk away so it isn't picked up
+  g.rounds.jumpTo(8);
+  run.tick();
+  const saved = g.closing.serialize();
+  assert.equal(saved.drops.length, 1, 'one key on the floor');
+  assert.deepEqual(saved.held, ['janitor']);
+  g.saveGame.saveAndQuit();
+  const loaded = game(t, storage);
+  loaded.g.saveGame.load();
+  assert.deepEqual(loaded.g.closing.serialize(), saved);
+  assert.equal(loaded.g.closing.pickups.length, 1, 'the floor key is back, so it can still be collected');
+  assert.equal(loaded.g.state.closingMode, 'classic');
+  assert.equal(loaded.g.state.assisted, true, 'a debug run stays one');
+});
+
+test('a save made in overtime keeps the win: Stay for overtime takes a fresh snapshot', (t) => {
+  const storage = memoryStorage();
+  const run = game(t, storage);
+  const { g } = run;
+  run.tick();
+  for (const boss of ['janitor', 'guard', 'manager', 'influencer']) g.debug.run('closing', 'grant', boss);
+  for (const line of ['janitor', 'guard', 'manager']) while (!g.closing.isDone(line)) g.events.emit(
+    line === 'janitor' ? 'fountainKill' : line === 'manager' ? 'ritualCollect' : 'purchase', { kind: 'closing', id: 'nightSafe' });
+  g.events.emit('escapeVanStart');
+  assert.equal(g.state.winPending, true);
+  assert.equal(g.saveGame.canSave().ok, false, 'not while the win receipt is up');
+  g.stayForOvertime();
+  run.tick();
+  assert.equal(g.saveGame.snapshot.data.runOutcome.won, true);
+  g.saveGame.saveAndQuit();
+  const loaded = game(t, storage);
+  loaded.g.saveGame.load();
+  assert.equal(loaded.g.state.won, true);
+  assert.equal(loaded.g.overtimeFrom, g.overtimeFrom);
+  assert.equal(loaded.g.closing.done, g.closing.done);
+});

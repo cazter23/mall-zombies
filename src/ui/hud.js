@@ -7,6 +7,7 @@
 // =============================================================================
 
 import { feel } from '../config/feel.js';
+import { closingTime } from '../config/closingTime.js';
 import { createScreens } from './screens.js';
 import { createIncentiveHud } from './incentiveHud.js';
 import { createRitualHud } from './ritualHud.js';
@@ -160,7 +161,10 @@ export function createHud() {
   let lastOccupancy = 'break'; // (what it shows now: 'break' or the count)
   occupancyCounter.textContent = 'CLOSED FOR RESTOCK';
   occupancyCounter.classList.add('closed');
-  roundCounter.append(roundLabel, roundValue, occupancyCounter);
+  const overtimeTag = el('div', 'overtime-tag');
+  overtimeTag.textContent = closingTime.overtimeTag;
+  overtimeTag.hidden = true;
+  roundCounter.append(roundLabel, roundValue, occupancyCounter, overtimeTag);
   hud.append(roundCounter);
   const objectiveLine = el('div', 'hud-objective');
   objectiveLine.hidden = true;
@@ -321,10 +325,22 @@ export function createHud() {
   let lastFps = -1;
 
   // Flowing lanes keep growing rewards/PA copy clear of other tickets and bosses.
+  const checklist = el('div', 'closing-boxes');
+  checklist.setAttribute('role', 'group');
+  checklist.setAttribute('aria-label', closingTime.title);
+  const closingLines = Object.entries(closingTime.lines).map(([id, { duty }]) => {
+    const box = el('span', 'closing-box');
+    box.title = duty;
+    box.setAttribute('role', 'checkbox');
+    box.setAttribute('aria-label', duty);
+    box.setAttribute('aria-readonly', 'true');
+    checklist.append(box);
+    return { id, box, marker: createBagMarker() };
+  });
   const leftStack = el('div', 'hud-left-stack');
-  leftStack.append(roundCounter, objectiveLine, clockIn, incentives.element, ritualTicket.element);
+  leftStack.append(roundCounter, objectiveLine, checklist, clockIn, incentives.element, ritualTicket.element);
   const topStack = el('div', 'hud-top-stack');
-  topStack.append(bossBar, roundBanner, bagMarker.element);
+  topStack.append(bossBar, roundBanner, ...closingLines.map(({ marker }) => marker.element), bagMarker.element);
   const rightStack = el('div', 'hud-right-stack');
   rightStack.append(saleTag, clawTag, announceBanner, certificate.element);
   hud.append(leftStack, topStack, rightStack);
@@ -422,6 +438,7 @@ export function createHud() {
         lastClawSiteId = null;
         clawTag.classList.remove('show');
       });
+      events.on('runReset', () => { overtimeTag.hidden = true; });
       events.on('playerDeath', clearNotices);
       events.on('mascotPopBlast', ({ butter: buttered, butterSeconds }) => {
         if (buttered) splatButter(butterSeconds);
@@ -452,6 +469,28 @@ export function createHud() {
     // A dropped Limited Edition's direction: null hides it (game/features/limitedEditions.js status).
     setLimitedEdition(status) {
       bagMarker.update(status);
+    },
+
+    setOvertime(active) {
+      if (overtimeTag.hidden === active) overtimeTag.hidden = !active;
+    },
+
+    setClosing(lines, markers) {
+      checklist.hidden = lines === null;
+      for (const [index, { id, box, marker }] of closingLines.entries()) {
+        marker.update(lines ? markers[id] ?? null : null);
+        if (!lines) continue;
+        const { duty, done, count, needed } = lines[index];
+        const progress = count == null ? '' : closingTime.lineProgress(count, needed);
+        const text = [done ? '✓' : '', progress].filter(Boolean).join(' ');
+        const checked = String(done);
+        if (box.textContent !== text || box.getAttribute('aria-checked') !== checked) {
+          box.setAttribute('aria-checked', checked);
+          box.setAttribute('aria-label', progress ? `${duty} ${progress}` : duty);
+          box.classList.toggle('has-progress', Boolean(progress));
+          box.textContent = text;
+        }
+      }
     },
 
     // The Birth Certificate, at collection: { name, gunName, combo, stuffing, heart, quality, kills, round, remark, note }.

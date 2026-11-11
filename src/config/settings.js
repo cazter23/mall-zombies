@@ -6,7 +6,8 @@
 //
 // Entry fields:
 //   id        unique key, also the name it's saved under
-//   tab       which tab it appears on (must be in `settingsTabs`)
+//   tab       which tab it appears on (must be in `settingsTabs`); null = not in the menu: a remembered choice
+//             (the run mode), which no preset sets and "Reset everything" leaves alone
 //   label     shown in the menu
 //   type      'toggle' | 'slider' | 'select'
 //   default   the starting value (usually read from the other config files)
@@ -34,6 +35,7 @@ import { atmosphere } from './environment.js';
 import { look } from './look.js';
 import { bossComfort } from './bosses.js';
 import { idle } from './idle.js';
+import { closingTime } from './closingTime.js';
 
 export const settingsTabs = ['Graphics', 'Mouse', 'Controller', 'Audio', 'Comfort'];
 export const menuFeel = { confirmSeconds: 3 };
@@ -282,6 +284,14 @@ export const settingDefs = [
 
 // First launch only (game/autoGraphics.js): measure the title flyover's frame rate for a few seconds, then pick the best
 // Graphics preset whose fps floor this computer reaches. tiers: best first; the last one is the fallback.
+// ---- Remembered choices (tab null: saved like a setting, never shown in the menu, in no preset) ----
+settingDefs.push({
+  // The run mode last confirmed on the title's chooser (ui/runStart.js): it is focused there next time.
+  id: 'closingMode', tab: null, label: 'Run mode', type: 'select', default: closingTime.modes.default,
+  options: closingTime.modes.list.map(({ id, label }) => ({ value: id, label })),
+  apply: () => {}, // (the game takes the mode when a run starts, not when the value changes)
+});
+
 export const autoGraphics = {
   measureSeconds: 3, // seconds of good frames to measure
   warmupFrames: 30, // first frames ignored (shader compiles)

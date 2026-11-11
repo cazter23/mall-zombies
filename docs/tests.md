@@ -74,6 +74,9 @@ ownership reset, reload blocking, ammo conservation/full-reserve overflow, fully
 
 > Moved out of CLAUDE.md (verbatim) so the file every session loads stays small. Read it to find the test that guards something before you change it, or to see where a new test belongs.
 
+The title mode chooser is tested for its order (Directed first) and default focus, focus on the remembered mode, Back by button, Escape or controller, and mode confirmation.
+`tests/menus.test.js` also checks that the run mode is remembered through game/settings.js (no tab, in no preset, kept by Reset everything), and that starting from the chooser
+(ui/runStart.js) stores the mode and plays once with no reset and no Fresh shift screen, the chooser staying up until play starts and a late pointer lock after Back being refused.
 Menu regressions: `tests/menus.test.js` covers modal inert/focus isolation, Tab/Escape, controller presets including
 equal/custom values, reset buttons/confirmation and native-resolution readout. `tests/blood.test.js` also changes
 splatter while paused, clearing flesh effects/pools immediately without removing dust or tracers.
@@ -126,6 +129,28 @@ Promenade shutter from inside and receives natural upstairs spawns.
 debug-run exclusion, reset, corrupt saves and unavailable browser storage.
 `tests/music.test.js` also covers the End of Shift death sting: receipt-timed bell, music volume, cancellation of future
 notes, replacement-voice cleanup, and real-game death/reset wiring.
+`tests/closingTime.test.js` follows boss keys from defeat or disappearance to clear-floor drops and collection.
+It also covers a Classic run that wins with every duty done: its short prompts (the safe and the van name the missing key, the van then names an unfinished duty by its place),
+the key and duty sounds in both modes with no quest PA in Classic, career credit, run mode retention on reset, the fountain switch's count in both modes,
+and mode-dependent markers, checklists and receipts (closingDone null from g.receiptFor is the one value for "no checklist line").
+It checks one drop per boss alongside the usual rewards, persistence through round changes and cleanup, simultaneous drops, checklist events and PA, the death receipt, and Play again.
+It also checks the real van's hold and missing-key prompt, the paused win, Clock out, normal next-round overtime with the same loadout,
+career credit on overtime death, and version 1 career migration with fastest-win persistence.
+Phase 3 checks receipt modes and controller choice, and the clocked-out and completed-overtime lines on a death receipt.
+The fix pass checks that the van refuses with four keys and an unfinished duty and names it; that the Van Keys tick nothing and the win ticks line 4 (3 before the van, 4 after, headless);
+that a won run left from the menu is recorded once and a never-won one is not; that a win in the break keeps the announced round while a win mid-wave moves on;
+that a boss voucher on the floor survives Stay for overtime and still pays on expiry (a debug skip deletes it); the once-per-run PA briefing; the Statistics wins, fastest win and won mark;
+that a newer-version career save is left untouched; that a key from a boss killed on an escalator ramp or against a wall rests on clear floor and is collected there;
+that a boss vanishing while the player is mid-jump drops its key once they come down; that Play again after a lost run, win + overtime + death, Clock out and leaving from the menu
+equals a fresh game (`snapshot()` in tests/helpers/headlessGame.js includes the checklist, keys, pickups and win flags); and the HUD's four boxes, counts and key markers.
+`tests/powerUps.test.js` also checks that the incentive HUD names a boss voucher lying on the floor and never throws on a pickup id it does not know (a throw in render stops the frame loop).
+`tests/retailUi.test.js` also covers the PA queue's `keep` rule: a kept message survives a full queue and a preemption, and other messages trim and preempt as before.
+Phase 4 checks that the key opens the fountain count, only fountain kills advance it (including bosses and Mascots), the tick and PA fire once, and Play again resets the duty.
+Phase 5 checks the night safe’s prompt alongside both Customer Service windows and the Prize Counter. It covers refusals,
+priced deposits with both discounts, four-hold completion, PA, and reset.
+Phase 6 checks actual workshop collections before and after the Signature pickup, orders already running at pickup, Restuffs,
+ritual pricing, both PA announcements, one tick per run, and Play again.
+
 `tests/powerUps.test.js` checks earned incentive thresholds, skill credit, single drops, caps/repeats, expiry, safe floor/ramp
 placement, swept slide collection, wall/storey rejection, Blue Light payouts/timers, reserve delivery without bypassing
 reloads/upgrades, Security Sweep through all zombie attack/charge states, visuals/disposal and HUD. fullRun.test.js also

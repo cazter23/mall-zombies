@@ -6,12 +6,13 @@
 //   reasons     why the pause menu's Save & Quit is greyed out (the button shows the text).
 // =============================================================================
 export const save = {
-  version: 1,
+  version: 2, // 2: Kiosk Kevin and Closing Time (map.features gained entries, so a version 1 save's feature data no longer lines up)
   storageKey: 'sunsetGalleria.save',
   reasons: {
     noRound: 'Not clocked in yet',
     dead: 'No longer employed',
     hurt: 'Full health needed',
+    shiftComplete: 'Shift complete',
   },
   loadedPa: { kicker: 'Attention shoppers', text: 'Welcome back. Your shift resumes at round {round}.' },
   droppedNotice: 'Your saved shift was from an older version of the mall and has been discarded.',

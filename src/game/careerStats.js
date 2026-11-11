@@ -4,13 +4,13 @@
 // can be tested in Node. The browser wires it to localStorage in main.js.
 // =============================================================================
 
+import { CAREER_STATS_VERSION, PREVIOUS_CAREER_STATS_VERSION, RECENT_RUN_LIMIT, ACCURACY_RECORD_MIN_SHOTS } from '../config/careerStats.js';
+
 export const CAREER_STATS_KEY = 'sunsetGalleria.careerStats';
-export const CAREER_STATS_VERSION = 1;
-export const RECENT_RUN_LIMIT = 12;
-export const ACCURACY_RECORD_MIN_SHOTS = 25;
+export { CAREER_STATS_VERSION, RECENT_RUN_LIMIT, ACCURACY_RECORD_MIN_SHOTS };
 
 const TOTAL_FIELDS = [
-  'runs', 'timeAlive', 'kills', 'headshotKills', 'meleeKills',
+  'runs', 'wins', 'timeAlive', 'kills', 'headshotKills', 'meleeKills',
   'shotsFired', 'shotsHit', 'pointsEarned', 'pointsSpent',
 ];
 const RUN_FIELDS = [
@@ -29,6 +29,7 @@ function blank() {
       headshotKills: 0,
       pointsEarned: 0,
       accuracy: null,
+      fastestWin: null,
     },
     recentRuns: [],
   };
@@ -44,15 +45,24 @@ function cleanRun(run = {}) {
   }
   cleaned.shotsHit = Math.min(cleaned.shotsHit, cleaned.shotsFired);
   cleaned.accuracy = cleaned.shotsFired > 0 ? cleaned.shotsHit / cleaned.shotsFired : 0;
+  cleaned.won = run.won === true;
+  cleaned.winTime = cleaned.won && Number.isFinite(run.winTime) && run.winTime >= 0 ? run.winTime : null;
   return cleaned;
 }
 
 function normalize(raw) {
   const data = blank();
-  if (!raw || raw.version !== CAREER_STATS_VERSION) return data;
+  if (raw?.version !== CAREER_STATS_VERSION && raw?.version !== PREVIOUS_CAREER_STATS_VERSION) return data;
   for (const field of TOTAL_FIELDS) data.totals[field] = number(raw.totals?.[field]);
   for (const field of ['runs', 'kills', 'headshotKills', 'meleeKills', 'shotsFired', 'shotsHit', 'pointsEarned', 'pointsSpent']) {
     data.totals[field] = whole(data.totals[field]);
+  }
+  if (raw.version === CAREER_STATS_VERSION) {
+    data.totals.wins = Math.min(whole(raw.totals?.wins), data.totals.runs);
+    const fastest = raw.bests?.fastestWin;
+    if (Number.isFinite(fastest) && fastest >= 0) data.bests.fastestWin = fastest;
+  } else {
+    data.totals.wins = 0;
   }
   data.totals.shotsHit = Math.min(data.totals.shotsHit, data.totals.shotsFired);
   for (const field of ['round', 'timeAlive', 'kills', 'headshotKills', 'pointsEarned']) {
@@ -64,7 +74,7 @@ function normalize(raw) {
     : null;
   data.recentRuns = Array.isArray(raw.recentRuns)
     ? raw.recentRuns.slice(0, RECENT_RUN_LIMIT).map((run) => ({
-      ...cleanRun(run),
+      ...cleanRun(raw.version === PREVIOUS_CAREER_STATS_VERSION ? { ...run, won: false } : run),
       endedAt: typeof run.endedAt === 'string' ? run.endedAt : '',
     }))
     : [];
@@ -76,14 +86,21 @@ const clone = (data) => JSON.parse(JSON.stringify(data));
 export function createCareerStats({ storage, key = CAREER_STATS_KEY, now = () => new Date() } = {}) {
   let targetStorage = storage;
   let data;
+  // A save written by a NEWER build than this one (its version is higher than this build knows): its records must not
+  // be wiped. This session keeps a blank ledger in memory and never writes over the stored save. (Unknown or corrupt
+  // older data is replaced by a blank ledger at the next save, as before.)
+  let newerSave = false;
   try {
     targetStorage ??= globalThis.localStorage;
-    data = normalize(JSON.parse(targetStorage?.getItem(key) ?? 'null'));
+    const raw = JSON.parse(targetStorage?.getItem(key) ?? 'null');
+    newerSave = Number.isFinite(raw?.version) && raw.version > CAREER_STATS_VERSION;
+    data = normalize(raw);
   } catch {
     data = blank();
   }
 
   function save() {
+    if (newerSave) return false;
     try {
       targetStorage?.setItem(key, JSON.stringify(data));
       return true;
@@ -125,7 +142,14 @@ export function createCareerStats({ storage, key = CAREER_STATS_KEY, now = () =>
       }
 
       data.totals.runs += 1;
-      for (const field of TOTAL_FIELDS.filter((field) => field !== 'runs')) data.totals[field] += run[field];
+      if (run.won) {
+        data.totals.wins += 1;
+        if (run.winTime !== null && (data.bests.fastestWin === null || run.winTime < data.bests.fastestWin)) {
+          data.bests.fastestWin = run.winTime;
+          newRecords.push('Fastest win');
+        }
+      }
+      for (const field of TOTAL_FIELDS.filter((field) => field !== 'runs' && field !== 'wins')) data.totals[field] += run[field];
       data.recentRuns.unshift({ ...run, endedAt: now().toISOString() });
       data.recentRuns.length = Math.min(data.recentRuns.length, RECENT_RUN_LIMIT);
       save();

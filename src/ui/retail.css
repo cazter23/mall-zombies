@@ -660,6 +660,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .stats-run { display: table-row; color: var(--plum); padding: 0; border: 0; border-radius: 0; background: none; }
 .stats-run td { padding: 8px; border-bottom: 1px solid var(--print-rule); }
 .stats-run b { color: var(--raspberry); }
+.stats-won { margin-left: 6px; padding: 1px 5px; border: 1px solid currentColor; border-radius: 3px; color: var(--raspberry); font-size: 9px; font-weight: 700; letter-spacing: .08em; white-space: nowrap; }
 
 /* Facilities console and illustrated handbook keep familiar, operable controls. */
 .settings { background: #23192db0; }

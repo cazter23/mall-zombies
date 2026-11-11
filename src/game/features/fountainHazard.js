@@ -8,13 +8,14 @@
 
 import * as THREE from 'three';
 import { hazards } from '../../config/hazards.js';
+import { closingTime } from '../../config/closingTime.js';
 import { createHazard, dealHazardDamage } from './hazards.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
 
 export function buildFountainHazard(feature, ctx) {
   const cfg = hazards.fountain;
-  const { scene, zombies, effects, sound } = ctx;
+  const { scene, zombies, effects, sound, events } = ctx;
   const fx = cfg.center.x;
   const fz = cfg.center.z;
   const r = cfg.innerRadius;
@@ -173,6 +174,11 @@ export function buildFountainHazard(feature, ctx) {
     ctx,
     cfg,
     isPlayerInside: isInside,
+    // Closing Time's line 1: while Murray's Key Ring is held and the line is open, the switch shows the count (both run modes).
+    note: () => {
+      const progress = ctx.closing?.dutyProgress('janitor');
+      return progress ? closingTime.lines.janitor.promptCount(progress) : null;
+    },
     onActivate() {
       fieldGroup.visible = true;
       rippleAge = 0;
@@ -220,7 +226,9 @@ export function buildFountainHazard(feature, ctx) {
           zombie.staggerAway?.(centerGround, cfg.openingSurge);
         }
         zombie.applySlow?.(cfg.slowDuration, cfg.slowFactor, 'shock');
-        dealHazardDamage(zombie, cfg.zombieDamage, cfg);
+        if (dealHazardDamage(zombie, cfg.zombieDamage, cfg)?.killed) {
+          events.emit('fountainKill', { zombie });
+        }
       }
     },
     onStop() {

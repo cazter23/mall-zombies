@@ -23,6 +23,8 @@ src/
                         and Wet Floor settings. Boss kill values and health scaling go through economy.js.
     deathMusic.js       End of Shift: original seven-second death composition (piano/pad/bell/noise layers), gain and
                         stop fade. Bell anchors to feel.death.resultsDelay; played once through sound's music/master buses
+    careerStats.js      Career schema versions, recent-run limit and accuracy record threshold.
+    closingTime.js      Four closing duties and their keys, fountain, night-safe and last-orders targets, PA copy (the once-per-run briefing and its delay; `keep` marks the lines the PA queue never drops), the win receipt's words, the OVERTIME tag, Statistics labels, key marker and prop tuning, and escape van prompt data. Also the run modes (order, default, chooser words), Classic's prompt words, each duty's place and the fountain prompt's count.
     powerUps.js         Employee-incentive drop tuning, skill credit, round caps, pickup/zone durations, ammo top-up,
                         sweep strength, colors and PA lines. First round 2, 12-16 credit per drop, maximum 3 per round
     effectWords.js      THE WORDS-ONLY RULE: players never see an upgrade's effect as a number. The fixed size bands (a little / noticeably / much), sizeWord / fillSize
@@ -87,7 +89,7 @@ src/
                         gamepad (deadzones, look speed/curve, turn ramp, triggers, click-to-sprint release),
                         aimAssist (strength dial, range/cone, slowdown, rotational, ADS snap). Equipment: lethal = G / RB, tactical = middle
                         click (Mouse1) / D-pad right; melee = V / R3 (RB moved to the Lethal throw, COD's layout)
-    settings.js         THE LIST of player settings (options menu): { id, tab, label, type toggle|slider|select, default,
+    settings.js         THE LIST of player settings (options menu; an entry with tab null is a remembered choice that is never shown: closingMode, the run mode): { id, tab, label, type toggle|slider|select, default,
                         min/max/step, format, apply(value, ctx) }. Most apply() functions write into the config objects the
                         game reads every frame (feel, controls, audio). New setting = one entry here (new tab = add to settingsTabs)
     debug.js            THE DEBUG KEYS as a table (`commands`: id, key, shift, group, label; keys must not clash with gameplay
@@ -385,7 +387,7 @@ src/
     equipment/
       equipmentDamage.js equipmentPower(round) = (zombieHealthForRound / 800) ^ 0.37 (multiplies every equipment damage), blastFalloff (1 at
                         the centre to edgeFraction at the radius), blastDamage(target, distance, blast, round) (a boss: its fixed share of max health).
-    pricing.js          createPricing(): priceOf('door'|'weapon'|'ammo'|'ammoCache'|'tier'|'attachment', id) = economy.js base price with any
+    pricing.js          createPricing(): priceOf('door'|'weapon'|'ammo'|'ammoCache'|'tier'|'attachment'|'closing', id) = economy.js base price with any
                         discount applied (setDiscount(category, 0..1), rounded to the nearest economy.discountRoundTo (10); discountOf; reset() on a new
                         run). Unknown category/id throws. PRICE_CATEGORIES
     events.js           createEvents(): tiny synchronous bus (on -> unsubscribe fn, emit, count). The event list + payloads
@@ -403,8 +405,8 @@ src/
                         No DOM: the browser parts are passed in
     careerStats.js      createCareerStats({ storage }): versioned persistent employee record with lifetime totals,
                         personal bests and the last 12 completed shifts. Assisted/debug runs are rejected; storage
-                        failures fall back to memory. main.js supplies localStorage and records the runEnd event
-    settings.js         createSettings(ctx): current value of every setting, saved in localStorage ('mallZombies.settings',
+                        failures fall back to memory. A save from a newer version is never written over (blank ledger for the session). main.js supplies localStorage and records the runEnd event
+    settings.js         createSettings(ctx): current value of every setting (and of remembered choices with no tab, like the run mode: "Reset everything" keeps those), saved in localStorage ('mallZombies.settings',
                         values are sanitized on load), applies them all at startup; get/set/reset(tab)/onChange. ctx = { renderer, sound, hud }
     runStats.js         createRunStats(): time alive, kills, headshot/melee kills, bosses defeated, shots fired/hit, accuracy
     bossDirector.js     Picks debut rounds (never a zombie type's or a Mascot costume's), retries a normal-marker spawn partway
@@ -417,6 +419,10 @@ src/
                         end, death, Play again). g.mascotCostumes
     meltTrail.js        Scoops' puddles: one fixed pool for every Scoops (oldest gives way, own material to fade), drops every
                         dropEvery where he walks; a grounded player in one reports 'melt' to surfaceSlows
+    closingTime.js      g.closing owns persistent boss key drops, collection, checklist progress (fountain kills, night-safe purchases and workshop collections) and Play again reset.
+                        A key never ticks a line: lines 1 to 3 tick on their duty, line 4 on the win (completeLeaving, called by onRunWon). readyToLeave = four keys and
+                        lines 1 to 3 (what the van asks for); missingKeys / missingDuties say what is left. Emits the once-per-run 'closingBriefing'.
+    floorPickups.js     Shared clear-floor placement and swept collection for incentives and closing keys; direction for HUD markers.
     powerUps.js         createPowerUps(): listens to kill/round/death events; earned dynamic pickups on clear floor,
                         swept walk-through collection, 15s expiry, no repeats, per-round caps. Blue Light multiplies only
                         base kill credit, within its 4m radius, same floor and line of sight. reset/dispose; debugDrop(id, at)
@@ -472,6 +478,8 @@ src/
       retailUnease.js   Called by the existing horror feature: unseen mannequin turn, shared empty-concourse TV feed,
                         distant upstairs silhouette. Quiet intervals, comfort gates, reset and static-batching-safe hooks.
       workshop.js       The workshop feature: builds the ritual, its effects and the Limited Edition drops, runs Party Trap charges.
+      nightSafe.js      Customer Service deposit prompt. Gates payments on Kettle’s Safe Key and completion, and charges the live closing price. Without the key: "Requires <key>" in Directed, "Needs <key>" in Classic.
+      escapeVan.js      Customer Parking hold prompt. Blocked until g.closing.readyToLeave: Directed lists missing keys, then the unfinished duties whose key is held (vanNeeds); Classic names one thing at a time, the first missing key or an unfinished duty by its place (vanNeedsClassic). Emits the van start.
       limitedEditions.js The bag a shopping-bag zombie sometimes drops: walk over it and Party Trap or Clearance Rack fits a gun you carry, free.
       workshopRitual.js The Build-A-Blaster ritual: idle, running, ready. Bench opens the order form, gun on the conveyor, gauge (kills also shorten the clock), maximum time, the gun coming back by itself, chute steering. Built by workshop.js.
       workshopStuffings.js What a finished build does (and its looks: flashes, flames, ice, drips, hearts): one function per Stuffing, one per Heart. Hearts read 'shot' and hand off to the stuffing; nothing here emits 'shot', so a stuffing's kills can't fire a Heart.
@@ -512,7 +520,7 @@ src/
                         Darker every round, flickering neon dies, every tube browns out, lamps die, the view drifts to the lateHours grade, power cuts.
       hazards.js        Shared environmental hazard lifecycle (docs/hazards-plan.md): buildHazardSwitchBox (dynamic parent group, status lamp + throw lever),
                         createHazard (ready -> active -> cooldown, 'hazard' pricing prompt, player-inside slow/hurt, reset), dealHazardDamage (source 'hazard', boss/Mascot maxHealthCap).
-      fountainHazard.js Feature kind 'fountainHazard': Grand Atrium center fountain breaker switch; energizes the basin and conductive floor ring, pulsing electric arcs (source 'hazard') and slows.
+      fountainHazard.js Feature kind 'fountainHazard': Grand Atrium center fountain breaker switch; energizes the basin and conductive floor ring, pulsing electric arcs (source 'hazard') and slows. Emits 'fountainKill' for each killing blow.
     debugCommands.js    createDebugCommands(game parts): the debug shortcuts as functions run(id) (spawn, cycleZombie, clearZombies,
                         killZombies, nextRound, jumpRounds, flashSale, addPoints, zeroPoints, god, giveGun, upgradeGun, doors, arena, panel,
                         spawnMascot / spawnGoldMascot: each costume in turn at the spawn point nearest you);
@@ -710,6 +718,7 @@ src/
     ballView.js         Browser side only: draws `balls.list` (the Tennis Ball Launcher's balls) as a pool of tumbling tennis balls between last tick's and this tick's position (alpha).
     throwableView.js    Browser side only: draws `equipment.live` (Kiosk Kevin's thrown things) as a pool of cola bottles: tumbling in the air, lying and
                         rattling on the floor, swelling as the fuse runs out; a mesh is hidden when its item is gone; dispose() frees the pool.
+    closingKeyView.js   Reusable spinning key and signature props for the four closing pickups.
     powerUpView.js      Reusable delivery carton, blue beacon and security badge (no lights/colliders); bob/spin/blink,
                         floor-projected Blue Light ring clipped at walls/voids, hide on reset/death, owned-resource disposal
     contactShadows.js   One instanced draw for soft zombie grounding; interpolates feet and finds supporting collider tops.
@@ -822,7 +831,7 @@ src/
     damageDirection.js  Computes relative damage angle (0° = front, 90° = right, 180° = behind, 270° = left) and queues damage indicators for the HUD.
     retail.css          Retail presentation layer loaded after style.css: mall directory, distinct combat signs,
                         shelf tickets, personnel paperwork, facilities settings and handbook. Responsive + reduced motion.
-    bagMarker.js        The HUD arrow to a dropped Limited Edition: name, distance, floor, time left.
+    bagMarker.js        The HUD arrow to a Limited Edition or closing key: name, distance, floor and time left when applicable.
     birthCertificate.js The Birth Certificate notice at collection. Clears itself; nothing pauses.
     orderForm.js        Draws the order form from its view. Only draws: choices come in on the fixed tick. Sized from the screen height (retail.css --order-base,
                         everything in em), left of centre; keys drawn as keycaps (keycaps()), one line on what the order does (orderSummary()), stuffings
@@ -830,7 +839,7 @@ src/
     fittingRoomPicker.js Draws the fitting-room picker from its view (hud.setFittingRoom): four slot columns on the order form's paper and keycaps, the
                         highlighted item's stat lines in green and red. Only draws.
     ritualHud.js        The order ticket on the HUD: the gun's stage, one progress bar, the gauge and time (reads the ritual's status).
-    announcements.js    Bounded PA queue: type introductions priority 2, incentives 1, routine messages 0;
+    announcements.js    Bounded PA queue: type introductions priority 2, incentives 1, routine messages 0; a message flagged `keep` is never trimmed and is re-queued if cut off;
                         clear on pause/death/reset; wall-clock presentation timers only
     noticeHistory.js    The run's PA notices, kept for the Notices menu (queued and pre-empted ones too); pausing never clears it.
     noticesMenu.js      createNoticesMenu(history): the pause screen's list of this run's PA notices.
@@ -839,7 +848,10 @@ src/
                         silhouettes for empty slots, a swing + glow on pulse. Variants: 'hud' (over the health bar, from round 1), 'pause' (large, with each item's
                         lines) and 'receipt' (the death receipt's DIED WEARING row).
     outfitIcons.js      The rail's SVG pictures: one icon per item (`icon` ids in config/wardrobe.js) and one dashed silhouette per slot.
-    screens.js          The menus around a run (title, statistics, pause, results) as plain DOM over the canvas.
+    screens.js          The menus around a run (title, run mode, statistics, pause, results) as plain DOM over the canvas. The run mode chooser lists config/closingTime.js modes
+                        (Directed first), focuses the remembered mode (setRunMode) and stays up after a mode is confirmed until play starts (startRequested).
+    runStart.js         createRunStart({ game, screens, settings, play }): a mode confirmed on the chooser is stored (game.closingMode, the 'closingMode' setting) and play() is
+                        asked once. No reset (the title already reset the run) and no pause screen; acceptsLock() tells main.js whether an arriving pointer lock may start play.
     titleCamera.js      The title flyover: plays map.titleShots forever behind the main menu.
 ```
 

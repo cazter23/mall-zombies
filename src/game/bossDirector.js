@@ -93,7 +93,11 @@ export function createBossDirector({ events, rounds, zombies, scene, colliders, 
     get scheduledRound() { return [...(schedule?.keys() ?? [])][0] ?? null; },
     summon(id = schedule?.get(rounds.round) ?? 'janitor') { return bossTypes[id] ? spawn(id) : null; },
     update(dt, allowSpawn = true) {
-      if (active && !zombies.zombies.includes(active)) clear('vanished');
+      if (active && !zombies.zombies.includes(active)) {
+        const zombie = active;
+        clear('vanished');
+        events.emit('bossVanished', { zombie, round: rounds.round });
+      }
       if (active) {
         behavior.update(dt);
         surfaces.set('boss', behavior.surfaceSpeed ?? 1);

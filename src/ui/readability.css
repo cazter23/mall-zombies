@@ -45,6 +45,24 @@
   max-width: 100%; min-width: 0;
 }
 .hud-left-stack .round-counter { align-self: flex-start; padding: 8px 14px 5px; }
+.closing-boxes {
+  display: flex; align-self: flex-start; gap: .25em; padding: .2em .35em;
+  background: var(--paper); color: var(--plum); box-shadow: 2px 3px 0 #39294066;
+  font: 700 var(--ui-body)/1.15 var(--font-ui);
+}
+.closing-box {
+  display: grid; place-items: center; inline-size: 1em; block-size: 1em;
+  border: 1px solid var(--plum); line-height: 1;
+}
+.closing-box.has-progress { inline-size: auto; white-space: nowrap; }
+.closing-boxes[hidden], .hud.dead .closing-boxes { display: none; }
+.overtime-tag:not([hidden]) {
+  display: block;
+  color: var(--mall-yellow);
+  font: 700 var(--ui-caption)/1.4 var(--font-ui);
+  letter-spacing: .12em;
+}
+.hud.dead .overtime-tag { display: none; }
 .round-value { font-size: calc(44 * var(--ui-space)); }
 .hud-objective { font-size: var(--ui-caption); letter-spacing: .04em; }
 .hud-left-stack .incentive-hud, .hud-left-stack .ritual-hud { width: 100%; }
@@ -152,6 +170,13 @@
 .pause-stats span { font-size: var(--ui-caption); letter-spacing: .03em; }
 .pause-stats b { font-size: calc(32 * var(--ui-type)); line-height: 1.1; overflow-wrap: anywhere; }
 .pause-stats div { min-width: 0; }
+.pause-closing { margin-block-start: 12px; }
+.closing-list { padding: 0; margin: 0; list-style: none; font-size: var(--ui-caption); }
+.closing-list li {
+  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0 .7em;
+  padding-block: .2em; border-bottom: 1px solid var(--print-rule);
+}
+.closing-list small { font-size: inherit; opacity: .75; }
 .pause-screen, .help-screen, .stats-screen { align-items: safe center; }
 .help-card { max-width: none; width: min(calc(920 * var(--ui-space)), 100%); margin: auto; }
 .help-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -195,6 +220,14 @@ kbd { font-size: .9em; }
 .controls-diagram { display: block; max-height: none; }
 .controls-auto-note { margin: 0 0 12px; }
 .receipt { width: min(calc(400 * var(--ui-space)), calc(100vw - 48px)); font-size: calc(21 * var(--ui-type)); }
+.receipt-shift-heading {
+  margin: .45em 0;
+  color: var(--plum);
+  font: 700 calc(34 * var(--ui-type))/1.05 var(--font-hud);
+  text-align: center;
+  letter-spacing: .06em;
+}
+.results-screen [hidden] { display: none; }
 .receipt-store { font-size: calc(28 * var(--ui-type)); letter-spacing: .08em; }
 .receipt-sub { font-size: calc(18 * var(--ui-type)); }
 .receipt-line { font-size: calc(21 * var(--ui-type)); line-height: 1.35; flex-wrap: wrap; }

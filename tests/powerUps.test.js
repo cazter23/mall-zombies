@@ -12,6 +12,7 @@ import { Zombie } from '../src/zombies/zombie.js';
 import { zombieTypes } from '../src/config/zombies.js';
 import { economy } from '../src/config/economy.js';
 import { createPowerUpView } from '../src/fx/powerUpView.js';
+import { bossVouchers } from '../src/config/bosses.js';
 import { createIncentiveHud } from '../src/ui/incentiveHud.js';
 import { menuDom } from './helpers/menuDom.js';
 
@@ -325,6 +326,14 @@ test('incentive HUD shows earning progress, pickup countdown, active-zone timer 
   assert.equal(hud.element.hidden, false);
   assert.match(hud.element.textContent, /50%/);
   assert.match(hud.element.textContent, /SECURITY SWEEP · COLLECT · 9s/);
+  // A boss's voucher on the floor is a pickup too, though it is not an incentive type: it must be named, never throw
+  // (a throw in the HUD stops the browser's frame loop).
+  for (const [id, voucher] of Object.entries(bossVouchers)) {
+    hud.update({ available: true, progress: 0.5, pickup: { id, remaining: 14.2, bossReward: true }, active: null });
+    assert.equal(hud.element.querySelector('.incentive-drop').textContent, voucher.name + ' · COLLECT · 15s');
+  }
+  hud.update({ available: true, progress: 0.5, pickup: { id: 'notAThing', remaining: 3 }, active: null });
+  assert.equal(hud.element.querySelector('.incentive-drop').textContent, 'notAThing · COLLECT · 3s');
   hud.update({ available: false, progress: 0, pickup: null, active: { remaining: 12 }, round: 2 });
   assert.match(hud.element.textContent, /ALLOWANCE USED/);
   assert.match(hud.element.textContent, /BLUE LIGHT SPECIAL · 12s/);

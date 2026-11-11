@@ -77,6 +77,7 @@ export function createSaveGame({ steps, events, stats, state, rounds, resetRun, 
 
     canSave() {
       if (state.over) return { ok: false, reason: config.reasons.dead };
+      if (state.winPending) return { ok: false, reason: config.reasons.shiftComplete }; // (the win receipt is up: Clock out or overtime first)
       if (!snapshot) return { ok: false, reason: config.reasons.noRound };
       if (stats.health < stats.maxHealth) return { ok: false, reason: config.reasons.hurt };
       return { ok: true, reason: null };

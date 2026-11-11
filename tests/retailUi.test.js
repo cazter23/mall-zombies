@@ -38,6 +38,40 @@ test('PA queues same-tick messages, suppresses duplicates, and introduces threat
   assert.equal(n.hidden, 1);
 });
 
+test('a kept PA message survives a full queue and a preemption; other messages still trim and preempt as before', () => {
+  const n = notices();
+  n.board.push({ text: 'Showing', priority: 1 });
+  for (const text of ['One', 'Two', 'Three']) n.board.push({ text, priority: 1 }); // the queue is full
+  n.board.push({ text: 'Line complete', priority: 1, keep: true });
+  n.board.push({ text: 'Dropped', priority: 1 }); // an ordinary fourth message is still trimmed
+  for (let i = 0; i < 4; i++) n.advance();
+  assert.deepEqual(n.shown.map((m) => m.text), ['Showing', 'One', 'Two', 'Three', 'Line complete']);
+
+  // Cut off while it is showing: it comes back once the more important message is done. Its duplicate is still ignored.
+  n.board.push({ text: 'Boss intro', priority: 2 });
+  n.board.push({ text: 'Line complete', priority: 1, keep: true });
+  n.advance();
+  assert.deepEqual(n.shown.slice(-2).map((m) => m.text), ['Boss intro', 'Line complete']);
+  n.advance();
+  assert.equal(n.hidden, 1);
+
+  // An ordinary message that is cut off is not shown again (unchanged).
+  n.board.push({ text: 'Routine', priority: 1 });
+  n.board.push({ text: 'Threat', priority: 2 });
+  n.advance();
+  assert.equal(n.shown.at(-1).text, 'Threat');
+  assert.equal(n.hidden, 2);
+
+  // Kept messages do not take the ordinary messages' three places either.
+  n.board.push({ text: 'Showing again', priority: 1 });
+  n.board.push({ text: 'Line opened', priority: 1, keep: true });
+  for (const text of ['A', 'B', 'C', 'D']) n.board.push({ text, priority: 1 });
+  for (let i = 0; i < 4; i++) n.advance();
+  assert.deepEqual(n.shown.slice(-4).map((m) => m.text), ['Line opened', 'A', 'B', 'C']);
+  n.advance();
+  assert.equal(n.hidden, 3);
+});
+
 test('long PA instructions get reading time and the display and queue use the same duration', () => {
   const short = { text: 'Your shift has begun.' };
   const long = { text: 'Important instructions '.repeat(25) };
