@@ -90,6 +90,8 @@ export const skins = {
   tennisBallLauncher: [{ id: 'centre-court', name: 'Centre Court', slot: 1,
     palette: { body: 0x244838, dark: 0x192e26, metal: 0xa4bdb4, grip: 0x1c2723, accent: 0xe0e5c4, sight: 0xffe6a3, ammo: 0xe2ed91, glass: 0xc7e6d7 }, challenge: mastery(400) }, {
     id: 'country-club', name: 'Country Club', slot: 2,
+    palette: { body: 0x5a0a9a, dark: 0x34065a, metal: 0xd6c8e6, grip: 0x1e1828, accent: 0xd8f0a0, sight: 0xffe6a3 },
+    pattern: { kind: 'argyle', ink: 0xf4f4e6, ink2: 0x2f8a46, width: 0.024, height: 0.036, line: 0.0012 }, // clubhouse sweater
     challenge: { kind: 'bankShotKills', count: 60, minBounces: 1, needs: ['claw'],
       text: 'Clear {count} zombies with a {gun} ball that had already bounced.' },
   }],
