@@ -108,6 +108,12 @@ export const closingTime = {
     overtimeRounds: 'Overtime rounds survived',
   },
   overtimeTag: 'OVERTIME', // beside the round counter while overtime is played (ui/hud.js)
+  // OVERTIME's two changes (game/closingTime.js; docs/closing-time-plan.md "Overtime"). Nothing changes before the win.
+  // healthPerRound: every zombie and boss spawned in overtime has its health x this, compounded once per overtime round
+  //   (the first overtime round is x1.03, the fifth x1.03^5), on top of the normal round scaling. Counts, spawn pace and the
+  //   alive cap are untouched.
+  // killPay: multiplied into the stats' killPayMultiplier once, when overtime starts (so it stacks with the Gold Card).
+  overtime: { healthPerRound: 1.03, killPay: 1.25 },
   // The Statistics screen (ui/screens.js): career wins, the fastest win, and the mark on a won shift in the recent list.
   stats: { wins: 'Shifts completed', fastestWin: 'Fastest close', noWin: '—', wonMark: 'CLOSED', wonTitle: 'Shift completed: the mall was closed' },
   lineProgress: (count, needed) => `${count}/${needed}`,

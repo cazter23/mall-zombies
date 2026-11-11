@@ -5,7 +5,10 @@ const lines = Object.entries(config.lines);
 const total = lines.length;
 const leavingLine = lines.find(([, line]) => !line.needed)[0]; // line 4: no duty count, it is ticked by the win
 
-export function createClosingTime({ events, player, colliders, state, view, rounds, bosses }) {
+// stats: the player's stats object (overtime's kill pay is multiplied into it). getOvertimeRound: () => how many overtime
+// rounds have begun (0 before overtime; the first overtime round is 1), worked out by createGame from the round number
+// and the saved `overtimeFrom`, so a loaded overtime run gets the right health with no counter of its own to save.
+export function createClosingTime({ events, player, colliders, state, view, rounds, bosses, stats = null, getOvertimeRound = () => 0 }) {
   const floor = createFloorPickups(colliders);
   const drops = new Map(); // boss id -> floor position (null while waiting for safe floor)
   const held = new Set();
@@ -91,8 +94,17 @@ export function createClosingTime({ events, player, colliders, state, view, roun
   });
 
   const readyToValidate = () => held.size === total && lines.every(([id, line]) => !line.needed || completed.has(id));
+  // Overtime pay: once, when overtime starts. Deliberately not on 'runLoaded' or in restore(): the stats object is saved as
+  // it is (the x1.25 included), and Play again's stats reset puts the multiplier back to 1.
+  events.on('overtimeStart', () => {
+    if (stats) stats.killPayMultiplier *= config.overtime.killPay;
+  });
 
   return {
+    // The health multiplier for a zombie spawned now (the zombie manager reads it on every spawn): 1 before overtime.
+    get healthMultiplier() {
+      return Math.pow(config.overtime.healthPerRound, Math.max(0, getOvertimeRound()));
+    },
     get done() { return completed.size; },
     hasKey(bossId) { return held.has(bossId); },
     isDone(bossId) { return completed.has(bossId); },

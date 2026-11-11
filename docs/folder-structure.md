@@ -447,6 +447,8 @@ src/
     closingTime.js      g.closing owns persistent boss key drops, collection, checklist progress (fountain kills, night-safe purchases and workshop collections) and Play again reset.
                         A key never ticks a line: lines 1 to 3 tick on their duty, line 4 on the win (completeLeaving, called by onRunWon). readyToValidate = four keys and
                         lines 1 to 3; readyToLeave also needs validated and lastCustomerDefeated. closingValidated books the next closingRound through bosses.book; bossDefeated clears the van gate. These fields serialize/restore silently and reset clears them. A paid validation purchase emits closingValidated with the current round and PA. serialize/restore keeps validated silently; reset clears it. missingKeys / missingDuties say what is left. Emits the once-per-run 'closingBriefing'.
+                        Overtime: `healthMultiplier` (config overtime.healthPerRound ^ the overtime rounds begun, from createGame's getOvertimeRound = rounds.round - overtimeFrom + 1; the zombie
+                        manager reads it on every spawn through its getHealthMultiplier option) and, on 'overtimeStart' only, killPay multiplied into stats.killPayMultiplier (never on a load).
     floorPickups.js     Shared clear-floor placement and swept collection for incentives and closing keys; direction for HUD markers.
     powerUps.js         createPowerUps(): listens to kill/round/death events; earned dynamic pickups on clear floor,
                         swept walk-through collection, 15s expiry, no repeats, per-round caps. Blue Light multiplies only

@@ -1,6 +1,6 @@
 # Closing Time: plan for a run goal, an ending and a final boss
 
-Status: PHASES 1–6 BUILT AND REVIEWED (10 November 2026; the review's fix pass is on `codex/closing-time-6`). Phases 7–8 built on `claude/closing-time-8`; phase 9 built on `claude/closing-time-9`; phases 10–12 are planned. The ten decisions below are made.
+Status: PHASES 1–10 BUILT (11 November 2026). Phases 1–6 were reviewed; phases 7–9 came from `claude/closing-time-9`, and phase 10 was integrated on `codex/closing-time-integration`. Phases 11–12 are planned. The ten decisions below are made.
 Every number is a starting point for `src/config/closingTime.js` and `config/economy.js`, to be tuned in phase 11. Build one phase at a
 time, each in its own worktree.
 
@@ -235,7 +235,7 @@ Each phase leaves the game working and is worth having without the later ones. A
 | 7 | Parking validation | The ticket machine and its 5,000; the PA calls closing time for the next round; the van now also needs lines 1 to 3 | features/escapeVan.js, **economy.js** | No |
 | 8 | The Last Customer, reused parts only | She is booked for the Closing Time round, charges, crashes into vans, calls backup, and dies like any boss; the van needs her gone | **config/bosses.js**, **bossDirector.js**, zombies/bosses/lastCustomer.js, **economy.js** (kill value), config/deathReports.js | No |
 | 9 | The return and the Returns Desk | Speechless, the two ways to return her, the per-boss Return to Sender fraction, the desk selling the gun and its ammo, and the two ammo machines refusing it | zombies/bosses/lastCustomer.js, **weapons/gunStats.js**, features/returnsDesk.js, features/ammoCache.js, features/prizeCounter.js, **economy.js**, **mall.js** | **Yes, the one** |
-| 10 | Harder overtime | The extra health per overtime round and the kill pay | game/closingTime.js, zombies/zombieManager.js (read the multiplier), config only otherwise | No |
+| 10 | Harder overtime (BUILT) | The extra health per overtime round and the kill pay | game/closingTime.js, zombies/zombieManager.js (read the multiplier), config only otherwise | No |
 | 11 | Measure and tune | A bot that does the quest: minutes to the win, points in hand at the win, what share of income the quest took, how often the finale kills, and what overtime does to the surplus. Prices, her health and the overtime numbers set from that | tools/ (the review's bot is throwaway and gitignored: copy what is needed), config only | No |
 | 12 | Spectacle | Her model and trolley, the van's lights and engine, music for the last round, the receipt's art | models, audio, ui | No |
 

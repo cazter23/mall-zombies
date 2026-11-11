@@ -1,5 +1,14 @@
 # Sunset Galleria: build history ("Current state")
 
+## 11 November 2026 - Closing Time phases 7-10 integration
+
+- Integrated `claude/closing-time-9`, including phase 7 parking validation and phase 8's booked Last Customer, with current main. The history conflict preserves both the weapon-skin rules and phase 9 entries.
+- Copied phase 10's pending overtime implementation into `codex/closing-time-integration`; the original `closing-time-10` worktree is untouched. Reconciled its Closing Time wiring with validation and the final boss, and adapted the overtime fixtures to those prerequisites.
+- The plan now marks phases 1-10 built; phases 11-12 remain planned. Harder overtime has its own documented `tests/overtime.test.js`, covering normal and pending-win state, health compounding, kill pay, Clock out, save/load and Play again.
+- Validation on the combined code: 81 focused tests passed; full `npm test` passed 1,438/1,438 with no failures or skips at four files at a time; `npm run build` and `npm run balance` passed. Browser checks were not repeated; phase 9's original entry records its production-preview checks.
+- The quick economy baseline completed four runs to round 10 on one worker (`npm run sim:economy -- --quick --set=baseline --workers=1`). Its bot does not do the quest or reach overtime; quest balance measurement remains phase 11.
+- Shared changes include `mall.js`, `economy.js`, `createGame.js`, `bossDirector.js`, `closingTime.js`, `zombieManager.js`, interactions, the feature registry, weapon handling, tests and docs. `CLAUDE.md` and `shutters.js` are unchanged.
+
 ## 11 November 2026 - Weapon skins: two rules settled after phase 6 (dark rims, prints on the left face)
 
 - **Why:** phase 6 found that the 2:1 contrast floor between a skin body and every stuffing and warranty tier caps every body at luminance 0.0585 (no cream, yellow or orange skin was possible), and that prints kept to the top and right faces barely show in your hands, because a gun held on the right only ever shows its left face and top. Lowering the floor does not help (1.5:1 still caps it at 0.095), and a hue-difference rule does not either (the six stuffings cover the whole colour wheel). The user chose a rim and a left-face print with gaps.
@@ -17,6 +26,17 @@
 - Balance: Platinum Rivet Rifle bar times at rounds 16/18/20 remain 16.4/18.9/21.9 s. Base Return to Sender needs 34 beams to Speechless, then a return. Claw odds are unchanged; valuing its copy at the guaranteed 10,000 desk price changes the 1,000-point grab's 3-in-4 first value/price from 1.52 to 1.66, timed from 1.67 to 1.85, whole-site value/point from 1.50 to 1.62. Details and shared files: [phase 9 report](closing-time-9-report.md).
 - Validation: focused Closing Time, save, refill, boss and coplanar checks passed; production build passed. Isolated production-preview Edge/SwiftShader verified the desk, refill redirection, Speechless HUD, hand return beside the van with reload held and SHIFT COMPLETE, without game exceptions. Preview stopped. Final npm suite: 1,430/1,430 passed, zero failures or skips, across 158 files at four at a time (281 s testing; 338 s including the shared-lock wait).
 - Main's committed weapon skins and capped/locked npm test runner were merged into this worktree. All tests use npm; the final run waits for other large runs. Shared changes include config/economy/save, mall.js, createGame, bossDirector, interactions, feature registry/ammo/prize, gunStats/playerGun, zombie/manager, HUD, existing tests and docs. No main checkout edits.
+
+## 11 November 2026 - Closing Time phase 10: harder overtime
+
+- **Health.** Every zombie and boss spawned in overtime has its health x `closingTime.overtime.healthPerRound` (1.03) compounded per overtime round,
+  on top of the normal round scaling. The first overtime round is x1.03 (n = rounds.round - overtimeFrom + 1), so a loaded overtime run needs no counter of its own:
+  `g.closing.healthMultiplier` is worked out from the saved `overtimeFrom`. The zombie manager got one option, `getHealthMultiplier`, read in `spawn()` (it multiplies a
+  summoned fan's own fraction). Counts, spawn pace and the alive cap are untouched.
+- **Pay.** On 'overtimeStart' (only), `stats.killPayMultiplier *= overtime.killPay` (1.25): it stacks with the Gold Card (1.1 x 1.25 = 1.375) and Play again's stats reset removes it.
+  A load restores the saved stats as they are and never applies it again; tests/overtime.test.js checks a save in overtime round 3 comes back with the same pay.
+- **Shopper health, win at round 15 (first overtime round 16):** overtime round 1 (round 16) 1,281 vs 1,244 normal; round 5 (round 20) 1,927 vs 1,662; round 10 (round 25) 3,207 vs 2,386.
+- Shared files: createGame.js, zombies/zombieManager.js, config/closingTime.js, game/closingTime.js, docs. New: tests/overtime.test.js.
 
 ## 11 November 2026 - One big test run at a time, and AGENTS.md / GEMINI.md
 

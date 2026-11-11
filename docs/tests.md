@@ -152,7 +152,10 @@ It also covers a Classic run that wins with every duty done: its short prompts (
 the key and duty sounds in both modes with no quest PA in Classic, career credit, run mode retention on reset, the fountain switch's count in both modes,
 and mode-dependent markers, checklists and receipts (closingDone null from g.receiptFor is the one value for "no checklist line").
 It checks one drop per boss alongside the usual rewards, persistence through round changes and cleanup, simultaneous drops, checklist events and PA, the death receipt, and Play again.
-It also checks the real van's hold and missing-key prompt, the paused win, Clock out, normal next-round overtime with the same loadout,
+`tests/overtime.test.js` covers Closing Time's harder overtime: zombies and bosses spawned in overtime have the round's normal health times the per-round multiplier compounded by overtime round (first, fifth, tenth),
+counts and the alive cap are unchanged, kill pay stacks with the Gold Card and is applied once, a Clock out and the time before the win change nothing, a save in overtime round 3 loads with the right health and an undoubled pay,
+and Play again puts both back to normal.
+`tests/closingTime.test.js` also checks the real van's hold and missing-key prompt, the paused win, Clock out, normal next-round overtime with the same loadout,
 career credit on overtime death, and version 1 career migration with fastest-win persistence.
 Phase 3 checks receipt modes and controller choice, and the clocked-out and completed-overtime lines on a death receipt.
 The fix pass checks that the van refuses with four keys and an unfinished duty and names it; that the Van Keys tick nothing and the win ticks line 4 (3 before the van, 4 after, headless);

@@ -370,6 +370,7 @@ export function createGame({
     isZoneOpen: (zone) => map.zones[zone].open,
     getRound,
     getRounds: () => rounds,
+    getHealthMultiplier: () => closing.healthMultiplier, // (overtime's extra health; `closing` is built below, read at spawn time)
     canAttack: () => !health.isDead,
     onPlayerHit: (damage, zombie, knockback = null, attackerPosition = null) => {
       // Second Chance's grace period: the swing lands on nothing, so nothing reacts to it (no damage arrow, rumble, outfit
@@ -579,7 +580,11 @@ export function createGame({
     if (zombie.type.defeatBanner) hud.showAnnouncement({ ...zombie.type.defeatBanner, priority: bossTiming.introPriority });
   });
   // Register after the defeat banner so the key-drop PA queues behind it.
-  const closing = createClosingTime({ events, player, colliders, state, view: createClosingKeyView(scene), rounds, bosses });
+  const closing = createClosingTime({
+    events, player, colliders, state, view: createClosingKeyView(scene), rounds, bosses, stats,
+    // Overtime rounds begun so far (the first overtime round is 1), from the saved `overtimeFrom`: a loaded run needs no counter.
+    getOvertimeRound: () => (overtimeFrom === null ? 0 : Math.max(0, rounds.round - overtimeFrom + 1)),
+  });
   events.on('runLoaded', () => hud.showRoundBanner(rounds.round, closing.isClosingRound(rounds.round) ? closingTime.finale.banner : null));
   events.on('bossPhase', ({ zombie, phase }) => {
     const pa = zombie.type.phases?.[phase];

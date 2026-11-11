@@ -31,6 +31,7 @@ const UP = new THREE.Vector3(0, 1, 0);
  * @param spawnPoints  map markers: [{ name, zone, position }]
  * @param isZoneOpen   (zoneId) => boolean; zombies only spawn in zones the player has opened
  * @param getRound     () => current round number (for health scaling)
+ * @param getHealthMultiplier optional () => extra health multiplier for every spawn (Closing Time's overtime; 1 otherwise)
  * @param canAttack    () => false once the player is dead
  * @param onPlayerHit  (damage, zombie) => apply a landed zombie hit to the player
  * @param onKill       optional (zombie) => called when a zombie dies (run stats, later points)
@@ -50,6 +51,7 @@ export function createZombieManager({
   isZoneOpen = () => true,
   getRound,
   getRounds = null,
+  getHealthMultiplier = () => 1,
   canAttack,
   onPlayerHit,
   onKill = null,
@@ -476,7 +478,9 @@ export function createZombieManager({
         type = golden ? mascotGoldTypes[costume] : mascotTypes[costume];
       }
       const speed = pickGaitSpeed(type, round);
-      const health = zombieHealthFor(typeId, round) * healthMultiplier;
+      // Overtime (game/closingTime.js) makes every zombie and boss tougher, on top of a summoned fan's own fraction.
+      const extra = getHealthMultiplier();
+      const health = extra === 1 ? zombieHealthFor(typeId, round) * healthMultiplier : Math.round(zombieHealthFor(typeId, round) * healthMultiplier * extra);
       const zombie = new Zombie({ type, health: type.gold ? Math.round(health * mascotGold.healthMultiplier) : health, position, yaw, speed, round });
       zombie.fanOwner = fanOwner;
       zombie.noRewards = !!fanOwner;
