@@ -36,6 +36,20 @@ export const closingTime = {
     ],
     sign: { text: 'VALIDATE', offset: 0.25, y: 1.72, width: 0.48, height: 0.12, background: '#243042', color: '#ffe4a0' },
   },
+  returnsDesk: {
+    name: 'Returns Desk', weaponId: 'returnToSender', ammoName: 'Return to Sender ammo',
+    buy: 'buy', refill: 'refill', gate: 'Unfinished: ', equip: 'Equip Return to Sender for ammo',
+    busy: 'Finish switching weapons first', full: 'Ammo full',
+    redirect: 'Return to Sender ammo is sold at the Returns Desk · Customer Service',
+    screen: { line: 'RETURNS DESK', note: 'Customer Service', tone: '#ff9f43' },
+    offsetFromBooth: 4.8, promptOffset: 0.42, promptHeight: 1.42,
+    parts: [
+      { name: 'returns_desk_housing', min: [-0.24, 1.04, -0.42], max: [0.02, 1.84, 0.42], color: 0x253e4d },
+      { name: 'returns_desk_screen', min: [-0.28, 1.20, -0.34], max: [-0.23, 1.56, 0.34], color: 0x151f2c },
+      { name: 'returns_desk_tray', min: [-0.46, 0.98, -0.42], max: [0.02, 1.04, 0.42], color: 0x698b86 },
+    ],
+    sign: { text: 'RETURNS DESK', offset: 0.30, y: 1.70, width: 0.70, height: 0.18, background: '#243042', color: '#ffe4a0' },
+  },
   nightSafe: {
     name: 'Night Safe',
     verb: 'deposit',

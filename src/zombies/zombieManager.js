@@ -136,7 +136,7 @@ export function createZombieManager({
   } });
   const tankDeaths = createTankDeaths();
   function onZombieDeath(zombie) {
-    if (zombie.killedBy === 'partyTrap') {
+    if (zombie.returned || zombie.killedBy === 'partyTrap') {
       if (onKill) onKill(zombie);
       return;
     }

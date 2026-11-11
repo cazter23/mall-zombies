@@ -314,3 +314,57 @@ test('a save in the break before Closing Time keeps the booking and reloads exac
   assert.deepEqual(repeatedPa, []);
   assert.ok(!loaded.g.bosses.serialize().met.includes('lastCustomer'));
 });
+
+test('a Returns Desk purchase uses the normal gun save step, retaining the held gun and its ammunition', (t) => {
+  const storage = memoryStorage();
+  const run = game(t, storage);
+  const { g } = run;
+  run.tick();
+  g.rounds.update = () => {};
+  g.map.areaUnlocks.unlock('hallway');
+  run.tick(120);
+  for (const line of ['janitor', 'guard', 'manager']) {
+    g.debug.run('closing', 'grant', line);
+    while (!g.closing.isDone(line)) g.events.emit(line === 'janitor' ? 'fountainKill' : line === 'manager' ? 'ritualCollect' : 'purchase', { kind: 'closing', id: 'nightSafe' });
+  }
+  const desk = g.map.features.find(({ kind }) => kind === 'returnsDesk');
+  run.standAt(desk.position.x + desk.normal.x * 1.2, desk.position.z + desk.normal.z * 1.2, Math.atan2(desk.normal.x, desk.normal.z) * 180 / Math.PI);
+  g.wallet.earn(g.pricing.priceOf('closing', 'returnsDesk'));
+  run.press('KeyF', Math.ceil(feel.interact.holdSeconds / dt) + 1);
+  run.tick(60);
+  assert.equal(g.gun.def.id, 'returnToSender');
+  g.gun.weapon.magazine = 3; g.gun.weapon.reserve = 7;
+  g.rounds.jumpTo(4); run.tick();
+  const saved = g.saveGame.snapshot.data;
+  assert.ok(g.saveGame.saveAndQuit());
+  const loaded = game(t, storage);
+  assert.ok(loaded.g.saveGame.load());
+  assert.equal(loaded.g.gun.def.id, 'returnToSender');
+  assert.deepEqual([loaded.g.gun.weapon.magazine, loaded.g.gun.weapon.reserve], [3, 7]);
+  assert.deepEqual(loaded.g.saveGame.serializeNow(), saved);
+});
+
+test('Speechless is transient: loading the round-start save restores a fresh full-health booked boss without a hand prompt', (t) => {
+  const run = game(t, memoryStorage());
+  const { g } = run;
+  run.tick();
+  g.rounds.update = () => {};
+  g.map.areaUnlocks.openAll();
+  run.tick(120);
+  g.rounds.jumpTo(20);
+  assert.ok(g.bosses.book(20, 'lastCustomer'));
+  run.tick();
+  const boss = g.bosses.summon('lastCustomer');
+  assert.ok(boss);
+  boss.takeHit({ damage: Infinity, part: 'body', source: 'hazard' });
+  run.tick();
+  assert.equal(boss.state, 'speechless');
+  assert.ok(g.saveGame.saveAndQuit());
+  assert.ok(g.saveGame.load());
+  run.tick(120);
+  const restored = g.bosses.summon('lastCustomer');
+  assert.ok(restored);
+  assert.equal(restored.health, restored.maxHealth);
+  assert.equal(restored.state, 'spawning');
+  assert.notEqual(g.interactions.prompt?.id, 'handReturn');
+});

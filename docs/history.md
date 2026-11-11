@@ -1,5 +1,14 @@
 # Sunset Galleria: build history ("Current state")
 
+## 11 November 2026 - Closing Time phase 9: the return and Returns Desk
+
+- Lorraine stops at 1 health and becomes Speechless for 6 s. Return her with one Return to Sender beam or a 1.5 s hand stamp; either uses the existing box/stamp feedback and normal kill event. Missing the window restores 25%. Her beam share is 3% instead of the ordinary boss 12%; no other gun stats changed. Both finishes carry the weapon ID for skins; beams keep their distance.
+- The Returns Desk on the hallway north wall east of Customer Service sells the gun after duties 1–3 for 10,000 and its half-rate refill for 2,500 without a duty gate. Both use pricing and discounts. RESTOCK-O-MATICs and the Prize Counter redirect its ammo buyers; free refills are unchanged. Real prompt tests keep the desk, safe, service windows and Prize Counter separate. The hand stamp wins over the van and held reload.
+- Save version 5 appends the desk feature. A purchased gun/ammo uses the existing gun save step; Speechless and its hand prompt remain transient. The booked boss still survives a round-start save/load. Reset clears the encounter and its prompt.
+- Balance: Platinum Rivet Rifle bar times at rounds 16/18/20 remain 16.4/18.9/21.9 s. Base Return to Sender needs 34 beams to Speechless, then a return. Claw odds are unchanged; valuing its copy at the guaranteed 10,000 desk price changes the 1,000-point grab's 3-in-4 first value/price from 1.52 to 1.66, timed from 1.67 to 1.85, whole-site value/point from 1.50 to 1.62. Details and shared files: [phase 9 report](closing-time-9-report.md).
+- Validation: focused Closing Time, save, refill, boss and coplanar checks passed; production build passed. Isolated production-preview Edge/SwiftShader verified the desk, refill redirection, Speechless HUD, hand return beside the van with reload held and SHIFT COMPLETE, without game exceptions. Preview stopped. Final npm suite: 1,430/1,430 passed, zero failures or skips, across 158 files at four at a time (281 s testing; 338 s including the shared-lock wait).
+- Main's committed weapon skins and capped/locked npm test runner were merged into this worktree. All tests use npm; the final run waits for other large runs. Shared changes include config/economy/save, mall.js, createGame, bossDirector, interactions, feature registry/ammo/prize, gunStats/playerGun, zombie/manager, HUD, existing tests and docs. No main checkout edits.
+
 ## 11 November 2026 - One big test run at a time, and AGENTS.md / GEMINI.md
 
 - **The lock.** A test run of more than 8 files (npm test, or a big test:quick selection) takes a lock file in the system temp folder

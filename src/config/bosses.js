@@ -213,11 +213,17 @@ export const bossTypes = {
     charge: { ...zombieTypes.cartPusher.charge },
     sounds: zombieTypes.cartPusher.sounds,
     spawnMarker: 'spawn_parkingLot_deliveryGate',
+    returnRequired: true, damageFloor: 1, returnToSenderFraction: 0.03,
+    speechlessSeconds: 6, recoverHealthFraction: 0.25, speechlessNotice: 'SPEECHLESS · Return now',
+    handReturn: { holdSeconds: 1.5, height: 1.1, priority: 1, label: 'The Last Customer · Speechless', verb: 'stamp RETURNED', priceLabel: 'Return by hand' },
     backup: { thresholds: [0.66, 0.33], count: 4, type: 'mallWalker', zone: 'parkingLot' },
     introBanner: { kicker: 'One customer remains', text: 'Lorraine Pruitt has arrived with a receipt. Closing time is not her problem.' },
     introSound: 'guardSting',
     defeatBanner: { kicker: 'Last customer served', text: 'Lorraine has left the premises. Associates, start the van and clock out.' },
-    phases: { backup: { kicker: 'Additional customers', text: 'More Mall Walkers have arrived in Customer Parking. They insist they were here before closing.' } },
+    phases: {
+      backup: { kicker: 'Additional customers', text: 'More Mall Walkers have arrived in Customer Parking. They insist they were here before closing.' },
+      speechless: { kicker: 'Speechless', text: 'Return accepted. Use Return to Sender or hold to stamp her RETURNED by hand before she recovers.' },
+    },
     balance: { rounds: [16, 18, 20], range: 10 }, // the requested Platinum Rivet Rifle report, body shots without crash bonuses
   },
 };

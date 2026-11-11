@@ -19,6 +19,7 @@
 // or aiming until it's up, and a reload in progress is cancelled.
 // =============================================================================
 
+import { returnToSender } from './returnToSender.js';
 import * as THREE from 'three';
 import { feel } from '../config/feel.js';
 import { Weapon } from './weapon.js';
@@ -269,7 +270,8 @@ export function createPlayerGun({
         const headshot = hit.part === 'head';
         // Headshot x distance falloff x pass-through (pierce) falloff x player stats: gunStats.js.
         const damage = hitDamage(d, hit, i, stats, chargeScale, hit.target);
-        const { killed } = hit.target.takeHit({
+        const returned = !!d.instantKill && isReturnable(hit.target);
+        const { killed } = returned ? returnToSender(hit.target, { effects, sound, point: hit.point, normal: hit.normal, part: hit.part, direction, impact: d.impact, distance: hit.distance }) : hit.target.takeHit({
           damage,
           part: hit.part,
           point: hit.point,
@@ -282,7 +284,7 @@ export function createPlayerGun({
         // On a kill, ONLY the killing pellet decides the headshot bonus.
         targets.set(hit.target, {
           hit: killed || headshot || !previous ? hit : previous.hit,
-          killed,
+          killed, returned,
           headshot: killed ? headshot : headshot || (previous?.headshot ?? false),
         });
       });
@@ -303,11 +305,7 @@ export function createPlayerGun({
       const { hit, killed, headshot } = result;
       anyKilled ||= killed;
       anyHeadshot ||= headshot;
-      if (killed && d.instantKill && isReturnable(target)) {
-        // Returned to sender: boxed up in cardboard and tape instead of the usual splatter.
-        effects.confetti(hit.point, hit.normal, d.instantKill.box);
-        if (sound) sound.play('returnStamp');
-      } else {
+      if (!result.returned) {
         effects.splat(hit.point, hit.normal, target.splatColors,
           headshot ? feel.effects.headshotSplatCount : feel.effects.splatCount, {
             flesh: true,

@@ -225,6 +225,7 @@ src/
                         tierOf / nextTier / attachmentsOf read them back, attachmentFits(base, id) (Extended Nozzle doesn't
                         fit the Nail Gun). EFFECTS turns each effect into this gun's stat changes (shell-by-shell reload
                         phases, pellet cones, hip spread that leaves aimed accuracy alone). Apply: gun.setMods(id, ...)
+    returnToSender.js  Shared accepted-return lethal hit and existing cardboard/stamp feedback for the beam and hand; normal kill events carry weaponId returnToSender.
     gunStats.js         THE gun maths: damageFalloff(distance, falloff), hitDamage(def, hit, index, stats, chargeScale, target) (damage x head x falloff x
                         pierce x player multiplier; the only place it's computed; with a `target`, a gun with `instantKill` (Return to Sender) deals INSTANT_KILL_DAMAGE to any returnable zombie and `bigFraction` of a boss's or Mascot's max health instead, x its tier damage: isReturnable(target)), resolveGun(base, mods) (upgrades as data:
                         { id, modifiers: [{ stat: 'falloff.start', op: 'set'|'add'|'mul', value }] }; set, then adds, then muls;
@@ -312,7 +313,7 @@ src/
                         follow a curved surface) + buildMascotBadge; shared geometry and canvas prints made once (sharedOnce)
     mascotVariants.js   pickMascotVariant(round, zone, random): weight 1 per unlocked costume, x homeWeight in a home zone,
                         no dice with one costume; mascotDebutIn(round). Both take an optional costume table (tests)
-    bosses/lastCustomer.js The Last Customer's two health thresholds queue quota-funded Mall Walker backup through the four safe parking markers.
+    bosses/lastCustomer.js The Last Customer's two health thresholds queue quota-funded Mall Walker backup through the four safe parking markers. At the damage floor she freezes in Speechless, owns a temporary priority hand-return hold, and recovers if its timer expires; disposal removes the prompt.
                         The shared zombie.js type.charge state machine supplies her telegraph, straight charge, solid crashes and vulnerability.
                         Requests retry on an occupied marker or full alive cap; disposal clears them. No return mechanic in phase 8.
     bosses/janitor.js   Places, ages and disposes Wet Floor patches on clear floor. Slows the player on contact and
@@ -498,6 +499,7 @@ src/
       retailUnease.js   Called by the existing horror feature: unseen mannequin turn, shared empty-concourse TV feed,
                         distant upstairs silhouette. Quiet intervals, comfort gates, reset and static-batching-safe hooks.
       workshop.js       The workshop feature: builds the ritual, its effects and the Limited Edition drops, runs Party Trap charges.
+      returnsDesk.js    Returns Desk: buys Return to Sender after the first three duties, using the normal two-slot gun.give path; sells its half-rate ammo to anyone holding it. Both prices use g.pricing closing. No independent saved state.
       nightSafe.js      Customer Service deposit prompt. Gates payments on Kettle’s Safe Key and completion, and charges the live closing price. Without the key: "Requires <key>" in Directed, "Needs <key>" in Classic.
       escapeVan.js      Customer Parking van and ticket-machine holds, both in escapeVan. The machine requires four keys and the first three duties,
                         pays through g.pricing closing/validation, then shows a local confirmation and refuses another payment. The van needs validation and the Last Customer defeated too.

@@ -1,4 +1,4 @@
-// RETURN TO SENDER (config/weapons.js returnToSender: the claw-only wonder weapon) and its two rules: the INSTANT KILL (weapons/gunStats.js hitDamage:
+// RETURN TO SENDER (config/weapons.js returnToSender: the desk/claw wonder weapon) and its two rules: the INSTANT KILL (weapons/gunStats.js hitDamage:
 // any returnable zombie dies in one hit at any round; a boss or a Mascot, which can't be returned, takes a big fixed share of its health instead, never a
 // one-shot) and the HALF-RATE REFILL (weapon.js refillFraction: a refill fills the magazine and half the reserve). First the maths alone, then the real game.
 import test from 'node:test';
@@ -88,7 +88,7 @@ test('the real game: a boss takes the big fixed hit and lives (a Mascot too: its
   assert.ok(Math.abs(5000 - b.health - 2 * 5000 * rts.instantKill.bigFraction) < 150);
 });
 
-test('the half-rate refill: a refill (RESTOCK-O-MATIC, an ammo buy, a Refurbished grab) fills the magazine and only half the reserve; "full" means that', () => {
+test('the half-rate refill: a refill (Returns Desk, Stockroom Delivery, a Refurbished grab) fills the magazine and only half the reserve; "full" means that', () => {
   const weapon = new Weapon(rts, { reloadSpeed: 1, reserveMultiplier: 1 });
   assert.deepEqual([weapon.magazine, weapon.reserve], [rts.magazineSize, rts.startingReserve], 'it starts with all of it');
   assert.equal(weapon.isFull, true);
@@ -97,7 +97,7 @@ test('the half-rate refill: a refill (RESTOCK-O-MATIC, an ammo buy, a Refurbishe
   assert.equal(weapon.isFull, false);
   weapon.refill();
   assert.deepEqual([weapon.magazine, weapon.reserve], [rts.magazineSize, Math.round(rts.startingReserve * rts.refillFraction)]);
-  assert.equal(weapon.isFull, true, 'and an ammo machine has nothing more to give it');
+  assert.equal(weapon.isFull, true, 'and a Returns Desk refill has nothing more to give it');
   weapon.reserve = rts.startingReserve; // more than a refill would give: a refill never takes ammo away
   weapon.refill();
   assert.equal(weapon.reserve, rts.startingReserve);
@@ -109,7 +109,7 @@ test('the half-rate refill: a refill (RESTOCK-O-MATIC, an ammo buy, a Refurbishe
   assert.equal(weapon.reserve, Math.round(rts.startingReserve * rts.refillFraction), 'a Stockroom Delivery too');
 });
 
-test('claw-only: no wall price, and the wall-buy feature refuses it', () => {
+test('no wall price: the wall-buy feature refuses it (claw or Returns Desk only)', () => {
   assert.equal(rts.clawOnly, true);
   assert.equal(economy.wallBuys.returnToSender, undefined);
   const added = [];
@@ -138,4 +138,42 @@ test('Build-A-Blaster on the wonder weapon: a stuffed Return to Sender still ret
   t.press('Mouse0');
   assert.equal(z.isAlive, false, 'still returned in one beam');
   assert.ok(fired >= 1, 'the Last Round heart fired its stuffing');
+});
+
+test('paid ammo machines redirect Return to Sender without taking points or tickets, even when full', (t) => {
+  const run = headlessGame();
+  const { g } = run;
+  t.after(() => { g.resetRun(); g.map.dispose(); });
+  g.rounds.update = () => {};
+  g.map.areaUnlocks.openAll();
+  g.gun.give(rts);
+  run.tick(120);
+  g.wallet.earn(10000); g.tickets.add(1000);
+  const points = g.wallet.points, tickets = g.tickets.count;
+  const caches = g.map.features.filter(({ kind }) => kind === 'ammoCache');
+  for (const full of [false, true]) {
+    g.gun.weapon.magazine = full ? rts.magazineSize : 0;
+    g.gun.weapon.reserve = full ? rts.startingReserve : 0;
+    for (const cache of caches) {
+      const n = cache.normal;
+      const floorY = cache.zone === 'cinema' ? g.map.navigation.floors[1] : 0;
+      g.player.teleport({ position: new THREE.Vector3(cache.position.x + n.x * 1.2, floorY, cache.position.z + n.z * 1.2), yaw: Math.atan2(n.x, n.z) });
+      run.tick();
+      assert.equal(g.interactions.prompt?.kind, 'ammoCache');
+      assert.match(g.interactions.prompt.blocked, /Returns Desk/);
+      run.press('KeyF', 30);
+      assert.equal(g.wallet.points, points);
+      assert.equal(g.gun.weapon.magazine, full ? rts.magazineSize : 0);
+    }
+    const prize = g.map.features.find(({ kind }) => kind === 'prizeCounter').slots.find(({ id }) => id === 'ammo');
+    run.standAt(prize.position.x, prize.position.z - 1.2, 180);
+    assert.equal(g.interactions.prompt?.id, 'ammo');
+    assert.match(g.interactions.prompt.blocked, /Returns Desk/);
+    run.press('KeyF', 30);
+    assert.equal(g.tickets.count, tickets);
+    assert.equal(g.wallet.points, points);
+  }
+  g.gun.weapon.magazine = g.gun.weapon.reserve = 0;
+  g.gun.weapon.restock(0.5);
+  assert.deepEqual([g.gun.weapon.magazine, g.gun.weapon.reserve], [Math.ceil(rts.magazineSize * 0.5), Math.round(rts.startingReserve * rts.refillFraction)]);
 });

@@ -11,6 +11,9 @@ import { economy, zombieCountForRound, zombieHealthFor } from '../src/config/eco
 import { feel } from '../src/config/feel.js';
 import { hazards } from '../src/config/hazards.js';
 import { dealHazardDamage } from '../src/game/features/hazards.js';
+import { hitDamage, isReturnable, resolveGun, INSTANT_KILL_DAMAGE } from '../src/weapons/gunStats.js';
+import { returnToSender } from '../src/weapons/returnToSender.js';
+import { withTier } from '../src/weapons/upgrades.js';
 import { weapons } from '../src/config/weapons.js';
 import { workshopRitual } from '../src/config/workshop.js';
 import { powerUps as pickupConfig } from '../src/config/powerUps.js';
@@ -1691,7 +1694,7 @@ for (const round of [15, 17, 19]) test(`validation in round ${round} books exact
   assert.ok(hud.calls.some(([name, notice]) => name === 'showAnnouncement' && notice.text === boss.type.introBanner.text));
 });
 
-test('the van refuses while the Last Customer is pending or alive; her ordinary death unlocks a win, and overtime encores exclude her', (t) => {
+test('the van refuses while the Last Customer is pending or alive; her accepted return unlocks a win, and overtime encores exclude her', (t) => {
   const game = validationRun(t, 19);
   const { g, pay, standAt, press, van } = game;
   const staff = g.bosses.summon('guard');
@@ -1715,7 +1718,10 @@ test('the van refuses while the Last Customer is pending or alive; her ordinary 
   assert.equal(g.closing.lastCustomerDefeated, false);
   const points = g.wallet.points;
   boss.takeHit({ damage: boss.health, part: 'body', source: 'hazard' });
-  assert.equal(boss.isAlive, false, 'phase 8 has an ordinary lethal hit, no Speechless state');
+  game.tick();
+  assert.equal(boss.state, 'speechless');
+  returnToSender(boss, { effects: g.effects, sound: { play() {} } });
+  assert.equal(boss.isAlive, false, 'the accepted return finishes the encounter');
   assert.equal(g.wallet.points - points, economy.killValues.lastCustomer);
   assert.equal(g.closing.lastCustomerDefeated, true);
   assert.equal(g.closing.readyToLeave, true);
@@ -1806,4 +1812,240 @@ test('the CLOSING TIME title uses the existing round banner and returns to the n
   assert.equal(document.querySelector('.round-banner').textContent, 'CLOSING TIME');
   hud.showRoundBanner(17);
   assert.equal(document.querySelector('.round-banner').textContent, 'Round 17');
+});
+
+// Phase 9: the return and the Returns Desk.
+function returnEncounter(t, distance = 6) {
+  const game = validationRun(t, 19);
+  const { g, tick } = game;
+  game.pay();
+  endWave(game);
+  const boss = startBookedBoss(game);
+  g.rounds.update = () => {};
+  for (const zombie of g.zombies.zombies) if (zombie !== boss && zombie.isAlive) zombie.takeHit({ damage: zombie.health, part: 'body', source: 'hazard' });
+  g.player.teleport({ position: new Vector3(-17, 0, 0.5), yaw: -Math.PI / 2 });
+  boss.position.set(-17 + distance, 0, 0.5);
+  boss.prevPosition.copy(boss.position);
+  boss.setState('chasing');
+  boss.speed = 0;
+  boss.attackCooldown = boss.chargeCooldown = 999;
+  tick(2);
+  function empty() {
+    boss.takeHit({ damage: Infinity, part: 'body', source: 'hazard' });
+    tick(2);
+    assert.equal(boss.state, 'speechless');
+    assert.equal(boss.health, boss.type.damageFloor);
+  }
+  return { ...game, boss, empty };
+}
+
+test('every damage source stops the Last Customer at one health; Speechless is announced once and ordinary damage cannot finish her', (t) => {
+  const { g, boss, empty, tick } = returnEncounter(t);
+  const phases = [], kills = [];
+  g.events.on('bossPhase', ({ phase }) => phases.push(phase));
+  g.events.on('kill', ({ zombie }) => { if (zombie === boss) kills.push(zombie); });
+  empty();
+  const at = boss.position.clone();
+  for (const source of ['gun', 'melee', 'hazard', 'burn', 'build']) {
+    assert.equal(boss.takeHit({ damage: Infinity, part: 'head', source }).killed, false);
+    assert.equal(boss.health, 1);
+  }
+  tick(30);
+  assert.ok(boss.isAlive);
+  assert.deepEqual(boss.position, at, 'she cannot move or attack while Speechless');
+  assert.equal(phases.filter(p => p === 'speechless').length, 1);
+  assert.deepEqual(kills, []);
+  assert.equal(isReturnable(boss), true);
+  assert.equal(g.closing.readyToLeave, false);
+});
+
+test('missing the six-second return window restores a quarter of max health and removes the hand prompt; reset clears the encounter', (t) => {
+  const { g, boss, empty, tick, standAt } = returnEncounter(t);
+  standAt(boss.position.x - 1, boss.position.z, -90);
+  assert.notEqual(g.interactions.prompt?.id, 'handReturn');
+  empty();
+  assert.equal(g.interactions.prompt?.id, 'handReturn');
+  tick(Math.floor(boss.type.speechlessSeconds / dt) - 3);
+  assert.equal(boss.state, 'speechless');
+  tick(5);
+  assert.equal(boss.state, 'chasing');
+  assert.equal(boss.health, boss.maxHealth * 0.25);
+  assert.equal(isReturnable(boss), false);
+  assert.notEqual(g.interactions.prompt?.id, 'handReturn');
+  empty();
+  g.resetRun();
+  assert.equal(g.bosses.active, null);
+  assert.equal(g.closing.lastCustomerDefeated, false);
+  assert.notEqual(g.interactions.prompt?.id, 'handReturn');
+});
+
+test('Return to Sender uses the Last Customer three-percent override until Speechless, then one beam returns her', () => {
+  const type = bossTypes.lastCustomer;
+  const target = { type, state: 'chasing', maxHealth: 20000 };
+  const rts = weapons.returnToSender;
+  const hit = { part: 'head', distance: 100 };
+  const stats = { damageMultiplier: 1 };
+  assert.equal(hitDamage(rts, hit, 0, stats, 1, target), target.maxHealth * 0.03);
+  const platinum = resolveGun(rts, withTier(rts, [], 'platinum'));
+  assert.equal(hitDamage(platinum, hit, 0, stats, 1, target), target.maxHealth * 0.03 * platinum.damage / rts.damage);
+  assert.equal(hitDamage(rts, hit, 0, stats, 1, { type: bossTypes.guard, maxHealth: target.maxHealth }), target.maxHealth * rts.instantKill.bigFraction);
+  target.state = 'speechless';
+  assert.equal(hitDamage(rts, hit, 0, stats, 1, target), INSTANT_KILL_DAMAGE);
+  assert.equal(isReturnable(target), true);
+});
+
+test('a distant real beam returns the Speechless boss once through kill, carries skin credit and unlocks the van', (t) => {
+  const { g, boss, empty, tick, press, standAt, van, sounds } = returnEncounter(t, 30);
+  g.gun.give(weapons.returnToSender);
+  tick(60);
+  g.player.pitch = Math.atan2(1.1 - g.player.eyeHeight, 30);
+  empty();
+  assert.notEqual(g.interactions.prompt?.id, 'handReturn', 'out of hand range');
+  const kills = [];
+  g.events.on('kill', (event) => { if (event.zombie === boss) kills.push(event); });
+  const before = sounds.filter(s => s === 'returnStamp').length;
+  press('Mouse0');
+  assert.equal(boss.isAlive, false);
+  assert.equal(kills.length, 1);
+  assert.equal(kills[0].weaponId, 'returnToSender');
+  assert.equal(kills[0].source, 'gun');
+  assert.ok(kills[0].distance > 20, 'beam distance reaches the existing skin role challenges');
+  assert.equal(sounds.filter(s => s === 'returnStamp').length - before, 1);
+  assert.equal(g.closing.readyToLeave, true);
+  standAt(van.position.x + 1, van.position.z, 90);
+  press('KeyF', holdTicks);
+  assert.equal(g.state.won, true);
+});
+
+test('the hand stamp takes a full hold, beats the nearer van prompt and a held reload, and gets Return to Sender kill credit', (t) => {
+  const { g, boss, empty, tick, input, press, standAt, van, sounds } = returnEncounter(t);
+  g.gun.give(weapons.rivetRifle);
+  tick(60);
+  g.gun.weapon.magazine = 1;
+  let reloads = 0;
+  g.events.on('reload', () => reloads++);
+  input.held.add('KeyR'); input.pressed.add('KeyR'); tick();
+  assert.equal(reloads, 1);
+  empty();
+  boss.position.set(van.position.x + 1.4, 0, van.position.z);
+  boss.prevPosition.copy(boss.position);
+  standAt(van.position.x + 0.6, van.position.z, 90); // van is nearer, both are within the facing-free radius
+  assert.equal(g.interactions.prompt?.id, 'handReturn');
+  const kills = [], purchases = [];
+  g.events.on('kill', e => { if (e.zombie === boss) kills.push(e); });
+  g.events.on('purchase', e => purchases.push(e));
+  const before = sounds.filter(s => s === 'returnStamp').length;
+  input.held.add('PadX'); input.pressed.add('PadX');
+  tick(Math.floor(boss.type.handReturn.holdSeconds / dt) - 2);
+  assert.ok(boss.isAlive, 'the normal quarter-second buy hold is insufficient');
+  assert.ok(g.interactions.prompt.progress > 0.9);
+  tick(4);
+  input.held.delete('PadX'); input.held.delete('KeyR'); tick();
+  assert.equal(boss.isAlive, false);
+  assert.equal(kills.length, 1);
+  assert.equal(kills[0].weaponId, 'returnToSender');
+  assert.equal(kills[0].melee, false);
+  assert.equal(reloads, 1, 'shared interact/reload did not become another reload tap');
+  assert.deepEqual(purchases, [], 'the hand stamp is a free action');
+  assert.equal(sounds.filter(s => s === 'returnStamp').length - before, 1);
+  assert.equal(g.interactions.prompt?.id, van.name);
+  press('KeyF', holdTicks);
+  assert.equal(g.state.won, true);
+});
+
+function atReturnsDesk(t) {
+  const game = fixture(t);
+  const { g, standAt, tick } = game;
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  const desk = g.map.features.find(({ kind }) => kind === 'returnsDesk');
+  const approach = () => standAt(desk.position.x + desk.normal.x * 1.2, desk.position.z + desk.normal.z * 1.2, Math.atan2(desk.normal.x, desk.normal.z) * 180 / Math.PI);
+  approach();
+  assert.equal(g.interactions.prompt, null);
+  g.map.areaUnlocks.unlock('hallway'); tick(120); approach();
+  assert.equal(g.interactions.prompt?.id, 'returnsDesk');
+  return { ...game, desk, approach };
+}
+
+test('the Returns Desk explains each unfinished duty, costs ten thousand and adds the gun without needing Skylar or validation', (t) => {
+  const { g, press, tick } = atReturnsDesk(t);
+  const paid = [];
+  g.events.on('purchase', event => { if (event.id === 'returnsDesk') paid.push(event); });
+  const price = g.pricing.priceOf('closing', 'returnsDesk');
+  assert.equal(price, 10000);
+  g.wallet.earn(price);
+  grantKeys(g, dutyIds);
+  for (const id of dutyIds) {
+    assert.ok(g.interactions.prompt.blocked.includes(closingTime.lines[id].duty));
+    const points = g.wallet.points;
+    press('KeyF', holdTicks);
+    assert.equal(g.wallet.points, points);
+    finishDuties(g, [id]);
+  }
+  assert.equal(g.closing.hasKey('influencer'), false);
+  assert.equal(g.closing.validated, false);
+  assert.equal(g.interactions.prompt.blocked, null);
+  const before = g.wallet.points;
+  press('KeyF', holdTicks);
+  tick(60);
+  assert.equal(before - g.wallet.points, price);
+  assert.deepEqual(g.gun.slots, ['stapleGun', 'returnToSender']);
+  assert.equal(g.gun.def.id, 'returnToSender');
+  assert.deepEqual(paid, [{ kind: 'closing', id: 'returnsDesk', label: weapons.returnToSender.name, cost: price }]);
+});
+
+test('the Returns Desk honours a Discount Code and replaces the held gun in a full two-slot loadout', (t) => {
+  const { g, tick, press } = atReturnsDesk(t);
+  g.gun.give(weapons.rivetRifle); tick(60);
+  grantKeys(g, dutyIds); finishDuties(g);
+  g.pricing.setVoucher(bossVouchers.discountCode);
+  const price = g.pricing.priceOf('closing', 'returnsDesk');
+  assert.equal(price, economy.closing.returnsDesk - bossVouchers.discountCode.maxSaving);
+  g.wallet.earn(price);
+  const before = g.wallet.points;
+  press('KeyF', holdTicks); tick(60);
+  assert.equal(before - g.wallet.points, price);
+  assert.deepEqual(g.gun.slots, ['stapleGun', 'returnToSender']);
+  assert.equal(g.gun.def.id, 'returnToSender');
+  assert.equal(g.pricing.voucher, null);
+});
+
+test('the Returns Desk sells half-rate ammo for twenty-five hundred without a checklist gate, refuses full ammo and resets', (t) => {
+  const { g, tick, press, approach } = atReturnsDesk(t);
+  g.gun.give(weapons.returnToSender); tick(60);
+  g.gun.weapon.magazine = g.gun.weapon.reserve = 0;
+  assert.equal(g.closing.done, 0);
+  assert.equal(g.interactions.prompt.id, 'returnsAmmo');
+  assert.equal(g.interactions.prompt.blocked, null);
+  const price = g.pricing.priceOf('closing', 'returnsAmmo');
+  assert.equal(price, 2500);
+  g.wallet.earn(price);
+  const before = g.wallet.points;
+  press('KeyF', holdTicks);
+  assert.equal(before - g.wallet.points, price);
+  const def = weapons.returnToSender;
+  assert.deepEqual([g.gun.weapon.magazine, g.gun.weapon.reserve], [def.magazineSize, Math.round(def.startingReserve * def.refillFraction)]);
+  assert.equal(g.interactions.prompt.blocked, closingTime.returnsDesk.full);
+  const points = g.wallet.points;
+  press('KeyF', holdTicks);
+  assert.equal(g.wallet.points, points);
+  g.resetRun(); g.map.areaUnlocks.unlock('hallway'); tick(120); approach();
+  assert.equal(g.gun.owns('returnToSender'), false);
+  assert.equal(g.interactions.prompt.id, 'returnsDesk');
+  assert.ok(g.interactions.prompt.blocked);
+});
+
+test('the Returns Desk, night safe, three service windows and Prize Counter keep their own prompts', (t) => {
+  const { g, approach, standAt } = atReturnsDesk(t);
+  const desk = g.map.features.find(({ kind }) => kind === 'upgradeDesk');
+  const safe = g.map.features.find(({ kind }) => kind === 'nightSafe');
+  const prize = g.map.features.find(({ kind }) => kind === 'prizeCounter').slots[0];
+  for (const [spot, kind] of [[desk.position, 'tier'], [desk.meleePosition, 'melee'], [desk.secondChancePosition, 'secondChance'], [prize.position, 'prize']]) {
+    standAt(spot.x, spot.z - 1.4, 180);
+    assert.equal(g.interactions.prompt?.kind, kind);
+  }
+  standAt(safe.position.x + 1.2, safe.position.z, 90);
+  assert.equal(g.interactions.prompt?.id, safe.name);
+  approach();
+  assert.equal(g.interactions.prompt.id, 'returnsDesk');
 });

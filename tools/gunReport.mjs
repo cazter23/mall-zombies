@@ -7,7 +7,7 @@
 
 import { weapons } from '../src/config/weapons.js';
 import { workshopRitual, workshopStuffings, workshopHearts } from '../src/config/workshop.js';
-import { resolveGun, gunPower } from '../src/weapons/gunStats.js';
+import { hitDamage, resolveGun, gunPower } from '../src/weapons/gunStats.js';
 import { economy, zombieHealthForRound, zombieHealthFor, zombieCountForRound } from '../src/config/economy.js';
 import { withTier } from '../src/weapons/upgrades.js';
 import { bossTypes, bossVouchers } from '../src/config/bosses.js';
@@ -38,8 +38,12 @@ const platinumRivet = resolveGun(weapons.rivetRifle, withTier(weapons.rivetRifle
 console.log(`\nLAST CUSTOMER (Platinum Rivet Rifle, ADS body shots at ${finale.balance.range} m; sustained fire with reloads, no crash bonus, headshots, misses or wave pressure)`);
 console.table(finale.balance.rounds.map(round => {
   const hp = zombieHealthFor(finale.id, round);
-  return { round, hp, 'Platinum Rivet seconds': r1(hp / sustainedDps(platinumRivet, finale.balance.range, { ads: true })) };
+  return { round, hp, 'Platinum Rivet seconds to Speechless': r1((hp - finale.damageFloor) / sustainedDps(platinumRivet, finale.balance.range, { ads: true })),
+    'base RTS beam hit': r1(hitDamage(weapons.returnToSender, { part: 'body', distance: finale.balance.range }, 0, { damageMultiplier: 1 }, 1, { type: finale, maxHealth: hp })),
+    'base RTS beams to Speechless': Math.ceil((hp - finale.damageFloor) / (hp * finale.returnToSenderFraction)) };
 }));
+
+console.log(`An emptied Last Customer bar requires a return: a beam during Speechless, or a ${finale.handReturn.holdSeconds} s hand stamp within ${finale.speechlessSeconds} s. A missed window restores ${finale.recoverHealthFraction * 100}% health.`);
 
 console.log('\nGUN OVERVIEW (dps measured at 5 m; ADS except pellet guns)');
 console.table(guns.map((d) => ({

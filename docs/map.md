@@ -184,6 +184,7 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   middle (x 7), SHARPENING at x 8.25 (box cutter tiers) and SECOND CHANCE at x 5.75 (the start-doorway end: one self-revive per run, 2,000,
   game/secondChance.js). The Second Chance ticket only shows on its own side of the middle and stays up once bought ("Already held" / "Used this run").
 - The Night Safe mounts 2 cm proud of Customer Service’s east wall at x 8.8, centered at z 5.12 and facing east. Approach from the elevator side.
+- The Returns Desk mounts on the hallway north wall east of Customer Service at x 11.8, facing south. Its prompt is (11.8, 1.42, 5.58); approach from z 4.38. It is clear of the safe, three service windows, Gold Card display and Prize Counter. It sells Return to Sender after three duties and its ammo to anyone holding it.
 - Customer Service booth (gun tiers): a small walled office on the hallway's north wall at x 5.2..8.8 (between the start doorway
   and the elevator), 1.6m deep + a 0.3m counter ledge; you buy at its service window (spot z ~4.1). Hold F/X to buy the next Extended
   Warranty tier for the gun in your hand. Its spot is ONE entry, LAYOUT.serviceDesk in mall.js (along/center/wallAt/facing/zone):

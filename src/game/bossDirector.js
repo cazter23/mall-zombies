@@ -31,7 +31,7 @@ export function chooseBossSchedule(random = Math.random) {
 
 // `surfaces`: game/surfaceSlows.js. The active boss's slow (behavior.surfaceSpeed: the Janitor's wet floor, the Guard's
 // taser) is reported there as 'boss', never written to the stat itself: Scoops' melt reports too and the lowest wins.
-export function createBossDirector({ events, rounds, zombies, scene, colliders, player, surfaces, powerUps, state, map }) {
+export function createBossDirector({ events, rounds, zombies, scene, colliders, player, surfaces, powerUps, state, map, interactions, effects, sound }) {
   let schedule = null;
   let active = null;
   let behavior = null;
@@ -60,7 +60,7 @@ export function createBossDirector({ events, rounds, zombies, scene, colliders, 
     }
     spawned = true;
     behavior = behaviors[id]({
-      zombie, scene, colliders, player, powerUps, zombies, rounds, map, events,
+      zombie, scene, colliders, player, powerUps, zombies, rounds, map, events, interactions, effects, sound, state,
       onPhase: (phase) => events.emit('bossPhase', { zombie, phase, round: rounds.round }),
     });
     events.emit('bossSpawn', { zombie, round: rounds.round });

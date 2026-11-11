@@ -398,7 +398,8 @@ export function createHud({ locker = null } = {}) {
         }
       }
       if (zombie) {
-        bossHealth.value = Math.max(0, zombie.health);
+        bossHealth.value = Math.max(0, zombie.health - (zombie.type.damageFloor ?? 0));
+        if (zombie.type.speechlessNotice) bossNotice.textContent = zombie.state === 'speechless' ? zombie.type.speechlessNotice : zombie.type.barNotice;
         if (zombie.followers !== undefined) bossNotice.textContent = `${zombie.type.barNotice}: ${Math.floor(zombie.followers)}%`;
       }
     },

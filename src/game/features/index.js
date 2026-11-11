@@ -25,6 +25,7 @@ import { buildPrizeCounter } from './prizeCounter.js';
 import { buildKiosk } from './kiosk.js';
 import { buildNightSafe } from './nightSafe.js';
 import { buildEscapeVan } from './escapeVan.js';
+import { buildReturnsDesk } from './returnsDesk.js';
 import { buildFountainHazard } from './fountainHazard.js';
 
 const builders = {
@@ -42,6 +43,7 @@ const builders = {
   fountainHazard: buildFountainHazard, // Grand Atrium fountain breaker switch (docs/hazards-plan.md)
   nightSafe: buildNightSafe,
   escapeVan: buildEscapeVan,
+  returnsDesk: buildReturnsDesk,
 };
 
 export const FEATURE_KINDS = Object.keys(builders);

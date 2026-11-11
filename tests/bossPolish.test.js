@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { headlessGame,dt } from './helpers/headlessGame.js';
 import { bossTypes,bossVouchers,bossSpectacle } from '../src/config/bosses.js';
+import { returnToSender } from '../src/weapons/returnToSender.js';
+import { weapons } from '../src/config/weapons.js';
 import { audio } from '../src/config/audio.js';
 import { seededRandom } from '../src/world/textures.js';
-import { weapons } from '../src/config/weapons.js';
 
 function fixture(t) {
   const game=headlessGame();const {g}=game;
@@ -47,8 +48,11 @@ test('distinct boss stings, costume props and non-gore deaths preserve one kill 
     const z=g.bosses.summon(id);assert.ok(z);
     const before=g.effects.counts.particles;
     let kills=0;const off=g.events.on('kill',({zombie})=>{if(zombie===z)kills++;});
-    z.takeHit({damage:z.health,part:'body',source:'hazard'});off();
-    assert.equal(kills,1);assert.ok(g.effects.counts.particles>=Math.min(before+bossSpectacle.death.count,100));
+    z.takeHit({damage:z.health,part:'body',source:'hazard'});
+    if (type.returnRequired) { tick(); returnToSender(z,{effects:g.effects,sound:{play(){}}}); }
+    off();
+    const burst=type.returnRequired?weapons.returnToSender.instantKill.box.count:bossSpectacle.death.count;
+    assert.equal(kills,1);assert.ok(g.effects.counts.particles>=Math.min(before+burst,100));
     assert.ok(hud.calls.some(([name,line])=>name==='showAnnouncement' && line.text===type.defeatBanner.text));
     g.bosses.reset();g.zombies.clear();tick();
   }
