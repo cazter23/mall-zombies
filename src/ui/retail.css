@@ -302,6 +302,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .pocket[data-item='sparklerCake'] .pocket-icon { width: 20px; height: 18px; top: 8px; background: #ff6fa8;
   clip-path: polygon(0 45%, 100% 45%, 100% 100%, 0 100%, 0 45%, 18% 45%, 18% 0, 26% 0, 26% 45%, 46% 45%, 46% 0, 54% 0, 54% 45%, 74% 45%, 74% 0, 82% 0, 82% 45%); } /* a cake with three sparklers */
 .pocket[data-item='glitterBomb'] .pocket-icon { background: #e08bff; }
+.pocket[data-item='sentry'] .pocket-icon { width: 16px; height: 22px; background: #d8d2c4;
+  clip-path: polygon(0 0, 100% 0, 100% 30%, 60% 30%, 60% 85%, 100% 85%, 100% 100%, 0 100%, 0 85%, 40% 85%, 40% 30%, 0 30%); } /* a stand with a gun on top */
 .armour-layers { display: flex; gap: 3px; }
 .armour-layers:empty { display: none; }
 .armour-layer { width: 18px; height: 4px; border-radius: 2px; background: #f7f5ef; }

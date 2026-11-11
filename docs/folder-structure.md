@@ -107,15 +107,17 @@ src/
                         { type: 'fall' } or { type: 'hazard', id } (a hazard that hurts the player needs a hazards entry).
     attachmentVisuals.js Per-weapon attachment sizing, near-side rail placement, short-barrel spans and held reload copies.
     retailUnease.js     Rare atrium display changes and localized back-room sound timings/ranges; no gameplay tuning.
-    kiosk.js            Kiosk Kevin (docs/kiosk-kevin-plan.md; phases 1-5 built): his five sites (x, z, faces, floorY, the PA's `where`; the first is
+    kiosk.js            Kiosk Kevin (docs/kiosk-kevin-plan.md; phases 1-6 built): his five sites (x, z, faces, floorY, the PA's `where`; the first is
                         where every run starts), the cart's size, spawnClearance, the PA lines; the cart's three `slots` (Lethal: Soda Bomb /
-                        Sparkler Cake, Bubble Wrap, Tactical: Air Horn / Glitter Bomb; a two-product slot alternates round by round); the equipment
+                        Sparkler Cake / Sentry, Bubble Wrap, Tactical: Air Horn / Glitter Bomb; each slot rotates round by round); the equipment
                         power curve (power: baseHealth 800, exponent 0.37), the throw (blockSeconds 0.4, lob, start offset), the two pockets, and the
                         products: the Soda Bomb (Lethal, 3 charges, 1.8 s fuse, 4 m blast, 850 x power at the centre, 0.3 of that at the edge, a boss's
                         share 6% of its max health), the Sparkler Cake (Lethal, 2 charges; lands and sprays 4 s, a pulse every 0.5 s lights zombies within
                         3 m: a 450 x power burn over 3 s, bosses at half), the Stadium Air Horn (Tactical, 2), the Glitter Bomb (Tactical, 2; opens on
-                        touch, confuses up to 8 zombies within 4 m for 6 s, their swings 75 x power), each with its projectile, sounds and look
-                        (look.model: bottle / cake / card). productOf(id), stockFor(round) (the three on sale), pickFor(round) (Kevin's Pick).
+                        touch, confuses up to 8 zombies within 4 m for 6 s, their swings 75 x power), the SPIN-O-MATIC Sentry (Lethal, 1; noPick;
+                        turret: 30 s, a 58 x power body shot every 0.2 s at the nearest zombie in sight within 15 m, muzzle 0.95 m up, weaponId
+                        'sentry'), each with its projectile, sounds and look (look.model: bottle / cake / card / sentry). productOf(id),
+                        stockFor(round) (the three on sale), pickFor(round) (Kevin's Pick: the product on sale that has waited longest, never noPick).
     clawMachine.js      GRAB-A-GUN, the claw machine: the prize weights and capsule colours, the sweep (2.4 s, 0.2 s quicker a grab, 1.4 s
                         floor), auto-drop, lift and take times, stock (6 a site) and plush odds, the cabinet's size, its six sites and the
                         PA lines. Price: economy.claw (through g.pricing 'claw').
@@ -394,7 +396,9 @@ src/
                         updateThrown(dt) runs the fuses: the Soda Bomb bursts on every zombie in range and in view (takeHit source 'equipment':
                         pays only through 'kill', never 'hit'; skips anything without a type or with noRewards, so never Sunny). A product with
                         `opens` settles when it lands ('touch': anything; 'floor': a floor; or where it stops, or after landSeconds): the Glitter Bomb
-                        opens (equipment/glitterBomb.js, 'equipmentBurst'), the Sparkler Cake stays in `live` and sprays (equipment/sparklerCake.js).
+                        opens (equipment/glitterBomb.js, 'equipmentBurst'), the Sparkler Cake stays in `live` and sprays (equipment/sparklerCake.js),
+                        the Sentry deploys ('sentryDeployed') and shoots (equipment/sentry.js) until its lifetime runs out ('sentryExpired'). One
+                        Sentry out at a time: a second throw is refused and keeps its charge (`sentry` = the one out, or null).
                         targetsNear(point, radius, floorTolerance): zombies on that floor and in sight, nearest first. live (fx/throwableView.js
                         draws it), status (HUD), detonate(id, position) (tests: a burst, an opening or a spray right there), clearThrown() (death),
                         reset() (the 'equipment' step, right after 'balls'). Thrown things are never saved: only the pockets are.
@@ -406,6 +410,9 @@ src/
                         zombie.applyConfusion (Build-A-Blaster's Glitter path, source 'equipment'); bosses refuse it. Deals no damage itself.
       sparklerCake.js   pulseSparklerCake({ product, point, targets, round, effects }): one pulse of sparks; each target burns through
                         zombie.applyBurn (the Fryer Oil burn, source 'equipment'), a boss at half strength.
+      sentry.js         sentryTarget({ muzzle, turret, shootables, colliders }): the nearest zombie (alive, typed, not noRewards, not rising)
+                        within range with a clear line from the muzzle to its body; fireSentry(...): the hitscan (castShot) from the muzzle
+                        against zombies only, a body hit for turret.damage x power, source 'equipment', weaponId 'sentry'; a tracer and splat.
     pricing.js          createPricing(): priceOf('door'|'weapon'|'ammo'|'ammoCache'|'tier'|'attachment'|'closing', id) = economy.js base price with any
                         discount applied (setDiscount(category, 0..1), rounded to the nearest economy.discountRoundTo (10); discountOf; reset() on a new
                         run). Unknown category/id throws. PRICE_CATEGORIES
@@ -532,7 +539,7 @@ src/
                         the chute flap, an attract screen, sounds that fade with distance (jingle, a tick into each lane, motor, grab,
                         fanfare, Sunny's slide whistle) and a hum: an emitter it adds to map.ambience that follows the live machine.
       kiosk.js          Kiosk Kevin's cart: three priced buy spots on the LIVE cart (getter positions; each slot's product read live from
-                        stockFor(round): the Lethal and Tactical slots alternate), round gating, Kevin's Pick, hiding and PA (the round's stock).
+                        stockFor(round): each slot rotates), round gating, Kevin's Pick (pickFor), hiding and PA (the round's stock).
                         Five sites (config/kiosk.js sites), one live; every run starts at the first. At each 'roundStart' after the opening
                         round he moves to a random other site whose zone is open (none: he stays), never mid-purchase (`pending` waits for
                         the hold to end). Announces 'kioskStock' (one PA line a round, naming the place when he is new there) and
@@ -753,7 +760,8 @@ src/
     ballView.js         Browser side only: draws `balls.list` (the Tennis Ball Launcher's balls) as a pool of tumbling tennis balls between last tick's and this tick's position (alpha).
     throwableView.js    Browser side only: draws `equipment.live` (Kiosk Kevin's thrown things), one pool per look.model: the cola bottle (tumbling in the
                         air, lying and rattling on the floor, swelling as the fuse runs out), the Sparkler Cake (spinning, then upright and jittering
-                        while it sprays) and the Glitter Bomb card (flipping); a mesh is hidden when its item is gone; dispose() frees the pools.
+                        while it sprays), the Glitter Bomb card (flipping) and the Sentry (tumbling, then standing with its head turned to item.yaw);
+                        a mesh is hidden when its item is gone; dispose() frees the pools.
     closingKeyView.js   Reusable spinning key and signature props for the four closing pickups.
     powerUpView.js      Reusable delivery carton, blue beacon and security badge (no lights/colliders); bob/spin/blink,
                         floor-projected Blue Light ring clipped at walls/voids, hide on reset/death, owned-resource disposal

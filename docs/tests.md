@@ -249,7 +249,7 @@ with the carried gun in the real game), `meleeUpgrades.test.js` the box cutter t
 prop + collider + buy spot, solid and too tall to climb, tiers one at a time at pricing's price, gun in hand only, no refill,
 nothing past Platinum (including the exact purchase frame and switching back to a Platinum gun), Flash Sale applies,
 no prompt while closed / switching / facing away, Play again resets),
-`saveGame.test.js` covers Save & Quit: every Play again step is either saved or named transient (so a new system has to decide); a load gives back the run as it was at the START of the round (points earned and areas bought mid-round are gone), at that round's break, with the slot used up, and what the loaded game would save is exactly what was saved; a replay keeps the same boss schedule, Flash Sale and feature state; a gun away at Build-A-Blaster with the loaner in hand comes back the same; saving needs a started round, a live player and full health; an older version's save is dropped, never loaded; saving is not a death (no runEnd, no career record); Kiosk Kevin reopens where he stood at the round's start (not the first site, and not where a mid-round move took him) and does not move again on the load.
+`saveGame.test.js` covers Save & Quit: every Play again step is either saved or named transient (so a new system has to decide); a load gives back the run as it was at the START of the round (points earned and areas bought mid-round are gone), at that round's break, with the slot used up, and what the loaded game would save is exactly what was saved; a replay keeps the same boss schedule, Flash Sale and feature state; a gun away at Build-A-Blaster with the loaner in hand comes back the same; saving needs a started round, a live player and full health; an older version's save is dropped, never loaded; saving is not a death (no runEnd, no career record); Kiosk Kevin reopens where he stood at the round's start (not the first site, and not where a mid-round move took him) and does not move again on the load; a save made with a SPIN-O-MATIC Sentry out loads without one (the pockets as of the round's start).
 
 `secondChance.test.js` covers the Customer Service purchase and shared pricing, the one-use limit, lethal Cart Pusher charges, falls and fountain shocks, the local shove, paused protection, the PA, the final receipt, and Play again; that a hit or a hard landing during the protection is not announced at all (no 'playerHit' / 'playerFall', no outfit tag, no shove of the player) and is an ordinary hit again afterwards; that the revive itself is not read as the Cardigan soaking a hit; and that 'secondChance' announces held / used / available once each, with Play again mid-protection leaving the new run unprotected.
 `tests/effectWords.test.js` guards the words-only rule: the size bands (fixed, ordered, symmetric, {size}/{Size} fill), the number detector, and a scan of every tier, It also covers GRAB-A-GUN: every claw and Prize Counter string in config and the real prompts they build (pay, drop, take, Refurbished, each prize card) carry no stat number and no multiplier word; the claw sale keeps its percentage.
@@ -387,8 +387,16 @@ the model and debris and disposes their shared geometry and materials.
   strength, sprays for its time then is gone; its kill pays through 'kill' only, nothing after death. The gold Mascot still drops its
   power-up when a cake burn or a confused zombie kills it. Real input: G throws a cake that lands on the floor and sprays, middle click
   a card that opens where it lands. Death and Play again leave no cake behind.
-- `kiosk.test.js`: Bubble Wrap's damage order, cap and reset. All five products bought through real input at the cart (the Lethal
-  and Tactical slots alternate round by round; a Sparkler Cake replaces the Soda Bombs in their pocket), Pick bonuses, hiding, pricing and vouchers. Air Horn input, cover, charge interruption, Mascot weight,
+- `sentry.test.js`: Kiosk Kevin phase 6, the SPIN-O-MATIC Sentry in the real game. Its ticket is words only; it rotates through the
+  Lethal slot and is never Kevin's Pick, while every other product gets its turn. Thrown with G it deploys on the floor where it
+  lands, adds no collider, and shoots only the nearest zombie it can see, every shot a body hit of the round's damage with weaponId
+  'sentry'. It never targets Sunny, a dummy, the dead or a zombie behind the shut start shutter, and its shot passes Sunny to the
+  zombie behind. Its kills pay through 'kill' only (source 'equipment', weaponId 'sentry', no headshot, no 'hit', no +10, no meter);
+  a boss takes full damage. One out at a time (a second throw keeps its charge), it falls apart after its lifetime
+  ('sentryExpired'), stops while paused, is gone on death, and Play again leaves nothing.
+- `kiosk.test.js`: Bubble Wrap's damage order, cap and reset. All six products bought through real input at the cart (each slot
+  rotates round by round, the Pick goes to whatever has waited longest; a Sparkler Cake replaces the Soda Bombs, a Sentry the
+  cakes, in their pocket), Pick bonuses, hiding, pricing and vouchers. Air Horn input, cover, charge interruption, Mascot weight,
   boss immunity and zero payout. Kevin's five sites (phase 4): each has one collider (a vaultable counter or >= 2.1 m),
   a clear stand point zombies reach, no zombie spawn within `spawnClearance`, a real prompt there, and ducking measured
   from that cart; the carts leave every spawn's route to the hub alone (no more than 3 m longer); he opens first in

@@ -11,7 +11,9 @@
 //   them) and do their job when their fuse runs out (the Soda Bomb: a blast, game/equipment/equipmentDamage.js) or when they
 //   land (product.opens: 'touch' = the first thing it touches, 'floor' = the first floor; or wherever it stops, or after
 //   product.landSeconds): the Glitter Bomb opens (game/equipment/glitterBomb.js), the Sparkler Cake sits and sprays for a
-//   while (game/equipment/sparklerCake.js). The Air Horn isn't thrown: it sounds at once.
+//   while (game/equipment/sparklerCake.js), the SPIN-O-MATIC Sentry stands up and shoots for its lifetime
+//   (game/equipment/sentry.js; one out at a time: a second can't be thrown while one is out). The Air Horn isn't thrown: it
+//   sounds at once. Nothing thrown is ever saved (Save & Quit keeps only the pockets, as of the round's start).
 //   Equipment damage goes through zombie.takeHit({ source: 'equipment' }), so a kill pays through 'kill' like any other. It
 //   never emits 'hit' (no +10, no boss onHit reactions) and skips anything that isn't a zombie (no `type`) or pays nothing
 //   (`noRewards`: Sunny, fans).
@@ -24,7 +26,8 @@
 //                                      so the menu keeps D-pad right)
 //   equipment.updateThrown(dt)  fuses and bursts (after throwables.update, so it bursts where the bottle is now)
 //   equipment.detonate(id, position)   a product does its job there now, as if it had landed there (tests): a Soda Bomb bursts,
-//                                      a Glitter Bomb opens, a Sparkler Cake starts spraying
+//                                      a Glitter Bomb opens, a Sparkler Cake starts spraying, a Sentry is deployed
+//   equipment.sentry            the Sentry that is out (a live item, deployed or still in the air), or null
 //   equipment.clearThrown()     every thrown thing gone (death; Play again)
 //   equipment.live              thrown things still out: { id, position, previous, age, flying, settled, spraying, removed }
 //                               (fx/throwableView.js draws them; a Sparkler Cake stays in it while it sprays)
@@ -40,6 +43,7 @@ import { castShot } from '../weapons/hitscan.js';
 import { blastDamage } from './equipment/equipmentDamage.js';
 import { openGlitterBomb } from './equipment/glitterBomb.js';
 import { pulseSparklerCake } from './equipment/sparklerCake.js';
+import { sentryTarget, fireSentry } from './equipment/sentry.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 const UP = new THREE.Vector3(0, 1, 0);
@@ -75,6 +79,7 @@ export function createEquipment({
     const pocket = pockets[pocketId];
     const product = productOf(pocket.id);
     if (!product || pocket.count <= 0 || !canThrow()) return false;
+    if (product.turret && sentryOut()) return false; // (one Sentry at a time: the charge stays in the pocket)
     pocket.count -= 1;
     const id = pocket.id;
     if (pocket.count === 0) pocket.id = null;
@@ -107,6 +112,7 @@ export function createEquipment({
   const newItem = (id, product, position) => ({
     id, product, position: position.clone(), previous: position.clone(), age: 0, flying: true, removed: false, ball: null,
     landed: false, settled: false, spraying: false, sprayLeft: 0, pulseTimer: 0,
+    deployed: false, lifeLeft: 0, fireTimer: 0, muzzle: null, yaw: 0, hunting: true, lastShot: null, // (a Sentry)
   });
 
   // Zombies whose nearest hitbox is within `radius` of `point`, on its floor and in sight of it, nearest first (a snapshot:
@@ -144,6 +150,44 @@ export function createEquipment({
       item.sprayLeft = product.spray.seconds;
       item.pulseTimer = 0; // (the first pulse is right away)
       sound?.play(product.sounds.spray);
+    } else if (product.turret) {
+      const floorY = item.position.y - (product.projectile?.radius ?? 0);
+      item.deployed = true;
+      item.lifeLeft = product.turret.lifeSeconds;
+      item.fireTimer = product.turret.warmupSeconds;
+      item.muzzle = item.position.clone().setY(floorY + product.turret.muzzleHeight);
+      item.position.y = floorY; // (it stands on the floor)
+      item.previous.copy(item.position);
+      item.yaw = 0;
+      sound?.play(product.sounds.deploy);
+      events.emit('sentryDeployed', { position: item.position.clone() });
+    }
+  }
+
+  const sentryOut = () => live.find((item) => item.product.turret && !item.removed) ?? null;
+
+  // One tick of a deployed Sentry: it looks for a target only when it's ready to fire (a few times a second, so the line-of-sight
+  // rays stay cheap), turns to it and shoots; otherwise it spins. Spent after its lifetime.
+  function runTurret(item, dt) {
+    const { turret } = item.product;
+    item.lifeLeft -= dt;
+    item.fireTimer -= dt;
+    if (item.fireTimer <= 1e-9) {
+      const target = sentryTarget({ muzzle: item.muzzle, turret, shootables, colliders });
+      if (target) {
+        item.yaw = Math.atan2(target.position.x - item.muzzle.x, target.position.z - item.muzzle.z);
+        item.lastShot = fireSentry({ muzzle: item.muzzle, turret, target, shootables, colliders, round: getRound(), effects, sound,
+          fireSound: item.product.sounds.fire, look: item.product.look });
+        item.fireTimer += turret.fireSeconds;
+      } else {
+        item.fireTimer = 0; // (nothing in sight: it looks again next tick)
+      }
+      item.hunting = !target;
+    }
+    if (item.hunting) item.yaw += turret.spinSpeed * Math.PI * 2 * dt;
+    if (item.lifeLeft <= 1e-9) {
+      remove(item);
+      events.emit('sentryExpired', { position: item.position.clone() });
     }
   }
 
@@ -240,6 +284,10 @@ export function createEquipment({
     pockets,
     live,
 
+    get sentry() {
+      return sentryOut();
+    },
+
     get isBusy() {
       return busyTimer > 0;
     },
@@ -310,6 +358,7 @@ export function createEquipment({
         }
         if (!item.settled && (item.landed || !item.flying || item.age >= product.landSeconds)) settle(item);
         if (item.spraying && !item.removed) spray(item, dt);
+        if (item.deployed && !item.removed) runTurret(item, dt);
       }
       for (let i = live.length - 1; i >= 0; i--) if (live[i].removed) live.splice(i, 1);
     },

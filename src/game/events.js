@@ -116,6 +116,9 @@
 //   'equipmentBurst'  { id, position, radius, hit }      a thrown Soda Bomb burst, or a Glitter Bomb opened (damage 0: hit = the
 //                                                        zombies it confused); hit = [{ target, damage, killed }]. Equipment
 //                                                        damage never emits 'hit' (no +10): its kills pay through 'kill', source 'equipment'
+//   'sentryDeployed'  { position }                       a thrown SPIN-O-MATIC Sentry landed and stood up (game/equipment.js); its kills
+//                                                        carry weaponId 'sentry'
+//   'sentryExpired'   { position }                       its lifetime ran out and it fell apart (death and Play again just clear it)
 //   'challengeProgress' { gunId, skinId, count, needed }  a challenge counter changed (game/challenges.js)
 //   'skinUnlocked' { gunId, skinId, pa }                  a skin was earned; PA and HUD toast listen here
 //   'runReset'    {}                                     after Play again reset everything

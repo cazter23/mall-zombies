@@ -136,6 +136,15 @@ test('the Sparkler Cake sets Shoppers, a Cart Pusher and a Mascot round it burni
   const far = place(t, 'shopper', 0, 9 - cake.spray.radius - 1.5);
   const log = ledger(g);
   const health = new Map([shopper, cart, mascot, boss, far].map((z) => [z, z.health]));
+  // The burn's own ticks, as dealt (before a target's own damage multipliers, which a boss may change as it goes).
+  const dealt = new Map();
+  for (const zombie of [shopper, boss]) {
+    const takeHit = zombie.takeHit.bind(zombie);
+    zombie.takeHit = (hit) => {
+      if (hit.source === 'equipment') dealt.set(zombie, (dealt.get(zombie) ?? 0) + hit.damage);
+      return takeHit(hit);
+    };
+  }
   g.equipment.detonate('sparklerCake', floorAt(0, 9));
   assert.equal(g.equipment.live.length, 1, 'the cake sits there');
   t.tick(1); // (the first pulse)
@@ -153,9 +162,8 @@ test('the Sparkler Cake sets Shoppers, a Cart Pusher and a Mascot round it burni
   assert.equal(g.equipment.live.length, 0, 'spent');
   for (const zombie of [shopper, cart, mascot, boss]) assert.ok(zombie.health < health.get(zombie), `${zombie.type.id} took burn damage`);
   assert.equal(far.health, health.get(far));
-  const shopperLost = health.get(shopper) - shopper.health;
-  const bossLost = (health.get(boss) - boss.health) / boss.damageTakenMultiplier;
-  assert.ok(Math.abs(bossLost / shopperLost - cake.spray.bossFactor) < 0.05, `boss ${bossLost.toFixed(0)} vs Shopper ${shopperLost.toFixed(0)}`);
+  const shopperDealt = dealt.get(shopper), bossDealt = dealt.get(boss);
+  assert.ok(Math.abs(bossDealt / shopperDealt - cake.spray.bossFactor) < 0.05, `boss ${bossDealt.toFixed(0)} vs Shopper ${shopperDealt.toFixed(0)}`);
   assert.equal(log.hits.length, 0, 'never a \'hit\' event');
   assert.equal(g.wallet.points, log.points, 'nothing died: nothing paid (no +10 a tick)');
 });

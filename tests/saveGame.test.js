@@ -164,6 +164,30 @@ test('Bubble Wrap bought before the round survives a load, partly used layers in
   assert.equal(layers.length, 2);
 });
 
+test('a save made with a SPIN-O-MATIC Sentry out loads without one: it is transient, the pockets come back as of the round\'s start', (t) => {
+  const storage = memoryStorage();
+  const run = game(t, storage);
+  const { g } = run;
+  run.tick();
+  g.equipment.give('sentry', 1);
+  g.equipment.give('airHorn', 2);
+  g.equipment.detonate('sentry', g.player.position.clone().setZ(g.player.position.z - 2).setY(0.16)); // (the one out)
+  assert.ok(g.equipment.sentry?.deployed);
+  g.rounds.jumpTo(3); // (the snapshot is taken at the end of the next tick, with the Sentry still out)
+  run.tick();
+  assert.ok(g.equipment.sentry, 'still out when the round began');
+  assert.equal(g.saveGame.saveAndQuit(), true);
+
+  const loaded = game(t, storage);
+  assert.equal(loaded.g.saveGame.load(), true);
+  assert.equal(loaded.g.equipment.sentry, null, 'no Sentry after the load');
+  assert.equal(loaded.g.equipment.live.length, 0);
+  assert.deepEqual(loaded.g.equipment.pockets, g.saveGame.snapshot.data.equipment.pockets);
+  assert.deepEqual(loaded.g.equipment.pockets.tactical, { id: 'airHorn', count: 2 });
+  loaded.tick(2);
+  assert.equal(loaded.g.equipment.sentry, null, 'and none appears');
+});
+
 test("Kiosk Kevin reopens where he stood at the round's start: not the first site, and not where a mid-round move took him", (t) => {
   const storage = memoryStorage();
   const run = game(t, storage);

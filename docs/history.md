@@ -1,5 +1,38 @@
 # Sunset Galleria: build history ("Current state")
 
+## 10 November 2026 - Kiosk Kevin, phase 6: the SPIN-O-MATIC Sentry
+
+Phase 6 of docs/kiosk-kevin-plan.md, built on `claude/kiosk-kevin-6`: cut from `claude/kiosk-kevin-5` (phases 4 and 5) with main merged
+in (weapon skins), so the Sentry's kills can carry their weaponId.
+
+- **The merge.** Main's weapon skins gave `applyBurn` and `applyConfusion` a fourth argument, `weaponId`; phase 5 had given them
+  `source`. They now take both: `(..., weaponId = null, source = 'build')`; the burn keeps both from whichever burn supplies the
+  damage. The Glitter Bomb and Sparkler Cake pass `(null, 'equipment')`. config/save.js version 4: main and the kiosk branch had each
+  bumped it to 3 for different changes.
+- **The Sentry** (game/equipment/sentry.js, config/kiosk.js products.sentry): Lethal, 1 charge, 1,500. Thrown like the rest; where it
+  first touches the floor (or stops) it stands up ('sentryDeployed'), and for 30 s fires every 0.2 s at the nearest zombie within 15 m
+  that it can see from its muzzle (0.95 m up): a clear line from the muzzle to the zombie's body, never Sunny, dummies, the dead or a
+  rising zombie. The shot is the hitscan (castShot) from its own muzzle against zombies only, so Sunny can't soak one up. Each shot is
+  a body hit of 58 x equipmentPower(round) (a Price Gun sticker, at under half a held Price Gun's rate; it can't aim, so no headshot
+  pay or helmet bonus), source 'equipment', weaponId 'sentry'; bosses are hit normally. It looks for a target only when it's ready to
+  fire, so the line-of-sight rays stay cheap. Then it falls apart ('sentryExpired'). One out at a time: a second throw is refused
+  and keeps its charge. No collider (zombies walk through it; nothing can target it). It stops when paused or dead (the equipment
+  tick doesn't run) and death and Play again clear it. Save & Quit drops it: thrown things are transient; the pockets come back as of
+  the round's start.
+- **Selling it (the user's choices):** the Lethal slot rotates Soda Bomb, Sparkler Cake, Sentry, and Kevin's Pick is now the product
+  on sale that has waited longest for it (never the Sentry: `noPick`), because the Lethal slot's three-round cycle would otherwise
+  line up with the Pick's and lock it onto the Soda Bomb. Rounds 2 to 7: Pick Soda Bomb, Sparkler Cake, Bubble Wrap (the Sentry's
+  round), Glitter Bomb, Stadium Air Horn, Bubble Wrap.
+- **View and HUD:** fx/throwableView.js draws a display stand with a staple gun whose head turns to its target (spinning while it
+  hunts); a pocket icon. Phase 8 does the real model.
+- **Checked:** tests/sentry.test.js (6 new tests), tests/saveGame.test.js (a save with a Sentry out loads without one), tests/kiosk.test.js
+  (the purchase test buys all six). In the browser (worktree build): thrown with G in the Hallway it landed and stood up by the Food
+  Court gate; three Shoppers in front of it took 43.6 a shot (58 x the round-4 power) and died, each kill 'equipment' / 'sentry' and
+  paid its 60 only; Shoppers behind the shut Food Court shutter were never shot; no console errors. The Sparkler Cake's boss test now compares the burn ticks as dealt: after the merge the guard's
+  own damage multiplier changes during the test, which made the health-lost ratio drift (the burn itself was still exactly half).
+- Shared files changed: src/zombies/zombie.js and src/zombies/confusion.js (merge), src/config/save.js, src/config/economy.js (the
+  Sentry's price), src/game/events.js ('sentryDeployed', 'sentryExpired'), src/ui/retail.css, docs (folder-structure, tests, the plan).
+
 ## 10 November 2026 - Kiosk Kevin, phase 5: the Glitter Bomb and the Sparkler Cake
 
 Phase 5 of docs/kiosk-kevin-plan.md, built on `claude/kiosk-kevin-5` (cut from `claude/kiosk-kevin-4`, which it builds on). The Air Horn

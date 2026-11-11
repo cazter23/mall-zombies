@@ -49,12 +49,12 @@ test('Bubble Wrap keeps partial layers, caps purchases, and absorbs before healt
   assert.deepEqual(health.armour, []);
 });
 
-test('the Hallway cart sells all five products through hold input: the Lethal and Tactical slots alternate, the Pick moves along', () => {
+test('the Hallway cart sells all six products through hold input: each slot rotates, the Pick goes to whatever waited longest', () => {
   const t = fixture();
   const { g } = t;
   const { instance } = g.features.list.find(({ feature }) => feature.kind === 'kiosk');
   const startDoor = g.map.doors.find(({ id }) => id === 'startShutter');
-  const SLOT = { sodaBomb: 0, sparklerCake: 0, bubbleWrap: 1, airHorn: 2, glitterBomb: 2 };
+  const SLOT = { sodaBomb: 0, sparklerCake: 0, sentry: 0, bubbleWrap: 1, airHorn: 2, glitterBomb: 2 };
   const atSlot = (id) => {
     const { position } = instance.site.cart.slots[SLOT[id]];
     t.standAt(position.x, position.z + .9);
@@ -72,7 +72,7 @@ test('the Hallway cart sells all five products through hold input: the Lethal an
   };
   const announced = [];
   g.events.on('kioskStock', ({ pick, stock }) => announced.push([pick, ...stock]));
-  g.wallet.earn(5000);
+  g.wallet.earn(8000);
   assert.equal(atSlot('sodaBomb'), null);
   g.rounds.jumpTo(2);
   assert.equal(atSlot('sodaBomb'), null, 'locked Hallway');
@@ -81,36 +81,40 @@ test('the Hallway cart sells all five products through hold input: the Lethal an
   assert.match(atSlot('sodaBomb').title, /Kevin's Pick/);
   pay('sodaBomb', 300);
   assert.equal(g.equipment.status.lethal.count, 4);
-  // Round 3: the other product in each alternating slot. A Sparkler Cake replaces the Soda Bombs (its own pocket only).
+  // Round 3: the next product in each slot. A Sparkler Cake (the Pick: it has never been it) replaces the Soda Bombs.
   g.rounds.jumpTo(3);
-  assert.equal(instance.status.pick, 'bubbleWrap');
+  assert.equal(instance.status.pick, 'sparklerCake');
   assert.deepEqual(instance.status.stock, ['sparklerCake', 'bubbleWrap', 'glitterBomb']);
   assert.match(atSlot('sparklerCake').detail, /Replaces 4 Soda Bombs\./);
   pay('sparklerCake', 400);
-  assert.deepEqual(g.equipment.pockets.lethal, { id: 'sparklerCake', count: 2 });
+  assert.deepEqual(g.equipment.pockets.lethal, { id: 'sparklerCake', count: 3 }, 'two and the Pick');
   assert.equal(atSlot('sparklerCake').blocked, 'Pocket is full');
   const before = g.wallet.points;
   t.press('KeyF', 20);
   assert.equal(g.wallet.points, before);
-  pay('bubbleWrap', 500);
-  assert.equal(g.health.armour.length, 2);
-  pay('bubbleWrap', 500);
-  assert.equal(g.health.armour.length, 3);
-  assert.ok(g.interactions.prompt.blocked);
+  for (let layers = 1; layers <= 3; layers++) {
+    pay('bubbleWrap', 500);
+    assert.equal(g.health.armour.length, layers);
+  }
+  assert.ok(atSlot('bubbleWrap').blocked);
   pay('glitterBomb', 750, 'PadX');
   assert.deepEqual(g.equipment.pockets.tactical, { id: 'glitterBomb', count: 2 });
-  // Round 4: back to the first of each, the Pick on the Tactical slot.
+  // Round 4: the Sentry's round (never the Pick: Bubble Wrap is, the one that has waited longest).
   g.rounds.jumpTo(4);
+  assert.equal(instance.status.pick, 'bubbleWrap');
+  assert.match(atSlot('sentry').detail, /Replaces 3 Sparkler Cakes\./);
+  pay('sentry', 1500);
+  assert.deepEqual(g.equipment.pockets.lethal, { id: 'sentry', count: 1 });
   assert.match(atSlot('airHorn').detail, /Replaces 2 Glitter Bombs\./);
   pay('airHorn', 500);
-  assert.deepEqual(g.equipment.pockets.tactical, { id: 'airHorn', count: 3 });
+  assert.deepEqual(g.equipment.pockets.tactical, { id: 'airHorn', count: 2 });
   g.rounds.jumpTo(5);
-  assert.match(atSlot('sparklerCake').title, /^Kevin's Pick · Sparkler Cake$/);
+  assert.match(atSlot('glitterBomb').title, /^Kevin's Pick · Glitter Bomb$/);
   assert.deepEqual(announced, [
     ['sodaBomb', 'sodaBomb', 'bubbleWrap', 'airHorn'],
-    ['bubbleWrap', 'sparklerCake', 'bubbleWrap', 'glitterBomb'],
-    ['airHorn', 'sodaBomb', 'bubbleWrap', 'airHorn'],
     ['sparklerCake', 'sparklerCake', 'bubbleWrap', 'glitterBomb'],
+    ['bubbleWrap', 'sentry', 'bubbleWrap', 'airHorn'],
+    ['glitterBomb', 'sodaBomb', 'bubbleWrap', 'glitterBomb'],
   ]);
   g.resetRun();
   assert.equal(snapshot(g).kiosk.open, false);
@@ -310,7 +314,7 @@ test('Kevin opens first in the Hallway at round 2, moves from round 3 with the P
   assert.deepEqual(moves, [{ siteId: kevin.site.id, area: kevin.site.where, moved: true }]);
   assert.deepEqual(lines[1], [kevin.site.id,
     `Kevin's cart is now in ${kevin.site.where}. He's asked us to say it's a limited time only. `
-    + "Today on Kevin's cart: Sparkler Cake, Bubble Wrap and Glitter Bomb. Kevin's Pick is Bubble Wrap."]);
+    + "Today on Kevin's cart: Sparkler Cake, Bubble Wrap and Glitter Bomb. Kevin's Pick is Sparkler Cake."]);
   assert.ok(!hasStatNumber(lines[1][1]));
   t.tick(30);
   assert.equal(lines.length, 2, 'one PA line a round');

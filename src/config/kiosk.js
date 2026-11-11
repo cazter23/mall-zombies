@@ -42,11 +42,13 @@ export const kiosk = {
   },
   openingRound: 2,
   duckRadius: 3,
-  // The cart's three slots, left to right. A slot with two products ALTERNATES round by round from the opening round (the
-  // user's choice, 10 November 2026: no random stock): round 2 sells the first of each, round 3 the second, and so on.
-  // Bubble Wrap is always there. Kevin's Pick moves along the three slots one a round (stockFor / pickFor below).
+  // The cart's three slots, left to right. A slot with several products ROTATES through them round by round from the opening
+  // round (the user's choice, 10 November 2026: no random stock): round 2 sells the first of each, round 3 the second, and so on.
+  // Bubble Wrap is always there. Kevin's Pick is the product on the cart that has waited longest to be the Pick (ties: left to
+  // right), never one marked noPick (the Sentry): stockFor / pickFor below. (Moving the Pick along the slots instead would lock
+  // it onto the Soda Bomb: the Lethal slot's three-round cycle and the Pick's would line up.)
   slots: [
-    ['sodaBomb', 'sparklerCake'], // Lethal
+    ['sodaBomb', 'sparklerCake', 'sentry'], // Lethal
     ['bubbleWrap'],
     ['airHorn', 'glitterBomb'], // Tactical
   ],
@@ -143,6 +145,41 @@ export const kiosk = {
     // The Glitter Bomb Greeting Card. Lobbed; it opens where it first touches anything (floor, wall or zombie): up to
     // maxTargets zombies within radius of it (in sight, nearest first) are confused for `seconds` and fight each other
     // (zombie.applyConfusion, the same confusion as Build-A-Blaster's Glitter: zombies/confusion.js). Bosses refuse it.
+    // The SPIN-O-MATIC Sentry: Kevin's own display stand with a staple gun taped on. Lobbed like the rest; where it first touches
+    // the floor (or stops) it stands up and, for lifeSeconds, spins and fires at the nearest zombie it can see from its muzzle
+    // (a hitscan shot every fireSeconds, damage x equipmentPower(round); bosses are hit normally). Then it falls apart. One out
+    // at a time (no second throw while one is out), no collider (zombies walk through it: they can't target it, decision 5),
+    // never Sunny or anything without a zombie type. Its kills carry weaponId 'sentry'. Never Kevin's Pick (noPick).
+    sentry: {
+      id: 'sentry',
+      name: 'SPIN-O-MATIC Sentry',
+      pocket: 'lethal',
+      charges: 1,
+      noPick: true,
+      detail: 'Sets itself up where it lands and shoots the nearest zombie it can see for a while, then falls apart. One out at a time. Batteries not included. Neither is supervision.',
+      opens: 'floor',
+      landSeconds: 4,
+      turret: {
+        lifeSeconds: 30,
+        warmupSeconds: 0.6, // from landing to its first shot (it stands up)
+        fireSeconds: 0.2, // a shot every this many seconds (5 a second: under half a held Price Gun's rate)
+        damage: 58, // a Price Gun sticker, x equipmentPower(round)
+        range: 15, // m
+        muzzleHeight: 0.95, // m above where it landed
+        spinSpeed: 2.5, // turns a second while it hunts (the view)
+        weaponId: 'sentry',
+        impact: { flinch: 0.8, knockback: 0.6, hitstopSeconds: 0, deathImpulse: 1 },
+      },
+      projectile: {
+        speed: 11, gravity: 12, restitution: 0.15, maxBounces: 6, radius: 0.16, minSpeed: 1.2,
+        lifeSeconds: 6, rehitSeconds: 0.25, seekRange: 0,
+      },
+      sounds: { throw: 'meleeSwing', bounce: 'tennisBounce', deploy: 'dryClick', fire: 'stapleShot' },
+      look: {
+        model: 'sentry', stand: 0xd8d2c4, base: 0x45246e, gun: 0x3a3f4a, sign: 0xffe14d, // the stand (fx/throwableView.js)
+        tracer: 0xe8eef5, // a silver staple streak
+      },
+    },
     glitterBomb: {
       id: 'glitterBomb',
       name: 'Glitter Bomb',
@@ -182,9 +219,18 @@ export function stockFor(round) {
   return kiosk.slots.map((choices) => choices[n % choices.length]);
 }
 
-/** Kevin's Pick in `round` (it moves along the slots one a round), or null before he opens. */
+const pickCache = new Map(); // (pickFor replays the rounds from the opening one; the answer for a round never changes)
+/** Kevin's Pick in `round`: the product on sale that has waited longest to be the Pick (never a noPick one), or null before he opens. */
 export function pickFor(round) {
   if (round < kiosk.openingRound) return null;
-  const n = round - kiosk.openingRound;
-  return stockFor(round)[n % kiosk.slots.length];
+  if (pickCache.has(round)) return pickCache.get(round);
+  const last = new Map(); // product -> the last round it was the Pick
+  let pick = null;
+  for (let r = kiosk.openingRound; r <= round; r++) {
+    const options = stockFor(r).filter((id) => !productOf(id)?.noPick);
+    pick = options.reduce((best, id) => ((last.get(id) ?? -1) < (last.get(best) ?? -1) ? id : best), options[0] ?? null);
+    last.set(pick, r);
+  }
+  pickCache.set(round, pick);
+  return pick;
 }

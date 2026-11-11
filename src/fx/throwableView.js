@@ -6,6 +6,8 @@
 //   bottle  the Soda Bomb: a stubby two-litre that tumbles while it flies and shakes harder as the fuse runs out
 //   cake    the Sparkler Cake: a short iced cake with three sparklers; it spins in the air and sits upright, jittering, while it sprays
 //   card    the Glitter Bomb: a greeting card in its envelope, flipping end over end (it opens the moment it lands)
+//   sentry  the SPIN-O-MATIC Sentry: a display stand with a staple gun taped on; it tumbles in the air, then stands and its head
+//           turns to item.yaw (spinning while it hunts, facing what it shoots)
 // One small pool of meshes per model, built as needed; a mesh is hidden when its item is gone (burst, death, Play again).
 // dispose() frees it all.
 // =============================================================================
@@ -14,7 +16,7 @@ import * as THREE from 'three';
 import { kiosk } from '../config/kiosk.js';
 
 export function createThrowableView(scene, equipment) {
-  const { sodaBomb, sparklerCake, glitterBomb } = kiosk.products;
+  const { sodaBomb, sparklerCake, glitterBomb, sentry } = kiosk.products;
   const geometries = {
     body: new THREE.CylinderGeometry(0.075, 0.085, 0.24, 8),
     neck: new THREE.CylinderGeometry(0.025, 0.07, 0.09, 8),
@@ -24,6 +26,10 @@ export function createThrowableView(scene, equipment) {
     icing: new THREE.CylinderGeometry(0.135, 0.135, 0.025, 10),
     wick: new THREE.CylinderGeometry(0.006, 0.006, 0.12, 4),
     card: new THREE.BoxGeometry(0.17, 0.008, 0.12),
+    standBase: new THREE.CylinderGeometry(0.17, 0.19, 0.04, 10),
+    standPole: new THREE.CylinderGeometry(0.025, 0.025, 0.85, 6),
+    sentryGun: new THREE.BoxGeometry(0.08, 0.11, 0.28),
+    sentrySign: new THREE.BoxGeometry(0.2, 0.08, 0.01),
   };
   const materials = {
     bottle: new THREE.MeshStandardMaterial({ color: sodaBomb.look.bottle, roughness: 0.25, transparent: true, opacity: 0.88 }),
@@ -33,6 +39,10 @@ export function createThrowableView(scene, equipment) {
     icing: new THREE.MeshStandardMaterial({ color: sparklerCake.look.icing, roughness: 0.5 }),
     wick: new THREE.MeshStandardMaterial({ color: sparklerCake.look.wick, roughness: 0.4, metalness: 0.5 }),
     card: new THREE.MeshStandardMaterial({ color: glitterBomb.look.envelope, roughness: 0.4, metalness: 0.3 }),
+    stand: new THREE.MeshStandardMaterial({ color: sentry.look.stand, roughness: 0.5, metalness: 0.4 }),
+    standBase: new THREE.MeshStandardMaterial({ color: sentry.look.base, roughness: 0.6 }),
+    sentryGun: new THREE.MeshStandardMaterial({ color: sentry.look.gun, roughness: 0.45, metalness: 0.3 }),
+    sentrySign: new THREE.MeshStandardMaterial({ color: sentry.look.sign, roughness: 0.6 }),
   };
   const mesh = (geometry, material, y = 0) => {
     const m = new THREE.Mesh(geometries[geometry], materials[material]);
@@ -51,6 +61,17 @@ export function createThrowableView(scene, equipment) {
       }
     },
     card: (body) => body.add(mesh('card', 'card')),
+    sentry: (body) => {
+      body.add(mesh('standBase', 'standBase', 0.02), mesh('standPole', 'stand', 0.45));
+      const head = new THREE.Group(); // (turns to item.yaw)
+      head.position.y = sentry.turret.muzzleHeight;
+      head.add(mesh('sentryGun', 'sentryGun'));
+      const sign = mesh('sentrySign', 'sentrySign', 0.1);
+      sign.position.z = -0.06;
+      head.add(sign);
+      body.add(head);
+      body.userData.head = head;
+    },
   };
   const pools = Object.fromEntries(Object.keys(builders).map((model) => [model, []]));
   const group = new THREE.Group();
@@ -90,6 +111,13 @@ export function createThrowableView(scene, equipment) {
         body.rotation.z = 0.25;
       } else {
         body.rotation.set((Math.random() - 0.5) * 0.06, body.rotation.y + 0.08, (Math.random() - 0.5) * 0.06); // (the sparklers make it jitter)
+      }
+    } else if (model === 'sentry') {
+      if (item.flying) {
+        body.rotation.x += 0.3; // (it tumbles)
+      } else {
+        body.rotation.set(0, 0, 0); // (stood up where it landed)
+        body.userData.head.rotation.y = item.yaw;
       }
     } else {
       body.rotation.x += 0.4; // (a card flips end over end)
