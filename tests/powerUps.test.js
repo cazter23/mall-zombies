@@ -316,10 +316,16 @@ test('Blue Light ring never paints across a wall or floats over unsupported balc
 test('incentive HUD shows earning progress, pickup countdown, active-zone timer and clears on death', () => {
   menuDom();
   const hud = createIncentiveHud();
-  hud.update({ available: true, progress: 0.5, pickup: { id: 'securitySweep', remaining: 8.5 }, active: null });
+  // Round 2 with 0 progress remains hidden until first progress
+  hud.update({ available: true, progress: 0, pickup: null, active: null, round: 2 });
+  assert.equal(hud.element.hidden, true, 'hidden when progress is 0');
+
+  // Once progress > 0, it shows
+  hud.update({ available: true, progress: 0.5, pickup: { id: 'securitySweep', remaining: 8.5 }, active: null, round: 2 });
+  assert.equal(hud.element.hidden, false);
   assert.match(hud.element.textContent, /50%/);
   assert.match(hud.element.textContent, /SECURITY SWEEP · COLLECT · 9s/);
-  hud.update({ available: false, progress: 0, pickup: null, active: { remaining: 12 } });
+  hud.update({ available: false, progress: 0, pickup: null, active: { remaining: 12 }, round: 2 });
   assert.match(hud.element.textContent, /ALLOWANCE USED/);
   assert.match(hud.element.textContent, /BLUE LIGHT SPECIAL · 12s/);
   assert.equal(hud.element.querySelector('.incentive-drop').textContent, '');

@@ -15,6 +15,7 @@ export const feel = {
     eyeHeight: 1.6, // camera height above the feet
     radius: 0.35, // collision radius
     maxHealth: 100, // a Shopper hits for 40, so 3 hits from full
+    spawnYaw: Math.PI, // faces +Z into the clearance room where round 1 zombies rise
   },
 
   // Health regen and the red "you're hurt" screen edges

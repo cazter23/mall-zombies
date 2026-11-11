@@ -252,4 +252,4 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   vignette/fringing, ACES tone mapping, MSAA) is fx/postProcessing.js with three levels, Settings > Video > Visual effects: High (default),
   Low (composer only: no bloom/lens/MSAA), Off (no composer: the world and the gun drawn straight to the screen). "Dust and
   flickering lights" (atmosphere.ambient.enabled) hides the dust motes and zeroes the flicker/emergency lights (kept in the scene).
-- Player spawns at (0, 0, 12) facing the shutter.
+- Player spawns at (0, 0, 12) facing into the room (+Z, yaw Math.PI).
