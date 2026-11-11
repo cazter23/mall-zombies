@@ -1,5 +1,64 @@
 # Sunset Galleria: build history ("Current state")
 
+## 11 November 2026 - Kiosk Kevin, phase 7: sales, vouchers and balance
+
+Phase 7 of docs/kiosk-kevin-plan.md, built on `claude/kiosk-kevin-7`: cut from `claude/kiosk-kevin-6` (phases 4 to 6) with main merged in
+(pattern skins, the test runner's cap and lock). Save version 5: main's 4 (challenge counters) and this branch's 4 (Kevin's carts and the
+skins) are different shapes, so both together are a new number.
+
+- **`npm run kiosk`** (tools/kioskReport.mjs; its maths in tools/kioskBalance.js, read straight from config and the game's own functions):
+  equipment power by round, Soda Bomb share and kill radius by round and zombie type, the Sparkler Cake's burn, the Sentry against the
+  Price Gun, Bubble Wrap hits to death, damage per point against wall ammo, and every price as a share of what a round pays (the good
+  bot's measured income, copied from docs/economy-report.md section 2 as ROUND_INCOME).
+- **The bar it set** (tests/kioskBalance.test.js): no must-buy at round 2 = each product costs at least 40% of what round 2 pays (904),
+  and no pocket thrown into crowds of four deals more per point than the Price Gun's own wall ammo at any round; the Soda Bomb at round
+  25 = 40 to 60% of a Shopper at the centre, a Shopper's worth from a crowd, a pocket at most 5% of the round; Bubble Wrap = a full wrap
+  absorbs less than the player's health and less than doubles Shopper hits to death (the maths is checked against the real health).
+- **What changed from it:** the **Soda Bomb 300 -> 500** (300 was 33% of round 2, and past round 10 a pocket into crowds dealt more per
+  point than Rivet Rifle ammo: 20.8 against 18.2 at round 15, 27.2 at round 25; now 12.5 and 16.3). **A Bubble Wrap layer 40 -> 30**: a
+  full wrap absorbed 120% of your health and took Shopper hits to death from 3 to 6, exactly double; now 90% and 3 to 5. Mascot hits (50)
+  and a Cart Pusher's charge (60) still go 2 to 4: whole hits are lumpy, and holding those under double would need a layer of about 15.
+  The two armour numbers moved from player/stats.js into config/kiosk.js bubbleWrap (layerStrength, maxLayers). Everything else stays:
+  Bubble Wrap and the Air Horn 500, the Sparkler Cake 400 (44% of round 2; a throw takes about what a Soda Bomb's does), the Glitter Bomb
+  750, the Sentry 1,500 (166% of round 2; 13% of round 25; 0.42x a Price Gun's dps at round 2, level with it at round 25). The exponent
+  0.37 stays: the Soda Bomb's centre is 53% of a Shopper at round 25, inside the plan's 40 to 60%.
+- **Not done:** prices that climb with the round (the economy report's other option). At round 25 a Soda Bomb pocket is 4% of the round;
+  what limits Kevin late is the pocket (one kind, 1 to 3 charges) and walking back to his cart, which moves every round.
+- **Flash Sale and vouchers.** The 'kiosk' Flash Sale group and its eligibility (only while his cart is open and he is not ducking)
+  came with phase 3; this phase adds the checks: no Kevin sale in round 1 or while his site is behind the locked start shutter, prices
+  back on the shelf when it ends; the Discount Code takes 750 off a Sentry and is spent by that one purchase (one Sentry, never the Pick);
+  the Master Key and Signed Approval never apply. Purchases spend the voucher through the 'purchase' event (kind 'kiosk'), as before.
+- **The economy bot buys from Kevin** (tools/economyBot.js): a `{ type: 'kiosk', share, products }` step is a standing order. From that
+  point on, every break, after the buy order, it spends up to `share` of the points in hand at his cart in the order's preference (a
+  pocket still holding another product is left alone), and in a fight it throws: a lethal at the zombie it aims at when two more stand
+  within 3.5 m of it, the Sentry when four are up and one is within 14 m, the Air Horn when two are within 4 m, the Glitter Bomb like a
+  lethal. The KIOSK buy order (tools/economyPlans.js) is SENSIBLE with Kevin from the moment the shutter is open, half of what is in hand.
+  economySim.mjs plays it as the 'kiosk' run set (immortal and mortal), with a table by round (spent at Kevin, thrown, equipment kills,
+  Bubble Wrap absorbed, deaths beside SENSIBLE), income and time with and without him, and when the power purchases land.
+- **`npm run sim:economy -- --quick`, before and after** (4 workers; 80 runs each; all finished; too few seeds to quote, as the tool says):
+
+  | | Before (Soda 300, layer 40) | After (Soda 500, layer 30) |
+  |---|---|---|
+  | KIOSK: spent at Kevin, rounds 1-10 (a run) | 2,600 | 950 |
+  | KIOSK: bought a run | Bubble Wrap 4.5, Sparkler Cake 0.5, Soda Bomb 0.5 | Bubble Wrap 1.5, Sparkler Cake 0.5 |
+  | KIOSK: earned by round 10 / SENSIBLE | 22,495 / 24,550 | 22,070 / 22,395 |
+  | KIOSK: first build, first Premium (round) | 7.5, 8.5 | 7.0, 8.0 (SENSIBLE: 7, 8 both times) |
+  | KIOSK mortal (4 runs): died in round, mean; reached 10 | 9.0; 50% | 10.5; 100% |
+  | SENSIBLE mortal good (4 runs): died in round, mean; reached 10 | 8.8; 50% | 9.0; 75% |
+
+  SENSIBLE never buys from Kevin, so its rows moving (24,550 to 22,395 by round 10) is the sim's run-to-run noise (docs/economy-report.md
+  section 1), and so is most of the mortal rows. What the change does show: at 300 the bot's leftover half-bank bought from Kevin most
+  breaks from round 5 and its first build came half a round later; at 500 it bought from him about a third as often and lost nothing on the
+  route. Neither run shows Kevin as a must-buy: with him the one-life runs did no worse, and four seeds cannot say better.
+- **Browser check** (production build, vite preview of the worktree): at round 2 in the Hallway the cart's prompt read "Kevin's Pick ·
+  Soda Bomb" at 500; holding F paid 500 for four bombs (the Pick), then 500 for one Bubble Wrap layer of 30 (one segment on the HUD); a
+  Flash Sale started on Kevin's cart (40% off) and the wrap's prompt showed 500 crossed to 300. No console errors; browser storage left empty.
+- **Tests:** test:quick picked all 161 files (the full suite): 1,429 passed. Build clean.
+- **Not checked:** a full (non-quick) sim; playing Kevin's products by hand for feel.
+- New: tools/kioskBalance.js, tools/kioskReport.mjs, tests/kioskBalance.test.js. Shared files changed: src/config/economy.js (economy.kiosk),
+  src/config/save.js (the merge), src/player/stats.js, src/config/kiosk.js, package.json (`kiosk`), CLAUDE.md (the command),
+  tools/economyBot.js, tools/economyPlans.js, tools/economySim.mjs, tests/kiosk.test.js, docs (plan, economy report, folder-structure, tests).
+
 ## 11 November 2026 - One big test run at a time, and AGENTS.md / GEMINI.md
 
 - **The lock.** A test run of more than 8 files (npm test, or a big test:quick selection) takes a lock file in the system temp folder

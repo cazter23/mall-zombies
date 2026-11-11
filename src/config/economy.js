@@ -130,7 +130,8 @@ export const economy = {
   // Second Chance (Customer Service's third window; game/secondChance.js): one automatic self-revive per run. What the revive
   // gives is in config/feel.js (health.secondChance). In no Flash Sale group; the Discount Code and Employee Discount apply.
   secondChance: { price: 2000 },
-  kiosk: { sodaBomb: 300, bubbleWrap: 500, airHorn: 500, sparklerCake: 400, glitterBomb: 750, sentry: 1500 },
+  // Kiosk Kevin (phase 7, from `npm run kiosk`: each at least 40% of what round 2 pays; the Soda Bomb was 300).
+  kiosk: { sodaBomb: 500, bubbleWrap: 500, airHorn: 500, sparklerCake: 400, glitterBomb: 750, sentry: 1500 },
 
   // Closing Time's quest prices (docs/closing-time-plan.md): one Night Safe deposit. Read through g.pricing.priceOf('closing', id).
   closing: { nightSafe: 1000 },

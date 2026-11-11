@@ -8,7 +8,7 @@
 //   npm run sim:economy                      every run set, every table (about an hour and a half the first time: a run to round 30 is slow;
 //                                            finished runs are kept in scratch/economy-sim/ and reused until the game's code or that plan changes)
 //   npm run sim:economy -- --quick           2 seeds to round 10 and 4 mortal seeds: every table in a few minutes, too noisy to quote
-//   npm run sim:economy -- --set=baseline    only some run sets (baseline, survival, cheap, nobab, claw, after), comma separated
+//   npm run sim:economy -- --set=baseline    only some run sets (baseline, survival, cheap, nobab, claw, kiosk, after), comma separated
 //   npm run sim:economy -- --seeds=8 --mortal-seeds=40 --rounds=30 --workers=10
 //   npm run sim:economy -- --fresh           play everything again
 //   npm run sim:economy -- --tables          no bot: only the tables that are pure maths (guns, the upgrade ladder, the proposals' config side)
@@ -73,6 +73,8 @@ const GROUPS = [
   group('claw', 'CLAW_FIRST', 'good', false, CLAW_ROUNDS, 'none', SEEDS),
   group('claw', 'SENSIBLE', 'good', false, CLAW_ROUNDS, 'none', SEEDS),
   group('claw', 'CLAW_FIRST', 'good', true, 30, 'none', MORTAL_SEEDS),
+  group('kiosk', 'KIOSK', 'good', false, ROUNDS, 'none', FEW), // Kiosk Kevin every break (docs/kiosk-kevin-plan.md, phase 7)
+  group('kiosk', 'KIOSK', 'good', true, 30, 'none', MORTAL_SEEDS),
   ...MORTAL_ONLY.map((id) => group('after', PROPOSALS[id].plan ?? 'SENSIBLE', 'good', true, 30, id, MORTAL_SEEDS)),
   group('after', PROPOSALS.all.plan, 'average', true, 30, 'all', MORTAL_SEEDS),
   ...AFTER.flatMap((id) => {
@@ -385,6 +387,25 @@ function ladderTable() {
   out();
 }
 
+/** Kiosk Kevin, played (the KIOSK buy order): what the bot spent at his cart, threw and killed with it, round by round, beside SENSIBLE. */
+function kioskTable(runs, sensible, rounds) {
+  out(`### Kiosk Kevin by round (KIOSK buy order, good skill, immortal; ${runs.length} runs, SENSIBLE: ${sensible.length})${noteBroken(runs)}`);
+  out('Spent at Kevin = points paid at his cart in that round\'s break and fight. Thrown = items thrown in the round. Equipment kills = kills by thrown items. Absorbed = damage Bubble Wrap took. Deaths = lethal hits taken (immortal runs carry on).');
+  out();
+  const rows = [];
+  for (let round = 1; round <= rounds; round++) {
+    const k = (fn) => mean(at(runs, round, fn));
+    rows.push([round, n0(k((r) => r.earned)), n0(k((r) => r.kiosk ?? 0)), pct(k((r) => r.kiosk ?? 0) / k((r) => r.earned)), n1(k((r) => r.thrown ?? 0)),
+      n1(k((r) => r.equipmentKills ?? 0)), n0(k((r) => r.armourAbsorbed ?? 0)), n1(k((r) => r.deaths)), n1(mean(at(sensible, round, (r) => r.deaths)))]);
+  }
+  out(table(['Round', 'Earned', 'Spent at Kevin', 'Share of the round', 'Thrown', 'Equipment kills', 'Absorbed', 'Deaths', 'Deaths (SENSIBLE)'], rows));
+  const counts = {};
+  for (const run of runs) for (const p of run.purchases) if (p.label.startsWith('kiosk:')) counts[p.label.slice(6)] = (counts[p.label.slice(6)] ?? 0) + 1 / runs.length;
+  out();
+  out(`Bought a run (mean): ${Object.entries(counts).map(([id, n]) => `${id} ${n1(n)}`).join(', ') || 'nothing'}.`);
+  out();
+}
+
 function survivalTable(rows) {
   out('### Where mortal runs end');
   out('One life, the same bot. Reached = the share of runs that began that round. Owned a build = runs that had one when they died.');
@@ -559,6 +580,7 @@ const mortalRows = [];
 if (has('survival')) mortalRows.push(['SENSIBLE, good skill', runsOf('survival', 'SENSIBLE', 'good', true)], ['SENSIBLE, average skill', runsOf('survival', 'SENSIBLE', 'average', true)]);
 if (has('nobab')) mortalRows.push(['No build, good skill', runsOf('nobab', 'NO_BAB', 'good', true)]);
 if (has('claw')) mortalRows.push(['Claw first, 1,000 a grab (today), good skill', runsOf('claw', 'CLAW_FIRST', 'good', true)]);
+if (has('kiosk')) mortalRows.push(['Kiosk Kevin every break (KIOSK), good skill', runsOf('kiosk', 'KIOSK', 'good', true)]);
 if (has('after')) for (const id of ['priceGun', 'priceGun62', 'bab3000', 'bab', 'babPrice', 'warranty', 'claw', 'all']) mortalRows.push([`${PROPOSALS[id].label}, good skill${PROPOSALS[id].plan === 'CLAW_FIRST' ? ' (claw-first buy order)' : ''}`, runsOf('after', PROPOSALS[id].plan ?? 'SENSIBLE', 'good', true, id)]);
 if (has('after')) mortalRows.push([`${PROPOSALS.all.label}, average skill`, runsOf('after', PROPOSALS.all.plan, 'average', true, 'all')]);
 if (mortalRows.some(([, runs]) => runs.length)) survivalTable(mortalRows);
@@ -570,6 +592,23 @@ if (good.length && (has('cheap') || has('nobab'))) {
   momentsTable('Income, time and deaths by buy order', 'Good skill, immortal. Deaths = lethal hits taken (the difficulty a mortal player would not have survived).', rows, ROUNDS);
   const cheap = rows[1][1];
   if (cheap.length) powerTable(cheap, ROUNDS, 'The power curve on the Price Gun alone');
+}
+
+if (has('kiosk')) {
+  const kiosk = runsOf('kiosk', 'KIOSK', 'good', false);
+  if (kiosk.length) {
+    out('## Kiosk Kevin, played');
+    out();
+    kioskTable(kiosk, good, ROUNDS);
+    momentsTable('Income, time and deaths with and without Kevin', 'Good skill, immortal.', [['SENSIBLE', good], ['KIOSK (Kevin every break)', kiosk]], ROUNDS);
+    out('### When the power purchases land with Kevin in the buy order');
+    out('The round whose break each was bought in: mean (min to max).');
+    out();
+    const cells = [['SENSIBLE', milestones(good, 'SENSIBLE')], ['KIOSK', milestones(kiosk, 'KIOSK')]];
+    const names = Object.keys(cells[0][1]);
+    out(table(['Set-up', ...names], cells.map(([label, c]) => [label, ...names.map((n) => c[n])])));
+    out();
+  }
 }
 
 out('## Proposals: the config side');

@@ -54,6 +54,11 @@ export const kiosk = {
   ],
   bubbleWrap: {
     name: 'Bubble Wrap',
+    // The armour (player/health.js absorb; the stats in player/stats.js start from these): each layer absorbs this much of a
+    // zombie hit before your health, then pops; at most maxLayers at once. 30 (was 40, phase 7): a full wrap absorbs 90% of your
+    // health, so it never doubles what you can take (Shopper hits to death 3 -> 5, not 6). npm run kiosk prints the table.
+    layerStrength: 30,
+    maxLayers: 3,
     detail: 'Absorbs zombie hits before they reach your health. FRAGILE. This side towards zombies.',
   },
 

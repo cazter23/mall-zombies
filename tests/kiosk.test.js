@@ -22,11 +22,13 @@ test('Bubble Wrap keeps partial layers, caps purchases, and absorbs before healt
   const { g, sounds } = headlessGame();
   const { health, stats, events } = g;
   const hit = (damage, zombie) => events.emit('playerHit', { damage, zombie });
+  const { layerStrength: S, maxLayers } = kiosk.bubbleWrap; // (three layers; each more than the 20 the first hit takes)
+  assert.equal(maxLayers, 3);
   assert.equal(health.addArmour(4), 3);
   assert.equal(health.addArmour(), 0);
   stats.damageTakenMultiplier = 0.5;
   hit(40);
-  assert.deepEqual(health.armour, [40, 40, 20]);
+  assert.deepEqual(health.armour, [S, S, S - 20]);
   assert.equal(stats.health, 100);
   assert.ok(!sounds.includes('bubbleWrapPop'));
   g.player.onFall({ drop: 6, damage: 5 });
@@ -34,16 +36,16 @@ test('Bubble Wrap keeps partial layers, caps purchases, and absorbs before healt
   const regen = health.regenWaitFraction;
   health.invulnerable = true;
   hit(200);
-  assert.deepEqual(health.armour, [40, 40, 20]);
+  assert.deepEqual(health.armour, [S, S, S - 20]);
   assert.equal(health.regenWaitFraction, regen);
   health.invulnerable = false;
-  hit(140, { type: { id: 'guard', boss: true } });
-  assert.deepEqual(health.armour, [30]);
+  hit(2 * (2 * S - 10), { type: { id: 'guard', boss: true } }); // halved: the partial layer, the next whole one, 10 of the last
+  assert.deepEqual(health.armour, [S - 10]);
   assert.equal(stats.health, 95);
   assert.ok(sounds.includes('bubbleWrapPop'));
-  hit(80);
+  hit(80); // halved to 40: the rest of the wrap, then health
   assert.deepEqual(health.armour, []);
-  assert.equal(stats.health, 85);
+  assert.equal(stats.health, 95 - (40 - (S - 10)));
   assert.match(g.debug.run('armour'), /3 layers/);
   g.resetRun();
   assert.deepEqual(health.armour, []);
@@ -79,34 +81,34 @@ test('the Hallway cart sells all six products through hold input: each slot rota
   startDoor.open();
   g.map.zones.hallway.open = true;
   assert.match(atSlot('sodaBomb').title, /Kevin's Pick/);
-  pay('sodaBomb', 300);
+  pay('sodaBomb', economy.kiosk.sodaBomb);
   assert.equal(g.equipment.status.lethal.count, 4);
   // Round 3: the next product in each slot. A Sparkler Cake (the Pick: it has never been it) replaces the Soda Bombs.
   g.rounds.jumpTo(3);
   assert.equal(instance.status.pick, 'sparklerCake');
   assert.deepEqual(instance.status.stock, ['sparklerCake', 'bubbleWrap', 'glitterBomb']);
   assert.match(atSlot('sparklerCake').detail, /Replaces 4 Soda Bombs\./);
-  pay('sparklerCake', 400);
+  pay('sparklerCake', economy.kiosk.sparklerCake);
   assert.deepEqual(g.equipment.pockets.lethal, { id: 'sparklerCake', count: 3 }, 'two and the Pick');
   assert.equal(atSlot('sparklerCake').blocked, 'Pocket is full');
   const before = g.wallet.points;
   t.press('KeyF', 20);
   assert.equal(g.wallet.points, before);
   for (let layers = 1; layers <= 3; layers++) {
-    pay('bubbleWrap', 500);
+    pay('bubbleWrap', economy.kiosk.bubbleWrap);
     assert.equal(g.health.armour.length, layers);
   }
   assert.ok(atSlot('bubbleWrap').blocked);
-  pay('glitterBomb', 750, 'PadX');
+  pay('glitterBomb', economy.kiosk.glitterBomb, 'PadX');
   assert.deepEqual(g.equipment.pockets.tactical, { id: 'glitterBomb', count: 2 });
   // Round 4: the Sentry's round (never the Pick: Bubble Wrap is, the one that has waited longest).
   g.rounds.jumpTo(4);
   assert.equal(instance.status.pick, 'bubbleWrap');
   assert.match(atSlot('sentry').detail, /Replaces 3 Sparkler Cakes\./);
-  pay('sentry', 1500);
+  pay('sentry', economy.kiosk.sentry);
   assert.deepEqual(g.equipment.pockets.lethal, { id: 'sentry', count: 1 });
   assert.match(atSlot('airHorn').detail, /Replaces 2 Glitter Bombs\./);
-  pay('airHorn', 500);
+  pay('airHorn', economy.kiosk.airHorn);
   assert.deepEqual(g.equipment.pockets.tactical, { id: 'airHorn', count: 2 });
   g.rounds.jumpTo(5);
   assert.match(atSlot('glitterBomb').title, /^Kevin's Pick · Glitter Bomb$/);
@@ -153,7 +155,7 @@ test('hiding cancels an armed purchase and the kiosk uses the live sale, coupon 
 
   assert.equal(g.flashSales.startNow(), true);
   const salePrice = g.interactions.prompt.cost;
-  assert.ok(salePrice < 300);
+  assert.ok(salePrice < economy.kiosk.sodaBomb);
   g.pricing.setCoupon({ fraction: .2, maxSaving: 500 });
   const couponPrice = g.interactions.prompt.cost;
   assert.ok(couponPrice < salePrice);
@@ -169,6 +171,50 @@ test('hiding cancels an armed purchase and the kiosk uses the live sale, coupon 
   game.press('KeyF', 20);
   assert.equal(g.wallet.points, before - finalPrice);
   assert.equal(g.pricing.voucher, null);
+});
+
+test('Kevin\'s Flash Sale waits until his cart is open and puts prices back; the Discount Code halves the Sentry once, door and tier vouchers never apply', (t) => {
+  const game = fixture();
+  const { g } = game;
+  const { instance } = g.features.list.find(({ feature }) => feature.kind === 'kiosk');
+  const groups = economy.flashSales.groups;
+  economy.flashSales.groups = groups.filter(({ id }) => id === 'kiosk');
+  t.after(() => { economy.flashSales.groups = groups; });
+  const shelf = economy.kiosk.sentry;
+  // Shut (round 1), then open for the round but behind the locked start shutter (his first site is the Hallway): no Kevin sale.
+  assert.equal(g.flashSales.startNow(), false);
+  g.rounds.jumpTo(4); // the Lethal slot's third product: the Sentry
+  assert.equal(instance.status.stock[0], 'sentry');
+  assert.equal(instance.status.open, false);
+  assert.equal(g.flashSales.startNow(), false, 'nothing to discount behind a locked zone');
+  g.map.doors.find(({ id }) => id === 'startShutter').open();
+  g.map.zones.hallway.open = true;
+  assert.equal(g.flashSales.startNow(), true);
+  const { discount } = g.flashSales.active;
+  assert.equal(g.pricing.priceOf('kiosk', 'sentry'), Math.round((shelf * (1 - discount)) / economy.discountRoundTo) * economy.discountRoundTo);
+  g.flashSales.update(economy.flashSales.durationSeconds + 1);
+  assert.equal(g.flashSales.active, null);
+  for (const id of Object.keys(economy.kiosk)) assert.equal(g.pricing.priceOf('kiosk', id), economy.kiosk[id], `${id} is back to its shelf price`);
+
+  g.wallet.earn(10000);
+  const spot = instance.site.cart.slots[0].position;
+  game.standAt(spot.x, spot.z + .9);
+  game.tick(2);
+  assert.equal(g.interactions.prompt.id, 'sentry');
+  for (const voucher of [bossVouchers.masterKey, bossVouchers.signedApproval]) {
+    g.pricing.setVoucher(voucher);
+    assert.equal(g.interactions.prompt.cost, shelf, `${voucher.name} is for doors and tiers`);
+    g.pricing.clearVoucher();
+  }
+  g.pricing.setVoucher(bossVouchers.discountCode);
+  const half = shelf - Math.min(bossVouchers.discountCode.maxSaving, Math.floor((shelf * bossVouchers.discountCode.fraction) / economy.discountRoundTo) * economy.discountRoundTo);
+  assert.equal(g.interactions.prompt.cost, half);
+  const before = g.wallet.points;
+  game.press('KeyF', 20);
+  assert.equal(g.wallet.points, before - half);
+  assert.equal(g.pricing.voucher, null, 'one purchase spends it');
+  assert.deepEqual(g.equipment.pockets.lethal, { id: 'sentry', count: 1 }, 'never the Pick: one Sentry');
+  assert.equal(g.pricing.priceOf('kiosk', 'sentry'), shelf);
 });
 
 test('the Air Horn immediately interrupts charges, respects solid cover and has no payout', () => {

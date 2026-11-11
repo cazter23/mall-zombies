@@ -220,6 +220,11 @@ list in order at the shelf price, and its books balance (every point earned has 
 a proposal changes config numbers in memory only and puts them back, and a typo in a proposal's path is an error; every proposal and every
 buy order points at config that exists (a renamed door, gun or tier fails here, not in a 40-minute run); the maths side reads config (wave
 shares add up, a weaker gun earns more from the same wave, the ladder's prices are the shop's); the claw step only wants guns the bot can fire.
+`kioskBalance.test.js` Kiosk Kevin's balance bar (phase 7, from tools/kioskBalance.js, the maths `npm run kiosk` prints): no product is a
+must-buy at round 2 (each costs at least 40% of what round 2 pays, and no pocket thrown into crowds deals more per point than the Price Gun's
+own wall ammo at any round); the Soda Bomb at round 25 is weaker, not useless (40 to 60% of a Shopper at the centre, a Shopper's worth from a
+crowd, a pocket at most 5% of the round's income) and power keeps rising every round; a full Bubble Wrap absorbs less than the player's
+health and less than doubles Shopper hits to death, and those hits to death match the real game's health; the report prints every section.
 `clawSim.test.js` GRAB-A-GUN's odds (tools/clawOdds.js): the wall stays the cheaper way to every specific gun even at perfect
 timing, a site lasts 5 to 6 grabs, perfect timing never meets the plush while a random lane often does, better timing wins dearer guns,
 and a plush grab costs nothing. clawMachine.test.js also plays the 'claw' Flash Sale (the PA, the sale price charged and refunded, the
@@ -400,7 +405,9 @@ the model and debris and disposes their shared geometry and materials.
   ('sentryExpired'), stops while paused, is gone on death, and Play again leaves nothing.
 - `kiosk.test.js`: Bubble Wrap's damage order, cap and reset. All six products bought through real input at the cart (each slot
   rotates round by round, the Pick goes to whatever has waited longest; a Sparkler Cake replaces the Soda Bombs, a Sentry the
-  cakes, in their pocket), Pick bonuses, hiding, pricing and vouchers. Air Horn input, cover, charge interruption, Mascot weight,
+  cakes, in their pocket), Pick bonuses, hiding, pricing and vouchers (phase 7: Kevin's Flash Sale group waits until his cart is open,
+  not before round 2 or behind the locked start shutter, and ends back at the shelf prices; the Discount Code halves the Sentry once and is
+  spent by that purchase, which is one Sentry (never the Pick); the Master Key and Signed Approval never apply). Air Horn input, cover, charge interruption, Mascot weight,
   boss immunity and zero payout. Kevin's five sites (phase 4): each has one collider (a vaultable counter or >= 2.1 m),
   a clear stand point zombies reach, no zombie spawn within `spawnClearance`, a real prompt there, and ducking measured
   from that cart; the carts leave every spawn's route to the hub alone (no more than 3 m longer); he opens first in

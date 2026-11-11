@@ -107,7 +107,7 @@ src/
                         { type: 'fall' } or { type: 'hazard', id } (a hazard that hurts the player needs a hazards entry).
     attachmentVisuals.js Per-weapon attachment sizing, near-side rail placement, short-barrel spans and held reload copies.
     retailUnease.js     Rare atrium display changes and localized back-room sound timings/ranges; no gameplay tuning.
-    kiosk.js            Kiosk Kevin (docs/kiosk-kevin-plan.md; phases 1-6 built): his five sites (x, z, faces, floorY, the PA's `where`; the first is
+    kiosk.js            Kiosk Kevin (docs/kiosk-kevin-plan.md; phases 1-7 built): his five sites (x, z, faces, floorY, the PA's `where`; the first is
                         where every run starts), the cart's size, spawnClearance, the PA lines; the cart's three `slots` (Lethal: Soda Bomb /
                         Sparkler Cake / Sentry, Bubble Wrap, Tactical: Air Horn / Glitter Bomb; each slot rotates round by round); the equipment
                         power curve (power: baseHealth 800, exponent 0.37), the throw (blockSeconds 0.4, lob, start offset), the two pockets, and the
@@ -118,6 +118,8 @@ src/
                         turret: 30 s, a 58 x power body shot every 0.2 s at the nearest zombie in sight within 15 m, muzzle 0.95 m up, weaponId
                         'sentry'), each with its projectile, sounds and look (look.model: bottle / cake / card / sentry). productOf(id),
                         stockFor(round) (the three on sale), pickFor(round) (Kevin's Pick: the product on sale that has waited longest, never noPick).
+                        bubbleWrap: its ticket and the armour (layerStrength 30 a layer, maxLayers 3: player/stats.js starts the two stats from them).
+                        Prices: economy.kiosk (phase 7 set them from `npm run kiosk`).
     clawMachine.js      GRAB-A-GUN, the claw machine: the prize weights and capsule colours, the sweep (2.4 s, 0.2 s quicker a grab, 1.4 s
                         floor), auto-drop, lift and take times, stock (6 a site) and plush odds, the cabinet's size, its six sites and the
                         PA lines. Price: economy.claw (through g.pricing 'claw').
@@ -798,12 +800,13 @@ src/
                         the music worker (as a Blob worker) pasted into ONE html file; the Google Fonts link loads non-blocking so a blocked
                         network just falls back to system fonts; tests/singleFile.test.js builds it and checks it is self-contained); balance.js = gun balance maths shared with the tests (seeded Monte Carlo of each
                         gun's real spread + pellets vs a Shopper's hitboxes at a range: expectedShotDamage, sustainedDps, burstDps,
-                        shotsToKill); gunReport.mjs = `npm run balance`; meleeReport.mjs = `npm run melee` (swings to kill by round, plain box cutter vs the Customer Service tiers); gunSheet.html/.js = a contact sheet of one gun in eight upgrade states (`npm run dev`, /tools/gunSheet.html?gun=nailGun&view=left); babReport.mjs = `npm run balance:bab` (headless horde bot: plain gun vs warranty tiers vs builds); clawOdds.js = GRAB-A-GUN's odds
+                        shotsToKill); gunReport.mjs = `npm run balance`; meleeReport.mjs = `npm run melee` (swings to kill by round, plain box cutter vs the Customer Service tiers); kioskBalance.js = Kiosk Kevin's balance maths from the game's own config and functions (equipment power, Soda Bomb share and kill radius by round and zombie type, the Sparkler Cake's burn, the Sentry against the Price Gun, Bubble Wrap hits to death, damage per point against wall ammo, prices as a share of a round's measured income: ROUND_INCOME, copied from docs/economy-report.md); kioskReport.mjs = `npm run kiosk` prints it (tests/kioskBalance.test.js holds phase 7's bar on the same maths); gunSheet.html/.js = a contact sheet of one gun in eight upgrade states (`npm run dev`, /tools/gunSheet.html?gun=nailGun&view=left); babReport.mjs = `npm run balance:bab` (headless horde bot: plain gun vs warranty tiers vs builds); clawOdds.js = GRAB-A-GUN's odds
                         simulation (seeded; the game's own roll; perfect / 3-in-4 / random / timed presses; sites, plush closes, wall value,
                         points per specific gun vs its cheapest wall route); clawSim.mjs = `npm run sim:claw [price]` prints it (the plan's odds tables);
                         economySim.mjs = `npm run sim:economy` (docs/economy-report.md is written from its tables): plays the real game headless, many seeds in parallel
                         child processes, with economyBot.js (the bot: aims with error, kites, shops by TELEPORT from a buy order, immortal or mortal; records income by
-                        source, purchases and the loadout each round) following economyPlans.js (PLANS = buy orders; PROPOSALS = config changes applied in memory only,
+                        source, purchases and the loadout each round; a 'kiosk' step is a standing order: it buys from Kiosk Kevin every break with a share of what
+                        it has left and throws what it carries in a fight) following economyPlans.js (PLANS = buy orders, KIOSK = SENSIBLE with Kevin from round 2, the 'kiosk' run set; PROPOSALS = config changes applied in memory only,
                         so a before/after is measured without touching src/config), beside economyModel.js (the maths: wave mix, points a zombie, the upgrade ladder);
                         finished runs are kept in scratch/economy-sim/ (git-ignored) until the game's code or that plan changes; --quick for a short, noisy look
   world/                Shared building blocks for maps

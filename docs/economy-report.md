@@ -641,6 +641,7 @@ spend in total (the "spendable so far" table in section 3).
   the late game lacks. At flat prices a buyer past round 15 takes everything he has without noticing (750 is 12% of a round at 15,
   5% at 30), so what limits him late has to be stock, not price, unless his prices climb with the round as his damage already does
   (equipmentPower). Add a kiosk step to the bot (tools/economyPlans.js lists the step types) and replay the baseline in phase 7.
+  Done in phase 7 (11 November 2026): the KIOSK buy order and the sim's 'kiosk' run set, `npm run kiosk`, and the prices it set (docs/history.md).
 - **Hazards (docs/hazards-plan.md).** 500 to 750 a trigger with a 25 second cooldown: three or four triggers in a round is half of round
   10's income and a quarter of round 20's. A second cost is hidden: a hazard kill pays the kill value but none of the +10 hits, and
   hits are a quarter to nearly half of income, so each zombie a hazard kills pays about 55 to 115 points less than one shot down.

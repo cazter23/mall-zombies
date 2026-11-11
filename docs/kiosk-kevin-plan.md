@@ -1,6 +1,6 @@
 # Kiosk Kevin: plan
 
-## Built scope · 10 November 2026
+## Built scope · 11 November 2026
 
 Phases 2 and 3 are built as Minimal Kiosk Kevin, with the Stadium Air Horn pulled forward from phase 5.
 Phase 4 is built (10 November 2026, `claude/kiosk-kevin-4`): five carts, and from round 3 Kevin moves at each
@@ -17,6 +17,12 @@ choice): the Pick is the product on sale that has waited longest to be the Pick 
 other product keeps getting its turn (moving it along the slots would have locked it onto the Soda Bomb). It adds one charge or
 layer, subject to the armour cap. Prices: Soda Bomb 300 (refill to three, four when featured), Bubble Wrap and Air Horn 500,
 Sparkler Cake 400, Glitter Bomb 750, Sentry 1,500 (starting points for phase 7). Every product in the plan is now built.
+Phase 7 is built (11 November 2026, `claude/kiosk-kevin-7`, with main merged in): `npm run kiosk` (tools/kioskReport.mjs, its maths in
+tools/kioskBalance.js) and a Kiosk Kevin step for the economy bot (a standing order, the KIOSK buy order and the sim's 'kiosk' run set).
+From the report: the **Soda Bomb is 500** (was 300: 33% of what round 2 pays, under the 40% bar, and a pocket into crowds dealt more per
+point than Rivet Rifle ammo past round 10) and a **Bubble Wrap layer absorbs 30** (was 40: a full wrap took 120% of your health and doubled
+the hits you can take; now 90%, Shopper hits 3 to 5). Every other price and the exponent (0.37) stay. The Flash Sale group (from phase 3)
+and the vouchers are checked by tests; Kevin's prices do not climb with the round (his late limit is the pocket and the walk to him).
 
 Phase 1 was built on 9 November 2026 on `claude/kiosk-kevin-1` (the two pockets, the buttons and the Soda Bomb).
 The original proposal below was written on `claude/kiosk-kevin-plan` the same day. Its remaining phases and
@@ -329,7 +335,7 @@ Done when: each does its job on Shoppers, Cart Pushers and Mascots, does nothing
 Deploy on landing, targeting with a clear line, the hitscan from its muzzle, lifetime, one at a time, no collider.
 Done when: it never targets Sunny or the dead, stops when paused or dead, and its kills pay through 'kill' with no +10.
 
-### 7. Sales, vouchers and balance (Sonnet or Luna)
+### 7. Sales, vouchers and balance (Sonnet or Luna) -- BUILT 11 November 2026 (tests/kioskBalance.test.js, tests/kiosk.test.js)
 The Flash Sale group, voucher checks, and `tools/kioskReport.mjs` (`npm run kiosk`): Soda Bomb kills by round and type, Bubble Wrap hits-to-death,
 Sentry damage per second against the Price Gun. Set the prices.
 Done when: no product is a must-buy at round 2, the Soda Bomb is still worth its price at round 25 (weaker, not useless), and Bubble Wrap doesn't
