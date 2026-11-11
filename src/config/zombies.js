@@ -19,9 +19,10 @@ const shopper = {
     { fromRound: 1, walk: 1 },
     { fromRound: 3, walk: 0.7, jog: 0.3 },
     { fromRound: 5, walk: 0.35, jog: 0.65 },
-    { fromRound: 7, walk: 0.15, jog: 0.55, run: 0.3 },
-    { fromRound: 10, jog: 0.4, run: 0.6 },
-    { fromRound: 13, jog: 0.15, run: 0.85 },
+    { fromRound: 7, walk: 0.25, jog: 0.65, run: 0.1 },
+    { fromRound: 9, walk: 0.15, jog: 0.55, run: 0.3 },
+    { fromRound: 11, jog: 0.4, run: 0.6 },
+    { fromRound: 14, jog: 0.15, run: 0.85 },
   ],
   acceleration: 8, // m/s^2
   turnSpeed: 7, // radians per second it can turn to face where it's going
