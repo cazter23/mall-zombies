@@ -76,6 +76,8 @@ export const skins = {
   barcodeScanner: [{ id: 'black-label', name: 'Black Label', slot: 1,
     palette: { body: 0x292636, dark: 0x171723, metal: 0xa8a2bb, grip: 0x201e29, accent: 0xd9b5de, sight: 0xc8f3b0, emitter: 0xf391b3 }, challenge: mastery(400) }, {
     id: 'express-lane', name: 'Express Lane', slot: 2,
+    palette: { body: 0x0c3a9a, dark: 0x07225c, metal: 0xc8d6f0, grip: 0x161b2a, accent: 0xf4f8ff, sight: 0xc8f3b0 },
+    pattern: { kind: 'checker', ink: 0xf4f8ff, size: 0.008 }, // checkered flag
     challenge: { kind: 'multiKillShots', count: 40, minKills: 2, text: 'Fire {count} beams of the {gun} that each clear {minKills} or more zombies.' },
   }],
   leafBlower: [{ id: 'autumn-gold', name: 'Autumn Gold', slot: 1,
