@@ -151,15 +151,18 @@ export const challengeDebug = {
 // is 0.167, and the lightest, Popcorn Butter, 0.882, leaves no room above. Pattern skins are deep SATURATED colours for that reason.)
 export const skinContrast = { minimum: 2 };
 
-// Printed patterns (slot 2 skins; weapons/models/skinPattern.js). One canvas per skin, made the first time it is worn and shared by
-// the gun in hand, the locker preview and the conveyor. The canvas spans `metres` of gun in both directions (centred on the gun);
-// its top `blankFraction` stays body colour: every face that is not printed samples there. Printed faces: those whose outward
-// normal, in the gun's own frame, points up (y >= faceDot) or to the right (x >= faceDot), and leans left no more than leftLimit
-// (x >= leftLimit: a rounded top's left bevel stays plain). Never the left face (the build patch,
-// warranty seal and loaner tag sit there) and never a face already carrying a texture (the brand label is its own mesh).
-// A skin's `pattern`: { kind, ink, ...that kind's numbers in metres }. Kinds: lines, grid, dots, stripes, checker, gingham,
-// confetti, tread, argyle, text (fonts from config/fonts.js).
-export const skinPatterns = { size: 512, metres: 0.8, blankFraction: 0.06, faceDot: 0.6, leftLimit: -0.2, anisotropy: 4 };
+// Printed patterns (slot 2 skins; weapons/models/skinPattern.js). One canvas per skin (and layout), made the first time it is worn and shared by
+// the gun in hand, the locker preview and the conveyor. The canvas is size wide and twice that tall: an upper region for faces pointing up or
+// right, a lower one for faces pointing left (the side you see in your hands), each `metres` of gun across, centred on the gun's body; its
+// top `blankFraction` stays body colour for every other face. faceDot = how squarely a face must point that way; leftLimit = a top face may
+// lean left no more than this. keepOut: on the left face, a box this many metres either side of each named mount is painted plain, so the
+// build patch and the warranty seal (both at the sticker mount) always sit on plain paint. A face already carrying a texture (the brand
+// label) is never printed. A skin's `pattern`: { kind, ink, ...that kind's numbers in metres }. Kinds: lines, grid, dots, stripes, checker,
+// gingham, confetti, tread, argyle, text (fonts from config/fonts.js).
+export const skinPatterns = {
+  size: 512, metres: 0.8, blankFraction: 0.06, faceDot: 0.6, leftLimit: -0.2, anisotropy: 4,
+  keepOut: { mounts: ['sticker'], halfLength: 0.036, halfHeight: 0.026 },
+};
 
 export const locker = {
   title: 'Associate locker', menu: 'Weapon locker', kicker: 'Personnel · Approved self-expression',

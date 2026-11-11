@@ -286,12 +286,16 @@ src/
                         terrycloth wristband with woven tag) and createUpgradeVisuals(model): every part + a branded Extended Warranty service
                         seal built up front (hidden), show({ tier, attachments }) per frame; the Extended Nozzle moves the muzzle (and flash) to its tip.
                         warrantyTrim.js = the Extended Warranty on the gun: barrel collar (rings that get chunkier by tier, studs for Renewals) and a swinging grip tag; buildVisual.js also puffs the body (pillows). Sizes: config/gunStyle.js.
+                        RIMS (config/gunStyle.js rim): a thin dark edge round the build patch (extra instances of the stitch mesh), the warranty tag (merged
+                        into its print bar) and each collar (one merged 'warrantyRim' mesh per tier), so they read on any skin's body, light or dark.
                         New gun = new file + 1 line (+ its mounts)
-      skinPattern.js    applySkinPattern(root, def, skinId): a slot 2 skin's printed pattern (config/skins.js `pattern`, numbers in skinPatterns), applied by
-                        models/index.js after a build in that skin. Swaps the body material for ONE patterned clone (no draw call added) and rewrites the
-                        body meshes' UVs in the gun's frame: top and right faces take the print, every other face (the left one with the build patch,
-                        seal and loaner tag) samples a blank strip painted the body colour. One canvas per skin, made on first use and shared
-                        (userData.sharedSkinPattern: the locker's release skips it); none in Node.
+      skinPattern.js    applySkinPattern(root, def, skinId, mounts): a slot 2 skin's printed pattern (config/skins.js `pattern`, numbers in skinPatterns),
+                        applied by models/index.js after a build in that skin (a display borrows the model's mounts, built once per gun). Swaps the body
+                        material for ONE patterned clone (no draw call added) and rewrites the body meshes' UVs in the gun's frame, laid out from the
+                        sticker mount: top and right faces sample the canvas's upper region, left faces its lower one, where a keep-out round the sticker
+                        mount (build patch, warranty seal) is painted back to the body colour; front, back and underneath sample a blank strip. One canvas
+                        per skin and layout, made on first use and shared by the gun in hand and its displays (userData.sharedSkinPattern: the locker's
+                        release skips it); none in Node.
       shortBarrel.js    Reversible front-segment geometry variants, preserving moving-parent transforms and owning both variants.
       loanerTag.js      The Courtesy Loaner's security tag and swinging card (reversible, like the other upgrade visuals).
       buildVisual.js    A finished gun's look: seam, patch and stitches in the stuffing's colour, lumps and leaking tufts when Overstuffed. Instanced, placed from the sticker and top mounts.

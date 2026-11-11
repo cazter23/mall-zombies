@@ -4,6 +4,7 @@
 // Everything is built up front and hidden; show() switches it on. The collar goes on the gun's `barrel` mount and the tag on its `grip` mount, so
 // it works for every gun that has them (weapons/models/*.js mounts), and it sits BEHIND the muzzle so the Extended Nozzle and Sawn-Off still show.
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { upgrades } from '../../config/upgrades.js';
 import { gunStyle } from '../../config/gunStyle.js';
 
@@ -26,6 +27,12 @@ function ring(group, w, h, depth, bar, mat, z = 0) {
     mesh.position.set(x, y, z);
     group.add(mesh);
   }
+}
+
+/** The bars of a hollow rectangle (as ring() lays them out), as box geometries for merging. */
+function ringBars(w, h, depth, bar, z = 0) {
+  return [[w, bar, 0, (h - bar) / 2], [w, bar, 0, -(h - bar) / 2], [bar, h - 2 * bar, (w - bar) / 2, 0], [bar, h - 2 * bar, -(w - bar) / 2, 0]]
+    .map(([pw, ph, x, y]) => new THREE.BoxGeometry(pw, ph, depth).translate(x, y, z));
 }
 
 /** The metal a tier is made of (config/gunStyle.js finish): its own material, so a shimmering Platinum never changes another gun's. */
@@ -62,6 +69,13 @@ export function createWarrantyTrim(gun, mounts = {}) {
       const paint = shimmerOf(tier.id, metalMaterial(tier.id, tier.color));
       const rings = spec.rings ?? 1;
       for (let i = 0; i < rings; i++) ring(group, w, h, spec.ringDepth, c.bar, paint, i * (spec.ringDepth + (spec.gap ?? 0)));
+      // The rim: one dark ring just inside each metal ring and a little longer, so a dark edge shows at both ends (config/gunStyle.js rim). One mesh.
+      const r = style.rim.width;
+      const rimParts = [];
+      for (let i = 0; i < rings; i++) rimParts.push(...ringBars(w - 0.001, h - 0.001, spec.ringDepth + 2 * r, c.bar, i * (spec.ringDepth + (spec.gap ?? 0))));
+      const rimMesh = new THREE.Mesh(mergeGeometries(rimParts), material(style.rim.color));
+      rimMesh.name = 'warrantyRim';
+      group.add(rimMesh);
       if (spec.stripes) {
         for (let i = 0; i < spec.stripes; i++) {
           const z = (i - (spec.stripes - 1) / 2) * spec.ringDepth * 0.62;
@@ -102,7 +116,13 @@ export function createWarrantyTrim(gun, mounts = {}) {
   // A dark hole punched near the top and a bar of print across the middle, so it reads as a card from a distance.
   const hole = new THREE.Mesh(new THREE.BoxGeometry(0.006, 0.006, t.thickness + 0.001), material(c.stripe, { basic: true }));
   hole.position.set(0, t.size[1] / 2 - 0.007, 0);
-  const print = new THREE.Mesh(new THREE.BoxGeometry(t.size[0] * 0.7, 0.005, t.thickness + 0.001), material(c.stripe, { basic: true }));
+  // The bar of print and the card's dark rim are one mesh (config/gunStyle.js rim): a frame just outside the card's edges, a little thinner than it.
+  const rimWidth = style.rim.width, [cw, ch] = t.size;
+  const print = new THREE.Mesh(mergeGeometries([
+    new THREE.BoxGeometry(cw * 0.7, 0.005, t.thickness + 0.001),
+    ...ringBars(cw + 2 * rimWidth, ch + 2 * rimWidth, t.thickness * 0.8, rimWidth).map(g => g.translate(0, 0.004, 0)) // (centred on the card: the print bar sits 4 mm low),
+  ]), material(style.rim.color, { basic: true }));
+  print.name = 'warrantyTagPrint';
   print.position.set(0, -0.004, 0);
   card.add(hole, print);
   pivot.add(string, card);

@@ -73,4 +73,10 @@ export const gunStyle = {
 
   // BUILD GLOW: the seam along the top glows in the stuffing's colour (drawn unlit, so it holds in dark rooms).
   glow: { width: 0.0045, height: 0.0035 },
+
+  // RIMS: a thin dark edge round the build patch, the warranty tag and each warranty collar, so they read on ANY gun body, light or dark (a weapon
+  // skin's body only has to contrast with this ink, or else with every stuffing and tier colour: tests/skinEquipment.test.js). width = how far the
+  // edge shows past the part; color = the one dark ink (the patch's stitches use it too). Costs no draw call on the patch (extra stitch instances) or the
+  // tag (merged into its print), one on a visible collar.
+  rim: { width: 0.0025, color: 0x1d1626 },
 };

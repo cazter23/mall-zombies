@@ -9,6 +9,7 @@ import { gunStyle } from '../../config/gunStyle.js';
 
 const PATCH = { height: .03, length: .05, thickness: .002 };
 const STITCH = { count: 5, spacing: .0115, length: .012, width: .0016, offsetY: .02, proud: .0018 };
+const RIM_BARS = 4; // the patch's dark edge: four bars, drawn as extra instances of the stitch mesh (config/gunStyle.js rim)
 const SEAM = { count: 6, spacing: .017, length: .017, width: gunStyle.glow.width, lift: .0035 }; // thread down the top of the gun, the face you look at
 const LUMPS = [[.02, .012, -.024, .017], [.024, -.012, -.006, .021], [.02, .014, .014, .016], [.018, -.014, .028, .015]]; // out, up, along, radius
 const TUFTS = 3, TUFT_SIZE = .005, TUFT_FALL = .05, TUFT_DRIFT = .012, TUFT_SPEED = .5;
@@ -51,10 +52,10 @@ export function createBuildVisual(gun, mounts = {}) {
   face.add(patch);
 
   const stitchGeometry = new THREE.BoxGeometry(STITCH.width, STITCH.length, STITCH.width);
-  const stitchMaterial = new THREE.MeshStandardMaterial({ color: 0x1d1626, roughness: .7 });
+  const stitchMaterial = new THREE.MeshStandardMaterial({ color: gunStyle.rim.color, roughness: .7 });
   // (Instanced: a built gun is carried everywhere, so its dozens of stitches must stay one draw.)
   const form = new THREE.Object3D();
-  const stitches = new THREE.InstancedMesh(stitchGeometry, stitchMaterial, 2 * 2 * STITCH.count);
+  const stitches = new THREE.InstancedMesh(stitchGeometry, stitchMaterial, 2 * 2 * STITCH.count + RIM_BARS);
   stitches.name = 'buildStitch';
   let placed = 0;
   for (const row of [-1, 1]) {
@@ -67,6 +68,19 @@ export function createBuildVisual(gun, mounts = {}) {
       }
     }
   }
+  // The rim: a dark frame just round the patch, a hair proud of it (the stitch box scaled into bars: no extra draw).
+  const rim = gunStyle.rim.width;
+  for (const [up, along, height, length] of [
+    [(PATCH.height + rim) / 2, 0, rim, PATCH.length + 2 * rim], [-(PATCH.height + rim) / 2, 0, rim, PATCH.length + 2 * rim],
+    [0, (PATCH.length + rim) / 2, PATCH.height, rim], [0, -(PATCH.length + rim) / 2, PATCH.height, rim],
+  ]) {
+    form.position.set(outward * PATCH.thickness, up, along);
+    form.rotation.set(0, 0, 0);
+    form.scale.set(PATCH.thickness * 1.4 / STITCH.width, height / STITCH.length, length / STITCH.width);
+    form.updateMatrix();
+    stitches.setMatrixAt(placed++, form.matrix);
+  }
+  form.scale.set(1, 1, 1);
   face.add(stitches);
 
   // The HEART BADGE: a coloured plate on the patch with the Heart's shape in cream on it (config/gunStyle.js heart).

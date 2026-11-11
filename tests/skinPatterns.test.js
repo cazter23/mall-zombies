@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { skins, skinPatterns } from '../src/config/skins.js';
 import { weapons } from '../src/config/weapons.js';
 import { buildWeaponModel, buildWeaponDisplay } from '../src/weapons/models/index.js';
-import { printedSide, blankUv, skinPatternTexture } from '../src/weapons/models/skinPattern.js';
+import { printedSide, blankUv, sideUv, keepOuts } from '../src/weapons/models/skinPattern.js';
 import { resolveGunColors } from '../src/weapons/skinPalette.js';
 
 const patterned = Object.entries(skins).flatMap(([gunId, entries]) => entries.filter(skin => skin.pattern).map(skin => ({ gunId, skin })));
@@ -81,7 +81,7 @@ for (const { gunId, skin } of patterned) {
         prints += 1;
         assert.equal(before.color.getHex(), body, `${mesh.name} was body-coloured`);
         assert.equal(mesh.material.userData.bodyColor, body);
-        assert.equal(mesh.material.map, skinPatternTexture(gunId, skin), 'the shared print');
+        assert.equal(mesh.material.map, b.find(other => isPrint(other.material)).material.map, 'one shared print');
         assert.deepEqual([mesh.material.roughness, mesh.material.metalness], [before.roughness, before.metalness], 'same finish');
       } else {
         assert.equal(mesh.material.color?.getHex(), before.color?.getHex(), `${mesh.name}: every other role is untouched`);
@@ -91,41 +91,58 @@ for (const { gunId, skin } of patterned) {
     assert.ok(prints > 0, 'something is printed');
     assert.ok(b.some(mesh => mesh.material.map && !isPrint(mesh.material)) || !a.some(mesh => mesh.material.map),
       'the brand label (its own textured mesh) is still there');
-    const map = skinPatternTexture(gunId, skin).image;
-    assert.deepEqual(map.commands.slice(0, 2), [['fillStyle', '#' + body.toString(16).padStart(6, '0')], ['fillRect', 0, 0, skinPatterns.size, skinPatterns.size]],
+    const map = b.find(mesh => isPrint(mesh.material)).material.map.image;
+    assert.deepEqual(map.commands.slice(0, 2), [['fillStyle', '#' + body.toString(16).padStart(6, '0')], ['fillRect', 0, 0, skinPatterns.size, skinPatterns.size * 2]],
       'the canvas is the body colour first: unprinted faces and the blank strip are exactly the palette body');
   });
 
-  test(`${skin.name} (${gunId}): the print is on top and right faces only; the left-face mounts are clear`, () => {
+  test(`${skin.name} (${gunId}): top and right faces print above, left faces below, and the sticker mount sits on plain paint`, () => {
     const model = withCanvas(() => buildWeaponModel(def, skin.id));
-    const sticker = new THREE.Vector3(...model.mounts.sticker.position);
-    let top = 0, right = 0, nearSticker = 0;
-    const printedV = 1 - skinPatterns.blankFraction;
+    const counts = { top: 0, right: 0, left: 0 };
     for (const mesh of meshes(model.root).filter(mesh => isPrint(mesh.material))) {
       for (const tri of triangles(model.root, mesh)) {
         if (tri.side === null) {
           for (const uv of tri.uvs) assert.deepEqual(uv.map(x => Math.fround(x)), blankUv.map(x => Math.fround(x)), `${mesh.name}: an unprinted face samples the blank strip`);
-        } else {
-          assert.ok(tri.normal.x >= skinPatterns.leftLimit, 'never a face leaning left');
-          for (const [, v] of tri.uvs) assert.ok(v < printedV, 'inside the printed area');
-          if (tri.side === 'top') top += 1; else right += 1;
+          continue;
         }
-        if (tri.normal.x < -skinPatterns.faceDot && tri.centre.distanceTo(sticker) < 0.05) {
-          nearSticker += 1;
-          assert.equal(tri.side, null, 'the face under the build patch / seal / loaner tag is plain');
+        counts[tri.side] += 1;
+        if (tri.side === 'top') assert.ok(tri.normal.x >= skinPatterns.leftLimit, 'a top face leaning left stays plain');
+        for (const [, v] of tri.uvs) {
+          if (tri.side === 'left') assert.ok(v < 0.5, 'left faces sample the lower region');
+          else assert.ok(v > 0.5 && v < blankUv[1], 'top and right faces sample the upper region, below the blank strip');
         }
       }
     }
-    assert.ok(top > 0, 'the top is printed');
-    void nearSticker; // (0 when the sticker sits on a part that is not body-coloured)
+    assert.ok(counts.top > 0, 'the top is printed');
+    assert.ok(counts.left > 0, 'the side you see in your hands is printed');
+
+    // The sticker mount (the build patch and the warranty seal): after the print, its keep-out is painted back to the body colour, and the patch
+    // and the seal lie inside it.
+    const print = meshes(model.root).find(mesh => isPrint(mesh.material)).material;
+    const centre = new THREE.Vector3().fromArray(print.userData.patternCentre);
+    const commands = print.map.image.commands;
+    const after = commands.slice(commands.map(([name]) => name).lastIndexOf('restore') + 1);
+    const body = '#' + skin.palette.body.toString(16).padStart(6, '0');
+    assert.deepEqual(after[0], ['fillStyle', body]);
+    const [hole] = keepOuts(model.mounts);
+    const width = skinPatterns.size, height = skinPatterns.size * 2;
+    const pixel = point => { const [u, v] = sideUv('left', point, centre); return [u * width, (1 - v) * height]; };
+    const covered = ([x, y]) => after.some(([name, x0, y0, w, h]) => name === 'fillRect' && x >= x0 && x <= x0 + w && y >= y0 && y <= y0 + h);
+    const [, sy, sz] = model.mounts.sticker.position;
+    for (const [dz, dy] of [[0, 0], [-0.025, -0.015], [0.025, 0.015], [-0.025, 0.015], [0.025, -0.015]]) { // the patch is 50 x 30 mm, the seal 40 x 32
+      assert.ok(covered(pixel({ z: sz + dz, y: sy + dy })), `plain paint at the sticker ${dz}, ${dy}`);
+    }
+    assert.ok(hole.z[1] - hole.z[0] >= 0.05 && hole.y[1] - hole.y[0] >= 0.032, 'the keep-out is bigger than the patch and the seal');
   });
 
   test(`${skin.name} (${gunId}): the locker / conveyor display wears it too, sharing the one texture`, () => {
     const display = withCanvas(() => buildWeaponDisplay(def, skin.id));
+    const model = withCanvas(() => buildWeaponModel(def, skin.id));
     const prints = meshes(display).filter(mesh => isPrint(mesh.material));
+    const held = meshes(model.root).find(mesh => isPrint(mesh.material)).material.map;
     assert.ok(prints.length > 0);
-    assert.ok(prints.every(mesh => mesh.material.map === skinPatternTexture(gunId, skin)));
-    assert.equal(skinPatternTexture(gunId, skin).userData.sharedSkinPattern, true, 'a preview release leaves it alone');
+    assert.ok(prints.every(mesh => mesh.material.map === held), 'the held gun and its display share one texture (same body, same keep-out)');
+    assert.equal(held.userData.sharedSkinPattern, true, 'a preview release leaves it alone');
   });
 }
 
