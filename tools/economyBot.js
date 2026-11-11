@@ -27,6 +27,7 @@ import { buildOf } from '../src/config/workshop.js';
 import { productOf } from '../src/config/kiosk.js';
 import { weapons } from '../src/config/weapons.js';
 import { sustainedDps } from './balance.js';
+import { closingTimeSim } from '../src/config/closingTimeSim.js';
 
 const DEG = Math.PI / 180;
 const UPPER_Y = 6.3; // the upper floor (docs/map.md)
@@ -35,10 +36,7 @@ const TICKS_PER_SECOND = 60;
 // The bot's hands and eyes. sigma: wandering aim error (degrees); slew: how fast the view turns (deg/s); head: share of targets aimed
 // at the head; stand: stand and shoot while the nearest zombie is further than this (m); panic: sprint away when one is this close;
 // fireCone: how close to the aim point (degrees) before it pulls the trigger.
-export const SKILLS = {
-  average: { sigma: 1.6, slew: 260, head: 0.2, stand: 7, panic: 2.2, fireCone: 2.2 },
-  good: { sigma: 0.8, slew: 420, head: 0.5, stand: 6, panic: 2.0, fireCone: 1.4 },
-};
+export const SKILLS = closingTimeSim.skills;
 // The claw: a press aimed at the middle of the wanted lane's window, off by a normal error of this many seconds (tools/clawOdds.js "timed").
 const CLAW_PRESS_ERROR_SECONDS = 0.12;
 // Ammo: refill a gun when its reserve is under this share of its cap; a round counts as stalled after this many seconds.
@@ -78,13 +76,25 @@ export const defaultBase = (g) => (g.map.zones.hallway.open ? { x: 0, y: 0, z: 2
 /** What a plan step is called in the tables: "tier:rivetRifle", "door:atrium". */
 export const stepLabel = (step) => `${step.type}:${step.id ?? step.area ?? step.gun ?? ''}`;
 
-export function runBot({ seed = 1, skill = 'average', plan = [], maxRound = 30, immortal = false, maxSeconds = 2 * 3600, base = defaultBase, onGame = null } = {}) {
+export function runBot(options = {}) {
+  const originalRandom = Math.random;
+  let seeded = null;
+  // Construction still uses unseeded randomness. Systems which capture this
+  // function as a default argument switch to the seed after map construction.
+  Math.random = () => (seeded ?? originalRandom)();
+  try { return playBot(options, rand => { seeded = rand; }); }
+  finally { Math.random = originalRandom; }
+}
+
+function playBot({ seed = 1, skill = 'average', plan = [], maxRound = 30, immortal = false, maxSeconds = 2 * 3600, base = defaultBase, driver: makeDriver = null, onGame = null }, seedRandom) {
   const S = typeof skill === 'string' ? SKILLS[skill] : skill;
-  const t = headlessGame(), { g, input } = t;
+  const silent = new Proxy({}, { get: () => () => {} });
+  const t = headlessGame(makeDriver ? { hud: silent, sound: { play() {}, unlock() {} } } : {}), { g, input } = t;
   onGame?.(g);
-  t.tick(1);
   const rand = mulberry(seed * 7919 + 13);
-  Math.random = rand; // (after the map is built: CLAUDE.md)
+  seedRandom(rand); // (after the map is built: CLAUDE.md)
+  g.resetRun(); // reseed per-run choices, including captured RNG defaults
+  t.tick(1);
   const gauss = () => { let u = 0; while (!u) u = rand(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * rand()); };
   const nav = g.zombies.nav;
   const P = g.player;
@@ -143,14 +153,14 @@ export function runBot({ seed = 1, skill = 'average', plan = [], maxRound = 30, 
   if (immortal) {
     const real = g.health.takeDamage.bind(g.health);
     g.health.takeDamage = (amount, source) => {
-      if (amount >= g.stats.health) { if (cur) cur.deaths++; g.stats.health = g.stats.maxHealth; return; }
+      if (amount >= g.stats.health) { if (cur) cur.deaths++; driver?.lethal({ amount, source }); g.stats.health = g.stats.maxHealth; return; }
       real(amount, source);
     };
   }
   const bought = (label, cost) => { purchases.push({ round: g.rounds.round, label, cost }); if (cur) cur.bought.push(`${label}(${cost})`); };
 
   // ---------------- buying (teleport + hold F on the real prompt) ----------------
-  function interactAt(target, { id = null, kind = null } = {}) {
+  function interactAt(target, { id = null, kind = null, ticks = 50, success = null } = {}) {
     const fy = floorOf(target.y);
     const before = { spent: g.wallet.totalSpent, menu: g.state.menu };
     for (const r of [1.0, 1.4, 0.7, 1.8]) {
@@ -167,10 +177,10 @@ export function runBot({ seed = 1, skill = 'average', plan = [], maxRound = 30, 
         if (!p || (id && p.id !== id) || (kind && p.kind !== kind)) continue;
         if (!p.canAfford || p.blocked) return { ok: false, reason: p.blocked ? 'blocked' : 'poor', cost: p.cost };
         input.pressed.add('KeyF'); input.held.add('KeyF');
-        t.tick(p.instant ? 2 : 50);
+        t.tick(p.instant ? 2 : ticks);
         input.held.delete('KeyF');
         t.tick(2);
-        if (g.wallet.totalSpent !== before.spent || g.state.menu !== before.menu) return { ok: true, cost: g.wallet.totalSpent - before.spent };
+        if (success?.() || g.wallet.totalSpent !== before.spent || g.state.menu !== before.menu) return { ok: true, cost: g.wallet.totalSpent - before.spent };
       }
     }
     return { ok: false, reason: 'noPrompt' };
@@ -329,6 +339,13 @@ export function runBot({ seed = 1, skill = 'average', plan = [], maxRound = 30, 
       const w = g.gun.weaponFor(gunId);
       if (!w || w.def.loaner || w.reserve > w.reserveCap * REFILL_BELOW || (gunId === 'stapleGun' && g.gun.slots.length > 1 && g.rounds.round > 3)) continue;
       if (!holdGun(gunId)) continue;
+      if (gunId === 'returnToSender') {
+        if (g.wallet.points < g.pricing.priceOf('closing', 'returnsAmmo') + (driver?.reserve() ?? 0)) continue;
+        const desk = feature((f) => f.kind === 'returnsDesk');
+        const r = interactAt(desk.position, { id: 'returnsAmmo' });
+        if (r.ok) bought(`ammo:${gunId}`, r.cost);
+        continue;
+      }
       const cache = feature((f) => f.kind === 'ammoCache' && g.map.zones[f.zone].open);
       const wb = feature((f) => f.kind === 'wallBuy' && f.weapon === gunId && g.map.zones[f.zone].open);
       const cachePrice = g.pricing.priceOf('ammoCache', 'ammoCache');
@@ -343,21 +360,24 @@ export function runBot({ seed = 1, skill = 'average', plan = [], maxRound = 30, 
     home ??= P.position.clone();
     const back = home.clone(), yaw = P.yaw;
     refillAmmo();
+    driver?.shop();
     for (let guard = 0; guard < 12; guard++) {
       const step = todo.find((s) => !s.done);
       if (!step) break;
+      if (driver?.defer(step)) break;
       const r = tryStep(step);
       if (r.ok && !r.logged) step.cost = r.cost;
       if (r.done) { step.done = true; step.round = g.rounds.round; if (r.ok && !r.logged) bought(stepLabel(step), r.cost); if (step.type !== 'claw') continue; }
       break; // strict order: save for the next thing on the list
     }
     if (kioskOrder?.active) shopKevin(kioskOrder);
-    const b = base(g);
+    const b = driver?.base() ?? base(g);
     if (b) back.set(b.x, b.y, b.z);
     P.teleport({ position: back, yaw });
     home = null;
   }
 
+  const driver = makeDriver?.({ g, input, t, interactAt, holdGun, tryStep, bought, refillAmmo });
   // ---------------- combat ----------------
   let target = null, targetPart = 'body', retarget = 0;
   let errYaw = 0, errPitch = 0, errTimer = 0;
@@ -402,7 +422,7 @@ export function runBot({ seed = 1, skill = 'average', plan = [], maxRound = 30, 
     if (!target?.isAlive || --retarget <= 0) {
       const visible = threats.filter((z) => z.state !== 'spawning' && nav.clearLine(P.position.x, P.position.z, z.position.x, z.position.z, fy));
       visible.sort((a, b) => a.position.distanceToSquared(P.position) - b.position.distanceToSquared(P.position));
-      const next = visible[0] ?? null;
+      const next = driver?.target(visible) ?? visible[0] ?? null;
       if (next !== target) targetPart = rand() < S.head ? 'head' : 'body';
       target = next; retarget = 20;
     }
@@ -494,6 +514,7 @@ export function runBot({ seed = 1, skill = 'average', plan = [], maxRound = 30, 
   while (g.runStats.timeAlive < maxSeconds) {
     tick++;
     if (g.state.over) { outcome = 'died'; break; }
+    if (driver?.stop()) { outcome = 'won'; break; }
     if (g.rounds.round > maxRound) { outcome = 'maxRound'; break; }
     if (g.state.menu) input.pressed.add('KeyQ');
     // shop once per break (and once at the very start, before any zombie is up)
@@ -513,7 +534,7 @@ export function runBot({ seed = 1, skill = 'average', plan = [], maxRound = 30, 
       const [x, y, z] = spots[unstick % spots.length];
       P.teleport({ position: new THREE.Vector3(x, y, z), yaw: P.yaw });
     }
-    act();
+    if (!driver?.beforeTick(tick)) { act(); driver?.afterAct(); }
     g.update(1 / TICKS_PER_SECOND);
     if (tick % 120 === 0) { // not moving while wanting to: nudge the steering
       if (P.position.distanceTo(lastPos) < 0.2 && (input.padMove.x || input.padMove.y)) { stuck++; moveDir = { x: Math.sin(rand() * 6.28), z: Math.cos(rand() * 6.28) }; }
@@ -535,6 +556,7 @@ export function runBot({ seed = 1, skill = 'average', plan = [], maxRound = 30, 
     r.accuracy = r.shots ? ((n ? n.hit0 : g.runStats.shotsHit) - r.hit0) / r.shots : 0;
   }
   const result = {
+    quest: driver?.result(),
     outcome, round: g.rounds.round, seconds: g.runStats.timeAlive, earned: g.wallet.totalEarned, spent: g.wallet.totalSpent, points: g.wallet.points,
     kills: g.runStats.kills, accuracy: g.runStats.accuracy, killedBy: g.health.killedBy?.id ?? null, stalls, unstick, stuck,
     rounds, purchases, events, loadout: loadout(), wearing: g.wardrobe.status,

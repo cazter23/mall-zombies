@@ -663,3 +663,5 @@ spend in total (the "spendable so far" table in section 3).
 - The bot never used the Confetti Cannon, the Barcode Scanner or a claw-only gun, an attachment, a hazard, the Soda Bomb or a prize ticket.
 - Flash Sales and vouchers were on and are inside every number (about 16 sales a run); they were not measured apart.
 - Proposal E (more Renewals) is maths only.
+
+Phase 11 measurement note (11 November 2026): the Closing Time tool shares this report's bot, but now switches captured random functions to its seed after map construction and resets per-run choices before play. The historical tables above retain their original measurement method; their note about non-repeatable runs describes those historical runs. New quick reports are regenerated because the bot/config content hash changed. The economy runner now caps child processes at four, including an explicit larger --workers argument. Quest timing and overtime measurements live in closing-time-11-report.md.

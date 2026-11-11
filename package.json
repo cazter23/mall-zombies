@@ -17,6 +17,7 @@
     "sim:claw": "node tools/clawSim.mjs",
     "sim:economy": "node tools/economySim.mjs",
     "sim:challenges": "node tools/challengeReport.mjs",
+    "sim:closing": "node tools/closingTimeSim.mjs",
     "balance:bab": "node tools/babReport.mjs"
   },
   "dependencies": {

@@ -1,5 +1,12 @@
 # Sunset Galleria: build history ("Current state")
 
+## 11 November 2026 - The Closing Time measurement bot merged into main (its report is out of date)
+
+- claude/closing-time-11 (`npm run sim:closing`: tools/closingTimeBot.js and closingTimeSim.mjs, the economy bot's seeded wrapper and driver hook, and the phase 11 report) merged into main. The user's call: worth having, not very useful.
+- Conflicts: docs (both kept), package.json (both new scripts, sim:challenges and sim:closing) and tools/economyBot.js, where main's `onGame` hook (tools/challengeReport.mjs) and Kevin's standing order were kept beside the branch's seeded wrapper and driver.
+- **One fix:** the bot's "with Return to Sender" runs bought the gun at the Returns Desk, which no longer sells it, so they would have waited forever. At the same moment (the duties done) the bot now skips the hidden quest to "your number is called" and collects the gun free. One run checked: directed, immortal, average skill, seed 1, won at round 20 with the beam as the finisher.
+- **The phase 11 report predates the Return quest** and its "returns" figures include the old 10,000. It is marked out of date at its top; rerun `npm run sim:closing` before quoting it.
+
 ## 11 November 2026 - Weapon skins phase 9: the Closing Time rewards
 
 - **Two looks that fit every gun, unlocked by winning the shift** (config/skins.js `closingRewards`, appended to each gun's list as slots 4 and 5):
@@ -93,6 +100,14 @@
   on, a Staple Gun kill shows all three pins under the round box (the changed one edged yellow); a Rivet Rifle body shot strikes Gold
   Standard through with "Failed"; Gold Standard's band moves between frames; Rush Order's trims glow; the locker previews Grand Opening.
   Browser storage was left as found (empty).
+## 11 November 2026 - Closing Time phase 11: measure and tune
+
+- Built sim:closing on the economy bot and SENSIBLE plan, with real purchases/keys/duties/validation/return/van and a four-process ceiling. Developer-only policy numbers live in config/closingTimeSim.js. Captured random functions now switch to the seed after map construction; the caller RNG is restored.
+- Measured 322 attempts across all sixteen mode/life/skill/purchase conditions, with at least twenty completed samples at every immortal overtime index. Retained overtime fan-targeting stalls and added consecutive seeds rather than hiding failed attempts. All mortal runs died before the finale; immortal lethal exposure is reported separately.
+- No gameplay tuning values changed: required spending is light, the Returns ammo route absorbs overtime income, and bot mortality/targeting limits do not establish a human fight-feel problem. The report gives current/candidate/applied values and open questions. No round gate or new duties.
+- Evidence and complete tables: [phase 11 report](closing-time-11-report.md), with compact per-seed data in closing-time-11-results.json. Teleported journeys/hand approach, Classic discovery, fan targeting, fun, readability and fight feel are explicit limits.
+- Validation: final npm run balance, npm run sim:economy -- --quick --workers=4, npm test (one full run) and npm run build all passed. Focused economy/tool, Closing Time and overtime tests passed while iterating.
+- Shared edits: tools/economyBot.js, tools/economySim.mjs, package.json, tests/economySim.test.js and docs. Added two quest tools and developer-only config. Gameplay systems and gameplay balance config are unchanged. Work remains on claude/closing-time-11; no merge into main.
 
 ## 11 November 2026 - Closing Time phases 7-10 integration
 

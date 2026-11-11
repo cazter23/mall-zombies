@@ -104,3 +104,70 @@ test('the bot only wants guns it can use (the claw step leaves the rest in the c
   assert.ok(gunWorth('coilNailer') > gunWorth('rivetRifle') && gunWorth('rivetRifle') > gunWorth('nailGun'));
   assert.equal(gunWorth('returnToSender'), Infinity, 'the wonder weapon beats everything');
 });
+
+// Phase 11: the quest tool extends the existing bot, and keeps its books.
+import { runClosingBot, QUEST_PLAN } from '../tools/closingTimeBot.js';
+test('the Closing Time driver uses Classic and real purchases, with no invented progress', () => {
+  const random = Math.random;
+  const run = runClosingBot({ mode: 'classic', seed: 3, skill: 'good', immortal: true, maxRound: 2 });
+  assert.equal(Math.random, random, 'the bot restores the caller random source');
+  assert.equal(run.outcome, 'maxRound');
+  assert.equal(run.quest.mode, 'classic');
+  assert.equal(run.quest.win, null);
+  assert.equal(run.quest.checklist.filter(l => l.done).length, 0);
+  assert.ok(run.quest.log.some(e => e.name === 'purchase' && e.id === 'startShutter'));
+  assert.equal(run.spent, sum(run.purchases, p => p.cost));
+  assert.equal(run.points, economy.startingPoints + run.earned - run.spent);
+  assert.ok(QUEST_PLAN.some(s => s.area === 'parkingLot'));
+});
+
+import { headlessGame } from './helpers/headlessGame.js';
+import { questDriver } from '../tools/closingTimeBot.js';
+test('the quest report includes first overtime round spending and payload-free death events', () => {
+  const t = headlessGame();
+  const g = Object.create(t.g);
+  Object.defineProperty(g, 'overtimeFrom', { value: 20 });
+  Object.defineProperty(g, 'rounds', { value: Object.create(t.g.rounds) });
+  Object.defineProperty(g.rounds, 'round', { value: 20 });
+  const policy = questDriver({ ...t, g, bought() {}, tryStep() {}, holdGun() {}, interactAt() {} },
+    { mode: 'directed', buyReturns: true, overtime: 10, immortal: true });
+  assert.equal(policy.reserve(), 0, 'no wonder-weapon ammo budget before owning it');
+  g.gun.give(weapons.returnToSender);
+  assert.equal(policy.reserve(), g.pricing.priceOf('closing', 'validation'), 'reserve parking money before optional ammo');
+  g.events.emit('overtimeStart', { round: 20 });
+  g.wallet.earn(6000);
+  assert.ok(g.wallet.spend(2500));
+  g.events.emit('purchase', { id: 'returnsAmmo', kind: 'closing', cost: 2500 });
+  g.events.emit('roundStart', { round: 21 });
+  const [row] = policy.result().overtime;
+  assert.equal(row.index, 1);
+  assert.equal(row.earned, 6000);
+  assert.equal(row.spent, 2500);
+  assert.equal(row.banked, 3500);
+  assert.equal(row.ammo, 2500);
+  g.health.takeDamage(g.stats.health, { type: 'zombie', id: 'shopper' });
+  const [death] = policy.result().deaths;
+  assert.equal(death.cause, 'shopper');
+  assert.ok(Array.isArray(death.position));
+  g.map.dispose?.();
+});
+
+test('the quest policy keeps its last beam for Speechless, then switches back to return her', () => {
+  const t = headlessGame(), g = Object.create(t.g), switched = [];
+  const boss = { type: { id: 'lastCustomer' }, state: 'chasing' };
+  const beam = { magazine: 1, reserve: 0 }, rifle = { magazine: 30, reserve: 100 };
+  Object.defineProperty(g, 'bosses', { value: { active: boss } });
+  Object.defineProperty(g, 'gun', { value: {
+    weaponFor: id => id === 'returnToSender' ? beam : rifle,
+    owns: () => true,
+  } });
+  const policy = questDriver({ ...t, g, bought() {}, tryStep() {}, interactAt() {}, holdGun: id => switched.push(id) },
+    { mode: 'directed', buyReturns: true, overtime: 10, immortal: true });
+  policy.beforeTick(1);
+  assert.deepEqual(switched, ['rivetRifle']);
+  boss.state = 'speechless';
+  policy.beforeTick(2);
+  assert.deepEqual(switched, ['rivetRifle', 'returnToSender']);
+  assert.equal(policy.target([boss]), boss);
+  g.map.dispose?.();
+});
