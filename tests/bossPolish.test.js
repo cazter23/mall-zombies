@@ -40,7 +40,7 @@ test('Manager and Guard travel from every open zone, and from below into the wor
 });
 
 test('distinct boss stings, costume props and non-gore deaths preserve one kill payout',t=>{
-  const {g,tick,hud}=fixture(t);tick();
+  const {g,tick,hud}=fixture(t);g.map.areaUnlocks.openAll();tick(120);
   const names=new Set();
   for(const [id,type] of Object.entries(bossTypes)) {
     assert.ok(audio.sounds[type.introSound]?.layers.length);names.add(type.introSound);
@@ -52,7 +52,7 @@ test('distinct boss stings, costume props and non-gore deaths preserve one kill 
     assert.ok(hud.calls.some(([name,line])=>name==='showAnnouncement' && line.text===type.defeatBanner.text));
     g.bosses.reset();g.zombies.clear();tick();
   }
-  assert.equal(names.size,Object.keys(bossTypes).length);
+  assert.equal(names.size,Object.values(bossTypes).filter(({firstRounds})=>firstRounds?.length).length, 'debut bosses have distinct stings; the booked finale reuses one');
 });
 
 test('order-form purchases consume Discount Code, quiet menu opening does not, and fans cannot feed the ritual',t=>{
@@ -85,7 +85,7 @@ test('vouchers survive the real Employee Discount expiring, and death/reset clea
 });
 
 test('each boss is selectable in the debug overlay and summonable by explicit id',t=>{
-  const {g,tick}=fixture(t);tick();
+  const {g,tick}=fixture(t);g.map.areaUnlocks.openAll();tick(120);
   for(const id of Object.keys(bossTypes)) {
     assert.match(g.debug.run('summonBoss',id),/Summoned/);
     assert.equal(g.bosses.active.type.id,id);

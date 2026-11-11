@@ -7,7 +7,8 @@ function prerequisites(closing) {
 }
 
 export function vanNeeds(closing) {
-  return [...prerequisites(closing), ...(closing.validated ? [] : [closingTime.validation.missing])];
+  return [...prerequisites(closing), ...(closing.validated ? [] : [closingTime.validation.missing]),
+    ...(closing.lastCustomerDefeated ? [] : [closingTime.finale.missing])];
 }
 
 // Classic names one missing thing at a time, using the duty's place rather than the checklist line.
@@ -20,7 +21,8 @@ function prerequisiteClassic(closing) {
 }
 
 export function vanNeedsClassic(closing) {
-  return prerequisiteClassic(closing) ?? (closing.validated ? null : closingTime.classic.needs + closingTime.validation.missing);
+  return prerequisiteClassic(closing) ?? (closing.validated ? null : closingTime.classic.needs + closingTime.validation.missing)
+    ?? (closing.lastCustomerDefeated ? null : closingTime.classic.needs + closingTime.finale.missing);
 }
 
 export function buildEscapeVan(feature, { map, closing, interactions, pricing, events, state }) {
@@ -37,7 +39,7 @@ export function buildEscapeVan(feature, { map, closing, interactions, pricing, e
     get cost() { return closing.validated ? 0 : pricing.priceOf('closing', 'validation'); },
     get priceLabel() { return closing.validated ? machine.done : null; },
     get blocked() {
-      if (closing.validated) return machine.complete;
+      if (closing.validated) return closing.lastCustomerDefeated ? machine.cleared : machine.complete;
       if (closing.readyToValidate) return null;
       return state.showClosingGuidance ? blockedPrefix + prerequisites(closing).join(', ') : prerequisiteClassic(closing);
     },

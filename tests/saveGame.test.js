@@ -198,6 +198,7 @@ test('a save made in overtime keeps the win: Stay for overtime takes a fresh sna
   for (const line of ['janitor', 'guard', 'manager']) while (!g.closing.isDone(line)) g.events.emit(
     line === 'janitor' ? 'fountainKill' : line === 'manager' ? 'ritualCollect' : 'purchase', { kind: 'closing', id: 'nightSafe' });
   g.events.emit('purchase', { kind: 'closing', id: 'validation' });
+  g.events.emit('bossDefeated', { zombie: { type: { id: 'lastCustomer' }, position: g.player.position } });
   g.events.emit('escapeVanStart');
   assert.equal(g.state.winPending, true);
   assert.equal(g.saveGame.canSave().ok, false, 'not while the win receipt is up');
@@ -243,7 +244,7 @@ test('paid parking validation survives a round-start save and loads without repl
   loaded.g.events.on('closingValidated', (event) => repeated.push(event));
   assert.ok(loaded.g.saveGame.load());
   assert.equal(loaded.g.closing.validated, true);
-  assert.equal(loaded.g.closing.readyToLeave, true);
+  assert.equal(loaded.g.closing.readyToLeave, false, 'the Last Customer is still to come');
   assert.equal(loaded.g.wallet.points, saved.wallet.points);
   assert.deepEqual(loaded.g.saveGame.serializeNow(), saved);
   loaded.standAt(validation.position.x - 1, validation.position.z, -90);
@@ -251,4 +252,65 @@ test('paid parking validation survives a round-start save and loads without repl
   assert.equal(loaded.g.wallet.points, saved.wallet.points, 'a second hold cannot charge again');
   assert.deepEqual(repeated, []);
   assert.ok(!loaded.hud.calls.some(([name, notice]) => name === 'showAnnouncement' && notice.text === closingTime.pa.validated.text));
+});
+
+test('a save in the break before Closing Time keeps the booking and reloads exactly one Last Customer, including round 20', (t) => {
+  const storage = memoryStorage();
+  const run = game(t, storage);
+  const { g } = run;
+  run.tick();
+  g.map.areaUnlocks.openAll();
+  g.health.invulnerable = true;
+  g.rounds.jumpTo(19);
+  for (const boss of ['janitor', 'guard', 'manager', 'influencer']) g.debug.run('closing', 'grant', boss);
+  for (const line of ['janitor', 'guard', 'manager']) while (!g.closing.isDone(line)) g.events.emit(
+    line === 'janitor' ? 'fountainKill' : line === 'manager' ? 'ritualCollect' : 'purchase', { kind: 'closing', id: 'nightSafe' });
+  const van = g.map.features.find(({ kind }) => kind === 'escapeVan');
+  run.standAt(van.validation.position.x - 1, van.validation.position.z, -90);
+  const staff = g.bosses.summon('guard');
+  assert.ok(staff);
+  staff.takeHit({ damage: staff.health, part: 'body', source: 'hazard' });
+  assert.ok(g.bosses.serialize().met.includes('guard'), 'there is an encore candidate for round 20');
+  g.wallet.earn(g.pricing.priceOf('closing', 'validation'));
+  run.press('KeyF', Math.ceil(feel.interact.holdSeconds / dt) + 1);
+  assert.equal(g.closing.closingRound, 20);
+  for (const zombie of g.zombies.zombies) if (zombie.isAlive) zombie.takeHit({ damage: zombie.health, part: 'body', source: 'hazard' });
+  while (g.rounds.remainingToSpawn > 0) {
+    const zombie = g.rounds.spawnBackup('shopper');
+    assert.ok(zombie);
+    zombie.takeHit({ damage: zombie.health, part: 'body', source: 'hazard' });
+  }
+  run.tick();
+  assert.equal(g.rounds.round, 20);
+  assert.equal(g.rounds.state, 'break');
+  assert.equal(new Map(g.saveGame.snapshot.data.bosses.schedule).get(20), 'lastCustomer');
+  const saved = g.saveGame.snapshot.data;
+  assert.ok(g.saveGame.saveAndQuit());
+
+  const loaded = game(t, storage);
+  const bosses = [], repeatedPa = [];
+  loaded.g.events.on('bossSpawn', ({ zombie }) => bosses.push(zombie.type.id));
+  loaded.g.events.on('closingValidated', (event) => repeatedPa.push(event));
+  assert.ok(loaded.g.saveGame.load());
+  assert.deepEqual(loaded.g.saveGame.serializeNow(), saved);
+  assert.equal(loaded.g.closing.closingRound, 20);
+  assert.equal(loaded.g.closing.lastCustomerDefeated, false);
+  assert.deepEqual(loaded.hud.calls.filter(([name]) => name === 'showRoundBanner').at(-1), ['showRoundBanner', 20, closingTime.finale.banner]);
+  loaded.g.health.invulnerable = true;
+  loaded.g.rounds.endBreak(0);
+  loaded.tick();
+  // Restored shutters and navigation settle during the break. A safe spawn can legitimately fail in an early tick;
+  // retry it as the real wave does, without spending quota. Defeat regular shoppers so the alive cap stays clear.
+  for (let i = 0; i < 600 && !loaded.g.bosses.active; i++) {
+    loaded.g.rounds.spawnBackup('shopper');
+    for (const zombie of loaded.g.zombies.zombies) if (zombie.isAlive && !zombie.type.boss) {
+      zombie.takeHit({ damage: zombie.health, part: 'body', source: 'hazard' });
+    }
+    loaded.tick();
+  }
+  assert.equal(loaded.g.bosses.active?.type.id, 'lastCustomer');
+  loaded.tick(120);
+  assert.deepEqual(bosses, ['lastCustomer']);
+  assert.deepEqual(repeatedPa, []);
+  assert.ok(!loaded.g.bosses.serialize().met.includes('lastCustomer'));
 });

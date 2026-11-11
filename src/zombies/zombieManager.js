@@ -447,19 +447,20 @@ export function createZombieManager({
     },
 
     // Spawn one zombie of `typeId` at a good spawn point (or at `at`, a Vector3, if given).
-    // Returns the zombie, or null if no spawn point is usable right now.
+    // Returns the zombie, or null if no spawn point is usable right now. `spawnPoints` optionally restricts safe selection
+    // to those markers (booked bosses and parking backup); it never falls back outside that list.
     // Options: `variant` = the Mascot costume to wear (otherwise picked here, see below); `gold` = true / false for an
     // Employee of the Month or not (otherwise rolled here); `nearest` = the safe spawn point closest to the player
     // instead of a random nearby one (debug); `fanOwner` / `healthMultiplier` = a boss's summoned fan (no rewards, never
     // past the round's max alive, never out of the chute).
-    spawn(typeId = 'shopper', at = null, { variant = null, gold = null, nearest = false, fanOwner = null, healthMultiplier = 1 } = {}) {
+    spawn(typeId = 'shopper', at = null, { variant = null, gold = null, nearest = false, fanOwner = null, healthMultiplier = 1, spawnPoints: requestedPoints = null } = {}) {
       if (fanOwner && zombies.filter(z => z.isAlive).length >= maxAliveForRound(getRound())) return null;
       const cap = economy.zombieMix[typeId]?.maxAlive;
       if (cap && zombies.filter(z => z.isAlive && z.type.id === typeId).length >= cap) typeId = 'shopper';
       let type = bossTypes[typeId] ?? zombieTypes[typeId];
-      const chute = type.boss || fanOwner ? null : steered;
+      const chute = type.boss || fanOwner || requestedPoints ? null : steered;
       const chutePoint = at || !chute ? null : pickSpawnPoint(type, null, chute, nearest);
-      const point = at ? null : chutePoint || pickSpawnPoint(type, null, spawnPoints, nearest);
+      const point = at ? null : chutePoint || pickSpawnPoint(type, null, requestedPoints ?? spawnPoints, nearest);
       if (!at && !point) return null;
       const position = at ? at.clone() : point.position.clone();
       position.y = point ? point.position.y : at.y;

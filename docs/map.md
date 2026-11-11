@@ -135,6 +135,7 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   a solid parked trolley by the east wall at x 33.43..33.91, z -5.90..-5.08, framed fluorescent fittings. The two lamps now
   separate warm checkouts from cool aisles; no flashing. Entrances, crossings, spawn spaces and four main aisles stay clear.
 - Customer Parking (zone `parkingLot`, 1250): outside Mega Mart's east wall, x 34.3..62.3, z -24..6, ground y 0.
+  Closing Time's Last Customer enters at spawn_parkingLot_deliveryGate (39.3, 0, -22.8); her quota-funded Mall Walker backup uses the four existing safe lot markers. Her shared charge crashes into the solid vans. No new map entry or collider.
   The parking-validation ticket machine is mounted on the mauve van's west flank (x 53.8, z -11.05, prompt x 53.67), opposite its east-side start prompt. It stays within bay 4, adds no collision, and leaves the gaps, exit approach and four fence spawns clear. Both interactions belong to escapeVan.
   Realism (config/parkingDetails.js realism): accessible bay = bay 1 (x 43..46.5), cart corral in bay 5 (solid, vaultable 1.0 m;
   the gaps between the vans are combat lanes), a stray cart (solid), row letters and banners on the two light poles, a kerb island

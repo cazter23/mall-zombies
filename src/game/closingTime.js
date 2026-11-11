@@ -5,13 +5,15 @@ const lines = Object.entries(config.lines);
 const total = lines.length;
 const leavingLine = lines.find(([, line]) => !line.needed)[0]; // line 4: no duty count, it is ticked by the win
 
-export function createClosingTime({ events, player, colliders, state, view, rounds }) {
+export function createClosingTime({ events, player, colliders, state, view, rounds, bosses }) {
   const floor = createFloorPickups(colliders);
   const drops = new Map(); // boss id -> floor position (null while waiting for safe floor)
   const held = new Set();
   const completed = new Set();
   const counts = new Map(); // opened duties that take more than a key
   let briefingIn = null; // seconds until the PA introduces the checklist (null: not waiting)
+  let closingRound = null;
+  let lastCustomerDefeated = false;
   let validated = false; // paid once per run; restored silently by Save & Quit
   let briefed = false; // once per run
   const progressDuties = {
@@ -51,7 +53,15 @@ export function createClosingTime({ events, player, colliders, state, view, roun
     return true;
   }
 
-  events.on('bossDefeated', ({ zombie }) => drop(zombie.type.id, zombie.position));
+  events.on('bossDefeated', ({ zombie }) => {
+    if (!state.over && zombie.type.id === config.finale.bossId && validated) lastCustomerDefeated = true;
+    drop(zombie.type.id, zombie.position);
+  });
+  events.on('closingValidated', ({ round }) => {
+    if (state.over || !validated || closingRound !== null) return;
+    closingRound = round + config.finale.roundOffset;
+    bosses.book(closingRound, config.finale.bossId);
+  });
   events.on('bossVanished', ({ zombie }) => drop(zombie.type.id, player.position));
   function advance(line) {
     if (state.over || !counts.has(line) || completed.has(line)) return;
@@ -91,10 +101,13 @@ export function createClosingTime({ events, player, colliders, state, view, roun
     get missingDuties() {
       return lines.filter(([id, line]) => line.needed && !completed.has(id)).map(([bossId, line]) => ({ bossId, ...line }));
     },
-    // Parking validation needs every key and the first three duties; phase 7 then unlocks the van immediately.
+    // Parking validation needs every key and the first three duties; the van also needs the Last Customer defeated.
     get readyToValidate() { return readyToValidate(); },
     get validated() { return validated; },
-    get readyToLeave() { return readyToValidate() && validated; },
+    get closingRound() { return closingRound; },
+    isClosingRound(round) { return round === closingRound; },
+    get lastCustomerDefeated() { return lastCustomerDefeated; },
+    get readyToLeave() { return readyToValidate() && validated && lastCustomerDefeated; },
     // A duty's count as text ("3/12") while its key is held and its line is still open, else null (the fountain switch's prompt).
     dutyProgress(bossId) {
       if (!counts.has(bossId) || completed.has(bossId)) return null;
@@ -146,7 +159,7 @@ export function createClosingTime({ events, player, colliders, state, view, roun
     serialize() {
       return {
         drops: [...drops].map(([bossId, position]) => [bossId, position ? position.toArray() : null]),
-        held: [...held], completed: [...completed], counts: [...counts], briefingIn, briefed, validated,
+        held: [...held], completed: [...completed], counts: [...counts], briefingIn, briefed, validated, closingRound, lastCustomerDefeated,
       };
     },
     restore(data) {
@@ -163,6 +176,8 @@ export function createClosingTime({ events, player, colliders, state, view, roun
       briefingIn = data.briefingIn;
       briefed = data.briefed;
       validated = data.validated;
+      closingRound = data.closingRound;
+      lastCustomerDefeated = data.lastCustomerDefeated;
     },
     reset() {
       for (const bossId of drops.keys()) view.remove(bossId);
@@ -173,6 +188,8 @@ export function createClosingTime({ events, player, colliders, state, view, roun
       briefingIn = null;
       briefed = false;
       validated = false;
+      closingRound = null;
+      lastCustomerDefeated = false;
     },
     debug(mode = 'drop', bossId, at = player.position) {
       if (state.over) return 'The shift has ended';

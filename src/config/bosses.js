@@ -200,4 +200,24 @@ export const bossTypes = {
       { color: 0xe0dbbc, size: [0.075, 0.076, 0.235], at: [0.11, -0.022, -1.032], tilt: 0.17 },
     ],
   },
+  lastCustomer: {
+    ...shopper, id: 'lastCustomer', boss: true, name: 'Lorraine Pruitt', title: 'The Last Customer',
+    barNotice: 'Returns accepted with receipt', barSymbol: '↩', encore: false,
+    healthMultiplier: 16, slowStrength: 0.5, speed: 2.6, speedVariation: 0,
+    gaits: null, gaitsByRound: null, bagChance: 0,
+    // Placeholder: recoloured employee skeleton. Her trolley and finished model come in phase 12.
+    shirtColors: [0x9e677c], pantsColors: [0x392b48], shoeColor: 0x24232c,
+    modelScale: { width: 1.3, height: 1.06 },
+    hitbox: { bodyHalfWidth: 0.34, bodyTop: 1.48, headHalfSize: 0.23, headBottom: 1.48, headTop: 1.94 },
+    attack: { ...shopper.attack, damage: 60, windupSeconds: 0.7, minWindupSeconds: 0.7, windupShrinkPerRound: 0 },
+    charge: { ...zombieTypes.cartPusher.charge },
+    sounds: zombieTypes.cartPusher.sounds,
+    spawnMarker: 'spawn_parkingLot_deliveryGate',
+    backup: { thresholds: [0.66, 0.33], count: 4, type: 'mallWalker', zone: 'parkingLot' },
+    introBanner: { kicker: 'One customer remains', text: 'Lorraine Pruitt has arrived with a receipt. Closing time is not her problem.' },
+    introSound: 'guardSting',
+    defeatBanner: { kicker: 'Last customer served', text: 'Lorraine has left the premises. Associates, start the van and clock out.' },
+    phases: { backup: { kicker: 'Additional customers', text: 'More Mall Walkers have arrived in Customer Parking. They insist they were here before closing.' } },
+    balance: { rounds: [16, 18, 20], range: 10 }, // the requested Platinum Rivet Rifle report, body shots without crash bonuses
+  },
 };

@@ -21,9 +21,10 @@ export const closingTime = {
     blockedPrefix: 'Still needed: ',
     promptHeight: 1.2, clearance: 0.12,
   },
+  finale: { bossId: 'lastCustomer', roundOffset: 1, banner: 'CLOSING TIME', missing: 'The Last Customer' },
   validation: {
     name: 'Parking Validation', verb: 'validate parking', missing: 'Parking validation',
-    done: 'Validated', complete: 'Validated · Start the van',
+    done: 'Validated', complete: 'Validated · Defeat the Last Customer', cleared: 'Validated · Start the van',
     // Mounted on the mauve van's west flank, inside its painted bay. No new collider or obstruction in the combat lanes.
     promptOffset: 0.38, promptHeight: 1.4,
     parts: [

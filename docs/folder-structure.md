@@ -19,7 +19,7 @@ src/
   config/
     idle.js             Idle saver numbers: delays (short / normal / long: dim and sleep seconds), dimFps, muteWhenAsleep, pollSeconds
     haptics.js          Controller vibration intensity and per-gun/damage/pickup durations, motor strengths and priorities
-    bosses.js           Boss debut windows, wave timing, combat and control tuning, PA lines, and the Janitor's costume
+    bosses.js           Boss debut windows (the booked-only Last Customer has none), parking entrance/backup markers, wave timing, combat and control tuning, PA lines, and the Janitor's costume
                         and Wet Floor settings. Boss kill values and health scaling go through economy.js.
     deathMusic.js       End of Shift: original seven-second death composition (piano/pad/bell/noise layers), gain and
                         stop fade. Bell anchors to feel.death.resultsDelay; played once through sound's music/master buses
@@ -303,6 +303,9 @@ src/
                         follow a curved surface) + buildMascotBadge; shared geometry and canvas prints made once (sharedOnce)
     mascotVariants.js   pickMascotVariant(round, zone, random): weight 1 per unlocked costume, x homeWeight in a home zone,
                         no dice with one costume; mascotDebutIn(round). Both take an optional costume table (tests)
+    bosses/lastCustomer.js The Last Customer's two health thresholds queue quota-funded Mall Walker backup through the four safe parking markers.
+                        The shared zombie.js type.charge state machine supplies her telegraph, straight charge, solid crashes and vulnerability.
+                        Requests retry on an occupied marker or full alive cap; disposal clears them. No return mechanic in phase 8.
     bosses/janitor.js   Places, ages and disposes Wet Floor patches on clear floor. Slows the player on contact and
                         calls into the incentive system to mop Spill Cleanup.
     bosses/janitorModel.js Adds Murray's uniform, bucket, wet floor sign and animated mop to the standard skeleton.
@@ -411,7 +414,9 @@ src/
     runStats.js         createRunStats(): time alive, kills, headshot/melee kills, bosses defeated, shots fired/hit, accuracy
     bossDirector.js     Picks debut rounds (never a zombie type's or a Mascot costume's), retries a normal-marker spawn partway
                         through the wave, and blocks round completion while a boss is pending. Owns encounter behavior and
-                        emits boss lifecycle events. The active boss's slow (behavior.surfaceSpeed) reports 'boss' to surfaceSlows.js.
+                        emits boss lifecycle events. book(round, id) replaces that round's one schedule slot (including an encore) and is saved in schedule.
+                        Types with encore:false never enter met or replace lastBoss. An optional spawnMarker restricts entry to safe selection at that marker, with retries.
+                        The active boss's slow (behavior.surfaceSpeed) reports 'boss' to surfaceSlows.js.
     surfaceSlows.js     createSurfaceSlows(stats): the ONLY writer of stats.surfaceSpeed. Each slow floor reports its own factor
                         (set / clear by source id); the stat is the lowest, so two never stack. g.surfaces; reset on Play again
     mascotCostumes.js   createMascotCostumes(): the costume twists past the zombie itself, on the bus. Poppy Corn's pop blast
@@ -421,7 +426,7 @@ src/
                         dropEvery where he walks; a grounded player in one reports 'melt' to surfaceSlows
     closingTime.js      g.closing owns persistent boss key drops, collection, checklist progress (fountain kills, night-safe purchases and workshop collections) and Play again reset.
                         A key never ticks a line: lines 1 to 3 tick on their duty, line 4 on the win (completeLeaving, called by onRunWon). readyToValidate = four keys and
-                        lines 1 to 3; readyToLeave also needs validated. A paid validation purchase emits closingValidated with the current round and PA. serialize/restore keeps validated silently; reset clears it. missingKeys / missingDuties say what is left. Emits the once-per-run 'closingBriefing'.
+                        lines 1 to 3; readyToLeave also needs validated and lastCustomerDefeated. closingValidated books the next closingRound through bosses.book; bossDefeated clears the van gate. These fields serialize/restore silently and reset clears them. A paid validation purchase emits closingValidated with the current round and PA. serialize/restore keeps validated silently; reset clears it. missingKeys / missingDuties say what is left. Emits the once-per-run 'closingBriefing'.
     floorPickups.js     Shared clear-floor placement and swept collection for incentives and closing keys; direction for HUD markers.
     powerUps.js         createPowerUps(): listens to kill/round/death events; earned dynamic pickups on clear floor,
                         swept walk-through collection, 15s expiry, no repeats, per-round caps. Blue Light multiplies only
@@ -480,7 +485,7 @@ src/
       workshop.js       The workshop feature: builds the ritual, its effects and the Limited Edition drops, runs Party Trap charges.
       nightSafe.js      Customer Service deposit prompt. Gates payments on Kettle’s Safe Key and completion, and charges the live closing price. Without the key: "Requires <key>" in Directed, "Needs <key>" in Classic.
       escapeVan.js      Customer Parking van and ticket-machine holds, both in escapeVan. The machine requires four keys and the first three duties,
-                        pays through g.pricing closing/validation, then shows a local confirmation and refuses another payment. The van needs validation too.
+                        pays through g.pricing closing/validation, then shows a local confirmation and refuses another payment. The van needs validation and the Last Customer defeated too.
                         Directed lists missing keys, duties whose key is held, then validation (vanNeeds); Classic names one missing thing by key or place
                         (vanNeedsClassic), then validation. Classic has local confirmation without quest PA. Emits escapeVanStart after the van hold.
       limitedEditions.js The bag a shopping-bag zombie sometimes drops: walk over it and Party Trap or Clearance Rack fits a gun you carry, free.
@@ -823,7 +828,7 @@ src/
     hud.js              createHud(): 4-line crosshair whose gap = spread cone (dot in ADS) + hit marker (white body, big yellow head, red kill),
                         boss name, job title and health bar while an encounter is active. retail.css gives each employee
                         a department design: Murray's caution sign, Kettle's security badge, Dennis's clipboard and
-                        Skylar's livestream frame. data-boss changes and clears with the encounter; follower text updates live,
+                        Skylar's livestream frame. The round banner accepts an optional title for CLOSING TIME, including runLoaded after all save steps restore. data-boss changes and clears with the encounter; follower text updates live,
                         bottom-left health (white) + stamina (green) bars, bottom-right ammo counter (with setPockets: Kiosk Kevin's two
                         equipment pockets left of the count, icon + charges + button, an empty one a faint dashed outline),
                         reload prompt under the crosshair, buy prompt below it (setInteract: "Hold F to open X 500",
@@ -947,13 +952,13 @@ Skylar's appearance: config/influencerLook.js owns her outfit, palette, ponytail
 zombies/bosses/influencerModel.js dresses and poses the shared zombie skeleton, with zombieModel owning batching and disposal.
 The influencer behavior exposes its existing phone wind-up to the visual pose through phoneFlashWindup.
 
-Boss spectacle: bossSpectacle in config/bosses.js owns death confetti and employee poses; audio.js owns unique synthesized stings. zombieManager emits the same single kill event after the cartoon boss death burst. zombieModel applies bone poses and disposes costume geometry. debugCommands/debugPanel expose the next selected boss. tools/gunReport.mjs includes a boss encounter table.
+Boss spectacle: bossSpectacle in config/bosses.js owns death confetti and employee poses; audio.js owns unique synthesized stings. zombieManager emits the same single kill event after the cartoon boss death burst. zombieModel applies bone poses and disposes costume geometry. debugCommands/debugPanel expose the next selected boss. tools/gunReport.mjs includes a boss encounter table and the Last Customer Platinum Rivet Rifle sustained-body-fire estimates at the configured rounds, using resolveGun/withTier for the real upgrades.
 
 Boss scheduling: bossDirector exports bossIntroRounds/isEncoreRound, skips optional mascotVariants.unlockRound values in both debut/encore choices, and remembers actual encounters until reset. Cadence is bossTiming.encores.
 
 Influencer: bosses/influencer.js owns filming movement, follower thresholds, fan requests/departure and phone windup. bosses/filmingSpots.js selects reachable shootable cell centres; navigation.pathTo uses an independent breadth-first route without replacing the shared horde flow field. ui/bossFlash.js presents the event, obeys the Comfort setting, and cancels on death/reset. Fans use zombieManager spawn metadata and delayed no-kill dismissal.
 
-Guard: zombies/bosses/guard.js owns alarm, physical shutter closure, radio headshots, reinforcement retries and taser slowdown. maps/areaBarriers.js supplies areaAt and barriersAround through loadMap. Shutters expose kind; ownership is never reset by lockdown. rounds.spawnBackup consumes the existing toSpawn budget and respects maxAlive.
+Guard: zombies/bosses/guard.js owns alarm, physical shutter closure, radio headshots, reinforcement retries and taser slowdown. maps/areaBarriers.js supplies areaAt and barriersAround through loadMap. Shutters expose kind; ownership is never reset by lockdown. rounds.spawnBackup consumes the existing toSpawn budget and respects maxAlive; optional spawn options restrict Last Customer backup to safe parking markers through zombieManager.spawn (no fallback outside the supplied list).
 
 Boss encounters: bosses/manager.js owns meetings/reports; bosses/employeeModel.js mounts configured costume parts and owns the temporary whiteboard. game/bossVouchers.js wires carried-gun/area eligibility and points conversion into pricing. powerUps.js and powerUpView.js deliver voucher pickups through the existing reward queue.
 

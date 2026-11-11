@@ -560,8 +560,8 @@ export function createHud() {
       if (!message.archiveOnly) announcements.push(message);
     },
 
-    showRoundBanner(n) {
-      roundBanner.textContent = `Round ${n}`;
+    showRoundBanner(n, label = null) {
+      roundBanner.textContent = label ?? `Round ${n}`;
       roundBanner.classList.remove('show');
       void roundBanner.offsetWidth; // restart the animation
       roundBanner.classList.add('show');

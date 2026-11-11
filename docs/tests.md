@@ -129,6 +129,9 @@ Promenade shutter from inside and receives natural upstairs spawns.
 debug-run exclusion, reset, corrupt saves and unavailable browser storage.
 `tests/music.test.js` also covers the End of Shift death sting: receipt-timed bell, music volume, cancellation of future
 notes, replacement-voice cleanup, and real-game death/reset wiring.
+Phase 8 in `tests/closingTime.test.js` checks the booked-only boss, next-round scheduling including the round-20 encore slot, CLOSING TIME banner,
+parking-gate entry, ordinary death and van refusal/unlock, encore exclusion after winning, reset, crashes into all three vans and both quota-funded backup thresholds.
+`tests/saveGame.test.js` saves the break before Closing Time and verifies the restored round still brings exactly one Last Customer with no validation PA replay.
 Phase 7 in `tests/closingTime.test.js` checks each missing key and duty at the ticket machine in both modes, affordability, one paid validation, the next-round PA, discounts preserved on refusal and consumed on payment, the van blocked before validation and winning afterwards, and reset. The mounted machine stays within the van's bay, clear of the lot's spawns and approach.
 `tests/closingTime.test.js` follows boss keys from defeat or disappearance to clear-floor drops and collection.
 It also covers a Classic run that wins with every duty done: its short prompts (the safe and the van name the missing key, the van then names an unfinished duty by its place),
