@@ -167,7 +167,7 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   south along the Food Court's west side to a dead end at z -14 (x -23.3..-20.3, 3.5m ceiling). Its east side is the
   hallway's and Food Court's own west walls (noWall); the Food Court wall contains the shortcut at z -13.4..-11.
   Dressing on its west wall: EMPLOYEES MUST WASH HANDS sign, two boarded vents (spawns), an electrical panel
-  with a DANGER · HIGH VOLTAGE sign, a bank of lockers (solid, narrows it to ~2.5m), exposed pipes the whole way;
+  with a DANGER · HIGH VOLTAGE sign and the pay-to-trigger PA System Lure paging switch `paLureHazard` at (-23.1, 1.35, -4.5) facing +X (500 via `g.pricing`, broadcasting a 10 m clearance lure around (-21.5, -4.5)), a bank of lockers (solid, narrows it to ~2.5m), exposed pipes the whole way;
   boxes + a vent (spawn) + NO LOITERING (ESPECIALLY THE UNDEAD) at the dead end; three ceiling strips (middle one
   dead), two warm point lights. Concrete-look floor, drab walls.
 - Loop connections (ordinary security shutters; buy the unowned destination, free when both are owned):

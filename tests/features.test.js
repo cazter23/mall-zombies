@@ -10,7 +10,7 @@ import { economy } from '../src/config/economy.js';
 
 test('the mall lists its wall buys, the ammo cache, the upgrade desk and the attachment counters as features, each fully described', () => {
   const { g } = headlessGame();
-  assert.deepEqual(FEATURE_KINDS, ['wallBuy', 'ammoCache', 'upgradeDesk', 'attachmentCounter', 'workshop', 'wardrobeRack', 'fittingRoom', 'horror', 'clawMachine', 'prizeCounter', 'kiosk', 'fountainHazard', 'fryerHazard', 'sprinklerHazard', 'nightSafe', 'escapeVan']);
+  assert.deepEqual(FEATURE_KINDS, ['wallBuy', 'ammoCache', 'upgradeDesk', 'attachmentCounter', 'workshop', 'wardrobeRack', 'fittingRoom', 'horror', 'clawMachine', 'prizeCounter', 'kiosk', 'fountainHazard', 'fryerHazard', 'sprinklerHazard', 'paLureHazard', 'nightSafe', 'escapeVan']);
   assert.equal(featuresOf(g.map, 'kiosk').length, 1, 'one fixed kiosk cart');
   assert.equal(featuresOf(g.map, 'clawMachine').length, 1, 'one machine (with several sites)');
   assert.equal(featuresOf(g.map, 'prizeCounter').length, 1, 'one Prize Counter');

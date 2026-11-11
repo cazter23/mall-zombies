@@ -1,11 +1,13 @@
 // Environmental hazards (docs/hazards-plan.md, config/hazards.js, game/features/hazards.js,
-// game/features/fountainHazard.js, game/features/fryerHazard.js, game/features/sprinklerHazard.js):
+// game/features/fountainHazard.js, game/features/fryerHazard.js, game/features/sprinklerHazard.js,
+// game/features/paLureHazard.js):
 // pay to trigger through g.pricing, active pulses with source 'hazard' (fountain shock + stagger +
 // convulsion slow, fryer opening burst + slip, sprinkler chill + soak applyVulnerable on zombies,
-// bosses, and Mascots, boss/Mascot damage cap, boss slip immunity), Kiosk Kevin nearest-prompt-wins,
-// cooldowns, payouts (Mascot helmet bonus and regular power-up meter ignore hazard kills; Gold Mascot
-// drops and kill multipliers still apply), Closing Time line 1 counts fountainKills only (not fryerKills
-// or sprinklerKills), player self-shock/scald/slow while standing inside, nothing paid after death,
+// bosses, and Mascots, PA lure hold + feedback pop, boss/Mascot damage cap, boss slip/hold immunity),
+// Kiosk Kevin nearest-prompt-wins, 3 m Service Corridor crowd + failsafe check, cooldowns, payouts
+// (Mascot helmet bonus and regular power-up meter ignore hazard kills; Gold Mascot drops and kill
+// multipliers still apply), Closing Time line 1 counts fountainKills only (not fryerKills, sprinklerKills,
+// or paLureKills), player self-shock/scald/slow while standing inside, nothing paid after death,
 // and Play again (resetRun) leaving nothing behind.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -18,9 +20,11 @@ import { hasStatNumber } from '../src/config/effectWords.js';
 const cfg = hazards.fountain;
 const fryerCfg = hazards.fryer;
 const sprinklerCfg = hazards.sprinklers;
+const paLureCfg = hazards.paLure;
 const OUTSIDE_Z = 10.5; // 8.1 m south of fountain center (18.6), outside the 7.0 m radius
 const FRYER_OUTSIDE_Z = -5.0; // north of the grease apron (minZ: -13.0, maxZ: -6.5)
 const SPRINKLER_OUTSIDE_X = -15.0; // west of the drenched concourse (minX: -12, maxX: 12)
+const PALURE_OUTSIDE = { x: 0, z: 12 }; // Start Room, well outside the 10 m radius around (-21.5, -4.5)
 
 function standAtFountainSwitch(t, distance = 1.25) {
   const { x, z } = cfg.position;
@@ -53,6 +57,17 @@ function standAtSprinklerSwitch(t, distance = 1.25) {
 
 function getSprinklerInstance(g) {
   return g.features.list.find((f) => f.feature.kind === 'sprinklerHazard')?.instance;
+}
+
+function standAtPaLureSwitch(t, distance = 1.25) {
+  const { x, z } = paLureCfg.position;
+  const { x: nx, z: nz } = paLureCfg.normal;
+  const yawDeg = (Math.atan2(nx, nz) * 180) / Math.PI;
+  t.standAt(x + nx * distance, z + nz * distance, yawDeg);
+}
+
+function getPaLureInstance(g) {
+  return g.features.list.find((f) => f.feature.kind === 'paLureHazard')?.instance;
 }
 
 test('triggering, price and discounts: locked until Atrium opens, charges g.pricing ("hazard"), and respects Flash Sale discounts', (t) => {
@@ -312,6 +327,17 @@ test('words-only guard: every hazard config string and live prompt has no stat n
     if (sprinklerPrompt[key]) {
       assert.ok(!hasStatNumber(sprinklerPrompt[key]), `sprinklerPrompt.${key}: "${sprinklerPrompt[key]}"`);
       assert.ok(!multiplierWords.test(sprinklerPrompt[key]), `sprinklerPrompt.${key}: "${sprinklerPrompt[key]}"`);
+    }
+  }
+
+  g.map.areaUnlocks.unlock('serviceCorridor');
+  standAtPaLureSwitch(game);
+  const paLurePrompt = g.interactions.prompt;
+  assert.ok(paLurePrompt);
+  for (const key of ['label', 'title', 'detail', 'blocked']) {
+    if (paLurePrompt[key]) {
+      assert.ok(!hasStatNumber(paLurePrompt[key]), `paLurePrompt.${key}: "${paLurePrompt[key]}"`);
+      assert.ok(!multiplierWords.test(paLurePrompt[key]), `paLurePrompt.${key}: "${paLurePrompt[key]}"`);
     }
   }
 });
@@ -863,5 +889,340 @@ test('Play again (resetRun) clears active sprinkler state, cooldowns, visuals, a
   assert.equal(sprinklers.phase, 'ready');
   assert.equal(sprinklers.remaining, 0);
   assert.equal(g.stats.surfaceSpeed, 1);
+  assert.deepEqual(snapshot(g), fresh);
+});
+
+test('paLure triggering, price and discounts: locked until Service Corridor opens, charges g.pricing ("hazard"), and respects Flash Sale discounts', (t) => {
+  const game = headlessGame();
+  t.after(() => game.g.map.dispose());
+  const { g } = game;
+  game.tick(1);
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  g.wallet.earn(10_000);
+
+  // Service Corridor is locked at the start of a run: no prompt yet.
+  standAtPaLureSwitch(game);
+  assert.equal(g.interactions.prompt, null, 'no prompt while Service Corridor is locked');
+
+  // Unlock Service Corridor: prompt shows the shelf price from g.pricing.
+  g.map.areaUnlocks.unlock('serviceCorridor');
+  standAtPaLureSwitch(game);
+  assert.ok(g.interactions.prompt, 'prompt appears once Service Corridor is open');
+  assert.equal(g.interactions.prompt.kind, 'hazard');
+  assert.equal(g.interactions.prompt.id, 'paLure');
+  assert.equal(g.interactions.prompt.cost, economy.hazards.paLure);
+
+  // Apply a 40% hazard discount (e.g. Mall hazards Flash Sale).
+  g.pricing.setDiscount('hazard', 0.4);
+  const expectedPrice = g.pricing.priceOf('hazard', 'paLure');
+  assert.equal(expectedPrice, 300);
+  standAtPaLureSwitch(game);
+  assert.equal(g.interactions.prompt.cost, expectedPrice, 'prompt reflects the discounted hazard price');
+
+  const before = g.wallet.points;
+  const paLure = getPaLureInstance(g);
+  assert.equal(paLure.phase, 'ready');
+  game.press('KeyF', 20);
+  assert.equal(before - g.wallet.points, expectedPrice, 'charged the discounted hazard price');
+  assert.equal(paLure.phase, 'active');
+  assert.ok(game.sounds.includes(paLureCfg.triggerSound), 'played the trigger sound');
+});
+
+test('paLure cooldown: blocked while active ("Active") and recharging ("Recharging"), then ready again after cooldown elapses', (t) => {
+  const game = headlessGame();
+  t.after(() => game.g.map.dispose());
+  const { g } = game;
+  game.tick(1);
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  g.wallet.earn(10_000);
+  g.map.areaUnlocks.unlock('serviceCorridor');
+
+  const paLure = getPaLureInstance(g);
+  standAtPaLureSwitch(game);
+  game.press('KeyF', 20);
+  assert.equal(paLure.phase, 'active');
+
+  standAtPaLureSwitch(game);
+  assert.equal(g.interactions.prompt?.blocked, hazards.status.active);
+  const walletWhileActive = g.wallet.points;
+  game.press('KeyF', 20);
+  assert.equal(g.wallet.points, walletWhileActive, 'cannot pay again while active');
+
+  // Run out the remaining active time into cooldown.
+  game.standAt(PALURE_OUTSIDE.x, PALURE_OUTSIDE.z, 0);
+  game.tick(Math.ceil(paLureCfg.durationSeconds / dt) + 2);
+  assert.equal(paLure.phase, 'cooldown');
+  assert.ok(paLure.remaining > 0 && paLure.remaining <= paLureCfg.cooldownSeconds);
+
+  standAtPaLureSwitch(game);
+  assert.equal(g.interactions.prompt?.blocked, hazards.status.cooldown);
+  const walletDuringCooldown = g.wallet.points;
+  game.press('KeyF', 20);
+  assert.equal(g.wallet.points, walletDuringCooldown, 'cannot pay while recharging');
+
+  // Finish the cooldown: ready to trigger again.
+  game.standAt(PALURE_OUTSIDE.x, PALURE_OUTSIDE.z, 0);
+  game.tick(Math.ceil(paLureCfg.cooldownSeconds / dt) + 5);
+  assert.equal(paLure.phase, 'ready');
+  standAtPaLureSwitch(game);
+  assert.equal(g.interactions.prompt?.blocked, null);
+});
+
+test('paLure holds normal zombies on pulses, deals feedback pop damage (source: "hazard") on completion, caps boss/Mascot damage, respects Mascot helmet rule and Gold Mascot drop, and pays nothing after death', (t) => {
+  const game = headlessGame();
+  t.after(() => game.g.map.dispose());
+  const { g } = game;
+  game.tick(1);
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  g.wallet.earn(10_000);
+  g.map.areaUnlocks.unlock('serviceCorridor');
+
+  const kills = [];
+  const paLureKills = [];
+  const headPops = [];
+  g.events.on('kill', (e) => kills.push(e));
+  g.events.on('paLureKill', (e) => paLureKills.push(e));
+  g.events.on('mascotHeadPop', (e) => headPops.push(e));
+
+  // 1. Early-round Shopper (100 HP) and high-round Shopper (1000 HP) in the corridor, plus a Boss and a Mascot.
+  const earlyShopper = g.zombies.spawn('shopper', new THREE.Vector3(-21.8, 0, -4.5));
+  earlyShopper.setState('chasing');
+  const lateShopper = g.zombies.spawn('shopper', new THREE.Vector3(-21.8, 0, -6.5));
+  lateShopper.setState('chasing');
+  lateShopper.maxHealth = 1000;
+  lateShopper.health = 1000;
+
+  const boss = g.zombies.spawn('janitor', new THREE.Vector3(-21.8, 0, -2.5));
+  boss.setState('chasing');
+  boss.speed = 0;
+  const bossInitialHealth = boss.health;
+
+  const mascot = g.zombies.spawn('mascot', new THREE.Vector3(-21.8, 0, -8.5), { gold: false });
+  mascot.setState('chasing');
+  const mascotPopCap = mascot.maxHealth * paLureCfg.maxHealthCap;
+  mascot.health = Math.floor(mascot.maxHealth * 0.5) + Math.min(10, mascotPopCap * 0.5);
+  const mascotHealthBeforePop = mascot.health;
+
+  const goldMascot = g.zombies.spawn('mascot', new THREE.Vector3(-21.8, 0, -10.5), { gold: true });
+  goldMascot.setState('chasing');
+  goldMascot.health = 5;
+
+  const pointsBefore = g.wallet.points;
+  const progressBefore = g.powerUps.progress;
+  const paLure = getPaLureInstance(g);
+  game.standAt(PALURE_OUTSIDE.x, PALURE_OUTSIDE.z, 0);
+  paLure.trigger();
+
+  // During the broadcast pulses, normal zombies and Mascots are held with zero pulse damage, while bosses ignore applyHold.
+  assert.ok(earlyShopper.hold, 'early shopper is held by the PA lure on pulse');
+  assert.equal(earlyShopper.hold.seconds, paLureCfg.holdDuration);
+  assert.ok(lateShopper.hold, 'high-round shopper is held by the PA lure on pulse');
+  assert.equal(boss.hold, null, 'bosses ignore applyHold');
+  assert.equal(earlyShopper.isAlive, true, 'broadcast pulses deal zero damage before the feedback pop');
+  assert.equal(lateShopper.health, 1000, 'no damage dealt during broadcast pulses');
+  assert.equal(boss.health, bossInitialHealth, 'no damage dealt to boss during broadcast pulses');
+
+  // Tick partway through the broadcast: holds are refreshed every 0.5 s pulse so held zombies stay in place.
+  const heldPos = earlyShopper.position.clone();
+  game.tick(Math.ceil(2.0 / dt));
+  assert.ok(earlyShopper.hold, 'hold is refreshed by subsequent pulses');
+  assert.ok(earlyShopper.position.distanceTo(heldPos) < 1e-4, 'held shopper stays in place during broadcast');
+  assert.equal(kills.length, 0, 'no kills before the final feedback pop');
+
+  // Tick to the end of the 8 s broadcast: the feedback pop fires once as the lure stops.
+  game.tick(Math.ceil((paLureCfg.durationSeconds - 2.0) / dt) + 2);
+  assert.equal(paLure.phase, 'cooldown');
+  assert.ok(game.sounds.includes(paLureCfg.popSound), 'played the feedback pop sound');
+
+  // Early shopper (100 HP) and low-HP Gold Mascot died on the feedback pop; high-round shopper (1000 HP) took 60% (600) and was released from hold.
+  assert.equal(earlyShopper.isAlive, false, 'round-1 shopper died on the feedback pop');
+  assert.equal(lateShopper.isAlive, true);
+  assert.equal(lateShopper.hold, null, 'surviving shopper is released when the lure stops');
+  assert.equal(lateShopper.health, 1000 - 1000 * paLureCfg.normalHealthFraction, 'high-round shopper took 60% maxHealth on the feedback pop');
+
+  // Boss and Mascot feedback pop damage is capped at maxHealthCap (10%), and Mascot helmet pop pays no helmetPopBonus.
+  assert.ok(Math.abs((bossInitialHealth - boss.health) - boss.maxHealth * paLureCfg.maxHealthCap) < 1e-6, 'boss feedback pop damage is capped at 10% of maxHealth');
+  assert.ok(Math.abs((mascotHealthBeforePop - mascot.health) - mascotPopCap) < 1e-6, 'Mascot feedback pop damage is capped at 10% of maxHealth');
+  assert.equal(headPops.length, 1, 'Mascot helmet popped at 50% HP on the feedback pop');
+  assert.equal(headPops[0].source, 'hazard');
+
+  // Gold Mascot died and dropped its guaranteed power-up; regular power-up meter did not advance; wallet got exact killValues (shopper + mascot) and no helmetPopBonus.
+  assert.equal(goldMascot.isAlive, false);
+  assert.ok(g.powerUps.pickup, 'Gold Mascot killed by the PA lure feedback pop drops its guaranteed power-up');
+  assert.equal(kills.length, 2);
+  assert.equal(paLureKills.length, 2);
+  assert.ok(kills.every((k) => k.source === 'hazard' && !k.headshot && !k.melee));
+  assert.equal(g.wallet.points - pointsBefore, economy.killValues.shopper + economy.killValues.mascot, 'paid exact killValues with zero +10 hit points and zero helmetPopBonus');
+  assert.equal(g.powerUps.progress, progressBefore, 'hazard kills do not fill the regular power-up meter');
+
+  // 2. Once the player is dead (state.over), the feedback pop does not fire or pay anything.
+  g.zombies.clear();
+  game.tick(Math.ceil(paLureCfg.cooldownSeconds / dt) + 5);
+  assert.equal(paLure.phase, 'ready');
+  const doomed = g.zombies.spawn('shopper', new THREE.Vector3(-21.8, 0, -4.5));
+  doomed.health = 5;
+  paLure.trigger();
+  assert.ok(doomed.hold);
+  g.health.takeDamage(10_000);
+  assert.equal(g.state.over, true);
+  const walletAtDeath = g.wallet.points;
+  const killsAtDeath = g.runStats.kills;
+  game.tick(Math.ceil(paLureCfg.durationSeconds / dt) + 5);
+  assert.equal(g.wallet.points, walletAtDeath, 'nothing paid after player death');
+  assert.equal(g.runStats.kills, killsAtDeath, 'no kills counted after player death');
+});
+
+test('Closing Time line 1 isolation: paLure kills emit paLureKill and leave line 1 (janitor fountain duty) untouched', (t) => {
+  const game = headlessGame();
+  t.after(() => game.g.map.dispose());
+  const { g } = game;
+  game.tick(1);
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  g.wallet.earn(10_000);
+  g.map.areaUnlocks.unlock('serviceCorridor');
+  g.closing.debug('grant', 'janitor');
+  assert.equal(g.closing.hasKey('janitor'), true);
+  assert.equal(g.closing.checklist.find((c) => c.bossId === 'janitor')?.count, 0);
+
+  let fountainKillEvents = 0;
+  let paLureKillEvents = 0;
+  g.events.on('fountainKill', () => { fountainKillEvents++; });
+  g.events.on('paLureKill', () => { paLureKillEvents++; });
+
+  for (let i = 0; i < 3; i++) {
+    const z = g.zombies.spawn('shopper', new THREE.Vector3(-21.8, 0, -3.5 - i * 1.5));
+    z.setState('chasing');
+  }
+  game.standAt(PALURE_OUTSIDE.x, PALURE_OUTSIDE.z, 0);
+  const paLure = getPaLureInstance(g);
+  paLure.trigger();
+  game.tick(Math.ceil(paLureCfg.durationSeconds / dt) + 2);
+
+  assert.equal(paLureKillEvents, 3, 'PA lure kills emitted paLureKill');
+  assert.equal(fountainKillEvents, 0, 'PA lure kills never emit fountainKill');
+  assert.equal(g.closing.checklist.find((c) => c.bossId === 'janitor')?.count, 0, 'Closing Time line 1 count remains 0 after PA lure kills');
+  assert.equal(g.closing.isDone('janitor'), false);
+});
+
+test('3 m-wide Service Corridor: a held crowd does not trigger zombieManager failsafe or block an unheld zombie or boss (which ignores applyHold) from walking through', (t) => {
+  const game = headlessGame();
+  t.after(() => game.g.map.dispose());
+  const { g } = game;
+  game.tick(1);
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  g.wallet.earn(10_000);
+  g.health.invulnerable = true;
+  g.map.areaUnlocks.unlock('hallway');
+  g.map.areaUnlocks.unlock('serviceCorridor');
+  game.tick(1);
+
+  // Place the player near the north end of the Service Corridor (z = 1.0) so zombies in the corridor route north (+Z) toward the player,
+  // while the held crowd (> 4.5 m south of the player) is far enough to be subject to zombieFailsafe if not properly excluded.
+  game.standAt(-21.8, 1.0, 180);
+
+  // Spawn a dense crowd of 3 Shoppers abreast across the 3 m-wide Service Corridor (x = -23.3..-20.3) at z = -5.5 (6.5 m from the player).
+  const heldCrowd = [
+    g.zombies.spawn('shopper', new THREE.Vector3(-22.5, 0, -5.5)),
+    g.zombies.spawn('shopper', new THREE.Vector3(-21.8, 0, -5.5)),
+    g.zombies.spawn('shopper', new THREE.Vector3(-21.1, 0, -5.5)),
+  ];
+  for (const z of heldCrowd) {
+    z.setState('chasing');
+    z.maxHealth = 2000;
+    z.health = 2000;
+  }
+
+  // Spawn a Boss (janitor) and an unheld walker south of the held crowd at z = -8.5: bosses ignore applyHold, and both
+  // must be able to walk right past the held crowd in the 3 m-wide corridor without getting wedged or triggering rescueStuckZombies.
+  const boss = g.zombies.spawn('janitor', new THREE.Vector3(-21.8, 0, -8.5));
+  boss.setState('chasing');
+  const unheldShopper = g.zombies.spawn('shopper', new THREE.Vector3(-22.2, 0, -9.2));
+  unheldShopper.setState('chasing');
+  unheldShopper.applyHold = () => false;
+
+  const paLure = getPaLureInstance(g);
+  paLure.trigger();
+
+  for (const z of heldCrowd) {
+    assert.ok(z.hold, 'corridor crowd shopper is held');
+  }
+  assert.equal(boss.hold, null, 'boss ignores applyHold');
+  assert.equal(unheldShopper.hold, null);
+
+  // Tick for 6.5 s (past zombieFailsafe.checkSeconds = 6.0 s, while the 8.0 s lure is still active).
+  let anyRespawned = false;
+  for (const z of [...heldCrowd, boss, unheldShopper]) {
+    const origRespawn = z.respawnAt.bind(z);
+    z.respawnAt = (...args) => {
+      anyRespawned = true;
+      return origRespawn(...args);
+    };
+  }
+  game.tick(Math.ceil(6.5 / dt));
+
+  assert.equal(anyRespawned, false, 'neither the held crowd, the unheld zombie, nor the boss triggered the stuck-zombie failsafe in the 3 m corridor');
+  for (const z of heldCrowd) {
+    assert.ok(z.hold, 'crowd remains held during the broadcast');
+    assert.equal(z.stuckTimer, 0, 'held zombies keep stuckTimer at 0');
+  }
+  assert.equal(boss.hold, null, 'boss still has no hold');
+  assert.ok(boss.position.z > -4.0, `boss walked right past the held crowd at z = -5.5 in the 3 m corridor (reached z = ${boss.position.z.toFixed(2)})`);
+  assert.ok(unheldShopper.position.z > -4.0, `unheld zombie walked right past the held crowd at z = -5.5 in the 3 m corridor (reached z = ${unheldShopper.position.z.toFixed(2)})`);
+});
+
+test('player standing in the active paLure zone takes no damage and is not slowed', (t) => {
+  const game = headlessGame();
+  t.after(() => game.g.map.dispose());
+  const { g } = game;
+  game.tick(1);
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  g.wallet.earn(10_000);
+  g.map.areaUnlocks.unlock('serviceCorridor');
+
+  standAtPaLureSwitch(game);
+  const healthBefore = g.stats.health;
+  game.press('KeyF', 20);
+  assert.equal(g.stats.health, healthBefore, 'PA lure deals zero player damage on activation');
+  assert.equal(g.stats.surfaceSpeed, 1, 'PA lure does not slow the player');
+
+  game.tick(Math.ceil(paLureCfg.pulseInterval / dt) + 2);
+  assert.equal(g.stats.health, healthBefore, 'PA lure deals zero player damage on pulse');
+  assert.equal(g.stats.surfaceSpeed, 1);
+});
+
+test('Play again (resetRun) clears active paLure state, releases holds without firing the feedback pop, and matches a fresh snapshot', (t) => {
+  const game = headlessGame();
+  t.after(() => game.g.map.dispose());
+  const { g } = game;
+  const fresh = snapshot(g);
+
+  game.tick(1);
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  g.wallet.earn(10_000);
+  g.map.areaUnlocks.unlock('serviceCorridor');
+
+  const shopper = g.zombies.spawn('shopper', new THREE.Vector3(-21.8, 0, -4.5));
+  shopper.setState('chasing');
+  standAtPaLureSwitch(game);
+  game.press('KeyF', 20);
+
+  const paLure = getPaLureInstance(g);
+  assert.equal(paLure.phase, 'active');
+  assert.ok(shopper.hold);
+
+  let paLureKills = 0;
+  g.events.on('paLureKill', () => { paLureKills++; });
+
+  g.resetRun();
+  assert.equal(paLure.phase, 'ready');
+  assert.equal(paLure.remaining, 0);
+  assert.equal(paLureKills, 0, 'resetRun stops the active lure without firing the feedback pop');
   assert.deepEqual(snapshot(g), fresh);
 });

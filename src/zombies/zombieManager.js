@@ -260,8 +260,10 @@ export function createZombieManager({
           const nz = dz / d;
           const overlap = minSpacing - Math.min(d, minSpacing);
           const half = overlap / 2;
-          const aMoved = !a.frozen && !a.hold && shoveIfClear(a.position, -nx * half, -nz * half, a.type.radius, a.type.height);
-          const bMoved = !b.frozen && !b.hold && shoveIfClear(b.position, nx * (aMoved ? half : overlap), nz * (aMoved ? half : overlap), b.type.radius, b.type.height);
+          const aCanMove = !a.frozen && (!a.hold || (!b.hold && !b.frozen));
+          const bCanMove = !b.frozen && (!b.hold || (!a.hold && !a.frozen));
+          const aMoved = aCanMove && shoveIfClear(a.position, -nx * half, -nz * half, a.type.radius, a.type.height);
+          const bMoved = bCanMove && shoveIfClear(b.position, nx * (aMoved ? half : overlap), nz * (aMoved ? half : overlap), b.type.radius, b.type.height);
           if (!bMoved && aMoved) shoveIfClear(a.position, -nx * half, -nz * half, a.type.radius, a.type.height);
         }
       }

@@ -6,7 +6,7 @@
 //   reasons     why the pause menu's Save & Quit is greyed out (the button shows the text).
 // =============================================================================
 export const save = {
-  version: 6, // 3: run skin choices and the challenge unlock receipt are saved; 4: and the per-run challenge counters; 5: Fryer Blast hazard (map.features gained an entry); 6: Fire Sprinklers hazard (another entry)
+  version: 7, // 3: run skin choices and the challenge unlock receipt are saved; 4: and the per-run challenge counters; 5: Fryer Blast hazard (map.features gained an entry); 6: Fire Sprinklers hazard (another entry); 7: PA System Lure hazard (another entry)
   storageKey: 'sunsetGalleria.save',
   reasons: {
     noRound: 'Not clocked in yet',
