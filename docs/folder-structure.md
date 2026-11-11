@@ -239,7 +239,7 @@ src/
                         (scaled by ADS), viewmodel.fire (gun kick + flash), shot sound, tracer, splatter, hit
                         marker. 'empty' -> viewmodel.dryFire + dry click. Runs viewmodel.reload.events as the
                         reload clock passes them (sound + viewmodel.jolt), so sounds match the animation
-    skinPalette.js      resolveGunColors(def, skinId) maps palette roles to model colour keys, with the gun's own colours as fallback.
+    skinPalette.js      resolveGunColors(def, skinId) maps shared roles to every gun's model colour keys, with weapon config and gunPalettes.js defaults as fallback.
     viewmodel.js        Shared first-person rig in its own scene + own fixed-FOV camera (drawn after the world
                         with depth cleared). createViewmodel(allWeaponDefs, meleeDef, { skinFor }) builds every gun's base coats up
                         front (only the shown one visible; one shared hand light + world light that each gun's

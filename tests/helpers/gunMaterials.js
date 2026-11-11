@@ -73,10 +73,13 @@ export function captureGun(root) {
 export function captureGuns({ canvas = false, recolours = {} } = {}) {
   if (canvas) globalThis.document = canvasDocument();
   Object.assign(skins, recolours);
-  return Object.fromEntries(Object.entries(weapons).map(([id, def]) => {
+  const originalDefinitions = JSON.stringify(weapons);
+  const result = Object.fromEntries(Object.entries(weapons).map(([id, def]) => {
     const model = buildWeaponModel(def, recolours[id]?.[0].id);
     return [id, { model: captureGun(model.root), display: captureGun(buildWeaponDisplay(def)) }];
   }));
+  if (JSON.stringify(weapons) !== originalDefinitions) throw new Error('Model construction mutated weapon config');
+  return result;
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

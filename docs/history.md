@@ -1,5 +1,14 @@
 # Sunset Galleria: build history ("Current state")
 
+## 10 November 2026 - Weapon skins phase 2 - Every gun answers to its palette
+
+- Price Gun, Nail Gun, Foam Dart Blaster, Confetti Cannon, Heavy Coil Nailer, Barcode Scanner, Leaf Blower, Tennis Ball Launcher and Return to Sender now resolve their first-person and display colours through skinPalette. Reload props use the same coat as the gun. Displays use the default.
+- gunPalettes.js contains role bindings and the defaults moved from model literals. Added roles are ammo (labels, darts, shells and balls), emitter (laser window and returns emitter ring, separate from aiming sights), screen (returns display) and glass (transparent hopper). Body shading uses dark, brass and coils use accent, and contact surfaces use grip. Return to Sender's six physical rainbow strips keep six default colours and take accent under a recolour.
+- The fixture was captured before editing any model, from Phase 1 at a1c627e. It records all eleven models and displays with and without canvas support, including mesh/material names, colours, emissive colours, finishes, transforms, geometry and drawing commands. Nine test-only palettes prove role placement, fixed canvas artwork and reload props. Equal-valued role colours preserve finishes and glow, including the Foam Dart Blaster's original glowing accent.
+- Validation passed. The full `npm test -- --test-concurrency=4` run has 1175 tests, 1175 passes, zero failures and zero skips. The focused run passed 102 tests, including upgradeColors, weaponModels and newGuns. The production build transforms 301 modules with zero errors and the existing large-chunk warning. The balance report completes.
+- Browser comparison used a committed-main snapshot (ec36907) built inside this worktree's scratch folder. All eleven default gun regions are pixel-identical at 1440 x 900. Full-frame differences are confined to a timed HUD panel at the top right. Price Gun, Barcode Scanner and Return to Sender wore their test palettes through the existing skin debug command in a temporary QA build, including a Neon Tube build on Return to Sender. Captures and pixel comparisons are in scratch/skins-2-qa/. Chrome/SwiftShader checks cover the rendered frames. Physical-GPU, controller and hands-on combat play were outside these checks.
+- Shared files changed are config/gunPalettes.js, weapons/skinPalette.js, tests/skins.test.js, the tests/helpers/gunMaterials.js capture helper, the pre-edit JSON fixture and the folder/test/history docs, alongside the nine model files.
+
 ## 10 November 2026 - Weapon skins phase 1 - The base coat on two guns
 
 - Night Shift (Staple Gun) and Carbon Copy (Rivet Rifle) recolour the held models by role. The default colours, brand label and wall displays match main.

@@ -14,7 +14,7 @@ export function resolveGunColors(def, skinId) {
     sightColor: palette.sight ?? vm.sightColor,
   };
   for (const [key, role] of Object.entries(gunPaletteKeys[def.id] ?? {})) {
-    colors[key] = palette[role] ?? vm[key] ?? gunPaletteDefaults[def.id]?.[key];
+    colors[key] = palette[role] ?? vm[key] ?? (key === 'emitterColor' ? vm.sightColor : gunPaletteDefaults[def.id]?.[key]);
   }
   return colors;
 }
