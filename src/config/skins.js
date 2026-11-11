@@ -98,6 +98,8 @@ export const skins = {
   returnToSender: [{ id: 'final-notice', name: 'Final Notice', slot: 1,
     palette: { body: 0x492c3c, dark: 0x291d29, metal: 0xbba9ba, grip: 0x241c26, accent: 0xefb0c4, sight: 0xffe7a7, emitter: 0xf8c3d2, screen: 0xcdebc0 }, challenge: mastery(150) }, {
     id: 'handle-with-care', name: 'Handle With Care', slot: 2,
+    palette: { body: 0x6a1a08, dark: 0x3c0e04, metal: 0xdcc8b8, grip: 0x24170f, accent: 0xf2e1b8, sight: 0xffe7a7 },
+    pattern: { kind: 'text', ink: 0xf2e1b8, words: ['FRAGILE', 'THIS WAY UP'], font: '"Bebas Neue"', height: 0.011, wordSpacing: 0.075, rowSpacing: 0.02 }, // parcel tape
     challenge: { kind: 'bossKills', count: 5, needs: ['claw'], text: 'Finish {count} bosses with a beam from the {gun}.' },
   }],
 };
