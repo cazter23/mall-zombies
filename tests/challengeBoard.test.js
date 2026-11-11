@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import './helpers/headlessGame.js'; // (first: it stubs the browser globals settings.js reads)
 import { menuDom } from './helpers/menuDom.js';
 import { challengeBoard as cfg } from '../src/config/challengeBoard.js';
-import { skins, challengeText, locker as lockerWords } from '../src/config/skins.js';
+import { skins, closingRewards, challengeText, locker as lockerWords } from '../src/config/skins.js';
 import { weapons } from '../src/config/weapons.js';
 import { settingDefs } from '../src/config/settings.js';
 import { createEvents } from '../src/game/events.js';
@@ -59,13 +59,17 @@ test('pins: up to maxPins in pin order, toggled off again, written each time; a 
 test('the catalogue lists every weapon skin challenge under one category, by gun, with its sentence, tag and progress', () => {
   const [category] = challengeCatalog();
   assert.equal(category.label, cfg.categories.skins);
-  assert.deepEqual(category.groups.map(group => group.id), Object.keys(skins));
+  assert.deepEqual(category.groups.map(group => group.id), [...Object.keys(skins), 'closing'], 'a group per gun, then the Closing Time rewards every gun shares');
+  const closing = category.groups.pop();
+  assert.equal(closing.label, cfg.closingGroup);
+  assert.deepEqual(closing.entries.map(entry => entry.skinId), closingRewards.map(reward => reward.id));
+  for (const entry of closing.entries) assert.equal(entry.id, `skin:closing/${entry.skinId}`, 'one pin for all eleven guns');
   const save = createSkinSave({ storage: memoryStorage() });
   save.record('rivetRifle', 'gold-standard', 12);
   save.record('stapleGun', 'night-shift', 40);
   for (const group of category.groups) {
     assert.equal(group.label, weapons[group.id].name);
-    assert.deepEqual(group.entries.map(entry => entry.skinId), skins[group.id].map(skin => skin.id));
+    assert.deepEqual(group.entries.map(entry => entry.skinId), skins[group.id].filter(skin => !skin.shared).map(skin => skin.id));
     for (const entry of group.entries) {
       const skin = skins[group.id].find(s => s.id === entry.skinId);
       assert.equal(entry.id, skinPinId(group.id, skin.id));
@@ -117,7 +121,7 @@ test('the board opens from the title, lists a gun\'s three challenges with progr
   assert.equal(t.screens.showsFlyover, true);
   t.group('nailGun').click();
   const rows = t.book.element.querySelectorAll('.challenge-row');
-  assert.deepEqual(rows.map(row => row.dataset.challenge), skins.nailGun.map(skin => skinPinId('nailGun', skin.id)));
+  assert.deepEqual(rows.map(row => row.dataset.challenge), skins.nailGun.filter(skin => !skin.shared).map(skin => skinPinId('nailGun', skin.id)));
   const feat = t.row('skin:nailGun/rush-order');
   assert.ok(feat.textContent.includes('Clear 50 zombies with the Nail Gun in one round.'));
   assert.ok(feat.textContent.includes(lockerWords.featProgress(31, 50)));

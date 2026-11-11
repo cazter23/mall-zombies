@@ -1,5 +1,6 @@
 // Each skin belongs to one gun. Slot 1 = Mastery recolours, slot 2 = Role (a recolour plus one printed pattern), slot 3 = Feat (a recolour plus
-// one shared glow or motion treatment, skinTreatments below): the base coat under every build and warranty.
+// one shared glow or motion treatment, skinTreatments below): the base coat under every build and warranty. Slots 4 and 5 are the Closing Time
+// REWARDS (closingRewards below): one look that fits every gun, earned once and unlocked on all eleven.
 // A challenge is data: `kind` picks its counter in game/challenges.js (one entry each there), `count` is what unlocks
 // the skin, the other fields are that kind's numbers, and `text` is the locker's sentence ({gun} = the gun's name,
 // {anyField} = that field). `needs` names a system the challenge depends on that could be cut (swap the challenge if it is).
@@ -26,6 +27,7 @@
 //   calmRound        a cleared round from minRound on without being hurt, having blown minStopped zombies out of an attack with the gun
 //   ballKills        `count` kills by one ball of the gun (the kill's projectile)
 //   finishType       finish a zombie whose type id is in `types` with the gun
+//   closingWin       (slots 4 and 5, shared by every gun) win the Closing Time shift in one of `modes` (the run summary's closingMode)
 // Phase 8 (tools/challengeReport.mjs): a gun carried as the main gun clears 300 to 350 zombies in a run to round 15 and 530 to 580 by round 20,
 // so 1000 is about three runs to round 15 (the plan's "three to five runs"). Return to Sender is rarer (the claw, or 10,000 at the Returns Desk).
 const mastery = count => ({ kind: 'kills', count, text: 'Clear {count} zombies with the {gun} across all shifts.' });
@@ -185,6 +187,29 @@ export const skins = {
   }],
 };
 
+// --- The Closing Time rewards (plan: "The Closing Time rewards"). ONE look that fits every gun, so a win unlocks it on all eleven at once
+// (game/challenges.js: kind 'closingWin', announced once, not eleven times). Palettes use the shared roles only: a gun's own extra roles
+// (emitter, screen, ammo, glass) keep that gun's colours. They add no stat, price or sound, like every skin.
+//   Employee of the Month  polished brass, a dark grip and a name badge on the left face (weapons/models/skinBadge.js). Any win.
+//   After Hours            near-black with sunset-coloured trims that glow and slowly change (a 'drift' treatment). A win on Classic,
+//                          which also unlocks Employee of the Month ("better" = more striking, and both; nothing that affects play).
+// A win counts when the shift is won (the van), whether you then clock out, stay for overtime or die. Not on a debug-assisted run.
+export const closingRewards = [{
+  id: 'employee-of-the-month', name: 'Employee of the Month', slot: 4, shared: true,
+  palette: { body: 0xc6993a, dark: 0x6b4f1c, metal: 0xe9dcae, grip: 0x2a1d17, accent: 0xa8312b, sight: 0xffe7a3 },
+  badge: { plate: 0xf3e9cf, stripe: 0xb4322c, ink: 0x2b2420 },
+  challenge: { kind: 'closingWin', count: 1, modes: ['directed', 'classic'], track: 'Win the shift',
+    text: 'Win the Closing Time shift, in any run mode.' },
+}, {
+  id: 'after-hours', name: 'After Hours', slot: 5, shared: true,
+  palette: { body: 0x17141f, dark: 0x2b1a42, metal: 0x4b4560, grip: 0x0f0d15, accent: 0xff5e8c, sight: 0xffb56e },
+  treatment: { kind: 'drift', role: 'dark', colors: [0xff7a3a, 0xff3d7f, 0x9a5cff], low: 0.15, high: 0.42, period: 7 }, // a sunset along the trims
+  challenge: { kind: 'closingWin', count: 1, modes: ['classic'], track: 'Win on Classic',
+    text: 'Win the Closing Time shift on Classic: no checklist, no key markers. Also unlocks Employee of the Month.' },
+}];
+// Each gun's list ends with the rewards (its own copy: nothing shares a skin object between guns).
+for (const list of Object.values(skins)) for (const reward of closingRewards) list.push(structuredClone(reward));
+
 /** The locker's sentence for a challenge, from its own data ({gun} and {field} filled in). */
 export function challengeText(challenge, gunName) {
   return challenge.text.replace(/\{(\w+)\}/g, (_, key) => (key === 'gun' ? gunName : String(challenge[key])));
@@ -208,6 +233,11 @@ export const skinNotices = {
   toastSeconds: 6,
   toastTitle: 'Skin unlocked',
   toastText: (gunName, skinName) => `${skinName} · ${gunName}`,
+  toastShared: skinName => `${skinName} · every gun`, // a Closing Time reward (one notice for all eleven)
+  sharedPa: skinName => ({
+    kicker: 'Closing time commendation',
+    text: `Attention associates. Thank you for closing. ${skinName} is now yours, for every piece of equipment in the building.`,
+  }),
   // slot 1 = a mastery skin, slot 2 = a role skin, slot 3 = a feat skin
   pa: (gunName, skinName, slot = 1) => (slot === 3 ? {
     kicker: 'Employee commendation',
@@ -248,6 +278,17 @@ export const skinPatterns = {
   keepOut: { mounts: ['sticker'], halfLength: 0.036, halfHeight: 0.026 },
 };
 
+// The Employee of the Month name badge (weapons/models/skinBadge.js): one small plate, one draw call, laid flat on the gun's left face beside
+// the sticker mount (where the build patch and the warranty seal sit). It is tried at each of `tries` ([metres along the gun toward the back,
+// metres up] from that mount, in this order); a ray from the left finds the face, and the plate goes where the first-hit surface is within
+// `tolerance` of the mount's own x. A gun with no such spot goes without (a hand or an arm in the way is never mistaken for the face).
+export const skinBadges = {
+  size: [0.003, 0.02, 0.036], // metres: how far it stands off the face, its height, its length along the gun
+  tries: [[0.056, 0], [-0.056, 0], [0.112, 0], [-0.112, 0], [0, 0.042], [0, -0.042], [0.056, 0.042], [-0.056, 0.042], [0.056, -0.042], [-0.056, -0.042]],
+  tolerance: 0.012, rayStart: 0.3,
+  canvas: { width: 72, height: 40, stripe: 0.36, lines: 2 }, // the printed plate (a name tag: a coloured top band and two ruled lines)
+};
+
 // Glow and motion treatments (slot 3 skins; weapons/models/skinTreatments.js). Emissive light on the meshes painted in one palette ROLE
 // (body, dark, accent...), animated from the model's own animate(); no lights, no textures, no draw calls. A skin's `treatment`:
 //   { kind, role, color | colors, low, high, period, ...that kind's numbers }: the glow swings between low and high (emissive intensity)
@@ -269,7 +310,7 @@ export const locker = {
   previewLabel: 'Gun finish preview',
   theme: { ink: '#302b30', paper: '#f4ead7', edge: '#b8a98e', stamp: '#9a3f53', selected: '#e8d9c1', highlight: '#93556a', lockedPaper: '#dedbd4', lockedInk: '#625e59' },
   progress: (count, needed) => count + ' / ' + needed,
-  // A feat (slot 3) shows its best attempt; a one-off feat shows whether it is done.
+  // A feat (slot 3) or a reward (slots 4 and 5) shows its best attempt; a one-off shows whether it is done.
   featProgress: (count, needed) => (needed === 1 ? (count >= 1 ? 'Done' : 'Not yet') : 'Best ' + count + ' / ' + needed),
   receiptLabel: 'Skins unlocked',
   receiptNames: names => names.join(' · '),

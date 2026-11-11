@@ -98,7 +98,7 @@ test('the target\'s last kill saves first and emits progress then exactly one un
   assert.deepEqual(order.slice(-2), ['progress', 'unlock']);
   assert.deepEqual(progress.at(-1), { gunId: 'stapleGun', skinId: staple.id, count: MASTERY, needed: MASTERY });
   assert.deepEqual(unlocks, [{
-    gunId: 'stapleGun', skinId: staple.id, pa: skinNotices.pa(weapons.stapleGun.name, staple.name),
+    gunId: 'stapleGun', skinId: staple.id, shared: false, pa: skinNotices.pa(weapons.stapleGun.name, staple.name),
   }]);
   t.kill();
   assert.equal(t.save.progress('stapleGun', staple.id), MASTERY);

@@ -274,6 +274,7 @@ export function createGame({
       skinsUnlocked: challenges.earned,
       ticketsWon: tickets.won, // (GRAB-A-GUN's prize tickets: not points, not income)
       closingDone: closing.done,
+      closingMode: state.closingMode, // 'directed' | 'classic': the Closing Time rewards read it (game/challenges.js closingWin)
       won: state.won,
       winTime: state.won ? winSummary?.timeAlive ?? runStats.timeAlive : null,
       winRound: state.won ? winSummary?.round ?? rounds.round : null,
@@ -349,7 +350,12 @@ export function createGame({
 
   // A summary as its receipt shows it. Classic has no checklist line on a receipt, and closingDone: null is the ONE
   // value that says so (ui/screens.js receiptLinesFor). The death receipt below and main.js's win receipt both use this.
-  const receiptFor = (summary) => (state.showClosingGuidance ? summary : { ...summary, closingDone: null });
+  // (A win's summary is taken the moment the van leaves, before the Closing Time rewards are paid: its receipt lists what the shift has earned now.)
+  const receiptFor = (summary) => {
+    const earned = challenges.earned; // (the same summary object comes back when it is already current: a death's was taken after)
+    const shown = summary.won && earned.length !== summary.skinsUnlocked?.length ? { ...summary, skinsUnlocked: earned } : summary;
+    return state.showClosingGuidance ? shown : { ...shown, closingDone: null };
+  };
 
   function showResults() {
     death.resultsShown = true;

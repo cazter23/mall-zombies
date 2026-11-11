@@ -129,9 +129,10 @@ Read every number as "a run that ignores the challenge" by a bot with fixed aim 
 | A win on Directed (Clock out or a later death both count) | **Employee of the Month** | Polished brass body, dark grip, a small name badge |
 | A win on Classic | **After Hours** | Near-black body, sunset-gradient edges that glow. Also unlocks Employee of the Month |
 
-- These wait for the Closing Time fix pass. Today the run summary does not record which mode was played, and that pass is rewriting
-  the code that records a win (createGame.js `onRunWon`, `clockOut`, the quit path). The hook is one field on the summary (`closingMode`)
-  and one listener on `'runEnd'`.
+- Built in phase 9 (11 November 2026), after the Closing Time fix pass. The hook is one field on the run summary (`closingMode`) and a counter
+  (`closingWin`) that listens for `'runWon'`, not `'runEnd'`: the win is paid when the van leaves, so the win receipt can list it, and a tab closed
+  at the receipt loses nothing. A win on Directed or Classic both unlock Employee of the Month; only Classic unlocks After Hours. The name badge is
+  found by raycast, not hand-placed. After Hours' body is near-black and so passes the contrast rule directly against every stuffing and tier.
 - "Better" for Classic means the more striking look and getting both. It does not mean anything that affects play.
 - Later ideas, not in the phases below: a third treatment for a Classic win plus five overtime rounds; one for a fast win.
 
@@ -192,7 +193,7 @@ Each phase leaves the game working. Phases 1 to 6 touch none of the files the Cl
 | 6 | Slot 2: role challenges and pattern skins | Eleven role challenges, checked against the balance report; eleven pattern skins | game/challenges.js, config/skins.js, weapons/models/ (pattern textures) | Medium: art time |
 | 7 | Slot 3: feats and treatments (built) | The shared treatments; eleven feats; eleven feat skins; the Challenges tab and tracker | weapons/models/skinTreatments.js, game/challenges.js, config/skins.js | Medium |
 | 8 | Measure and tune (built) | A bot or saved runs: how many runs each challenge takes, which are never met, which are met by accident. Numbers set from that | tools/, config only | Low |
-| 9 | Closing Time rewards | `closingMode` on the run summary; the two treatments on every gun; unlocked by a win | **createGame.js**, game/challenges.js, config/skins.js | Low, but AFTER the Closing Time fix pass has merged |
+| 9 | Closing Time rewards (built) | `closingMode` on the run summary; the two treatments on every gun; unlocked by a win | **createGame.js**, game/challenges.js, config/skins.js | Low, but AFTER the Closing Time fix pass has merged |
 
 Notes for whoever builds a phase:
 

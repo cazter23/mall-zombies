@@ -14,7 +14,8 @@ export const challengeBoard = {
   title: 'Performance objectives', kicker: 'Personnel · Goals you may set yourself',
   form: 'SG / HR · FORM 7-B',
   categories: { skins: 'Weapon finishes' },
-  slotTags: { 1: 'Mastery', 2: 'Role', 3: 'Feat · one shift' },
+  closingGroup: 'Closing Time', // the rewards every gun shares are listed once, here, not under each gun
+  slotTags: { 1: 'Mastery', 2: 'Role', 3: 'Feat · one shift', 4: 'Reward · every gun', 5: 'Reward · every gun' },
   pin: 'Pin', pinned: 'Pinned', done: 'Done',
   pinCount: (count, max) => `Pinned ${count} / ${max}`,
   full: max => `You can pin ${max}. Unpin one first.`,
@@ -30,6 +31,7 @@ export const challengeBoard = {
     failedSeconds: 3,   // a lost attempt stays struck through this long, then drops off until its next attempt
     failed: 'Failed',
     title: (skinName, gunName) => `${skinName} · ${gunName}`,
+    sharedTitle: skinName => `${skinName} · every gun`,
     failSound: { name: 'pageTurn', volume: 0.5 }, // soft: a line crossed out on a form
   },
 };
