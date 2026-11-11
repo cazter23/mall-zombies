@@ -10,7 +10,7 @@
 import { bindings } from '../config/controls.js';
 
 // Keys whose default browser behaviour (scrolling, etc.) we block while playing.
-const GAME_KEYS = new Set(['Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'ShiftLeft', 'ShiftRight', 'KeyC', 'KeyR', 'KeyV']);
+const GAME_KEYS = new Set(['Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'ShiftLeft', 'ShiftRight', 'KeyC', 'KeyR', 'KeyV', 'Tab']);
 
 // Chrome occasionally reports a huge mouse jump right after locking; ignore those.
 const MAX_MOUSE_DELTA = 400;

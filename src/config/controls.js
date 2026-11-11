@@ -30,6 +30,7 @@ export const bindings = {
   lethal: ['KeyG', 'PadRB'], // throw what's in the Lethal pocket (Kiosk Kevin's Soda Bomb...: game/equipment.js)
   tactical: ['Mouse1', 'PadRight'], // throw what's in the Tactical pocket (Mouse1 = middle click; D-pad right is menuRight in a menu)
   inspect: ['KeyI', 'PadDown'],
+  minimap: ['Tab', 'PadBack'], // tap: the corner map on/off; hold: the whole mall directory (ui/minimap.js)
   pause: ['PadStart'],
   // Build-A-Blaster's order form (the player stands still while it is open, so these can share keys with moving and buying).
   menuUp: ['KeyW', 'ArrowUp', 'WheelUp', 'PadUp'],
@@ -64,6 +65,7 @@ export const controlsHelp = {
     { keys: 'G', text: 'Throw Lethal (Soda Bomb...)', short: 'Throw Lethal', anchors: ['G'] },
     { keys: 'Middle click', text: 'Throw Tactical', short: 'Throw Tactical', anchors: ['mmb'] },
     { keys: 'I', text: 'Inspect weapon / clock in (hold between rounds)', short: 'Inspect / clock in', anchors: ['I'] },
+    { keys: 'Tab', text: 'Map: tap for the corner map, hold for the directory', short: 'Map (tap / hold)', anchors: ['Tab'] },
     { keys: 'Esc', text: 'Pause', short: 'Pause', anchors: ['Esc'] },
   ],
   gamepad: [
@@ -79,6 +81,7 @@ export const controlsHelp = {
     { keys: 'R3', text: 'Box cutter (click the right stick)', short: 'Box cutter (R3)', anchors: ['r3'] },
     { keys: 'RB / R1', text: 'Throw Lethal (Soda Bomb...)', short: 'Throw Lethal', anchors: ['rb'] },
     { keys: 'D-pad right', text: 'Throw Tactical', short: 'Throw Tactical', anchors: ['dright'] },
+    { keys: 'Back / View', text: 'Map: tap for the corner map, hold for the directory', short: 'Map (tap / hold)', anchors: ['back'] },
     { keys: 'Start', text: 'Pause', short: 'Pause', anchors: ['start'] },
   ],
 };

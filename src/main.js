@@ -7,6 +7,7 @@
 import './style.css';
 import './ui/retail.css';
 import './ui/readability.css';
+import './ui/minimap.css';
 import { createNoticesMenu } from './ui/noticesMenu.js';
 import * as THREE from 'three';
 import { feel } from './config/feel.js';
@@ -21,6 +22,8 @@ import { createHaptics } from './core/haptics.js';
 import { buttonLabels } from './config/controls.js';
 import { buildTestRange } from './maps/testRange/testRange.js';
 import { createHud } from './ui/hud.js';
+import { createMinimap } from './ui/minimap.js';
+import { buildMinimapPlan, minimapState } from './game/minimapPlan.js';
 import { createDamageIndicatorQueue } from './ui/damageDirection.js';
 import { weapons, melee as meleeWeapons } from './config/weapons.js';
 import { createViewmodel } from './weapons/viewmodel.js';
@@ -107,6 +110,10 @@ const challengeBoard = createChallengeBoard({
   trackerEnabled: () => settings.get('challengeTracker'), getChallenges: () => g.challenges, guideSave,
 });
 const hud = createHud({ locker, guide: guideScreen, challenges: challengeBoard });
+// The mall directory (ui/minimap.js): a tap of the minimap button shows or hides the corner map (remembered), a hold shows it all.
+hud.minimap = createMinimap({ onCornerChange: (on) => settings.set('minimap', on) });
+hud.element.append(hud.minimap.element);
+let minimapPlan;
 const noticesMenu = createNoticesMenu(hud.history);
 const sound = createSound(); // synthesized sound effects (starts on the first click/key press)
 const viewmodel = createViewmodel(Object.values(weapons), meleeWeapons.boxCutter, {
@@ -580,6 +587,14 @@ function render(alpha, frameTime) {
   hud.setOccupancy?.(rounds.remainingInWave, rounds.inBreak);
   const clockInPrompt = game.over || game.menu ? null : g.clockIn.prompt; // the shopping window: hold to call the next round
   hud.setClockIn?.(clockInPrompt, clockInPrompt && buttonLabel(clockInPrompt.action));
+  {
+    const active = game.running && !game.over && !game.menu;
+    minimapPlan ??= buildMinimapPlan(g.map, g.colliders);
+    hud.minimap.update({
+      plan: minimapPlan, active, held: input.actionDown('minimap'), dt: frameTime, guidance: game.showClosingGuidance,
+      state: active && minimapPlan ? minimapState(minimapPlan, g, { guidance: game.showClosingGuidance }) : null,
+    });
+  }
 
   // Render world + viewmodel through HDR post-processing (UnrealBloom + lens vignette/aberration + ACES tone mapping).
   roomCulling.update(cullingOn);

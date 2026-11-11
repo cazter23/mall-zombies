@@ -296,6 +296,11 @@ settingDefs.push({
   options: closingTime.modes.list.map(({ id, label }) => ({ value: id, label })),
   apply: () => {}, // (the game takes the mode when a run starts, not when the value changes)
 });
+settingDefs.push({
+  // The corner minimap, shown or hidden with a tap of the minimap button (ui/minimap.js). Hidden until asked for.
+  id: 'minimap', tab: null, label: 'Corner map', type: 'toggle', default: false,
+  apply: (v, ctx) => ctx.hud?.minimap?.setCornerOn(v),
+});
 
 export const autoGraphics = {
   measureSeconds: 3, // seconds of good frames to measure

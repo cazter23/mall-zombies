@@ -22,6 +22,8 @@
 //   titleShots    [{ from, to, lookFrom, lookTo }]   the main menu's camera flyover (ui/titleCamera.js)
 //   benchmarkShots [{ name, from, to, lookFrom, lookTo }]  optional: the timed camera route of the benchmark (fx/benchmark.js)
 //   gradeZones    [{ grade, minX, maxX, minZ, maxZ, minY?, maxY? }]  optional: zone lighting (fx/zoneGrading.js, config/look.js grading)
+//   minimap       optional { floors: [{ id, label, below?, rooms: [cullArea ids] }], shapes?: { roomId: rect }, voids?: [{ floor, ...rect }] }
+//                 the mall directory's floor plan (game/minimapPlan.js); a map without it has no minimap
 //   ambience      optional [{ id, kind, zone, position: [x,y,z], range, gain?, pulse? }] spatial loops
 //   ambientEvents optional [{ id, sound, zone, position: [x,y,z], range, minSeconds, maxSeconds, gain? }] local one-shots
 //   update(dt)    animate doors etc.

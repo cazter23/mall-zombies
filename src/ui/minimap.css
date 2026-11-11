@@ -1,0 +1,40 @@
+/* The mall directory (ui/minimap.js; colours and sizes: config/minimap.js). The board's look: a backlit directory sign,
+   navy with a brass frame. The drawing itself is canvas; this only places and frames it. */
+.minimap { position: absolute; inset: 0; pointer-events: none; }
+.minimap [hidden] { display: none !important; }
+
+.minimap-corner {
+  position: absolute; top: var(--hud-margin); right: var(--hud-margin);
+  width: calc(var(--minimap-size) * var(--ui-space)); aspect-ratio: 1;
+  border: 2px solid #e9c46a; border-radius: 10px; overflow: hidden;
+  background: #14213d; box-shadow: 0 6px 18px #0009, inset 0 0 0 1px #0006;
+}
+.minimap-corner canvas { display: block; width: 100%; height: 100%; }
+.minimap-floor {
+  position: absolute; left: 6px; bottom: 5px; padding: 1px 6px 0; border-radius: 3px;
+  background: #14213dd9; color: #e9c46a; font: 600 15px/1.1 var(--font-hud); letter-spacing: .08em; text-transform: uppercase;
+}
+
+.minimap-full {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 92vw; max-height: 92vh; box-sizing: border-box; padding: 12px 16px 10px;
+  display: flex; flex-direction: column; gap: 6px;
+  border: 3px solid #e9c46a; border-radius: 14px;
+  background: #14213dfa; box-shadow: 0 10px 40px #000b, inset 0 0 0 2px #0008;
+}
+.minimap-title {
+  color: #f2e8cf; font: 600 30px/1 var(--font-hud); letter-spacing: .14em; text-transform: uppercase; text-align: center;
+}
+.minimap-full canvas { flex: none; width: 100%; display: block; }
+/* The PA, sales and notices move down under the corner map while it is up. */
+.hud.minimap-on .hud-right-stack { top: calc(var(--hud-margin) * 2 + var(--minimap-size) * var(--ui-space)); }
+.minimap-legend {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px;
+  color: #dde3ee; font: 600 12px/1.4 var(--font-ui);
+}
+.minimap-legend-item { display: inline-flex; align-items: center; gap: 5px; }
+.minimap-legend-item i {
+  display: inline-grid; place-items: center; width: 15px; height: 15px; border-radius: 50%;
+  color: #14213d; font: 700 10px/1 var(--font-ui); font-style: normal;
+}
+.minimap-legend-item b { display: inline-block; width: 16px; height: 5px; border-radius: 1px; }

@@ -1,5 +1,14 @@
 # Sunset Galleria: build history ("Current state")
 
+## 11 November 2026 - The minimap: a mall directory on Tab
+
+- **Hidden until asked for** (the user's call: an always-on minimap is a common complaint about modern COD). TAP Tab (controller Back/View) for a small corner map that turns with you; HOLD it for the whole directory, both floors side by side, north-up, while held. The corner choice is remembered (setting `minimap`, not in the menu). No gags: it is meant to be useful.
+- **What a printed directory would show, no more:** rooms (bought ones filled, the rest hatched), the upper floor's holes (balcony voids, the atrium court), escalators and stairs, shutters still shut with the price to open them where you can, wall guns by name, Restocks, Warranty, attachment counters, Build-A-Blaster, fitting rooms, the claw and prize counter, the four hazard switches, the night safe, Returns desk and van, Kevin's cart while open, and dropped Closing Time keys on Directed runs only. Never zombies, bosses, lost property or quest steps. The duty places (safe, desk, van) show in Classic too: they are fixtures you can see anyway; only the keys and quest stay unmarked.
+- **All from map data** (game/minimapPlan.js): the culling rooms per floor (the map's new `minimap` entry), culling portals for shutters, `colliders.ramps`, `map.features`. A new area, door or feature shows up with no change to the minimap.
+- The PA, sales and notices (right-hand HUD stack) move down under the corner map while it is up. Tab is now blocked from moving browser focus while playing.
+- Seen in the browser (production build, vite preview, 800x450 and 1600x900): the corner map on both floors, the full directory, the right stack moving down, and the Tab / Back labels on both Controls diagrams. Browser storage was empty before and after.
+- Shared files: maps/mall/mall.js (the `minimap` entry), maps/index.js (interface comment), maps/areaBarriers.js (`zoneForRoom` exported), config/controls.js (binding and help lines), config/settings.js (the remembered setting), core/input.js (Tab in GAME_KEYS), ui/controlsDiagram.js (two label slots), main.js (mount and per-frame update). Branch claude/minimap.
+
 ## 11 November 2026 - The Closing Time measurement bot merged into main (its report is out of date)
 
 - claude/closing-time-11 (`npm run sim:closing`: tools/closingTimeBot.js and closingTimeSim.mjs, the economy bot's seeded wrapper and driver hook, and the phase 11 report) merged into main. The user's call: worth having, not very useful.

@@ -1108,6 +1108,21 @@ export function buildMall(scene, colliders) {
       // Down through the floor: the escalator's hole and the two balcony voids (no doors; the rope across the escalator hides nothing)
       ...[escalator.hole, ...LAYOUT.level2.voids].map((r) => ({ a: 'hallway', b: 'level2', minX: r.minX, maxX: r.maxX, minY: H.height - 0.1, maxY: upperY + 0.1, minZ: r.minZ, maxZ: r.maxZ })),
     ],
+    // The mall directory (ui/minimap.js, drawn by game/minimapPlan.js): which culling rooms make up each floor, a room drawn from
+    // the layout instead of its (looser) culling box, and the holes in the upper floor (the balcony voids, the atrium's open court).
+    minimap: {
+      floors: [
+        { id: 'ground', label: 'Level 1', below: upperY - 1.8,
+          rooms: ['parkingLot', 'megaMart', 'foodCourt', 'hallway', 'startRoom', 'departmentStore', 'atrium', 'serviceCorridor', 'cinemaReturn', 'cinemaStairwell'] },
+        { id: 'upper', label: 'Level 2',
+          rooms: ['level2', 'shoePer', 'workshop', 'workshopHall', 'atrium', 'cinemaLobby', 'cinemaScreen', 'cinemaPassage', 'cinemaStairwell'] },
+      ],
+      shapes: { atrium: AT.rect },
+      voids: [
+        ...[escalator.hole, ...LAYOUT.level2.voids].map((r) => ({ floor: 'upper', ...r })),
+        { floor: 'upper', minX: AT.rect.minX + AT.ringDepth, maxX: AT.rect.maxX - AT.ringDepth, minZ: AT.rect.minZ + AT.ringDepth, maxZ: AT.rect.maxZ - AT.ringDepth },
+      ],
+    },
     titleShots,
     benchmarkShots,
     // Zone lighting (fx/zoneGrading.js, grades in config/look.js): which grade where. First match wins, so small areas

@@ -1,6 +1,6 @@
 // Spatial queries belong to the map interface. Ownership stays in areaUnlocks;
 // temporary encounters receive the physical shutters only (never escalator gates).
-const zoneForRoom = id => ['level2', 'shoePer', 'workshop', 'workshopHall'].includes(id) ? 'upstairs'
+export const zoneForRoom = id => ['level2', 'shoePer', 'workshop', 'workshopHall'].includes(id) ? 'upstairs'
   : id.startsWith('cinema') ? 'cinema' : id;
 
 export function createAreaQueries(map) {

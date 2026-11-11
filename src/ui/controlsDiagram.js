@@ -77,6 +77,7 @@ function drawKeyboard(parent, anchors, slots) {
 
   Object.assign(slots, {
     Esc: { x: 232, y: 156, align: 'end' }, // Pause
+    Tab: { x: 232, y: 192, align: 'end' }, // Map
     1: { x: 320, y: 96, align: 'middle' }, // Switch weapon
     A: { x: 232, y: 228, align: 'end' }, // Move (A is the left end of WASD)
     Shift: { x: 232, y: 264, align: 'end' }, // Sprint
@@ -153,6 +154,7 @@ function drawController(parent, anchors, slots) {
     ls: { x: 330, y: 250, align: 'end' }, // Move / sprint
     x: { x: 330, y: 290, align: 'end' }, // Reload / buy
     start: { x: 540, y: 100, align: 'middle' }, // Pause
+    back: { x: 430, y: 100, align: 'middle' }, // Map
     y: { x: 710, y: 226, align: 'start' }, // Switch weapon
     b: { x: 710, y: 250, align: 'start' }, // Crouch / slide
     a: { x: 710, y: 274, align: 'start' }, // Jump
