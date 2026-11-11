@@ -69,6 +69,8 @@ export const skins = {
   coilNailer: [{ id: 'factory-finish', name: 'Factory Finish', slot: 1,
     palette: { body: 0x38454a, dark: 0x202c32, metal: 0xb1c1ca, grip: 0x202428, accent: 0xddb480, sight: 0xf8e0a0 }, challenge: mastery(400) }, {
     id: 'loading-dock', name: 'Loading Dock', slot: 2,
+    palette: { body: 0x0a4a1e, dark: 0x052a10, metal: 0xc0d4c4, grip: 0x161f19, accent: 0xf4d35e, sight: 0xfff0a0 },
+    pattern: { kind: 'tread', ink: 0xa9d4b4, spacing: 0.014, length: 0.009, width: 0.0026 }, // diamond plate
     challenge: { kind: 'typeKills', count: 100, types: ['mascot', 'cartPusher'], text: 'Clear {count} Mascots or Cart Pushers with the {gun}.' },
   }],
   barcodeScanner: [{ id: 'black-label', name: 'Black Label', slot: 1,
