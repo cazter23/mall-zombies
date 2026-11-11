@@ -3,13 +3,14 @@
 //   { id, category, group, name, tag, text, done(ctx), progress(ctx), track(ctx) }
 // where ctx = { save, challenges, guideSave }: the skins' permanent record, the run's live counters, and the Survival Guide's record (which
 // holds lost property). `id` is what game/challengePins.js stores. An entry must cope with a ctx that lacks the record it reads.
-import { skins, challengeText, locker as lockerWords } from '../config/skins.js';
+import { skins, gunSkin, closingRewards, challengeText, locker as lockerWords } from '../config/skins.js';
 import { weapons } from '../config/weapons.js';
 import { challengeBoard as cfg } from '../config/challengeBoard.js';
 import { lostFoundProgress } from './lostFound.js';
 import { lostFound } from '../config/lostFound.js';
 
-export const skinPinId = (gunId, skinId) => `skin:${gunId}/${skinId}`;
+// A Closing Time reward belongs to every gun at once: one pin id, whichever gun's progress moved.
+export const skinPinId = (gunId, skinId) => (gunSkin(gunId, skinId)?.shared ? `skin:closing/${skinId}` : `skin:${gunId}/${skinId}`);
 
 // A feat's tracker line: its `track` words with {value} = the attempt in progress (0 before it starts), {gun} and its own fields.
 const fill = (template, challenge, gunName, value) => template.replace(/\{(\w+)\}/g, (_, field) =>
@@ -18,7 +19,7 @@ const fill = (template, challenge, gunName, value) => template.replace(/\{(\w+)\
 function skinEntry(gunId, skin) {
   const gunName = weapons[gunId].name;
   const { challenge } = skin;
-  const feat = skin.slot === 3;
+  const feat = skin.slot >= 3; // (a feat or a Closing Time reward: its progress is a best, or done / not yet)
   return {
     id: skinPinId(gunId, skin.id), category: 'skins', group: gunId, gunId, skinId: skin.id,
     name: skin.name, tag: cfg.slotTags[skin.slot], text: challengeText(challenge, gunName),
@@ -27,6 +28,7 @@ function skinEntry(gunId, skin) {
     /** The tracker's line: the title, and how it stands now (a feat: the attempt in progress this run). */
     track({ save, challenges }) {
       const done = save.unlocked(gunId, skin.id);
+      if (skin.shared) return { id: skinPinId(gunId, skin.id), title: cfg.tracker.sharedTitle(skin.name), value: done ? cfg.done : challenge.track, done };
       const value = done ? cfg.done : feat
         ? fill(challenge.track ?? '{value} / {count}', challenge, gunName, challenges?.attempt(gunId, skin.id)?.value ?? 0)
         : lockerWords.progress(save.progress(gunId, skin.id), challenge.count);
@@ -57,9 +59,13 @@ let catalog = null;
 export function challengeCatalog() {
   catalog ??= [{
     id: 'skins', label: cfg.categories.skins,
-    groups: Object.entries(skins).map(([gunId, list]) => ({
-      id: gunId, label: weapons[gunId].name, entries: list.filter(skin => skin.challenge).map(skin => skinEntry(gunId, skin)),
-    })),
+    groups: [...Object.entries(skins).map(([gunId, list]) => ({
+      id: gunId, label: weapons[gunId].name, entries: list.filter(skin => skin.challenge && !skin.shared).map(skin => skinEntry(gunId, skin)),
+    })), {
+      // The rewards every gun shares, listed once: they unlock together, so one entry reads the first gun's record.
+      id: 'closing', label: cfg.closingGroup,
+      entries: closingRewards.map(reward => skinEntry(Object.keys(skins)[0], gunSkin(Object.keys(skins)[0], reward.id))),
+    }],
   }, {
     id: 'collections', label: cfg.categories.collections,
     groups: [{ id: 'lostFound', label: cfg.lostFound.group, entries: [lostFoundEntry()] }],

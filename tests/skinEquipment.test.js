@@ -176,7 +176,7 @@ test('every configured skin body reads against all six stuffings and every warra
   // What the rim opens up: a cream body, which fails against Popcorn Butter and Platinum directly, reads through the rim.
   assert.ok(ratio(0xf3e3b8, 0xfff2b8) < skinContrast.minimum && ratio(0xf3e3b8, gunStyle.rim.color) >= skinContrast.minimum);
   for (const [gunId, entries] of Object.entries(skins)) for (const skin of entries) {
-    assert.equal(entries.length, 3); assert.deepEqual(entries.map(entry => entry.slot), [1, 2, 3]);
+    assert.equal(entries.length, 5); assert.deepEqual(entries.map(entry => entry.slot), [1, 2, 3, 4, 5]); // (4 and 5: the Closing Time rewards)
     assert.ok(Number.isInteger(skin.palette.body));
     for (const other of [...Object.values(workshopStuffings), ...upgrades.tiers]) {
       const direct = ratio(skin.palette.body, other.color);

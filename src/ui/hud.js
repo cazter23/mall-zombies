@@ -414,7 +414,7 @@ export function createHud({ locker = null, guide = null, challenges = null } = {
         const skin = gunSkin(gunId, skinId);
         if (!skin) return;
         clearTimeout(skinToastTimer);
-        skinToastText.textContent = skinNotices.toastText(weapons[gunId].name, skin.name);
+        skinToastText.textContent = skin.shared ? skinNotices.toastShared(skin.name) : skinNotices.toastText(weapons[gunId].name, skin.name);
         skinToast.hidden = false;
         skinToastTimer = setTimeout(() => { skinToast.hidden = true; }, skinNotices.toastSeconds * 1000);
       });

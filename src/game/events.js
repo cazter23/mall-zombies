@@ -143,7 +143,7 @@
 //                                                        carry weaponId 'sentry'
 //   'sentryExpired'   { position }                       its lifetime ran out and it fell apart (death and Play again just clear it)
 //   'challengeProgress' { gunId, skinId, count, needed }  a challenge counter changed (game/challenges.js)
-//   'skinUnlocked' { gunId, skinId, pa }                  a skin was earned; PA and HUD toast listen here
+//   'skinUnlocked' { gunId, skinId, shared, pa }                  a skin was earned; PA and HUD toast listen here
 //   'challengeLive' { gunId, skinId, value, needed, failed }  a feat's attempt in progress changed (game/challenges.js): value = how it
 //                                                        stands (config/skins.js `track` words it), failed = it was just lost (the
 //                                                        challenge tracker strikes it through); the next attempt reports failed false

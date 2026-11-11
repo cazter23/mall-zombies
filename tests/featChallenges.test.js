@@ -138,7 +138,7 @@ const CASES = {
 test('every gun has exactly one feat (slot 3) with a counter, a sentence built from its own data and a tracker line', () => {
   assert.deepEqual(Object.keys(CASES).sort(), Object.keys(skins).sort());
   for (const [gunId, entries] of Object.entries(skins)) {
-    assert.deepEqual(entries.map(skin => skin.slot), [1, 2, 3], gunId);
+    assert.deepEqual(entries.map(skin => skin.slot), [1, 2, 3, 4, 5], gunId); // (4 and 5: the Closing Time rewards, tests/closingRewards.test.js)
     const { challenge, treatment } = featOf(gunId);
     assert.ok(Number.isSafeInteger(challenge.count) && challenge.count > 0, gunId);
     assert.ok(treatment, `${gunId}: a feat skin has a treatment`);

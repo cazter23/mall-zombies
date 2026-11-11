@@ -293,6 +293,18 @@ const COUNTERS = {
     };
   },
 
+  // The Closing Time rewards (slots 4 and 5, one copy per gun, all unlocked by the same win): the shift is won ('runWon' is announced the
+  // moment the van leaves, before the clock-out choice) in one of the skin's modes. A debug-assisted run earns nothing.
+  closingWin({ skin, best }) {
+    return {
+      events: {
+        runWon({ summary }) {
+          if (summary?.won && !summary.assisted && skin.challenge.modes.includes(summary.closingMode)) best(1);
+        },
+      },
+    };
+  },
+
   // Per-run state: the magazine in progress. A shot that leaves as many rounds as the last one or more began a new magazine
   // (a reload, a refill or a new gun came between). Saved with the run, so Continue resumes the magazine the gun resumes.
   cleanMagazines({ gunId, skin, advance }) {
@@ -336,6 +348,15 @@ export function createChallenges({ events, state, save }) {
     return Math.max(0, after - Math.max(paid, before));
   }
   const clearRound = () => { credited.clear(); replayed.clear(); };
+  // A skin was earned. A shared reward (every gun gets it at once) is announced, and listed on the receipt, only once.
+  function announce(gunId, skin) {
+    if (skin.shared && earned.some(entry => entry.skinId === skin.id)) return;
+    const gunName = weapons[gunId].name;
+    events.emit('skinUnlocked', {
+      gunId, skinId: skin.id, shared: skin.shared === true,
+      pa: skin.shared ? skinNotices.sharedPa(skin.name) : skinNotices.pa(gunName, skin.name, skin.slot),
+    });
+  }
   // A feat's best attempt: progress only ever goes up, to its count (unlocking there). Idempotent, so Save & Quit needs no ledger.
   function best(gunId, skin, value) {
     const needed = skin.challenge.count;
@@ -346,7 +367,7 @@ export function createChallenges({ events, state, save }) {
     save.record(gunId, skin.id, count, unlock);
     if (unlock) save.flush();
     events.emit('challengeProgress', { gunId, skinId: skin.id, count, needed });
-    if (unlock) events.emit('skinUnlocked', { gunId, skinId: skin.id, pa: skinNotices.pa(weapons[gunId].name, skin.name, skin.slot) });
+    if (unlock) announce(gunId, skin);
     return count;
   }
   // How the attempt in progress stands, for the tracker: { value, needed, failed }. Announced only when it changes.
@@ -369,9 +390,7 @@ export function createChallenges({ events, state, save }) {
     save.record(gunId, skin.id, count, unlock);
     if (unlock || persist) save.flush();
     if (count !== before) events.emit('challengeProgress', { gunId, skinId: skin.id, count, needed });
-    if (unlock) events.emit('skinUnlocked', {
-      gunId, skinId: skin.id, pa: skinNotices.pa(weapons[gunId].name, skin.name, skin.slot),
-    });
+    if (unlock) announce(gunId, skin);
     return count;
   }
 

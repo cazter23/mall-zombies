@@ -151,7 +151,7 @@ test('every gun lists Default, its mastery, role and feat skins, each challenge 
       assert.ok(row.textContent.includes(skin.name));
       assert.ok(row.textContent.includes(challengeText(skin.challenge, def.name)), `${gunId}/${skin.id}`);
       const count = gunId === 'stapleGun' && skin.slot === 1 ? 212 : gunId === 'nailGun' && skin.slot === 2 ? 7 : 0;
-      const progress = skin.slot === 3 ? cfg.featProgress(count, skin.challenge.count) : `${count} / ${skin.challenge.count}`;
+      const progress = skin.slot >= 3 ? cfg.featProgress(count, skin.challenge.count) : `${count} / ${skin.challenge.count}`;
       assert.ok(row.textContent.includes(progress), `${gunId}/${skin.id}: ${row.textContent}`);
     }
   }

@@ -310,6 +310,10 @@ src/
                         mount (build patch, warranty seal) is painted back to the body colour; front, back and underneath sample a blank strip. One canvas
                         per skin and layout, made on first use and shared by the gun in hand and its displays (userData.sharedSkinPattern: the locker's
                         release skips it); none in Node.
+      skinBadge.js      applySkinBadge(root, def, skinId, mounts): the Employee of the Month name tag (config/skins.js `badge`, numbers in skinBadges): ONE plate
+                        mesh (one draw call) laid on the gun's left face beside the sticker mount, clear of the build patch and warranty seal. The spot is
+                        found, not hand-placed: a ray from the left at each candidate offset round the mount must meet a surface at the face's own depth (a
+                        hand or arm in the way rejects it). Called by models/index.js after a model or display is built; the print is one shared texture.
       skinTreatments.js applySkinTreatment(root, def, skinId): a slot 3 skin's glow or motion (config/skins.js `treatment`, numbers in
                         skinTreatments), applied by models/index.js after a build in that skin, which wraps the model's animate() to run it (state.time:
                         the viewmodel's clock; the locker preview animates a display's root.userData.skinTreatment). Clones each material painted in the
@@ -1061,7 +1065,7 @@ Boss groundwork: zombie.js owns timed buffs, source-bound holds and a behavior c
 ### Challenges tab and tracker (skins phase 7)
 
 - src/game/challengeCatalog.js: DOM-free list of every challenge for the board and the tracker: categories (today one, weapon finishes) of
-  groups (a gun) of entries { id, name, tag, text, done(ctx), progress(ctx), track(ctx) }, ctx = { save, challenges }. A new kind of
+  groups (a gun, then one "Closing Time" group holding the two rewards every gun shares, pinned as skin:closing/<id>) of entries { id, name, tag, text, done(ctx), progress(ctx), track(ctx) }, ctx = { save, challenges }. A new kind of
   unlockable adds a category here. catalogEntry(id) finds a pin's entry (null: one the catalogue no longer knows); skinPinId(gunId, skinId).
 - src/game/challengePins.js: createChallengePins({ storage }): the pinned ids in pin order, up to maxPins (toggle returns true / false / null
   when full), written on every change under their own key; a newer stored version is left untouched; a blocked store keeps pins in memory.

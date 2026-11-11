@@ -1,5 +1,20 @@
 # Sunset Galleria: build history ("Current state")
 
+## 11 November 2026 - Weapon skins phase 9: the Closing Time rewards
+
+- **Two looks that fit every gun, unlocked by winning the shift** (config/skins.js `closingRewards`, appended to each gun's list as slots 4 and 5):
+  **Employee of the Month** (any run mode: brass body, dark grip, a name badge) and **After Hours** (Classic only: near-black with sunset-coloured
+  trims that glow and drift; it also unlocks Employee of the Month). One win unlocks a reward on all eleven guns, announced once ("every gun").
+- **The hook:** the run summary gains `closingMode`; a new counter kind `closingWin` (game/challenges.js) listens for `'runWon'` (the moment the van
+  leaves) rather than `'runEnd'`, so a win counts even if the tab closes at the receipt, and the win receipt can list it: createGame's
+  `receiptFor` reads the shift's earned list live (the win summary is taken just before the reward is paid). Clock out, Stay and a later death all
+  keep it; a debug-assisted run earns nothing.
+- **The badge** (weapons/models/skinBadge.js): one small plate, one draw call, placed by raycast on every gun's left face next to the sticker mount
+  (not hand-placed: eleven guns, eleven different faces; a hand or arm in the way rejects a spot). After Hours reuses the phase 7 `drift` treatment.
+- **The board and locker:** the Challenges tab lists the two rewards once, under "Closing Time" (one pin each, `skin:closing/<id>`); the locker shows
+  five finishes per gun. No gun number, price or sound changed (the balance report is unchanged).
+
+
 ## 11 November 2026 - Hazards phases 2 to 4 and their review merged into main
 
 - claude/hazards-review (Food Court Fryer Blast, Main Hallway Fire Sprinklers, Service Corridor PA System Lure, and the review's fixes: player slows through game/surfaceSlows.js, one switch per hazard, readable effects) merged into main after Kiosk Kevin phases 4 to 7. Its own entries are below. docs/hazards-plan.md moved to docs/archive/.

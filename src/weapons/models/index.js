@@ -29,6 +29,7 @@ import { buildReturnToSenderModel, buildReturnToSenderDisplay } from './returnTo
 import { resolveGunColors } from '../skinPalette.js';
 import { applySkinPattern } from './skinPattern.js';
 import { applySkinTreatment } from './skinTreatments.js';
+import { applySkinBadge } from './skinBadge.js';
 import { gunSkin } from '../../config/skins.js';
 
 const builders = {
@@ -51,12 +52,13 @@ function builderFor(def) {
   return b;
 }
 
-// A slot 2 skin's printed pattern and a slot 3 skin's treatment go on after the build (models/skinPattern.js, models/skinTreatments.js);
-// other skins and the default are untouched. A treatment runs from the model's own animate().
+// A slot 2 skin's printed pattern, a slot 3 skin's treatment and the Employee of the Month badge go on after the build (models/skinPattern.js,
+// models/skinTreatments.js, models/skinBadge.js); other skins and the default are untouched. A treatment runs from the model's own animate().
 export function buildWeaponModel(def, skinId) {
   const model = builderFor(def).model(def, skinId);
   applySkinPattern(model.root, def, skinId, model.mounts);
   const treatment = applySkinTreatment(model.root, def, skinId);
+  applySkinBadge(model.root, def, skinId, model.mounts);
   if (treatment) {
     const animate = model.animate;
     model.animate = state => { animate?.call(model, state); treatment.animate(state?.time ?? 0); };
@@ -71,6 +73,7 @@ export function buildWeaponDisplay(def, skinId) {
   const display = builderFor(def).display(painted);
   if (gunSkin(def.id, skinId)?.pattern) applySkinPattern(display, def, skinId, mountsOf(def));
   applySkinTreatment(display, def, skinId); // (display.userData.skinTreatment: the locker preview animates it; elsewhere it holds still)
+  if (gunSkin(def.id, skinId)?.badge) applySkinBadge(display, def, skinId, mountsOf(def));
   return display;
 }
 
