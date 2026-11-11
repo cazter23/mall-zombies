@@ -60,6 +60,8 @@ export const skins = {
   confettiCannon: [{ id: 'encore', name: 'Encore', slot: 1,
     palette: { body: 0x512753, dark: 0x2c1a30, metal: 0xb1a0be, grip: 0x241b2b, accent: 0xe9b5f2, sight: 0xffe7ad, ammo: 0xf2ddaf }, challenge: mastery(400) }, {
     id: 'party-size', name: 'Party Size', slot: 2,
+    palette: { body: 0x7a0866, dark: 0x44043a, metal: 0xe0b8d8, grip: 0x26141f, accent: 0xffc0ec, sight: 0xfff0b0 },
+    pattern: { kind: 'confetti', colors: [0xffe066, 0x7fe3ff, 0xffffff, 0xff9ad5, 0x9dff9a], perSquareMetre: 9000, minSize: 0.004, maxSize: 0.008, seed: 11 },
     challenge: { kind: 'multiKillShots', count: 40, minKills: 3, text: 'Fire {count} blasts of the {gun} that each clear {minKills} or more zombies.' },
   }],
   coilNailer: [{ id: 'factory-finish', name: 'Factory Finish', slot: 1,
