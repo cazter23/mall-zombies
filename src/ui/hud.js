@@ -19,6 +19,8 @@ import { gunLabel, buildOf, workshopStuffings } from '../config/workshop.js';
 import { tierById, tierOf } from '../weapons/upgrades.js';
 import { createAnnouncements } from './announcements.js';
 import { ui } from '../config/ui.js';
+import { gunSkin, skinNotices } from '../config/skins.js';
+import { weapons } from '../config/weapons.js';
 import { upgrades } from '../config/upgrades.js';
 import { iconSvg } from './outfitIcons.js';
 import { wardrobeLook } from '../config/wardrobe.js';
@@ -32,7 +34,7 @@ function el(tag, className) {
   return node;
 }
 
-export function createHud() {
+export function createHud({ locker = null } = {}) {
   const hud = el('div', 'hud');
   const eyewear = el('div', 'wardrobe-eyewear');
   eyewear.setAttribute('aria-hidden', 'true');
@@ -132,8 +134,18 @@ export function createHud() {
   purchaseStamp.setAttribute('role', 'status');
   hud.append(purchaseStamp);
   let purchaseTimer = null;
+  const skinToast = el('div', 'skin-unlock-toast');
+  skinToast.setAttribute('role', 'status');
+  skinToast.hidden = true;
+  const skinToastTitle = el('strong');
+  skinToastTitle.textContent = skinNotices.toastTitle;
+  const skinToastText = el('span');
+  skinToast.append(skinToastTitle, skinToastText);
+  let skinToastTimer = null;
   function clearNotices() {
     announcements.clear();
+    clearTimeout(skinToastTimer);
+    skinToast.hidden = true;
     clearTimeout(purchaseTimer);
     purchaseStamp.classList.remove('show');
     roundBanner.classList.remove('show');
@@ -342,14 +354,14 @@ export function createHud() {
   const topStack = el('div', 'hud-top-stack');
   topStack.append(bossBar, roundBanner, ...closingLines.map(({ marker }) => marker.element), bagMarker.element);
   const rightStack = el('div', 'hud-right-stack');
-  rightStack.append(saleTag, clawTag, announceBanner, certificate.element);
+  rightStack.append(saleTag, clawTag, announceBanner, skinToast, certificate.element);
   hud.append(leftStack, topStack, rightStack);
   // A workshop order starts below any active boss display. Measure its real
   // height, including wrapped names and the player's chosen text size.
   const updateOrderTop = () => hud.style.setProperty('--hud-order-top', `${Math.ceil(topStack.offsetTop + topStack.offsetHeight + 12)}px`);
   if (typeof ResizeObserver === 'function') new ResizeObserver(updateOrderTop).observe(topStack);
   // The menus around a run (title / pause / results receipt): ui/screens.js.
-  const screens = createScreens();
+  const screens = createScreens({ locker });
   document.body.append(hud);
 
   let lastHealth = -1;
@@ -394,6 +406,14 @@ export function createHud() {
     // Peripheral feedback listens to the existing event bus; no purchase callbacks in gameplay.
     connectEvents(events) {
       phoneFlash.connect(events);
+      events.on('skinUnlocked', ({ gunId, skinId }) => {
+        const skin = gunSkin(gunId, skinId);
+        if (!skin) return;
+        clearTimeout(skinToastTimer);
+        skinToastText.textContent = skinNotices.toastText(weapons[gunId].name, skin.name);
+        skinToast.hidden = false;
+        skinToastTimer = setTimeout(() => { skinToast.hidden = true; }, skinNotices.toastSeconds * 1000);
+      });
       events.on('purchase', ({ label, kind, id, cost }) => {
         clearTimeout(purchaseTimer);
         purchaseStamp.textContent = kind === 'fittingRoom' ? `Changed into ${label}`

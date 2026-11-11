@@ -8,6 +8,7 @@
 // =============================================================================
 
 import * as THREE from 'three';
+import { resolveGunColors } from '../skinPalette.js';
 import { samplePose } from '../../core/keyframes.js';
 import { buildDeformedBoxGeometry } from '../../player/body.js';
 import { buildPistolArms } from './arms.js';
@@ -61,13 +62,13 @@ function buildGun(vm) {
   const materials = new Map();
   const mat = (color) => {
     if (!materials.has(color)) {
-      const isDark = color === vm.darkColor;
-      const isSight = color === vm.sightColor;
+      const isDark = color === 'darkColor' || color === 'gripColor';
+      const isSight = color === 'sightColor' || color === 'accentColor';
       materials.set(color, new THREE.MeshStandardMaterial({
-        color,
+        color: vm[color],
         roughness: isSight ? 0.2 : isDark ? 0.74 : 0.3,
         metalness: isDark ? 0.05 : 0.08,
-        ...(isSight ? { emissive: color, emissiveIntensity: 0.7 } : {}),
+        ...(isSight ? { emissive: vm[color], emissiveIntensity: 0.7 } : {}),
         flatShading: true,
       }));
     }
@@ -90,15 +91,15 @@ function buildGun(vm) {
   };
 
   // Faceted blue clamshell receiver & yellow lower accent rail
-  const housing = box(0.082, 0.085, 0.23, 0, 0.005, -0.07, vm.bodyColor, gun, blasterShellGeo);
+  const housing = box(0.082, 0.085, 0.23, 0, 0.005, -0.07, 'bodyColor', gun, blasterShellGeo);
   housing.name = 'foamHousing';
-  box(0.085, 0.024, 0.24, 0, -0.05, -0.07, vm.accentColor);
+  box(0.085, 0.024, 0.24, 0, -0.05, -0.07, 'accentColor');
 
   // Molded plastic clamshell parting seam along the top/rear spine & screw bosses on the right shell
-  box(0.004, 0.088, 0.234, 0, 0.006, -0.07, vm.darkColor);
+  box(0.004, 0.088, 0.234, 0, 0.006, -0.07, 'darkColor');
   for (const z of [-0.01, -0.07, -0.13, -0.17]) {
-    box(0.085, 0.01, 0.014, 0, 0.024, z, vm.darkColor); // upper vent slots
-    cylinder(0.004, 0.084, 0, -0.018, z, vm.darkColor, gun, 'x'); // molded screw bosses
+    box(0.085, 0.01, 0.014, 0, 0.024, z, 'darkColor'); // upper vent slots
+    cylinder(0.004, 0.084, 0, -0.018, z, 'darkColor', gun, 'x'); // molded screw bosses
   }
 
   // Toy branding & "AGES 8-80" warning plaque on the right receiver side
@@ -111,58 +112,58 @@ function buildGun(vm) {
     plaque.position.set(0.0415, 0.004, -0.065);
     gun.add(plaque);
   } else {
-    box(0.003, 0.024, 0.078, 0.0415, 0.004, -0.065, vm.accentColor);
+    box(0.003, 0.024, 0.078, 0.0415, 0.004, -0.065, 'accentColor');
   }
 
   // Ribbed pump-style foregrip under the front half of the receiver
-  const foregrip = box(0.058, 0.032, 0.105, 0, -0.068, -0.145, vm.darkColor, gun, blasterShellGeo);
+  const foregrip = box(0.058, 0.032, 0.105, 0, -0.068, -0.145, 'gripColor', gun, blasterShellGeo);
   foregrip.name = 'foamForegrip';
   for (const z of [-0.108, -0.128, -0.148, -0.168, -0.188]) {
-    box(0.062, 0.012, 0.009, 0, -0.076, z, vm.accentColor);
+    box(0.062, 0.012, 0.009, 0, -0.076, z, 'accentColor');
   }
 
   // Sights & barrel with bright safety-orange toy muzzle ring
-  box(0.032, 0.03, 0.065, 0, 0.063, 0.005, vm.darkColor); // rear rail
-  box(0.008, 0.05, 0.012, 0, 0.065, -0.185, vm.darkColor); // front sight post
-  box(0.014, 0.014, 0.016, 0, 0.091, -0.19, vm.sightColor); // clear sight above drum
-  cylinder(0.027, 0.1, 0, 0.006, -0.22, vm.accentColor, gun);
-  cylinder(0.031, 0.025, 0, 0.006, -0.275, vm.muzzleColor, gun);
-  cylinder(0.02, 0.002, 0, 0.006, -0.289, vm.darkColor, gun); // dark muzzle opening
+  box(0.032, 0.03, 0.065, 0, 0.063, 0.005, 'darkColor'); // rear rail
+  box(0.008, 0.05, 0.012, 0, 0.065, -0.185, 'darkColor'); // front sight post
+  box(0.014, 0.014, 0.016, 0, 0.091, -0.19, 'sightColor'); // clear sight above drum
+  cylinder(0.027, 0.1, 0, 0.006, -0.22, 'accentColor', gun);
+  cylinder(0.031, 0.025, 0, 0.006, -0.275, 'muzzleColor', gun);
+  cylinder(0.02, 0.002, 0, 0.006, -0.289, 'darkColor', gun); // dark muzzle opening
 
   // Contoured pistol grip, orange trigger & shaped skeletonized toy stock
-  const grip = box(0.042, 0.12, 0.05, 0, -0.095, 0.025, vm.darkColor, gun, blasterShellGeo);
+  const grip = box(0.042, 0.12, 0.05, 0, -0.095, 0.025, 'gripColor', gun, blasterShellGeo);
   grip.rotation.x = 0.3;
   for (const y of [-0.072, -0.094, -0.116]) {
-    const gripRib = box(0.045, 0.007, 0.036, 0, y, 0.026, vm.bodyColor);
+    const gripRib = box(0.045, 0.007, 0.036, 0, y, 0.026, 'bodyColor');
     gripRib.rotation.x = 0.3;
   }
 
   // Shaped stock: upper cheek rest, angled lower strut, and yellow/orange ribbed buttpad
-  const stockTop = box(0.064, 0.034, 0.088, 0, 0.012, 0.088, vm.bodyColor, gun, blasterShellGeo);
+  const stockTop = box(0.064, 0.034, 0.088, 0, 0.012, 0.088, 'bodyColor', gun, blasterShellGeo);
   stockTop.name = 'foamStock';
   stockTop.rotation.x = -0.06;
-  const stockStrut = box(0.044, 0.02, 0.082, 0, -0.024, 0.088, vm.darkColor);
+  const stockStrut = box(0.044, 0.02, 0.082, 0, -0.024, 0.088, 'darkColor');
   stockStrut.rotation.x = 0.18;
-  box(0.066, 0.074, 0.018, 0, -0.004, 0.132, vm.accentColor, gun, blasterShellGeo);
-  box(0.068, 0.078, 0.012, 0, -0.004, 0.145, vm.muzzleColor, gun, blasterShellGeo); // orange rubberized buttplate
+  box(0.066, 0.074, 0.018, 0, -0.004, 0.132, 'accentColor', gun, blasterShellGeo);
+  box(0.068, 0.078, 0.012, 0, -0.004, 0.145, 'muzzleColor', gun, blasterShellGeo); // orange rubberized buttplate
 
-  const trigger = box(0.012, 0.03, 0.014, 0, -0.065, -0.017, vm.muzzleColor);
+  const trigger = box(0.012, 0.03, 0.014, 0, -0.065, -0.017, 'muzzleColor');
 
   // Exposed rotary dart drum on the left side
   const drum = new THREE.Group();
   drum.name = 'dartDrum';
   drum.position.set(-0.065, 0.025, -0.075);
   gun.add(drum);
-  cylinder(0.061, 0.075, 0, 0, 0, vm.accentColor, drum, 'x');
-  cylinder(0.049, 0.078, 0, 0, 0, vm.bodyColor, drum, 'x');
-  cylinder(0.018, 0.082, 0, 0, 0, vm.muzzleColor, drum, 'x'); // orange center spindle cap
+  cylinder(0.061, 0.075, 0, 0, 0, 'accentColor', drum, 'x');
+  cylinder(0.049, 0.078, 0, 0, 0, 'bodyColor', drum, 'x');
+  cylinder(0.018, 0.082, 0, 0, 0, 'muzzleColor', drum, 'x'); // orange center spindle cap
   // Foam darts and safety-orange tips visible around the outside of the drum
   for (let i = 0; i < 8; i++) {
     const angle = (i * Math.PI) / 4;
     const y = Math.cos(angle) * 0.037;
     const z = Math.sin(angle) * 0.037;
-    cylinder(0.008, 0.022, -0.046, y, z, vm.dartColor, drum, 'x');
-    cylinder(0.009, 0.006, -0.06, y, z, vm.muzzleColor, drum, 'x');
+    cylinder(0.008, 0.022, -0.046, y, z, 'dartColor', drum, 'x');
+    cylinder(0.009, 0.006, -0.06, y, z, 'muzzleColor', drum, 'x');
   }
 
   const muzzle = new THREE.Object3D();
@@ -182,12 +183,12 @@ function buildGun(vm) {
 }
 
 export function buildFoamDartBlasterDisplay(def) {
-  return buildGun(def.viewmodel).gun;
+  return buildGun(resolveGunColors(def)).gun;
 }
 
-export function buildFoamDartBlasterModel(def) {
+export function buildFoamDartBlasterModel(def, skinId) {
   const vm = def.viewmodel;
-  const { gun, muzzle, trigger, drum, mounts } = buildGun(vm);
+  const { gun, muzzle, trigger, drum, mounts } = buildGun(resolveGunColors(def, skinId));
   // Left hand braces the ribbed foregrip below and ahead of the side-mounted dart drum
   const { leftArm } = buildPistolArms(gun, {
     leftOffset: new THREE.Vector3(-0.004, -0.036, -0.065),

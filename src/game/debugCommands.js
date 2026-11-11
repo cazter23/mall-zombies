@@ -11,11 +11,12 @@
 //   dbg.status()      live numbers for the window: { round, points, alive, zombieType, god, panelOpen, last }
 //   dbg.state         { panelOpen, zombieIndex, gunIndex, last }; god mode lives on health.invulnerable
 //
-// Debug state is not part of a run: Play again does not reset it (god mode and the window stay as you left them).
+// God mode and the window persist through Play again. Skin overrides are scoped to the run.
 // Kills made here count as 'hazard' kills, so they pay and count like any non-player kill.
 // =============================================================================
 
 import { debug } from '../config/debug.js';
+import { gunSkin, skins, skinDebug, challengeDebug } from '../config/skins.js';
 import { weapons } from '../config/weapons.js';
 import { mascotTypes, zombieTypes } from '../config/zombies.js';
 import { bossTypes } from '../config/bosses.js';
@@ -28,9 +29,10 @@ const BOSS_IDS = Object.keys(bossTypes).sort((a,b)=>bossTypes[a].firstRounds[0]-
 const WALL_GUN_IDS = Object.keys(weapons).filter((id) => id !== 'stapleGun');
 const nameOf = (id) => id.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
 
-export function createDebugCommands({ map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses, wardrobe, features = null, equipment = null, closing = null, commands = debug.commands, onUse = null }) {
+export function createDebugCommands({ map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses, wardrobe, features = null, equipment = null, challenges = null, closing = null, commands = debug.commands, onUse = null }) {
   const clawMachine = () => features?.list.find(({ feature }) => feature.kind === 'clawMachine')?.instance ?? null; // GRAB-A-GUN
   const state = { panelOpen: debug.panel.startOpen, zombieIndex: 0, bossIndex: 0, gunIndex: 0, mascotIndex: 0, goldIndex: 0, last: '' };
+  const skinOverrides = new Map();
   const selectedZombie = () => ZOMBIE_IDS[state.zombieIndex];
 
   // Spawn a Mascot in a chosen costume at the open spawn point nearest you (the Mascot cap, and one Employee of the
@@ -192,6 +194,21 @@ export function createDebugCommands({ map, zombies, rounds, wallet, gun, health,
   // Commands with NO key (the keyboard has none left to spare): run them from the browser console,
   // window.__mall.g.debug.run('pockets'), or from a test. Not in the key table or the debug window.
   const keyless = {
+    skin(gunId, skinId) {
+      if (!gunId || !skinId) return skinDebug.usage;
+      if (!Object.hasOwn(skins, gunId)) return skinDebug.unknownGun;
+      if (skinId === 'default') {
+        skinOverrides.delete(gunId);
+        return skinDebug.cleared(weapons[gunId].name);
+      }
+      const skin = gunSkin(gunId, skinId);
+      if (!skin) return skinDebug.unknownSkin;
+      skinOverrides.set(gunId, skin.id);
+      return skinDebug.equipped(weapons[gunId].name, skin.name);
+    },
+    challenge(...args) {
+      return challenges ? challenges.debug(...args) : challengeDebug.unavailable;
+    },
     armour() {
       health.addArmour(health.maxArmourLayers);
       return `Bubble Wrap: ${health.armour.length} layers`;
@@ -217,6 +234,8 @@ export function createDebugCommands({ map, zombies, rounds, wallet, gun, health,
   return {
     state,
     commands,
+    skinFor: (gunId) => skinOverrides.get(gunId),
+    clearSkinOverrides: () => skinOverrides.clear(),
     /** Run a command by id; the returned message is also kept as the "last result" for the window. */
     run(id, ...args) {
       const table = Object.hasOwn(run, id) ? run : Object.hasOwn(keyless, id) ? keyless : null;
@@ -245,6 +264,6 @@ export function createDebugCommands({ map, zombies, rounds, wallet, gun, health,
       };
     },
     ids: Object.keys(run), // (the keyed commands: one per entry in config/debug.js)
-    keylessIds: Object.keys(keyless), // (run by id only: 'pockets')
+    keylessIds: Object.keys(keyless), // (run by id only: 'skin', 'pockets')
   };
 }

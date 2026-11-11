@@ -135,7 +135,7 @@ export function createPlayerGun({
       if (!target.isAlive) continue; // (killed earlier this pulse by a kill listener)
       const hit = { target, part: 'body', point: point.clone(), normal: direction.clone().negate(), distance };
       hits.push(hit);
-      const { killed } = target.takeHit({ damage: hitDamage(d, hit, 0, stats), part: 'body', point: hit.point, direction, impact: d.impact });
+      const { killed } = target.takeHit({ damage: hitDamage(d, hit, 0, stats), part: 'body', point: hit.point, direction, impact: d.impact, weaponId: d.id });
       if (!killed) blowAway(target, origin, cone, distance);
       resolved.push({ hit, killed, paid: killed || pay.take(target) });
     }
@@ -182,6 +182,7 @@ export function createPlayerGun({
       distance: 6, target: null, part: null, hits: [], worldHit: null, projectile: true, weaponId: d.id, magazineLeft: weapon.magazine };
     let counted = false;
     balls.launch({
+      weaponId: d.id,
       position: start,
       direction: throwDirection,
       projectile,
@@ -271,6 +272,7 @@ export function createPlayerGun({
           point: hit.point,
           direction,
           impact: d.impact,
+          weaponId: d.id,
         });
         const previous = targets.get(hit.target);
         // On a kill, ONLY the killing pellet decides the headshot bonus.

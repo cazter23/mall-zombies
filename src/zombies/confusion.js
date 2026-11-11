@@ -60,7 +60,7 @@ export function updateConfusion(zombie, dt, ctx) {
       zombie.setState('swing');
       if (target && zombie.canHit(asTarget(target)) && !zombie.wallBetween(asTarget(target), ctx.colliders)) {
         target.stuffedBy = zombie.stuffedBy; // (its kill belongs to the gun that confused this one)
-        target.takeHit({ damage: state.damage, part: 'body', source: state.source ?? 'build' });
+        target.takeHit({ damage: state.damage, part: 'body', source: state.source ?? 'build', weaponId: state.weaponId });
       }
     }
     return;

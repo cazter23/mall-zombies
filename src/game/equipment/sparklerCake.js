@@ -18,7 +18,7 @@ export function pulseSparklerCake({ product, point, targets, round, effects }) {
   const lit = [];
   for (const target of targets) {
     if (!target.isAlive) continue;
-    target.applyBurn(burnDamage(target, spray, round), spray.burn.seconds, spray.burn.tickSeconds, 'equipment');
+    target.applyBurn(burnDamage(target, spray, round), spray.burn.seconds, spray.burn.tickSeconds, null, 'equipment');
     lit.push(target);
   }
   effects?.confetti(point.clone().setY(point.y + 0.25), UP, product.look.sparks);

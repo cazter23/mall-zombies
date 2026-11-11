@@ -11,6 +11,7 @@
 
 import * as THREE from 'three';
 import { samplePose } from '../../core/keyframes.js';
+import { resolveGunColors } from '../skinPalette.js';
 import { buildDeformedBoxGeometry } from '../../player/body.js';
 import { buildPistolArms } from './arms.js';
 
@@ -89,10 +90,10 @@ function buildGun(colors) {
   const mat = (color, opts = {}) =>
     new THREE.MeshStandardMaterial({ color, roughness: 0.34, metalness: 0.1, flatShading: true, ...opts });
   const body = mat(colors.bodyColor, { roughness: 0.32, metalness: 0.14 });
-  const bodyShade = mat(0xc89918, { roughness: 0.42, metalness: 0.16 });
+  const bodyShade = mat(colors.bodyShadeColor, { roughness: 0.42, metalness: 0.16 });
   const dark = mat(colors.darkColor, { roughness: 0.72, metalness: 0.1 });
   const metal = mat(colors.metalColor, { roughness: 0.24, metalness: 0.78 });
-  const brass = mat(0xd4a437, { roughness: 0.3, metalness: 0.72 });
+  const brass = mat(colors.brassColor, { roughness: 0.3, metalness: 0.72 });
   const sight = mat(colors.sightColor, { emissive: colors.sightColor, emissiveIntensity: 0.7, roughness: 0.2 });
 
   function part(w, h, d, x, y, z, material, parent = gun, geo = null) {
@@ -179,7 +180,7 @@ function buildGun(colors) {
   magazine.add(nails);
 
   // Angled rubberized grip, trigger guard, trigger & bottom pneumatic air connector + hose stub
-  const handle = part(0.042, 0.12, 0.05, 0, -0.09, 0.02, dark, gun, chamberGeo);
+  const handle = part(0.042, 0.12, 0.05, 0, -0.09, 0.02, mat(colors.gripColor, { roughness: dark.roughness, metalness: dark.metalness }), gun, chamberGeo);
   handle.rotation.x = 0.3;
   for (const y of [-0.07, -0.092, -0.114]) {
     const gripRib = part(0.045, 0.008, 0.038, 0, y, 0.022, bodyShade);
@@ -218,12 +219,12 @@ function buildGun(colors) {
 
 /** Just the gun, no hands (for the wall-buy display). */
 export function buildNailGunDisplay(def) {
-  return buildGun(def.viewmodel).gun;
+  return buildGun(resolveGunColors(def)).gun;
 }
 
-export function buildNailGunModel(def) {
+export function buildNailGunModel(def, skinId) {
   const vm = def.viewmodel;
-  const { gun, muzzle, trigger, nose, cap, nails, follower, metal, brass, mounts } = buildGun(vm);
+  const { gun, muzzle, trigger, nose, cap, nails, follower, metal, brass, mounts } = buildGun(resolveGunColors(def, skinId));
   const { leftArm } = buildPistolArms(gun);
   // The fresh collated nail strip the left hand brings during a reload.
   const strip = buildCollatedNails(metal, brass, 0.15, 10);

@@ -20,7 +20,7 @@ export function openGlitterBomb({ product, point, targets, round, effects, sound
   const confused = [];
   for (const target of targets) {
     if (confused.length >= confuse.maxTargets) break;
-    if (target.applyConfusion(confuse.seconds, damage, 'equipment')) confused.push(target);
+    if (target.applyConfusion(confuse.seconds, damage, null, 'equipment')) confused.push(target);
   }
   effects?.confetti(point, UP, product.look.burst);
   sound?.play(product.sounds.open);

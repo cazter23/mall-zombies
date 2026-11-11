@@ -64,6 +64,9 @@ import { createSecondChance } from './secondChance.js';
 import { createWardrobe } from './wardrobe.js';
 import { createOutfitRail } from './outfitRail.js';
 import { createRunStats } from './runStats.js';
+import { createSkinSave } from './skinSave.js';
+import { createSkins } from './skins.js';
+import { createChallenges } from './challenges.js';
 import { createWallet, pointsForHit } from './wallet.js';
 import { createRounds } from './rounds.js';
 import { createClockIn } from './clockIn.js';
@@ -81,6 +84,7 @@ const DEG_TO_RAD = Math.PI / 180;
  * @param scene, camera   three.js scene (the map, zombies and effects go in it) and the world camera
  * @param input           core/input.js Input (or a test double with the same calls)
  * @param hud, sound, viewmodel  browser parts (see the header)
+ * @param skinSave        optional permanent skin record (memory by default; main.js supplies browser storage)
  * @param mapId           which map (maps/index.js)
  * @param buildTestRange  optional (scene, colliders) => arena: the debug movement/shooting range
  * @param debugTick       optional () => void, run each live tick just before the player moves
@@ -95,6 +99,7 @@ export function createGame({
   hud,
   sound,
   viewmodel,
+  skinSave = createSkinSave({ storage: null }),
   mapId = 'mall',
   buildTestRange = null,
   debugTick = null,
@@ -222,6 +227,8 @@ export function createGame({
       return !this.over && !this.winPending && (input.locked || this.padPlaying || this.forceRun);
     },
   };
+  const challenges = createChallenges({ events, state, save: skinSave });
+  const skins = createSkins({ save: skinSave });
   const runFrozen = () => state.over || state.winPending;
   // GRAB-A-GUN's prize tickets (game/tickets.js): their own currency, never points, pricing or income.
   const tickets = createTickets({ events, state });
@@ -258,6 +265,7 @@ export function createGame({
       wearing: Object.freeze(Object.fromEntries(outfitRail.snapshot().map(({ slot, id }) => [slot, id]))),
       // The guns you named at Build-A-Blaster (the receipt reads them out).
       survivedBy: gun.namedBuilds.map((build) => ({ name: build.name, combo: comboName(build), confirmed: build.confirmed ?? 0 })),
+      skinsUnlocked: challenges.earned,
       ticketsWon: tickets.won, // (GRAB-A-GUN's prize tickets: not points, not income)
       closingDone: closing.done,
       won: state.won,
@@ -389,6 +397,7 @@ export function createGame({
       headshot: zombie.killedByHeadshot,
       melee: zombie.killedByMelee,
       source: zombie.killedBy,
+      weaponId: zombie.killedByWeaponId,
     }),
     // (`again`: the helmet came off a second time, after Captain Coupon put it back on)
     onHeadPop: (zombie, { headshot, source }) => events.emit('mascotHeadPop', { zombie, headshot, source, again: zombie.mascotReclaims > 0 }),
@@ -512,7 +521,7 @@ export function createGame({
   });
 
   // Build-A-Blaster's PA lines (game/features/workshopRitual.js), and GRAB-A-GUN's (game/features/clawMachine.js).
-  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualWaiting', 'ritualCollect', 'limitedEditionDrop', 'limitedEditionFitted', 'wardrobeBuy', 'clawClosed', 'clawMoved', 'kioskStock']) {
+  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualWaiting', 'ritualCollect', 'limitedEditionDrop', 'limitedEditionFitted', 'wardrobeBuy', 'clawClosed', 'clawMoved', 'skinUnlocked', 'kioskStock']) {
     events.on(name, ({ pa }) => {
       if (!pa) return;
       hud.showAnnouncement({ ...pa, priority: 1 });
@@ -598,7 +607,7 @@ export function createGame({
   const wardrobe = createWardrobe({ stats, player, events });
   const features = buildFeatures(map, {
     scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state, warranty, meleeUpgrades, wardrobe,
-    colliders, effects, sound, input, tickets, shootables, aimAssist, secondChance, equipment, closing,
+    colliders, effects, sound, input, tickets, shootables, aimAssist, secondChance, equipment, closing, skins,
   });
   const kevin = features.list.find(({ feature }) => feature.kind === 'kiosk')?.instance;
 
@@ -627,12 +636,14 @@ export function createGame({
   });
   // Developer shortcuts (config/debug.js lists the keys; main.js turns key presses into debug.run(id)).
   const debugCommands = createDebugCommands({
-    map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses, wardrobe, features, equipment, closing,
+    map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses, wardrobe, features, equipment, challenges, closing,
     onUse: (id) => {
       // Merely showing the panel or choosing the next spawn type changes no run outcome.
       if (id !== 'panel' && id !== 'cycleZombie' && id !== 'cycleBoss' && id !== 'benchmark') state.assisted = true;
     },
   });
+
+  events.on('runReset', debugCommands.clearSkinOverrides);
 
   events.on('clockIn', () => {
     hud.showAnnouncement(economy.rounds.clockIn.pa);
@@ -663,6 +674,8 @@ export function createGame({
     ['health', () => health.reset()], // (after stats: back to the base max health)
     ['secondChance', () => secondChance.reset()], // not held, and buyable again (its 'secondChance' event hides the HUD tag)
     ['runStats', () => runStats.reset()],
+    ['challenges', () => challenges.reset()],
+    ['skins', () => skins.reset()],
     ['balls', () => balls.clear()], // (before the gun: a ball in the air reports to it)
     ['equipment', () => equipment.reset()], // empty pockets, nothing thrown left in the air or on the floor
     ['gun', () => gun.reset()], // just the staple gun again, no upgrades
@@ -726,6 +739,8 @@ export function createGame({
     ['secondChance', () => secondChance.serialize(), (data) => secondChance.restore(data)],
     ['armour', () => health.armour, (layers) => health.restoreArmour(layers)], // Bubble Wrap (health itself is transient: stats.health is saved)
     ['runStats', () => runStats.serialize(), (data) => runStats.restore(data)],
+    ['challenges', () => challenges.serialize(), (data) => challenges.restore(data)],
+    ['skins', () => skins.serialize(), (data) => skins.restore(data)],
     ['equipment', () => equipment.serialize(), (data) => equipment.restore(data)],
     ['gun', () => ({ ...gun.serialize(), attachments: ownedAttachments(gun) }), (data) => {
       gun.restore(data, weapons);
@@ -863,6 +878,7 @@ export function createGame({
     shutterSounds.update(dt);
     features.update(dt);
     outfitRail.update(dt);
+    challenges.update(dt);
     flashSales.update(dt);
     if (arena) arena.update(dt);
     player.updateView(dt); // recoil/jolt springs last, so this tick's kicks show on the next frame
@@ -892,6 +908,8 @@ export function createGame({
     closing,
     bosses,
     debug: debugCommands,
+    challenges,
+    skins,
     colliders,
     arena,
     shootables,

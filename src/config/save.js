@@ -6,8 +6,9 @@
 //   reasons     why the pause menu's Save & Quit is greyed out (the button shows the text).
 // =============================================================================
 export const save = {
-  version: 3, // 2: Kiosk Kevin and Closing Time (map.features gained entries, so a version 1 save's feature data no longer lines up)
-  //             3: Kevin's five carts (the kiosk feature gained its sites and saves where he is)
+  version: 4, // 2: Kiosk Kevin and Closing Time (map.features gained entries, so a version 1 save's feature data no longer lines up)
+  //             3: Kevin's five carts (the kiosk feature saves where he is), and, separately on main, run skin choices and the
+  //                challenge unlock receipt; 4: both of those together
   storageKey: 'sunsetGalleria.save',
   reasons: {
     noRound: 'Not clocked in yet',

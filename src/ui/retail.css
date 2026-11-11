@@ -556,6 +556,10 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .purchase-stamp.show { display: block; }
 .hud.dead .purchase-stamp { display: none; }
 
+.skin-unlock-toast { padding: 10px 14px; background: var(--plum); color: var(--paper); border-left: 3px solid var(--mint); font: 500 var(--ui-body, 13px)/1.4 var(--font-ui); overflow-wrap: anywhere; }
+.skin-unlock-toast strong, .skin-unlock-toast span { display: block; }
+.skin-unlock-toast strong { color: var(--mint); }
+
 /* PA, round and sale each get a lane. No full-width text across a player's aim. */
 .round-banner { top: 15%; font: 600 clamp(25px, 4vw, 42px)/1 var(--font-hud); color: var(--paper); background: var(--plum); padding: 7px 24px 3px; border-bottom: 3px solid var(--raspberry); letter-spacing: .07em; text-shadow: none; }
 .round-banner.show { animation: retail-round var(--round-seconds, 2.2s) ease-out forwards; }
@@ -921,4 +925,31 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .pause-card .save-note {
   margin-top: 0.4rem;
   font-size: 0.78em;
+}
+
+/* Personnel property form: paper, ink and the Statistics screen's menu controls. */
+.locker-screen { overflow-y: auto; align-items: safe center; }
+.locker-card { width: min(1120px, 94vw); max-width: none; margin: auto; padding: 28px 36px; }
+.locker-card h1 { margin: 4px 0 18px; font-size: 38px; }
+.locker-card h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .12em; margin: 0 0 10px; }
+.locker-layout { display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 30px; }
+.locker-guns { display: grid; gap: 3px; }
+.locker-gun { width: 100%; text-align: left; padding: 8px 12px; font-size: 15px; }
+.locker-gun[aria-pressed="true"] { border-left: 4px solid var(--locker-stamp); background: var(--locker-selected); }
+.locker-preview { height: 280px; background: var(--locker-preview); border: 1px solid var(--locker-edge); overflow: hidden; }
+.locker-preview canvas { display: block; width: 100%; height: 100%; }
+.locker-preview-caption { min-height: 24px; padding: 7px 0 15px; font-size: 13px; font-weight: 700; }
+.locker-skins { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.locker-skin { display: grid; gap: 7px; text-align: left; padding: 14px; border: 1px solid var(--locker-edge); background: var(--locker-paper); color: var(--locker-ink); cursor: pointer; font: inherit; }
+.locker-skin b { font-size: 18px; }
+.locker-skin span, .locker-skin small { font-size: 12px; line-height: 1.5; }
+.locker-skin.locked { background: var(--locker-lockedPaper); color: var(--locker-lockedInk); border-style: dashed; }
+.locker-skin.highlighted, .locker-skin:focus-visible { outline: 2px solid var(--locker-highlight); outline-offset: 2px; }
+.locker-skin[aria-pressed="true"] { border-bottom: 4px solid var(--locker-stamp); }
+.locker-card > .menu-row { margin-top: 20px; }
+@media (max-width: 720px) {
+  .locker-card { padding: 20px; }
+  .locker-layout { grid-template-columns: 1fr; gap: 18px; }
+  .locker-guns { grid-template-columns: 1fr 1fr; }
+  .locker-preview { height: 220px; }
 }
