@@ -261,6 +261,14 @@ export const audio = {
       { type: 'noise', filter: 'lowpass', freq: 1100, q: .7, gain: .85, attack: .001, decay: .16 },
       { type: 'noise', filter: 'highpass', freq: 4200, q: .7, gain: .45, attack: .01, decay: .6 },
     ] },
+    stadiumAirHorn: { volume: .72, layers: [
+      { type: 'tone', wave: 'sawtooth', freq: 415, freqEnd: 392, gain: .5, attack: .012, decay: .34 },
+      { type: 'tone', wave: 'sawtooth', freq: 508, freqEnd: 480, gain: .35, attack: .016, decay: .33 },
+    ] },
+    bubbleWrapPop: { volume: .65, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 2400, q: 1.1, gain: .9, attack: .001, decay: .035 },
+      { type: 'tone', wave: 'sine', freq: 260, freqEnd: 95, gain: .4, attack: .001, decay: .065 },
+    ] },
     partySnap: { volume: .8, layers: [
       { type: 'noise', filter: 'bandpass', freq: 3300, q: .8, gain: .9, attack: .001, decay: .045 },
       { type: 'noise', filter: 'lowpass', freq: 920, q: .7, gain: .48, attack: .002, decay: .075 },

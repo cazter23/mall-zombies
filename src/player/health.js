@@ -8,6 +8,7 @@
 // =============================================================================
 
 import { feel } from '../config/feel.js';
+import { armourDefaults } from './stats.js';
 
 export function createPlayerHealth({ stats, onDeath, onRegenStart = null }) {
   let sinceHit = Infinity; // seconds since the last hit (regen waits for stats.regenDelay)
@@ -17,6 +18,7 @@ export function createPlayerHealth({ stats, onDeath, onRegenStart = null }) {
   let dead = false;
   let killedBy = null; // source of the lethal blow ({ type, id, variant, boss, fall })
   let reviveProtection = 0;
+  const armour = [];
 
   return {
     get regenWaitFraction() {
@@ -27,6 +29,41 @@ export function createPlayerHealth({ stats, onDeath, onRegenStart = null }) {
 
     get isReviveProtected() {
       return reviveProtection > 1e-9;
+    },
+
+    get armour() {
+      return armour.slice();
+    },
+
+    get maxArmourLayers() {
+      return stats.maxArmourLayers ?? armourDefaults.maxArmourLayers;
+    },
+
+    addArmour(count = 1) {
+      const strength = stats.armourLayerStrength ?? armourDefaults.armourLayerStrength;
+      const added = Math.max(0, Math.min(count, this.maxArmourLayers - armour.length));
+      for (let i = 0; i < added; i++) armour.push(strength);
+      return added;
+    },
+
+    // Save & Quit (game/saveGame.js): the layers as they are (each one's strength left).
+    restoreArmour(layers) {
+      armour.length = 0;
+      armour.push(...layers.slice(0, this.maxArmourLayers));
+    },
+
+    absorb(amount) {
+      let popped = 0;
+      while (!dead && !this.invulnerable && amount > 0 && armour.length) {
+        const outer = armour.length - 1;
+        const absorbed = Math.min(amount, armour[outer]);
+        armour[outer] -= absorbed;
+        amount -= absorbed;
+        if (armour[outer] > 0) break;
+        armour.pop();
+        popped += 1;
+      }
+      return { damage: amount, popped };
     },
 
     get isDead() {
@@ -94,6 +131,7 @@ export function createPlayerHealth({ stats, onDeath, onRegenStart = null }) {
 
     // Back to full health and clear damage from the previous life.
     reset() {
+      armour.length = 0;
       stats.health = stats.maxHealth;
       sinceHit = Infinity;
       regenerating = false;

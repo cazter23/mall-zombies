@@ -192,6 +192,10 @@ export function createDebugCommands({ map, zombies, rounds, wallet, gun, health,
   // Commands with NO key (the keyboard has none left to spare): run them from the browser console,
   // window.__mall.g.debug.run('pockets'), or from a test. Not in the key table or the debug window.
   const keyless = {
+    armour() {
+      health.addArmour(health.maxArmourLayers);
+      return `Bubble Wrap: ${health.armour.length} layers`;
+    },
     // Kiosk Kevin's equipment (game/equipment.js): every pocket that has a product, full.
     pockets() {
       if (!equipment) return 'This game has no equipment';

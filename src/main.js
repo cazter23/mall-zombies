@@ -464,6 +464,7 @@ function render(alpha, frameTime) {
   hud.setCrosshair(gapPx, aimAmount);
 
   hud.setHealth(health.fraction, health.regenWaitFraction);
+  hud.setArmour(game.over ? 0 : health.armour.length);
   hud.setHurt(health.overlay);
   damageIndicators.flush();
   hud.setSpeedLines(game.over ? 0 : player.sprintAmount * feel.sprintFx.speedLinesOpacity);

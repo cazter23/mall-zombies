@@ -52,6 +52,8 @@ import { buildMallAtmosphere } from './atmosphere.js';
 import { buildRestockMachine } from './restockMachine.js';
 import { buildClawCabinet } from './clawCabinet.js';
 import { buildPrizeCounter } from './prizeCounter.js';
+import { buildKioskCart } from './kioskCart.js';
+import { kiosk } from '../../config/kiosk.js';
 import { clawMachine } from '../../config/clawMachine.js';
 import { buildLevelTwo } from './levelTwo.js';
 import { buildAtrium } from './atrium.js';
@@ -567,6 +569,7 @@ export function buildMall(scene, colliders) {
   // Its Prize Counter (game/features/prizeCounter.js): one fixed booth (mall/prizeCounter.js) where prize tickets buy small things.
   const counterSite = clawMachine.prizeCounter.site;
   const prizeBooth = buildPrizeCounter({ kit, back: counterSite.back, faces: counterSite.faces, floorY: counterSite.floorY });
+  const kioskCart = buildKioskCart(kit);
 
   sign('EXIT  ·  MAIN HALL', {
     x: 0, y: 3.6, z: F.maxZ - 0.02, width: 3, height: 0.5, facing: -1,
@@ -920,6 +923,7 @@ export function buildMall(scene, colliders) {
     // GRAB-A-GUN: one machine, live at one of its sites (it starts at the first every run).
     { kind: 'clawMachine', name: 'clawMachine', zone: clawSites[0].zone, position: clawSites[0].cabinet.position, normal: clawSites[0].cabinet.normal, sites: clawSites },
     { kind: 'prizeCounter', name: 'prizeCounter', zone: counterSite.zone, position: prizeBooth.position, normal: prizeBooth.normal, slots: prizeBooth.slots },
+    { kind: 'kiosk', name: 'kioskKevin', zone: kiosk.site.zone, ...kioskCart },
     // Environmental hazards (docs/hazards-plan.md): Grand Atrium Electrified Fountain breaker switch.
     { kind: 'fountainHazard', name: 'hazard_fountain', zone: hazards.fountain.zone, position: new THREE.Vector3(hazards.fountain.position.x, hazards.fountain.position.y, hazards.fountain.position.z), normal: new THREE.Vector3(hazards.fountain.normal.x, hazards.fountain.normal.y, hazards.fountain.normal.z) },
   ];

@@ -36,6 +36,8 @@
 //                                                        hitDirection = { x, z } normalized vector from player toward attack source or null.
 //                                                        damage is BEFORE clothes: createGame's listener applies stats.damageTakenMultiplier
 //   'playerFall'  { drop, damage }                       a landing from a height hurt (feel.fall); damage is already taken
+//   'armourHit'   { absorbed, layers, popped }            Bubble Wrap absorbed damage from a zombie hit
+//   'kioskStock'  { pick, pa }                           Kevin's fixed cart opened or its Pick changed
 //   'regenStart'  {}                                     health began climbing back (once per recovery: player/health.js)
 //   'secondChance' { status }                            Second Chance changed (game/secondChance.js): 'held' = bought at Customer Service,
 //                                                        'used' = it just covered a lethal hit (the player is already back at full health,

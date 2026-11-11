@@ -10,12 +10,15 @@
 import { feel } from '../config/feel.js';
 import { weaponStatDefaults } from '../config/weapons.js';
 
+export const armourDefaults = { maxArmourLayers: 3, armourLayerStrength: 40 };
+
 export function createPlayerStats() {
   return {
     damageTakenMultiplier: 1,
     knockbackMultiplier: 1,
     maxHealth: feel.player.maxHealth,
     health: feel.player.maxHealth,
+    ...armourDefaults,
     regenDelay: feel.health.regenDelay, // seconds after a hit before health regenerates
     regenRate: feel.health.regenRate, // health per second while regenerating
 

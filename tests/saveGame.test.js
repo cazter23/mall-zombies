@@ -147,3 +147,19 @@ test('saving is not a death: no runEnd, so career records count the run once, wh
   assert.equal(ended, 0);
   assert.equal(career.snapshot().totals.runs, 0);
 });
+
+test('Bubble Wrap bought before the round survives a load, partly used layers included', (t) => {
+  const storage = memoryStorage();
+  const run = game(t, storage);
+  run.tick();
+  run.g.health.addArmour(2);
+  run.g.health.absorb(15); // the outer layer is worn down, not popped
+  run.g.rounds.jumpTo(3);
+  run.tick();
+  const layers = run.g.health.armour;
+  run.g.saveGame.saveAndQuit();
+  const loaded = game(t, storage);
+  loaded.g.saveGame.load();
+  assert.deepEqual(loaded.g.health.armour, layers);
+  assert.equal(layers.length, 2);
+});
