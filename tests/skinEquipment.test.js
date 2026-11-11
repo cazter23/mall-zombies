@@ -156,7 +156,7 @@ test('receipt names only skins unlocked during this run, and combines multiple u
   assert.deepEqual(receipt(), []);
 });
 
-test('every configured mastery body contrasts with all six stuffings and every warranty tier', () => {
+test('every configured skin body contrasts with all six stuffings and every warranty tier', () => {
   const luminance = hex => {
     const rgb = [hex >> 16 & 255, hex >> 8 & 255, hex & 255].map(channel => {
       const value = channel / 255;
@@ -167,7 +167,7 @@ test('every configured mastery body contrasts with all six stuffings and every w
   assert.equal(Object.keys(skins).length, 11);
   assert.equal(Object.keys(workshopStuffings).length, 6);
   for (const [gunId, entries] of Object.entries(skins)) for (const skin of entries) {
-    assert.equal(entries.length, 1); assert.equal(skin.slot, 1);
+    assert.equal(entries.length, 2); assert.deepEqual(entries.map(entry => entry.slot), [1, 2]);
     assert.ok(Number.isInteger(skin.palette.body));
     for (const other of [...Object.values(workshopStuffings), ...upgrades.tiers]) {
       const a = luminance(skin.palette.body), b = luminance(other.color);

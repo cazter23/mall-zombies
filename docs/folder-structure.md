@@ -295,6 +295,11 @@ src/
                         seal built up front (hidden), show({ tier, attachments }) per frame; the Extended Nozzle moves the muzzle (and flash) to its tip.
                         warrantyTrim.js = the Extended Warranty on the gun: barrel collar (rings that get chunkier by tier, studs for Renewals) and a swinging grip tag; buildVisual.js also puffs the body (pillows). Sizes: config/gunStyle.js.
                         New gun = new file + 1 line (+ its mounts)
+      skinPattern.js    applySkinPattern(root, def, skinId): a slot 2 skin's printed pattern (config/skins.js `pattern`, numbers in skinPatterns), applied by
+                        models/index.js after a build in that skin. Swaps the body material for ONE patterned clone (no draw call added) and rewrites the
+                        body meshes' UVs in the gun's frame: top and right faces take the print, every other face (the left one with the build patch,
+                        seal and loaner tag) samples a blank strip painted the body colour. One canvas per skin, made on first use and shared
+                        (userData.sharedSkinPattern: the locker's release skips it); none in Node.
       shortBarrel.js    Reversible front-segment geometry variants, preserving moving-parent transforms and owning both variants.
       loanerTag.js      The Courtesy Loaner's security tag and swinging card (reversible, like the other upgrade visuals).
       buildVisual.js    A finished gun's look: seam, patch and stitches in the stuffing's colour, lumps and leaking tufts when Overstuffed. Instanced, placed from the sticker and top mounts.
@@ -432,7 +437,7 @@ src/
     skinSave.js         createSkinSave({ storage, key }): the permanent { version, progress, unlocked, equipped } record. Also `replay` (what the round a Save & Quit will replay has already been paid; written by Save & Quit only) and `dirty` (memory holds something storage does not).
                         Counts and unlocks are keyed by gun and skin; memory updates flush on unlock/runEnd. Safe with
                         missing/corrupt/blocked storage; newer versions are protected from all writes. Debug clear can relock one challenge.
-    challenges.js       createChallenges({ events, state, save }): g.challenges, DOM-free event counter factories by challenge.kind. A round replayed after Save & Quit pays only what goes beyond what it was already paid; unsaved progress is written on runEnd, runSaved, runReset and flush() (the page closing).
+    challenges.js       createChallenges({ events, state, save }): g.challenges, DOM-free event counter factories by challenge.kind (config/skins.js lists the kinds: kills, the role kinds of phase 6, and cleanMagazines, the one with per-run state, saved with the run). A round replayed after Save & Quit pays only what goes beyond what it was already paid; unsaved progress is written on runEnd, runSaved, runReset and flush() (the page closing).
                         Mastery counts kill.weaponId, ignores assisted/dead/fan kills, emits challengeProgress and skinUnlocked.
                         update/reset/snapshot cover per-run counters; finish handlers can finalize later round/run feats before saving.
     careerStats.js      createCareerStats({ storage }): versioned persistent employee record with lifetime totals,
@@ -784,7 +789,12 @@ src/
                         The horror layer's mood darkens it (exposure), multiplies the lateHours grade on by its decay, and turns a cut area red.
   vite.config.js        Dev server only: compiles the game at server start (warmup) and skips .claude, dist, dist-single, references and scratch. Paths are absolute from this checkout, so a worktree keeps its own hot reload.
   play.cmd              Double-click version of `npm run play`. tools/play.mjs rebuilds the single file if the source is newer, keeps the last good build if that fails, and opens it in Firefox (the Windows default for .html may be another browser).
-  (tools/)              Dev scripts (not bundled): buildSingle.mjs = `npm run build:single` (a normal Vite build into dist-single/, then the JS, CSS and
+  (tools/)              Dev scripts (not bundled): runTests.mjs = `npm test` (node --test with a cap on how many test files run at once: 4, or
+                        MALL_TEST_JOBS; `npm test -- tests/x.test.js` runs only those files; testQuick.mjs runs its selection through it too, so
+                        no test command starts node's default of one process per CPU thread, ~9 GB when every file builds the mall;
+                        a run of more than 8 files takes a lock file in the system temp folder, shared by every worktree and tool, and
+                        waits while another big run holds it; a dead or 30-min-old lock is taken over; tests/testRunner.test.js);
+                        buildSingle.mjs = `npm run build:single` (a normal Vite build into dist-single/, then the JS, CSS and
                         the music worker (as a Blob worker) pasted into ONE html file; the Google Fonts link loads non-blocking so a blocked
                         network just falls back to system fonts; tests/singleFile.test.js builds it and checks it is self-contained); balance.js = gun balance maths shared with the tests (seeded Monte Carlo of each
                         gun's real spread + pellets vs a Shopper's hitboxes at a range: expectedShotDamage, sustainedDps, burstDps,

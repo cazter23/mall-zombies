@@ -135,8 +135,11 @@ export function createPlayerGun({
       if (!target.isAlive) continue; // (killed earlier this pulse by a kill listener)
       const hit = { target, part: 'body', point: point.clone(), normal: direction.clone().negate(), distance };
       hits.push(hit);
-      const { killed } = target.takeHit({ damage: hitDamage(d, hit, 0, stats), part: 'body', point: hit.point, direction, impact: d.impact, weaponId: d.id });
-      if (!killed) blowAway(target, origin, cone, distance);
+      const attacking = target.isAttacking === true; // (before the gust: the shove is what stops it)
+      const { killed } = target.takeHit({ damage: hitDamage(d, hit, 0, stats), part: 'body', point: hit.point, direction, impact: d.impact, weaponId: d.id, distance });
+      // interrupted: the gust shoved a zombie out of an attack (shot.hits; weapon skin challenges count it, nothing pays by it).
+      const blown = killed ? null : blowAway(target, origin, cone, distance);
+      hit.interrupted = attacking && blown?.pushed === true;
       resolved.push({ hit, killed, paid: killed || pay.take(target) });
     }
     const end = origin.clone().addScaledVector(direction, cone.range);
@@ -273,6 +276,7 @@ export function createPlayerGun({
           direction,
           impact: d.impact,
           weaponId: d.id,
+          distance: hit.distance,
         });
         const previous = targets.get(hit.target);
         // On a kill, ONLY the killing pellet decides the headshot bonus.

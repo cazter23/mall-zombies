@@ -6,13 +6,79 @@
 import { skins, gunSkin, skinNotices, challengeDebug } from '../config/skins.js';
 import { weapons } from '../config/weapons.js';
 
+// A kill counter: the gun named by the kill's weaponId (never the gun in hand), never a noRewards fan, and `test`.
+const killsWhere = test => ({ gunId, skin, advance }) => ({
+  events: {
+    kill(event) {
+      if (event.weaponId === gunId && !event.zombie?.noRewards && test(event, skin.challenge)) advance(1);
+    },
+  },
+});
+const farEnough = (distance, min) => min === undefined || (Number.isFinite(distance) && distance >= min);
+// The zombies a shot's own hits killed: alive when it was fired (castShot skips the dead), dead now, credited to this gun.
+function killedBy(shot, gunId) {
+  const killed = new Set();
+  for (const { target } of shot.hits ?? []) {
+    if (target && !target.isAlive && target.killedByWeaponId === gunId && !target.noRewards) killed.add(target);
+  }
+  return killed.size;
+}
+
 const COUNTERS = {
-  kills({ gunId, advance }) {
+  kills: killsWhere(() => true),
+  headshotKills: killsWhere((kill, c) => kill.headshot === true && farEnough(kill.distance, c.minDistance)),
+  rangedKills: killsWhere((kill, c) => farEnough(kill.distance, c.minDistance) && Number.isFinite(kill.distance)),
+  quickKills: killsWhere((kill, c) => kill.firstWound?.weaponId === kill.weaponId && kill.firstWound.seconds <= c.seconds),
+  typeKills: killsWhere((kill, c) => c.types.includes(kill.zombie?.type?.id)),
+  bossKills: killsWhere(kill => !!kill.zombie?.type?.boss),
+  bankShotKills: killsWhere((kill, c) => Number.isFinite(kill.bounces) && kill.bounces >= c.minBounces),
+
+  multiKillShots({ gunId, skin, advance }) {
     return {
       events: {
-        kill({ weaponId, zombie }) {
-          if (weaponId === gunId && !zombie?.noRewards) advance(1);
+        shot(shot) { // ('shot' is announced after its hits, so its kills have already happened)
+          if (shot.weaponId === gunId && killedBy(shot, gunId) >= skin.challenge.minKills) advance(1);
         },
+      },
+    };
+  },
+
+  stoppedAttacks({ gunId, advance }) {
+    return {
+      events: {
+        shot(shot) {
+          if (shot.weaponId !== gunId) return;
+          const stopped = (shot.hits ?? []).filter(hit => hit.interrupted === true && !hit.target?.noRewards).length;
+          if (stopped > 0) advance(stopped);
+        },
+      },
+    };
+  },
+
+  // Per-run state: the magazine in progress. A shot that leaves as many rounds as the last one or more began a new magazine
+  // (a reload, a refill or a new gun came between). Saved with the run, so Continue resumes the magazine the gun resumes.
+  cleanMagazines({ gunId, skin, advance }) {
+    const blank = () => ({ left: null, shots: 0, clean: true });
+    let mag = blank();
+    return {
+      events: {
+        shot(shot) {
+          if (shot.weaponId !== gunId || !Number.isFinite(shot.magazineLeft)) return;
+          if (mag.left === null || shot.magazineLeft >= mag.left) mag = blank();
+          mag.shots += 1;
+          mag.clean &&= (shot.hits ?? []).some(hit => hit.target && !hit.target.noRewards);
+          mag.left = shot.magazineLeft;
+          if (mag.left === 0 && mag.clean && mag.shots >= skin.challenge.minShots) advance(1);
+        },
+      },
+      reset() { mag = blank(); },
+      snapshot: () => ({ ...mag }),
+      serialize: () => ({ ...mag }),
+      restore(data) {
+        mag = blank();
+        if (data && (data.left === null || Number.isSafeInteger(data.left)) && Number.isSafeInteger(data.shots)) {
+          mag = { left: data.left, shots: data.shots, clean: data.clean === true };
+        }
       },
     };
   },
@@ -43,7 +109,7 @@ export function createChallenges({ events, state, save }) {
     if (unlock || persist) save.flush();
     if (count !== before) events.emit('challengeProgress', { gunId, skinId: skin.id, count, needed });
     if (unlock) events.emit('skinUnlocked', {
-      gunId, skinId: skin.id, pa: skinNotices.pa(weapons[gunId].name, skin.name),
+      gunId, skinId: skin.id, pa: skinNotices.pa(weapons[gunId].name, skin.name, skin.slot),
     });
     return count;
   }
@@ -84,11 +150,17 @@ export function createChallenges({ events, state, save }) {
 
   return {
     get earned() { return earned.map(entry => ({ ...entry })); },
-    serialize() { return { earned: this.earned }; },
+    // Save & Quit: the receipt list and the per-run counters (a magazine in progress), keyed 'gunId/skinId'.
+    serialize() {
+      const run = {};
+      for (const { gunId, skinId, counter } of counters) if (counter.serialize) run[`${gunId}/${skinId}`] = counter.serialize();
+      return { earned: this.earned, run };
+    },
     restore(data) {
       earned = (Array.isArray(data?.earned) ? data.earned : [])
         .filter(({ gunId, skinId }) => gunSkin(gunId, skinId) && save.unlocked(gunId, skinId))
         .map(({ gunId, skinId }) => ({ gunId, skinId }));
+      for (const { gunId, skinId, counter } of counters) counter.restore?.(data?.run?.[`${gunId}/${skinId}`]);
     },
     snapshot() {
       return {

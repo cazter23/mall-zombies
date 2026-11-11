@@ -127,7 +127,8 @@ export function createBalls({ colliders, shootables, zombies = 'hit' }) {
     const normal = result.normal.clone();
     ball.position.copy(point).addScaledVector(normal, p.radius * 1.05);
     const damage = ball.damageOf({ part: result.part, distance: ball.travelled });
-    const { killed } = target.takeHit({ damage, part: result.part, point, direction: direction.clone(), impact: ball.impact, weaponId: ball.weaponId });
+    const { killed } = target.takeHit({ damage, part: result.part, point, direction: direction.clone(), impact: ball.impact, weaponId: ball.weaponId,
+      distance: ball.travelled, bounces: ball.bounces });
     ball.hits.push({ target, part: result.part, point, normal, distance: ball.travelled, killed });
     ball.lastTarget = target;
     ball.sinceHit = 0;
