@@ -37,6 +37,7 @@ import { COLORS } from './palette.js';
 import { debug } from '../../config/debug.js';
 import { feel } from '../../config/feel.js';
 import { economy } from '../../config/economy.js';
+import { lostFound } from '../../config/lostFound.js';
 import { fittingRooms, wardrobeItems, wardrobeAnchor } from '../../config/wardrobe.js';
 import { buildWardrobeDisplay } from './wardrobeDisplays.js';
 import { foodCourtShowpieces } from './wardrobeShowpieces/foodCourt.js';
@@ -1031,6 +1032,10 @@ export function buildMall(scene, colliders) {
       { id: 'parkingLot', grades: ['parkingLot'], neons: [] },
     ],
   };
+  // Lost and Found: one piece of lost property per area, at fixed spots (config/lostFound.js).
+  for (const item of lostFound.items) {
+    features.push({ kind: 'lostProperty', name: `lost_${item.id}`, zone: item.zone, item: item.id, position: new THREE.Vector3(...item.at), normal: new THREE.Vector3(0, 1, 0) });
+  }
   features.push({ kind: 'horror', name: 'horror_director', zone: 'startRoom', position: playerSpawn.position.clone(), normal: new THREE.Vector3(0, 0, -1), seed: 1986 });
 
   return {

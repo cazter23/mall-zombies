@@ -1008,3 +1008,10 @@ Boss groundwork: zombie.js owns timed buffs, source-bound holds and a behavior c
 - src/game/guideSave.js: the permanent record (`seen`, `kills`, and `replay` for a Save & Quit round) in its own localStorage key. `see`, `add`, `flush` (merges another tab, never overwrites a newer version), `dirty`, `clear` (debug).
 - src/game/guide.js: `createGuide({ events, state, save })`, built in createGame as `g.guide`. Sightings from the arrival events, kills from 'kill', 'guideEntry' out. `pages()` for a reader, `flush()` for the closing page, `reset()` as a reset step (transient: the replay count lives in the record), `debug(...)`.
 - src/ui/guide.js: the title screen's book (`createGuideScreen`) and its turning model (`createGuidePreview`: a real Zombie that is never ticked, posed by its own model). Opened and closed by ui/screens.js like the locker. Since the restyle the screen is a ring binder: contents under divider tabs, one printed sheet (letterhead, facts, memo) with the survivor's pen notes, tally marks, sticky-note tip, a rubber stamp for the stage and the model as a taped or paper-clipped camera still. `onTurn` is called when a different page is shown (main.js plays `pageTurn`). Styles: the guide block at the end of ui/retail.css.
+
+### Lost and Found
+
+- src/config/lostFound.js: the eleven items (id, name, zone, area, spot `at`, tag line, cue sound, model parts), the tag's look, the cue and pickup numbers, the PA line and the incident summary's text. `lostItem(id)`.
+- src/game/lostFound.js: `createLostFound({ events, state, save })`, built in createGame as `g.lostFound` and passed to features. `pickUp(id)`, `found(id)`, `blocked`, `progress()`, `debug(...)`; `lostFoundProgress(save)` for a menu that has only the record. Emits 'lostFound'.
+- src/game/features/lostProperty.js: feature kind `lostProperty` (one per item, added by maps/mall/mall.js from the config): the model (`buildLostPropertyModel`, also used by the guide's preview), the pulsing tag, the cue, the hold-to-log prompt and the faded "already logged" look.
+- The pages are in src/ui/guide.js (kinds `item` and `report`); the record is `found` in src/game/guideSave.js.

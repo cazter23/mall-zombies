@@ -141,6 +141,28 @@ export const audio = {
       { type: 'tone', wave: 'triangle', freq: 620, freqEnd: 380, gain: 0.35, attack: 0.01, decay: 0.23, delay: 0.25 },
       { type: 'tone', wave: 'sine', freq: 100, freqEnd: 45, gain: 0.4, attack: 0.005, decay: 0.2 },
     ] },
+    // Lost and Found (game/features/lostProperty.js): a quiet cue from an item you are near, by what it is, and the pickup.
+    lostGlint: { volume: 0.22, layers: [
+      { type: 'tone', wave: 'sine', freq: 2093, gain: 0.5, attack: 0.004, decay: 0.28 },
+      { type: 'tone', wave: 'sine', freq: 3136, gain: 0.3, attack: 0.004, decay: 0.2, delay: 0.09 },
+    ] },
+    lostBeep: { volume: 0.2, layers: [
+      { type: 'tone', wave: 'square', freq: 1480, gain: 0.35, attack: 0.002, decay: 0.07 },
+      { type: 'tone', wave: 'square', freq: 1480, gain: 0.35, attack: 0.002, decay: 0.07, delay: 0.16 },
+    ] },
+    lostCreak: { volume: 0.24, layers: [
+      { type: 'tone', wave: 'sawtooth', freq: 310, freqEnd: 420, gain: 0.22, attack: 0.05, decay: 0.3 },
+      { type: 'noise', filter: 'bandpass', freq: 1800, q: 6, gain: 0.2, attack: 0.04, decay: 0.22 },
+    ] },
+    lostFlutter: { volume: 0.24, layers: [
+      { type: 'noise', filter: 'highpass', freq: 3000, q: 0.7, gain: 0.4, attack: 0.02, decay: 0.09 },
+      { type: 'noise', filter: 'highpass', freq: 3400, q: 0.7, gain: 0.3, attack: 0.02, decay: 0.08, delay: 0.14 },
+    ] },
+    lostPickup: { volume: 0.4, layers: [
+      { type: 'tone', wave: 'triangle', freq: 784, gain: 0.5, attack: 0.004, decay: 0.2 },
+      { type: 'tone', wave: 'triangle', freq: 1175, gain: 0.5, attack: 0.004, decay: 0.2, delay: 0.1 },
+      { type: 'tone', wave: 'triangle', freq: 1568, gain: 0.5, attack: 0.004, decay: 0.34, delay: 0.2 },
+    ] },
     // The Staff Survival Guide (ui/guide.js): a sheet of paper flicked over on the binder's rings.
     pageTurn: { volume: 0.3, layers: [
       { type: 'noise', filter: 'highpass', freq: 2600, q: 0.7, gain: 0.5, attack: 0.03, decay: 0.12 },

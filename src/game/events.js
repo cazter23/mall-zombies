@@ -74,6 +74,8 @@
 //   'typeIntro'   { typeId, zombie }                     a zombie type's first appearance this run (zombie = that spawn)
 //   'mascotVariantIntro' { variant, zombie }             a Mascot costume's first appearance this run, after the type's
 //                                                        own intro (game/rounds.js; banner: config/zombies.js mascotVariants)
+//   'lostFound'   { itemId, found, total, complete, pa? } a piece of lost property was logged for good (game/lostFound.js;
+//                                                        itemId null = the debug shortcut changed the record)
 //   'guideEntry'  { entryId, stage, pa? }                a Survival Guide page appeared (stage 1) or gained a paragraph (2 = field
 //                                                        notes, 3 = the tip; these carry a PA line). game/guide.js
 //   'bossSpawn'   { zombie, round }                      a scheduled or debug-summoned boss entered the wave

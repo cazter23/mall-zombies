@@ -983,7 +983,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 
 /* The sheet on the rings. */
 .guide-sheet {
-  position: relative; min-height: 520px; padding: 20px 30px 26px 54px; color: var(--guide-ink);
+  position: sticky; top: 14px; min-height: 520px; padding: 20px 30px 26px 54px; color: var(--guide-ink); /* (stays put while the long contents scroll) */
   background:
     radial-gradient(circle at 78% 86%, transparent 37px, rgba(120, 78, 40, .13) 38px, rgba(120, 78, 40, .13) 41px, transparent 43px),
     linear-gradient(90deg, rgba(0, 0, 0, .07), transparent 22px), var(--guide-paper);
@@ -1056,12 +1056,24 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .guide-tip h3 { margin: 4px 0 4px; font: 400 calc(17px * var(--gt)) / 1.1 'Permanent Marker', cursive; letter-spacing: .02em; text-transform: uppercase; color: var(--guide-marker); }
 .guide-tip p { margin: 0; font: 700 calc(21px * var(--gt)) / 1.2 'Caveat', cursive; }
 
+/* Lost & Found pages: the property tag is the item's own yellow card; the incident summary is typed, then signed by nobody. */
+.guide-section[data-section="lostFound"] .guide-tab { background: var(--guide-sticky); }
+.guide-proptag { margin-top: 26px; transform: rotate(1.2deg); border-radius: 0 0 0 18px; }
+.guide-proptag::before { content: ''; position: absolute; left: 12px; top: 14px; width: 9px; height: 9px; border-radius: 50%; background: var(--guide-paper); box-shadow: inset 0 0 0 1px var(--guide-stickyEdge); }
+.guide-proptag h3 { padding-left: 18px; }
+.guide-sheet[data-kind="report"] .guide-photo { display: none; }
+.guide-sheet[data-kind="report"] .guide-stamp { top: 70px; }
+.guide-report { margin-top: 10px; max-width: 62ch; }
+.guide-report p { margin: 0 0 9px; font: 400 calc(15px * var(--gt)) / 1.5 var(--font-receipt); letter-spacing: .01em; }
+.guide-report .guide-report-conclusion { margin-top: 16px; padding-top: 10px; border-top: 1px solid var(--guide-ink); font-weight: 700; }
+.guide-report .guide-report-signed { margin-top: 22px; padding-bottom: 26px; width: 320px; border-bottom: 1px solid var(--guide-ink); color: var(--guide-faint); }
+
 .guide-binder > .menu-row { margin-top: 18px; }
 .guide-binder > .pad-hint { color: var(--guide-binderStitch); }
 @media (max-width: 900px) {
   .guide-binder { padding: 16px; }
   .guide-layout { grid-template-columns: 1fr; gap: 18px; }
-  .guide-sheet { padding-left: 34px; }
+  .guide-sheet { position: relative; top: 0; padding-left: 34px; }
   .guide-photo { float: none; margin: 0 auto 14px; }
   .guide-stamp { top: 372px; right: 20px; }
 }

@@ -70,6 +70,7 @@ import { createSkins } from './skins.js';
 import { createChallenges } from './challenges.js';
 import { createGuideSave } from './guideSave.js';
 import { createGuide } from './guide.js';
+import { createLostFound } from './lostFound.js';
 import { createWallet, pointsForHit } from './wallet.js';
 import { createRounds } from './rounds.js';
 import { createClockIn } from './clockIn.js';
@@ -235,6 +236,7 @@ export function createGame({
   const challenges = createChallenges({ events, state, save: skinSave });
   const skins = createSkins({ save: skinSave });
   const guide = createGuide({ events, state, save: guideSave }); // the Staff Survival Guide's sightings and kill counts
+  const lostFound = createLostFound({ events, state, save: guideSave }); // lost property logged for good (the same record)
   const runFrozen = () => state.over || state.winPending;
   // GRAB-A-GUN's prize tickets (game/tickets.js): their own currency, never points, pricing or income.
   const tickets = createTickets({ events, state });
@@ -531,7 +533,7 @@ export function createGame({
   });
 
   // Build-A-Blaster's PA lines (game/features/workshopRitual.js), and GRAB-A-GUN's (game/features/clawMachine.js).
-  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualWaiting', 'ritualCollect', 'limitedEditionDrop', 'limitedEditionFitted', 'wardrobeBuy', 'clawClosed', 'clawMoved', 'skinUnlocked', 'kioskStock', 'guideEntry']) {
+  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualWaiting', 'ritualCollect', 'limitedEditionDrop', 'limitedEditionFitted', 'wardrobeBuy', 'clawClosed', 'clawMoved', 'skinUnlocked', 'kioskStock', 'guideEntry', 'lostFound']) {
     events.on(name, ({ pa }) => {
       if (!pa) return;
       hud.showAnnouncement({ ...pa, priority: 1 });
@@ -622,7 +624,7 @@ export function createGame({
   const wardrobe = createWardrobe({ stats, player, events });
   const features = buildFeatures(map, {
     scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state, warranty, meleeUpgrades, wardrobe,
-    colliders, effects, sound, input, tickets, shootables, aimAssist, secondChance, equipment, closing, skins,
+    colliders, effects, sound, input, tickets, shootables, aimAssist, secondChance, equipment, closing, skins, lostFound,
   });
   const kevin = features.list.find(({ feature }) => feature.kind === 'kiosk')?.instance;
 
@@ -928,6 +930,7 @@ export function createGame({
     challenges,
     skins,
     guide,
+    lostFound,
     colliders,
     arena,
     shootables,
