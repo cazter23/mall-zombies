@@ -30,6 +30,7 @@ function withCanvas(fn) {
   try { return fn(); } finally { if (before === undefined) delete globalThis.document; else globalThis.document = before; }
 }
 
+const saturation = hex => { const c = [hex >> 16 & 255, hex >> 8 & 255, hex & 255]; const max = Math.max(...c); return max ? (max - Math.min(...c)) / max : 0; };
 const meshes = root => { const list = []; root.traverse(node => { if (node.isMesh) list.push(node); }); return list; };
 const isPrint = material => !!material?.userData?.skinPattern;
 
@@ -48,13 +49,14 @@ function triangles(root, mesh) {
   return out;
 }
 
-test('there is one pattern skin per gun so far, each a slot 2 skin with a known kind', () => {
-  assert.ok(patterned.length >= 1);
+test('every gun has one pattern skin, its slot 2 skin, each with a known kind; their bodies are saturated, unlike the muted mastery bodies', () => {
+  assert.deepEqual(patterned.map(({ gunId }) => gunId).sort(), Object.keys(skins).sort());
   const kinds = ['lines', 'grid', 'dots', 'stripes', 'checker', 'gingham', 'confetti', 'tread', 'argyle', 'text'];
   for (const { gunId, skin } of patterned) {
     assert.equal(skin.slot, 2, gunId);
     assert.ok(kinds.includes(skin.pattern.kind), skin.pattern.kind);
     assert.ok(Number.isInteger(skin.palette.body));
+    assert.ok(saturation(skin.palette.body) > saturation(skins[gunId][0].palette.body) + 0.2, `${gunId}: recognisably another skin`);
   }
 });
 

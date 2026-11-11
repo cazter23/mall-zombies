@@ -168,7 +168,6 @@ test('every configured skin body contrasts with all six stuffings and every warr
   assert.equal(Object.keys(workshopStuffings).length, 6);
   for (const [gunId, entries] of Object.entries(skins)) for (const skin of entries) {
     assert.equal(entries.length, 2); assert.deepEqual(entries.map(entry => entry.slot), [1, 2]);
-    if (skin.slot === 2 && !skin.palette) continue; // (step A: a role challenge before its pattern skin)
     assert.ok(Number.isInteger(skin.palette.body));
     for (const other of [...Object.values(workshopStuffings), ...upgrades.tiers]) {
       const a = luminance(skin.palette.body), b = luminance(other.color);
