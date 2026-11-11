@@ -43,7 +43,7 @@ test('locker lists all eleven guns, Default and readable locked challenge/progre
   assert.equal(locked.classList.contains('locked'), true);
   assert.equal(locked.getAttribute('aria-disabled'), 'true');
   assert.ok(locked.textContent.includes(challengeText(skins.stapleGun[0].challenge, weapons.stapleGun.name)));
-  assert.ok(locked.textContent.includes('212 / 400'));
+  assert.ok(locked.textContent.includes(`212 / ${skins.stapleGun[0].challenge.count}`));
   locked.click();
   assert.equal(t.writes, 0);
   assert.equal(t.save.equippedFor('stapleGun'), 'default');

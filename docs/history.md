@@ -1,5 +1,16 @@
 # Sunset Galleria: build history ("Current state")
 
+## 11 November 2026 - Weapon skins phase 8: challenges measured and tuned
+
+- **tools/challengeReport.mjs** (`npm run sim:challenges`, ~38 min for 3 seeds x 6 guns to round 20 at 3 workers): the economy bot (new
+  `onGame` hook) plays each gun it can use as its main gun; in the playing process every challenge's target is lifted, so the game's own
+  counters show raw values. `--skill=sharp` aims every shot at the head; `--guns=` picks guns.
+- **Tuned** (table in docs/weapon-skins-plan.md "Phase 8"): mastery 400 -> 1000 (Return to Sender 150 -> 300), Doorbuster 150 -> 400, Rush
+  Order 40 -> 50, Double Shift 2 -> 4 bosses, Final Markdown only from round 9, Company Man round 15 -> 12, Gold Standard 20 -> 15. The
+  tests read these targets from config now.
+- **Not measurable by the bot:** the Confetti Cannon, Barcode Scanner, Leaf Blower, Tennis Ball Launcher and Return to Sender challenges
+  (pellets, charge, cone, ball, instant kill), and every "survive" feat (its runs are immortal). Their numbers are first guesses.
+
 ## 11 November 2026 - Weapon skins phase 7: feats, glow treatments, the Challenges tab and tracker
 
 - **Eleven feats** (slot 3; game/challenges.js, data in config/skins.js): a run on the Staple Gun alone to round 15 (buying, winning or firing

@@ -11,6 +11,7 @@ import { menuDom } from './helpers/menuDom.js';
 
 const staple = skins.stapleGun[0];
 const nail = skins.nailGun[0];
+const MASTERY = staple.challenge.count; // (a mastery skin's target; phase 8 set it)
 const blank = () => ({ version: skinStorage.version, progress: {}, unlocked: {}, equipped: {} });
 
 function memoryStorage(record = null) {
@@ -62,7 +63,7 @@ test('all eleven guns have a named mastery challenge; Phase 1 IDs survive the co
   for (const [gunId, [skin]] of Object.entries(skins)) {
     assert.equal(skin.slot, 1);
     assert.equal(skin.challenge.kind, 'kills');
-    assert.equal(skin.challenge.count, gunId === 'returnToSender' ? 150 : 400);
+    assert.equal(skin.challenge.count, gunId === 'returnToSender' ? 300 : 1000);
     assert.equal(gunSkin(gunId, skin.id), skin);
   }
 });
@@ -81,7 +82,7 @@ test('kills advance only their gun; melee, hazards, equipment and unknown guns a
   assert.equal(t.storage.writes, 0);
 });
 
-test('the 400th kill saves first and emits progress then exactly one unlock with its PA line', () => {
+test('the target\'s last kill saves first and emits progress then exactly one unlock with its PA line', () => {
   const t = counters();
   const progress = [], unlocks = [], order = [];
   t.events.on('challengeProgress', event => { progress.push(event); order.push('progress'); });
@@ -90,24 +91,26 @@ test('the 400th kill saves first and emits progress then exactly one unlock with
     order.push('unlock');
     assert.equal(t.storage.record.unlocked.stapleGun['night-shift'], true, 'durable before feedback');
   });
-  for (let i = 0; i < 399; i++) t.kill();
+  for (let i = 0; i < MASTERY - 1; i++) t.kill();
   assert.equal(t.storage.writes, 0);
   assert.equal(unlocks.length, 0);
   t.kill();
   assert.deepEqual(order.slice(-2), ['progress', 'unlock']);
-  assert.deepEqual(progress.at(-1), { gunId: 'stapleGun', skinId: staple.id, count: 400, needed: 400 });
+  assert.deepEqual(progress.at(-1), { gunId: 'stapleGun', skinId: staple.id, count: MASTERY, needed: MASTERY });
   assert.deepEqual(unlocks, [{
     gunId: 'stapleGun', skinId: staple.id, pa: skinNotices.pa(weapons.stapleGun.name, staple.name),
   }]);
   t.kill();
-  assert.equal(t.save.progress('stapleGun', staple.id), 400);
+  assert.equal(t.save.progress('stapleGun', staple.id), MASTERY);
   assert.equal(unlocks.length, 1);
   assert.equal(t.storage.writes, 1);
 });
 
-test('Return to Sender unlocks on its 150th eligible kill', () => {
+test('Return to Sender unlocks on its last eligible kill (its own, smaller target)', () => {
   const t = counters();
-  for (let i = 0; i < 149; i++) t.kill('returnToSender');
+  const target = skins.returnToSender[0].challenge.count;
+  assert.ok(target < MASTERY);
+  for (let i = 0; i < target - 1; i++) t.kill('returnToSender');
   assert.equal(t.save.unlocked('returnToSender', 'final-notice'), false);
   t.kill('returnToSender');
   assert.equal(t.save.unlocked('returnToSender', 'final-notice'), true);
@@ -199,7 +202,7 @@ test('Play again clears counter state and matches a fresh game with the same per
   assert.deepEqual(t.g.challenges.snapshot(), fresh.g.challenges.snapshot());
   assert.deepEqual(t.g.challenges.snapshot().run, {
     'nailGun/measure-twice': { left: null, shots: 0, clean: true }, 'stapleGun/company-man': { spoiled: false }, 'rivetRifle/gold-standard': { streak: 0 },
-    'foamDartBlaster/bullseye': { round: 0 }, 'coilNailer/double-shift': { bosses: 0 }, 'leafBlower/still-air': { round: 0 },
+    'foamDartBlaster/bullseye': { round: 0 }, 'coilNailer/double-shift': { bosses: 0 }, 'leafBlower/still-air': { round: 0 }, 'priceGun/final-markdown': { round: 0 },
   }, 'no magazine in progress, and every feat in progress starts again');
   assert.ok(t.g.resetSteps.includes('challenges'));
   assert.deepEqual(snapshot(t.g), snapshot(fresh.g));
@@ -207,7 +210,7 @@ test('Play again clears counter state and matches a fresh game with the same per
 
 test('unlock feedback uses the existing PA listener and one chime in the real game', context => {
   const t = realGame(context);
-  t.g.debug.run('challenge', 'stapleGun', staple.id, 'add', 399);
+  t.g.debug.run('challenge', 'stapleGun', staple.id, 'add', MASTERY - 1);
   t.g.resetRun();
   const before = t.sounds.length;
   shopper(t, 1).takeHit({ damage: 10, part: 'body', weaponId: 'stapleGun' });
@@ -222,10 +225,10 @@ test('debug add, complete and clear persist and affect only their challenge', co
   const t = realGame(context), { g, save, storage } = t;
   assert.ok(g.debug.keylessIds.includes('challenge'));
   assert.ok(!g.debug.commands.some(command => command.id === 'challenge'));
-  g.debug.run('challenge', 'stapleGun', staple.id, 'add', 399);
+  g.debug.run('challenge', 'stapleGun', staple.id, 'add', MASTERY - 1);
   assert.equal(g.state.assisted, true);
-  assert.equal(save.progress('stapleGun', staple.id), 399);
-  assert.equal(storage.record.progress.stapleGun[staple.id], 399);
+  assert.equal(save.progress('stapleGun', staple.id), MASTERY - 1);
+  assert.equal(storage.record.progress.stapleGun[staple.id], MASTERY - 1);
   g.debug.run('challenge', 'stapleGun', staple.id, 'complete');
   assert.equal(storage.record.unlocked.stapleGun[staple.id], true);
   g.debug.run('challenge', 'nailGun', nail.id, 'add', 7);
@@ -323,7 +326,7 @@ test('blocked reads, blocked writes and unavailable storage never stop counting'
     null,
   ]) {
     const t = counters(storage);
-    for (let i = 0; i < 400; i++) t.kill();
+    for (let i = 0; i < MASTERY; i++) t.kill();
     assert.equal(t.save.unlocked('stapleGun', staple.id), true);
     assert.doesNotThrow(() => t.events.emit('runEnd'));
   }
@@ -381,7 +384,7 @@ test('a persisted unlock stays unlocked and emits no second unlock in a fresh se
   fresh.events.on('skinUnlocked', event => unlocks.push(event));
   fresh.kill();
   assert.equal(fresh.save.unlocked('stapleGun', staple.id), true);
-  assert.equal(fresh.save.progress('stapleGun', staple.id), 400);
+  assert.equal(fresh.save.progress('stapleGun', staple.id), MASTERY);
   assert.deepEqual(unlocks, []);
 });
 

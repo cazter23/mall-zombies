@@ -16,6 +16,7 @@ import { challengeCatalog, catalogEntry, skinPinId } from '../src/game/challenge
 import { createChallengeBoard } from '../src/ui/challengeBoard.js';
 import { createChallengeTracker, connectChallengeTracker } from '../src/ui/challengeTracker.js';
 
+const STREAK = skins.rivetRifle[2].challenge.count; // (phase 8 tunes it)
 menuDom();
 const { createScreens } = await import('../src/ui/screens.js');
 
@@ -73,8 +74,8 @@ test('the catalogue lists every weapon skin challenge under one category, by gun
       assert.equal(catalogEntry(entry.id), entry);
     }
   }
-  assert.equal(catalogEntry('skin:rivetRifle/gold-standard').progress({ save }), lockerWords.featProgress(12, 20));
-  assert.equal(catalogEntry('skin:stapleGun/night-shift').progress({ save }), '40 / 400');
+  assert.equal(catalogEntry('skin:rivetRifle/gold-standard').progress({ save }), lockerWords.featProgress(12, STREAK));
+  assert.equal(catalogEntry('skin:stapleGun/night-shift').progress({ save }), `40 / ${skins.stapleGun[0].challenge.count}`);
   assert.equal(catalogEntry('skin:nope/nothing'), null);
 });
 
@@ -83,13 +84,13 @@ test('a tracker line: a running total from the save, a feat from the attempt in 
   const save = createSkinSave({ storage: memoryStorage() });
   const challenges = createChallenges({ events, state: { assisted: false, over: false }, save });
   const streak = catalogEntry('skin:rivetRifle/gold-standard');
-  assert.deepEqual(streak.track({ save, challenges }), { id: streak.id, title: cfg.tracker.title('Gold Standard', 'Rivet Rifle'), value: '0 / 20 in a row', done: false });
+  assert.deepEqual(streak.track({ save, challenges }), { id: streak.id, title: cfg.tracker.title('Gold Standard', 'Rivet Rifle'), value: `0 / ${STREAK} in a row`, done: false });
   for (let i = 0; i < 7; i++) events.emit('kill', { weaponId: 'rivetRifle', headshot: true, zombie: {} });
-  assert.equal(streak.track({ save, challenges }).value, '7 / 20 in a row');
+  assert.equal(streak.track({ save, challenges }).value, `7 / ${STREAK} in a row`);
   assert.equal(catalogEntry('skin:barcodeScanner/clean-scan').track({ save, challenges }).value, '0 / 25 shots, no misses');
   save.record('stapleGun', 'night-shift', 40);
-  assert.equal(catalogEntry('skin:stapleGun/night-shift').track({ save, challenges }).value, '40 / 400');
-  save.record('stapleGun', 'night-shift', 400, true);
+  assert.equal(catalogEntry('skin:stapleGun/night-shift').track({ save, challenges }).value, `40 / ${skins.stapleGun[0].challenge.count}`);
+  save.record('stapleGun', 'night-shift', skins.stapleGun[0].challenge.count, true);
   assert.deepEqual(catalogEntry('skin:stapleGun/night-shift').track({ save, challenges }).value, cfg.done);
 });
 
@@ -118,8 +119,8 @@ test('the board opens from the title, lists a gun\'s three challenges with progr
   const rows = t.book.element.querySelectorAll('.challenge-row');
   assert.deepEqual(rows.map(row => row.dataset.challenge), skins.nailGun.map(skin => skinPinId('nailGun', skin.id)));
   const feat = t.row('skin:nailGun/rush-order');
-  assert.ok(feat.textContent.includes('Clear 40 zombies with the Nail Gun in one round.'));
-  assert.ok(feat.textContent.includes(lockerWords.featProgress(31, 40)));
+  assert.ok(feat.textContent.includes('Clear 50 zombies with the Nail Gun in one round.'));
+  assert.ok(feat.textContent.includes(lockerWords.featProgress(31, 50)));
   assert.ok(feat.textContent.includes(cfg.slotTags[3]));
   assert.ok(t.book.element.querySelector('.challenge-pins').textContent.includes(cfg.pinCount(0, 3)));
 
@@ -187,7 +188,7 @@ test('the tracker shows every pinned challenge when one of them moves, then hide
   assert.deepEqual(t.lines().map(row => row.dataset.challenge), ['skin:rivetRifle/gold-standard', 'skin:stapleGun/night-shift'], 'in pin order');
   const staple = t.lines()[1];
   assert.ok(staple.classList.contains('changed'));
-  assert.ok(staple.textContent.includes('1 / 400'));
+  assert.ok(staple.textContent.includes(`1 / ${skins.stapleGun[0].challenge.count}`));
   assert.equal(t.timers.at(-1).ms, cfg.tracker.showSeconds * 1000);
   t.timers.at(-1).fn();
   assert.equal(t.tracker.visible, false);
@@ -199,7 +200,7 @@ test('a lost attempt is struck through with "Failed" and a soft sound, drops off
   t.events.emit('shot', { weaponId: 'rivetRifle', hits: [{ target: { type: { id: 'shopper' }, isAlive: true }, part: 'body' }] });
   const failed = t.lines().find(row => row.dataset.challenge === 'skin:rivetRifle/gold-standard');
   assert.ok(failed.classList.contains('failed'));
-  assert.ok(failed.textContent.includes(`4 / 20 in a row · ${cfg.tracker.failed}`));
+  assert.ok(failed.textContent.includes(`4 / ${STREAK} in a row · ${cfg.tracker.failed}`));
   assert.deepEqual(t.sounds, [[cfg.tracker.failSound.name, { volume: cfg.tracker.failSound.volume }]]);
   assert.equal(t.timers.at(-1).ms, Math.max(cfg.tracker.showSeconds, cfg.tracker.failedSeconds) * 1000);
 
@@ -207,7 +208,7 @@ test('a lost attempt is struck through with "Failed" and a soft sound, drops off
   assert.deepEqual(t.lines().map(row => row.dataset.challenge), ['skin:stapleGun/night-shift'], 'dropped off');
   t.kill('rivetRifle', { headshot: true });
   assert.deepEqual(t.lines().map(row => row.dataset.challenge), ['skin:rivetRifle/gold-standard', 'skin:stapleGun/night-shift'], 'back with the next attempt');
-  assert.ok(t.lines()[0].textContent.includes('1 / 20 in a row'));
+  assert.ok(t.lines()[0].textContent.includes(`1 / ${STREAK} in a row`));
   t.events.emit('runReset', {});
   assert.equal(t.tracker.visible, false);
 });

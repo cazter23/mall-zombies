@@ -11,6 +11,8 @@ import { createChallenges } from '../src/game/challenges.js';
 import { headlessGame } from './helpers/headlessGame.js';
 
 const featOf = gunId => skins[gunId].find(skin => skin.slot === 3);
+const need = gunId => featOf(gunId).challenge.count; // (phase 8 tunes these: the tests read them)
+const times = (n, fn) => { for (let i = 0; i < n; i++) fn(i); };
 
 function memoryStorage() {
   const values = new Map();
@@ -46,24 +48,29 @@ const round = (t, n) => t.events.emit('roundStart', { round: n });
 // For each gun: `earn` completes its feat from a fresh run; `near` is the closest attempt that must not.
 const CASES = {
   stapleGun: {
-    earn: t => { for (let r = 1; r <= 15; r++) { round(t, r); shot(t, 'stapleGun'); } },
+    earn: t => { for (let r = 1; r <= need('stapleGun'); r++) { round(t, r); shot(t, 'stapleGun'); } },
     near: t => {
       round(t, 1);
       t.events.emit('purchase', { kind: 'weapon', id: 'priceGun', cost: 500 }); // bought another gun (never fired)
-      for (let r = 2; r <= 15; r++) round(t, r);
+      for (let r = 2; r <= need('stapleGun'); r++) round(t, r);
     },
   },
   priceGun: {
-    earn: t => kill(t, 'priceGun', { zombie: boss(['priceGun']) }),
-    near: t => kill(t, 'priceGun', { zombie: boss(['priceGun', 'stapleGun']) }), // the Staple Gun chipped it once
+    earn: t => { round(t, featOf('priceGun').challenge.minRound); kill(t, 'priceGun', { zombie: boss(['priceGun']) }); },
+    near: t => {
+      round(t, featOf('priceGun').challenge.minRound - 1); kill(t, 'priceGun', { zombie: boss(['priceGun']) }); // too early (Murray)
+      round(t, featOf('priceGun').challenge.minRound); kill(t, 'priceGun', { zombie: boss(['priceGun', 'stapleGun']) }); // the Staple Gun chipped it once
+    },
   },
   nailGun: {
-    earn: t => { round(t, 3); for (let i = 0; i < 40; i++) kill(t, 'nailGun'); },
-    near: t => { round(t, 3); for (let i = 0; i < 39; i++) kill(t, 'nailGun'); round(t, 4); for (let i = 0; i < 39; i++) kill(t, 'nailGun'); },
+    earn: t => { round(t, 3); times(need('nailGun'), () => kill(t, 'nailGun')); },
+    near: t => { round(t, 3); times(need('nailGun') - 1, () => kill(t, 'nailGun')); round(t, 4); times(need('nailGun') - 1, () => kill(t, 'nailGun')); },
   },
   foamDartBlaster: {
-    earn: t => { round(t, 12); for (let i = 0; i < 30; i++) kill(t, 'foamDartBlaster', { headshot: true }); round(t, 13); },
+    // (a Foam Dart shot first: a run on it is not a Staple Gun loyalty run, whose target is also round 12 or so)
+    earn: t => { shot(t, 'foamDartBlaster'); round(t, 12); for (let i = 0; i < 30; i++) kill(t, 'foamDartBlaster', { headshot: true }); round(t, 13); },
     near: t => {
+      shot(t, 'foamDartBlaster');
       round(t, 11); for (let i = 0; i < 30; i++) kill(t, 'foamDartBlaster', { headshot: true }); round(t, 12); // too early
       for (let i = 0; i < 30; i++) kill(t, 'foamDartBlaster', { headshot: true });
       kill(t, null, { source: 'melee', melee: true }); // one box cutter kill spoils round 12
@@ -87,16 +94,16 @@ const CASES = {
     },
   },
   rivetRifle: {
-    earn: t => { for (let i = 0; i < 20; i++) { kill(t, 'rivetRifle', { headshot: true }); shot(t, 'rivetRifle', { hits: [hitOn(zombie(), 'head')] }); } },
+    earn: t => times(need('rivetRifle'), () => { kill(t, 'rivetRifle', { headshot: true }); shot(t, 'rivetRifle', { hits: [hitOn(zombie(), 'head')] }); }),
     near: t => {
-      for (let i = 0; i < 19; i++) kill(t, 'rivetRifle', { headshot: true });
+      times(need('rivetRifle') - 1, () => kill(t, 'rivetRifle', { headshot: true }));
       shot(t, 'rivetRifle', { hits: [hitOn(zombie({ isAlive: true }), 'body')] }); // one body shot
-      for (let i = 0; i < 19; i++) kill(t, 'rivetRifle', { headshot: true });
+      times(need('rivetRifle') - 1, () => kill(t, 'rivetRifle', { headshot: true }));
     },
   },
   coilNailer: {
-    earn: t => { kill(t, 'coilNailer', { zombie: boss(['coilNailer']) }); kill(t, 'coilNailer', { zombie: boss(['coilNailer', 'priceGun']) }); },
-    near: t => { kill(t, 'coilNailer', { zombie: boss(['coilNailer']) }); kill(t, 'priceGun', { zombie: boss(['coilNailer', 'priceGun']) }); },
+    earn: t => { times(need('coilNailer') - 1, () => kill(t, 'coilNailer', { zombie: boss(['coilNailer']) })); kill(t, 'coilNailer', { zombie: boss(['coilNailer', 'priceGun']) }); },
+    near: t => { times(need('coilNailer') - 1, () => kill(t, 'coilNailer', { zombie: boss(['coilNailer']) })); kill(t, 'priceGun', { zombie: boss(['coilNailer', 'priceGun']) }); },
   },
   barcodeScanner: {
     earn: t => { round(t, 4); for (let i = 0; i < 25; i++) shot(t, 'barcodeScanner', { hits: [hitOn(zombie())] }); round(t, 5); },
@@ -171,16 +178,16 @@ test('a feat records its best attempt, never a sum: two rounds of 30 Nail Gun ki
   assert.equal(t.progress('nailGun'), 30);
   round(t, 7); for (let i = 0; i < 33; i++) kill(t, 'nailGun');
   assert.equal(t.progress('nailGun'), 33);
-  assert.deepEqual(t.challenges.attempt('nailGun', 'rush-order'), { value: 33, needed: 40, failed: false });
+  assert.deepEqual(t.challenges.attempt('nailGun', 'rush-order'), { value: 33, needed: need('nailGun'), failed: false });
 });
 
 test('the tracker hears an attempt fail: a body shot breaks the streak, a hit spoils the calm round, another gun spoils loyalty', () => {
   const t = counters();
   for (let i = 0; i < 5; i++) kill(t, 'rivetRifle', { headshot: true });
   shot(t, 'rivetRifle', { hits: [hitOn(zombie({ isAlive: true }), 'body')] });
-  assert.deepEqual(t.live.filter(e => e.gunId === 'rivetRifle').at(-1), { gunId: 'rivetRifle', skinId: 'gold-standard', value: 5, needed: 20, failed: true });
+  assert.deepEqual(t.live.filter(e => e.gunId === 'rivetRifle').at(-1), { gunId: 'rivetRifle', skinId: 'gold-standard', value: 5, needed: need('rivetRifle'), failed: true });
   kill(t, 'rivetRifle', { headshot: true });
-  assert.deepEqual(t.challenges.attempt('rivetRifle', 'gold-standard'), { value: 1, needed: 20, failed: false }, 'and starts again');
+  assert.deepEqual(t.challenges.attempt('rivetRifle', 'gold-standard'), { value: 1, needed: need('rivetRifle'), failed: false }, 'and starts again');
   assert.equal(t.progress('rivetRifle'), 5, 'the best run is kept');
 
   round(t, 8);
@@ -231,9 +238,9 @@ test('Save & Quit keeps run feats where the round began: a streak, the bosses so
 
   const again = counters(t.storage);
   again.challenges.restore(saved);
-  kill(again, 'coilNailer', { zombie: boss(['coilNailer']) });
-  assert.equal(again.save.unlocked('coilNailer', 'double-shift'), true, 'the second boss of the run completes it');
-  for (let i = 0; i < 13; i++) kill(again, 'rivetRifle', { headshot: true });
+  times(need('coilNailer') - 1, () => kill(again, 'coilNailer', { zombie: boss(['coilNailer']) }));
+  assert.equal(again.save.unlocked('coilNailer', 'double-shift'), true, 'the run\'s later bosses complete it');
+  times(need('rivetRifle') - 7, () => kill(again, 'rivetRifle', { headshot: true }));
   assert.equal(again.save.unlocked('rivetRifle', 'gold-standard'), true, 'the streak carried on');
   // The leaf blower's round 9 is replayed from its break and still counts, without a new 'roundStart'.
   for (let i = 0; i < 10; i++) shot(again, 'leafBlower', { cone: true, hits: [{ target: zombie({ isAlive: true }), interrupted: true }] });

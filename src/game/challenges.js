@@ -83,18 +83,24 @@ const COUNTERS = {
     };
   },
 
-  // Kill a boss that nothing but this gun ever hurt.
-  soloBoss({ gunId, best, live }) {
+  // Kill a boss (from minRound on) that nothing but this gun ever hurt.
+  soloBoss({ gunId, skin, best, live }) {
     const onlyThis = zombie => zombie.woundedBy.size > 0 && [...zombie.woundedBy].every(id => id === gunId);
+    let round = 0;
+    const counts = () => round >= (skin.challenge.minRound ?? 0);
     return {
       events: {
-        bossSpawn() { live({ value: 0 }); },
-        hit({ target }) { if (target?.type?.boss && !target.noRewards && !onlyThis(target)) live({ value: 0, failed: true }); },
+        roundStart({ round: next }) { round = next; },
+        bossSpawn() { if (counts()) live({ value: 0 }); },
+        hit({ target }) { if (counts() && target?.type?.boss && !target.noRewards && !onlyThis(target)) live({ value: 0, failed: true }); },
         kill(event) {
           const zombie = event.zombie;
-          if (event.weaponId === gunId && zombie?.type?.boss && !zombie.noRewards && onlyThis(zombie)) { best(1); live({ value: 1 }); }
+          if (counts() && event.weaponId === gunId && zombie?.type?.boss && !zombie.noRewards && onlyThis(zombie)) { best(1); live({ value: 1 }); }
         },
       },
+      reset() { round = 0; },
+      snapshot: () => ({ round }), serialize: () => ({ round }),
+      restore(data) { round = Number.isSafeInteger(data?.round) ? data.round : 0; },
     };
   },
 

@@ -9,6 +9,7 @@
 //   npm run sim:challenges                       3 seeds per gun to round 20, 3 at a time (about 15 to 25 minutes)
 //   npm run sim:challenges -- --quick            1 seed per gun to round 12 (a few minutes; too noisy to tune from)
 //   npm run sim:challenges -- --seeds=4 --rounds=25 --workers=2 --skill=average
+//   npm run sim:challenges -- --skill=sharp --guns=rivetRifle,foamDartBlaster   the good bot aiming every shot at the head (headshot feats)
 // Progress goes to stderr and the tables (markdown) to stdout.
 //
 // What it cannot see (say so wherever its numbers are quoted):
@@ -56,10 +57,11 @@ const PLANS = plansFor();
 if (option('job')) {
   const job = JSON.parse(Buffer.from(option('job'), 'base64url').toString());
   for (const list of Object.values(skins)) for (const skin of list) skin.challenge.count = LIFTED;
-  const { runBot } = await import('./economyBot.js');
+  const { runBot, SKILLS } = await import('./economyBot.js');
+  const skill = job.skill === 'sharp' ? { ...SKILLS.good, head: 1 } : job.skill;
   const byRound = [];
   const result = runBot({
-    seed: job.seed, skill: job.skill, plan: PLANS[job.gun], maxRound: job.rounds + 1, immortal: true,
+    seed: job.seed, skill, plan: PLANS[job.gun], maxRound: job.rounds + 1, immortal: true,
     onGame(g) {
       g.events.on('roundStart', ({ round }) => byRound.push({ round, progress: structuredClone(g.challenges.snapshot().progress) }));
     },
@@ -82,7 +84,8 @@ const SKILL = option('skill', 'good');
 const scratch = join(root, 'scratch', 'challenge-report');
 mkdirSync(scratch, { recursive: true });
 
-const jobs = Object.keys(PLANS).flatMap(gun => Array.from({ length: SEEDS }, (_, i) => ({
+const GUNS = option('guns', null)?.split(',') ?? Object.keys(PLANS);
+const jobs = GUNS.flatMap(gun => Array.from({ length: SEEDS }, (_, i) => ({
   gun, seed: i + 1, skill: SKILL, rounds: ROUNDS, out: join(scratch, `${gun}-${SKILL}-${i + 1}-r${ROUNDS}.json`),
 })));
 
@@ -109,7 +112,7 @@ await Promise.all(Array.from({ length: Math.min(WORKERS, jobs.length) }, async (
 // ---------------------------------------------------------------------------------------------------------------------------------
 const CHECKPOINTS = [10, 15, 20, 25, 30].filter(r => r <= ROUNDS);
 // Progress after clearing round r: the snapshot taken as round r + 1 began.
-const after = (run, r, gunId, skinId) => run.byRound.find(entry => entry.round === r + 1)?.progress?.[gunId]?.[skinId] ?? null;
+const after = (run, r, gunId, skinId) => { const at = run.byRound.find(entry => entry.round === r + 1); return at ? at.progress?.[gunId]?.[skinId] ?? 0 : null; };
 const mean = list => (list.length ? list.reduce((a, b) => a + b, 0) / list.length : null);
 const fmt = (x, digits = 1) => (x === null ? '-' : Number.isInteger(x) ? String(x) : x.toFixed(digits));
 const out = [];
@@ -122,7 +125,7 @@ line('a feat shows the best attempt the run made by then. "Runs" = runs to that 
 line('');
 line(`| Gun | Slot | Skin | Challenge | Target | ${CHECKPOINTS.map(r => `R${r}`).join(' | ')} | Runs (R15) | Runs (R20) |`);
 line(`|---|---|---|---|---|${CHECKPOINTS.map(() => '---|').join('')}---|---|`);
-for (const gunId of Object.keys(PLANS)) {
+for (const gunId of GUNS) {
   const runs = results.filter(r => r.job.gun === gunId);
   for (const skin of skins[gunId]) {
     const original = skin.challenge.count; // (this process never lifted it)
