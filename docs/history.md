@@ -1,5 +1,19 @@
 # Sunset Galleria: build history ("Current state")
 
+## 11 November 2026 - The test runner caps how many test files run at once
+
+- **Why: the PC froze while agents worked.** The machine has 16 GB of RAM. `node --test` runs one file per CPU thread minus one (19 here),
+  and 125 of the 157 test files build the whole mall headless, at 500-600 MB a process (a file that builds no map: ~60 MB). One full run
+  peaked at 9.3 GB and left 16 MB of RAM free; about 100 full runs were made by Claude Code and Codex sessions on 10-11 November, often at
+  the same time as each other, so Windows swapped to disk for minutes at a time.
+- **Now:** `npm test` is `node tools/runTests.mjs`: the same files, at most 4 at once (`MALL_TEST_JOBS=n` for another cap).
+  `npm test -- tests/x.test.js` runs only those files, at the cap. test:quick runs its selection through the same runner. CLAUDE.md says
+  to test through npm, never with a bare `node --test` on many files.
+- **Measured (4 at once):** 1316/1316 in 277 s, peak 4.1 GB for the run's processes, lowest free RAM 1.3 GB, with Claude, Codex and
+  Antigravity open. Uncapped it was 199 s but swapping the whole machine. 6 and 8 at once were not measured.
+- Not done yet (proposed): a lock so two full runs never overlap, and AGENTS.md / GEMINI.md pointers so Codex and Gemini read CLAUDE.md.
+- Shared files: package.json, tools/testQuick.mjs, CLAUDE.md (Commands), docs.
+
 ## 10 November 2026 - Weapon skins: three fixes from the review of phases 1 to 5
 
 - **Save & Quit paid a round's kills twice.** Mastery progress is permanent and was written at Save & Quit, but Continue replays the round, so the same kills counted again (30 kills, save, continue, 30 again = 60 with a run total of 30; repeatable, so a skin could be farmed without the run advancing). Now game/challenges.js remembers what the unfinished round has already been paid (`credited`, per gun and skin) and counts only what an attempt earns beyond that. Save & Quit writes it into the skin record as `replay`; 'runLoaded' reads it back; a new round, Play again or a run that loaded nothing starts with none. Nothing is ever taken back, so an unlock earned before the save stays.

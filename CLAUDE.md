@@ -15,7 +15,9 @@ wardrobe, mods and hazards, repeat until you die. Death shows a results screen.
 ```
 npm install           # once
 npm run test:quick    # WHILE ITERATING and for small commits on your own branch: the tests your change touches + a fast core set (--list, --all)
-npm test              # the FULL suite (~2 min): before merging into main, and after changing a shared system (createGame, zombies, collision, vault)
+npm test              # the FULL suite: before merging into main, and after changing a shared system (createGame, zombies, collision, vault)
+npm test -- tests/x.test.js   # just these files. Always test through npm (tools/runTests.mjs caps files at once: 4, MALL_TEST_JOBS=n to change);
+                      # a bare `node --test` on many files runs 19 at once, ~9 GB, and freezes a 16 GB PC
 npm run dev           # Vite dev server (hot reload)
 npm run build         # production build into dist/; run after every change to catch errors (it only bundles: it does not run the game)
 npm run preview       # serve the built dist/

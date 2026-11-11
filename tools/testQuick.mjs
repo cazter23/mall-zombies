@@ -1,6 +1,6 @@
 // =============================================================================
 // QUICK TESTS (npm run test:quick): run only the tests your change can affect, plus a small fast core set. The full suite
-// (npm test, ~90 s) is for before a commit; this is for the edit-test loop.
+// (npm test) is for before a merge; this is for the edit-test loop. Both cap how many files run at once (tools/runTests.mjs).
 //
 //   npm run test:quick                 changed files (vs main, plus uncommitted and new files) -> the tests that guard them + the core set
 //   npm run test:quick -- --list       print the plan and run nothing
@@ -20,6 +20,7 @@ import { spawnSync } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { runTests, testJobs } from './runTests.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -104,7 +105,8 @@ if (!info.everything) for (const t of chosen) console.log(`  ${t.padEnd(34)} ${p
 console.log('(Run `npm test` before committing: this is the quick loop, not the full guarantee.)');
 if (flag('list')) process.exit(0);
 
+// Through the shared runner, so quick runs keep the same cap on files at once as npm test (tools/runTests.mjs).
 const started = Date.now();
-const run = spawnSync(process.execPath, ['--test', ...chosen.map((t) => join('tests', t))], { cwd: root, stdio: 'inherit' });
-console.log(`\ntest:quick finished in ${((Date.now() - started) / 1000).toFixed(1)} s (${chosen.length}/${testFiles.length} files)`);
-process.exit(run.status ?? 1);
+const status = runTests(chosen.map((t) => join('tests', t)));
+console.log(`\ntest:quick finished in ${((Date.now() - started) / 1000).toFixed(1)} s (${chosen.length}/${testFiles.length} files, ${testJobs()} at a time)`);
+process.exit(status);
