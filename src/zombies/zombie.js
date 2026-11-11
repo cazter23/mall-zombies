@@ -187,7 +187,7 @@ export class Zombie {
   // later 'hazard' / 'effect'...). Read as zombie.killedBy by the 'kill' event (game/events.js).
   // `distance` / `bounces`: how far the shot travelled and a ball's bounces so far (reported on the kill only; they change no damage).
   takeHit({ damage, part, melee = false, source = melee ? 'melee' : 'gun', weaponId = null, direction = null, impact = null,
-    distance = null, bounces = null }) {
+    distance = null, bounces = null, returnHit = false }) {
     if (!this.isAlive) return { killed: false };
     if (!this.firstWound && damage > 0) this.firstWound = { weaponId, seconds: 0 };
     damage *= this.damageTakenMultiplier;
@@ -195,7 +195,9 @@ export class Zombie {
     if (this.slipTimer > 0 && part === 'head') damage *= workshopStuffings.popcornButter.puddle.fallenHeadshotMultiplier; // (Popcorn Butter: it's down)
     // A crashed Cart Pusher is wide open: hits do extra damage.
     if (this.state === 'crashed') damage *= this.type.charge.crashDamageTakenMultiplier;
-    this.health -= damage;
+    // The Last Customer can only cross her damage floor on an accepted return during Speechless.
+    const returned = returnHit && (!this.type.returnRequired || this.state === 'speechless');
+    this.health = Math.max(returned ? 0 : (this.type.damageFloor ?? -Infinity), this.health - damage);
     const flinchMul = (impact?.flinch ?? 1) * (part === 'head' ? 1.35 : 1);
     this.flinchDuration = this.type.flinchSeconds * Math.min(1.6, Math.max(0.85, flinchMul * 0.85));
     this.flinchTimer = this.flinchDuration; // flinches, but an attack already winding up still comes
@@ -236,6 +238,7 @@ export class Zombie {
     this.killedByWeaponId = weaponId;
     this.killedAtDistance = distance;
     this.killedAfterBounces = bounces;
+    this.returned = returned;
     this.deathImpulse = (impact?.deathImpulse ?? 1) * (this.killedByHeadshot ? 1.25 : 1);
     this.deathTwist = this.flinchSide * Math.min(0.42, 0.16 * this.deathImpulse);
     this.die();

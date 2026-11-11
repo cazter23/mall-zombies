@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { headlessGame,dt } from './helpers/headlessGame.js';
 import { bossTypes,bossVouchers,bossSpectacle } from '../src/config/bosses.js';
+import { returnToSender } from '../src/weapons/returnToSender.js';
+import { weapons } from '../src/config/weapons.js';
 import { audio } from '../src/config/audio.js';
 import { seededRandom } from '../src/world/textures.js';
-import { weapons } from '../src/config/weapons.js';
 
 function fixture(t) {
   const game=headlessGame();const {g}=game;
@@ -40,19 +41,22 @@ test('Manager and Guard travel from every open zone, and from below into the wor
 });
 
 test('distinct boss stings, costume props and non-gore deaths preserve one kill payout',t=>{
-  const {g,tick,hud}=fixture(t);tick();
+  const {g,tick,hud}=fixture(t);g.map.areaUnlocks.openAll();tick(120);
   const names=new Set();
   for(const [id,type] of Object.entries(bossTypes)) {
     assert.ok(audio.sounds[type.introSound]?.layers.length);names.add(type.introSound);
     const z=g.bosses.summon(id);assert.ok(z);
     const before=g.effects.counts.particles;
     let kills=0;const off=g.events.on('kill',({zombie})=>{if(zombie===z)kills++;});
-    z.takeHit({damage:z.health,part:'body',source:'hazard'});off();
-    assert.equal(kills,1);assert.ok(g.effects.counts.particles>=Math.min(before+bossSpectacle.death.count,100));
+    z.takeHit({damage:z.health,part:'body',source:'hazard'});
+    if (type.returnRequired) { tick(); returnToSender(z,{effects:g.effects,sound:{play(){}}}); }
+    off();
+    const burst=type.returnRequired?weapons.returnToSender.instantKill.box.count:bossSpectacle.death.count;
+    assert.equal(kills,1);assert.ok(g.effects.counts.particles>=Math.min(before+burst,100));
     assert.ok(hud.calls.some(([name,line])=>name==='showAnnouncement' && line.text===type.defeatBanner.text));
     g.bosses.reset();g.zombies.clear();tick();
   }
-  assert.equal(names.size,Object.keys(bossTypes).length);
+  assert.equal(names.size,Object.values(bossTypes).filter(({firstRounds})=>firstRounds?.length).length, 'debut bosses have distinct stings; the booked finale reuses one');
 });
 
 test('order-form purchases consume Discount Code, quiet menu opening does not, and fans cannot feed the ritual',t=>{
@@ -85,7 +89,7 @@ test('vouchers survive the real Employee Discount expiring, and death/reset clea
 });
 
 test('each boss is selectable in the debug overlay and summonable by explicit id',t=>{
-  const {g,tick}=fixture(t);tick();
+  const {g,tick}=fixture(t);g.map.areaUnlocks.openAll();tick(120);
   for(const id of Object.keys(bossTypes)) {
     assert.match(g.debug.run('summonBoss',id),/Summoned/);
     assert.equal(g.bosses.active.type.id,id);

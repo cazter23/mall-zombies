@@ -39,7 +39,7 @@ export function seeded(seed = 1) {
 // The pool with nothing carried (the Staple Gun is never a prize anyway).
 export const POOL = prizePool({ owns: (id) => id === 'stapleGun', modsFor: () => [], away: null });
 // What a gun is worth in the report: its wall price, or for a claw-only gun (on no wall) the nominal `value` its prize entry carries.
-export const wallPrice = (id) => economy.wallBuys[id]?.weapon ?? cfg.prizes[id]?.value ?? 0;
+export const wallPrice = (id) => id === 'returnToSender' ? economy.closing.returnsDesk : economy.wallBuys[id]?.weapon ?? cfg.prizes[id]?.value ?? 0;
 
 // The cheapest area unlocks from the start room to each wall gun (docs/map.md): Hallway first for most; HOFFMAN'S has its own
 // side door off the start room; the Cinema is reached through the Service Corridor's stairs.
@@ -52,7 +52,7 @@ export const WALL_ROUTES = {
   coilNailer: ['hallway', 'serviceCorridor', 'cinema'],
   barcodeScanner: ['departmentStore'],
 };
-// (a claw-only gun has no wall route: the claw is the only way to it, so the wall can never be the cheaper one)
+// A gun flagged clawOnly has no wall route; Return to Sender additionally has the gated Returns Desk route.
 export const wallRouteCost = (id) => weapons[id]?.clawOnly ? Infinity : WALL_ROUTES[id].reduce((sum, area) => sum + economy.doors[area], 0) + wallPrice(id);
 // What the claw needs before the first grab: it waits in the Hallway until you own it.
 export const CLAW_ENTRY = economy.doors[cfg.sites[0].zone];

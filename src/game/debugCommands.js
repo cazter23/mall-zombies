@@ -25,7 +25,7 @@ import { toggleDoors } from '../world/door.js';
 import { nextTier, withTier, tierById } from '../weapons/upgrades.js';
 
 const ZOMBIE_IDS = Object.keys(zombieTypes);
-const BOSS_IDS = Object.keys(bossTypes).sort((a,b)=>bossTypes[a].firstRounds[0]-bossTypes[b].firstRounds[0]);
+const BOSS_IDS = Object.keys(bossTypes).sort((a,b)=>(bossTypes[a].firstRounds?.[0] ?? Infinity)-(bossTypes[b].firstRounds?.[0] ?? Infinity));
 const WALL_GUN_IDS = Object.keys(weapons).filter((id) => id !== 'stapleGun');
 const nameOf = (id) => id.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
 

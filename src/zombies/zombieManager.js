@@ -31,6 +31,7 @@ const UP = new THREE.Vector3(0, 1, 0);
  * @param spawnPoints  map markers: [{ name, zone, position }]
  * @param isZoneOpen   (zoneId) => boolean; zombies only spawn in zones the player has opened
  * @param getRound     () => current round number (for health scaling)
+ * @param getHealthMultiplier optional () => extra health multiplier for every spawn (Closing Time's overtime; 1 otherwise)
  * @param canAttack    () => false once the player is dead
  * @param onPlayerHit  (damage, zombie) => apply a landed zombie hit to the player
  * @param onKill       optional (zombie) => called when a zombie dies (run stats, later points)
@@ -50,6 +51,7 @@ export function createZombieManager({
   isZoneOpen = () => true,
   getRound,
   getRounds = null,
+  getHealthMultiplier = () => 1,
   canAttack,
   onPlayerHit,
   onKill = null,
@@ -136,7 +138,7 @@ export function createZombieManager({
   } });
   const tankDeaths = createTankDeaths();
   function onZombieDeath(zombie) {
-    if (zombie.killedBy === 'partyTrap') {
+    if (zombie.returned || zombie.killedBy === 'partyTrap') {
       if (onKill) onKill(zombie);
       return;
     }
@@ -447,19 +449,20 @@ export function createZombieManager({
     },
 
     // Spawn one zombie of `typeId` at a good spawn point (or at `at`, a Vector3, if given).
-    // Returns the zombie, or null if no spawn point is usable right now.
+    // Returns the zombie, or null if no spawn point is usable right now. `spawnPoints` optionally restricts safe selection
+    // to those markers (booked bosses and parking backup); it never falls back outside that list.
     // Options: `variant` = the Mascot costume to wear (otherwise picked here, see below); `gold` = true / false for an
     // Employee of the Month or not (otherwise rolled here); `nearest` = the safe spawn point closest to the player
     // instead of a random nearby one (debug); `fanOwner` / `healthMultiplier` = a boss's summoned fan (no rewards, never
     // past the round's max alive, never out of the chute).
-    spawn(typeId = 'shopper', at = null, { variant = null, gold = null, nearest = false, fanOwner = null, healthMultiplier = 1 } = {}) {
+    spawn(typeId = 'shopper', at = null, { variant = null, gold = null, nearest = false, fanOwner = null, healthMultiplier = 1, spawnPoints: requestedPoints = null } = {}) {
       if (fanOwner && zombies.filter(z => z.isAlive).length >= maxAliveForRound(getRound())) return null;
       const cap = economy.zombieMix[typeId]?.maxAlive;
       if (cap && zombies.filter(z => z.isAlive && z.type.id === typeId).length >= cap) typeId = 'shopper';
       let type = bossTypes[typeId] ?? zombieTypes[typeId];
-      const chute = type.boss || fanOwner ? null : steered;
+      const chute = type.boss || fanOwner || requestedPoints ? null : steered;
       const chutePoint = at || !chute ? null : pickSpawnPoint(type, null, chute, nearest);
-      const point = at ? null : chutePoint || pickSpawnPoint(type, null, spawnPoints, nearest);
+      const point = at ? null : chutePoint || pickSpawnPoint(type, null, requestedPoints ?? spawnPoints, nearest);
       if (!at && !point) return null;
       const position = at ? at.clone() : point.position.clone();
       position.y = point ? point.position.y : at.y;
@@ -475,7 +478,9 @@ export function createZombieManager({
         type = golden ? mascotGoldTypes[costume] : mascotTypes[costume];
       }
       const speed = pickGaitSpeed(type, round);
-      const health = zombieHealthFor(typeId, round) * healthMultiplier;
+      // Overtime (game/closingTime.js) makes every zombie and boss tougher, on top of a summoned fan's own fraction.
+      const extra = getHealthMultiplier();
+      const health = extra === 1 ? zombieHealthFor(typeId, round) * healthMultiplier : Math.round(zombieHealthFor(typeId, round) * healthMultiplier * extra);
       const zombie = new Zombie({ type, health: type.gold ? Math.round(health * mascotGold.healthMultiplier) : health, position, yaw, speed, round });
       zombie.fanOwner = fanOwner;
       zombie.noRewards = !!fanOwner;

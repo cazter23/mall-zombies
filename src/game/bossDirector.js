@@ -4,9 +4,10 @@ import { createJanitorBehavior } from '../zombies/bosses/janitor.js';
 import { createManagerBehavior } from '../zombies/bosses/manager.js';
 import { createGuardBehavior } from '../zombies/bosses/guard.js';
 import { createInfluencerBehavior } from '../zombies/bosses/influencer.js';
+import { createLastCustomerBehavior } from '../zombies/bosses/lastCustomer.js';
 import * as zombieConfig from '../config/zombies.js';
 
-const behaviors = { janitor: createJanitorBehavior, manager: createManagerBehavior, guard: createGuardBehavior, influencer: createInfluencerBehavior };
+const behaviors = { janitor: createJanitorBehavior, manager: createManagerBehavior, guard: createGuardBehavior, influencer: createInfluencerBehavior, lastCustomer: createLastCustomerBehavior };
 
 export function bossIntroRounds(variants = zombieConfig.mascotVariants ?? {}) {
   return new Set([...Object.values(economy.zombieMix).map(({ fromRound }) => fromRound),
@@ -22,7 +23,7 @@ export function chooseBossSchedule(random = Math.random) {
   const intros = bossIntroRounds(); // (never a zombie type's or a Mascot costume's debut)
   const schedule = new Map();
   for (const [id, type] of Object.entries(bossTypes)) {
-    const rounds = type.firstRounds.filter(round => !intros.has(round) && !schedule.has(round));
+    const rounds = (type.firstRounds ?? []).filter(round => !intros.has(round) && !schedule.has(round));
     if (rounds.length) schedule.set(rounds[Math.floor(random() * rounds.length)], id);
   }
   return new Map([...schedule].sort(([a], [b]) => a - b));
@@ -30,7 +31,7 @@ export function chooseBossSchedule(random = Math.random) {
 
 // `surfaces`: game/surfaceSlows.js. The active boss's slow (behavior.surfaceSpeed: the Janitor's wet floor, the Guard's
 // taser) is reported there as 'boss', never written to the stat itself: Scoops' melt reports too and the lowest wins.
-export function createBossDirector({ events, rounds, zombies, scene, colliders, player, surfaces, powerUps, state, map }) {
+export function createBossDirector({ events, rounds, zombies, scene, colliders, player, surfaces, powerUps, state, map, interactions, effects, sound }) {
   let schedule = null;
   let active = null;
   let behavior = null;
@@ -49,14 +50,17 @@ export function createBossDirector({ events, rounds, zombies, scene, colliders, 
 
   function spawn(id) {
     if (state.over || spawned || active) return null;
-    const zombie = zombies.spawn(id);
+    const marker = bossTypes[id].spawnMarker;
+    const zombie = marker ? zombies.spawn(id, null, { spawnPoints: map.spawnPoints.filter(({ name }) => name === marker) }) : zombies.spawn(id);
     if (!zombie) return null;
     active = zombie;
-    met.add(id);
-    lastBoss = id;
+    if (bossTypes[id].encore !== false) {
+      met.add(id);
+      lastBoss = id;
+    }
     spawned = true;
     behavior = behaviors[id]({
-      zombie, scene, colliders, player, powerUps, zombies, rounds, map, events,
+      zombie, scene, colliders, player, powerUps, zombies, rounds, map, events, interactions, effects, sound, state,
       onPhase: (phase) => events.emit('bossPhase', { zombie, phase, round: rounds.round }),
     });
     events.emit('bossSpawn', { zombie, round: rounds.round });
@@ -91,6 +95,14 @@ export function createBossDirector({ events, rounds, zombies, scene, colliders, 
     get pending() { return pending(); },
     get patches() { return behavior?.patches ?? []; },
     get scheduledRound() { return [...(schedule?.keys() ?? [])][0] ?? null; },
+    // A booking owns the one boss slot for that round, replacing an encore or a debut. It is saved in the same schedule.
+    book(round, id) {
+      if (state.over || !Object.hasOwn(bossTypes, id) || !Number.isInteger(round) || round <= 0 || round < rounds.round || (round === rounds.round && spawned)) return false;
+      schedule ??= chooseBossSchedule();
+      schedule.set(round, id);
+      schedule = new Map([...schedule].sort(([a], [b]) => a - b));
+      return true;
+    },
     summon(id = schedule?.get(rounds.round) ?? 'janitor') { return bossTypes[id] ? spawn(id) : null; },
     update(dt, allowSpawn = true) {
       if (active && !zombies.zombies.includes(active)) {
@@ -118,7 +130,7 @@ export function createBossDirector({ events, rounds, zombies, scene, colliders, 
     restore(data) {
       schedule = data.schedule ? new Map(data.schedule) : null;
       met.clear();
-      for (const id of data.met) met.add(id);
+      for (const id of data.met) if (bossTypes[id]?.encore !== false) met.add(id);
       lastBoss = data.lastBoss;
       spawned = false;
       retry = 0;

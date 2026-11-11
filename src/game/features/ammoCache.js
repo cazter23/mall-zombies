@@ -16,6 +16,10 @@
 //     price  points (a number, or a function returning one)
 // =============================================================================
 
+import { closingTime } from '../../config/closingTime.js';
+
+const returnsOnly = (gun) => gun.def.id === closingTime.returnsDesk.weaponId;
+
 export function buildAmmoCache(cache, { map, gun, pricing, interactions }) {
   interactions.add(ammoCacheItem({ cache, zones: map.zones, gun, price: () => pricing.priceOf('ammoCache') }));
   if (!cache.screen) return null;
@@ -28,6 +32,7 @@ export function buildAmmoCache(cache, { map, gun, pricing, interactions }) {
 export function ammoScreenText({ gun, price, sale = false }) {
   const w = gun.weapon;
   const name = gun.def.name.toUpperCase();
+  if (returnsOnly(gun)) return { title: name, ...closingTime.returnsDesk.screen };
   if (w.isFull) return { title: name, line: 'FULL', note: `${w.magazine} / ${w.reserve}`, tone: '#7dffb0' };
   return { title: name, line: `${price} PTS`, note: `${w.magazine} / ${w.reserve}${sale ? '  SALE' : ''}`, tone: sale ? '#ffd23f' : '#ff9f43' };
 }
@@ -37,6 +42,8 @@ export function ammoCacheItem({ cache, zones, gun, price }) {
     get label() {
       return `Ammo · ${gun.def.name}`; // shows which gun it's for
     },
+    get blocked() { return returnsOnly(gun) ? closingTime.returnsDesk.redirect : null; },
+    get priceLabel() { return returnsOnly(gun) ? closingTime.returnsDesk.name : null; },
     verb: 'buy',
     detail: 'Refills the held weapon’s magazine and reserve',
     kind: 'ammoCache',
@@ -47,7 +54,7 @@ export function ammoCacheItem({ cache, zones, gun, price }) {
       return typeof price === 'function' ? price() : price;
     },
     position: cache.position,
-    available: () => zones[cache.zone].open && !gun.weapon.isFull,
+    available: () => zones[cache.zone].open && (returnsOnly(gun) || !gun.weapon.isFull),
     use: () => gun.weapon.refill(),
   };
 }

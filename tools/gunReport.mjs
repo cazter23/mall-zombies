@@ -7,8 +7,9 @@
 
 import { weapons } from '../src/config/weapons.js';
 import { workshopRitual, workshopStuffings, workshopHearts } from '../src/config/workshop.js';
-import { gunPower } from '../src/weapons/gunStats.js';
+import { hitDamage, resolveGun, gunPower } from '../src/weapons/gunStats.js';
 import { economy, zombieHealthForRound, zombieHealthFor, zombieCountForRound } from '../src/config/economy.js';
+import { withTier } from '../src/weapons/upgrades.js';
 import { bossTypes, bossVouchers } from '../src/config/bosses.js';
 import {
   cycleSeconds, magazineSeconds, reloadSeconds, expectedShotDamage, burstDps, sustainedDps, shotsToKill, killsPerSecond,
@@ -22,15 +23,27 @@ const RANGES = [2, 5, 10, 15, 20, 30];
 const playStyle = (d) => ({ ads: !d.pellets });
 
 console.log('\nBOSS ENCOUNTERS (base Nail Gun body damage at 10 m; no upgrades, headshots, misses or wave pressure)');
-console.table(Object.values(bossTypes).sort((a,b)=>a.firstRounds[0]-b.firstRounds[0]).map(type=>({
+console.table(Object.values(bossTypes).sort((a,b)=>(a.firstRounds?.[0] ?? Infinity)-(b.firstRounds?.[0] ?? Infinity)).map(type=>({
   boss: type.name,
-  debut: type.firstRounds.join('/'),
-  'debut hp': zombieHealthFor(type.id,type.firstRounds[0]),
+  debut: type.firstRounds?.join('/') ?? 'booked',
+  'debut hp': type.firstRounds ? zombieHealthFor(type.id,type.firstRounds[0]) : '-',
   'round 20 hp': zombieHealthFor(type.id,20),
   'kill points': economy.killValues[type.id],
-  'base Nail Gun seconds': r1(zombieHealthFor(type.id,type.firstRounds[0])/sustainedDps(weapons.nailGun,10,{ads:true})),
-  reward: bossVouchers[type.reward]?.name ?? type.reward,
+  'base Nail Gun seconds': type.firstRounds ? r1(zombieHealthFor(type.id,type.firstRounds[0])/sustainedDps(weapons.nailGun,10,{ads:true})) : '-',
+  reward: bossVouchers[type.reward]?.name ?? type.reward ?? '-',
 })));
+
+const finale = bossTypes.lastCustomer;
+const platinumRivet = resolveGun(weapons.rivetRifle, withTier(weapons.rivetRifle, [], 'platinum'));
+console.log(`\nLAST CUSTOMER (Platinum Rivet Rifle, ADS body shots at ${finale.balance.range} m; sustained fire with reloads, no crash bonus, headshots, misses or wave pressure)`);
+console.table(finale.balance.rounds.map(round => {
+  const hp = zombieHealthFor(finale.id, round);
+  return { round, hp, 'Platinum Rivet seconds to Speechless': r1((hp - finale.damageFloor) / sustainedDps(platinumRivet, finale.balance.range, { ads: true })),
+    'base RTS beam hit': r1(hitDamage(weapons.returnToSender, { part: 'body', distance: finale.balance.range }, 0, { damageMultiplier: 1 }, 1, { type: finale, maxHealth: hp })),
+    'base RTS beams to Speechless': Math.ceil((hp - finale.damageFloor) / (hp * finale.returnToSenderFraction)) };
+}));
+
+console.log(`An emptied Last Customer bar requires a return: a beam during Speechless, or a ${finale.handReturn.holdSeconds} s hand stamp within ${finale.speechlessSeconds} s. A missed window restores ${finale.recoverHealthFraction * 100}% health.`);
 
 console.log('\nGUN OVERVIEW (dps measured at 5 m; ADS except pellet guns)');
 console.table(guns.map((d) => ({

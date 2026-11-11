@@ -111,9 +111,9 @@ export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null,
 
     // Reserved reinforcements spend the existing wave budget. Failed safe spawns
     // and a full living cap keep the request pending in the encounter.
-    spawnBackup(typeId) {
+    spawnBackup(typeId, options = {}) {
       if (state !== 'active' || toSpawn <= 0 || zombies.aliveCount >= maxAliveForRound(round)) return null;
-      const zombie = zombies.spawn(typeId);
+      const zombie = zombies.spawn(typeId, null, options);
       if (!zombie) return null;
       toSpawn -= 1;
       spawnedThisRound += 1;

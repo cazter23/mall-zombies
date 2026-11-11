@@ -21,6 +21,35 @@ export const closingTime = {
     blockedPrefix: 'Still needed: ',
     promptHeight: 1.2, clearance: 0.12,
   },
+  finale: { bossId: 'lastCustomer', roundOffset: 1, banner: 'CLOSING TIME', missing: 'The Last Customer' },
+  validation: {
+    name: 'Parking Validation', verb: 'validate parking', missing: 'Parking validation',
+    done: 'Validated', complete: 'Validated · Defeat the Last Customer', cleared: 'Validated · Start the van',
+    // Mounted on the mauve van's west flank, inside its painted bay. No new collider or obstruction in the combat lanes.
+    promptOffset: 0.38, promptHeight: 1.4,
+    parts: [
+      { name: 'validation_housing', min: [-0.18, 0.80, -0.32], max: [0.02, 1.86, 0.32], color: 0x343c50 },
+      { name: 'validation_face', min: [-0.22, 0.88, -0.28], max: [-0.17, 1.80, 0.28], color: 0x698b86 },
+      { name: 'validation_screen', min: [-0.24, 1.36, -0.23], max: [-0.21, 1.63, 0.23], color: 0x162b32 },
+      { name: 'validation_slot', min: [-0.24, 1.12, -0.18], max: [-0.21, 1.18, 0.18], color: 0x161622 },
+      { name: 'validation_button', min: [-0.25, 0.96, 0.12], max: [-0.21, 1.05, 0.21], color: 0xf7bd62 },
+    ],
+    sign: { text: 'VALIDATE', offset: 0.25, y: 1.72, width: 0.48, height: 0.12, background: '#243042', color: '#ffe4a0' },
+  },
+  returnsDesk: {
+    name: 'Returns Desk', weaponId: 'returnToSender', ammoName: 'Return to Sender ammo',
+    buy: 'buy', refill: 'refill', gate: 'Unfinished: ', equip: 'Equip Return to Sender for ammo',
+    busy: 'Finish switching weapons first', full: 'Ammo full',
+    redirect: 'Return to Sender ammo is sold at the Returns Desk · Customer Service',
+    screen: { line: 'RETURNS DESK', note: 'Customer Service', tone: '#ff9f43' },
+    offsetFromBooth: 4.8, promptOffset: 0.42, promptHeight: 1.42,
+    parts: [
+      { name: 'returns_desk_housing', min: [-0.24, 1.04, -0.42], max: [0.02, 1.84, 0.42], color: 0x253e4d },
+      { name: 'returns_desk_screen', min: [-0.28, 1.20, -0.34], max: [-0.23, 1.56, 0.34], color: 0x151f2c },
+      { name: 'returns_desk_tray', min: [-0.46, 0.98, -0.42], max: [0.02, 1.04, 0.42], color: 0x698b86 },
+    ],
+    sign: { text: 'RETURNS DESK', offset: 0.30, y: 1.70, width: 0.70, height: 0.18, background: '#243042', color: '#ffe4a0' },
+  },
   nightSafe: {
     name: 'Night Safe',
     verb: 'deposit',
@@ -59,12 +88,13 @@ export const closingTime = {
     drop: (key) => ({ kicker: 'Closing time', text: key + ' is on the floor. Associates, please collect it for the closing checklist.' }),
     // The Van Keys tick nothing by themselves: line 4 is ticked by the win (game/createGame.js onRunWon).
     // keep: these line-opening and line-complete messages are never dropped from the PA queue (ui/announcements.js).
-    vanKeys: (key) => ({ kicker: 'Closing time', keep: true, text: key + ' collected. Start the van to finish closing.' }),
+    vanKeys: (key) => ({ kicker: 'Closing time', keep: true, text: key + ' collected. Finish the duties, then validate parking at the ticket machine by the van.' }),
     openFountain: (key, needed) => ({ kicker: 'Closing time', keep: true, text: `${key} collected. Use the Electrified Fountain in the Grand Atrium to take out ${needed} zombies.` }),
     openNightSafe: (key, needed) => ({ kicker: 'Closing time', keep: true, text: `${key} collected. Make ${needed} deposits at the Night Safe beside Customer Service.` }),
     completeNightSafe: { kicker: 'Closing time', keep: true, text: 'Takings banked is checked off. Thank you, associates.' },
     completeFountain: { kicker: 'Closing time', keep: true, text: 'Water features off is checked off. Thank you, associates.' },
     openLastOrders: (key) => ({ kicker: 'Closing time', keep: true, text: `${key} collected. Collect a build or Restuff from Build-A-Blaster’s Naming Booth.` }),
+    validated: { kicker: 'Closing time', keep: true, text: 'Parking validated. Attention associates: closing time is the next round.' },
     completeLastOrders: { kicker: 'Closing time', keep: true, text: 'Last orders signed off. Thank you, associates.' },
   },
   // The win receipt, and the two lines a later death receipt gains after a win (ui/screens.js).
@@ -78,6 +108,12 @@ export const closingTime = {
     overtimeRounds: 'Overtime rounds survived',
   },
   overtimeTag: 'OVERTIME', // beside the round counter while overtime is played (ui/hud.js)
+  // OVERTIME's two changes (game/closingTime.js; docs/closing-time-plan.md "Overtime"). Nothing changes before the win.
+  // healthPerRound: every zombie and boss spawned in overtime has its health x this, compounded once per overtime round
+  //   (the first overtime round is x1.03, the fifth x1.03^5), on top of the normal round scaling. Counts, spawn pace and the
+  //   alive cap are untouched.
+  // killPay: multiplied into the stats' killPayMultiplier once, when overtime starts (so it stacks with the Gold Card).
+  overtime: { healthPerRound: 1.03, killPay: 1.25 },
   // The Statistics screen (ui/screens.js): career wins, the fastest win, and the mark on a won shift in the recent list.
   stats: { wins: 'Shifts completed', fastestWin: 'Fastest close', noWin: '—', wonMark: 'CLOSED', wonTitle: 'Shift completed: the mall was closed' },
   lineProgress: (count, needed) => `${count}/${needed}`,

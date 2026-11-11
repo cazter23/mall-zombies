@@ -21,7 +21,7 @@ test('a run picks one Janitor round from 5 or 7 and leaves the Mascot and other 
   for (const [roll, expected] of [[0, 5], [0.99, 7]]) {
     const schedule = chooseBossSchedule(() => roll);
     assert.equal(schedule.get(expected), 'janitor');
-    assert.equal(schedule.size, Object.keys(bossTypes).length);
+    assert.equal(schedule.size, Object.values(bossTypes).filter(({ firstRounds }) => firstRounds?.length).length);
     for (const [round, id] of schedule) assert.ok(bossTypes[id].firstRounds.includes(round) && !intros.includes(round));
     assert.ok(!intros.includes(expected));
   }

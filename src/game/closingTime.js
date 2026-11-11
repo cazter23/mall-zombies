@@ -5,13 +5,19 @@ const lines = Object.entries(config.lines);
 const total = lines.length;
 const leavingLine = lines.find(([, line]) => !line.needed)[0]; // line 4: no duty count, it is ticked by the win
 
-export function createClosingTime({ events, player, colliders, state, view }) {
+// stats: the player's stats object (overtime's kill pay is multiplied into it). getOvertimeRound: () => how many overtime
+// rounds have begun (0 before overtime; the first overtime round is 1), worked out by createGame from the round number
+// and the saved `overtimeFrom`, so a loaded overtime run gets the right health with no counter of its own to save.
+export function createClosingTime({ events, player, colliders, state, view, rounds, bosses, stats = null, getOvertimeRound = () => 0 }) {
   const floor = createFloorPickups(colliders);
   const drops = new Map(); // boss id -> floor position (null while waiting for safe floor)
   const held = new Set();
   const completed = new Set();
   const counts = new Map(); // opened duties that take more than a key
   let briefingIn = null; // seconds until the PA introduces the checklist (null: not waiting)
+  let closingRound = null;
+  let lastCustomerDefeated = false;
+  let validated = false; // paid once per run; restored silently by Save & Quit
   let briefed = false; // once per run
   const progressDuties = {
     janitor: { open: config.pa.openFountain, complete: config.pa.completeFountain },
@@ -50,7 +56,15 @@ export function createClosingTime({ events, player, colliders, state, view }) {
     return true;
   }
 
-  events.on('bossDefeated', ({ zombie }) => drop(zombie.type.id, zombie.position));
+  events.on('bossDefeated', ({ zombie }) => {
+    if (!state.over && zombie.type.id === config.finale.bossId && validated) lastCustomerDefeated = true;
+    drop(zombie.type.id, zombie.position);
+  });
+  events.on('closingValidated', ({ round }) => {
+    if (state.over || !validated || closingRound !== null) return;
+    closingRound = round + config.finale.roundOffset;
+    bosses.book(closingRound, config.finale.bossId);
+  });
   events.on('bossVanished', ({ zombie }) => drop(zombie.type.id, player.position));
   function advance(line) {
     if (state.over || !counts.has(line) || completed.has(line)) return;
@@ -73,9 +87,24 @@ export function createClosingTime({ events, player, colliders, state, view }) {
   events.on('ritualCollect', () => advance('manager'));
   events.on('purchase', ({ kind, id }) => {
     if (kind === 'closing' && id === 'nightSafe') advance('guard');
+    if (kind === 'closing' && id === 'validation' && !state.over && !state.won && !validated && readyToValidate()) {
+      validated = true;
+      events.emit('closingValidated', { round: rounds.round, pa: config.pa.validated });
+    }
+  });
+
+  const readyToValidate = () => held.size === total && lines.every(([id, line]) => !line.needed || completed.has(id));
+  // Overtime pay: once, when overtime starts. Deliberately not on 'runLoaded' or in restore(): the stats object is saved as
+  // it is (the x1.25 included), and Play again's stats reset puts the multiplier back to 1.
+  events.on('overtimeStart', () => {
+    if (stats) stats.killPayMultiplier *= config.overtime.killPay;
   });
 
   return {
+    // The health multiplier for a zombie spawned now (the zombie manager reads it on every spawn): 1 before overtime.
+    get healthMultiplier() {
+      return Math.pow(config.overtime.healthPerRound, Math.max(0, getOvertimeRound()));
+    },
     get done() { return completed.size; },
     hasKey(bossId) { return held.has(bossId); },
     isDone(bossId) { return completed.has(bossId); },
@@ -84,8 +113,13 @@ export function createClosingTime({ events, player, colliders, state, view }) {
     get missingDuties() {
       return lines.filter(([id, line]) => line.needed && !completed.has(id)).map(([bossId, line]) => ({ bossId, ...line }));
     },
-    // What the van asks for: all four keys and lines 1 to 3 ticked. There is no round gate.
-    get readyToLeave() { return held.size === total && this.missingDuties.length === 0; },
+    // Parking validation needs every key and the first three duties; the van also needs the Last Customer defeated.
+    get readyToValidate() { return readyToValidate(); },
+    get validated() { return validated; },
+    get closingRound() { return closingRound; },
+    isClosingRound(round) { return round === closingRound; },
+    get lastCustomerDefeated() { return lastCustomerDefeated; },
+    get readyToLeave() { return readyToValidate() && validated && lastCustomerDefeated; },
     // A duty's count as text ("3/12") while its key is held and its line is still open, else null (the fountain switch's prompt).
     dutyProgress(bossId) {
       if (!counts.has(bossId) || completed.has(bossId)) return null;
@@ -137,7 +171,7 @@ export function createClosingTime({ events, player, colliders, state, view }) {
     serialize() {
       return {
         drops: [...drops].map(([bossId, position]) => [bossId, position ? position.toArray() : null]),
-        held: [...held], completed: [...completed], counts: [...counts], briefingIn, briefed,
+        held: [...held], completed: [...completed], counts: [...counts], briefingIn, briefed, validated, closingRound, lastCustomerDefeated,
       };
     },
     restore(data) {
@@ -153,6 +187,9 @@ export function createClosingTime({ events, player, colliders, state, view }) {
       for (const [id, count] of data.counts) counts.set(id, count);
       briefingIn = data.briefingIn;
       briefed = data.briefed;
+      validated = data.validated;
+      closingRound = data.closingRound;
+      lastCustomerDefeated = data.lastCustomerDefeated;
     },
     reset() {
       for (const bossId of drops.keys()) view.remove(bossId);
@@ -162,6 +199,9 @@ export function createClosingTime({ events, player, colliders, state, view }) {
       counts.clear();
       briefingIn = null;
       briefed = false;
+      validated = false;
+      closingRound = null;
+      lastCustomerDefeated = false;
     },
     debug(mode = 'drop', bossId, at = player.position) {
       if (state.over) return 'The shift has ended';

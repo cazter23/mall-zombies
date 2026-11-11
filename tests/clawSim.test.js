@@ -12,7 +12,7 @@ const GRABS = 60_000;
 
 test('the wall stays the cheaper way to every specific gun, even with perfect timing (and the Hallway the claw needs)', () => {
   for (const { id } of POOL) {
-    if (weapons[id].clawOnly) { assert.equal(wallRouteCost(id), Infinity, `${id}: no wall route, the claw is the only way`); continue; }
+    if (weapons[id].clawOnly) { assert.equal(wallRouteCost(id), Infinity, `${id}: no wall route (Return to Sender has its separate gated desk)`); continue; }
     const claw = clawCostPerGun(id, { mode: 'perfect', grabs: GRABS, random: seeded(4) }) + CLAW_ENTRY;
     assert.ok(claw > wallRouteCost(id), `${id}: claw ${Math.round(claw)} vs wall ${wallRouteCost(id)}`);
   }

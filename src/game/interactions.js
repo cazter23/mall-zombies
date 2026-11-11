@@ -92,7 +92,7 @@ export function createInteractions({ input, player, wallet, sound = null, onRelo
     for (const item of items) {
       if (!item.available() || !canReach(item)) continue;
       const d = Math.hypot(item.position.x - player.position.x, item.position.z - player.position.z);
-      if (d < bestD) {
+      if (!best || (item.priority ?? 0) > (best.priority ?? 0) || ((item.priority ?? 0) === (best.priority ?? 0) && d < bestD)) {
         bestD = d;
         best = item;
       }
@@ -128,6 +128,12 @@ export function createInteractions({ input, player, wallet, sound = null, onRelo
       return item;
     },
 
+    remove(item) {
+      const index = items.indexOf(item);
+      if (index !== -1) items.splice(index, 1);
+      if (focused === item) { focused = null; holdTime = 0; armed = false; }
+    },
+
     // HUD ticket: null, or label/title/detail, kind/id, live cost/shortfall, canAfford, progress 0..1, denied.
     get prompt() {
       // Buying or switching guns can invalidate focus after this tick's interaction update.
@@ -149,7 +155,7 @@ export function createInteractions({ input, player, wallet, sound = null, onRelo
         shortfall: Math.max(0, focused.cost - wallet.points),
         cost: focused.cost,
         canAfford: wallet.canAfford(focused.cost),
-        progress: armed ? Math.min(1, holdTime / cfg.holdSeconds) : 0,
+        progress: armed ? Math.min(1, holdTime / (focused.holdSeconds ?? cfg.holdSeconds)) : 0,
         denied: deniedTimer > 0,
       };
     },
@@ -196,7 +202,7 @@ export function createInteractions({ input, player, wallet, sound = null, onRelo
       if (pressedNow) armed = true;
       if (armed && input.actionDown('interact')) {
         holdTime += dt;
-        if (holdTime >= cfg.holdSeconds) {
+        if (holdTime >= (focused.holdSeconds ?? cfg.holdSeconds)) {
           tryBuy(focused);
           if (sharedHeld) sharedUsed = true; // this press bought something: no reload on release
           armed = false; // let go and press again to retry

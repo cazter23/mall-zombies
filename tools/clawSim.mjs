@@ -56,13 +56,16 @@ console.log('\nONE SPECIFIC GUN: points of grabs per copy (aiming for it when it
 console.log(`(the claw also needs the Hallway, ${CLAW_ENTRY}; the wall route is the cheapest doors from the start room plus the gun)`);
 console.table(POOL.map((p) => {
   const clawOnly = weapons[p.id]?.clawOnly;
-  const row = { gun: name(p.id), 'wall route': clawOnly ? 'none: claw only' : wallRouteCost(p.id) };
+  const desk = p.id === 'returnToSender';
+  const row = { gun: name(p.id), 'wall route': desk ? `Returns Desk: ${economy.closing.returnsDesk} after duties` : clawOnly ? 'none: claw only' : wallRouteCost(p.id) };
   for (const m of ['3-in-4', 'timed', 'random']) row[`claw ${m}`] = r0(clawCostPerGun(p.id, { mode: m, grabs: GRABS / 2, price }));
   const perfect = clawCostPerGun(p.id, { mode: 'perfect', grabs: GRABS / 2, price }) + CLAW_ENTRY;
   row['claw perfect + Hallway'] = r0(perfect);
-  row['claw cheaper?'] = clawOnly ? 'the only way' : perfect < wallRouteCost(p.id) ? 'YES: rule broken' : 'no';
+  row['claw cheaper?'] = desk ? 'random shortcut; desk is guaranteed' : clawOnly ? 'the only way' : perfect < wallRouteCost(p.id) ? 'YES: rule broken' : 'no';
   return row;
 }));
+
+console.log(`Return to Sender: the desk guarantees a copy for ${economy.closing.returnsDesk} after duties 1–3. Its paid half-rate refill is ${economy.closing.returnsAmmo}, at that desk only; free refills are unchanged. The value table now uses the desk price instead of a nominal claw-only value.`);
 
 // Every cost above scales with the price (a plush refunds the price too): what other prices would do, from the same runs.
 console.log('\nBY PRICE (the same simulated grabs, scaled)');

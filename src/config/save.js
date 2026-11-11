@@ -6,7 +6,7 @@
 //   reasons     why the pause menu's Save & Quit is greyed out (the button shows the text).
 // =============================================================================
 export const save = {
-  version: 4, // 3: run skin choices and the challenge unlock receipt are saved; 4: and the per-run challenge counters
+  version: 5, // 5: Returns Desk appended to map.features; Speechless is transient, guns use the existing loadout save step
   storageKey: 'sunsetGalleria.save',
   reasons: {
     noRound: 'Not clocked in yet',

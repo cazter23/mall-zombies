@@ -70,6 +70,10 @@ export const deathReports = {
       cause: 'Fatal flash overexposure and mobbing by unvetted brand followers',
       tip: 'Associate Tip: Look away during flash photography windup to prevent blinding and stay clear of stream fans.',
     },
+    lastCustomer: {
+      cause: 'Terminal customer service escalation after advertised closing hours',
+      tip: 'Associate Tip: Sidestep the charge and let the vans stop her; attack while she recovers from the crash.',
+    },
   },
 
   // Your own hazard switch (config/hazards.js ids of hazards that hurt the player). Any other gets hazardDefault.
