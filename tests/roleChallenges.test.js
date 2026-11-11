@@ -102,7 +102,7 @@ const CASES = {
 test('every gun has exactly one role challenge, each with a counter and a sentence built from its own data', () => {
   assert.deepEqual(Object.keys(CASES).sort(), Object.keys(skins).sort());
   for (const [gunId, entries] of Object.entries(skins)) {
-    assert.deepEqual(entries.map(skin => skin.slot), [1, 2], gunId);
+    assert.equal(entries.filter(skin => skin.slot === 2).length, 1, gunId);
     const { challenge } = role(gunId);
     assert.ok(Number.isSafeInteger(challenge.count) && challenge.count > 0, gunId);
     const text = challengeText(challenge, weapons[gunId].name);

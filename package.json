@@ -15,6 +15,7 @@
     "melee": "node tools/meleeReport.mjs",
     "sim:claw": "node tools/clawSim.mjs",
     "sim:economy": "node tools/economySim.mjs",
+    "sim:challenges": "node tools/challengeReport.mjs",
     "balance:bab": "node tools/babReport.mjs"
   },
   "dependencies": {

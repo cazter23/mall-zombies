@@ -436,7 +436,7 @@ export function createViewmodel(weaponDefs, meleeDef, { skinFor = () => undefine
 
       // The gun's own moving parts (trigger, hands during the reload, charge state).
       const chargeProgress = weapon.def.id === active.def.id ? (weapon.chargeProgress ?? 0) : 0;
-      model.animate({ sinceFire, reloadProgress: reloadShown, reloadWeight: rw, chargeProgress });
+      model.animate({ sinceFire, reloadProgress: reloadShown, reloadWeight: rw, chargeProgress, time });
 
       // Melee: drop the gun aside, swap the left hand for the box cutter arm and slash.
       const mel = vm.melee;

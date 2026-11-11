@@ -18,6 +18,9 @@ src/
   boot.js               The page's entry point: waits for the web fonts (core/fontsReady.js, list and time limit in config/fonts.js), then imports main.js.
   config/
     skins.js            Eleven mastery role palettes, gunSkin lookup, kill challenges, permanent save key/version, contrast threshold, locker/preview and unlock/debug words.
+                        Also the role (slot 2) and feat (slot 3) skins: patterns (skinPatterns), treatments (skinTreatments), each feat's tracker words (`track`).
+    challengeBoard.js   The Challenges tab and the challenge tracker: maxPins (3), the pins' storage key/version, the board's words, slot tags, and the
+                        tracker's seconds (shown, struck through), words and soft fail sound.
                         Preserves Phase 1's Night Shift/Carbon Copy palettes; the other nine skins carry names and challenges for now.
     idle.js             Idle saver numbers: delays (short / normal / long: dim and sleep seconds), dimFps, muteWhenAsleep, pollSeconds
     haptics.js          Controller vibration intensity and per-gun/damage/pickup durations, motor strengths and priorities
@@ -297,6 +300,12 @@ src/
                         mount (build patch, warranty seal) is painted back to the body colour; front, back and underneath sample a blank strip. One canvas
                         per skin and layout, made on first use and shared by the gun in hand and its displays (userData.sharedSkinPattern: the locker's
                         release skips it); none in Node.
+      skinTreatments.js applySkinTreatment(root, def, skinId): a slot 3 skin's glow or motion (config/skins.js `treatment`, numbers in
+                        skinTreatments), applied by models/index.js after a build in that skin, which wraps the model's animate() to run it (state.time:
+                        the viewmodel's clock; the locker preview animates a display's root.userData.skinTreatment). Clones each material painted in the
+                        treatment's palette ROLE (roleColors) once and lights it with emissive light; a material that already glows is left alone. Kinds:
+                        pulse, edgeGlow, drift (intensity and colour per frame), shimmer (a DataTexture band as the emissive map, the lit meshes' UVs laid
+                        along the gun, the band slid by texture offset). No lights, no new meshes. peakGlow(treatment) <= skinTreatments.maxGlow.
       shortBarrel.js    Reversible front-segment geometry variants, preserving moving-parent transforms and owning both variants.
       loanerTag.js      The Courtesy Loaner's security tag and swinging card (reversible, like the other upgrade visuals).
       buildVisual.js    A finished gun's look: seam, patch and stitches in the stuffing's colour, lumps and leaking tufts when Overstuffed. Instanced, placed from the sticker and top mounts.
@@ -423,7 +432,10 @@ src/
     skinSave.js         createSkinSave({ storage, key }): the permanent { version, progress, unlocked, equipped } record. Also `replay` (what the round a Save & Quit will replay has already been paid; written by Save & Quit only) and `dirty` (memory holds something storage does not).
                         Counts and unlocks are keyed by gun and skin; memory updates flush on unlock/runEnd. Safe with
                         missing/corrupt/blocked storage; newer versions are protected from all writes. Debug clear can relock one challenge.
-    challenges.js       createChallenges({ events, state, save }): g.challenges, DOM-free event counter factories by challenge.kind (config/skins.js lists the kinds: kills, the role kinds of phase 6, and cleanMagazines, the one with per-run state, saved with the run). A round replayed after Save & Quit pays only what goes beyond what it was already paid; unsaved progress is written on runEnd, runSaved, runReset and flush() (the page closing).
+    challenges.js       createChallenges({ events, state, save }): g.challenges, DOM-free event counter factories by challenge.kind (config/skins.js lists the kinds: kills, the role kinds of phase 6, and cleanMagazines, the one with per-run state, saved with the run; the
+                        feat kinds of phase 7, whose progress is the best attempt (best(), idempotent, so no replay ledger) and which report the attempt in
+                        progress to the tracker ('challengeLive', challenges.attempt(gunId, skinId)); run feats save their state with the run, round feats
+                        are decided on the next 'roundStart' and void on a 'roundDiscard'). A round replayed after Save & Quit pays only what goes beyond what it was already paid; unsaved progress is written on runEnd, runSaved, runReset and flush() (the page closing).
                         Mastery counts kill.weaponId, ignores assisted/dead/fan kills, emits challengeProgress and skinUnlocked.
                         update/reset/snapshot cover per-run counters; finish handlers can finalize later round/run feats before saving.
     careerStats.js      createCareerStats({ storage }): versioned persistent employee record with lifetime totals,
@@ -790,7 +802,11 @@ src/
                         child processes, with economyBot.js (the bot: aims with error, kites, shops by TELEPORT from a buy order, immortal or mortal; records income by
                         source, purchases and the loadout each round) following economyPlans.js (PLANS = buy orders; PROPOSALS = config changes applied in memory only,
                         so a before/after is measured without touching src/config), beside economyModel.js (the maths: wave mix, points a zombie, the upgrade ladder);
-                        finished runs are kept in scratch/economy-sim/ (git-ignored) until the game's code or that plan changes; --quick for a short, noisy look
+                        finished runs are kept in scratch/economy-sim/ (git-ignored) until the game's code or that plan changes; --quick for a short, noisy look;
+                        challengeReport.mjs = `npm run sim:challenges` (weapon skins phase 8): plays economyBot.js (its onGame hook) once per gun the bot can use, that
+                        gun bought early as the main gun, every challenge's target lifted in memory so the game's own counters (game/challenges.js) show raw values;
+                        tables of what a run to rounds 10/15/20 gives each challenge, how many runs that makes, what other guns' challenges moved by accident and
+                        the bot's first death (its runs are immortal: "survive" feats mean nothing there); runs written to scratch/challenge-report/
   world/                Shared building blocks for maps
     mapKit.js           createMapKit(group, colliders): mat, addCollider, box, sign, tiledFloor, wall({ along, from, to,
                         at0, at1, height, openings: [{ from, to, top }] }) (doorways get lintels), shutterDoor({ id, label,
@@ -1001,6 +1017,21 @@ Boss groundwork: zombie.js owns timed buffs, source-bound holds and a behavior c
 - src/ui/locker.js: title locker DOM, mouse/keyboard/controller browsing, immediate equip persistence, and a turning buildWeaponDisplay preview. Its renderer, meshes, materials and textures exist only while open; main's idle-governed render loop drives it.
 - src/config/skins.js: eleven mastery role palettes, contrast threshold, locker words, preview settings and receipt copy.
 - src/game/challenges.js: also keeps this run's unlock list for the receipt, saved independently of permanent progress.
+
+### Challenges tab and tracker (skins phase 7)
+
+- src/game/challengeCatalog.js: DOM-free list of every challenge for the board and the tracker: categories (today one, weapon finishes) of
+  groups (a gun) of entries { id, name, tag, text, done(ctx), progress(ctx), track(ctx) }, ctx = { save, challenges }. A new kind of
+  unlockable adds a category here. catalogEntry(id) finds a pin's entry (null: one the catalogue no longer knows); skinPinId(gunId, skinId).
+- src/game/challengePins.js: createChallengePins({ storage }): the pinned ids in pin order, up to maxPins (toggle returns true / false / null
+  when full), written on every change under their own key; a newer stored version is left untouched; a blocked store keeps pins in memory.
+- src/ui/challengeBoard.js: the title screen's Challenges tab (a screens.js "book", like the locker, reusing its form styles): groups on the
+  left by category, the chosen group's challenges on the right with tag, sentence, progress and a pin; a line with the pin count (or "full"),
+  and a note while the tracker setting is off. Mouse, keyboard and pad.
+- src/ui/challengeTracker.js: createChallengeTracker() is the HUD view (ui/hud.js puts it under the round box; hud.setChallengeTrackerEnabled
+  from the 'challengeTracker' setting, off by default): show(lines, { changed, failed }) for showSeconds, then hides. connectChallengeTracker
+  (main.js) listens on 'challengeProgress' and 'challengeLive' for pinned challenges only; a failed attempt is struck through with a soft
+  sound, then dropped until that feat's next attempt; Play again and Continue clear it.
 
 ### Staff Survival Guide
 

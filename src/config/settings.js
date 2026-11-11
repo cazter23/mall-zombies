@@ -249,6 +249,11 @@ export const settingDefs = [
     apply: (v) => { feel.ads.toggle = v; },
   },
   {
+    id: 'challengeTracker', tab: 'Comfort', label: 'Challenge tracker', type: 'toggle', default: false,
+    hint: 'Shows the challenges you pinned (title screen › Challenges) under the round counter for a few seconds whenever one moves.',
+    apply: (v, ctx) => ctx.hud?.setChallengeTrackerEnabled?.(v),
+  },
+  {
     id: 'dimPhoneFlash', tab: 'Comfort', label: 'Dim instead of phone flashes', type: 'toggle', default: false,
     apply: v => { bossComfort.dimPhoneFlash = v; },
   },

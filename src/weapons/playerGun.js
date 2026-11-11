@@ -153,7 +153,7 @@ export function createPlayerGun({
       if (killed) effects.splat(hit.point, hit.normal, hit.target.splatColors, feel.effects.splatCount, { flesh: true, speedScale: 1, direction });
       if (paid) {
         paidAny = true;
-        if (onHit) onHit({ target: hit.target, killed, headshot: false, melee: false });
+        if (onHit) onHit({ target: hit.target, killed, headshot: false, melee: false, weaponId: d.id });
       }
     }
     if (paidAny) {
@@ -197,7 +197,7 @@ export function createPlayerGun({
         if (!counted) { counted = true; onProjectileHit?.(); }
         effects.splat(point, normal, target.splatColors, headshot ? feel.effects.headshotSplatCount : feel.effects.splatCount,
           { flesh: true, speedScale: Math.sqrt(Math.max(1, d.impact?.deathImpulse ?? 1)) * (headshot ? 1.2 : 1), direction: hitDirection });
-        if (onHit) onHit({ target, killed, headshot, melee: false });
+        if (onHit) onHit({ target, killed, headshot, melee: false, weaponId: d.id });
         hud.showHitMarker({ headshot, killed });
         if (sound) {
           sound.play(headshot ? 'hitHead' : 'hitBody');
@@ -313,7 +313,7 @@ export function createPlayerGun({
             direction,
           });
       }
-      if (onHit) onHit({ target, killed, headshot, melee: false });
+      if (onHit) onHit({ target, killed, headshot, melee: false, weaponId: d.id });
     }
     if (targets.size > 0) {
       const isHead = d.pellets ? anyHeadshot : shot.hits[0].part === 'head';

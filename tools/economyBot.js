@@ -12,7 +12,8 @@
 //     see rounds 15 to 30 (mortal bots die around round 6 to 8), so late-round income is "what the game pays if you get there".
 //   - Its skill is two fixed settings (SKILLS). Trust the shape of a curve and the gap between two set-ups, not a single number.
 //
-//   runBot({ seed, skill, plan, maxRound, immortal }) -> { outcome, round, earned, spent, rounds: [per round], purchases, ... }
+//   runBot({ seed, skill, plan, maxRound, immortal, onGame }) -> { outcome, round, earned, spent, rounds: [per round], purchases, ... }
+//   onGame(g): called once the game is built, before round 1 (tools/challengeReport.mjs listens to its events)
 // Ported from the review bot of 9 November 2026 (docs/history.md); the claw step and the income split are new.
 // =============================================================================
 
@@ -73,9 +74,10 @@ export const defaultBase = (g) => (g.map.zones.hallway.open ? { x: 0, y: 0, z: 2
 /** What a plan step is called in the tables: "tier:rivetRifle", "door:atrium". */
 export const stepLabel = (step) => `${step.type}:${step.id ?? step.area ?? step.gun ?? ''}`;
 
-export function runBot({ seed = 1, skill = 'average', plan = [], maxRound = 30, immortal = false, maxSeconds = 2 * 3600, base = defaultBase } = {}) {
+export function runBot({ seed = 1, skill = 'average', plan = [], maxRound = 30, immortal = false, maxSeconds = 2 * 3600, base = defaultBase, onGame = null } = {}) {
   const S = typeof skill === 'string' ? SKILLS[skill] : skill;
   const t = headlessGame(), { g, input } = t;
+  onGame?.(g);
   t.tick(1);
   const rand = mulberry(seed * 7919 + 13);
   Math.random = rand; // (after the map is built: CLAUDE.md)
