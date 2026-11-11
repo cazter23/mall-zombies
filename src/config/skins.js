@@ -83,6 +83,8 @@ export const skins = {
   leafBlower: [{ id: 'autumn-gold', name: 'Autumn Gold', slot: 1,
     palette: { body: 0x51402b, dark: 0x2d281e, metal: 0xbeb099, grip: 0x27231d, accent: 0xedc77f, sight: 0xffefb0 }, challenge: mastery(400) }, {
     id: 'lawn-and-garden', name: 'Lawn & Garden', slot: 2,
+    palette: { body: 0x2f4a06, dark: 0x1a2a03, metal: 0xd0d4b8, grip: 0x1e2116, accent: 0xfff4cc, sight: 0xfff0b0 },
+    pattern: { kind: 'gingham', ink: 0xfff4cc, size: 0.011, alpha: 0.45 }, // picnic blanket
     challenge: { kind: 'stoppedAttacks', count: 100, needs: ['claw'], text: 'Blow {count} zombies out of an attack with the {gun}.' },
   }],
   tennisBallLauncher: [{ id: 'centre-court', name: 'Centre Court', slot: 1,
