@@ -45,6 +45,8 @@ export const skins = {
   nailGun: [{ id: 'aftermarket', name: 'Aftermarket', slot: 1,
     palette: { body: 0x393e35, dark: 0x20271f, metal: 0xaab4a0, grip: 0x24241d, accent: 0xe7b36b, sight: 0xf7e1a0 }, challenge: mastery(400) }, {
     id: 'measure-twice', name: 'Measure Twice', slot: 2,
+    palette: { body: 0x1a26c0, dark: 0x101878, metal: 0xc6d0ea, grip: 0x161a2e, accent: 0xe8f0ff, sight: 0xfff0a8 },
+    pattern: { kind: 'grid', ink: 0xbcd4ff, spacing: 0.008, width: 0.0006, majorEvery: 5, majorWidth: 0.0015 }, // blueprint paper
     challenge: { kind: 'cleanMagazines', count: 25, minShots: 10,
       text: 'Empty {count} magazines of the {gun} ({minShots} nails or more) without a single nail missing.' },
   }],
