@@ -759,7 +759,9 @@ src/
   play.cmd              Double-click version of `npm run play`. tools/play.mjs rebuilds the single file if the source is newer, keeps the last good build if that fails, and opens it in Firefox (the Windows default for .html may be another browser).
   (tools/)              Dev scripts (not bundled): runTests.mjs = `npm test` (node --test with a cap on how many test files run at once: 4, or
                         MALL_TEST_JOBS; `npm test -- tests/x.test.js` runs only those files; testQuick.mjs runs its selection through it too, so
-                        no test command starts node's default of one process per CPU thread, ~9 GB when every file builds the mall);
+                        no test command starts node's default of one process per CPU thread, ~9 GB when every file builds the mall;
+                        a run of more than 8 files takes a lock file in the system temp folder, shared by every worktree and tool, and
+                        waits while another big run holds it; a dead or 30-min-old lock is taken over; tests/testRunner.test.js);
                         buildSingle.mjs = `npm run build:single` (a normal Vite build into dist-single/, then the JS, CSS and
                         the music worker (as a Blob worker) pasted into ONE html file; the Google Fonts link loads non-blocking so a blocked
                         network just falls back to system fonts; tests/singleFile.test.js builds it and checks it is self-contained); balance.js = gun balance maths shared with the tests (seeded Monte Carlo of each

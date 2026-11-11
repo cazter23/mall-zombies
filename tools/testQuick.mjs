@@ -1,6 +1,7 @@
 // =============================================================================
 // QUICK TESTS (npm run test:quick): run only the tests your change can affect, plus a small fast core set. The full suite
-// (npm test) is for before a merge; this is for the edit-test loop. Both cap how many files run at once (tools/runTests.mjs).
+// (npm test) is for before a merge; this is for the edit-test loop. Both cap how many files run at once, and a selection of more
+// than 8 files waits for any other big run on this PC to finish first (tools/runTests.mjs).
 //
 //   npm run test:quick                 changed files (vs main, plus uncommitted and new files) -> the tests that guard them + the core set
 //   npm run test:quick -- --list       print the plan and run nothing
@@ -107,6 +108,6 @@ if (flag('list')) process.exit(0);
 
 // Through the shared runner, so quick runs keep the same cap on files at once as npm test (tools/runTests.mjs).
 const started = Date.now();
-const status = runTests(chosen.map((t) => join('tests', t)));
+const status = await runTests(chosen.map((t) => join('tests', t))); // (a big selection waits for the lock like npm test)
 console.log(`\ntest:quick finished in ${((Date.now() - started) / 1000).toFixed(1)} s (${chosen.length}/${testFiles.length} files, ${testJobs()} at a time)`);
 process.exit(status);

@@ -1,5 +1,18 @@
 # Sunset Galleria: build history ("Current state")
 
+## 11 November 2026 - One big test run at a time, and AGENTS.md / GEMINI.md
+
+- **The lock.** A test run of more than 8 files (npm test, or a big test:quick selection) takes a lock file in the system temp folder
+  (`sunset-galleria-tests.lock`), which every worktree and every tool on the PC shares. A second big run waits and says whose run it is
+  waiting for ("Waiting for the run from closing-time-7 (pid ..., 157 files, started 14:05)"). Runs of 8 files or fewer never wait, so
+  fixing one failure never queues. A lock whose process is gone (a run killed by an agent's timeout) or that is over 30 minutes old is
+  taken over. Checked for real: two 9-file runs started together, the second waited 2 s and then ran; the lock file was gone after.
+- **AGENTS.md (Codex) and GEMINI.md (Gemini, Antigravity)** point those tools at CLAUDE.md, which they did not read before, and repeat
+  the testing rules: only through npm, never a bare `node --test` on many files, rerun only the failing file while fixing, the full suite
+  once at the end, long timeouts for a run that waits. CLAUDE.md gained the same habits as one rule.
+- Until a worktree merges or rebases on main it still has the old runner; the lock only counts runs made through the new one.
+- Shared files: tools/runTests.mjs, tools/testQuick.mjs, CLAUDE.md, AGENTS.md (new), GEMINI.md (new), docs.
+
 ## 11 November 2026 - The test runner caps how many test files run at once
 
 - **Why: the PC froze while agents worked.** The machine has 16 GB of RAM. `node --test` runs one file per CPU thread minus one (19 here),
