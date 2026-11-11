@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { menuDom } from './helpers/menuDom.js';
 import { createSkinSave } from '../src/game/skinSave.js';
-import { skins, locker as cfg, skinStorage } from '../src/config/skins.js';
+import { skins, challengeText, locker as cfg, skinStorage } from '../src/config/skins.js';
 import { weapons } from '../src/config/weapons.js';
 import { createLocker, createLockerPreview } from '../src/ui/locker.js';
 
@@ -42,7 +42,7 @@ test('locker lists all eleven guns, Default and readable locked challenge/progre
   const locked = t.skin('night-shift');
   assert.equal(locked.classList.contains('locked'), true);
   assert.equal(locked.getAttribute('aria-disabled'), 'true');
-  assert.ok(locked.textContent.includes(cfg.challenge(weapons.stapleGun.name, 400)));
+  assert.ok(locked.textContent.includes(challengeText(skins.stapleGun[0].challenge, weapons.stapleGun.name)));
   assert.ok(locked.textContent.includes('212 / 400'));
   locked.click();
   assert.equal(t.writes, 0);
@@ -136,4 +136,25 @@ test('real preview releases every model geometry, material and label texture on 
   assert.ok(second.every(({ calls }) => calls === 1));
   assert.equal(host.children.length, 0);
   assert.equal(draws, 2); assert.equal(disposed, 1); assert.equal(lost, 1);
+});
+
+test('every gun lists Default, its mastery and its role skin, each challenge readable with its progress from the start', () => {
+  const t = fixture();
+  t.save.record('nailGun', 'measure-twice', 7);
+  for (const [gunId, def] of Object.entries(weapons)) {
+    t.gun(gunId).click();
+    const rows = t.locker.element.querySelectorAll('.locker-skin');
+    assert.deepEqual(rows.map(row => row.dataset.skin), ['default', ...skins[gunId].map(skin => skin.id)], gunId);
+    for (const skin of skins[gunId]) {
+      const row = t.skin(skin.id);
+      assert.equal(row.classList.contains('locked'), true);
+      assert.ok(row.textContent.includes(skin.name));
+      assert.ok(row.textContent.includes(challengeText(skin.challenge, def.name)), `${gunId}/${skin.id}`);
+      const count = gunId === 'stapleGun' && skin.slot === 1 ? 212 : gunId === 'nailGun' && skin.slot === 2 ? 7 : 0;
+      assert.ok(row.textContent.includes(`${count} / ${skin.challenge.count}`), `${gunId}/${skin.id}: ${row.textContent}`);
+    }
+  }
+  t.gun('nailGun').click();
+  assert.ok(t.skin('measure-twice').textContent.includes('Empty 25 magazines of the Nail Gun (10 nails or more) without a single nail missing.'));
+  t.screens.show('title');
 });

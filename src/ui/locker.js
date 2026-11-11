@@ -1,6 +1,6 @@
 // Plain DOM, driven by the main loop so the title idle saver also stops the preview.
 import * as THREE from 'three';
-import { skins, gunSkin, locker as cfg } from '../config/skins.js';
+import { skins, gunSkin, challengeText, locker as cfg } from '../config/skins.js';
 import { weapons } from '../config/weapons.js';
 import { buildWeaponDisplay } from '../weapons/models/index.js';
 
@@ -124,7 +124,7 @@ export function createLocker({ save, onBack, createPreview = createLockerPreview
       const name = document.createElement('b');
       name.textContent = skin.name;
       const description = document.createElement('span');
-      description.textContent = skin.challenge ? cfg.challenge(def.name, skin.challenge.count) : cfg.defaultDescription;
+      description.textContent = skin.challenge ? challengeText(skin.challenge, def.name) : cfg.defaultDescription;
       const status = document.createElement('small');
       const progress = skin.challenge ? cfg.progress(save.progress(selectedGun, skin.id), skin.challenge.count) : '';
       status.textContent = [progress, equipped === skin.id ? cfg.equipped : unlocked ? cfg.available : cfg.locked].filter(Boolean).join(' · ');

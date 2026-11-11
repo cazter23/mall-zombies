@@ -410,7 +410,7 @@ src/
     skinSave.js         createSkinSave({ storage, key }): the permanent { version, progress, unlocked, equipped } record. Also `replay` (what the round a Save & Quit will replay has already been paid; written by Save & Quit only) and `dirty` (memory holds something storage does not).
                         Counts and unlocks are keyed by gun and skin; memory updates flush on unlock/runEnd. Safe with
                         missing/corrupt/blocked storage; newer versions are protected from all writes. Debug clear can relock one challenge.
-    challenges.js       createChallenges({ events, state, save }): g.challenges, DOM-free event counter factories by challenge.kind. A round replayed after Save & Quit pays only what goes beyond what it was already paid; unsaved progress is written on runEnd, runSaved, runReset and flush() (the page closing).
+    challenges.js       createChallenges({ events, state, save }): g.challenges, DOM-free event counter factories by challenge.kind (config/skins.js lists the kinds: kills, the role kinds of phase 6, and cleanMagazines, the one with per-run state, saved with the run). A round replayed after Save & Quit pays only what goes beyond what it was already paid; unsaved progress is written on runEnd, runSaved, runReset and flush() (the page closing).
                         Mastery counts kill.weaponId, ignores assisted/dead/fan kills, emits challengeProgress and skinUnlocked.
                         update/reset/snapshot cover per-run counters; finish handlers can finalize later round/run feats before saving.
     careerStats.js      createCareerStats({ storage }): versioned persistent employee record with lifetime totals,
