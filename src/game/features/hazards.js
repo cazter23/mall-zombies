@@ -165,7 +165,7 @@ export function createHazard({
   onStop,
   note = null, // optional () => text | null: one more term on the switch's own prompt (the fountain's closing-duty count)
 }) {
-  const { scene, map, events, pricing, interactions, player, stats, health, state, sound, effects } = ctx;
+  const { scene, map, events, pricing, interactions, player, health, state, sound, effects, surfaces } = ctx;
   const { rig, setPhaseVisual } = buildHazardSwitchBox({
     position: feature.position,
     normal: feature.normal,
@@ -176,17 +176,14 @@ export function createHazard({
   let phase = 'ready'; // 'ready' | 'active' | 'cooldown'
   let timer = 0;
   let pulseTimer = 0;
-  let slowingPlayer = false;
+  // The player's slow goes through game/surfaceSlows.js like every other floor slow (a boss's wet floor, Scoops' melt):
+  // this hazard reports its own factor under its own source name and clears it, so it never overwrites or wipes another's.
+  const slowSource = `hazard:${cfg.id}`;
 
   function applyPlayerSlow(inside) {
     const shouldSlow = inside && !state.over && phase === 'active' && cfg.playerSlowFactor < 1;
-    if (shouldSlow) {
-      slowingPlayer = true;
-      if (stats.surfaceSpeed > cfg.playerSlowFactor) stats.surfaceSpeed = cfg.playerSlowFactor;
-    } else if (slowingPlayer) {
-      slowingPlayer = false;
-      if (stats.surfaceSpeed === cfg.playerSlowFactor) stats.surfaceSpeed = 1;
-    }
+    if (shouldSlow) surfaces.set(slowSource, cfg.playerSlowFactor);
+    else if (surfaces.factorOf(slowSource) < 1) surfaces.clear(slowSource);
   }
 
   function runPulse(isOpening = false) {

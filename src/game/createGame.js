@@ -610,7 +610,7 @@ export function createGame({
   const wardrobe = createWardrobe({ stats, player, events });
   const features = buildFeatures(map, {
     scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state, warranty, meleeUpgrades, wardrobe,
-    colliders, effects, sound, input, tickets, shootables, aimAssist, secondChance, equipment, closing, skins,
+    colliders, effects, sound, input, tickets, shootables, aimAssist, secondChance, equipment, closing, skins, surfaces,
   });
   const kevin = features.list.find(({ feature }) => feature.kind === 'kiosk')?.instance;
 

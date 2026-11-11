@@ -257,6 +257,37 @@ test('player standing in the active fountain takes shock damage and is slowed, t
   assert.ok(g.stats.health >= healthOutside, 'no shock damage while outside the ring');
 });
 
+test('a hazard slows the player through game/surfaceSlows.js: it never overwrites or wipes another source\'s slow (a boss wet floor, a melt)', (t) => {
+  const game = headlessGame();
+  t.after(() => game.g.map.dispose());
+  const { g } = game;
+  game.tick(1);
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  g.map.areaUnlocks.unlock('atrium');
+  const fountain = getFountainInstance(g);
+  g.health.invulnerable = true; // (the whole activation, standing in the ring, would kill the player: that is not this test)
+  game.standAt(cfg.center.x - 5, cfg.center.z, 0); // inside the ring, clear of the basin
+
+  // A stronger slow from another source wins while both run; the fountain's own slot holds its factor.
+  fountain.trigger();
+  g.surfaces.set('testFloor', 0.5);
+  game.tick(2);
+  assert.equal(g.surfaces.factorOf(`hazard:${cfg.id}`), cfg.playerSlowFactor, 'the fountain reports its slow as its own source');
+  assert.equal(g.stats.surfaceSpeed, 0.5, 'the lowest slow wins');
+
+  // A weaker one: the fountain decides, and when the fountain ends the other slow is still there (not reset to 1).
+  g.surfaces.set('testFloor', 0.9);
+  game.tick(1);
+  assert.equal(g.stats.surfaceSpeed, cfg.playerSlowFactor);
+  game.tick(Math.ceil(cfg.durationSeconds / dt) + 2);
+  assert.equal(fountain.phase, 'cooldown');
+  assert.equal(g.surfaces.factorOf(`hazard:${cfg.id}`), 1, 'the fountain cleared its own slot');
+  assert.equal(g.stats.surfaceSpeed, 0.9, "the other source's slow survives the fountain ending");
+  g.surfaces.clear('testFloor');
+  assert.equal(g.stats.surfaceSpeed, 1);
+});
+
 test('Play again (resetRun) clears active hazard state, cooldowns, visuals, and player slow (snapshot equality)', (t) => {
   const game = headlessGame();
   t.after(() => game.g.map.dispose());

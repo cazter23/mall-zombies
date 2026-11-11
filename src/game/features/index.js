@@ -10,7 +10,7 @@
 //
 // ctx (from createGame, built after its core event wiring, so a feature's listeners run after payouts/stats):
 //   { scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state, warranty, meleeUpgrades, wardrobe,
-//     colliders, effects, sound, input, tickets, shootables, aimAssist, secondChance, equipment, closing }
+//     colliders, effects, sound, input, tickets, shootables, aimAssist, secondChance, equipment, closing, skins, surfaces }   (surfaces: game/surfaceSlows.js, where a feature reports a floor slow on the player)
 // =============================================================================
 
 import { buildWallBuy } from './wallBuy.js';
