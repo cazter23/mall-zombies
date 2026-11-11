@@ -974,3 +974,10 @@ Boss groundwork: zombie.js owns timed buffs, source-bound holds and a behavior c
 - src/ui/locker.js: title locker DOM, mouse/keyboard/controller browsing, immediate equip persistence, and a turning buildWeaponDisplay preview. Its renderer, meshes, materials and textures exist only while open; main's idle-governed render loop drives it.
 - src/config/skins.js: eleven mastery role palettes, contrast threshold, locker words, preview settings and receipt copy.
 - src/game/challenges.js: also keeps this run's unlock list for the receipt, saved independently of permanent progress.
+
+### Staff Survival Guide
+
+- src/config/guide.js: every page of the book (`guideEntries`: section, the zombie type shown, name, health against a Shopper, first round, `notesAt` / `tipAt` kills, memo, notes, tip), `guideEntryId(type)` (which page a zombie belongs on), `guideStage`, the PA line, the screen's words, theme and preview settings, and the storage key and version. Numbers in the text are read from config/zombies.js, bosses.js and economy.js, never typed.
+- src/game/guideSave.js: the permanent record (`seen`, `kills`, and `replay` for a Save & Quit round) in its own localStorage key. `see`, `add`, `flush` (merges another tab, never overwrites a newer version), `dirty`, `clear` (debug).
+- src/game/guide.js: `createGuide({ events, state, save })`, built in createGame as `g.guide`. Sightings from the arrival events, kills from 'kill', 'guideEntry' out. `pages()` for a reader, `flush()` for the closing page, `reset()` as a reset step (transient: the replay count lives in the record), `debug(...)`.
+- src/ui/guide.js: the title screen's book (`createGuideScreen`) and its turning model (`createGuidePreview`: a real Zombie that is never ticked, posed by its own model). Opened and closed by ui/screens.js like the locker.

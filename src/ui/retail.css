@@ -950,3 +950,43 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   .locker-guns { grid-template-columns: 1fr 1fr; }
   .locker-preview { height: 220px; }
 }
+
+/* The Staff Survival Guide (ui/guide.js): an index, the turning subject and its page. Colours: config/guide.js theme. */
+.guide-screen { overflow-y: auto; align-items: safe center; }
+.guide-card { width: min(1180px, 94vw); max-width: none; margin: auto; padding: 28px 36px; }
+.guide-card h1 { margin: 4px 0 18px; font-size: 38px; }
+.guide-layout { display: grid; grid-template-columns: 250px 300px minmax(0, 1fr); gap: 26px; align-items: start; }
+.guide-index { display: grid; gap: 18px; }
+.guide-section { display: grid; gap: 3px; }
+.guide-section h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .12em; margin: 0; }
+.guide-blurb { margin: 0; font-size: 11px; line-height: 1.4; color: var(--guide-lockedInk); }
+.guide-count { font-size: 11px; font-weight: 700; margin-bottom: 5px; color: var(--guide-stamp); }
+.guide-entry { display: flex; justify-content: space-between; gap: 8px; width: 100%; text-align: left; padding: 7px 12px; font-size: 15px; }
+.guide-entry small { color: var(--guide-stamp); letter-spacing: .08em; }
+.guide-entry.unknown { color: var(--guide-lockedInk); border-style: dashed; }
+.guide-entry[aria-pressed="true"] { border-left: 4px solid var(--guide-stamp); background: var(--guide-selected); }
+.guide-preview { position: relative; height: 420px; background: var(--guide-preview); border: 1px solid var(--guide-edge); overflow: hidden; }
+.guide-preview canvas { display: block; width: 100%; height: 100%; }
+.guide-preview.unknown canvas { visibility: hidden; }
+.guide-preview.unknown::after { content: '?'; position: absolute; inset: 0; display: grid; place-items: center; font: 700 140px/1 var(--font-ui); color: rgba(255, 255, 255, .16); }
+.guide-page { min-height: 420px; color: var(--guide-ink); }
+.guide-page h2 { margin: 0; font-size: 30px; line-height: 1.1; }
+.guide-page h3 { margin: 16px 0 5px; font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: var(--guide-stamp); }
+.guide-page p, .guide-page li { font-size: 14px; line-height: 1.55; margin: 0; }
+.guide-title { font-weight: 700; text-transform: uppercase; letter-spacing: .1em; font-size: 12px !important; margin-bottom: 12px !important; }
+.guide-facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px 14px; margin: 0; padding: 10px 0; border-top: 1px solid var(--guide-edge); border-bottom: 1px solid var(--guide-edge); }
+.guide-facts dt { grid-row: 1; font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--guide-lockedInk); }
+.guide-facts dd { grid-row: 2; margin: 0; font-size: 15px; font-weight: 700; }
+.guide-memo { font-style: italic; }
+.guide-notes { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+.guide-tip { padding: 10px 12px; border-left: 4px solid var(--guide-stamp); background: var(--guide-selected); }
+.guide-locked { margin-top: 14px !important; padding: 9px 12px; border: 1px dashed var(--guide-edge); background: var(--guide-lockedPaper); color: var(--guide-lockedInk); font-size: 12px !important; }
+.guide-card > .menu-row { margin-top: 20px; }
+@media (max-width: 980px) {
+  .guide-card { padding: 20px; }
+  .guide-layout { grid-template-columns: 1fr; gap: 18px; }
+  .guide-section { grid-template-columns: 1fr 1fr; }
+  .guide-section h2, .guide-blurb, .guide-count { grid-column: 1 / -1; }
+  .guide-preview { height: 260px; }
+  .guide-page { min-height: 0; }
+}
