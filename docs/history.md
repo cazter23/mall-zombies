@@ -1,5 +1,16 @@
 # Sunset Galleria: build history ("Current state")
 
+## 11 November 2026 - The Survival Guide gets its own look: a ring binder with a survivor's handwriting
+
+- **Why.** The first version was the weapon locker's card with different words. The user asked for a look unlike every other menu.
+- **The idea: two voices.** The staff memo is the company's printed page (serif, letterhead, form number). The field notes are a survivor's blue pen over the top of it (Caveat), with tally marks for kills. The tip is a yellow sticky note headed in marker (Permanent Marker). So a page visibly gets more lived-in as it fills: a fresh one looks like HR printed it yesterday. The notes were reworded into the first person to match (numbers still read from config).
+- **The object.** A vinyl binder with stitching and a paper label; divider tabs for Customers and Management; one sheet on three rings with a coffee ring and a dog-eared corner. The model is a security-camera still (CAM number, scanlines) in a Polaroid: taped on for customers, paper-clipped for a boss, whose sheet is a "Personnel file" with one extra line (Employment status: Ongoing, regrettably). A rubber stamp says how far the page has got (Sighted, Documented, Resolved). An unseen page is a blank form with "No report filed" and NO SIGNAL on the camera.
+- **Turning a page** flicks the sheet (0.22 s, off under prefers-reduced-motion) and plays a new synthesised sound, `pageTurn` (config/audio.js), through the screen's `onTurn` callback. It fires only when a different page is shown.
+- No new fonts: Caveat, Permanent Marker, Fraunces and Playfair Display were already loaded for signs. Readable sizes follow the Text size setting (`--ui-text-scale`). There is no setting that swaps handwriting for plain type; the handwriting is set large (21 px) instead.
+- Not changed: the record, the counters and their tests. tests/guideScreen.test.js gained three tests and one updated (new wording for "how many more").
+- A note for browser checks: in a HIDDEN pane, after several reloads of the same tab, opening the guide (or the locker: both make a WebGL context) could block for over 45 s. A fresh tab opened it in under half a second. It was the tab, not the code.
+- Shared files: config/audio.js (one sound), main.js (two lines), ui/retail.css (the guide block only), docs.
+
 ## 10 November 2026 - The Staff Survival Guide: a log of every zombie type and boss
 
 - **What it is.** A book off the title screen ("Survival guide", under the weapon locker) with a page for each of the nine customers (Shopper, Mall Walker, Cart Pusher, Mannequin, the four Mascot costumes, the gold Employee of the Month) and the four bosses. A page appears when its subject is first seen and fills in by kills across all shifts: the staff memo at once, the field notes at `notesAt` kills, the tip at `tipAt` (Shopper 50 / 500 down to a boss's 1 / 3). Unseen pages are "???" with no model. Nothing in it pays anything.

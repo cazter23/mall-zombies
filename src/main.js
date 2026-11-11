@@ -58,6 +58,7 @@ import { createSkinSave } from './game/skinSave.js';
 import { createLocker } from './ui/locker.js';
 import { createGuideSave } from './game/guideSave.js';
 import { createGuideScreen } from './ui/guide.js';
+import { guide as guideCfg } from './config/guide.js';
 
 // --- Renderer, scene, camera ---------------------------------------------------
 
@@ -93,7 +94,9 @@ const gamepad = createGamepad(input); // feeds controller buttons/sticks into `i
 const skinSave = createSkinSave();
 const locker = createLocker({ save: skinSave, onBack: () => hud.screens.show('title') });
 const guideSave = createGuideSave();
-const guideScreen = createGuideScreen({ save: guideSave, onBack: () => hud.screens.show('title') });
+const guideScreen = createGuideScreen({
+  save: guideSave, onBack: () => hud.screens.show('title'), onTurn: () => sound.play(guideCfg.turnSound), // (sound is made just below)
+});
 const hud = createHud({ locker, guide: guideScreen });
 const noticesMenu = createNoticesMenu(hud.history);
 const sound = createSound(); // synthesized sound effects (starts on the first click/key press)

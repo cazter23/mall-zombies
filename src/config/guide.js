@@ -2,6 +2,8 @@
 // THE STAFF SURVIVAL GUIDE: a permanent log of every zombie type and boss, opened from the title (ui/guide.js).
 // A page appears when its subject is first seen, and fills in by KILLS across all shifts (game/guide.js counts them,
 // game/guideSave.js keeps them): the memo at once, the field notes at `notesAt` kills, the tip at `tipAt`.
+// TWO VOICES: the memo is the company's printed page; the notes and the tip are a survivor's handwriting on top of it
+// (first person, in pen, then a sticky note). Keep them apart when adding a page.
 // Every number a page quotes is read from the config it describes, so a balance change can't leave the guide lying.
 // No page pays anything: the guide is a record, not a perk.
 // =============================================================================
@@ -29,7 +31,7 @@ function mascotPage(variant, { memo, twist, tip, notesAt = 3, tipAt = 12 }) {
     id: variant, section: 'customers', type: mascotTypes[variant], name: mascotVariants[variant].name, title: 'Mascot',
     health: mix.mascot.healthMultiplier, firstSeen: `Round ${mascotVariants[variant].unlockRound}`, notesAt, tipAt, memo,
     notes: [
-      `Slow (${mascotTypes[variant].speed} m/s) and padded. At ${pct(mascot.healthFraction)} health the helmet pops off; it shakes for a moment, then rushes at ${mascot.exposedSpeed} m/s. You walk at ${feel.movement.walkSpeed}.`,
+      `Slow (${mascotTypes[variant].speed} m/s) and padded. At ${pct(mascot.healthFraction)} health the helmet pops off, it shakes for a moment, then it RUNS at ${mascot.exposedSpeed} m/s. I walk at ${feel.movement.walkSpeed}.`,
       twist,
     ].filter(Boolean),
     tip,
@@ -42,7 +44,7 @@ function bossPage(type, page) {
   return {
     id: type.id, section: 'management', type, name: type.name, title: type.title, health: type.healthMultiplier,
     firstSeen: `Round ${rounds(type.firstRounds)}`, notesAt: 1, tipAt: 3, ...page,
-    notes: [...page.notes, reward ? `Leaves behind: ${titleCase(reward)}.` : null].filter(Boolean),
+    notes: [...page.notes, reward ? `Left behind when I got them: ${titleCase(reward)}.` : null].filter(Boolean),
   };
 }
 
@@ -61,8 +63,8 @@ export const guideEntries = [
     health: 1, firstSeen: 'Round 1', notesAt: 50, tipAt: 500,
     memo: 'Arrived for the sale. Did not leave. Nobody has told them the sale is over, and staff are advised not to volunteer.',
     notes: [
-      `Shambles straight at you and swings when close: ${shopper.attack.damage} damage a hit.`,
-      'In later rounds some of them jog, then run, and all of them wind up their swing sooner.',
+      `They walk straight at me and swing when they get close. ${shopper.attack.damage} damage a hit.`,
+      'Later on some of them jog, then run. They all swing sooner too.',
     ],
     tip: 'A headshot does more than a body shot with every gun, and twice as much with some. Let them bunch up in a doorway and aim high.',
   },
@@ -71,8 +73,8 @@ export const guideEntries = [
     health: mix.mallWalker.healthMultiplier, firstSeen: `Round ${mix.mallWalker.fromRound}`, notesAt: 25, tipAt: 150,
     memo: 'Has completed eleven thousand laps of the upper level. Stops for nothing, except, briefly, their own lungs.',
     notes: [
-      `Fast: ${mallWalker.speed} m/s. You walk at ${feel.movement.walkSpeed} and sprint at ${feel.movement.sprintSpeed}, so backing away does not work.`,
-      `After every swing, hit or miss, it stands panting for ${mallWalker.winded.standSeconds} seconds, then follows at ${pct(mallWalker.winded.slowSpeedFraction)} speed for a moment.`,
+      `FAST. ${mallWalker.speed} m/s. I walk at ${feel.movement.walkSpeed} and sprint at ${feel.movement.sprintSpeed}, so backing away doesn't work.`,
+      `After every swing, hit or miss, it stops to pant for ${mallWalker.winded.standSeconds} seconds, then follows at ${pct(mallWalker.winded.slowSpeedFraction)} speed for a moment.`,
     ],
     tip: 'Let it swing at you and step out of reach, then shoot while it has its hands on its knees.',
   },
@@ -81,8 +83,8 @@ export const guideEntries = [
     health: mix.cartPusher.healthMultiplier, firstSeen: `Round ${mix.cartPusher.fromRound}`, notesAt: 15, tipAt: 75,
     memo: 'Customer and trolley have been inseparable since the incident in the adhesives aisle.',
     notes: [
-      `With a clear lane to you from ${cartPusher.charge.minRange} to ${cartPusher.charge.maxRange} metres away it stops, rattles the cart for ${cartPusher.charge.telegraphSeconds} seconds, then charges in a straight line for ${cartPusher.charge.damage} damage.`,
-      'The direction locks when the rattle ends. Furniture in the lane stops it charging at all.',
+      `Give it a clear lane from ${cartPusher.charge.minRange} to ${cartPusher.charge.maxRange} metres and it stops, rattles the cart for ${cartPusher.charge.telegraphSeconds} seconds, then charges dead straight. ${cartPusher.charge.damage} damage.`,
+      "It picks its direction when the rattle ends. It won't charge through furniture.",
     ],
     tip: `Sidestep the charge. A miss leaves it slumped over the cart for ${cartPusher.charge.crashSeconds} seconds, taking ${extra(cartPusher.charge.crashDamageTakenMultiplier)} more damage.`,
   },
@@ -91,29 +93,29 @@ export const guideEntries = [
     health: mix.mannequin.healthMultiplier, firstSeen: `Round ${mix.mannequin.fromRound}`, notesAt: 10, tipAt: 40,
     memo: 'Was not in that position yesterday. Was not on that floor yesterday. Visual Merchandising deny all knowledge.',
     notes: [
-      `Cannot move while you are looking at it. Moves at ${mannequin.speed} m/s when you are not, faster than you walk.`,
-      `Never more than ${mix.mannequin.maxAlive} in the mall at once.`,
+      `Can't move while I'm looking at it. Does ${mannequin.speed} m/s when I'm not. That's faster than I walk.`,
+      `Never seen more than ${mix.mannequin.maxAlive} at once.`,
     ],
     tip: 'Kill it first, or keep it on screen while you deal with the rest. The click you hear is one coming unstuck.',
   },
   mascotPage('sirWaffles', {
     memo: 'The Food Court\'s breakfast knight. The costume was rented by the hour. The hour has been going on for some time.',
-    twist: `Never more than ${mix.mascot.maxAlive} Mascots at once, whatever they are wearing.`,
+    twist: `Never more than ${mix.mascot.maxAlive} Mascots at once, whatever they're wearing.`,
     tip: 'Do the first half of the damage from a distance, and have somewhere to run before the helmet comes off.',
   }),
   mascotPage('captainCoupon', {
     memo: 'Mega Mart\'s discount superhero. His coupons expired some time ago. Legal would like it noted that so did he.',
-    twist: `After the helmet pops he hurries back to it and puts it on again, which returns him to ${pct(reclaim.reclaimHealthFraction)} health. He manages it once.`,
+    twist: `After the helmet pops he hurries back and puts it on again. That puts him back at ${pct(reclaim.reclaimHealthFraction)} health. He only manages it once.`,
     tip: `Shoot him while he is bent over the helmet: his head is bare. Or stand within ${reclaim.guardRadius} metres of it yourself and he gives up and rushes you.`,
   }),
   mascotPage('poppyCorn', {
     memo: 'The Sunset Cinema\'s usher. Patrons are reminded to silence their phones, their children and their screaming.',
-    twist: `Her helmet pops with a blast: zombies within ${pop.zombieRadius} metres are flung and stunned for ${pop.stunSeconds} seconds, and within ${pop.playerRadius} metres you are shoved away too. It does no damage to anyone.`,
+    twist: `Her helmet goes off like a bomb. Zombies within ${pop.zombieRadius} metres get flung and stunned for ${pop.stunSeconds} seconds. Within ${pop.playerRadius} metres I get shoved too. Nobody takes damage from it.`,
     tip: 'Pop her from range while she is standing in a crowd, and the blast does your crowd control for you.',
   }),
   mascotPage('scoops', {
     memo: 'The Atrium\'s soda-fountain mascot, currently melting. Please mind the floor. It is mostly strawberry.',
-    twist: 'Leaves a trail of melt puddles that slow you down, and drips twice as fast once his cone is off.',
+    twist: "Leaves a trail of melt puddles that slow me down. Drips twice as fast once the cone's off.",
     tip: 'Never retreat along the path he arrived by. Lead him somewhere you do not plan to stand.',
   }),
   {
@@ -121,7 +123,7 @@ export const guideEntries = [
     health: mix.mascot.healthMultiplier * mascotGold.healthMultiplier, firstSeen: `Round ${mascotGold.fromRound}`, notesAt: 1, tipAt: 3,
     memo: 'Twelve consecutive months. Nobody else was nominated. Nobody else was available.',
     notes: [
-      `From round ${mascotGold.fromRound} any Mascot may arrive in gold (${pct(mascotGold.chance)} of the time), ${extra(mascotGold.healthMultiplier)} tougher, in whichever costume it would have worn. Never two at once.`,
+      `From round ${mascotGold.fromRound} any Mascot can turn up in gold (${pct(mascotGold.chance)} of the time). ${extra(mascotGold.healthMultiplier)} tougher, same costume underneath. Never two at once.`,
       'Always drops a power-up where it falls.',
     ],
     tip: 'Worth dropping everything for. Kill it somewhere you can reach the body.',
@@ -130,16 +132,16 @@ export const guideEntries = [
   bossPage(janitor, {
     memo: 'Thirty-one years of service. Has never once been thanked. Has noticed.',
     notes: [
-      `Chases and swings like a Shopper with a mop: ${janitor.attack.damage} damage a hit.`,
-      `Leaves wet patches behind him, up to ${janitor.wetFloor.maxPatches} at a time, each lasting ${janitor.wetFloor.seconds} seconds. Standing in one cuts your speed to ${pct(janitor.wetFloor.speedFraction)}.`,
+      `Chases and swings like a Shopper with a mop. ${janitor.attack.damage} damage a hit.`,
+      `Leaves wet patches behind him, up to ${janitor.wetFloor.maxPatches} at once, ${janitor.wetFloor.seconds} seconds each. Standing in one cuts me to ${pct(janitor.wetFloor.speedFraction)} speed.`,
     ],
     tip: 'Fight him in a big room and back away in a wide circle, not a straight line: his puddles are always where he has just been.',
   }),
   bossPage(guard, {
     memo: 'Has apprehended four shoplifters and one very surprised delivery driver. Considers survival to be suspicious behaviour.',
     notes: [
-      `Charges from ${guard.charge.minRange} to ${guard.charge.maxRange} metres like a Cart Pusher, after a chime. It does ${guard.charge.damage} damage and the taser slows you to ${pct(guard.taserSlow.speed)} speed for ${guard.taserSlow.seconds} second.`,
-      `At ${lock.thresholds.map(pct).join(' and ')} health he calls a lockdown: after a ${lock.alarmSeconds} second alarm the shutters around the area you are standing in close for ${lock.seconds} seconds and ${lock.backup} ${lock.backupType === 'mallWalker' ? 'Mall Walkers' : 'zombies'} join in.`,
+      `Charges from ${guard.charge.minRange} to ${guard.charge.maxRange} metres like a Cart Pusher, after a chime. ${guard.charge.damage} damage, and the taser slows me to ${pct(guard.taserSlow.speed)} speed for ${guard.taserSlow.seconds} second.`,
+      `At ${lock.thresholds.map(pct).join(' and ')} health he calls a lockdown. ${lock.alarmSeconds} second alarm, then the shutters round whatever area I'm standing in close for ${lock.seconds} seconds and ${lock.backup} ${lock.backupType === 'mallWalker' ? 'Mall Walkers' : 'zombies'} join in.`,
     ],
     tip: `${lock.headshots} headshots during the alarm or the lockdown break his radio: the shutters open and he can never call another. Dodge a charge and he is stunned for ${guard.charge.crashSeconds} seconds, taking ${extra(guard.charge.crashDamageTakenMultiplier)} more damage.`,
   }),
@@ -147,16 +149,16 @@ export const guideEntries = [
     memo: 'Would like a quick word. Please budget the rest of your life. His door is always open; that is how they got in.',
     notes: [
       `Every ${report.interval} seconds he picks up to ${report.maxTargets} zombies near him and makes them ${extra(report.speed)} faster for ${report.seconds} seconds.`,
-      `At ${meet.thresholds.map(pct).join(' and ')} health he calls a Staff Meeting: he and the zombies near him stand still for ${meet.seconds} seconds, and he takes ${extra(meet.damageTaken)} more damage. If it finishes, every zombie in the mall is ${extra(meet.speed)} faster and hits ${extra(meet.damage)} harder for ${meet.buffSeconds} seconds.`,
+      `At ${meet.thresholds.map(pct).join(' and ')} health he calls a Staff Meeting. He and the zombies near him stand still for ${meet.seconds} seconds and he takes ${extra(meet.damageTaken)} more damage. If it finishes, every zombie in the mall is ${extra(meet.speed)} faster and hits ${extra(meet.damage)} harder for ${meet.buffSeconds} seconds.`,
     ],
     tip: `Take ${pct(meet.cancelFraction)} of his health off during a meeting and it is cancelled: no bonus for them, and he is stunned for ${meet.stunSeconds} seconds. Save a full magazine for it.`,
   }),
   bossPage(influencer, {
     memo: 'Is filming. Was always filming. Engagement is up eleven per cent since the incident, which she describes as "a rebrand".',
     notes: [
-      `Never attacks. She films you from ${influencer.filming.minRange} to ${influencer.filming.maxRange} metres away and moves when you close in.`,
+      `Never attacks. Films me from ${influencer.filming.minRange} to ${influencer.filming.maxRange} metres away and moves when I close in.`,
       `Her follower count climbs on its own and every hit knocks it back, a headshot most. At ${fol.thresholds.join(', ')} per cent, ${fans.perThreshold} fans arrive; at ${fol.viral} she goes viral and ${fans.viralCount} more do. Fans are weak Mall Walkers and pay nothing.`,
-      `Within ${flash.range} metres she charges her phone flash for ${flash.windupSeconds} seconds. It only blinds you if you are facing her.`,
+      `Within ${flash.range} metres she charges her phone flash for ${flash.windupSeconds} seconds. It only blinds me if I'm facing her.`,
     ],
     tip: 'Ignore the fans and keep shooting her: steady hits hold the count down, and the fans leave when she does. Turn away when the flash warning appears.',
   }),
@@ -199,21 +201,49 @@ export const guideDebug = {
   cleared: (name) => `${name}: page torn out`,
 };
 
+// The screen (ui/guide.js). It looks like nothing else in the menus on purpose: a vinyl ring binder holding the company's
+// printed handbook, with a survivor's pen, sticky notes and rubber stamps on top. Colours: `theme` (CSS variables
+// --guide-<name>); the layout is in ui/retail.css.
 export const guide = {
-  title: 'Staff Survival Guide', menu: 'Survival guide', kicker: 'Human Resources · Read before your shift, if there is time',
-  form: 'SG / TRAINING · HANDBOOK 4-B', back: 'Back',
-  hint: 'Arrow keys / D-pad to browse · Escape / B to return',
+  title: 'Staff Survival Guide', menu: 'Survival guide', kicker: 'Property of Human Resources · Do not remove from the break room',
+  back: 'Close the binder',
+  hint: 'Arrow keys / D-pad to turn pages · Escape / B to close',
   previewLabel: 'Subject, turning slowly',
-  unknownName: '???', unknownTitle: 'Not yet encountered', unknownBody: 'No associate has returned with a description.',
-  memoHeading: 'Staff memo', notesHeading: 'Field notes', tipHeading: 'How to survive it', factsHeading: 'On file',
+  // One printed sheet per section: its heading, its form number, and (Management) an extra line on file.
+  sheets: {
+    customers: { heading: 'Customer incident report', form: 'SG / LOSS PREVENTION · FORM 109-C' },
+    management: { heading: 'Personnel file', form: 'SG / HUMAN RESOURCES · FORM 22-P', status: ['Employment status', 'Ongoing, regrettably'] },
+  },
+  letterhead: 'Sunset Galleria · Associate Handbook',
+  pageOf: (page, total) => `Page ${page} of ${total}`,
+  cctv: (camera) => `CAM ${String(camera).padStart(2, '0')} ● REC`,
+  // The rubber stamp on a page, by stage (0 = not seen).
+  stamps: ['No report filed', 'Sighted', 'Documented', 'Resolved'],
+  rowStatus: (stage) => ['', '✓', '✓✓', '✓✓✓'][stage],
+  unknownName: '— no report —', unknownTitle: 'Subject not yet encountered',
+  unknownBody: 'No associate has returned with a description. If you are the first, please complete this form in block capitals.',
+  blankFields: ['Name of subject', 'Description', 'Last seen', 'Risk to staff'],
+  memoHeading: 'Staff memo', factsHeading: 'On file',
+  notesHeading: "what I've seen —", tipHeading: 'How to survive it',
   health: (multiplier) => multiplier === 1 ? 'The baseline' : `${Number(multiplier.toFixed(2))}× a Shopper`,
   facts: { health: 'Health', firstSeen: 'First appears', kills: 'Cleared by you' },
-  locked: (heading, left) => `${heading}: ${left} more to clear`,
-  rowStatus: (stage) => ['', '★', '★★', '★★★'][stage],
+  // Pencilled where the handwriting will go, until there are enough kills to write it.
+  lockedNotes: (left) => `(${left} more and I'll know what I'm looking at)`,
+  lockedTip: (left) => `(${left} more before I'd give anyone advice)`,
+  // Tally marks in the margin: up to tallyMax strokes, then just the number.
+  tallyMax: 25, tallyTotal: (kills) => `= ${kills}`,
   sectionCount: (done, total) => `${done} / ${total} complete`,
-  theme: { ink: '#302b30', paper: '#f4ead7', edge: '#b8a98e', stamp: '#9a3f53', selected: '#e8d9c1', highlight: '#93556a', lockedPaper: '#dedbd4', lockedInk: '#625e59' },
+  turnSound: 'pageTurn',
+  theme: {
+    binder: '#3b2a3d', binderEdge: '#241826', binderStitch: '#7d6480', label: '#f4ead7',
+    paper: '#f7f0df', paperEdge: '#cbbd9f', rule: '#d9ccb0', ink: '#2c272c', faint: '#7b7168',
+    stamp: '#9a3f53', selected: '#e8d9c1', tab: '#d8c7a6', tabInk: '#3a3136',
+    biro: '#1f3f8f', pencil: '#8a857c', marker: '#b3262b', sticky: '#ffe66e', stickyEdge: '#e2c63c',
+    stampSighted: '#3c5f8a', stampDocumented: '#3f7a4d', stampResolved: '#b3262b', stampNone: '#8a857c',
+    polaroid: '#fbf8f0', tape: 'rgba(238, 222, 160, .78)',
+  },
   preview: {
-    width: 360, height: 420, pixelRatio: 1.5, background: 0x211c2b,
+    width: 250, height: 290, pixelRatio: 1.5, background: 0x1b1f24,
     fov: 30, near: 0.05, far: 40, framing: 1.25, rotationSpeed: 0.5,
     initialYaw: 2.6, camera: [0, 0.18, 1],
     sky: 0xfff0d8, ground: 0x655474, ambientIntensity: 2,

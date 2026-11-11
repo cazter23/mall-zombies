@@ -79,25 +79,43 @@ export function createGuidePreview(host, { makeRenderer = (options) => new THREE
   };
 }
 
-export function createGuideScreen({ save, onBack, createPreview = createGuidePreview }) {
+/**
+ * The binder. Left: the contents, under a divider tab per section. Right: one printed sheet on the rings, with the
+ * subject's photo taped to it, a rubber stamp for how far the page has got, and the survivor's additions on top
+ * (pen notes, tally marks, a sticky note). `onTurn` runs whenever a different page is shown (main.js: the paper sound).
+ */
+export function createGuideScreen({ save, onBack, onTurn = null, createPreview = createGuidePreview }) {
   const element = document.createElement('div');
   element.className = 'screen guide-screen hidden';
   for (const [name, value] of Object.entries(cfg.theme)) element.style.setProperty('--guide-' + name, value);
   element.style.setProperty('--guide-preview', '#' + cfg.preview.background.toString(16).padStart(6, '0'));
   element.innerHTML = `
-    <div class="card guide-card">
-      <div class="form-number">${cfg.form}</div>
-      <div class="kicker">${cfg.kicker}</div><h1>${cfg.title}</h1>
+    <div class="guide-binder">
+      <header class="guide-label"><div class="kicker">${cfg.kicker}</div><h1>${cfg.title}</h1></header>
       <div class="guide-layout">
         <nav class="guide-index"></nav>
-        <div class="guide-preview"></div>
-        <article class="guide-page" aria-live="polite"></article>
+        <div class="guide-sheet">
+          <div class="guide-rings" aria-hidden="true"><i></i><i></i><i></i></div>
+          <div class="guide-letterhead"></div>
+          <figure class="guide-photo">
+            <div class="guide-preview"></div>
+            <span class="guide-cctv" aria-hidden="true"></span>
+            <figcaption class="guide-caption"></figcaption>
+          </figure>
+          <div class="guide-stamp" aria-hidden="true"></div>
+          <article class="guide-page" aria-live="polite"></article>
+        </div>
       </div>
       <div class="menu-row"><button class="menu-btn guide-back" type="button">${cfg.back}</button></div>
       <p class="pad-hint">${cfg.hint}</p>
     </div>`;
   const index = element.querySelector('.guide-index');
+  const sheet = element.querySelector('.guide-sheet');
+  const letterhead = element.querySelector('.guide-letterhead');
   const previewHost = element.querySelector('.guide-preview');
+  const cctv = element.querySelector('.guide-cctv');
+  const caption = element.querySelector('.guide-caption');
+  const stamp = element.querySelector('.guide-stamp');
   const page = element.querySelector('.guide-page');
   const back = element.querySelector('.guide-back');
   let open = false, preview = null;
@@ -116,54 +134,88 @@ export function createGuideScreen({ save, onBack, createPreview = createGuidePre
     return node;
   };
 
+  // Tally marks in the margin: gates of five, then the loose strokes, then the number once there are too many to draw.
+  function tally(parent, kills) {
+    const row = add(parent, 'div', 'guide-tally');
+    row.setAttribute('aria-label', `${cfg.facts.kills}: ${kills}`);
+    const drawn = Math.min(kills, cfg.tallyMax);
+    for (let i = 0; i < Math.floor(drawn / 5); i++) add(row, 'span', 'guide-five');
+    if (drawn % 5) add(row, 'span', 'guide-strokes').setAttribute('data-strokes', String(drawn % 5));
+    if (kills > cfg.tallyMax) add(row, 'span', 'guide-tally-total', cfg.tallyTotal(kills));
+  }
+
   function showPage(id) {
     if (!open || shown === id) return;
     shown = selected = id;
-    const entry = guideEntries.find((candidate) => candidate.id === id);
+    const at = guideEntries.findIndex((candidate) => candidate.id === id);
+    const entry = guideEntries[at];
+    const form = cfg.sheets[entry.section];
     const { kills, stage } = standing(entry);
     for (const row of element.querySelectorAll('.guide-entry')) row.setAttribute('aria-pressed', String(row.dataset.entry === id));
-    page.replaceChildren();
-    previewHost.classList.toggle('unknown', stage === 0);
+
+    // The sheet: which form it is, how far it has got, and a flick as it turns over.
+    sheet.setAttribute('data-section', entry.section);
+    sheet.setAttribute('data-stage', String(stage));
+    sheet.classList.remove('turning');
+    void sheet.offsetWidth; // (restarts the turn animation)
+    sheet.classList.add('turning');
+    letterhead.replaceChildren();
+    add(letterhead, 'span', '', cfg.letterhead);
+    add(letterhead, 'b', '', form.heading);
+    add(letterhead, 'span', '', `${form.form} · ${cfg.pageOf(at + 1, guideEntries.length)}`);
+    stamp.textContent = cfg.stamps[stage];
+    cctv.textContent = cfg.cctv(at + 1);
+    caption.textContent = stage === 0 ? '' : entry.name;
     preview.show(stage > 0 ? entry.type : null);
-    if (stage === 0) {
+    onTurn?.();
+
+    page.replaceChildren();
+    if (stage === 0) { // a blank form, waiting for someone to come back and fill it in
       add(page, 'h2', '', cfg.unknownName);
       add(page, 'p', 'guide-title', cfg.unknownTitle);
-      add(page, 'p', 'guide-locked', cfg.unknownBody);
+      const blank = add(page, 'dl', 'guide-blank');
+      for (const field of cfg.blankFields) { add(blank, 'dt', '', field); add(blank, 'dd'); }
+      add(page, 'p', 'guide-small-print', cfg.unknownBody);
       return;
     }
+    // The company's printed page.
     add(page, 'h2', '', entry.name);
     add(page, 'p', 'guide-title', entry.title);
     const facts = add(page, 'dl', 'guide-facts');
-    for (const [label, value] of [[cfg.facts.health, cfg.health(entry.health)], [cfg.facts.firstSeen, entry.firstSeen], [cfg.facts.kills, String(kills)]]) {
+    for (const [label, value] of [[cfg.facts.health, cfg.health(entry.health)], [cfg.facts.firstSeen, entry.firstSeen], [cfg.facts.kills, String(kills)], ...(form.status ? [form.status] : [])]) {
       add(facts, 'dt', '', label);
       add(facts, 'dd', '', value);
     }
     add(page, 'h3', '', cfg.memoHeading);
     add(page, 'p', 'guide-memo', entry.memo);
+    // The survivor's pen, over the top of it.
+    const hand = add(page, 'div', 'guide-hand');
     if (stage >= 2) {
-      add(page, 'h3', '', cfg.notesHeading);
-      const list = add(page, 'ul', 'guide-notes');
+      add(hand, 'h3', '', cfg.notesHeading);
+      const list = add(hand, 'ul', 'guide-notes');
       for (const note of entry.notes) add(list, 'li', '', note);
-    } else add(page, 'p', 'guide-locked', cfg.locked(cfg.notesHeading, entry.notesAt - kills));
+    } else add(hand, 'p', 'guide-pencil', cfg.lockedNotes(entry.notesAt - kills));
+    if (kills > 0) tally(hand, kills);
     if (stage >= 3) {
-      add(page, 'h3', '', cfg.tipHeading);
-      add(page, 'p', 'guide-tip', entry.tip);
-    } else add(page, 'p', 'guide-locked', cfg.locked(cfg.tipHeading, entry.tipAt - kills));
+      const sticky = add(page, 'aside', 'guide-tip');
+      add(sticky, 'h3', '', cfg.tipHeading);
+      add(sticky, 'p', '', entry.tip);
+    } else add(page, 'p', 'guide-pencil', cfg.lockedTip(entry.tipAt - kills));
   }
 
-  // The index is rebuilt each time the book opens: the record may have changed during a shift.
+  // The contents are rebuilt each time the binder opens: the record may have changed during a shift.
   function fillIndex() {
     index.replaceChildren();
     for (const section of guideSections) {
       const entries = guideEntries.filter((entry) => entry.section === section.id);
       const group = add(index, 'section', 'guide-section');
       group.setAttribute('data-section', section.id);
-      add(group, 'h2', '', section.name);
+      add(group, 'h2', 'guide-tab', section.name);
       add(group, 'p', 'guide-blurb', section.blurb);
       add(group, 'small', 'guide-count', cfg.sectionCount(entries.filter((entry) => standing(entry).stage === 3).length, entries.length));
       for (const entry of entries) {
         const { stage } = standing(entry);
-        const row = add(group, 'button', `menu-btn guide-entry${stage === 0 ? ' unknown' : ''}`);
+        const row = add(group, 'button', `guide-entry${stage === 0 ? ' unknown' : ''}`);
         row.type = 'button';
         row.setAttribute('data-entry', entry.id);
         row.setAttribute('data-stage', String(stage));

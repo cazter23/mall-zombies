@@ -951,42 +951,117 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   .locker-preview { height: 220px; }
 }
 
-/* The Staff Survival Guide (ui/guide.js): an index, the turning subject and its page. Colours: config/guide.js theme. */
-.guide-screen { overflow-y: auto; align-items: safe center; }
-.guide-card { width: min(1180px, 94vw); max-width: none; margin: auto; padding: 28px 36px; }
-.guide-card h1 { margin: 4px 0 18px; font-size: 38px; }
-.guide-layout { display: grid; grid-template-columns: 250px 300px minmax(0, 1fr); gap: 26px; align-items: start; }
-.guide-index { display: grid; gap: 18px; }
-.guide-section { display: grid; gap: 3px; }
-.guide-section h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .12em; margin: 0; }
-.guide-blurb { margin: 0; font-size: 11px; line-height: 1.4; color: var(--guide-lockedInk); }
-.guide-count { font-size: 11px; font-weight: 700; margin-bottom: 5px; color: var(--guide-stamp); }
-.guide-entry { display: flex; justify-content: space-between; gap: 8px; width: 100%; text-align: left; padding: 7px 12px; font-size: 15px; }
-.guide-entry small { color: var(--guide-stamp); letter-spacing: .08em; }
-.guide-entry.unknown { color: var(--guide-lockedInk); border-style: dashed; }
-.guide-entry[aria-pressed="true"] { border-left: 4px solid var(--guide-stamp); background: var(--guide-selected); }
-.guide-preview { position: relative; height: 420px; background: var(--guide-preview); border: 1px solid var(--guide-edge); overflow: hidden; }
-.guide-preview canvas { display: block; width: 100%; height: 100%; }
-.guide-preview.unknown canvas { visibility: hidden; }
-.guide-preview.unknown::after { content: '?'; position: absolute; inset: 0; display: grid; place-items: center; font: 700 140px/1 var(--font-ui); color: rgba(255, 255, 255, .16); }
-.guide-page { min-height: 420px; color: var(--guide-ink); }
-.guide-page h2 { margin: 0; font-size: 30px; line-height: 1.1; }
-.guide-page h3 { margin: 16px 0 5px; font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: var(--guide-stamp); }
-.guide-page p, .guide-page li { font-size: 14px; line-height: 1.55; margin: 0; }
-.guide-title { font-weight: 700; text-transform: uppercase; letter-spacing: .1em; font-size: 12px !important; margin-bottom: 12px !important; }
-.guide-facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px 14px; margin: 0; padding: 10px 0; border-top: 1px solid var(--guide-edge); border-bottom: 1px solid var(--guide-edge); }
-.guide-facts dt { grid-row: 1; font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--guide-lockedInk); }
-.guide-facts dd { grid-row: 2; margin: 0; font-size: 15px; font-weight: 700; }
-.guide-memo { font-style: italic; }
-.guide-notes { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
-.guide-tip { padding: 10px 12px; border-left: 4px solid var(--guide-stamp); background: var(--guide-selected); }
-.guide-locked { margin-top: 14px !important; padding: 9px 12px; border: 1px dashed var(--guide-edge); background: var(--guide-lockedPaper); color: var(--guide-lockedInk); font-size: 12px !important; }
-.guide-card > .menu-row { margin-top: 20px; }
-@media (max-width: 980px) {
-  .guide-card { padding: 20px; }
+/* The Staff Survival Guide (ui/guide.js). Deliberately unlike the other menus: a vinyl ring binder, a printed company
+   sheet on its rings, and a survivor's additions on top (pen, tally marks, a sticky note, rubber stamps, a taped photo).
+   Colours: config/guide.js theme (--guide-*). Readable sizes follow the Text size setting (--ui-text-scale). */
+.guide-screen { overflow-y: auto; overflow-x: hidden; align-items: safe center; --gt: var(--ui-text-scale, 1); } /* (x: the turning sheet swings past the edge) */
+.guide-binder {
+  position: relative; width: min(1180px, 95vw); margin: auto; padding: 22px 30px 18px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, .06), transparent 40%), var(--guide-binder);
+  border: 2px solid var(--guide-binderEdge); border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .55), inset 0 0 0 6px var(--guide-binder), inset 0 0 0 7px var(--guide-binderStitch);
+  outline: 1px dashed var(--guide-binderStitch); outline-offset: -12px; color: var(--guide-label);
+}
+/* The paper label in the cover's sleeve. */
+.guide-label { display: inline-block; margin: 4px 0 18px 6px; padding: 8px 18px 10px; background: var(--guide-label); color: var(--guide-ink); border: 1px solid var(--guide-paperEdge); box-shadow: 0 2px 0 rgba(0, 0, 0, .35); transform: rotate(-.6deg); }
+.guide-label .kicker { color: var(--guide-stamp); font-size: 10px; }
+.guide-label h1 { margin: 2px 0 0; font-size: 34px; line-height: 1; color: var(--guide-ink); }
+.guide-layout { display: grid; grid-template-columns: 236px minmax(0, 1fr); gap: 34px; align-items: start; }
+
+/* Contents: a divider tab per section, then its pages. */
+.guide-index { display: grid; gap: 16px; }
+.guide-section { display: grid; gap: 2px; padding: 0 10px 10px; background: var(--guide-paper); color: var(--guide-ink); border: 1px solid var(--guide-paperEdge); box-shadow: 0 2px 0 rgba(0, 0, 0, .3); }
+.guide-tab { justify-self: start; margin: -1px 0 6px -11px; padding: 5px 16px 5px 12px; font: 700 12px/1.2 var(--font-ui); text-transform: uppercase; letter-spacing: .14em; background: var(--guide-tab); color: var(--guide-tabInk); border: 1px solid var(--guide-paperEdge); border-radius: 0 0 9px 0; }
+.guide-section[data-section="management"] .guide-tab { background: var(--guide-stamp); color: var(--guide-label); }
+.guide-blurb { margin: 0; font-size: 11px; line-height: 1.4; color: var(--guide-faint); }
+.guide-count { font-size: 11px; font-weight: 700; margin-bottom: 4px; color: var(--guide-stamp); }
+.guide-entry { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; width: 100%; padding: 6px 8px; text-align: left; font: 600 14px/1.25 var(--font-ui); color: var(--guide-ink); background: none; border: 0; border-bottom: 1px dotted var(--guide-paperEdge); cursor: pointer; }
+.guide-entry small { font: 700 17px/1 'Caveat', cursive; color: var(--guide-biro); white-space: nowrap; }
+.guide-entry.unknown { color: var(--guide-pencil); font-weight: 400; font-style: italic; }
+.guide-entry:hover, .guide-entry.focused, .guide-entry:focus-visible { background: var(--guide-selected); outline: none; }
+.guide-entry[aria-pressed="true"] { background: var(--guide-selected); box-shadow: inset 4px 0 0 var(--guide-stamp); }
+
+/* The sheet on the rings. */
+.guide-sheet {
+  position: relative; min-height: 520px; padding: 20px 30px 26px 54px; color: var(--guide-ink);
+  background:
+    radial-gradient(circle at 78% 86%, transparent 37px, rgba(120, 78, 40, .13) 38px, rgba(120, 78, 40, .13) 41px, transparent 43px),
+    linear-gradient(90deg, rgba(0, 0, 0, .07), transparent 22px), var(--guide-paper);
+  border: 1px solid var(--guide-paperEdge); box-shadow: 3px 4px 0 rgba(0, 0, 0, .28), 6px 8px 0 rgba(247, 240, 223, .25);
+  transform-origin: left center;
+}
+.guide-sheet::after { content: ''; position: absolute; right: 0; bottom: 0; border-style: solid; border-width: 0 0 26px 26px; border-color: transparent transparent var(--guide-binder) transparent; filter: drop-shadow(-2px -2px 1px rgba(0, 0, 0, .18)); } /* a dog-eared corner */
+.guide-sheet.turning { animation: guide-turn .22s ease-out; }
+@keyframes guide-turn { from { transform: perspective(1400px) rotateY(-16deg); opacity: .55; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .guide-sheet.turning { animation: none; } }
+.guide-rings { position: absolute; left: -17px; top: 0; bottom: 0; display: grid; align-content: space-evenly; pointer-events: none; }
+.guide-rings i { display: block; width: 38px; height: 15px; border: 3px solid #c9ccd1; border-radius: 9px; background: linear-gradient(#f4f5f7, #8d9198); box-shadow: 0 2px 2px rgba(0, 0, 0, .4); }
+.guide-letterhead { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 14px; padding-bottom: 7px; margin-bottom: 14px; border-bottom: 2px solid var(--guide-ink); font: 700 9px/1.5 var(--font-ui); text-transform: uppercase; letter-spacing: .1em; color: var(--guide-faint); }
+.guide-letterhead b { color: var(--guide-ink); font-size: 11px; }
+
+/* The photo: a still from the security camera, taped on (customers) or paper-clipped (personnel files). */
+.guide-photo { float: right; position: relative; width: 250px; margin: 2px 0 14px 26px; padding: 10px 10px 8px; background: var(--guide-polaroid); box-shadow: 0 3px 8px rgba(0, 0, 0, .3); transform: rotate(2.2deg); }
+.guide-photo::before, .guide-photo::after { content: ''; position: absolute; top: -11px; width: 74px; height: 22px; background: var(--guide-tape); box-shadow: 0 1px 2px rgba(0, 0, 0, .15); }
+.guide-photo::before { left: -22px; transform: rotate(-32deg); }
+.guide-photo::after { right: -22px; transform: rotate(31deg); }
+.guide-sheet[data-section="management"] .guide-photo { transform: rotate(-1.6deg); }
+.guide-sheet[data-section="management"] .guide-photo::before { left: 26px; top: -16px; width: 16px; height: 46px; background: none; border: 3px solid #9aa0a8; border-radius: 9px; box-shadow: none; transform: rotate(6deg); }
+.guide-sheet[data-section="management"] .guide-photo::after { display: none; }
+.guide-preview { position: relative; height: 290px; background: var(--guide-preview); overflow: hidden; }
+.guide-preview canvas { display: block; width: 100%; height: 100%; filter: saturate(.86) contrast(1.06); }
+.guide-preview::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(rgba(0, 0, 0, .16) 0 1px, transparent 1px 3px), radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, .5)); }
+.guide-cctv { position: absolute; left: 18px; top: 16px; font: 400 16px/1 var(--font-receipt); letter-spacing: .06em; color: #e8f3e6; text-shadow: 0 0 4px rgba(0, 0, 0, .9); }
+.guide-caption { min-height: 26px; padding-top: 4px; text-align: center; font: 700 calc(22px * var(--gt)) / 1.1 'Caveat', cursive; color: var(--guide-biro); }
+.guide-sheet[data-stage="0"] .guide-preview canvas { visibility: hidden; }
+.guide-sheet[data-stage="0"] .guide-preview::before { content: '?'; position: absolute; inset: 0; display: grid; place-items: center; font: 700 130px/1 var(--font-ui); color: rgba(255, 255, 255, .16); }
+.guide-sheet[data-stage="0"] .guide-cctv::after { content: ' · NO SIGNAL'; }
+
+/* The rubber stamp. */
+.guide-stamp { position: absolute; right: 44px; top: 408px; padding: 4px 12px 3px; font: 700 20px/1 var(--font-hud); letter-spacing: .16em; text-transform: uppercase; border: 3px double currentColor; border-radius: 4px; transform: rotate(-8deg); opacity: .78; mix-blend-mode: multiply; pointer-events: none; color: var(--guide-stampNone); }
+.guide-sheet[data-stage="1"] .guide-stamp { color: var(--guide-stampSighted); }
+.guide-sheet[data-stage="2"] .guide-stamp { color: var(--guide-stampDocumented); }
+.guide-sheet[data-stage="3"] .guide-stamp { color: var(--guide-stampResolved); }
+
+/* Voice one: the company's print. */
+.guide-page h2 { margin: 0; font: 700 calc(34px * var(--gt)) / 1.05 'Fraunces', Georgia, serif; }
+.guide-title { margin: 2px 0 12px; font: 700 calc(11px * var(--gt)) / 1.4 var(--font-ui); text-transform: uppercase; letter-spacing: .14em; color: var(--guide-stamp); }
+.guide-page h3 { margin: 14px 0 4px; font: 700 calc(10px * var(--gt)) / 1.4 var(--font-ui); text-transform: uppercase; letter-spacing: .14em; color: var(--guide-faint); }
+.guide-facts { display: grid; grid-template-columns: auto 1fr; gap: 3px 14px; margin: 0; padding: 8px 0; max-width: 330px; border-top: 1px solid var(--guide-rule); border-bottom: 1px solid var(--guide-rule); font-size: calc(13px * var(--gt)); }
+.guide-facts dt { font-size: calc(10px * var(--gt)); text-transform: uppercase; letter-spacing: .1em; color: var(--guide-faint); align-self: center; }
+.guide-facts dd { margin: 0; font-weight: 700; }
+.guide-memo { margin: 0; max-width: 46ch; font: italic 400 calc(15px * var(--gt)) / 1.5 'Playfair Display', Georgia, serif; }
+.guide-memo::before { content: '“'; } .guide-memo::after { content: '”'; }
+.guide-small-print { margin: 16px 0 0; max-width: 46ch; font-size: calc(12px * var(--gt)); line-height: 1.5; color: var(--guide-faint); }
+.guide-blank { display: grid; grid-template-columns: auto 1fr; gap: 14px 12px; margin: 14px 0 0; max-width: 380px; }
+.guide-blank dt { font: 700 calc(10px * var(--gt)) / 1.4 var(--font-ui); text-transform: uppercase; letter-spacing: .1em; color: var(--guide-faint); align-self: end; }
+.guide-blank dd { margin: 0; height: 22px; border-bottom: 1px solid var(--guide-ink); }
+
+/* Voice two: the survivor's pen. */
+.guide-hand { margin-top: 16px; padding: 4px 0 0 14px; border-left: 2px solid var(--guide-biro); color: var(--guide-biro); transform: rotate(-.35deg); }
+.guide-hand h3 { margin: 0 0 2px; font: 700 calc(21px * var(--gt)) / 1.1 'Caveat', cursive; text-transform: none; letter-spacing: 0; color: var(--guide-biro); text-decoration: underline; text-decoration-thickness: 1px; }
+.guide-notes { margin: 0; padding-left: 20px; list-style: '– '; display: grid; gap: 3px; }
+.guide-notes li { font: 600 calc(21px * var(--gt)) / 1.22 'Caveat', cursive; }
+.guide-pencil { margin: 10px 0 0; font: 600 calc(19px * var(--gt)) / 1.2 'Caveat', cursive; color: var(--guide-pencil); }
+.guide-hand .guide-pencil { margin-top: 0; }
+.guide-tally { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-top: 8px; }
+.guide-five, .guide-strokes { position: relative; display: inline-block; height: 22px; background: repeating-linear-gradient(90deg, var(--guide-biro) 0 2px, transparent 2px 7px); transform: skewX(-6deg); }
+.guide-five { width: 23px; }
+.guide-five::after { content: ''; position: absolute; left: -5px; right: -5px; top: 10px; height: 2px; background: var(--guide-biro); transform: rotate(-24deg); }
+.guide-strokes[data-strokes="1"] { width: 2px; } .guide-strokes[data-strokes="2"] { width: 9px; }
+.guide-strokes[data-strokes="3"] { width: 16px; } .guide-strokes[data-strokes="4"] { width: 23px; }
+.guide-tally-total { font: 700 calc(21px * var(--gt)) / 1 'Caveat', cursive; }
+
+/* The sticky note, in marker. */
+.guide-tip { position: relative; clear: both; width: min(430px, 92%); margin: 20px 0 4px 26px; padding: 12px 16px 14px; background: linear-gradient(var(--guide-stickyEdge) 0 9px, var(--guide-sticky) 9px); color: var(--guide-ink); box-shadow: 2px 5px 8px rgba(0, 0, 0, .24); transform: rotate(-1.8deg); }
+.guide-tip h3 { margin: 4px 0 4px; font: 400 calc(17px * var(--gt)) / 1.1 'Permanent Marker', cursive; letter-spacing: .02em; text-transform: uppercase; color: var(--guide-marker); }
+.guide-tip p { margin: 0; font: 700 calc(21px * var(--gt)) / 1.2 'Caveat', cursive; }
+
+.guide-binder > .menu-row { margin-top: 18px; }
+.guide-binder > .pad-hint { color: var(--guide-binderStitch); }
+@media (max-width: 900px) {
+  .guide-binder { padding: 16px; }
   .guide-layout { grid-template-columns: 1fr; gap: 18px; }
-  .guide-section { grid-template-columns: 1fr 1fr; }
-  .guide-section h2, .guide-blurb, .guide-count { grid-column: 1 / -1; }
-  .guide-preview { height: 260px; }
-  .guide-page { min-height: 0; }
+  .guide-sheet { padding-left: 34px; }
+  .guide-photo { float: none; margin: 0 auto 14px; }
+  .guide-stamp { top: 372px; right: 20px; }
 }
