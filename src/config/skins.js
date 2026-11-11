@@ -53,6 +53,8 @@ export const skins = {
   foamDartBlaster: [{ id: 'blue-ribbon', name: 'Blue Ribbon', slot: 1,
     palette: { body: 0x243c68, dark: 0x19243e, metal: 0x9bb7d8, grip: 0x202736, accent: 0xc7dcff, sight: 0xffe6a4, ammo: 0x9dd4f5 }, challenge: mastery(400) }, {
     id: 'aisle-fifteen', name: 'Aisle Fifteen', slot: 2,
+    palette: { body: 0x064a50, dark: 0x03292d, metal: 0xa8d4d4, grip: 0x14242a, accent: 0x9ff2ee, sight: 0xffe9a8 },
+    pattern: { kind: 'dots', ink: 0x9ff2ee, spacing: 0.012, radius: 0.0034 }, // halftone dots
     challenge: { kind: 'rangedKills', count: 150, minDistance: 15, text: 'Clear {count} zombies from {minDistance} m or more with the {gun}.' },
   }],
   confettiCannon: [{ id: 'encore', name: 'Encore', slot: 1,
