@@ -287,6 +287,11 @@ src/
                         seal built up front (hidden), show({ tier, attachments }) per frame; the Extended Nozzle moves the muzzle (and flash) to its tip.
                         warrantyTrim.js = the Extended Warranty on the gun: barrel collar (rings that get chunkier by tier, studs for Renewals) and a swinging grip tag; buildVisual.js also puffs the body (pillows). Sizes: config/gunStyle.js.
                         New gun = new file + 1 line (+ its mounts)
+      skinPattern.js    applySkinPattern(root, def, skinId): a slot 2 skin's printed pattern (config/skins.js `pattern`, numbers in skinPatterns), applied by
+                        models/index.js after a build in that skin. Swaps the body material for ONE patterned clone (no draw call added) and rewrites the
+                        body meshes' UVs in the gun's frame: top and right faces take the print, every other face (the left one with the build patch,
+                        seal and loaner tag) samples a blank strip painted the body colour. One canvas per skin, made on first use and shared
+                        (userData.sharedSkinPattern: the locker's release skips it); none in Node.
       shortBarrel.js    Reversible front-segment geometry variants, preserving moving-parent transforms and owning both variants.
       loanerTag.js      The Courtesy Loaner's security tag and swinging card (reversible, like the other upgrade visuals).
       buildVisual.js    A finished gun's look: seam, patch and stitches in the stuffing's colour, lumps and leaking tufts when Overstuffed. Instanced, placed from the sticker and top mounts.
@@ -410,7 +415,7 @@ src/
     skinSave.js         createSkinSave({ storage, key }): the permanent { version, progress, unlocked, equipped } record. Also `replay` (what the round a Save & Quit will replay has already been paid; written by Save & Quit only) and `dirty` (memory holds something storage does not).
                         Counts and unlocks are keyed by gun and skin; memory updates flush on unlock/runEnd. Safe with
                         missing/corrupt/blocked storage; newer versions are protected from all writes. Debug clear can relock one challenge.
-    challenges.js       createChallenges({ events, state, save }): g.challenges, DOM-free event counter factories by challenge.kind. A round replayed after Save & Quit pays only what goes beyond what it was already paid; unsaved progress is written on runEnd, runSaved, runReset and flush() (the page closing).
+    challenges.js       createChallenges({ events, state, save }): g.challenges, DOM-free event counter factories by challenge.kind (config/skins.js lists the kinds: kills, the role kinds of phase 6, and cleanMagazines, the one with per-run state, saved with the run). A round replayed after Save & Quit pays only what goes beyond what it was already paid; unsaved progress is written on runEnd, runSaved, runReset and flush() (the page closing).
                         Mastery counts kill.weaponId, ignores assisted/dead/fan kills, emits challengeProgress and skinUnlocked.
                         update/reset/snapshot cover per-run counters; finish handlers can finalize later round/run feats before saving.
     careerStats.js      createCareerStats({ storage }): versioned persistent employee record with lifetime totals,
