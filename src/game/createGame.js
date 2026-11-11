@@ -641,7 +641,7 @@ export function createGame({
   });
   const features = buildFeatures(map, {
     scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state, warranty, meleeUpgrades, wardrobe,
-    colliders, effects, sound, input, tickets, shootables, aimAssist, secondChance, equipment, closing, skins, lostFound, returnQuest,
+    colliders, effects, sound, input, tickets, shootables, aimAssist, secondChance, equipment, closing, skins, lostFound, returnQuest, surfaces,
   });
   const kevin = features.list.find(({ feature }) => feature.kind === 'kiosk')?.instance;
 

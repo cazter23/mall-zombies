@@ -26,6 +26,7 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   west of the Fryer apron), Grand Atrium (south arcade west of the Hallway gate, x 8.04..10.24, z 6.64..7.39, facing
   +Z), Sunset Promenade (east lounge, x 11.9..14.1, z −1.875..−1.125, y 6.3, facing the Atrium link) and Customer
   Parking (bay 1 against the family van's east side, x 42.555..43.305, z −12.15..−9.95, facing +X).
+  The pay-to-trigger Fire Sprinklers pull station `sprinklerHazard` sits on the same south wall at (-6.6, 1.25, -1.95) facing +Z, between Kevin's Hallway cart (x -9.6..-7.4) and the planter (x -5.9..-4.5), under the notice poster (600 via `g.pricing`, drenching `x: -12..12, z: -2..6`). Out of reach from the Food Court gate (x -3.5..3.5), so the gate keeps its own prompt; the small red fire pull decal at x -3.9 by the gate is decoration.
   Escalator (SEALED until Hallway and Promenade are owned): west half, z 1..3, bottom end at x -4 facing the hub, rising west at 30 deg through a hole in
   the ceiling (x ~-16.5..-11.95) to level 2 (y 6.3, the top of the ceiling slab; see Level 2 below). Rope barriers + OUT OF ORDER boards at both ends disappear automatically when Hallway and Promenade are owned, including access via Atrium or Cinema; every collider you could
   reach from the floor is taller than a jump. Its low end (x -4..-10.4) is solid to the floor; under its high end
@@ -122,7 +123,7 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
 - Food Court: x -20..20, z -14.3..-2.3, 6m ceiling, behind the 1000 shutter: the old concourse moved south (its four
   shops Good Sports / Nuts & Bolts / Play Time Toys / Byte Me are real stores now (see below), 2 pillars, 2 benches (north side), tree planter,
   end planters, ceiling lights, 4 spawns), placed relative to its center line FZ = -8.3. Three food stalls along the
-  south wall between the shops: BURGER BARN (x -8.4..-3.1), WOK THIS WAY (-2.6..2.6), CORN DOG CORRAL (3.1..8.4); each
+  south wall between the shops: BURGER BARN (x -8.4..-3.1), WOK THIS WAY (-2.6..2.6), CORN DOG CORRAL (3.1..8.4, with the pay-to-trigger Fryer Blast valve switch `fryerHazard` on its front counter at (5.75, 1.05, -13.0), 750 via `g.pricing`, venting scalding oil across the grease apron `x: 2.5..9.0, z: -13.0..-6.5`); each
   is solid from the wall to its counter front (z -13.0), 1.2m tall, so you can't get onto or behind it. Eight round
   table sets (tables 0.75m you can hop onto via the 0.45m stools) at x +-9 / +-5.5 around the tree planter, leaving
   table lanes, a clear lane from the door to the planter and room to queue at the stalls; two trash cans (x +-11.2);
@@ -173,7 +174,7 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   south along the Food Court's west side to a dead end at z -14 (x -23.3..-20.3, 3.5m ceiling). Its east side is the
   hallway's and Food Court's own west walls (noWall); the Food Court wall contains the shortcut at z -13.4..-11.
   Dressing on its west wall: EMPLOYEES MUST WASH HANDS sign, two boarded vents (spawns), an electrical panel
-  with a DANGER · HIGH VOLTAGE sign, a bank of lockers (solid, narrows it to ~2.5m), exposed pipes the whole way;
+  with a DANGER · HIGH VOLTAGE sign and the pay-to-trigger PA System Lure paging switch `paLureHazard` at (-23.1, 1.35, -4.5) facing +X (500 via `g.pricing`, broadcasting a 10 m clearance lure around (-21.5, -4.5)), a bank of lockers (solid, narrows it to ~2.5m), exposed pipes the whole way;
   boxes + a vent (spawn) + NO LOITERING (ESPECIALLY THE UNDEAD) at the dead end; three ceiling strips (middle one
   dead), two warm point lights. Concrete-look floor, drab walls.
 - Loop connections (ordinary security shutters; buy the unowned destination, free when both are owned):

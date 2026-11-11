@@ -10,7 +10,8 @@
 //
 // ctx (from createGame, built after its core event wiring, so a feature's listeners run after payouts/stats):
 //   { scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state, warranty, meleeUpgrades, wardrobe,
-//     colliders, effects, sound, input, tickets, shootables, aimAssist, secondChance, equipment, closing, skins, lostFound, returnQuest }
+//     colliders, effects, sound, input, tickets, shootables, aimAssist, secondChance, equipment, closing, skins, lostFound, returnQuest, surfaces }
+//     (surfaces: game/surfaceSlows.js, where a feature reports a floor slow on the player)
 // =============================================================================
 
 import { buildWallBuy } from './wallBuy.js';
@@ -27,6 +28,9 @@ import { buildNightSafe } from './nightSafe.js';
 import { buildEscapeVan } from './escapeVan.js';
 import { buildReturnsDesk } from './returnsDesk.js';
 import { buildFountainHazard } from './fountainHazard.js';
+import { buildFryerHazard } from './fryerHazard.js';
+import { buildSprinklerHazard } from './sprinklerHazard.js';
+import { buildPaLureHazard } from './paLureHazard.js';
 import { buildLostProperty } from './lostProperty.js';
 import { buildRefundSign } from './refundSign.js';
 
@@ -42,7 +46,10 @@ const builders = {
   clawMachine: buildClawMachine, // GRAB-A-GUN: pay, time the drop, take the gun from the chute
   prizeCounter: buildPrizeCounter, // REDEMPTION: GRAB-A-GUN's prize tickets for small things
   kiosk: buildKiosk,
-  fountainHazard: buildFountainHazard, // Grand Atrium fountain breaker switch (docs/hazards-plan.md)
+  fountainHazard: buildFountainHazard, // Grand Atrium fountain breaker switch (docs/archive/hazards-plan.md)
+  fryerHazard: buildFryerHazard, // Food Court Corn Dog Corral fryer valve switch (docs/archive/hazards-plan.md)
+  sprinklerHazard: buildSprinklerHazard, // Main Hallway south fire alarm pull switch (docs/archive/hazards-plan.md)
+  paLureHazard: buildPaLureHazard, // Service Corridor west wall paging panel switch (docs/archive/hazards-plan.md)
   nightSafe: buildNightSafe,
   escapeVan: buildEscapeVan,
   returnsDesk: buildReturnsDesk,

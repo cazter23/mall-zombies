@@ -35,7 +35,7 @@ export const lostFound = {
       ],
     },
     {
-      id: 'pager', name: 'Order pager', zone: 'foodCourt', area: 'Food Court', at: [4.25, 0, -11.8], facing: 0.7, cue: 'lostBeep',
+      id: 'pager', name: 'Order pager', zone: 'foodCourt', area: 'Food Court', at: [-11.75, 0, -7.55], facing: 0.7, cue: 'lostBeep',
       tag: 'Order 47 is ready. Order 47 has been ready for some time.',
       parts: [
         { size: [0.16, 0.05, 0.24], at: [0, 0.025, 0], color: dark },

@@ -126,8 +126,8 @@ src/
     clawMachine.js      GRAB-A-GUN, the claw machine: the prize weights and capsule colours, the sweep (2.4 s, 0.2 s quicker a grab, 1.4 s
                         floor), auto-drop, lift and take times, stock (6 a site) and plush odds, the cabinet's size, its six sites and the
                         PA lines. Price: economy.claw (through g.pricing 'claw').
-    hazards.js          Environmental hazards (docs/hazards-plan.md): switch box sizing/colours, status labels, and tuning for the Grand Atrium
-                        Electrified Fountain (plus planned fryer, sprinkler and PA lure hazards). Prices: economy.hazards (through g.pricing 'hazard').
+    hazards.js          Environmental hazards (docs/archive/hazards-plan.md): the switches' shared status read-out and each switch model's sizes and colours, status labels, and tuning for the Grand Atrium
+                        Electrified Fountain, Food Court Fryer Blast, Main Hallway Fire Sprinklers, and Service Corridor PA System Lure (zone, damage, the stand-clear grace, every visual number). Prices: economy.hazards (through g.pricing 'hazard').
     workshop.js         Build-A-Blaster: Limited Edition numbers (workshopBuilds), the ritual (workshopRitual: time, qualities, stages, loaner, PA), Stuffings and Hearts, buildOf reads a gun's finished build.
     decor.js            Decoration kit + clutter scatter numbers (world/decor.js, world/scatter.js). Cosmetic only.
     concourse.js        The real-mall pass as data (maps/mall/concourse.js): Level 2 shopfronts, hallway display windows, soffits and
@@ -590,9 +590,14 @@ src/
                         voucherChoices(gun). 'prizeRedeemed'.
       horror.js         Feature kind 'horror': the mall decays as the rounds climb (config/look.js horror). Visual only, never gameplay.
                         Darker every round, flickering neon dies, every tube browns out, lamps die, the view drifts to the lateHours grade, power cuts.
-      hazards.js        Shared environmental hazard lifecycle (docs/hazards-plan.md): buildHazardSwitchBox (dynamic parent group, status lamp + throw lever),
-                        createHazard (ready -> active -> cooldown, 'hazard' pricing prompt, player-inside slow/hurt, reset), dealHazardDamage (source 'hazard', boss/Mascot maxHealthCap).
+      hazards.js        Shared environmental hazard lifecycle (docs/archive/hazards-plan.md): createHazard (the switch, ready -> active -> cooldown, 'hazard' pricing prompt,
+                        player-inside slow (through ctx.surfaces) and hurt after a stand-clear grace, reset), dealHazardDamage (source 'hazard', boss/Mascot maxHealthCap).
+      hazardSwitches.js buildHazardSwitch(style, ...): the switch you throw, one model per hazard ('breaker' fountain, 'valve' fryer, 'firePull' sprinklers,
+                        'paging' PA Lure), still parts merged by material; each shows a status lamp and a strip (full ready, runs down active, refills recharging).
       fountainHazard.js Feature kind 'fountainHazard': Grand Atrium center fountain breaker switch; energizes the basin and conductive floor ring, pulsing electric arcs (source 'hazard') and slows. Emits 'fountainKill' for each killing blow.
+      fryerHazard.js    Feature kind 'fryerHazard': Food Court Corn Dog Corral counter fryer valve switch; vents superheated oil across the counter apron (`x: 2.5..9.0, z: -13.0..-6.5`), pulsing scalding oil bursts (source 'hazard') and slipping zombies (`applySlip`). Dark oil slick with a bright rim, popping bubbles, boiling vats, steam. Emits 'fryerKill' for each killing blow.
+      sprinklerHazard.js Feature kind 'sprinklerHazard': Main Hallway south wall fire alarm pull station (`(-6.6, 1.25, -1.95)`, between Kevin's cart and the planter); drenches the concourse (`x: -12..12, z: -2..6`), chilling (`applySlow`) and soaking (`applyVulnerable`) zombies, bosses, and Mascots (`source: 'hazard'`). Ceiling heads always there; falling drops and splash rings while it sprays. Emits 'sprinklerKill' for each killing blow.
+      paLureHazard.js   Feature kind 'paLureHazard': Service Corridor west wall paging panel switch (`(-23.1, 1.35, -4.5)`); broadcasts a clearance chime (`10 m` radius around `(-21.5, -4.5)`), holding normal zombies with `applyHold` before a final feedback pop (`source: 'hazard'`). Speaker horn always mounted; sound waves out to its real reach and a spinning sale tag over each held shopper. Emits 'paLureKill' for each killing blow.
     debugCommands.js    createDebugCommands(game parts): the debug shortcuts as functions run(id) (spawn, cycleZombie, clearZombies,
                         killZombies, nextRound, jumpRounds, flashSale, addPoints, zeroPoints, god, giveGun, upgradeGun, doors, arena, panel,
                         spawnMascot / spawnGoldMascot: each costume in turn at the spawn point nearest you);

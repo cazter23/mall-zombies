@@ -6,8 +6,9 @@
 //   reasons     why the pause menu's Save & Quit is greyed out (the button shows the text).
 // =============================================================================
 export const save = {
-  version: 7, // 7: Kiosk Kevin's five carts merged into main (the kiosk feature saves where he is), with Lost and Found and the
-  //             Return quest (map.features gained lost property and NO REFUNDS signs, and a 'returnQuest' save step);
+  version: 8, // 8: hazards phases 2-4 merged into main (map.features gained the Fryer Blast, Fire Sprinklers and PA System Lure
+  //             switches); 7: Kiosk Kevin's five carts (the kiosk feature saves where he is), Lost and Found and the Return
+  //             quest (map.features gained lost property and NO REFUNDS signs, and a 'returnQuest' save step);
   //          6: the challenges step saves the weapon skin feats' run state; 5: Returns Desk appended to map.features
   storageKey: 'sunsetGalleria.save',
   reasons: {

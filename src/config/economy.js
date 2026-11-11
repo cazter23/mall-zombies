@@ -139,7 +139,7 @@ export const economy = {
   // gun's nominal worth, which the claw machine's report reads.
   closing: { nightSafe: 1000, validation: 5000, returnsDesk: 10000, returnsAmmo: 2500 },
 
-  // Environmental hazards (docs/hazards-plan.md, config/hazards.js): pay-to-trigger mall traps with cooldowns.
+  // Environmental hazards (docs/archive/hazards-plan.md, config/hazards.js): pay-to-trigger mall traps with cooldowns.
   hazards: {
     fountain: 750,
     fryer: 750,

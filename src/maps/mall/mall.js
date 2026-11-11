@@ -954,9 +954,12 @@ export function buildMall(scene, colliders) {
     { kind: 'prizeCounter', name: 'prizeCounter', zone: counterSite.zone, position: prizeBooth.position, normal: prizeBooth.normal, slots: prizeBooth.slots },
     // Kiosk Kevin: one cart live at one of his sites (every run starts at the first).
     { kind: 'kiosk', name: 'kioskKevin', zone: kioskSites[0].zone, position: kioskSites[0].cart.position, normal: kioskSites[0].cart.normal, sites: kioskSites },
-    // Environmental hazards (docs/hazards-plan.md): Grand Atrium Electrified Fountain breaker switch.
+    // Environmental hazards (docs/archive/hazards-plan.md): Grand Atrium Electrified Fountain, Food Court Fryer Blast, Main Hallway Fire Sprinklers & Service Corridor PA System Lure switches.
     { kind: 'escapeVan', name: 'escape_van', zone: 'parkingLot', position: escapeVanPosition, normal: new THREE.Vector3(1, 0, 0), validation: parking.validation },
     { kind: 'fountainHazard', name: 'hazard_fountain', zone: hazards.fountain.zone, position: new THREE.Vector3(hazards.fountain.position.x, hazards.fountain.position.y, hazards.fountain.position.z), normal: new THREE.Vector3(hazards.fountain.normal.x, hazards.fountain.normal.y, hazards.fountain.normal.z) },
+    { kind: 'fryerHazard', name: 'hazard_fryer', zone: hazards.fryer.zone, position: new THREE.Vector3(hazards.fryer.position.x, hazards.fryer.position.y, hazards.fryer.position.z), normal: new THREE.Vector3(hazards.fryer.normal.x, hazards.fryer.normal.y, hazards.fryer.normal.z) },
+    { kind: 'sprinklerHazard', name: 'hazard_sprinklers', zone: hazards.sprinklers.zone, position: new THREE.Vector3(hazards.sprinklers.position.x, hazards.sprinklers.position.y, hazards.sprinklers.position.z), normal: new THREE.Vector3(hazards.sprinklers.normal.x, hazards.sprinklers.normal.y, hazards.sprinklers.normal.z) },
+    { kind: 'paLureHazard', name: 'hazard_paLure', zone: hazards.paLure.zone, position: new THREE.Vector3(hazards.paLure.position.x, hazards.paLure.position.y, hazards.paLure.position.z), normal: new THREE.Vector3(hazards.paLure.normal.x, hazards.paLure.normal.y, hazards.paLure.normal.z) },
     { kind: 'returnsDesk', name: 'returnsDesk', zone: deskZone, position: new THREE.Vector3(returnsX, returns.promptHeight, returnsWallZ - returns.promptOffset), normal: new THREE.Vector3(0, 0, -1) },
   ];
 
