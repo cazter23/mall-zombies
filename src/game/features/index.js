@@ -22,6 +22,7 @@ import { buildHorror } from './horror.js';
 import { buildWardrobeRack, buildFittingRoom } from './wardrobeFixtures.js';
 import { buildClawMachine } from './clawMachine.js';
 import { buildPrizeCounter } from './prizeCounter.js';
+import { buildKiosk } from './kiosk.js';
 import { buildFountainHazard } from './fountainHazard.js';
 
 const builders = {
@@ -35,6 +36,7 @@ const builders = {
   horror: buildHorror, // the horror layer: lights die and the power cuts out as the rounds climb (visual only)
   clawMachine: buildClawMachine, // GRAB-A-GUN: pay, time the drop, take the gun from the chute
   prizeCounter: buildPrizeCounter, // REDEMPTION: GRAB-A-GUN's prize tickets for small things
+  kiosk: buildKiosk,
   fountainHazard: buildFountainHazard, // Grand Atrium fountain breaker switch (docs/hazards-plan.md)
 };
 

@@ -409,7 +409,12 @@ export function createGame({
       ...(zombie.type?.variant ? { variant: zombie.type.variant } : {}),
       ...(isBoss ? { boss: zombie.type.id } : {}),
     } : { type: 'zombie', id: 'shopper' };
-    health.takeDamage(damage * stats.damageTakenMultiplier, source); // (clothes scale zombie hits only: a fall goes straight to health)
+    // Clothes scale zombie hits only (a fall goes straight to health); Bubble Wrap (Kiosk Kevin) soaks what is left first.
+    const scaled = damage * stats.damageTakenMultiplier;
+    const { damage: remaining, popped } = health.absorb(scaled);
+    if (remaining < scaled) events.emit('armourHit', { absorbed: scaled - remaining, layers: health.armour.length, popped });
+    if (popped) sound.play('bubbleWrapPop');
+    health.takeDamage(remaining, source);
     if (health.isReviveProtected) return; // this hit just spent Second Chance: revived where you stand, no shove or jolt
     if (knockback) { // a Cart Pusher's charge shoves you along it (m/s, horizontal)
       player.velocity.x += knockback.x * stats.knockbackMultiplier;
@@ -439,7 +444,7 @@ export function createGame({
   });
 
   // Build-A-Blaster's PA lines (game/features/workshopRitual.js), and GRAB-A-GUN's (game/features/clawMachine.js).
-  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualWaiting', 'ritualCollect', 'limitedEditionDrop', 'limitedEditionFitted', 'wardrobeBuy', 'clawClosed', 'clawMoved']) {
+  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualWaiting', 'ritualCollect', 'limitedEditionDrop', 'limitedEditionFitted', 'wardrobeBuy', 'clawClosed', 'clawMoved', 'kioskStock']) {
     events.on(name, ({ pa }) => {
       hud.showAnnouncement({ ...pa, priority: 1 });
       sound.play('paChime');
@@ -511,8 +516,9 @@ export function createGame({
   const wardrobe = createWardrobe({ stats, player, events });
   const features = buildFeatures(map, {
     scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state, warranty, meleeUpgrades, wardrobe,
-    colliders, effects, sound, input, tickets, shootables, aimAssist, secondChance,
+    colliders, effects, sound, input, tickets, shootables, aimAssist, secondChance, equipment,
   });
+  const kevin = features.list.find(({ feature }) => feature.kind === 'kiosk')?.instance;
 
   // The outfit rail's brain: which worn item's tag pulses when (game/outfitRail.js; the HUD draws it).
   const outfitRail = createOutfitRail({ events, wardrobe, stats, player, gun, state });
@@ -530,6 +536,10 @@ export function createGame({
       if (group.id === 'tiers') return gun.slots.some((id) => warranty.offer(id));
       if (group.id === 'attachments') return featuresOf(map, 'attachmentCounter').some(s => !ownsAttachment(gun, s.attachment));
       if (group.id === 'apparel') return featuresOf(map, 'wardrobeRack').some(r => map.zones[r.zone].open && !wardrobe.owns(r.item));
+      if (group.id === 'kiosk') {
+        const status = kevin?.status;
+        return status?.open && !status.hiding;
+      }
       return true;
     },
   });
@@ -627,6 +637,7 @@ export function createGame({
     }],
     ['wardrobe', () => wardrobe.serialize(), (data) => wardrobe.restore(data)],
     ['secondChance', () => secondChance.serialize(), (data) => secondChance.restore(data)],
+    ['armour', () => health.armour, (layers) => health.restoreArmour(layers)], // Bubble Wrap (health itself is transient: stats.health is saved)
     ['runStats', () => runStats.serialize(), (data) => runStats.restore(data)],
     ['equipment', () => equipment.serialize(), (data) => equipment.restore(data)],
     ['gun', () => ({ ...gun.serialize(), attachments: ownedAttachments(gun) }), (data) => {

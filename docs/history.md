@@ -82,6 +82,19 @@ spare-gun chip). Damage direction and the glow tweak were fine. Fixed:
   economy.rounds.lastShoppers now, and the manager asks rounds.lastShoppers. The occupancy line only touches the DOM when it changes.
 - **Incident report:** a death from your own Electrified Fountain read "Unclassified workplace casualty". Hazards now pass their id,
   with their own reports. The Cart Pusher tip named the [Space] key (wrong on a controller).
+## 10 November 2026 - Minimal Kiosk Kevin
+
+- **Phase 2.** Bubble Wrap has three layers of 40 damage each. Zombie and boss hits go through clothing before
+  the wrap. Partial damage stays on the outer layer, falls bypass it, and a broken layer pops. The HUD shows
+  remaining layers. The keyless `armour` debug command adds layers up to the cap.
+- **Phase 3.** One fixed Hallway cart opens from round 2. It always stocks Soda Bomb (300 points to refill to
+  three), Bubble Wrap (500 per layer), and Stadium Air Horn (500 to refill to two). Kevin's Pick cycles through
+  the three, adding one charge or layer. Kevin ducks near zombies. Purchases use the normal discounts and vouchers.
+- **Air Horn.** The Tactical button sounds it immediately. It staggers nearby zombies with a clear line and
+  interrupts Cart Pusher charges. Bosses ignore it. Play again clears the pockets, wrap and cart state.
+- **Merged into main (review).** Combined with Second Chance (a hit during the revive protection is not announced, so it never
+  reaches the wrap) and Save & Quit: the wrap is saved as its own step ('armour', each layer's strength left), since health is
+  transient; tests/saveGame.test.js checks a partly used layer survives a load. The cart itself keeps no saved state.
 
 ## 10 November 2026 - Shopping window: a 20 s break and "Clock in"
 

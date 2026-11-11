@@ -64,7 +64,7 @@ export function createEquipment({
     return out.set((out.x / flat) * cos, Math.sin(pitch), (out.z / flat) * cos);
   }
 
-  function throwFrom(pocketId) {
+  function useFrom(pocketId) {
     const pocket = pockets[pocketId];
     const product = productOf(pocket.id);
     if (!product || pocket.count <= 0 || !canThrow()) return false;
@@ -73,6 +73,10 @@ export function createEquipment({
     if (pocket.count === 0) pocket.id = null;
     busyTimer = kiosk.throw.blockSeconds;
     gun.weapon.cancelReload(); // (like a box-cutter swing)
+    if (product.horn) {
+      blastHorn(product.horn);
+      return true;
+    }
     throwDirection(aim);
     const start = eye.clone().addScaledVector(aim, kiosk.throw.startOffset);
     start.y -= kiosk.throw.startDrop;
@@ -87,6 +91,23 @@ export function createEquipment({
     sound?.play(product.sounds.throw);
     events.emit('equipmentThrown', { id, pocket: pocketId, left: pocket.count });
     return true;
+  }
+
+  function blastHorn(horn) {
+    const origin = player.position;
+    player.getAim(eye, aim);
+    for (const target of shootables) {
+      if (!target.isAlive || !target.type || target.noRewards || target.type.boss) continue;
+      const { x, y, z } = target.position;
+      if (Math.abs(y - origin.y) > horn.floorTolerance || Math.hypot(x - origin.x, z - origin.z) > horn.radius) continue;
+      toTarget.set(x, y + horn.chestHeight, z).sub(eye);
+      const distance = toTarget.length();
+      if (distance > 1e-3 && castShot(eye, toTarget.divideScalar(distance), distance, colliders, []).worldHit) continue;
+      const mascot = target.type.mascot;
+      const weight = mascot && !target.mascotHeadOff ? mascot.hitKnockbackScale : 1;
+      target.staggerAway(origin, { ...horn.stagger, knockback: horn.stagger.knockback * weight });
+    }
+    sound?.play(horn.sound);
   }
 
   /** Distance from `point` to a target's nearest hitbox (0 = touching it). */
@@ -175,6 +196,14 @@ export function createEquipment({
       return { pocket: product.pocket, count: pocket.count, replaced };
     },
 
+    refill(id, count) {
+      const product = productOf(id);
+      if (!product?.pocket) throw new Error(`equipment: unknown product "${id}"`);
+      const pocket = pockets[product.pocket];
+      if (pocket.id === id) pocket.count = Math.max(pocket.count, count);
+      else this.give(id, count);
+    },
+
     fill() {
       const filled = [];
       for (const pocketId of kiosk.pockets) {
@@ -193,8 +222,8 @@ export function createEquipment({
       // Always consumed, so presses don't queue up; lethal first if both arrive on one tick (one throw at a time).
       const lethal = input.consumeAction('lethal');
       const tactical = input.consumeAction('tactical');
-      if (lethal) throwFrom('lethal');
-      if (tactical) throwFrom('tactical');
+      if (lethal) useFrom('lethal');
+      if (tactical) useFrom('tactical');
     },
 
     updateThrown(dt) {

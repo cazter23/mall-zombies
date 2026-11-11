@@ -310,7 +310,9 @@ export function createHud() {
   const secondChance = el('div', 'second-chance');
   secondChance.hidden = true;
   secondChance.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M6 1h4v5h5v4h-5v5H6v-5H1V6h5z"/></svg>Second Chance';
-  vitals.append(secondChance, outfitRail.el, health, sprint);
+  const armour = el('div', 'armour-layers'); // Bubble Wrap layers (Kiosk Kevin)
+  let lastArmourCount = 0;
+  vitals.append(secondChance, outfitRail.el, armour, health, sprint);
   hud.append(vitals);
 
   // FPS counter (Settings > Video), top right.
@@ -813,6 +815,13 @@ export function createHud() {
         view.key.textContent = keys[pocket] ?? '';
       }
       ammo.querySelector('.pockets').hidden = !status;
+    },
+
+    setArmour(count) {
+      if (count === lastArmourCount) return;
+      lastArmourCount = count;
+      armour.setAttribute('aria-label', `Bubble Wrap: ${count} layers`);
+      armour.replaceChildren(...Array.from({ length: count }, () => el('span', 'armour-layer')));
     },
 
     // Vault prompt: shown while `show`; `button` = the jump button for the device ("Space", "A", "✕").

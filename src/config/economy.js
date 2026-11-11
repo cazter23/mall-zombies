@@ -130,6 +130,7 @@ export const economy = {
   // Second Chance (Customer Service's third window; game/secondChance.js): one automatic self-revive per run. What the revive
   // gives is in config/feel.js (health.secondChance). In no Flash Sale group; the Discount Code and Employee Discount apply.
   secondChance: { price: 2000 },
+  kiosk: { sodaBomb: 300, bubbleWrap: 500, airHorn: 500 },
 
   // Environmental hazards (docs/hazards-plan.md, config/hazards.js): pay-to-trigger mall traps with cooldowns.
   hazards: {
@@ -187,6 +188,11 @@ export const economy = {
         id: 'claw', label: 'GRAB-A-GUN', categories: ['claw'], weight: 1,
         start: { kicker: 'Flash sale', text: 'GRAB-A-GUN is {pct}% off! Everyone\'s a winner.* (*See small print. Small print is out of stock.)' },
         end: { kicker: 'Sale over', text: 'The GRAB-A-GUN sale has ended. The claw is back to its usual grip.' },
+      },
+      {
+        id: 'kiosk', label: "Kevin's cart", categories: ['kiosk'], weight: 1,
+        start: { kicker: 'Flash sale', text: "Everything on Kevin's cart is {pct}% off. Kevin was not consulted." },
+        end: { kicker: 'Sale over', text: "Kevin's cart is back to regular prices. Kevin was consulted." },
       },
       {
         id: 'hazards', label: 'Mall hazards', categories: ['hazard'], weight: 0.8,

@@ -498,6 +498,7 @@ src/
                         forcePlush / moveNow (debug). The show (cfg.show, never the prize): prongs open and shut, the carried capsule swings,
                         the chute flap, an attract screen, sounds that fade with distance (jingle, a tick into each lane, motor, grab,
                         fanfare, Sunny's slide whistle) and a hum: an emitter it adds to map.ambience that follows the live machine.
+      kiosk.js          Kevin's fixed Hallway feature: three priced buy spots, round gating, Kevin's Pick, hiding and PA.
       clawSunny.js      Sunny runs away (built by clawMachine.js): out of the chute, a look round, a waddle along g.zombies.nav.pathTo to the
                         next site's front (open areas only; a lap round his own machine if no other site is open), into that cabinet, which
                         shakes (its rig group; colliders never move). His shootable (one body box) pops on any hit: stuffing and confetti,
@@ -641,6 +642,7 @@ src/
     mall/cinemaStairs.js Physical service stairs with a smooth ramp under visible treads, solid supports, handrails, two culling
                         rooms and the floor-to-floor nav link. Lower shutter (1500) opens cinema + serviceCorridor; the original
                         cinema shutter now opens cinema + upstairs. No real lights, guns or spawn markers added.
+    mall/kioskCart.js   Kevin's low counter, vendor, three buy spots and changing notices.
     mall/restockMachine.js buildRestockMachine({ kit, center, wallAt, facing, floorY = 0 }) -> { position, normal, screen }: the RESTOCK-O-MATIC
                         (north/south walls): body + hazard kick plate + glowing header and tagline, a lit window of ammo boxes, keypad,
                         card reader, live canvas screen (screen.show({ title, line, note, tone })), side signs, the AMMO blade sign, the
