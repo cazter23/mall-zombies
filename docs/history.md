@@ -1,5 +1,15 @@
 # Sunset Galleria: build history ("Current state")
 
+## 10 November 2026 - Weapon skins phase 5: The locker, and slot 1 skins
+
+- The title has a Weapon locker beside Statistics; Play keeps its Directed/Classic chooser. All eleven guns show Default and their named mastery recolour, with readable locked challenges and permanent progress. Mouse, arrows/Enter and controller D-pad/A browse/equip; Back, Escape and B return. Equipping saves immediately.
+- The turning buildWeaponDisplay preview exists only while open, runs on the title idle-saver loop, and disposes its geometry, materials, label textures, renderer/context and canvas on close. Your held, newly purchased/won/built and conveyor guns use g.skins; wall displays and claw prizes stay default.
+- Kept Night Shift unchanged and kept Carbon Copy, darkening only its body from #404a4d to #353f42 for the configured 2:1 contrast floor. Every mastery body passes all six stuffings and four warranty tiers; the lowest ratio is 2.0506:1. All eleven names and role palettes are in docs/skins-5-report.md.
+- Save & Quit version 3 saves run skin choices and the challenges earned-this-run receipt list. Permanent progress/unlocks/preferences stay in the version 1 skin save and flush on runSaved. Play again rereads preferences; Continue restores the saved run coat. The receipt adds one line for this run's skin unlocks.
+- Full suite: 1309/1309 passed, zero failures/skips. Production build passed (318 modules); balance output is byte-identical to Step 0. Phase 2 default fixtures and upgradeColors.test.js pass untouched. Step 0 separately passed 1295 tests and build; its commits are d8c2fea and d1aeafb.
+- Production-preview Chrome/SwiftShader captures cover locked/unlocked locker, both retained skins in hand, three stuffings at Platinum, and a real 150 HP Shopper kill from 399 progress followed by the PA/toast and receipt. Rivet Rifle draw calls: default 135, skinned 135. Preview canvas releases on Back; Escape and simulated controller B return to title. QA used an isolated profile; normal browser saves were untouched and the QA storage was restored. Physical controller/GPU and subjective combat play were not checked.
+- Shared files: config/skins.js and save.js; game/createGame.js, challenges.js, skinSave.js, features/workshop.js and workshopRitual.js; main.js; ui/hud.js, screens.js and retail.css; weapons/models/index.js; tests/challenges.test.js; folder/test/history docs. New files: game/skins.js, ui/locker.js, tests/locker.test.js and tests/skinEquipment.test.js. Full report: docs/skins-5-report.md.
+
 ## 10 November 2026 - Weapon skins phase 5, Step 0: join the tracks
 
 - Isolated skins-5 starts at skins-1 (90ca748); both input suites passed 1175/1175 with no failures or skips. The skins-3 merge is d8c2fea; all eleven challenges, the two original palettes, storage, notices and both debug commands are retained.

@@ -27,6 +27,7 @@
 // =============================================================================
 
 import { economy } from '../config/economy.js';
+import { gunSkin, locker as lockerCfg } from '../config/skins.js';
 import { closingTime } from '../config/closingTime.js';
 import { createOutfitRail } from './outfitRail.js';
 import { outfitRail as outfitCfg } from '../config/wardrobe.js';
@@ -63,6 +64,7 @@ export function receiptLinesFor(r) {
     lines.push([closingTime.receipt.overtimeRounds, r.overtimeRounds ?? 0]);
   }
   if (r.survivedBy?.length) lines.push(['Survived by', r.survivedBy.map(survivorLine).join(' and ')]);
+  if (r.skinsUnlocked?.length) lines.push([lockerCfg.receiptLabel, lockerCfg.receiptNames(r.skinsUnlocked.map(({ gunId, skinId }) => gunSkin(gunId, skinId)?.name).filter(Boolean))]);
   if (r.secondChanceUsed) lines.push(['Second Chance', 'Used']);
   // GRAB-A-GUN (game/tickets.js): tickets aren't points, so they're a line of their own, never in the totals.
   if (r.ticketsWon > 0) lines.push(['Prize tickets won', r.ticketsWon]);
@@ -151,7 +153,7 @@ export function evaluatePerformance(r = {}) {
   };
 }
 
-export function createScreens() {
+export function createScreens({ locker = null } = {}) {
   const handlers = {};
   const emit = (action, pad = false) => handlers[action]?.({ pad });
 
@@ -173,6 +175,7 @@ export function createScreens() {
         <button class="menu-btn primary" data-action="play" type="button">Play</button>
         <button class="menu-btn" data-action="help" type="button">How to play</button>
         <button class="menu-btn" data-action="stats" type="button">Statistics</button>
+        <button class="menu-btn" data-action="locker" type="button">${lockerCfg.menu}</button>
         <button class="menu-btn" data-action="settings" type="button">Settings</button>
         <button class="menu-btn" data-action="controls" type="button">Controls</button>
       </div>
@@ -385,7 +388,7 @@ export function createScreens() {
   const statsBests = stats.querySelector('.stats-bests');
   const statsRecent = stats.querySelector('.stats-recent');
 
-  const screens = { title, runMode, pause, results, help, stats };
+  const screens = { title, runMode, pause, results, help, stats, ...(locker ? { locker: locker.element } : {}) };
   for (const node of Object.values(screens)) document.body.append(node);
   let current = null;
   let focus = 0;
@@ -557,7 +560,7 @@ export function createScreens() {
 
     // Should the title flyover be drawn behind? (the title itself, or How to play opened from it)
     get showsFlyover() {
-      return current === 'title' || current === 'runMode' || current === 'stats' || (current === 'help' && helpReturn === 'title');
+      return current === 'title' || current === 'runMode' || current === 'stats' || current === 'locker' || (current === 'help' && helpReturn === 'title');
     },
 
     on(action, fn) {
@@ -565,6 +568,8 @@ export function createScreens() {
     },
 
     show(name, data) {
+      const leavingLocker = current === 'locker' && name !== 'locker';
+      if (leavingLocker) locker?.close();
       for (const [key, node] of Object.entries(screens)) node.classList.toggle('hidden', key !== name);
       for (const [button, timer] of armed) {
         clearTimeout(timer);
@@ -587,6 +592,8 @@ export function createScreens() {
       }
       if (name === 'help') helpReturn = data?.from ?? 'title';
       if (name === 'stats') fillStats(data);
+      if (name === 'locker') locker?.open();
+      if (leavingLocker && name === 'title') title.querySelector('[data-action="locker"]').focus();
       markFocus(false);
     },
 
@@ -621,6 +628,7 @@ export function createScreens() {
 
     padNav(input) {
       if (!current) return;
+      if (current === 'locker') return locker?.padNav(input);
       const buttons = buttonsOf(current);
       const step = (input.consumePress('PadDown') || input.consumePress('PadRight') ? 1 : 0)
         - (input.consumePress('PadUp') || input.consumePress('PadLeft') ? 1 : 0);

@@ -26,6 +26,7 @@ import { buildConfettiCannonModel, buildConfettiCannonDisplay } from './confetti
 import { buildLeafBlowerModel, buildLeafBlowerDisplay } from './leafBlower.js';
 import { buildTennisBallLauncherModel, buildTennisBallLauncherDisplay } from './tennisBallLauncher.js';
 import { buildReturnToSenderModel, buildReturnToSenderDisplay } from './returnToSender.js';
+import { resolveGunColors } from '../skinPalette.js';
 
 const builders = {
   rivetRifle: { model: buildRivetRifleModel, display: buildRivetRifleDisplay },
@@ -51,6 +52,9 @@ export function buildWeaponModel(def, skinId) {
   return builderFor(def).model(def, skinId);
 }
 
-export function buildWeaponDisplay(def) {
-  return builderFor(def).display(def);
+export function buildWeaponDisplay(def, skinId) {
+  // Display builders already resolve their defaults. Supply a copy of the chosen
+  // colour set only for the locker and YOUR conveyor gun; world displays omit it.
+  const painted = skinId ? { ...def, viewmodel: { ...def.viewmodel, ...resolveGunColors(def, skinId) } } : def;
+  return builderFor(def).display(painted);
 }

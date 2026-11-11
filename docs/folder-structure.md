@@ -17,7 +17,7 @@ src/
   style.css             HUD (crosshair, hit marker, health/stamina bars, ammo, prompt), start/pause overlay
   boot.js               The page's entry point: waits for the web fonts (core/fontsReady.js, list and time limit in config/fonts.js), then imports main.js.
   config/
-    skins.js            Per-gun skin arrays, gunSkin lookup, Mastery kill challenges, save key/version and unlock/debug words.
+    skins.js            Eleven mastery role palettes, gunSkin lookup, kill challenges, permanent save key/version, contrast threshold, locker/preview and unlock/debug words.
                         Preserves Phase 1's Night Shift/Carbon Copy palettes; the other nine skins carry names and challenges for now.
     idle.js             Idle saver numbers: delays (short / normal / long: dim and sleep seconds), dimFps, muteWhenAsleep, pollSeconds
     haptics.js          Controller vibration intensity and per-gun/damage/pickup durations, motor strengths and priorities
@@ -95,7 +95,6 @@ src/
                         min/max/step, format, apply(value, ctx) }. Most apply() functions write into the config objects the
                         game reads every frame (feel, controls, audio). New setting = one entry here (new tab = add to settingsTabs)
     gunPalettes.js      Shared role bindings for each model colour key and the defaults moved out of model files.
-    skins.js            Per-gun base coats (Staple Gun and Rivet Rifle), written in palette roles. Phase 1 uses a keyless debug override.
     debug.js            THE DEBUG KEYS as a table (`commands`: id, key, shift, group, label; keys must not clash with gameplay
                         bindings: tests check) + enabled (master switch), showMarkers, testArena, addPointsAmount, jumpRounds, panel,
                         dummies, exposeToWindow, keyLabel(). They work in a normal game (no debug mode): Z spawn the selected
@@ -862,7 +861,7 @@ src/
                         silhouettes for empty slots, a swing + glow on pulse. Variants: 'hud' (over the health bar, from round 1), 'pause' (large, with each item's
                         lines) and 'receipt' (the death receipt's DIED WEARING row).
     outfitIcons.js      The rail's SVG pictures: one icon per item (`icon` ids in config/wardrobe.js) and one dashed silhouette per slot.
-    screens.js          The menus around a run (title, run mode, statistics, pause, results) as plain DOM over the canvas. The run mode chooser lists config/closingTime.js modes
+    screens.js          The menus around a run (title, run mode, statistics, weapon locker, pause, results) as plain DOM over the canvas. The run mode chooser lists config/closingTime.js modes
                         (Directed first), focuses the remembered mode (setRunMode) and stays up after a mode is confirmed until play starts (startRequested).
     runStart.js         createRunStart({ game, screens, settings, play }): a mode confirmed on the chooser is stored (game.closingMode, the 'closingMode' setting) and play() is
                         asked once. No reset (the title already reset the run) and no pause screen; acceptsLock() tells main.js whether an arriving pointer lock may start play.
@@ -968,3 +967,10 @@ Guard: zombies/bosses/guard.js owns alarm, physical shutter closure, radio heads
 Boss encounters: bosses/manager.js owns meetings/reports; bosses/employeeModel.js mounts configured costume parts and owns the temporary whiteboard. game/bossVouchers.js wires carried-gun/area eligibility and points conversion into pricing. powerUps.js and powerUpView.js deliver voucher pickups through the existing reward queue.
 
 Boss groundwork: zombie.js owns timed buffs, source-bound holds and a behavior control function. pricing.js owns a separate one-use voucher, eligibility conversion and sale/coupon/voucher order. debug.run('summonBoss', id) selects a boss explicitly.
+
+### Weapon locker (skins phase 5)
+
+- src/game/skins.js: DOM-free per-run equipped choices from skinSave; validates unlocks, resets from preferences, and serializes/restores the run coat for Save & Quit.
+- src/ui/locker.js: title locker DOM, mouse/keyboard/controller browsing, immediate equip persistence, and a turning buildWeaponDisplay preview. Its renderer, meshes, materials and textures exist only while open; main's idle-governed render loop drives it.
+- src/config/skins.js: eleven mastery role palettes, contrast threshold, locker words, preview settings and receipt copy.
+- src/game/challenges.js: also keeps this run's unlock list for the receipt, saved independently of permanent progress.

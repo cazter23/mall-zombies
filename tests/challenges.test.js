@@ -53,12 +53,12 @@ function shopper(t, health = 1000) {
   return z;
 }
 
-test('all eleven guns have a named mastery challenge; Phase 1 IDs and palettes survive', () => {
+test('all eleven guns have a named mastery challenge; Phase 1 IDs survive the contrast pass', () => {
   assert.deepEqual(Object.keys(skins).sort(), Object.keys(weapons).sort());
   assert.equal(skins.stapleGun[0].id, 'night-shift');
   assert.equal(skins.rivetRifle[0].id, 'carbon-copy');
   assert.equal(skins.stapleGun[0].palette.body, 0x303e74);
-  assert.equal(skins.rivetRifle[0].palette.body, 0x404a4d);
+  assert.equal(skins.rivetRifle[0].palette.body, 0x353f42);
   for (const [gunId, [skin]] of Object.entries(skins)) {
     assert.equal(skin.slot, 1);
     assert.equal(skin.challenge.kind, 'kills');

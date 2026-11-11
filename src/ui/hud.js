@@ -34,7 +34,7 @@ function el(tag, className) {
   return node;
 }
 
-export function createHud() {
+export function createHud({ locker = null } = {}) {
   const hud = el('div', 'hud');
   const eyewear = el('div', 'wardrobe-eyewear');
   eyewear.setAttribute('aria-hidden', 'true');
@@ -361,7 +361,7 @@ export function createHud() {
   const updateOrderTop = () => hud.style.setProperty('--hud-order-top', `${Math.ceil(topStack.offsetTop + topStack.offsetHeight + 12)}px`);
   if (typeof ResizeObserver === 'function') new ResizeObserver(updateOrderTop).observe(topStack);
   // The menus around a run (title / pause / results receipt): ui/screens.js.
-  const screens = createScreens();
+  const screens = createScreens({ locker });
   document.body.append(hud);
 
   let lastHealth = -1;

@@ -55,6 +55,7 @@ import { createRoomCulling } from './fx/roomCulling.js';
 import { look } from './config/look.js';
 import { createCareerStats } from './game/careerStats.js';
 import { createSkinSave } from './game/skinSave.js';
+import { createLocker } from './ui/locker.js';
 
 // --- Renderer, scene, camera ---------------------------------------------------
 
@@ -87,16 +88,18 @@ window.addEventListener('resize', () => {
 
 const input = new Input(renderer.domElement);
 const gamepad = createGamepad(input); // feeds controller buttons/sticks into `input`
-const hud = createHud();
+const skinSave = createSkinSave();
+const locker = createLocker({ save: skinSave, onBack: () => hud.screens.show('title') });
+const hud = createHud({ locker });
 const noticesMenu = createNoticesMenu(hud.history);
 const sound = createSound(); // synthesized sound effects (starts on the first click/key press)
 const viewmodel = createViewmodel(Object.values(weapons), meleeWeapons.boxCutter, {
-  skinFor: (gunId) => g.debug.skinFor(gunId),
+  skinFor: (gunId) => g.debug.skinFor(gunId) ?? g.skins.skinFor(gunId),
 });
 const postProcessing = createPostProcessing({ renderer, scene, camera, viewmodel });
 
 const g = createGame({
-  skinSave: createSkinSave(),
+  skinSave,
   scene,
   camera,
   input,
@@ -337,6 +340,7 @@ function continueRun(how) {
 }
 // Play from the title starts a new shift: a save left in the slot is discarded (the button asked twice).
 function newShift(how) {
+  g.skins.reset(); // the locker may have changed after the title reset the previous run
   g.saveGame.discard();
   screens.setContinue(null);
   play(how);
@@ -366,6 +370,7 @@ screens.on('settings', () => settingsMenu.open());
 screens.on('stats', () => screens.show('stats', careerStats.snapshot()));
 screens.on('clearStats', () => screens.show('stats', careerStats.reset()));
 screens.on('statsBack', () => screens.show('title'));
+screens.on('locker', () => screens.show('locker'));
 wireRunIntro({ events: g.events, hud, sound }); // the PA's opening line as round 1 begins
 screens.on('controls', () => controlsMenu.open());
 screens.on('notices', () => noticesMenu.open());
@@ -453,6 +458,7 @@ function render(alpha, frameTime) {
 
   if (screens.showsFlyover) {
     renderTitle(frameTime);
+    locker.render(frameTime);
     return;
   }
 
@@ -610,7 +616,7 @@ if (debug.exposeToWindow) {
   window.__mall = {
     THREE, scene, camera, renderer, postProcessing, map, world: map, colliders: g.colliders, arena: g.arena, player, stats: g.stats, input, game,
     hud, gun, effects, viewmodel, shootables: g.shootables, body, zombies, health, melee, runStats: g.runStats, death, resetRun,
-    gamepad, aimAssist, wallet, rounds, sound, interactions, g, screens, titleCamera, roomCulling,
+    gamepad, aimAssist, wallet, rounds, sound, interactions, g, screens, locker, skinSave, titleCamera, roomCulling,
     menus: { play, pauseRun, freshRun, goToTitle }, // the menu flow, for testing
     benchmark: runBenchmark, // await __mall.benchmark() -> the report (title or pause screen)
     settings, lightPool, loop, idleSaver, // (settings.set(id, value) as the menu would; the light pool)

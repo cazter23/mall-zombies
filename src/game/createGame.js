@@ -65,6 +65,7 @@ import { createWardrobe } from './wardrobe.js';
 import { createOutfitRail } from './outfitRail.js';
 import { createRunStats } from './runStats.js';
 import { createSkinSave } from './skinSave.js';
+import { createSkins } from './skins.js';
 import { createChallenges } from './challenges.js';
 import { createWallet, pointsForHit } from './wallet.js';
 import { createRounds } from './rounds.js';
@@ -227,6 +228,7 @@ export function createGame({
     },
   };
   const challenges = createChallenges({ events, state, save: skinSave });
+  const skins = createSkins({ save: skinSave });
   const runFrozen = () => state.over || state.winPending;
   // GRAB-A-GUN's prize tickets (game/tickets.js): their own currency, never points, pricing or income.
   const tickets = createTickets({ events, state });
@@ -263,6 +265,7 @@ export function createGame({
       wearing: Object.freeze(Object.fromEntries(outfitRail.snapshot().map(({ slot, id }) => [slot, id]))),
       // The guns you named at Build-A-Blaster (the receipt reads them out).
       survivedBy: gun.namedBuilds.map((build) => ({ name: build.name, combo: comboName(build), confirmed: build.confirmed ?? 0 })),
+      skinsUnlocked: challenges.earned,
       ticketsWon: tickets.won, // (GRAB-A-GUN's prize tickets: not points, not income)
       closingDone: closing.done,
       won: state.won,
@@ -604,7 +607,7 @@ export function createGame({
   const wardrobe = createWardrobe({ stats, player, events });
   const features = buildFeatures(map, {
     scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state, warranty, meleeUpgrades, wardrobe,
-    colliders, effects, sound, input, tickets, shootables, aimAssist, secondChance, equipment, closing,
+    colliders, effects, sound, input, tickets, shootables, aimAssist, secondChance, equipment, closing, skins,
   });
   const kevin = features.list.find(({ feature }) => feature.kind === 'kiosk')?.instance;
 
@@ -672,6 +675,7 @@ export function createGame({
     ['secondChance', () => secondChance.reset()], // not held, and buyable again (its 'secondChance' event hides the HUD tag)
     ['runStats', () => runStats.reset()],
     ['challenges', () => challenges.reset()],
+    ['skins', () => skins.reset()],
     ['balls', () => balls.clear()], // (before the gun: a ball in the air reports to it)
     ['equipment', () => equipment.reset()], // empty pockets, nothing thrown left in the air or on the floor
     ['gun', () => gun.reset()], // just the staple gun again, no upgrades
@@ -735,6 +739,8 @@ export function createGame({
     ['secondChance', () => secondChance.serialize(), (data) => secondChance.restore(data)],
     ['armour', () => health.armour, (layers) => health.restoreArmour(layers)], // Bubble Wrap (health itself is transient: stats.health is saved)
     ['runStats', () => runStats.serialize(), (data) => runStats.restore(data)],
+    ['challenges', () => challenges.serialize(), (data) => challenges.restore(data)],
+    ['skins', () => skins.serialize(), (data) => skins.restore(data)],
     ['equipment', () => equipment.serialize(), (data) => equipment.restore(data)],
     ['gun', () => ({ ...gun.serialize(), attachments: ownedAttachments(gun) }), (data) => {
       gun.restore(data, weapons);
@@ -783,7 +789,7 @@ export function createGame({
   // Reset steps a save does not keep: nothing in them outlasts a round's start that matters (zombies, effects, timers).
   const transientSteps = [
     'zombies', 'mascotCostumes', 'surfaces', 'health', 'balls', 'interactions', 'viewmodel', 'effects', 'contactShadows',
-    'ambience', 'melee', 'aimAssist', 'clockIn', 'hud', 'saveGame', 'challenges', // mastery counters live in the permanent skin save; no run counters yet
+    'ambience', 'melee', 'aimAssist', 'clockIn', 'hud', 'saveGame',
   ];
   const saveGame = createSaveGame({ steps: saveSteps, events, stats, state, rounds, resetRun, storage: saveStorage });
   events.on('roundStart', () => saveGame.markRoundStart()); // (the snapshot waits for the end of the tick: see update)
@@ -903,6 +909,7 @@ export function createGame({
     bosses,
     debug: debugCommands,
     challenges,
+    skins,
     colliders,
     arena,
     shootables,

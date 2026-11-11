@@ -391,3 +391,8 @@ the model and debris and disposes their shared geometry and materials.
 - `docs.test.js`: every file in src/ has an entry in docs/folder-structure.md, every test file is described here, and every doc CLAUDE.md links to exists.
 
 `tests/uiInformationPriority.test.js` checks exhausted reward visibility, first-activation benefit teaching, live timers/charges on repeat pickups, run reset, and workshop countdown/quality priority.
+
+
+Weapon locker (phase 5):
+- tests/locker.test.js covers all eleven guns, readable locked challenges/progress, immediate durable equip/Default, mouse, arrows, controller A/B, all Back paths, the unchanged Play mode chooser, rendering only while open, and disposal of real preview geometries/materials/label textures.
+- tests/skinEquipment.test.js covers real held models, mid-run wall purchases, the player's conveyor model and built return, default displays, invalid saved choices, Play again/fresh storage, exact Save & Quit round trips with skin/challenge state, run-only receipt names, all skin/stuffing/tier contrast pairs and concurrent preference writes. Maps are built before any random mocking.

@@ -1,6 +1,6 @@
 // Permanent skin data. Inject storage in Node; the browser supplies its own store.
 // Loading and flushing are the only reads. Kill counters update memory until an unlock or runEnd.
-import { skinStorage } from '../config/skins.js';
+import { skinStorage, skins, gunSkin } from '../config/skins.js';
 
 const blank = () => ({ version: skinStorage.version, progress: {}, unlocked: {}, equipped: {} });
 const object = value => value && typeof value === 'object' && !Array.isArray(value) ? value : {};
@@ -38,6 +38,7 @@ export function createSkinSave({ storage, key = skinStorage.key } = {}) {
   let data = blank();
   let newer = false;
   const pendingClears = new Map(); // persistence work to retry after a failed debug write, independent of runs
+  const pendingEquipped = new Map(); // local choices win over an older stored choice for this gun only
 
   function read() {
     const raw = JSON.parse(storage?.getItem(key) ?? 'null');
@@ -77,8 +78,12 @@ export function createSkinSave({ storage, key = skinStorage.key } = {}) {
         else delete data.unlocked[gunId]?.[skinId];
         if (data.equipped[gunId] === skinId) delete data.equipped[gunId];
       }
+      for (const [gunId, skinId] of pendingEquipped) {
+        data.equipped[gunId] = gunSkin(gunId, skinId) && unlocked(gunId, skinId) ? skinId : 'default';
+      }
       storage.setItem(key, JSON.stringify(data));
       pendingClears.clear();
+      pendingEquipped.clear();
       return true;
     } catch {
       return false;
@@ -89,6 +94,17 @@ export function createSkinSave({ storage, key = skinStorage.key } = {}) {
     progress,
     unlocked,
     snapshot: () => structuredClone(data),
+    equippedFor(gunId) {
+      const id = data.equipped[gunId];
+      return gunSkin(gunId, id) && unlocked(gunId, id) ? id : 'default';
+    },
+    equip(gunId, skinId) {
+      if (!Object.hasOwn(skins, gunId) || (skinId !== 'default' && (!gunSkin(gunId, skinId) || !unlocked(gunId, skinId)))) return false;
+      data.equipped[gunId] = skinId;
+      pendingEquipped.set(gunId, skinId);
+      flush();
+      return true;
+    },
     record(gunId, skinId, count, unlock = false) {
       (data.progress[gunId] ??= {})[skinId] = Math.max(progress(gunId, skinId), whole(count));
       if (unlock) (data.unlocked[gunId] ??= {})[skinId] = true;
@@ -97,6 +113,7 @@ export function createSkinSave({ storage, key = skinStorage.key } = {}) {
       (data.progress[gunId] ??= {})[skinId] = 0;
       delete data.unlocked[gunId]?.[skinId];
       if (data.equipped[gunId] === skinId) delete data.equipped[gunId];
+      if (pendingEquipped.get(gunId) === skinId) pendingEquipped.delete(gunId);
       pendingClears.set(`${gunId}/${skinId}`, [gunId, skinId]);
       return flush();
     },

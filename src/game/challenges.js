@@ -16,6 +16,10 @@ const COUNTERS = {
 };
 
 export function createChallenges({ events, state, save }) {
+  let earned = []; // this shift's receipt; permanent unlocks are never rolled back by Continue
+  events.on('skinUnlocked', ({ gunId, skinId }) => {
+    if (!earned.some(entry => entry.gunId === gunId && entry.skinId === skinId)) earned.push({ gunId, skinId });
+  });
   function advance(gunId, skin, amount, persist = false) {
     const needed = skin.challenge.count;
     const before = save.progress(gunId, skin.id);
@@ -56,9 +60,17 @@ export function createChallenges({ events, state, save }) {
   events.on('runSaved', () => save.flush()); // quitting saves eligible mastery progress even without a runEnd
 
   return {
+    get earned() { return earned.map(entry => ({ ...entry })); },
+    serialize() { return { earned: this.earned }; },
+    restore(data) {
+      earned = (Array.isArray(data?.earned) ? data.earned : [])
+        .filter(({ gunId, skinId }) => gunSkin(gunId, skinId) && save.unlocked(gunId, skinId))
+        .map(({ gunId, skinId }) => ({ gunId, skinId }));
+    },
     snapshot() {
       return {
         ...save.snapshot(),
+        earned: this.earned,
         run: Object.fromEntries(counters.filter(({ counter }) => counter.snapshot)
           .map(({ gunId, skinId, counter }) => [`${gunId}/${skinId}`, counter.snapshot()])),
       };
@@ -68,6 +80,7 @@ export function createChallenges({ events, state, save }) {
       for (const { counter } of counters) counter.update?.(dt);
     },
     reset() {
+      earned = [];
       for (const { counter } of counters) counter.reset?.();
     },
     debug(gunId, skinId, action, amount = 1) {
