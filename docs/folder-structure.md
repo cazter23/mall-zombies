@@ -802,7 +802,11 @@ src/
                         child processes, with economyBot.js (the bot: aims with error, kites, shops by TELEPORT from a buy order, immortal or mortal; records income by
                         source, purchases and the loadout each round) following economyPlans.js (PLANS = buy orders; PROPOSALS = config changes applied in memory only,
                         so a before/after is measured without touching src/config), beside economyModel.js (the maths: wave mix, points a zombie, the upgrade ladder);
-                        finished runs are kept in scratch/economy-sim/ (git-ignored) until the game's code or that plan changes; --quick for a short, noisy look
+                        finished runs are kept in scratch/economy-sim/ (git-ignored) until the game's code or that plan changes; --quick for a short, noisy look;
+                        challengeReport.mjs = `npm run sim:challenges` (weapon skins phase 8): plays economyBot.js (its onGame hook) once per gun the bot can use, that
+                        gun bought early as the main gun, every challenge's target lifted in memory so the game's own counters (game/challenges.js) show raw values;
+                        tables of what a run to rounds 10/15/20 gives each challenge, how many runs that makes, what other guns' challenges moved by accident and
+                        the bot's first death (its runs are immortal: "survive" feats mean nothing there); runs written to scratch/challenge-report/
   world/                Shared building blocks for maps
     mapKit.js           createMapKit(group, colliders): mat, addCollider, box, sign, tiledFloor, wall({ along, from, to,
                         at0, at1, height, openings: [{ from, to, top }] }) (doorways get lintels), shutterDoor({ id, label,

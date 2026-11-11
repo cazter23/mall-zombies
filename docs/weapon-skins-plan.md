@@ -89,6 +89,17 @@ Rules for every challenge:
 - **Nothing is hidden.** Every challenge is readable in the locker from the start, with the skin shown greyed out.
 - **A challenge that needs a system that may be cut** (hazards, the claw, Closing Time) is marked so in config and can be swapped.
 
+**As built in phase 7 (11 November 2026).** The feats in config/skins.js differ from the first guesses above where the guesses could not
+work: the Leaf Blower does about 80 damage per tank, so "kills with the blower only" is out; its feat is a round from round 8 on without
+being hurt, having blown 10 zombies out of an attack. The Nail Gun's 60 kills in a round needs round 23 and every kill; it starts at 40
+(phase 8 tunes). The Barcode Scanner's perfect round needs at least 25 shots, so an idle round does not count. The Confetti Cannon's
+"one blast's worth" is one blast after the helmet comes off with nothing else hurting it; a fully upgraded cannon at point blank can
+do it to about round 14 (an unupgraded one never can). The Staple Gun's "never get another gun" is kept (one skin that bends a run, as
+the risk below allows): buying, winning or firing another gun spoils it, a loaner never fired does not.
+**Feats show in play** through the challenge tracker (ui/challengeTracker.js): the player pins up to three challenges on the title
+screen's Challenges tab, and, with the tracker turned on in Settings › Comfort (off by default), they show under the round counter for a
+few seconds whenever one moves; a lost attempt is struck through with "Failed", then drops off until the next attempt.
+
 ## The Closing Time rewards
 
 | Earned by | Treatment | Look |
@@ -157,7 +168,7 @@ Each phase leaves the game working. Phases 1 to 6 touch none of the files the Cl
 | 4 | Challenges and the save | `g.challenges`, the save, the two events, slot 1 (mastery) counting for every gun; a PA line and toast on unlock | game/challenges.js, game/skinSave.js, **createGame.js**, **events.js**, ui/hud.js | Medium |
 | 5 | The locker, and slot 1 skins | The locker screen; choosing a skin; eleven mastery recolours; the contrast test against stuffings and tiers | ui/locker.js, **ui/screens.js**, **main.js**, game/skins.js, config/skins.js | Medium: a new screen in the title flow |
 | 6 | Slot 2: role challenges and pattern skins | Eleven role challenges, checked against the balance report; eleven pattern skins | game/challenges.js, config/skins.js, weapons/models/ (pattern textures) | Medium: art time |
-| 7 | Slot 3: feats and treatments | The shared treatments; eleven feats; eleven feat skins | weapons/models/skinTreatments.js, game/challenges.js, config/skins.js | Medium |
+| 7 | Slot 3: feats and treatments (built) | The shared treatments; eleven feats; eleven feat skins; the Challenges tab and tracker | weapons/models/skinTreatments.js, game/challenges.js, config/skins.js | Medium |
 | 8 | Measure and tune | A bot or saved runs: how many runs each challenge takes, which are never met, which are met by accident. Numbers set from that | tools/, config only | Low |
 | 9 | Closing Time rewards | `closingMode` on the run summary; the two treatments on every gun; unlocked by a win | **createGame.js**, game/challenges.js, config/skins.js | Low, but AFTER the Closing Time fix pass has merged |
 
@@ -181,8 +192,8 @@ Notes for whoever builds a phase:
   Slot 1 alone (phase 5) is already a complete feature, and the plan can stop there.
 - **Readability in a fight.** The gun fills a corner of the screen all run. A loud skin under a loud build under a glowing seam can become
   noise. docs/ui-readability.md is the judge, and Comfort settings should be able to calm the treatments.
-- **Feats that cannot be seen failing.** "No missed shot this round" is lost on the first miss, and the player should know. Decide in
-  phase 7 whether a feat in progress shows on the HUD; the HUD is already full.
+- **Feats that cannot be seen failing.** "No missed shot this round" is lost on the first miss, and the player should know. (Decided in
+  phase 7: the opt-in challenge tracker, above. The HUD stays as it was unless the player pins something and turns the tracker on.)
 - **Challenges that bend play.** "Never buy another gun" asks for a bad run on purpose. That is fine for one skin per gun, not for all three.
 - **Grind.** 400 kills is about three to five runs with a main gun and far longer with a side gun. Phase 8 measures it.
 - **The kill-path change** (phase 3), as said above.
