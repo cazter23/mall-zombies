@@ -6,7 +6,7 @@
 //   reasons     why the pause menu's Save & Quit is greyed out (the button shows the text).
 // =============================================================================
 export const save = {
-  version: 3, // 3: run skin choices and the challenge unlock receipt are saved
+  version: 4, // 3: run skin choices and the challenge unlock receipt are saved; 4: and the per-run challenge counters
   storageKey: 'sunsetGalleria.save',
   reasons: {
     noRound: 'Not clocked in yet',

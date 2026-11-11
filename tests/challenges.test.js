@@ -197,7 +197,7 @@ test('Play again clears counter state and matches a fresh game with the same per
   const fresh = headlessGame({ skinSave: freshSave });
   context.after(() => fresh.g.map.dispose());
   assert.deepEqual(t.g.challenges.snapshot(), fresh.g.challenges.snapshot());
-  assert.deepEqual(t.g.challenges.snapshot().run, {});
+  assert.deepEqual(t.g.challenges.snapshot().run, { 'nailGun/measure-twice': { left: null, shots: 0, clean: true } }, 'no magazine in progress');
   assert.ok(t.g.resetSteps.includes('challenges'));
   assert.deepEqual(snapshot(t.g), snapshot(fresh.g));
 });

@@ -1,6 +1,6 @@
 // Plain DOM, driven by the main loop so the title idle saver also stops the preview.
 import * as THREE from 'three';
-import { skins, gunSkin, locker as cfg } from '../config/skins.js';
+import { skins, gunSkin, challengeText, locker as cfg } from '../config/skins.js';
 import { weapons } from '../config/weapons.js';
 import { buildWeaponDisplay } from '../weapons/models/index.js';
 
@@ -11,7 +11,7 @@ function release(root) {
     if (node.geometry) owned.add(node.geometry);
     for (const material of [].concat(node.material ?? [])) {
       owned.add(material);
-      for (const value of Object.values(material)) if (value?.isTexture) owned.add(value);
+      for (const value of Object.values(material)) if (value?.isTexture && !value.userData?.sharedSkinPattern) owned.add(value); // (a skin's print is shared)
     }
   });
   root.removeFromParent();
@@ -124,7 +124,7 @@ export function createLocker({ save, onBack, createPreview = createLockerPreview
       const name = document.createElement('b');
       name.textContent = skin.name;
       const description = document.createElement('span');
-      description.textContent = skin.challenge ? cfg.challenge(def.name, skin.challenge.count) : cfg.defaultDescription;
+      description.textContent = skin.challenge ? challengeText(skin.challenge, def.name) : cfg.defaultDescription;
       const status = document.createElement('small');
       const progress = skin.challenge ? cfg.progress(save.progress(selectedGun, skin.id), skin.challenge.count) : '';
       status.textContent = [progress, equipped === skin.id ? cfg.equipped : unlocked ? cfg.available : cfg.locked].filter(Boolean).join(' · ');
