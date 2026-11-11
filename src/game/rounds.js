@@ -94,6 +94,10 @@ export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null,
     get remainingToSpawn() {
       return toSpawn;
     },
+    // The last shoppers of the round (economy.rounds.lastShoppers): nothing left to spawn and only a few alive.
+    get lastShoppers() {
+      return state === 'active' && toSpawn === 0 && zombies.aliveCount > 0 && zombies.aliveCount <= cfg.lastShoppers.count;
+    },
     get remainingInWave() {
       return toSpawn + zombies.aliveCount;
     },
@@ -162,7 +166,7 @@ export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null,
             spawnTimer = cfg.spawnRetrySeconds; // no usable spawn point right now: try again shortly
           }
         }
-        if (!waveEndingEmitted && toSpawn === 0 && zombies.aliveCount > 0 && zombies.aliveCount <= 2) {
+        if (!waveEndingEmitted && toSpawn === 0 && zombies.aliveCount > 0 && zombies.aliveCount <= cfg.lastShoppers.count) {
           waveEndingEmitted = true;
           if (onWaveEnding) onWaveEnding({ round, remaining: zombies.aliveCount });
         }

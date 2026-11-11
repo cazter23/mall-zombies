@@ -74,13 +74,12 @@ export function createAim({ def, input, player }) {
       // --- ADS ---
       const wasAiming = this.isAiming;
       if (feel.ads.toggle) {
-        if (input.consumeAction('aim') && allowAim) {
-          this.isAiming = !this.isAiming;
-        }
+        // Toggle ADS (a Comfort setting): a press raises or lowers the sights; a sprint press (moving forward) or a
+        // weapon switch lowers them. Aiming mid-sprint is allowed, as with the held button: the controller then stops
+        // the sprint (it never sprints while aiming).
+        if (input.consumeAction('aim') && allowAim) this.isAiming = !this.isAiming;
         const sprintPressed = input.actionPressed('sprint') && input.moveAxis().y > 0;
-        if (!allowAim || player.isSprinting || sprintPressed) {
-          this.isAiming = false;
-        }
+        if (!allowAim || sprintPressed) this.isAiming = false;
       } else {
         const held = input.actionDown('aim') && allowAim;
         if (input.consumeAction('aim') || !held) cancelledBySprint = false; // a fresh press re-enables aiming

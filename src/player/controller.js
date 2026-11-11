@@ -312,20 +312,21 @@ export class PlayerController {
 
     let wantsSprint = false;
     if (feel.sprint.toggle) {
-      if (input.consumeAction('sprint')) {
-        this.sprintLatched = !this.sprintLatched;
-      }
-      const canSprint =
-        this.sprintBlockTimer <= 0 &&
-        this.stance === 'stand' &&
-        !this.isAiming &&
+      // Toggle sprint (a Comfort setting): a press starts a sprint, or ends the one you're in. It carries on until you
+      // stop moving forward, fire, run dry, crouch or aim. The press is only READ, never consumed: aim.js sees the same
+      // press and lowers the sights, and a toggled crouch stands up for it, so a press while aiming or crouched still
+      // starts the sprint (on the next tick, once you're standing with the sights down).
+      const pressed = input.actionPressed('sprint');
+      if (pressed) this.sprintLatched = !this.isSprinting;
+      const canRun =
+        this.sprintBlockTimer <= 0 && // just fired the gun: walking
         wishLength > 0 &&
+        !this.sprintExhausted &&
+        this.sprintMeter > 0 &&
         (!feel.sprint.requiresForward || forwardInput >= feel.sprint.minForwardInput);
-
-      if (!canSprint || this.sprintExhausted || this.sprintMeter <= 0) {
-        this.sprintLatched = false;
-      }
-      wantsSprint = this.sprintLatched;
+      const upright = this.stance === 'stand' && !this.isAiming;
+      if (!canRun || (!upright && !pressed)) this.sprintLatched = false;
+      wantsSprint = this.sprintLatched && upright;
     } else {
       wantsSprint =
         this.sprintBlockTimer <= 0 && // just fired the gun: walking
@@ -590,10 +591,13 @@ export class PlayerController {
       // Tap C while sprinting: start a slide in the direction we're moving.
       this.startSlide(wishX, wishZ);
     } else if (feel.crouch.toggle) {
+      // Toggle crouch (a Comfort setting): a press crouches; another press, a jump or a sprint press stands up
+      // (the jump is spent standing up; the sprint starts once you're up).
       const jumpPressed = input.actionPressed('jump') && !this.meleeCommitted;
+      const sprintPressed = input.actionPressed('sprint');
       if (this.stance === 'stand' && cPressed && !this.slideChainQueued) {
         this.stance = 'crouch';
-      } else if (this.stance === 'crouch' && (cPressed || jumpPressed)) {
+      } else if (this.stance === 'crouch' && (cPressed || jumpPressed || sprintPressed)) {
         const roomToStand = hasHeadroom(
           this.position,
           feel.player.radius,

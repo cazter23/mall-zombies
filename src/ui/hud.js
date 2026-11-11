@@ -157,6 +157,7 @@ export function createHud() {
   const roundLabel = el('span', 'hud-label'); roundLabel.textContent = 'Round';
   const roundValue = el('strong', 'round-value');
   const occupancyCounter = el('div', 'round-occupancy');
+  let lastOccupancy = 'break'; // (what it shows now: 'break' or the count)
   occupancyCounter.textContent = 'CLOSED FOR RESTOCK';
   occupancyCounter.classList.add('closed');
   roundCounter.append(roundLabel, roundValue, occupancyCounter);
@@ -531,7 +532,11 @@ export function createHud() {
     },
 
     // Retail store occupancy / wave progress tracker.
+    // Called every frame; only touches the DOM when the text changes.
     setOccupancy(count, inBreak = false) {
+      const key = inBreak ? 'break' : count;
+      if (key === lastOccupancy) return;
+      lastOccupancy = key;
       if (inBreak) {
         occupancyCounter.textContent = 'CLOSED FOR RESTOCK';
         occupancyCounter.classList.add('closed');
@@ -722,7 +727,8 @@ export function createHud() {
       const secWeapon = secondary.weapon;
       const secMods = secondary.mods ?? [];
       const secName = gunLabel(secDef);
-      const secAmmoCount = secDef.fuel ? `${secWeapon.magazine} fuel` : `${secWeapon.reserve}`;
+      // (loaded / spare, like the main count: a full magazine with nothing spare is not an empty gun)
+      const secAmmoCount = secDef.fuel ? `${secWeapon.magazine} fuel` : `${secWeapon.magazine}/${secWeapon.reserve}`;
       const tierId = tierOf(secMods);
       const build = buildOf(secMods);
       const stuffingColor = build ? (workshopStuffings[build.stuffing]?.color ?? null) : null;

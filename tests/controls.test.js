@@ -45,6 +45,9 @@ function createPlayerFixture() {
     getBodies: () => bodies,
   });
   player.grounded = true;
+  // Like the real game's input.endTick(): a press lasts one tick, whoever reads it.
+  const update = player.update.bind(player);
+  player.update = (step) => { update(step); pressed.clear(); };
 
   return { input, player, colliders };
 }
@@ -113,11 +116,90 @@ test('accessibility toggle settings are registered under Comfort tab with false 
   adsDef.apply(false);
   assert.equal(feel.ads.toggle, false);
 
-  // Standard preset resets all three to false
-  const standard = settingPresets.Comfort.find((p) => p.label === 'Standard');
-  assert.equal(standard.values.toggleSprint, false);
-  assert.equal(standard.values.toggleCrouch, false);
-  assert.equal(standard.values.toggleAds, false);
+  // They are a control choice, not comfort: no Comfort preset (Calm, Standard) changes them
+  for (const preset of settingPresets.Comfort) {
+    for (const id of ids) assert.equal(id in preset.values, false, `${preset.label} leaves ${id} alone`);
+  }
+});
+
+// The toggles together, the way the game ticks them: the player, then the gun's aim (each reads the same presses).
+function createToggleRig() {
+  const f = createPlayerFixture();
+  const aim = createAim({ def: weapons.stapleGun, input: f.input, player: f.player });
+  const updatePlayer = f.player.update; // (the fixture's: it ends the presses after the player)
+  const tick = () => {
+    const pressed = new Set(f.input.pressed);
+    updatePlayer(dt);
+    for (const p of pressed) f.input.pressed.add(p); // ...but this tick's presses are still there for the aim
+    aim.update(dt);
+    f.player.isAiming = aim.isAiming; // (playerGun does this in the game)
+    f.input.pressed.clear(); // input.endTick()
+  };
+  return { ...f, aim, tick };
+}
+
+test('toggle ADS: aiming mid-sprint is allowed and ends the sprint (as with the held button)', () => {
+  const r = createToggleRig();
+  feel.ads.toggle = true;
+  try {
+    r.input.axis = { x: 0, y: 1 };
+    r.input.held.add('sprint');
+    r.tick();
+    assert.equal(r.player.isSprinting, true, 'sprinting');
+    r.input.pressed.add('aim');
+    r.tick();
+    assert.equal(r.aim.isAiming, true, 'the aim press raises the sights mid-sprint');
+    r.tick();
+    assert.equal(r.player.isSprinting, false, 'and the sprint stops');
+    assert.equal(r.aim.isAiming, true, 'the sights stay up (sprint is held, not pressed again)');
+  } finally {
+    feel.ads.toggle = false;
+  }
+});
+
+test('toggle sprint: a sprint press while aiming lowers the sights and starts the sprint', () => {
+  for (const adsToggle of [false, true]) {
+    const r = createToggleRig();
+    feel.sprint.toggle = true;
+    feel.ads.toggle = adsToggle;
+    try {
+      r.input.axis = { x: 0, y: 1 };
+      if (adsToggle) r.input.pressed.add('aim');
+      else r.input.held.add('aim');
+      r.tick();
+      assert.equal(r.aim.isAiming, true, 'aiming');
+      r.input.pressed.add('sprint');
+      r.tick();
+      assert.equal(r.aim.isAiming, false, `the sprint press lowers the sights (toggle ADS ${adsToggle})`);
+      r.tick();
+      assert.equal(r.player.isSprinting, true, `and the sprint starts without a second press (toggle ADS ${adsToggle})`);
+    } finally {
+      feel.sprint.toggle = false;
+      feel.ads.toggle = false;
+    }
+  }
+});
+
+test('toggle crouch: a sprint press stands you up, and with toggle sprint the sprint follows', () => {
+  const r = createToggleRig();
+  feel.crouch.toggle = true;
+  feel.sprint.toggle = true;
+  try {
+    r.input.axis = { x: 0, y: 1 };
+    r.input.pressed.add('crouch');
+    r.tick();
+    assert.equal(r.player.stance, 'crouch', 'crouched');
+    for (let i = 0; i < 5; i++) r.tick();
+    assert.equal(r.player.stance, 'crouch', 'stays crouched with nothing held');
+    r.input.pressed.add('sprint');
+    r.tick();
+    assert.equal(r.player.stance, 'stand', 'the sprint press stands up');
+    r.tick();
+    assert.equal(r.player.isSprinting, true, 'and the one press is enough to sprint');
+  } finally {
+    feel.crouch.toggle = false;
+    feel.sprint.toggle = false;
+  }
 });
 
 test('toggleCrouch stays crouched on tap and stands on second tap or jump', () => {

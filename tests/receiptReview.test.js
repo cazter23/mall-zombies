@@ -135,7 +135,7 @@ test('getDeathReport resolves causes and survival tips for various lethal source
   // Cart Pusher
   const cart = getDeathReport({ type: 'zombie', id: 'cartPusher' });
   assert.equal(cart.cause, deathReports.zombies.cartPusher.cause);
-  assert.match(cart.tip, /Space/);
+  assert.doesNotMatch(cart.tip, /Space|\[/, 'no keyboard key: a controller player reads it too');
 
   // Mall Walker
   const walker = getDeathReport({ type: 'zombie', id: 'mallWalker' });
@@ -289,4 +289,17 @@ test('headless game records lethal blow source in summary and renders in receipt
     assert.equal(document.querySelector('.receipt-incident-cause').textContent, deathReports.fall.cause);
     assert.equal(document.querySelector('.receipt-incident-tip').textContent, deathReports.fall.tip);
   }
+});
+
+test('getDeathReport: a hazard switch that can hurt you has its own incident report', async () => {
+  const { hazards } = await import('../src/config/hazards.js');
+  const { deathReports } = await import('../src/config/deathReports.js');
+  const hurting = Object.values(hazards).filter((h) => h && h.id && h.playerDamage > 0);
+  assert.ok(hurting.length > 0, 'the Electrified Fountain hurts');
+  for (const h of hurting) {
+    const report = getDeathReport({ type: 'hazard', id: h.id });
+    assert.equal(report, deathReports.hazards[h.id], `add deathReports.hazards.${h.id}`);
+  }
+  assert.equal(getDeathReport({ type: 'hazard', id: 'somethingNew' }), deathReports.hazardDefault, 'an unknown hazard is still a hazard');
+  assert.notEqual(deathReports.hazardDefault, deathReports.default);
 });

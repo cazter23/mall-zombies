@@ -213,6 +213,12 @@ export const economy = {
       fromRound: 2, // offered in the break BEFORE this round and later (the short wait before round 1 is not a break)
     },
     spawnRetrySeconds: 0.5, // no usable spawn point (none open/reachable)? try again this soon
+    // The last shoppers: once a round has nothing left to spawn and this many or fewer zombies are alive, the PA says so
+    // ('waveEnding') and the stragglers (not bosses) speed up to their fastest gait, so the end of a round isn't a hunt.
+    lastShoppers: {
+      count: 2,
+      pa: { kicker: 'Attention shoppers', text: 'Final clearance — registers closing shortly!', priority: 1 },
+    },
   },
 
   waves: {

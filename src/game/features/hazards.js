@@ -190,7 +190,7 @@ export function createHazard({
     onPulse?.(isOpening);
     // (not during Second Chance's grace period: a pulse that can't hurt doesn't jolt the view either)
     if (cfg.playerDamage > 0 && isPlayerInside?.(player.position) && !health.isDead && !health.isReviveProtected) {
-      health.takeDamage(cfg.playerDamage);
+      health.takeDamage(cfg.playerDamage, { type: 'hazard', id: cfg.id }); // (the death receipt's incident report names it)
       if (cfg.playerViewJoltDegrees) {
         player.addViewKick(-cfg.playerViewJoltDegrees * DEG_TO_RAD);
       }

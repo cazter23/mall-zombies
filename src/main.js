@@ -469,12 +469,10 @@ function render(alpha, frameTime) {
   hud.setSpeedLines(game.over ? 0 : player.sprintAmount * feel.sprintFx.speedLinesOpacity);
   hud.setSprint(player.sprintFraction, player.sprintExhausted, player.isSprinting);
   {
+    // The carried gun not in hand: its button is slot 1 / slot 2 on a keyboard, the swap button on a controller.
     const secondary = gun.inactiveSlot;
-    const device = promptDevice();
-    const switchKey = device === 'keyboard'
-      ? (secondary?.index === 0 ? '1' : '2')
-      : (buttonLabel('switchWeapon') ?? (device === 'playstation' ? '△' : 'Y'));
-    hud.setAmmo(gun.weapon, buttonLabel('reload'), secondary, switchKey);
+    const switchAction = promptDevice() !== 'keyboard' ? 'switchWeapon' : secondary?.index === 0 ? 'weapon1' : 'weapon2';
+    hud.setAmmo(gun.weapon, buttonLabel('reload'), secondary, buttonLabel(switchAction));
   }
   hud.setAmmoTier(tierById(tierOf(gun.modsFor(gun.def.id) ?? [])));
   {

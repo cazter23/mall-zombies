@@ -422,11 +422,7 @@ export function createGame({
     hud.showRoundBanner(round);
   });
   events.on('waveEnding', () => {
-    hud.showAnnouncement({
-      kicker: 'Attention shoppers',
-      text: 'Final clearance — registers closing shortly!',
-      priority: 1,
-    });
+    hud.showAnnouncement(economy.rounds.lastShoppers.pa);
     sound.play('paChime');
   });
   // A zombie type's first appearance this run (Mall Walkers, round 4): PA chime + banner. (A Mascot announces the
