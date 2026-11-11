@@ -76,7 +76,7 @@ test('kills advance only their gun; melee, hazards, equipment and unknown guns a
   t.kill('not-a-gun');
   assert.deepEqual(t.save.snapshot().progress, {
     stapleGun: { 'night-shift': 1 },
-    nailGun: { aftermarket: 2 },
+    nailGun: { aftermarket: 2, 'rush-order': 2 }, // (and the Nail Gun's feat: its best round so far, 2 kills)
   });
   assert.equal(t.storage.writes, 0);
 });
@@ -197,7 +197,10 @@ test('Play again clears counter state and matches a fresh game with the same per
   const fresh = headlessGame({ skinSave: freshSave });
   context.after(() => fresh.g.map.dispose());
   assert.deepEqual(t.g.challenges.snapshot(), fresh.g.challenges.snapshot());
-  assert.deepEqual(t.g.challenges.snapshot().run, { 'nailGun/measure-twice': { left: null, shots: 0, clean: true } }, 'no magazine in progress');
+  assert.deepEqual(t.g.challenges.snapshot().run, {
+    'nailGun/measure-twice': { left: null, shots: 0, clean: true }, 'stapleGun/company-man': { spoiled: false }, 'rivetRifle/gold-standard': { streak: 0 },
+    'foamDartBlaster/bullseye': { round: 0 }, 'coilNailer/double-shift': { bosses: 0 }, 'leafBlower/still-air': { round: 0 },
+  }, 'no magazine in progress, and every feat in progress starts again');
   assert.ok(t.g.resetSteps.includes('challenges'));
   assert.deepEqual(snapshot(t.g), snapshot(fresh.g));
 });

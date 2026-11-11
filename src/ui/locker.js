@@ -126,7 +126,8 @@ export function createLocker({ save, onBack, createPreview = createLockerPreview
       const description = document.createElement('span');
       description.textContent = skin.challenge ? challengeText(skin.challenge, def.name) : cfg.defaultDescription;
       const status = document.createElement('small');
-      const progress = skin.challenge ? cfg.progress(save.progress(selectedGun, skin.id), skin.challenge.count) : '';
+      const shown = skin.slot === 3 ? cfg.featProgress : cfg.progress; // (a feat's progress is its best attempt)
+      const progress = skin.challenge ? shown(save.progress(selectedGun, skin.id), skin.challenge.count) : '';
       status.textContent = [progress, equipped === skin.id ? cfg.equipped : unlocked ? cfg.available : cfg.locked].filter(Boolean).join(' · ');
       row.append(name, description, status);
       row.addEventListener('mouseenter', () => highlight(skin.id));

@@ -138,7 +138,7 @@ test('real preview releases every model geometry, material and label texture on 
   assert.equal(draws, 2); assert.equal(disposed, 1); assert.equal(lost, 1);
 });
 
-test('every gun lists Default, its mastery and its role skin, each challenge readable with its progress from the start', () => {
+test('every gun lists Default, its mastery, role and feat skins, each challenge readable with its progress (a feat: its best attempt) from the start', () => {
   const t = fixture();
   t.save.record('nailGun', 'measure-twice', 7);
   for (const [gunId, def] of Object.entries(weapons)) {
@@ -151,7 +151,8 @@ test('every gun lists Default, its mastery and its role skin, each challenge rea
       assert.ok(row.textContent.includes(skin.name));
       assert.ok(row.textContent.includes(challengeText(skin.challenge, def.name)), `${gunId}/${skin.id}`);
       const count = gunId === 'stapleGun' && skin.slot === 1 ? 212 : gunId === 'nailGun' && skin.slot === 2 ? 7 : 0;
-      assert.ok(row.textContent.includes(`${count} / ${skin.challenge.count}`), `${gunId}/${skin.id}: ${row.textContent}`);
+      const progress = skin.slot === 3 ? cfg.featProgress(count, skin.challenge.count) : `${count} / ${skin.challenge.count}`;
+      assert.ok(row.textContent.includes(progress), `${gunId}/${skin.id}: ${row.textContent}`);
     }
   }
   t.gun('nailGun').click();

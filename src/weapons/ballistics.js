@@ -128,7 +128,7 @@ export function createBalls({ colliders, shootables, zombies = 'hit' }) {
     ball.position.copy(point).addScaledVector(normal, p.radius * 1.05);
     const damage = ball.damageOf({ part: result.part, distance: ball.travelled });
     const { killed } = target.takeHit({ damage, part: result.part, point, direction: direction.clone(), impact: ball.impact, weaponId: ball.weaponId,
-      distance: ball.travelled, bounces: ball.bounces });
+      distance: ball.travelled, bounces: ball.bounces, projectile: ball.id });
     ball.hits.push({ target, part: result.part, point, normal, distance: ball.travelled, killed });
     ball.lastTarget = target;
     ball.sinceHit = 0;
@@ -151,11 +151,13 @@ export function createBalls({ colliders, shootables, zombies = 'hit' }) {
     if (ball.bounces >= p.maxBounces) end(ball);
   }
 
+  let nextId = 0; // each ball's id: the 'kill' event's projectile (weapon skin feats count kills per ball)
   return {
     list,
 
     launch({ position, direction, projectile, damageOf, weaponId = null, impact = null, onHit = null, onBounce = null, onEnd = null }) {
       const ball = {
+        id: ++nextId,
         alive: true,
         position: position.clone(),
         previous: position.clone(),

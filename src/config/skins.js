@@ -1,5 +1,5 @@
-// Each skin belongs to one gun. Slot 1 = Mastery recolours, slot 2 = Role (a recolour plus one printed pattern):
-// the base coat under every build and warranty.
+// Each skin belongs to one gun. Slot 1 = Mastery recolours, slot 2 = Role (a recolour plus one printed pattern), slot 3 = Feat (a recolour plus
+// one shared glow or motion treatment, skinTreatments below): the base coat under every build and warranty.
 // A challenge is data: `kind` picks its counter in game/challenges.js (one entry each there), `count` is what unlocks
 // the skin, the other fields are that kind's numbers, and `text` is the locker's sentence ({gun} = the gun's name,
 // {anyField} = that field). `needs` names a system the challenge depends on that could be cut (swap the challenge if it is).
@@ -13,6 +13,19 @@
 //   multiKillShots   shots (a blast, a beam) that each killed minKills or more zombies
 //   cleanMagazines   magazines of at least minShots emptied with every shot hitting (a per-run count, saved with the run)
 //   stoppedAttacks   zombies shoved out of an attack by a cone gun (the shot's hits[].interrupted)
+// Slot 3 FEATS happen inside one run. Their progress is the best attempt (never a sum), and `track` is the challenge tracker's line for the
+// attempt in progress ({value} = how it stands, plus any field). Round feats are decided when the round is cleared.
+//   loyalty          reach round `count` having never bought, won or fired another gun (progress = the round reached)
+//   soloBoss         finish a boss that nothing but this gun ever hurt (the kill's woundedBy)
+//   roundKills       `count` kills with the gun inside one round
+//   headshotRound    a cleared round from minRound on in which every kill was a headshot kill with this gun
+//   mascotFinish     finish a Mascot within maxBlasts blasts of the gun after its helmet comes off, nothing else hurting it in between
+//   headshotStreak   `count` headshot kills in a row with the gun; a hit with it anywhere but the head starts again
+//   bossKillsInRun   `count` bosses finished with the gun in one run
+//   perfectRound     a cleared round in which the gun fired minShots times or more and every shot hit
+//   calmRound        a cleared round from minRound on without being hurt, having blown minStopped zombies out of an attack with the gun
+//   ballKills        `count` kills by one ball of the gun (the kill's projectile)
+//   finishType       finish a zombie whose type id is in `types` with the gun
 const mastery = count => ({ kind: 'kills', count, text: 'Clear {count} zombies with the {gun} across all shifts.' });
 
 export const skins = {
@@ -25,6 +38,12 @@ export const skins = {
     palette: { body: 0x4a10b8, dark: 0x2c0a6e, metal: 0xb8b0d8, grip: 0x1e1830, accent: 0xf2ecff, sight: 0xffe39a },
     pattern: { kind: 'lines', ink: 0xd9d2ff, spacing: 0.009, width: 0.0012, margin: { color: 0xff6f8a, width: 0.0016, offset: 0.03, every: 0.16 } }, // ruled memo paper
     challenge: { kind: 'headshotKills', count: 100, text: 'Land {count} headshot kills with the {gun}.' },
+  }, {
+    id: 'company-man', name: 'Company Man', slot: 3,
+    palette: { body: 0xeadcb6, dark: 0x5a4632, metal: 0xb59a62, grip: 0x3a2c22, accent: 0xd99a1e, sight: 0xffe39a },
+    treatment: { kind: 'pulse', role: 'accent', color: 0xffb43a, low: 0.08, high: 0.4, period: 2.4 }, // a service pin catching the light
+    challenge: { kind: 'loyalty', count: 15, track: 'Round {value} / {count}',
+      text: 'Reach round {count} without buying, winning or firing any gun but the {gun}.' },
   }],
   rivetRifle: [{
     id: 'carbon-copy', name: 'Carbon Copy', slot: 1,
@@ -35,6 +54,12 @@ export const skins = {
     palette: { body: 0x7a2000, dark: 0x461400, metal: 0xd2c2b2, grip: 0x221a16, accent: 0xffcc2e, sight: 0xfff2a0 },
     pattern: { kind: 'stripes', ink: 0xffcc2e, spacing: 0.03, width: 0.014, angle: 45 }, // hazard tape
     challenge: { kind: 'headshotKills', count: 150, minDistance: 10, text: 'Land {count} headshot kills from {minDistance} m or more with the {gun}.' },
+  }, {
+    id: 'gold-standard', name: 'Gold Standard', slot: 3,
+    palette: { body: 0xd6a83a, dark: 0x4a3410, metal: 0xf0dca0, grip: 0x2a2014, accent: 0x7a1e14, sight: 0xfff2a0 },
+    treatment: { kind: 'shimmer', role: 'body', color: 0xffe08a, low: 0, high: 0.38, period: 3.2, width: 0.22 }, // light running down polished brass
+    challenge: { kind: 'headshotStreak', count: 20, track: '{value} / {count} in a row',
+      text: 'Land {count} headshot kills in a row with the {gun}, without a single hit anywhere else.' },
   }],
   priceGun: [{ id: 'red-tag', name: 'Red Tag', slot: 1,
     palette: { body: 0x612635, dark: 0x311922, metal: 0xb0a3aa, grip: 0x241c24, accent: 0xf6adbd, sight: 0xffe3a1, ammo: 0xf8ecd9 }, challenge: mastery(400) }, {
@@ -43,6 +68,12 @@ export const skins = {
     pattern: { kind: 'text', ink: 0xffd84a, words: ['% OFF', 'SALE'], font: '"Anton"', height: 0.011, wordSpacing: 0.05, rowSpacing: 0.02 }, // sale banners
     challenge: { kind: 'quickKills', count: 150, seconds: 1,
       text: 'Mark down {count} zombies from full price to nothing in {seconds} second or less with the {gun}.' },
+  }, {
+    id: 'final-markdown', name: 'Final Markdown', slot: 3,
+    palette: { body: 0xffd23c, dark: 0x8a1410, metal: 0xf2e2c0, grip: 0x2a1614, accent: 0xe8202a, sight: 0xfff0a0, ammo: 0xfff4c8 },
+    treatment: { kind: 'pulse', role: 'accent', color: 0xff3a30, low: 0.05, high: 0.42, period: 1.1 }, // a flashing sale sign
+    challenge: { kind: 'soloBoss', count: 1, track: 'Boss: {gun} only',
+      text: 'Finish a boss that nothing but the {gun} has hurt.' },
   }],
   nailGun: [{ id: 'aftermarket', name: 'Aftermarket', slot: 1,
     palette: { body: 0x393e35, dark: 0x20271f, metal: 0xaab4a0, grip: 0x24241d, accent: 0xe7b36b, sight: 0xf7e1a0 }, challenge: mastery(400) }, {
@@ -51,6 +82,12 @@ export const skins = {
     pattern: { kind: 'grid', ink: 0xbcd4ff, spacing: 0.008, width: 0.0006, majorEvery: 5, majorWidth: 0.0015 }, // blueprint paper
     challenge: { kind: 'cleanMagazines', count: 25, minShots: 10,
       text: 'Empty {count} magazines of the {gun} ({minShots} nails or more) without a single nail missing.' },
+  }, {
+    id: 'rush-order', name: 'Rush Order', slot: 3,
+    palette: { body: 0xff8c22, dark: 0x2a2622, metal: 0xd8d2c8, grip: 0x1e1c1a, accent: 0xfff0b8, sight: 0xfff0a8 },
+    treatment: { kind: 'edgeGlow', role: 'dark', color: 0xff6a1a, low: 0.18, high: 0.34, period: 0.9 }, // a hot, ticking motor
+    challenge: { kind: 'roundKills', count: 40, track: '{value} / {count} this round',
+      text: 'Clear {count} zombies with the {gun} in one round.' },
   }],
   foamDartBlaster: [{ id: 'blue-ribbon', name: 'Blue Ribbon', slot: 1,
     palette: { body: 0x243c68, dark: 0x19243e, metal: 0x9bb7d8, grip: 0x202736, accent: 0xc7dcff, sight: 0xffe6a4, ammo: 0x9dd4f5 }, challenge: mastery(400) }, {
@@ -58,6 +95,12 @@ export const skins = {
     palette: { body: 0x064a50, dark: 0x03292d, metal: 0xa8d4d4, grip: 0x14242a, accent: 0x9ff2ee, sight: 0xffe9a8 },
     pattern: { kind: 'dots', ink: 0x9ff2ee, spacing: 0.012, radius: 0.0034 }, // halftone dots
     challenge: { kind: 'rangedKills', count: 150, minDistance: 15, text: 'Clear {count} zombies from {minDistance} m or more with the {gun}.' },
+  }, {
+    id: 'bullseye', name: 'Bullseye', slot: 3,
+    palette: { body: 0xf0eee8, dark: 0x22324a, metal: 0xb8c4d4, grip: 0x1c2232, accent: 0xe02a3a, sight: 0xffe9a8, ammo: 0xff5a64 },
+    treatment: { kind: 'pulse', role: 'accent', color: 0xff3048, low: 0.06, high: 0.4, period: 1.8 }, // a target's red ring
+    challenge: { kind: 'headshotRound', count: 1, minRound: 12, track: '{value} headshot kills, nothing else',
+      text: 'Clear a whole round from round {minRound} on with every kill a {gun} headshot.' },
   }],
   confettiCannon: [{ id: 'encore', name: 'Encore', slot: 1,
     palette: { body: 0x512753, dark: 0x2c1a30, metal: 0xb1a0be, grip: 0x241b2b, accent: 0xe9b5f2, sight: 0xffe7ad, ammo: 0xf2ddaf }, challenge: mastery(400) }, {
@@ -65,6 +108,12 @@ export const skins = {
     palette: { body: 0x7a0866, dark: 0x44043a, metal: 0xe0b8d8, grip: 0x26141f, accent: 0xffc0ec, sight: 0xfff0b0 },
     pattern: { kind: 'confetti', colors: [0xffe066, 0x7fe3ff, 0xffffff, 0xff9ad5, 0x9dff9a], perSquareMetre: 9000, minSize: 0.004, maxSize: 0.008, seed: 11 },
     challenge: { kind: 'multiKillShots', count: 40, minKills: 3, text: 'Fire {count} blasts of the {gun} that each clear {minKills} or more zombies.' },
+  }, {
+    id: 'grand-opening', name: 'Grand Opening', slot: 3,
+    palette: { body: 0xffa6d4, dark: 0x5a1a4a, metal: 0xf2d8ea, grip: 0x2a1626, accent: 0xffe066, sight: 0xfff0b0 },
+    treatment: { kind: 'drift', role: 'body', colors: [0xff5ab4, 0xffd23a, 0x5ad2ff, 0x9aff6a], low: 0.12, high: 0.3, period: 9 }, // party lights
+    challenge: { kind: 'mascotFinish', count: 1, maxBlasts: 1, track: 'Mascot finishers {value} / {count}',
+      text: 'Finish a Mascot with one blast of the {gun} after its helmet comes off.' },
   }],
   coilNailer: [{ id: 'factory-finish', name: 'Factory Finish', slot: 1,
     palette: { body: 0x38454a, dark: 0x202c32, metal: 0xb1c1ca, grip: 0x202428, accent: 0xddb480, sight: 0xf8e0a0 }, challenge: mastery(400) }, {
@@ -72,6 +121,12 @@ export const skins = {
     palette: { body: 0x0a4a1e, dark: 0x052a10, metal: 0xc0d4c4, grip: 0x161f19, accent: 0xf4d35e, sight: 0xfff0a0 },
     pattern: { kind: 'tread', ink: 0xa9d4b4, spacing: 0.014, length: 0.009, width: 0.0026 }, // diamond plate
     challenge: { kind: 'typeKills', count: 100, types: ['mascot', 'cartPusher'], text: 'Clear {count} Mascots or Cart Pushers with the {gun}.' },
+  }, {
+    id: 'double-shift', name: 'Double Shift', slot: 3,
+    palette: { body: 0x48c4b0, dark: 0x103a36, metal: 0xd4ece6, grip: 0x14201e, accent: 0xf4d35e, sight: 0xfff0a0 },
+    treatment: { kind: 'edgeGlow', role: 'dark', color: 0x3affd8, low: 0.16, high: 0.32, period: 2.6 }, // a night-shift neon
+    challenge: { kind: 'bossKillsInRun', count: 2, track: '{value} / {count} bosses',
+      text: 'Finish {count} bosses with the {gun} in one shift.' },
   }],
   barcodeScanner: [{ id: 'black-label', name: 'Black Label', slot: 1,
     palette: { body: 0x292636, dark: 0x171723, metal: 0xa8a2bb, grip: 0x201e29, accent: 0xd9b5de, sight: 0xc8f3b0, emitter: 0xf391b3 }, challenge: mastery(400) }, {
@@ -79,6 +134,12 @@ export const skins = {
     palette: { body: 0x0c3a9a, dark: 0x07225c, metal: 0xc8d6f0, grip: 0x161b2a, accent: 0xf4f8ff, sight: 0xc8f3b0 },
     pattern: { kind: 'checker', ink: 0xf4f8ff, size: 0.008 }, // checkered flag
     challenge: { kind: 'multiKillShots', count: 40, minKills: 2, text: 'Fire {count} beams of the {gun} that each clear {minKills} or more zombies.' },
+  }, {
+    id: 'clean-scan', name: 'Clean Scan', slot: 3,
+    palette: { body: 0xaaf0c8, dark: 0x163a2a, metal: 0xe0f4ea, grip: 0x14221c, accent: 0xff4a6a, sight: 0xff8aa0, emitter: 0xff4a6a },
+    treatment: { kind: 'shimmer', role: 'body', color: 0x6affb0, low: 0, high: 0.32, period: 1.6, width: 0.16 }, // a scan line sweeping the gun
+    challenge: { kind: 'perfectRound', count: 1, minShots: 25, track: '{value} / {minShots} shots, no misses',
+      text: 'Clear a round having fired the {gun} {minShots} times or more without a single miss.' },
   }],
   leafBlower: [{ id: 'autumn-gold', name: 'Autumn Gold', slot: 1,
     palette: { body: 0x51402b, dark: 0x2d281e, metal: 0xbeb099, grip: 0x27231d, accent: 0xedc77f, sight: 0xffefb0 }, challenge: mastery(400) }, {
@@ -86,6 +147,12 @@ export const skins = {
     palette: { body: 0x2f4a06, dark: 0x1a2a03, metal: 0xd0d4b8, grip: 0x1e2116, accent: 0xfff4cc, sight: 0xfff0b0 },
     pattern: { kind: 'gingham', ink: 0xfff4cc, size: 0.011, alpha: 0.45 }, // picnic blanket
     challenge: { kind: 'stoppedAttacks', count: 100, needs: ['claw'], text: 'Blow {count} zombies out of an attack with the {gun}.' },
+  }, {
+    id: 'still-air', name: 'Still Air', slot: 3,
+    palette: { body: 0xbfe2f2, dark: 0x1e3a4a, metal: 0xe6f2f8, grip: 0x18242c, accent: 0xffffff, sight: 0xfff0b0 },
+    treatment: { kind: 'drift', role: 'body', colors: [0x8ad4ff, 0xd2b4ff, 0xb4ffe6], low: 0.1, high: 0.24, period: 12 }, // a calm sky
+    challenge: { kind: 'calmRound', count: 1, minRound: 8, minStopped: 10, needs: ['claw'], track: '{value} / {minStopped} stopped, unhurt',
+      text: 'Clear a round from round {minRound} on without taking a hit, blowing {minStopped} zombies out of an attack with the {gun}.' },
   }],
   tennisBallLauncher: [{ id: 'centre-court', name: 'Centre Court', slot: 1,
     palette: { body: 0x244838, dark: 0x192e26, metal: 0xa4bdb4, grip: 0x1c2723, accent: 0xe0e5c4, sight: 0xffe6a3, ammo: 0xe2ed91, glass: 0xc7e6d7 }, challenge: mastery(400) }, {
@@ -94,6 +161,12 @@ export const skins = {
     pattern: { kind: 'argyle', ink: 0xf4f4e6, ink2: 0x2f8a46, width: 0.024, height: 0.036, line: 0.0012 }, // clubhouse sweater
     challenge: { kind: 'bankShotKills', count: 60, minBounces: 1, needs: ['claw'],
       text: 'Clear {count} zombies with a {gun} ball that had already bounced.' },
+  }, {
+    id: 'hat-trick', name: 'Hat Trick', slot: 3,
+    palette: { body: 0xdff04a, dark: 0x2a3a12, metal: 0xf2f6d8, grip: 0x1c2214, accent: 0xffffff, sight: 0xffe6a3, ammo: 0xfff4a0 },
+    treatment: { kind: 'pulse', role: 'accent', color: 0xf4ff9a, low: 0.06, high: 0.36, period: 1.4 }, // floodlit court lines
+    challenge: { kind: 'ballKills', count: 3, needs: ['claw'], track: '{value} / {count} with one ball',
+      text: 'Clear {count} zombies with a single {gun} ball.' },
   }],
   returnToSender: [{ id: 'final-notice', name: 'Final Notice', slot: 1,
     palette: { body: 0x492c3c, dark: 0x291d29, metal: 0xbba9ba, grip: 0x241c26, accent: 0xefb0c4, sight: 0xffe7a7, emitter: 0xf8c3d2, screen: 0xcdebc0 }, challenge: mastery(150) }, {
@@ -101,6 +174,12 @@ export const skins = {
     palette: { body: 0x6a1a08, dark: 0x3c0e04, metal: 0xdcc8b8, grip: 0x24170f, accent: 0xf2e1b8, sight: 0xffe7a7 },
     pattern: { kind: 'text', ink: 0xf2e1b8, words: ['FRAGILE', 'THIS WAY UP'], font: '"Bebas Neue"', height: 0.011, wordSpacing: 0.075, rowSpacing: 0.02 }, // parcel tape
     challenge: { kind: 'bossKills', count: 5, needs: ['claw'], text: 'Finish {count} bosses with a beam from the {gun}.' },
+  }, {
+    id: 'final-sale', name: 'Final Sale', slot: 3,
+    palette: { body: 0xf4ece0, dark: 0x4a0e1e, metal: 0xe8d8d0, grip: 0x24121a, accent: 0xd81e4a, sight: 0xffe7a7, emitter: 0xff6a8a, screen: 0xffd0da },
+    treatment: { kind: 'edgeGlow', role: 'dark', color: 0xff2a5a, low: 0.2, high: 0.4, period: 3 }, // a stamped red border, faintly lit
+    challenge: { kind: 'finishType', count: 1, types: ['lastCustomer'], needs: ['claw', 'closingTime'], track: 'Last Customer returned {value} / {count}',
+      text: 'Return the Last Customer with the {gun}.' },
   }],
 };
 
@@ -127,8 +206,11 @@ export const skinNotices = {
   toastSeconds: 6,
   toastTitle: 'Skin unlocked',
   toastText: (gunName, skinName) => `${skinName} · ${gunName}`,
-  // slot 1 = a mastery skin, slot 2 = a role skin
-  pa: (gunName, skinName, slot = 1) => (slot === 2 ? {
+  // slot 1 = a mastery skin, slot 2 = a role skin, slot 3 = a feat skin
+  pa: (gunName, skinName, slot = 1) => (slot === 3 ? {
+    kicker: 'Employee commendation',
+    text: `Attention associates. A commendation for outstanding work with the ${gunName}. ${skinName} is now yours.`,
+  } : slot === 2 ? {
     kicker: 'Performance review passed',
     text: `Attention associates. ${gunName} performance review passed. ${skinName} is now yours.`,
   } : {
@@ -164,6 +246,18 @@ export const skinPatterns = {
   keepOut: { mounts: ['sticker'], halfLength: 0.036, halfHeight: 0.026 },
 };
 
+// Glow and motion treatments (slot 3 skins; weapons/models/skinTreatments.js). Emissive light on the meshes painted in one palette ROLE
+// (body, dark, accent...), animated from the model's own animate(); no lights, no textures, no draw calls. A skin's `treatment`:
+//   { kind, role, color | colors, low, high, period, ...that kind's numbers }: the glow swings between low and high (emissive intensity)
+//   once per `period` seconds.
+//   pulse      the role breathes, all together (a smooth sine)
+//   edgeGlow   a steady glow with a slight flicker of `high - low` (trims and edges: use role 'dark')
+//   shimmer    a band of light runs from the back of the gun to the muzzle; width = the band's share of the gun's length
+//   drift      the glow's colour wanders through `colors`, one after another, over `period` seconds each
+// maxGlow: no treatment may glow brighter than this share of full, unlit colour (its brightest channel x high). The build's seam is
+// drawn unlit at full colour, so a treatment always stays clearly dimmer than a glowing seam (plan: "dimmer than a glowing seam").
+export const skinTreatments = { maxGlow: 0.45 };
+
 export const locker = {
   title: 'Associate locker', menu: 'Weapon locker', kicker: 'Personnel · Approved self-expression',
   form: 'SG / PROPERTY · FORM 11-C', guns: 'Issued equipment', skins: 'Approved finishes',
@@ -173,6 +267,8 @@ export const locker = {
   previewLabel: 'Gun finish preview',
   theme: { ink: '#302b30', paper: '#f4ead7', edge: '#b8a98e', stamp: '#9a3f53', selected: '#e8d9c1', highlight: '#93556a', lockedPaper: '#dedbd4', lockedInk: '#625e59' },
   progress: (count, needed) => count + ' / ' + needed,
+  // A feat (slot 3) shows its best attempt; a one-off feat shows whether it is done.
+  featProgress: (count, needed) => (needed === 1 ? (count >= 1 ? 'Done' : 'Not yet') : 'Best ' + count + ' / ' + needed),
   receiptLabel: 'Skins unlocked',
   receiptNames: names => names.join(' · '),
   preview: {
