@@ -36,6 +36,7 @@ export function createLockerPreview(host, { makeRenderer = options => new THREE.
   host.append(renderer.domElement);
   let model = null;
   let width = 0, height = 0;
+  let time = 0; // (a feat skin's glow runs on it)
   return {
     show(gunId, skinId) {
       release(model);
@@ -58,6 +59,8 @@ export function createLockerPreview(host, { makeRenderer = options => new THREE.
         camera.updateProjectionMatrix();
       }
       pivot.rotation.y += dt * c.rotationSpeed;
+      time += dt;
+      model?.userData.skinTreatment?.animate(time);
       renderer.render(scene, camera);
     },
     dispose() {

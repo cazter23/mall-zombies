@@ -8,7 +8,7 @@
 //   root              THREE.Object3D: the gun + hands, pointing down -Z, origin = where it's held
 //   muzzle            Object3D on the gun where tracers and the muzzle flash start
 //   animate(state)    gun-specific animation every frame (trigger, hands during reload...);
-//                     state = { sinceFire, reloadProgress, reloadWeight }
+//                     state = { sinceFire, reloadProgress, reloadWeight, chargeProgress, time } (time: a running clock, for a skin's treatment)
 //   leftHandVisible   setter: hide the support hand (the box cutter arm replaces it)
 //   mounts            where upgrade parts go: barrel / top / side / grip / magazine / sticker (upgradeParts.js)
 // A display builder returns just the gun (no hands), for the wall-buy display.
@@ -28,6 +28,7 @@ import { buildTennisBallLauncherModel, buildTennisBallLauncherDisplay } from './
 import { buildReturnToSenderModel, buildReturnToSenderDisplay } from './returnToSender.js';
 import { resolveGunColors } from '../skinPalette.js';
 import { applySkinPattern } from './skinPattern.js';
+import { applySkinTreatment } from './skinTreatments.js';
 import { gunSkin } from '../../config/skins.js';
 
 const builders = {
@@ -50,10 +51,16 @@ function builderFor(def) {
   return b;
 }
 
-// A slot 2 skin's printed pattern goes on after the build (models/skinPattern.js); other skins and the default are untouched.
+// A slot 2 skin's printed pattern and a slot 3 skin's treatment go on after the build (models/skinPattern.js, models/skinTreatments.js);
+// other skins and the default are untouched. A treatment runs from the model's own animate().
 export function buildWeaponModel(def, skinId) {
   const model = builderFor(def).model(def, skinId);
   applySkinPattern(model.root, def, skinId, model.mounts);
+  const treatment = applySkinTreatment(model.root, def, skinId);
+  if (treatment) {
+    const animate = model.animate;
+    model.animate = state => { animate?.call(model, state); treatment.animate(state?.time ?? 0); };
+  }
   return model;
 }
 
@@ -62,7 +69,9 @@ export function buildWeaponDisplay(def, skinId) {
   // colour set only for the locker and YOUR conveyor gun; world displays omit it.
   const painted = skinId ? { ...def, viewmodel: { ...def.viewmodel, ...resolveGunColors(def, skinId) } } : def;
   const display = builderFor(def).display(painted);
-  return gunSkin(def.id, skinId)?.pattern ? applySkinPattern(display, def, skinId, mountsOf(def)) : display;
+  if (gunSkin(def.id, skinId)?.pattern) applySkinPattern(display, def, skinId, mountsOf(def));
+  applySkinTreatment(display, def, skinId); // (display.userData.skinTreatment: the locker preview animates it; elsewhere it holds still)
+  return display;
 }
 
 // A display has no mounts of its own; a printed one borrows the model's (where its keep-outs go). One default model per gun, built once.

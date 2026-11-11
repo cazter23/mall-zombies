@@ -297,6 +297,12 @@ src/
                         mount (build patch, warranty seal) is painted back to the body colour; front, back and underneath sample a blank strip. One canvas
                         per skin and layout, made on first use and shared by the gun in hand and its displays (userData.sharedSkinPattern: the locker's
                         release skips it); none in Node.
+      skinTreatments.js applySkinTreatment(root, def, skinId): a slot 3 skin's glow or motion (config/skins.js `treatment`, numbers in
+                        skinTreatments), applied by models/index.js after a build in that skin, which wraps the model's animate() to run it (state.time:
+                        the viewmodel's clock; the locker preview animates a display's root.userData.skinTreatment). Clones each material painted in the
+                        treatment's palette ROLE (roleColors) once and lights it with emissive light; a material that already glows is left alone. Kinds:
+                        pulse, edgeGlow, drift (intensity and colour per frame), shimmer (a DataTexture band as the emissive map, the lit meshes' UVs laid
+                        along the gun, the band slid by texture offset). No lights, no new meshes. peakGlow(treatment) <= skinTreatments.maxGlow.
       shortBarrel.js    Reversible front-segment geometry variants, preserving moving-parent transforms and owning both variants.
       loanerTag.js      The Courtesy Loaner's security tag and swinging card (reversible, like the other upgrade visuals).
       buildVisual.js    A finished gun's look: seam, patch and stitches in the stuffing's colour, lumps and leaking tufts when Overstuffed. Instanced, placed from the sticker and top mounts.
