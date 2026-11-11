@@ -104,7 +104,8 @@ src/
                         { type: 'fall' } or { type: 'hazard', id } (a hazard that hurts the player needs a hazards entry).
     attachmentVisuals.js Per-weapon attachment sizing, near-side rail placement, short-barrel spans and held reload copies.
     retailUnease.js     Rare atrium display changes and localized back-room sound timings/ranges; no gameplay tuning.
-    kiosk.js            Kiosk Kevin (docs/kiosk-kevin-plan.md; phase 1 built): the equipment power curve (power: baseHealth 800, exponent 0.37), the throw
+    kiosk.js            Kiosk Kevin (docs/kiosk-kevin-plan.md; phases 1-4 built): his five sites (x, z, faces, floorY, the PA's `where`; the first is
+                        where every run starts), the cart's size, spawnClearance, the PA lines; the equipment power curve (power: baseHealth 800, exponent 0.37), the throw
                         (blockSeconds 0.4, lob, start offset), the two pockets, and the products: so far the Soda Bomb (Lethal, 3 charges, 1.8 s fuse,
                         4 m blast, 850 x power at the centre, 0.3 of that at the edge, a boss's share 6% of its max health, its bottle projectile and look). productOf(id).
     clawMachine.js      GRAB-A-GUN, the claw machine: the prize weights and capsule colours, the sweep (2.4 s, 0.2 s quicker a grab, 1.4 s
@@ -506,7 +507,11 @@ src/
                         forcePlush / moveNow (debug). The show (cfg.show, never the prize): prongs open and shut, the carried capsule swings,
                         the chute flap, an attract screen, sounds that fade with distance (jingle, a tick into each lane, motor, grab,
                         fanfare, Sunny's slide whistle) and a hum: an emitter it adds to map.ambience that follows the live machine.
-      kiosk.js          Kevin's fixed Hallway feature: three priced buy spots, round gating, Kevin's Pick, hiding and PA.
+      kiosk.js          Kiosk Kevin's cart: three priced buy spots on the LIVE cart (getter positions), round gating, Kevin's Pick, hiding and PA.
+                        Five sites (config/kiosk.js sites), one live; every run starts at the first. At each 'roundStart' after the opening
+                        round he moves to a random other site whose zone is open (none: he stays), never mid-purchase (`pending` waits for
+                        the hold to end). Announces 'kioskStock' (one PA line a round, naming the place when he is new there) and
+                        'kioskMoved'. moveNow(siteId) (debug), serialize/restore (his site and a pending move: Save & Quit).
       clawSunny.js      Sunny runs away (built by clawMachine.js): out of the chute, a look round, a waddle along g.zombies.nav.pathTo to the
                         next site's front (open areas only; a lap round his own machine if no other site is open), into that cabinet, which
                         shakes (its rig group; colliders never move). His shootable (one body box) pops on any hit: stuffing and confetti,
@@ -525,7 +530,8 @@ src/
                         killZombies, nextRound, jumpRounds, flashSale, addPoints, zeroPoints, god, giveGun, upgradeGun, doors, arena, panel,
                         spawnMascot / spawnGoldMascot: each costume in turn at the spawn point nearest you);
                         resolve(code, shift), status(). g.debug. A new command = a table entry in config/debug.js + a function here.
-                        KEYLESS commands (no key to spare; keylessIds): 'pockets' fills Kiosk Kevin's equipment pockets (window.__mall.g.debug.run('pockets')).
+                        KEYLESS commands (no key to spare; keylessIds): 'pockets' fills Kiosk Kevin's equipment pockets (window.__mall.g.debug.run('pockets')),
+                        'kioskMove' moves Kevin now (run('kioskMove', 'parkingLot'), or no id for a random open site).
                         God mode is health.invulnerable; debug state is not part of a run (Play again keeps it)
     rounds.js           createRounds(): announce(n, delay) flips the round number (and fires onRoundStart) the
                         moment the last zombie dies, then 'break' (economy.rounds.breakSeconds, inBreak; breakRemaining; endBreak(lead) cuts it short) -> 'active' (spawn quota at
@@ -650,7 +656,9 @@ src/
     mall/cinemaStairs.js Physical service stairs with a smooth ramp under visible treads, solid supports, handrails, two culling
                         rooms and the floor-to-floor nav link. Lower shutter (1500) opens cinema + serviceCorridor; the original
                         cinema shutter now opens cinema + upstairs. No real lights, guns or spawn markers added.
-    mall/kioskCart.js   Kevin's low counter, vendor, three buy spots and changing notices.
+    mall/kioskCart.js   buildKioskCart(kit, site) -> { position, stand, normal, slots, show(state) }: one of Kevin's carts (a 1.05 m vaultable
+                        counter), built in its own frame and turned by `faces` (+z, -z, +x, -x); vendor, three buy spots and a notice strip
+                        (closed / away "BACK IN 5 MIN" / hiding / Kevin's Pick) in a dynamic rig.
     mall/restockMachine.js buildRestockMachine({ kit, center, wallAt, facing, floorY = 0 }) -> { position, normal, screen }: the RESTOCK-O-MATIC
                         (north/south walls): body + hazard kick plate + glowing header and tagline, a lit window of ammo boxes, keypad,
                         card reader, live canvas screen (screen.show({ title, line, note, tone })), side signs, the AMMO blade sign, the

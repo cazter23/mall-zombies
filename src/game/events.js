@@ -37,7 +37,8 @@
 //                                                        damage is BEFORE clothes: createGame's listener applies stats.damageTakenMultiplier
 //   'playerFall'  { drop, damage }                       a landing from a height hurt (feel.fall); damage is already taken
 //   'armourHit'   { absorbed, layers, popped }            Bubble Wrap absorbed damage from a zombie hit
-//   'kioskStock'  { pick, pa }                           Kevin's fixed cart opened or its Pick changed
+//   'kioskStock'  { siteId, pick, pa }                   Kevin's cart opened for the round (or after a move): where he is and his Pick
+//   'kioskMoved'  { siteId, area, moved }                Kevin's site at a 'roundStart' (moved false: he stays where he is); area = the PA's name
 //   'regenStart'  {}                                     health began climbing back (once per recovery: player/health.js)
 //   'secondChance' { status }                            Second Chance changed (game/secondChance.js): 'held' = bought at Customer Service,
 //                                                        'used' = it just covered a lethal hit (the player is already back at full health,

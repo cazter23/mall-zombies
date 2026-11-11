@@ -3,11 +3,13 @@
 ## Built scope · 10 November 2026
 
 Phases 2 and 3 are built as Minimal Kiosk Kevin, with the Stadium Air Horn pulled forward from phase 5.
-The cart stays at one Hallway site and sells Soda Bomb, Bubble Wrap and Stadium Air Horn from round 2 when
-the Hallway is open. Kevin still ducks within 3 m of a living zombie. Kevin's Pick cycles through those three
+Phase 4 is built (10 November 2026, `claude/kiosk-kevin-4`): five carts, and from round 3 Kevin moves at each
+'roundStart' to another open site (see "Where Kevin is"). He sells Soda Bomb, Bubble Wrap and Stadium Air Horn from round 2,
+starting at the Hallway site once the Hallway is open. Kevin still ducks within 3 m of a living zombie. Kevin's Pick cycles through those three
 products in that order and adds one charge or layer, subject to the armour cap. Soda Bomb now costs 300 for
 a refill to three, or four when featured. Bubble Wrap and Air Horn cost 500 each. There are no round-start
-grants. The relocation, random stock and 750-point Soda Bomb price below describe the original proposal.
+grants. The random stock and 750-point Soda Bomb price below describe the original proposal (the stock does not
+re-roll: it is always those three, so phase 4's "stock re-rolls every 'roundStart'" means only the Pick moves on).
 The Sentry, Sparkler Cake and Glitter Bomb remain unbuilt.
 
 Phase 1 was built on 9 November 2026 on `claude/kiosk-kevin-1` (the two pockets, the buttons and the Soda Bomb).
@@ -15,7 +17,6 @@ The original proposal below was written on `claude/kiosk-kevin-plan` the same da
 balance suggestions are subject to the built scope above. Numbers are starting points to tune by playing, and prices are
 suggestions: the economy report now exists (`docs/economy-report.md`, 10 November 2026, from `npm run sim:economy`; its last section prices a purchase in
 "rounds of income"), so phase 7 checks Kevin's prices against it and adds a kiosk step to the bot in `tools/economyPlans.js`. Checked against main at 753aafd (all ten GRAB-A-GUN phases, Wardrobe v1 and showroom
-=======
 phases 1 and 3). Build one phase at a time, in its own worktree, and test before the next.
 
 ## The five decisions (made by the user, 9 November 2026)
@@ -138,7 +139,7 @@ dust sheets, for the same reason: no collider can be added or moved at runtime).
 |---|---|---|---|
 | Hallway | hallway | West half, south wall, between the Service Corridor door and the Food Court gate. **First site** | 2 m from the claw at x 8 and the Prize Counter at x -13; vent spawns |
 | Food Court | foodCourt | Centre aisle, between the stalls | The foam-finger bin and the pillar at (-13, -11.3) |
-| Grand Atrium | atrium | **The CELL-OUT kiosk at (12.6, 14.8)**: it's already a phone kiosk, so it becomes Kevin's | Its counter is 1.05 m; zombies' routes round the court |
+| Grand Atrium | atrium | ~~The CELL-OUT kiosk at (12.6, 14.8)~~ **Built: the south arcade west of the Hallway gate** (x 8.04..10.24, against the south wall). CELL-OUT failed the check: the west vent spawn is 4.7 m from its front, and its east face is inside the fountain hazard's apron | Its counter is 1.05 m; zombies' routes round the court |
 | Sunset Promenade | upstairs | East lounge, near the plinth at (14.2, 1.6) | Routes round both sides; Build-A-Blaster's storefront |
 | Customer Parking | parkingLot | Beside a van: Kevin's "overflow stock" | Outdoor spawns |
 
@@ -310,7 +311,7 @@ replace rule and ticket, ducking, the first PA lines, opening at round 2.
 Done when: every product can be bought through real input, the stock re-rolls every 'roundStart' with Bubble Wrap always in it, prices follow a Flash
 Sale and the Employee Discount, and the cart is never buyable while a zombie is within the duck radius.
 
-### 4. More sites and the move (Sonnet or Luna)
+### 4. More sites and the move (Sonnet or Luna) -- BUILT 10 November 2026 (tests/kiosk.test.js, tests/saveGame.test.js)
 The other four carts and their checks (stand point clear, no spawn within 5 m, routes unchanged, coplanar), the move rule, the clutter lists, PA.
 Done when: Kevin only ever opens in an open zone, never moves mid-purchase, and every site passes the navigation and coplanar tests.
 

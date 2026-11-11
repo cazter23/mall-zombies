@@ -1,5 +1,5 @@
 // =============================================================================
-// KIOSK KEVIN CONFIG: the fixed Hallway cart, its stock and the equipment in your pockets.
+// KIOSK KEVIN CONFIG: Kevin's five carts and the move rule, his stock and the equipment in your pockets.
 // Prices live in config/economy.js and are applied by g.pricing.
 //
 // Every equipment damage is multiplied by ONE number, equipmentPower(round) (game/equipment/equipmentDamage.js):
@@ -8,7 +8,37 @@
 // =============================================================================
 
 export const kiosk = {
-  site: { zone: 'hallway', x: -8.5, backZ: -1.96, width: 2.2, depth: 0.75, height: 1.05, slotSpacing: 0.72 },
+  // WHERE KEVIN IS (docs/kiosk-kevin-plan.md, "Where Kevin is"). Every site has a cart in the map all the time (maps/mall/kioskCart.js);
+  // only one is live, the others say "BACK IN 5 MIN" (no collider is added or moved at runtime). Every run starts at the FIRST site.
+  // At each 'roundStart' after the opening round he moves to a random OTHER site whose zone is open (none open: he stays put),
+  // never mid-purchase (the move waits until the hold is let go) and never into a locked zone. game/features/kiosk.js.
+  //   x, z     the middle of the cart's footprint;  faces  the way its front (the products and the signs) looks: '+z', '-z', '+x', '-x'
+  //   floorY   the floor it stands on;  where  the PA's name for the place
+  // Each site passed the checks in tests/kiosk.test.js: one collider, a vaultable counter (<= 1.1 m) or >= 2.1 m tall, a clear stand
+  // point zombies can reach, no zombie spawn within spawnClearance, zombie routes unchanged, no coplanar faces (tests/coplanar.test.js).
+  sites: [
+    // West half of the south wall, between the Service Corridor door and the Food Court gate. The first site.
+    { id: 'hallway', zone: 'hallway', where: 'the Main Hallway', x: -8.5, z: -1.585, faces: '+z', floorY: 0 },
+    // West of the door lane, facing the gate: 4.6 m clear of the Fryer Blast's grease apron (x 2.5..9.0, z -13.0..-6.5).
+    { id: 'foodCourt', zone: 'foodCourt', where: 'the Food Court', x: -3.2, z: -6.5, faces: '+z', floorY: 0 },
+    // The south arcade, in the corner west of the Hallway gate (the plan's CELL-OUT kiosk failed the check: the west vent
+    // spawn is 4.7 m from its front, and its east face is inside the Electrified Fountain's apron). 15 m from the fountain.
+    { id: 'atrium', zone: 'atrium', where: 'the Grand Atrium', x: 9.14, z: 7.015, faces: '+z', floorY: 0 },
+    // The east lounge, between the south benches and the plinth, facing the Atrium link.
+    { id: 'upstairs', zone: 'upstairs', where: 'the Sunset Promenade', x: 13, z: -1.5, faces: '+z', floorY: 6.3 },
+    // Beside the family van, in the empty bay east of it: Kevin's "overflow stock".
+    { id: 'parkingLot', zone: 'parkingLot', where: 'Customer Parking', x: 42.93, z: -11.05, faces: '+x', floorY: 0 },
+  ],
+  // A cart (maps/mall/kioskCart.js): a low counter, vaultable on its short side, with three slots along its front.
+  cart: { width: 2.2, depth: 0.75, height: 1.05, slotSpacing: 0.72, signWidth: 1.9, productY: 0.83 },
+  spawnClearance: 5, // m: no zombie spawn this close to a site's stand point (checked by the tests)
+  // The mall PA, once per round when Kevin opens for the round ({where} = the site's `where`, {pick} = Kevin's Pick).
+  pa: {
+    kicker: "Kevin's cart",
+    opened: "Kevin's cart is open in {where}.",
+    moved: "Kevin's cart is now in {where}. He's asked us to say it's a limited time only.",
+    pick: "Kevin's Pick is {pick}.",
+  },
   openingRound: 2,
   duckRadius: 3,
   stock: ['sodaBomb', 'bubbleWrap', 'airHorn'], // also the order of Kevin's Pick

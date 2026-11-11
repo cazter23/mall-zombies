@@ -1,5 +1,37 @@
 # Sunset Galleria: build history ("Current state")
 
+## 10 November 2026 - Kiosk Kevin, phase 4: five carts and the move
+
+Phase 4 of docs/kiosk-kevin-plan.md, built on `claude/kiosk-kevin-4`. The stock is unchanged (always Soda Bomb, Bubble Wrap and Air Horn;
+the Pick cycles), so only WHERE he sells changes.
+
+- **Five carts** (config/kiosk.js `sites`; maps/mall/kioskCart.js builds one per site in its own frame, turned by `faces`): the Hallway
+  (unchanged, the first site), the Food Court (x -4.3..-2.1, z -6.9..-6.1, facing the gate: west of the door lane and 4.6 m clear of the
+  Fryer Blast's grease apron, more than the 2 m asked), the Grand Atrium (the south arcade's corner west of the Hallway gate), the Sunset
+  Promenade's east lounge (between the south benches and the plinth, facing the Atrium link) and Customer Parking (bay 1, against the
+  family van's east side, facing +X). Each is the same 1.05 m vaultable counter; the live one has Kevin, the others say BACK IN 5 MIN.
+  Every site's slot is in the scatter-clear list (clutter keeps 2 m away), next to the claw's.
+- **Changed from the plan:** the Atrium site was to be the CELL-OUT kiosk, but its front is 4.7 m from the west vent spawn (the rule is
+  5 m), its back is no better and its east face is inside the Electrified Fountain's 7 m apron. The Food Court cart is not in the
+  centre aisle: that is the door lane (x -2..2) with the tree planter in it, and the stall side is the Fryer's.
+- **The move rule** (game/features/kiosk.js): at each 'roundStart' after the opening round (so from round 3) he moves to a random OTHER
+  site whose zone is open; with none, he stays (a 'kioskMoved' with moved false). Never into a locked zone (moveNow refuses one too).
+  Never mid-purchase: if a buy on his cart is being held (the prompt is a kiosk item with progress > 0), the site is picked right then
+  and he moves the tick the hold ends (`status.pending`). The buy items' positions are getters on the live cart.
+- **PA:** still one 'kioskStock' line a round when he first sells in it, now naming the place when he is new there: "Kevin's cart is open
+  in {where}." the first time (and after a load), "Kevin's cart is now in {where}. He's asked us to say it's a limited time only." after
+  a move, then "Kevin's Pick is {pick}." (lines in config/kiosk.js `pa`; `where` per site). New event 'kioskMoved' { siteId, area, moved }.
+- **Save & Quit:** the kiosk feature now saves { siteId, pendingId } (serialize/restore), so a loaded run reopens him where he stood at
+  the round's start (the snapshot is taken after the roundStart listeners, so that round's move is in it). config/save.js version 3.
+- **Debug:** keyless `g.debug.run('kioskMove', siteId?)`.
+- **Checked** (tests/kiosk.test.js, 5 new tests; tests/saveGame.test.js, 1 new; tests/coplanar.test.js now has a region per site):
+  each site has one collider (a vaultable counter), a clear stand point zombies reach, no spawn within 5 m, a real prompt from its front,
+  ducking from that cart; the carts leave every spawn's route to the hub within 3 m of what it was; opens first in the Hallway at round 2,
+  moves at round 3; 40 round starts with part of the mall locked only ever open him in an open zone, always somewhere new; a round that
+  starts during a held buy waits for it; Play again puts him back; a load keeps the round-start site, not a mid-round move.
+- Shared files changed: src/maps/mall/mall.js (the carts, the feature entry, the clear list), src/config/save.js, src/game/events.js,
+  src/game/debugCommands.js, tests/coplanar.test.js, tests/saveGame.test.js, docs (map, folder-structure, tests, the plan).
+
 ## 10 November 2026 - Save & Quit (Black Ops 6 style)
 
 - **The rules (the user's).** One save slot. Saving ENDS the run (to the title). You can save any time while alive, but only at full health.

@@ -164,6 +164,34 @@ test('Bubble Wrap bought before the round survives a load, partly used layers in
   assert.equal(layers.length, 2);
 });
 
+test("Kiosk Kevin reopens where he stood at the round's start: not the first site, and not where a mid-round move took him", (t) => {
+  const storage = memoryStorage();
+  const run = game(t, storage);
+  const { g } = run;
+  run.tick();
+  for (const id of ['hallway', 'foodCourt', 'upstairs']) g.map.areaUnlocks.unlock(id);
+  g.rounds.jumpTo(4); // (one 'roundStart' after the opening round: he moves off the Hallway)
+  run.tick();
+  const kevinOf = (game) => game.features.list.find(({ feature }) => feature.kind === 'kiosk').instance;
+  const atStart = kevinOf(g).site.id;
+  assert.notEqual(atStart, 'hallway');
+  const elsewhere = ['hallway', 'foodCourt', 'upstairs'].find((id) => id !== atStart);
+  assert.equal(kevinOf(g).moveNow(elsewhere)?.id, elsewhere, 'moved after the snapshot');
+  assert.equal(g.saveGame.saveAndQuit(), true);
+
+  const loaded = game(t, storage);
+  const lines = [];
+  loaded.g.events.on('kioskStock', ({ pa }) => lines.push(pa.text));
+  assert.equal(loaded.g.saveGame.load(), true);
+  const kevin = kevinOf(loaded.g);
+  assert.equal(kevin.site.id, atStart);
+  assert.equal(kevin.status.pending, null);
+  loaded.tick();
+  assert.ok(kevin.status.open, 'open for business at the start of the round');
+  assert.match(lines[0], new RegExp(`open in ${kevin.site.where}`), 'the PA says where he is');
+  assert.equal(kevin.site.id, atStart, 'a load is not a round start: he does not move again');
+});
+
 test('Closing Time survives a load: a key still on the floor, a held key and its duty count, and the run mode', (t) => {
   const storage = memoryStorage();
   const run = game(t, storage);

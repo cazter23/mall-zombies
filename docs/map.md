@@ -19,9 +19,13 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   across from the start door, under a FOOD COURT sign, framed by two planters), Mega Mart (750, east end z -1..5, 6m,
   under a MEGA MART sign), Service Corridor (1000, west wall z 0.5..3.5, under a "SERVICE CORRIDOR · STAFF ONLY"
   sign; the escalator's high end runs overhead just short of it). 3 boarded vents (zombie spawns).
-- Kiosk Kevin has one fixed cart on the Hallway's south wall at x −8.5, z −1.96, facing +Z. Its 2.2 × 0.75 m
-  footprint has a single 1.05 m counter collider. The three labeled buy spots face the aisle, and the cart opens
-  from round 2 after the Hallway unlocks.
+- Kiosk Kevin has five carts (config/kiosk.js `sites`; one live, the rest say BACK IN 5 MIN). Each is a 2.2 × 0.75 m
+  footprint with a single 1.05 m vaultable counter collider and three labeled buy spots along its front. He opens
+  from round 2 at the first, on the Hallway's south wall (x −9.6..−7.4, z −1.96..−1.21, facing +Z), and moves at
+  each round start after that to another open site: Food Court (x −4.3..−2.1, z −6.875..−6.125, facing the gate, 4.6 m
+  west of the Fryer apron), Grand Atrium (south arcade west of the Hallway gate, x 8.04..10.24, z 6.64..7.39, facing
+  +Z), Sunset Promenade (east lounge, x 11.9..14.1, z −1.875..−1.125, y 6.3, facing the Atrium link) and Customer
+  Parking (bay 1 against the family van's east side, x 42.555..43.305, z −12.15..−9.95, facing +X).
   Escalator (SEALED until Hallway and Promenade are owned): west half, z 1..3, bottom end at x -4 facing the hub, rising west at 30 deg through a hole in
   the ceiling (x ~-16.5..-11.95) to level 2 (y 6.3, the top of the ceiling slab; see Level 2 below). Rope barriers + OUT OF ORDER boards at both ends disappear automatically when Hallway and Promenade are owned, including access via Atrium or Cinema; every collider you could
   reach from the floor is taller than a jump. Its low end (x -4..-10.4) is solid to the floor; under its high end
