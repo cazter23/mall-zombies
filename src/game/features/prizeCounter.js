@@ -14,6 +14,7 @@
 // feature: { kind: 'prizeCounter', name, zone, position, normal, slots: [{ id, position }] }
 // =============================================================================
 
+import { closingTime } from '../../config/closingTime.js';
 import { clawMachine } from '../../config/clawMachine.js';
 import { upgrades } from '../../config/upgrades.js';
 import { attachmentById, attachmentFits, attachmentsOf, withAttachment } from '../../weapons/upgrades.js';
@@ -31,8 +32,9 @@ export function voucherChoices(gun) {
 export function buildPrizeCounter(spot, { map, gun, interactions, events, tickets, sound }) {
   const busy = () => gun.isSwitching || gun.weapon.isReloading || gun.weapon.isBursting || gun.weapon.isCharging;
 
-  // Why this prize can't be had right now (null: it can). Tickets first, then the prize's own rule.
+  // Why this prize can't be had right now (null: it can). Return to Sender redirects to its desk; otherwise tickets first, then the prize's own rule.
   function refusal(prize) {
+    if (prize.id === 'ammo' && gun.def.id === closingTime.returnsDesk.weaponId) return closingTime.returnsDesk.redirect;
     const need = prize.tickets - tickets.count;
     if (need > 0) return `Need ${need} more ticket${need === 1 ? '' : 's'}`;
     if (prize.id === 'ammo' && gun.weapon.isFull) return 'The gun in your hand is full';

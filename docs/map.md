@@ -135,6 +135,8 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   a solid parked trolley by the east wall at x 33.43..33.91, z -5.90..-5.08, framed fluorescent fittings. The two lamps now
   separate warm checkouts from cool aisles; no flashing. Entrances, crossings, spawn spaces and four main aisles stay clear.
 - Customer Parking (zone `parkingLot`, 1250): outside Mega Mart's east wall, x 34.3..62.3, z -24..6, ground y 0.
+  Closing Time's Last Customer enters at spawn_parkingLot_deliveryGate (39.3, 0, -22.8); her quota-funded Mall Walker backup uses the four existing safe lot markers. Her shared charge crashes into the solid vans. No new map entry or collider.
+  The parking-validation ticket machine is mounted on the mauve van's west flank (x 53.8, z -11.05, prompt x 53.67), opposite its east-side start prompt. It stays within bay 4, adds no collision, and leaves the gaps, exit approach and four fence spawns clear. Both interactions belong to escapeVan.
   Realism (config/parkingDetails.js realism): accessible bay = bay 1 (x 43..46.5), cart corral in bay 5 (solid, vaultable 1.0 m;
   the gaps between the vans are combat lanes), a stray cart (solid), row letters and banners on the two light poles, a kerb island
   x 37.6..39.3, z -14.9..-7.2 (0.15 m step) with a young tree, an entrance vestibule x 34.45..36.25, z 0.3..4.7 (solid glass sides).
@@ -182,6 +184,7 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   middle (x 7), SHARPENING at x 8.25 (box cutter tiers) and SECOND CHANCE at x 5.75 (the start-doorway end: one self-revive per run, 2,000,
   game/secondChance.js). The Second Chance ticket only shows on its own side of the middle and stays up once bought ("Already held" / "Used this run").
 - The Night Safe mounts 2 cm proud of Customer Service’s east wall at x 8.8, centered at z 5.12 and facing east. Approach from the elevator side.
+- The Returns Desk mounts on the hallway north wall east of Customer Service at x 11.8, facing south. Its prompt is (11.8, 1.42, 5.58); approach from z 4.38. It is clear of the safe, three service windows, Gold Card display and Prize Counter. It sells Return to Sender after three duties and its ammo to anyone holding it.
 - Customer Service booth (gun tiers): a small walled office on the hallway's north wall at x 5.2..8.8 (between the start doorway
   and the elevator), 1.6m deep + a 0.3m counter ledge; you buy at its service window (spot z ~4.1). Hold F/X to buy the next Extended
   Warranty tier for the gun in your hand. Its spot is ONE entry, LAYOUT.serviceDesk in mall.js (along/center/wallAt/facing/zone):

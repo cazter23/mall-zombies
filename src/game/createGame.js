@@ -43,6 +43,7 @@ import { createEffects } from '../fx/effects.js';
 import { createContactShadows } from '../fx/contactShadows.js';
 import { createAmbience } from './ambience.js';
 import { createPowerUps } from './powerUps.js';
+import { closingTime } from '../config/closingTime.js';
 import { createClosingTime } from './closingTime.js';
 import { createClosingKeyView } from '../fx/closingKeyView.js';
 import { createPowerUpView } from '../fx/powerUpView.js';
@@ -297,7 +298,7 @@ export function createGame({
   }
 
   function onRunWon() {
-    if (state.over || state.won || !closing.readyToLeave) return; // (all four keys and lines 1 to 3; no round gate)
+    if (state.over || state.won || !closing.readyToLeave) return; // (all four keys, lines 1 to 3 and paid validation and the Last Customer defeated)
     state.won = true;
     state.winPending = true;
     closing.completeLeaving(); // line 4 is the win itself: ticked here, before the summary, so the receipt reads 4 of 4
@@ -504,7 +505,7 @@ export function createGame({
   });
   events.on('roundStart', ({ round }) => {
     hud.setRound(round);
-    hud.showRoundBanner(round);
+    hud.showRoundBanner(round, closing.isClosingRound(round) ? closingTime.finale.banner : null);
   });
   events.on('waveEnding', () => {
     hud.showAnnouncement(economy.rounds.lastShoppers.pa);
@@ -535,7 +536,7 @@ export function createGame({
   // Closing Time's own sounds, in both run modes (Classic has no PA text): a key picked up, a checklist line ticked.
   events.on('closingKey', () => sound.play('closingKey'));
   events.on('closingLine', () => sound.play('closingDuty'));
-  for (const name of ['closingBriefing', 'closingKeyDrop', 'closingKey', 'closingLine']) {
+  for (const name of ['closingBriefing', 'closingKeyDrop', 'closingKey', 'closingLine', 'closingValidated']) {
     events.on(name, ({ pa }) => {
       if (!state.showClosingGuidance || !pa) return;
       hud.showAnnouncement({ ...pa, priority: 1 });
@@ -556,7 +557,7 @@ export function createGame({
     view: createPowerUpView(scene, colliders),
   });
   configureBossVouchers({ pricing, wallet, map, gun, state });
-  const bosses = createBossDirector({ events, rounds, zombies, scene, colliders, player, surfaces, powerUps, state, map });
+  const bosses = createBossDirector({ events, rounds, zombies, scene, colliders, player, surfaces, powerUps, state, map, interactions, effects, sound });
   let displayedBoss = null, displayedBossHealth, displayedFollowers;
   function updateBossBar(zombie) {
     const hp = zombie?.health;
@@ -578,7 +579,8 @@ export function createGame({
     if (zombie.type.defeatBanner) hud.showAnnouncement({ ...zombie.type.defeatBanner, priority: bossTiming.introPriority });
   });
   // Register after the defeat banner so the key-drop PA queues behind it.
-  const closing = createClosingTime({ events, player, colliders, state, view: createClosingKeyView(scene) });
+  const closing = createClosingTime({ events, player, colliders, state, view: createClosingKeyView(scene), rounds, bosses });
+  events.on('runLoaded', () => hud.showRoundBanner(rounds.round, closing.isClosingRound(rounds.round) ? closingTime.finale.banner : null));
   events.on('bossPhase', ({ zombie, phase }) => {
     const pa = zombie.type.phases?.[phase];
     if (pa) { hud.showAnnouncement({ ...pa, priority: bossTiming.introPriority }); sound.play('paChime'); }
@@ -756,7 +758,7 @@ export function createGame({
     ['rounds', () => rounds.serialize(), (data) => {
       rounds.restore(data);
       hud.setRound(data.round);
-      hud.showRoundBanner(data.round);
+      // The banner is shown on runLoaded, after the closing step has restored its round.
     }],
     ['bosses', () => bosses.serialize(), (data) => bosses.restore(data)],
     ['powerUps', () => powerUps.serialize(), (data) => powerUps.restore(data)],

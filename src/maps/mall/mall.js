@@ -426,6 +426,17 @@ export function buildMall(scene, colliders) {
   const { text, offset, ...safeSign } = safe.sign;
   kit.sign(text, { ...safeSign, x: safeWallX + offset, z: safeZ, facing: 'x+' }).name = 'night_safe_sign';
 
+  // Returns Desk on the hallway wall east of Customer Service, clear of the safe, wardrobe and service windows.
+  const returns = closingTime.returnsDesk;
+  const returnsX = deskSpot.center + returns.offsetFromBooth;
+  const returnsWallZ = deskSpot.wallAt;
+  for (const { name, min, max, color } of returns.parts) {
+    kit.box(returnsX + min[2], min[1], returnsWallZ + min[0], returnsX + max[2], max[1], returnsWallZ + max[0],
+      kit.mat(color), { name, collide: false });
+  }
+  const { text: returnsText, offset: returnsOffset, ...returnsSign } = returns.sign;
+  kit.sign(returnsText, { ...returnsSign, x: returnsX, z: returnsWallZ - returnsOffset, facing: -1 }).name = 'returns_desk_sign';
+
   // --- Main hallway dressing ---------------------------------------------------
 
   // (The hallway's FOOD COURT / MEGA MART / STAFF ONLY signs are neon: maps/mall/hallwayLook.js.)
@@ -940,8 +951,9 @@ export function buildMall(scene, colliders) {
     { kind: 'prizeCounter', name: 'prizeCounter', zone: counterSite.zone, position: prizeBooth.position, normal: prizeBooth.normal, slots: prizeBooth.slots },
     { kind: 'kiosk', name: 'kioskKevin', zone: kiosk.site.zone, ...kioskCart },
     // Environmental hazards (docs/hazards-plan.md): Grand Atrium Electrified Fountain breaker switch.
-    { kind: 'escapeVan', name: 'escape_van', zone: 'parkingLot', position: escapeVanPosition, normal: new THREE.Vector3(1, 0, 0) },
+    { kind: 'escapeVan', name: 'escape_van', zone: 'parkingLot', position: escapeVanPosition, normal: new THREE.Vector3(1, 0, 0), validation: parking.validation },
     { kind: 'fountainHazard', name: 'hazard_fountain', zone: hazards.fountain.zone, position: new THREE.Vector3(hazards.fountain.position.x, hazards.fountain.position.y, hazards.fountain.position.z), normal: new THREE.Vector3(hazards.fountain.normal.x, hazards.fountain.normal.y, hazards.fountain.normal.z) },
+    { kind: 'returnsDesk', name: 'returnsDesk', zone: deskZone, position: new THREE.Vector3(returnsX, returns.promptHeight, returnsWallZ - returns.promptOffset), normal: new THREE.Vector3(0, 0, -1) },
   ];
 
   const doors = [startDoor, megaMartDoor, foodCourtDoor, serviceCorridorDoor, foodCourtMegaMartDoor, serviceCorridorFoodCourtDoor, escalatorDoor, atriumDoor, atriumPromenadeDoor, atriumMegaMartDoor, cinemaWing.door, cinemaConnection.door, departmentStoreDoor, departmentStoreStartRoomDoor, parking.door];
