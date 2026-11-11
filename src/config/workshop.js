@@ -114,6 +114,7 @@ export const workshopRitual = {
 
 // The order form at the bench (game/features/workshopOrderForm.js, ui/orderForm.js).
 export const orderForm = {
+  buildBlurb: fillSize('A built blaster hits {size} harder and holds more ammo.', workshopRitual.qualities[0].gun.damage),
   deniedSeconds: .6, // how long "not enough points" shows
 };
 

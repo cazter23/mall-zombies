@@ -7,7 +7,7 @@ import { headlessGame } from './helpers/headlessGame.js';
 import { sizeBands, sizeWord, changeOf, fillSize, describeEffects, hasStatNumber } from '../src/config/effectWords.js';
 import { upgrades } from '../src/config/upgrades.js';
 import { wardrobeItems } from '../src/config/wardrobe.js';
-import { workshopStuffings, workshopHearts, stuffingBlurb } from '../src/config/workshop.js';
+import { orderForm, workshopStuffings, workshopHearts, stuffingBlurb } from '../src/config/workshop.js';
 import { powerUps } from '../src/config/powerUps.js';
 import { economy } from '../src/config/economy.js';
 import { bossVouchers, bossTypes } from '../src/config/bosses.js';
@@ -51,7 +51,7 @@ test('the detector catches stat numbers and leaves counts and names alone', () =
   }
 });
 
-test('every effect line in config is words: tiers, renewals, attachments, wardrobe items, stuffings, hearts, incentives, sales and boss vouchers', () => {
+test('every effect line in config is words: tiers, renewals, attachments, wardrobe items, stuffings, hearts, the build, incentives, sales and boss vouchers', () => {
   for (const tier of upgrades.tiers) for (const line of tierLines(tier.id)) clean(line.text, `tier ${tier.id}`);
   for (const tier of upgrades.tiers) clean(tier.job ?? '', `tier ${tier.id} job`);
   for (const line of renewalLines()) clean(line.text, 'renewal');
@@ -67,6 +67,7 @@ test('every effect line in config is words: tiers, renewals, attachments, wardro
   }
   for (const id of Object.keys(workshopStuffings)) clean(stuffingBlurb(id), `stuffing ${id}`);
   for (const [id, heart] of Object.entries(workshopHearts)) clean(heart.blurb, `heart ${id}`);
+  clean(orderForm.buildBlurb, 'workshop build');
   for (const [id, type] of Object.entries(powerUps.types)) {
     clean(type.hint ?? '', `incentive ${id} hint`);
     clean(type.pa?.text ?? '', `incentive ${id} PA`);

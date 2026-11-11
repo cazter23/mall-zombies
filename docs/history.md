@@ -121,6 +121,9 @@ docs/closing-time-plan.md plans a run goal with an ending, from the fun review's
 - The plan lists which side systems the quest uses (bosses, the fountain, Build-A-Blaster, the parking lot, the receipt, Return to Sender) and which it does not
   (power-ups, attachments, prize tickets, Limited Editions, the claw, the wardrobe, Kevin).
 - Shared files changed: docs/history.md and CLAUDE.md (the docs index row and build-order line 9 now point at the plan).
+## 10 November 2026 - Build-A-Blaster order form
+
+**Your Blaster** now tells shoppers that a built blaster hits much harder and holds more ammo. The summary stays visible below the scrolling choices.
 
 ## 9 November 2026 - Wardrobe showroom: upstairs showpieces and on-player looks
 
