@@ -22,6 +22,8 @@ export const skins = {
     challenge: mastery(400),
   }, {
     id: 'interoffice', name: 'Interoffice', slot: 2,
+    palette: { body: 0x4a10b8, dark: 0x2c0a6e, metal: 0xb8b0d8, grip: 0x1e1830, accent: 0xf2ecff, sight: 0xffe39a },
+    pattern: { kind: 'lines', ink: 0xd9d2ff, spacing: 0.009, width: 0.0012, margin: { color: 0xff6f8a, width: 0.0016, offset: 0.03, every: 0.16 } }, // ruled memo paper
     challenge: { kind: 'headshotKills', count: 100, text: 'Land {count} headshot kills with the {gun}.' },
   }],
   rivetRifle: [{
@@ -125,7 +127,19 @@ export const challengeDebug = {
 };
 
 // Minimum WCAG relative-luminance ratio for body paint against stuffings and warranty tiers.
+// (With today's six stuffings and four tiers this caps every body at luminance 0.0585: the darkest of them, the Standard tier,
+// is 0.167, and the lightest, Popcorn Butter, 0.882, leaves no room above. Pattern skins are deep SATURATED colours for that reason.)
 export const skinContrast = { minimum: 2 };
+
+// Printed patterns (slot 2 skins; weapons/models/skinPattern.js). One canvas per skin, made the first time it is worn and shared by
+// the gun in hand, the locker preview and the conveyor. The canvas spans `metres` of gun in both directions (centred on the gun);
+// its top `blankFraction` stays body colour: every face that is not printed samples there. Printed faces: those whose outward
+// normal, in the gun's own frame, points up (y >= faceDot) or to the right (x >= faceDot), and leans left no more than leftLimit
+// (x >= leftLimit: a rounded top's left bevel stays plain). Never the left face (the build patch,
+// warranty seal and loaner tag sit there) and never a face already carrying a texture (the brand label is its own mesh).
+// A skin's `pattern`: { kind, ink, ...that kind's numbers in metres }. Kinds: lines, grid, dots, stripes, checker, gingham,
+// confetti, tread, argyle, text (fonts from config/fonts.js).
+export const skinPatterns = { size: 512, metres: 0.8, blankFraction: 0.06, faceDot: 0.6, leftLimit: -0.2, anisotropy: 4 };
 
 export const locker = {
   title: 'Associate locker', menu: 'Weapon locker', kicker: 'Personnel · Approved self-expression',

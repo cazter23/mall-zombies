@@ -11,7 +11,7 @@ function release(root) {
     if (node.geometry) owned.add(node.geometry);
     for (const material of [].concat(node.material ?? [])) {
       owned.add(material);
-      for (const value of Object.values(material)) if (value?.isTexture) owned.add(value);
+      for (const value of Object.values(material)) if (value?.isTexture && !value.userData?.sharedSkinPattern) owned.add(value); // (a skin's print is shared)
     }
   });
   root.removeFromParent();
