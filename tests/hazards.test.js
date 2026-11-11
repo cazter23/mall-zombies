@@ -1,9 +1,11 @@
 // Environmental hazards (docs/hazards-plan.md, config/hazards.js, game/features/hazards.js,
-// game/features/fountainHazard.js): pay to trigger through g.pricing, active pulses with source
-// 'hazard' (1-shot early rounds, 2-shot late rounds, opening stagger + convulsion slow, boss/Mascot
-// cap), cooldowns, payouts (Mascot helmet bonus and regular power-up meter ignore hazard kills;
-// Gold Mascot drops and kill multipliers still apply), player self-shock/slow while standing inside,
-// nothing paid after death, and Play again (resetRun) leaving nothing behind.
+// game/features/fountainHazard.js, game/features/fryerHazard.js): pay to trigger through g.pricing,
+// active pulses with source 'hazard' (1-shot early rounds, 2/3-shot late rounds, fountain stagger +
+// convulsion slow, fryer opening burst + slip, boss/Mascot cap and boss slip immunity), cooldowns,
+// payouts (Mascot helmet bonus and regular power-up meter ignore hazard kills; Gold Mascot drops and
+// kill multipliers still apply), Closing Time line 1 counts fountainKills only (not fryerKills),
+// player self-shock/scald/slow while standing inside, nothing paid after death, and Play again
+// (resetRun) leaving nothing behind.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
@@ -13,7 +15,9 @@ import { economy } from '../src/config/economy.js';
 import { hasStatNumber } from '../src/config/effectWords.js';
 
 const cfg = hazards.fountain;
+const fryerCfg = hazards.fryer;
 const OUTSIDE_Z = 10.5; // 8.1 m south of fountain center (18.6), outside the 7.0 m radius
+const FRYER_OUTSIDE_Z = -5.0; // north of the grease apron (minZ: -13.0, maxZ: -6.5)
 
 function standAtFountainSwitch(t, distance = 1.25) {
   const { x, z } = cfg.position;
@@ -24,6 +28,17 @@ function standAtFountainSwitch(t, distance = 1.25) {
 
 function getFountainInstance(g) {
   return g.features.list.find((f) => f.feature.kind === 'fountainHazard')?.instance;
+}
+
+function standAtFryerSwitch(t, distance = 1.25) {
+  const { x, z } = fryerCfg.position;
+  const { x: nx, z: nz } = fryerCfg.normal;
+  const yawDeg = (Math.atan2(nx, nz) * 180) / Math.PI;
+  t.standAt(x + nx * distance, z + nz * distance, yawDeg);
+}
+
+function getFryerInstance(g) {
+  return g.features.list.find((f) => f.feature.kind === 'fryerHazard')?.instance;
 }
 
 test('triggering, price and discounts: locked until Atrium opens, charges g.pricing ("hazard"), and respects Flash Sale discounts', (t) => {
@@ -263,4 +278,275 @@ test('words-only guard: every hazard config string and live prompt has no stat n
       assert.ok(!multiplierWords.test(prompt[key]), `prompt.${key}: "${prompt[key]}"`);
     }
   }
+
+  g.map.areaUnlocks.unlock('foodCourt');
+  standAtFryerSwitch(game);
+  const fryerPrompt = g.interactions.prompt;
+  assert.ok(fryerPrompt);
+  for (const key of ['label', 'title', 'detail', 'blocked']) {
+    if (fryerPrompt[key]) {
+      assert.ok(!hasStatNumber(fryerPrompt[key]), `fryerPrompt.${key}: "${fryerPrompt[key]}"`);
+      assert.ok(!multiplierWords.test(fryerPrompt[key]), `fryerPrompt.${key}: "${fryerPrompt[key]}"`);
+    }
+  }
+});
+
+test('fryer triggering, price and discounts: locked until Food Court opens, charges g.pricing ("hazard"), and respects Flash Sale discounts', (t) => {
+  const game = headlessGame();
+  t.after(() => game.g.map.dispose());
+  const { g } = game;
+  game.tick(1);
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  g.wallet.earn(10_000);
+
+  // Food Court is locked at the start of a run: no prompt yet.
+  standAtFryerSwitch(game);
+  assert.equal(g.interactions.prompt, null, 'no prompt while Food Court is locked');
+
+  // Unlock Food Court: prompt shows the shelf price from g.pricing.
+  g.map.areaUnlocks.unlock('foodCourt');
+  standAtFryerSwitch(game);
+  assert.ok(g.interactions.prompt, 'prompt appears once Food Court is open');
+  assert.equal(g.interactions.prompt.kind, 'hazard');
+  assert.equal(g.interactions.prompt.id, 'fryer');
+  assert.equal(g.interactions.prompt.cost, economy.hazards.fryer);
+
+  // Apply a 40% hazard discount (e.g. Mall hazards Flash Sale).
+  g.pricing.setDiscount('hazard', 0.4);
+  const expectedPrice = g.pricing.priceOf('hazard', 'fryer');
+  assert.equal(expectedPrice, 450);
+  standAtFryerSwitch(game);
+  assert.equal(g.interactions.prompt.cost, expectedPrice, 'prompt reflects the discounted hazard price');
+
+  const before = g.wallet.points;
+  const fryer = getFryerInstance(g);
+  assert.equal(fryer.phase, 'ready');
+  game.press('KeyF', 20);
+  assert.equal(before - g.wallet.points, expectedPrice, 'charged the discounted hazard price');
+  assert.equal(fryer.phase, 'active');
+  assert.ok(game.sounds.includes(fryerCfg.triggerSound), 'played the trigger sound');
+});
+
+test('fryer cooldown: blocked while active ("Active") and recharging ("Recharging"), then ready again after cooldown elapses', (t) => {
+  const game = headlessGame();
+  t.after(() => game.g.map.dispose());
+  const { g } = game;
+  game.tick(1);
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  g.wallet.earn(10_000);
+  g.map.areaUnlocks.unlock('foodCourt');
+
+  const fryer = getFryerInstance(g);
+  standAtFryerSwitch(game);
+  game.press('KeyF', 20);
+  assert.equal(fryer.phase, 'active');
+
+  // Step back to inspect prompt while active.
+  standAtFryerSwitch(game);
+  assert.equal(g.interactions.prompt?.blocked, hazards.status.active);
+  const walletWhileActive = g.wallet.points;
+  game.press('KeyF', 20);
+  assert.equal(g.wallet.points, walletWhileActive, 'cannot pay again while active');
+
+  // Run out the remaining active time into cooldown while standing outside the grease apron.
+  game.standAt(5.75, FRYER_OUTSIDE_Z, 0);
+  game.tick(Math.ceil(fryerCfg.durationSeconds / dt) + 2);
+  assert.equal(fryer.phase, 'cooldown');
+  assert.ok(fryer.remaining > 0 && fryer.remaining <= fryerCfg.cooldownSeconds);
+
+  standAtFryerSwitch(game);
+  assert.equal(g.interactions.prompt?.blocked, hazards.status.cooldown);
+  const walletDuringCooldown = g.wallet.points;
+  game.press('KeyF', 20);
+  assert.equal(g.wallet.points, walletDuringCooldown, 'cannot pay while recharging');
+
+  // Finish the cooldown: ready to trigger again.
+  game.standAt(5.75, FRYER_OUTSIDE_Z, 0);
+  game.tick(Math.ceil(fryerCfg.cooldownSeconds / dt) + 5);
+  assert.equal(fryer.phase, 'ready');
+  standAtFryerSwitch(game);
+  assert.equal(g.interactions.prompt?.blocked, null);
+});
+
+test('fryer payout, opening burst vs pulse scaling, zombie slip, boss slip immunity & cap, Mascot helmet rule, Gold Mascot drop, and nothing paid after death', (t) => {
+  const game = headlessGame();
+  t.after(() => game.g.map.dispose());
+  const { g } = game;
+  game.tick(1);
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  g.wallet.earn(10_000);
+  g.map.areaUnlocks.unlock('foodCourt');
+
+  const kills = [];
+  const fryerKills = [];
+  const headPops = [];
+  g.events.on('kill', (e) => kills.push(e));
+  g.events.on('fryerKill', (e) => fryerKills.push(e));
+  g.events.on('mascotHeadPop', (e) => headPops.push(e));
+
+  // 1. Round-1 full-health Shopper (150 HP) in the apron is one-shot by the 180-damage opening burst;
+  //    a high-round Shopper (1000 maxHealth) takes 45% (450) and slips (0.9 s) on pulse 1 with zero +10 hit payout,
+  //    takes another 45% (450) on pulse 2, and dies on pulse 3.
+  const earlyShopper = g.zombies.spawn('shopper', new THREE.Vector3(4.5, 0, -9.5));
+  earlyShopper.setState('chasing');
+  const lateShopper = g.zombies.spawn('shopper', new THREE.Vector3(7.0, 0, -9.5));
+  lateShopper.setState('chasing');
+  lateShopper.maxHealth = 1000;
+  lateShopper.health = 1000;
+
+  // Boss standing in the grease apron: ignores applySlip and caps damage at maxHealthCap (10%).
+  const boss = g.zombies.spawn('janitor', new THREE.Vector3(5.75, 0, -8.5));
+  boss.setState('chasing');
+  const bossInitialHealth = boss.health;
+
+  const pointsBefore = g.wallet.points;
+  const progressBefore = g.powerUps.progress;
+  const fryer = getFryerInstance(g);
+  game.standAt(5.75, FRYER_OUTSIDE_Z, 0);
+  fryer.trigger();
+
+  assert.equal(earlyShopper.isAlive, false, 'round-1 full-health shopper is one-shot by the opening fryer burst');
+  assert.equal(kills.length, 1);
+  assert.equal(fryerKills.length, 1);
+  assert.equal(kills[0].source, 'hazard');
+  assert.equal(kills[0].headshot, false);
+  assert.equal(kills[0].melee, false);
+  assert.equal(g.wallet.points - pointsBefore, economy.killValues.shopper, 'paid exact shopper killValue with zero +10 non-lethal hit points');
+  assert.equal(g.runStats.kills, 1);
+  assert.equal(g.powerUps.progress, progressBefore, 'hazard kills do not fill the regular power-up meter');
+
+  assert.equal(lateShopper.isAlive, true);
+  assert.equal(lateShopper.health, 1000 - 1000 * fryerCfg.normalHealthFraction, 'high-round shopper took 45% maxHealth on pulse 1');
+  assert.equal(lateShopper.slipTimer, fryerCfg.slipDuration, 'normal zombie slipped on the scalding grease apron');
+  assert.equal(lateShopper.staggerDrag, fryerCfg.slipDrag);
+
+  assert.equal(boss.slipTimer, 0, 'bosses ignore applySlip');
+  assert.ok(Math.abs((bossInitialHealth - boss.health) - boss.maxHealth * fryerCfg.maxHealthCap) < 1e-6, 'boss damage is capped by maxHealthCap (10%) per pulse');
+
+  // Move the boss outside the apron before ticking through the remaining pulses for the high-round shopper.
+  boss.position.set(5.75, 0, FRYER_OUTSIDE_Z);
+
+  // Pulse 2 deals another 45% (100 HP left); pulse 3 finishes the high-round shopper.
+  game.tick(Math.ceil(fryerCfg.pulseInterval / dt) + 1);
+  assert.equal(lateShopper.isAlive, true);
+  assert.equal(lateShopper.health, 100);
+  game.tick(Math.ceil(fryerCfg.pulseInterval / dt) + 1);
+  assert.equal(lateShopper.isAlive, false, 'high-round shopper died on pulse 3');
+  assert.equal(g.wallet.points - pointsBefore, economy.killValues.shopper * 2);
+  assert.equal(fryerKills.length, 2);
+
+  // 2. Mascot helmet pop from the fryer: pops the helmet at 50% HP and caps damage at 10%, paying NO helmetPopBonus.
+  g.zombies.clear();
+  const mascot = g.zombies.spawn('mascot', new THREE.Vector3(5.75, 0, -9.5), { gold: false });
+  const pulseCap = mascot.maxHealth * fryerCfg.maxHealthCap;
+  mascot.health = Math.floor(mascot.maxHealth * 0.5) + Math.min(10, pulseCap * 0.5);
+  const healthBeforePulse = mascot.health;
+  const walletBeforeMascot = g.wallet.points;
+  game.tick(Math.ceil(fryerCfg.pulseInterval / dt) + 1);
+  assert.ok(Math.abs((healthBeforePulse - mascot.health) - pulseCap) < 1e-6, 'Mascot damage is capped by maxHealthCap (10%) per pulse');
+  assert.equal(headPops.length, 1, 'Mascot helmet popped at 50% HP');
+  assert.equal(headPops[0].source, 'hazard');
+  assert.equal(g.wallet.points, walletBeforeMascot, 'hazard helmet pop does NOT pay helmetPopBonus');
+
+  // 3. Employee of the Month (Gold Mascot): killing it with the fryer STILL drops its guaranteed power-up.
+  g.zombies.clear();
+  const goldMascot = g.zombies.spawn('mascot', new THREE.Vector3(5.75, 0, -9.5), { gold: true });
+  goldMascot.health = 5;
+  game.tick(Math.ceil(fryerCfg.pulseInterval / dt) + 1);
+  assert.equal(goldMascot.isAlive, false);
+  assert.ok(g.powerUps.pickup, 'Gold Mascot killed by the fryer still drops its guaranteed power-up');
+
+  // 4. Once the player is dead (state.over), nothing more is paid or counted.
+  const doomed = g.zombies.spawn('shopper', new THREE.Vector3(5.75, 0, -9.5));
+  doomed.health = 5;
+  g.health.takeDamage(10_000);
+  assert.equal(g.state.over, true);
+  const walletAtDeath = g.wallet.points;
+  const killsAtDeath = g.runStats.kills;
+  game.tick(Math.ceil(fryerCfg.pulseInterval / dt) + 2);
+  assert.equal(g.wallet.points, walletAtDeath, 'nothing paid after player death');
+  assert.equal(g.runStats.kills, killsAtDeath, 'no kills counted after player death');
+});
+
+test('Closing Time line 1 isolation: fryer kills emit fryerKill and leave line 1 (janitor fountain duty) untouched', (t) => {
+  const game = headlessGame();
+  t.after(() => game.g.map.dispose());
+  const { g } = game;
+  game.tick(1);
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  g.wallet.earn(10_000);
+  g.map.areaUnlocks.unlock('foodCourt');
+  g.closing.debug('grant', 'janitor');
+  assert.equal(g.closing.hasKey('janitor'), true);
+  assert.equal(g.closing.checklist.find((c) => c.bossId === 'janitor')?.count, 0);
+
+  let fountainKillEvents = 0;
+  let fryerKillEvents = 0;
+  g.events.on('fountainKill', () => { fountainKillEvents++; });
+  g.events.on('fryerKill', () => { fryerKillEvents++; });
+
+  for (let i = 0; i < 3; i++) {
+    const z = g.zombies.spawn('shopper', new THREE.Vector3(4.5 + i * 1.2, 0, -9.5));
+    z.setState('chasing');
+  }
+  game.standAt(5.75, FRYER_OUTSIDE_Z, 0);
+  const fryer = getFryerInstance(g);
+  fryer.trigger();
+
+  assert.equal(fryerKillEvents, 3, 'fryer kills emitted fryerKill');
+  assert.equal(fountainKillEvents, 0, 'fryer kills never emit fountainKill');
+  assert.equal(g.closing.checklist.find((c) => c.bossId === 'janitor')?.count, 0, 'Closing Time line 1 count remains 0 after fryer kills');
+  assert.equal(g.closing.isDone('janitor'), false);
+});
+
+test('player standing in the active grease apron takes scald damage and is slowed, then recovers when stepping out', (t) => {
+  const game = headlessGame();
+  t.after(() => game.g.map.dispose());
+  const { g } = game;
+  game.tick(1);
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  g.wallet.earn(10_000);
+  g.map.areaUnlocks.unlock('foodCourt');
+
+  // Stand at the fryer switch (inside the x: 2.5..9.0, z: -13.0..-6.5 apron) and trigger the fryer.
+  standAtFryerSwitch(game);
+  const healthBefore = g.stats.health;
+  game.press('KeyF', 20);
+  assert.ok(g.stats.health <= healthBefore - fryerCfg.playerDamage, 'player took scald damage from the fryer apron');
+  assert.equal(g.stats.surfaceSpeed, fryerCfg.playerSlowFactor, 'player surfaceSpeed is slowed while inside the active grease apron');
+
+  // Step outside the grease apron (z = -5.0 is north of maxZ = -6.5).
+  game.standAt(5.75, FRYER_OUTSIDE_Z, 0);
+  assert.equal(g.stats.surfaceSpeed, 1, 'surfaceSpeed returns to 1 as soon as the player steps outside the apron');
+  const healthOutside = g.stats.health;
+  game.tick(Math.ceil(fryerCfg.pulseInterval / dt) + 2);
+  assert.ok(g.stats.health >= healthOutside, 'no scald damage while outside the apron');
+});
+
+test('Play again (resetRun) clears active fryer state, cooldowns, visuals, and player slow (snapshot equality)', (t) => {
+  const game = headlessGame();
+  t.after(() => game.g.map.dispose());
+  const { g } = game;
+  const fresh = snapshot(g);
+
+  game.tick(1);
+  g.wallet.earn(10_000);
+  g.map.areaUnlocks.unlock('foodCourt');
+  standAtFryerSwitch(game);
+  game.press('KeyF', 20);
+
+  const fryer = getFryerInstance(g);
+  assert.equal(fryer.phase, 'active');
+  assert.equal(g.stats.surfaceSpeed, fryerCfg.playerSlowFactor);
+
+  g.resetRun();
+  assert.equal(fryer.phase, 'ready');
+  assert.equal(fryer.remaining, 0);
+  assert.equal(g.stats.surfaceSpeed, 1);
+  assert.deepEqual(snapshot(g), fresh);
 });

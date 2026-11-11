@@ -88,7 +88,7 @@ export const hazards = {
     pulseSound: 'hit',
   },
 
-  // --- Planned hazards (docs/hazards-plan.md; built in later phases) ---
+  // --- Phase 2: Food Court Fryer Blast (game/features/fryerHazard.js) ---
   fryer: {
     id: 'fryer',
     zone: 'foodCourt',
@@ -98,7 +98,10 @@ export const hazards = {
     detail: 'Blasts scalding oil across the counter apron',
     position: { x: 5.75, y: 1.05, z: -13.0 },
     normal: { x: 0, y: 0, z: 1 },
+    postBottomY: 0,
+    switchOffset: 0.21, // proud of the Corn Dog Corral counter face (z = -13.0) and stainless lip (z = -12.95)
     bounds: { minX: 2.5, maxX: 9.0, minZ: -13.0, maxZ: -6.5 },
+    maxHeight: 1.2,
     durationSeconds: 6,
     cooldownSeconds: 25,
     pulseInterval: 0.5,
@@ -107,9 +110,50 @@ export const hazards = {
     normalHealthFraction: 0.45,
     maxHealthCap: 0.1,
     slipDuration: 0.9,
+    slipDrag: 0.8,
     playerDamage: 5,
+    playerViewJoltDegrees: 1.0,
     playerSlowFactor: 0.8,
+    // Visuals & audio.
+    slickColor: 0xe08a1e,
+    slickEdgeColor: 0xffc84a,
+    waveColor: 0xffe07a,
+    slickOpacity: 0.36,
+    edgeOpacity: 0.78,
+    waveOpacity: 0.82,
+    vatGlowOpacity: 0.72,
+    slickY: 0.03,
+    edgeY: 0.035,
+    waveY: 0.04,
+    edgeWidth: 0.14,
+    waveDepth: 0.22,
+    vatCenters: [
+      { x: 4.12, y: 0.93, z: -13.92 },
+      { x: 5.75, y: 0.93, z: -13.92 },
+    ],
+    vatSize: { width: 1.24, height: 0.04, depth: 0.38 },
+    nozzlePositions: [
+      { x: 4.12, y: 1.24, z: -12.96 },
+      { x: 5.75, y: 1.24, z: -12.96 },
+    ],
+    nozzleSize: { width: 0.22, height: 0.12, depth: 0.14 },
+    jetSegments: 4,
+    jetArcHeight: 0.55,
+    jetJitter: 0.18,
+    idleJetCount: 3,
+    zombieTargetYOffset: 0.85,
+    hitSparkColors: [0xff8a1f, 0xffd24a, 0xff4d1f],
+    hitSparkCount: 10,
+    idleSparkCount: 4,
+    flashRadius: 1.8,
+    flashDuration: 0.16,
+    hitFlashRadius: 1.15,
+    hitFlashDuration: 0.12,
+    triggerSound: 'stuffingFryer',
+    pulseSound: 'stuffingFryer',
   },
+
+  // --- Planned hazards (docs/hazards-plan.md; built in later phases) ---
 
   sprinklers: {
     id: 'sprinklers',
