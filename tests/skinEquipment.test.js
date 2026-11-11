@@ -6,6 +6,7 @@ import { createSkinSave } from '../src/game/skinSave.js';
 import { skins, skinStorage, skinContrast, locker } from '../src/config/skins.js';
 import { weapons, melee } from '../src/config/weapons.js';
 import { upgrades } from '../src/config/upgrades.js';
+import { gunStyle } from '../src/config/gunStyle.js';
 import { workshopStuffings, workshopRitual } from '../src/config/workshop.js';
 import { createViewmodel } from '../src/weapons/viewmodel.js';
 import { buildWeaponDisplay } from '../src/weapons/models/index.js';
@@ -156,7 +157,9 @@ test('receipt names only skins unlocked during this run, and combines multiple u
   assert.deepEqual(receipt(), []);
 });
 
-test('every configured skin body contrasts with all six stuffings and every warranty tier', () => {
+// A body must read against every stuffing patch and warranty tier: directly (contrast with that colour), or through the dark rim round the patch,
+// the tag and the collar (contrast with the rim ink, which itself contrasts with every one of them).
+test('every configured skin body reads against all six stuffings and every warranty tier, directly or through the dark rim', () => {
   const luminance = hex => {
     const rgb = [hex >> 16 & 255, hex >> 8 & 255, hex & 255].map(channel => {
       const value = channel / 255;
@@ -164,15 +167,21 @@ test('every configured skin body contrasts with all six stuffings and every warr
     });
     return rgb[0] * .2126 + rgb[1] * .7152 + rgb[2] * .0722;
   };
+  const ratio = (x, y) => { const a = luminance(x), b = luminance(y); return (Math.max(a, b) + .05) / (Math.min(a, b) + .05); };
   assert.equal(Object.keys(skins).length, 11);
   assert.equal(Object.keys(workshopStuffings).length, 6);
+  for (const other of [...Object.values(workshopStuffings), ...upgrades.tiers]) {
+    assert.ok(ratio(gunStyle.rim.color, other.color) >= skinContrast.minimum, `the rim ink stands out from ${other.name}`);
+  }
+  // What the rim opens up: a cream body, which fails against Popcorn Butter and Platinum directly, reads through the rim.
+  assert.ok(ratio(0xf3e3b8, 0xfff2b8) < skinContrast.minimum && ratio(0xf3e3b8, gunStyle.rim.color) >= skinContrast.minimum);
   for (const [gunId, entries] of Object.entries(skins)) for (const skin of entries) {
     assert.equal(entries.length, 2); assert.deepEqual(entries.map(entry => entry.slot), [1, 2]);
     assert.ok(Number.isInteger(skin.palette.body));
     for (const other of [...Object.values(workshopStuffings), ...upgrades.tiers]) {
-      const a = luminance(skin.palette.body), b = luminance(other.color);
-      const contrast = (Math.max(a, b) + .05) / (Math.min(a, b) + .05);
-      assert.ok(contrast >= skinContrast.minimum, `${gunId}/${skin.name} vs ${other.name}: ${contrast}`);
+      const direct = ratio(skin.palette.body, other.color);
+      const throughRim = Math.min(ratio(skin.palette.body, gunStyle.rim.color), ratio(gunStyle.rim.color, other.color));
+      assert.ok(Math.max(direct, throughRim) >= skinContrast.minimum, `${gunId}/${skin.name} vs ${other.name}: ${direct} direct, ${throughRim} through the rim`);
     }
   }
 });

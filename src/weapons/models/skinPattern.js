@@ -1,20 +1,23 @@
 // =============================================================================
 // SKIN PATTERNS: the printed pattern of a slot 2 (role) skin (config/skins.js `pattern`, numbers in skinPatterns).
 //
-//   applySkinPattern(root, def, skinId)   after a model or display is built in a skin: prints its body
+//   applySkinPattern(root, def, skinId, mounts)   after a model or display is built in a skin: prints its body
 //
 // The body material (every material whose colour is the skin's body colour and has no texture of its own) is swapped for ONE
 // patterned clone, so the gun draws exactly as many meshes as before: no draw call is added. Its texture is made once per skin and
-// shared (the gun in hand, the locker preview and the conveyor), and marked userData.sharedSkinPattern so a preview's release
-// leaves it alone. The body meshes' UVs are rewritten in the gun's own frame: faces that point up or to the right take the print,
-// every other face samples the canvas's blank strip, which is painted the body colour. Without a canvas (Node) nothing changes.
+// layout and shared (the gun in hand, the locker preview and the conveyor), and marked userData.sharedSkinPattern so a preview's
+// release leaves it alone. The body meshes' UVs are rewritten in the gun's own frame. The canvas has two printed regions:
+//   upper   faces that point up or to the right
+//   lower   faces that point left: the side you see in your hands. Round the sticker mount (the build patch, the warranty seal) a
+//           keep-out is painted back to the body colour (skinPatterns.keepOut), so those always sit on plain paint.
+// Every other face (front, back, underneath) samples the blank strip at the top, also body colour. Without a canvas (Node) nothing changes.
 // =============================================================================
 import * as THREE from 'three';
 import { gunSkin, skinPatterns as cfg } from '../../config/skins.js';
 import { resolveGunColors } from '../skinPalette.js';
 
 const css = color => '#' + color.toString(16).padStart(6, '0');
-const textures = new Map(); // 'gunId/skinId' -> CanvasTexture
+const textures = new Map(); // 'gunId/skinId|layout' -> CanvasTexture
 
 // Each draws `p` (numbers in metres; m(x) = pixels) over the whole canvas, which is already filled with the body colour.
 const DRAW = {
@@ -126,25 +129,59 @@ const DRAW = {
   },
 };
 
-/** The skin's shared canvas texture, made on first use; null without a canvas. */
-export function skinPatternTexture(gunId, skin) {
-  const key = `${gunId}/${skin.id}`;
+// Canvas layout: size wide, 2 x size tall; rows [0, blank) are the blank strip, [blank, size) the upper region, [size, 2 x size) the lower.
+// Both regions have square pixels at size / metres per metre, so v moves 1 / (2 x metres) per metre.
+const layout = () => {
+  const width = cfg.size, height = cfg.size * 2, blank = Math.ceil(height * cfg.blankFraction / 2);
+  return { width, height, blank, perMetre: width / cfg.metres, top: 1 - blank / height, middle: 0.5 };
+};
+
+/** The blank strip's UV: body colour at every mip level (all of a face's UVs are this one point). */
+export const blankUv = Object.freeze([0.5, 1 - layout().blank / layout().height / 2]);
+
+/** A gun-space point on a face of this side, as UV (unclamped). centre = the body's centre: the print is laid out from it. */
+export function sideUv(side, point, centre) {
+  const { top, middle } = layout();
+  const across = 1 / (2 * cfg.metres);
+  if (side === 'left') return [0.5 + (point.z - centre.z) / cfg.metres, middle / 2 + (point.y - centre.y) * across]; // (read from the left: +z is to your right)
+  const upper = (middle + top) / 2;
+  if (side === 'top') return [0.5 - (point.z - centre.z) / cfg.metres, upper + (point.x - centre.x) * across];
+  return [0.5 - (point.z - centre.z) / cfg.metres, upper + (point.y - centre.y) * across]; // right
+}
+
+/** The keep-outs on the left face round each mount there, as gun-space boxes { z: [min, max], y: [min, max] }. */
+export function keepOuts(mounts = {}) {
+  const k = cfg.keepOut;
+  return k.mounts.map(name => mounts[name]?.position).filter(Boolean)
+    .map(([, y, z]) => ({ z: [z - k.halfLength, z + k.halfLength], y: [y - k.halfHeight, y + k.halfHeight] }));
+}
+
+/** The skin's canvas texture for this layout (the body's centre and its keep-outs), made on first use and shared; null without a canvas. */
+export function skinPatternTexture(gunId, skin, centre = new THREE.Vector3(), holes = []) {
+  const round = n => Math.round(n * 1e4);
+  const key = `${gunId}/${skin.id}|${[centre.x, centre.y, centre.z].map(round)}|${holes.map(h => [...h.z, ...h.y].map(round)).join(';')}`;
   if (textures.has(key)) return textures.get(key);
   if (typeof document === 'undefined') return null;
+  const { width, height, blank, perMetre } = layout();
   const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = cfg.size;
+  canvas.width = width;
+  canvas.height = height;
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
-  const size = cfg.size;
-  const blank = Math.ceil(size * cfg.blankFraction);
   ctx.fillStyle = css(skin.palette.body);
-  ctx.fillRect(0, 0, size, size);
+  ctx.fillRect(0, 0, width, height);
   ctx.save();
   ctx.beginPath();
-  ctx.rect(0, blank, size, size - blank);
+  ctx.rect(0, blank, width, height - blank);
   ctx.clip();
-  DRAW[skin.pattern.kind](ctx, skin.pattern, { m: metres => metres * size / cfg.metres, size });
+  DRAW[skin.pattern.kind](ctx, skin.pattern, { m: metres => metres * perMetre, size: height });
   ctx.restore();
+  // The keep-outs, painted back to the body colour last (tests read this order: nothing is drawn over them).
+  ctx.fillStyle = css(skin.palette.body);
+  for (const hole of holes) {
+    const [u0, v0] = sideUv('left', { z: hole.z[0], y: hole.y[0] }, centre), [u1, v1] = sideUv('left', { z: hole.z[1], y: hole.y[1] }, centre);
+    ctx.fillRect(Math.floor(u0 * width), Math.floor((1 - v1) * height), Math.ceil((u1 - u0) * width), Math.ceil((v1 - v0) * height));
+  }
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = cfg.anisotropy;
@@ -154,16 +191,13 @@ export function skinPatternTexture(gunId, skin) {
   return texture;
 }
 
-/** Where a face samples, by its outward normal in the gun's frame: 'top', 'right' or null (the blank strip). */
+/** Which printed side a face is, by its outward normal in the gun's frame: 'top', 'right', 'left' or null (the blank strip). */
 export function printedSide(normal) {
-  if (normal.x < cfg.leftLimit) return null;
-  if (normal.y >= cfg.faceDot) return 'top';
+  if (normal.y >= cfg.faceDot && normal.x >= cfg.leftLimit) return 'top';
   if (normal.x >= cfg.faceDot) return 'right';
+  if (normal.x <= -cfg.faceDot) return 'left';
   return null;
 }
-
-/** The blank strip's UV: body colour at every mip level (all of a face's UVs are this one point). */
-export const blankUv = Object.freeze([0.5, 1 - cfg.blankFraction / 2]);
 
 const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3(), n = new THREE.Vector3();
 
@@ -172,19 +206,20 @@ function printGeometry(geometry, toGun, centre) {
   const out = geometry.index ? geometry.toNonIndexed() : geometry.clone();
   const position = out.attributes.position;
   const uv = new Float32Array(position.count * 2);
-  const printed = 1 - cfg.blankFraction, edge = 1e-3;
-  const clampU = u => Math.min(1 - edge, Math.max(edge, u));
-  const clampV = v => Math.min(printed - edge, Math.max(edge, v));
+  const { top, middle } = layout(), edge = 1e-3;
+  const clamp = (value, lo, hi) => Math.min(hi - edge, Math.max(lo + edge, value));
   const corners = [a, b, c];
   for (let i = 0; i + 2 < position.count; i += 3) {
     for (let k = 0; k < 3; k++) corners[k].fromBufferAttribute(position, i + k).applyMatrix4(toGun);
     n.subVectors(c, b).cross(a.clone().sub(b)).normalize();
     const side = printedSide(n);
     for (let k = 0; k < 3; k++) {
-      const p = corners[k];
-      let u = blankUv[0], v = blankUv[1];
-      if (side === 'top') { u = clampU(0.5 - (p.z - centre.z) / cfg.metres); v = clampV(printed / 2 + (p.x - centre.x) / cfg.metres); }
-      if (side === 'right') { u = clampU(0.5 - (p.z - centre.z) / cfg.metres); v = clampV(printed / 2 + (p.y - centre.y) / cfg.metres); }
+      let [u, v] = blankUv;
+      if (side) {
+        [u, v] = sideUv(side, corners[k], centre);
+        u = clamp(u, 0, 1);
+        v = side === 'left' ? clamp(v, 0, middle) : clamp(v, middle, top);
+      }
       uv[(i + k) * 2] = u; uv[(i + k) * 2 + 1] = v;
     }
   }
@@ -192,29 +227,46 @@ function printGeometry(geometry, toGun, centre) {
   return out;
 }
 
-export function applySkinPattern(root, def, skinId) {
+/** The meshes a skin prints on: body-coloured, untextured. */
+function bodyMeshes(root, body) {
+  const list = [];
+  root.traverse(mesh => {
+    const material = mesh.isMesh && !Array.isArray(mesh.material) ? mesh.material : null;
+    if (material?.color && !material.map && material.color.getHex() === body) list.push(mesh);
+  });
+  return list;
+}
+
+/** mounts: the model's (weapons/models/index.js supplies a display's): the keep-outs sit round them. */
+export function applySkinPattern(root, def, skinId, mounts = {}) {
   const skin = gunSkin(def.id, skinId);
   if (!skin?.pattern || !root) return root;
-  const texture = skinPatternTexture(def.id, skin);
-  if (!texture) return root;
   const body = resolveGunColors(def, skinId).bodyColor;
   root.updateMatrixWorld(true);
   const fromRoot = root.matrixWorld.clone().invert();
-  const centre = new THREE.Box3().setFromObject(root).getCenter(new THREE.Vector3()).applyMatrix4(fromRoot);
+  const meshes = bodyMeshes(root, body);
+  if (!meshes.length) return root;
+  // Laid out from the sticker mount (on the gun's centre line), which the gun in hand and its display share, so they share one texture too.
+  // (Not the body's bounds: some guns' hand models carry body-coloured reload props.) Without a sticker mount: the body's centre.
+  const sticker = mounts.sticker?.position;
+  const bounds = new THREE.Box3();
+  if (!sticker) for (const mesh of meshes) bounds.expandByObject(mesh);
+  const centre = sticker ? new THREE.Vector3(0, sticker[1], sticker[2]) : bounds.getCenter(new THREE.Vector3()).applyMatrix4(fromRoot);
+  const texture = skinPatternTexture(def.id, skin, centre, keepOuts(mounts));
+  if (!texture) return root;
   const printedMaterials = new Map(); // the model's body material -> its one patterned clone
-  root.traverse(mesh => {
-    const material = mesh.isMesh && !Array.isArray(mesh.material) ? mesh.material : null;
-    if (!material?.color || material.map || material.color.getHex() !== body) return;
+  for (const mesh of meshes) {
+    const material = mesh.material;
     if (!printedMaterials.has(material)) {
       const print = material.clone();
       print.name = `${material.name || 'body'}:pattern`;
       print.map = texture;
       print.color.set(0xffffff); // (the canvas carries the body colour: the ink may be lighter than it)
-      print.userData = { ...material.userData, skinPattern: skin.id, bodyColor: body };
+      print.userData = { ...material.userData, skinPattern: skin.id, bodyColor: body, patternCentre: centre.toArray() };
       printedMaterials.set(material, print);
     }
     mesh.geometry = printGeometry(mesh.geometry, fromRoot.clone().multiply(mesh.matrixWorld), centre);
     mesh.material = printedMaterials.get(material);
-  });
+  }
   return root;
 }

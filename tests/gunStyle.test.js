@@ -100,3 +100,38 @@ test('attachments are drawn chunkier than the shop designs', () => {
   const lens = visuals.parts.zoomLens;
   assert.ok(lens.scale.x >= gunStyle.attachmentScale, `the lens holder is x${lens.scale.x.toFixed(2)}`);
 });
+
+// The rims (config/gunStyle.js rim): a dark edge round the build patch, the warranty tag and each collar, so they read on any gun body.
+test('the build patch, the warranty tag and every collar have a dark rim just outside them, at no draw call on the patch or the tag', () => {
+  const box = object => new THREE.Box3().setFromObject(object);
+  for (const def of Object.values(weapons)) {
+    const { model, visuals, collar, tag } = dressed(def);
+    visuals.show({ build: { stuffing: 'popcornButter', quality: 'regular' }, tier: 'premium' });
+    model.root.updateMatrixWorld(true);
+    const patch = model.root.getObjectByName('buildPatch'), stitches = model.root.getObjectByName('buildStitch');
+    assert.ok(stitches.isInstancedMesh && stitches.material.color.getHex() === gunStyle.rim.color, `${def.id}: the rim is drawn by the stitch mesh, in the rim ink`);
+    const [p, s] = [box(patch), box(stitches)];
+    const r = gunStyle.rim.width * 0.9;
+    // (the patch faces sideways: its height is y, its length z)
+    assert.ok(s.min.z <= p.min.z - r && s.max.z >= p.max.z + r, `${def.id}: the rim runs past both ends of the patch`);
+    assert.ok(s.min.y <= p.min.y - r && s.max.y >= p.max.y + r, `${def.id}: and above and below it`);
+
+    const card = tag.children.find(child => child.isMesh && child.geometry.parameters?.width === gunStyle.tag.size[0]);
+    const print = card.getObjectByName('warrantyTagPrint');
+    assert.equal(print.material.color.getHex(), gunStyle.rim.color);
+    assert.equal(card.children.length, 2, `${def.id}: still a hole and one print mesh (the rim is merged into the print)`);
+    print.geometry.computeBoundingBox();
+    const frame = print.geometry.boundingBox.getSize(new THREE.Vector3());
+    assert.ok(frame.x >= gunStyle.tag.size[0] + 2 * r && frame.y >= gunStyle.tag.size[1] + 2 * r, `${def.id}: the tag's rim frames the card`);
+
+    for (const group of collar.children.filter(child => child.children.length)) {
+      const rims = group.children.filter(child => child.name === 'warrantyRim');
+      assert.equal(rims.length, 1, `${def.id}: one rim mesh per collar`);
+      const rings = new THREE.Box3();
+      for (const child of group.children) if (child.isMesh && child.name !== 'warrantyRim' && child.name !== 'warrantyGem' && child.material.color.getHex() !== gunStyle.collar.stripe) rings.expandByObject(child);
+      const rim = box(rims[0]);
+      assert.ok(rim.min.z <= rings.min.z - r && rim.max.z >= rings.max.z + r, `${def.id}: the collar rim shows at both ends`);
+      assert.ok(rim.max.x < rings.max.x && rim.max.y < rings.max.y, `${def.id}: and stays inside the metal round the barrel`);
+    }
+  }
+});

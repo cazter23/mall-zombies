@@ -56,7 +56,9 @@ What is NOT uniform today, and is the real work:
 
 - **Treatments are shared code**, three or four in all (pulse, shimmer, edge glow, slow colour drift), each driven by numbers in config.
   Eleven feat skins pick from them; nobody writes eleven effects.
-- **Patterns keep off the left face**, where the build patch, the warranty seal and the loaner tag live. They go on the top and right.
+- **Patterns go on the top, the right AND the left face** (changed 11 November 2026: the gun is held on the right, so the left face and the top
+  are what you see in your hands). On the left, a keep-out round the sticker mount stays plain, so the build patch and the warranty seal always
+  sit on plain paint (config/skins.js skinPatterns.keepOut). The loaner tag clamps to the top mount.
 - **A gun's printed brand label survives every skin** unless the skin says otherwise, so the gun stays recognisable.
 
 ## Starting challenges
@@ -134,8 +136,10 @@ Rules for every challenge:
 
 - **Order of layers:** skin (base coat), then warranty trim, attachments, the build's patch, seam and lumps, the Heart badge, the loaner tag.
 - **Every skin is checked against all six stuffings.** The patch takes the stuffing's colour, so a skin whose body is close to a stuffing's
-  colour swallows the patch. A test compares each skin's body colour with each stuffing's and fails under a set contrast; a skin that
-  fails gets a darker or lighter body, the stuffing colours do not move.
+  colour swallows the patch. Since 11 November 2026 the patch, the warranty tag and each collar have a thin dark RIM (config/gunStyle.js rim),
+  so a body passes against a colour if it contrasts with that colour directly OR with the rim ink (which itself contrasts with every stuffing
+  and tier). Dark bodies pass the first way, light ones (cream, yellow, orange) the second. A skin that fails gets another body; the stuffing
+  colours do not move. (Before the rim the 2:1 floor capped every body at luminance 0.0585: no light skin was possible.)
 - **Limited Editions** (Party Trap, Clearance Rack) are builds on one gun each and follow the same rule.
 - **A named gun keeps its name and certificate**; the certificate may name the skin it was built in.
 - **Treatments must not fight the build's own glow** (`gunStyle.glow`): a glowing skin is dimmer than a glowing seam, by a number in config.
