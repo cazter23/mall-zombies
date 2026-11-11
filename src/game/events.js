@@ -83,6 +83,7 @@
 //   'closingKey' { bossId, pa }                           the player took a checklist key
 //   'fountainKill' { zombie }                            the Electrified Fountain dealt a killing blow during a pulse
 //   'fryerKill'   { zombie }                             the Fryer Blast dealt a killing blow during a pulse
+//   'sprinklerKill' { zombie }                           the Fire Sprinklers dealt a killing blow during a pulse
 //   'closingProgress' { line, count, needed }            a closing duty advanced (line is the boss id)
 //   'closingLine' { line, done, total, pa? }              a checklist line was checked off; done counts completed lines
 //   'bossFlash' { zombie, seconds, opacity, dimOpacity } telegraphed phone flash; browser presentation respects Comfort settings

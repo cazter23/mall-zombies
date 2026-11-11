@@ -19,9 +19,12 @@ const UP = new THREE.Vector3(0, 1, 0);
 export function dealHazardDamage(zombie, baseDamage, cfg) {
   if (!zombie || !zombie.isAlive || baseDamage <= 0) return false;
   const isBig = Boolean(zombie.type?.boss || zombie.type?.mascot);
-  const damage = isBig && cfg?.maxHealthCap
+  let damage = isBig && cfg?.maxHealthCap
     ? Math.min(Math.max(baseDamage, zombie.maxHealth * cfg.maxHealthCap), zombie.maxHealth * cfg.maxHealthCap)
     : Math.max(baseDamage, zombie.maxHealth * (cfg?.normalHealthFraction ?? 0));
+  if (isBig && cfg?.maxHealthCap && zombie.vulnerableTimer > 0 && zombie.vulnerableMultiplier > 1) {
+    damage /= zombie.vulnerableMultiplier;
+  }
   if (damage <= 0) return false;
   return zombie.takeHit({
     damage,

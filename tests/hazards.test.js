@@ -1,11 +1,12 @@
 // Environmental hazards (docs/hazards-plan.md, config/hazards.js, game/features/hazards.js,
-// game/features/fountainHazard.js, game/features/fryerHazard.js): pay to trigger through g.pricing,
-// active pulses with source 'hazard' (1-shot early rounds, 2/3-shot late rounds, fountain stagger +
-// convulsion slow, fryer opening burst + slip, boss/Mascot cap and boss slip immunity), cooldowns,
-// payouts (Mascot helmet bonus and regular power-up meter ignore hazard kills; Gold Mascot drops and
-// kill multipliers still apply), Closing Time line 1 counts fountainKills only (not fryerKills),
-// player self-shock/scald/slow while standing inside, nothing paid after death, and Play again
-// (resetRun) leaving nothing behind.
+// game/features/fountainHazard.js, game/features/fryerHazard.js, game/features/sprinklerHazard.js):
+// pay to trigger through g.pricing, active pulses with source 'hazard' (fountain shock + stagger +
+// convulsion slow, fryer opening burst + slip, sprinkler chill + soak applyVulnerable on zombies,
+// bosses, and Mascots, boss/Mascot damage cap, boss slip immunity), Kiosk Kevin nearest-prompt-wins,
+// cooldowns, payouts (Mascot helmet bonus and regular power-up meter ignore hazard kills; Gold Mascot
+// drops and kill multipliers still apply), Closing Time line 1 counts fountainKills only (not fryerKills
+// or sprinklerKills), player self-shock/scald/slow while standing inside, nothing paid after death,
+// and Play again (resetRun) leaving nothing behind.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
@@ -16,8 +17,10 @@ import { hasStatNumber } from '../src/config/effectWords.js';
 
 const cfg = hazards.fountain;
 const fryerCfg = hazards.fryer;
+const sprinklerCfg = hazards.sprinklers;
 const OUTSIDE_Z = 10.5; // 8.1 m south of fountain center (18.6), outside the 7.0 m radius
 const FRYER_OUTSIDE_Z = -5.0; // north of the grease apron (minZ: -13.0, maxZ: -6.5)
+const SPRINKLER_OUTSIDE_X = -15.0; // west of the drenched concourse (minX: -12, maxX: 12)
 
 function standAtFountainSwitch(t, distance = 1.25) {
   const { x, z } = cfg.position;
@@ -39,6 +42,17 @@ function standAtFryerSwitch(t, distance = 1.25) {
 
 function getFryerInstance(g) {
   return g.features.list.find((f) => f.feature.kind === 'fryerHazard')?.instance;
+}
+
+function standAtSprinklerSwitch(t, distance = 1.25) {
+  const { x, z } = sprinklerCfg.position;
+  const { x: nx, z: nz } = sprinklerCfg.normal;
+  const yawDeg = (Math.atan2(nx, nz) * 180) / Math.PI;
+  t.standAt(x + nx * distance, z + nz * distance, yawDeg);
+}
+
+function getSprinklerInstance(g) {
+  return g.features.list.find((f) => f.feature.kind === 'sprinklerHazard')?.instance;
 }
 
 test('triggering, price and discounts: locked until Atrium opens, charges g.pricing ("hazard"), and respects Flash Sale discounts', (t) => {
@@ -287,6 +301,17 @@ test('words-only guard: every hazard config string and live prompt has no stat n
     if (fryerPrompt[key]) {
       assert.ok(!hasStatNumber(fryerPrompt[key]), `fryerPrompt.${key}: "${fryerPrompt[key]}"`);
       assert.ok(!multiplierWords.test(fryerPrompt[key]), `fryerPrompt.${key}: "${fryerPrompt[key]}"`);
+    }
+  }
+
+  g.map.areaUnlocks.unlock('hallway');
+  standAtSprinklerSwitch(game);
+  const sprinklerPrompt = g.interactions.prompt;
+  assert.ok(sprinklerPrompt);
+  for (const key of ['label', 'title', 'detail', 'blocked']) {
+    if (sprinklerPrompt[key]) {
+      assert.ok(!hasStatNumber(sprinklerPrompt[key]), `sprinklerPrompt.${key}: "${sprinklerPrompt[key]}"`);
+      assert.ok(!multiplierWords.test(sprinklerPrompt[key]), `sprinklerPrompt.${key}: "${sprinklerPrompt[key]}"`);
     }
   }
 });
@@ -547,6 +572,296 @@ test('Play again (resetRun) clears active fryer state, cooldowns, visuals, and p
   g.resetRun();
   assert.equal(fryer.phase, 'ready');
   assert.equal(fryer.remaining, 0);
+  assert.equal(g.stats.surfaceSpeed, 1);
+  assert.deepEqual(snapshot(g), fresh);
+});
+
+test('sprinklers triggering, price, discounts, and Kiosk Kevin nearest-prompt-wins along the south hallway wall', (t) => {
+  const game = headlessGame();
+  t.after(() => game.g.map.dispose());
+  const { g } = game;
+  game.tick(1);
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  g.wallet.earn(10_000);
+
+  // Hallway is locked at the start of a run: no prompt yet.
+  standAtSprinklerSwitch(game);
+  assert.equal(g.interactions.prompt, null, 'no prompt while Hallway is locked');
+
+  // Unlock Hallway and advance to round 2 so Kiosk Kevin (at x = -8.5 on the same south wall, inside the spray zone) is open too.
+  g.map.areaUnlocks.unlock('hallway');
+  g.rounds.jumpTo(2);
+  game.tick(1);
+
+  // Nearest-prompt-wins rule: standing at the Fire Alarm Pull (-3.9) gives the sprinkler prompt, while standing at
+  // each of Kiosk Kevin's three slots (-9.22, -8.5, -7.78) gives that slot's own kiosk prompt.
+  const kioskFeature = g.map.features.find((f) => f.kind === 'kiosk');
+  assert.ok(kioskFeature, 'Kiosk Kevin feature exists on the south hallway wall');
+  for (const slot of kioskFeature.slots) {
+    game.standAt(slot.position.x, slot.position.z + 0.9, 0); // facing -Z toward the south wall
+    assert.equal(g.interactions.prompt?.kind, 'kiosk', `standing at Kevin slot ${slot.id} selects kiosk prompt`);
+    assert.equal(g.interactions.prompt?.id, slot.id);
+  }
+
+  standAtSprinklerSwitch(game);
+  assert.ok(g.interactions.prompt, 'standing at the Fire Alarm Pull selects the sprinkler prompt');
+  assert.equal(g.interactions.prompt.kind, 'hazard');
+  assert.equal(g.interactions.prompt.id, 'sprinklers');
+  assert.equal(g.interactions.prompt.cost, economy.hazards.sprinklers);
+
+  // Apply a 40% hazard discount (e.g. Mall hazards Flash Sale).
+  g.pricing.setDiscount('hazard', 0.4);
+  const expectedPrice = g.pricing.priceOf('hazard', 'sprinklers');
+  assert.equal(expectedPrice, 360);
+  standAtSprinklerSwitch(game);
+  assert.equal(g.interactions.prompt.cost, expectedPrice, 'prompt reflects the discounted hazard price');
+
+  const before = g.wallet.points;
+  const sprinklers = getSprinklerInstance(g);
+  assert.equal(sprinklers.phase, 'ready');
+  game.press('KeyF', 20);
+  assert.equal(before - g.wallet.points, expectedPrice, 'charged the discounted hazard price');
+  assert.equal(sprinklers.phase, 'active');
+  assert.ok(game.sounds.includes(sprinklerCfg.triggerSound), 'played the trigger sound');
+
+  // Even while the sprinklers are active over x: -12..12 (covering Kiosk Kevin at x = -8.5), Kevin's prompts still work at his cart.
+  for (const slot of kioskFeature.slots) {
+    game.standAt(slot.position.x, slot.position.z + 0.9, 0);
+    assert.equal(g.interactions.prompt?.kind, 'kiosk');
+    assert.equal(g.interactions.prompt?.id, slot.id);
+  }
+});
+
+test('sprinklers cooldown: blocked while active ("Active") and recharging ("Recharging"), then ready again after cooldown elapses', (t) => {
+  const game = headlessGame();
+  t.after(() => game.g.map.dispose());
+  const { g } = game;
+  game.tick(1);
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  g.wallet.earn(10_000);
+  g.map.areaUnlocks.unlock('hallway');
+
+  const sprinklers = getSprinklerInstance(g);
+  standAtSprinklerSwitch(game);
+  game.press('KeyF', 20);
+  assert.equal(sprinklers.phase, 'active');
+
+  standAtSprinklerSwitch(game);
+  assert.equal(g.interactions.prompt?.blocked, hazards.status.active);
+  const walletWhileActive = g.wallet.points;
+  game.press('KeyF', 20);
+  assert.equal(g.wallet.points, walletWhileActive, 'cannot pay again while active');
+
+  // Run out the remaining active time into cooldown while standing outside the spray zone.
+  game.standAt(SPRINKLER_OUTSIDE_X, 2, 0);
+  game.tick(Math.ceil(sprinklerCfg.durationSeconds / dt) + 2);
+  assert.equal(sprinklers.phase, 'cooldown');
+  assert.ok(sprinklers.remaining > 0 && sprinklers.remaining <= sprinklerCfg.cooldownSeconds);
+
+  standAtSprinklerSwitch(game);
+  assert.equal(g.interactions.prompt?.blocked, hazards.status.cooldown);
+  const walletDuringCooldown = g.wallet.points;
+  game.press('KeyF', 20);
+  assert.equal(g.wallet.points, walletDuringCooldown, 'cannot pay while recharging');
+
+  // Finish the cooldown: ready to trigger again.
+  game.standAt(SPRINKLER_OUTSIDE_X, 2, 0);
+  game.tick(Math.ceil(sprinklerCfg.cooldownSeconds / dt) + 5);
+  assert.equal(sprinklers.phase, 'ready');
+  standAtSprinklerSwitch(game);
+  assert.equal(g.interactions.prompt?.blocked, null);
+});
+
+test('sprinklers payout, chill + soak (applyVulnerable) on zombies, bosses, and Mascots, Mascot helmet rule, Gold Mascot drop, and nothing paid after death', (t) => {
+  const game = headlessGame();
+  t.after(() => game.g.map.dispose());
+  const { g } = game;
+  game.tick(1);
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  g.wallet.earn(10_000);
+  g.map.areaUnlocks.unlock('hallway');
+
+  const kills = [];
+  const sprinklerKills = [];
+  const headPops = [];
+  g.events.on('kill', (e) => kills.push(e));
+  g.events.on('sprinklerKill', (e) => sprinklerKills.push(e));
+  g.events.on('mascotHeadPop', (e) => headPops.push(e));
+
+  // 1. Normal Shopper (1000 maxHealth) in the concourse takes 25% (250) on pulse 1 with zero +10 hit payout,
+  //    is chilled (slowFraction 0.45, 'smoothie') and soaked (vulnerableMultiplier 1.35 for 1.2 s), and dies on subsequent pulses.
+  const shopper = g.zombies.spawn('shopper', new THREE.Vector3(0, 0, 2));
+  shopper.setState('chasing');
+  shopper.maxHealth = 1000;
+  shopper.health = 1000;
+
+  // Boss and Mascot in the concourse: each pulse caps hazard damage at 6% of maxHealth, and applyVulnerable (1.35x)
+  // makes weapon hits on both the soaked boss and the soaked Mascot deal 1.35x damage.
+  const boss = g.zombies.spawn('janitor', new THREE.Vector3(-4, 0, 2));
+  boss.setState('chasing');
+  const bossInitialHealth = boss.health;
+
+  const mascot = g.zombies.spawn('mascot', new THREE.Vector3(4, 0, 2), { gold: false });
+  mascot.setState('chasing');
+  const mascotInitialHealth = mascot.health;
+
+  const pointsBefore = g.wallet.points;
+  const progressBefore = g.powerUps.progress;
+  const sprinklers = getSprinklerInstance(g);
+  game.standAt(SPRINKLER_OUTSIDE_X, 2, 0);
+  sprinklers.trigger();
+
+  assert.equal(shopper.isAlive, true);
+  assert.equal(shopper.health, 1000 - 1000 * sprinklerCfg.normalHealthFraction, 'shopper took 25% maxHealth on pulse 1');
+  assert.equal(shopper.slowFraction, sprinklerCfg.slowFactor, 'shopper is chilled to 0.45');
+  assert.equal(shopper.slowKind, sprinklerCfg.slowKind);
+  assert.equal(shopper.vulnerableMultiplier, sprinklerCfg.vulnerableMultiplier, 'shopper is soaked with 1.35x vulnerableMultiplier');
+  assert.equal(shopper.vulnerableTimer, sprinklerCfg.vulnerableDuration);
+  assert.equal(g.wallet.points, pointsBefore, 'non-lethal hazard pulse pays zero +10 hit points');
+
+  // Verify Boss and Mascot pulse damage cap (6% maxHealth) and soak (applyVulnerable -> 1.35x weapon damage).
+  const bossPulseCap = boss.maxHealth * sprinklerCfg.maxHealthCap;
+  const mascotPulseCap = mascot.maxHealth * sprinklerCfg.maxHealthCap;
+  assert.ok(Math.abs((bossInitialHealth - boss.health) - bossPulseCap) < 1e-6, 'boss pulse damage is capped at 6% of maxHealth');
+  assert.ok(Math.abs((mascotInitialHealth - mascot.health) - mascotPulseCap) < 1e-6, 'Mascot pulse damage is capped at 6% of maxHealth');
+  assert.equal(boss.vulnerableMultiplier, sprinklerCfg.vulnerableMultiplier, 'boss is soaked (vulnerableMultiplier 1.35)');
+  assert.ok(boss.vulnerableTimer > 0);
+  assert.equal(mascot.vulnerableMultiplier, sprinklerCfg.vulnerableMultiplier, 'Mascot is soaked (vulnerableMultiplier 1.35)');
+  assert.ok(mascot.vulnerableTimer > 0);
+
+  // Shoot the soaked boss and soaked Mascot with a 100-damage gun hit: both take 135 damage (1.35x).
+  const bossBeforeShot = boss.health;
+  boss.takeHit({ damage: 100, part: 'body', point: boss.position, source: 'gun' });
+  assert.ok(Math.abs((bossBeforeShot - boss.health) - 100 * sprinklerCfg.vulnerableMultiplier) < 1e-6, 'soaked boss takes 1.35x weapon damage');
+
+  const mascotBeforeShot = mascot.health;
+  mascot.takeHit({ damage: 100, part: 'body', point: mascot.position, source: 'gun' });
+  assert.ok(Math.abs((mascotBeforeShot - mascot.health) - 100 * sprinklerCfg.vulnerableMultiplier) < 1e-6, 'soaked Mascot takes 1.35x weapon damage');
+
+  // Move boss and Mascot outside while ticking pulses 2..4 to finish off the shopper.
+  boss.position.set(SPRINKLER_OUTSIDE_X, 0, 2);
+  mascot.position.set(SPRINKLER_OUTSIDE_X, 0, -1);
+
+  for (let p = 0; p < 3 && shopper.isAlive; p++) {
+    game.tick(Math.ceil(sprinklerCfg.pulseInterval / dt) + 1);
+  }
+  assert.equal(shopper.isAlive, false, 'soaked shopper died from sprinkler pulses');
+  assert.equal(kills.length, 1);
+  assert.equal(sprinklerKills.length, 1);
+  assert.equal(kills[0].source, 'hazard');
+  assert.equal(g.wallet.points - pointsBefore, economy.killValues.shopper, 'paid exact shopper killValue');
+  assert.equal(g.powerUps.progress, progressBefore, 'hazard kills do not fill the regular power-up meter');
+
+  // 2. Mascot helmet pop from the sprinklers: pops the helmet at 50% HP and caps damage at 6% even while soaked, paying NO helmetPopBonus.
+  mascot.position.set(4, 0, 2);
+  mascot.health = Math.floor(mascot.maxHealth * 0.5) + Math.min(10, mascotPulseCap * 0.5);
+  const mascotHealthBeforePop = mascot.health;
+  const walletBeforeMascot = g.wallet.points;
+  game.tick(Math.ceil(sprinklerCfg.pulseInterval / dt) + 1);
+  assert.ok(Math.abs((mascotHealthBeforePop - mascot.health) - mascotPulseCap) < 1e-6, 'soaked Mascot pulse damage stays capped at 6%');
+  assert.equal(headPops.length, 1, 'Mascot helmet popped at 50% HP');
+  assert.equal(headPops[0].source, 'hazard');
+  assert.equal(g.wallet.points, walletBeforeMascot, 'hazard helmet pop does NOT pay helmetPopBonus');
+
+  // 3. Employee of the Month (Gold Mascot): killing it with the sprinklers STILL drops its guaranteed power-up.
+  g.zombies.clear();
+  const goldMascot = g.zombies.spawn('mascot', new THREE.Vector3(0, 0, 2), { gold: true });
+  goldMascot.health = 5;
+  game.tick(Math.ceil(sprinklerCfg.pulseInterval / dt) + 1);
+  assert.equal(goldMascot.isAlive, false);
+  assert.ok(g.powerUps.pickup, 'Gold Mascot killed by the sprinklers still drops its guaranteed power-up');
+
+  // 4. Once the player is dead (state.over), nothing more is paid or counted.
+  const doomed = g.zombies.spawn('shopper', new THREE.Vector3(0, 0, 2));
+  doomed.health = 5;
+  g.health.takeDamage(10_000);
+  assert.equal(g.state.over, true);
+  const walletAtDeath = g.wallet.points;
+  const killsAtDeath = g.runStats.kills;
+  game.tick(Math.ceil(sprinklerCfg.pulseInterval / dt) + 2);
+  assert.equal(g.wallet.points, walletAtDeath, 'nothing paid after player death');
+  assert.equal(g.runStats.kills, killsAtDeath, 'no kills counted after player death');
+});
+
+test('Closing Time line 1 isolation: sprinkler kills emit sprinklerKill and leave line 1 (janitor fountain duty) untouched', (t) => {
+  const game = headlessGame();
+  t.after(() => game.g.map.dispose());
+  const { g } = game;
+  game.tick(1);
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  g.wallet.earn(10_000);
+  g.map.areaUnlocks.unlock('hallway');
+  g.closing.debug('grant', 'janitor');
+  assert.equal(g.closing.hasKey('janitor'), true);
+  assert.equal(g.closing.checklist.find((c) => c.bossId === 'janitor')?.count, 0);
+
+  let fountainKillEvents = 0;
+  let sprinklerKillEvents = 0;
+  g.events.on('fountainKill', () => { fountainKillEvents++; });
+  g.events.on('sprinklerKill', () => { sprinklerKillEvents++; });
+
+  for (let i = 0; i < 3; i++) {
+    const z = g.zombies.spawn('shopper', new THREE.Vector3(-2 + i * 2, 0, 2));
+    z.setState('chasing');
+    z.health = 20;
+  }
+  game.standAt(SPRINKLER_OUTSIDE_X, 2, 0);
+  const sprinklers = getSprinklerInstance(g);
+  sprinklers.trigger();
+
+  assert.equal(sprinklerKillEvents, 3, 'sprinkler kills emitted sprinklerKill');
+  assert.equal(fountainKillEvents, 0, 'sprinkler kills never emit fountainKill');
+  assert.equal(g.closing.checklist.find((c) => c.bossId === 'janitor')?.count, 0, 'Closing Time line 1 count remains 0 after sprinkler kills');
+  assert.equal(g.closing.isDone('janitor'), false);
+});
+
+test('player standing in the active sprinkler zone takes no damage and is wet-tile slowed, then recovers when stepping out', (t) => {
+  const game = headlessGame();
+  t.after(() => game.g.map.dispose());
+  const { g } = game;
+  game.tick(1);
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  g.wallet.earn(10_000);
+  g.map.areaUnlocks.unlock('hallway');
+
+  // Stand at the Fire Alarm Pull (inside x: -12..12, z: -2..6) and trigger the sprinklers.
+  standAtSprinklerSwitch(game);
+  const healthBefore = g.stats.health;
+  game.press('KeyF', 20);
+  assert.equal(g.stats.health, healthBefore, 'sprinklers deal zero player damage');
+  assert.equal(g.stats.surfaceSpeed, sprinklerCfg.playerSlowFactor, 'player surfaceSpeed is slowed to 0.9 on the wet concourse tiles');
+
+  // Step outside the drenched concourse (x = -15 is west of minX = -12).
+  game.standAt(SPRINKLER_OUTSIDE_X, 2, 0);
+  assert.equal(g.stats.surfaceSpeed, 1, 'surfaceSpeed returns to 1 as soon as the player steps outside');
+  game.tick(Math.ceil(sprinklerCfg.pulseInterval / dt) + 2);
+  assert.equal(g.stats.health, healthBefore, 'still no player damage');
+});
+
+test('Play again (resetRun) clears active sprinkler state, cooldowns, visuals, and player slow (snapshot equality)', (t) => {
+  const game = headlessGame();
+  t.after(() => game.g.map.dispose());
+  const { g } = game;
+  const fresh = snapshot(g);
+
+  game.tick(1);
+  g.wallet.earn(10_000);
+  g.map.areaUnlocks.unlock('hallway');
+  standAtSprinklerSwitch(game);
+  game.press('KeyF', 20);
+
+  const sprinklers = getSprinklerInstance(g);
+  assert.equal(sprinklers.phase, 'active');
+  assert.equal(g.stats.surfaceSpeed, sprinklerCfg.playerSlowFactor);
+
+  g.resetRun();
+  assert.equal(sprinklers.phase, 'ready');
+  assert.equal(sprinklers.remaining, 0);
   assert.equal(g.stats.surfaceSpeed, 1);
   assert.deepEqual(snapshot(g), fresh);
 });
