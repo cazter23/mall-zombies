@@ -91,7 +91,7 @@ test('Nail Gun: no falloff, piercing, and a long-range advantage over the early 
 test('base guns meet the round-8 body-shot targets of the stronger-weapon pass', () => {
   const hp = zombieHealthForRound(8);
   for (const [d, expected] of [
-    [priceGun, 10], [nailGun, 5], [foamDartBlaster, 8], [confettiCannon, 2],
+    [priceGun, 12], [nailGun, 5], [foamDartBlaster, 8], [confettiCannon, 2],
     [weapons.rivetRifle, 8], [weapons.coilNailer, 8], [weapons.barcodeScanner, 3],
   ]) assert.equal(shotsToKill(d, hp, 5, style(d)), expected, d.name);
 });

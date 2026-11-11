@@ -56,12 +56,15 @@ test('a build powers the gun up by its quality, and each quality more than the l
   assert.ok(big.magazineSize > base.magazineSize, 'a bigger magazine');
 });
 
-test('even the plainest build beats a Deluxe warranty, a Regular one beats Platinum alone, and it costs less than Premium', () => {
+test('even the plainest build beats a Deluxe warranty, a Regular one beats Premium, the best one beats Platinum alone, and it costs less than Premium', () => {
   const understuffed = workshopRitual.qualities[0].gun.damage;
   const deluxe = upgrades.tiers.find(t => t.id === 'deluxe').effects.damage;
   assert.ok(understuffed > deluxe, `Understuffed x${understuffed} vs Deluxe x${deluxe}`);
+  // (Platinum went from x1.65 to x1.9 on 10 November 2026, docs/economy-report.md C: it costs 10,000 in all, so it may now pass a Regular build.)
+  const premium = upgrades.tiers.find(t => t.id === 'premium').effects.damage;
+  assert.ok(workshopRitual.qualities.find(q => q.id === 'regular').gun.damage > premium, 'a Regular build beats Premium');
   const best = Math.max(...upgrades.tiers.map(t => t.effects.damage ?? 1));
-  assert.ok(workshopRitual.qualities.find(q => q.id === 'regular').gun.damage > best, 'a Regular build beats Platinum alone');
+  assert.ok(workshopRitual.qualities.at(-1).gun.damage > best, 'an Overstuffed build beats Platinum alone');
   assert.ok(economy.upgrades.workshop.ritual < economy.upgrades.tiers.premium, 'and it costs less than Premium, which does less');
 });
 

@@ -35,13 +35,13 @@ export const upgrades = {
       lines: [{ effect: 'magazine', text: '{Size} bigger magazine' }, { effect: 'reload', text: 'Reloads {size} faster' }, { effect: 'damage', text: '{Size} more damage' }] },
     { id: 'premium', name: 'Premium', job: 'Damage', color: 0xdf9f1f, effects: { damage: 1.45, magazine: 1.1 }, holdsUntilRound: 12,
       lines: [{ effect: 'damage', text: '{Size} more damage' }, { effect: 'magazine', text: '{Size} bigger magazine' }] },
-    { id: 'platinum', name: 'Platinum', job: 'Damage and claims', color: 0xf2eefc, effects: { damage: 1.65, magazine: 1.15, reload: 0.9 }, holdsUntilRound: 14, claim: true,
+    { id: 'platinum', name: 'Platinum', job: 'Damage and claims', color: 0xf2eefc, effects: { damage: 1.9, magazine: 1.15, reload: 0.9 }, holdsUntilRound: 16, claim: true, // (damage was 1.65: 14% over Premium for 6,000; docs/economy-report.md, C)
       lines: [{ effect: 'damage', text: '{Size} more damage' }, { effect: 'magazine', text: '{Size} bigger magazine' }, { effect: 'reload', text: 'Reloads {size} faster' }, { text: 'Run dry? Ammo replaced free, once a round' }] },
   ],
 
   // WARRANTY RENEWALS: past Platinum, bought again and again at the Customer Service desk (prices: economy.js upgrades.renewals). Each one multiplies
   // the gun's damage and magazine a little more, so points still matter late in a run.
-  renewals: { max: 5, effects: { damage: 1.06, magazine: 1.03 }, color: 0xd9885a,
+  renewals: { max: 5, effects: { damage: 1.09, magazine: 1.03 }, color: 0xd9885a, // (damage was 1.06: less than one round of zombie health growth, x1.075)
     lines: [{ effect: 'damage', text: '{Size} more damage' }, { effect: 'magazine', text: '{Size} bigger magazine' }] },
 
   // TRANSFER: a warranty left behind by a gun you replaced stays on file; the desk moves it onto the gun in hand for this share of that tier's price.

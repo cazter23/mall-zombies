@@ -94,8 +94,9 @@ export const economy = {
     barcodeScanner: { weapon: 1750, ammo: 900 }, // weak sustained dps (180) but pierces 4 in a line, ~3x (Byte Me Electronics)
   },
 
-  // GRAB-A-GUN, the claw machine (config/clawMachine.js): one grab. A placeholder until the economy report checks it.
-  claw: { grab: 1000 },
+  // GRAB-A-GUN, the claw machine (config/clawMachine.js): one grab. 1,500 = what a site's first grab wins in wall value (it was 1,000 and
+  // won 1.52x that: docs/economy-report.md, D).
+  claw: { grab: 1500 },
 
   // Discounted prices (Flash Sales, game/pricing.js) are rounded to the nearest multiple of this.
   discountRoundTo: 10,
@@ -107,7 +108,7 @@ export const economy = {
     // that decision, but nothing charges them now: since phase 6 they drop free (game/features/limitedEditions.js).
     workshop: { partyTrap: 1500, clearanceRack: 1000, ritual: 1500, restuff: 750 },
     tiers: { deluxe: 1000, premium: 3000, platinum: 6000 },
-    renewals: [3000, 4000, 5500, 7500, 10000], // Warranty Renewals past Platinum (config/upgrades.js renewals), each dearer than the last // (the support upgrade: a build, 1500, hits harder than any single tier)
+    renewals: [4000, 5000, 6500, 8000, 10000], // Warranty Renewals past Platinum (config/upgrades.js renewals), each dearer than the last // (the support upgrade: a build, 1500, hits harder than any single tier)
     melee: { sharpened: 1500, pro: 4000 }, // Box cutter tiers at the Customer Service desk's second window (config/upgrades.js melee)
     attachments: {
       extendedNozzle: 1000, sawnOff: 1000, // barrel (Mega Mart hardware)

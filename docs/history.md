@@ -144,6 +144,61 @@ and strafe (4.25 m/s). The run share now ramps in gradually across rounds 7, 9, 
     Mean death round: 8.90. Mean survival time: 398.1 s. Round-7 deaths dropped from 8 (40%) to 5 (25%), with 11 of 20 runs reaching round 10+.
 - **Shared files changed:** `src/config/zombies.js`, `docs/history.md`.
 - **Not checked by hand:** manual browser play-feel of the transition into round 7; verified headlessly via 20-seed bot simulations, `npm run test:quick`, `npm test` (1,123 tests passing), and `npm run build`.
+## 10 November 2026 - Economy proposals A, C and D applied (B is not)
+
+Approved from docs/economy-report.md section 6, on the claude/economy-report branch. Build-A-Blaster (B) is unchanged: 1,500, any gun.
+
+- **A. Price Gun** damage 70 -> 58 (config/weapons.js): 434 sustained dps instead of 524; the Rivet Rifle is 1.34x it, the Foam Dart Blaster 1.31x, the Heavy
+  Coil Nailer 1.49x. Round-8 Shopper: 12 body shots, was 10 (tests/balance.test.js).
+- **C. Platinum** damage x1.65 -> x1.9, holdsUntilRound 14 -> 16; **Renewals** x1.06 -> x1.09 each, prices 3,000 / 4,000 / 5,500 / 7,500 / 10,000 ->
+  4,000 / 5,000 / 6,500 / 8,000 / 10,000 (config/upgrades.js, economy.upgrades.renewals).
+- **D. Claw grab** 1,000 -> 1,500 (economy.claw.grab).
+- **A design rule changed with C, and it was not in the report**: tests/workshopPower.test.js said "a Regular build beats Platinum alone". Platinum (x1.9, 10,000
+  in all) now passes a Regular build (x1.7, 1,500). The test now says a Regular build beats Premium and an Overstuffed one beats Platinum. If the old rule
+  matters more than Platinum's value, Platinum has to stay under x1.7.
+- tests/clawMachine.test.js pinned a 400-point sale grab; it reads the price from config now.
+- The report's "today" columns are the numbers BEFORE this change. Its "after" columns were played with exactly these numbers, on 7d633bf (before the
+  20-second break). tools/economyPlans.js still lists A, C and D as proposals; they now equal the game's numbers.
+- Not checked: nothing played by hand; no new bot runs after applying (the played "after" runs are the evidence); docs/claw-machine-plan.md and
+  docs/weapon-balance-pass.md still quote the old numbers in their tables.
+
+## 10 November 2026 - Economy report and power-curve proposal (no gameplay changes)
+
+The report four plans were waiting for: docs/economy-report.md, written from `npm run sim:economy` (tools/economySim.mjs). Nothing in src/ changed;
+the report PROPOSES numbers and they wait for approval. Built in the claude/economy-report worktree (.claude/worktrees/economy-sim).
+
+- **The tool.** tools/economyBot.js is the review's throwaway bot, kept: the real game headless, a bot that aims with error, kites, and shops by
+  teleport from a buy order (tools/economyPlans.js PLANS), immortal or with one life. New in it: income split by source (wallet.earn is wrapped and
+  each 'hit' / 'kill' claims what was just paid), every purchase with its round and cost, the loadout as each round begins, a claw step (pay, press
+  over the best capsule with a 0.12 s timing error, take it only if it beats the gun it would replace) and a give-up after 25 minutes in one round.
+  tools/economySim.mjs plays plan x skill x seeds in child processes (12 at a time here), keeps each finished run in scratch/economy-sim/ keyed by a
+  hash of src/, the bot and that plan, and prints every table as markdown. tools/economyModel.js is the maths beside it (wave mix, points a zombie,
+  the upgrade ladder, "rounds of zombie health" a multiplier buys back). PROPOSALS are config changes applied in memory in the process that plays the
+  run, so before/after is measured with src/config untouched. tests/economySim.test.js keeps it alive (two-round run, books balance, proposals and plans
+  point at real config).
+- **Measured, today's numbers** (8 immortal runs a skill to round 30, 40 one-life runs a set-up; 588 runs in all with the proposals):
+  216,000 points by round 30 for either skill (the review: 216,140); 600 / 2,000 / 5,200 / 9,500 / 15,400 in rounds 1 / 5 / 10 / 20 / 30. A quarter to
+  nearly half of it is +10 hits, so a weaker gun earns more (Price Gun only: +29%). The sensible buyer has the Rivet Rifle in round 5, the first build
+  in round 7, Platinum in 11 or 12 and the whole 106,500 list by round 23; then nothing to buy (104,000 unspent at round 30; ammo is 3% of income).
+  A Shopper takes 0.3 to 0.85 s of fire from round 1 to 23 while its health grows 14 times, then 1.4 s by round 30. One-life runs: the good bot is dead by
+  round 7 half the time and reaches round 10 in 38% of runs; the average bot dies in round 6 and never reaches 10; without builds 25% reach round 10.
+  The review's four findings are confirmed; one addition: a build on the Price Gun (shutter, Promenade, build: 3,750) is affordable in round 5.
+- **Proposed, not applied** (section 6 of the report, each with a played before/after): A. Price Gun 70 -> 58 damage (the Rivet Rifle goes from 1.11x
+  to 1.34x; no clear survival cost). B. Build-A-Blaster 1,500 -> 4,000 and only for a gun under Premium warranty (first build in round 9; needs a
+  rule in the order form), or 5,000 with no rule (round 8), or 3,000 (the mild one). C. Platinum x1.65 -> x1.9 and Renewals x1.06 -> x1.09 at 4,000
+  to 10,000 (Platinum 435 -> 193 points per +1% damage). D. Claw grab 1,000 -> 1,500 (the first grab wins 1.01x its price instead of 1.52x).
+  **B costs survival**: 15% (4,000 + Premium), 13% (5,000) and 28% (3,000) of good-skill one-life runs reach round 10, against 38 to 40% today.
+- **Two things learned the slow way.** (1) One-life results are very noisy: the first 20 runs on today's numbers had a median death round of 10, all
+  40 have 7, and proposal C (the same game until round 11) is the built-in noise check. (2) The same seed with the same numbers does not always
+  play the same run in the headless game (runs agree to about round 4, then drift). Not investigated; seeded tests may be exposed to it.
+- **Machine time**: round-30 runs are slow (about 17 minutes each with 12 running at once), so the whole set is roughly an hour and a half from an
+  empty cache. --quick (2 seeds to round 10, 4 one-life runs) took 6.5 minutes while another batch was running; it was not timed on an idle machine.
+- **Shared files changed**: package.json (the sim:economy script), CLAUDE.md (one command line, one docs-index row), docs/history.md,
+  docs/folder-structure.md, docs/tests.md, docs/claw-machine-plan.md and docs/kiosk-kevin-plan.md (one sentence each: the report exists now).
+- **Not checked**: nothing was played by a person; shopping is a teleport and builds were never fought for (Understuffed or Regular only); everything
+  past round 14 is from bots that cannot die; the proposals were played at good skill (average only for today's numbers and one-life runs with
+  everything in); the 3,000 build and a 62-damage Price Gun were played for survival only; the bot never uses hazards, the Soda Bomb, attachments, prize
+  tickets, the Confetti Cannon, the Barcode Scanner or a claw-only gun. npm test, npm run build and an unchanged npm run balance were run before the commit.
 
 ## 9 November 2026 - Wardrobe showroom: upstairs showpieces and on-player looks
 
