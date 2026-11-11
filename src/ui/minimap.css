@@ -1,40 +1,101 @@
-/* The mall directory (ui/minimap.js; colours and sizes: config/minimap.js). The board's look: a backlit directory sign,
-   navy with a brass frame. The drawing itself is canvas; this only places and frames it. */
+/* The mall directory (ui/minimap.js; colours and sizes: config/minimap.js). The look of the mall's own directory signs
+   (maps/mall/atriumDetails.js): a plum case in a brass frame with screw heads, a teal mall-signage header in cream serif,
+   and a faint glass glare. The floors are canvas; this frames them and lays out the store index. */
 .minimap { position: absolute; inset: 0; pointer-events: none; }
 .minimap [hidden] { display: none !important; }
 
+/* Brass screw heads in the four corners and a diagonal glass glare, shared by both boards. */
+.minimap-corner::before, .minimap-full::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 2;
+  --screw: radial-gradient(circle, #f3dc9c 0 1.6px, #9b7a35 2.2px 3px, transparent 3.6px);
+  background:
+    var(--screw) 3px 3px / 12px 12px no-repeat,
+    var(--screw) calc(100% - 3px) 3px / 12px 12px no-repeat,
+    var(--screw) 3px calc(100% - 3px) / 12px 12px no-repeat,
+    var(--screw) calc(100% - 3px) calc(100% - 3px) / 12px 12px no-repeat;
+}
+.minimap-corner::after, .minimap-full::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1; border-radius: inherit;
+  background: linear-gradient(118deg, transparent 0 34%, #ffffff16 40%, #ffffff05 52%, transparent 58%);
+}
+
+/* ---- The corner map ---- */
 .minimap-corner {
   position: absolute; top: var(--hud-margin); right: var(--hud-margin);
   width: calc(var(--minimap-size) * var(--ui-space)); aspect-ratio: 1;
-  border: 2px solid #e9c46a; border-radius: 10px; overflow: hidden;
-  background: #14213d; box-shadow: 0 6px 18px #0009, inset 0 0 0 1px #0006;
+  border: 3px solid #c9a45c; border-radius: 10px; overflow: hidden;
+  background: #2a1c2e; box-shadow: 0 6px 18px #0009, inset 0 0 0 1px #0008;
+  animation: minimap-slide .18s ease-out;
 }
 .minimap-corner canvas { display: block; width: 100%; height: 100%; }
+.minimap-area {
+  position: absolute; left: 0; right: 0; top: 0; padding: 3px 8px 1px; z-index: 1;
+  background: #246d76; border-bottom: 2px solid #c9a45c; color: #fff0cb;
+  font: 600 calc(15 * var(--ui-space))/1.1 var(--font-hud); letter-spacing: .1em; text-transform: uppercase; text-align: center;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.minimap-area:empty { display: none; }
 .minimap-floor {
-  position: absolute; left: 6px; bottom: 5px; padding: 1px 6px 0; border-radius: 3px;
-  background: #14213dd9; color: #e9c46a; font: 600 15px/1.1 var(--font-hud); letter-spacing: .08em; text-transform: uppercase;
+  position: absolute; left: 7px; bottom: 6px; padding: 2px 7px 0; border-radius: 4px 4px 0 0; z-index: 1;
+  background: #246d76; color: #fff0cb; font: 600 calc(14 * var(--ui-space))/1.1 var(--font-hud); letter-spacing: .1em; text-transform: uppercase;
+  border-bottom: 2px solid #c9a45c;
 }
 
+/* ---- The directory ---- */
 .minimap-full {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-  width: 92vw; max-height: 92vh; box-sizing: border-box; padding: 12px 16px 10px;
-  display: flex; flex-direction: column; gap: 6px;
-  border: 3px solid #e9c46a; border-radius: 14px;
-  background: #14213dfa; box-shadow: 0 10px 40px #000b, inset 0 0 0 2px #0008;
+  width: 92vw; max-height: 92vh; box-sizing: border-box; overflow: hidden;
+  display: flex; flex-direction: column;
+  border: 4px solid #c9a45c; border-radius: 12px;
+  background: #2a1c2e; box-shadow: 0 12px 44px #000c, inset 0 0 0 2px #0009, inset 0 0 40px #0006;
+  animation: minimap-flicker var(--minimap-flicker, .16s) steps(1, end);
 }
-.minimap-title {
-  color: #f2e8cf; font: 600 30px/1 var(--font-hud); letter-spacing: .14em; text-transform: uppercase; text-align: center;
+.minimap-header {
+  display: flex; align-items: baseline; justify-content: center; gap: 16px; padding: 9px 16px 7px;
+  background: #246d76; border-bottom: 3px solid #c9a45c; color: #fff0cb;
 }
+.minimap-title { font: 700 26px/1 Georgia, "Times New Roman", serif; letter-spacing: .04em; }
+.minimap-subtitle { font: 600 20px/1 var(--font-hud); letter-spacing: .22em; text-transform: uppercase; opacity: .85; }
+.minimap-body { display: flex; flex-direction: column; min-height: 0; background: #2a1c2e; }
 .minimap-full canvas { flex: none; width: 100%; display: block; }
+
+.minimap-index {
+  flex: none; box-sizing: border-box; padding: 9px 16px 10px;
+  display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0 18px;
+  border-top: 3px solid #c9a45c; background: #f3e3bf; color: #4b304e; overflow: hidden;
+  font: 500 12px/1.3 var(--font-ui);
+}
+.minimap-index h3 {
+  margin: 8px 0 3px; padding-bottom: 2px; border-bottom: 1.5px solid #4b304e;
+  font: 600 16px/1 var(--font-hud); letter-spacing: .12em; text-transform: uppercase; color: #246d76;
+}
+.minimap-index h3:first-child { margin-top: 0; }
+.minimap-index ol { list-style: none; margin: 0; padding: 0; }
+.minimap-index li { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: baseline; gap: 5px; padding: 1px 0; }
+.minimap-index li b {
+  display: inline-grid; place-items: center; height: 14px; border-radius: 7px; background: #c9a45c; color: #2a1c2e;
+  font: 700 9.5px/1 var(--font-ui);
+}
+.minimap-index .name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.minimap-index .where { color: #7a6680; font-size: 10.5px; white-space: nowrap; }
+.minimap-index .locked { opacity: .45; }
+.minimap-index .live p { margin: 0; font-weight: 600; }
+.minimap-marks { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; font-size: 11px; color: #5d4a63; }
+.minimap-marks span { display: inline-flex; align-items: center; gap: 7px; }
+.mark-tape::before {
+  content: ''; width: 22px; height: 7px; border: 1px solid #d62839;
+  background: repeating-linear-gradient(135deg, #d62839 0 3px, #fff4e0 3px 6px);
+}
+.mark-you::before { content: ''; width: 9px; height: 9px; margin: 0 6px 0 7px; border-radius: 50%; background: #e63946; box-shadow: 0 0 0 2px #fff, 0 0 0 3px #e6394666; }
+
 /* The PA, sales and notices move down under the corner map while it is up. */
 .hud.minimap-on .hud-right-stack { top: calc(var(--hud-margin) * 2 + var(--minimap-size) * var(--ui-space)); }
-.minimap-legend {
-  display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px;
-  color: #dde3ee; font: 600 12px/1.4 var(--font-ui);
+
+/* The backlight warming up, and the corner sliding in. */
+@keyframes minimap-flicker {
+  0% { opacity: 0; } 25% { opacity: .85; } 45% { opacity: .25; } 65% { opacity: 1; } 80% { opacity: .7; } 100% { opacity: 1; }
 }
-.minimap-legend-item { display: inline-flex; align-items: center; gap: 5px; }
-.minimap-legend-item i {
-  display: inline-grid; place-items: center; width: 15px; height: 15px; border-radius: 50%;
-  color: #14213d; font: 700 10px/1 var(--font-ui); font-style: normal;
+@keyframes minimap-slide { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .minimap-full, .minimap-corner { animation: none; }
 }
-.minimap-legend-item b { display: inline-block; width: 16px; height: 5px; border-radius: 1px; }

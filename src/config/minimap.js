@@ -5,6 +5,8 @@
 // What a printed directory would show, and nothing more: rooms (bought ones filled, locked ones hatched), shutters with the
 // price to open them, escalators and stairs, where to buy things, Kiosk Kevin's cart while it is open, and dropped Closing
 // Time keys when the run gives guidance (Directed). NEVER zombies, bosses, lost property or quest steps.
+// THE LOOK: the mall's own directory signs (maps/mall/atriumDetails.js, atmosphere.js): a plum case with brass trim, the
+// teal mall-signage header in cream serif, each area tinted like its shutters (config/shutters.js), wayfinding pictograms.
 // =============================================================================
 
 export const minimap = {
@@ -15,59 +17,90 @@ export const minimap = {
     metresAcross: 44, // how much of the mall fits across it
   },
   full: {
-    heightShare: 0.86, // at most this share of the screen's height (the width is the CSS's 92vw), for both floors side by side
-    gap: 34, // CSS px between the floors
-    padding: 18, // px round the drawing
+    heightShare: 0.86, // at most this share of the screen's height (the width is the CSS's 92vw)
+    gap: 30, // px between the floors
+    padding: 14, // px round the drawing
+    otherFloor: 0.62, // the floor you are not on is drawn this much smaller
+    tabHeight: 30, // px: the lit LEVEL tab over each floor
   },
+  flickerSeconds: 0.16, // the backlight warming up when the directory opens (CSS; reduced motion skips it)
 
   colors: {
-    board: '#14213d', // the directory's backing
-    frame: '#e9c46a',
-    room: '#f2e8cf', // a bought area
-    roomEdge: '#3d405b',
-    locked: '#5b6478', // an area not bought yet (hatched)
-    hatch: 'rgba(20, 33, 61, 0.55)',
-    void: '#0b1326', // open to the floor below
-    voidEdge: '#9aa5b8',
-    ramp: '#b9c2d0',
-    shutter: '#e63946', // a shutter still shut
-    price: '#ffe08a',
-    label: '#1d2540', // area names on a bought area
-    labelLocked: '#dde3ee',
-    floorTitle: '#e9c46a',
-    floorTitleDim: '#8d97ab',
-    you: '#e63946',
-    youEdge: '#ffffff',
+    case: '#2a1c2e', // the plum case behind the floors (in-world: directory_case)
+    wall: '#2a1c2e',
+    brass: '#c9a45c',
+    header: '#246d76', headerInk: '#fff0cb', // the mall-signage strip
+    locked: '#5d4a63', // mixed into an area's tint when it is not bought
+    lockedMix: 0.72, // how much of `locked` (0 = the tint, 1 = all locked)
+    hatch: 'rgba(42, 28, 46, 0.5)',
+    labelLocked: '#e9dcef',
+    void: '#120c16', voidRail: '#c9a45c',
+    ramp: '#d8d2c4', rampEdge: '#2a1c2e', rampArrow: '#246d76',
+    tape: '#d62839', tapeLight: '#fff4e0',
+    tag: '#fff0cb', tagInk: '#4b304e', tagString: '#c9a45c',
+    pictoBack: '#2a1c2e', pictoInk: '#fff0cb', number: '#c9a45c',
+    tab: '#3b2a40', tabLit: '#246d76', tabInk: '#b6a3bb', tabInkLit: '#fff0cb',
+    you: '#e63946', youRing: '#ffffff', cone: 'rgba(230, 57, 70, 0.22)',
   },
+  // Each area's floor colour and the ink of its name: the shutter finishes' accents, lightened for a printed plan.
+  areas: {
+    startRoom: { fill: '#ecd0da', ink: '#5e4051' },
+    hallway: { fill: '#f1e6cf', ink: '#4b304e' },
+    foodCourt: { fill: '#c6e3dc', ink: '#355a59' },
+    megaMart: { fill: '#cbd9e8', ink: '#374b67' },
+    serviceCorridor: { fill: '#c8d2c3', ink: '#344b43' },
+    atrium: { fill: '#e0d3e8', ink: '#5a4165' },
+    departmentStore: { fill: '#ebc4cc', ink: '#4a1d2a' },
+    upstairs: { fill: '#f6d6bb', ink: '#7a3b26' },
+    cinema: { fill: '#dcc3d4', ink: '#49364f' },
+    parkingLot: { fill: '#cfcfc9', ink: '#3b3f45' },
+  },
+  defaultArea: { fill: '#e8e2d4', ink: '#3b2a40' },
+  walls: { full: 3, corner: 2.4 }, // px
   fonts: {
     area: '600 {px}px "Teko", "Arial Narrow", sans-serif',
-    price: '700 {px}px "Space Grotesk", system-ui, sans-serif',
-    title: '600 {px}px "Teko", "Arial Narrow", sans-serif',
-    icon: '700 {px}px "Space Grotesk", system-ui, sans-serif',
+    tag: '700 {px}px "Space Grotesk", system-ui, sans-serif',
+    tab: '600 {px}px "Teko", "Arial Narrow", sans-serif',
+    number: '700 {px}px "Space Grotesk", system-ui, sans-serif',
   },
 
-  // Places worth finding, by map feature kind: a coloured disc with a letter, and a word for the legend. Kinds not listed
-  // (wardrobe racks, refund signs, lost property, the horror layer) are left off. `label: 'weapon'` writes the gun's name
-  // beside its wall buy on the full directory.
+  // Places worth finding, by map feature kind: a wayfinding pictogram (ui/minimap.js draws each `picto`; `back` = its square
+  // if not the case colour) and its word.
+  // Kinds not listed (wardrobe racks, refund signs, lost property, the horror layer) are left off. `label: 'weapon'` = the
+  // index names the gun. `name` = the index's words for it (else `legend`).
   places: {
-    wallBuy: { glyph: 'G', color: '#2a9d8f', legend: 'Wall gun', label: 'weapon' },
-    ammoCache: { glyph: 'A', color: '#43aa8b', legend: 'Restock' },
-    upgradeDesk: { glyph: 'W', color: '#577590', legend: 'Warranty' },
-    attachmentCounter: { glyph: '+', color: '#4d908e', legend: 'Attachment' },
-    workshop: { glyph: 'B', color: '#f3722c', legend: 'Build-A-Blaster' },
-    fittingRoom: { glyph: 'F', color: '#c77dff', legend: 'Fitting room' },
-    clawMachine: { glyph: 'C', color: '#f15bb5', legend: 'Claw machine' },
-    prizeCounter: { glyph: 'P', color: '#f9844a', legend: 'Prize counter' },
-    kiosk: { glyph: 'K', color: '#ffbe0b', legend: "Kevin's cart" }, // only while the cart is open, where it is this round
-    fountainHazard: { glyph: '!', color: '#e76f51', legend: 'Hazard switch' },
-    fryerHazard: { glyph: '!', color: '#e76f51', legend: 'Hazard switch' },
-    sprinklerHazard: { glyph: '!', color: '#e76f51', legend: 'Hazard switch' },
-    paLureHazard: { glyph: '!', color: '#e76f51', legend: 'Hazard switch' },
-    nightSafe: { glyph: '$', color: '#90be6d', legend: 'Night safe' },
-    returnsDesk: { glyph: 'R', color: '#8ecae6', legend: 'Returns desk' },
-    escapeVan: { glyph: 'V', color: '#adb5bd', legend: 'Van' },
+    wallBuy: { picto: 'gun', legend: 'Wall gun', label: 'weapon' },
+    ammoCache: { picto: 'ammo', legend: 'RESTOCK-O-MATIC' },
+    upgradeDesk: { picto: 'badge', legend: 'Extended Warranty' },
+    attachmentCounter: { picto: 'scope', legend: 'Attachment counters' },
+    workshop: { picto: 'hammer', legend: 'Build-A-Blaster' },
+    fittingRoom: { picto: 'hanger', legend: 'Fitting room' },
+    clawMachine: { picto: 'claw', legend: 'GRAB-A-GUN' },
+    prizeCounter: { picto: 'ticket', legend: 'Prize counter' },
+    kiosk: { picto: 'cart', legend: 'Kiosk Kevin', back: '#246d76' },
+    fountainHazard: { picto: 'bolt', back: '#8f2433', legend: 'Hazard', name: 'Fountain breaker' },
+    fryerHazard: { picto: 'bolt', back: '#8f2433', legend: 'Hazard', name: 'Fryer valve' },
+    sprinklerHazard: { picto: 'bolt', back: '#8f2433', legend: 'Hazard', name: 'Fire alarm pull' },
+    paLureHazard: { picto: 'bolt', back: '#8f2433', legend: 'Hazard', name: 'Paging panel' },
+    nightSafe: { picto: 'safe', legend: 'Night safe' },
+    returnsDesk: { picto: 'return', legend: 'Returns desk' },
+    escapeVan: { picto: 'van', legend: 'Van' },
   },
-  key: { glyph: '⚿', color: '#ffd166', legend: 'Dropped key' }, // a Closing Time key on the floor (Directed runs only)
-  iconRadius: { corner: 6.5, full: 7.5 }, // CSS px
-  youSize: { corner: 9, full: 8 },
+  key: { picto: 'key', legend: 'Dropped key', back: '#9a6b16' }, // a Closing Time key on the floor (Directed runs only)
+  // The store index beside the full directory: one heading per group, its places numbered in order.
+  index: [
+    { title: 'Wall guns', kinds: ['wallBuy'] },
+    { title: 'Upgrades', kinds: ['upgradeDesk', 'attachmentCounter', 'workshop', 'fittingRoom'] },
+    { title: 'Supplies', kinds: ['ammoCache', 'clawMachine', 'prizeCounter'] },
+    { title: 'Hazards', kinds: ['fountainHazard', 'fryerHazard', 'sprinklerHazard', 'paLureHazard'] },
+    { title: 'Customer services', kinds: ['nightSafe', 'returnsDesk', 'escapeVan'] },
+  ],
+  words: {
+    title: 'Sunset Galleria', subtitle: 'Store directory',
+    youAreHere: 'You are here',
+    kevinOpen: (area) => `This round: ${area}`, kevinClosed: 'Not open yet',
+    keys: 'Dropped keys', shutter: 'Shutter · price to open', up: 'UP',
+  },
+  pictoSize: { corner: 14, full: 17 }, // px, the dark rounded square each pictogram sits in
+  you: { corner: 6, full: 6, pulseSeconds: 1.6, pulseGrow: 2.6, coneMetres: 7, coneDegrees: 70 },
 };

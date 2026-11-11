@@ -63,24 +63,51 @@ export function buildMinimapPlan(map, colliders = []) {
     return { id: door.id, door, floor: floorAt(portal ? portal.minY + 0.5 : p.y - 1.5), x: (shape.minX + shape.maxX) / 2, z: (shape.minZ + shape.maxZ) / 2, ...shape };
   });
 
+  // Doorways (culling portals that are gaps in a wall, not holes in a floor): the floor plan's walls are broken there.
+  const zoneOfRoom = (id) => zoneForRoom(id);
+  const openings = (map.cullPortals ?? []).filter((p) => Math.min(p.maxX - p.minX, p.maxZ - p.minZ) < 1.2).map((p) => ({
+    ...rect(p), floor: floorAt(p.minY + 0.5), door: p.door ?? null, zones: [zoneOfRoom(p.a), zoneOfRoom(p.b)],
+    across: p.maxX - p.minX < p.maxZ - p.minZ ? 'x' : 'z', // (the thin axis: the wall's thickness)
+  }));
+
   // Places: map features of the kinds config/minimap.js lists. Kevin's carts are one feature with five sites (shown live).
+  // Each gets a number in the store index; places of one kind with the same name in the same area share it (the eight
+  // attachment counters are one entry).
+  const zoneLabel = (zone) => map.zones[zone]?.label ?? zone;
   const places = [];
   for (const feature of map.features ?? []) {
     const look = config.places[feature.kind];
     if (!look || feature.kind === 'kiosk') continue;
     const p = feature.position;
+    const gun = look.label === 'weapon' ? weapons[feature.weapon]?.name ?? null : null;
     places.push({
-      kind: feature.kind, x: p.x, z: p.z, floor: floorAt(p.y), zone: feature.zone,
-      label: look.label === 'weapon' ? weapons[feature.weapon]?.name ?? null : null,
+      kind: feature.kind, x: p.x, z: p.z, floor: floorAt(p.y), zone: feature.zone, area: zoneLabel(feature.zone),
+      label: gun, name: gun ?? look.name ?? look.legend,
     });
   }
-  return { floors, shutters, places, floorAt };
+  const groups = [];
+  for (const [i, group] of config.index.entries()) {
+    const members = places.filter((place) => group.kinds.includes(place.kind))
+      .sort((a, b) => a.floor - b.floor || a.x - b.x || a.z - b.z);
+    const entries = [];
+    for (const place of members) {
+      let entry = entries.find((e) => e.kind === place.kind && e.name === place.name && e.zone === place.zone);
+      if (!entry) entries.push(entry = { kind: place.kind, name: place.name, zone: place.zone, area: place.area, floor: place.floor, count: 0 });
+      entry.count++;
+      place.entry = entry;
+    }
+    if (entries.length) groups.push({ id: group.id ?? `group${i}`, title: group.title, entries });
+  }
+  let n = 0;
+  for (const group of groups) for (const entry of group.entries) entry.n = ++n;
+  for (const place of places) place.n = place.entry?.n ?? null;
+  return { floors, shutters, openings, places, index: groups, floorAt, zoneLabel };
 }
 
 /**
  * What the board shows right now. `g` = the game (createGame), `guidance` = the run shows Closing Time help (Directed).
- * Returns { you: { x, z, yaw, floor }, open: Set of bought zones, shutters: [{ ...shutter, price }] (shut ones only),
- *           kevin: { x, z, floor } | null, keys: [{ x, z, floor }] }.
+ * Returns { you: { x, z, yaw, floor, area }, open: Set of bought zones, shutters: [{ ...shutter, price }] (shut ones only),
+ *           kevin: { x, z, floor, area } | null, keys: [{ x, z, floor }] }.
  */
 export function minimapState(plan, g, { guidance = false } = {}) {
   const { map, player } = g;
@@ -94,10 +121,13 @@ export function minimapState(plan, g, { guidance = false } = {}) {
   const kiosk = g.features?.list.find(({ feature }) => feature.kind === 'kiosk')?.instance;
   const cart = kiosk?.status.open ? kiosk.site.cart.position : null;
   return {
-    you: { x: player.position.x, z: player.position.z, yaw: player.yaw, floor: plan.floorAt(player.position.y + 0.1) },
+    you: {
+      x: player.position.x, z: player.position.z, yaw: player.yaw, floor: plan.floorAt(player.position.y + 0.1),
+      area: (() => { const zone = map.areaAt?.(player.position); return zone ? plan.zoneLabel(zone) : null; })(),
+    },
     open,
     shutters,
-    kevin: cart && { x: cart.x, z: cart.z, floor: plan.floorAt(cart.y) },
+    kevin: cart && { x: cart.x, z: cart.z, floor: plan.floorAt(cart.y), area: plan.zoneLabel(kiosk.site.zone) },
     keys: guidance ? (g.closing?.pickups ?? []).map(({ position }) => ({ x: position.x, z: position.z, floor: plan.floorAt(position.y) })) : [],
   };
 }

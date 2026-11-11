@@ -1,5 +1,12 @@
 # Sunset Galleria: build history ("Current state")
 
+## 11 November 2026 - The minimap restyled as the mall's own directory sign
+
+- **The look of the in-world directories** (plum case, brass, teal signage, cream serif): brass frames with screw heads and a faint glass glare, a teal header ("Sunset Galleria · Store directory"), each area in its own colour taken from its shutter finish (areas not bought darker and hatched), a real floor plan (thick walls broken at doorways, from the culling portals), barrier tape over shut shutters with the price on a hanging price tag, escalator and stair chevrons pointing up, wayfinding pictograms instead of letters (gun, ammo, warranty badge, scope, hammer, hanger, claw, ticket, cart, bolt, safe, return arrow, van, key), and a pulsing you-are-here dot with a view cone.
+- **The directory works like a real one:** places are numbered, and a store index under the floors lists them by group (wall guns by name, upgrades, supplies, hazards, customer services) with their area, dimmed where not bought, plus where Kevin's cart is this round. The floor you are on is drawn larger under a lit LEVEL tab. The corner map gains a strip naming the area you are in.
+- **A little life:** the directory flickers on like a backlight warming up (0.16 s) and the corner map slides in; both are skipped with reduced motion.
+- Seen in the browser at 800x450 and 1600x900. Browser storage was empty before and after.
+
 ## 11 November 2026 - The minimap: a mall directory on Tab
 
 - **Hidden until asked for** (the user's call: an always-on minimap is a common complaint about modern COD). TAP Tab (controller Back/View) for a small corner map that turns with you; HOLD it for the whole directory, both floors side by side, north-up, while held. The corner choice is remembered (setting `minimap`, not in the menu). No gags: it is meant to be useful.

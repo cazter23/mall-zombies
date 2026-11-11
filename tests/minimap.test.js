@@ -56,7 +56,7 @@ test('state: you, the bought areas, shut shutters priced only where one side is 
   g.player.position.set(0, 0, 12);
   g.player.yaw = 1.2;
   const state = minimapState(plan, g);
-  assert.deepEqual(state.you, { x: 0, z: 12, yaw: 1.2, floor: 0 });
+  assert.deepEqual(state.you, { x: 0, z: 12, yaw: 1.2, floor: 0, area: 'Start Room' });
   assert.deepEqual([...state.open], ['startRoom']);
   const start = state.shutters.find((s) => s.id === 'startShutter');
   assert.equal(start.price, g.pricing.priceOf('door', 'hallway'));
@@ -76,7 +76,7 @@ test("Kevin's cart shows only while it is open, where it stands this round", () 
   g.rounds.jumpTo(2);
   const kevin = minimapState(plan, g).kevin;
   const site = g.features.list.find(({ feature }) => feature.kind === 'kiosk').instance.site;
-  assert.deepEqual(kevin, { x: site.cart.position.x, z: site.cart.position.z, floor: 0 });
+  assert.deepEqual(kevin, { x: site.cart.position.x, z: site.cart.position.z, floor: 0, area: g.map.zones[site.zone].label });
 });
 
 test('a dropped key shows only on a run with guidance (Directed)', () => {
@@ -84,6 +84,31 @@ test('a dropped key shows only on a run with guidance (Directed)', () => {
   const withKey = { ...g, map: g.map, player: g.player, pricing: g.pricing, features: g.features, closing: { pickups: [{ bossId: 'murray', position }] } };
   assert.deepEqual(minimapState(plan, withKey, { guidance: false }).keys, []);
   assert.deepEqual(minimapState(plan, withKey, { guidance: true }).keys, [{ x: 3, z: 1, floor: 1 }]);
+});
+
+test('the store index numbers every place once; places of one kind and name in one area share a number', () => {
+  const entries = plan.index.flatMap((group) => group.entries);
+  assert.deepEqual(entries.map((e) => e.n), entries.map((_, i) => i + 1));
+  for (const place of plan.places) assert.ok(entries.some((e) => e.n === place.n), `${place.kind} has no index entry`);
+  const attachments = plan.places.filter((p) => p.kind === 'attachmentCounter');
+  assert.equal(new Set(attachments.map((p) => p.n)).size, 1, 'the attachment counters are one entry');
+  assert.equal(entries.find((e) => e.n === attachments[0].n).count, attachments.length);
+  const indexed = new Set(config.index.flatMap((g) => g.kinds));
+  for (const kind of Object.keys(config.places)) if (kind !== 'kiosk') assert.ok(indexed.has(kind), `${kind} is in no index group`);
+});
+
+test('every area has its colour, every place a pictogram, and every shutter a doorway in the walls', async () => {
+  menuDom();
+  const { pictogramNames } = await import('../src/ui/minimap.js');
+  for (const zone of Object.keys(g.map.zones)) assert.ok(config.areas[zone], `${zone} has no colour`);
+  for (const look of [...Object.values(config.places), config.key]) assert.ok(pictogramNames.includes(look.picto), `no pictogram "${look.picto}"`);
+  for (const shutter of plan.shutters) assert.ok(plan.openings.some((o) => o.door === shutter.id), `${shutter.id} has no doorway`);
+  for (const o of plan.openings) assert.ok(Math.min(o.maxX - o.minX, o.maxZ - o.minZ) < 1.2, 'doorways are gaps in walls, not holes in floors');
+});
+
+test('the corner map names the area you are in', () => {
+  g.player.position.set(0, 0, 12);
+  assert.equal(minimapState(plan, g).you.area, g.map.zones.startRoom.label);
 });
 
 test('Tab and the controller Back button are the minimap, shared with nothing, and listed on the Controls screen', () => {
@@ -158,7 +183,9 @@ test('a tap shows or hides the corner map (and says so, to be remembered); a hol
   assert.ok(!full.hidden && corner.hidden, 'held: the whole directory, in place of the corner map');
   assert.ok(texts.some((s) => s.includes('YOU ARE HERE')));
   assert.ok(texts.includes(g.pricing.priceOf('door', 'megaMart').toLocaleString('en-US')), 'shutters show their price');
-  assert.ok(texts.includes('Price Gun'), 'wall buys name their gun');
+  const indexText = full.children[1].children[1].textContent;
+  assert.ok(indexText.includes('Price Gun') && indexText.includes('Wall guns'), 'the store index names the wall guns');
+  assert.ok(indexText.includes(config.words.kevinClosed) || indexText.includes('This round'), "the index says where Kevin's cart is");
   play(view, state, { held: false });
   assert.equal(view.cornerOn, true, 'letting go of a hold does not toggle');
   assert.ok(full.hidden && !corner.hidden);
