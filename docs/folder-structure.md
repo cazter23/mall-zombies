@@ -18,6 +18,9 @@ src/
   boot.js               The page's entry point: waits for the web fonts (core/fontsReady.js, list and time limit in config/fonts.js), then imports main.js.
   config/
     skins.js            Eleven mastery role palettes, gunSkin lookup, kill challenges, permanent save key/version, contrast threshold, locker/preview and unlock/debug words.
+                        Also the role (slot 2) and feat (slot 3) skins: patterns (skinPatterns), treatments (skinTreatments), each feat's tracker words (`track`).
+    challengeBoard.js   The Challenges tab and the challenge tracker: maxPins (3), the pins' storage key/version, the board's words, slot tags, and the
+                        tracker's seconds (shown, struck through), words and soft fail sound.
                         Preserves Phase 1's Night Shift/Carbon Copy palettes; the other nine skins carry names and challenges for now.
     idle.js             Idle saver numbers: delays (short / normal / long: dim and sleep seconds), dimFps, muteWhenAsleep, pollSeconds
     haptics.js          Controller vibration intensity and per-gun/damage/pickup durations, motor strengths and priorities
@@ -1010,6 +1013,21 @@ Boss groundwork: zombie.js owns timed buffs, source-bound holds and a behavior c
 - src/ui/locker.js: title locker DOM, mouse/keyboard/controller browsing, immediate equip persistence, and a turning buildWeaponDisplay preview. Its renderer, meshes, materials and textures exist only while open; main's idle-governed render loop drives it.
 - src/config/skins.js: eleven mastery role palettes, contrast threshold, locker words, preview settings and receipt copy.
 - src/game/challenges.js: also keeps this run's unlock list for the receipt, saved independently of permanent progress.
+
+### Challenges tab and tracker (skins phase 7)
+
+- src/game/challengeCatalog.js: DOM-free list of every challenge for the board and the tracker: categories (today one, weapon finishes) of
+  groups (a gun) of entries { id, name, tag, text, done(ctx), progress(ctx), track(ctx) }, ctx = { save, challenges }. A new kind of
+  unlockable adds a category here. catalogEntry(id) finds a pin's entry (null: one the catalogue no longer knows); skinPinId(gunId, skinId).
+- src/game/challengePins.js: createChallengePins({ storage }): the pinned ids in pin order, up to maxPins (toggle returns true / false / null
+  when full), written on every change under their own key; a newer stored version is left untouched; a blocked store keeps pins in memory.
+- src/ui/challengeBoard.js: the title screen's Challenges tab (a screens.js "book", like the locker, reusing its form styles): groups on the
+  left by category, the chosen group's challenges on the right with tag, sentence, progress and a pin; a line with the pin count (or "full"),
+  and a note while the tracker setting is off. Mouse, keyboard and pad.
+- src/ui/challengeTracker.js: createChallengeTracker() is the HUD view (ui/hud.js puts it under the round box; hud.setChallengeTrackerEnabled
+  from the 'challengeTracker' setting, off by default): show(lines, { changed, failed }) for showSeconds, then hides. connectChallengeTracker
+  (main.js) listens on 'challengeProgress' and 'challengeLive' for pinned challenges only; a failed attempt is struck through with a soft
+  sound, then dropped until that feat's next attempt; Play again and Continue clear it.
 
 ### Staff Survival Guide
 

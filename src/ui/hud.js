@@ -27,6 +27,7 @@ import { wardrobeLook } from '../config/wardrobe.js';
 import { createOutfitRail } from './outfitRail.js';
 import { createBossFlashView } from './bossFlash.js';
 import { createNoticeHistory } from './noticeHistory.js';
+import { createChallengeTracker } from './challengeTracker.js';
 
 function el(tag, className) {
   const node = document.createElement(tag);
@@ -34,7 +35,7 @@ function el(tag, className) {
   return node;
 }
 
-export function createHud({ locker = null, guide = null } = {}) {
+export function createHud({ locker = null, guide = null, challenges = null } = {}) {
   const hud = el('div', 'hud');
   const eyewear = el('div', 'wardrobe-eyewear');
   eyewear.setAttribute('aria-hidden', 'true');
@@ -349,8 +350,10 @@ export function createHud({ locker = null, guide = null } = {}) {
     checklist.append(box);
     return { id, box, marker: createBagMarker() };
   });
+  // Under the round box: the pinned challenges, for a few seconds when one moves (ui/challengeTracker.js; off unless turned on in Settings).
+  const challengeTracker = createChallengeTracker();
   const leftStack = el('div', 'hud-left-stack');
-  leftStack.append(roundCounter, objectiveLine, checklist, clockIn, incentives.element, ritualTicket.element);
+  leftStack.append(roundCounter, objectiveLine, checklist, challengeTracker.element, clockIn, incentives.element, ritualTicket.element);
   const topStack = el('div', 'hud-top-stack');
   topStack.append(bossBar, roundBanner, ...closingLines.map(({ marker }) => marker.element), bagMarker.element);
   const rightStack = el('div', 'hud-right-stack');
@@ -361,7 +364,7 @@ export function createHud({ locker = null, guide = null } = {}) {
   const updateOrderTop = () => hud.style.setProperty('--hud-order-top', `${Math.ceil(topStack.offsetTop + topStack.offsetHeight + 12)}px`);
   if (typeof ResizeObserver === 'function') new ResizeObserver(updateOrderTop).observe(topStack);
   // The menus around a run (title / pause / results receipt): ui/screens.js.
-  const screens = createScreens({ locker, guide });
+  const screens = createScreens({ locker, guide, challenges });
   document.body.append(hud);
 
   let lastHealth = -1;
@@ -523,6 +526,10 @@ export function createHud({ locker = null, guide = null } = {}) {
     setFpsVisible(visible) {
       fpsCounter.classList.toggle('show', visible);
     },
+
+    /** The pinned challenges under the round counter (main.js connects it to the events: connectChallengeTracker). */
+    challengeTracker,
+    setChallengeTrackerEnabled(on) { challengeTracker.setEnabled(on); },
 
     // Whole frames per second; only touches the DOM when the number changes.
     setFps(fps) {

@@ -28,6 +28,7 @@
 
 import { economy } from '../config/economy.js';
 import { gunSkin, locker as lockerCfg } from '../config/skins.js';
+import { challengeBoard as boardCfg } from '../config/challengeBoard.js';
 import { guide as guideCfg } from '../config/guide.js';
 import { closingTime } from '../config/closingTime.js';
 import { createOutfitRail } from './outfitRail.js';
@@ -154,8 +155,8 @@ export function evaluatePerformance(r = {}) {
   };
 }
 
-export function createScreens({ locker = null, guide = null } = {}) {
-  const books = { locker, guide }; // screens that own their DOM, preview and pad navigation (ui/locker.js, ui/guide.js)
+export function createScreens({ locker = null, guide = null, challenges = null } = {}) {
+  const books = { locker, guide, challenges }; // screens that own their DOM, preview and pad navigation (ui/locker.js, ui/guide.js, ui/challengeBoard.js)
   const handlers = {};
   const emit = (action, pad = false) => handlers[action]?.({ pad });
 
@@ -178,6 +179,7 @@ export function createScreens({ locker = null, guide = null } = {}) {
         <button class="menu-btn" data-action="help" type="button">How to play</button>
         <button class="menu-btn" data-action="stats" type="button">Statistics</button>
         <button class="menu-btn" data-action="locker" type="button">${lockerCfg.menu}</button>
+        ${challenges ? `<button class="menu-btn" data-action="challenges" type="button">${boardCfg.menu}</button>` : ''}
         <button class="menu-btn" data-action="guide" type="button">${guideCfg.menu}</button>
         <button class="menu-btn" data-action="settings" type="button">Settings</button>
         <button class="menu-btn" data-action="controls" type="button">Controls</button>
@@ -391,7 +393,8 @@ export function createScreens({ locker = null, guide = null } = {}) {
   const statsBests = stats.querySelector('.stats-bests');
   const statsRecent = stats.querySelector('.stats-recent');
 
-  const screens = { title, runMode, pause, results, help, stats, ...(locker ? { locker: locker.element } : {}), ...(guide ? { guide: guide.element } : {}) };
+  const screens = { title, runMode, pause, results, help, stats, ...(locker ? { locker: locker.element } : {}), ...(guide ? { guide: guide.element } : {}),
+    ...(challenges ? { challenges: challenges.element } : {}) };
   for (const node of Object.values(screens)) document.body.append(node);
   let current = null;
   let focus = 0;
@@ -563,7 +566,8 @@ export function createScreens({ locker = null, guide = null } = {}) {
 
     // Should the title flyover be drawn behind? (the title itself, or How to play opened from it)
     get showsFlyover() {
-      return current === 'title' || current === 'runMode' || current === 'stats' || current === 'locker' || current === 'guide' || (current === 'help' && helpReturn === 'title');
+      return current === 'title' || current === 'runMode' || current === 'stats' || current === 'locker' || current === 'guide' || current === 'challenges'
+        || (current === 'help' && helpReturn === 'title');
     },
 
     on(action, fn) {
