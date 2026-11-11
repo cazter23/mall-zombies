@@ -344,10 +344,11 @@ export class Zombie {
   }
 
   // Glitter: for `seconds` it fights other zombies instead of you, hitting for `damage`. Refused while it rises, while a mannequin is frozen, and
-  // for a while after the last dose. Returns whether it took.
-  applyConfusion(seconds, damage, weaponId = null) {
+  // for a while after the last dose. Returns whether it took. `weaponId`: the gun its kills belong to (weapon skins); `source`: what
+  // its hits count as ('build': Build-A-Blaster's Glitter; 'equipment': Kiosk Kevin's Glitter Bomb).
+  applyConfusion(seconds, damage, weaponId = null, source = 'build') {
     if (this.type.boss || !this.isAlive || this.state === 'spawning' || this.frozen || this.confusionImmune > 0) return false;
-    this.confusion = { left: seconds, damage, target: null, retarget: 0, weaponId };
+    this.confusion = { left: seconds, damage, target: null, retarget: 0, weaponId, source };
     this.setState('chasing'); // whatever it was doing to you, it has forgotten
     this.chargeLeft = 0;
     return true;
@@ -368,17 +369,21 @@ export class Zombie {
 
   // Burning: `damage` in total over `seconds`, paid in ticks through takeHit, so a kill counts like any other. A new burn
   // restarts the clock and never weakens one already burning. Burns don't stack: re-lighting a zombie doesn't add damage.
-  applyBurn(damage, seconds, tickSeconds, weaponId = null) {
+  // `weaponId`: the gun its kills belong to (weapon skins); `source`: what its ticks count as ('build': Fryer Oil; 'equipment':
+  // Kiosk Kevin's Sparkler Cake). Both come from whichever burn supplies the damage (the stronger one).
+  applyBurn(damage, seconds, tickSeconds, weaponId = null, source = 'build') {
     if (!this.isAlive || this.state === 'spawning') return;
     const perTick = (damage * tickSeconds) / seconds;
     const previous = this.burn;
+    const keepPrevious = previous && previous.perTick > perTick;
     // A weaker refresh can extend the burn, but the stronger hit still supplies its damage.
     this.burn = {
       perTick: Math.max(perTick, previous?.perTick ?? 0),
       tickSeconds,
       nextTick: previous?.nextTick ?? tickSeconds,
       left: seconds,
-      weaponId: previous && previous.perTick > perTick ? previous.weaponId : weaponId,
+      weaponId: keepPrevious ? previous.weaponId : weaponId,
+      source: keepPrevious ? previous.source : source,
     };
   }
 
@@ -396,7 +401,7 @@ export class Zombie {
     this.burn.nextTick -= dt;
     if (this.burn.nextTick <= 1e-9) {
       this.burn.nextTick += this.burn.tickSeconds;
-      this.takeHit({ damage: this.burn.perTick, part: 'body', source: 'build', weaponId: this.burn.weaponId });
+      this.takeHit({ damage: this.burn.perTick, part: 'body', source: this.burn.source, weaponId: this.burn.weaponId });
     }
     if (this.burn && this.burn.left <= 1e-9) this.burn = null;
   }

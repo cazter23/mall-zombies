@@ -235,6 +235,11 @@ list in order at the shelf price, and its books balance (every point earned has 
 a proposal changes config numbers in memory only and puts them back, and a typo in a proposal's path is an error; every proposal and every
 buy order points at config that exists (a renamed door, gun or tier fails here, not in a 40-minute run); the maths side reads config (wave
 shares add up, a weaker gun earns more from the same wave, the ladder's prices are the shop's); the claw step only wants guns the bot can fire.
+`kioskBalance.test.js` Kiosk Kevin's balance bar (phase 7, from tools/kioskBalance.js, the maths `npm run kiosk` prints): no product is a
+must-buy at round 2 (each costs at least 40% of what round 2 pays, and no pocket thrown into crowds deals more per point than the Price Gun's
+own wall ammo at any round); the Soda Bomb at round 25 is weaker, not useless (40 to 60% of a Shopper at the centre, a Shopper's worth from a
+crowd, a pocket at most 5% of the round's income) and power keeps rising every round; a full Bubble Wrap absorbs less than the player's
+health and less than doubles Shopper hits to death, and those hits to death match the real game's health; the report prints every section.
 `clawSim.test.js` GRAB-A-GUN's odds (tools/clawOdds.js): the wall stays the cheaper way to every specific gun even at perfect
 timing, a site lasts 5 to 6 grabs, perfect timing never meets the plush while a random lane often does, better timing wins dearer guns,
 and a plush grab costs nothing. clawMachine.test.js also plays the 'claw' Flash Sale (the PA, the sale price charged and refunded, the
@@ -270,6 +275,7 @@ nothing past Platinum (including the exact purchase frame and switching back to 
 no prompt while closed / switching / facing away, Play again resets),
 `saveGame.test.js` also pays parking validation through the real machine, keeps the round-start rollback rule, restores validation and points without another charge, and verifies no closingValidated event or PA replays on load.
 `saveGame.test.js` covers Save & Quit: every Play again step is either saved or named transient (so a new system has to decide); a load gives back the run as it was at the START of the round (points earned and areas bought mid-round are gone), at that round's break, with the slot used up, and what the loaded game would save is exactly what was saved; a replay keeps the same boss schedule, Flash Sale and feature state; a gun away at Build-A-Blaster with the loaner in hand comes back the same; saving needs a started round, a live player and full health; an older version's save is dropped, never loaded; saving is not a death (no runEnd, no career record).
+`saveGame.test.js` covers Save & Quit: every Play again step is either saved or named transient (so a new system has to decide); a load gives back the run as it was at the START of the round (points earned and areas bought mid-round are gone), at that round's break, with the slot used up, and what the loaded game would save is exactly what was saved; a replay keeps the same boss schedule, Flash Sale and feature state; a gun away at Build-A-Blaster with the loaner in hand comes back the same; saving needs a started round, a live player and full health; an older version's save is dropped, never loaded; saving is not a death (no runEnd, no career record); Kiosk Kevin reopens where he stood at the round's start (not the first site, and not where a mid-round move took him) and does not move again on the load; a save made with a SPIN-O-MATIC Sentry out loads without one (the pockets as of the round's start).
 
 `secondChance.test.js` covers the Customer Service purchase and shared pricing, the one-use limit, lethal Cart Pusher charges, falls and fountain shocks, the local shove, paused protection, the PA, the final receipt, and Play again; that a hit or a hard landing during the protection is not announced at all (no 'playerHit' / 'playerFall', no outfit tag, no shove of the player) and is an ordinary hit again afterwards; that the revive itself is not read as the Cardigan soaking a hit; and that 'secondChance' announces held / used / available once each, with Play again mid-protection leaving the new run unprotected.
 `tests/effectWords.test.js` guards the words-only rule: the size bands (fixed, ordered, symmetric, {size}/{Size} fill), the number detector, and a scan of every tier, It also covers GRAB-A-GUN: every claw and Prize Counter string in config and the real prompts they build (pay, drop, take, Refurbished, each prize card) carry no stat number and no multiplier word; the claw sale keeps its percentage.
@@ -399,9 +405,32 @@ the model and debris and disposes their shared geometry and materials.
 - `instantKill.test.js`: Return to Sender, the wonder weapon: hitDamage's instant kill (any returnable zombie, at any health) and the big fixed hit on a boss or Mascot (tiers and the damage stat scale it, never a kill), a round-30 Shopper returned in one beam with the normal kill pay and only one zombie a beam, a boss takes the big hit twice over two beams, the half-rate refill (a refill fills the magazine and half the reserve, `isFull` agrees, nothing is taken away, other guns refill fully), desk/claw availability, paid-refill refusal at all RESTOCK-O-MATICs and the Prize Counter (including full ammo), unchanged free Stockroom refills, and a stuffed build still returns in one beam with the Last Round heart firing.
 - `equipment.test.js`: The Soda Bomb's damage curve, blast falloff and wall cover, fixed boss share, keyboard and
   controller pocket actions, shared lockout, reload cancellation, ballistics, payouts, debug controls and cleanup.
-- `kiosk.test.js`: Bubble Wrap's damage order, cap and reset. All three cart purchases through real input, fixed
-  stock, Pick bonuses, hiding, pricing and vouchers. Air Horn input, cover, charge interruption, Mascot weight,
-  boss immunity and zero payout.
+- `equipmentStatus.test.js`: Kiosk Kevin phase 5, the Glitter Bomb and the Sparkler Cake in the real game. The tickets are words
+  only and name bosses. The card confuses Shoppers, a charging Cart Pusher (the charge is called off) and a Mascot round it, through
+  applyConfusion with source 'equipment' and swings scaled by equipmentPower; a boss and anything out of reach are untouched, and the
+  card hurts and pays nobody. A confused zombie's kill pays the kill value through 'kill' only (no 'hit', no +10, no meter) and it never
+  turns on you. The cake lights Shoppers, a Cart Pusher and a Mascot with the round's burn (source 'equipment') and a boss at half
+  strength, sprays for its time then is gone; its kill pays through 'kill' only, nothing after death. The gold Mascot still drops its
+  power-up when a cake burn or a confused zombie kills it. Real input: G throws a cake that lands on the floor and sprays, middle click
+  a card that opens where it lands. Death and Play again leave no cake behind.
+- `sentry.test.js`: Kiosk Kevin phase 6, the SPIN-O-MATIC Sentry in the real game. Its ticket is words only; it rotates through the
+  Lethal slot and is never Kevin's Pick, while every other product gets its turn. Thrown with G it deploys on the floor where it
+  lands, adds no collider, and shoots only the nearest zombie it can see, every shot a body hit of the round's damage with weaponId
+  'sentry'. It never targets Sunny, a dummy, the dead or a zombie behind the shut start shutter, and its shot passes Sunny to the
+  zombie behind. Its kills pay through 'kill' only (source 'equipment', weaponId 'sentry', no headshot, no 'hit', no +10, no meter);
+  a boss takes full damage. One out at a time (a second throw keeps its charge), it falls apart after its lifetime
+  ('sentryExpired'), stops while paused, is gone on death, and Play again leaves nothing.
+- `kiosk.test.js`: Bubble Wrap's damage order, cap and reset. All six products bought through real input at the cart (each slot
+  rotates round by round, the Pick goes to whatever has waited longest; a Sparkler Cake replaces the Soda Bombs, a Sentry the
+  cakes, in their pocket), Pick bonuses, hiding, pricing and vouchers (phase 7: Kevin's Flash Sale group waits until his cart is open,
+  not before round 2 or behind the locked start shutter, and ends back at the shelf prices; the Discount Code halves the Sentry once and is
+  spent by that purchase, which is one Sentry (never the Pick); the Master Key and Signed Approval never apply). Air Horn input, cover, charge interruption, Mascot weight,
+  boss immunity and zero payout. Kevin's five sites (phase 4): each has one collider (a vaultable counter or >= 2.1 m),
+  a clear stand point zombies reach, no zombie spawn within `spawnClearance`, a real prompt there, and ducking measured
+  from that cart; the carts leave every spawn's route to the hub alone (no more than 3 m longer); he opens first in
+  the Hallway at round 2 and moves from round 3 with the PA naming the place (one line a round); 40 round starts with
+  part of the mall locked only ever open him in an open zone, always somewhere new, and with nowhere to go he stays;
+  a round that starts during a held buy waits for it (the site is already picked) and Play again puts him back.
 - `ballistics.test.js`: the Tennis Ball Launcher's bouncing ball alone: gravity's arc, a spent ball (time, bounces, too slow, `clear()` silent), a wall and the floor reflect it at the restitution, a zombie is hit for the gun's damage (head or body), the ball is sent on at the nearest other zombie in view (not through a wall), passes through the zombie it just hit to the one right behind, skips corpses, and the real mall's floor is solid to it.
 - `tennisBallLauncher.test.js`: the gun in the real game: claw-only (no wall price, the wall-buy feature refuses it), one pull is one ball and one shot, each zombie a ball touches is a hit (+10 each, one accuracy hit per throw, a kill pays), a ball in the air when you die is gone, THE ROLE (a lone zombie in the open is one hit a ball, a clump in a line is three or more times that, a lone zombie in the Service Corridor is hit again off the walls), the reload, upgrades, Play again.
 - `leafBlower.test.js`: the gun in the real game: claw-only (no wall price, the wall-buy feature refuses it even with a price), holding fire pulses and burns fuel, pushes and drops a close Shopper and only tickles it, pays the +10 only now and then and a kill when it kills, a boss isn't moved, the tank runs dry / locks / refills / unlocks, no reload, upgrades (Jumbo Pack = bigger tank, Speed Loader = quicker refill, Extended Nozzle = longer reach), a refill and Play again put everything back.

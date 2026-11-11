@@ -110,9 +110,19 @@ src/
                         { type: 'fall' } or { type: 'hazard', id } (a hazard that hurts the player needs a hazards entry).
     attachmentVisuals.js Per-weapon attachment sizing, near-side rail placement, short-barrel spans and held reload copies.
     retailUnease.js     Rare atrium display changes and localized back-room sound timings/ranges; no gameplay tuning.
-    kiosk.js            Kiosk Kevin (docs/kiosk-kevin-plan.md; phase 1 built): the equipment power curve (power: baseHealth 800, exponent 0.37), the throw
-                        (blockSeconds 0.4, lob, start offset), the two pockets, and the products: so far the Soda Bomb (Lethal, 3 charges, 1.8 s fuse,
-                        4 m blast, 850 x power at the centre, 0.3 of that at the edge, a boss's share 6% of its max health, its bottle projectile and look). productOf(id).
+    kiosk.js            Kiosk Kevin (docs/kiosk-kevin-plan.md; phases 1-7 built): his five sites (x, z, faces, floorY, the PA's `where`; the first is
+                        where every run starts), the cart's size, spawnClearance, the PA lines; the cart's three `slots` (Lethal: Soda Bomb /
+                        Sparkler Cake / Sentry, Bubble Wrap, Tactical: Air Horn / Glitter Bomb; each slot rotates round by round); the equipment
+                        power curve (power: baseHealth 800, exponent 0.37), the throw (blockSeconds 0.4, lob, start offset), the two pockets, and the
+                        products: the Soda Bomb (Lethal, 3 charges, 1.8 s fuse, 4 m blast, 850 x power at the centre, 0.3 of that at the edge, a boss's
+                        share 6% of its max health), the Sparkler Cake (Lethal, 2 charges; lands and sprays 4 s, a pulse every 0.5 s lights zombies within
+                        3 m: a 450 x power burn over 3 s, bosses at half), the Stadium Air Horn (Tactical, 2), the Glitter Bomb (Tactical, 2; opens on
+                        touch, confuses up to 8 zombies within 4 m for 6 s, their swings 75 x power), the SPIN-O-MATIC Sentry (Lethal, 1; noPick;
+                        turret: 30 s, a 58 x power body shot every 0.2 s at the nearest zombie in sight within 15 m, muzzle 0.95 m up, weaponId
+                        'sentry'), each with its projectile, sounds and look (look.model: bottle / cake / card / sentry). productOf(id),
+                        stockFor(round) (the three on sale), pickFor(round) (Kevin's Pick: the product on sale that has waited longest, never noPick).
+                        bubbleWrap: its ticket and the armour (layerStrength 30 a layer, maxLayers 3: player/stats.js starts the two stats from them).
+                        Prices: economy.kiosk (phase 7 set them from `npm run kiosk`).
     clawMachine.js      GRAB-A-GUN, the claw machine: the prize weights and capsule colours, the sweep (2.4 s, 0.2 s quicker a grab, 1.4 s
                         floor), auto-drop, lift and take times, stock (6 a site) and plush odds, the cabinet's size, its six sites and the
                         PA lines. Price: economy.claw (through g.pricing 'claw').
@@ -408,11 +418,25 @@ src/
                         one throw at a time; isBusy blocks the gun (gun.update's `blocked`) and the box cutter for blockSeconds; a throw cancels a reload;
                         refused while switching, vaulting, swinging, in a menu (the buttons aren't read there, so the menu keeps D-pad right) or dead.
                         updateThrown(dt) runs the fuses: the Soda Bomb bursts on every zombie in range and in view (takeHit source 'equipment':
-                        pays only through 'kill', never 'hit'; skips anything without a type or with noRewards, so never Sunny). live (fx/throwableView.js
-                        draws it), status (HUD), detonate(id, position) (tests), clearThrown() (death), reset() (the 'equipment' step, right after 'balls').
+                        pays only through 'kill', never 'hit'; skips anything without a type or with noRewards, so never Sunny). A product with
+                        `opens` settles when it lands ('touch': anything; 'floor': a floor; or where it stops, or after landSeconds): the Glitter Bomb
+                        opens (equipment/glitterBomb.js, 'equipmentBurst'), the Sparkler Cake stays in `live` and sprays (equipment/sparklerCake.js),
+                        the Sentry deploys ('sentryDeployed') and shoots (equipment/sentry.js) until its lifetime runs out ('sentryExpired'). One
+                        Sentry out at a time: a second throw is refused and keeps its charge (`sentry` = the one out, or null).
+                        targetsNear(point, radius, floorTolerance): zombies on that floor and in sight, nearest first. live (fx/throwableView.js
+                        draws it), status (HUD), detonate(id, position) (tests: a burst, an opening or a spray right there), clearThrown() (death),
+                        reset() (the 'equipment' step, right after 'balls'). Thrown things are never saved: only the pockets are.
     equipment/
       equipmentDamage.js equipmentPower(round) = (zombieHealthForRound / 800) ^ 0.37 (multiplies every equipment damage), blastFalloff (1 at
-                        the centre to edgeFraction at the radius), blastDamage(target, distance, blast, round) (a boss: its fixed share of max health).
+                        the centre to edgeFraction at the radius), blastDamage(target, distance, blast, round) (a boss: its fixed share of max health),
+                        burnDamage(target, spray, round) (the Sparkler Cake's burn; a boss x bossFactor), confusionDamage(confuse, round).
+      glitterBomb.js    openGlitterBomb({ product, point, targets, round, effects, sound }): up to maxTargets zombies confused through
+                        zombie.applyConfusion (Build-A-Blaster's Glitter path, source 'equipment'); bosses refuse it. Deals no damage itself.
+      sparklerCake.js   pulseSparklerCake({ product, point, targets, round, effects }): one pulse of sparks; each target burns through
+                        zombie.applyBurn (the Fryer Oil burn, source 'equipment'), a boss at half strength.
+      sentry.js         sentryTarget({ muzzle, turret, shootables, colliders }): the nearest zombie (alive, typed, not noRewards, not rising)
+                        within range with a clear line from the muzzle to its body; fireSentry(...): the hitscan (castShot) from the muzzle
+                        against zombies only, a body hit for turret.damage x power, source 'equipment', weaponId 'sentry'; a tracer and splat.
     pricing.js          createPricing(): priceOf('door'|'weapon'|'ammo'|'ammoCache'|'tier'|'attachment'|'closing', id) = economy.js base price with any
                         discount applied (setDiscount(category, 0..1), rounded to the nearest economy.discountRoundTo (10); discountOf; reset() on a new
                         run). Unknown category/id throws. PRICE_CATEGORIES
@@ -549,7 +573,12 @@ src/
                         forcePlush / moveNow (debug). The show (cfg.show, never the prize): prongs open and shut, the carried capsule swings,
                         the chute flap, an attract screen, sounds that fade with distance (jingle, a tick into each lane, motor, grab,
                         fanfare, Sunny's slide whistle) and a hum: an emitter it adds to map.ambience that follows the live machine.
-      kiosk.js          Kevin's fixed Hallway feature: three priced buy spots, round gating, Kevin's Pick, hiding and PA.
+      kiosk.js          Kiosk Kevin's cart: three priced buy spots on the LIVE cart (getter positions; each slot's product read live from
+                        stockFor(round): each slot rotates), round gating, Kevin's Pick (pickFor), hiding and PA (the round's stock).
+                        Five sites (config/kiosk.js sites), one live; every run starts at the first. At each 'roundStart' after the opening
+                        round he moves to a random other site whose zone is open (none: he stays), never mid-purchase (`pending` waits for
+                        the hold to end). Announces 'kioskStock' (one PA line a round, naming the place when he is new there) and
+                        'kioskMoved'. moveNow(siteId) (debug), serialize/restore (his site and a pending move: Save & Quit).
       clawSunny.js      Sunny runs away (built by clawMachine.js): out of the chute, a look round, a waddle along g.zombies.nav.pathTo to the
                         next site's front (open areas only; a lap round his own machine if no other site is open), into that cabinet, which
                         shakes (its rig group; colliders never move). His shootable (one body box) pops on any hit: stuffing and confetti,
@@ -569,7 +598,8 @@ src/
                         spawnMascot / spawnGoldMascot: each costume in turn at the spawn point nearest you);
                         Keyless 'challenge' adds/completes/clears one permanent challenge, marking assistance; clear relocks only its target.
                         resolve(code, shift), status(). g.debug. A new command = a table entry in config/debug.js + a function here.
-                        KEYLESS commands (no key to spare; keylessIds): 'pockets' fills Kiosk Kevin's equipment pockets (window.__mall.g.debug.run('pockets')).
+                        KEYLESS commands (no key to spare; keylessIds): 'pockets' fills Kiosk Kevin's equipment pockets (window.__mall.g.debug.run('pockets')),
+                        'kioskMove' moves Kevin now (run('kioskMove', 'parkingLot'), or no id for a random open site).
                         'skin' takes gunId and skinId ('default' clears); it marks the run assisted. Play again clears skin overrides.
                         God mode is health.invulnerable; Play again keeps it and the window state.
     rounds.js           createRounds(): announce(n, delay) flips the round number (and fires onRoundStart) the
@@ -696,7 +726,9 @@ src/
     mall/cinemaStairs.js Physical service stairs with a smooth ramp under visible treads, solid supports, handrails, two culling
                         rooms and the floor-to-floor nav link. Lower shutter (1500) opens cinema + serviceCorridor; the original
                         cinema shutter now opens cinema + upstairs. No real lights, guns or spawn markers added.
-    mall/kioskCart.js   Kevin's low counter, vendor, three buy spots and changing notices.
+    mall/kioskCart.js   buildKioskCart(kit, site) -> { position, stand, normal, slots, show(state, stock) }: one of Kevin's carts (a 1.05 m vaultable
+                        counter), built in its own frame and turned by `faces` (+z, -z, +x, -x); vendor, three buy spots, a notice strip
+                        (closed / away "BACK IN 5 MIN" / hiding / Kevin's Pick) and the product labels (redrawn when the stock changes) in a dynamic rig.
     mall/restockMachine.js buildRestockMachine({ kit, center, wallAt, facing, floorY = 0 }) -> { position, normal, screen }: the RESTOCK-O-MATIC
                         (north/south walls): body + hazard kick plate + glowing header and tagline, a lit window of ammo boxes, keypad,
                         card reader, live canvas screen (screen.show({ title, line, note, tone })), side signs, the AMMO blade sign, the
@@ -762,8 +794,10 @@ src/
     musicWorker.js      Web Worker that renders mallMusic once, off the main thread (inlined as a Blob worker in the single-file build).
   fx/
     ballView.js         Browser side only: draws `balls.list` (the Tennis Ball Launcher's balls) as a pool of tumbling tennis balls between last tick's and this tick's position (alpha).
-    throwableView.js    Browser side only: draws `equipment.live` (Kiosk Kevin's thrown things) as a pool of cola bottles: tumbling in the air, lying and
-                        rattling on the floor, swelling as the fuse runs out; a mesh is hidden when its item is gone; dispose() frees the pool.
+    throwableView.js    Browser side only: draws `equipment.live` (Kiosk Kevin's thrown things), one pool per look.model: the cola bottle (tumbling in the
+                        air, lying and rattling on the floor, swelling as the fuse runs out), the Sparkler Cake (spinning, then upright and jittering
+                        while it sprays), the Glitter Bomb card (flipping) and the Sentry (tumbling, then standing with its head turned to item.yaw);
+                        a mesh is hidden when its item is gone; dispose() frees the pools.
     closingKeyView.js   Reusable spinning key and signature props for the four closing pickups.
     powerUpView.js      Reusable delivery carton, blue beacon and security badge (no lights/colliders); bob/spin/blink,
                         floor-projected Blue Light ring clipped at walls/voids, hide on reset/death, owned-resource disposal
@@ -795,12 +829,13 @@ src/
                         the music worker (as a Blob worker) pasted into ONE html file; the Google Fonts link loads non-blocking so a blocked
                         network just falls back to system fonts; tests/singleFile.test.js builds it and checks it is self-contained); balance.js = gun balance maths shared with the tests (seeded Monte Carlo of each
                         gun's real spread + pellets vs a Shopper's hitboxes at a range: expectedShotDamage, sustainedDps, burstDps,
-                        shotsToKill); gunReport.mjs = `npm run balance`; meleeReport.mjs = `npm run melee` (swings to kill by round, plain box cutter vs the Customer Service tiers); gunSheet.html/.js = a contact sheet of one gun in eight upgrade states (`npm run dev`, /tools/gunSheet.html?gun=nailGun&view=left); babReport.mjs = `npm run balance:bab` (headless horde bot: plain gun vs warranty tiers vs builds); clawOdds.js = GRAB-A-GUN's odds
+                        shotsToKill); gunReport.mjs = `npm run balance`; meleeReport.mjs = `npm run melee` (swings to kill by round, plain box cutter vs the Customer Service tiers); kioskBalance.js = Kiosk Kevin's balance maths from the game's own config and functions (equipment power, Soda Bomb share and kill radius by round and zombie type, the Sparkler Cake's burn, the Sentry against the Price Gun, Bubble Wrap hits to death, damage per point against wall ammo, prices as a share of a round's measured income: ROUND_INCOME, copied from docs/economy-report.md); kioskReport.mjs = `npm run kiosk` prints it (tests/kioskBalance.test.js holds phase 7's bar on the same maths); gunSheet.html/.js = a contact sheet of one gun in eight upgrade states (`npm run dev`, /tools/gunSheet.html?gun=nailGun&view=left); babReport.mjs = `npm run balance:bab` (headless horde bot: plain gun vs warranty tiers vs builds); clawOdds.js = GRAB-A-GUN's odds
                         simulation (seeded; the game's own roll; perfect / 3-in-4 / random / timed presses; sites, plush closes, wall value,
                         points per specific gun vs its cheapest wall route); clawSim.mjs = `npm run sim:claw [price]` prints it (the plan's odds tables);
                         economySim.mjs = `npm run sim:economy` (docs/economy-report.md is written from its tables): plays the real game headless, many seeds in parallel
                         child processes, with economyBot.js (the bot: aims with error, kites, shops by TELEPORT from a buy order, immortal or mortal; records income by
-                        source, purchases and the loadout each round) following economyPlans.js (PLANS = buy orders; PROPOSALS = config changes applied in memory only,
+                        source, purchases and the loadout each round; a 'kiosk' step is a standing order: it buys from Kiosk Kevin every break with a share of what
+                        it has left and throws what it carries in a fight) following economyPlans.js (PLANS = buy orders, KIOSK = SENSIBLE with Kevin from round 2, the 'kiosk' run set; PROPOSALS = config changes applied in memory only,
                         so a before/after is measured without touching src/config), beside economyModel.js (the maths: wave mix, points a zombie, the upgrade ladder);
                         finished runs are kept in scratch/economy-sim/ (git-ignored) until the game's code or that plan changes; --quick for a short, noisy look;
                         challengeReport.mjs = `npm run sim:challenges` (weapon skins phase 8): plays economyBot.js (its onGame hook) once per gun the bot can use, that

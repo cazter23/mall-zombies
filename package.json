@@ -13,6 +13,7 @@
     "play": "node tools/play.mjs",
     "balance": "node tools/gunReport.mjs",
     "melee": "node tools/meleeReport.mjs",
+    "kiosk": "node tools/kioskReport.mjs",
     "sim:claw": "node tools/clawSim.mjs",
     "sim:economy": "node tools/economySim.mjs",
     "sim:challenges": "node tools/challengeReport.mjs",

@@ -4,6 +4,9 @@
 //   - aims with a turn-speed limit and a wandering error (a player, not an aimbot), fires when on target, reloads, swaps guns, knifes up close;
 //   - kites: stands and shoots while the crowd is far, steers away through walkable space when they are near, sprints out of a pinch;
 //   - SHOPS in the break from a buy order (tools/economyPlans.js), strictly in order: it saves for the next thing on the list.
+//     A 'kiosk' step is a standing order instead: from then on it also buys from Kiosk Kevin every break (after the list, with a share
+//     of what it has left), and in a fight it throws what it carries (useEquipment: a lethal into a crowd, the Sentry when a wave is
+//     up, the Air Horn when cornered, the Glitter Bomb into a crowd).
 // It measures the ECONOMY: points earned per round and where they came from, what was bought when, what is carried each round.
 //
 // WHAT IT IS NOT (say so wherever its numbers are quoted):
@@ -21,6 +24,7 @@ import * as THREE from 'three';
 import { headlessGame } from '../tests/helpers/headlessGame.js';
 import { tierOf, renewalsOf } from '../src/weapons/upgrades.js';
 import { buildOf } from '../src/config/workshop.js';
+import { productOf } from '../src/config/kiosk.js';
 import { weapons } from '../src/config/weapons.js';
 import { sustainedDps } from './balance.js';
 
@@ -86,6 +90,7 @@ export function runBot({ seed = 1, skill = 'average', plan = [], maxRound = 30, 
   const P = g.player;
   const feature = (pred) => g.map.features.find(pred);
   const claw = g.features.list.find(({ feature: f }) => f.kind === 'clawMachine')?.instance ?? null;
+  const kevin = g.features.list.find(({ feature: f }) => f.kind === 'kiosk')?.instance ?? null;
 
   // ---------------- bookkeeping ----------------
   const rounds = []; // one record per round
@@ -103,6 +108,7 @@ export function runBot({ seed = 1, skill = 'average', plan = [], maxRound = 30, 
       bank: g.wallet.points, // points in hand as the round begins (before its break's shopping)
       income: { hits: 0, kills: 0, bosses: 0, other: 0 }, // where the round's points came from
       kills: 0, headshotKills: 0, meleeKills: 0, damage: 0, hitsTaken: 0, deaths: 0, dry: 0,
+      kiosk: 0, thrown: 0, equipmentKills: 0, armourAbsorbed: 0, // Kiosk Kevin: points spent at his cart, items thrown, their kills, Bubble Wrap absorbed
       shots0: g.runStats.shotsFired, hit0: g.runStats.shotsHit, bought: [], loadout: loadout(), inHand: g.gun.def.id,
     };
     rounds.push(cur);
@@ -118,14 +124,17 @@ export function runBot({ seed = 1, skill = 'average', plan = [], maxRound = 30, 
   const claim = (bucket) => { if (cur) cur.income[bucket] += unclaimed; unclaimed = 0; };
   g.wallet.earn = (amount, style) => { claim('other'); if (amount > 0) unclaimed += amount; realEarn(amount, style); };
   g.events.on('hit', (hit) => { if (!hit.killed) claim('hits'); });
-  g.events.on('kill', ({ zombie, headshot, melee }) => {
+  g.events.on('kill', ({ zombie, headshot, melee, source }) => {
     claim(zombie?.type?.boss ? 'bosses' : 'kills');
     if (!cur) return;
     cur.kills++;
+    if (source === 'equipment') cur.equipmentKills++;
     if (headshot) cur.headshotKills++;
     if (melee) cur.meleeKills++;
   });
   g.events.on('playerHit', ({ damage }) => { if (cur) { cur.damage += damage; cur.hitsTaken++; } lastHitTick = tick; });
+  g.events.on('equipmentThrown', () => { if (cur) cur.thrown++; });
+  g.events.on('armourHit', ({ absorbed }) => { if (cur) cur.armourAbsorbed += absorbed; });
   const events = [];
   let bossesDefeated = 0;
   g.events.on('bossDefeated', () => { bossesDefeated++; });
@@ -272,6 +281,10 @@ export function runBot({ seed = 1, skill = 'average', plan = [], maxRound = 30, 
         const ok = g.wallet.totalSpent > spent;
         return { ok, done: ok, cost: g.wallet.totalSpent - spent };
       }
+      case 'kiosk': { // a standing order: from now on shopKevin runs every break (it is "done" on the list at once)
+        step.active = true;
+        return { done: true, logged: true };
+      }
       case 'claw': { // one grab per break while any of `grabs` are left; the step is done after the last
         step.left ??= step.grabs ?? 1;
         const r = playClaw();
@@ -286,7 +299,31 @@ export function runBot({ seed = 1, skill = 'average', plan = [], maxRound = 30, 
   }
 
   const todo = plan.map((s) => ({ ...s }));
+  const kioskOrder = todo.find((s) => s.type === 'kiosk') ?? null;
   let home = null;
+
+  // Kiosk Kevin (a 'kiosk' standing order): with up to `share` of the points in hand, what he has today in the order's preference,
+  // each as many times as it can be bought (Bubble Wrap: a layer a purchase). A pocket still holding another product is left alone.
+  function shopKevin(order) {
+    if (!kevin || !kevin.status.open || kevin.status.hiding) return;
+    let budget = Math.floor(g.wallet.points * (order.share ?? 1));
+    const stock = kevin.status.stock;
+    for (const id of order.products ?? stock) {
+      const slot = stock.indexOf(id);
+      if (slot < 0) continue;
+      const product = productOf(id);
+      const pocket = product ? g.equipment.pockets[product.pocket] : null;
+      if (pocket?.id && pocket.id !== id && pocket.count > 0) continue;
+      for (let n = 0; n < 3; n++) {
+        if (g.pricing.priceOf('kiosk', id) > budget) break;
+        const r = interactAt(kevin.site.cart.slots[slot].position, { kind: 'kiosk', id });
+        if (!r.ok) break;
+        budget -= r.cost;
+        bought(`kiosk:${id}`, r.cost);
+        if (cur) cur.kiosk += r.cost;
+      }
+    }
+  }
   function refillAmmo() { // a carried gun is low: its wall, or a RESTOCK-O-MATIC, whichever is cheaper and open
     for (const gunId of [...g.gun.slots]) {
       const w = g.gun.weaponFor(gunId);
@@ -314,6 +351,7 @@ export function runBot({ seed = 1, skill = 'average', plan = [], maxRound = 30, 
       if (r.done) { step.done = true; step.round = g.rounds.round; if (r.ok && !r.logged) bought(stepLabel(step), r.cost); if (step.type !== 'claw') continue; }
       break; // strict order: save for the next thing on the list
     }
+    if (kioskOrder?.active) shopKevin(kioskOrder);
     const b = base(g);
     if (b) back.set(b.x, b.y, b.z);
     P.teleport({ position: back, yaw });
@@ -323,7 +361,7 @@ export function runBot({ seed = 1, skill = 'average', plan = [], maxRound = 30, 
   // ---------------- combat ----------------
   let target = null, targetPart = 'body', retarget = 0;
   let errYaw = 0, errPitch = 0, errTimer = 0;
-  let moveDir = { x: 0, z: 0 }, panicUntil = 0, steerTimer = 0;
+  let moveDir = { x: 0, z: 0 }, panicUntil = 0, steerTimer = 0, throwWait = 0;
   const point = new THREE.Vector3();
   const liveThreats = () => g.zombies.zombies.filter((z) => z.isAlive && !z.noRewards);
 
@@ -404,6 +442,7 @@ export function runBot({ seed = 1, skill = 'average', plan = [], maxRound = 30, 
       P.pitch += Math.max(-step, Math.min(step, wantPitch - P.pitch));
       onTarget = Math.abs(wrap(wantYaw - P.yaw)) < S.fireCone * DEG && Math.abs(wantPitch - P.pitch) < S.fireCone * DEG;
     }
+    if (useEquipment(threats, nearestD, onTarget, dist)) return;
     // --- walk (world direction -> stick, relative to where it looks) ---
     if (wantMove && (moveDir.x || moveDir.z)) {
       const sin = Math.sin(P.yaw), cos = Math.cos(P.yaw);
@@ -426,6 +465,25 @@ export function runBot({ seed = 1, skill = 'average', plan = [], maxRound = 30, 
       if (!wantMove && dist > 5) input.held.add('Mouse2');
       if (tick % 2) { input.pressed.add('Mouse0'); input.held.add('Mouse0'); }
     }
+  }
+
+  // Kiosk Kevin's equipment, thrown along the view (it lobs): a Soda Bomb or Sparkler Cake at the zombie it is aiming at when two more
+  // stand within 3.5 m of it; the Sentry when four or more are up and one is within 14 m; the Air Horn when two are within 4 m; the
+  // Glitter Bomb like a lethal. One throw a second at most.
+  function useEquipment(threats, nearestD, onTarget, dist) {
+    if (!kioskOrder || g.equipment.isBusy || --throwWait > 0) return false;
+    const crowd = (p, r) => threats.filter((z) => z.state !== 'spawning' && Math.hypot(z.position.x - p.x, z.position.z - p.z) < r).length;
+    const aimedCrowd = target && onTarget && dist > 5 && dist < 13 && crowd(target.position, 3.5) >= 3;
+    const { lethal, tactical } = g.equipment.pockets;
+    let code = null;
+    if (tactical.count > 0 && tactical.id === 'airHorn' && crowd(P.position, 4) >= 2) code = 'Mouse1';
+    else if (tactical.count > 0 && tactical.id === 'glitterBomb' && aimedCrowd) code = 'Mouse1';
+    else if (lethal.count > 0 && lethal.id === 'sentry' && !g.equipment.sentry && threats.length >= 4 && nearestD < 14) code = 'KeyG';
+    else if (lethal.count > 0 && lethal.id !== 'sentry' && aimedCrowd) code = 'KeyG';
+    if (!code) return false;
+    input.pressed.add(code);
+    throwWait = TICKS_PER_SECOND;
+    return true;
   }
 
   // ---------------- run ----------------

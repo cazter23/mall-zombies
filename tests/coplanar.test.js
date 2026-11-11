@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import { buildMall, LAYOUT } from '../src/maps/mall/mall.js';
 import { storeRoom } from '../src/maps/mall/stores.js';
 import { clawMachine } from '../src/config/clawMachine.js';
+import { kiosk } from '../src/config/kiosk.js';
 
 const ctx = new Proxy({}, {
   get: (target, key) => (key in target ? target[key] : (target[key] = () => ctx)),
@@ -75,6 +76,11 @@ test('no coplanar (flickering) surfaces inside the stores, the Customer Service 
   for (const site of clawMachine.sites) { // GRAB-A-GUN's cabinets (mall/clawCabinet.js), with a margin round each
     const r = 1.9;
     regions.push({ name: `claw_${site.id}`, minX: site.back.x - r, maxX: site.back.x + r, minZ: site.back.z - r, maxZ: site.back.z + r,
+      minY: site.floorY - 0.1, maxY: site.floorY + 2.6 });
+  }
+  for (const site of kiosk.sites) { // Kiosk Kevin's carts (mall/kioskCart.js), with a margin round each
+    const r = 1.9;
+    regions.push({ name: `kiosk_${site.id}`, minX: site.x - r, maxX: site.x + r, minZ: site.z - r, maxZ: site.z + r,
       minY: site.floorY - 0.1, maxY: site.floorY + 2.6 });
   }
   { // the Prize Counter booth (mall/prizeCounter.js)

@@ -1,5 +1,10 @@
 # Sunset Galleria: build history ("Current state")
 
+## 11 November 2026 - Kiosk Kevin phases 4 to 7 merged into main
+
+- claude/kiosk-kevin-7 (five carts and the move, the Glitter Bomb and Sparkler Cake, the SPIN-O-MATIC Sentry, sales, vouchers and balance) merged into main. Its own entries are below, under their dates. Phase 8 (spectacle) is still to do.
+- Conflicts: docs only, and config/save.js, where both sides had bumped the save version for different reasons. It is now 7, which also covers what Lost and Found and the Return quest changed earlier today (new map features and a 'returnQuest' save step) and should have bumped then.
+
 ## 11 November 2026 - The Return: Return to Sender moves to a hidden quest, and the duties award labels
 
 - **The change (the user's idea).** Return to Sender is no longer sold at the Returns Desk for 10,000 once the three duties are done. It comes free from a hidden quest, in the style of a COD Zombies Easter egg. The duties stay required to win; each of the three working duties now awards a RETURN LABEL, a variant of the gun's behaviour, fitted at the desk. The claw machine still pays the gun out (weight 1 of 115, unchanged), so the quest is by far the easier way.
@@ -103,6 +108,64 @@
   A load restores the saved stats as they are and never applies it again; tests/overtime.test.js checks a save in overtime round 3 comes back with the same pay.
 - **Shopper health, win at round 15 (first overtime round 16):** overtime round 1 (round 16) 1,281 vs 1,244 normal; round 5 (round 20) 1,927 vs 1,662; round 10 (round 25) 3,207 vs 2,386.
 - Shared files: createGame.js, zombies/zombieManager.js, config/closingTime.js, game/closingTime.js, docs. New: tests/overtime.test.js.
+## 11 November 2026 - Kiosk Kevin, phase 7: sales, vouchers and balance
+
+Phase 7 of docs/kiosk-kevin-plan.md, built on `claude/kiosk-kevin-7`: cut from `claude/kiosk-kevin-6` (phases 4 to 6) with main merged in
+(pattern skins, the test runner's cap and lock). Save version 5: main's 4 (challenge counters) and this branch's 4 (Kevin's carts and the
+skins) are different shapes, so both together are a new number.
+
+- **`npm run kiosk`** (tools/kioskReport.mjs; its maths in tools/kioskBalance.js, read straight from config and the game's own functions):
+  equipment power by round, Soda Bomb share and kill radius by round and zombie type, the Sparkler Cake's burn, the Sentry against the
+  Price Gun, Bubble Wrap hits to death, damage per point against wall ammo, and every price as a share of what a round pays (the good
+  bot's measured income, copied from docs/economy-report.md section 2 as ROUND_INCOME).
+- **The bar it set** (tests/kioskBalance.test.js): no must-buy at round 2 = each product costs at least 40% of what round 2 pays (904),
+  and no pocket thrown into crowds of four deals more per point than the Price Gun's own wall ammo at any round; the Soda Bomb at round
+  25 = 40 to 60% of a Shopper at the centre, a Shopper's worth from a crowd, a pocket at most 5% of the round; Bubble Wrap = a full wrap
+  absorbs less than the player's health and less than doubles Shopper hits to death (the maths is checked against the real health).
+- **What changed from it:** the **Soda Bomb 300 -> 500** (300 was 33% of round 2, and past round 10 a pocket into crowds dealt more per
+  point than Rivet Rifle ammo: 20.8 against 18.2 at round 15, 27.2 at round 25; now 12.5 and 16.3). **A Bubble Wrap layer 40 -> 30**: a
+  full wrap absorbed 120% of your health and took Shopper hits to death from 3 to 6, exactly double; now 90% and 3 to 5. Mascot hits (50)
+  and a Cart Pusher's charge (60) still go 2 to 4: whole hits are lumpy, and holding those under double would need a layer of about 15.
+  The two armour numbers moved from player/stats.js into config/kiosk.js bubbleWrap (layerStrength, maxLayers). Everything else stays:
+  Bubble Wrap and the Air Horn 500, the Sparkler Cake 400 (44% of round 2; a throw takes about what a Soda Bomb's does), the Glitter Bomb
+  750, the Sentry 1,500 (166% of round 2; 13% of round 25; 0.42x a Price Gun's dps at round 2, level with it at round 25). The exponent
+  0.37 stays: the Soda Bomb's centre is 53% of a Shopper at round 25, inside the plan's 40 to 60%.
+- **Not done:** prices that climb with the round (the economy report's other option). At round 25 a Soda Bomb pocket is 4% of the round;
+  what limits Kevin late is the pocket (one kind, 1 to 3 charges) and walking back to his cart, which moves every round.
+- **Flash Sale and vouchers.** The 'kiosk' Flash Sale group and its eligibility (only while his cart is open and he is not ducking)
+  came with phase 3; this phase adds the checks: no Kevin sale in round 1 or while his site is behind the locked start shutter, prices
+  back on the shelf when it ends; the Discount Code takes 750 off a Sentry and is spent by that one purchase (one Sentry, never the Pick);
+  the Master Key and Signed Approval never apply. Purchases spend the voucher through the 'purchase' event (kind 'kiosk'), as before.
+- **The economy bot buys from Kevin** (tools/economyBot.js): a `{ type: 'kiosk', share, products }` step is a standing order. From that
+  point on, every break, after the buy order, it spends up to `share` of the points in hand at his cart in the order's preference (a
+  pocket still holding another product is left alone), and in a fight it throws: a lethal at the zombie it aims at when two more stand
+  within 3.5 m of it, the Sentry when four are up and one is within 14 m, the Air Horn when two are within 4 m, the Glitter Bomb like a
+  lethal. The KIOSK buy order (tools/economyPlans.js) is SENSIBLE with Kevin from the moment the shutter is open, half of what is in hand.
+  economySim.mjs plays it as the 'kiosk' run set (immortal and mortal), with a table by round (spent at Kevin, thrown, equipment kills,
+  Bubble Wrap absorbed, deaths beside SENSIBLE), income and time with and without him, and when the power purchases land.
+- **`npm run sim:economy -- --quick`, before and after** (4 workers; 80 runs each; all finished; too few seeds to quote, as the tool says):
+
+  | | Before (Soda 300, layer 40) | After (Soda 500, layer 30) |
+  |---|---|---|
+  | KIOSK: spent at Kevin, rounds 1-10 (a run) | 2,600 | 950 |
+  | KIOSK: bought a run | Bubble Wrap 4.5, Sparkler Cake 0.5, Soda Bomb 0.5 | Bubble Wrap 1.5, Sparkler Cake 0.5 |
+  | KIOSK: earned by round 10 / SENSIBLE | 22,495 / 24,550 | 22,070 / 22,395 |
+  | KIOSK: first build, first Premium (round) | 7.5, 8.5 | 7.0, 8.0 (SENSIBLE: 7, 8 both times) |
+  | KIOSK mortal (4 runs): died in round, mean; reached 10 | 9.0; 50% | 10.5; 100% |
+  | SENSIBLE mortal good (4 runs): died in round, mean; reached 10 | 8.8; 50% | 9.0; 75% |
+
+  SENSIBLE never buys from Kevin, so its rows moving (24,550 to 22,395 by round 10) is the sim's run-to-run noise (docs/economy-report.md
+  section 1), and so is most of the mortal rows. What the change does show: at 300 the bot's leftover half-bank bought from Kevin most
+  breaks from round 5 and its first build came half a round later; at 500 it bought from him about a third as often and lost nothing on the
+  route. Neither run shows Kevin as a must-buy: with him the one-life runs did no worse, and four seeds cannot say better.
+- **Browser check** (production build, vite preview of the worktree): at round 2 in the Hallway the cart's prompt read "Kevin's Pick ·
+  Soda Bomb" at 500; holding F paid 500 for four bombs (the Pick), then 500 for one Bubble Wrap layer of 30 (one segment on the HUD); a
+  Flash Sale started on Kevin's cart (40% off) and the wrap's prompt showed 500 crossed to 300. No console errors; browser storage left empty.
+- **Tests:** test:quick picked all 161 files (the full suite): 1,429 passed. Build clean.
+- **Not checked:** a full (non-quick) sim; playing Kevin's products by hand for feel.
+- New: tools/kioskBalance.js, tools/kioskReport.mjs, tests/kioskBalance.test.js. Shared files changed: src/config/economy.js (economy.kiosk),
+  src/config/save.js (the merge), src/player/stats.js, src/config/kiosk.js, package.json (`kiosk`), CLAUDE.md (the command),
+  tools/economyBot.js, tools/economyPlans.js, tools/economySim.mjs, tests/kiosk.test.js, docs (plan, economy report, folder-structure, tests).
 
 ## 11 November 2026 - One big test run at a time, and AGENTS.md / GEMINI.md
 
@@ -166,6 +229,102 @@
 - **The screen** (ui/guide.js) follows the locker: plain DOM, its own small WebGL preview made on open and freed on close. The preview is the real Zombie with its real model, walking on the spot. ui/screens.js now treats the locker and the guide alike (`books`).
 - Developer shortcut: `g.guide.debug('mallWalker', 'add', 25)`, `'see'`, `'complete'`, `'clear'` (not in g.debug.run, to keep out of game/debugCommands.js while skins phase 6 is open).
 - Shared files: game/createGame.js (the system, one reset step, one transient step, the PA list), game/events.js (one event), main.js, ui/screens.js, ui/hud.js, ui/retail.css, docs. Branch claude/survival-guide.
+
+## 10 November 2026 - Kiosk Kevin, phase 6: the SPIN-O-MATIC Sentry
+
+Phase 6 of docs/kiosk-kevin-plan.md, built on `claude/kiosk-kevin-6`: cut from `claude/kiosk-kevin-5` (phases 4 and 5) with main merged
+in (weapon skins), so the Sentry's kills can carry their weaponId.
+
+- **The merge.** Main's weapon skins gave `applyBurn` and `applyConfusion` a fourth argument, `weaponId`; phase 5 had given them
+  `source`. They now take both: `(..., weaponId = null, source = 'build')`; the burn keeps both from whichever burn supplies the
+  damage. The Glitter Bomb and Sparkler Cake pass `(null, 'equipment')`. config/save.js version 4: main and the kiosk branch had each
+  bumped it to 3 for different changes.
+- **The Sentry** (game/equipment/sentry.js, config/kiosk.js products.sentry): Lethal, 1 charge, 1,500. Thrown like the rest; where it
+  first touches the floor (or stops) it stands up ('sentryDeployed'), and for 30 s fires every 0.2 s at the nearest zombie within 15 m
+  that it can see from its muzzle (0.95 m up): a clear line from the muzzle to the zombie's body, never Sunny, dummies, the dead or a
+  rising zombie. The shot is the hitscan (castShot) from its own muzzle against zombies only, so Sunny can't soak one up. Each shot is
+  a body hit of 58 x equipmentPower(round) (a Price Gun sticker, at under half a held Price Gun's rate; it can't aim, so no headshot
+  pay or helmet bonus), source 'equipment', weaponId 'sentry'; bosses are hit normally. It looks for a target only when it's ready to
+  fire, so the line-of-sight rays stay cheap. Then it falls apart ('sentryExpired'). One out at a time: a second throw is refused
+  and keeps its charge. No collider (zombies walk through it; nothing can target it). It stops when paused or dead (the equipment
+  tick doesn't run) and death and Play again clear it. Save & Quit drops it: thrown things are transient; the pockets come back as of
+  the round's start.
+- **Selling it (the user's choices):** the Lethal slot rotates Soda Bomb, Sparkler Cake, Sentry, and Kevin's Pick is now the product
+  on sale that has waited longest for it (never the Sentry: `noPick`), because the Lethal slot's three-round cycle would otherwise
+  line up with the Pick's and lock it onto the Soda Bomb. Rounds 2 to 7: Pick Soda Bomb, Sparkler Cake, Bubble Wrap (the Sentry's
+  round), Glitter Bomb, Stadium Air Horn, Bubble Wrap.
+- **View and HUD:** fx/throwableView.js draws a display stand with a staple gun whose head turns to its target (spinning while it
+  hunts); a pocket icon. Phase 8 does the real model.
+- **Checked:** tests/sentry.test.js (6 new tests), tests/saveGame.test.js (a save with a Sentry out loads without one), tests/kiosk.test.js
+  (the purchase test buys all six). In the browser (worktree build): thrown with G in the Hallway it landed and stood up by the Food
+  Court gate; three Shoppers in front of it took 43.6 a shot (58 x the round-4 power) and died, each kill 'equipment' / 'sentry' and
+  paid its 60 only; Shoppers behind the shut Food Court shutter were never shot; no console errors. The Sparkler Cake's boss test now compares the burn ticks as dealt: after the merge the guard's
+  own damage multiplier changes during the test, which made the health-lost ratio drift (the burn itself was still exactly half).
+- Shared files changed: src/zombies/zombie.js and src/zombies/confusion.js (merge), src/config/save.js, src/config/economy.js (the
+  Sentry's price), src/game/events.js ('sentryDeployed', 'sentryExpired'), src/ui/retail.css, docs (folder-structure, tests, the plan).
+
+## 10 November 2026 - Kiosk Kevin, phase 5: the Glitter Bomb and the Sparkler Cake
+
+Phase 5 of docs/kiosk-kevin-plan.md, built on `claude/kiosk-kevin-5` (cut from `claude/kiosk-kevin-4`, which it builds on). The Air Horn
+was already built; this adds the other two products.
+
+- **Selling them (the user's choice):** the cart keeps its three slots. The Lethal slot alternates Soda Bomb / Sparkler Cake round by
+  round from round 2, the Tactical slot Air Horn / Glitter Bomb, Bubble Wrap is always there (config/kiosk.js `slots`, stockFor,
+  pickFor). No randomness, so nothing new to save. Kevin's Pick moves along the slots, so every product is the Pick within six rounds.
+  The buy spots read their product live; the cart's product labels became one canvas strip in its dynamic rig, redrawn when the
+  stock changes. The PA line now names the round's three products. Prices: Sparkler Cake 400 (2), Glitter Bomb 750 (2): starting points.
+- **The Glitter Bomb** (game/equipment/glitterBomb.js): opens where it first touches anything; up to 8 zombies within 4 m (in sight,
+  nearest first) are confused for 6 s through `zombie.applyConfusion`, the SAME path as Build-A-Blaster's Glitter (zombies/confusion.js),
+  not a second one. Their swings at each other are 75 x equipmentPower(round). Bosses refuse it (the method's own boss check).
+- **The Sparkler Cake** (game/equipment/sparklerCake.js): lands on the floor and sprays for 4 s; every 0.5 s each zombie within 3 m (in
+  sight, on its floor) is lit through `zombie.applyBurn`, the Fryer Oil burn: 450 x power over 3 s, a boss at half (equipmentDamage.js
+  burnDamage). Burns don't stack, so standing in it keeps one burning.
+- **Shared change:** `applyConfusion` and `applyBurn` take an optional `source` (default 'build', so Build-A-Blaster is unchanged); the
+  products pass 'equipment', so their kills are equipment kills. Nothing pays 'hit' (no +10), the meter ignores them, and the gold Mascot's
+  guaranteed power-up already drops whatever kills it (powerUps.js reads only the type): checked for a cake burn and a confused zombie.
+- **Throwing:** equipment.js gained `opens` ('touch' / 'floor', or wherever it stops, or after landSeconds), targetsNear and a spraying
+  state; `detonate(id, position)` now opens or lands any thrown product (tests). Thrown things stay transient: only the pockets are saved.
+  fx/throwableView.js draws a pool per look.model (bottle, cake, card); the HUD has a cake icon and colours for both.
+- **Checked:** tests/equipmentStatus.test.js (9 new tests) and tests/kiosk.test.js (the purchase test now buys all five through real
+  input). In the browser (worktree build): the cart's labels and the PA show the round's three; a thrown cake lands and sprays, four
+  Shoppers burn down with only the kill value paid; a thrown card confuses four Shoppers; no console errors. Found while testing: a
+  card that opens in the air (on a zombie's chest) caught nobody, because the floor check compared feet to the card's height; it now
+  takes any point from a zombie's feet to its head (plus the tolerance), with a test for it. And a Mascot placed with speed 0 has NaN
+  hitboxes headless (its pose divides by its speed), so the tests place zombies at a crawl; a real Mascot always moves.
+- Shared files changed: src/zombies/zombie.js and src/zombies/confusion.js (the optional source), src/config/economy.js (two kiosk
+  prices), src/game/events.js (docs of two events), src/ui/retail.css, docs (folder-structure, tests, the plan).
+
+## 10 November 2026 - Kiosk Kevin, phase 4: five carts and the move
+
+Phase 4 of docs/kiosk-kevin-plan.md, built on `claude/kiosk-kevin-4`. The stock is unchanged (always Soda Bomb, Bubble Wrap and Air Horn;
+the Pick cycles), so only WHERE he sells changes.
+
+- **Five carts** (config/kiosk.js `sites`; maps/mall/kioskCart.js builds one per site in its own frame, turned by `faces`): the Hallway
+  (unchanged, the first site), the Food Court (x -4.3..-2.1, z -6.9..-6.1, facing the gate: west of the door lane and 4.6 m clear of the
+  Fryer Blast's grease apron, more than the 2 m asked), the Grand Atrium (the south arcade's corner west of the Hallway gate), the Sunset
+  Promenade's east lounge (between the south benches and the plinth, facing the Atrium link) and Customer Parking (bay 1, against the
+  family van's east side, facing +X). Each is the same 1.05 m vaultable counter; the live one has Kevin, the others say BACK IN 5 MIN.
+  Every site's slot is in the scatter-clear list (clutter keeps 2 m away), next to the claw's.
+- **Changed from the plan:** the Atrium site was to be the CELL-OUT kiosk, but its front is 4.7 m from the west vent spawn (the rule is
+  5 m), its back is no better and its east face is inside the Electrified Fountain's 7 m apron. The Food Court cart is not in the
+  centre aisle: that is the door lane (x -2..2) with the tree planter in it, and the stall side is the Fryer's.
+- **The move rule** (game/features/kiosk.js): at each 'roundStart' after the opening round (so from round 3) he moves to a random OTHER
+  site whose zone is open; with none, he stays (a 'kioskMoved' with moved false). Never into a locked zone (moveNow refuses one too).
+  Never mid-purchase: if a buy on his cart is being held (the prompt is a kiosk item with progress > 0), the site is picked right then
+  and he moves the tick the hold ends (`status.pending`). The buy items' positions are getters on the live cart.
+- **PA:** still one 'kioskStock' line a round when he first sells in it, now naming the place when he is new there: "Kevin's cart is open
+  in {where}." the first time (and after a load), "Kevin's cart is now in {where}. He's asked us to say it's a limited time only." after
+  a move, then "Kevin's Pick is {pick}." (lines in config/kiosk.js `pa`; `where` per site). New event 'kioskMoved' { siteId, area, moved }.
+- **Save & Quit:** the kiosk feature now saves { siteId, pendingId } (serialize/restore), so a loaded run reopens him where he stood at
+  the round's start (the snapshot is taken after the roundStart listeners, so that round's move is in it). config/save.js version 3.
+- **Debug:** keyless `g.debug.run('kioskMove', siteId?)`.
+- **Checked** (tests/kiosk.test.js, 5 new tests; tests/saveGame.test.js, 1 new; tests/coplanar.test.js now has a region per site):
+  each site has one collider (a vaultable counter), a clear stand point zombies reach, no spawn within 5 m, a real prompt from its front,
+  ducking from that cart; the carts leave every spawn's route to the hub within 3 m of what it was; opens first in the Hallway at round 2,
+  moves at round 3; 40 round starts with part of the mall locked only ever open him in an open zone, always somewhere new; a round that
+  starts during a held buy waits for it; Play again puts him back; a load keeps the round-start site, not a mid-round move.
+- Shared files changed: src/maps/mall/mall.js (the carts, the feature entry, the clear list), src/config/save.js, src/game/events.js,
+  src/game/debugCommands.js, tests/coplanar.test.js, tests/saveGame.test.js, docs (map, folder-structure, tests, the plan).
 
 ## 10 November 2026 - Weapon skins: three fixes from the review of phases 1 to 5
 

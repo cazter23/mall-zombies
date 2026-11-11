@@ -1,7 +1,8 @@
 // =============================================================================
 // CONFUSION (Build-A-Blaster's Glitter): a confused zombie forgets the player, walks at the nearest other zombie on its floor and hits it.
 // While it lasts the zombie's own update hands over to updateConfusion below, so it can't swing at the player or charge. It uses the same
-// windup and swing states as a normal attack, so the model plays the normal animation. Its hits go through takeHit with source 'build': a kill
+// windup and swing states as a normal attack, so the model plays the normal animation. Its hits go through takeHit with the dose's source
+// ('build', or 'equipment' for Kiosk Kevin's Glitter Bomb): a kill
 // pays once on the 'kill' event, and no Heart counts it.
 // Numbers: config/zombies.js zombieConfusion. How long and how hard come from the stuffing (zombie.applyConfusion).
 // =============================================================================
@@ -59,7 +60,7 @@ export function updateConfusion(zombie, dt, ctx) {
       zombie.setState('swing');
       if (target && zombie.canHit(asTarget(target)) && !zombie.wallBetween(asTarget(target), ctx.colliders)) {
         target.stuffedBy = zombie.stuffedBy; // (its kill belongs to the gun that confused this one)
-        target.takeHit({ damage: state.damage, part: 'body', source: 'build', weaponId: state.weaponId });
+        target.takeHit({ damage: state.damage, part: 'body', source: state.source ?? 'build', weaponId: state.weaponId });
       }
     }
     return;

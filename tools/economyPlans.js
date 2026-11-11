@@ -10,8 +10,11 @@
 //   { type: 'wardrobe', id }                   an apparel item
 //   { type: 'attachment', gun, id }            a store attachment for that gun
 //   { type: 'claw', grabs }                    GRAB-A-GUN, one grab a break until `grabs` are used
+//   { type: 'kiosk', share, products }         Kiosk Kevin, a STANDING ORDER: from this point on, every break, after the list, it spends up to
+//                                              `share` of the points in hand at his cart on whatever of `products` he has (in that order),
+//                                              and it throws what it carries in a fight (tools/economyBot.js useEquipment)
 //   any step: fromRound (not before this round), afterBosses (not before this many bosses are beaten)
-// A new buyable (Kiosk Kevin's cart, a hazard switch) = a step type in the bot's tryStep and steps here.
+// A new buyable (a hazard switch) = a step type in the bot's tryStep and steps here.
 //
 // PROPOSALS: named sets of config changes that are NOT in src/config. The sim applies one in memory (applyOverrides) in the process
 // that plays the run, so a proposal's "after" numbers are measured while the game's real numbers stay as they are. A path is a config
@@ -77,10 +80,17 @@ export const CLAW_FIRST = [
   { type: 'gun', id: 'priceGun' }, { type: 'door', area: 'hallway' }, { type: 'claw', grabs: 2 },
   ...SENSIBLE.slice(2),
 ];
+// SENSIBLE, and Kiosk Kevin every break from the moment the shutter is open (half of what is in hand after the list): what does Kevin
+// cost the route, what does he give back in survival, and how much does he soak up late (docs/kiosk-kevin-plan.md, phase 7)?
+export const KIOSK = [
+  ...SENSIBLE.slice(0, 2),
+  { type: 'kiosk', share: 0.5, products: ['bubbleWrap', 'sentry', 'sodaBomb', 'sparklerCake', 'glitterBomb', 'airHorn'] },
+  ...SENSIBLE.slice(2),
+];
 // Buys nothing but the shutter: how far does the starting kit go?
 export const NOTHING = [{ type: 'door', area: 'hallway' }];
 
-export const PLANS = { SENSIBLE, PRICE_GUN_ONLY, NO_BAB, BAB_AFTER_PREMIUM, CLAW_FIRST, NOTHING };
+export const PLANS = { SENSIBLE, PRICE_GUN_ONLY, NO_BAB, BAB_AFTER_PREMIUM, CLAW_FIRST, KIOSK, NOTHING };
 
 // ---------------------------------------------------------------------------------------------------------------------------------
 // PROPOSALS (docs/economy-report.md, "Proposals"). Change the numbers here to try others.

@@ -48,7 +48,9 @@
 //                                                        damage is BEFORE clothes: createGame's listener applies stats.damageTakenMultiplier
 //   'playerFall'  { drop, damage }                       a landing from a height hurt (feel.fall); damage is already taken
 //   'armourHit'   { absorbed, layers, popped }            Bubble Wrap absorbed damage from a zombie hit
-//   'kioskStock'  { pick, pa }                           Kevin's fixed cart opened or its Pick changed
+//   'kioskStock'  { siteId, stock, pick, pa }            Kevin's cart opened for the round (or after a move): where he is, the round's
+//                                                        three products and his Pick
+//   'kioskMoved'  { siteId, area, moved }                Kevin's site at a 'roundStart' (moved false: he stays where he is); area = the PA's name
 //   'regenStart'  {}                                     health began climbing back (once per recovery: player/health.js)
 //   'secondChance' { status }                            Second Chance changed (game/secondChance.js): 'held' = bought at Customer Service,
 //                                                        'used' = it just covered a lethal hit (the player is already back at full health,
@@ -131,8 +133,12 @@
 //   'sunnyPopped' { siteId }                             shot or slashed: stuffing everywhere, tickets paid, the next site re-picked
 //   'equipmentThrown' { id, pocket, left }               a pocket's item was thrown (game/equipment.js; pocket 'lethal' | 'tactical',
 //                                                        left = charges still in it)
-//   'equipmentBurst'  { id, position, radius, hit }      a thrown Soda Bomb burst; hit = [{ target, damage, killed }]. Equipment
+//   'equipmentBurst'  { id, position, radius, hit }      a thrown Soda Bomb burst, or a Glitter Bomb opened (damage 0: hit = the
+//                                                        zombies it confused); hit = [{ target, damage, killed }]. Equipment
 //                                                        damage never emits 'hit' (no +10): its kills pay through 'kill', source 'equipment'
+//   'sentryDeployed'  { position }                       a thrown SPIN-O-MATIC Sentry landed and stood up (game/equipment.js); its kills
+//                                                        carry weaponId 'sentry'
+//   'sentryExpired'   { position }                       its lifetime ran out and it fell apart (death and Play again just clear it)
 //   'challengeProgress' { gunId, skinId, count, needed }  a challenge counter changed (game/challenges.js)
 //   'skinUnlocked' { gunId, skinId, pa }                  a skin was earned; PA and HUD toast listen here
 //   'challengeLive' { gunId, skinId, value, needed, failed }  a feat's attempt in progress changed (game/challenges.js): value = how it

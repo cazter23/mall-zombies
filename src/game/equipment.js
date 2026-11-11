@@ -8,7 +8,12 @@
 //   the gun for kiosk.throw.blockSeconds (createGame passes isBusy into gun.update's `blocked`) and cancels a reload, like a
 //   box-cutter swing. Refused while switching guns, vaulting, swinging, in a menu (state.menu) or dead.
 //   Thrown things fly on `throwables` (weapons/ballistics.js with zombies: 'bounce': they bounce off zombies without hurting
-//   them) and do their job when their fuse runs out (the Soda Bomb: a blast, game/equipment/equipmentDamage.js).
+//   them) and do their job when their fuse runs out (the Soda Bomb: a blast, game/equipment/equipmentDamage.js) or when they
+//   land (product.opens: 'touch' = the first thing it touches, 'floor' = the first floor; or wherever it stops, or after
+//   product.landSeconds): the Glitter Bomb opens (game/equipment/glitterBomb.js), the Sparkler Cake sits and sprays for a
+//   while (game/equipment/sparklerCake.js), the SPIN-O-MATIC Sentry stands up and shoots for its lifetime
+//   (game/equipment/sentry.js; one out at a time: a second can't be thrown while one is out). The Air Horn isn't thrown: it
+//   sounds at once. Nothing thrown is ever saved (Save & Quit keeps only the pockets, as of the round's start).
 //   Equipment damage goes through zombie.takeHit({ source: 'equipment' }), so a kill pays through 'kill' like any other. It
 //   never emits 'hit' (no +10, no boss onHit reactions) and skips anything that isn't a zombie (no `type`) or pays nothing
 //   (`noRewards`: Sunny, fans).
@@ -20,9 +25,12 @@
 //   equipment.update(dt, { inMenu })   the buttons and the throw timer (before the gun; in a menu the buttons aren't read,
 //                                      so the menu keeps D-pad right)
 //   equipment.updateThrown(dt)  fuses and bursts (after throwables.update, so it bursts where the bottle is now)
-//   equipment.detonate(id, position)   burst a product there now (tests)
+//   equipment.detonate(id, position)   a product does its job there now, as if it had landed there (tests): a Soda Bomb bursts,
+//                                      a Glitter Bomb opens, a Sparkler Cake starts spraying, a Sentry is deployed
+//   equipment.sentry            the Sentry that is out (a live item, deployed or still in the air), or null
 //   equipment.clearThrown()     every thrown thing gone (death; Play again)
-//   equipment.live              thrown things still out: { id, position, previous, age, flying, removed } (fx/throwableView.js draws them)
+//   equipment.live              thrown things still out: { id, position, previous, age, flying, settled, spraying, removed }
+//                               (fx/throwableView.js draws them; a Sparkler Cake stays in it while it sprays)
 //   equipment.pockets           { lethal: { id, count }, tactical: { id, count } } (id null = empty)
 //   equipment.status            for the HUD: { busy, lethal: { id, name, count }, tactical: { ... } }
 //   equipment.isBusy            mid-throw (the gun and the box cutter wait)
@@ -33,6 +41,9 @@ import * as THREE from 'three';
 import { kiosk, productOf } from '../config/kiosk.js';
 import { castShot } from '../weapons/hitscan.js';
 import { blastDamage } from './equipment/equipmentDamage.js';
+import { openGlitterBomb } from './equipment/glitterBomb.js';
+import { pulseSparklerCake } from './equipment/sparklerCake.js';
+import { sentryTarget, fireSentry } from './equipment/sentry.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 const UP = new THREE.Vector3(0, 1, 0);
@@ -68,6 +79,7 @@ export function createEquipment({
     const pocket = pockets[pocketId];
     const product = productOf(pocket.id);
     if (!product || pocket.count <= 0 || !canThrow()) return false;
+    if (product.turret && sentryOut()) return false; // (one Sentry at a time: the charge stays in the pocket)
     pocket.count -= 1;
     const id = pocket.id;
     if (pocket.count === 0) pocket.id = null;
@@ -80,17 +92,116 @@ export function createEquipment({
     throwDirection(aim);
     const start = eye.clone().addScaledVector(aim, kiosk.throw.startOffset);
     start.y -= kiosk.throw.startDrop;
-    const item = { id, product, position: start.clone(), previous: start.clone(), age: 0, flying: true, removed: false, ball: null };
+    const item = newItem(id, product, start);
     item.ball = throwables.launch({
       position: start,
       direction: aim,
       projectile: product.projectile,
-      onBounce: ({ ball }) => { if (ball.velocity.length() > 3) sound?.play(product.sounds.bounce, { volume: 0.6 }); },
+      onBounce: ({ ball, normal, target }) => {
+        if (ball.velocity.length() > 3) sound?.play(product.sounds.bounce, { volume: 0.6 });
+        // It lands: on anything ('touch'), or on a floor ('floor': a surface facing up, not a wall or a zombie).
+        if (product.opens === 'touch' || (product.opens === 'floor' && !target && normal.y > 0.5)) item.landed = true;
+      },
     });
     live.push(item);
     sound?.play(product.sounds.throw);
     events.emit('equipmentThrown', { id, pocket: pocketId, left: pocket.count });
     return true;
+  }
+
+  const newItem = (id, product, position) => ({
+    id, product, position: position.clone(), previous: position.clone(), age: 0, flying: true, removed: false, ball: null,
+    landed: false, settled: false, spraying: false, sprayLeft: 0, pulseTimer: 0,
+    deployed: false, lifeLeft: 0, fireTimer: 0, muzzle: null, yaw: 0, hunting: true, lastShot: null, // (a Sentry)
+  });
+
+  // Zombies whose nearest hitbox is within `radius` of `point`, on its floor and in sight of it, nearest first (a snapshot:
+  // a kill listener can change the list of targets). "On its floor": the point is no further than floorTolerance below a
+  // zombie's feet or above its head (a card that opens on a zombie's chest is on that zombie's floor; one floor up is not).
+  function targetsNear(point, radius, floorTolerance) {
+    const found = [];
+    for (const target of shootables) {
+      if (!target.isAlive || !target.type || target.noRewards) continue; // (only zombies: never Sunny, fans or dummies)
+      const above = point.y - target.position.y;
+      if (above < -floorTolerance || above > (target.type.height ?? 2) + floorTolerance) continue;
+      const distance = distanceTo(target, point);
+      if (distance > radius || !inView(point, target)) continue;
+      found.push({ target, distance });
+    }
+    return found.sort((a, b) => a.distance - b.distance).map((entry) => entry.target);
+  }
+
+  // A thrown thing that opens on landing has landed (or stopped, or run out of time): it stays where it is and does its job.
+  function settle(item) {
+    item.settled = true;
+    item.flying = false;
+    if (item.ball) item.ball.alive = false;
+    item.ball = null;
+    const { product } = item;
+    if (product.confuse) {
+      const { radius, floorTolerance } = product.confuse;
+      const confused = openGlitterBomb({ product, point: item.position, targets: targetsNear(item.position, radius, floorTolerance),
+        round: getRound(), effects, sound });
+      remove(item);
+      events.emit('equipmentBurst', { id: item.id, position: item.position.clone(), radius,
+        hit: confused.map((target) => ({ target, damage: 0, killed: false })) });
+    } else if (product.spray) {
+      item.spraying = true;
+      item.sprayLeft = product.spray.seconds;
+      item.pulseTimer = 0; // (the first pulse is right away)
+      sound?.play(product.sounds.spray);
+    } else if (product.turret) {
+      const floorY = item.position.y - (product.projectile?.radius ?? 0);
+      item.deployed = true;
+      item.lifeLeft = product.turret.lifeSeconds;
+      item.fireTimer = product.turret.warmupSeconds;
+      item.muzzle = item.position.clone().setY(floorY + product.turret.muzzleHeight);
+      item.position.y = floorY; // (it stands on the floor)
+      item.previous.copy(item.position);
+      item.yaw = 0;
+      sound?.play(product.sounds.deploy);
+      events.emit('sentryDeployed', { position: item.position.clone() });
+    }
+  }
+
+  const sentryOut = () => live.find((item) => item.product.turret && !item.removed) ?? null;
+
+  // One tick of a deployed Sentry: it looks for a target only when it's ready to fire (a few times a second, so the line-of-sight
+  // rays stay cheap), turns to it and shoots; otherwise it spins. Spent after its lifetime.
+  function runTurret(item, dt) {
+    const { turret } = item.product;
+    item.lifeLeft -= dt;
+    item.fireTimer -= dt;
+    if (item.fireTimer <= 1e-9) {
+      const target = sentryTarget({ muzzle: item.muzzle, turret, shootables, colliders });
+      if (target) {
+        item.yaw = Math.atan2(target.position.x - item.muzzle.x, target.position.z - item.muzzle.z);
+        item.lastShot = fireSentry({ muzzle: item.muzzle, turret, target, shootables, colliders, round: getRound(), effects, sound,
+          fireSound: item.product.sounds.fire, look: item.product.look });
+        item.fireTimer += turret.fireSeconds;
+      } else {
+        item.fireTimer = 0; // (nothing in sight: it looks again next tick)
+      }
+      item.hunting = !target;
+    }
+    if (item.hunting) item.yaw += turret.spinSpeed * Math.PI * 2 * dt;
+    if (item.lifeLeft <= 1e-9) {
+      remove(item);
+      events.emit('sentryExpired', { position: item.position.clone() });
+    }
+  }
+
+  // One tick of a Sparkler Cake on the floor: a pulse every pulseSeconds, then it's spent.
+  function spray(item, dt) {
+    const cfg = item.product.spray;
+    if (item.pulseTimer <= 1e-9) {
+      item.pulseTimer += cfg.pulseSeconds;
+      pulseSparklerCake({ product: item.product, point: item.position, targets: targetsNear(item.position, cfg.radius, cfg.floorTolerance),
+        round: getRound(), effects });
+    }
+    item.pulseTimer -= dt;
+    item.sprayLeft -= dt;
+    if (item.sprayLeft <= 1e-9) remove(item);
   }
 
   function blastHorn(horn) {
@@ -173,6 +284,10 @@ export function createEquipment({
     pockets,
     live,
 
+    get sentry() {
+      return sentryOut();
+    },
+
     get isBusy() {
       return busyTimer > 0;
     },
@@ -228,23 +343,35 @@ export function createEquipment({
 
     updateThrown(dt) {
       for (const item of live) {
+        if (item.removed) continue;
         item.previous.copy(item.position);
         if (item.ball?.alive) item.position.copy(item.ball.position);
         else item.flying = false; // (stopped rolling: it sits there until its fuse)
         item.age += dt;
-        if (item.age >= item.product.fuseSeconds) {
-          remove(item);
-          burst(item);
+        const { product } = item;
+        if (product.blast) {
+          if (item.age >= product.fuseSeconds) {
+            remove(item);
+            burst(item);
+          }
+          continue;
         }
+        if (!item.settled && (item.landed || !item.flying || item.age >= product.landSeconds)) settle(item);
+        if (item.spraying && !item.removed) spray(item, dt);
+        if (item.deployed && !item.removed) runTurret(item, dt);
       }
       for (let i = live.length - 1; i >= 0; i--) if (live[i].removed) live.splice(i, 1);
     },
 
-    /** Burst a product at a point right now, as if its fuse ran out there (tests; nothing is taken from a pocket). */
+    /** A product does its job at a point right now, as if it had landed there (tests; nothing is taken from a pocket). */
     detonate(id, position) {
       const product = productOf(id);
-      if (!product?.blast) throw new Error(`equipment: "${id}" doesn't burst`);
-      burst({ id, product, position: position.clone() });
+      if (product?.blast) return burst({ id, product, position: position.clone() });
+      if (!product?.opens) throw new Error(`equipment: "${id}" isn't thrown`);
+      const item = newItem(id, product, position);
+      live.push(item);
+      settle(item); // (a Glitter Bomb opens now; a Sparkler Cake sprays its first pulse on the next tick)
+      for (let i = live.length - 1; i >= 0; i--) if (live[i].removed) live.splice(i, 1);
     },
 
     clearThrown() {

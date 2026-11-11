@@ -222,6 +222,13 @@ export function createDebugCommands({ map, zombies, rounds, wallet, gun, health,
       const filled = equipment.fill();
       return filled.length ? `Pockets full: ${filled.map((p) => `${p.charges} ${p.name}s`).join(', ')}` : 'Nothing to put in the pockets';
     },
+    // Kiosk Kevin's cart (game/features/kiosk.js): move him now, to `siteId` or a random other open site.
+    kioskMove(siteId = null) {
+      const kevin = features?.list.find(({ feature }) => feature.kind === 'kiosk')?.instance;
+      if (!kevin) return 'This map has no Kiosk Kevin';
+      const site = kevin.moveNow(siteId);
+      return site ? `Kevin moved to ${site.where}` : 'Not moved: mid-purchase, or no other open area';
+    },
   };
 
   return {

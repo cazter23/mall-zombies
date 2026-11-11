@@ -9,8 +9,10 @@
 
 import { feel } from '../config/feel.js';
 import { weaponStatDefaults } from '../config/weapons.js';
+import { kiosk } from '../config/kiosk.js';
 
-export const armourDefaults = { maxArmourLayers: 3, armourLayerStrength: 40 };
+// Bubble Wrap (Kiosk Kevin): its numbers are in config/kiosk.js bubbleWrap.
+export const armourDefaults = { maxArmourLayers: kiosk.bubbleWrap.maxLayers, armourLayerStrength: kiosk.bubbleWrap.layerStrength };
 
 export function createPlayerStats() {
   return {

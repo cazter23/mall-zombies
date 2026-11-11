@@ -592,7 +592,8 @@ export function buildMall(scene, colliders) {
   // Its Prize Counter (game/features/prizeCounter.js): one fixed booth (mall/prizeCounter.js) where prize tickets buy small things.
   const counterSite = clawMachine.prizeCounter.site;
   const prizeBooth = buildPrizeCounter({ kit, back: counterSite.back, faces: counterSite.faces, floorY: counterSite.floorY });
-  const kioskCart = buildKioskCart(kit);
+  // Kiosk Kevin (game/features/kiosk.js): a cart at every site in config/kiosk.js (mall/kioskCart.js), one live at a time.
+  const kioskSites = kiosk.sites.map((s) => ({ id: s.id, zone: s.zone, where: s.where, floorY: s.floorY, cart: buildKioskCart(kit, s) }));
 
   sign('EXIT  ·  MAIN HALL', {
     x: 0, y: 3.6, z: F.maxZ - 0.02, width: 3, height: 0.5, facing: -1,
@@ -951,7 +952,8 @@ export function buildMall(scene, colliders) {
     // GRAB-A-GUN: one machine, live at one of its sites (it starts at the first every run).
     { kind: 'clawMachine', name: 'clawMachine', zone: clawSites[0].zone, position: clawSites[0].cabinet.position, normal: clawSites[0].cabinet.normal, sites: clawSites },
     { kind: 'prizeCounter', name: 'prizeCounter', zone: counterSite.zone, position: prizeBooth.position, normal: prizeBooth.normal, slots: prizeBooth.slots },
-    { kind: 'kiosk', name: 'kioskKevin', zone: kiosk.site.zone, ...kioskCart },
+    // Kiosk Kevin: one cart live at one of his sites (every run starts at the first).
+    { kind: 'kiosk', name: 'kioskKevin', zone: kioskSites[0].zone, position: kioskSites[0].cart.position, normal: kioskSites[0].cart.normal, sites: kioskSites },
     // Environmental hazards (docs/hazards-plan.md): Grand Atrium Electrified Fountain breaker switch.
     { kind: 'escapeVan', name: 'escape_van', zone: 'parkingLot', position: escapeVanPosition, normal: new THREE.Vector3(1, 0, 0), validation: parking.validation },
     { kind: 'fountainHazard', name: 'hazard_fountain', zone: hazards.fountain.zone, position: new THREE.Vector3(hazards.fountain.position.x, hazards.fountain.position.y, hazards.fountain.position.z), normal: new THREE.Vector3(hazards.fountain.normal.x, hazards.fountain.normal.y, hazards.fountain.normal.z) },
@@ -985,6 +987,7 @@ export function buildMall(scene, colliders) {
     ...spawnPoints.map((s) => around(s.position, 1.2)),
     ...features.map((f) => around(f.position, 2.0)),
     ...clawSites.map((s) => around(s.cabinet.position, 2.0)), // (every GRAB-A-GUN site, not only the feature's first)
+    ...kioskSites.map((s) => around(s.cart.position, 2.0)), // (every Kiosk Kevin site, likewise)
     ...doors.map((d) => around(d.position, 2.6)),
     around({ x: escalator.foot.x + 1, z: escalator.foot.z }, 2.5),
     { minX: D.minX - 1, maxX: D.maxX + 1, minZ: H.maxZ - 3, maxZ: H.maxZ }, // the start door's approach
