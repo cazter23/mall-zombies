@@ -1,6 +1,6 @@
 # Closing Time: plan for a run goal, an ending and a final boss
 
-Status: PHASES 1–10 BUILT (11 November 2026). Phases 1–6 were reviewed; phases 7–9 came from `claude/closing-time-9`, and phase 10 was integrated on `codex/closing-time-integration`. Phases 11–12 are planned. The ten decisions below are made.
+Status: PHASES 1-10 merged; PHASE 11 BUILT on claude/closing-time-11 (not merged), 11 November 2026. Phase 12 remains planned. The ten decisions below are unchanged. See docs/closing-time-11-report.md for measurements and unapplied tuning questions.
 Every number is a starting point for `src/config/closingTime.js` and `config/economy.js`, to be tuned in phase 11. Build one phase at a
 time, each in its own worktree.
 

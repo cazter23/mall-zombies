@@ -57,7 +57,7 @@ const SEEDS = Number(option('seeds', QUICK ? 2 : 8)); // immortal runs of the ba
 const FEW = Math.max(2, Math.round(SEEDS / 2)); // immortal runs of each variant and proposal
 const MORTAL_SEEDS = Number(option('mortal-seeds', QUICK ? 4 : 40)); // (20 was too few: one-life runs are that noisy)
 const CLAW_ROUNDS = Math.min(ROUNDS, 15); // the claw is an early-game question
-const WORKERS = Number(option('workers', Math.max(1, Math.min(10, cpus().length - 2))));
+const WORKERS = Math.max(1, Math.min(4, Number(option('workers', Math.max(1, Math.min(4, cpus().length - 2))))));
 const AFTER = ['priceGun', 'bab', 'babPrice', 'warranty', 'claw', 'all']; // the proposals that get played
 const MORTAL_ONLY = ['priceGun62', 'bab3000']; // ...and those played for survival only (no runs to round 30)
 

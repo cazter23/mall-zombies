@@ -1,5 +1,14 @@
 # Sunset Galleria: build history ("Current state")
 
+## 11 November 2026 - Closing Time phase 11: measure and tune
+
+- Built sim:closing on the economy bot and SENSIBLE plan, with real purchases/keys/duties/validation/return/van and a four-process ceiling. Developer-only policy numbers live in config/closingTimeSim.js. Captured random functions now switch to the seed after map construction; the caller RNG is restored.
+- Measured 322 attempts across all sixteen mode/life/skill/purchase conditions, with at least twenty completed samples at every immortal overtime index. Retained overtime fan-targeting stalls and added consecutive seeds rather than hiding failed attempts. All mortal runs died before the finale; immortal lethal exposure is reported separately.
+- No gameplay tuning values changed: required spending is light, the Returns ammo route absorbs overtime income, and bot mortality/targeting limits do not establish a human fight-feel problem. The report gives current/candidate/applied values and open questions. No round gate or new duties.
+- Evidence and complete tables: [phase 11 report](closing-time-11-report.md), with compact per-seed data in closing-time-11-results.json. Teleported journeys/hand approach, Classic discovery, fan targeting, fun, readability and fight feel are explicit limits.
+- Validation: final npm run balance, npm run sim:economy -- --quick --workers=4, npm test (one full run) and npm run build all passed. Focused economy/tool, Closing Time and overtime tests passed while iterating.
+- Shared edits: tools/economyBot.js, tools/economySim.mjs, package.json, tests/economySim.test.js and docs. Added two quest tools and developer-only config. Gameplay systems and gameplay balance config are unchanged. Work remains on claude/closing-time-11; no merge into main.
+
 ## 11 November 2026 - Closing Time phases 7-10 integration
 
 - Integrated `claude/closing-time-9`, including phase 7 parking validation and phase 8's booked Last Customer, with current main. The history conflict preserves both the weapon-skin rules and phase 9 entries.
