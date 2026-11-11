@@ -1,7 +1,9 @@
 // Save & Quit (game/saveGame.js): one slot, the run as it stood at the START of the current round, used up when loaded.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { headlessGame } from './helpers/headlessGame.js';
+import { dt, headlessGame } from './helpers/headlessGame.js';
+import { feel } from '../src/config/feel.js';
+import { closingTime } from '../src/config/closingTime.js';
 import { weapons } from '../src/config/weapons.js';
 import { TIER_IDS, withTier } from '../src/weapons/upgrades.js';
 import { save as saveConfig } from '../src/config/save.js';
@@ -195,6 +197,7 @@ test('a save made in overtime keeps the win: Stay for overtime takes a fresh sna
   for (const boss of ['janitor', 'guard', 'manager', 'influencer']) g.debug.run('closing', 'grant', boss);
   for (const line of ['janitor', 'guard', 'manager']) while (!g.closing.isDone(line)) g.events.emit(
     line === 'janitor' ? 'fountainKill' : line === 'manager' ? 'ritualCollect' : 'purchase', { kind: 'closing', id: 'nightSafe' });
+  g.events.emit('purchase', { kind: 'closing', id: 'validation' });
   g.events.emit('escapeVanStart');
   assert.equal(g.state.winPending, true);
   assert.equal(g.saveGame.canSave().ok, false, 'not while the win receipt is up');
@@ -207,4 +210,45 @@ test('a save made in overtime keeps the win: Stay for overtime takes a fresh sna
   assert.equal(loaded.g.state.won, true);
   assert.equal(loaded.g.overtimeFrom, g.overtimeFrom);
   assert.equal(loaded.g.closing.done, g.closing.done);
+});
+
+test('paid parking validation survives a round-start save and loads without replaying its PA or charging again', (t) => {
+  const storage = memoryStorage();
+  const run = game(t, storage);
+  const { g } = run;
+  run.tick();
+  g.health.invulnerable = true;
+  g.map.areaUnlocks.openAll();
+  for (const boss of ['janitor', 'guard', 'manager', 'influencer']) g.debug.run('closing', 'grant', boss);
+  for (const line of ['janitor', 'guard', 'manager']) while (!g.closing.isDone(line)) g.events.emit(
+    line === 'janitor' ? 'fountainKill' : line === 'manager' ? 'ritualCollect' : 'purchase', { kind: 'closing', id: 'nightSafe' });
+  const { validation } = g.map.features.find(({ kind }) => kind === 'escapeVan');
+  const price = g.pricing.priceOf('closing', 'validation');
+  g.wallet.earn(price);
+  run.standAt(validation.position.x - 1, validation.position.z, -90);
+  assert.equal(g.interactions.prompt?.id, 'validation');
+  const points = g.wallet.points;
+  run.press('KeyF', Math.ceil(feel.interact.holdSeconds / dt) + 1);
+  assert.equal(g.wallet.points, points - price);
+  assert.equal(g.closing.validated, true);
+  assert.equal(g.saveGame.snapshot.data.closing.validated, false, 'current-round payment is rolled back until the next round starts');
+  g.rounds.jumpTo(18);
+  run.tick();
+  const saved = g.saveGame.snapshot.data;
+  assert.equal(saved.closing.validated, true);
+  assert.ok(g.saveGame.saveAndQuit());
+
+  const loaded = game(t, storage);
+  const repeated = [];
+  loaded.g.events.on('closingValidated', (event) => repeated.push(event));
+  assert.ok(loaded.g.saveGame.load());
+  assert.equal(loaded.g.closing.validated, true);
+  assert.equal(loaded.g.closing.readyToLeave, true);
+  assert.equal(loaded.g.wallet.points, saved.wallet.points);
+  assert.deepEqual(loaded.g.saveGame.serializeNow(), saved);
+  loaded.standAt(validation.position.x - 1, validation.position.z, -90);
+  loaded.press('KeyF', Math.ceil(feel.interact.holdSeconds / dt) + 1);
+  assert.equal(loaded.g.wallet.points, saved.wallet.points, 'a second hold cannot charge again');
+  assert.deepEqual(repeated, []);
+  assert.ok(!loaded.hud.calls.some(([name, notice]) => name === 'showAnnouncement' && notice.text === closingTime.pa.validated.text));
 });

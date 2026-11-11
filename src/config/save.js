@@ -6,7 +6,7 @@
 //   reasons     why the pause menu's Save & Quit is greyed out (the button shows the text).
 // =============================================================================
 export const save = {
-  version: 2, // 2: Kiosk Kevin and Closing Time (map.features gained entries, so a version 1 save's feature data no longer lines up)
+  version: 3, // 3: Closing Time parking validation added to the closing save step
   storageKey: 'sunsetGalleria.save',
   reasons: {
     noRound: 'Not clocked in yet',

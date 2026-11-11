@@ -12,6 +12,7 @@ import { dealHazardDamage } from '../src/game/features/hazards.js';
 import { weapons } from '../src/config/weapons.js';
 import { workshopRitual } from '../src/config/workshop.js';
 import { powerUps as pickupConfig } from '../src/config/powerUps.js';
+import { parkingLot } from '../src/config/parkingLot.js';
 import { overlapsSolid, rampHeightAt } from '../src/world/collision.js';
 import { createHud } from '../src/ui/hud.js';
 import { menuDom } from './helpers/menuDom.js';
@@ -253,10 +254,16 @@ function finishDuties(g, ids = dutyIds) {
   }
 }
 
-// Everything the van asks for: the four keys and lines 1 to 3.
+// Stand in for the machine's paid purchase in tests about the win/receipt rather than the payment.
+function validate(g) {
+  g.events.emit('purchase', { kind: 'closing', id: 'validation', label: closingTime.validation.name, cost: 0 });
+}
+
+// Everything the van asks for: the four keys, lines 1 to 3 and validation.
 function readyToLeave(g) {
   grantKeys(g);
   finishDuties(g);
+  validate(g);
   assert.ok(g.closing.readyToLeave);
 }
 
@@ -271,12 +278,12 @@ test('the van explains missing keys and duties, then a hold wins once and Clock 
   g.events.on('runEnd', ({ summary }) => { ends.push(summary); career.recordRun(summary); });
   g.events.on('playerDeath', () => deaths++);
   approachVan(game);
-  assert.equal(g.interactions.prompt.blocked, van.blockedPrefix + bossIds.map((id) => lines[id].key).join(', '));
+  assert.equal(g.interactions.prompt.blocked, van.blockedPrefix + [...bossIds.map((id) => lines[id].key), closingTime.validation.missing].join(', '));
 
   // Keys first, then the duty whose key is held but which is not done.
   grantKeys(g, ['janitor']);
   assert.equal(g.interactions.prompt.blocked,
-    van.blockedPrefix + [lines.guard.key, lines.manager.key, lines.influencer.key, lines.janitor.duty].join(', '));
+    van.blockedPrefix + [lines.guard.key, lines.manager.key, lines.influencer.key, lines.janitor.duty, closingTime.validation.missing].join(', '));
 
   grantKeys(g, ['guard', 'manager']);
   assert.match(g.interactions.prompt.blocked, /Skylar's Van Keys/);
@@ -286,15 +293,20 @@ test('the van explains missing keys and duties, then a hold wins once and Clock 
   // Four keys are not enough: the van refuses and names each unfinished duty.
   grantKeys(g, ['influencer']);
   assert.deepEqual(g.closing.missingKeys, []);
-  assert.equal(g.interactions.prompt.blocked, van.blockedPrefix + dutyIds.map((id) => lines[id].duty).join(', '));
+  assert.equal(g.interactions.prompt.blocked, van.blockedPrefix + [...dutyIds.map((id) => lines[id].duty), closingTime.validation.missing].join(', '));
   finishDuties(g, ['janitor', 'guard']);
-  assert.equal(g.interactions.prompt.blocked, van.blockedPrefix + lines.manager.duty);
+  assert.equal(g.interactions.prompt.blocked, van.blockedPrefix + [lines.manager.duty, closingTime.validation.missing].join(', '));
   press('KeyF', holdTicks);
   g.events.emit('escapeVanStart');
   assert.equal(g.state.won, false, 'four keys and an unfinished duty do not start the van');
   assert.equal(wins.length, 0);
 
   finishDuties(g, ['manager']);
+  assert.equal(g.interactions.prompt.blocked, van.blockedPrefix + closingTime.validation.missing);
+  press('KeyF', holdTicks);
+  g.events.emit('escapeVanStart');
+  assert.equal(g.state.won, false, 'completed duties still require validation');
+  validate(g);
   assert.equal(g.interactions.prompt.blocked, null);
   press('KeyF', holdTicks);
   assert.equal(g.state.won, true);
@@ -648,7 +660,7 @@ test('Play again after win + overtime + death, and after Clock out, equals a fre
   const fresh = snapshot(untouched.g);
   t.after(() => untouched.g.map.dispose());
   assert.deepEqual(fresh.closing, {
-    checklist: bossIds.map((id) => [id, false, null]), keys: [], pickups: [], markers: [], readyToLeave: false,
+    checklist: bossIds.map((id) => [id, false, null]), keys: [], pickups: [], markers: [], validated: false, readyToLeave: false,
   });
   assert.deepEqual([fresh.won, fresh.winPending, fresh.winSummary, fresh.overtimeFrom], [false, false, null, null]);
 
@@ -751,6 +763,7 @@ test('the HUD draws the four boxes (tick, count) from the game checklist and poi
   finishDuties(g);
   show();
   assert.deepEqual(boxes.map((box) => box.getAttribute('aria-checked')), ['true', 'true', 'true', 'false']);
+  validate(g);
   g.events.emit('escapeVanStart');
   show();
   assert.equal(boxes[3].getAttribute('aria-checked'), 'true');
@@ -814,7 +827,7 @@ test('the Van Keys tick nothing; the win itself ticks line 4, so the game reads 
   standAt(at.x, at.z);
   const { key } = closingTime.lines.influencer;
   assert.deepEqual(keyNotices, [{ bossId: 'influencer', pa: closingTime.pa.vanKeys(key) }]);
-  assert.equal(keyNotices[0].pa.text, key + ' collected. Start the van to finish closing.');
+  assert.equal(keyNotices[0].pa.text, key + ' collected. Finish the duties, then validate parking at the ticket machine by the van.');
   assert.ok(hud.calls.some(([name, notice]) => name === 'showAnnouncement' && notice.text === keyNotices[0].pa.text));
   assert.deepEqual(ticked, []);
 
@@ -825,6 +838,7 @@ test('the Van Keys tick nothing; the win itself ticks line 4, so the game reads 
   assert.equal(g.closing.done, 3);
   assert.deepEqual(g.closing.checklist.map(({ done }) => done), [true, true, true, false]);
   ticked.length = 0;
+  validate(g);
 
   press('KeyF', holdTicks);
   assert.ok(g.state.won);
@@ -1247,6 +1261,8 @@ test('a Classic run: short prompts that say what is true, key and duty sounds wi
 
   const career = createCareerStats({ storage: { getItem: () => null, setItem() {} } });
   g.events.on('runEnd', ({ summary }) => career.recordRun(summary));
+  assert.equal(atVan(), classic.needs + closingTime.validation.missing);
+  validate(g);
   assert.equal(atVan(), null);
   press('KeyF', holdTicks);
   assert.ok(g.winSummary?.won);
@@ -1396,4 +1412,169 @@ test('the HUD and pause screen hide the checklist and key markers for a Classic 
   hud.showResults(receipt);
   assert.ok(receiptStats.textContent.includes(closingTime.title));
   assert.equal(hud.setReceiptClosingDone, undefined);
+});
+
+// Phase 7: parking validation, part of the escapeVan feature.
+function atValidation(t) {
+  const game = fixture(t);
+  const { g, standAt } = game;
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  g.health.invulnerable = true;
+  const van = g.map.features.find(({ kind }) => kind === 'escapeVan');
+  const approach = () => standAt(van.validation.position.x - 1, van.validation.position.z, -90);
+  approach();
+  assert.equal(g.interactions.prompt, null, 'parking must be unlocked');
+  g.map.areaUnlocks.openAll();
+  approach();
+  assert.equal(g.interactions.prompt?.id, 'validation');
+  return { ...game, van, approach };
+}
+
+for (const mode of ['directed', 'classic']) test(`parking validation names and refuses each missing requirement (${mode})`, (t) => {
+  const { g, press, approach } = atValidation(t);
+  const purchases = [], validated = [];
+  g.events.on('purchase', (event) => { if (event.id === 'validation') purchases.push(event); });
+  g.events.on('closingValidated', (event) => validated.push(event));
+  const price = g.pricing.priceOf('closing', 'validation');
+  // Isolate every key and every duty, so no other missing requirement can hide a refusal.
+  for (const missing of [...bossIds, ...dutyIds.map((id) => 'duty:' + id)]) {
+    g.resetRun();
+    g.state.closingMode = mode;
+    g.map.areaUnlocks.openAll();
+    grantKeys(g, bossIds.filter((id) => id !== missing));
+    finishDuties(g, dutyIds.filter((id) => id !== missing && 'duty:' + id !== missing));
+    g.wallet.earn(price);
+    approach();
+    const line = closingTime.lines[missing.replace('duty:', '')];
+    const reason = missing.startsWith('duty:') ? (mode === 'classic' ? line.place : line.duty) : line.key;
+    assert.ok(g.interactions.prompt.blocked.includes(reason), missing + ': ' + g.interactions.prompt.blocked);
+    const points = g.wallet.points;
+    press('KeyF', holdTicks);
+    assert.equal(g.wallet.points, points);
+    assert.equal(g.closing.validated, false);
+    assert.equal(g.state.won, false);
+  }
+  assert.deepEqual(purchases, []);
+  assert.deepEqual(validated, []);
+});
+
+for (const mode of ['directed', 'classic']) test(`parking validation charges once, unlocks the van and resets (${mode})`, (t) => {
+  const game = atValidation(t);
+  const { g, press, approach, standAt, van, hud } = game;
+  g.state.closingMode = mode;
+  const validated = [], purchases = [];
+  g.events.on('closingValidated', (event) => validated.push(event));
+  g.events.on('purchase', (event) => { if (event.id === 'validation') purchases.push(event); });
+  grantKeys(g);
+  finishDuties(g);
+  assert.equal(g.closing.readyToValidate, true);
+  assert.equal(g.closing.readyToLeave, false);
+  standAt(van.position.x + 1, van.position.z, 90);
+  assert.ok(g.interactions.prompt.blocked.includes(closingTime.validation.missing));
+  press('KeyF', holdTicks);
+  g.events.emit('escapeVanStart');
+  assert.equal(g.state.won, false);
+
+  approach();
+  const price = g.pricing.priceOf('closing', 'validation');
+  assert.equal(price, economy.closing.validation);
+  assert.equal(price, 5000);
+  g.wallet.earn(price - g.wallet.points - 1);
+  assert.equal(g.interactions.prompt.blocked, null);
+  assert.equal(g.interactions.prompt.shortfall, 1);
+  press('KeyF', holdTicks);
+  assert.equal(g.interactions.prompt.denied, true);
+  assert.equal(g.closing.validated, false);
+  assert.deepEqual(validated, []);
+
+  g.wallet.earn(1);
+  const round = g.rounds.round;
+  press('KeyF', holdTicks * 3);
+  assert.equal(g.wallet.points, 0);
+  assert.equal(g.closing.validated, true);
+  assert.equal(g.closing.readyToLeave, true);
+  assert.equal(g.closing.done, dutyIds.length, 'validation does not tick line 4');
+  assert.equal(g.state.won, false, 'validation only unlocks the van');
+  assert.equal(g.rounds.round, round, 'no wave change in phase 7');
+  assert.deepEqual(validated, [{ round, pa: closingTime.pa.validated }]);
+  assert.match(validated[0].pa.text, /closing time is the next round/i);
+  assert.equal(g.interactions.prompt.priceLabel, closingTime.validation.done);
+  assert.equal(g.interactions.prompt.blocked, closingTime.validation.complete);
+  press('KeyF', holdTicks);
+  assert.equal(g.wallet.points, 0);
+  assert.equal(purchases.length, 1);
+  assert.deepEqual(purchases[0], { kind: 'closing', id: 'validation', label: closingTime.validation.name, cost: price });
+  assert.equal(validated.length, 1);
+  const notices = closingNotices(hud).filter(([, notice]) => notice.text === closingTime.pa.validated.text);
+  assert.equal(notices.length, mode === 'directed' ? 1 : 0, 'Classic keeps the local confirmation but no quest PA');
+
+  standAt(van.position.x + 1, van.position.z, 90);
+  assert.equal(g.interactions.prompt?.id, van.name);
+  assert.equal(g.interactions.prompt.blocked, null);
+  press('KeyF', holdTicks);
+  assert.equal(g.state.won, true);
+  assert.equal(g.closing.done, bossIds.length);
+  g.resetRun();
+  assert.equal(g.closing.validated, false);
+  assert.equal(g.closing.serialize().validated, false);
+  assert.equal(g.closing.readyToLeave, false);
+  g.map.areaUnlocks.openAll();
+  approach();
+  assert.equal(g.interactions.prompt.cost, price);
+  assert.ok(g.interactions.prompt.blocked.includes(closingTime.lines.janitor.key));
+});
+
+test('a Discount Code and Employee Discount apply to the validation price and are spent only on payment', (t) => {
+  const { g, tick, press, approach } = atValidation(t);
+  const base = g.pricing.priceOf('closing', 'validation');
+  const paid = [];
+  g.events.on('purchase', (event) => paid.push(event));
+  for (const discount of ['voucher', 'coupon']) {
+    g.resetRun();
+    g.map.areaUnlocks.openAll();
+    if (discount === 'voucher') assert.ok(g.pricing.setVoucher(bossVouchers.discountCode));
+    else { assert.ok(g.powerUps.debugDrop('employeeDiscount')); tick(); }
+    const price = g.pricing.priceOf('closing', 'validation');
+    assert.ok(price < base);
+    if (discount === 'voucher') assert.equal(price, base - bossVouchers.discountCode.maxSaving);
+    g.wallet.earn(price - g.wallet.points);
+    approach();
+    press('KeyF', holdTicks); // Refusal must preserve the voucher/coupon.
+    assert.equal(g.pricing.priceOf('closing', 'validation'), price);
+    grantKeys(g);
+    finishDuties(g);
+    assert.equal(g.interactions.prompt.cost, price);
+    press('KeyF', holdTicks);
+    assert.equal(g.wallet.points, 0);
+    assert.equal(paid.at(-1).cost, price);
+    assert.equal(g.pricing.priceOf('closing', 'validation'), base, 'discount consumed by the paid hold');
+    assert.equal(g.closing.validated, true);
+  }
+});
+
+
+test('the ticket machine fits the van bay without blocking combat lanes, spawns or either prompt', (t) => {
+  const { g, van, approach, standAt } = atValidation(t);
+  const vehicle = parkingLot.vehicles.find(({ id }) => id === 'abandoned');
+  const bayMin = parkingLot.bays.fromX + vehicle.bay * parkingLot.bays.spacing;
+  const bayMax = bayMin + parkingLot.bays.spacing;
+  for (const { name } of closingTime.validation.parts) {
+    const mesh = g.map.group.getObjectByName(name);
+    assert.ok(mesh, name + ' rendered');
+    mesh.geometry.computeBoundingBox();
+    const bounds = mesh.geometry.boundingBox.clone().translate(mesh.position);
+    assert.ok(bounds.min.x > bayMin && bounds.max.x < bayMax, name + ' inside the painted bay');
+    assert.ok(bounds.min.z > vehicle.z - vehicle.length / 2 && bounds.max.z < vehicle.z + vehicle.length / 2,
+      name + ' between the van ends, leaving the cross lanes clear');
+    assert.ok(bounds.min.x > parkingLot.rect.minX + parkingLot.sidewalkWidth, 'exit approach clear');
+    assert.ok(parkingLot.spawns.every(({ x, z }) => Math.hypot(x - mesh.position.x, z - mesh.position.z) > feel.interact.range),
+      'well away from each fence spawn');
+  }
+  approach();
+  assert.equal(g.interactions.prompt.id, 'validation');
+  assertOnClearFloor(g, g.player.position, 'ticket machine approach');
+  standAt(van.position.x + 1, van.position.z, 90);
+  assert.equal(g.interactions.prompt.id, van.name, 'machine does not steal the van prompt');
+  assertOnClearFloor(g, g.player.position, 'van start approach');
 });

@@ -76,6 +76,7 @@
 //   'fountainKill' { zombie }                            the Electrified Fountain dealt a killing blow during a pulse
 //   'closingProgress' { line, count, needed }            a closing duty advanced (line is the boss id)
 //   'closingLine' { line, done, total, pa? }              a checklist line was checked off; done counts completed lines
+//   'closingValidated' { round, pa }                     parking validation paid once; closing time is the next round (never replayed on load)
 //   'bossFlash' { zombie, seconds, opacity, dimOpacity } telegraphed phone flash; browser presentation respects Comfort settings
 //   Fan actors carry noRewards: all hit/kill payouts, incentive and workshop credit ignore them.
 //   'purchase'    { label, cost, kind, id }              something was bought; kind 'door' | 'weapon' | 'ammo' |

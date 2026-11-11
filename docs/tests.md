@@ -129,6 +129,7 @@ Promenade shutter from inside and receives natural upstairs spawns.
 debug-run exclusion, reset, corrupt saves and unavailable browser storage.
 `tests/music.test.js` also covers the End of Shift death sting: receipt-timed bell, music volume, cancellation of future
 notes, replacement-voice cleanup, and real-game death/reset wiring.
+Phase 7 in `tests/closingTime.test.js` checks each missing key and duty at the ticket machine in both modes, affordability, one paid validation, the next-round PA, discounts preserved on refusal and consumed on payment, the van blocked before validation and winning afterwards, and reset. The mounted machine stays within the van's bay, clear of the lot's spawns and approach.
 `tests/closingTime.test.js` follows boss keys from defeat or disappearance to clear-floor drops and collection.
 It also covers a Classic run that wins with every duty done: its short prompts (the safe and the van name the missing key, the van then names an unfinished duty by its place),
 the key and duty sounds in both modes with no quest PA in Classic, career credit, run mode retention on reset, the fountain switch's count in both modes,
@@ -241,6 +242,7 @@ with the carried gun in the real game), `meleeUpgrades.test.js` the box cutter t
 prop + collider + buy spot, solid and too tall to climb, tiers one at a time at pricing's price, gun in hand only, no refill,
 nothing past Platinum (including the exact purchase frame and switching back to a Platinum gun), Flash Sale applies,
 no prompt while closed / switching / facing away, Play again resets),
+`saveGame.test.js` also pays parking validation through the real machine, keeps the round-start rollback rule, restores validation and points without another charge, and verifies no closingValidated event or PA replays on load.
 `saveGame.test.js` covers Save & Quit: every Play again step is either saved or named transient (so a new system has to decide); a load gives back the run as it was at the START of the round (points earned and areas bought mid-round are gone), at that round's break, with the slot used up, and what the loaded game would save is exactly what was saved; a replay keeps the same boss schedule, Flash Sale and feature state; a gun away at Build-A-Blaster with the loaner in hand comes back the same; saving needs a started round, a live player and full health; an older version's save is dropped, never loaded; saving is not a death (no runEnd, no career record).
 
 `secondChance.test.js` covers the Customer Service purchase and shared pricing, the one-use limit, lethal Cart Pusher charges, falls and fountain shocks, the local shove, paused protection, the PA, the final receipt, and Play again; that a hit or a hard landing during the protection is not announced at all (no 'playerHit' / 'playerFall', no outfit tag, no shove of the player) and is an ordinary hit again afterwards; that the revive itself is not read as the Cardigan soaking a hit; and that 'secondChance' announces held / used / available once each, with Play again mid-protection leaving the new run unprotected.

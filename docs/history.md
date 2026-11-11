@@ -1,5 +1,14 @@
 # Sunset Galleria: build history ("Current state")
 
+## 10 November 2026 - Closing Time phase 7: parking validation
+
+- The ticket machine is part of the existing escapeVan feature, mounted on the mauve van's west flank inside bay 4, opposite the east-side start prompt. It adds no collider and leaves combat lanes, the exit approach and four spawns clear.
+- Every key and lines 1 to 3 are required. Hold to pay g.pricing.priceOf('closing', 'validation'): 5,000 base, with Discount Code and Employee Discount honoured. The machine explains each missing requirement, confirms validation locally in both modes, and cannot charge twice. The van names validation among its missing requirements and unlocks after payment. No final boss or round gate is added in this phase.
+- g.closing owns validated, announces closingValidated { round, pa } once, and clears it on reset. Directed's PA says closing time is the next round; Classic keeps its local confirmation without quest PA. The Van Keys pickup now points to the ticket machine.
+- The existing closing save step serializes/restores validated silently. config/save.js version is 3 for the changed step shape; map.features keeps its order and gains no entry. Save & Quit still rolls back to the round's start: validation first survives a save once it is in that snapshot.
+- Checked: all 51 targeted Closing Time / Save & Quit tests; npm test (1,210 passing); npm run build; npm run test:quick while iterating; quick economy baseline (the bot does not do the quest; quest balance remains phase 11). Headless Edge against the production preview checked the missing-key prompt, a Discount Code payment of 3,000, the once-only event and confirmation, and the van's SHIFT COMPLETE receipt, with no game console exceptions. The machine screenshot was visually inspected.
+- Shared files changed: config/closingTime.js, config/economy.js, config/save.js; game/closingTime.js, game/createGame.js, game/events.js, game/features/escapeVan.js; maps/mall/mall.js and parkingLot.js; tests/closingTime.test.js, saveGame.test.js and helpers/headlessGame.js; docs (plan, history, folder-structure, map, tests). No new source or test files.
+
 ## 10 November 2026 - Save & Quit (Black Ops 6 style)
 
 - **The rules (the user's).** One save slot. Saving ENDS the run (to the title). You can save any time while alive, but only at full health.

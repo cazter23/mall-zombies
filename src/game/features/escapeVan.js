@@ -1,16 +1,17 @@
 import { closingTime } from '../../config/closingTime.js';
 
-// What the van still needs, in the order the prompt reads it: every missing key first, then the unfinished duties
-// by name. A duty whose key is still missing is not listed as well (its key already stands for it), so the prompt
-// stays short enough to read.
-export function vanNeeds(closing) {
+// Every missing key first, then the unfinished duties whose key is already held.
+function prerequisites(closing) {
   const duties = closing.missingDuties.filter(({ bossId }) => closing.hasKey(bossId)).map(({ duty }) => duty);
   return [...closing.missingKeys, ...duties];
 }
 
-// Classic's van prompt: one missing thing at a time, to stay short. The first missing key, or with every key held the
-// first unfinished duty by its place.
-export function vanNeedsClassic(closing) {
+export function vanNeeds(closing) {
+  return [...prerequisites(closing), ...(closing.validated ? [] : [closingTime.validation.missing])];
+}
+
+// Classic names one missing thing at a time, using the duty's place rather than the checklist line.
+function prerequisiteClassic(closing) {
   const { needs, unfinished } = closingTime.classic;
   const [key] = closing.missingKeys;
   if (key) return needs + key;
@@ -18,8 +19,30 @@ export function vanNeedsClassic(closing) {
   return duty ? unfinished + duty.place : null;
 }
 
-export function buildEscapeVan(feature, { map, closing, interactions, events, state }) {
+export function vanNeedsClassic(closing) {
+  return prerequisiteClassic(closing) ?? (closing.validated ? null : closingTime.classic.needs + closingTime.validation.missing);
+}
+
+export function buildEscapeVan(feature, { map, closing, interactions, pricing, events, state }) {
   const { name, verb, blockedPrefix, priceLabel } = closingTime.van;
+  const available = () => map.zones[feature.zone].open && !state.over && !state.won;
+  const machine = closingTime.validation;
+  interactions.add({
+    id: 'validation',
+    kind: 'closing',
+    label: machine.name,
+    verb: machine.verb,
+    position: feature.validation.position,
+    available,
+    get cost() { return closing.validated ? 0 : pricing.priceOf('closing', 'validation'); },
+    get priceLabel() { return closing.validated ? machine.done : null; },
+    get blocked() {
+      if (closing.validated) return machine.complete;
+      if (closing.readyToValidate) return null;
+      return state.showClosingGuidance ? blockedPrefix + prerequisites(closing).join(', ') : prerequisiteClassic(closing);
+    },
+    use() {}, // The paid purchase event validates once in g.closing and announces closingValidated.
+  });
   interactions.add({
     id: feature.name,
     label: name,
@@ -28,7 +51,7 @@ export function buildEscapeVan(feature, { map, closing, interactions, events, st
     priceLabel,
     quiet: true,
     position: feature.position,
-    available: () => map.zones[feature.zone].open && !state.over && !state.won,
+    available,
     get blocked() {
       if (closing.readyToLeave) return null;
       return state.showClosingGuidance ? blockedPrefix + vanNeeds(closing).join(', ') : vanNeedsClassic(closing);

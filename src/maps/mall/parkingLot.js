@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { parkingLot as config } from '../../config/parkingLot.js';
+import { closingTime } from '../../config/closingTime.js';
 import { economy } from '../../config/economy.js';
 import { seededRandom } from '../../world/textures.js';
 import { buildParkingSurroundings } from './parkingSurroundings.js';
@@ -103,6 +104,22 @@ export function buildParkingLot(kit, { zones, mallWallX, wallThickness }) {
     if (v.id === 'delivery') sign('SUNSET GALLERIA · SAME DAY DELIVERY*', { x: x + w / 2 + .04, y: 1.12, z,
       width: 3.7, height: .32, facing: 'x+', background: '#b86476', color: '#fff0ce' }).name = 'parking_van_logo';
   }
+  // The ticket machine rides on the van's west side, opposite the east-side start prompt. It adds no solid in the
+  // gaps between vans, the routes around their ends, the Mega Mart exit approach or any fence spawn.
+  const van = P.vehicles.find(({ id }) => id === 'abandoned');
+  const machine = closingTime.validation;
+  const machineX = van.x - van.width / 2;
+  for (const { name, min, max, color } of machine.parts) {
+    box(machineX + min[0], min[1], van.z + min[2], machineX + max[0], max[1], van.z + max[2],
+      mat(color), { name, collide: false });
+  }
+  const { text, offset, ...machineSign } = machine.sign;
+  sign(text, { ...machineSign, x: machineX - offset, z: van.z, facing: 'x-' }).name = 'validation_sign';
+  const validation = {
+    position: new THREE.Vector3(machineX - machine.promptOffset, machine.promptHeight, van.z),
+    normal: new THREE.Vector3(-1, 0, 0),
+  };
+
   const lamps = P.lamps.map(l => {
     solid('lamp_post', l.x - .11, 0, l.z - .11, l.x + .11, l.y + .3, l.z + .11, metal);
     detail('lamp_arm', l.x + .55, l.y + .2, l.z, 1.2, .14, .15, metal);
@@ -121,7 +138,7 @@ export function buildParkingLot(kit, { zones, mallWallX, wallThickness }) {
   }
   const sky = buildSky();
 
-  return { door, lamps, sky, // (sky: the sunset dome; the dusk recolours it, maps/mall/mall.js setDusk)
+  return { door, lamps, validation, sky, // (sky: the sunset dome; the dusk recolours it, maps/mall/mall.js setDusk)
     spawns: P.spawns.map(s => ({ name: `spawn_parkingLot_${s.id}`, zone: 'parkingLot', position: new THREE.Vector3(s.x, 0, s.z) })),
     room: { id: 'parkingLot', ...R, minY: -.3, maxY: 12 },
     portal: { a: 'megaMart', b: 'parkingLot', door: door.id, minX: mallWallX, maxX: R.minX + .14,

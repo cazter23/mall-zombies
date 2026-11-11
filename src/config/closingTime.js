@@ -21,6 +21,20 @@ export const closingTime = {
     blockedPrefix: 'Still needed: ',
     promptHeight: 1.2, clearance: 0.12,
   },
+  validation: {
+    name: 'Parking Validation', verb: 'validate parking', missing: 'Parking validation',
+    done: 'Validated', complete: 'Validated · Start the van',
+    // Mounted on the mauve van's west flank, inside its painted bay. No new collider or obstruction in the combat lanes.
+    promptOffset: 0.38, promptHeight: 1.4,
+    parts: [
+      { name: 'validation_housing', min: [-0.18, 0.80, -0.32], max: [0.02, 1.86, 0.32], color: 0x343c50 },
+      { name: 'validation_face', min: [-0.22, 0.88, -0.28], max: [-0.17, 1.80, 0.28], color: 0x698b86 },
+      { name: 'validation_screen', min: [-0.24, 1.36, -0.23], max: [-0.21, 1.63, 0.23], color: 0x162b32 },
+      { name: 'validation_slot', min: [-0.24, 1.12, -0.18], max: [-0.21, 1.18, 0.18], color: 0x161622 },
+      { name: 'validation_button', min: [-0.25, 0.96, 0.12], max: [-0.21, 1.05, 0.21], color: 0xf7bd62 },
+    ],
+    sign: { text: 'VALIDATE', offset: 0.25, y: 1.72, width: 0.48, height: 0.12, background: '#243042', color: '#ffe4a0' },
+  },
   nightSafe: {
     name: 'Night Safe',
     verb: 'deposit',
@@ -59,12 +73,13 @@ export const closingTime = {
     drop: (key) => ({ kicker: 'Closing time', text: key + ' is on the floor. Associates, please collect it for the closing checklist.' }),
     // The Van Keys tick nothing by themselves: line 4 is ticked by the win (game/createGame.js onRunWon).
     // keep: these line-opening and line-complete messages are never dropped from the PA queue (ui/announcements.js).
-    vanKeys: (key) => ({ kicker: 'Closing time', keep: true, text: key + ' collected. Start the van to finish closing.' }),
+    vanKeys: (key) => ({ kicker: 'Closing time', keep: true, text: key + ' collected. Finish the duties, then validate parking at the ticket machine by the van.' }),
     openFountain: (key, needed) => ({ kicker: 'Closing time', keep: true, text: `${key} collected. Use the Electrified Fountain in the Grand Atrium to take out ${needed} zombies.` }),
     openNightSafe: (key, needed) => ({ kicker: 'Closing time', keep: true, text: `${key} collected. Make ${needed} deposits at the Night Safe beside Customer Service.` }),
     completeNightSafe: { kicker: 'Closing time', keep: true, text: 'Takings banked is checked off. Thank you, associates.' },
     completeFountain: { kicker: 'Closing time', keep: true, text: 'Water features off is checked off. Thank you, associates.' },
     openLastOrders: (key) => ({ kicker: 'Closing time', keep: true, text: `${key} collected. Collect a build or Restuff from Build-A-Blaster’s Naming Booth.` }),
+    validated: { kicker: 'Closing time', keep: true, text: 'Parking validated. Attention associates: closing time is the next round.' },
     completeLastOrders: { kicker: 'Closing time', keep: true, text: 'Last orders signed off. Thank you, associates.' },
   },
   // The win receipt, and the two lines a later death receipt gains after a win (ui/screens.js).

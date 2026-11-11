@@ -289,7 +289,7 @@ export function createGame({
   }
 
   function onRunWon() {
-    if (state.over || state.won || !closing.readyToLeave) return; // (all four keys and lines 1 to 3; no round gate)
+    if (state.over || state.won || !closing.readyToLeave) return; // (all four keys, lines 1 to 3 and paid parking validation; no round gate)
     state.won = true;
     state.winPending = true;
     closing.completeLeaving(); // line 4 is the win itself: ticked here, before the summary, so the receipt reads 4 of 4
@@ -523,7 +523,7 @@ export function createGame({
   // Closing Time's own sounds, in both run modes (Classic has no PA text): a key picked up, a checklist line ticked.
   events.on('closingKey', () => sound.play('closingKey'));
   events.on('closingLine', () => sound.play('closingDuty'));
-  for (const name of ['closingBriefing', 'closingKeyDrop', 'closingKey', 'closingLine']) {
+  for (const name of ['closingBriefing', 'closingKeyDrop', 'closingKey', 'closingLine', 'closingValidated']) {
     events.on(name, ({ pa }) => {
       if (!state.showClosingGuidance || !pa) return;
       hud.showAnnouncement({ ...pa, priority: 1 });
@@ -566,7 +566,7 @@ export function createGame({
     if (zombie.type.defeatBanner) hud.showAnnouncement({ ...zombie.type.defeatBanner, priority: bossTiming.introPriority });
   });
   // Register after the defeat banner so the key-drop PA queues behind it.
-  const closing = createClosingTime({ events, player, colliders, state, view: createClosingKeyView(scene) });
+  const closing = createClosingTime({ events, player, colliders, state, view: createClosingKeyView(scene), rounds });
   events.on('bossPhase', ({ zombie, phase }) => {
     const pa = zombie.type.phases?.[phase];
     if (pa) { hud.showAnnouncement({ ...pa, priority: bossTiming.introPriority }); sound.play('paChime'); }

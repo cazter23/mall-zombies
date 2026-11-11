@@ -1,6 +1,6 @@
 # Closing Time: plan for a run goal, an ending and a final boss
 
-Status: PHASES 1–6 BUILT AND REVIEWED (10 November 2026; the review's fix pass is on `codex/closing-time-6`). Phases 7–12 are planned. The ten decisions below are made.
+Status: PHASES 1–6 BUILT AND REVIEWED (10 November 2026; the review's fix pass is on `codex/closing-time-6`). Phase 7 built on `claude/closing-time-7`; phases 8–12 are planned. The ten decisions below are made.
 Every number is a starting point for `src/config/closingTime.js` and `config/economy.js`, to be tuned in phase 11. Build one phase at a
 time, each in its own worktree.
 

@@ -92,6 +92,7 @@ export function snapshot(g) {
       keys: g.closing.checklist.filter(({ bossId }) => g.closing.hasKey(bossId)).map(({ bossId }) => bossId),
       pickups: g.closing.pickups.map(({ bossId, position }) => [bossId, ...position.toArray().map(round)]),
       markers: Object.keys(g.closing.markers),
+      validated: g.closing.validated,
       readyToLeave: g.closing.readyToLeave,
     },
     points: g.wallet.points,
