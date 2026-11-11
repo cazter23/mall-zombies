@@ -175,8 +175,13 @@ test('the fountain hazard can trigger Second Chance', (t) => {
   const fountain = g.features.list.find(({ feature }) => feature.kind === 'fountainHazard').instance;
   const { x, z } = hazards.fountain.center;
   standAt(x + hazards.fountain.radius - 1, z);
-  g.stats.health = 1;
   assert.equal(fountain.trigger(), true);
+  // (the fountain spares the player for its stand-clear grace; held at 1 health after it, the next pulse is lethal)
+  while (fountain.sparingPlayer) g.update(dt);
+  for (let i = 0; i < Math.ceil(hazards.fountain.pulseInterval / dt) + 1 && !g.health.isReviveProtected; i++) {
+    g.stats.health = Math.min(g.stats.health, 1); // (no regen back out of reach between pulses)
+    g.update(dt);
+  }
   assert.equal(g.health.isReviveProtected, true);
   assert.equal(g.stats.health, g.stats.maxHealth);
   assert.equal(g.state.over, false);

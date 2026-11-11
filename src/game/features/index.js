@@ -42,10 +42,10 @@ const builders = {
   clawMachine: buildClawMachine, // GRAB-A-GUN: pay, time the drop, take the gun from the chute
   prizeCounter: buildPrizeCounter, // REDEMPTION: GRAB-A-GUN's prize tickets for small things
   kiosk: buildKiosk,
-  fountainHazard: buildFountainHazard, // Grand Atrium fountain breaker switch (docs/hazards-plan.md)
-  fryerHazard: buildFryerHazard, // Food Court Corn Dog Corral fryer valve switch (docs/hazards-plan.md)
-  sprinklerHazard: buildSprinklerHazard, // Main Hallway south fire alarm pull switch (docs/hazards-plan.md)
-  paLureHazard: buildPaLureHazard, // Service Corridor west wall paging panel switch (docs/hazards-plan.md)
+  fountainHazard: buildFountainHazard, // Grand Atrium fountain breaker switch (docs/archive/hazards-plan.md)
+  fryerHazard: buildFryerHazard, // Food Court Corn Dog Corral fryer valve switch (docs/archive/hazards-plan.md)
+  sprinklerHazard: buildSprinklerHazard, // Main Hallway south fire alarm pull switch (docs/archive/hazards-plan.md)
+  paLureHazard: buildPaLureHazard, // Service Corridor west wall paging panel switch (docs/archive/hazards-plan.md)
   nightSafe: buildNightSafe,
   escapeVan: buildEscapeVan,
 };

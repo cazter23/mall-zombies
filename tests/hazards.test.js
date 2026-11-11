@@ -1,4 +1,4 @@
-// Environmental hazards (docs/hazards-plan.md, config/hazards.js, game/features/hazards.js,
+// Environmental hazards (docs/archive/hazards-plan.md, config/hazards.js, game/features/hazards.js,
 // game/features/fountainHazard.js, game/features/fryerHazard.js, game/features/sprinklerHazard.js,
 // game/features/paLureHazard.js):
 // pay to trigger through g.pricing, active pulses with source 'hazard' (fountain shock + stagger +
@@ -69,6 +69,46 @@ function standAtPaLureSwitch(t, distance = 1.25) {
 function getPaLureInstance(g) {
   return g.features.list.find((f) => f.feature.kind === 'paLureHazard')?.instance;
 }
+
+// Ticks past a hazard's stand-clear grace (the seconds after the switch is thrown in which it spares the player)
+// and one more pulse, so the next pulse that can hurt the player has landed.
+function pastGrace(game, hazardCfg) {
+  game.tick(Math.ceil(((hazardCfg.playerGraceSeconds ?? 0) + hazardCfg.pulseInterval) / dt) + 1);
+}
+
+test('stand clear: the fountain and fryer spare the player for their grace after the switch is thrown, never the zombies', (t) => {
+  for (const [hazardCfg, instance, standAtSwitch, zombieAt] of [
+    [cfg, getFountainInstance, standAtFountainSwitch, [cfg.center.x + cfg.innerRadius + 1, cfg.center.z]],
+    [fryerCfg, getFryerInstance, standAtFryerSwitch, [fryerCfg.bounds.minX + 1, fryerCfg.bounds.maxZ - 1]],
+  ]) {
+    const game = headlessGame();
+    const { g } = game;
+    game.tick(1);
+    g.rounds.update = () => {};
+    g.zombies.clear();
+    g.wallet.earn(10_000);
+    g.map.areaUnlocks.unlock(hazardCfg.zone);
+    assert.ok(hazardCfg.playerGraceSeconds > hazardCfg.pulseInterval, `${hazardCfg.id}: the grace covers the opening pulse and more`);
+    const zombie = g.zombies.spawn('shopper', new THREE.Vector3(zombieAt[0], 0, zombieAt[1]));
+    zombie.setState('chasing');
+
+    standAtSwitch(game); // (inside its own zone)
+    const hazard = instance(g);
+    const healthBefore = g.stats.health;
+    assert.equal(hazard.trigger(), true);
+    assert.equal(zombie.isAlive, false, `${hazardCfg.id}: the opening pulse still hits zombies`);
+    assert.equal(hazard.sparingPlayer, true);
+    game.tick(Math.floor(hazardCfg.playerGraceSeconds / dt) - 1);
+    assert.equal(g.stats.health, healthBefore, `${hazardCfg.id}: no damage while the player steps clear`);
+    assert.equal(g.stats.surfaceSpeed, 1, `${hazardCfg.id}: no slow either`);
+
+    pastGrace(game, hazardCfg);
+    assert.equal(hazard.sparingPlayer, false);
+    assert.ok(g.stats.health < healthBefore, `${hazardCfg.id}: staying in it hurts once the grace is over`);
+    assert.equal(g.stats.surfaceSpeed, hazardCfg.playerSlowFactor);
+    g.map.dispose();
+  }
+});
 
 test('triggering, price and discounts: locked until Atrium opens, charges g.pricing ("hazard"), and respects Flash Sale discounts', (t) => {
   const game = headlessGame();
@@ -242,10 +282,11 @@ test('player standing in the active fountain takes shock damage and is slowed, t
   g.wallet.earn(10_000);
   g.map.areaUnlocks.unlock('atrium');
 
-  // Stand at the switch (inside the 7.0 m ring) and trigger the fountain.
+  // Stand at the switch (inside the 7.0 m ring), trigger the fountain and stay past the stand-clear grace.
   standAtFountainSwitch(game);
   const healthBefore = g.stats.health;
   game.press('KeyF', 20);
+  pastGrace(game, cfg);
   assert.ok(g.stats.health <= healthBefore - cfg.playerDamage, 'player took shock damage from the fountain');
   assert.equal(g.stats.surfaceSpeed, cfg.playerSlowFactor, 'player surfaceSpeed is slowed while inside the active ring');
 
@@ -272,7 +313,7 @@ test('a hazard slows the player through game/surfaceSlows.js: it never overwrite
   // A stronger slow from another source wins while both run; the fountain's own slot holds its factor.
   fountain.trigger();
   g.surfaces.set('testFloor', 0.5);
-  game.tick(2);
+  pastGrace(game, cfg);
   assert.equal(g.surfaces.factorOf(`hazard:${cfg.id}`), cfg.playerSlowFactor, 'the fountain reports its slow as its own source');
   assert.equal(g.stats.surfaceSpeed, 0.5, 'the lowest slow wins');
 
@@ -299,6 +340,7 @@ test('Play again (resetRun) clears active hazard state, cooldowns, visuals, and 
   g.map.areaUnlocks.unlock('atrium');
   standAtFountainSwitch(game);
   game.press('KeyF', 20);
+  pastGrace(game, cfg);
 
   const fountain = getFountainInstance(g);
   assert.equal(fountain.phase, 'active');
@@ -599,6 +641,7 @@ test('player standing in the active grease apron takes scald damage and is slowe
   standAtFryerSwitch(game);
   const healthBefore = g.stats.health;
   game.press('KeyF', 20);
+  pastGrace(game, fryerCfg);
   assert.ok(g.stats.health <= healthBefore - fryerCfg.playerDamage, 'player took scald damage from the fryer apron');
   assert.equal(g.stats.surfaceSpeed, fryerCfg.playerSlowFactor, 'player surfaceSpeed is slowed while inside the active grease apron');
 
@@ -621,6 +664,7 @@ test('Play again (resetRun) clears active fryer state, cooldowns, visuals, and p
   g.map.areaUnlocks.unlock('foodCourt');
   standAtFryerSwitch(game);
   game.press('KeyF', 20);
+  pastGrace(game, fryerCfg);
 
   const fryer = getFryerInstance(g);
   assert.equal(fryer.phase, 'active');
@@ -651,7 +695,7 @@ test('sprinklers triggering, price, discounts, and Kiosk Kevin nearest-prompt-wi
   g.rounds.jumpTo(2);
   game.tick(1);
 
-  // Nearest-prompt-wins rule: standing at the Fire Alarm Pull (-3.9) gives the sprinkler prompt, while standing at
+  // Nearest-prompt-wins rule: standing at the Fire Alarm Pull (-6.6) gives the sprinkler prompt, while standing at
   // each of Kiosk Kevin's three slots (-9.22, -8.5, -7.78) gives that slot's own kiosk prompt.
   const kioskFeature = g.map.features.find((f) => f.kind === 'kiosk');
   assert.ok(kioskFeature, 'Kiosk Kevin feature exists on the south hallway wall');
@@ -688,6 +732,31 @@ test('sprinklers triggering, price, discounts, and Kiosk Kevin nearest-prompt-wi
     assert.equal(g.interactions.prompt?.kind, 'kiosk');
     assert.equal(g.interactions.prompt?.id, slot.id);
   }
+});
+
+test("the sprinkler pull never takes the Food Court gate's prompt: anywhere along the closed gate, holding F is for the gate", (t) => {
+  const game = headlessGame();
+  t.after(() => game.g.map.dispose());
+  const { g } = game;
+  game.tick(1);
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  g.map.areaUnlocks.unlock('hallway');
+  const gate = g.map.doors.find((d) => d.id === 'foodCourt');
+  assert.equal(gate.isOpen, false);
+  // The gate spans x -3.5..3.5 on the hallway's south wall; walk its whole width, near and a little back, facing it
+  // and turned towards the pull.
+  for (let x = -3.5; x <= 3.5; x += 0.25) {
+    for (const z of [-0.6, 0.4]) {
+      for (const yaw of [0, 30, 60]) {
+        game.standAt(x, z, yaw);
+        assert.notEqual(g.interactions.prompt?.kind, 'hazard', `at x ${x}, z ${z}, yaw ${yaw}`);
+      }
+    }
+  }
+  // ...and at the pull itself the prompt is the sprinklers'.
+  standAtSprinklerSwitch(game);
+  assert.equal(g.interactions.prompt?.id, 'sprinklers');
 });
 
 test('sprinklers cooldown: blocked while active ("Active") and recharging ("Recharging"), then ready again after cooldown elapses', (t) => {

@@ -1,11 +1,12 @@
 // =============================================================================
-// HAZARDS FRAMEWORK (game/features/hazards.js): shared switch prop, interaction prompt,
+// HAZARDS FRAMEWORK (game/features/hazards.js): the switch (game/features/hazardSwitches.js), interaction prompt,
 // ready -> active -> cooldown state machine, `source: 'hazard'` zombie damage helper,
-// player-inside slow/hurt, and Play-again reset for environmental hazards (docs/hazards-plan.md).
+// player-inside slow/hurt, and Play-again reset for environmental hazards (docs/archive/hazards-plan.md).
 // =============================================================================
 
 import * as THREE from 'three';
 import { hazards } from '../../config/hazards.js';
+import { buildHazardSwitch } from './hazardSwitches.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 const UP = new THREE.Vector3(0, 1, 0);
@@ -35,123 +36,6 @@ export function dealHazardDamage(zombie, baseDamage, cfg) {
 }
 
 /**
- * Builds the 3D industrial breaker/switch box at `position` facing `normal`.
- * Marked `userData.dynamic = true` on the parent Group (never on child meshes).
- */
-export function buildHazardSwitchBox({ position, normal, postBottomY }) {
-  const boxCfg = hazards.switchBox;
-  const rig = new THREE.Group();
-  rig.name = 'hazard_switch_rig';
-  rig.userData.dynamic = true;
-  rig.position.copy(position);
-  rig.rotation.y = Math.atan2(normal.x, normal.z);
-
-  const cabinetMat = new THREE.MeshLambertMaterial({ color: boxCfg.cabinetColor });
-  const trimMat = new THREE.MeshLambertMaterial({ color: boxCfg.trimColor });
-  const darkMat = new THREE.MeshLambertMaterial({ color: boxCfg.stripeDarkColor });
-  const metalMat = new THREE.MeshLambertMaterial({ color: boxCfg.metalColor });
-  const meterBgMat = new THREE.MeshBasicMaterial({ color: boxCfg.meterBgColor });
-  const needleMat = new THREE.MeshBasicMaterial({ color: boxCfg.needleColor });
-  const handleMat = new THREE.MeshLambertMaterial({ color: boxCfg.handleColor });
-  const lampMat = new THREE.MeshBasicMaterial({ color: boxCfg.readyColor });
-
-  // Support post + conduit pipe down to the rim or floor when mounted above a low wall.
-  if (typeof postBottomY === 'number' && position.y - boxCfg.height / 2 > postBottomY + 0.02) {
-    const postH = position.y - boxCfg.height / 2 - postBottomY;
-    const post = new THREE.Mesh(
-      new THREE.BoxGeometry(boxCfg.postWidth, postH, boxCfg.postWidth),
-      cabinetMat,
-    );
-    post.position.set(0, -boxCfg.height / 2 - postH / 2, -boxCfg.depth / 2);
-    rig.add(post);
-  }
-
-  // Main breaker cabinet body (recessed behind local z = 0 so its front face sits at z = 0).
-  const cabinet = new THREE.Mesh(
-    new THREE.BoxGeometry(boxCfg.width, boxCfg.height, boxCfg.depth),
-    cabinetMat,
-  );
-  cabinet.position.set(0, 0, -boxCfg.depth / 2);
-  rig.add(cabinet);
-
-  // Top & bottom yellow/black hazard warning bars (proud of the front face by 2.5 cm).
-  const barW = boxCfg.width - 0.04;
-  for (const ySign of [1, -1]) {
-    const barY = ySign * (boxCfg.height / 2 - 0.045);
-    const yellowBar = new THREE.Mesh(new THREE.BoxGeometry(barW, 0.05, 0.02), trimMat);
-    yellowBar.position.set(0, barY, 0.025);
-    rig.add(yellowBar);
-    for (let i = -2; i <= 2; i += 2) {
-      const tick = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.052, 0.015), darkMat);
-      tick.position.set(i * 0.055, barY, 0.045);
-      rig.add(tick);
-    }
-  }
-
-  // Top beacon dome (glows in the current status color).
-  const beaconBase = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.03, 0.11), metalMat);
-  beaconBase.position.set(0, boxCfg.height / 2 + 0.015, -boxCfg.depth / 2);
-  rig.add(beaconBase);
-  const beaconDome = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.07, 0.08), lampMat);
-  beaconDome.position.set(0, boxCfg.height / 2 + 0.065, -boxCfg.depth / 2);
-  rig.add(beaconDome);
-
-  // Analog voltage gauge on the upper-left front face + rotating needle.
-  const meterFace = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.09, 0.02), meterBgMat);
-  meterFace.position.set(-0.085, 0.075, 0.025);
-  rig.add(meterFace);
-  const needlePivot = new THREE.Group();
-  needlePivot.position.set(-0.085, 0.045, 0.045);
-  const needle = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.055, 0.01), needleMat);
-  needle.position.set(0, 0.024, 0);
-  needlePivot.add(needle);
-  rig.add(needlePivot);
-
-  // Status indicator lamp on the lower-left front face (proud by 3 cm).
-  const lamp = new THREE.Mesh(
-    new THREE.BoxGeometry(0.075, 0.075, 0.03),
-    lampMat,
-  );
-  lamp.position.set(-0.085, -0.055, 0.03);
-  rig.add(lamp);
-
-  // Heavy twin-blade knife switch on the right half of the box.
-  const handlePivot = new THREE.Group();
-  handlePivot.position.set(0.075, 0.01, 0.03);
-  for (const dx of [-0.035, 0.035]) {
-    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.16, 0.025), metalMat);
-    blade.position.set(dx, 0.06, 0.02);
-    handlePivot.add(blade);
-  }
-  const crossbar = new THREE.Mesh(
-    new THREE.BoxGeometry(0.11, 0.042, 0.045),
-    handleMat,
-  );
-  crossbar.position.set(0, 0.13, 0.035);
-  handlePivot.add(crossbar);
-  rig.add(handlePivot);
-
-  function setPhaseVisual(phase) {
-    if (phase === 'active') {
-      lampMat.color.setHex(boxCfg.activeColor);
-      handlePivot.rotation.x = 2.15;
-      needlePivot.rotation.z = -0.65;
-    } else if (phase === 'cooldown') {
-      lampMat.color.setHex(boxCfg.cooldownColor);
-      handlePivot.rotation.x = 0.45;
-      needlePivot.rotation.z = 0.25;
-    } else {
-      lampMat.color.setHex(boxCfg.readyColor);
-      handlePivot.rotation.x = -0.35;
-      needlePivot.rotation.z = 0.55;
-    }
-  }
-
-  setPhaseVisual('ready');
-  return { rig, setPhaseVisual };
-}
-
-/**
  * Shared lifecycle for a pay-to-trigger environmental hazard feature.
  */
 export function createHazard({
@@ -166,22 +50,26 @@ export function createHazard({
   note = null, // optional () => text | null: one more term on the switch's own prompt (the fountain's closing-duty count)
 }) {
   const { scene, map, events, pricing, interactions, player, health, state, sound, effects, surfaces } = ctx;
-  const { rig, setPhaseVisual } = buildHazardSwitchBox({
+  const { rig, show } = buildHazardSwitch(cfg.switchStyle ?? 'breaker', {
     position: feature.position,
     normal: feature.normal,
     postBottomY: cfg.postBottomY,
+    offset: cfg.switchOffset ?? 0,
   });
   scene.add(rig);
 
   let phase = 'ready'; // 'ready' | 'active' | 'cooldown'
   let timer = 0;
   let pulseTimer = 0;
+  // Seconds after the switch is thrown in which the hazard spares the player (cfg.playerGraceSeconds): every switch
+  // stands inside its own zone, so this is the time to step clear. Zombies are hit from the first pulse.
+  let graceLeft = 0;
   // The player's slow goes through game/surfaceSlows.js like every other floor slow (a boss's wet floor, Scoops' melt):
   // this hazard reports its own factor under its own source name and clears it, so it never overwrites or wipes another's.
   const slowSource = `hazard:${cfg.id}`;
 
   function applyPlayerSlow(inside) {
-    const shouldSlow = inside && !state.over && phase === 'active' && cfg.playerSlowFactor < 1;
+    const shouldSlow = inside && !state.over && phase === 'active' && graceLeft <= 1e-9 && cfg.playerSlowFactor < 1;
     if (shouldSlow) surfaces.set(slowSource, cfg.playerSlowFactor);
     else if (surfaces.factorOf(slowSource) < 1) surfaces.clear(slowSource);
   }
@@ -189,8 +77,8 @@ export function createHazard({
   function runPulse(isOpening = false) {
     if (state.over) return;
     onPulse?.(isOpening);
-    // (not during Second Chance's grace period: a pulse that can't hurt doesn't jolt the view either)
-    if (cfg.playerDamage > 0 && isPlayerInside?.(player.position) && !health.isDead && !health.isReviveProtected) {
+    // (not during the stand-clear grace, nor Second Chance's grace period: a pulse that can't hurt doesn't jolt the view either)
+    if (cfg.playerDamage > 0 && graceLeft <= 1e-9 && isPlayerInside?.(player.position) && !health.isDead && !health.isReviveProtected) {
       health.takeDamage(cfg.playerDamage, { type: 'hazard', id: cfg.id }); // (the death receipt's incident report names it)
       if (cfg.playerViewJoltDegrees) {
         player.addViewKick(-cfg.playerViewJoltDegrees * DEG_TO_RAD);
@@ -198,15 +86,24 @@ export function createHazard({
     }
   }
 
+  /** What the switch's strip shows: full when ready, the time left while active, the recharge while cooling down. */
+  function progress() {
+    if (phase === 'active') return timer / cfg.durationSeconds;
+    if (phase === 'cooldown') return 1 - timer / cfg.cooldownSeconds;
+    return 1;
+  }
+
   function trigger() {
     if (state.over || phase !== 'ready') return false;
     phase = 'active';
     timer = cfg.durationSeconds;
     pulseTimer = cfg.pulseInterval;
-    setPhaseVisual(phase);
+    graceLeft = cfg.playerGraceSeconds ?? 0;
+    show(phase, progress(), 0);
+    const s = hazards.switchStatus;
     if (cfg.triggerSound) sound?.play(cfg.triggerSound);
-    effects?.splat?.(feature.position, UP, hazards.switchBox.sparkColors, hazards.switchBox.sparkCount);
-    effects?.flash?.(feature.position, hazards.switchBox.activeColor, 1.1, 0.15);
+    effects?.splat?.(rig.position, UP, s.sparkColors, s.sparkCount);
+    effects?.flash?.(rig.position, s.activeColor, { size: s.flashSize, seconds: s.flashSeconds });
     onActivate?.();
     applyPlayerSlow(Boolean(isPlayerInside?.(player.position)));
     runPulse(true);
@@ -246,6 +143,7 @@ export function createHazard({
       return;
     }
     if (phase === 'active') {
+      graceLeft = Math.max(0, graceLeft - dt);
       applyPlayerSlow(Boolean(isPlayerInside?.(player.position)));
       onTick?.(dt, timer);
       timer -= dt;
@@ -260,16 +158,15 @@ export function createHazard({
         phase = 'cooldown';
         timer = cfg.cooldownSeconds;
         pulseTimer = 0;
-        setPhaseVisual(phase);
       }
     } else if (phase === 'cooldown') {
       timer = Math.max(0, timer - dt);
       if (timer <= 1e-9) {
         phase = 'ready';
         timer = 0;
-        setPhaseVisual(phase);
       }
     }
+    show(phase, progress(), dt);
   }
 
   function reset() {
@@ -278,7 +175,8 @@ export function createHazard({
     phase = 'ready';
     timer = 0;
     pulseTimer = 0;
-    setPhaseVisual(phase);
+    graceLeft = 0;
+    show(phase, progress(), 0);
   }
 
   return {
@@ -289,6 +187,7 @@ export function createHazard({
     get active() { return phase === 'active'; },
     get coolingDown() { return phase === 'cooldown'; },
     get ready() { return phase === 'ready'; },
+    get sparingPlayer() { return phase === 'active' && graceLeft > 1e-9; },
     trigger,
     update,
     reset,

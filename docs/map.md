@@ -21,7 +21,7 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   sign; the escalator's high end runs overhead just short of it). 3 boarded vents (zombie spawns).
 - Kiosk Kevin has one fixed cart on the Hallway's south wall at x −8.5, z −1.96, facing +Z. Its 2.2 × 0.75 m
   footprint has a single 1.05 m counter collider. The three labeled buy spots face the aisle, and the cart opens
-  from round 2 after the Hallway unlocks. The pay-to-trigger Fire Sprinklers pull station `sprinklerHazard` sits on the same south wall at (-3.9, 1.35, -1.95) facing +Z (600 via `g.pricing`, drenching `x: -12..12, z: -2..6`; 3.5 m east of Kevin's cart with independent prompts).
+  from round 2 after the Hallway unlocks. The pay-to-trigger Fire Sprinklers pull station `sprinklerHazard` sits on the same south wall at (-6.6, 1.25, -1.95) facing +Z, between Kevin's cart (x -9.6..-7.4) and the planter (x -5.9..-4.5), under the notice poster (600 via `g.pricing`, drenching `x: -12..12, z: -2..6`). Out of reach from the Food Court gate (x -3.5..3.5), so the gate keeps its own prompt; the small red fire pull decal at x -3.9 by the gate is decoration.
   Escalator (SEALED until Hallway and Promenade are owned): west half, z 1..3, bottom end at x -4 facing the hub, rising west at 30 deg through a hole in
   the ceiling (x ~-16.5..-11.95) to level 2 (y 6.3, the top of the ceiling slab; see Level 2 below). Rope barriers + OUT OF ORDER boards at both ends disappear automatically when Hallway and Promenade are owned, including access via Atrium or Cinema; every collider you could
   reach from the floor is taller than a jump. Its low end (x -4..-10.4) is solid to the floor; under its high end

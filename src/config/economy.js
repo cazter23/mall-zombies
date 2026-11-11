@@ -135,7 +135,7 @@ export const economy = {
   // Closing Time's quest prices (docs/closing-time-plan.md): one Night Safe deposit. Read through g.pricing.priceOf('closing', id).
   closing: { nightSafe: 1000 },
 
-  // Environmental hazards (docs/hazards-plan.md, config/hazards.js): pay-to-trigger mall traps with cooldowns.
+  // Environmental hazards (docs/archive/hazards-plan.md, config/hazards.js): pay-to-trigger mall traps with cooldowns.
   hazards: {
     fountain: 750,
     fryer: 750,

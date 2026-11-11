@@ -168,7 +168,7 @@ Built when `debug.testArena` is true (it still is: turn it off before shipping);
 ## Build order (status, November 2026)
 1-4. Walkable mall, staple gun, Shopper zombies + box cutter, waves/points/doors/wall buys (done)
 5. The roster: Mall Walker, Cart Pusher, Mannequin, Mascot (four costumes + gold) (done); bosses: Murray, Fairweather, Kettle, Skylar, with encores (done)
-6. Build-A-Blaster and Flash Sales (done); Wardrobe and claw machine (planned: docs/); Kiosk Kevin vendor (in progress); hazards (done: docs/hazards-plan.md)
+6. Build-A-Blaster and Flash Sales (done); Wardrobe and claw machine (planned: docs/); Kiosk Kevin vendor (in progress); hazards (done: docs/archive/hazards-plan.md)
 7. Second floor, escalators, stairs, multi-floor navigation (done); elevators (dropped: escalators and stairs do the job)
 8. Audio and UI polish (ongoing)
 9. Meta progression and skill tree (not started); a run goal / ending (planned, not built: docs/closing-time-plan.md, a "Closing Time" checklist with a final boss)
@@ -191,7 +191,7 @@ Built when `debug.testArena` is true (it still is: turn it off before shipping);
 - **Pack-a-Punch equivalent: Build-A-Blaster (built: docs/archive/build-a-blaster-plan.md).** One build per weapon (fryer oil = burn, smoothie freeze = slow,
   neon sign = electric chain, glitter = confuse zombies).
 - **Vendor: Kiosk Kevin** sells lethals, tacticals, armor plates and a turret, with rotating stock each round.
-- **Environmental hazards** (pay to trigger, with cooldowns; built: docs/hazards-plan.md): electrified fountain (Atrium), fryer blast (Food Court),
+- **Environmental hazards** (pay to trigger, with cooldowns; built: docs/archive/hazards-plan.md): electrified fountain (Atrium), fryer blast (Food Court),
   fire sprinklers (Main Hallway), PA system lure (Service Corridor). Escalator reversal and toppling shelves were dropped (the plan says why).
 - **Flash Sales:** random, announced over the mall PA (25-50% off one category).
 - **Later:** meta progression and a skill tree (keep boosts small).
