@@ -26,6 +26,7 @@ import { buildKiosk } from './kiosk.js';
 import { buildNightSafe } from './nightSafe.js';
 import { buildEscapeVan } from './escapeVan.js';
 import { buildFountainHazard } from './fountainHazard.js';
+import { buildFryerHazard } from './fryerHazard.js';
 
 const builders = {
   wallBuy: buildWallBuy, // buy a gun off the wall, or its ammo once you own it
@@ -40,6 +41,7 @@ const builders = {
   prizeCounter: buildPrizeCounter, // REDEMPTION: GRAB-A-GUN's prize tickets for small things
   kiosk: buildKiosk,
   fountainHazard: buildFountainHazard, // Grand Atrium fountain breaker switch (docs/hazards-plan.md)
+  fryerHazard: buildFryerHazard, // Food Court Corn Dog Corral fryer valve switch (docs/hazards-plan.md)
   nightSafe: buildNightSafe,
   escapeVan: buildEscapeVan,
 };

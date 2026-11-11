@@ -118,7 +118,7 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
 - Food Court: x -20..20, z -14.3..-2.3, 6m ceiling, behind the 1000 shutter: the old concourse moved south (its four
   shops Good Sports / Nuts & Bolts / Play Time Toys / Byte Me are real stores now (see below), 2 pillars, 2 benches (north side), tree planter,
   end planters, ceiling lights, 4 spawns), placed relative to its center line FZ = -8.3. Three food stalls along the
-  south wall between the shops: BURGER BARN (x -8.4..-3.1), WOK THIS WAY (-2.6..2.6), CORN DOG CORRAL (3.1..8.4); each
+  south wall between the shops: BURGER BARN (x -8.4..-3.1), WOK THIS WAY (-2.6..2.6), CORN DOG CORRAL (3.1..8.4, with the pay-to-trigger Fryer Blast valve switch `fryerHazard` on its front counter at (5.75, 1.05, -13.0), 750 via `g.pricing`, venting scalding oil across the grease apron `x: 2.5..9.0, z: -13.0..-6.5`); each
   is solid from the wall to its counter front (z -13.0), 1.2m tall, so you can't get onto or behind it. Eight round
   table sets (tables 0.75m you can hop onto via the 0.45m stools) at x +-9 / +-5.5 around the tree planter, leaving
   table lanes, a clear lane from the door to the planter and room to queue at the stalls; two trash cans (x +-11.2);

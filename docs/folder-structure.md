@@ -111,7 +111,7 @@ src/
                         floor), auto-drop, lift and take times, stock (6 a site) and plush odds, the cabinet's size, its six sites and the
                         PA lines. Price: economy.claw (through g.pricing 'claw').
     hazards.js          Environmental hazards (docs/hazards-plan.md): switch box sizing/colours, status labels, and tuning for the Grand Atrium
-                        Electrified Fountain (plus planned fryer, sprinkler and PA lure hazards). Prices: economy.hazards (through g.pricing 'hazard').
+                        Electrified Fountain and Food Court Fryer Blast (plus planned sprinkler and PA lure hazards). Prices: economy.hazards (through g.pricing 'hazard').
     workshop.js         Build-A-Blaster: Limited Edition numbers (workshopBuilds), the ritual (workshopRitual: time, qualities, stages, loaner, PA), Stuffings and Hearts, buildOf reads a gun's finished build.
     decor.js            Decoration kit + clutter scatter numbers (world/decor.js, world/scatter.js). Cosmetic only.
     concourse.js        The real-mall pass as data (maps/mall/concourse.js): Level 2 shopfronts, hallway display windows, soffits and
@@ -521,6 +521,7 @@ src/
       hazards.js        Shared environmental hazard lifecycle (docs/hazards-plan.md): buildHazardSwitchBox (dynamic parent group, status lamp + throw lever),
                         createHazard (ready -> active -> cooldown, 'hazard' pricing prompt, player-inside slow/hurt, reset), dealHazardDamage (source 'hazard', boss/Mascot maxHealthCap).
       fountainHazard.js Feature kind 'fountainHazard': Grand Atrium center fountain breaker switch; energizes the basin and conductive floor ring, pulsing electric arcs (source 'hazard') and slows. Emits 'fountainKill' for each killing blow.
+      fryerHazard.js    Feature kind 'fryerHazard': Food Court Corn Dog Corral counter fryer valve switch; vents superheated oil across the counter apron (`x: 2.5..9.0, z: -13.0..-6.5`), pulsing scalding oil bursts (source 'hazard') and slipping zombies (`applySlip`). Emits 'fryerKill' for each killing blow.
     debugCommands.js    createDebugCommands(game parts): the debug shortcuts as functions run(id) (spawn, cycleZombie, clearZombies,
                         killZombies, nextRound, jumpRounds, flashSale, addPoints, zeroPoints, god, giveGun, upgradeGun, doors, arena, panel,
                         spawnMascot / spawnGoldMascot: each costume in turn at the spawn point nearest you);

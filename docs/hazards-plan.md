@@ -14,7 +14,7 @@ The mall's infrastructure is still wired into 1986 breaker boxes, fryer valves, 
 
 - **4 hazards chosen, 2 dropped** from the design reference list (`fire sprinklers, an electrified fountain, a fryer blast, escalator reversal, toppling shelves, a PA system lure`):
   1. **Electrified Fountain** (`fountain`, Grand Atrium) — **built first in Phase 1**
-  2. **Fryer Blast** (`fryer`, Food Court at Corn Dog Corral)
+  2. **Fryer Blast** (`fryer`, Food Court at Corn Dog Corral) — **built in Phase 2**
   3. **Fire Sprinklers** (`sprinklers`, Main Hallway concourse)
   4. **PA System Lure** (`paLure`, Service Corridor)
   - *Dropped*: **Toppling Shelves** and **Escalator Reversal** (see **Why two candidates were dropped** below).
@@ -45,7 +45,7 @@ The mall's infrastructure is still wired into 1986 breaker boxes, fryer valves, 
 | Hazard (`id`) | Feature kind | Area (`zone`) & switch spot | Active zone | Price & cooldown | What it does to zombies | Player in it | Bosses & Mascots | Sight & sound |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | **Electrified Fountain** (`fountain`) | `fountainHazard` | **Grand Atrium** (`atrium`), breaker box on the south fountain rim at `(20, 1.28, 15.92)` facing `-Z` (above the `y = 0.55` fountain sign) | Circular wet apron + basin around `(20, 18.6)`, radius `7.0 m` | `750` pts · `8 s` active · `25 s` cooldown | Opening stagger surge + pulses every `0.4 s` for `max(200, 55% maxHealth)` shock damage (`source: 'hazard'`) + `applySlow(0.65, 0.25, 'shock')` | `6` shock damage per pulse (`health.takeDamage`), minor view jolt, `0.75` `stats.surfaceSpeed` slow while inside | Damage capped at `10%` of `maxHealth` per pulse; bosses scale slow by `type.slowStrength`; Mascot helmet pop does not pay `helmetPopBonus` | Energized `3.7 m` fountain jet + bowls + 4 waterfall sheets, expanding floor shockwave ripple, jagged 4-segment forked lightning bolts + spark bursts, industrial breaker box with voltage needle & beacon |
-| **Fryer Blast** (`fryer`) | `fryerHazard` | **Food Court** (`foodCourt`), valve switch on **CORN DOG CORRAL** front counter at `(5.75, 1.05, -13.0)` facing `+Z` north | Rectangular stall apron `x: 2.5..9.0, z: -13.0..-6.5` | `750` pts · `6 s` active · `25 s` cooldown | Initial `90` scald burst + `35` burn damage every `0.5 s` (`source: 'hazard'`) + `applySlip(0.9)` on the hot grease slick | `5` scald damage per pulse + `0.8` `stats.surfaceSpeed` grease slow while inside | Bosses ignore `applySlip` (`type.boss` guard in `zombie.js`); pulse damage capped at `6%` of `maxHealth` | Amber grease floor slick, orange/gold steam-and-oil burst (`effects.splat` + `effects.flash`), sizzle audio |
+| **Fryer Blast** (`fryer`) | `fryerHazard` | **Food Court** (`foodCourt`), valve switch on **CORN DOG CORRAL** front counter at `(5.75, 1.05, -13.0)` facing `+Z` north | Rectangular stall apron `x: 2.5..9.0, z: -13.0..-6.5` | `750` pts · `6 s` active · `25 s` cooldown | Opening `max(180, 45% maxHealth)` scald burst + `max(120, 45% maxHealth)` burn damage every `0.5 s` (`source: 'hazard'`) + `applySlip(0.9, 0.8)` on the hot grease slick | `5` scald damage per pulse + `0.8` `stats.surfaceSpeed` grease slow while inside | Bosses ignore `applySlip` (`type.boss` guard in `zombie.js`); pulse damage capped at `10%` of `maxHealth` | Amber grease floor slick, sweeping hot-oil wave, glowing fryer vats + counter nozzles, orange/gold oil streams (`effects.tracer` + `effects.splat` + `effects.flash`), sizzle audio |
 | **Fire Sprinklers** (`sprinklers`) | `sprinklerHazard` | **Main Hallway** (`hallway`), red fire pull station on south concourse wall at `(-3.9, 1.35, -1.95)` facing `+Z` north | Central concourse `x: -12..12, z: -2..6` | `600` pts · `10 s` active · `30 s` cooldown | Pulses every `0.5 s` for `20` cold-spray damage (`source: 'hazard'`), chills zombies (`applySlow(1.0, 0.55, 'smoothie')`), and soaks them (`applyVulnerable(1.2, 1.35)`) | No damage; `0.9` wet-tile `stats.surfaceSpeed` slow while inside | Soaked bosses and Mascots take `1.35x` weapon damage from `vulnerableMultiplier`; pulse damage capped at `3%` of `maxHealth` | Overhead water-drop streaks from ceiling height (`effects.tracer`), floor mist flashes, chime + spray audio |
 | **PA System Lure** (`paLure`) | `paLureHazard` | **Service Corridor** (`serviceHall`), paging box on west corridor wall at `(-23.1, 1.35, -4.5)` facing `+X` east | `10 m` radius around ceiling speaker at `(-21.5, -4.5)` | `500` pts · `8 s` active · `30 s` cooldown | Holds normal zombies in place with `applyHold(lureSource, 1.2)` every pulse, ending with a `70` damage feedback pop (`source: 'hazard'`) | Harmless to the player | Bosses ignore `applyHold` (`if (this.type.boss) return false;` in `zombie.js`); final pop capped at `5%` of `maxHealth` | Pulsing amber speaker beacon ring on the corridor floor, `paChime` broadcast + feedback pop |
 
@@ -95,6 +95,7 @@ Because `source` is `'hazard'`, the existing systems in `src/game/createGame.js`
 - `src/game/pricing.js` — adds `hazard` to `BASE` (`PRICE_CATEGORIES`) so `g.pricing.priceOf('hazard', id)` and Flash Sale discounts work identically to doors, weapons, and the claw machine.
 - `src/game/features/hazards.js` — shared hazard framework (`createHazard`, `dealHazardDamage`): builds the switch box + indicator lamp, registers the `interactions.add` buyable (`kind: 'hazard'`), ticks `ready → active → cooldown`, applies player self-damage/slow, and resets cleanly on `resetRun()` or `playerDeath`.
 - `src/game/features/fountainHazard.js` — Phase 1 feature kind (`fountainHazard`) for the Grand Atrium Electrified Fountain; registered in `src/game/features/index.js` and listed in `map.features` in `src/maps/mall/mall.js`.
+- `src/game/features/fryerHazard.js` — Phase 2 feature kind (`fryerHazard`) for the Food Court Fryer Blast at Corn Dog Corral; registered in `src/game/features/index.js` and listed in `map.features` in `src/maps/mall/mall.js`.
 
 ### Constraints checked
 
@@ -115,9 +116,9 @@ Because `source` is `'hazard'`, the existing systems in `src/game/createGame.js`
 
 ## Phases
 
-1. **Phase 1 (this session)**:
+1. **Phase 1 (built)**:
    - Shared hazard config (`src/config/hazards.js`), pricing category + Flash Sale group (`src/config/economy.js`, `src/game/pricing.js`), shared hazard lifecycle module (`src/game/features/hazards.js`), and the **Electrified Fountain** (`src/game/features/fountainHazard.js`, `src/game/features/index.js`, `src/maps/mall/mall.js`) + full headless integration tests (`tests/hazards.test.js`) and doc updates.
-2. **Phase 2 (later session)**:
+2. **Phase 2 (built)**:
    - **Fryer Blast** (`src/game/features/fryerHazard.js`) at Corn Dog Corral in the Food Court.
 3. **Phase 3 (later session)**:
    - **Fire Sprinklers** (`src/game/features/sprinklerHazard.js`) at the Main Hallway south fire pull station.
