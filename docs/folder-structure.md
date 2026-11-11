@@ -169,7 +169,7 @@ src/
                         revive(seconds) = full health again plus that long with no damage at all (`isReviveProtected`; it counts down in update, so it pauses
                         with the game): Second Chance (game/secondChance.js) calls it from inside onDeath, so the death never registers.
     body.js             createPlayerBody(): first-person legs + lower torso in the world scene (visual only).
-    wardrobeAppearance.js  Browser equip and reset wiring for body and gun cosmetics. Tags the active sleeve style across all models and generates the cable-knit texture.
+    wardrobeAppearance.js  Browser equip and reset wiring for body and gun cosmetics. Tags the active sleeve style across all models and generates the cable-knit texture. The styler's add(root) styles a model added to the rig later (a skinned gun built on first use).
                         Tapered faceted waist/pelvis, belt buckle, tapered thighs/shins and faceted sneakers with tongue accent.
                         Hip height follows eye height; feet posed for walk cycle / slide (V) / air tuck, knees
                         solved with two-bone IK. Exports placeLimb()/makeBoxMesh()/makeFacetedLimbMesh()/buildDeformedBoxGeometry() (also used for the arms)
@@ -407,10 +407,10 @@ src/
                         per-run state = one line there), onPlayerDeath, showResults, state { forceRun, over,
                         padPlaying, assisted, running }, death (including the frozen run summary), vaultPromptVisible.
                         No DOM: the browser parts are passed in
-    skinSave.js         createSkinSave({ storage, key }): the permanent { version, progress, unlocked, equipped } record.
+    skinSave.js         createSkinSave({ storage, key }): the permanent { version, progress, unlocked, equipped } record. Also `replay` (what the round a Save & Quit will replay has already been paid; written by Save & Quit only) and `dirty` (memory holds something storage does not).
                         Counts and unlocks are keyed by gun and skin; memory updates flush on unlock/runEnd. Safe with
                         missing/corrupt/blocked storage; newer versions are protected from all writes. Debug clear can relock one challenge.
-    challenges.js       createChallenges({ events, state, save }): g.challenges, DOM-free event counter factories by challenge.kind.
+    challenges.js       createChallenges({ events, state, save }): g.challenges, DOM-free event counter factories by challenge.kind. A round replayed after Save & Quit pays only what goes beyond what it was already paid; unsaved progress is written on runEnd, runSaved, runReset and flush() (the page closing).
                         Mastery counts kill.weaponId, ignores assisted/dead/fan kills, emits challengeProgress and skinUnlocked.
                         update/reset/snapshot cover per-run counters; finish handlers can finalize later round/run feats before saving.
     careerStats.js      createCareerStats({ storage }): versioned persistent employee record with lifetime totals,

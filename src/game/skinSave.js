@@ -6,6 +6,9 @@ const blank = () => ({ version: skinStorage.version, progress: {}, unlocked: {},
 const object = value => value && typeof value === 'object' && !Array.isArray(value) ? value : {};
 const safeKey = key => key !== '__proto__' && key !== 'constructor' && key !== 'prototype';
 const whole = value => Number.isSafeInteger(value) && value >= 0 ? value : 0;
+// Progress already paid for the round a Save & Quit will replay: { 'gunId/skinId': amount } (game/challenges.js).
+const cleanReplay = value => Object.fromEntries(Object.entries(object(value))
+  .filter(([key, amount]) => safeKey(key) && whole(amount) > 0).map(([key, amount]) => [key, whole(amount)]));
 
 function normalize(raw) {
   const data = blank();
@@ -22,6 +25,8 @@ function normalize(raw) {
   }
   data.equipped = Object.fromEntries(Object.entries(object(raw.equipped))
     .filter(([gunId, skinId]) => safeKey(gunId) && typeof skinId === 'string'));
+  const replay = cleanReplay(raw.replay);
+  if (Object.keys(replay).length) data.replay = replay;
   return data;
 }
 
@@ -37,6 +42,7 @@ function merge(data, stored) {
 export function createSkinSave({ storage, key = skinStorage.key } = {}) {
   let data = blank();
   let newer = false;
+  let dirty = false; // memory holds something storage does not
   const pendingClears = new Map(); // persistence work to retry after a failed debug write, independent of runs
   const pendingEquipped = new Map(); // local choices win over an older stored choice for this gun only
 
@@ -84,6 +90,7 @@ export function createSkinSave({ storage, key = skinStorage.key } = {}) {
       storage.setItem(key, JSON.stringify(data));
       pendingClears.clear();
       pendingEquipped.clear();
+      dirty = false;
       return true;
     } catch {
       return false;
@@ -102,12 +109,25 @@ export function createSkinSave({ storage, key = skinStorage.key } = {}) {
       if (!Object.hasOwn(skins, gunId) || (skinId !== 'default' && (!gunSkin(gunId, skinId) || !unlocked(gunId, skinId)))) return false;
       data.equipped[gunId] = skinId;
       pendingEquipped.set(gunId, skinId);
+      dirty = true;
       flush();
       return true;
     },
     record(gunId, skinId, count, unlock = false) {
-      (data.progress[gunId] ??= {})[skinId] = Math.max(progress(gunId, skinId), whole(count));
+      const next = Math.max(progress(gunId, skinId), whole(count));
+      if (next !== progress(gunId, skinId) || (unlock && !unlocked(gunId, skinId))) dirty = true;
+      (data.progress[gunId] ??= {})[skinId] = next;
       if (unlock) (data.unlocked[gunId] ??= {})[skinId] = true;
+    },
+    /** True while memory holds progress that storage does not (a run quit or restarted before any write). */
+    get dirty() { return dirty; },
+    /** What the round a saved run will replay has already been paid, by 'gunId/skinId'. Written by Save & Quit only. */
+    get replay() { return { ...(data.replay ?? {}) }; },
+    setReplay(amounts) {
+      const replay = cleanReplay(amounts);
+      if (Object.keys(replay).length) data.replay = replay;
+      else delete data.replay;
+      dirty = true;
     },
     clear(gunId, skinId) {
       (data.progress[gunId] ??= {})[skinId] = 0;
@@ -115,6 +135,7 @@ export function createSkinSave({ storage, key = skinStorage.key } = {}) {
       if (data.equipped[gunId] === skinId) delete data.equipped[gunId];
       if (pendingEquipped.get(gunId) === skinId) pendingEquipped.delete(gunId);
       pendingClears.set(`${gunId}/${skinId}`, [gunId, skinId]);
+      dirty = true;
       return flush();
     },
     flush,

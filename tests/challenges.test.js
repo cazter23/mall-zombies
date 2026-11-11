@@ -176,11 +176,11 @@ test('progress survives resetRun and a fresh game using the same storage', conte
   const storage = memoryStorage();
   const t = realGame(context, storage);
   shopper(t).takeHit({ damage: 10000, part: 'body', weaponId: 'stapleGun' });
-  t.g.resetRun();
+  t.g.resetRun(); // (Quit to title / Restart run: the run ends without a death, so its progress is written here)
   assert.equal(t.save.progress('stapleGun', staple.id), 1);
-  assert.equal(storage.writes, 0);
-  t.g.health.takeDamage(10000);
   assert.equal(storage.writes, 1);
+  t.g.health.takeDamage(10000);
+  assert.equal(storage.writes, 1, 'a death with nothing new to save writes nothing');
   const fresh = realGame(context, storage);
   assert.equal(fresh.save.progress('stapleGun', staple.id), 1);
 });
@@ -397,4 +397,141 @@ test('a throwing global localStorage accessor falls back safely; headless inject
   assert.equal(save.flush(), false);
   const t = realGame(context);
   assert.equal(t.g.challenges.snapshot().progress.stapleGun, undefined);
+});
+
+// --- Review fixes: Save & Quit must not pay a round twice; a quit run keeps what it earned ---------------------------
+
+test('Save & Quit keeps the kills, and replaying that round pays only what goes beyond them', () => {
+  const t = counters();
+  for (let i = 0; i < 30; i++) t.kill();
+  t.events.emit('runSaved', { round: 3 });
+  assert.equal(t.storage.record.progress.stapleGun['night-shift'], 30);
+  assert.deepEqual(t.storage.record.replay, { 'stapleGun/night-shift': 30 });
+
+  // Continue, in a new session: the round starts over.
+  const again = counters(t.storage);
+  again.challenges.reset();
+  again.events.emit('runLoaded', { round: 3 });
+  for (let i = 0; i < 30; i++) again.kill();
+  assert.equal(again.save.progress('stapleGun', staple.id), 30, 'the same 30 kills are not paid twice');
+  again.kill('nailGun');
+  assert.equal(again.save.progress('nailGun', nail.id), 1, 'a gun that earned nothing before the save is paid at once');
+  for (let i = 0; i < 10; i++) again.kill();
+  assert.equal(again.save.progress('stapleGun', staple.id), 40);
+
+  // Saving again part-way through the replay still remembers everything this round was paid.
+  again.events.emit('runSaved', { round: 3 });
+  assert.deepEqual(again.storage.record.replay, { 'stapleGun/night-shift': 40, 'nailGun/aftermarket': 1 });
+  const third = counters(again.storage);
+  third.events.emit('runLoaded', { round: 3 });
+  for (let i = 0; i < 12; i++) third.kill();
+  third.events.emit('runSaved', { round: 3 });
+  assert.equal(third.storage.record.replay['stapleGun/night-shift'], 40, 'a short attempt does not shrink the record');
+  const fourth = counters(third.storage);
+  fourth.events.emit('runLoaded', { round: 3 });
+  for (let i = 0; i < 45; i++) fourth.kill();
+  assert.equal(fourth.save.progress('stapleGun', staple.id), 45);
+});
+
+test('the next round, Play again and a run that loaded nothing all start with nothing to replay', () => {
+  const t = counters();
+  for (let i = 0; i < 20; i++) t.kill();
+  t.events.emit('runSaved', { round: 2 });
+
+  const resumed = counters(t.storage);
+  resumed.events.emit('runLoaded', { round: 2 });
+  for (let i = 0; i < 20; i++) resumed.kill();
+  resumed.events.emit('roundStart', { round: 3 });
+  for (let i = 0; i < 5; i++) resumed.kill();
+  assert.equal(resumed.save.progress('stapleGun', staple.id), 25, 'round 3 is new ground');
+
+  const fresh = counters(t.storage); // the save was discarded: Play from the title, no 'runLoaded'
+  for (let i = 0; i < 5; i++) fresh.kill();
+  assert.equal(fresh.save.progress('stapleGun', staple.id), 25);
+
+  const replaying = counters(t.storage);
+  replaying.events.emit('runLoaded', { round: 2 });
+  replaying.challenges.reset(); // Play again in the middle of the replay
+  for (let i = 0; i < 3; i++) replaying.kill();
+  assert.equal(replaying.save.progress('stapleGun', staple.id), 23);
+});
+
+test('an unlock earned before a Save & Quit stays, and its replay neither fires again nor counts', () => {
+  const t = counters(memoryStorage(JSON.stringify({ ...blank(), progress: { stapleGun: { [staple.id]: staple.challenge.count - 2 } } })));
+  const unlocks = [];
+  t.events.on('skinUnlocked', event => unlocks.push(event.skinId));
+  t.kill(); t.kill(); t.kill();
+  t.events.emit('runSaved', { round: 9 });
+  assert.deepEqual(unlocks, [staple.id]);
+  const again = counters(t.storage);
+  again.events.on('skinUnlocked', event => unlocks.push(event.skinId));
+  again.events.emit('runLoaded', { round: 9 });
+  for (let i = 0; i < 5; i++) again.kill();
+  assert.deepEqual(unlocks, [staple.id]);
+  assert.equal(again.save.unlocked('stapleGun', staple.id), true);
+});
+
+test('the real game: 30 kills, Save & Quit, Continue and the same 30 again is 30, in a run that also says 30', context => {
+  const storage = memoryStorage();
+  const slot = new Map();
+  const saveStorage = { getItem: key => slot.get(key) ?? null, setItem: (key, value) => slot.set(key, value), removeItem: key => slot.delete(key) };
+  const save = createSkinSave({ storage });
+  const t = headlessGame({ skinSave: save, saveStorage });
+  context.after(() => t.g.map.dispose());
+  const { g } = t;
+  t.tick();
+  for (let i = 0; i < 4000 && g.rounds.state !== 'active'; i++) t.tick();
+  const kill = () => {
+    const z = g.zombies.spawn('shopper', new THREE.Vector3(3, 0, 12));
+    z.takeHit({ damage: z.health + 1, part: 'body', weaponId: 'stapleGun' });
+  };
+  for (let i = 0; i < 30; i++) kill();
+  assert.equal(save.progress('stapleGun', staple.id), 30);
+  assert.equal(g.saveGame.saveAndQuit(), true);
+  g.resetRun(); // (main.js goes to the title)
+  assert.equal(g.saveGame.load(), true);
+  assert.equal(g.runStats.kills, 0, 'the round starts over');
+  for (let i = 0; i < 30; i++) kill();
+  assert.equal(save.progress('stapleGun', staple.id), 30);
+  for (let i = 0; i < 5; i++) kill();
+  assert.equal(save.progress('stapleGun', staple.id), 35);
+  assert.equal(g.runStats.kills, 35);
+  assert.equal(storage.record.progress.stapleGun[staple.id], 30, 'nothing is written per kill');
+});
+
+test('Quit to title and Restart run write what the run earned, once, and nothing when there is nothing new', () => {
+  const t = counters();
+  t.events.emit('runReset');
+  assert.equal(t.storage.writes, 0, 'an untouched run writes nothing');
+  for (let i = 0; i < 40; i++) t.kill();
+  assert.equal(t.save.dirty, true);
+  t.events.emit('runReset');
+  assert.equal(t.storage.writes, 1);
+  assert.equal(t.storage.record.progress.stapleGun[staple.id], 40);
+  assert.equal(createSkinSave({ storage: t.storage }).progress('stapleGun', staple.id), 40, 'a new session sees it');
+  t.events.emit('runReset');
+  assert.equal(t.challenges.flush(), false);
+  assert.equal(t.storage.writes, 1);
+
+  // A death already wrote it: the Play again that follows adds no second write.
+  const died = counters();
+  for (let i = 0; i < 5; i++) died.kill();
+  died.events.emit('runEnd');
+  died.events.emit('runReset');
+  assert.equal(died.storage.writes, 1);
+
+  // The page closing mid-run (main.js calls flush on 'pagehide').
+  const closing = counters();
+  for (let i = 0; i < 7; i++) closing.kill();
+  assert.equal(closing.challenges.flush(), true);
+  assert.equal(closing.storage.record.progress.stapleGun[staple.id], 7);
+  assert.equal(closing.storage.record.replay, undefined, 'only Save & Quit records a round to replay');
+});
+
+test('the real game: 40 kills then Quit to title reach storage without a death', context => {
+  const t = realGame(context);
+  for (let i = 0; i < 40; i++) shopper(t, 1).takeHit({ damage: 5, part: 'body', weaponId: 'stapleGun' });
+  assert.equal(t.storage.writes, 0);
+  t.g.resetRun();
+  assert.equal(t.storage.record.progress.stapleGun[staple.id], 40);
 });

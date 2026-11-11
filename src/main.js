@@ -371,6 +371,7 @@ screens.on('stats', () => screens.show('stats', careerStats.snapshot()));
 screens.on('clearStats', () => screens.show('stats', careerStats.reset()));
 screens.on('statsBack', () => screens.show('title'));
 screens.on('locker', () => screens.show('locker'));
+window.addEventListener('pagehide', () => g.challenges.flush()); // closing the tab mid-run keeps the skin progress it earned
 wireRunIntro({ events: g.events, hud, sound }); // the PA's opening line as round 1 begins
 screens.on('controls', () => controlsMenu.open());
 screens.on('notices', () => noticesMenu.open());

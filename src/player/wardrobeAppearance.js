@@ -26,9 +26,11 @@ function knitTile() {
 
 export function createSleeveStyler(rig) {
   const tagged = [];
-  rig.traverse((part) => {
+  const scan = (root) => root.traverse((part) => {
     if (part.userData.sleevePart) tagged.push({ part, material: part.material, visible: part.visible });
   });
+  scan(rig);
+  let worn = null;
   const wool = knitTile();
   const cloth = (color, options) => new THREE.MeshStandardMaterial({ color, roughness: 0.85, flatShading: true, ...options });
   const knit = cloth(wardrobeLook.knit.wool, { map: wool });
@@ -40,7 +42,8 @@ export function createSleeveStyler(rig) {
     cardigan: { sleeve: knit, forearm: knit, cuff, stripe: trim, gold: cuff, badge: false },
     hiVisVest: { sleeve: vest, cuff: vest, stripe: tape, gold: vest, tape },
   };
-  return (item) => {
+  const wear = (item) => {
+    worn = item;
     const style = styles[item];
     for (const { part, material, visible } of tagged) {
       const look = style?.[part.userData.sleevePart];
@@ -48,6 +51,9 @@ export function createSleeveStyler(rig) {
       part.visible = look === false ? false : visible || !!look;
     }
   };
+  /** A model added to the rig later (a skinned gun built on first use): it gets the sleeves being worn. */
+  wear.add = (root) => { scan(root); wear(worn); };
+  return wear;
 }
 
 /** Browser-owned geometry follows the same events as the outfit rail. */

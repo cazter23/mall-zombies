@@ -188,3 +188,41 @@ test('equip writes win over stale storage for that gun while preserving another 
   assert.equal(loaded.equippedFor('rivetRifle'), 'carbon-copy');
   assert.equal(loaded.progress('nailGun', 'aftermarket'), 212);
 });
+
+// --- Review fix: a skinned model is built when its gun is first held in that skin, not at start-up --------------------
+
+test('only default gun models exist at start; a skin is built once on first use and wears the sleeves already on', context => {
+  const storage = memory();
+  const save = createSkinSave({ storage });
+  unlock(save, 'stapleGun');
+  const t = game(context, storage), { g } = t;
+  const count = name => { let n = 0; t.viewmodel.scene.traverse(node => { if (node.isMesh && node.name === name) n += 1; }); return n; };
+  const sleeves = () => {
+    const worn = new Map();
+    t.viewmodel.scene.traverseVisible(node => { if (node.isMesh && node.userData.sleevePart) worn.set(node.userData.sleevePart, node.material); });
+    return worn;
+  };
+  assert.equal(count('stapleHousing'), 1, 'no skinned twin before the gun is held');
+  t.viewmodel.setSleeves('cardigan'); // put on before the skinned model exists
+  t.tick(); g.rounds.update = () => {}; g.zombies.clear();
+  assert.equal(t.held('stapleHousing'), skins.stapleGun[0].palette.body);
+  assert.equal(count('stapleHousing'), 2);
+  const onSkin = sleeves();
+  assert.ok(onSkin.size > 0, 'the staple gun model has sleeve parts');
+
+  g.gun.give(weapons.priceGun); t.tick(60); // (a default-look gun: its sleeves were styled by the first scan)
+  t.held('unused');
+  const onDefault = sleeves();
+  let compared = 0;
+  for (const [part, material] of onSkin) {
+    if (!onDefault.has(part)) continue;
+    compared += 1;
+    assert.equal(material, onDefault.get(part), part + ' wears the cardigan on the late-built model');
+  }
+  assert.ok(compared > 0, 'both models share at least one sleeve part');
+
+  t.viewmodel.setSleeves(null);
+  t.held('unused');
+  const bare = sleeves();
+  for (const [part, material] of onDefault) if (bare.has(part)) assert.notEqual(bare.get(part), material, part + ' goes back to bare');
+});

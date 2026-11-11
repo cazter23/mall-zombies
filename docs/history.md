@@ -1,5 +1,14 @@
 # Sunset Galleria: build history ("Current state")
 
+## 10 November 2026 - Weapon skins: three fixes from the review of phases 1 to 5
+
+- **Save & Quit paid a round's kills twice.** Mastery progress is permanent and was written at Save & Quit, but Continue replays the round, so the same kills counted again (30 kills, save, continue, 30 again = 60 with a run total of 30; repeatable, so a skin could be farmed without the run advancing). Now game/challenges.js remembers what the unfinished round has already been paid (`credited`, per gun and skin) and counts only what an attempt earns beyond that. Save & Quit writes it into the skin record as `replay`; 'runLoaded' reads it back; a new round, Play again or a run that loaded nothing starts with none. Nothing is ever taken back, so an unlock earned before the save stays.
+- **Progress was lost by quitting.** It was written only on an unlock, a death or a Save & Quit, so Quit to title, Restart run or closing the tab mid-run dropped it. Now 'runReset' and the page's `pagehide` write it, and only when there is something new (the skin record tracks `dirty`); a death with nothing new writes nothing either. Still never a write per kill.
+- **Every skin of every gun was built at start-up** (22 first-person models, 66 once each gun has five skins). The viewmodel now builds the eleven default looks up front and a skinned model the first time its gun is held in that skin, then reuses it. The sleeve styler (player/wardrobeAppearance.js) gained `add(root)` so a late-built model wears the cardigan or vest already on.
+- Not changed, for the user to judge: the eleven mastery skins are all a dark body with pale trim, Return to Sender's six stripes share one accent colour under a skin, and a new skin can only be worn from the next run.
+- Full suite 1316/1316 (seven new tests; one existing test updated: it asserted that a quit wrote nothing). Build clean; balance report identical to main. Branch claude/skins-fixes on top of codex/skins-5.
+- Shared files: game/challenges.js, game/skinSave.js, weapons/viewmodel.js, player/wardrobeAppearance.js, main.js (one line), tests/challenges.test.js, tests/skinEquipment.test.js, docs.
+
 ## 10 November 2026 - Weapon skins phase 5: The locker, and slot 1 skins
 
 - The title has a Weapon locker beside Statistics; Play keeps its Directed/Classic chooser. All eleven guns show Default and their named mastery recolour, with readable locked challenges and permanent progress. Mouse, arrows/Enter and controller D-pad/A browse/equip; Back, Escape and B return. Equipping saves immediately.
