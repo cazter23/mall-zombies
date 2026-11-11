@@ -231,3 +231,53 @@ test('near an item you have not logged its cue plays, louder up close, and not f
   if (g.interactions.prompt?.id === 'lost_badge') assert.equal(g.interactions.prompt.blocked, lostFound.pickup.assisted);
   assert.equal(g.lostFound.pickUp('badge'), false);
 });
+
+// --- The Challenges tab and the tracker (ui/challengeBoard.js, ui/challengeTracker.js) --------------------------------
+
+test('the Challenges tab lists Lost and Found as one collection: the count from the guide record, never an item\'s name', async () => {
+  const { menuDom } = await import('./helpers/menuDom.js');
+  const { challengeBoard: words } = await import('../src/config/challengeBoard.js');
+  const { challengeCatalog, catalogEntry, LOST_FOUND_PIN } = await import('../src/game/challengeCatalog.js');
+  const { createChallengePins } = await import('../src/game/challengePins.js');
+  const { createSkinSave } = await import('../src/game/skinSave.js');
+  const { createChallengeBoard } = await import('../src/ui/challengeBoard.js');
+  const { createChallengeTracker, connectChallengeTracker } = await import('../src/ui/challengeTracker.js');
+
+  const category = challengeCatalog().find(({ id }) => id === 'collections');
+  assert.equal(category.label, words.categories.collections);
+  const entry = catalogEntry(LOST_FOUND_PIN);
+  assert.equal(category.groups[0].entries[0], entry);
+  const t = log();
+  const ctx = { save: null, challenges: null, guideSave: t.save };
+  assert.equal(entry.progress(ctx), words.lostFound.progress(0, 11));
+  assert.equal(entry.done(ctx), false);
+  assert.equal(entry.done({}), false, 'a caller without the guide record still gets an answer');
+  assert.equal(entry.progress({}), words.lostFound.progress(0, 11));
+  t.lost.pickUp('badge'); t.lost.pickUp('coin');
+  assert.equal(entry.progress(ctx), words.lostFound.progress(2, 11));
+  assert.deepEqual(entry.track(ctx), { id: LOST_FOUND_PIN, title: words.lostFound.trackerTitle, value: words.lostFound.progress(2, 11), done: false });
+  for (const item of lostFound.items) assert.ok(!entry.text.includes(item.name), 'no hints');
+
+  // On the board: its own group, the count, and a pin like any other challenge.
+  menuDom();
+  const pins = createChallengePins({ storage: null });
+  const board = createChallengeBoard({ save: createSkinSave({ storage: null }), pins, onBack() {}, guideSave: t.save });
+  board.open();
+  board.element.querySelector('[data-group="lostFound"]').click();
+  const row = board.element.querySelector(`[data-challenge="${LOST_FOUND_PIN}"]`);
+  assert.ok(row.textContent.includes(words.lostFound.name) && row.textContent.includes(words.lostFound.progress(2, 11)));
+  row.click();
+  assert.equal(pins.has(LOST_FOUND_PIN), true);
+  board.close();
+
+  // In a run: the pinned line shows when an item is logged.
+  const tracker = createChallengeTracker({ setTimer: () => 1, clearTimer() {} });
+  tracker.setEnabled(true);
+  connectChallengeTracker({ events: t.events, tracker, pins, save: createSkinSave({ storage: null }), challenges: null, guideSave: t.save });
+  assert.equal(tracker.visible, false);
+  t.lost.pickUp('keys');
+  assert.equal(tracker.visible, true);
+  assert.ok(tracker.element.textContent.includes(words.lostFound.progress(3, 11)));
+  for (const item of lostFound.items) t.lost.pickUp(item.id);
+  assert.ok(tracker.element.textContent.includes(words.done));
+});

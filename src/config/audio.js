@@ -141,6 +141,12 @@ export const audio = {
       { type: 'tone', wave: 'triangle', freq: 620, freqEnd: 380, gain: 0.35, attack: 0.01, decay: 0.23, delay: 0.25 },
       { type: 'tone', wave: 'sine', freq: 100, freqEnd: 45, gain: 0.4, attack: 0.005, decay: 0.2 },
     ] },
+    // The Return to Sender quest: a NO REFUNDS floor sign shot over (game/features/refundSign.js).
+    refundSignDown: { volume: 0.5, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 900, q: 1.5, gain: 0.6, attack: 0.002, decay: 0.09 },
+      { type: 'tone', wave: 'triangle', freq: 220, freqEnd: 120, gain: 0.4, attack: 0.002, decay: 0.16, delay: 0.22 },
+      { type: 'noise', filter: 'lowpass', freq: 500, q: 0.8, gain: 0.5, attack: 0.002, decay: 0.12, delay: 0.24 },
+    ] },
     // Lost and Found (game/features/lostProperty.js): a quiet cue from an item you are near, by what it is, and the pickup.
     lostGlint: { volume: 0.22, layers: [
       { type: 'tone', wave: 'sine', freq: 2093, gain: 0.5, attack: 0.004, decay: 0.28 },

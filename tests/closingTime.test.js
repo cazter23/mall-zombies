@@ -4,6 +4,7 @@ import { Scene, Vector3 } from 'three';
 import { dt, headlessGame, snapshot } from './helpers/headlessGame.js';
 import { bossTypes, bossTiming, bossVouchers } from '../src/config/bosses.js';
 import { closingTime } from '../src/config/closingTime.js';
+import { returnQuest } from '../src/config/returnQuest.js';
 import { CAREER_STATS_KEY, CAREER_STATS_VERSION, createCareerStats } from '../src/game/careerStats.js';
 import { chooseBossSchedule } from '../src/game/bossDirector.js';
 import { getDeathReport, deathReports } from '../src/config/deathReports.js';
@@ -1314,7 +1315,7 @@ test('quest PA and chimes reach presentation only in Directed; the key and duty 
     const notices = hud.calls.filter(([name]) => name === 'showAnnouncement').map(([, notice]) => notice);
     assert.ok(notices.some((notice) => notice.text === pa.text));
     assert.equal(closingNotices(hud).length, mode === 'directed' ? 3 : 0);
-    assert.equal(played(sounds, 'paChime'), mode === 'directed' ? 4 : 1);
+    assert.equal(played(sounds, 'paChime'), mode === 'directed' ? 5 : 1); // (Directed: + the return label this duty issues)
     assert.equal(played(sounds, 'closingKey'), 1, mode + ': the key pickup sound');
     assert.equal(played(sounds, 'closingDuty'), 1, mode + ': the finished duty sound');
 
@@ -1967,47 +1968,35 @@ function atReturnsDesk(t) {
   return { ...game, desk, approach };
 }
 
-test('the Returns Desk explains each unfinished duty, costs ten thousand and adds the gun without needing Skylar or validation', (t) => {
+test('the Returns Desk no longer sells the gun or waits for the duties: finishing them changes nothing at the desk', (t) => {
   const { g, press, tick } = atReturnsDesk(t);
   const paid = [];
-  g.events.on('purchase', event => { if (event.id === 'returnsDesk') paid.push(event); });
-  const price = g.pricing.priceOf('closing', 'returnsDesk');
-  assert.equal(price, 10000);
-  g.wallet.earn(price);
-  grantKeys(g, dutyIds);
-  for (const id of dutyIds) {
-    assert.ok(g.interactions.prompt.blocked.includes(closingTime.lines[id].duty));
-    const points = g.wallet.points;
-    press('KeyF', holdTicks);
-    assert.equal(g.wallet.points, points);
-    finishDuties(g, [id]);
-  }
-  assert.equal(g.closing.hasKey('influencer'), false);
-  assert.equal(g.closing.validated, false);
-  assert.equal(g.interactions.prompt.blocked, null);
-  const before = g.wallet.points;
-  press('KeyF', holdTicks);
-  tick(60);
-  assert.equal(before - g.wallet.points, price);
-  assert.deepEqual(g.gun.slots, ['stapleGun', 'returnToSender']);
-  assert.equal(g.gun.def.id, 'returnToSender');
-  assert.deepEqual(paid, [{ kind: 'closing', id: 'returnsDesk', label: weapons.returnToSender.name, cost: price }]);
+  g.events.on('purchase', event => { if (String(event.id).startsWith('returns')) paid.push(event); });
+  g.wallet.earn(20000);
+  const policy = g.interactions.prompt.blocked;
+  assert.ok(policy, 'the quest has not started: the desk only states its policy (tests/returnQuest.test.js)');
+  grantKeys(g, dutyIds); finishDuties(g);
+  assert.equal(g.interactions.prompt.blocked, policy, 'the duties do not open the desk');
+  for (const id of dutyIds) assert.ok(!policy.includes(closingTime.lines[id].duty));
+  const points = g.wallet.points;
+  press('KeyF', holdTicks); tick(60);
+  assert.equal(g.wallet.points, points);
+  assert.equal(g.gun.owns('returnToSender'), false);
+  assert.deepEqual(paid, []);
 });
 
-test('the Returns Desk honours a Discount Code and replaces the held gun in a full two-slot loadout', (t) => {
+test('the gun the quest issues is free, spends no Discount Code and replaces the held gun in a full two-slot loadout', (t) => {
   const { g, tick, press } = atReturnsDesk(t);
   g.gun.give(weapons.rivetRifle); tick(60);
-  grantKeys(g, dutyIds); finishDuties(g);
   g.pricing.setVoucher(bossVouchers.discountCode);
-  const price = g.pricing.priceOf('closing', 'returnsDesk');
-  assert.equal(price, economy.closing.returnsDesk - bossVouchers.discountCode.maxSaving);
-  g.wallet.earn(price);
+  g.returnQuest.debug('called');
+  assert.equal(g.interactions.prompt.blocked, null);
   const before = g.wallet.points;
-  press('KeyF', holdTicks); tick(60);
-  assert.equal(before - g.wallet.points, price);
+  press('KeyF', Math.ceil(returnQuest.desk.holdSeconds / dt) + 2); tick(60);
+  assert.equal(g.wallet.points, before);
   assert.deepEqual(g.gun.slots, ['stapleGun', 'returnToSender']);
   assert.equal(g.gun.def.id, 'returnToSender');
-  assert.equal(g.pricing.voucher, null);
+  assert.equal(g.pricing.voucher, bossVouchers.discountCode, 'a free issue is not a purchase');
 });
 
 test('the Returns Desk sells half-rate ammo for twenty-five hundred without a checklist gate, refuses full ammo and resets', (t) => {

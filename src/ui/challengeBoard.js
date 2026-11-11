@@ -5,7 +5,7 @@
 import { challengeCatalog } from '../game/challengeCatalog.js';
 import { challengeBoard as cfg } from '../config/challengeBoard.js';
 
-export function createChallengeBoard({ save, pins, onBack, trackerEnabled = () => true, getChallenges = () => null }) {
+export function createChallengeBoard({ save, pins, onBack, trackerEnabled = () => true, getChallenges = () => null, guideSave = null }) {
   const element = document.createElement('div');
   element.className = 'screen locker-screen challenge-board hidden';
   for (const [name, value] of Object.entries(cfg.theme)) element.style.setProperty('--locker-' + name, value);
@@ -33,7 +33,7 @@ export function createChallengeBoard({ save, pins, onBack, trackerEnabled = () =
   let selected = catalog[0].groups[0];
   let focus = 0;
   const buttons = () => [...element.querySelectorAll('button')];
-  const ctx = () => ({ save, challenges: getChallenges() });
+  const ctx = () => ({ save, challenges: getChallenges(), guideSave });
 
   function fillHeader(message = null) {
     pinLine.textContent = message ?? cfg.pinCount(pins.ids.length, cfg.maxPins);

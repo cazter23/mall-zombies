@@ -1046,3 +1046,11 @@ Boss groundwork: zombie.js owns timed buffs, source-bound holds and a behavior c
 - src/game/lostFound.js: `createLostFound({ events, state, save })`, built in createGame as `g.lostFound` and passed to features. `pickUp(id)`, `found(id)`, `blocked`, `progress()`, `debug(...)`; `lostFoundProgress(save)` for a menu that has only the record. Emits 'lostFound'.
 - src/game/features/lostProperty.js: feature kind `lostProperty` (one per item, added by maps/mall/mall.js from the config): the model (`buildLostPropertyModel`, also used by the guide's preview), the pulsing tag, the cue, the hold-to-log prompt and the faded "already logged" look.
 - The pages are in src/ui/guide.js (kinds `item` and `report`); the record is `found` in src/game/guideSave.js.
+
+### The Return (Return to Sender quest)
+
+- src/config/returnQuest.js: the sign spots and their look, the crash radius, the ticket number and queue radius, the desk's prompt words per stage, the PA lines, the three labels with their numbers, the label slot and its printer, the parcel. `returnLabel(id)`.
+- src/game/returnQuest.js: `createReturnQuest(...)`, built in createGame as `g.returnQuest` and passed to features. `stage` ('policy' | 'damaged' | 'ticket' | 'queue' | 'collect' | 'done'), `shootSign`, `pullTicket`, `collect`, `cycleLabel`, `labels`, `fitted`, `nextLabel`, `update` (the crash check), `serialize` / `restore` / `reset`, `debug(step)`. Listens to 'kill' (the queue count and the fitted label) and 'closingLine' (a duty's label). Emits 'returnQuest' and 'returnLabel'.
+- src/game/features/refundSign.js: feature kind `refundSign`, a shootable A-frame floor sign that follows the quest's state.
+- src/game/features/returnsDesk.js: now the quest's counter (its prompt is the trail), the ammo counter with the gun in hand, the parcel on the tray, and the label slot with its printer.
+- The Challenges tab's Lost and Found entry: src/game/challengeCatalog.js (`LOST_FOUND_PIN`, category `collections`), words in src/config/challengeBoard.js.

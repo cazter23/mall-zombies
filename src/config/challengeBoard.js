@@ -13,7 +13,13 @@ export const challengeBoard = {
   menu: 'Challenges',
   title: 'Performance objectives', kicker: 'Personnel · Goals you may set yourself',
   form: 'SG / HR · FORM 7-B',
-  categories: { skins: 'Weapon finishes' },
+  categories: { skins: 'Weapon finishes', collections: 'Collections' },
+  // Collections: things found, not earned by a counter. Their progress lives in the Survival Guide's record.
+  lostFound: {
+    group: 'Lost property', name: 'Lost and Found', tag: 'Collection',
+    text: (total) => `Recover all ${total} items of lost property hidden in the mall. One per area. No description is on file.`,
+    progress: (found, total) => `${found} / ${total}`, trackerTitle: 'Lost property',
+  },
   slotTags: { 1: 'Mastery', 2: 'Role', 3: 'Feat · one shift' },
   pin: 'Pin', pinned: 'Pinned', done: 'Done',
   pinCount: (count, max) => `Pinned ${count} / ${max}`,

@@ -71,6 +71,7 @@ import { createChallenges } from './challenges.js';
 import { createGuideSave } from './guideSave.js';
 import { createGuide } from './guide.js';
 import { createLostFound } from './lostFound.js';
+import { createReturnQuest } from './returnQuest.js';
 import { createWallet, pointsForHit } from './wallet.js';
 import { createRounds } from './rounds.js';
 import { createClockIn } from './clockIn.js';
@@ -535,7 +536,7 @@ export function createGame({
   });
 
   // Build-A-Blaster's PA lines (game/features/workshopRitual.js), and GRAB-A-GUN's (game/features/clawMachine.js).
-  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualWaiting', 'ritualCollect', 'limitedEditionDrop', 'limitedEditionFitted', 'wardrobeBuy', 'clawClosed', 'clawMoved', 'skinUnlocked', 'kioskStock', 'guideEntry', 'lostFound']) {
+  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualWaiting', 'ritualCollect', 'limitedEditionDrop', 'limitedEditionFitted', 'wardrobeBuy', 'clawClosed', 'clawMoved', 'skinUnlocked', 'kioskStock', 'guideEntry', 'lostFound', 'returnQuest']) {
     events.on(name, ({ pa }) => {
       if (!pa) return;
       hud.showAnnouncement({ ...pa, priority: 1 });
@@ -553,6 +554,14 @@ export function createGame({
       sound.play('paChime');
     });
   }
+
+  // A return label issued by a ticked duty is announced like the duty itself: in Directed only. (Classic finds the label
+  // slot by the desk. The quest's own step lines, 'returnQuest', are in-world and play in both modes: the generic PA list.)
+  events.on('returnLabel', ({ pa }) => {
+    if (!state.showClosingGuidance || !pa) return;
+    hud.showAnnouncement({ ...pa, priority: 1 });
+    sound.play('paChime');
+  });
 
   events.on('ritualCollect', ({ certificate }) => hud.showCertificate(certificate));
   // A Platinum warranty claim (game/warranty.js).
@@ -624,9 +633,15 @@ export function createGame({
   const meleeUpgrades = createMeleeUpgrades({ stats, events }); // box cutter tiers (the desk's second window; tiers live in stats)
   events.on('meleeUpgrade', ({ tier }) => viewmodel.setMeleeColors?.(upgrades.melee[tier - 1].colors)); // (the headless test viewmodel has no hands)
   const wardrobe = createWardrobe({ stats, player, events });
+  // THE RETURN: the hidden quest that issues Return to Sender, and its return labels (game/returnQuest.js). After
+  // closing, so a ticked duty's own PA line is queued before the label's.
+  const returnQuest = createReturnQuest({
+    events, state, player, zombies, gun, wallet, effects, sound,
+    desk: map.features?.find(({ kind }) => kind === 'returnsDesk')?.position ?? null,
+  });
   const features = buildFeatures(map, {
     scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state, warranty, meleeUpgrades, wardrobe,
-    colliders, effects, sound, input, tickets, shootables, aimAssist, secondChance, equipment, closing, skins, lostFound,
+    colliders, effects, sound, input, tickets, shootables, aimAssist, secondChance, equipment, closing, skins, lostFound, returnQuest,
   });
   const kevin = features.list.find(({ feature }) => feature.kind === 'kiosk')?.instance;
 
@@ -685,6 +700,7 @@ export function createGame({
     ['bosses', () => bosses.reset()],
     ['powerUps', () => powerUps.reset()],
     ['closing', () => closing.reset()],
+    ['returnQuest', () => returnQuest.reset()],
     ['zombies', () => zombies.clear()],
     ['mascotCostumes', () => mascotCostumes.reset()],
     ['wardrobe', () => wardrobe.reset()],
@@ -796,6 +812,7 @@ export function createGame({
     ['outfitRail', () => outfitRail.serialize(), (data) => outfitRail.restore(data)],
     ['warranty', () => warranty.serialize(), (data) => warranty.restore(data)], // (after the gun)
     ['closing', () => closing.serialize(), (data) => closing.restore(data)], // the checklist and any key still on the floor
+    ['returnQuest', () => returnQuest.serialize(), (data) => returnQuest.restore(data)], // signs down, the ticket, labels held and fitted
     // The run's mode (Classic / Directed) and its outcome so far: a debug run stays one, and a run saved in overtime is still
     // a won run (its win and overtime start are kept, so the receipt after Continue is right).
     ['runOutcome', () => ({ assisted: state.assisted, closingMode: state.closingMode, won: state.won, winSummary, overtimeFrom }), (data) => {
@@ -865,6 +882,7 @@ export function createGame({
     }
     powerUps.update(dt); // collect escape rewards before this tick's zombie attacks; paused/dead timers freeze
     closing.update(dt);
+    returnQuest.update(dt);
     // "[Space] Vault" prompt: would a jump press now end in a vault? (checked per tick, shown in render)
     vaultPromptVisible = !inMenu && player.grounded && !player.vault.active && player.vault.preview();
     const alreadyWon = state.won;
@@ -933,6 +951,7 @@ export function createGame({
     skins,
     guide,
     lostFound,
+    returnQuest,
     colliders,
     arena,
     shootables,

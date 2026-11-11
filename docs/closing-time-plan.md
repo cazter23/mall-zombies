@@ -15,6 +15,7 @@ time, each in its own worktree.
 5. **After the win: a choice, and overtime is harder.** The receipt offers Clock out or Stay for overtime. In overtime zombies scale faster and
    kills pay more.
 6. **Return to Sender is bought:** 10,000 at a Returns Desk, once lines 1 to 3 are ticked. The claw keeps its rare copy.
+   **SUPERSEDED 11 November 2026:** the gun now comes free from a hidden quest at the desk (config/returnQuest.js; docs/history.md, "The Return"). The duties stay required to win and each awards a return label instead. The desk still sells the ammo.
 7. **Prices stay light:** 12,000 for the required steps.
 8. **Return to Sender's ammo is sold only at the Returns Desk**, at a steep price. That is the overtime point sink.
 9. **A key is a floor pickup**, dropped where its boss fell.
