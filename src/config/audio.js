@@ -141,6 +141,11 @@ export const audio = {
       { type: 'tone', wave: 'triangle', freq: 620, freqEnd: 380, gain: 0.35, attack: 0.01, decay: 0.23, delay: 0.25 },
       { type: 'tone', wave: 'sine', freq: 100, freqEnd: 45, gain: 0.4, attack: 0.005, decay: 0.2 },
     ] },
+    // The Staff Survival Guide (ui/guide.js): a sheet of paper flicked over on the binder's rings.
+    pageTurn: { volume: 0.3, layers: [
+      { type: 'noise', filter: 'highpass', freq: 2600, q: 0.7, gain: 0.5, attack: 0.03, decay: 0.12 },
+      { type: 'noise', filter: 'bandpass', freq: 900, q: 1.2, gain: 0.35, attack: 0.005, decay: 0.07, delay: 0.1 },
+    ] },
     shutterRattle: { volume: 0.12, layers: [
       { type: 'noise', filter: 'bandpass', freq: 650, q: 2, gain: 0.3, attack: 0.04, decay: 0.45 },
       { type: 'tone', wave: 'triangle', freq: 170, freqEnd: 95, gain: 0.12, attack: 0.03, decay: 0.35, delay: 0.12 },

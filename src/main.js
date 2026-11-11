@@ -56,6 +56,9 @@ import { look } from './config/look.js';
 import { createCareerStats } from './game/careerStats.js';
 import { createSkinSave } from './game/skinSave.js';
 import { createLocker } from './ui/locker.js';
+import { createGuideSave } from './game/guideSave.js';
+import { createGuideScreen } from './ui/guide.js';
+import { guide as guideCfg } from './config/guide.js';
 
 // --- Renderer, scene, camera ---------------------------------------------------
 
@@ -90,7 +93,11 @@ const input = new Input(renderer.domElement);
 const gamepad = createGamepad(input); // feeds controller buttons/sticks into `input`
 const skinSave = createSkinSave();
 const locker = createLocker({ save: skinSave, onBack: () => hud.screens.show('title') });
-const hud = createHud({ locker });
+const guideSave = createGuideSave();
+const guideScreen = createGuideScreen({
+  save: guideSave, onBack: () => hud.screens.show('title'), onTurn: () => sound.play(guideCfg.turnSound), // (sound is made just below)
+});
+const hud = createHud({ locker, guide: guideScreen });
 const noticesMenu = createNoticesMenu(hud.history);
 const sound = createSound(); // synthesized sound effects (starts on the first click/key press)
 const viewmodel = createViewmodel(Object.values(weapons), meleeWeapons.boxCutter, {
@@ -100,6 +107,7 @@ const postProcessing = createPostProcessing({ renderer, scene, camera, viewmodel
 
 const g = createGame({
   skinSave,
+  guideSave,
   scene,
   camera,
   input,
@@ -371,7 +379,8 @@ screens.on('stats', () => screens.show('stats', careerStats.snapshot()));
 screens.on('clearStats', () => screens.show('stats', careerStats.reset()));
 screens.on('statsBack', () => screens.show('title'));
 screens.on('locker', () => screens.show('locker'));
-window.addEventListener('pagehide', () => g.challenges.flush()); // closing the tab mid-run keeps the skin progress it earned
+screens.on('guide', () => screens.show('guide'));
+window.addEventListener('pagehide', () => { g.challenges.flush(); g.guide.flush(); }); // closing the tab mid-run keeps the skin progress it earned
 wireRunIntro({ events: g.events, hud, sound }); // the PA's opening line as round 1 begins
 screens.on('controls', () => controlsMenu.open());
 screens.on('notices', () => noticesMenu.open());
@@ -460,6 +469,7 @@ function render(alpha, frameTime) {
   if (screens.showsFlyover) {
     renderTitle(frameTime);
     locker.render(frameTime);
+    guideScreen.render(frameTime);
     return;
   }
 

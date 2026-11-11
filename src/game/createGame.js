@@ -68,6 +68,8 @@ import { createRunStats } from './runStats.js';
 import { createSkinSave } from './skinSave.js';
 import { createSkins } from './skins.js';
 import { createChallenges } from './challenges.js';
+import { createGuideSave } from './guideSave.js';
+import { createGuide } from './guide.js';
 import { createWallet, pointsForHit } from './wallet.js';
 import { createRounds } from './rounds.js';
 import { createClockIn } from './clockIn.js';
@@ -86,6 +88,7 @@ const DEG_TO_RAD = Math.PI / 180;
  * @param input           core/input.js Input (or a test double with the same calls)
  * @param hud, sound, viewmodel  browser parts (see the header)
  * @param skinSave        optional permanent skin record (memory by default; main.js supplies browser storage)
+ * @param guideSave       optional permanent Survival Guide record (memory by default; main.js supplies browser storage)
  * @param mapId           which map (maps/index.js)
  * @param buildTestRange  optional (scene, colliders) => arena: the debug movement/shooting range
  * @param debugTick       optional () => void, run each live tick just before the player moves
@@ -101,6 +104,7 @@ export function createGame({
   sound,
   viewmodel,
   skinSave = createSkinSave({ storage: null }),
+  guideSave = createGuideSave({ storage: null }),
   mapId = 'mall',
   buildTestRange = null,
   debugTick = null,
@@ -230,6 +234,7 @@ export function createGame({
   };
   const challenges = createChallenges({ events, state, save: skinSave });
   const skins = createSkins({ save: skinSave });
+  const guide = createGuide({ events, state, save: guideSave }); // the Staff Survival Guide's sightings and kill counts
   const runFrozen = () => state.over || state.winPending;
   // GRAB-A-GUN's prize tickets (game/tickets.js): their own currency, never points, pricing or income.
   const tickets = createTickets({ events, state });
@@ -526,7 +531,7 @@ export function createGame({
   });
 
   // Build-A-Blaster's PA lines (game/features/workshopRitual.js), and GRAB-A-GUN's (game/features/clawMachine.js).
-  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualWaiting', 'ritualCollect', 'limitedEditionDrop', 'limitedEditionFitted', 'wardrobeBuy', 'clawClosed', 'clawMoved', 'skinUnlocked', 'kioskStock']) {
+  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualWaiting', 'ritualCollect', 'limitedEditionDrop', 'limitedEditionFitted', 'wardrobeBuy', 'clawClosed', 'clawMoved', 'skinUnlocked', 'kioskStock', 'guideEntry']) {
     events.on(name, ({ pa }) => {
       if (!pa) return;
       hud.showAnnouncement({ ...pa, priority: 1 });
@@ -686,6 +691,7 @@ export function createGame({
     ['runStats', () => runStats.reset()],
     ['challenges', () => challenges.reset()],
     ['skins', () => skins.reset()],
+    ['guide', () => guide.reset()], // (only what the round being replayed was counted: the record itself is permanent)
     ['balls', () => balls.clear()], // (before the gun: a ball in the air reports to it)
     ['equipment', () => equipment.reset()], // empty pockets, nothing thrown left in the air or on the floor
     ['gun', () => gun.reset()], // just the staple gun again, no upgrades
@@ -800,6 +806,7 @@ export function createGame({
   const transientSteps = [
     'zombies', 'mascotCostumes', 'surfaces', 'health', 'balls', 'interactions', 'viewmodel', 'effects', 'contactShadows',
     'ambience', 'melee', 'aimAssist', 'clockIn', 'hud', 'saveGame',
+    'guide', // (its replay count travels in the guide's own record, not the run save)
   ];
   const saveGame = createSaveGame({ steps: saveSteps, events, stats, state, rounds, resetRun, storage: saveStorage });
   events.on('roundStart', () => saveGame.markRoundStart()); // (the snapshot waits for the end of the tick: see update)
@@ -920,6 +927,7 @@ export function createGame({
     debug: debugCommands,
     challenges,
     skins,
+    guide,
     colliders,
     arena,
     shootables,
