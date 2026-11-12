@@ -87,6 +87,11 @@ export const deathReports = {
       tip: 'Associate Tip: Vented fryer oil does not check badges; vacate the spill zone before opening the valve.',
     },
   },
+  // Your own rocket (the Bottle Rocket Bazooka: killedBy { type: 'ownBlast' }).
+  ownBlast: {
+    cause: 'Self-administered fireworks display, indoors, at close range',
+    tip: 'Associate Tip: Bottle rockets are for the far end of the Hallway. Fireproof attire is available in store.',
+  },
   hazardDefault: {
     cause: 'Self-inflicted facilities incident',
     tip: 'Associate Tip: Mall hazards cannot tell staff from shoppers; stand clear before you pull the switch.',
@@ -106,6 +111,7 @@ export const deathReports = {
 export function getDeathReport(killedBy) {
   if (!killedBy) return deathReports.default;
   if (killedBy.fall || killedBy.type === 'fall') return deathReports.fall;
+  if (killedBy.type === 'ownBlast') return deathReports.ownBlast;
   if (killedBy.type === 'hazard') return deathReports.hazards[killedBy.id] ?? deathReports.hazardDefault;
   if (killedBy.boss && deathReports.bosses[killedBy.boss]) {
     return deathReports.bosses[killedBy.boss];

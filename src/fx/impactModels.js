@@ -106,6 +106,11 @@ export function buildImpactModel(kind, variant) {
     for (const x of [-0.034, 0.034]) box(0.004, 0.032, 0.0012, red, x, 0, 0.0012, tilt);
     for (let i = 0; i < 3; i++) box(0.016, 0.005, 0.0012, red, -0.018 + i * 0.018, 0, 0.0014, tilt); // the lettering, as dashes
     box(0.03, 0.012, 0.001, 0xc9954f, 0.03, 0.02, 0.0022, [0, 0, 0.6 + variant * 0.3]);
+  } else if (kind === 'bearing') {
+    // The Stargazer 3000: a steel ball bearing half sunk in a cratered dent, with cracks running out from it.
+    hole(0, 0, 0.016);
+    part(new THREE.SphereGeometry(0.008, 8, 6), 0xd8dee6, 0, 0, 0.003);
+    for (let i = 0; i < 5; i++) box(0.0018, 0.03, 0.001, 0x3a342e, 0, 0, 0.0016, [0, 0, i * 1.26 + variant * 0.5]);
   } else throw new Error(`Unknown impact signature: ${kind}`);
   const geometry = mergeGeometries(parts); parts.forEach((g) => g.dispose());
   return { geometry, material: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.45, metalness: 0.22,

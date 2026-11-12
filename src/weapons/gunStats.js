@@ -8,7 +8,8 @@
 //                Gameplay (weapon.js, aim.js, playerGun.js) reads only that resolved copy.
 //   3. PLAYER    the player's stats object (stats.damageMultiplier, stats.reloadSpeed...), applied
 //                live where the number is used, because perks can change mid-run.
-//   4. PER HIT   headshot x distance falloff x pierce falloff: hitDamage(), below.
+//   4. PER HIT   headshot x distance falloff x pierce falloff: hitDamage(), below. A BLAST (a gun with `blast`, the Bottle Rocket Bazooka):
+//                damage x the blast's falloff over the distance from its centre (weapons/blast.js blastFalloff), no headshots, no range falloff.
 //
 // A mod is plain data:
 //   { id: 'longBarrel', modifiers: [
@@ -22,6 +23,8 @@
 // Counts stay whole after mods (magazine x1.15 = 13.8 -> 14): see WHOLE_STATS; a burst gun's magazine
 // rounds to whole bursts.
 // =============================================================================
+
+import { blastFalloff } from './blast.js';
 
 /**
  * Damage multiplier for a hit at `distance` meters. `falloff` = { start, end, minMultiplier }:
@@ -46,7 +49,7 @@ export function isReturnable(target) {
 
 /**
  * Damage of ONE hit (one bullet, dart, nail or pellet on one zombie).
- *   hit:         { part: 'head' | 'body', distance }   (distance from the eye, meters)
+ *   hit:         { part: 'head' | 'body', distance }   (distance from the eye, meters); a blast's hit: { part: 'body', blastDistance } (from its centre)
  *   index:       0 for the first zombie this ray hit, 1 for the one behind it (pierce), ...
  *   stats:       the player's stats object (stats.damageMultiplier)
  *   chargeScale: optional charge damage multiplier (1 by default)
@@ -59,6 +62,7 @@ export function hitDamage(def, hit, index, stats, chargeScale = 1, target = null
     const tier = def.base ? def.damage / def.base.damage : 1; // (an Extended Warranty's damage helps against bosses too)
     return target.maxHealth * (target.type?.returnToSenderFraction ?? def.instantKill.bigFraction) * tier * stats.damageMultiplier;
   }
+  if (def.blast && hit.blastDistance !== undefined) return def.damage * chargeScale * blastFalloff(hit.blastDistance, def.blast) * stats.damageMultiplier;
   const head = hit.part === 'head' ? def.headshotMultiplier * (stats.headshotDamageMultiplier ?? 1) : 1;
   const pierce = def.pierce ? def.pierce.damageFalloff[Math.min(index, def.pierce.damageFalloff.length - 1)] : 1;
   return def.damage * chargeScale * head * damageFalloff(hit.distance, def.falloff) * pierce * stats.damageMultiplier;

@@ -30,6 +30,7 @@ import { buildMinimapPlan, minimapState } from './game/minimapPlan.js';
 import { createDamageIndicatorQueue } from './ui/damageDirection.js';
 import { weapons, melee as meleeWeapons } from './config/weapons.js';
 import { createViewmodel } from './weapons/viewmodel.js';
+import { scopeOverlay } from './weapons/scope.js';
 import { createPlayerBody } from './player/body.js';
 import { connectWardrobeAppearance } from './player/wardrobeAppearance.js';
 import { createSound } from './audio/sound.js';
@@ -48,6 +49,7 @@ import { createTitleCamera } from './ui/titleCamera.js';
 import { createRunStart } from './ui/runStart.js';
 import { createBenchmark } from './fx/benchmark.js';
 import { createBallView } from './fx/ballView.js';
+import { createRocketView } from './fx/rocketView.js';
 import { createThrowableView } from './fx/throwableView.js';
 import { createLightPool, collectPointLights } from './fx/lightPool.js';
 import { batchStatic } from './world/staticBatch.js';
@@ -285,6 +287,7 @@ const metalSheen = sheenEnvironment(renderer, look.metalSheen);
 for (const root of [map.group, g.arena?.group].filter(Boolean)) applyMetalSheen(root, metalSheen, look.metalSheen);
 effects.prepare(renderer, camera); // shared impact graphics warmed before the first shot
 const ballView = createBallView(scene, g.balls); // the Tennis Ball Launcher's balls in the air
+const rocketView = createRocketView(scene, g.rockets, g.effects); // the Bottle Rocket Bazooka's rockets in the air, with their spark trails
 const throwableView = createThrowableView(scene, g.equipment); // Kiosk Kevin's thrown equipment (a Soda Bomb on its fuse)
 
 // --- Menus and the run's flow ------------------------------------------------------
@@ -513,6 +516,9 @@ function render(alpha, frameTime) {
   // ADS zoom + sprint FOV kick: narrow the world camera's FOV on ADS, widen slightly when sprinting.
   const aimAmount = gun.aim.renderAmount(alpha);
   const baseFov = feel.camera.fov * (1 + (gun.weapon.def.ads.fovMultiplier - 1) * aimAmount);
+  // A scoped gun's eyepiece (weapons/scope.js): fills the view as it aims in; once it covers everything the gun model is not drawn.
+  const scoped = game.over ? 0 : scopeOverlay(gun.weapon.def.scope, aimAmount);
+  hud.setScope(scoped, gun.weapon.def.scope?.look);
   const speedAmount = game.over ? 0 : player.sprintAmount * (1 - aimAmount);
   const fov = baseFov + (atmosphere.postProcessing?.sprintFovDegrees ?? 5.5) * speedAmount;
   if (camera.fov !== fov) {
@@ -530,6 +536,7 @@ function render(alpha, frameTime) {
   g.contactShadows.update(zombies.zombies, alpha);
   effects.update(visualTime);
   ballView.update(alpha); // the Tennis Ball Launcher's balls in the air
+  rocketView.update(alpha, visualTime);
   throwableView.update(alpha);
   viewmodel.update(visualTime, camera, {
     weapon: gun.weapon,
@@ -612,7 +619,7 @@ function render(alpha, frameTime) {
   // Render world + viewmodel through HDR post-processing (UnrealBloom + lens vignette/aberration + ACES tone mapping).
   roomCulling.update(cullingOn);
   detailCulling.update(camera); // (Graphics > Small detail: fx/detailCulling.js)
-  postProcessing.render({ showViewmodel: !death.summary, speedAmount, grade: gradeAt(frameTime) });
+  postProcessing.render({ showViewmodel: !death.summary && scoped < 1, speedAmount, grade: gradeAt(frameTime) });
 }
 
 // The main menu's backdrop: the camera glides through the mall (map.titleShots), fading through black at each cut.
@@ -669,6 +676,7 @@ if (debug.exposeToWindow) {
     THREE, scene, camera, renderer, postProcessing, map, world: map, colliders: g.colliders, arena: g.arena, player, stats: g.stats, input, game,
     hud, gun, effects, viewmodel, shootables: g.shootables, body, zombies, health, melee, runStats: g.runStats, death, resetRun,
     gamepad, aimAssist, wallet, rounds, sound, interactions, g, screens, locker, skinSave, titleCamera, roomCulling,
+    weapons, // the gun configs (gun.give(__mall.weapons.stargazer) hands over a claw-only gun in a browser check)
     menus: { play, pauseRun, freshRun, goToTitle }, // the menu flow, for testing
     benchmark: runBenchmark, // await __mall.benchmark() -> the report (title or pause screen)
     settings, lightPool, loop, idleSaver, // (settings.set(id, value) as the menu would; the light pool)

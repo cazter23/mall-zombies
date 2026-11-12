@@ -8,6 +8,8 @@ export const gunPaletteKeys = {
     stripeGreenColor: 'accent', stripeBlueColor: 'accent', stripePurpleColor: 'accent',
   },
   tennisBallLauncher: { ballColor: 'ammo', glassColor: 'glass' },
+  stargazer: { lensColor: 'glass', starColor: 'accent' },
+  bottleRocket: { rocketColor: 'ammo', noseColor: 'sight', wickColor: 'grip' },
   leafBlower: { tankColor: 'body' },
   barcodeScanner: { coilColor: 'accent', windowColor: 'emitter' },
   coilNailer: { drumColor: 'dark', coilColor: 'accent' },

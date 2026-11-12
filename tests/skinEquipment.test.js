@@ -168,7 +168,7 @@ test('every configured skin body reads against all six stuffings and every warra
     return rgb[0] * .2126 + rgb[1] * .7152 + rgb[2] * .0722;
   };
   const ratio = (x, y) => { const a = luminance(x), b = luminance(y); return (Math.max(a, b) + .05) / (Math.min(a, b) + .05); };
-  assert.equal(Object.keys(skins).length, 11);
+  assert.equal(Object.keys(skins).length, Object.keys(weapons).length, 'every gun has its skins');
   assert.equal(Object.keys(workshopStuffings).length, 6);
   for (const other of [...Object.values(workshopStuffings), ...upgrades.tiers]) {
     assert.ok(ratio(gunStyle.rim.color, other.color) >= skinContrast.minimum, `the rim ink stands out from ${other.name}`);

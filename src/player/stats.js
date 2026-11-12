@@ -36,6 +36,7 @@ export function createPlayerStats() {
     slideCooldown: feel.slide.cooldown,
 
     fallDamageScale: 1, // landing damage multiplier (a future perk can lower it)
+    ownBlastDamage: 1, // what your OWN rocket's burst does to you, x this (weapons/blast.js selfBlastDamage); the wardrobe's blast-proof item makes it 0
     vaultMaxHeight: feel.vault.maxHeight,
     vaultMomentumRetention: feel.vault.momentumRetention,
     meleeLungeMomentumRetention: feel.melee.entryMomentumKeep,

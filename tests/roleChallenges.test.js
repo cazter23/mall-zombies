@@ -95,7 +95,15 @@ const CASES = {
   },
   returnToSender: {
     earn: t => kill(t, 'returnToSender', { zombie: shopper({ type: { id: 'janitor', boss: {} } }) }),
-    near: t => kill(t, 'returnToSender', { zombie: shopper({ type: { id: 'mascot', mascot: {} } }) }),
+    near: t => kill(t, 'returnToSender', { zombie: shopper({ type: { id: 'mascot', mascot: {} } }) }),
+  },
+  stargazer: {
+    earn: t => kill(t, 'stargazer', { headshot: true, distance: 25 }),
+    near: t => { kill(t, 'stargazer', { headshot: true, distance: 24.9 }); kill(t, 'stargazer', { headshot: false, distance: 40 }); },
+  },
+  bottleRocket: {
+    earn: t => kill(t, 'bottleRocket', { distance: 12 }),
+    near: t => { kill(t, 'bottleRocket', { distance: 11.9 }); kill(t, 'stargazer', { distance: 30 }); },
   },
 };
 

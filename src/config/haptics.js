@@ -11,6 +11,8 @@ export const haptics = {
     foamDartBlaster: { duration: 28, strongMagnitude: 0.14, weakMagnitude: 0.3, priority: 1 },
     returnToSender: { duration: 140, strongMagnitude: 0.6, weakMagnitude: 0.5, priority: 1 },
     tennisBallLauncher: { duration: 110, strongMagnitude: 0.45, weakMagnitude: 0.3, priority: 1 },
+    stargazer: { duration: 150, strongMagnitude: 0.7, weakMagnitude: 0.4, priority: 1 },
+    bottleRocket: { duration: 200, strongMagnitude: 0.85, weakMagnitude: 0.5, priority: 1 },
     leafBlower: { duration: 40, strongMagnitude: 0.1, weakMagnitude: 0.35, priority: 1 }, // (a stream: a light rumble per pulse)
     confettiCannon: { duration: 170, strongMagnitude: 0.85, weakMagnitude: 0.55, priority: 1 },
   },

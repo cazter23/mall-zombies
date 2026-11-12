@@ -1,5 +1,48 @@
 # Sunset Galleria: build history ("Current state")
 
+## 12 November 2026 - More claw-only guns, 2: the Bottle Rocket Bazooka (the rocket launcher) and the blast
+
+The user's own idea, with their call on self-damage: your own rocket hurts you, and a wardrobe item will cancel it (the next step; until then
+`stats.ownBlastDamage` is 1 for everyone). **The Bottle Rocket Bazooka**: a fireworks-stand cardboard tube firing one oversized bottle rocket. Its job: the only
+gun that hurts everything around a POINT. The rocket flies on a third ballistics instance (`g.rockets`, zombies 'bounce', one contact of any kind ends it, or the
+end of its 1.6 s life in the air) and bursts: 900 at the centre down to 25% at 3.5 m, through gunStats.hitDamage (`hit.blastDistance`), so tiers and stats
+apply. One rocket in the tube, a 2.4 s reload, 12 in reserve. Measured (`npm run balance`, new BLAST GUNS tables): the centre kills a Shopper to round 11, 1.5 m
+out to round 7; a clump of six 1.5 m round a burst takes 1,527 a second, 1.18x the best wall gun at 15 m even counting its pierce (the Heavy Coil Nailer's two,
+1,294); one zombie gets 375, under the Price Gun's 434. **Your own burst**: 45% of your max health at its centre with the same falloff, never more than 75% (it
+can't kill you from full), nothing behind a wall; it goes straight to health like a fall, jolts the view, and a death by it reads "Self-administered fireworks
+display, indoors, at close range" (config/deathReports.js ownBlast). fireInterval is 1 s, not shorter: Build-A-Blaster's stuffings scale from damage / fireInterval
+(tests/workshopBuilds.test.js caught 0.6 s making a burn outpace the gun).
+**The engine piece, weapons/blast.js**, alone first (tests/blast.test.js): the falloff, who is caught (live zombies within the radius by their nearest hitbox
+point, a wall shields), and the self-damage. playerGun.js fires and explodes; the new 'gunBlast' event carries the hits and selfDamage, and createGame's
+listener takes it off your health. The view, fx/rocketView.js, draws each rocket as a firework with a spark trail. Models get `state.loaded` (viewmodel.js) so the
+nose shows in the tube's mouth only while loaded. In the GRAB-A-GUN pool as a GOLD capsule, weight 2: `npm run sim:claw` puts it in 4.9% of pits (won 3.6-4.8%);
+Return to Sender stays the rarest (2.5%). Skins: Grand Finale; Long Fuse (200 kills from 12 m: its kills land after the shot, like the tennis ball's, so not a
+multi-kill-shot challenge); Sparkler (40 kills in one round).
+Other tests touched by the two guns: weaponProgression's 1.2-2x headshot bound now covers wall guns only (the sniper's 3x is its job), impactMarks skips blast
+guns, the Stargazer's wall mark is a new 'bearing' kind (each signature needs its own draw), upgrades lists the rocket among guns the Extended Nozzle doesn't fit,
+aim.test's Laser Pointer check on a scoped gun compares only fully aimed or at the hip, and skinEquipment counts guns instead of assuming eleven.
+
+## 12 November 2026 - More claw-only guns, 1: the Stargazer 3000 (the sniper) and its scope
+
+The user picked three new claw-only guns from a pitch (a sniper and a rocket launcher, their own ideas, and the Balloon Launcher from the wish list); this is the first.
+**The Stargazer 3000**: a hobby-shop telescope fitted with a bolt, firing steel ball bearings. Its job: the further away, the harder it hits. Its falloff RISES
+(`falloff.minMultiplier` 2: gunStats.damageFalloff already ran the line up when the end is above 1, so no damage maths changed): 300 a hit to 8 m, 600 at 30 m,
+3x headshots (the biggest multiplier), a 4-zombie pierce, 5 rounds, a 1.2 s bolt, a 3.0 s reload. Measured (`npm run balance`, new SCOPED GUNS table): one aimed
+headshot at 30 m kills a Shopper through round 21 (round 11 across a room); at 30 m with headshots it kills 1.2x (round 18) to 1.4x (round 20) faster than the best
+wall gun, level with it by round 25 and behind before round 15; up close it is 192 sustained dps, under half the Price Gun's. The bolt was 1.3 s / 3.2 s reload at first:
+that only tied the Foam Dart Blaster at round 16, so it went to 1.2 / 3.0.
+**The engine piece, weapons/scope.js**, built and tested alone first (tests/scope.test.js): the eyepiece (a HUD overlay, ui/hud.js setScope, star-chart reticle;
+once it covers the view main.js stops drawing the gun model), a figure-eight sway applied as per-tick changes to the view (shots follow it; crouched or prone it is
+a third; lowering the scope gives back exactly what it took), and the bolt (aim.js onShot drops ADS to 0.35 after a scoped shot; holding aim brings it back before
+the next shot). ADS zoom 0.28. The balance tool gained `aimAt: 'head'`.
+Everything one gun touches now includes the weapon skins (the first gun added since they were built): three skins in config/skins.js (Midnight Sky; Constellation,
+150 headshot kills from 25 m; Supernova, a perfect round of 15 shots), their cases in roleChallenges/featChallenges, its palette keys, and its default materials
+added to tests/fixtures/weapon-materials-phase-1.json (existing entries untouched). In the GRAB-A-GUN pool as a purple capsule, weight 6 (the other claw-only purples are 7):
+`npm run sim:claw` at 1,500 a grab puts it in 14.5% of pits and wins it 7-8% of grabs (timed or 3-in-4); Return to Sender stays the rarest prize (2.5% of pits).
+Files: config/weapons.js, audio.js (shot with the bolt as delayed layers, three reload sounds), haptics.js, ui.js, attachmentVisuals.js, gunPalettes.js, skins.js,
+clawMachine.js; weapons/scope.js, aim.js, playerGun.js, models/stargazer.js + index.js; ui/hud.js, style.css, main.js (two lines); tools/balance.js, gunReport.mjs;
+tests scope, stargazer, balance, role/feat challenges, the material fixture.
+
 ## 12 November 2026 - Delete list from the code review: dead exports gone; three items held back on purpose
 
 From the code review (pass 2). An export scan (every `export` in src/ that no other file in src, tests or tools names) found 22. Only one was dead code: `ATTACHMENT_SLOTS` in game/features/attachmentCounter.js, now deleted. Eleven more are used only inside their own file, so they lost the `export` keyword (nothing else changes): workshopComboNames, impulseForPeak, portalRect, HAZARD_SWITCH_STYLES, CLAW_CABINET, PRIZE_BOOTH, ARENA, getFacetedLimbGeometry, skinPatternTexture, NOZZLE_LENGTH, DIRECTIONS. The other ten were left exported: six are named in docs/folder-structure.md as a module's API (vanNeeds, vanNeedsClassic, meleeDeskItem, secondChanceItem, paintMural, HEADS), and four sit in files the sign-looks work owns (stores.js, typeKit.js, textures.js, config/fonts.js).

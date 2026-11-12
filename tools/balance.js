@@ -18,7 +18,7 @@
 //   sustainedDps(def, m, o)        damage per second over magazine + reload, at m meters
 //   burstDps(def, m, o)            damage per second while the magazine lasts (no reload)
 //   shotsToKill(def, hp, m, o)     trigger pulls for an average kill of `hp` at m meters
-// Options `o`: { ads: false, samples: 2000, seed: 7 }.
+// Options `o`: { ads: false, samples: 2000, seed: 7, aimAt: 'chest' } (aimAt 'head': aimed at the middle of the head, for headshot guns).
 // "A shot" = one dart / nail / sticker / staple, or one whole blast for pellet guns (all its pellets).
 // Absolute numbers assume RESTING spread (no bloom from sustained fire) and a target that doesn't move:
 // use them to compare guns and to see the effect of a change, not as exact in-game time-to-kill.
@@ -34,6 +34,7 @@ import { seededRandom } from '../src/world/textures.js';
 const hb = zombieTypes.shopper.hitbox;
 const EYE = feel.player.eyeHeight;
 const CHEST = hb.bodyTop * 0.7; // aim point: the middle of the chest
+const HEAD = (hb.headBottom + hb.headTop) / 2; // (aimAt 'head')
 const NO_STATS = { damageMultiplier: 1 };
 
 export { cycleSeconds }; // (weapons/gunStats.js: the game's own number)
@@ -76,7 +77,7 @@ export function hitChance(def, distance, options) {
   return measureShots(def, distance, options).hitChance;
 }
 
-function measureShots(def, distance, { ads = false, samples = 2000, seed = 7 } = {}) {
+function measureShots(def, distance, { ads = false, samples = 2000, seed = 7, aimAt = 'chest' } = {}) {
   const origin = new THREE.Vector3(0, EYE, 0);
   const body = new THREE.Box3(
     new THREE.Vector3(-hb.bodyHalfWidth, 0, -distance - hb.bodyHalfWidth),
@@ -95,7 +96,7 @@ function measureShots(def, distance, { ads = false, samples = 2000, seed = 7 } =
     let hits = 0;
     for (let n = 0; n < samples; n++) {
       for (let i = 0; i < rays; i++) {
-        const dir = new THREE.Vector3(0, CHEST - EYE, -distance).normalize();
+        const dir = new THREE.Vector3(0, (aimAt === 'head' ? HEAD : CHEST) - EYE, -distance).normalize();
         applyConeSpread(dir, aimCone);
         applyConeSpread(dir, pelletCone);
         const ray = new THREE.Ray(origin, dir);

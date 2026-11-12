@@ -8,7 +8,8 @@
 //   root              THREE.Object3D: the gun + hands, pointing down -Z, origin = where it's held
 //   muzzle            Object3D on the gun where tracers and the muzzle flash start
 //   animate(state)    gun-specific animation every frame (trigger, hands during reload...);
-//                     state = { sinceFire, reloadProgress, reloadWeight, chargeProgress, time } (time: a running clock, for a skin's treatment)
+//                     state = { sinceFire, reloadProgress, reloadWeight, chargeProgress, time, loaded } (time: a running clock, for a skin's treatment;
+//                     loaded: the magazine holds a round, false once the last is fired)
 //   leftHandVisible   setter: hide the support hand (the box cutter arm replaces it)
 //   mounts            where upgrade parts go: barrel / top / side / grip / magazine / sticker (upgradeParts.js)
 // A display builder returns just the gun (no hands), for the wall-buy display.
@@ -26,6 +27,8 @@ import { buildConfettiCannonModel, buildConfettiCannonDisplay } from './confetti
 import { buildLeafBlowerModel, buildLeafBlowerDisplay } from './leafBlower.js';
 import { buildTennisBallLauncherModel, buildTennisBallLauncherDisplay } from './tennisBallLauncher.js';
 import { buildReturnToSenderModel, buildReturnToSenderDisplay } from './returnToSender.js';
+import { buildStargazerModel, buildStargazerDisplay } from './stargazer.js';
+import { buildBottleRocketModel, buildBottleRocketDisplay } from './bottleRocket.js';
 import { resolveGunColors } from '../skinPalette.js';
 import { applySkinPattern } from './skinPattern.js';
 import { applySkinTreatment } from './skinTreatments.js';
@@ -41,6 +44,8 @@ const builders = {
   leafBlower: { model: buildLeafBlowerModel, display: buildLeafBlowerDisplay },
   tennisBallLauncher: { model: buildTennisBallLauncherModel, display: buildTennisBallLauncherDisplay },
   returnToSender: { model: buildReturnToSenderModel, display: buildReturnToSenderDisplay },
+  stargazer: { model: buildStargazerModel, display: buildStargazerDisplay },
+  bottleRocket: { model: buildBottleRocketModel, display: buildBottleRocketDisplay },
   stapleGun: { model: buildStapleGunModel, display: buildStapleGunDisplay },
   priceGun: { model: buildPriceGunModel, display: buildPriceGunDisplay },
   nailGun: { model: buildNailGunModel, display: buildNailGunDisplay },

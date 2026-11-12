@@ -985,6 +985,162 @@ export const weapons = {
       },
     },
   },
+  // CLAW-ONLY (GRAB-A-GUN): the STARGAZER 3000, a hobby-shop telescope someone fitted with a bolt and a trigger. It fires steel ball bearings. Purple capsule.
+  // ROLE: the sniper, the gun that is BETTER THE FURTHER AWAY the target is. Its falloff RISES (minMultiplier above 1: weapons/gunStats.js damageFalloff
+  // runs the same straight line up instead of down), so a bearing does twice the damage at 30 m that it does across a room, and it goes through a line
+  // of zombies. Down the long Hallway one aimed headshot kills a Shopper up to about round 20; close up it is clumsy: a slow bolt, a wide hip cone
+  // and below the Price Gun at 2 and 5 m (tests/balance.test.js). A REAL SCOPE (weapons/scope.js): aiming in fills the view with the eyepiece, the
+  // view sways in a slow figure eight (less crouched or prone), and each shot knocks your eye off it while the bolt is worked.
+  stargazer: {
+    id: 'stargazer', name: 'Stargazer 3000', fireMode: 'semi', clawOnly: true,
+    damage: 300, headshotMultiplier: 3, // the headshot gun: the biggest multiplier there is
+    // RISING falloff: full (1x) up to `start`, then up in a straight line to minMultiplier (2x) at `end` and beyond.
+    falloff: { start: 8, end: 30, minMultiplier: 2 },
+    pierce: { maxTargets: 4, damageFalloff: [1, 0.85, 0.7, 0.55] }, // a bearing goes through a queue of shoppers
+    magazineSize: 5, startingReserve: 30,
+    fireInterval: 1.2, fireBuffer: 0.15, reloadTime: 3.0, range: 120,
+    recoil: {
+      pitchDegrees: 3.2, yawDegrees: 0.5, rollDegrees: 0.8, adsMultiplier: 0.55,
+      model: { back: 0.07, up: 0.012, pitchDegrees: 9, yawDegrees: 1.2, rollDegrees: 2.5,
+        adsMultiplier: 0.4, frequency: 5, damping: 0.5 },
+    },
+    impact: { flinch: 1.6, knockback: 1.6, hitstopSeconds: 0.02, deathImpulse: 2.2 },
+    spread: { // clumsy from the hip (a telescope is not a pistol); dead on through the scope
+      base: 4.5, moving: 3, maxMovingFactor: 1.6, airborne: 6,
+      perShot: 2, maxBloom: 3, bloomRecoveryDelay: 0.3, bloomRecovery: 4,
+      smoothing: 10, adsMultiplier: 0.01,
+    },
+    ads: { seconds: 0.38, fovMultiplier: 0.28, moveSpeedMultiplier: 0.6, offset: { x: 0, y: -0.1, z: -0.4 } },
+    // The scope (weapons/scope.js). overlayFrom: the ADS amount where the eyepiece starts filling the view (all of it when fully aimed: the gun model
+    // is then not drawn). boltDropTo: after a shot the ADS amount falls back to this while the bolt is worked, and eases back in while aim is held.
+    // sway: the view drifts `degrees` each way in a figure eight every periodSeconds (pitchShare of it up and down), crouchMultiplier of it crouched or
+    // prone. It moves the crosshair for real (shots go where you look): steady it by correcting, or get low.
+    scope: {
+      overlayFrom: 0.75, boltDropTo: 0.35,
+      sway: { degrees: 0.22, periodSeconds: 3.4, pitchShare: 0.55, crouchMultiplier: 0.35 },
+      look: { ring: '#0b1230', glass: 'rgba(40, 70, 140, 0.10)', reticle: '#ffd76a', stars: '#fff6c8' }, // the eyepiece overlay (ui/hud.js setScope)
+    },
+    muzzleFlash: {
+      seconds: 0.05, size: 0.24, coreSize: 0.08, outerOpacity: 0.8, sizeJitter: 0.15,
+      forwardOffset: 0.08, outerColor: 0xffe08a, coreColor: 0xffffff,
+      adsWidth: 1.6, adsHeight: 0.5, adsTwistFraction: 0.05,
+      lightColor: 0xfff0c0, handLightIntensity: 0.5, handLightRange: 1,
+      worldLightIntensity: 6, worldLightRange: 8,
+    },
+    sounds: { fire: 'stargazerShot', dryFire: 'dryClick' }, // (the shot's last layer is the bolt being worked)
+    tracerColor: 0xfff0b0,
+    viewmodel: {
+      model: 'stargazer', hipOffset: { x: 0.17, y: -0.15, z: -0.42 },
+      aimYawDegrees: 7, hipPitchDegrees: 2, hipRollDegrees: 3,
+      bodyColor: 0x1d2a6b, accentColor: 0xd8a740, metalColor: 0xc4c9d2, // planetarium navy and brass
+      darkColor: 0x14161e, gripColor: 0x5a3a22, sightColor: 0xffe58a, lensColor: 0x6fb6ff, starColor: 0xfff1b0,
+      // The bolt: after each shot the handle lifts, slides back and forward again, and drops (sinceFire, over boltSeconds after boltDelay).
+      fire: { triggerDegrees: 22, pressSeconds: 0.03, releaseSeconds: 0.12, boltDelay: 0.3, boltSeconds: 0.55, boltTravel: 0.06, boltLiftDegrees: 70 },
+      // Reload: the gun rolls to show its right side, the bolt stays open, the support hand pushes a strip of bearings down into the port, then the bolt closes.
+      reload: {
+        gunKeys: [
+          { t: 0, pos: [0, 0, 0], rot: [0, 0, 0] },
+          { t: 0.16, pos: [-0.01, 0.01, 0.03], rot: [8, -6, -22] },
+          { t: 0.8, pos: [-0.01, 0.01, 0.03], rot: [8, -6, -22] },
+          { t: 1, pos: [0, 0, 0], rot: [0, 0, 0] },
+        ],
+        handKeys: [
+          { t: 0, pos: [0, 0, 0] },
+          { t: 0.2, pos: [-0.04, -0.16, 0.12], rot: [-20, 0, 0] }, // down to the pouch
+          { t: 0.36, pos: [-0.04, -0.16, 0.12], rot: [-20, 0, 0] }, // a strip of bearings
+          { t: 0.52, pos: [0.04, 0.06, 0.14], rot: [10, 0, 0] }, // up over the open port
+          { t: 0.66, pos: [0.04, 0.035, 0.14], rot: [10, 0, 0] }, // thumbs them down
+          { t: 0.85, pos: [0, 0, 0] },
+        ],
+        stripVisible: [[0.36, 0.66]], // the strip in the hand
+        boltOpen: [[0.12, 0.84]], // the bolt is back for the whole reload
+        events: [
+          { at: 0.12, sound: 'stargazerReloadOut', jolt: { back: 0.006, pitchDegrees: 1.5 } },
+          { at: 0.64, sound: 'stargazerReloadIn', jolt: { up: -0.006, pitchDegrees: -2 } },
+          { at: 0.84, sound: 'stargazerReloadReady', jolt: { back: 0.01, pitchDegrees: 2.5 } },
+        ],
+      },
+    },
+  },
+  // CLAW-ONLY (GRAB-A-GUN): the BOTTLE ROCKET BAZOOKA, from the fireworks stand. A striped cardboard launch tube that fires one oversized bottle rocket.
+  // Gold capsule. ROLE: the only gun that hurts everything around a POINT. The rocket flies (weapons/ballistics.js: fast, a slight drop, it ends on the
+  // first thing it touches, wall, floor or zombie, or at the end of its life) and BURSTS there (weapons/blast.js): every zombie within blast.radius and in
+  // sight of it takes `damage` x the blast falloff (weapons/gunStats.js hitDamage with blastDistance). One rocket in the tube and a slow reload, so it is a
+  // poor duellist (below the Price Gun on one zombie, tests/balance.test.js) and the best clump-breaker there is.
+  // IT HURTS YOU TOO: inside the radius your own blast takes blast.self.share of your max health (with the falloff), never more than maxShare, so it can't
+  // kill you from full health; behind a wall it can't reach you. The wardrobe's blast-proof item (stats.ownBlastDamage 0) cancels it.
+  bottleRocket: {
+    id: 'bottleRocket', name: 'Bottle Rocket Bazooka', fireMode: 'semi', clawOnly: true,
+    damage: 900, headshotMultiplier: 1, // (at the blast's centre; a blast has no headshots)
+    blast: {
+      radius: 3.5, edgeFraction: 0.25, // m; the damage at the very edge is edgeFraction of the centre's
+      self: { share: 0.45, maxShare: 0.75, joltDegrees: 3 }, // your own blast: up to 45% of your max health at its centre, never more than 75%; the view jolts down
+      look: { colors: [0xff3b3b, 0xffd23f, 0x3ad1ff, 0xff5ec8, 0xffffff], count: 46, speed: 6, size: 0.07 }, // the firework burst (effects.confetti)
+      flash: { color: 0xffe08a, size: 2.2, seconds: 0.18 },
+    },
+    magazineSize: 1, startingReserve: 12,
+    fireInterval: 1, fireBuffer: 0.15, reloadTime: 2.4, range: 60, // (fireInterval: Build-A-Blaster scales its stuffings from damage / fireInterval, so it is not shorter than a real cycle needs)
+    // The rocket in the air (weapons/ballistics.js, a `zombies: 'bounce'` instance: it bursts on the first thing it touches). speed m/s, gravity m/s^2 (a slight
+    // drop), lifeSeconds (it bursts in the air at the end), radius m, startOffset / startDrop: where it leaves, in front of and below the eye. trailSeconds: a puff of
+    // sparks behind it this often. look: fx/rocketView.js.
+    rocket: {
+      speed: 30, gravity: 2.5, lifeSeconds: 1.6, radius: 0.08, startOffset: 0.7, startDrop: -0.06, trailSeconds: 0.05,
+      trail: { colors: [0xffd23f, 0xff8a1f, 0xfff6c8], count: 3, speed: 1.2, size: 0.03 },
+      look: { body: 0xd8323a, stripe: 0xffffff, nose: 0xffd23f, stick: 0xc89a5a },
+    },
+    recoil: {
+      pitchDegrees: 3.6, yawDegrees: 0.6, rollDegrees: 1.2, adsMultiplier: 0.6,
+      model: { back: 0.08, up: 0.02, pitchDegrees: 10, yawDegrees: 1.5, rollDegrees: 3,
+        adsMultiplier: 0.5, frequency: 4.5, damping: 0.5 },
+    },
+    impact: { flinch: 2, knockback: 4, hitstopSeconds: 0.03, deathImpulse: 2.6 },
+    spread: {
+      base: 1.6, moving: 2.5, maxMovingFactor: 1.5, airborne: 4,
+      perShot: 1, maxBloom: 2, bloomRecoveryDelay: 0.3, bloomRecovery: 4,
+      smoothing: 10, adsMultiplier: 0.1,
+    },
+    ads: { seconds: 0.3, fovMultiplier: 0.82, moveSpeedMultiplier: 0.75, offset: { x: 0, y: -0.11, z: -0.36 } },
+    muzzleFlash: {
+      seconds: 0.08, size: 0.32, coreSize: 0.12, outerOpacity: 0.85, sizeJitter: 0.2,
+      forwardOffset: 0.08, outerColor: 0xffb02e, coreColor: 0xfff6c8,
+      adsWidth: 1.6, adsHeight: 0.6, adsTwistFraction: 0.05,
+      lightColor: 0xffc06a, handLightIntensity: 0.7, handLightRange: 1.2,
+      worldLightIntensity: 8, worldLightRange: 8,
+    },
+    sounds: { fire: 'bottleRocketLaunch', dryFire: 'dryClick', burst: 'bottleRocketBurst' },
+    tracerColor: 0xffd23f,
+    viewmodel: {
+      model: 'bottleRocket', hipOffset: { x: 0.16, y: -0.16, z: -0.4 },
+      aimYawDegrees: 6, hipPitchDegrees: 1.5, hipRollDegrees: 2.5,
+      bodyColor: 0xd8323a, accentColor: 0xf4f1e8, metalColor: 0xc4c9d2, // fireworks-stand red and white
+      darkColor: 0x1e1a24, gripColor: 0x2c2a33, sightColor: 0xffd23f, rocketColor: 0x2f6bff, noseColor: 0xffd23f, wickColor: 0xc89a5a,
+      fire: { triggerDegrees: 24, pressSeconds: 0.03, releaseSeconds: 0.14 },
+      // Reload: the tube tips up, the support hand brings a fresh rocket from below and slides it into the front of the tube, then pats it home.
+      reload: {
+        gunKeys: [
+          { t: 0, pos: [0, 0, 0], rot: [0, 0, 0] },
+          { t: 0.18, pos: [0.01, 0.02, 0.04], rot: [16, 6, 10] },
+          { t: 0.8, pos: [0.01, 0.02, 0.04], rot: [16, 6, 10] },
+          { t: 1, pos: [0, 0, 0], rot: [0, 0, 0] },
+        ],
+        handKeys: [
+          { t: 0, pos: [0, 0, 0] },
+          { t: 0.22, pos: [-0.04, -0.18, 0.06], rot: [-20, 0, 0] }, // down to the box of rockets
+          { t: 0.38, pos: [-0.04, -0.18, 0.06], rot: [-20, 0, 0] },
+          { t: 0.55, pos: [0, 0.05, -0.22], rot: [8, 0, 0] }, // up in front of the tube's mouth
+          { t: 0.7, pos: [0, 0.04, -0.1], rot: [8, 0, 0] }, // slides it in
+          { t: 0.9, pos: [0, 0, 0] },
+        ],
+        rocketVisible: [[0.38, 0.7]], // the rocket in the hand
+        tubeEmpty: [0.08, 0.7], // the loaded rocket's nose is gone from the tube's mouth from the shot's reload until the new one is in
+        events: [
+          { at: 0.2, sound: 'bottleRocketReloadOut' },
+          { at: 0.68, sound: 'bottleRocketReloadIn', jolt: { back: 0.012, pitchDegrees: -2 } },
+          { at: 0.86, sound: 'bottleRocketReloadReady', jolt: { up: 0.006, pitchDegrees: 2 } },
+        ],
+      },
+    },
+  },
 };
 
 // The melee weapon: a box cutter from the employee's pocket (COD knife equivalent).

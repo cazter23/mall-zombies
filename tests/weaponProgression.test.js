@@ -4,7 +4,9 @@ import { createWeaponTrial } from './helpers/weaponTrial.js';
 import { weapons } from '../src/config/weapons.js';
 
 test('weapon pass: bounded headshot rewards and real round-8/10 combat separate the early gun from premium automatics', () => {
-  for (const gun of Object.values(weapons)) assert.ok(gun.headshotMultiplier >= 1.2 && gun.headshotMultiplier <= 2, gun.id);
+  // (The guns of the wall. A claw-only gun has its own job test in balance.test.js: the Stargazer 3000, the sniper, is THE headshot gun at 3x.)
+  for (const gun of Object.values(weapons).filter((g) => !g.clawOnly)) assert.ok(gun.headshotMultiplier >= 1.2 && gun.headshotMultiplier <= 2, gun.id);
+  assert.ok(weapons.stargazer.headshotMultiplier <= 3, 'even the sniper stays at 3x or under');
   const trial = createWeaponTrial();
   try {
     for (const round of [8, 10]) {

@@ -131,7 +131,18 @@ const CASES = {
   },
   returnToSender: {
     earn: t => kill(t, 'returnToSender', { zombie: zombie({ type: { id: 'lastCustomer', boss: {} } }) }),
-    near: t => kill(t, 'returnToSender', { zombie: boss(['returnToSender']) }),
+    near: t => kill(t, 'returnToSender', { zombie: boss(['returnToSender']) }),
+  },
+  stargazer: {
+    earn: t => { round(t, 4); for (let i = 0; i < 15; i++) shot(t, 'stargazer', { hits: [hitOn(zombie())] }); round(t, 5); },
+    near: t => {
+      round(t, 4); for (let i = 0; i < 14; i++) shot(t, 'stargazer', { hits: [hitOn(zombie())] }); round(t, 5); // too few shots
+      for (let i = 0; i < 20; i++) shot(t, 'stargazer', { hits: i === 3 ? [] : [hitOn(zombie())] }); round(t, 6); // one miss
+    },
+  },
+  bottleRocket: {
+    earn: t => { round(t, 3); times(need('bottleRocket'), () => kill(t, 'bottleRocket')); },
+    near: t => { round(t, 3); times(need('bottleRocket') - 1, () => kill(t, 'bottleRocket')); round(t, 4); times(need('bottleRocket') - 1, () => kill(t, 'bottleRocket')); },
   },
 };
 
