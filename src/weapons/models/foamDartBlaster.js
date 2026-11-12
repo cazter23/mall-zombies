@@ -12,6 +12,7 @@ import { resolveGunColors } from '../skinPalette.js';
 import { samplePose } from '../../core/keyframes.js';
 import { buildDeformedBoxGeometry } from '../../player/body.js';
 import { buildPistolArms } from './arms.js';
+import { drawType } from '../../world/typeKit.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 
@@ -46,12 +47,8 @@ function getToyBrandTexture() {
   ctx.fillRect(4, 4, 152, 24);
   ctx.fillStyle = '#ff7a1a';
   ctx.fillRect(4, 24, 152, 5);
-  ctx.fillStyle = '#1d1626';
-  ctx.font = 'italic bold 15px sans-serif';
-  ctx.fillText('FOAM STORM', 10, 22);
-  ctx.fillStyle = '#f1faee';
-  ctx.font = 'bold 10px monospace';
-  ctx.fillText('AGES 8-80 · PLAY TIME', 10, 45);
+  drawType(ctx, 'FOAM STORM', 10, 23, { role: 'toyBrand', size: 20, fill: '#1d1626', align: 'left', baseline: 'alphabetic', maxWidth: 140, outline: false });
+  drawType(ctx, 'AGES 8-80 · PLAY TIME', 10, 46, { role: 'toyBody', size: 12, fill: '#f1faee', align: 'left', baseline: 'alphabetic', maxWidth: 140 });
   cachedToyBrandTex = new THREE.CanvasTexture(canvas);
   cachedToyBrandTex.colorSpace = THREE.SRGBColorSpace;
   return cachedToyBrandTex;

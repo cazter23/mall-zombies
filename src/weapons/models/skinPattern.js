@@ -15,6 +15,7 @@
 import * as THREE from 'three';
 import { gunSkin, skinPatterns as cfg } from '../../config/skins.js';
 import { resolveGunColors } from '../skinPalette.js';
+import { drawType } from '../../world/typeKit.js';
 
 const css = color => '#' + color.toString(16).padStart(6, '0');
 const textures = new Map(); // 'gunId/skinId|layout' -> CanvasTexture
@@ -117,14 +118,12 @@ const DRAW = {
       ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x - size * w / h, size); ctx.stroke();
     }
   },
-  // Repeated words in rows, alternate rows offset (a canvas font from config/fonts.js, already loaded at boot).
+  // Repeated words in rows, alternate rows offset (p.font is a type ROLE from config/typefaces.js, already loaded at boot).
   text(ctx, p, { m, size }) {
-    ctx.fillStyle = css(p.ink);
-    ctx.font = `${p.weight ?? 400} ${Math.max(6, Math.round(m(p.height)))}px ${p.font}`;
-    ctx.textBaseline = 'middle';
+    const o = { role: p.font, size: Math.max(6, Math.round(m(p.height))), fill: css(p.ink), align: 'left', weight: p.weight, outline: false, shadow: false, glow: false };
     for (let row = 0, y = m(p.rowSpacing) / 2; y < size + m(p.rowSpacing); row++, y += m(p.rowSpacing)) {
       const word = p.words[row % p.words.length];
-      for (let x = (row % 2) * -m(p.wordSpacing) / 2; x < size; x += m(p.wordSpacing)) ctx.fillText(word, x, y);
+      for (let x = (row % 2) * -m(p.wordSpacing) / 2; x < size; x += m(p.wordSpacing)) drawType(ctx, word, x, y, o);
     }
   },
 };

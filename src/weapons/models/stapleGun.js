@@ -15,6 +15,7 @@ import { samplePose } from '../../core/keyframes.js';
 import { resolveGunColors } from '../skinPalette.js';
 import { buildDeformedBoxGeometry } from '../../player/body.js';
 import { buildPistolArms } from './arms.js';
+import { drawType } from '../../world/typeKit.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 
@@ -47,13 +48,9 @@ function getOfficeBrandTexture(label) {
   ctx.fillRect(0, 0, 128, 48);
   ctx.fillStyle = label.stripe;
   ctx.fillRect(0, 0, 128, 15);
-  ctx.fillStyle = label.title;
-  ctx.font = 'bold 10px sans-serif';
-  ctx.fillText('STAPLE-PRO T50', 7, 11);
-  ctx.fillStyle = label.ink;
-  ctx.font = 'bold 9px monospace';
-  ctx.fillText('OFFICE SUPPLY #12', 7, 30);
-  ctx.fillText('USE 1/2" CROWN', 7, 42);
+  drawType(ctx, 'STAPLE-PRO T50', 7, 12, { role: 'stencil', size: 12, fill: label.title, align: 'left', baseline: 'alphabetic', maxWidth: 114 });
+  drawType(ctx, 'OFFICE SUPPLY #12', 7, 31, { role: 'wayfinding', size: 12, fill: label.ink, align: 'left', baseline: 'alphabetic', maxWidth: 114 });
+  drawType(ctx, 'USE 1/2" CROWN', 7, 43, { role: 'wayfinding', size: 12, fill: label.ink, align: 'left', baseline: 'alphabetic', maxWidth: 114 });
   cachedOfficeTex = new THREE.CanvasTexture(canvas);
   cachedOfficeTex.colorSpace = THREE.SRGBColorSpace;
   return cachedOfficeTex;

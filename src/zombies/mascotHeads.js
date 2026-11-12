@@ -13,6 +13,7 @@
 // =============================================================================
 
 import * as THREE from 'three';
+import { drawType } from '../world/typeKit.js';
 
 const shared = new Map();
 function sharedOnce(key, make) {
@@ -203,13 +204,8 @@ function drawPriceTagPrint(ctx, w, h, head) {
   ctx.setLineDash([26, 16]);
   ctx.strokeRect(14, 14, w - 28, h - 28);
   ctx.setLineDash([]);
-  ctx.fillStyle = print.ink;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = `400 ${Math.round(h * print.textSize)}px "Anton", Impact, sans-serif`;
-  ctx.fillText(print.text, toX(print.textAt[0]), toY(print.textAt[1]), w * 0.55);
-  ctx.font = `400 ${Math.round(h * print.symbolSize)}px "Anton", Impact, sans-serif`;
-  ctx.fillText(print.symbol, toX(print.symbolAt[0]), toY(print.symbolAt[1]));
+  drawType(ctx, print.text, toX(print.textAt[0]), toY(print.textAt[1]), { role: 'clearance', size: Math.round(h * print.textSize), fill: print.ink, maxWidth: w * 0.55 });
+  drawType(ctx, print.symbol, toX(print.symbolAt[0]), toY(print.symbolAt[1]), { role: 'clearance', size: Math.round(h * print.symbolSize), fill: print.ink });
 }
 
 // Employee of the Month's name badge (config/zombies.js mascotGold.badge): a card on the chest with its print in front.
@@ -224,13 +220,8 @@ export function buildMascotBadge(badge, parent, { block, shape, material, colors
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = print.star;
     ctx.fillRect(0, 0, w, h * 0.16); // a gold band across the top
-    ctx.fillStyle = print.ink;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = `700 ${Math.round(h * 0.3)}px "Space Grotesk", Arial, sans-serif`;
-    ctx.fillText(print.lines[0], w / 2, h * 0.42, w * 0.9);
-    ctx.font = `700 ${Math.round(h * 0.2)}px "Space Grotesk", Arial, sans-serif`;
-    ctx.fillText(print.lines[1], w / 2, h * 0.74, w * 0.9);
+    drawType(ctx, print.lines[0], w / 2, h * 0.42, { role: 'official', size: Math.round(h * 0.3), fill: print.ink, maxWidth: w * 0.9 });
+    drawType(ctx, print.lines[1], w / 2, h * 0.74, { role: 'official', size: Math.round(h * 0.2), fill: print.ink, maxWidth: w * 0.9 });
   });
   if (!map) return;
   const plane = sharedOnce('badge.plane', () => new THREE.PlaneGeometry(badge.size[0], badge.size[1]));

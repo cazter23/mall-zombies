@@ -14,6 +14,7 @@ import { samplePose } from '../../core/keyframes.js';
 import { resolveGunColors } from '../skinPalette.js';
 import { buildDeformedBoxGeometry } from '../../player/body.js';
 import { buildPistolArms } from './arms.js';
+import { drawType } from '../../world/typeKit.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 
@@ -47,14 +48,10 @@ function getWarningTexture() {
   ctx.fillRect(0, 0, 128, 48);
   ctx.fillStyle = '#f2c12e';
   ctx.fillRect(3, 3, 122, 15);
-  ctx.fillStyle = '#1d1d22';
-  ctx.font = 'bold 11px sans-serif';
-  ctx.fillText('! CAUTION 120 PSI', 8, 14);
-  ctx.fillStyle = '#f1faee';
-  ctx.font = 'bold 9px monospace';
-  ctx.fillText('CONTACT TRIP FIRE', 8, 31);
-  ctx.fillStyle = '#ff5a2e';
-  ctx.fillText('WEAR EYE SHIELD', 8, 42);
+  const left = { role: 'wayfinding', size: 12, align: 'left', baseline: 'alphabetic', maxWidth: 112 };
+  drawType(ctx, '! CAUTION 120 PSI', 8, 15, { ...left, role: 'hazard', size: 13, fill: '#1d1d22' });
+  drawType(ctx, 'CONTACT TRIP FIRE', 8, 32, { ...left, fill: '#f1faee' });
+  drawType(ctx, 'WEAR EYE SHIELD', 8, 43, { ...left, fill: '#ff5a2e' });
   cachedWarningTex = new THREE.CanvasTexture(canvas);
   cachedWarningTex.colorSpace = THREE.SRGBColorSpace;
   return cachedWarningTex;
