@@ -60,7 +60,7 @@ const builders = {
 export const FEATURE_KINDS = Object.keys(builders);
 
 /**
- * Build every feature of a map. Returns { list, update(dt), reset() }: list = the built features
+ * Build every feature of a map. Returns { list, instanceOf(kind), instancesOf(kind), update(dt), reset() }: list = the built features
  * ({ feature, instance }), update/reset run each feature's own hooks (if it has any).
  * An unknown or missing kind is an error (a typo in map data shouldn't silently vanish).
  * `kinds` defaults to the registry above (tests pass their own).
@@ -77,6 +77,14 @@ export function buildFeatures(map, ctx, kinds = builders) {
   return {
     list,
     context: ctx, // what every feature was given (for tests / debugging)
+    /** The first built instance of a kind (Kiosk Kevin, the claw machine...), or undefined if the map has none. */
+    instanceOf(kind) {
+      return list.find(({ feature }) => feature.kind === kind)?.instance;
+    },
+    /** Every built instance of a kind, in map order. */
+    instancesOf(kind) {
+      return list.filter(({ feature }) => feature.kind === kind).map(({ instance }) => instance);
+    },
     update(dt) {
       for (const { instance } of list) instance.update?.(dt);
     },

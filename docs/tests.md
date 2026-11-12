@@ -56,6 +56,8 @@ reachable by zombies, a zombie following round each side, the hall as its own cu
 
 `tests/reviewFixes.test.js` covers review fixes: a free attachment refit keeps the Discount Code (a paid fitting and `spendVoucher` with a full-discount voucher still spend it), a boss voucher left on the floor while another is held pays its points on expiry, Signed Approval survives its gun being away at Build-A-Blaster, and a boss killing the player mid-update neither skips the next zombie's tick nor lingers after it.
 
+`tests/announcer.test.js` covers the mall PA table (game/announcer.js) in the real game: a system's line shows with a chime and an event without one is silent, Closing Time lines and return labels only in Directed (the key sound in both, before the chime), a collect line before its certificate, a Flash Sale ended by a new run is silent, and features.instanceOf / instancesOf.
+
 `tests/loop.test.js` covers the fixed-step loop surviving errors: a throwing tick, look input or render is caught on its own while the other stages and the next frame still run, a tick that always throws is used up rather than piling up owed ticks, a broken reporter is harmless, and the default report prints each distinct error once, not every tick.
 
 `tests/idleSaver.test.js` covers the idle saver: awake / dim / asleep by time, a live run never throttled and the count starting when the game stops running, settings read live, an unfocused window counting as nobody there, the loop's frame cap / pause / resume (no replay of the sleep), the browser half (keys, pointer, wheel, focus, visibility, controller buttons and sticks, mute off, dispose) and the three settings.
