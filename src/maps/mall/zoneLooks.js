@@ -328,6 +328,8 @@ export function buildAtriumLook({ looks, layout, upperY, keepClear = [] }) {
   // Neon: two suns either side of the SUNSET GALLERIA sign (north upper wall), the promise on the south upper wall.
   const neon = looks.neon('atrium');
   for (const dx of [-6.6, 6.6]) neon.shape('sun', { x: cx + dx, y: upperY + 1.9, z: A.maxZ - inset, facing: -1, size: 2.6, color: S.sun });
+  // The mall's name between them, in neon (it was a flat printed plate: the showpiece room's centrepiece didn't glow).
+  neon.sign({ text: 'SUNSET GALLERIA', x: cx, y: upperY + 2.3, z: A.maxZ - inset, facing: -1, height: 0.72, color: S.promise, backing, border: S.sun, flickerLetters: [4] });
   const promiseX = 23.4;
   neon.sign({ text: sat.promise, x: promiseX, y: upperY + 2.3, z: A.minZ + inset, facing: 1, height: 0.46, color: S.promise, backing, border: L.trim.ringLong, flickerLetters: [27] });
 
@@ -364,6 +366,7 @@ export function buildAtriumLook({ looks, layout, upperY, keepClear = [] }) {
     looks.pool(A.maxX - 0.01, y - 0.45, midZ, dz, 0.9, 'x-', endColor, P.trimOpacity, { wash: true });
   }
   for (const dx of [-6.6, 6.6]) looks.pool(cx + dx, upperY + 1.9, A.maxZ - 0.026, 5, 3.4, -1, S.sun, P.wallOpacity);
+  looks.pool(cx, upperY + 2.3, A.maxZ - 0.026, 9, 1.8, -1, S.promise, P.wallOpacity);
   looks.pool(promiseX, upperY + 2.3, A.minZ + 0.026, 12, 1.6, 1, S.promise, P.wallOpacity);
 
   // Posters, 3 cm proud (arcade walls and the ring's east wall).

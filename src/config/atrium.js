@@ -3,6 +3,20 @@
 // Shops have real interiors behind sealed glazing; they are scenery, never walkable rooms.
 export const atriumDetails = {
   restockMachine: { x: 30.5, wallInset: .2 }, // ground-floor northeast corner, facing the court
+  // The ground floor's south wall (shared with the Main Hallway): three painted panels above the doors' height, between the
+  // doorways (maps/mall/atriumMurals.js). from/to = x along the wall (clear of the gate 13-18 and the Mega Mart link 21.5-24.5),
+  // bottom/top = y; sunAt = where the sun sits across the panel (0..1).
+  murals: {
+    bottom: 3.3, top: 4.8, standOff: 0.03, pixelsPerMetre: 220,
+    frame: { color: 0xc9a14a, width: 0.07, depth: 0.05 },
+    panels: [
+      { from: 8.4, to: 12.65, title: 'SUNSET GALLERIA', sub: 'SHOPPING · DINING · ETERNAL EMPLOYMENT', sunAt: 0.5 },
+      { from: 18.35, to: 21.15, title: 'EST. 1986', sub: 'AND STILL ESTABLISHING', sunAt: 0.5 },
+      { from: 24.85, to: 31.6, title: 'GRAND OPENING!', sub: '(SINCE 1986) · EVERY DAY IS OPENING DAY', sunAt: 0.62 },
+    ],
+  },
+  // Seats and a planter along that same wall, under the murals: [x0, z0, x1, z1] (clear of both doorways and Kevin's cart).
+  southWall: { benches: [[18.6, 6.72, 20.9, 7.22], [29.6, 6.72, 31.7, 7.22]], planters: [[28.4, 6.72, 29.3, 7.62]] },
   // Sun shafts from the skylight: soft additive planes leaning west (the sun is setting), merged into one mesh. at = [x, z]
   // where each shaft meets the court floor; the dusk fades them (config/look.js dusk.shafts).
   sunShafts: { at: [[15.2, 14.5], [19, 21.5], [22.5, 16.2], [24.5, 23.2]], width: 1.7, lean: .2, // (lean: tops stay inside the open court)

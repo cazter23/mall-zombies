@@ -19,6 +19,8 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { slabPiecesWithHoles } from '../../world/mapKit.js';
 import { COLORS } from './palette.js';
 import { buildAtriumDetails } from './atriumDetails.js';
+import { buildAtriumMurals } from './atriumMurals.js';
+import { atriumDetails as ATRIUM_DRESSING } from '../../config/atrium.js';
 import { atriumShopOpenings } from './atriumStorefronts.js';
 import { atriumDetails } from '../../config/atrium.js';
 import { wayfinding } from '../../config/concourse.js';
@@ -209,11 +211,13 @@ export function buildAtrium({ kit, props, layout, upperY }) {
   // Tall trees: the court is open to the skylight, so the canopy sits above the kiosk signs instead of in front of them.
   for (const [x, z] of layout.planters) props.planter(x - 0.7, z - 0.7, x + 0.7, z + 0.7, { tree: 'tall' });
   for (const [x0, z0, x1, z1] of layout.benches) props.bench(x0, z0, x1, z1);
+  // The south wall (shared with the hallway): murals above the doors, seats and a planter under them (config/atrium.js).
+  buildAtriumMurals({ kit, layout });
+  for (const [x0, z0, x1, z1] of ATRIUM_DRESSING.southWall.benches) props.bench(x0, z0, x1, z1);
+  for (const [x0, z0, x1, z1] of ATRIUM_DRESSING.southWall.planters) props.planter(x0, z0, x1, z1, { tree: true });
 
   // --- Signs ---------------------------------------------------------------------------------------------------------------------
-  sign('SUNSET GALLERIA', {
-    x: cx, y: upperY + 2.3, z: A.maxZ - 0.02, width: 8, height: 1.1, facing: -1, background: '#6b3f5e', color: '#ffd9a8',
-  });
+  // (The room's own name, SUNSET GALLERIA between the two suns on the north upper wall, is neon: zoneLooks.js buildAtriumLook.)
   sign('THE GRAND ATRIUM', {
     x: cx, y: 4.3, z: A.maxZ - 0.02, width: 6, height: 0.8, facing: -1, background: '#3b2f44', color: '#ffd23f', font: 'Georgia, "Times New Roman", serif',
   });

@@ -60,6 +60,10 @@ export const concourse = {
       { area: 'hallway', y: 0, wall: 'north', z: 6, from: -20, to: 20, width: 0.55, tile: { base: '#8e78b4', grout: '#e07fb2', variation: 10, seed: 71 } },
       { area: 'hallway', y: 0, wall: 'south', z: -2, from: -20, to: 20, width: 0.55, tile: { base: '#8e78b4', grout: '#e07fb2', variation: 10, seed: 72 } },
       { area: 'level2', y: 6.3, wall: 'south', z: -4.5, from: -20, to: 20, width: 0.55, tile: { base: '#a86e79', grout: '#5e3d5c', variation: 8, seed: 73 } },
+      // The Atrium: both long sides of the upper ring (plum terrazzo, gold grout). (Not its ground floor: the mosaic lifts that
+      // floor, which would put a band at the painted pools' height.)
+      { area: 'atrium', y: 6.3, wall: 'south', z: 6.6, from: 8, to: 32, width: 0.55, tile: { base: '#9c6a7d', grout: '#e7b97a', variation: 9, seed: 75 } },
+      { area: 'atrium', y: 6.3, wall: 'north', z: 30.6, from: 8, to: 32, width: 0.55, tile: { base: '#9c6a7d', grout: '#e7b97a', variation: 9, seed: 76 } },
     ],
     bandLift: 0.006, // band top above the floor surface it sits on (pools sit at 0.012: never the same plane)
     medallions: [
