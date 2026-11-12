@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { cinemaFinish } from '../../config/cinemaFinish.js';
 import { cinemaDetails } from '../../config/cinemaDetails.js';
 import { cinemaPrint } from './cinemaPrint.js';
+import { drawType } from '../../world/typeKit.js';
 
 export function buildCinemaPublicFinish({ kit, layout: c, floorY: Y }) {
   const C = cinemaDetails.palette, D = cinemaFinish;
@@ -40,10 +41,9 @@ export function buildCinemaPublicFinish({ kit, layout: c, floorY: Y }) {
   for (let i = 0; i < D.lobby.candy.length; i++) {
     const cv = canvas(384, 256), ctx = cv.getContext('2d');
     ctx.fillStyle = ['#bb657e', '#537e75', '#c7a46a', '#526e8b'][i]; ctx.fillRect(0, 0, 384, 256);
-    ctx.fillStyle = '#f7e9c8'; ctx.textAlign = 'center';
-    ctx.font = 'bold 47px Georgia, serif';
-    D.lobby.candy[i].split(' ').forEach((s, j) => ctx.fillText(s, 192, 93 + j * 61));
-    ctx.font = '19px monospace'; ctx.fillText('SUNSET SWEETS / 45g', 192, 231);
+    D.lobby.candy[i].split(' ').forEach((s, j) => drawType(ctx, s, 192, 70 + j * 61,
+      { role: 'toyBrand', size: 52, fill: '#f7e9c8', maxWidth: 340, outline: { color: '#2b1a2a', width: 0.07 } }));
+    drawType(ctx, 'SUNSET SWEETS / 45g', 192, 228, { role: 'cinemaBody', size: 26, fill: '#f7e9c8', maxWidth: 340, caps: 'upper', tracking: 0.1 });
     printPanel('candy_brand', cv, -41.25, 1.205, -.70 + i * .22, .16, .11, 'x+');
   }
   for (const z of [-.95, -.60, -.25]) {
@@ -86,13 +86,13 @@ export function buildCinemaPublicFinish({ kit, layout: c, floorY: Y }) {
     const cv = canvas(768, 768), ctx = cv.getContext('2d');
     ctx.fillStyle = '#242a2a'; ctx.fillRect(0, 0, 768, 768);
     ctx.strokeStyle = '#bda16b'; ctx.lineWidth = 12; ctx.strokeRect(12, 12, 744, 744);
-    ctx.textAlign = 'center'; ctx.fillStyle = '#e9d9b4'; ctx.font = 'bold 58px Georgia, serif'; ctx.fillText('SUNSET CINEMA', 384, 96);
-    ctx.font = '21px monospace'; ctx.fillText('TONIGHT / EVERY NIGHT', 384, 145);
+    drawType(ctx, 'SUNSET CINEMA', 384, 82, { role: 'marquee', size: 66, fill: ['#f3e4bd', '#c9a96a'], maxWidth: 680, outline: { color: '#0e1212', width: 0.05 } });
+    drawType(ctx, 'TONIGHT / EVERY NIGHT', 384, 140, { role: 'cinemaBody', size: 28, fill: '#e9d9b4', maxWidth: 680, caps: 'upper', tracking: 0.14 });
     ctx.strokeStyle = '#535a53'; ctx.lineWidth = 2;
     for (let y = 190; y < 620; y += 42) { ctx.beginPath(); ctx.moveTo(35, y); ctx.lineTo(733, y); ctx.stroke(); }
-    ctx.font = 'bold 29px "Courier New", monospace'; ctx.textAlign = 'left';
-    cinemaDetails.lobby.showtimes.slice(0, 3).forEach((text, i) => ctx.fillText(text, 45, 260 + i * 125));
-    ctx.textAlign = 'center'; ctx.font = '23px Georgia, serif'; ctx.fillText('MATINEE PRICES / ALL ETERNITY', 384, 694);
+    cinemaDetails.lobby.showtimes.slice(0, 3).forEach((text, i) => drawType(ctx, text, 45, 260 + i * 125,
+      { role: 'led', size: 40, fill: '#e9d9b4', maxWidth: 680, align: 'left', baseline: 'alphabetic', glow: false }));
+    drawType(ctx, 'MATINEE PRICES / ALL ETERNITY', 384, 688, { role: 'hoffmanSub', size: 26, fill: '#e9d9b4', maxWidth: 680 });
     const replacement = printPanel('showtime_print', cv, showtimes.position.x, showtimes.position.y - Y,
       showtimes.position.z, showtimes.geometry.parameters.width, showtimes.geometry.parameters.height);
     replacement.rotation.copy(showtimes.rotation);

@@ -8,7 +8,7 @@ export function buildCinemaStairs({ kit, layout: c, cinema, floorY: Y, zones, pr
   const box = (name, x0, y0, z0, x1, y1, z1, color, collide = true, options = {}) =>
     kit.box(x0, y0, z0, x1, y1, z1, kit.mat(color, options), { name: `cinema_stairs_${name}`, collide });
   const sign = (text, x, y, z, width, facing) => kit.sign(text, { x, y, z, width, height: .36,
-    facing, background: '#38434a', color: '#d7e9d4', font: 'Arial, "Helvetica Neue", sans-serif' });
+    facing, background: '#38434a', color: '#d7e9d4', font: 'wayfinding' });
   // All horizontal slabs meet edge to edge, including the original cinema floor
   // through the upper doorway and the original Service Corridor below.
   box('upper_landing', S.minX, 0, S.minZ, S.maxX, Y, upper, C.base);

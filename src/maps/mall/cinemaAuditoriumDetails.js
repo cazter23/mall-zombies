@@ -1,5 +1,6 @@
 import { cinemaDetails as d } from '../../config/cinemaDetails.js';
 import { cinemaPrint } from './cinemaPrint.js';
+import { drawType } from '../../world/typeKit.js';
 
 export function buildCinemaAuditoriumDetails({ kit, looks, layout: c, floorY: Y }) {
   const C = d.palette, A = c.auditorium, { box, cyl, placard, y, canvas, printPanel } = cinemaPrint(kit, C, Y);
@@ -45,8 +46,7 @@ export function buildCinemaAuditoriumDetails({ kit, looks, layout: c, floorY: Y 
         const rowArt = canvas(128, 128), rowCtx = rowArt.getContext('2d');
         rowCtx.fillStyle = '#49354d'; rowCtx.fillRect(0, 0, 128, 128);
         rowCtx.strokeStyle = '#efdfbf'; rowCtx.lineWidth = 4; rowCtx.strokeRect(7, 7, 114, 114);
-        rowCtx.fillStyle = '#efdfbf'; rowCtx.textAlign = 'center'; rowCtx.font = 'bold 86px Georgia, serif';
-        rowCtx.fillText(String.fromCharCode(65 + rowId), 64, 95);
+        drawType(rowCtx, String.fromCharCode(65 + rowId), 64, 68, { role: 'marquee', size: 90, fill: '#efdfbf', maxWidth: 90, tracking: 0 });
         printPanel('row_letter', rowArt, x0 + .13, .84, z - .325, .16, .14, -1);
         for (let i = 0; i < c.seats.perRow; i++) {
           const x = x0 + spacing * (i + .5), hx = x + spacing * .45;

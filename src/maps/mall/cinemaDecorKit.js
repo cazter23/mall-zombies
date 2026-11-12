@@ -1,6 +1,7 @@
 // Small map-owned primitives for cinema dressing. World coordinates keep the
 // existing coplanar checks meaningful; no collision is added by these helpers.
 import * as THREE from 'three';
+import { drawType } from '../../world/typeKit.js';
 
 export function cinemaDecorKit(kit, palette, floorY = 0) {
   const y = h => floorY + h;
@@ -25,9 +26,9 @@ export function cinemaDecorKit(kit, palette, floorY = 0) {
   function placard(name, lines, x, h, z, w, height, facing = 1, base = '#49354d', ink = '#efdfbf') {
     const c = canvas(512, Math.round(512 * height / w)), ctx = c.getContext('2d');
     ctx.fillStyle = base; ctx.fillRect(0, 0, c.width, c.height); ctx.strokeStyle = ink; ctx.lineWidth = 3; ctx.strokeRect(9, 9, c.width - 18, c.height - 18);
-    ctx.fillStyle = ink; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    const text = lines.split('\n'); ctx.font = `bold ${Math.min(32, c.height / (text.length + 1) * .65)}px sans-serif`;
-    text.forEach((s, i) => ctx.fillText(s, c.width / 2, c.height * (i + 1) / (text.length + 1)));
+    const text = lines.split('\n'), size = Math.min(34, c.height / (text.length + 1) * .7);
+    text.forEach((s, i) => drawType(ctx, s, c.width / 2, c.height * (i + 1) / (text.length + 1),
+      { role: 'wayfinding', size, fill: ink, maxWidth: c.width - 50 }));
     return panel(name, c, x, h, z, w, height, facing);
   }
   return { box, cyl, panel, canvas, placard, tag, y, colors: palette };
