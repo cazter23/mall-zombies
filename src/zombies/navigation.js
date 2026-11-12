@@ -28,11 +28,16 @@ import { zombieNav } from '../config/zombies.js';
 import { colliderSignature } from '../world/collision.js';
 
 const SQRT2 = Math.SQRT2;
-// 8 neighbours: [dx, dz, cost]
-const NEIGHBORS = [
-  [1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1],
-  [1, 1, SQRT2], [1, -1, SQRT2], [-1, 1, SQRT2], [-1, -1, SQRT2],
-];
+// 8 neighbours, as three flat lists read by index (neighbour n = column step, row step, cost). Flat on purpose: the flow
+// field visits every walkable cell's neighbours five times a second, and a list of [dx, dz, cost] triples read with
+// `for (const [dc, dr, cost] of ...)` made a throwaway object per neighbour (about 200 MB of garbage a second in a full mall).
+// The ORDER matters: the first of two equally good neighbours wins, so changing it changes routes.
+const NEIGHBOR_COUNT = 8;
+const NEIGHBOR_DC = [1, -1, 0, 0, 1, 1, -1, -1];
+const NEIGHBOR_DR = [0, 0, 1, -1, 1, -1, 1, -1];
+const NEIGHBOR_COST = [1, 1, 1, 1, SQRT2, SQRT2, SQRT2, SQRT2];
+// How much of a zombie's lane offset to try, in turn (directionTo).
+const LANE_FRACTIONS = [1, 0.5];
 
 /**
  * @param colliders  the shared world collider list (Box3s); rebuilt automatically when it changes
@@ -52,38 +57,51 @@ export function createNavigation(colliders, agent, { floors = [0], links = [] } 
   let walkable = new Uint8Array(0); // all layers, layer-major: index = layer * cells + row * cols + col
   let nearWall = new Uint8Array(0); // 1 = walkable cell touching a blocked one (costs extra to walk)
   let dist = new Float32Array(0);
+  let spreadFrom = new Float32Array(0); // computeField's own notes: the distance each cell last spread to its neighbours at
   let linkEdges = new Map(); // global cell index -> [{ to, cost (cells), link }]
+  let hasLink = new Uint8Array(0); // 1 = this cell has an entry in linkEdges (a typed flag is cheaper to ask than the Map)
   let linkList = []; // links with their end cells resolved (see build)
   let builtForSignature = null; // colliderSignature() the grid was built for
   let refreshTimer = 0;
   let hasField = false;
+  // Where the player stood when the field was last drawn (NaN = never, or the grid was rebuilt since): standing on
+  // exactly the same spot, the field would come out the same, so update() skips the redraw.
+  let fieldX = NaN;
+  let fieldY = NaN;
+  let fieldZ = NaN;
 
   // Does a solid box stand between (x0,z0) and (x1,z1), anywhere between heights yLow and yHigh?
   // A real physical check against the colliders (the grid alone can't see walls thinner than a cell).
+  // (Written out per axis, with no temporary arrays: the field's seeding and bestCellNear call this for every box.)
   function wallBetween(x0, z0, x1, z1, yLow, yHigh) {
     const dx = x1 - x0;
     const dz = z1 - z0;
-    for (const box of colliders) {
+    for (let n = 0; n < colliders.length; n++) {
+      const box = colliders[n];
       if (box.max.y <= yLow || box.min.y >= yHigh) continue; // floors, or overhead
       if (x0 >= box.min.x && x0 <= box.max.x && z0 >= box.min.z && z0 <= box.max.z) continue; // starting inside
       // Slab test: does the segment's [0,1] range overlap the box on both axes at once?
       let t0 = 0;
       let t1 = 1;
-      for (const [o, d, lo, hi] of [[x0, dx, box.min.x, box.max.x], [z0, dz, box.min.z, box.max.z]]) {
-        if (Math.abs(d) < 1e-9) {
-          if (o < lo || o > hi) {
-            t0 = 1;
-            t1 = 0;
-            break;
-          }
-          continue;
-        }
-        let a = (lo - o) / d;
-        let b = (hi - o) / d;
-        if (a > b) [a, b] = [b, a];
-        t0 = Math.max(t0, a);
-        t1 = Math.min(t1, b);
-        if (t0 > t1) break;
+      // x
+      if (Math.abs(dx) < 1e-9) {
+        if (x0 < box.min.x || x0 > box.max.x) continue; // parallel to this slab and outside it: misses the box
+      } else {
+        const a = (box.min.x - x0) / dx;
+        const b = (box.max.x - x0) / dx;
+        t0 = Math.max(t0, a > b ? b : a);
+        t1 = Math.min(t1, a > b ? a : b);
+        if (t0 > t1) continue;
+      }
+      // z
+      if (Math.abs(dz) < 1e-9) {
+        if (z0 < box.min.z || z0 > box.max.z) continue;
+      } else {
+        const a = (box.min.z - z0) / dz;
+        const b = (box.max.z - z0) / dz;
+        t0 = Math.max(t0, a > b ? b : a);
+        t1 = Math.min(t1, a > b ? a : b);
+        if (t0 > t1) continue;
       }
       if (t0 <= t1) return true;
     }
@@ -114,7 +132,10 @@ export function createNavigation(colliders, agent, { floors = [0], links = [] } 
     walkable = new Uint8Array(layers * cells);
     nearWall = new Uint8Array(layers * cells);
     dist = new Float32Array(layers * cells);
+    spreadFrom = new Float32Array(layers * cells);
+    hasLink = new Uint8Array(layers * cells);
     hasField = false;
+    fieldX = fieldY = fieldZ = NaN; // (a new grid: the next field is drawn wherever the player stands)
 
     const floorTol = zombieNav.floorTolerance;
     for (let layer = 0; layer < layers; layer++) {
@@ -159,6 +180,7 @@ export function createNavigation(colliders, agent, { floors = [0], links = [] } 
       for (const [from, to] of [[lowerCell, upperCell], [upperCell, lowerCell]]) {
         if (!linkEdges.has(from)) linkEdges.set(from, []);
         linkEdges.get(from).push({ to, cost, link: resolved });
+        hasLink[from] = 1;
       }
       return resolved;
     });
@@ -216,32 +238,43 @@ export function createNavigation(colliders, agent, { floors = [0], links = [] } 
 
   // --- Flow field (Dijkstra from the player) -----------------------------------
 
-  // Small binary min-heap of cell indices, keyed by dist[].
-  const heap = [];
+  // Small binary min-heap of cell indices, keyed by dist[]. One reused block of numbers (it grows when a bigger map
+  // needs it and is never thrown away), and swaps through a plain temporary: no garbage per field.
+  let heap = new Int32Array(1024);
+  let heapSize = 0;
   function heapPush(i) {
-    heap.push(i);
-    let k = heap.length - 1;
+    if (heapSize === heap.length) {
+      const bigger = new Int32Array(heap.length * 2);
+      bigger.set(heap);
+      heap = bigger;
+    }
+    let k = heapSize++;
+    heap[k] = i;
     while (k > 0) {
       const p = (k - 1) >> 1;
-      if (dist[heap[p]] <= dist[heap[k]]) break;
-      [heap[p], heap[k]] = [heap[k], heap[p]];
+      const parent = heap[p];
+      if (dist[parent] <= dist[i]) break;
+      heap[p] = i;
+      heap[k] = parent;
       k = p;
     }
   }
   function heapPop() {
     const top = heap[0];
-    const last = heap.pop();
-    if (heap.length > 0) {
+    const last = heap[--heapSize];
+    if (heapSize > 0) {
       heap[0] = last;
       let k = 0;
       for (;;) {
         const l = 2 * k + 1;
         const r = l + 1;
         let m = k;
-        if (l < heap.length && dist[heap[l]] < dist[heap[m]]) m = l;
-        if (r < heap.length && dist[heap[r]] < dist[heap[m]]) m = r;
+        if (l < heapSize && dist[heap[l]] < dist[heap[m]]) m = l;
+        if (r < heapSize && dist[heap[r]] < dist[heap[m]]) m = r;
         if (m === k) break;
-        [heap[m], heap[k]] = [heap[k], heap[m]];
+        const moved = heap[m];
+        heap[m] = heap[k];
+        heap[k] = moved;
         k = m;
       }
     }
@@ -250,7 +283,7 @@ export function createNavigation(colliders, agent, { floors = [0], links = [] } 
 
   function computeField(target) {
     dist.fill(Infinity);
-    heap.length = 0;
+    heapSize = 0;
     const ty = target.y ?? 0;
 
     // Seed: walkable cells near the player (the player might stand on a bench zombies can't),
@@ -290,30 +323,40 @@ export function createNavigation(colliders, agent, { floors = [0], links = [] } 
     hasField = seeded;
     if (!seeded) return;
 
-    while (heap.length > 0) {
+    const wallPenalty = zombieNav.wallPenalty;
+    spreadFrom.fill(Infinity);
+    while (heapSize > 0) {
       const i = heapPop();
+      const d = dist[i];
+      // A cell is queued again every time a shorter way to it turns up, so most cells come out of the heap more than
+      // once. Spreading from one again at the SAME distance can't shorten anything (its neighbours already have that
+      // offer), so only the first visit at each distance does the work. Same field, fewer visits.
+      if (spreadFrom[i] === d) continue;
+      spreadFrom[i] = d;
       const base = Math.floor(i / cells) * cells;
       const local = i - base;
       const c = local % cols;
       const r = (local - c) / cols;
-      const d = dist[i];
-      for (const [dc, dr, cost] of NEIGHBORS) {
+      for (let n = 0; n < NEIGHBOR_COUNT; n++) {
+        const dc = NEIGHBOR_DC[n];
+        const dr = NEIGHBOR_DR[n];
         const nc = c + dc;
         const nr = r + dr;
-        if (!inside(nc, nr)) continue;
+        if (nc < 0 || nr < 0 || nc >= cols || nr >= rows) continue;
         const ni = base + nr * cols + nc;
         if (!walkable[ni]) continue;
         // No cutting corners diagonally past a blocked cell.
         if (dc !== 0 && dr !== 0 && (!walkable[base + r * cols + nc] || !walkable[base + nr * cols + c])) continue;
-        const nd = d + cost * (1 + zombieNav.wallPenalty * nearWall[ni]);
+        const nd = d + NEIGHBOR_COST[n] * (1 + wallPenalty * nearWall[ni]);
         if (nd < dist[ni]) {
           dist[ni] = nd;
           heapPush(ni);
         }
       }
-      const edges = linkEdges.get(i); // a ramp to another floor
-      if (edges) {
-        for (const edge of edges) {
+      if (hasLink[i]) { // a ramp to another floor
+        const edges = linkEdges.get(i);
+        for (let e = 0; e < edges.length; e++) {
+          const edge = edges[e];
           const nd = d + edge.cost;
           if (nd < dist[edge.to]) {
             dist[edge.to] = nd;
@@ -390,7 +433,15 @@ export function createNavigation(colliders, agent, { floors = [0], links = [] } 
       }
       refreshTimer -= dt;
       if (rebuilt || refreshTimer <= 0) {
-        computeField(target);
+        // The field depends only on the grid and on exactly where the player stands. Same grid, same spot (holding a
+        // corner, an open menu, the death camera): the field in hand is already the one this would draw, so keep it.
+        const ty = target.y ?? 0;
+        if (rebuilt || target.x !== fieldX || ty !== fieldY || target.z !== fieldZ) {
+          computeField(target);
+          fieldX = target.x;
+          fieldY = ty;
+          fieldZ = target.z;
+        }
         refreshTimer = zombieNav.refreshSeconds;
       }
     },
@@ -464,7 +515,9 @@ export function createNavigation(colliders, agent, { floors = [0], links = [] } 
         const r = (local - c) / cols;
         let next = -1;
         let nextD = dist[i];
-        for (const [dc, dr] of NEIGHBORS) {
+        for (let n = 0; n < NEIGHBOR_COUNT; n++) {
+          const dc = NEIGHBOR_DC[n];
+          const dr = NEIGHBOR_DR[n];
           const nc = c + dc;
           const nr = r + dr;
           if (!inside(nc, nr)) continue;
@@ -503,7 +556,8 @@ export function createNavigation(colliders, agent, { floors = [0], links = [] } 
       if (!setDir(out, ax - from.x, az - from.z)) return false;
 
       // Shift the aim point sideways into this zombie's lane (full, then half) if there's room.
-      for (const f of [1, 0.5]) {
+      for (let n = 0; n < LANE_FRACTIONS.length; n++) {
+        const f = LANE_FRACTIONS[n];
         if (offset === 0) break;
         const lx = ax - out.z * offset * f;
         const lz = az + out.x * offset * f;
@@ -536,8 +590,8 @@ export function createNavigation(colliders, agent, { floors = [0], links = [] } 
         const i=queue[cursor], base=Math.floor(i/cells)*cells, local=i-base;
         const c=local%cols,r=Math.floor(local/cols);
         const visit=ni=>{ if (previous[ni]===-1 && walkable[ni]) { previous[ni]=i; queue.push(ni); } };
-        for (const [dc,dr] of NEIGHBORS) {
-          const nc=c+dc,nr=r+dr;
+        for (let n=0;n<NEIGHBOR_COUNT;n++) {
+          const dc=NEIGHBOR_DC[n],dr=NEIGHBOR_DR[n],nc=c+dc,nr=r+dr;
           if (!inside(nc,nr)) continue;
           if (dc!==0 && dr!==0 && (!walkable[base+r*cols+nc] || !walkable[base+nr*cols+c])) continue;
           visit(base+nr*cols+nc);

@@ -362,7 +362,9 @@ src/
                         in the field a link is one extra edge between its end cells; a mover ON a ramp (within zombieNav.rampTolerance of its
                         surface) walks to whichever end is closer to the player (or straight at a player on the same ramp); at a ramp's foot it
                         walks in when the route goes that way. layerOf(y), rampAt(x,y,z); distanceToTarget / isWalkableAt / clearLine take
-                        an optional floor height y. Single-floor maps are unchanged. (Ground-floor description:) flow field on a 0.5m grid (floor =
+                        an optional floor height y. Single-floor maps are unchanged. The field is redrawn every zombieNav.refreshSeconds, and
+                        not at all while the player stands on exactly the same spot on an unchanged grid (the result would be the same); its
+                        inner loops make no garbage (flat neighbour lists, one reused heap). (Ground-floor description:) flow field on a 0.5m grid (floor =
                         box top at y~0; obstacles padded by zombie radius; cells within extraClearance cost extra
                         so routes stay off walls but narrow gaps still connect). Dijkstra from the player every
                         0.2s; rebuilds when colliderSignature() changes (count + version, see collision.js). The grid
