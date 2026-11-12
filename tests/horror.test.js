@@ -62,6 +62,14 @@ test('a power cut darkens the area you are in (lamps, neon, emergency red), then
     assert.ok(hallwayLamps.every((l) => l.intensity === 0), 'the hallway lamps are dark');
     assert.equal(g.map.horror.neons.hallway.power, 0, 'its neon is dark');
     assert.equal(g.map.horror.neons.foodCourt.power, 1, 'other areas keep their power');
+    // The lit ceiling panels go dark with their lamps (they'd otherwise glow on in a black room).
+    const hallPanels = g.map.horror.panels.filter((p) => Math.abs(p.position.x) < 20 && p.position.z > -2 && p.position.z < 6 && p.position.y < 6.5);
+    const glow = look.hallway.panelGlow;
+    assert.ok(hallPanels.length > 0);
+    tick(1);
+    assert.ok(hallPanels.every((p) => p.material.emissiveIntensity <= glow * look.horror.panels.dark + 1e-6), 'hallway panels are dark');
+    const otherPanels = g.map.horror.panels.filter((p) => p.position.z < -3 && p.position.y < 6.5); // (the Food Court)
+    assert.ok(otherPanels.some((p) => p.material.emissiveIntensity > 0.5), 'other areas\' panels stay lit');
     // Count flips while it stutters back: never more than 3 a second.
     let flips = 0;
     let last = g.map.horror.neons.hallway.power;
@@ -75,6 +83,8 @@ test('a power cut darkens the area you are in (lamps, neon, emergency red), then
     }
     assert.equal(g.map.horror.state.cut, null, 'the power came back');
     assert.equal(g.map.horror.neons.hallway.power, 1);
+    tick(1);
+    assert.ok(hallPanels.some((p) => p.material.emissiveIntensity > glow * 0.5), 'the panels come back with the power');
     // A flash is an off + on pair = 2 flips, so 3 flashes a second is 6 flips a second (+1: the flip as the power returns).
     // (This used to count single flips, which only passed for some seeded random sequences; adding lamps reshuffles them.)
     assert.ok(flips <= Math.ceil(2 * 3 * look.horror.powerCuts.stutterSeconds) + 1, `${flips} flips in the stutter`);

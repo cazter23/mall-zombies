@@ -1025,6 +1025,7 @@ export function buildMall(scene, colliders) {
     state: { exposure: 1, decay: 0, dusk: 0, cut: null }, // read by zone lighting (main.js)
     setDusk, // the sun going down over a run (look.dusk)
     lamps,
+    panels: props.panels.filter((p) => !p.dead).map((p) => p.mesh), // lit ceiling panels: they dim with their area's lamps
     neons: looks.parts.neonsByName,
     areas: [
       { id: 'hallway', grades: ['front'], neons: ['hallway'] },

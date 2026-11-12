@@ -52,13 +52,14 @@ export const concourse = {
     hallway: { bottom: 5.6, depth: 0.5, color: 0xf7f3ee, north: [[-20, 20]], south: [[-20, 20]] },
   },
 
-  // --- FLOORS: a border band of contrasting terrazzo along the long walls, sunset medallions at the junctions, and a
+  // --- FLOORS: a border band of contrasting terrazzo along the long walls (a step DARKER than the floor, so the walls
+  // frame the action in the bright hubs), sunset medallions at the junctions, and a
   // worn walking lane (a faint dark smudge where forty years of feet went).
   floor: {
     bands: [
-      { area: 'hallway', y: 0, wall: 'north', z: 6, from: -20, to: 20, width: 0.55, tile: { base: '#cdbde3', grout: '#ec9fc4', variation: 10, seed: 71 } },
-      { area: 'hallway', y: 0, wall: 'south', z: -2, from: -20, to: 20, width: 0.55, tile: { base: '#cdbde3', grout: '#ec9fc4', variation: 10, seed: 72 } },
-      { area: 'level2', y: 6.3, wall: 'south', z: -4.5, from: -20, to: 20, width: 0.55, tile: { base: '#efd8c6', grout: '#8a5f86', variation: 8, seed: 73 } },
+      { area: 'hallway', y: 0, wall: 'north', z: 6, from: -20, to: 20, width: 0.55, tile: { base: '#8e78b4', grout: '#e07fb2', variation: 10, seed: 71 } },
+      { area: 'hallway', y: 0, wall: 'south', z: -2, from: -20, to: 20, width: 0.55, tile: { base: '#8e78b4', grout: '#e07fb2', variation: 10, seed: 72 } },
+      { area: 'level2', y: 6.3, wall: 'south', z: -4.5, from: -20, to: 20, width: 0.55, tile: { base: '#a86e79', grout: '#5e3d5c', variation: 8, seed: 73 } },
     ],
     bandLift: 0.006, // band top above the floor surface it sits on (pools sit at 0.012: never the same plane)
     medallions: [

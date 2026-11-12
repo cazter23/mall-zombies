@@ -169,11 +169,11 @@ export function createMallProps(kit) {
   /** A ceiling light panel spanning x0..x1 / z0..z1, just under a ceiling at `ceilingY`. */
   const panels = []; // every light panel built (the concourse pass paints a soft pool on the floor under the lit ones)
   function lightPanel(x0, z0, x1, z1, ceilingY, { dead = false, tint = COLORS.lightPanel, glow = 1.35 } = {}) {
-    panels.push({ x0, z0, x1, z1, ceilingY, dead, tint });
     const material = dead
       ? mat(COLORS.deadLightPanel, { roughness: 0.45, metalness: 0.15 })
       : mat(tint, { emissive: tint, emissiveIntensity: glow, roughness: 0.2 });
-    box(x0, ceilingY - 0.06, z0, x1, ceilingY, z1, material, { collide: false });
+    const mesh = box(x0, ceilingY - 0.06, z0, x1, ceilingY, z1, material, { collide: false });
+    panels.push({ x0, z0, x1, z1, ceilingY, dead, tint, mesh }); // (mesh: the horror layer dims lit panels with their lamps)
   }
 
   // --- Big-box store props (Mega Mart) ----------------------------------------

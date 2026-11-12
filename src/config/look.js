@@ -28,11 +28,14 @@ export const look = {
   // THE HORROR LAYER (game/features/horror.js): the mall falls apart as the rounds climb. Visual only.
   horror: {
     fromRound: 5, // nothing before this round
-    darkness: { perRound: 0.025, max: 0.2 }, // the whole mall's exposure falls this much per round past fromRound
+    // Measured 11 November 2026: at the old 0.2 / lateHours 0.84 a round-21 hallway was only ~14% darker on screen than
+    // with the layer off (no one could see it). Now about twice that: the hubs get properly dim, so neon and pickups glow.
+    darkness: { perRound: 0.04, max: 0.4 }, // the whole mall's exposure falls this much per round past fromRound
     neonFailure: { perRound: 0.08, max: 0.6 }, // share of flickering neon (letters, tubes) that dies for good, per round
     neonBrownout: { perRound: 0.035, max: 0.5 }, // share of brightness EVERY tube loses (steady ones too), per round
     decay: { perRound: 0.07, max: 1 }, // how far the view drifts towards grading.grades.lateHours, per round (1 = all the way)
-    lampDeaths: { everyRounds: 2, maxShare: 0.4, flickerSeconds: 2.5 }, // one more lamp dies every N rounds (it flickers first)
+    lampDeaths: { everyRounds: 2, maxShare: 0.55, flickerSeconds: 2.5 }, // one more lamp dies every N rounds (it flickers first)
+    panels: { dark: 0.06 }, // a lit ceiling panel's glow when every lamp of its area is out (1 = as built)
     powerCuts: {
       fromRound: 6,
       chance: 0.35, // per round
@@ -41,6 +44,10 @@ export const look = {
       stutterSeconds: 0.8, // the power stutters back on at the end
     },
   },
+
+  // PRINTED SIGNS AND POSTERS (world/mapKit.js printedMaterial): lit like the wall they hang on, plus this much of their
+  // own glow (0 = pure paint, 1 = as bright as an unlit sign) so they stay readable in a dim corner.
+  print: { glow: 0.35 },
 
   // METAL SHEEN (fx/metalSheen.js): without anything to reflect, metal renders nearly black. Metal materials (metalness
   // >= minMetalness) get a tiny baked gradient: warm-white ceiling above, a lavender horizon, a dusk floor below.
@@ -52,9 +59,15 @@ export const look = {
 
   // ZOMBIE EDGE GLOW (zombies/zombieRim.js): a soft rim of light round each zombie so it reads against the pastel walls,
   // tinted by kind. power = how tight the rim is (higher = thinner), strength = how bright.
+  // A light rim does nothing against light walls, so in bright areas the edge goes DARK instead (darkEdge: the silhouette
+  // shades towards a deep plum, like an ink line), and only where the view is dim (the back of house, late rounds, power
+  // cuts) does the light rim take over. darkBelow: the view's exposure (zone grade x horror) at which the edge is all
+  // light rim (first number) and all dark edge (second); in between they blend.
   zombieRim: {
     power: 3.6, strength: 0.28,
     colors: { default: 0xffe6c8, mallWalker: 0xc8f0ff, cartPusher: 0xffd27a, mannequin: 0xd8e4ff, mascot: 0xffb26b, boss: 0xff8fb0 },
+    darkEdge: { color: 0x2a1530, power: 2.2, strength: 0.6 },
+    darkBelow: [0.62, 0.86],
   },
 
   // THE SUN GOES DOWN (game/features/horror.js state.dusk, maps/mall/mall.js setDusk): golden hour at the start of a run,
@@ -88,21 +101,21 @@ export const look = {
     fallback: 'front', // anywhere outside every zone (the hallway)
     grades: {
       parkingLot: { exposure: 1.05, tint: [1.06, .98, .96], saturation: .94, contrast: 1.04, fog: .011, fogColor: 0xb58a8e },
-      front: { exposure: 1, tint: [1, 1, 1], saturation: 1.04, contrast: 1, fog: .010, fogColor: 0xf3e2dc },
+      front: { exposure: 1, tint: [1, 1, 1], saturation: 1.04, contrast: 1.06, fog: .010, fogColor: 0xc9a6a4 }, // (a warm mauve haze, not white: depth without washing out)
       startRoom: { exposure: 0.97, tint: [1.03, 1, 0.94], saturation: 0.92, contrast: 1, fog: .008, fogColor: 0xf0e2c8 }, // faded clearance store
-      foodCourt: { exposure: 1.02, tint: [1.04, 1, 0.95], saturation: 1.06, contrast: 1, fog: .009, fogColor: 0xfbe0cc }, // warm and hungry
+      foodCourt: { exposure: 1.02, tint: [1.04, 1, 0.95], saturation: 1.06, contrast: 1.03, fog: .009, fogColor: 0xe2bea4 }, // warm and hungry
       megaMart: { exposure: 1, tint: [0.97, 1, 1.04], saturation: 0.98, contrast: 1.02, fog: .009, fogColor: 0xe2ebf2 }, // cool fluorescent
       martBack: { exposure: 0.55, tint: [1.1, 0.88, 0.85], saturation: 0.8, contrast: 1.15, vignette: 0.2, fog: .022, fogColor: 0x5a2e2c }, // the stockroom walkway: dim, red
       serviceCorridor: { exposure: 0.42, tint: [0.88, 1.05, 0.8], saturation: 0.6, contrast: 1.2, vignette: 0.3, fog: .03, fogColor: 0x3d4a38 }, // back of house: dark, sick green
-      level2: { exposure: 1, tint: [1.05, 0.98, 0.92], saturation: 1.03, contrast: 1, fog: .012, fogColor: 0xf2d4c8 }, // the Sunset Promenade
+      level2: { exposure: 1, tint: [1.05, 0.98, 0.92], saturation: 1.05, contrast: 1.07, fog: .012, fogColor: 0xc3978f }, // the Sunset Promenade
       cinemaLobby: { exposure: 1.02, tint: [1.06, 1, .98], saturation: 1.02, contrast: 1.02, fog: .012, fogColor: 0x3f2a3c },
       cinemaScreen: { exposure: .82, tint: [.99, .96, 1.08], saturation: .94, contrast: 1.04, fog: .02, fogColor: 0x221a2c },
       cinemaService: { exposure: .70, tint: [.98, 1.03, 1.03], saturation: .85, contrast: 1.06, fog: .02, fogColor: 0x3a4440 },
-      atrium: { exposure: 1.03, tint: [1.05, 0.99, 0.92], saturation: 1.06, contrast: 1, fog: .008, fogColor: 0xf6dcc0 }, // under the sunset skylight
+      atrium: { exposure: 1.03, tint: [1.05, 0.99, 0.92], saturation: 1.06, contrast: 1.05, fog: .008, fogColor: 0xd4ab8a }, // under the sunset skylight
       departmentStore: { exposure: 1.01, tint: [1.04, 1, 0.95], saturation: 1, contrast: 1.02, fog: .010, fogColor: 0xe9d6c4 }, // HOFFMAN'S: warm, a little upscale
       // The horror layer's late rounds (horror.decay): MULTIPLIED onto each area's own grade (vignette and fog added), so
       // dark rooms get darker rather than brighter: dimmer, greyer, harder, a little sick, hazier.
-      lateHours: { exposure: 0.84, tint: [0.97, 1.0, 0.9], saturation: 0.7, contrast: 1.14, vignette: 0.28, fog: .006 },
+      lateHours: { exposure: 0.68, tint: [0.97, 1.0, 0.9], saturation: 0.7, contrast: 1.2, vignette: 0.3, fog: .006 },
       powerCut: { exposure: 0.3, tint: [1.3, 0.5, 0.45], saturation: 0.55, contrast: 1.2, vignette: 0.35, fog: .03, fogColor: 0x2a0c0c }, // the horror layer: emergency red
     },
   },

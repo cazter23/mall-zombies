@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import { applyZombieRim, rimColorFor } from '../src/zombies/zombieRim.js';
+import { applyZombieRim, rimColorFor, rimDaylightFor, rimShared, setRimDaylight } from '../src/zombies/zombieRim.js';
 import { look } from '../src/config/look.js';
 
 test('each kind gets its colour: bosses, every mascot costume, mannequins, the rest by id or the default', () => {
@@ -30,8 +30,24 @@ test('applied once per material, opaque standard materials only, one shared prog
   assert.equal(glass.userData.rim, undefined);
   assert.equal(basic.userData.rim, undefined);
   assert.equal(skin.customProgramCacheKey(), 'zombieRim');
-  const shader = { uniforms: {}, fragmentShader: '#include <common>\n#include <normal_fragment_maps>\n' };
+  const shader = { uniforms: {}, fragmentShader: '#include <common>\n#include <normal_fragment_maps>\n#include <dithering_fragment>\n' };
   skin.onBeforeCompile(shader);
   assert.match(shader.fragmentShader, /totalEmissiveRadiance \+= rimColor/);
+  assert.match(shader.fragmentShader, /mix\(gl_FragColor\.rgb, edgeColor/, 'the dark edge is drawn last');
   assert.ok(shader.uniforms.rimColor && shader.uniforms.rimPower);
+  assert.equal(shader.uniforms.rimDaylight, rimShared.rimDaylight, 'every material shares the one daylight value');
+});
+
+test('bright views get the dark edge, dim views the light rim, blended in between', () => {
+  const [light, dark] = look.zombieRim.darkBelow;
+  assert.equal(rimDaylightFor(1), 1);
+  assert.equal(rimDaylightFor(dark), 1);
+  assert.equal(rimDaylightFor(light), 0);
+  assert.equal(rimDaylightFor(0.3), 0, 'a power cut is all light rim');
+  const mid = rimDaylightFor((light + dark) / 2);
+  assert.ok(mid > 0.4 && mid < 0.6);
+  setRimDaylight(0.4);
+  assert.equal(rimShared.rimDaylight.value, 0);
+  setRimDaylight(1);
+  assert.equal(rimShared.rimDaylight.value, 1);
 });

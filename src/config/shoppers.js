@@ -1,5 +1,6 @@
 // Shopper appearance only. No gameplay stats or hitboxes live here. Clothes are
-// coordinated palettes within an outfit, rather than unrelated random colors.
+// coordinated palettes within an outfit, rather than unrelated random colors. Tops stay a step darker or more saturated
+// than the pastel walls (no near-white or pale-lilac tops), so a shopper reads against the mall at range.
 // Decorative parts: material, size [w,h,d], position [x,y,z], optional Z rotation.
 // Positions are local to the torso/neck/elbow bone; faces look toward -Z.
 const p = (material, size, position, rz = 0) => ({ material, size, position, rz });
@@ -14,15 +15,15 @@ export const shoppers = {
         palette('mustardNavy', 0xc49b45, 0xf1e5c9, 0x333b50, 0xf1e5c9, 0xe5ddd0),
         palette('cobaltWeekend', 0x3675d1, 0xece6d5, 0xb6a384, 0xece6d5, 0xe5e6df),
         palette('violetDenim', 0x8761b1, 0xded5ec, 0x43475b, 0xddd5b8, 0xebe5da),
-        palette('ivoryDenim', 0xede5d2, 0x668db1, 0x394e72, 0x668db1, 0x4b4540)] },
+        palette('ivoryDenim', 0xd3c3a0, 0x668db1, 0x394e72, 0x668db1, 0x4b4540)] },
     { id: 'office', weight: 1.4, tops: ['buttonUp', 'cardigan'], bottoms: ['trousers', 'skirt'],
       accessories: ['none', 'shoulderBag', 'shoppingBag'], patterns: ['plain'],
-      palettes: [palette('blueOffice', 0x91afc0, 0xeee7da, 0x414651, 0x354d6a, 0x3e3634),
+      palettes: [palette('blueOffice', 0x6b90a9, 0xeee7da, 0x414651, 0x354d6a, 0x3e3634),
         palette('plumOffice', 0x766078, 0xe4d8c7, 0x524a48, 0xc4b4a6, 0x403636),
         palette('royalOffice', 0x517cc0, 0xebe5dc, 0x333d52, 0xd1c19f, 0x343438),
-        palette('creamOffice', 0xe5d5ae, 0xf0e9da, 0x39445c, 0x647b9b, 0x51473c),
+        palette('creamOffice', 0xc9ad74, 0xf0e9da, 0x39445c, 0x647b9b, 0x51473c),
         palette('charcoalOffice', 0x4b4d57, 0xbdd4e3, 0xb0a899, 0xbdd4e3, 0x353438),
-        palette('lilacOffice', 0xada0c9, 0xf0e8d5, 0x4a455c, 0x685783, 0xe5ded0)] },
+        palette('lilacOffice', 0x8b78b3, 0xf0e8d5, 0x4a455c, 0x685783, 0xe5ded0)] },
     { id: 'teen', weight: 2, tops: ['hoodie', 'raglan', 'jacket'], bottoms: ['trousers', 'shorts'],
       accessories: ['none', 'headphones', 'backpack'], patterns: ['plain', 'logo'],
       palettes: [palette('rustHoodie', 0xa85e43, 0xd7c9b5, 0x3e424f, 0xd7c9b5, 0xddd7c8),
@@ -36,17 +37,17 @@ export const shoppers = {
       palettes: [palette('oliveJacket', 0x727c59, 0xe6dcc2, 0x58545b, 0xb5b397, 0x554b3e),
         palette('wineCardigan', 0x854f60, 0xdcc8b8, 0x4c5861, 0xdcc8b8, 0x50413d),
         palette('denimJacket', 0x5a83b0, 0xf0e4ca, 0x514d59, 0xc9d8e4, 0xe0d8c8),
-        palette('tanJacket', 0xbda786, 0xece4d5, 0x3c4b68, 0x74634e, 0x554b42),
-        palette('slateCardigan', 0x66738a, 0xe4bb61, 0xd0c5ac, 0xd9e0e5, 0x4d4650),
-        palette('lavenderCardigan', 0xa593bb, 0xeee3cb, 0x38465f, 0xd3c4e3, 0xe1d8cb)] },
+        palette('tanJacket', 0xa4865c, 0xece4d5, 0x3c4b68, 0x74634e, 0x554b42),
+        palette('slateCardigan', 0x66738a, 0xe4bb61, 0xa6977a, 0xd9e0e5, 0x4d4650),
+        palette('lavenderCardigan', 0x8870a7, 0xeee3cb, 0x38465f, 0xd3c4e3, 0xe1d8cb)] },
     { id: 'summer', weight: 1.6, tops: ['tee', 'polo'], bottoms: ['shorts', 'skirt'],
       accessories: ['none', 'sunglasses', 'shoulderBag', 'shoppingBag'], patterns: ['plain', 'stripes'],
-      palettes: [palette('coralSummer', 0xc78376, 0xf0e2c7, 0xb8a783, 0xf0e2c7, 0xe6dfcc),
-        palette('sageSummer', 0x8eac99, 0xeee7ce, 0x8b7790, 0xeee7ce, 0x65554a),
-        palette('skySummer', 0x69b6dc, 0xf1e6cd, 0xd2c2a0, 0xf1e6cd, 0xece5d5),
-        palette('sunshineSummer', 0xf0d46a, 0xf2ebd7, 0x4c709a, 0xf2ebd7, 0xe9e4d7),
-        palette('lavenderSummer', 0xb69bd4, 0xeee3ce, 0x9d9b92, 0xeee3ce, 0x5a5262),
-        palette('whiteSummer', 0xf1eadb, 0xe1c15c, 0x688ba9, 0xe1c15c, 0x716958)] },
+      palettes: [palette('coralSummer', 0xc4614f, 0xf0e2c7, 0xb8a783, 0xf0e2c7, 0xe6dfcc),
+        palette('sageSummer', 0x5e8c73, 0xeee7ce, 0x8b7790, 0xeee7ce, 0x65554a),
+        palette('skySummer', 0x3f8fc4, 0xf1e6cd, 0xa8946e, 0xf1e6cd, 0xece5d5),
+        palette('sunshineSummer', 0xdcae2c, 0xf2ebd7, 0x4c709a, 0xf2ebd7, 0xe9e4d7),
+        palette('lavenderSummer', 0x9273bd, 0xeee3ce, 0x9d9b92, 0xeee3ce, 0x5a5262),
+        palette('whiteSummer', 0xd6cbb4, 0xe1c15c, 0x688ba9, 0xe1c15c, 0x716958)] },
   ],
   builds: [{ id: 'slight', width: 0.93 }, { id: 'regular', width: 1 }, { id: 'broad', width: 1.07 }],
   hairWeights: [

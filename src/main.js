@@ -57,6 +57,7 @@ import { wireRunIntro } from './game/runIntro.js';
 import { atmosphere } from './config/environment.js';
 import { createPostProcessing } from './fx/postProcessing.js';
 import { createZoneGrading } from './fx/zoneGrading.js';
+import { setRimDaylight } from './zombies/zombieRim.js';
 import { createRoomCulling } from './fx/roomCulling.js';
 import { look } from './config/look.js';
 import { createCareerStats } from './game/careerStats.js';
@@ -201,6 +202,7 @@ const gradeAt = (frameTime) => {
   const grade = zoneGrading.update(frameTime, camera.position, look.runtime.zoneGrading, map.horror?.state);
   scene.fog.density = grade.fog;
   scene.fog.color.setRGB(grade.fogColor[0], grade.fogColor[1], grade.fogColor[2], THREE.SRGBColorSpace);
+  setRimDaylight(grade.exposure); // (zombie edges: dark in bright areas, a light rim in dim ones: zombies/zombieRim.js)
   return grade;
 };
 const firstLaunch = !hasSavedSettings(); // (read before anything is saved)

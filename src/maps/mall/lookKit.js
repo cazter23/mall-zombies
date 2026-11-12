@@ -27,6 +27,7 @@ import { makeSoftFootprint } from '../../world/atmosphereTextures.js';
 import { makePosterTexture } from '../../world/posterTextures.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { look } from '../../config/look.js';
+import { printedMaterial } from '../../world/mapKit.js';
 import { atmosphere } from '../../config/environment.js';
 
 const facingRotation = (mesh, facing) => {
@@ -137,10 +138,10 @@ export function createLookKit({ kit, colliders }) {
     return m;
   }
 
-  /** A poster / banner / notice (world/posterTextures.js), unlit so it reads in any light. */
+  /** A poster / banner / notice (world/posterTextures.js): printed, so it takes the room's light (world/mapKit.js printedMaterial). */
   function poster(kind, options, x, y, z, w, h, facing) {
     const texture = makePosterTexture(kind, options);
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: texture, toneMapped: false }));
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), printedMaterial(texture));
     m.position.set(x, y, z);
     facingRotation(m, facing);
     m.name = `poster_${kind}`;

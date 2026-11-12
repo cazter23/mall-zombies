@@ -10,11 +10,14 @@
 //   dying lamps   one more lamp flickers out every few rounds, for the rest of the run
 //   power cuts    now and then the area you're in loses power for a few seconds: its lamps and neon go dark and zone
 //                 lighting drops it to emergency red (state.cut), then the power stutters back
+//   ceiling panels the lit light panels follow their area's lamps (dying, dead, cut), so a dark room has dark panels
 // Listens to 'roundStart'; Play again (reset) puts every light back. Comfort > Horror lighting (look.runtime.horror) off
 // = none of it. Random choices are seeded per run (feature.seed), so tests can follow them.
 //
-// map.horror = { state: { exposure, decay, dusk, cut }, setDusk(t), lamps: [PointLight], neons: { name: neon builder },
-//               areas: [{ id, grades: [zone lighting grade ids], neons: [names] }] }   (a lamp's area = the grade where it hangs)
+// map.horror = { state: { exposure, decay, dusk, cut }, setDusk(t), lamps: [PointLight], panels: [Mesh] (lit ceiling panels),
+//               neons: { name: neon builder }, areas: [{ id, grades: [zone lighting grade ids], neons: [names] }] }
+//               (a lamp's or panel's area = the grade where it hangs; each area's panels get their own material, flagged
+//               userData.animated so static batching keeps it, and its glow follows the mean level of the area's lamps)
 // =============================================================================
 
 import { look } from '../../config/look.js';
@@ -39,6 +42,23 @@ export function buildHorror(feature, { map, events, rounds, player }) {
   };
   const lamps = hooks.lamps.map((light) => ({ light, area: areaAt(light.position), base: light.intensity, dead: false, dying: 0, hold: 0, on: true }));
   const neons = areas.flatMap((a) => a.neons);
+  // Lit ceiling panels, per area: one material per area and original material (cloned once, before static batching).
+  const panelSets = new Map(); // area -> [{ material, base }]
+  const panelMaterials = new Map(); // `${area id}|${material uuid}` -> entry
+  for (const mesh of hooks.panels ?? []) {
+    const area = areaAt(mesh.getWorldPosition(mesh.position.clone()));
+    if (!area || !mesh.material?.emissive) continue;
+    const key = `${area.id}|${mesh.material.uuid}`;
+    if (!panelMaterials.has(key)) {
+      const material = mesh.material.clone();
+      material.userData.animated = true;
+      const entry = { material, base: material.emissiveIntensity };
+      panelMaterials.set(key, entry);
+      if (!panelSets.has(area)) panelSets.set(area, []);
+      panelSets.get(area).push(entry);
+    }
+    mesh.material = panelMaterials.get(key).material;
+  }
 
   let runs = 0;
   let rand = seededRandom(feature.seed ?? 1);
@@ -61,6 +81,17 @@ export function buildHorror(feature, { map, events, rounds, player }) {
 
   function setLamp(l, level) {
     l.light.intensity = l.base * level;
+  }
+
+  // Each area's panels glow at the mean level of its lamps (0 = all dark); an area without lamps only goes dark in a cut.
+  function syncPanels() {
+    for (const [area, entries] of panelSets) {
+      const mine = lamps.filter((l) => l.area === area);
+      let level = mine.length ? mine.reduce((sum, l) => sum + (l.base > 0 ? l.light.intensity / l.base : 1), 0) / mine.length : 1;
+      if (cut && cut.area === area && cut.level > 0) level = 0;
+      const glow = cfg.panels.dark + (1 - cfg.panels.dark) * Math.min(1, Math.max(0, level));
+      for (const e of entries) e.material.emissiveIntensity = e.base * glow;
+    }
   }
 
   function endCut() {
@@ -114,6 +145,7 @@ export function buildHorror(feature, { map, events, rounds, player }) {
       l.dying = 0;
       setLamp(l, 1);
     }
+    syncPanels();
   }
 
   function startCut() {
@@ -161,6 +193,7 @@ export function buildHorror(feature, { map, events, rounds, player }) {
         apply();
       }
       if (!enabled) return;
+      syncPanels(); // (last frame's lamp levels: one tick behind is invisible)
       // Lamps on their way out: a few seconds of stutter, then dark for the rest of the run.
       for (const l of lamps) {
         if (l.dying <= 0) continue;

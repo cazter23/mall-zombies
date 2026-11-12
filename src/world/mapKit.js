@@ -23,6 +23,7 @@
 
 import * as THREE from 'three';
 import { atmosphere } from '../config/environment.js';
+import { look } from '../config/look.js';
 import { makeTileRoughness, makeTileBump } from './atmosphereTextures.js';
 import { makeTileTexture, makeSignTexture, makeShutterTexture } from './textures.js';
 import { createShutter } from './shutter.js';
@@ -142,7 +143,7 @@ export function createMapKit(group, colliders) {
   /** A flat sign. `facing` is +1 (faces +Z) or -1 (faces -Z); or 'x+'/'x-' for side walls. */
   function sign(text, { x, y, z, width, height, facing, background, color, ...extra }) {
     const texture = makeSignTexture(text, { background, color, aspect: width / height, ...extra });
-    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height), new THREE.MeshBasicMaterial({ map: texture }));
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height), printedMaterial(texture));
     mesh.position.set(x, y, z);
     if (facing === -1) mesh.rotation.y = Math.PI;
     if (facing === 'x+') mesh.rotation.y = Math.PI / 2;
@@ -279,4 +280,13 @@ export function createMapKit(group, colliders) {
   }
 
   return { group, colliders, mat, addCollider, ramp, box, sign, tiledFloor, slab, wall, corridor, shutterDoor, markers, dispose };
+}
+
+/**
+ * A printed sign or poster: it takes the room's light like the wall it hangs on (so it dims in a dark corridor, a dying
+ * lamp or a power cut instead of glowing like a sticker on the screen), plus a little of its own glow so it stays
+ * readable (config/look.js print). Neon, screens and light boxes stay unlit; this is for paper, card and paint.
+ */
+export function printedMaterial(texture, { glow = look.print.glow } = {}) {
+  return new THREE.MeshLambertMaterial({ map: texture, emissive: 0xffffff, emissiveMap: texture, emissiveIntensity: glow });
 }
