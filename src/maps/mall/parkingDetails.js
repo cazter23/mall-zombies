@@ -62,13 +62,13 @@ export function buildParkingDetails({ kit, looks }) {
     }
     const C = Y.cabinet;
     box('pylon_cabinet', Y.x, (C.bottom + C.top) / 2, Y.z, C.depth, C.top - C.bottom, C.width, mat(0x2a1838, { roughness: .7 }));
-    neon.sign({ text: Y.text, x: Y.x - C.depth / 2 - .02, y: (C.bottom + C.top) / 2, z: Y.z, facing: 'x-', height: Y.textHeight,
+    neon.sign({ text: Y.text, style: 'block', x: Y.x - C.depth / 2 - .02, y: (C.bottom + C.top) / 2, z: Y.z, facing: 'x-', height: Y.textHeight,
       color: 0xff5ea8, backing: false, border: 0xffa04d, flickerLetters: [11] });
     neon.shape('sun', { x: Y.x - C.depth / 2 - .02, y: Y.sunY, z: Y.z, facing: 'x-', size: Y.sunSize, color: 0xffa04d });
     looks.pool(Y.x - .03, (C.bottom + C.top) / 2, Y.z, C.width + 1.4, 3.2, 'x-', 0xff5ea8, .12);
     // The name in neon on the facade, over the faded ghost sign (the mall still says who it is after dark).
     const F = L.facadeNeon, wallX = P.rect.minX + .15; // (the cladding's face, as the facade details use)
-    neon.sign({ text: F.text, x: wallX + .08, y: F.y, z: F.z, facing: 'x+', height: F.height, color: 0xffd9a8, backing: true, border: 0xff5ea8 });
+    neon.sign({ text: F.text, style: 'deco', x: wallX + .08, y: F.y, z: F.z, facing: 'x+', height: F.height, color: 0xffd9a8, backing: true, border: 0xff5ea8 });
     // Gloss over the painted puddles: low roughness, so the lamps leave a highlight on the wet asphalt.
     const wet = mat(L.gloss.color, { roughness: L.gloss.roughness, metalness: .1 });
     for (const [x, z, w, h] of D.wear.puddles) {

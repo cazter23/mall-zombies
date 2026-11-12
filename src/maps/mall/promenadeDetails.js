@@ -113,7 +113,7 @@ export function buildPromenadeDetails({ kit, looks, layout, floorY }) {
   const workshop = layout.workshop;
   const center = (workshop.from + workshop.to) / 2;
   box('workshop_header', center, 2.79, front - .09, workshop.to - workshop.from, .58, .16, workshop.colors.plum);
-  looks.neon('promenade_workshop').text('BUILD-A-BLASTER', { x: center, y: y(3.08), z: front - .19,
+  looks.neon('promenade_workshop').text('BUILD-A-BLASTER', { style: 'italic', x: center, y: y(3.08), z: front - .19,
     facing: -1, height: .34, color: workshop.colors.lamp });
   looks.pool(center, y(.018), front - .62, 5.8, 2.2, 'floor', '#ffc588', .26);
 

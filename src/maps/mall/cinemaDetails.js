@@ -138,7 +138,7 @@ export function buildCinemaDetails({ kit, looks, layout: c, floorY: Y }) {
   }
   buildCinemaPublicFinish({ kit, layout: c, floorY: Y });
   const neon = looks.neon('cinema');
-  neon.text('CINEMA', { x: -30, y: y(3.9), z: L.maxZ - .07, width: 5, height: .65, facing: -1, color: '#e7a7ce' });
+  neon.text('CINEMA', { style: 'wide', x: -30, y: y(3.9), z: L.maxZ - .07, width: 5, height: .65, facing: -1, color: '#e7a7ce' });
 
   // One changing texture, no video, flashing light or per-frame canvas redraw.
   const canvas = document.createElement('canvas'); canvas.width = 1024; canvas.height = 320;

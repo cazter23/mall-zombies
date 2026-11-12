@@ -64,9 +64,9 @@ export function buildFoodCourtLook({ looks, kit, layout, keepClear = [] }) {
   const backing = look.hallway.backing;
   const north = F.maxZ - 0.05;
   const south = F.minZ + 0.04;
-  neon.sign({ text: sat.meat, x: 0, y: 5.15, z: south, facing: 1, height: 0.5, color: S.meat, backing, border: L.trim, flickerLetters: [6, 7, 8, 9] });
-  neon.sign({ text: sat.eat, x: -7, y: 4.4, z: north, facing: -1, height: 0.36, color: S.eat, backing });
-  neon.sign({ text: sat.refills, x: 8.4, y: 4.4, z: north, facing: -1, height: 0.36, color: S.refills, backing, flickerLetters: [12] });
+  neon.sign({ text: sat.meat, style: 'block', x: 0, y: 5.15, z: south, facing: 1, height: 0.5, color: S.meat, backing, border: L.trim, flickerLetters: [6, 7, 8, 9] });
+  neon.sign({ text: sat.eat, style: 'script', x: -7, y: 4.4, z: north, facing: -1, height: 0.36, color: S.eat, backing });
+  neon.sign({ text: sat.refills, style: 'italic', x: 8.4, y: 4.4, z: north, facing: -1, height: 0.36, color: S.refills, backing, flickerLetters: [12] });
   const tY = L.trimY;
   neon.tube([[F.minX + 0.4, tY, north], [-0.6, tY, north]], { color: L.trim });
   neon.tube([[0.6, tY, north], [F.maxX - 0.4, tY, north]], { color: L.trim, flicker: true });
@@ -199,7 +199,7 @@ export function buildServiceCorridorLook({ looks, kit, layout, corridor, keepCle
   const east = eastX - 0.05;
   neon.tube([[east, tY, endZ + 0.4], [east, tY, SF.minZ - 0.4]], { color: S.tube, flicker: 'dying' });
   neon.tube([[east, tY, SF.maxZ + 0.4], [east, tY, layout.serviceCorridor.doorway.minZ - 0.3]], { color: S.tube, dead: true });
-  neon.sign({ text: 'EXIT', x: westX + 0.05, y: 2.75, z: zAt(0.3), facing: 'x+', height: 0.22, color: S.exit, backing: look.hallway.backing, flickerLetters: [1] });
+  neon.sign({ text: 'EXIT', style: 'wide', x: westX + 0.05, y: 2.75, z: zAt(0.3), facing: 'x+', height: 0.22, color: S.exit, backing: look.hallway.backing, flickerLetters: [1] });
 
   // Painted light: a sick green wash under the tube, red round the EXIT and a red glow at the dead end.
   const P = look.hallway.pools;
@@ -247,8 +247,8 @@ export function buildStartRoomLook({ looks, kit, layout }) {
   const neon = looks.neon('startRoom');
   const S = L.signs;
   const backing = look.hallway.backing;
-  neon.sign({ text: L.satire.thanks, x: 0, y: 3.5, z: front + 0.05, facing: 1, height: 0.24, color: S.thanks, backing, flickerLetters: [9] });
-  neon.sign({ text: L.satire.clearance, x: R.minX + 0.05, y: 3.25, z: 13.4, facing: 'x+', height: 0.36, color: S.clearance, backing, border: S.thanks, flickerLetters: [4] });
+  neon.sign({ text: L.satire.thanks, style: 'script', x: 0, y: 3.5, z: front + 0.05, facing: 1, height: 0.24, color: S.thanks, backing, flickerLetters: [9] });
+  neon.sign({ text: L.satire.clearance, style: 'italic', x: R.minX + 0.05, y: 3.25, z: 13.4, facing: 'x+', height: 0.36, color: S.clearance, backing, border: S.thanks, flickerLetters: [4] });
 
   const P = look.hallway.pools;
   looks.pool(0, 3.5, front + 0.026, 6.5, 1.0, 1, S.thanks, P.wallOpacity);
@@ -273,8 +273,8 @@ export function buildLevelTwoLook({ looks, layout, floorY, hole, keepClear = [] 
 
   // Neon: the sunset slogan over the south-west vent, YOUR STORE HERE! over the escalator lobby, pink trim along both long walls.
   const neon = looks.neon('level2');
-  neon.sign({ text: sat.sunset, x: -12, y: y(2.75), z: south, facing: 1, height: 0.24, color: S.sunset, backing, border: L.trim, flickerLetters: [8] });
-  neon.sign({ text: sat.leasing, x: -15, y: y(2.75), z: north, facing: -1, height: 0.26, color: S.leasing, backing, flickerLetters: [11] });
+  neon.sign({ text: sat.sunset, style: 'script', x: -12, y: y(2.75), z: south, facing: 1, height: 0.24, color: S.sunset, backing, border: L.trim, flickerLetters: [8] });
+  neon.sign({ text: sat.leasing, style: 'wide', x: -15, y: y(2.75), z: north, facing: -1, height: 0.26, color: S.leasing, backing, flickerLetters: [11] });
   // The pink trim runs along the soffits' front edges (config/concourse.js soffits.level2: the lowered bulkheads over the
   // shopfronts), so the middle of the Promenade reads raised; the south run keeps its flickering west half.
   const SO = concourse.soffits.level2;
@@ -329,9 +329,9 @@ export function buildAtriumLook({ looks, layout, upperY, keepClear = [] }) {
   const neon = looks.neon('atrium');
   for (const dx of [-6.6, 6.6]) neon.shape('sun', { x: cx + dx, y: upperY + 1.9, z: A.maxZ - inset, facing: -1, size: 2.6, color: S.sun });
   // The mall's name between them, in neon (it was a flat printed plate: the showpiece room's centrepiece didn't glow).
-  neon.sign({ text: 'SUNSET GALLERIA', x: cx, y: upperY + 2.3, z: A.maxZ - inset, facing: -1, height: 0.72, color: S.promise, backing, border: S.sun, flickerLetters: [4] });
+  neon.sign({ text: 'SUNSET GALLERIA', style: 'wide', x: cx, y: upperY + 2.3, z: A.maxZ - inset, facing: -1, height: 0.72, color: S.promise, backing, border: S.sun, flickerLetters: [4] });
   const promiseX = 23.4;
-  neon.sign({ text: sat.promise, x: promiseX, y: upperY + 2.3, z: A.minZ + inset, facing: 1, height: 0.46, color: S.promise, backing, border: L.trim.ringLong, flickerLetters: [27] });
+  neon.sign({ text: sat.promise, style: 'deco', x: promiseX, y: upperY + 2.3, z: A.minZ + inset, facing: 1, height: 0.46, color: S.promise, backing, border: L.trim.ringLong, flickerLetters: [27] });
 
   // Trim: orange round the arcade (under the ring), cyan on the ring's long walls, pink on its ends (one tube dying).
   const tube = (points, opts) => neon.tube(points, opts);

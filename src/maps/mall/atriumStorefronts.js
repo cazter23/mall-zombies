@@ -39,7 +39,7 @@ export function buildAtriumStorefronts(kit, layout, upperY, root) {
     for (let i = 0; i < uv.count; i++) uv.setXY(i, 8 / 2048, 1 - 8 / 2048);
     return m;
   };
-  function label(g, name, text, at, w, h, bg = '#eee2ca', color = '#363642', font = 'officialBody') {
+  function label(g, name, text, at, w, h, bg = '#eee2ca', color = '#363642', font = 'cinemaBody') {
     const key = JSON.stringify([text, w / h, bg, color, font]);
     if (!prints.has(key)) {
       const source = makeSignTexture(text, { aspect: w / h, background: bg, color, font, style: 'standard' });

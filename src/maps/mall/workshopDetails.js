@@ -187,7 +187,7 @@ export function buildWorkshopDetails({ kit, looks, layout, floorY }) {
 
   // Beams across the ceiling (clear of the light panels), and the neon thank-you over the mouth.
   for (const z of d.beams) box('beam', west, hallTop - .2, z - .1, east, hallTop, z + .1, c.beam);
-  looks.neon('promenade_workshop').text(d.neonText, { x: (from + to) / 2, y: y(d.neonY), z: south + .04, facing: 1, height: .26, color: c.neon });
+  looks.neon('promenade_workshop').text(d.neonText, { style: 'italic', x: (from + to) / 2, y: y(d.neonY), z: south + .04, facing: 1, height: .26, color: c.neon });
 
   // Quality Control, inside the island in the gap the U leaves east of the tank (seen through the glass, never reached).
   const qc = d.qc;

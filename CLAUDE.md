@@ -163,7 +163,7 @@ adjoining areas are owned. No cascading unlocks. Nine area purchases total 9500;
   `git branch --show-current` says main. Commit only your own changes, never run a bare `git stash`, never overwrite another tool's uncommitted files.
   Say which shared files you changed (mall.js, economy.js, shutters.js, CLAUDE.md, tests).
 - **Windows shell:** complicated quoting in Bash heredocs fails; write scripts with the file tools. Line endings are mixed (CRLF and LF): an edit script must keep each file's own.
-- **Canvas fonts:** `src/boot.js` waits for the web fonts, then imports main.js. A new font on a sign goes in index.html AND config/fonts.js, or it stays on the fallback.
+- **Canvas fonts / typefaces:** every sign, poster and label in the 3D world asks for a ROLE (config/typefaces.js: roles, families, sign kinds) through `world/typeKit.js` (`fontFor`, `drawType`); never write a raw font string (tests/typefaces.test.js fails on one). Fonts are bundled locally (src/fonts/, no network, they work in the single-file build): a new family = its .woff2 in src/fonts/files + an entry in `families` + `node tools/buildFontCss.mjs`. `src/boot.js` waits for them before main.js. HUD/menu type (style.css) is separate. The sign table: docs/typefaces.md.
 - **Browser checks:** build first (`npm run build`) and use `npm run preview`; a hidden pane shows stale frames (take two), and its frame times mean nothing
   (draw calls and triangles still count). `window.__mall` has `step(n)`, `g`, `game.forceRun`; `g.debug.run('doors'|'god')`.
 - **Keep this file small.** It loads in every session. New history goes in docs/history.md, new per-module notes in docs/folder-structure.md, new

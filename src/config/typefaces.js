@@ -120,3 +120,14 @@ export const posterTypography = {
   handwritten: { display: 'marker', body: 'note' },
   cinema: { display: 'marquee', body: 'cinemaBody' },
 };
+
+// NEON: tube text is bent from ONE stroke font (world/neon.js: a neon tube cannot have a filled, serif or outlined letter), so
+// neon "typefaces" are lettering STYLES: how far the letters lean and how far apart they stand. A neon sign asks for one
+// with `style`; slant is font units per unit of height, spacing is the gap between letters in font units (default block 1.2).
+export const neonStyles = {
+  block:  { slant: 0, spacing: 1.2 },    // plain tube capitals: shop names, EXIT
+  italic: { slant: 0.22, spacing: 1.2 }, // sale and promo signs: leaning forward
+  script: { slant: 0.45, spacing: 0.5 }, // diner-script feel: heavy lean, letters run together
+  wide:   { slant: 0, spacing: 3.0 },    // art-deco: tall, airy spacing (cinema, atrium, directories)
+  deco:   { slant: 0.12, spacing: 2.2 }, // gentle lean with air: lounge and promise signs
+};
