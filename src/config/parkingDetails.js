@@ -2,6 +2,19 @@
 // fighting lane, the two main gaps and every perimeter spawn approach open.
 export const parkingDetails = {
   seed: 861026, textureSize: 1024,
+  // What makes the lot a place you'd know from across it (maps/mall/parkingDetails.js landmarks): the mall's pylon sign
+  // just inside the east fence (neon name and sun, the Closing Time arena's backdrop), the name in neon on the facade by
+  // the MEGA MART band, wet patches that catch the lamps, traffic cones by the fence, and a box truck abandoned along the
+  // south fence (solid, 2.2 m and up: nothing new to climb). All of it clear of the fighting lanes and spawn approaches.
+  landmarks: {
+    pylon: { x: 61.95, z: -16.5, postSpacing: 2.4, post: .26, height: 9.2, cabinet: { bottom: 6.2, top: 8.3, width: 4.6, depth: .5 },
+      text: 'SUNSET GALLERIA', textHeight: .42, sunY: 8.9, sunSize: 1.5 },
+    facadeNeon: { z: -18.6, y: 4.95, text: 'SUNSET GALLERIA', height: .42 }, // (south of the MEGA MART band sign, at its height)
+    gloss: { y: .053, color: 0x15141c, roughness: .06 }, // over the painted puddles (wear.puddles)
+    cones: [[41.6, -22.6, 0], [42.5, -23.3, 1], [58.3, -22.3, 0], [59.1, -23.1, 1]], // [x, z, knocked over]
+    truck: { x0: 43.6, x1: 50.2, z0: -23.65, z1: -21.25, cabLength: 1.9, bodyHeight: 2.75, cabHeight: 2.25,
+      body: 0xd9d2c4, cab: 0x7a2f45, logo: 'SUNSET GALLERIA · DELIVERIES' },
+  },
   wear: {
     cracks: 23, skidMarks: [[39.5, -5.8, 4.2, .12], [56.8, -18.3, 3.4, -.15]],
     patches: [[38.8, -10, 1.4, 2.1], [59, -17.4, 2.2, 1.5], [46.8, -5, 2.6, 1.2]],

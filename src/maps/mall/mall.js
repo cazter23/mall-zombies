@@ -1038,7 +1038,7 @@ export function buildMall(scene, colliders) {
       { id: 'atrium', grades: ['atrium'], neons: ['atrium'] },
       { id: 'departmentStore', grades: ['departmentStore'], neons: ['departmentStore'] },
       { id: 'cinema', grades: ['cinemaLobby', 'cinemaScreen', 'cinemaService'], neons: ['cinema'] },
-      { id: 'parkingLot', grades: ['parkingLot'], neons: [] },
+      { id: 'parkingLot', grades: ['parkingLot'], neons: ['parkingLot'] },
     ],
   };
   // The Return to Sender quest's NO REFUNDS floor signs (config/returnQuest.js).

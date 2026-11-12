@@ -14,7 +14,7 @@ export function buildParkingDetails({ kit, looks }) {
   const metal = mat(0x8f989e, { roughness: .55, metalness: .4 }), dark = mat(0x343741);
   const cream = mat(0xd5c4a7), rust = mat(0x806354), paper = mat(0xdacdb6), teal = mat(0x739c96);
   const random = seededRandom(D.seed);
-  surfaceWear(); facadeDetails(); P.vehicles.forEach(vehicleDetails); abandonedScenes(); realism();
+  surfaceWear(); facadeDetails(); P.vehicles.forEach(vehicleDetails); abandonedScenes(); realism(); landmarks();
 
   // Painted light follows the existing Neon glow setting and needs no extra lamps.
   for (const l of P.lamps) {
@@ -49,6 +49,65 @@ export function buildParkingDetails({ kit, looks }) {
     },
     reset() { elapsed = 0; sway.rotation.z = 0; haze.visible = atmosphere.ambient.enabled; },
   };
+
+  // The lot's landmarks (config/parkingDetails.js landmarks): pylon sign, facade neon, wet gloss, cones, a box truck.
+  function landmarks() {
+    const L = D.landmarks;
+    const neon = looks.neon('parkingLot');
+    // The pylon: two posts, a cabinet with the name in neon and a neon sun over it, facing the lot.
+    const Y = L.pylon, half = Y.postSpacing / 2, post = mat(0x3b3846, { roughness: .6, metalness: .35 });
+    for (const dz of [-half, half]) {
+      box('pylon_post', Y.x, Y.height / 2, Y.z + dz, Y.post, Y.height, Y.post, post);
+      kit.addCollider(Y.x - Y.post / 2, 0, Y.z + dz - Y.post / 2, Y.x + Y.post / 2, Y.height, Y.z + dz + Y.post / 2);
+    }
+    const C = Y.cabinet;
+    box('pylon_cabinet', Y.x, (C.bottom + C.top) / 2, Y.z, C.depth, C.top - C.bottom, C.width, mat(0x2a1838, { roughness: .7 }));
+    neon.sign({ text: Y.text, x: Y.x - C.depth / 2 - .02, y: (C.bottom + C.top) / 2, z: Y.z, facing: 'x-', height: Y.textHeight,
+      color: 0xff5ea8, backing: false, border: 0xffa04d, flickerLetters: [11] });
+    neon.shape('sun', { x: Y.x - C.depth / 2 - .02, y: Y.sunY, z: Y.z, facing: 'x-', size: Y.sunSize, color: 0xffa04d });
+    looks.pool(Y.x - .03, (C.bottom + C.top) / 2, Y.z, C.width + 1.4, 3.2, 'x-', 0xff5ea8, .12);
+    // The name in neon on the facade, over the faded ghost sign (the mall still says who it is after dark).
+    const F = L.facadeNeon, wallX = P.rect.minX + .15; // (the cladding's face, as the facade details use)
+    neon.sign({ text: F.text, x: wallX + .08, y: F.y, z: F.z, facing: 'x+', height: F.height, color: 0xffd9a8, backing: true, border: 0xff5ea8 });
+    // Gloss over the painted puddles: low roughness, so the lamps leave a highlight on the wet asphalt.
+    const wet = mat(L.gloss.color, { roughness: L.gloss.roughness, metalness: .1 });
+    for (const [x, z, w, h] of D.wear.puddles) {
+      const mesh = new THREE.Mesh(new THREE.CircleGeometry(.5, 20).rotateX(-Math.PI / 2), wet);
+      mesh.scale.set(w * .9, 1, h * .9);
+      mesh.position.set(x, L.gloss.y, z);
+      mesh.name = 'parking_detail_puddle_gloss';
+      kit.group.add(mesh);
+    }
+    // Traffic cones by the fence (decoration: knee-high, so you walk through rather than catch on them).
+    const orange = mat(0xff6a1f, { roughness: .6 }), white = mat(0xf2efe6), rubber = mat(0x24232c);
+    for (const [x, z, over] of L.cones) {
+      const cone = new THREE.Group();
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(.03, .16, .5, 10), orange); body.position.y = .28;
+      const band = new THREE.Mesh(new THREE.CylinderGeometry(.075, .1, .08, 10), white); band.position.y = .3;
+      const foot = new THREE.Mesh(new THREE.BoxGeometry(.36, .03, .36), rubber); foot.position.y = .015;
+      cone.add(body, band, foot);
+      cone.position.set(x, 0, z);
+      if (over) { cone.rotation.z = Math.PI / 2; cone.position.y = .18; cone.rotation.y = random() * Math.PI; }
+      cone.traverse((o) => { if (o.isMesh) o.name = 'parking_detail_cone'; });
+      kit.group.add(cone);
+    }
+    // The box truck: cab and box, wheels, a windscreen, the mall's name on its side. Solid, and too tall to stand on.
+    const T = L.truck, len = T.x1 - T.x0, width = T.z1 - T.z0, zc = (T.z0 + T.z1) / 2;
+    const bodyX0 = T.x0 + T.cabLength;
+    box('truck_box', (bodyX0 + T.x1) / 2, .45 + (T.bodyHeight - .45) / 2, zc, T.x1 - bodyX0, T.bodyHeight - .45, width, mat(T.body, { roughness: .7 }));
+    box('truck_cab', T.x0 + T.cabLength / 2, .4 + (T.cabHeight - .4) / 2, zc, T.cabLength - .08, T.cabHeight - .4, width - .1, mat(T.cab, { roughness: .55 }));
+    box('truck_windscreen', T.x0 + .02, T.cabHeight - .55, zc, .04, .6, width - .4, mat(0x344a60, { roughness: .15, metalness: .3 }));
+    box('truck_chassis', (T.x0 + T.x1) / 2, .32, zc, len - .2, .16, width - .3, dark);
+    for (const x of [T.x0 + .55, bodyX0 + .9, T.x1 - .7]) {
+      for (const z of [T.z0 + .25, T.z1 - .25]) box('truck_wheel', x, .4, z, .8, .8, .3, mat(0x24232c));
+    }
+    for (const [z, facing] of [[T.z1 + .012, 1], [T.z0 - .012, -1]]) {
+      sign('truck_logo', T.logo, { x: (bodyX0 + T.x1) / 2, y: 1.75, z, width: Math.min(4.2, T.x1 - bodyX0 - .4), height: .5,
+        facing, background: '#d9d2c4', color: '#7a2f45', font: '"Righteous", "Bebas Neue", sans-serif' });
+    }
+    kit.addCollider(bodyX0, 0, T.z0, T.x1, T.bodyHeight, T.z1);
+    kit.addCollider(T.x0, 0, T.z0, bodyX0, T.cabHeight, T.z1);
+  }
 
   function surfaceWear() {
     const R = P.rect, size = D.textureSize, width = R.maxX - R.minX, depth = R.maxZ - R.minZ;
