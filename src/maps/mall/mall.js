@@ -560,17 +560,17 @@ export function buildMall(scene, colliders) {
   props.foodStall({
     ...stallWall, from: -8.4, to: -3.1, name: 'BURGER BARN', menu: 'BURGERS · FRIES · SHAKES',
     colors: { main: 0xd62839, accent: 0x8d1c26, awning: [0xd62839, 0xf1faee], signBackground: '#2b1a12', signText: '#ffd23f' },
-    gear: ['grill', 'fryer', 'soda'],
+    gear: ['grill', 'fryer', 'shake'], theme: 'barn',
   });
   props.foodStall({
     ...stallWall, from: -2.6, to: 2.6, name: 'WOK THIS WAY', menu: 'NOODLES · RICE · FORTUNES (BAD)',
     colors: { main: 0xe0a526, accent: 0x7a1f1f, awning: [0xd62839, 0xffd23f], signBackground: '#7a1f1f', signText: '#ffd23f' },
-    gear: ['wok', 'wok', 'soda'],
+    gear: ['wok', 'wok', 'soda'], theme: 'wok',
   });
   props.foodStall({
     ...stallWall, from: 3.1, to: 8.4, name: 'CORN DOG CORRAL', menu: 'CORN DOGS · LEMONADE · REGRET',
     colors: { main: 0x3a86ff, accent: 0x1d4e89, awning: [0xffd23f, 0x3a86ff], signBackground: '#1d4e89', signText: '#ffd23f' },
-    gear: ['fryer', 'fryer', 'soda'],
+    gear: ['fryer', 'fryer', 'soda'], theme: 'cornDog',
   });
 
   // Seating: eight table sets around the tree planter, leaving lanes between them, a clear path from

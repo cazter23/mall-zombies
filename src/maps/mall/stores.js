@@ -27,6 +27,7 @@ import { makeTileTexture } from '../../world/textures.js';
 import { makeTileRoughness, makeTileBump } from '../../world/atmosphereTextures.js';
 import { atmosphere } from '../../config/environment.js';
 import { upgrades } from '../../config/upgrades.js';
+import { storeFacades } from './storeFacades.js';
 
 const WALL_H = 4.5; // store walls
 const CEIL_Y = 4.2; // interior ceiling
@@ -177,6 +178,9 @@ export function buildStores({ kit, props, court, thickness: T, stores }) {
       const x0 = opening.from + i * stripeW;
       F(x0, 3.02, x0 + stripeW, 3.14, 0.05, 0.95, mat(i % 2 ? STRIPES[0] : store.color));
     }
+
+    // The facade dressed as what the store sells (mall/storeFacades.js): pier decor, sign frame, roof props, a window ledge of goods.
+    storeFacades[store.theme]?.({ kit, F, out, zOut, zIn, store, cx, from, to, opening, doorLo, doorHi, facingOut });
 
     // --- Inside: lights, counter, clerk, theme -------------------------------------
     for (const frac of [0.35, 0.75]) {
