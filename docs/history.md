@@ -1,5 +1,10 @@
 # Sunset Galleria: build history ("Current state")
 
+## 12 November 2026 - Build-A-Blaster hall colours restored; debug window names the god-mode key
+
+- Look pass 5 put a comment in the middle of a palette line in config/promenade.js (workshop details colors), which commented out the hall's `glass`, `pipe`, `beam`, `neon` and `lamp`: eleven parts (hopper windows, pipe runs, beams, neon, lamps) were built with no colour and Three.js only warned. The comment now ends the line. New guard in tests/mall.test.js: building the mall must give every material its colour.
+- God mode is on B (G throws a Lethal since Kiosk Kevin phase 1). The debug window's status headings now take their keys from the command table (config/debug.js), so it reads "B toggles god mode" instead of the stale "G toggles".
+
 ## 12 November 2026 - Look pass: readability, a horror layer you can see, half the sign memory, and the barebones spots dressed
 
 From the graphics review (pass 3) and its detail audit. Seven commits on branch claude/look-pass, each tested; the user asked for every item the review was confident about.

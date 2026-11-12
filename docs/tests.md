@@ -198,7 +198,7 @@ and preserves a real checkout vault and the original Price Gun purchase,
 `megaMartDetails.test.js` protects aisle/crossing/entrance/spawn/vault clearance against the actual decorative triangles,
 validates geometry and trolley placement, and vaults all four checkouts plus buys the Foam Dart Blaster at its original price,
 `zombies.test.js` zombie types/mix/rounds, `maps.test.js` wall pieces, single/multi-zone shared doors, nav rebuilds,
-`mall.test.js` the REAL mall built in Node with a stub canvas: dispose leaves no colliders + frees everything, door ladder, spawn points on clear floor, zones
+`mall.test.js` the REAL mall built in Node with a stub canvas: every material gets its colour (no Three.js "value of undefined" warning), dispose leaves no colliders + frees everything, door ladder, spawn points on clear floor, zones
 sealed until any connecting door is bought (all 120 orders after the start shutter), shortcut-only entrances,
 short nav paths and standing-player crossings in both directions, clear approaches, vaultable counters, the sealed escalator (a real PlayerController sprint-jumping
 at it never gets on; you can walk under its high end), the ceiling hole, Food Court stalls/tables (queue spots and

@@ -514,3 +514,15 @@ test('dispose unloads the map: its colliders leave the shared list, GPU memory i
   again.dispose();
   assert.deepEqual([...colliders], [someoneElses]);
 });
+
+test('building the mall gives every material its colour (a value commented out of a palette fails here)', () => {
+  // Three.js only warns ("parameter 'color' has value of undefined") and builds the mesh with its default colour, so this
+  // kind of slip is silent in the game: Look pass 5 once commented five Build-A-Blaster hall colours out of config/promenade.js.
+  const warnings = [];
+  const warn = console.warn;
+  console.warn = (...args) => { if (/has value of undefined/.test(String(args[0]))) warnings.push(String(args[0])); else warn(...args); };
+  let map;
+  try { map = buildMall(new THREE.Scene(), []); } finally { console.warn = warn; }
+  map.dispose();
+  assert.deepEqual(warnings, []);
+});

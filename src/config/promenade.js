@@ -112,7 +112,7 @@ export const promenade = {
       colors: {
         slat: 0x6b4f73, metal: 0x354668, cream: 0xffedca, wood: 0x99724f, heart: 0xe04a68, ink: 0x2b2633, screen: 0x7fe0c4,
         footprint: 0x6b8fd9, paper: 0xf5ebd6, plush: 0xf0b854, plushAlt: 0xc98bd6, toy: 0xc64140, grid: 0xe9dcc0,
-        wainscot: 0x5f6b78, rail: 0xf2c230, // (machine grey under a safety-yellow rail: the hall is a workshop) glass: 0xc8eaff, pipe: 0x8a9bb0, beam: 0x5a5368, neon: 0xff6fae, lamp: 0x7fffb0,
+        wainscot: 0x5f6b78, rail: 0xf2c230, glass: 0xc8eaff, pipe: 0x8a9bb0, beam: 0x5a5368, neon: 0xff6fae, lamp: 0x7fffb0, // (wainscot and rail: machine grey under a safety-yellow rail, the hall is a workshop)
         red: 0xc64140, cork: 0xb08a5a, plum: 0x253c87, locker: 0x4f7aa8, strap: 0x6b4f73, cart: 0x8fb4c9, fluff: 0xfff5de,
         bin: 0x3d6b8a, cardboard: 0xc49a63, safety: 0xf2c230,
         fabric: [0xf4a7c0, 0x9fd3c7, 0xf7d58b, 0xb8a6e6, 0xf0b07a, 0xa7c7f4],
