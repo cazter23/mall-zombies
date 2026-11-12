@@ -1,5 +1,9 @@
 # Sunset Galleria: build history ("Current state")
 
+## 12 November 2026 - Feature saves keyed by name: adding a map feature no longer breaks Save & Quit
+
+From the code review (pass 2). Save & Quit stored each map feature's run state (Build-A-Blaster's order, the claw machine's site and stock, Kiosk Kevin's site) under its PLACE in map.features. Adding a feature anywhere before those three shifted the places, so the save version had to be bumped (dropping everyone's saved run) or a save would restore the claw machine's data into the wrong feature. Versions 5, 7 and 8 were bumped partly for that. Now features/index.js keys the data by the feature's name: adding, removing or reordering features needs no bump; renaming one of the saving features does. A feature that saves must have a name of its own, or building the map throws (all 61 mall features are named, no duplicates). Saves written before this change are still read: a numeric key is taken as the old place, so a saved run in progress survives the update; that fallback can go with the next version bump. No version bump here. tests/features.test.js guards it.
+
 ## 12 November 2026 - createGame.js: the mall PA becomes a table, feature lookups get a name
 
 From the code review (pass 2). createGame.js went from 995 to 911 lines. Not a rewrite: it is still the one place every system is built and wired, which is the point of it. What moved out was repetition:
