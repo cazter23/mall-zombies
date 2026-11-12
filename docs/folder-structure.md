@@ -149,7 +149,10 @@ src/
   core/
     loop.js             startLoop(): fixed-timestep accumulator; each frame calls beforeUpdate(frameTime) (look
                         input), then update(dt) per tick, then render(alpha, frameTime). Returns a handle:
-                        setMaxFps(n|null), pause(), resume() (the clock restarts), paused, maxFps
+                        setMaxFps(n|null), pause(), resume() (the clock restarts), paused, maxFps, errors.
+                        An error thrown by beforeUpdate, a tick or render is caught on its own and reported (onError,
+                        default: each distinct error once to console.error, then a count every 5 s); the next frame is
+                        always requested, and a throwing tick is used up, not owed
     idleGovernor.js     createIdleGovernor(): pure. Which stage ('awake' | 'dim' | 'asleep') the game should be in from
                         activity, focus and the time; thresholds read live from config/idle.js. Always awake while
                         eligible() is false (a live run)
