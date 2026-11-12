@@ -35,7 +35,7 @@ export function buildWorkshopDetails({ kit, looks, layout, floorY }) {
     if (vaultable) collider.vaultable = true;
     return collider;
   };
-  const sign = (name, text, x, h, z, width, height, facing, background, color, font) => {
+  const sign = (name, text, x, h, z, width, height, facing, background, color, font = 'toyBody') => {
     const mesh = kit.sign(text, { x, y: y(h), z, width, height, facing, background, color, ...(font ? { font } : {}) });
     mesh.name = `workshop_detail_${name}`;
     return tag(mesh);
@@ -104,14 +104,14 @@ export function buildWorkshopDetails({ kit, looks, layout, floorY }) {
     { emissive: c.screen, emissiveIntensity: .7 });
   screen.rotation.x = -.25;
   box('till_drawer', till.x0 + .03, benchTop + .02, benchFront + till.z0 - .025, till.x1 - .03, benchTop + .07, benchFront + till.z0, c.metal);
-  sign('birthday_club', 'ASK ABOUT OUR BIRTHDAY CLUB', (till.x0 + till.x1) / 2, benchTop - .2, benchFront - .03, .74, .1, -1, '#ffe39b', '#253c87');
+  sign('birthday_club', 'ASK ABOUT OUR BIRTHDAY CLUB', (till.x0 + till.x1) / 2, benchTop - .2, benchFront - .03, .74, .1, -1, '#ffe39b', '#253c87', 'toyBrand');
 
   // Footprints from each entrance to the bench, and where the line starts.
   const steps = d.footprints;
   for (const side of [-1, 1]) {
     const entry = shop.entrances[side < 0 ? 0 : 1], x0 = (entry.from + entry.to) / 2, z0 = front + steps.start;
     const x1 = side * steps.endX, z1 = benchFront - steps.stopShort;
-    sign(`line_starts_${side < 0 ? 'west' : 'east'}`, 'LINE STARTS HERE', x0, .9, front + .02, 1.1, .16, 1, '#294679', '#fff0cb');
+    sign(`line_starts_${side < 0 ? 'west' : 'east'}`, 'LINE STARTS HERE', x0, .9, front + .02, 1.1, .16, 1, '#294679', '#fff0cb', 'toyBody');
     for (let i = 0; i < steps.count; i++) {
       const t = i / (steps.count - 1), x = x0 + (x1 - x0) * t + (i % 2 ? .07 : -.07), z = z0 + (z1 - z0) * t;
       box('footprint', x - .045, .014, z - .1, x + .045, .018, z + .1, c.footprint);
@@ -119,7 +119,7 @@ export function buildWorkshopDetails({ kit, looks, layout, floorY }) {
   }
 
   // The window: GRAND OPENING on the glass (outside), and three balloons that gave up some time ago.
-  sign('grand_opening', 'GRAND OPENING · ALL BLASTERS WELCOME', (shop.window.from + shop.window.to) / 2, 2.2, layout.rect.maxZ + .1, 1.7, .2, -1, 'transparent', '#ff6fae');
+  sign('grand_opening', 'GRAND OPENING · ALL BLASTERS WELCOME', (shop.window.from + shop.window.to) / 2, 2.2, layout.rect.maxZ + .1, 1.7, .2, -1, 'transparent', '#ff6fae', 'toyBrand');
   d.balloons.forEach(([x, h, color], i) => {
     const z = front + .35 + i * .12;
     box('balloon_string', x - .004, h + .14, z - .004, x + .004, ceiling - .01, z + .004, c.paper);
@@ -155,7 +155,7 @@ export function buildWorkshopDetails({ kit, looks, layout, floorY }) {
     ...d.sprinklers.hall.map(([x, z]) => ({ x, h: hallTop - .04, z })),
   ], { metalness: .5, roughness: .4 });
   for (const entry of shop.entrances) {
-    sign('exit_sign', 'EXIT', (entry.from + entry.to) / 2, 2.98, front + .022, .42, .16, 1, '#1e6b3c', '#e9fff0');
+    sign('exit_sign', 'EXIT', (entry.from + entry.to) / 2, 2.98, front + .022, .42, .16, 1, '#1e6b3c', '#e9fff0', 'wayfinding');
   }
 
   // ---------------------------------------------------------------------------------------------------------------------
@@ -175,7 +175,7 @@ export function buildWorkshopDetails({ kit, looks, layout, floorY }) {
     box('hopper', x - half, hp.bottom, north - hp.depth, x + half, hp.top, north - .02, color, { roughness: .5 });
     box('hopper_window', x - half + .08, hp.bottom + .18, north - hp.depth - .006, x + half - .08, hp.top - .3, north - hp.depth, c.glass, { roughness: .1 });
     box('hopper_funnel', x - .12, hp.bottom - .32, north - hp.depth + .08, x + .12, hp.bottom, north - .1, c.metal);
-    sign('hopper_label', workshopStuffings[id].name.toUpperCase(), x, hp.top - .14, north - hp.depth - .012, hp.width - .06, .1, -1, '#fff0cb', '#253c87');
+    sign('hopper_label', workshopStuffings[id].name.toUpperCase(), x, hp.top - .14, north - hp.depth - .012, hp.width - .06, .1, -1, '#fff0cb', '#253c87', 'toyBody');
     box('hopper_riser', x - .04, hp.top, north - .3, x + .04, hp.pipeY, north - .22, c.pipe);
   });
   const lastX = hp.firstX + (ids.length - 1) * hp.spacing, tankX = H.tank.x;
@@ -183,7 +183,7 @@ export function buildWorkshopDetails({ kit, looks, layout, floorY }) {
   box('pipe_main', tankX - .07, hp.pipeY - .02, H.tank.z + hp.dropOffset, tankX + .07, hp.pipeY + .1, north - .32, c.pipe);
   box('pipe_drop', tankX - .07, H.tank.height - .05, H.tank.z + hp.dropOffset - .14, tankX + .07, hp.pipeY + .1, H.tank.z + hp.dropOffset, c.pipe);
   for (let z = north - 1.2; z > H.tank.z + hp.dropOffset + .3; z -= 1.6) box('pipe_hanger', tankX - .015, hp.pipeY + .1, z - .015, tankX + .015, hallTop, z + .015, c.metal);
-  sign('pipe_flow', 'STUFFING →  TANK', tankX + .09, hp.pipeY + .04, (north + H.tank.z) / 2, 1, .09, 'x+', 'transparent', '#ffe39b');
+  sign('pipe_flow', 'STUFFING →  TANK', tankX + .09, hp.pipeY + .04, (north + H.tank.z) / 2, 1, .09, 'x+', 'transparent', '#ffe39b', 'toyBody');
 
   // Beams across the ceiling (clear of the light panels), and the neon thank-you over the mouth.
   for (const z of d.beams) box('beam', west, hallTop - .2, z - .1, east, hallTop, z + .1, c.beam);
@@ -202,7 +202,7 @@ export function buildWorkshopDetails({ kit, looks, layout, floorY }) {
   box('clipboard_sheet', qc.x1 - .19, .775, (qc.z0 + qc.z1) / 2 - .1, qc.x1 - .05, .78, (qc.z0 + qc.z1) / 2 + .1, c.paper);
   box('qc_stool_seat', qc.x1 + .02, .55, (qc.z0 + qc.z1) / 2 - .17, qc.x1 + .34, .6, (qc.z0 + qc.z1) / 2 + .17, c.red);
   box('qc_stool_leg', qc.x1 + .16, 0, (qc.z0 + qc.z1) / 2 - .03, qc.x1 + .2, .55, (qc.z0 + qc.z1) / 2 + .03, c.metal);
-  sign('qc_sign', 'QUALITY CONTROL', I.maxX - .14, .5, (qc.z0 + qc.z1) / 2, .9, .16, 'x+', '#ffe39b', '#253c87');
+  sign('qc_sign', 'QUALITY CONTROL', I.maxX - .14, .5, (qc.z0 + qc.z1) / 2, .9, .16, 'x+', '#ffe39b', '#253c87', 'stencil');
   // Rollers on the belt's outer faces.
   const belt = H.conveyor, bx0 = I.minX + belt.inset, bx1 = I.maxX - belt.inset, bz0 = I.minZ + belt.inset, bz1 = I.maxZ - belt.inset;
   const roller = new THREE.CylinderGeometry(.06, .06, .02, 10);
@@ -222,32 +222,32 @@ export function buildWorkshopDetails({ kit, looks, layout, floorY }) {
   kit.group.add(tag(platen));
   box('certificate_stack', cx - .1, ct, B.maxZ - 1.2, cx + .1, ct + .06, B.maxZ - .92, c.paper);
   box('name_tag_board', B.minX + .1, 1.15, B.minZ - .03, B.maxX - .1, 2.15, B.minZ - .01, c.cork);
-  sign('name_tag_title', 'HELLO, MY NAME IS', (B.minX + B.maxX) / 2, 2.02, B.minZ - .036, .9, .12, -1, '#c64140', '#fff0cb');
+  sign('name_tag_title', 'HELLO, MY NAME IS', (B.minX + B.maxX) / 2, 2.02, B.minZ - .036, .9, .12, -1, '#c64140', '#fff0cb', 'official');
   workshopNames.slice(0, 8).forEach((name, i) => {
     const x = B.minX + .28 + (i % 4) * .22, h = 1.72 - Math.floor(i / 4) * .32;
-    sign('name_tag', name.toUpperCase(), x, h, B.minZ - .036, .19, .1, -1, '#fff6e6', '#c64140');
+    sign('name_tag', name.toUpperCase(), x, h, B.minZ - .036, .19, .1, -1, '#fff6e6', '#c64140', 'marker');
   });
 
   // Family portraits by the booth: the guns that went home (frames with a name under each).
   const fp = d.portraits;
   box('portrait_board', east - .04, fp.bottom, fp.z0, east - .02, fp.bottom + 1.1, fp.z1, c.plum);
-  sign('portrait_title', 'FAMILY PORTRAITS', east - .045, fp.bottom + .98, (fp.z0 + fp.z1) / 2, 1.4, .14, 'x-', '#ffe39b', '#253c87');
+  sign('portrait_title', 'FAMILY PORTRAITS', east - .045, fp.bottom + .98, (fp.z0 + fp.z1) / 2, 1.4, .14, 'x-', '#ffe39b', '#253c87', 'hoffmanBrand');
   for (let i = 0; i < 6; i++) {
     const z = fp.z0 + .3 + (i % 3) * ((fp.z1 - fp.z0 - .6) / 2), h = fp.bottom + .52 - Math.floor(i / 3) * .42;
     box('portrait_frame', east - .07, h, z - .16, east - .045, h + .3, z + .16, c.wood);
     box('portrait_photo', east - .078, h + .04, z - .12, east - .07, h + .26, z + .12, c.fabric[i % c.fabric.length]);
-    sign('portrait_name', workshopNames[(i + 8) % workshopNames.length].toUpperCase(), east - .072, h - .05, z, .3, .07, 'x-', 'transparent', '#fff0cb');
+    sign('portrait_name', workshopNames[(i + 8) % workshopNames.length].toUpperCase(), east - .072, h - .05, z, .3, .07, 'x-', 'transparent', '#fff0cb', 'hoffmanSub');
   }
 
   // Safety board and fire extinguisher (south and west walls), and the returns policy by the chute.
-  sign('days_board', 'DAYS WITHOUT INCIDENT', d.safetyBoardX, 2.32, south + .03, 1.4, .18, 1, '#294679', '#fff0cb');
+  sign('days_board', 'DAYS WITHOUT INCIDENT', d.safetyBoardX, 2.32, south + .03, 1.4, .18, 1, '#294679', '#fff0cb', 'industrial');
   box('days_board_back', d.safetyBoardX - .75, 1.55, south + .005, d.safetyBoardX + .75, 2.45, south + .02, c.cream);
-  sign('days_count', '0', d.safetyBoardX, 1.85, south + .03, .5, .5, 1, '#fff6e6', '#c64140', 'Georgia, serif');
+  sign('days_count', '0', d.safetyBoardX, 1.85, south + .03, .5, .5, 1, '#fff6e6', '#c64140', 'industrial');
   const fx = d.extinguisherZ;
   box('extinguisher_cabinet', west + .02, 1.0, fx - .2, west + .16, 1.65, fx + .2, c.red);
   box('extinguisher_glass', west + .16, 1.06, fx - .16, west + .166, 1.59, fx + .16, c.glass, { roughness: .1 });
-  sign('extinguisher_sign', 'FIRE', west + .025, 1.82, fx, .36, .14, 'x+', '#c64140', '#ffffff');
-  sign('returns_policy', 'RETURN POLICY: NO QUESTIONS ASKED. NONE.', west + .025, 1.75, d.returnsPolicyZ, 1.5, .18, 'x+', '#fff6e6', '#c64140');
+  sign('extinguisher_sign', 'FIRE', west + .025, 1.82, fx, .36, .14, 'x+', '#c64140', '#ffffff', 'stencil');
+  sign('returns_policy', 'RETURN POLICY: NO QUESTIONS ASKED. NONE.', west + .025, 1.75, d.returnsPolicyZ, 1.5, .18, 'x+', '#fff6e6', '#c64140', 'typewriter');
   // Posters on the bare stretches of the side walls, 3 cm proud.
   for (const p of d.wallPosters) {
     const onWest = p.wall === 'west';
@@ -264,7 +264,7 @@ export function buildWorkshopDetails({ kit, looks, layout, floorY }) {
     box('locker_handle', east - lk.depth - .03, 1.0, z1 - .1, east - lk.depth, 1.15, z1 - .07, c.metal);
   }
   box('time_clock', east - .14, 1.3, d.timeClockZ - .14, east - .02, 1.62, d.timeClockZ + .14, c.cream);
-  sign('time_clock_face', 'IN · OUT', east - .145, 1.52, d.timeClockZ, .2, .08, 'x-', '#253c87', '#fff0cb');
+  sign('time_clock_face', 'IN · OUT', east - .145, 1.52, d.timeClockZ, .2, .08, 'x-', '#253c87', '#fff0cb', 'led');
   box('card_rack', east - .06, 1.0, d.timeClockZ + .2, east - .02, 1.5, d.timeClockZ + .48, c.metal);
 
   // Corners: bales of stuffing (south-west), a laundry cart of fluff (north-west), a returns bin under the hoppers, a plush pile (north-east).
@@ -295,7 +295,7 @@ export function buildWorkshopDetails({ kit, looks, layout, floorY }) {
   solid(bin.x0, 0, north - bin.depth, bin.x1, bin.height, north, { vaultable: true });
   box('returns_bin', bin.x0, 0, north - bin.depth, bin.x1, bin.height, north - .02, c.bin);
   box('returns_bin_rim', bin.x0 - .02, bin.height - .05, north - bin.depth - .02, bin.x1 + .02, bin.height + .02, north - .03, c.metal);
-  sign('returns_bin_sign', 'RETURNS', (bin.x0 + bin.x1) / 2, bin.height - .25, north - bin.depth - .006, bin.x1 - bin.x0 - .1, .12, -1, '#c64140', '#fff0cb');
+  sign('returns_bin_sign', 'RETURNS', (bin.x0 + bin.x1) / 2, bin.height - .25, north - bin.depth - .006, bin.x1 - bin.x0 - .1, .12, -1, '#c64140', '#fff0cb', 'stencil');
   for (const [dx, dz, h] of [[.12, .15, .62], [.36, .2, .66]]) box('returned_box', bin.x0 + dx - .1, h, north - bin.depth + dz - .08, bin.x0 + dx + .1, h + .16, north - bin.depth + dz + .08, c.cardboard);
   d.plushPile.forEach(([px, pz, turn, color], i) => plush(`plush_pile_${i}`, px, 0, pz, turn, color));
 
