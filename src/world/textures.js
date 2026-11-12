@@ -5,6 +5,8 @@
 
 import * as THREE from 'three';
 import { shutters } from '../config/shutters.js';
+import { signKinds } from '../config/typefaces.js';
+import { drawType, fitSize } from './typeKit.js';
 
 function finish(canvas, { repeat = false } = {}) {
   const texture = new THREE.CanvasTexture(canvas);
@@ -107,23 +109,6 @@ function buildTileTexture({ base, grout, variation, seed }) {
   return finish(canvas, { repeat: true });
 }
 
-function measureTextWidth(ctx, text) {
-  const m = ctx.measureText(text);
-  return typeof m?.width === 'number' && !Number.isNaN(m.width) ? m.width : 0;
-}
-
-function fitText(ctx, text, family, maxFontSize, maxWidth) {
-  let fontSize = maxFontSize;
-  ctx.font = `${fontSize}px ${family}`;
-  let w = measureTextWidth(ctx, text);
-  while (w > maxWidth && fontSize > 10) {
-    fontSize -= 2;
-    ctx.font = `${fontSize}px ${family}`;
-    w = measureTextWidth(ctx, text);
-  }
-  return fontSize;
-}
-
 export function detectSignStyle(text, background = '') {
   const upper = String(text).toUpperCase();
   if (upper.includes('BYTE ME') || upper.includes('LOADING') || upper.includes('NO SIGNAL')) return 'tech';
@@ -184,17 +169,10 @@ export function makeSignTexture(text, { background, color, aspect = 6, style, su
         ctx.strokeRect(10, 10, width - 20, height - 20);
         ctx.strokeRect(17, 17, width - 34, height - 34);
       }
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = ink;
-      const family = mart ? 'bold Arial Black, Arial, sans-serif' : 'bold Georgia, serif';
-      fitText(ctx, text, family, Math.round(height * (subtext ? .46 : .57)), width * .88);
-      ctx.fillText(text, cx, height * (subtext ? .43 : .51));
-      if (subtext) {
-        ctx.fillStyle = mart ? accent : ink;
-        fitText(ctx, subtext, 'bold Arial, sans-serif', Math.round(height * .16), width * .85);
-        ctx.fillText(subtext, cx, height * .74);
-      }
+      const kind = signKinds[detectedStyle];
+      drawType(ctx, text, cx, height * (subtext ? .43 : .51),
+        { role: font || kind.main, size: Math.round(height * (subtext ? .46 : .57)), maxWidth: width * .88, fill: ink });
+      if (subtext) drawType(ctx, subtext, cx, height * .74, { role: kind.sub, size: Math.round(height * .16), maxWidth: width * .85, fill: mart ? accent : ink });
       break;
     }
 
@@ -227,17 +205,7 @@ export function makeSignTexture(text, { background, color, aspect = 6, style, su
       }
 
       // Font & glowing text
-      const family = font || '"VT323", "Space Grotesk", "Courier New", monospace';
-      const fontSize = fitText(ctx, text, family, Math.round(height * 0.62), width * 0.82);
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      // Neon cyan shadow
-      ctx.shadowColor = color || '#00f0d4';
-      ctx.shadowBlur = 14;
-      ctx.fillStyle = color || '#00f0d4';
-      ctx.fillText(text, cx, cy);
-      ctx.shadowBlur = 0;
+      drawType(ctx, text, cx, cy, { role: font || signKinds.tech.main, size: Math.round(height * 0.62), maxWidth: width * 0.82, fill: color || '#00f0d4' });
       break;
     }
 
@@ -271,20 +239,8 @@ export function makeSignTexture(text, { background, color, aspect = 6, style, su
       }
 
       // Slanted athletic block font
-      ctx.save();
-      ctx.transform(1, 0, -0.09, 1, 0, 0);
-      const family = font || '"Teko", "Arial Black", sans-serif';
-      const fontSize = fitText(ctx, text, family, Math.round(height * 0.65), width * 0.78);
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      // Thick dark jersey outline + athletic fill
-      ctx.lineWidth = Math.max(6, fontSize * 0.14);
-      ctx.strokeStyle = '#050a14';
-      ctx.strokeText(text, cx + 8, cy);
-      ctx.fillStyle = color || '#ff8a3d';
-      ctx.fillText(text, cx + 8, cy);
-      ctx.restore();
+      // (the role carries the lean and the thick dark jersey outline)
+      drawType(ctx, text, cx + 8, cy, { role: font || signKinds.varsity.main, size: Math.round(height * 0.65), maxWidth: width * 0.78, fill: color || '#ff8a3d' });
       break;
     }
 
@@ -329,16 +285,7 @@ export function makeSignTexture(text, { background, color, aspect = 6, style, su
       drawStar(width - 26, height - 26, 12);
 
       // Bubbly text
-      const family = font || '"Fredoka", "Righteous", "Comic Sans MS", cursive, sans-serif';
-      const fontSize = fitText(ctx, text, family, Math.round(height * 0.58), width * 0.82);
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      ctx.lineWidth = Math.max(6, fontSize * 0.14);
-      ctx.strokeStyle = '#240046';
-      ctx.strokeText(text, cx, cy + 2);
-      ctx.fillStyle = color || '#ffd60a';
-      ctx.fillText(text, cx, cy);
+      drawType(ctx, text, cx, cy, { role: font || signKinds.toy.main, size: Math.round(height * 0.58), maxWidth: width * 0.82, fill: color || '#ffd60a' });
       break;
     }
 
@@ -374,15 +321,7 @@ export function makeSignTexture(text, { background, color, aspect = 6, style, su
         }
       }
 
-      const family = font || '"Space Grotesk", "Arial Black", "Trebuchet MS", sans-serif';
-      const fontSize = fitText(ctx, text, family, Math.round(height * 0.58), width * 0.78);
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-      ctx.fillText(text, cx + 4, cy + 4);
-      ctx.fillStyle = color || '#ffd23f';
-      ctx.fillText(text, cx, cy);
+      drawType(ctx, text, cx, cy, { role: font || signKinds.industrial.main, size: Math.round(height * 0.68), maxWidth: width * 0.78, fill: color || '#ffd23f' });
       break;
     }
 
@@ -411,16 +350,7 @@ export function makeSignTexture(text, { background, color, aspect = 6, style, su
       };
       diamond(30, 14); diamond(width - 30, 14); diamond(30, height - 14); diamond(width - 30, height - 14);
 
-      const family = font || '"Righteous", "Georgia", "Cooper Black", serif';
-      const fontSize = fitText(ctx, text, family, Math.round(height * 0.62), width * 0.82);
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      // Rich drop shadow
-      ctx.fillStyle = '#8a1c26';
-      ctx.fillText(text, cx + 4, cy + 5);
-      ctx.fillStyle = color || '#ffd166';
-      ctx.fillText(text, cx, cy);
+      drawType(ctx, text, cx, cy, { role: font || signKinds.diner.main, size: Math.round(height * 0.66), maxWidth: width * 0.82, fill: color || '#ffd166' });
       break;
     }
 
@@ -447,17 +377,8 @@ export function makeSignTexture(text, { background, color, aspect = 6, style, su
       curl(50, 1);
       curl(width - 50, -1);
 
-      const family = font || '"Righteous", "Permanent Marker", cursive, sans-serif';
-      const fontSize = fitText(ctx, text, family, Math.round(height * 0.6), width * 0.78);
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      // Radiant gold text with fiery neon backlight glow
-      ctx.shadowColor = '#ff2a4b';
-      ctx.shadowBlur = 18;
-      ctx.fillStyle = color || '#ffd23f';
-      ctx.fillText(text, cx, cy);
-      ctx.shadowBlur = 0;
+      // Radiant gold brush lettering with a fiery backlight glow (the role's glow)
+      drawType(ctx, text, cx, cy, { role: font || signKinds.wok.main, size: Math.round(height * 0.66), maxWidth: width * 0.78, fill: color || '#ffd23f' });
       break;
     }
 
@@ -480,15 +401,7 @@ export function makeSignTexture(text, { background, color, aspect = 6, style, su
         ctx.beginPath(); ctx.arc(x, height - 12, 4, 0, Math.PI * 2); ctx.fill();
       }
 
-      const family = font || '"Righteous", "Arial Black", sans-serif';
-      const fontSize = fitText(ctx, text, family, Math.round(height * 0.6), width * 0.8);
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      ctx.fillStyle = '#d62839';
-      ctx.fillText(text, cx + 4, cy + 4);
-      ctx.fillStyle = color || '#ffd166';
-      ctx.fillText(text, cx, cy);
+      drawType(ctx, text, cx, cy, { role: font || signKinds.carnival.main, size: Math.round(height * 0.6), maxWidth: width * 0.8, fill: color || '#ffd166' });
       break;
     }
 
@@ -512,10 +425,7 @@ export function makeSignTexture(text, { background, color, aspect = 6, style, su
         ctx.fillStyle = '#ffffff';
         ctx.beginPath(); ctx.arc(rX, cy - 4, Math.min(28, height * 0.36), 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = '#0f3c75';
-        ctx.font = `bold ${Math.round(height * 0.42)}px "Space Grotesk", sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(aisleNum, rX, cy - 4);
+        drawType(ctx, aisleNum, rX, cy - 4, { role: 'martBrand', size: Math.round(height * 0.42), fill: '#0f3c75' });
       } else if (text.includes('MEGA MART')) {
         // Multi-point yellow starburst spark on left
         const sX = 52;
@@ -533,18 +443,8 @@ export function makeSignTexture(text, { background, color, aspect = 6, style, su
       }
 
       // Modern geometric italic sans
-      ctx.save();
-      ctx.transform(1, 0, -0.08, 1, 0, 0);
-      const family = font || '"Space Grotesk", "Helvetica Neue", "Arial", sans-serif';
-      const fontSize = fitText(ctx, text, family, Math.round(height * 0.58), width * 0.78);
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
-      ctx.fillText(text, cx + 3, cy + 2);
-      ctx.fillStyle = color || '#ffd23f';
-      ctx.fillText(text, cx, cy - 4);
-      ctx.restore();
+      drawType(ctx, text, cx, cy - 4, { role: font || signKinds.supermarket.main, size: Math.round(height * 0.58), maxWidth: width * 0.78, fill: color || '#ffd23f',
+        slant: 0.08, shadow: { color: 'rgba(0, 0, 0, 0.45)', dx: 0.05, dy: 0.04 } });
       break;
     }
 
@@ -582,15 +482,8 @@ export function makeSignTexture(text, { background, color, aspect = 6, style, su
       ctx.save();
       ctx.translate(cx, cy);
       ctx.rotate(-0.02);
-      const family = font || '"Anton", "Bebas Neue", "Arial Black", sans-serif';
-      const fontSize = fitText(ctx, text, family, Math.round(height * 0.65), width * 0.68);
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-      ctx.fillText(text, 3, 3);
-      ctx.fillStyle = color || (background === '#d62839' ? '#ffffff' : '#111114');
-      ctx.fillText(text, 0, 0);
+      drawType(ctx, text, 0, 0, { role: font || signKinds.clearance.main, size: Math.round(height * 0.65), maxWidth: width * 0.68,
+        fill: color || (background === '#d62839' ? '#ffffff' : '#111114'), shadow: { color: 'rgba(0, 0, 0, 0.85)', dx: 0.04, dy: 0.04 } });
       ctx.restore();
       break;
     }
@@ -609,14 +502,8 @@ export function makeSignTexture(text, { background, color, aspect = 6, style, su
       ctx.save();
       ctx.translate(cx, cy);
       ctx.rotate(-0.015);
-      const family = font || '"Teko", "Arial Black", sans-serif';
-      const fontSize = fitText(ctx, text, family, Math.round(height * 0.72), width * 0.85);
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
       // Stamped ink look: dark purple/black with slight stamp punch
-      ctx.fillStyle = color || '#141419';
-      ctx.fillText(text, 0, 0);
+      drawType(ctx, text, 0, 0, { role: font || signKinds.pricetag.main, size: Math.round(height * 0.72), maxWidth: width * 0.85, fill: color || '#141419' });
       ctx.restore();
       break;
     }
@@ -644,18 +531,11 @@ export function makeSignTexture(text, { background, color, aspect = 6, style, su
       ctx.roundRect ? ctx.roundRect(cx - pillW / 2, 14, pillW, pillH, 8) : ctx.rect(cx - pillW / 2, 14, pillW, pillH);
       ctx.fill();
 
-      ctx.fillStyle = '#ffffff';
-      ctx.font = `bold ${Math.round(pillH * 0.68)}px "Arial Black", sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('DANGER', cx, 14 + pillH / 2);
+      drawType(ctx, 'DANGER', cx, 14 + pillH / 2, { role: signKinds.hazard.sub, size: Math.round(pillH * 0.7), fill: '#ffffff' });
 
       // Warning text below
       const lowerH = height - barH - 20;
-      const family = font || '"Space Grotesk", "Arial Black", sans-serif';
-      const fontSize = fitText(ctx, text, family, Math.round(lowerH * 0.58), width * 0.85);
-      ctx.fillStyle = color || '#18191c';
-      ctx.fillText(text, cx, barH + 10 + lowerH / 2);
+      drawType(ctx, text, cx, barH + 10 + lowerH / 2, { role: font || signKinds.hazard.main, size: Math.round(lowerH * 0.58), maxWidth: width * 0.85, fill: color || '#18191c' });
       break;
     }
 
@@ -669,21 +549,12 @@ export function makeSignTexture(text, { background, color, aspect = 6, style, su
       ctx.lineWidth = 4;
       ctx.strokeRect(4, 4, width - 8, height - 8);
 
-      const family = font || '"VT323", monospace';
-      const fontSize = fitText(ctx, text, family, Math.round(height * 0.72), width * 0.88);
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
+      const role = font || signKinds.digital.main;
+      const size = fitSize(ctx, text, role, Math.round(height * 0.62), width * 0.88);
       // Ghost segments background
-      ctx.fillStyle = 'rgba(255, 42, 75, 0.06)';
-      ctx.fillText('888888888888'.slice(0, text.length || 6), cx, cy);
-
+      drawType(ctx, '888888888888'.slice(0, text.length || 6), cx, cy, { role, size, fill: 'rgba(255, 42, 75, 0.06)' });
       // Glowing LED digits
-      ctx.shadowColor = color || '#ff2a55';
-      ctx.shadowBlur = 16;
-      ctx.fillStyle = color || '#ff2a55';
-      ctx.fillText(text, cx, cy);
-      ctx.shadowBlur = 0;
+      drawType(ctx, text, cx, cy, { role, size, fill: color || '#ff2a55', glow: { color: color || '#ff2a55', blur: 0.26 } });
       break;
     }
 
@@ -717,13 +588,7 @@ export function makeSignTexture(text, { background, color, aspect = 6, style, su
       ctx.save();
       ctx.translate(cx, cy);
       ctx.rotate(-0.025);
-      const family = font || '"Permanent Marker", "Comic Sans MS", "Chalkboard SE", cursive, sans-serif';
-      const fontSize = fitText(ctx, text, family, Math.round(height * 0.58), width * 0.82);
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      ctx.fillStyle = color || '#18141d';
-      ctx.fillText(text, 0, 0);
+      drawType(ctx, text, 0, 0, { role: font || signKinds.handwritten.main, size: Math.round(height * 0.58), maxWidth: width * 0.82, fill: color || '#18141d' });
       ctx.restore();
       break;
     }
@@ -742,13 +607,7 @@ export function makeSignTexture(text, { background, color, aspect = 6, style, su
         ctx.strokeRect(10, 10, width - 20, height - 20);
       }
 
-      const family = font || 'Arial, "Helvetica Neue", sans-serif';
-      const fontSize = fitText(ctx, text, family, Math.round(height * 0.52), width * 0.84);
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      ctx.fillStyle = color || '#ffffff';
-      ctx.fillText(text, cx, cy);
+      drawType(ctx, text, cx, cy, { role: font || signKinds.wayfinding.main, size: Math.round(height * 0.6), maxWidth: width * 0.84, fill: color || '#ffffff' });
       break;
     }
 
@@ -765,13 +624,7 @@ export function makeSignTexture(text, { background, color, aspect = 6, style, su
       ctx.lineWidth = 1;
       ctx.strokeRect(16, 16, width - 32, height - 32);
 
-      const family = font || '"Space Grotesk", "Georgia", serif';
-      const fontSize = fitText(ctx, text, family, Math.round(height * 0.54), width * 0.84);
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      ctx.fillStyle = color || '#ffd166';
-      ctx.fillText(text, cx, cy);
+      drawType(ctx, text, cx, cy, { role: font || signKinds.service.main, size: Math.round(height * 0.54), maxWidth: width * 0.84, fill: color || '#ffd166' });
       break;
     }
 
@@ -788,16 +641,7 @@ export function makeSignTexture(text, { background, color, aspect = 6, style, su
       ctx.fillRect(18, 0, 6, height);
       ctx.fillRect(width - 24, 0, 6, height);
 
-      const family = font || '"Teko", "Righteous", sans-serif';
-      const fontSize = fitText(ctx, text, family, Math.round(height * 0.62), width * 0.82);
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      ctx.shadowColor = '#ff6a13';
-      ctx.shadowBlur = 12;
-      ctx.fillStyle = color || '#ffe14d';
-      ctx.fillText(text, cx, cy);
-      ctx.shadowBlur = 0;
+      drawType(ctx, text, cx, cy, { role: font || signKinds.ammo.main, size: Math.round(height * 0.6), maxWidth: width * 0.82, fill: color || '#ffe14d', glow: { color: '#ff6a13', blur: 0.2 } });
       break;
     }
 
@@ -822,15 +666,8 @@ export function makeSignTexture(text, { background, color, aspect = 6, style, su
       ctx.lineWidth = 5;
       ctx.strokeRect(12, 12, width - 24, height - 24);
 
-      const family = font || '"Space Grotesk", "Arial Black", sans-serif';
-      const fontSize = fitText(ctx, text, family, Math.round(height * 0.6), width * 0.88);
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      ctx.fillStyle = 'rgba(0,0,0,0.42)';
-      ctx.fillText(text, cx + 4, cy + 5);
-      ctx.fillStyle = color || '#fff';
-      ctx.fillText(text, cx, cy);
+      drawType(ctx, text, cx, cy, { role: font || signKinds.standard.main, size: Math.round(height * 0.6), maxWidth: width * 0.88, fill: color || '#fff',
+        shadow: { color: 'rgba(0,0,0,0.42)', dx: 0.05, dy: 0.06 } });
       break;
     }
   }
@@ -854,10 +691,8 @@ export function makeShutterTexture(message = 'CLOSED', { width = 3, height = 3, 
   for (let i = 0; i < 3; i++) ctx.fillRect(w / 2 - radius + i * radius * .15, sunY + 4 + i * radius * .19,
     radius * 2 - i * radius * .3, radius * .11);
   ctx.globalAlpha = 1;
-  function words(text, y, size, color = look.ink) {
-    ctx.font = `700 ${size}px sans-serif`;
-    while (ctx.measureText(text).width > w * .88 && size > 8) { size--; ctx.font = `700 ${size}px sans-serif`; }
-    ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, w / 2, y);
+  function words(text, y, size, color = look.ink, role = 'stencil') {
+    drawType(ctx, text, w / 2, y, { role, size, maxWidth: w * .88, fill: color });
   }
   words('SUNSET GALLERIA', h * .52, Math.round(h * .035));
   words(message === 'CLOSED' ? look.heading : message, h * .62, Math.round(h * .052));
@@ -877,13 +712,10 @@ export function makeShutterTexture(message = 'CLOSED', { width = 3, height = 3, 
   ctx.translate(w * .78, h * .83); ctx.rotate(-.07);
   if (look.sticker) {
     ctx.fillStyle = '#e9d5a8'; ctx.fillRect(-w * .115, -h * .045, w * .23, h * .09);
-    ctx.fillStyle = look.ink; ctx.font = `700 ${Math.round(h * .022)}px monospace`;
-    ctx.fillText(look.sticker, 0, 0);
+    drawType(ctx, look.sticker, 0, 0, { role: 'typewriter', size: Math.round(h * .024), fill: look.ink });
   }
   ctx.restore();
-  ctx.fillStyle = look.ink; ctx.globalAlpha = .6; ctx.font = `${Math.round(h * .022)}px monospace`;
-  ctx.textAlign = 'left'; ctx.fillText(`SG / ${look.seed} · SECURITY SYSTEMS`, w * .05, h * .94);
-  ctx.globalAlpha = 1;
+  drawType(ctx, `SG / ${look.seed} · SECURITY SYSTEMS`, w * .05, h * .94, { role: 'typewriter', size: Math.round(h * .022), fill: look.ink, align: 'left', alpha: .6 });
   return finish(canvas);
 }
 
@@ -1045,13 +877,8 @@ export function makeChalkTexture(name, { aspect = 2, seed = 11 } = {}) {
   }
 
   // The name along the bottom, written twice slightly offset (chalk pressure).
-  ctx.font = 'bold 38px "Permanent Marker", "Chalkboard SE", "Segoe Print", "Comic Sans MS", sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = 'rgba(245, 245, 240, 0.7)';
-  ctx.fillText(name.toUpperCase(), w / 2, h - 44);
-  ctx.fillStyle = 'rgba(245, 245, 240, 0.35)';
-  ctx.fillText(name.toUpperCase(), w / 2 + 2, h - 42);
+  drawType(ctx, name.toUpperCase(), w / 2, h - 44, { role: 'marker', size: 38, maxWidth: w * 0.9, fill: 'rgba(245, 245, 240, 0.7)' });
+  drawType(ctx, name.toUpperCase(), w / 2 + 2, h - 42, { role: 'marker', size: 38, maxWidth: w * 0.9, fill: 'rgba(245, 245, 240, 0.35)' });
 
   return finish(canvas);
 }
