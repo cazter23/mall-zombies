@@ -59,7 +59,8 @@ export const promenade = {
     window: { from: -.95, to: .95, top: 2.7, sill: .62 },
     bench: { halfWidth: 1.05, height: 1.02, offsetZ: 3.4, depth: .88, promptHeight: 1.43, promptInset: .15 },
     floor: { light: '#f4dfb3', dark: '#b3a483', grout: '#b4a78c', tileSize: .55 },
-    colors: { wall: 0xf6dfb4, cream: 0xffedca, cabinet: 0xf2c569, plum: 0x253c87, metal: 0x354668,
+    // hallWall / hallRoof: the back hall is the factory floor, not the shop: workshop grey walls, a dark exposed roof.
+    colors: { wall: 0xf6dfb4, hallWall: 0xc3c9c1, hallRoof: 0x4d4858, cream: 0xffedca, cabinet: 0xf2c569, plum: 0x253c87, metal: 0x354668,
       wood: 0x99724f, paper: 0xf5ebd6, red: 0xc64140, lamp: 0xffcb8a, glass: 0xe2f7ef },
     lamp: { x: 0, height: 2.55, offsetZ: 2.2, color: 0xffce99, intensity: 1.05, distance: 7 },
     rideHeight: .22, // the gun rides this far above the belt
@@ -87,6 +88,11 @@ export const promenade = {
       qc: { x0: -1.05, x1: -.45, z0: 18.4, z1: 19.6 }, // inside the island, east of the tank
       portraits: { z0: 23.5, z1: 26.2, bottom: 1.25 },
       safetyBoardX: -6.6, extinguisherZ: 14.2, returnsPolicyZ: 23.8, timeClockZ: 14.3,
+      // The factory floor: pegboard tool walls (wall, from..to along it, bottom..top above the floor), cable trays hung under
+      // the roof (z, a little below the roof), and chain hoists in the corners ([x, z], hook height). All decoration.
+      pegboards: [{ wall: 'north', from: 2.5, to: 4.55, bottom: 1.0, top: 2.25 }, { wall: 'west', from: 23.0, to: 25.3, bottom: 1.0, top: 2.25 }],
+      trays: { z: [15.3, 22.9], drop: .3, width: .32 }, // (drop .3: above the stuffing pipe, which runs at hoppers.pipeY)
+      hoists: { at: [[-8.6, 14.2], [3.9, 25.4]], hookHeight: 2.75 },
       // Posters on the hall's bare stretches (wall 'west' faces east, 'east' faces west; z = centre, y above the hall floor).
       wallPosters: [
         { wall: 'west', z: 18.3, y: 2.3, width: 5, height: 1.2, kind: 'banner',
@@ -106,7 +112,7 @@ export const promenade = {
       colors: {
         slat: 0x6b4f73, metal: 0x354668, cream: 0xffedca, wood: 0x99724f, heart: 0xe04a68, ink: 0x2b2633, screen: 0x7fe0c4,
         footprint: 0x6b8fd9, paper: 0xf5ebd6, plush: 0xf0b854, plushAlt: 0xc98bd6, toy: 0xc64140, grid: 0xe9dcc0,
-        wainscot: 0xd9c2a0, rail: 0x99724f, glass: 0xc8eaff, pipe: 0x8a9bb0, beam: 0x5a5368, neon: 0xff6fae, lamp: 0x7fffb0,
+        wainscot: 0x5f6b78, rail: 0xf2c230, // (machine grey under a safety-yellow rail: the hall is a workshop) glass: 0xc8eaff, pipe: 0x8a9bb0, beam: 0x5a5368, neon: 0xff6fae, lamp: 0x7fffb0,
         red: 0xc64140, cork: 0xb08a5a, plum: 0x253c87, locker: 0x4f7aa8, strap: 0x6b4f73, cart: 0x8fb4c9, fluff: 0xfff5de,
         bin: 0x3d6b8a, cardboard: 0xc49a63, safety: 0xf2c230,
         fabric: [0xf4a7c0, 0x9fd3c7, 0xf7d58b, 0xb8a6e6, 0xf0b07a, 0xa7c7f4],

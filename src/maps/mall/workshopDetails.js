@@ -7,7 +7,8 @@
 //   Hall        six stuffing hoppers piped into the tank, a QC desk inside the island, a typewriter and certificates at
 //               the Naming Booth with a board of name tags, family portraits, a safety board, lockers and a time clock,
 //               a fire extinguisher, floor safety lines and hazard stripes, beams, a wainscot, stuffing bales, a laundry
-//               cart of fluff, a returns bin, a slumped plush pile, stray tufts, and a neon thank-you over the mouth.
+//               cart of fluff, a returns bin, a slumped plush pile, stray tufts, and a neon thank-you over the mouth; and the
+//               factory floor's kit: pegboard tool walls (shadow-board outlines), cable trays under the roof, chain hoists.
 // Decoration has no collision, sits >= 2 cm proud of walls, and stays out of the lanes round the island. The few big,
 // solid pieces (lockers, bales, cart, bin) get one collider each and live in corners or flat against a wall:
 // tests/workshopDetails.test.js checks the lanes, the collision rules and the draw budget.
@@ -313,5 +314,56 @@ export function buildWorkshopDetails({ kit, looks, layout, floorY }) {
   box('loading_box', B.minX - .9, h0, B.minZ - .07, B.minX - .3, h1, B.minZ, c.safety);
   box('loading_box', B.minX - .9, h0, B.maxZ, B.minX - .3, h1, B.maxZ + .07, c.safety);
 
+  // The factory floor: pegboard tool walls with painted shadow outlines, cable trays under the roof, chain hoists in two corners.
+  // Plain colours only, flat on the walls or above head height: the batcher merges them (no new draws worth counting).
+  const wallFrame = {
+    north: (u0, u1, depth0, depth1) => [u0, north - depth1, u1, north - depth0],
+    west: (u0, u1, depth0, depth1) => [west + depth0, u0, west + depth1, u1],
+  };
+  const flat = (name, wall, u0, h0, u1, h1, depth0, depth1, color) => {
+    const [a, b, cc, dd] = wallFrame[wall](u0, u1, depth0, depth1);
+    return box(name, a, h0, b, cc, h1, dd, color);
+  };
+  const toolColors = { wood: c.wood, metal: c.pipe, grip: c.red, dark: c.ink };
+  for (const board of d.pegboards) {
+    flat('pegboard', board.wall, board.from, board.bottom, board.to, board.top, .006, .03, COLOR_PEGBOARD);
+    flat('pegboard_trim', board.wall, board.from - .04, board.top, board.to + .04, board.top + .05, .006, .04, c.safety);
+    // Tools in a row, each over its painted outline (the shadow board: you'd see at once which one is missing).
+    const tools = [
+      [[.0, .1, .035, .42, 'wood'], [-.05, .38, .085, .47, 'metal']], // hammer
+      [[.0, .12, .03, .4, 'metal'], [-.025, .38, .055, .44, 'metal'], [-.02, .08, .05, .13, 'metal']], // wrench
+      [[.0, .24, .04, .34, 'grip'], [.012, .08, .028, .24, 'metal']], // screwdriver
+      [[-.12, .14, .2, .3, 'metal'], [.2, .12, .29, .32, 'grip']], // saw
+      [[.0, .1, .035, .36, 'grip'], [-.04, .34, .075, .42, 'dark']], // mallet
+      [[-.04, .12, .07, .38, 'metal'], [-.06, .36, .09, .42, 'dark']], // clamp
+    ];
+    const count = Math.max(1, Math.floor((board.to - board.from) / .5));
+    for (let i = 0; i < count; i++) {
+      const u = board.from + .3 + i * ((board.to - board.from - .5) / Math.max(1, count - 1));
+      const tool = tools[i % tools.length];
+      const missing = i === 2; // (one outline with nothing on it: someone borrowed it)
+      const [o0, p0, o1, p1] = tool.reduce(([a, b, cc, dd], [u0, v0, u1, v1]) => [Math.min(a, u0), Math.min(b, v0), Math.max(cc, u1), Math.max(dd, v1)],
+        [Infinity, Infinity, -Infinity, -Infinity]);
+      flat('tool_outline', board.wall, u + o0 - .015, board.bottom + p0 + .3 - .015, u + o1 + .015, board.bottom + p1 + .3 + .015, .03, .036, c.ink);
+      // Each part a few millimetres prouder than the last, so overlapping parts never share a plane.
+      if (!missing) tool.forEach(([du0, v0, du1, v1, kind], j) => flat('tool', board.wall, u + du0, board.bottom + v0 + .3, u + du1,
+        board.bottom + v1 + .3, .036, .056 + j * .008, toolColors[kind]));
+    }
+  }
+  const tr = d.trays;
+  for (const z of tr.z) {
+    box('cable_tray', west + .1, hallTop - tr.drop - .06, z - tr.width / 2, east - .1, hallTop - tr.drop, z + tr.width / 2, c.metal);
+    box('cable_bundle', west + .1, hallTop - tr.drop, z - tr.width / 2 + .05, east - .1, hallTop - tr.drop + .07, z + tr.width / 2 - .05, c.ink);
+    for (let x = west + .8; x < east - .3; x += 2.4) box('tray_hanger', x - .015, hallTop - tr.drop, z - .015, x + .015, hallTop, z + .015, c.metal);
+  }
+  for (const [x, z] of d.hoists.at) {
+    const hook = d.hoists.hookHeight;
+    box('hoist_block', x - .14, hallTop - .55, z - .1, x + .14, hallTop - .2, z + .1, c.safety);
+    box('hoist_mount', x - .04, hallTop - .2, z - .04, x + .04, hallTop, z + .04, c.metal);
+    box('hoist_chain', x - .015, hook + .1, z - .015, x + .015, hallTop - .55, z + .015, c.metal);
+    box('hoist_hook', x - .06, hook, z - .02, x + .06, hook + .1, z + .02, c.ink);
+  }
+
   return { meshes: made };
 }
+const COLOR_PEGBOARD = 0xc79a62; // (maps/mall/palette.js COLORS.pegboard: tan hardboard)

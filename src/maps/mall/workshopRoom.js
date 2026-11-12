@@ -190,10 +190,10 @@ export function buildWorkshopRoom({ kit, props, floorY, layout }) {
   addFloor('workshop_hall_checkerboard', H.minX, H.minZ, H.maxX, H.maxZ);
   kit.wall({ along: 'x', from: H.minX - t, to: H.maxX + t, at0: H0, at1: H.minZ, bottom: floorY, height: H.height,
     openings: [{ from, to, top: H.mouthTop }] }, kit.mat(c.wall), { name: 'workshop_hall_front' });
-  box('hall_west', H.minX - t, 0, H.minZ, H.minX, H.height, H.maxZ, c.wall, solid);
-  box('hall_east', H.maxX, 0, H.minZ, H.maxX + t, H.height, H.maxZ, c.wall, solid);
-  box('hall_north', H.minX - t, 0, H.maxZ, H.maxX + t, H.height, H1, c.wall, solid);
-  box('hall_roof', H.minX - t, H.height, H0, H.maxX + t, H.height + t, H1, c.cream, solid);
+  box('hall_west', H.minX - t, 0, H.minZ, H.minX, H.height, H.maxZ, c.hallWall, solid); // (workshop grey: the factory floor)
+  box('hall_east', H.maxX, 0, H.minZ, H.maxX + t, H.height, H.maxZ, c.hallWall, solid);
+  box('hall_north', H.minX - t, 0, H.maxZ, H.maxX + t, H.height, H1, c.hallWall, solid);
+  box('hall_roof', H.minX - t, H.height, H0, H.maxX + t, H.height + t, H1, c.hallRoof, solid);
   for (const [x, z] of H.panels) props.lightPanel(x - 1.1, z - .55, x + 1.1, z + .55, floorY + H.height, { tint: c.lamp, glow: 1.4 });
 
   // The island: a glass guard round the conveyor and the tank. One solid block stops feet but not bullets, so nothing
