@@ -560,7 +560,7 @@ export function buildMall(scene, colliders) {
   props.foodStall({
     ...stallWall, from: -8.4, to: -3.1, name: 'BURGER BARN', menu: 'BURGERS · FRIES · SHAKES',
     colors: { main: 0xd62839, accent: 0x8d1c26, awning: [0xd62839, 0xf1faee], signBackground: '#2b1a12', signText: '#ffd23f' },
-    gear: ['grill', 'fryer', 'soda'],
+    gear: ['grill', 'fryer', 'shake'], theme: 'barn',
   });
   props.foodStall({
     ...stallWall, from: -2.6, to: 2.6, name: 'WOK THIS WAY', menu: 'NOODLES · RICE · FORTUNES (BAD)',

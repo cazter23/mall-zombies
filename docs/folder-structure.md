@@ -649,6 +649,8 @@ src/
                         coilNailer (Cinema projection passage), barcodeScanner (HOFFMAN'S). All meshes, lights and debug markers live in its group. Exports LAYOUT
                         (startRoom, hallway, foodCourt, megaMart, doorway, foodCourtDoorway, megaMartDoorway, escalator,
                         elevator, serviceCorridor, foodCourtMegaMartDoorway, serviceCorridorFoodCourtDoorway). The hallway ceiling is a kit.slab with a hole where the escalator passes through
+    mall/stallThemes.js Per-stall decoration for props.foodStall's `theme` option, so a Food Court stall looks like what it is named (decoration only, no collision;
+                        `barn` = BURGER BARN: siding, trim, hay-loft roof shoulders, checker band, weathervane, heat lamp). A new theme = a function here + `theme:` in mall.js.
     mall/props.js       createMallProps(kit): shopFront({ along 'x'|'z', from, to, wallAt, facing, color, text }), pillar,
                         bench (vaultable), planter ({ tree }), lightPanel ({ dead }), gondola (solid double-sided shelf,
                         products = one seeded InstancedMesh), checkout (vaultable counter + register + lane light),

@@ -33,6 +33,7 @@ import { COLORS } from './palette.js';
 import { atmosphere } from '../../config/environment.js';
 import { concourse } from '../../config/concourse.js';
 import { seededRandom } from '../../world/textures.js';
+import { stallThemes } from './stallThemes.js';
 import { buildAttachmentPart } from '../../weapons/models/upgradeParts.js';
 import { buildClerkFigure } from '../../zombies/zombieModel.js';
 
@@ -578,9 +579,10 @@ export function createMallProps(kit) {
    * pockets zombies can't reach).
    *   along/from/to/wallAt/facing as for shopFront; depth = how far the counter sticks out.
    *   colors: { main, accent, awning: [a, b], signBackground, signText }; name; menu (text)
-   *   gear: what's behind the counter, left to right: 'grill' | 'fryer' | 'wok' | 'soda'
+   *   gear: what's behind the counter, left to right: 'grill' | 'fryer' | 'wok' | 'soda' | 'shake'
+   *   theme: a key of mall/stallThemes.js, extra decoration that makes the stall look like what it is named
    */
-  function foodStall({ along = 'x', from, to, wallAt, facing, depth = 1.3, name, menu, colors, gear = [] }) {
+  function foodStall({ along = 'x', from, to, wallAt, facing, depth = 1.3, name, menu, colors, gear = [], theme }) {
     const place = wallPlacer(along);
     const d = (offset) => wallAt + facing * offset;
     const flat = { collide: false };
@@ -614,7 +616,16 @@ export function createMallProps(kit) {
       const u0 = from + 0.2 + i * slot + 0.1;
       const u1 = u0 + slot - 0.2;
       const back = [d(0.1), d(0.65)];
-      if (kind === 'soda') {
+      if (kind === 'shake') {
+        // milkshake machine: a stainless body, a glowing pink flavour panel, three spindles over a tray of cups
+        place(u0, 0, u1, 1.45, ...back, mat(COLORS.stainless), flat);
+        place(u0 + 0.08, 0.95, u1 - 0.08, 1.35, d(0.65), d(0.67), mat(0xff7eb6, { emissive: 0xff7eb6, emissiveIntensity: 0.45 }), flat);
+        for (let k = 0; k < 3; k++) {
+          const sx = u0 + (u1 - u0) * (0.2 + 0.3 * k);
+          place(sx, 1.45, sx + 0.05, 1.7, d(0.3), d(0.35), mat(COLORS.elevatorSteel), flat);
+          place(sx - 0.04, 1.62, sx + 0.09, 1.7, d(0.27), d(0.38), mat(0xfff3e0), flat);
+        }
+      } else if (kind === 'soda') {
         place(u0, 0, u1, 1.7, ...back, mat(COLORS.elevatorSteel), flat);
         place(u0 + 0.08, 0.8, u1 - 0.08, 1.6, d(0.65), d(0.67), mat(colors.main, { emissive: colors.main, emissiveIntensity: 0.35 }), flat);
       } else {
@@ -629,6 +640,9 @@ export function createMallProps(kit) {
     for (let u = from, i = 0; u < to - 1e-6; u += stripe, i++) {
       place(u, 2.95, Math.min(to, u + stripe), 3.05, d(0.1), d(depth + 0.35), mat(colors.awning[i % 2]), flat);
     }
+    // The stall's own theme (barn, ...) decorates it further, round the name sign
+    stallThemes[theme]?.({ place, d, mat, from, to, mid: (from + to) / 2, depth, counterHeight,
+      sign: { width: to - from - 0.5, y: 3.9, height: 0.8 }, colors });
     // Name sign up top, menu board under the awning line
     const mid = (from + to) / 2;
     const at = (offset) => (along === 'x' ? { x: mid, z: d(offset), facing } : { x: d(offset), z: mid, facing: facing > 0 ? 'x+' : 'x-' });
