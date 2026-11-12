@@ -878,6 +878,10 @@ src/
   world/                Shared building blocks for maps
     typeKit.js          How text is set on canvas: fontFor(role, px), fitSize (shrink to fit, never clip) and drawType (case, tracking, slant, outline, hard shadow, glow,
                         gradient fill from the role's treatment or per-call options). Every sign, poster and label draws through it.
+    signStyles.js       One painter per shop-sign style (makeSignTexture's `style`): its own layout, ornaments, material and wear, lettered through drawType.
+                        A new style = a painter here + a signKinds entry (config/typefaces.js) + a line in detectSignStyle if it is auto-picked.
+    signKit.js          Canvas helpers the sign styles share: bevel, domed rivets, bulb rows, caution stripes, awning, checker, ornaments, burst,
+                        brushed metal, grain, scuffs, vignette, glare (all seeded, so a sign looks the same every run).
     mapKit.js           (also exports printedMaterial(texture): a sign or poster lit like its wall plus look.print.glow, and
                         signPixels(metres): a sign canvas's width for its size, look.signTexture)
                         createMapKit(group, colliders): mat, addCollider, box, sign, tiledFloor, wall({ along, from, to,
