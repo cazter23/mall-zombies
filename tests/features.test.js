@@ -104,3 +104,46 @@ test('the real game gives features its systems, and ticks/resets them like the r
   g.resetRun();
   assert.equal(probe.resets, 1, 'Play again resets it');
 });
+
+// Save & Quit keys each saving feature's run state by its NAME: a map that gains, loses or reorders features keeps the save.
+function savingKinds() {
+  const counter = (feature) => {
+    let count = 0;
+    return { bump() { count++; }, get count() { return count; }, serialize: () => ({ count }), restore(data) { count = data.count; } };
+  };
+  return { counter, plain: () => ({}) };
+}
+
+test('feature saves are keyed by name: a reordered map with a new feature still restores each one', () => {
+  const kinds = savingKinds();
+  const before = buildFeatures({ id: 'm', features: [
+    { kind: 'counter', name: 'claw' }, { kind: 'plain', name: 'sign' }, { kind: 'counter', name: 'kiosk' },
+  ] }, {}, kinds);
+  before.list[0].instance.bump();
+  before.list[2].instance.bump(); before.list[2].instance.bump();
+  const saved = JSON.parse(JSON.stringify(before.serialize()));
+  assert.deepEqual(saved, { claw: { count: 1 }, kiosk: { count: 2 } });
+
+  const after = buildFeatures({ id: 'm', features: [
+    { kind: 'counter', name: 'newcomer' }, { kind: 'counter', name: 'kiosk' }, { kind: 'counter', name: 'claw' },
+  ] }, {}, kinds);
+  after.restore(saved);
+  assert.equal(after.instanceOf('counter'), after.list[0].instance);
+  assert.deepEqual(after.list.map(({ feature, instance }) => [feature.name, instance.count]), [['newcomer', 0], ['kiosk', 2], ['claw', 1]]);
+});
+
+test('a save from before names (keyed by place) still restores; a saving feature needs its own name', () => {
+  const kinds = savingKinds();
+  const built = buildFeatures({ id: 'm', features: [{ kind: 'plain', name: 'sign' }, { kind: 'counter', name: 'claw' }] }, {}, kinds);
+  built.restore({ 1: { count: 5 } });
+  assert.equal(built.list[1].instance.count, 5);
+
+  assert.throws(() => buildFeatures({ id: 'm', features: [{ kind: 'counter' }] }, {}, kinds), /saves run state, so it needs a name/);
+  assert.throws(() => buildFeatures({ id: 'm', features: [{ kind: 'counter', name: 'x' }, { kind: 'counter', name: 'x' }] }, {}, kinds), /two features named "x"/);
+  assert.doesNotThrow(() => buildFeatures({ id: 'm', features: [{ kind: 'plain', name: 'x' }, { kind: 'plain', name: 'x' }] }, {}, kinds), 'only saving features must be unique');
+});
+
+test("the mall's saving features (Build-A-Blaster, the claw machine, Kiosk Kevin) save under their names", () => {
+  const { g } = headlessGame();
+  assert.deepEqual(Object.keys(g.features.serialize()).sort(), ['buildABlaster', 'clawMachine', 'kioskKevin']);
+});

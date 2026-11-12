@@ -327,7 +327,7 @@ solid are fine); run it after adding anything to a store (hang things on a wall 
 `viewmodel.test.js` real player-gun/model recoil with attachments, including firing and dry-clicking immediately after fitting/removing one
 before rendering, `weaponModels.test.js` also checks upgrade parts (every gun has every
 mount, parts show only when fitted, the Extended Nozzle moves the muzzle + flash and back, tier sticker hidden at Standard, no part
-floats), `features.test.js` map features (the mall's list, unknown kind = error, a new kind's update/reset hooks run, inert wall buy for a
+floats), `features.test.js` map features (the mall's list, unknown kind = error, saves keyed by feature name so a reordered map with a new feature still restores, an old place-keyed save still loads, a saving feature without its own name = error, a new kind's update/reset hooks run, inert wall buy for a
 gun that doesn't exist, inherited names aren't kinds, features get the game's systems and tick only while playing (not paused /
 dead) + reset on Play again, buy a wall gun + refill at the RESTOCK-O-MATIC in the real game);
 `spawning.test.js` covers local selection/safety/cooldowns/rescues plus the real mall at six positions with hallway

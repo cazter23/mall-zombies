@@ -74,6 +74,14 @@ export function buildFeatures(map, ctx, kinds = builders) {
     }
     list.push({ feature, instance: build(feature, ctx) ?? {} });
   }
+  // A feature that saves run state is saved under its NAME, so its name must be there and be its own.
+  const savingNames = new Set();
+  for (const { feature, instance } of list) {
+    if (!instance.serialize) continue;
+    if (!feature.name) throw new Error(`map "${map.id}": a "${feature.kind}" feature saves run state, so it needs a name`);
+    if (savingNames.has(feature.name)) throw new Error(`map "${map.id}": two features named "${feature.name}" (one saves run state: names must differ)`);
+    savingNames.add(feature.name);
+  }
   return {
     list,
     context: ctx, // what every feature was given (for tests / debugging)
@@ -92,14 +100,21 @@ export function buildFeatures(map, ctx, kinds = builders) {
       for (const { instance } of list) instance.reset?.();
     },
     // Save & Quit (game/saveGame.js): each feature with run state worth keeping has serialize() / restore(data); the data
-    // is keyed by the feature's place in map.features (a save from another map version is dropped by its version number).
+    // is keyed by the feature's NAME, so adding, removing or reordering other features does not disturb a save (renaming
+    // a saving feature does: bump config/save.js). A feature missing from the save keeps its fresh state.
+    // (Saves written before November 2026 were keyed by place in map.features: restore still reads a numeric key as
+    // that place. That fallback can go with the next save version bump.)
     serialize() {
       const out = {};
-      list.forEach(({ instance }, i) => { if (instance.serialize) out[i] = instance.serialize(); });
+      for (const { feature, instance } of list) if (instance.serialize) out[feature.name] = instance.serialize();
       return out;
     },
     restore(data) {
-      list.forEach(({ instance }, i) => { if (instance.restore && data[i] !== undefined) instance.restore(data[i]); });
+      list.forEach(({ feature, instance }, i) => {
+        if (!instance.restore) return;
+        const saved = Object.hasOwn(data, feature.name) ? data[feature.name] : data[i];
+        if (saved !== undefined) instance.restore(saved);
+      });
     },
   };
 }

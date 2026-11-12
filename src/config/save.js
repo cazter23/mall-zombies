@@ -1,7 +1,8 @@
 // =============================================================================
 // SAVE & QUIT (game/saveGame.js): one save slot, Black Ops 6 style.
-//   version     bump it whenever what a system saves changes shape (or map.features changes order): an older save
-//               is then dropped with a notice instead of being half-loaded.
+//   version     bump it whenever what a system saves changes shape (or a feature that saves is renamed): an older save
+//               is then dropped with a notice instead of being half-loaded. Map features are saved by name, so adding,
+//               removing or reordering map.features needs no bump.
 //   storageKey  the localStorage key of the one slot.
 //   reasons     why the pause menu's Save & Quit is greyed out (the button shows the text).
 // =============================================================================
