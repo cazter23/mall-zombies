@@ -32,9 +32,9 @@ export function buildParkingLot(kit, { zones, mallWallX, wallThickness }) {
   detail('facade_band', R.minX + .16, 4.1, (R.minZ + R.maxZ) / 2, .07, .5, R.maxZ - R.minZ - .04, mat(0x628c8c));
   detail('facade_coping', R.minX + .12, 6.45, (R.minZ + R.maxZ) / 2, .32, .16, R.maxZ - R.minZ, concrete);
   sign('MEGA MART · CUSTOMER PARKING', { x: R.minX + .21, y: 4.95, z: -8,
-    width: 12, height: .85, facing: 'x+', background: '#264653', color: '#ffe2a3' }).name = 'parking_facade_sign';
+    width: 12, height: .85, facing: 'x+', background: '#264653', color: '#ffe2a3', font: 'martBrand' }).name = 'parking_facade_sign';
   sign('RETURN TO MEGA MART', { x: R.minX + .21, y: 3.55, z: 2.5,
-    width: 3.4, height: .4, facing: 'x+', background: '#264653', color: '#fff0ce' }).name = 'parking_return_sign';
+    width: 3.4, height: .4, facing: 'x+', background: '#264653', color: '#fff0ce', font: 'wayfinding' }).name = 'parking_return_sign';
   const door = kit.shutterDoor({ id: 'parkingLot', label: 'Customer Parking', price: economy.doors.parkingLot,
     opensZone: 'parkingLot', zones, doorway: { minX: mallWallX, maxX: mallWallX + wallThickness,
       minZ: G.from, maxZ: G.to, height: G.height }, text: 'PARKING CLOSED' });
@@ -57,13 +57,13 @@ export function buildParkingLot(kit, { zones, mallWallX, wallThickness }) {
   }
   // A locked vehicle gate makes the perimeter's dead end legible.
   sign('EXIT CLOSED · PLEASE REMAIN A CUSTOMER', { x: 51, y: 2.1, z: R.minZ + .09,
-    width: 6.4, height: .6, facing: 1, background: '#93566b', color: '#ffe7bb' }).name = 'parking_exit_notice';
+    width: 6.4, height: .6, facing: 1, background: '#93566b', color: '#ffe7bb', font: 'stencil' }).name = 'parking_exit_notice';
   for (const spawn of P.spawns) {
     const east = spawn.id === 'eastFence';
     sign('KEEP CLEAR', { x: east ? R.maxX - .09 : spawn.x, y: .72,
       z: east ? spawn.z : spawn.z > 0 ? R.maxZ - .09 : R.minZ + .09,
       width: 1.6, height: .3, facing: east ? 'x-' : spawn.z > 0 ? -1 : 1,
-      background: '#d6b16e', color: '#3f3543' }).name = `parking_spawn_notice_${spawn.id}`;
+      background: '#d6b16e', color: '#3f3543', font: 'hazard' }).name = `parking_spawn_notice_${spawn.id}`;
   }
 
   // One row with empty bays between the vehicles and broad lanes on all four sides.
@@ -102,7 +102,7 @@ export function buildParkingLot(kit, { zones, mallWallX, wallThickness }) {
       }
     }
     if (v.id === 'delivery') sign('SUNSET GALLERIA · SAME DAY DELIVERY*', { x: x + w / 2 + .04, y: 1.12, z,
-      width: 3.7, height: .32, facing: 'x+', background: '#b86476', color: '#fff0ce' }).name = 'parking_van_logo';
+      width: 3.7, height: .32, facing: 'x+', background: '#b86476', color: '#fff0ce', font: 'mallBrand' }).name = 'parking_van_logo';
   }
   // The ticket machine rides on the van's west side, opposite the east-side start prompt. It adds no solid in the
   // gaps between vans, the routes around their ends, the Mega Mart exit approach or any fence spawn.
