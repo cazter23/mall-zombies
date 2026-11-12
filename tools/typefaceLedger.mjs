@@ -1,4 +1,4 @@
-// Builds the sign ledger, docs/typefaces.md, from two runtime text logs of the REAL game in a browser: one taken before the
+// Builds the sign ledger, docs/typefaces-ledger.md, from two runtime text logs of the REAL game in a browser: one taken before the
 // typeface pass, one after (see "How the log is made" in the doc). Every canvas text draw is logged with its text, font and call site.
 //   node tools/typefaceLedger.mjs <before.json> <after.json> [out.md]
 // Rows are unique (area, text, module:line); `Was` is the font drawn before, `Now` the role and family drawn after.
@@ -6,7 +6,7 @@ import { readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { roles, families, signKinds } from '../src/config/typefaces.js';
 
-const [beforePath, afterPath, outPath = 'docs/typefaces.md'] = process.argv.slice(2);
+const [beforePath, afterPath, outPath = 'docs/typefaces-ledger.md'] = process.argv.slice(2);
 const before = JSON.parse(readFileSync(beforePath, 'utf8'));
 const after = JSON.parse(readFileSync(afterPath, 'utf8'));
 
@@ -17,7 +17,7 @@ const AREAS = [
   [/cinema/, 'Sunset Cinema'], [/atriumMurals|atriumStore|atriumDetails|atrium\.js|config\/atrium/, 'Grand Atrium'], [/atmosphere|concourse|zoneLooks|hallway/, 'Main hallway / concourse'],
   [/levelTwo|promenade/, 'Sunset Promenade (level 2)'], [/departmentStore|paintedInteriors/, "HOFFMAN'S"], [/megaMart|stores\.js/, 'Mega Mart / food court stores'],
   [/startRoom/, 'Start room'], [/workshop/, 'Build-A-Blaster'], [/claw|prizeCounter/, 'Claw machine / prize counter'], [/restock/, 'RESTOCK-O-MATIC'],
-  [/kiosk/, 'Kiosk Kevin'], [/parking/, 'Customer Parking'], [/wardrobe|showpiece/, 'Wardrobe'], [/setPieces|props\.js|mall\.js/, 'Mall set pieces / props'],
+  [/kiosk/, 'Kiosk Kevin'], [/parking/, 'Customer Parking'], [/wardrobe|showpiece/, 'Wardrobe'], [/setPieces|props\.js|mall\.js|seamDetails/, 'Mall set pieces / props'], [/lookKit/, 'Posters, banners and notices (hallway, food court, Mega Mart, start room...)'], [/wallBuy/, 'Wall buys'],
   [/weapons\//, 'Weapon models'], [/zombies\//, 'Zombie costumes'], [/clearanceSticker|retailUnease|impactModels/, 'Runtime effects'], [/testRange/, 'Test range (debug)'],
 ];
 const areaOf = (site) => (AREAS.find(([re]) => re.test(site)) ?? [null, 'Other / shared'])[1];
@@ -47,7 +47,7 @@ for (const [name, def] of Object.entries(roles)) {
 const cleanFont = (font) => font.replace(/\d+(\.\d+)?px/, 'Npx').replace(/"/g, '');
 const nowOf = (font) => {
   // the browser normalises ctx.font: 700 -> "bold", 400 -> nothing, quotes dropped from simple names
-  const m = /^(italic )?(bold|[0-9]+)? ?[0-9.]+px (?:"([^"]+)"|([^,]+))/.exec(font);
+  const m = /^(italic )?(?:(bold|[0-9]{3}) )?[0-9.]+px (?:"([^"]+)"|([^,]+))/.exec(font);
   const family = m && (m[3] ?? m[4]);
   if (!m || !families[family]) return { text: '**' + cleanFont(font) + '** (fallback)', role: null };
   const weight = m[2] === 'bold' ? 700 : Number(m[2] ?? 400);
@@ -95,7 +95,7 @@ for (const [area, list] of [...groups.entries()].sort((a, b) => a[0].localeCompa
   lines.push(`### ${area} (${list.length})`, '', '| Text | Module:line | Was | Now | Purpose |', '|---|---|---|---|---|');
   for (const r of list) {
     total++;
-    const nowText = r.nowFonts.length ? [...new Set(r.nowFonts.map((n) => `${r.role === n.role && n.role ? `\`${n.role}\` ` : ''}${n.text}`))].join('; ') : '*(not drawn in the after-log: runtime-only)*';
+    const nowText = r.nowFonts.length ? [...new Set(r.nowFonts.map((n) => `${r.role === n.role && n.role ? `\`${n.role}\` ` : ''}${n.text}`))].join('; ') : '*(not in the after-log: poster copy re-wrapped by the new font, or drawn only at runtime)*';
     if (r.nowFonts.some((n) => !n.role && n.text.includes('(fallback)'))) fallbackNow.push(`${r.module}: ${r.text}`);
     lines.push(`| ${esc(r.text.length > 48 ? r.text.slice(0, 45) + '...' : r.text)} | ${esc(r.module.replace('src/', ''))}:${[...r.lines].slice(0, 2).join(',')} | ${esc([...r.was].slice(0, 2).join('; ') || '-')} | ${esc(nowText)} | ${esc(purposeOf(r.text, r.role))} |`);
   }
@@ -131,6 +131,6 @@ const doc = [
   `**${total} unique signs.**`, '', '## The type system', '', 'Roles live in `src/config/typefaces.js`; a module asks for a role through `world/typeKit.js` (`fontFor`, `drawType`). Fonts are bundled in `src/fonts/` (no network). Treatments (case, tracking, slant, outline, hard shadow, glow, gradient) are options of `drawType`, defaulting to the role itself.', '', '### Fonts and licences', '', ...familyLines, '', '### Roles', '', ...roleLines, '', '### Sign styles to roles', '', ...kindLines, '', '## Signs, by area', '',
   ...lines,
 ].join('\n');
-writeFileSync(outPath + '.body', doc);
+writeFileSync(outPath, `${doc}\n`);
 console.log(`${total} rows; ${fallbackNow.length} drawn in a fallback font after`);
 if (fallbackNow.length) console.log(fallbackNow.slice(0, 40).join('\n'));

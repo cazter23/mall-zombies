@@ -78,6 +78,7 @@ tests/docs.test.js fails if a new src/ file or test file isn't described in the 
 | plan the next big system | the open plans: docs/closing-time-plan.md (phase 12 left), docs/kiosk-kevin-plan.md (phase 8 left); finished plans (claw machine, wardrobe, weapon skins, hazards, bosses...) are in docs/archive/ |
 | want to know how COD zombies does something | docs/research/ (BO1, BO3, BO4 and Cold War script analyses, and a balance comparison) |
 | touch behaviour and want to know which test guards it | docs/tests.md |
+| add or restyle a sign, poster, neon or label (fonts, roles) | docs/typefaces.md (the type system) and docs/typefaces-ledger.md (every sign) |
 | change a gun | docs/weapon-balance-pass.md and `npm run balance` |
 | change a price, a payout or how strong an upgrade is | docs/economy-report.md and `npm run sim:economy` |
 

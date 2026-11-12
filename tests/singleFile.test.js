@@ -25,9 +25,10 @@ test('npm run build:single writes one self-contained sunset-galleria.html', { ti
   assert.doesNotMatch(html, /import\.meta\.url/, 'no URLs resolved against the page address');
   assert.match(html, /new Worker\(URL\.createObjectURL\(new Blob\(\[/, 'the music worker is inlined as a Blob worker');
   assert.doesNotMatch(html, /musicWorker-[\w-]+\.js/, 'no leftover worker file name');
-  // the only external thing: Google Fonts, loaded without blocking the first paint
-  const external = [...html.matchAll(/<link[^>]+>/g)].map((m) => m[0]).filter((tag) => /https?:/.test(tag) && /rel="stylesheet"/.test(tag));
-  assert.equal(external.length, 1);
-  assert.match(external[0], /media="print" onload="this\.media='all'"/);
+  // nothing external at all: the web fonts (config/typefaces.js) are inlined as data: URLs, so the signs look right offline
+  const external = [...html.matchAll(/<link[^>]+>/g)].map((m) => m[0]).filter((tag) => /https?:/.test(tag));
+  assert.deepEqual(external, [], 'no link to a font host or anything else');
+  assert.doesNotMatch(html, /fonts\.(googleapis|gstatic)\.com/);
+  assert.ok((html.match(/url\(data:font\/woff2;base64,/g) ?? []).length >= 35, 'every bundled font face is inlined');
   assert.ok(existsSync('dist-single/sunset-galleria.html'));
 });
