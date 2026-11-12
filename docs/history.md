@@ -1,5 +1,9 @@
 # Sunset Galleria: build history ("Current state")
 
+## 12 November 2026 - Docs stop conflicting: history, tests and folder-structure merge with the union driver
+
+From the code review (pass 2). Of the last 80 merges, 38 stopped on a conflict in docs/history.md, 7 in docs/tests.md and 4 in docs/folder-structure.md, almost always because two branches each added a line at the same spot (the top of history, the end of a list) and a person had to keep both by hand. A new .gitattributes marks those three files `merge=union`: git keeps both sides' lines instead of stopping. Replaying the 80 merges with the rule on: none of the three files conflicts any more, and 134 of 153 file results are byte-identical to what was committed; the other 19 differ by a few lines (mostly one), which is the price: if two branches edit the SAME existing line, both versions are kept, so look at the merged file once. Code files and docs/map.md still conflict normally.
+
 ## 12 November 2026 - Zombie pathfinding: half the cost per redraw, a sixteenth of the garbage, the same routes
 
 From the code review (pass 2). The zombies' shared "arrows toward the player" map (zombies/navigation.js) is redrawn for the whole mall every 0.2 s. Measured headless at round 30 with every area open: that one job was about 30% of the tick's CPU, made a slow tick every 13th tick, and produced about 94% of the game's garbage. Branch claude/nav-flow-field.
