@@ -1,12 +1,13 @@
 // =============================================================================
 // GALLERIA FM: the mall's radio station, heard through the mall's speakers (map.ambience entries of kind 'music').
 // The songs are in config/radioTracks.js (original compositions, written as data); audio/mallMusic.js renders them;
-// audio/sound.js plays them in a shuffled rotation (every song once before any repeats), crossfading from one to the
+// audio/sound.js plays After Closing first, then a shuffled rotation (every song once before any repeats), crossfading from one to the
 // next, and only ever holds the song playing and the one after it. Every song opens with the station chime.
 // =============================================================================
 
 export const radio = {
   station: 'Galleria FM',
+  opener: 'afterClosing', // the mall's theme: the first song of every session, then the shuffle
   sampleRate: 16000, // (the speakers' low-pass sits under 4 kHz, so this loses nothing you can hear and halves the memory)
   peak: 0.78, // every song is mastered to this peak
   tailSeconds: 3, // the last chord rings this long after the final bar

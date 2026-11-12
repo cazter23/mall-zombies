@@ -213,6 +213,7 @@ test('the rotation plays every song once before any repeats, never the same song
       sound.setAmbience([]);
       sound.resetMusic(); // (a new run: the next song)
     }
+    assert.equal(rendered[0], radio.opener, 'every session opens with the mall theme');
     const n = radioTracks.length;
     for (let start = 0; start + n <= rendered.length; start += n) {
       assert.equal(new Set(rendered.slice(start, start + n)).size, n, `songs ${start}..${start + n - 1} are all different`);

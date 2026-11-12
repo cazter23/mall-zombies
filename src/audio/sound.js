@@ -38,9 +38,9 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
   const ambientPulseBuffers = new Map();
   let deathVoice = null;
 
-  // ---- Galleria FM: a shuffled rotation (every song once before any repeats, never the same song twice running). Only the
-  // song playing and the one after it are held; the next is rendered while the current plays. The speakers share one
-  // timeline, which moves only while one is audible (so the radio waits for you while you are out of earshot).
+  // ---- Galleria FM: the opener (After Closing), then a shuffled rotation (every song once before any repeats, never the same
+  // song twice running). Only the song playing and the one after it are held; the next is rendered while the current plays.
+  // The speakers share one timeline, which moves only while one is audible (so the radio waits for you while you are out of earshot).
   const station = { order: [], at: 0, last: null, current: null, next: null, loading: false, failed: false, cursor: 0, wear: 0 };
   const byId = new Map(radioTracks.map(t => [t.id, t]));
   function nextTrackId() {
@@ -48,6 +48,8 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
       const ids = radioTracks.map(t => t.id);
       for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(random() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
       if (ids.length > 1 && ids[0] === station.last) [ids[0], ids[1]] = [ids[1], ids[0]];
+      // The session's first shuffle opens with the mall's theme.
+      if (!station.last && ids.includes(radio.opener)) ids.unshift(...ids.splice(ids.indexOf(radio.opener), 1));
       station.order = ids; station.at = 0;
     }
     return (station.last = station.order[station.at++]);

@@ -808,7 +808,7 @@ src/
                         flute / lead / sax, clavinet, bass, Karplus-Strong pluck, pad; a synthesised kit; the chime first), trackById,
                         tapeWear(round, horrorOn). Used by the music worker, tools/exportMusic.mjs and tests/music.test.js.
     musicWorker.js      Web Worker that renders one song ({ id }) off the main thread (inlined as a Blob worker in the single-file build).
-                        sound.js keeps the radio: a shuffled rotation (all six before a repeat, never one twice running), only the song
+                        sound.js keeps the radio: the opener (config/music.js), then a shuffled rotation (all six before a repeat, never one twice running), only the song
                         playing and the next held, a crossfade at the end, onTrackChange for the now-playing card, setTapeWear, nowPlaying.
   fx/
     ballView.js         Browser side only: draws `balls.list` (the Tennis Ball Launcher's balls) as a pool of tumbling tennis balls between last tick's and this tick's position (alpha).
