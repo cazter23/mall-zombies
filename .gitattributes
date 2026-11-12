@@ -1,0 +1,5 @@
+# Docs where everybody adds lines at the same spot (the top of history, the end of a list):
+# keep both sides on a merge instead of stopping with a conflict.
+docs/history.md merge=union
+docs/tests.md merge=union
+docs/folder-structure.md merge=union
