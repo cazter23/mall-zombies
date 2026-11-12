@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { createNavigation } from '../src/zombies/navigation.js';
 import { moveAndCollide, markCollidersChanged } from '../src/world/collision.js';
 import { feel } from '../src/config/feel.js';
+import { zombieNav } from '../src/config/zombies.js';
 
 const AGENT = { radius: 0.32, height: 1.75 };
 const dt = 1 / 60;
@@ -133,4 +134,29 @@ test('a floor that is closed off and later opened: the route appears when the co
   nav.update(dt, target);
   assert.ok(nav.distanceToTarget(3, 0, 0) < shut || shut === Infinity || shut > 0, 'the field was rebuilt');
   assert.ok(Number.isFinite(nav.distanceToTarget(3, 0, 0)));
+});
+
+// The field is not redrawn while the player stands on exactly the same spot (it would come out the same). The two ways
+// that could go wrong: a wall that goes while you stand still, and a player position that is one object moved in place.
+test('standing still keeps the field in hand; a collider change or a step still redraws it', () => {
+  const wall = box(9, 0, 0, 10, 3, 10); // right across the floor: the far side is cut off until it goes
+  const colliders = [box(0, -0.2, 0, 20, 0, 10), wall];
+  const nav = createNavigation(colliders, AGENT);
+  const target = new THREE.Vector3(15, 0, 5);
+  const refreshTicks = Math.ceil(zombieNav.refreshSeconds / dt) + 1;
+  nav.update(dt, target);
+  assert.equal(nav.distanceToTarget(2, 5), Infinity, 'walled off');
+  const near = nav.distanceToTarget(13, 5);
+  for (let i = 0; i < refreshTicks * 4; i++) nav.update(dt, target);
+  assert.equal(nav.distanceToTarget(13, 5), near, 'the same answers while nothing changes');
+
+  colliders.splice(colliders.indexOf(wall), 1);
+  markCollidersChanged(colliders);
+  nav.update(dt, target);
+  const reached = nav.distanceToTarget(2, 5);
+  assert.ok(Number.isFinite(reached), 'the wall went while the player stood still: the route is there on the next tick');
+
+  target.x = 18; // (the same Vector3, moved: the zombie manager passes player.position itself)
+  for (let i = 0; i < refreshTicks; i++) nav.update(dt, target);
+  assert.ok(nav.distanceToTarget(2, 5) > reached + 2, 'the field followed the player by the next refresh');
 });
