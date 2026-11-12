@@ -119,7 +119,7 @@ function getWarrantySealTexture() {
   return warrantySealTex;
 }
 
-export const NOZZLE_LENGTH = 0.095; // visible extension; also moves the tracer/flash origin
+const NOZZLE_LENGTH = 0.095; // visible extension; also moves the tracer/flash origin
 
 function buildJumboPackForGun(g, gunId) {
   if (gunId === 'priceGun') {

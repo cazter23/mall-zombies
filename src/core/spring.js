@@ -17,7 +17,7 @@
  * Velocity that makes a spring at rest peak at exactly `peak` after an impulse.
  * Lets config say "the gun kicks back 4cm" instead of a raw velocity.
  */
-export function impulseForPeak(peak, frequency, damping) {
+function impulseForPeak(peak, frequency, damping) {
   const w = 2 * Math.PI * frequency;
   if (damping >= 0.999) return peak * w * Math.E; // critically damped: peaks at t = 1/w
   const wd = w * Math.sqrt(1 - damping * damping);

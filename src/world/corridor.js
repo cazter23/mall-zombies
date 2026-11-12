@@ -39,7 +39,7 @@
 //             opening (on the wall's outer face, heading out): build a branch from an opening
 // =============================================================================
 
-export const DIRECTIONS = {
+const DIRECTIONS = {
   north: { dx: 0, dz: 1 },
   south: { dx: 0, dz: -1 },
   east: { dx: 1, dz: 0 },
