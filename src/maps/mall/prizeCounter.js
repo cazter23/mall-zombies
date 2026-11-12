@@ -12,6 +12,7 @@
 import * as THREE from 'three';
 import { clawMachine } from '../../config/clawMachine.js';
 import { wallFrame, drawSunny } from './clawCabinet.js';
+import { drawType } from '../../world/typeKit.js';
 
 export const PRIZE_BOOTH = {
   colors: {
@@ -47,7 +48,7 @@ const ICONS = {
   ammo(ctx) { // a box of rounds
     ctx.fillStyle = '#ff6a13'; ctx.fillRect(40, 60, 96, 70);
     ctx.fillStyle = '#ffe14d'; ctx.fillRect(40, 84, 96, 20);
-    ctx.fillStyle = '#1d1626'; ctx.font = '700 20px "Fredoka", sans-serif'; ctx.textAlign = 'center'; ctx.fillText('AMMO', 88, 101);
+    drawType(ctx, 'AMMO', 88, 101, { role: 'toyBody', size: 20, fill: '#1d1626', maxWidth: 90 });
   },
   slowClaw(ctx) { // a claw riding a snail
     ctx.fillStyle = '#9b6bff'; ctx.beginPath(); ctx.arc(100, 100, 30, 0, Math.PI * 2); ctx.fill();
@@ -64,7 +65,7 @@ const ICONS = {
   freeGrab(ctx) { // a gold token
     ctx.fillStyle = '#ffc83d'; ctx.beginPath(); ctx.arc(88, 96, 40, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = '#d98a00'; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(88, 96, 32, 0, Math.PI * 2); ctx.stroke();
-    ctx.fillStyle = '#b8236f'; ctx.font = '400 22px "Righteous", sans-serif'; ctx.textAlign = 'center'; ctx.fillText('FREE', 88, 104);
+    drawType(ctx, 'FREE', 88, 104, { role: 'arcade', size: 22, fill: '#b8236f', maxWidth: 56 });
   },
   keychain(ctx) { // Sunny on a ring
     ctx.strokeStyle = '#c9ccd4'; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(88, 44, 14, 0, Math.PI * 2); ctx.stroke();
@@ -82,8 +83,7 @@ function boothArt() {
     ctx.fillStyle = '#fff6e0'; ctx.fillRect(0, 0, 176, 176);
     ctx.strokeStyle = '#6b3fa0'; ctx.lineWidth = 6; ctx.strokeRect(3, 3, 170, 170);
     ICONS[id](ctx);
-    ctx.fillStyle = '#45246e'; ctx.textAlign = 'center'; ctx.font = '700 17px "Fredoka", sans-serif';
-    ctx.fillText(name.toUpperCase(), 88, 160, 160);
+    drawType(ctx, name.toUpperCase(), 88, 160, { role: 'toyBody', size: 17, fill: '#45246e', maxWidth: 160 });
     return new THREE.MeshBasicMaterial({ map: texture(c) });
   };
   // The header: "REDEMPTION" in tickets-orange on grape, a strip of ticket stubs under it.
@@ -92,10 +92,7 @@ function boothArt() {
     const ctx = header.getContext('2d');
     ctx.fillStyle = '#45246e'; ctx.fillRect(0, 0, 512, 80);
     for (let x = 4; x < 512; x += 24) { ctx.fillStyle = x % 48 < 24 ? '#ffc83d' : '#ff9fd2'; ctx.fillRect(x, 66, 18, 10); }
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = '400 50px "Righteous", "Fredoka", sans-serif';
-    ctx.lineWidth = 6; ctx.strokeStyle = '#1d1626'; ctx.strokeText(clawMachine.prizeCounter.name, 256, 34, 480);
-    ctx.fillStyle = '#ffc83d'; ctx.fillText(clawMachine.prizeCounter.name, 256, 34, 480);
+    drawType(ctx, clawMachine.prizeCounter.name, 256, 34, { role: 'toyBrand', size: 50, fill: '#ffc83d', maxWidth: 480, outline: { color: '#1d1626', width: 0.12 } });
   }
   // The wall of prizes nobody can afford: shelves of plush suns, ducks and teddies.
   const shelves = canvas(512, 192);
@@ -117,8 +114,7 @@ function boothArt() {
         }
       }
     }
-    ctx.fillStyle = '#45246e'; ctx.font = '700 15px "Space Grotesk", sans-serif'; ctx.textAlign = 'right';
-    ctx.fillText('DISPLAY ONLY', 506, 16);
+    drawType(ctx, 'DISPLAY ONLY', 506, 16, { role: 'official', size: 15, fill: '#45246e', align: 'right', maxWidth: 200 });
   }
   // The teen's face: eyelids at half mast, a flat mouth, a gum bubble on its way.
   const face = canvas(128, 128);
@@ -162,12 +158,12 @@ export function buildPrizeCounter({ kit, back, faces = '+z', floorY = 0, spec = 
   const slotU = (i) => (i - (prizes.length - 1) / 2) * spec.slotSpacing;
   prizes.forEach((prize, i) => {
     sign(`${prize.tickets} TICKETS`, slotU(i), 0.72, depth + 0.012,
-      { width: 0.44, height: 0.16, background: '#ffc83d', color: '#45246e' });
+      { width: 0.44, height: 0.16, background: '#ffc83d', color: '#45246e', font: 'priceTag' });
     picture(looks.cards[prize.id], slotU(i), topY + 0.24, depth - 0.2, 0.34, 0.34, frame.sign, 'prize_card');
     place(slotU(i) - 0.1, topY + 0.05, slotU(i) + 0.1, topY + 0.07, depth - 0.3, depth - 0.1, solid(colors.bodyDark)); // its little stand
   });
   sign('ALL PRIZES FINAL. TICKETS HAVE NO CASH VALUE. OR ANY VALUE.', 0, 0.36, depth + 0.012,
-    { width: 2.3, height: 0.09, background: '#45246e', color: '#ffe3f1' });
+    { width: 2.3, height: 0.09, background: '#45246e', color: '#ffe3f1', font: 'officialBody' });
 
   // --- Behind the glass: the prize wall, posts, glass, and the teen ---
   place(-half, topY + 0.05, half, 2.05, 0, 0.08, solid(colors.bodyDark)); // back panel (thick enough to cover the wall's own trim)
@@ -188,7 +184,7 @@ export function buildPrizeCounter({ kit, back, faces = '+z', floorY = 0, spec = 
   world(tu + 0.03, topY + 0.55, 0.48, gum.position);
   gum.name = 'prize_teen_gum';
   kit.group.add(gum);
-  sign('NOW SERVING: NOBODY', tu, 1.92, depth - 0.015, { width: 0.6, height: 0.09, background: '#1d1626', color: '#7dffb0' });
+  sign('NOW SERVING: NOBODY', tu, 1.92, depth - 0.015, { width: 0.6, height: 0.09, background: '#1d1626', color: '#7dffb0', font: 'led' });
 
   // --- The header ---
   place(-half - 0.03, 2.05, half + 0.03, height, 0, depth + 0.04, solid(colors.trim));

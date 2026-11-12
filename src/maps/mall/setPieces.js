@@ -14,6 +14,7 @@
 import * as THREE from 'three';
 import { atmosphere } from '../../config/environment.js';
 import { seededRandom } from '../../world/textures.js';
+import { drawType } from '../../world/typeKit.js';
 
 // Where they go (data, so moving one is one line). Footprints are x0, z0, x1, z1.
 export const SET_PIECES = {
@@ -59,18 +60,12 @@ function makeAdTexture(frame) {
   const g = c.getContext('2d');
   g.fillStyle = frame ? '#1d3a8a' : '#c8102e';
   g.fillRect(0, 0, 128, 96);
-  g.fillStyle = frame ? '#ffd23f' : '#ffffff';
-  g.textAlign = 'center';
-  g.textBaseline = 'middle';
   if (frame) {
-    g.font = 'bold 22px sans-serif';
-    g.fillText('EVERYTHING', 64, 36);
-    g.fillText('MUST GO', 64, 62);
+    drawType(g, 'EVERYTHING', 64, 36, { role: 'clearance', size: 28, fill: '#ffd23f', maxWidth: 116 });
+    drawType(g, 'MUST GO', 64, 64, { role: 'clearance', size: 28, fill: '#ffd23f', maxWidth: 116 });
   } else {
-    g.font = 'bold 46px sans-serif';
-    g.fillText('SALE!', 64, 44);
-    g.font = 'bold 13px sans-serif';
-    g.fillText('70% OFF FOREVER', 64, 78);
+    drawType(g, 'SALE!', 64, 42, { role: 'clearance', size: 56, fill: '#ffffff', maxWidth: 116 });
+    drawType(g, '70% OFF FOREVER', 64, 78, { role: 'wayfinding', size: 16, fill: '#ffffff', maxWidth: 116 });
   }
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
@@ -134,7 +129,7 @@ export function buildSetPieces({ kit, layout, floorY }) {
       zBox(cx - 0.1, 1.02, d - 0.15, cx - 0.07, 1.12, d - 0.12, dark); // joystick
       for (const dx of [0.03, 0.1]) zBox(cx + dx, 1.02, d - 0.16, cx + dx + 0.04, 1.04, d - 0.12, red);
       zBox(cx - 0.08, 0.45, d - 0.1, cx + 0.08, 0.62, d - 0.09, coin, { name: 'arcade_coin_door' });
-      sign(game.name, { x: cx, y: A.height - 0.14, z: at(d - 0.09), width: w - 0.1, height: 0.2, facing: f, background: '#0c0d10', color: game.art });
+      sign(game.name, { x: cx, y: A.height - 0.14, z: at(d - 0.09), width: w - 0.1, height: 0.2, facing: f, background: '#0c0d10', color: game.art, font: 'arcade' });
       if (i === 1) {
         // GALAXY RAIDERS still runs its attract mode: the screen cycles colours (in the animated group).
         const screen = liveMat({ color: 0x22e8ff, toneMapped: false });
@@ -242,7 +237,7 @@ export function buildSetPieces({ kit, layout, floorY }) {
       put(P.x0 + 0.06 + rand() * (P.x1 - P.x0 - 0.12), 0.055, P.z0 + rand() * (P.z1 - P.z0), Math.PI / 2, rand() * Math.PI, i++);
     }
     // Its sign, knocked flat.
-    const card = sign('PYRAMID OF SAVINGS!', { x: P.x0 + 0.45, y: 0.02, z: P.z1 - 0.5, width: 0.8, height: 0.3, facing: 1, background: '#ffd23f', color: '#c8102e' });
+    const card = sign('PYRAMID OF SAVINGS!', { x: P.x0 + 0.45, y: 0.02, z: P.z1 - 0.5, width: 0.8, height: 0.3, facing: 1, background: '#ffd23f', color: '#c8102e', font: 'clearance' });
     card.rotation.set(-Math.PI / 2, 0, 0.3);
     parts.pyramid = { cans };
   }
@@ -292,7 +287,7 @@ export function buildSetPieces({ kit, layout, floorY }) {
     head.rotation.set(0.4, 0.8, Math.PI / 2);
     head.name = 'mannequin_head';
     kit.group.add(head);
-    sign('NEW SEASON · SAME SHOPPERS', { x: (M.x0 + M.x1) / 2, y: y(2.25), z: layout.hallway.minZ + 0.02, width: 2.0, height: 0.32, facing: 1, background: '#2a1838', color: '#ff9ec7' });
+    sign('NEW SEASON · SAME SHOPPERS', { x: (M.x0 + M.x1) / 2, y: y(2.25), z: layout.hallway.minZ + 0.02, width: 2.0, height: 0.32, facing: 1, background: '#2a1838', color: '#ff9ec7', font: 'hoffmanSub' });
     parts.mannequins = { collider: [M.x0, M.z0, M.x1, M.z1] };
   }
 
