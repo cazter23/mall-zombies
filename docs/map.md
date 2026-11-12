@@ -25,7 +25,7 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   each round start after that to another open site: Food Court (x −4.3..−2.1, z −6.875..−6.125, facing the gate, 4.6 m
   west of the Fryer apron), Grand Atrium (south arcade west of the Hallway gate, x 8.04..10.24, z 6.64..7.39, facing
   +Z), Sunset Promenade (east lounge, x 11.9..14.1, z −1.875..−1.125, y 6.3, facing the Atrium link) and Customer
-  Parking (bay 1 against the family van's east side, x 42.555..43.305, z −12.15..−9.95, facing +X).
+  Parking (against the family van's east side, in its bay's painted space, x 42.555..43.305, z −12.15..−9.95, facing +X).
   The pay-to-trigger Fire Sprinklers pull station `sprinklerHazard` sits on the same south wall at (-6.6, 1.25, -1.95) facing +Z, between Kevin's Hallway cart (x -9.6..-7.4) and the planter (x -5.9..-4.5), under the notice poster (600 via `g.pricing`, drenching `x: -12..12, z: -2..6`). Out of reach from the Food Court gate (x -3.5..3.5), so the gate keeps its own prompt; the small red fire pull decal at x -3.9 by the gate is decoration.
   Escalator (SEALED until Hallway and Promenade are owned): west half, z 1..3, bottom end at x -4 facing the hub, rising west at 30 deg through a hole in
   the ceiling (x ~-16.5..-11.95) to level 2 (y 6.3, the top of the ceiling slab; see Level 2 below). Rope barriers + OUT OF ORDER boards at both ends disappear automatically when Hallway and Promenade are owned, including access via Atrium or Cinema; every collider you could
@@ -106,9 +106,8 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   Screen 1 adds broad fabric panels, continuous side-wall aisle strips, a curtain pelmet and chamfered seat silhouettes.
   All are map-owned decoration. Existing movement/vent/vault clearances, collision, lighting pool and purchases are retained.
 - The Grand Atrium (zone 'atrium'): x 8..32, z 6.6..30.6, behind a 5m gate (area unlock 1250) in the hallway's north wall at x 13..18 under a
-  Concourse pass: a kiddie ride (solid, vaultable 1.1 m) at (9.3, 18.6) and a gumball machine (solid 1.1 m) at (9.3, 19.75), between
-  the west vent (z 16) and the Rivet Rifle; a directory totem (2.2 m) at (10.6, 8.4) inside the gate; sun shafts from the skylight.
-  GRAND ATRIUM sign. Two storeys (roof 9.9 under a big warm skylight): an open court x 11.5..28.5, z 10.1..27.1 with a square
+  GRAND ATRIUM sign. Concourse pass: a kiddie ride (solid, vaultable 1.1 m) at (9.3, 18.6) and a gumball machine (solid 1.1 m) at (9.3, 19.75), between
+  the west vent (z 16) and the Rivet Rifle; a directory totem (2.2 m) at (10.6, 8.4) inside the gate; sun shafts from the skylight. Two storeys (roof 9.9 under a big warm skylight): an open court x 11.5..28.5, z 10.1..27.1 with a square
   fountain (glass guard, solid to 2.2m, with the pay-to-trigger Electrified Fountain breaker switch `fountainHazard` on its south rim at (20, 1.28, 15.92), 750 via `g.pricing`) in the middle, CELL-OUT and SHADE SHACK kiosks, four tree planters, three benches; a 3.5m arcade
   round the edge under the UPPER RING (y 6.3), which is railed all round the court. A second escalator rises east from the court
   (x 16.5) to the ring's east side. The ring's south wall has the 'atriumPromenade' shutter (destination price,  x 11.5..14.5) into level 2.
@@ -129,7 +128,9 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   table lanes, a clear lane from the door to the planter and room to queue at the stalls; two trash cans (x +-11.2);
   an "EXIT · MAIN HALL" sign over the door inside.
 - Mega Mart: x 20..34, z -24..6, 5m ceiling, behind the 750 shutter. Its west wall (x 20..20.3, 6m tall) is also the
-  east wall of the hallway (door at z 0..4) and of the Food Court (shortcut at z -9.8..-6.8). Front: 4 checkout
+  east wall of the hallway (door at z -1..5) and of the Food Court (shortcut at z -10.8..-5.8). Its north wall (z 6..6.6) has a third
+  shutter, into the Grand Atrium at x 21.5..24.5 (3 m high, GRAND ATRIUM / MEGA MART signs; door `atriumMegaMart`): free once both areas
+  are owned, else the price of the side not yet bought. Front: 4 checkout
   lanes (vaultable counters, x 24.5..27.5, 2m lanes, open ends to run round). Back: 3 stocked shelf gondolas
   (x 24 / 27.5 / 31, z -19.5..-8, solid, 2m tall) making 4 aisles, a 4.5m back walkway with stockroom/receiving
   doors + a boarded vent, an emergency exit on the east wall. Brand stripe, aisle signs, fluorescent strips (some
@@ -189,7 +190,7 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   middle (x 7), SHARPENING at x 8.25 (box cutter tiers) and SECOND CHANCE at x 5.75 (the start-doorway end: one self-revive per run, 2,000,
   game/secondChance.js). The Second Chance ticket only shows on its own side of the middle and stays up once bought ("Already held" / "Used this run").
 - The Night Safe mounts 2 cm proud of Customer Service’s east wall at x 8.8, centered at z 5.12 and facing east. Approach from the elevator side.
-- The Returns Desk mounts on the hallway north wall east of Customer Service at x 11.8, facing south. Its prompt is (11.8, 1.42, 5.58); approach from z 4.38. It is clear of the safe, three service windows, Gold Card display and Prize Counter. It sells Return to Sender after three duties and its ammo to anyone holding it.
+- The Returns Desk mounts on the hallway north wall east of Customer Service at x 11.8, facing south. Its prompt is (11.8, 1.42, 5.58); approach from z 4.38. It is clear of the safe, three service windows, Gold Card display and Prize Counter. It is the Return to Sender quest's counter (the quest issues the gun free: config/returnQuest.js) and sells the gun's ammo (economy `returnsAmmo`, through g.pricing 'closing'). Its second prompt, the label slot ("Fit: <label>", free), is 0.85 m along the wall at tray height, with a small label printer on the wall beside it.
 - Customer Service booth (gun tiers): a small walled office on the hallway's north wall at x 5.2..8.8 (between the start doorway
   and the elevator), 1.6m deep + a 0.3m counter ledge; you buy at its service window (spot z ~4.1). Hold F/X to buy the next Extended
   Warranty tier for the gun in your hand. Its spot is ONE entry, LAYOUT.serviceDesk in mall.js (along/center/wallAt/facing/zone):
@@ -205,7 +206,7 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
 - **Wardrobe** has 12 apparel displays and three fitting rooms. In the Food Court three are SHOWPIECES (maps/mall/wardrobeShowpieces/foodCourt.js):
   a burger on Burger Barn's roof sells the Paper Hat (buy at the counter, x -5.75); a skate ramp on the court floor in front of Good Sports' east
   window sells the Wheelies (x -11.05..-9.15, z -13.3..-12, 0.9 m, vaultable; buy at its front edge, x -10.1) and a 3 m foam finger in a pennant bin
-  on the open court floor sells the Foam Finger (bin x -15.5..-14.5, z -10.4..-9.6; buy at its front, z -8.8; the 6 m pillar at (-13, -11.3) hides
+  on the open court floor sells the Foam Finger (bin x -15.5..-14.5, z -10.4..-9.6; buy at its front, z -9.57; the 6 m pillar at (-13, -11.3) hides
   Good Sports' west half from the entrance, so it stands north of it). The ramp keeps Good Sports' 3 m door
   (x -14.5..-11.5) clear. The prompt coordinates for the other six ground-floor showpieces are in metres (x/z).
   Gold Card (4.03, 5.04) faces west toward the start shutter, just west of Customer Service. Mega Mart’s Sandwich Board (24.10, 2.75) and
@@ -266,3 +267,12 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   Low (composer only: no bloom/lens/MSAA), Off (no composer: the world and the gun drawn straight to the screen). "Dust and
   flickering lights" (atmosphere.ambient.enabled) hides the dust motes and zeroes the flicker/emergency lights (kept in the scene).
 - Player spawns at (0, 0, 12) facing into the room (+Z, yaw Math.PI).
+
+## Collectibles and quest props (config/lostFound.js, config/returnQuest.js; positions [x, y, z])
+- Lost and Found, one item per area (feature kind `lostProperty`, hold to log): badge, Start Room (4.25, 0, 6.75); balloon, Main
+  Hallway (19.25, 1.9, 5.25); order pager, Food Court (-11.75, 0, -7.55); shopping list, Mega Mart (33.25, 0, -23.5); Murray's flask,
+  Service Corridor (-22.75, 0, -13.25); wishing coin, Grand Atrium (23.25, 0, 17.35); unpaid shoe, Promenade (16.75, 6.3, 5.25);
+  mannequin's hand, HOFFMAN'S (-14.25, 0, 22.8); ticket stub, Cinema (-35.75, 6.3, -10); half-stuffed bear, Build-A-Blaster hall
+  (-9, 6.3, 24.75); car keys, Customer Parking (61.8, 0, -23.5). tests/lostFound.test.js keeps each clear, reachable and its own prompt.
+- NO REFUNDS signs, the Return quest's first step (feature kind `refundSign`, shoot to knock flat): Start Room (-4.5, 0, 13.25), Main
+  Hallway (19.25, 0, -1.5), Food Court (8.75, 0, -13.8), Mega Mart (20.75, 0, -23.5).

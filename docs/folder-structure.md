@@ -48,9 +48,8 @@ src/
                         body (colors + leg/pose tuning), health (regen, hurt edges), death camera, sprintFx,
                         weaponSwitch (lower/raise time, drop), interact (hold time, range, facing angle, denied
                         flash), world.wallBuyDisplay, melee lunge end
-    economy.js          Points, payouts, kill values, door prices (startShutter 500, megaMart 750, foodCourt 1000,
-                        serviceCorridor 1250, foodCourtMegaMart 1000, serviceCorridorFoodCourt 1250, departmentStore 1250,
-                        departmentStoreStartRoom 1250) +
+    economy.js          Points, payouts, kill values, door prices keyed by DESTINATION area (hallway 500, megaMart 750, foodCourt 1000,
+                        serviceCorridor 1000, the other five 1250: 9500 in all; a connection is free once both sides are owned) +
                         wall-buy prices, ammoCache.price (400, flat, any gun), round timing, wave scaling + helpers
                         (zombieHealthForRound, zombieCountForRound, spawnDelayForRound, maxAliveForRound).
                         zombieMix: special types per round (mallWalker: from round 4, share 15% / 25% from 6 / 30% from 9,
@@ -69,9 +68,9 @@ src/
                         offset/angles, colors, trigger anim, reload keyframes gunKeys/handKeys + timed events
                         with sounds/jolts), `melee.boxCutter` (damage, reach, cone, swing timing, lunge),
                         weaponStatDefaults for stats
-    upgrades.js         GUN UPGRADES as effects (not stat paths): Extended Warranty `tiers` (standard / deluxe x1.4 dmg
-                        +15% mag / premium x2.1 +15% mag -10% reload / platinum x3.5 +30% mag -20% reload; color,
-                        holdsUntilRound) and store `attachments` (one per slot: barrel extendedNozzle|sawnOff, sight
+    upgrades.js         GUN UPGRADES as effects (not stat paths): Extended Warranty `tiers` (standard / deluxe x1.1 dmg
+                        x1.25 mag x0.85 reload / premium x1.45 dmg x1.1 mag / platinum x1.9 dmg x1.15 mag x0.9 reload + claims;
+                        job, color, holdsUntilRound; Renewals past Platinum) and store `attachments` (one per slot: barrel extendedNozzle|sawnOff, sight
                         laserPointer|zoomLens, grip gripTape|wristband, magazine jumboPack|speedLoader; effects + blurb;
                         sawnOff.falloffIfNone). Effect list in its header. Prices: economy.upgrades
     audio.js            Master volume, pitch variation, compressor, and sound recipes (layers of filtered noise
@@ -346,7 +345,7 @@ src/
                         no dice with one costume; mascotDebutIn(round). Both take an optional costume table (tests)
     bosses/lastCustomer.js The Last Customer's two health thresholds queue quota-funded Mall Walker backup through the four safe parking markers. At the damage floor she freezes in Speechless, owns a temporary priority hand-return hold, and recovers if its timer expires; disposal removes the prompt.
                         The shared zombie.js type.charge state machine supplies her telegraph, straight charge, solid crashes and vulnerability.
-                        Requests retry on an occupied marker or full alive cap; disposal clears them. No return mechanic in phase 8.
+                        Requests retry on an occupied marker or full alive cap; disposal clears them. Phase 9 added the return: while she is Speechless a 'handReturn' interaction (and Return to Sender) finishes her.
     bosses/janitor.js   Places, ages and disposes Wet Floor patches on clear floor. Slows the player on contact and
                         calls into the incentive system to mop Spill Cleanup.
     bosses/janitorModel.js Adds Murray's uniform, bucket, wet floor sign and animated mop to the standard skeleton.
@@ -450,7 +449,7 @@ src/
                         run). Unknown category/id throws. PRICE_CATEGORIES
     events.js           createEvents(): tiny synchronous bus (on -> unsubscribe fn, emit, count). The event list + payloads
                         are in its header: shot, hit (player attack hit; +10 if not lethal), kill (any zombie death, with
-                        headshot / melee / source: 'gun' | 'melee' | future 'hazard'...; ALL kill payouts + kill stats),
+                        headshot / melee / source: 'gun' | 'melee' | 'hazard' (with fountainKill / fryerKill / sprinklerKill / paLureKill)...; ALL kill payouts + kill stats),
                         playerHit, playerDeath, runEnd ({ summary }, one immutable final snapshot), roundStart, typeIntro,
                         the Mascot's (mascotHeadPop, mascotVariantIntro, mascotReclaim, mascotPopBlast, mascotGold),
                         purchase ({ label, cost, kind, id }, read before use()), runReset. 'shot' = one per staple / sticker / nail / dart / whole blast
@@ -513,7 +512,7 @@ src/
                         overtime extensions, melee charges and sprint pulses. Owned/reset/disposed by powerUps.js.
     wallet.js           createWallet(): points (start 500), earn/spend/canAfford, totalEarned, totalSpent, onChange cb (HUD
                         pop-ups). pointsForHit(): COD payouts (+10 hit; kill value +40 head / +70 melee; zombies only)
-    interactions.js     createInteractions(): buyables (doors now, wall buys next). add({ label, verb, cost, position,
+    interactions.js     createInteractions(): every buyable and hold prompt (doors, wall buys, desks, Kevin, the claw, hazards...). add({ label, verb, cost, position,
                         available(), use() }). Each tick: nearest available item within feel.interact.range and
                         roughly faced, in 3D range of the EYE and in plain sight (a ray vs the colliders; an item's `seeThrough` boxes, e.g. a door's own
                         shutter, don't block) = focus; holding interact for holdSeconds (hold must START while focused) spends
@@ -537,7 +536,7 @@ src/
                         RESTOCK-O-MATIC item: label "Ammo · <gun in hand>", available when its zone is open and the gun in hand
                         isn't full, use = gun.weapon.refill() (mag + reserve, ANY gun incl. the staple gun). upgradeDesk.js = Customer Service:
                         "upgrade <Gun> → <next tier>" (g.pricing 'tier', purchase kind 'tier'), gun in hand only, not while
-                        switching, nothing past Platinum, NO ammo refill (the bigger magazine fills on the next reload/buy).
+                        switching, Warranty Renewals past Platinum, moving a warranty on file onto the gun in hand, the SECOND CHANCE window (game/secondChance.js), NO ammo refill (the bigger magazine fills on the next reload/buy).
                         meleeDeskItem = the desk's SECOND window (feature.meleePosition, 1.25 m along the counter, a SHARPENING sign):
                         "Box Cutter → <tier>" (g.pricing 'melee', purchase kind 'melee'), not tied to the gun in hand, not while switching.
                         attachmentCounter.js = one attachment on a store counter: "fit <Attachment> on the <Gun> · <blurb>"
@@ -549,7 +548,7 @@ src/
       retailUnease.js   Called by the existing horror feature: unseen mannequin turn, shared empty-concourse TV feed,
                         distant upstairs silhouette. Quiet intervals, comfort gates, reset and static-batching-safe hooks.
       workshop.js       The workshop feature: builds the ritual, its effects and the Limited Edition drops, runs Party Trap charges.
-      returnsDesk.js    Returns Desk: buys Return to Sender after the first three duties, using the normal two-slot gun.give path; sells its half-rate ammo to anyone holding it. Both prices use g.pricing closing. No independent saved state.
+      returnsDesk.js    Returns Desk: the Return to Sender quest's counter (game/returnQuest.js issues the gun free, through the normal two-slot gun.give path), the ammo counter for the gun in hand (economy returnsAmmo through g.pricing 'closing'), and a second prompt, the label slot, that fits return labels free; the parcel on the tray and the label printer are its props.
       nightSafe.js      Customer Service deposit prompt. Gates payments on Kettle’s Safe Key and completion, and charges the live closing price. Without the key: "Requires <key>" in Directed, "Needs <key>" in Classic.
       escapeVan.js      Customer Parking van and ticket-machine holds, both in escapeVan. The machine requires four keys and the first three duties,
                         pays through g.pricing closing/validation, then shows a local confirmation and refuses another payment. The van needs validation and the Last Customer defeated too.
@@ -635,10 +634,12 @@ src/
                         with the map kit + mall props. Zones startRoom (open) / hallway / megaMart / foodCourt /
                         serviceCorridor; doors: start shutter (500) -> hallway (the hub), Mega Mart shutter (750, hallway
                         east end) -> megaMart, Food Court shutter (1000, hallway south wall) -> foodCourt, Service
-                        Corridor shutter (1250, hallway west wall) -> serviceCorridor (built with kit.corridor from a data
-                        spec; its layout's pointAt places the dressing and spawns); shortcuts foodCourtMegaMart (1000)
-                        and serviceCorridorFoodCourt (1250) each open both joined zones; wall buys priceGun (start room) +
-                        nailGun (hallway south wall) + foamDartBlaster (Mega Mart) + confettiCannon (Service Corridor). All meshes, lights and debug markers live in its group. Exports LAYOUT
+                        Corridor shutter (1000, hallway west wall) -> serviceCorridor (built with kit.corridor from a data
+                        spec; its layout's pointAt places the dressing and spawns); shortcuts foodCourtMegaMart
+                        and serviceCorridorFoodCourt have no price of their own: a door costs its DESTINATION area's price
+                        (pricing.priceOf('door', destination)), and opens free once both sides are owned; seven wall buys: priceGun (start room),
+                        nailGun (hallway south wall), foamDartBlaster (Mega Mart), confettiCannon (Service Corridor), rivetRifle (Atrium),
+                        coilNailer (Cinema projection passage), barcodeScanner (HOFFMAN'S). All meshes, lights and debug markers live in its group. Exports LAYOUT
                         (startRoom, hallway, foodCourt, megaMart, doorway, foodCourtDoorway, megaMartDoorway, escalator,
                         elevator, serviceCorridor, foodCourtMegaMartDoorway, serviceCorridorFoodCourtDoorway). The hallway ceiling is a kit.slab with a hole where the escalator passes through
     mall/props.js       createMallProps(kit): shopFront({ along 'x'|'z', from, to, wallAt, facing, color, text }), pillar,
@@ -737,7 +738,7 @@ src/
                         batch with the existing static system. Each map owns its sheet/material; no runtime canvas updates.
     config/cinemaStairs.js West stairwell/return-passage bounds, ramp plateaus, tread count, lower door opening and painted light.
     mall/cinemaStairs.js Physical service stairs with a smooth ramp under visible treads, solid supports, handrails, two culling
-                        rooms and the floor-to-floor nav link. Lower shutter (1500) opens cinema + serviceCorridor; the original
+                        rooms and the floor-to-floor nav link. Lower shutter (economy.doors.cinema, 1250) opens cinema + serviceCorridor; the original
                         cinema shutter now opens cinema + upstairs. No real lights, guns or spawn markers added.
     mall/kioskCart.js   buildKioskCart(kit, site) -> { position, stand, normal, slots, show(state, stock) }: one of Kevin's carts (a 1.05 m vaultable
                         counter), built in its own frame and turned by `faces` (+z, -z, +x, -x); vendor, three buy spots, a notice strip
@@ -897,8 +898,8 @@ src/
                         Constant slat pitch in X/Z walls, hidden curtain when fully rolled up. Curtain and frame stay on the always-drawn
                         layer so a closed doorway cannot cull its own barrier. config/shutters.js owns finishes/dimensions.
     textures.js         Procedural canvas textures (floor tile, shop sign, shutter, muzzle flash burst, wall-buy chalk). No image files.
-    atmosphereTextures.js Soft footprint alpha and deterministic tile roughness (no image downloads)
                         seededRandom(seed): deterministic random (also used for shelf stock)
+    atmosphereTextures.js Soft footprint alpha, dust motes and deterministic tile roughness / bump (no image downloads)
     neonDemo.js         Debug only: a sample wall of everything world/neon.js can make.
     posterTextures.js   The mall's posters, drawn on canvas (upbeat slogans, something wrong in each); 'ghost' = a faded advert painted on a wall.
     canvasAtlas.js      Many painted panels on one canvas texture (createCanvasAtlas, atlasQuad), so an area's signs draw as one mesh.
@@ -932,8 +933,8 @@ src/
                         equipment pockets left of the count, icon + charges + button, an empty one a faint dashed outline),
                         reload prompt under the crosshair, buy prompt below it (setInteract: "Hold F to open X 500",
                         red cost when unaffordable, shake when denied, hold-progress bar), red hurt edges, click-to-play/paused overlay,
-                        "Clocked Out" results screen with Play again (plain DOM). Pause screen: Click to play + Settings (left) /
-                        Controls (right) buttons (onOpenSettings/onOpenControls); FPS counter top right (setFpsVisible/setFps);
+                        the title, pause and results menus are ui/screens.js (hud.screens; showResults delegates to it; main.js
+                        wires Settings and Controls with screens.on('settings' | 'controls')); FPS counter top right (setFpsVisible/setFps);
                         skinUnlocked displays an independent skin-unlock-toast in the right HUD stack, cleared on pause/death/reset.
                         setAmmoTier(tier): "<Tier> warranty" in the tier's color under the gun name
                         (hidden at Standard; main.js feeds it from tierOf(gun.modsFor(...))); showAnnouncement({ kicker, text }): PA-style banner under the round banner (new zombie types)
@@ -1004,11 +1005,11 @@ src/
   write straight into the config objects (feel/controls/audio), so everything that reads config each frame picks them up live.
   `render()` also feeds the FPS counter.
 - Input: mouse buttons are tracked like keys as `Mouse0`/`Mouse1`/`Mouse2`, only while pointer-locked.
-  Controller buttons are `PadA`.. codes written by `gamepad.poll()` (first thing in `update`).
+  Controller buttons are `PadA`.. codes written by `gamepad.poll()` (main.js's own update() before g.update, and again in applyLookInput).
 - Controller flow: `game.running` = pointer locked OR `game.padPlaying` OR forceRun. `handleControllerMenus()`
   in main: A/Start starts or resumes (no pointer lock needed; also tries `sound.unlock()`), Start pauses, A on the
   results screen plays again, unplugging the controller mid-game pauses. Stick look is applied per frame in
-  render (`player.applyStickLook`) x `aimAssist.slowdown`.
+  applyLookInput, the hook that runs before the ticks (`player.applyStickLook` x `aimAssist.slowdown`).
 - Render timing: while paused (not running, not dead) render uses alpha = 1 and zero visual time, so nothing
   twitches; after death visual time keeps flowing (zombies animate, particles fall, the flash fades).
 - Shooting: `player.getAim()` gives eye + direction including view kick; `aim.applySpread()` then randomizes it
@@ -1019,11 +1020,11 @@ src/
   Audio starts on the first click/key (main also calls `sound.unlock()` on Click to play).
 - ADS: `aim` sets `player.isAiming` / `player.aimAmount` each tick (blocks sprint, scales walk speed by
   `stats.adsMoveSpeed`). Render zooms `camera.fov` by `def.ads.fovMultiplier` and sets `player.lookScale`.
-  `main.js` keeps a `shootables` array (test-range dummies now; zombies should be pushed into it). A collider
+  createGame keeps the `shootables` array (g.shootables: the test-range dummies; zombies are hit through zombieManager). A collider
   Box3 with `ignoreShots = true` blocks walking but not bullets.
 - The game only runs while the pointer is locked; Esc pauses and shows the overlay. An in-game menu a feature opens (`state.menu`, e.g. the Build-A-Blaster
   order form) stops the player (no moving, shooting or buying) but not the world; the feature reads menu actions (config/controls.js menu*) in features.update.
-- Collision: one shared flat array `colliders` of `THREE.Box3` (created in main, filled by the map and the
+- Collision: one shared flat array `colliders` of `THREE.Box3` (created in createGame, filled by the map and the
   test range). `box(..., {collide})` in `mall.js`
   makes a mesh and (optionally) a collider; some visuals use `collide:false` with a separate hand-sized
   `addCollider` (pillars, benches). Shutter adds/removes its own collider from the same array.

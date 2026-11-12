@@ -20,7 +20,7 @@
 //                      its door is straight across the hallway from the start room's)
 //   - Mega Mart:       x 20..34,  z -24..6, 5m ceiling. Its west wall (x 20..20.3, 6m tall)
 //                      is also the east wall of the hallway (with the Mega Mart door) and of
-//                      the Food Court (shortcut at z -9.8..-6.8).
+//                      the Food Court (shortcut at z -10.8..-5.8).
 //   - Service Corridor: a 3m-wide back-of-house corridor built with the corridor builder
 //                      (world/corridor.js): through the hallway's west wall (z 0.5..3.5), then
 //                      south 16m along the Food Court's west side (shortcut at z -13.4..-11),
@@ -712,7 +712,7 @@ export function buildMall(scene, colliders) {
   }).name = 'mart_checkout_thanks';
 
   // Front of the store: four checkout lanes (vaultable counters) facing the entrance. You walk in
-  // at z 0..4 and the lanes are 2m wide; the ends stay open, so you can run round the row.
+  // at z -1..5 and the lanes are 2m wide; the ends stay open, so you can run round the row.
   MART_FIXTURES.checkoutZs.forEach((z, i) => props.checkout(24.5, z - 0.4, 27.5, z + 0.4, i + 1, { drawerOpen: concourse.stories.registerDrawer && i === 1 }));
 
   // Back of the store: three long shelf aisles (gondolas) running north-south. Aisles are 2.5m

@@ -28,6 +28,10 @@ npm run balance       # gun balance report (tools/gunReport.mjs): dps by range, 
 npm run melee         # box cutter report (tools/meleeReport.mjs): swings to kill by round, plain vs the Customer Service tiers
 npm run kiosk         # Kiosk Kevin report (tools/kioskReport.mjs): equipment damage by round and type, Bubble Wrap hits to death, the Sentry vs the Price Gun, prices in rounds of income
 npm run sim:economy   # economy report (tools/economySim.mjs, ~90 min from an empty cache; --quick for a short look): a headless bot's income by round, what it can afford when, proposals before/after
+npm run sim:claw      # GRAB-A-GUN odds tables (tools/clawSim.mjs)
+npm run sim:challenges  # weapon-skin challenge report (tools/challengeReport.mjs): how many runs each challenge takes
+npm run balance:bab   # Build-A-Blaster report (tools/babReport.mjs): plain gun vs warranty tiers vs builds
+npm run sim:closing   # Closing Time quest bot (tools/closingTimeSim.mjs). COSTLY and it measures the bot, not players: ask first
 ```
 There is no linter. Docs-only changes need no tests. What each test file covers: docs/tests.md (relationships and rules, not exact values).
 tests/docs.test.js fails if a new src/ file or test file isn't described in the docs.
@@ -100,8 +104,9 @@ src/fx/              post-processing, zone grading, light pool, room culling, ef
 src/audio/           synthesised sound, music worker
 src/ui/              retail HUD pieces: hud, settings/controls menus, debug panel, announcements, incentive HUD, titleCamera
 tests/               node:test files (one per system/area) + helpers/headlessGame.js (the real game running headless)
-tools/               dev scripts: balance report, single-file build, test selection (testQuick.mjs), music export
-docs/                history.md, folder-structure.md, map.md, tests.md, weapon-balance-pass.md, the open plans; archive/ (finished plans, old history)
+tools/               dev scripts: the test runner (runTests.mjs, testQuick.mjs), single-file build + play, the reports above, music export
+docs/                history.md, folder-structure.md, map.md, tests.md, weapon-balance-pass.md, economy-report.md, ui-readability.md (HUD text
+                     sizes and lanes), the open plans; archive/ (finished plans, old history); research/ (COD zombies script analyses)
 ```
 
 ## How the pieces connect (the full walkthrough: docs/folder-structure.md, "How the pieces connect")
