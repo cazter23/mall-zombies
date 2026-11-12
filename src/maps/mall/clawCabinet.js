@@ -32,7 +32,7 @@ import * as THREE from 'three';
 import { clawMachine } from '../../config/clawMachine.js';
 import { drawType } from '../../world/typeKit.js';
 
-export const CLAW_CABINET = {
+const CLAW_CABINET = {
   colors: {
     body: 0xff4fa3, // hot pink (the RESTOCK-O-MATIC is orange, the stores are teal and pastel)
     bodyDark: 0xb8236f,

@@ -60,4 +60,3 @@ export function attachmentCounterItem({ spot, zones, gun, pricing }) {
   };
 }
 
-export const ATTACHMENT_SLOTS = Object.keys(upgrades.attachmentSlots);

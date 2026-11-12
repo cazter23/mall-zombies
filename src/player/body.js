@@ -28,7 +28,7 @@ const limbGeoCache = new Map();
  * cross-section tapers from `startScale` at point `a` (z = -0.5) to `endScale`
  * at point `b` (z = +0.5), bounded within [-0.5, 0.5] when scales <= 1.
  */
-export function getFacetedLimbGeometry(startScale = 1, endScale = 1) {
+function getFacetedLimbGeometry(startScale = 1, endScale = 1) {
   const key = `${startScale.toFixed(3)}|${endScale.toFixed(3)}`;
   if (!limbGeoCache.has(key)) {
     const geo = new THREE.CylinderGeometry(

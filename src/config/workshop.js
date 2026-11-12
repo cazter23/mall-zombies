@@ -207,7 +207,7 @@ export const workshopNames = ['Gerald', 'Doris', 'Mavis', 'Todd', 'Nigel', 'Beve
   'Dale', 'Phyllis', 'Norman', 'Bernice', 'Wendell', 'Trudy', 'Earl', 'Hortense', 'Steve', 'Lorraine', 'Vern', 'Gladys'];
 
 // What a Stuffing and Heart make together: the model name on the Birth Certificate and the receipt.
-export const workshopComboNames = {
+const workshopComboNames = {
   smoothie: { headshot: 'Brain Freeze', lastRound: 'Last Sip', reload: 'Free Refill', everyTenth: 'Punch Card' },
   fryerOil: { headshot: 'Hot Head', lastRound: 'Final Fry', reload: 'Grease Fire', everyTenth: 'Combo Meal' },
   neonTube: { headshot: 'Bright Idea', lastRound: 'Closing Time', reload: 'Power Surge', everyTenth: 'Vacancy' },

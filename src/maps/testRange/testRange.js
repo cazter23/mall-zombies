@@ -18,7 +18,7 @@ import { makeTileTexture, makeSignTexture } from '../../world/textures.js';
 import { createDummy } from './dummy.js';
 import { zombieHealthForRound } from '../../config/economy.js';
 
-export const ARENA = {
+const ARENA = {
   center: { x: 0, z: -100 }, // far south of the mall, out of sight behind its walls
   halfSize: 30, // arena is 60m x 60m
   wallHeight: 2,

@@ -33,7 +33,7 @@ export function areaAt(areas, p) {
 }
 
 /** A portal's rectangle on screen (normalised device coordinates), FULL when the camera is at / behind it, null off screen. */
-export function portalRect(p, camera) {
+function portalRect(p, camera) {
   const near = 0.6; // closer than this to the opening: treat it as filling the screen
   if (camera.position.x > p.minX - near && camera.position.x < p.maxX + near && camera.position.y > p.minY - near
     && camera.position.y < p.maxY + near && camera.position.z > p.minZ - near && camera.position.z < p.maxZ + near) return FULL;

@@ -14,7 +14,7 @@ import { clawMachine } from '../../config/clawMachine.js';
 import { wallFrame, drawSunny } from './clawCabinet.js';
 import { drawType } from '../../world/typeKit.js';
 
-export const PRIZE_BOOTH = {
+const PRIZE_BOOTH = {
   colors: {
     body: 0x6b3fa0, // grape (the claw is hot pink, the RESTOCK-O-MATIC orange)
     bodyDark: 0x45246e,

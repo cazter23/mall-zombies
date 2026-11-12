@@ -156,7 +156,7 @@ export function keepOuts(mounts = {}) {
 }
 
 /** The skin's canvas texture for this layout (the body's centre and its keep-outs), made on first use and shared; null without a canvas. */
-export function skinPatternTexture(gunId, skin, centre = new THREE.Vector3(), holes = []) {
+function skinPatternTexture(gunId, skin, centre = new THREE.Vector3(), holes = []) {
   const round = n => Math.round(n * 1e4);
   const key = `${gunId}/${skin.id}|${[centre.x, centre.y, centre.z].map(round)}|${holes.map(h => [...h.z, ...h.y].map(round)).join(';')}`;
   if (textures.has(key)) return textures.get(key);

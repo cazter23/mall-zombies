@@ -237,7 +237,7 @@ function buildPaging(rig) {
 }
 
 const builders = { breaker: buildBreaker, firePull: buildFirePull, valve: buildValve, paging: buildPaging };
-export const HAZARD_SWITCH_STYLES = Object.keys(builders);
+const HAZARD_SWITCH_STYLES = Object.keys(builders);
 
 /** Builds a hazard's switch at `position` facing `normal`, `offset` metres out along it. */
 export function buildHazardSwitch(style, { position, normal, postBottomY, offset = 0 }) {
