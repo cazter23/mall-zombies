@@ -229,6 +229,11 @@ test('the debug window lists every key by group, shows/hides with the game state
     assert.ok(text().includes((c.shift ? 'Shift+' : '') + keyLabel(c.key)), c.id);
   }
   for (const group of new Set(debug.commands.map((c) => c.group))) assert.ok(text().includes(group), group);
+  // The status headings name the keys the table actually binds (god mode once said G after it moved to B).
+  const godKey = keyLabel(debug.commands.find((c) => c.id === 'god').key);
+  const headings = panel.element.querySelectorAll('.debug-selection').map((field) => field.children[0].textContent);
+  assert.ok(headings.includes(`${godKey} toggles god mode`), headings.join(' | '));
+  for (const heading of headings) assert.ok(!/^G toggles/.test(heading) || godKey === 'G', 'no stale G heading');
   assert.ok(text().includes(`Round ${t.g.rounds.round}`), 'live numbers');
   assert.equal(panel.element.querySelectorAll('section').length, new Set(debug.commands.map(c => c.group)).size);
   assert.ok(text().includes(d.status().nextGun), 'the next gun is visible before pressing H');

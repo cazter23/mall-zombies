@@ -37,11 +37,16 @@ export function createDebugPanel({ commands = debug.commands, status, config = d
     selections.append(field);
     return value;
   }
-  const enemy = statusField('Z spawns');
-  const gun = statusField('H gives next');
-  const god = statusField('G toggles');
+  // Each heading names the key from the command table, so a rebind (god mode moved from G to B) can't leave it stale.
+  const keyOf = (id) => {
+    const c = commands.find((cmd) => cmd.id === id);
+    return c ? (c.shift ? 'Shift+' : '') + keyLabel(c.key) : '?';
+  };
+  const enemy = statusField(`${keyOf('spawn')} spawns`);
+  const gun = statusField(`${keyOf('giveGun')} gives next`);
+  const god = statusField(`${keyOf('god')} toggles god mode`);
   const boss = statusField('Boss in play');
-  const nextBoss = statusField('J summons');
+  const nextBoss = statusField(`${keyOf('summonBoss')} summons`);
   root.append(selections);
   const columns = document.createElement('div');
   columns.className = 'debug-groups';
