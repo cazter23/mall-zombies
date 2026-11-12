@@ -37,11 +37,85 @@ export const kiosk = {
   pa: {
     kicker: "Kevin's cart",
     opened: "Kevin's cart is open in {where}.",
-    moved: "Kevin's cart is now in {where}. He's asked us to say it's a limited time only.",
+    // When he has moved: these take turns by round (round 3 says the first), so the PA never needs Math.random.
+    moved: [
+      "Kevin's cart is now in {where}. He's asked us to say it's a limited time only.",
+      "Kevin's cart is now in {where}. Kevin would like everyone to know he was not chased there.",
+      "Kevin's cart has relocated to {where}. Mall management did not approve this. Mall management is a zombie.",
+      "Kevin's cart is now in {where}. Please stop telling him where the zombies are. He knows.",
+    ],
     stock: "Today on Kevin's cart: {stock}. Kevin's Pick is {pick}.",
   },
   openingRound: 2,
   duckRadius: 3,
+
+  // KEVIN HIMSELF (phase 8: presentation only; nothing below changes a price, a damage or a rule).
+  // He shouts (game/features/kiosk.js emits 'kioskHawk'; his cart shows the line in a speech bubble, maps/mall/kioskCart.js):
+  //   lines  when you're within `radius` of his open cart (and within floorTolerance of its floor), at most once every
+  //          `seconds`. {product} = one of the round's three, in turn.
+  //   duck   when a zombie sends him under the counter (at most once every duckSeconds);  back  when he comes back up.
+  // Each list takes turns in order (no Math.random: the game's random numbers, and so the seeded tests, stay as they were).
+  hawk: {
+    radius: 8, // m (the plan's "within 8 m")
+    floorTolerance: 2, // m
+    seconds: 14,
+    duckSeconds: 6,
+    bubbleSeconds: 3.2, // how long a line stays over his head (the view)
+    lines: [
+      'Excuse me! Can I ask you a question?',
+      'You! You look like someone who needs a {product}!',
+      'Free sample! It is not free.',
+      '{product}! As seen on TV! The TV is on fire!',
+      "Don't walk away! I can tell you're interested!",
+      'Is that a zombie behind you? Great, two customers!',
+      'Everything must go! Including me, ideally!',
+      'Ask me about {product}! Please! Nobody asks!',
+      'One day only! Every day!',
+    ],
+    duck: ['Not today! NOT TODAY!', "We're closed! We're CLOSED!", "I'm on break! Union rules!", 'Nobody here! Just a cart!'],
+    back: ["And we're back! Did you miss me?", 'Okay! Open! Never left!', 'Where were we? Oh right, you were buying.'],
+  },
+  // Kevin's look (maps/mall/kioskCart.js): his clothes, the lanyard and the lid that covers the cart while he's away.
+  //   duckSeconds  how fast he drops (and springs back up);  peekSeconds  how often he peeks over the counter while hiding
+  vendor: {
+    skin: 0xd5a16e, hair: 0x4a2c1a, shirt: 0x34a9a1, collar: 0x2b8a83, trousers: 0x5a4f6e, lanyard: 0xd8323a, badge: 0xf4f1e8,
+    headset: 0x1d1626, eyes: 0x1d1626, mouth: 0x7a2730,
+    badgeText: ['KEVIN', 'ASK ME A QUESTION'],
+    duckSeconds: 0.16, peekSeconds: 2.4, turnSpeed: 4, maxTurn: 1.0, // (turnSpeed: how fast he turns to you; maxTurn: radians either way)
+  },
+  // The lid: a slatted roll-top over the counter while he's away (or before he opens). Its notice takes turns each time a
+  // cart is left; flipped open behind him (lidSeconds) when he arrives.
+  lid: {
+    seconds: 0.55,
+    slats: 0x8d8a96, slatDark: 0x6c6976, ink: '#1d1626',
+    notices: ['BACK IN 5 MIN', 'GONE TO GET CHANGE', 'ON BREAK · DO NOT TOUCH', 'BACK SOON · PROBABLY', 'CLOSED · ALL SALES FINAL'],
+  },
+  // THE SHOW (fx/kioskSpectacle.js, browser side; looks only). Every burst also draws a ring out to the reach it really has,
+  // so you learn each product's size by watching. [a, b] = a random value between the two.
+  spectacle: {
+    maxParticles: 700,
+    ringSeconds: 0.4,
+    // The Soda Bomb: a cola geyser for `seconds` and a ring of foam skidding out across the floor.
+    cola: {
+      seconds: 0.45, perSecond: 170, speed: [6, 10], spread: 0.22, gravity: 12, size: 0.05, life: [0.7, 1.1],
+      colors: [0x5a2a12, 0x7a3b1c, 0xf6efe0, 0xc98a4b],
+      foam: { count: 50, speed: [3, 5.5], color: 0xf6efe0, size: 0.06 },
+      ring: 0xc98a4b,
+    },
+    // The Glitter Bomb: a cloud that hangs, twinkles and drifts down, and a pinch more on every zombie it confused.
+    glitter: {
+      count: 150, perTarget: 14, life: [2.2, 3.4], size: 0.03, gravity: 0.5, drag: 1.4, speed: [0.6, 2.2],
+      colors: [0xe08bff, 0xff8bd8, 0xfff3d4, 0x8bd8ff, 0xffe14d], ring: 0xe08bff,
+    },
+    // The Air Horn: rings of sound rolling out from where you stand, on the floor and at chest height.
+    horn: { rings: 3, gap: 0.08, color: 0xfff3d4, chestHeight: 1.1 },
+    // Bubble Wrap: a layer popping just in front of you (white bits) when it's used up.
+    wrap: { count: 16, speed: [1.2, 2.6], size: 0.011, life: [0.18, 0.35], distance: 0.55, colors: [0xdcefff, 0xffffff, 0xbfe3ff] },
+    // The Sentry: a muzzle flash per shot; when its time is up it comes apart in pieces.
+    sentry: { debris: 28, speed: [2, 4.5], size: 0.07, life: [0.9, 1.4], gravity: 9, colors: [0x45246e, 0xd8d2c4, 0x3a3f4a, 0xffe14d], flash: 0xfff1b8 },
+    // Comic words over the action (role toyBrand); `seconds` on screen, `size` m wide.
+    words: { seconds: 0.9, size: 1.1, sodaBomb: 'FSSSHH!', airHorn: 'HOOONK!', glitterBomb: 'CONGRATS!', bubbleWrap: 'POP!', sentry: 'BZZT!' },
+  },
   // The cart's three slots, left to right. A slot with several products ROTATES through them round by round from the opening
   // round (the user's choice, 10 November 2026: no random stock): round 2 sells the first of each, round 3 the second, and so on.
   // Bubble Wrap is always there. Kevin's Pick is the product on the cart that has waited longest to be the Pick (ties: left to
@@ -60,6 +134,7 @@ export const kiosk = {
     layerStrength: 30,
     maxLayers: 3,
     detail: 'Absorbs zombie hits before they reach your health. FRAGILE. This side towards zombies.',
+    look: { sheet: 0xdcefff, core: 0xc9a46b, bubble: 0xf4fbff }, // the roll on the counter (world/kioskProducts.js)
   },
 
   // Equipment power (decision 4): 1.0 at round 10 (806 health), about 0.54 at round 1 and 1.7 at round 30.
@@ -131,7 +206,7 @@ export const kiosk = {
       },
       sounds: { throw: 'meleeSwing', bounce: 'tennisBounce', spray: 'stuffingFryer' },
       look: {
-        model: 'cake', cake: 0xf7d6e0, icing: 0xff6fa8, wick: 0xf4f1e8, // the cake drawn in the air and on the floor (fx/throwableView.js)
+        model: 'cake', cake: 0xf7d6e0, icing: 0xff6fa8, wick: 0xf4f1e8, doily: 0xfdf8ee, // the cake in the air, on the floor and on the counter
         sparks: { colors: [0xffe27a, 0xffb02e, 0xfff6d8], count: 10, speed: 3.2, size: 0.035 }, // each pulse (effects.confetti)
       },
     },
@@ -146,6 +221,7 @@ export const kiosk = {
         stagger: { seconds: 1.2, knockback: 7, drag: 5 },
         sound: 'stadiumAirHorn',
       },
+      look: { can: 0xd8323a, valve: 0x1d1626, horn: 0xf4f1e8 }, // on the counter (world/kioskProducts.js)
     },
     // The Glitter Bomb Greeting Card. Lobbed; it opens where it first touches anything (floor, wall or zombie): up to
     // maxTargets zombies within radius of it (in sight, nearest first) are confused for `seconds` and fight each other
@@ -181,7 +257,7 @@ export const kiosk = {
       },
       sounds: { throw: 'meleeSwing', bounce: 'tennisBounce', deploy: 'dryClick', fire: 'stapleShot' },
       look: {
-        model: 'sentry', stand: 0xd8d2c4, base: 0x45246e, gun: 0x3a3f4a, sign: 0xffe14d, // the stand (fx/throwableView.js)
+        model: 'sentry', stand: 0xd8d2c4, base: 0x45246e, gun: 0x3a3f4a, sign: 0xffe14d, tape: 0xb8b2a6, // the stand (world/kioskProducts.js)
         tracer: 0xe8eef5, // a silver staple streak
       },
     },

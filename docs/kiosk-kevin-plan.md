@@ -2,7 +2,8 @@
 
 ## Built scope · 11 November 2026
 
-Status: phases 1 to 7 are built and in main; only phase 8 (spectacle: Kevin's model, the cart, product models and effects) remains.
+Status: ALL EIGHT PHASES BUILT. Phases 1 to 7 are in main; phase 8 (spectacle) was built on 12 November 2026 (`claude/epic-hellman-cf878e`):
+Kevin himself, the cart's lid, the products on the counter, his shouts, and the effects (see phase 8 below). Only "Later" is left.
 
 Phases 2 and 3 are built as Minimal Kiosk Kevin, with the Stadium Air Horn pulled forward from phase 5.
 Phase 4 is built (10 November 2026, `claude/kiosk-kevin-4`): five carts, and from round 3 Kevin moves at each
@@ -343,9 +344,17 @@ Sentry damage per second against the Price Gun. Set the prices.
 Done when: no product is a must-buy at round 2, the Soda Bomb is still worth its price at round 25 (weaker, not useless), and Bubble Wrap doesn't
 double survival by itself. Tune the exponent (0.37) here if the fade is too fast or too slow.
 
-### 8. Spectacle (Sonnet or Luna)
+### 8. Spectacle (Sonnet or Luna) -- BUILT 12 November 2026 (tests/kiosk.test.js; presentation only: no price, damage or rule changed)
 Kevin (a low-poly guy in a lanyard, ducking animation), the cart and its shutter, the hawking lines, product models, the cola spray, the glitter, the
 air-horn blast ring, bubble-wrap pops, the Sentry's spin, and a humour pass. Keep it static-batched where it doesn't move.
+As built: Kevin (maps/mall/kioskKevin.js: polo, lanyard and badge, quiff, headset; he turns to you, waves while he talks, drops into the cart
+with his arms over his head and peeks out); the cart's shutter is a slatted roll-top lid with a notice that changes each time he leaves, flipping
+open behind him when he arrives (maps/mall/kioskCart.js); the round's products stand on the counter (world/kioskProducts.js, the same models
+you throw); he hawks in a speech bubble within 8 m (every 14 s at most), yelps as he ducks and says when he's back ('kioskHawk', lines that
+take turns, never Math.random); fx/kioskSpectacle.js draws the cola geyser, the glitter cloud, the air-horn rings ('airHornBlast'), bubble-wrap
+pops (and the HUD segment bursting), the Sentry's muzzle flash and break-up (its spring-up, spinner and dying sputter are fx/throwableView.js),
+a ring to each burst's real reach and comic words. Humour: four PA "moved" lines in turn, nine hawk lines, duck and back lines, five lid notices.
+Everything that moves is in the cart's dynamic rig and baked (world/bakeParts.js): Kevin is 8 draws, a counter display 1 to 4.
 
 ### Later
 - Kevin's van in the Parking lot as a sixth site.

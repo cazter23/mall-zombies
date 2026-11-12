@@ -13,7 +13,11 @@
 // The PA speaks once a round, when he first sells in it (or after a move): where he is if he's new there, the round's three
 // products and his Pick.
 //
-// DOM-free: announces 'kioskStock' (the PA line) and 'kioskMoved' on g.events; main.js and tests read .status.
+// He SHOUTS (phase 8, presentation only): within kiosk.hawk.radius of his open cart he hawks a line now and then, ducking he
+// yelps, and coming back up he says so ('kioskHawk'; the cart shows it in a speech bubble). Each list of lines takes turns
+// (never Math.random, so the game's random numbers are untouched).
+//
+// DOM-free: announces 'kioskStock' (the PA line), 'kioskMoved' and 'kioskHawk' on g.events; main.js and tests read .status.
 // Save & Quit: his site (and a pending move) is saved with the feature (serialize/restore), as it stood at the round's start.
 //
 // feature: { kind: 'kiosk', name, zone, position, normal, sites: [{ id, zone, where, floorY, cart: { position, stand, normal, slots, show } }] }
@@ -24,12 +28,14 @@ import { kiosk, productOf, stockFor, pickFor } from '../../config/kiosk.js';
 const nameOf = (id) => productOf(id)?.name ?? kiosk.bubbleWrap.name;
 const fill = (text, values) => text.replace(/\{(\w+)\}/g, (_, key) => values[key] ?? '');
 
-export function buildKiosk(feature, { map, rounds, zombies, pricing, interactions, equipment, health, events, state }) {
+export function buildKiosk(feature, { map, rounds, zombies, pricing, interactions, equipment, health, events, state, player }) {
   const sites = feature.sites;
   let site = sites[0];
   let pending = null; // a site picked at 'roundStart' during a purchase: he goes there once it's let go
   let lastRound = 0; // the round and site of the last PA line (one a round, again after a move)
   let lastSite = null;
+  // His shouting (kiosk.hawk): a clock, when each kind of line may come again, and whose turn it is in each list.
+  const shout = { clock: 0, hawkAt: 0, duckAt: 0, wasHiding: false, turns: { lines: 0, duck: 0, back: 0 }, products: 0 };
 
   const cart = () => site.cart;
   const zoneOpen = (s) => map.zones[s.zone].open;
@@ -82,12 +88,50 @@ export function buildKiosk(feature, { map, rounds, zombies, pricing, interaction
     return options.length ? options[Math.floor(Math.random() * options.length)] : null;
   }
 
+  // The next line of one of his lists (they take turns).
+  function nextLine(kind) {
+    const list = kiosk.hawk[kind];
+    const text = list[shout.turns[kind]++ % list.length];
+    if (!text.includes('{product}')) return text;
+    const products = stock();
+    return fill(text, { product: nameOf(products[shout.products++ % products.length]) });
+  }
+  function say(kind) {
+    events.emit('kioskHawk', { siteId: site.id, kind, line: nextLine(kind) });
+  }
+  // One tick of his shouting: a yelp as he ducks, a word as he comes back up, and a hawk while you're near his open cart.
+  function hawk(dt) {
+    shout.clock += dt;
+    if (!open() || state.over) {
+      shout.wasHiding = false; // (shut, or you're dead: he says nothing)
+      return;
+    }
+    const ducking = hiding();
+    if (ducking !== shout.wasHiding) {
+      shout.wasHiding = ducking;
+      if (shout.clock >= shout.duckAt) {
+        shout.duckAt = shout.clock + kiosk.hawk.duckSeconds;
+        say(ducking ? 'duck' : 'back');
+        shout.hawkAt = Math.max(shout.hawkAt, shout.clock + kiosk.hawk.bubbleSeconds); // (no hawk over the top of it)
+        return;
+      }
+    }
+    if (ducking || !player || shout.clock < shout.hawkAt) return;
+    const { stand } = cart();
+    const p = player.position;
+    if (Math.abs(p.y - stand.y) > kiosk.hawk.floorTolerance
+      || Math.hypot(p.x - stand.x, p.z - stand.z) > kiosk.hawk.radius) return;
+    shout.hawkAt = shout.clock + kiosk.hawk.seconds;
+    say('lines');
+  }
+
   function moveTo(target) {
     pending = null;
     const moved = target !== site;
     if (moved) {
       cart().show('away');
       site = target;
+      shout.wasHiding = false; // (the new cart starts with him standing)
     }
     events.emit('kioskMoved', { siteId: site.id, area: site.where, moved });
   }
@@ -106,6 +150,7 @@ export function buildKiosk(feature, { map, rounds, zombies, pricing, interaction
     pending = null;
     lastRound = 0;
     lastSite = null;
+    Object.assign(shout, { clock: 0, hawkAt: 0, duckAt: 0, wasHiding: false, turns: { lines: 0, duck: 0, back: 0 }, products: 0 });
     sites.forEach((s, i) => s.cart.show(i === 0 ? 'closed' : 'away', stockFor(kiosk.openingRound)));
   }
   setUp();
@@ -126,14 +171,16 @@ export function buildKiosk(feature, { map, rounds, zombies, pricing, interaction
       moveTo(target);
       return site;
     },
-    update() {
+    update(dt = 0) {
       if (pending && !midPurchase()) moveTo(pending);
       const selling = open();
       const selected = pick();
       const products = stock();
       cart().show(!selling ? 'closed' : hiding() ? 'hiding' : selected, products);
+      hawk(dt);
       if (!selling || state.over || (lastRound === rounds.round && lastSite === site)) return;
-      const text = lastSite === null ? kiosk.pa.opened : lastSite !== site ? kiosk.pa.moved : '';
+      const moved = kiosk.pa.moved[Math.max(0, rounds.round - kiosk.openingRound - 1) % kiosk.pa.moved.length];
+      const text = lastSite === null ? kiosk.pa.opened : lastSite !== site ? moved : '';
       lastRound = rounds.round;
       lastSite = site;
       const names = products.map(nameOf);

@@ -886,9 +886,14 @@ export function createHud({ locker = null, guide = null, challenges = null } = {
 
     setArmour(count) {
       if (count === lastArmourCount) return;
+      const before = lastArmourCount;
       lastArmourCount = count;
       armour.setAttribute('aria-label', `Bubble Wrap: ${count} layers`);
-      armour.replaceChildren(...Array.from({ length: count }, () => el('span', 'armour-layer')));
+      // Kept layers, then (fewer than before) the ones just used up, bursting (retail.css armour-pop), or (more) the new ones growing in.
+      const layers = Array.from({ length: count }, (_, i) => el('span', i >= before ? 'armour-layer added' : 'armour-layer'));
+      const popped = Array.from({ length: Math.max(0, before - count) }, () => el('span', 'armour-layer popping'));
+      armour.replaceChildren(...layers, ...popped);
+      if (popped.length) setTimeout(() => popped.forEach((span) => span.remove()), 340);
     },
 
     // Vault prompt: shown while `show`; `button` = the jump button for the device ("Space", "A", "✕").

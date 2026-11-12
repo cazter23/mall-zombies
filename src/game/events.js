@@ -51,6 +51,9 @@
 //   'kioskStock'  { siteId, stock, pick, pa }            Kevin's cart opened for the round (or after a move): where he is, the round's
 //                                                        three products and his Pick
 //   'kioskMoved'  { siteId, area, moved }                Kevin's site at a 'roundStart' (moved false: he stays where he is); area = the PA's name
+//   'kioskHawk'   { siteId, kind, line }                 Kevin shouted (game/features/kiosk.js; config/kiosk.js hawk): kind 'lines' (you're
+//                                                        near his open cart), 'duck' (a zombie sent him under it) or 'back' (he's up again);
+//                                                        his cart shows `line` in a speech bubble (presentation only)
 //   'regenStart'  {}                                     health began climbing back (once per recovery: player/health.js)
 //   'secondChance' { status }                            Second Chance changed (game/secondChance.js): 'held' = bought at Customer Service,
 //                                                        'used' = it just covered a lethal hit (the player is already back at full health,
@@ -139,6 +142,8 @@
 //   'equipmentBurst'  { id, position, radius, hit }      a thrown Soda Bomb burst, or a Glitter Bomb opened (damage 0: hit = the
 //                                                        zombies it confused); hit = [{ target, damage, killed }]. Equipment
 //                                                        damage never emits 'hit' (no +10): its kills pay through 'kill', source 'equipment'
+//   'airHornBlast'    { position, radius, pushed }       the Stadium Air Horn sounded where you stand (game/equipment.js; it isn't
+//                                                        thrown); pushed = how many zombies it staggered. Presentation (the blast ring)
 //   'sentryDeployed'  { position }                       a thrown SPIN-O-MATIC Sentry landed and stood up (game/equipment.js); its kills
 //                                                        carry weaponId 'sentry'
 //   'sentryExpired'   { position }                       its lifetime ran out and it fell apart (death and Play again just clear it)

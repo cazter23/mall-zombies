@@ -207,6 +207,7 @@ export function createEquipment({
   function blastHorn(horn) {
     const origin = player.position;
     player.getAim(eye, aim);
+    let pushed = 0;
     for (const target of shootables) {
       if (!target.isAlive || !target.type || target.noRewards || target.type.boss) continue;
       const { x, y, z } = target.position;
@@ -217,8 +218,10 @@ export function createEquipment({
       const mascot = target.type.mascot;
       const weight = mascot && !target.mascotHeadOff ? mascot.hitKnockbackScale : 1;
       target.staggerAway(origin, { ...horn.stagger, knockback: horn.stagger.knockback * weight });
+      pushed++;
     }
     sound?.play(horn.sound);
+    events.emit('airHornBlast', { position: origin.clone(), radius: horn.radius, pushed }); // (the blast ring: fx/kioskSpectacle.js)
   }
 
   /** Distance from `point` to a target's nearest hitbox (0 = touching it). */

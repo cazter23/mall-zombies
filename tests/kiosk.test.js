@@ -240,7 +240,12 @@ test('the Air Horn immediately interrupts charges, respects solid cover and has 
   const before = g.wallet.points;
   g.equipment.give('airHorn', 2);
   g.equipment.give('sodaBomb', 1);
+  const blasts = [];
+  g.events.on('airHornBlast', (e) => blasts.push(e));
   t.press('Mouse1');
+  assert.equal(blasts.length, 1, 'the blast is announced (its ring: fx/kioskSpectacle.js)');
+  assert.equal(blasts[0].radius, kiosk.products.airHorn.horn.radius);
+  assert.equal(blasts[0].pushed, 2, 'the Cart Pusher and the Mascot');
   assert.equal(cart.chargeLeft, 0);
   assert.equal(cart.staggerTimer, 1.2);
   assert.equal(mascot.staggerTimer, 1.2);
@@ -420,4 +425,50 @@ test('Kevin never moves mid-purchase: a round that starts during a held buy wait
   assert.ok(g.wallet.points < before, 'the purchase went through');
   assert.equal(kevin.site.id, 'foodCourt');
   assert.equal(kevin.status.pending, null);
+});
+
+test('Kevin shouts: a hawk as you walk up to his open cart and again only after its wait, a yelp as he ducks and a word when he is back, each list in turn', () => {
+  const t = fixture(), { g } = t;
+  const kevin = kevinOf(g);
+  const said = [];
+  g.events.on('kioskHawk', ({ siteId, kind, line }) => said.push([siteId, kind, line]));
+  const kinds = (kind) => said.filter(([, k]) => k === kind).map(([, , line]) => line);
+  standAtCart(t, g, kevin.site);
+  t.tick(30);
+  assert.deepEqual(said, [], 'not before he opens');
+  g.map.doors.find(({ id }) => id === 'startShutter').open();
+  g.map.zones.hallway.open = true;
+  g.rounds.jumpTo(2);
+  t.standAt(0, 12); // (the start room: out of earshot)
+  t.tick(30);
+  assert.deepEqual(said, [], 'nothing while you are far away');
+  standAtCart(t, g, kevin.site);
+  assert.deepEqual(said, [['hallway', 'lines', kiosk.hawk.lines[0]]]);
+  t.tick(Math.round(kiosk.hawk.seconds * 60) - 10);
+  assert.equal(said.length, 1, 'once every few seconds at most');
+  t.tick(20);
+  const product = kiosk.products[kevin.status.stock[0]].name;
+  assert.deepEqual(kinds('lines'), [kiosk.hawk.lines[0], kiosk.hawk.lines[1].replace('{product}', product)], 'the next line, naming a product on sale');
+  // A zombie at his stand: he ducks (a yelp, and no hawking while he's down); gone again: he's back up and says so.
+  g.zombies.spawn('shopper', kevin.site.cart.stand.clone()).position.copy(kevin.site.cart.stand);
+  t.tick(2);
+  assert.deepEqual(kinds('duck'), [kiosk.hawk.duck[0]]);
+  t.tick(Math.round(kiosk.hawk.seconds * 60) + 30);
+  assert.equal(kinds('lines').length, 2, 'no hawking while he hides');
+  g.zombies.clear();
+  t.tick(2);
+  assert.deepEqual(kinds('back'), [kiosk.hawk.back[0]]);
+  assert.ok(said.every(([, , line]) => !line.includes('{')), 'every placeholder filled');
+  // Dead: not a word. Play again starts every list from the top.
+  const count = said.length;
+  g.health.takeDamage(10_000);
+  t.tick(Math.round(kiosk.hawk.seconds * 60) * 2);
+  assert.equal(said.length, count);
+  g.resetRun();
+  g.rounds.update = () => {};
+  g.map.doors.find(({ id }) => id === 'startShutter').open();
+  g.map.zones.hallway.open = true;
+  g.rounds.jumpTo(2);
+  standAtCart(t, g, kevin.site);
+  assert.deepEqual(said.at(-1), ['hallway', 'lines', kiosk.hawk.lines[0]]);
 });
