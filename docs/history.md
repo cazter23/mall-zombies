@@ -1,5 +1,16 @@
 # Sunset Galleria: build history ("Current state")
 
+## 12 November 2026 - Zombie pathfinding: half the cost per redraw, a sixteenth of the garbage, the same routes
+
+From the code review (pass 2). The zombies' shared "arrows toward the player" map (zombies/navigation.js) is redrawn for the whole mall every 0.2 s. Measured headless at round 30 with every area open: that one job was about 30% of the tick's CPU, made a slow tick every 13th tick, and produced about 94% of the game's garbage. Branch claude/nav-flow-field.
+
+- **No garbage in the inner loops.** The eight neighbours were a list of `[dx, dz, cost]` triples read with `for (const [...] of ...)`, the heap swapped with `[a, b] = [b, a]`, and the wall check built three small arrays per collider. Each made throwaway objects by the million. They are now flat lists read by index, one reused block of numbers for the heap, and the wall check written out per axis. Measured (V8's sampling heap profiler, 24 zombies, round 30): 3,596 KB a tick (211 MB a second) down to 220 KB a tick (13 MB a second).
+- **Less repeated work.** A cell that comes out of the heap again at the distance it already spread from is skipped (it cannot shorten anything), and a typed flag answers "does this cell have a ramp" instead of a Map lookup per cell. One redraw: 7.8 ms down to 3.9 ms (median of 400, everything open, this PC).
+- **No redraw while the player stands on exactly the same spot** on an unchanged grid (holding a corner, an open order form, the death camera, most headless tests): the field would come out the same. A collider change still redraws it on the next tick, and the position is compared by value (the zombie manager passes player.position itself, moved in place): tests/navFloors.test.js guards both.
+- **The routes are the same, to the bit.** A throwaway script fingerprinted 4.4 million answers (distanceToTarget at every cell, directionTo with three lanes at every metre, both floors, 53 player spots, doors closed and everything open, plus boss paths): the same hash before and after.
+- **The whole tick**, old and new run back to back under the same load (another agent was testing, so the absolute numbers are high): round 30 with 24 zombies, p95 12.6-15.4 ms down to 5.5-5.8 ms, mean 2.8-3.5 ms down to 2.1-2.3 ms. Measured in Node; Firefox will differ.
+- Not touched, and still the next costs: collision scans every collider for every zombie (world/collision.js moveAndCollide, about 23% of the tick's CPU before this change), and a single tick of about 30 ms still turns up while holding fire into a crowd with a boss and four hazards running (before and after this change: not the flow field, cause not isolated).
+- Shared files: none besides docs/history.md, docs/tests.md and docs/folder-structure.md.
 ## 12 November 2026 - Build-A-Blaster hall colours restored; debug window names the god-mode key
 
 - Look pass 5 put a comment in the middle of a palette line in config/promenade.js (workshop details colors), which commented out the hall's `glass`, `pipe`, `beam`, `neon` and `lamp`: eleven parts (hopper windows, pipe runs, beams, neon, lamps) were built with no colour and Three.js only warned. The comment now ends the line. New guard in tests/mall.test.js: building the mall must give every material its colour.

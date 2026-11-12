@@ -386,7 +386,7 @@ the model and debris and disposes their shared geometry and materials.
 - `levelTwo.test.js`: the Promenade: closed in, a standable floor, the well fenced, vents sealed until the escalator is repaired, balcony voids you cannot walk into.
 - `lightPool.test.js`: N real lights follow the camera to the nearest lamps, fading rather than popping, copying flicker, skipping lamps that are off.
 - `metalSheen.test.js`: only metal materials without a reflection of their own get the shared sheen, each once; paint and mirrors are left alone.
-- `navFloors.test.js`: zombie navigation over several floors and stairs on small synthetic maps (a floor with no link is unreachable).
+- `navFloors.test.js`: zombie navigation over several floors and stairs on small synthetic maps (a floor with no link is unreachable). Standing still keeps the field in hand, but a wall that goes or a step (the same position object, moved) still redraws it.
 - `neon.test.js`: the neon stroke font (every character), text sizing and multi-line, facing like kit.sign.
 - `newGuns.test.js`: burst fire (Foam Dart Blaster) and the Confetti Cannon's shells and reload, plus upgrades on a carried gun through resolveGun.
 - `posterTextures.test.js`: every poster kind builds (unknown kinds throw); the hallway hangs them 3 cm proud with their copy in config.
