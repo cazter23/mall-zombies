@@ -1,5 +1,5 @@
 // =============================================================================
-// CHALLENGE REPORT:  npm run sim:challenges        (weapon skins phase 8; docs/weapon-skins-plan.md "Measure and tune")
+// CHALLENGE REPORT:  npm run sim:challenges        (weapon skins phase 8; docs/archive/weapon-skins-plan.md "Measure and tune")
 // How much of each weapon skin challenge a run gives, and so how many runs it takes. It PLAYS the real game headless with the economy bot
 // (tools/economyBot.js: read its header for what the bot is not), once per gun the bot can use, that gun bought early and carried as its
 // main gun, and reads the game's OWN challenge counters (game/challenges.js). In the process that plays, every challenge's target is lifted

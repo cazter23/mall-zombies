@@ -1,6 +1,6 @@
 # Wardrobe: plan
 
-Status: playable v1 implemented at the prices below. This document records the original design. For shipped behavior and playtest notes, see [the build history](history.md#9-november-2026---wardrobe-v1).
+Status: playable v1 implemented at the prices below. This document records the original design. For shipped behavior and playtest notes, see [the build history](../history.md#9-november-2026---wardrobe-v1).
 
 ## The idea
 
@@ -214,7 +214,7 @@ Real displays, mirror reaction, shoe tint on the first-person legs, Light-Up Sne
 - **Taking an item off.** Add a "nothing" entry to the bag cycle if players ask for it.
 - **Set bonuses or triggered items,** only if the plain version gets dull. Needs a rule change first.
 - **Non-Slip upgrade:** Orthopedic Mall Walkers also shrink the Janitor's wet floor slow, through a `slowTakenMultiplier` stat read by the Janitor. Add it with the boss.
-- **Plush Keychain:** a free accessory won from the claw machine's plush (see `docs/claw-machine-plan.md`).
+- **Plush Keychain:** a free accessory won from the claw machine's plush (see `docs/archive/claw-machine-plan.md`).
 
 ## Tests to add
 

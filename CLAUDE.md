@@ -71,7 +71,8 @@ tests/docs.test.js fails if a new src/ file or test file isn't described in the 
 | change or add a module | its entry in docs/folder-structure.md (search for the file name) |
 | work in an area or add a door/spawn/buy spot | its entry in docs/map.md |
 | want the background of a past decision, a measured number, or how an area was built | docs/history.md (newest first; older: docs/archive/) |
-| plan the next big system | docs/wardrobe-plan.md, docs/wardrobe-showroom-plan.md (its rework), docs/claw-machine-plan.md, docs/closing-time-plan.md (the run goal and ending), docs/weapon-skins-plan.md (per-gun skins earned by challenges) (finished plans are in docs/archive/) |
+| plan the next big system | the open plans: docs/closing-time-plan.md (phase 12 left), docs/kiosk-kevin-plan.md (phase 8 left); finished plans (claw machine, wardrobe, weapon skins, hazards, bosses...) are in docs/archive/ |
+| want to know how COD zombies does something | docs/research/ (BO1, BO3, BO4 and Cold War script analyses, and a balance comparison) |
 | touch behaviour and want to know which test guards it | docs/tests.md |
 | change a gun | docs/weapon-balance-pass.md and `npm run balance` |
 | change a price, a payout or how strong an upgrade is | docs/economy-report.md and `npm run sim:economy` |
@@ -169,10 +170,10 @@ Built when `debug.testArena` is true (it still is: turn it off before shipping);
 ## Build order (status, November 2026)
 1-4. Walkable mall, staple gun, Shopper zombies + box cutter, waves/points/doors/wall buys (done)
 5. The roster: Mall Walker, Cart Pusher, Mannequin, Mascot (four costumes + gold) (done); bosses: Murray, Fairweather, Kettle, Skylar, with encores (done)
-6. Build-A-Blaster and Flash Sales (done); Wardrobe and claw machine (planned: docs/); Kiosk Kevin vendor (in progress); hazards (done: docs/archive/hazards-plan.md)
+6. Build-A-Blaster and Flash Sales (done); Wardrobe and claw machine (done); Kiosk Kevin vendor (phases 1-7 done, phase 8 spectacle left); hazards (done: docs/archive/hazards-plan.md)
 7. Second floor, escalators, stairs, multi-floor navigation (done); elevators (dropped: escalators and stairs do the job)
-8. Audio and UI polish (ongoing)
-9. Meta progression and skill tree (not started); a run goal / ending (planned, not built: docs/closing-time-plan.md, a "Closing Time" checklist with a final boss)
+8. Audio and UI polish (ongoing): Galleria FM radio, the minimap, weapon skins, the Survival Guide, Lost and Found (done)
+9. Meta progression and skill tree (not started); the run goal / ending, Closing Time (phases 1-11 done, phase 12 spectacle left: docs/closing-time-plan.md)
 
 ## Design reference (decisions made so far)
 - **Zombie roster, with intro rounds:** Shopper (round 1), Mall Walker (4, fast, low HP),

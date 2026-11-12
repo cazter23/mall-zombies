@@ -2,7 +2,7 @@
 
 Status (9 November 2026). Phase 1 has the fitting-room picker, words-only tickets and balance changes. Phase 2 has all twelve showpieces.
 Phase 3 has the outfit rail, and phase 4 has the first-person apparel and HUD looks. See docs/history.md for the placements and checks.
-This reworks Wardrobe v1 (docs/wardrobe-plan.md). Numbers are starting points, to be tuned by playing.
+This reworks Wardrobe v1 (docs/archive/wardrobe-plan.md). Numbers are starting points, to be tuned by playing.
 
 ## Why
 

@@ -1,6 +1,6 @@
 // =============================================================================
 // GRAB-A-GUN, the claw machine (game/features/clawMachine.js; the cabinet: maps/mall/clawCabinet.js; the plan:
-// docs/claw-machine-plan.md). Every number the machine uses. Its price is economy.claw (read through g.pricing).
+// docs/archive/claw-machine-plan.md). Every number the machine uses. Its price is economy.claw (read through g.pricing).
 //
 // A grab: pay (hold), three capsules fall into the pit, one per lane, and the claw sweeps over them. Press interact once
 // to drop it (or it drops by itself after autoDropSeconds); the capsule under it is the prize. It lifts, the gun sits in

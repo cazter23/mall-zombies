@@ -629,11 +629,11 @@ spend in total (the "spendable so far" table in section 3).
 | 20 | 9,500 | 80,060 / 77,236 | 8% | 16% | 42% |
 | 30 | 15,400 | 193,419 / 192,171 | 5% | 10% | 26% |
 
-- **GRAB-A-GUN (docs/claw-machine-plan.md).** The price: proposal D. "No round gate" can stay: the bot's two early grabs won a
+- **GRAB-A-GUN (docs/archive/claw-machine-plan.md).** The price: proposal D. "No round gate" can stay: the bot's two early grabs won a
   Heavy Coil Nailer twice in 16 grabs, and the claw-first runs were no faster over 15 rounds (17.4 minutes against 16.8). What
   was not measured: prize tickets (the free grab about every 7 grabs), Refurbished attachments, and the three claw-only guns, which the
   bot cannot use.
-- **Wardrobe (docs/wardrobe-plan.md).** Items cost 750 to 2,500: a third of a round to a whole round at rounds 4 to 6, when they
+- **Wardrobe (docs/archive/wardrobe-plan.md).** Items cost 750 to 2,500: a third of a round to a whole round at rounds 4 to 6, when they
   compete with the Rivet Rifle route and Deluxe, and small change by round 10. One item for each of the four slots (3,750 to
   7,250) is about a round of income at round 10. All twelve (16,250) cost about what rounds 11 to 13 pay. The prices are in the right range for
   a round 5 to 12 purchase; nothing here says what an item does for survival (the bot wears a cardigan and a fanny pack and nothing else).
@@ -664,4 +664,4 @@ spend in total (the "spendable so far" table in section 3).
 - Flash Sales and vouchers were on and are inside every number (about 16 sales a run); they were not measured apart.
 - Proposal E (more Renewals) is maths only.
 
-Phase 11 measurement note (11 November 2026): the Closing Time tool shares this report's bot, but now switches captured random functions to its seed after map construction and resets per-run choices before play. The historical tables above retain their original measurement method; their note about non-repeatable runs describes those historical runs. New quick reports are regenerated because the bot/config content hash changed. The economy runner now caps child processes at four, including an explicit larger --workers argument. Quest timing and overtime measurements live in closing-time-11-report.md.
+Phase 11 measurement note (11 November 2026): the Closing Time tool shares this report's bot, but now switches captured random functions to its seed after map construction and resets per-run choices before play. The historical tables above retain their original measurement method; their note about non-repeatable runs describes those historical runs. New quick reports are regenerated because the bot/config content hash changed. The economy runner now caps child processes at four, including an explicit larger --workers argument. Quest timing and overtime measurements come from `npm run sim:closing` (the phase 11 report was removed once the Return quest made it out of date).

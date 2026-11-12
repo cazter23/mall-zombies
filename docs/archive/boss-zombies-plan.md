@@ -94,7 +94,7 @@ Ring light, selfie stick, always filming. She doesn't chase you. She moves betwe
   They have half health and still count against the round's maximum alive.
 - **Phone flash:** a short, mild white flash if you get within 5 m, with a wind-up so you can look away.
   Settings → Comfort → Dim instead of phone flashes substitutes a dark overlay; the Calm preset enables it.
-- **Reward:** the **Discount Code**, 50% off your next purchase, saving up to 2,000. It doesn't work on the claw machine (docs/claw-machine-plan.md).
+- **Reward:** the **Discount Code**, 50% off your next purchase, saving up to 2,000. It doesn't work on the claw machine (docs/archive/claw-machine-plan.md).
 
 ## Rewards
 

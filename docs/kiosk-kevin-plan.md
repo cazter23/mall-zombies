@@ -2,6 +2,8 @@
 
 ## Built scope · 11 November 2026
 
+Status: phases 1 to 7 are built and in main; only phase 8 (spectacle: Kevin's model, the cart, product models and effects) remains.
+
 Phases 2 and 3 are built as Minimal Kiosk Kevin, with the Stadium Air Horn pulled forward from phase 5.
 Phase 4 is built (10 November 2026, `claude/kiosk-kevin-4`): five carts, and from round 3 Kevin moves at each
 'roundStart' to another open site (see "Where Kevin is"). He sells from round 2, starting at the Hallway site once the Hallway

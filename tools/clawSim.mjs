@@ -1,6 +1,6 @@
 // =============================================================================
 // GRAB-A-GUN ODDS REPORT:  npm run sim:claw   (optional: npm run sim:claw -- 1500  to try another grab price)
-// Reproduces docs/claw-machine-plan.md's odds tables from config/clawMachine.js (the simulation: tools/clawOdds.js):
+// Reproduces docs/archive/claw-machine-plan.md's odds tables from config/clawMachine.js (the simulation: tools/clawOdds.js):
 // what a grab wins at each timing, how long a site lasts and how it closes, the wall value of a prize, and what one
 // specific gun costs from the claw against its wall. Run it after changing the prize weights, plush odds, stock or price.
 // =============================================================================

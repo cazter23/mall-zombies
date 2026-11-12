@@ -1,6 +1,6 @@
 # Closing Time: plan for a run goal, an ending and a final boss
 
-Status: PHASES 1-10 merged; PHASE 11 BUILT on claude/closing-time-11 (not merged), 11 November 2026. Phase 12 remains planned. The ten decisions below are unchanged. See docs/closing-time-11-report.md for measurements and unapplied tuning questions.
+Status (11 November 2026): PHASES 1-11 are in main; only phase 12 (spectacle) remains. Since the plan, Return to Sender comes free from a hidden quest and the duties award return labels (docs/history.md, "The Return"), so decisions 6 and 8 are superseded. Phase 11's measurement report predated that and was removed; `npm run sim:closing` measures today's game.
 Every number is a starting point for `src/config/closingTime.js` and `config/economy.js`, to be tuned in phase 11. Build one phase at a
 time, each in its own worktree.
 

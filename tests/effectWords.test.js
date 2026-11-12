@@ -118,7 +118,7 @@ test('every real prompt the game builds from them is words: attachment counters,
   for (const slot of ['head', 'torso', 'feet', 'accessory']) for (const tag of g.outfitRail.snapshot().filter((x) => x.slot === slot)) for (const { text } of tag.lines) clean(text, `rail ${tag.id}`);
 });
 
-// --- GRAB-A-GUN (docs/claw-machine-plan.md): everything the claw machine and the Prize Counter SAY is words too. Prices, points, ticket counts,
+// --- GRAB-A-GUN (docs/archive/claw-machine-plan.md): everything the claw machine and the Prize Counter SAY is words too. Prices, points, ticket counts,
 // "N left" and countdown seconds stay numbers (the clean() check only rejects a digit with %, x, s, m, a degree sign or an arrow, and percentages).
 // A Flash Sale keeps its percentage (the claw sale group is checked with the others, above).
 

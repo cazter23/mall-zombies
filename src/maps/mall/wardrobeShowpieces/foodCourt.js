@@ -1,6 +1,6 @@
 // =============================================================================
 // FOOD COURT SHOWPIECES: the Paper Hat burger, the Wheelie Sneakers ramp and the Giant Foam Finger.
-// Each is one big themed fixture (docs/wardrobe-showroom-plan.md, section 1): readable from across the court, alive while
+// Each is one big themed fixture (docs/archive/wardrobe-showroom-plan.md, section 1): readable from across the court, alive while
 // unsold (idle motion), dim with a SOLD OUT card once owned. Shapes + motion live here; the sold state, the buying pose
 // and the motif are driven by game/features/wardrobeFixtures.js through the handle from showpiece.js.
 //

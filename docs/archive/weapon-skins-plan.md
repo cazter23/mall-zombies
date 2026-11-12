@@ -1,7 +1,7 @@
 # Weapon skins: plan for per-gun looks earned by challenges
 
-Status: PLAN ONLY (10 November 2026). Nothing here is built. Checked against main at a4cb9d2. Every number and every challenge is a
-starting point for `src/config/skins.js`, to be tuned in phase 8. Build one phase at a time, each in its own worktree.
+Status: BUILT, all nine phases (11 November 2026; see docs/history.md). Archived. The plan below is as written on 10 November; the code, docs/folder-structure.md and config/skins.js are the current truth.
+Its numbers were starting points for `src/config/skins.js`, tuned in phase 8.
 
 ## Decided by the user (10 November 2026)
 

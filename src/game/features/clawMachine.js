@@ -1,6 +1,6 @@
 // =============================================================================
 // GRAB-A-GUN, the claw machine (map feature kind 'clawMachine'; numbers in config/clawMachine.js; the plan:
-// docs/claw-machine-plan.md). The mystery box, but you work it:
+// docs/archive/claw-machine-plan.md). The mystery box, but you work it:
 //   idle      hold interact to pay (g.pricing 'claw' 'grab'). Three capsules fall into the pit, one per lane, each named on
 //             the screen and the ticket.
 //   sweeping  the claw travels across the lanes and back. PRESS interact once (an `instant` item: a timed press can't wait
