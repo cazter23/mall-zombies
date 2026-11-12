@@ -144,6 +144,13 @@ const CASES = {
     earn: t => { round(t, 3); times(need('bottleRocket'), () => kill(t, 'bottleRocket')); },
     near: t => { round(t, 3); times(need('bottleRocket') - 1, () => kill(t, 'bottleRocket')); round(t, 4); times(need('bottleRocket') - 1, () => kill(t, 'bottleRocket')); },
   },
+  balloonLauncher: {
+    earn: t => { round(t, featOf('balloonLauncher').challenge.minRound); kill(t, 'balloonLauncher', { zombie: boss(['balloonLauncher']) }); },
+    near: t => {
+      round(t, featOf('balloonLauncher').challenge.minRound - 1); kill(t, 'balloonLauncher', { zombie: boss(['balloonLauncher']) }); // too early
+      round(t, featOf('balloonLauncher').challenge.minRound); kill(t, 'balloonLauncher', { zombie: boss(['balloonLauncher', 'stargazer']) }); // the sniper helped
+    },
+  },
 };
 
 test('every gun has exactly one feat (slot 3) with a counter, a sentence built from its own data and a tracker line', () => {

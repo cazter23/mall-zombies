@@ -105,6 +105,10 @@ const CASES = {
     earn: t => kill(t, 'bottleRocket', { distance: 12 }),
     near: t => { kill(t, 'bottleRocket', { distance: 11.9 }); kill(t, 'stargazer', { distance: 30 }); },
   },
+  balloonLauncher: {
+    earn: t => kill(t, 'balloonLauncher', { zombie: shopper({ type: { id: 'mallWalker' } }) }),
+    near: t => { kill(t, 'balloonLauncher', { zombie: shopper({ type: { id: 'shopper' } }) }); kill(t, 'bottleRocket', { zombie: shopper({ type: { id: 'mallWalker' } }) }); },
+  },
 };
 
 test('every gun has exactly one role challenge, each with a counter and a sentence built from its own data', () => {

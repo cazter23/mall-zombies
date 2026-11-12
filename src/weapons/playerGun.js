@@ -224,7 +224,7 @@ export function createPlayerGun({
   // The launch is the shot; the burst's first zombie makes it a hit for the run's accuracy (onProjectileHit).
   function fireRocket(slot) {
     const { def: d, aim, weapon } = slot;
-    const r = d.rocket;
+    const r = d.flight;
     player.getAim(origin, direction);
     const flight = direction.clone();
     aim.applySpread(flight);

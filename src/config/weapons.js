@@ -1083,7 +1083,7 @@ export const weapons = {
     // The rocket in the air (weapons/ballistics.js, a `zombies: 'bounce'` instance: it bursts on the first thing it touches). speed m/s, gravity m/s^2 (a slight
     // drop), lifeSeconds (it bursts in the air at the end), radius m, startOffset / startDrop: where it leaves, in front of and below the eye. trailSeconds: a puff of
     // sparks behind it this often. look: fx/rocketView.js.
-    rocket: {
+    flight: {
       speed: 30, gravity: 2.5, lifeSeconds: 1.6, radius: 0.08, startOffset: 0.7, startDrop: -0.06, trailSeconds: 0.05,
       trail: { colors: [0xffd23f, 0xff8a1f, 0xfff6c8], count: 3, speed: 1.2, size: 0.03 },
       look: { body: 0xd8323a, stripe: 0xffffff, nose: 0xffd23f, stick: 0xc89a5a },
@@ -1137,6 +1137,85 @@ export const weapons = {
           { at: 0.2, sound: 'bottleRocketReloadOut' },
           { at: 0.68, sound: 'bottleRocketReloadIn', jolt: { back: 0.012, pitchDegrees: -2 } },
           { at: 0.86, sound: 'bottleRocketReloadReady', jolt: { up: 0.006, pitchDegrees: 2 } },
+        ],
+      },
+    },
+  },
+  // CLAW-ONLY (GRAB-A-GUN): the BALLOON LAUNCHER, from the party store. A helium-tank blaster that inflates a balloon on its nozzle and lets it go.
+  // Purple capsule. ROLE: the gun that hits what you DON'T aim at. A balloon drifts out slowly and HOMES (weapons/ballistics.js `homing`): it turns
+  // toward the nearest zombie ahead of it and in sight, and pops on what it touches with a small confetti blast (weapons/blast.js, no harm to you).
+  // So you can keep firing while you back away from a crowd, or at its edge, without lining anything up (it finds what is within 55 degrees of where
+  // it is flying, never behind). Weak on one zombie you are aiming at (below the Price Gun:
+  // tests/balance.test.js), slow enough that a balloon fired at a sprinting Mall Walker takes a moment to catch up.
+  // It uses the same flying-and-bursting path as the Bottle Rocket Bazooka (playerGun.js fires anything with `blast` + `flight` on g.rockets).
+  balloonLauncher: {
+    id: 'balloonLauncher', name: 'Balloon Launcher', fireMode: 'semi', clawOnly: true,
+    damage: 200, headshotMultiplier: 1, // (at the pop's centre; a pop has no headshots)
+    blast: {
+      radius: 1.3, edgeFraction: 0.5, // a small pop: the zombie it touched, and maybe one beside it
+      // (no `self`: a balloon pop never hurts you)
+      look: { colors: [0xff5ec8, 0x3ad1ff, 0xffd23f, 0x8a5cff, 0x5ce07a], count: 18, speed: 3.2, size: 0.05 }, // the pop: confetti and balloon scraps
+      flash: { color: 0xffd6f0, size: 0.8, seconds: 0.1 },
+    },
+    magazineSize: 8, startingReserve: 64,
+    fireInterval: 0.3, fireBuffer: 0.12, reloadTime: 2.6, range: 40,
+    // The balloon in the air (on g.rockets, like a rocket: it pops on the first thing it touches, or at the end of its life). Slow, and it rises a
+    // little (gravity below 0: helium). homing: it steers for the nearest zombie within `range`, inside coneDegrees of its flight and in sight, turning
+    // at most turnDegreesPerSecond (weapons/ballistics.js). look: fx/rocketView.js (model 'balloon', one of `colors` each, with a string).
+    flight: {
+      speed: 9, gravity: -0.4, lifeSeconds: 3.5, radius: 0.15, startOffset: 0.6, startDrop: -0.05, trailSeconds: 0,
+      homing: { range: 16, coneDegrees: 55, turnDegreesPerSecond: 140, retargetSeconds: 0.25 },
+      look: { model: 'balloon', colors: [0xff5ec8, 0x3ad1ff, 0xffd23f, 0x8a5cff, 0x5ce07a], string: 0xf4f1e8 },
+    },
+    recoil: {
+      pitchDegrees: 0.8, yawDegrees: 0.2, rollDegrees: 0.4, adsMultiplier: 0.6,
+      model: { back: 0.025, up: 0.006, pitchDegrees: 3, yawDegrees: 0.6, rollDegrees: 1.2,
+        adsMultiplier: 0.5, frequency: 6, damping: 0.55 },
+    },
+    impact: { flinch: 0.9, knockback: 1.2, hitstopSeconds: 0, deathImpulse: 1.2 },
+    spread: {
+      base: 1.2, moving: 2, maxMovingFactor: 1.5, airborne: 3,
+      perShot: 0.6, maxBloom: 2, bloomRecoveryDelay: 0.2, bloomRecovery: 5,
+      smoothing: 10, adsMultiplier: 0.3,
+    },
+    ads: { seconds: 0.22, fovMultiplier: 0.88, offset: { x: 0, y: -0.1, z: -0.38 } },
+    muzzleFlash: {
+      seconds: 0.04, size: 0.14, coreSize: 0.05, outerOpacity: 0.6, sizeJitter: 0.2,
+      forwardOffset: 0.05, outerColor: 0xffd6f0, coreColor: 0xffffff,
+      adsWidth: 1.4, adsHeight: 0.5, adsTwistFraction: 0.05,
+      lightColor: 0xffe6f4, handLightIntensity: 0.15, handLightRange: 0.6,
+      worldLightIntensity: 1, worldLightRange: 3,
+    },
+    sounds: { fire: 'balloonLaunch', dryFire: 'dryClick', burst: 'balloonPop' },
+    tracerColor: 0xff5ec8,
+    viewmodel: {
+      model: 'balloonLauncher', hipOffset: { x: 0.17, y: -0.15, z: -0.42 },
+      aimYawDegrees: 6, hipPitchDegrees: 1.5, hipRollDegrees: 3,
+      bodyColor: 0x2fc4c0, accentColor: 0xff5ec8, metalColor: 0xd6dbe2, // party-store teal and pink
+      darkColor: 0x1e2430, gripColor: 0x2a2f3a, sightColor: 0xffd23f, tankColor: 0xe9edf2, balloonColor: 0xff5ec8, ribbonColor: 0xffd23f,
+      // The balloon on the nozzle: it inflates over `inflateSeconds` after each shot (and after a reload), and shows only while loaded.
+      fire: { triggerDegrees: 22, pressSeconds: 0.025, releaseSeconds: 0.1, inflateSeconds: 0.25 },
+      // Reload: the gun tips, the support hand twists a fresh helium cartridge into the tank's base, and the gauge swings back up.
+      reload: {
+        gunKeys: [
+          { t: 0, pos: [0, 0, 0], rot: [0, 0, 0] },
+          { t: 0.18, pos: [0.01, -0.02, 0.03], rot: [12, 8, 18] },
+          { t: 0.8, pos: [0.01, -0.02, 0.03], rot: [12, 8, 18] },
+          { t: 1, pos: [0, 0, 0], rot: [0, 0, 0] },
+        ],
+        handKeys: [
+          { t: 0, pos: [0, 0, 0] },
+          { t: 0.2, pos: [-0.05, -0.16, 0.1], rot: [-20, 0, 0] },
+          { t: 0.38, pos: [-0.05, -0.16, 0.1], rot: [-20, 0, 0] },
+          { t: 0.56, pos: [-0.01, -0.04, 0.12], rot: [0, 0, 30] }, // under the tank
+          { t: 0.7, pos: [-0.01, -0.04, 0.12], rot: [0, 0, -40] }, // twists it in
+          { t: 0.9, pos: [0, 0, 0] },
+        ],
+        cartridgeVisible: [[0.38, 0.7]],
+        events: [
+          { at: 0.2, sound: 'balloonReloadOut' },
+          { at: 0.7, sound: 'balloonReloadIn', jolt: { up: -0.005, pitchDegrees: -2 } },
+          { at: 0.88, sound: 'balloonReloadReady', jolt: { back: 0.006, pitchDegrees: 2 } },
         ],
       },
     },

@@ -23,6 +23,7 @@ export const clawMachine = {
     returnToSender: { weight: 1, capsule: 'rainbow' }, // WONDER WEAPON: otherwise issued by the Return quest (config/returnQuest.js), so this stays the rarest prize; report value comes from economy.closing
     tennisBallLauncher: { weight: 7, capsule: 'purple', value: 1500 }, // CLAW-ONLY, like the Leaf Blower
     stargazer: { weight: 6, capsule: 'purple', value: 1500 }, // CLAW-ONLY: the sniper
+    balloonLauncher: { weight: 6, capsule: 'purple', value: 1500 }, // CLAW-ONLY: homing balloons
     bottleRocket: { weight: 2, capsule: 'gold', value: 2500 }, // CLAW-ONLY: the rocket launcher (gold: rarer than the purples, still above the wonder weapon)
     leafBlower: { weight: 7, capsule: 'purple', value: 1500 }, // CLAW-ONLY (config/weapons.js clawOnly): it is on no wall, this is the only way to it. `value`: a nominal worth for tools/clawOdds.js only (a wall gun's is its wall price); the game never reads it
     coilNailer: { weight: 3, capsule: 'gold' },

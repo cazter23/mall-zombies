@@ -1,5 +1,21 @@
 # Sunset Galleria: build history ("Current state")
 
+## 12 November 2026 - More claw-only guns, 3: the Balloon Launcher (homing balloons)
+
+From the user's wish list. **The Balloon Launcher**: a party-store helium blaster. Its job: it hits what you DON'T aim at. A balloon drifts out at 9 m/s, rising a
+little (gravity -0.4), and HOMES: every quarter second it picks the nearest live zombie within 16 m, inside 55 degrees of its flight and in sight, and turns
+toward its chest at up to 140 degrees a second; it pops on what it touches with a small harmless blast (200 at the centre, half that at 1.3 m). Eight balloons,
+0.3 s apart, a 2.6 s reload. On one zombie you aim at it does 340 a second, under the Price Gun's 434; fired 35 degrees wide of a zombie it still finds it.
+**The engine piece**: `homing` in weapons/ballistics.js (any projectile can carry it), tested alone first in ballistics.test.js. The gun itself needed no new
+system: it is a blast gun (`blast` + `flight`) like the Bottle Rocket Bazooka, so the `rocket` config block became `flight` and fx/rocketView.js draws each flight
+by its look.model (a firework or a bobbing balloon on a string). Balance: the first numbers had 170 a pop, which one-shot only a round-1 Shopper; 200 now.
+In the pool as a purple capsule, weight 6. `npm run sim:claw` (weights now total 129): it is in 13.4% of pits, won 6-7% of grabs; Return to Sender stays the
+rarest (2.3%). With five claw-only guns plus the wonder weapon, 29 of 129 weight (22% of a capsule, was 13%) is now a claw-only gun.
+Skins: Birthday Party; Polka Dot (150 Mall Walkers: the fast ones, homing catches them); Helium High (a boss from round 9 that only balloons hurt).
+**Still open**: the wardrobe's blast-proof item for the Bottle Rocket Bazooka (stats.ownBlastDamage already exists): the wardrobe is 4 slots x 3 items and
+the picker and its tests walk all 81 outfits, so a 13th item is a design decision for the user (a new item, or a third line on an existing one such as the
+Hi-Vis Vest).
+
 ## 12 November 2026 - More claw-only guns, 2: the Bottle Rocket Bazooka (the rocket launcher) and the blast
 
 The user's own idea, with their call on self-damage: your own rocket hurts you, and a wardrobe item will cancel it (the next step; until then

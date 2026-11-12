@@ -29,6 +29,7 @@ import { buildTennisBallLauncherModel, buildTennisBallLauncherDisplay } from './
 import { buildReturnToSenderModel, buildReturnToSenderDisplay } from './returnToSender.js';
 import { buildStargazerModel, buildStargazerDisplay } from './stargazer.js';
 import { buildBottleRocketModel, buildBottleRocketDisplay } from './bottleRocket.js';
+import { buildBalloonLauncherModel, buildBalloonLauncherDisplay } from './balloonLauncher.js';
 import { resolveGunColors } from '../skinPalette.js';
 import { applySkinPattern } from './skinPattern.js';
 import { applySkinTreatment } from './skinTreatments.js';
@@ -46,6 +47,7 @@ const builders = {
   returnToSender: { model: buildReturnToSenderModel, display: buildReturnToSenderDisplay },
   stargazer: { model: buildStargazerModel, display: buildStargazerDisplay },
   bottleRocket: { model: buildBottleRocketModel, display: buildBottleRocketDisplay },
+  balloonLauncher: { model: buildBalloonLauncherModel, display: buildBalloonLauncherDisplay },
   stapleGun: { model: buildStapleGunModel, display: buildStapleGunDisplay },
   priceGun: { model: buildPriceGunModel, display: buildPriceGunDisplay },
   nailGun: { model: buildNailGunModel, display: buildNailGunDisplay },

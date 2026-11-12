@@ -1,9 +1,11 @@
 // =============================================================================
-// ROCKET VIEW (browser side: draws the Bottle Rocket Bazooka's rockets)
-// Reads `rockets.list` (weapons/ballistics.js, g.rockets; the game runs without this) and shows each rocket as a firework: a striped body, a yellow
-// cone nose and a wooden stick trailing behind, pointed along its flight, between its last tick's position and this tick's (the render's `alpha`).
-// It also puffs a few sparks behind each rocket every trailSeconds of frame time (effects.confetti). One small pool of meshes, built once; a mesh is
-// hidden when its rocket is gone (burst, death, Play again). The look is config/weapons.js bottleRocket.rocket.
+// ROCKET VIEW (browser side: draws what flies on g.rockets, the guns with `blast` + `flight`)
+// Reads `rockets.list` (weapons/ballistics.js; the game runs without this) and draws each one by its gun's flight.look.model (config/weapons.js):
+//   rocket   the Bottle Rocket Bazooka: a firework (striped body, yellow nose, a wooden stick trailing) pointed along its flight, puffing a few
+//            sparks behind it every flight.trailSeconds of frame time (effects.confetti, flight.trail)
+//   balloon  the Balloon Launcher: a party balloon (one of look.colors, by the balloon's id) with a knot and a dangling string, bobbing as it drifts
+// Each is drawn between its last tick's position and this tick's (the render's `alpha`). One small pool of meshes per model, built as needed; a mesh
+// is hidden when its flight is over (burst, pop, death, Play again).
 // =============================================================================
 
 import * as THREE from 'three';
@@ -12,70 +14,104 @@ import { weapons } from '../config/weapons.js';
 const FORWARD = new THREE.Vector3(0, 0, -1);
 
 export function createRocketView(scene, rockets, effects) {
-  const r = weapons.bottleRocket.rocket;
-  const materials = {
-    body: new THREE.MeshStandardMaterial({ color: r.look.body, roughness: 0.7, flatShading: true }),
-    stripe: new THREE.MeshStandardMaterial({ color: r.look.stripe, roughness: 0.7, flatShading: true }),
-    nose: new THREE.MeshStandardMaterial({ color: r.look.nose, roughness: 0.5, emissive: r.look.nose, emissiveIntensity: 0.3, flatShading: true }),
-    stick: new THREE.MeshStandardMaterial({ color: r.look.stick, roughness: 0.9, flatShading: true }),
+  const materials = new Map(); // colour -> material (shared across the pool)
+  const material = (color, extra = {}) => {
+    const key = `${color}:${extra.emissive ?? ''}:${extra.roughness ?? ''}`;
+    if (!materials.has(key)) materials.set(key, new THREE.MeshStandardMaterial({ color, roughness: 0.6, flatShading: true, ...extra }));
+    return materials.get(key);
   };
   const geometries = {
     body: new THREE.CylinderGeometry(0.05, 0.05, 0.26, 10).rotateX(Math.PI / 2),
     stripe: new THREE.CylinderGeometry(0.052, 0.052, 0.04, 10).rotateX(Math.PI / 2),
     nose: new THREE.ConeGeometry(0.05, 0.1, 10).rotateX(-Math.PI / 2), // (the point to -Z: forward)
     stick: new THREE.BoxGeometry(0.012, 0.012, 0.4),
+    balloon: new THREE.SphereGeometry(0.15, 12, 9).scale(1, 1.18, 1),
+    knot: new THREE.ConeGeometry(0.025, 0.04, 6),
+    string: new THREE.BoxGeometry(0.004, 0.4, 0.004),
   };
-  const pool = [];
+  const pools = { rocket: [], balloon: [] };
   const group = new THREE.Group();
   group.name = 'rockets';
   scene.add(group);
-  const look = new THREE.Vector3();
   const heading = new THREE.Vector3();
   const back = new THREE.Vector3();
+  const look = new THREE.Vector3();
   let sinceTrail = 0;
+  let time = 0;
 
-  function make() {
+  function makeRocket(flight) {
+    const r = flight.look;
     const rocket = new THREE.Group();
-    const mesh = (part, z, x = 0) => {
-      const m = new THREE.Mesh(geometries[part], materials[part]);
+    const part = (geometry, color, z, x = 0, extra) => {
+      const m = new THREE.Mesh(geometries[geometry], material(color, extra));
       m.position.set(x, 0, z);
       rocket.add(m);
     };
-    mesh('body', 0);
-    mesh('stripe', -0.05);
-    mesh('stripe', 0.07);
-    mesh('nose', -0.18);
-    mesh('stick', 0.3, 0.05);
-    rocket.visible = false;
-    group.add(rocket);
+    part('body', r.body, 0);
+    part('stripe', r.stripe, -0.05);
+    part('stripe', r.stripe, 0.07);
+    part('nose', r.nose, -0.18, 0, { emissive: r.nose, emissiveIntensity: 0.3 });
+    part('stick', r.stick, 0.3, 0.05);
     return rocket;
+  }
+  function makeBalloon(flight) {
+    const balloon = new THREE.Group();
+    const skin = new THREE.Mesh(geometries.balloon, material(flight.look.colors[0], { roughness: 0.35 }));
+    skin.name = 'balloonSkin';
+    const knot = new THREE.Mesh(geometries.knot, skin.material);
+    knot.position.y = -0.19;
+    const string = new THREE.Mesh(geometries.string, material(flight.look.string));
+    string.position.y = -0.4;
+    balloon.add(skin, knot, string);
+    balloon.userData.skin = skin;
+    balloon.userData.knot = knot;
+    return balloon;
   }
 
   return {
     group,
     update(alpha = 1, frameTime = 0) {
-      const live = rockets.list;
-      while (pool.length < live.length) pool.push(make());
+      time += frameTime;
       sinceTrail += frameTime;
-      const puff = sinceTrail >= r.trailSeconds;
-      if (puff) sinceTrail = 0;
-      for (let i = 0; i < pool.length; i++) {
-        const mesh = pool[i];
-        const rocket = live[i];
-        mesh.visible = !!rocket;
-        if (!rocket) continue;
-        mesh.position.lerpVectors(rocket.previous, rocket.position, alpha);
-        if (rocket.velocity.lengthSq() > 1e-6) {
-          heading.copy(rocket.velocity).normalize();
+      const used = { rocket: 0, balloon: 0 };
+      let puffed = false;
+      for (const item of rockets.list) {
+        const flight = weapons[item.weaponId]?.flight;
+        if (!flight) continue;
+        const model = flight.look.model ?? 'rocket';
+        const pool = pools[model];
+        if (!pool) continue;
+        if (pool.length <= used[model]) {
+          const mesh = model === 'balloon' ? makeBalloon(flight) : makeRocket(flight);
+          group.add(mesh);
+          pool.push(mesh);
+        }
+        const mesh = pool[used[model]++];
+        mesh.visible = true;
+        mesh.position.lerpVectors(item.previous, item.position, alpha);
+        if (model === 'balloon') {
+          const color = flight.look.colors[item.id % flight.look.colors.length];
+          const skin = mesh.userData.skin;
+          if (skin.material.color.getHex() !== color) skin.material = mesh.userData.knot.material = material(color, { roughness: 0.35 });
+          mesh.rotation.set(Math.sin(time * 3 + item.id) * 0.15, item.id, Math.cos(time * 2.4 + item.id) * 0.15); // (a lazy bob)
+          continue;
+        }
+        if (item.velocity.lengthSq() > 1e-6) {
+          heading.copy(item.velocity).normalize();
           mesh.quaternion.setFromUnitVectors(FORWARD, heading);
         }
-        if (puff && effects) effects.confetti(back.copy(mesh.position).addScaledVector(heading, -0.2), look.copy(heading).negate(), r.trail);
+        if (flight.trail && effects && sinceTrail >= flight.trailSeconds) {
+          puffed = true;
+          effects.confetti(back.copy(mesh.position).addScaledVector(heading, -0.2), look.copy(heading).negate(), flight.trail);
+        }
       }
+      if (puffed) sinceTrail = 0;
+      for (const [model, pool] of Object.entries(pools)) for (let i = used[model]; i < pool.length; i++) pool[i].visible = false;
     },
     dispose() {
       scene.remove(group);
       for (const g of Object.values(geometries)) g.dispose();
-      for (const m of Object.values(materials)) m.dispose();
+      for (const m of materials.values()) m.dispose();
     },
   };
 }

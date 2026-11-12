@@ -13,7 +13,7 @@ import { buildWallBuy } from '../src/game/features/wallBuy.js';
 import { getDeathReport, deathReports } from '../src/config/deathReports.js';
 
 const rk = weapons.bottleRocket;
-const FLIGHT_TICKS = Math.ceil(rk.rocket.lifeSeconds / dt) + 5;
+const FLIGHT_TICKS = Math.ceil(rk.flight.lifeSeconds / dt) + 5;
 
 // In the Main Hallway along z 0 (clear for 39 m), the bazooka in hand. `x`, `yaw`: where and which way (default: the west end, facing +x).
 function setup(x = -17, yaw = -Math.PI / 2) {

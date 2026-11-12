@@ -219,7 +219,7 @@ test('Stargazer 3000, the sniper: the further away, the harder it hits; the hard
 test('Bottle Rocket Bazooka: the only gun that hurts everything around a point; it breaks a clump better than anything on the wall, duels worse than the Price Gun, and can hurt you but never one-shot you', () => {
   const rk = weapons.bottleRocket;
   assert.equal(rk.clawOnly, true);
-  for (const d of Object.values(weapons)) if (d !== rk) assert.equal(d.blast, undefined, `${d.name} has no blast`);
+  for (const d of Object.values(weapons)) if (d !== rk && d.blast) assert.ok(d.blast.radius < rk.blast.radius / 2 && !d.blast.self, `${d.name}: any other blast is a small pop that never hurts you`);
   const NO_STATS = { damageMultiplier: 1 };
   const at = (m) => hitDamage(rk, { part: 'body', blastDistance: m }, 0, NO_STATS);
   const cycle = magazineSeconds(rk) + reloadSeconds(rk);
@@ -241,4 +241,18 @@ test('Bottle Rocket Bazooka: the only gun that hurts everything around a point; 
   assert.ok(rk.blast.self.share >= 0.25 && rk.blast.self.maxShare < 1);
   // Still not the wonder weapon: Return to Sender kills more a second on one zombie from round 12 (its own test checks every gun).
   assert.ok(killsPerSecond(rk, zombieHealthForRound(12), 5, style(rk)) < killsPerSecond(weapons.returnToSender, zombieHealthForRound(12), 5, style(weapons.returnToSender)));
+});
+
+test('Balloon Launcher: the gun that hits what you do not aim at. Its balloons home (a wide cone, a quick turn, a long reach) but fly slowly; on one zombie you aim at it is below the Price Gun, and its pop is small and never hurts you', () => {
+  const bl = weapons.balloonLauncher;
+  assert.equal(bl.clawOnly, true);
+  for (const d of Object.values(weapons)) if (d !== bl) assert.equal(d.flight?.homing, undefined, `${d.name} does not home`);
+  const h = bl.flight.homing;
+  assert.ok(h.coneDegrees >= 45 && h.coneDegrees <= 75, 'it finds a zombie well off to one side, never one behind it');
+  assert.ok(h.turnDegreesPerSecond >= 90, 'and turns hard enough to reach it');
+  assert.ok(h.range >= 10 && bl.flight.speed * bl.flight.lifeSeconds >= 25, 'across a room and down a corridor');
+  assert.ok(bl.flight.speed <= 12, 'slow: a balloon, not a bullet (a sprinting Mall Walker gets a head start)');
+  for (const m of [2, 5, 10, 20]) assert.ok(dps(bl, m) < dps(priceGun, m), `aimed at one zombie at ${m} m: ${Math.round(dps(bl, m))} vs the Price Gun's ${Math.round(dps(priceGun, m))}`);
+  assert.ok(bl.blast.radius <= 1.5 && !bl.blast.self, 'a small pop, harmless to you');
+  assert.ok(bl.magazineSize >= 6 && bl.fireInterval <= 0.4, 'a handful of balloons, quickly: fire and forget');
 });

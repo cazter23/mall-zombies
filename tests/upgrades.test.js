@@ -96,11 +96,15 @@ test('what each attachment does (on the Price Gun), and that the Laser Pointer l
   assert.ok(g('speedLoader').magazineSize < priceGun.magazineSize && g('speedLoader').reloadTime < priceGun.reloadTime);
 });
 
-test('fits: everything fits every gun except the Extended Nozzle on a gun with no falloff to extend (the Nail Gun, Return to Sender, the Bottle Rocket Bazooka); Sawn-Off GIVES it falloff', () => {
+test('fits: everything fits every gun except the Extended Nozzle on a gun with no falloff to extend (the Nail Gun, Return to Sender, the blast guns); Sawn-Off GIVES it falloff', () => {
   for (const base of guns) {
     for (const id of ATTACHMENTS) {
       const fits = attachmentFits(base, id);
-      assert.equal(fits, !(['nailGun', 'returnToSender', 'bottleRocket'].includes(base.id) && id === 'extendedNozzle'), `${id} on ${base.id}`);
+      assert.equal(fits, !(!base.falloff && id === 'extendedNozzle'), `${id} on ${base.id}`);
+    }
+    if (['nailGun', 'returnToSender', 'bottleRocket', 'balloonLauncher'].includes(base.id)) assert.equal(base.falloff, undefined, `${base.id} has no falloff`);
+    for (const id of ATTACHMENTS) {
+      const fits = attachmentFits(base, id);
       if (fits) at(base, 'platinum', id); // resolves without throwing
     }
   }

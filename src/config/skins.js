@@ -214,6 +214,20 @@ export const skins = {
     challenge: { kind: 'roundKills', count: 40, needs: ['claw'], track: '{value} / {count} this round',
       text: 'Clear {count} zombies with the {gun} in one round.' },
   }],
+  balloonLauncher: [{ id: 'birthday-party', name: 'Birthday Party', slot: 1,
+    palette: { body: 0xff8fc8, dark: 0x3a1a34, metal: 0xf0e4ec, grip: 0x2a1a28, accent: 0x3ad1ff, sight: 0xffd23f, ammo: 0x3ad1ff },
+    challenge: mastery(1000) }, {
+    id: 'polka-dot', name: 'Polka Dot', slot: 2,
+    palette: { body: 0xffd23f, dark: 0x3a2a10, metal: 0xf4ecd8, grip: 0x2a2014, accent: 0xff3b3b, sight: 0xff5ec8, ammo: 0xff3b3b },
+    pattern: { kind: 'dots', ink: 0xff3b3b, spacing: 0.02, radius: 0.005 }, // party-bag polka dots
+    challenge: { kind: 'typeKills', count: 150, types: ['mallWalker'], needs: ['claw'], text: 'Clear {count} Mall Walkers with the {gun}.' },
+  }, {
+    id: 'helium-high', name: 'Helium High', slot: 3,
+    palette: { body: 0xb8f0ff, dark: 0x1c2c44, metal: 0xeef6fa, grip: 0x18202c, accent: 0xa070ff, sight: 0xffd23f, ammo: 0xa070ff },
+    treatment: { kind: 'drift', role: 'accent', colors: [0xff5ec8, 0x3ad1ff, 0xffd23f], low: 0.1, high: 0.3, period: 5 }, // a bunch of balloons catching the light
+    challenge: { kind: 'soloBoss', count: 1, minRound: 9, needs: ['claw'], track: 'Boss: {gun} only',
+      text: 'Finish a boss from round {minRound} on that nothing but the {gun} has hurt.' },
+  }],
 };
 
 // --- The Closing Time rewards (plan: "The Closing Time rewards"). ONE look that fits every gun, so a win unlocks it on all eleven at once

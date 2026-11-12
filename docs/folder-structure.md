@@ -207,6 +207,8 @@ src/
                         DOM-free: createGame ticks it (after the zombies) and clears it on death and Play again ('balls' reset step); fx/ballView.js draws it.
                         createBalls({ ..., zombies: 'bounce' }): a zombie is bounced off WITHOUT being hit (no takeHit, no onHit): the second instance
                         createGame makes for thrown equipment (g.throwables, game/equipment.js).
+                        projectile.homing (the Balloon Launcher): it STEERS in flight toward the nearest live zombie (with a type, not noRewards) within range, inside
+                        coneDegrees of its flight and in view, re-picked every retargetSeconds or when that one dies, turning at most turnDegreesPerSecond at the same speed.
     fuel.js             The fuel tank of a gun with `fuel` (the Leaf Blower): createFuel(), tickFuel(state, cfg, dt, { fired, level, capacity }) -> units to add
                         (it refills by itself regenDelay after the last pulse, at regenPerSecond; running dry LOCKS the trigger until the tank holds restartAt),
                         resetFuel(). Pure timing: the tank's LEVEL is the weapon's `magazine`, so the HUD, RESTOCK-O-MATIC, Refurbished grabs and
@@ -325,6 +327,8 @@ src/
                         bottleRocket.js = the claw-only rocket launcher: a fireworks-stand cardboard tube (red, white bands, yellow stars, a dark flared back end, a flip-up
                         sight, a coiled fuse with a glowing tip); the loaded rocket's nose shows in the mouth only while loaded (animate's state.loaded, from viewmodel.js);
                         the support hand brings a fresh rocket from below to reload.
+                        balloonLauncher.js = the claw-only homing launcher: a teal party blaster with pink trim, a silver helium tank and gauge on top, a nozzle with
+                        ribbons; a balloon inflates on the nozzle after each shot (sinceFire, state.loaded); the support hand twists in a helium cartridge to reload.
                         leafBlower.js = orange motor housing, red fuel tank with a level window, ribbed flared nozzle (the claw-only Leaf Blower).
                         Each model also returns `mounts` (barrel / top / side / grip / magazine / sticker: where upgrade parts go).
                         upgradeParts.js = what upgrades LOOK like: buildAttachmentPart(id, mount) (mounting brackets/adapters on universal
@@ -858,8 +862,9 @@ src/
                         playing and the next held, a crossfade at the end, onTrackChange for the now-playing card, setTapeWear, nowPlaying.
   fx/
     ballView.js         Browser side only: draws `balls.list` (the Tennis Ball Launcher's balls) as a pool of tumbling tennis balls between last tick's and this tick's position (alpha).
-    rocketView.js       Browser side only: draws g.rockets.list (the Bottle Rocket Bazooka's rockets) as fireworks (striped body, nose, trailing stick) pointed along
-                        their flight between last tick's and this tick's position (alpha), and puffs sparks behind them (effects.confetti) every rocket.trailSeconds.
+    rocketView.js       Browser side only: draws g.rockets.list (what the blast guns fire) by its gun's flight.look.model: 'rocket' (the Bottle Rocket Bazooka: a firework
+                        pointed along its flight, puffing sparks, effects.confetti, every flight.trailSeconds) or 'balloon' (the Balloon Launcher: a bobbing party
+                        balloon on a string, its colour by the balloon's id); between last tick's and this tick's position (alpha).
     throwableView.js    Browser side only: draws `equipment.live` (Kiosk Kevin's thrown things), one pool per look.model: the cola bottle (tumbling in the
                         air, lying and rattling on the floor, swelling as the fuse runs out), the Sparkler Cake (spinning, then upright and jittering
                         while it sprays), the Glitter Bomb card (flipping) and the Sentry (tumbling, then standing with its head turned to item.yaw);

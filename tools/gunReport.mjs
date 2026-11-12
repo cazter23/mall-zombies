@@ -144,12 +144,12 @@ if (blastGuns.length) {
   const noStats = { damageMultiplier: 1 };
   const lastRound = (damage) => { let round = 0; while (round < 60 && zombieHealthForRound(round + 1) <= damage) round += 1; return round; };
   console.log('\nBLAST GUNS (damage by distance from the burst; your own blast: share of your max health)');
-  console.table(blastGuns.flatMap((d) => [0, 1, 1.5, 2.5, d.blast.radius].map((m) => {
+  console.table(blastGuns.flatMap((d) => [...new Set([0, 1, 1.5, 2.5].filter((m) => m < d.blast.radius).concat(d.blast.radius))].map((m) => {
     const damage = hitDamage(d, { part: 'body', blastDistance: m }, 0, noStats);
-    const self = Math.min(d.blast.self.share * (1 + (d.blast.edgeFraction - 1) * m / d.blast.radius), d.blast.self.maxShare);
+    const self = d.blast.self ? Math.min(d.blast.self.share * (1 + (d.blast.edgeFraction - 1) * m / d.blast.radius), d.blast.self.maxShare) : 0;
     return { gun: d.name, 'from the burst': `${m} m`, damage: r0(damage), 'kills to round': lastRound(damage), 'to you': `${Math.round(100 * self)}%` };
   })));
-  console.table(blastGuns.map((d) => {
+  console.table(blastGuns.filter((d) => d.blast.radius >= 2).map((d) => { // (a clump 1.5 m round the burst: only a real blast reaches it, not a balloon's pop)
     const cycle = magazineSeconds(d) + reloadSeconds(d);
     const clump = (6 * hitDamage(d, { part: 'body', blastDistance: 1.5 }, 0, noStats)) / cycle;
     const best = guns.filter((g) => !g.clawOnly).map((g) => [g.name, sustainedDps(g, 15, playStyle(g)) * Math.min(6, g.pierce?.maxTargets ?? 1)]).sort((a, b) => b[1] - a[1])[0];

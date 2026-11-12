@@ -428,6 +428,27 @@ export const audio = {
       { type: 'noise', filter: 'lowpass', freq: 1200, q: 0.8, gain: 0.5, attack: 0.001, decay: 0.05 },
       { type: 'tone', wave: 'triangle', freq: 660, freqEnd: 660, gain: 0.15, attack: 0.001, decay: 0.1, delay: 0.04 },
     ] },
+    // The Balloon Launcher: a hiss of helium and a rubbery squeak as a balloon lets go; the pop is a sharp crack with a little confetti rustle.
+    balloonLaunch: { volume: 0.6, layers: [
+      { type: 'noise', filter: 'highpass', freq: 3000, q: 0.7, gain: 0.5, attack: 0.005, decay: 0.12 },
+      { type: 'tone', wave: 'triangle', freq: 520, freqEnd: 980, gain: 0.3, attack: 0.005, decay: 0.09 },
+      { type: 'tone', wave: 'sine', freq: 300, freqEnd: 220, gain: 0.25, attack: 0.002, decay: 0.06 },
+    ] },
+    balloonPop: { volume: 0.8, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 2400, q: 0.6, gain: 1, attack: 0.001, decay: 0.035 },
+      { type: 'tone', wave: 'sine', freq: 240, freqEnd: 90, gain: 0.5, attack: 0.001, decay: 0.06 },
+      { type: 'noise', filter: 'highpass', freq: 5000, q: 0.7, gain: 0.2, attack: 0.01, decay: 0.2, delay: 0.03 },
+    ] },
+    balloonReloadOut: { volume: 0.5, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 1400, q: 1.3, gain: 0.5, attack: 0.001, decay: 0.06 },
+    ] },
+    balloonReloadIn: { volume: 0.55, layers: [ // a cartridge twisted in, then the hiss of the tank filling
+      { type: 'noise', filter: 'bandpass', freq: 1800, q: 1.4, gain: 0.5, attack: 0.001, decay: 0.05 },
+      { type: 'noise', filter: 'highpass', freq: 3500, q: 0.7, gain: 0.35, attack: 0.02, decay: 0.25, delay: 0.05 },
+    ] },
+    balloonReloadReady: { volume: 0.5, layers: [
+      { type: 'tone', wave: 'triangle', freq: 880, freqEnd: 1320, gain: 0.2, attack: 0.002, decay: 0.12 },
+    ] },
     // One pulse of the Leaf Blower's stream (every 0.15 s): wind and a motor, long enough to run into the next one so it reads as one roar.
     leafBlowerPuff: { volume: 0.5, layers: [
       { type: 'noise', filter: 'bandpass', freq: 900, q: 0.5, gain: 0.7, attack: 0.025, decay: 0.2 },

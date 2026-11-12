@@ -10,6 +10,7 @@ export const gunPaletteKeys = {
   tennisBallLauncher: { ballColor: 'ammo', glassColor: 'glass' },
   stargazer: { lensColor: 'glass', starColor: 'accent' },
   bottleRocket: { rocketColor: 'ammo', noseColor: 'sight', wickColor: 'grip' },
+  balloonLauncher: { tankColor: 'metal', balloonColor: 'ammo', ribbonColor: 'sight' },
   leafBlower: { tankColor: 'body' },
   barcodeScanner: { coilColor: 'accent', windowColor: 'emitter' },
   coilNailer: { drumColor: 'dark', coilColor: 'accent' },
