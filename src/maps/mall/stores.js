@@ -68,6 +68,28 @@ export function storeOpenings(stores, side) {
   return stores.filter((s) => s.side === side).map(storeOpening);
 }
 
+// A pod's outside side wall, facing the court: a printed ad board, and giant alphabet blocks stacked at its foot (solid,
+// vaultable: knee and waist height). store.exterior = { side 'east' | 'west', sign, blocks: [[letter, colour, z, level]] }.
+const BLOCK = 0.45;
+function dressExterior(kit, store, { x, sideMin, sideMax }) {
+  const E = store.exterior, out = E.side === 'east' ? 1 : -1, facing = out > 0 ? 'x+' : 'x-';
+  const zc = (sideMin + sideMax) / 2, span = sideMax - sideMin;
+  kit.sign(E.sign, { x: x + out * 0.025, y: 2.75, z: zc, width: Math.min(3.8, span - 0.8), height: 1.25, facing, style: 'toy' })
+    .name = `store_${store.id}_side_ad`;
+  const stacks = new Map();
+  for (const [letter, color, z, level] of E.blocks) {
+    const x0 = out > 0 ? x + 0.01 : x - 0.01 - BLOCK, y0 = level * BLOCK;
+    kit.box(x0, y0, z - BLOCK / 2, x0 + BLOCK, y0 + BLOCK, z + BLOCK / 2, kit.mat(color, { roughness: 0.6 }), { collide: false, name: 'toy_block' });
+    kit.sign(letter, { x: out > 0 ? x0 + BLOCK + 0.006 : x0 - 0.006, y: y0 + BLOCK / 2, z, width: BLOCK * 0.8, height: BLOCK * 0.8, facing,
+      background: '#fff6e6', color: '#' + color.toString(16).padStart(6, '0'), font: '"Fredoka", Arial, sans-serif' }).name = 'toy_block_letter';
+    stacks.set(z, Math.max(stacks.get(z) ?? 0, y0 + BLOCK));
+  }
+  for (const [z, top] of stacks) { // one collider per stack, vaultable (they're at most waist high)
+    const x0 = out > 0 ? x + 0.01 : x - 0.01 - BLOCK;
+    kit.addCollider(x0, 0, z - BLOCK / 2, x0 + BLOCK, top, z + BLOCK / 2).vaultable = true;
+  }
+}
+
 export function buildStores({ kit, props, court, thickness: T, stores }) {
   const { box, mat, sign, addCollider, group } = kit;
   const spots = [];
@@ -123,6 +145,7 @@ export function buildStores({ kit, props, court, thickness: T, stores }) {
     const sideMax = south ? zIn : zBack;
     box(from - T, 0, sideMin, from, WALL_H, sideMax, wallMat, { name: `store_${store.id}_wall` });
     box(to, 0, sideMin, to + T, WALL_H, sideMax, wallMat, { name: `store_${store.id}_wall` });
+    if (store.exterior) dressExterior(kit, store, { x: store.exterior.side === 'east' ? to + T : from - T, sideMin, sideMax });
     if (south) box(from - T, 0, zBack - T, to + T, WALL_H, zBack, wallMat, { name: `store_${store.id}_wall` });
     else B(from, 0, 0, to, CEIL_Y, 0.01, wallMat, { collide: false }); // paint the hallway wall in the store's color (1cm: things hung on it sit proud)
     // The front wall: a pod builds its own (a recessed store's is the Food Court wall, opened by storeOpenings).

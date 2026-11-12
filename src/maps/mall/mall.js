@@ -153,6 +153,8 @@ export const LAYOUT = {
       id: 'playTimeToys', name: 'PLAY TIME TOYS', slot: 'magazine', side: 'north', from: -16.4, to: -10.6, depth: 4.5, doorWidth: 3, theme: 'playTimeToys',
       color: 0xffc83d, signColor: '#ffd23f', wall: 0xfff1a8, floor: { base: '#f4b6d2', grout: '#ffd6e7', variation: 8, seed: 45 },
       apron: 0xff7bd5, title: 'PLAY TIME TOYS · MAGAZINES', titleColor: '#ffd23f', signStyle: 'toy',
+      // Its east side wall faces the seating: an ad board and giant alphabet blocks instead of bare yellow (stores.js).
+      exterior: { side: 'east', sign: 'PLAY TIME! · TOYS · GAMES · PLUSH', blocks: [['A', 0xe63946, -3.25, 0], ['B', 0x3a86ff, -3.25, 1], ['C', 0xffd23f, -3.8, 0]] },
     },
     {
       id: 'byteMe', name: 'BYTE ME ELECTRONICS', slot: 'sight', side: 'north', from: 10.6, to: 16.4, depth: 4.5, doorWidth: 3, theme: 'byteMe',

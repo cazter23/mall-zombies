@@ -13,6 +13,17 @@ export const MART_FIXTURES = {
     { x: 31, faces: ['holidays', 'housewares'], seed: 61 },
   ],
   checkoutZs: [4.1, 1.3, -1.5, -4.3],
+  // Overstock racks bolted high on the side walls, the way a big box keeps its back stock: two decks of boxed stock from
+  // above head height (clear of the aisles, the spawns and the posters below), each with a department sign over it.
+  // wall 'east' / 'west', z0..z1 along it; decks at these heights (m); depth out of the wall.
+  overstock: {
+    decks: [3.0, 3.72], depth: .62, uprightEvery: 1.6, signY: 4.62,
+    racks: [
+      { wall: 'east', z0: -9.6, z1: -3.1, sign: 'SEASONAL · OVERSTOCK', seed: 71 },
+      { wall: 'west', z0: -14.8, z1: -11.1, sign: 'BULK · BACK STOCK', seed: 83 },
+      { wall: 'west', z0: -5.6, z1: -1.3, sign: 'HOUSEWARES', seed: 97 },
+    ],
+  },
 };
 
 export function buildMegaMartDetails(kit, room) {
@@ -211,6 +222,35 @@ export function buildMegaMartDetails(kit, room) {
   for (const cfg of megaMartLighting) {
     const light = new THREE.PointLight(cfg.color, cfg.intensity, cfg.distance, 2);
     light.name = cfg.name; light.position.set(cfg.x, cfg.y, cfg.z); details.add(light);
+  }
+
+  // Overstock racks high on the side walls (MART_FIXTURES.overstock): orange uprights, navy beams, plywood decks, and boxed
+  // stock in cardboard and the store's own colours, a few gaps where a box went missing.
+  const O = MART_FIXTURES.overstock, orange = mat(0xf58a39, { roughness: .6 }), navy = mat(0x263d5c), ply = mat(0xc9a06b);
+  const stockColors = [cardboard, cardboard, cardboard, mat(0xd2b48c), blue, red, white];
+  for (const rack of O.racks) {
+    const east = rack.wall === 'east';
+    const wallX = east ? room.maxX : room.minX + 0.3; // (the west wall's inside face: the Mart's wall thickness)
+    const out = east ? -1 : 1; // into the room
+    const front = wallX + out * O.depth, mid = wallX + out * O.depth / 2;
+    const length = rack.z1 - rack.z0, zc = (rack.z0 + rack.z1) / 2;
+    const random = seededRandom(rack.seed);
+    for (let z = rack.z0; z <= rack.z1 + 1e-6; z += Math.min(O.uprightEvery, length)) {
+      box('overstock_upright', front - out * .03, (O.decks[0] - .1 + O.decks[1] + .7) / 2, z, .05, O.decks[1] + .7 - O.decks[0] + .1, .06, orange);
+      box('overstock_bracket', mid, O.decks[0] - .06, z, O.depth, .06, .05, orange);
+    }
+    for (const y of O.decks) {
+      box('overstock_deck', mid, y, zc, O.depth - .02, .035, length, ply);
+      box('overstock_beam', front - out * .03, y - .04, zc, .06, .08, length + .06, navy);
+      let z = rack.z0 + .04;
+      while (z < rack.z1 - .3) {
+        const w = .32 + random() * .34, h = .24 + random() * .36, d = .3 + random() * (O.depth - .38);
+        if (random() > .14) box('overstock_box', wallX + out * (.04 + d / 2), y + .0175 + h / 2, z + w / 2, d, h, w,
+          stockColors[Math.floor(random() * stockColors.length)]);
+        z += w + .03;
+      }
+    }
+    sign('overstock_sign', rack.sign, wallX + out * .025, O.signY, zc, Math.min(length - .2, 4.2), .42, east ? 'x-' : 'x+', '#182b49', '#ffe2a3');
   }
 
   const batches = new Map();

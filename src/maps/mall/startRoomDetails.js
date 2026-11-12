@@ -298,6 +298,37 @@ export function buildStartRoomDetails(kit, room) {
   box('damaged_diffuser', 0.60, room.height - 0.17, 7.12, 0.95, room.height - 0.12, 7.86, dust).rotation.z = -0.12;
   for (const z of [7.25, 7.70]) box('broken_light_tube', -0.72, room.height - 0.12, z, 0.42, room.height - 0.08, z + 0.035, dark);
 
+  // The bare east wall behind the crates: a slatwall of leftover stock, most hooks already empty.
+  const ex = room.maxX - cx; // (the east wall's face, room-relative x)
+  const slat0 = 5.6, slat1 = 9.4; // (z from the front: clear of the Price Gun wall buy and the back corner's vent)
+  box('slatwall', ex - .025, 1.65, slat0, ex - .005, 2.75, slat1, cream);
+  for (let y = 1.72; y < 2.72; y += .11) box('slat_groove', ex - .031, y, slat0 + .02, ex - .025, y + .012, slat1 - .02, dust);
+  const hookColors = [red, wood, metal, tape];
+  let hook = 0;
+  for (const y of [2.36, 1.98]) {
+    for (let z = slat0 + .3; z < slat1 - .2; z += .45, hook++) {
+      box('slat_hook', ex - .2, y, z - .006, ex - .031, y + .012, z + .006, metal);
+      if (hook % 3 === 1) box('slat_stock', ex - .19, y - .27, z - .08, ex - .13, y - .02, z + .08, hookColors[hook % hookColors.length]); // (what's left)
+    }
+  }
+  sign('slatwall_header', 'LAST CHANCE · ALL SALES FINAL', ex - .045, 2.62, (slat0 + slat1) / 2, 1.9, .2, 'x-', '#b93f39');
+  // SALE pennants strung across the ceiling, and a FINAL WEEK sign hung on wires over the middle of the shop.
+  const top = room.height - .25;
+  const pennants = [red, cream, tape];
+  for (const z of [3.0, 6.8]) {
+    box('pennant_string', -4.9, top, z - .006, 4.9, top + .012, z + .006, dark);
+    let k = 0;
+    for (let x = -4.6; x <= 4.6; x += .4, k++) {
+      box('pennant', x - .09, top - .2, z - .004, x + .09, top - .02, z + .004, pennants[k % pennants.length]).rotation.z = Math.PI / 4;
+    }
+  }
+  const hangY = room.height - .85;
+  for (const x of [-.7, .7]) box('sign_wire', x - .006, hangY + .22, 4.994, x + .006, room.height, 5.006, metal);
+  box('hanging_sign_board', -.85, hangY - .22, 4.99, .85, hangY + .22, 5.01, cream);
+  for (const facing of [1, -1]) {
+    sign('hanging_sign', 'FINAL WEEK! (SINCE 1986)', 0, hangY, 5 + facing * .014, 1.6, .38, facing, '#b93f39');
+  }
+
   for (const cfg of startRoomLighting) {
     const light = new THREE.PointLight(cfg.color, cfg.intensity, cfg.distance, 2);
     light.name = cfg.name;
