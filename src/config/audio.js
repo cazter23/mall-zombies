@@ -818,5 +818,23 @@ export const audio = {
         { type: 'tone', wave: 'sine', freq: 240, freqEnd: 120, gain: 0.3, attack: 0.001, decay: 0.04, delay: 0.05 },
       ],
     },
+
+    // Skylar's van at the end of a won run (fx/vanLights.js, config/closingTime.js vanShow): the hazard relay's click, the
+    // starter cranking (nine strokes), and the engine catching with a rev and a muffler pop.
+    vanHazardTick: { volume: 0.22, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 2600, q: 3, gain: 0.5, attack: 0.001, decay: 0.03 },
+      { type: 'tone', wave: 'square', freq: 1150, freqEnd: 900, gain: 0.08, attack: 0.001, decay: 0.025 },
+    ] },
+    vanStarter: { volume: 0.55, layers: Array.from({ length: 9 }, (_, i) => [
+      { type: 'noise', filter: 'lowpass', freq: 520, q: 1.2, gain: 0.55, attack: 0.008, decay: 0.07, delay: i * 0.083 },
+      { type: 'tone', wave: 'square', freq: 74, freqEnd: 58, gain: 0.16, attack: 0.006, decay: 0.06, delay: i * 0.083 },
+    ]).flat() },
+    vanEngine: { volume: 0.7, layers: [
+      { type: 'tone', wave: 'sawtooth', freq: 34, freqEnd: 62, gain: 0.32, attack: 0.03, decay: 0.45 },
+      { type: 'tone', wave: 'sawtooth', freq: 62, freqEnd: 118, gain: 0.26, attack: 0.08, decay: 0.5, delay: 0.32 },
+      { type: 'tone', wave: 'sawtooth', freq: 110, freqEnd: 46, gain: 0.22, attack: 0.05, decay: 1.4, delay: 0.85 },
+      { type: 'noise', filter: 'lowpass', freq: 240, q: 0.9, gain: 0.6, attack: 0.05, decay: 1.9 },
+      { type: 'noise', filter: 'bandpass', freq: 900, q: 1.5, gain: 0.45, attack: 0.002, decay: 0.09, delay: 0.62 },
+    ] },
   },
 };

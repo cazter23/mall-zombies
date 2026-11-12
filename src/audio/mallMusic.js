@@ -8,8 +8,11 @@
 
 import { radio } from '../config/music.js';
 import { radioTracks } from '../config/radioTracks.js';
+import { closingMusic } from '../config/closingMusic.js';
 
-export const trackById = (id) => radioTracks.find((track) => track.id === id) ?? null;
+// The radio's songs, and Last Call (the Closing Time round's music: config/closingMusic.js), which is never on the radio.
+const allTracks = [...radioTracks, closingMusic.track];
+export const trackById = (id) => allTracks.find((track) => track.id === id) ?? null;
 
 /** 0..1: how worn the radio's tape sounds at a round (config/music.js tapeWear); 0 with the horror layer turned off. */
 export function tapeWear(round, horrorOn = true) {
@@ -258,13 +261,15 @@ const DRUMS = {
 
 /**
  * Render a track to stereo PCM: the chime, the song, and a ringing tail. `sampleRate` can be lowered (tests).
+ * A track with `chime: false` starts straight in; one with `loop: true` is exactly its form long, its ringing tail folded
+ * back onto its start and no end fade, so it loops without a seam (Last Call, config/closingMusic.js).
  * Returns { id, title, left, right, sampleRate, seconds, songStart }.
  */
 export function renderTrack(track, { sampleRate = radio.sampleRate } = {}) {
   const rate = sampleRate;
   const beat = 60 / track.bpm;
   const events = songEvents(track);
-  const songStart = radio.chime.seconds;
+  const songStart = track.chime === false ? 0 : radio.chime.seconds;
   const seconds = songStart + events.beats * beat + radio.tailSeconds;
   const frames = Math.round(seconds * rate);
   const left = new Float32Array(frames), right = new Float32Array(frames);
@@ -289,7 +294,7 @@ export function renderTrack(track, { sampleRate = radio.sampleRate } = {}) {
   }
 
   // The station chime, then the song.
-  for (const [at, note, held] of radio.chime.notes) playNote(radio.chime.voice, noteNumber(note), at, held, 1);
+  if (songStart > 0) for (const [at, note, held] of radio.chime.notes) playNote(radio.chime.voice, noteNumber(note), at, held, 1);
   for (const note of events.notes) {
     const part = track.parts[note.part];
     const jitter = (random() * 2 - 1) * H.seconds, loud = 1 + (random() * 2 - 1) * H.velocity;
@@ -305,14 +310,21 @@ export function renderTrack(track, { sampleRate = radio.sampleRate } = {}) {
     place(wave, songStart + hit.start * beat + (random() * 2 - 1) * H.seconds * 0.5, kit.pan[hit.kind] ?? 0, kit.gain[hit.kind] * hit.velocity * loud);
   }
 
-  // Mastering: one shared peak (keeps the stereo image), and a short fade at the very end.
+  // A loop: what rings past the last bar sounds again over the first bars, and the PCM ends on the last bar.
+  let length = frames;
+  if (track.loop) {
+    length = Math.round((songStart + events.beats * beat) * rate);
+    for (let i = length; i < frames; i++) { left[i - length] += left[i]; right[i - length] += right[i]; }
+  }
+  // Mastering: one shared peak (keeps the stereo image), and a short fade at the very end (not on a loop).
   let peak = 0;
-  for (let i = 0; i < frames; i++) peak = Math.max(peak, Math.abs(left[i]), Math.abs(right[i]));
+  for (let i = 0; i < length; i++) peak = Math.max(peak, Math.abs(left[i]), Math.abs(right[i]));
   const scale = radio.peak / Math.max(peak, 1e-6);
-  const fade = Math.round(radio.endFadeSeconds * rate);
-  for (let i = 0; i < frames; i++) {
-    const out = i > frames - fade ? (frames - i) / fade : 1;
+  const fade = track.loop ? 0 : Math.round(radio.endFadeSeconds * rate);
+  for (let i = 0; i < length; i++) {
+    const out = i > length - fade ? (length - i) / fade : 1;
     left[i] *= scale * out; right[i] *= scale * out;
   }
-  return { id: track.id, title: track.title, left, right, sampleRate: rate, seconds: frames / rate, songStart };
+  const [l, r] = length < frames ? [left.slice(0, length), right.slice(0, length)] : [left, right];
+  return { id: track.id, title: track.title, left: l, right: r, sampleRate: rate, seconds: length / rate, songStart };
 }

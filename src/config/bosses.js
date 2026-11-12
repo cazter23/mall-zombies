@@ -1,5 +1,6 @@
 import { zombieTypes } from './zombies.js';
 import { influencerLook } from './influencerLook.js';
+import { lastCustomerLook } from './lastCustomerLook.js';
 
 const { shopper } = zombieTypes;
 export const bossComfort = { dimPhoneFlash: false };
@@ -205,8 +206,10 @@ export const bossTypes = {
     barNotice: 'Returns accepted with receipt', barSymbol: '↩', encore: false,
     healthMultiplier: 16, slowStrength: 0.5, speed: 2.6, speedVariation: 0,
     gaits: null, gaitsByRound: null, bagChance: 0,
-    // Placeholder: recoloured employee skeleton. Her trolley and finished model come in phase 12.
-    shirtColors: [0x9e677c], pantsColors: [0x392b48], shoeColor: 0x24232c,
+    // Her look (twinset, perm, glasses, the trolley of returns): config/lastCustomerLook.js, zombies/bosses/lastCustomerModel.js.
+    // The trolley and its pose are visual only: the charge reach is the Cart Pusher's, and no cart hitbox is added.
+    shirtColors: [0xb48bc4], pantsColors: [0x5b3b5e], shoeColor: 0x3a2a33, hairColors: [0xa69dba],
+    cart: { ...lastCustomerLook.trolley, heap: lastCustomerLook.heap }, cartAnimation: lastCustomerLook.pushing,
     modelScale: { width: 1.3, height: 1.06 },
     hitbox: { bodyHalfWidth: 0.34, bodyTop: 1.48, headHalfSize: 0.23, headBottom: 1.48, headTop: 1.94 },
     attack: { ...shopper.attack, damage: 60, windupSeconds: 0.7, minWindupSeconds: 0.7, windupShrinkPerRound: 0 },

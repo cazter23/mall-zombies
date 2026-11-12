@@ -1,0 +1,40 @@
+/* The SHIFT COMPLETE receipt (ui/receiptArt.js, ui/screens.js): a sunset backdrop instead of the death receipt's red, a printed
+   picture of the van leaving, the Last Customer's return slip, a teal stamp, and the overtime coupon while the choice is open. */
+.results-screen.won {
+  background:
+    radial-gradient(ellipse at 50% 115%, rgba(255, 176, 92, 0.55), transparent 55%),
+    radial-gradient(circle at 50% 40%, rgba(232, 96, 140, 0.32), rgba(23, 14, 38, 0.92) 72%);
+}
+.receipt { --receipt-paper: #fbf8f1; }
+.receipt-art { margin: 8px 0 2px; color: #2a2530; }
+.receipt-art-picture { display: block; width: 100%; height: auto; opacity: 0.88; }
+.receipt-art-caption,
+.receipt-return-note,
+.receipt-coupon-fine {
+  font-family: var(--font-receipt);
+  font-size: calc(15 * var(--ui-type, 1px));
+  text-align: center;
+  color: #6b6375;
+}
+.receipt-return { margin: 8px 0 2px; }
+.receipt-return-head,
+.receipt-coupon-head {
+  font-family: var(--font-receipt);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-align: center;
+}
+.receipt-coupon {
+  margin: 12px 4px 4px;
+  padding: 8px 10px;
+  border: 2px dashed #2a2530;
+  border-radius: 4px;
+  text-align: center;
+  font-family: var(--font-receipt);
+}
+.receipt-coupon-line { font-size: calc(19 * var(--ui-type, 1px)); }
+/* The win's stamp: teal ink, a double ring. */
+.results-screen.won .receipt-stamp {
+  color: rgba(18, 122, 112, 0.88);
+  border: 5px double rgba(18, 122, 112, 0.88);
+}

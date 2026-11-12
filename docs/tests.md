@@ -22,6 +22,14 @@
 `tests/influencerModel.test.js` shoots the visible face during idle, movement and flash poses, checks that the compact
 filming rig stays beside the head, verifies ponytail/phone animation, and checks costume buffer/material disposal.
 
+`tests/lastCustomerModel.test.js`: Lorraine's trolley is on the root, the Cart Pusher's size, its nose where her charge reach says, the heap above the basket, no cart hitbox and no random shopper look; a shot at her drawn face is a headshot while pushing, telegraphing, charging and crashed (her leans stay small); Speechless opens her mouth and takes her hands off the handle, and she goes back; every costume and trolley buffer is disposed.
+
+`tests/vanLights.test.js`: the van stays dark until the run can be won, then only the amber hazards blink at their rate, the relay clicks near you and not out of earshot; Start the van plays the starter, then the engine at the catch, lights the headlights, beams, pool and tail lights, and calls the receipt once, after the fade; it idles lit through overtime and goes dark for a new run; its sounds exist and its lenses stand 2 cm clear of the van's own lamps.
+
+`tests/closingMusic.test.js`: Last Call is off the radio but found by the worker, a full song (drums, a melody from the first bar, notes in range) under 90 s; it renders deterministically as a seamless loop (no chime, exactly its form long, sound at both ends, the radio's peak); on fake Web Audio it is rendered once a session, loops at the music volume (and follows it), ducks the radio and gives it back, ends under its resolving chord on its own bus or with a plain fade, and does nothing while the audio is locked.
+
+`tests/receiptArt.test.js`: the SHIFT COMPLETE receipt shows the picture, the return slip and the overtime coupon (no coupon once clocked out; none of it on a death receipt) and the won backdrop; the coupon states overtime's real terms; the picture is printed in one ink.
+
 `tests/bossPolish.test.js` walks Manager/Guard from every open zone and into the workshop without rescue; checks unique stings, death feedback, direct order-form voucher consumption, fans excluded from ritual credit, actual Employee Discount expiry, death/reset voucher cleanup and debug ids. Isolated headless Chrome captured all four models with zero browser exceptions; no real browser tabs were opened.
 
 `tests/bossEncores.test.js` checks configurable cadence, type/Mascot debut exclusions, known-boss selection, one boss per round, alternatives and Play again.

@@ -14,6 +14,7 @@ import { atmosphere } from '../config/environment.js';
 import { radio } from '../config/music.js';
 import { radioTracks } from '../config/radioTracks.js';
 import { deathMusic } from '../config/deathMusic.js';
+import { closingMusic } from '../config/closingMusic.js';
 import { makeAmbientPulse } from './ambientPulse.js';
 
 function renderMusicInWorker(id) {
@@ -156,6 +157,7 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
   // paused/dead games never retain a running soundtrack.
   function setAmbience(mix) {
     if (!ctx) return;
+    if (score.wanted && !score.voice) playScore(); // (wanted before the audio could start it, or before it was rendered)
     const now = ctx.currentTime, cfg = atmosphere.ambience;
     // Every speaker shares one track and timeline; changing rooms only moves its pan/gain.
     const entries = mix.slice(0, cfg.maxVoices).map(v => v.kind === 'music' ? { ...v, id: 'mall_music' } : v);
@@ -216,7 +218,7 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
       }
       voice.pan.pan.setTargetAtTime(item.pan, now, cfg.fadeSeconds);
       voice.spatialGain = Math.max(0, item.gain);
-      voice.gain.gain.setTargetAtTime(voice.spatialGain * def.gain * (isMusic ? audio.musicVolume : audio.ambienceVolume), now, fadeIn);
+      voice.gain.gain.setTargetAtTime(voice.spatialGain * def.gain * (isMusic ? audio.musicVolume * score.duck : audio.ambienceVolume), now, fadeIn);
     }
   }
 
@@ -256,9 +258,71 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
     }
   }
 
+  // ---- Last Call (config/closingMusic.js): the Closing Time round's music, straight to you (not through the speakers), looped.
+  // Rendered once, when first wanted. While it is wanted the radio is ducked (score.duck, read by setAmbience).
+  const score = { buffer: null, loading: false, wanted: false, voice: null, duck: 1 };
+  function startScore() {
+    if (!score.wanted || score.voice || !score.buffer || !ctx || ctx.state !== 'running') return;
+    const now = ctx.currentTime;
+    const gain = ctx.createGain();
+    gain.gain.value = 0;
+    gain.gain.setTargetAtTime(closingMusic.volume * audio.musicVolume, now, closingMusic.fadeInSeconds / 3);
+    gain.connect(master);
+    const source = ctx.createBufferSource();
+    source.buffer = score.buffer;
+    source.loop = true;
+    source.connect(gain);
+    source.start(now);
+    score.voice = { source, gain };
+  }
+  function playScore() {
+    score.wanted = true;
+    score.duck = closingMusic.radioDuck;
+    if (!ctx) return;
+    if (score.buffer) { startScore(); return; }
+    if (score.loading) return;
+    score.loading = true;
+    Promise.resolve().then(() => renderMusic(closingMusic.track.id)).then(pcm => {
+      const buffer = ctx.createBuffer(2, pcm.left.length, pcm.sampleRate);
+      buffer.getChannelData(0).set(pcm.left);
+      buffer.getChannelData(1).set(pcm.right);
+      score.buffer = buffer;
+      score.loading = false;
+      startScore();
+    }).catch(error => { score.loading = false; console.warn('Last Call could not be prepared:', error); });
+  }
+  /** Ends the score: faded out, or (resolve) cut short under a resolving chord on the same bus. */
+  function stopScore({ resolve = false } = {}) {
+    score.wanted = false;
+    score.duck = 1;
+    const voice = score.voice;
+    score.voice = null;
+    if (!voice) return;
+    const now = ctx.currentTime;
+    const seconds = resolve ? closingMusic.resolveFadeSeconds : closingMusic.fadeOutSeconds;
+    voice.gain.gain.cancelScheduledValues(now);
+    voice.gain.gain.setTargetAtTime(0, now, seconds / 3);
+    voice.source.stop(now + seconds);
+    voice.source.onended = () => { voice.source.disconnect(); voice.gain.disconnect(); };
+    if (resolve && ctx.state === 'running') {
+      const chord = ctx.createGain();
+      chord.gain.value = closingMusic.volume * audio.musicVolume;
+      chord.connect(master);
+      let remaining = closingMusic.resolve.length;
+      for (const layer of closingMusic.resolve) {
+        const source = playLayer(layer, now + (layer.delay ?? 0), 1, 1, chord);
+        const cleanup = source.onended;
+        source.onended = () => { cleanup(); if (--remaining === 0) chord.disconnect(); };
+      }
+    }
+  }
+
   return {
     playDeathMusic,
     stopDeathMusic,
+    playScore,
+    stopScore,
+    get scorePlaying() { return score.wanted; },
     setAmbience,
     // A new run: the next song in the rotation if it is ready (else this one again), from the top.
     resetMusic() {
@@ -289,8 +353,9 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
       audio.musicVolume = volume;
       if (deathVoice) deathVoice.gain.gain.value = deathMusic.volume * volume;
       for (const voice of ambientVoices.values()) if (voice.kind === 'music') {
-        voice.gain.gain.setTargetAtTime(voice.spatialGain * voice.def.gain * volume, ctx.currentTime, atmosphere.ambience.fadeSeconds);
+        voice.gain.gain.setTargetAtTime(voice.spatialGain * voice.def.gain * volume * score.duck, ctx.currentTime, atmosphere.ambience.fadeSeconds);
       }
+      if (score.voice) score.voice.gain.gain.setTargetAtTime(closingMusic.volume * volume, ctx.currentTime, 0.05);
     },
     playAmbient(name, { volume = 1, pan = 0 } = {}) {
       const def = audio.sounds[name];

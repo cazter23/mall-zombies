@@ -31,6 +31,7 @@ import { gunSkin, locker as lockerCfg } from '../config/skins.js';
 import { challengeBoard as boardCfg } from '../config/challengeBoard.js';
 import { guide as guideCfg } from '../config/guide.js';
 import { closingTime } from '../config/closingTime.js';
+import { receiptArtHtml, returnSlipHtml, overtimeCouponHtml } from './receiptArt.js';
 import { createOutfitRail } from './outfitRail.js';
 import { outfitRail as outfitCfg } from '../config/wardrobe.js';
 import { menuFeel } from '../config/settings.js';
@@ -271,8 +272,10 @@ export function createScreens({ locker = null, guide = null, challenges = null }
         <div class="receipt-store">SUNSET GALLERIA</div>
         <div class="receipt-sub">Store #013 · Register 4</div>
         <div class="receipt-sub receipt-date"></div>
+        <div class="receipt-art" hidden="hidden">${receiptArtHtml()}</div>
         <h1 class="receipt-shift-heading" hidden="hidden">${closingTime.receipt.shiftComplete}</h1>
         <div class="receipt-sub receipt-cashier">Cashier: YOU (deceased)</div>
+        <div class="receipt-return" hidden="hidden">${returnSlipHtml()}</div>
         <div class="receipt-rule"></div>
         <div class="receipt-lines"></div>
         <div class="receipt-wearing"><div class="receipt-wearing-head"></div></div>
@@ -303,6 +306,7 @@ export function createScreens({ locker = null, guide = null, challenges = null }
           <div class="receipt-barcode"></div>
           <div class="receipt-stamp">Clocked out</div>
         </div>
+        <div class="receipt-coupon" hidden="hidden">${overtimeCouponHtml()}</div>
         <div class="receipt-thanks">${deathThanks}</div>
       </div>
       <div class="menu-list menu-row">
@@ -319,6 +323,8 @@ export function createScreens({ locker = null, guide = null, challenges = null }
   const cashier = results.querySelector('.receipt-cashier');
   const receiptStamp = results.querySelector('.receipt-stamp');
   const receiptThanks = results.querySelector('.receipt-thanks');
+  const winArt = results.querySelectorAll('.receipt-art, .receipt-return'); // (ui/receiptArt.js: only on a win)
+  const overtimeCoupon = results.querySelector('.receipt-coupon');
   const deathSections = results.querySelectorAll('.receipt-review, .receipt-incident, .receipt-death-rule');
   const resultButtons = [...results.querySelectorAll('[data-action]')];
   const receiptDate = results.querySelector('.receipt-date');
@@ -481,6 +487,9 @@ export function createScreens({ locker = null, guide = null, challenges = null }
     receiptThanks.innerHTML = shiftComplete ? words.thanks : deathThanks;
     receiptWearing.querySelector('.receipt-wearing-head').textContent = shiftComplete ? words.woreOnShift : outfitCfg.diedWearing;
     for (const section of deathSections) section.hidden = shiftComplete;
+    for (const section of winArt) section.hidden = !shiftComplete;
+    overtimeCoupon.hidden = !(shiftComplete && !r.clockedOut);
+    results.classList.toggle('won', shiftComplete);
     for (const button of resultButtons) {
       const choice = button.dataset.action === 'clockOut' || button.dataset.action === 'overtime';
       button.hidden = choice !== (shiftComplete && !r.clockedOut);
