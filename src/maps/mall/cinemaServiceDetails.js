@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { cinemaDetails as d } from '../../config/cinemaDetails.js';
 import { cinemaDecorKit } from './cinemaDecorKit.js';
 import { seededRandom } from '../../world/textures.js';
+import { drawType } from '../../world/typeKit.js';
 import { buildCinemaServiceFinish } from './cinemaServiceFinish.js';
 
 export function buildCinemaServiceDetails({ kit, looks, cinema: c, stairs: s, floorY: Y }) {
@@ -64,9 +65,9 @@ export function buildCinemaServiceDetails({ kit, looks, cinema: c, stairs: s, fl
   // Stencilled landing numbers are transparent artwork rather than more signs.
   for (const st of d.service.stairStencils) {
     const cv = canvas(512, 320), ctx = cv.getContext('2d'), [number, label] = st.text.split(' / ');
-    ctx.clearRect(0, 0, 512, 320); ctx.fillStyle = '#b9c9bd'; ctx.textAlign = 'center';
-    ctx.font = 'bold 210px sans-serif'; ctx.fillText(number, 256, 220);
-    ctx.font = 'bold 30px sans-serif'; ctx.fillText(label, 256, 283);
+    ctx.clearRect(0, 0, 512, 320);
+    drawType(ctx, number, 256, 150, { role: 'stencil', size: 230, fill: '#b9c9bd', maxWidth: 460 });
+    drawType(ctx, label, 256, 276, { role: 'stencil', size: 34, fill: '#b9c9bd', maxWidth: 460 });
     const stencil = panel('landing_stencil', cv, s.shaft.minX + .035, st.h, st.z, 2.35, 1.45, 'x+');
     stencil.material.transparent = true; stencil.material.depthWrite = false;
   }

@@ -15,6 +15,7 @@
 // =============================================================================
 
 import * as THREE from 'three';
+import { drawType } from '../../world/typeKit.js';
 
 export const RESTOCK = {
   name: 'RESTOCK-O-MATIC',
@@ -95,17 +96,9 @@ function createScreen() {
     ctx.fillRect(0, 0, 256, 160);
     ctx.fillStyle = 'rgba(125, 255, 176, 0.07)';
     for (let y = 0; y < 160; y += 4) ctx.fillRect(0, y, 256, 1); // scan lines
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#9ef0b5';
-    ctx.font = 'bold 22px monospace';
-    ctx.fillText(title, 128, 24, 240);
-    ctx.fillStyle = tone;
-    ctx.font = 'bold 44px monospace';
-    ctx.fillText(line, 128, 78, 240);
-    ctx.fillStyle = '#9ef0b5';
-    ctx.font = 'bold 24px monospace';
-    ctx.fillText(note, 128, 130, 240);
+    drawType(ctx, title, 128, 24, { role: 'led', size: 28, fill: '#9ef0b5', maxWidth: 240 });
+    drawType(ctx, line, 128, 78, { role: 'readout', size: 40, fill: tone, maxWidth: 240 });
+    drawType(ctx, note, 128, 130, { role: 'led', size: 30, fill: '#9ef0b5', maxWidth: 240 });
     texture.needsUpdate = true;
   }
   show({ title: 'RESTOCK-O-MATIC', line: 'AMMO', note: 'PLEASE HOLD F' });
@@ -136,8 +129,8 @@ export function buildRestockMachine({ kit, center, wallAt, facing, floorY = 0, s
 
   // --- Header: the big glowing name, then a tagline strip ---
   const header = { y: height - 0.17, width: width - 0.14, height: 0.26 };
-  sign(spec.name, { ...signAt(center, header.y, depth + 0.075), width: header.width, height: header.height, background: '#1d1626', color: '#ffe14d' });
-  sign('AMMO  ·  REFILLS  ·  NO QUESTIONS', { ...signAt(center, height - 0.41, depth + 0.03), width: width - 0.14, height: 0.13, background: '#b83f06', color: '#fff3d6' });
+  sign(spec.name, { ...signAt(center, header.y, depth + 0.075), width: header.width, height: header.height, background: '#1d1626', color: '#ffe14d', font: 'stencil' });
+  sign('AMMO  ·  REFILLS  ·  NO QUESTIONS', { ...signAt(center, height - 0.41, depth + 0.03), width: width - 0.14, height: 0.13, background: '#b83f06', color: '#fff3d6', font: 'wayfinding' });
 
   // --- Window: lit, with shelves of boxes of rounds ---
   const winU0 = u0 + 0.1;
@@ -181,8 +174,8 @@ export function buildRestockMachine({ kit, center, wallAt, facing, floorY = 0, s
   place(u0 + 0.14, 0.4, u1 - 0.12, 0.43, d(depth + 0.05), d(depth + 0.06), glow(colors.glow)); // ...with a lit lip
 
   // --- Side signs, so it reads when you walk past along the wall ---
-  sign('AMMO', { x: u0 - 0.025, y: 1.5, z: d(depth / 2), facing: 'x-', width: depth - 0.1, height: 0.5, background: '#b83f06', color: '#fff3d6' });
-  sign('AMMO', { x: u1 + 0.025, y: 1.5, z: d(depth / 2), facing: 'x+', width: depth - 0.1, height: 0.5, background: '#b83f06', color: '#fff3d6' });
+  sign('AMMO', { x: u0 - 0.025, y: 1.5, z: d(depth / 2), facing: 'x-', width: depth - 0.1, height: 0.5, background: '#b83f06', color: '#fff3d6', font: 'stencil' });
+  sign('AMMO', { x: u1 + 0.025, y: 1.5, z: d(depth / 2), facing: 'x+', width: depth - 0.1, height: 0.5, background: '#b83f06', color: '#fff3d6', font: 'stencil' });
 
   // --- The blade sign: a double-sided glowing "AMMO" arm sticking out of the wall above the machine ---
   const bladeY = height + 0.95;
@@ -194,7 +187,7 @@ export function buildRestockMachine({ kit, center, wallAt, facing, floorY = 0, s
   for (const faceSide of [-1, 1]) {
     sign('AMMO ▸ ▸', {
       x: center + faceSide * 0.035, y: bladeY - 0.3, z: bladeCenter, facing: faceSide < 0 ? 'x-' : 'x+',
-      width: bladeLen - 0.1, height: 0.46, background: '#ff6a13', color: '#1d1626',
+      width: bladeLen - 0.1, height: 0.46, background: '#ff6a13', color: '#1d1626', font: 'stencil',
     });
   }
 

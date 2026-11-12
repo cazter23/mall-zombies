@@ -33,7 +33,7 @@ export function buildDepartmentStoreDetails({ kit, layout: S }) {
     return mesh;
   };
   const sign = (text, opts) => {
-    const mesh = kit.sign(text, opts);
+    const mesh = kit.sign(text, { font: 'hoffmanBrand', ...opts }); // the house engraved caps unless a sign picks its own
     details.add(mesh);
     return mesh;
   };
@@ -91,8 +91,8 @@ export function buildDepartmentStoreDetails({ kit, layout: S }) {
       wb('layaway_tag', a + 0.08, a + 0.18, 0.34, 0.352, y + h * 0.55, y + h * 0.55 + 0.1, P.paper);
     }
   });
-  sign('LAYAWAY · PAY FOREVER', { x: (D.layawayShelving.x0 + D.layawayShelving.x1) / 2, y: 2.62, z: r.maxZ - 0.06, width: 2.8, height: 0.34, facing: -1, background: '#8c2f45', color: '#f6e7c8', font: 'Georgia, "Times New Roman", serif' });
-  sign('PAID IN FULL · 1987', { x: D.layawayShelving.x0 + 0.25, y: D.layawayShelving.shelves[1] + 0.2, z: r.maxZ - 0.36, width: 0.22, height: 0.12, facing: -1, background: '#f4ecda', color: '#8c2f45', font: 'Georgia, "Times New Roman", serif' });
+  sign('LAYAWAY · PAY FOREVER', { x: (D.layawayShelving.x0 + D.layawayShelving.x1) / 2, y: 2.62, z: r.maxZ - 0.06, width: 2.8, height: 0.34, facing: -1, background: '#8c2f45', color: '#f6e7c8', font: 'hoffmanSerif' });
+  sign('PAID IN FULL · 1987', { x: D.layawayShelving.x0 + 0.25, y: D.layawayShelving.shelves[1] + 0.2, z: r.maxZ - 0.36, width: 0.22, height: 0.12, facing: -1, background: '#f4ecda', color: '#8c2f45', font: 'note' });
 
   // --- Counter tops: small and low, off the vault line -------------------------------------------------------------------------
   const top = S.counterHeight + 0.006;

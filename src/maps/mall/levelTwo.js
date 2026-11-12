@@ -189,24 +189,24 @@ export function buildLevelTwo({ kit, props, floorY, supportRect, supportRects = 
   // --- Signs and leftovers (decoration) ----------------------------------------------------------------------------------------------
   sign('Level 2 · Sunset Promenade', {
     x: rect.minX + 0.02, y: y(2.5), z: zMid + 3.5, width: 3.2, height: 0.6, facing: 'x+',
-    background: '#3b2f44', color: '#ffd23f', font: 'Arial, "Helvetica Neue", sans-serif',
+    background: '#3b2f44', color: '#ffd23f', font: 'mallBrand',
   });
   sign('Escalator · Level 1 ↓', {
     x: rect.minX + 0.02, y: y(2.5), z: zMid, width: 2.8, height: 0.5, facing: 'x+',
-    background: '#1d1626', color: '#ffffff', font: 'Arial, "Helvetica Neue", sans-serif',
+    background: '#1d1626', color: '#ffffff', font: 'wayfinding',
   });
   sign('Mind the Gap', {
     x: hole.maxX + edge - 0.03, y: y(0.55), z: (hole.minZ + hole.maxZ) / 2, width: 1.2, height: 0.35, facing: 'x+',
-    background: '#ffd23f', color: '#1d1626', font: 'Arial, "Helvetica Neue", sans-serif',
+    background: '#ffd23f', color: '#1d1626', font: 'hazard',
   });
   // (on the south soffit's face: the shopfront run sits under it, maps/mall/concourse.js)
   sign('Sunset Galleria · Level 2', {
     x: 2, y: y((concourse.soffits.level2.bottom + layout.height) / 2), z: rect.minZ + concourse.soffits.level2.depth + 0.012, width: 7, height: 0.5, facing: 1,
-    background: '#6b3f5e', color: '#ffd9a8', font: 'Georgia, "Times New Roman", serif',
+    background: '#6b3f5e', color: '#ffd9a8', font: 'mallBrand',
   });
   sign('Restrooms → Not anymore', {
     x: 15.5, y: y(2.2), z: rect.minZ + 0.02, width: 2.6, height: 0.45, facing: 1,
-    background: '#3a3f47', color: '#ffd23f', font: 'Arial, "Helvetica Neue", sans-serif',
+    background: '#3a3f47', color: '#ffd23f', font: 'official',
   });
   // A "wet floor" cone and a tipped shopping bag by the well
   box(hole.maxX + 1.0, floorY, hole.maxZ + 0.7, hole.maxX + 1.3, y(0.55), hole.maxZ + 1.0, mat(0xffa21f), { collide: false });

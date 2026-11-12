@@ -81,7 +81,7 @@ function dressExterior(kit, store, { x, sideMin, sideMax }) {
     const x0 = out > 0 ? x + 0.01 : x - 0.01 - BLOCK, y0 = level * BLOCK;
     kit.box(x0, y0, z - BLOCK / 2, x0 + BLOCK, y0 + BLOCK, z + BLOCK / 2, kit.mat(color, { roughness: 0.6 }), { collide: false, name: 'toy_block' });
     kit.sign(letter, { x: out > 0 ? x0 + BLOCK + 0.006 : x0 - 0.006, y: y0 + BLOCK / 2, z, width: BLOCK * 0.8, height: BLOCK * 0.8, facing,
-      background: '#fff6e6', color: '#' + color.toString(16).padStart(6, '0'), font: '"Fredoka", Arial, sans-serif' }).name = 'toy_block_letter';
+      background: '#fff6e6', color: '#' + color.toString(16).padStart(6, '0'), font: 'toyBody' }).name = 'toy_block_letter';
     stacks.set(z, Math.max(stacks.get(z) ?? 0, y0 + BLOCK));
   }
   for (const [z, top] of stacks) { // one collider per stack, vaultable (they're at most waist high)

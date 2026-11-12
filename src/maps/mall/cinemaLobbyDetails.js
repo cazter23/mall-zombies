@@ -1,6 +1,7 @@
 import { cinemaDetails as d } from '../../config/cinemaDetails.js';
 import { cinemaDecorKit } from './cinemaDecorKit.js';
 import { seededRandom } from '../../world/textures.js';
+import { drawType } from '../../world/typeKit.js';
 
 export function buildCinemaLobbyDetails({ kit, layout: c, floorY: Y }) {
   const C = d.palette, { box, cyl, placard, panel, canvas } = cinemaDecorKit(kit, C, Y);
@@ -57,13 +58,13 @@ export function buildCinemaLobbyDetails({ kit, layout: c, floorY: Y }) {
   for (let i = 0; i < 2; i++) {
     const cv = canvas(640, 256), ctx = cv.getContext('2d');
     ctx.fillStyle = i ? '#48665f' : '#623d55'; ctx.fillRect(0, 0, 640, 256);
-    ctx.fillStyle = '#efdfbb'; ctx.textAlign = 'center'; ctx.font = 'bold 32px sans-serif'; ctx.fillText(d.lobby.menu[i], 320, 45);
+    drawType(ctx, d.lobby.menu[i], 320, 45, { role: 'marquee', size: 36, fill: '#efdfbb', maxWidth: 580 });
     for (let j = 0; j < 3; j++) {
       const x = 115 + j * 205;
       ctx.fillStyle = ['#d3a857', '#bd8492', '#97b4a6'][j];
       ctx.beginPath(); ctx.moveTo(x - 30, 95); ctx.lineTo(x + 30, 95); ctx.lineTo(x + 22, 167); ctx.lineTo(x - 22, 167); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = '#efdfbb'; ctx.font = '18px sans-serif'; ctx.fillText((i ? ['CANDY', 'SLUSH', 'SODA'] : ['SMALL', 'LARGE', 'REFILL'])[j], x, 205);
-      ctx.font = '16px sans-serif'; ctx.fillText(['$1.25', '$2.50', '$0.75'][j], x, 231);
+      drawType(ctx, (i ? ['CANDY', 'SLUSH', 'SODA'] : ['SMALL', 'LARGE', 'REFILL'])[j], x, 205, { role: 'cinemaBody', size: 24, fill: '#efdfbb', maxWidth: 180, tracking: 0.1 });
+      drawType(ctx, ['$1.25', '$2.50', '$0.75'][j], x, 231, { role: 'priceTag', size: 28, fill: '#efdfbb', maxWidth: 180 });
     }
     panel('menu_illustration', cv, c.lobby.minX + .10, 3.77, i ? 1.85 : -.92, 2.45, .98, 'x+');
   }

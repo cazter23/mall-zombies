@@ -28,6 +28,7 @@ import { createLoanerTag } from './loanerTag.js';
 import { upgrades } from '../../config/upgrades.js';
 import { attachmentVisuals } from '../../config/attachmentVisuals.js';
 import { prepareShortBarrel } from './shortBarrel.js';
+import { drawType } from '../../world/typeKit.js';
 
 // Colors in the shops' brand colors, so a part reads as "from that store".
 const C = {
@@ -109,16 +110,10 @@ function getWarrantySealTexture() {
   // Header ribbon bar
   ctx.fillStyle = '#1f242b';
   ctx.fillRect(14, 15, 100, 20);
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 13px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('WARRANTY', 64, 30);
+  drawType(ctx, 'WARRANTY', 64, 25, { role: 'stencil', size: 15, fill: '#ffffff', maxWidth: 92 });
   // Center seal text
-  ctx.fillStyle = '#1f242b';
-  ctx.font = 'bold 14px monospace';
-  ctx.fillText('★ CERTIFIED ★', 64, 54);
-  ctx.font = 'bold 10px sans-serif';
-  ctx.fillText('SERVICE SEAL', 64, 72);
+  drawType(ctx, '★ CERTIFIED ★', 64, 50, { role: 'official', size: 14, fill: '#1f242b', maxWidth: 96 });
+  drawType(ctx, 'SERVICE SEAL', 64, 69, { role: 'wayfinding', size: 13, fill: '#1f242b', maxWidth: 96 });
   warrantySealTex = new THREE.CanvasTexture(c);
   warrantySealTex.colorSpace = THREE.SRGBColorSpace;
   return warrantySealTex;

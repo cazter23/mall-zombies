@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { startRoomLighting } from '../../config/environment.js';
+import { drawType } from '../../world/typeKit.js';
 
 export function buildStartRoomDetails(kit, room) {
   const details = new THREE.Group();
@@ -61,27 +62,23 @@ export function buildStartRoomDetails(kit, room) {
     ctx.textBaseline = 'middle';
 
     // Store header in dot-matrix font
-    ctx.font = 'bold 22px "VT323", "Silkscreen", monospace';
-    ctx.fillText('SUNSET GALLERIA #042', 128, 30);
-    ctx.font = '16px "VT323", "Silkscreen", monospace';
-    ctx.fillText('REGISTER #01  TRAN #9884', 128, 50);
+    const ink = '#2a2436';
+    const W = 220;
+    drawType(ctx, 'SUNSET GALLERIA #042', 128, 30, { role: 'led', size: 24, weight: 700, fill: ink, maxWidth: W });
+    drawType(ctx, 'REGISTER #01  TRAN #9884', 128, 50, { role: 'led', size: 17, fill: ink, maxWidth: W });
 
     // Dotted separator
-    ctx.font = '18px "VT323", "Silkscreen", monospace';
-    ctx.fillText('. . . . . . . . . . . . . . . . . .', 128, 68);
+    drawType(ctx, '. . . . . . . . . . . . . . . . . .', 128, 68, { role: 'led', size: 18, fill: ink, maxWidth: W });
 
     // Receipt lines
     let y = 92;
     lines.forEach((line) => {
       if (line.includes('---')) {
-        ctx.font = '16px "VT323", "Silkscreen", monospace';
-        ctx.fillText('- - - - - - - - - - - - - - -', 128, y);
+        drawType(ctx, '- - - - - - - - - - - - - - -', 128, y, { role: 'led', size: 17, fill: ink, maxWidth: W });
       } else if (line === 'FINAL SALE' || line === 'NO REFUNDS') {
-        ctx.font = 'bold 24px "VT323", "Silkscreen", monospace';
-        ctx.fillText(`* ${line} *`, 128, y);
+        drawType(ctx, `* ${line} *`, 128, y, { role: 'led', size: 26, weight: 700, fill: ink, maxWidth: W });
       } else {
-        ctx.font = '20px "VT323", "Silkscreen", monospace';
-        ctx.fillText(line, 128, y);
+        drawType(ctx, line, 128, y, { role: 'led', size: 22, fill: ink, maxWidth: W });
       }
       y += 33;
     });
@@ -96,8 +93,7 @@ export function buildStartRoomDetails(kit, room) {
       ctx.fillRect(bx, barY, w, barH);
       bx += w + 2;
     }
-    ctx.font = '14px "VT323", "Silkscreen", monospace';
-    ctx.fillText('0 725272 730429', 128, barY + barH + 12);
+    drawType(ctx, '0 725272 730429', 128, barY + barH + 12, { role: 'led', size: 16, fill: '#2a2436', maxWidth: 200 });
 
     const texture = new THREE.CanvasTexture(canvas);
     texture.colorSpace = THREE.SRGBColorSpace;
@@ -142,21 +138,20 @@ export function buildStartRoomDetails(kit, room) {
     ctx.textBaseline = 'alphabetic';
 
     // Frantic manager handwriting
-    ctx.font = 'bold 24px "Permanent Marker", "Caveat", cursive';
+    const pen = '#102554';
     ctx.save();
     ctx.translate(50, 42);
     ctx.rotate(-0.02);
-    ctx.fillText(lines[0] || 'INVENTORY', 0, 0);
+    drawType(ctx, lines[0] || 'INVENTORY', 0, 0, { role: 'marker', size: 24, fill: pen, align: 'left', baseline: 'alphabetic', maxWidth: 190 });
     ctx.restore();
 
-    ctx.font = '22px "Permanent Marker", "Caveat", cursive';
     lines.slice(1).forEach((line, i) => {
       ctx.save();
       const jitter = (i % 2 === 0 ? 0.012 : -0.012);
       const ly = 80 + i * 40;
       ctx.translate(48, ly);
       ctx.rotate(jitter);
-      ctx.fillText(line, 0, 0);
+      drawType(ctx, line, 0, 0, { role: 'marker', size: 22, fill: pen, align: 'left', baseline: 'alphabetic', maxWidth: 196 });
       ctx.restore();
     });
 
@@ -189,7 +184,7 @@ export function buildStartRoomDetails(kit, room) {
     for (const hx of [x + 0.04, x + 0.15]) box('bag_handle', hx, 1.32, z + 0.08, hx + 0.015, 1.43, z + 0.10, tape);
     box('bag_handle', x + 0.04, 1.415, z + 0.08, x + 0.165, 1.43, z + 0.10, tape);
   }
-  sign('no_refunds', 'NO REFUNDS', -2.7, 0.67, 7.589, 1.15, 0.25, -1, '#d90429', '#ffffff', { font: '"Arial Black", Arial, sans-serif' });
+  sign('no_refunds', 'NO REFUNDS', -2.7, 0.67, 7.589, 1.15, 0.25, -1, '#d90429', '#ffffff', { font: 'clearance' });
   // Clipboard rests at the far end, away from the vault route.
   box('inventory_clipboard', -4.12, 1.024, 8.05, -3.88, 1.035, 8.42, wood);
   clipboardSheet('inventory_sheet', ['INVENTORY', 'STOCK: 0', 'STAFF: 0', 'PROBLEMS:', 'TOO MANY'], 0.17, 0.28, [-3.99, 1.04, 8.25], [-Math.PI / 2, 0, -0.15]);
@@ -212,7 +207,7 @@ export function buildStartRoomDetails(kit, room) {
     [4.1, 1.17, 'SOLD', '#d90429', '#ffffff'], // red clearance sold tag
     [5.0, 1.77, '70% OFF', '#ff0055', '#ffffff'], // electric pink markdown tag
   ]) {
-    const tag = sign('shelf_tag', label, -4.365, y, z, 0.34, 0.12, 'x+', bg, col, { font: 'Arial, sans-serif' });
+    const tag = sign('shelf_tag', label, -4.365, y, z, 0.34, 0.12, 'x+', bg, col, { font: 'priceTag' });
     tag.rotation.x = 0.06;
   }
 
@@ -229,7 +224,7 @@ export function buildStartRoomDetails(kit, room) {
   }
   // Two old shelf labels survive after the stock and their price strips were pulled away.
   for (const [z, y, label] of [[3.05, 1.19, 'WAS 29.99'], [4.55, 1.79, 'FINAL 99¢']]) {
-    const remnant = sign('torn_shelf_label', label, -4.365, y, z, 0.42, 0.13, 'x+', '#d7c9aa', '#71634d', { font: 'Georgia, serif' });
+    const remnant = sign('torn_shelf_label', label, -4.365, y, z, 0.42, 0.13, 'x+', '#d7c9aa', '#71634d', { font: 'typewriter' });
     remnant.rotation.x = -0.08;
     remnant.rotation.z = z < 4 ? 0.035 : -0.045;
   }
@@ -260,15 +255,15 @@ export function buildStartRoomDetails(kit, room) {
   for (const z of [3.15, 3.98]) box('poster_tape', -4.966, 3.13, z, -4.956, 3.24, z + 0.12, tape);
   sign('sale_sticker', '70% OFF', -4.945, 2.73, 3.65, 0.73, 0.35, 'x+', '#ac3d35');
   box('peeled_sticker_corner', -4.94, 2.87, 3.9, -4.91, 2.92, 4.01, cream).rotation.x = -0.16;
-  const final = sign('final_sale_banner', 'ALL SALES FINAL', 0.35, 3.30, 9.96, 3.25, 0.40, -1, '#b44638', '#f6edda', { font: '"Arial Black", Arial, sans-serif' });
+  const final = sign('final_sale_banner', 'ALL SALES FINAL', 0.35, 3.30, 9.96, 3.25, 0.40, -1, '#b44638', '#f6edda', { font: 'clearance' });
   final.rotation.z = -0.045;
   box('employee_frame', 4.91, 2.02, 6.35, 4.98, 2.98, 7.15, wood);
-  sign('employee_title', 'EMPLOYEE OF THE MONTH', 4.899, 2.82, 6.75, 0.69, 0.14, 'x-', '#574b3a', '#e1d2b2', { font: 'Georgia, "Times New Roman", serif' });
+  sign('employee_title', 'EMPLOYEE OF THE MONTH', 4.899, 2.82, 6.75, 0.69, 0.14, 'x-', '#574b3a', '#e1d2b2', { font: 'hoffmanSub' });
   box('missing_photo', 4.89, 2.10, 6.46, 4.90, 2.65, 7.04, material(0xe1d2b2));
   for (const z of [6.5, 6.93]) box('photo_tape', 4.875, 2.53, z, 4.885, 2.70, z + 0.07, tape);
 
   // Price Gun station: frame around the existing outline, never over the gun or its label.
-  sign('pricing_station_title', 'FINAL MARKDOWN', 4.97, 2.23, 4, 1.42, 0.28, 'x-', '#8f342f', '#f6edda', { font: '"Space Grotesk", Arial, sans-serif' });
+  sign('pricing_station_title', 'FINAL MARKDOWN', 4.97, 2.23, 4, 1.42, 0.28, 'x-', '#8f342f', '#f6edda', { font: 'clearance' });
   box('pricing_station_sill', 4.72, 0.92, 3.20, 4.99, 0.98, 4.80, wood);
   for (const z of [3.32, 4.40]) {
     const roll = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, 0.14, 10), cream);

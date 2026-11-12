@@ -59,7 +59,7 @@ export function buildWorkshopRoom({ kit, props, floorY, layout }) {
     kit.box(x0, floorY + h0, z0, x1, floorY + h1, z1, kit.mat(color, material),
       { collide, name: 'workshop_' + name });
   const sign = (text, x, h, z, width, signHeight, background = '#523a54', color = '#fff1d7', facing = -1) =>
-    kit.sign(text, { x, y: floorY + h, z, width, height: signHeight, facing, background, color });
+    kit.sign(text, { x, y: floorY + h, z, width, height: signHeight, facing, background, color, font: 'toyBrand' });
   const solid = { collide: true };
   const addFloor = (name, x0, z0, x1, z1) => {
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0),
@@ -164,7 +164,7 @@ export function buildWorkshopRoom({ kit, props, floorY, layout }) {
   const bins = Object.entries(workshopStuffings).map(([id, stuffing], i) => {
     const z = front + B0.firstOffsetZ + i * B0.spacing;
     box('bin', cubbyFace - .36, B0.sill, z - B0.width / 2, cubbyFace - .02, B0.top, z + B0.width / 2, stuffing.color);
-    kit.sign(stuffing.name.toUpperCase(), { x: cubbyFace + .004, y: floorY + (B0.sill + B0.top) / 2, z, width: B0.width - .03, height: .11, facing: 'x+', background: '#fff0cb', color: '#253c87' });
+    kit.sign(stuffing.name.toUpperCase(), { x: cubbyFace + .004, y: floorY + (B0.sill + B0.top) / 2, z, width: B0.width - .03, height: .11, facing: 'x+', background: '#fff0cb', color: '#253c87', font: 'toyBody' });
     const lamp = box('bin_lamp', cubbyFace - .12, B0.top + .012, z - B0.width / 2 + .02, cubbyFace - .03, B0.top + .04, z + B0.width / 2 - .02, stuffing.color,
       { emissive: stuffing.color, emissiveIntensity: 2.2 });
     binLamps.add(lamp);
@@ -175,8 +175,8 @@ export function buildWorkshopRoom({ kit, props, floorY, layout }) {
   const hearts = Object.keys(workshopHearts).map((id, i) => {
     const z = front + HW.firstOffsetZ + i * HW.spacing, half = HW.size / 2;
     box('heart_plaque', heartFace + .1, HW.height - half - .08, z - half - .08, heartFace + .44, HW.height + half + .08, z + half + .08, c.plum);
-    kit.sign('♥', { x: heartFace + .08, y: floorY + HW.height + .05, z, width: HW.size, height: HW.size, facing: 'x-', background: 'transparent', color: '#e04a68' });
-    kit.sign(workshopHearts[id].name.toUpperCase(), { x: heartFace + .072, y: floorY + HW.height - half + .02, z, width: HW.size + .12, height: .09, facing: 'x-', background: 'transparent', color: '#fff0cb' });
+    kit.sign('♥', { x: heartFace + .08, y: floorY + HW.height + .05, z, width: HW.size, height: HW.size, facing: 'x-', background: 'transparent', color: '#e04a68', font: 'toyBody' });
+    kit.sign(workshopHearts[id].name.toUpperCase(), { x: heartFace + .072, y: floorY + HW.height - half + .02, z, width: HW.size + .12, height: .09, facing: 'x-', background: 'transparent', color: '#fff0cb', font: 'toyBody' });
     return { id, position: new THREE.Vector3(heartFace - .1, floorY + HW.promptHeight, z) };
   });
 
@@ -267,7 +267,7 @@ export function buildWorkshopRoom({ kit, props, floorY, layout }) {
     const y = tank.gaugeBase + (quality.minKills / topKills) * gaugeRange;
     cylinder('tank_mark', tank.radius - .065, .035, y, c.red);
     for (const [side, facing] of [[-1, -1], [1, 1]]) {
-      kit.sign(quality.name.toUpperCase(), { x: tank.x, y: floorY + y + .09, z: tank.z + side * (tank.radius - .05), width: .95, height: .14, facing, background: 'transparent', color: '#c64140' });
+      kit.sign(quality.name.toUpperCase(), { x: tank.x, y: floorY + y + .09, z: tank.z + side * (tank.radius - .05), width: .95, height: .14, facing, background: 'transparent', color: '#c64140', font: 'toyBody' });
     }
   }
   sign('STUFFING TANK', tank.x, tank.gaugeBase / 2 + .06, tank.z - tank.radius - .03, 1.5, .28, '#ffe39b', '#253c87');

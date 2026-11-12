@@ -30,6 +30,7 @@
 
 import * as THREE from 'three';
 import { clawMachine } from '../../config/clawMachine.js';
+import { drawType } from '../../world/typeKit.js';
 
 export const CLAW_CABINET = {
   colors: {
@@ -127,14 +128,7 @@ function cabinetArt() {
         ctx.beginPath(); ctx.arc(10 + i * 19.6, y, 5, 0, Math.PI * 2); ctx.fill();
       }
     }
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = '400 58px "Righteous", "Fredoka", sans-serif';
-    ctx.lineWidth = 8;
-    ctx.strokeStyle = '#ffc83d';
-    ctx.strokeText(clawMachine.name, 256, 50, 470);
-    ctx.fillStyle = '#ff4fa3';
-    ctx.fillText(clawMachine.name, 256, 50, 470);
+    drawType(ctx, clawMachine.name, 256, 50, { role: 'arcade', size: 58, fill: '#ff4fa3', maxWidth: 470, outline: { color: '#ffc83d', width: 0.14 }, shadow: false });
   }
   // The backdrop inside the glass: pink rays, stars, and the promise.
   const backdrop = canvas(256, 224);
@@ -150,12 +144,8 @@ function cabinetArt() {
       ctx.lineTo(128 + Math.cos(a1) * 400, 150 + Math.sin(a1) * 400);
       ctx.closePath(); ctx.fill();
     }
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#b8236f';
-    ctx.font = '400 30px "Righteous", "Fredoka", sans-serif';
-    ctx.fillText('WIN! WIN! WIN!', 128, 40, 236);
-    ctx.font = '400 15px "Space Grotesk", sans-serif';
-    ctx.fillText('(results may vary)', 128, 62, 236);
+    drawType(ctx, 'WIN! WIN! WIN!', 128, 40, { role: 'arcade', size: 30, fill: '#b8236f', maxWidth: 236 });
+    drawType(ctx, '(results may vary)', 128, 62, { role: 'officialBody', size: 15, fill: '#b8236f', maxWidth: 236 });
   }
   // Sunny on his own (the sides and the topper), with a see-through background.
   const sunny = canvas(256, 256);
@@ -188,13 +178,8 @@ function cabinetArt() {
     ctx.fillRect(0, 0, 256, 160);
     ctx.fillStyle = 'rgba(200, 200, 160, 0.7)'; // tape
     ctx.fillRect(98, 0, 60, 16);
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#b8236f';
-    ctx.font = '400 44px "Permanent Marker", "Caveat", cursive';
-    ctx.fillText('BACK SOON', 128, 78, 236);
-    ctx.fillStyle = '#5a4a40';
-    ctx.font = '700 22px "Caveat", cursive';
-    ctx.fillText('- Mgmt. (Do not lift sheet)', 128, 120, 236);
+    drawType(ctx, 'BACK SOON', 128, 78, { role: 'marker', size: 44, fill: '#b8236f', maxWidth: 236 });
+    drawType(ctx, '- Mgmt. (Do not lift sheet)', 128, 120, { role: 'note', size: 22, fill: '#5a4a40', maxWidth: 236 });
     drawSunny(ctx, 222, 138, 12);
   }
   art = {
@@ -223,11 +208,7 @@ function createScreen() {
     ctx.fillRect(0, 0, 256, 36); // the title bar
     ctx.fillStyle = 'rgba(255, 120, 200, 0.07)';
     for (let y = 36; y < 192; y += 4) ctx.fillRect(0, y, 256, 1); // scan lines
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#1a0614';
-    ctx.font = '400 28px "VT323", monospace';
-    ctx.fillText(title, 128, 19, 240);
+    drawType(ctx, title, 128, 19, { role: 'led', size: 28, fill: '#1a0614', maxWidth: 240 });
     lines.forEach((line, i) => {
       const y = 62 + i * 34;
       if (i === highlight) {
@@ -238,13 +219,9 @@ function createScreen() {
         ctx.fillStyle = `#${dots[i].toString(16).padStart(6, '0')}`;
         ctx.beginPath(); ctx.arc(24, y, 9, 0, Math.PI * 2); ctx.fill();
       }
-      ctx.fillStyle = i === highlight ? '#1a0614' : tone;
-      ctx.font = '400 28px "VT323", monospace';
-      ctx.fillText(line, dots[i] !== undefined && dots[i] !== null ? 138 : 128, y, dots[i] !== undefined && dots[i] !== null ? 204 : 232);
+      drawType(ctx, line, dots[i] !== undefined && dots[i] !== null ? 138 : 128, y, { role: 'led', size: 28, fill: i === highlight ? '#1a0614' : tone, maxWidth: dots[i] !== undefined && dots[i] !== null ? 204 : 232 });
     });
-    ctx.fillStyle = '#ff9fd2';
-    ctx.font = '400 24px "VT323", monospace';
-    ctx.fillText(note, 128, 174, 240);
+    drawType(ctx, note, 128, 174, { role: 'led', size: 24, fill: '#ff9fd2', maxWidth: 240 });
     map.needsUpdate = true;
   }
   show({ title: clawMachine.name, lines: ['', 'EVERYONE\'S', 'A WINNER*'], note: '*Not everyone' });
@@ -327,13 +304,13 @@ export function buildClawCabinet({ kit, back, faces = '+z', floorY = 0, spec = C
   place(-half, 0.135, half, 0.86, 0, depth, solid(colors.body), { collide: false, name: 'claw_base' }); // (up to the chrome lip)
   place(-half - 0.02, 0, half + 0.02, 0.135, 0, depth + 0.02, solid(colors.chrome, { metalness: 0.6, roughness: 0.3 }));
   sign('*NOT EVERYONE. PRIZES NOT TO SCALE. THE CLAW IS DOING ITS BEST.', 0, 0.068, depth + 0.03,
-    { width: 1.24, height: 0.07, background: '#1d1626', color: '#ff9fd2' });
+    { width: 1.24, height: 0.07, background: '#1d1626', color: '#ff9fd2', font: 'officialBody' });
   place(-half - 0.005, 0.86, half + 0.005, 0.9, 0, depth + 0.005, solid(colors.chrome, { metalness: 0.6, roughness: 0.3 })); // chrome lip
   const screen = createScreen();
   place(-0.58, 0.5, 0.16, 0.84, depth, depth + 0.01, solid(colors.trim)); // bezel
   place(-0.55, 0.53, 0.13, 0.81, depth + 0.01, depth + 0.012, new THREE.MeshBasicMaterial({ map: screen.texture }));
   place(0.24, 0.54, 0.6, 0.84, depth, depth + 0.015, solid(colors.bodyDark)); // button panel
-  sign('DROP!', 0.42, 0.805, depth + 0.025, { width: 0.2, height: 0.045, background: '#b8236f', color: '#fff3d6' });
+  sign('DROP!', 0.42, 0.805, depth + 0.025, { width: 0.2, height: 0.045, background: '#b8236f', color: '#fff3d6', font: 'arcade' });
   const button = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.075, 0.05, 20), glow(colors.button));
   const bezel = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.02, 20), solid(colors.chrome, { metalness: 0.6, roughness: 0.3 }));
   for (const [mesh, out] of [[button, 0.04], [bezel, 0.022]]) {
@@ -346,7 +323,7 @@ export function buildClawCabinet({ kit, back, faces = '+z', floorY = 0, spec = C
   // The coin door, right of the chute.
   place(0.15, 0.18, 0.58, 0.48, depth, depth + 0.012, solid(colors.coin));
   place(0.33, 0.36, 0.4, 0.42, depth + 0.012, depth + 0.02, solid(colors.chrome, { metalness: 0.6, roughness: 0.3 })); // coin slot plate
-  sign('INSERT POINTS', 0.365, 0.25, depth + 0.02, { width: 0.36, height: 0.07, background: '#2b2233', color: '#ffe9a8' });
+  sign('INSERT POINTS', 0.365, 0.25, depth + 0.02, { width: 0.36, height: 0.07, background: '#2b2233', color: '#ffe9a8', font: 'arcade' });
   // The prize chute: a dark mouth behind a hinged flap, and a tray sticking out where the won gun lands.
   const { u0: cu0, u1: cu1, y0: cy0, y1: cy1 } = spec.chute;
   place(cu0, cy0, cu1, cy1, depth, depth + 0.006, solid(colors.tray));
@@ -371,7 +348,7 @@ export function buildClawCabinet({ kit, back, faces = '+z', floorY = 0, spec = C
   // --- The header: the marquee, the promise, and Sunny on top ---
   place(-half - 0.02, 1.95, half + 0.02, height, 0, depth + 0.03, solid(colors.trim));
   picture(looks.marquee, 0, 2.075, depth + 0.04, 1.26, 0.235, frame.sign, 'claw_marquee');
-  sign('EVERYONE\'S A WINNER*', 0, 1.905, depth - 0.015, { width: 1.1, height: 0.08, background: '#ffc83d', color: '#b8236f' });
+  sign('EVERYONE\'S A WINNER*', 0, 1.905, depth - 0.015, { width: 1.1, height: 0.08, background: '#ffc83d', color: '#b8236f', font: 'arcade' });
   const topper = spec.topper;
   picture(looks.sunny, 0, height + topper.lift + topper.size / 2, depth * 0.6, topper.size, topper.size, frame.sign, 'claw_topper');
 

@@ -27,6 +27,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { neon as cfg, NEON_COLORS } from '../config/neon.js';
+import { neonStyles } from '../config/typefaces.js';
 import { seededRandom } from './textures.js';
 
 export { NEON_COLORS };
@@ -503,6 +504,13 @@ export function createNeon(kit, { seed = cfg.flicker.seed } = {}) {
     b.add(whole, { color, radius, flicker });
   }
 
+  /** The lettering style of a sign (config/typefaces.js neonStyles): `style` names one, `slant` / `spacing` override it. */
+  function styleOf(opts) {
+    const named = opts.style ? neonStyles[opts.style] : null;
+    if (opts.style && !named) throw new Error(`neon: unknown lettering style "${opts.style}"`);
+    return { slant: opts.slant ?? named?.slant, spacing: opts.spacing ?? named?.spacing };
+  }
+
   const textRadius = (height, radius) => radius ?? Math.max(height * cfg.text.radiusPerHeight, cfg.tube.radius * 0.5);
 
   /**
@@ -513,8 +521,8 @@ export function createNeon(kit, { seed = cfg.flicker.seed } = {}) {
    */
   function text(string, opts = {}) {
     checkAlive();
-    const { height = cfg.text.height, color = NEON_COLORS.hotPink, radius, align, slant } = opts;
-    const layout = layoutText(string, { height, align, slant });
+    const { height = cfg.text.height, color = NEON_COLORS.hotPink, radius, align } = opts;
+    const layout = layoutText(string, { height, align, ...styleOf(opts) });
     const group = placed('neon-text', opts);
     root.add(group);
     const b = batch(group);
@@ -554,7 +562,7 @@ export function createNeon(kit, { seed = cfg.flicker.seed } = {}) {
   function sign(opts = {}) {
     checkAlive();
     const { text: string = '', height = cfg.text.height, color = NEON_COLORS.hotPink, backing = true, border = false, radius } = opts;
-    const layout = layoutText(string, { height, align: opts.align, slant: opts.slant });
+    const layout = layoutText(string, { height, align: opts.align, ...styleOf(opts) });
     const pad = height * cfg.sign.padding + cfg.sign.margin;
     const width = layout.width + pad * 2, panelHeight = layout.height + pad * 2;
     const group = placed('neon-sign', opts);

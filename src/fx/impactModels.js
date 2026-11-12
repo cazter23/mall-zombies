@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { seededRandom } from '../world/textures.js';
+import { drawType } from '../world/typeKit.js';
 
 export function buildImpactModel(kind, variant) {
   if (kind === 'sticker') {
@@ -22,11 +23,9 @@ export function buildImpactModel(kind, variant) {
     ctx.fillStyle = sheen; ctx.fillRect(18, 10, 220, 132);
     // Red retail header bar
     ctx.fillStyle = '#b8252a'; ctx.fillRect(23, 15, 210, 30);
-    ctx.fillStyle = '#fff6dc'; ctx.font = 'bold 20px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('MEGA MARKDOWN', 128, 36);
+    drawType(ctx, 'MEGA MARKDOWN', 128, 31, { role: 'clearance', size: 26, fill: '#fff6dc', maxWidth: 196 });
     // Main price / clearance stamp
-    ctx.fillStyle = '#241e22'; ctx.font = 'bold 32px sans-serif';
-    ctx.fillText(['REDUCED', 'FINAL SALE', '$0.01'][variant], 128, 86);
+    drawType(ctx, ['REDUCED', 'FINAL SALE', '$0.01'][variant], 128, 76, { role: 'clearance', size: 44, fill: '#241e22', maxWidth: 200 });
     // Crisp UPC barcode + feed notches
     ctx.fillStyle = '#1e191d';
     for (let i = 0; i < 26; i++) ctx.fillRect(42 + i * 6.6, 100, i % 4 === 0 ? 4 : i % 2 ? 2 : 3, 24);

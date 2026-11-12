@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { resolveGunColors } from '../skinPalette.js';
 import { samplePose } from '../../core/keyframes.js';
 import { buildPistolArms } from './arms.js';
+import { drawType } from '../../world/typeKit.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 
@@ -19,13 +20,8 @@ function getPartyBrandTexture() {
   ctx.strokeStyle = '#ff5ea8';
   ctx.lineWidth = 4;
   ctx.strokeRect(2, 2, 124, 44);
-  ctx.fillStyle = '#ff5ea8';
-  ctx.font = 'bold 15px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('PARTY POP!', 64, 21);
-  ctx.fillStyle = '#06b6d4';
-  ctx.font = 'bold 10px monospace';
-  ctx.fillText('TWIN FESTIVE SHELLS', 64, 37);
+  drawType(ctx, 'PARTY POP!', 64, 20, { role: 'toyBrand', size: 22, fill: '#ff5ea8', outline: false, maxWidth: 110 });
+  drawType(ctx, 'TWIN FESTIVE SHELLS', 64, 36, { role: 'toyBody', size: 12, fill: '#06b6d4', maxWidth: 110 });
   partyBrandTex = new THREE.CanvasTexture(c);
   partyBrandTex.colorSpace = THREE.SRGBColorSpace;
   return partyBrandTex;

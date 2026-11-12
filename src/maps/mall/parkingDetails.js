@@ -39,7 +39,7 @@ export function buildParkingDetails({ kit, looks }) {
   sway.name = 'parking_loose_sign'; sway.userData.dynamic = true;
   sway.position.set(S.x, S.y, S.z); sway.rotation.y = -Math.PI / 2; kit.group.add(sway);
   const loose = sign('loose_notice', 'NO OVERNIGHT PARKING', { x: 0, y: -.2, z: 0, width: 1.6, height: .45,
-    facing: 1, background: '#ccb58d', color: '#574650' }); sway.add(loose);
+    facing: 1, background: '#ccb58d', color: '#574650', font: 'stencil' }); sway.add(loose);
   let elapsed = 0;
   return {
     update(dt) {
@@ -62,13 +62,13 @@ export function buildParkingDetails({ kit, looks }) {
     }
     const C = Y.cabinet;
     box('pylon_cabinet', Y.x, (C.bottom + C.top) / 2, Y.z, C.depth, C.top - C.bottom, C.width, mat(0x2a1838, { roughness: .7 }));
-    neon.sign({ text: Y.text, x: Y.x - C.depth / 2 - .02, y: (C.bottom + C.top) / 2, z: Y.z, facing: 'x-', height: Y.textHeight,
+    neon.sign({ text: Y.text, style: 'block', x: Y.x - C.depth / 2 - .02, y: (C.bottom + C.top) / 2, z: Y.z, facing: 'x-', height: Y.textHeight,
       color: 0xff5ea8, backing: false, border: 0xffa04d, flickerLetters: [11] });
     neon.shape('sun', { x: Y.x - C.depth / 2 - .02, y: Y.sunY, z: Y.z, facing: 'x-', size: Y.sunSize, color: 0xffa04d });
     looks.pool(Y.x - .03, (C.bottom + C.top) / 2, Y.z, C.width + 1.4, 3.2, 'x-', 0xff5ea8, .12);
     // The name in neon on the facade, over the faded ghost sign (the mall still says who it is after dark).
     const F = L.facadeNeon, wallX = P.rect.minX + .15; // (the cladding's face, as the facade details use)
-    neon.sign({ text: F.text, x: wallX + .08, y: F.y, z: F.z, facing: 'x+', height: F.height, color: 0xffd9a8, backing: true, border: 0xff5ea8 });
+    neon.sign({ text: F.text, style: 'deco', x: wallX + .08, y: F.y, z: F.z, facing: 'x+', height: F.height, color: 0xffd9a8, backing: true, border: 0xff5ea8 });
     // Gloss over the painted puddles: low roughness, so the lamps leave a highlight on the wet asphalt.
     const wet = mat(L.gloss.color, { roughness: L.gloss.roughness, metalness: .1 });
     for (const [x, z, w, h] of D.wear.puddles) {
@@ -103,7 +103,7 @@ export function buildParkingDetails({ kit, looks }) {
     }
     for (const [z, facing] of [[T.z1 + .012, 1], [T.z0 - .012, -1]]) {
       sign('truck_logo', T.logo, { x: (bodyX0 + T.x1) / 2, y: 1.75, z, width: Math.min(4.2, T.x1 - bodyX0 - .4), height: .5,
-        facing, background: '#d9d2c4', color: '#7a2f45', font: '"Righteous", "Bebas Neue", sans-serif' });
+        facing, background: '#d9d2c4', color: '#7a2f45', font: 'mallBrand' });
     }
     kit.addCollider(bodyX0, 0, T.z0, T.x1, T.bodyHeight, T.z1);
     kit.addCollider(T.x0, 0, T.z0, bodyX0, T.cabHeight, T.z1);
@@ -197,7 +197,7 @@ export function buildParkingDetails({ kit, looks }) {
     kit.addCollider(b.x - b.width / 2, 0, b.z - b.depth / 2, b.x + b.width / 2, b.height, b.z + b.depth / 2);
     box('cabinet_door', b.x + b.width / 2 + .015, 1.2, b.z, .025, 1.65, b.depth - .09, metal);
     sign('high_voltage', 'DANGER · HIGH VOLTAGE', { x: b.x + b.width / 2 + .04, y: 1.65, z: b.z,
-      width: .58, height: .26, facing: 'x+', background: '#cdb16b', color: '#493e3d' });
+      width: .58, height: .26, facing: 'x+', background: '#cdb16b', color: '#493e3d', font: 'hazard' });
     for (const camera of D.facade.cameras) {
       box('camera_mount', wallX + .1, camera.y, camera.z, .12, .22, .2, dark);
       rod('camera_arm', [wallX + .1, camera.y, camera.z], [wallX + .6, camera.y, camera.z], .03, metal);
@@ -206,9 +206,9 @@ export function buildParkingDetails({ kit, looks }) {
     }
     for (const notice of D.facade.notices) {
       sign('service_notice', notice.text, { x: wallX + .055, y: 1.8, z: notice.z,
-        width: 1.4, height: .35, facing: 'x+', background: '#cbbca0', color: '#51454b' });
+        width: 1.4, height: .35, facing: 'x+', background: '#cbbca0', color: '#51454b', font: 'wayfinding' });
       sign('service_notice_sub', notice.sub, { x: wallX + .055, y: 1.47, z: notice.z,
-        width: 1.4, height: .22, facing: 'x+', background: '#cbbca0', color: '#51454b' });
+        width: 1.4, height: .22, facing: 'x+', background: '#cbbca0', color: '#51454b', font: 'officialBody' });
     }
     // Roof hardware is beyond the wall edge, where it cannot overlap an indoor ceiling face.
     for (const [x, y, z] of D.facade.roofUnits) {
@@ -232,7 +232,7 @@ export function buildParkingDetails({ kit, looks }) {
       const mirror = box('rv_mirror', x + side * (w / 2 + .24), h - .7, front - .25, .09, .25, .17, dark);
       if (index === 2 && side === 1) mirror.rotation.z = -.45;
       sign('rv_plate', D.vehicle.plates[index], { x, y: .62, z: side > 0 ? front + .11 : back - .11,
-        width: .55, height: .14, facing: side, background: '#c6bda3', color: '#494451' });
+        width: .55, height: .14, facing: side, background: '#c6bda3', color: '#494451', font: 'wayfinding' });
       for (const dx of [-.4, .4]) box('rv_wiper', x + dx, h - .7, side > 0 ? front + .047 : back - .047,
         .55, .024, .018, dark, [0, 0, dx > 0 ? .24 : -.24]);
     }
@@ -241,7 +241,7 @@ export function buildParkingDetails({ kit, looks }) {
     rod('rv_aerial', [x + .5, h + .1, z + 1], [x + .5, h + .7, z + 1], .012, metal);
     rod('rv_aerial_cross', [x + .1, h + .65, z + 1], [x + .9, h + .65, z + 1], .009, metal);
     sign('rv_travel_sticker', D.vehicle.stickers[index], { x: x - .65, y: 1.18, z: back - .05,
-      width: .7, height: .19, facing: -1, background: '#aa8f71', color: '#e5d7b5' });
+      width: .7, height: .19, facing: -1, background: '#aa8f71', color: '#e5d7b5', font: 'marker' });
     const dirt = document.createElement('canvas'); dirt.width = 256; dirt.height = 64;
     const c = dirt.getContext('2d');
     for (let i = 0; i < 150; i++) {
@@ -337,7 +337,7 @@ export function buildParkingDetails({ kit, looks }) {
     }
     for (const [x, z] of [[cx0, cz0], [cx1, cz0], [cx0, cz1], [cx1, cz1]]) rod('corral_post', [x, 0, z], [x, K.height, z], .035, metal);
     box('corral_sign', cx, K.height + .22, cz0, K.width - .1, .34, .03, mat(0x264653));
-    sign('corral_sign_text', 'RETURN CARTS HERE', { x: cx, y: K.height + .22, z: cz0 - .02, width: K.width - .16, height: .28, facing: -1, background: '#264653', color: '#ffe2a3' });
+    sign('corral_sign_text', 'RETURN CARTS HERE', { x: cx, y: K.height + .22, z: cz0 - .02, width: K.width - .16, height: .28, facing: -1, background: '#264653', color: '#ffe2a3', font: 'wayfinding' });
     kit.addCollider(cx0 - .04, 0, cz0 - .04, cx1 + .04, K.height, cz1 + .04).vaultable = true;
     const cartRandom = seededRandom(D.seed + 7);
     for (const [x, z, yaw] of K.carts) {
@@ -358,7 +358,7 @@ export function buildParkingDetails({ kit, looks }) {
       for (const facing of ['x+', 'x-']) {
         const side = facing === 'x+' ? 1 : -1;
         sign('row_letter', `ROW ${Rz.rowLetters[i] ?? 'A'}`, { x: l.x + side * .12, y: 2.6, z: l.z, width: .5, height: .5, facing,
-          background: '#264653', color: '#ffe2a3' });
+          background: '#264653', color: '#ffe2a3', font: 'stencil' });
       }
       const bx = l.x - .11 - B.out - B.width / 2;
       rod('banner_arm', [l.x - .11, B.y + B.height / 2, l.z], [bx - B.width / 2, B.y + B.height / 2, l.z], .02, metal);
@@ -388,7 +388,7 @@ export function buildParkingDetails({ kit, looks }) {
     kit.box(V.minX, V.height, V.minZ - .1, V.maxX + .15, V.height + V.roof, V.maxZ + .1, mat(0x628c8c), { name: 'parking_detail_vestibule_roof', collide: false });
     kit.box(V.maxX - .06, V.height - .3, V.minZ, V.maxX + .02, V.height, V.maxZ, frame, { name: 'parking_detail_vestibule_header', collide: false });
     sign('vestibule_sign', 'MEGA MART · ENTRANCE', { x: V.maxX + .025, y: V.height - .15, z: (V.minZ + V.maxZ) / 2, width: 2.2, height: .24, facing: 'x+',
-      background: '#264653', color: '#ffe2a3' });
+      background: '#264653', color: '#ffe2a3', font: 'wayfinding' });
   }
 
 }

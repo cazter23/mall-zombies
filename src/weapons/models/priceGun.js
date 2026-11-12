@@ -15,6 +15,7 @@ import { samplePose } from '../../core/keyframes.js';
 import { resolveGunColors } from '../skinPalette.js';
 import { buildDeformedBoxGeometry } from '../../player/body.js';
 import { buildPistolArms } from './arms.js';
+import { drawType } from '../../world/typeKit.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 
@@ -54,12 +55,8 @@ function getBrandTexture() {
   ctx.fillRect(0, 0, 128, 48);
   ctx.fillStyle = '#ff7a1a';
   ctx.fillRect(3, 3, 122, 12);
-  ctx.fillStyle = '#f6f2e6';
-  ctx.font = 'bold 11px sans-serif';
-  ctx.fillText('PRICEMASTER', 8, 30);
-  ctx.fillStyle = '#ffd23f';
-  ctx.font = 'bold 9px monospace';
-  ctx.fillText('MM-04', 88, 41);
+  drawType(ctx, 'PRICEMASTER', 8, 31, { role: 'stencil', size: 14, fill: '#f6f2e6', align: 'left', baseline: 'alphabetic', maxWidth: 112 });
+  drawType(ctx, 'MM-04', 88, 42, { role: 'wayfinding', size: 12, fill: '#ffd23f', align: 'left', baseline: 'alphabetic', maxWidth: 34 });
   cachedBrandTex = new THREE.CanvasTexture(canvas);
   cachedBrandTex.colorSpace = THREE.SRGBColorSpace;
   return cachedBrandTex;

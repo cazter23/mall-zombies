@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { drawType } from '../../world/typeKit.js';
 
 export function makeClearanceSticker() {
   const canvas = document.createElement('canvas');
@@ -24,14 +25,10 @@ export function makeClearanceSticker() {
 
   ctx.fillStyle = '#f9c669';
   ctx.fillRect(19, 21, 160, 21);
-  ctx.fillStyle = '#4a1932';
-  ctx.font = 'bold 15px Arial';
-  ctx.fillText('C L E A R A N C E', 28, 37);
+  drawType(ctx, 'CLEARANCE', 28, 32, { role: 'wayfinding', size: 20, fill: '#4a1932', align: 'left', tracking: 0.3, maxWidth: 146 });
+  drawType(ctx, '99', 21, 78, { role: 'clearance', size: 100, fill: '#fff4d6', align: 'left', maxWidth: 101 });
+  drawType(ctx, '¢', 126, 80, { role: 'clearance', size: 56, fill: '#fff4d6', align: 'left' });
   ctx.fillStyle = '#fff4d6';
-  ctx.font = '900 75px Arial Black, Arial, sans-serif';
-  ctx.fillText('99', 21, 106, 101);
-  ctx.font = 'bold 43px Arial';
-  ctx.fillText('¢', 126, 101);
 
   for (let y = 22; y < 110; y += 11) ctx.fillRect(186, y, 2, 6);
   let x = 196;
@@ -39,9 +36,7 @@ export function makeClearanceSticker() {
     ctx.fillRect(x, 63, width, 35);
     x += width + 3;
   }
-  ctx.fillStyle = '#f9c669';
-  ctx.font = 'bold 16px monospace';
-  ctx.fillText('SG', 205, 48);
+  drawType(ctx, 'SG', 205, 48, { role: 'priceTag', size: 22, fill: '#f9c669', align: 'left', baseline: 'alphabetic' });
 
   const map = new THREE.CanvasTexture(canvas);
   map.colorSpace = THREE.SRGBColorSpace;

@@ -124,21 +124,21 @@ export function buildMallAtmosphere(kit, layout, { service, ceilingHole, ceiling
   // (The directory hung at x -18 until HOFFMAN'S gate took that stretch of wall: now over the hallway's north-west vent.)
   // (Raised 0.25 m: that vent is boarded with planks up to y 1.35 at the same z as these rows, so the lowest row flickered against them.)
   const directoryRise = 0.25;
-  sign('Sunset Galleria / Directory', { x: -6.9, y: 2.6 + directoryRise, z: 5.95, width: 2.3, height: 0.34, facing: -1, font: 'Arial, "Helvetica Neue", sans-serif' });
+  sign('Sunset Galleria / Directory', { x: -6.9, y: 2.6 + directoryRise, z: 5.95, width: 2.3, height: 0.34, facing: -1, font: 'wayfinding' });
   for (const [i, text] of ['Food Court  ·  South', 'Mega Mart  ·  East', "Hoffman's  ·  North-West", 'Cinema  ·  Upstairs, West'].entries()) {
     sign(text, { x: -6.9, y: 2.19 + directoryRise - i * 0.29, z: 5.94, width: 2.3, height: 0.25, facing: -1,
-      background: '#eee1c1', color: '#2e5158', font: 'Arial, "Helvetica Neue", sans-serif' });
+      background: '#eee1c1', color: '#2e5158', font: 'wayfinding' });
   }
-  sign('Please enjoy your stay', { x: 18.8, y: 3.6, z: 5.95, width: 1.8, height: 0.28, facing: -1, font: 'Arial, "Helvetica Neue", sans-serif' });
+  sign('Please enjoy your stay', { x: 18.8, y: 3.6, z: 5.95, width: 1.8, height: 0.28, facing: -1, font: 'wayfinding' });
   sign('TABLES ARE FOR CUSTOMERS. MOSTLY.', { x: -16.9, y: 2.8, z: -14.25, width: 3.1, height: 0.3, facing: 1 });
   sign('RESTOCK IN PROGRESS', { x: 29.05, y: 2.1, z: -23.95, width: 1.8, height: 0.28, facing: 1 });
 
   // (Hung under the bridge between the two balcony voids.)
   const hanging = sign('Food Court  /  Mega Mart  →', { x: 0.5, y: 4.5, z: 2,
-    width: 3.2, height: 0.42, facing: 1, font: 'Arial, "Helvetica Neue", sans-serif' });
+    width: 3.2, height: 0.42, facing: 1, font: 'wayfinding' });
   // A second face for the return trip; both pivot around the same centre.
   const reverse = sign('←  Food Court  /  Mega Mart', { x: 0.5, y: 4.5, z: 1.98,
-    width: 3.2, height: 0.42, facing: -1, font: 'Arial, "Helvetica Neue", sans-serif' });
+    width: 3.2, height: 0.42, facing: -1, font: 'wayfinding' });
   for (const x of [-0.7, 1.7]) box('sign_suspension', x, 5.35, 2, 0.025, 1.3, 0.025, metal);
 
   // Interrupted lunch. Trays, cups and cartons stay on existing table tops.

@@ -1,6 +1,7 @@
 // Map-owned dressing and a single reusable slide texture. No gameplay state,
 // colliders or extra real lights; static pieces participate in room batching.
 import * as THREE from 'three';
+import { drawType } from '../../world/typeKit.js';
 import { atmosphere } from '../../config/environment.js';
 import { buildCinemaArchitecture } from './cinemaArchitecture.js';
 import { makeTileTexture } from '../../world/textures.js';
@@ -16,7 +17,7 @@ export function buildCinemaDetails({ kit, looks, layout: c, floorY: Y }) {
   const y = h => Y + h;
   const box = (name, x, h, z, w, height, d, color, options = {}) => kit.box(x - w / 2, y(h), z - d / 2,
     x + w / 2, y(h + height), z + d / 2, kit.mat(color, options), { collide: false, name: `cinema_detail_${name}` });
-  function sign(name, text, x, h, z, w, height, facing = 1, background = '#423044', color = '#f0dfbc', font = 'Arial, "Helvetica Neue", sans-serif') {
+  function sign(name, text, x, h, z, w, height, facing = 1, background = '#423044', color = '#f0dfbc', font = 'wayfinding') {
     const m = kit.sign(text, { x, y: y(h), z, width: w, height, facing, background, color, font });
     m.name = `cinema_detail_${name}`; return m;
   }
@@ -63,7 +64,7 @@ export function buildCinemaDetails({ kit, looks, layout: c, floorY: Y }) {
   sign('auditorium_exit', 'Exit →', -24.07, 3.05, 23.7, 2.0, .35, 'x-');
   sign('passage_exit', '← Lobby', -22, 3.1, 5.88, 2.4, .35, 1);
   for (const side of [-1, 1]) sign('entrance', side === -1 ? 'Sunset Cinema' : 'Sunset Promenade',
-    side === -1 ? -19.9 : -20.43, 3.15, -2.9, 3.15, .45, side === -1 ? 'x+' : 'x-', '#423044', '#f0dfbc', side === -1 ? 'Georgia, "Times New Roman", serif' : 'Arial, "Helvetica Neue", sans-serif');
+    side === -1 ? -19.9 : -20.43, 3.15, -2.9, 3.15, .45, side === -1 ? 'x+' : 'x-', '#423044', '#f0dfbc', side === -1 ? 'marquee' : 'wayfinding');
   for (const s of c.futureScreens) {
     for (const dx of [-.6, .6]) box('future_door_handle', (s.from + s.to) / 2 + dx, 1.02, L.minZ + .055, .04, .35, .05, C.brass);
     sign('future_screen_closed', s.label, (s.from + s.to) / 2, 1.8, L.minZ + .06, 1.7, .25);
@@ -81,21 +82,28 @@ export function buildCinemaDetails({ kit, looks, layout: c, floorY: Y }) {
       r.maxX - r.minX + .08, .16, r.maxZ - r.minZ + .08, C.brass);
   }
   const con = c.concessions, tx = (c.ticketBooth.minX + c.ticketBooth.maxX) / 2;
-  sign('concession_menu', 'Popcorn / Soda / Forever', con.maxX + .03, 3.05, .45, 4.8, .5, 'x+');
-  sign('ticket_header', 'Box Office · Admit One', tx, 3.05, -9.35, 4.1, .45, 1, '#423044', '#f0dfbc', 'Georgia, "Times New Roman", serif');
-  sign('ticket_price', 'Tonight: Your Entire Shift', tx, .67, -9.37, 3.3, .3);
+  sign('concession_menu', 'Popcorn / Soda / Forever', con.maxX + .03, 3.05, .45, 4.8, .5, 'x+', '#423044', '#f0dfbc', 'cinemaBody');
+  sign('ticket_header', 'Box Office · Admit One', tx, 3.05, -9.35, 4.1, .45, 1, '#423044', '#f0dfbc', 'marquee');
+  sign('ticket_price', 'Tonight: Your Entire Shift', tx, .67, -9.37, 3.3, .3, 1, '#423044', '#f0dfbc', 'priceTag');
   buildCinemaLobbyDetails({ kit, layout: c, floorY: Y });
   buildCinemaAuditoriumDetails({ kit, looks, layout: c, floorY: Y });
   const story = buildCinemaStoryDetails({ kit, layout: c, floorY: Y });
-  sign('island_ad', 'Now Showing · Forever', -33.5, .38, c.island.minZ - .025, 3.6, .25, -1, '#423044', '#f0dfbc', 'Georgia, "Times New Roman", serif');
+  sign('island_ad', 'Now Showing · Forever', -33.5, .38, c.island.minZ - .025, 3.6, .25, -1, '#423044', '#f0dfbc', 'marquee');
   // Portrait one-sheets, with original graphic art rather than more menu tiles.
   for (const [i, poster] of c.posters.entries()) {
     const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 768;
     const ctx = canvas.getContext('2d'); ctx.fillStyle = poster.base; ctx.fillRect(0, 0, 512, 768);
     ctx.strokeStyle = poster.accent; ctx.lineWidth = 4; ctx.strokeRect(16, 16, 480, 736);
-    ctx.fillStyle = poster.accent; ctx.textAlign = 'center'; ctx.font = 'bold 39px Georgia, "Times New Roman", serif'; ctx.fillText(poster.title, 256, 105);
-    ctx.font = 'italic 17px Georgia, "Times New Roman", serif'; ctx.fillText(poster.tagline, 256, 660);
-    ctx.font = '15px sans-serif'; ctx.fillText('A SUNSET PICTURES PRESENTATION', 256, 713);
+    ctx.fillStyle = poster.accent; ctx.textAlign = 'center';
+    // each one-sheet gets its own title treatment
+    const titleStyle = [
+      { role: 'marquee', fill: [poster.accent, '#c08a5c'], outline: { color: '#1d1420', width: 0.06 } },
+      { role: 'readout', fill: poster.accent, glow: { color: poster.accent, blur: 0.25 }, tracking: 0.08 },
+      { role: 'clearance', fill: poster.accent, shadow: { color: '#1d1420', dx: 0.05, dy: 0.06 }, tracking: 0.06 },
+    ][i % 3];
+    drawType(ctx, poster.title, 256, 105, { size: 44, maxWidth: 420, ...titleStyle });
+    drawType(ctx, poster.tagline, 256, 660, { role: 'hoffmanSub', size: 21, fill: poster.accent, maxWidth: 440 });
+    drawType(ctx, 'A SUNSET PICTURES PRESENTATION', 256, 713, { role: 'cinemaBody', size: 19, fill: poster.accent, maxWidth: 440, tracking: 0.12 });
     ctx.beginPath(); ctx.arc(256, 340, 143, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#282333'; ctx.strokeStyle = '#282333'; ctx.lineWidth = 14;
     if (i === 0) {
@@ -103,7 +111,7 @@ export function buildCinemaDetails({ kit, looks, layout: c, floorY: Y }) {
       ctx.beginPath(); ctx.moveTo(174, 316); ctx.lineTo(372, 316); ctx.lineTo(346, 392); ctx.lineTo(190, 392); ctx.closePath(); ctx.fill();
       for (const x of [210, 330]) { ctx.beginPath(); ctx.arc(x, 450, 18, 0, Math.PI * 2); ctx.fill(); }
       ctx.save(); ctx.translate(256, 548); ctx.rotate(-.10); ctx.fillStyle = poster.accent; ctx.fillRect(-130, -28, 260, 56);
-      ctx.fillStyle = '#282333'; ctx.font = 'bold 29px sans-serif'; ctx.fillText('FINAL MARKDOWN', 0, 10); ctx.restore();
+      drawType(ctx, 'FINAL MARKDOWN', 0, 0, { role: 'clearance', size: 34, fill: '#282333', maxWidth: 240 }); ctx.restore();
     } else if (i === 1) {
       ctx.beginPath(); ctx.arc(256, 340, 110, 0, Math.PI * 2); ctx.stroke();
       for (let n = 0; n < 12; n++) { const a = n * Math.PI / 6; ctx.beginPath(); ctx.moveTo(256 + Math.sin(a) * 84, 340 + Math.cos(a) * 84); ctx.lineTo(256 + Math.sin(a) * 96, 340 + Math.cos(a) * 96); ctx.stroke(); }
@@ -130,7 +138,7 @@ export function buildCinemaDetails({ kit, looks, layout: c, floorY: Y }) {
   }
   buildCinemaPublicFinish({ kit, layout: c, floorY: Y });
   const neon = looks.neon('cinema');
-  neon.text('CINEMA', { x: -30, y: y(3.9), z: L.maxZ - .07, width: 5, height: .65, facing: -1, color: '#e7a7ce' });
+  neon.text('CINEMA', { style: 'wide', x: -30, y: y(3.9), z: L.maxZ - .07, width: 5, height: .65, facing: -1, color: '#e7a7ce' });
 
   // One changing texture, no video, flashing light or per-frame canvas redraw.
   const canvas = document.createElement('canvas'); canvas.width = 1024; canvas.height = 320;
@@ -185,9 +193,9 @@ export function buildCinemaDetails({ kit, looks, layout: c, floorY: Y }) {
     const s = p.slides[index]; ctx.fillStyle = s.base; ctx.fillRect(0, 0, 1024, 320);
     ctx.strokeStyle = s.accent; ctx.lineWidth = 3; ctx.strokeRect(22, 20, 980, 280);
     ctx.fillStyle = s.accent; ctx.textAlign = 'center';
-    ctx.font = 'bold 48px sans-serif'; ctx.fillText(s.title, 512, 98);
-    ctx.font = '24px sans-serif'; ctx.fillText(s.subtitle, 512, 146);
-    ctx.font = '18px sans-serif'; ctx.fillText(s.footer, 512, 280);
+    drawType(ctx, s.title, 512, 84, { role: 'marquee', size: 54, fill: [s.accent, '#b99265'], maxWidth: 900, outline: { color: '#120e1c', width: 0.05 } });
+    drawType(ctx, s.subtitle, 512, 140, { role: 'cinemaBody', size: 30, fill: s.accent, maxWidth: 900, caps: 'upper', tracking: 0.1 });
+    drawType(ctx, s.footer, 512, 272, { role: 'cinemaBody', size: 22, fill: s.accent, maxWidth: 900, caps: 'upper', tracking: 0.14 });
     // Quiet moving line art on a fixed-brightness field, never a strobe.
     const phase = time * .35;
     if (index === 0) {

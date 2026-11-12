@@ -74,9 +74,9 @@ export function buildParkingSurroundings(kit) {
     box('door_handle', front - .065, 1.05, z + .4, .04, .34, .04, concrete);
     box(`${shop.id}_awning`, front - .6, 2.85, z, 1.15, .18, w * .8, accent);
     label(`${shop.id}_sign`, shop.sign, { x: front - .165, y: h - .65, z,
-      width: w - .6, height: .65, facing: 'x-', background: '#394454', color: shop.ink });
+      width: w - .6, height: .65, facing: 'x-', background: '#394454', color: shop.ink, ...(shop.font ? { font: shop.font } : {}) });
     label(`${shop.id}_sub`, shop.sub, { x: front - .08, y: .6, z,
-      width: w - .8, height: .28, facing: 'x-', background: '#d9c7aa', color: '#514451' });
+      width: w - .8, height: .28, facing: 'x-', background: '#d9c7aa', color: '#514451', font: 'typewriter' });
     // Wheel stops and bay stripes make these read as roadside businesses.
     for (let dz = -w / 2 + 1; dz < w / 2; dz += 3) {
       box('shop_bay', front - 3, .052, z + dz, 4.2, .012, .08, paint);
@@ -121,11 +121,11 @@ export function buildParkingSurroundings(kit) {
   box('pylon_case', p.x, p.height - 1.3, p.z, .35, 2.7, 4.8, mat(0x557d7d));
   for (const side of [-1, 1]) {
     label('pylon_title', 'SUNSET GALLERIA', { x: p.x + side * .205, y: p.height - .7, z: p.z,
-      width: 4.5, height: .75, facing: side < 0 ? 'x-' : 'x+', background: '#344954', color: '#edc986' });
+      width: 4.5, height: .75, facing: side < 0 ? 'x-' : 'x+', background: '#344954', color: '#edc986', font: 'mallBrand' });
     label('pylon_hours', 'OPEN FOREVER', { x: p.x + side * .205, y: p.height - 1.6, z: p.z,
-      width: 4.5, height: .5, facing: side < 0 ? 'x-' : 'x+', background: '#344954', color: '#e8c9ca' });
+      width: 4.5, height: .5, facing: side < 0 ? 'x-' : 'x+', background: '#344954', color: '#e8c9ca', font: 'wayfinding' });
   }
   box('stop_post', R.minX - 1, 1.3, C.maxZ + 2, .08, 2.6, .08, metal);
   label('stop_sign', 'STOP', { x: R.minX - 1, y: 2.25, z: C.maxZ + 2.06, width: .7, height: .7,
-    facing: 1, background: '#954f61', color: '#f7e4d7' });
+    facing: 1, background: '#954f61', color: '#f7e4d7', font: 'stencil' });
 }

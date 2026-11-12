@@ -1,14 +1,15 @@
 // Web fonts that canvas signs, posters and print use, and how long the game waits for them at startup.
-// Keep in step with the Google Fonts link in index.html.
+// The families are listed ONCE, in config/typefaces.js, and bundled locally (src/fonts/fonts.css, written by
+// tools/buildFontCss.mjs): this list is derived from them, so a new font cannot be forgotten here.
+import { families } from './typefaces.js';
+
+export const fontFaces = (name, def = families[name]) => [
+  ...def.weights.map((weight) => `${weight} 40px "${name}"`),
+  ...(def.italic ?? []).map((weight) => `italic ${weight} 40px "${name}"`),
+];
+
 export const fonts = {
-  maxWaitMs: 2500, // slow or no network: start anyway on the CSS fallback fonts
+  maxWaitMs: 4000, // the fonts are local files: this is only a safety net
   sampleText: 'Aa',
-  canvas: [
-    '400 40px "Anton"', '400 40px "Bebas Neue"', '600 40px "Caveat"', '700 40px "Caveat"',
-    '600 40px "Fraunces"', '700 40px "Fraunces"', '600 40px "Fredoka"', '700 40px "Fredoka"',
-    '400 40px "Permanent Marker"', '600 40px "Playfair Display"', '700 40px "Playfair Display"',
-    'italic 400 40px "Playfair Display"', '400 40px "Righteous"', '400 40px "Silkscreen"', '700 40px "Silkscreen"',
-    '400 40px "Space Grotesk"', '500 40px "Space Grotesk"', '700 40px "Space Grotesk"',
-    '500 40px "Teko"', '600 40px "Teko"', '700 40px "Teko"', '400 40px "VT323"',
-  ],
+  canvas: Object.keys(families).flatMap((name) => fontFaces(name)),
 };

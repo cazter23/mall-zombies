@@ -53,6 +53,9 @@ export function buildConcourse({ kit, looks, props, layout, upperY }) {
 
   // --- Shopfronts + vitrines: their painted panels (interiors and signs) all go on one atlas ---------------------------
   const S = C.shopfronts;
+  // each shop's own lettering (config/typefaces.js roles), by the kind of shop
+  const SHOP_ROLE = { music: ['neonBlock', 'wayfinding'], photo: ['hoffmanSerif', 'hoffmanSub'], jewelry: ['neonScript', 'wayfinding'], keys: ['industrial', 'typewriter'], electronics: ['terminal', 'wayfinding'], toys: ['toyBrand', 'toyBody'] };
+  const roleOf = (kind) => { const [role, subRole] = SHOP_ROLE[kind] ?? ['mallBrand', 'wayfinding']; return { role, subRole }; };
   const cells = [];
   const cell = (aspect, draw) => cells.push({ aspect, draw }) - 1;
   const shops = S.level2.map((shop) => {
@@ -60,15 +63,15 @@ export function buildConcourse({ kit, looks, props, layout, upperY }) {
     return {
       ...shop, n: shop.wall === 'south' ? 1 : -1, wallZ: shop.wall === 'south' ? L2.minZ : L2.maxZ,
       interior: cell(w / glassH, (ctx, cw, ch) => paintInterior(ctx, cw, ch, { kind: shop.kind, light: shop.light, lit: shop.lit, seed: shop.from * 31 + 7 })),
-      header: cell((w - 0.2) / (S.header - 0.1), (ctx, cw, ch) => paintShopSign(ctx, cw, ch, { name: shop.name, sub: shop.sub, ground: hexCss(shop.color), ink: shop.ink })),
-      blade: cell(S.blade.width / S.blade.height, (ctx, cw, ch) => paintShopSign(ctx, cw, ch, { name: shop.name, ground: hexCss(shop.color), ink: shop.ink })),
+      header: cell((w - 0.2) / (S.header - 0.1), (ctx, cw, ch) => paintShopSign(ctx, cw, ch, { name: shop.name, sub: shop.sub, ground: hexCss(shop.color), ink: shop.ink, ...roleOf(shop.kind) })),
+      blade: cell(S.blade.width / S.blade.height, (ctx, cw, ch) => paintShopSign(ctx, cw, ch, { name: shop.name, ground: hexCss(shop.color), ink: shop.ink, ...roleOf(shop.kind) })),
       note: shop.note ? cell(3, (ctx, cw, ch) => paintShopSign(ctx, cw, ch, { name: shop.note, ground: '#f4f0e0', ink: '#3b2f44' })) : null,
     };
   });
   const windows = C.vitrines.map((v) => ({
     ...v, n: v.wall === 'south' ? 1 : -1, wallZ: v.wall === 'south' ? layout.hallway.minZ : layout.hallway.maxZ,
     interior: cell((v.to - v.from) / (v.top - v.sill), (ctx, cw, ch) => paintInterior(ctx, cw, ch, { kind: v.kind, light: v.light, lit: true, seed: v.from * 17 + 3 })),
-    plate: cell(6, (ctx, cw, ch) => paintShopSign(ctx, cw, ch, { name: v.name, ground: hexCss(v.frame), ink: '#fff0d8' })),
+    plate: cell(6, (ctx, cw, ch) => paintShopSign(ctx, cw, ch, { name: v.name, ground: hexCss(v.frame), ink: '#fff0d8', ...roleOf(v.kind) })),
   }));
   const atlas = createCanvasAtlas(cells);
   const painted = { level2: [], hallway: [] }; // atlas quads per area (one mesh each)

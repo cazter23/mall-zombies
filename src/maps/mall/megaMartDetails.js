@@ -41,8 +41,8 @@ export function buildMegaMartDetails(kit, room) {
     shape(name, new THREE.BoxGeometry(w, h, d), material, x, y, z, rotation);
   const cylinder = (name, x, y, z, radius, height, material, rotation, top = radius) =>
     shape(name, new THREE.CylinderGeometry(top, radius, height, 8), material, x, y, z, rotation);
-  function sign(name, text, x, y, z, width, height, facing = 1, background = '#244d79', color = '#f7e7b8') {
-    const mesh = kit.sign(text, { x, y, z, width, height, facing, background, color });
+  function sign(name, text, x, y, z, width, height, facing = 1, background = '#244d79', color = '#f7e7b8', font = 'martBrand') {
+    const mesh = kit.sign(text, { x, y, z, width, height, facing, background, color, font });
     mesh.name = name; details.add(mesh); return mesh;
   }
   // All stock stays INSIDE the existing 1m-wide gondola footprints. Shapes, palette and sparse
@@ -101,7 +101,7 @@ export function buildMegaMartDetails(kit, room) {
       }
       for (const [i, z] of [-17.5, -12.6, -9.0].entries()) {
         const ticket = sign('mart_shelf_ticket', ['99c', '2 FOR 1', 'LAST FEW'][i], fixture.x + side * 0.512, 0.58, z,
-          0.44, 0.10, side < 0 ? 'x-' : 'x+', '#e8d9ab', '#3a423d');
+          0.44, 0.10, side < 0 ? 'x-' : 'x+', '#e8d9ab', '#3a423d', 'priceTag');
         ticket.rotation.x = i === 1 ? -0.06 : 0;
       }
     }
@@ -131,9 +131,9 @@ export function buildMegaMartDetails(kit, room) {
     for (let i = 0; i < 3; i++) box('receiving_scuff', x - 0.5 + i * 0.25, 0.42 + i * 0.11,
       room.minZ + 0.124, 0.22, 0.016, 0.01, cardboard, [0, 0, -0.12]);
   }
-  sign('delivery_clipboard', 'DELIVERY: STILL WAITING', 29.05, 1.55, room.minZ + 0.04, 1.35, 0.31);
-  sign('delivery_label', 'FRAGILE. PROBABLY.', 31.8, 1.12, room.minZ + 0.115, 0.95, 0.19, 1, '#dfd2af', '#414337');
-  sign('safety_board', 'DAYS WITHOUT INCIDENT: 0', 23.9, 2.85, room.minZ + 0.04, 2.0, 0.38);
+  sign('delivery_clipboard', 'DELIVERY: STILL WAITING', 29.05, 1.55, room.minZ + 0.04, 1.35, 0.31, 1, '#244d79', '#f7e7b8', 'typewriter');
+  sign('delivery_label', 'FRAGILE. PROBABLY.', 31.8, 1.12, room.minZ + 0.115, 0.95, 0.19, 1, '#dfd2af', '#414337', 'marker');
+  sign('safety_board', 'DAYS WITHOUT INCIDENT: 0', 23.9, 2.85, room.minZ + 0.04, 2.0, 0.38, 1, '#244d79', '#f7e7b8', 'stencil');
   box('safety_old_number', 24.57, 2.85, room.minZ + 0.05, 0.035, 0.30, 0.012, red, [0, 0, -0.55]);
   for (const dx of [-0.8, 0.8]) box('rear_vent_frame', 21.8 + dx, 0.90, room.minZ + 0.08, 0.07, 1.62, 0.12, metal);
   for (const y of [0.12, 1.68]) box('rear_vent_frame', 21.8, y, room.minZ + 0.08, 1.67, 0.07, 0.12, metal);
@@ -250,7 +250,7 @@ export function buildMegaMartDetails(kit, room) {
         z += w + .03;
       }
     }
-    sign('overstock_sign', rack.sign, wallX + out * .025, O.signY, zc, Math.min(length - .2, 4.2), .42, east ? 'x-' : 'x+', '#182b49', '#ffe2a3');
+    sign('overstock_sign', rack.sign, wallX + out * .025, O.signY, zc, Math.min(length - .2, 4.2), .42, east ? 'x-' : 'x+', '#182b49', '#ffe2a3', 'clearance');
   }
 
   const batches = new Map();

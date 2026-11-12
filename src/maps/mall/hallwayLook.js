@@ -48,7 +48,7 @@ export function buildHallwayLook({ looks, kit, layout, keepClear = [] }) {
   const south = H.minZ + 0.04;
   const backing = L.backing; // dark sign panels: neon needs them to pop on the bright pastel walls
   // (y 3.9, not higher: seen from the back of the start room, the start door's 3 m lintel hid a sign at 4.3)
-  neon.sign({ text: 'FOOD COURT', x: (FD.minX + FD.maxX) / 2, y: 3.9, z: south, facing: 1, height: 0.55, color: S.foodCourt, border: S.foodCourt, flickerLetters: [7] });
+  neon.sign({ text: 'FOOD COURT', style: 'italic', x: (FD.minX + FD.maxX) / 2, y: 3.9, z: south, facing: 1, height: 0.55, color: S.foodCourt, border: S.foodCourt, flickerLetters: [7] });
   // A big-box fascia with printed price cards, separate from the landlord's neon.
   const martZ = (MD.minZ + MD.maxZ) / 2;
   kit.box(H.maxX - .24, 3.72, MD.minZ - .68, H.maxX - .023, 4.93, MD.maxZ + .68,
@@ -59,23 +59,23 @@ export function buildHallwayLook({ looks, kit, layout, keepClear = [] }) {
     kit.sign(text, { x: H.maxX - .065, y: 2.25, z, width: .72, height: 1.02, facing: 'x-',
       style: 'martBrand', background: '#f58a39', color: '#182b49', accentColor: '#fff0d2', subtext }).name = 'mart_window_offer';
   }
-  neon.sign({ text: 'GRAND ATRIUM', x: (gate.from + gate.to) / 2, y: 4.3, z: north, facing: -1, height: 0.42, color: S.atrium, border: S.atrium });
+  neon.sign({ text: 'GRAND ATRIUM', style: 'wide', x: (gate.from + gate.to) / 2, y: 4.3, z: north, facing: -1, height: 0.42, color: S.atrium, border: S.atrium });
   neon.sign({
     text: 'STAFF ONLY', x: H.minX + 0.04, y: 3.6, z: (SCD.minZ + SCD.maxZ) / 2, facing: 'x+', height: 0.22, color: S.staffOnly,
     flickerLetters: [0, 1, 2, 3, 4, 6, 7, 8, 9], flickerStyle: 'dying',
   });
   // The start room's storefront: "GO NG OUT OF BUS NESS" (two letters dead, one stuttering)
-  neon.sign({ text: 'GOING OUT OF BUSINESS', x: 0, y: 3.95, z: north, facing: -1, height: 0.32, color: S.storefront, deadLetters: [2, 16], flickerLetters: [13] });
+  neon.sign({ text: 'GOING OUT OF BUSINESS', style: 'italic', x: 0, y: 3.95, z: north, facing: -1, height: 0.32, color: S.storefront, deadLetters: [2, 16], flickerLetters: [13] });
   // The centrepiece over the west half of the north wall: a big neon sun over the backed logo.
   // (No side shapes: palms read as stick figures and stars as squiggles from most angles.)
   const logoX = -11;
   neon.shape('sun', { x: logoX, y: 5.0, z: north, facing: -1, size: 1.9, color: S.sun });
-  neon.sign({ text: 'SUNSET GALLERIA', x: logoX, y: 3.8, z: north, facing: -1, height: 0.42, color: S.logo, backing, border: S.star, flickerLetters: [3] });
+  neon.sign({ text: 'SUNSET GALLERIA', style: 'script', x: logoX, y: 3.8, z: north, facing: -1, height: 0.42, color: S.logo, backing, border: S.star, flickerLetters: [3] });
   // The corporate cheer in neon: the opening hours over the west half of the south wall, a reminder over the east half.
   const openX = -11.5;
   const smileX = 16.4;
-  neon.sign({ text: sat.open, x: openX, y: 4.35, z: south, facing: 1, height: 0.4, color: S.open, backing, border: L.trim.north, flickerLetters: [16] });
-  neon.sign({ text: sat.smile, x: smileX, y: 4.35, z: south, facing: 1, height: 0.26, color: S.smile, backing });
+  neon.sign({ text: sat.open, style: 'block', x: openX, y: 4.35, z: south, facing: 1, height: 0.4, color: S.open, backing, border: L.trim.north, flickerLetters: [16] });
+  neon.sign({ text: sat.smile, style: 'script', x: smileX, y: 4.35, z: south, facing: 1, height: 0.26, color: S.smile, backing });
   // Trim: one tube a little under the ceiling line on each long wall, in pieces (one dead, two stuttering).
   const trimY = L.trimY;
   const trim = (x0, x1, z, color, opts = {}) => neon.tube([[x0, trimY, z], [x1, trimY, z]], { color, ...opts });

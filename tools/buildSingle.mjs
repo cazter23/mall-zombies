@@ -5,8 +5,8 @@
 // separate module scripts and workers from file://.)
 //
 // How: a normal Vite build into dist-single/ with everything in one JS chunk and one CSS file, then this script pastes
-// them into index.html. The music worker (a self-contained script) becomes a Blob URL created at runtime. The Google Fonts
-// link stays but loads without blocking (print-media trick), so a blocked / offline network just falls back to system fonts.
+// them into index.html. The music worker (a self-contained script) becomes a Blob URL created at runtime. The web fonts
+// (src/fonts/*.woff2) are inlined into the stylesheet as data: URLs, so the signs look right offline too.
 // =============================================================================
 
 import { build } from 'vite';
@@ -64,8 +64,6 @@ let html = readFileSync(join(OUT, 'index.html'), 'utf8');
 html = html
   .replace(/<script[^>]*type="module"[^>]*src="[^"]*"[^>]*><\/script>\s*/i, '')
   .replace(/<link[^>]*rel="stylesheet"[^>]*href="\.\/assets\/[^"]*"[^>]*>\s*/i, '')
-  // fonts: don't block the first paint if the network is slow or blocked
-  .replace(/<link href="(https:\/\/fonts\.googleapis\.com[^"]*)" rel="stylesheet" \/>/, '<link href="$1" rel="stylesheet" media="print" onload="this.media=\'all\'" />')
   .replace('</head>', () => `    <style>${safe(css)}</style>\n  </head>`)
   .replace('</body>', () => `    <script type="module">${safe(js)}</script>\n  </body>`);
 

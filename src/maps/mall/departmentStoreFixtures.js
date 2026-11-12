@@ -20,7 +20,8 @@ const BURGUNDY = 0x8c2f45;
 const MANNEQUIN = 0xebe4d8;
 
 export function buildDepartmentFixtures({ kit, layout: S }) {
-  const { box, mat, sign, addCollider, group } = kit;
+  const { box, mat, addCollider, group } = kit;
+  const sign = (text, opts) => kit.sign(text, { font: 'hoffmanBrand', ...opts }); // HOFFMAN'S house engraved caps
   const r = S.rect;
   const rand = seededRandom(1987);
   const deco = { collide: false };

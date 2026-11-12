@@ -841,11 +841,11 @@ export function createMallProps(kit) {
     clerk({ along, center, wallAt, facing, depth: 0.85, apron: 0x2d6a4f });
     // Signs.
     place(u0 - 0.1, H + 0.08, u1 + 0.1, H + 0.9, d(depth - 0.3), d(depth), mat(0x1f1a24), o); // sign board standing on the roof
-    sign('CUSTOMER SERVICE', { ...signAt(center, H + 0.5, depth + 0.01), width: width + 0.1, height: 0.62, background: '#1f1a24', color: '#7fe3e8' });
+    sign('CUSTOMER SERVICE', { ...signAt(center, H + 0.5, depth + 0.01), width: width + 0.1, height: 0.62, background: '#1f1a24', color: '#7fe3e8', font: 'marquee' });
     sign('NOW SERVING  000', { ...signAt(center, 2.66, depth + 0.01), width: 1.5, height: 0.28, background: '#1d1626', color: '#ff6b5b' });
-    sign('SHARPENING', { ...signAt(center + meleeOffset, 2.66, depth + 0.011), width: 0.88, height: 0.28, background: '#1d1626', color: '#ffd23f' }); // the box cutter window (its buy spot is below)
-    sign('SECOND CHANCE', { ...signAt(center - meleeOffset, 2.66, depth + 0.011), width: 0.94, height: 0.28, background: '#1d1626', color: '#a4f3c4' });
-    sign('EXTENDED WARRANTY · ASK HERE', { ...signAt(center, 0.4, depth + 0.011), width: width - 1.0, height: 0.26, background: '#f1faee', color: '#1d1626' }); // (below the tier stickers: nothing shares a plane)
+    sign('SHARPENING', { ...signAt(center + meleeOffset, 2.66, depth + 0.011), width: 0.88, height: 0.28, background: '#1d1626', color: '#ffd23f', font: 'industrial' }); // the box cutter window (its buy spot is below)
+    sign('SECOND CHANCE', { ...signAt(center - meleeOffset, 2.66, depth + 0.011), width: 0.94, height: 0.28, background: '#1d1626', color: '#a4f3c4', font: 'dinerScript' });
+    sign('EXTENDED WARRANTY · ASK HERE', { ...signAt(center, 0.4, depth + 0.011), width: width - 1.0, height: 0.26, background: '#f1faee', color: '#1d1626', font: 'typewriter' }); // (below the tier stickers: nothing shares a plane)
     const n = tierColors.length;
     const rightward = along === 'x' ? facing : -facing; // +1 if "along the wall" runs left to right for a customer
     tierColors.forEach((color, i) => {

@@ -19,14 +19,14 @@ export function buildParkingStreetDetails(kit) {
   box('bus_bench_back', B.x - .3, .85, B.z, .08, .5, B.length * .65, teal);
   for (const dz of [-.85, .85]) box('bus_bench_leg', B.x - .1, .28, B.z + dz, .32, .5, .12, metal);
   sign('bus_timetable', 'ROUTE 86 · SUNSET LOOP', { x: B.x - .62, y: 1.9, z: B.z,
-    width: 1.6, height: .3, facing: 'x+', background: '#d4c7ae', color: '#3b4c51' });
+    width: 1.6, height: .3, facing: 'x+', background: '#d4c7ae', color: '#3b4c51', font: 'wayfinding' });
   sign('bus_timetable_sub', 'NEXT BUS: PLEASE WAIT', { x: B.x - .62, y: 1.55, z: B.z,
-    width: 1.6, height: .3, facing: 'x+', background: '#d4c7ae', color: '#5c4c55' });
+    width: 1.6, height: .3, facing: 'x+', background: '#d4c7ae', color: '#5c4c55', font: 'officialBody' });
   sign('bus_ad', 'YOUR NEXT STOP: SUNSET GALLERIA', { x: B.x - .75, y: 1.8, z: B.z,
-    width: 2, height: .55, facing: 'x-', background: '#536e78', color: '#ead3a5' });
+    width: 2, height: .55, facing: 'x-', background: '#536e78', color: '#ead3a5', font: 'mallBrand' });
   rod('bus_stop_pole', [69.5, .1, B.z - 2.5], [69.5, 3, B.z - 2.5], .035, metal);
   sign('bus_stop', '86 · BUS STOP', { x: 69.44, y: 2.7, z: B.z - 2.5,
-    width: 1.05, height: .45, facing: 'x-', background: '#547a7d', color: '#eadbc0' });
+    width: 1.05, height: .45, facing: 'x-', background: '#547a7d', color: '#eadbc0', font: 'wayfinding' });
 
   for (const [x, z] of D.street.bins) {
     const bin = new THREE.Mesh(new THREE.CylinderGeometry(.25, .22, .85, 8), teal);
@@ -38,9 +38,9 @@ export function buildParkingStreetDetails(kit) {
   const N = D.street.streetNames;
   rod('street_name_post', [N.x, .1, N.z], [N.x, 3, N.z], .035, metal);
   sign('street_name', 'SUNSET BOULEVARD', { x: N.x - .05, y: 2.85, z: N.z,
-    width: 2.2, height: .3, facing: 'x-', background: '#52796d', color: '#e0d8c5' });
+    width: 2.2, height: .3, facing: 'x-', background: '#52796d', color: '#e0d8c5', font: 'wayfinding' });
   sign('street_name_cross', 'GALLERIA DRIVE', { x: N.x, y: 2.5, z: N.z + .05,
-    width: 2, height: .3, facing: 1, background: '#52796d', color: '#e0d8c5' });
+    width: 2, height: .3, facing: 1, background: '#52796d', color: '#e0d8c5', font: 'wayfinding' });
 
   const W = D.street.roadworks;
   box('road_repair_patch', W.x, .023, W.z, W.width, .02, W.length, dark);
@@ -54,7 +54,7 @@ export function buildParkingStreetDetails(kit) {
   box('barricade', W.x, .95, W.z - 2.8, 2.2, .3, .1, coral);
   for (const dx of [-.7, -.1, .5]) box('barricade_stripe', W.x + dx, .95, W.z - 2.86, .28, .3, .02, cream, [0, 0, -.3]);
   sign('roadworks_notice', 'ROAD WORK · NO END IN SIGHT', { x: W.x, y: 1.45, z: W.z - 2.8,
-    width: 2.2, height: .35, facing: -1, background: '#ba8b61', color: '#4b4146' });
+    width: 2.2, height: .35, facing: -1, background: '#ba8b61', color: '#4b4146', font: 'hazard' });
 
   const C = D.street.stoppedCar, car = new THREE.Group();
   car.name = 'parking_street_stopped_car'; car.position.set(C.x, 0, C.z); car.rotation.y = C.yaw; kit.group.add(car);
@@ -76,7 +76,7 @@ export function buildParkingStreetDetails(kit) {
       shop.width * .26, 1.32, windowGlow, 'x-');
     sign('shop_delivery_notice', shop.id === 'diner' ? 'BACK IN 5 MINUTES' : 'DELIVERIES AT REAR',
       { x: front - .07, y: 1.35, z: shop.z, width: .75, height: .24,
-        facing: 'x-', background: '#cfbea1', color: '#564b4e' });
+        facing: 'x-', background: '#cfbea1', color: '#564b4e', font: 'marker' });
     box('shop_aircon', shop.x + .7, shop.height + .5, shop.z + 1.2, 1.5, .65, 1.1, metal);
     for (let dz = -.4; dz <= .4; dz += .2) box('shop_aircon_grille', shop.x - .06, shop.height + .5,
       shop.z + 1.2 + dz, .025, .4, .06, dark);

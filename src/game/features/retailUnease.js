@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { retailUnease as cfg } from '../../config/retailUnease.js';
 import { look } from '../../config/look.js';
 import { atmosphere } from '../../config/environment.js';
+import { drawType } from '../../world/typeKit.js';
 
 // Called by the existing horror feature. View changes happen only in quiet intervals;
 // the mannequin must have been seen, then remain well outside the player's view.
@@ -26,7 +27,7 @@ export function buildRetailUnease({ map, player, rounds }) {
       for (const x of [18, 58, 198, 238]) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(128 + (x - 128) * .17, 70); ctx.stroke(); }
       ctx.fillStyle = '#304c51'; ctx.fillRect(112, 43, 32, 32);
       ctx.fillStyle = '#fff0b7'; ctx.fillRect(105, 10, 46, 5);
-      ctx.fillStyle = '#e7e6c9'; ctx.font = '9px monospace'; ctx.fillText('CAM 01 - CONCOURSE', 8, 117);
+      drawType(ctx, 'CAM 01 - CONCOURSE', 8, 117, { role: 'led', size: 16, fill: '#e7e6c9', align: 'left', glow: false });
     }
     ctx.fillStyle = '#173d4933'; for (let y = 0; y < 128; y += 4) ctx.fillRect(0, y, 256, 1);
     feed.needsUpdate = true;

@@ -15,6 +15,7 @@ import * as THREE from 'three';
 import { kiosk, productOf } from '../../config/kiosk.js';
 import { look } from '../../config/look.js';
 import { createBeacon } from '../../fx/beacon.js';
+import { drawType } from '../../world/typeKit.js';
 
 // World x/z from the cart's frame, per facing.
 const FRAMES = {
@@ -49,7 +50,7 @@ export function buildKioskCart(kit, site) {
 
   const sign = (text, u, y, w, h, color = '#fff3d6') => {
     const [x, z] = at(u, front + .025);
-    return kit.sign(text, { x, y: fy + y, z, width: w, height: h, facing: frame.sign, background: '#1d1626', color });
+    return kit.sign(text, { x, y: fy + y, z, width: w, height: h, facing: frame.sign, background: '#1d1626', color, font: 'kevin' });
   };
   sign('KIOSK KEVIN', 0, .36, signWidth, .24, '#ffe14d');
   const slots = kiosk.slots.map((_, index) => ({ position: point((index - 1) * slotSpacing, height + .1, front + .09) }));
@@ -89,14 +90,10 @@ export function buildKioskCart(kit, site) {
     const step = slotSpacing / labelsWidth * canvas.width;
     ctx.fillStyle = '#45246e'; // (the cart's body shows between the cells)
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.font = 'bold 26px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
     stock.forEach((id, index) => {
       ctx.fillStyle = '#1d1626';
       ctx.fillRect(index * step, 0, cell, canvas.height);
-      ctx.fillStyle = '#fff3d6';
-      ctx.fillText(nameOf(id), index * step + cell / 2, canvas.height / 2, cell - 12);
+      drawType(ctx, nameOf(id), index * step + cell / 2, canvas.height / 2, { role: 'priceTag', size: 36, fill: '#fff3d6', maxWidth: cell - 12 });
     });
     texture.needsUpdate = true;
   }
@@ -131,11 +128,7 @@ export function buildKioskCart(kit, site) {
       const { canvas, ctx, texture } = notice;
       ctx.fillStyle = '#1d1626';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#ffe14d';
-      ctx.font = 'bold 32px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(notices[state], canvas.width / 2, canvas.height / 2, canvas.width - 24);
+      drawType(ctx, notices[state], canvas.width / 2, canvas.height / 2, { role: 'marker', size: 32, fill: '#ffe14d', maxWidth: canvas.width - 24 });
       texture.needsUpdate = true;
       vendor.visible = state !== 'closed' && state !== 'away';
       beacon.root.visible = vendor.visible;
