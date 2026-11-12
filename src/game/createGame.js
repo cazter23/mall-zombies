@@ -33,7 +33,7 @@ import { bossTiming } from '../config/bosses.js';
 import { createBossDirector } from './bossDirector.js';
 import { configureBossVouchers } from './bossVouchers.js';
 import { createShutterSounds } from './shutterSounds.js';
-import { mascotGold, mascotTypes, zombieTypes } from '../config/zombies.js';
+import { mascotGold } from '../config/zombies.js';
 import { weapons, melee as meleeWeapons } from '../config/weapons.js';
 import { loadMap } from '../maps/index.js';
 import { createPlayerStats, resetPlayerStats } from '../player/stats.js';
@@ -57,7 +57,8 @@ import { createMascotCostumes } from './mascotCostumes.js';
 import { createSurfaceSlows } from './surfaceSlows.js';
 import { createEvents } from './events.js';
 import { createPricing } from './pricing.js';
-import { createFlashSales } from './flashSales.js';
+import { createFlashSales, saleEligibility } from './flashSales.js';
+import { createAnnouncer } from './announcer.js';
 import { createDebugCommands } from './debugCommands.js';
 import { createWarranty } from './warranty.js';
 import { createMeleeUpgrades } from './meleeUpgrades.js';
@@ -78,9 +79,8 @@ import { createClockIn } from './clockIn.js';
 import { createInteractions } from './interactions.js';
 import { createTickets } from './tickets.js';
 import { buildFeatures, featuresOf } from './features/index.js';
-import { ownsAttachment, ownedAttachments, unlockAttachment } from './features/attachmentCounter.js';
+import { ownedAttachments, unlockAttachment } from './features/attachmentCounter.js';
 import { createSaveGame } from './saveGame.js';
-import { save as saveConfig } from '../config/save.js';
 import { comboName } from '../config/workshop.js';
 
 const DEG_TO_RAD = Math.PI / 180;
@@ -524,58 +524,15 @@ export function createGame({
     hud.setRound(round);
     hud.showRoundBanner(round, closing.isClosingRound(round) ? closingTime.finale.banner : null);
   });
-  events.on('waveEnding', () => {
-    hud.showAnnouncement(economy.rounds.lastShoppers.pa);
-    sound.play('paChime');
-  });
-  // A zombie type's first appearance this run (Mall Walkers, round 4): PA chime + banner. (A Mascot announces the
-  // costume it came in: Sir Waffles in round 10.) Each later costume's first appearance gets its own.
-  events.on('typeIntro', ({ typeId, zombie }) => {
-    const intro = (zombie?.type ?? zombieTypes[typeId])?.introBanner;
-    if (!intro) return;
-    hud.showAnnouncement({ ...intro, priority: 2 });
-    sound.play('paChime');
-  });
-  events.on('mascotVariantIntro', ({ variant }) => {
-    hud.showAnnouncement({ ...mascotTypes[variant].introBanner, priority: 2 });
-    sound.play('paChime');
-  });
-
-  // Build-A-Blaster's PA lines (game/features/workshopRitual.js), and GRAB-A-GUN's (game/features/clawMachine.js).
-  for (const name of ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualWaiting', 'ritualCollect', 'limitedEditionDrop', 'limitedEditionFitted', 'wardrobeBuy', 'clawClosed', 'clawMoved', 'skinUnlocked', 'kioskStock', 'guideEntry', 'lostFound', 'returnQuest']) {
-    events.on(name, ({ pa }) => {
-      if (!pa) return;
-      hud.showAnnouncement({ ...pa, priority: 1 });
-      sound.play('paChime');
-    });
-  }
-
   // Closing Time's own sounds, in both run modes (Classic has no PA text): a key picked up, a checklist line ticked.
+  // (Before the PA tables: the sound plays before the chime.)
   events.on('closingKey', () => sound.play('closingKey'));
   events.on('closingLine', () => sound.play('closingDuty'));
-  for (const name of ['closingBriefing', 'closingKeyDrop', 'closingKey', 'closingLine', 'closingValidated']) {
-    events.on(name, ({ pa }) => {
-      if (!state.showClosingGuidance || !pa) return;
-      hud.showAnnouncement({ ...pa, priority: 1 });
-      sound.play('paChime');
-    });
-  }
-
-  // A return label issued by a ticked duty is announced like the duty itself: in Directed only. (Classic finds the label
-  // slot by the desk. The quest's own step lines, 'returnQuest', are in-world and play in both modes: the generic PA list.)
-  events.on('returnLabel', ({ pa }) => {
-    if (!state.showClosingGuidance || !pa) return;
-    hud.showAnnouncement({ ...pa, priority: 1 });
-    sound.play('paChime');
-  });
-
-  events.on('ritualCollect', ({ certificate }) => hud.showCertificate(certificate));
-  // A Platinum warranty claim (game/warranty.js).
-  events.on('warrantyClaim', ({ pa }) => {
-    hud.showAnnouncement({ ...pa, priority: 1 });
-    sound.play('paChime');
-  });
-  events.on('ritualStage', ({ pa }) => hud.showAnnouncement({ ...pa, priority: 0, archiveOnly: true })); // (narration: quality and ready lines beat it)
+  // THE MALL PA (game/announcer.js): which event says what. Its four tables are registered at four points in this
+  // function, each where its listeners always were, because the order listeners are added is the order lines queue.
+  const announcer = createAnnouncer({ events, hud, sound, state });
+  announcer.runAndFeatures();
+  events.on('ritualCollect', ({ certificate }) => hud.showCertificate(certificate)); // (after its PA line)
 
   powerUps = createPowerUps({
     events, player, gun, zombies, colliders, state, stats, pricing, wallet,
@@ -610,20 +567,9 @@ export function createGame({
     getOvertimeRound: () => (overtimeFrom === null ? 0 : Math.max(0, rounds.round - overtimeFrom + 1)),
   });
   events.on('runLoaded', () => hud.showRoundBanner(rounds.round, closing.isClosingRound(rounds.round) ? closingTime.finale.banner : null));
-  events.on('bossPhase', ({ zombie, phase }) => {
-    const pa = zombie.type.phases?.[phase];
-    if (pa) { hud.showAnnouncement({ ...pa, priority: bossTiming.introPriority }); sound.play('paChime'); }
-  });
   events.on('roundDiscard', () => updateBossBar(null));
   events.on('playerDeath', () => updateBossBar(null));
-  events.on('powerUpCollect', ({ pa, sound: name }) => {
-    hud.showAnnouncement({ ...pa, priority: 1 });
-    sound.play(name);
-  });
-  events.on('incentiveComplete', ({ text }) => {
-    hud.showAnnouncement({ kicker: 'Employee incentive complete', text, priority: 1 });
-    sound.play('incentiveRestock');
-  });
+  announcer.bossesAndIncentives(); // a boss's phase lines, power-ups, employee incentives
   events.on('incentiveBurst', ({ position }) => {
     const visual = incentiveConfig.types.inventoryLiquidation;
     effects.splat(position, new Vector3(0, 1, 0), visual.splatColors, visual.splatCount);
@@ -643,36 +589,22 @@ export function createGame({
   // closing, so a ticked duty's own PA line is queued before the label's.
   const returnQuest = createReturnQuest({
     events, state, player, zombies, gun, wallet, effects, sound,
-    desk: map.features?.find(({ kind }) => kind === 'returnsDesk')?.position ?? null,
+    desk: featuresOf(map, 'returnsDesk')[0]?.position ?? null,
   });
   const features = buildFeatures(map, {
     scene, map, events, pricing, interactions, gun, player, stats, wallet, health, zombies, rounds, state, warranty, meleeUpgrades, wardrobe,
     colliders, effects, sound, input, tickets, shootables, aimAssist, secondChance, equipment, closing, skins, lostFound, returnQuest, surfaces,
   });
-  const kevin = features.list.find(({ feature }) => feature.kind === 'kiosk')?.instance;
 
   // The outfit rail's brain: which worn item's tag pulses when (game/outfitRail.js; the HUD draws it).
   const outfitRail = createOutfitRail({ events, wardrobe, stats, player, gun, state });
 
   // FLASH SALES: the mall PA discounts one group of prices for a while (game/flashSales.js). A group is only picked
-  // when it would be of use right now.
+  // when it would be of use right now (saleEligibility, in the same file).
   const flashSales = createFlashSales({
     events,
     pricing,
-    eligible: (group) => {
-      if (group.id === 'doors') return map.areaUnlocks
-        ? Object.keys(economy.doors).some(id => !map.zones[id].open)
-        : map.doors.some((d) => !d.isOpen);
-      if (group.id === 'weapons') return featuresOf(map, 'wallBuy').some((w) => !gun.owns(w.weapon));
-      if (group.id === 'tiers') return gun.slots.some((id) => warranty.offer(id));
-      if (group.id === 'attachments') return featuresOf(map, 'attachmentCounter').some(s => !ownsAttachment(gun, s.attachment));
-      if (group.id === 'apparel') return featuresOf(map, 'wardrobeRack').some(r => map.zones[r.zone].open && !wardrobe.owns(r.item));
-      if (group.id === 'kiosk') {
-        const status = kevin?.status;
-        return status?.open && !status.hiding;
-      }
-      return true;
-    },
+    eligible: saleEligibility({ map, gun, warranty, wardrobe, kiosk: features.instanceOf('kiosk') }),
   });
   // Developer shortcuts (config/debug.js lists the keys; main.js turns key presses into debug.run(id)).
   const debugCommands = createDebugCommands({
@@ -685,19 +617,7 @@ export function createGame({
 
   events.on('runReset', debugCommands.clearSkinOverrides);
 
-  events.on('clockIn', () => {
-    hud.showAnnouncement(economy.rounds.clockIn.pa);
-    sound.play('paChime');
-  });
-  events.on('flashSaleStart', ({ pa }) => {
-    hud.showAnnouncement(pa);
-    sound.play('paChime');
-  });
-  events.on('flashSaleEnd', ({ reason, pa }) => {
-    if (reason !== 'expired') return; // a new run ends it silently
-    hud.showAnnouncement(pa);
-    sound.play('paChime');
-  });
+  announcer.sales(); // Clock in and Flash Sales
 
   // PLAY AGAIN: every system that holds per-run state, put back in this order. A new system with
   // run state = one line here. (tests/fullRun.test.js plays a messy run, resets, and checks the game
@@ -839,11 +759,7 @@ export function createGame({
   events.on('roundStart', () => saveGame.markRoundStart()); // (the snapshot waits for the end of the tick: see update)
   // Stay for overtime in a break restarts the break without a 'roundStart': snapshot again, so a save there keeps the win.
   events.on('overtimeStart', () => saveGame.markRoundStart());
-  // The PA welcomes you back after a load.
-  events.on('runLoaded', ({ round }) => {
-    hud.showAnnouncement({ ...saveConfig.loadedPa, text: saveConfig.loadedPa.text.replace('{round}', String(round)), priority: 2 });
-    sound.play('paChime');
-  });
+  announcer.welcomeBack(); // the PA welcomes you back after a load
 
   let vaultPromptVisible = false;
 

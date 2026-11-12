@@ -118,7 +118,7 @@ export function minimapState(plan, g, { guidance = false } = {}) {
     const destination = map.areaUnlocks?.destination(shutter.door) ?? null; // (null: neither side bought, or both)
     shutters.push({ ...shutter, price: destination ? g.pricing.priceOf('door', destination) : null });
   }
-  const kiosk = g.features?.list.find(({ feature }) => feature.kind === 'kiosk')?.instance;
+  const kiosk = g.features?.instanceOf('kiosk');
   const cart = kiosk?.status.open ? kiosk.site.cart.position : null;
   return {
     you: {

@@ -30,7 +30,7 @@ const WALL_GUN_IDS = Object.keys(weapons).filter((id) => id !== 'stapleGun');
 const nameOf = (id) => id.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
 
 export function createDebugCommands({ map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses, wardrobe, features = null, equipment = null, challenges = null, closing = null, commands = debug.commands, onUse = null }) {
-  const clawMachine = () => features?.list.find(({ feature }) => feature.kind === 'clawMachine')?.instance ?? null; // GRAB-A-GUN
+  const clawMachine = () => features?.instanceOf('clawMachine') ?? null; // GRAB-A-GUN
   const state = { panelOpen: debug.panel.startOpen, zombieIndex: 0, bossIndex: 0, gunIndex: 0, mascotIndex: 0, goldIndex: 0, last: '' };
   const skinOverrides = new Map();
   const selectedZombie = () => ZOMBIE_IDS[state.zombieIndex];
@@ -224,7 +224,7 @@ export function createDebugCommands({ map, zombies, rounds, wallet, gun, health,
     },
     // Kiosk Kevin's cart (game/features/kiosk.js): move him now, to `siteId` or a random other open site.
     kioskMove(siteId = null) {
-      const kevin = features?.list.find(({ feature }) => feature.kind === 'kiosk')?.instance;
+      const kevin = features?.instanceOf('kiosk');
       if (!kevin) return 'This map has no Kiosk Kevin';
       const site = kevin.moveNow(siteId);
       return site ? `Kevin moved to ${site.where}` : 'Not moved: mid-purchase, or no other open area';

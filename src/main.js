@@ -150,10 +150,10 @@ scene.add(viewmodel.worldLight); // the muzzle flash lights up the room
 const { state: game, death, map, player, gun, melee, zombies, rounds, health, wallet, effects, aimAssist, interactions, pricing, flashSales } = g;
 const body = createPlayerBody(scene, effects); // legs + torso you see when looking down
 connectWardrobeAppearance(g.events, { body, viewmodel });
-const workshop = g.features.list.find(({ feature }) => feature.kind === 'workshop')?.instance; // Build-A-Blaster (the HUD reads its status)
+const workshop = g.features.instanceOf('workshop'); // Build-A-Blaster (the HUD reads its status)
 const { ritual, drops: limitedEditions } = workshop ?? {};
-const fittingRooms = g.features.list.filter(({ feature }) => feature.kind === 'fittingRoom').map(({ instance }) => instance); // (the HUD draws the open picker)
-const clawMachine = g.features.list.find(({ feature }) => feature.kind === 'clawMachine')?.instance; // GRAB-A-GUN (the HUD reads its status)
+const fittingRooms = g.features.instancesOf('fittingRoom'); // (the HUD draws the open picker)
+const clawMachine = g.features.instanceOf('clawMachine'); // GRAB-A-GUN (the HUD reads its status)
 const resetRun = g.resetRun;
 hud.connectEvents(g.events);
 const damageIndicators = createDamageIndicatorQueue({

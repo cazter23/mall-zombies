@@ -471,7 +471,14 @@ src/
                         in the order below), resetRun() (Play again: walks ONE ordered `resetSteps` list; a new system with
                         per-run state = one line there), onPlayerDeath, showResults, state { forceRun, over,
                         padPlaying, assisted, running }, death (including the frozen run summary), vaultPromptVisible.
-                        No DOM: the browser parts are passed in
+                        No DOM: the browser parts are passed in. The mall PA (event -> announcement + chime) is a table in
+                        announcer.js, registered at four points here on purpose (listener order = the order lines queue)
+    announcer.js        createAnnouncer({ events, hud, sound, state }): THE MALL PA as data. Four tables of [event,
+                        line(payload) -> announcement or null, sound?] (default sound paChime): runAndFeatures() (wave ending,
+                        zombie and costume intros, every system's own `pa` line, Closing Time and return labels in Directed
+                        only, warranty claims, ritual narration), bossesAndIncentives(), sales() (Clock in, Flash Sales),
+                        welcomeBack() (after a load). createGame calls each where its listeners always were: moving one
+                        can reorder what the player hears. A new system's plain PA line = its event name in PLAIN_PA_EVENTS
     skinSave.js         createSkinSave({ storage, key }): the permanent { version, progress, unlocked, equipped } record. Also `replay` (what the round a Save & Quit will replay has already been paid; written by Save & Quit only) and `dirty` (memory holds something storage does not).
                         Counts and unlocks are keyed by gun and skin; memory updates flush on unlock/runEnd. Safe with
                         missing/corrupt/blocked storage; newer versions are protected from all writes. Debug clear can relock one challenge.
@@ -536,9 +543,10 @@ src/
                         (nothing once dead; 'ticketsWon'), spend, won (the receipt), and the Prize Counter's tokens (slowClaw, freeGrab,
                         keychain: hold / has / use). A resetStep ('tickets'), so Play again starts at 0.
     flashSales.js       Flash Sales: a random PA-announced discount on one category, set through pricing so every price in it drops.
+                        saleEligibility({ map, gun, warranty, wardrobe, kiosk }) = which groups are worth discounting now
     runIntro.js         The PA's opening announcement on a run's first round (listens to 'roundStart').
     shutterSounds.js    Purchase sounds that follow the real shutter motion; pausing stops them, death and reset cancel them.
-    features/           MAP FEATURES by kind. index.js = the registry (kind -> build(feature, ctx) returning optional
+    features/           MAP FEATURES by kind (built features: features.instanceOf(kind) / instancesOf(kind)). index.js = the registry (kind -> build(feature, ctx) returning optional
                         { update(dt), reset() }), buildFeatures(map, ctx) (unknown kind throws; createGame ticks/resets them),
                         featuresOf(map, kind), FEATURE_KINDS (own entries only). Built AFTER createGame's core event wiring (payouts/stats
                         listen first) with ctx = { scene, map, events, pricing, interactions, gun, player, stats, wallet,

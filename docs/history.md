@@ -1,5 +1,13 @@
 # Sunset Galleria: build history ("Current state")
 
+## 12 November 2026 - createGame.js: the mall PA becomes a table, feature lookups get a name
+
+From the code review (pass 2). createGame.js went from 995 to 911 lines. Not a rewrite: it is still the one place every system is built and wired, which is the point of it. What moved out was repetition:
+- **The mall PA** (event -> `hud.showAnnouncement` + chime): about 25 hand-written listeners became four tables in game/announcer.js. They are registered at four points in createGame on purpose, each where its listeners always were, because listeners of one event run in the order they were added and equal-priority lines queue in that order (Closing Time's key sound before the chime, a collect line before its certificate). A new system's plain PA line is now one name in PLAIN_PA_EVENTS.
+- **Flash Sale eligibility** (which groups are worth discounting) moved next to Flash Sales as `saleEligibility` in game/flashSales.js.
+- **Feature lookups by kind**: `features.instanceOf(kind)` / `instancesOf(kind)` replace the `features.list.find(({ feature }) => feature.kind === ...)` copies in createGame, debugCommands, minimapPlan and main.js (tools and tests keep their own: no need to touch them).
+Checked: a recorder of every HUD and sound call (every PA event with and without a line, both run modes, plus a short real run) hashed the same before and after (b8493642a5b8e217). tests/announcer.test.js guards the order and the Directed-only lines.
+
 ## 12 November 2026 - One bug no longer freezes the game: the loop catches errors per stage
 
 From the code review (pass 2). core/loop.js asked for the next animation frame only at the end of a frame, so any error thrown by a tick (any gameplay system, any event listener) or by render skipped that request: the picture froze for good while the radio kept playing, and the only trace was one line in the console. Now beforeUpdate, each tick and render are caught separately and the next frame is requested whatever happens. A tick that throws counts as played (the accumulator is decremented before the tick), so a tick that fails every time does not build up a debt that would be replayed at once when it stops failing. The default report prints each distinct error once in full and then a count of repeats every 5 seconds; `onError(error, stage)` replaces it, and `loop.errors` counts them. The trade-off: a tick that throws may have stopped partway (later systems skipped for that tick), so state can be slightly off; a game that keeps going with a logged error beats a frozen one. `window.__mall.step()` does not go through the loop and still throws to its caller, as tests want. tests/loop.test.js guards it.

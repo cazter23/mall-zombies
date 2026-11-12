@@ -15,7 +15,7 @@
 //     active         null, or { id, label, categories, discount, remaining, duration }
 //     timeUntilNext  seconds until the next sale starts (0 while one is running)
 //   }
-//   eligible(group) -> boolean   (createGame passes "is this group of any use to the player right now")
+//   eligible(group) -> boolean   (createGame passes saleEligibility(...): "is this group of any use to the player right now")
 //
 // EVENTS (game/events.js): 'flashSaleStart' { id, label, categories, discount, seconds, pa: { kicker, text } } and
 // 'flashSaleEnd' { id, label, reason: 'expired' | 'reset', pa }. createGame turns them into the PA banner + chime;
@@ -24,6 +24,29 @@
 // =============================================================================
 
 import { economy } from '../config/economy.js';
+import { featuresOf } from './features/index.js';
+import { ownsAttachment } from './features/attachmentCounter.js';
+
+/**
+ * Is a group worth discounting right now? No door sale when every area is bought, no weapon sale when every wall gun
+ * is owned, and so on. `kiosk` is Kiosk Kevin's feature instance (or undefined on a map without him).
+ */
+export function saleEligibility({ map, gun, warranty, wardrobe, kiosk }) {
+  return (group) => {
+    if (group.id === 'doors') return map.areaUnlocks
+      ? Object.keys(economy.doors).some(id => !map.zones[id].open)
+      : map.doors.some((d) => !d.isOpen);
+    if (group.id === 'weapons') return featuresOf(map, 'wallBuy').some((w) => !gun.owns(w.weapon));
+    if (group.id === 'tiers') return gun.slots.some((id) => warranty.offer(id));
+    if (group.id === 'attachments') return featuresOf(map, 'attachmentCounter').some(s => !ownsAttachment(gun, s.attachment));
+    if (group.id === 'apparel') return featuresOf(map, 'wardrobeRack').some(r => map.zones[r.zone].open && !wardrobe.owns(r.item));
+    if (group.id === 'kiosk') {
+      const status = kiosk?.status;
+      return status?.open && !status.hiding;
+    }
+    return true;
+  };
+}
 
 export function createFlashSales({ events, pricing, random = Math.random, config = economy.flashSales, eligible = () => true }) {
   let active = null;
