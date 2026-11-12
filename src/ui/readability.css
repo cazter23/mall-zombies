@@ -371,6 +371,14 @@ kbd { font-size: .9em; }
   .order-head { margin-bottom: .4em; }
 }
 @media (max-height: 600px) {
+  /* Short windows (a 960x540 laptop window): the side cards covered about a third of the view mid-fight. Slimmer cards,
+     and the wardrobe rail only once something is worn (four empty tags say nothing). */
+  .hud .outfit-hud:not(:has(.outfit-tag:not(.empty))) { display: none; }
+  .round-counter { padding: 5px 9px; }
+  .round-value { font-size: 44px; }
+  .incentive-hud { padding: 6px 8px; }
+  .hud-right-stack .sale-tag { padding: .4em .6em; }
+  .pa-display { padding: 7px 9px; }
   .hud-right-stack .announce-banner { max-height: 45dvh; overflow: auto; }
   .hud-right-stack .birth-certificate { display: none; }
   .interact { top: calc(50% + 16px); }

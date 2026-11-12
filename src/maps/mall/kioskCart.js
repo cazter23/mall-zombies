@@ -4,7 +4,7 @@
 // a notice strip above the counter (Kevin's Pick, "KEVIN IS HIDING", "BACK IN 5 MIN"...) and Kevin behind it.
 // Built in the cart's own frame: u runs across the front (to the right of a shopper facing it), v from the middle towards
 // the front; `faces` turns that frame to the world (axis-aligned, so the collider stays a Box3).
-// Moving parts (the notice, the product labels and Kevin) are in a `userData.dynamic` rig; the rest is static and gets batched.
+// Moving parts (the notice, the product labels, Kevin and the beacon over an open cart) are in a `userData.dynamic` rig; the rest is static and gets batched.
 //
 // buildKioskCart(kit, site) -> { position, stand, normal, slots: [{ position }], show(state, stock) }
 //   position  the middle slot (where the prompt is);  stand  Kevin's spot behind the counter (the duck radius is measured from it)
@@ -13,6 +13,8 @@
 // =============================================================================
 import * as THREE from 'three';
 import { kiosk, productOf } from '../../config/kiosk.js';
+import { look } from '../../config/look.js';
+import { createBeacon } from '../../fx/beacon.js';
 
 // World x/z from the cart's frame, per facing.
 const FRAMES = {
@@ -106,6 +108,11 @@ export function buildKioskCart(kit, site) {
     box(-.11, 1.48, back + .12, .11, 1.74, back + .33, kit.mat(0xd5a16e), { collide: false, name: 'kevin_head' }),
   );
   rig.add(vendor);
+  // While Kevin is at this cart, a light column rises over it (fx/beacon.js), so the open cart reads across a room.
+  const beacon = createBeacon({ color: look.beacons.kevin, ring: false, base: 1.95 });
+  beacon.root.position.copy(point(0, 0, 0));
+  beacon.root.visible = false;
+  rig.add(beacon.root);
 
   let shown;
   let shownStock = '';
@@ -131,6 +138,7 @@ export function buildKioskCart(kit, site) {
       ctx.fillText(notices[state], canvas.width / 2, canvas.height / 2, canvas.width - 24);
       texture.needsUpdate = true;
       vendor.visible = state !== 'closed' && state !== 'away';
+      beacon.root.visible = vendor.visible;
       vendor.position.y = state === 'hiding' ? -.73 : 0;
     },
   };

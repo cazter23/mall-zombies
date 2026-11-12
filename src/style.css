@@ -610,10 +610,11 @@ kbd {
   color: var(--cash-mint);
   text-shadow: 0 0 12px var(--cash-mint-glow), 0 2px 4px rgba(0, 0, 0, 0.8);
 }
+/* Floats up from just ABOVE the store-credit card, so it never covers the card's label (it used to start inside it). */
 .points-pop {
   position: absolute;
   right: 14px;
-  bottom: 34px;
+  bottom: calc(100% + 4px);
   font-family: var(--font-hud);
   font-size: 24px;
   font-weight: 600;

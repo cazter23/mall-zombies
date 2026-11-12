@@ -275,8 +275,8 @@ test('reusable visuals show three distinct props, zone and expiry blinking, add 
   const geometries = new Set(), materials = new Set();
   view.root.traverse((o) => {
     assert.equal(!!o.isLight, false);
-    if (o.geometry) geometries.add(o.geometry);
-    if (o.material) materials.add(o.material);
+    if (o.geometry && !o.geometry.userData.shared) geometries.add(o.geometry); // (beacon parts are shared, not owned)
+    if (o.material && !o.material.userData.shared) materials.add(o.material);
   });
   for (const resource of [...geometries, ...materials]) resource.addEventListener('dispose', () => { disposed++; });
   for (const id of Object.keys(powerUps.types)) {

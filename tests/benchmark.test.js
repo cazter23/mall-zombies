@@ -61,10 +61,21 @@ test('cancel ends the run with what it has; the mall has a named route through e
   assert.equal(report.frames, 10);
 
   const { buildMall } = await import('../src/maps/mall/mall.js');
-  const map = buildMall(new THREE.Scene(), []);
+  const colliders = [];
+  const map = buildMall(new THREE.Scene(), colliders);
   const names = map.benchmarkShots.map((s) => s.name);
   for (const area of ['hallway', 'food court', 'mega mart', 'service corridor', 'start room', 'atrium court', 'atrium ring', 'level 2', 'cinema lobby', 'cinema screen', 'cinema stairs']) {
     assert.ok(names.includes(area), `route covers ${area}`);
+  }
+  // Every camera path stays out of solid things (the Food Court dolly once ran through two shops' walls, timing a wall).
+  const p = new THREE.Vector3();
+  for (const shot of map.benchmarkShots) {
+    const from = new THREE.Vector3(...shot.from), to = new THREE.Vector3(...shot.to);
+    const steps = Math.ceil(from.distanceTo(to) / 0.2);
+    for (let i = 0; i <= steps; i++) {
+      p.lerpVectors(from, to, i / steps);
+      assert.ok(!colliders.some((b) => b.containsPoint(p)), `the ${shot.name} shot's camera passes through something solid at ${p.toArray().map((v) => v.toFixed(1))}`);
+    }
   }
   map.dispose();
   const command = debug.commands.find((c) => c.id === 'benchmark');

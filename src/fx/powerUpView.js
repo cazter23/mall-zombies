@@ -1,5 +1,7 @@
-// Reusable low-poly incentive props. Emissive materials, no dynamic lights or colliders.
+// Reusable low-poly incentive props. Emissive materials, no dynamic lights or colliders. A pickup on the floor also gets a
+// beacon in its colour (fx/beacon.js: a light column and a pulsing floor ring), so it reads over a crowd and in the dark.
 import * as THREE from 'three';
+import { createBeacon } from './beacon.js';
 import { powerUps as config } from '../config/powerUps.js';
 import { bossVouchers } from '../config/bosses.js';
 import { rampHeightAt } from '../world/collision.js';
@@ -26,7 +28,12 @@ export function createPowerUpView(scene, colliders) {
     return mesh;
   }
   const props = {};
+  const beacons = {};
   for (const [id, def] of Object.entries({ ...config.types, ...bossVouchers })) {
+    const beacon = createBeacon({ color: def.color });
+    beacon.root.visible = false;
+    root.add(beacon.root);
+    beacons[id] = beacon;
     const group = new THREE.Group();
     group.name = id;
     group.visible = false;
@@ -172,10 +179,15 @@ export function createPowerUpView(scene, colliders) {
     root,
     update(pickup, active, dt = 0, effects = []) {
       for (const prop of Object.values(props)) prop.visible = false;
+      for (const beacon of Object.values(beacons)) beacon.root.visible = false;
       if (pickup) {
         const prop = props[pickup.id];
         const v = config.visual;
         prop.visible = pickup.remaining > v.blinkLastSeconds || Math.floor(pickup.age * v.blinkHz * 2) % 2 === 0;
+        const beacon = beacons[pickup.id];
+        beacon.root.visible = prop.visible; // (blinks with the prop in its last seconds)
+        beacon.root.position.copy(pickup.position);
+        beacon.update(pickup.age);
         prop.position.copy(pickup.position);
         prop.position.y += v.hover + Math.sin(pickup.age * v.bobSpeed) * v.bob;
         prop.rotation.y = pickup.age * v.spinSpeed;
@@ -207,6 +219,7 @@ export function createPowerUpView(scene, colliders) {
       }
     },
     dispose() {
+      for (const beacon of Object.values(beacons)) beacon.dispose();
       root.removeFromParent();
       geometry.forEach((g) => g.dispose());
       materials.forEach((m) => m.dispose());

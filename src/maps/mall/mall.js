@@ -902,7 +902,8 @@ export function buildMall(scene, colliders) {
   const benchmarkShots = [
     parkingLot.benchmark,
     { name: 'hallway', from: [18, 1.7, 2], to: [8, 1.7, 2], lookFrom: [-18, 2, 2], lookTo: [-18, 2.5, 2] },
-    { name: 'food court', from: [-17, 1.7, -4], to: [17, 1.7, -4], lookFrom: [0, 1.5, -13], lookTo: [0, 1.5, -13] },
+    // (z -8.5: clear end to end. At z -4 the dolly ran through the Play Time Toys and Byte Me stores, inside their walls.)
+    { name: 'food court', from: [-17, 1.7, -8.5], to: [17, 1.7, -8.5], lookFrom: [0, 1.5, -13], lookTo: [0, 1.5, -13] },
     { name: 'mega mart', from: [22, 1.7, 4.8], to: [32, 1.7, 4.8], lookFrom: [27, 1.5, -20], lookTo: [27, 1.5, -20] },
     { name: 'service corridor', from: [-21.8, 1.7, 1], to: [-21.8, 1.7, -12], lookFrom: [-21.8, 1.5, -14], lookTo: [-21.8, 1.5, -14] },
     { name: 'start room', from: [0, 1.7, 7], to: [0, 1.7, 13], lookFrom: [0, 1.5, 16], lookTo: [-3, 1.5, 16] },

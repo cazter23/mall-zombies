@@ -1,5 +1,6 @@
 import { BoxGeometry, Group, Mesh, MeshStandardMaterial, TorusGeometry } from 'three';
 import { closingTime } from '../config/closingTime.js';
+import { createBeacon } from './beacon.js';
 
 export function createClosingKeyView(scene) {
   const { visual } = closingTime;
@@ -21,7 +22,13 @@ export function createClosingKeyView(scene) {
     return mesh;
   }
   const props = new Map();
+  const beacons = new Map(); // (a light column over each dropped key: fx/beacon.js)
+  let clock = 0;
   for (const id of Object.keys(closingTime.lines)) {
+    const beacon = createBeacon({ color: visual.color });
+    beacon.root.visible = false;
+    root.add(beacon.root);
+    beacons.set(id, beacon);
     const prop = new Group();
     prop.name = id;
     prop.visible = false;
@@ -41,14 +48,20 @@ export function createClosingKeyView(scene) {
       prop.position.y += visual.hover;
       prop.rotation.y = 0;
       prop.visible = true;
+      const beacon = beacons.get(id);
+      beacon.root.position.copy(position);
+      beacon.root.visible = true;
     },
     remove(id) {
       props.get(id).visible = false;
+      beacons.get(id).root.visible = false;
     },
     update(dt) {
+      clock += dt;
       for (const prop of props.values()) {
         if (prop.visible) prop.rotation.y += dt * visual.spinSpeed;
       }
+      for (const beacon of beacons.values()) if (beacon.root.visible) beacon.update(clock);
     },
   };
 }

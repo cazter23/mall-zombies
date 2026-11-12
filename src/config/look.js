@@ -45,6 +45,11 @@ export const look = {
     },
   },
 
+  // BEACONS (fx/beacon.js): the light column over a power-up, a Closing Time key and Kevin's open cart (metres, seconds).
+  // ringLift sits above the painted floor pools (0.012) and the medallions (0.016): never sharing a plane.
+  beacons: { height: 3.4, radius: 0.14, opacity: 0.5, ringRadius: 0.6, ringOpacity: 0.7, ringLift: 0.022, pulseSeconds: 1.4,
+    kevin: 0xffd23f }, // (Kevin's cart: the KIOSK KEVIN sign's yellow)
+
   // PRINTED SIGNS AND POSTERS (world/mapKit.js printedMaterial): lit like the wall they hang on, plus this much of their
   // own glow (0 = pure paint, 1 = as bright as an unlit sign) so they stay readable in a dim corner.
   print: { glow: 0.35 },
