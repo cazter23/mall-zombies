@@ -33,7 +33,20 @@ export function makeDustMoteTexture() {
 }
 
 /** Linear data: grout stays matte while the broad waxed tile faces catch crisp specular light. */
+// Both tile maps below have fixed seeds, so every floor's copy is the same: built once, handed out as clones (a clone shares
+// the image and its GPU upload, and keeps its own repeat).
+let roughnessTemplate = null;
+let bumpTemplate = null;
 export function makeTileRoughness() {
+  roughnessTemplate ??= buildTileRoughness();
+  return roughnessTemplate.clone();
+}
+export function makeTileBump() {
+  bumpTemplate ??= buildTileBump();
+  return bumpTemplate.clone();
+}
+
+function buildTileRoughness() {
   const size = 256;
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = size;
@@ -84,7 +97,7 @@ export function makeTileRoughness() {
 }
 
 /** Linear heightmap: raised flat tile faces with beveled rims and recessed mortar channels. */
-export function makeTileBump() {
+function buildTileBump() {
   const size = 256;
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = size;

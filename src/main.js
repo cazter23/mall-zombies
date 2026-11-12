@@ -58,6 +58,7 @@ import { atmosphere } from './config/environment.js';
 import { createPostProcessing } from './fx/postProcessing.js';
 import { createZoneGrading } from './fx/zoneGrading.js';
 import { setRimDaylight } from './zombies/zombieRim.js';
+import { createDetailCulling } from './fx/detailCulling.js';
 import { createRoomCulling } from './fx/roomCulling.js';
 import { look } from './config/look.js';
 import { createCareerStats } from './game/careerStats.js';
@@ -238,6 +239,7 @@ const benchmark = createBenchmark({
   camera, renderer, draw: () => {
     lightPool.update(camera.position, 1 / 60);
     roomCulling.update(cullingOn);
+    detailCulling.update(camera); // (Graphics > Small detail: fx/detailCulling.js)
     postProcessing.render({ showViewmodel: false, speedAmount: 0, grade: gradeAt(1 / 60) });
   },
 });
@@ -275,7 +277,9 @@ const roomCulling = createRoomCulling({
 });
 const cullingOn = !new URLSearchParams(location.search).has('noculling');
 if (cullingOn) roomCulling.tag(map.group);
-if (!new URLSearchParams(location.search).has('nobatch')) batchStatic(map.group, { shade: look.bakedShade }); // (?nobatch: off, to compare)
+if (!new URLSearchParams(location.search).has('nobatch')) batchStatic(map.group, { shade: look.bakedShade, cellSize: look.batchCellSize }); // (?nobatch: off, to compare)
+// Small detail distance (Graphics > Small detail, fx/detailCulling.js): collected after batching, from what is still its own mesh.
+const detailCulling = createDetailCulling(map.group);
 // Metal sheen (fx/metalSheen.js): a tiny baked gradient for metal materials only, after batching so the merged ones get it.
 const metalSheen = sheenEnvironment(renderer, look.metalSheen);
 for (const root of [map.group, g.arena?.group].filter(Boolean)) applyMetalSheen(root, metalSheen, look.metalSheen);
@@ -607,6 +611,7 @@ function render(alpha, frameTime) {
 
   // Render world + viewmodel through HDR post-processing (UnrealBloom + lens vignette/aberration + ACES tone mapping).
   roomCulling.update(cullingOn);
+  detailCulling.update(camera); // (Graphics > Small detail: fx/detailCulling.js)
   postProcessing.render({ showViewmodel: !death.summary, speedAmount, grade: gradeAt(frameTime) });
 }
 
@@ -624,6 +629,7 @@ function renderTitle(frameTime) {
   body.root.visible = false;
   effects.update(frameTime);
   roomCulling.update(cullingOn);
+  detailCulling.update(camera); // (Graphics > Small detail: fx/detailCulling.js)
   postProcessing.render({ showViewmodel: false, speedAmount: 0, grade: gradeAt(frameTime) });
 }
 

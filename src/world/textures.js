@@ -30,7 +30,16 @@ export function seededRandom(seed) {
  * Polished mall floor tile. The canvas holds 2x2 tiles; set `repeat` on the
  * returned texture to (width / 2, depth / 2) for 1m tiles.
  */
+// Built once per look and handed out as clones: a clone shares its image (and its one GPU upload) and has its own repeat.
+// (99 floors used to paint 99 canvases, most of them the same.)
+const tileCache = new Map();
 export function makeTileTexture({ base = '#efe5d3', grout = '#c9bba4', variation = 10, seed = 7 } = {}) {
+  const key = `${base}|${grout}|${variation}|${seed}`;
+  if (!tileCache.has(key)) tileCache.set(key, buildTileTexture({ base, grout, variation, seed }));
+  return tileCache.get(key).clone();
+}
+
+function buildTileTexture({ base, grout, variation, seed }) {
   const size = 512;
   const canvas = document.createElement('canvas');
   canvas.width = size;
@@ -138,14 +147,19 @@ export function detectSignStyle(text, background = '') {
 
 /**
  * A themed shop/mall sign with unique typography, graphics, and era-appropriate styling.
+ * Always DRAWN on a 1024-wide page (every border, font and offset below is in those units), but the canvas itself is
+ * `pixelsWide` across (default 1024) and the page is scaled onto it: a small sign gets a small canvas and looks the
+ * same (world/mapKit.js sign sizes it by the sign's width in metres; a fixed 1024 cost ~770 MB across the mall).
  */
-export function makeSignTexture(text, { background, color, aspect = 6, style, subtext, font, accentColor } = {}) {
+export function makeSignTexture(text, { background, color, aspect = 6, style, subtext, font, accentColor, pixelsWide = 1024 } = {}) {
   const width = 1024;
   const height = Math.round(width / aspect);
+  const scale = Math.min(1, Math.max(64, Math.round(pixelsWide)) / width);
   const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
+  canvas.width = Math.round(width * scale);
+  canvas.height = Math.max(1, Math.round(height * scale));
   const ctx = canvas.getContext('2d');
+  if (scale < 1) ctx.scale(scale, scale);
 
   const detectedStyle = style || detectSignStyle(text, background);
   const cx = width / 2;

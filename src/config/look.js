@@ -20,6 +20,7 @@ export const look = {
   runtime: {
     neonGlow: true, // neon halos + painted light pools (Graphics > Neon glow)
     clutter: 'full', // decoration density: 'none' | 'some' | 'full' (Graphics > Clutter)
+    detailDistance: 'all', // small signs and posters drawn: 'all' | 'near' | 'close' (Graphics > Small detail; detailDistance)
     zoneGrading: true, // per-area colour grading (Graphics > Zone lighting)
     vhs: 'off', // the VHS tape look: 'off' | 'subtle' | 'full' (Graphics > VHS filter; a style choice, off by default)
     horror: true, // the horror layer: lights dying, power cuts (Comfort > Horror lighting)
@@ -45,6 +46,10 @@ export const look = {
     },
   },
 
+  // SMALL DETAIL DISTANCE (fx/detailCulling.js, Graphics > Small detail): small printed things (signs, posters, labels up to
+  // maxSize metres across) are hidden beyond these distances on weaker settings. 'all' = never hidden.
+  detailDistance: { maxSize: 2.2, everyFrames: 6, metres: { all: Infinity, near: 22, close: 14 } },
+
   // BEACONS (fx/beacon.js): the light column over a power-up, a Closing Time key and Kevin's open cart (metres, seconds).
   // ringLift sits above the painted floor pools (0.012) and the medallions (0.016): never sharing a plane.
   beacons: { height: 3.4, radius: 0.14, opacity: 0.5, ringRadius: 0.6, ringOpacity: 0.7, ringLift: 0.022, pulseSeconds: 1.4,
@@ -53,6 +58,9 @@ export const look = {
   // PRINTED SIGNS AND POSTERS (world/mapKit.js printedMaterial): lit like the wall they hang on, plus this much of their
   // own glow (0 = pure paint, 1 = as bright as an unlit sign) so they stay readable in a dim corner.
   print: { glow: 0.35 },
+  // A sign's canvas is sized by the sign (world/mapKit.js signPixels): this many pixels per metre of width, within min..max.
+  // (Every sign used to get 1024 pixels: about 770 MB of canvases across the mall.) 400/m keeps text crisp at arm's length.
+  signTexture: { pixelsPerMetre: 400, min: 256, max: 1024 },
 
   // METAL SHEEN (fx/metalSheen.js): without anything to reflect, metal renders nearly black. Metal materials (metalness
   // >= minMetalness) get a tiny baked gradient: warm-white ceiling above, a lavender horizon, a dusk floor below.
@@ -61,6 +69,9 @@ export const look = {
   // BAKED GROUNDING (world/staticBatch.js shadeAt): walls, counters and shelves darken towards the floor they stand on,
   // baked into the batched vertex colours at load (free to draw). floors = the floor levels (ground, upper floor).
   bakedShade: { strength: 0.2, fade: 1.6, minHeight: 0.35, floors: [0, 6.3] },
+  // Static batching's chunk size (metres): merged meshes are split per chunk so the camera can skip far ones. Rooms and floors
+  // are already apart (room culling's layers), so chunks can be big: 24 m drew about 10% fewer calls than 12 m (High, Level 2: 1,657 -> 1,480; triangles the same).
+  batchCellSize: 24,
 
   // ZOMBIE EDGE GLOW (zombies/zombieRim.js): a soft rim of light round each zombie so it reads against the pastel walls,
   // tinted by kind. power = how tight the rim is (higher = thinner), strength = how bright.

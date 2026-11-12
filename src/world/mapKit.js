@@ -142,7 +142,7 @@ export function createMapKit(group, colliders) {
 
   /** A flat sign. `facing` is +1 (faces +Z) or -1 (faces -Z); or 'x+'/'x-' for side walls. */
   function sign(text, { x, y, z, width, height, facing, background, color, ...extra }) {
-    const texture = makeSignTexture(text, { background, color, aspect: width / height, ...extra });
+    const texture = makeSignTexture(text, { background, color, aspect: width / height, pixelsWide: signPixels(width), ...extra });
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height), printedMaterial(texture));
     mesh.position.set(x, y, z);
     if (facing === -1) mesh.rotation.y = Math.PI;
@@ -287,6 +287,12 @@ export function createMapKit(group, colliders) {
  * lamp or a power cut instead of glowing like a sticker on the screen), plus a little of its own glow so it stays
  * readable (config/look.js print). Neon, screens and light boxes stay unlit; this is for paper, card and paint.
  */
+/** How many pixels across a sign's canvas gets for its width in metres (config/look.js signTexture). */
+export function signPixels(metres) {
+  const { pixelsPerMetre, min, max } = look.signTexture;
+  return Math.min(max, Math.max(min, Math.round(metres * pixelsPerMetre)));
+}
+
 export function printedMaterial(texture, { glow = look.print.glow } = {}) {
   return new THREE.MeshLambertMaterial({ map: texture, emissive: 0xffffff, emissiveMap: texture, emissiveIntensity: glow });
 }
