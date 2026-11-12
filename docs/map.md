@@ -8,7 +8,8 @@ Prices (category `door`, keyed by area): hallway 500, Mega Mart 750, Food Court 
 HOFFMAN'S 1250, Grand Atrium 1250, Promenade/upstairs 1250, Cinema 1250, Customer Parking 1250. Nine purchases fully connect all 15
 barriers for 9500 points. Door Flash Sales apply to the destination price; prompts show the destination name.
 Start Room is owned initially; Play again restores that state. Debug O opens all areas, or resets all when fully open.
-- Start room: x -5..5, z 6..16, 4m ceiling, checkout counter, shelf, crates, boarded vents. Its 4m doorway at z=6
+- Start room: x -5..5, z 6..16, 4m ceiling, checkout counter, shelf, crates, boarded vents (and, decoration only: a slatwall of leftover stock on the
+  east wall at z 13..15.4, SALE bunting across the ceiling at z 9 and 12.8, a FINAL WEEK sign hung over z 11). Its 4m doorway at z=6
   is blocked by a security shutter door (500) that opens the hallway. Hold **F** (controller: hold **X**) near a
   door to buy it. Debug: press **O** to open all doors for free; if all are open, O closes them all.
   Dressed as a picked-over clearance store: register/receipt/bags at the left end of the vaultable checkout,
@@ -119,6 +120,10 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   an empty-concourse feed, and an upstairs vacant unit has a brief distant silhouette. The locked ground vacant unit contains
   an abandoned lunch and off-hook phone; upstairs footprints lead toward an empty display. Sparse phone/cart/footstep sounds
   use the existing spatial ambience and wall occlusion. Comfort > Horror effects disables anomalies; new runs restore them.
+  Look pass (November 2026): the ground floor's south wall (z 6.6, shared with the hallway) has three framed sunset murals at y 3.3..4.8
+  (x 8.4..12.65, 18.35..21.15, 24.85..31.6; maps/mall/atriumMurals.js), benches at x 18.6..20.9 and 29.6..31.7 (z 6.72..7.22) and a tree planter
+  at x 28.4..29.3 under them (config/atrium.js southWall). SUNSET GALLERIA between the two suns on the north upper wall is neon. Plum border
+  bands run along both long sides of the upper ring (config/concourse.js floor.bands).
 - Food Court: x -20..20, z -14.3..-2.3, 6m ceiling, behind the 1000 shutter: the old concourse moved south (its four
   shops Good Sports / Nuts & Bolts / Play Time Toys / Byte Me are real stores now (see below), 2 pillars, 2 benches (north side), tree planter,
   end planters, ceiling lights, 4 spawns), placed relative to its center line FZ = -8.3. Three food stalls along the
@@ -140,12 +145,18 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   delivery/safety notices, TRY BEFORE YOU BUY Foam Dart promotion, dropped basket within a gondola, perimeter spill/scuffs,
   a solid parked trolley by the east wall at x 33.43..33.91, z -5.90..-5.08, framed fluorescent fittings. The two lamps now
   separate warm checkouts from cool aisles; no flashing. Entrances, crossings, spawn spaces and four main aisles stay clear.
+  Overstock racks bolted high on the side walls (decks at y 3.0 and 3.72, nothing below 2.9 m): east wall z -9.6..-3.1, west wall
+  z -14.8..-11.1 and -5.6..-1.3, each with a department sign at y 4.62 (megaMartDetails.js MART_FIXTURES.overstock).
 - Customer Parking (zone `parkingLot`, 1250): outside Mega Mart's east wall, x 34.3..62.3, z -24..6, ground y 0.
   Closing Time's Last Customer enters at spawn_parkingLot_deliveryGate (39.3, 0, -22.8); her quota-funded Mall Walker backup uses the four existing safe lot markers. Her shared charge crashes into the solid vans. No new map entry or collider.
   The parking-validation ticket machine is mounted on the mauve van's west flank (x 53.8, z -11.05, prompt x 53.67), opposite its east-side start prompt. It stays within bay 4, adds no collision, and leaves the gaps, exit approach and four fence spawns clear. Both interactions belong to escapeVan.
   Realism (config/parkingDetails.js realism): accessible bay = bay 1 (x 43..46.5), cart corral in bay 5 (solid, vaultable 1.0 m;
   the gaps between the vans are combat lanes), a stray cart (solid), row letters and banners on the two light poles, a kerb island
   x 37.6..39.3, z -14.9..-7.2 (0.15 m step) with a young tree, an entrance vestibule x 34.45..36.25, z 0.3..4.7 (solid glass sides).
+  Landmarks (config/parkingDetails.js landmarks): the mall's pylon sign inside the east fence at x 61.95, z -16.5 (two solid posts 9.2 m,
+  neon name and sun above the fence), SUNSET GALLERIA in neon on the facade at z -18.6, y 4.95, gloss over the painted puddles, four
+  cones by the south fence (decoration), and a box truck along the south fence x 43.6..50.2, z -23.65..-21.25 (solid, cab 2.25 m, box 2.75 m),
+  clear of the south lane and the delivery-gate and south-fence spawns.
   The former emergency exit is a real 3m shutter at x 34..34.3, z 1..4. A flush sidewalk connects it to the asphalt;
   one parking row has three abandoned family/delivery vans, empty bays and broad lanes around both ends and sides.
   Vehicle bodies are solid to their visible tall roofs, preventing an unreachable camping spot. A 3.4m metal fence

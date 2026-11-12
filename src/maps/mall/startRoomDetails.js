@@ -300,7 +300,8 @@ export function buildStartRoomDetails(kit, room) {
 
   // The bare east wall behind the crates: a slatwall of leftover stock, most hooks already empty.
   const ex = room.maxX - cx; // (the east wall's face, room-relative x)
-  const slat0 = 5.6, slat1 = 9.4; // (z from the front: clear of the Price Gun wall buy and the back corner's vent)
+  const slat0 = 7.0, slat1 = 9.4; // (z from the front: clear of the Price Gun wall buy, the back corner's vent and the plain wall
+  // shots hit at z 12: tests/impactMarks.test.js fires every gun there; a slatwall's grooves leave no bullet marks)
   box('slatwall', ex - .025, 1.65, slat0, ex - .005, 2.75, slat1, cream);
   for (let y = 1.72; y < 2.72; y += .11) box('slat_groove', ex - .031, y, slat0 + .02, ex - .025, y + .012, slat1 - .02, dust);
   const hookColors = [red, wood, metal, tape];

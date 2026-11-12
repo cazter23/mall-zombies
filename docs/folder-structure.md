@@ -677,6 +677,8 @@ src/
                         zombie spawn just inside the door. buildStores({ kit, props, court, thickness, stores }) -> { spots, spawns }
     mall/atrium.js      buildAtrium({ kit, props, layout, upperY }) -> { spawns, lamps, link, ramp, emitters, update, reset }: THE GRAND ATRIUM (walls, ring
                         slab + skin + railings, escalator, fountain, kiosks, planters, benches, signs, vents). Doors are built by mall.js
+    mall/atriumMurals.js The Atrium's ground-floor south wall: three framed 1986 sunset murals painted on canvas (paintMural), printed material,
+                        brass frames the batcher merges (config/atrium.js murals). Decoration only.
     mall/atriumDetails.js Authored shop interiors, kiosk merchandise, fountain/floor details, overhead decorations and small scenes.
                         Uses config/atrium.js; no colliders/lights/interactions. Only ripples/mobile animate; kit owns disposal.
     mall/atriumStorefronts.js Twelve sealed shops with real shells behind wall openings, glazing/locked doors, themed stock and
@@ -817,8 +819,13 @@ src/
                         air, lying and rattling on the floor, swelling as the fuse runs out), the Sparkler Cake (spinning, then upright and jittering
                         while it sprays), the Glitter Bomb card (flipping) and the Sentry (tumbling, then standing with its head turned to item.yaw);
                         a mesh is hidden when its item is gone; dispose() frees the pools.
-    closingKeyView.js   Reusable spinning key and signature props for the four closing pickups.
-    powerUpView.js      Reusable delivery carton, blue beacon and security badge (no lights/colliders); bob/spin/blink,
+    closingKeyView.js   Reusable spinning key and signature props for the four closing pickups, each with a beacon while it lies there.
+    beacon.js           createBeacon({ color, ring, base }): an additive light column and a pulsing floor ring (2 draws; geometry shared by every
+                        beacon, materials by colour, flagged userData.shared) over a power-up, a Closing Time key and Kevin's open cart.
+    detailCulling.js    Graphics > Small detail (look.runtime.detailDistance): small printed meshes (signs, posters, labels under
+                        look.detailDistance.maxSize) hidden beyond 22 m (Low) or 14 m (Potato). Collected once after batching; only hides
+                        what it collected and only re-shows what it hid. main.js updates it beside room culling.
+    powerUpView.js      Reusable delivery carton, blue beacon and security badge (no lights/colliders), a fx/beacon.js light column over the pickup; bob/spin/blink,
                         floor-projected Blue Light ring clipped at walls/voids, hide on reset/death, owned-resource disposal
     contactShadows.js   One instanced draw for soft zombie grounding; interpolates feet and finds supporting collider tops.
                         No collision, hitbox or navigation changes; clear on restart, dispose owned GPU resources on unload.
@@ -862,7 +869,9 @@ src/
                         tables of what a run to rounds 10/15/20 gives each challenge, how many runs that makes, what other guns' challenges moved by accident and
                         the bot's first death (its runs are immortal: "survive" feats mean nothing there); runs written to scratch/challenge-report/
   world/                Shared building blocks for maps
-    mapKit.js           createMapKit(group, colliders): mat, addCollider, box, sign, tiledFloor, wall({ along, from, to,
+    mapKit.js           (also exports printedMaterial(texture): a sign or poster lit like its wall plus look.print.glow, and
+                        signPixels(metres): a sign canvas's width for its size, look.signTexture)
+                        createMapKit(group, colliders): mat, addCollider, box, sign, tiledFloor, wall({ along, from, to,
                         at0, at1, height, openings: [{ from, to, top }] }) (doorways get lintels), shutterDoor({ id, label,
                         price, opensZone / opensZones, zones, doorway, text }), markers(), slab(rect, y0, y1, mat, { hole }) (a ceiling
                         with a hole), corridor(spec, { floor, wall, ceiling }) (a whole corridor from a data spec; returns
@@ -886,7 +895,8 @@ src/
                         go through areaUnlocks, never directly through door.open. toggleDoors delegates to area ownership.
     sunnyModel.js       buildSunnyModel(size) -> { root, legs, body }: Sunny the plush, low-poly (body, merged rays, a staring eye, a button
                         eye, a crooked smile, two legs), feet at the origin, facing -Z; disposeSunnyModel(root).
-    wallBuy.js          createWallBuyDisplay(): chalk outline (textures.makeChalkTexture) + the gun on two pegs, side on
+    wallBuy.js          createWallBuyDisplay(): chalk outline (textures.makeChalkTexture) + the gun on two pegs, side on; the gun is merged
+                        into one mesh per material (mergeByMaterial: 28-55 meshes -> 9-17, wall buys aren't in the map group the batcher sees)
     collision.js        RAMPS (addRamp / removeRamp / rampHeightAt, `colliders.ramps`): a walkable slope that is only a SURFACE the feet follow
                         (never a wall or ceiling; add boxes beside/under it): up within rampStep 0.5 m, down within rampSnap 0.4 m, not while
                         jumping. kit.ramp(spec) registers one and dispose removes it. moveAndCollide(): horizontal push-out (also removes the velocity going into the wall, so
@@ -898,6 +908,8 @@ src/
                         Constant slat pitch in X/Z walls, hidden curtain when fully rolled up. Curtain and frame stay on the always-drawn
                         layer so a closed doorway cannot cull its own barrier. config/shutters.js owns finishes/dimensions.
     textures.js         Procedural canvas textures (floor tile, shop sign, shutter, muzzle flash burst, wall-buy chalk). No image files.
+                        makeSignTexture draws on a 1024-wide page scaled onto a canvas pixelsWide across (mapKit sizes it by metres:
+                        signPixels); makeTileTexture is built once per look and handed out as clones (shared image, own repeat).
                         seededRandom(seed): deterministic random (also used for shelf stock)
     atmosphereTextures.js Soft footprint alpha, dust motes and deterministic tile roughness / bump (no image downloads)
     neonDemo.js         Debug only: a sample wall of everything world/neon.js can make.
