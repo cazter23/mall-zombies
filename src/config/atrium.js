@@ -26,12 +26,12 @@ export const atriumDetails = {
   shopInterior: {
     depth: 2.35, openingHeight: 3.08, glassOpacity: 0.12,
     finishes: {
-      fashion: { wall: 0xe6d9cf, floor: 0xa98265, font: 'Georgia, serif' },
-      beauty: { wall: 0xe6d9df, floor: 0xd5dcd4, font: 'Georgia, serif' },
-      luggage: { wall: 0xd5e1dc, floor: 0xbba78b, font: '"Space Grotesk", Arial, sans-serif' },
-      television: { wall: 0xa6b9c5, floor: 0x727c86, font: '"Teko", "Arial Narrow", sans-serif' },
-      portraits: { wall: 0xdcd0ba, floor: 0x99837d, font: 'Georgia, serif' },
-      paper: { wall: 0xc4bdb0, floor: 0x9f9d92, font: 'Arial, sans-serif' },
+      fashion: { wall: 0xe6d9cf, floor: 0xa98265, font: 'hoffmanSerif' },
+      beauty: { wall: 0xe6d9df, floor: 0xd5dcd4, font: 'hoffmanSerif' },
+      luggage: { wall: 0xd5e1dc, floor: 0xbba78b, font: 'official' },
+      television: { wall: 0xa6b9c5, floor: 0x727c86, font: 'readout' },
+      portraits: { wall: 0xdcd0ba, floor: 0x99837d, font: 'hoffmanSerif' },
+      paper: { wall: 0xc4bdb0, floor: 0x9f9d92, font: 'typewriter' },
     },
   },
   storefronts: [

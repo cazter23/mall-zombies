@@ -7,7 +7,7 @@
 
 // One sign style for every new wayfinding sign (the stairwell's level marks use it too), so the mall's directions
 // look like one system.
-export const wayfinding = { background: '#2b2233', color: '#ffd6ec', font: 'Arial, "Helvetica Neue", sans-serif' };
+export const wayfinding = { background: '#2b2233', color: '#ffd6ec', font: 'wayfinding' };
 
 export const concourse = {
   // --- SHOPFRONTS: sealed shops in a run (Level 2), each: pilasters, a header with its name, glass, a painted interior

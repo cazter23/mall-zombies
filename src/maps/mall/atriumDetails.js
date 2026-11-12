@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { atriumDetails as cfg } from '../../config/atrium.js';
 import { atmosphere } from '../../config/environment.js';
 import { seededRandom } from '../../world/textures.js';
+import { drawType } from '../../world/typeKit.js';
 import { buildAtriumStorefronts } from './atriumStorefronts.js';
 
 export function buildAtriumDetails(kit, layout, upperY) {
@@ -30,17 +31,13 @@ export function buildAtriumDetails(kit, layout, upperY) {
       const c = canvas.getContext('2d'), tall = h / w > 2;
       c.fillStyle = bg; c.fillRect(0, 0, canvas.width, canvas.height);
       c.strokeStyle = color; c.lineWidth = tall ? 5 : 2; c.strokeRect(9, 9, canvas.width - 18, canvas.height - 18);
-      c.fillStyle = color; c.textAlign = 'center'; c.textBaseline = 'middle';
-      const family = name === 'employee_schedule' ? '"Courier New", monospace'
-        : name === 'directory_title' ? 'Georgia, "Times New Roman", serif' : 'Arial, "Helvetica Neue", sans-serif';
+      // typewritten memos, the engraved directory title, the mall's own voice on banners, wayfinding for the rest
+      const role = name === 'employee_schedule' ? 'typewriter' : name === 'directory_title' ? 'hoffmanBrand' : tall ? 'mallBrand' : 'wayfinding';
       const parts = text.split('\n');
       const lines = tall ? [...parts[0].split(' '), '', ...parts.slice(1).flatMap(s => s.split(' '))] : parts;
       lines.forEach((line, i) => {
         let size = tall ? (i < parts[0].split(' ').length ? 38 : 25) : Math.min(32, canvas.height / (lines.length + 1) * .65);
-        const weight = name === 'directory_floorplan' ? '400' : '700';
-        c.font = `${weight} ${size}px ${family}`;
-        while (c.measureText(line).width > canvas.width - 36 && size > 10) { size--; c.font = `${weight} ${size}px ${family}`; }
-        c.fillText(line, canvas.width / 2, (i + 1) * canvas.height / (lines.length + 1));
+        drawType(c, line, canvas.width / 2, (i + 1) * canvas.height / (lines.length + 1), { role, size, maxWidth: canvas.width - 36, min: 10, fill: color });
       });
       const map = new THREE.CanvasTexture(canvas); map.colorSpace = THREE.SRGBColorSpace;
       m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map }));

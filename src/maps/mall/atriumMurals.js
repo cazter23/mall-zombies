@@ -12,6 +12,7 @@ import * as THREE from 'three';
 import { atriumDetails } from '../../config/atrium.js';
 import { printedMaterial } from '../../world/mapKit.js';
 import { seededRandom } from '../../world/textures.js';
+import { drawType } from '../../world/typeKit.js';
 
 /** Paints one mural panel onto a canvas context (pixels). Pure drawing: no textures, no scene. */
 export function paintMural(ctx, w, h, { title, sub, seed = 1, sunAt = 0.5 }) {
@@ -82,22 +83,8 @@ export function paintMural(ctx, w, h, { title, sub, seed = 1, sunAt = 0.5 }) {
     }
   }
   // Lettering: the title in a chunky display face with a hot-pink drop shadow, the line under it in a clean grotesk.
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  let size = h * 0.24;
-  ctx.font = `400 ${size}px "Righteous", "Bebas Neue", sans-serif`;
-  while (ctx.measureText(title).width > w * 0.78 && size > 8) { size -= 2; ctx.font = `400 ${size}px "Righteous", "Bebas Neue", sans-serif`; }
-  ctx.fillStyle = '#ff3d8b';
-  ctx.fillText(title, w / 2 + size * 0.06, h * 0.27 + size * 0.06);
-  ctx.fillStyle = '#fff1d6';
-  ctx.fillText(title, w / 2, h * 0.27);
-  if (sub) {
-    let s = h * 0.085;
-    ctx.font = `700 ${s}px "Space Grotesk", Arial, sans-serif`;
-    while (ctx.measureText(sub).width > w * 0.7 && s > 6) { s -= 1; ctx.font = `700 ${s}px "Space Grotesk", Arial, sans-serif`; }
-    ctx.fillStyle = '#ffe9b8';
-    ctx.fillText(sub, w / 2, h * 0.45);
-  }
+  drawType(ctx, title, w / 2, h * 0.27, { role: 'chrome', size: h * 0.24, maxWidth: w * 0.78, fill: '#fff1d6', shadow: { color: '#ff3d8b', dx: 0.06, dy: 0.06 } });
+  if (sub) drawType(ctx, sub, w / 2, h * 0.45, { role: 'wayfinding', size: h * 0.1, maxWidth: w * 0.7, fill: '#ffe9b8' });
 }
 
 export function buildAtriumMurals({ kit, layout }) {

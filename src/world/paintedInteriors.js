@@ -10,8 +10,7 @@
 // =============================================================================
 
 const hex = (c) => (typeof c === 'number' ? `#${c.toString(16).padStart(6, '0')}` : c);
-const FONT = '"Bungee", "Arial Black", system-ui, sans-serif';
-const BODY = 'Arial, "Helvetica Neue", sans-serif';
+import { drawType } from './typeKit.js';
 
 const ROOMS = {
   music: { wall: '#2c3550', floor: '#3b3048', side: '#262c44' },
@@ -133,22 +132,11 @@ export function paintInterior(ctx, w, h, { kind = 'vacant', light = 0xffffff, li
   }
 }
 
-export function paintShopSign(ctx, w, h, { name, sub = '', ground = '#2b2233', ink = '#ffd6ec' }) {
+export function paintShopSign(ctx, w, h, { name, sub = '', ground = '#2b2233', ink = '#ffd6ec', role = 'mallBrand', subRole = 'wayfinding' }) {
   ctx.fillStyle = hex(ground);
   ctx.fillRect(0, 0, w, h);
-  ctx.fillStyle = hex(ink);
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  let size = Math.round(h * (sub ? 0.5 : 0.62));
-  do { ctx.font = `${size}px ${FONT}`; size -= 2; } while (ctx.measureText(name).width > w * 0.92 && size > 8);
-  ctx.fillText(name, w / 2, sub ? h * 0.4 : h / 2);
-  if (sub) {
-    ctx.globalAlpha = 0.8;
-    let s = Math.round(h * 0.2);
-    do { ctx.font = `600 ${s}px ${BODY}`; s -= 1; } while (ctx.measureText(sub).width > w * 0.92 && s > 6);
-    ctx.fillText(sub, w / 2, h * 0.78);
-    ctx.globalAlpha = 1;
-  }
+  drawType(ctx, name, w / 2, sub ? h * 0.4 : h / 2, { role, size: Math.round(h * (sub ? 0.5 : 0.62)), maxWidth: w * 0.92, fill: hex(ink) });
+  if (sub) drawType(ctx, sub, w / 2, h * 0.78, { role: subRole, size: Math.round(h * 0.24), maxWidth: w * 0.92, fill: hex(ink), alpha: 0.8 });
 }
 
 export function paintCampaign(ctx, w, h, c) {
@@ -161,19 +149,11 @@ export function paintCampaign(ctx, w, h, c) {
   ctx.beginPath(); ctx.arc(w / 2, h * 0.36, w * 0.3, Math.PI, 0); ctx.fill();
   ctx.fillStyle = c.colors.top;
   for (let i = 1; i < 4; i++) ctx.fillRect(w * 0.18, h * 0.36 - i * w * 0.07, w * 0.64, w * 0.025);
-  ctx.fillStyle = c.colors.ink;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  const line = (text, y, size) => {
-    let s = size;
-    do { ctx.font = `${s}px ${FONT}`; s -= 2; } while (ctx.measureText(text).width > w * 0.86 && s > 8);
-    ctx.fillText(text, w / 2, y);
-  };
+  const line = (text, y, size) => drawType(ctx, text, w / 2, y, { role: 'mallBrand', size, maxWidth: w * 0.86, fill: c.colors.ink });
   line(c.title, h * 0.52, w * 0.2);
   line(c.title2, h * 0.64, w * 0.24);
   line(c.year, h * 0.78, w * 0.3);
-  ctx.font = `600 ${Math.round(w * 0.075)}px ${BODY}`;
-  ctx.fillText(c.tag, w / 2, h * 0.92);
+  drawType(ctx, c.tag, w / 2, h * 0.92, { role: 'wayfinding', size: Math.round(w * 0.09), maxWidth: w * 0.86, fill: c.colors.ink });
 }
 
 export function paintMedallion(ctx, size) {

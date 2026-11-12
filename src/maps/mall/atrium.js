@@ -187,7 +187,7 @@ export function buildAtrium({ kit, props, layout, upperY }) {
     box(x0, 2.15, z0, x1, 2.2, z1, mat(0xc9a04a), { collide: false });
   }
   sign('Please do not feed the fountain', {
-    x: fx, y: 0.55, z: fz - r - 0.06, width: 2.6, height: 0.3, facing: -1, background: '#3b2f44', color: '#ffd9a8', font: 'Arial, "Helvetica Neue", sans-serif',
+    x: fx, y: 0.55, z: fz - r - 0.06, width: 2.6, height: 0.3, facing: -1, background: '#3b2f44', color: '#ffd9a8', font: 'official',
   });
 
   // --- Kiosks (solid up to their canopy: nobody stands on the counter), planters, benches round the fountain -----------------------
@@ -219,11 +219,11 @@ export function buildAtrium({ kit, props, layout, upperY }) {
   // --- Signs ---------------------------------------------------------------------------------------------------------------------
   // (The room's own name, SUNSET GALLERIA between the two suns on the north upper wall, is neon: zoneLooks.js buildAtriumLook.)
   sign('THE GRAND ATRIUM', {
-    x: cx, y: 4.3, z: A.maxZ - 0.02, width: 6, height: 0.8, facing: -1, background: '#3b2f44', color: '#ffd23f', font: 'Georgia, "Times New Roman", serif',
+    x: cx, y: 4.3, z: A.maxZ - 0.02, width: 6, height: 0.8, facing: -1, background: '#3b2f44', color: '#ffd23f', font: 'mallBrand',
   });
   sign('Promenade · Level 2', {
     x: (link.from + link.to) / 2, y: upperY + link.height + 0.35, z: A.minZ + shutters.track.signOffset, width: 2.8, height: 0.4, facing: 1,
-    background: '#1d1626', color: '#ffd23f', font: 'Arial, "Helvetica Neue", sans-serif',
+    background: '#1d1626', color: '#ffd23f', font: 'wayfinding',
   }).name = 'sign_atrium_promenade';
   box((link.from + link.to) / 2 - 1.4, upperY + link.height + .15, A.minZ + .03,
     (link.from + link.to) / 2 + 1.4, upperY + link.height + .55, A.minZ + shutters.track.signOffset - .01,
