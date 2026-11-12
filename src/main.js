@@ -8,6 +8,7 @@ import './style.css';
 import './ui/retail.css';
 import './ui/readability.css';
 import './ui/minimap.css';
+import './ui/radio.css';
 import { createNoticesMenu } from './ui/noticesMenu.js';
 import * as THREE from 'three';
 import { feel } from './config/feel.js';
@@ -23,6 +24,8 @@ import { buttonLabels } from './config/controls.js';
 import { buildTestRange } from './maps/testRange/testRange.js';
 import { createHud } from './ui/hud.js';
 import { createMinimap } from './ui/minimap.js';
+import { createRadioTicker } from './ui/radioTicker.js';
+import { tapeWear } from './audio/mallMusic.js';
 import { buildMinimapPlan, minimapState } from './game/minimapPlan.js';
 import { createDamageIndicatorQueue } from './ui/damageDirection.js';
 import { weapons, melee as meleeWeapons } from './config/weapons.js';
@@ -115,7 +118,10 @@ hud.minimap = createMinimap({ onCornerChange: (on) => settings.set('minimap', on
 hud.element.append(hud.minimap.element);
 let minimapPlan;
 const noticesMenu = createNoticesMenu(hud.history);
-const sound = createSound(); // synthesized sound effects (starts on the first click/key press)
+// Galleria FM's "Now playing" card, shown when a song starts where you can hear it (ui/radioTicker.js).
+const radioTicker = createRadioTicker();
+hud.element.append(radioTicker.element);
+const sound = createSound({ onTrackChange: (track) => radioTicker.show(track) }); // synthesized sound effects (starts on the first click/key press)
 const viewmodel = createViewmodel(Object.values(weapons), meleeWeapons.boxCutter, {
   skinFor: (gunId) => g.debug.skinFor(gunId) ?? g.skins.skinFor(gunId),
 });
@@ -587,6 +593,7 @@ function render(alpha, frameTime) {
   hud.setOccupancy?.(rounds.remainingInWave, rounds.inBreak);
   const clockInPrompt = game.over || game.menu ? null : g.clockIn.prompt; // the shopping window: hold to call the next round
   hud.setClockIn?.(clockInPrompt, clockInPrompt && buttonLabel(clockInPrompt.action));
+  sound.setTapeWear(tapeWear(rounds.round, look.runtime.horror !== false)); // (the radio wears out with the later rounds)
   {
     const active = game.running && !game.over && !game.menu;
     minimapPlan ??= buildMinimapPlan(g.map, g.colliders);

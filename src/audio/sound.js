@@ -11,40 +11,71 @@
 
 import { audio } from '../config/audio.js';
 import { atmosphere } from '../config/environment.js';
-import { mallMusic } from '../config/music.js';
+import { radio } from '../config/music.js';
+import { radioTracks } from '../config/radioTracks.js';
 import { deathMusic } from '../config/deathMusic.js';
 import { makeAmbientPulse } from './ambientPulse.js';
 
-function renderMusicInWorker() {
+function renderMusicInWorker(id) {
   return new Promise((resolve, reject) => {
     const worker = new Worker(new URL('./musicWorker.js', import.meta.url), { type: 'module' });
     worker.onmessage = ({ data }) => { worker.terminate(); resolve(data); };
     worker.onerror = error => { worker.terminate(); reject(error); };
-    worker.postMessage(null);
+    worker.postMessage({ id });
   });
 }
 
-export function createSound({ renderMusic = renderMusicInWorker } = {}) {
+/**
+ * @param renderMusic   (trackId) => Promise<{ left, right, sampleRate }>: a song's PCM (default: rendered in a worker)
+ * @param random        the shuffle (default Math.random: the radio is not gameplay)
+ * @param onTrackChange (track) => void when a song starts from its beginning where you can hear it (the now-playing card)
+ */
+export function createSound({ renderMusic = renderMusicInWorker, random = Math.random, onTrackChange = null } = {}) {
   let ctx = null;
   let master = null;
   let noiseBuffer = null;
   const ambientVoices = new Map();
   const ambientPulseBuffers = new Map();
-  let musicBuffer = null, musicLoading = false, musicFailed = false, musicCursor = 0;
   let deathVoice = null;
 
+  // ---- Galleria FM: a shuffled rotation (every song once before any repeats, never the same song twice running). Only the
+  // song playing and the one after it are held; the next is rendered while the current plays. The speakers share one
+  // timeline, which moves only while one is audible (so the radio waits for you while you are out of earshot).
+  const station = { order: [], at: 0, last: null, current: null, next: null, loading: false, failed: false, cursor: 0, wear: 0 };
+  const byId = new Map(radioTracks.map(t => [t.id, t]));
+  function nextTrackId() {
+    if (station.at >= station.order.length) {
+      const ids = radioTracks.map(t => t.id);
+      for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(random() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
+      if (ids.length > 1 && ids[0] === station.last) [ids[0], ids[1]] = [ids[1], ids[0]];
+      station.order = ids; station.at = 0;
+    }
+    return (station.last = station.order[station.at++]);
+  }
   function prepareMusic() {
-    if (musicBuffer || musicLoading || musicFailed) return;
-    musicLoading = true;
-    Promise.resolve().then(renderMusic).then(track => {
-      musicBuffer = ctx.createBuffer(2, track.left.length, track.sampleRate);
-      musicBuffer.getChannelData(0).set(track.left);
-      musicBuffer.getChannelData(1).set(track.right);
-      musicLoading = false;
+    if (station.loading || station.failed || (station.current && station.next)) return;
+    const id = nextTrackId();
+    station.loading = true;
+    Promise.resolve().then(() => renderMusic(id)).then(pcm => {
+      const buffer = ctx.createBuffer(2, pcm.left.length, pcm.sampleRate);
+      buffer.getChannelData(0).set(pcm.left);
+      buffer.getChannelData(1).set(pcm.right);
+      const song = { track: byId.get(id), buffer };
+      if (!station.current) station.current = song; else station.next = song;
+      station.loading = false;
+      prepareMusic(); // (the one after it, while this one plays)
     }).catch(error => {
-      musicLoading = false; musicFailed = true;
-      console.warn('Mall music could not be prepared:', error);
+      station.loading = false; station.failed = true;
+      console.warn('Galleria FM could not prepare a song:', error);
     });
+  }
+  const wearCents = () => (station.wear ? station.wear * radio.tapeWear.detuneCents : 0);
+  const positionOf = (voice, now) => voice.offset + (now - voice.startedAt) * voice.rate;
+  function fadeOut(voice, now, seconds) {
+    voice.gain.gain.cancelScheduledValues(now);
+    voice.gain.gain.setTargetAtTime(0, now, seconds / 3);
+    for (const node of voice.nodes) if (node.stop) node.stop(now + seconds);
+    voice.source.onended = () => { for (const node of voice.nodes) node.disconnect(); };
   }
 
   // One second of white noise, reused by every noise layer.
@@ -129,25 +160,31 @@ export function createSound({ renderMusic = renderMusicInWorker } = {}) {
     const wanted = new Set(entries.map(v => v.id));
     for (const [id, voice] of ambientVoices) {
       if (wanted.has(id)) continue;
-      if (voice.kind === 'music') musicCursor = (voice.offset + now - voice.startedAt) % musicBuffer.duration;
-      voice.gain.gain.cancelScheduledValues(now);
-      voice.gain.gain.setTargetAtTime(0, now, cfg.fadeSeconds / 3);
-      voice.source.stop(now + cfg.fadeSeconds);
-      voice.source.onended = () => { for (const node of voice.nodes) node.disconnect(); };
+      if (voice.kind === 'music') station.cursor = positionOf(voice, now) % voice.source.buffer.duration;
+      fadeOut(voice, now, cfg.fadeSeconds);
       ambientVoices.delete(id);
     }
     for (const item of entries) {
       if (ctx.state !== 'running') break;
       const isMusic = item.kind === 'music';
-      const def = isMusic ? mallMusic : cfg.voices[item.kind];
-      if (!def) continue;
-      if (isMusic && !musicBuffer) { if (audio.musicVolume > 0) prepareMusic(); continue; }
+      if (isMusic && !station.current) { if (audio.musicVolume > 0) prepareMusic(); continue; }
       let voice = ambientVoices.get(item.id);
+      // The song is ending and the next one is ready: crossfade (the next one opens with the station chime).
+      let fadeIn = cfg.fadeSeconds;
+      if (isMusic && voice && station.next && positionOf(voice, now) >= voice.source.buffer.duration - radio.crossfadeSeconds) {
+        fadeOut(voice, now, radio.crossfadeSeconds);
+        ambientVoices.delete(item.id);
+        station.current = station.next; station.next = null; station.cursor = 0;
+        voice = null; fadeIn = radio.crossfadeSeconds;
+      }
+      if (isMusic && !station.next) prepareMusic();
+      const def = isMusic ? station.current.track : cfg.voices[item.kind];
+      if (!def) continue;
       if (!voice) {
         const source = (isMusic || def.noise) ? ctx.createBufferSource() : ctx.createOscillator();
         if (isMusic || def.noise) {
           if (def.clickEverySeconds && !ambientPulseBuffers.has(item.kind)) ambientPulseBuffers.set(item.kind, makeAmbientPulse(ctx, noiseBuffer, def));
-          source.buffer = isMusic ? musicBuffer : def.clickEverySeconds ? ambientPulseBuffers.get(item.kind) : noiseBuffer;
+          source.buffer = isMusic ? station.current.buffer : def.clickEverySeconds ? ambientPulseBuffers.get(item.kind) : noiseBuffer;
           source.loop = true;
         }
         else { source.type = def.wave || 'sine'; source.frequency.value = def.frequency; }
@@ -156,18 +193,28 @@ export function createSound({ renderMusic = renderMusicInWorker } = {}) {
         const pan = ctx.createStereoPanner();
         source.connect(filter); filter.connect(gain); gain.connect(pan); pan.connect(master);
         const nodes = [source, filter, gain, pan];
+        let rate = 1;
         if (isMusic) {
           source.disconnect();
           const highpass = ctx.createBiquadFilter(); highpass.type = 'highpass'; highpass.frequency.value = def.highpassHz;
           source.connect(highpass); highpass.connect(filter); nodes.push(highpass);
+          // Tape wear (later rounds): the pitch sags and wobbles; the timeline runs at the sagged speed.
+          const wobble = ctx.createOscillator(); wobble.frequency.value = radio.tapeWear.wobbleHz;
+          const depth = ctx.createGain(); depth.gain.value = station.wear * radio.tapeWear.wobbleCents;
+          wobble.connect(depth);
+          if (source.detune) { depth.connect(source.detune); source.detune.value = wearCents(); }
+          wobble.start(now);
+          nodes.push(wobble, depth);
+          rate = 2 ** (wearCents() / 1200);
+          if (station.cursor < 0.05) onTrackChange?.(def);
         }
-        source.start(now, isMusic ? musicCursor : def.clickEverySeconds ? now % def.clickEverySeconds : 0);
-        voice = { source, gain, pan, nodes, kind: item.kind, startedAt: now, offset: musicCursor };
+        source.start(now, isMusic ? station.cursor : def.clickEverySeconds ? now % def.clickEverySeconds : 0);
+        voice = { source, gain, pan, nodes, kind: item.kind, startedAt: now, offset: isMusic ? station.cursor : 0, rate, def };
         ambientVoices.set(item.id, voice);
       }
       voice.pan.pan.setTargetAtTime(item.pan, now, cfg.fadeSeconds);
       voice.spatialGain = Math.max(0, item.gain);
-      voice.gain.gain.setTargetAtTime(voice.spatialGain * def.gain * (isMusic ? audio.musicVolume : audio.ambienceVolume), now, cfg.fadeSeconds);
+      voice.gain.gain.setTargetAtTime(voice.spatialGain * def.gain * (isMusic ? audio.musicVolume : audio.ambienceVolume), now, fadeIn);
     }
   }
 
@@ -211,7 +258,25 @@ export function createSound({ renderMusic = renderMusicInWorker } = {}) {
     playDeathMusic,
     stopDeathMusic,
     setAmbience,
-    resetMusic() { musicCursor = 0; },
+    // A new run: the next song in the rotation if it is ready (else this one again), from the top.
+    resetMusic() {
+      if (station.next) { station.current = station.next; station.next = null; }
+      station.cursor = 0;
+    },
+    /** The song on the radio now: { id, title } or null. */
+    get nowPlaying() { return station.current && { id: station.current.track.id, title: station.current.track.title }; },
+    /** 0..1: how worn the tape sounds (main.js, from the round and the horror setting: audio/mallMusic.js tapeWear). */
+    setTapeWear(amount) {
+      const wear = Math.max(0, Math.min(1, amount));
+      if (wear === station.wear) return;
+      station.wear = wear;
+      if (!ctx) return;
+      const now = ctx.currentTime, voice = ambientVoices.get('mall_music');
+      if (!voice) return;
+      voice.offset = positionOf(voice, now); voice.startedAt = now; voice.rate = 2 ** (wearCents() / 1200);
+      if (voice.source.detune) voice.source.detune.value = wearCents();
+      voice.nodes.at(-1).gain.value = wear * radio.tapeWear.wobbleCents;
+    },
     // The idle saver (core/idleSaver.js): the whole audio graph stops while nobody is there, and carries on from the same spot.
     setSleeping(sleeping) {
       if (!ctx) return;
@@ -222,7 +287,7 @@ export function createSound({ renderMusic = renderMusicInWorker } = {}) {
       audio.musicVolume = volume;
       if (deathVoice) deathVoice.gain.gain.value = deathMusic.volume * volume;
       for (const voice of ambientVoices.values()) if (voice.kind === 'music') {
-        voice.gain.gain.setTargetAtTime(voice.spatialGain * mallMusic.gain * volume, ctx.currentTime, atmosphere.ambience.fadeSeconds);
+        voice.gain.gain.setTargetAtTime(voice.spatialGain * voice.def.gain * volume, ctx.currentTime, atmosphere.ambience.fadeSeconds);
       }
     },
     playAmbient(name, { volume = 1, pan = 0 } = {}) {

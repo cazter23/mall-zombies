@@ -1,5 +1,15 @@
 # Sunset Galleria: build history ("Current state")
 
+## 11 November 2026 - Galleria FM: six songs on the mall radio
+
+- **One 44-second loop became a radio station.** The mall's speakers now play Galleria FM: six original songs of 1:44 to 2:32, each a different kind of mall music, in a shuffled rotation (every song once before any repeats, never the same one twice running), crossfading from one to the next. Every song opens with the station's three-note chime, so the chime plays between songs. A "Now playing" card (Galleria FM · song title) slides in at the bottom left when a song starts where you can hear it.
+- **The songs** (config/radioTracks.js): After Closing (the original lounge loop, kept note for note, now with a bridge and an ending), Escalator Bossa (nylon plucks, flute, a marimba chorus), Food Court Funk (slap bass, clavinet, a brassy riff), Synth Promenade (80s mall pop with arpeggios, gated snare and a key change), Waiting On Hold (an elevator-music waltz, marimba and flute) and Clearance Event (smooth jazz: breathy synth sax over electric piano).
+- **A small song engine** (audio/mallMusic.js): songs are data (chord symbols per bar, rhythm patterns that play each bar's chord, written melodies, drum grooves, sections and a form), synthesised deterministically with new instruments (electric piano, marimba, bell, a wind voice for flute / lead / sax, clavinet, a plucked string, slap-style bass) and a synthesised kit (kick, snare with an optional gate, clap, hats, shaker, rim, brush, tom). Rendering one song takes about a second, in a worker.
+- **Memory:** only the song playing and the next one are held (about 15 MB each at 16 kHz; the speakers' low-pass sits under 4 kHz). The radio's timeline still moves only while a speaker is audible, as before.
+- **Tape wear:** from round 14 to round 30 the radio sags in pitch (up to 45 cents) and wobbles, like a worn tape. Off when the horror layer is off.
+- Not heard by a person yet: the songs were checked by measurement (levels, no clipping, no silent stretches, melody notes on chords) and by WAV previews (`node tools/exportMusic.mjs scratch/galleria-fm`). Mix levels between instruments are first guesses.
+- Shared files: audio/sound.js (the radio player), main.js (the card and tape wear), config/music.js (rewritten). Branch claude/galleria-fm.
+
 ## 11 November 2026 - The minimap restyled as the mall's own directory sign
 
 - **The look of the in-world directories** (plum case, brass, teal signage, cream serif): brass frames with screw heads and a faint glass glare, a teal header ("Sunset Galleria · Store directory"), each area in its own colour taken from its shutter finish (areas not bought darker and hatched), a real floor plan (thick walls broken at doorways, from the culling portals), barrier tape over shut shutters with the price on a hanging price tag, escalator and stair chevrons pointing up, wayfinding pictograms instead of letters (gun, ammo, warranty badge, scope, hammer, hanger, claw, ticket, cart, bolt, safe, return arrow, van, key), and a pulsing you-are-here dot with a view cone.

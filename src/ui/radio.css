@@ -1,0 +1,22 @@
+/* Galleria FM's "Now playing" card (ui/radioTicker.js): a little radio display, bottom left above the health bars. */
+.radio-ticker {
+  position: absolute; left: var(--hud-margin); bottom: calc(150 * var(--ui-space) + var(--hud-margin));
+  display: flex; flex-direction: column; gap: 2px; padding: 6px 12px 6px 30px; min-width: 150px; max-width: 40vw;
+  border: 2px solid #c9a45c; border-radius: 6px; background: #1d1420e6; color: #fff0cb;
+  box-shadow: 0 4px 14px #0008; pointer-events: none;
+  transform: translateX(calc(-100% - 40px)); opacity: 0; transition: transform .45s cubic-bezier(.2, .9, .3, 1.1), opacity .45s;
+}
+.radio-ticker.show { transform: none; opacity: 1; }
+/* A little speaker grille with a pulsing light. */
+.radio-ticker::before {
+  content: ''; position: absolute; left: 9px; top: 50%; width: 12px; height: 12px; margin-top: -6px; border-radius: 50%;
+  background: repeating-radial-gradient(circle, #c9a45c 0 1px, transparent 1px 3px);
+}
+.radio-ticker.show::after {
+  content: ''; position: absolute; left: 13px; top: 7px; width: 4px; height: 4px; border-radius: 50%; background: #e63946;
+  animation: radio-light 1.1s ease-in-out infinite;
+}
+.radio-station { font: 700 calc(10 * var(--ui-space)) / 1.1 var(--font-ui); letter-spacing: .14em; text-transform: uppercase; color: #6fc3c9; }
+.radio-title { font: 600 calc(20 * var(--ui-space)) / 1 var(--font-hud); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@keyframes radio-light { 50% { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { .radio-ticker { transition: opacity .3s; transform: none; } .radio-ticker.show::after { animation: none; } }

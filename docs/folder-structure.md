@@ -134,7 +134,11 @@ src/
                         cornice, floor bands / medallions / worn lanes, painted light under panels and neon, fixtures, little stories,
                         the FALL INTO SAVINGS '86 campaign, a directory totem; `wayfinding` = the one style for new direction signs.
     look.js             Art direction, "Grand Opening, Forever": palette, zone grading, the horror layer, set pieces.
-    music.js            The 16-bar lounge loop "After Closing" as data (pitches, beats, timbres).
+    music.js            Galleria FM, the mall radio: sample rate, mastering peak, tail and crossfade, timing looseness, the station
+                        chime, chord voicing, every synth's defaults, the drum kit, tape wear (later rounds) and the now-playing card.
+    radioTracks.js      Galleria FM's six original songs as data (After Closing, Escalator Bossa, Food Court Funk, Synth Promenade,
+                        Waiting On Hold, Clearance Event): tempo, parts (synth + overrides), rhythm patterns on each bar's chord,
+                        melodies, drum grooves, sections (chord symbols per bar, transpose) and the form.
     neon.js             Neon tube builder tuning (world/neon.js): palette, tube sizes, flicker.
   core/
     loop.js             startLoop(): fixed-timestep accumulator; each frame calls beforeUpdate(frameTime) (look
@@ -799,8 +803,13 @@ src/
     game/warranty.js    The Extended Warranty rules that are not a stat change: what the Customer Service desk offers (next tier, a Renewal past Platinum, or a warranty on file moved onto this gun for a fee), the warranty a replaced gun leaves on file, and the Platinum claim (a dry gun gets its ammo back once per round). Numbers: config/upgrades.js.
                         occasional one-shots only in audible unlocked areas. Timers freeze on pause and restart on reset.
     ambientPulse.js     Sparse mechanical ticks mixed into a looping ambience buffer (reuses the noise grain: no gameplay random draws).
-    mallMusic.js        Pure, deterministic PCM composition of the lounge loop; used by the music worker and the export/preview tests.
-    musicWorker.js      Web Worker that renders mallMusic once, off the main thread (inlined as a Blob worker in the single-file build).
+    mallMusic.js        The song engine, pure and deterministic: noteNumber, parseChord (chord symbols, slash chords), songEvents
+                        (a song's form -> notes and drum hits), renderTrack (synths: piano, electric piano, marimba, bell, wind for
+                        flute / lead / sax, clavinet, bass, Karplus-Strong pluck, pad; a synthesised kit; the chime first), trackById,
+                        tapeWear(round, horrorOn). Used by the music worker, tools/exportMusic.mjs and tests/music.test.js.
+    musicWorker.js      Web Worker that renders one song ({ id }) off the main thread (inlined as a Blob worker in the single-file build).
+                        sound.js keeps the radio: a shuffled rotation (all six before a repeat, never one twice running), only the song
+                        playing and the next held, a crossfade at the end, onTrackChange for the now-playing card, setTapeWear, nowPlaying.
   fx/
     ballView.js         Browser side only: draws `balls.list` (the Tennis Ball Launcher's balls) as a pool of tumbling tennis balls between last tick's and this tick's position (alpha).
     throwableView.js    Browser side only: draws `equipment.live` (Kiosk Kevin's thrown things), one pool per look.model: the cola bottle (tumbling in the
@@ -1112,3 +1121,9 @@ The quest policy reserves parking validation funds before optional Returns Desk 
 - src/game/minimapPlan.js: DOM-free. `buildMinimapPlan(map, colliders)` turns the map's `minimap` (floors listing culling rooms, shape overrides, upper-floor voids) plus `cullAreas`, `cullPortals` (shutters drawn as their doorway), `colliders.ramps` (escalators and stairs, on every floor they touch) and `map.features` into floors, shutters, doorways (`openings`: wall gaps from the portals, with the thin axis), places (each numbered for the store index; one kind with one name in one area shares a number) and `index` (the numbered groups), with `floorAt(y)` and `zoneLabel(zone)`. `minimapState(plan, g, { guidance })`: you (position, yaw, floor, the area's name), the bought zones, the shut shutters with the price to open them (only where one side is bought), Kevin's cart while it is open, and dropped keys when the run gives guidance.
 - src/ui/minimap.js: `createMinimap({ onCornerChange })` (main.js mounts it in the HUD as `hud.minimap`). `update({ plan, state, held, active, dt, guidance })` each frame: a tap of the `minimap` action (Tab / PadBack) toggles the corner map (turned so you face up; the 'minimap' remembered setting), a hold past `holdSeconds` shows the whole directory (both floors side by side, yours larger under a lit LEVEL tab, north-up, area names, price tags, numbered pictograms, and the store index under it with Kevin's cart this round) while held. Drawn as a floor plan: area colours, thick walls broken at doorways, barrier tape over shut shutters, escalator chevrons pointing up, a pulsing you-are-here dot with a view cone. `pictogramNames` lists the drawn pictograms (tests check every place has one). A press that began in a menu does nothing. Adds `minimap-on` to the HUD root while the corner map is up.
 - src/ui/minimap.css: the brass frames with screw heads and a glass glare, the corner's area strip and floor tab, the directory's teal serif header and the index strip, the backlight flicker and the corner's slide-in (none with reduced motion); moves `.hud-right-stack` (PA, sales, notices) down under the corner map.
+
+### Galleria FM (the mall radio)
+
+- src/ui/radioTicker.js: `createRadioTicker()`, the "Now playing" card (main.js mounts it in the HUD and passes `show` to createSound as onTrackChange). `show(track)` slides it in for config/music.js `ticker.seconds`.
+- src/ui/radio.css: the card's look (a little radio display with a speaker grille and a blinking light), bottom left above the health bars; no slide with reduced motion.
+- tools/exportMusic.mjs: `node tools/exportMusic.mjs <folder> [trackId ...]` writes full-volume WAV previews of the songs.

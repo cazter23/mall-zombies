@@ -1,6 +1,7 @@
-import { renderMallMusic } from './mallMusic.js';
+import { renderTrack, trackById } from './mallMusic.js';
 
-self.onmessage = () => {
-  const track = renderMallMusic();
-  self.postMessage(track, [track.left.buffer, track.right.buffer]);
+// Renders one Galleria FM song ({ id }) off the main thread and hands its PCM back (audio/sound.js).
+self.onmessage = ({ data }) => {
+  const song = renderTrack(trackById(data.id));
+  self.postMessage(song, [song.left.buffer, song.right.buffer]);
 };

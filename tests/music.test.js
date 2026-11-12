@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import './helpers/headlessGame.js';
-import { renderMallMusic } from '../src/audio/mallMusic.js';
-import { mallMusic } from '../src/config/music.js';
+import { renderTrack, songEvents, noteNumber, parseChord, trackById, tapeWear } from '../src/audio/mallMusic.js';
+import { radio } from '../src/config/music.js';
+import { radioTracks } from '../src/config/radioTracks.js';
 import { deathMusic } from '../src/config/deathMusic.js';
 import { feel } from '../src/config/feel.js';
 import { headlessGame } from './helpers/headlessGame.js';
@@ -12,24 +13,57 @@ import { createAmbience } from '../src/game/ambience.js';
 import { createSettings } from '../src/game/settings.js';
 import * as THREE from 'three';
 
-test('original track has deterministic stereo audio, a seamless loop, useful dynamics and no clipping/silent bars', () => {
-  const a = renderMallMusic(), b = renderMallMusic();
-  assert.deepEqual(a, b, 'independent renders are identical and use no gameplay randomness');
-  assert.equal(a.left.length, Math.round(mallMusic.bars * mallMusic.beatsPerBar * 60 / mallMusic.bpm * a.sampleRate));
-  let stereo = 0, energy = 0;
-  for (const ch of [a.left, a.right]) {
-    assert.ok(Math.abs(ch[0] - ch.at(-1)) < 1e-6, 'no discontinuity at loop seam');
-    for (const v of ch) { assert.ok(Number.isFinite(v) && Math.abs(v) <= mallMusic.peak); energy += v * v; }
-    for (let bar = 0; bar < mallMusic.bars; bar++) {
-      let square = 0;
-      const start = Math.floor(bar * ch.length / mallMusic.bars), end = Math.floor((bar + 1) * ch.length / mallMusic.bars);
-      for (let i = start; i < end; i++) square += ch[i] ** 2;
-      assert.ok(Math.sqrt(square / (end - start)) > 0.02, `bar ${bar} has audible material`);
-    }
+test('notes and chord symbols read as expected', () => {
+  assert.equal(noteNumber('C4'), 60);
+  assert.equal(noteNumber('Bb3'), 58);
+  assert.equal(noteNumber('F#5'), 78);
+  assert.equal(noteNumber(69), 69);
+  assert.deepEqual(parseChord('Ebmaj9'), { root: 3, intervals: [0, 4, 11, 14], bass: 3 });
+  assert.equal(parseChord('Bb/F').bass, 5);
+  assert.throws(() => parseChord('Cwhatever'));
+  assert.throws(() => noteNumber('H2'));
+});
+
+test('Galleria FM has six original songs, each parsing into a full form with drums, a melody and a sensible length', () => {
+  assert.equal(radioTracks.length, 6);
+  assert.equal(new Set(radioTracks.map((t) => t.id)).size, 6);
+  for (const track of radioTracks) {
+    const events = songEvents(track);
+    const seconds = radio.chime.seconds + events.beats * 60 / track.bpm + radio.tailSeconds;
+    assert.ok(seconds > 90 && seconds < 170, `${track.id}: ${seconds.toFixed(0)} s`);
+    assert.ok(events.drums.length > 100, `${track.id} has drums`);
+    assert.ok(events.notes.some((n) => track.sections[track.form[1]].melody?.part === n.part), `${track.id} has a melody early on`);
+    for (const note of events.notes) assert.ok(note.midi >= 28 && note.midi <= 96, `${track.id}: note ${note.midi} out of range`);
+    assert.ok(track.gain > 0 && track.lowpassHz > 1000 && track.highpassHz > 0);
+    assert.equal(trackById(track.id), track);
   }
-  for (let i = 0; i < a.left.length; i++) stereo += Math.abs(a.left[i] - a.right[i]);
-  assert.ok(stereo / a.left.length > 0.001);
-  assert.ok(Math.sqrt(energy / (a.left.length * 2)) < 0.3, 'headroom remains for combat');
+});
+
+test('every song renders deterministically: stereo, no clipping, headroom, the chime first, and no silent stretch', () => {
+  const rate = 4000;
+  for (const track of radioTracks) {
+    const a = renderTrack(track, { sampleRate: rate }), b = renderTrack(track, { sampleRate: rate });
+    assert.deepEqual(a.left, b.left, `${track.id}: two renders are identical`);
+    let energy = 0, stereo = 0;
+    for (let i = 0; i < a.left.length; i++) {
+      for (const v of [a.left[i], a.right[i]]) { assert.ok(Number.isFinite(v) && Math.abs(v) <= radio.peak + 1e-6); energy += v * v; }
+      stereo += Math.abs(a.left[i] - a.right[i]);
+    }
+    assert.ok(stereo / a.left.length > 0.001, `${track.id} is stereo`);
+    assert.ok(Math.sqrt(energy / (a.left.length * 2)) < 0.3, `${track.id} leaves headroom for combat`);
+    const rms = (from, to) => { let sq = 0; for (let i = Math.floor(from * rate); i < Math.floor(to * rate); i++) sq += a.left[i] ** 2; return Math.sqrt(sq / ((to - from) * rate)); };
+    assert.ok(rms(0, 0.8) > 0.02, `${track.id} opens with the station chime`);
+    for (let t = a.songStart; t < a.seconds - radio.tailSeconds - 2; t += 2) assert.ok(rms(t, t + 2) > 0.01, `${track.id} is silent at ${t.toFixed(0)} s`);
+  }
+});
+
+test('the tape wears from its round to full, and not at all with the horror layer off', () => {
+  const { fromRound, fullRound } = radio.tapeWear;
+  assert.equal(tapeWear(1), 0);
+  assert.equal(tapeWear(fromRound), 0);
+  assert.ok(tapeWear((fromRound + fullRound) / 2) > 0.4 && tapeWear((fromRound + fullRound) / 2) < 0.6);
+  assert.equal(tapeWear(fullRound + 10), 1);
+  assert.equal(tapeWear(fullRound, false), 0);
 });
 
 function fakeAudio() {
@@ -38,7 +72,7 @@ function fakeAudio() {
     exponentialRampToValueAtTime() {}, cancelScheduledValues() {}, setTargetAtTime(v) { this.value = v; } });
   const make = kind => {
     const n = { kind, gain: param(), frequency: param(), pan: param(), Q: param(), threshold: param(), ratio: param(),
-      attack: param(), release: param(), knee: param(),
+      attack: param(), release: param(), knee: param(), detune: param(),
       connect() {}, disconnect() { this.disconnected = true; }, start(...args) { this.started = args; },
       stop(at) { this.stopped = at; } };
     nodes.push(n); if (kind === 'source' || kind === 'oscillator') sources.push(n); return n;
@@ -111,40 +145,104 @@ test('a real run plays its sting once on death and stops it when Play again or M
   assert.equal(calls.at(-1)[0], 'stop');
 });
 
-test('music loads once asynchronously, stays in sync between speakers, resumes after pause, resets and mutes independently', async () => {
+const pcm = (seconds) => ({ left: new Float32Array(seconds * 16), right: new Float32Array(seconds * 16), sampleRate: 16 });
+const settle = () => new Promise((resolve) => setImmediate(resolve));
+
+test('the radio renders the song playing and the next one, crossfades at the end, and announces each song once', async () => {
   const f = fakeAudio(), previous = window.AudioContext, volumes = [audio.musicVolume, audio.ambienceVolume];
   window.AudioContext = f.AudioContext;
-  let renders = 0, ready;
-  const rendered = new Promise(resolve => { ready = resolve; });
+  const rendered = [], announced = [];
   try {
     audio.musicVolume = 0.45;
-    const sound = createSound({ renderMusic: () => { renders++; return rendered; } }); sound.unlock();
-    const compressor = f.nodes.find(n => n.kind === 'compressor');
-    assert.deepEqual([compressor.threshold.value, compressor.ratio.value, compressor.attack.value,
-      compressor.release.value, compressor.knee.value], [audio.compressor.thresholdDb, audio.compressor.ratio,
-      audio.compressor.attack, audio.compressor.release, audio.compressor.kneeDb]);
-    const mix = id => [{ id, kind: 'music', gain: 0.8, pan: 0 }, { id: 'vent', kind: 'ventilation', gain: 0.5, pan: 0 }];
-    sound.setAmbience(mix('hall')); sound.setAmbience(mix('hall'));
-    await Promise.resolve(); assert.equal(renders, 1);
-    assert.equal(f.sources.length, 1, 'HVAC starts while music is being prepared');
-    ready({ left: new Float32Array(160), right: new Float32Array(160), sampleRate: 16 });
-    await new Promise(resolve => setImmediate(resolve));
+    const sound = createSound({ renderMusic: (id) => { rendered.push(id); return pcm(20); }, random: () => 0.5, onTrackChange: (t) => announced.push(t.id) });
+    sound.unlock();
+    const mix = (id) => [{ id, kind: 'music', gain: 0.8, pan: 0 }, { id: 'vent', kind: 'ventilation', gain: 0.5, pan: 0 }];
     sound.setAmbience(mix('hall'));
-    const music = f.sources.find(s => s.buffer?.numberOfChannels === 2);
-    assert.ok(music.loop); assert.deepEqual(music.started, [10, 0]);
+    assert.equal(f.sources.length, 1, 'HVAC starts while the first song is prepared');
+    await settle();
+    assert.equal(rendered.length, 2, 'the song playing and the one after it, no more');
+    sound.setAmbience(mix('hall'));
+    const first = f.sources.find((s) => s.buffer?.numberOfChannels === 2);
+    assert.ok(first.loop);
+    assert.deepEqual(first.started, [10, 0]);
+    assert.equal(sound.nowPlaying.id, rendered[0]);
+    assert.deepEqual(announced, [rendered[0]]);
+
+    // Changing speakers keeps the same song and timeline; pausing remembers where it was.
     f.context().currentTime = 12.5; sound.setAmbience(mix('mart'));
-    assert.equal(f.sources.length, 2, 'changing speakers reuses the existing track');
-    const gains = f.nodes.filter(n => n.kind === 'gain'), ventGain = gains[1].gain.value;
-    sound.setMusicVolume(0); assert.equal(gains[2].gain.value, 0); assert.equal(gains[1].gain.value, ventGain);
-    sound.setMusicVolume(0.5); assert.ok(gains[2].gain.value > 0);
+    assert.equal(f.sources.filter((s) => s.buffer?.numberOfChannels === 2).length, 1);
     sound.setAmbience([]);
-    assert.ok(music.stopped > 12.5); music.onended(); assert.ok(music.disconnected);
     f.context().currentTime = 13; sound.setAmbience(mix('mart'));
-    assert.deepEqual(f.sources.at(-2).started, [13, 2.5], 'resume retains musical position');
-    sound.setAmbience([]); sound.resetMusic(); sound.setAmbience(mix('start'));
-    assert.equal(f.sources.at(-2).started[1], 0, 'a new run starts at the beginning');
+    assert.deepEqual(f.sources.filter((s) => s.buffer?.numberOfChannels === 2).at(-1).started, [13, 2.5], 'resume keeps its place');
+    assert.equal(announced.length, 1, 'resuming is not a new song');
+
+    // Near the end: the next song starts (from its top, with the chime) and the old one fades out.
+    const playing = f.sources.filter((s) => s.buffer?.numberOfChannels === 2).at(-1);
+    f.context().currentTime = 13 + (20 - 2.5) - radio.crossfadeSeconds + 0.1;
+    sound.setAmbience(mix('mart'));
+    const next = f.sources.filter((s) => s.buffer?.numberOfChannels === 2).at(-1);
+    assert.notEqual(next, playing);
+    assert.equal(next.started[1], 0);
+    assert.ok(playing.stopped > f.context().currentTime, 'the old song fades out rather than cutting');
+    assert.equal(sound.nowPlaying.id, rendered[1]);
+    assert.deepEqual(announced, [rendered[0], rendered[1]]);
+    await settle();
+    assert.equal(rendered.length, 3, 'the one after that is prepared while this one plays');
+
+    // Volume: music alone.
+    sound.setMusicVolume(0);
+    const musicGain = f.nodes.filter((n) => n.kind === 'gain').at(-2);
+    assert.equal(musicGain.gain.value, 0);
     sound.setAmbience([]);
   } finally { window.AudioContext = previous; [audio.musicVolume, audio.ambienceVolume] = volumes; }
+});
+
+test('the rotation plays every song once before any repeats, never the same song twice running; a new run moves on', async () => {
+  const f = fakeAudio(), previous = window.AudioContext;
+  window.AudioContext = f.AudioContext;
+  const rendered = [];
+  let seed = 3;
+  const random = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+  try {
+    const sound = createSound({ renderMusic: (id) => { rendered.push(id); return pcm(10); }, random });
+    sound.unlock();
+    const mix = [{ id: 'hall', kind: 'music', gain: 0.8, pan: 0 }];
+    for (let i = 0; i < 20; i++) {
+      sound.setAmbience(mix);
+      await settle();
+      sound.setAmbience([]);
+      sound.resetMusic(); // (a new run: the next song)
+    }
+    const n = radioTracks.length;
+    for (let start = 0; start + n <= rendered.length; start += n) {
+      assert.equal(new Set(rendered.slice(start, start + n)).size, n, `songs ${start}..${start + n - 1} are all different`);
+    }
+    for (let i = 1; i < rendered.length; i++) assert.notEqual(rendered[i], rendered[i - 1], 'never the same song twice running');
+  } finally { window.AudioContext = previous; }
+});
+
+test('tape wear sags the pitch and wobbles it, and the timeline runs at the sagged speed', async () => {
+  const f = fakeAudio(), previous = window.AudioContext;
+  window.AudioContext = f.AudioContext;
+  try {
+    const sound = createSound({ renderMusic: () => pcm(60) });
+    sound.unlock();
+    const mix = [{ id: 'hall', kind: 'music', gain: 0.8, pan: 0 }];
+    sound.setAmbience(mix); await settle(); sound.setAmbience(mix);
+    const source = f.sources.find((s) => s.buffer?.numberOfChannels === 2);
+    assert.equal(source.detune.value, 0);
+    sound.setTapeWear(1);
+    assert.equal(source.detune.value, radio.tapeWear.detuneCents);
+    f.context().currentTime = 20;
+    sound.setAmbience([]);
+    f.context().currentTime = 21;
+    sound.setTapeWear(0);
+    sound.setAmbience(mix);
+    const resumed = f.sources.filter((s) => s.buffer?.numberOfChannels === 2).at(-1);
+    const sagged = 10 * 2 ** (radio.tapeWear.detuneCents / 1200);
+    assert.ok(Math.abs(resumed.started[1] - sagged) < 1e-6, 'ten seconds at the sagged speed is a little less than ten seconds of song');
+    sound.setAmbience([]);
+  } finally { window.AudioContext = previous; }
 });
 
 test('one strongest music speaker leaves space for mechanical ambience; reset rewinds the soundtrack', () => {
@@ -176,4 +274,18 @@ test('music volume is saved/restored and independent of master and environmental
     globalThis.localStorage = savedStorage;
     [audio.masterVolume, audio.ambienceVolume, audio.musicVolume] = volumes;
   }
+});
+
+test('the now-playing card shows the station and the song', async () => {
+  const { menuDom } = await import('./helpers/menuDom.js');
+  menuDom();
+  const { createRadioTicker } = await import('../src/ui/radioTicker.js');
+  const ticker = createRadioTicker();
+  assert.equal(ticker.showing, false);
+  ticker.show(trackById('escalatorBossa'));
+  assert.equal(ticker.showing, true);
+  assert.equal(ticker.title, 'Escalator Bossa');
+  assert.ok(ticker.element.textContent.includes(radio.station));
+  ticker.show(trackById('foodCourtFunk')); // (a second song restarts the card's timer)
+  assert.equal(ticker.title, 'Food Court Funk');
 });
