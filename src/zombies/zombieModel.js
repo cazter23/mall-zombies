@@ -1,7 +1,9 @@
 // =============================================================================
 // ZOMBIE MODEL
 // Faceted low-poly zombies, built from the type's config (config/zombies.js):
-//   Shopper:     grey-green skin, coordinated clothing/build/hair/accessories/face from config/shoppers.js
+//   Shopper:     grey-green skin, dressed as one of the 1986 mall-goer archetypes in config/shoppers.js (shopperModel.js),
+//                drawn with ONE vertex-coloured material and shared baked geometry (shopperBake.js): 8 draw calls
+//                whatever it wears. The Cart Pusher behind its cart wears the same looks.
 //   Mall Walker: matching tracksuit with stripes, headband, wristbands, white sneakers,
 //                silver hair, maybe a fanny pack; slimmer (type.modelScale)
 //   Cart Pusher: a shopper look pushing a shopping cart (type.cart, zombies/cartModel.js): arms out to the
@@ -17,7 +19,9 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { shoppers } from '../config/shoppers.js';
-import { chooseShopperAppearance } from './shopperAppearance.js';
+import { chooseShopperAppearance, lookRandom } from './shopperAppearance.js';
+import { createShopperDresser } from './shopperModel.js';
+import { paint, bakeShopper, createShopperMaterial } from './shopperBake.js';
 import { buildCart } from './cartModel.js';
 import { createMannequinModel } from './mannequinModel.js';
 import { createMascotModel } from './mascotModel.js';
@@ -42,10 +46,6 @@ function deformIndexedBox(segX, segY, segZ, fn) {
 }
 
 const unitBox = new THREE.BoxGeometry(1, 1, 1);
-
-const skirtBox = deformIndexedBox(1, 1, 1, (x, y, z) => (
-  y > 0 ? [x * shoppers.skirt.taper, y, z * shoppers.skirt.taper] : [x, y, z]
-));
 
 // Faceted upper skull/cranium: bevelled crown, angled temples, cheekbones, and recessed lower base.
 const craniumBox = deformIndexedBox(2, 2, 2, (x, y, z) => {
@@ -178,20 +178,45 @@ const SHAPE = {
   head: 0.3,
 };
 
-export function createZombieModel(type, { random = Math.random, appearance } = {}) {
+const wearsShopperLook = (type) => (type.id === 'shopper' || (type.cart && !type.boss)) && !type.outfit;
+
+/**
+ * `random`: the model's random numbers (default Math.random). `seed`: a Shopper look's seed (zombie.lookSeed): the look,
+ * skin and walk phase come from a random of its own (shopperAppearance.js lookRandom), so the same seed always builds the
+ * same Shopper. While it builds, that random also stands in for Math.random (Three.js draws on it for every object's
+ * id, and a look's piece count varies): building a Shopper never moves the game's own random numbers, so seeded tests
+ * don't change when a look does. `appearance`: a ready look (tests).
+ */
+export function createZombieModel(type, options = {}) {
+  if (!wearsShopperLook(type) || options.seed === null || options.seed === undefined || options.random) return buildZombieModel(type, options);
+  const random = lookRandom(options.seed);
+  const gameRandom = Math.random;
+  Math.random = random;
+  try {
+    return buildZombieModel(type, { ...options, random });
+  } finally {
+    Math.random = gameRandom;
+  }
+}
+
+function buildZombieModel(type, { random = Math.random, appearance } = {}) {
   if (type.mascot) return createMascotModel(type, random);
   if (type.plastic) return createMannequinModel(type);
+  const shopperLook = wearsShopperLook(type);
   const materials = [];
   const materialCache = new Map(); // per zombie: hit flashes must never affect its neighbours
   const ownedGeometry = [];
   const pick = (list) => list[Math.min(list.length - 1, Math.floor(random() * list.length))];
-  function mat(color) {
+  function realMat(color) {
     if (materialCache.has(color)) return materialCache.get(color);
     const m = new THREE.MeshStandardMaterial({ color, roughness: 0.85, flatShading: true });
     materials.push(m);
     materialCache.set(color, m);
     return m;
   }
+  // A Shopper is dressed in paints (shopperBake.js) and baked into one vertex-coloured material; everyone else gets a
+  // material per colour.
+  const mat = shopperLook ? paint : realMat;
   function block(material, w, h, d, x, y, z, parent, geo = unitBox) {
     const mesh = new THREE.Mesh(geo, material);
     mesh.scale.set(w, h, d);
@@ -200,33 +225,31 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
     return mesh;
   }
 
-  // Outfit: a matching tracksuit (one color for top and bottom) or a random shirt + pants.
+  // Outfit: a matching tracksuit (one color for top and bottom), a Shopper look (config/shoppers.js), or a random
+  // shirt + pants.
   const outfit = type.outfit ?? null;
-  const look = (type.id === 'shopper' || (type.cart && !type.boss)) && !outfit ? appearance ?? chooseShopperAppearance(random) : null;
-  const topStyle = look ? shoppers.tops[look.top] : null;
-  const width = look?.build.width ?? 1;
-  const skin = mat(pick(type.skinColors));
+  const look = shopperLook ? appearance ?? chooseShopperAppearance(random) : null;
+  const width = look ? shoppers.builds[look.build].width : 1; // (body width only: the head and hitboxes never move)
+  const skinColor = pick(type.skinColors);
+  const skin = mat(skinColor);
   const shirt = outfit ? mat(pick(outfit.tracksuitColors)) : mat(look?.palette.top ?? pick(type.shirtColors));
   const pants = outfit ? shirt : mat(look?.palette.pants ?? pick(type.pantsColors));
   const hair = mat(pick(type.hairColors));
   const eyes = mat(type.eyeColor);
   const stripe = outfit ? mat(outfit.stripeColor) : null;
   const S = SHAPE;
-  const fabric = look ? {
-    top: shirt, pants, skin, hair, eyes, inner: mat(look.palette.inner), trim: mat(look.palette.trim),
-    accessory: mat(look.accessoryColor), hardware: mat(shoppers.colors.hardware), stain: mat(shoppers.colors.stain),
-  } : {
-    top: shirt, pants, skin, hair, eyes, inner: stripe ?? hair, trim: stripe ?? shirt,
-    accessory: shirt, hardware: eyes, stain: hair,
+  const fabric = { // (the face's colours for everyone who isn't a Shopper)
+    top: shirt, pants, skin, hair, eyes, inner: stripe ?? hair, offWhite: stripe ?? hair, stain: hair, // (teeth as before)
   };
-  function addParts(parent, parts, scaleWidth = 1, forward = 0) {
+  function addParts(parent, parts) {
     for (const part of parts) {
       const [w, h, d] = part.size;
       const [x, y, z] = part.position;
-      const mesh = block(fabric[part.material], w * scaleWidth, h, d, x * scaleWidth, y, z - forward, parent);
+      const mesh = block(fabric[part.role], w, h, d, x, y, z, parent);
       mesh.rotation.z = part.rz;
     }
   }
+  const dress = look ? createShopperDresser(look, { skin: skinColor, eyes: type.eyeColor, shape: S, geometries: ANATOMY_GEOMETRIES, block }) : null;
 
   // root: at the feet, turned to face where the zombie faces.
   // fall: tips the whole body over when it dies (pivot at the feet); also scales slimmer types.
@@ -241,14 +264,11 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
     const hip = new THREE.Group();
     hip.name = side < 0 ? 'leftLeg' : 'rightLeg';
     hip.position.set(side * S.legGap * width, S.hipY, 0);
-    if (look && look.bottom !== 'trousers') {
-      block(skin, S.legWidth * width, S.hipY, S.legWidth + 0.02, 0, -S.hipY / 2, 0, hip, limbBoxY);
-      if (look.bottom === 'shorts') block(pants, S.legWidth * width + shoppers.clothingPadding, shoppers.shortsLength,
-        S.legWidth + 0.02 + shoppers.clothingPadding, 0, -shoppers.shortsLength / 2, 0, hip, limbBoxY);
-    } else block(pants, S.legWidth * width, S.hipY, S.legWidth + 0.02, 0, -S.hipY / 2, 0, hip, limbBoxY);
-    const barefoot = look?.wear === 'missingShoe' && side < 0;
-    const shoeMat = barefoot ? skin : mat(look?.palette.shoes ?? type.shoeColor);
-    block(shoeMat, S.legWidth + 0.01, 0.085, 0.26, 0, -S.hipY + 0.042, -0.04, hip, shoeBox);
+    if (dress) dress.leg(hip, side);
+    else {
+      block(pants, S.legWidth, S.hipY, S.legWidth + 0.02, 0, -S.hipY / 2, 0, hip, limbBoxY);
+      block(mat(type.shoeColor), S.legWidth + 0.01, 0.085, 0.26, 0, -S.hipY + 0.042, -0.04, hip, shoeBox);
+    }
     if (stripe) {
       block(stripe, 0.02, S.hipY - 0.1, 0.05, side * (S.legWidth / 2 + 0.006), -S.hipY / 2 + 0.02, 0, hip);
       // Mall Walker sneaker stripe accent
@@ -263,21 +283,11 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
   upper.name = 'upperBody';
   upper.position.y = S.hipY;
   fall.add(upper);
-  const torsoMat = fabric?.[topStyle?.torsoMaterial] ?? shirt;
-  block(torsoMat, S.torso.w * width, S.torso.h, S.torso.d, 0, S.torso.h / 2, 0, upper, torsoBox);
-  // Subtle shoulder caps at top of torso to bridge into the upper arms
-  block(shirt, (S.torso.w + 0.04) * width, 0.08, S.torso.d - 0.02, 0, S.torso.h - 0.035, 0, upper, jawBox);
-  if (look) {
-    addParts(upper, topStyle.parts, width);
-    // Jacket/cardigan fronts already supply their own layering: don't paint stripes over them.
-    if (!topStyle.torsoMaterial && look.top !== 'buttonUp') addParts(upper, shoppers.patterns[look.pattern], width);
-    if (look.wear === 'stain') addParts(upper, shoppers.stain, width, topStyle.stainForward ?? 0);
-    if (look.bottom === 'skirt') {
-      const skirt = new THREE.Mesh(skirtBox, pants);
-      skirt.scale.set(shoppers.skirt.width * width, shoppers.skirt.height, shoppers.skirt.depth);
-      skirt.position.y = -shoppers.skirt.height / 2;
-      upper.add(skirt);
-    }
+  if (dress) dress.torso(upper);
+  else {
+    block(shirt, S.torso.w, S.torso.h, S.torso.d, 0, S.torso.h / 2, 0, upper, torsoBox);
+    // Subtle shoulder caps at top of torso to bridge into the upper arms
+    block(shirt, S.torso.w + 0.04, 0.08, S.torso.d - 0.02, 0, S.torso.h - 0.035, 0, upper, jawBox);
   }
   if (stripe) block(stripe, 0.03, S.torso.h * 0.85, 0.02, 0, S.torso.h * 0.45, -S.torso.d / 2 - 0.006, upper); // zip
   if (outfit && random() < outfit.fannyPackChance) {
@@ -291,11 +301,8 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
     shoulder.name = side < 0 ? 'leftArm' : 'rightArm';
     shoulder.position.set(side * S.shoulderX * width, S.shoulderY, 0);
     const t = S.armThickness;
-    if (look) {
-      block(skin, t, t, S.sleeve, 0, 0, -S.sleeve / 2, shoulder, limbBoxZ);
-      const sleeve = look.wear === 'tornSleeve' && side < 0 ? shoppers.tornSleeveLength : shoppers.shortSleeveLength;
-      block(fabric[topStyle.sleeveMaterial ?? 'top'], t + 0.02, t + 0.02, sleeve, 0, 0, -sleeve / 2, shoulder, limbBoxZ);
-    } else block(shirt, t + 0.02, t + 0.02, S.sleeve, 0, 0, -S.sleeve / 2, shoulder, limbBoxZ);
+    if (dress) dress.upperArm(shoulder, side);
+    else block(shirt, t + 0.02, t + 0.02, S.sleeve, 0, 0, -S.sleeve / 2, shoulder, limbBoxZ);
     if (stripe) block(stripe, 0.02, 0.05, S.sleeve, side * (t / 2 + 0.016), 0, -S.sleeve / 2, shoulder);
     const elbow = new THREE.Group();
     elbow.position.z = -S.sleeve;
@@ -308,24 +315,21 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
     fingers.rotation.y = side * 0.28;
     const thumb = block(skin, 0.026, 0.028, 0.048, side * -0.028, 0.036, handZ - 0.008, elbow, jawBox);
     thumb.rotation.x = 0.35;
-    if (look && topStyle.sleeve === 'long') {
-      const length = look.wear === 'tornSleeve' && side < 0 ? shoppers.tornLongSleeveLength : shoppers.longSleeveLength;
-      block(shirt, t + shoppers.clothingPadding, t + shoppers.clothingPadding, length, 0, 0, -length / 2, elbow, limbBoxZ);
-    }
+    if (dress) dress.forearm(elbow, side); // (long sleeves, cuffs, and whatever is in the right hand)
     if (outfit) block(mat(outfit.wristbandColor), t + 0.025, t + 0.025, 0.06, 0, 0, -S.forearm + 0.09, elbow);
     upper.add(shoulder);
     return { shoulder, elbow };
   });
 
   // Cart Pusher: the cart stands on `root` (not `fall`), so it stays put when the zombie tips over dead.
-  const cart = type.cart ? buildCart(type.cart, mat, random) : null;
+  const cart = type.cart ? buildCart(type.cart, realMat, random) : null; // (real materials: the bake leaves it alone)
   if (cart) {
     root.add(cart);
     ownedGeometry.push(...cart.userData.geometries);
   }
 
   // Sometimes clutching a shopping bag in the right hand.
-  let carriesBag = look?.accessory === 'shoppingBag';
+  let carriesBag = dress?.hasBag ?? false;
   if (!look && !cart && random() < type.bagChance) {
     carriesBag = true;
     const bag = new THREE.Group();
@@ -352,39 +356,38 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
   block(skin, 0.028, 0.064, 0.044, -h / 2 - 0.004, h * 0.56, 0.01, neck, jawBox);
   block(skin, 0.028, 0.064, 0.044, h / 2 + 0.004, h * 0.56, 0.01, neck, jawBox);
 
-  if (look) addParts(neck, shoppers.hair[look.hair]);
+  if (dress) dress.head(neck); // (hair, hat, glasses, headphones)
   else if (!type.appearance) {
     block(hair, h + 0.02, 0.07, h + 0.02, 0, h + 0.04, 0.01, neck, craniumBox); // hair on top
     block(hair, h + 0.01, h * 0.55, 0.05, 0, h * 0.68, h / 2, neck, jawBox); // hair at the back
   }
-  addParts(neck, faceProfile.parts);
+  if (dress) dress.parts(neck, faceProfile.parts);
+  else addParts(neck, faceProfile.parts);
   if (outfit) block(mat(pick(outfit.headbandColors)), h + 0.03, 0.06, h + 0.03, 0, h * 0.86, 0, neck); // headband
   if (type.beanieColors) { // (the Shoplifter) a knit beanie: a cap over the top of the head and a folded cuff round it
     const knit = mat(pick(type.beanieColors));
     block(knit, h + 0.035, 0.11, h + 0.035, 0, h + 0.06, 0.005, neck, craniumBox);
     block(knit, h + 0.05, 0.05, h + 0.05, 0, h * 0.86, 0.005, neck);
   }
-  if (look) {
-    const accessory = shoppers.accessories[look.accessory];
-    addParts(upper, accessory.torso ?? [], width);
-    addParts(neck, accessory.head ?? []);
-    addParts(arms[1].elbow, accessory.hand ?? []);
-    root.userData.appearance = {
-      profile: look.profile, palette: look.palette.id, top: look.top, bottom: look.bottom,
-      build: look.build.id, hair: look.hair, accessory: look.accessory, wear: look.wear,
-      face: faceProfile.id,
-    };
-  }
+  if (dress) root.userData.appearance = { ...dress.summary };
 
   if (type.id === 'janitor') dressJanitor(type, { upper, neck, arms, mat, block });
   if (type.costume) dressEmployee(type, { upper, neck, arms, mat, block, ownedGeometry });
   const influencerRig = type.appearance ? dressInfluencer(type, { upper, neck, arms, legs, mat, block, ownedGeometry }) : null;
   const lastCustomerRig = type.id === 'lastCustomer' ? dressLastCustomer({ upper, neck, arms, mat, block, ownedGeometry }) : null;
 
-  // Batch meshes of the same material on each rigid bone across all zombie types.
+  // A Shopper: every bone's painted pieces become one shared, vertex-coloured mesh drawn with its one material.
+  let releaseBaked = null;
+  if (dress) {
+    const shopperMaterial = createShopperMaterial();
+    materials.push(shopperMaterial);
+    releaseBaked = bakeShopper(root, shopperMaterial, cart);
+  }
+
+  // Everyone else: batch meshes of the same material on each rigid bone.
   // Bones remain separate so clothes, bags and hair inherit the original walk/attack/death animation.
   const bones = [];
-  root.traverse((node) => {
+  if (!dress) root.traverse((node) => {
     if (node === cart) return;
     if (node.children.some((child) => child.isMesh)) bones.push(node);
   });
@@ -625,6 +628,7 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
       root.removeFromParent();
       for (const m of materials) m.dispose();
       for (const geometry of ownedGeometry) geometry.dispose();
+      releaseBaked?.(); // (shared Shopper geometry goes when the last Shopper using it does)
     },
   };
 }

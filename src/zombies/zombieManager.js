@@ -477,7 +477,10 @@ export function createZombieManager({
       // Overtime (game/closingTime.js) makes every zombie and boss tougher, on top of a summoned fan's own fraction.
       const extra = getHealthMultiplier();
       const health = extra === 1 ? zombieHealthFor(typeId, round) * healthMultiplier : Math.round(zombieHealthFor(typeId, round) * healthMultiplier * extra);
-      const zombie = new Zombie({ type, health: type.gold ? Math.round(health * mascotGold.healthMultiplier) : health, position, yaw, speed, round });
+      // Which Shopper look it wears (zombie.lookSeed): ONE draw per spawn, whatever the look turns out to be (building it
+      // never touches Math.random: zombieModel.js), so seeded tests stay put when a look changes.
+      const lookSeed = Math.floor(Math.random() * 2147483646) + 1;
+      const zombie = new Zombie({ type, health: type.gold ? Math.round(health * mascotGold.healthMultiplier) : health, position, yaw, speed, round, lookSeed });
       zombie.fanOwner = fanOwner;
       zombie.noRewards = !!fanOwner;
       zombie.onDeath = onZombieDeath;
