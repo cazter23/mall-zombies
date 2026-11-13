@@ -84,6 +84,17 @@ test('the facts a page quotes are the config\'s own', () => {
   }
   assert.ok(guideEntry('mallWalker').notes.join(' ').includes(String(zombieTypes.mallWalker.winded.standSeconds)));
   assert.ok(guideEntry('guard').tip.startsWith(String(bossTypes.guard.lockdown.headshots)));
+  assert.doesNotMatch(guideEntry('shopper').tip, /every gun/i);
+  assert.ok(guideEntry('sirWaffles').notes[0].includes(`RUNS at ${zombieTypes.mascot.mascot.exposedSpeed} m/s`));
+  assert.ok(!guideEntry('captainCoupon').notes[0].includes('then it RUNS'));
+  assert.ok(guideEntry('captainCoupon').notes[0].includes(`RUNS at ${zombieTypes.mascot.mascot.exposedSpeed} m/s`));
+  assert.ok(guideEntry('influencer').notes[0].includes(`${bossTypes.influencer.filming.relocateSeconds} seconds`));
+  assert.doesNotMatch(guideEntry('influencer').notes[0], /moves when I close in/i);
+  assert.doesNotMatch(guideEntry('lastCustomer').notes[0], /once the closing checklist is done/i);
+  assert.match(guideEntry('lastCustomer').notes[0], /validate parking/i);
+  assert.doesNotMatch(incentiveEntry('stockroomDelivery').summary, /half of every/i);
+  assert.match(incentiveEntry('stockroomDelivery').summary, /reserve.*held magazine/i);
+  assert.match(incentiveEntry('storeWideClearance').summary, /bosses there/i);
 });
 
 test('a page goes from unseen to memo to notes to tip; only the Shopper starts open', () => {

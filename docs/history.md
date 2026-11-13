@@ -1,5 +1,18 @@
 # Sunset Galleria: build history ("Current state")
 
+## 13 November 2026 - Survival Guide accuracy audit (`claude/hydrogen-guide-audit`)
+
+Audited every factual claim in the Staff Survival Guide (`src/config/guide.js` and the incentive summaries sourced from `src/config/powerUps.js`) against `src/config/zombies.js`, `bosses.js`, `powerUps.js`, `weapons.js`, `closingTime.js`, `src/zombies/` (`zombie.js`, `observation.js`, `bosses/*.js`), `src/weapons/` (`weapon.js`, `playerGun.js`, `gunStats.js`, `melee.js`, `returnToSender.js`), and `src/game/` (`incentiveEffects.js`, `closingTime.js`). Confirmed all 14 enemy/boss pages (including `lastCustomer`) and all 11 incentive pages are already present.
+
+Fixed only the inaccurate (`FALSE` / `PARTLY`) claims:
+- **Shopper `tip` (`src/config/guide.js`):** no longer claims headshots deal more than body shots "with every gun" (`bottleRocket` and `balloonLauncher` have `headshotMultiplier: 1` and blast `part: 'body'`, `leafBlower` `fireCone` passes `'body'`, and `returnToSender` uses fixed `INSTANT_KILL_DAMAGE` / `bigFraction`), and allows `3×` on `stargazer` (`twice as much or more`).
+- **Captain Coupon `notes[0]` (`src/config/guide.js` `mascotPage`):** added optional `afterPop` so Captain Coupon no longer shares the generic "then it RUNS at `5.6` m/s" claim; after shaking he goes for his helmet at `2.4` m/s (`mascotSeek`) and only runs at `exposedSpeed` (`5.6` m/s) if he gives up or loses his helmet a second time.
+- **Skylar Sparkle `notes[0]` (`src/config/guide.js`):** no longer claims she "moves when I close in"; `influencer.js` only picks a new spot when `spot` is missing/unreachable or her `${influencer.filming.relocateSeconds}` s timer expires.
+- **The Last Customer `notes[0]` (`src/config/guide.js`):** no longer claims she arrives "once the closing checklist is done"; she is booked in Customer Parking for the round after the duties are done and parking is validated (`closingValidated` -> `round + closingTime.finale.roundOffset`).
+- **Stockroom Delivery (`src/config/powerUps.js`):** `summary` (displayed on the guide page) and `hint` no longer claim it "Refills half of every equipped firearm’s magazine reserve"; `gun.restock(magazineFraction)` refills every equipped gun's full `refillReserve` (half on `returnToSender` via `refillFraction: 0.5`) and tops only the held gun's magazine to at least `50%` unless reloading or shell-loaded.
+- **Store-Wide Clearance `summary` (`src/config/powerUps.js`):** added `there` so boss damage is scoped accurately to bosses in that area of the floor (`inScope`).
+- **Tests & Docs (`tests/guide.test.js`, `docs/tests.md`):** pinned assertions covering these mechanics without altering any existing checks.
+
 ## 12 November 2026 - Review of the four Hydrogen text branches (text pools, PA pools, Kevin's pitches, voice guide)
 
 Merged through `claude/hydrogen-review`. The lines, voices and structure held up; fixed in review:
