@@ -187,7 +187,7 @@ src/
                         only) + yawKickSpring (sideways, part of the aim; `viewKickYaw`). addRecoil(pitch, roll, yaw)
                         for shots, addViewKick() for instant jolts (hits, melee),
                         updateView(dt) at the END of each tick; syncCamera interpolates both
-    vault.js            (blocksVault(body): a live body blocks a vault unless flagged ignoreVault, like Sunny.) Opt-in low-obstacle vault: jump on approach, full-cylinder path/headroom/landing
+    vault.js            (blocksVault(body): a live body blocks a vault unless flagged ignoreVault, like Sunny.) Opt-in low-obstacle vault (it goes where you LOOK: within feel.vault.maxLookDegrees of the vault's own direction, rails ledge.maxLookDegrees; the angled search paths only dodge a blocked landing; maxDepth is the thickness through the entered face): jump on approach, full-cylinder path/headroom/landing
                         checks (including live shootables), entry momentum on exit, interrupt on crowd shove
                         Balcony rails (collider.ledge, set by props.railing): always climbed straight over along the rail's
                         normal (up to 70 degrees off; pushing into it from a standstill counts), then a drop with no steering
