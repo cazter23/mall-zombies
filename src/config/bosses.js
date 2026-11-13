@@ -198,8 +198,8 @@ export const bossTypes = {
       kicker: 'Maintenance callback',
       lines: [
         'Mopwater Murray is back on shift. Fresh footprints were detected in aisle three.',
-        'Mopwater Murray has returned with a spare bucket. The earlier floor remained insufficiently wet.',
-        'Mopwater Murray is scrubbing the concourse again. Please step aside while he charges.',
+        'Mopwater Murray has returned with a spare bucket. The floor was not wet enough.',
+        'Mopwater Murray is scrubbing the concourse again. Please step aside while he runs.',
         'Mopwater Murray has clocked back in for rework. The spill situation requires attention.',
       ],
     },

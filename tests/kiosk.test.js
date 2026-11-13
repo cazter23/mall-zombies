@@ -655,6 +655,12 @@ test('Kevin PA pools (opened, stock): invariants, injected lineRandom picks ever
     assert.ok(!hasStatNumber(line), `stock PA line has stat number: ${line}`);
   }
 
+  // opened + stock share ONE PA banner: with the longest real values filled in, stay under the moved + stock worst case
+  // that was already in the game (moved lines are longer than opened ones).
+  const fillLong = (text) => text.replace('{where}', 'the Grand Atrium').replace('{stock}', 'Sparkler Cake, Bubble Wrap and Stadium Air Horn').replace('{pick}', 'Stadium Air Horn');
+  const longest = (list) => Math.max(...list.map((line) => fillLong(line).length));
+  assert.ok(longest(kiosk.pa.opened) + 1 + longest(kiosk.pa.stock) <= longest(kiosk.pa.moved) + 1 + longest(kiosk.pa.stock), 'opened + stock never longer than moved + stock');
+  assert.ok(longest(kiosk.pa.stock) <= 115, 'stock lines stay near the original length');
   const base = headlessGame();
   t.after(() => base.g.map.dispose());
   openAll(base, base.g);

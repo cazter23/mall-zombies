@@ -50,8 +50,8 @@ export const powerUps = {
     stockroomDelivery: {
       tier: 'common', name: 'STOCKROOM DELIVERY', color: 0xffc04d, weight: 1,
       magazineFraction: 0.5,
-      hint: 'REFILLS RESERVES · TOPS UP HELD MAGAZINE',
-      summary: 'Refills every equipped firearm’s reserve (half on Return to Sender) and tops the held magazine to at least half unless reloading or shell-loaded.',
+      hint: 'REFILLS YOUR RESERVES',
+      summary: 'Refills the reserve of every gun you carry and tops up the magazine in your hand.',
       icon: 'stockroom', sound: 'incentiveRestock',
       pa: { kicker: 'Employee incentive', text: 'Unscheduled stockroom delivery authorized. Please retain all packaging.' },
       need: { startBelowFraction: 0.85, maxAtFraction: 0.15, maxMultiplier: 4 },

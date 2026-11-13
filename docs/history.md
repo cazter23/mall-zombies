@@ -1,5 +1,17 @@
 # Sunset Galleria: build history ("Current state")
 
+## 13 November 2026 - Review of PA pools round two and the Survival Guide audit
+
+Merged through `claude/hydrogen-review-2`. The encore detection (met before this fight), the boss intro moving into the announcer table
+(only the Survival Guide also listens to bossSpawn, and its first sighting carries no PA line, so nothing is reordered) and every guide
+finding (checked: Skylar relocates on a timer or an unreachable spot; the finale is booked for the validation round + roundOffset) held up.
+Fixed in review:
+- **Kevin's opening PA:** `opened` and `stock` are joined in ONE banner; the new pools made it up to 233 characters (the original 147).
+  Both pools rewritten shorter (worst now 181, under the existing moved+stock 220). `opened` plays once a run, so "once again open" went.
+- **Murray's encore:** he runs, he doesn't charge; one 96-character line trimmed.
+- **Guide wording:** Captain Coupon's after-pop clause reads "then he goes back for it instead of running" (the twist explains the rest);
+  Stockroom Delivery's summary and hint lost the internals ("shell-loaded", Return to Sender's half) for plain words.
+
 ## 13 November 2026 - PA pools round two (`claude/hydrogen-pa-pools-2`)
 
 Converted three more high-frequency single-line PA moments into deadpan mall-PA pools using `pickPaLine` and cosmetic `paRandom` from `src/game/announcer.js` (never `Math.random` or gameplay randomness), preserving original lines at index `0`:

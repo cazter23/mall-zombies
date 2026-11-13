@@ -105,7 +105,7 @@ export const guideEntries = [
   }),
   mascotPage('captainCoupon', {
     memo: 'Mega Mart\'s discount superhero. His coupons expired some time ago. Legal would like it noted that so did he.',
-    afterPop: `then only RUNS at ${mascot.exposedSpeed} m/s if he gives up on the helmet or loses it a second time`,
+    afterPop: 'then he goes back for it instead of running',
     twist: `After the helmet pops he hurries back and puts it on again. That puts him back at ${pct(reclaim.reclaimHealthFraction)} health. He only manages it once.`,
     tip: `Shoot him while he is bent over the helmet: his head is bare. Or stand within ${reclaim.guardRadius} metres of it yourself and he gives up and rushes you.`,
   }),
