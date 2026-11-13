@@ -990,7 +990,7 @@ export const weapons = {
   // runs the same straight line up instead of down), so a bearing does twice the damage at 30 m that it does across a room, and it goes through a line
   // of zombies. Down the long Hallway one aimed headshot kills a Shopper up to about round 20; close up it is clumsy: a slow bolt, a wide hip cone
   // and below the Price Gun at 2 and 5 m (tests/balance.test.js). A REAL SCOPE (weapons/scope.js): aiming in fills the view with the eyepiece, the
-  // view sways in a slow figure eight (less crouched or prone), and each shot knocks your eye off it while the bolt is worked.
+  // view sways in a slow figure eight (less crouched or prone), and you stay in the scope while the bolt is worked between shots.
   stargazer: {
     id: 'stargazer', name: 'Stargazer 3000', fireMode: 'semi', clawOnly: true,
     damage: 300, headshotMultiplier: 3, // the headshot gun: the biggest multiplier there is
@@ -1012,11 +1012,11 @@ export const weapons = {
     },
     ads: { seconds: 0.38, fovMultiplier: 0.28, moveSpeedMultiplier: 0.6, offset: { x: 0, y: -0.1, z: -0.4 } },
     // The scope (weapons/scope.js). overlayFrom: the ADS amount where the eyepiece starts filling the view (all of it when fully aimed: the gun model
-    // is then not drawn). boltDropTo: after a shot the ADS amount falls back to this while the bolt is worked, and eases back in while aim is held.
+    // is then not drawn). Firing keeps you scoped: the bolt is worked without taking the eye off the eyepiece (tests/stargazer.test.js).
     // sway: the view drifts `degrees` each way in a figure eight every periodSeconds (pitchShare of it up and down), crouchMultiplier of it crouched or
     // prone. It moves the crosshair for real (shots go where you look): steady it by correcting, or get low.
     scope: {
-      overlayFrom: 0.75, boltDropTo: 0.35,
+      overlayFrom: 0.75,
       sway: { degrees: 0.22, periodSeconds: 3.4, pitchShare: 0.55, crouchMultiplier: 0.35 },
       look: { ring: '#0b1230', glass: 'rgba(40, 70, 140, 0.10)', reticle: '#ffd76a', stars: '#fff6c8' }, // the eyepiece overlay (ui/hud.js setScope)
     },

@@ -8,7 +8,7 @@ import { weapons } from '../src/config/weapons.js';
 
 const DEG = Math.PI / 180;
 const dt = 1 / 60;
-const scope = { overlayFrom: 0.8, boltDropTo: 0.4, sway: { degrees: 0.2, periodSeconds: 3, pitchShare: 0.6, crouchMultiplier: 0.4 } };
+const scope = { overlayFrom: 0.8, sway: { degrees: 0.2, periodSeconds: 3, pitchShare: 0.6, crouchMultiplier: 0.4 } };
 
 test('the eyepiece: nothing at the hip or below overlayFrom, all of the view when fully aimed, and never on a gun without a scope', () => {
   assert.equal(scopeOverlay(scope, 0), 0);
@@ -83,7 +83,7 @@ function aimRig(def) {
   return { aim: createAim({ def, input, player }), controls };
 }
 
-test('the bolt: a scoped shot drops ADS to boltDropTo, and holding aim brings it back within the ADS time; an unscoped gun keeps its aim', () => {
+test('firing keeps the aim: a shot from a scoped gun leaves ADS fully in (the eyepiece stays); so does an unscoped gun', () => {
   const base = weapons.rivetRifle;
   const scoped = { ...base, scope };
   const { aim } = aimRig(scoped);
@@ -91,9 +91,8 @@ test('the bolt: a scoped shot drops ADS to boltDropTo, and holding aim brings it
   assert.equal(aim.amount, 1);
   aim.onShot();
   aim.update(dt);
-  assert.ok(aim.amount < 0.5, `off the eyepiece after the shot (${aim.amount.toFixed(2)})`);
-  for (let t = 0; t < base.ads.seconds + 0.05; t += dt) aim.update(dt);
-  assert.equal(aim.amount, 1, 'back in the scope while aim is held');
+  assert.equal(aim.amount, 1, 'still fully aimed after the shot');
+  assert.equal(scopeOverlay(scope, aim.amount), 1, 'still looking through the eyepiece');
 
   const plain = aimRig(base).aim;
   for (let i = 0; i < 60; i++) plain.update(dt);

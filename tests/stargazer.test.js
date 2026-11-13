@@ -102,17 +102,22 @@ test('the scope in play: aimed in, the eyepiece fills the view; the view sways w
   assert.ok(Math.abs(g.player.yaw - yaw0) < 1e-9 && Math.abs(g.player.pitch - pitch0) < 1e-9, 'no drift left behind');
 });
 
-test('the bolt: a shot through the scope knocks the eye off the eyepiece, and holding aim brings it back before the next shot is ready', () => {
+test('firing while aimed keeps you in the scope: every tick of the shot and the bolt after it stays fully aimed, and a second shot does too', () => {
   const { t, g, fire } = setup();
   t.input.pressed.add('Mouse2');
   t.input.held.add('Mouse2');
   t.tick(Math.ceil(sg.ads.seconds / dt) + 2);
-  fire();
-  assert.ok(g.gun.aim.amount <= sg.scope.boltDropTo + 0.05, `off the eyepiece (${g.gun.aim.amount.toFixed(2)})`);
-  assert.ok(scopeOverlay(sg.scope, g.gun.aim.amount) === 0, 'the eyepiece is gone while the bolt is worked');
+  for (let shot = 0; shot < 2; shot++) {
+    const before = g.gun.weapon.magazine;
+    fire();
+    assert.equal(g.gun.weapon.magazine, before - 1, `shot ${shot + 1} went off`);
+    for (let i = 0; i < Math.ceil(sg.fireInterval / dt); i++) {
+      assert.equal(g.gun.aim.amount, 1, `still aimed ${i} ticks after shot ${shot + 1}`);
+      assert.equal(scopeOverlay(sg.scope, g.gun.aim.amount), 1, 'the eyepiece never leaves the view');
+      t.tick();
+    }
+  }
   assert.ok(t.sounds.includes('stargazerShot'));
-  t.tick(Math.ceil(sg.fireInterval / dt));
-  assert.equal(g.gun.aim.amount, 1, 'back in the scope by the time the bolt is closed');
   t.input.held.delete('Mouse2');
 });
 

@@ -134,9 +134,7 @@ export function createAim({ def, input, player }) {
     onShot() {
       bloom = Math.min(s.maxBloom, bloom + s.perShot);
       bloomRecoveryTimer = s.bloomRecoveryDelay ?? 0;
-      // A scoped gun (weapons/scope.js): the eye comes off the eyepiece to work the bolt, and eases back while aim is held.
-      // (Only the linear amount drops; prevAmount keeps last tick's, so the render eases out of the scope rather than cutting.)
-      if (def.scope) amount = Math.min(amount, def.scope.boltDropTo);
+      // (Firing never lowers the sights, scoped gun or not: the Stargazer 3000 stays in its scope between shots.)
     },
 
     // Nudges `direction` (unit vector) to a random point inside the current cone.

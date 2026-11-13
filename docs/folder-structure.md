@@ -242,7 +242,7 @@ src/
                         applySpread() picks a random direction inside the cone; applyConeSpread() also samples pellets;
                         pelletSpreadDegrees() blends their independent ADS cone. reset() (new run: hip, base spread).
                         update(dt, allowAim) (false mid weapon switch). One aim per carried gun
-                        onShot() on a gun with `scope` also drops the ADS amount to scope.boltDropTo (the bolt is worked off the eye; it eases back while aim is held).
+                        onShot() never lowers ADS, scoped gun or not (the Stargazer 3000 stays in its scope between shots).
     scope.js            The real scope of a gun with `scope` (the Stargazer 3000): scopeOverlay(scope, aimAmount) -> 0..1, how far the eyepiece fills the view
                         (0 below scope.overlayFrom; main.js draws it with hud.setScope and stops drawing the gun model at 1); scopeSwayOffset(scope, t, aim,
                         crouched) -> { yaw, pitch }, a slow figure eight scaled by the aim (smaller crouched or prone); createScopeSway() -> update(dt, scope,

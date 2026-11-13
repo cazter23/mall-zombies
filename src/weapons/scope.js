@@ -12,8 +12,7 @@
 //                                    change is applied, so dropping the scope gives back exactly what the sway took: no drift
 //                                    is ever left behind.
 //
-// The bolt: after each shot the ADS amount falls back to scope.boltDropTo (weapons/aim.js onShot), the eye comes off the
-// eyepiece while the bolt is worked, and it eases back in by itself while aim is still held.
+// Firing keeps you in the scope: the bolt is worked without lowering the sights (weapons/aim.js onShot leaves ADS alone).
 // =============================================================================
 
 const DEG_TO_RAD = Math.PI / 180;
