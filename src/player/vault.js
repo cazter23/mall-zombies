@@ -44,6 +44,9 @@ function crossing(position, dx, dz, box, padding = 0) {
 /** Does this live body block a vault's path or landing? Not a dead one, and never one flagged ignoreVault (Sunny). */
 export const blocksVault = (body) => body.isAlive && !body.ignoreVault;
 
+// Why a straight vault can fail that a slightly turned path might get round (searchPlan): the landing side, not the approach.
+const LANDING_REASONS = new Set(['no floor to land on', 'no room to start', 'path or landing blocked', 'not looking where it would take you']);
+
 export function createVault({ player, colliders, getBodies = () => [] }) {
   const cfg = feel.vault;
   const sample = new THREE.Vector3();
@@ -149,7 +152,9 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
         reason = 'wrong height';
         continue;
       }
-      if (raw.far - raw.near > cfg.maxDepth || raw.approach < minApproach) {
+      // maxDepth is the obstacle's THICKNESS straight through the face you enter (so a bench's length is refused), not the
+      // longer diagonal an angled run takes through it: that made deep counters refuse angles the angle limit allows.
+      if ((raw.far - raw.near) * raw.approach > cfg.maxDepth || raw.approach < minApproach) {
         reason = 'too steep an angle (along its long side)';
         continue;
       }
@@ -314,11 +319,15 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
       ledgeOnly = true;
       moving = cfg.ledge.pushSpeed;
     }
-    if (-Math.sin(player.yaw) * dx - Math.cos(player.yaw) * dz < Math.cos(cfg.maxLookDegrees * DEG_TO_RAD)) {
-      return { reason: 'not looking where you are going' };
-    }
     return { dx, dz, speed: moving, ledgeOnly };
   }
+
+  // Intent: a vault only goes roughly where you are LOOKING (feel.vault.maxLookDegrees between your view and the direction
+  // the vault would carry you). Your movement says whether and how fast; your view says you meant it. Checked against the
+  // vault's own direction (after any angled search, and a rail's straight-over line), not your velocity, so strafing along a
+  // counter, or a search path turned toward something you aren't facing, never vaults you sideways.
+  // A balcony rail (always climbed straight over) has its own, wider limit: ledge.maxLookDegrees.
+  const facing = (dx, dz, degrees = cfg.maxLookDegrees) => -Math.sin(player.yaw) * dx - Math.cos(player.yaw) * dz >= Math.cos(degrees * DEG_TO_RAD);
 
   // Try straight ahead, then a few slightly angled paths (a blocked landing can often be dodged).
   function searchPlan(start, floorY, t) {
@@ -328,8 +337,13 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
       const dx = t.dx * Math.cos(a) - t.dz * Math.sin(a);
       const dz = t.dx * Math.sin(a) + t.dz * Math.cos(a);
       const result = makePlan(start, floorY, dx, dz, t.speed, t.ledgeOnly);
-      if (result.plan || result.ledge) return result; // (a rail is always climbed straight over: turning the path changes nothing)
+      const plan = result.plan;
+      if (plan && !facing(plan.dx, plan.dz, result.ledge ? cfg.ledge.maxLookDegrees : cfg.maxLookDegrees)) { firstReason ??= 'not looking where it would take you'; continue; }
+      if (plan || result.ledge) return result; // (a rail is always climbed straight over: turning the path changes nothing)
       firstReason ??= result.reason;
+      // The turned paths only dodge a blocked LANDING. They never rescue a straight path that was refused for anything else
+      // (too steep an angle, too far, wrong height): turning 24 degrees into a counter you are running along is a sideways yank.
+      if (degrees === 0 && !LANDING_REASONS.has(result.reason)) break;
     }
     return { reason: firstReason };
   }
@@ -357,7 +371,9 @@ export function createVault({ player, colliders, getBodies = () => [] }) {
       if (ready.reason) return false;
       const t = travel();
       if (t.reason) return false;
-      return !!findObstacle(player.position, ready.floorY, t.dx, t.dz, cfg.magnetRange, t.ledgeOnly).box;
+      const found = findObstacle(player.position, ready.floorY, t.dx, t.dz, cfg.magnetRange, t.ledgeOnly);
+      // (only worth holding the jump for if the vault would go where you look: a rail's is straight over it)
+      return !!found.box && (found.box.ledge ? facing(found.dx, found.dz, cfg.ledge.maxLookDegrees) : facing(t.dx, t.dz));
     },
 
     // Would a jump press now end in a vault (now, or once the magnet brings you into reach)?

@@ -19,6 +19,21 @@ The wonder weapon felt underpowered for its rarity: it instant-killed, but one z
 - **Tests:** instantKill.test.js (one blast, the edge, the sides), returnQuest.test.js (labels once per blast), balance.test.js (the new role),
   closingTime.test.js (the Last Customer is returned from inside the cone, not from 30 m), skins.test.js roles; the model fixture regenerated for this
   gun only. The economy simulation was NOT rerun (about 90 minutes): the bot's income with this gun will have changed.
+## 13 November 2026 - The vault goes where you look
+
+Playtest: first the vault refused angled runs, then (after loosening it) it vaulted you sideways when you were not facing the
+counter. A headless matrix (real input, a counter, a deep counter and a bench; path angle x where you look x walk/sprint x the gap
+at the press) showed three causes:
+- Where you looked was ignored: `maxLookDegrees` 100 compared your view with your VELOCITY, so a pure strafe vaulted exactly like a
+  run straight at it. Now it compares your view with the direction the vault would carry you, at 55 degrees (rails: their own
+  `ledge.maxLookDegrees` 70, so angled runs at a rail still climb it, but strafing along a balcony looking along it never tips you over).
+- The angle limit leaked: a straight path refused as too steep was "rescued" by `directionSearchDegrees` turning it 12-24 degrees
+  into the counter, so skimming past at 85 degrees vaulted. The turned paths now only dodge a blocked landing.
+- `maxDepth` measured the diagonal an angled run takes through the obstacle, so a 0.9 m counter refused anything past ~45 degrees
+  (the original "angles don't vault"). It is now the thickness straight through the face you enter; `maxApproachDegrees` 75 -> 65
+  is then the one angle rule for every obstacle.
+Result on all three obstacles: running at it from straight-on to 60 degrees vaults (walk or sprint, from up to 3 m out), looking a
+little off your path is fine; strafing along it, looking well away, or skimming past at 65+ degrees is a plain jump.
 
 ## 13 November 2026 - Bottle Rocket Bazooka: a better model and a breech-loading reload (`claude/claw-guns`)
 
