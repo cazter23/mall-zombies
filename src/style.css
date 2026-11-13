@@ -516,16 +516,6 @@ kbd {
 .sale-tag.show {
   display: block;
 }
-.sale-tag.soon {
-  background: linear-gradient(90deg, #fff0cb 0%, #f3d58d 100%);
-  color: #2a1c2e;
-  box-shadow: 0 4px 0 #9a7432, 0 6px 16px rgba(243, 213, 141, 0.32);
-}
-.sale-tag.doorbuster {
-  background: linear-gradient(90deg, #ff3b4e 0%, #ff7a3d 100%);
-  color: #fff6e8;
-  box-shadow: 0 4px 0 #7f1422, 0 6px 20px rgba(255, 59, 78, 0.48);
-}
 .hud.dead .sale-tag {
   display: none;
 }
