@@ -416,3 +416,39 @@ test('Speechless is transient: loading the round-start save restores a fresh ful
   assert.equal(restored.state, 'spawning');
   assert.notEqual(g.interactions.prompt?.id, 'handReturn');
 });
+
+test('incentive temporary stat buffs are stripped from round-start saves and lastWasJackpot survives Save & Quit', (t) => {
+  const storage = memoryStorage();
+  const run = game(t, storage);
+  const { g } = run;
+  run.tick();
+  g.rounds.update = () => {};
+  g.powerUps.debugDrop('commissionDay');
+  run.tick();
+  g.powerUps.debugDrop('blackFriday');
+  run.tick();
+  assert.equal(g.stats.pointsMultiplier, 2);
+  assert.equal(g.stats.instantKill, true);
+
+  // Also restore a state where the last drop was a jackpot and snap at round 4 start.
+  const ps = g.powerUps.serialize();
+  ps.lastWasJackpot = true;
+  ps.lastType = 'blackFriday';
+  g.powerUps.restore(ps);
+  g.rounds.jumpTo(4);
+  run.tick();
+  assert.ok(g.saveGame.saveAndQuit());
+
+  const loaded = game(t, storage);
+  assert.equal(loaded.g.saveGame.load(), true);
+  assert.equal(loaded.g.stats.pointsMultiplier, 1, 'Commission Day multiplier does not leak across Save & Quit');
+  assert.equal(loaded.g.stats.instantKill, false, 'Black Friday instantKill does not leak across Save & Quit');
+  assert.equal(loaded.g.stats.bossDamageMultiplier, 1);
+  assert.equal(loaded.g.powerUps.effects.length, 0);
+  assert.equal(loaded.g.powerUps.lastWasJackpot, true, 'jackpot no-repeat flag survives Save & Quit');
+
+  // Legacy version 8 saves are cleanly ignored rather than loading removed incentive types.
+  storage.setItem(saveConfig.storageKey, JSON.stringify({ version: 8, round: 4, savedAt: Date.now(), data: {} }));
+  const legacy = game(t, storage);
+  assert.equal(legacy.g.saveGame.peek(), null);
+});

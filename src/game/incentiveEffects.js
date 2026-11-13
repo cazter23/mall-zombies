@@ -1,15 +1,27 @@
-// Temporary employee benefits. Damage is deferred until update: secondary kills
-// cannot recursively detonate or invalidate the shot currently being resolved.
+// Temporary employee benefits and detonated clearance effects. Damage is deferred until
+// update where secondary kills could otherwise invalidate the shot currently being resolved.
 import * as THREE from 'three';
+import { INSTANT_KILL_DAMAGE } from '../weapons/gunStats.js';
 import { PRICE_CATEGORIES } from './pricing.js';
+import { zombieCountForRound } from '../config/economy.js';
 
-export function createIncentiveEffects({ events, player, gun, zombies, stats, pricing, wallet, state, config, clearLine, findPosition }) {
+/** Store-Wide Clearance's one flat credit in `round`: bonus.perRoundZombie x that round's wave size, rounded to bonus.roundTo. */
+export function clearanceBonus(round, def) {
+  const { perRoundZombie, roundTo } = def.bonus;
+  return Math.round(perRoundZombie * zombieCountForRound(Math.max(1, round)) / roundTo) * roundTo;
+}
+
+// `areaAt(point)`: the map's area id for a point (map.areaAt), or null without one (Clearance then uses its radius).
+// `getRound()`: the round now (Clearance's bonus grows with it).
+export function createIncentiveEffects({ events, player, gun, zombies, stats, pricing, wallet, state, config, clearLine, findPosition,
+  areaAt = null, getRound = () => 1 }) {
   const effects = new Map();
   let bursts = [];
   const direct = source => source === 'gun' || source === 'melee';
-  const living = () => (zombies.zombies ?? []).filter(z => z.isAlive && z.state !== 'spawning');
-  const near = (a, b, radius) => Math.abs(a.y - b.y) <= config.floorTolerance
-    && Math.hypot(a.x - b.x, a.z - b.z) <= radius && clearLine(a, b);
+  const living = () => (zombies.zombies ?? []).filter(z => z.isAlive && z.state !== 'spawning' && !z.removed);
+  const onFloorInRadius = (a, b, radius) => Math.abs(a.y - b.y) <= config.floorTolerance
+    && Math.hypot(a.x - b.x, a.z - b.z) <= radius;
+  const near = (a, b, radius) => onFloorInRadius(a, b, radius) && clearLine(a, b);
   const candidates = (radius) => living().filter(z => !z.type.boss && !z.noRewards && near(player.position, z.position, radius))
     .sort((a, b) => a.position.distanceToSquared(player.position) - b.position.distanceToSquared(player.position));
 
@@ -18,6 +30,7 @@ export function createIncentiveEffects({ events, player, gun, zombies, stats, pr
     if (!effect) return;
     effects.delete(id);
     for (const [key, factor] of Object.entries(effect.modifiers ?? {})) stats[key] /= factor;
+    if (id === 'blackFriday') stats.instantKill = false;
     if (id === 'employeeDiscount') pricing?.clearCoupon();
     events.emit('powerUpEnd', { id, reason });
   }
@@ -26,7 +39,6 @@ export function createIncentiveEffects({ events, player, gun, zombies, stats, pr
     if (effects.has(id)) return false;
     if (id === 'paidBreak') return !!stats && stats.health < stats.maxHealth;
     if (id === 'mysteryShopper') return candidates(config.types[id].targetRadius).length > 0;
-    if (id === 'productRecall') return candidates(config.types[id].targetRadius).length >= 2;
     return true;
   }
 
@@ -34,14 +46,25 @@ export function createIncentiveEffects({ events, player, gun, zombies, stats, pr
     const def = config.types[id];
     end(id, 'replaced');
     const effect = { id, position: position.clone(), remaining: def.seconds, elapsed: 0, charges: def.charges, radius: def.radius, bossReward };
-    if (id === 'expressCheckout') effect.modifiers = { reloadSpeed: def.reloadMultiplier, switchSpeed: def.switchMultiplier };
-    if (id === 'overtimeApproved') effect.modifiers = { walkSpeed: def.speedMultiplier, sprintSpeed: def.speedMultiplier };
+    if (id === 'shiftBonus') {
+      effect.modifiers = {
+        reloadSpeed: def.reloadMultiplier,
+        switchSpeed: def.switchMultiplier,
+        walkSpeed: def.speedMultiplier,
+        sprintSpeed: def.speedMultiplier,
+      };
+    }
     if (id === 'lossPrevention') effect.modifiers = { meleeDamageMultiplier: def.damageMultiplier };
     if (id === 'paidBreak') effect.healing = def.healing;
+    if (id === 'commissionDay') effect.modifiers = { pointsMultiplier: def.pointsMultiplier };
+    if (id === 'blackFriday') {
+      effect.modifiers = { bossDamageMultiplier: def.bossDamageMultiplier };
+      stats.instantKill = true;
+    }
     if (id === 'employeeDiscount') pricing?.setCoupon({ fraction: def.fraction, maxSaving: def.maxSaving });
-    if (id === 'mysteryShopper' || id === 'productRecall') {
+    if (id === 'mysteryShopper') {
       effect.targets = candidates(def.targetRadius).slice(0, def.targets ?? 1);
-      if (effect.targets.length < (id === 'productRecall' ? 2 : 1)) return false;
+      if (!effect.targets.length) return false;
     }
     if (id === 'spillCleanup') {
       const behind = player.position.clone();
@@ -61,13 +84,54 @@ export function createIncentiveEffects({ events, player, gun, zombies, stats, pr
     for (const z of targets) if (z.isAlive && near(origin, z.position, def.radius ?? Infinity)) z.staggerAway(origin, def.stagger);
   }
 
+  // Kills non-boss zombies in the pickup's area, on its floor (no area: within radius), using source `'clearance'` (no
+  // per-kill payout), deals capped non-lethal damage to bosses there, and pays the single flat clearance bonus once.
+  function detonateClearance(origin) {
+    const def = config.types.storeWideClearance;
+    const area = areaAt?.(origin) ?? null;
+    const inScope = area
+      ? (p) => Math.abs(p.y - origin.y) <= config.floorTolerance && areaAt(p) === area
+      : (p) => onFloorInRadius(origin, p, def.radius);
+    const bonus = clearanceBonus(getRound(), def);
+    const killedPositions = [];
+    let bossesHit = 0;
+    for (const z of [...living()]) {
+      if (!inScope(z.position)) continue;
+      if (z.type?.boss) {
+        const crashScale = z.state === 'crashed' ? (z.type.charge?.crashDamageTakenMultiplier ?? 1) : 1;
+        const scale = (z.damageTakenMultiplier ?? 1) * (z.vulnerableTimer > 0 ? (z.vulnerableMultiplier ?? 1) : 1) * crashScale;
+        const floor = Math.max(1, (z.type.damageFloor ?? 0) + 1);
+        const maxAllowed = Math.max(0, (z.health - floor) / Math.max(1, scale));
+        const deal = Math.min(maxAllowed, (z.maxHealth * def.bossDamageFraction) / Math.max(1, scale));
+        if (deal > 0) {
+          z.takeHit({ damage: deal, part: 'body', source: 'clearance' });
+          bossesHit += 1;
+        }
+      } else {
+        const pos = z.position.clone();
+        const result = z.takeHit({ damage: INSTANT_KILL_DAMAGE, part: 'body', source: 'clearance' });
+        if (result?.killed) killedPositions.push(pos);
+      }
+    }
+    wallet?.award(bonus);
+    events.emit('clearanceDetonated', {
+      position: origin.clone(),
+      area,
+      radius: area ? null : def.radius,
+      kills: killedPositions.length,
+      bossesHit,
+      positions: killedPositions,
+      flatBonus: bonus,
+    });
+  }
+
   const off = [
     events.on('kill', ({ zombie, source }) => {
       if (state.over || zombie.noRewards) return;
       const mystery = effects.get('mysteryShopper');
       if (mystery?.targets.includes(zombie)) {
         if (direct(source)) {
-          wallet?.earn(config.types.mysteryShopper.points);
+          wallet?.award(config.types.mysteryShopper.points);
           for (const id of gun.slots) {
             const weapon = gun.weaponFor(id);
             // Keep any rounds already held above the current cap.
@@ -78,17 +142,11 @@ export function createIncentiveEffects({ events, player, gun, zombies, stats, pr
         }
         end(mystery.id, direct(source) ? 'completed' : 'targetLost');
       }
-      const recall = effects.get('productRecall');
-      if (recall?.targets.includes(zombie)) {
-        recall.targets = recall.targets.filter(z => z !== zombie && z.isAlive);
-        stagger(zombie.position, config.types.productRecall, recall.targets);
-        if (!recall.targets.length) end(recall.id, 'completed');
-      }
       if (!direct(source)) return;
-      const overtime = effects.get('overtimeApproved');
-      if (overtime) {
-        const def = config.types.overtimeApproved;
-        overtime.remaining = Math.min(def.maxSeconds - overtime.elapsed, overtime.remaining + def.killExtension);
+      const shift = effects.get('shiftBonus');
+      if (shift) {
+        const def = config.types.shiftBonus;
+        shift.remaining = Math.min(def.maxSeconds - shift.elapsed, shift.remaining + def.killExtension);
       }
       const liquidation = effects.get('inventoryLiquidation');
       if (liquidation) {
@@ -110,7 +168,14 @@ export function createIncentiveEffects({ events, player, gun, zombies, stats, pr
 
   return {
     get active() { return [...effects.values()]; },
-    useful, start,
+    useful, start, detonateClearance,
+    stripModifiers(targetStats) {
+      for (const effect of effects.values()) {
+        for (const [key, factor] of Object.entries(effect.modifiers ?? {})) targetStats[key] /= factor;
+        if (effect.id === 'blackFriday') targetStats.instantKill = false;
+      }
+      return targetStats;
+    },
     cleanSpill(position) {
       const spill = effects.get('spillCleanup');
       if (!spill || !near(position, spill.position, spill.radius)) return false;
@@ -121,13 +186,20 @@ export function createIncentiveEffects({ events, player, gun, zombies, stats, pr
       for (const effect of effects.values()) if (effect.bossReward) end(effect.id, 'roundDiscard');
     },
     update(dt) {
+      let quiet = null; // (worked out once, only if a holdWhileQuiet benefit is running)
       for (const effect of [...effects.values()]) {
         const def = config.types[effect.id];
+        // A jackpot's clock waits while no zombie is up to fight (between waves, the round break, all spawns still rising).
+        if (def.holdWhileQuiet) {
+          quiet ??= living().length === 0;
+          effect.held = quiet;
+          if (quiet) continue;
+        }
         const step = Math.min(dt, effect.remaining);
         effect.remaining -= dt;
         effect.elapsed += step;
         if (effect.id === 'paidBreak' && near(effect.position, player.position, def.radius)) {
-          const heal = Math.min(effect.healing, def.healPerSecond * step, stats.maxHealth - stats.health);
+          const heal = Math.max(0, Math.min(effect.healing, def.healPerSecond * step, stats.maxHealth - stats.health));
           stats.health += heal;
           effect.healing -= heal;
           if (effect.healing <= 0) { end(effect.id, 'spent'); continue; }
@@ -135,11 +207,11 @@ export function createIncentiveEffects({ events, player, gun, zombies, stats, pr
         if (effect.id === 'spillCleanup') {
           for (const z of living()) if (near(effect.position, z.position, def.radius)) z.applySlow(def.slowSeconds, def.slowFraction);
         }
-        if (effect.id === 'staffEntrance') {
+        if (effect.id === 'lossPrevention') {
           effect.pulse = Math.max(0, (effect.pulse ?? 0) - dt);
           if (player.isSprinting && effect.pulse === 0) {
-            stagger(player.position, def);
-            effect.pulse = def.pulseSeconds;
+            stagger(player.position, { radius: def.shoveRadius, stagger: def.shoveStagger });
+            effect.pulse = def.shovePulseSeconds;
           }
         }
         if (effect.targets) {

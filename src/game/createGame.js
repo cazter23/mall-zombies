@@ -138,7 +138,10 @@ export function createGame({
   // Every price the player pays goes through here (base price from config/economy.js + any discount).
   const pricing = createPricing();
   // Points. Every gain/spend shows a "+60" / "-500" pop-up by the counter.
-  const wallet = createWallet({ onChange: (amount, points, style) => style ? hud.pointsPopup(amount, style) : hud.pointsPopup(amount) });
+  const wallet = createWallet({
+    onChange: (amount, points, style) => style ? hud.pointsPopup(amount, style) : hud.pointsPopup(amount),
+    getMultiplier: () => stats.pointsMultiplier,
+  });
   const runStats = createRunStats();
   events.on('purchase', ({ kind, id, cost }) => pricing.spendVoucher(kind, id, cost));
   events.on('playerDeath', () => {
@@ -456,12 +459,12 @@ export function createGame({
   // Once you're dead nothing more is paid or counted (a burning zombie dying later doesn't change
   // the results screen).
   events.on('hit', (hit) => {
-    if (!runFrozen() && !hit.killed) wallet.earn(pointsForHit(hit));
+    if (!runFrozen() && !hit.killed) wallet.award(pointsForHit(hit));
   });
-  events.on('kill', ({ zombie, headshot, melee }) => {
-    if (!runFrozen()) wallet.earn(pointsForHit({
+  events.on('kill', ({ zombie, headshot, melee, source }) => {
+    if (source === 'clearance') return;
+    if (!runFrozen()) wallet.award(pointsForHit({
       target: zombie, killed: true, headshot, melee,
-      killMultiplier: powerUps?.killMultiplier(zombie.position) ?? 1,
       killPayMultiplier: stats.killPayMultiplier,
     }), wardrobe.wearing('accessory') === 'goldCard' ? 'goldCard' : undefined);
   });
@@ -477,7 +480,7 @@ export function createGame({
   events.on('mascotHeadPop', ({ zombie, headshot, source, again }) => {
     const earned = source === 'melee' || (source === 'gun' && headshot);
     if (runFrozen() || again || zombie.noRewards || !earned) return;
-    wallet.earn(economy.payouts.helmetPopBonus);
+    wallet.award(economy.payouts.helmetPopBonus);
     hud.showAnnouncement({ ...zombie.type.mascot.helmetPopLine, priority: 0 });
   });
   // A hard landing (feel.fall): the same hurt as a zombie's swing, without a zombie.
@@ -535,7 +538,8 @@ export function createGame({
   events.on('ritualCollect', ({ certificate }) => hud.showCertificate(certificate)); // (after its PA line)
 
   powerUps = createPowerUps({
-    events, player, gun, zombies, colliders, state, stats, pricing, wallet,
+    events, player, gun, zombies, colliders, state, stats, pricing, wallet, interactions,
+    areaAt: (point) => map.areaAt?.(point) ?? null, // (Store-Wide Clearance clears the area it lies in)
     view: createPowerUpView(scene, colliders),
   });
   configureBossVouchers({ pricing, wallet, map, gun, state });
@@ -574,6 +578,12 @@ export function createGame({
     const visual = incentiveConfig.types.inventoryLiquidation;
     effects.splat(position, new Vector3(0, 1, 0), visual.splatColors, visual.splatCount);
     sound.play('incentiveSecurity');
+  });
+  events.on('clearanceDetonated', ({ positions }) => {
+    const visual = incentiveConfig.types.storeWideClearance;
+    for (const pos of positions) {
+      effects.splat(pos, new Vector3(0, 1, 0), visual.splatColors, visual.splatCount);
+    }
   });
 
   // Everything else in the map you interact with (wall buys, the ammo cache, later the claw machine,
@@ -692,9 +702,11 @@ export function createGame({
   // resetRun first). Every reset step above is either here or in transientSteps; tests/saveGame.test.js fails otherwise,
   // so a new system with run state decides whether a save keeps it.
   const saveSteps = [
-    // The stats as they are (clothes, box cutter tiers and health included): nothing is re-applied on top.
-    ['stats', () => ({ ...stats }), (data) => {
+    // The stats as they are (clothes, box cutter tiers and health included), stripped of any active
+    // temporary incentive modifiers so a round-start snapshot never leaks timed bonuses into a loaded run.
+    ['stats', () => powerUps.stripEffectModifiers({ ...stats }), (data) => {
       Object.assign(stats, data);
+      stats.instantKill = false;
       if (stats.meleeTier > 0) viewmodel.setMeleeColors?.(upgrades.melee[stats.meleeTier - 1].colors);
     }],
     ['wardrobe', () => wardrobe.serialize(), (data) => wardrobe.restore(data)],

@@ -61,6 +61,9 @@ export function createPlayerStats() {
     headshotDamageMultiplier: 1,
     reserveMultiplier: 1,
     killPayMultiplier: 1,
+    pointsMultiplier: 1,
+    instantKill: false,
+    bossDamageMultiplier: 1,
   };
 }
 

@@ -5,6 +5,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { headlessGame, snapshot } from './helpers/headlessGame.js';
 import { look } from '../src/config/look.js';
+import { powerUps } from '../src/config/powerUps.js';
+import { bossComfort } from '../src/config/bosses.js';
 
 const neonsOf = (g) => Object.values(g.map.horror.neons);
 const failedParts = (g) => neonsOf(g).reduce((n, neon) => n + neon.flickers.filter((p) => p.failed).length, 0);
@@ -89,6 +91,33 @@ test('a power cut darkens the area you are in (lamps, neon, emergency red), then
     // (This used to count single flips, which only passed for some seeded random sequences; adding lamps reshuffles them.)
     assert.ok(flips <= Math.ceil(2 * 3 * look.horror.powerCuts.stutterSeconds) + 1, `${flips} flips in the stutter`);
   } finally { Object.assign(look.horror.powerCuts, saved); }
+});
+
+test('Store-Wide Clearance stutters the lights of its area only, under 3 flashes a second, then restores them; Comfort dimming skips it', () => {
+  const flicker = powerUps.visual.clearanceFlicker;
+  const { g, tick, standAt } = headlessGame();
+  tick(5);
+  g.debug.run('doors');
+  standAt(0, 2); // the hallway
+  const hall = g.map.horror.neons.hallway;
+  g.events.emit('clearanceDetonated', { position: g.player.position.clone(), radius: 28, kills: 0, bossesHit: 0, positions: [], flatBonus: 0 });
+  let flips = 0, last = hall.power, sawDim = false, ticks = 0;
+  for (; ticks < Math.ceil(flicker.seconds * 60) + 5; ticks++) {
+    tick(1);
+    if (hall.power !== last) flips++;
+    last = hall.power;
+    sawDim ||= hall.power === flicker.neonLevel;
+    assert.equal(g.map.horror.neons.foodCourt.power, 1, 'other areas keep their lights');
+  }
+  assert.ok(sawDim, 'the hallway neon dipped');
+  assert.equal(hall.power, 1, 'and came back on');
+  assert.ok(flips <= Math.ceil(2 * 3 * flicker.seconds) + 1, `${flips} flips`);
+  const prev = bossComfort.dimPhoneFlash;
+  try {
+    bossComfort.dimPhoneFlash = true;
+    g.events.emit('clearanceDetonated', { position: g.player.position.clone(), radius: 28, kills: 0, bossesHit: 0, positions: [], flatBonus: 0 });
+    for (let i = 0; i < 60; i++) { tick(1); assert.equal(hall.power, 1, 'no stutter with Comfort dimming on'); }
+  } finally { bossComfort.dimPhoneFlash = prev; }
 });
 
 test('Horror lighting off puts everything back at once; Play again restores every light and equals a fresh game', () => {

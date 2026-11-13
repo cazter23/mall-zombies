@@ -102,7 +102,8 @@ export function snapshot(g) {
     totalSpent: g.wallet.totalSpent,
     powerUps: {
       progress: round(g.powerUps.progress), drops: g.powerUps.dropsThisRound,
-      pickup: g.powerUps.pickup?.id ?? null, active: g.powerUps.active?.id ?? null,
+      pickup: g.powerUps.pickup?.id ?? null, lastWasJackpot: g.powerUps.lastWasJackpot,
+      effects: g.powerUps.effects.map((e) => e.id),
     },
     round: g.rounds.round,
     started: g.rounds.started,

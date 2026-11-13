@@ -38,13 +38,13 @@ test('a power-up on the floor and a dropped key show a beacon in their colour, a
   const colliders = [];
   const view = createPowerUpView(scene, colliders);
   const shown = () => beaconsIn(view.root).filter((o) => o.visible);
-  view.update(null, null, 0, []);
+  view.update(null, 0, []);
   assert.equal(shown().length, 0);
-  const pickup = { id: 'blueLightSpecial', position: new THREE.Vector3(3, 0, 4), remaining: 20, age: 1 };
-  view.update(pickup, null, 1 / 60, []);
+  const pickup = { id: 'shiftBonus', position: new THREE.Vector3(3, 0, 4), remaining: 20, age: 1 };
+  view.update(pickup, 1 / 60, []);
   assert.equal(shown().length, 1);
   assert.deepEqual(shown()[0].position.toArray(), [3, 0, 4], 'standing on the floor under the prop');
-  view.update(null, null, 1 / 60, []);
+  view.update(null, 1 / 60, []);
   assert.equal(shown().length, 0);
 
   const keys = createClosingKeyView(scene);

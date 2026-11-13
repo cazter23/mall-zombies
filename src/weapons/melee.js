@@ -13,6 +13,7 @@
 // =============================================================================
 
 import * as THREE from 'three';
+import { applyInstantKillDamage } from './gunStats.js';
 import { castShot } from './hitscan.js';
 
 const DEG_TO_RAD = Math.PI / 180;
@@ -134,7 +135,7 @@ export function createMelee({ def, stats, player, input, getWeapon, shootables, 
     let anyKilled = false;
     for (const found of hits) {
       if (!found.target.isAlive) continue; // already dead this swing (a kill listener got it): no hit on a corpse
-      const killed = hitOne(found, damage);
+      const killed = hitOne(found, applyInstantKillDamage(damage, found.target, stats));
       first ??= { target: found.target, killed, hits: 0 };
       first.hits++;
       anyKilled ||= killed;

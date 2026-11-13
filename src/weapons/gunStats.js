@@ -44,6 +44,13 @@ export function isReturnable(target) {
   return !(target?.type?.boss || target?.type?.mascot);
 }
 
+/** Applies Black Friday one-hit eliminations (non-boss zombies) and boss damage multiplier when active. */
+export function applyInstantKillDamage(damage, target, stats) {
+  if (!stats?.instantKill || !target?.type) return damage;
+  if (target.type.boss) return damage * (stats.bossDamageMultiplier ?? 1);
+  return Math.max(damage, INSTANT_KILL_DAMAGE);
+}
+
 /**
  * Damage of ONE hit (one bullet, dart, nail or pellet on one zombie).
  *   hit:         { part: 'head' | 'body', distance }   (distance from the eye, meters)
@@ -54,14 +61,17 @@ export function isReturnable(target) {
  *                Mascot takes def.instantKill.bigFraction of its max health instead, times the gun's tier damage and the player's damage stat.
  */
 export function hitDamage(def, hit, index, stats, chargeScale = 1, target = null) {
-  if (def.instantKill && target) {
-    if (isReturnable(target)) return INSTANT_KILL_DAMAGE;
+  const effectiveTarget = target ?? hit?.target ?? null;
+  if (def.instantKill && effectiveTarget) {
+    if (isReturnable(effectiveTarget)) return INSTANT_KILL_DAMAGE;
     const tier = def.base ? def.damage / def.base.damage : 1; // (an Extended Warranty's damage helps against bosses too)
-    return target.maxHealth * (target.type?.returnToSenderFraction ?? def.instantKill.bigFraction) * tier * stats.damageMultiplier;
+    const base = effectiveTarget.maxHealth * (effectiveTarget.type?.returnToSenderFraction ?? def.instantKill.bigFraction) * tier * stats.damageMultiplier;
+    return applyInstantKillDamage(base, effectiveTarget, stats);
   }
   const head = hit.part === 'head' ? def.headshotMultiplier * (stats.headshotDamageMultiplier ?? 1) : 1;
   const pierce = def.pierce ? def.pierce.damageFalloff[Math.min(index, def.pierce.damageFalloff.length - 1)] : 1;
-  return def.damage * chargeScale * head * damageFalloff(hit.distance, def.falloff) * pierce * stats.damageMultiplier;
+  const base = def.damage * chargeScale * head * damageFalloff(hit.distance, def.falloff) * pierce * stats.damageMultiplier;
+  return applyInstantKillDamage(base, effectiveTarget, stats);
 }
 
 /** One trigger cycle (a burst counts as one cycle). */

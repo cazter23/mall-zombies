@@ -2,11 +2,14 @@
 // permanent record (game/guideSave.js), then the lost property that has been logged and the summary it unlocks. Plain DOM, driven by the main loop like the weapon locker, so the title's idle
 // saver also stops the turning model. All words and numbers: config/guide.js.
 import * as THREE from 'three';
-import { guide as cfg, guideEntries, guideSections, guideStage } from '../config/guide.js';
+import { guide as cfg, guideEntries, guideSections, guideStage, incentiveEntries } from '../config/guide.js';
+import { powerUps } from '../config/powerUps.js';
 import { Zombie } from '../zombies/zombie.js';
 import { lostFound } from '../config/lostFound.js';
 import { lostFoundProgress } from '../game/lostFound.js';
 import { buildLostPropertyModel } from '../game/features/lostProperty.js';
+import { buildIncentiveModel } from '../fx/powerUpView.js';
+import { incentiveIconSvg } from './incentiveHud.js';
 
 /**
  * The turning model beside a page: the real zombie (its own model and walk animation), walking on the spot.
@@ -55,6 +58,9 @@ export function createGuidePreview(host, { makeRenderer = (options) => new THREE
       if (type.parts) { // lost property: its own small model, turning, nothing to animate
         prop = { item: type, ...buildLostPropertyModel(type) };
         root = prop.group;
+      } else if (type.incentiveId) { // incentive pickup: shared model (disposing clears group, never shared assets)
+        prop = { item: type, ...buildIncentiveModel(type.incentiveId) };
+        root = prop.group;
       } else {
         subject = new Zombie({ type, health: 1, position: new THREE.Vector3(), yaw: 0 });
         subject.state = 'chasing';
@@ -82,6 +88,7 @@ export function createGuidePreview(host, { makeRenderer = (options) => new THREE
         camera.updateProjectionMatrix();
       }
       if (subject) pose(dt);
+      if (prop?.group?.userData?.halo) prop.group.userData.halo.rotation.z += dt * powerUps.visual.jackpotHaloSpinSpeed;
       pivot.rotation.y += dt * c.rotationSpeed;
       renderer.render(scene, camera);
     },
@@ -136,9 +143,10 @@ export function createGuideScreen({ save, onBack, onTurn = null, createPreview =
   const stamp = element.querySelector('.guide-stamp');
   const page = element.querySelector('.guide-page');
   const back = element.querySelector('.guide-back');
-  // Every page of the binder, in order.
+  // Every page of the binder, in section order.
   const pages = [
     ...guideEntries.map((entry) => ({ id: entry.id, section: entry.section, kind: 'entry', entry })),
+    ...incentiveEntries.map((incentive) => ({ id: 'incentive:' + incentive.id, section: 'incentives', kind: 'incentive', incentive })),
     ...lostFound.items.map((item, at) => ({ id: 'lost:' + item.id, section: 'lostFound', kind: 'item', item, number: at + 1 })),
     { id: 'lost:report', section: 'lostFound', kind: 'report' },
   ];
@@ -152,11 +160,13 @@ export function createGuideScreen({ save, onBack, onTurn = null, createPreview =
   };
   // How far a page has got, 0..3, whatever its kind (the contents' ticks and the complete count read this).
   const stageOf = (leaf) => leaf.kind === 'entry' ? standing(leaf.entry).stage
-    : leaf.kind === 'item' ? (save.found(leaf.item.id) ? 3 : 0)
-      : (lostFoundProgress(save).complete ? 3 : 0);
+    : leaf.kind === 'incentive' ? (save.discovered(leaf.incentive.id) ? 3 : 0)
+      : leaf.kind === 'item' ? (save.found(leaf.item.id) ? 3 : 0)
+        : (lostFoundProgress(save).complete ? 3 : 0);
   const titleOf = (leaf) => leaf.kind === 'entry' ? (stageOf(leaf) ? leaf.entry.name : cfg.unknownName)
-    : leaf.kind === 'item' ? (stageOf(leaf) ? leaf.item.name : cfg.lost.unknownName)
-      : (stageOf(leaf) ? lostFound.report.title : cfg.lost.sealedName);
+    : leaf.kind === 'incentive' ? (stageOf(leaf) ? leaf.incentive.name : cfg.incentives.unknownName)
+      : leaf.kind === 'item' ? (stageOf(leaf) ? leaf.item.name : cfg.lost.unknownName)
+        : (stageOf(leaf) ? lostFound.report.title : cfg.lost.sealedName);
   const add = (parent, tag, className, text) => {
     const node = document.createElement(tag);
     if (className) node.className = className;
@@ -208,6 +218,33 @@ export function createGuideScreen({ save, onBack, onTurn = null, createPreview =
       add(sticky, 'h3', '', cfg.tipHeading);
       add(sticky, 'p', '', entry.tip);
     } else add(page, 'p', 'guide-pencil', cfg.lockedTip(entry.tipAt - kills));
+  }
+  // An employee incentive: locked as ??? until first actual pickup, then icon, summary and PA flavour.
+  function incentivePage({ incentive }, found) {
+    const total = incentiveEntries.length;
+    if (!found) {
+      add(page, 'h2', '', cfg.incentives.unknownName);
+      add(page, 'p', 'guide-title', cfg.incentives.unknownTitle);
+      const blank = add(page, 'dl', 'guide-blank');
+      for (const field of cfg.incentives.blankFields) { add(blank, 'dt', '', field); add(blank, 'dd'); }
+      add(page, 'p', 'guide-small-print', cfg.incentives.unknownBody);
+      return;
+    }
+    const headingRow = add(page, 'div', 'guide-incentive-head');
+    const iconBadge = add(headingRow, 'span', 'guide-incentive-icon');
+    iconBadge.style.setProperty('--incentive-color', '#' + incentive.color.toString(16).padStart(6, '0'));
+    iconBadge.innerHTML = incentiveIconSvg(incentive.id);
+    add(headingRow, 'h2', '', incentive.name);
+    add(page, 'p', 'guide-title', cfg.incentives.itemOf(incentive.number, total));
+    const minRound = incentive.tier === 'jackpot' ? powerUps.jackpot.firstRound : powerUps.firstRound;
+    facts([[cfg.incentives.tierLabel, incentive.tierLabel], [cfg.incentives.firstRoundLabel, `Round ${minRound}+`]]);
+    add(page, 'h3', '', cfg.incentives.effectHeading);
+    add(page, 'p', 'guide-incentive-summary', incentive.summary);
+    if (incentive.paText) {
+      const note = add(page, 'aside', 'guide-tip guide-incentive-pa');
+      add(note, 'h3', '', `${cfg.incentives.paHeading} · ${incentive.paKicker}`);
+      add(note, 'p', 'guide-memo', incentive.paText);
+    }
   }
   // A piece of lost property: the log entry, and its yellow property tag once it has been handed in. No hint before.
   function itemPage({ item, number }, found) {
@@ -265,14 +302,20 @@ export function createGuideScreen({ save, onBack, onTurn = null, createPreview =
     add(letterhead, 'span', '', cfg.letterhead);
     add(letterhead, 'b', '', form.heading);
     add(letterhead, 'span', '', `${form.form} · ${cfg.pageOf(at + 1, pages.length)}`);
-    stamp.textContent = leaf.kind === 'entry' ? cfg.stamps[stage] : leaf.kind === 'item' ? cfg.lost.stamps[stage ? 1 : 0] : cfg.lost.reportStamps[stage ? 1 : 0];
-    cctv.textContent = leaf.kind === 'entry' ? cfg.cctv(at + 1) : cfg.lost.exhibit(leaf.number ?? 0);
+    stamp.textContent = leaf.kind === 'entry' ? cfg.stamps[stage]
+      : leaf.kind === 'incentive' ? cfg.incentives.stamps[stage ? 1 : 0]
+        : leaf.kind === 'item' ? cfg.lost.stamps[stage ? 1 : 0]
+          : cfg.lost.reportStamps[stage ? 1 : 0];
+    cctv.textContent = leaf.kind === 'entry' ? cfg.cctv(at + 1)
+      : leaf.kind === 'incentive' ? cfg.incentives.exhibit(leaf.incentive.number)
+        : cfg.lost.exhibit(leaf.number ?? 0);
     caption.textContent = stage === 0 || leaf.kind === 'report' ? '' : titleOf(leaf);
-    preview.show(stage === 0 ? null : leaf.kind === 'entry' ? leaf.entry.type : leaf.kind === 'item' ? leaf.item : null);
+    preview.show(stage === 0 ? null : leaf.kind === 'entry' ? leaf.entry.type : leaf.kind === 'incentive' ? leaf.incentive : leaf.kind === 'item' ? leaf.item : null);
     onTurn?.();
 
     page.replaceChildren();
     if (leaf.kind === 'entry') entryPage(leaf.entry, stage, save.kills(leaf.entry.id), form);
+    else if (leaf.kind === 'incentive') incentivePage(leaf, stage > 0);
     else if (leaf.kind === 'item') itemPage(leaf, stage > 0);
     else reportPage(stage > 0);
   }
@@ -288,14 +331,22 @@ export function createGuideScreen({ save, onBack, onTurn = null, createPreview =
       add(group, 'p', 'guide-blurb', section.blurb);
       const counted = leaves.filter((leaf) => leaf.kind !== 'report'); // (the summary is the prize, not one of the things to find)
       const done = counted.filter((leaf) => stageOf(leaf) === 3).length;
-      add(group, 'small', 'guide-count', section.id === 'lostFound' ? cfg.lost.sectionCount(done, counted.length) : cfg.sectionCount(done, counted.length));
+      const countText = section.id === 'lostFound' ? cfg.lost.sectionCount(done, counted.length)
+        : section.id === 'incentives' ? cfg.incentives.sectionCount(done, counted.length)
+          : cfg.sectionCount(done, counted.length);
+      add(group, 'small', 'guide-count', countText);
       for (const leaf of leaves) {
         const stage = stageOf(leaf);
         const row = add(group, 'button', `guide-entry${stage === 0 ? ' unknown' : ''}`);
         row.type = 'button';
         row.setAttribute('data-entry', leaf.id);
         row.setAttribute('data-stage', String(stage));
-        add(row, 'span', '', titleOf(leaf));
+        const nameWrap = add(row, 'span', 'guide-entry-label');
+        if (leaf.kind === 'incentive' && stage > 0) {
+          const icon = add(nameWrap, 'span', 'guide-entry-icon');
+          icon.innerHTML = incentiveIconSvg(leaf.incentive.id);
+        }
+        add(nameWrap, 'span', '', titleOf(leaf));
         add(row, 'small', '', leaf.kind === 'entry' ? cfg.rowStatus(stage) : stage ? cfg.rowStatus(1) : '');
         row.addEventListener('click', () => showPage(leaf.id));
         row.addEventListener('focus', () => showPage(leaf.id));

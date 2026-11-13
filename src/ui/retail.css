@@ -518,12 +518,26 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .certificate-note { padding-top: .4em; font: 600 .8em/1.25 var(--font-ui); opacity: .85; }
 .certificate-note[hidden] { display: none; }
 .certificate-remark { padding-top: .45em; border-top: 1px dashed var(--print-rule); font: 700 1.3em/1.1 'Caveat', cursive; }
+.incentive-meter { display: grid; gap: 3px; }
+.incentive-meter[hidden] { display: none; }
 .incentive-progress { width: 100%; height: 8px; border: 1px solid var(--plum); border-radius: 0; background: #d4c9b8; accent-color: var(--raspberry); }
 .incentive-progress::-webkit-progress-bar { background: repeating-linear-gradient(90deg, #ded3c1 0 8%, var(--paper) 8% 10%); }
 .incentive-progress::-webkit-progress-value { background: var(--raspberry); }
 .incentive-progress::-moz-progress-bar { background: var(--raspberry); }
-.incentive-drop { color: #843241; }
+.incentive-hud.is-near-full { border-top-color: #d98216; box-shadow: 0 0 12px rgba(255, 209, 71, 0.55), 2px 3px 0 #39294066; }
+.incentive-hud.is-near-full .incentive-label { color: #9c5600; font-weight: 700; }
+.incentive-hud.is-near-full .incentive-progress { border-color: #9c5600; accent-color: #e5a11a; box-shadow: 0 0 6px rgba(255, 209, 71, 0.75); }
+.incentive-hud.is-near-full .incentive-progress::-webkit-progress-value { background: linear-gradient(90deg, #d98216, #ffd147); }
+.incentive-hud.is-near-full .incentive-progress::-moz-progress-bar { background: linear-gradient(90deg, #d98216, #ffd147); }
+.incentive-hud.is-capped .incentive-heading,
+.incentive-hud.is-capped .incentive-meter { opacity: 0.62; filter: saturate(0.35); }
+.incentive-hud.is-capped .incentive-progress::-webkit-progress-value { background: #8f858d; }
+.incentive-hud.is-capped .incentive-progress::-moz-progress-bar { background: #8f858d; }
+.incentive-drop { color: #843241; display: flex; align-items: center; gap: 5px; }
+.incentive-drop.jackpot { color: #9c5600; }
 .incentive-zone { color: #175869; }
+.incentive-icon { width: 14px; height: 14px; flex: 0 0 auto; vertical-align: -2px; margin-right: 4px; }
+.incentive-effect.jackpot strong { color: #9c5600; }
 
 /* Compact purchase line. Only shortage/upgrade terms earn a second line. */
 .interact {
@@ -561,6 +575,11 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .skin-unlock-toast { padding: 10px 14px; background: var(--plum); color: var(--paper); border-left: 3px solid var(--mint); font: 500 var(--ui-body, 13px)/1.4 var(--font-ui); overflow-wrap: anywhere; }
 .skin-unlock-toast strong, .skin-unlock-toast span { display: block; }
 .skin-unlock-toast strong { color: var(--mint); }
+.incentive-discovery-toast { border-left-color: #ffe066; }
+.incentive-discovery-toast strong { color: #ffe066; }
+.incentive-discovery-toast > span { display: flex; align-items: center; gap: 6px; }
+.incentive-toast-icon { display: inline-flex; align-items: center; flex: 0 0 auto; color: #ffe066; }
+.incentive-toast-icon .incentive-icon { margin-right: 0; }
 /* The challenge tracker (ui/challengeTracker.js): pinned challenges under the round box, a shelf ticket per line. */
 .challenge-tracker { display: grid; gap: 3px; }
 .challenge-tracker[hidden] { display: none; }
@@ -1081,6 +1100,18 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .guide-tip { position: relative; clear: both; width: min(430px, 92%); margin: 20px 0 4px 26px; padding: 12px 16px 14px; background: linear-gradient(var(--guide-stickyEdge) 0 9px, var(--guide-sticky) 9px); color: var(--guide-ink); box-shadow: 2px 5px 8px rgba(0, 0, 0, .24); transform: rotate(-1.8deg); }
 .guide-tip h3 { margin: 4px 0 4px; font: 400 calc(17px * var(--gt)) / 1.1 'Permanent Marker', cursive; letter-spacing: .02em; text-transform: uppercase; color: var(--guide-marker); }
 .guide-tip p { margin: 0; font: 700 calc(21px * var(--gt)) / 1.2 'Caveat', cursive; }
+
+/* Employee Incentives pages in the Survival Guide */
+.guide-section[data-section="incentives"] .guide-tab { background: #81e5b0; color: #241826; }
+.guide-entry-label { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.guide-entry-icon { display: inline-flex; width: 15px; height: 15px; flex: 0 0 auto; color: var(--guide-stamp); }
+.guide-entry-icon .incentive-icon { width: 100%; height: 100%; margin: 0; }
+.guide-incentive-head { display: flex; align-items: center; gap: 10px; }
+.guide-incentive-icon { display: inline-grid; place-items: center; width: 34px; height: 34px; flex: 0 0 auto; background: var(--guide-ink); color: var(--incentive-color, var(--guide-sticky)); border: 1px solid var(--guide-paperEdge); box-shadow: 2px 2px 0 rgba(0, 0, 0, .2); }
+.guide-incentive-icon .incentive-icon { width: 20px; height: 20px; margin: 0; }
+.guide-incentive-summary { margin: 2px 0 0; max-width: 46ch; font: 600 calc(14px * var(--gt)) / 1.45 var(--font-ui); }
+.guide-incentive-pa { transform: rotate(.8deg); margin-top: 22px; }
+.guide-incentive-pa p { font: italic 400 calc(15px * var(--gt)) / 1.45 'Playfair Display', Georgia, serif; }
 
 /* Lost & Found pages: the property tag is the item's own yellow card; the incident summary is typed, then signed by nobody. */
 .guide-section[data-section="lostFound"] .guide-tab { background: var(--guide-sticky); }

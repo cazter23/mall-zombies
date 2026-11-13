@@ -9,7 +9,8 @@
 import { feel } from '../config/feel.js';
 import { closingTime } from '../config/closingTime.js';
 import { createScreens } from './screens.js';
-import { createIncentiveHud } from './incentiveHud.js';
+import { createIncentiveHud, incentiveIconSvg } from './incentiveHud.js';
+import { powerUps } from '../config/powerUps.js';
 import { createRitualHud } from './ritualHud.js';
 import { createOrderFormView } from './orderForm.js';
 import { createFittingRoomView } from './fittingRoomPicker.js';
@@ -35,7 +36,7 @@ function el(tag, className) {
   return node;
 }
 
-export function createHud({ locker = null, guide = null, challenges = null } = {}) {
+export function createHud({ locker = null, guide = null, challenges = null, onIncentiveReady = null } = {}) {
   const hud = el('div', 'hud');
   const eyewear = el('div', 'wardrobe-eyewear');
   eyewear.setAttribute('aria-hidden', 'true');
@@ -45,7 +46,7 @@ export function createHud({ locker = null, guide = null, challenges = null } = {
   const history = createNoticeHistory();
   const phoneFlash = createBossFlashView();
   hud.append(phoneFlash.element);
-  const incentives = createIncentiveHud();
+  const incentives = createIncentiveHud({ onNearFull: () => onIncentiveReady?.() });
   hud.append(incentives.element);
   const ritualTicket = createRitualHud();
   hud.append(ritualTicket.element);
@@ -135,18 +136,37 @@ export function createHud({ locker = null, guide = null, challenges = null } = {
   purchaseStamp.setAttribute('role', 'status');
   hud.append(purchaseStamp);
   let purchaseTimer = null;
-  const skinToast = el('div', 'skin-unlock-toast');
-  skinToast.setAttribute('role', 'status');
-  skinToast.hidden = true;
-  const skinToastTitle = el('strong');
-  skinToastTitle.textContent = skinNotices.toastTitle;
-  const skinToastText = el('span');
-  skinToast.append(skinToastTitle, skinToastText);
-  let skinToastTimer = null;
+  function makeToast(className, titleText) {
+    const box = el('div', className);
+    box.setAttribute('role', 'status');
+    box.hidden = true;
+    const title = el('strong');
+    title.textContent = titleText;
+    const text = el('span');
+    box.append(title, text);
+    let timer = null;
+    return {
+      element: box,
+      show(content, seconds) {
+        clearTimeout(timer);
+        if (typeof content === 'string') text.textContent = content;
+        else text.replaceChildren(...content);
+        box.hidden = false;
+        timer = setTimeout(() => { box.hidden = true; }, seconds * 1000);
+      },
+      hide() {
+        clearTimeout(timer);
+        timer = null;
+        box.hidden = true;
+      },
+    };
+  }
+  const skinToast = makeToast('skin-unlock-toast', skinNotices.toastTitle);
+  const discoveryToast = makeToast('skin-unlock-toast incentive-discovery-toast', powerUps.meter.newDiscoveryLabel);
   function clearNotices() {
     announcements.clear();
-    clearTimeout(skinToastTimer);
-    skinToast.hidden = true;
+    skinToast.hide();
+    discoveryToast.hide();
     clearTimeout(purchaseTimer);
     purchaseStamp.classList.remove('show');
     roundBanner.classList.remove('show');
@@ -357,7 +377,7 @@ export function createHud({ locker = null, guide = null, challenges = null } = {
   const topStack = el('div', 'hud-top-stack');
   topStack.append(bossBar, roundBanner, ...closingLines.map(({ marker }) => marker.element), bagMarker.element);
   const rightStack = el('div', 'hud-right-stack');
-  rightStack.append(saleTag, clawTag, announceBanner, skinToast, certificate.element);
+  rightStack.append(saleTag, clawTag, announceBanner, skinToast.element, discoveryToast.element, certificate.element);
   hud.append(leftStack, topStack, rightStack);
   // A workshop order starts below any active boss display. Measure its real
   // height, including wrapped names and the player's chosen text size.
@@ -413,10 +433,17 @@ export function createHud({ locker = null, guide = null, challenges = null } = {
       events.on('skinUnlocked', ({ gunId, skinId }) => {
         const skin = gunSkin(gunId, skinId);
         if (!skin) return;
-        clearTimeout(skinToastTimer);
-        skinToastText.textContent = skin.shared ? skinNotices.toastShared(skin.name) : skinNotices.toastText(weapons[gunId].name, skin.name);
-        skinToast.hidden = false;
-        skinToastTimer = setTimeout(() => { skinToast.hidden = true; }, skinNotices.toastSeconds * 1000);
+        skinToast.show(skin.shared ? skinNotices.toastShared(skin.name) : skinNotices.toastText(weapons[gunId].name, skin.name), skinNotices.toastSeconds);
+      });
+      events.on('incentiveDiscovered', ({ id, name, found, total }) => {
+        const icon = el('span', 'incentive-toast-icon');
+        icon.innerHTML = incentiveIconSvg(id);
+        const label = el('span');
+        label.textContent = `${name} · ${found}/${total}`;
+        discoveryToast.show([icon, label], powerUps.meter.discoveryToastSeconds);
+      });
+      events.on('powerUpMeter', (meter) => {
+        incentives.setMeter(meter);
       });
       events.on('purchase', ({ label, kind, id, cost }) => {
         clearTimeout(purchaseTimer);
@@ -471,6 +498,10 @@ export function createHud({ locker = null, guide = null, challenges = null } = {
 
     setPowerUps(status) {
       incentives.update(status);
+    },
+
+    setIncentiveMeterEnabled(on) {
+      incentives.setEnabled(on);
     },
 
     // Build-A-Blaster's order ticket: null hides it (game/features/workshopRitual.js status).

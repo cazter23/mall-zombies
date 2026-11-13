@@ -2,10 +2,10 @@
 // Its own localStorage key (config/guide.js guideStorage), apart from the run save, career stats and skins.
 // Inject storage in Node; the browser supplies its own. Counting changes memory only: game/guide.js decides when to
 // write (a page gaining a paragraph, a run ending, Save & Quit, the page closing), never once per kill.
-import { guideStorage, guideEntry } from '../config/guide.js';
+import { guideStorage, guideEntry, incentiveEntry } from '../config/guide.js';
 import { lostItem } from '../config/lostFound.js';
 
-const blank = () => ({ version: guideStorage.version, seen: {}, kills: {}, found: {} }); // found: lost property logged (game/lostFound.js)
+const blank = () => ({ version: guideStorage.version, seen: {}, kills: {}, found: {}, discovered: {} }); // found: lost property; discovered: incentives
 const object = (value) => (value && typeof value === 'object' && !Array.isArray(value) ? value : {});
 const whole = (value) => (Number.isSafeInteger(value) && value >= 0 ? value : 0);
 // Only pages the book has: an unknown id (a later build's page, or junk) is dropped, never trusted as a key.
@@ -18,6 +18,7 @@ function normalize(raw) {
   data.kills = counts(raw.kills);
   for (const [id, seen] of Object.entries(object(raw.seen))) if (guideEntry(id) && seen === true) data.seen[id] = true;
   for (const [id, found] of Object.entries(object(raw.found))) if (lostItem(id) && found === true) data.found[id] = true; // (absent in a record from before Lost and Found: nothing found)
+  for (const [id, known] of Object.entries(object(raw.discovered))) if (incentiveEntry(id) && known === true) data.discovered[id] = true;
   // What the round a Save & Quit will replay has already been counted (game/guide.js), by page id.
   const replay = counts(raw.replay);
   if (Object.keys(replay).length) data.replay = replay;
@@ -30,6 +31,7 @@ export function createGuideSave({ storage, key = guideStorage.key } = {}) {
   let dirty = false; // memory holds something storage does not
   const cleared = new Set(); // pages the debug command emptied: a merge must not bring their old count back
   const lost = new Set(); // lost property the debug command un-logged: likewise
+  const forgotten = new Set(); // incentives the debug command cleared: likewise
 
   function read() {
     const raw = JSON.parse(storage?.getItem(key) ?? 'null');
@@ -61,9 +63,11 @@ export function createGuideSave({ storage, key = guideStorage.key } = {}) {
       for (const [id, count] of Object.entries(stored.kills)) if (!cleared.has(id)) data.kills[id] = Math.max(kills(id), count);
       for (const id of Object.keys(stored.seen)) if (!cleared.has(id)) data.seen[id] = true;
       for (const id of Object.keys(stored.found)) if (!lost.has(id)) data.found[id] = true;
+      for (const id of Object.keys(stored.discovered)) if (!forgotten.has(id)) data.discovered[id] = true;
       storage.setItem(key, JSON.stringify(data));
       cleared.clear();
       lost.clear();
+      forgotten.clear();
       dirty = false;
       return true;
     } catch {
@@ -102,6 +106,22 @@ export function createGuideSave({ storage, key = guideStorage.key } = {}) {
     lose(id) {
       delete data.found[id];
       lost.add(id);
+      dirty = true;
+    },
+    /** Employee incentives: has this incentive type been picked up at least once? */
+    discovered: (id) => data.discovered[id] === true,
+    /** Record a picked-up incentive type (memory only: game/guide.js flushes at once). True when first discovered. */
+    discover(id) {
+      if (!incentiveEntry(id) || data.discovered[id] === true) return false;
+      forgotten.delete(id);
+      data.discovered[id] = true;
+      dirty = true;
+      return true;
+    },
+    /** Debug: un-discover an incentive type. */
+    forgetIncentive(id) {
+      delete data.discovered[id];
+      forgotten.add(id);
       dirty = true;
     },
     /** True while memory holds something storage does not. */

@@ -34,6 +34,7 @@
 
 import { feel } from '../config/feel.js';
 import { bindings } from '../config/controls.js';
+import { PRICE_CATEGORIES } from './pricing.js';
 import * as THREE from 'three';
 
 const DEG_TO_RAD = Math.PI / 180;
@@ -132,6 +133,18 @@ export function createInteractions({ input, player, wallet, sound = null, onRelo
       const index = items.indexOf(item);
       if (index !== -1) items.splice(index, 1);
       if (focused === item) { focused = null; holdTime = 0; armed = false; }
+    },
+
+    // Live unbought point-priced items (read-only snapshot for incentive need weighting).
+    buyables() {
+      const list = [];
+      for (const item of items) {
+        if (!item.available() || item.quiet || item.blocked || item.owned) continue;
+        if (!PRICE_CATEGORIES.includes(item.kind)) continue;
+        const cost = item.cost;
+        if (typeof cost === 'number' && Number.isFinite(cost) && cost > 0) list.push({ kind: item.kind, cost });
+      }
+      return list;
     },
 
     // HUD ticket: null, or label/title/detail, kind/id, live cost/shortfall, canAfford, progress 0..1, denied.
