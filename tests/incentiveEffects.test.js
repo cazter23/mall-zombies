@@ -317,7 +317,36 @@ test('Spill floor rings and target markers render, track, hide, and dispose clea
   view.dispose(); assert.equal(scene.children.length, 0);
 });
 
-test('Paid Break heals inside the green circle up to its budget, respects walls/radius, and updates HUD + ring view', () => {
+// (Restored from main: the trim's rewrite below dropped the other-floor, wall and max-health checks.)
+test('Paid Break heals only in its circle and floor, respects walls/max health, and exhausts a finite budget', () => {
+  const t = scenario(), { g } = t;
+  g.stats.health = 10;
+  t.collect('paidBreak');
+  const effect = t.active('paidBreak');
+  const initial = g.stats.health;
+  g.player.position.x = 4;
+  g.powerUps.update(1);
+  assert.equal(g.stats.health, initial);
+  g.player.position.set(0, 6, 12);
+  g.powerUps.update(1);
+  assert.equal(g.stats.health, initial);
+  g.player.position.set(0.6, 0, 12);
+  const wall = new THREE.Box3(new THREE.Vector3(0.2, 0, 11), new THREE.Vector3(0.3, 3, 13));
+  g.colliders.push(wall);
+  g.powerUps.update(1);
+  assert.equal(g.stats.health, initial);
+  g.colliders.pop();
+  g.player.position.set(0, 0, 12);
+  g.powerUps.update(5);
+  assert.equal(g.stats.health, 70);
+  assert.equal(t.active('paidBreak'), undefined);
+  assert.equal(effect.healing, 0);
+  g.stats.health = g.stats.maxHealth - 1;
+  t.collect('paidBreak'); g.powerUps.update(1);
+  assert.equal(g.stats.health, g.stats.maxHealth);
+});
+
+test('Paid Break heals inside the green circle up to its budget, stops outside its radius, and updates HUD + ring view', () => {
   const t = scenario(), { g } = t;
   g.stats.health = 50;
   const at = g.player.position.clone();

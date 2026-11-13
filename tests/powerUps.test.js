@@ -18,6 +18,7 @@ import { createIncentiveHud } from '../src/ui/incentiveHud.js';
 import { createHud } from '../src/ui/hud.js';
 import { settingDefs } from '../src/config/settings.js';
 import { menuDom } from './helpers/menuDom.js';
+import { hitDamage, INSTANT_KILL_DAMAGE } from '../src/weapons/gunStats.js';
 
 function fixture(overrides = {}) {
   const events = createEvents();
@@ -217,6 +218,22 @@ test('an Employee of the Month drop with no useful common still never falls back
   assert.equal(powerUps.types[eotm()].tier, 'common', 'and the next one cannot be a jackpot');
 });
 
+test('Black Friday damage maths (gunStats): one-hit on non-bosses, exactly bossDamageMultiplier on bosses, nothing without the flag', () => {
+  const def = weapons.stapleGun;
+  const hit = { part: 'body', distance: 1 };
+  const stats = createPlayerStats();
+  const shopper = { type: zombieTypes.shopper, maxHealth: 150 };
+  const boss = { type: { id: 'boss', boss: true }, maxHealth: 5000 };
+  const plain = hitDamage(def, hit, 0, stats, 1, boss);
+  assert.equal(hitDamage(def, hit, 0, stats, 1, shopper), plain, 'no flag: same damage on anyone');
+  stats.bossDamageMultiplier = powerUps.types.blackFriday.bossDamageMultiplier;
+  assert.equal(hitDamage(def, hit, 0, stats, 1, boss), plain, 'the boss multiplier only counts while instantKill is on');
+  stats.instantKill = true;
+  assert.equal(hitDamage(def, hit, 0, stats, 1, shopper), INSTANT_KILL_DAMAGE);
+  assert.equal(hitDamage(def, hit, 0, stats, 1, boss), plain * powerUps.types.blackFriday.bossDamageMultiplier);
+  assert.equal(hitDamage(def, hit, 0, stats, 1, null), plain, 'no target (balance reports): unchanged');
+});
+
 test('drop placement stays on the correct floor and refuses unsupported or blocked locations', () => {
   const t = fixture({ placementRadii: [0] });
   assert.equal(t.manager.debugDrop('shiftBonus', new THREE.Vector3(0, 6, 0)), false);
@@ -315,6 +332,12 @@ test('real game: Commission Day doubles payouts via wallet multiplier, stops on 
   z.state = 'chasing';
   z.takeHit({ damage: 10000, part: 'head' });
   assert.equal(g.wallet.points - before, (economy.killValues.shopper + economy.payouts.headshotKillBonus) * 2);
+
+  // The Mascot's helmet pop bonus goes through the same multiplier.
+  before = g.wallet.points;
+  const popper = g.zombies.spawn('mascot', at.clone().add(new THREE.Vector3(-1, 0, 0)), { variant: 'sirWaffles', gold: false });
+  g.events.emit('mascotHeadPop', { zombie: popper, headshot: true, source: 'gun', again: false });
+  assert.equal(g.wallet.points - before, economy.payouts.helmetPopBonus * 2);
 
   // Raw wallet.earn (tests / debug points / expired voucher fallback) is never doubled by Commission Day.
   before = g.wallet.points;
