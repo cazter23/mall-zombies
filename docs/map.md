@@ -18,7 +18,7 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   floor litter/scuffs, damaged dead ceiling fitting, warm checkout / cool shutter light. Central lane and both spawn bodies stay clear.
 - Main hallway: x -20..20, z -2..6 (8m wide), 6m ceiling. Doors: Food Court (1000, south wall x -3.5..3.5, a 7m gate, straight
   across from the start door, under a FOOD COURT sign, framed by two planters), Mega Mart (750, east end z -1..5, 6m,
-  under a MEGA MART sign), Service Corridor (1000, west wall z 0.5..3.5, under a "SERVICE CORRIDOR · STAFF ONLY"
+  under a MEGA MART sign), Service Corridor (1000, west wall z 0.5..3.5, under a "STAFF ONLY"
   sign; the escalator's high end runs overhead just short of it). 3 boarded vents (zombie spawns).
 - Kiosk Kevin has five carts (config/kiosk.js `sites`; one live, the rest say BACK IN 5 MIN). Each is a 2.2 × 0.75 m
   footprint with a single 1.05 m vaultable counter collider and three labeled buy spots along its front. He opens
@@ -26,7 +26,7 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   each round start after that to another open site: Food Court (x −4.3..−2.1, z −6.875..−6.125, facing the gate, 4.6 m
   west of the Fryer apron), Grand Atrium (south arcade west of the Hallway gate, x 8.04..10.24, z 6.64..7.39, facing
   +Z), Sunset Promenade (east lounge, x 11.9..14.1, z −1.875..−1.125, y 6.3, facing the Atrium link) and Customer
-  Parking (against the family van's east side, in its bay's painted space, x 42.555..43.305, z −12.15..−9.95, facing +X).
+  Parking (against the family van's east side, straddling the bay 0 / bay 1 line at x 43.0, x 42.555..43.305, z −12.15..−9.95, facing +X).
   The pay-to-trigger Fire Sprinklers pull station `sprinklerHazard` sits on the same south wall at (-6.6, 1.25, -1.95) facing +Z, between Kevin's Hallway cart (x -9.6..-7.4) and the planter (x -5.9..-4.5), under the notice poster (600 via `g.pricing`, drenching `x: -12..12, z: -2..6`). Out of reach from the Food Court gate (x -3.5..3.5), so the gate keeps its own prompt; the small red fire pull decal at x -3.9 by the gate is decoration.
   Escalator (SEALED until Hallway and Promenade are owned): west half, z 1..3, bottom end at x -4 facing the hub, rising west at 30 deg through a hole in
   the ceiling (x ~-16.5..-11.95) to level 2 (y 6.3, the top of the ceiling slab; see Level 2 below). Rope barriers + OUT OF ORDER boards at both ends disappear automatically when Hallway and Promenade are owned, including access via Atrium or Cinema; every collider you could
@@ -47,7 +47,7 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   Concourse pass (config/concourse.js): a shopfront run on the south wall, CASSETTE CITY x -4.1..1.0, GLAMOUR PORTRAITS 1.4..7.2,
   EAR-RESISTIBLE 17.0..19.8 (gate shut), and KEYS CUT x -12.5..-10.25 on the north wall; fronts stand 0.26 m off the wall, no colliders.
   Soffits (bulkheads) along both long walls from 3.0 m, 1.0 m deep (north gap x -3.7..3.7 for the Build-A-Blaster front), the pink
-  trim on their front edge; the "Sunset Galleria - Level 2" sign is on the south soffit face. Ashtray urns (solid, 0.63 m) at
+  trim on their front edge; the "Sunset Galleria · Level 2" sign is on the south soffit face. Ashtray urns (solid, 0.63 m) at
   x -9.3, -6.7 and 14.9 by the south benches; a mop bucket (solid, 0.45 m) at (-19.2, 5.2); garland on the void rails' walkway side.
   BUILD-A-BLASTER is a walk-in workshop, part of the Promenade zone. Storefront: interior x -3.35..3.35, z 6.3..11.7, two entrances flanking a solid
   glass display, parts cubbies down both walls (west: the Stuffing bins on the bottom shelf, lit while in today's stock; east: the Heart wall), the order bench in the middle (x 0, z 9.4..10.28; prompt z 9.25) with a 1.8 m lane either side.
@@ -64,7 +64,7 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   tickets/fitting shoes and two-sided hanging directional signs complete the pass. No new weapons or spawn markers.
   The elevator stays sealed. Data is exposed through LAYOUT.level2; see mall/levelTwo.js, promenadeShop.js and promenadeDetails.js.
 - HOFFMAN'S · Est. Forever (zone 'departmentStore', maps/mall/departmentStore.js): the department store north of the hallway's
-  west half, x -20..-5.3, z 6.3..26, 5 m ceiling, open sky above (the Promenade's shoe store and the cinema are outside it).
+  west half, x -20..-5.3, z 6.3..26, 5 m ceiling; the cinema is west of it (x -42..-20.3), while Level 2's Shoe-Per Sale (x -10.3..-3.7, z 6..11.6) and Build-A-Blaster workshop hall (x -9.8..5.2, z 11.7..26.8) sit at y 6.3 above its east side.
   Gate (1250) in the hallway's north wall at x -19.5..-15.5 under a HOFFMAN'S neon; side door 'departmentStoreStartRoom' (1250)
   through the start room's west wall at z 11.6..13.5 (the start room's only second exit: buyable before the start shutter).
   Front: cosmetics + fragrance counters (vaultable); middle: six round racks and three mannequins; back: fitting rooms (a
@@ -179,7 +179,7 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   Sunset sky, exterior facade/return signs, two pooled pole lights, painted bays/crosswalk, wind and electrical buzz.
   Includes a culling room/portal, color grade, horror area and benchmark shot; Play again relocks it and map unload
   frees its geometry, textures, lights and colliders. The mauve van's east-side hold prompt is near (56.57, 1.2, -11.05).
-  In Phase 2, holding all four keys lets you start it for free. Data: config/parkingLot.js and config/closingTime.js;
+  Starting it is free once all four keys are held, the first three duties are complete, Parking Validation (5000) is paid at its west-side machine, and the Last Customer is defeated. Data: config/parkingLot.js and config/closingTime.js;
   builder: maps/mall/parkingLot.js.
 - Service Corridor: behind the 1000 area entrance, a 3m-wide back-of-house corridor built from a data spec with the
   corridor builder: in through the hallway's west wall (floor reaches under the doorway), a 1.5m run west, then 16m
@@ -203,7 +203,7 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
 - The Night Safe mounts 2 cm proud of Customer Service’s east wall at x 8.8, centered at z 5.12 and facing east. Approach from the elevator side.
 - The Returns Desk mounts on the hallway north wall east of Customer Service at x 11.8, facing south. Its prompt is (11.8, 1.42, 5.58); approach from z 4.38. It is clear of the safe, three service windows, Gold Card display and Prize Counter. It is the Return to Sender quest's counter (the quest issues the gun free: config/returnQuest.js) and sells the gun's ammo (economy `returnsAmmo`, through g.pricing 'closing'). Its second prompt, the label slot ("Fit: <label>", free), is 0.85 m along the wall at tray height, with a small label printer on the wall beside it.
 - Customer Service booth (gun tiers): a small walled office on the hallway's north wall at x 5.2..8.8 (between the start doorway
-  and the elevator), 1.6m deep + a 0.3m counter ledge; you buy at its service window (spot z ~4.1). Hold F/X to buy the next Extended
+  and the elevator), 1.6m deep + a 0.3m counter ledge; you buy at its service window (collider front z 4.1; service-window spots at z 4.0). Hold F/X to buy the next Extended
   Warranty tier for the gun in your hand. Its spot is ONE entry, LAYOUT.serviceDesk in mall.js (along/center/wallAt/facing/zone):
   change it to move the booth. A map feature of kind 'upgradeDesk'.
   The booth has a SECOND window 1.25 m along the counter (LAYOUT.serviceDesk.meleeOffset; feature.meleePosition, a SHARPENING sign above it):
@@ -255,8 +255,8 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   x 5.3 (a bench) and x 13.4 (a vent spawn 2.8 m away), the west of the hallway (spawns within 5 m), the Atrium (opens too late).
   Sunny's topper stands 0.5 m above each header (2.24..2.74 m, no collision), and peeks over the dust sheet too.
   Rejected: Hallway x 15 / x -12 (vent spawns), Mega Mart x 23 (the Atrium link), the Promenade, HOFFMAN'S and the Service Corridor.
-- Wall-buy spots: start room east wall (5, 1.5, 10) = Price Gun; hallway south wall (11, 1.5, -2) = Nail Gun;
-  Mega Mart north wall (31.5, 1.5, 6) = Foam Dart Blaster, Service Corridor west wall near the dead end
+- Wall-buy spots: start room east wall (4.98, 1.5, 10) = Price Gun; hallway south wall (11, 1.5, -1.98) = Nail Gun;
+  Mega Mart north wall (31.5, 1.5, 5.98) = Foam Dart Blaster, Service Corridor west wall near the dead end
   (-23.28, 1.5, -12.2) = Confetti Cannon; Grand Atrium west arcade wall (8.02, 1.5, 21.5) = Rivet Rifle;
   Cinema projection-passage east wall (-20.36, 8.3, 20) = Heavy Coil Nailer (zone 'cinema', weapon 2500 / ammo 650),
   above the tile dado between the rewind/reel equipment and rear crossover; either Cinema entrance grants access.

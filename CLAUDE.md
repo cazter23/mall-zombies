@@ -147,7 +147,7 @@ adjoining areas are owned. No cascading unlocks. Nine area purchases total 9500;
   Three tall abandoned vans, four outdoor spawns, fenced perimeter, sunset sky; config/parkingLot.js and maps/mall/parkingLot.js.
 - **RESTOCK-O-MATICs:** Food Court north wall, Grand Atrium ground-floor northeast corner, and Cinema lobby north wall.
   Each requires its area unlocked and refills the held gun for 400 points.
-- **Player spawns** at (0, 0, 12). Zombie spawn markers are tagged by zone and floor height and only used while their zone is open.
+- **Player spawns** at (0, 0, 12). Zombie spawn markers are tagged by zone (carrying floor height in `position.y`) and only used while their zone is open.
 
 ## Gotchas that have cost time (read before changing the map or its tests)
 - **Decoration** is static and has no collision (`collide:false`); the static batcher merges it. Hang things >= 2 cm proud of a wall, never on its plane:
