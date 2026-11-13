@@ -64,7 +64,8 @@ import { createLookKit } from './lookKit.js';
 import { buildConcourse } from './concourse.js';
 import { concourse } from '../../config/concourse.js';
 import { buildSetPieces } from './setPieces.js';
-import { buildFoodCourtLook, buildMegaMartLook, buildServiceCorridorLook, buildStartRoomLook, buildLevelTwoLook, buildAtriumLook, buildDepartmentStoreLook } from './zoneLooks.js';
+import { buildServiceDetails } from './serviceDetails.js';
+import { buildFoodCourtLook,buildMegaMartLook, buildServiceCorridorLook, buildStartRoomLook, buildLevelTwoLook, buildAtriumLook, buildDepartmentStoreLook } from './zoneLooks.js';
 import { look } from '../../config/look.js';
 import { atmosphere } from '../../config/environment.js';
 import { atriumDetails } from '../../config/atrium.js';
@@ -1008,6 +1009,7 @@ export function buildMall(scene, colliders) {
   buildStartRoomLook({ looks, kit, layout: LAYOUT });
   buildMegaMartLook({ looks, kit, layout: LAYOUT, keepClear: hallwayClear.slice(0, -2) });
   buildServiceCorridorLook({ looks, kit, layout: LAYOUT, corridor: service, keepClear: hallwayClear.slice(0, -2) });
+  buildServiceDetails({ kit, eastX: LAYOUT.hallway.minX - T, zAt, endZ: zAt(SC.length), shortcut: SF });
   buildLevelTwoLook({ looks, layout: LAYOUT, floorY: upperY, hole: escalator.hole, keepClear: hallwayClear.slice(0, -2) });
   buildPromenadeDetails({ kit, looks, layout: LAYOUT.level2, floorY: upperY });
   buildWorkshopDetails({ kit, looks, layout: LAYOUT.level2, floorY: upperY }); // (Build-A-Blaster's shop and hall dressing)

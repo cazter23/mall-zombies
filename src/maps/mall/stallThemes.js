@@ -134,12 +134,12 @@ function wok(c) {
 
 /**
  * CORN DOG CORRAL: a rodeo fairground stand. A giant corn dog on a stick lying on the roof, a wooden frame round the sign with
- * mustard drips below it, bunting along the awning, cow-print counter panels (the Fryer Valve stands on the counter's centre,
+ * mustard drips below it, bunting along the awning, fairground-striped counter panels (the Fryer Valve stands on the counter's centre,
  * x 5.75: that stays clear), a lemonade dispenser and mustard / ketchup pumps.
  */
 function cornDog(c) {
   const { place, d, mat, from, to, mid, depth, counterHeight: ch, sign } = c;
-  const wood = mat(0x7a4a24), batter = mat(0xe0a030), mustard = mat(0xffd23f), white = mat(0xf6f1e6), ink = mat(0x18151a);
+  const wood = mat(0x7a4a24), batter = mat(0xe0a030), mustard = mat(0xffd23f), white = mat(0xf6f1e6);
 
   // Giant corn dog: a platform, the batter body, the stick, and a zigzag of mustard (clear of FRESH MEAT DAILY's neon, x < ~4.5).
   place(mid - 0.95, 4.7, mid + 0.95, 4.78, d(0.08), d(0.5), mat(0xb83239), FLAT);
@@ -163,15 +163,12 @@ function cornDog(c) {
   const flags = [mat(0xd62839), mat(0xffd23f), mat(0xf6f1e6)];
   for (let u = from + 0.1, k = 0; u < to - 0.2; u += 0.26, k++) place(u, 2.8, u + 0.18, 2.94, d(depth + 0.3), d(depth + 0.32), flags[k % 3], FLAT);
 
-  // Cow-print panels on the counter front, each side of the valve (x 5.3..6.2), blotches seeded by position.
-  let seed = Math.floor(Math.abs(from * 13 + to));
-  const rand = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+  // Fairground-striped panels on the counter front, each side of the valve (x 5.3..6.2): cream with red bands and a mustard cap.
+  const red = mat(0xc4262e);
   for (const [a, b] of [[from + 0.15, mid - 0.5], [mid + 0.5, to - 0.15]]) {
     place(a, 0.15, b, 1.02, d(depth), d(depth + 0.02), white, FLAT);
-    for (let k = 0; k < 7; k++) {
-      const bx = a + 0.05 + rand() * (b - a - 0.4), by = 0.2 + rand() * 0.65;
-      place(bx, by, bx + 0.14 + rand() * 0.14, by + 0.1 + rand() * 0.1, d(depth + 0.02), d(depth + 0.03), ink, FLAT);
-    }
+    for (let u = a; u < b - 0.02; u += 0.18) place(u, 0.15, Math.min(u + 0.09, b), 0.95, d(depth + 0.02), d(depth + 0.03), red, FLAT);
+    place(a, 0.95, b, 1.02, d(depth + 0.02), d(depth + 0.03), mustard, FLAT);
   }
 
   // Counter: mustard and ketchup pumps, and a lemonade dispenser (yellow, with a tap and a lemon on top).

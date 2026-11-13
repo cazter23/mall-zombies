@@ -650,6 +650,7 @@ src/
                         (startRoom, hallway, foodCourt, megaMart, doorway, foodCourtDoorway, megaMartDoorway, escalator,
                         elevator, serviceCorridor, foodCourtMegaMartDoorway, serviceCorridorFoodCourtDoorway). The hallway ceiling is a kit.slab with a hole where the escalator passes through
     mall/storeFacades.js The outside of each Food Court store dressed as what it sells (pier decor, sign frame, roof props, a window ledge of goods), picked by the store's `theme`
+    mall/serviceDetails.js buildServiceDetails: the Service Corridor east wall fittings (conduits, fire cabinet, time clock, corkboard, first-aid box, hazard-striped jambs, floor line, mop bucket); decoration only
                         in stores.js. Decoration only, 2 cm proud of the facade. A new store theme = a function here (+ its interior in stores.js THEMES).
     mall/stallThemes.js Per-stall decoration for props.foodStall's `theme` option, so a Food Court stall looks like what it is named (decoration only, no collision;
                         `barn` BURGER BARN: siding, trim, hay-loft roof, checker band; `wok` WOK THIS WAY: pagoda eave, lanterns, lattice; `cornDog` CORN DOG CORRAL: giant corn dog, bunting, cow print). A new theme = a function here + `theme:` in mall.js.
