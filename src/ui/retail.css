@@ -307,6 +307,15 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .armour-layers { display: flex; gap: 3px; }
 .armour-layers:empty { display: none; }
 .armour-layer { width: 18px; height: 4px; border-radius: 2px; background: #f7f5ef; }
+/* A layer just used up: it swells and bursts (hud.setArmour; Kiosk Kevin phase 8). */
+.armour-layer.popping { animation: armour-pop .32s ease-out forwards; }
+@keyframes armour-pop {
+  0% { transform: scale(1); opacity: 1; }
+  35% { transform: scale(1.6, 2.6); opacity: 1; background: #dcefff; }
+  100% { transform: scale(2.2, .4); opacity: 0; }
+}
+.armour-layer.added { animation: armour-add .25s ease-out; }
+@keyframes armour-add { 0% { transform: scale(.2, 2); } 70% { transform: scale(1.25, 1); } 100% { transform: scale(1); } }
 .pocket.empty .pocket-icon { background: #fff8e830; }
 .pocket-count { position: absolute; right: -5px; bottom: -6px; min-width: 15px; padding: 1px 3px; box-sizing: border-box; background: var(--paper); color: var(--plum); font: 700 11px/1.1 var(--font-ui); text-align: center; text-shadow: none; }
 .pocket.empty .pocket-count { display: none; }

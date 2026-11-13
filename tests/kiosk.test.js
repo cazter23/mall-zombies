@@ -240,7 +240,12 @@ test('the Air Horn immediately interrupts charges, respects solid cover and has 
   const before = g.wallet.points;
   g.equipment.give('airHorn', 2);
   g.equipment.give('sodaBomb', 1);
+  const blasts = [];
+  g.events.on('airHornBlast', (e) => blasts.push(e));
   t.press('Mouse1');
+  assert.equal(blasts.length, 1, 'the blast is announced (its ring: fx/kioskSpectacle.js)');
+  assert.equal(blasts[0].radius, kiosk.products.airHorn.horn.radius);
+  assert.equal(blasts[0].pushed, 2, 'the Cart Pusher and the Mascot');
   assert.equal(cart.chargeLeft, 0);
   assert.equal(cart.staggerTimer, 1.2);
   assert.equal(mascot.staggerTimer, 1.2);
@@ -420,4 +425,92 @@ test('Kevin never moves mid-purchase: a round that starts during a held buy wait
   assert.ok(g.wallet.points < before, 'the purchase went through');
   assert.equal(kevin.site.id, 'foodCourt');
   assert.equal(kevin.status.pending, null);
+});
+
+test('Kevin shouts: a hawk as you walk up to his open cart and again only after its wait, a yelp as he ducks and a word when he is back, each list in turn', () => {
+  const t = fixture(), { g } = t;
+  const kevin = kevinOf(g);
+  const said = [];
+  g.events.on('kioskHawk', ({ siteId, kind, line }) => said.push([siteId, kind, line]));
+  const kinds = (kind) => said.filter(([, k]) => k === kind).map(([, , line]) => line);
+  standAtCart(t, g, kevin.site);
+  t.tick(30);
+  assert.deepEqual(said, [], 'not before he opens');
+  g.map.doors.find(({ id }) => id === 'startShutter').open();
+  g.map.zones.hallway.open = true;
+  g.rounds.jumpTo(2);
+  t.standAt(0, 12); // (the start room: out of earshot)
+  t.tick(30);
+  assert.deepEqual(said, [], 'nothing while you are far away');
+  standAtCart(t, g, kevin.site);
+  assert.deepEqual(said, [['hallway', 'lines', kiosk.hawk.lines[0]]]);
+  t.tick(Math.round(kiosk.hawk.seconds * 60) - 10);
+  assert.equal(said.length, 1, 'once every few seconds at most');
+  t.tick(20);
+  const product = kiosk.products[kevin.status.stock[0]].name;
+  assert.deepEqual(kinds('lines'), [kiosk.hawk.lines[0], kiosk.hawk.lines[1].replace('{product}', product)], 'the next line, naming a product on sale');
+  // A zombie at his stand: he ducks (a yelp, and no hawking while he's down); gone again: he's back up and says so.
+  g.zombies.spawn('shopper', kevin.site.cart.stand.clone()).position.copy(kevin.site.cart.stand);
+  t.tick(2);
+  assert.deepEqual(kinds('duck'), [kiosk.hawk.duck[0]]);
+  t.tick(Math.round(kiosk.hawk.seconds * 60) + 30);
+  assert.equal(kinds('lines').length, 2, 'no hawking while he hides');
+  g.zombies.clear();
+  t.tick(2);
+  assert.deepEqual(kinds('back'), [kiosk.hawk.back[0]]);
+  assert.ok(said.every(([, , line]) => !line.includes('{')), 'every placeholder filled');
+  // Dead: not a word. Play again starts every list from the top.
+  const count = said.length;
+  g.health.takeDamage(10_000);
+  t.tick(Math.round(kiosk.hawk.seconds * 60) * 2);
+  assert.equal(said.length, count);
+  g.resetRun();
+  g.rounds.update = () => {};
+  g.map.doors.find(({ id }) => id === 'startShutter').open();
+  g.map.zones.hallway.open = true;
+  g.rounds.jumpTo(2);
+  standAtCart(t, g, kevin.site);
+  assert.deepEqual(said.at(-1), ['hallway', 'lines', kiosk.hawk.lines[0]]);
+});
+
+test('Kevin\'s products are baked: one mesh per material kind, each piece where it was, turning parts kept apart', async () => {
+  const { bakeParts } = await import('../src/world/bakeParts.js');
+  const { buildProductDisplay, buildProductModel } = await import('../src/world/kioskProducts.js');
+  const mats = new Map();
+  const mat = (color, options = {}) => {
+    const key = `${color}|${JSON.stringify(options)}`;
+    if (!mats.has(key)) mats.set(key, new THREE.MeshStandardMaterial({ color, flatShading: true, ...options }));
+    return mats.get(key);
+  };
+  // bakeParts by itself: two boxes of one kind in two colours become one mesh with the same bounds; a kept pivot stays.
+  const root = new THREE.Group();
+  const a = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), mat(0xff0000));
+  a.position.set(2, 0, 0);
+  const b = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), mat(0x00ff00));
+  b.position.set(-2, 1, 0);
+  b.rotation.z = 0.5;
+  const pivot = new THREE.Group();
+  pivot.userData.keep = true;
+  pivot.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), mat(0xff0000)));
+  root.add(a, b, pivot);
+  const before = new THREE.Box3().setFromObject(root);
+  bakeParts(root);
+  const meshes = root.children.filter((o) => o.isMesh);
+  assert.equal(meshes.length, 1, 'the two loose boxes are one mesh');
+  assert.ok(meshes[0].material.vertexColors, 'their colours moved into the vertices');
+  assert.ok(root.children.includes(pivot) && pivot.children.length === 1, 'the kept pivot is left alone');
+  const after = new THREE.Box3().setFromObject(root);
+  assert.ok(before.min.distanceTo(after.min) < 1e-6 && before.max.distanceTo(after.max) < 1e-6, 'every piece stays where it was');
+  // Every product, on the counter and in the air: a few draws each, something to see, and the Sentry's head and spinner apart.
+  for (const id of [...kiosk.slots.flat(), ...Object.keys(kiosk.products)]) {
+    for (const model of [buildProductDisplay(id, mat), buildProductModel(id, mat)]) {
+      let draws = 0;
+      model.traverse((o) => { if (o.isMesh) draws++; });
+      assert.ok(draws >= 1 && draws <= 8, `${id}: ${draws} draws`);
+      assert.ok(!new THREE.Box3().setFromObject(model).isEmpty(), `${id} has a shape`);
+    }
+  }
+  const sentry = buildProductModel('sentry', mat);
+  assert.ok(sentry.userData.head?.userData.keep && sentry.userData.spinner?.userData.keep, 'the Sentry\'s head and spinner can turn');
+  assert.ok(buildProductDisplay('sentry', mat).userData.spinner, 'the demo unit on the counter spins');
 });

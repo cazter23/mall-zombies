@@ -50,6 +50,7 @@ import { createRunStart } from './ui/runStart.js';
 import { createBenchmark } from './fx/benchmark.js';
 import { createBallView } from './fx/ballView.js';
 import { createThrowableView } from './fx/throwableView.js';
+import { createKioskSpectacle } from './fx/kioskSpectacle.js';
 import { createLightPool, collectPointLights } from './fx/lightPool.js';
 import { batchStatic } from './world/staticBatch.js';
 import { sheenEnvironment, applyMetalSheen } from './fx/metalSheen.js';
@@ -294,6 +295,8 @@ for (const root of [map.group, g.arena?.group].filter(Boolean)) applyMetalSheen(
 effects.prepare(renderer, camera); // shared impact graphics warmed before the first shot
 const ballView = createBallView(scene, g.balls); // the Tennis Ball Launcher's balls in the air
 const throwableView = createThrowableView(scene, g.equipment); // Kiosk Kevin's thrown equipment (a Soda Bomb on its fuse)
+// Kiosk Kevin's show: Kevin's animation and shouts, the cola geyser, the glitter, the air-horn rings, bubble-wrap pops, the Sentry's flash and break-up.
+const kioskSpectacle = createKioskSpectacle({ scene, events: g.events, camera, kiosk: g.features.instanceOf('kiosk'), equipment: g.equipment, effects, sound });
 
 // --- Menus and the run's flow ------------------------------------------------------
 // title (live flyover) -> playing <-> paused -> dead -> results receipt -> playing again / title.
@@ -538,7 +541,8 @@ function render(alpha, frameTime) {
   g.contactShadows.update(zombies.zombies, alpha);
   effects.update(visualTime);
   ballView.update(alpha); // the Tennis Ball Launcher's balls in the air
-  throwableView.update(alpha);
+  throwableView.update(alpha, visualTime);
+  kioskSpectacle.update(visualTime, performance.now() / 1000);
   viewmodel.update(visualTime, camera, {
     weapon: gun.weapon,
     shownDef: gun.shownDef, // mid-switch: the old gun while it drops away

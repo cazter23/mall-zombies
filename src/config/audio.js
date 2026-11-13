@@ -331,6 +331,23 @@ export const audio = {
       { type: 'tone', wave: 'sawtooth', freq: 415, freqEnd: 392, gain: .5, attack: .012, decay: .34 },
       { type: 'tone', wave: 'sawtooth', freq: 508, freqEnd: 480, gain: .35, attack: .016, decay: .33 },
     ] },
+    // Kiosk Kevin shouting (fx/kioskSpectacle.js, 'kioskHawk'): a nasal "hey-HEY!" (two buzzy rising syllables through a
+    // vowel-ish band), a squeaky yelp as he ducks, and the SPIN-O-MATIC coming apart (a sad descending whirr and a rattle).
+    kevinShout: { volume: .42, layers: [
+      { type: 'tone', wave: 'sawtooth', freq: 210, freqEnd: 260, gain: .35, attack: .01, decay: .09 },
+      { type: 'noise', filter: 'bandpass', freq: 1300, q: 3, gain: .25, attack: .01, decay: .08 },
+      { type: 'tone', wave: 'sawtooth', freq: 270, freqEnd: 330, gain: .45, attack: .01, decay: .16, delay: .12 },
+      { type: 'noise', filter: 'bandpass', freq: 1500, q: 3, gain: .3, attack: .01, decay: .14, delay: .12 },
+    ] },
+    kevinYelp: { volume: .4, layers: [
+      { type: 'tone', wave: 'square', freq: 520, freqEnd: 880, gain: .3, attack: .005, decay: .14 },
+      { type: 'noise', filter: 'bandpass', freq: 2200, q: 2.5, gain: .2, attack: .005, decay: .12 },
+    ] },
+    sentryBreak: { volume: .6, layers: [
+      { type: 'tone', wave: 'square', freq: 640, freqEnd: 140, gain: .35, attack: .005, decay: .55 },
+      { type: 'noise', filter: 'bandpass', freq: 1800, q: .9, gain: .5, attack: .002, decay: .18 },
+      { type: 'noise', filter: 'lowpass', freq: 700, q: .7, gain: .4, attack: .002, decay: .12, delay: .2 },
+    ] },
     bubbleWrapPop: { volume: .65, layers: [
       { type: 'noise', filter: 'bandpass', freq: 2400, q: 1.1, gain: .9, attack: .001, decay: .035 },
       { type: 'tone', wave: 'sine', freq: 260, freqEnd: 95, gain: .4, attack: .001, decay: .065 },

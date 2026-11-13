@@ -121,8 +121,11 @@ src/
                         { type: 'fall' } or { type: 'hazard', id } (a hazard that hurts the player needs a hazards entry).
     attachmentVisuals.js Per-weapon attachment sizing, near-side rail placement, short-barrel spans and held reload copies.
     retailUnease.js     Rare atrium display changes and localized back-room sound timings/ranges; no gameplay tuning.
-    kiosk.js            Kiosk Kevin (docs/kiosk-kevin-plan.md; phases 1-7 built): his five sites (x, z, faces, floorY, the PA's `where`; the first is
-                        where every run starts), the cart's size, spawnClearance, the PA lines; the cart's three `slots` (Lethal: Soda Bomb /
+    kiosk.js            Kiosk Kevin (docs/kiosk-kevin-plan.md; all eight phases built): his five sites (x, z, faces, floorY, the PA's `where`; the first is
+                        where every run starts), the cart's size, spawnClearance, the PA lines (the "moved" lines take turns by round); phase 8's looks:
+                        `hawk` (his shouts: radius 8 m, every 14 s at most, the lines, duck and back lists), `vendor` (Kevin's colours, badge, duck and
+                        peek timing), `lid` (the shutter's slats and its notices, in turn), `spectacle` (fx/kioskSpectacle.js: the cola geyser, glitter,
+                        horn rings, bubble pops, Sentry debris, the comic words) and each product's counter colours; the cart's three `slots` (Lethal: Soda Bomb /
                         Sparkler Cake / Sentry, Bubble Wrap, Tactical: Air Horn / Glitter Bomb; each slot rotates round by round); the equipment
                         power curve (power: baseHealth 800, exponent 0.37), the throw (blockSeconds 0.4, lob, start offset), the two pockets, and the
                         products: the Soda Bomb (Lethal, 3 charges, 1.8 s fuse, 4 m blast, 850 x power at the centre, 0.3 of that at the edge, a boss's
@@ -620,6 +623,8 @@ src/
                         round he moves to a random other site whose zone is open (none: he stays), never mid-purchase (`pending` waits for
                         the hold to end). Announces 'kioskStock' (one PA line a round, naming the place when he is new there) and
                         'kioskMoved'. moveNow(siteId) (debug), serialize/restore (his site and a pending move: Save & Quit).
+                        His shouts (phase 8, kiosk.hawk): 'kioskHawk' { kind 'lines' | 'duck' | 'back', line } when you're near his open cart
+                        (rate-limited), as he ducks and when he's back up; each list takes turns (no Math.random), reset with the run.
       clawSunny.js      Sunny runs away (built by clawMachine.js): out of the chute, a look round, a waddle along g.zombies.nav.pathTo to the
                         next site's front (open areas only; a lap round his own machine if no other site is open), into that cabinet, which
                         shakes (its rig group; colliders never move). His shootable (one body box) pops on any hit: stuffing and confetti,
@@ -780,9 +785,17 @@ src/
     mall/cinemaStairs.js Physical service stairs with a smooth ramp under visible treads, solid supports, handrails, two culling
                         rooms and the floor-to-floor nav link. Lower shutter (economy.doors.cinema, 1250) opens cinema + serviceCorridor; the original
                         cinema shutter now opens cinema + upstairs. No real lights, guns or spawn markers added.
-    mall/kioskCart.js   buildKioskCart(kit, site) -> { position, stand, normal, slots, show(state, stock) }: one of Kevin's carts (a 1.05 m vaultable
-                        counter), built in its own frame and turned by `faces` (+z, -z, +x, -x); vendor, three buy spots, a notice strip
-                        (closed / away "BACK IN 5 MIN" / hiding / Kevin's Pick) and the product labels (redrawn when the stock changes) in a dynamic rig.
+    mall/kioskCart.js   buildKioskCart(kit, site) -> { position, stand, normal, slots, show(state, stock), say(line), animate(dt, time, viewer) }: one
+                        of Kevin's carts (a 1.05 m vaultable counter), built in its own frame and turned by `faces` (+z, -z, +x, -x); three buy spots,
+                        a notice strip (closed / away, the lid's notice in turn / hiding / Kevin's Pick), the product labels (redrawn when the stock
+                        changes) and, in a dynamic rig: the round's three products on the counter (world/kioskProducts.js), a slatted lid that covers
+                        it while he's away (its notice on top) and flips open behind him, Kevin (mall/kioskKevin.js) and his speech bubble. show() only
+                        sets targets (it runs headless every tick); animate() is the browser's (fx/kioskSpectacle.js).
+    mall/kioskKevin.js  buildKevin(mat) -> { group, animate(dt, time, { mode, talking, look }), popUp() }: Kiosk Kevin, low-poly (polo, paunch, lanyard
+                        and a canvas name badge, quiff, headset mic, two jointed arms), baked to 8 draws (world/bakeParts.js) with the neck, mouth,
+                        shoulders and elbows kept as pivots. 'open': bobs, turns to the viewer, waves and talks while a bubble is up; 'hiding': a
+                        spring drops him into the cart, arms over his head, peeking now and then; 'gone': hidden. buildSpeechBubble(): a sprite
+                        (never raycast) with the line wrapped to two balanced lines at one size ('toyBody'), popping in and fading.
     mall/restockMachine.js buildRestockMachine({ kit, center, wallAt, facing, floorY = 0 }) -> { position, normal, screen }: the RESTOCK-O-MATIC
                         (north/south walls): body + hazard kick plate + glowing header and tagline, a lit window of ammo boxes, keypad,
                         card reader, live canvas screen (screen.show({ title, line, note, tone })), side signs, the AMMO blade sign, the
@@ -853,10 +866,17 @@ src/
                         playing and the next held, a crossfade at the end, onTrackChange for the now-playing card, setTapeWear, nowPlaying.
   fx/
     ballView.js         Browser side only: draws `balls.list` (the Tennis Ball Launcher's balls) as a pool of tumbling tennis balls between last tick's and this tick's position (alpha).
-    throwableView.js    Browser side only: draws `equipment.live` (Kiosk Kevin's thrown things), one pool per look.model: the cola bottle (tumbling in the
-                        air, lying and rattling on the floor, swelling as the fuse runs out), the Sparkler Cake (spinning, then upright and jittering
-                        while it sprays), the Glitter Bomb card (flipping) and the Sentry (tumbling, then standing with its head turned to item.yaw);
-                        a mesh is hidden when its item is gone; dispose() frees the pools.
+    throwableView.js    Browser side only: draws `equipment.live` (Kiosk Kevin's thrown things; the models are world/kioskProducts.js'), one pool per
+                        look.model: the cola bottle (tumbling in the air, lying and rattling on the floor, swelling as the fuse runs out), the Sparkler
+                        Cake (spinning, then upright and jittering while it sprays), the Glitter Bomb card (flipping) and the Sentry (tumbling, then
+                        springing up over its warm-up, its head turned to item.yaw and kicking back per shot, the spinner on top whirring; in its last
+                        3 s it sags, wobbles and sputters); a mesh is hidden when its item is gone; dispose() frees the pools.
+    kioskSpectacle.js   Browser side only (phase 8 of the Kiosk Kevin plan; looks in config/kiosk.js spectacle): animates every cart (lid, Kevin) and
+                        shows his shouts ('kioskHawk': the bubble, a "hey!" within earshot), and LISTENS for the rest: the Soda Bomb's cola geyser and
+                        foam ring, the Glitter Bomb's twinkling cloud, the Air Horn's rings ('airHornBlast'), a Bubble Wrap layer popping in front of
+                        you ('armourHit' popped), the Sentry's muzzle flash per shot and its break-up ('sentryExpired'); each burst draws a ring to its
+                        real reach, and a comic word (FSSSHH!, CONGRATS!, HOOONK!, POP!, BZZT!). Own particles (one instanced mesh), rings, word
+                        sprites; clear() on 'runReset', dispose().
     closingKeyView.js   Reusable spinning key and signature props for the four closing pickups, each with a beacon while it lies there.
     saleTagView.js      Browser side only: pooled two-sided floating SALE / SALE SOON / DOORBUSTER tags (world/typeKit.js `clearance` role; three InstancedMeshes, one
                         shown at a time) and a Doorbuster beacon over the buy spots collectSaleSpots(g, sale) returns; re-reads on sale/purchase/move events and
@@ -914,6 +934,11 @@ src/
                         tables of what a run to rounds 10/15/20 gives each challenge, how many runs that makes, what other guns' challenges moved by accident and
                         the bot's first death (its runs are immortal: "survive" feats mean nothing there); runs written to scratch/challenge-report/
   world/                Shared building blocks for maps
+    kioskProducts.js    Kiosk Kevin's six products as low-poly models (colours: config/kiosk.js looks): buildProductModel(id, mat) one item as it
+                        flies (fx/throwableView.js; a Sentry's head and spinner kept to turn), buildProductDisplay(id, mat) how it stands on his
+                        counter (three bottles, the cake on a doily, a mini demo Sentry, a Bubble Wrap roll, the air horn, a glitter card). Baked.
+    bakeParts.js        bakeParts(root): merges a small MOVING model's plain meshes into one per material kind (colour per vertex), leaving
+                        userData.keep pivots and textured meshes alone. For what the static batcher must skip (Kevin, his products).
     typeKit.js          How text is set on canvas: fontFor(role, px), fitSize (shrink to fit, never clip) and drawType (case, tracking, slant, outline, hard shadow, glow,
                         gradient fill from the role's treatment or per-call options). Every sign, poster and label draws through it.
     signStyles.js       One painter per shop-sign style (makeSignTexture's `style`): its own layout, ornaments, material and wear, lettered through drawType.
