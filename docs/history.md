@@ -1,5 +1,15 @@
 # Sunset Galleria: build history ("Current state")
 
+## 13 November 2026 - Bottle Rocket Bazooka: a better model and a breech-loading reload (`claude/claw-guns`)
+
+- **Model (`src/weapons/models/bottleRocket.js`):** a crimped mouth, a yellow label wrap with stars, a ring front sight and a peep, a fat fuse coil with a
+  wick and a flickering tip (`fire.fuseFlicker`), a shoulder pad, and a breech cap on the back end hinged on the left. `tests/fixtures/weapon-materials-phase-1.json`:
+  only this gun's entries regenerated.
+- **Reload (same 2.4 s, keys in `viewmodel.reload`):** it used to load through the mouth, which is at the far top-left of the screen, so the loading was
+  tiny. Now the tube turns side-on, the cap swings open AWAY from you (a right-hand hinge swung it into the camera once the tube was side-on), the burnt-out
+  casing is pulled and tossed, a fresh rocket slides in through the breech (its nose shows in the mouth from `rocketInAt`, which replaces `tubeEmpty`: the
+  old window let the nose flash on the first frame), the cap shuts and the tube gets a pat before swinging home low. Test: `bottleRocket.test.js`.
+
 ## 13 November 2026 - Stargazer 3000 keeps its scope; both claw guns' models and reloads redone (`claude/claw-guns`)
 
 - **The scope bug (`src/weapons/aim.js`, `src/weapons/scope.js`, `src/config/weapons.js`):** a Stargazer shot used to drop the ADS amount to `scope.boltDropTo`
