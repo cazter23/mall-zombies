@@ -8,6 +8,9 @@ import { weapons } from '../src/config/weapons.js';
 import { TIER_IDS, withTier } from '../src/weapons/upgrades.js';
 import { save as saveConfig } from '../src/config/save.js';
 import { createCareerStats } from '../src/game/careerStats.js';
+import { featuresOf } from '../src/game/features/index.js';
+import { ownsAttachment } from '../src/game/features/attachmentCounter.js';
+import { attachmentsOf } from '../src/weapons/upgrades.js';
 
 function memoryStorage() {
   const items = new Map();
@@ -20,8 +23,8 @@ function memoryStorage() {
 }
 
 // A game sharing `storage` (the map is built before anything random is seeded: see CLAUDE.md).
-function game(t, storage) {
-  const run = headlessGame({ saveStorage: storage });
+function game(t, storage, options = {}) {
+  const run = headlessGame({ saveStorage: storage, ...options });
   t.after(() => run.g.map.dispose());
   return run;
 }
@@ -498,4 +501,214 @@ test('a pending Flash Sale teaser and an active Doorbuster save cleanly at round
   loaded2.tick(Math.ceil((loaded2.g.flashSales.active.remaining + 1) * 60));
   assert.equal(loaded2.g.flashSales.active, null);
   assert.equal(loaded2.g.pricing.priceOf(dbTarget.category, dbTarget.id), loaded2.g.pricing.basePriceOf(dbTarget.category, dbTarget.id));
+});
+
+test('owned attachments and Box Cutter tier survive Save & Quit, refit free on another gun, and tint the viewmodel', (t) => {
+  const storage = memoryStorage();
+  const run = game(t, storage);
+  const { g } = run;
+  run.tick();
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  g.health.invulnerable = true;
+  g.map.areaUnlocks.unlock('hallway');
+  g.map.areaUnlocks.unlock('foodCourt');
+  run.tick(10);
+  g.wallet.earn(10000);
+
+  // Fit Jumbo Pack at its Food Court counter for 1,000 points.
+  const jumboSpot = g.map.features.find((f) => f.kind === 'attachmentCounter' && f.attachment === 'jumboPack');
+  const jumboPos = jumboSpot.position.clone().addScaledVector(jumboSpot.normal, 1.1);
+  jumboPos.y = 0;
+  g.player.teleport({ position: jumboPos, yaw: Math.atan2(jumboSpot.normal.x, jumboSpot.normal.z) });
+  run.tick();
+  assert.equal(g.interactions.prompt?.id, 'jumboPack');
+  assert.equal(g.interactions.prompt?.verb, 'fit');
+  assert.equal(g.interactions.prompt?.cost, 1000);
+  run.press('KeyF', 30);
+  assert.equal(ownsAttachment(g.gun, 'jumboPack'), true);
+
+  // Buy Sharpened Blade (1,500) and Box Cutter Pro (4,000) at Customer Service.
+  const desk = featuresOf(g.map, 'upgradeDesk')[0];
+  run.standAt(desk.meleePosition.x, desk.meleePosition.z - 1.4, 180);
+  assert.equal(g.interactions.prompt?.id, 'sharpened');
+  assert.equal(g.interactions.prompt?.cost, 1500);
+  run.press('KeyF', 30);
+  assert.equal(g.interactions.prompt?.id, 'pro');
+  assert.equal(g.interactions.prompt?.cost, 4000);
+  run.press('KeyF', 30);
+  assert.equal(g.wallet.points, 4000);
+
+  g.rounds.jumpTo(3);
+  run.tick();
+  assert.equal(g.saveGame.saveAndQuit(), true);
+
+  const meleeColors = [];
+  const loaded = game(t, storage, {
+    viewmodel: {
+      fire: () => {},
+      dryFire: () => {},
+      jolt: () => {},
+      reset: () => {},
+      getMuzzleWorldPosition: (out) => out.set(0, 1.5, 0),
+      setMeleeColors: (colors) => meleeColors.push(colors),
+    },
+  });
+  assert.equal(loaded.g.saveGame.load(), true);
+  const lg = loaded.g;
+  assert.equal(lg.stats.meleeTier, 2);
+  assert.equal(lg.stats.meleeUpgradeDamage, 5);
+  assert.equal(lg.stats.meleeHalfAngleDegrees, 70);
+  assert.equal(lg.stats.meleeMaxTargets, 2);
+  assert.deepEqual(meleeColors, [{ blade: 0xffd9a0, handle: 0xd62839 }]);
+  assert.equal(ownsAttachment(lg.gun, 'jumboPack'), true);
+  assert.equal(lg.wallet.points, 4000);
+
+  // A second compatible gun gets a free refit from the same counter after Continue.
+  lg.gun.give(weapons.priceGun);
+  loaded.tick(40);
+  const spot2 = lg.map.features.find((f) => f.kind === 'attachmentCounter' && f.attachment === 'jumboPack');
+  const pos2 = spot2.position.clone().addScaledVector(spot2.normal, 1.1);
+  pos2.y = 0;
+  lg.player.teleport({ position: pos2, yaw: Math.atan2(spot2.normal.x, spot2.normal.z) });
+  loaded.tick();
+  assert.equal(lg.interactions.prompt?.id, 'jumboPack');
+  assert.equal(lg.interactions.prompt?.verb, 'refit');
+  assert.equal(lg.interactions.prompt?.cost, 0);
+  assert.match(lg.interactions.prompt?.detail, /Owned this run · Free refit/);
+  loaded.press('KeyF', 30);
+  assert.equal(lg.wallet.points, 4000);
+  assert.equal(attachmentsOf(lg.gun.modsFor('priceGun')).magazine, 'jumboPack');
+});
+
+test('a warranty on file and a used Platinum claim survive Save & Quit', (t) => {
+  const storage = memoryStorage();
+  const run = game(t, storage);
+  const { g } = run;
+  run.tick();
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  g.health.invulnerable = true;
+
+  // Replace a Premium Nail Gun so Premium goes on file, and put Platinum on Staple Gun.
+  g.gun.give(weapons.nailGun);
+  run.tick(50);
+  g.gun.setMods('nailGun', withTier(weapons.nailGun, g.gun.modsFor('nailGun'), 'premium'));
+  run.tick(2);
+  g.gun.give(weapons.priceGun);
+  run.tick(50);
+  if (g.gun.slots.includes('nailGun')) {
+    g.gun.give(weapons.rivetRifle);
+    run.tick(50);
+  }
+  assert.equal(g.features.context.warranty.onFile, 'premium');
+  g.gun.setMods('stapleGun', withTier(weapons.stapleGun, g.gun.modsFor('stapleGun'), 'platinum'));
+  run.tick(2);
+
+  // Consume Round 3's Platinum claim on the same tick that takes the Round 3 snapshot.
+  let preClaims = 0;
+  g.events.on('warrantyClaim', () => { preClaims += 1; });
+  g.rounds.jumpTo(3);
+  const dry = g.gun.weaponFor('stapleGun');
+  dry.magazine = 0;
+  dry.reserve = 0;
+  run.tick();
+  assert.equal(preClaims, 1);
+  assert.equal(dry.magazine, 14);
+  assert.equal(dry.reserve, 60);
+  assert.equal(g.saveGame.saveAndQuit(), true);
+
+  const loaded = game(t, storage);
+  let postClaims = 0;
+  loaded.g.events.on('warrantyClaim', () => { postClaims += 1; });
+  assert.equal(loaded.g.saveGame.load(), true);
+  const lw = loaded.g.features.context.warranty;
+  assert.equal(lw.onFile, 'premium');
+  assert.deepEqual(lw.offer('priceGun'), { kind: 'transfer', tier: 'premium', pricingId: 'transfer:premium' });
+
+  // Running dry again in Round 3 cannot reclaim; Round 4 allows a fresh claim.
+  const lDry = loaded.g.gun.weaponFor('stapleGun');
+  lDry.magazine = 0;
+  lDry.reserve = 0;
+  loaded.tick(2);
+  assert.equal(postClaims, 0);
+  assert.equal(lDry.magazine, 0);
+  assert.equal(lDry.reserve, 0);
+  assert.equal(lw.onFile, 'premium');
+
+  loaded.g.rounds.jumpTo(4);
+  loaded.tick(2);
+  assert.equal(postClaims, 1);
+  assert.equal(lDry.magazine, 14);
+  assert.equal(lDry.reserve, 60);
+});
+
+test('canSave pins reason strings, discard clears the slot, and a storage write failure emits no runSaved', (t) => {
+  const storage = memoryStorage();
+  const run = game(t, storage);
+  const { g } = run;
+  let savedEvents = 0;
+  g.events.on('runSaved', () => { savedEvents += 1; });
+
+  assert.deepEqual(g.saveGame.canSave(), { ok: false, reason: 'Not clocked in yet' });
+  run.tick();
+  assert.deepEqual(g.saveGame.canSave(), { ok: true, reason: null });
+
+  assert.equal(g.saveGame.saveAndQuit(), true);
+  assert.equal(savedEvents, 1);
+  assert.equal(storage.items.has('sunsetGalleria.save'), true);
+  g.saveGame.discard();
+  assert.equal(storage.items.has('sunsetGalleria.save'), false);
+  assert.equal(g.saveGame.peek(), null);
+  assert.equal(g.saveGame.load(), false);
+
+  g.state.winPending = true;
+  assert.deepEqual(g.saveGame.canSave(), { ok: false, reason: 'Shift complete' });
+  assert.equal(g.saveGame.saveAndQuit(), false);
+  assert.equal(savedEvents, 1);
+  g.state.winPending = false;
+
+  storage.setItem = () => { throw new Error('QuotaExceededError'); };
+  assert.equal(g.saveGame.saveAndQuit(), false);
+  assert.equal(savedEvents, 1);
+
+  g.stats.health = g.stats.maxHealth - 1;
+  assert.deepEqual(g.saveGame.canSave(), { ok: false, reason: 'Full health needed' });
+  g.health.takeDamage(1000);
+  assert.deepEqual(g.saveGame.canSave(), { ok: false, reason: 'No longer employed' });
+});
+
+test('a save whose restore throws drops the slot, returns false, and leaves a fresh run', (t) => {
+  const storage = memoryStorage();
+  const run = game(t, storage);
+  run.tick();
+  run.g.rounds.jumpTo(3);
+  run.tick();
+  assert.equal(run.g.saveGame.saveAndQuit(), true);
+
+  // Corrupt the 'gun' payload so restore throws AFTER 'stats' and 'equipment' have mutated state.
+  const raw = JSON.parse(storage.getItem('sunsetGalleria.save'));
+  raw.data.stats.maxHealth = 150;
+  raw.data.equipment.pockets.lethal = { id: 'sodaBomb', count: 2 };
+  raw.data.gun.attachments = null;
+  storage.setItem('sunsetGalleria.save', JSON.stringify(raw));
+
+  const loaded = game(t, storage);
+  let loadedEvents = 0;
+  loaded.g.events.on('runLoaded', () => { loadedEvents += 1; });
+  const warn = console.warn;
+  console.warn = () => {};
+  try {
+    assert.equal(loaded.g.saveGame.load(), false);
+  } finally {
+    console.warn = warn;
+  }
+  assert.equal(loadedEvents, 0);
+  assert.equal(loaded.g.saveGame.dropped, true);
+  assert.equal(storage.items.has('sunsetGalleria.save'), false);
+  assert.equal(loaded.g.saveGame.peek(), null);
+  assert.equal(loaded.g.rounds.started, false);
+  assert.equal(loaded.g.rounds.round, 0);
+  assert.equal(loaded.g.stats.maxHealth, 100);
+  assert.deepEqual(loaded.g.equipment.pockets.lethal, { id: null, count: 0 });
 });
