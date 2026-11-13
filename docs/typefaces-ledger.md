@@ -76,7 +76,7 @@ Roles live in `src/config/typefaces.js`; a module asks for a role through `world
 | `marker` | Permanent Marker 400 | - | hand-made marker signs and notes |
 | `note` | Caveat 700 | - | handwritten notes |
 | `scrawl` | Rock Salt 400 | - | scrawled graffiti-style notes |
-| `kevin` | Rock Salt 400 | - | Kiosk Kevin's hustler hand-lettering |
+| `kevin` | Righteous 400, pink drop shadow | - | Kiosk Kevin's marquee (retro market-stall lettering) |
 | `typewriter` | Special Elite 400 | - | memos, schedules, paperwork |
 | `led` | VT323 400 | - | dot-matrix / LED displays |
 | `hud3d` | Teko 600 | - | 3D-world numerals that echo the HUD |
