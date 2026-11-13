@@ -251,7 +251,7 @@ owned, a free grab, a keychain in the run summary); the voucher keeps the counte
 for the Courtesy Loaner); tickets never touch points, pricing or income, are lost on death and gone on Play again; the booth has one
 tall collider, a clear reachable spot at every prize, no spawn within 5 m and unchanged zombie routes. clawMachine.test.js checks
 every grab outcome's tickets; receiptReview.test.js the receipt's ticket and keychain lines.
-`economySim.test.js` the economy sim (npm run sim:economy; tools/economyBot.js, economyPlans.js, economyModel.js): the bot plays two rounds headless, buys its
+`economySim.test.js` the economy sim (npm run sim:economy; tools/economyBot.js, economyPlans.js, economyModel.js): the bot plays three rounds headless, buys its
 list in order at the shelf price, and its books balance (every point earned has a round and a source, every point spent a logged purchase);
 a proposal changes config numbers in memory only and puts them back, and a typo in a proposal's path is an error; every proposal and every
 buy order points at config that exists (a renamed door, gun or tier fails here, not in a 40-minute run); the maths side reads config (wave
