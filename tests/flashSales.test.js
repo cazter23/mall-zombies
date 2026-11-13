@@ -644,3 +644,39 @@ test('the tag view re-reads while a sale is on, so a spot that becomes usable wi
     g.map.dispose();
   }
 });
+
+test('a shutter on sale points its tag at the bought side (out of the shutter), never into the closed area', () => {
+  const t = headlessGame();
+  const { g } = t;
+  t.tick(1);
+  const sale = { kind: 'category', categories: ['door'] };
+  const start = collectSaleSpots(g, sale).find((s) => s.category === 'door' && s.id === 'hallway' && s.z < 7);
+  assert.ok(start, 'the start shutter is on sale');
+  assert.deepEqual(start.normal, { x: 0, y: 0, z: 1 }, 'the start room (z 6..16) is the bought side');
+  g.map.areaUnlocks.unlock('hallway');
+  const fromHallway = collectSaleSpots(g, sale).filter((s) => s.category === 'door');
+  assert.ok(fromHallway.length > 3);
+  for (const s of fromHallway) {
+    assert.ok(s.normal, `${s.id} has a side`);
+    const probe = { x: s.x + s.normal.x * 1.5, y: s.y, z: s.z + s.normal.z * 1.5 };
+    assert.ok(g.map.zones[g.map.areaAt(probe)]?.open, `${s.id}: the tag side is a bought area`);
+  }
+  g.map.dispose();
+});
+
+test('rush markers stay near the item even when only a few markers are open (none from across the mall)', () => {
+  const t = headlessGame();
+  const { g } = t;
+  t.tick(1);
+  g.map.areaUnlocks.unlock('hallway'); // start room + hallway: only a handful of open markers, spread 40 m apart
+  const shutter = g.map.doors.find((d) => d.id === 'serviceCorridor').position; // the hallway's west end
+  const { nearestMarkers, maxMarkerDistance } = economy.flashSales.doorbuster.rush;
+  const near = nearOpenSpawnPoints(g.map, shutter);
+  assert.ok(near.length >= 1 && near.length <= nearestMarkers);
+  for (const p of near) assert.ok(Math.hypot(p.position.x - shutter.x, p.position.z - shutter.z) <= maxMarkerDistance, `${p.name} is near`);
+  const openCount = g.map.spawnPoints.filter((p) => g.map.zones[p.zone].open).length;
+  assert.ok(near.length < Math.min(openCount, nearestMarkers), 'the far ones are left out');
+  // Nothing within reach at all: the single nearest marker, never an empty list (the rush must have somewhere to come from).
+  assert.equal(nearOpenSpawnPoints(g.map, shutter, 5, 0.1).length, 1);
+  g.map.dispose();
+});

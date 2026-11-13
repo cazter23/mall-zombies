@@ -187,7 +187,8 @@ export const economy = {
         baseCount: 3,
         perRound: 0.5, // +1 extra shopper per 2 rounds past fromRound
         maxCount: 8, // hard cap regardless of round
-        nearestMarkers: 5, // pick from this many closest open-zone spawn markers to the item
+        nearestMarkers: 5, // pick from this many closest open-zone spawn markers to the item...
+        maxMarkerDistance: 18, // ...that are within this many metres of it (another floor counts 4x); else the single nearest
         spawnIntervalSeconds: 0.45,
         retrySeconds: 0.35,
       },
@@ -198,6 +199,8 @@ export const economy = {
       maxDoorbuster: 6,
       hoverY: 0.72,
       wallOffset: 0.28, // nudge forward along a spot's outward wall normal so tags sit clear of frames
+      doorOffset: 0.8, // a shutter's tag: out on the bought side, clear of the shutter (half its depth + the spinning tag's half width)
+      doorProbe: 1.5, // metres out from a shutter on each side to find which side is bought (game/flashSales.js doorNormal)
       beaconFloorDrop: 1.25,
       syncIntervalSeconds: 0.25,
       bobAmplitude: 0.08,

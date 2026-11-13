@@ -168,7 +168,8 @@ export function createSaleTagView(scene, g) {
 
     if (activeMesh === doorbusterMesh) {
       const lead = spots[0];
-      beacon.root.position.set(lead.x, Math.max(0.02, lead.y - cfg.beaconFloorDrop), lead.z);
+      const out = lead.category === 'door' ? cfg.doorOffset : cfg.wallOffset; // (under the tag, clear of the shutter or wall)
+      beacon.root.position.set(lead.x + (lead.normal?.x ?? 0) * out, Math.max(0.02, lead.y - cfg.beaconFloorDrop), lead.z + (lead.normal?.z ?? 0) * out);
       beacon.root.visible = true;
     } else {
       beacon.root.visible = false;
@@ -214,7 +215,8 @@ export function createSaleTagView(scene, g) {
         const nz = spot.normal?.z ?? 0;
         const bob = Math.sin(clock * cfg.bobSpeed + i * 0.9) * cfg.bobAmplitude;
         const pulse = isDb ? 1 + cfg.doorbusterPulseAmplitude * Math.sin(clock * cfg.doorbusterPulseSpeed + i) : 1;
-        dummy.position.set(spot.x + nx * cfg.wallOffset, spot.y + cfg.hoverY + bob, spot.z + nz * cfg.wallOffset);
+        const out = spot.category === 'door' ? cfg.doorOffset : cfg.wallOffset;
+        dummy.position.set(spot.x + nx * out, spot.y + cfg.hoverY + bob, spot.z + nz * out);
         dummy.rotation.set(0, clock * spin + i * 0.7, 0);
         dummy.scale.setScalar(pulse);
         dummy.updateMatrix();

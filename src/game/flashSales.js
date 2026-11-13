@@ -20,6 +20,7 @@ import { kiosk as kioskConfig } from '../config/kiosk.js';
 import { featuresOf } from './features/index.js';
 import { ownsAttachment } from './features/attachmentCounter.js';
 import { attachmentFits } from '../weapons/upgrades.js';
+import { zoneForRoom } from '../maps/areaBarriers.js';
 
 const NO_THE_ZONES = new Set(['megaMart', 'cinema', 'departmentStore', 'parkingLot']);
 const HAZARD_PRICING_ID = {
@@ -38,6 +39,22 @@ const areaPhrase = (map, zoneId) => {
   return NO_THE_ZONES.has(zoneId) ? label : `the ${label}`;
 };
 const capitalize = (s) => (s ? s[0].toUpperCase() + s.slice(1) : s);
+// A shutter has no wall normal: its tag would sit inside the shutter. Point it at the bought side instead: probe a little
+// way out along the collider's thin axis on both sides, and take the side inside a culling room of an open area (or null).
+function doorNormal(map, door) {
+  const box = door.barrier?.collider;
+  if (!box || !map.cullAreas) return null;
+  const alongX = box.max.x - box.min.x < box.max.z - box.min.z;
+  const reach = economy.flashSales.worldTag.doorProbe;
+  for (const sign of [1, -1]) {
+    const x = door.position.x + (alongX ? sign * reach : 0);
+    const z = door.position.z + (alongX ? 0 : sign * reach);
+    const inOpenRoom = map.cullAreas.some((r) => x >= r.minX && x <= r.maxX && z >= r.minZ && z <= r.maxZ
+      && door.position.y >= (r.minY ?? -Infinity) && door.position.y <= (r.maxY ?? Infinity) && map.zones[zoneForRoom(r.id)]?.open);
+    if (inOpenRoom) return alongX ? { x: sign, y: 0, z: 0 } : { x: 0, y: 0, z: sign };
+  }
+  return null;
+}
 // An attachment is only of use if it fits a gun you carry (the counter refuses one that fits the gun in hand).
 const fitsCarriedGun = (gun, id) => [gun?.def, gun?.inactiveSlot?.def].some((def) => def?.base && attachmentFits(def.base, id));
 
@@ -117,7 +134,7 @@ export function doorbusterCandidates({ map, gun, wardrobe, kiosk, equipment = nu
       out.push({
         category: 'door', id: dest, itemLabel, itemPhrase: `the ${itemLabel}`,
         zone: openZone, zoneLabel: zoneLabelOf(map, openZone), area: areaPhrase(map, openZone),
-        position: primary.position, positions: doors.map((d) => ({ position: d.position, normal: null })),
+        position: primary.position, positions: doors.map((d) => ({ position: d.position, normal: doorNormal(map, d) })),
       });
     }
   } else {
@@ -128,7 +145,7 @@ export function doorbusterCandidates({ map, gun, wardrobe, kiosk, equipment = nu
       out.push({
         category: 'door', id: d.id, itemLabel: label, itemPhrase: `the ${label}`,
         zone: openZone, zoneLabel: zoneLabelOf(map, openZone), area: areaPhrase(map, openZone),
-        position: d.position, positions: [{ position: d.position, normal: null }],
+        position: d.position, positions: [{ position: d.position, normal: doorNormal(map, d) }],
       });
     }
   }
@@ -184,17 +201,17 @@ export function doorbusterCandidates({ map, gun, wardrobe, kiosk, equipment = nu
 /**
  * Nearest open-zone spawn markers to a world position (`targetPos`), preferring the same floor level.
  */
-export function nearOpenSpawnPoints(map, targetPos, limit = economy.flashSales.doorbuster.rush.nearestMarkers) {
+// At most `limit` of them, and only those within `maxDistance` metres (another floor counts 4x), so early in a run, when
+// only a few markers are open, the rush does not come from across the mall; the single nearest is kept if none is that close.
+export function nearOpenSpawnPoints(map, targetPos, limit = economy.flashSales.doorbuster.rush.nearestMarkers,
+  maxDistance = economy.flashSales.doorbuster.rush.maxMarkerDistance) {
   if (!map?.spawnPoints?.length || !targetPos) return [];
   const zones = map.zones ?? {};
-  const open = map.spawnPoints.filter((p) => zones[p.zone]?.open);
-  if (!open.length) return [];
-  const sorted = [...open].sort((a, b) => {
-    const da = (a.position.x - targetPos.x) ** 2 + (a.position.z - targetPos.z) ** 2 + ((a.position.y - targetPos.y) * 4) ** 2;
-    const db = (b.position.x - targetPos.x) ** 2 + (b.position.z - targetPos.z) ** 2 + ((b.position.y - targetPos.y) * 4) ** 2;
-    return da - db;
-  });
-  return sorted.slice(0, Math.max(1, limit));
+  const away = (p) => Math.hypot(p.position.x - targetPos.x, p.position.z - targetPos.z, (p.position.y - targetPos.y) * 4);
+  const sorted = map.spawnPoints.filter((p) => zones[p.zone]?.open).sort((a, b) => away(a) - away(b));
+  if (!sorted.length) return [];
+  const close = sorted.filter((p) => away(p) <= maxDistance).slice(0, Math.max(1, limit));
+  return close.length ? close : sorted.slice(0, 1);
 }
 
 /**
@@ -227,7 +244,7 @@ export function collectSaleSpots({ map, features, gun, warranty, wardrobe, equip
       const dest = map.areaUnlocks ? map.areaUnlocks.destination(d) : (d.isOpen ? null : d.id);
       if (!dest) continue;
       const openZone = d.connectsZones?.find((z) => zones[z]?.open) ?? map.areaAt?.(d.position) ?? 'startRoom';
-      push(d.position, null, 'door', dest, openZone);
+      push(d.position, doorNormal(map, d), 'door', dest, openZone);
     }
   }
   if (cats.has('weapon') || cats.has('ammo')) {
