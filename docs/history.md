@@ -1,5 +1,25 @@
 # Sunset Galleria: build history ("Current state")
 
+## 13 November 2026 - Buying a door is a moment (claude/doors)
+
+- game/doorOpenings.js turns a door 'purchase' into bus events: 'areaOpened' (once per purchase, with the PA's welcome on an area's
+  first opening this run), 'barrierOpening' per barrier set rolling (bought = the one paid at; the others are free connections) and
+  'barrierOpened' when it is fully up. Listeners: the announcer, game/shutterSounds.js, core/haptics.js, fx/doorOpenView.js (new).
+- Per kind of barrier (config/shutters.js opening.profiles, by finish): rattly (the start shutter: padlock click, tinny rattle), roll
+  (store grilles: key and latch), service (steel staff doors: deadbolt, heavy grinding motor, dusty), grand (the brass Atrium/HOFFMAN'S/
+  Cinema fronts: a shop bell, smooth roll, ringing clunk), repair (the escalator: a spin-up and engage). Each: unlock + motor, roll ticks,
+  a heavier end clunk (config/audio.js). The mall has no glass doors: "grand" is the storefront version.
+- The curtain is DRAWN eased (opening.rollEase 2.2: leaps off the floor, settles into the housing) and rattles sideways as the motor
+  catches. The real roll is untouched: the collider leaves on exactly the same tick (1.2 s roll, gone at 1.9 m), and the drawn curtain
+  is never below the real one. Dust puffs along the floor line and falls from the housing (effects.splat); light from the new area spills
+  through (a pooled additive card past the curtain and a floor tongue, coloured by area; it follows the real roll, then fades over
+  0.5 s, so a paused game or a long frame cannot use it up; no real lights). A small view nudge and
+  a controller thump when it clunks home within 10 m.
+- Free connections opened because you now own both sides: a smaller rattle and less dust, only a quiet clunk; no glow, nudge, rumble or PA.
+- PA welcomes (kicker 'Now open', two lines per area, docs/voice.md PA voice) carry `ifQuiet`: the HUD drops them instead of queueing when
+  another PA line is up, and the announcer skips the chime (hud.showAnnouncement returns false).
+- Save & Quit: the restore opens doors with { instant: true } (snapped open, no events/sounds) and counts owned areas as welcomed.
+
 ## 13 November 2026 - Tennis Ball Launcher keeps up; Barcode Scanner: scan and ring up (claude/gun-rework)
 
 - Tennis Ball Launcher: 60 a hit x (round Shopper health / 150)^0.85 by the round the zombie spawned in (roundScaling; zombie.round), so a

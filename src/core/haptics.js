@@ -59,6 +59,9 @@ export function createHaptics({ gamepad, input, state, health, events, config = 
     }),
     events.on('playerFall', () => { if (!health.invulnerable && !health.isDead) pulse(config.damage); }),
     events.on('powerUpCollect', () => pulse(config.pickup)),
+    // A bought door (game/doorOpenings.js): a tick as it unlocks, a thump when it clunks home near you.
+    events.on('barrierOpening', ({ bought }) => { if (bought) pulse(config.doorUnlock); }),
+    events.on('barrierOpened', ({ bought, near }) => { if (bought && near) pulse(config.doorClunk); }),
     events.on('playerDeath', stop),
     events.on('runReset', stop),
   ];

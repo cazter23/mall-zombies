@@ -30,7 +30,11 @@ src/
                         tracker's seconds (shown, struck through), words and soft fail sound.
                         Preserves Phase 1's Night Shift/Carbon Copy palettes; the other nine skins carry names and challenges for now.
     idle.js             Idle saver numbers: delays (short / normal / long: dim and sleep seconds), dimFps, muteWhenAsleep, pollSeconds
-    haptics.js          Controller vibration intensity and per-gun/damage/pickup durations, motor strengths and priorities
+    haptics.js          Controller vibration intensity and per-gun/damage/pickup durations, motor strengths and priorities; doorUnlock / doorClunk
+                        (a bought door's latch and its end clunk near you)
+    shutters.js         Shutter construction (slats, track, housing, finishes keyed by door id, each with an opening `profile`) and `opening`:
+                        the buy moment's numbers (rollEase, lightScale/lightVolume for free connections, nudge, dust, glow + glowColor by area,
+                        profiles = sounds/rattle/dust per kind of barrier: rattly, roll, service, grand, repair) and the PA's area welcomes.
     bosses.js           Boss debut windows (the booked-only Last Customer has none), parking entrance/backup markers, wave timing, combat and control tuning, PA lines (`introBanner`, per-encore-boss `encoreBanner` 4-line pools on `influencer`/`guard`/`manager`/`janitor`, `phases`, `defeatBanner`), and the Janitor's costume
                         and Wet Floor settings. Boss kill values and health scaling go through economy.js.
     deathMusic.js       End of Shift: original seven-second death composition (piano/pad/bell/noise layers), gain and
@@ -607,7 +611,14 @@ src/
                         keychain: hold / has / use). A resetStep ('tickets'), so Play again starts at 0.
     flashSales.js       Flash Sales & Doorbusters: a PA teaser (`flashSaleSoon`, 10 s lead time, category line picked from `teaser.lines` via `pickPaLine` with its own cosmetic `lineRandom` (default announcer.js `paRandom`: never a draw from the sales' `random`), re-checks eligibility at go-live), category sales (`25-50% off`), and rare Doorbusters (one unowned item you can reach in time, `reachableInTime`, 65-75% off for 20 s; BUYING it sells it out (`flashSaleEnd` reason 'sold') and brings a capped open-zone shopper rush via zombieManager). Also exports `saleEligibility`, `doorbusterCandidates`, `nearOpenSpawnPoints`, `collectSaleSpots`.
     runIntro.js         The PA's opening announcement on a run's first round (listens to 'roundStart').
-    shutterSounds.js    Purchase sounds that follow the real shutter motion; pausing stops them, death and reset cancel them.
+    shutterSounds.js    A bought door's sounds by its opening profile (config/shutters.js opening.profiles): unlock + motor on 'barrierOpening',
+                        a roll tick every rollInterval while it really rises, the heavy end clunk on 'barrierOpened'; a free connection only
+                        clunks, at lightVolume. Follows the real barrier: pausing stops them, death and reset cancel them, a load plays none.
+    doorOpenings.js     Buying a door as a moment: turns a door 'purchase' into 'areaOpened' (once per purchase; first + the PA welcome
+                        `pa` with ifQuiet on an area's first opening this run), 'barrierOpening' per barrier set rolling (bought = the one
+                        paid at; the rest are free connections) and 'barrierOpened' when it is fully up (near = within opening.nudge.range;
+                        a bought one near you kicks the view a little: player.addRecoil). openingProfile(door). A reset step (transient):
+                        'runLoaded' marks every owned area as welcomed. Listeners: announcer, shutterSounds, core/haptics, fx/doorOpenView.
     features/           MAP FEATURES by kind (built features: features.instanceOf(kind) / instancesOf(kind)). index.js = the registry (kind -> build(feature, ctx) returning optional
                         { update(dt), reset() }), buildFeatures(map, ctx) (unknown kind throws; createGame ticks/resets them),
                         featuresOf(map, kind), FEATURE_KINDS (own entries only). Built AFTER createGame's core event wiring (payouts/stats
@@ -952,6 +963,11 @@ src/
     saleTagView.js      Browser side only: pooled two-sided floating SALE / SALE SOON / DOORBUSTER tags (world/typeKit.js `clearance` role; three InstancedMeshes, one
                         shown at a time) and a Doorbuster beacon over the buy spots collectSaleSpots(g, sale) returns; re-reads on sale/purchase/move events and
                         every worldTag.syncIntervalSeconds; dispose() unsubscribes and frees its pools. Numbers: economy.flashSales.worldTag.
+    doorOpenView.js     Browser side only: a bought door going up (game/doorOpenings.js events). Dust through effects.splat along the doorway's
+                        floor line ('barrierOpening') and falling from the housing ('barrierOpened'; the escalator: a puff at its foot); for the
+                        door you paid at, light from the new area spills through: an additive card just past the curtain (revealed as it lifts)
+                        and a tongue of light on your side's floor, coloured by area (opening.glowColor). opening.glow.slots pooled pairs made
+                        once and hidden when idle: no real lights, no draw calls between openings. update(dt) (0 while paused), active, dispose().
     beacon.js           createBeacon({ color, ring, base }): an additive light column and a pulsing floor ring (2 draws; geometry shared by every
                         beacon, materials by colour, flagged userData.shared) over a power-up, a Closing Time key and Kevin's open cart.
     detailCulling.js    Graphics > Small detail (look.runtime.detailDistance): small printed meshes (signs, posters, labels under
@@ -1034,8 +1050,9 @@ src/
                         (start a branch corridor through a side opening). left/right = as walked (right = (-dz, dx)).
                         THROWS if the corridor crosses itself or two runs are so close a wall lands in another's walkway
     areaUnlocks.js      createAreaUnlocks({ zones, doors, connections }): destination(door) identifies the one locked
-                        endpoint. unlock(areaId) owns only that area and opens all connections whose endpoints are owned,
-                        returning their barrier ids for sound feedback. openAll/reset support debug and Play again.
+                        endpoint. unlock(areaId, { instant, bought }) owns only that area and opens all connections whose endpoints are
+                        owned, returning their barrier ids for the open sequence (bought = the door paid at; every other barrier gets the
+                        light version; instant = a load: snapped open). openAll/reset support debug and Play again.
                         Mall's 15 barriers connect nine purchasable areas plus the initially owned Start Room.
     door.js             createDoor(): physical barrier wrapping open/close/update/collider. Raw open/reset retains
                         legacy zone-holder behavior for standalone maps and geometry tests. Mall gameplay purchases
@@ -1054,6 +1071,9 @@ src/
                         collider changes. mesh = cropped moving curtain + hardware; frame = fixed guides/housing (mapKit adds both).
                         Constant slat pitch in X/Z walls, hidden curtain when fully rolled up. Curtain and frame stay on the always-drawn
                         layer so a closed doorway cannot cull its own barrier. config/shutters.js owns finishes/dimensions.
+                        The open sequence is drawn only: `raised` (the real roll, which the collider follows exactly as before) is
+                        DRAWN at drawnRaise (eased by opening.rollEase, never below it); from fully closed the curtain rattles sideways
+                        by its finish's profile.shake (smaller with open({ light })). open({ instant }) snaps open (a load). Exposes finish.
     textures.js         Procedural canvas textures (floor tile, shop sign, shutter, muzzle flash burst, wall-buy chalk). No image files.
                         makeSignTexture draws on a 1024-wide page scaled onto a canvas pixelsWide across (mapKit sizes it by metres:
                         signPixels); makeTileTexture is built once per look and handed out as clones (shared image, own repeat).
@@ -1110,6 +1130,8 @@ src/
                         highlighted item's stat lines in green and red. Only draws.
     ritualHud.js        The order ticket on the HUD: the gun's stage, one progress bar, the gauge and time (reads the ritual's status).
     announcements.js    Bounded PA queue: type introductions priority 2, incentives 1, routine messages 0; a message flagged `keep` is never trimmed and is re-queued if cut off;
+                        one flagged `ifQuiet` (an area welcome) is dropped when anything is showing or queued: push() returns false, and
+                        hud.showAnnouncement passes it on (not archived; the announcer skips the chime);
                         clear on pause/death/reset; wall-clock presentation timers only
     noticeHistory.js    The run's PA notices, kept for the Notices menu (queued and pre-empted ones too); pausing never clears it.
     noticesMenu.js      createNoticesMenu(history): the pause screen's list of this run's PA notices.

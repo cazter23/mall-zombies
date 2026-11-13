@@ -76,10 +76,22 @@ export function createShutter({ name, minX, maxX, minZ, maxZ, minY = 0, height, 
   markCollidersChanged(colliders);
 
   let state = 'closed'; // 'closed' | 'opening' | 'open' | 'closing'
-  let raised = 0; // meters the shutter has rolled up
+  let raised = 0; // meters the shutter has REALLY rolled up (the collider follows this, exactly as before the open sequence)
+  // The open sequence (config/shutters.js opening): how it is DRAWN. Cosmetic only.
+  const opening = shutters.opening;
+  const profile = opening.profiles[finish.profile] ?? opening.profiles.roll;
+  const baseX = mesh.position.x, baseZ = mesh.position.z;
+  let shakeAge = Infinity, shakeScale = 1; // seconds since a rattle began (Infinity = still)
+
+  /** Where the curtain is drawn for a real roll of `metres`: eased, and never below the real roll. */
+  function drawnRaise(metres) {
+    const p = Math.min(1, Math.max(0, metres / height));
+    return height * (1 - (1 - p) ** opening.rollEase);
+  }
 
   function pose() {
-    const remaining = Math.max(0, height - raised), fraction = remaining / height;
+    const shown = drawnRaise(raised);
+    const remaining = Math.max(0, height - shown), fraction = remaining / height;
     // The lower, unrolled portion of the original curtain rises into a fixed housing.
     // Crop its UVs with its geometry so neither the painted lettering nor the slat spacing squashes.
     for (let i = 0; i < positions.count; i++) {
@@ -87,7 +99,18 @@ export function createShutter({ name, minX, maxX, minZ, maxZ, minY = 0, height, 
     }
     positions.needsUpdate = true; uv.needsUpdate = true;
     geometry.computeBoundingBox(); geometry.computeBoundingSphere();
-    mesh.position.y = minY + raised + remaining / 2;
+    mesh.position.y = minY + shown + remaining / 2;
+    // The rattle as the motor catches: sideways along the doorway, dying away, with a little hop up.
+    const shake = profile.shake;
+    if (shake && shakeAge < shake.seconds) {
+      const fade = 1 - shakeAge / shake.seconds, phase = shakeAge * shake.hz * Math.PI * 2;
+      const side = Math.sin(phase) * shake.amplitude * shakeScale * fade;
+      mesh.position.x = baseX + (alongX ? side : 0);
+      mesh.position.z = baseZ + (alongX ? 0 : side);
+      mesh.position.y += Math.abs(Math.sin(phase * 0.5)) * shake.amplitude * 0.4 * shakeScale * fade;
+    } else {
+      mesh.position.x = baseX; mesh.position.z = baseZ;
+    }
     bottomRail.position.y = -remaining / 2 + shutters.bottomRailHeight / 2;
     bottomRail.visible = remaining >= shutters.bottomRailHeight;
     for (const handle of handles) {
@@ -116,18 +139,41 @@ export function createShutter({ name, minX, maxX, minZ, maxZ, minY = 0, height, 
     mesh,
     frame,
     collider, // the solid slab filling the doorway (the interaction system sees through it to the buy spot)
+    finish, // (its opening profile: config/shutters.js)
     get state() {
       return state;
     },
     get isOpen() {
       return state === 'open';
     },
-    open() {
-      if (state === 'closed' || state === 'closing') state = 'opening';
+    /** Metres REALLY rolled up (the collider goes at feel.player.height + 0.1, as it always has). */
+    get raised() {
+      return raised;
+    },
+    /** Where the curtain's bottom edge is drawn (metres above its floor): eased, never below `raised`. */
+    get drawnRaise() {
+      return drawnRaise(raised);
+    },
+    // instant: snap fully open with no roll (a loaded save: that doorway was already open). light: a free connection
+    // opening on its own (a smaller rattle). Only a shutter starting from fully closed rattles as its motor catches.
+    open({ instant = false, light = false } = {}) {
+      if (instant) {
+        state = 'open';
+        raised = height;
+        shakeAge = Infinity;
+        removeCollider();
+        pose();
+        return;
+      }
+      if (state === 'closed' || state === 'closing') {
+        if (raised <= 0) { shakeAge = 0; shakeScale = light ? opening.lightScale : 1; }
+        state = 'opening';
+      }
     },
     close() {
       if (state === 'open' || state === 'opening') {
         state = 'closing';
+        shakeAge = Infinity;
         mesh.visible = true;
         addCollider(); // block immediately so nobody slips under a closing door
       }
@@ -139,6 +185,8 @@ export function createShutter({ name, minX, maxX, minZ, maxZ, minY = 0, height, 
     update(dt) {
       const before = raised;
       const speed = height / feel.world.shutterOpenSeconds;
+      const shaking = shakeAge < (profile.shake?.seconds ?? 0);
+      if (shaking) shakeAge += dt;
       if (state === 'opening') {
         raised = Math.min(height, raised + speed * dt);
         // Let the player through once there's head room.
@@ -148,7 +196,7 @@ export function createShutter({ name, minX, maxX, minZ, maxZ, minY = 0, height, 
         raised = Math.max(0, raised - speed * dt);
         if (raised <= 0) state = 'closed';
       }
-      if (raised !== before) pose();
+      if (raised !== before || shaking) pose(); // (one more pose after the rattle ends puts it back on its centre)
     },
   };
 }

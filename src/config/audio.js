@@ -206,18 +206,95 @@ export const audio = {
       { type: 'noise', filter: 'bandpass', freq: 650, q: 2, gain: 0.3, attack: 0.04, decay: 0.45 },
       { type: 'tone', wave: 'triangle', freq: 170, freqEnd: 95, gain: 0.12, attack: 0.03, decay: 0.35, delay: 0.12 },
     ] },
+    // BUYING A DOOR (config/shutters.js opening.profiles picks one of each per kind of barrier): an unlock as the
+    // purchase lands, the motor catching, a roll tick while it rises, and the heavy end clunk when it is fully up.
+    // Store roll-down grille: a key turn and a latch.
+    shutterLatch: { volume: 0.34, layers: [
+      { type: 'noise', filter: 'highpass', freq: 3000, q: 0.7, gain: 0.4, attack: 0.001, decay: 0.03 },
+      { type: 'tone', wave: 'square', freq: 1400, freqEnd: 900, gain: 0.07, attack: 0.001, decay: 0.04, delay: 0.03 },
+      { type: 'noise', filter: 'bandpass', freq: 700, q: 3, gain: 0.32, attack: 0.002, decay: 0.08, delay: 0.07 },
+      { type: 'tone', wave: 'triangle', freq: 180, freqEnd: 120, gain: 0.22, attack: 0.002, decay: 0.1, delay: 0.07 },
+    ] },
+    // The start room's flimsy clearance shutter: a padlock click and the whole curtain rattling in its tracks.
+    shutterLatchTin: { volume: 0.34, layers: [
+      { type: 'noise', filter: 'highpass', freq: 3500, q: 0.7, gain: 0.35, attack: 0.001, decay: 0.025 },
+      { type: 'noise', filter: 'bandpass', freq: 1600, q: 4, gain: 0.35, attack: 0.003, decay: 0.05, delay: 0.05 },
+      { type: 'noise', filter: 'bandpass', freq: 900, q: 2, gain: 0.28, attack: 0.02, decay: 0.28, delay: 0.08 },
+      { type: 'tone', wave: 'triangle', freq: 420, freqEnd: 300, gain: 0.1, attack: 0.002, decay: 0.08, delay: 0.06 },
+    ] },
+    // A steel service door: a heavy deadbolt thrown back.
+    shutterBolt: { volume: 0.4, layers: [
+      { type: 'noise', filter: 'lowpass', freq: 2200, gain: 0.5, attack: 0.001, decay: 0.05 },
+      { type: 'tone', wave: 'sine', freq: 140, freqEnd: 70, gain: 0.5, attack: 0.001, decay: 0.12 },
+      { type: 'noise', filter: 'bandpass', freq: 1100, q: 5, gain: 0.3, attack: 0.001, decay: 0.06, delay: 0.09 },
+      { type: 'tone', wave: 'square', freq: 520, freqEnd: 380, gain: 0.06, attack: 0.001, decay: 0.05, delay: 0.09 },
+    ] },
+    // A brass-trimmed storefront (the Atrium, HOFFMAN'S, the Cinema): the shop bell over the door, and a soft latch.
+    shutterChime: { volume: 0.3, layers: [
+      { type: 'noise', filter: 'highpass', freq: 2500, q: 0.7, gain: 0.2, attack: 0.001, decay: 0.03 },
+      { type: 'tone', wave: 'sine', freq: 1568, gain: 0.3, attack: 0.003, decay: 0.45, delay: 0.02 },
+      { type: 'tone', wave: 'sine', freq: 2350, gain: 0.12, attack: 0.003, decay: 0.3, delay: 0.02 },
+      { type: 'tone', wave: 'triangle', freq: 200, freqEnd: 140, gain: 0.12, attack: 0.002, decay: 0.08, delay: 0.05 },
+    ] },
     shutterMotor: { volume: 0.32, layers: [
       { type: 'tone', wave: 'triangle', freq: 105, freqEnd: 145, gain: 0.28, attack: 0.018, decay: 0.15 },
       { type: 'noise', filter: 'lowpass', freq: 850, gain: 0.16, attack: 0.006, decay: 0.09 },
+    ] },
+    shutterMotorLight: { volume: 0.28, layers: [
+      { type: 'tone', wave: 'triangle', freq: 160, freqEnd: 230, gain: 0.22, attack: 0.015, decay: 0.12 },
+      { type: 'noise', filter: 'lowpass', freq: 1400, gain: 0.16, attack: 0.006, decay: 0.08 },
+    ] },
+    shutterMotorHeavy: { volume: 0.36, layers: [
+      { type: 'tone', wave: 'sawtooth', freq: 62, freqEnd: 90, gain: 0.18, attack: 0.03, decay: 0.35 },
+      { type: 'noise', filter: 'lowpass', freq: 500, gain: 0.25, attack: 0.02, decay: 0.3 },
+      { type: 'tone', wave: 'triangle', freq: 120, freqEnd: 150, gain: 0.15, attack: 0.02, decay: 0.25 },
     ] },
     shutterRoll: { volume: 0.2, layers: [
       { type: 'noise', filter: 'bandpass', freq: 1100, q: 1.2, gain: 0.3, attack: 0.004, decay: 0.075 },
       { type: 'tone', wave: 'triangle', freq: 205, freqEnd: 170, gain: 0.1, attack: 0.003, decay: 0.06 },
     ] },
-    shutterStop: { volume: 0.34, layers: [
-      { type: 'tone', wave: 'sine', freq: 95, freqEnd: 43, gain: 0.48, attack: 0.002, decay: 0.13 },
-      { type: 'noise', filter: 'lowpass', freq: 1200, gain: 0.34, attack: 0.001, decay: 0.06 },
-      { type: 'tone', wave: 'triangle', freq: 360, freqEnd: 190, gain: 0.1, attack: 0.002, decay: 0.07 },
+    shutterRollTin: { volume: 0.2, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 1900, q: 2, gain: 0.32, attack: 0.003, decay: 0.05 },
+      { type: 'tone', wave: 'triangle', freq: 330, freqEnd: 280, gain: 0.08, attack: 0.002, decay: 0.04 },
+    ] },
+    shutterRollHeavy: { volume: 0.24, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 600, q: 1, gain: 0.35, attack: 0.005, decay: 0.1 },
+      { type: 'tone', wave: 'triangle', freq: 120, freqEnd: 100, gain: 0.14, attack: 0.004, decay: 0.09 },
+    ] },
+    shutterRollSmooth: { volume: 0.16, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 1400, q: 0.9, gain: 0.2, attack: 0.005, decay: 0.07 },
+      { type: 'tone', wave: 'sine', freq: 240, freqEnd: 220, gain: 0.06, attack: 0.004, decay: 0.06 },
+    ] },
+    // The heavy end clunks: a low thump into the housing, the slam's crack, and a short metal ring.
+    shutterStop: { volume: 0.4, layers: [
+      { type: 'tone', wave: 'sine', freq: 95, freqEnd: 40, gain: 0.55, attack: 0.002, decay: 0.18 },
+      { type: 'noise', filter: 'lowpass', freq: 1200, gain: 0.4, attack: 0.001, decay: 0.07 },
+      { type: 'tone', wave: 'triangle', freq: 360, freqEnd: 190, gain: 0.12, attack: 0.002, decay: 0.09 },
+      { type: 'noise', filter: 'bandpass', freq: 2400, q: 6, gain: 0.08, attack: 0.002, decay: 0.25, delay: 0.02 },
+    ] },
+    shutterStopTin: { volume: 0.36, layers: [
+      { type: 'tone', wave: 'sine', freq: 130, freqEnd: 60, gain: 0.4, attack: 0.002, decay: 0.12 },
+      { type: 'noise', filter: 'bandpass', freq: 1800, q: 3, gain: 0.3, attack: 0.002, decay: 0.2 },
+      { type: 'tone', wave: 'triangle', freq: 620, freqEnd: 540, gain: 0.08, attack: 0.002, decay: 0.2, delay: 0.02 },
+    ] },
+    shutterStopHeavy: { volume: 0.46, layers: [
+      { type: 'tone', wave: 'sine', freq: 70, freqEnd: 32, gain: 0.7, attack: 0.002, decay: 0.28 },
+      { type: 'noise', filter: 'lowpass', freq: 700, gain: 0.5, attack: 0.001, decay: 0.12 },
+      { type: 'tone', wave: 'triangle', freq: 220, freqEnd: 110, gain: 0.2, attack: 0.002, decay: 0.15 },
+      { type: 'noise', filter: 'bandpass', freq: 900, q: 2, gain: 0.2, attack: 0.02, decay: 0.3, delay: 0.06 },
+    ] },
+    shutterStopBrass: { volume: 0.4, layers: [
+      { type: 'tone', wave: 'sine', freq: 90, freqEnd: 42, gain: 0.55, attack: 0.002, decay: 0.2 },
+      { type: 'noise', filter: 'lowpass', freq: 1500, gain: 0.3, attack: 0.001, decay: 0.06 },
+      { type: 'tone', wave: 'sine', freq: 880, gain: 0.1, attack: 0.002, decay: 0.6, delay: 0.01 },
+      { type: 'tone', wave: 'sine', freq: 1320, gain: 0.05, attack: 0.002, decay: 0.45, delay: 0.01 },
+    ] },
+    // The escalator repaired: the motor spins up, then the steps engage with a clunk.
+    escalatorStartup: { volume: 0.4, layers: [
+      { type: 'tone', wave: 'sawtooth', freq: 40, freqEnd: 110, gain: 0.16, attack: 0.3, decay: 0.5 },
+      { type: 'noise', filter: 'lowpass', freq: 400, gain: 0.25, attack: 0.2, decay: 0.5 },
+      { type: 'tone', wave: 'sine', freq: 90, freqEnd: 40, gain: 0.5, attack: 0.001, decay: 0.15, delay: 0.6 },
+      { type: 'noise', filter: 'lowpass', freq: 1000, gain: 0.3, attack: 0.001, decay: 0.06, delay: 0.6 },
     ] },
     // Chunky compressed-air darts: mid-bass body + sub-bass tube thump stays punchy on headphones and speakers.
     foamShot: { volume: 0.56, layers: [

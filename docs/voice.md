@@ -2,7 +2,7 @@
 
 Every string in `src/config/` belongs to a specific speaker. Match the voice, tone, punctuation, and length of the pool you edit.
 
-## 1. Mall PA (`config/clawMachine.js` `pa`, `kiosk.js` `pa`, `bosses.js`, `economy.js`, `feel.js`)
+## 1. Mall PA (`config/clawMachine.js` `pa`, `kiosk.js` `pa`, `bosses.js`, `economy.js`, `feel.js`, `shutters.js` `opening.welcome`)
 - Deadpan corporate-retail intercom: calm, dry, bureaucratic; never excited, panic-stricken, or chatty.
 - No exclamation marks (two old lines have one: the last-shoppers and clock-in originals; do not add more).
 - Treat absurd zombie reality as routine mall policy, store procedure, or customer-service logistics.
