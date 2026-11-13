@@ -1036,28 +1036,71 @@ export const weapons = {
       darkColor: 0x14161e, gripColor: 0x5a3a22, sightColor: 0xffe58a, lensColor: 0x6fb6ff, starColor: 0xfff1b0,
       // The bolt: after each shot the handle lifts, slides back and forward again, and drops (sinceFire, over boltSeconds after boltDelay).
       fire: { triggerDegrees: 22, pressSeconds: 0.03, releaseSeconds: 0.12, boltDelay: 0.3, boltSeconds: 0.55, boltTravel: 0.06, boltLiftDegrees: 70 },
-      // Reload: the gun rolls to show its right side, the bolt stays open, the support hand pushes a strip of bearings down into the port, then the bolt closes.
+      // Reload, a bolt-action strip load (models/stargazer.js). Poses: pos in metres (right, up, back), rot in degrees (muzzle up, turn left,
+      // roll left). The TRIGGER hand leaves the grip (the gun rolls its bolt up toward it), lifts the bolt and pulls it back (Out) and returns
+      // to the grip; the gun rolls the other way to show its left side, where the support hand brings a strip from below and presses the
+      // bearings sideways into the port (In), then flicks the empty clip away; the gun rolls back, the trigger hand pushes the bolt forward
+      // and drops it (Ready); everything settles home.
       reload: {
         gunKeys: [
           { t: 0, pos: [0, 0, 0], rot: [0, 0, 0] },
-          { t: 0.16, pos: [-0.01, 0.01, 0.03], rot: [8, -6, -22] },
-          { t: 0.8, pos: [-0.01, 0.01, 0.03], rot: [8, -6, -22] },
+          { t: 0.12, pos: [-0.01, 0.015, 0.02], rot: [6, -3, 12] }, // bolt side up, toward the trigger hand
+          { t: 0.26, pos: [-0.008, 0.02, 0.028], rot: [5, -3, 10] }, // drawn back a touch as the bolt comes back
+          { t: 0.4, pos: [-0.03, 0.01, 0.02], rot: [6, 8, -24] }, // rolls over: the left side and its port face you
+          { t: 0.57, pos: [-0.034, 0.012, 0.02], rot: [9, 9, -28] }, // tips to meet the strip
+          { t: 0.65, pos: [-0.026, 0.008, 0.02], rot: [7, 7, -24] }, // shoved by the push
+          { t: 0.73, pos: [-0.01, 0.015, 0.022], rot: [5, -2, 8] }, // rolls back for the bolt
+          { t: 0.82, pos: [-0.008, 0.012, 0.018], rot: [4, -2, 8] },
+          { t: 0.95, pos: [0, 0, 0], rot: [0, 0, 0] },
           { t: 1, pos: [0, 0, 0], rot: [0, 0, 0] },
         ],
+        // The support hand (offsets from where it holds the fore-end); stripInPalm: where the strip sits in it (the hand group's coordinates).
+        stripInPalm: [-0.04, -0.026, -0.275], // pinched on the palm's top edge, in sight above the hand
         handKeys: [
           { t: 0, pos: [0, 0, 0] },
-          { t: 0.2, pos: [-0.04, -0.16, 0.12], rot: [-20, 0, 0] }, // down to the pouch
-          { t: 0.36, pos: [-0.04, -0.16, 0.12], rot: [-20, 0, 0] }, // a strip of bearings
-          { t: 0.52, pos: [0.04, 0.06, 0.14], rot: [10, 0, 0] }, // up over the open port
-          { t: 0.66, pos: [0.04, 0.035, 0.14], rot: [10, 0, 0] }, // thumbs them down
-          { t: 0.85, pos: [0, 0, 0] },
+          { t: 0.26, pos: [0, 0, 0] }, // holds the gun while the bolt is opened
+          { t: 0.36, pos: [-0.07, -0.18, 0.12], rot: [-25, 0, 0] }, // down to the pouch
+          { t: 0.44, pos: [-0.07, -0.18, 0.12], rot: [-25, 0, 0] }, // a strip of bearings
+          { t: 0.54, pos: [-0.04, 0.05, 0.215], rot: [0, 0, 0] }, // up beside the open port
+          { t: 0.58, pos: [-0.002, 0.036, 0.215] }, // the strip against the port
+          { t: 0.65, pos: [0.01, 0.036, 0.215] }, // pushes the bearings in
+          { t: 0.71, pos: [-0.08, 0.1, 0.19], rot: [0, 30, 20] }, // flicks the empty clip away
+          { t: 0.86, pos: [0, 0, 0] },
         ],
-        stripVisible: [[0.36, 0.66]], // the strip in the hand
-        boltOpen: [[0.12, 0.84]], // the bolt is back for the whole reload
+        // The trigger hand: the palm's resting point on the grip (the pivot it turns about), and its offsets from there to the bolt knob.
+        boltHandPivot: [0.004, -0.1, 0.026],
+        boltHandKeys: [
+          { t: 0, pos: [0, 0, 0] },
+          { t: 0.04, pos: [0, 0, 0] },
+          { t: 0.13, pos: [0.088, 0.07, 0.014], rot: [0, 0, -25] }, // fingers on the knob
+          { t: 0.19, pos: [0.07, 0.12, 0.01], rot: [0, 0, -45] }, // lifts it
+          { t: 0.26, pos: [0.07, 0.12, 0.07], rot: [-6, 0, -45] }, // pulls it back
+          { t: 0.36, pos: [0, 0, 0] }, // back on the grip
+          { t: 0.66, pos: [0, 0, 0] },
+          { t: 0.71, pos: [0.07, 0.12, 0.07], rot: [-6, 0, -45] }, // on the open bolt
+          { t: 0.76, pos: [0.07, 0.12, 0.01], rot: [0, 0, -45] }, // pushes it forward
+          { t: 0.81, pos: [0.088, 0.07, 0.014], rot: [0, 0, -25] }, // drops it
+          { t: 0.9, pos: [0, 0, 0] },
+        ],
+        // The bolt: pos[0] = lift (0..1 of fire.boltLiftDegrees), pos[1] = back (0..1 of fire.boltTravel), riding on the trigger hand.
+        boltKeys: [
+          { t: 0, pos: [0, 0, 0] },
+          { t: 0.13, pos: [0, 0, 0] },
+          { t: 0.19, pos: [1, 0, 0] },
+          { t: 0.26, pos: [1, 1, 0] },
+          { t: 0.71, pos: [1, 1, 0] },
+          { t: 0.76, pos: [1, 0, 0] },
+          { t: 0.81, pos: [0, 0, 0] },
+          { t: 1, pos: [0, 0, 0] },
+        ],
+        stripVisible: [[0.4, 0.71]], // the strip in the hand, from the pouch until it is flicked away
+        stripPress: [0.58, 0.65], stripPressDepth: 0.02, // the bearings slide this far off the clip into the port, then are gone
+        portFilledFrom: 0.62, // the port shows the new bearings from here until the bolt closes over them
         events: [
-          { at: 0.12, sound: 'stargazerReloadOut', jolt: { back: 0.006, pitchDegrees: 1.5 } },
-          { at: 0.64, sound: 'stargazerReloadIn', jolt: { up: -0.006, pitchDegrees: -2 } },
-          { at: 0.84, sound: 'stargazerReloadReady', jolt: { back: 0.01, pitchDegrees: 2.5 } },
+          { at: 0.22, sound: 'stargazerReloadOut', jolt: { back: 0.008, pitchDegrees: 1.5 } },
+          { at: 0.63, sound: 'stargazerReloadIn', jolt: { up: -0.008, pitchDegrees: -2.5, rollDegrees: 1.5 } },
+          { at: 0.71, jolt: { up: 0.004, rollDegrees: -2 } }, // the clip flicked away
+          { at: 0.81, sound: 'stargazerReloadReady', jolt: { back: 0.012, pitchDegrees: 3 } },
         ],
       },
     },
@@ -1195,29 +1238,71 @@ export const weapons = {
       aimYawDegrees: 6, hipPitchDegrees: 1.5, hipRollDegrees: 3,
       bodyColor: 0x2fc4c0, accentColor: 0xff5ec8, metalColor: 0xd6dbe2, // party-store teal and pink
       darkColor: 0x1e2430, gripColor: 0x2a2f3a, sightColor: 0xffd23f, tankColor: 0xe9edf2, balloonColor: 0xff5ec8, ribbonColor: 0xffd23f,
-      // The balloon on the nozzle: it inflates over `inflateSeconds` after each shot (and after a reload), and shows only while loaded.
-      fire: { triggerDegrees: 22, pressSeconds: 0.025, releaseSeconds: 0.1, inflateSeconds: 0.25 },
-      // Reload: the gun tips, the support hand twists a fresh helium cartridge into the tank's base, and the gauge swings back up.
+      // The balloon on the nozzle: it inflates over `inflateSeconds` after each shot, and shows only while loaded. The gauge's needle (degrees
+      // from straight up): at needleRestDegrees when loaded, dipping needleDipDegrees with each shot and climbing back as the balloon fills,
+      // at -needleEmptyDegrees when empty.
+      fire: { triggerDegrees: 22, pressSeconds: 0.025, releaseSeconds: 0.1, inflateSeconds: 0.25, needleRestDegrees: 35, needleDipDegrees: 25, needleEmptyDegrees: 70 },
+      // Reload (models/balloonLauncher.js). Poses: pos in metres (right, up, back), rot in degrees (muzzle up, turn left, roll left). The
+      // balloon lets go; the gun swings its tail toward the support hand, which unscrews the spent cartridge from the tank's back (Out),
+      // tosses it, fetches a new one from below, pushes it in and screws it home (In, the needle climbs), then taps the gauge (Ready) and
+      // the balloon blows back up as the gun settles.
       reload: {
         gunKeys: [
           { t: 0, pos: [0, 0, 0], rot: [0, 0, 0] },
-          { t: 0.18, pos: [0.01, -0.02, 0.03], rot: [12, 8, 18] },
-          { t: 0.8, pos: [0.01, -0.02, 0.03], rot: [12, 8, 18] },
+          { t: 0.12, pos: [-0.02, 0.02, 0.01], rot: [10, -12, 10] }, // tail toward the support hand
+          { t: 0.26, pos: [-0.02, 0.024, 0.018], rot: [9, -12, 11] }, // tugged as the cartridge comes out
+          { t: 0.42, pos: [-0.014, 0.012, 0.01], rot: [6, -8, 7] }, // waits while a new one is fetched
+          { t: 0.6, pos: [-0.02, 0.02, 0.0], rot: [10, -12, 10] },
+          { t: 0.64, pos: [-0.02, 0.016, -0.008], rot: [11, -12, 10] }, // shoved as it goes in
+          { t: 0.74, pos: [-0.012, 0.016, 0.0], rot: [6, -6, 20] }, // rolls the gauge toward you
+          { t: 0.8, pos: [-0.012, 0.008, 0.0], rot: [4, -6, 22] }, // tapped
+          { t: 0.95, pos: [0, 0, 0], rot: [0, 0, 0] },
           { t: 1, pos: [0, 0, 0], rot: [0, 0, 0] },
         ],
+        // The support hand (offsets from where it holds the body); cartridgeInHand: where the cartridge sits in it (the hand group's coordinates).
+        cartridgeInHand: [-0.04, -0.03, -0.19],
         handKeys: [
           { t: 0, pos: [0, 0, 0] },
-          { t: 0.2, pos: [-0.05, -0.16, 0.1], rot: [-20, 0, 0] },
-          { t: 0.38, pos: [-0.05, -0.16, 0.1], rot: [-20, 0, 0] },
-          { t: 0.56, pos: [-0.01, -0.04, 0.12], rot: [0, 0, 30] }, // under the tank
-          { t: 0.7, pos: [-0.01, -0.04, 0.12], rot: [0, 0, -40] }, // twists it in
+          { t: 0.12, pos: [0.04, 0.092, 0.26] }, // on the cartridge
+          { t: 0.16, pos: [0.04, 0.092, 0.262], rot: [0, 0, -18] }, // unscrews it, a turn at a time
+          { t: 0.2, pos: [0.04, 0.092, 0.266], rot: [0, 0, 10] },
+          { t: 0.24, pos: [0.04, 0.092, 0.27], rot: [0, 0, -10] },
+          { t: 0.3, pos: [0.03, 0.1, 0.31] }, // pulls it out
+          { t: 0.36, pos: [-0.1, 0.0, 0.25], rot: [0, 40, 30] }, // tosses it
+          { t: 0.44, pos: [-0.06, -0.17, 0.12], rot: [-20, 0, 0] }, // down to the box of cartridges
+          { t: 0.48, pos: [-0.06, -0.17, 0.12], rot: [-20, 0, 0] },
+          { t: 0.57, pos: [0.04, 0.1, 0.31] }, // up behind the tank
+          { t: 0.62, pos: [0.04, 0.092, 0.26] }, // pushes it in
+          { t: 0.65, pos: [0.04, 0.092, 0.258], rot: [0, 0, -15] }, // screws it home
+          { t: 0.68, pos: [0.04, 0.092, 0.257], rot: [0, 0, 10] },
+          { t: 0.71, pos: [0.04, 0.092, 0.256], rot: [0, 0, -8] },
+          { t: 0.76, pos: [0.05, 0.18, 0.2] }, // over the gauge
+          { t: 0.79, pos: [0.055, 0.164, 0.2] }, // taps it
           { t: 0.9, pos: [0, 0, 0] },
         ],
-        cartridgeVisible: [[0.38, 0.7]],
+        // The cartridges: the seated one is out over cartridgeOut; the one in the hand shows over cartridgeVisible (the old one, tossed; then
+        // the new one). twistKeys rot[2]: their spin about their own axis (degrees), unscrewing and screwing in.
+        cartridgeOut: [0.24, 0.62],
+        cartridgeVisible: [[0.24, 0.34], [0.44, 0.62]],
+        twistKeys: [
+          { t: 0, rot: [0, 0, 0] }, { t: 0.12, rot: [0, 0, 0] }, { t: 0.24, rot: [0, 0, -360] },
+          { t: 0.36, rot: [0, 0, -360] }, { t: 0.4, rot: [0, 0, 0] }, // (reset while nothing is in sight)
+          { t: 0.62, rot: [0, 0, 0] }, { t: 0.72, rot: [0, 0, 360] }, { t: 1, rot: [0, 0, 360] },
+        ],
+        // The gauge's needle (rot[2], degrees from straight up; the ends match fire.needleRestDegrees): drops as the cartridge comes out,
+        // climbs with the hiss as the new one goes in, jumps past full when tapped and settles.
+        needleKeys: [
+          { t: 0, rot: [0, 0, 35] }, { t: 0.22, rot: [0, 0, 35] }, { t: 0.3, rot: [0, 0, -70] }, { t: 0.62, rot: [0, 0, -70] },
+          { t: 0.72, rot: [0, 0, -5] }, { t: 0.77, rot: [0, 0, -5] }, { t: 0.81, rot: [0, 0, 55] }, { t: 0.9, rot: [0, 0, 35] },
+          { t: 1, rot: [0, 0, 35] },
+        ],
+        deflateBy: 0.1, // the balloon on the nozzle lets go over the start of the reload...
+        inflateFrom: 0.82, // ...and blows back up from here to the end
         events: [
-          { at: 0.2, sound: 'balloonReloadOut' },
-          { at: 0.7, sound: 'balloonReloadIn', jolt: { up: -0.005, pitchDegrees: -2 } },
-          { at: 0.88, sound: 'balloonReloadReady', jolt: { back: 0.006, pitchDegrees: 2 } },
+          { at: 0.24, sound: 'balloonReloadOut', jolt: { back: 0.006, pitchDegrees: 1.5 } },
+          { at: 0.36, jolt: { up: 0.003, rollDegrees: -1.5 } }, // the spent cartridge tossed
+          { at: 0.64, sound: 'balloonReloadIn', jolt: { back: -0.006, pitchDegrees: -2 } },
+          { at: 0.79, sound: 'balloonReloadReady', jolt: { up: -0.005, rollDegrees: 2, pitchDegrees: 1.5 } },
         ],
       },
     },

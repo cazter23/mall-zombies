@@ -331,14 +331,19 @@ src/
                         double barrels, gold rims, PARTY POP! stock label and striped shells; hinge open, a shell per cycle, snap shut.
                         returnToSender.js = the wonder weapon: a returns-desk scanner gun in blue and white with a lit green screen, a rainbow stripe, a pink emitter ring and a battery pack that the support hand slaps in to reload.
                         tennisBallLauncher.js = sporting-goods blue pump launcher: fat ringed barrel, loading port, clear hopper with balls, a support hand that fetches a ball to reload.
-                        stargazer.js = the claw-only sniper: a hobby-shop telescope (navy tube on brass rings, objective bell, blue lens, finder scope) on a bolt-action with
-                        gold stars, a slim barrel with a brass crown, a folded tripod and a wooden stock; the bolt handle lifts and slides after each shot (from
-                        sinceFire) and stays open through the reload while the support hand thumbs in a strip of bearings.
+                        stargazer.js = the claw-only sniper: a hobby-shop telescope (navy tube on brass rings over a dark rail, objective bell, blue lens, focus turrets
+                        and ring, finder scope) on a bolt-action with gold stars, a loading port on the LEFT (the side you see), a fluted barrel with a brass band and
+                        crown and a ringed-planet front sight, a folded three-leg tripod and a shaped wooden stock with a navy cheek rest. The bolt handle lifts and
+                        slides after each shot (from sinceFire; the next bearings show in the port while it is back). Reload, all from viewmodel.reload keys: the
+                        trigger hand (its parts gathered under one pivot group here) lifts and pulls the bolt (boltHandKeys, boltKeys), the support hand presses a
+                        strip of bearings sideways into the port and flicks the clip away, the trigger hand closes the bolt.
                         bottleRocket.js = the claw-only rocket launcher: a fireworks-stand cardboard tube (red, white bands, yellow stars, a dark flared back end, a flip-up
                         sight, a coiled fuse with a glowing tip); the loaded rocket's nose shows in the mouth only while loaded (animate's state.loaded, from viewmodel.js);
                         the support hand brings a fresh rocket from below to reload.
-                        balloonLauncher.js = the claw-only homing launcher: a teal party blaster with pink trim, a silver helium tank and gauge on top, a nozzle with
-                        ribbons; a balloon inflates on the nozzle after each shot (sinceFire, state.loaded); the support hand twists in a helium cartridge to reload.
+                        balloonLauncher.js = the claw-only homing launcher: a teal party blaster with pink stripes and polka dots, a domed silver helium tank on top
+                        with a valve wheel, a hose to the nozzle and a white-faced gauge, a ribbed nozzle with curly ribbons; a teardrop balloon inflates on the
+                        nozzle after each shot (sinceFire, state.loaded) and the gauge needle dips. A helium cartridge screws into the tank's back end: the reload
+                        (viewmodel.reload keys) unscrews it and tosses it, screws in a new one (twistKeys), taps the gauge (needleKeys), and the balloon blows back up.
                         leafBlower.js = orange motor housing, red fuel tank with a level window, ribbed flared nozzle (the claw-only Leaf Blower).
                         Each model also returns `mounts` (barrel / top / side / grip / magazine / sticker: where upgrade parts go).
                         upgradeParts.js = what upgrades LOOK like: buildAttachmentPart(id, mount) (mounting brackets/adapters on universal

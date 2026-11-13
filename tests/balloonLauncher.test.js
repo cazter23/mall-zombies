@@ -1,7 +1,7 @@
 // The Balloon Launcher (config/weapons.js balloonLauncher: claw-only, homing balloons that pop), in the real headless game through real input. Homing
 // itself has its own tests (ballistics.test.js) and so does the pop (blast.test.js); this checks the gun: no wall sells it, one pull is one balloon and
 // one shot, THE ROLE (fired well wide of a zombie it still finds it, where the same shot from the Bottle Rocket Bazooka misses), the pop never hurts
-// you, and Play again leaves no balloon in the air.
+// you, Play again leaves no balloon in the air, and the reload as the model shows it.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
@@ -10,6 +10,7 @@ import { weapons } from '../src/config/weapons.js';
 import { economy } from '../src/config/economy.js';
 import { clawMachine } from '../src/config/clawMachine.js';
 import { buildWallBuy } from '../src/game/features/wallBuy.js';
+import { buildWeaponModel } from '../src/weapons/models/index.js';
 
 const bl = weapons.balloonLauncher;
 const FLIGHT_TICKS = Math.ceil(bl.flight.lifeSeconds / dt) + 5;
@@ -93,4 +94,37 @@ test('Play again: no balloon left in the air', () => {
   assert.equal(g.rockets.list.length, 1);
   g.resetRun();
   assert.equal(g.rockets.list.length, 0);
+});
+
+test('the reload as the model shows it: the spent cartridge comes out, a new one goes in, the gauge drops and recovers, the balloon blows back up', () => {
+  const model = buildWeaponModel(bl);
+  const part = (name) => model.root.getObjectByName(name);
+  const seated = part('seatedCartridge'), held = part('heliumCartridge'), balloon = part('nozzleBalloon'), needle = part('gaugeNeedle');
+  const r = bl.viewmodel.reload, f = bl.viewmodel.fire;
+  const at = (p, weight = 1) => model.animate({ sinceFire: 9, reloadProgress: p, reloadWeight: weight, loaded: true });
+  const rest = -f.needleRestDegrees * DEG;
+  const home = () => {
+    assert.equal(seated.visible, true, 'a cartridge in the tank');
+    assert.equal(held.visible, false, 'none in the hand');
+    assert.ok(balloon.visible && Math.abs(balloon.scale.x - 1) < 1e-9, 'the balloon full on the nozzle');
+    assert.ok(Math.abs(needle.rotation.x - rest) < 1e-9, 'the needle at rest');
+  };
+  at(0); home();
+  at(0.3); // the spent one in the hand, the tank empty, the gauge down, no balloon
+  assert.ok(!seated.visible && held.visible, 'the spent cartridge out, in the hand');
+  assert.equal(balloon.visible, false);
+  assert.ok(needle.rotation.x > rest + 60 * DEG, 'the needle dropped');
+  at(0.38);
+  assert.ok(!seated.visible && !held.visible, 'tossed: nothing in the tank or the hand');
+  at(0.5);
+  assert.ok(!seated.visible && held.visible, 'a new one in the hand');
+  at(0.66);
+  assert.ok(seated.visible && !held.visible, 'the new one in the tank');
+  at(0.9);
+  assert.ok(balloon.visible && balloon.scale.x > 0.3 && balloon.scale.x < 1, 'the balloon blowing back up');
+  at(1); home();
+  at(0.3, 0); home(); // a reload eased fully out leaves everything in place
+  const sounds = r.events.filter((e) => e.sound);
+  assert.deepEqual(sounds.map((e) => e.sound), ['balloonReloadOut', 'balloonReloadIn', 'balloonReloadReady']);
+  for (const e of r.events) assert.ok(e.at > 0 && e.at < 0.95);
 });
