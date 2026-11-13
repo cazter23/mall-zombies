@@ -22,6 +22,10 @@ export function createReturnQuest({ events, state, player, zombies, gun, wallet,
   const labels = new Set(); // label ids held
   let fitted = null; // the label on the gun, or null
   let applying = false; // a label is returning more zombies: their 'kill' events must not start it again
+  // One blast returns a crowd, so a label's extra returns (Chain Return, Product Recall) and Full Refund's round back happen once per BLAST, not once
+  // per zombie: these are set by the blast's first return and cleared by its 'shot' event (which comes after the blast's kills).
+  let extraReturnsUsed = false;
+  let ammoRollUsed = false;
 
   const stage = () => (issued ? 'done'
     : ticket && served >= cfg.ticket.number ? 'collect'
@@ -46,6 +50,9 @@ export function createReturnQuest({ events, state, player, zombies, gun, wallet,
     try { applyLabel(zombie); } finally { applying = false; }
   });
 
+  const blastDone = () => { extraReturnsUsed = false; ammoRollUsed = false; };
+  events.on('shot', ({ weaponId }) => { if (weaponId === cfg.weaponId) blastDone(); });
+
   const kindOf = (zombie) => `${zombie.type?.variant ?? zombie.type?.id}${zombie.type?.gold ? '+gold' : ''}`;
   function nearby(origin, radius, test = () => true) {
     return zombies.zombies
@@ -63,14 +70,21 @@ export function createReturnQuest({ events, state, player, zombies, gun, wallet,
   }
   function applyLabel(zombie) {
     const label = cfg.labels[fitted];
-    if (fitted === 'chain') alsoReturn(nearby(zombie, label.radius).slice(0, label.count));
-    else if (fitted === 'recall') {
-      const kind = kindOf(zombie);
-      alsoReturn(nearby(zombie, label.radius, (z) => kindOf(z) === kind).slice(0, label.count));
+    if (fitted === 'chain' || fitted === 'recall') {
+      if (extraReturnsUsed) return; // (once per blast: from the first zombie it returned)
+      extraReturnsUsed = true;
+      if (fitted === 'chain') alsoReturn(nearby(zombie, label.radius).slice(0, label.count));
+      else {
+        const kind = kindOf(zombie);
+        alsoReturn(nearby(zombie, label.radius, (z) => kindOf(z) === kind).slice(0, label.count));
+      }
     } else if (fitted === 'refund') {
-      wallet.award(label.points);
+      wallet.award(label.points); // (every zombie returned pays)
       const weapon = gun.def.id === cfg.weaponId ? gun.weapon : null;
-      if (weapon && random() < label.ammoChance) weapon.reserve = Math.min(weapon.reserveCap, weapon.reserve + 1);
+      if (weapon && !ammoRollUsed) {
+        ammoRollUsed = true; // (one chance of a round back per blast)
+        if (random() < label.ammoChance) weapon.reserve = Math.min(weapon.reserveCap, weapon.reserve + 1);
+      }
     }
   }
 
@@ -149,9 +163,12 @@ export function createReturnQuest({ events, state, player, zombies, gun, wallet,
       for (const id of data.labels ?? []) if (returnLabel(id)) labels.add(id);
       fitted = labels.has(data.fitted) ? data.fitted : null;
     },
+    /** A blast is over: the next return starts a new one (the gun's 'shot' event calls this; a test returning zombies by hand calls it between blasts). */
+    blastDone,
     reset() {
       signs.clear();
       parcel = ticket = issued = false;
+      extraReturnsUsed = ammoRollUsed = false;
       served = 0;
       labels.clear();
       fitted = null;

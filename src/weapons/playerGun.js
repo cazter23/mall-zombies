@@ -122,8 +122,10 @@ export function createPlayerGun({
     return ads;
   }
 
-  // A gun with a cone (the Leaf Blower): one PULSE of wind instead of a ray. Everything in the cone is shoved back (and the close ones laid down),
-  // takes a tickle of damage, and the leaves fly. Points: a zombie that keeps being blown pays the hit +10 only now and then (createBlastPay).
+  // A gun with a cone (the Leaf Blower, Return to Sender): one PULSE of wind instead of a ray. Everything in the cone is shoved back (and the close
+  // ones laid down), takes the gun's damage, and the gust flies. Points: a zombie that keeps being blown pays the hit +10 only now and then
+  // (createBlastPay). A cone gun with `instantKill` (Return to Sender) RETURNS every returnable zombie within cone.killRange (the same path as its
+  // old beam: weapons/returnToSender.js) and only shoves the ones beyond it; bosses and Mascots within killRange take its big hit.
   const blastPay = new Map(); // gun id -> its pulse ledger
   const scopeSway = createScopeSway(); // the scoped gun's drift (weapons/scope.js), applied in update()
   function fireCone(slot) {
@@ -137,25 +139,33 @@ export function createPlayerGun({
     const found = findInCone(origin, direction, cone, colliders, shootables);
     const hits = [];
     const resolved = [];
+    const killRange = cone.killRange ?? cone.range;
     for (const { target, distance, point } of found) {
       if (!target.isAlive) continue; // (killed earlier this pulse by a kill listener)
       const hit = { target, part: 'body', point: point.clone(), normal: direction.clone().negate(), distance };
       hits.push(hit);
       const attacking = target.isAttacking === true; // (before the gust: the shove is what stops it)
-      const { killed } = target.takeHit({ damage: hitDamage(d, hit, 0, stats, 1, target), part: 'body', point: hit.point, direction, impact: d.impact, weaponId: d.id, distance });
+      const inReach = distance <= killRange;
+      const returned = !!d.instantKill && isReturnable(target);
+      let killed = false;
+      if (returned) {
+        if (inReach) ({ killed } = returnToSender(target, { effects, sound, point: hit.point, normal: hit.normal, part: 'body', direction, impact: d.impact, distance }));
+      } else if (inReach) {
+        ({ killed } = target.takeHit({ damage: hitDamage(d, hit, 0, stats, 1, target), part: 'body', point: hit.point, direction, impact: d.impact, weaponId: d.id, distance }));
+      }
       // interrupted: the gust shoved a zombie out of an attack (shot.hits; weapon skin challenges count it, nothing pays by it).
-      const blown = killed ? null : blowAway(target, origin, cone, distance);
+      const blown = killed || !target.isAlive ? null : blowAway(target, origin, cone, distance);
       hit.interrupted = attacking && blown?.pushed === true;
-      resolved.push({ hit, killed, paid: killed || pay.take(target) });
+      resolved.push({ hit, killed, returned: returned && killed, paid: killed || pay.take(target) });
     }
     const end = origin.clone().addScaledVector(direction, cone.range);
     const gust = cone.gust;
     effects.confetti(origin.clone().addScaledVector(direction, cone.range * 0.55), direction, gust);
     let paidAny = false;
     let anyKilled = false;
-    for (const { hit, killed, paid } of resolved) {
+    for (const { hit, killed, returned, paid } of resolved) {
       anyKilled ||= killed;
-      if (killed) effects.splat(hit.point, hit.normal, hit.target.splatColors, feel.effects.splatCount, { flesh: true, speedScale: 1, direction });
+      if (killed && !returned) effects.splat(hit.point, hit.normal, hit.target.splatColors, feel.effects.splatCount, { flesh: true, speedScale: 1, direction });
       if (paid) {
         paidAny = true;
         if (onHit) onHit({ target: hit.target, killed, headshot: false, melee: false, weaponId: d.id });

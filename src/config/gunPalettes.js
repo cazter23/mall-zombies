@@ -3,7 +3,7 @@
 // screen is the returns display. glass is the transparent hopper tint.
 export const gunPaletteKeys = {
   returnToSender: {
-    screenColor: 'screen', batteryColor: 'accent', emitterColor: 'emitter',
+    screenColor: 'screen', batteryColor: 'accent', emitterColor: 'emitter', glassColor: 'glass', canisterColor: 'ammo',
     stripeRedColor: 'accent', stripeOrangeColor: 'accent', stripeYellowColor: 'accent',
     stripeGreenColor: 'accent', stripeBlueColor: 'accent', stripePurpleColor: 'accent',
   },
