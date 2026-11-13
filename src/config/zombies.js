@@ -651,8 +651,11 @@ export const mascotVariants = {
       crystalColors: [0xfffcf5, 0xf3ead8, 0xe8dec8],
       sound: 'saltCrunch',
       volume: 0.9,
-      stepMeters: 0.72, // horizontal distance walked inside a patch per crunch sound
+      stepMeters: 0.72, // horizontal distance walked inside a patch per player crunch sound
       entryStepMeters: 0.08, // first crunch fires promptly on walking into a patch (standing still stays silent)
+      zombieStepMeters: 0.72, // Twisty's own stride distance between bare-headed salt crunches
+      zombieEntryStepMeters: 0.08, // first crunch fires promptly once bare-headed Twisty steps through salt
+      maxDistance: 18, // metres: positional falloff matching Mascot thumps (silent at or past this range)
       minSpeed: 0.4, // m/s: stationary jitter stays silent; crouch-walk and sprinting crunch
       maxStepSpeed: 20, // m/s: ignores single-frame teleports so warping onto a patch without walking stays silent
     },

@@ -1,8 +1,8 @@
 // =============================================================================
 // SALT TRAIL: the short-lived coarse salt patches Twisty drops when his helmet
 // pops (config/zombies.js mascotVariants.twisty.saltPatch). One shared pool in
-// the scene, flat floors only, and a sound cue underfoot when walking across:
-// never deals damage and never slows the player.
+// the scene, flat floors only, and a sound cue when the player or any bare-headed
+// Twisty walks across: never deals damage and never slows the player.
 // =============================================================================
 
 import * as THREE from 'three';
@@ -51,8 +51,10 @@ function buildPatchGroup(config, dustGeometry, crystalGeometry) {
   return { group, dustMaterial, materials };
 }
 
-/** Pooled floor salt patches with underfoot crunch audio (no damage, no slow). */
-export function createSaltTrail({ scene, player, colliders, sound, config = mascotVariants.twisty.saltPatch }) {
+const makeWalker = () => ({ hasPos: false, lastX: 0, lastZ: 0, stepAccum: 0, wasInside: false });
+
+/** Pooled floor salt patches with underfoot & bare-headed Twisty crunch audio (no damage, no slow). */
+export function createSaltTrail({ scene, zombies = null, player, colliders, sound, config = mascotVariants.twisty.saltPatch }) {
   const dustGeometry = new THREE.CircleGeometry(1, config.dustSegments).rotateX(-Math.PI / 2);
   const crystalGeometry = new THREE.BoxGeometry(1, 1, 1);
 
@@ -63,9 +65,8 @@ export function createSaltTrail({ scene, player, colliders, sound, config = masc
   });
 
   let drops = 0;
-  let lastPos = null;
-  let stepAccum = 0;
-  let wasInside = false;
+  const playerWalker = makeWalker();
+  const zombieWalkers = new Map();
 
   // Flat floor under (x, z) near height y, or null on ramps/escalators.
   function floorUnder(x, y, z) {
@@ -101,13 +102,13 @@ export function createSaltTrail({ scene, player, colliders, sound, config = masc
       patch.group.visible = false;
     }
     drops = 0;
-    lastPos = null;
-    stepAccum = 0;
-    wasInside = false;
+    playerWalker.hasPos = false;
+    playerWalker.stepAccum = 0;
+    playerWalker.wasInside = false;
+    zombieWalkers.clear();
   }
 
-  function isPlayerInside(pos) {
-    if (!player.grounded) return false;
+  function isInsidePatch(pos) {
     const r2 = config.radius * config.radius;
     for (const patch of patches) {
       if (patch.remaining <= 0) continue;
@@ -117,6 +118,36 @@ export function createSaltTrail({ scene, player, colliders, sound, config = masc
       if (dx * dx + dz * dz <= r2) return true;
     }
     return false;
+  }
+
+  function stepThroughSalt(walker, pos, grounded, dt, stepMeters, entryStepMeters, onCrunch) {
+    const dx = walker.hasPos ? pos.x - walker.lastX : 0;
+    const dz = walker.hasPos ? pos.z - walker.lastZ : 0;
+    walker.lastX = pos.x;
+    walker.lastZ = pos.z;
+    walker.hasPos = true;
+
+    if (!grounded || !isInsidePatch(pos)) {
+      walker.wasInside = false;
+      walker.stepAccum = 0;
+      return;
+    }
+
+    if (!walker.wasInside) {
+      walker.wasInside = true;
+      walker.stepAccum = Math.max(0, stepMeters - entryStepMeters);
+    }
+
+    const dist = Math.hypot(dx, dz);
+    const speed = dt > 0 ? dist / dt : 0;
+    if (speed < config.minSpeed || speed > config.maxStepSpeed) return;
+
+    walker.stepAccum += dist;
+    if (walker.stepAccum >= stepMeters) {
+      walker.stepAccum -= stepMeters;
+      if (walker.stepAccum > stepMeters) walker.stepAccum = 0;
+      onCrunch();
+    }
   }
 
   return {
@@ -141,31 +172,27 @@ export function createSaltTrail({ scene, player, colliders, sound, config = masc
         for (const m of patch.materials) m.opacity = config.opacity * fade;
       }
 
-      const pos = player.position;
-      const dx = lastPos ? pos.x - lastPos.x : 0;
-      const dz = lastPos ? pos.z - lastPos.z : 0;
-      lastPos = { x: pos.x, z: pos.z };
-
-      if (!isPlayerInside(pos)) {
-        wasInside = false;
-        stepAccum = 0;
-        return;
-      }
-
-      if (!wasInside) {
-        wasInside = true;
-        stepAccum = Math.max(0, config.stepMeters - config.entryStepMeters);
-      }
-
-      const dist = Math.hypot(dx, dz);
-      const speed = dt > 0 ? dist / dt : 0;
-      if (speed < config.minSpeed || speed > config.maxStepSpeed) return;
-
-      stepAccum += dist;
-      if (stepAccum >= config.stepMeters) {
-        stepAccum -= config.stepMeters;
-        if (stepAccum > config.stepMeters) stepAccum = 0;
+      stepThroughSalt(playerWalker, player.position, player.grounded, dt, config.stepMeters, config.entryStepMeters, () => {
         sound?.play(config.sound, { volume: config.volume });
+      });
+
+      if (!zombies) return;
+      const list = zombies.zombies;
+      for (const tracked of zombieWalkers.keys()) {
+        if (!tracked.isAlive || tracked.state === 'spawning' || !tracked.mascotHeadOff || !list.includes(tracked)) {
+          zombieWalkers.delete(tracked);
+        }
+      }
+      for (const zombie of list) {
+        if (!zombie.type.mascot?.saltPatch || !zombie.isAlive || zombie.state === 'spawning' || !zombie.mascotHeadOff) continue;
+        let walker = zombieWalkers.get(zombie);
+        if (!walker) zombieWalkers.set(zombie, (walker = makeWalker()));
+        stepThroughSalt(walker, zombie.position, true, dt, config.zombieStepMeters, config.zombieEntryStepMeters, () => {
+          // Match Zombie.playSound / distanceTo (src/zombies/zombie.js:822-826, 1019-1021).
+          const distToPlayer = Math.hypot(player.position.x - zombie.position.x, player.position.z - zombie.position.z);
+          const volume = 1 - distToPlayer / config.maxDistance;
+          if (volume > 0) sound?.play(config.sound, { volume });
+        });
       }
     },
     dispose() {

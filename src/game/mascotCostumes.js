@@ -24,7 +24,7 @@ export function createMascotCostumes({ events, scene, zombies, player, colliders
   const target = new THREE.Vector3();
   const direction = new THREE.Vector3();
   const melt = createMeltTrail({ scene, zombies, player, colliders, surfaces });
-  const salt = createSaltTrail({ scene, player, colliders, sound });
+  const salt = createSaltTrail({ scene, zombies, player, colliders, sound });
 
   // Nothing solid between the popping head and a body (the blast doesn't go through walls).
   function clearLine(from, to) {

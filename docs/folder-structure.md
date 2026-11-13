@@ -545,7 +545,7 @@ src/
     meltTrail.js        Scoops' puddles: one fixed pool for every Scoops (oldest gives way, own material to fade), drops every
                         dropEvery where he walks; a grounded player in one reports 'melt' to surfaceSlows
     saltTrail.js        Twisty's salt patches: one fixed pool for every Twisty (oldest gives way, per-patch fading materials),
-                        drops on helmet pop; a grounded moving player inside plays 'saltCrunch' underfoot (sound cue only, no damage or slow)
+                        drops on helmet pop; a grounded moving player plays 'saltCrunch' underfoot AND any bare-headed walking Twisty plays positional 'saltCrunch' (`1 - dist / maxDistance`, throttled per zombie by `zombieStepMeters`); sound cue only, no damage or slow
     closingTime.js      g.closing owns persistent boss key drops, collection, checklist progress (fountain kills, night-safe purchases and workshop collections) and Play again reset.
                         A key never ticks a line: lines 1 to 3 tick on their duty, line 4 on the win (completeLeaving, called by onRunWon). readyToValidate = four keys and
                         lines 1 to 3; readyToLeave also needs validated and lastCustomerDefeated. closingValidated books the next closingRound through bosses.book; bossDefeated clears the van gate. These fields serialize/restore silently and reset clears them. A paid validation purchase emits closingValidated with the current round and PA. serialize/restore keeps validated silently; reset clears it. missingKeys / missingDuties say what is left. Emits the once-per-run 'closingBriefing'.
