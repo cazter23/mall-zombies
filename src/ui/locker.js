@@ -3,6 +3,8 @@ import * as THREE from 'three';
 import { skins, gunSkin, challengeText, locker as cfg } from '../config/skins.js';
 import { weapons } from '../config/weapons.js';
 import { buildWeaponDisplay } from '../weapons/models/index.js';
+import { padBook } from './menuFocus.js';
+import { hintHtml } from './glyphs.js';
 
 function release(root) {
   if (!root) return;
@@ -91,7 +93,7 @@ export function createLocker({ save, onBack, createPreview = createLockerPreview
         </section>
       </div>
       <div class="menu-row"><button class="menu-btn locker-back" type="button">${cfg.back}</button></div>
-      <p class="pad-hint">${cfg.hint}</p>
+      <p class="pad-hint" data-hint="locker">${hintHtml('locker')}</p>
     </div>`;
   const gunList = element.querySelector('.locker-guns');
   const skinList = element.querySelector('.locker-skins');
@@ -160,11 +162,26 @@ export function createLocker({ save, onBack, createPreview = createLockerPreview
     gunList.append(row);
   }
   back.addEventListener('click', () => onBack());
+  const at = () => {
+    const active = buttons().indexOf(document.activeElement);
+    return active >= 0 ? active : focus;
+  };
   function move(step) {
     const list = buttons();
-    const active = list.indexOf(document.activeElement);
-    focus = ((active >= 0 ? active : focus) + step + list.length) % list.length;
-    list.forEach((row, index) => row.classList.toggle('focused', index === focus));
+    focusAt((at() + step + list.length) % list.length);
+  }
+  // LB / RB: the previous / next gun, picked (its skins listed), the cursor on it.
+  function nextGun(dir) {
+    const ids = Object.keys(weapons);
+    const id = ids[(ids.indexOf(selectedGun) + dir + ids.length) % ids.length];
+    const row = gunList.querySelector(`[data-gun="${id}"]`);
+    row?.click();
+    if (row) focusAt(buttons().indexOf(row));
+  }
+  function focusAt(index) {
+    const list = buttons();
+    focus = index;
+    list.forEach((row, i) => row.classList.toggle('focused', i === focus));
     list[focus].focus();
     list[focus].scrollIntoView?.({ block: 'nearest' });
   }
@@ -199,13 +216,10 @@ export function createLocker({ save, onBack, createPreview = createLockerPreview
       highlighted = null;
     },
     render(dt) { if (open) preview.render(dt); },
+    // Controller (ui/menuFocus.js padBook): move between guns and skins, LB / RB the previous / next gun, A equips.
     padNav(input) {
       if (!open) return;
-      if (input.consumePress('PadB')) return onBack();
-      const step = (input.consumePress('PadDown') || input.consumePress('PadRight') ? 1 : 0)
-        - (input.consumePress('PadUp') || input.consumePress('PadLeft') ? 1 : 0);
-      if (step) move(step);
-      if (input.consumePress('PadA')) (buttons().includes(document.activeElement) ? document.activeElement : buttons()[focus]).click();
+      padBook(input, { list: buttons, at, focusAt, back: onBack, tab: nextGun, scrollHost: element });
     },
   };
 }

@@ -254,7 +254,6 @@ export const guideDebug = {
 export const guide = {
   title: 'Staff Survival Guide', menu: 'Survival guide', kicker: 'Property of Human Resources · Do not remove from the break room',
   back: 'Close the binder',
-  hint: 'Arrow keys / D-pad to turn pages · Escape / B to close',
   previewLabel: 'Subject, turning slowly',
   // One printed sheet per section: its heading, its form number, and (Management) an extra line on file.
   sheets: {

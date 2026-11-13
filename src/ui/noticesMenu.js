@@ -1,5 +1,7 @@
 import { createModal } from './modal.js';
 import { createBirthCertificate } from './birthCertificate.js';
+import { menuNav, scrollPage, TICK } from './menuFocus.js';
+import { hintHtml } from './glyphs.js';
 
 const el = (tag, className, text) => {
   const node = document.createElement(tag);
@@ -17,7 +19,10 @@ export function createNoticesMenu(history) {
   const footer = el('div', 'settings-footer');
   const back = el('button', 'play', 'Back');
   back.type = 'button';
-  footer.append(el('span', 'settings-hint', 'Controller: D-pad to scroll · A / B back'), back);
+  const hint = el('span', 'settings-hint');
+  hint.setAttribute('data-hint', 'notices'); // (ui/glyphs.js: the buttons of the device used last)
+  hint.innerHTML = hintHtml('notices');
+  footer.append(hint, back);
   card.append(el('div', 'form-number', 'SG / PERSONNEL · SHIFT CORRESPONDENCE'), el('h2', 'settings-title', 'Notices & certificates'), content, footer);
   root.append(card);
   root.setAttribute('aria-label', 'Notices and certificates');
@@ -51,10 +56,12 @@ export function createNoticesMenu(history) {
       modal.open();
     },
     close: () => modal.close(),
+    // Controller (core/menuNav.js, the ui* actions): A / B / Start close; up / down page, the right stick or a trigger scrolls.
     padNav(input) {
-      if (['PadA', 'PadB', 'PadStart'].some(key => input.consumePress(key))) return modal.close();
-      const step = (input.consumePress('PadDown') ? 1 : 0) - (input.consumePress('PadUp') ? 1 : 0);
-      if (step) content.scrollBy({ top: step * content.clientHeight * .6, behavior: 'instant' });
+      const nav = menuNav.read(input, TICK);
+      if (nav.confirm || nav.back || nav.start) return modal.close();
+      if (nav.y) scrollPage(content, nav.y * content.clientHeight * .6);
+      scrollPage(content, nav.scroll);
     },
   };
 }

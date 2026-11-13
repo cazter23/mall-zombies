@@ -8,22 +8,25 @@
 // It closes on: back, a zombie's hit, being moved away from the mirror, death, Play again.
 //
 // DOM-free. ui/fittingRoomPicker.js draws `view`; input arrives as ACTIONS (config/controls.js menuLeft/menuRight pick the slot,
-// menuUp/menuDown the item, menuConfirm wears, menuBack closes) plus the left stick.
+// menuUp/menuDown the item, menuConfirm wears, menuBack closes) plus the left stick, read through core/menuNav.js (the one
+// menu model: a held direction repeats).
 //
 //   const picker = createFittingRoomPicker({ input, state, events, sound, wardrobe, player, position })
 //   picker.open() / close() / update(dt) / reset() / isOpen / view
 // =============================================================================
 
 import { wardrobeItems, wardrobeSlots, fittingRoomPicker as cfg } from '../../config/wardrobe.js';
+import { feel } from '../../config/feel.js';
+import { createMenuNav, GAME_MENU_ACTIONS } from '../../core/menuNav.js';
 
 const SLOTS = Object.keys(wardrobeSlots);
-const STICK_ON = .6, STICK_OFF = .3; // stick deflection that counts as a press, and that re-arms it
+const TICK = 1 / feel.simulation.tickRate;
 
 export function createFittingRoomPicker({ input, state, events, sound, wardrobe, player, position }) {
   let open = false;
   let slot = SLOTS[0]; // the slot being browsed
   let cursor = {}; // slot -> highlighted item id
-  let stick = { x: 0, y: 0 }; // last stick direction pressed (-1, 0, 1), so holding it moves once
+  const nav = createMenuNav({ actions: GAME_MENU_ACTIONS }); // (D-pad, keys, wheel and left stick; held, they repeat)
 
   function setOpen(value) {
     if (open === value) return;
@@ -32,14 +35,6 @@ export function createFittingRoomPicker({ input, state, events, sound, wardrobe,
   }
 
   const filled = () => SLOTS.filter((s) => wardrobe.ownedIn(s).length > 0);
-
-  // Keys and the mouse wheel give a press per step; the stick gives one per push.
-  function stickStep(axis, value) {
-    const dir = value > STICK_ON ? 1 : value < -STICK_ON ? -1 : Math.abs(value) < STICK_OFF ? 0 : stick[axis];
-    const fresh = dir !== 0 && dir !== stick[axis];
-    stick[axis] = dir;
-    return fresh ? dir : 0;
-  }
 
   function moveSlot(step) {
     const slots = filled();
@@ -71,29 +66,27 @@ export function createFittingRoomPicker({ input, state, events, sound, wardrobe,
       cursor = Object.fromEntries(SLOTS.map((s) => [s, wardrobe.wearing(s) ?? wardrobe.ownedIn(s)[0] ?? null]));
       const slots = filled();
       slot = slots.find((s) => wardrobe.ownedIn(s).length > 1) ?? slots[0] ?? SLOTS[0];
-      stick = { x: Math.sign(Math.round(input.padMove.x)), y: Math.sign(Math.round(input.padMove.y)) }; // (a stick already held doesn't count)
+      nav.prime(input); // (a stick or key already held doesn't count)
       setOpen(true);
     },
 
     close() { setOpen(false); },
 
     /** Press handling while open. Runs on the fixed tick (features.update). */
-    update() {
+    update(dt = TICK) {
       if (!open) return;
       if (Math.hypot(player.position.x - position.x, player.position.z - position.z) > cfg.closeDistance) {
         setOpen(false);
         return;
       }
-      if (input.consumeAction('menuBack')) {
+      const step = nav.read(input, dt);
+      if (step.back) {
         setOpen(false);
         return;
       }
-      const sideways = (input.consumeAction('menuRight') ? 1 : 0) - (input.consumeAction('menuLeft') ? 1 : 0) + stickStep('x', input.padMove.x);
-      if (sideways) moveSlot(Math.sign(sideways));
-      // (padMove.y is forward-positive: pushing up moves up the list)
-      const down = (input.consumeAction('menuDown') ? 1 : 0) - (input.consumeAction('menuUp') ? 1 : 0) - stickStep('y', input.padMove.y);
-      if (down) moveItem(Math.sign(down));
-      if (input.consumeAction('menuConfirm')) confirm();
+      if (step.x) moveSlot(step.x);
+      if (step.y) moveItem(step.y); // (+1 = down the list)
+      if (step.confirm) confirm();
     },
 
     /** What ui/fittingRoomPicker.js draws. Null while closed. */

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { menuDom } from './helpers/menuDom.js';
 import { createModal } from '../src/ui/modal.js';
+import { padInput } from './helpers/padInput.js';
 
 menuDom(); // config/settings reads the display density once when imported
 const { createScreens } = await import('../src/ui/screens.js');
@@ -32,7 +33,7 @@ function settingsMenu() {
   menu.open();
   const root = document.body.children.at(-1);
   return { ...dom, menu, root, settings, resets,
-    pad: (code) => menu.padNav({ consumePress: (key) => key === code }),
+    pad: (code) => menu.padNav(padInput(code)),
   };
 }
 
@@ -149,7 +150,7 @@ test('Play opens the mode chooser: Directed is listed and focused first, then th
   const screens = createScreens();
   const choices = [];
   const button = (action) => document.querySelector('[data-action="' + action + '"]');
-  const pad = (code) => screens.padNav({ consumePress: (key) => key === code });
+  const pad = (code) => screens.padNav(padInput(code));
   screens.on('startRun', (choice) => { choices.push(choice); screens.show(null); });
   screens.show('title');
 
@@ -298,9 +299,9 @@ test('starting from the chooser stores the mode and plays once: no reset, no Fre
   // A controller starts at once.
   lockGranted = false;
   screens.show('title');
-  screens.padNav({ consumePress: (code) => code === 'PadStart' });
+  screens.padNav(padInput('PadStart'));
   assert.equal(document.activeElement, button('classic'));
-  screens.padNav({ consumePress: (code) => code === 'PadA' });
+  screens.padNav(padInput('PadA'));
   assert.deepEqual(plays.at(-1), { pad: true });
   assert.equal(screens.current, null);
 

@@ -27,7 +27,6 @@ export const challengeBoard = {
   full: max => `You can pin ${max}. Unpin one first.`,
   trackerOff: 'The challenge tracker is off: turn it on under Settings › Comfort to see your pins during a shift.',
   back: 'Back',
-  hint: 'Arrow keys / D-pad to browse · Enter / A to pin · Escape / B to return',
   theme: { ink: '#302b30', paper: '#f4ead7', edge: '#b8a98e', stamp: '#9a3f53', selected: '#e8d9c1', highlight: '#93556a', lockedPaper: '#dedbd4', lockedInk: '#625e59' },
 
   // The tracker (in a run)

@@ -364,7 +364,6 @@ export const locker = {
   form: 'SG / PROPERTY · FORM 11-C', guns: 'Issued equipment', skins: 'Approved finishes',
   defaultName: 'Default', defaultDescription: 'Factory issue. No paperwork required.',
   back: 'Back', locked: 'Locked', equipped: 'Equipped', available: 'Equip',
-  hint: 'Arrow keys / D-pad to browse · Enter / A to equip · Escape / B to return',
   previewLabel: 'Gun finish preview',
   theme: { ink: '#302b30', paper: '#f4ead7', edge: '#b8a98e', stamp: '#9a3f53', selected: '#e8d9c1', highlight: '#93556a', lockedPaper: '#dedbd4', lockedInk: '#625e59' },
   progress: (count, needed) => count + ' / ' + needed,

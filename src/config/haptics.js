@@ -20,6 +20,16 @@ export const haptics = {
   },
   damage: { duration: 180, strongMagnitude: 0.8, weakMagnitude: 0.7, priority: 3 },
   pickup: { duration: 140, strongMagnitude: 0.25, weakMagnitude: 0.5, priority: 2 },
+  // Moments (core/haptics.js listens on the event bus). Priority 2: above a shot, below getting hurt.
+  blast: { duration: 220, strongMagnitude: 0.9, weakMagnitude: 0.55, priority: 2 }, // a rocket or balloon bursting ('gunBlast'), a Soda Bomb ('equipmentBurst')
+  airHorn: { duration: 170, strongMagnitude: 0.25, weakMagnitude: 0.8, priority: 2 }, // the Stadium Air Horn going off where you stand
+  bossSpawn: { duration: 450, strongMagnitude: 0.75, weakMagnitude: 0.3, priority: 2 }, // a boss walks in: a long low rumble
+  bossDefeated: { duration: 380, strongMagnitude: 0.55, weakMagnitude: 0.85, priority: 2 },
+  jackpot: { duration: 260, strongMagnitude: 0.3, weakMagnitude: 0.9, priority: 2 }, // GRAB-A-GUN's prize taken, prize tickets won, a gold Mascot shows up
+  doorbuster: { duration: 200, strongMagnitude: 0.2, weakMagnitude: 0.7, priority: 2 }, // a Doorbuster goes live (not every Flash Sale: they're common)
+  // While a charge gun winds up (the Barcode Scanner's scan, weapon.chargeProgress 0..1): a short pulse every everyMs that
+  // grows from the first magnitude to the second as it fills. Priority 0: any shot, hit or moment plays over it.
+  charge: { duration: 80, everyMs: 60, strongMagnitude: [0.03, 0.28], weakMagnitude: [0.1, 0.45], priority: 0 },
   // A bought door (game/doorOpenings.js): a light tick as it unlocks, a thump when it clunks home (only within
   // config/shutters.js opening.nudge.range). Free connections that open on their own stay still.
   doorUnlock: { duration: 60, strongMagnitude: 0.1, weakMagnitude: 0.4, priority: 2 },

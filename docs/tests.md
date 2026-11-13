@@ -115,7 +115,15 @@ equal/custom values, reset buttons/confirmation and native-resolution readout. `
 splatter while paused, clearing flesh effects/pools immediately without removing dust or tracers.
 `tests/retailUi.test.js` covers PA message priority, duplicates, bounded queues/cancellation, real purchase-ticket shortages,
 sale/base prices, weapon/ammo distinctions, attachment replacement/tradeoff text and warranty transitions.
-`tests/haptics.test.js` covers distinct gun pulses (including every dart in a real burst), damage priority, pickups,
+`tests/controllerMenus.test.js` covers the one controller menu model: every ui* action is pad-only (and the in-run menu* actions keep
+their keys); a D-pad press steps once and, held, repeats after the delay at the rate; the left stick's hysteresis and repeat; prime (a
+direction held when a menu opens never steps); A / B / LB RB / Y / X / Start and right-stick / trigger scrolling; spatialStep (nearest that
+way, in-order wrap without layout); prompt devices and button names, every menu hint named on Xbox and PlayStation, the keyboard line
+advertising the controller; setPromptDevice rewriting the hint lines and How to play keycaps; and the screens with only a pad (the cursor
+shows at once, Y / X / Start / B, the receipt scrolled by the right stick and its button row walked left / right).
+Menu tests drive a pad through `tests/helpers/padInput.js` (codes pressed / held this tick, read through the bound actions).
+`tests/haptics.test.js` covers distinct gun pulses (including every dart in a real burst), damage priority, pickups, the moments (blasts,
+air horn, bosses, jackpots, Doorbusters; a plain Flash Sale and a Glitter Bomb stay quiet), the charge hum (grows, never cuts a shot short),
 intensity/off, unsupported/rejected actuator APIs, legacy pulse fallback, gamepad snapshots/unplug, focus/pause/death/reset
 cleanup and keyboard suppression. Settings -> Controller -> Controller vibration is saved with the other settings.
 `tests/prone.test.js` covers toggle controls, crawl speed from stats, smooth eye/collision lowering, low roofs,

@@ -21,8 +21,11 @@
 //   'startRun' also carries { mode }. 'play' opens the chooser here.
 //   actions: 'startRun' 'continue' 'resume' 'restart' 'saveQuit' 'quit' 'settings' 'controls' 'stats' 'clearStats' 'statsBack'
 //            'playAgain' 'mainMenu' ('help' / 'back' are handled here)
-// padNav(input): D-pad up/down moves (skipping hidden and greyed buttons), A presses, B / Start = Resume on the pause
-// screen, Start = Play (or Continue, with a save) on the title, Y = Settings and X = Controls on the title and pause screens.
+// padNav(input): the shared controller model (core/menuNav.js + ui/menuFocus.js): D-pad / left stick moves to the nearest
+// button that way (skipping hidden and greyed ones), A presses, B backs (Resume on the pause screen), the right stick or a
+// held trigger scrolls the screen (the receipt), Start = Resume on the pause screen and Play (or Continue, with a save) on
+// the title, Y = Settings and X = Controls on the title and pause screens. With a controller in use the cursor shows at once.
+// The hint lines are data-hint (ui/glyphs.js): the buttons of the device used last.
 // setFade(0..1): a black fade over the title flyover (between camera shots).
 // =============================================================================
 
@@ -37,8 +40,12 @@ import { outfitRail as outfitCfg } from '../config/wardrobe.js';
 import { menuFeel } from '../config/settings.js';
 import { survivorLine } from '../config/workshop.js';
 import { getDeathReport } from '../config/deathReports.js';
+import { createFocusList, menuNav, scrollPage, TICK } from './menuFocus.js';
+import { hintHtml, glyphHtml } from './glyphs.js';
 
 export { getDeathReport };
+
+const hintLine = (id) => `<p class="pad-hint" data-hint="${id}">${hintHtml(id)}</p>`;
 
 function el(tag, className, html) {
   const node = document.createElement(tag);
@@ -185,7 +192,7 @@ export function createScreens({ locker = null, guide = null, challenges = null }
         <button class="menu-btn" data-action="settings" type="button">Settings</button>
         <button class="menu-btn" data-action="controls" type="button">Controls</button>
       </div>
-      <p class="pad-hint">Controller: D-pad + <kbd>A</kbd> · <kbd>Start</kbd> to play · <kbd>Y</kbd> settings · <kbd>X</kbd> controls</p>
+      ${hintLine('title')}
     </div>
     <div class="title-footer"><b>OPEN UNTIL FURTHER NOTICE</b><span>Notice will not be provided. · Now hiring · Must provide own staples</span></div>
   `);
@@ -204,7 +211,7 @@ export function createScreens({ locker = null, guide = null, challenges = null }
         <p id="${id}-description">${description}</p>`).join('')}
         <button class="menu-btn" data-action="modeBack" type="button">${modeCfg.back}</button>
       </div>
-      <p class="pad-hint">Controller: D-pad + <kbd>A</kbd> · <kbd>B</kbd> back</p>
+      ${hintLine('runMode')}
     </div>
   `);
   function markPreferredMode() {
@@ -238,15 +245,15 @@ export function createScreens({ locker = null, guide = null, challenges = null }
       <p class="paper-note">Your absence has been noted. Please return to the sales floor.</p>
       <div class="menu-list">
         <button class="menu-btn primary" data-action="resume" type="button">Resume</button>
-        <button class="menu-btn" data-action="restart" data-confirm="Restart? Click again" type="button">Restart run</button>
+        <button class="menu-btn" data-action="restart" data-confirm="Restart? Press again" type="button">Restart run</button>
         <button class="menu-btn" data-action="notices" type="button">Notices &amp; certificates</button>
         <button class="menu-btn" data-action="settings" type="button">Settings</button>
         <button class="menu-btn" data-action="controls" type="button">Controls</button>
-        <button class="menu-btn save-quit" data-action="saveQuit" data-confirm="Save &amp; quit? Click again" type="button">Save &amp; quit</button>
-        <button class="menu-btn danger" data-action="quit" data-confirm="Quit? Click again" type="button">Quit to title</button>
+        <button class="menu-btn save-quit" data-action="saveQuit" data-confirm="Save &amp; quit? Press again" type="button">Save &amp; quit</button>
+        <button class="menu-btn danger" data-action="quit" data-confirm="Quit? Press again" type="button">Quit to title</button>
       </div>
       <p class="paper-note save-note">Saves your shift as it was when this round began. One save; it is used up when you continue.</p>
-      <p class="pad-hint">Controller: D-pad + <kbd>A</kbd> · <kbd>B</kbd> / <kbd>Start</kbd> resume · <kbd>Y</kbd> settings · <kbd>X</kbd> controls</p>
+      ${hintLine('pause')}
     </div>
   `);
   const pauseKicker = pause.querySelector('.pause-kicker');
@@ -316,7 +323,7 @@ export function createScreens({ locker = null, guide = null, challenges = null }
         <button class="menu-btn" data-action="notices" type="button">Notices &amp; certificates</button>
         <button class="menu-btn" data-action="mainMenu" type="button">Main menu</button>
       </div>
-      <p class="pad-hint">Controller: D-pad + <kbd>A</kbd></p>
+      ${hintLine('results')}
     </div>
   `);
   const shiftHeading = results.querySelector('.receipt-shift-heading');
@@ -353,15 +360,15 @@ export function createScreens({ locker = null, guide = null, challenges = null }
       <div class="help-grid">
         <div><b>Survive</b><p>Zombies come in rounds. Every round brings more of them, and tougher. You have one life.</p></div>
         <div><b>Earn</b><p>+${pay.nonLethalHit} for every hit, +${kill} for a kill. Headshot kills +${pay.headshotKillBonus} more, box cutter kills +${pay.meleeKillBonus}.</p></div>
-        <div><b>Spend</b><p>Hold <kbd>F</kbd> / <kbd>X</kbd> to buy: shutters open new parts of the mall, guns hang on the walls, the RESTOCK-O-MATIC refills ammo.</p></div>
+        <div><b>Spend</b><p>Hold ${glyphHtml('interact')} to buy: shutters open new parts of the mall, guns hang on the walls, the RESTOCK-O-MATIC refills ammo.</p></div>
         <div><b>Upgrade</b><p>Buy more damage with an Extended Warranty at Customer Service. Fit attachments at the Food Court stores.</p><p>At Build-A-Blaster on the Promenade, choose a Stuffing and a Heart. Hand over your gun, then fight in the room to fill its tank.</p></div>
         <div><b>Listen</b><p>The PA warns before Flash Sales begin: discounts appear on the directory and over each deal. Watch for rare Doorbusters: one item nearby, steeply cut. Buying it draws a rush of shoppers.</p></div>
-        <div><b>Move</b><p>Sprint and tap <kbd>C</kbd> to slide. Jump with <kbd>Space</kbd> to vault counters. Slash with the box cutter (<kbd>V</kbd>).</p><p><kbd>Ctrl</kbd> / <kbd>LB</kbd> goes prone; <kbd>Space</kbd> / <kbd>A</kbd> stands up. Keep moving to avoid being surrounded.</p></div>
+        <div><b>Move</b><p>Sprint and tap ${glyphHtml('crouch')} to slide. Jump with ${glyphHtml('jump')} to vault counters. Slash with the box cutter (${glyphHtml('melee')}).</p><p>${glyphHtml('prone')} goes prone; ${glyphHtml('jump')} stands up. Keep moving to avoid being surrounded.</p></div>
       </div>
       <div class="menu-list menu-row">
         <button class="menu-btn primary" data-action="back" type="button">Back</button>
       </div>
-      <p class="pad-hint">Controller: <kbd>A</kbd> / <kbd>B</kbd> back</p>
+      ${hintLine('help')}
     </div>
   `);
 
@@ -390,7 +397,7 @@ export function createScreens({ locker = null, guide = null, challenges = null }
         <button class="menu-btn danger" data-action="clearStats" data-confirm="Clear records? Press again" type="button">Clear records</button>
         <button class="menu-btn primary" data-action="statsBack" type="button">Back</button>
       </div>
-      <p class="pad-hint">Controller: D-pad + <kbd>A</kbd> · <kbd>B</kbd> back</p>
+      ${hintLine('stats')}
     </div>
   `);
   const statsEmpty = stats.querySelector('.stats-empty');
@@ -403,7 +410,6 @@ export function createScreens({ locker = null, guide = null, challenges = null }
     ...(challenges ? { challenges: challenges.element } : {}) };
   for (const node of Object.values(screens)) document.body.append(node);
   let current = null;
-  let focus = 0;
   let helpReturn = 'title'; // where Back on the help page goes
 
   // Buttons: click (or A) runs the action. A "confirm" button needs a second press within a few seconds.
@@ -448,10 +454,8 @@ export function createScreens({ locker = null, guide = null, challenges = null }
   }
 
   const buttonsOf = (name) => [...screens[name].querySelectorAll('[data-action]')].filter((b) => !b.hidden && !b.disabled);
-  function markFocus(show) {
-    if (!current) return;
-    buttonsOf(current).forEach((b, i) => b.classList.toggle('focused', show && i === focus));
-  }
+  // The controller cursor (ui/menuFocus.js) over the current screen's buttons (the books keep their own).
+  const cursor = createFocusList({ items: () => (current && !books[current] ? buttonsOf(current) : []) });
 
   const percent = (value) => `${Math.round((value ?? 0) * 100)}%`;
   const statCards = (items) => items.map(([label, value]) => `<div><span>${label}</span><b>${value}</b></div>`).join('');
@@ -595,9 +599,10 @@ export function createScreens({ locker = null, guide = null, challenges = null }
       armed.clear();
       current = name ?? null;
       startRequested = false;
-      focus = 0;
+      cursor.set(0, { show: false });
       if (name === 'runMode') {
-        focus = Math.max(0, modeIds.indexOf(preferredMode));
+        const focus = Math.max(0, modeIds.indexOf(preferredMode));
+        cursor.set(focus, { show: false });
         buttonsOf(name)[focus].focus({ preventScroll: true });
       }
       if (name === 'pause') fillPause(data);
@@ -609,8 +614,11 @@ export function createScreens({ locker = null, guide = null, challenges = null }
       if (name === 'help') helpReturn = data?.from ?? 'title';
       if (name === 'stats') fillStats(data);
       if (books[name]) books[name].open();
-      if (leaving && name === 'title') title.querySelector(`[data-action="${leaving}"]`).focus();
-      markFocus(false);
+      if (leaving && name === 'title') {
+        const back = title.querySelector(`[data-action="${leaving}"]`);
+        back.focus();
+        cursor.set(Math.max(0, buttonsOf('title').indexOf(back)), { show: false }); // (the pad cursor comes back to it too)
+      }
     },
 
     // A mode was confirmed on the chooser and play has not started yet (ui/runStart.js lets that pointer lock through).
@@ -642,27 +650,31 @@ export function createScreens({ locker = null, guide = null, challenges = null }
       careerResult = result;
     },
 
+    // The controller, once per tick while a screen is up (main.js). Reads the ui* ACTIONS through core/menuNav.js.
     padNav(input) {
       if (!current) return;
       if (books[current]) return books[current].padNav(input);
-      const buttons = buttonsOf(current);
-      const step = (input.consumePress('PadDown') || input.consumePress('PadRight') ? 1 : 0)
-        - (input.consumePress('PadUp') || input.consumePress('PadLeft') ? 1 : 0);
-      if (step) {
-        focus = (focus + step + buttons.length) % buttons.length;
-        if (current === 'results' || current === 'runMode') buttons[focus]?.focus?.({ preventScroll: true });
-        markFocus(true);
+      const nav = menuNav.read(input, TICK);
+      // A controller in use: the cursor shows straight away (where it is; the receipt isn't scrolled to the buttons).
+      if (input.device === 'gamepad' && !cursor.shown) cursor.set(cursor.index, { show: true, scroll: false });
+      if (nav.x || nav.y) cursor.move(nav.x, nav.y);
+      scrollPage(screens[current], nav.scroll); // (the receipt, a long pause card, the record)
+      const shortcuts = current === 'title' || current === 'pause';
+      if (nav.back) {
+        if (current === 'runMode') return backFromMode();
+        if (current === 'help') return api.show(helpReturn);
+        if (current === 'stats') return emit('statsBack', true);
+        if (current === 'pause') return emit('resume', true);
       }
-      if (current === 'runMode' && input.consumePress('PadB')) return backFromMode();
-      if (current === 'help' && input.consumePress('PadB')) return api.show(helpReturn);
-      if (current === 'stats' && input.consumePress('PadB')) return emit('statsBack', true);
-      if (current === 'pause' && (input.consumePress('PadB') || input.consumePress('PadStart'))) return emit('resume', true);
-      if (current === 'title' && input.consumePress('PadStart')) return continueButton.hidden ? api.show('runMode') : emit('continue', true);
-      if ((current === 'title' || current === 'pause') && input.consumePress('PadY')) return emit('settings', true);
-      if ((current === 'title' || current === 'pause') && input.consumePress('PadX')) return emit('controls', true);
-      if (input.consumePress('PadA')) {
-        markFocus(true);
-        press(buttons[focus], true);
+      if (nav.start) {
+        if (current === 'pause') return emit('resume', true);
+        if (current === 'title') return continueButton.hidden ? api.show('runMode') : emit('continue', true);
+      }
+      if (shortcuts && nav.option) return emit('settings', true);
+      if (shortcuts && nav.option2) return emit('controls', true);
+      if (nav.confirm && cursor.current) {
+        cursor.show();
+        press(cursor.current, true);
       }
     },
   };

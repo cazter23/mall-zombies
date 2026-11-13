@@ -741,6 +741,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .controls-list { color: var(--plum); }
 .controls-list li { border-bottom: 1px solid var(--print-rule); }
 .controls-list kbd { color: var(--plum); background: #e4d9cb; border-radius: 0; border-color: #b4a397; }
+.controls-menus { margin-top: 14px; padding-top: 8px; border-top: 2px solid var(--print-rule); } /* (Controller tab: how every menu works on a pad) */
+.controls-menus-title { margin: 0 0 4px; color: var(--plum); font: 700 var(--ui-caption, 11px)/1.4 var(--font-ui); letter-spacing: .12em; text-transform: uppercase; }
 .dg-body { fill: #ded6ca; stroke: #836c79; }
 .dg-key { fill: #f9efdc; stroke: #a18b98; }
 .dg-key-text { fill: #705866; }
@@ -990,6 +992,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .locker-skin span, .locker-skin small { font-size: 12px; line-height: 1.5; }
 .locker-skin.locked { background: var(--locker-lockedPaper); color: var(--locker-lockedInk); border-style: dashed; }
 .locker-skin.highlighted, .locker-skin:focus-visible { outline: 2px solid var(--locker-highlight); outline-offset: 2px; }
+.locker-skin.focused { outline: 3px solid var(--locker-highlight); outline-offset: 2px; } /* (the controller cursor: ui/menuFocus.js) */
 .locker-skin[aria-pressed="true"] { border-bottom: 4px solid var(--locker-stamp); }
 .locker-card > .menu-row { margin-top: 20px; }
 /* The Challenges board (ui/challengeBoard.js) reuses the locker's form; a challenge row adds its slot tag and a pin. */

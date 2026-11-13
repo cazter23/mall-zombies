@@ -1,5 +1,22 @@
 # Sunset Galleria: build history ("Current state")
 
+## 13 November 2026 - Controller audit: one menu model, pad glyphs everywhere, new rumbles (`claude/controller`)
+
+core/gamepad.js had not changed since October; everything added since was audited for a pad (the table: docs/controller-audit.md).
+Gameplay already worked on a pad (buying, the claw, Kevin, the order form, charge and scope); the menus around a run were the gap.
+- **One menu model (core/menuNav.js):** D-pad or left stick moves (held: repeats after 0.4 s, every 0.11 s), A / B, LB / RB tabs,
+  the right stick or a held trigger scrolls, Start / Y / X shortcuts. The DOM menus read new pad-only ui* actions (a key there would
+  press a web-page button twice); the order form and fitting room read menu* through the same navigator (their hard-coded stick numbers
+  moved to config/controls.js menuNav). Moves go to the nearest button that way (spatialStep), so the receipt's row and the locker's two
+  columns work. ui/menuFocus.js is the shared cursor and the locker / Survival Guide / Challenges padNav. Before: raw Pad codes, up/down
+  only, no stick, no hold, and the receipt, guide pages, stats and notices could not be scrolled.
+- **Glyphs (ui/glyphs.js):** every menu hint line and How to play's keycaps follow the device used last (Xbox / PlayStation names; with
+  the keyboard the lines still advertise the controller). Confirm buttons say "Press again". Controls opens on the Controller page from
+  a pad, with an "In menus" list.
+- **Rumble:** blasts (rockets, balloons, Soda Bombs), the Air Horn, a boss arriving and falling, jackpots (the claw's prize, prize
+  tickets, a gold Mascot), a Doorbuster going live, and a hum that grows while the Barcode Scanner scans (config/haptics.js).
+- Not built: rebinding (the Controls screen is a reference). Checked in the browser with a fake pad only: what to try with a real one is
+  at the end of docs/controller-audit.md.
 ## 13 November 2026 - Buying a door is a moment (claude/doors)
 
 - game/doorOpenings.js turns a door 'purchase' into bus events: 'areaOpened' (once per purchase, with the PA's welcome on an area's
