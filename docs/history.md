@@ -1,5 +1,20 @@
 # Sunset Galleria: build history ("Current state")
 
+## 13 November 2026 - Stargazer 3000 keeps its scope; both claw guns' models and reloads redone (`claude/claw-guns`)
+
+- **The scope bug (`src/weapons/aim.js`, `src/weapons/scope.js`, `src/config/weapons.js`):** a Stargazer shot used to drop the ADS amount to `scope.boltDropTo`
+  (0.35), under the eyepiece's `overlayFrom` (0.75), so every shot blanked the scope for about a quarter second while it eased back. That was by design
+  ("the eye comes off the eyepiece to work the bolt"), but it plays as being kicked out of the scope, so the drop is gone: firing never lowers the sights,
+  scoped or not. `boltDropTo` is removed from the config. Tests: `stargazer.test.js` (fully aimed every tick through two shots and their bolts), `scope.test.js`.
+- **Models (`src/weapons/models/stargazer.js`, `balloonLauncher.js`):** Stargazer: a left-side loading port (the camera sees the gun's left and top, never
+  its right), turrets and a focus ring, a fluted barrel with a brass band, a ringed-planet front sight, a three-leg tripod, a shaped stock with a navy cheek
+  rest. Balloon Launcher: polka dots, a domed tank with a valve wheel and a hose, a white-faced gauge, a teardrop balloon with a knot, curly ribbons, a
+  helium cartridge screwed into the tank's back. `tests/fixtures/weapon-materials-phase-1.json`: only these two guns' entries regenerated.
+- **Reloads (same lengths, keys in `viewmodel.reload`):** Stargazer: the trigger hand (gathered under a pivot group in the model) lifts and pulls the bolt,
+  the gun rolls its left side up, the support hand presses a strip of bearings sideways into the port and flicks the clip away, the trigger hand closes the
+  bolt. Balloon Launcher: the balloon lets go, the spent cartridge is unscrewed and tossed, a new one screwed in while the needle climbs, the gauge tapped,
+  the balloon blows back up. Reload events may now be a bump with no sound (`tests/newGuns.test.js` allows it).
+
 ## 13 November 2026 - Kiosk Kevin rests between moves and restocks every 3 rounds (`claude/hydrogen-kevin-calmer`)
 
 Calmed Kiosk Kevin down so he rotates stock, Pick, and sites on a 3-round cadence instead of every round:
