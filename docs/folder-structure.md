@@ -844,7 +844,9 @@ src/
                         while it sprays), the Glitter Bomb card (flipping) and the Sentry (tumbling, then standing with its head turned to item.yaw);
                         a mesh is hidden when its item is gone; dispose() frees the pools.
     closingKeyView.js   Reusable spinning key and signature props for the four closing pickups, each with a beacon while it lies there.
-    saleTagView.js      Browser side only: pooled two-sided floating SALE / SALE SOON / DOORBUSTER tags (world/typeKit.js) and a Doorbuster beacon over active buy spots.
+    saleTagView.js      Browser side only: pooled two-sided floating SALE / SALE SOON / DOORBUSTER tags (world/typeKit.js `clearance` role; three InstancedMeshes, one
+                        shown at a time) and a Doorbuster beacon over the buy spots collectSaleSpots(g, sale) returns; re-reads on sale/purchase/move events and
+                        every worldTag.syncIntervalSeconds; dispose() unsubscribes and frees its pools. Numbers: economy.flashSales.worldTag.
     beacon.js           createBeacon({ color, ring, base }): an additive light column and a pulsing floor ring (2 draws; geometry shared by every
                         beacon, materials by colour, flagged userData.shared) over a power-up, a Closing Time key and Kevin's open cart.
     detailCulling.js    Graphics > Small detail (look.runtime.detailDistance): small printed meshes (signs, posters, labels under

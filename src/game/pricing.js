@@ -17,6 +17,9 @@
 //   basePriceOf(category, id)      original shelf price before a discount (same validation/source)
 //   setDiscount(category, 0.25)    25% off everything in that category (0 = none); rounded to the nearest
 //                                  economy.discountRoundTo (10)
+//   setItemDiscount(category, id, 0.7)  70% off that ONE id (a Doorbuster: game/flashSales.js); 0 = none. The bigger of
+//                                  the category's and the item's discount applies, then the coupon and voucher as always
+//   discountOf(category, id?)      the discount in force (with an id: the bigger of category and item); itemDiscountOf
 //   reset()                        no discounts (a new run)
 // An unknown category or id is an error (a typo shouldn't make something free).
 // =============================================================================
