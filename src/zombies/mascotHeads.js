@@ -183,6 +183,47 @@ export const HEADS = {
       faceAlong(piece, x / scoop.radius, up / scoop.radius, z / scoop.radius);
     }
   },
+
+  // Baked soft pretzel: heart-shaped dough loop, crossed twist arms, plump center knot for the face, and coarse salt flecks.
+  pretzel(head, group, { block, shape, colors }) {
+    const { ring, arms, knot, salt } = head;
+    const ringGeo = sharedOnce('pretzel.ring', () => {
+      const curve = new THREE.CatmullRomCurve3(ring.points.map((p) => new THREE.Vector3(...p)), true, 'centripetal');
+      return new THREE.TubeGeometry(curve, ring.tubularSegments, ring.radius, ring.radialSegments, true);
+    });
+    shape(group, ringGeo, head.color, [0, 0, 0], [0, 0, 0], [1, 1, ring.scaleZ]);
+
+    arms.pairs.forEach((points, i) => {
+      const armGeo = sharedOnce(`pretzel.arm.${i}`, () => {
+        const curve = new THREE.CatmullRomCurve3(points.map((p) => new THREE.Vector3(...p)), false, 'catmullrom');
+        return new THREE.TubeGeometry(curve, arms.tubularSegments, arms.radius, arms.radialSegments, false);
+      });
+      shape(group, armGeo, head.color, [0, 0, 0], [0, 0, 0], [1, 1, arms.scaleZ]);
+    });
+
+    const knotGeo = sharedOnce('pretzel.knot', () => new THREE.IcosahedronGeometry(knot.radius, 1));
+    shape(group, knotGeo, head.color, knot.at, [0, 0, 0], knot.scale);
+
+    const surfaceZ = ring.radius * ring.scaleZ + salt.proud;
+    for (const piece of salt.pieces) {
+      block(group, colors[salt.color], piece.size, [piece.at[0], piece.at[1], piece.side * surfaceZ], piece.tilt);
+    }
+
+    const [kx, ky, kz] = knot.at;
+    const [rx, ry, rz] = knot.scale.map((s) => knot.radius * s);
+    for (const { color, size, at: [x, y], proud = 0.01, tilt = 0 } of head.face) {
+      const ux = (x - kx) / rx, uy = (y - ky) / ry;
+      const uz = -Math.sqrt(Math.max(0.01, 1 - ux * ux - uy * uy));
+      const nx = ux / rx, ny = uy / ry, nz = uz / rz;
+      const len = Math.hypot(nx, ny, nz) || 1;
+      const push = proud + size[2] / 2;
+      const px = kx + ux * rx + (nx / len) * push;
+      const py = ky + uy * ry + (ny / len) * push;
+      const pz = kz + uz * rz + (nz / len) * push;
+      const piece = block(group, colors[color], size, [px, py, pz], tilt);
+      faceAlong(piece, nx / len, ny / len, nz / len);
+    }
+  },
 };
 
 // Turn a block so its front (-z) points along the outward normal (nx, ny, nz) of the surface it sits on.

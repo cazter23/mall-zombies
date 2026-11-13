@@ -50,7 +50,7 @@ function bossPage(type, page) {
 
 const lock = guard.lockdown, meet = manager.meeting, report = manager.report;
 const fol = influencer.followers, fans = influencer.fans, flash = influencer.flash;
-const reclaim = mascotVariants.captainCoupon.reclaim, pop = mascotVariants.poppyCorn.popBlast;
+const reclaim = mascotVariants.captainCoupon.reclaim, pop = mascotVariants.poppyCorn.popBlast, salt = mascotVariants.twisty.saltPatch;
 
 /**
  * Every page, in book order. { id, section, type (the zombie type its model is built from), name, title,
@@ -118,6 +118,11 @@ export const guideEntries = [
     memo: 'The Atrium\'s soda-fountain mascot, currently melting. Please mind the floor. It is mostly strawberry.',
     twist: "Leaves a trail of melt puddles that slow me down. Drips twice as fast once the cone's off.",
     tip: 'Never retreat along the path he arrived by. Lead him somewhere you do not plan to stand.',
+  }),
+  mascotPage('twisty', {
+    memo: "The Food Court pretzel stand's ambassador, still shedding rock salt from the warmer. Housekeeping filed a complaint six months ago.",
+    twist: `Drops a patch of coarse salt crystals for ${salt.lifeSeconds} seconds when his helmet pops. Walking across it crunches loudly, doesn't hurt or slow me, and marks where he lost his crust.`,
+    tip: 'When you hear salt crunch underfoot and cannot see him, check behind you: his helmet is already off and he is sprinting.',
   }),
   {
     id: 'employeeOfTheMonth', section: 'customers', type: mascotGoldTypes.sirWaffles, name: 'Employee of the Month', title: 'Gold Mascot',

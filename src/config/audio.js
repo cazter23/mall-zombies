@@ -679,6 +679,15 @@ export const audio = {
         { type: 'noise', filter: 'lowpass', freq: 360, gain: 0.47, attack: 0.008, decay: 0.16, delay: 0.68 },
       ],
     },
+    saltCrunch: {
+      volume: 0.75,
+      layers: [
+        { type: 'noise', filter: 'bandpass', freq: 2600, q: 1.6, gain: 0.56, attack: 0.002, decay: 0.045 },
+        { type: 'noise', filter: 'highpass', freq: 4200, q: 0.9, gain: 0.44, attack: 0.001, decay: 0.035, delay: 0.015 },
+        { type: 'noise', filter: 'bandpass', freq: 2100, q: 1.8, gain: 0.48, attack: 0.003, decay: 0.055, delay: 0.045 },
+        { type: 'noise', filter: 'lowpass', freq: 480, gain: 0.24, attack: 0.002, decay: 0.04 },
+      ],
+    },
 
     // A detuned closing bell and a low bucket clang for the Night Janitor.
     janitorSting: {

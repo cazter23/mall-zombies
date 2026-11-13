@@ -512,7 +512,7 @@ export function createGame({
     sound.play('paChime');
   });
   // The costume twists that reach past the zombie (Poppy Corn's blast...): game/mascotCostumes.js.
-  const mascotCostumes = createMascotCostumes({ events, scene, zombies, player, colliders, effects, surfaces, state });
+  const mascotCostumes = createMascotCostumes({ events, scene, zombies, player, colliders, effects, surfaces, state, sound });
   events.on('playerHit', ({ damage, zombie, knockback }) => {
     if (runFrozen()) return;
     const isBoss = Boolean(zombie?.type?.boss);

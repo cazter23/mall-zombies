@@ -51,6 +51,10 @@ export const deathReports = {
       cause: 'Chilled blunt force trauma compounded by melted dairy slowdowns',
       tip: 'Associate Tip: Scoops leaves slowing puddles, twice as often once unmasked; do not retreat along his trail.',
     },
+    twisty: {
+      cause: 'Seasoned blunt force trauma from a freshly uncrusted pretzel ambassador',
+      tip: 'Associate Tip: Twisty drops harmless salt when his helmet pops; hear it crunch and check behind you.',
+    },
   },
 
   bosses: {
