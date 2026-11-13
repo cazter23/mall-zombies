@@ -1,5 +1,21 @@
 # Sunset Galleria: build history ("Current state")
 
+## 12 November 2026 - Integration: incentives, Flash Sales, Kiosk Kevin phase 8 and the claw guns on one branch
+
+`claude/integration` (from main a013f9a) merges, in order: `claude/incentive-meter` (the reviewed tip of `claude/incentives`: it
+holds that commit plus the review), `claude/flash-sales`, `claude/epic-hellman-cf878e` (Kevin phase 8) and `claude/magical-chaplygin-a0d099`
+(claw machine + Stargazer 3000, Bottle Rocket Bazooka, Balloon Launcher).
+- **Conflicts:** config/save.js (three branches each went to version 9: now **10**, one note naming all three changes); main.js twice
+  (the incentive HUD's `{ pickup, effects }` kept beside the sale teaser and floating SALE tags; the rocket view kept beside Kevin's new
+  `throwableView.update(alpha, visualTime)` and his spectacle); tests/saveGame.test.js (both new tests kept).
+- **Cross-feature bug:** Black Friday did nothing to a Bottle Rocket burst: gunStats `hitDamage` returned a blast's damage before the
+  jackpot step, and playerGun's `explode()` passed no target. Both fixed; a burst now one-shots every shopper caught and does x3 to a boss.
+- **Docs:** the union driver kept main's old `ballistics.test.js` line (tests.md) and the old `throwableView.js` entry (folder-structure.md)
+  next to the branches' rewrites; the stale copies are gone.
+- **Checks:** tests/crossFeature.test.js (jackpots on the claw guns, Commission Day on a blast kill, the three price layers in one order).
+  Full suite 1733/1733; balance, build and build:single fine; a browser run (Black Friday rocket, a Doorbuster bought, Kevin, a claw
+  Balloon Launcher, Save & Quit and Continue) showed no console errors.
+
 ## 12 November 2026 - Jackpots: clocks that wait for a fight, and a Clearance that clears its area
 
 Three changes proposed after the incentives review, on `claude/incentive-meter` (game/incentiveEffects.js, config/powerUps.js):
