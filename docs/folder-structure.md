@@ -635,6 +635,11 @@ src/
                         (Inspect: I / D-pad down; read with actionDown only, so a tap still inspects the gun) calls rounds.endBreak(leadSeconds)
                         and emits 'clockIn' { round, skipped }. Once per break; ignored behind a menu; prompt = { action, progress } for the
                         HUD (hud.setClockIn, under the round box). createGame's 'clockIn' listener reads the PA line. Reset step 'clockIn'
+    stragglers.js       createStragglers({ rounds, zombies, events, state }): end-of-round straggler helper. When rounds.state is 'active',
+                        remainingToSpawn === 0, 0 < aliveCount <= feel.stragglers.threshold and feel.stragglers.delaySeconds pass without a kill
+                        (with the Comfort setting on), emits 'stragglers' { round, zombies, firstTime } for non-boss survivors (bosses count
+                        toward aliveCount but are never highlighted). Clears via 'stragglersCleared' on round end, spawns pending, count > threshold,
+                        boss-only, death, setting off, or reset. Reset step 'stragglers' (transientSteps)
   maps/
     index.js            Map registry + loadMap(id, scene, colliders) + THE MAP INTERFACE (id, group, zones, doors,
                         spawnPoints, features (wall buys, ammo cache... by kind), playerSpawn, update, reset, dispose).

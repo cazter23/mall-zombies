@@ -84,6 +84,21 @@ export const look = {
     colors: { default: 0xffe6c8, mallWalker: 0xc8f0ff, cartPusher: 0xffd27a, mannequin: 0xd8e4ff, mascot: 0xffb26b, boss: 0xff8fb0 },
     darkEdge: { color: 0x2a1530, power: 2.2, strength: 0.6 },
     darkBelow: [0.62, 0.86],
+    // Last-zombie straggler highlight (on-screen rim boost + through-walls silhouette): dual high-contrast bright/dark edge
+    // so remaining zombies read clearly in both sunlit courts and darkened service corridors.
+    straggler: {
+      color: 0xffc857,          // warm amber-gold core glow in dim areas & occluded pulse
+      darkEdgeColor: 0x160a1f,  // deep plum-ink border in bright areas so gold reads against pastel walls
+      power: 2.0,               // tighter < 2.0 fills more of the silhouette; 2.0 keeps the form recognizable
+      strength: 1.35,           // bright-area/dark-area rim boost intensity
+      edgeStrength: 0.85,       // dark border boost around bright-zone stragglers
+      pulseSpeed: 3.2,          // rad/s gentle breathing pulse
+      pulseMin: 0.65,           // lowest pulse multiplier so the highlight never disappears
+      throughWallColor: 0xff9f38,
+      throughWallOpacity: 0.72,
+      throughWallPower: 1.5,
+      throughWallCore: 0.28,    // faint interior fill so distant limbs still read behind walls
+    },
   },
 
   // THE SUN GOES DOWN (game/features/horror.js state.dusk, maps/mall/mall.js setDusk): golden hour at the start of a run,

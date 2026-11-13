@@ -57,7 +57,7 @@ import { wireRunIntro } from './game/runIntro.js';
 import { atmosphere } from './config/environment.js';
 import { createPostProcessing } from './fx/postProcessing.js';
 import { createZoneGrading } from './fx/zoneGrading.js';
-import { setRimDaylight } from './zombies/zombieRim.js';
+import { setRimDaylight, setStragglerPulse, syncStragglerHighlights } from './zombies/zombieRim.js';
 import { createDetailCulling } from './fx/detailCulling.js';
 import { createRoomCulling } from './fx/roomCulling.js';
 import { look } from './config/look.js';
@@ -163,6 +163,21 @@ const damageIndicators = createDamageIndicatorQueue({
   getPlayerPosition: () => player.position,
 });
 const haptics = createHaptics({ gamepad, input, state: game, health, events: g.events });
+
+// Last-zombie ("straggler") browser view: listens on the event bus so headless logic stays DOM/Three-free.
+let activeStragglerZombies = [];
+g.events.on('stragglers', ({ zombies: targets, firstTime }) => {
+  activeStragglerZombies = targets;
+  syncStragglerHighlights(targets.map((z) => z.model.root));
+  if (firstTime) {
+    hud.showAnnouncement(feel.stragglers.pa);
+    sound.play('paChime');
+  }
+});
+g.events.on('stragglersCleared', () => {
+  activeStragglerZombies = [];
+  syncStragglerHighlights([]);
+});
 
 // Which button set prompts show: the device used last ('keyboard', or the controller's type: 'xbox', 'playstation'...).
 function promptDevice() {
@@ -526,6 +541,7 @@ function render(alpha, frameTime) {
   if (death.summary) applyDeathCamera(alpha);
   body.root.visible = !death.summary;
   body.update(visualTime, player, alpha);
+  if (activeStragglerZombies.length) setStragglerPulse(visualTime);
   zombies.render(visualTime, alpha);
   g.contactShadows.update(zombies.zombies, alpha);
   effects.update(visualTime);
@@ -603,9 +619,15 @@ function render(alpha, frameTime) {
   {
     const active = game.running && !game.over && !game.menu;
     minimapPlan ??= buildMinimapPlan(g.map, g.colliders);
+    const stragglers = active && minimapPlan && activeStragglerZombies.length
+      ? activeStragglerZombies
+        .filter((z) => z.isAlive)
+        .map((z) => ({ x: z.position.x, z: z.position.z, floor: minimapPlan.floorAt(z.position.y + 0.1) }))
+      : [];
     hud.minimap.update({
       plan: minimapPlan, active, held: input.actionDown('minimap'), dt: frameTime, guidance: game.showClosingGuidance,
       state: active && minimapPlan ? minimapState(minimapPlan, g, { guidance: game.showClosingGuidance }) : null,
+      stragglers,
     });
   }
 

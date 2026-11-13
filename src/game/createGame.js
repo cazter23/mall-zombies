@@ -75,6 +75,7 @@ import { createReturnQuest } from './returnQuest.js';
 import { createWallet, pointsForHit } from './wallet.js';
 import { createRounds } from './rounds.js';
 import { createClockIn } from './clockIn.js';
+import { createStragglers } from './stragglers.js';
 import { createInteractions } from './interactions.js';
 import { createTickets } from './tickets.js';
 import { buildFeatures, featuresOf } from './features/index.js';
@@ -448,6 +449,8 @@ export function createGame({
   });
   // The shopping window: hold Clock in during the break to call the next round early (announces 'clockIn').
   const clockIn = createClockIn({ input, rounds, events });
+  // End-of-round straggler helper (announces 'stragglers' / 'stragglersCleared' after delay with <= threshold left).
+  const stragglers = createStragglers({ rounds, zombies, events, state });
   let powerUps = null;
 
   // --- Who reacts to what (the event bus; game/events.js lists the events) ---
@@ -734,6 +737,7 @@ export function createGame({
     ['pricing', () => pricing.reset()], // no discounts carried into a new run
     ['rounds', () => rounds.reset()],
     ['clockIn', () => clockIn.reset()],
+    ['stragglers', () => stragglers.reset()],
     ['player', () => player.teleport(map.playerSpawn)],
     ['map', () => map.reset()], // doors closed, zones locked
     ['features', () => features.reset()],
@@ -832,7 +836,7 @@ export function createGame({
   // Reset steps a save does not keep: nothing in them outlasts a round's start that matters (zombies, effects, timers).
   const transientSteps = [
     'zombies', 'mascotCostumes', 'surfaces', 'health', 'balls', 'interactions', 'viewmodel', 'effects', 'contactShadows',
-    'ambience', 'melee', 'aimAssist', 'clockIn', 'hud', 'saveGame',
+    'ambience', 'melee', 'aimAssist', 'clockIn', 'stragglers', 'hud', 'saveGame',
     'guide', // (its replay count travels in the guide's own record, not the run save)
   ];
   const saveGame = createSaveGame({ steps: saveSteps, events, stats, state, rounds, resetRun, storage: saveStorage });
@@ -916,6 +920,7 @@ export function createGame({
       bosses.update(dt, inMall);
       if (inMall) clockIn.update(dt, !inMenu); // before the rounds: a finished hold shortens this tick's break
       if (inMall) rounds.update(dt, !bosses.pending);
+      if (inMall) stragglers.update(dt);
       updateBossBar(bosses.active);
     }
     health.update(dt);
@@ -982,6 +987,7 @@ export function createGame({
     surfaces,
     rounds,
     clockIn,
+    stragglers,
     get vaultPromptVisible() {
       return vaultPromptVisible;
     },

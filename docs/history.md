@@ -1,5 +1,9 @@
 # Sunset Galleria: build history ("Current state")
 
+## 12 November 2026 - Last-zombie straggler helper
+
+At the tail of a round (no spawns remaining and `aliveCount <= 2`), after an 8-second quiet window since the last kill, remaining non-boss zombies are highlighted through walls (`zombies/zombieRim.js`: per-zombie rim uniform + one shared `GreaterDepth` overlay material readable in bright and dark zones) and pinged live on the minimap (`ui/minimap.js`), with a once-per-run PA line ("Shoppers, we have a straggler in the store."). Bosses count toward the zombie count but are excluded from the helper since they already carry a boss bar. Driven by `game/stragglers.js` via `'stragglers'` / `'stragglersCleared'` on `game/events.js`, with a Comfort setting (`stragglerHelper`, default on), `tests/stragglers.test.js`, and reset/transient registration in `createGame.js`.
+
 ## 12 November 2026 - Zombie pathfinding: half the cost per redraw, a sixteenth of the garbage, the same routes
 
 From the code review (pass 2). The zombies' shared "arrows toward the player" map (zombies/navigation.js) is redrawn for the whole mall every 0.2 s. Measured headless at round 30 with every area open: that one job was about 30% of the tick's CPU, made a slow tick every 13th tick, and produced about 94% of the game's garbage. Branch claude/nav-flow-field.

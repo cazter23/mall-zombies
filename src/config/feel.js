@@ -252,6 +252,20 @@ export const feel = {
     ],
   },
 
+  // Last-zombie ("straggler") helper (game/stragglers.js): triggers at the tail of an active round once every zombie
+  // has spawned and at most `threshold` remain alive for `delaySeconds` without a kill. Bosses count toward `aliveCount`
+  // but are never highlighted or pinged (they already carry a boss bar).
+  stragglers: {
+    enabled: true,         // Comfort setting toggle (config/settings.js -> stragglerHelper)
+    threshold: 2,          // activate once alive <= this (matches economy.rounds.lastShoppers.count)
+    delaySeconds: 8,       // quiet seconds since the last kill before the outline + minimap pings turn on
+    pa: {
+      kicker: 'Attention shoppers',
+      text: 'Shoppers, we have a straggler in the store.',
+      priority: 1,
+    },
+  },
+
   // The main menu's flyover through the mall (ui/titleCamera.js; the shots are map data: map.titleShots).
   titleScreen: {
     shotSeconds: 9, // each camera glide

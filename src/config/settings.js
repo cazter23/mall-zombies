@@ -296,6 +296,12 @@ export const settingDefs = [
     id: 'horrorLighting', tab: 'Comfort', label: 'Horror effects (lighting, displays, eerie sounds)', type: 'toggle', default: true,
     apply: (v) => { look.runtime.horror = v; },
   },
+  {
+    // Highlights and pings the last few zombies at the end of a round (game/stragglers.js).
+    id: 'stragglerHelper', tab: 'Comfort', label: 'Last-zombie tracker (outline & minimap ping)', type: 'toggle',
+    default: true,
+    apply: (v) => { feel.stragglers.enabled = v; },
+  },
 ];
 
 // First launch only (game/autoGraphics.js): measure the title flyover's frame rate for a few seconds, then pick the best

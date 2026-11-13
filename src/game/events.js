@@ -74,6 +74,9 @@
 //   'clockIn'     { round, skipped }                     the player ended the break before `round` early (game/clockIn.js);
 //                                                        skipped = seconds of the break given up
 //   'waveEnding'  { round, remaining }                   no spawns left and 2 or fewer zombies alive (final clearance cue)
+//   'stragglers'  { round, zombies, firstTime }          all spawns done, alive <= threshold, quiet delay elapsed (game/stragglers.js);
+//                                                        `zombies` lists non-boss alive targets; `firstTime` = first activation this run
+//   'stragglersCleared' { round, reason }                straggler helper turned off (roundEnd, disabled, bossOnly, reset, over)
 //   'roundDiscard' { reason }                            the current wave was cleared: reason 'debug' (skipRound / jumpTo) or
 //                                                        'overtime' (Stay for overtime with a wave live; an uncollected boss reward stays)
 //   'typeIntro'   { typeId, zombie }                     a zombie type's first appearance this run (zombie = that spawn)
