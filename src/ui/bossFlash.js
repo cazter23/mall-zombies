@@ -23,7 +23,7 @@ export function createBossFlashView() {
       events.on('bossFlash', trigger);
       events.on('clearanceDetonated', () => {
         const cf = powerUps.visual.clearanceFlash;
-        trigger({ opacity: cf.maxOpacity, dimOpacity: 0.16, seconds: cf.fadeOutSeconds, color: cf.color });
+        trigger({ opacity: cf.maxOpacity, dimOpacity: cf.dimOpacity, seconds: cf.fadeOutSeconds, color: cf.color });
       });
       events.on('runReset', clear);
       events.on('playerDeath', clear);

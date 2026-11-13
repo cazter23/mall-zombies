@@ -261,8 +261,9 @@ export function buildHorror(feature, { map, events, rounds, player }) {
         } else if ((clearanceFlicker.hold -= dt) <= 0) {
           clearanceFlicker.hold = between(flickerRand, HOLD);
           clearanceFlicker.on = !clearanceFlicker.on;
-          const level = clearanceFlicker.on ? 1 : 0.12;
-          for (const n of clearanceFlicker.area.neons) n.setPower(clearanceFlicker.on ? 1 : 0.15);
+          const flicker = powerUps.visual.clearanceFlicker;
+          const level = clearanceFlicker.on ? 1 : flicker.lampLevel;
+          for (const n of clearanceFlicker.area.neons) n.setPower(clearanceFlicker.on ? 1 : flicker.neonLevel);
           for (const l of lamps) if (l.area === clearanceFlicker.area && !l.dead && l.dying <= 0) setLamp(l, level);
         }
       }

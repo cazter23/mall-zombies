@@ -40,8 +40,10 @@ export const powerUps = {
     cardboardColor: 0xc28952, cardboardEmissive: 0.18,
     goldColor: 0xffe066, goldEmissive: 0xe6a119, goldEmissiveIntensity: 0.52,
     markerHoverAboveTarget: 0.45, markerRadius: 0.18,
-    clearanceFlash: { color: '#fff3c4', maxOpacity: 0.75, fadeOutSeconds: 0.55 },
-    clearanceFlicker: { seconds: 1.8 },
+    // dimOpacity: the black flash used instead when Comfort's "Dim instead of phone flashes" is on.
+    clearanceFlash: { color: '#fff3c4', maxOpacity: 0.75, dimOpacity: 0.16, fadeOutSeconds: 0.55 },
+    // The area's lights stutter (game/features/horror.js): lamps and neons drop to these levels on each "off" beat.
+    clearanceFlicker: { seconds: 1.8, lampLevel: 0.12, neonLevel: 0.15 },
   },
   types: {
     stockroomDelivery: {
