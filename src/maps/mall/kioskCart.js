@@ -1,6 +1,6 @@
 // =============================================================================
 // KIOSK KEVIN'S CARTS (one per site in config/kiosk.js `sites`; game/features/kiosk.js keeps ONE live).
-// A cart is a low counter (vaultable on its short side) with three product slots along its front, the KIOSK KEVIN sign,
+// A cart is a low counter under a canopy (one collider, solid to the roof) with three product slots along its front, the KIOSK KEVIN sign,
 // a notice strip above the counter (Kevin's Pick, "KEVIN IS HIDING", "BACK IN 5 MIN"...) and Kevin in it (mall/kioskKevin.js).
 // On the counter, each slot shows what it sells (world/kioskProducts.js). While he's away (or before he opens) a slatted lid
 // covers the counter with a notice on it; when he arrives it flips open behind him and he springs up.
@@ -39,7 +39,7 @@ const nameOf = (id) => productOf(id)?.name ?? kiosk.bubbleWrap.name;
 const glow = (color) => new THREE.MeshBasicMaterial({ color });
 
 /**
- * The cart's looks, all static decoration (nothing collides), in the cart's frame (u across, v out to the front):
+ * The cart's looks, all static decoration (none of it collides: the cart's one collider covers it), in the cart's frame (u across, v out to the front):
  * a harlequin front panel over a dark plinth, a gold shelf lip for the products, a striped canopy on four posts with a scalloped
  * valance, a pegboard behind Kevin, a bulb-lit KIOSK KEVIN marquee on the roof, and a hanging board behind the notice strip.
  * `box(u0, y0, v0, u1, y1, v1, material, options)` and `signAt(text, u, y, v, w, h, background, color)` are the cart's own helpers.
@@ -61,7 +61,7 @@ function dressCart({ kit, box, signAt, half, front, back, height, signWidth }) {
   box(-.95, height + .02, front + .015, .95, height + .06, front + .2, gold, own);
 
   // Canopy: four posts, a purple roof with gold stripes, a striped valance with a scalloped edge.
-  const roofY = 2.4, pw = .07;
+  const { roofY } = kiosk.cart, pw = .07; // (the cart's collider reaches the roof's top: buildKioskCart)
   for (const u of [-half + .06, half - .06 - pw]) {
     box(u, height, front + .02, u + pw, roofY, front + .02 + pw, gold, own);
     box(u, height, back, u + pw, roofY, back + pw, gold, own);
@@ -120,7 +120,13 @@ export function buildKioskCart(kit, site) {
   const back = -depth / 2;
   const half = width / 2;
 
-  box(-half, 0, back, half, height, front, kit.mat(0x45246e), { vaultable: true, name: 'kevin_cart' });
+  // The counter is drawn; the cart's ONE collider is invisible and solid from the floor to the canopy roof's top over the
+  // footprint, so nothing walks or shoots through the posts, pegboard or canopy (and it can't be vaulted: no headroom).
+  box(-half, 0, back, half, height, front, kit.mat(0x45246e), { collide: false, name: 'kevin_cart' });
+  {
+    const [ax, az] = at(-half, back), [bx, bz] = at(half, front);
+    kit.addCollider(Math.min(ax, bx), fy, Math.min(az, bz), Math.max(ax, bx), fy + kiosk.cart.roofY + kiosk.cart.roofThickness, Math.max(az, bz));
+  }
   box(-half + .02, height - .04, back + .02, half - .02, height + .02, front + .015,
     kit.mat(0xf1cc70), { collide: false, name: 'kevin_countertop' });
   dressCart({ kit, box, signAt: (text, u, y, v, w, h, background, color) => {

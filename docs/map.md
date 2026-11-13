@@ -21,7 +21,7 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   under a MEGA MART sign), Service Corridor (1000, west wall z 0.5..3.5, under a "STAFF ONLY"
   sign; the escalator's high end runs overhead just short of it). 3 boarded vents (zombie spawns).
 - Kiosk Kevin has five carts (config/kiosk.js `sites`; one live, the rest say BACK IN 5 MIN). Each is a 2.2 × 0.75 m
-  footprint with a single 1.05 m vaultable counter collider and three labeled buy spots along its front. He opens
+  footprint: a 1.05 m counter under a canopy, ONE collider solid from the floor to the roof (kiosk.cart.roofY + roofThickness, not vaultable), and three labeled buy spots along its front. He opens
   from round 2 at the first, on the Hallway's south wall (x −9.6..−7.4, z −1.96..−1.21, facing +Z), and moves at
   each round start after that to another open site: Food Court (x −4.3..−2.1, z −6.875..−6.125, facing the gate, 4.6 m
   west of the Fryer apron), Grand Atrium (south arcade west of the Hallway gate, x 8.04..10.24, z 6.64..7.39, facing

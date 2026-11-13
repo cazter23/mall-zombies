@@ -453,7 +453,7 @@ the model and debris and disposes their shared geometry and materials.
   cakes, in their pocket), Pick bonuses, hiding, pricing and vouchers (phase 7: Kevin's Flash Sale group waits until his cart is open,
   not before round 2 or behind the locked start shutter, works mid-block without a move/PA, and ends back at the shelf prices; the Discount Code halves the Sentry once and is
   spent by that purchase, which is one Sentry (never the Pick); the Master Key and Signed Approval never apply). Air Horn input, cover, charge interruption, Mascot weight,
-  boss immunity and zero payout. Kevin's five sites (phase 4): each has one collider (a vaultable counter or >= 2.1 m),
+  boss immunity and zero payout. Kevin's five sites (phase 4): each has one collider (solid to the canopy roof, not vaultable),
   a clear stand point zombies reach, no zombie spawn within `spawnClearance`, a real prompt there, and ducking measured
   from that cart; the carts leave every spawn's route to the hub alone (no more than 3 m longer); he opens first in
   the Hallway at round 2, stays put silently on rounds 3-4, and moves every 3 rounds (`5, 8...`) with the PA naming the place; 40 move rounds with
