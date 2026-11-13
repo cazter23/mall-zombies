@@ -243,7 +243,8 @@ src/
                         0 past it); findInBlast(centre, blast, colliders, shootables) -> [{ target, distance }] nearest first (live zombies only, never Sunny or a
                         dummy; distance to the nearest hitbox point; a wall between the centre and a body shields it); selfBlastDamage({ eye, feetY }, centre,
                         blast, colliders, maxHealth, multiplier) -> what your own burst does to you (maxHealth x self.share x the falloff from the nearest point of
-                        you, x stats.ownBlastDamage, capped at self.maxShare so it never kills from full; 0 behind a wall). Pure (tests/blast.test.js); the
+                        you, x stats.ownBlastDamage, capped at self.maxShare so it never kills from full; 0 behind a wall or under self.ignoreBelow, which is how the
+                        Hi-Vis Vest's ownBlastDamage 0.01 makes you blast-proof). Pure (tests/blast.test.js); the
                         damage per zombie is gunStats.hitDamage with hit.blastDistance. playerGun.js fires the rocket on g.rockets (ballistics, zombies 'bounce',
                         one contact ends it), explodes it here at the end, and reports onBlast -> the 'gunBlast' event; createGame's listener applies selfDamage.
     aimAssist.js        (assistable(shootable): never a dead or spawning one, or one flagged ignoreAimAssist, like Sunny.) createAimAssist(): controller-only (input.device). Picks the visible target nearest the

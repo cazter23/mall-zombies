@@ -8,8 +8,8 @@
 //                                       with no wall between the centre and its body (a wall shields it)
 //   selfBlastDamage({ eye, feetY }, centre, blast, colliders, maxHealth, multiplier)   -> what your OWN blast does to you: maxHealth x blast.self.share
 //                                       x the falloff (from the nearest point of you, a line from your feet to your eye), x `multiplier` (stats.ownBlastDamage: 0 in the
-//                                       wardrobe's blast-proof item), never more than maxHealth x blast.self.maxShare, so it can never kill you from full
-//                                       health; 0 behind a wall.
+//                                       Hi-Vis Vest: 0.01), never more than maxHealth x blast.self.maxShare, so it can never kill you from full health;
+//                                       0 behind a wall, and 0 when it comes to less than blast.self.ignoreBelow (the vest's scratch).
 // The damage each zombie takes is the gun's own maths (weapons/gunStats.js hitDamage, with hit.blastDistance), so tiers and stats apply.
 // =============================================================================
 
@@ -65,5 +65,6 @@ export function selfBlastDamage({ eye, feetY }, centre, blast, colliders, maxHea
   const near = feet.distanceTo(centre);
   const falloff = blastFalloff(near, blast);
   if (falloff <= 0 || !clearLine(centre, eye, colliders)) return 0;
-  return Math.min(maxHealth * self.share * falloff * multiplier, maxHealth * self.maxShare);
+  const damage = Math.min(maxHealth * self.share * falloff * multiplier, maxHealth * self.maxShare);
+  return damage < (self.ignoreBelow ?? 0) ? 0 : damage; // (a scratch under ignoreBelow is nothing: the Hi-Vis Vest)
 }

@@ -186,7 +186,7 @@ export const skins = {
       text: 'Return the Last Customer with the {gun}.' },
   }],
   stargazer: [{ id: 'midnight-sky', name: 'Midnight Sky', slot: 1,
-    palette: { body: 0x10153a, dark: 0x0a0c1c, metal: 0x9aa3c0, grip: 0x2c2230, accent: 0xc9d4ff, sight: 0xffe58a, glass: 0xa98bff },
+    palette: { body: 0x2c3044, dark: 0x0a0c1c, metal: 0x9aa3c0, grip: 0x2c2230, accent: 0xc9d4ff, sight: 0xffe58a, glass: 0xa98bff }, // (muted: the role skin is the saturated one)
     challenge: mastery(1000) }, {
     id: 'constellation', name: 'Constellation', slot: 2,
     palette: { body: 0x1a2a6b, dark: 0x0d1433, metal: 0xc7cde0, grip: 0x3a2618, accent: 0xffe08a, sight: 0xffe58a },
@@ -201,16 +201,16 @@ export const skins = {
       text: 'Clear a round having fired the {gun} {minShots} times or more without a single miss.' },
   }],
   bottleRocket: [{ id: 'grand-finale', name: 'Grand Finale', slot: 1,
-    palette: { body: 0x2a1f5c, dark: 0x141024, metal: 0xb8b4d0, grip: 0x1c1a26, accent: 0xffd23f, sight: 0xff5ec8, ammo: 0xff3b3b },
+    palette: { body: 0x3a3448, dark: 0x141024, metal: 0xb8b4d0, grip: 0x1c1a26, accent: 0xffd23f, sight: 0xff5ec8, ammo: 0xff3b3b }, // (muted: the role skin is the saturated one)
     challenge: mastery(1000) }, {
     id: 'long-fuse', name: 'Long Fuse', slot: 2,
-    palette: { body: 0xf4f1e8, dark: 0x1e2a5c, metal: 0xc8ccd8, grip: 0x232733, accent: 0xd8323a, sight: 0xffd23f },
-    pattern: { kind: 'stripes', ink: 0xd8323a, spacing: 0.03, width: 0.012, angle: 30 }, // a firework wrapper's candy stripe
+    palette: { body: 0xc8283a, dark: 0x1e2a5c, metal: 0xc8ccd8, grip: 0x232733, accent: 0xf4f1e8, sight: 0xffd23f },
+    pattern: { kind: 'stripes', ink: 0xf4f1e8, spacing: 0.03, width: 0.012, angle: 30 }, // a firework wrapper's candy stripe
     challenge: { kind: 'rangedKills', count: 200, minDistance: 12, needs: ['claw'], text: 'Clear {count} zombies from {minDistance} m or more with the {gun}.' },
   }, {
     id: 'sparkler', name: 'Sparkler', slot: 3,
     palette: { body: 0x1a1a22, dark: 0x0e0e14, metal: 0xd8d4e0, grip: 0x141418, accent: 0xffb02e, sight: 0xfff0a8, ammo: 0xffd23f },
-    treatment: { kind: 'pulse', role: 'accent', color: 0xffc04a, low: 0.06, high: 0.5, period: 0.7 }, // a lit fuse fizzing
+    treatment: { kind: 'pulse', role: 'accent', color: 0xffc04a, low: 0.06, high: 0.4, period: 0.7 }, // a lit fuse fizzing
     challenge: { kind: 'roundKills', count: 40, needs: ['claw'], track: '{value} / {count} this round',
       text: 'Clear {count} zombies with the {gun} in one round.' },
   }],

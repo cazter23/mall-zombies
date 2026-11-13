@@ -91,12 +91,17 @@ test('your own burst hurts you: a rocket into the wall in front of you takes a s
   assert.ok(lost <= rk.blast.self.maxShare * near.g.stats.maxHealth + 1e-9 && near.g.stats.health > 0, 'never more than maxShare: you live');
   assert.ok(Math.abs(near.blasts[0].selfDamage - lost) < 1e-9);
 
+  // Wearing the Hi-Vis Vest (safety gear): bought and worn through the wardrobe, your own burst does nothing; taken off, it bites again.
   const proof = setup(-18.5, Math.PI / 2);
-  proof.g.stats.ownBlastDamage = 0; // (what the wardrobe's blast-proof item sets)
+  proof.g.wardrobe.buy('hiVisVest'); // (bought and put on)
+  assert.equal(proof.g.wardrobe.status.worn.torso, 'hiVisVest');
+  const full = proof.g.stats.health;
   proof.fire();
   proof.t.tick(30);
   assert.equal(proof.blasts[0].selfDamage, 0);
-  assert.equal(proof.g.stats.health, proof.g.stats.maxHealth);
+  assert.equal(proof.g.stats.health, full, 'not a scratch');
+  proof.g.wardrobe.buy('cardigan'); // (the torso slot: the vest comes off)
+  assert.equal(proof.g.stats.ownBlastDamage, 1, 'the vest off: back to normal (the factor divides out cleanly)');
 });
 
 test('it can finish you when you are already hurt, and the death receipt says it was your own rocket', () => {

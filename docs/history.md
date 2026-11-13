@@ -12,9 +12,12 @@ by its look.model (a firework or a bobbing balloon on a string). Balance: the fi
 In the pool as a purple capsule, weight 6. `npm run sim:claw` (weights now total 129): it is in 13.4% of pits, won 6-7% of grabs; Return to Sender stays the
 rarest (2.3%). With five claw-only guns plus the wonder weapon, 29 of 129 weight (22% of a capsule, was 13%) is now a claw-only gun.
 Skins: Birthday Party; Polka Dot (150 Mall Walkers: the fast ones, homing catches them); Helium High (a boss from round 9 that only balloons hurt).
-**Still open**: the wardrobe's blast-proof item for the Bottle Rocket Bazooka (stats.ownBlastDamage already exists): the wardrobe is 4 slots x 3 items and
-the picker and its tests walk all 81 outfits, so a 13th item is a design decision for the user (a new item, or a third line on an existing one such as the
-Hi-Vis Vest).
+**The blast-proof fix is the Hi-Vis Vest** (the user's choice over a 13th item: the wardrobe is 4 slots x 3 items and the picker walks all 81 outfits).
+Safety gear: it gains a third line, "Your own blasts can't hurt you" (factor ownBlastDamage 0.01, statBetter 'lower'). Not 0: the wardrobe takes an item
+off by dividing its factors out, and 0 can't be divided out. weapons/blast.js drops a self-hit under blast.self.ignoreBelow (1 health point), so the vest's
+0.45 at most is no hit at all (no hurt flash, no regen reset). The vest is now a stronger item (faster reloads, blast-proof, zombie hits hurt more).
+The full suite (once, at the end) caught: the 'rockets' reset step must not sit between 'balls' and 'equipment' (equipment.test), a role skin's body must be
+clearly more saturated than its mastery body (two mastery bodies muted, the rocket's role skin made red), and no feat glow may peak past 0.45.
 
 ## 12 November 2026 - More claw-only guns, 2: the Bottle Rocket Bazooka (the rocket launcher) and the blast
 

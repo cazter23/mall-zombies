@@ -1068,13 +1068,15 @@ export const weapons = {
   // sight of it takes `damage` x the blast falloff (weapons/gunStats.js hitDamage with blastDistance). One rocket in the tube and a slow reload, so it is a
   // poor duellist (below the Price Gun on one zombie, tests/balance.test.js) and the best clump-breaker there is.
   // IT HURTS YOU TOO: inside the radius your own blast takes blast.self.share of your max health (with the falloff), never more than maxShare, so it can't
-  // kill you from full health; behind a wall it can't reach you. The wardrobe's blast-proof item (stats.ownBlastDamage 0) cancels it.
+  // kill you from full health; behind a wall it can't reach you. The Hi-Vis Vest (config/wardrobe.js, stats.ownBlastDamage 0.01) cancels it.
   bottleRocket: {
     id: 'bottleRocket', name: 'Bottle Rocket Bazooka', fireMode: 'semi', clawOnly: true,
     damage: 900, headshotMultiplier: 1, // (at the blast's centre; a blast has no headshots)
     blast: {
       radius: 3.5, edgeFraction: 0.25, // m; the damage at the very edge is edgeFraction of the centre's
-      self: { share: 0.45, maxShare: 0.75, joltDegrees: 3 }, // your own blast: up to 45% of your max health at its centre, never more than 75%; the view jolts down
+      // your own blast: up to 45% of your max health at its centre, never more than 75%; the view jolts down. ignoreBelow (health points): less than this
+      // is no hit at all (the Hi-Vis Vest's 0.01 leaves at most 0.45: harmless, no hurt flash, no regen reset).
+      self: { share: 0.45, maxShare: 0.75, joltDegrees: 3, ignoreBelow: 1 },
       look: { colors: [0xff3b3b, 0xffd23f, 0x3ad1ff, 0xff5ec8, 0xffffff], count: 46, speed: 6, size: 0.07 }, // the firework burst (effects.confetti)
       flash: { color: 0xffe08a, size: 2.2, seconds: 0.18 },
     },

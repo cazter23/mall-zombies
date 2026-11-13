@@ -492,7 +492,7 @@ export function createGame({
     if (!health.isReviveProtected) player.addViewKick(-feel.fall.viewJoltDegrees * DEG_TO_RAD); // (not when this fall just spent it)
   };
   // Your own rocket's burst (the Bottle Rocket Bazooka; weapons/blast.js worked out selfDamage: capped below a one-shot, 0 behind a wall or in the
-  // blast-proof item). Like a fall it goes straight to health, past armour; the death receipt names it (config/deathReports.js ownBlast).
+  // Hi-Vis Vest). Like a fall it goes straight to health, past armour; the death receipt names it (config/deathReports.js ownBlast).
   events.on('gunBlast', ({ selfDamage, weaponId }) => {
     if (runFrozen() || !(selfDamage > 0) || health.isReviveProtected) return;
     health.takeDamage(selfDamage, { type: 'ownBlast', weaponId });
@@ -651,8 +651,8 @@ export function createGame({
     ['skins', () => skins.reset()],
     ['guide', () => guide.reset()], // (only what the round being replayed was counted: the record itself is permanent)
     ['balls', () => balls.clear()], // (before the gun: a ball in the air reports to it)
-    ['rockets', () => rockets.clear()], // (a rocket in the air is gone, silently: no burst)
     ['equipment', () => equipment.reset()], // empty pockets, nothing thrown left in the air or on the floor
+    ['rockets', () => rockets.clear()], // (before the gun, like the balls: a rocket in the air is gone, silently, no burst)
     ['gun', () => gun.reset()], // just the staple gun again, no upgrades
     ['interactions', () => interactions.reset()],
     ['viewmodel', () => viewmodel.reset()],

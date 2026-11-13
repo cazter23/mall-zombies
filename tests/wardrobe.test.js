@@ -370,8 +370,8 @@ test('ticket lines are words only: each factor has a direction and one line, siz
     { stat: 'maxHealth', good: true, text: 'Noticeably more health' },
     { stat: 'sprintDuration', good: false, text: 'Sprints noticeably shorter' },
   ]);
-  assert.deepEqual(texts('hiVisVest'), ['Reloads noticeably faster', 'Zombie hits hurt noticeably more']);
-  assert.equal(wardrobe.ticketDetail('hiVisVest'), `${wardrobeItems.hiVisVest.ticket} · Reloads noticeably faster · Zombie hits hurt noticeably more · Torso slot`);
+  assert.deepEqual(texts('hiVisVest'), ['Reloads noticeably faster', "Your own blasts can't hurt you", 'Zombie hits hurt noticeably more']);
+  assert.equal(wardrobe.ticketDetail('hiVisVest'), `${wardrobeItems.hiVisVest.ticket} · Reloads noticeably faster · Your own blasts can't hurt you · Zombie hits hurt noticeably more · Torso slot`);
   for (const id of Object.keys(wardrobeItems)) {
     for (const line of wardrobe.statLines(id)) assert.ok(!hasStatNumber(line.text) && !/\d/.test(line.text), `${id}: "${line.text}"`);
     assert.ok(!hasStatNumber(wardrobe.ticketDetail(id)), id);

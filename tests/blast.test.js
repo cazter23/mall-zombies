@@ -51,6 +51,9 @@ test('your own blast: half your health at its centre, less further out, nothing 
   assert.equal(selfBlastDamage(me, v(0, 0.1, 0), fierce, [], 100), 80, 'capped: it can never kill you from full health');
   assert.equal(selfBlastDamage(me, v(0, 0.1, 0), blast, [], 100, 0), 0, 'the blast-proof item (multiplier 0)');
   assert.equal(selfBlastDamage(me, v(0, 0.1, 0), blast, [], 100, 0.5), 25);
+  const scratch = { ...blast, self: { ...blast.self, ignoreBelow: 1 } };
+  assert.equal(selfBlastDamage(me, v(0, 0.1, 0), scratch, [], 100, 0.01), 0, 'the Hi-Vis Vest: half a point is no hit at all');
+  assert.equal(selfBlastDamage(me, v(0, 0.1, 0), scratch, [], 100), 50, 'and without it, the same blast bites');
   assert.equal(selfBlastDamage(me, v(0, 0.1, 0), { radius: 4, edgeFraction: 0.25 }, [], 100), 0, 'a blast without `self` never hurts you');
 });
 
