@@ -39,8 +39,10 @@ src/
     closingTime.js      Four closing duties and their keys, fountain, night-safe and last-orders targets, PA copy (the once-per-run briefing and its delay; `keep` marks the lines the PA queue never drops), the win receipt's words, the OVERTIME tag, Statistics labels, key marker and prop tuning, escape van prompt data, and parking validation machine geometry, prompts and PA. Also the run modes (order, default, chooser words), Classic's prompt words, each duty's place and the fountain prompt's count.
     powerUps.js         Employee-incentive drop tuning: 11 types (8 common, 3 jackpot), common vs jackpot tier weights
                         (jackpot.firstRound 4, chance 0.125), needWeight factor cap + per-type need curves (Paid Break,
-                        Stockroom Delivery, Employee Discount), skill credit, round caps, durations/charges, ammo top-up,
-                        clearance flash/flicker, colors, icons and PA lines. First round 2, 12-16 credit per drop, max 3 per round
+                        Stockroom Delivery, Employee Discount), visual parameters (common vs jackpot hover/bob/spin/scale,
+                        jackpot gold trim & beacon multipliers, emissive dark/cream/cardboard tones), skill credit,
+                        round caps, durations/charges, ammo top-up, clearance flash/flicker, colors, icons and PA lines.
+                        First round 2, 12-16 credit per drop, max 3 per round
     effectWords.js      THE WORDS-ONLY RULE: players never see an upgrade's effect as a number. The fixed size bands (a little / noticeably / much), sizeWord / fillSize
                         for the `{size}` / `{Size}` tokens in a config line, describeEffects and hasStatNumber (the detector the tests use).
     wardrobe.js         Apparel items, four slots, stat multipliers, joke line, signature colour, icon id and `lines` (the words for each upside / downside) per item,
@@ -856,10 +858,12 @@ src/
     detailCulling.js    Graphics > Small detail (look.runtime.detailDistance): small printed meshes (signs, posters, labels under
                         look.detailDistance.maxSize) hidden beyond 22 m (Low) or 14 m (Potato). Collected once after batching; only hides
                         what it collected and only re-shows what it hid. main.js updates it beside room culling.
-    powerUpView.js      Reusable per-incentive pickup meshes (carton, Shift Bonus timepiece/chevrons, Loss Prevention shield+baton,
-                        Clearance finned bomb, Commission Day medallion, Black Friday cleaver tag, etc.) with fx/beacon.js
-                        light column + jackpot double halo rings; no lights/colliders; bob/spin/blink, floor zone rings
-                        (Paid Break, Spill Cleanup) & target rings, hide on reset/death, owned-resource disposal
+    powerUpView.js      Shared low-poly pickup models built once per session and merged by material (userData.shared:
+                        stacked boxes, first-aid case, winged clock, shield+baton, bursting shopping bag, angled % hang-tag,
+                        detective eye loupe, mop bucket+pole, gold-trimmed Clearance nuke / Commission $ coin / Black Friday
+                        cleaver tag, and distinct boss vouchers). Standout jackpot hover/spin/tilt/scale/halo and scaled
+                        fx/beacon.js columns; readable emissive hardware in dark rooms; 2-4 meshes per pickup; zero lights/colliders;
+                        floor zone rings (Paid Break, Spill Cleanup) & target markers, clean per-view disposal.
     contactShadows.js   One instanced draw for soft zombie grounding; interpolates feet and finds supporting collider tops.
                         No collision, hitbox or navigation changes; clear on restart, dispose owned GPU resources on unload.
     impactMarks.js      Persistent world aftermath: visible-mesh ray + flat-face corner checks, ring of 200 marks shared

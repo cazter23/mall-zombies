@@ -190,7 +190,8 @@ global weight cap, unchanged jackpot rate, preserved bag & no-repeat rules under
 expiry, safe floor/ramp placement, swept slide collection, wall/storey rejection, reserve delivery without bypassing reloads/upgrades,
 Loss Prevention shove through all zombie attack/charge states, real-game Store-Wide Clearance (same-floor clear, zero per-kill pay,
 flat bonus once, non-lethal boss hit, Comfort flash), Commission Day (`wallet.award` multiplier, raw `earn` unscaled, timely expiry),
-Black Friday (one-hit kills across hitscan/cone/projectile/melee without editing config, boss damage multiplier), visuals/disposal and HUD.
+Black Friday (one-hit kills across hitscan/cone/projectile/melee without editing config, boss damage multiplier),
+per-type distinct 3D low-poly silhouettes (`userData.shared` merged geometries/materials built once and reused without per-pickup disposal or leaks across resets, few meshes per pickup, standout jackpot scale/hover/halo/beacon), and HUD.
 `fullRun.test.js` also earns and collects a drop with production tuning, then checks Play again cleanup.
 `tests/incentiveEffects.test.js` covers Shift Bonus (reload/swap/move + direct-kill extension cap), Paid Break (green healing circle + HUD/ring),
 Inventory Liquidation, Employee Discount, Mystery Shopper, Spill Cleanup, Loss Prevention (three melee charges + sprint shove pulses), reward rotation,

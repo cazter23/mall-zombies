@@ -12,15 +12,16 @@ const escapeHtml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
 const icons = {
   shift: '<path d="M12 4a8 8 0 1 0 8 8h-2a6 6 0 1 1-6-6V3l3.5 2.5L12 8V4z"/><path d="M12 8v4l2.8 1.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
   shield: '<path d="M12 2.5 4.5 5.5v6c0 4.6 3.2 8.7 7.5 10 4.3-1.3 7.5-5.4 7.5-10v-6L12 2.5zm0 4.5v10m-3.5-6.5 3.5-2.5 3.5 2.5"/>',
-  burst: '<path d="M12 2l2.1 5.6L20 6.5l-3.6 4.7L22 14l-5.7 1.8L17.5 22 12 18.4 6.5 22l1.2-6.2L2 14l5.6-2.8L4 6.5l5.9 1.1z"/>',
-  ticket: '<path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3a2 2 0 0 0 0-4V7z"/>',
+  burst: '<path fill-rule="evenodd" d="M8.5 7V5.2a3.5 3.5 0 0 1 7 0V7H19l1.2 13H3.8L5 7h3.5zm2 0h3V5.2a1.5 1.5 0 0 0-3 0V7zM12 9.2l1.1 2.4 2.6-.4-1.6 2 1.8 1.9-2.5.7.5 2.5L12 16.7l-1.9 1.6.5-2.5-2.5-.7 1.8-1.9-1.6-2 2.6.4L12 9.2z"/>',
+  ticket: '<path fill-rule="evenodd" d="M4.5 5h9l6.5 6.5-6.5 6.5L5 9.5V5zm3.2 2.2a1.4 1.4 0 1 0 0 2.8 1.4 1.4 0 0 0 0-2.8z"/>',
   eye: '<path d="M2 12s3.8-6 10-6 10 6 10 6-3.8 6-10 6-10-6-10-6zm10 3.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z"/>',
-  spill: '<path d="M12 3s-5 5.6-5 9.2a5 5 0 0 0 10 0C17 8.6 12 3 12 3zM5 19h14v2H5z"/>',
+  spill: '<path d="M5 10h11l-1.4 9H6.4L5 10zm11-7 2 1.2-5 8.8-2-1.1L16 3zM3 20.5h18V22H3z"/>',
   clearance: '<path d="M12 2c2.8 0 4.5 2.1 4.5 4.8V11l2.8 2.8v2.2h-4.6L16 20H8l1.3-4H4.7v-2.2L7.5 11V6.8C7.5 4.1 9.2 2 12 2z"/>',
   commission: '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 6.5v11M9.2 9.5h5.2M9.2 14.5h5.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
   blackFriday: '<path d="M4.5 3.5h8.2l7.8 7.8-7.7 7.7L5 11.2V3.5zm3.5 3a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/>',
   stockroom: '<path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5v-9zm9 4.5 9-4.5M12 12v9M12 12 3 7.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>',
-  cross: '<path d="M9.5 4h5v5.5H20v5h-5.5V20h-5v-5.5H4v-5h5.5V4z"/>',
+  cross: '<path fill-rule="evenodd" d="M8.5 4h7V6H20a1.5 1.5 0 0 1 1.5 1.5v11A1.5 1.5 0 0 1 20 20H4a1.5 1.5 0 0 1-1.5-1.5v-11A1.5 1.5 0 0 1 4 6h4.5V4zm2 2h3v1.5h-3V6zm.2 4h2.6v2.2h2.2v2.6h-2.2V17h-2.6v-2.2H8.5v-2.6h2.2V10z"/>',
+  door: '<path fill-rule="evenodd" d="M7.5 15a4.5 4.5 0 1 1 3.9-6.7H21v3.4h-2.2v2.3h-2.4v-2.3h-5A4.5 4.5 0 0 1 7.5 15zm0-2.6a1.9 1.9 0 1 0 0-3.8 1.9 1.9 0 0 0 0 3.8z"/>',
 };
 
 function incentiveIconSvg(id) {

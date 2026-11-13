@@ -501,27 +501,117 @@ test('real loadout: Delivery fills both upgraded reserves, retains mods and does
   assert.equal(g.state.assisted, true);
 });
 
-test('reusable visuals show distinct shapes per type, halo rings on jackpots, add no lights, and dispose owned resources', () => {
+test('reusable visuals give every type a distinct low-poly shape, standout jackpots, few meshes, and clean disposal', () => {
   const scene = new THREE.Scene();
   const view = createPowerUpView(scene, []);
   let disposed = 0;
   const geometries = new Set(), materials = new Set();
   view.root.traverse((o) => {
     assert.equal(!!o.isLight, false);
-    if (o.geometry && !o.geometry.userData.shared) geometries.add(o.geometry); // (beacon parts are shared, not owned)
+    if (o.geometry && !o.geometry.userData.shared) geometries.add(o.geometry); // (beacon and shared pickup parts are shared, not owned)
     if (o.material && !o.material.userData.shared) materials.add(o.material);
   });
   for (const resource of [...geometries, ...materials]) resource.addEventListener('dispose', () => { disposed++; });
-  for (const [id, def] of Object.entries(powerUps.types)) {
+
+  const fingerprints = new Map();
+  const commonY = [], jackpotY = [];
+  for (const [id, def] of Object.entries({ ...powerUps.types, ...bossVouchers })) {
     view.update({ id, position: new THREE.Vector3(1, 6, 1), age: 0.5, remaining: 10 }, 1 / 60, []);
     const prop = view.root.getObjectByName(id);
     assert.equal(prop.visible, true);
     assert.ok(prop.position.y > 6.5);
-    if (def.tier === 'jackpot') assert.ok(prop.scale.x > 1, `${id} jackpot stands out in scale`);
+    assert.ok(prop.children.length >= 2 && prop.children.length <= 4, `${id} keeps few merged meshes (got ${prop.children.length})`);
+
+    // Distinct shape fingerprint (vertex counts + bounding box dimensions across merged parts, ignoring scale/color).
+    const box = new THREE.Box3();
+    const sig = prop.children.map((m) => {
+      m.geometry.computeBoundingBox();
+      box.copy(m.geometry.boundingBox);
+      const size = box.getSize(new THREE.Vector3()).toArray().map((n) => Math.round(n * 100)).join('x');
+      return `${m.geometry.attributes.position.count}@${size}`;
+    }).sort().join('|');
+    assert.equal(fingerprints.has(sig), false, `${id} silhouette collides with ${fingerprints.get(sig)}`);
+    fingerprints.set(sig, id);
+
+    if (def.tier === 'jackpot') {
+      assert.ok(prop.scale.x > 1.2, `${id} jackpot stands out in scale`);
+      assert.ok(prop.userData.halo, `${id} jackpot has orbiting halo`);
+      jackpotY.push(prop.position.y);
+    } else if (def.tier === 'common') {
+      assert.equal(prop.scale.x, 1);
+      commonY.push(prop.position.y);
+    }
   }
+  assert.ok(Math.min(...jackpotY) > Math.max(...commonY), 'jackpots hover visibly higher than commons');
   view.dispose();
   assert.equal(scene.children.length, 0);
   assert.equal(disposed, geometries.size + materials.size);
+});
+
+test('shared pickup models and materials are built once, reused across views, and never leaked or disposed per pickup', () => {
+  const sceneA = new THREE.Scene();
+  const viewA = createPowerUpView(sceneA, []);
+  const sharedResources = new Set();
+  const propGeosA = new Map();
+  const propMatsA = new Map();
+
+  for (const id of Object.keys({ ...powerUps.types, ...bossVouchers })) {
+    const prop = viewA.root.getObjectByName(id);
+    propGeosA.set(id, prop.children.map((m) => m.geometry));
+    propMatsA.set(id, prop.children.map((m) => m.material));
+    for (const m of prop.children) {
+      assert.equal(m.geometry.userData.shared, true, `${id} geometry flagged userData.shared`);
+      assert.equal(m.material.userData.shared, true, `${id} material flagged userData.shared`);
+      sharedResources.add(m.geometry);
+      sharedResources.add(m.material);
+    }
+  }
+
+  let sharedDisposed = 0;
+  for (const r of sharedResources) r.addEventListener('dispose', () => { sharedDisposed++; });
+
+  // Second view shares exact same Geometry & Material instances with zero extra shared allocations.
+  const sceneB = new THREE.Scene();
+  const viewB = createPowerUpView(sceneB, []);
+  for (const id of Object.keys({ ...powerUps.types, ...bossVouchers })) {
+    const propB = viewB.root.getObjectByName(id);
+    assert.deepEqual(propB.children.map((m) => m.geometry), propGeosA.get(id));
+    assert.deepEqual(propB.children.map((m) => m.material), propMatsA.get(id));
+  }
+
+  // Disposing viewA frees only owned per-view resources and leaves all shared assets intact for viewB.
+  viewA.dispose();
+  assert.equal(sceneA.children.length, 0);
+  assert.equal(sharedDisposed, 0, 'disposing one view must never dispose shared pickup models/materials');
+
+  // Jackpot beacon stands taller and wider than common beacon while sharing column geometry.
+  viewB.update({ id: 'shiftBonus', position: new THREE.Vector3(), age: 0.2, remaining: 10 }, 1 / 60, []);
+  const commonBeacon = viewB.root.children.find((c) => c.name === 'beacon' && c.visible);
+  viewB.update({ id: 'commissionDay', position: new THREE.Vector3(), age: 0.2, remaining: 10 }, 1 / 60, []);
+  const jackpotBeacon = viewB.root.children.find((c) => c.name === 'beacon' && c.visible);
+  assert.ok(jackpotBeacon.scale.x > commonBeacon.scale.x && jackpotBeacon.scale.y > commonBeacon.scale.y);
+  assert.equal(commonBeacon.children[0].geometry, jackpotBeacon.children[0].geometry);
+  viewB.dispose();
+  assert.equal(sharedDisposed, 0);
+
+  // Many view create/dispose cycles leave zero scene children and allocate zero additional shared assets.
+  for (let i = 0; i < 25; i++) {
+    const s = new THREE.Scene();
+    const v = createPowerUpView(s, []);
+    v.update({ id: 'blackFriday', position: new THREE.Vector3(), age: 1, remaining: 10 }, 1 / 60, []);
+    v.dispose();
+    assert.equal(s.children.length, 0);
+  }
+  const sceneC = new THREE.Scene();
+  const viewC = createPowerUpView(sceneC, []);
+  for (const id of Object.keys(powerUps.types)) {
+    const propC = viewC.root.getObjectByName(id);
+    for (const m of propC.children) {
+      assert.ok(sharedResources.has(m.geometry), `${id} reused shared geometry after 25 cycles`);
+      assert.ok(sharedResources.has(m.material), `${id} reused shared material after 25 cycles`);
+    }
+  }
+  viewC.dispose();
 });
 
 test('incentive HUD shows earning progress, pickup countdown, jackpot marker and clears on death', () => {

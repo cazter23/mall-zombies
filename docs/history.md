@@ -1,5 +1,15 @@
 # Sunset Galleria: build history ("Current state")
 
+## 12 November 2026 - Distinct 3D shapes, standout jackpots, and shared pickup models
+
+Branch `claude/incentive-looks` (branched from `claude/incentive-weights` `049cb88` so the trimmed 11-type roster, jackpots, and HUD icons are present; `main` at `a013f9a` untouched):
+
+- **Shape-first pickup models (`src/fx/powerUpView.js`, `src/config/powerUps.js`):** replaced shared silhouettes with distinct merged low-poly models for all 8 common incentives (stacked cartons, first-aid kit briefcase + `+`, winged punch clock, shield + baton, trapezoid shopping bag + starburst, tilted `%` hang tag, eye loupe + handle, mop bucket + diagonal pole), 3 jackpots (gold-trimmed bomb warhead, notched `$` medallion coin, gold-armored crimson tag + crossed cleavers), and 3 boss vouchers (`masterKey` bow/blade, `discountCode` stencil coupon, `signedApproval` seal + nib). Tuned high-contrast dark trims (`darkColor: 0x202437`, `darkEmissive: 0.25`) and warm non-reflective gold (`metalness: 0.15` + emissive) for readability in both lit corridors and horror/power-cut dark rooms without needing an `envMap`.
+- **HUD alignment (`src/ui/incentiveHud.js`):** updated SVG silhouettes (`burst`, `ticket`, `spill`, `cross`, `door`) to match each 3D pickup prop.
+- **Standout jackpots:** higher hover (`0.98` vs `0.82`), larger prop/glow scale (`1.38`), faster spin with tilt precession, gold bezel + rotating halo ring, and scaled beacon (`widthScale: 1.65, heightScale: 1.4`).
+- **Shared model & material cache + draw-call reduction:** built each model and prop material once at module level (`userData.shared = true`), merging parts per material via `mergeGeometries` (`.toNonIndexed()` + stripped `uv`). Measured across all 14 types via Three.js scene-graph inspection: per-view owned geometries dropped `21 -> 2` (beacon pulse rings only), owned materials `34 -> 16` (`benefitZones` + pulses only), `propMeshes` `3..10 -> 3..4`, and active `prop + beacon` meshes `5..12 -> 5..6` (`12 -> 6` on `storeWideClearance`, `11 -> 6` on `commissionDay`). `view.dispose()` never disposes shared assets.
+- **Checks & browser note:** extended `tests/powerUps.test.js`, updated `docs/folder-structure.md` and `docs/tests.md`, and verified `npm run build` + full `npm test`. `npm run preview` loaded cleanly at `http://localhost:4173`, while live `window.__mall` spawning and `renderer.info` inspection in the built-in browser subagent were blocked by its Web Worker sandbox (`page.evaluate` disabled and Pointer Lock unavailable on click).
+
 ## 12 November 2026 - Need-weighted employee incentive drops (and Paid Break restored)
 
 On branch `claude/incentive-weights` (stacked on `claude/incentives` `70fd8f5` in `.claude/worktrees/incentives`, leaving `main` untouched), `game/powerUps.js` now shapes common drop probabilities toward what the player actively needs while keeping every existing bag, no-repeat, and jackpot rule intact:
