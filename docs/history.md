@@ -3,7 +3,7 @@
 ## 13 November 2026 - Stargazer 3000: sniper hip fire
 
 - Playtest: from the hip it played like a piercing shotgun. The hip cone was 4.5 deg: a standing hip shot hit 100% at 3 m and 79% at
-  5 m. Now  12 and  5 (config/weapons.js): ~77% at 2 m, ~50% at 3 m, ~25% at 5 m, ~3% at 15 m (npm run balance);
+  5 m. Now `spread.base` 12 and `spread.moving` 5 (config/weapons.js): ~77% at 2 m, ~50% at 3 m, ~25% at 5 m, ~3% at 15 m (npm run balance);
   through the scope it is still dead on. tests/balance.test.js pins hip at 3 m <= 60% and at 5 m <= 35%.
 
 ## 13 November 2026 - Bottle Rocket Bazooka: a better model and a breech-loading reload (`claude/claw-guns`)
