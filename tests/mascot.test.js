@@ -30,7 +30,7 @@ test('the Mascot first appears in round 10 with its own PA banner and five Shopp
   for (let round = 1; round < mix.fromRound; round++) {
     for (let i = 0; i < 100; i++) assert.notEqual(zombieTypeForRound(round, i / 100), 'mascot');
   }
-  assert.equal(zombieTypeForRound(10, 0.51), 'mascot');
+  assert.equal(zombieTypeForRound(10, 0.42), 'mascot'); // (after the Shoplifters, Cart Pushers and Mannequins: 0.40 to 0.44)
   for (const round of [10, 12, 20]) assert.equal(zombieHealthFor('mascot', round), zombieHealthForRound(round) * 5);
 
   const intros = [];

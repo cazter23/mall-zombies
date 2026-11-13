@@ -79,8 +79,8 @@ test('frozen mannequins resist crowd shoves and rescue, stay shootable, die norm
 test('round 8 introduces mannequins, their health scales, and the live cap substitutes a Shopper', () => {
   assert.equal(zombieHealthFor('mannequin', 8), Math.round(zombieHealthForRound(8) * .8));
   for (let i = 0; i < 100; i++) assert.notEqual(zombieTypeForRound(7, i / 100), 'mannequin');
-  assert.equal(zombieTypeForRound(8, .36), 'mannequin');
-  assert.equal(zombieTypeForRound(12, .51), 'mannequin');
+  assert.equal(zombieTypeForRound(8, .30), 'mannequin'); // (after the Shoplifters' 18% and the Cart Pushers' 10%)
+  assert.equal(zombieTypeForRound(12, .40), 'mannequin'); // (after the Shoplifters' 20% and the Cart Pushers' 15%)
   const { g, z } = fixture();
   const second = g.zombies.spawn('mannequin', new THREE.Vector3(2, 0, 9));
   const third = g.zombies.spawn('mannequin', new THREE.Vector3(-2, 0, 9));
