@@ -22,6 +22,20 @@
   too). Not vaultable any more: the canopy leaves 1.35 m over the counter. tests/kiosk.test.js checks every site.
 - **Last shoppers:** `economy.rounds.lastShoppers.speedUp` (new, false) switches off the end-of-round sprint (the last 2 zombies jumped
   to their fastest gait: the user found it caused cheap deaths). The "final clearance" PA stays; the straggler glow does the finding.
+## 13 November 2026 - Closing Time says what to do next
+
+- Playtest: after "Open the shutter" nothing said what Closing Time wanted (the four checklist boxes have no text, and the round-1
+  briefing PA is easy to miss after the opening line). In Directed mode the line under the round box now shows `g.closing.nextStep`
+  once the shutter is open: "Closing checklist · staff carry the keys" until a key exists, then "Collect <key>", the open duty with
+  its count ("Shock zombies at the Atrium fountain 3/12"), "Validate parking by the van", "Closing time: serve the Last Customer",
+  "Start Skylar's van". Wording in config/closingTime.js `objective`; Classic shows nothing (it is the discover-it-yourself mode).
+
+## 13 November 2026 - Spill Cleanup draws shoppers through it
+
+- The teal spill only slowed whoever happened to cross it. Now a non-boss shopper within `attractRadius` (10 m, same floor, clear line,
+  the spill nearer to it than the player) walks to the puddle first (`zombie.detour`, steered in `Zombie.chase` before the route to the
+  player), and is done with it once within `crossRadius` (0.8 m) of its middle, so each shopper is drawn once. Detours are let go when
+  the spill ends. game/incentiveEffects.js `lureThroughSpill`; config/powerUps.js spillCleanup; tests/incentiveEffects.test.js.
 
 ## 13 November 2026 - Kiosk Kevin rests between moves and restocks every 3 rounds (`claude/hydrogen-kevin-calmer`)
 

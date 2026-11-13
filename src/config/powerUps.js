@@ -114,8 +114,11 @@ export const powerUps = {
     spillCleanup: {
       tier: 'common', name: 'SPILL CLEANUP', color: 0x6de5db, weight: 1,
       seconds: 18, radius: 2.2, behindMeters: 1.4, slowFraction: 0.35, slowSeconds: 0.2,
+      // Shoppers are drawn THROUGH it: a non-boss within attractRadius (m, same floor, clear line, the spill nearer than you)
+      // walks to it first, and is done with it once within crossRadius (m) of its middle (game/incentiveEffects.js).
+      attractRadius: 10, crossRadius: 0.8, giveUpSeconds: 4, // (drawn this long without reaching it: something is in the way)
       hint: 'TEAL SPILL SLOWS SHOPPERS',
-      summary: 'Drops a slippery teal spill behind you for 18 s that slows pursuing shoppers.',
+      summary: 'Drops a slippery teal spill behind you for 18 s. Nearby shoppers walk through it and slow down.',
       icon: 'spill', sound: 'incentiveSpill',
       pa: { kicker: 'Spill Cleanup', text: 'A slippery patch has been left behind you. Customers are advised to disregard this warning.' },
     },

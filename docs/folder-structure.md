@@ -553,7 +553,7 @@ src/
                         drops on helmet pop; a grounded moving player plays 'saltCrunch' underfoot AND any bare-headed walking Twisty plays positional 'saltCrunch' (`1 - dist / maxDistance`, throttled per zombie by `zombieStepMeters`); sound cue only, no damage or slow
     closingTime.js      g.closing owns persistent boss key drops, collection, checklist progress (fountain kills, night-safe purchases and workshop collections) and Play again reset.
                         A key never ticks a line: lines 1 to 3 tick on their duty, line 4 on the win (completeLeaving, called by onRunWon). readyToValidate = four keys and
-                        lines 1 to 3; readyToLeave also needs validated and lastCustomerDefeated. closingValidated books the next closingRound through bosses.book; bossDefeated clears the van gate. These fields serialize/restore silently and reset clears them. A paid validation purchase emits closingValidated with the current round and PA. serialize/restore keeps validated silently; reset clears it. missingKeys / missingDuties say what is left. Emits the once-per-run 'closingBriefing'.
+                        lines 1 to 3; readyToLeave also needs validated and lastCustomerDefeated. closingValidated books the next closingRound through bosses.book; bossDefeated clears the van gate. These fields serialize/restore silently and reset clears them. A paid validation purchase emits closingValidated with the current round and PA. serialize/restore keeps validated silently; reset clears it. missingKeys / missingDuties say what is left. nextStep: the one thing to do next as HUD text (config objective; a key on the floor, an open duty with its count, validation, the Last Customer, the van; else who carries the keys), shown under the round box in Directed once the shutter hint is gone (main.js). Emits the once-per-run 'closingBriefing'.
                         Overtime: `healthMultiplier` (config overtime.healthPerRound ^ the overtime rounds begun, from createGame's getOvertimeRound = rounds.round - overtimeFrom + 1; the zombie
                         manager reads it on every spawn through its getHealthMultiplier option) and, on 'overtimeStart' only, killPay multiplied into stats.killPayMultiplier (never on a load).
     floorPickups.js     Shared clear-floor placement and swept collection for incentives and closing keys; direction for HUD markers.
@@ -576,7 +576,7 @@ src/
     incentiveEffects.js Temporary employee benefits & Clearance: concurrent timers, reversible stat modifiers (Shift Bonus,
                         Loss Prevention melee, Commission Day pointsMultiplier, Black Friday instantKill/bossDamageMultiplier),
                         deferred non-recursive liquidation damage, one-purchase coupons, target marks, green healing zones
-                        (Paid Break), slow patches (Spill Cleanup), direct-kill extensions, melee charges + sprint shoves,
+                        (Paid Break), slow patches (Spill Cleanup, which also draws nearby shoppers through it: zombie.detour), direct-kill extensions, melee charges + sprint shoves,
                         detonateClearance() (every non-boss zombie in the pickup's map area on its floor, via map.areaAt passed
                         from createGame, else within its radius; source 'clearance', capped non-lethal boss hit, one flat bonus
                         from clearanceBonus(round): perRoundZombie x the round's wave size; 'clearanceDetonated'), holdWhileQuiet

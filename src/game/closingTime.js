@@ -120,6 +120,21 @@ export function createClosingTime({ events, player, colliders, state, view, roun
     isClosingRound(round) { return round === closingRound; },
     get lastCustomerDefeated() { return lastCustomerDefeated; },
     get readyToLeave() { return readyToValidate() && validated && lastCustomerDefeated; },
+    // The one thing to do next, as text for the HUD (config.objective; first match wins), or null once the shift is won.
+    get nextStep() {
+      const text = config.objective;
+      if (state.won) return null;
+      const onFloor = [...drops].find(([, position]) => position);
+      if (onFloor) return text.collect(config.lines[onFloor[0]].key);
+      for (const [bossId, line] of lines) {
+        if (!line.needed || !held.has(bossId) || completed.has(bossId)) continue;
+        const count = counts.has(bossId) ? ` ${config.lineProgress(counts.get(bossId), line.needed)}` : '';
+        return text.duty[bossId] + count;
+      }
+      if (validated) return lastCustomerDefeated ? text.leave : text.lastCustomer; // (validating needs every key and duty)
+      if (readyToValidate()) return text.validate;
+      return held.size ? text.keys : text.waiting;
+    },
     // A duty's count as text ("3/12") while its key is held and its line is still open, else null (the fountain switch's prompt).
     dutyProgress(bossId) {
       if (!counts.has(bossId) || completed.has(bossId)) return null;

@@ -25,10 +25,38 @@ export function createIncentiveEffects({ events, player, gun, zombies, stats, pr
   const candidates = (radius) => living().filter(z => !z.type.boss && !z.noRewards && near(player.position, z.position, radius))
     .sort((a, b) => a.position.distanceToSquared(player.position) - b.position.distanceToSquared(player.position));
 
+  // Spill Cleanup draws shoppers THROUGH the puddle: a non-boss zombie within attractRadius, with a clear line to it and the
+  // puddle nearer than the player, walks to it first (zombie.detour); once it has stepped within crossRadius of the middle
+  // it is done with this spill and chases as usual. A zombie on another floor, or behind a wall, is left alone.
+  function lureThroughSpill(effect, def, dt) {
+    effect.crossed ??= new Set();
+    effect.drawnFor ??= new Map(); // seconds each zombie has been drawn: past giveUpSeconds (something low in the way) it gives up
+    for (const z of living()) {
+      if (z.detour === effect.position) {
+        const seconds = (effect.drawnFor.get(z) ?? 0) + dt;
+        effect.drawnFor.set(z, seconds);
+        if (seconds > def.giveUpSeconds) effect.crossed.add(z);
+      }
+      const mine = z.detour === effect.position;
+      if (z.type?.boss || effect.crossed.has(z)) { if (mine) z.detour = null; continue; }
+      const toSpill = Math.hypot(z.position.x - effect.position.x, z.position.z - effect.position.z);
+      if (toSpill <= def.crossRadius && onFloorInRadius(z.position, effect.position, def.crossRadius)) {
+        effect.crossed.add(z);
+        if (mine) z.detour = null;
+        continue;
+      }
+      const toPlayer = Math.hypot(z.position.x - player.position.x, z.position.z - player.position.z);
+      const drawn = toSpill < toPlayer && near(effect.position, z.position, def.attractRadius);
+      if (drawn) z.detour = effect.position;
+      else if (mine) z.detour = null;
+    }
+  }
+
   function end(id, reason = 'expired') {
     const effect = effects.get(id);
     if (!effect) return;
     effects.delete(id);
+    if (id === 'spillCleanup') for (const z of zombies.zombies ?? []) if (z.detour === effect.position) z.detour = null;
     for (const [key, factor] of Object.entries(effect.modifiers ?? {})) stats[key] /= factor;
     if (id === 'blackFriday') stats.instantKill = false;
     if (id === 'employeeDiscount') pricing?.clearCoupon();
@@ -206,6 +234,7 @@ export function createIncentiveEffects({ events, player, gun, zombies, stats, pr
         }
         if (effect.id === 'spillCleanup') {
           for (const z of living()) if (near(effect.position, z.position, def.radius)) z.applySlow(def.slowSeconds, def.slowFraction);
+          lureThroughSpill(effect, def, step);
         }
         if (effect.id === 'lossPrevention') {
           effect.pulse = Math.max(0, (effect.pulse ?? 0) - dt);

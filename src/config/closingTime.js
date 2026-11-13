@@ -98,6 +98,22 @@ export const closingTime = {
     manager: { duty: 'Last orders signed off', key: "Fairweather's Signature", needed: 1, place: 'Build-A-Blaster' },
     influencer: { duty: 'Car park cleared', key: "Skylar's Van Keys" },
   },
+  // The NEXT STEP under the round box in Directed mode (g.closing.nextStep; HUD objective line, once the shutter hint is gone).
+  // First match wins: a key on the floor, an open duty (with its count), validation, the Last Customer, the van; with
+  // nothing to act on yet, `waiting` says who carries the keys. Kept short: it shares the round box's width.
+  objective: {
+    waiting: 'Closing checklist · staff carry the keys',
+    collect: (key) => `Collect ${key}`,
+    duty: {
+      janitor: 'Shock zombies at the Atrium fountain',
+      guard: 'Make deposits at the Night Safe',
+      manager: 'Collect a build at Build-A-Blaster',
+    },
+    keys: 'Closing checklist · more keys to find',
+    validate: 'Validate parking by the van',
+    lastCustomer: 'Closing time: serve the Last Customer',
+    leave: "Start Skylar's van",
+  },
   // The PA introduces the checklist once per run, this long after round 1 is announced: after the run's opening line
   // (game/runIntro.js, feel.runIntro), whose longest line stays up about 7 s.
   briefing: { delaySeconds: 8 },
