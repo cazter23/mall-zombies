@@ -123,7 +123,7 @@ src/
     retailUnease.js     Rare atrium display changes and localized back-room sound timings/ranges; no gameplay tuning.
     kiosk.js            Kiosk Kevin (docs/kiosk-kevin-plan.md; all eight phases built): his five sites (x, z, faces, floorY, the PA's `where`; the first is
                         where every run starts), the cart's size, spawnClearance, the PA lines (the "moved" lines take turns by round); phase 8's looks:
-                        `hawk` (his shouts: radius 8 m, every 14 s at most, the lines, duck and back lists), `vendor` (Kevin's colours, badge, duck and
+                        `hawk` (his shouts: radius 8 m, every 14 s at most, the lines, pitchChance 0.35 and per-product `pitches`, duck and back lists), `vendor` (Kevin's colours, badge, duck and
                         peek timing), `lid` (the shutter's slats and its notices, in turn), `spectacle` (fx/kioskSpectacle.js: the cola geyser, glitter,
                         horn rings, bubble pops, Sentry debris, the comic words) and each product's counter colours; the cart's three `slots` (Lethal: Soda Bomb /
                         Sparkler Cake / Sentry, Bubble Wrap, Tactical: Air Horn / Glitter Bomb; each slot rotates round by round); the equipment
@@ -648,7 +648,8 @@ src/
                         the hold to end). Announces 'kioskStock' (one PA line a round, naming the place when he is new there) and
                         'kioskMoved'. moveNow(siteId) (debug), serialize/restore (his site and a pending move: Save & Quit).
                         His shouts (phase 8, kiosk.hawk): 'kioskHawk' { kind 'lines' | 'duck' | 'back', line } when you're near his open cart
-                        (rate-limited), as he ducks and when he's back up; each list takes turns (no Math.random), reset with the run.
+                        (rate-limited), as he ducks and when he's back up; `lines` shouts mix general lines with `pitches` (`pitchChance`,
+                        stocked items only, preferring Kevin's Pick); each list takes turns deterministically (no Math.random), reset with the run.
       clawSunny.js      Sunny runs away (built by clawMachine.js): out of the chute, a look round, a waddle along g.zombies.nav.pathTo to the
                         next site's front (open areas only; a lap round his own machine if no other site is open), into that cabinet, which
                         shakes (its rig group; colliders never move). His shootable (one body box) pops on any hit: stuffing and confetti,

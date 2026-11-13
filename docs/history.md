@@ -1,5 +1,12 @@
 # Sunset Galleria: build history ("Current state")
 
+## 12 November 2026 - Kiosk Kevin product pitches (claude/hydrogen-kevin-pitches)
+
+Gave Kiosk Kevin product-specific sales pitches tied to his current round stock (`src/config/kiosk.js`, `src/game/features/kiosk.js`):
+- **Config (`src/config/kiosk.js` `hawk`):** added `pitchChance: 0.35` and `pitches` with 4 short, exclamation-mark salesman lines for each of the 6 products he stocks (`sodaBomb`, `sparklerCake`, `bubbleWrap`, `airHorn`, `glitterBomb`, `sentry`), keeping lengths within the speech bubble budget and no stat numbers.
+- **Deterministic cadence & Pick preference (`src/game/features/kiosk.js`):** on `'lines'` shouts, a deterministic `pitchCredit` accumulator triggers a product pitch at `pitchChance` (so the first lines stay predictable, zero `Math.random` calls are consumed, and `pitchChance` `0`/`1` edge cases behave cleanly). Pitches filter strictly to `stockFor(round)`, interleave Kevin's Pick twice per 4-turn cycle (`[pick, other0, pick, other1]`), and advance each product's own pitch turn counter so lines don't repeat back to back; all counters reset on `setUp()`.
+- **Tests & Docs:** extended `tests/kiosk.test.js` (pitch table shape/length/words-only checks, `pitchChance` `0`/`1`/`0.35`, stocked-only filtering across rounds, Pick preference, no pitches for unstocked/fake IDs, and zero back-to-back repeats while keeping all existing hawk tests unchanged) and updated `docs/folder-structure.md` and `docs/tests.md`.
+
 ## 12 November 2026 - Integration: incentives, Flash Sales, Kiosk Kevin phase 8 and the claw guns on one branch
 
 `claude/integration` (from main a013f9a) merges, in order: `claude/incentive-meter` (the reviewed tip of `claude/incentives`: it

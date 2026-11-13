@@ -51,9 +51,10 @@ export const kiosk = {
 
   // KEVIN HIMSELF (phase 8: presentation only; nothing below changes a price, a damage or a rule).
   // He shouts (game/features/kiosk.js emits 'kioskHawk'; his cart shows the line in a speech bubble, maps/mall/kioskCart.js):
-  //   lines  when you're within `radius` of his open cart (and within floorTolerance of its floor), at most once every
-  //          `seconds`. {product} = one of the round's three, in turn.
-  //   duck   when a zombie sends him under the counter (at most once every duckSeconds);  back  when he comes back up.
+  //   lines   when you're within `radius` of his open cart (and within floorTolerance of its floor), at most once every
+  //           `seconds`. {product} = one of the round's three, in turn.
+  //   pitches product-specific shouts (about pitchChance of 'lines' shouts), only for this round's stock and preferring his Pick.
+  //   duck    when a zombie sends him under the counter (at most once every duckSeconds);  back  when he comes back up.
   // Each list takes turns in order (no Math.random: the game's random numbers, and so the seeded tests, stay as they were).
   hawk: {
     radius: 8, // m (the plan's "within 8 m")
@@ -61,6 +62,7 @@ export const kiosk = {
     seconds: 14,
     duckSeconds: 6,
     bubbleSeconds: 3.2, // how long a line stays over his head (the view)
+    pitchChance: 0.35, // share of `lines` shouts replaced by a pitch for something he stocks this round
     lines: [
       'Excuse me! Can I ask you a question?',
       'You! You look like someone who needs a {product}!',
@@ -72,6 +74,44 @@ export const kiosk = {
       'Ask me about {product}! Please! Nobody asks!',
       'One day only! Every day!',
     ],
+    pitches: {
+      sodaBomb: [
+        'Soda Bomb! Warm, shaken, ready to burst!',
+        'Take a Soda Bomb! Please, my cooler is humming!',
+        'Galleria Cola Soda Bomb! Do not point at face!',
+        'Hot Soda Bomb deal! Fizz first, mop later!',
+      ],
+      sparklerCake: [
+        'Sparkler Cake! Sets the whole welcome mat ablaze!',
+        'Party aisle Sparkler Cake! Do NOT light indoors!',
+        'Sparkler Cake! Burns the crowd right off your heels!',
+        'Buy a Sparkler Cake! Warranty already voided!',
+      ],
+      bubbleWrap: [
+        'Bubble Wrap! Let the plastic take the bite!',
+        'Fresh Bubble Wrap! Very chewable, surprisingly tough!',
+        'Bubble Wrap! Sounds fun when a zombie pops it!',
+        'Need padding? Bubble Wrap keeps the teeth off!',
+      ],
+      airHorn: [
+        'Stadium Air Horn! Shoves a whole doorway backward!',
+        'Need breathing room? Try a Stadium Air Horn! HOOONK!',
+        'Stadium Air Horn! Stops a rushing cart dead cold!',
+        'Too close? Stadium Air Horn clears your personal space!',
+      ],
+      glitterBomb: [
+        'Glitter Bomb! Make the zombies fight each other!',
+        'Congrats! It is a Glitter Bomb! Never comes out!',
+        'Mail a Glitter Bomb! Let the crowd swing at itself!',
+        'Glitter Bomb card! Sparkles ruin friendships fast!',
+      ],
+      sentry: [
+        'SPIN-O-MATIC Sentry! A staple gun taped to a stand!',
+        'SPIN-O-MATIC Sentry! Spins round and staples the lot!',
+        'SPIN-O-MATIC Sentry! Do not look down the display!',
+        'Need backup? Grab a SPIN-O-MATIC Sentry! Tape holds!',
+      ],
+    },
     duck: ['Not today! NOT TODAY!', "We're closed! We're CLOSED!", "I'm on break! Union rules!", 'Nobody here! Just a cart!'],
     back: ["And we're back! Did you miss me?", 'Okay! Open! Never left!', 'Where were we? Oh right, you were buying.'],
   },
