@@ -254,6 +254,7 @@ test('Rotation visits every eligible common benefit before repeating and skips f
     }
     assert.equal(new Set(ids).size, 6, ids.join(', '));
     assert.ok(!ids.includes('stockroomDelivery'));
+    assert.ok(!ids.includes('paidBreak'));
     assert.ok(ids.every((id) => powerUps.types[id].tier === 'common'), 'no jackpots in round 2');
   } finally { def.maxPerRound = previousMax; Object.assign(def.threshold, previousThreshold); }
 });
@@ -314,4 +315,46 @@ test('Spill floor rings and target markers render, track, hide, and dispose clea
   assert.equal(marker.visible, false);
   assert.equal(view.root.getObjectByName('spillCleanupZone').visible, false);
   view.dispose(); assert.equal(scene.children.length, 0);
+});
+
+test('Paid Break heals inside the green circle up to its budget, respects walls/radius, and updates HUD + ring view', () => {
+  const t = scenario(), { g } = t;
+  g.stats.health = 50;
+  const at = g.player.position.clone();
+  t.collect('paidBreak');
+  assert.ok(t.active('paidBreak'));
+
+  g.powerUps.update(1);
+  assert.equal(g.stats.health, 50 + powerUps.types.paidBreak.healPerSecond);
+  assert.equal(t.active('paidBreak').healing, powerUps.types.paidBreak.healing - powerUps.types.paidBreak.healPerSecond);
+
+  // Stepping outside the radius stops healing until returning inside.
+  g.player.position.x = at.x + powerUps.types.paidBreak.radius + 1;
+  g.powerUps.update(1);
+  assert.equal(g.stats.health, 65);
+
+  g.player.position.x = at.x;
+  g.stats.health = 20;
+  g.powerUps.update(4); // spends remaining 45 HP healing budget
+  assert.equal(g.stats.health, 65);
+  assert.equal(t.active('paidBreak'), undefined, 'Paid Break ends once its healing pool is spent');
+
+  // View + HUD display the green circle and HP LEFT readout.
+  menuDom();
+  const hud = createIncentiveHud();
+  hud.update({ available: true, progress: 0, effects: [{ id: 'paidBreak', remaining: 14, healing: 45 }] });
+  assert.match(hud.element.textContent, /PAID BREAK · 14s · 45 HP LEFT/);
+
+  const floor = new THREE.Box3(new THREE.Vector3(-20, -1, -20), new THREE.Vector3(20, 0, 20));
+  const scene = new THREE.Scene();
+  const view = createPowerUpView(scene, [floor]);
+  view.update(null, 1 / 60, [{ id: 'paidBreak', position: new THREE.Vector3(0, 0, 0), remaining: 14, healing: 45 }]);
+  assert.equal(view.root.getObjectByName('paidBreakZone').visible, true);
+  view.update(null, 1 / 60, []);
+  assert.equal(view.root.getObjectByName('paidBreakZone').visible, false);
+  view.dispose();
+
+  // Real interactions wiring: unbought doors appear in g.interactions.buyables().
+  const buyables = g.interactions.buyables();
+  assert.ok(buyables.some((b) => b.kind === 'door' && b.cost > 0), 'real game exposes unbought doors to need weights');
 });

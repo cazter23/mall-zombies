@@ -27,6 +27,7 @@ export function createIncentiveEffects({ events, player, gun, zombies, stats, pr
 
   function useful(id) {
     if (effects.has(id)) return false;
+    if (id === 'paidBreak') return !!stats && stats.health < stats.maxHealth;
     if (id === 'mysteryShopper') return candidates(config.types[id].targetRadius).length > 0;
     return true;
   }
@@ -44,6 +45,7 @@ export function createIncentiveEffects({ events, player, gun, zombies, stats, pr
       };
     }
     if (id === 'lossPrevention') effect.modifiers = { meleeDamageMultiplier: def.damageMultiplier };
+    if (id === 'paidBreak') effect.healing = def.healing;
     if (id === 'commissionDay') effect.modifiers = { pointsMultiplier: def.pointsMultiplier };
     if (id === 'blackFriday') {
       effect.modifiers = { bossDamageMultiplier: def.bossDamageMultiplier };
@@ -173,6 +175,12 @@ export function createIncentiveEffects({ events, player, gun, zombies, stats, pr
         const step = Math.min(dt, effect.remaining);
         effect.remaining -= dt;
         effect.elapsed += step;
+        if (effect.id === 'paidBreak' && near(effect.position, player.position, def.radius)) {
+          const heal = Math.max(0, Math.min(effect.healing, def.healPerSecond * step, stats.maxHealth - stats.health));
+          stats.health += heal;
+          effect.healing -= heal;
+          if (effect.healing <= 0) { end(effect.id, 'spent'); continue; }
+        }
         if (effect.id === 'spillCleanup') {
           for (const z of living()) if (near(effect.position, z.position, def.radius)) z.applySlow(def.slowSeconds, def.slowFraction);
         }

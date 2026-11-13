@@ -4,7 +4,7 @@ import { bossVouchers } from '../config/bosses.js';
 import { createFloorPickups } from './floorPickups.js';
 import { createIncentiveEffects } from './incentiveEffects.js';
 
-export function createPowerUps({ events, player, gun, zombies, colliders, state, stats, pricing, wallet, config = defaults, random = Math.random, view = null }) {
+export function createPowerUps({ events, player, gun, zombies, colliders, state, stats, pricing, wallet, interactions = null, config = defaults, random = Math.random, view = null }) {
   let round = 0;
   let earned = 0;
   let threshold;
@@ -26,11 +26,61 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
   const nextThreshold = () => config.threshold.min + random() * (config.threshold.max - config.threshold.min);
   threshold = nextThreshold();
 
+  function totalAmmoFraction() {
+    let held = 0, cap = 0;
+    for (const slotId of gun.slots) {
+      const w = gun.weaponFor(slotId);
+      const max = w.def.magazineSize + w.reserveCap;
+      held += Math.min(max, w.magazine + w.reserve);
+      cap += max;
+    }
+    return cap > 0 ? held / cap : 1;
+  }
+
+  function deficitFactor(fraction, need) {
+    const span = need.startBelowFraction - need.maxAtFraction;
+    if (span <= 0) return fraction <= need.maxAtFraction ? need.maxMultiplier : 1;
+    const t = Math.max(0, Math.min(1, (need.startBelowFraction - fraction) / span));
+    return 1 + t * (need.maxMultiplier - 1);
+  }
+
+  function proximityFactor(need) {
+    const points = wallet?.points ?? 0;
+    const buyables = interactions?.buyables?.() ?? [];
+    if (points <= 0 || !buyables.length) return 1;
+    let best = 0;
+    for (const item of buyables) {
+      if (need.excludeKinds?.includes(item.kind) || item.cost <= 0) continue;
+      const ratio = points / item.cost;
+      if (ratio <= need.minRatio || ratio >= need.maxRatio) continue;
+      const t = ratio <= need.idealRatio
+        ? (ratio - need.minRatio) / Math.max(1e-6, need.idealRatio - need.minRatio)
+        : (need.maxRatio - ratio) / Math.max(1e-6, need.maxRatio - need.idealRatio);
+      if (t > best) best = t;
+    }
+    return 1 + best * (need.maxMultiplier - 1);
+  }
+
+  const NEED_EVALUATORS = {
+    paidBreak: (need) => deficitFactor(stats.maxHealth > 0 ? stats.health / stats.maxHealth : 1, need),
+    stockroomDelivery: (need) => deficitFactor(totalAmmoFraction(), need),
+    employeeDiscount: (need) => proximityFactor(need),
+  };
+
+  function effectiveWeight(id) {
+    const def = config.types[id];
+    if (def.tier === 'jackpot') return def.weight; // need weights never increase jackpot odds
+    const evaluate = def.need && NEED_EVALUATORS[id];
+    if (!evaluate) return def.weight;
+    const { minFactor, maxFactor } = config.needWeight;
+    return def.weight * Math.max(minFactor, Math.min(maxFactor, evaluate(def.need)));
+  }
+
   function weightedPick(pool) {
     if (!pool.length) return null;
-    let pick = random() * pool.reduce((sum, id) => sum + config.types[id].weight, 0);
+    let pick = random() * pool.reduce((sum, id) => sum + effectiveWeight(id), 0);
     for (const id of pool) {
-      pick -= config.types[id].weight;
+      pick -= effectiveWeight(id);
       if (pick <= 0) return id;
     }
     return pool.at(-1);

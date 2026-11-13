@@ -109,7 +109,9 @@ export function createPowerUpView(scene, colliders) {
       box(group, [0.42, 0.5, 0.06], [0, 0, 0], cream);
       box(group, [0.16, 0.06, 0.08], [0, 0.23, 0], dark);
       const glyph = (size, at = [0, 0, 0.06], mat = color) => box(group, size, at, mat);
-      if (def.icon === 'burst') {
+      if (def.icon === 'cross') {
+        glyph([0.1, 0.3, 0.08]); glyph([0.3, 0.1, 0.08]);
+      } else if (def.icon === 'burst') {
         for (let i = 0; i < 4; i++) glyph([0.06, 0.34, 0.08]).rotation.z = i * Math.PI / 4;
       } else if (def.icon === 'ticket') {
         glyph([0.3, 0.16, 0.08]).rotation.z = 0.45;
@@ -177,7 +179,7 @@ export function createPowerUpView(scene, colliders) {
   }
 
   const benefitZones = {};
-  for (const id of ['spillCleanup']) {
+  for (const id of ['paidBreak', 'spillCleanup']) {
     const def = config.types[id];
     const source = new THREE.RingGeometry(def.radius - 0.12, def.radius, 48);
     const geo = source.toNonIndexed();

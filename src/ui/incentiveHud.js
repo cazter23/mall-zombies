@@ -20,6 +20,7 @@ const icons = {
   commission: '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 6.5v11M9.2 9.5h5.2M9.2 14.5h5.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
   blackFriday: '<path d="M4.5 3.5h8.2l7.8 7.8-7.7 7.7L5 11.2V3.5zm3.5 3a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/>',
   stockroom: '<path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5v-9zm9 4.5 9-4.5M12 12v9M12 12 3 7.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>',
+  cross: '<path d="M9.5 4h5v5.5H20v5h-5.5V20h-5v-5.5H4v-5h5.5V4z"/>',
 };
 
 function incentiveIconSvg(id) {
@@ -73,7 +74,8 @@ export function createIncentiveHud() {
       const percent = Math.floor(status.progress * 100);
       const benefitText = effects.map(effect => {
         const def = powerUps.types[effect.id];
-        const count = effect.charges != null ? ` · ${effect.charges} LEFT` : '';
+        const count = effect.charges != null ? ` · ${effect.charges} LEFT`
+          : effect.healing != null ? ` · ${Math.ceil(effect.healing)} HP LEFT` : '';
         return `${def.name} · ${Math.ceil(effect.remaining)}s${count} · ${def.hint}`;
       }).join('\n');
       const key = `${status.round}|${available}|${percent}|${pickup?.id}|${Math.ceil(pickup?.remaining ?? 0)}|${benefitText}`;
@@ -89,7 +91,8 @@ export function createIncentiveHud() {
       }
       const rows = effects.map(effect => {
         const def = powerUps.types[effect.id];
-        const count = effect.charges != null ? ` · ${effect.charges} LEFT` : '';
+        const count = effect.charges != null ? ` · ${effect.charges} LEFT`
+          : effect.healing != null ? ` · ${Math.ceil(effect.healing)} HP LEFT` : '';
         return {
           id: effect.id,
           jackpot: def.tier === 'jackpot',

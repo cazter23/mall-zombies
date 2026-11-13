@@ -15,6 +15,8 @@ export const powerUps = {
   placementRadii: [0, 0.7, 1.4],
   placementDirections: 8,
   jackpot: { firstRound: 4, chance: 0.125 },
+  // Global bounds on per-type need weighting (multiplies type.weight among eligible commons; never touches jackpots).
+  needWeight: { minFactor: 1, maxFactor: 4 },
   visual: {
     hover: 0.8, bob: 0.09, bobSpeed: 2.8, spinSpeed: 1.2, blinkLastSeconds: 4, blinkHz: 5, floorOffset: 0.035,
     jackpotGlowScale: 1.25,
@@ -27,6 +29,14 @@ export const powerUps = {
       magazineFraction: 0.5,
       sound: 'incentiveRestock',
       pa: { kicker: 'Employee incentive', text: 'Unscheduled stockroom delivery authorized. Please retain all packaging.' },
+      need: { startBelowFraction: 0.85, maxAtFraction: 0.15, maxMultiplier: 4 },
+    },
+    paidBreak: {
+      tier: 'common', name: 'PAID BREAK', color: 0x82efa2, weight: 1,
+      seconds: 20, radius: 2.5, healing: 60, healPerSecond: 15,
+      hint: 'HEAL INSIDE THE GREEN CIRCLE', icon: 'cross', sound: 'incentiveRestock',
+      pa: { kicker: 'Paid Break', text: 'A short recovery break is authorized inside the green circle. Seating is not provided.' },
+      need: { startBelowFraction: 0.9, maxAtFraction: 0.25, maxMultiplier: 4 },
     },
     shiftBonus: {
       tier: 'common', name: 'SHIFT BONUS', color: 0x81e5b0, weight: 1,
@@ -56,6 +66,7 @@ export const powerUps = {
       seconds: 30, fraction: 0.3, maxSaving: 300,
       hint: 'YOUR NEXT PURCHASE IS CHEAPER', icon: 'ticket', sound: 'incentiveRestock',
       pa: { kicker: 'Employee Discount', text: 'A discount on your next purchase. The offer will not last.' },
+      need: { minRatio: 0.65, idealRatio: 0.9, maxRatio: 1.15, maxMultiplier: 3, excludeKinds: ['ammo', 'ammoCache', 'hazard'] },
     },
     mysteryShopper: {
       tier: 'common', name: 'MYSTERY SHOPPER', color: 0xf8ef83, weight: 1,

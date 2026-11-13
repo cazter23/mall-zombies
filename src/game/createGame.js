@@ -538,7 +538,7 @@ export function createGame({
   events.on('ritualCollect', ({ certificate }) => hud.showCertificate(certificate)); // (after its PA line)
 
   powerUps = createPowerUps({
-    events, player, gun, zombies, colliders, state, stats, pricing, wallet,
+    events, player, gun, zombies, colliders, state, stats, pricing, wallet, interactions,
     view: createPowerUpView(scene, colliders),
   });
   configureBossVouchers({ pricing, wallet, map, gun, state });

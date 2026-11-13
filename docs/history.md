@@ -1,5 +1,15 @@
 # Sunset Galleria: build history ("Current state")
 
+## 12 November 2026 - Need-weighted employee incentive drops (and Paid Break restored)
+
+On branch `claude/incentive-weights` (stacked on `claude/incentives` `70fd8f5` in `.claude/worktrees/incentives`, leaving `main` untouched), `game/powerUps.js` now shapes common drop probabilities toward what the player actively needs while keeping every existing bag, no-repeat, and jackpot rule intact:
+- **Paid Break restored (`paidBreak`, 8th common type -> 11 total):** The trimmed catalog had removed all healing incentives, so `paidBreak` (`20 s`, `2.5 m` green circle, `60 HP` budget at `15 HP/s`, cross icon + `HP LEFT` HUD/floor ring) was restored in `config/powerUps.js`, `game/incentiveEffects.js`, `fx/powerUpView.js`, and `ui/incentiveHud.js`.
+- **Config-driven need curves and cap (`config/powerUps.js`):** Global bounds `needWeight: { minFactor: 1, maxFactor: 4 }` cap how far any type can scale so no single incentive takes over:
+  - **Healing (`paidBreak`):** Linear deficit curve from `1x` at `90%` health down to `4x` at `25%` health (`need: { startBelowFraction: 0.9, maxAtFraction: 0.25, maxMultiplier: 4 }`), still ineligible at full health.
+  - **Ammo restock (`stockroomDelivery`):** Sums held rounds (`magazine + reserve`) divided by total capacity (`magazineSize + reserveCap`) across all carried `gun.slots`, ramping linearly from `1x` at `85%` combined ammo up to `4x` at `15%` (`need: { startBelowFraction: 0.85, maxAtFraction: 0.15, maxMultiplier: 4 }`).
+  - **Discount (`employeeDiscount`):** `interactions.buyables()` (`game/interactions.js`, passed from `createGame.js`) inspects live unbought `PRICE_CATEGORIES` entries (`available()`, non-quiet, non-blocked, unowned, `cost > 0`), skipping repeatable `['ammo', 'ammoCache', 'hazard']`. Tent curve over `wallet.points / cost` on `[0.65, 0.9, 1.15]` peaks at `maxMultiplier: 3` at `idealRatio: 0.9`.
+- **Bag & jackpot isolation:** Need factors apply inside `weightedPick()` on eligible common types only (`nextInBag()` and `chooseRewardType()`). Jackpot `firstRound: 4`, `chance: 0.125`, no-consecutive-jackpot tracking (`lastWasJackpot`), no-immediate-repeat (`lastType`), and full-bag cycling remain unchanged.
+
 ## 12 November 2026 - Employee incentives: trimmed 13 -> 10 types and rare jackpot tier
 
 Employee incentives (`config/powerUps.js`, `game/powerUps.js`, `game/incentiveEffects.js`) were consolidated from 13 overlapping types down to 10 (7 `common`, 3 `jackpot`) on branch `claude/incentives`:

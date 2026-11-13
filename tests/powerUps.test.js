@@ -25,27 +25,30 @@ function fixture(overrides = {}) {
   const stats = createPlayerStats();
   const ammo = new Weapon(weapons.stapleGun, stats);
   const restocks = [], log = [];
-  const gun = { slots: ['stapleGun'], weapon: ammo, weaponFor: () => ammo, restock: (fraction) => { restocks.push(fraction); ammo.restock(fraction); } };
-  const zombies = { zombies: [] };
+  const gun = overrides.gun ?? { slots: ['stapleGun'], weapon: ammo, weaponFor: () => ammo, restock: (fraction) => { restocks.push(fraction); ammo.restock(fraction); } };
+  const zombies = overrides.zombies ?? { zombies: [] };
+  const wallet = overrides.wallet ?? null;
+  const interactions = overrides.interactions ?? null;
   const random = overrides.random ?? (() => 0);
-  const { random: _omitRandom, ...configOverrides } = overrides;
+  const { random: _omitRandom, gun: _omitGun, wallet: _omitWallet, interactions: _omitInteractions, zombies: _omitZombies, ...configOverrides } = overrides;
   const config = { ...powerUps, threshold: { min: 2, max: 2 }, ...configOverrides };
-  const manager = createPowerUps({ events, player, gun, zombies, colliders, state, stats, config, random });
+  const manager = createPowerUps({ events, player, gun, zombies, colliders, state, stats, wallet, interactions, config, random });
   for (const name of ['powerUpDrop', 'powerUpCollect', 'powerUpExpire', 'powerUpStart', 'powerUpEnd', 'clearanceDetonated']) {
     events.on(name, (event) => log.push([name, event]));
   }
   const kill = (extra = {}, at = new THREE.Vector3()) => events.emit('kill', { zombie: { type: { id: 'shopper' }, position: at }, source: 'gun', ...extra });
   const stand = (x, y = 0, z = 0) => { player.position.set(x, y, z); player.prevPosition.copy(player.position); };
-  return { manager, events, player, colliders, state, stats, ammo, restocks, log, kill, stand };
+  return { manager, events, player, colliders, state, stats, ammo, zombies, restocks, log, kill, stand };
 }
 
-test('trimmed type catalog has 10 distinct types (7 common, 3 jackpot) and zero removed IDs', () => {
-  const removed = ['blueLightSpecial', 'securitySweep', 'expressCheckout', 'overtimeApproved', 'staffEntrance', 'productRecall', 'paidBreak'];
+test('type catalog has 11 distinct types (8 common including Paid Break, 3 jackpot) and zero removed IDs', () => {
+  const removed = ['blueLightSpecial', 'securitySweep', 'expressCheckout', 'overtimeApproved', 'staffEntrance', 'productRecall'];
   for (const id of removed) assert.equal(Object.hasOwn(powerUps.types, id), false, `${id} should be removed`);
   const entries = Object.entries(powerUps.types);
-  assert.equal(entries.length, 10);
-  assert.equal(entries.filter(([, def]) => def.tier === 'common').length, 7);
+  assert.equal(entries.length, 11);
+  assert.equal(entries.filter(([, def]) => def.tier === 'common').length, 8);
   assert.equal(entries.filter(([, def]) => def.tier === 'jackpot').length, 3);
+  assert.ok(powerUps.types.paidBreak);
   assert.ok(powerUps.jackpot.firstRound >= 4);
 });
 
@@ -553,4 +556,170 @@ test('incentive HUD shows earning progress, pickup countdown, jackpot marker and
   assert.equal(hud.element.querySelector('.incentive-drop').textContent, '');
   hud.update(null);
   assert.equal(hud.element.hidden, true);
+});
+
+function makePrng(seed = 4242) {
+  let state = seed >>> 0;
+  return () => { state = (state * 1664525 + 1013904223) >>> 0; return state / 2 ** 32; };
+}
+
+function twoSlotGun(stats) {
+  const primary = new Weapon(weapons.stapleGun, stats);
+  const secondary = new Weapon(weapons.priceGun, stats);
+  const byId = { stapleGun: primary, priceGun: secondary };
+  return {
+    primary,
+    secondary,
+    gun: {
+      slots: ['stapleGun', 'priceGun'],
+      weapon: primary,
+      weaponFor: (id) => byId[id],
+      restock: (fraction) => { primary.restock(fraction); secondary.restock(fraction); },
+    },
+  };
+}
+
+function drawMeterSequence(t, count, round = 2) {
+  t.manager.reset();
+  t.events.emit('roundStart', { round });
+  const ids = [];
+  for (let i = 0; i < count; i++) {
+    t.kill(); t.manager.update(0.01);
+    assert.ok(t.manager.pickup, `drop ${i}`);
+    ids.push(t.manager.pickup.id);
+    t.manager.update(powerUps.lifetime);
+  }
+  return ids;
+}
+
+function drawBossRewards(t, count, round = 2) {
+  const ids = [];
+  t.events.emit('roundStart', { round });
+  for (let i = 0; i < count; i++) {
+    t.events.emit('kill', { zombie: { type: { id: 'sirWaffles', guaranteedDrop: true }, position: new THREE.Vector3(2, 0, 0) }, source: 'gun' });
+    t.manager.update(0.01);
+    assert.ok(t.manager.pickup, `reward ${i}`);
+    ids.push(t.manager.pickup.id);
+    t.manager.update(powerUps.lifetime);
+  }
+  return ids;
+}
+
+test('need weights shift draws toward healing at low health and restock when total ammo across both slots drops', () => {
+  const countOf = (list, target) => list.filter((id) => id === target).length;
+
+  // 1. Health need over continuous meter draws (low health vs full health) & reward draws (20% vs 90% health).
+  const fullHpMeter = fixture({ threshold: { min: 1, max: 1 }, maxPerRound: 1000, random: makePrng(101) });
+  const lowHpMeter = fixture({ threshold: { min: 1, max: 1 }, maxPerRound: 1000, random: makePrng(101) });
+  lowHpMeter.stats.health = 20;
+  const fullHpDraws = drawMeterSequence(fullHpMeter, 300);
+  const lowHpDraws = drawMeterSequence(lowHpMeter, 300);
+  assert.equal(countOf(fullHpDraws, 'paidBreak'), 0, 'full health never rolls Paid Break');
+  assert.ok(countOf(lowHpDraws, 'paidBreak') >= 30, `expected frequent Paid Break at low HP, got ${countOf(lowHpDraws, 'paidBreak')}`);
+
+  const mildHp = fixture({ random: makePrng(202) });
+  mildHp.stats.health = 90; // eligible (< 100), above startBelowFraction (0.9) => weight 1
+  const hurtHp = fixture({ random: makePrng(202) });
+  hurtHp.stats.health = 20; // below maxAtFraction (0.25) => weight 4
+  const mildHealHits = countOf(drawBossRewards(mildHp, 600), 'paidBreak');
+  const lowHealHits = countOf(drawBossRewards(hurtHp, 600), 'paidBreak');
+  assert.ok(lowHealHits > mildHealHits * 2, `expected low health (${lowHealHits}) > 2x mild health (${mildHealHits})`);
+
+  // 2. Ammo need across both slots (stapleGun + smg): drained total ammo vs full & vs lightly spent eligible ammo.
+  const fullStats = createPlayerStats();
+  const fullLoadout = twoSlotGun(fullStats);
+  const fullAmmoMeter = fixture({ threshold: { min: 1, max: 1 }, maxPerRound: 1000, gun: fullLoadout.gun, random: makePrng(303) });
+  const lowStats = createPlayerStats();
+  const lowLoadout = twoSlotGun(lowStats);
+  lowLoadout.primary.magazine = 1; lowLoadout.primary.reserve = 5;
+  lowLoadout.secondary.magazine = 2; lowLoadout.secondary.reserve = 10;
+  const lowAmmoMeter = fixture({ threshold: { min: 1, max: 1 }, maxPerRound: 1000, gun: lowLoadout.gun, random: makePrng(303) });
+  assert.equal(countOf(drawMeterSequence(fullAmmoMeter, 300), 'stockroomDelivery'), 0, 'full two-slot ammo skips restock');
+  const lowAmmoCount = countOf(drawMeterSequence(lowAmmoMeter, 300), 'stockroomDelivery');
+  assert.ok(lowAmmoCount >= 30, `expected frequent restock at low two-slot ammo, got ${lowAmmoCount}`);
+
+  // When both slots average ~85% ammo vs ~10% ammo (both eligible): drained two-slot loadout wins > 2x as often.
+  const mildAmmo = twoSlotGun(createPlayerStats());
+  mildAmmo.primary.reserve = Math.floor(mildAmmo.primary.reserveCap * 0.85);
+  mildAmmo.secondary.reserve = Math.floor(mildAmmo.secondary.reserveCap * 0.85);
+  const mildAmmoMgr = fixture({ gun: mildAmmo.gun, random: makePrng(404) });
+  const emptySecondaryOnly = twoSlotGun(createPlayerStats());
+  emptySecondaryOnly.primary.magazine = 0; emptySecondaryOnly.primary.reserve = 6;
+  emptySecondaryOnly.secondary.magazine = 0; emptySecondaryOnly.secondary.reserve = 12;
+  const lowAmmoMgr = fixture({ gun: emptySecondaryOnly.gun, random: makePrng(404) });
+  const mildAmmoHits = countOf(drawBossRewards(mildAmmoMgr, 600), 'stockroomDelivery');
+  const lowAmmoHits = countOf(drawBossRewards(lowAmmoMgr, 600), 'stockroomDelivery');
+  assert.ok(lowAmmoHits > mildAmmoHits * 2, `expected low total ammo (${lowAmmoHits}) > 2x mild ammo (${mildAmmoHits})`);
+});
+
+test('Employee Discount need rises near an unbought price and drops when unaffordable, overshot, or only ammo is nearby', () => {
+  const countOf = (list, target) => list.filter((id) => id === target).length;
+  const setup = (points, items, seed) => {
+    const wallet = { points };
+    const interactions = { buyables: () => items };
+    return fixture({ wallet, interactions, random: makePrng(seed) });
+  };
+  const doorOnly = [{ kind: 'door', cost: 1000 }];
+  const zeroHits = countOf(drawBossRewards(setup(0, doorOnly, 505), 600), 'employeeDiscount');
+  const nearHits = countOf(drawBossRewards(setup(900, doorOnly, 505), 600), 'employeeDiscount');
+  const richHits = countOf(drawBossRewards(setup(2500, doorOnly, 505), 600), 'employeeDiscount');
+  const ammoOnlyHits = countOf(drawBossRewards(setup(225, [{ kind: 'ammo', cost: 250 }], 505), 600), 'employeeDiscount');
+  const boughtOutHits = countOf(drawBossRewards(setup(900, [], 505), 600), 'employeeDiscount');
+
+  assert.ok(nearHits > zeroHits * 1.8, `near unbought door (${nearHits}) > 1.8x broke (${zeroHits})`);
+  assert.ok(nearHits > richHits * 1.8, `near unbought door (${nearHits}) > 1.8x overshot (${richHits})`);
+  assert.equal(ammoOnlyHits, zeroHits, 'excluded repeatable ammo prices do not boost discount need');
+  assert.equal(boughtOutHits, zeroHits, 'once everything unbought is gone, discount returns to base weight');
+});
+
+test('need cap limits dominance, preserves bag & no-repeat rules, and leaves jackpot frequency unchanged', () => {
+  // 1. Global needWeight.maxFactor hard cap bounds extreme per-type maxMultiplier.
+  const capped = fixture({
+    needWeight: { minFactor: 1, maxFactor: 2 },
+    types: {
+      ...powerUps.types,
+      paidBreak: { ...powerUps.types.paidBreak, need: { ...powerUps.types.paidBreak.need, maxMultiplier: 50 } },
+    },
+    random: makePrng(606),
+  });
+  capped.stats.health = 1;
+  const cappedHeals = drawBossRewards(capped, 800).filter((id) => id === 'paidBreak').length;
+  // Expected share at maxFactor 2 among 7 eligible commons (full ammo skips delivery) is 2 / (2 + 6) = 25% (~200).
+  assert.ok(cappedHeals >= 140 && cappedHeals <= 260, `expected capped share ~25% (got ${cappedHeals}/800)`);
+
+  // 2. Under simultaneous heavy health, ammo, and discount need, jackpot rarity & bag/no-repeat stay intact.
+  const gun = twoSlotGun(createPlayerStats());
+  gun.primary.magazine = 0; gun.primary.reserve = 0;
+  gun.secondary.magazine = 0; gun.secondary.reserve = 5;
+  const sim = fixture({
+    threshold: { min: 1, max: 1 },
+    maxPerRound: 5000,
+    gun: gun.gun,
+    zombies: { zombies: [{ isAlive: true, state: 'chasing', removed: false, type: { id: 'shopper' }, position: new THREE.Vector3(0, 0, 10) }] },
+    wallet: { points: 900 },
+    interactions: { buyables: () => [{ kind: 'door', cost: 1000 }] },
+    random: makePrng(707),
+  });
+  sim.stats.health = 10;
+
+  // Round 2: zero jackpots, no immediate repeats, full 8-common bag cycle before repeating any common.
+  const bagSeq = drawMeterSequence(sim, 16, 2);
+  for (let i = 1; i < bagSeq.length; i++) {
+    assert.notEqual(bagSeq[i], bagSeq[i - 1], `no consecutive repeat at ${i}: ${bagSeq[i]}`);
+    assert.notEqual(powerUps.types[bagSeq[i]].tier, 'jackpot');
+  }
+  assert.equal(new Set(bagSeq.slice(0, 8)).size, 8, `first 8-item bag visits all 8 commons: ${bagSeq.slice(0, 8)}`);
+  assert.equal(new Set(bagSeq.slice(8, 16)).size, 8, `second 8-item bag visits all 8 commons: ${bagSeq.slice(8, 16)}`);
+
+  // Round 4+: 2,400 draws retain exact expected jackpot frequency (~1/9 ≈ 11.1%) despite maximum common need.
+  const jpSeq = drawMeterSequence(sim, 2400, powerUps.jackpot.firstRound);
+  let jackpots = 0;
+  for (let i = 0; i < jpSeq.length; i++) {
+    const isJp = powerUps.types[jpSeq[i]].tier === 'jackpot';
+    if (i > 0) assert.notEqual(jpSeq[i], jpSeq[i - 1]);
+    if (i > 0) assert.ok(!(isJp && powerUps.types[jpSeq[i - 1]].tier === 'jackpot'), 'never two jackpots in a row');
+    if (isJp) jackpots++;
+  }
+  const jpRate = jackpots / jpSeq.length;
+  assert.ok(jpRate >= 0.08 && jpRate <= 0.14, `jackpot rate unchanged (~11.1%), got ${(jpRate * 100).toFixed(1)}%`);
 });

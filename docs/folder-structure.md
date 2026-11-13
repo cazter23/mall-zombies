@@ -37,8 +37,9 @@ src/
                         stop fade. Bell anchors to feel.death.resultsDelay; played once through sound's music/master buses
     careerStats.js      Career schema versions, recent-run limit and accuracy record threshold.
     closingTime.js      Four closing duties and their keys, fountain, night-safe and last-orders targets, PA copy (the once-per-run briefing and its delay; `keep` marks the lines the PA queue never drops), the win receipt's words, the OVERTIME tag, Statistics labels, key marker and prop tuning, escape van prompt data, and parking validation machine geometry, prompts and PA. Also the run modes (order, default, chooser words), Classic's prompt words, each duty's place and the fountain prompt's count.
-    powerUps.js         Employee-incentive drop tuning: 10 types (7 common, 3 jackpot), common vs jackpot tier weights
-                        (jackpot.firstRound 4, chance 0.125), skill credit, round caps, durations/charges, ammo top-up,
+    powerUps.js         Employee-incentive drop tuning: 11 types (8 common, 3 jackpot), common vs jackpot tier weights
+                        (jackpot.firstRound 4, chance 0.125), needWeight factor cap + per-type need curves (Paid Break,
+                        Stockroom Delivery, Employee Discount), skill credit, round caps, durations/charges, ammo top-up,
                         clearance flash/flicker, colors, icons and PA lines. First round 2, 12-16 credit per drop, max 3 per round
     effectWords.js      THE WORDS-ONLY RULE: players never see an upgrade's effect as a number. The fixed size bands (a little / noticeably / much), sizeWord / fillSize
                         for the `{size}` / `{Size}` tokens in a config line, describeEffects and hasStatNumber (the detector the tests use).
@@ -516,11 +517,12 @@ src/
     floorPickups.js     Shared clear-floor placement and swept collection for incentives and closing keys; direction for HUD markers.
     powerUps.js         createPowerUps(): listens to kill/round/death events; earned dynamic pickups on clear floor,
                         swept walk-through collection, 15s expiry, common/jackpot rotation (jackpots from firstRound 4 at jackpot.chance,
-                        no consecutive jackpots), per-round caps, Save & Quit serialize/restore, stripEffectModifiers(), reset/dispose;
-                        debugDrop(id, at) marks the run assisted. Boss rewards wait for the pickup slot, survive natural wave progression
-                        and clear on death, Play again or debug skips. createGame builds/ticks/resets it as g.powerUps.
+                        no consecutive jackpots), capped per-type need weighting (health, combined carried-slot ammo, discount
+                        proximity via interactions.buyables()), per-round caps, Save & Quit serialize/restore, stripEffectModifiers(),
+                        reset/dispose; debugDrop(id, at) marks the run assisted. Boss rewards wait for the pickup slot, survive
+                        natural wave progression and clear on death, Play again or debug skips. createGame builds/ticks/resets it as g.powerUps.
                         A kill whose type has guaranteedDrop (Employee of the Month) queues a reward through chooseRewardType()
-                        respecting weights, utility and no-consecutive-jackpot outside the meter.
+                        respecting need-adjusted weights, utility and no-consecutive-jackpot outside the meter.
     wardrobe.js         g.wardrobe: per-run ownership, equipped slots and reversible player stat factors. buy(id), wear(id) (anything owned),
                         ownedIn(slot), grantAll() (debug), and the ticket words: statLines(id) / ticketDetail(id) from the item's own `lines` (no numbers);
                         wornLines(id) = the same words for a WORN item, for the pause screen's rail.
@@ -530,10 +532,10 @@ src/
                         snapshot() (four slots with the worn item, its colour/icon and its lines). Nothing pulses once you are dead.
     incentiveEffects.js Temporary employee benefits & Clearance: concurrent timers, reversible stat modifiers (Shift Bonus,
                         Loss Prevention melee, Commission Day pointsMultiplier, Black Friday instantKill/bossDamageMultiplier),
-                        deferred non-recursive liquidation damage, one-purchase coupons, target marks, slow patches,
-                        direct-kill extensions, melee charges + sprint shoves, detonateClearance() (non-boss floor clear with
-                        source 'clearance', capped non-lethal boss hit, flat bonus, 'clearanceDetonated'), and stripModifiers().
-                        Owned/reset/disposed by powerUps.js.
+                        deferred non-recursive liquidation damage, one-purchase coupons, target marks, green healing zones
+                        (Paid Break), slow patches (Spill Cleanup), direct-kill extensions, melee charges + sprint shoves,
+                        detonateClearance() (non-boss floor clear with source 'clearance', capped non-lethal boss hit, flat
+                        bonus, 'clearanceDetonated'), and stripModifiers(). Owned/reset/disposed by powerUps.js.
     wallet.js           createWallet({ getMultiplier }): points (start 500), earn/award/spend/canAfford, totalEarned, totalSpent, onChange cb (HUD
                         pop-ups). `award()` applies `getMultiplier()` (e.g. Commission Day). pointsForHit(): COD payouts (+10 hit; kill value +40 head / +70 melee; zombies only)
     interactions.js     createInteractions(): every buyable and hold prompt (doors, wall buys, desks, Kevin, the claw, hazards...). add({ label, verb, cost, position,
@@ -542,7 +544,7 @@ src/
                         shutter, don't block) = focus; holding interact for holdSeconds (hold must START while focused) spends
                         and calls use(), else red prompt + 'denied'. Buttons bound to both interact and reload
                         (controller X): the press is hidden from the gun near a buyable; let go before it buys =
-                        onReloadTap (gun.requestReload()). `prompt` for the HUD; reset()
+                        onReloadTap (gun.requestReload()). `buyables()` exposes live unbought point prices; `prompt` for the HUD; reset()
     autoGraphics.js     First launch only: measures frame times during the title flyover and picks a Graphics preset.
     tickets.js          GRAB-A-GUN's prize tickets (g.tickets): their own currency, never the wallet, pricing or income. add(amount, reason)
                         (nothing once dead; 'ticketsWon'), spend, won (the receipt), and the Prize Counter's tokens (slowClaw, freeGrab,
@@ -856,8 +858,8 @@ src/
                         what it collected and only re-shows what it hid. main.js updates it beside room culling.
     powerUpView.js      Reusable per-incentive pickup meshes (carton, Shift Bonus timepiece/chevrons, Loss Prevention shield+baton,
                         Clearance finned bomb, Commission Day medallion, Black Friday cleaver tag, etc.) with fx/beacon.js
-                        light column + jackpot double halo rings; no lights/colliders; bob/spin/blink, spill ring & target
-                        rings, hide on reset/death, owned-resource disposal
+                        light column + jackpot double halo rings; no lights/colliders; bob/spin/blink, floor zone rings
+                        (Paid Break, Spill Cleanup) & target rings, hide on reset/death, owned-resource disposal
     contactShadows.js   One instanced draw for soft zombie grounding; interpolates feet and finds supporting collider tops.
                         No collision, hitbox or navigation changes; clear on restart, dispose owned GPU resources on unload.
     impactMarks.js      Persistent world aftermath: visible-mesh ray + flat-face corner checks, ring of 200 marks shared

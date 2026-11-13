@@ -183,15 +183,17 @@ priced deposits with both discounts, four-hold completion, PA, and reset.
 Phase 6 checks actual workshop collections before and after the Signature pickup, orders already running at pickup, Restuffs,
 ritual pricing, both PA announcements, one tick per run, and Play again.
 
-`tests/powerUps.test.js` checks the trimmed 10-type catalog (7 common, 3 jackpot; zero removed IDs), earned incentive thresholds,
+`tests/powerUps.test.js` checks the 11-type catalog (8 common including Paid Break, 3 jackpot; zero removed IDs), earned incentive thresholds,
 skill credit, single drops, caps/repeats, jackpot tier rules (firstRound, rarity, no two jackpots in a row including Employee of the Month),
+per-type need weighting (low health -> Paid Break, low combined two-slot ammo -> Stockroom Delivery, points near unbought prices -> Employee Discount,
+global weight cap, unchanged jackpot rate, preserved bag & no-repeat rules under need),
 expiry, safe floor/ramp placement, swept slide collection, wall/storey rejection, reserve delivery without bypassing reloads/upgrades,
 Loss Prevention shove through all zombie attack/charge states, real-game Store-Wide Clearance (same-floor clear, zero per-kill pay,
 flat bonus once, non-lethal boss hit, Comfort flash), Commission Day (`wallet.award` multiplier, raw `earn` unscaled, timely expiry),
 Black Friday (one-hit kills across hitscan/cone/projectile/melee without editing config, boss damage multiplier), visuals/disposal and HUD.
 `fullRun.test.js` also earns and collects a drop with production tuning, then checks Play again cleanup.
-`tests/incentiveEffects.test.js` covers Shift Bonus (reload/swap/move + direct-kill extension cap), Inventory Liquidation,
-Employee Discount, Mystery Shopper, Spill Cleanup, Loss Prevention (three melee charges + sprint shove pulses), reward rotation,
+`tests/incentiveEffects.test.js` covers Shift Bonus (reload/swap/move + direct-kill extension cap), Paid Break (green healing circle + HUD/ring),
+Inventory Liquidation, Employee Discount, Mystery Shopper, Spill Cleanup, Loss Prevention (three melee charges + sprint shove pulses), reward rotation,
 death/reset cleanup, concurrent HUD counters with jackpot styling, floor rings and target markers.
 
 Gameplay regression tests live in `tests/` (`gameplay.test.js` movement/melee/vault, `aim.test.js` spread
