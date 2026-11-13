@@ -46,6 +46,7 @@ import { gunStyle } from './config/gunStyle.js';
 import { buildOf, qualityById, workshopStuffings } from './config/workshop.js';
 import { PRICE_CATEGORIES } from './game/pricing.js';
 import { createSaleTagView } from './fx/saleTagView.js';
+import { createDoorOpenView } from './fx/doorOpenView.js';
 import { createDebugPanel } from './ui/debugPanel.js';
 import { createTitleCamera } from './ui/titleCamera.js';
 import { createRunStart } from './ui/runStart.js';
@@ -322,6 +323,8 @@ const scanLine = createScanLine(scene, weapons.barcodeScanner); // its red scan 
 const lootView = createLootView(scene, g.zombies); // the gold coin over a Shoplifter running off with your points (game/shoplifting.js)
 const rocketView = createRocketView(scene, g.rockets, g.effects); // the Bottle Rocket Bazooka's rockets in the air, with their spark trails
 const throwableView = createThrowableView(scene, g.equipment); // Kiosk Kevin's thrown equipment (a Soda Bomb on its fuse)
+// A bought door going up: dust at its floor line and housing, light from the new area spilling through (game/doorOpenings.js).
+const doorOpenView = createDoorOpenView({ scene, events: g.events, effects, player });
 // Kiosk Kevin's show: Kevin's animation and shouts, the cola geyser, the glitter, the air-horn rings, bubble-wrap pops, the Sentry's flash and break-up.
 const kioskSpectacle = createKioskSpectacle({ scene, events: g.events, camera, kiosk: g.features.instanceOf('kiosk'), equipment: g.equipment, effects, sound });
 const vanLights = createVanLights({ scene, sound }); // Skylar's van: hazards once the run can be won, the drive-off to the receipt
@@ -640,6 +643,7 @@ function render(alpha, frameTime) {
   }, buttonLabel('interact'));
   hud.setFlashSale(game.over ? null : flashSales.active, game.over ? null : flashSales.pending);
   saleTags.update(game.running ? frameTime : 0);
+  doorOpenView.update(game.running ? frameTime : 0); // (paused: the light holds)
   hud.setPowerUps(game.over ? null : { pickup: g.powerUps.pickup, effects: g.powerUps.effects });
   hud.setRitual(game.over ? null : ritual?.status ?? null);
   const menuLabels = { confirm: buttonLabel('menuConfirm'), back: buttonLabel('menuBack'), move: buttonLabel('menuMove'), switch: buttonLabel('menuSwitch') };
@@ -747,6 +751,7 @@ if (debug.exposeToWindow) {
     benchmark: runBenchmark, // await __mall.benchmark() -> the report (title or pause screen)
     settings, lightPool, loop, idleSaver, // (settings.set(id, value) as the menu would; the light pool)
     vanLights, // (Skylar's van: update / start, fx/vanLights.js)
+    doorOpenView, // (a bought door's dust and light spill: .active = glow slots lit, fx/doorOpenView.js)
   };
   // Advance the real game loop by `ticks` fixed steps and draw one frame. For automated
   // testing when the browser isn't animating (e.g. a hidden tab). Pair with game.forceRun.

@@ -34,6 +34,7 @@ import { bossTiming } from '../config/bosses.js';
 import { createBossDirector } from './bossDirector.js';
 import { configureBossVouchers } from './bossVouchers.js';
 import { createShutterSounds } from './shutterSounds.js';
+import { createDoorOpenings } from './doorOpenings.js';
 import { mascotGold } from '../config/zombies.js';
 import { weapons, melee as meleeWeapons } from '../config/weapons.js';
 import { loadMap } from '../maps/index.js';
@@ -188,7 +189,10 @@ export function createGame({
     onReloadTap: () => gun.requestReload(), // controller X tapped next to a buyable: it was a reload
     onPurchase: (purchase) => events.emit('purchase', purchase),
   });
-  const shutterSounds = createShutterSounds({ events, doors: map.doors, sound });
+  // Buying a door is a moment (game/doorOpenings.js announces it: the area, each barrier going up and clunking home;
+  // the PA welcome, sounds, dust, glow and rumble listen). Its sounds follow the real barrier (game/shutterSounds.js).
+  const doorOpenings = createDoorOpenings({ events, doors: map.doors, zones: map.zones, player });
+  const shutterSounds = createShutterSounds({ events, sound });
   for (const door of map.doors) {
     interactions.add({
       get label() {
@@ -210,7 +214,7 @@ export function createGame({
       use: () => {
         if (!map.areaUnlocks) return door.open();
         const areaId = map.areaUnlocks.destination(door);
-        return { areaId, openedDoorIds: map.areaUnlocks.unlock(areaId) };
+        return { areaId, openedDoorIds: map.areaUnlocks.unlock(areaId, { bought: door.id }) };
       },
     });
   }
@@ -697,6 +701,7 @@ export function createGame({
     ['stragglers', () => stragglers.reset()],
     ['player', () => player.teleport(map.playerSpawn)],
     ['map', () => map.reset()], // doors closed, zones locked
+    ['doorOpenings', () => doorOpenings.reset()], // no barrier mid-show, no area welcomed yet
     ['features', () => features.reset()],
     ['outfitRail', () => outfitRail.reset()],
     ['warranty', () => warranty.reset()], // no warranty on file in a new run
@@ -770,12 +775,13 @@ export function createGame({
       zones: Object.keys(map.zones).filter((id) => map.zones[id].open),
       doors: map.doors.filter((d) => d.isOpen).map((d) => d.id),
     }), (data) => {
+      // (instant: a loaded shift finds its doorways already open: no roll, no dust, no sound, no PA)
       for (const id of data.zones) {
         if (!Object.hasOwn(map.zones, id) || map.zones[id].open) continue;
-        if (map.areaUnlocks) map.areaUnlocks.unlock(id);
+        if (map.areaUnlocks) map.areaUnlocks.unlock(id, { instant: true });
         else map.zones[id].open = true;
       }
-      for (const door of map.doors) if (data.doors.includes(door.id) && !door.isOpen) door.open();
+      for (const door of map.doors) if (data.doors.includes(door.id) && !door.isOpen) door.open({ instant: true });
     }],
     ['features', () => features.serialize(), (data) => features.restore(data)], // (after the gun and map: an order needs its gun away)
     ['outfitRail', () => outfitRail.serialize(), (data) => outfitRail.restore(data)],
@@ -796,6 +802,7 @@ export function createGame({
   const transientSteps = [
     'zombies', 'mascotCostumes', 'surfaces', 'health', 'balls', 'rockets', 'interactions', 'viewmodel', 'effects', 'contactShadows',
     'ambience', 'melee', 'aimAssist', 'clockIn', 'stragglers', 'hud', 'saveGame',
+    'doorOpenings', // (a load counts every owned area as already welcomed: game/doorOpenings.js, on 'runLoaded')
     'guide', // (its replay count travels in the guide's own record, not the run save)
   ];
   const saveGame = createSaveGame({ steps: saveSteps, events, stats, state, rounds, resetRun, storage: saveStorage });
@@ -882,6 +889,7 @@ export function createGame({
     }
     health.update(dt);
     map.update(dt);
+    doorOpenings.update(dt); // (after the map: a barrier that rolled fully up this tick clunks home now)
     shutterSounds.update(dt);
     features.update(dt);
     outfitRail.update(dt);
@@ -939,6 +947,7 @@ export function createGame({
     throwables,
     equipment,
     interactions,
+    doorOpenings, // (a bought door's moment: game/doorOpenings.js)
     melee,
     health,
     zombies,

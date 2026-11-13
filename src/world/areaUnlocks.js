@@ -17,13 +17,15 @@ export function createAreaUnlocks({ zones, doors, connections }) {
     return zones[a].open ? b : a;
   }
 
-  function unlock(id) {
+  // instant: every barrier snaps open (a loaded save). bought: the id of the door the player paid at; every OTHER
+  // barrier this opens is a free connection and gets the light show (world/shutter.js).
+  function unlock(id, { instant = false, bought = null } = {}) {
     if (!Object.hasOwn(zones, id)) throw new Error(`Unknown area: ${id}`);
     zones[id].open = true;
     const opened = [];
     for (const door of doors) {
       if (!door.isOpen && door.connectsZones.every(area => zones[area].open)) {
-        door.open();
+        door.open({ instant, light: bought !== null && door.id !== bought });
         opened.push(door.id);
       }
     }

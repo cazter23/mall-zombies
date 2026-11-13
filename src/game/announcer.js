@@ -15,6 +15,7 @@ import { economy } from '../config/economy.js';
 import { bossTiming } from '../config/bosses.js';
 import { mascotTypes, zombieTypes } from '../config/zombies.js';
 import { save as saveConfig } from '../config/save.js';
+import { shutters } from '../config/shutters.js';
 
 /** A system's own PA line ({ pa } in the payload) at this priority; silent when the payload has none. */
 const paLine = (priority) => ({ pa }) => (pa ? { ...pa, priority } : null);
@@ -59,7 +60,8 @@ export function createAnnouncer({ events, hud, sound, state, random = paRandom }
       events.on(name, (payload) => {
         const announcement = line(payload);
         if (!announcement) return;
-        hud.showAnnouncement(announcement);
+        // (false = the HUD dropped an `ifQuiet` line because another one is up: no chime either)
+        if (hud.showAnnouncement(announcement) === false) return;
         const id = typeof chime === 'function' ? chime(payload) : chime;
         if (id) sound.play(id);
       });
@@ -91,6 +93,8 @@ export function createAnnouncer({ events, hud, sound, state, random = paRandom }
         // label slot by the desk).
         ['returnLabel', directedOnly],
         ['warrantyClaim', paAlways(1)], // a Platinum warranty claim (game/warranty.js)
+        // An area's first opening this run (game/doorOpenings.js): a welcome, only if no other PA line is up (ifQuiet).
+        ['areaOpened', paLine(shutters.opening.welcome.priority)],
         ['ritualStage', ({ pa }) => ({ ...pa, priority: 0, archiveOnly: true }), null], // (narration: quality and ready lines beat it)
       ]);
     },

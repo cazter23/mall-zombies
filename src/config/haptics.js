@@ -20,4 +20,8 @@ export const haptics = {
   },
   damage: { duration: 180, strongMagnitude: 0.8, weakMagnitude: 0.7, priority: 3 },
   pickup: { duration: 140, strongMagnitude: 0.25, weakMagnitude: 0.5, priority: 2 },
+  // A bought door (game/doorOpenings.js): a light tick as it unlocks, a thump when it clunks home (only within
+  // config/shutters.js opening.nudge.range). Free connections that open on their own stay still.
+  doorUnlock: { duration: 60, strongMagnitude: 0.1, weakMagnitude: 0.4, priority: 2 },
+  doorClunk: { duration: 160, strongMagnitude: 0.6, weakMagnitude: 0.35, priority: 2 },
 };

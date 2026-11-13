@@ -31,19 +31,23 @@ test('a rolling curtain feeds into a stationary housing without squashing slats,
     t.group.updateMatrixWorld(true);
     const p = s.mesh.geometry.attributes.position, uv = s.mesh.geometry.attributes.uv;
     const y = Array.from({ length: p.count }, (_, i) => p.getY(i));
-    assert.ok(Math.abs(Math.max(...y) - Math.min(...y) - 1.5) < 1e-5);
+    // (drawn eased: half the roll's time shows more than half the curtain gone, config/shutters.js opening.rollEase)
+    const remaining = 3 - s.drawnRaise;
+    assert.ok(s.drawnRaise > 1.5 && s.drawnRaise < 3);
+    assert.ok(Math.abs(Math.max(...y) - Math.min(...y) - remaining) < 1e-5);
     const v = Array.from({ length: uv.count }, (_, i) => uv.getY(i));
     assert.ok(Math.abs((Math.max(...y) - Math.min(...y)) / (Math.max(...v) - Math.min(...v)) - 3) < 1e-5,
       'world metres per texture unit remains constant');
     assert.ok(Math.abs(s.mesh.position.y + Math.max(...y) - (minY + 3)) < 1e-5, 'curtain top stays in the housing');
-    assert.ok(Math.abs(s.mesh.position.y + Math.min(...y) - (minY + 1.5)) < 1e-5);
+    assert.ok(Math.abs(s.mesh.position.y + Math.min(...y) - (minY + s.drawnRaise)) < 1e-5);
     assert.deepEqual(new THREE.Box3().setFromObject(s.frame), frame, 'fixed frame never rises');
     assert.equal(t.colliders.length, 1);
     s.update(feel.world.shutterOpenSeconds / 2 + .001);
     assert.equal(s.mesh.visible, false); assert.equal(s.frame.visible, true); assert.equal(t.colliders.length, 0);
     s.close(); assert.equal(t.colliders.length, 1); s.update(feel.world.shutterOpenSeconds + .001);
     assert.equal(s.state, 'closed'); assert.equal(s.mesh.visible, true);
-    assert.deepEqual(Array.from(s.mesh.geometry.attributes.uv.array).filter((_, i) => i % 2), v.map(value => value * 2));
+    const closedV = Array.from(s.mesh.geometry.attributes.uv.array).filter((_, i) => i % 2);
+    closedV.forEach((value, i) => assert.ok(Math.abs(value - v[i] * 3 / remaining) < 1e-5, 'the whole curtain is back'));
     t.dispose();
   }
 });
@@ -101,16 +105,18 @@ function atStart() {
   t.standAt(0, 8, 0); return t;
 }
 
-test('a real door purchase plays motor/roll/stop once; pause freezes progress and debug open-all is silent', () => {
+test('a real door purchase plays unlock/motor/roll/stop once; pause freezes progress and debug open-all is silent', () => {
   const t = atStart(), { g } = t;
+  const p = shutters.opening.profiles[shutterFinish('startShutter').profile];
   t.press('KeyF', 30);
   assert.ok(g.map.doors.find(d => d.id === 'startShutter').isOpen);
-  assert.equal(t.sounds.filter(s => s === 'shutterMotor').length, 1);
+  assert.equal(t.sounds.filter(s => s === p.unlock).length, 1);
+  assert.equal(t.sounds.filter(s => s === p.motor).length, 1);
   g.state.forceRun = false; t.tick(180);
-  assert.equal(t.sounds.filter(s => s === 'shutterStop').length, 0, 'no wall-clock clunk while paused');
+  assert.equal(t.sounds.filter(s => s === p.stop).length, 0, 'no wall-clock clunk while paused');
   g.state.forceRun = true; t.tick(120);
-  assert.ok(t.sounds.includes('shutterRoll'));
-  assert.equal(t.sounds.filter(s => s === 'shutterStop').length, 1);
+  assert.ok(t.sounds.includes(p.roll));
+  assert.equal(t.sounds.filter(s => s === p.stop).length, 1);
   const before = t.sounds.filter(s => s.startsWith('shutter')).length;
   g.debug.run('doors'); t.tick(120);
   assert.equal(t.sounds.filter(s => s.startsWith('shutter')).length, before);
