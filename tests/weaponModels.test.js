@@ -125,6 +125,18 @@ test('every weapon model uses the refreshed faceted hands and sleeved cuffs with
   for (const id of GUN_IDS) {
     const model = buildWeaponModel(weapons[id]);
     model.root.updateMatrixWorld(true);
+    if (model.skinTargets?.length > 1) { // AKIMBO (BOGO): a gripping hand on each gun, no support hand; the box cutter hides the left gun
+      for (const { root } of model.skinTargets) {
+        for (const part of ['rightPalm', 'rightGripFingers', 'rightIndexFinger', 'gripThumb', 'rightCuff']) assert.ok(root.getObjectByName(part), `${id}: missing ${part}`);
+        const palm = bounds(root.getObjectByName('rightPalm')).expandByScalar(0.012);
+        for (const finger of ['rightGripFingers', 'rightIndexFinger', 'gripThumb']) assert.ok(palm.intersectsBox(bounds(root.getObjectByName(finger))), `${id}: ${finger} floats`);
+      }
+      const left = model.skinTargets[1].root;
+      model.leftHandVisible = false;
+      assert.ok(!left.parent.visible || !left.parent.parent.visible || !left.parent.parent.parent.visible, `${id}: leftHandVisible hides the left gun`);
+      model.leftHandVisible = true;
+      continue;
+    }
     for (const part of ['rightPalm', 'rightGripFingers', 'rightIndexFinger', 'gripThumb', 'supportPalm', 'supportFingers', 'supportThumb', 'rightCuff', 'leftCuff']) {
       assert.ok(model.root.getObjectByName(part), `${id}: missing ${part}`);
     }

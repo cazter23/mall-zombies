@@ -583,13 +583,13 @@ export const weapons = {
   },
 
   // WALL BUY: Grand Atrium (economy.wallBuys). Debug H still cycles it.
-  // ROLE: steady medium-range body damage, paid for with slower ADS/strafe.
+  // ROLE: faster, lighter medium-range automatic rifle, paid for with slower ADS/strafe.
   // Stronger per-hit damage than Price, with a full 30-round magazine; no penetration.
   rivetRifle: {
     id: 'rivetRifle', name: 'Rivet Rifle', fireMode: 'auto',
-    damage: 95, headshotMultiplier: 1.75,
-    magazineSize: 30, startingReserve: 144,
-    fireInterval: 0.1, fireBuffer: 0.1, reloadTime: 2, range: 100,
+    damage: 80, headshotMultiplier: 2, // lighter per-hit than Coil (~941 burst dps); x2 keeps a headshot (160) about where it was (95 x 1.75) and above a Foam dart's
+    magazineSize: 36, startingReserve: 144, // (36: at 0.085 s a shot a 30 ran dry in 2.5 s and sat under the Foam Dart Blaster sustained; 144 = four magazines)
+    fireInterval: 0.085, fireBuffer: 0.1, reloadTime: 2, range: 100, // ~11.8 shots/s
     falloff: { start: 12, end: 28, minMultiplier: 0.6 },
     recoil: {
       pitchDegrees: 0.9, yawDegrees: 0.16, rollDegrees: 0.25, adsMultiplier: 0.7,
@@ -647,14 +647,14 @@ export const weapons = {
   },
 
   // WALL BUY: Cinema projection passage (economy.wallBuys).
-  // ROLE: heavy industrial LMG. Huge 64-nail wire-collated drum and 2-target pierce chew through
-  // corridor hordes for over 6 seconds straight, paid for with heavy ADS handling and a long 3.1s drum swap.
+  // ROLE: heavy industrial LMG. Huge 64-nail wire-collated drum, heavy 120-damage hits and 2-target pierce
+  // chew through corridor hordes for nearly 8 seconds straight, paid for with heavy ADS handling and a long 3.1s drum swap.
   coilNailer: {
     id: 'coilNailer', name: 'Heavy Coil Nailer', fireMode: 'auto',
-    damage: 95, headshotMultiplier: 1.5,
+    damage: 120, headshotMultiplier: 1.5, // slower, harder-hitting than Rivet (960 burst dps)
     pierce: { maxTargets: 2, damageFalloff: [1, 0.5] },
     magazineSize: 64, startingReserve: 256,
-    fireInterval: 0.1, fireBuffer: 0.1, reloadTime: 3.1, range: 90,
+    fireInterval: 0.125, fireBuffer: 0.1, reloadTime: 3.1, range: 90, // 8 shots/s (~7.9s drum)
     falloff: { start: 15, end: 30, minMultiplier: 0.65 },
     recoil: {
       pitchDegrees: 0.68, yawDegrees: 0.28, rollDegrees: 0.38, adsMultiplier: 0.68,
@@ -1404,6 +1404,72 @@ export const weapons = {
           { at: 0.36, jolt: { up: 0.003, rollDegrees: -1.5 } }, // the spent cartridge tossed
           { at: 0.64, sound: 'balloonReloadIn', jolt: { back: -0.006, pitchDegrees: -2 } },
           { at: 0.79, sound: 'balloonReloadReady', jolt: { up: -0.005, rollDegrees: 2, pitchDegrees: 1.5 } },
+        ],
+      },
+    },
+  },
+
+  // CLAW-ONLY (GRAB-A-GUN): BOGO, Buy One Get One. Purple capsule. Two compact label-tagger SMGs, one in each hand (AKIMBO: the model is the
+  // pair, weapons/models/bogo.js; each shot comes out of the other gun, the shots alternate right, left, right...). It is ONE gun to the
+  // game: one magazine (both guns' together), one fire button, one reload. Right mouse does not raise sights: it pulls the pair in a little
+  // and tightens the spray (ads.offset, spread.adsMultiplier), the crosshair stays.
+  // ROLE: the close-range shredder. The fastest fire in the game and the most damage per second up close, falling off hard past a room's
+  // width (falloff), with a wide spray that blooms the longer you hold the trigger. Weak down a hallway (tests/balance.test.js).
+  bogo: {
+    id: 'bogo', name: 'BOGO', fireMode: 'auto', clawOnly: true,
+    damage: 60, headshotMultiplier: 1.4, // round 1 (150 HP): 3 body / 2 head; ~18 shots a second (~680 sustained up close, with Coil; under 300 at 15 m)
+    magazineSize: 60, startingReserve: 300, // two 30-round magazines, one per gun (3.3 s of fire)
+    fireInterval: 0.055, fireBuffer: 0.1, reloadTime: 2, range: 60,
+    falloff: { start: 7, end: 18, minMultiplier: 0.45 },
+    recoil: {
+      pitchDegrees: 0.42, yawDegrees: 0.3, rollDegrees: 0.2, adsMultiplier: 0.75,
+      // (the pair as a whole barely moves: each gun kicks on its own in the model, viewmodel.fire below)
+      model: { back: 0.012, up: 0.003, pitchDegrees: 1.6, yawDegrees: 0.6, rollDegrees: 0.8,
+        adsMultiplier: 0.6, frequency: 8.5, damping: 0.6 },
+    },
+    impact: { flinch: 0.75, knockback: 0.55, hitstopSeconds: 0, deathImpulse: 1.15 },
+    spread: {
+      base: 2.4, moving: 2.2, maxMovingFactor: 1.5, airborne: 3.5,
+      perShot: 0.35, maxBloom: 3.5, bloomRecoveryDelay: 0.12, bloomRecovery: 7,
+      smoothing: 12, adsMultiplier: 0.55, // (right mouse: a tighter spray, never a pinpoint)
+    },
+    ads: { seconds: 0.16, fovMultiplier: 0.93, moveSpeedMultiplier: 0.95,
+      offset: { x: 0, y: -0.13, z: -0.39 } }, // (the pair pulled in and up a little: nothing lines up with the eye)
+    muzzleFlash: {
+      seconds: 0.03, size: 0.1, coreSize: 0.045, outerOpacity: 0.75, sizeJitter: 0.25,
+      forwardOffset: 0.04, outerColor: 0xff8fa8, coreColor: 0xfff3e8,
+      adsWidth: 1, adsHeight: 1, adsTwistFraction: 0, // (the guns never line up with the eye: the hip burst stays)
+      lightColor: 0xffb0c0, handLightIntensity: 0.2, handLightRange: 0.7,
+      worldLightIntensity: 2.2, worldLightRange: 5,
+    },
+    sounds: { fire: 'bogoShot', dryFire: 'dryClick' }, tracerColor: 0xff8fa8,
+    viewmodel: {
+      model: 'bogo', hipOffset: { x: 0, y: -0.15, z: -0.42 }, // (the pair is centred: each gun sits gunSpacing to its side)
+      aimYawDegrees: 0, hipPitchDegrees: 1.5, hipRollDegrees: 0,
+      gunSpacing: 0.19, adsGunSpacing: 0.15, // metres from the middle to each gun, at the hip / with right mouse held
+      gunYawDegrees: 5, gunRollDegrees: 6, // each gun turned in toward the crosshair, and canted in a little
+      bodyColor: 0xe8344e, accentColor: 0xffd23f, darkColor: 0x23202a, metalColor: 0xbfc4cc,
+      gripColor: 0x2a2630, sightColor: 0x7dffb0, labelColor: 0xfff6e0, // clearance red, a yellow tag, white labels
+      // Each gun's own kick when it fires (on top of the pair's recoil.model): it snaps back and up, then settles.
+      fire: { triggerDegrees: 26, pressSeconds: 0.018, releaseSeconds: 0.05, kickBack: 0.022, kickPitchDegrees: 9, kickSeconds: 0.09 },
+      // The reload: both guns tip down and out, the magazines drop, fresh ones snap in, both guns flick back up.
+      reload: {
+        gunKeys: [
+          { t: 0, pos: [0, 0, 0], rot: [0, 0, 0] },
+          { t: 0.14, pos: [0, -0.02, 0.03], rot: [-14, 0, 0] },
+          { t: 0.6, pos: [0, -0.025, 0.03], rot: [-16, 0, 0] },
+          { t: 0.74, pos: [0, 0.01, 0.01], rot: [8, 0, 0] },
+          { t: 0.9, pos: [0, 0, 0], rot: [0, 0, 0] },
+          { t: 1, pos: [0, 0, 0], rot: [0, 0, 0] },
+        ],
+        rollDegrees: 28, // each gun rolls outward to dump its magazine (eases in and out with the reload)
+        magazineDrop: [0.18, 0.34], // the old magazines fall away over this part of the reload...
+        magazineIn: [0.5, 0.66], // ...and the fresh ones slide up into the grips over this part
+        dropMeters: 0.22,
+        events: [
+          { at: 0.18, sound: 'bogoReloadOut' },
+          { at: 0.66, sound: 'bogoReloadIn', jolt: { up: -0.006, pitchDegrees: -2 } },
+          { at: 0.8, sound: 'bogoReloadReady', jolt: { back: 0.004, pitchDegrees: 2.5 } },
         ],
       },
     },

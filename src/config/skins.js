@@ -228,6 +228,21 @@ export const skins = {
     challenge: { kind: 'soloBoss', count: 1, minRound: 9, needs: ['claw'], track: 'Boss: {gun} only',
       text: 'Finish a boss from round {minRound} on that nothing but the {gun} has hurt.' },
   }],
+  bogo: [{ id: 'markdown', name: 'Markdown', slot: 1,
+    palette: { body: 0x5a3842, dark: 0x221a20, metal: 0xb4a8ae, grip: 0x221c22, accent: 0xd8b860, sight: 0xffe3a1, ammo: 0xf2e8d8 }, // (muted: last season's stock)
+    challenge: mastery(1000) }, {
+    id: 'two-for-one', name: 'Two for One', slot: 2,
+    palette: { body: 0xffd23f, dark: 0x3a2a10, metal: 0xf4ecd8, grip: 0x2a2014, accent: 0xe8344e, sight: 0x7dffb0, ammo: 0xfff6e0 },
+    pattern: { kind: 'text', ink: 0xe8344e, words: ['BUY 1', 'GET 1'], font: 'clearance', height: 0.01, wordSpacing: 0.04, rowSpacing: 0.018 }, // the sale sign
+    challenge: { kind: 'quickKills', count: 300, seconds: 1, needs: ['claw'],
+      text: 'Clear {count} zombies within {seconds} second of the {gun} first hitting them.' },
+  }, {
+    id: 'doorbuster-rush', name: 'Doorbuster Rush', slot: 3,
+    palette: { body: 0x1c1c24, dark: 0x0e0e14, metal: 0xd8d4e0, grip: 0x141418, accent: 0xff3b5c, sight: 0x7dffb0, ammo: 0xffd23f },
+    treatment: { kind: 'pulse', role: 'accent', color: 0xff5c7a, low: 0.08, high: 0.42, period: 0.9 }, // a flashing SALE sign
+    challenge: { kind: 'roundKills', count: 50, needs: ['claw'], track: '{value} / {count} this round',
+      text: 'Clear {count} zombies with the {gun} in one round.' },
+  }],
 };
 
 // --- The Closing Time rewards (plan: "The Closing Time rewards"). ONE look that fits every gun, so a win unlocks it on every gun at once

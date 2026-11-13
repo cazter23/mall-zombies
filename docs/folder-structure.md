@@ -358,6 +358,12 @@ src/
                         with a valve wheel, a hose to the nozzle and a white-faced gauge, a ribbed nozzle with curly ribbons; a teardrop balloon inflates on the
                         nozzle after each shot (sinceFire, state.loaded) and the gauge needle dips. A helium cartridge screws into the tank's back end: the reload
                         (viewmodel.reload keys) unscrews it and tosses it, screws in a new one (twistKeys), taps the gauge (needleKeys), and the balloon blows back up.
+                        bogo.js = BOGO, the claw-only AKIMBO SMGs: two clearance-red label-tagger SMGs, one in each hand (no support hand), each with a label
+                        roll, a stubby barrel, a stick magazine and a swinging yellow price tag. The model is the PAIR; the left gun is the right one mirrored
+                        (a group scaled -1 in x). The optional pair hooks (models/index.js): onFire(flash) alternates the gun that fires (model.muzzle is a
+                        getter; the flash moves onto it), createUpgradeVisuals() fits attachments and trims on both guns, skinTargets prints a skin pattern
+                        on each (the badge on the right one), animate reads state.aimAmount (right mouse pulls the guns in). Each gun kicks on its own; the
+                        reload rolls both out, drops both magazines and slides fresh ones up (viewmodel.reload). The box cutter hides the left gun.
                         leafBlower.js = orange motor housing, red fuel tank with a level window, ribbed flared nozzle (the claw-only Leaf Blower).
                         Each model also returns `mounts` (barrel / top / side / grip / magazine / sticker: where upgrade parts go).
                         upgradeParts.js = what upgrades LOOK like: buildAttachmentPart(id, mount) (mounting brackets/adapters on universal
@@ -983,7 +989,7 @@ src/
     impactMarks.js      Persistent world aftermath: visible-mesh ray + flat-face corner checks, ring of 200 marks shared
                         across instanced signature pools. Skips shutters/unsupported edges; follows rigid surface transforms,
                         removes marks when surfaces unload, clears on restart. prepare(renderer,camera) warms shared graphics.
-    impactModels.js     Small shared staple/nail/dart/confetti meshes with vertex colours; three procedural price-sticker textures
+    impactModels.js     Small shared staple/nail/dart/confetti/BOGO-tag meshes with vertex colours; three procedural price-sticker textures
     effects.js          Tracers (pooled) + particle bursts (one InstancedMesh): splat(), puff(), clear() (new run). A splat palette flagged
                         `foam` (or the Mascot's) keeps its colours in Red splatter mode (Sunny is stuffing, not blood).
                         The Mascot's foam palette bypasses flesh splatter settings.
