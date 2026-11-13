@@ -5,6 +5,7 @@ import { createSkinSave } from '../src/game/skinSave.js';
 import { skins, challengeText, locker as cfg, skinStorage } from '../src/config/skins.js';
 import { weapons } from '../src/config/weapons.js';
 import { createLocker, createLockerPreview } from '../src/ui/locker.js';
+import { padInput } from './helpers/padInput.js';
 
 menuDom();
 const { createScreens } = await import('../src/ui/screens.js');
@@ -30,7 +31,7 @@ function fixture() {
     get writes() { return writes; }, get releases() { return releases; }, get frames() { return frames; },
     skin: id => locker.element.querySelector(`[data-skin="${id}"]`),
     gun: id => locker.element.querySelector(`[data-gun="${id}"]`),
-    pad: code => screens.padNav({ consumePress: key => key === code }),
+    pad: code => screens.padNav(padInput(code)),
   };
 }
 

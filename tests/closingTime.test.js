@@ -23,6 +23,7 @@ import { overlapsSolid, rampHeightAt } from '../src/world/collision.js';
 import { createHud } from '../src/ui/hud.js';
 import { menuDom } from './helpers/menuDom.js';
 import { createScreens, receiptLinesFor } from '../src/ui/screens.js';
+import { padInput } from './helpers/padInput.js';
 
 const bossIds = Object.keys(closingTime.lines);
 
@@ -919,8 +920,7 @@ test('win receipt offers both choices, then restores the death receipt for an ov
   assert.equal(button('playAgain').hidden, true);
   assert.equal(document.activeElement, button('clockOut'));
   button('clockOut').click();
-  const presses = new Set(['PadDown', 'PadA']);
-  screens.padNav({ consumePress: (code) => presses.delete(code) });
+  screens.padNav(padInput('PadDown', 'PadA'));
   assert.deepEqual(picks, ['clockOut', true]);
 
   screens.show('results', { ...win, clockedOut: true });

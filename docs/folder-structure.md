@@ -30,7 +30,9 @@ src/
                         tracker's seconds (shown, struck through), words and soft fail sound.
                         Preserves Phase 1's Night Shift/Carbon Copy palettes; the other nine skins carry names and challenges for now.
     idle.js             Idle saver numbers: delays (short / normal / long: dim and sleep seconds), dimFps, muteWhenAsleep, pollSeconds
-    haptics.js          Controller vibration intensity and per-gun/damage/pickup durations, motor strengths and priorities
+    haptics.js          Controller vibration intensity and per-gun/damage/pickup durations, motor strengths and priorities; moments
+                        (blast, airHorn, bossSpawn, bossDefeated, jackpot, doorbuster) and the charge hum (a pulse every everyMs,
+                        growing with the Barcode Scanner's scan)
     bosses.js           Boss debut windows (the booked-only Last Customer has none), parking entrance/backup markers, wave timing, combat and control tuning, PA lines (`introBanner`, per-encore-boss `encoreBanner` 4-line pools on `influencer`/`guard`/`manager`/`janitor`, `phases`, `defeatBanner`), and the Janitor's costume
                         and Wet Floor settings. Boss kill values and health scaling go through economy.js.
     deathMusic.js       End of Shift: original seven-second death composition (piano/pad/bell/noise layers), gain and
@@ -101,8 +103,11 @@ src/
                         `mascotPicking` (home weight) and `mascotGold` (Employee of the Month). Each costume resolves ONCE into
                         `mascotTypes[id]` (id 'mascot', variant, name) and `mascotGoldTypes[id]`; zombieTypes.mascot = Sir Waffles
     controls.js         bindings (action -> keyboard/mouse + Pad* codes; interact = F / X; switchWeapon = wheel / Y,
-                        weapon1/weapon2 = 1/2; menu-only: settings = Y, controlsScreen = X on the pause screen), buttonLabels
-                        (prompts per device), controlsHelp (what the Controls screen shows; keep in sync with bindings),
+                        weapon1/weapon2 = 1/2; menu* = the in-run menus (keys + pad); ui* = the menus around a run, CONTROLLER ONLY
+                        (a key there would press a web-page button twice): D-pad, A, B, LB/RB tabs, LT/RT scroll, Y / X, Start),
+                        menuNav (menu repeat delay/rate, stick push threshold, scroll speed, slider steps), menuHints (each menu's
+                        hint line per device), buttonLabels (prompts per device, incl. the ui* names), controlsHelp (what the
+                        Controls screen shows, incl. gamepadMenus; keep in sync with bindings),
                         gamepad (deadzones, look speed/curve, turn ramp, triggers, click-to-sprint release),
                         aimAssist (strength dial, range/cone, slowdown, rotational, ADS snap). Equipment: lethal = G / RB, tactical = middle
                         click (Mouse1) / D-pad right; melee = V / R3 (RB moved to the Lethal throw, COD's layout)
@@ -180,6 +185,11 @@ src/
                         click-to-sprint latch (PadSprint; ended by stick release or a FRESH aim/crouch action
                         press, so L3 while holding LT drops ADS and sprints), Xbox/PlayStation detection,
                         `connected`, lookRate() w/ turn ramp
+    menuNav.js          THE controller menu model (DOM-free): createMenuNav({ actions }).read(input, dt) -> { x, y, confirm, back,
+                        tab, option, option2, start, scroll }: D-pad / left stick one step per push, held = repeat (config/controls.js
+                        menuNav), right stick / LT RT scroll in pixels. prime(input): a direction held when a menu opens never steps.
+                        UI_ACTIONS (the ui* actions: ui/ menus) / GAME_MENU_ACTIONS (menu*: the order form, the fitting room).
+                        spatialStep(rects, from, dx, dy): the nearest item that way, else the next in order (wrapping)
   player/
     controller.js       PlayerController: WASD, jump (buffer + coyote time), sprint meter, crouch/slide/prone
                         (stance: stand|crouch|slide|prone), gravity, mouse look (per render frame), camera interpolation.
@@ -1067,11 +1077,19 @@ src/
     scatter.js          Places decor-kit clutter on a floor area, deterministic per seed, merged into one mesh per material.
     staticBatch.js      Merges still, opaque map meshes into a few big ones (fewer draw calls); userData.dynamic opts a mesh out.
   ui/
+    glyphs.js           Which buttons prompts name: promptDevice(input, gamepad) ('keyboard' | 'xbox' | 'playstation'), buttonLabel,
+                        hintHtml(id) (a menu's hint line from config/controls.js menuHints), glyphHtml(action) (a keycap in running
+                        text, How to play), setPromptDevice(device) (main.js each tick: on a change rewrites every [data-hint] line and
+                        [data-glyph] keycap and sets <body data-input>)
+    menuFocus.js        The DOM side of the menu model: menuNav (the one navigator every DOM menu reads; one menu per tick),
+                        createFocusList (the controller cursor: class 'focused', DOM focus, scrolled into view, moves with
+                        spatialStep), padBook (the shared padNav of the locker, Survival Guide and Challenges), scrollPage
     incentiveHud.js     Employee of the Hour bar driven by 'powerUpMeter' (hidden pre-unlock / disabled by setting, near-full glow + chime, dimmed capped state), uncollected pickup countdown with shared SVG icon (`incentiveIconSvg`), and active effect timers/charges
     modal.js            Shared Settings/Controls dialog behavior: inert background, focus trap, Escape, restores focus on close
     settingsMenu.js     createSettingsMenu(settings): builds the options screen from the settings list (tabs, rows per type:
                         checkbox / range + readout / select). Opened by the pause screen's Settings button (controller: Y);
-                        Esc / Back / B closes. padNav(input): D-pad moves + changes, A toggles, LB/RB tabs, B back
+                        Esc / Back / B closes. padNav(input) (core/menuNav.js): up/down move, left/right change (held: they
+                        repeat; on the footer they walk its buttons), A toggles, LB/RB tabs, B / Start back
                         (main.js routes controller input to it while it's open)
     debugPanel.js       createDebugPanel({ status }): the small read-only debug window (the ` key): every debug key by group, live
                         round / points / enemies / sale, selected spawn type, next gun, god mode and active boss.

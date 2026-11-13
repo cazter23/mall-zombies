@@ -4,6 +4,8 @@
 // on the right; keyboard and pad move through every button, Enter / A presses one.
 import { challengeCatalog } from '../game/challengeCatalog.js';
 import { challengeBoard as cfg } from '../config/challengeBoard.js';
+import { padBook } from './menuFocus.js';
+import { hintHtml } from './glyphs.js';
 
 export function createChallengeBoard({ save, pins, onBack, trackerEnabled = () => true, getChallenges = () => null, guideSave = null }) {
   const element = document.createElement('div');
@@ -20,7 +22,7 @@ export function createChallengeBoard({ save, pins, onBack, trackerEnabled = () =
         <section class="locker-finishes"><h2 class="challenge-group-title"></h2><div class="locker-skins challenge-list"></div></section>
       </div>
       <div class="menu-row"><button class="menu-btn locker-back" type="button">${cfg.back}</button></div>
-      <p class="pad-hint">${cfg.hint}</p>
+      <p class="pad-hint" data-hint="challenges">${hintHtml('challenges')}</p>
     </div>`;
   const groupList = element.querySelector('.challenge-groups');
   const list = element.querySelector('.challenge-list');
@@ -96,11 +98,26 @@ export function createChallengeBoard({ save, pins, onBack, trackerEnabled = () =
   }
   back.addEventListener('click', () => onBack());
 
+  const at = () => {
+    const active = buttons().indexOf(document.activeElement);
+    return active >= 0 ? active : focus;
+  };
   function move(step) {
     const all = buttons();
-    const active = all.indexOf(document.activeElement);
-    focus = ((active >= 0 ? active : focus) + step + all.length) % all.length;
-    all.forEach((row, index) => row.classList.toggle('focused', index === focus));
+    focusAt((at() + step + all.length) % all.length);
+  }
+  // LB / RB: the previous / next group, picked (its challenges listed), the cursor on it.
+  function nextGroup(dir) {
+    const rows = [...groupList.querySelectorAll('[data-group]')];
+    const here = rows.findIndex((row) => row.dataset.group === selected.id);
+    const row = rows[(Math.max(0, here) + dir + rows.length) % rows.length];
+    row?.click();
+    if (row) focusAt(buttons().indexOf(row));
+  }
+  function focusAt(index) {
+    const all = buttons();
+    focus = index;
+    all.forEach((row, i) => row.classList.toggle('focused', i === focus));
     all[focus].focus();
     all[focus].scrollIntoView?.({ block: 'nearest' });
   }
@@ -134,13 +151,10 @@ export function createChallengeBoard({ save, pins, onBack, trackerEnabled = () =
       element.classList.add('hidden');
     },
     render() {},
+    // Controller (ui/menuFocus.js padBook): move between groups and challenges, LB / RB the previous / next group, A pins.
     padNav(input) {
       if (!open) return;
-      if (input.consumePress('PadB')) return onBack();
-      const step = (input.consumePress('PadDown') || input.consumePress('PadRight') ? 1 : 0)
-        - (input.consumePress('PadUp') || input.consumePress('PadLeft') ? 1 : 0);
-      if (step) move(step);
-      if (input.consumePress('PadA')) (buttons().includes(document.activeElement) ? document.activeElement : buttons()[focus]).click();
+      padBook(input, { list: buttons, at, focusAt, back: onBack, tab: nextGroup, scrollHost: element });
     },
   };
 }

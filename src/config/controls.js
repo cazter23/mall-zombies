@@ -39,9 +39,53 @@ export const bindings = {
   menuRight: ['KeyD', 'ArrowRight', 'PadRight'],
   menuConfirm: ['KeyF', 'Enter', 'PadA'],
   menuBack: ['KeyQ', 'Backspace', 'PadB'],
-  confirm: ['PadA', 'PadStart'], // controller menus: start, resume, play again
-  settings: ['PadY'], // controller: open Settings from the pause screen
-  controlsScreen: ['PadX'], // controller: open the Controls screen from the pause screen
+  // The menus around a run (title, pause, results, Settings, Controls, the locker, the Survival Guide...: ui/, through
+  // core/menuNav.js). CONTROLLER ONLY on purpose: on a keyboard those screens are plain web pages (the browser's own focus,
+  // Tab, Enter and Esc), so a key bound here would press a button twice.
+  uiUp: ['PadUp'], // D-pad (the left stick moves too: core/menuNav.js)
+  uiDown: ['PadDown'],
+  uiLeft: ['PadLeft'],
+  uiRight: ['PadRight'],
+  uiConfirm: ['PadA'],
+  uiBack: ['PadB'],
+  uiTabPrev: ['PadLB'], // previous / next tab (Settings, Controls), section (Survival Guide), gun (locker), group (Challenges)
+  uiTabNext: ['PadRB'],
+  uiScrollUp: ['PadLT'], // hold to scroll a long page (the right stick scrolls too)
+  uiScrollDown: ['PadRT'],
+  uiOption: ['PadY'], // a screen's extra button: Settings on the title and pause screens, Diagram / List in Controls
+  uiOption2: ['PadX'], // a second one: Controls on the title and pause screens
+  uiStart: ['PadStart'], // Play / Continue on the title, Resume on the pause screen, closes Settings and Controls
+};
+
+// Menu navigation feel (core/menuNav.js), shared by every menu on a controller, in a run (order form, fitting room) or not.
+export const menuNav = {
+  stickOn: 0.6, // left stick deflection that counts as a push...
+  stickOff: 0.3, // ...and how far it must come back before the next push counts
+  repeatDelay: 0.4, // seconds a held D-pad direction or stick waits before it repeats...
+  repeatEvery: 0.11, // ...then one step per this many seconds
+  scrollPixelsPerSecond: 1100, // a long page (the receipt, the Survival Guide, the notices) at full right stick or a held trigger
+  sliderSteps: 20, // a Settings slider moves 1/20 of its range per step (or its own step, if bigger)
+};
+
+// The hint line under each menu (data-hint="<id>", filled by ui/glyphs.js for the device used last).
+// `pad`: [label key in buttonLabels, what it does]; an entry whose key has no label on the device is left out.
+// `keyboard`: the line shown with the keyboard and mouse; without one, the pad line (Xbox names) after "Controller:".
+export const menuHints = {
+  title: { pad: [['uiMove', 'move'], ['uiConfirm', 'select'], ['uiStart', 'play'], ['uiOption', 'settings'], ['uiOption2', 'controls']] },
+  runMode: { pad: [['uiMove', 'move'], ['uiConfirm', 'select'], ['uiBack', 'back']] },
+  pause: { pad: [['uiMove', 'move'], ['uiConfirm', 'select'], ['uiBack', 'resume'], ['uiOption', 'settings'], ['uiOption2', 'controls']] },
+  results: { pad: [['uiMove', 'move'], ['uiConfirm', 'select'], ['uiScroll', 'read the receipt']] },
+  help: { pad: [['uiConfirm', 'back'], ['uiBack', 'back'], ['uiScroll', 'scroll']] },
+  stats: { pad: [['uiMove', 'move'], ['uiConfirm', 'select'], ['uiBack', 'back'], ['uiScroll', 'scroll']] },
+  settings: { pad: [['uiMove', 'move and change'], ['uiConfirm', 'toggle'], ['uiTabs', 'tabs'], ['uiBack', 'back']] },
+  controls: { pad: [['uiTabs', 'switch device'], ['uiOption', 'diagram or list'], ['uiScroll', 'scroll'], ['uiBack', 'back']] },
+  notices: { pad: [['uiScroll', 'scroll'], ['uiBack', 'back']] },
+  guide: { keyboard: 'Arrow keys to turn pages · Escape to close',
+    pad: [['uiMove', 'turn pages'], ['uiTabs', 'sections'], ['uiScroll', 'scroll the page'], ['uiBack', 'close']] },
+  locker: { keyboard: 'Arrow keys to browse · Enter to equip · Escape to return',
+    pad: [['uiMove', 'browse'], ['uiTabs', 'guns'], ['uiConfirm', 'equip'], ['uiBack', 'return']] },
+  challenges: { keyboard: 'Arrow keys to browse · Enter to pin · Escape to return',
+    pad: [['uiMove', 'browse'], ['uiTabs', 'groups'], ['uiConfirm', 'pin'], ['uiBack', 'return']] },
 };
 
 // What the Controls screen shows. Each entry: keys + text (list view), short label + anchors (diagram view).
@@ -84,13 +128,25 @@ export const controlsHelp = {
     { keys: 'Back / View', text: 'Map: tap for the corner map, hold for the directory', short: 'Map (tap / hold)', anchors: ['back'] },
     { keys: 'Start', text: 'Pause', short: 'Pause', anchors: ['start'] },
   ],
+  // In every menu on a controller (shown under the Controller tab: ui/controlsMenu.js). The ui* and menu* actions above.
+  gamepadMenus: [
+    { keys: 'D-pad / left stick', text: 'Move (hold to keep going); left / right change a setting' },
+    { keys: 'A', text: 'Select' },
+    { keys: 'B', text: 'Back' },
+    { keys: 'LB / RB', text: 'Tabs, sections, guns' },
+    { keys: 'Right stick / LT RT', text: 'Scroll a long page' },
+    { keys: 'Start', text: 'Play, resume, close' },
+  ],
 };
 
-// Button names shown in on-screen prompts, per device.
+// Button names shown in on-screen prompts, per device (ui/glyphs.js picks the device used last).
+// ui*: the menu hint lines (menuHints above); the keyboard has none of them (its menus are plain web pages).
 export const buttonLabels = {
-  keyboard: { reload: 'R', melee: 'V', lethal: 'G', tactical: 'MMB', confirm: 'Click', interact: 'F', inspect: 'I', jump: 'Space', menuConfirm: 'F', menuBack: 'Q', menuMove: 'W/S', menuSwitch: 'A/D', weapon1: '1', weapon2: '2' },
-  xbox: { reload: 'X', melee: 'R3', lethal: 'RB', tactical: '▶', confirm: 'A', interact: 'X', inspect: '▼', jump: 'A', menuConfirm: 'A', menuBack: 'B', menuMove: 'D-pad', menuSwitch: '◀ ▶', switchWeapon: 'Y' },
-  playstation: { reload: '□', melee: 'R3', lethal: 'R1', tactical: '▶', confirm: '✕', interact: '□', inspect: '▼', jump: '✕', menuConfirm: '✕', menuBack: '○', menuMove: 'D-pad', menuSwitch: '◀ ▶', switchWeapon: '△' },
+  keyboard: { reload: 'R', melee: 'V', lethal: 'G', tactical: 'MMB', confirm: 'Click', interact: 'F', inspect: 'I', jump: 'Space', menuConfirm: 'F', menuBack: 'Q', menuMove: 'W/S', menuSwitch: 'A/D', weapon1: '1', weapon2: '2', crouch: 'C', prone: 'Ctrl' },
+  xbox: { reload: 'X', melee: 'R3', lethal: 'RB', tactical: '▶', confirm: 'A', interact: 'X', inspect: '▼', jump: 'A', menuConfirm: 'A', menuBack: 'B', menuMove: 'D-pad', menuSwitch: '◀ ▶', switchWeapon: 'Y', crouch: 'B', prone: 'LB',
+    uiMove: 'D-pad', uiConfirm: 'A', uiBack: 'B', uiTabs: 'LB/RB', uiScroll: 'Right stick', uiOption: 'Y', uiOption2: 'X', uiStart: 'Start' },
+  playstation: { reload: '□', melee: 'R3', lethal: 'R1', tactical: '▶', confirm: '✕', interact: '□', inspect: '▼', jump: '✕', menuConfirm: '✕', menuBack: '○', menuMove: 'D-pad', menuSwitch: '◀ ▶', switchWeapon: '△', crouch: '○', prone: 'L1',
+    uiMove: 'D-pad', uiConfirm: '✕', uiBack: '○', uiTabs: 'L1/R1', uiScroll: 'Right stick', uiOption: '△', uiOption2: '□', uiStart: 'Options' },
 };
 
 export const gamepad = {

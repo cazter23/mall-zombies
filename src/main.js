@@ -21,7 +21,7 @@ import { createIdleSaver } from './core/idleSaver.js';
 import { Input } from './core/input.js';
 import { createGamepad } from './core/gamepad.js';
 import { createHaptics } from './core/haptics.js';
-import { buttonLabels } from './config/controls.js';
+import { promptDevice as devicePrompted, buttonLabel as labelOf, setPromptDevice } from './ui/glyphs.js';
 import { buildTestRange } from './maps/testRange/testRange.js';
 import { createHud } from './ui/hud.js';
 import { createMinimap } from './ui/minimap.js';
@@ -178,7 +178,8 @@ const damageIndicators = createDamageIndicatorQueue({
   getCameraYaw: () => camera.rotation.y,
   getPlayerPosition: () => player.position,
 });
-const haptics = createHaptics({ gamepad, input, state: game, health, events: g.events });
+// (charge: a charge gun winding up hums on the pad, the Barcode Scanner's scan: weapons/weapon.js chargeProgress)
+const haptics = createHaptics({ gamepad, input, state: game, health, events: g.events, charge: () => (game.over ? 0 : gun.weapon.chargeProgress) });
 const saleTags = createSaleTagView(scene, g);
 
 // Last-zombie ("straggler") browser view: listens on the event bus so headless logic stays DOM/Three-free.
@@ -196,13 +197,13 @@ g.events.on('stragglersCleared', () => {
   syncStragglerHighlights([]);
 });
 
-// Which button set prompts show: the device used last ('keyboard', or the controller's type: 'xbox', 'playstation'...).
+// Which button set prompts show: the device used last ('keyboard', or the controller's type: 'xbox', 'playstation'...),
+// and a button's name on it ("R" vs "X" vs "□"): ui/glyphs.js.
 function promptDevice() {
-  return input.device === 'gamepad' ? gamepad.type : 'keyboard';
+  return devicePrompted(input, gamepad);
 }
-// Button name for prompts on whichever device was used last ("R" vs "X" vs "□").
 function buttonLabel(action) {
-  return buttonLabels[promptDevice()][action];
+  return labelOf(action, promptDevice());
 }
 
 const DEG_TO_RAD = Math.PI / 180;
@@ -497,6 +498,7 @@ function handleControllerMenus() {
 
 function update(dt) {
   gamepad.poll();
+  setPromptDevice(promptDevice()); // (on a change: every menu's hint line and <body data-input> follow the device used last)
   haptics.update();
   handleControllerMenus();
   g.update(dt);

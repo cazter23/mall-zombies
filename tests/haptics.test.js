@@ -128,16 +128,21 @@ test('driver exposes the polled pad and clears it on unplug, without changing ex
 test('real gun events carry weapon identity and drive one pulse per actual shot; death/reset stop the motor', () => {
   const t = headlessGame();
   const f = fixture();
+  let clock = 0;
   const feedback = createHaptics({ gamepad: f.gamepad, input: f.input, state: t.g.state, health: t.g.health,
-    events: t.g.events, config: f.config, page: f.page, windowTarget: f.windowTarget });
+    events: t.g.events, config: f.config, page: f.page, windowTarget: f.windowTarget, now: () => clock });
   t.tick();
   t.g.rounds.update = () => {};
   for (const def of Object.values(weapons)) {
     t.g.gun.give(def); t.tick(45);
-    const before = f.calls.filter(([kind]) => kind === 'dual-rumble').length;
-    // (A charge gun, the Barcode Scanner, fires when its scan completes: hold for the scan, then let go.)
+    clock += 1000; // (a rocket's blast, priority over shots, has long finished before the next gun)
+    // (A rocket bursting against the range is a moment of its own, haptics.blast: not counted as a shot.)
+    const shotPulses = () => f.calls.filter(([kind, effect]) => kind === 'dual-rumble' && effect.duration !== defaults.blast.duration);
+    const before = shotPulses().length;
+    // (A charge gun, the Barcode Scanner, fires when its scan completes: hold for the scan, then let go. It hums while it
+    // winds up only when given a charge reader, which this one isn't.)
     t.press('Mouse0', def.charge ? Math.ceil(def.charge.seconds * 60) + 1 : 1); t.tick(20);
-    const pulses = f.calls.filter(([kind]) => kind === 'dual-rumble');
+    const pulses = shotPulses();
     assert.equal(pulses.length - before, def.fireMode === 'burst' ? 3 : 1, def.id);
     assert.equal(pulses.at(-1)[1].duration, defaults.shots[def.id].duration);
   }
@@ -161,4 +166,66 @@ test('Controller vibration setting supports off, applies immediately and uses th
     t.events.emit('shot', { weaponId: 'stapleGun' });
     assert.equal(t.calls.length, count);
   } finally { defaults.strength = previous; t.haptics.dispose(); }
+});
+
+test('moments rumble: blasts, the air horn, bosses, jackpots and Doorbusters (not every Flash Sale, not glitter)', () => {
+  const t = fixture();
+  const fire = (event, payload, effect) => {
+    const count = t.calls.length;
+    t.events.emit(event, payload);
+    assert.equal(t.calls.length, count + 1, event);
+    assert.equal(t.calls.at(-1)[1].duration, effect.duration, event);
+    t.advance(1000);
+  };
+  fire('gunBlast', { weaponId: 'bottleRocket' }, defaults.blast);
+  fire('equipmentBurst', { id: 'sodaBomb' }, defaults.blast);
+  fire('airHornBlast', {}, defaults.airHorn);
+  fire('bossSpawn', {}, defaults.bossSpawn);
+  fire('bossDefeated', {}, defaults.bossDefeated);
+  fire('clawPrize', { outcome: 'new' }, defaults.jackpot);
+  fire('ticketsWon', { amount: 5 }, defaults.jackpot);
+  fire('mascotGold', {}, defaults.jackpot);
+  fire('flashSaleStart', { kind: 'doorbuster' }, defaults.doorbuster);
+  const count = t.calls.length;
+  t.events.emit('flashSaleStart', { kind: 'flashSale' });
+  t.events.emit('equipmentBurst', { id: 'glitterBomb' });
+  assert.equal(t.calls.length, count, 'a plain Flash Sale and a Glitter Bomb stay quiet');
+  for (const key of ['blast', 'airHorn', 'bossSpawn', 'bossDefeated', 'jackpot', 'doorbuster']) {
+    assert.ok(defaults[key].priority > defaults.shots.stapleGun.priority && defaults[key].priority < defaults.damage.priority, key);
+  }
+  t.haptics.dispose();
+});
+
+test('a charge gun winding up hums, growing as it fills, every everyMs; a shot plays over it; nothing when not charging', () => {
+  const calls = [];
+  const motor = { effects: ['dual-rumble'], playEffect: (type, effect) => { calls.push(effect); return Promise.resolve(); }, reset: () => Promise.resolve() };
+  const gamepad = { connected: true, pad: { index: 0, id: 'Xbox', connected: true, vibrationActuator: motor } };
+  const events = createEvents();
+  const page = new EventTarget(); page.hidden = false; page.hasFocus = () => true;
+  let time = 0;
+  let amount = 0;
+  const haptics = createHaptics({ gamepad, input: { device: 'gamepad' }, state: { running: true, over: false },
+    health: { invulnerable: false, isDead: false }, events, config: { ...defaults, strength: 1 }, page,
+    windowTarget: new EventTarget(), now: () => time, charge: () => amount });
+  const hum = defaults.charge;
+  haptics.update();
+  assert.equal(calls.length, 0, 'not charging: quiet');
+  amount = 0.1;
+  haptics.update();
+  const low = calls.at(-1);
+  haptics.update();
+  assert.equal(calls.length, 1, 'not again before everyMs');
+  time += hum.everyMs;
+  amount = 1;
+  haptics.update();
+  const high = calls.at(-1);
+  assert.equal(calls.length, 2);
+  assert.ok(high.strongMagnitude > low.strongMagnitude && high.weakMagnitude > low.weakMagnitude, 'it grows');
+  assert.ok(Math.abs(high.strongMagnitude - hum.strongMagnitude[1]) < 1e-9);
+  events.emit('shot', { weaponId: 'barcodeScanner' });
+  assert.equal(calls.at(-1).duration, defaults.shots.barcodeScanner.duration, 'the shot plays over the hum');
+  time += hum.everyMs;
+  haptics.update();
+  assert.equal(calls.at(-1).duration, defaults.shots.barcodeScanner.duration, 'and the hum does not cut the shot short');
+  haptics.dispose();
 });

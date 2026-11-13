@@ -7,6 +7,9 @@
 
 import { settingsTabs, settingPresets, menuFeel, displayPixelRatio } from '../config/settings.js';
 import { createModal } from './modal.js';
+import { menuNav, TICK } from './menuFocus.js';
+import { hintHtml } from './glyphs.js';
+import { menuNav as menuNavCfg } from '../config/controls.js';
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -26,7 +29,9 @@ export function createSettingsMenu(settings) {
   const resetButton = el('button', 'settings-reset', 'Reset this tab');
   const resetAllButton = el('button', 'settings-reset', 'Reset everything');
   const backButton = el('button', 'play', 'Back');
-  const hint = el('p', 'pad-hint settings-hint', 'Controller: D-pad to move and change · A to toggle · LB/RB tabs · B back');
+  const hint = el('p', 'pad-hint settings-hint');
+  hint.setAttribute('data-hint', 'settings'); // (ui/glyphs.js: the buttons of the device used last)
+  hint.innerHTML = hintHtml('settings');
   const resets = el('div', 'settings-resets');
   resets.append(resetButton, resetAllButton);
   footer.append(resets, backButton);
@@ -167,7 +172,7 @@ export function createSettingsMenu(settings) {
   let resetAllTimer = null;
   resetAllButton.addEventListener('click', () => {
     if (!resetAllTimer) {
-      resetAllButton.textContent = 'Sure? Click again';
+      resetAllButton.textContent = 'Sure? Press again';
       resetAllTimer = setTimeout(() => {
         resetAllButton.textContent = 'Reset everything';
         resetAllTimer = null;
@@ -201,21 +206,26 @@ export function createSettingsMenu(settings) {
     },
     close,
 
-    // Controller navigation. Called each tick while the menu is open.
+    // Controller navigation (core/menuNav.js, the ui* actions). Called each tick while the menu is open: up / down move
+    // (held: they repeat), left / right change the setting (a slider keeps sliding while held), A toggles or presses,
+    // LB / RB switch tabs, B or Start close. On the footer, left / right move between its buttons.
     padNav(input) {
+      const nav = menuNav.read(input, TICK);
       const tabIndex = settingsTabs.indexOf(tab);
-      if (input.consumePress('PadB') || input.consumePress('PadStart')) return close();
-      if (input.consumePress('PadRB')) showTab(settingsTabs[(tabIndex + 1) % settingsTabs.length]);
-      if (input.consumePress('PadLB')) showTab(settingsTabs[(tabIndex - 1 + settingsTabs.length) % settingsTabs.length]);
+      if (nav.back || nav.start) return close();
+      if (nav.tab) showTab(settingsTabs[(tabIndex + nav.tab + settingsTabs.length) % settingsTabs.length]);
       const nodes = navigation();
-      const step = (input.consumePress('PadDown') ? 1 : 0) - (input.consumePress('PadUp') ? 1 : 0);
-      if (step) {
-        focus = (focus + step + nodes.length) % nodes.length;
+      let dir = nav.x;
+      if (focus >= rows.length && dir) { // (the footer is a row of buttons: left / right walk along it)
+        focus = rows.length + (focus - rows.length + dir + footerButtons.length) % footerButtons.length;
+        dir = 0;
+      }
+      if (nav.y) {
+        focus = (focus + nav.y + nodes.length) % nodes.length;
         nodes[focus].scrollIntoView({ block: 'nearest' });
       }
       markFocus();
-      const dir = (input.consumePress('PadRight') ? 1 : 0) - (input.consumePress('PadLeft') ? 1 : 0);
-      const press = input.consumePress('PadA');
+      const press = nav.confirm;
       if (focus >= rows.length) {
         if (press) footerButtons[focus - rows.length].click();
         return;
@@ -225,7 +235,8 @@ export function createSettingsMenu(settings) {
         if (dir || press) rows[focus].step(dir || 1);
       } else if (def.type === 'toggle' && (press || dir)) settings.set(def.id, !settings.get(def.id));
       else if (def.type === 'slider' && dir) {
-        settings.set(def.id, settings.get(def.id) + dir * Math.max(def.step, (def.max - def.min) / 20));
+        const next = settings.get(def.id) + dir * Math.max(def.step, (def.max - def.min) / menuNavCfg.sliderSteps);
+        settings.set(def.id, Math.max(def.min, Math.min(def.max, next)));
       } else if (def.type === 'select' && dir) {
         const i = def.options.findIndex((o) => o.value === settings.get(def.id));
         settings.set(def.id, def.options[(i + dir + def.options.length) % def.options.length].value);

@@ -9,6 +9,8 @@ import { controlsHelp } from '../config/controls.js';
 import { debug, keyLabel } from '../config/debug.js';
 import { buildControlsDiagram } from './controlsDiagram.js';
 import { createModal } from './modal.js';
+import { menuNav, scrollPage, TICK } from './menuFocus.js';
+import { hintHtml, currentDevice } from './glyphs.js';
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -41,7 +43,10 @@ export function createControlsMenu() {
     const hint = `${keyLabel('Backquote')} shows the debug window listing every debug key`;
     card.append(el('p', 'controls-debug', `Debug: ${hint}`));
   }
-  card.append(footer, el('p', 'pad-hint settings-hint', 'Controller: LB/RB switch device · Y diagram or list · B back'));
+  const hint = el('p', 'pad-hint settings-hint');
+  hint.setAttribute('data-hint', 'controls'); // (ui/glyphs.js: the buttons of the device used last)
+  hint.innerHTML = hintHtml('controls');
+  card.append(footer, hint);
   root.append(card);
   document.body.append(root);
 
@@ -61,6 +66,7 @@ export function createControlsMenu() {
     const useList = mode === 'list' || (view.clientWidth > 0 && view.clientWidth < minimum);
     if (!useList) {
       view.append(buildControlsDiagram(tab, controlsHelp[tab]));
+      if (tab === 'gamepad') menuStrip();
       return;
     }
     if (mode === 'diagram') view.append(el('p', 'controls-auto-note', 'List view keeps the controls readable at this size.'));
@@ -71,6 +77,20 @@ export function createControlsMenu() {
       list.append(row);
     }
     view.append(list);
+    if (tab === 'gamepad') menuStrip();
+  }
+  // Under the Controller tab, both views: how every menu works on a pad (config/controls.js controlsHelp.gamepadMenus).
+  function menuStrip() {
+    const strip = el('div', 'controls-menus');
+    strip.append(el('h3', 'controls-menus-title', 'In menus'));
+    const list = el('ul', 'controls-list');
+    for (const { keys, text } of controlsHelp.gamepadMenus) {
+      const row = el('li');
+      row.append(el('kbd', null, keys), el('span', null, text));
+      list.append(row);
+    }
+    strip.append(list);
+    view.append(strip);
   }
   const showTab = (id) => { tab = id; render(); };
 
@@ -104,15 +124,21 @@ export function createControlsMenu() {
 
   return {
     get isOpen() { return !root.classList.contains('hidden'); },
-    open() { modal.open(); render(); },
+    open() {
+      tab = currentDevice() === 'keyboard' ? tab : 'gamepad'; // (opened from a controller: its own page first)
+      modal.open();
+      render();
+    },
     close,
-    // Controller: B / Start close, bumpers switch tab.
+    // Controller (core/menuNav.js, the ui* actions): B / Start close, LB / RB (or left / right) switch device, Y switches
+    // diagram / list, up / down page through it, the right stick or a held trigger scrolls it.
     padNav(input) {
-      if (input.consumePress('PadB') || input.consumePress('PadStart')) return close();
-      if (input.consumePress('PadY')) { mode = mode === 'diagram' ? 'list' : 'diagram'; render(); }
-      if (input.consumePress('PadRB') || input.consumePress('PadLB')) showTab(tab === 'keyboard' ? 'gamepad' : 'keyboard');
-      const step = (input.consumePress('PadDown') ? 1 : 0) - (input.consumePress('PadUp') ? 1 : 0);
-      if (step) view.scrollBy({ top: step * view.clientHeight * .6, behavior: 'instant' });
+      const nav = menuNav.read(input, TICK);
+      if (nav.back || nav.start || nav.confirm) return close();
+      if (nav.option) { mode = mode === 'diagram' ? 'list' : 'diagram'; render(); }
+      if (nav.tab || nav.x) showTab(tab === 'keyboard' ? 'gamepad' : 'keyboard');
+      if (nav.y) scrollPage(view, nav.y * view.clientHeight * .6);
+      scrollPage(view, nav.scroll);
     },
   };
 }

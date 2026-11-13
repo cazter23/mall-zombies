@@ -15,6 +15,7 @@ import { createChallengePins } from '../src/game/challengePins.js';
 import { challengeCatalog, catalogEntry, skinPinId } from '../src/game/challengeCatalog.js';
 import { createChallengeBoard } from '../src/ui/challengeBoard.js';
 import { createChallengeTracker, connectChallengeTracker } from '../src/ui/challengeTracker.js';
+import { padInput } from './helpers/padInput.js';
 
 const STREAK = skins.rivetRifle[2].challenge.count; // (phase 8 tunes it)
 menuDom();
@@ -112,7 +113,7 @@ function board({ trackerOn = false } = {}) {
   return { ...dom, save, pins, screens, book: challengesBook, setTracker: on => { tracker = on; },
     group: id => challengesBook.element.querySelector(`[data-group="${id}"]`),
     row: id => challengesBook.element.querySelector(`[data-challenge="${id}"]`),
-    pad: code => screens.padNav({ consumePress: key => key === code }) };
+    pad: code => screens.padNav(padInput(code)) };
 }
 
 test('the board opens from the title, lists a gun\'s three challenges with progress, pins and unpins, and refuses a fourth pin', () => {

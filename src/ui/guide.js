@@ -10,6 +10,8 @@ import { lostFoundProgress } from '../game/lostFound.js';
 import { buildLostPropertyModel } from '../game/features/lostProperty.js';
 import { buildIncentiveModel } from '../fx/powerUpView.js';
 import { incentiveIconSvg } from './incentiveHud.js';
+import { padBook } from './menuFocus.js';
+import { hintHtml } from './glyphs.js';
 
 /**
  * The turning model beside a page: the real zombie (its own model and walk animation), walking on the spot.
@@ -132,7 +134,7 @@ export function createGuideScreen({ save, onBack, onTurn = null, createPreview =
         </div>
       </div>
       <div class="menu-row"><button class="menu-btn guide-back" type="button">${cfg.back}</button></div>
-      <p class="pad-hint">${cfg.hint}</p>
+      <p class="pad-hint" data-hint="guide">${hintHtml('guide')}</p>
     </div>`;
   const index = element.querySelector('.guide-index');
   const sheet = element.querySelector('.guide-sheet');
@@ -355,10 +357,25 @@ export function createGuideScreen({ save, onBack, onTurn = null, createPreview =
     }
   }
   back.addEventListener('click', () => onBack());
+  const at = () => {
+    const active = buttons().indexOf(document.activeElement);
+    return active >= 0 ? active : focus;
+  };
   function move(step) {
     const list = buttons();
-    const active = list.indexOf(document.activeElement);
-    focus = ((active >= 0 ? active : focus) + step + list.length) % list.length;
+    focusAt((at() + step + list.length) % list.length);
+  }
+  // LB / RB: the first entry of the next / previous section of the index.
+  function jumpSection(dir) {
+    const sections = [...element.querySelectorAll('.guide-section')];
+    const here = sections.findIndex((section) => section.contains(buttons()[at()]));
+    const next = sections[(Math.max(0, here) + dir + sections.length) % sections.length];
+    const first = next?.querySelector('[data-entry]');
+    if (first) focusAt(buttons().indexOf(first));
+  }
+  function focusAt(index) {
+    const list = buttons();
+    focus = index;
     list.forEach((row, at) => row.classList.toggle('focused', at === focus));
     list[focus].focus();
     list[focus].scrollIntoView?.({ block: 'nearest' });
@@ -396,13 +413,10 @@ export function createGuideScreen({ save, onBack, onTurn = null, createPreview =
       shown = null;
     },
     render(dt) { if (open) preview.render(dt); },
+    // Controller (ui/menuFocus.js padBook): move between entries, LB / RB jump a section, the right stick scrolls the page.
     padNav(input) {
       if (!open) return;
-      if (input.consumePress('PadB')) return onBack();
-      const step = (input.consumePress('PadDown') || input.consumePress('PadRight') ? 1 : 0)
-        - (input.consumePress('PadUp') || input.consumePress('PadLeft') ? 1 : 0);
-      if (step) move(step);
-      if (input.consumePress('PadA')) (buttons().includes(document.activeElement) ? document.activeElement : buttons()[focus]).click();
+      padBook(input, { list: buttons, at, focusAt, back: onBack, tab: jumpSection, scrollHost: element });
     },
   };
 }

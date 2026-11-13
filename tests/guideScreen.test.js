@@ -9,6 +9,7 @@ import { lostFound, lostItem } from '../src/config/lostFound.js';
 
 const PAGES = guideEntries.length + incentiveEntries.length + lostFound.items.length + 1; // zombies/bosses, incentives, lost property, summary
 import { createGuideScreen, createGuidePreview } from '../src/ui/guide.js';
+import { padInput } from './helpers/padInput.js';
 
 menuDom();
 const { createScreens } = await import('../src/ui/screens.js');
@@ -36,7 +37,7 @@ function fixture(prepare = () => {}) {
     stamp: () => guide.element.querySelector('.guide-stamp').textContent,
     row: (id) => guide.element.querySelector(`[data-entry="${id}"]`),
     page: () => guide.element.querySelector('.guide-page').textContent,
-    pad: (code) => screens.padNav({ consumePress: (key) => key === code }),
+    pad: (code) => screens.padNav(padInput(code)),
   };
 }
 

@@ -6,7 +6,8 @@
 // while state.menu is set) and the zombies keep coming. Cancel, death or Play again close it.
 //
 // DOM-free. ui/orderForm.js draws `view`; input arrives as ACTIONS (config/controls.js menuUp/menuDown/menuLeft/menuRight/
-// menuConfirm/menuBack) plus the left stick, so keyboard, mouse wheel and controller all work.
+// menuConfirm/menuBack) plus the left stick, read through core/menuNav.js (the one menu model: a held direction repeats),
+// so keyboard, mouse wheel and controller all work.
 //
 //   const form = createOrderForm({ input, state, wallet, events, sound, price, options, defaults, onOrder })
 //     price()      what this order costs now (g.pricing)
@@ -18,15 +19,14 @@
 
 import { workshopStuffings, workshopHearts, stuffingBlurb, orderForm as cfg } from '../../config/workshop.js';
 import { gunStyle } from '../../config/gunStyle.js';
-
-const STICK_ON = .6, STICK_OFF = .3; // stick deflection that counts as a press, and that re-arms it
+import { createMenuNav, GAME_MENU_ACTIONS } from '../../core/menuNav.js';
 
 export function createOrderForm({ input, state, wallet, events, sound, price, options, defaults, onOrder, label }) {
   let open = false;
   let column = 0; // 0 = Stuffing, 1 = Heart
   let stuffing = null, heart = null;
   let denied = 0;
-  let stick = { x: 0, y: 0 }; // last stick direction pressed (-1, 0, 1), so holding it moves once
+  const nav = createMenuNav({ actions: GAME_MENU_ACTIONS }); // (D-pad, keys, wheel and left stick; held, they repeat)
 
   function setOpen(value) {
     open = value;
@@ -44,14 +44,6 @@ export function createOrderForm({ input, state, wallet, events, sound, price, op
       const i = hearts.indexOf(heart);
       heart = hearts[(Math.max(0, i) + step + hearts.length) % hearts.length];
     }
-  }
-
-  // Keys and the mouse wheel give a press per step; the stick gives one per push.
-  function stickStep(axis, value) {
-    const dir = value > STICK_ON ? 1 : value < -STICK_ON ? -1 : Math.abs(value) < STICK_OFF ? 0 : stick[axis];
-    const fresh = dir !== 0 && dir !== stick[axis];
-    stick[axis] = dir;
-    return fresh ? dir : 0;
   }
 
   function confirm() {
@@ -77,7 +69,7 @@ export function createOrderForm({ input, state, wallet, events, sound, price, op
       heart = fill.heart;
       column = 0;
       denied = 0;
-      stick = { x: Math.sign(Math.round(input.padMove.x)), y: Math.sign(Math.round(input.padMove.y)) }; // (a stick already held doesn't count)
+      nav.prime(input); // (a stick or key already held doesn't count)
       setOpen(true);
     },
 
@@ -89,16 +81,14 @@ export function createOrderForm({ input, state, wallet, events, sound, price, op
     update(dt) {
       if (!open) return;
       denied = Math.max(0, denied - dt);
-      if (input.consumeAction('menuBack')) {
+      const step = nav.read(input, dt);
+      if (step.back) {
         setOpen(false);
         return;
       }
-      const sideways = (input.consumeAction('menuRight') ? 1 : 0) - (input.consumeAction('menuLeft') ? 1 : 0) + stickStep('x', input.padMove.x);
-      if (sideways) column = sideways > 0 ? 1 : 0;
-      // (padMove.y is forward-positive: pushing up moves up the list)
-      const down = (input.consumeAction('menuDown') ? 1 : 0) - (input.consumeAction('menuUp') ? 1 : 0) - stickStep('y', input.padMove.y);
-      if (down) move(column, down);
-      if (input.consumeAction('menuConfirm') && stuffing && heart) confirm();
+      if (step.x) column = step.x > 0 ? 1 : 0;
+      if (step.y) move(column, step.y); // (+1 = down the list)
+      if (step.confirm && stuffing && heart) confirm();
     },
 
     /** What ui/orderForm.js draws. Null while closed. */

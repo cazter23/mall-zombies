@@ -1,14 +1,17 @@
 // Browser peripheral: listens to gameplay events, never changes gameplay.
 // Unsupported/blocked actuators are silent no-ops. No delayed rumble queue.
+// Shots, getting hurt, pickups, blasts, bosses, jackpots and Doorbusters come from the event bus (config/haptics.js);
+// `charge` (optional, () => 0..1) is read each tick: a charge gun winding up hums, growing as it fills.
 import { haptics as defaults } from '../config/haptics.js';
 
-export function createHaptics({ gamepad, input, state, health, events, config = defaults,
+export function createHaptics({ gamepad, input, state, health, events, config = defaults, charge = null,
   now = () => performance.now(), page = globalThis.document, windowTarget = globalThis.window }) {
   let actuator = null;
   let padKey = null;
   let priority = 0;
   let until = 0;
   let focused = page?.hasFocus?.() ?? true;
+  let nextCharge = 0; // when the charge hum may pulse again
 
   function safely(call) {
     try { Promise.resolve(call()).catch(() => {}); } catch { /* hardware may disappear between polls */ }
@@ -59,6 +62,15 @@ export function createHaptics({ gamepad, input, state, health, events, config = 
     }),
     events.on('playerFall', () => { if (!health.invulnerable && !health.isDead) pulse(config.damage); }),
     events.on('powerUpCollect', () => pulse(config.pickup)),
+    events.on('gunBlast', () => pulse(config.blast)),
+    events.on('equipmentBurst', ({ id }) => { if (id !== 'glitterBomb') pulse(config.blast); }), // (glitter does no damage: no thump)
+    events.on('airHornBlast', () => pulse(config.airHorn)),
+    events.on('bossSpawn', () => pulse(config.bossSpawn)),
+    events.on('bossDefeated', () => pulse(config.bossDefeated)),
+    events.on('clawPrize', () => pulse(config.jackpot)),
+    events.on('ticketsWon', () => pulse(config.jackpot)),
+    events.on('mascotGold', () => pulse(config.jackpot)),
+    events.on('flashSaleStart', ({ kind }) => { if (kind === 'doorbuster') pulse(config.doorbuster); }),
     events.on('playerDeath', stop),
     events.on('runReset', stop),
   ];
@@ -74,7 +86,17 @@ export function createHaptics({ gamepad, input, state, health, events, config = 
     stop,
     update() {
       const pad = gamepad.pad;
-      if (!eligible() || (padKey !== null && `${pad?.index}:${pad?.id}` !== padKey)) stop();
+      if (!eligible() || (padKey !== null && `${pad?.index}:${pad?.id}` !== padKey)) {
+        stop();
+        return;
+      }
+      const amount = charge?.() ?? 0;
+      const hum = config.charge;
+      if (hum && amount > 0 && now() >= nextCharge) {
+        nextCharge = now() + hum.everyMs;
+        const mix = ([from, to]) => from + (to - from) * Math.min(1, amount);
+        pulse({ duration: hum.duration, priority: hum.priority, strongMagnitude: mix(hum.strongMagnitude), weakMagnitude: mix(hum.weakMagnitude) });
+      }
     },
     setStrength(value) {
       config.strength = Math.max(0, Math.min(1, value));
