@@ -4,6 +4,8 @@ import * as THREE from 'three';
 import { headlessGame, snapshot, dt } from './helpers/headlessGame.js';
 import { kiosk } from '../src/config/kiosk.js';
 import { economy } from '../src/config/economy.js';
+import { createEvents } from '../src/game/events.js';
+import { buildKiosk } from '../src/game/features/kiosk.js';
 import { bossVouchers } from '../src/config/bosses.js';
 import { hasStatNumber } from '../src/config/effectWords.js';
 import { overlapsSolid } from '../src/world/collision.js';
@@ -352,20 +354,31 @@ test('Kevin opens first in the Hallway at round 2, moves from round 3 with the P
   const lines = [], moves = [];
   g.events.on('kioskStock', ({ siteId, pa }) => lines.push([siteId, pa.text]));
   g.events.on('kioskMoved', (e) => moves.push(e));
+  const fillPa = (text, values) => text.replace(/\{(\w+)\}/g, (_, key) => values[key] ?? '');
   openAll(t, g);
   g.rounds.jumpTo(2);
   t.tick();
   assert.equal(kevin.site.id, 'hallway', 'no move at the opening round, even with the whole mall open');
   assert.deepEqual(moves, []);
-  assert.deepEqual(lines, [['hallway', "Kevin's cart is open in the Main Hallway. Today on Kevin's cart: Soda Bomb, Bubble Wrap "
-    + "and Stadium Air Horn. Kevin's Pick is Soda Bomb."]]);
+  const round2Expected = kiosk.pa.opened.flatMap((open) =>
+    kiosk.pa.stock.map((stock) => `${fillPa(open, { where: 'the Main Hallway' })} ${fillPa(stock, {
+      stock: 'Soda Bomb, Bubble Wrap and Stadium Air Horn',
+      pick: 'Soda Bomb',
+    })}`),
+  );
+  assert.equal(lines.length, 1);
+  assert.equal(lines[0][0], 'hallway');
+  assert.ok(round2Expected.includes(lines[0][1]), `round 2 PA came from opened + stock pools: ${lines[0][1]}`);
   g.rounds.jumpTo(3);
   t.tick();
   assert.notEqual(kevin.site.id, 'hallway');
   assert.deepEqual(moves, [{ siteId: kevin.site.id, area: kevin.site.where, moved: true }]);
-  assert.deepEqual(lines[1], [kevin.site.id,
-    `Kevin's cart is now in ${kevin.site.where}. He's asked us to say it's a limited time only. `
-    + "Today on Kevin's cart: Sparkler Cake, Bubble Wrap and Glitter Bomb. Kevin's Pick is Sparkler Cake."]);
+  const round3Expected = kiosk.pa.stock.map((stock) => `${fillPa(kiosk.pa.moved[0], { where: kevin.site.where })} ${fillPa(stock, {
+    stock: 'Sparkler Cake, Bubble Wrap and Glitter Bomb',
+    pick: 'Sparkler Cake',
+  })}`);
+  assert.equal(lines[1][0], kevin.site.id);
+  assert.ok(round3Expected.includes(lines[1][1]), `round 3 PA came from moved[0] + stock pool: ${lines[1][1]}`);
   assert.ok(!hasStatNumber(lines[1][1]));
   t.tick(30);
   assert.equal(lines.length, 2, 'one PA line a round');
@@ -620,5 +633,141 @@ test('Kevin pitches: respects stock and Pick preference, obeys chance 0 and 1, i
     kiosk.hawk.pitchChance = savedChance;
     kiosk.hawk.pitches = savedPitches;
     g.map.dispose();
+  }
+});
+
+test('Kevin PA pools (opened, stock): invariants, injected lineRandom picks every line, and Math.random untouched', (t) => {
+  assert.ok(kiosk.pa.opened.length >= 8);
+  assert.equal(new Set(kiosk.pa.opened).size, kiosk.pa.opened.length);
+  assert.equal(kiosk.pa.opened[0], "Kevin's cart is open in {where}.");
+  for (const line of kiosk.pa.opened) {
+    assert.ok(line.includes('open in {where}'), `opened line keeps open in {where}: ${line}`);
+    assert.ok(!line.includes('!'), `opened PA line has exclamation mark: ${line}`);
+    assert.ok(!hasStatNumber(line), `opened PA line has stat number: ${line}`);
+  }
+
+  assert.ok(kiosk.pa.stock.length >= 8);
+  assert.equal(new Set(kiosk.pa.stock).size, kiosk.pa.stock.length);
+  assert.equal(kiosk.pa.stock[0], "Today on Kevin's cart: {stock}. Kevin's Pick is {pick}.");
+  for (const line of kiosk.pa.stock) {
+    assert.ok(line.includes('{stock}') && line.includes('{pick}'), `stock line keeps placeholders: ${line}`);
+    assert.ok(!line.includes('!'), `stock PA line has exclamation mark: ${line}`);
+    assert.ok(!hasStatNumber(line), `stock PA line has stat number: ${line}`);
+  }
+
+  // opened + stock share ONE PA banner: with the longest real values filled in, stay under the moved + stock worst case
+  // that was already in the game (moved lines are longer than opened ones).
+  const fillLong = (text) => text.replace('{where}', 'the Grand Atrium').replace('{stock}', 'Sparkler Cake, Bubble Wrap and Stadium Air Horn').replace('{pick}', 'Stadium Air Horn');
+  const longest = (list) => Math.max(...list.map((line) => fillLong(line).length));
+  assert.ok(longest(kiosk.pa.opened) + 1 + longest(kiosk.pa.stock) <= longest(kiosk.pa.moved) + 1 + longest(kiosk.pa.stock), 'opened + stock never longer than moved + stock');
+  assert.ok(longest(kiosk.pa.stock) <= 115, 'stock lines stay near the original length');
+  const base = headlessGame();
+  t.after(() => base.g.map.dispose());
+  openAll(base, base.g);
+  const feature = base.g.map.features.find((f) => f.kind === 'kiosk');
+  const fillPa = (text, values) => text.replace(/\{(\w+)\}/g, (_, key) => values[key] ?? '');
+
+  const announceFor = (roll, useDefaultRandom = false) => {
+    const events = createEvents();
+    const emitted = [];
+    events.on('kioskStock', (e) => emitted.push(e));
+    const rounds = { round: 2 };
+    const instance = buildKiosk(feature, {
+      map: base.g.map,
+      rounds,
+      zombies: { zombies: [] },
+      pricing: base.g.pricing,
+      interactions: { add() {}, prompt: null },
+      equipment: base.g.equipment,
+      health: base.g.health,
+      events,
+      state: { over: false },
+      player: base.g.player,
+      ...(useDefaultRandom ? {} : { lineRandom: () => roll }),
+    });
+    instance.update(dt);
+    const first = emitted[0].pa.text;
+    rounds.round = 3;
+    events.emit('roundStart', { round: 3 });
+    instance.update(dt);
+    const moved = emitted[1].pa.text;
+    return { first, moved, siteWhere: instance.site.where };
+  };
+
+  const count = Math.max(kiosk.pa.opened.length, kiosk.pa.stock.length);
+  const seenOpened = new Set();
+  const seenStock = new Set();
+  for (let i = 0; i < count; i++) {
+    const openIdx = Math.min(i, kiosk.pa.opened.length - 1);
+    const stockIdx = Math.min(i, kiosk.pa.stock.length - 1);
+    const { first, moved, siteWhere } = announceFor(i / count + 1e-6);
+    const expectedOpen = fillPa(kiosk.pa.opened[openIdx], { where: 'the Main Hallway' });
+    const expectedR2Stock = fillPa(kiosk.pa.stock[stockIdx], {
+      stock: 'Soda Bomb, Bubble Wrap and Stadium Air Horn',
+      pick: 'Soda Bomb',
+    });
+    assert.equal(first, `${expectedOpen} ${expectedR2Stock}`);
+    seenOpened.add(kiosk.pa.opened[openIdx]);
+    seenStock.add(kiosk.pa.stock[stockIdx]);
+
+    const expectedMoved = fillPa(kiosk.pa.moved[0], { where: siteWhere });
+    const expectedR3Stock = fillPa(kiosk.pa.stock[stockIdx], {
+      stock: 'Sparkler Cake, Bubble Wrap and Glitter Bomb',
+      pick: 'Sparkler Cake',
+    });
+    assert.equal(moved, `${expectedMoved} ${expectedR3Stock}`);
+  }
+  assert.equal(seenOpened.size, kiosk.pa.opened.length);
+  assert.equal(seenStock.size, kiosk.pa.stock.length);
+
+  // Edge rolls: 0 picks first entry, 0.999 picks last entry.
+  assert.equal(
+    announceFor(0).first,
+    `${fillPa(kiosk.pa.opened[0], { where: 'the Main Hallway' })} ${fillPa(kiosk.pa.stock[0], {
+      stock: 'Soda Bomb, Bubble Wrap and Stadium Air Horn',
+      pick: 'Soda Bomb',
+    })}`,
+  );
+  assert.equal(
+    announceFor(0.999).first,
+    `${fillPa(kiosk.pa.opened.at(-1), { where: 'the Main Hallway' })} ${fillPa(kiosk.pa.stock.at(-1), {
+      stock: 'Soda Bomb, Bubble Wrap and Stadium Air Horn',
+      pick: 'Soda Bomb',
+    })}`,
+  );
+
+  // Default cosmetic random never consumes Math.random during PA announcements when crypto is available.
+  if (globalThis.crypto?.getRandomValues) {
+    const events = createEvents();
+    const emitted = [];
+    events.on('kioskStock', (e) => emitted.push(e));
+    const rounds = { round: 2 };
+    const instance = buildKiosk(feature, {
+      map: base.g.map,
+      rounds,
+      zombies: { zombies: [] },
+      pricing: base.g.pricing,
+      interactions: { add() {}, prompt: null },
+      equipment: base.g.equipment,
+      health: base.g.health,
+      events,
+      state: { over: false },
+      player: base.g.player,
+    });
+    const savedRandom = Math.random;
+    const blockRandom = () => { throw new Error('Math.random should not be called by kiosk PA'); };
+    try {
+      Math.random = blockRandom;
+      instance.update(dt);
+      assert.ok(emitted[0].pa.text.includes('the Main Hallway'));
+      Math.random = savedRandom;
+      rounds.round = 3;
+      events.emit('roundStart', { round: 3 });
+      Math.random = blockRandom;
+      instance.update(dt);
+      assert.ok(emitted[1].pa.text.includes(instance.site.where));
+    } finally {
+      Math.random = savedRandom;
+    }
   }
 });

@@ -1,5 +1,37 @@
 # Sunset Galleria: build history ("Current state")
 
+## 13 November 2026 - Review of PA pools round two and the Survival Guide audit
+
+Merged through `claude/hydrogen-review-2`. The encore detection (met before this fight), the boss intro moving into the announcer table
+(only the Survival Guide also listens to bossSpawn, and its first sighting carries no PA line, so nothing is reordered) and every guide
+finding (checked: Skylar relocates on a timer or an unreachable spot; the finale is booked for the validation round + roundOffset) held up.
+Fixed in review:
+- **Kevin's opening PA:** `opened` and `stock` are joined in ONE banner; the new pools made it up to 233 characters (the original 147).
+  Both pools rewritten shorter (worst now 181, under the existing moved+stock 220). `opened` plays once a run, so "once again open" went.
+- **Murray's encore:** he runs, he doesn't charge; one 96-character line trimmed.
+- **Guide wording:** Captain Coupon's after-pop clause reads "then he goes back for it instead of running" (the twist explains the rest);
+  Stockroom Delivery's summary and hint lost the internals ("shell-loaded", Return to Sender's half) for plain words.
+
+## 13 November 2026 - PA pools round two (`claude/hydrogen-pa-pools-2`)
+
+Converted three more high-frequency single-line PA moments into deadpan mall-PA pools using `pickPaLine` and cosmetic `paRandom` from `src/game/announcer.js` (never `Math.random` or gameplay randomness), preserving original lines at index `0`:
+- **Kiosk Kevin's PA (`src/config/kiosk.js`, `src/game/features/kiosk.js`):** expanded `pa.opened` (1 → 8 lines, each preserving `open in {where}`) and `pa.stock` (1 → 8 lines, each preserving `{stock}` and `{pick}`). `buildKiosk` now takes `lineRandom = paRandom` and picks both with `pickPaLine`, while `pa.moved` keeps its deterministic round rotation.
+- **Boss encores (`src/config/bosses.js`, `src/game/bossDirector.js`, `src/game/announcer.js`, `src/game/createGame.js`, `src/game/events.js`):** added 4-line `encoreBanner` pools acknowledging a boss's return to the four encore-capable bosses (`influencer`, `guard`, `manager`, `janitor`; `lastCustomer` keeps `encore: false` with no encore banner). `bossDirector.js` checks `met.has(id)` before recording `met.add(id)` and emits `encore` on `'bossSpawn'`, and `announcer.bossesAndIncentives()` handles `'bossSpawn'` so encores pick from `encoreBanner` via `random` while first fights keep `introBanner` and `introSound` unchanged.
+- **Platinum warranty claim PA (`src/config/upgrades.js`, `src/game/warranty.js`):** chosen as the third once-a-round PA moment because Platinum claims fire automatically once per round a Platinum weapon empties and already route through `announcer.js` (`'warrantyClaim'`), keeping high repeat visibility in late-round combat. Expanded `upgrades.claimPa` from `{ kicker, text }` into `{ kicker, lines }` (8 Customer Service lines keeping `Warranty claim approved` and `{gun}`), picked via `pickPaLine(upgrades.claimPa.lines, lineRandom)` with `lineRandom = paRandom`.
+- **Tests & Docs:** updated `tests/kiosk.test.js`, extended `tests/announcer.test.js` and `tests/bossEncores.test.js` (pool invariants, injected-random coverage, first-fight vs encore banners, reset behavior, and default `paRandom` never calling `Math.random` while leaving all existing tests passing), and updated `docs/folder-structure.md` and `docs/tests.md`.
+## 13 November 2026 - Survival Guide accuracy audit (`claude/hydrogen-guide-audit`)
+
+Audited every factual claim in the Staff Survival Guide (`src/config/guide.js` and the incentive summaries sourced from `src/config/powerUps.js`) against `src/config/zombies.js`, `bosses.js`, `powerUps.js`, `weapons.js`, `closingTime.js`, `src/zombies/` (`zombie.js`, `observation.js`, `bosses/*.js`), `src/weapons/` (`weapon.js`, `playerGun.js`, `gunStats.js`, `melee.js`, `returnToSender.js`), and `src/game/` (`incentiveEffects.js`, `closingTime.js`). Confirmed all 14 enemy/boss pages (including `lastCustomer`) and all 11 incentive pages are already present.
+
+Fixed only the inaccurate (`FALSE` / `PARTLY`) claims:
+- **Shopper `tip` (`src/config/guide.js`):** no longer claims headshots deal more than body shots "with every gun" (`bottleRocket` and `balloonLauncher` have `headshotMultiplier: 1` and blast `part: 'body'`, `leafBlower` `fireCone` passes `'body'`, and `returnToSender` uses fixed `INSTANT_KILL_DAMAGE` / `bigFraction`), and allows `3×` on `stargazer` (`twice as much or more`).
+- **Captain Coupon `notes[0]` (`src/config/guide.js` `mascotPage`):** added optional `afterPop` so Captain Coupon no longer shares the generic "then it RUNS at `5.6` m/s" claim; after shaking he goes for his helmet at `2.4` m/s (`mascotSeek`) and only runs at `exposedSpeed` (`5.6` m/s) if he gives up or loses his helmet a second time.
+- **Skylar Sparkle `notes[0]` (`src/config/guide.js`):** no longer claims she "moves when I close in"; `influencer.js` only picks a new spot when `spot` is missing/unreachable or her `${influencer.filming.relocateSeconds}` s timer expires.
+- **The Last Customer `notes[0]` (`src/config/guide.js`):** no longer claims she arrives "once the closing checklist is done"; she is booked in Customer Parking for the round after the duties are done and parking is validated (`closingValidated` -> `round + closingTime.finale.roundOffset`).
+- **Stockroom Delivery (`src/config/powerUps.js`):** `summary` (displayed on the guide page) and `hint` no longer claim it "Refills half of every equipped firearm’s magazine reserve"; `gun.restock(magazineFraction)` refills every equipped gun's full `refillReserve` (half on `returnToSender` via `refillFraction: 0.5`) and tops only the held gun's magazine to at least `50%` unless reloading or shell-loaded.
+- **Store-Wide Clearance `summary` (`src/config/powerUps.js`):** added `there` so boss damage is scoped accurately to bosses in that area of the floor (`inScope`).
+- **Tests & Docs (`tests/guide.test.js`, `docs/tests.md`):** pinned assertions covering these mechanics without altering any existing checks.
+
 ## 12 November 2026 - Review of the four Hydrogen text branches (text pools, PA pools, Kevin's pitches, voice guide)
 
 Merged through `claude/hydrogen-review`. The lines, voices and structure held up; fixed in review:

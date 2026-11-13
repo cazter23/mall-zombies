@@ -24,11 +24,12 @@
 //   (zone/position/normal: the first site's, where every run starts)
 // =============================================================================
 import { kiosk, productOf, stockFor, pickFor } from '../../config/kiosk.js';
+import { paRandom, pickPaLine } from '../announcer.js';
 
 const nameOf = (id) => productOf(id)?.name ?? kiosk.bubbleWrap.name;
 const fill = (text, values) => text.replace(/\{(\w+)\}/g, (_, key) => values[key] ?? '');
 
-export function buildKiosk(feature, { map, rounds, zombies, pricing, interactions, equipment, health, events, state, player }) {
+export function buildKiosk(feature, { map, rounds, zombies, pricing, interactions, equipment, health, events, state, player, lineRandom = paRandom }) {
   const sites = feature.sites;
   let site = sites[0];
   let pending = null; // a site picked at 'roundStart' during a purchase: he goes there once it's let go
@@ -216,18 +217,19 @@ export function buildKiosk(feature, { map, rounds, zombies, pricing, interaction
       hawk(dt);
       if (!selling || state.over || (lastRound === rounds.round && lastSite === site)) return;
       const moved = kiosk.pa.moved[Math.max(0, rounds.round - kiosk.openingRound - 1) % kiosk.pa.moved.length];
-      const text = lastSite === null ? kiosk.pa.opened : lastSite !== site ? moved : '';
+      const text = lastSite === null ? pickPaLine(kiosk.pa.opened, lineRandom) : lastSite !== site ? moved : '';
       lastRound = rounds.round;
       lastSite = site;
       const names = products.map(nameOf);
       const list = `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+      const stockLine = pickPaLine(kiosk.pa.stock, lineRandom);
       events.emit('kioskStock', {
         siteId: site.id,
         stock: products,
         pick: selected,
         pa: {
           kicker: kiosk.pa.kicker,
-          text: `${text ? `${fill(text, { where: site.where })} ` : ''}${fill(kiosk.pa.stock, { stock: list, pick: nameOf(selected) })}`,
+          text: `${text ? `${fill(text, { where: site.where })} ` : ''}${fill(stockLine, { stock: list, pick: nameOf(selected) })}`,
           priority: 1,
         },
       });

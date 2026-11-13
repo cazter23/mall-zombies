@@ -5,8 +5,14 @@ import assert from 'node:assert/strict';
 import { headlessGame } from './helpers/headlessGame.js';
 import { createAnnouncer, pickPaLine } from '../src/game/announcer.js';
 import { createEvents } from '../src/game/events.js';
+import { createWarranty } from '../src/game/warranty.js';
 import { economy } from '../src/config/economy.js';
+import { bossTiming, bossTypes } from '../src/config/bosses.js';
+import { upgrades } from '../src/config/upgrades.js';
+import { weapons } from '../src/config/weapons.js';
+import { hasStatNumber } from '../src/config/effectWords.js';
 import { save as saveConfig } from '../src/config/save.js';
+import { withTier } from '../src/weapons/upgrades.js';
 
 const pa = (text) => ({ kicker: 'Attention shoppers', text });
 const announcements = (t, from) => t.hud.calls.slice(from).filter(([name]) => name === 'showAnnouncement').map(([, a]) => a);
@@ -187,4 +193,161 @@ test('real game & save load: pooled PA announcements always come from config poo
     }),
     `flashSaleSoon text came from teaser pool: ${banners[2].text}`,
   );
+});
+
+test('encoreBanner & warranty claimPa pools: counts, voice, uniqueness, and injected random selection', () => {
+  const encoreBossIds = Object.keys(bossTypes).filter((id) => bossTypes[id].encore !== false);
+  assert.deepEqual(encoreBossIds, ['influencer', 'guard', 'manager', 'janitor']);
+  for (const id of encoreBossIds) {
+    const boss = bossTypes[id];
+    assert.ok(boss.encoreBanner, `${id} has encoreBanner`);
+    assert.ok(!boss.encoreBanner.kicker.includes('!'), `${id} encore kicker has no exclamation mark`);
+    assert.ok(!hasStatNumber(boss.encoreBanner.kicker), `${id} encore kicker has no stat number`);
+    assert.ok(boss.encoreBanner.lines.length >= 4, `${id} has at least 4 encore lines`);
+    assert.equal(new Set(boss.encoreBanner.lines).size, boss.encoreBanner.lines.length, `${id} encore lines are unique`);
+    for (const line of boss.encoreBanner.lines) {
+      assert.ok(!line.includes('!'), `${id} encore line has exclamation mark: ${line}`);
+      assert.ok(!hasStatNumber(line), `${id} encore line has stat number: ${line}`);
+      assert.notEqual(line, boss.introBanner.text, `${id} encore line differs from introBanner`);
+    }
+  }
+  assert.equal(bossTypes.lastCustomer.encore, false);
+  assert.equal(bossTypes.lastCustomer.encoreBanner, undefined);
+
+  const claimLines = upgrades.claimPa.lines;
+  assert.ok(claimLines.length >= 8);
+  assert.equal(new Set(claimLines).size, claimLines.length);
+  assert.equal(claimLines[0], 'Warranty claim approved for your {gun}. Ammunition has been replaced. Terms apply.');
+  for (const line of claimLines) {
+    assert.ok(line.includes('Warranty claim approved'), `claim line keeps approval phrase: ${line}`);
+    assert.ok(line.includes('{gun}'), `claim line keeps {gun} placeholder: ${line}`);
+    assert.ok(!line.includes('!'), `claim line has exclamation mark: ${line}`);
+    assert.ok(!hasStatNumber(line), `claim line has stat number: ${line}`);
+  }
+
+  // Injected random selects encoreBanner on encores and never alters first-fight introBanner.
+  for (const id of encoreBossIds) {
+    const type = bossTypes[id];
+    const spawnWith = (roll, encore) => {
+      const events = createEvents();
+      const calls = [];
+      const sounds = [];
+      const announcer = createAnnouncer({
+        events,
+        hud: { showAnnouncement: (a) => calls.push(a) },
+        sound: { play: (s) => sounds.push(s) },
+        state: {},
+        random: () => roll,
+      });
+      announcer.bossesAndIncentives();
+      events.emit('bossSpawn', { zombie: { type }, round: 20, encore });
+      return { banner: calls[0], sounds };
+    };
+
+    for (const roll of [0, 0.999]) {
+      assert.deepEqual(spawnWith(roll, false), {
+        banner: { ...type.introBanner, priority: bossTiming.introPriority },
+        sounds: [type.introSound],
+      });
+      assert.deepEqual(spawnWith(roll, undefined), {
+        banner: { ...type.introBanner, priority: bossTiming.introPriority },
+        sounds: [type.introSound],
+      });
+    }
+
+    const seen = new Set();
+    for (let i = 0; i < type.encoreBanner.lines.length; i++) {
+      const res = spawnWith(i / type.encoreBanner.lines.length + 1e-6, true);
+      assert.equal(res.banner.kicker, type.encoreBanner.kicker);
+      assert.equal(res.banner.priority, bossTiming.introPriority);
+      assert.equal(res.banner.text, type.encoreBanner.lines[i]);
+      assert.deepEqual(res.sounds, [type.introSound]);
+      seen.add(res.banner.text);
+    }
+    assert.equal(seen.size, type.encoreBanner.lines.length);
+  }
+
+  // Non-encore boss without encoreBanner still falls back cleanly to introBanner.
+  {
+    const events = createEvents();
+    const calls = [];
+    const announcer = createAnnouncer({
+      events,
+      hud: { showAnnouncement: (a) => calls.push(a) },
+      sound: { play: () => {} },
+      state: {},
+      random: () => 0.999,
+    });
+    announcer.bossesAndIncentives();
+    events.emit('bossSpawn', { zombie: { type: bossTypes.lastCustomer }, round: 25, encore: true });
+    assert.deepEqual(calls, [{ ...bossTypes.lastCustomer.introBanner, priority: bossTiming.introPriority }]);
+  }
+
+  // createWarranty picks from claimPa.lines with injected lineRandom and emits PA for announcer.
+  const runClaim = (roll, useDefaultRandom = false) => {
+    const events = createEvents();
+    const calls = [];
+    const sounds = [];
+    const announcer = createAnnouncer({
+      events,
+      hud: { showAnnouncement: (a) => calls.push(a) },
+      sound: { play: (s) => sounds.push(s) },
+      state: {},
+    });
+    announcer.runAndFeatures();
+    const mods = withTier(weapons.stapleGun, [], 'platinum');
+    const weapon = { magazine: 0, reserve: 0, refill() { this.magazine = 12; } };
+    const gun = {
+      slots: ['stapleGun'],
+      modsFor: () => mods,
+      weaponFor: () => weapon,
+      defOf: () => weapons.stapleGun,
+    };
+    const warranty = createWarranty({
+      gun,
+      events,
+      rounds: { round: 4 },
+      ...(useDefaultRandom ? {} : { lineRandom: () => roll }),
+    });
+    warranty.update();
+    return { calls, sounds };
+  };
+
+  const seenClaims = new Set();
+  for (let i = 0; i < claimLines.length; i++) {
+    const { calls, sounds } = runClaim(i / claimLines.length + 1e-6);
+    assert.deepEqual(sounds, ['paChime']);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].kicker, upgrades.claimPa.kicker);
+    assert.equal(calls[0].priority, 1);
+    assert.equal(calls[0].text, claimLines[i].replace('{gun}', weapons.stapleGun.name));
+    seenClaims.add(calls[0].text);
+  }
+  assert.equal(seenClaims.size, claimLines.length);
+  assert.equal(runClaim(0).calls[0].text, claimLines[0].replace('{gun}', weapons.stapleGun.name));
+  assert.equal(runClaim(0.999).calls[0].text, claimLines.at(-1).replace('{gun}', weapons.stapleGun.name));
+
+  // Default cosmetic random never invokes Math.random when crypto is present.
+  if (globalThis.crypto?.getRandomValues) {
+    const savedRandom = Math.random;
+    Math.random = () => { throw new Error('Math.random should not be called by warranty/boss PA'); };
+    try {
+      const events = createEvents();
+      const calls = [];
+      const announcer = createAnnouncer({
+        events,
+        hud: { showAnnouncement: (a) => calls.push(a) },
+        sound: { play: () => {} },
+        state: {},
+      });
+      announcer.bossesAndIncentives();
+      events.emit('bossSpawn', { zombie: { type: bossTypes.janitor }, round: 20, encore: true });
+      assert.ok(bossTypes.janitor.encoreBanner.lines.includes(calls[0].text));
+
+      const claimRes = runClaim(0, true);
+      assert.ok(claimRes.calls[0].text.includes('Warranty claim approved'));
+    } finally {
+      Math.random = savedRandom;
+    }
+  }
 });

@@ -26,12 +26,12 @@ const rewardName = (id) => bossVouchers[id]?.name ?? powerUps.types?.[id]?.name 
 const titleCase = (text) => text.toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
 
 // One costume's page. `twist` = its field note beyond the shared Mascot beats.
-function mascotPage(variant, { memo, twist, tip, notesAt = 3, tipAt = 12 }) {
+function mascotPage(variant, { memo, afterPop = `then it RUNS at ${mascot.exposedSpeed} m/s`, twist, tip, notesAt = 3, tipAt = 12 }) {
   return {
     id: variant, section: 'customers', type: mascotTypes[variant], name: mascotVariants[variant].name, title: 'Mascot',
     health: mix.mascot.healthMultiplier, firstSeen: `Round ${mascotVariants[variant].unlockRound}`, notesAt, tipAt, memo,
     notes: [
-      `Slow (${mascotTypes[variant].speed} m/s) and padded. At ${pct(mascot.healthFraction)} health the helmet pops off, it shakes for a moment, then it RUNS at ${mascot.exposedSpeed} m/s. I walk at ${feel.movement.walkSpeed}.`,
+      `Slow (${mascotTypes[variant].speed} m/s) and padded. At ${pct(mascot.healthFraction)} health the helmet pops off, it shakes for a moment, ${afterPop}. I walk at ${feel.movement.walkSpeed}.`,
       twist,
     ].filter(Boolean),
     tip,
@@ -66,7 +66,7 @@ export const guideEntries = [
       `They walk straight at me and swing when they get close. ${shopper.attack.damage} damage a hit.`,
       'Later on some of them jog, then run. They all swing sooner too.',
     ],
-    tip: 'A headshot does more than a body shot with every gun, and twice as much with some. Let them bunch up in a doorway and aim high.',
+    tip: 'A headshot does more than a body shot with most guns, twice as much or more on some. Let them bunch up in a doorway and aim high.',
   },
   {
     id: 'mallWalker', section: 'customers', type: mallWalker, name: 'Mall Walker', title: 'Fitness enthusiast',
@@ -105,6 +105,7 @@ export const guideEntries = [
   }),
   mascotPage('captainCoupon', {
     memo: 'Mega Mart\'s discount superhero. His coupons expired some time ago. Legal would like it noted that so did he.',
+    afterPop: 'then he goes back for it instead of running',
     twist: `After the helmet pops he hurries back and puts it on again. That puts him back at ${pct(reclaim.reclaimHealthFraction)} health. He only manages it once.`,
     tip: `Shoot him while he is bent over the helmet: his head is bare. Or stand within ${reclaim.guardRadius} metres of it yourself and he gives up and rushes you.`,
   }),
@@ -156,7 +157,7 @@ export const guideEntries = [
   bossPage(influencer, {
     memo: 'Is filming. Was always filming. Engagement is up eleven per cent since the incident, which she describes as "a rebrand".',
     notes: [
-      `Never attacks. Films me from ${influencer.filming.minRange} to ${influencer.filming.maxRange} metres away and moves when I close in.`,
+      `Never attacks. Aims for a spot ${influencer.filming.minRange} to ${influencer.filming.maxRange} metres away and shifts every ${influencer.filming.relocateSeconds} seconds.`,
       `Her follower count climbs on its own and every hit knocks it back, a headshot most. At ${fol.thresholds.join(', ')} per cent, ${fans.perThreshold} fans arrive; at ${fol.viral} she goes viral and ${fans.viralCount} more do. Fans are weak Mall Walkers and pay nothing.`,
       `Within ${flash.range} metres she charges her phone flash for ${flash.windupSeconds} seconds. It only blinds me if I'm facing her.`,
     ],
@@ -165,7 +166,7 @@ export const guideEntries = [
   bossPage(lastCustomer, {
     memo: 'Has a receipt. Has been waiting since before closing, and would like that noted. Associates are reminded that the customer is always right, and in this case also always there.',
     notes: [
-      `Turns up in Customer Parking once the closing checklist is done. Charges like a Cart Pusher, ${lastCustomer.charge.damage} damage, and swings for ${lastCustomer.attack.damage} up close.`,
+      `Turns up in Customer Parking the round after I validate parking. Charges like a Cart Pusher, ${lastCustomer.charge.damage} damage, and swings for ${lastCustomer.attack.damage} up close.`,
       `At ${lastCustomer.backup.thresholds.map(pct).join(' and ')} health, ${lastCustomer.backup.count} Mall Walkers arrive to back her up.`,
       `Shooting her does NOT finish her. At the end of her health she goes Speechless for ${lastCustomer.speechlessSeconds} seconds. Miss that and she's back at ${pct(lastCustomer.recoverHealthFraction)}.`,
     ],

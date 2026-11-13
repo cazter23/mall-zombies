@@ -33,10 +33,20 @@ export const kiosk = {
   cart: { width: 2.2, depth: 0.75, height: 1.05, slotSpacing: 0.72, signWidth: 1.9, productY: 0.83 },
   spawnClearance: 5, // m: no zombie spawn this close to a site's stand point (checked by the tests)
   // The mall PA, once per round when Kevin opens for the round ({where} = the site's `where`, {stock} = the round's three products,
-  // {pick} = Kevin's Pick).
+  // {pick} = Kevin's Pick). Entry 0 is the original line. `opened` plays once a run (his first opening), and one `stock`
+  // line follows it, or a `moved` line, in ONE banner: keep `opened` short and `stock` near the original's length.
   pa: {
     kicker: "Kevin's cart",
-    opened: "Kevin's cart is open in {where}.",
+    opened: [
+      "Kevin's cart is open in {where}.",
+      "Kevin's cart is open in {where}. Please approach calmly.",
+      "Kevin's cart is open in {where}, while Kevin lasts.",
+      "Kevin's cart is open in {where}. Management is neutral.",
+      "Kevin's cart is open in {where}. Kevin is behind it.",
+      "Kevin's cart is open in {where}. Mall hours remain suspended.",
+      "Kevin's cart is open in {where}. Nod twice for a receipt.",
+      "Kevin's cart is open in {where}. Business as usual.",
+    ],
     // When he has moved: these take turns by round (round 3 says the first), so the PA never needs Math.random.
     moved: [
       "Kevin's cart is now in {where}. He's asked us to say it's a limited time only.",
@@ -44,7 +54,16 @@ export const kiosk = {
       "Kevin's cart has relocated to {where}. Mall management did not approve this. Mall management is a zombie.",
       "Kevin's cart is now in {where}. Please stop telling him where the zombies are. He knows.",
     ],
-    stock: "Today on Kevin's cart: {stock}. Kevin's Pick is {pick}.",
+    stock: [
+      "Today on Kevin's cart: {stock}. Kevin's Pick is {pick}.",
+      "In stock at Kevin's cart: {stock}. Kevin's Pick: {pick}.",
+      "Kevin is carrying {stock}. He personally vouches for {pick}.",
+      "On the cart this round: {stock}. Kevin's Pick is {pick}.",
+      "Kevin's inventory: {stock}. Staff preference: {pick}.",
+      "Stocked today: {stock}. Kevin has circled {pick} in marker.",
+      "Available from the cart: {stock}. Kevin insists on {pick}.",
+      "Kevin's cart offers {stock}. Today's highlight is {pick}.",
+    ],
   },
   openingRound: 2,
   duckRadius: 3,

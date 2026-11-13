@@ -14,11 +14,12 @@
 // =============================================================================
 
 import { upgrades } from '../config/upgrades.js';
+import { paRandom, pickPaLine } from './announcer.js';
 import { TIER_IDS, nextTier, renewalsOf, tierById, tierOf, withRenewals, withTier } from '../weapons/upgrades.js';
 
 const rank = (tier) => TIER_IDS.indexOf(tier);
 
-export function createWarranty({ gun, events, rounds }) {
+export function createWarranty({ gun, events, rounds, lineRandom = paRandom }) {
   let onFile = null;
   let carried = new Map(); // gun id -> its tier last tick
   const claimed = new Map(); // gun id -> the round of its last claim
@@ -62,7 +63,8 @@ export function createWarranty({ gun, events, rounds }) {
         if (!weapon || weapon.magazine > 0 || weapon.reserve > 0 || claimed.get(id) === rounds.round) continue;
         claimed.set(id, rounds.round);
         weapon.refill();
-        const pa = { kicker: upgrades.claimPa.kicker, text: upgrades.claimPa.text.replace('{gun}', gun.defOf(id).name) };
+        const line = pickPaLine(upgrades.claimPa.lines, lineRandom);
+        const pa = { kicker: upgrades.claimPa.kicker, text: line.replace('{gun}', gun.defOf(id).name) };
         events.emit('warrantyClaim', { weaponId: id, round: rounds.round, pa });
       }
     },
