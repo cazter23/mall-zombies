@@ -1,5 +1,16 @@
 # Sunset Galleria: build history ("Current state")
 
+## 13 November 2026 - BOGO, the akimbo SMGs, in GRAB-A-GUN (`claude/bogo`)
+
+A new claw-only gun (purple capsule, weight 6): BOGO, Buy One Get One. Two label-tagger SMGs, one in each hand, firing in turn. To the game it
+is one gun (config/weapons.js bogo): one 60-round magazine (two 30s), one trigger, one 2 s reload. 60 a hit every 0.055 s (~18 a second, the
+fastest there is), falloff from 7 m to 0.45x at 18 m and a wide spray that blooms: `npm run balance` sustained 686 at 2 to 5 m (the Coil
+Nailer 647, the Rivet Rifle 582), 364 at 15 m (the Price Gun 407), 216 at 20 m. Right mouse raises no sights: it pulls the pair in and
+tightens the spray (spread.adsMultiplier 0.55; hip 438 vs 592 at 10 m), the crosshair stays. The model (weapons/models/bogo.js) is the pair;
+the viewmodel gained three optional hooks for it (onFire, createUpgradeVisuals, skinTargets; animate gets aimAmount), so attachments, warranty
+trims and skin prints go on both guns. Skins: Markdown, Two for One (BUY 1 / GET 1, 300 quick kills), Doorbuster Rush (50 kills in a round).
+Its wall mark is a little two-for-one tag (impactModels bogoTag).
+
 ## 13 November 2026 - Tennis Ball Launcher keeps up; Barcode Scanner: scan and ring up (claude/gun-rework)
 
 - Tennis Ball Launcher: 60 a hit x (round Shopper health / 150)^0.85 by the round the zombie spawned in (roundScaling; zombie.round), so a

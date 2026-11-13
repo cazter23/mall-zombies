@@ -14,6 +14,7 @@ export const haptics = {
     stargazer: { duration: 150, strongMagnitude: 0.7, weakMagnitude: 0.4, priority: 1 },
     bottleRocket: { duration: 200, strongMagnitude: 0.85, weakMagnitude: 0.5, priority: 1 },
     balloonLauncher: { duration: 45, strongMagnitude: 0.12, weakMagnitude: 0.3, priority: 1 },
+    bogo: { duration: 24, strongMagnitude: 0.08, weakMagnitude: 0.4, priority: 1 }, // (18 shots a second: a short buzz each)
     leafBlower: { duration: 40, strongMagnitude: 0.1, weakMagnitude: 0.35, priority: 1 }, // (a stream: a light rumble per pulse)
     confettiCannon: { duration: 170, strongMagnitude: 0.85, weakMagnitude: 0.55, priority: 1 },
   },
