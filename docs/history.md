@@ -1,5 +1,11 @@
 # Sunset Galleria: build history ("Current state")
 
+## 12 November 2026 - Employee of the Hour meter and Guide incentive discovery
+- Branch `claude/incentive-meter` stacked on `claude/incentive-looks` (`ef2c6cd`) adds the `EMPLOYEE OF THE HOUR` meter to the HUD and a persistent `Employee Incentives` discovery section to the Staff Survival Guide.
+- `src/game/powerUps.js` announces `'powerUpMeter'` snapshots (`unlocked`, `earned`, `threshold`, `dropped`, `maxPerRound`, `capped`, `fraction`, `silent`) across round starts, kills, drop spawns, save restores and run resets; `src/ui/hud.js` forwards `'powerUpMeter'` to `src/ui/incentiveHud.js` without reading `powerUps` internals.
+- `src/ui/incentiveHud.js` renders the `.incentive-meter` card inside `.hud-left-stack` (hidden before `powerUps.firstRound` and when Comfort toggle `settings.incentiveMeter` is off, while keeping drops/benefits visible), highlights `.is-near-full` + triggers one-shot chime `incentiveMeterReady` at `nearFullFraction: 0.8` per cycle, and dims as `ROUND CAP · CAPPED` when the round drop limit is reached.
+- `src/game/guideSave.js` (`discovered` map), `src/game/guide.js` (`'powerUpCollect'` listener ignoring assisted/dead runs, `'incentiveDiscovered'` event, `debugIncentive`), `src/config/guide.js`, `src/fx/powerUpView.js` (`buildIncentiveModel`), and `src/ui/guide.js` add the 11-entry `incentives` section (`???` lock until first genuine pickup, `X/11 incentives found`, icon + summary + PA quote + shared-mesh 3D exhibit) and `"NEW INCENTIVE"` toast.
+
 ## 12 November 2026 - Distinct 3D shapes, standout jackpots, and shared pickup models
 
 Branch `claude/incentive-looks` (branched from `claude/incentive-weights` `049cb88` so the trimmed 11-type roster, jackpots, and HUD icons are present; `main` at `a013f9a` untouched):

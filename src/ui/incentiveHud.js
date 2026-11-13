@@ -1,4 +1,4 @@
-// A small employee punch card, plus the incentive currently on the floor / active benefits.
+// A small employee punch card ("Employee of the hour"), plus the incentive currently on the floor / active benefits.
 import { powerUps } from '../config/powerUps.js';
 import { bossVouchers } from '../config/bosses.js';
 
@@ -24,95 +24,203 @@ const icons = {
   door: '<path fill-rule="evenodd" d="M7.5 15a4.5 4.5 0 1 1 3.9-6.7H21v3.4h-2.2v2.3h-2.4v-2.3h-5A4.5 4.5 0 0 1 7.5 15zm0-2.6a1.9 1.9 0 1 0 0-3.8 1.9 1.9 0 0 0 0 3.8z"/>',
 };
 
-function incentiveIconSvg(id) {
-  const def = powerUps.types[id];
+/** Shared inline SVG icon for both the HUD pickup card and the Survival Guide. */
+export function incentiveIconSvg(id, className = 'incentive-icon') {
+  const def = powerUps.types[id] ?? bossVouchers[id];
   const iconKey = def?.icon ?? (id === 'stockroomDelivery' ? 'stockroom' : 'ticket');
   const body = icons[iconKey] ?? icons.ticket;
-  return `<svg class="incentive-icon" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">${body}</svg>`;
+  return `<svg class="${className}" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">${body}</svg>`;
 }
 
-export function createIncentiveHud() {
+const DEFAULT_METER = () => ({
+  round: 0,
+  unlocked: false,
+  available: false,
+  capped: false,
+  nearFull: false,
+  progress: 0,
+  dropped: 0,
+  maxPerRound: powerUps.maxPerRound,
+});
+
+function meterFromStatus(status) {
+  const round = status.round ?? powerUps.firstRound;
+  const unlocked = status.unlocked ?? (round >= powerUps.firstRound);
+  const available = status.available ?? false;
+  const capped = status.capped ?? (unlocked && !available);
+  const progress = Math.max(0, Math.min(1, status.progress ?? 0));
+  const nearFull = status.nearFull ?? (available && progress >= powerUps.meter.nearFullFraction);
+  return {
+    round,
+    unlocked,
+    available,
+    capped,
+    nearFull,
+    progress,
+    dropped: status.dropped ?? 0,
+    maxPerRound: status.maxPerRound ?? powerUps.maxPerRound,
+  };
+}
+
+export function createIncentiveHud({ onNearFull = null } = {}) {
   const element = document.createElement('div');
   element.className = 'incentive-hud';
+  const heading = document.createElement('div');
+  heading.className = 'incentive-heading';
+  heading.textContent = powerUps.meter.heading;
+  const meterBox = document.createElement('div');
+  meterBox.className = 'incentive-meter';
   const label = document.createElement('div');
   label.className = 'incentive-label';
   const progress = document.createElement('progress');
   progress.className = 'incentive-progress';
   progress.max = 1;
   progress.value = 0;
-  progress.setAttribute('aria-label', 'Employee incentive progress');
+  progress.setAttribute('aria-label', `${powerUps.meter.heading} progress`);
+  meterBox.append(label, progress);
   const drop = document.createElement('div');
   drop.className = 'incentive-drop';
   const zone = document.createElement('div');
   zone.className = 'incentive-zone';
-  const heading = document.createElement('div');
-  heading.className = 'incentive-heading';
-  heading.textContent = 'Employee rewards';
-  element.append(heading, label, progress, drop, zone);
+  element.append(heading, meterBox, drop, zone);
+
+  let enabled = true;
+  let busMeter = null;
+  let lastStatus = null;
+  let deadHidden = false;
   let lastKey = '';
+  let wasNearFull = false;
   const taught = new Set();
   let activeIds = new Set(), teaching = new Set();
-  let hasMeterProgress = false;
+
+  function render() {
+    if (deadHidden || (lastStatus === null && !busMeter)) {
+      element.hidden = true;
+      return;
+    }
+    const status = lastStatus ?? {};
+    const { pickup = null, effects = [] } = status;
+    const meter = busMeter ?? (('progress' in status || 'round' in status || 'available' in status || 'unlocked' in status)
+      ? meterFromStatus(status)
+      : DEFAULT_METER());
+
+    const ids = new Set(effects.map((effect) => effect.id));
+    for (const id of ids) if (!activeIds.has(id)) {
+      if (!taught.has(id)) { teaching.add(id); taught.add(id); } else teaching.delete(id);
+    }
+    for (const id of activeIds) if (!ids.has(id)) teaching.delete(id);
+    activeIds = ids;
+
+    const showMeter = enabled && meter.unlocked;
+    const nearFullGlow = showMeter && meter.nearFull && !meter.capped;
+    const showCapped = showMeter && meter.capped;
+    const percent = Math.floor(meter.progress * 100);
+    const benefitText = effects.map((effect) => {
+      const def = powerUps.types[effect.id];
+      const count = effect.charges != null ? ` · ${effect.charges} LEFT`
+        : effect.healing != null ? ` · ${Math.ceil(effect.healing)} HP LEFT` : '';
+      return `${def.name} · ${Math.ceil(effect.remaining)}s${count} · ${def.hint}`;
+    }).join('\n');
+
+    element.hidden = !showMeter && !pickup && !effects.length;
+    heading.hidden = !showMeter;
+    meterBox.hidden = !showMeter;
+    label.hidden = !showMeter;
+    progress.hidden = !showMeter;
+    element.classList.toggle('is-near-full', nearFullGlow);
+    element.classList.toggle('is-capped', showCapped);
+    meterBox.classList.toggle('is-near-full', nearFullGlow);
+    meterBox.classList.toggle('is-capped', showCapped);
+
+    const key = `${showMeter}|${meter.round}|${meter.available}|${showCapped}|${nearFullGlow}|${percent}|${pickup?.id}|${Math.ceil(pickup?.remaining ?? 0)}|${benefitText}`;
+    if (key === lastKey) return;
+    lastKey = key;
+
+    label.textContent = showCapped ? powerUps.meter.cappedLabel
+      : nearFullGlow ? `${powerUps.meter.readyLabel} · ${percent}%`
+        : meter.unlocked ? `PROGRESS · ${percent}%`
+          : `BEGINS ROUND ${powerUps.firstRound}`;
+    progress.value = showCapped ? 1 : meter.progress;
+
+    drop.classList.toggle('jackpot', Boolean(pickup && powerUps.types[pickup.id]?.tier === 'jackpot'));
+    drop.textContent = '';
+    if (pickup) {
+      drop.innerHTML = `${incentiveIconSvg(pickup.id)}${escapeHtml(`${pickupName(pickup.id)} · COLLECT · ${Math.ceil(pickup.remaining)}s`)}`;
+    }
+    const rows = effects.map((effect) => {
+      const def = powerUps.types[effect.id];
+      const count = effect.charges != null ? ` · ${effect.charges} LEFT`
+        : effect.healing != null ? ` · ${Math.ceil(effect.healing)} HP LEFT` : '';
+      return {
+        id: effect.id,
+        jackpot: def.tier === 'jackpot',
+        title: `${def.name} · ${Math.ceil(effect.remaining)}s${count}`,
+        hint: def.hint,
+        teach: teaching.has(effect.id),
+      };
+    });
+    zone.replaceChildren(...rows.map(({ id, jackpot, title, hint, teach }) => {
+      const row = document.createElement('div');
+      row.className = jackpot ? 'incentive-effect jackpot' : 'incentive-effect';
+      const name = document.createElement('strong');
+      name.innerHTML = `${incentiveIconSvg(id)}${escapeHtml(title)}`;
+      const detail = document.createElement('span');
+      detail.textContent = hint;
+      detail.hidden = !teach;
+      row.append(name, detail);
+      return row;
+    }));
+  }
+
   return {
     element,
-    reset() { taught.clear(); activeIds.clear(); teaching.clear(); lastKey = ''; hasMeterProgress = false; element.hidden = true; },
+    get enabled() { return enabled; },
+    setEnabled(on) {
+      enabled = !!on;
+      if (!enabled) wasNearFull = false;
+      lastKey = '';
+      render();
+    },
+    setMeter(meter) {
+      if (!meter) {
+        busMeter = null;
+        wasNearFull = false;
+      } else {
+        busMeter = meterFromStatus(meter);
+        const nowNear = busMeter.unlocked && !busMeter.capped && busMeter.nearFull;
+        if (enabled && nowNear && !meter.silent && !wasNearFull) onNearFull?.();
+        wasNearFull = nowNear;
+      }
+      render();
+    },
+    reset() {
+      taught.clear();
+      activeIds.clear();
+      teaching.clear();
+      busMeter = null;
+      lastStatus = null;
+      deadHidden = false;
+      lastKey = '';
+      wasNearFull = false;
+      element.classList.remove('is-near-full', 'is-capped');
+      meterBox.classList.remove('is-near-full', 'is-capped');
+      element.hidden = true;
+    },
     update(status) {
-      element.hidden = !status;
-      if (!status) return;
-      const { pickup, available, effects = [] } = status;
-      const ids = new Set(effects.map(effect => effect.id));
-      for (const id of ids) if (!activeIds.has(id)) {
-        if (!taught.has(id)) { teaching.add(id); taught.add(id); } else teaching.delete(id);
+      lastStatus = status;
+      if (!status) {
+        deadHidden = true;
+        element.hidden = true;
+        return;
       }
-      for (const id of activeIds) if (!ids.has(id)) teaching.delete(id);
-      activeIds = ids;
-      if (status.progress > 0) hasMeterProgress = true;
-      const showProgress = available && status.round >= powerUps.firstRound && hasMeterProgress;
-      element.hidden = !showProgress && !pickup && !effects.length;
-      heading.hidden = !showProgress;
-      label.hidden = !showProgress;
-      progress.hidden = !showProgress;
-      const percent = Math.floor(status.progress * 100);
-      const benefitText = effects.map(effect => {
-        const def = powerUps.types[effect.id];
-        const count = effect.charges != null ? ` · ${effect.charges} LEFT`
-          : effect.healing != null ? ` · ${Math.ceil(effect.healing)} HP LEFT` : '';
-        return `${def.name} · ${Math.ceil(effect.remaining)}s${count} · ${def.hint}`;
-      }).join('\n');
-      const key = `${status.round}|${available}|${percent}|${pickup?.id}|${Math.ceil(pickup?.remaining ?? 0)}|${benefitText}`;
-      if (key === lastKey) return;
-      lastKey = key;
-      label.textContent = available ? `PROGRESS · ${percent}%`
-        : status.round < powerUps.firstRound ? `BEGINS ROUND ${powerUps.firstRound}` : 'ROUND ALLOWANCE USED';
-      progress.value = status.progress;
-      drop.classList.toggle('jackpot', Boolean(pickup && powerUps.types[pickup.id]?.tier === 'jackpot'));
-      drop.textContent = '';
-      if (pickup) {
-        drop.innerHTML = `${incentiveIconSvg(pickup.id)}${escapeHtml(`${pickupName(pickup.id)} · COLLECT · ${Math.ceil(pickup.remaining)}s`)}`;
+      deadHidden = false;
+      if (!busMeter && ('progress' in status || 'round' in status || 'available' in status || 'unlocked' in status)) {
+        const synthetic = meterFromStatus(status);
+        const nowNear = synthetic.unlocked && !synthetic.capped && synthetic.nearFull;
+        if (enabled && nowNear && !wasNearFull) onNearFull?.();
+        wasNearFull = nowNear;
       }
-      const rows = effects.map(effect => {
-        const def = powerUps.types[effect.id];
-        const count = effect.charges != null ? ` · ${effect.charges} LEFT`
-          : effect.healing != null ? ` · ${Math.ceil(effect.healing)} HP LEFT` : '';
-        return {
-          id: effect.id,
-          jackpot: def.tier === 'jackpot',
-          title: `${def.name} · ${Math.ceil(effect.remaining)}s${count}`,
-          hint: def.hint,
-          teach: teaching.has(effect.id),
-        };
-      });
-      zone.replaceChildren(...rows.map(({ id, jackpot, title, hint, teach }) => {
-        const row = document.createElement('div');
-        row.className = jackpot ? 'incentive-effect jackpot' : 'incentive-effect';
-        const name = document.createElement('strong');
-        name.innerHTML = `${incentiveIconSvg(id)}${escapeHtml(title)}`;
-        const detail = document.createElement('span');
-        detail.textContent = hint;
-        detail.hidden = !teach;
-        row.append(name, detail);
-        return row;
-      }));
+      render();
     },
   };
 }

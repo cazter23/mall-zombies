@@ -4,15 +4,23 @@ import { menuDom } from './helpers/menuDom.js';
 import { createIncentiveHud } from '../src/ui/incentiveHud.js';
 import { createRitualHud } from '../src/ui/ritualHud.js';
 
-test('exhausted rewards disappear, but active benefits and timed drops remain', () => {
+test('pre-unlock meter hides, capped round dims clearly, setting off hides meter, and active benefits/drops stay crisp', () => {
   menuDom(); const view = createIncentiveHud();
-  const status = { round: 4, progress: .4, available: false, effects: [] };
-  view.update(status); assert.equal(view.element.hidden, true);
-  view.update({ ...status, pickup: { id: 'employeeDiscount', remaining: 10 } });
+  view.update({ round: 1, progress: 0, unlocked: false, available: false, effects: [] });
+  assert.equal(view.element.hidden, true);
+  const status = { round: 4, progress: .4, unlocked: true, available: false, capped: true, effects: [] };
+  view.update(status);
   assert.equal(view.element.hidden, false);
-  assert.equal(view.element.querySelector('.incentive-progress').hidden, true);
+  assert.equal(view.element.classList.contains('is-capped'), true);
+  assert.match(view.element.querySelector('.incentive-label').textContent, /CAPPED/);
+  view.update({ ...status, pickup: { id: 'employeeDiscount', remaining: 10 } });
   assert.match(view.element.querySelector('.incentive-drop').textContent, /10s/);
-  view.update({ ...status, available: true });
+  view.setEnabled(false);
+  assert.equal(view.element.querySelector('.incentive-progress').hidden, true);
+  assert.equal(view.element.hidden, false, 'pickup keeps card visible when meter is hidden by setting');
+  view.setEnabled(true);
+  view.update({ ...status, available: true, capped: false });
+  assert.equal(view.element.classList.contains('is-capped'), false);
   assert.equal(view.element.querySelector('.incentive-progress').hidden, false);
 });
 

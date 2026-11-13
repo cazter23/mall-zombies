@@ -3,10 +3,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { menuDom } from './helpers/menuDom.js';
 import { createGuideSave } from '../src/game/guideSave.js';
-import { guide as cfg, guideEntries, guideEntry, guideSections } from '../src/config/guide.js';
+import { guide as cfg, guideEntries, guideEntry, guideSections, incentiveEntries, incentiveEntry } from '../src/config/guide.js';
+import { powerUps } from '../src/config/powerUps.js';
 import { lostFound, lostItem } from '../src/config/lostFound.js';
 
-const PAGES = guideEntries.length + lostFound.items.length + 1; // zombies and bosses, lost property, the summary
+const PAGES = guideEntries.length + incentiveEntries.length + lostFound.items.length + 1; // zombies/bosses, incentives, lost property, summary
 import { createGuideScreen, createGuidePreview } from '../src/ui/guide.js';
 
 menuDom();
@@ -303,4 +304,63 @@ test('the real preview shows and frees a piece of lost property like any other s
   preview.render(1 / 60);
   assert.equal(meshes(), 0);
   preview.dispose();
+});
+
+// --- Employee Incentives -----------------------------------------------------------------------------------------------
+
+test('incentives section locks entries as ??? until discovered, then shows icon, summary, PA quote and counts found/total', () => {
+  const commission = incentiveEntry('commissionDay');
+  const t = fixture((save) => save.discover('commissionDay'));
+  const count = () => t.guide.element.querySelector('[data-section="incentives"]').querySelector('.guide-count').textContent;
+  assert.equal(count(), cfg.incentives.sectionCount(1, incentiveEntries.length));
+
+  // Locked incentive gives nothing away
+  assert.ok(t.row('incentive:blackFriday').textContent.includes(cfg.incentives.unknownName));
+  t.row('incentive:blackFriday').click();
+  assert.equal(t.sheet().getAttribute('data-section'), 'incentives');
+  assert.equal(t.sheet().getAttribute('data-stage'), '0');
+  assert.equal(t.shown.at(-1), null, 'no model for locked incentive');
+  assert.equal(t.stamp(), cfg.incentives.stamps[0]);
+  const lockedDef = powerUps.types.blackFriday;
+  for (const secret of [lockedDef.name, lockedDef.summary, lockedDef.pa.text]) assert.ok(!t.page().includes(secret), 'no leak: ' + secret);
+
+  // Discovered incentive shows icon, name, summary, PA quote and preview entry
+  assert.ok(t.row('incentive:commissionDay').textContent.includes(commission.name));
+  assert.ok(t.row('incentive:commissionDay').querySelector('svg'), 'discovered row shows incentive icon');
+  t.row('incentive:commissionDay').click();
+  assert.equal(t.sheet().getAttribute('data-stage'), '3');
+  assert.equal(t.shown.at(-1), commission);
+  assert.equal(t.stamp(), cfg.incentives.stamps[1]);
+  assert.equal(t.guide.element.querySelector('.guide-caption').textContent, commission.name);
+  assert.ok(t.guide.element.querySelector('.guide-incentive-icon').querySelector('svg'), 'detail page renders incentive icon');
+  for (const shown of [commission.name, commission.summary, commission.paText]) assert.ok(t.page().includes(shown));
+  t.screens.show('title');
+});
+
+test('the real Guide preview renders every incentive 3D model safely without disposing shared powerUpView assets', () => {
+  menuDom();
+  const host = document.createElement('div');
+  let scene;
+  const renderer = { domElement: document.createElement('canvas'), setPixelRatio() {}, setSize() {}, render(value) { scene = value; }, dispose() {}, forceContextLoss() {} };
+  const preview = createGuidePreview(host, { makeRenderer: () => renderer });
+  const sharedResources = new Set();
+  const collectShared = () => {
+    scene.traverse((node) => {
+      if (node.geometry?.userData?.shared) sharedResources.add(node.geometry);
+      for (const m of [].concat(node.material ?? [])) if (m?.userData?.shared) sharedResources.add(m);
+    });
+  };
+  let sharedDisposed = 0;
+  for (const entry of incentiveEntries) {
+    preview.show(entry);
+    preview.render(1 / 60);
+    collectShared();
+    assert.equal(preview.showing, entry);
+  }
+  for (const resource of sharedResources) resource.addEventListener('dispose', () => { sharedDisposed += 1; });
+  assert.ok(sharedResources.size >= incentiveEntries.length, 'collected shared incentive geometries/materials');
+  preview.show(guideEntry('shopper').type);
+  preview.show(null);
+  preview.dispose();
+  assert.equal(sharedDisposed, 0, 'Guide preview never disposes shared incentive GPU assets');
 });

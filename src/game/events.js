@@ -63,8 +63,11 @@
 //                                                        round after a win mid-wave, the already announced one after a win in the break)
 //   'runEnd'      { summary }                            final run totals, emitted once per recorded run: on death, on Clock out,
 //                                                        or when a won run is left from a menu (createGame's leaveRun)
+//   'powerUpMeter' { progress, round, unlocked, available, capped, nearFull, dropped, maxPerRound, silent? }
+//                                                        Employee of the Hour meter state changed (game/powerUps.js)
 //   'powerUpDrop' { id, position, seconds }               earned incentive appeared on clear floor
 //   'powerUpCollect' { id, name, pa, sound }              walk-through collection (instant effect or benefit start)
+//   'incentiveDiscovered' { id, name, icon, tier, found, total }   first career pickup of an incentive type (game/guide.js)
 //   'powerUpStart' { id, position, remaining, radius, ... } floor spill or temporary employee benefit began
 //   'powerUpEnd'  { id, reason }                         benefit ended (including mopped by the Janitor or roundDiscard)
 //   'incentiveComplete' { id, text }                     marked-target bonus earned (PA/HUD feedback)

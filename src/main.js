@@ -61,6 +61,7 @@ import { setRimDaylight } from './zombies/zombieRim.js';
 import { createDetailCulling } from './fx/detailCulling.js';
 import { createRoomCulling } from './fx/roomCulling.js';
 import { look } from './config/look.js';
+import { powerUps } from './config/powerUps.js';
 import { createCareerStats } from './game/careerStats.js';
 import { createSkinSave } from './game/skinSave.js';
 import { createLocker } from './ui/locker.js';
@@ -114,7 +115,12 @@ const challengeBoard = createChallengeBoard({
   save: skinSave, pins: challengePins, onBack: () => hud.screens.show('title'),
   trackerEnabled: () => settings.get('challengeTracker'), getChallenges: () => g.challenges, guideSave,
 });
-const hud = createHud({ locker, guide: guideScreen, challenges: challengeBoard });
+const hud = createHud({
+  locker,
+  guide: guideScreen,
+  challenges: challengeBoard,
+  onIncentiveReady: () => sound.play(powerUps.meter.sound),
+});
 // The mall directory (ui/minimap.js): a tap of the minimap button shows or hides the corner map (remembered), a hold shows it all.
 hud.minimap = createMinimap({ onCornerChange: (on) => settings.set('minimap', on) });
 hud.element.append(hud.minimap.element);
@@ -576,7 +582,7 @@ function render(alpha, frameTime) {
     originalCost: PRICE_CATEGORIES.includes(prompt.kind) ? pricing.basePriceOf(prompt.kind, prompt.pricingId ?? prompt.id) : prompt.cost,
   }, buttonLabel('interact'));
   hud.setFlashSale(game.over ? null : flashSales.active);
-  hud.setPowerUps(game.over ? null : g.powerUps);
+  hud.setPowerUps(game.over ? null : { pickup: g.powerUps.pickup, effects: g.powerUps.effects });
   hud.setRitual(game.over ? null : ritual?.status ?? null);
   const menuLabels = { confirm: buttonLabel('menuConfirm'), back: buttonLabel('menuBack'), move: buttonLabel('menuMove'), switch: buttonLabel('menuSwitch') };
   hud.setOrderForm(game.over ? null : ritual?.form ?? null, menuLabels);

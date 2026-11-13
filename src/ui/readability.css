@@ -391,7 +391,7 @@ kbd { font-size: .9em; }
 .hud-right-stack .certificate-gun { font-size: 1.1em; font-weight: 700; }
 .hud-right-stack .certificate-remark { font-size: .85em; }
 .announce-banner[data-flavor='true'] .announce-text { font-size: var(--ui-small); }
-.announce-kicker[hidden], .incentive-label[hidden], .incentive-progress[hidden], .incentive-heading[hidden], .incentive-effect span[hidden] { display: none; }
+.announce-kicker[hidden], .incentive-meter[hidden], .incentive-label[hidden], .incentive-progress[hidden], .incentive-heading[hidden], .incentive-effect span[hidden] { display: none; }
 .ritual-stage { font-size: var(--ui-action); }
 .ritual-gauge { font-size: var(--ui-body); font-weight: 700; }
 .ritual-heading { letter-spacing: 0; }

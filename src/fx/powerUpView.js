@@ -269,6 +269,29 @@ function ensureSharedAssets() {
   return sharedAssets;
 }
 
+function createPropGroup(id, def, shared, v) {
+  const group = new THREE.Group();
+  group.name = id;
+  for (const { geometry, material } of shared.models[id]) group.add(new THREE.Mesh(geometry, material));
+  if (def.tier === 'jackpot') {
+    group.scale.setScalar(v.jackpotGlowScale);
+    const halo = new THREE.Mesh(shared.haloGeo, shared.haloMat);
+    halo.rotation.set(v.haloTiltX, 0, v.haloTiltZ);
+    halo.position.y = v.haloOffsetY;
+    group.add(halo);
+    group.userData.halo = halo;
+  }
+  return group;
+}
+
+/** Build a standalone display group for the Survival Guide preview using shared GPU assets. */
+export function buildIncentiveModel(id) {
+  const def = config.types[id] ?? bossVouchers[id];
+  if (!def) return null;
+  const shared = ensureSharedAssets();
+  return { group: createPropGroup(id, def, shared, config.visual), materials: [] };
+}
+
 export function createPowerUpView(scene, colliders) {
   const root = new THREE.Group();
   root.name = 'employeeIncentives';
@@ -288,18 +311,8 @@ export function createPowerUpView(scene, colliders) {
     root.add(beacon.root);
     beacons[id] = beacon;
 
-    const group = new THREE.Group();
-    group.name = id;
+    const group = createPropGroup(id, def, shared, v);
     group.visible = false;
-    for (const { geometry, material } of shared.models[id]) group.add(new THREE.Mesh(geometry, material));
-    if (isJackpot) {
-      group.scale.setScalar(v.jackpotGlowScale);
-      const halo = new THREE.Mesh(shared.haloGeo, shared.haloMat);
-      halo.rotation.set(v.haloTiltX, 0, v.haloTiltZ);
-      halo.position.y = v.haloOffsetY;
-      group.add(halo);
-      group.userData.halo = halo;
-    }
     root.add(group);
     props[id] = group;
   }

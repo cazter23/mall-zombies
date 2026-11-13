@@ -160,8 +160,22 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
     events.emit('powerUpCollect', { id: item.id, name: def.name, pa: def.pa, sound: def.sound });
   }
 
+  function meterSnapshot({ silent = false } = {}) {
+    const unlocked = round >= config.firstRound;
+    const available = unlocked && dropped < config.maxPerRound;
+    const capped = unlocked && !available;
+    const progress = unlocked ? Math.min(1, earned / threshold) : 0;
+    const nearFull = available && progress >= (config.meter?.nearFullFraction ?? 0.8);
+    return { progress, round, unlocked, available, capped, nearFull, dropped, maxPerRound: config.maxPerRound, silent };
+  }
+  const emitMeter = (opts) => events.emit('powerUpMeter', meterSnapshot(opts));
+
   const off = [
-    events.on('roundStart', (event) => { round = event.round; dropped = 0; }),
+    events.on('roundStart', (event) => {
+      round = event.round;
+      dropped = 0;
+      emitMeter({ silent: true });
+    }),
     events.on('kill', ({ zombie, headshot, melee, source }) => {
       if (state.over || round < config.firstRound || dropped >= config.maxPerRound || pickup || pendingPosition) return;
       if ((source !== 'gun' && source !== 'melee') || !zombie?.type || zombie.noRewards || zombie.type.boss || seen.has(zombie)) return;
@@ -170,6 +184,7 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
       if (clock - lastKillAt <= config.credit.multiKillSeconds) earned += config.credit.multiKillBonus;
       lastKillAt = clock;
       if (earned >= threshold) pendingPosition = zombie.position.clone();
+      emitMeter();
     }),
     events.on('playerDeath', () => {
       pickup = null;
@@ -255,6 +270,7 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
           dropped += 1;
           lastType = id;
           lastWasJackpot = config.types[id]?.tier === 'jackpot';
+          emitMeter();
           events.emit('powerUpDrop', { id, position: position.clone(), seconds: config.lifetime });
         }
       }
@@ -288,6 +304,7 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
       lastWasJackpot = Boolean(data.lastWasJackpot);
       rotation = [...(data.rotation ?? [])];
       jackpotRotation = [...(data.jackpotRotation ?? [])];
+      emitMeter({ silent: true });
     },
 
     reset() {
@@ -307,6 +324,7 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
       bossRewards.length = 0;
       seen = new WeakSet();
       view?.update(null, 0);
+      emitMeter({ silent: true });
     },
 
     dispose() {

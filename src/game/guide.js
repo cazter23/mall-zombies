@@ -7,7 +7,7 @@
 // round has already been counted (it travels in the guide record's `replay`), `replayed` is this attempt's count, and
 // only what an attempt earns beyond `credited` is new. (The same rule as game/challenges.js, kept apart on purpose:
 // the two records are written separately and either may be cleared without the other.)
-import { guideEntries, guideEntry, guideEntryId, guideStage, guideNotices, guideDebug } from '../config/guide.js';
+import { guideEntries, guideEntry, guideEntryId, guideStage, guideNotices, guideDebug, incentiveEntries, incentiveEntry } from '../config/guide.js';
 
 export function createGuide({ events, state, save }) {
   const credited = new Map(); // page id -> kills this unfinished round has been counted, over every attempt at it
@@ -46,6 +46,20 @@ export function createGuide({ events, state, save }) {
     const amount = newlyEarned(entry.id, 1);
     change(entry, () => { save.see(entry.id); if (amount > 0) save.add(entry.id, amount); });
   });
+  events.on('powerUpCollect', ({ id }) => {
+    const entry = incentiveEntry(id);
+    if (!entry || !counting() || !save.discover(entry.id)) return;
+    save.flush();
+    const found = incentiveEntries.filter((candidate) => save.discovered(candidate.id)).length;
+    events.emit('incentiveDiscovered', {
+      id: entry.id,
+      name: entry.name,
+      icon: entry.icon,
+      tier: entry.tier,
+      found,
+      total: incentiveEntries.length,
+    });
+  });
 
   // Nothing new = no write.
   const flushIfDirty = () => (save.dirty ? save.flush() : false);
@@ -64,6 +78,21 @@ export function createGuide({ events, state, save }) {
     /** Every page with where it stands: [{ entry, seen, kills, stage }], in book order. */
     pages() {
       return guideEntries.map((entry) => ({ entry, seen: save.seen(entry.id) || !!entry.alwaysSeen, kills: save.kills(entry.id), stage: stageOf(entry) }));
+    },
+    /** Discovered employee incentives summary + items. */
+    incentives() {
+      const items = incentiveEntries.map((entry) => ({ ...entry, discovered: save.discovered(entry.id) }));
+      const found = items.filter((item) => item.discovered).length;
+      return { found, total: items.length, complete: found === items.length, items };
+    },
+    /** Developer shortcut for incentives: g.guide.debugIncentive(id | 'all', 'discover' | 'clear'). */
+    debugIncentive(id, action = 'discover') {
+      const ids = id === 'all' ? incentiveEntries.map((entry) => entry.id) : incentiveEntry(id) ? [id] : [];
+      if (!ids.length || !['discover', 'clear'].includes(action)) return "Use g.guide.debugIncentive(id | 'all', 'discover' | 'clear')";
+      for (const each of ids) action === 'discover' ? save.discover(each) : save.forgetIncentive(each);
+      save.flush();
+      const found = incentiveEntries.filter((entry) => save.discovered(entry.id)).length;
+      return `Incentives: ${found} / ${incentiveEntries.length}`;
     },
     /** Write unsaved counts now (main.js: the page is closing). No-op when storage is already current. */
     flush: flushIfDirty,

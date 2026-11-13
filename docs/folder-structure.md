@@ -40,8 +40,9 @@ src/
     powerUps.js         Employee-incentive drop tuning: 11 types (8 common, 3 jackpot), common vs jackpot tier weights
                         (jackpot.firstRound 4, chance 0.125), needWeight factor cap + per-type need curves (Paid Break,
                         Stockroom Delivery, Employee Discount), visual parameters (common vs jackpot hover/bob/spin/scale,
-                        jackpot gold trim & beacon multipliers, emissive dark/cream/cardboard tones), skill credit,
-                        round caps, durations/charges, ammo top-up, clearance flash/flicker, colors, icons and PA lines.
+                        jackpot gold trim & beacon multipliers, emissive dark/cream/cardboard tones), meter thresholds & labels
+                        (`meter`: nearFullFraction 0.8, sound `incentiveMeterReady`, capped/new-discovery labels), skill credit,
+                        round caps, durations/charges, ammo top-up, clearance flash/flicker, colors, icons, one-line summaries and PA lines.
                         First round 2, 12-16 credit per drop, max 3 per round
     effectWords.js      THE WORDS-ONLY RULE: players never see an upgrade's effect as a number. The fixed size bands (a little / noticeably / much), sizeWord / fillSize
                         for the `{size}` / `{Size}` tokens in a config line, describeEffects and hasStatNumber (the detector the tests use).
@@ -517,12 +518,13 @@ src/
                         Overtime: `healthMultiplier` (config overtime.healthPerRound ^ the overtime rounds begun, from createGame's getOvertimeRound = rounds.round - overtimeFrom + 1; the zombie
                         manager reads it on every spawn through its getHealthMultiplier option) and, on 'overtimeStart' only, killPay multiplied into stats.killPayMultiplier (never on a load).
     floorPickups.js     Shared clear-floor placement and swept collection for incentives and closing keys; direction for HUD markers.
-    powerUps.js         createPowerUps(): listens to kill/round/death events; earned dynamic pickups on clear floor,
-                        swept walk-through collection, 15s expiry, common/jackpot rotation (jackpots from firstRound 4 at jackpot.chance,
-                        no consecutive jackpots), capped per-type need weighting (health, combined carried-slot ammo, discount
-                        proximity via interactions.buyables()), per-round caps, Save & Quit serialize/restore, stripEffectModifiers(),
-                        reset/dispose; debugDrop(id, at) marks the run assisted. Boss rewards wait for the pickup slot, survive
-                        natural wave progression and clear on death, Play again or debug skips. createGame builds/ticks/resets it as g.powerUps.
+    powerUps.js         createPowerUps(): listens to kill/round/death events; emits 'powerUpMeter' on meter/round/restore/reset
+                        changes for HUD decoupling; earned dynamic pickups on clear floor, swept walk-through collection,
+                        15s expiry, common/jackpot rotation (jackpots from firstRound 4 at jackpot.chance, no consecutive jackpots),
+                        capped per-type need weighting (health, combined carried-slot ammo, discount proximity via interactions.buyables()),
+                        per-round caps, Save & Quit serialize/restore, stripEffectModifiers(), reset/dispose; debugDrop(id, at)
+                        marks the run assisted. Boss rewards wait for the pickup slot, survive natural wave progression and clear on
+                        death, Play again or debug skips. createGame builds/ticks/resets it as g.powerUps.
                         A kill whose type has guaranteedDrop (Employee of the Month) queues a reward through chooseRewardType()
                         respecting need-adjusted weights, utility and no-consecutive-jackpot outside the meter.
     wardrobe.js         g.wardrobe: per-run ownership, equipped slots and reversible player stat factors. buy(id), wear(id) (anything owned),
@@ -963,7 +965,7 @@ src/
     scatter.js          Places decor-kit clutter on a floor area, deterministic per seed, merged into one mesh per material.
     staticBatch.js      Merges still, opaque map meshes into a few big ones (fewer draw calls); userData.dynamic opts a mesh out.
   ui/
-    incentiveHud.js     Small employee punch card (drop progress), uncollected incentive countdown with SVG icon + jackpot badge, and active effect timers/charges
+    incentiveHud.js     Employee of the Hour bar driven by 'powerUpMeter' (hidden pre-unlock / disabled by setting, near-full glow + chime, dimmed capped state), uncollected pickup countdown with shared SVG icon (`incentiveIconSvg`), and active effect timers/charges
     modal.js            Shared Settings/Controls dialog behavior: inert background, focus trap, Escape, restores focus on close
     settingsMenu.js     createSettingsMenu(settings): builds the options screen from the settings list (tabs, rows per type:
                         checkbox / range + readout / select). Opened by the pause screen's Settings button (controller: Y);
@@ -1144,10 +1146,10 @@ Boss groundwork: zombie.js owns timed buffs, source-bound holds and a behavior c
 
 ### Staff Survival Guide
 
-- src/config/guide.js: every page of the book (`guideEntries`: section, the zombie type shown, name, health against a Shopper, first round, `notesAt` / `tipAt` kills, memo, notes, tip), `guideEntryId(type)` (which page a zombie belongs on), `guideStage`, the PA line, the screen's words, theme and preview settings, and the storage key and version. Numbers in the text are read from config/zombies.js, bosses.js and economy.js, never typed. Two voices: `memo` is the company's print, `notes` and `tip` are the survivor's handwriting (first person). The screen's words now include `sheets` (form per section), `stamps`, `cctv`, the blank form's fields, the pencilled "how many more" lines and the tally cap.
-- src/game/guideSave.js: the permanent record (`seen`, `kills`, and `replay` for a Save & Quit round) in its own localStorage key. `see`, `add`, `flush` (merges another tab, never overwrites a newer version), `dirty`, `clear` (debug).
-- src/game/guide.js: `createGuide({ events, state, save })`, built in createGame as `g.guide`. Sightings from the arrival events, kills from 'kill', 'guideEntry' out. `pages()` for a reader, `flush()` for the closing page, `reset()` as a reset step (transient: the replay count lives in the record), `debug(...)`.
-- src/ui/guide.js: the title screen's book (`createGuideScreen`) and its turning model (`createGuidePreview`: a real Zombie that is never ticked, posed by its own model). Opened and closed by ui/screens.js like the locker. Since the restyle the screen is a ring binder: contents under divider tabs, one printed sheet (letterhead, facts, memo) with the survivor's pen notes, tally marks, sticky-note tip, a rubber stamp for the stage and the model as a taped or paper-clipped camera still. `onTurn` is called when a different page is shown (main.js plays `pageTurn`). Styles: the guide block at the end of ui/retail.css.
+- src/config/guide.js: every page of the book (`guideEntries`: section, the zombie type shown, name, health against a Shopper, first round, `notesAt` / `tipAt` kills, memo, notes, tip), `incentiveEntries` / `incentiveEntry` derived from `config/powerUps.js` (`incentives` section), `guideEntryId(type)` (which page a zombie belongs on), `guideStage`, the PA line, the screen's words, theme and preview settings, and the storage key and version. Numbers in the text are read from config/zombies.js, bosses.js and economy.js, never typed. Two voices: `memo` is the company's print, `notes` and `tip` are the survivor's handwriting (first person). The screen's words now include `sheets` (form per section), `stamps`, `cctv`, the blank form's fields, the pencilled "how many more" lines and the tally cap.
+- src/game/guideSave.js: the permanent record (`seen`, `kills`, `found` lost property, `discovered` incentives, and `replay` for a Save & Quit round) in its own localStorage key. `see`, `add`, `discover`/`discovered`/`forgetIncentive`, `flush` (merges another tab, never overwrites a newer version), `dirty`, `clear` (debug).
+- src/game/guide.js: `createGuide({ events, state, save })`, built in createGame as `g.guide`. Sightings from the arrival events, kills from 'kill' ('guideEntry' out), first real incentive pickups from 'powerUpCollect' ('incentiveDiscovered' out; ignored on assisted/dead/drop/expiry/voucher). `pages()` and `incentives()` for readers, `flush()` for the closing page, `reset()` as a reset step (transient: the replay count lives in the record), `debug(...)`, `debugIncentive(...)`.
+- src/ui/guide.js: the title screen's book (`createGuideScreen`) and its turning model (`createGuidePreview`: a real Zombie that is never ticked, Lost & Found props, and incentive pickup 3D models via `buildIncentiveModel` without disposing `userData.shared` resources). Opened and closed by ui/screens.js like the locker. Since the restyle the screen is a ring binder: contents under divider tabs, one printed sheet (letterhead, facts, memo) with the survivor's pen notes, tally marks, sticky-note tip, a rubber stamp for the stage and the model as a taped or paper-clipped camera still. `onTurn` is called when a different page is shown (main.js plays `pageTurn`). Styles: the guide block at the end of ui/retail.css.
 
 ### Lost and Found
 

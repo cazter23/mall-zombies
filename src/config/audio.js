@@ -158,6 +158,11 @@ export const audio = {
       { type: 'tone', wave: 'sawtooth', freq: 329.63, freqEnd: 329.63, gain: 0.24, attack: 0.006, decay: 0.35, delay: 0.04 },
       { type: 'tone', wave: 'square', freq: 659.25, freqEnd: 880, gain: 0.22, attack: 0.006, decay: 0.35, delay: 0.1 },
     ] },
+    // Soft retail desk ding when Employee of the Hour approaches its next drop.
+    incentiveMeterReady: { volume: 0.22, layers: [
+      { type: 'tone', wave: 'sine', freq: 1174.66, gain: 0.45, attack: 0.004, decay: 0.22 },
+      { type: 'tone', wave: 'sine', freq: 1760, gain: 0.28, attack: 0.004, decay: 0.28, delay: 0.06 },
+    ] },
     // The Return to Sender quest: a NO REFUNDS floor sign shot over (game/features/refundSign.js).
     refundSignDown: { volume: 0.5, layers: [
       { type: 'noise', filter: 'bandpass', freq: 900, q: 1.5, gain: 0.6, attack: 0.002, decay: 0.09 },

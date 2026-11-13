@@ -15,6 +15,8 @@ import { createPowerUpView } from '../src/fx/powerUpView.js';
 import { bossComfort, bossVouchers } from '../src/config/bosses.js';
 import { createBossFlashView } from '../src/ui/bossFlash.js';
 import { createIncentiveHud } from '../src/ui/incentiveHud.js';
+import { createHud } from '../src/ui/hud.js';
+import { settingDefs } from '../src/config/settings.js';
 import { menuDom } from './helpers/menuDom.js';
 
 function fixture(overrides = {}) {
@@ -614,23 +616,47 @@ test('shared pickup models and materials are built once, reused across views, an
   viewC.dispose();
 });
 
-test('incentive HUD shows earning progress, pickup countdown, jackpot marker and clears on death', () => {
+test('incentive HUD shows Employee of the Hour progress, near-full chime/glow, capped dim state, pickup countdown and clears on death', () => {
   menuDom();
-  const hud = createIncentiveHud();
-  // Round 2 with 0 progress remains hidden until first progress
-  hud.update({ available: true, progress: 0, pickup: null, round: 2 });
-  assert.equal(hud.element.hidden, true, 'hidden when progress is 0');
+  let chimes = 0;
+  const hud = createIncentiveHud({ onNearFull: () => { chimes += 1; } });
+  // Before firstRound (round 1): meter is hidden cleanly.
+  hud.update({ available: false, progress: 0, pickup: null, round: 1 });
+  assert.equal(hud.element.hidden, true, 'hidden before firstRound');
+  assert.equal(hud.element.querySelector('.incentive-progress').hidden, true);
 
-  // Once progress > 0, it shows
+  // Round 2 unlocked at 0%: shows Employee of the Hour meter at 0%.
+  hud.update({ available: true, progress: 0, pickup: null, round: 2 });
+  assert.equal(hud.element.hidden, false, 'visible once unlocked even at 0%');
+  assert.match(hud.element.querySelector('.incentive-heading').textContent, /Employee of the hour/i);
+  assert.match(hud.element.querySelector('.incentive-label').textContent, /PROGRESS · 0%/);
+  assert.equal(chimes, 0);
+
+  // Mid-progress + active drop
   hud.update({ available: true, progress: 0.5, pickup: { id: 'shiftBonus', remaining: 8.5 }, round: 2 });
   assert.equal(hud.element.hidden, false);
   assert.match(hud.element.textContent, /50%/);
   assert.match(hud.element.textContent, /SHIFT BONUS · COLLECT · 9s/);
+  assert.equal(hud.element.classList.contains('is-near-full'), false);
+  assert.equal(chimes, 0);
+
+  // Crossing nearFullFraction glows and dings ONCE per fill cycle
+  hud.update({ available: true, progress: 0.85, pickup: null, round: 2 });
+  assert.equal(hud.element.classList.contains('is-near-full'), true);
+  assert.match(hud.element.querySelector('.incentive-label').textContent, /85%/);
+  assert.equal(chimes, 1);
+  hud.update({ available: true, progress: 0.92, pickup: null, round: 2 });
+  assert.equal(chimes, 1, 'no repeat chime during the same fill cycle');
 
   // Jackpot pickup highlights with .jackpot class while keeping clean countdown text.
-  hud.update({ available: true, progress: 0.5, pickup: { id: 'storeWideClearance', remaining: 11.2 }, round: 4 });
+  hud.update({ available: true, progress: 0.2, pickup: { id: 'storeWideClearance', remaining: 11.2 }, round: 4 });
+  assert.equal(hud.element.classList.contains('is-near-full'), false);
   assert.equal(hud.element.querySelector('.incentive-drop').classList.contains('jackpot'), true);
   assert.equal(hud.element.querySelector('.incentive-drop').textContent, 'STORE-WIDE CLEARANCE · COLLECT · 12s');
+
+  // Re-arm near-full chime on next cycle
+  hud.update({ available: true, progress: 0.85, pickup: null, round: 4 });
+  assert.equal(chimes, 2);
 
   // A boss's voucher on the floor is a pickup too, though it is not an incentive type: it must be named, never throw
   // (a throw in the HUD stops the browser's frame loop).
@@ -640,10 +666,20 @@ test('incentive HUD shows earning progress, pickup countdown, jackpot marker and
   }
   hud.update({ available: true, progress: 0.5, pickup: { id: 'notAThing', remaining: 3 } });
   assert.equal(hud.element.querySelector('.incentive-drop').textContent, 'notAThing · COLLECT · 3s');
+
+  // Capped round dims the meter with CAPPED state while keeping active benefits visible.
   hud.update({ available: false, progress: 0, pickup: null, effects: [{ id: 'commissionDay', remaining: 12 }], round: 4 });
-  assert.match(hud.element.textContent, /ALLOWANCE USED/);
+  assert.equal(hud.element.classList.contains('is-capped'), true);
+  assert.match(hud.element.querySelector('.incentive-label').textContent, /CAPPED/);
   assert.match(hud.element.textContent, /COMMISSION DAY · 12s/);
   assert.equal(hud.element.querySelector('.incentive-drop').textContent, '');
+
+  // Disabling the meter setting hides the meter (and mutes chime), while pickups/benefits stay visible.
+  hud.setEnabled(false);
+  assert.equal(hud.element.querySelector('.incentive-meter').hidden, true);
+  assert.equal(hud.element.hidden, false, 'active benefits still keep the card visible');
+  hud.setEnabled(true);
+
   hud.update(null);
   assert.equal(hud.element.hidden, true);
 });
@@ -812,4 +848,77 @@ test('need cap limits dominance, preserves bag & no-repeat rules, and leaves jac
   }
   const jpRate = jackpots / jpSeq.length;
   assert.ok(jpRate >= 0.08 && jpRate <= 0.14, `jackpot rate unchanged (~11.1%), got ${(jpRate * 100).toFixed(1)}%`);
+});
+
+test('powerUpMeter event bus tracks real meter across round unlock, near-full, cap, save/restore and reset', () => {
+  menuDom();
+  const meterLog = [];
+  const t = fixture({ threshold: { min: 5, max: 5 }, maxPerRound: 1 });
+  let chimes = 0;
+  const view = createIncentiveHud({ onNearFull: () => { chimes += 1; } });
+  t.events.on('powerUpMeter', (m) => { meterLog.push(m); view.setMeter(m); });
+
+  t.events.emit('roundStart', { round: 1 });
+  assert.equal(meterLog.at(-1).unlocked, false);
+  assert.equal(meterLog.at(-1).progress, 0);
+  assert.equal(view.element.hidden, true);
+
+  t.events.emit('roundStart', { round: 2 });
+  assert.equal(meterLog.at(-1).unlocked, true);
+  assert.equal(meterLog.at(-1).progress, 0);
+  assert.equal(view.element.hidden, false);
+
+  for (let i = 0; i < 4; i++) {
+    t.kill();
+    t.manager.update(powerUps.credit.multiKillSeconds + 0.1);
+  } // 4 / 5 = 0.8 >= nearFullFraction (0.8)
+  assert.equal(meterLog.at(-1).progress, 0.8);
+  assert.equal(meterLog.at(-1).nearFull, true);
+  assert.equal(view.element.classList.contains('is-near-full'), true);
+  assert.equal(chimes, 1);
+
+  t.kill(); // 5 / 5 triggers drop on update
+  t.manager.update(0.01);
+  assert.equal(meterLog.at(-1).capped, true);
+  assert.equal(view.element.classList.contains('is-capped'), true);
+
+  // Restore preserves meter quietly (silent: true prevents spurious chime)
+  const snap = t.manager.serialize();
+  t.manager.reset();
+  assert.equal(meterLog.at(-1).unlocked, false);
+  assert.equal(meterLog.at(-1).progress, 0);
+  view.reset();
+  t.manager.restore(snap);
+  assert.equal(meterLog.at(-1).capped, true);
+  assert.equal(meterLog.at(-1).silent, true);
+  assert.equal(chimes, 1);
+});
+
+test('hud.connectEvents drives meter & NEW INCENTIVE discovery toast, and setting incentiveMeter toggles meter', () => {
+  menuDom();
+  let readies = 0;
+  const events = createEvents();
+  const hud = createHud({ onIncentiveReady: () => { readies += 1; } });
+  hud.connectEvents(events);
+  const meterSetting = settingDefs.find((d) => d.id === 'incentiveMeter');
+  assert.equal(meterSetting.tab, 'Comfort');
+  assert.equal(meterSetting.default, true);
+
+  events.emit('powerUpMeter', { round: 2, unlocked: true, available: true, capped: false, nearFull: true, progress: 0.85 });
+  assert.equal(hud.element.querySelector('.incentive-hud').classList.contains('is-near-full'), true);
+  assert.equal(readies, 1);
+
+  meterSetting.apply(false, { hud });
+  assert.equal(hud.element.querySelector('.incentive-progress').hidden, true);
+  meterSetting.apply(true, { hud });
+  assert.equal(hud.element.querySelector('.incentive-progress').hidden, false);
+
+  events.emit('incentiveDiscovered', { id: 'commissionDay', name: 'COMMISSION DAY', icon: 'commission', tier: 'jackpot', found: 1, total: 11 });
+  const toast = hud.element.querySelector('.incentive-discovery-toast');
+  assert.equal(toast.hidden, false);
+  assert.match(toast.textContent, /NEW INCENTIVE/);
+  assert.match(toast.textContent, /COMMISSION DAY · 1\/11/);
+
+  events.emit('runReset');
+  assert.equal(toast.hidden, true);
 });
