@@ -129,7 +129,7 @@ test('a held Premium gun is offered Platinum instead of a Premium transfer; Plat
   t.setTier('nailGun', 'premium');
   t.tick(2);
   g.gun.give(weapons.priceGun); t.tick(50);
-  if (g.gun.slots.includes('nailGun')) { g.gun.give(weapons.rivetRifle); t.tick(50); }
+  assert.deepEqual(g.gun.slots, ['stapleGun', 'priceGun'], 'the Price Gun replaced the Nail Gun in hand');
   assert.equal(warranty.onFile, 'premium');
 
   // A Standard gun still sees the Premium transfer for 750 (25% of 3,000).
@@ -164,12 +164,12 @@ test('replacing a Deluxe gun never overwrites a Premium warranty already on file
   t.setTier('nailGun', 'premium');
   t.tick(2);
   g.gun.give(weapons.priceGun); t.tick(50);
-  if (g.gun.slots.includes('nailGun')) { g.gun.give(weapons.rivetRifle); t.tick(50); }
+  assert.deepEqual(g.gun.slots, ['stapleGun', 'priceGun'], 'the Price Gun replaced the Nail Gun in hand');
   assert.equal(warranty.onFile, 'premium');
 
   // Upgrade the held gun to Deluxe, then replace it with another weapon.
   const heldId = g.gun.def.id;
-  const replacement = g.gun.slots.includes('rivetRifle') ? weapons.nailGun : weapons.rivetRifle;
+  const replacement = weapons.rivetRifle;
   t.setTier(heldId, 'deluxe');
   t.tick(2);
   g.gun.give(replacement); t.tick(50);

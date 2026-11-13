@@ -597,10 +597,7 @@ test('a warranty on file and a used Platinum claim survive Save & Quit', (t) => 
   run.tick(2);
   g.gun.give(weapons.priceGun);
   run.tick(50);
-  if (g.gun.slots.includes('nailGun')) {
-    g.gun.give(weapons.rivetRifle);
-    run.tick(50);
-  }
+  assert.deepEqual(g.gun.slots, ['stapleGun', 'priceGun'], 'the Price Gun replaced the Nail Gun in hand');
   assert.equal(g.features.context.warranty.onFile, 'premium');
   g.gun.setMods('stapleGun', withTier(weapons.stapleGun, g.gun.modsFor('stapleGun'), 'platinum'));
   run.tick(2);
