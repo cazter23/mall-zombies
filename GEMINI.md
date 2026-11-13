@@ -26,6 +26,9 @@ Check each of these before you call a change done:
   Characters have their own voices: Kiosk Kevin (config/kiosk.js hawk) is a pushy, desperate salesman who shouts in
   exclamation marks, and the GRAB-A-GUN cabinet's text (config/clawMachine.js) is a cheerful arcade machine. Keep new lines about
   as long as the ones beside them (HUD lanes: docs/ui-readability.md).
+- **Cite file:line for every claim about the game.** Before any text says what something does (a tip, a guide entry, a PA
+  line, a doc), find the code that does it and note `file:line` in your summary. If you cannot find it, do not write the
+  claim. (The death-report tips written from memory got mechanics wrong; the guide audit, which cited code, got them right.)
 - **Think through the player's moment.** Ask when the player sees, hears or pays for the thing (the first Doorbuster rush
   arrived before the player had bought the item, so it read as a random spawn). Say in your summary how to try it in the game.
 - **Commit your draft as an unreviewed snapshot** on your own branch; a review pass runs before anything merges into main.
