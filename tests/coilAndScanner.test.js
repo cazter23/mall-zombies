@@ -89,64 +89,122 @@ test('Heavy Coil Nailer model animates nose punch, piston dome hop, and coil dru
   assert.equal(heldDrum.visible, false);
 });
 
-test('Barcode Scanner charge-and-release: tap fires a weak 1-target snap shot; full hold fires a 4-target railgun beam', () => {
-  // 1. Quick tap (1 tick press, then release) -> low chargeRatio, 1 target pierced
-  {
-    const t = headlessGame();
-    const { g } = t;
-    t.tick();
-    g.rounds.update = () => {};
-    g.zombies.clear();
-    g.gun.give(barcodeScanner);
-    t.tick(45);
-    t.standAt(0, 12, 0, -0.15);
-    const zs = [3, 4, 5, 6].map((meters) => {
-      const z = g.zombies.spawn('shopper', new THREE.Vector3(0, 0, 12 - meters));
-      z.setState('chasing');
-      z.health = 500;
-      z.speed = 0;
-      z.updateHitboxes();
-      return z;
-    });
-    t.press('Mouse0', 1); // 1 tick held (starts charge)
-    assert.ok(t.sounds.includes('scannerCharge'), 'plays capacitor whine when charge begins');
-    t.tick(1); // released on next tick -> fires snap shot
-    assert.equal(g.runStats.shotsFired, 1);
-    assert.ok(g.gun.lastShot.chargeRatio < 0.1, 'near-zero charge ratio on quick tap');
-    const tapDamage = 500 - zs[0].health;
-    assert.ok(tapDamage >= barcodeScanner.damage * barcodeScanner.charge.minDamageMultiplier && tapDamage < barcodeScanner.damage * 0.5);
-    assert.equal(zs[1].health, 500, 'tap shot only hits the first zombie');
-  }
+// The Barcode Scanner rework (13 November 2026): hold to scan, the beam fires itself when the scan completes, no weak tap, and what it hits
+// is RUNG UP (game/rungUp.js).
+function scannerRange(t, metersList, { health = 2000 } = {}) {
+  const { g } = t;
+  t.tick();
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  g.gun.give(barcodeScanner);
+  t.tick(45);
+  t.standAt(0, 13.5, 0, -0.15);
+  const zs = metersList.map((meters) => {
+    const z = g.zombies.spawn('shopper', new THREE.Vector3(0, 0, 13.5 - meters));
+    z.setState('chasing');
+    z.health = z.maxHealth = health;
+    z.speed = 0;
+    z.updateHitboxes();
+    return z;
+  });
+  return zs;
+}
 
-  // 2. Full charge hold -> auto-discharges at chargeRatio = 1, pierces all 4 targets
-  {
-    const t = headlessGame();
-    const { g } = t;
-    t.tick();
-    g.rounds.update = () => {};
-    g.zombies.clear();
-    g.gun.give(barcodeScanner);
-    t.tick(45);
-    t.standAt(0, 13.5, 0, -0.15);
-    const zs = [1.8, 2.6, 3.4, 4.2, 5.0].map((meters) => {
-      const z = g.zombies.spawn('shopper', new THREE.Vector3(0, 0, 13.5 - meters));
-      z.setState('chasing');
-      z.health = 500;
-      z.speed = 0;
-      z.updateHitboxes();
-      return z;
-    });
-    g.zombies.update = () => {};
-    const chargeTicks = Math.ceil(barcodeScanner.charge.seconds / dt);
-    t.press('Mouse0', chargeTicks);
-    assert.equal(g.runStats.shotsFired, 1);
-    assert.equal(g.gun.lastShot.chargeRatio, 1);
-    assert.equal(zs[0].health, 500 - barcodeScanner.damage * 1.0);
-    assert.equal(zs[1].health, 500 - barcodeScanner.damage * 0.85);
-    assert.equal(zs[2].health, 500 - barcodeScanner.damage * 0.7);
-    assert.equal(zs[3].health, 500 - barcodeScanner.damage * 0.55);
-    assert.equal(zs[4].health, 500, 'beam stops after 4 targets');
+test('Barcode Scanner: a tap or a release before the scan completes fires nothing and spends nothing; holding fires the moment it completes, and again', () => {
+  const scanTicks = Math.ceil(barcodeScanner.charge.seconds / dt);
+  // A tap: one tick pressed, then let go. No shot, no ammo, no scan left running.
+  const tap = new Weapon(barcodeScanner, createPlayerStats());
+  assert.equal(tap.update(dt, { triggerPressed: true, triggerHeld: true }), null);
+  assert.equal(tap.isCharging, true, 'the scan starts on the press');
+  assert.equal(tap.update(dt, { triggerHeld: false }), null);
+  assert.equal(tap.isCharging, false);
+  assert.equal(tap.magazine, barcodeScanner.magazineSize, 'a tap spends nothing');
+  // Let go one tick short of the scan: still nothing.
+  const early = new Weapon(barcodeScanner, createPlayerStats());
+  early.update(dt, { triggerPressed: true, triggerHeld: true });
+  for (let i = 1; i < scanTicks - 1; i++) assert.equal(early.update(dt, { triggerHeld: true }), null);
+  assert.equal(early.update(dt, { triggerHeld: false }), null, 'released just before the scan completed');
+  assert.equal(early.magazine, barcodeScanner.magazineSize);
+  // Held: it fires on the tick the scan completes, a full shot, with no release needed.
+  const held = new Weapon(barcodeScanner, createPlayerStats());
+  const fired = [];
+  for (let tick = 0; tick < 180; tick++) {
+    if (held.update(dt, { triggerPressed: tick === 0, triggerHeld: true }) === 'fire') fired.push(tick);
   }
+  assert.equal(fired[0], scanTicks - 1, `the first beam fires as the ${barcodeScanner.charge.seconds} s scan completes`);
+  assert.equal(held.lastChargeRatio, 1, 'every shot is a full shot');
+  // Keep holding: it scans again after the fire interval and fires again (a beam every charge + interval).
+  const cycle = Math.round((barcodeScanner.charge.seconds + barcodeScanner.fireInterval) / dt);
+  assert.ok(fired.length >= 4, `held 3 s: ${fired.length} beams`);
+  for (let i = 1; i < fired.length; i++) assert.ok(Math.abs(fired[i] - fired[i - 1] - cycle) <= 2, `beam ${i}: ${fired[i] - fired[i - 1]} ticks apart (~${cycle})`);
+});
+
+test('Barcode Scanner: a full beam pierces 4 in a line (1, 0.85, 0.7, 0.55), beeps, and rings up every zombie it hits', () => {
+  const t = headlessGame();
+  const { g } = t;
+  const zs = scannerRange(t, [1.8, 2.6, 3.4, 4.2, 5.0]);
+  g.zombies.update = () => {};
+  const marked = [];
+  g.events.on('rungUp', ({ zombie }) => marked.push(zombie));
+  t.press('Mouse0', Math.ceil(barcodeScanner.charge.seconds / dt));
+  assert.equal(g.runStats.shotsFired, 1);
+  const falloff = barcodeScanner.pierce.damageFalloff;
+  assert.deepEqual(falloff, [1, 0.85, 0.7, 0.55]);
+  falloff.forEach((f, i) => assert.equal(zs[i].health, 2000 - 420 * f, `target ${i + 1}: 420 x ${f}`));
+  assert.equal(zs[4].health, 2000, 'the beam stops after 4');
+  assert.ok(t.sounds.includes('scannerCharge') && t.sounds.includes('scannerShot') && t.sounds.includes('scannerBeep'), 'whine, shot and checkout BEEP');
+  assert.deepEqual(marked, zs.slice(0, 4), 'all four rung up');
+  for (const z of zs.slice(0, 4)) {
+    assert.equal(z.isRungUp, true);
+    assert.equal(z.rungUpTimer, barcodeScanner.rungUp.seconds);
+  }
+  assert.equal(zs[4].isRungUp, false);
+});
+
+test('RUNG UP: x1.35 damage from everything for 4 s, +40 on a kill while marked, gone on death, and nothing paid once the run is over', () => {
+  const { rungUp } = barcodeScanner;
+  assert.deepEqual([rungUp.seconds, rungUp.damageTaken, rungUp.killBonus], [4, 1.35, 40]);
+  const t = headlessGame();
+  const { g } = t;
+  const [a, b, c] = scannerRange(t, [2, 2.8, 3.6], { health: 5000 });
+  g.health.invulnerable = true;
+  t.press('Mouse0', Math.ceil(barcodeScanner.charge.seconds / dt)); // rings all three up
+  assert.ok(a.isRungUp && b.isRungUp && c.isRungUp);
+  // More from EVERYTHING: a hazard's hit and the box cutter's, not just the scanner.
+  const before = a.health;
+  a.takeHit({ damage: 100, part: 'body', source: 'hazard' });
+  assert.equal(before - a.health, 135, 'a hazard hit of 100 does 135');
+  b.health = 50;
+  const melee = b.health;
+  b.takeHit({ damage: 20, part: 'body', melee: true });
+  assert.equal(melee - b.health, 27, 'a box cutter hit of 20 does 27');
+  // A kill while marked pays the kill (60 for a Shopper) and the bonus (40).
+  const bonuses = [];
+  g.events.on('rungUpKill', (e) => bonuses.push(e));
+  let points = g.wallet.points;
+  a.takeHit({ damage: 1e6, part: 'body', source: 'gun', weaponId: 'priceGun' });
+  assert.equal(g.wallet.points - points, 60 + 40);
+  assert.equal(bonuses.length, 1);
+  assert.equal(a.rungUpTimer, 0, 'the mark ends with it');
+  // Wears off: after its 4 s, a kill pays the plain kill only.
+  b.health = 5000;
+  t.tick(Math.ceil(rungUp.seconds / dt) + 2);
+  assert.equal(b.isRungUp, false, 'worn off after 4 s');
+  points = g.wallet.points;
+  b.takeHit({ damage: 1e6, part: 'body', source: 'gun', weaponId: 'priceGun' });
+  assert.equal(g.wallet.points - points, 60, 'no bonus once the mark is gone');
+  // Once the run is over nothing more is paid, the bonus included.
+  c.applyRungUp(rungUp.seconds, rungUp.damageTaken);
+  c.rungUpBonus = rungUp.killBonus;
+  g.state.over = true;
+  points = g.wallet.points;
+  c.takeHit({ damage: 1e6, part: 'body', source: 'gun' });
+  assert.equal(g.wallet.points, points);
+  assert.equal(bonuses.length, 1);
+  g.state.over = false;
+  // Play again: the zombies (and their marks) are gone.
+  g.resetRun();
+  assert.equal(g.zombies.zombies.filter((z) => z.isRungUp).length, 0);
 });
 
 test('Barcode Scanner charge is cancelled cleanly by reload, weapon switch, or blocking without spending ammo', () => {

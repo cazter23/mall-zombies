@@ -119,6 +119,7 @@ export function createPlayerGun({
     );
     viewmodel.fire(ads, d); // gun kick + muzzle flash using this shot's resolved stats (visual only)
     if (sound) sound.play(d.sounds.fire);
+    if (sound && d.sounds.beep) sound.play(d.sounds.beep); // (the Barcode Scanner's checkout BEEP, on top of the shot)
     return ads;
   }
 
@@ -196,6 +197,14 @@ export function createPlayerGun({
     kick(d, aim);
     const start = origin.clone().addScaledVector(throwDirection, projectile.startOffset);
     start.y += projectile.startDrop;
+    // Zeroed: angle the throw so the ball crosses the crosshair line `zeroDistance` out (it leaves below the eye and falls), lifted by the drop
+    // gravity gives it over that flight, as the ball does when it seeks its next zombie (weapons/ballistics.js).
+    if (projectile.zeroDistance) {
+      const zero = origin.clone().addScaledVector(throwDirection, projectile.zeroDistance).sub(start);
+      const flight = zero.length() / projectile.speed;
+      zero.y += 0.5 * projectile.gravity * flight * flight;
+      throwDirection.copy(zero.normalize());
+    }
     const ahead = start.clone().addScaledVector(throwDirection, 6);
     const shot = { origin: start.clone(), end: ahead, endNormal: throwDirection.clone().negate(), point: ahead.clone(), normal: throwDirection.clone().negate(),
       distance: 6, target: null, part: null, hits: [], worldHit: null, projectile: true, weaponId: d.id, magazineLeft: weapon.magazine };
@@ -309,14 +318,11 @@ export function createPlayerGun({
     if (slot.def.cone) return fireCone(slot);
     const { def: d, aim, weapon } = slot;
     player.getAim(origin, direction);
+    // (A charged gun, the Barcode Scanner, only fires when its scan completes: every shot is a full one, weapons/weapon.js.)
     const chargeRatio = d.charge ? (weapon.lastChargeRatio ?? 1) : 1;
-    const chargeScale = d.charge ? d.charge.minDamageMultiplier + (1 - d.charge.minDamageMultiplier) * chargeRatio : 1;
+    const chargeScale = 1;
     const pierce = d.pierce ?? null;
-    const maxTargets = pierce
-      ? (d.charge
-          ? Math.round((d.charge.minTargets ?? 1) + (pierce.maxTargets - (d.charge.minTargets ?? 1)) * chargeRatio)
-          : pierce.maxTargets)
-      : 1;
+    const maxTargets = pierce ? pierce.maxTargets : 1;
     const trap = workshopBuilds.partyTrap;
     const workshop = workshopModOf(slot.mods);
     const placementRay = workshop === 'partyTrap' && aim.amount >= trap.aimAmount
@@ -353,7 +359,7 @@ export function createPlayerGun({
     for (const [rayIndex, ray] of rays.entries()) {
       const colors = d.pellets?.tracerColors;
       const color = colors ? colors[rayIndex % colors.length] : d.tracerColor;
-      effects.tracer(muzzlePosition, ray.end, color);
+      effects.tracer(muzzlePosition, ray.end, color, d.beam); // (d.beam: a gun's own fatter, longer streak: the Barcode Scanner's beam)
       ray.hits.forEach((hit, i) => {
         // Hits are worked out before any damage, so a target can be dead by the time its hit applies
         // (killed by an earlier pellet, or by something reacting to another kill this shot): skip it.

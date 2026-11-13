@@ -25,6 +25,7 @@
 // =============================================================================
 
 import { blastFalloff } from './blast.js';
+import { zombieHealthForRound } from '../config/economy.js';
 
 /**
  * Damage multiplier for a hit at `distance` meters. `falloff` = { start, end, minMultiplier }:
@@ -36,6 +37,16 @@ export function damageFalloff(distance, falloff) {
   if (distance <= falloff.start) return 1;
   if (distance >= falloff.end) return falloff.minMultiplier;
   return 1 + (falloff.minMultiplier - 1) * (distance - falloff.start) / (falloff.end - falloff.start);
+}
+
+/**
+ * A gun with `roundScaling` ({ exponent }: the Tennis Ball Launcher) hits harder against zombies of later rounds: its damage is multiplied by
+ * (the round's Shopper health / round 1's) ^ exponent, the round being the one the TARGET spawned in (zombie.round). An exponent under 1 keeps
+ * it a little behind the health curve, so the hits a kill takes creep up slowly instead of running away. No round known (a practice dummy): x1.
+ */
+export function roundDamageScale(def, round) {
+  if (!def.roundScaling || !(round > 1)) return 1;
+  return Math.pow(zombieHealthForRound(round) / zombieHealthForRound(1), def.roundScaling.exponent);
 }
 
 /** What an instant kill deals: more than any zombie has (takeHit multiplies it by the zombie's own damage-taken factors, so it stays lethal). */
@@ -77,7 +88,8 @@ export function hitDamage(def, hit, index, stats, chargeScale = 1, target = null
   }
   const head = hit.part === 'head' ? def.headshotMultiplier * (stats.headshotDamageMultiplier ?? 1) : 1;
   const pierce = def.pierce ? def.pierce.damageFalloff[Math.min(index, def.pierce.damageFalloff.length - 1)] : 1;
-  const base = def.damage * chargeScale * head * damageFalloff(hit.distance, def.falloff) * pierce * stats.damageMultiplier;
+  const rounds = roundDamageScale(def, effectiveTarget?.round);
+  const base = def.damage * chargeScale * head * damageFalloff(hit.distance, def.falloff) * pierce * rounds * stats.damageMultiplier;
   return applyInstantKillDamage(base, effectiveTarget, stats);
 }
 

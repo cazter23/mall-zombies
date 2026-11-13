@@ -81,7 +81,7 @@ export const look = {
   // light rim (first number) and all dark edge (second); in between they blend.
   zombieRim: {
     power: 3.6, strength: 0.28,
-    colors: { default: 0xffe6c8, mallWalker: 0xc8f0ff, cartPusher: 0xffd27a, mannequin: 0xd8e4ff, mascot: 0xffb26b, boss: 0xff8fb0 },
+    colors: { default: 0xffe6c8, shoplifter: 0xd0b8ff, mallWalker: 0xc8f0ff, cartPusher: 0xffd27a, mannequin: 0xd8e4ff, mascot: 0xffb26b, boss: 0xff8fb0 },
     darkEdge: { color: 0x2a1530, power: 2.2, strength: 0.6 },
     darkBelow: [0.62, 0.86],
     // Last-zombie straggler highlight (on-screen rim boost + through-walls silhouette): dual high-contrast bright/dark edge

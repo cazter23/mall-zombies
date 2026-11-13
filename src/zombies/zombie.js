@@ -49,6 +49,7 @@ export class Zombie {
   // `speed`: this zombie's gait speed in m/s (defaults to the type's base walk).
   // `round`: the round it spawned in (later rounds wind up their attacks faster).
   constructor({ type, health, position, yaw, speed = type.speed, round = 1 }) {
+    this.round = round; // (a gun whose damage keeps up with the rounds reads it: weapons/gunStats.js roundDamageScale)
     this.type = type;
     this.maxHealth = health;
     this.health = health;
@@ -78,6 +79,8 @@ export class Zombie {
     this.slowKind = null; // what slowed it ('smoothie', 'antifreeze', 'butter'...): only for how it looks (zombies/statusTint.js)
     this.vulnerableTimer = 0; // Smoothie: seconds it takes extra damage from everything
     this.vulnerableMultiplier = 1;
+    this.rungUpTimer = 0; // Barcode Scanner: seconds it stays RUNG UP (game/rungUp.js): extra damage from everything, a kill bonus
+    this.rungUpMultiplier = 1;
     this.slipTimer = 0; // Popcorn Butter: seconds it lies on the floor (headshots do extra); slipTotal = how long this fall is
     this.slipTotal = 0;
     this.slipImmune = 0; // seconds before it can slip again, so a puddle can't pin it down
@@ -198,6 +201,7 @@ export class Zombie {
     if (damage > 0) this.woundedBy.add(weaponId ?? source);
     damage *= this.damageTakenMultiplier;
     if (this.vulnerableTimer > 0) damage *= this.vulnerableMultiplier; // (Smoothie: slowed zombies take more from everything)
+    if (this.rungUpTimer > 0) damage *= this.rungUpMultiplier; // (Barcode Scanner: RUNG UP, more from everything)
     if (this.slipTimer > 0 && part === 'head') damage *= workshopStuffings.popcornButter.puddle.fallenHeadshotMultiplier; // (Popcorn Butter: it's down)
     // A crashed Cart Pusher is wide open: hits do extra damage.
     if (this.state === 'crashed') damage *= this.type.charge.crashDamageTakenMultiplier;
@@ -330,6 +334,18 @@ export class Zombie {
     this.vulnerableTimer = Math.max(this.vulnerableTimer, seconds);
   }
 
+  // Barcode Scanner: RUNG UP for `seconds`: every hit on it does `multiplier` times the damage, and a kill pays a bonus (game/rungUp.js).
+  // A new beam restarts the clock (never shortens it). Not on a dead or still-rising zombie.
+  applyRungUp(seconds, multiplier) {
+    if (!this.isAlive || this.state === 'spawning') return false;
+    this.rungUpMultiplier = multiplier;
+    this.rungUpTimer = Math.max(this.rungUpTimer, seconds);
+    return true;
+  }
+
+  /** Is it RUNG UP right now (the Barcode Scanner mark)? */
+  get isRungUp() { return this.isAlive && this.rungUpTimer > 0; }
+
   // Popcorn Butter: it slips and slides for `seconds` (steering lost, like a stagger, but it keeps its speed), flat on its back. Refused
   // for bosses, while it rises, while it's already down or just got up.
   applySlip(seconds, drag) {
@@ -396,6 +412,7 @@ export class Zombie {
     this.detour = null; // { x, y, z } a point to walk through on the way to the player (Spill Cleanup: game/incentiveEffects.js)
     this.control = null; // behavior-owned function(dt, ctx): true when it handled movement
     this.damageTakenMultiplier = 1;
+    this.rungUpTimer = 0; // (a dead zombie is no longer rung up)
     this.burn = null;
       return;
     }
@@ -467,6 +484,7 @@ export class Zombie {
       this.slowKind = null;
     }
     this.vulnerableTimer = Math.max(0, this.vulnerableTimer - dt);
+    this.rungUpTimer = Math.max(0, this.rungUpTimer - dt);
     this.slipImmune = Math.max(0, this.slipImmune - dt);
     if (this.slipTimer > 0) {
       this.slipTimer = Math.max(0, this.slipTimer - dt);
@@ -773,7 +791,7 @@ export class Zombie {
     let ax = dirX * speed - this.velocity.x;
     let az = dirZ * speed - this.velocity.z;
     const aLen = Math.hypot(ax, az);
-    const maxChange = this.type.mascot.exposedAcceleration * dt;
+    const maxChange = (this.type.mascot?.exposedAcceleration ?? this.type.acceleration ?? 12) * dt; // (a bare Mascot, or a fleeing Shoplifter)
     if (aLen > maxChange) {
       ax *= maxChange / aLen;
       az *= maxChange / aLen;

@@ -566,6 +566,55 @@ export function createNavigation(colliders, agent, { floors = [0], links = [] } 
       return true;
     },
 
+    /**
+     * Which way should something at `from` walk to get AWAY from the player? The field directionTo walks down, walked UP: a few cells
+     * to ever-greater route cost (round corners, along corridors), aiming at the furthest one still in a straight line. Writes a unit
+     * (x, z) into `out` and returns true, or false when there is nowhere further to go (cornered in a dead end) or no field.
+     * On a ramp it heads for the ramp's end further from the player. Used by the Shoplifter's getaway (game/shoplifting.js).
+     */
+    directionAway(from, out, { lookAhead = 4 } = {}) {
+      if (!hasField) return false;
+      const fy = from.y ?? 0;
+      const ramp = rampAt(from.x, fy, from.z);
+      if (ramp) {
+        const end = dist[ramp.upperCell] >= dist[ramp.lowerCell] ? ramp.upper : ramp.lower;
+        return setDir(out, end.x - from.x, end.z - from.z);
+      }
+      const layer = layerOf(fy);
+      const floorY = floors[layer];
+      let i = bestCellNear(from.x, from.z, layer);
+      if (i < 0 || dist[i] === Infinity) return false;
+      const start = i;
+      let aim = i;
+      const base = layer * cells;
+      for (let step = 0; step < lookAhead; step++) {
+        const local = i - base;
+        const c = local % cols;
+        const r = (local - c) / cols;
+        let next = -1;
+        let nextD = dist[i];
+        for (let n = 0; n < NEIGHBOR_COUNT; n++) {
+          const dc = NEIGHBOR_DC[n];
+          const dr = NEIGHBOR_DR[n];
+          const nc = c + dc;
+          const nr = r + dr;
+          if (!inside(nc, nr)) continue;
+          const ni = base + nr * cols + nc;
+          if (!walkable[ni] || dist[ni] === Infinity) continue;
+          if (dc !== 0 && dr !== 0 && (!walkable[base + r * cols + nc] || !walkable[base + nr * cols + c])) continue;
+          if (dist[ni] > nextD) {
+            nextD = dist[ni];
+            next = ni;
+          }
+        }
+        if (next < 0) break;
+        i = next;
+        if (step === 0 || clearLine(from.x, from.z, cellX(i), cellZ(i), floorY)) aim = i;
+      }
+      if (aim === start) return false;
+      return setDir(out, cellX(aim) - from.x, cellZ(aim) - from.z);
+    },
+
     isWalkableAt,
     clearLine,
 

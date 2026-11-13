@@ -92,9 +92,15 @@ export const audio = {
       { type: 'tone', wave: 'sine', freq: 240, freqEnd: 95, gain: 0.35, attack: 0.001, decay: 0.055, delay: 0.018 },
     ] },
     // Barcode Scanner: rising capacitor whine, retail checkout laser beep + high-voltage crackle discharge.
-    scannerCharge: { volume: 0.48, layers: [
-      { type: 'tone', wave: 'sine', freq: 520, freqEnd: 1760, gain: 0.42, attack: 0.015, decay: 0.38 },
-      { type: 'tone', wave: 'triangle', freq: 1040, freqEnd: 2640, gain: 0.18, attack: 0.02, decay: 0.36 },
+    // The scan: a whine rising over the whole charge (weapons.barcodeScanner.charge.seconds, 0.45 s), so you hear it fill.
+    scannerCharge: { volume: 0.5, layers: [
+      { type: 'tone', wave: 'sine', freq: 420, freqEnd: 1900, gain: 0.42, attack: 0.3, decay: 0.16 },
+      { type: 'tone', wave: 'triangle', freq: 840, freqEnd: 2900, gain: 0.2, attack: 0.32, decay: 0.14 },
+    ] },
+    // The checkout BEEP the beam fires with: one loud, clean till beep, played on top of scannerShot.
+    scannerBeep: { volume: 0.7, layers: [
+      { type: 'tone', wave: 'square', freq: 1960, freqEnd: 1960, gain: 0.32, attack: 0.002, decay: 0.13 },
+      { type: 'tone', wave: 'sine', freq: 3920, freqEnd: 3920, gain: 0.12, attack: 0.002, decay: 0.1 },
     ] },
     scannerShot: { volume: 0.86, layers: [
       { type: 'tone', wave: 'square', freq: 2150, freqEnd: 2150, gain: 0.34, attack: 0.0005, decay: 0.042 },
@@ -607,6 +613,17 @@ export const audio = {
         { type: 'noise', filter: 'lowpass', freq: 500, q: 0.7, gain: 0.3, attack: 0.025, decay: 0.12 },
       ],
     },
+    // The Shoplifter (game/shoplifting.js): a cash drawer's "ka-ching" as it grabs your points...
+    shopliftGrab: { volume: 0.75, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 1800, q: 2, gain: 0.35, attack: 0.001, decay: 0.05 },
+      { type: 'tone', wave: 'triangle', freq: 2637, freqEnd: 2637, gain: 0.3, attack: 0.002, decay: 0.35, delay: 0.06 },
+      { type: 'tone', wave: 'sine', freq: 3520, freqEnd: 3520, gain: 0.2, attack: 0.002, decay: 0.45, delay: 0.09 },
+    ] },
+    // ...and a bright two-note chime when they come back (it was stopped).
+    shopliftRecovered: { volume: 0.6, layers: [
+      { type: 'tone', wave: 'sine', freq: 1046, freqEnd: 1046, gain: 0.4, attack: 0.005, decay: 0.2 },
+      { type: 'tone', wave: 'sine', freq: 1568, freqEnd: 1568, gain: 0.4, attack: 0.005, decay: 0.35, delay: 0.12 },
+    ] },
     // ...and three quick pants when it's winded after a swing.
     walkerPant: {
       volume: 0.6,

@@ -77,7 +77,9 @@ export function hitChance(def, distance, options) {
   return measureShots(def, distance, options).hitChance;
 }
 
-function measureShots(def, distance, { ads = false, samples = 2000, seed = 7, aimAt = 'chest' } = {}) {
+// `round`: the round the Shopper spawned in, for a gun whose damage keeps up with the rounds (def.roundScaling: weapons/gunStats.js roundDamageScale).
+function measureShots(def, distance, { ads = false, samples = 2000, seed = 7, aimAt = 'chest', round = 1 } = {}) {
+  const target = def.roundScaling ? { round } : null; // (only then: any other gun is measured exactly as before)
   const origin = new THREE.Vector3(0, EYE, 0);
   const body = new THREE.Box3(
     new THREE.Vector3(-hb.bodyHalfWidth, 0, -distance - hb.bodyHalfWidth),
@@ -104,7 +106,7 @@ function measureShots(def, distance, { ads = false, samples = 2000, seed = 7, ai
         let dist = Infinity;
         if (ray.intersectBox(head, point)) { part = 'head'; dist = point.distanceTo(origin); }
         if (ray.intersectBox(body, point) && point.distanceTo(origin) < dist) { part = 'body'; dist = point.distanceTo(origin); }
-        if (part) { total += hitDamage(def, { part, distance: dist }, 0, NO_STATS); hits += 1; }
+        if (part) { total += hitDamage(def, { part, distance: dist }, 0, NO_STATS, 1, target); hits += 1; }
       }
     }
     return { damage: total / samples, hitChance: hits / (samples * rays) };

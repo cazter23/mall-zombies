@@ -243,12 +243,14 @@ export class Weapon {
         }
         if (triggerHeld) {
           this.chargeTimer += dt;
-          if (this.chargeTimer >= this.def.charge.seconds) {
+          if (this.chargeTimer >= this.def.charge.seconds - 1e-9) { // (27 ticks of 1/60 add up a hair under 0.45)
             return this.fireChargedShot(1);
           }
           return null;
         }
-        return this.fireChargedShot(this.chargeProgress);
+        // Let go before the scan completed: it is cancelled. Nothing fires and no ammo is spent (every shot is a full shot).
+        this.chargeTimer = 0;
+        return null;
       }
       const wantsCharge = triggerPressed || (triggerHeld && this.magazine > 0);
       this.fireRequest = wantsCharge ? this.def.fireBuffer : 0;
@@ -284,10 +286,10 @@ export class Weapon {
     }
 
     if (this.def.fireMode === 'charge') {
-      if (!triggerHeld) return this.fireChargedShot(0);
+      if (!triggerHeld) return null; // (a tap that was let go before its turn came: no scan, no shot)
       this.chargeTimer = dt;
       this.justStartedCharging = true;
-      if (this.chargeTimer >= this.def.charge.seconds) {
+      if (this.chargeTimer >= this.def.charge.seconds - 1e-9) { // (27 ticks of 1/60 add up a hair under 0.45)
         return this.fireChargedShot(1);
       }
       return null;

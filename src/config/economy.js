@@ -20,6 +20,7 @@ export const economy = {
   // Base points for killing each zombie type
   killValues: {
     shopper: 60,
+    shoplifter: 70, // a little over a Shopper: it's the one you have to prioritise
     mallWalker: 60,
     mannequin: 100,
     cartPusher: 130, // 1.8x a Shopper's health (an even per-bullet payout would be 108), a little extra for how dangerous it is
@@ -39,15 +40,24 @@ export const economy = {
   //                    forced to be one if none has come yet, so the "they're here" banner always has a zombie
   //   maxAlive         further selections become Shoppers while this many are alive
   zombieMix: {
-    mallWalker: {
+    // Round 4+: the Shoplifter (zombies.js; game/shoplifting.js). It took the Mall Walker's slot (13 November 2026): it pressures your
+    // points, not your legs. At most 3 alive (further picks become Shoppers).
+    shoplifter: {
       fromRound: 4,
       shareByRound: [
-        { fromRound: 4, share: 0.15 },
-        { fromRound: 6, share: 0.25 },
-        { fromRound: 9, share: 0.3 },
+        { fromRound: 4, share: 0.12 },
+        { fromRound: 6, share: 0.18 },
+        { fromRound: 9, share: 0.2 },
       ],
-      healthMultiplier: 0.65,
+      healthMultiplier: 0.8,
       introSpawnIndex: 2,
+      maxAlive: 3,
+    },
+    // SUMMON ONLY (no fromRound / shareByRound: never in a wave): the Mall Walker is the bosses' backup now (Skylar's fans, Kettle's
+    // lockdown, the Last Customer: config/bosses.js). It was in the waves from round 4 at up to 30%, outrunning your walk: rounds
+    // turned into running away (playtest, 13 November 2026).
+    mallWalker: {
+      healthMultiplier: 0.65,
     },
     cartPusher: {
       fromRound: 6,
@@ -92,7 +102,7 @@ export const economy = {
     // The three late guns (priced from `npm run balance`): ammo about half the gun, like the others.
     rivetRifle: { weapon: 1500, ammo: 750 }, // stronger automatic rifle; smaller magazine and quicker handling than Coil (Grand Atrium)
     coilNailer: { weapon: 2500, ammo: 650 }, // late Cinema purchase: large drum, slow reload and 2-target pierce
-    barcodeScanner: { weapon: 1750, ammo: 900 }, // weak sustained dps (180) but pierces 4 in a line, ~3x (Byte Me Electronics)
+    barcodeScanner: { weapon: 1750, ammo: 900 }, // a full 420 beam every scan, pierces 4, rings up what it hits (HOFFMAN'S; 13 November 2026 rework)
   },
 
   // GRAB-A-GUN, the claw machine (config/clawMachine.js): one grab. 1,500 = what a site's first grab wins in wall value (it was 1,000 and
@@ -398,7 +408,7 @@ export function zombieHealthFor(typeId, round) {
 // Which type the next spawn in `round` is, from zombieMix (`roll` 0..1, random by default).
 export function zombieTypeForRound(round, roll = Math.random()) {
   for (const [typeId, mix] of Object.entries(economy.zombieMix)) {
-    if (round < mix.fromRound) continue;
+    if (!mix.shareByRound || round < mix.fromRound) continue; // (a summon-only type, the Mall Walker, is never rolled)
     let share = 0;
     for (const row of mix.shareByRound) if (round >= row.fromRound) share = row.share;
     if (roll < share) return typeId;

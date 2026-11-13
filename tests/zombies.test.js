@@ -12,14 +12,15 @@ import { feel } from '../src/config/feel.js';
 
 const dt = 1 / feel.simulation.tickRate;
 
-test('Mall Walkers only join the mix from round 4, at the configured shares', () => {
+test('Shoplifters join the mix from round 4 at the configured shares; a Mall Walker is never rolled in a wave (boss backup only)', () => {
   for (const round of [1, 2, 3]) assert.equal(zombieTypeForRound(round, 0), 'shopper');
-  assert.equal(zombieTypeForRound(4, 0.149), 'mallWalker');
-  assert.equal(zombieTypeForRound(4, 0.151), 'shopper');
-  assert.equal(zombieTypeForRound(6, 0.249), 'mallWalker');
-  assert.equal(zombieTypeForRound(9, 0.299), 'mallWalker');
-  assert.equal(zombieTypeForRound(20, 0.301), 'cartPusher'); // the Cart Pushers' share comes after the Walkers' (tests/cartPusher.test.js)
-  assert.equal(zombieTypeForRound(20, 0.571), 'shopper'); // beyond the Mannequin and Mascot shares
+  assert.equal(zombieTypeForRound(4, 0.119), 'shoplifter');
+  assert.equal(zombieTypeForRound(4, 0.121), 'shopper');
+  assert.equal(zombieTypeForRound(6, 0.179), 'shoplifter');
+  assert.equal(zombieTypeForRound(9, 0.199), 'shoplifter');
+  assert.equal(zombieTypeForRound(20, 0.201), 'cartPusher'); // the Cart Pushers' share comes after the Shoplifters' (tests/cartPusher.test.js)
+  assert.equal(zombieTypeForRound(20, 0.471), 'shopper'); // beyond the Mannequin and Mascot shares
+  for (const round of [4, 9, 20, 30]) for (let roll = 0; roll < 1; roll += 0.01) assert.notEqual(zombieTypeForRound(round, roll), 'mallWalker');
 });
 
 test('Mall Walkers have 65% of the round health and pay the same kill value', () => {
@@ -31,7 +32,7 @@ test('Mall Walkers have 65% of the round health and pay the same kill value', ()
   assert.equal(pointsForHit({ target: { type: zombieTypes.mallWalker }, killed: false }), economy.payouts.nonLethalHit);
 });
 
-test('round 4 always brings a Mall Walker early and announces each new type once per run', () => {
+test('round 4 always brings a Shoplifter early and announces each new type once per run', () => {
   const spawns = [];
   const intros = [];
   const fakeZombies = { aliveCount: 0, spawn(typeId) { spawns.push({ round: rounds.round, typeId }); return {}; }, clear() {} };
@@ -41,8 +42,8 @@ test('round 4 always brings a Mall Walker early and announces each new type once
   assert.ok(rounds.round >= 5, 'rounds should have advanced past round 4');
   assert.equal(spawns.filter((s) => s.round < 4 && s.typeId !== 'shopper').length, 0);
   const round4 = spawns.filter((s) => s.round === 4);
-  assert.ok(round4.slice(0, economy.zombieMix.mallWalker.introSpawnIndex + 1).some((s) => s.typeId === 'mallWalker'));
-  assert.deepEqual(intros.map((i) => i.typeId), ['shopper', 'mallWalker']);
+  assert.ok(round4.slice(0, economy.zombieMix.shoplifter.introSpawnIndex + 1).some((s) => s.typeId === 'shoplifter'));
+  assert.deepEqual(intros.map((i) => i.typeId), ['shopper', 'shoplifter']);
   assert.equal(intros[1].round, 4);
   rounds.reset();
   rounds.start();

@@ -1,5 +1,28 @@
 # Sunset Galleria: build history ("Current state")
 
+## 13 November 2026 - Tennis Ball Launcher keeps up; Barcode Scanner: scan and ring up (claude/gun-rework)
+
+- Tennis Ball Launcher: 60 a hit x (round Shopper health / 150)^0.85 by the round the zombie spawned in (roundScaling; zombie.round), so a
+  Shopper takes 3-4 hits from round 1 to 30 (it was 24 by round 15). A faster, flatter ball (28 m/s, gravity 4) zeroed at 10 m: it lands
+  on the crosshair instead of ~0.7 m under it at 10 m. Seeks the next zombie within 4.5 m.
+- Barcode Scanner: hold to scan (red scan line on the target, a ring filling round the crosshair, the window and LEDs, a rising whine);
+  the beam fires itself when the 0.45 s scan completes, with a checkout BEEP: 420, 2x headshots, pierce 4. No weak tap: let go early and
+  nothing fires. Everything a beam hits is RUNG UP for 4 s (game/rungUp.js, a red price tag over it, fx/rungUpView.js): x1.35 damage from
+  everything and +40 on a kill while marked. Sustained 292 -> 494 (~645 on its own marked target; Rivet Rifle 582, Price Gun 434).
+- Numbers and reasons: docs/weapon-balance-pass.md (13 November 2026 section). New: game/rungUp.js, fx/rungUpView.js, fx/scanLine.js,
+  hud.setCharge (the crosshair ring), gunStats roundDamageScale, audio scannerBeep.
+## 13 November 2026 - The Shoplifter replaces the Mall Walker in the waves (`claude/shoplifter`)
+
+Playtest: Mall Walkers (5.4 m/s, faster than your walk; up to 30% of spawns from round 9 with no cap; a slimmer hitbox) made rounds about
+running away, not shooting. They leave the waves (economy.zombieMix.mallWalker is summon-only: Skylar's fans, Kettle's lockdown backup
+and the Last Customer's backup still bring them) and the SHOPLIFTER takes round 4: a jogging shopper (3.6 m/s, under your backpedal) in a
+hoodie and beanie with a bag, 0.8x health, a 25 hit. A hit steals 10% of your points (50 to 400) and it runs off (navigation.directionAway: the
+player field walked uphill) at 5.2 m/s with a gold coin over it; kill it within 8 s and every point comes back (plus its 70), else they are
+gone. 12% / 18% / 20% of spawns from rounds 4 / 6 / 9, at most 3 alive. PA pools for the theft, the recovery and the getaway, a till's
+"ka-ching" and a recovery chime. New: game/shoplifting.js, fx/lootView.js, wallet.lose/recover, a Shoplifter guide page and death report;
+the Polka Dot skin (Balloon Launcher) now asks for 100 Shoplifters instead of 150 Mall Walkers. Also: zombie.walkToward no longer assumes
+a Mascot (it read the Mascot's acceleration).
+
 ## 13 November 2026 - Return to Sender becomes a blast (`claude/claw-guns`)
 
 The wonder weapon felt underpowered for its rarity: it instant-killed, but one zombie per pull. Asked for something like a COD "Thunder Gun"

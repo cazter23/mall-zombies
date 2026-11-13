@@ -19,7 +19,8 @@ const pct = (fraction) => Math.round(fraction * 100) + '%';
 const extra = (multiplier) => pct(multiplier - 1); // 1.5 -> "50%" (more)
 const rounds = (list) => list.length > 2 ? `${list.slice(0, -1).join(', ')} or ${list.at(-1)}` : list.join(' or ');
 const mix = economy.zombieMix;
-const { shopper, mallWalker, cartPusher, mannequin } = zombieTypes;
+const { shopper, shoplifter, mallWalker, cartPusher, mannequin } = zombieTypes;
+const theft = shoplifter.theft;
 const mascot = zombieTypes.mascot.mascot;
 const { janitor, guard, manager, influencer, lastCustomer } = bossTypes;
 const rewardName = (id) => bossVouchers[id]?.name ?? powerUps.types?.[id]?.name ?? null;
@@ -69,8 +70,18 @@ export const guideEntries = [
     tip: 'A headshot does more than a body shot with most guns, twice as much or more on some. Let them bunch up in a doorway and aim high.',
   },
   {
+    id: 'shoplifter', section: 'customers', type: shoplifter, name: 'Shoplifter', title: 'Unpaid customer',
+    health: mix.shoplifter.healthMultiplier, firstSeen: `Round ${mix.shoplifter.fromRound}`, notesAt: 25, tipAt: 100,
+    memo: 'Hood up, bag open, never once at a register. Loss Prevention has a file on every one of them. The file is also missing.',
+    notes: [
+      `It jogs at ${shoplifter.speed} m/s, slower than I back away. Its hit is only ${shoplifter.attack.damage}, but it takes ${pct(theft.fraction)} of my points with it (at least ${theft.min}, at most ${theft.max}).`,
+      `Then it runs for it at ${theft.fleeSpeed} m/s with a gold coin over its head. I sprint faster. After ${theft.fleeSeconds} seconds it is gone, and so are my points.`,
+    ],
+    tip: 'Shoot it first. If it does get a hand in the till, sprint after it: drop it before it gets away and every point comes back.',
+  },
+  {
     id: 'mallWalker', section: 'customers', type: mallWalker, name: 'Mall Walker', title: 'Fitness enthusiast',
-    health: mix.mallWalker.healthMultiplier, firstSeen: `Round ${mix.mallWalker.fromRound}`, notesAt: 25, tipAt: 150,
+    health: mix.mallWalker.healthMultiplier, firstSeen: 'Boss backup', notesAt: 25, tipAt: 150,
     memo: 'Has completed eleven thousand laps of the upper level. Stops for nothing, except, briefly, their own lungs.',
     notes: [
       `FAST. ${mallWalker.speed} m/s. I walk at ${feel.movement.walkSpeed} and sprint at ${feel.movement.sprintSpeed}, so backing away doesn't work.`,

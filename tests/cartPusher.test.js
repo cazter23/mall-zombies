@@ -56,12 +56,12 @@ const box = (x0, y0, z0, x1, y1, z1) => new THREE.Box3(new THREE.Vector3(x0, y0,
 
 test('round mix: Cart Pushers from round 6 (10%, 15% from round 10), 1.8x health, worth 130', () => {
   for (const round of [1, 4, 5]) for (const roll of [0, 0.2, 0.3, 0.5, 0.99]) assert.notEqual(zombieTypeForRound(round, roll), 'cartPusher');
-  assert.equal(zombieTypeForRound(6, 0.249), 'mallWalker');
-  assert.equal(zombieTypeForRound(6, 0.26), 'cartPusher');
-  assert.equal(zombieTypeForRound(6, 0.349), 'cartPusher');
-  assert.equal(zombieTypeForRound(6, 0.351), 'shopper');
-  assert.equal(zombieTypeForRound(10, 0.449), 'cartPusher'); // after the Mall Walkers' 30%
-  assert.equal(zombieTypeForRound(10, 0.541), 'shopper'); // beyond the Mannequin and Mascot shares
+  assert.equal(zombieTypeForRound(6, 0.179), 'shoplifter');
+  assert.equal(zombieTypeForRound(6, 0.19), 'cartPusher');
+  assert.equal(zombieTypeForRound(6, 0.279), 'cartPusher');
+  assert.equal(zombieTypeForRound(6, 0.281), 'shopper');
+  assert.equal(zombieTypeForRound(10, 0.349), 'cartPusher'); // after the Shoplifters' 20%
+  assert.equal(zombieTypeForRound(10, 0.471), 'shopper'); // beyond the Mannequin and Mascot shares
   for (const round of [6, 9, 14]) {
     assert.equal(zombieHealthFor('cartPusher', round), Math.round(zombieHealthForRound(round) * 1.8));
   }

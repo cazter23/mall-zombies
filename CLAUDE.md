@@ -184,7 +184,7 @@ Built when `debug.testArena` is true (it still is: turn it off before shipping);
 9. Meta progression and skill tree (not started); the run goal / ending, Closing Time (all twelve phases done: docs/closing-time-plan.md)
 
 ## Design reference (decisions made so far)
-- **Zombie roster, with intro rounds:** Shopper (round 1), Mall Walker (4, fast, low HP),
+- **Zombie roster, with intro rounds:** Shopper (round 1), Shoplifter (4: a hit steals points, then it flees; kill it to get them back; it replaced the Mall Walker, now only a boss's backup),
   Cart Pusher (6, telegraphed charge), Mannequin (8, frozen while looked at; implemented), Mascot (10, tanky, 5x HP; implemented).
   The Mascot is ONE slot in several costumes (config/zombies.js mascotVariants, each changing one beat): Sir Waffles (10, baseline),
   Captain Coupon (13, puts his head back on), Poppy Corn (16, the pop is a blast), Scoops (19, slowing melt trail), plus the
