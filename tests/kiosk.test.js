@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import * as THREE from 'three';
 import { headlessGame, snapshot, dt } from './helpers/headlessGame.js';
-import { kiosk } from '../src/config/kiosk.js';
+import { kiosk, pickFor, stockFor } from '../src/config/kiosk.js';
 import { economy } from '../src/config/economy.js';
 import { createEvents } from '../src/game/events.js';
 import { buildKiosk } from '../src/game/features/kiosk.js';
@@ -85,8 +85,14 @@ test('the Hallway cart sells all six products through hold input: each slot rota
   assert.match(atSlot('sodaBomb').title, /Kevin's Pick/);
   pay('sodaBomb', economy.kiosk.sodaBomb);
   assert.equal(g.equipment.status.lethal.count, 4);
-  // Round 3: the next product in each slot. A Sparkler Cake (the Pick: it has never been it) replaces the Soda Bombs.
-  g.rounds.jumpTo(3);
+  // Rounds 3 and 4 stay on the first block's stock and Pick.
+  for (const r of [3, 4]) {
+    g.rounds.jumpTo(r);
+    assert.equal(instance.status.pick, 'sodaBomb');
+    assert.deepEqual(instance.status.stock, ['sodaBomb', 'bubbleWrap', 'airHorn']);
+  }
+  // Round 5 (second block): the next product in each slot. A Sparkler Cake (the Pick: it has never been it) replaces the Soda Bombs.
+  g.rounds.jumpTo(5);
   assert.equal(instance.status.pick, 'sparklerCake');
   assert.deepEqual(instance.status.stock, ['sparklerCake', 'bubbleWrap', 'glitterBomb']);
   assert.match(atSlot('sparklerCake').detail, /Replaces 4 Soda Bombs\./);
@@ -103,8 +109,8 @@ test('the Hallway cart sells all six products through hold input: each slot rota
   assert.ok(atSlot('bubbleWrap').blocked);
   pay('glitterBomb', economy.kiosk.glitterBomb, 'PadX');
   assert.deepEqual(g.equipment.pockets.tactical, { id: 'glitterBomb', count: 2 });
-  // Round 4: the Sentry's round (never the Pick: Bubble Wrap is, the one that has waited longest).
-  g.rounds.jumpTo(4);
+  // Round 8 (third block): the Sentry's block (never the Pick: Bubble Wrap is, the one that has waited longest).
+  g.rounds.jumpTo(8);
   assert.equal(instance.status.pick, 'bubbleWrap');
   assert.match(atSlot('sentry').detail, /Replaces 3 Sparkler Cakes\./);
   pay('sentry', economy.kiosk.sentry);
@@ -112,13 +118,11 @@ test('the Hallway cart sells all six products through hold input: each slot rota
   assert.match(atSlot('airHorn').detail, /Replaces 2 Glitter Bombs\./);
   pay('airHorn', economy.kiosk.airHorn);
   assert.deepEqual(g.equipment.pockets.tactical, { id: 'airHorn', count: 2 });
-  g.rounds.jumpTo(5);
+  // Round 11 (fourth block): Glitter Bomb becomes the Pick; only Hallway is open so Kevin never moves and PA only spoke once.
+  g.rounds.jumpTo(11);
   assert.match(atSlot('glitterBomb').title, /^Kevin's Pick · Glitter Bomb$/);
   assert.deepEqual(announced, [
     ['sodaBomb', 'sodaBomb', 'bubbleWrap', 'airHorn'],
-    ['sparklerCake', 'sparklerCake', 'bubbleWrap', 'glitterBomb'],
-    ['bubbleWrap', 'sentry', 'bubbleWrap', 'airHorn'],
-    ['glitterBomb', 'sodaBomb', 'bubbleWrap', 'glitterBomb'],
   ]);
   g.resetRun();
   assert.equal(snapshot(g).kiosk.open, false);
@@ -185,7 +189,7 @@ test('Kevin\'s Flash Sale waits until his cart is open and puts prices back; the
   const shelf = economy.kiosk.sentry;
   // Shut (round 1), then open for the round but behind the locked start shutter (his first site is the Hallway): no Kevin sale.
   assert.equal(g.flashSales.startNow(), false);
-  g.rounds.jumpTo(4); // the Lethal slot's third product: the Sentry
+  g.rounds.jumpTo(8); // the Lethal slot's third product (third block): the Sentry
   assert.equal(instance.status.stock[0], 'sentry');
   assert.equal(instance.status.open, false);
   assert.equal(g.flashSales.startNow(), false, 'nothing to discount behind a locked zone');
@@ -347,7 +351,7 @@ test('the carts leave zombie routes alone: every spawn and stand point still rea
   });
 });
 
-test('Kevin opens first in the Hallway at round 2, moves from round 3 with the PA naming the place, and Play again puts him back', () => {
+test('Kevin opens first in the Hallway at round 2, stays put on rounds 3-4 with no PA, moves from round 5 with the PA naming the place, and Play again puts him back', () => {
   const t = fixture(), { g } = t;
   const fresh = snapshot(headlessGame().g).kiosk;
   const kevin = kevinOf(g);
@@ -369,53 +373,80 @@ test('Kevin opens first in the Hallway at round 2, moves from round 3 with the P
   assert.equal(lines.length, 1);
   assert.equal(lines[0][0], 'hallway');
   assert.ok(round2Expected.includes(lines[0][1]), `round 2 PA came from opened + stock pools: ${lines[0][1]}`);
-  g.rounds.jumpTo(3);
+  for (const r of [3, 4]) {
+    g.rounds.jumpTo(r);
+    t.tick();
+    assert.equal(kevin.site.id, 'hallway', `stays put on round ${r}`);
+    assert.deepEqual(moves, [], `no kioskMoved on round ${r}`);
+    assert.equal(lines.length, 1, `no kioskStock PA when he did not move on round ${r}`);
+  }
+  g.rounds.jumpTo(5);
   t.tick();
   assert.notEqual(kevin.site.id, 'hallway');
   assert.deepEqual(moves, [{ siteId: kevin.site.id, area: kevin.site.where, moved: true }]);
-  const round3Expected = kiosk.pa.stock.map((stock) => `${fillPa(kiosk.pa.moved[0], { where: kevin.site.where })} ${fillPa(stock, {
+  const round5Expected = kiosk.pa.stock.map((stock) => `${fillPa(kiosk.pa.moved[0], { where: kevin.site.where })} ${fillPa(stock, {
     stock: 'Sparkler Cake, Bubble Wrap and Glitter Bomb',
     pick: 'Sparkler Cake',
   })}`);
   assert.equal(lines[1][0], kevin.site.id);
-  assert.ok(round3Expected.includes(lines[1][1]), `round 3 PA came from moved[0] + stock pool: ${lines[1][1]}`);
+  assert.ok(round5Expected.includes(lines[1][1]), `round 5 PA came from moved[0] + stock pool: ${lines[1][1]}`);
   assert.ok(!hasStatNumber(lines[1][1]));
   t.tick(30);
-  assert.equal(lines.length, 2, 'one PA line a round');
+  assert.equal(lines.length, 2, 'one PA line for the move');
+  g.rounds.jumpTo(6);
+  t.tick();
+  assert.equal(moves.length, 1, 'no move on round 6');
+  assert.equal(lines.length, 2, 'PA silent on round 6');
   g.health.takeDamage(10_000);
   g.resetRun();
   assert.equal(kevin.site.id, 'hallway');
   assert.deepEqual(snapshot(g).kiosk, fresh);
 });
 
-test('Kevin only ever opens in an open zone: 40 round starts with part of the mall locked, and he stays put with nowhere to go', () => {
+test('Kevin only ever opens in an open zone: 40 moves across open rounds with part of the mall locked, and he stays put with nowhere to go', () => {
   const t = fixture(), { g } = t;
   const kevin = kevinOf(g);
   g.map.areaUnlocks.unlock('hallway');
   t.tick();
-  const moves = [];
+  const moves = [], stockPa = [];
   g.events.on('kioskMoved', (e) => moves.push(e));
-  g.rounds.jumpTo(3);
-  assert.equal(kevin.site.id, 'hallway', 'only the Hallway open: he restocks where he stands');
+  g.events.on('kioskStock', (e) => stockPa.push(e));
+  g.rounds.jumpTo(2);
+  t.tick();
+  assert.equal(stockPa.length, 1, 'initial opening PA');
+  for (const r of [3, 4]) {
+    g.rounds.jumpTo(r);
+    t.tick();
+    assert.deepEqual(moves, [], `round ${r} is not a move round`);
+    assert.equal(stockPa.length, 1, `no PA on round ${r}`);
+  }
+  g.rounds.jumpTo(5);
+  t.tick();
+  assert.equal(kevin.site.id, 'hallway', 'only the Hallway open: he stays where he stands');
   assert.deepEqual(moves, [{ siteId: 'hallway', area: 'the Main Hallway', moved: false }]);
+  assert.equal(stockPa.length, 1, 'no PA when a move round keeps him at the same site');
   g.map.areaUnlocks.unlock('foodCourt');
   g.map.areaUnlocks.unlock('upstairs');
   t.tick();
   const seen = new Set();
-  for (let i = 0; i < 40; i++) {
+  for (let r = 6; r < 6 + 40 * kiosk.moveEveryRounds; r++) {
     const before = kevin.site;
-    g.rounds.jumpTo(4 + i);
+    g.rounds.jumpTo(r);
     t.tick();
     assert.ok(g.map.zones[kevin.site.zone].open, `${kevin.site.id} is open`);
-    assert.notEqual(kevin.site, before, 'always a different site when one is open');
+    if ((r - kiosk.openingRound) % kiosk.moveEveryRounds === 0) {
+      assert.notEqual(kevin.site, before, `round ${r} moves to a different open site`);
+      seen.add(kevin.site.id);
+    } else {
+      assert.equal(kevin.site, before, `round ${r} is mid-block: stays put`);
+    }
     assert.ok(kevin.status.open);
-    seen.add(kevin.site.id);
   }
   assert.deepEqual([...seen].sort(), ['foodCourt', 'hallway', 'upstairs']);
   assert.equal(kevin.moveNow('parkingLot'), null, 'never into a locked zone');
 });
 
-test('Kevin never moves mid-purchase: a round that starts during a held buy waits for it, then he goes', () => {
+test('Kevin never moves mid-purchase: non-move rounds stay put and a move round during a held buy waits for it, then he goes', () => {
   const t = fixture(), { g, input } = t;
   const kevin = kevinOf(g);
   g.map.areaUnlocks.unlock('hallway');
@@ -428,7 +459,12 @@ test('Kevin never moves mid-purchase: a round that starts during a held buy wait
   t.tick(4);
   assert.ok(g.interactions.prompt.progress > 0, 'the hold has started');
   assert.equal(kevin.moveNow('foodCourt'), null, 'the debug move is refused too');
-  g.rounds.jumpTo(3);
+  for (const r of [3, 4]) {
+    g.rounds.jumpTo(r);
+    assert.equal(kevin.site.id, 'hallway', `round ${r} does not move`);
+    assert.equal(kevin.status.pending, null, `round ${r} sets no pending move`);
+  }
+  g.rounds.jumpTo(5);
   t.tick();
   assert.equal(kevin.site.id, 'hallway', 'still here while the hold lasts');
   assert.equal(kevin.status.pending, 'foodCourt', 'the site is already picked');
@@ -600,22 +636,22 @@ test('Kevin pitches: respects stock and Pick preference, obeys chance 0 and 1, i
       savedPitches.airHorn[1],
     ]);
 
-    // Round 3: stock = [sparklerCake, bubbleWrap, glitterBomb] -> never mentions round-2-only or fake ids.
-    const r3 = collectShouts(3, 6);
-    assert.deepEqual(r3.status.stock, ['sparklerCake', 'bubbleWrap', 'glitterBomb']);
-    const allowedR3 = new Set(r3.status.stock.flatMap((id) => savedPitches[id]));
-    for (const line of r3.lines) {
-      assert.ok(allowedR3.has(line), `round 3 pitched unstocked line: "${line}"`);
+    // Round 5 (second block): stock = [sparklerCake, bubbleWrap, glitterBomb] -> never mentions first-block-only or fake ids.
+    const r5 = collectShouts(5, 6);
+    assert.deepEqual(r5.status.stock, ['sparklerCake', 'bubbleWrap', 'glitterBomb']);
+    const allowedR5 = new Set(r5.status.stock.flatMap((id) => savedPitches[id]));
+    for (const line of r5.lines) {
+      assert.ok(allowedR5.has(line), `round 5 pitched unstocked line: "${line}"`);
       assert.ok(!line.includes('Fake Item'), 'never pitches an id not in stock');
     }
 
-    // Round 4: stock = [sentry, bubbleWrap, airHorn], Pick = bubbleWrap (sentry is noPick, still pitched).
-    const r4 = collectShouts(4, 6);
-    assert.deepEqual(r4.status.stock, ['sentry', 'bubbleWrap', 'airHorn']);
-    assert.equal(r4.status.pick, 'bubbleWrap');
-    assert.ok(r4.lines.some((line) => savedPitches.sentry.includes(line)), 'sentry pitched when stocked');
-    const allowedR4 = new Set(r4.status.stock.flatMap((id) => savedPitches[id]));
-    for (const line of r4.lines) assert.ok(allowedR4.has(line), `round 4 pitched unstocked line: "${line}"`);
+    // Round 8 (third block): stock = [sentry, bubbleWrap, airHorn], Pick = bubbleWrap (sentry is noPick, still pitched).
+    const r8 = collectShouts(8, 6);
+    assert.deepEqual(r8.status.stock, ['sentry', 'bubbleWrap', 'airHorn']);
+    assert.equal(r8.status.pick, 'bubbleWrap');
+    assert.ok(r8.lines.some((line) => savedPitches.sentry.includes(line)), 'sentry pitched when stocked');
+    const allowedR8 = new Set(r8.status.stock.flatMap((id) => savedPitches[id]));
+    for (const line of r8.lines) assert.ok(allowedR8.has(line), `round 8 pitched unstocked line: "${line}"`);
 
     // Default chance (0.35): mixes pitches with general lines, keeps no back-to-back repeats.
     kiosk.hawk.pitchChance = savedChance;
@@ -687,8 +723,14 @@ test('Kevin PA pools (opened, stock): invariants, injected lineRandom picks ever
     });
     instance.update(dt);
     const first = emitted[0].pa.text;
-    rounds.round = 3;
-    events.emit('roundStart', { round: 3 });
+    for (const r of [3, 4]) {
+      rounds.round = r;
+      events.emit('roundStart', { round: r });
+      instance.update(dt);
+      assert.equal(emitted.length, 1, `no kioskStock PA on round ${r}`);
+    }
+    rounds.round = 5;
+    events.emit('roundStart', { round: 5 });
     instance.update(dt);
     const moved = emitted[1].pa.text;
     return { first, moved, siteWhere: instance.site.where };
@@ -761,8 +803,16 @@ test('Kevin PA pools (opened, stock): invariants, injected lineRandom picks ever
       instance.update(dt);
       assert.ok(emitted[0].pa.text.includes('the Main Hallway'));
       Math.random = savedRandom;
-      rounds.round = 3;
-      events.emit('roundStart', { round: 3 });
+      for (const r of [3, 4]) {
+        rounds.round = r;
+        events.emit('roundStart', { round: r });
+        Math.random = blockRandom;
+        instance.update(dt);
+        assert.equal(emitted.length, 1, `no PA on round ${r}`);
+        Math.random = savedRandom;
+      }
+      rounds.round = 5;
+      events.emit('roundStart', { round: 5 });
       Math.random = blockRandom;
       instance.update(dt);
       assert.ok(emitted[1].pa.text.includes(instance.site.where));
@@ -827,8 +877,9 @@ test('rebuying the same product tops the pocket up to its target without stackin
   g.equipment.refill('airHorn', 1);
   assert.deepEqual(g.equipment.pockets.tactical, { id: 'airHorn', count: 2 });
 
-  // Carry 4 Pick Soda Bombs into Round 5 (Pick is Glitter Bomb, Soda Bomb target is 3): blocked and never lowered to 3.
-  g.rounds.jumpTo(5);
+  // Carry 4 Pick Soda Bombs into Round 11 (the Soda Bomb's next block on the cart; Pick is Glitter Bomb, Soda Bomb target is 3):
+  // blocked and never lowered to 3. (Only the Hallway is open, so his round-5/8/11 moves keep him at the Hallway cart.)
+  g.rounds.jumpTo(11);
   assert.equal(instance.status.pick, 'glitterBomb');
   assert.equal(instance.status.stock[0], 'sodaBomb');
   assert.equal(atSlot(0).id, 'sodaBomb');
@@ -850,4 +901,93 @@ test('rebuying the same product tops the pocket up to its target without stackin
   assert.equal(g.wallet.points, 1000);
   assert.deepEqual(g.equipment.pockets.lethal, { id: 'sodaBomb', count: 3 });
   g.equipment.clearThrown();
+});
+
+test('stock and Pick stay identical on rounds 2, 3, 4 and advance on 5 across three-round blocks (literal pins)', (testCtx) => {
+  assert.equal(kiosk.openingRound, 2);
+  assert.equal(kiosk.stockEveryRounds, 3);
+  assert.equal(kiosk.moveEveryRounds, 3);
+
+  assert.equal(pickFor(1), null);
+  assert.deepEqual(stockFor(1), ['sodaBomb', 'bubbleWrap', 'airHorn']);
+
+  const expectedBlocks = [
+    { rounds: [2, 3, 4], stock: ['sodaBomb', 'bubbleWrap', 'airHorn'], pick: 'sodaBomb' },
+    { rounds: [5, 6, 7], stock: ['sparklerCake', 'bubbleWrap', 'glitterBomb'], pick: 'sparklerCake' },
+    { rounds: [8, 9, 10], stock: ['sentry', 'bubbleWrap', 'airHorn'], pick: 'bubbleWrap' },
+    { rounds: [11, 12, 13], stock: ['sodaBomb', 'bubbleWrap', 'glitterBomb'], pick: 'glitterBomb' },
+    { rounds: [14, 15, 16], stock: ['sparklerCake', 'bubbleWrap', 'airHorn'], pick: 'airHorn' },
+  ];
+  for (const block of expectedBlocks) {
+    for (const r of block.rounds) {
+      assert.deepEqual(stockFor(r), block.stock, `stockFor(${r})`);
+      assert.equal(pickFor(r), block.pick, `pickFor(${r})`);
+    }
+  }
+
+  const t = fixture(), { g } = t;
+  testCtx.after(() => g.map.dispose());
+  const savedGroups = economy.flashSales.groups;
+  economy.flashSales.groups = savedGroups.filter(({ id }) => id === 'kiosk');
+  testCtx.after(() => { economy.flashSales.groups = savedGroups; });
+
+  openAll(t, g);
+  const kevin = kevinOf(g);
+  const eventsSeen = [];
+  g.events.on('kioskMoved', (e) => eventsSeen.push({ round: g.rounds.round, type: 'moved', ...e }));
+  g.events.on('kioskStock', (e) => eventsSeen.push({ round: g.rounds.round, type: 'stock', siteId: e.siteId, stock: e.stock, pick: e.pick }));
+
+  g.rounds.jumpTo(2);
+  t.tick();
+  assert.deepEqual(kevin.status.stock, ['sodaBomb', 'bubbleWrap', 'airHorn']);
+  assert.equal(kevin.status.pick, 'sodaBomb');
+  const siteR2 = kevin.site.id;
+
+  // Rounds 3 and 4 (mid-block): no move, same stock/Pick, no PA, Flash Sales still eligible.
+  g.rounds.jumpTo(3);
+  t.tick();
+  assert.equal(kevin.site.id, siteR2);
+  assert.deepEqual(kevin.status.stock, ['sodaBomb', 'bubbleWrap', 'airHorn']);
+  assert.equal(kevin.status.pick, 'sodaBomb');
+  assert.equal(g.flashSales.startNow(), true, 'kiosk Flash Sale eligible mid-block on round 3');
+  g.flashSales.update(economy.flashSales.durationSeconds + 1);
+
+  g.rounds.jumpTo(4);
+  t.tick();
+  assert.equal(kevin.site.id, siteR2);
+  assert.deepEqual(kevin.status.stock, ['sodaBomb', 'bubbleWrap', 'airHorn']);
+  assert.equal(kevin.status.pick, 'sodaBomb');
+  assert.equal(g.flashSales.startNow(), true, 'kiosk Flash Sale eligible mid-block on round 4');
+  g.flashSales.update(economy.flashSales.durationSeconds + 1);
+
+  g.rounds.jumpTo(5);
+  t.tick();
+  assert.notEqual(kevin.site.id, siteR2);
+  assert.deepEqual(kevin.status.stock, ['sparklerCake', 'bubbleWrap', 'glitterBomb']);
+  assert.equal(kevin.status.pick, 'sparklerCake');
+  const siteR5 = kevin.site.id;
+
+  for (const r of [6, 7]) {
+    g.rounds.jumpTo(r);
+    t.tick();
+    assert.equal(kevin.site.id, siteR5);
+    assert.deepEqual(kevin.status.stock, ['sparklerCake', 'bubbleWrap', 'glitterBomb']);
+    assert.equal(kevin.status.pick, 'sparklerCake');
+  }
+
+  g.rounds.jumpTo(8);
+  t.tick();
+  assert.notEqual(kevin.site.id, siteR5);
+  assert.deepEqual(kevin.status.stock, ['sentry', 'bubbleWrap', 'airHorn']);
+  assert.equal(kevin.status.pick, 'bubbleWrap');
+
+  // Only round 2 (opened), round 5 (first move), and round 8 (second move) emitted kioskStock PA; rounds 3, 4, 6, 7 had none.
+  assert.deepEqual(
+    eventsSeen.filter((e) => e.type === 'stock').map((e) => e.round),
+    [2, 5, 8],
+  );
+  assert.deepEqual(
+    eventsSeen.filter((e) => e.type === 'moved').map((e) => e.round),
+    [5, 8],
+  );
 });

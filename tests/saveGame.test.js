@@ -199,7 +199,7 @@ test("Kiosk Kevin reopens where he stood at the round's start: not the first sit
   const { g } = run;
   run.tick();
   for (const id of ['hallway', 'foodCourt', 'upstairs']) g.map.areaUnlocks.unlock(id);
-  g.rounds.jumpTo(4); // (one 'roundStart' after the opening round: he moves off the Hallway)
+  g.rounds.jumpTo(5); // (first move round after the opening round: he moves off the Hallway)
   run.tick();
   const kevinOf = (game) => game.features.list.find(({ feature }) => feature.kind === 'kiosk').instance;
   const atStart = kevinOf(g).site.id;
@@ -219,6 +219,58 @@ test("Kiosk Kevin reopens where he stood at the round's start: not the first sit
   assert.ok(kevin.status.open, 'open for business at the start of the round');
   assert.match(lines[0], new RegExp(`open in ${kevin.site.where}`), 'the PA says where he is');
   assert.equal(kevin.site.id, atStart, 'a load is not a round start: he does not move again');
+});
+
+test('Kiosk Kevin Save & Quit mid-block reloads the same site and stock, stays put until the next block', (t) => {
+  const storage = memoryStorage();
+  const run = game(t, storage);
+  const { g } = run;
+  const kevinOf = (gameInstance) => gameInstance.features.list.find(({ feature }) => feature.kind === 'kiosk').instance;
+  run.tick();
+  for (const id of ['hallway', 'foodCourt', 'upstairs']) g.map.areaUnlocks.unlock(id);
+
+  // Move on round 5 (second block: Sparkler Cake, Bubble Wrap, Glitter Bomb; Pick Sparkler Cake).
+  g.rounds.jumpTo(5);
+  run.tick();
+  const siteAt5 = kevinOf(g).site.id;
+  assert.notEqual(siteAt5, 'hallway');
+
+  // Advance to round 6 (mid-block): Kevin stays at siteAt5 with identical stock & Pick before Save & Quit.
+  g.rounds.jumpTo(6);
+  run.tick();
+  assert.equal(kevinOf(g).site.id, siteAt5);
+  assert.deepEqual(kevinOf(g).status.stock, ['sparklerCake', 'bubbleWrap', 'glitterBomb']);
+  assert.equal(kevinOf(g).status.pick, 'sparklerCake');
+  assert.equal(g.saveGame.saveAndQuit(), true);
+
+  // Reloading mid-block restores round 6, the same site, and the same stock & Pick.
+  const loaded = game(t, storage);
+  const lines = [];
+  loaded.g.events.on('kioskStock', (e) => lines.push(e));
+  assert.equal(loaded.g.saveGame.load(), true);
+  const kevin = kevinOf(loaded.g);
+  assert.equal(loaded.g.rounds.round, 6);
+  assert.equal(kevin.site.id, siteAt5);
+  assert.deepEqual(kevin.status.stock, ['sparklerCake', 'bubbleWrap', 'glitterBomb']);
+  assert.equal(kevin.status.pick, 'sparklerCake');
+  loaded.tick();
+  assert.equal(lines.length, 1, 'opening announcement on load tells the returning player his site');
+
+  // Advancing to round 7 (still mid-block) keeps site, stock & Pick unchanged with no extra PA.
+  loaded.g.rounds.jumpTo(7);
+  loaded.tick();
+  assert.equal(kevin.site.id, siteAt5);
+  assert.deepEqual(kevin.status.stock, ['sparklerCake', 'bubbleWrap', 'glitterBomb']);
+  assert.equal(kevin.status.pick, 'sparklerCake');
+  assert.equal(lines.length, 1, 'no PA on round 7 mid-block');
+
+  // Advancing to round 8 (next block) moves Kevin to a new site and rotates to Sentry stock / Bubble Wrap Pick.
+  loaded.g.rounds.jumpTo(8);
+  loaded.tick();
+  assert.notEqual(kevin.site.id, siteAt5);
+  assert.deepEqual(kevin.status.stock, ['sentry', 'bubbleWrap', 'airHorn']);
+  assert.equal(kevin.status.pick, 'bubbleWrap');
+  assert.equal(lines.length, 2, 'moved PA plays when the new block begins');
 });
 
 test('Closing Time survives a load: a key still on the floor, a held key and its duty count, and the run mode', (t) => {
