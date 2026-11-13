@@ -118,3 +118,63 @@ test('Play again clears a warranty on file', () => {
   assert.equal(warranty.onFile, null);
   g.map.dispose();
 });
+
+test('a held Premium gun is offered Platinum instead of a Premium transfer; Platinum is offered a Renewal', () => {
+  const t = fixture(), { g } = t;
+  const warranty = g.features.context.warranty;
+  const pricing = createPricing();
+
+  // Put Premium on file by replacing a Premium Nail Gun.
+  g.gun.give(weapons.nailGun); t.tick(50);
+  t.setTier('nailGun', 'premium');
+  t.tick(2);
+  g.gun.give(weapons.priceGun); t.tick(50);
+  assert.deepEqual(g.gun.slots, ['stapleGun', 'priceGun'], 'the Price Gun replaced the Nail Gun in hand');
+  assert.equal(warranty.onFile, 'premium');
+
+  // A Standard gun still sees the Premium transfer for 750 (25% of 3,000).
+  const transferOffer = warranty.offer('stapleGun');
+  assert.deepEqual(transferOffer, { kind: 'transfer', tier: 'premium', pricingId: 'transfer:premium' });
+  assert.equal(pricing.priceOf('tier', transferOffer.pricingId), 750);
+
+  // A held Premium gun is already at that rank, so Customer Service offers Platinum (6,000).
+  const heldId = g.gun.def.id;
+  t.setTier(heldId, 'premium');
+  t.tick(2);
+  const platOffer = warranty.offer(heldId);
+  assert.deepEqual(platOffer, { kind: 'tier', tier: 'platinum', pricingId: 'platinum' });
+  assert.equal(pricing.priceOf('tier', platOffer.pricingId), 6000);
+
+  // A held Platinum gun is offered Renewal 1 (4,000), leaving Premium on file untouched.
+  t.setTier(heldId, 'platinum');
+  t.tick(2);
+  const renewalOffer = warranty.offer(heldId);
+  assert.deepEqual(renewalOffer, { kind: 'renewal', count: 1, pricingId: 'renewal1' });
+  assert.equal(pricing.priceOf('tier', renewalOffer.pricingId), 4000);
+  assert.equal(warranty.onFile, 'premium');
+  g.map.dispose();
+});
+
+test('replacing a Deluxe gun never overwrites a Premium warranty already on file', () => {
+  const t = fixture(), { g } = t;
+  const warranty = g.features.context.warranty;
+
+  // Replace a Premium Nail Gun so Premium sits on file, leaving Price Gun in hand.
+  g.gun.give(weapons.nailGun); t.tick(50);
+  t.setTier('nailGun', 'premium');
+  t.tick(2);
+  g.gun.give(weapons.priceGun); t.tick(50);
+  assert.deepEqual(g.gun.slots, ['stapleGun', 'priceGun'], 'the Price Gun replaced the Nail Gun in hand');
+  assert.equal(warranty.onFile, 'premium');
+
+  // Upgrade the held gun to Deluxe, then replace it with another weapon.
+  const heldId = g.gun.def.id;
+  const replacement = weapons.rivetRifle;
+  t.setTier(heldId, 'deluxe');
+  t.tick(2);
+  g.gun.give(replacement); t.tick(50);
+
+  assert.ok(!g.gun.slots.includes(heldId), 'the Deluxe gun was replaced');
+  assert.equal(warranty.onFile, 'premium', 'lower Deluxe warranty on the replaced gun never overwrites Premium');
+  g.map.dispose();
+});

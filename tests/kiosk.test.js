@@ -771,3 +771,83 @@ test('Kevin PA pools (opened, stock): invariants, injected lineRandom picks ever
     }
   }
 });
+
+test('rebuying the same product tops the pocket up to its target without stacking, and a pocket above target is never lowered', (t) => {
+  const game = fixture();
+  const { g } = game;
+  t.after(() => g.map.dispose());
+  g.zombies.clear();
+  g.health.invulnerable = true;
+
+  // Keep Hallway as the only open zone so Kevin remains at the Hallway cart across rounds.
+  const { instance } = g.features.list.find(({ feature }) => feature.kind === 'kiosk');
+  g.map.doors.find(({ id }) => id === 'startShutter').open();
+  g.map.zones.hallway.open = true;
+  const atSlot = (slot) => {
+    const { position } = instance.site.cart.slots[slot];
+    game.standAt(position.x, position.z + 0.9);
+    return g.interactions.prompt;
+  };
+
+  g.wallet.earn(3000); // 500 + 3000 = 3500
+  g.rounds.jumpTo(2);
+  assert.equal(instance.status.pick, 'sodaBomb');
+
+  // Buy Soda Bomb while Pick (target = 4, price = 500), then throw 3 and rebuy: tops back up to 4 (not 1 + 4 = 5).
+  assert.equal(atSlot(0).id, 'sodaBomb');
+  assert.equal(atSlot(0).cost, 500);
+  assert.equal(atSlot(0).blocked, null);
+  game.press('KeyF', 20);
+  assert.equal(g.wallet.points, 3000);
+  assert.deepEqual(g.equipment.pockets.lethal, { id: 'sodaBomb', count: 4 });
+  assert.equal(atSlot(0).blocked, 'Pocket is full');
+
+  for (let i = 0; i < 3; i++) {
+    game.press('KeyG', 1);
+    game.tick(26);
+  }
+  assert.deepEqual(g.equipment.pockets.lethal, { id: 'sodaBomb', count: 1 });
+  assert.equal(atSlot(0).blocked, null);
+  game.press('KeyF', 20);
+  assert.equal(g.wallet.points, 2500);
+  assert.deepEqual(g.equipment.pockets.lethal, { id: 'sodaBomb', count: 4 });
+
+  // Tactical non-Pick Air Horn (target = 2, price = 500): use 1, rebuy tops to 2 (not 3), and direct lower refill keeps 2.
+  assert.equal(atSlot(2).id, 'airHorn');
+  assert.equal(atSlot(2).cost, 500);
+  game.press('KeyF', 20);
+  assert.equal(g.wallet.points, 2000);
+  assert.deepEqual(g.equipment.pockets.tactical, { id: 'airHorn', count: 2 });
+  game.press('PadRight', 1);
+  game.tick(26);
+  assert.deepEqual(g.equipment.pockets.tactical, { id: 'airHorn', count: 1 });
+  game.press('KeyF', 20);
+  assert.equal(g.wallet.points, 1500);
+  assert.deepEqual(g.equipment.pockets.tactical, { id: 'airHorn', count: 2 });
+  g.equipment.refill('airHorn', 1);
+  assert.deepEqual(g.equipment.pockets.tactical, { id: 'airHorn', count: 2 });
+
+  // Carry 4 Pick Soda Bombs into Round 5 (Pick is Glitter Bomb, Soda Bomb target is 3): blocked and never lowered to 3.
+  g.rounds.jumpTo(5);
+  assert.equal(instance.status.pick, 'glitterBomb');
+  assert.equal(instance.status.stock[0], 'sodaBomb');
+  assert.equal(atSlot(0).id, 'sodaBomb');
+  assert.equal(atSlot(0).blocked, 'Pocket is full');
+  game.press('KeyF', 20);
+  assert.equal(g.wallet.points, 1500);
+  assert.deepEqual(g.equipment.pockets.lethal, { id: 'sodaBomb', count: 4 });
+  g.equipment.refill('sodaBomb', 3);
+  assert.deepEqual(g.equipment.pockets.lethal, { id: 'sodaBomb', count: 4 });
+
+  // Dropping below Round 5's target of 3 (throw 2 -> 2 left) unlocks the rebuy and tops back up to 3.
+  for (let i = 0; i < 2; i++) {
+    game.press('KeyG', 1);
+    game.tick(26);
+  }
+  assert.deepEqual(g.equipment.pockets.lethal, { id: 'sodaBomb', count: 2 });
+  assert.equal(atSlot(0).blocked, null);
+  game.press('KeyF', 20);
+  assert.equal(g.wallet.points, 1000);
+  assert.deepEqual(g.equipment.pockets.lethal, { id: 'sodaBomb', count: 3 });
+  g.equipment.clearThrown();
+});
