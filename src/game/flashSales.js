@@ -19,6 +19,7 @@ import { wardrobeItems } from '../config/wardrobe.js';
 import { kiosk as kioskConfig } from '../config/kiosk.js';
 import { featuresOf } from './features/index.js';
 import { ownsAttachment } from './features/attachmentCounter.js';
+import { attachmentFits } from '../weapons/upgrades.js';
 
 const NO_THE_ZONES = new Set(['megaMart', 'cinema', 'departmentStore', 'parkingLot']);
 const HAZARD_PRICING_ID = {
@@ -37,6 +38,8 @@ const areaPhrase = (map, zoneId) => {
   return NO_THE_ZONES.has(zoneId) ? label : `the ${label}`;
 };
 const capitalize = (s) => (s ? s[0].toUpperCase() + s.slice(1) : s);
+// An attachment is only of use if it fits a gun you carry (the counter refuses one that fits the gun in hand).
+const fitsCarriedGun = (gun, id) => [gun?.def, gun?.inactiveSlot?.def].some((def) => def?.base && attachmentFits(def.base, id));
 
 /**
  * Is a normal Flash Sale group worth discounting right now?
@@ -135,7 +138,7 @@ export function doorbusterCandidates({ map, gun, wardrobe, kiosk, equipment = nu
     if (!zones[s.zone]?.open) continue;
     const def = upgrades.attachments[s.attachment];
     if (!def || typeof economy.upgrades.attachments[s.attachment] !== 'number') continue;
-    if (ownsAttachment(gun, s.attachment)) continue;
+    if (ownsAttachment(gun, s.attachment) || !fitsCarriedGun(gun, s.attachment)) continue;
     out.push({
       category: 'attachment', id: s.attachment, itemLabel: def.name, itemPhrase: `the ${def.name}`,
       zone: s.zone, zoneLabel: zoneLabelOf(map, s.zone), area: areaPhrase(map, s.zone),
@@ -247,7 +250,7 @@ export function collectSaleSpots({ map, features, gun, warranty, wardrobe, equip
   }
   if (cats.has('attachment')) {
     for (const f of featuresOf(map, 'attachmentCounter')) {
-      if (zones[f.zone]?.open && !ownsAttachment(gun, f.attachment)) push(f.position, f.normal, 'attachment', f.attachment, f.zone);
+      if (zones[f.zone]?.open && !ownsAttachment(gun, f.attachment) && fitsCarriedGun(gun, f.attachment)) push(f.position, f.normal, 'attachment', f.attachment, f.zone);
     }
   }
   if (cats.has('wardrobe') && wardrobe) {
@@ -371,7 +374,7 @@ export function createFlashSales({
   const sayTeaser = (offer, leadSec) => {
     const lead = leadWords(leadSec);
     if (offer.kind === 'doorbuster') return sayDoorbuster(config.doorbuster.teaser, offer.target, 0, lead);
-    const t = config.teaser ?? { kicker: 'Flash sale soon', text: 'Attention shoppers: a flash sale begins in {lead} — {label}.' };
+    const t = config.teaser ?? economy.flashSales.teaser; // (a test's small config may leave the words out)
     return { kicker: t.kicker, text: t.text.replace('{lead}', lead).replace('{label}', offer.group.label) };
   };
 

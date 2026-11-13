@@ -872,6 +872,7 @@ export function createGame({
     secondChance,
     outfitRail,
     flashSales,
+    warranty, // (read by the Flash Sale markers: game/flashSales.js collectSaleSpots needs it for Extended Warranty sales)
     powerUps,
     closing,
     bosses,

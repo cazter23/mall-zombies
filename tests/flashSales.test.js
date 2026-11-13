@@ -4,7 +4,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import { createFlashSales, doorbusterCandidates, nearOpenSpawnPoints } from '../src/game/flashSales.js';
+import { createFlashSales, doorbusterCandidates, nearOpenSpawnPoints, collectSaleSpots } from '../src/game/flashSales.js';
+import { attachmentFits } from '../src/weapons/upgrades.js';
 import { createEvents } from '../src/game/events.js';
 import { createPricing } from '../src/game/pricing.js';
 import { createSaleTagView } from '../src/fx/saleTagView.js';
@@ -446,6 +447,7 @@ test('doorbuster rush: scaled count capped by maxCount, waits on alive cap, and 
 test('the real game: Doorbuster picks only eligible items, discounts one spot, spawns open-zone rush, and completes round', () => {
   const t = headlessGame();
   const { g } = t;
+  g.health.invulnerable = true; // (the long kill loops below must not end in a death)
   t.tick(1);
   // Seed AFTER headlessGame() built the map (CLAUDE.md rule).
   const realRandom = Math.random;
@@ -468,16 +470,31 @@ test('the real game: Doorbuster picks only eligible items, discounts one spot, s
     assert.ok(openCandidates.some((c) => c.category === 'weapon' && c.id === 'rivetRifle'), 'Rivet Rifle becomes eligible once Atrium opens');
 
     // Give Nail Gun + Price Gun and keep Rivet Rifle unowned, trigger Doorbuster on an eligible item via startNow('doorbuster').
+    // A spy on the zombie manager: the rush is the spawns asked for with a spawnPoints list (the wave never passes one).
     g.gun.give(weapons.nailGun);
+    const rushSpawns = [];
+    const realSpawn = g.zombies.spawn;
+    g.zombies.spawn = function (typeId, at, opts = {}) {
+      const zombie = realSpawn.call(this, typeId, at, opts);
+      if (opts.spawnPoints && zombie) rushSpawns.push({ zombie, at: zombie.position.clone(), points: opts.spawnPoints });
+      return zombie;
+    };
     assert.equal(g.flashSales.startNow('doorbuster'), true);
     const db = g.flashSales.active;
     assert.equal(db.kind, 'doorbuster');
     assert.equal(g.rounds.remainingToSpawn, remainingBefore, 'Doorbuster rush is extra zombies, never shrinks round remainingToSpawn');
 
     // Tick 4 seconds so the rush finishes queuing within maxAliveForRound(4).
-    const beforeCount = g.zombies.zombies.length;
     t.tick(60 * 4);
-    assert.ok(g.zombies.zombies.length > beforeCount, 'rush spawned extra zombies');
+    const rushCfg = economy.flashSales.doorbuster;
+    const expectedRush = Math.min(rushCfg.rush.maxCount, rushCfg.rush.baseCount + Math.floor((4 - rushCfg.fromRound) * rushCfg.rush.perRound));
+    assert.equal(rushSpawns.length, expectedRush, 'exactly the round-scaled rush spawned, through the zombie manager');
+    for (const { zombie, at, points } of rushSpawns) {
+      assert.ok(points.length <= rushCfg.rush.nearestMarkers && points.every((p) => g.map.zones[p.zone].open), 'near, open-zone markers only');
+      assert.ok(points.some((p) => p.position.x === at.x && p.position.z === at.z), 'rose at one of those markers');
+      assert.ok(g.zombies.zombies.includes(zombie), 'a normal managed zombie (failsafe, caps and round count see it)');
+    }
+    g.zombies.spawn = realSpawn;
     assert.ok(g.zombies.aliveCount <= maxAliveForRound(4), 'alive count stayed within round maxAlive cap');
     for (const z of g.zombies.zombies) {
       assert.equal(z.noRewards, false, 'rush zombies count as normal zombies for points');
@@ -502,7 +519,16 @@ test('the real game: Doorbuster picks only eligible items, discounts one spot, s
     assert.equal(g.rounds.inBreak, true);
     assert.equal(g.flashSales.startNow('doorbuster'), true);
     t.tick(60 * 3);
+    assert.equal(g.rounds.inBreak, true, 'still the break');
+    assert.ok(g.zombies.aliveCount > 0, 'the rush came during the break');
     assert.ok(g.zombies.aliveCount <= maxAliveForRound(5));
+    // ...and round 5 (its full wave plus the break's rush) still ends when everything is dead: nothing stalls.
+    safety = 0;
+    while (g.rounds.round === 5 && safety++ < 200) {
+      for (const z of g.zombies.zombies) if (z.isAlive) z.takeHit({ damage: Infinity, part: 'body' });
+      t.tick(60);
+    }
+    assert.equal(g.rounds.round, 6, 'round 5 completed cleanly after a break-time rush');
   } finally {
     Math.random = realRandom;
     g.map.dispose();
@@ -552,5 +578,47 @@ test('in-world 3D sale tags: pool counts track teaser, live sale, purchase remov
   g.resetRun();
   view.update(0.1);
   assert.deepEqual(view.counts(), { soon: 0, sale: 0, doorbuster: 0, beacon: false });
+  g.map.dispose();
+});
+
+test('the tag view lets go: dispose() stops listening, frees its pools and leaves the scene', () => {
+  const t = headlessGame();
+  const { g } = t;
+  const scene = new THREE.Scene();
+  const before = g.events.count('flashSaleStart');
+  const view = createSaleTagView(scene, g);
+  assert.equal(g.events.count('flashSaleStart'), before + 1);
+  view.dispose();
+  assert.equal(g.events.count('flashSaleStart'), before, 'listener removed');
+  assert.equal(view.root.parent, null, 'out of the scene');
+  g.map.dispose();
+});
+
+test('the real game: an Extended Warranty sale marks the Customer Service desk; attachment Doorbusters only fit a carried gun', () => {
+  const t = headlessGame();
+  const { g } = t;
+  t.tick(1);
+  g.map.areaUnlocks.unlock('hallway');
+  g.map.areaUnlocks.unlock('foodCourt');
+  const groups = economy.flashSales.groups;
+  economy.flashSales.groups = groups.filter((grp) => grp.id === 'tiers');
+  try {
+    assert.equal(g.flashSales.startNow(), true);
+    const desks = g.map.features.filter((f) => f.kind === 'upgradeDesk' && g.map.zones[f.zone].open);
+    assert.ok(desks.length > 0, 'the desk is in a bought area');
+    const spots = collectSaleSpots(g, g.flashSales.active);
+    assert.equal(spots.filter((s) => s.category === 'tier').length, desks.length, 'the desk carries the sale marker');
+  } finally {
+    economy.flashSales.groups = groups;
+    g.flashSales.reset();
+  }
+  const kiosk = g.features.instanceOf('kiosk');
+  const candidates = doorbusterCandidates({ map: g.map, gun: g.gun, wardrobe: g.wardrobe, kiosk, equipment: g.equipment, health: g.health });
+  const attachments = candidates.filter((c) => c.category === 'attachment');
+  assert.ok(attachments.length > 0, 'the Food Court counters are open');
+  for (const c of attachments) assert.ok(attachmentFits(g.gun.def.base, c.id), `${c.id} fits the gun in hand`);
+  const unarmed = { ...g.gun, owns: (id) => g.gun.owns(id), modsFor: (id) => g.gun.modsFor(id), def: null, inactiveSlot: null };
+  assert.equal(doorbusterCandidates({ map: g.map, gun: unarmed, wardrobe: g.wardrobe, kiosk }).filter((c) => c.category === 'attachment').length, 0,
+    'no carried gun: no attachment is worth a Doorbuster');
   g.map.dispose();
 });

@@ -144,8 +144,9 @@ export function createSaleTagView(scene, g) {
   let syncTimer = 0;
   const dummy = new Object3D();
 
-  const refreshEvents = ['flashSaleSoon', 'flashSaleStart', 'flashSaleEnd', 'purchase', 'clawMoved', 'kioskMoved', 'gunSwitched', 'runReset', 'runLoaded'];
-  for (const ev of refreshEvents) g.events.on(ev, () => { dirty = true; });
+  // Re-read at once on these (a bought item loses its tag the same frame); otherwise every cfg.syncIntervalSeconds.
+  const refreshEvents = ['flashSaleSoon', 'flashSaleStart', 'flashSaleEnd', 'purchase', 'clawMoved', 'kioskMoved', 'kioskStock', 'runReset', 'runLoaded'];
+  const unsubscribe = refreshEvents.map((ev) => g.events.on(ev, () => { dirty = true; }));
 
   function sync() {
     dirty = false;
@@ -177,6 +178,20 @@ export function createSaleTagView(scene, g) {
   return {
     root,
     refresh() { dirty = true; },
+    // Stop listening and free the tags (their geometry, materials and canvas textures) and the beacon's own material.
+    dispose() {
+      for (const off of unsubscribe) off();
+      for (const m of [soonMesh, saleMesh, doorbusterMesh]) {
+        m.material.map?.dispose();
+        m.material.dispose();
+        m.dispose();
+      }
+      normalGeo.dispose();
+      doorbusterGeo.dispose();
+      beacon.dispose();
+      root.removeFromParent();
+      spots = [];
+    },
     counts() {
       return { soon: soonMesh.count, sale: saleMesh.count, doorbuster: doorbusterMesh.count, beacon: beacon.root.visible };
     },
