@@ -63,7 +63,7 @@ console.table(guns.map((d) => ({
 })));
 
 // A gun with a fuel tank or a cone is judged by what it DOES, not by its damage: how long it blows, how long it refills, and how far and wide it pushes.
-const pushers = guns.filter((d) => d.cone);
+const pushers = guns.filter((d) => d.cone && !d.instantKill); // (Return to Sender's blast is a cone too: it has its own table below)
 if (pushers.length) {
   console.log('\nCONE GUNS (a wide push and a fuel tank; the damage above is only a tickle)');
   console.table(pushers.map((d) => ({
@@ -98,12 +98,12 @@ if (throwers.length) {
   })));
 }
 
-// An instant-kill gun (the wonder weapon) kills one zombie per shot that connects, at any health: judged by kills a second against the best other gun, and by
-// the ammo it carries against a wave. The Build-A-Blaster playtest (npm run balance:bab -- returnToSender 25,30) is its builds' rows.
+// An instant-kill gun (the wonder weapon) returns every zombie its BLAST catches within cone.killRange, at any health: judged by kills a second on ONE
+// target against the best other gun (a blast into a crowd of n is n times that), and by the ammo it carries against a wave. The Build-A-Blaster playtest (npm run balance:bab -- returnToSender 25,30) is its builds' rows.
 const instantGuns = guns.filter((d) => d.instantKill);
 if (instantGuns.length) {
   const waveSize = zombieCountForRound(25);
-  console.log('INSTANT-KILL GUNS (kills a second, one target, sustained over magazine + reload, against the best other gun)');
+  console.log('INSTANT-KILL GUNS (kills a second, ONE target, sustained over magazine + reload, against the best other gun; a blast into a crowd of n: n times that)');
   console.table(instantGuns.flatMap((d) => [10, 15, 20, 25, 30].map((round) => {
     const hp = zombieHealthForRound(round);
     const mine = killsPerSecond(d, hp, 5, playStyle(d));
@@ -111,7 +111,8 @@ if (instantGuns.length) {
     return {
       gun: d.name, round, 'zombie hp': r0(hp), 'kills/s': mine.toFixed(2), 'best other gun': best.toFixed(2), 'x the best': (mine / best).toFixed(1),
       carries: d.magazineSize + d.startingReserve, 'a refill gives': d.magazineSize + Math.round(d.startingReserve * (d.refillFraction ?? 1)),
-      'wave 25': waveSize, 'beams for a boss': r1(1 / d.instantKill.bigFraction),
+      'wave 25': waveSize, 'blasts for a boss': r1(1 / d.instantKill.bigFraction),
+      'kill range m': d.cone?.killRange ?? '-', 'knocks down to m': d.cone?.range ?? '-', 'half angle': d.cone?.halfAngleDegrees ?? '-',
     };
   })));
 }

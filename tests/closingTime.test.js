@@ -1925,11 +1925,11 @@ test('Return to Sender uses the Last Customer three-percent override until Speec
   assert.equal(isReturnable(target), true);
 });
 
-test('a distant real beam returns the Speechless boss once through kill, carries skin credit and unlocks the van', (t) => {
-  const { g, boss, empty, tick, press, standAt, van, sounds } = returnEncounter(t, 30);
+test('a real blast from out of hand reach returns the Speechless boss once through kill, carries skin credit and unlocks the van', (t) => {
+  const { g, boss, empty, tick, press, standAt, van, sounds } = returnEncounter(t, weapons.returnToSender.cone.killRange - 1.5);
   g.gun.give(weapons.returnToSender);
   tick(60);
-  g.player.pitch = Math.atan2(1.1 - g.player.eyeHeight, 30);
+  g.player.pitch = Math.atan2(1.1 - g.player.eyeHeight, weapons.returnToSender.cone.killRange - 1.5);
   empty();
   assert.notEqual(g.interactions.prompt?.id, 'handReturn', 'out of hand range');
   const kills = [];
@@ -1940,7 +1940,7 @@ test('a distant real beam returns the Speechless boss once through kill, carries
   assert.equal(kills.length, 1);
   assert.equal(kills[0].weaponId, 'returnToSender');
   assert.equal(kills[0].source, 'gun');
-  assert.ok(kills[0].distance > 20, 'beam distance reaches the existing skin role challenges');
+  assert.ok(kills[0].distance > 5, 'returned from across the room, not by hand');
   assert.equal(sounds.filter(s => s === 'returnStamp').length - before, 1);
   assert.equal(g.closing.readyToLeave, true);
   standAt(van.position.x + 1, van.position.z, 90);

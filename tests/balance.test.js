@@ -157,27 +157,32 @@ test('Tennis Ball Launcher: the corridor gun. One hit a ball in the open (weak: 
   assert.ok(launcher.magazineSize >= 4 && launcher.magazineSize <= 10);
 });
 
-test('Return to Sender, the wonder weapon: the strongest gun from the mid rounds on, one zombie a shot at any health, but starved by its magazine, reload and half-rate refill', () => {
+test('Return to Sender, the wonder weapon: a blast that returns every zombie in a wide, short cone at any round, starved by a two-shot tube, a slow reload and a half-rate refill', () => {
   const rts = weapons.returnToSender;
+  const cone = rts.cone;
   assert.equal(rts.clawOnly, true);
   assert.ok(rts.instantKill && rts.refillFraction > 0 && rts.refillFraction < 1);
+  assert.equal(shotsToKill(rts, zombieHealthForRound(30), 5, style(rts)), 1, 'one blast that catches a round-30 Shopper kills it');
+  assert.equal(shotsToKill(rts, zombieHealthForRound(1), 5, style(rts)), 1);
+  // The blast: wide and short. It kills across a room, not down a hallway; past the kill line it only knocks down.
+  assert.ok(cone.halfAngleDegrees >= 25 && cone.halfAngleDegrees <= 35, 'a wide cone');
+  assert.ok(cone.killRange >= 6 && cone.killRange <= 10, `kills across a room (${cone.killRange} m)`);
+  assert.ok(cone.range > cone.killRange && cone.range <= 14 && cone.knockdownRange >= cone.range, 'and knocks down the next few metres');
+  // Not a duellist: on one zombie at a time it is no faster than the best other gun until the late rounds.
   const everyOtherGun = Object.values(weapons).filter((d) => d !== rts);
   const best = (round) => Math.max(...everyOtherGun.map((d) => killsPerSecond(d, zombieHealthForRound(round), 5, style(d))));
   const mine = (round) => killsPerSecond(rts, zombieHealthForRound(round), 5, style(rts));
-  // (Early on the Heavy Coil Nailer's 64-round drum kills faster; from about round 10 nothing keeps up with a kill that ignores health.)
-  for (const round of [12, 15, 20, 25, 30]) {
-    assert.ok(mine(round) > 1.2 * best(round), `round ${round}: ${mine(round).toFixed(2)} kills/s against the best other gun's ${best(round).toFixed(2)}`);
-  }
-  for (const round of [20, 25, 30]) assert.ok(mine(round) > 2 * best(round), `round ${round}: more than twice as fast as anything else`);
-  assert.equal(shotsToKill(rts, zombieHealthForRound(30), 5, style(rts)), 1, 'one shot that connects kills a round-30 Shopper');
-  assert.equal(shotsToKill(rts, zombieHealthForRound(1), 5, style(rts)), 1);
-  // Held back: it can never clear a late wave alone, however it is played.
-  assert.ok(mine(25) < 1.5, `never more than about a kill a second (${mine(25).toFixed(2)})`);
-  const wave = zombieCountForRound(25);
-  assert.ok(rts.magazineSize + rts.startingReserve < wave / 3, 'everything it carries is under a third of a round-25 wave');
-  assert.ok(rts.magazineSize + Math.round(rts.startingReserve * rts.refillFraction) < wave / 5, 'and a refill gives under a fifth of one');
+  assert.ok(mine(10) < best(10), `one at a time it is not the answer (${mine(10).toFixed(2)} kills/s at round 10 vs ${best(10).toFixed(2)})`);
+  // The crowd: a blast into a crush of eight clears it, which nothing else comes near late on.
+  for (const round of [20, 30]) assert.ok(8 * mine(round) > 3 * best(round), `round ${round}: into a crowd it is the answer`);
+  // Starved: twelve blasts in all, a refill gives seven, two in the tube, slow to fire and reload.
+  assert.equal(rts.magazineSize, 2, 'two blasts a tube');
+  assert.ok(rts.magazineSize + rts.startingReserve <= 12, 'twelve blasts at most');
+  assert.ok(rts.magazineSize + Math.round(rts.startingReserve * rts.refillFraction) <= 7, 'a refill gives seven at most');
   assert.ok(rts.fireInterval >= 0.6 && rts.reloadTime >= 2.5, 'slow to fire, slow to reload');
-  assert.ok(1 / rts.instantKill.bigFraction >= 6 && 1 / rts.instantKill.bigFraction <= 15, 'a boss takes 6 to 15 beams, never one');
+  assert.ok(1 / rts.instantKill.bigFraction >= 6 && 1 / rts.instantKill.bigFraction <= 15, 'a boss takes 6 to 15 blasts, never one');
+  // The other cone gun, the Leaf Blower, shoves and never kills: the two do not overlap.
+  assert.ok(!weapons.leafBlower.instantKill && cone.killRange > weapons.leafBlower.cone.range * 0.9);
 });
 
 test('Stargazer 3000, the sniper: the further away, the harder it hits; the hardest hit there is at 30 m, one headshot there kills to about round 20, and clumsy up close', () => {

@@ -64,7 +64,8 @@ function realGame(context) {
     zombie.attackCooldown = 99;
     return zombie;
   };
-  const beam = (zombie) => returnToSender(zombie, { effects: g.effects, sound: null });
+  // One blast's return by hand; the blast then ends (as the gun's 'shot' event ends it), so the next beam is a new blast for the labels.
+  const beam = (zombie) => { const result = returnToSender(zombie, { effects: g.effects, sound: null }); g.returnQuest.blastDone(); return result; };
   return { ...t, desk, built, atDesk, atSlot, spawn, beam, quest: g.returnQuest };
 }
 
@@ -410,6 +411,40 @@ test('Full Refund pays its bonus on top of the kill and hands a round back when 
   weapon.reserve = weapon.reserveCap;
   paid();
   assert.equal(weapon.reserve, weapon.reserveCap, 'never past the cap');
+});
+
+test('one blast returns a crowd, so the labels act once per blast: one chain, one recall, one roll for a round back (Full Refund still pays every return)', (context) => {
+  const t = realGame(context);
+  const { g, quest } = t;
+  quest.debug('labels');
+  g.gun.give(weapons[GUN]); t.tick(60);
+  const kills = [];
+  g.events.on('kill', ({ zombie }) => kills.push(zombie));
+  const returnByHand = (zombie) => returnToSender(zombie, { effects: g.effects, sound: null }); // (inside one blast: no blastDone between)
+  const crowd = () => { g.zombies.clear(); kills.length = 0; return [0, 1, 2, 3, 4, 5].map((i) => t.spawn('shopper', i * 0.6, 0)); };
+
+  assert.equal(quest.cycleLabel(), 'chain');
+  let c = crowd();
+  returnByHand(c[0]); returnByHand(c[5]);
+  assert.equal(kills.length, 2 + cfg.labels.chain.count, 'two returns in one blast chain once');
+  quest.blastDone();
+  c = crowd();
+  returnByHand(c[0]);
+  assert.equal(kills.length, 1 + cfg.labels.chain.count, 'the next blast chains again');
+
+  assert.equal(quest.cycleLabel(), 'refund');
+  quest.blastDone();
+  const weapon = g.gun.weapon;
+  weapon.reserve = 3;
+  context.mock.method(Math, 'random', () => 0);
+  c = crowd();
+  const before = g.wallet.points;
+  returnByHand(c[0]); returnByHand(c[1]); returnByHand(c[2]);
+  assert.ok(g.wallet.points - before >= 3 * cfg.labels.refund.points, 'every return pays the refund');
+  assert.equal(weapon.reserve, 4, 'but only one round back for the whole blast');
+  quest.blastDone();
+  returnByHand(c[3]);
+  assert.equal(weapon.reserve, 5, 'a new blast, a new roll');
 });
 
 test('Save & Quit keeps the quest as the round began and Continue puts the signs, the parcel and the label back', (context) => {

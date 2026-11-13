@@ -51,7 +51,7 @@ const worth = new Map();
 export function gunWorth(gunId) {
   if (!worth.has(gunId)) {
     const def = weapons[gunId];
-    const usable = def && !def.cone && !def.projectile && !def.pellets && def.fireMode !== 'charge';
+    const usable = def && (def.instantKill || (!def.cone && !def.projectile && !def.pellets && def.fireMode !== 'charge')); // (the wonder weapon's blast is a cone)
     worth.set(gunId, !usable ? 0 : def.instantKill ? Infinity : sustainedDps(def, 5, { ads: true }));
   }
   return worth.get(gunId);

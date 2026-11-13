@@ -1,6 +1,7 @@
 // RETURN TO SENDER (config/weapons.js returnToSender: the desk/claw wonder weapon) and its two rules: the INSTANT KILL (weapons/gunStats.js hitDamage:
 // any returnable zombie dies in one hit at any round; a boss or a Mascot, which can't be returned, takes a big fixed share of its health instead, never a
-// one-shot) and the HALF-RATE REFILL (weapon.js refillFraction: a refill fills the magazine and half the reserve). First the maths alone, then the real game.
+// one-shot), fired as a BLAST (a cone: every returnable zombie within cone.killRange, the rest of the cone knocked down), and the HALF-RATE REFILL
+// (weapon.js refillFraction: a refill fills the magazine and half the reserve). First the maths alone, then the real game.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
@@ -58,19 +59,28 @@ function setup() {
   return { t, g, spawn, freeze };
 }
 
-test('the real game: one beam kills a round-30 Shopper outright and pays the normal kill; the cardboard stamp sounds; only ONE zombie per beam', () => {
+test('the real game: one blast returns EVERY zombie in the cone within killRange at round-30 health and pays each; past killRange it is knocked down and lives; off to the side or behind, untouched', () => {
   const { t, g, spawn, freeze } = setup();
-  const front = spawn('shopper', 5), behind = spawn('shopper', 6.5);
-  freeze([front, behind]);
-  for (const z of [front, behind]) z.health = z.maxHealth = zombieHealthFor('shopper', 30);
-  assert.ok(front.maxHealth > 3000, 'round-30 health');
-  const points = g.wallet.points, kills = g.runStats.kills;
+  const cone = rts.cone;
+  const inside = [spawn('shopper', 2.5), spawn('shopper', 4.5, -1), spawn('shopper', 6.5, 1.5), spawn('mallWalker', cone.killRange - 0.6)];
+  const edge = spawn('shopper', (cone.killRange + cone.range) / 2, 0.5); // in the cone, past the kill range
+  const wide = spawn('shopper', 2, -2.2); // 45 degrees off the aim: outside the 30-degree cone
+  const behind = spawn('shopper', -3);
+  const all = [...inside, edge, wide, behind];
+  freeze(all);
+  for (const z of all) z.health = z.maxHealth = zombieHealthFor('shopper', 30);
+  assert.ok(inside[0].maxHealth > 3000, 'round-30 health');
+  const kills = g.runStats.kills, points = g.wallet.points;
   t.press('Mouse0');
-  assert.equal(front.isAlive, false, 'returned');
-  assert.equal(behind.isAlive, true, 'one zombie a beam: it does not pierce');
-  assert.equal(g.runStats.kills, kills + 1);
-  assert.ok(g.wallet.points - points >= 10 + economy.killValues.shopper * 0, 'the usual hit and kill points are paid');
+  for (const z of inside) assert.equal(z.isAlive, false, 'returned');
+  assert.equal(g.runStats.kills, kills + inside.length, 'one blast, a kill each');
+  assert.ok(g.wallet.points - points >= 10 * inside.length, 'every zombie caught pays');
+  assert.equal(edge.isAlive, true, 'past the kill range it lives');
+  assert.ok(edge.slipTimer > 0, 'but it is blown off its feet');
+  assert.equal(edge.health, edge.maxHealth, 'and takes no damage');
+  for (const z of [wide, behind]) assert.ok(z.isAlive && z.health === z.maxHealth && !(z.slipTimer > 0), 'outside the cone: untouched');
   assert.ok(t.sounds.includes('returnBeam') && t.sounds.includes('returnStamp'));
+  assert.equal(g.gun.weapon.magazine, rts.magazineSize - 1, 'one pull is one blast');
 });
 
 test('the real game: a boss takes the big fixed hit and lives (a Mascot too: its rule is the same type.mascot check, covered above; the headless game cannot pose a Mascot to shoot it)', () => {
