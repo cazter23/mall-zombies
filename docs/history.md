@@ -1,5 +1,13 @@
 # Sunset Galleria: build history ("Current state")
 
+## 13 November 2026 - Closing Time says what to do next
+
+- Playtest: after "Open the shutter" nothing said what Closing Time wanted (the four checklist boxes have no text, and the round-1
+  briefing PA is easy to miss after the opening line). In Directed mode the line under the round box now shows `g.closing.nextStep`
+  once the shutter is open: "Closing checklist · staff carry the keys" until a key exists, then "Collect <key>", the open duty with
+  its count ("Shock zombies at the Atrium fountain 3/12"), "Validate parking by the van", "Closing time: serve the Last Customer",
+  "Start Skylar's van". Wording in config/closingTime.js `objective`; Classic shows nothing (it is the discover-it-yourself mode).
+
 ## 13 November 2026 - Spill Cleanup draws shoppers through it
 
 - The teal spill only slowed whoever happened to cross it. Now a non-boss shopper within `attractRadius` (10 m, same floor, clear line,

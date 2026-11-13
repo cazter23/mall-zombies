@@ -636,8 +636,11 @@ function render(alpha, frameTime) {
   hud.setFittingRoom(game.over ? null : fittingRooms.find((room) => room.view)?.view ?? null, menuLabels);
   hud.setLimitedEdition(game.over ? null : limitedEditions?.status ?? null);
   const objectiveArea = ui.startObjective.until;
-  hud.setObjective(game.over || g.map.zones[objectiveArea]?.open !== false ? null
-    : ui.startObjective.text.replace('{price}', g.pricing.priceOf('door', objectiveArea).toLocaleString('en-US')));
+  // The line under the round box: the shutter until the Hallway is owned, then (Directed only) Closing Time's next step.
+  const shutterShut = g.map.zones[objectiveArea]?.open === false;
+  hud.setObjective(game.over ? null
+    : shutterShut ? ui.startObjective.text.replace('{price}', g.pricing.priceOf('door', objectiveArea).toLocaleString('en-US'))
+      : game.showClosingGuidance ? g.closing.nextStep : null);
   hud.setClosing(
     game.showClosingGuidance ? g.closing.checklist : null,
     game.showClosingGuidance && !game.over ? g.closing.markers : {},
