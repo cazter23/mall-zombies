@@ -937,12 +937,14 @@ export const weapons = {
     },
   },
   // THE WONDER WEAPON (GRAB-A-GUN, phase 10): clawOnly, a RAINBOW capsule, the rarest prize in the machine, a mall joke you cannot buy anywhere.
-  // RETURN TO SENDER: a returns-desk scanner. Its beam BOXES one zombie and sends it back to the manufacturer: an INSTANT KILL, whatever the round (a round-30
-  // Shopper has 3,400 HP). The instant kill (weapons/gunStats.js hitDamage, `instantKill`) skips bosses and Mascots: they can't be returned, so they take a big
-  // fixed hit instead (`bigFraction` of their health, scaled by the gun's tiers), never a one-shot.
-  // It is the strongest gun in the game (kills a round-30 zombie as fast as a round-1 one: tests/balance.test.js), kept from trivialising the late rounds by its
-  // small magazine, slow reload and slow refill: a RESTOCK-O-MATIC or a Refurbished grab fills the magazine but only HALF the reserve (`refillFraction`), so
-  // a crowd of 60+ zombies costs more rounds than you carry. One zombie a shot: no pierce, no splash.
+  // RETURN TO SENDER: a returns-desk pneumatic tube cannon. One pull fires a RETURN BLAST, a wide cone of packing wind (`cone`, weapons/coneBlast.js, the
+  // same cone the Leaf Blower uses): every zombie inside cone.killRange is BOXED and sent back to the manufacturer, an INSTANT KILL whatever the round (a
+  // round-30 Shopper has 3,400 HP), and the boxes are flung away; the ones further out, to cone.range, are blown off their feet. The instant kill
+  // (weapons/gunStats.js hitDamage, `instantKill`) skips bosses and Mascots: they can't be returned, so they take a big fixed hit instead (`bigFraction`
+  // of their health, scaled by the gun's tiers), never a one-shot. A wall between you and a zombie shields it.
+  // ROLE: the crowd answer. A pull into a crush clears it, at any round. It is kept from trivialising the late rounds by its two-shot magazine, a slow
+  // reload and a slow refill: a RESTOCK-O-MATIC or a Refurbished grab fills the magazine but only HALF the reserve (`refillFraction`). The Leaf Blower
+  // is the other cone gun: a steady shove that never kills.
   returnToSender: {
     id: 'returnToSender', name: 'Return to Sender', fireMode: 'semi', clawOnly: true,
     // (damage: a nominal 'what a hit is worth' for Build-A-Blaster's stuffings (weapons/gunStats.js gunPower) and the tiers; the instant kill ignores it on a zombie.)
@@ -951,15 +953,26 @@ export const weapons = {
       bigFraction: 0.12, // bosses and Mascots (they can't be returned): each beam takes this share of their MAX health (x the gun's tier damage)
       box: { colors: [0xc9954f, 0xe2b676, 0xf2e1b8, 0xa9772e], count: 36, speed: 4.2, size: 0.07 }, // the zombie is boxed: cardboard and packing tape fly
     },
-    magazineSize: 5, startingReserve: 14, // a five-round magazine, 19 returns in all
+    magazineSize: 2, startingReserve: 10, // two blasts in the tube, twelve in all
     refillFraction: 0.5, // a refill (RESTOCK-O-MATIC, a Refurbished grab) fills the magazine and only HALF the reserve: it stays special
-    fireInterval: 0.7, fireBuffer: 0.12, reloadTime: 3.0, range: 60,
+    fireInterval: 0.9, fireBuffer: 0.12, reloadTime: 3.0, range: 12,
+    // The blast (weapons/coneBlast.js findInCone / blowAway; playerGun.js fireCone). Everything in `range` and inside the angle, with no wall between, is
+    // caught: a returnable zombie within killRange is returned; past it, it is shoved and laid down. A boss or Mascot within killRange takes the big hit
+    // (and a Mascot is shoved at mascotScale; bosses are never moved). knockback is m/s at the muzzle, falling to farFraction of it at `range`.
+    // payEverySeconds 0: every zombie caught pays its +10, every blast. gust: the cardboard and packing peanuts it throws.
+    cone: {
+      killRange: 9, range: 12, halfAngleDegrees: 30, targetRadius: 0.4,
+      knockback: 10, farFraction: 0.5, staggerSeconds: 0.4, drag: 2.2, mascotScale: 0.5,
+      knockdownRange: 12, knockdownSeconds: 1.4, knockdownDrag: 1.4,
+      payEverySeconds: 0,
+      gust: { count: 42, speed: 11, size: 0.07, colors: [0xc9954f, 0xe2b676, 0xf2e1b8, 0xf6f6e6, 0xff59a9] },
+    },
     recoil: {
       pitchDegrees: 1.6, yawDegrees: 0.3, rollDegrees: 0.5, adsMultiplier: 0.6,
       model: { back: 0.05, up: 0.01, pitchDegrees: 7, yawDegrees: 1.2, rollDegrees: 2.5,
         adsMultiplier: 0.45, frequency: 5.6, damping: 0.5 },
     },
-    impact: { flinch: 1, knockback: 0, hitstopSeconds: 0, deathImpulse: 0.6 }, // (a boxed zombie drops where it stands)
+    impact: { flinch: 1, knockback: 0, hitstopSeconds: 0.03, deathImpulse: 3.2 }, // (a boxed zombie is flung away by the blast)
     spread: {
       base: 0.15, moving: 1.4, maxMovingFactor: 1.5, airborne: 2.5,
       perShot: 0.4, maxBloom: 1, bloomRecoveryDelay: 0.3, bloomRecovery: 3,
@@ -979,29 +992,60 @@ export const weapons = {
       model: 'returnToSender', hipOffset: { x: 0.17, y: -0.16, z: -0.43 },
       aimYawDegrees: 6, hipPitchDegrees: 1.5, hipRollDegrees: 3,
       bodyColor: 0x4a5bd8, accentColor: 0xf6f6e6, metalColor: 0xbfc5cc, // returns-desk blue and white
-      darkColor: 0x20242b, sightColor: 0xff59a9, screenColor: 0x7bffb0, batteryColor: 0xffd23f,
+      darkColor: 0x20242b, sightColor: 0xff59a9, screenColor: 0x7bffb0, batteryColor: 0xffd23f, // (batteryColor: the parcel tape)
+      glassColor: 0xcfe9f5, canisterColor: 0xc9954f, // the chamber's glass lid; the kraft-paper parcel canister
       fire: { triggerDegrees: 26, pressSeconds: 0.03, releaseSeconds: 0.14 },
-      // Reload: the gun tips, the support hand slaps a fresh battery pack into the grip's slot, and the screen reboots.
+      // Reload (models/returnToSender.js). Poses: pos in metres (right, up, back), rot in degrees (muzzle up, turn left, roll left). The gun rolls its
+      // glass chamber toward you; the support hand flips the lid open, lifts out the spent canister (Out) and tosses it, brings a fresh parcel
+      // canister from below and drops it in (In), shuts the lid and thumps the RETURNED stamp (Ready).
       reload: {
         gunKeys: [
           { t: 0, pos: [0, 0, 0], rot: [0, 0, 0] },
-          { t: 0.18, pos: [0.012, -0.025, 0.03], rot: [14, 8, 12] },
-          { t: 0.82, pos: [0.012, -0.025, 0.03], rot: [14, 8, 12] },
+          { t: 0.1, pos: [-0.03, 0.02, 0.01], rot: [8, 6, 20] }, // the chamber rolled toward you
+          { t: 0.3, pos: [-0.03, 0.026, 0.014], rot: [7, 6, 22] }, // tugged as the canister comes out
+          { t: 0.5, pos: [-0.025, 0.014, 0.01], rot: [5, 5, 17] }, // waits while a fresh one is fetched
+          { t: 0.64, pos: [-0.03, 0.014, 0.01], rot: [9, 6, 22] }, // dipped as it drops in
+          { t: 0.76, pos: [-0.028, 0.018, 0.01], rot: [7, 6, 19] }, // the lid slapped shut
+          { t: 0.86, pos: [-0.02, 0.006, 0.005], rot: [3, 4, 12] }, // the stamp thumped
           { t: 1, pos: [0, 0, 0], rot: [0, 0, 0] },
         ],
+        // The support hand (offsets from where it holds the body's left side); canisterInHand: where a canister sits in it (the hand group's coordinates).
+        canisterInHand: [-0.04, -0.01, -0.025],
         handKeys: [
           { t: 0, pos: [0, 0, 0] },
-          { t: 0.2, pos: [-0.05, -0.15, 0.1], rot: [-20, 0, 0] }, // down, to the battery bin
-          { t: 0.38, pos: [-0.05, -0.15, 0.1], rot: [-20, 0, 0] }, // grabs a pack
-          { t: 0.58, pos: [-0.02, -0.07, 0.06] }, // brings it up under the grip
-          { t: 0.7, pos: [-0.015, -0.055, 0.045] }, // slaps it in
-          { t: 0.9, pos: [0, 0, 0] },
+          { t: 0.1, pos: [0.1, 0.159, 0.045] }, // on the lid's latch
+          { t: 0.17, pos: [0.01, 0.179, 0.045] }, // flips it open
+          { t: 0.24, pos: [0.04, 0.08, 0.045] }, // takes hold of the spent canister
+          { t: 0.3, pos: [0.04, 0.16, 0.045] }, // lifts it out
+          { t: 0.37, pos: [-0.12, 0.05, 0.0], rot: [0, 0, 40] }, // tosses it
+          { t: 0.45, pos: [-0.06, -0.16, 0.08], rot: [-20, 0, 0] }, // down to the canister rack
+          { t: 0.5, pos: [-0.06, -0.16, 0.08], rot: [-20, 0, 0] },
+          { t: 0.58, pos: [0.04, 0.16, 0.045] }, // over the open chamber
+          { t: 0.64, pos: [0.04, 0.08, 0.045] }, // drops it in
+          { t: 0.7, pos: [0.01, 0.179, 0.045] }, // to the open lid
+          { t: 0.76, pos: [0.1, 0.159, 0.045] }, // slaps it shut
+          { t: 0.82, pos: [0.098, 0.135, -0.04] }, // over the stamp
+          { t: 0.86, pos: [0.098, 0.122, -0.04] }, // thumps it
+          { t: 0.95, pos: [0, 0, 0] },
         ],
-        batteryVisible: [[0.38, 0.7]], // the battery pack in the hand, from the grab to the slot
+        lidOpenDegrees: 125,
+        lidKeys: [ // pos[0]: 0 shut .. 1 open
+          { t: 0, pos: [0, 0, 0] }, { t: 0.1, pos: [0, 0, 0] }, { t: 0.17, pos: [1, 0, 0] },
+          { t: 0.7, pos: [1, 0, 0] }, { t: 0.76, pos: [0, 0, 0] }, { t: 1, pos: [0, 0, 0] },
+        ],
+        stampTravel: 0.01, // how far the stamp goes down when thumped (m)
+        stampKeys: [ // pos[0]: 0 up .. 1 pressed
+          { t: 0, pos: [0, 0, 0] }, { t: 0.84, pos: [0, 0, 0] }, { t: 0.86, pos: [1, 0, 0] }, { t: 0.92, pos: [0, 0, 0] }, { t: 1, pos: [0, 0, 0] },
+        ],
+        canisterOut: [0.24, 0.64], // the chamber is empty: the seated canister is hidden
+        spentVisible: [[0.24, 0.36]], // the spent canister in the hand, from the chamber until it is tossed
+        freshVisible: [[0.48, 0.64]], // the fresh one, from the rack until it drops in
         events: [
-          { at: 0.2, sound: 'returnReloadOut' },
-          { at: 0.7, sound: 'returnReloadIn', jolt: { up: -0.006, pitchDegrees: -2 } },
-          { at: 0.9, sound: 'returnReloadReady', jolt: { back: 0.012, pitchDegrees: 3 } },
+          { at: 0.17, jolt: { up: 0.004, rollDegrees: -1.5 } }, // the lid flips open
+          { at: 0.27, sound: 'returnReloadOut', jolt: { up: 0.006, pitchDegrees: 1.5 } },
+          { at: 0.64, sound: 'returnReloadIn', jolt: { up: -0.008, pitchDegrees: -2 } },
+          { at: 0.76, jolt: { up: -0.005, rollDegrees: 2 } }, // the lid slapped shut
+          { at: 0.86, sound: 'returnReloadReady', jolt: { up: -0.01, pitchDegrees: -3 } }, // the stamp
         ],
       },
     },

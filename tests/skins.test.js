@@ -221,8 +221,8 @@ const expectedRoles = {
   returnToSender: {
     colors: { '4a5bd8': 'body', f6f6e6: 'accent', '20242b': 'dark', '7bffb0': 'screen', bfc5cc: 'metal',
       ff59a9: 'sight', ffd23f: 'accent', ff4d4d: 'accent', ffa733: 'accent', ffe14a: 'accent',
-      '59d36c': 'accent', '4aa8ff': 'accent', a06bff: 'accent' },
-    grips: [15], emitters: [12],
+      '59d36c': 'accent', '4aa8ff': 'accent', a06bff: 'accent', cfe9f5: 'glass', c9954f: 'ammo' },
+    grips: [35, 38], emitters: [30], // (the stamp's knob and the grip; the pink ring inside the bell)
   },
 };
 

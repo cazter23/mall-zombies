@@ -375,12 +375,14 @@ export const audio = {
       { type: 'noise', filter: 'bandpass', freq: 1800, q: 0.8, gain: 0.2, attack: 0.008, decay: 0.16, delay: 0.055 },
       { type: 'noise', filter: 'highpass', freq: 3500, q: 0.7, gain: 0.15, attack: 0.012, decay: 0.18, delay: 0.065 },
     ] },
-    // RETURN TO SENDER: a rising scanner beep-zap, the rubber stamp that boxes a zombie, and the reload (a battery pack slapped in).
-    returnBeam: { volume: 0.8, layers: [
-      { type: 'tone', wave: 'sawtooth', freq: 520, freqEnd: 1900, gain: 0.35, attack: 0.001, decay: 0.12 },
-      { type: 'tone', wave: 'sine', freq: 140, freqEnd: 60, gain: 0.9, attack: 0.001, decay: 0.18 },
-      { type: 'noise', filter: 'bandpass', freq: 3400, q: 0.9, gain: 0.5, attack: 0.001, decay: 0.05 },
-      { type: 'tone', wave: 'triangle', freq: 1760, freqEnd: 1760, gain: 0.18, attack: 0.001, decay: 0.07, delay: 0.1 },
+    // RETURN TO SENDER: the blast (a pneumatic-tube WHOOMP: a deep thump, a rush of air and a tube's rising whistle), the rubber stamp that boxes a
+    // zombie, and the reload (a parcel canister swapped).
+    returnBeam: { volume: 0.95, layers: [
+      { type: 'tone', wave: 'sine', freq: 95, freqEnd: 34, gain: 1.2, attack: 0.001, decay: 0.32 },
+      { type: 'noise', filter: 'lowpass', freq: 700, q: 0.7, gain: 1.0, attack: 0.002, decay: 0.38 },
+      { type: 'noise', filter: 'bandpass', freq: 1900, q: 0.6, gain: 0.55, attack: 0.03, decay: 0.45, delay: 0.02 },
+      { type: 'tone', wave: 'sawtooth', freq: 300, freqEnd: 1500, gain: 0.16, attack: 0.01, decay: 0.3, delay: 0.03 },
+      { type: 'tone', wave: 'triangle', freq: 1760, freqEnd: 1760, gain: 0.12, attack: 0.001, decay: 0.08, delay: 0.28 },
     ] },
     returnStamp: { volume: 0.7, layers: [
       { type: 'noise', filter: 'lowpass', freq: 700, q: 0.8, gain: 0.9, attack: 0.001, decay: 0.07 },

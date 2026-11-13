@@ -11,6 +11,25 @@
   everything and +40 on a kill while marked. Sustained 292 -> 494 (~645 on its own marked target; Rivet Rifle 582, Price Gun 434).
 - Numbers and reasons: docs/weapon-balance-pass.md (13 November 2026 section). New: game/rungUp.js, fx/rungUpView.js, fx/scanLine.js,
   hud.setCharge (the crosshair ring), gunStats roundDamageScale, audio scannerBeep.
+## 13 November 2026 - Return to Sender becomes a blast (`claude/claw-guns`)
+
+The wonder weapon felt underpowered for its rarity: it instant-killed, but one zombie per pull. Asked for something like a COD "Thunder Gun"
+(a wide blast that flings a crowd), in our own theme:
+- **The blast (`src/config/weapons.js` returnToSender.cone, `src/weapons/playerGun.js` fireCone):** it now fires through the Leaf Blower's cone code
+  (`weapons/coneBlast.js`). Every returnable zombie within `cone.killRange` (9 m, 30 degrees each side, no wall between) is returned (the same
+  `weapons/returnToSender.js` path: an instant kill at any round, the cardboard burst, the stamp sound) and flung (`impact.deathImpulse` 3.2); the
+  rest of the cone, to 12 m, is shoved and knocked down unharmed. Bosses and Mascots within killRange take the big fixed hit as before. Every zombie
+  caught pays its +10. Two blasts a tube, twelve in all (was 5 and 19 single kills), fireInterval 0.9, reload unchanged at 3 s, the half-rate
+  refill unchanged. The fire sound (`returnBeam`) is now a pneumatic whoomp. `tools/economyBot.js` still counts it usable (it has a cone).
+- **Labels (`src/game/returnQuest.js`):** one blast returns a crowd, so Chain Return and Product Recall act once per blast (from its first return)
+  and Full Refund rolls its round back once per blast (its points are still per return): otherwise one pull would chain through a round or refill
+  itself. The gun's 'shot' event ends a blast (`blastDone()`).
+- **Model (`src/weapons/models/returnToSender.js`):** the plain scanner box is now a pneumatic tube cannon (a flared bell, a glass chamber with a
+  parcel canister, a tube curl, a stamp, the rainbow label kept). Reload: flip the glass lid, lift the spent canister out and toss it, drop a fresh
+  one in, shut the lid, thump the stamp. New palette roles glassColor (glass) and canisterColor (ammo).
+- **Tests:** instantKill.test.js (one blast, the edge, the sides), returnQuest.test.js (labels once per blast), balance.test.js (the new role),
+  closingTime.test.js (the Last Customer is returned from inside the cone, not from 30 m), skins.test.js roles; the model fixture regenerated for this
+  gun only. The economy simulation was NOT rerun (about 90 minutes): the bot's income with this gun will have changed.
 
 ## 13 November 2026 - Bottle Rocket Bazooka: a better model and a breech-loading reload (`claude/claw-guns`)
 

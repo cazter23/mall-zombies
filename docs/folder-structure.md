@@ -222,7 +222,7 @@ src/
                         (it refills by itself regenDelay after the last pulse, at regenPerSecond; running dry LOCKS the trigger until the tank holds restartAt),
                         resetFuel(). Pure timing: the tank's LEVEL is the weapon's `magazine`, so the HUD, RESTOCK-O-MATIC, Refurbished grabs and
                         Build-A-Blaster work on it unchanged. weapon.js owns one (`weapon.fuel`) and runs updateFuel instead of the magazine/reload path.
-    coneBlast.js        The cone attack of a gun with `cone` (the Leaf Blower): findInCone(origin, dir, cone, colliders, shootables) (in range, inside the
+    coneBlast.js        The cone attack of a gun with `cone` (the Leaf Blower; Return to Sender's blast, see playerGun.js fireCone): findInCone(origin, dir, cone, colliders, shootables) (in range, inside the
                         angle, no wall between, height forgiving: it aims at the height the aim line passes the body), blowAway(zombie, origin, cone,
                         distance) (the zombies' own staggerAway, plus applySlip close up; bosses refuse both, a Mascot is shoved at mascotScale, a zombie
                         already sliding is left alone), createBlastPay(everyPulses) (the +10 hit points once per payEverySeconds per zombie, not per pulse).
@@ -278,6 +278,10 @@ src/
                         phases, pellet cones, hip spread that leaves aimed accuracy alone). Apply: gun.setMods(id, ...)
     returnToSender.js  Shared accepted-return lethal hit and existing cardboard/stamp feedback for the beam and hand; normal kill events carry weaponId returnToSender.
     gunStats.js         THE gun maths: roundDamageScale(def, round) (a gun with `roundScaling`, the Tennis Ball Launcher: x (that round's Shopper health / round 1's) ^ exponent, by the round the TARGET spawned in, zombie.round), damageFalloff(distance, falloff), applyInstantKillDamage(target, def, baseDamage, stats), hitDamage(def, hit, index, stats, chargeScale, target) (damage x head x falloff x
+    returnToSender.js  Shared accepted-return lethal hit and existing cardboard/stamp feedback for the blast and hand; normal kill events carry weaponId returnToSender.
+                        playerGun.js fireCone calls it for every returnable zombie a Return to Sender blast catches within cone.killRange (the rest of the
+                        cone is only shoved and knocked down; bosses and Mascots within killRange take hitDamage's big hit).
+    gunStats.js         THE gun maths: damageFalloff(distance, falloff), applyInstantKillDamage(target, def, baseDamage, stats), hitDamage(def, hit, index, stats, chargeScale, target) (damage x head x falloff x
                         pierce x player multiplier; the only place it's computed; with a `target`, a gun with `instantKill` (Return to Sender) or `stats.instantKill` (Black Friday) deals INSTANT_KILL_DAMAGE to non-boss/returnable zombies and scales bosses with `bigFraction` or `stats.bossDamageMultiplier`), resolveGun(base, mods) (upgrades as data:
                         { id, modifiers: [{ stat: 'falloff.start', op: 'set'|'add'|'mul', value }] }; set, then adds, then muls;
                         a bad stat path throws; counts (magazine, reserve, pellets...) are rounded whole after mods, a burst
@@ -329,7 +333,11 @@ src/
                         coilNailer.js = heavy automatic pneumatic coil nailer with round wire-collated drum. barcodeScanner.js =
                         charge-beam retail laser scanner with capacitor coils and Li-Ion battery pack. confettiCannon.js = pink/purple
                         double barrels, gold rims, PARTY POP! stock label and striped shells; hinge open, a shell per cycle, snap shut.
-                        returnToSender.js = the wonder weapon: a returns-desk scanner gun in blue and white with a lit green screen, a rainbow stripe, a pink emitter ring and a battery pack that the support hand slaps in to reload.
+                        returnToSender.js = the wonder weapon: the Returns Desk's pneumatic tube cannon in blue and white: a flared bell with a pink emitter ring,
+                        a glass chamber on top (the lid hinged on its left, open rings at both ends so you see in) holding a kraft parcel canister, a tube
+                        curling into the neck, a rainbow label, parcel tape, a RETURNED stamp and a green screen facing you. Reload (viewmodel.reload keys):
+                        the lid flips open (lidKeys), the spent canister is lifted out and tossed, a fresh one dropped in, the lid shut, the stamp thumped
+                        (stampKeys). glassColor and canisterColor are palette roles glass and ammo (config/gunPalettes.js).
                         tennisBallLauncher.js = sporting-goods blue pump launcher: fat ringed barrel, loading port, clear hopper with balls, a support hand that fetches a ball to reload.
                         stargazer.js = the claw-only sniper: a hobby-shop telescope (navy tube on brass rings over a dark rail, objective bell, blue lens, focus turrets
                         and ring, finder scope) on a bolt-action with gold stars, a loading port on the LEFT (the side you see), a fluted barrel with a brass band and
@@ -1258,7 +1266,8 @@ Boss groundwork: zombie.js owns timed buffs, source-bound holds and a behavior c
 ### The Return (Return to Sender quest)
 
 - src/config/returnQuest.js: the sign spots and their look, the crash radius, the ticket number and queue radius, the desk's prompt words per stage, the PA lines, the three labels with their numbers, the label slot and its printer, the parcel. `returnLabel(id)`.
-- src/game/returnQuest.js: `createReturnQuest(...)`, built in createGame as `g.returnQuest` and passed to features. `stage` ('policy' | 'damaged' | 'ticket' | 'queue' | 'collect' | 'done'), `shootSign`, `pullTicket`, `collect`, `cycleLabel`, `labels`, `fitted`, `nextLabel`, `update` (the crash check), `serialize` / `restore` / `reset`, `debug(step)`. Listens to 'kill' (the queue count and the fitted label) and 'closingLine' (a duty's label). Emits 'returnQuest' and 'returnLabel'.
+- src/game/returnQuest.js: `createReturnQuest(...)`, built in createGame as `g.returnQuest` and passed to features. `stage` ('policy' | 'damaged' | 'ticket' | 'queue' | 'collect' | 'done'), `shootSign`, `pullTicket`, `collect`, `cycleLabel`, `labels`, `fitted`, `nextLabel`, `update` (the crash check), `serialize` / `restore` / `reset`, `debug(step)`, `blastDone()`. Listens to 'kill' (the queue count and the fitted label), 'closingLine' (a duty's label)
+  and 'shot' (a Return to Sender blast is over: blastDone, so Chain Return / Product Recall and Full Refund's round back act once per blast). Emits 'returnQuest' and 'returnLabel'.
 - src/game/features/refundSign.js: feature kind `refundSign`, a shootable A-frame floor sign that follows the quest's state.
 - src/game/features/returnsDesk.js: now the quest's counter (its prompt is the trail), the ammo counter with the gun in hand, the parcel on the tray, and the label slot with its printer.
 - The Challenges tab's Lost and Found entry: src/game/challengeCatalog.js (`LOST_FOUND_PIN`, category `collections`), words in src/config/challengeBoard.js.

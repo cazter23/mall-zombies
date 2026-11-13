@@ -21,7 +21,7 @@ export const ui = {
     rivetRifle: 'Steady automatic · Controlled body fire',
     coilNailer: 'Heavy automatic · Sustained crowd pressure',
     barcodeScanner: 'Hold to scan · Fires itself when the scan completes · Rings up what it hits: more damage from everything, bonus points',
-    returnToSender: 'The wonder weapon · Boxes one zombie and returns it: an instant kill · Bosses and Mascots only take a big hit',
+    returnToSender: 'The wonder weapon · A blast of packing wind returns every zombie in front of you: an instant kill · Two shots a tube · Bosses and Mascots only take a big hit',
     tennisBallLauncher: 'Tight spaces · Balls bounce off walls and between zombies, each bounce a hit · Keeps up with the rounds',
     stargazer: 'The sniper · Hits harder the further away it lands · Huge headshots through a real scope · Pierces a line',
     bottleRocket: 'Blast at range · The rocket bursts on whatever it hits, hurting every zombie around it · Too close and it hurts you too',
