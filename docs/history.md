@@ -1,5 +1,17 @@
 # Sunset Galleria: build history ("Current state")
 
+## 12 November 2026 - Incentives review: the trim, jackpots, weights, looks and meter checked and fixed
+
+A second model reviewed the four stacked incentive branches (`claude/incentives` -> `incentive-weights` -> `incentive-looks` -> `incentive-meter`, all in `.claude/worktrees/incentives`) against the trim/jackpot spec. The uncommitted meter work went in as one snapshot commit first, then small fixes on top:
+- **Bug:** an Employee of the Month drop with every common busy fell back to the whole catalogue, so a jackpot could drop before `jackpot.firstRound` or right after another jackpot. It now falls back to any common (`chooseRewardType`, game/powerUps.js); a test pins it.
+- **Weakened test:** the trim rewrote the Paid Break test and lost its other-floor, wall and max-health checks (its title still said walls). Main's test is back beside the new one.
+- **Weak tests:** Black Friday's boss check passed even with no multiplier (a gunStats unit test now pins one-hit damage, exactly 3x on bosses, nothing without the flag); Commission Day's test named the helmet pop but never checked it; the Clearance light stutter in horror.js had no test (tests/horror.test.js now has one).
+- **Config rule:** the Clearance flash's dim opacity (ui/bossFlash.js) and the stutter's lamp/neon levels (horror.js) were hardcoded; they live in `config/powerUps.js` visual now.
+- **Words:** three stale "Security Sweep" comments (feel.js, zombies.js, mascotCostumes.js) and Loss Prevention's summary ("strikes": its charges count melee hits, so a multi-target swing spends several).
+- **Checked and kept:** reset order (powerUps resets before stats, so every modifier is divided out of the run's stats, never fresh ones), death and Save & Quit stripping (`stripEffectModifiers`, save version 9), clearance kills skipping the per-kill payout and the outfit rail, the shared-model cache, the edits to ballistics/melee/playerGun (Black Friday reaches projectiles and the box cutter), zombieManager (the removed `securitySweep`), returnQuest/wallet (`award`: the Commission Day path), headlessGame's snapshot (more fields compared, not fewer), scoops.test.js (`gold: false` pins a coin flip). `npm run balance` is byte-identical to main.
+- **Economy (`--quick`, 2 seeds, noisy):** rounds 1-3 identical; round 10 total 23,430 -> 23,205 (good) and 22,025 -> 23,175 (average); mortal mean round 10.0 -> 10.3 and 7.0 -> 7.5.
+- **Left as decisions:** 11 types (8 common + 3 jackpot) against the spec's 8-10; Clearance's 28 m radius ignores walls; Commission Day does not double boss-voucher point conversions (`wallet.earn`).
+
 ## 12 November 2026 - Employee of the Hour meter and Guide incentive discovery
 - Branch `claude/incentive-meter` stacked on `claude/incentive-looks` (`ef2c6cd`) adds the `EMPLOYEE OF THE HOUR` meter to the HUD and a persistent `Employee Incentives` discovery section to the Staff Survival Guide.
 - `src/game/powerUps.js` announces `'powerUpMeter'` snapshots (`progress`, `round`, `unlocked`, `available`, `capped`, `nearFull`, `dropped`, `maxPerRound`, `silent`) across round starts, kills, drop spawns, save restores and run resets; `src/ui/hud.js` forwards `'powerUpMeter'` to `src/ui/incentiveHud.js` without reading `powerUps` internals.
