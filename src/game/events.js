@@ -126,6 +126,12 @@
 //                                                        'ammoCache' | 'tier' | 'attachment' | 'wardrobe' | 'fittingRoom' | 'secondChance' | 'other', id as it was BEFORE
 //                                                        the purchase (buying a gun is kind 'weapon'; a fitting room emits the id of the item put on, cost 0)
 //                                                        Area purchases also include areaId and openedDoorIds (one charge, many barriers).
+//   'areaOpened'  { areaId, doorId, openedDoorIds, first, pa }  once per door purchase (game/doorOpenings.js); first = the area's
+//                                                        first opening this run, pa = its welcome then (ifQuiet: dropped if
+//                                                        another PA line is up). Never on a load or debug open-all
+//   'barrierOpening' { door, doorId, areaId, bought, profile }  each barrier that purchase set rolling; bought = the one paid at,
+//                                                        the others are free connections (the light show). profile: config/shutters.js
+//   'barrierOpened'  { door, doorId, areaId, bought, profile, near }  that barrier clunked fully open (near = within the nudge range)
 //   'wardrobeChange' { slot, worn, removed }              apparel equipped, item ids (removed is null for an empty slot)
 //   'outfitPulse' { id, slot }                            a worn item just did its job (game/outfitRail.js): its tag on the outfit rail swings
 //   'wardrobeBuy' { id, pa: { kicker, text } }            an item was bought from a showpiece (game/features/wardrobeFixtures.js): the mall PA reads `pa`

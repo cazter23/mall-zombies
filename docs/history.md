@@ -17,6 +17,47 @@ Gameplay already worked on a pad (buying, the claw, Kevin, the order form, charg
   tickets, a gold Mascot), a Doorbuster going live, and a hum that grows while the Barcode Scanner scans (config/haptics.js).
 - Not built: rebinding (the Controls screen is a reference). Checked in the browser with a fake pad only: what to try with a real one is
   at the end of docs/controller-audit.md.
+## 13 November 2026 - Buying a door is a moment (claude/doors)
+
+- game/doorOpenings.js turns a door 'purchase' into bus events: 'areaOpened' (once per purchase, with the PA's welcome on an area's
+  first opening this run), 'barrierOpening' per barrier set rolling (bought = the one paid at; the others are free connections) and
+  'barrierOpened' when it is fully up. Listeners: the announcer, game/shutterSounds.js, core/haptics.js, fx/doorOpenView.js (new).
+- Per kind of barrier (config/shutters.js opening.profiles, by finish): rattly (the start shutter: padlock click, tinny rattle), roll
+  (store grilles: key and latch), service (steel staff doors: deadbolt, heavy grinding motor, dusty), grand (the brass Atrium/HOFFMAN'S/
+  Cinema fronts: a shop bell, smooth roll, ringing clunk), repair (the escalator: a spin-up and engage). Each: unlock + motor, roll ticks,
+  a heavier end clunk (config/audio.js). The mall has no glass doors: "grand" is the storefront version.
+- The curtain is DRAWN eased (opening.rollEase 2.2: leaps off the floor, settles into the housing) and rattles sideways as the motor
+  catches. The real roll is untouched: the collider leaves on exactly the same tick (1.2 s roll, gone at 1.9 m), and the drawn curtain
+  is never below the real one. Dust puffs along the floor line and falls from the housing (effects.splat); light from the new area spills
+  through (a pooled additive card past the curtain and a floor tongue, coloured by area; it follows the real roll, then fades over
+  0.5 s, so a paused game or a long frame cannot use it up; no real lights). A small view nudge and
+  a controller thump when it clunks home within 10 m.
+- Free connections opened because you now own both sides: a smaller rattle and less dust, only a quiet clunk; no glow, nudge, rumble or PA.
+- PA welcomes (kicker 'Now open', two lines per area, docs/voice.md PA voice) carry `ifQuiet`: the HUD drops them instead of queueing when
+  another PA line is up, and the announcer skips the chime (hud.showAnnouncement returns false).
+- Save & Quit: the restore opens doors with { instant: true } (snapped open, no events/sounds) and counts owned areas as welcomed.
+## 13 November 2026 - Shoppers become 1986 mall-goers, and a crowd of them costs less to draw (`claude/shoppers`)
+
+- **Eight archetypes** (config/shoppers.js), each with a few variations, every colour from a curated 1986 palette (`colors`): the
+  weekend shopper (tee/polo/raglan/rugby, jeans or shorts, bags), the velour tracksuit (colour-blocked shoulders or panels, matching
+  trousers; not the Mall Walker's striped one: no headband or wristbands), the mall-rat teen (colour-block windbreaker, neon tee or jean
+  jacket, acid-wash jeans or a ra-ra skirt with leg warmers, big hair, side pony, mullet, flat-top, a slushie, a Walkman with orange foam
+  headphones), the office worker on lunch (shirt and tie, loose tie, short sleeves with a pocket protector, a power suit with shoulder
+  pads; big glasses, a briefcase), the parent with a front carrier (a sleeping baby in a bonnet), the retiree (cardigan or sweater vest,
+  a perm or a flat cap, glasses, a purse), the food-court crew in their stall's colours (Corn Dog Corral, Burger Barn, Pretzel Palace,
+  Wok This Way: paper hat or visor, apron, name badge, a spatula) and the rocker (denim or studded vest over a tee with a back patch,
+  long hair or a mullet, a chain wallet). Widths 0.92 / 1 / 1.08; heights never change (the head hitbox is fixed). Nothing the Shoplifter
+  (dark hoodie, beanie) or the Mall Walker wears. The Cart Pusher wears them too.
+- **One material per Shopper.** It used to be a material per colour per zombie (~8 each) and a mesh per material per bone: 433 draw calls
+  for 24 Shoppers. Now every piece is a paint (zombies/shopperBake.js) and each bone is baked into ONE mesh with vertex colours, drawn
+  with the Shopper's own vertex-coloured material (so hit flashes, Build-A-Blaster glows, the edge shading and the straggler highlight still
+  work per zombie): 8 draw calls a Shopper, 192 for 24. Baked geometry is shared between Shoppers whose bone looks the same, ref-counted
+  and freed with the last one (normals and colours in bytes).
+- **Deterministic looks.** A look is a pure function of zombie.lookSeed (one Math.random draw per spawn in zombieManager). While a seeded
+  Shopper builds, its own random stands in for Math.random, because Three.js draws on it for every object id and a look's piece count
+  varies: building one never moves the game's random numbers, so changing a look no longer shifts seeded tests.
+- New: zombies/shopperModel.js, zombies/shopperBake.js. Changed: config/shoppers.js (rewritten), zombies/shopperAppearance.js,
+  zombieModel.js (Shopper path), zombie.js and zombieManager.js (lookSeed). limitedEditions.test.js reads `appearance.held`.
 ## 13 November 2026 - Rivet Rifle and Heavy Coil Nailer separation (`claude/hydrogen-rivet-coil`)
 
 Separated the Rivet Rifle and Heavy Coil Nailer (both were `damage: 95`, `fireInterval: 0.1` in `src/config/weapons.js`; numbers and adjacent comments only):

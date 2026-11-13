@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { headlessGame } from './helpers/headlessGame.js';
 import { economy } from '../src/config/economy.js';
 import { createAreaUnlocks } from '../src/world/areaUnlocks.js';
+import { shutters } from '../src/config/shutters.js';
 
 function started() {
   const t = headlessGame();
@@ -37,8 +38,11 @@ test('nine real purchases fully connect the mall for 9,500; free shutters animat
   buy(t, 'megaMart', 18.6, 2, -90);
   assert.equal(g.map.zones.foodCourt.open, false, 'Mega Mart does not grant Food Court');
   const motorCount = t.sounds.filter(s => s === 'shutterMotor').length;
+  const stopCount = t.sounds.filter(s => s === 'shutterStop').length;
   buy(t, 'foodCourt', 0, -.8);
-  assert.equal(t.sounds.filter(s => s === 'shutterMotor').length - motorCount, 2, 'entrance and shortcut sound');
+  // (both are 'roll' shutters: the bought entrance runs its motor, the free shortcut only clunks home, quietly)
+  assert.equal(t.sounds.filter(s => s === 'shutterMotor').length - motorCount, 1, 'only the bought entrance runs its motor');
+  assert.equal(t.sounds.filter(s => s === 'shutterStop').length - stopCount, 2, 'entrance and shortcut both clunk home');
   const shortcut = g.map.doors.find(d => d.id === 'foodCourtMegaMart');
   assert.equal(shortcut.barrier.state, 'open');
   assert.equal(g.colliders.includes(shortcut.barrier.collider), false);
@@ -60,8 +64,10 @@ test('nine real purchases fully connect the mall for 9,500; free shutters animat
   assert.equal(paid.reduce((n, e) => n + e.openedDoorIds.length, 0), 15);
   assert.ok(g.map.doors.every(d => d.isOpen));
   assert.ok(Object.values(g.map.zones).every(z => z.open));
-  assert.equal(t.hud.calls.some(([name, message]) => name === 'showAnnouncement' && message.kicker === 'Area unlocked'), false,
-    'area purchases do not trigger PA announcements');
+  // One PA welcome per area (its first opening this run: game/doorOpenings.js), none for the six free connections.
+  const welcomes = t.hud.calls.filter(([name, message]) => name === 'showAnnouncement' && message.kicker === shutters.opening.welcome.kicker);
+  assert.equal(welcomes.length, 9, 'one welcome per area bought');
+  for (const [, message] of welcomes) assert.equal(message.ifQuiet, true, 'a welcome never stacks on another PA line');
   g.resetRun(); t.tick(120);
   assert.ok(g.map.doors.every(d => !d.isOpen));
   assert.deepEqual(Object.keys(g.map.zones).filter(id => g.map.zones[id].open), ['startRoom']);

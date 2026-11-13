@@ -1,6 +1,6 @@
 // Browser peripheral: listens to gameplay events, never changes gameplay.
 // Unsupported/blocked actuators are silent no-ops. No delayed rumble queue.
-// Shots, getting hurt, pickups, blasts, bosses, jackpots and Doorbusters come from the event bus (config/haptics.js);
+// Shots, getting hurt, pickups, blasts, bosses, jackpots, Doorbusters and bought doors come from the event bus (config/haptics.js);
 // `charge` (optional, () => 0..1) is read each tick: a charge gun winding up hums, growing as it fills.
 import { haptics as defaults } from '../config/haptics.js';
 
@@ -71,6 +71,9 @@ export function createHaptics({ gamepad, input, state, health, events, config = 
     events.on('ticketsWon', () => pulse(config.jackpot)),
     events.on('mascotGold', () => pulse(config.jackpot)),
     events.on('flashSaleStart', ({ kind }) => { if (kind === 'doorbuster') pulse(config.doorbuster); }),
+    // A bought door (game/doorOpenings.js): a tick as it unlocks, a thump when it clunks home near you.
+    events.on('barrierOpening', ({ bought }) => { if (bought) pulse(config.doorUnlock); }),
+    events.on('barrierOpened', ({ bought, near }) => { if (bought && near) pulse(config.doorClunk); }),
     events.on('playerDeath', stop),
     events.on('runReset', stop),
   ];

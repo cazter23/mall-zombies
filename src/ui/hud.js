@@ -637,10 +637,12 @@ export function createHud({ locker = null, guide = null, challenges = null, onIn
       roundValue.textContent = n > 0 ? String(n).padStart(2, '0') : '—';
     },
 
-    // A PA-style announcement: { kicker, text, priority? }. Queue/preempt rather than overwrite.
+    // A PA-style announcement: { kicker, text, priority?, ifQuiet? }. Queue/preempt rather than overwrite.
+    // Returns false when an `ifQuiet` line was dropped because another one is up (it is not archived either).
     showAnnouncement(message) {
+      if (!message.archiveOnly && announcements.push(message) === false) return false;
       history.addMessage(message);
-      if (!message.archiveOnly) announcements.push(message);
+      return true;
     },
 
     showRoundBanner(n, label = null) {

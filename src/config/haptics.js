@@ -30,4 +30,8 @@ export const haptics = {
   // While a charge gun winds up (the Barcode Scanner's scan, weapon.chargeProgress 0..1): a short pulse every everyMs that
   // grows from the first magnitude to the second as it fills. Priority 0: any shot, hit or moment plays over it.
   charge: { duration: 80, everyMs: 60, strongMagnitude: [0.03, 0.28], weakMagnitude: [0.1, 0.45], priority: 0 },
+  // A bought door (game/doorOpenings.js): a light tick as it unlocks, a thump when it clunks home (only within
+  // config/shutters.js opening.nudge.range). Free connections that open on their own stay still.
+  doorUnlock: { duration: 60, strongMagnitude: 0.1, weakMagnitude: 0.4, priority: 2 },
+  doorClunk: { duration: 160, strongMagnitude: 0.6, weakMagnitude: 0.35, priority: 2 },
 };

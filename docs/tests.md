@@ -128,8 +128,14 @@ intensity/off, unsupported/rejected actuator APIs, legacy pulse fallback, gamepa
 cleanup and keyboard suppression. Settings -> Controller -> Controller vibration is saved with the other settings.
 `tests/prone.test.js` covers toggle controls, crawl speed from stats, smooth eye/collision lowering, low roofs,
 safe stand/crouch recovery, slide/jump/melee/vault constraints, gun use, zombie damage, body clearance, controller sprint latch and run reset.
-`tests/shopperAppearance.test.js` covers coordinated wardrobe choices and rarity, every clothing/hair/accessory/wear variant,
-valid geometry and mesh budgets, animation, isolated hit flashes, owned-resource disposal, fixed hitboxes and unchanged Mall Walkers.
+`tests/shopperAppearance.test.js` covers the Shopper looks: the same seed is the same Shopper, every archetype turns up at its weight and
+wears every top/bottom/shoe/pattern/build/hair/hat/glasses/held item/extra on its lists over 6000 seeds; every colour is a named palette colour
+and every part well formed; no other kind's signature (hoodie, beanie, headband, wristbands) and nothing towering over the head hitbox;
+every piece builds valid geometry and animates, a Shopper is ONE vertex-coloured material and 8 meshes, the head anchor and bone names
+never move; the Cart Pusher keeps its cart's own materials; hit flash and edge shading per zombie; shared baked geometry is shared by
+identical bones, only freed with its last user, and the cache is empty after many spawns and deaths; the look never depends on Math.random
+and the hitboxes never change; Mall Walkers and Shoplifters keep their own materials; and in the real game the same seeded spawns are
+the same Shoppers, each spawn takes the same random numbers whatever it wears, and clear() frees every shared geometry.
 `tests/atmosphere.test.js` checks decorative triangles against protected routes/vaults and the escalator ceiling well,
 zero added collision, batching/motion reset, interpolated supporting-surface shadows and disposal, spatial sound
 occlusion/zones/panning/caps, pause/death/reset silence, closed-shutter rattles and Web Audio voice cleanup.
@@ -141,8 +147,15 @@ glazing, continuous window/door barriers on both floors and a shared lettering m
 `tests/retailUnease.test.js` checks sighting/look-away and quiet-interval gates, distant silhouette duration, TV feed visibility
 after static batching, reset/comfort restoration, and local sound ownership/pause/comfort gates.
 `tests/shutters.test.js` checks both wall axes/upstairs, fixed frame clearance, physical slat pitch/UV cropping, original
-collision timing/reversal/reset, finishes/aspects, static batching/disposal, real F purchases and motor/roll/stop sounds
-(pause freezes progress; death/reset cancel; debug open-all is silent), and unobscured low destination signs.
+collision timing/reversal/reset, finishes/aspects, static batching/disposal, real F purchases and the finish's
+unlock/motor/roll/stop sounds (pause freezes progress; death/reset cancel; debug open-all is silent), and unobscured low
+destination signs. Its curtain test measures against `drawnRaise` (the eased drawing), not a linear roll.
+`tests/doorOpenings.test.js` checks the buy moment (game/doorOpenings.js): one 'areaOpened' per purchase with the right
+area, the bought barrier's full show (one nudge as it clunks home near you) and the free connection's light one (smaller
+rattle, no nudge, no PA); the PA welcome only on an area's first opening in a run (again after Play again); a Save & Quit
+load that snaps its doorways open with no events, sounds or welcomes replayed; every finish and profile, open or light,
+dropping its collider on exactly the tick the old linear roll did, never drawn below the real roll, fully up in under 2 s;
+`ifQuiet` lines dropped (and not chimed) while another PA line is up; every area has a short, `!`-free welcome.
 `tests/promenade.test.js` checks independent upper-floor expansion/support, the widened southern route, sealed future
 connections, a real two-entrance shoe-store loop in both directions, momentum vaults, the eastern junction and live zombie
 routes from both escalators plus a 12-zombie horde using both lanes. `tests/promenadeDetails.test.js` checks actual decorative
@@ -367,7 +380,7 @@ does not run the game, so also try changes in `npm run dev`).
 5250-point Hallway -> Service Corridor -> Cinema -> Coil purchase sequence. The relocated Coil's F-hold purchase,
 650-point refill, full-ammo hiding, spawn clearance and restart use the real interaction system.
 
-`tests/areaUnlocks.test.js` buys all nine areas through the real interaction system for 9500 points, verifies all 15 barriers open, automatic connection sound/collision/navigation, reverse destination pricing and mid-hold sales, denied purchases, no cascade, and repeatable reset. Existing geometry tests may use raw door.open/reset to isolate a particular physical route; production purchases use map.areaUnlocks.
+`tests/areaUnlocks.test.js` buys all nine areas through the real interaction system for 9500 points, verifies all 15 barriers open, one ifQuiet PA welcome per area, automatic connection sound (a free connection only clunks)/collision/navigation, reverse destination pricing and mid-hold sales, denied purchases, no cascade, and repeatable reset. Existing geometry tests may use raw door.open/reset to isolate a particular physical route; production purchases use map.areaUnlocks.
 
 `tests/parkingLot.test.js` checks a real discounted parking purchase, player traversal in both directions, flush threshold, restart/disposal, all outdoor spawn routes and lanes with and without the debug range, vehicle collision and the fenced perimeter. It also checks RVs against the actual rendered bay lines and raycasts the exterior from two parking positions with the Atrium closed, before and after static batching. The coplanar test includes the exterior.
 

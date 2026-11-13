@@ -69,14 +69,15 @@ export function createDoor({ id, label, price, opensZone, opensZones, zones, bar
       return isOpen;
     },
 
-    open() {
+    // options go to the barrier: { instant } snaps it open (a loaded save), { light } is a free connection's smaller show.
+    open(options) {
       if (isOpen) return;
       isOpen = true;
       for (const zone of openedZones) {
         holders(zone).add(id);
         zone.open = true;
       }
-      barrier.open();
+      barrier.open(options);
     },
 
     // Debug only (doors stay open once bought).
