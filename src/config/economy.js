@@ -161,7 +161,7 @@ export const economy = {
     discounts: { min: 0.25, max: 0.5, step: 0.05 }, // "25-50% off"
     teaser: {
       kicker: 'Flash sale soon',
-      text: 'Attention shoppers: a flash sale begins in {lead} — {label}.',
+      text: 'Attention shoppers: in {lead}, a flash sale on {label}. Please do not run. Running comes later.',
     },
     doorbuster: {
       enabled: true,
@@ -171,7 +171,7 @@ export const economy = {
       discounts: { min: 0.65, max: 0.75, step: 0.05 }, // steep 65-75% off one item
       teaser: {
         kicker: 'Doorbuster soon',
-        text: 'Attention shoppers: a Doorbuster begins in {lead} — {item} in {area}.',
+        text: 'Attention shoppers: in {lead}, a Doorbuster on {item} in {area}. Sensible shoes are recommended.',
       },
       start: {
         kicker: 'Doorbuster',
