@@ -187,7 +187,7 @@ export function createPostProcessing({ renderer, scene, camera, viewmodel }) {
   const renderTarget = new THREE.WebGLRenderTarget(
     Math.floor(lastWidth * lastPixelRatio),
     Math.floor(lastHeight * lastPixelRatio),
-    { type: THREE.HalfFloatType, samples: cfg.msaaSamples ?? 2 },
+    { type: THREE.HalfFloatType, samples: cfg.msaaSamples ?? 2, stencilBuffer: true },
   );
 
   const composer = new EffectComposer(renderer, renderTarget);

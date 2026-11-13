@@ -295,6 +295,9 @@ From the code review (pass 2). core/loop.js asked for the next animation frame o
 ## 12 November 2026 - Docs stop conflicting: history, tests and folder-structure merge with the union driver
 
 From the code review (pass 2). Of the last 80 merges, 38 stopped on a conflict in docs/history.md, 7 in docs/tests.md and 4 in docs/folder-structure.md, almost always because two branches each added a line at the same spot (the top of history, the end of a list) and a person had to keep both by hand. A new .gitattributes marks those three files `merge=union`: git keeps both sides' lines instead of stopping. Replaying the 80 merges with the rule on: none of the three files conflicts any more, and 134 of 153 file results are byte-identical to what was committed; the other 19 differ by a few lines (mostly one), which is the price: if two branches edit the SAME existing line, both versions are kept, so look at the merged file once. Code files and docs/map.md still conflict normally.
+## 12 November 2026 - Last-zombie straggler helper
+
+At the tail of a round (no spawns remaining and `aliveCount <= 2`), after an 8-second quiet window since the last kill, remaining non-boss zombies are highlighted through walls (`zombies/zombieRim.js`: per-zombie rim uniform + one shared `GreaterDepth` overlay material readable in bright and dark zones) and pinged live on the minimap (`ui/minimap.js`), with a once-per-run PA line ("Shoppers, we have a straggler in the store."). Bosses count toward the zombie count but are excluded from the helper since they already carry a boss bar. Driven by `game/stragglers.js` via `'stragglers'` / `'stragglersCleared'` on `game/events.js`, with a Comfort setting (`stragglerHelper`, default on), `tests/stragglers.test.js`, and reset/transient registration in `createGame.js`.
 
 ## 12 November 2026 - Zombie pathfinding: half the cost per redraw, a sixteenth of the garbage, the same routes
 
