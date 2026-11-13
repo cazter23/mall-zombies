@@ -1,5 +1,12 @@
 # Sunset Galleria: build history ("Current state")
 
+## 12 November 2026 - Text pool expansion and death-report accuracy pass (`claude/hydrogen-text-pools`)
+
+- **Kiosk Kevin (`src/config/kiosk.js`)**: expanded `hawk.lines` (9 → 25, including 8 new `{product}` shouts), `hawk.duck` (4 → 10), and `hawk.back` (3 → 8) while keeping the existing opening lines in place.
+- **GRAB-A-GUN (`src/config/clawMachine.js`)**: added deadpan PA lines across `pa.plush` (3 → 7), `pa.soldOut` (3 → 7), `pa.moved` (3 → 7), and `pa.restocked` (2 → 6), and added 6 three-line arcade screens to `screen.attract` (4 → 10).
+- **Run-intro PA (`src/config/feel.js`)**: fixed the indentation on `runIntro.lines[0]` and added 14 deadpan mall PA opening announcements (6 → 20), each within the existing maximum line length.
+- **Death reports (`src/config/deathReports.js`)**: audited and updated `cause` and `tip` copy across `fall`, zombies, mascots, bosses, `hazards`, `ownBlast`, and `hazardDefault` to match actual runtime behavior (such as mascot half-health unmasking without torso foam armor, Poppy Corn's instant zero-damage pop blast, Mopwater Murray's slowing puddles rather than cones, Officer Kettle's taser charge and gun-headshot radio break, Lorraine Pruitt's Speechless return flow, and fryer/fountain grace windows after activation) while keeping the words-only rule.
+
 ## 12 November 2026 - Integration: incentives, Flash Sales, Kiosk Kevin phase 8 and the claw guns on one branch
 
 `claude/integration` (from main a013f9a) merges, in order: `claude/incentive-meter` (the reviewed tip of `claude/incentives`: it
