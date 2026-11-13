@@ -42,6 +42,23 @@ export const minimap = {
     tab: '#3b2a40', tabLit: '#246d76', tabInk: '#b6a3bb', tabInkLit: '#fff0cb',
     you: '#e63946', youRing: '#ffffff', cone: 'rgba(230, 57, 70, 0.22)',
   },
+  sales: {
+    pulseSeconds: 1.4,
+    soonFill: '#fff0cb',
+    soonBorder: '#a14759',
+    soonInk: '#422731',
+    saleFill: '#f3c66e',
+    saleBorder: '#2a1c2e',
+    saleInk: '#422731',
+    doorbusterFill: '#d62839',
+    doorbusterRing: '#ffe066',
+    doorbusterInk: '#fff4e0',
+    radiusCorner: 5.5,
+    radiusFull: 7.5,
+    doorbusterRadiusCorner: 7,
+    doorbusterRadiusFull: 10,
+    ringGrow: 5.5,
+  },
   // Each area's floor colour and the ink of its name: the shutter finishes' accents, lightened for a printed plan.
   areas: {
     startRoom: { fill: '#ecd0da', ink: '#5e4051' },
@@ -100,6 +117,7 @@ export const minimap = {
     youAreHere: 'You are here',
     kevinOpen: (area) => `This round: ${area}`, kevinClosed: 'Not open yet',
     keys: 'Dropped keys', shutter: 'Shutter · price to open', up: 'UP',
+    sale: 'On sale', saleSoon: 'Sale soon', doorbuster: 'Doorbuster',
   },
   pictoSize: { corner: 14, full: 17 }, // px, the dark rounded square each pictogram sits in
   you: { corner: 6, full: 6, pulseSeconds: 1.6, pulseGrow: 2.6, coneMetres: 7, coneDegrees: 70 },

@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createPricing, PRICE_CATEGORIES } from '../src/game/pricing.js';
 import { economy } from '../src/config/economy.js';
+import { powerUps as incentives } from '../src/config/powerUps.js';
 import { headlessGame } from './helpers/headlessGame.js';
 
 test('no discount: every price is exactly the config price', () => {
@@ -99,4 +100,84 @@ test('a sale that starts mid-hold: you pay the price when the hold completes', (
   t.input.held.delete('KeyF');
   assert.equal(g.map.doors.find((d) => d.id === 'startShutter').isOpen, true);
   assert.equal(g.wallet.points, economy.startingPoints - economy.doors.hallway / 2);
+});
+
+test('per-item discounts affect only that one item, validate cleanly, and restore on serialize/reset', () => {
+  const p = createPricing();
+  p.setItemDiscount('weapon', 'rivetRifle', 0.7);
+  assert.equal(p.itemDiscountOf('weapon', 'rivetRifle'), 0.7);
+  assert.equal(p.discountOf('weapon', 'rivetRifle'), 0.7);
+  assert.equal(p.discountOf('weapon', 'nailGun'), 0);
+  assert.equal(p.discountOf('weapon'), 0);
+  assert.equal(p.priceOf('weapon', 'rivetRifle'), Math.round((economy.wallBuys.rivetRifle.weapon * 0.3) / economy.discountRoundTo) * economy.discountRoundTo);
+  assert.equal(p.priceOf('weapon', 'nailGun'), economy.wallBuys.nailGun.weapon, 'other guns stay full price');
+  assert.equal(p.priceOf('ammo', 'rivetRifle'), economy.wallBuys.rivetRifle.ammo, 'ammo category untouched');
+  assert.throws(() => p.setItemDiscount('weapon', 'rayGun', 0.5), /no weapon price/);
+  assert.throws(() => p.setItemDiscount('weapon', '', 0.5), /non-empty string/);
+  assert.throws(() => p.setItemDiscount('weapon', 'rivetRifle', 1.2), /0..1/);
+
+  const saved = p.serialize();
+  const clone = createPricing();
+  clone.restore(saved);
+  assert.equal(clone.priceOf('weapon', 'rivetRifle'), p.priceOf('weapon', 'rivetRifle'));
+
+  p.setItemDiscount('weapon', 'rivetRifle', 0);
+  assert.equal(p.priceOf('weapon', 'rivetRifle'), economy.wallBuys.rivetRifle.weapon);
+  p.setItemDiscount('weapon', 'nailGun', 0.7);
+  p.reset();
+  assert.equal(p.priceOf('weapon', 'nailGun'), economy.wallBuys.nailGun.weapon);
+});
+
+test('Flash Sale + employee incentive coupon still stack identically (and work with Doorbuster per-item discounts)', () => {
+  const p = createPricing();
+  const base = economy.wallBuys.rivetRifle.weapon;
+  const step = economy.discountRoundTo;
+  const coupon = { fraction: 0.25, maxSaving: 300 };
+  p.setDiscount('weapon', 0.4); // 40% category Flash Sale -> 900
+  p.setCoupon(coupon);
+  const expectedSale = Math.round((base * 0.6) / step) * step;
+  const expectedCoupon = expectedSale - Math.min(coupon.maxSaving, Math.floor((expectedSale * coupon.fraction) / step) * step);
+  assert.equal(p.priceOf('weapon', 'rivetRifle'), expectedCoupon);
+
+  // Per-item Doorbuster discount + coupon uses the exact same pipeline.
+  p.reset();
+  p.setItemDiscount('weapon', 'rivetRifle', 0.7);
+  p.setCoupon(coupon);
+  const expectedDb = Math.round((base * 0.3) / step) * step;
+  const expectedDbCoupon = expectedDb - Math.min(coupon.maxSaving, Math.floor((expectedDb * coupon.fraction) / step) * step);
+  assert.equal(p.priceOf('weapon', 'rivetRifle'), expectedDbCoupon);
+
+  // Pinned numbers (what main's pricing charged before per-item discounts existed): 1500 at 40% off = 900, minus the
+  // coupon's 25% rounded down to 10 (220) = 680; at 70% off = 450, minus 110 = 340. A change in the stacking moves these.
+  assert.equal(expectedCoupon, 680);
+  assert.equal(expectedDbCoupon, 340);
+
+  // Real game: a real Flash Sale on wall guns plus the real Employee Discount incentive (dropped at your feet and picked
+  // up), on the Price Gun's prompt and its charge. The incentive files are untouched; this only reads their result.
+  const t = headlessGame();
+  const { g } = t;
+  t.tick(1);
+  g.wallet.earn(5000);
+  const groups = economy.flashSales.groups;
+  economy.flashSales.groups = groups.filter((grp) => grp.id === 'weapons');
+  try {
+    assert.equal(g.flashSales.startNow(), true);
+  } finally {
+    economy.flashSales.groups = groups;
+  }
+  const off = g.pricing.discountOf('weapon');
+  assert.ok(off >= economy.flashSales.discounts.min && off <= economy.flashSales.discounts.max);
+  t.standAt(3.5, 10, -90);
+  assert.ok(g.powerUps.debugDrop('employeeDiscount'));
+  t.tick(2);
+  const { fraction, maxSaving } = incentives.types.employeeDiscount;
+  const pgBase = economy.wallBuys.priceGun.weapon;
+  const pgSale = Math.round((pgBase * (1 - off)) / step) * step;
+  const pgCombined = pgSale - Math.min(maxSaving, Math.floor((pgSale * fraction) / step) * step);
+  assert.ok(pgCombined < pgSale, 'the coupon took something off the sale price');
+  assert.equal(g.interactions.prompt.cost, pgCombined);
+  const before = g.wallet.points;
+  t.press('KeyF', 30);
+  assert.equal(before - g.wallet.points, pgCombined);
+  g.map.dispose();
 });

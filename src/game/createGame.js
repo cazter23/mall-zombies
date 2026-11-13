@@ -27,7 +27,7 @@
 import { feel } from '../config/feel.js';
 import { Vector3 } from 'three';
 import { powerUps as incentiveConfig } from '../config/powerUps.js';
-import { economy } from '../config/economy.js';
+import { economy, maxAliveForRound } from '../config/economy.js';
 import { upgrades } from '../config/upgrades.js';
 import { bossTiming } from '../config/bosses.js';
 import { createBossDirector } from './bossDirector.js';
@@ -57,7 +57,7 @@ import { createMascotCostumes } from './mascotCostumes.js';
 import { createSurfaceSlows } from './surfaceSlows.js';
 import { createEvents } from './events.js';
 import { createPricing } from './pricing.js';
-import { createFlashSales, saleEligibility } from './flashSales.js';
+import { createFlashSales, saleEligibility, doorbusterCandidates, nearOpenSpawnPoints, reachableInTime } from './flashSales.js';
 import { createAnnouncer } from './announcer.js';
 import { createDebugCommands } from './debugCommands.js';
 import { createWarranty } from './warranty.js';
@@ -609,13 +609,24 @@ export function createGame({
   // The outfit rail's brain: which worn item's tag pulses when (game/outfitRail.js; the HUD draws it).
   const outfitRail = createOutfitRail({ events, wardrobe, stats, player, gun, state });
 
-  // FLASH SALES: the mall PA discounts one group of prices for a while (game/flashSales.js). A group is only picked
-  // when it would be of use right now (saleEligibility, in the same file).
+  // FLASH SALES & DOORBUSTERS: the mall PA discounts one group (or one specific item on Doorbuster with a shopper rush).
   const flashSales = createFlashSales({
     events,
     pricing,
     eligible: saleEligibility({ map, gun, warranty, wardrobe, kiosk: features.instanceOf('kiosk') }),
+    doorbusters: () => doorbusterCandidates({
+      map, gun, wardrobe, kiosk: features.instanceOf('kiosk'), equipment, health,
+    }),
+    // Only an item you can get to in time: its route cost to you (the zombies' nav field, which leads to the player)
+    // within reachShareOfWindow of the Doorbuster's window at your sprint speed.
+    reachable: (target) => reachableInTime(target, (p) => zombies.nav.distanceToTarget(p.x, p.z, p.y),
+      stats.sprintSpeed * economy.flashSales.doorbuster.durationSeconds * economy.flashSales.doorbuster.reachShareOfWindow),
+    getRound: () => rounds.round,
+    canSpawnRush: () => zombies.aliveCount < maxAliveForRound(Math.max(1, rounds.round)),
+    nearSpawnPoints: (target) => nearOpenSpawnPoints(map, target.position, economy.flashSales.doorbuster.rush.nearestMarkers),
+    onRushSpawn: (points) => zombies.spawn('shopper', null, { spawnPoints: points }),
   });
+  events.on('roundDiscard', () => flashSales.clearRush());
   // Developer shortcuts (config/debug.js lists the keys; main.js turns key presses into debug.run(id)).
   const debugCommands = createDebugCommands({
     map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses, wardrobe, features, equipment, challenges, closing,
@@ -877,6 +888,7 @@ export function createGame({
     secondChance,
     outfitRail,
     flashSales,
+    warranty, // (read by the Flash Sale markers: game/flashSales.js collectSaleSpots needs it for Extended Warranty sales)
     powerUps,
     closing,
     bosses,

@@ -173,8 +173,12 @@ function drawPicto(ctx, look, sx, sy, size, { dim = false, number = null } = {})
   }
 }
 
-// A retail price tag on a string, hung from (sx, sy): the price to open a shutter.
-function drawTag(ctx, sx, sy, price) {
+// A retail price tag on a string, hung from (sx, sy): the price to open a shutter (tinted while on sale or Doorbuster).
+function drawTag(ctx, sx, sy, price, sale = null) {
+  const S = config.sales;
+  const fill = sale?.doorbuster ? S.doorbusterFill : sale ? (sale.soon ? S.soonFill : S.saleFill) : C.tag;
+  const ink = sale?.doorbuster ? S.doorbusterInk : sale ? (sale.soon ? S.soonInk : S.saleInk) : C.tagInk;
+  const border = sale?.doorbuster ? S.doorbusterRing : sale ? (sale.soon ? S.soonBorder : S.saleBorder) : C.tagInk;
   const text = price.toLocaleString('en-US');
   ctx.save();
   ctx.font = font('tag', 10);
@@ -187,16 +191,58 @@ function drawTag(ctx, sx, sy, price) {
   ctx.rotate(-0.06);
   ctx.beginPath();
   ctx.moveTo(0, h / 2); ctx.lineTo(6, 0); ctx.lineTo(w, 0); ctx.lineTo(w, h); ctx.lineTo(6, h); ctx.closePath();
-  ctx.fillStyle = C.tag;
+  ctx.fillStyle = fill;
   ctx.fill();
-  ctx.lineWidth = 1;
-  ctx.strokeStyle = C.tagInk;
+  ctx.lineWidth = sale?.doorbuster ? 1.5 : 1;
+  ctx.strokeStyle = border;
   ctx.stroke();
-  ctx.fillStyle = C.tagInk;
+  ctx.fillStyle = ink;
   ctx.beginPath(); ctx.arc(4.5, h / 2, 1.6, 0, Math.PI * 2); ctx.fill();
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillText(text, 9, h / 2 + 0.5);
+  ctx.restore();
+}
+
+// Highlight ring + corner retail badge for an item or door currently on sale or teased.
+function drawSaleMark(ctx, sx, sy, sale, { full, time }) {
+  const S = config.sales;
+  const isDb = sale.doorbuster;
+  const r = isDb ? (full ? S.doorbusterRadiusFull : S.doorbusterRadiusCorner) : (full ? S.radiusFull : S.radiusCorner);
+  const phase = ((time ?? 0) % S.pulseSeconds) / S.pulseSeconds;
+  const fill = isDb ? S.doorbusterFill : sale.soon ? S.soonFill : S.saleFill;
+  const border = isDb ? S.doorbusterRing : sale.soon ? S.soonBorder : S.saleBorder;
+  const ink = isDb ? S.doorbusterInk : sale.soon ? S.soonInk : S.saleInk;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(sx, sy, r + phase * S.ringGrow, 0, Math.PI * 2);
+  ctx.strokeStyle = isDb ? S.doorbusterFill : fill;
+  ctx.globalAlpha = 1 - phase * 0.85;
+  ctx.lineWidth = isDb ? 2.4 : 1.8;
+  if (sale.soon) ctx.setLineDash([3, 2]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.globalAlpha = 1;
+
+  const bx = sx + r * 0.72, by = sy - r * 0.72;
+  const half = isDb ? (full ? 6.5 : 5.5) : (full ? 5.5 : 4.5);
+  ctx.translate(bx, by);
+  if (isDb) ctx.rotate(Math.PI / 4);
+  ctx.beginPath();
+  ctx.roundRect(-half, -half, half * 2, half * 2, isDb ? 2 : 3);
+  ctx.fillStyle = fill;
+  ctx.fill();
+  ctx.lineWidth = isDb ? 1.6 : 1.2;
+  ctx.strokeStyle = border;
+  if (sale.soon) ctx.setLineDash([2.5, 1.5]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  if (isDb) ctx.rotate(-Math.PI / 4);
+  ctx.fillStyle = ink;
+  ctx.font = font('number', isDb ? 9.5 : 8.5);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(isDb ? '!' : '%', 0, 0.5);
   ctx.restore();
 }
 
@@ -335,6 +381,11 @@ function drawFloor(ctx, floor, plan, state, view) {
     const [sx, sy] = project(key.x, key.z);
     drawPicto(ctx, config.key, sx, sy, size * 1.1);
   }
+  for (const sale of state.sales ?? []) {
+    if (sale.floor !== floor.index) continue;
+    const [sx, sy] = project(sale.x, sale.z);
+    drawSaleMark(ctx, sx, sy, sale, { full, time: view.time });
+  }
 
   // 8. You are here: a view cone, a pulsing ring and a red dot (yaw 0 looks along -z).
   if (state.you.floor === floor.index) {
@@ -404,7 +455,8 @@ export function createMinimap({ onCornerChange = null } = {}) {
 
   // The store index: the numbered places by group, Kevin's cart this round, keys, and the two marks to know.
   function buildIndex(plan, state, guidance) {
-    const signature = `${[...state.open].sort()}|${state.kevin?.area ?? ''}|${guidance ? state.keys.length : '-'}`;
+    const saleMode = (state.sales ?? []).some((s) => s.doorbuster) ? 'D' : (state.sales ?? []).some((s) => s.soon) ? 'soon' : (state.sales?.length ? 'sale' : '');
+    const signature = `${[...state.open].sort()}|${state.kevin?.area ?? ''}|${guidance ? state.keys.length : '-'}|${saleMode}`;
     if (signature === indexFor) return;
     indexFor = signature;
     const sections = plan.index.map((group) => {
@@ -426,6 +478,9 @@ export function createMinimap({ onCornerChange = null } = {}) {
     if (guidance && state.keys.length) live.append(el('h3', null, W.keys), el('p', null, String(state.keys.length)));
     const marks = el('div', 'minimap-marks');
     marks.append(el('span', 'mark-tape', W.shutter), el('span', 'mark-you', W.youAreHere));
+    if (saleMode === 'D') marks.append(el('span', 'mark-sale doorbuster', W.doorbuster));
+    else if (saleMode === 'soon') marks.append(el('span', 'mark-sale soon', W.saleSoon));
+    else if (saleMode === 'sale') marks.append(el('span', 'mark-sale', W.sale));
     live.append(marks);
     index.replaceChildren(...sections, live);
   }
@@ -486,10 +541,12 @@ export function createMinimap({ onCornerChange = null } = {}) {
       ctx.fillText(text, ox + 11, F.padding + (F.tabHeight - 6) / 2 + 1);
       drawFloor(ctx, floor, plan, state, { project, scale: s, full: true, time });
       // Price tags hang over everything on the floor.
+      const doorSales = (state.sales ?? []).filter((s) => s.category === 'door');
       for (const shutter of state.shutters) {
         if (shutter.floor !== i || shutter.price === null) continue;
         const [sx, sy] = project(shutter.x, shutter.z);
-        drawTag(ctx, sx, sy, shutter.price);
+        const match = doorSales.find((s) => Math.hypot(s.x - shutter.x, s.z - shutter.z) < 2 && s.floor === i) ?? null;
+        drawTag(ctx, sx, sy, shutter.price, match);
       }
       left += widths[i] * scale + F.gap;
     });

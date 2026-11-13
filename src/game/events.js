@@ -115,8 +115,10 @@
 //   'wardrobeChange' { slot, worn, removed }              apparel equipped, item ids (removed is null for an empty slot)
 //   'outfitPulse' { id, slot }                            a worn item just did its job (game/outfitRail.js): its tag on the outfit rail swings
 //   'wardrobeBuy' { id, pa: { kicker, text } }            an item was bought from a showpiece (game/features/wardrobeFixtures.js): the mall PA reads `pa`
-//   'flashSaleStart' { id, label, categories, discount, seconds, pa: { kicker, text } }   a Flash Sale began (game/flashSales.js)
-//   'flashSaleEnd'   { id, label, reason 'expired' | 'reset', pa }                         it ended (no banner on 'reset')
+//   'flashSaleSoon'  { kind, id, label, categories, target, seconds, pa: { kicker, text } }  a Flash Sale or Doorbuster teaser began (game/flashSales.js)
+//   'flashSaleStart' { kind, id, label, categories, target, discount, seconds, pa }            a Flash Sale or Doorbuster began
+//   'flashSaleEnd'   { kind, id, label, reason 'expired' | 'sold' | 'reset' | 'cancelled', pa } it ended ('sold': a Doorbuster's item was bought,
+//                                                        its rush is on the way; no banner on 'reset' or 'cancelled')
 //   'ritualStart' { gunId, gunName, loaner, restuff, pa }  Build-A-Blaster took a gun (game/features/workshopRitual.js)
 //   'ritualStage' { stage, pa }                           the gun reached the next stage of the conveyor
 //   'chuteDrop'   {}                                      a zombie fell out of the Returns Chute

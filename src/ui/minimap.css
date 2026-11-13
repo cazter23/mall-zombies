@@ -87,6 +87,9 @@
   background: repeating-linear-gradient(135deg, #d62839 0 3px, #fff4e0 3px 6px);
 }
 .mark-you::before { content: ''; width: 9px; height: 9px; margin: 0 6px 0 7px; border-radius: 50%; background: #e63946; box-shadow: 0 0 0 2px #fff, 0 0 0 3px #e6394666; }
+.mark-sale::before { content: '%'; display: inline-grid; place-items: center; width: 13px; height: 13px; margin: 0 4px 0 5px; border-radius: 3px; font: 700 9px/1 var(--font-ui); background: #f3c66e; color: #422731; border: 1px solid #2a1c2e; }
+.mark-sale.soon::before { background: #fff0cb; border-style: dashed; border-color: #a14759; }
+.mark-sale.doorbuster::before { content: '!'; background: #d62839; color: #fff4e0; border-color: #ffe066; box-shadow: 0 0 0 2px #d6283955; }
 
 /* The PA, sales and notices move down under the corner map while it is up. */
 .hud.minimap-on .hud-right-stack { top: calc(var(--hud-margin) * 2 + var(--minimap-size) * var(--ui-space)); }

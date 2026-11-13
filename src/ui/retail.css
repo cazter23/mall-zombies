@@ -623,6 +623,9 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .announce-text { margin-top: 4px; color: #f4e7c8; font: 400 18px/1.35 var(--font-ui); letter-spacing: .005em; text-transform: none; text-shadow: none; overflow-wrap: anywhere; }
 .claw-tag { background: #ffc4e1; border-bottom-color: #b8236f; } /* GRAB-A-GUN's whereabouts, under the sale tag */
 .sale-tag { left: auto; right: 24px; top: 24px; transform: none; width: 155px; box-sizing: border-box; white-space: normal; padding: 9px 12px; color: #422731; font: 700 11px/1.5 var(--font-ui); letter-spacing: .03em; background: #f3c66e; border-radius: 0; border-bottom: 3px dashed #a14759; box-shadow: 3px 3px 0 #39294088; }
+.sale-tag.soon { background: #f6ebd0; color: #2a1c2e; border-bottom: 3px dashed #246d76; box-shadow: 3px 3px 0 #246d7666; }
+.sale-tag.doorbuster { background: #d62839; color: #fff4e0; border-bottom: 3px solid #ffe066; box-shadow: 3px 3px 0 #261b2fcc; }
+.sale-tag.doorbuster.soon { background: #7a2034; color: #ffe066; border-bottom: 3px dashed #ffe066; }
 
 /* Directory: luminous sign typography, arrow selection, ruled entries. */
 .directory-brand { display: flex; align-items: center; gap: 14px; color: var(--mall-pink); }
