@@ -226,7 +226,7 @@ src/
                         angle, no wall between, height forgiving: it aims at the height the aim line passes the body), blowAway(zombie, origin, cone,
                         distance) (the zombies' own staggerAway, plus applySlip close up; bosses refuse both, a Mascot is shoved at mascotScale, a zombie
                         already sliding is left alone), createBlastPay(everyPulses) (the +10 hit points once per payEverySeconds per zombie, not per pulse).
-    weapon.js           Weapon class: ammo, fire cooldown + click buffer, reload. Pure state; update({ triggerPressed,
+    weapon.js           Weapon class: ammo, fire cooldown + click buffer, reload. A 'charge' gun (the Barcode Scanner) scans while held and fires a FULL shot the tick the scan completes; letting go first cancels it (no shot, no ammo). Pure state; update({ triggerPressed,
                         triggerHeld, reloadPressed, blocked }) returns 'fire' | 'empty' | null. fireMode 'auto' fires
                         while held (dry-clicks only on a fresh press; runs dry while held = reloads itself).
                         fireMode 'burst' starts 3 darts on one press (holding never repeats); reload requests queue
@@ -277,7 +277,7 @@ src/
                         fit the Nail Gun). EFFECTS turns each effect into this gun's stat changes (shell-by-shell reload
                         phases, pellet cones, hip spread that leaves aimed accuracy alone). Apply: gun.setMods(id, ...)
     returnToSender.js  Shared accepted-return lethal hit and existing cardboard/stamp feedback for the beam and hand; normal kill events carry weaponId returnToSender.
-    gunStats.js         THE gun maths: damageFalloff(distance, falloff), applyInstantKillDamage(target, def, baseDamage, stats), hitDamage(def, hit, index, stats, chargeScale, target) (damage x head x falloff x
+    gunStats.js         THE gun maths: roundDamageScale(def, round) (a gun with `roundScaling`, the Tennis Ball Launcher: x (that round's Shopper health / round 1's) ^ exponent, by the round the TARGET spawned in, zombie.round), damageFalloff(distance, falloff), applyInstantKillDamage(target, def, baseDamage, stats), hitDamage(def, hit, index, stats, chargeScale, target) (damage x head x falloff x
                         pierce x player multiplier; the only place it's computed; with a `target`, a gun with `instantKill` (Return to Sender) or `stats.instantKill` (Black Friday) deals INSTANT_KILL_DAMAGE to non-boss/returnable zombies and scales bosses with `bigFraction` or `stats.bossDamageMultiplier`), resolveGun(base, mods) (upgrades as data:
                         { id, modifiers: [{ stat: 'falloff.start', op: 'set'|'add'|'mul', value }] }; set, then adds, then muls;
                         a bad stat path throws; counts (magazine, reserve, pellets...) are rounded whole after mods, a burst
@@ -417,7 +417,7 @@ src/
                         The field is seeded only from cells near the player with no wall in between (a real ray vs
                         the colliders, wallBetween), and bestCellNear() never picks a cell across a wall, so there
                         are no phantom routes through thin walls
-    zombie.js           Zombie class (shootable): states spawning -> chasing -> windup -> swing -> chasing (with
+    zombie.js           Zombie class (shootable; `round` = the round it spawned in; RUNG UP: applyRungUp / rungUpTimer / isRungUp, x damage taken from everything): states spawning -> chasing -> windup -> swing -> chasing (with
                         attackCooldown) / dead. Steering: goal = its surround slot (if assigned) else the route
                         along its own lane; spacing push (quadratic, capped); queueing (slow + sidestep around a
                         zombie ahead); arrive braking; faces where it's trying to go. Personal laneOffset,
@@ -708,6 +708,10 @@ src/
                         (with the Comfort setting on), emits 'stragglers' { round, zombies, firstTime } for non-boss survivors (bosses count
                         toward aliveCount but are never highlighted). Clears via 'stragglersCleared' on round end, spawns pending, count > threshold,
                         boss-only, death, setting off, or reset. Reset step 'stragglers' (transientSteps)
+    rungUp.js           createRungUp({ events, wallet, runFrozen }): the Barcode Scanner's mark, on the bus. A 'hit' from a gun with a `rungUp` block
+                        (config/weapons.js) that didn't kill RINGS UP the target (zombie.applyRungUp: x damageTaken from everything for `seconds`) and
+                        announces 'rungUp'; a 'kill' of a zombie still marked pays rungUp.killBonus (not once the run is over, not a no-rewards fan),
+                        announces 'rungUpKill' and clears the mark. No per-run state (the marks live on the zombies). g.rungUp
   maps/
     index.js            Map registry + loadMap(id, scene, colliders) + THE MAP INTERFACE (id, group, zones, doors,
                         spawnPoints, features (wall buys, ammo cache... by kind), playerSpawn, update, reset, dispose).
@@ -911,6 +915,10 @@ src/
                         playing and the next held, a crossfade at the end, onTrackChange for the now-playing card, setTapeWear, nowPlaying.
   fx/
     ballView.js         Browser side only: draws `balls.list` (the Tennis Ball Launcher's balls) as a pool of tumbling tennis balls between last tick's and this tick's position (alpha).
+    rungUpView.js       Browser side only: a pool of red price tags (punched hole, a bit of string) floating, spinning and bobbing over every
+                        zombie that isRungUp (game/rungUp.js), shrinking away over the mark's last half second. barcodeScanner.rungUp.tag
+    scanLine.js         Browser side only: the Barcode Scanner's scan while the trigger is held: a thin red laser from the muzzle to what you aim
+                        at (castShot) and a red bar sweeping up and down across it, brightening with the charge. barcodeScanner.scanLine
     throwableView.js    Browser side only: draws `equipment.live` (Kiosk Kevin's thrown things; the models are world/kioskProducts.js'), one pool per
                         look.model: the cola bottle (tumbling in the air, lying and rattling on the floor, swelling as the fuse runs out), the Sparkler
                         Cake (spinning, then upright and jittering while it sprays), the Glitter Bomb card (flipping) and the Sentry (tumbling, then

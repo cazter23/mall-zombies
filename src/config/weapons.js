@@ -717,16 +717,31 @@ export const weapons = {
   },
 
   // WALL BUY: Byte Me Electronics, east face of its pod (economy.wallBuys).
-  // ROLE: charge-and-release precision laser railgun. Tap for a quick 1-target laser snap, or hold 0.42s
-  // to charge the capacitor bank for a full-power 4-target piercing checkout beam with 2x headshots.
+  // ROLE: SCAN AND RING UP (13 November 2026 rework). HOLD the trigger to scan: a red scan line sweeps the target, the window and LEDs fill, a
+  // ring fills round the crosshair and the capacitor whines up. The moment the scan completes (charge.seconds) the beam fires BY ITSELF with a
+  // checkout BEEP: every shot is a full shot, piercing up to 4 in a line. Let go before it completes and nothing fires (no ammo spent); keep
+  // holding and it scans again. Everything the beam hits and doesn't kill is RUNG UP for rungUp.seconds (a red price tag over it, game/rungUp.js):
+  // it takes rungUp.damageTaken x damage from EVERYTHING (your other gun, the box cutter, hazards, the next beam) and a kill while it is marked
+  // pays rungUp.killBonus extra. Tuned to sit with the Rivet Rifle overall (it out-damages it once its own follow-up beams land on marked zombies),
+  // the best gun of the wall against one tough target (2x headshots on a marked target) and against a line (tests/balance.test.js).
+  // (It was tap-or-hold-and-release: the tap was a weak 35% snap, the full shot needed a release, and played like a normal gun it was weaker than
+  // the 500-point Price Gun.)
   barcodeScanner: {
     id: 'barcodeScanner', name: 'Barcode Scanner', fireMode: 'charge',
-    charge: { seconds: 0.42, minDamageMultiplier: 0.35, minTargets: 1, sound: 'scannerCharge' },
-    damage: 260, headshotMultiplier: 2,
+    charge: { seconds: 0.45, sound: 'scannerCharge' }, // the scan; it fires itself when complete (weapons/weapon.js)
+    damage: 420, headshotMultiplier: 2,
     pierce: { maxTargets: 4, damageFalloff: [1, 0.85, 0.7, 0.55] },
+    // The mark (game/rungUp.js; fx/rungUpView.js draws the tag). seconds: how long it lasts (a new beam restarts it); damageTaken: x damage from
+    // everything while marked; killBonus: points on top of the kill's own pay. tag: the price tag over its head (m, colours).
+    rungUp: {
+      seconds: 4, damageTaken: 1.35, killBonus: 40,
+      tag: { width: 0.26, height: 0.16, depth: 0.02, hole: 0.025, above: 0.32, spin: 2.2, bob: 0.04, color: 0xe8202c, holeColor: 0xfff4e8 },
+    },
+    // The scan line on the target while charging (fx/scanLine.js): a red laser from the gun to what you aim at, and a bar sweeping it.
+    scanLine: { color: 0xff2a38, laserWidth: 0.006, barWidth: 0.7, barHeight: 0.02, sweep: 0.9, sweepHz: 3, opacity: 0.9, maxRange: 60 },
     magazineSize: 8, startingReserve: 40,
-    fireInterval: 0.28, fireBuffer: 0.12, reloadTime: 1.8, range: 100,
-    falloff: { start: 16, end: 34, minMultiplier: 0.74 },
+    fireInterval: 0.2, fireBuffer: 0.12, reloadTime: 1.8, range: 100,
+    falloff: { start: 12, end: 30, minMultiplier: 0.6 }, // a store-aisle gun, not a sniper: the Stargazer keeps the long hits
     recoil: {
       pitchDegrees: 2.1, yawDegrees: 0.2, rollDegrees: 0.55, adsMultiplier: 0.6,
       model: {
@@ -751,7 +766,7 @@ export const weapons = {
       lightColor: 0xff4d5a, handLightIntensity: 0.75, handLightRange: 1.0,
       worldLightIntensity: 12, worldLightRange: 10,
     },
-    sounds: { fire: 'scannerShot', dryFire: 'dryClick' },
+    sounds: { fire: 'scannerShot', beep: 'scannerBeep', dryFire: 'dryClick' }, // (beep: the checkout BEEP on top of the shot)
     tracerColor: 0xff2a38,
     viewmodel: {
       model: 'barcodeScanner', hipOffset: { x: 0.175, y: -0.145, z: -0.42 },
@@ -843,24 +858,30 @@ export const weapons = {
     },
   },
   // CLAW-ONLY (GRAB-A-GUN, phase 9): no wall sells it (clawOnly), it only comes out of the machine. Purple capsule.
-  // ROLE: the corridor gun. It THROWS a ball (weapons/ballistics.js) instead of firing a ray: the ball is lobbed, bounces off walls, the floor and
-  // every zombie it hits, and each zombie it touches is a hit; after a zombie it is sent on at the nearest other zombie in view. In the open it is one
-  // lobbed hit a shot, slow, with a drop at range (a weak gun: below the Price Gun at every range, tests/balance.test.js). In a tight space, the
-  // Service Corridor or the cinema stairs, one ball hits two or three zombies, and that is where it beats the guns of the wall.
+  // ROLE: the corridor gun. It THROWS a ball (weapons/ballistics.js) instead of firing a ray: the ball bounces off walls, the floor and every zombie it
+  // hits, and each zombie it touches is a hit; after a zombie it is sent on at the nearest other zombie in view. In the open it is one hit a shot:
+  // decent, a little under the Price Gun in the early rounds. In a tight space, the Service Corridor or the cinema stairs, one ball hits two or three
+  // zombies, and that is where it beats the guns of the wall.
+  // It KEEPS UP WITH THE ROUNDS (13 November 2026 rework; it was a flat 50 a hit, ~23 hits a round-15 Shopper): each hit is multiplied by the round's
+  // Shopper health ^ roundScaling.exponent (weapons/gunStats.js roundDamageScale, by the round the zombie spawned in), so a Shopper takes ~3 hits in
+  // the early rounds and ~4 from the mid rounds to round 30, like the other claw guns that hold their value late.
   // The damage is per HIT, with a falloff over the distance the BALL has flown (bounces included), so a long chain fades out.
   tennisBallLauncher: {
     id: 'tennisBallLauncher', name: 'Tennis Ball Launcher', fireMode: 'semi', clawOnly: true,
-    damage: 50, headshotMultiplier: 1.5, // one ball hit is a third of a round-1 Shopper (150)
+    damage: 60, headshotMultiplier: 1.5, // round 1: 60 a hit (3 hits a 150 Shopper); round 15 ~340, round 25 ~630 (roundScaling)
+    roundScaling: { exponent: 0.85 }, // x (Shopper health that round / 150) ^ 0.85
     falloff: { start: 14, end: 36, minMultiplier: 0.5 }, // by metres the ball has FLOWN
     magazineSize: 6, startingReserve: 30,
     fireInterval: 0.45, fireBuffer: 0.12, reloadTime: 2.3, range: 40, // (range: for the balance tools; the ball ends by bounces and lifeSeconds)
     // The ball. speed m/s at the muzzle, gravity m/s^2 (the lob), restitution = speed kept by a bounce, maxBounces = every bounce counts (wall, floor, zombie),
     // lifeSeconds in the air, radius m, minSpeed = slower than this and it has stopped, rehitSeconds = the same zombie can't be hit twice in a row inside
     // this, seekRange m = after a zombie it is thrown on at the nearest OTHER zombie this close and in view (0 = it only reflects), startOffset / startDrop =
-    // where it leaves, in front of and below the eye. look: the colours (fx/ballView.js).
+    // where it leaves, in front of and below the eye. zeroDistance m = the throw is angled so the ball crosses the crosshair this far out (it leaves
+    // below the eye and gravity pulls it down: unzeroed, the old 21 m/s ball was ~0.8 m under the crosshair at 10 m). look: the colours (fx/ballView.js).
+    // (Faster and flatter since the rework: 28 m/s and 4 m/s^2, so it lands near where you aim from a few metres to ~20 m.)
     projectile: {
-      speed: 21, gravity: 6.5, restitution: 0.84, maxBounces: 5, lifeSeconds: 3.2, radius: 0.07, minSpeed: 2.2, rehitSeconds: 0.35, seekRange: 3.5,
-      startOffset: 0.55, startDrop: -0.08, bounceSound: 'tennisBounce',
+      speed: 28, gravity: 4, restitution: 0.84, maxBounces: 5, lifeSeconds: 3.2, radius: 0.07, minSpeed: 2.2, rehitSeconds: 0.35, seekRange: 4.5,
+      startOffset: 0.55, startDrop: -0.08, zeroDistance: 10, bounceSound: 'tennisBounce',
       look: { color: 0xcfe23a, seamColor: 0xf6f6e6 },
     },
     recoil: {

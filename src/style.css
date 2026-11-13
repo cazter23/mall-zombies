@@ -91,6 +91,28 @@ canvas {
 .ch-right {
   left: var(--gap);
 }
+/* The Barcode Scanner's scan: a red ring round the crosshair filling clockwise (hud.setCharge), brighter when the scan completes. */
+.ch-charge {
+  --charge: 0;
+  position: absolute;
+  left: -15px;
+  top: -15px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  opacity: 0;
+  background: conic-gradient(#ff2a38 calc(var(--charge) * 360deg), rgba(255, 42, 56, 0.18) 0);
+  -webkit-mask: radial-gradient(circle, transparent 11px, #000 12px);
+  mask: radial-gradient(circle, transparent 11px, #000 12px);
+  transition: opacity 0.08s;
+}
+.ch-charge.active {
+  opacity: 0.9;
+}
+.ch-charge.full {
+  opacity: 1;
+  filter: drop-shadow(0 0 4px #ff2a38);
+}
 .ch-dot {
   position: absolute;
   left: -2px;

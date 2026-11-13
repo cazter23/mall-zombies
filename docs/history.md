@@ -1,5 +1,17 @@
 # Sunset Galleria: build history ("Current state")
 
+## 13 November 2026 - Tennis Ball Launcher keeps up; Barcode Scanner: scan and ring up (claude/gun-rework)
+
+- Tennis Ball Launcher: 60 a hit x (round Shopper health / 150)^0.85 by the round the zombie spawned in (roundScaling; zombie.round), so a
+  Shopper takes 3-4 hits from round 1 to 30 (it was 24 by round 15). A faster, flatter ball (28 m/s, gravity 4) zeroed at 10 m: it lands
+  on the crosshair instead of ~0.7 m under it at 10 m. Seeks the next zombie within 4.5 m.
+- Barcode Scanner: hold to scan (red scan line on the target, a ring filling round the crosshair, the window and LEDs, a rising whine);
+  the beam fires itself when the 0.45 s scan completes, with a checkout BEEP: 420, 2x headshots, pierce 4. No weak tap: let go early and
+  nothing fires. Everything a beam hits is RUNG UP for 4 s (game/rungUp.js, a red price tag over it, fx/rungUpView.js): x1.35 damage from
+  everything and +40 on a kill while marked. Sustained 292 -> 494 (~645 on its own marked target; Rivet Rifle 582, Price Gun 434).
+- Numbers and reasons: docs/weapon-balance-pass.md (13 November 2026 section). New: game/rungUp.js, fx/rungUpView.js, fx/scanLine.js,
+  hud.setCharge (the crosshair ring), gunStats roundDamageScale, audio scannerBeep.
+
 ## 13 November 2026 - Bottle Rocket Bazooka: a better model and a breech-loading reload (`claude/claw-guns`)
 
 - **Model (`src/weapons/models/bottleRocket.js`):** a crimped mouth, a yellow label wrap with stars, a ring front sight and a peep, a fat fuse coil with a

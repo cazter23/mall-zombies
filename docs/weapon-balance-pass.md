@@ -2,6 +2,33 @@
 
 Historical record of the 25 October pass. The newer base-weapon pass and measurements are at the top of `docs/history.md`.
 
+## 13 November 2026 — Tennis Ball Launcher and Barcode Scanner rework
+
+Playtest feedback: both guns "felt weird"; the Tennis Ball Launcher was too weak, the Barcode Scanner needed a real rework.
+Numbers from `npm run balance` (5 m, aimed, Shopper, chest; claw guns' per-round hits by the round the zombie spawned in).
+
+**Tennis Ball Launcher (claw only).** It was a flat 50 a hit: 3 hits a round-1 Shopper, 24 by round 15. Its ball also left 8 cm under
+the eye with no compensation for gravity: ~0.23 m under the crosshair at 5 m, ~0.74 m at 10 m, ~2.9 m at 20 m.
+- Damage 50 → 60 a hit, times (that round's Shopper health / 150) ^ 0.85 (`roundScaling`, weapons/gunStats.js `roundDamageScale`,
+  using zombie.round): 60 / 153 / 251 / 341 / 463 / 630 / 857 a hit at rounds 1 / 5 / 10 / 15 / 20 / 25 / 30. A Shopper takes 3 hits
+  to round 5 and 4 from round 8 to 30, so one ball chaining three zombies in a corridor stays worth it all game. In the open (one hit a
+  ball) it stays under the Price Gun early and passes the unupgraded Price Gun from about round 20.
+- The ball: 21 → 28 m/s, gravity 6.5 → 4, and the throw is zeroed (`zeroDistance` 10 m): within ~2 cm of the crosshair to 10 m, 14 cm
+  under at 15 m, 41 cm at 20 m. seekRange 3.5 → 4.5 m (it finds the next zombie a little further away).
+- Sustained dps at round 1, one hit a ball: 66 → 79 (all bounces hitting: 330 → 396, and it scales with the round).
+
+**Barcode Scanner (wall, 1750).** Tap = a 91-damage 1-target snap; hold 0.42 s and release = a 260 4-target beam. Every other gun fires
+on press, so it felt laggy; played normally it was under the Price Gun (sustained 292 vs 434), the lowest sustained damage of any wall gun.
+- Hold to scan, it fires itself when the 0.45 s scan completes, every shot a full 420 (2x headshots), pierce 4 at 1 / 0.85 / 0.7 / 0.55.
+  Let go early: nothing fires, no ammo spent. Fire interval 0.28 → 0.2 s (a beam every 0.65 s while held).
+- RUNG UP (game/rungUp.js): what a beam hits and doesn't kill takes x1.35 from everything for 4 s and pays +40 if killed while marked.
+- Range falloff from full to 16 m / 74% at 34 m to full to 12 m / 60% at 30 m: the Stargazer keeps the long hits.
+- Sustained dps 292 → 494 raw (Price Gun 434, Rivet Rifle 582); ~645 on its own marked target (every beam after the first in a
+  magazine hits a rung-up zombie). Burst 371 → 646. Shots to kill a round-8 Shopper 3 → 2. Biggest single headshot on the wall (840,
+  1134 on a marked zombie) and the most damage a second down a line of four.
+- tests/balance.test.js: the Bazooka's "beats any wall gun on a clump, even counting its pierce" now counts pierce at what it really deals
+  (the falloff sum, 3.1 for the scanner) instead of 4 full hits.
+
 Implemented the agreed changes. Prices, zombie health, fire rates, recoil, spread,
 ADS/movement handling and reload durations are unchanged.
 
