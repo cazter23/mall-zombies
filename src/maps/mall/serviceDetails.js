@@ -24,11 +24,19 @@ export function buildServiceDetails({ kit, eastX, zAt, endZ, shortcut }) {
   const yellow = mat(0xf2c230), paper = mat(0xf5eed8), cork = mat(0xb98a52), green = mat(0x2f7d4f);
   const top = zAt(0.1);
 
-  // Two conduit runs above the dying tube (y 2.95), with a junction box every few metres.
-  B(top, 3.1, endZ, 3.16, 0.05, 0.11, steel);
-  B(top, 3.22, endZ, 3.28, 0.05, 0.11, darkSteel);
+  // Two conduit runs above the dying tube (y 2.95), with a junction box every few metres. They break round the
+  // EXIT · FOOD COURT plaque over the shortcut (mall.js: 2.6 m wide, y 3.075..3.425), which would otherwise sit behind them;
+  // a junction box closes each end of the gap. (tests/shutters.test.js checks nothing hides that sign.)
+  const mid = (shortcut.minZ + shortcut.maxZ) / 2;
+  const gapLo = mid - 1.4, gapHi = mid + 1.4;
+  for (const [from, to] of [[top, gapHi], [gapLo, endZ]]) {
+    B(from, 3.1, to, 3.16, 0.05, 0.11, steel);
+    B(from, 3.22, to, 3.28, 0.05, 0.11, darkSteel);
+  }
+  for (const z of [gapLo - 0.14, gapHi + 0.14]) B(z - 0.14, 3.04, z + 0.14, 3.34, 0.04, 0.17, darkSteel);
   for (let m = 1.2; m < 15.5; m += 3.4) {
     const z = zAt(m);
+    if (z > gapLo - 0.3 && z < gapHi + 0.3) continue; // (none in the gap)
     B(z - 0.14, 3.04, z + 0.14, 3.34, 0.04, 0.17, darkSteel);
     B(z - 0.1, 3.08, z + 0.1, 3.12, 0.17, 0.19, black); // (the cover screws' line)
   }
