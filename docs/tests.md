@@ -449,7 +449,9 @@ the model and debris and disposes their shared geometry and materials.
   Phase 8: the Air Horn announces 'airHornBlast' (its reach, how many it pushed: the ring's source). Kevin's shouts ('kioskHawk'):
   none before he opens or while you're far away, one as you walk up and the next only after hawk.seconds (naming a product on
   sale), a yelp as a zombie sends him under the counter, no hawking while he hides, a word when he's back up, every placeholder
-  filled, nothing once you're dead, and Play again starts each list from the top (they take turns: no Math.random).
+  filled, nothing once you're dead, and Play again starts each list from the top (they take turns: no Math.random); product pitches
+  (`kiosk.hawk.pitches`, 4 lines per stocked id, words-only, bubble-length) obey `pitchChance` (0 and 1 cases, plus 0.35 mix), only name products
+  in this round's stock while preferring Kevin's Pick, ignore unstocked ids, and never repeat back to back.
   The models: world/bakeParts.js merges loose pieces into one mesh per material kind (vertex colours, every piece where it
   was, a userData.keep pivot left alone); every product, on the counter and thrown, has a shape in a few draws, and the
   Sentry's head and spinner (and the counter demo's spinner) stay apart so they can turn.

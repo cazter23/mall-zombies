@@ -34,8 +34,8 @@ export function buildKiosk(feature, { map, rounds, zombies, pricing, interaction
   let pending = null; // a site picked at 'roundStart' during a purchase: he goes there once it's let go
   let lastRound = 0; // the round and site of the last PA line (one a round, again after a move)
   let lastSite = null;
-  // His shouting (kiosk.hawk): a clock, when each kind of line may come again, and whose turn it is in each list.
-  const shout = { clock: 0, hawkAt: 0, duckAt: 0, wasHiding: false, turns: { lines: 0, duck: 0, back: 0 }, products: 0 };
+  // His shouting (kiosk.hawk): a clock, when each kind of line may come again, and whose turn it is (populated by setUp).
+  const shout = {};
 
   const cart = () => site.cart;
   const zoneOpen = (s) => map.zones[s.zone].open;
@@ -88,8 +88,44 @@ export function buildKiosk(feature, { map, rounds, zombies, pricing, interaction
     return options.length ? options[Math.floor(Math.random() * options.length)] : null;
   }
 
+  // Product pitches for this round's stock: prefer Kevin's Pick (twice per cycle) while alternating other stocked items.
+  function pitchPool() {
+    const table = kiosk.hawk.pitches ?? {};
+    const available = stock().filter((id) => table[id]?.length);
+    if (!available.length) return [];
+    const selected = pick();
+    if (!selected || !available.includes(selected)) return available;
+    const others = available.filter((id) => id !== selected);
+    if (!others.length) return [selected];
+    const order = [];
+    for (const id of others) order.push(selected, id);
+    return order;
+  }
+
+  function nextPitch() {
+    const order = pitchPool();
+    if (!order.length) return null;
+    const id = order[shout.pitchOrder++ % order.length];
+    const list = kiosk.hawk.pitches[id];
+    const turn = shout.pitches[id] ?? 0;
+    shout.pitches[id] = turn + 1;
+    return list[turn % list.length];
+  }
+
   // The next line of one of his lists (they take turns).
   function nextLine(kind) {
+    if (kind === 'lines') {
+      const chance = Math.max(0, Math.min(1, kiosk.hawk.pitchChance ?? 0));
+      if (chance > 0) {
+        // Epsilon keeps decimal cadences (like 0.35 over 20 shouts) free of IEEE-754 drift.
+        const usePitch = shout.pitchCredit + chance >= 1 - 1e-9;
+        shout.pitchCredit += chance - (usePitch ? 1 : 0);
+        if (usePitch) {
+          const pitch = nextPitch();
+          if (pitch) return pitch;
+        }
+      }
+    }
     const list = kiosk.hawk[kind];
     const text = list[shout.turns[kind]++ % list.length];
     if (!text.includes('{product}')) return text;
@@ -150,7 +186,7 @@ export function buildKiosk(feature, { map, rounds, zombies, pricing, interaction
     pending = null;
     lastRound = 0;
     lastSite = null;
-    Object.assign(shout, { clock: 0, hawkAt: 0, duckAt: 0, wasHiding: false, turns: { lines: 0, duck: 0, back: 0 }, products: 0 });
+    Object.assign(shout, { clock: 0, hawkAt: 0, duckAt: 0, wasHiding: false, turns: { lines: 0, duck: 0, back: 0 }, pitchCredit: 0, pitchOrder: 0, pitches: {}, products: 0 });
     sites.forEach((s, i) => s.cart.show(i === 0 ? 'closed' : 'away', stockFor(kiosk.openingRound)));
   }
   setUp();

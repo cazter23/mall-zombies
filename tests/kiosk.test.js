@@ -514,3 +514,111 @@ test('Kevin\'s products are baked: one mesh per material kind, each piece where 
   assert.ok(sentry.userData.head?.userData.keep && sentry.userData.spinner?.userData.keep, 'the Sentry\'s head and spinner can turn');
   assert.ok(buildProductDisplay('sentry', mat).userData.spinner, 'the demo unit on the counter spins');
 });
+
+test('Kevin pitches: 3-4 short loud lines per real stocked id, words-only, no extra ids', () => {
+  const realIds = [...new Set(kiosk.slots.flat())];
+  assert.deepEqual(Object.keys(kiosk.hawk.pitches).sort(), [...realIds].sort());
+  assert.equal(kiosk.hawk.pitchChance, 0.35);
+
+  const longestExpandedHawk = Math.max(
+    ...kiosk.hawk.lines.map((line) => line.replace('{product}', kiosk.products.sentry.name).length),
+  );
+  for (const id of realIds) {
+    const lines = kiosk.hawk.pitches[id];
+    assert.ok(lines.length >= 3 && lines.length <= 4, `${id}: expected 3-4 pitches, got ${lines.length}`);
+    assert.equal(new Set(lines).size, lines.length, `${id}: unique pitches`);
+    const label = (kiosk.products[id] ?? kiosk.bubbleWrap).name;
+    for (const line of lines) {
+      assert.ok(line.includes('!'), `${id}: missing exclamation mark in "${line}"`);
+      assert.ok(line.includes(label), `${id}: pitch "${line}" should name "${label}"`);
+      assert.ok(!line.includes('{'), `${id}: unresolved placeholder in "${line}"`);
+      assert.equal(hasStatNumber(line), false, `${id}: stat number in "${line}"`);
+      assert.ok(line.length <= longestExpandedHawk, `${id}: too long (${line.length} > ${longestExpandedHawk}): "${line}"`);
+    }
+  }
+});
+
+test('Kevin pitches: respects stock and Pick preference, obeys chance 0 and 1, ignores unstocked ids, and never repeats back to back', () => {
+  const savedChance = kiosk.hawk.pitchChance;
+  const savedPitches = kiosk.hawk.pitches;
+  const t = fixture(), { g } = t;
+  try {
+    const stepSeconds = Math.round(kiosk.hawk.seconds * 60);
+    const kevin = kevinOf(g);
+    let lines = [];
+    g.events.on('kioskHawk', ({ kind, line }) => { if (kind === 'lines') lines.push(line); });
+    const collectShouts = (round, count) => {
+      g.resetRun();
+      g.rounds.update = () => {};
+      g.zombies.update = () => {};
+      lines = [];
+      g.map.doors.find(({ id }) => id === 'startShutter').open();
+      g.map.zones.hallway.open = true;
+      g.rounds.jumpTo(round);
+      standAtCart(t, g, kevin.site);
+      for (let i = 1; i < count; i++) t.tick(stepSeconds + 1);
+      return { status: kevin.status, lines: [...lines] };
+    };
+
+    // chance = 0: general hawk lines only, zero pitches.
+    kiosk.hawk.pitchChance = 0;
+    const pitchAll = new Set(Object.values(savedPitches).flat());
+    const atZero = collectShouts(2, 6);
+    assert.equal(atZero.lines.length, 6);
+    assert.equal(atZero.lines[0], kiosk.hawk.lines[0]);
+    for (const line of atZero.lines) assert.ok(!pitchAll.has(line), `unexpected pitch at chance 0: "${line}"`);
+
+    // chance = 1 with an extra id Kevin never sells: pitches only stocked items, prefers Pick, cycles cleanly.
+    kiosk.hawk.pitchChance = 1;
+    kiosk.hawk.pitches = { ...savedPitches, fakeItem: ['Fake Item! Not stocked anywhere!'] };
+
+    // Round 2: stock = [sodaBomb, bubbleWrap, airHorn], Pick = sodaBomb.
+    const r2 = collectShouts(2, 8);
+    assert.deepEqual(r2.status.stock, ['sodaBomb', 'bubbleWrap', 'airHorn']);
+    assert.equal(r2.status.pick, 'sodaBomb');
+    assert.deepEqual(r2.lines, [
+      savedPitches.sodaBomb[0],
+      savedPitches.bubbleWrap[0],
+      savedPitches.sodaBomb[1],
+      savedPitches.airHorn[0],
+      savedPitches.sodaBomb[2],
+      savedPitches.bubbleWrap[1],
+      savedPitches.sodaBomb[3],
+      savedPitches.airHorn[1],
+    ]);
+
+    // Round 3: stock = [sparklerCake, bubbleWrap, glitterBomb] -> never mentions round-2-only or fake ids.
+    const r3 = collectShouts(3, 6);
+    assert.deepEqual(r3.status.stock, ['sparklerCake', 'bubbleWrap', 'glitterBomb']);
+    const allowedR3 = new Set(r3.status.stock.flatMap((id) => savedPitches[id]));
+    for (const line of r3.lines) {
+      assert.ok(allowedR3.has(line), `round 3 pitched unstocked line: "${line}"`);
+      assert.ok(!line.includes('Fake Item'), 'never pitches an id not in stock');
+    }
+
+    // Round 4: stock = [sentry, bubbleWrap, airHorn], Pick = bubbleWrap (sentry is noPick, still pitched).
+    const r4 = collectShouts(4, 6);
+    assert.deepEqual(r4.status.stock, ['sentry', 'bubbleWrap', 'airHorn']);
+    assert.equal(r4.status.pick, 'bubbleWrap');
+    assert.ok(r4.lines.some((line) => savedPitches.sentry.includes(line)), 'sentry pitched when stocked');
+    const allowedR4 = new Set(r4.status.stock.flatMap((id) => savedPitches[id]));
+    for (const line of r4.lines) assert.ok(allowedR4.has(line), `round 4 pitched unstocked line: "${line}"`);
+
+    // Default chance (0.35): mixes pitches with general lines, keeps no back-to-back repeats.
+    kiosk.hawk.pitchChance = savedChance;
+    kiosk.hawk.pitches = savedPitches;
+    const mixed = collectShouts(2, 20);
+    const mixedPitches = mixed.lines.filter((line) => pitchAll.has(line));
+    assert.equal(mixedPitches.length, 7);
+    assert.equal(mixed.lines.length - mixedPitches.length, 13);
+    for (let i = 1; i < mixed.lines.length; i++) {
+      assert.notEqual(mixed.lines[i], mixed.lines[i - 1], 'never repeats the same shout back to back');
+    }
+    const r2Allowed = new Set(['sodaBomb', 'bubbleWrap', 'airHorn'].flatMap((id) => savedPitches[id]));
+    for (const line of mixedPitches) assert.ok(r2Allowed.has(line));
+  } finally {
+    kiosk.hawk.pitchChance = savedChance;
+    kiosk.hawk.pitches = savedPitches;
+    g.map.dispose();
+  }
+});
