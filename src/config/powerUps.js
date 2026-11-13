@@ -80,7 +80,7 @@ export const powerUps = {
       shoveRadius: 1.8, shovePulseSeconds: 0.35,
       shoveStagger: { seconds: 0.5, knockback: 4, drag: 6 },
       hint: 'HEAVY MELEE STAGGERS · SPRINT SHOVES SHOPPERS',
-      summary: 'Empowers your next 3 heavy melee strikes with 2× damage & stagger, while sprinting shoves shoppers aside.',
+      summary: 'Your next 3 melee hits deal 2× damage and stagger the crowd around them, while sprinting shoves shoppers aside.',
       icon: 'shield', sound: 'incentiveSecurity',
       pa: { kicker: 'Loss Prevention', text: 'Enhanced crowd control authorized. Heavy blade strikes stagger, and sprinting clears the aisle.' },
     },
