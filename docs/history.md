@@ -14,6 +14,14 @@
   the gun rolls its left side up, the support hand presses a strip of bearings sideways into the port and flicks the clip away, the trigger hand closes the
   bolt. Balloon Launcher: the balloon lets go, the spent cartridge is unscrewed and tossed, a new one screwed in while the needle climbs, the gauge tapped,
   the balloon blows back up. Reload events may now be a bump with no sound (`tests/newGuns.test.js` allows it).
+## 13 November 2026 - Kevin's cart is solid to the roof; the last shoppers no longer sprint
+
+- **Cart collision:** the sign pass gave the carts a canopy, posts, a pegboard and a marquee, all decoration, over a 1.05 m vaultable
+  counter collider, so the upper cart could be walked and shot through. Now the counter mesh is decoration and each cart has ONE invisible
+  collider over its footprint from the floor to the roof's top (`kiosk.cart.roofY` 2.4 + `roofThickness` 0.09; dressCart reads roofY
+  too). Not vaultable any more: the canopy leaves 1.35 m over the counter. tests/kiosk.test.js checks every site.
+- **Last shoppers:** `economy.rounds.lastShoppers.speedUp` (new, false) switches off the end-of-round sprint (the last 2 zombies jumped
+  to their fastest gait: the user found it caused cheap deaths). The "final clearance" PA stays; the straggler glow does the finding.
 
 ## 13 November 2026 - Kiosk Kevin rests between moves and restocks every 3 rounds (`claude/hydrogen-kevin-calmer`)
 

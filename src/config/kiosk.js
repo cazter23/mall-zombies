@@ -29,8 +29,10 @@ export const kiosk = {
     // Beside the family van, in the empty bay east of it: Kevin's "overflow stock".
     { id: 'parkingLot', zone: 'parkingLot', where: 'Customer Parking', x: 42.93, z: -11.05, faces: '+x', floorY: 0 },
   ],
-  // A cart (maps/mall/kioskCart.js): a low counter, vaultable on its short side, with three slots along its front.
-  cart: { width: 2.2, depth: 0.75, height: 1.05, slotSpacing: 0.72, signWidth: 1.9, productY: 0.83 },
+  // A cart (maps/mall/kioskCart.js): a low counter under a canopy, with three slots along its front.
+  // roofY = the canopy's underside (its roof and trim add 0.09 on top). The cart is ONE solid collider from the floor to the
+  // roof's top over its footprint: with a canopy 1.35 m above the counter it can't be stood on, so it is not vaultable.
+  cart: { width: 2.2, depth: 0.75, height: 1.05, roofY: 2.4, roofThickness: 0.09, slotSpacing: 0.72, signWidth: 1.9, productY: 0.83 },
   spawnClearance: 5, // m: no zombie spawn this close to a site's stand point (checked by the tests)
   // The mall PA, played when Kevin first opens in a run (`opened` + `stock`) and when he moves to another site (`moved` + `stock`),
   // in ONE banner ({where} = the site's `where`, {stock} = the block's three products, {pick} = Kevin's Pick). Entry 0 is the original line.
