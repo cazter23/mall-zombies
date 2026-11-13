@@ -80,6 +80,27 @@ export function createHud({ locker = null, guide = null, challenges = null, onIn
   hud.append(speedLines);
   let lastSpeed = -1;
 
+  // A scoped gun's eyepiece (weapons/scope.js; the Stargazer 3000): the view through a telescope, a circle of faintly tinted glass in a dark
+  // ring, with a star-chart reticle (fine cross hairs, mil dots and a constellation). Under the hit marker; its colours come from the gun's
+  // scope.look (setScope). Drawn once; only its opacity changes.
+  const scopeView = el('div', 'scope-view');
+  const constellation = [[-52, 30], [-40, 44], [-27, 40], [-18, 54], [-30, 62], [-44, 60]];
+  scopeView.innerHTML = `<div class="scope-glass"><svg viewBox="-100 -100 200 200" aria-hidden="true">
+    <g class="scope-hairs">
+      <line x1="-96" y1="0" x2="-40" y2="0" stroke-width="2"/><line x1="40" y1="0" x2="96" y2="0" stroke-width="2"/>
+      <line x1="0" y1="40" x2="0" y2="96" stroke-width="2"/><line x1="0" y1="-96" x2="0" y2="-40" stroke-width="2"/>
+      <line x1="-40" y1="0" x2="-3" y2="0" stroke-width="0.45"/><line x1="3" y1="0" x2="40" y2="0" stroke-width="0.45"/>
+      <line x1="0" y1="3" x2="0" y2="40" stroke-width="0.45"/><line x1="0" y1="-40" x2="0" y2="-3" stroke-width="0.45"/>
+    </g>
+    <g class="scope-dots">${[-30, -15, 15, 30].map((d) => `<circle cx="${d}" cy="0" r="0.9"/><circle cx="0" cy="${d}" r="0.9"/>`).join('')}<circle cx="0" cy="0" r="0.55"/></g>
+    <g class="scope-stars"><polyline fill="none" stroke-width="0.25" points="${constellation.map(([x, y]) => `${x},${y}`).join(' ')}"/>
+      ${constellation.map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="${i % 2 ? 0.9 : 1.3}"/>`).join('')}
+      <circle cx="58" cy="-48" r="0.8"/><circle cx="66" cy="-36" r="0.6"/><circle cx="47" cy="-62" r="0.7"/></g>
+  </svg></div>`;
+  hud.append(scopeView);
+  let lastScope = -1;
+  let lastScopeLook = null;
+
   // Crosshair: four lines around a gap that shows the current spread cone,
   // plus a precise dot that fades in while aiming down sights.
   const crosshair = el('div', 'crosshair');
@@ -716,6 +737,24 @@ export function createHud({ locker = null, guide = null, challenges = null, onIn
         crosshairDot.style.opacity = String(aim);
         lastAim = aim;
       }
+    },
+
+    // 0..1: how far a scoped gun's eyepiece fills the view (weapons/scope.js scopeOverlay); `look` = its scope.look colours.
+    // The crosshair fades out as the eyepiece comes in (the reticle replaces it).
+    setScope(opacity, look = null) {
+      const rounded = Math.round(opacity * 50) / 50;
+      if (look && look !== lastScopeLook) {
+        scopeView.style.setProperty('--scope-ring', look.ring);
+        scopeView.style.setProperty('--scope-glass', look.glass);
+        scopeView.style.setProperty('--scope-reticle', look.reticle);
+        scopeView.style.setProperty('--scope-stars', look.stars);
+        lastScopeLook = look;
+      }
+      if (rounded === lastScope) return;
+      scopeView.style.opacity = String(rounded);
+      scopeView.classList.toggle('active', rounded > 0);
+      crosshair.style.opacity = String(1 - rounded);
+      lastScope = rounded;
     },
 
     // 0..1 opacity of the sprint speed lines.

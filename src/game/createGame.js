@@ -20,6 +20,7 @@
 //   g.debug        the developer shortcuts (game/debugCommands.js): run(id), resolve(key, shift), status()
 //   g.equipment    Kiosk Kevin's equipment: the Lethal and Tactical pockets and the throw (game/equipment.js);
 //                  g.throwables = the thrown things in the air (weapons/ballistics.js, bouncing off zombies)
+//   g.rockets      the Bottle Rocket Bazooka's rockets in the air (weapons/ballistics.js, zombies 'bounce'; each bursts on its first contact)
 //   g.<system>     map, colliders, arena, shootables, stats, player, wallet, runStats, effects, aimAssist,
 //                  gun, interactions, melee, health, zombies, mascotCostumes, rounds, death
 // =============================================================================
@@ -153,6 +154,7 @@ export function createGame({
   const effects = createEffects(scene, { surfaces: [map.group, ...(arena ? [arena.group] : [])] });
   const aimAssist = createAimAssist({ player, input, shootables, colliders });
   const balls = createBalls({ colliders, shootables }); // the Tennis Ball Launcher's balls in the air (weapons/ballistics.js); the gun throws them, main.js draws them
+  const rockets = createBalls({ colliders, shootables, zombies: 'bounce' }); // the Bottle Rocket Bazooka's rockets: the burst does the damage (weapons/blast.js)
   const gun = createPlayerGun({
     def: weapons.stapleGun,
     stats,
@@ -170,6 +172,8 @@ export function createGame({
     onHit: announceHit,
     onReload: (reload) => events.emit('reload', reload),
     aimAssist,
+    rockets,
+    onBlast: (blast) => events.emit('gunBlast', blast),
   });
   // Buyables (hold F / X): the map's doors and wall buys.
   const interactions = createInteractions({
@@ -490,6 +494,14 @@ export function createGame({
     health.takeDamage(damage, { type: 'fall', fall: true });
     if (!health.isReviveProtected) player.addViewKick(-feel.fall.viewJoltDegrees * DEG_TO_RAD); // (not when this fall just spent it)
   };
+  // Your own rocket's burst (the Bottle Rocket Bazooka; weapons/blast.js worked out selfDamage: capped below a one-shot, 0 behind a wall or in the
+  // Hi-Vis Vest). Like a fall it goes straight to health, past armour; the death receipt names it (config/deathReports.js ownBlast).
+  events.on('gunBlast', ({ selfDamage, weaponId }) => {
+    if (runFrozen() || !(selfDamage > 0) || health.isReviveProtected) return;
+    health.takeDamage(selfDamage, { type: 'ownBlast', weaponId });
+    const jolt = weapons[weaponId]?.blast?.self?.joltDegrees ?? 0;
+    if (jolt && !health.isReviveProtected) player.addViewKick(-jolt * DEG_TO_RAD);
+  });
   events.on('mascotReclaim', ({ zombie }) => {
     hud.showAnnouncement({ ...zombie.type.mascot.reclaim.line, priority: 1 });
     sound.play('paChime');
@@ -661,6 +673,7 @@ export function createGame({
     ['guide', () => guide.reset()], // (only what the round being replayed was counted: the record itself is permanent)
     ['balls', () => balls.clear()], // (before the gun: a ball in the air reports to it)
     ['equipment', () => equipment.reset()], // empty pockets, nothing thrown left in the air or on the floor
+    ['rockets', () => rockets.clear()], // (before the gun, like the balls: a rocket in the air is gone, silently, no burst)
     ['gun', () => gun.reset()], // just the staple gun again, no upgrades
     ['interactions', () => interactions.reset()],
     ['viewmodel', () => viewmodel.reset()],
@@ -774,7 +787,7 @@ export function createGame({
   ];
   // Reset steps a save does not keep: nothing in them outlasts a round's start that matters (zombies, effects, timers).
   const transientSteps = [
-    'zombies', 'mascotCostumes', 'surfaces', 'health', 'balls', 'interactions', 'viewmodel', 'effects', 'contactShadows',
+    'zombies', 'mascotCostumes', 'surfaces', 'health', 'balls', 'rockets', 'interactions', 'viewmodel', 'effects', 'contactShadows',
     'ambience', 'melee', 'aimAssist', 'clockIn', 'hud', 'saveGame',
     'guide', // (its replay count travels in the guide's own record, not the run save)
   ];
@@ -794,6 +807,7 @@ export function createGame({
     if (death.summary) {
       death.timer += dt;
       balls.clear(); // (a ball in the air when you died is gone: nothing more is paid or counted)
+      rockets.clear(); // (so is a rocket: it never bursts)
       equipment.clearThrown(); // (so is a Soda Bomb on its fuse)
       zombies.update(dt);
       health.update(dt);
@@ -846,6 +860,7 @@ export function createGame({
     warranty.update(dt); // (a replaced gun's warranty goes on file; a dry Platinum gun makes its claim)
     zombies.update(dt);
     balls.update(dt); // after the zombies moved: a ball hits them where they are now
+    rockets.update(dt); // (and a rocket bursts against them where they are now)
     throwables.update(dt); // (same for a thrown Soda Bomb)
     equipment.updateThrown(dt); // fuses run out and burst where the bottle is now
     mascotCostumes.update(dt);
@@ -912,6 +927,7 @@ export function createGame({
     aimAssist,
     gun,
     balls,
+    rockets,
     throwables,
     equipment,
     interactions,

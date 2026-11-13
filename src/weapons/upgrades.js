@@ -85,7 +85,13 @@ const EFFECTS = {
       : g.shellReload
         ? [mul('shellReload.startSeconds', v), mul('shellReload.shellSeconds', v), mul('shellReload.endSeconds', v)]
         : [mul('reloadTime', v)],
-  falloffRange: (v, g) => (g.falloff ? [mul('falloff.start', v), mul('falloff.end', v), ...(g.cone ? [mul('cone.range', v)] : [])] : null),
+  // (A RISING falloff, the Stargazer's, minMultiplier above 1: its bonus grows with distance, so "carries further" brings the bonus in
+  // closer, 1 / v, and a shorter barrel pushes it out. Scaling it like a fading one would turn every barrel the wrong way round.)
+  falloffRange: (v, g) => {
+    if (!g.falloff) return null;
+    const k = g.falloff.minMultiplier > 1 ? 1 / v : v;
+    return [mul('falloff.start', k), mul('falloff.end', k), ...(g.cone ? [mul('cone.range', v)] : [])];
+  },
   hipSpread: (v, g) => [
     // Scale recovery with bloom too: otherwise the smaller hip cone also recovers faster in ADS.
     ...['base', 'moving', 'airborne', 'perShot', 'maxBloom', 'bloomRecovery'].map((k) => mul(`spread.${k}`, v)),

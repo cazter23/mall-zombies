@@ -215,6 +215,8 @@ src/
                         DOM-free: createGame ticks it (after the zombies) and clears it on death and Play again ('balls' reset step); fx/ballView.js draws it.
                         createBalls({ ..., zombies: 'bounce' }): a zombie is bounced off WITHOUT being hit (no takeHit, no onHit): the second instance
                         createGame makes for thrown equipment (g.throwables, game/equipment.js).
+                        projectile.homing (the Balloon Launcher): it STEERS in flight toward the nearest live zombie (with a type, not noRewards) within range, inside
+                        coneDegrees of its flight and in view, re-picked every retargetSeconds or when that one dies, turning at most turnDegreesPerSecond at the same speed.
     fuel.js             The fuel tank of a gun with `fuel` (the Leaf Blower): createFuel(), tickFuel(state, cfg, dt, { fired, level, capacity }) -> units to add
                         (it refills by itself regenDelay after the last pulse, at regenPerSecond; running dry LOCKS the trigger until the tank holds restartAt),
                         resetFuel(). Pure timing: the tank's LEVEL is the weapon's `magazine`, so the HUD, RESTOCK-O-MATIC, Refurbished grabs and
@@ -239,6 +241,20 @@ src/
                         applySpread() picks a random direction inside the cone; applyConeSpread() also samples pellets;
                         pelletSpreadDegrees() blends their independent ADS cone. reset() (new run: hip, base spread).
                         update(dt, allowAim) (false mid weapon switch). One aim per carried gun
+                        onShot() on a gun with `scope` also drops the ADS amount to scope.boltDropTo (the bolt is worked off the eye; it eases back while aim is held).
+    scope.js            The real scope of a gun with `scope` (the Stargazer 3000): scopeOverlay(scope, aimAmount) -> 0..1, how far the eyepiece fills the view
+                        (0 below scope.overlayFrom; main.js draws it with hud.setScope and stops drawing the gun model at 1); scopeSwayOffset(scope, t, aim,
+                        crouched) -> { yaw, pitch }, a slow figure eight scaled by the aim (smaller crouched or prone); createScopeSway() -> update(dt, scope,
+                        aim, crouched) gives the per-tick CHANGE playerGun.js adds to player.yaw/pitch, so the drift is real (shots follow it) and lowering
+                        the scope hands back exactly what it took. DOM-free (tests/scope.test.js).
+    blast.js            The explosion of a gun with `blast` (the Bottle Rocket Bazooka): blastFalloff(distance, blast) (1 at the centre, edgeFraction at the radius,
+                        0 past it); findInBlast(centre, blast, colliders, shootables) -> [{ target, distance }] nearest first (live zombies only, never Sunny or a
+                        dummy; distance to the nearest hitbox point; a wall between the centre and a body shields it); selfBlastDamage({ eye, feetY }, centre,
+                        blast, colliders, maxHealth, multiplier) -> what your own burst does to you (maxHealth x self.share x the falloff from the nearest point of
+                        you, x stats.ownBlastDamage, capped at self.maxShare so it never kills from full; 0 behind a wall or under self.ignoreBelow, which is how the
+                        Hi-Vis Vest's ownBlastDamage 0.01 makes you blast-proof). Pure (tests/blast.test.js); the
+                        damage per zombie is gunStats.hitDamage with hit.blastDistance. playerGun.js fires the rocket on g.rockets (ballistics, zombies 'bounce',
+                        one contact ends it), explodes it here at the end, and reports onBlast -> the 'gunBlast' event; createGame's listener applies selfDamage.
     aimAssist.js        (assistable(shootable): never a dead or spawning one, or one flagged ignoreAimAssist, like Sunny.) createAimAssist(): controller-only (input.device). Picks the visible target nearest the
                         crosshair (sticky), aims at its chest. Slowdown multiplier (read per frame for stick
                         look), rotational follow of the target's angular motion while a stick is in use, and
@@ -314,6 +330,14 @@ src/
                         double barrels, gold rims, PARTY POP! stock label and striped shells; hinge open, a shell per cycle, snap shut.
                         returnToSender.js = the wonder weapon: a returns-desk scanner gun in blue and white with a lit green screen, a rainbow stripe, a pink emitter ring and a battery pack that the support hand slaps in to reload.
                         tennisBallLauncher.js = sporting-goods blue pump launcher: fat ringed barrel, loading port, clear hopper with balls, a support hand that fetches a ball to reload.
+                        stargazer.js = the claw-only sniper: a hobby-shop telescope (navy tube on brass rings, objective bell, blue lens, finder scope) on a bolt-action with
+                        gold stars, a slim barrel with a brass crown, a folded tripod and a wooden stock; the bolt handle lifts and slides after each shot (from
+                        sinceFire) and stays open through the reload while the support hand thumbs in a strip of bearings.
+                        bottleRocket.js = the claw-only rocket launcher: a fireworks-stand cardboard tube (red, white bands, yellow stars, a dark flared back end, a flip-up
+                        sight, a coiled fuse with a glowing tip); the loaded rocket's nose shows in the mouth only while loaded (animate's state.loaded, from viewmodel.js);
+                        the support hand brings a fresh rocket from below to reload.
+                        balloonLauncher.js = the claw-only homing launcher: a teal party blaster with pink trim, a silver helium tank and gauge on top, a nozzle with
+                        ribbons; a balloon inflates on the nozzle after each shot (sinceFire, state.loaded); the support hand twists in a helium cartridge to reload.
                         leafBlower.js = orange motor housing, red fuel tank with a level window, ribbed flared nozzle (the claw-only Leaf Blower).
                         Each model also returns `mounts` (barrel / top / side / grip / magazine / sticker: where upgrade parts go).
                         upgradeParts.js = what upgrades LOOK like: buildAttachmentPart(id, mount) (mounting brackets/adapters on universal
@@ -877,6 +901,13 @@ src/
                         you ('armourHit' popped), the Sentry's muzzle flash per shot and its break-up ('sentryExpired'); each burst draws a ring to its
                         real reach, and a comic word (FSSSHH!, CONGRATS!, HOOONK!, POP!, BZZT!). Own particles (one instanced mesh), rings, word
                         sprites; clear() on 'runReset', dispose().
+    rocketView.js       Browser side only: draws g.rockets.list (what the blast guns fire) by its gun's flight.look.model: 'rocket' (the Bottle Rocket Bazooka: a firework
+                        pointed along its flight, puffing sparks, effects.confetti, every flight.trailSeconds) or 'balloon' (the Balloon Launcher: a bobbing party
+                        balloon on a string, its colour by the balloon's id); between last tick's and this tick's position (alpha).
+    throwableView.js    Browser side only: draws `equipment.live` (Kiosk Kevin's thrown things), one pool per look.model: the cola bottle (tumbling in the
+                        air, lying and rattling on the floor, swelling as the fuse runs out), the Sparkler Cake (spinning, then upright and jittering
+                        while it sprays), the Glitter Bomb card (flipping) and the Sentry (tumbling, then standing with its head turned to item.yaw);
+                        a mesh is hidden when its item is gone; dispose() frees the pools.
     closingKeyView.js   Reusable spinning key and signature props for the four closing pickups, each with a beacon while it lies there.
     saleTagView.js      Browser side only: pooled two-sided floating SALE / SALE SOON / DOORBUSTER tags (world/typeKit.js `clearance` role; three InstancedMeshes, one
                         shown at a time) and a Doorbuster beacon over the buy spots collectSaleSpots(g, sale) returns; re-reads on sale/purchase/move events and
@@ -1014,7 +1045,8 @@ src/
                         drawn on top to the first of each entry's `anchors` (ids of drawn parts: key names, 'mouse', 'lmb', 'ls', 'rt'...);
                         all anchors get tinted. New part = id + slot there, then list it in controlsHelp
     hud.js              createHud(): 4-line crosshair whose gap = spread cone (dot in ADS) + hit marker (white body, big yellow head, red kill),
-                        boss name, job title and health bar while an encounter is active. retail.css gives each employee
+                        boss name, job title and health bar while an encounter is active. setScope(opacity, look): a scoped gun's eyepiece (a tinted circle in a dark
+                        ring with a star-chart reticle, drawn once; the crosshair fades as it comes in; style.css .scope-view). retail.css gives each employee
                         a department design: Murray's caution sign, Kettle's security badge, Dennis's clipboard and
                         Skylar's livestream frame. The round banner accepts an optional title for CLOSING TIME, including runLoaded after all save steps restore. data-boss changes and clears with the encounter; follower text updates live,
                         bottom-left health (white) + stamina (green) bars, bottom-right ammo counter (with setPockets: Kiosk Kevin's two

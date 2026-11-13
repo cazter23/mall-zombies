@@ -79,6 +79,77 @@ The last phase of docs/kiosk-kevin-plan.md, presentation only: no price, damage,
 - Found while checking it in the browser: a sprite in the map breaks any raycast made without a camera (the bullet-mark raycast in tests/staticBatch.test.js threw). Kevin's bubble and the comic words opt out of raycasts.
 Shared files touched: src/main.js (three lines), src/config/audio.js (three sounds), src/game/events.js (two events), src/ui/hud.js and retail.css (the armour pop), CLAUDE.md (status lines). Not regenerated: docs/typefaces-ledger.md (tools/typefaceLedger.mjs), which the sign-looks work owns; the new texts use existing roles (marker, priceTag, toyBody, toyBrand).
 Review pass (same day, before merging): Kevin's lanyard was an upside-down V (an "A") with the badge hidden behind the middle product; it is now a V to a badge high on his chest. The headset band sat across his hair like a hat band (his hair read as a cap): it now runs over the top, with sideburns and a nose added. His speech bubble was tone-mapped and fogged (grey, not white) and the cart's light column washed out the middle of each line: it now draws after the column, untoned. The spectacle's last inline numbers (foam life, gravity and drag; debris drag; the Sentry's sputter seconds) moved to config/kiosk.js spectacle. New test: the bake and every product model (tests/kiosk.test.js).
+## 12 November 2026 - Claw guns review: rockets through walls, Last Round on the Bazooka, the Stargazer's barrels, save 9
+
+A review of the three claw-only guns before merging (unverified work, checked against the game's rules, `npm run balance` and `npm run sim:claw`).
+- **Rockets and balloons went through walls.** They leave 0.6-0.7 m in front of the eye; pressed against a wall that is already past it (the player is 0.35 wide, walls 0.3), so a rocket fired at the Hallway's west wall burst in the Service Corridor, killing and paying into locked areas and dodging its own self-damage. weapons/playerGun.js now casts from the eye to the launch point: a wall or zombie in between bursts it right there (and a rocket into a wall at your face hurts you). The Tennis Ball Launcher (main's code, 0.55 m) has the same latent gap; not changed here.
+- **Build-A-Blaster on a blast gun.** The Bazooka's magazine is one round, so the Last Round heart fired on EVERY launch, at a made-up point 6 m in front of the tube (through walls), and the stuffing scaled from 900 a second though the gun's real cycle includes its 2.4 s reload. A blast gun's Last Round now waits for the burst ('gunBlast' carries magazineLeft) and goes off on the zombie it caught or where it burst; gunStats.gunPower counts the reload of a one-round magazine (the Bazooka's proc base 900 -> 375, its single-target fire rate). The Headshot heart still never fires on a blast gun (a blast has no headshots).
+- **The Stargazer's barrels were backwards.** Its falloff RISES, so scaling start and end like a fading gun's made the Extended Nozzle ("carries further") a nerf and the Sawn-Off's downside a big buff. weapons/upgrades.js scales a rising falloff by 1 / the factor.
+- **Save version 9**: stats gained ownBlastDamage, and a version-8 save restored with the Hi-Vis Vest on left it at 1 (and taking the vest off then made it 100).
+- Tests: tests/featChallenges and roleChallenges had been rewritten LF -> CRLF (whole-file churn, one stray CR each): back to LF, so the real change is the new cases. weaponProgression's headshot bound skipped every claw gun: now only blast guns and the Stargazer. The clump test in bottleRocket.test.js failed about one run in five on the branch (the hip spread sent the rocket over the clump, and a bench shielded one zombie from a low burst): moved to an open stretch and fired dead on. "Eleven guns" wording fixed.
+Not changed (noted): the Speed Loader's "smaller magazine" on a one-round gun rounds back to 1; a few view-only numbers in playerGun's burst splat.
+
+## 12 November 2026 - More claw-only guns, 3: the Balloon Launcher (homing balloons)
+
+From the user's wish list. **The Balloon Launcher**: a party-store helium blaster. Its job: it hits what you DON'T aim at. A balloon drifts out at 9 m/s, rising a
+little (gravity -0.4), and HOMES: every quarter second it picks the nearest live zombie within 16 m, inside 55 degrees of its flight and in sight, and turns
+toward its chest at up to 140 degrees a second; it pops on what it touches with a small harmless blast (200 at the centre, half that at 1.3 m). Eight balloons,
+0.3 s apart, a 2.6 s reload. On one zombie you aim at it does 340 a second, under the Price Gun's 434; fired 35 degrees wide of a zombie it still finds it.
+**The engine piece**: `homing` in weapons/ballistics.js (any projectile can carry it), tested alone first in ballistics.test.js. The gun itself needed no new
+system: it is a blast gun (`blast` + `flight`) like the Bottle Rocket Bazooka, so the `rocket` config block became `flight` and fx/rocketView.js draws each flight
+by its look.model (a firework or a bobbing balloon on a string). Balance: the first numbers had 170 a pop, which one-shot only a round-1 Shopper; 200 now.
+In the pool as a purple capsule, weight 6. `npm run sim:claw` (weights now total 129): it is in 13.4% of pits, won 6-7% of grabs; Return to Sender stays the
+rarest (2.3%). With five claw-only guns plus the wonder weapon, 29 of 129 weight (22% of a capsule, was 13%) is now a claw-only gun.
+Skins: Birthday Party; Polka Dot (150 Mall Walkers: the fast ones, homing catches them); Helium High (a boss from round 9 that only balloons hurt).
+**The blast-proof fix is the Hi-Vis Vest** (the user's choice over a 13th item: the wardrobe is 4 slots x 3 items and the picker walks all 81 outfits).
+Safety gear: it gains a third line, "Your own blasts can't hurt you" (factor ownBlastDamage 0.01, statBetter 'lower'). Not 0: the wardrobe takes an item
+off by dividing its factors out, and 0 can't be divided out. weapons/blast.js drops a self-hit under blast.self.ignoreBelow (1 health point), so the vest's
+0.45 at most is no hit at all (no hurt flash, no regen reset). The vest is now a stronger item (faster reloads, blast-proof, zombie hits hurt more).
+The full suite (once, at the end) caught: the 'rockets' reset step must not sit between 'balls' and 'equipment' (equipment.test), a role skin's body must be
+clearly more saturated than its mastery body (two mastery bodies muted, the rocket's role skin made red), and no feat glow may peak past 0.45.
+
+## 12 November 2026 - More claw-only guns, 2: the Bottle Rocket Bazooka (the rocket launcher) and the blast
+
+The user's own idea, with their call on self-damage: your own rocket hurts you, and a wardrobe item will cancel it (the next step; until then
+`stats.ownBlastDamage` is 1 for everyone). **The Bottle Rocket Bazooka**: a fireworks-stand cardboard tube firing one oversized bottle rocket. Its job: the only
+gun that hurts everything around a POINT. The rocket flies on a third ballistics instance (`g.rockets`, zombies 'bounce', one contact of any kind ends it, or the
+end of its 1.6 s life in the air) and bursts: 900 at the centre down to 25% at 3.5 m, through gunStats.hitDamage (`hit.blastDistance`), so tiers and stats
+apply. One rocket in the tube, a 2.4 s reload, 12 in reserve. Measured (`npm run balance`, new BLAST GUNS tables): the centre kills a Shopper to round 11, 1.5 m
+out to round 7; a clump of six 1.5 m round a burst takes 1,527 a second, 1.18x the best wall gun at 15 m even counting its pierce (the Heavy Coil Nailer's two,
+1,294); one zombie gets 375, under the Price Gun's 434. **Your own burst**: 45% of your max health at its centre with the same falloff, never more than 75% (it
+can't kill you from full), nothing behind a wall; it goes straight to health like a fall, jolts the view, and a death by it reads "Self-administered fireworks
+display, indoors, at close range" (config/deathReports.js ownBlast). fireInterval is 1 s, not shorter: Build-A-Blaster's stuffings scale from damage / fireInterval
+(tests/workshopBuilds.test.js caught 0.6 s making a burn outpace the gun).
+**The engine piece, weapons/blast.js**, alone first (tests/blast.test.js): the falloff, who is caught (live zombies within the radius by their nearest hitbox
+point, a wall shields), and the self-damage. playerGun.js fires and explodes; the new 'gunBlast' event carries the hits and selfDamage, and createGame's
+listener takes it off your health. The view, fx/rocketView.js, draws each rocket as a firework with a spark trail. Models get `state.loaded` (viewmodel.js) so the
+nose shows in the tube's mouth only while loaded. In the GRAB-A-GUN pool as a GOLD capsule, weight 2: `npm run sim:claw` puts it in 4.9% of pits (won 3.6-4.8%);
+Return to Sender stays the rarest (2.5%). Skins: Grand Finale; Long Fuse (200 kills from 12 m: its kills land after the shot, like the tennis ball's, so not a
+multi-kill-shot challenge); Sparkler (40 kills in one round).
+Other tests touched by the two guns: weaponProgression's 1.2-2x headshot bound now covers wall guns only (the sniper's 3x is its job), impactMarks skips blast
+guns, the Stargazer's wall mark is a new 'bearing' kind (each signature needs its own draw), upgrades lists the rocket among guns the Extended Nozzle doesn't fit,
+aim.test's Laser Pointer check on a scoped gun compares only fully aimed or at the hip, and skinEquipment counts guns instead of assuming eleven.
+
+## 12 November 2026 - More claw-only guns, 1: the Stargazer 3000 (the sniper) and its scope
+
+The user picked three new claw-only guns from a pitch (a sniper and a rocket launcher, their own ideas, and the Balloon Launcher from the wish list); this is the first.
+**The Stargazer 3000**: a hobby-shop telescope fitted with a bolt, firing steel ball bearings. Its job: the further away, the harder it hits. Its falloff RISES
+(`falloff.minMultiplier` 2: gunStats.damageFalloff already ran the line up when the end is above 1, so no damage maths changed): 300 a hit to 8 m, 600 at 30 m,
+3x headshots (the biggest multiplier), a 4-zombie pierce, 5 rounds, a 1.2 s bolt, a 3.0 s reload. Measured (`npm run balance`, new SCOPED GUNS table): one aimed
+headshot at 30 m kills a Shopper through round 21 (round 11 across a room); at 30 m with headshots it kills 1.2x (round 18) to 1.4x (round 20) faster than the best
+wall gun, level with it by round 25 and behind before round 15; up close it is 192 sustained dps, under half the Price Gun's. The bolt was 1.3 s / 3.2 s reload at first:
+that only tied the Foam Dart Blaster at round 16, so it went to 1.2 / 3.0.
+**The engine piece, weapons/scope.js**, built and tested alone first (tests/scope.test.js): the eyepiece (a HUD overlay, ui/hud.js setScope, star-chart reticle;
+once it covers the view main.js stops drawing the gun model), a figure-eight sway applied as per-tick changes to the view (shots follow it; crouched or prone it is
+a third; lowering the scope gives back exactly what it took), and the bolt (aim.js onShot drops ADS to 0.35 after a scoped shot; holding aim brings it back before
+the next shot). ADS zoom 0.28. The balance tool gained `aimAt: 'head'`.
+Everything one gun touches now includes the weapon skins (the first gun added since they were built): three skins in config/skins.js (Midnight Sky; Constellation,
+150 headshot kills from 25 m; Supernova, a perfect round of 15 shots), their cases in roleChallenges/featChallenges, its palette keys, and its default materials
+added to tests/fixtures/weapon-materials-phase-1.json (existing entries untouched). In the GRAB-A-GUN pool as a purple capsule, weight 6 (the other claw-only purples are 7):
+`npm run sim:claw` at 1,500 a grab puts it in 14.5% of pits and wins it 7-8% of grabs (timed or 3-in-4); Return to Sender stays the rarest prize (2.5% of pits).
+Files: config/weapons.js, audio.js (shot with the bolt as delayed layers, three reload sounds), haptics.js, ui.js, attachmentVisuals.js, gunPalettes.js, skins.js,
+clawMachine.js; weapons/scope.js, aim.js, playerGun.js, models/stargazer.js + index.js; ui/hud.js, style.css, main.js (two lines); tools/balance.js, gunReport.mjs;
+tests scope, stargazer, balance, role/feat challenges, the material fixture.
 
 ## 12 November 2026 - Delete list from the code review: dead exports gone; three items held back on purpose
 

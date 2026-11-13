@@ -159,3 +159,60 @@ test('zombies standing in a line: the ball goes on through the first to the one 
   assert.equal(first.damageTaken.length, 1, 'hit once');
   assert.ok(second.damageTaken.length >= 1);
 });
+
+// --- Homing (the Balloon Launcher): a projectile that steers toward a zombie ahead of it ---
+const homing = { range: 15, coneDegrees: 60, turnDegreesPerSecond: 120, retargetSeconds: 0.25 };
+const zombieAt = (x, z, extra = {}) => Object.assign(target(x, z), { type: { id: 'shopper' } }, extra);
+const slow = (extra = {}) => flat({ speed: 8, gravity: 0, maxBounces: 1, seekRange: 0, lifeSeconds: 4, homing, ...extra });
+
+test('homing: fired 40 degrees off a zombie, it turns and reaches it; without homing the same shot misses', () => {
+  const off = v(Math.cos(40 * Math.PI / 180), 0, Math.sin(40 * Math.PI / 180)); // 40 degrees to the side of +x
+  for (const home of [true, false]) {
+    const z = zombieAt(8, 0);
+    const balls = createBalls({ colliders: [], shootables: [z] });
+    const { log, ...cb } = record();
+    balls.launch({ position: v(0, 1, 0), direction: off, projectile: slow(home ? {} : { homing: undefined }), damageOf: () => 10, ...cb });
+    run(balls, 3);
+    assert.equal(log.hits.length, home ? 1 : 0, home ? 'it homed in' : 'a straight shot goes wide');
+  }
+});
+
+test('homing turns no faster than turnDegreesPerSecond and keeps its speed', () => {
+  const z = zombieAt(0, 6); // straight to the side: 90 degrees off, inside a wide cone
+  const balls = createBalls({ colliders: [], shootables: [z] });
+  const ball = balls.launch({ position: v(0, 1, 0), direction: v(1, 0, 0), projectile: slow({ homing: { ...homing, coneDegrees: 100 } }), damageOf: () => 1 });
+  const before = ball.velocity.clone().normalize();
+  balls.update(dt);
+  const turned = Math.acos(before.dot(ball.velocity.clone().normalize())) * 180 / Math.PI;
+  assert.ok(turned > 0 && turned <= 120 * dt + 1e-6, `${turned.toFixed(3)} degrees in one tick`);
+  assert.ok(Math.abs(ball.velocity.length() - 8) < 1e-9, 'same speed');
+});
+
+test('homing ignores what it must: a zombie behind it, past its range, behind a wall, dead, or not a zombie at all (Sunny, a dummy)', () => {
+  const cases = {
+    behind: [zombieAt(-6, 0.5), []],
+    outOfRange: [zombieAt(16, 3), []],
+    behindAWall: [zombieAt(6, 3), [wall(2, 0, 0.8, 2.2, 2, 1.2)]],
+    dead: [zombieAt(6, 3, { isAlive: false }), []],
+    sunny: [zombieAt(6, 3, { noRewards: true }), []],
+    dummy: [Object.assign(target(6, 3), { type: null }), []],
+  };
+  for (const [name, [z, colliders]] of Object.entries(cases)) {
+    const balls = createBalls({ colliders, shootables: [z] });
+    const ball = balls.launch({ position: v(0, 1, 0), direction: v(1, 0, 0), projectile: slow(), damageOf: () => 1 });
+    balls.update(dt);
+    assert.ok(Math.abs(ball.velocity.z) < 1e-9 && Math.abs(ball.velocity.y) < 1e-9, `${name}: it flies straight on`);
+  }
+});
+
+test('homing picks the nearest zombie in its cone, and a new one when that one dies', () => {
+  const near = zombieAt(5, 2), far = zombieAt(9, -3);
+  const balls = createBalls({ colliders: [], shootables: [far, near] });
+  const ball = balls.launch({ position: v(0, 1, 0), direction: v(1, 0, 0), projectile: slow(), damageOf: () => 1 });
+  balls.update(dt);
+  assert.equal(ball.homingTarget, near);
+  assert.ok(ball.velocity.z > 0, 'turning toward the near one');
+  near.isAlive = false;
+  balls.update(dt);
+  assert.equal(ball.homingTarget, far, 'its target died: the next one');
+});

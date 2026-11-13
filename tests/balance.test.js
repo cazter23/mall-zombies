@@ -6,8 +6,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { weapons } from '../src/config/weapons.js';
 import { zombieHealthForRound, zombieCountForRound, economy } from '../src/config/economy.js';
-import { sustainedDps, expectedShotDamage, shotsToKill, killsPerSecond } from '../tools/balance.js';
+import { sustainedDps, expectedShotDamage, shotsToKill, killsPerSecond, hitChance, magazineSeconds, reloadSeconds } from '../tools/balance.js';
 import { seededRandom } from '../src/world/textures.js';
+import { hitDamage } from '../src/weapons/gunStats.js';
 
 const style = (d) => ({ ads: !d.pellets, samples: 1500 });
 const dps = (d, m) => sustainedDps(d, m, style(d));
@@ -177,4 +178,81 @@ test('Return to Sender, the wonder weapon: the strongest gun from the mid rounds
   assert.ok(rts.magazineSize + Math.round(rts.startingReserve * rts.refillFraction) < wave / 5, 'and a refill gives under a fifth of one');
   assert.ok(rts.fireInterval >= 0.6 && rts.reloadTime >= 2.5, 'slow to fire, slow to reload');
   assert.ok(1 / rts.instantKill.bigFraction >= 6 && 1 / rts.instantKill.bigFraction <= 15, 'a boss takes 6 to 15 beams, never one');
+});
+
+test('Stargazer 3000, the sniper: the further away, the harder it hits; the hardest hit there is at 30 m, one headshot there kills to about round 20, and clumsy up close', () => {
+  const sg = weapons.stargazer;
+  assert.equal(sg.clawOnly, true);
+  const head = (d) => ({ ...style(d), aimAt: 'head' });
+  const hit = (d, m, o = style(d)) => expectedShotDamage(d, m, o);
+  // Rising damage: the only gun that hits harder at 30 m than at 5 m.
+  assert.ok(hit(sg, 30) > 1.9 * hit(sg, 5), `${Math.round(hit(sg, 30))} at 30 m vs ${Math.round(hit(sg, 5))} at 5 m`);
+  for (const d of Object.values(weapons)) if (d !== sg) assert.ok(hit(d, 30) <= hit(d, 5) + 1e-9, `${d.name} must not gain with range`);
+  // The hardest single hit at 30 m, body or head (the instant kill aside: it ignores damage; and a blast, which hits everything round a point).
+  assert.ok(hit(sg, 30, head(sg)) > weapons.bottleRocket.damage, 'a 30 m headshot beats even the centre of a rocket burst');
+  for (const d of Object.values(weapons).filter((g) => g !== sg && !g.instantKill && !g.blast)) {
+    assert.ok(hit(sg, 30) > 2 * hit(d, 30), `body at 30 m vs ${d.name}`);
+    assert.ok(hit(sg, 30, head(sg)) > 2 * hit(d, 30, head(d)), `head at 30 m vs ${d.name}`);
+  }
+  // One aimed headshot: through round 20 at 30 m, only to about round 10 across a room.
+  assert.equal(shotsToKill(sg, zombieHealthForRound(20), 30, head(sg)), 1, 'a round-20 Shopper, one headshot at 30 m');
+  assert.equal(shotsToKill(sg, zombieHealthForRound(23), 30, head(sg)), 2, 'not forever: two by round 23');
+  assert.equal(shotsToKill(sg, zombieHealthForRound(10), 5, head(sg)), 1);
+  assert.equal(shotsToKill(sg, zombieHealthForRound(13), 5, head(sg)), 2, 'close up the same headshot runs out by round 13');
+  // Its window: at 30 m with headshots, from round 16 to 20 it kills faster than any wall gun (no pierce counted).
+  const oneShotKillsPerSecond = sg.magazineSize / (magazineSeconds(sg) + reloadSeconds(sg));
+  for (const round of [16, 18, 20]) {
+    const hp = zombieHealthForRound(round);
+    for (const d of all) assert.ok(oneShotKillsPerSecond > killsPerSecond(d, hp, 30, head(d)), `round ${round} at 30 m vs ${d.name}`);
+  }
+  // Clumsy up close: below the Price Gun at 2 and 5 m, and from the hip it misses most shots at 10 m.
+  for (const m of [2, 5]) assert.ok(dps(sg, m) < dps(priceGun, m), `${Math.round(dps(sg, m))} vs the Price Gun's ${Math.round(dps(priceGun, m))} at ${m} m`);
+  assert.ok(hitChance(sg, 10) < 0.5, 'hip fire at 10 m lands under half the time');
+  assert.ok(hitChance(sg, 30, { ads: true }) > 0.99, 'through the scope it is dead on');
+  // A line of zombies, a real scope, and held back by a slow bolt, a small magazine and a long reload.
+  assert.ok(sg.pierce.maxTargets >= 3 && sg.pierce.maxTargets <= 5);
+  assert.ok(sg.scope.sway.degrees > 0 && sg.scope.boltDropTo < sg.scope.overlayFrom, 'it sways, and each shot takes the eye off the eyepiece');
+  assert.ok(sg.ads.fovMultiplier <= 0.35, 'a real zoom');
+  assert.ok(sg.fireInterval >= 1 && sg.reloadTime >= 3 && sg.magazineSize <= 6);
+});
+
+test('Bottle Rocket Bazooka: the only gun that hurts everything around a point; it breaks a clump better than anything on the wall, duels worse than the Price Gun, and can hurt you but never one-shot you', () => {
+  const rk = weapons.bottleRocket;
+  assert.equal(rk.clawOnly, true);
+  for (const d of Object.values(weapons)) if (d !== rk && d.blast) assert.ok(d.blast.radius < rk.blast.radius / 2 && !d.blast.self, `${d.name}: any other blast is a small pop that never hurts you`);
+  const NO_STATS = { damageMultiplier: 1 };
+  const at = (m) => hitDamage(rk, { part: 'body', blastDistance: m }, 0, NO_STATS);
+  const cycle = magazineSeconds(rk) + reloadSeconds(rk);
+  // A clump of six Shoppers 1.5 m round the burst, 15 m away: more damage a second than any wall gun can do there, even counting its pierce,
+  // and over twice what any of them does to one zombie.
+  const clump = (6 * at(1.5)) / cycle;
+  for (const d of all) {
+    assert.ok(clump > dps(d, 15) * Math.min(6, d.pierce?.maxTargets ?? 1), `clump ${Math.round(clump)} vs ${d.name} with its pierce`);
+    assert.ok(clump > 2 * dps(d, 15), `clump vs ${d.name} on one zombie`);
+  }
+  // What one rocket does: its centre kills a round-10 Shopper, 1.5 m out a round-7 one, and the edge still stings.
+  assert.ok(at(0) >= zombieHealthForRound(10) && at(1.5) >= zombieHealthForRound(7));
+  assert.ok(at(rk.blast.radius) > 0 && at(rk.blast.radius + 0.01) === 0);
+  assert.ok(rk.blast.radius >= 2.5 && rk.blast.radius <= 5, 'a room-corner of a blast, not the whole room');
+  // A poor duellist: one rocket in the tube and a slow reload; on one zombie it is below the Price Gun.
+  for (const m of [5, 15]) assert.ok(dps(rk, m) < dps(priceGun, m), `one zombie at ${m} m: ${Math.round(dps(rk, m))} vs the Price Gun's ${Math.round(dps(priceGun, m))}`);
+  assert.ok(rk.magazineSize <= 2 && rk.reloadTime >= 2);
+  // Your own blast: a real bite at its centre, never a one-shot from full health.
+  assert.ok(rk.blast.self.share >= 0.25 && rk.blast.self.maxShare < 1);
+  // Still not the wonder weapon: Return to Sender kills more a second on one zombie from round 12 (its own test checks every gun).
+  assert.ok(killsPerSecond(rk, zombieHealthForRound(12), 5, style(rk)) < killsPerSecond(weapons.returnToSender, zombieHealthForRound(12), 5, style(weapons.returnToSender)));
+});
+
+test('Balloon Launcher: the gun that hits what you do not aim at. Its balloons home (a wide cone, a quick turn, a long reach) but fly slowly; on one zombie you aim at it is below the Price Gun, and its pop is small and never hurts you', () => {
+  const bl = weapons.balloonLauncher;
+  assert.equal(bl.clawOnly, true);
+  for (const d of Object.values(weapons)) if (d !== bl) assert.equal(d.flight?.homing, undefined, `${d.name} does not home`);
+  const h = bl.flight.homing;
+  assert.ok(h.coneDegrees >= 45 && h.coneDegrees <= 75, 'it finds a zombie well off to one side, never one behind it');
+  assert.ok(h.turnDegreesPerSecond >= 90, 'and turns hard enough to reach it');
+  assert.ok(h.range >= 10 && bl.flight.speed * bl.flight.lifeSeconds >= 25, 'across a room and down a corridor');
+  assert.ok(bl.flight.speed <= 12, 'slow: a balloon, not a bullet (a sprinting Mall Walker gets a head start)');
+  for (const m of [2, 5, 10, 20]) assert.ok(dps(bl, m) < dps(priceGun, m), `aimed at one zombie at ${m} m: ${Math.round(dps(bl, m))} vs the Price Gun's ${Math.round(dps(priceGun, m))}`);
+  assert.ok(bl.blast.radius <= 1.5 && !bl.blast.self, 'a small pop, harmless to you');
+  assert.ok(bl.magazineSize >= 6 && bl.fireInterval <= 0.4, 'a handful of balloons, quickly: fire and forget');
 });

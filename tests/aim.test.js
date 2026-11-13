@@ -103,13 +103,15 @@ test('Laser Pointer preserves its hip benefit and unchanged aimed accuracy throu
           triggerPressed: tick < 220 && !weapon.isBursting && weapon.cooldown < dt,
           triggerHeld: tick < 220,
         });
-        closeTo(fitted.aim.spreadDegrees, plain.aim.spreadDegrees * ratio);
+        // (A scoped gun's bolt knocks the eye off the eyepiece after each shot, weapons/scope.js: between hip and ADS the laser's two ratios blend, so it
+        // is compared only fully aimed or at the hip.)
+        if (!base.scope || plain.aim.amount === 0 || plain.aim.amount === 1) closeTo(fitted.aim.spreadDegrees, plain.aim.spreadDegrees * ratio);
         if (result === 'fire') {
           shots++;
           plain.aim.onShot(); fitted.aim.onShot();
         }
       }
-      assert.ok(shots > 2, `${base.id}: exercised repeated shots`);
+      assert.ok(shots > Math.min(2, base.magazineSize - 1), `${base.id}: exercised repeated shots`); // (the Bottle Rocket Bazooka holds one)
       closeTo(plain.aim.spreadDegrees, base.spread.base * (aiming ? base.spread.adsMultiplier : 1));
     }
   }

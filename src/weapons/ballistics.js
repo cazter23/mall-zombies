@@ -17,6 +17,10 @@
 //       rehitSeconds   the zombie it just hit is passed THROUGH for this long (no second hit, no bounce off it): the ball is sent on at the next zombie, which
 //                      may be standing right behind this one, and must not hit this one again on its way out
 //       seekRange      after a zombie, the ball is sent on at the nearest OTHER zombie this close and in view (0 = it only reflects)
+//       homing         optional { range, coneDegrees, turnDegreesPerSecond, retargetSeconds }: it STEERS in flight (the Balloon Launcher). Every
+//                      retargetSeconds (or when its target dies) it picks the nearest live zombie (a target with a `type`, not `noRewards`) within
+//                      `range`, inside `coneDegrees` of where it is flying and in view, and turns toward its chest, never faster than
+//                      turnDegreesPerSecond; the speed is kept. No target: it flies on as it is.
 //     damageOf({ part, distance }) -> damage of ONE hit on a zombie (the gun's own maths: weapons/gunStats.js hitDamage)
 //     onHit({ target, part, point, normal, killed, direction, ball })     a zombie was hit
 //     onBounce({ point, normal, target, ball })                          every bounce (target null = a surface)
@@ -39,6 +43,9 @@ const move = new THREE.Vector3();
 const toNext = new THREE.Vector3();
 const chest = new THREE.Vector3();
 const lineDir = new THREE.Vector3();
+const desired = new THREE.Vector3();
+const axis = new THREE.Vector3();
+const DEG_TO_RAD = Math.PI / 180;
 
 /** The middle of a target's body (where a ball is sent when it seeks the next zombie). */
 function bodyCentre(target, out) {
@@ -65,6 +72,51 @@ export function createBalls({ colliders, shootables, zombies = 'hit' }) {
     return best;
   }
 
+  /** Homing: the nearest live zombie within range, inside the cone ahead of the ball's flight, with nothing solid between. */
+  function homingTarget(ball, homing) {
+    const speed = ball.velocity.length();
+    if (speed < 1e-6) return null;
+    const cosCone = Math.cos(homing.coneDegrees * DEG_TO_RAD);
+    let best = null;
+    let bestDistance = homing.range;
+    for (const target of shootables) {
+      if (!target.isAlive || !target.type || target.noRewards || !bodyCentre(target, chest)) continue;
+      const distance = chest.distanceTo(ball.position);
+      if (distance >= bestDistance || distance < 1e-3) continue;
+      lineDir.copy(chest).sub(ball.position).divideScalar(distance);
+      if (lineDir.dot(ball.velocity) / speed < cosCone) continue; // (behind it, or too far off to one side)
+      if (castShot(ball.position, lineDir, distance, colliders, []).worldHit) continue;
+      best = target;
+      bestDistance = distance;
+    }
+    return best;
+  }
+
+  /** Turn the ball's flight toward its target's chest, at most turnDegreesPerSecond, keeping its speed. */
+  function steer(ball, dt) {
+    const homing = ball.projectile.homing;
+    ball.retarget -= dt;
+    if (!ball.homingTarget?.isAlive || ball.retarget <= 0) {
+      ball.homingTarget = homingTarget(ball, homing);
+      ball.retarget = homing.retargetSeconds;
+    }
+    const target = ball.homingTarget;
+    if (!target || !bodyCentre(target, chest)) return;
+    const speed = ball.velocity.length();
+    desired.copy(chest).sub(ball.position).normalize();
+    move.copy(ball.velocity).divideScalar(speed);
+    const angle = Math.acos(Math.max(-1, Math.min(1, move.dot(desired))));
+    const maxTurn = homing.turnDegreesPerSecond * DEG_TO_RAD * dt;
+    if (angle <= maxTurn) {
+      ball.velocity.copy(desired).multiplyScalar(speed);
+      return;
+    }
+    axis.crossVectors(move, desired);
+    if (axis.lengthSq() < 1e-12) axis.set(0, 1, 0); // (exactly behind: turn either way)
+    axis.normalize();
+    ball.velocity.copy(move).applyAxisAngle(axis, maxTurn).multiplyScalar(speed);
+  }
+
   function reflect(velocity, normal, restitution) {
     const along = velocity.dot(normal);
     if (along < 0) velocity.addScaledVector(normal, -2 * along);
@@ -81,6 +133,7 @@ export function createBalls({ colliders, shootables, zombies = 'hit' }) {
     ball.previous.copy(ball.position);
     ball.age += dt;
     ball.sinceHit += dt;
+    if (p.homing) steer(ball, dt);
     ball.velocity.y -= p.gravity * dt;
     const speed = ball.velocity.length();
     if (ball.age >= p.lifeSeconds || speed < p.minSpeed || ball.position.y < -20) { end(ball); return; }
@@ -164,6 +217,7 @@ export function createBalls({ colliders, shootables, zombies = 'hit' }) {
         velocity: direction.clone().normalize().multiplyScalar(projectile.speed),
         projectile, damageOf, weaponId, impact, onHit, onBounce, onEnd,
         bounces: 0, age: 0, sinceHit: Infinity, travelled: 0, lastTarget: null, hits: [],
+        homingTarget: null, retarget: 0, // (homing: the zombie it is steering for, and when to look again)
       };
       list.push(ball);
       return ball;

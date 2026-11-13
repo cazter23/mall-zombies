@@ -28,6 +28,8 @@ import { castShot } from './hitscan.js';
 import { createAim, applyConeSpread, pelletSpreadDegrees } from './aim.js';
 import { hitDamage, resolveGun, isReturnable } from './gunStats.js';
 import { findInCone, blowAway, createBlastPay } from './coneBlast.js';
+import { createScopeSway } from './scope.js';
+import { findInBlast, selfBlastDamage } from './blast.js';
 import { impacts } from '../config/impacts.js';
 
 const DEG_TO_RAD = Math.PI / 180;
@@ -50,6 +52,8 @@ export function createPlayerGun({
   aimAssist = null, // optional (weapons/aimAssist.js): controller aim help, applied before each shot
   balls = null, // optional (weapons/ballistics.js): the bouncing balls of a gun with a `projectile` (the Tennis Ball Launcher)
   onProjectileHit = null, // () a ball touched its first zombie (run accuracy: the throw was a shot, this makes it a hit)
+  rockets = null, // optional (weapons/ballistics.js, zombies 'bounce'): the rockets of a gun with `blast` (the Bottle Rocket Bazooka) in the air
+  onBlast = null, // ({ weaponId, position, radius, hits, selfDamage }) a rocket burst; selfDamage = what it does to you (createGame applies it)
 }) {
   const startDef = def;
   const origin = new THREE.Vector3();
@@ -121,6 +125,7 @@ export function createPlayerGun({
   // A gun with a cone (the Leaf Blower): one PULSE of wind instead of a ray. Everything in the cone is shoved back (and the close ones laid down),
   // takes a tickle of damage, and the leaves fly. Points: a zombie that keeps being blown pays the hit +10 only now and then (createBlastPay).
   const blastPay = new Map(); // gun id -> its pulse ledger
+  const scopeSway = createScopeSway(); // the scoped gun's drift (weapons/scope.js), applied in update()
   function fireCone(slot) {
     const { def: d, aim, weapon } = slot;
     const cone = d.cone;
@@ -213,7 +218,83 @@ export function createPlayerGun({
     return shot;
   }
 
+  // A gun with a blast (the Bottle Rocket Bazooka): the trigger launches a ROCKET (weapons/ballistics.js, the `rockets` instance, which bounces off zombies
+  // without hurting them) that bursts on the first thing it touches, or in the air at the end of its life. The burst (weapons/blast.js) hits every zombie
+  // in its radius and in sight of it (+10 each, a kill pays as usual) and reports what it does to you (onBlast: createGame takes it off your health).
+  // The launch is the shot; the burst's first zombie makes it a hit for the run's accuracy (onProjectileHit).
+  function fireRocket(slot) {
+    const { def: d, aim, weapon } = slot;
+    const r = d.flight;
+    player.getAim(origin, direction);
+    const flight = direction.clone();
+    aim.applySpread(flight);
+    aim.onShot();
+    kick(d, aim);
+    const start = origin.clone().addScaledVector(flight, r.startOffset);
+    start.y += r.startDrop;
+    const ahead = start.clone().addScaledVector(flight, 6);
+    // (blast: true tells Build-A-Blaster's shot Hearts to wait for the burst, 'gunBlast', which carries magazineLeft and the hits)
+    const shot = { origin: start.clone(), end: ahead, endNormal: flight.clone().negate(), point: ahead.clone(), normal: flight.clone().negate(),
+      distance: 6, target: null, part: null, hits: [], worldHit: null, projectile: true, blast: true, weaponId: d.id, magazineLeft: weapon.magazine };
+    const fired = origin.clone();
+    const magazineLeft = weapon.magazine;
+    // The launch point is in front of the eye, further than you are wide: up against a wall (or a zombie) it would already be on
+    // the far side. Anything between the eye and the launch point (plus the rocket's radius) bursts it right there instead.
+    const toStart = start.clone().sub(origin);
+    const reach = toStart.length();
+    toStart.divideScalar(reach);
+    const blocker = castShot(origin, toStart, reach + r.radius, colliders, shootables);
+    if (blocker.distance < reach + r.radius) {
+      const centre = origin.clone().addScaledVector(toStart, Math.max(0, blocker.distance - r.radius));
+      if (onShot) onShot(shot);
+      explode(d, centre, fired, magazineLeft);
+      return shot;
+    }
+    rockets.launch({
+      weaponId: d.id,
+      position: start,
+      direction: flight,
+      projectile: { ...r, restitution: 0, maxBounces: 1, minSpeed: 0, rehitSeconds: 0, seekRange: 0 }, // (one contact of any kind and it is over)
+      onEnd: ({ ball }) => explode(d, ball.position.clone(), fired, magazineLeft), // (fx/rocketView.js draws it in the air, with its spark trail)
+    });
+    if (onShot) onShot(shot);
+    return shot;
+  }
+
+  // A rocket burst at `centre`: every zombie caught takes the blast damage (gunStats.hitDamage with blastDistance), then what it does to you.
+  function explode(d, centre, firedFrom, magazineLeft) {
+    const found = findInBlast(centre, d.blast, colliders, shootables); // (snapshot first: a kill listener can change the list)
+    const hits = [];
+    let anyKilled = false;
+    for (const { target, distance } of found) {
+      if (!target.isAlive) continue; // (killed by an earlier kill's listener: no hits on corpses)
+      const away = new THREE.Vector3(target.position.x - centre.x, 0, target.position.z - centre.z);
+      if (away.lengthSq() < 1e-6) away.set(0, 0, 1);
+      away.normalize();
+      const damage = hitDamage(d, { part: 'body', blastDistance: distance }, 0, stats);
+      const point = target.position.clone().setY(target.position.y + 1);
+      const { killed } = target.takeHit({ damage, part: 'body', point, direction: away, impact: d.impact, weaponId: d.id, distance: firedFrom.distanceTo(centre) });
+      anyKilled ||= killed;
+      hits.push({ target, part: 'body', killed, distance });
+      effects.splat(point, away, target.splatColors, feel.effects.splatCount, { flesh: true, speedScale: 1.4, direction: away });
+      if (onHit) onHit({ target, killed, headshot: false, melee: false, weaponId: d.id });
+    }
+    effects.confetti(centre, new THREE.Vector3(0, 1, 0), d.blast.look);
+    effects.flash(centre, d.blast.flash.color, { size: d.blast.flash.size, seconds: d.blast.flash.seconds });
+    if (sound) sound.play(d.sounds.burst);
+    if (hits.length) {
+      onProjectileHit?.();
+      hud.showHitMarker({ headshot: false, killed: anyKilled });
+      if (sound) { sound.play('hitBody'); if (anyKilled) sound.play('killConfirm'); }
+    }
+    const eye = new THREE.Vector3();
+    player.getAim(eye, new THREE.Vector3());
+    const selfDamage = selfBlastDamage({ eye, feetY: player.position.y }, centre, d.blast, colliders, stats.maxHealth, stats.ownBlastDamage ?? 1);
+    onBlast?.({ weaponId: d.id, position: centre.clone(), radius: d.blast.radius, hits, selfDamage, magazineLeft });
+  }
+
   function fire(slot) {
+    if (slot.def.blast && rockets) return fireRocket(slot);
     if (slot.def.projectile && balls) return fireProjectile(slot);
     if (slot.def.cone) return fireCone(slot);
     const { def: d, aim, weapon } = slot;
@@ -548,6 +629,14 @@ export function createPlayerGun({
       const slot = slots[current];
       const busy = blocked || switching !== null;
       slot.aim.update(dt, !busy); // melee/vaulting also lower ADS; no snap during a committed action
+      // A scoped gun's view drifts in a slow figure eight while aimed (weapons/scope.js); crouched or prone it is steadier.
+      // Only the change is added, so the view gets back exactly what the sway took when the scope comes down.
+      const sway = scopeSway.update(dt, slot.def.scope, slot.aim.amount, player.stance === 'crouch' || player.stance === 'prone');
+      if (sway.yaw !== 0 || sway.pitch !== 0) {
+        player.yaw += sway.yaw;
+        player.pitch += sway.pitch;
+        player.clampPitch?.();
+      }
       if (aimAssist) {
         if (busy) aimAssist.reset();
         else aimAssist.update(dt, slot.aim);
@@ -644,6 +733,7 @@ export function createPlayerGun({
       lastReloadProgress = null;
       this.lastShot = null;
       blastPay.clear(); // (a stream's pay ledgers start over with the run)
+      scopeSway.reset(); // (the player's view is reset with the run too)
     },
   };
 }

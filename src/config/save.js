@@ -7,9 +7,10 @@
 //   reasons     why the pause menu's Save & Quit is greyed out (the button shows the text).
 // =============================================================================
 export const save = {
-  version: 10, // 10: the integration of four branches that each bumped to 9 on their own (one number above all of them):
+  version: 10, // 10: the integration of three branches that each bumped to 9 on their own (one number above all of them):
   //             trimmed 10-type incentives + jackpot tier (powerUps saves lastWasJackpot and jackpotRotation); Flash Sales
-  //             save pending teasers and Doorbuster targets, pricing saves per-item discounts;
+  //             save pending teasers and Doorbuster targets, pricing saves per-item discounts; stats gained ownBlastDamage
+  //             (the Hi-Vis Vest's blast-proofing: an older save restored into it lost the vest's factor);
   //             8: hazards phases 2-4 merged into main (map.features gained the Fryer Blast, Fire Sprinklers and PA System Lure
   //             switches); 7: Kiosk Kevin's five carts (the kiosk feature saves where he is), Lost and Found and the Return
   //             quest (map.features gained lost property and NO REFUNDS signs, and a 'returnQuest' save step);
