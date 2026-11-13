@@ -122,12 +122,12 @@ src/
                         { type: 'fall' } or { type: 'hazard', id } (a hazard that hurts the player needs a hazards entry).
     attachmentVisuals.js Per-weapon attachment sizing, near-side rail placement, short-barrel spans and held reload copies.
     retailUnease.js     Rare atrium display changes and localized back-room sound timings/ranges; no gameplay tuning.
-    kiosk.js            Kiosk Kevin (docs/kiosk-kevin-plan.md; all eight phases built): his five sites (x, z, faces, floorY, the PA's `where`; the first is
-                        where every run starts), the cart's size, spawnClearance, the PA lines (`opened` and `stock` are 8-line pools; `moved` lines take turns by round); phase 8's looks:
+    kiosk.js            Kiosk Kevin (docs/kiosk-kevin-plan.md; all eight phases built): `openingRound` (2), `stockEveryRounds` (3), `moveEveryRounds` (3), his five sites (x, z, faces, floorY, the PA's `where`; the first is
+                        where every run starts), the cart's size, spawnClearance, the PA lines (`opened` and `stock` are 8-line pools; `moved` lines take turns by move, PA speaks only on open or move); phase 8's looks:
                         `hawk` (his shouts: radius 8 m, every 14 s at most, the lines, pitchChance 0.35 and per-product `pitches`, duck and back lists), `vendor` (Kevin's colours, badge, duck and
                         peek timing), `lid` (the shutter's slats and its notices, in turn), `spectacle` (fx/kioskSpectacle.js: the cola geyser, glitter,
                         horn rings, bubble pops, Sentry debris, the comic words) and each product's counter colours; the cart's three `slots` (Lethal: Soda Bomb /
-                        Sparkler Cake / Sentry, Bubble Wrap, Tactical: Air Horn / Glitter Bomb; each slot rotates round by round); the equipment
+                        Sparkler Cake / Sentry, Bubble Wrap, Tactical: Air Horn / Glitter Bomb; each slot advances once per 3-round block from `openingRound`: rounds 2-4, 5-7, etc.); the equipment
                         power curve (power: baseHealth 800, exponent 0.37), the throw (blockSeconds 0.4, lob, start offset), the two pockets, and the
                         products: the Soda Bomb (Lethal, 3 charges, 1.8 s fuse, 4 m blast, 850 x power at the centre, 0.3 of that at the edge, a boss's
                         share 6% of its max health), the Sparkler Cake (Lethal, 2 charges; lands and sprays 4 s, a pulse every 0.5 s lights zombies within
@@ -135,7 +135,7 @@ src/
                         touch, confuses up to 8 zombies within 4 m for 6 s, their swings 75 x power), the SPIN-O-MATIC Sentry (Lethal, 1; noPick;
                         turret: 30 s, a 58 x power body shot every 0.2 s at the nearest zombie in sight within 15 m, muzzle 0.95 m up, weaponId
                         'sentry'), each with its projectile, sounds and look (look.model: bottle / cake / card / sentry). productOf(id),
-                        stockFor(round) (the three on sale), pickFor(round) (Kevin's Pick: the product on sale that has waited longest, never noPick).
+                        stockFor(round) (advances one step per `stockEveryRounds` block from `openingRound`), pickFor(round) (Kevin's Pick: the product on sale that has waited longest across blocks, never noPick, unchanged within a block).
                         bubbleWrap: its ticket and the armour (layerStrength 30 a layer, maxLayers 3: player/stats.js starts the two stats from them).
                         Prices: economy.kiosk (phase 7 set them from `npm run kiosk`).
     clawMachine.js      GRAB-A-GUN, the claw machine: the prize weights and capsule colours, the sweep (2.4 s, 0.2 s quicker a grab, 1.4 s
@@ -648,10 +648,10 @@ src/
                         the chute flap, an attract screen, sounds that fade with distance (jingle, a tick into each lane, motor, grab,
                         fanfare, Sunny's slide whistle) and a hum: an emitter it adds to map.ambience that follows the live machine.
       kiosk.js          Kiosk Kevin's cart: three priced buy spots on the LIVE cart (getter positions; each slot's product read live from
-                        stockFor(round): each slot rotates), round gating, Kevin's Pick (pickFor), hiding and PA (the round's stock).
-                        Five sites (config/kiosk.js sites), one live; every run starts at the first. At each 'roundStart' after the opening
-                        round he moves to a random other site whose zone is open (none: he stays), never mid-purchase (`pending` waits for
-                        the hold to end). Announces 'kioskStock' (one PA line a round, picking `opened` and `stock` via `pickPaLine` with `lineRandom = paRandom` while `moved` rotates by round) and
+                        stockFor(round): advances once per `stockEveryRounds` block), round gating, Kevin's Pick (pickFor), hiding and PA (block's stock).
+                        Five sites (config/kiosk.js sites), one live; every run starts at the first. Every `moveEveryRounds` rounds after the opening
+                        round (`openingRound + 3, + 6...`) at 'roundStart' he moves to a random other site whose zone is open (none: he stays), never mid-purchase (`pending` waits for
+                        the hold to end). Announces 'kioskStock' only on first open or a move (picking `opened` and `stock` via `pickPaLine` with `lineRandom = paRandom` while `moved` rotates by move; silent when he stays put) and
                         'kioskMoved'. moveNow(siteId) (debug), serialize/restore (his site and a pending move: Save & Quit).
                         His shouts (phase 8, kiosk.hawk): 'kioskHawk' { kind 'lines' | 'duck' | 'back', line } when you're near his open cart
                         (rate-limited), as he ducks and when he's back up; `lines` shouts mix general lines with `pitches` (`pitchChance`,

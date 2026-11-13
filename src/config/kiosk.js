@@ -10,8 +10,8 @@
 export const kiosk = {
   // WHERE KEVIN IS (docs/kiosk-kevin-plan.md, "Where Kevin is"). Every site has a cart in the map all the time (maps/mall/kioskCart.js);
   // only one is live, the others say "BACK IN 5 MIN" (no collider is added or moved at runtime). Every run starts at the FIRST site.
-  // At each 'roundStart' after the opening round he moves to a random OTHER site whose zone is open (none open: he stays put),
-  // never mid-purchase (the move waits until the hold is let go) and never into a locked zone. game/features/kiosk.js.
+  // Every `moveEveryRounds` rounds after the opening round (`openingRound + 3, + 6...`) at 'roundStart' he moves to a random OTHER site
+  // whose zone is open (none open: he stays put), never mid-purchase (the move waits until the hold is let go) and never into a locked zone. game/features/kiosk.js.
   //   x, z     the middle of the cart's footprint;  faces  the way its front (the products and the signs) looks: '+z', '-z', '+x', '-x'
   //   floorY   the floor it stands on;  where  the PA's name for the place
   // Each site passed the checks in tests/kiosk.test.js: one collider, a vaultable counter (<= 1.1 m) or >= 2.1 m tall, a clear stand
@@ -32,9 +32,9 @@ export const kiosk = {
   // A cart (maps/mall/kioskCart.js): a low counter, vaultable on its short side, with three slots along its front.
   cart: { width: 2.2, depth: 0.75, height: 1.05, slotSpacing: 0.72, signWidth: 1.9, productY: 0.83 },
   spawnClearance: 5, // m: no zombie spawn this close to a site's stand point (checked by the tests)
-  // The mall PA, once per round when Kevin opens for the round ({where} = the site's `where`, {stock} = the round's three products,
-  // {pick} = Kevin's Pick). Entry 0 is the original line. `opened` plays once a run (his first opening), and one `stock`
-  // line follows it, or a `moved` line, in ONE banner: keep `opened` short and `stock` near the original's length.
+  // The mall PA, played when Kevin first opens in a run (`opened` + `stock`) and when he moves to another site (`moved` + `stock`),
+  // in ONE banner ({where} = the site's `where`, {stock} = the block's three products, {pick} = Kevin's Pick). Entry 0 is the original line.
+  // Rounds where he stays put keep the PA silent; keep `opened` short and `stock` near the original's length.
   pa: {
     kicker: "Kevin's cart",
     opened: [
@@ -47,7 +47,7 @@ export const kiosk = {
       "Kevin's cart is open in {where}. Nod twice for a receipt.",
       "Kevin's cart is open in {where}. Business as usual.",
     ],
-    // When he has moved: these take turns by round (round 3 says the first), so the PA never needs Math.random.
+    // When he has moved: these take turns by move (the first move says the first), so the PA never needs Math.random.
     moved: [
       "Kevin's cart is now in {where}. He's asked us to say it's a limited time only.",
       "Kevin's cart is now in {where}. Kevin would like everyone to know he was not chased there.",
@@ -66,6 +66,8 @@ export const kiosk = {
     ],
   },
   openingRound: 2,
+  stockEveryRounds: 3,
+  moveEveryRounds: 3,
   duckRadius: 3,
 
   // KEVIN HIMSELF (phase 8: presentation only; nothing below changes a price, a damage or a rule).
@@ -211,11 +213,12 @@ export const kiosk = {
     // Comic words over the action (role toyBrand); `seconds` on screen, `size` m wide.
     words: { seconds: 0.9, size: 1.1, sodaBomb: 'FSSSHH!', airHorn: 'HOOONK!', glitterBomb: 'CONGRATS!', bubbleWrap: 'POP!', sentry: 'BZZT!' },
   },
-  // The cart's three slots, left to right. A slot with several products ROTATES through them round by round from the opening
-  // round (the user's choice, 10 November 2026: no random stock): round 2 sells the first of each, round 3 the second, and so on.
-  // Bubble Wrap is always there. Kevin's Pick is the product on the cart that has waited longest to be the Pick (ties: left to
-  // right), never one marked noPick (the Sentry): stockFor / pickFor below. (Moving the Pick along the slots instead would lock
-  // it onto the Soda Bomb: the Lethal slot's three-round cycle and the Pick's would line up.)
+  // The cart's three slots, left to right. A slot with several products ROTATES through them one step per `stockEveryRounds` block from
+  // the opening round (the user's choice, 10 November 2026: no random stock; calmer 3-round cadence): rounds 2-4 sell the first of each,
+  // rounds 5-7 the second, and so on. Bubble Wrap is always there. Kevin's Pick is the product on the cart that has waited longest
+  // to be the Pick across blocks (ties: left to right), staying the same for the whole block and never picking one marked noPick
+  // (the Sentry): stockFor / pickFor below. (Moving the Pick along the slots instead would lock it onto the Soda Bomb: the Lethal
+  // slot's three-block cycle and the Pick's would line up.)
   slots: [
     ['sodaBomb', 'sparklerCake', 'sentry'], // Lethal
     ['bubbleWrap'],
@@ -389,24 +392,34 @@ export function productOf(id) {
   return kiosk.products[id] ?? null;
 }
 
-/** The cart's three products in `round` (each slot's choices alternate from the opening round; before it, the first of each). */
-export function stockFor(round) {
-  const n = Math.max(0, round - kiosk.openingRound);
-  return kiosk.slots.map((choices) => choices[n % choices.length]);
+/** Block index from `openingRound` for `round` (each block lasts `stockEveryRounds` rounds). */
+function stockBlock(round) {
+  const every = Math.max(1, kiosk.stockEveryRounds);
+  return Math.floor(Math.max(0, round - kiosk.openingRound) / every);
 }
 
-const pickCache = new Map(); // (pickFor replays the rounds from the opening one; the answer for a round never changes)
+/** The cart's three products in `round` (each slot advances once per `stockEveryRounds` block from the opening round; before it, the first of each). */
+export function stockFor(round) {
+  const block = stockBlock(round);
+  return kiosk.slots.map((choices) => choices[block % choices.length]);
+}
+
+const pickCache = new Map(); // (pickFor replays the blocks from the opening one; the answer for a block never changes)
 /** Kevin's Pick in `round`: the product on sale that has waited longest to be the Pick (never a noPick one), or null before he opens. */
 export function pickFor(round) {
   if (round < kiosk.openingRound) return null;
-  if (pickCache.has(round)) return pickCache.get(round);
-  const last = new Map(); // product -> the last round it was the Pick
+  const every = Math.max(1, kiosk.stockEveryRounds);
+  const block = stockBlock(round);
+  const key = `${kiosk.openingRound}:${every}:${block}`;
+  if (pickCache.has(key)) return pickCache.get(key);
+  const last = new Map(); // product -> the last block it was the Pick
   let pick = null;
-  for (let r = kiosk.openingRound; r <= round; r++) {
+  for (let b = 0; b <= block; b++) {
+    const r = kiosk.openingRound + b * every;
     const options = stockFor(r).filter((id) => !productOf(id)?.noPick);
     pick = options.reduce((best, id) => ((last.get(id) ?? -1) < (last.get(best) ?? -1) ? id : best), options[0] ?? null);
-    last.set(pick, r);
+    last.set(pick, b);
   }
-  pickCache.set(round, pick);
+  pickCache.set(key, pick);
   return pick;
 }
