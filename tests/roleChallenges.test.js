@@ -109,6 +109,13 @@ const CASES = {
     earn: t => kill(t, 'balloonLauncher', { zombie: shopper({ type: { id: 'shoplifter' } }) }),
     near: t => { kill(t, 'balloonLauncher', { zombie: shopper({ type: { id: 'mallWalker' } }) }); kill(t, 'bottleRocket', { zombie: shopper({ type: { id: 'shoplifter' } }) }); },
   },
+  bogo: {
+    earn: t => kill(t, 'bogo', { firstWound: { weaponId: 'bogo', seconds: 1 } }),
+    near: t => {
+      kill(t, 'bogo', { firstWound: { weaponId: 'bogo', seconds: 1.02 } }); // a moment too slow
+      kill(t, 'bogo', { firstWound: { weaponId: 'priceGun', seconds: 0.1 } }); // another gun drew first blood
+    },
+  },
 };
 
 test('every gun has exactly one role challenge, each with a counter and a sentence built from its own data', () => {

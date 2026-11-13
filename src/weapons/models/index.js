@@ -12,6 +12,11 @@
 //                     loaded: the magazine holds a round, false once the last is fired)
 //   leftHandVisible   setter: hide the support hand (the box cutter arm replaces it)
 //   mounts            where upgrade parts go: barrel / top / side / grip / magazine / sticker (upgradeParts.js)
+// Optional, for a model of more than one gun (the akimbo BOGO, models/bogo.js):
+//   onFire(flash)            a shot: the model picks the gun it comes from (muzzle may be a getter) and moves the flash there
+//   createUpgradeVisuals()   its own attachment parts (instead of one upgradeParts.js set on root)
+//   skinTargets              [{ root, mounts }]: where a skin's pattern and badge print (instead of root + mounts)
+// animate's state also carries aimAmount (0 hip .. 1 right mouse held).
 // A display builder returns just the gun (no hands), for the wall-buy display.
 // =============================================================================
 
@@ -30,6 +35,7 @@ import { buildReturnToSenderModel, buildReturnToSenderDisplay } from './returnTo
 import { buildStargazerModel, buildStargazerDisplay } from './stargazer.js';
 import { buildBottleRocketModel, buildBottleRocketDisplay } from './bottleRocket.js';
 import { buildBalloonLauncherModel, buildBalloonLauncherDisplay } from './balloonLauncher.js';
+import { buildBogoModel, buildBogoDisplay } from './bogo.js';
 import { resolveGunColors } from '../skinPalette.js';
 import { applySkinPattern } from './skinPattern.js';
 import { applySkinTreatment } from './skinTreatments.js';
@@ -48,6 +54,7 @@ const builders = {
   stargazer: { model: buildStargazerModel, display: buildStargazerDisplay },
   bottleRocket: { model: buildBottleRocketModel, display: buildBottleRocketDisplay },
   balloonLauncher: { model: buildBalloonLauncherModel, display: buildBalloonLauncherDisplay },
+  bogo: { model: buildBogoModel, display: buildBogoDisplay },
   stapleGun: { model: buildStapleGunModel, display: buildStapleGunDisplay },
   priceGun: { model: buildPriceGunModel, display: buildPriceGunDisplay },
   nailGun: { model: buildNailGunModel, display: buildNailGunDisplay },
@@ -63,9 +70,10 @@ function builderFor(def) {
 // models/skinTreatments.js, models/skinBadge.js); other skins and the default are untouched. A treatment runs from the model's own animate().
 export function buildWeaponModel(def, skinId) {
   const model = builderFor(def).model(def, skinId);
-  applySkinPattern(model.root, def, skinId, model.mounts);
+  const targets = model.skinTargets ?? [{ root: model.root, mounts: model.mounts }];
+  for (const t of targets) applySkinPattern(t.root, def, skinId, t.mounts);
   const treatment = applySkinTreatment(model.root, def, skinId);
-  applySkinBadge(model.root, def, skinId, model.mounts);
+  applySkinBadge(targets[0].root, def, skinId, targets[0].mounts); // (one badge: a pair wears it on the right gun)
   if (treatment) {
     const animate = model.animate;
     model.animate = state => { animate?.call(model, state); treatment.animate(state?.time ?? 0); };
@@ -78,9 +86,10 @@ export function buildWeaponDisplay(def, skinId) {
   // colour set only for the locker and YOUR conveyor gun; world displays omit it.
   const painted = skinId ? { ...def, viewmodel: { ...def.viewmodel, ...resolveGunColors(def, skinId) } } : def;
   const display = builderFor(def).display(painted);
-  if (gunSkin(def.id, skinId)?.pattern) applySkinPattern(display, def, skinId, mountsOf(def));
+  const targets = display.userData.skinTargets ?? [{ root: display, mounts: mountsOf(def) }]; // (a pair: each gun)
+  if (gunSkin(def.id, skinId)?.pattern) for (const t of targets) applySkinPattern(t.root, def, skinId, t.mounts);
   applySkinTreatment(display, def, skinId); // (display.userData.skinTreatment: the locker preview animates it; elsewhere it holds still)
-  if (gunSkin(def.id, skinId)?.badge) applySkinBadge(display, def, skinId, mountsOf(def));
+  if (gunSkin(def.id, skinId)?.badge) applySkinBadge(targets[0].root, def, skinId, targets[0].mounts);
   return display;
 }
 

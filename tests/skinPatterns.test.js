@@ -99,8 +99,9 @@ for (const { gunId, skin } of patterned) {
   test(`${skin.name} (${gunId}): top and right faces print above, left faces below, and the sticker mount sits on plain paint`, () => {
     const model = withCanvas(() => buildWeaponModel(def, skin.id));
     const counts = { top: 0, right: 0, left: 0 };
-    for (const mesh of meshes(model.root).filter(mesh => isPrint(mesh.material))) {
-      for (const tri of triangles(model.root, mesh)) {
+    const gun = model.skinTargets?.[0].root ?? model.root; // (a pair, BOGO: each gun is printed in its own frame; the left one is its mirror)
+    for (const mesh of meshes(gun).filter(mesh => isPrint(mesh.material))) {
+      for (const tri of triangles(gun, mesh)) {
         if (tri.side === null) {
           for (const uv of tri.uvs) assert.deepEqual(uv.map(x => Math.fround(x)), blankUv.map(x => Math.fround(x)), `${mesh.name}: an unprinted face samples the blank strip`);
           continue;

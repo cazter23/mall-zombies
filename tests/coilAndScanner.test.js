@@ -15,14 +15,14 @@ import { buildWeaponModel, buildWeaponDisplay } from '../src/weapons/models/inde
 const { coilNailer, barcodeScanner } = weapons;
 const dt = 1 / 60;
 
-test('Heavy Coil Nailer fires 10 nails/s from a 64-nail drum and reloads in 3.1s from its 256 reserve', () => {
+test('Heavy Coil Nailer fires 8 nails/s from a 64-nail drum and reloads in 3.1s from its 256 reserve', () => {
   const w = new Weapon(coilNailer, createPlayerStats());
   let shots = 0;
   for (let tick = 0; tick < 60; tick++) {
     if (w.update(dt, { triggerPressed: tick === 0, triggerHeld: true }) === 'fire') shots++;
   }
-  assert.equal(shots, 10, '10 shots in the first second');
-  for (let tick = 0; tick < 400 && w.magazine > 0; tick++) {
+  assert.equal(shots, 8, '8 shots in the first second (fireInterval 0.125)');
+  for (let tick = 0; tick < 600 && w.magazine > 0; tick++) { // (64 nails at 8/s: 8 s)
     if (w.update(dt, { triggerHeld: true }) === 'fire') shots++;
   }
   assert.equal(shots, 64);

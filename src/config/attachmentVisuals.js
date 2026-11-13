@@ -11,6 +11,7 @@ export const attachmentVisuals = {
     stargazer: { laserX: -0.04, span: .2, optic: 1.2, laser: 1.3, pack: 1.35 },
     bottleRocket: { laserX: -0.06, span: .2, optic: 1.35, laser: 1.4, pack: 1.5 },
     balloonLauncher: { laserX: -0.045, span: .12, optic: 1.25, laser: 1.3, pack: 1.35 },
+    bogo: { laserX: -0.03, span: .05, optic: 1.15, laser: 1.2, pack: 1.25 }, // (per gun: both guns of the pair wear them)
     leafBlower: { laserX: -0.05, span: .2, optic: 1.3, laser: 1.3, pack: 1.4 },
     confettiCannon: { laserX: -0.094, span: .13, optic: 1.4, laser: 1.45, pack: 1.45 },
     rivetRifle: { laserX: -0.045, span: .16, optic: 1.45, laser: 1.4, pack: 1.45, held: 'heldRivetMagazine' },
