@@ -90,9 +90,15 @@ export function createAnnouncer({ events, hud, sound, state, random = paRandom }
       ]);
     },
 
-    // A boss's phase lines, power-ups and employee incentives. Registered after Closing Time.
+    // A boss's spawn and phase lines, power-ups and employee incentives. Registered after Closing Time.
     bossesAndIncentives() {
       register([
+        ['bossSpawn', ({ zombie, encore }) => {
+          const banner = encore && zombie.type.encoreBanner
+            ? pickPa(zombie.type.encoreBanner, random)
+            : zombie.type.introBanner;
+          return { ...banner, priority: bossTiming.introPriority };
+        }, ({ zombie }) => zombie.type.introSound],
         ['bossPhase', ({ zombie, phase }) => {
           const pa = zombie.type.phases?.[phase];
           return pa ? { ...pa, priority: bossTiming.introPriority } : null;

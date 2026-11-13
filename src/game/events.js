@@ -97,7 +97,7 @@
 //                                                        itemId null = the debug shortcut changed the record)
 //   'guideEntry'  { entryId, stage, pa? }                a Survival Guide page appeared (stage 1) or gained a paragraph (2 = field
 //                                                        notes, 3 = the tip; these carry a PA line). game/guide.js
-//   'bossSpawn'   { zombie, round }                      a scheduled or debug-summoned boss entered the wave
+//   'bossSpawn'   { zombie, round, encore }             a scheduled or debug-summoned boss entered the wave
 //   'bossPhase'   { zombie, phase, round }               an encounter mechanic began (Janitor: wetFloor)
 //   'bossDefeated' { zombie, round }                     an active boss died through the regular kill path
 //   'bossVanished' { zombie, round }                     an active boss disappeared without a kill or an explicit round discard

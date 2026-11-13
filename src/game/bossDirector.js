@@ -54,6 +54,7 @@ export function createBossDirector({ events, rounds, zombies, scene, colliders, 
     const zombie = marker ? zombies.spawn(id, null, { spawnPoints: map.spawnPoints.filter(({ name }) => name === marker) }) : zombies.spawn(id);
     if (!zombie) return null;
     active = zombie;
+    const encore = bossTypes[id].encore !== false && met.has(id);
     if (bossTypes[id].encore !== false) {
       met.add(id);
       lastBoss = id;
@@ -63,7 +64,7 @@ export function createBossDirector({ events, rounds, zombies, scene, colliders, 
       zombie, scene, colliders, player, powerUps, zombies, rounds, map, events, interactions, effects, sound, state,
       onPhase: (phase) => events.emit('bossPhase', { zombie, phase, round: rounds.round }),
     });
-    events.emit('bossSpawn', { zombie, round: rounds.round });
+    events.emit('bossSpawn', { zombie, round: rounds.round, encore });
     return zombie;
   }
 

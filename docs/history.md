@@ -1,5 +1,13 @@
 # Sunset Galleria: build history ("Current state")
 
+## 13 November 2026 - PA pools round two (`claude/hydrogen-pa-pools-2`)
+
+Converted three more high-frequency single-line PA moments into deadpan mall-PA pools using `pickPaLine` and cosmetic `paRandom` from `src/game/announcer.js` (never `Math.random` or gameplay randomness), preserving original lines at index `0`:
+- **Kiosk Kevin's PA (`src/config/kiosk.js`, `src/game/features/kiosk.js`):** expanded `pa.opened` (1 → 8 lines, each preserving `open in {where}`) and `pa.stock` (1 → 8 lines, each preserving `{stock}` and `{pick}`). `buildKiosk` now takes `lineRandom = paRandom` and picks both with `pickPaLine`, while `pa.moved` keeps its deterministic round rotation.
+- **Boss encores (`src/config/bosses.js`, `src/game/bossDirector.js`, `src/game/announcer.js`, `src/game/createGame.js`, `src/game/events.js`):** added 4-line `encoreBanner` pools acknowledging a boss's return to the four encore-capable bosses (`influencer`, `guard`, `manager`, `janitor`; `lastCustomer` keeps `encore: false` with no encore banner). `bossDirector.js` checks `met.has(id)` before recording `met.add(id)` and emits `encore` on `'bossSpawn'`, and `announcer.bossesAndIncentives()` handles `'bossSpawn'` so encores pick from `encoreBanner` via `random` while first fights keep `introBanner` and `introSound` unchanged.
+- **Platinum warranty claim PA (`src/config/upgrades.js`, `src/game/warranty.js`):** chosen as the third once-a-round PA moment because Platinum claims fire automatically once per round a Platinum weapon empties and already route through `announcer.js` (`'warrantyClaim'`), keeping high repeat visibility in late-round combat. Expanded `upgrades.claimPa` from `{ kicker, text }` into `{ kicker, lines }` (8 Customer Service lines keeping `Warranty claim approved` and `{gun}`), picked via `pickPaLine(upgrades.claimPa.lines, lineRandom)` with `lineRandom = paRandom`.
+- **Tests & Docs:** updated `tests/kiosk.test.js`, extended `tests/announcer.test.js` and `tests/bossEncores.test.js` (pool invariants, injected-random coverage, first-fight vs encore banners, reset behavior, and default `paRandom` never calling `Math.random` while leaving all existing tests passing), and updated `docs/folder-structure.md` and `docs/tests.md`.
+
 ## 12 November 2026 - Review of the four Hydrogen text branches (text pools, PA pools, Kevin's pitches, voice guide)
 
 Merged through `claude/hydrogen-review`. The lines, voices and structure held up; fixed in review:

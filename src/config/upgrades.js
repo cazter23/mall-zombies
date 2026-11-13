@@ -61,8 +61,20 @@ export const upgrades = {
       lines: [{ effect: 'damage', text: '{Size} more damage' }, { text: 'A much wider swing' }, { text: 'Hits two zombies at once' }] },
   ],
 
-  // What the warranty says (PA lines; {gun} is the gun's name).
-  claimPa: { kicker: 'Customer Service', text: 'Warranty claim approved for your {gun}. Ammunition has been replaced. Terms apply.' },
+  // What the warranty says (PA lines; {gun} is the gun's name, entry 0 is the original line).
+  claimPa: {
+    kicker: 'Customer Service',
+    lines: [
+      'Warranty claim approved for your {gun}. Ammunition has been replaced. Terms apply.',
+      'Warranty claim approved for your {gun}. Fresh ammunition has been issued at no retail charge.',
+      'Warranty claim approved for your {gun}. Replacement rounds are billed to store shrinkage.',
+      'Warranty claim approved for your {gun}. Please retain your Platinum receipt for future depletion.',
+      'Warranty claim approved for your {gun}. Magazine restocked under normal wear and mayhem.',
+      'Warranty claim approved for your {gun}. Customer Service appreciates your continued survival.',
+      'Warranty claim approved for your {gun}. Extended coverage does not cover operator panic.',
+      'Warranty claim approved for your {gun}. Ammunition replenished pending audit review.',
+    ],
+  },
 
   // STORE ATTACHMENTS: one per slot. First purchase unlocks free fitting at that store for the run;
   // fitting another attachment in the same slot replaces it. `fits` is worked out per gun (an
