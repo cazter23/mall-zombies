@@ -40,7 +40,7 @@ export function createMascotCostumes({ events, scene, zombies, player, colliders
       if (Math.abs(other.position.y - zombie.position.y) > blast.floorTolerance) continue;
       if (Math.hypot(other.position.x - zombie.position.x, other.position.z - zombie.position.z) > blast.zombieRadius) continue;
       if (!clearLine(head, target.copy(other.position).setY(other.position.y + blast.chestHeight))) continue;
-      // The Security Sweep's stagger: knocked away from the blast, no attacks for a moment, no damage.
+      // The Loss Prevention shove's stagger: knocked away from the blast, no attacks for a moment, no damage.
       if (other.staggerAway(zombie.position, { seconds: blast.stunSeconds, knockback: blast.knockback, drag: blast.drag })) flung += 1;
     }
 
