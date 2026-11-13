@@ -33,10 +33,19 @@ export const kiosk = {
   cart: { width: 2.2, depth: 0.75, height: 1.05, slotSpacing: 0.72, signWidth: 1.9, productY: 0.83 },
   spawnClearance: 5, // m: no zombie spawn this close to a site's stand point (checked by the tests)
   // The mall PA, once per round when Kevin opens for the round ({where} = the site's `where`, {stock} = the round's three products,
-  // {pick} = Kevin's Pick).
+  // {pick} = Kevin's Pick). Entry 0 is the original line.
   pa: {
     kicker: "Kevin's cart",
-    opened: "Kevin's cart is open in {where}.",
+    opened: [
+      "Kevin's cart is open in {where}.",
+      "Kevin's cart is now open in {where}. Please approach at a calm walking pace.",
+      "Kevin's cart is once again open in {where}. Management neither endorses nor obstructs this.",
+      "Kevin's cart is open in {where} while supplies and Kevin last.",
+      "Kevin's cart is open in {where}. Kindly refrain from bleeding on the display.",
+      "Kevin's cart is open in {where}. All enquiries may be directed to the man behind it.",
+      "Kevin's cart is open in {where}. Regular mall operating hours remain suspended.",
+      "Kevin's cart is open in {where}. Receipts are available by nodding twice.",
+    ],
     // When he has moved: these take turns by round (round 3 says the first), so the PA never needs Math.random.
     moved: [
       "Kevin's cart is now in {where}. He's asked us to say it's a limited time only.",
@@ -44,7 +53,16 @@ export const kiosk = {
       "Kevin's cart has relocated to {where}. Mall management did not approve this. Mall management is a zombie.",
       "Kevin's cart is now in {where}. Please stop telling him where the zombies are. He knows.",
     ],
-    stock: "Today on Kevin's cart: {stock}. Kevin's Pick is {pick}.",
+    stock: [
+      "Today on Kevin's cart: {stock}. Kevin's Pick is {pick}.",
+      "Currently stocked on Kevin's cart: {stock}. His recommended selection is {pick}.",
+      "This round's assortment features {stock}. Kevin is personally vouching for {pick}.",
+      "Available now from the cart: {stock}. Featured item of the hour: {pick}.",
+      "Kevin's inventory includes {stock}. Staff preference leans toward {pick}.",
+      "On the cart for your convenience: {stock}. Kevin has circled {pick} in marker.",
+      "Featured merchandise at the cart: {stock}. Today's highlight remains {pick}.",
+      "Stocked for immediate purchase: {stock}. Kevin insists you examine {pick}.",
+    ],
   },
   openingRound: 2,
   duckRadius: 3,

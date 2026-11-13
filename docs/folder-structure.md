@@ -31,7 +31,7 @@ src/
                         Preserves Phase 1's Night Shift/Carbon Copy palettes; the other nine skins carry names and challenges for now.
     idle.js             Idle saver numbers: delays (short / normal / long: dim and sleep seconds), dimFps, muteWhenAsleep, pollSeconds
     haptics.js          Controller vibration intensity and per-gun/damage/pickup durations, motor strengths and priorities
-    bosses.js           Boss debut windows (the booked-only Last Customer has none), parking entrance/backup markers, wave timing, combat and control tuning, PA lines, and the Janitor's costume
+    bosses.js           Boss debut windows (the booked-only Last Customer has none), parking entrance/backup markers, wave timing, combat and control tuning, PA lines (`introBanner`, per-encore-boss `encoreBanner` 4-line pools on `influencer`/`guard`/`manager`/`janitor`, `phases`, `defeatBanner`), and the Janitor's costume
                         and Wet Floor settings. Boss kill values and health scaling go through economy.js.
     deathMusic.js       End of Shift: original seven-second death composition (piano/pad/bell/noise layers), gain and
                         stop fade. Bell anchors to feel.death.resultsDelay; played once through sound's music/master buses
@@ -85,7 +85,7 @@ src/
                         x1.25 mag x0.85 reload / premium x1.45 dmg x1.1 mag / platinum x1.9 dmg x1.15 mag x0.9 reload + claims;
                         job, color, holdsUntilRound; Renewals past Platinum) and store `attachments` (one per slot: barrel extendedNozzle|sawnOff, sight
                         laserPointer|zoomLens, grip gripTape|wristband, magazine jumboPack|speedLoader; effects + blurb;
-                        sawnOff.falloffIfNone). Effect list in its header. Prices: economy.upgrades
+                        sawnOff.falloffIfNone). Effect list in its header. Prices: economy.upgrades. `claimPa.lines` holds the 8-line Customer Service warranty-claim PA pool (`{gun}`).
     audio.js            Master volume, pitch variation, compressor, and sound recipes (layers of filtered noise
                         bursts and tones): staple / price / nail / foam / confetti gun shots and reloads, dry click, purchase, denied,
                         Mall Walker walkerSqueak / walkerHuff / walkerPant, paChime (announcements)
@@ -123,7 +123,7 @@ src/
     attachmentVisuals.js Per-weapon attachment sizing, near-side rail placement, short-barrel spans and held reload copies.
     retailUnease.js     Rare atrium display changes and localized back-room sound timings/ranges; no gameplay tuning.
     kiosk.js            Kiosk Kevin (docs/kiosk-kevin-plan.md; all eight phases built): his five sites (x, z, faces, floorY, the PA's `where`; the first is
-                        where every run starts), the cart's size, spawnClearance, the PA lines (the "moved" lines take turns by round); phase 8's looks:
+                        where every run starts), the cart's size, spawnClearance, the PA lines (`opened` and `stock` are 8-line pools; `moved` lines take turns by round); phase 8's looks:
                         `hawk` (his shouts: radius 8 m, every 14 s at most, the lines, pitchChance 0.35 and per-product `pitches`, duck and back lists), `vendor` (Kevin's colours, badge, duck and
                         peek timing), `lid` (the shutter's slats and its notices, in turn), `spectacle` (fx/kioskSpectacle.js: the cola geyser, glitter,
                         horn rings, bubble pops, Sentry debris, the comic words) and each product's counter colours; the cart's three `slots` (Lethal: Soda Bomb /
@@ -515,7 +515,7 @@ src/
                         THE MALL PA as data. Four tables of [event, line(payload) -> announcement or null, sound?] (default sound paChime):
                         runAndFeatures() (`waveEnding` picking from `rounds.lastShoppers.pa.lines`, zombie and costume intros, every system's
                         own `pa` line, Closing Time and return labels in Directed only, warranty claims, ritual narration),
-                        bossesAndIncentives(), sales() (`clockIn` picking from `rounds.clockIn.pa.lines`, Flash Sales), welcomeBack() (after a load).
+                        bossesAndIncentives() (`bossSpawn` picking `encoreBanner` on `encore: true` else `introBanner`, with `introSound`; `bossPhase`, `powerUpCollect`, `incentiveComplete`), sales() (`clockIn` picking from `rounds.clockIn.pa.lines`, Flash Sales), welcomeBack() (after a load).
                         createGame calls each where its listeners always were: moving one can reorder what the player hears. A new system's plain PA line = its event name in PLAIN_PA_EVENTS
     skinSave.js         createSkinSave({ storage, key }): the permanent { version, progress, unlocked, equipped } record. Also `replay` (what the round a Save & Quit will replay has already been paid; written by Save & Quit only) and `dirty` (memory holds something storage does not).
                         Counts and unlocks are keyed by gun and skin; memory updates flush on unlock/runEnd. Safe with
@@ -535,7 +535,7 @@ src/
     bossDirector.js     Picks debut rounds (never a zombie type's or a Mascot costume's), retries a normal-marker spawn partway
                         through the wave, and blocks round completion while a boss is pending. Owns encounter behavior and
                         emits boss lifecycle events. book(round, id) replaces that round's one schedule slot (including an encore) and is saved in schedule.
-                        Types with encore:false never enter met or replace lastBoss. An optional spawnMarker restricts entry to safe selection at that marker, with retries.
+                        Types with encore:false never enter met or replace lastBoss. `'bossSpawn'` includes `encore: true` when an encore-capable boss was already in `met`. An optional spawnMarker restricts entry to safe selection at that marker, with retries.
                         The active boss's slow (behavior.surfaceSpeed) reports 'boss' to surfaceSlows.js.
     surfaceSlows.js     createSurfaceSlows(stats): the ONLY writer of stats.surfaceSpeed. Each slow floor reports its own factor
                         (set / clear by source id); the stat is the lowest, so two never stack. g.surfaces; reset on Play again
@@ -649,7 +649,7 @@ src/
                         stockFor(round): each slot rotates), round gating, Kevin's Pick (pickFor), hiding and PA (the round's stock).
                         Five sites (config/kiosk.js sites), one live; every run starts at the first. At each 'roundStart' after the opening
                         round he moves to a random other site whose zone is open (none: he stays), never mid-purchase (`pending` waits for
-                        the hold to end). Announces 'kioskStock' (one PA line a round, naming the place when he is new there) and
+                        the hold to end). Announces 'kioskStock' (one PA line a round, picking `opened` and `stock` via `pickPaLine` with `lineRandom = paRandom` while `moved` rotates by round) and
                         'kioskMoved'. moveNow(siteId) (debug), serialize/restore (his site and a pending move: Save & Quit).
                         His shouts (phase 8, kiosk.hawk): 'kioskHawk' { kind 'lines' | 'duck' | 'back', line } when you're near his open cart
                         (rate-limited), as he ducks and when he's back up; `lines` shouts mix general lines with `pitches` (`pitchChance`,
@@ -883,7 +883,7 @@ src/
     game/secondChance.js  The one automatic self-revive per run, sold at Customer Service's third window (upgradeDesk.js secondChanceItem, opposite Sharpening; economy.secondChance through g.pricing 'secondChance'). status 'available' | 'held' | 'used'; buy() (the desk has charged); redeem() is called by createGame's onPlayerDeath on every lethal hit: held = health.revive (full health in place, feel.health.secondChance.protectionSeconds of immunity) + zombies.staggerNearby (the shove: same floor, in reach, never a boss) and true, so the run goes on; otherwise false and the death stands. reset() is Play again's 'secondChance' step. Announces 'secondChance' { status } on every change: createGame's listener shows the HUD tag while held and reads the PA line on 'used'. While the protection lasts createGame announces no 'playerHit' or 'playerFall' (a swing that cannot hurt gets no arrow, rumble, outfit tag or boss effect). The receipt's "Second Chance · Used" line comes from summary.secondChanceUsed. createGame exposes g.secondChance.
     game/saveGame.js  Save & Quit, Black Ops 6 style: one slot (localStorage in the browser, any { getItem, setItem, removeItem } in tests via createGame's saveStorage). Each 'roundStart' raises a flag and createGame's update() takes the snapshot at the END of that tick, after every roundStart listener rolled its draws (boss schedule, Flash Sale, claw site, today's bins): every createGame saveSteps entry's serialize(), as JSON. canSave() { ok, reason }: a round has started, alive, full health. saveAndQuit() writes { version, round, savedAt, data } and announces 'runSaved'; main.js then goes to the title (not a death: no runEnd, no career record). peek() for the title's Continue; a save of another version is removed and `dropped` turns true. load() removes the slot FIRST, runs resetRun, then each step's restore in order (rounds.restore puts the run at the start of that round's break without a 'roundStart'), and announces 'runLoaded' { round } (horror relights, the PA welcomes you back); a restore that throws drops the save and resets. Systems with saved state have serialize()/restore(data) next to reset(): wallet, runStats, tickets, secondChance, rounds, pricing, flashSales, bossDirector, powerUps, wardrobe (restores WITHOUT re-applying factors: the stats are saved as they are), warranty, outfitRail, equipment, playerGun (each slot as config id + mods + ammo, the gun away at Build-A-Blaster, the loaner), features/index.js (by feature NAME, so adding or reordering map.features needs no version bump; a saving feature needs a unique name or the build throws; a pre-November-2026 save keyed by place still loads: workshop's ritual order, the claw machine's site and stock, Kiosk Kevin's site). Not kept: zombies, power-ups on the floor or running, traps, puddles, hazard cooldowns, a grab under way (createGame's transientSteps).
     game/meleeUpgrades.js  The box cutter tiers sold at Customer Service's second window (config/upgrades.js melee: Sharpened Blade x3 damage, Box Cutter Pro x5 + a wider cone + two targets): offer() = the next tier or null, accept() writes stats.meleeTier / meleeUpgradeDamage / meleeHalfAngleDegrees / meleeMaxTargets and announces 'meleeUpgrade' (the viewmodel recolours the cutter). Nothing run-scoped lives here: Play again's stats reset puts it back. Prices: economy.upgrades.melee through g.pricing 'melee'. createGame exposes g.meleeUpgrades.
-    game/warranty.js    The Extended Warranty rules that are not a stat change: what the Customer Service desk offers (next tier, a Renewal past Platinum, or a warranty on file moved onto this gun for a fee), the warranty a replaced gun leaves on file, and the Platinum claim (a dry gun gets its ammo back once per round). Numbers: config/upgrades.js.
+    game/warranty.js    The Extended Warranty rules that are not a stat change: what the Customer Service desk offers (next tier, a Renewal past Platinum, or a warranty on file moved onto this gun for a fee), the warranty a replaced gun leaves on file, and the Platinum claim (a dry gun gets its ammo back once per round, picking its `'warrantyClaim'` PA line from `upgrades.claimPa.lines` via `pickPaLine` with `lineRandom = paRandom`). Numbers: config/upgrades.js.
                         occasional one-shots only in audible unlocked areas. Timers freeze on pause and restart on reset.
     ambientPulse.js     Sparse mechanical ticks mixed into a looping ambience buffer (reuses the noise grain: no gameplay random draws).
     mallMusic.js        The song engine, pure and deterministic: noteNumber, parseChord (chord symbols, slash chords), songEvents

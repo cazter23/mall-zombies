@@ -50,6 +50,15 @@ export const bossTypes = {
     fans: { type: 'mallWalker', healthFraction: 0.5, perThreshold: 3, viralCount: 8, maxPending: 17, leaveSeconds: 2 },
     flash: { range: 5, windupSeconds: 0.75, cooldownSeconds: 7, seconds: 0.3, opacity: 0.24, dimOpacity: 0.35 },
     introBanner: { kicker: 'Live from the Galleria', text: 'Skylar Sparkle is filming. Dislike and unsubscribe with your weapon.' },
+    encoreBanner: {
+      kicker: 'Stream resumed',
+      lines: [
+        'Skylar Sparkle is back on air. Her audience requested a rematch.',
+        'Skylar Sparkle has returned with a second livestream. Please keep the frame tidy.',
+        'Skylar Sparkle is filming again. Management reminds shoppers not to feed the algorithm.',
+        'Skylar Sparkle has resumed broadcasting from the concourse. Do not like or subscribe.',
+      ],
+    },
     introSound: 'influencerSting', reward: 'discountCode',
     defeatBanner: { kicker: 'Stream ended', text: 'Skylar has logged off. Her followers have discovered another channel.' },
     phases: {
@@ -74,6 +83,15 @@ export const bossTypes = {
     sounds: { telegraph: { name: 'paChime', maxDistance: 24 } },
     lockdown: { thresholds: [0.75, 0.35], alarmSeconds: 3, seconds: 25, headshots: 3, backup: 2, backupType: 'mallWalker' },
     introBanner: { kicker: 'Loss Prevention advisory', text: 'Officer Kettle has mistaken survival for suspicious behaviour.' },
+    encoreBanner: {
+      kicker: 'Loss Prevention follow-up',
+      lines: [
+        'Officer Kettle is back on patrol. Your earlier receipt failed inspection.',
+        'Officer Kettle has returned to the floor for a secondary bag check.',
+        'Officer Kettle is making another round. Unauthorised breathing remains a policy concern.',
+        'Officer Kettle has clocked back in. The incident report was apparently incomplete.',
+      ],
+    },
     introSound: 'guardSting', reward: 'masterKey',
     defeatBanner: { kicker: 'Loss reported', text: 'Officer Kettle has clocked out. This incident has been filed under Loss Prevention.' },
     phases: {
@@ -109,6 +127,15 @@ export const bossTypes = {
     hitbox: { bodyHalfWidth: 0.31, bodyTop: 1.54, headHalfSize: 0.21, headBottom: 1.54, headTop: 1.97 },
     attack: { ...shopper.attack, damage: 60, windupSeconds: 0.9, minWindupSeconds: 0.9, windupShrinkPerRound: 0, moveSpeedFraction: 0.45 },
     introBanner: { kicker: 'Management is on the floor', text: 'Dennis Fairweather would like a quick word. Please budget the rest of your life.' },
+    encoreBanner: {
+      kicker: 'Management follow-up',
+      lines: [
+        'Dennis Fairweather has returned to revisit your earlier performance review.',
+        'Dennis Fairweather is back on the floor. This meeting could not wait for an email.',
+        'Dennis Fairweather has rescheduled a second quick word. Attendance remains mandatory.',
+        'Dennis Fairweather is following up in person. Unresolved action items have been noted.',
+      ],
+    },
     introSound: 'managerSting', reward: 'signedApproval',
     defeatBanner: { kicker: 'Position vacant', text: 'Dennis Fairweather is no longer pursuing this opportunity. Internal applications are welcome.' },
     report: { interval: 8, radius: 14, maxTargets: 6, seconds: 5, speed: 1.3 },
@@ -167,6 +194,15 @@ export const bossTypes = {
     pantsColors: [0x235652],
     shoeColor: 0x27232d,
     introBanner: { kicker: 'Maintenance advisory', text: 'Mopwater Murray is on duty. Please walk, do not run. Murray will run.' },
+    encoreBanner: {
+      kicker: 'Maintenance callback',
+      lines: [
+        'Mopwater Murray is back on shift. Fresh footprints were detected in aisle three.',
+        'Mopwater Murray has returned with a spare bucket. The earlier floor remained insufficiently wet.',
+        'Mopwater Murray is scrubbing the concourse again. Please step aside while he charges.',
+        'Mopwater Murray has clocked back in for rework. The spill situation requires attention.',
+      ],
+    },
     introSound: 'janitorSting',
     defeatBanner: { kicker: 'Cleaning completed', text: 'Murray has left a vacancy on the rota and a substantial mess on the floor.' },
     reward: 'spillCleanup',

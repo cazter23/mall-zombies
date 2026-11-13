@@ -567,11 +567,7 @@ export function createGame({
     displayedFollowers = followers;
     hud.setBoss(zombie);
   }
-  events.on('bossSpawn', ({ zombie }) => {
-    updateBossBar(zombie);
-    hud.showAnnouncement({ ...zombie.type.introBanner, priority: bossTiming.introPriority });
-    sound.play(zombie.type.introSound);
-  });
+  events.on('bossSpawn', ({ zombie }) => updateBossBar(zombie));
   events.on('bossDefeated', ({ zombie }) => {
     runStats.bossesDefeated += 1;
     updateBossBar(null);
@@ -586,7 +582,7 @@ export function createGame({
   events.on('runLoaded', () => hud.showRoundBanner(rounds.round, closing.isClosingRound(rounds.round) ? closingTime.finale.banner : null));
   events.on('roundDiscard', () => updateBossBar(null));
   events.on('playerDeath', () => updateBossBar(null));
-  announcer.bossesAndIncentives(); // a boss's phase lines, power-ups, employee incentives
+  announcer.bossesAndIncentives(); // a boss's spawn and phase lines, power-ups, employee incentives
   events.on('incentiveBurst', ({ position }) => {
     const visual = incentiveConfig.types.inventoryLiquidation;
     effects.splat(position, new Vector3(0, 1, 0), visual.splatColors, visual.splatCount);
