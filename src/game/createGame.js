@@ -545,6 +545,7 @@ export function createGame({
   events.on('closingLine', () => sound.play('closingDuty'));
   // THE MALL PA (game/announcer.js): which event says what. Its four tables are registered at four points in this
   // function, each where its listeners always were, because the order listeners are added is the order lines queue.
+  // (A pooled line is picked with the PA's own cosmetic random, announcer.js paRandom: never Math.random.)
   const announcer = createAnnouncer({ events, hud, sound, state });
   announcer.runAndFeatures();
   events.on('ritualCollect', ({ certificate }) => hud.showCertificate(certificate)); // (after its PA line)

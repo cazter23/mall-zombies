@@ -304,6 +304,23 @@ test('teaser: reset clears a pending teaser and keeps prices untouched', () => {
   assert.equal(sales.timeUntilNext, 10);
 });
 
+test('teaser: picks a line from economy.flashSales.teaser.lines with its own cosmetic random (lineRandom), never a draw from the random that picks the sales', () => {
+  const { lines } = economy.flashSales.teaser;
+  assert.ok(lines.length >= 8);
+  assert.equal(new Set(lines).size, lines.length, 'every teaser line is unique');
+
+  const first = setup({ teaserSeconds: 10 }, dice(0.1), undefined, { lineRandom: () => 0 });
+  first.run(10);
+  const firstPa = first.log.find(([k]) => k === 'soon')?.[1]?.pa;
+  assert.equal(firstPa.text, lines[0].replace('{lead}', 'ten seconds').replace('{label}', 'Doors'));
+
+  const last = setup({ teaserSeconds: 10 }, dice(0.1), undefined, { lineRandom: () => 0.99 });
+  last.run(10);
+  const lastPa = last.log.find(([k]) => k === 'soon')?.[1]?.pa;
+  assert.equal(lastPa.text, lines[lines.length - 1].replace('{lead}', 'ten seconds').replace('{label}', 'Doors'));
+  assert.notEqual(firstPa.text, lastPa.text);
+});
+
 test('the real game: teaser PA banner and HUD clock precede go-live, and re-checking skips cleanly if all doors open', () => {
   withFastDoorSales(() => {
     const t = headlessGame();
