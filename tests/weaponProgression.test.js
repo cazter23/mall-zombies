@@ -25,8 +25,8 @@ test('weapon pass: bounded headshot rewards and real round-8/10 combat separate 
     }
     const latePrice = trial.run({ id: 'priceGun', round: 21 });
     assert.equal(latePrice.kills, 1); assert.equal(latePrice.reloads, 1, 'Price eventually needs a reload for one body kill');
-    const sustained = trial.run({ id: 'coilNailer', round: 8, count: 9 });
-    assert.equal(sustained.kills, 9); assert.ok(sustained.reloads >= 1, 'large drum still requires a real reload');
+    const sustained = trial.run({ id: 'coilNailer', round: 8, count: 11 }); // (6 a kill since the Coil hits for 120: 11 need 66, past the 64 drum)
+    assert.equal(sustained.kills, 11); assert.ok(sustained.reloads >= 1, 'large drum still requires a real reload');
     const upgraded = trial.run({ id: 'rivetRifle', round: 17, tier: 'premium' });
     assert.ok(upgraded.kills === 1 && upgraded.reloads === 0, 'equal-tier progression remains viable');
     const longPrice = trial.run({ id: 'priceGun', round: 8, range: 30 });

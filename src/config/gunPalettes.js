@@ -12,6 +12,7 @@ export const gunPaletteKeys = {
   bottleRocket: { rocketColor: 'ammo', noseColor: 'sight', wickColor: 'grip' },
   balloonLauncher: { tankColor: 'metal', balloonColor: 'ammo', ribbonColor: 'sight' },
   leafBlower: { tankColor: 'body' },
+  bogo: { labelColor: 'ammo' },
   barcodeScanner: { coilColor: 'accent', windowColor: 'emitter' },
   coilNailer: { drumColor: 'dark', coilColor: 'accent' },
   confettiCannon: { shellColor: 'ammo' },
