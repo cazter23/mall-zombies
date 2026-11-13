@@ -622,3 +622,25 @@ test('the real game: an Extended Warranty sale marks the Customer Service desk; 
     'no carried gun: no attachment is worth a Doorbuster');
   g.map.dispose();
 });
+
+test('the tag view re-reads while a sale is on, so a spot that becomes usable without an event still gets its tag', () => {
+  const t = headlessGame();
+  const { g } = t;
+  const scene = new THREE.Scene();
+  const view = createSaleTagView(scene, g);
+  t.tick(1);
+  const groups = economy.flashSales.groups;
+  economy.flashSales.groups = groups.filter((grp) => grp.id === 'tiers');
+  try {
+    assert.equal(g.flashSales.teaseNow('category'), true, 'a warranty teaser while the desk is still behind a shutter');
+    view.update(0.1);
+    assert.equal(view.counts().soon, 0, 'the Customer Service desk is not usable yet');
+    g.map.areaUnlocks.unlock('hallway'); // (no 'purchase' event on this path)
+    view.update(economy.flashSales.worldTag.syncIntervalSeconds + 0.01);
+    assert.equal(view.counts().soon, 1, 'the desk gets its SALE SOON tag on the next timed re-read');
+  } finally {
+    economy.flashSales.groups = groups;
+    view.dispose();
+    g.map.dispose();
+  }
+});

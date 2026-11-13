@@ -198,7 +198,10 @@ export function createSaleTagView(scene, g) {
     update(dt) {
       clock += dt;
       syncTimer -= dt;
-      if (dirty || (spots.length && syncTimer <= 0)) sync();
+      // Re-read on a timer whenever a sale or teaser is on, even with no tag up yet: a spot can become usable without an
+      // event (Kevin stops hiding, the claw reopens, an area opens by a debug or quest path).
+      const saleOn = !!(g.flashSales?.active || g.flashSales?.pending);
+      if (dirty || ((spots.length || saleOn) && syncTimer <= 0)) sync();
       if (!spots.length) return;
 
       const isDb = spots[0].doorbuster;
