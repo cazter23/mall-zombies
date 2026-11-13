@@ -583,13 +583,13 @@ export const weapons = {
   },
 
   // WALL BUY: Grand Atrium (economy.wallBuys). Debug H still cycles it.
-  // ROLE: steady medium-range body damage, paid for with slower ADS/strafe.
+  // ROLE: faster, lighter medium-range automatic rifle, paid for with slower ADS/strafe.
   // Stronger per-hit damage than Price, with a full 30-round magazine; no penetration.
   rivetRifle: {
     id: 'rivetRifle', name: 'Rivet Rifle', fireMode: 'auto',
-    damage: 95, headshotMultiplier: 1.75,
+    damage: 80, headshotMultiplier: 1.75, // lighter per-hit than Coil (~941 burst dps)
     magazineSize: 30, startingReserve: 144,
-    fireInterval: 0.1, fireBuffer: 0.1, reloadTime: 2, range: 100,
+    fireInterval: 0.085, fireBuffer: 0.1, reloadTime: 2, range: 100, // ~11.8 shots/s
     falloff: { start: 12, end: 28, minMultiplier: 0.6 },
     recoil: {
       pitchDegrees: 0.9, yawDegrees: 0.16, rollDegrees: 0.25, adsMultiplier: 0.7,
@@ -647,14 +647,14 @@ export const weapons = {
   },
 
   // WALL BUY: Cinema projection passage (economy.wallBuys).
-  // ROLE: heavy industrial LMG. Huge 64-nail wire-collated drum and 2-target pierce chew through
-  // corridor hordes for over 6 seconds straight, paid for with heavy ADS handling and a long 3.1s drum swap.
+  // ROLE: heavy industrial LMG. Huge 64-nail wire-collated drum, heavy 120-damage hits and 2-target pierce
+  // chew through corridor hordes for nearly 8 seconds straight, paid for with heavy ADS handling and a long 3.1s drum swap.
   coilNailer: {
     id: 'coilNailer', name: 'Heavy Coil Nailer', fireMode: 'auto',
-    damage: 95, headshotMultiplier: 1.5,
+    damage: 120, headshotMultiplier: 1.5, // slower, harder-hitting than Rivet (960 burst dps)
     pierce: { maxTargets: 2, damageFalloff: [1, 0.5] },
     magazineSize: 64, startingReserve: 256,
-    fireInterval: 0.1, fireBuffer: 0.1, reloadTime: 3.1, range: 90,
+    fireInterval: 0.125, fireBuffer: 0.1, reloadTime: 3.1, range: 90, // 8 shots/s (~7.9s drum)
     falloff: { start: 15, end: 30, minMultiplier: 0.65 },
     recoil: {
       pitchDegrees: 0.68, yawDegrees: 0.28, rollDegrees: 0.38, adsMultiplier: 0.68,

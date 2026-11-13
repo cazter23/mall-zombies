@@ -2,6 +2,18 @@
 
 Historical record of the 25 October pass. The newer base-weapon pass and measurements are at the top of `docs/history.md`.
 
+## 13 November 2026 — Rivet Rifle and Heavy Coil Nailer separation
+
+Both guns previously shared `damage: 95` and `fireInterval: 0.1` (`src/config/weapons.js`). Numbers-only pass (`npm run balance`, 5 m ADS against a Shopper):
+
+- **Heavy Coil Nailer (`coilNailer`, 2500 pts):** `damage` `95 → 120`, `fireInterval` `0.1 → 0.125` (`8.0` shots/s, `7.9` s drum).
+  - Burst DPS `950 → 960`; sustained DPS (2–15 / 20 / 30 m) `647 / 575 / 424 → 700 / 622 / 459`.
+  - Shots to kill a Shopper at 5 m (rounds 1 / 2 / 3 / 5 / 8 / 10 / 15): `2 / 3 / 4 / 5 / 8 / 9 / 13 → 2 / 2 / 3 / 4 / 6 / 7 / 10`.
+- **Rivet Rifle (`rivetRifle`, 1500 pts):** `damage` `95 → 80`, `fireInterval` `0.1 → 0.085` (`11.8` shots/s, `2.5` s mag).
+  - Burst DPS `950 → 941`; sustained DPS (2–10 / 15 / 20 / 30 m) `582 / 542 / 469 / 349 → 538 / 501 / 433 / 323`.
+  - Shots to kill a Shopper at 5 m (rounds 1 / 2 / 3 / 5 / 8 / 10 / 15): `2 / 3 / 4 / 5 / 8 / 9 / 13 → 2 / 3 / 4 / 6 / 9 / 11 / 15`.
+  - Because `0.085` s empties the 30-round magazine faster (`2.9 → 2.5` s) while `reloadTime: 2.0` s stayed unchanged, sustained DPS fell from `582` to `538`, dropping below `0.95 ×` Foam Dart Blaster (`570` at 5 m, `tests/rivetRifle.test.js:40`).
+
 ## 13 November 2026 — Tennis Ball Launcher and Barcode Scanner rework
 
 Playtest feedback: both guns "felt weird"; the Tennis Ball Launcher was too weak, the Barcode Scanner needed a real rework.
