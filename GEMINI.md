@@ -21,8 +21,11 @@ Check each of these before you call a change done:
   clear) and a test that it runs. Delete CSS rules, helpers and comments your change made unused or wrong.
 - **Docs match the code.** Update docs/folder-structure.md for every module you add or change, docs/tests.md for every test
   file, and add a docs/history.md entry; field and event names in the docs must be the real ones.
-- **The mall's voice.** PA lines, signs and HUD text are deadpan corporate retail (read the existing lines in config/ first);
-  no exclamation-mark hype.
+- **Match the voice of what you add to.** Read the existing lines of that pool first and write like them. The mall PA, signs,
+  HUD text, death reports and Survival Guide forms are deadpan corporate retail: calm, bureaucratic, no exclamation marks.
+  Characters have their own voices: Kiosk Kevin (config/kiosk.js hawk) is a pushy, desperate salesman who shouts in
+  exclamation marks, and the GRAB-A-GUN cabinet's text (config/clawMachine.js) is a cheerful arcade machine. Keep new lines about
+  as long as the ones beside them (HUD lanes: docs/ui-readability.md).
 - **Think through the player's moment.** Ask when the player sees, hears or pays for the thing (the first Doorbuster rush
   arrived before the player had bought the item, so it read as a random spawn). Say in your summary how to try it in the game.
 - **Commit your draft as an unreviewed snapshot** on your own branch; a review pass runs before anything merges into main.
