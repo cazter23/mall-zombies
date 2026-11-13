@@ -245,7 +245,7 @@ test('the real game: Play again ends the sale silently, restores prices, and sta
 // --- Part 1: Teasers (lead time, PA warning, re-checking eligibility, quiet cancel, reset) ---
 
 test('teaser: fires flashSaleSoon ahead of start, honours lead time, and does not discount prices until go-live', () => {
-  const { sales, pricing, log, run } = setup({ teaserSeconds: 10 }, dice(0.1, 0, 0.2));
+  const { sales, pricing, log, run } = setup({ teaserSeconds: 10 }, dice(0.1, 0.2));
   run(10);
   assert.equal(sales.active, null, 'still not live at teaser start');
   assert.ok(sales.pending && sales.pending.id === 'doors', 'pending teaser is doors');
@@ -269,7 +269,7 @@ test('teaser: re-checks eligibility at go-live (switches to another group or can
   // Case A: doors stopped making sense during the teaser, ammo is still eligible -> switches at go-live.
   let doorsOk = true;
   let ammoOk = true;
-  const a = setup({ teaserSeconds: 10 }, dice(0.1, 0, 0.0, 0.5, 0.2), (g) => (g.id === 'doors' ? doorsOk : ammoOk));
+  const a = setup({ teaserSeconds: 10 }, dice(0.1, 0.0, 0.5, 0.2), (g) => (g.id === 'doors' ? doorsOk : ammoOk));
   a.run(10);
   assert.equal(a.sales.pending.id, 'doors');
   doorsOk = false;
@@ -304,17 +304,17 @@ test('teaser: reset clears a pending teaser and keeps prices untouched', () => {
   assert.equal(sales.timeUntilNext, 10);
 });
 
-test('teaser: picks a line from economy.flashSales.teaser.lines using injectable random', () => {
+test('teaser: picks a line from economy.flashSales.teaser.lines with its own cosmetic random (lineRandom), never a draw from the random that picks the sales', () => {
   const { lines } = economy.flashSales.teaser;
   assert.ok(lines.length >= 8);
   assert.equal(new Set(lines).size, lines.length, 'every teaser line is unique');
 
-  const first = setup({ teaserSeconds: 10 }, dice(0.1, 0));
+  const first = setup({ teaserSeconds: 10 }, dice(0.1), undefined, { lineRandom: () => 0 });
   first.run(10);
   const firstPa = first.log.find(([k]) => k === 'soon')?.[1]?.pa;
   assert.equal(firstPa.text, lines[0].replace('{lead}', 'ten seconds').replace('{label}', 'Doors'));
 
-  const last = setup({ teaserSeconds: 10 }, dice(0.1, 0.99));
+  const last = setup({ teaserSeconds: 10 }, dice(0.1), undefined, { lineRandom: () => 0.99 });
   last.run(10);
   const lastPa = last.log.find(([k]) => k === 'soon')?.[1]?.pa;
   assert.equal(lastPa.text, lines[lines.length - 1].replace('{lead}', 'ten seconds').replace('{label}', 'Doors'));

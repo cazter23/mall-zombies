@@ -4,7 +4,7 @@ Every string in `src/config/` belongs to a specific speaker. Match the voice, to
 
 ## 1. Mall PA (`config/clawMachine.js` `pa`, `kiosk.js` `pa`, `bosses.js`, `economy.js`, `feel.js`)
 - Deadpan corporate-retail intercom: calm, dry, bureaucratic; never excited, panic-stricken, or chatty.
-- Never use exclamation marks.
+- No exclamation marks (two old lines have one: the last-shoppers and clock-in originals; do not add more).
 - Treat absurd zombie reality as routine mall policy, store procedure, or customer-service logistics.
 - Keep lines short enough to read cleanly during the PA banner window (see `docs/ui-readability.md`).
 
@@ -45,12 +45,12 @@ Never: `'INSERT POINTS NOW TO OPERATE THE PRIZE CLAW UNIT'`, `'Out of order. Man
 - Deadpan HR workplace-incident report: `cause` reads like an OSHA/insurance filing; `tip` starts with `'Associate Tip:'`.
 - **Words-only rule**: no `%`, multipliers, or raw numbers; describe intensity and behaviour in plain words.
 - No exclamation marks; frame fatal attacks as customer-service or safety compliance lapses.
-- Ensure every `tip` accurately reflects the enemy or hazard's real mechanic.
+- Ensure every `tip` accurately reflects the enemy or hazard's real mechanic (check the code, not the name), and keep it near the others' length (about 110 characters: the receipt is narrow).
 
 Real examples:
-- `cause: 'Fatal blunt force trauma from dissatisfied customer'` / `tip: 'Associate Tip: Maintain active floor spacing and backpedal while delivering price markdowns.'`
-- `cause: 'Unauthorized impact with moving shopping cart'` / `tip: 'Associate Tip: A rattling cart is taking aim; sidestep as it charges, because it cannot turn.'`
-- `cause: 'Self-administered fireworks display, indoors, at close range'` / `tip: 'Associate Tip: Bottle rockets are for the far end of the Hallway. Fireproof attire is available in store.'`
+- `cause: 'Fatal blunt force trauma from dissatisfied customer'` / `tip: 'Associate Tip: Later in the shift, shoppers start to run; turn and sprint rather than backpedal, and aim high.'`
+- `cause: 'Unauthorized impact with moving shopping cart'` / `tip: 'Associate Tip: It steers while the cart rattles; sidestep once it launches, then hit it hard while it sits stunned.'`
+- `cause: 'Self-administered fireworks display, indoors, at close range'` / `tip: 'Associate Tip: Bottle rockets are for the far end of the Hallway. The Hi-Vis Vest in the Service Corridor helps.'`
 
 Never: `'You got run over by a cart! Dodge sideways next time!'`, `'Associate Tip: Stay 5 m back — charges deal 45% bonus damage.'`
 

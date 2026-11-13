@@ -1,11 +1,26 @@
 # Sunset Galleria: build history ("Current state")
 
+## 12 November 2026 - Review of the four Hydrogen text branches (text pools, PA pools, Kevin's pitches, voice guide)
+
+Merged through `claude/hydrogen-review`. The lines, voices and structure held up; fixed in review:
+- **Death reports:** several rewritten tips were wrong when checked against the code (the Last Customer goes Speechless at her damage floor,
+  not by crashing into the vans; Fairweather's meeting is cancelled before its buff applies, no buff is cancelled; no "open area" rule for
+  Kettle's lockdown; only the hit that knocks a helmet off pays a bonus; the fryer oil covers the counter apron, not the kitchen) and up to
+  151 characters (main's longest was 110: a narrow receipt). All tips rewritten to the code, at most 117 characters, with the old jokes kept
+  where they were still true ("perimeter railings are not slides", "fryer oil does not check badges", "the far end of the Hallway").
+- **PA random:** the Flash Sale teaser took its line from the sales' own random, so every later sale and discount shifted (two existing
+  tests had their dice changed to fit). The cosmetic random now lives once in announcer.js (`paRandom`, never Math.random); flashSales
+  takes a separate `lineRandom` and createGame lost its inline copy. The two tests' dice are back as they were.
+- **docs/voice.md:** its death-report examples quoted the tips this pass replaced; the PA rule now admits the two old lines with "!".
+- **Kevin:** the text-pool and pitch branches both edited config/kiosk.js; merged with both (25 lines, 10 duck, 8 back, the pitch table).
+
 ## 12 November 2026 - Text pool expansion and death-report accuracy pass (`claude/hydrogen-text-pools`)
 
 - **Kiosk Kevin (`src/config/kiosk.js`)**: expanded `hawk.lines` (9 → 25, including 8 new `{product}` shouts), `hawk.duck` (4 → 10), and `hawk.back` (3 → 8) while keeping the existing opening lines in place.
 - **GRAB-A-GUN (`src/config/clawMachine.js`)**: added deadpan PA lines across `pa.plush` (3 → 7), `pa.soldOut` (3 → 7), `pa.moved` (3 → 7), and `pa.restocked` (2 → 6), and added 6 three-line arcade screens to `screen.attract` (4 → 10).
 - **Run-intro PA (`src/config/feel.js`)**: fixed the indentation on `runIntro.lines[0]` and added 14 deadpan mall PA opening announcements (6 → 20), each within the existing maximum line length.
 - **Death reports (`src/config/deathReports.js`)**: audited and updated `cause` and `tip` copy across `fall`, zombies, mascots, bosses, `hazards`, `ownBlast`, and `hazardDefault` to match actual runtime behavior (such as mascot half-health unmasking without torso foam armor, Poppy Corn's instant zero-damage pop blast, Mopwater Murray's slowing puddles rather than cones, Officer Kettle's taser charge and gun-headshot radio break, Lorraine Pruitt's Speechless return flow, and fryer/fountain grace windows after activation) while keeping the words-only rule.
+
 ## 12 November 2026 - PA pools for the most-heard single lines (claude/hydrogen-pa-pools)
 
 Audited single-line announcements in `game/announcer.js` and its configs on `claude/hydrogen-pa-pools` and converted the three highest-frequency single-line PA moments into deadpan mall-PA pools with injectable `random`:
@@ -18,6 +33,7 @@ Audited single-line announcements in `game/announcer.js` and its configs on `cla
   - `createGame.js` passes a `crypto.getRandomValues` `paRandom` to `createAnnouncer` so cosmetic PA phrasing never consumes `Math.random` combat/bot draws (keeping seeded `economySim` runs intact).
   - `sayTeaser` in `src/game/flashSales.js` picks from `teaser.lines` via `pickPaLine(t.lines, random)` (with `t.text` fallback for minimal test configs). Save format (`version: 10`) is unchanged.
 - **Tests & Docs:** extended `tests/announcer.test.js` (pool invariants, `pickPaLine` / `createAnnouncer` injectable `random`, and Save & Quit `load()` compatibility with pooled PA lines), updated `tests/rounds.test.js` (`waveEnding` and `clockIn` `.pa.lines` checks) and `tests/flashSales.test.js` (`dice(...)` roll adjustment for teaser draws + injectable `random` teaser-pool test), and updated `docs/folder-structure.md` and `docs/tests.md`.
+
 ## 12 November 2026 - Kiosk Kevin product pitches (claude/hydrogen-kevin-pitches)
 
 Gave Kiosk Kevin product-specific sales pitches tied to his current round stock (`src/config/kiosk.js`, `src/game/features/kiosk.js`):

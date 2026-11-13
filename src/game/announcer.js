@@ -31,8 +31,16 @@ const PLAIN_PA_EVENTS = ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualW
 // Closing Time's lines: Directed mode only (Classic has no PA text; its own sounds play in both modes, see createGame).
 const CLOSING_PA_EVENTS = ['closingBriefing', 'closingKeyDrop', 'closingKey', 'closingLine', 'closingValidated'];
 
-/** Pick one string at random from `lines` (`random()` in [0, 1)). */
-export function pickPaLine(lines, random = Math.random) {
+// Which line of a pool the PA reads is cosmetic, so it never draws from Math.random: a seeded test or bot (and the game's
+// own draws, like which Flash Sale comes next) sees the same numbers whatever the PA says. (Kevin's shouts take turns
+// for the same reason: game/features/kiosk.js.)
+const paRoll = new Uint32Array(1);
+export const paRandom = globalThis.crypto?.getRandomValues
+  ? () => globalThis.crypto.getRandomValues(paRoll)[0] / 0x100000000
+  : Math.random;
+
+/** Pick one string at random from `lines` (`random()` in [0, 1); by default the PA's own cosmetic random). */
+export function pickPaLine(lines, random = paRandom) {
   if (!lines?.length) return '';
   return lines[Math.floor(random() * lines.length) % lines.length];
 }
@@ -45,7 +53,7 @@ function pickPa(pa, random) {
   return out;
 }
 
-export function createAnnouncer({ events, hud, sound, state, random = Math.random }) {
+export function createAnnouncer({ events, hud, sound, state, random = paRandom }) {
   function register(table) {
     for (const [name, line, chime = 'paChime'] of table) {
       events.on(name, (payload) => {
