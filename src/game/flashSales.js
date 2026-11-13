@@ -22,6 +22,7 @@ import { featuresOf } from './features/index.js';
 import { ownsAttachment } from './features/attachmentCounter.js';
 import { attachmentFits } from '../weapons/upgrades.js';
 import { zoneForRoom } from '../maps/areaBarriers.js';
+import { pickPaLine } from './announcer.js';
 
 const NO_THE_ZONES = new Set(['megaMart', 'cinema', 'departmentStore', 'parkingLot']);
 const HAZARD_PRICING_ID = {
@@ -423,7 +424,8 @@ export function createFlashSales({
     const lead = leadWords(leadSec);
     if (offer.kind === 'doorbuster') return sayDoorbuster(config.doorbuster.teaser, offer.target, 0, lead);
     const t = config.teaser ?? economy.flashSales.teaser; // (a test's small config may leave the words out)
-    return { kicker: t.kicker, text: t.text.replace('{lead}', lead).replace('{label}', offer.group.label) };
+    const template = t.lines?.length ? pickPaLine(t.lines, random) : t.text;
+    return { kicker: t.kicker, text: template.replace('{lead}', lead).replace('{label}', offer.group.label) };
   };
 
   function beginTeaser(offer) {

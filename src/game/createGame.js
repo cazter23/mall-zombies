@@ -545,7 +545,12 @@ export function createGame({
   events.on('closingLine', () => sound.play('closingDuty'));
   // THE MALL PA (game/announcer.js): which event says what. Its four tables are registered at four points in this
   // function, each where its listeners always were, because the order listeners are added is the order lines queue.
-  const announcer = createAnnouncer({ events, hud, sound, state });
+  // Cosmetic PA phrasing keeps off Math.random so it never shifts seeded gameplay bots or combat draws (cf. kiosk.js).
+  const paRoll = new Uint32Array(1);
+  const paRandom = globalThis.crypto?.getRandomValues
+    ? () => globalThis.crypto.getRandomValues(paRoll)[0] / 0x100000000
+    : Math.random;
+  const announcer = createAnnouncer({ events, hud, sound, state, random: paRandom });
   announcer.runAndFeatures();
   events.on('ritualCollect', ({ certificate }) => hud.showCertificate(certificate)); // (after its PA line)
 

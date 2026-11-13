@@ -161,7 +161,16 @@ export const economy = {
     discounts: { min: 0.25, max: 0.5, step: 0.05 }, // "25-50% off"
     teaser: {
       kicker: 'Flash sale soon',
-      text: 'Attention shoppers: in {lead}, a flash sale on {label}. Please do not run. Running comes later.',
+      lines: [
+        'Attention shoppers: in {lead}, a flash sale on {label}. Please do not run. Running comes later.',
+        'In {lead}, prices drop on {label}. Please form an orderly stampede.',
+        'Markdowns on {label} begin in {lead}. Keep elbows tucked.',
+        'A temporary promotion on {label} starts in {lead}. Stay calm.',
+        'Wait {lead} for discounts on {label}. Impulse violence waits too.',
+        'In {lead}, corporate will regret discounting {label}. Browse safely.',
+        'Savings on {label} go live in {lead}. Carts remain single-file.',
+        'Prepare wallets: {lead} until reduced pricing on {label}.',
+      ],
     },
     doorbuster: {
       enabled: true,
@@ -301,7 +310,19 @@ export const economy = {
       action: 'inspect', // an existing action (config/controls.js): I / D-pad down. A tap still inspects the gun
       holdSeconds: 0.8, // how long it must be held
       leadSeconds: 1.5, // the zombies come this long after clocking in (never later than the break would have ended)
-      pa: { kicker: 'Attention shoppers', text: 'An associate has clocked in early. Doors are opening now!' },
+      pa: {
+        kicker: 'Attention shoppers',
+        lines: [
+          'An associate has clocked in early. Doors are opening now!',
+          'Break declined. Management appreciates your eagerness.',
+          'Early punch-in logged. Next wave approaching.',
+          'Associate requested extra hours. Request approved.',
+          'Timecard accepted. Rest period forfeited.',
+          'Break ended by employee initiative. Please stand by.',
+          'Early clock-in recorded. Floor is back in service.',
+          'Overtime volunteered. Sending out the next shift.',
+        ],
+      },
       fromRound: 2, // offered in the break BEFORE this round and later (the short wait before round 1 is not a break)
     },
     spawnRetrySeconds: 0.5, // no usable spawn point (none open/reachable)? try again this soon
@@ -309,7 +330,27 @@ export const economy = {
     // ('waveEnding') and the stragglers (not bosses) speed up to their fastest gait, so the end of a round isn't a hunt.
     lastShoppers: {
       count: 2,
-      pa: { kicker: 'Attention shoppers', text: 'Final clearance — registers closing shortly!', priority: 1 },
+      pa: {
+        kicker: 'Attention shoppers',
+        priority: 1,
+        lines: [
+          'Final clearance — registers closing shortly!',
+          'Remaining shoppers, please make it quick.',
+          'Few shoppers left. Till count imminent.',
+          'Shutters closing shortly. Please clear out.',
+          'Last call for late-shift browsing.',
+          'Cashiers are counting down their drawers.',
+          'Clearance aisle is nearly picked clean.',
+          'Mopping starts right after this batch.',
+          'Kindly wrap up your final selections.',
+          'Floor sweeping commences momentarily.',
+          'Nearly empty. Just the stubborn ones left.',
+          'All stragglers, report to the register.',
+          'Management is waiting to lock the doors.',
+          'End-of-wave sweep is now in progress.',
+          'Final foot traffic is now expedited.',
+        ],
+      },
     },
   },
 

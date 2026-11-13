@@ -203,7 +203,7 @@ test('real game createGame wiring: waveEnding triggers PA announcement and chime
   const announcement = t.hud.calls.find(([name]) => name === 'showAnnouncement');
   assert.ok(announcement, 'announcement shown on HUD');
   assert.equal(announcement[1].kicker, 'Attention shoppers');
-  assert.equal(announcement[1].text, 'Final clearance — registers closing shortly!');
+  assert.ok(economy.rounds.lastShoppers.pa.lines.includes(announcement[1].text), 'line comes from lastShoppers pool');
   assert.equal(announcement[1].priority, 1);
 });
 
@@ -382,7 +382,7 @@ test('real game: holding Clock in during the break brings the next round early, 
   assert.ok(events[0].skipped > economy.rounds.breakSeconds / 2, 'most of the break was skipped');
   assert.ok(t.sounds.slice(soundsBefore).includes('paChime'));
   const pa = t.hud.calls.filter(([name]) => name === 'showAnnouncement').at(-1);
-  assert.equal(pa[1].text, cfg.pa.text);
+  assert.ok(cfg.pa.lines.includes(pa[1].text), 'clock-in line comes from clockIn pool');
   assert.equal(hasStatNumber(pa[1].text), false);
   assert.equal(t.g.clockIn.prompt, null);
 

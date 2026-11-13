@@ -67,6 +67,7 @@ src/
                         zombieMix: special types per round (mallWalker: from round 4, share 15% / 25% from 6 / 30% from 9,
                         healthMultiplier 0.65, introSpawnIndex) + zombieHealthFor(typeId, round), zombieTypeForRound(round).
                         Mascot enters at round 10 with 5x Shopper health and a two-alive cap (every costume shares that slot).
+                        PA line pools for `rounds.lastShoppers.pa.lines` (15), `rounds.clockIn.pa.lines` (8), and `flashSales.teaser.lines` (8).
     weapons.js          stapleGun (start pistol, semi), priceGun (wall buy, full auto), nailGun (wall buy, semi,
                         piercing: `pierce: { maxTargets, damageFalloff }`), foamDartBlaster (Mega Mart, burst),
                         confettiCannon (Service Corridor, 12 pellets, pellets pierce 2 zombies, six-shell tube, shell-by-shell
@@ -506,13 +507,14 @@ src/
                         per-run state = one line there), onPlayerDeath, showResults, state { forceRun, over,
                         padPlaying, assisted, running }, death (including the frozen run summary), vaultPromptVisible.
                         No DOM: the browser parts are passed in. The mall PA (event -> announcement + chime) is a table in
-                        announcer.js, registered at four points here on purpose (listener order = the order lines queue)
-    announcer.js        createAnnouncer({ events, hud, sound, state }): THE MALL PA as data. Four tables of [event,
-                        line(payload) -> announcement or null, sound?] (default sound paChime): runAndFeatures() (wave ending,
-                        zombie and costume intros, every system's own `pa` line, Closing Time and return labels in Directed
-                        only, warranty claims, ritual narration), bossesAndIncentives(), sales() (Clock in, Flash Sales),
-                        welcomeBack() (after a load). createGame calls each where its listeners always were: moving one
-                        can reorder what the player hears. A new system's plain PA line = its event name in PLAIN_PA_EVENTS
+                        announcer.js, registered at four points here on purpose (listener order = the order lines queue),
+                        using an isolated `crypto.getRandomValues` random source so cosmetic PA phrasing keeps off `Math.random`
+    announcer.js        `pickPaLine(lines, random = Math.random)` and `createAnnouncer({ events, hud, sound, state, random = Math.random })`:
+                        THE MALL PA as data. Four tables of [event, line(payload) -> announcement or null, sound?] (default sound paChime):
+                        runAndFeatures() (`waveEnding` picking from `rounds.lastShoppers.pa.lines`, zombie and costume intros, every system's
+                        own `pa` line, Closing Time and return labels in Directed only, warranty claims, ritual narration),
+                        bossesAndIncentives(), sales() (`clockIn` picking from `rounds.clockIn.pa.lines`, Flash Sales), welcomeBack() (after a load).
+                        createGame calls each where its listeners always were: moving one can reorder what the player hears. A new system's plain PA line = its event name in PLAIN_PA_EVENTS
     skinSave.js         createSkinSave({ storage, key }): the permanent { version, progress, unlocked, equipped } record. Also `replay` (what the round a Save & Quit will replay has already been paid; written by Save & Quit only) and `dirty` (memory holds something storage does not).
                         Counts and unlocks are keyed by gun and skin; memory updates flush on unlock/runEnd. Safe with
                         missing/corrupt/blocked storage; newer versions are protected from all writes. Debug clear can relock one challenge.
@@ -584,7 +586,7 @@ src/
     tickets.js          GRAB-A-GUN's prize tickets (g.tickets): their own currency, never the wallet, pricing or income. add(amount, reason)
                         (nothing once dead; 'ticketsWon'), spend, won (the receipt), and the Prize Counter's tokens (slowClaw, freeGrab,
                         keychain: hold / has / use). A resetStep ('tickets'), so Play again starts at 0.
-    flashSales.js       Flash Sales & Doorbusters: a PA teaser (`flashSaleSoon`, 10 s lead time, re-checks eligibility at go-live), category sales (`25-50% off`), and rare Doorbusters (one unowned item you can reach in time, `reachableInTime`, 65-75% off for 20 s; BUYING it sells it out (`flashSaleEnd` reason 'sold') and brings a capped open-zone shopper rush via zombieManager). Also exports `saleEligibility`, `doorbusterCandidates`, `nearOpenSpawnPoints`, `collectSaleSpots`.
+    flashSales.js       Flash Sales & Doorbusters: a PA teaser (`flashSaleSoon`, 10 s lead time, category line picked from `teaser.lines` via `pickPaLine` with injectable `random`, re-checks eligibility at go-live), category sales (`25-50% off`), and rare Doorbusters (one unowned item you can reach in time, `reachableInTime`, 65-75% off for 20 s; BUYING it sells it out (`flashSaleEnd` reason 'sold') and brings a capped open-zone shopper rush via zombieManager). Also exports `saleEligibility`, `doorbusterCandidates`, `nearOpenSpawnPoints`, `collectSaleSpots`.
     runIntro.js         The PA's opening announcement on a run's first round (listens to 'roundStart').
     shutterSounds.js    Purchase sounds that follow the real shutter motion; pausing stops them, death and reset cancel them.
     features/           MAP FEATURES by kind (built features: features.instanceOf(kind) / instancesOf(kind)). index.js = the registry (kind -> build(feature, ctx) returning optional

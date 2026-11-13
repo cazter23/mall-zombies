@@ -31,7 +31,21 @@ const PLAIN_PA_EVENTS = ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualW
 // Closing Time's lines: Directed mode only (Classic has no PA text; its own sounds play in both modes, see createGame).
 const CLOSING_PA_EVENTS = ['closingBriefing', 'closingKeyDrop', 'closingKey', 'closingLine', 'closingValidated'];
 
-export function createAnnouncer({ events, hud, sound, state }) {
+/** Pick one string at random from `lines` (`random()` in [0, 1)). */
+export function pickPaLine(lines, random = Math.random) {
+  if (!lines?.length) return '';
+  return lines[Math.floor(random() * lines.length) % lines.length];
+}
+
+/** Resolve a static `{ kicker, text }` or pooled `{ kicker, lines, priority? }` PA entry. */
+function pickPa(pa, random) {
+  if (!pa?.lines?.length) return pa;
+  const out = { kicker: pa.kicker, text: pickPaLine(pa.lines, random) };
+  if (pa.priority !== undefined) out.priority = pa.priority;
+  return out;
+}
+
+export function createAnnouncer({ events, hud, sound, state, random = Math.random }) {
   function register(table) {
     for (const [name, line, chime = 'paChime'] of table) {
       events.on(name, (payload) => {
@@ -50,7 +64,7 @@ export function createAnnouncer({ events, hud, sound, state }) {
     // Rounds, zombie introductions and every system's own lines. Registered before the boss director and Closing Time.
     runAndFeatures() {
       register([
-        ['waveEnding', () => economy.rounds.lastShoppers.pa],
+        ['waveEnding', () => pickPa(economy.rounds.lastShoppers.pa, random)],
         // A zombie type's first appearance this run (Mall Walkers, round 4). A Mascot announces the costume it came in
         // (Sir Waffles in round 10); each later costume's first appearance gets its own.
         ['typeIntro', ({ typeId, zombie }) => {
@@ -83,7 +97,7 @@ export function createAnnouncer({ events, hud, sound, state }) {
     // Clock in and Flash Sales. Registered after the features and Flash Sales are built.
     sales() {
       register([
-        ['clockIn', () => economy.rounds.clockIn.pa],
+        ['clockIn', () => pickPa(economy.rounds.clockIn.pa, random)],
         ['flashSaleSoon', ({ pa }) => pa],
         ['flashSaleStart', ({ pa }) => pa],
         ['flashSaleEnd', ({ reason, pa }) => (reason === 'expired' || reason === 'sold' ? pa : null)], // a new run or cancelled teaser ends silently
