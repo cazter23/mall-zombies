@@ -823,7 +823,8 @@ src/
                         rooms and the floor-to-floor nav link. Lower shutter (economy.doors.cinema, 1250) opens cinema + serviceCorridor; the original
                         cinema shutter now opens cinema + upstairs. No real lights, guns or spawn markers added.
     mall/kioskCart.js   buildKioskCart(kit, site) -> { position, stand, normal, slots, show(state, stock), say(line), animate(dt, time, viewer) }: one
-                        of Kevin's carts (a 1.05 m vaultable counter), built in its own frame and turned by `faces` (+z, -z, +x, -x); three buy spots,
+                        of Kevin's carts (a 1.05 m vaultable counter), built in its own frame and turned by `faces` (+z, -z, +x, -x), dressed by
+                        dressCart (static, no collision: harlequin front, gold shelf lip, striped canopy, KIOSK KEVIN marquee, pegboard); three buy spots,
                         a notice strip (closed / away, the lid's notice in turn / hiding / Kevin's Pick), the product labels (redrawn when the stock
                         changes) and, in a dynamic rig: the round's three products on the counter (world/kioskProducts.js), a slatted lid that covers
                         it while he's away (its notice on top) and flips open behind him, Kevin (mall/kioskKevin.js) and his speech bubble. show() only
