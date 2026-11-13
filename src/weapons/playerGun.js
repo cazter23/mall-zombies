@@ -271,7 +271,7 @@ export function createPlayerGun({
       const away = new THREE.Vector3(target.position.x - centre.x, 0, target.position.z - centre.z);
       if (away.lengthSq() < 1e-6) away.set(0, 0, 1);
       away.normalize();
-      const damage = hitDamage(d, { part: 'body', blastDistance: distance }, 0, stats);
+      const damage = hitDamage(d, { part: 'body', blastDistance: distance }, 0, stats, 1, target); // (the target: Black Friday's one-shot needs it)
       const point = target.position.clone().setY(target.position.y + 1);
       const { killed } = target.takeHit({ damage, part: 'body', point, direction: away, impact: d.impact, weaponId: d.id, distance: firedFrom.distanceTo(centre) });
       anyKilled ||= killed;

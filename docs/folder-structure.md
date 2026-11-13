@@ -904,10 +904,6 @@ src/
     rocketView.js       Browser side only: draws g.rockets.list (what the blast guns fire) by its gun's flight.look.model: 'rocket' (the Bottle Rocket Bazooka: a firework
                         pointed along its flight, puffing sparks, effects.confetti, every flight.trailSeconds) or 'balloon' (the Balloon Launcher: a bobbing party
                         balloon on a string, its colour by the balloon's id); between last tick's and this tick's position (alpha).
-    throwableView.js    Browser side only: draws `equipment.live` (Kiosk Kevin's thrown things), one pool per look.model: the cola bottle (tumbling in the
-                        air, lying and rattling on the floor, swelling as the fuse runs out), the Sparkler Cake (spinning, then upright and jittering
-                        while it sprays), the Glitter Bomb card (flipping) and the Sentry (tumbling, then standing with its head turned to item.yaw);
-                        a mesh is hidden when its item is gone; dispose() frees the pools.
     closingKeyView.js   Reusable spinning key and signature props for the four closing pickups, each with a beacon while it lies there.
     saleTagView.js      Browser side only: pooled two-sided floating SALE / SALE SOON / DOORBUSTER tags (world/typeKit.js `clearance` role; three InstancedMeshes, one
                         shown at a time) and a Doorbuster beacon over the buy spots collectSaleSpots(g, sale) returns; re-reads on sale/purchase/move events and

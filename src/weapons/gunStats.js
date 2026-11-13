@@ -71,7 +71,10 @@ export function hitDamage(def, hit, index, stats, chargeScale = 1, target = null
     const base = effectiveTarget.maxHealth * (effectiveTarget.type?.returnToSenderFraction ?? def.instantKill.bigFraction) * tier * stats.damageMultiplier;
     return applyInstantKillDamage(base, effectiveTarget, stats);
   }
-  if (def.blast && hit.blastDistance !== undefined) return def.damage * chargeScale * blastFalloff(hit.blastDistance, def.blast) * stats.damageMultiplier;
+  // (A blast goes through the same Black Friday step as a bullet: an incentive jackpot one-shots a shopper caught in the burst.)
+  if (def.blast && hit.blastDistance !== undefined) {
+    return applyInstantKillDamage(def.damage * chargeScale * blastFalloff(hit.blastDistance, def.blast) * stats.damageMultiplier, effectiveTarget, stats);
+  }
   const head = hit.part === 'head' ? def.headshotMultiplier * (stats.headshotDamageMultiplier ?? 1) : 1;
   const pierce = def.pierce ? def.pierce.damageFalloff[Math.min(index, def.pierce.damageFalloff.length - 1)] : 1;
   const base = def.damage * chargeScale * head * damageFalloff(hit.distance, def.falloff) * pierce * stats.damageMultiplier;
