@@ -13,6 +13,7 @@ export const impacts = {
     barcodeScanner: { kind: 'laserBurn', radius: 0.03, variants: 2 },
     stapleGun: { kind: 'staple', radius: 0.028, variants: 2 },
     priceGun: { kind: 'sticker', radius: 0.072, variants: 3, rotationDegrees: 22 },
+    bogo: { kind: 'bogoTag', radius: 0.03, variants: 3 }, // a little two-for-one label, stuck on crooked
     nailGun: { kind: 'nail', radius: 0.028, variants: 2 },
     foamDartBlaster: { kind: 'dart', radius: 0.025, variants: 3 },
     confettiCannon: { kind: 'confetti', radius: 0.075, variants: 3 },

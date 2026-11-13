@@ -496,6 +496,26 @@ export const audio = {
     balloonReloadReady: { volume: 0.5, layers: [
       { type: 'tone', wave: 'triangle', freq: 880, freqEnd: 1320, gain: 0.2, attack: 0.002, decay: 0.12 },
     ] },
+    // BOGO: two label taggers firing in turn, 18 a second: a short snappy clack with a paper flick, light enough to run together.
+    bogoShot: { volume: 0.5, layers: [
+      { type: 'tone', wave: 'sine', freq: 240, freqEnd: 120, gain: 0.55, attack: 0.0008, decay: 0.03 },
+      { type: 'noise', filter: 'bandpass', freq: 2300, q: 0.9, gain: 0.6, attack: 0.0005, decay: 0.018 },
+      { type: 'noise', filter: 'lowpass', freq: 1100, q: 0.7, gain: 0.35, attack: 0.001, decay: 0.022 },
+      { type: 'tone', wave: 'triangle', freq: 900, freqEnd: 520, gain: 0.1, attack: 0.001, decay: 0.012, delay: 0.006 },
+    ] },
+    bogoReloadOut: { volume: 0.5, layers: [ // both magazines let go
+      { type: 'noise', filter: 'bandpass', freq: 1600, q: 1.2, gain: 0.55, attack: 0.001, decay: 0.05 },
+      { type: 'noise', filter: 'bandpass', freq: 1400, q: 1.2, gain: 0.45, attack: 0.001, decay: 0.05, delay: 0.035 },
+    ] },
+    bogoReloadIn: { volume: 0.6, layers: [ // two fresh ones slapped home, a beat apart
+      { type: 'noise', filter: 'lowpass', freq: 1100, q: 0.8, gain: 0.7, attack: 0.001, decay: 0.07 },
+      { type: 'tone', wave: 'sine', freq: 190, freqEnd: 80, gain: 0.5, attack: 0.001, decay: 0.07 },
+      { type: 'noise', filter: 'lowpass', freq: 1000, q: 0.8, gain: 0.6, attack: 0.001, decay: 0.07, delay: 0.06 },
+    ] },
+    bogoReloadReady: { volume: 0.5, layers: [ // both guns cocked
+      { type: 'noise', filter: 'bandpass', freq: 2500, q: 1, gain: 0.5, attack: 0.001, decay: 0.04 },
+      { type: 'tone', wave: 'triangle', freq: 640, freqEnd: 300, gain: 0.22, attack: 0.001, decay: 0.05, delay: 0.02 },
+    ] },
     // One pulse of the Leaf Blower's stream (every 0.15 s): wind and a motor, long enough to run into the next one so it reads as one roar.
     leafBlowerPuff: { volume: 0.5, layers: [
       { type: 'noise', filter: 'bandpass', freq: 900, q: 0.5, gain: 0.7, attack: 0.025, decay: 0.2 },

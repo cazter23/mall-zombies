@@ -9,6 +9,16 @@ Separated the Rivet Rifle and Heavy Coil Nailer (both were `damage: 95`, `fireIn
 - **Review fix:** the Rivet Rifle's magazine `30 -> 36` (reserve stays 144: four magazines) and headshot multiplier `1.75 -> 2` (a headshot 160, about the old 166, still above a Foam dart's 157.5), so the faster gun is still an upgrade over the
   Foam Dart Blaster: sustained `538 -> 579` at 5 m (Foam `570`), `539` at 15 m. The four other failures were the old numbers in the tests
   (fire rates 12/s and 8/s, round-8 body shots Rivet 9 / Coil 6, a Coil drum now needs 11 round-8 Shoppers to run dry): updated.
+## 13 November 2026 - BOGO, the akimbo SMGs, in GRAB-A-GUN (`claude/bogo`)
+
+A new claw-only gun (purple capsule, weight 6): BOGO, Buy One Get One. Two label-tagger SMGs, one in each hand, firing in turn. To the game it
+is one gun (config/weapons.js bogo): one 60-round magazine (two 30s), one trigger, one 2 s reload. 60 a hit every 0.055 s (~18 a second, the
+fastest there is), falloff from 7 m to 0.45x at 18 m and a wide spray that blooms: `npm run balance` sustained 686 at 2 to 5 m (the Coil
+Nailer 647, the Rivet Rifle 582), 364 at 15 m (the Price Gun 407), 216 at 20 m. Right mouse raises no sights: it pulls the pair in and
+tightens the spray (spread.adsMultiplier 0.55; hip 438 vs 592 at 10 m), the crosshair stays. The model (weapons/models/bogo.js) is the pair;
+the viewmodel gained three optional hooks for it (onFire, createUpgradeVisuals, skinTargets; animate gets aimAmount), so attachments, warranty
+trims and skin prints go on both guns. Skins: Markdown, Two for One (BUY 1 / GET 1, 300 quick kills), Doorbuster Rush (50 kills in a round).
+Its wall mark is a little two-for-one tag (impactModels bogoTag).
 
 ## 13 November 2026 - Tennis Ball Launcher keeps up; Barcode Scanner: scan and ring up (claude/gun-rework)
 

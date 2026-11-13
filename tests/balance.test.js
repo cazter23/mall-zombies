@@ -303,3 +303,16 @@ test('Balloon Launcher: the gun that hits what you do not aim at. Its balloons h
   assert.ok(bl.blast.radius <= 1.5 && !bl.blast.self, 'a small pop, harmless to you');
   assert.ok(bl.magazineSize >= 6 && bl.fireInterval <= 0.4, 'a handful of balloons, quickly: fire and forget');
 });
+
+test('BOGO, the akimbo SMGs: the fastest fire there is and, up close, with the best automatics on the wall; a spray that falls apart down a hallway; right mouse tightens it', () => {
+  const bogo = weapons.bogo;
+  assert.ok(bogo.clawOnly && !bogo.pellets);
+  for (const d of Object.values(weapons)) if (d !== bogo && d.fireInterval) assert.ok(bogo.fireInterval < d.fireInterval, `faster than the ${d.name}`);
+  const close = dps(bogo, 5);
+  for (const d of [priceGun, nailGun, foamDartBlaster, weapons.rivetRifle]) assert.ok(close > dps(d, 5), `beats the ${d.name} at 5 m: ${Math.round(close)} vs ${Math.round(dps(d, 5))}`);
+  const coil = dps(weapons.coilNailer, 5);
+  assert.ok(close > 0.9 * coil && close < 1.15 * coil, `about the Coil Nailer up close: ${Math.round(close)} vs ${Math.round(coil)}`);
+  assert.ok(dps(bogo, 15) < dps(priceGun, 15), 'below the Price Gun at 15 m');
+  assert.ok(dps(bogo, 20) < 0.4 * close, 'a spray, not a rifle, at 20 m');
+  assert.ok(sustainedDps(bogo, 10, { ads: false, samples: 1500 }) < 0.85 * sustainedDps(bogo, 10, { ads: true, samples: 1500 }), 'right mouse tightens the spray');
+});

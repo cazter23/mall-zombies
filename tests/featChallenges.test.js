@@ -151,6 +151,10 @@ const CASES = {
       round(t, featOf('balloonLauncher').challenge.minRound); kill(t, 'balloonLauncher', { zombie: boss(['balloonLauncher', 'stargazer']) }); // the sniper helped
     },
   },
+  bogo: {
+    earn: t => { round(t, 3); times(need('bogo'), () => kill(t, 'bogo')); },
+    near: t => { round(t, 3); times(need('bogo') - 1, () => kill(t, 'bogo')); round(t, 4); times(need('bogo') - 1, () => kill(t, 'bogo')); },
+  },
 };
 
 test('every gun has exactly one feat (slot 3) with a counter, a sentence built from its own data and a tracker line', () => {

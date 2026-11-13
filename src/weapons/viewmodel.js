@@ -168,7 +168,7 @@ export function createViewmodel(weaponDefs, meleeDef, { skinFor = () => undefine
     holder.add(model.root);
     const flash = createMuzzleFlash(def.muzzleFlash, { handLight, worldLight });
     model.muzzle.add(flash.object);
-    const upgrades = createUpgradeVisuals(model); // attachment parts + tier sticker, all hidden for now
+    const upgrades = model.createUpgradeVisuals?.() ?? createUpgradeVisuals(model); // attachment parts + tier sticker, all hidden for now (a pair of guns fits its own)
     const entry = { def, model, flash, upgrades };
     guns.set(variantKey(def.id, skinId), entry);
     return entry;
@@ -262,6 +262,7 @@ export function createViewmodel(weaponDefs, meleeDef, { skinFor = () => undefine
         rk.yawDegrees * DEG_TO_RAD * m * randomSide(),
         rk.rollDegrees * DEG_TO_RAD * m * randomSide(),
       );
+      active.model.onFire?.(active.flash.object); // (a pair of guns: the next one fires, and the flash moves onto it)
       active.flash.trigger(aimAmount, workshopStuffings[buildOf(def.modList ?? [])?.stuffing]?.color ?? null); // (a built gun's flash is its stuffing's colour)
       sinceFire = 0;
       // A shot ends any reload pose at once (a shell-by-shell gun fired mid-reload: barrels snap shut
@@ -437,7 +438,7 @@ export function createViewmodel(weaponDefs, meleeDef, { skinFor = () => undefine
       // The gun's own moving parts (trigger, hands during the reload, charge state).
       const chargeProgress = weapon.def.id === active.def.id ? (weapon.chargeProgress ?? 0) : 0;
       const loaded = weapon.def.id === active.def.id ? weapon.magazine > 0 : true; // (the Bottle Rocket Bazooka shows its rocket's nose only when loaded)
-      model.animate({ sinceFire, reloadProgress: reloadShown, reloadWeight: rw, chargeProgress, time, loaded });
+      model.animate({ sinceFire, reloadProgress: reloadShown, reloadWeight: rw, chargeProgress, time, loaded, aimAmount });
 
       // Melee: drop the gun aside, swap the left hand for the box cutter arm and slash.
       const mel = vm.melee;

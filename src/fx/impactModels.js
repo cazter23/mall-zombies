@@ -111,6 +111,13 @@ export function buildImpactModel(kind, variant) {
     hole(0, 0, 0.016);
     part(new THREE.SphereGeometry(0.008, 8, 6), 0xd8dee6, 0, 0, 0.003);
     for (let i = 0; i < 5; i++) box(0.0018, 0.03, 0.001, 0x3a342e, 0, 0, 0.0016, [0, 0, i * 1.26 + variant * 0.5]);
+  } else if (kind === 'bogoTag') {
+    // BOGO: a small white two-for-one label stuck on crooked, a red band across its top and two yellow dots (BUY 1, GET 1), as boxes.
+    const tilt = [0, 0, (variant - 1) * 0.35];
+    box(0.046, 0.03, 0.0012, 0x3a3238, 0.002, -0.002, 0.0008, tilt); // its shadow
+    box(0.044, 0.028, 0.0012, 0xfff6e0, 0, 0, 0.0016, tilt);
+    box(0.044, 0.008, 0.0012, 0xe8344e, 0, 0.01, 0.0022, tilt);
+    for (const x of [-0.009, 0.009]) box(0.008, 0.008, 0.0012, 0xffd23f, x, -0.004, 0.0022, tilt);
   } else throw new Error(`Unknown impact signature: ${kind}`);
   const geometry = mergeGeometries(parts); parts.forEach((g) => g.dispose());
   return { geometry, material: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.45, metalness: 0.22,
