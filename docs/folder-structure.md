@@ -48,8 +48,12 @@ src/
                         for the `{size}` / `{Size}` tokens in a config line, describeEffects and hasStatNumber (the detector the tests use).
     wardrobe.js         Apparel items, four slots, stat multipliers, joke line, signature colour, icon id and `lines` (the words for each upside / downside) per item,
                         `statBetter` (which direction of a stat is good), rack locations, fitting-room placards and the picker's close distance.
-    shoppers.js         Cosmetic-only Shopper wardrobe: coordinated palettes/profiles, shirts/layers, bottoms, hair,
-                        modest width variations, accessories and wear. Parts are data; combat never reads this file.
+    shoppers.js         Cosmetic-only Shopper looks: `colors` (the curated 1986 mall palette: every colour a Shopper wears is named
+                        here), eight ARCHETYPES (weekend shopper, velour tracksuit, mall-rat teen, office worker on lunch, parent
+                        with a baby carrier, retiree, food-court crew in their stall's colours, rocker), each with its tops,
+                        bottoms, shoes, hair, hats, glasses, held item, extras and coordinated palettes; then the parts library
+                        (tops, bottoms, shoes, hair, headwear, eyewear, held, extras, faces) as data. No other kind's signature
+                        (no hoodie, beanie, headband, wristbands). Combat never reads this file.
     impacts.js          Cosmetic impact cap (200), Cannon budget (2 clusters), projection/edge tolerances and gun signatures
     environment.js      Cosmetic mall lighting/materials, ceiling spacing, subtle local motion, contact shadows,
                         ambient voice/distance/occlusion/fade tuning; fixed start-room and Mega Mart lamps
@@ -438,11 +442,22 @@ src/
                         hitboxes, and accelerates into a rush. Captain Coupon (type.mascot.reclaim): updateReclaim walks back
                         to mascotHelmet.rest, lifts it on (mascotLift), restores health once; gives up when it is gone, guarded
                         or too slow (mascotWantsHelmet = still going back for it)
-    shopperAppearance.js Weighted, coordinated Shopper wardrobe selection; optional seeded random for tests, one look per spawn
+    shopperAppearance.js Which Shopper a spawn is: chooseShopperAppearance(random) picks an archetype and everything from its own lists;
+                        lookRandom(seed) / appearanceForSeed(seed) make it a pure function of zombie.lookSeed (one Math.random draw
+                        per spawn in zombieManager, whatever the look)
+    shopperModel.js     createShopperDresser(look, ...): dresses the shared skeleton (legs, torso, sleeves, held item, hair, hat,
+                        glasses, extras) from config/shoppers.js parts, all in PAINTS; hasBag (Limited Editions) and the summary
+                        on root.userData.appearance
+    shopperBake.js      How a crowd stays cheap: paint(hex) markers; bakeShopper merges each bone's painted pieces into one mesh with
+                        vertex colours (normals and colours in bytes) drawn with the Shopper's ONE vertex-coloured material
+                        (createShopperMaterial): 8 draw calls per Shopper. Baked geometry is shared through a cache keyed by
+                        what the bone wears, ref-counted, freed with its last Shopper (release() on dispose); bakedGeometryStats()
     cartModel.js        buildCart(cfg, mat): the Cart Pusher's shopping cart (wire basket, chassis, casters, red handle, shopping
                         inside), merged by material; on the model's root so it stays upright when the zombie dies
-    zombieModel.js      Faceted low-poly zombie model built from the type: Shopper (config/shoppers.js wardrobe + 5 cartoon-undead
-                        face profiles: sunkenEyes, offsetJaw, droopingEyelid, retailSmile, discolored), Mall Walker (type.outfit:
+    zombieModel.js      Faceted low-poly zombie model built from the type: Shopper (a config/shoppers.js archetype dressed by
+                        shopperModel.js and baked by shopperBake.js: one vertex-coloured material, 8 meshes; with a seed the build
+                        runs on the look's own random, Math.random swapped out meanwhile because Three.js ids draw on it; 5
+                        cartoon-undead face profiles: sunkenEyes, offsetJaw, droopingEyelid, retailSmile, discolored), Mall Walker (type.outfit:
                         matching tracksuit + stripes, headband, wristbands, fanny pack; modelScale) or Cart Pusher. Shared indexed
                         ANATOMY_GEOMETRIES (faceted cranium + tapered jaw + brow/ears, V-tapered torso with shoulder caps, tapered
                         limbs, faceted shoes and recognizable hands with palm/fingers/thumb) batch per bone across all zombie types.

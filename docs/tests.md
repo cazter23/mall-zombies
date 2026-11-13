@@ -120,8 +120,14 @@ intensity/off, unsupported/rejected actuator APIs, legacy pulse fallback, gamepa
 cleanup and keyboard suppression. Settings -> Controller -> Controller vibration is saved with the other settings.
 `tests/prone.test.js` covers toggle controls, crawl speed from stats, smooth eye/collision lowering, low roofs,
 safe stand/crouch recovery, slide/jump/melee/vault constraints, gun use, zombie damage, body clearance, controller sprint latch and run reset.
-`tests/shopperAppearance.test.js` covers coordinated wardrobe choices and rarity, every clothing/hair/accessory/wear variant,
-valid geometry and mesh budgets, animation, isolated hit flashes, owned-resource disposal, fixed hitboxes and unchanged Mall Walkers.
+`tests/shopperAppearance.test.js` covers the Shopper looks: the same seed is the same Shopper, every archetype turns up at its weight and
+wears every top/bottom/shoe/pattern/build/hair/hat/glasses/held item/extra on its lists over 6000 seeds; every colour is a named palette colour
+and every part well formed; no other kind's signature (hoodie, beanie, headband, wristbands) and nothing towering over the head hitbox;
+every piece builds valid geometry and animates, a Shopper is ONE vertex-coloured material and 8 meshes, the head anchor and bone names
+never move; the Cart Pusher keeps its cart's own materials; hit flash and edge shading per zombie; shared baked geometry is shared by
+identical bones, only freed with its last user, and the cache is empty after many spawns and deaths; the look never depends on Math.random
+and the hitboxes never change; Mall Walkers and Shoplifters keep their own materials; and in the real game the same seeded spawns are
+the same Shoppers, each spawn takes the same random numbers whatever it wears, and clear() frees every shared geometry.
 `tests/atmosphere.test.js` checks decorative triangles against protected routes/vaults and the escalator ceiling well,
 zero added collision, batching/motion reset, interpolated supporting-surface shadows and disposal, spatial sound
 occlusion/zones/panning/caps, pause/death/reset silence, closed-shutter rattles and Web Audio voice cleanup.

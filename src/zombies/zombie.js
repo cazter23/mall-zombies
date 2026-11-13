@@ -48,7 +48,10 @@ const laneRay = new THREE.Ray();
 export class Zombie {
   // `speed`: this zombie's gait speed in m/s (defaults to the type's base walk).
   // `round`: the round it spawned in (later rounds wind up their attacks faster).
-  constructor({ type, health, position, yaw, speed = type.speed, round = 1 }) {
+  // `lookSeed`: which Shopper look it wears (zombies/shopperAppearance.js; the manager gives every spawn its own). Without
+  // one the look is rolled from Math.random.
+  constructor({ type, health, position, yaw, speed = type.speed, round = 1, lookSeed = null }) {
+    this.lookSeed = lookSeed;
     this.round = round; // (a gun whose damage keeps up with the rounds reads it: weapons/gunStats.js roundDamageScale)
     this.type = type;
     this.maxHealth = health;
@@ -160,7 +163,7 @@ export class Zombie {
     ];
 
     if (type.cartHitbox) this.hitboxes.push({ part: 'body', box: new THREE.Box3() }); // the tipped cart (zombies/cartPose.js)
-    this.model = createZombieModel(type);
+    this.model = createZombieModel(type, { seed: lookSeed });
     applyZombieRim(this.model.root, type); // (the soft edge glow: zombies/zombieRim.js)
     this.updateHitboxes();
   }
