@@ -1,5 +1,12 @@
 # Sunset Galleria: build history ("Current state")
 
+## 13 November 2026 - Spill Cleanup draws shoppers through it
+
+- The teal spill only slowed whoever happened to cross it. Now a non-boss shopper within `attractRadius` (10 m, same floor, clear line,
+  the spill nearer to it than the player) walks to the puddle first (`zombie.detour`, steered in `Zombie.chase` before the route to the
+  player), and is done with it once within `crossRadius` (0.8 m) of its middle, so each shopper is drawn once. Detours are let go when
+  the spill ends. game/incentiveEffects.js `lureThroughSpill`; config/powerUps.js spillCleanup; tests/incentiveEffects.test.js.
+
 ## 13 November 2026 - Kiosk Kevin rests between moves and restocks every 3 rounds (`claude/hydrogen-kevin-calmer`)
 
 Calmed Kiosk Kevin down so he rotates stock, Pick, and sites on a 3-round cadence instead of every round:

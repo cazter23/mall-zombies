@@ -205,7 +205,7 @@ Commission Day also doubles the helmet pop; Black Friday (one-hit kills across h
 per-type distinct 3D low-poly silhouettes (`userData.shared` merged geometries/materials built once and reused without per-pickup disposal or leaks across resets, few meshes per pickup, standout jackpot scale/hover/halo/beacon), `'powerUpMeter'` event bus tracking across round unlock/near-full/cap/restore/reset, Comfort `incentiveMeter` toggle, `'incentiveDiscovered'` NEW INCENTIVE HUD toast, and Employee of the Hour HUD states.
 `fullRun.test.js` also earns and collects a drop with production tuning, then checks Play again cleanup.
 `tests/incentiveEffects.test.js` covers Shift Bonus (reload/swap/move + direct-kill extension cap), Paid Break (its circle and floor only, blocked by walls, capped at max health, a finite budget; green ring + HUD),
-Inventory Liquidation, Employee Discount, Mystery Shopper, Spill Cleanup, Loss Prevention (three melee charges + sprint shove pulses), reward rotation,
+Inventory Liquidation, Employee Discount, Mystery Shopper, Spill Cleanup (and it drawing nearby shoppers through the puddle once each), Loss Prevention (three melee charges + sprint shove pulses), reward rotation,
 death/reset cleanup, concurrent HUD counters with jackpot styling, floor rings and target markers.
 
 Gameplay regression tests live in `tests/` (`gameplay.test.js` movement/melee/vault, `aim.test.js` spread
