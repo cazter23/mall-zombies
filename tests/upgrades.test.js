@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { weapons } from '../src/config/weapons.js';
 import { upgrades } from '../src/config/upgrades.js';
 import { economy, zombieHealthForRound } from '../src/config/economy.js';
-import { resolveGun } from '../src/weapons/gunStats.js';
+import { resolveGun, damageFalloff } from '../src/weapons/gunStats.js';
 import {
   TIER_IDS, tierOf, nextTier, attachmentsOf, attachmentFits, withTier, withAttachment,
 } from '../src/weapons/upgrades.js';
@@ -96,11 +96,15 @@ test('what each attachment does (on the Price Gun), and that the Laser Pointer l
   assert.ok(g('speedLoader').magazineSize < priceGun.magazineSize && g('speedLoader').reloadTime < priceGun.reloadTime);
 });
 
-test('fits: everything fits every gun except the Extended Nozzle on a gun with no falloff to extend (the Nail Gun, Return to Sender); Sawn-Off GIVES it falloff', () => {
+test('fits: everything fits every gun except the Extended Nozzle on a gun with no falloff to extend (the Nail Gun, Return to Sender, the blast guns); Sawn-Off GIVES it falloff', () => {
   for (const base of guns) {
     for (const id of ATTACHMENTS) {
       const fits = attachmentFits(base, id);
-      assert.equal(fits, !((base.id === 'nailGun' || base.id === 'returnToSender') && id === 'extendedNozzle'), `${id} on ${base.id}`);
+      assert.equal(fits, !(!base.falloff && id === 'extendedNozzle'), `${id} on ${base.id}`);
+    }
+    if (['nailGun', 'returnToSender', 'bottleRocket', 'balloonLauncher'].includes(base.id)) assert.equal(base.falloff, undefined, `${base.id} has no falloff`);
+    for (const id of ATTACHMENTS) {
+      const fits = attachmentFits(base, id);
       if (fits) at(base, 'platinum', id); // resolves without throwing
     }
   }
@@ -168,4 +172,17 @@ test('the real game: upgrades stay through an ammo buy, go with a replaced gun, 
   t.tick(1);
   assert.equal(g.gun.owns('priceGun'), false);
   assert.deepEqual(g.gun.modsFor('stapleGun'), []);
+});
+
+test('a barrel on a RISING falloff (the Stargazer) works the way its line says: the Extended Nozzle brings the long-range bonus in closer, the Sawn-Off pushes it out', () => {
+  const { stargazer } = weapons;
+  const plain = at(stargazer, 'standard'), nozzle = at(stargazer, 'standard', 'extendedNozzle'), sawn = at(stargazer, 'standard', 'sawnOff');
+  for (const metres of [15, 20, 25]) {
+    const base = damageFalloff(metres, plain.falloff);
+    assert.ok(damageFalloff(metres, nozzle.falloff) > base, `Extended Nozzle at ${metres} m: more, not less`);
+    assert.ok(damageFalloff(metres, sawn.falloff) < base, `Sawn-Off at ${metres} m: its falloff side is the downside`);
+  }
+  assert.equal(damageFalloff(60, nozzle.falloff), stargazer.falloff.minMultiplier, 'the ceiling stays where it was');
+  // (a fading falloff as before: the nozzle pushes the fade out)
+  assert.ok(at(priceGun, 'standard', 'extendedNozzle').falloff.end > priceGun.falloff.end);
 });

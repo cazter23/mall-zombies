@@ -30,6 +30,7 @@ import { buildMinimapPlan, minimapState } from './game/minimapPlan.js';
 import { createDamageIndicatorQueue } from './ui/damageDirection.js';
 import { weapons, melee as meleeWeapons } from './config/weapons.js';
 import { createViewmodel } from './weapons/viewmodel.js';
+import { scopeOverlay } from './weapons/scope.js';
 import { createPlayerBody } from './player/body.js';
 import { connectWardrobeAppearance } from './player/wardrobeAppearance.js';
 import { createSound } from './audio/sound.js';
@@ -43,12 +44,15 @@ import { upgrades } from './config/upgrades.js';
 import { gunStyle } from './config/gunStyle.js';
 import { buildOf, qualityById, workshopStuffings } from './config/workshop.js';
 import { PRICE_CATEGORIES } from './game/pricing.js';
+import { createSaleTagView } from './fx/saleTagView.js';
 import { createDebugPanel } from './ui/debugPanel.js';
 import { createTitleCamera } from './ui/titleCamera.js';
 import { createRunStart } from './ui/runStart.js';
 import { createBenchmark } from './fx/benchmark.js';
 import { createBallView } from './fx/ballView.js';
+import { createRocketView } from './fx/rocketView.js';
 import { createThrowableView } from './fx/throwableView.js';
+import { createKioskSpectacle } from './fx/kioskSpectacle.js';
 import { createLightPool, collectPointLights } from './fx/lightPool.js';
 import { batchStatic } from './world/staticBatch.js';
 import { sheenEnvironment, applyMetalSheen } from './fx/metalSheen.js';
@@ -61,6 +65,7 @@ import { setRimDaylight } from './zombies/zombieRim.js';
 import { createDetailCulling } from './fx/detailCulling.js';
 import { createRoomCulling } from './fx/roomCulling.js';
 import { look } from './config/look.js';
+import { powerUps } from './config/powerUps.js';
 import { createCareerStats } from './game/careerStats.js';
 import { createSkinSave } from './game/skinSave.js';
 import { createLocker } from './ui/locker.js';
@@ -114,7 +119,12 @@ const challengeBoard = createChallengeBoard({
   save: skinSave, pins: challengePins, onBack: () => hud.screens.show('title'),
   trackerEnabled: () => settings.get('challengeTracker'), getChallenges: () => g.challenges, guideSave,
 });
-const hud = createHud({ locker, guide: guideScreen, challenges: challengeBoard });
+const hud = createHud({
+  locker,
+  guide: guideScreen,
+  challenges: challengeBoard,
+  onIncentiveReady: () => sound.play(powerUps.meter.sound),
+});
 // The mall directory (ui/minimap.js): a tap of the minimap button shows or hides the corner map (remembered), a hold shows it all.
 hud.minimap = createMinimap({ onCornerChange: (on) => settings.set('minimap', on) });
 hud.element.append(hud.minimap.element);
@@ -163,6 +173,7 @@ const damageIndicators = createDamageIndicatorQueue({
   getPlayerPosition: () => player.position,
 });
 const haptics = createHaptics({ gamepad, input, state: game, health, events: g.events });
+const saleTags = createSaleTagView(scene, g);
 
 // Which button set prompts show: the device used last ('keyboard', or the controller's type: 'xbox', 'playstation'...).
 function promptDevice() {
@@ -285,7 +296,10 @@ const metalSheen = sheenEnvironment(renderer, look.metalSheen);
 for (const root of [map.group, g.arena?.group].filter(Boolean)) applyMetalSheen(root, metalSheen, look.metalSheen);
 effects.prepare(renderer, camera); // shared impact graphics warmed before the first shot
 const ballView = createBallView(scene, g.balls); // the Tennis Ball Launcher's balls in the air
+const rocketView = createRocketView(scene, g.rockets, g.effects); // the Bottle Rocket Bazooka's rockets in the air, with their spark trails
 const throwableView = createThrowableView(scene, g.equipment); // Kiosk Kevin's thrown equipment (a Soda Bomb on its fuse)
+// Kiosk Kevin's show: Kevin's animation and shouts, the cola geyser, the glitter, the air-horn rings, bubble-wrap pops, the Sentry's flash and break-up.
+const kioskSpectacle = createKioskSpectacle({ scene, events: g.events, camera, kiosk: g.features.instanceOf('kiosk'), equipment: g.equipment, effects, sound });
 
 // --- Menus and the run's flow ------------------------------------------------------
 // title (live flyover) -> playing <-> paused -> dead -> results receipt -> playing again / title.
@@ -513,6 +527,9 @@ function render(alpha, frameTime) {
   // ADS zoom + sprint FOV kick: narrow the world camera's FOV on ADS, widen slightly when sprinting.
   const aimAmount = gun.aim.renderAmount(alpha);
   const baseFov = feel.camera.fov * (1 + (gun.weapon.def.ads.fovMultiplier - 1) * aimAmount);
+  // A scoped gun's eyepiece (weapons/scope.js): fills the view as it aims in; once it covers everything the gun model is not drawn.
+  const scoped = game.over ? 0 : scopeOverlay(gun.weapon.def.scope, aimAmount);
+  hud.setScope(scoped, gun.weapon.def.scope?.look);
   const speedAmount = game.over ? 0 : player.sprintAmount * (1 - aimAmount);
   const fov = baseFov + (atmosphere.postProcessing?.sprintFovDegrees ?? 5.5) * speedAmount;
   if (camera.fov !== fov) {
@@ -530,7 +547,9 @@ function render(alpha, frameTime) {
   g.contactShadows.update(zombies.zombies, alpha);
   effects.update(visualTime);
   ballView.update(alpha); // the Tennis Ball Launcher's balls in the air
-  throwableView.update(alpha);
+  rocketView.update(alpha, visualTime); // the Bottle Rocket Bazooka
+  throwableView.update(alpha, visualTime);
+  kioskSpectacle.update(visualTime, performance.now() / 1000);
   viewmodel.update(visualTime, camera, {
     weapon: gun.weapon,
     shownDef: gun.shownDef, // mid-switch: the old gun while it drops away
@@ -569,14 +588,15 @@ function render(alpha, frameTime) {
     });
   }
   const prompt = game.over || game.menu ? null : interactions.prompt; // (no shelf ticket behind an open menu)
-  // A Flash Sale shows as a SALE mark on the price of whatever it discounted.
+  // A Flash Sale (or Doorbuster) shows as a SALE mark on the price of whatever it discounted.
   hud.setInteract(prompt && {
     ...prompt,
-    sale: !prompt.owned && PRICE_CATEGORIES.includes(prompt.kind) && pricing.discountOf(prompt.kind) > 0,
+    sale: !prompt.owned && PRICE_CATEGORIES.includes(prompt.kind) && pricing.discountOf(prompt.kind, prompt.pricingId ?? prompt.id) > 0,
     originalCost: PRICE_CATEGORIES.includes(prompt.kind) ? pricing.basePriceOf(prompt.kind, prompt.pricingId ?? prompt.id) : prompt.cost,
   }, buttonLabel('interact'));
-  hud.setFlashSale(game.over ? null : flashSales.active);
-  hud.setPowerUps(game.over ? null : g.powerUps);
+  hud.setFlashSale(game.over ? null : flashSales.active, game.over ? null : flashSales.pending);
+  saleTags.update(game.running ? frameTime : 0);
+  hud.setPowerUps(game.over ? null : { pickup: g.powerUps.pickup, effects: g.powerUps.effects });
   hud.setRitual(game.over ? null : ritual?.status ?? null);
   const menuLabels = { confirm: buttonLabel('menuConfirm'), back: buttonLabel('menuBack'), move: buttonLabel('menuMove'), switch: buttonLabel('menuSwitch') };
   hud.setOrderForm(game.over ? null : ritual?.form ?? null, menuLabels);
@@ -612,7 +632,7 @@ function render(alpha, frameTime) {
   // Render world + viewmodel through HDR post-processing (UnrealBloom + lens vignette/aberration + ACES tone mapping).
   roomCulling.update(cullingOn);
   detailCulling.update(camera); // (Graphics > Small detail: fx/detailCulling.js)
-  postProcessing.render({ showViewmodel: !death.summary, speedAmount, grade: gradeAt(frameTime) });
+  postProcessing.render({ showViewmodel: !death.summary && scoped < 1, speedAmount, grade: gradeAt(frameTime) });
 }
 
 // The main menu's backdrop: the camera glides through the mall (map.titleShots), fading through black at each cut.
@@ -669,6 +689,7 @@ if (debug.exposeToWindow) {
     THREE, scene, camera, renderer, postProcessing, map, world: map, colliders: g.colliders, arena: g.arena, player, stats: g.stats, input, game,
     hud, gun, effects, viewmodel, shootables: g.shootables, body, zombies, health, melee, runStats: g.runStats, death, resetRun,
     gamepad, aimAssist, wallet, rounds, sound, interactions, g, screens, locker, skinSave, titleCamera, roomCulling,
+    weapons, // the gun configs (gun.give(__mall.weapons.stargazer) hands over a claw-only gun in a browser check)
     menus: { play, pauseRun, freshRun, goToTitle }, // the menu flow, for testing
     benchmark: runBenchmark, // await __mall.benchmark() -> the report (title or pause screen)
     settings, lightPool, loop, idleSaver, // (settings.set(id, value) as the menu would; the light pool)

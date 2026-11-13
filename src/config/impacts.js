@@ -17,5 +17,6 @@ export const impacts = {
     foamDartBlaster: { kind: 'dart', radius: 0.025, variants: 3 },
     confettiCannon: { kind: 'confetti', radius: 0.075, variants: 3 },
     returnToSender: { kind: 'returnStamp', radius: 0.045, variants: 2 }, // a red RETURNED stamp on the wall
+    stargazer: { kind: 'bearing', radius: 0.03, variants: 2 }, // a steel ball bearing half sunk in a cracked dent
   },
 };

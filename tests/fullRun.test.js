@@ -292,11 +292,9 @@ test('round-2 combat earns a real incentive, collects it without F, and Play aga
   t.tick();
   assert.equal(g.powerUps.pickup, null, 'walk-through collection needs no interact input');
   assert.notEqual(pickup.id, 'stockroomDelivery', 'full inventory earns a useful reward');
-  assert.ok(g.powerUps.active || g.powerUps.effects.some(effect => effect.id === pickup.id)
-    || pickup.id === 'securitySweep', 'collected reward activates its zone, temporary benefit or immediate sweep');
+  assert.ok(g.powerUps.effects.some(effect => effect.id === pickup.id), 'collected reward activates its temporary benefit');
   g.resetRun();
   assert.equal(g.powerUps.pickup, null);
-  assert.equal(g.powerUps.active, null);
   assert.equal(g.powerUps.progress, 0);
   assert.equal(g.powerUps.dropsThisRound, 0);
   assert.deepEqual(g.powerUps.effects, [], 'all temporary benefits removed on restart');

@@ -153,11 +153,89 @@ export const economy = {
   // now (every door already open, every wall gun owned, every gun already Platinum).
   flashSales: {
     enabled: true,
-    firstDelaySeconds: 120, // into a run, before the first sale
+    firstDelaySeconds: 110, // quiet time into a run before the first teaser (120 s to go-live with teaserSeconds)
     gapSeconds: { min: 120, max: 240 }, // quiet time after a sale ends
+    teaserSeconds: 10, // warning lead time announced on the PA before a sale goes live
     durationSeconds: 45,
     retrySeconds: 30, // when nothing was worth discounting, look again this soon
     discounts: { min: 0.25, max: 0.5, step: 0.05 }, // "25-50% off"
+    teaser: {
+      kicker: 'Flash sale soon',
+      text: 'Attention shoppers: in {lead}, a flash sale on {label}. Please do not run. Running comes later.',
+    },
+    doorbuster: {
+      enabled: true,
+      weight: 0.55, // weighted alongside eligible normal groups (rarer than normal category sales)
+      fromRound: 3, // never before round 3 on scheduled rolls
+      durationSeconds: 20, // short window on one specific unowned / reachable item
+      discounts: { min: 0.65, max: 0.75, step: 0.05 }, // steep 65-75% off one item
+      teaser: {
+        kicker: 'Doorbuster soon',
+        text: 'Attention shoppers: in {lead}, a Doorbuster on {item} in {area}. Sensible shoes are recommended.',
+      },
+      start: {
+        kicker: 'Doorbuster',
+        text: 'Doorbuster! {Item} in {area}, {pct}% off, while supplies last.',
+      },
+      end: {
+        kicker: 'Doorbuster over',
+        text: 'The Doorbuster on {item} has ended. Thank you for trampling responsibly.',
+      },
+      sold: { // you bought it: the sale ends and the rush comes
+        kicker: 'Sold',
+        text: 'Sold! {Item}, {pct}% off. The other shoppers saw that.',
+      },
+      // Only an item you can get to in time: by route (zombie nav) within this share of the window at your sprint speed
+      // (stats.sprintSpeed; 0.5 of 20 s at 8 m/s = 80 m of route).
+      reachShareOfWindow: 0.5,
+      // The shoppers who saw you buy it: extra zombies near the item (open zones only), coming when you BUY the Doorbuster
+      // (a sale you let pass costs nothing). Extra (not taken from rounds.remainingToSpawn), so wave sizes never shrink.
+      rush: {
+        baseCount: 3,
+        perRound: 0.5, // +1 extra shopper per 2 rounds past fromRound
+        maxCount: 8, // hard cap regardless of round
+        nearestMarkers: 5, // pick from this many closest open-zone spawn markers to the item...
+        maxMarkerDistance: 18, // ...that are within this many metres of it (another floor counts 4x); else the single nearest
+        spawnIntervalSeconds: 0.45,
+        retrySeconds: 0.35,
+      },
+    },
+    // In-world floating clearance tag & Doorbuster beacon (fx/saleTagView.js). Kept tiny and shared across instances.
+    worldTag: {
+      maxNormal: 24,
+      maxDoorbuster: 6,
+      hoverY: 0.72,
+      wallOffset: 0.28, // nudge forward along a spot's outward wall normal so tags sit clear of frames
+      doorOffset: 0.8, // a shutter's tag: out on the bought side, clear of the shutter (half its depth + the spinning tag's half width)
+      doorProbe: 1.5, // metres out from a shutter on each side to find which side is bought (game/flashSales.js doorNormal)
+      beaconFloorDrop: 1.25,
+      syncIntervalSeconds: 0.25,
+      bobAmplitude: 0.08,
+      bobSpeed: 2.6,
+      spinSpeed: 0.9,
+      doorbusterSpinSpeed: 1.5,
+      doorbusterPulseSpeed: 4.5,
+      doorbusterPulseAmplitude: 0.08,
+      tagWidth: 0.62,
+      tagHeight: 0.3,
+      doorbusterWidth: 0.86,
+      doorbusterHeight: 0.36,
+      canvasWidth: 256,
+      canvasHeight: 128,
+      fontSize: 56,
+      minFontSize: 22,
+      colors: {
+        soonBg: '#f6ebd0',
+        soonBorder: '#a14759',
+        soonInk: '#422731',
+        saleBg: '#f3c66e',
+        saleBorder: '#2a1c2e',
+        saleInk: '#422731',
+        doorbusterBg: '#d62839',
+        doorbusterBorder: '#ffe066',
+        doorbusterInk: '#fff4e0',
+      },
+    },
     groups: [
       {
         id: 'doors', label: 'Security shutters', categories: ['door'], weight: 1,

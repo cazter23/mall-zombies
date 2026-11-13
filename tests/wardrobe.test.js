@@ -310,8 +310,7 @@ test('clothing stacks with live incentives, caps health and sprint, and scales z
   const game = scenario(t), { g } = game;
   const { stats, player, wardrobe } = g;
   const base = { ...stats };
-  const express = powerUps.types.expressCheckout;
-  const overtime = powerUps.types.overtimeApproved;
+  const shift = powerUps.types.shiftBonus;
   const loss = powerUps.types.lossPrevention;
   wardrobe.buy('cardigan');
   near(stats.maxHealth, base.maxHealth * 1.25, 'Cardigan capacity');
@@ -319,8 +318,7 @@ test('clothing stacks with live incentives, caps health and sprint, and scales z
   near(player.sprintMeter, stats.sprintDuration, 'shorter sprint clamps the meter');
   stats.health = stats.maxHealth;
 
-  collect(game, 'expressCheckout');
-  collect(game, 'overtimeApproved');
+  collect(game, 'shiftBonus');
   collect(game, 'lossPrevention');
   wardrobe.buy('sandwichBoard');
   near(stats.health, base.health, 'removing Cardigan clamps health');
@@ -330,8 +328,8 @@ test('clothing stacks with live incentives, caps health and sprint, and scales z
   wardrobe.buy('fannyPack');
   wardrobe.buy('lightUpSneakers');
   for (const id of ['cardigan', 'sandwichBoard', 'foamFinger']) assert.equal(wardrobe.wear(id), true);
-  near(stats.reloadSpeed, base.reloadSpeed * express.reloadMultiplier * 0.9, 'express and finger');
-  near(stats.sprintSpeed, base.sprintSpeed * overtime.speedMultiplier * 1.1, 'overtime and shoes');
+  near(stats.reloadSpeed, base.reloadSpeed * shift.reloadMultiplier * 0.9, 'shift bonus and finger');
+  near(stats.sprintSpeed, base.sprintSpeed * shift.speedMultiplier * 1.1, 'shift bonus and shoes');
   near(stats.meleeDamageMultiplier, base.meleeDamageMultiplier * loss.damageMultiplier * 1.5, 'loss prevention and finger');
   g.powerUps.update(120);
   assertFactors(stats, base, wardrobe.status.worn);
@@ -370,8 +368,8 @@ test('ticket lines are words only: each factor has a direction and one line, siz
     { stat: 'maxHealth', good: true, text: 'Noticeably more health' },
     { stat: 'sprintDuration', good: false, text: 'Sprints noticeably shorter' },
   ]);
-  assert.deepEqual(texts('hiVisVest'), ['Reloads noticeably faster', 'Zombie hits hurt noticeably more']);
-  assert.equal(wardrobe.ticketDetail('hiVisVest'), `${wardrobeItems.hiVisVest.ticket} · Reloads noticeably faster · Zombie hits hurt noticeably more · Torso slot`);
+  assert.deepEqual(texts('hiVisVest'), ['Reloads noticeably faster', "Your own blasts can't hurt you", 'Zombie hits hurt noticeably more']);
+  assert.equal(wardrobe.ticketDetail('hiVisVest'), `${wardrobeItems.hiVisVest.ticket} · Reloads noticeably faster · Your own blasts can't hurt you · Zombie hits hurt noticeably more · Torso slot`);
   for (const id of Object.keys(wardrobeItems)) {
     for (const line of wardrobe.statLines(id)) assert.ok(!hasStatNumber(line.text) && !/\d/.test(line.text), `${id}: "${line.text}"`);
     assert.ok(!hasStatNumber(wardrobe.ticketDetail(id)), id);
@@ -384,8 +382,7 @@ test('ticket lines are words only: each factor has a direction and one line, siz
   }
 
   // Running incentives change the stats but not the words: the lines are about the item.
-  collect(game, 'overtimeApproved');
-  collect(game, 'expressCheckout');
+  collect(game, 'shiftBonus');
   const before = texts('lightUpSneakers');
   assert.deepEqual(before, ['Sprints a little faster', 'Sprints a little shorter']);
   const quick = stats.sprintSpeed;
@@ -523,20 +520,21 @@ test('Fanny Pack adds refill capacity to live ammo sources and preserves excess 
   assert.equal(weapon.reserve, aboveBase);
 });
 
-test('Gold Card boosts rounded base credit for any kill source, with Blue Light and bonuses applied once', (t) => {
+test('Gold Card boosts rounded base credit for any kill source, with Commission Day and bonuses applied once', (t) => {
   const game = scenario(t), { g } = game;
   const makeKill = (source, part = 'body') => {
     const zombie = g.zombies.spawn('shopper', new Vector3(0, 0, 11));
     const points = g.wallet.points;
-    zombie.takeHit({ damage: zombie.health + 1, source, part, melee: source === "melee" });
+    zombie.takeHit({ damage: zombie.health + 1, source, part, melee: source === 'melee' });
     return g.wallet.points - points;
   };
   assert.equal(makeKill('hazard'), 60);
   g.wardrobe.buy('goldCard');
   assert.equal(makeKill('hazard'), 70);
   assert.equal(makeKill('gun', 'head'), 110);
-  collect(game, 'blueLightSpecial');
-  assert.equal(makeKill('melee'), 200);
+  collect(game, 'commissionDay');
+  // Base 60 * 1.2 (goldCard -> 70) + 70 (meleeKillBonus) = 140, doubled to 280 once via Commission Day.
+  assert.equal(makeKill('melee'), 280);
   g.health.takeDamage(10000);
   assert.equal(makeKill('gun'), 0);
 });

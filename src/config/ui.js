@@ -23,6 +23,9 @@ export const ui = {
     barcodeScanner: 'Charge and release · Piercing precision laser',
     returnToSender: 'The wonder weapon · Boxes one zombie and returns it: an instant kill · Bosses and Mascots only take a big hit',
     tennisBallLauncher: 'Tight spaces · Lobbed balls bounce off walls and between zombies, each bounce a hit',
+    stargazer: 'The sniper · Hits harder the further away it lands · Huge headshots through a real scope · Pierces a line',
+    bottleRocket: 'Blast at range · The rocket bursts on whatever it hits, hurting every zombie around it · Too close and it hurts you too',
+    balloonLauncher: 'Hits what you do not aim at · Slow balloons home in on the nearest zombie and pop · Fire while you back away',
     leafBlower: 'Crowd control · Blows zombies back and knocks them down · Runs on a tank that refills',
   },
 };

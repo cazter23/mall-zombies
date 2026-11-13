@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import { guideEntries, guideSections, guideEntry, guideEntryId, guideStage, guideStorage, guideNotices, guideDebug } from '../src/config/guide.js';
+import { guideEntries, guideSections, guideEntry, guideEntryId, guideStage, guideStorage, guideNotices, guideDebug, incentiveEntries, incentiveEntry } from '../src/config/guide.js';
 import { zombieTypes, mascotTypes, mascotGoldTypes } from '../src/config/zombies.js';
 import { bossTypes } from '../src/config/bosses.js';
 import { economy } from '../src/config/economy.js';
@@ -24,7 +24,7 @@ function memoryStorage(record = null) {
     get record() { return JSON.parse(values.get(guideStorage.key) ?? 'null'); },
   };
 }
-const stored = (data) => ({ version: guideStorage.version, seen: {}, kills: {}, found: {}, ...data });
+const stored = (data) => ({ version: guideStorage.version, seen: {}, kills: {}, found: {}, discovered: {}, ...data });
 
 function counters(storage = memoryStorage()) {
   const events = createEvents();
@@ -291,4 +291,68 @@ test('the real game: kills of each kind land on their pages, a boss walking in i
   g.state.assisted = true;
   kill(g.zombies.spawn('shopper', at));
   assert.equal(page('shopper').kills, 1);
+});
+
+test('incentive discoveries unlock once on actual pickup, ignore drops/expiry/assisted/dead/vouchers, and persist across resetRun and save/load', (context) => {
+  const storage = memoryStorage();
+  const discoveredEvents = [];
+  const t = counters(storage);
+  t.events.on('incentiveDiscovered', (e) => discoveredEvents.push(e));
+
+  assert.equal(t.guide.incentives().found, 0);
+  assert.equal(t.guide.incentives().total, incentiveEntries.length);
+
+  // Drop, expire, assisted, dead, and boss vouchers must NOT unlock any incentive entry.
+  t.events.emit('powerUpDrop', { id: 'shiftBonus', position: new THREE.Vector3(), seconds: 15 });
+  t.events.emit('powerUpExpire', { id: 'shiftBonus', pointsInstead: 0 });
+  t.events.emit('powerUpCollect', { id: 'masterKey', name: 'MASTER KEY' });
+  t.state.assisted = true;
+  t.events.emit('powerUpCollect', { id: 'shiftBonus', name: 'SHIFT BONUS' });
+  t.state.assisted = false;
+  t.state.over = true;
+  t.events.emit('powerUpCollect', { id: 'shiftBonus', name: 'SHIFT BONUS' });
+  t.state.over = false;
+  assert.equal(t.guide.incentives().found, 0);
+  assert.equal(discoveredEvents.length, 0);
+  assert.equal(storage.writes, 0);
+
+  // Actual first pickup unlocks, flushes at once, emits 'incentiveDiscovered' once, and ignores repeat pickups.
+  t.events.emit('powerUpCollect', { id: 'shiftBonus', name: 'SHIFT BONUS' });
+  assert.equal(t.guide.incentives().found, 1);
+  assert.equal(t.save.discovered('shiftBonus'), true);
+  assert.equal(storage.writes, 1);
+  assert.deepEqual(discoveredEvents, [{
+    id: 'shiftBonus',
+    name: incentiveEntry('shiftBonus').name,
+    icon: incentiveEntry('shiftBonus').icon,
+    tier: incentiveEntry('shiftBonus').tier,
+    found: 1,
+    total: incentiveEntries.length,
+  }]);
+  t.events.emit('powerUpCollect', { id: 'shiftBonus', name: 'SHIFT BONUS' });
+  assert.equal(discoveredEvents.length, 1);
+  assert.equal(storage.writes, 1);
+
+  // Unknown ids from storage are dropped, and another tab flush merges discoveries.
+  storage.setItem(guideStorage.key, JSON.stringify(stored({ discovered: { shiftBonus: true, commissionDay: true, bogon: true } })));
+  t.save.discover('paidBreak');
+  t.save.flush();
+  assert.deepEqual(storage.record.discovered, { shiftBonus: true, paidBreak: true, commissionDay: true });
+
+  // Headless full game: actual pickup persists across resetRun and a fresh game using the same guideSave.
+  const gameStorage = memoryStorage();
+  const sharedSave = createGuideSave({ storage: gameStorage });
+  const gameA = headlessGame({ guideSave: sharedSave });
+  context.after(() => gameA.g.map.dispose());
+  gameA.g.events.emit('powerUpCollect', { id: 'blackFriday', name: 'BLACK FRIDAY' });
+  assert.equal(sharedSave.discovered('blackFriday'), true);
+  gameA.g.resetRun();
+  assert.equal(sharedSave.discovered('blackFriday'), true);
+  assert.equal(createGuideSave({ storage: gameStorage }).discovered('blackFriday'), true);
+
+  // Debug helper can clear/discover all or one cleanly.
+  t.guide.debugIncentive('paidBreak', 'clear');
+  assert.equal(t.save.discovered('paidBreak'), false);
+  t.guide.debugIncentive('all', 'discover');
+  assert.equal(t.guide.incentives().complete, true);
 });

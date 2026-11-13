@@ -9,7 +9,8 @@
 import { feel } from '../config/feel.js';
 import { closingTime } from '../config/closingTime.js';
 import { createScreens } from './screens.js';
-import { createIncentiveHud } from './incentiveHud.js';
+import { createIncentiveHud, incentiveIconSvg } from './incentiveHud.js';
+import { powerUps } from '../config/powerUps.js';
 import { createRitualHud } from './ritualHud.js';
 import { createOrderFormView } from './orderForm.js';
 import { createFittingRoomView } from './fittingRoomPicker.js';
@@ -35,7 +36,7 @@ function el(tag, className) {
   return node;
 }
 
-export function createHud({ locker = null, guide = null, challenges = null } = {}) {
+export function createHud({ locker = null, guide = null, challenges = null, onIncentiveReady = null } = {}) {
   const hud = el('div', 'hud');
   const eyewear = el('div', 'wardrobe-eyewear');
   eyewear.setAttribute('aria-hidden', 'true');
@@ -45,7 +46,7 @@ export function createHud({ locker = null, guide = null, challenges = null } = {
   const history = createNoticeHistory();
   const phoneFlash = createBossFlashView();
   hud.append(phoneFlash.element);
-  const incentives = createIncentiveHud();
+  const incentives = createIncentiveHud({ onNearFull: () => onIncentiveReady?.() });
   hud.append(incentives.element);
   const ritualTicket = createRitualHud();
   hud.append(ritualTicket.element);
@@ -78,6 +79,27 @@ export function createHud({ locker = null, guide = null, challenges = null } = {
   const speedLines = el('div', 'speed-lines');
   hud.append(speedLines);
   let lastSpeed = -1;
+
+  // A scoped gun's eyepiece (weapons/scope.js; the Stargazer 3000): the view through a telescope, a circle of faintly tinted glass in a dark
+  // ring, with a star-chart reticle (fine cross hairs, mil dots and a constellation). Under the hit marker; its colours come from the gun's
+  // scope.look (setScope). Drawn once; only its opacity changes.
+  const scopeView = el('div', 'scope-view');
+  const constellation = [[-52, 30], [-40, 44], [-27, 40], [-18, 54], [-30, 62], [-44, 60]];
+  scopeView.innerHTML = `<div class="scope-glass"><svg viewBox="-100 -100 200 200" aria-hidden="true">
+    <g class="scope-hairs">
+      <line x1="-96" y1="0" x2="-40" y2="0" stroke-width="2"/><line x1="40" y1="0" x2="96" y2="0" stroke-width="2"/>
+      <line x1="0" y1="40" x2="0" y2="96" stroke-width="2"/><line x1="0" y1="-96" x2="0" y2="-40" stroke-width="2"/>
+      <line x1="-40" y1="0" x2="-3" y2="0" stroke-width="0.45"/><line x1="3" y1="0" x2="40" y2="0" stroke-width="0.45"/>
+      <line x1="0" y1="3" x2="0" y2="40" stroke-width="0.45"/><line x1="0" y1="-40" x2="0" y2="-3" stroke-width="0.45"/>
+    </g>
+    <g class="scope-dots">${[-30, -15, 15, 30].map((d) => `<circle cx="${d}" cy="0" r="0.9"/><circle cx="0" cy="${d}" r="0.9"/>`).join('')}<circle cx="0" cy="0" r="0.55"/></g>
+    <g class="scope-stars"><polyline fill="none" stroke-width="0.25" points="${constellation.map(([x, y]) => `${x},${y}`).join(' ')}"/>
+      ${constellation.map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="${i % 2 ? 0.9 : 1.3}"/>`).join('')}
+      <circle cx="58" cy="-48" r="0.8"/><circle cx="66" cy="-36" r="0.6"/><circle cx="47" cy="-62" r="0.7"/></g>
+  </svg></div>`;
+  hud.append(scopeView);
+  let lastScope = -1;
+  let lastScopeLook = null;
 
   // Crosshair: four lines around a gap that shows the current spread cone,
   // plus a precise dot that fades in while aiming down sights.
@@ -135,18 +157,37 @@ export function createHud({ locker = null, guide = null, challenges = null } = {
   purchaseStamp.setAttribute('role', 'status');
   hud.append(purchaseStamp);
   let purchaseTimer = null;
-  const skinToast = el('div', 'skin-unlock-toast');
-  skinToast.setAttribute('role', 'status');
-  skinToast.hidden = true;
-  const skinToastTitle = el('strong');
-  skinToastTitle.textContent = skinNotices.toastTitle;
-  const skinToastText = el('span');
-  skinToast.append(skinToastTitle, skinToastText);
-  let skinToastTimer = null;
+  function makeToast(className, titleText) {
+    const box = el('div', className);
+    box.setAttribute('role', 'status');
+    box.hidden = true;
+    const title = el('strong');
+    title.textContent = titleText;
+    const text = el('span');
+    box.append(title, text);
+    let timer = null;
+    return {
+      element: box,
+      show(content, seconds) {
+        clearTimeout(timer);
+        if (typeof content === 'string') text.textContent = content;
+        else text.replaceChildren(...content);
+        box.hidden = false;
+        timer = setTimeout(() => { box.hidden = true; }, seconds * 1000);
+      },
+      hide() {
+        clearTimeout(timer);
+        timer = null;
+        box.hidden = true;
+      },
+    };
+  }
+  const skinToast = makeToast('skin-unlock-toast', skinNotices.toastTitle);
+  const discoveryToast = makeToast('skin-unlock-toast incentive-discovery-toast', powerUps.meter.newDiscoveryLabel);
   function clearNotices() {
     announcements.clear();
-    clearTimeout(skinToastTimer);
-    skinToast.hidden = true;
+    skinToast.hide();
+    discoveryToast.hide();
     clearTimeout(purchaseTimer);
     purchaseStamp.classList.remove('show');
     roundBanner.classList.remove('show');
@@ -357,7 +398,7 @@ export function createHud({ locker = null, guide = null, challenges = null } = {
   const topStack = el('div', 'hud-top-stack');
   topStack.append(bossBar, roundBanner, ...closingLines.map(({ marker }) => marker.element), bagMarker.element);
   const rightStack = el('div', 'hud-right-stack');
-  rightStack.append(saleTag, clawTag, announceBanner, skinToast, certificate.element);
+  rightStack.append(saleTag, clawTag, announceBanner, skinToast.element, discoveryToast.element, certificate.element);
   hud.append(leftStack, topStack, rightStack);
   // A workshop order starts below any active boss display. Measure its real
   // height, including wrapped names and the player's chosen text size.
@@ -413,10 +454,17 @@ export function createHud({ locker = null, guide = null, challenges = null } = {
       events.on('skinUnlocked', ({ gunId, skinId }) => {
         const skin = gunSkin(gunId, skinId);
         if (!skin) return;
-        clearTimeout(skinToastTimer);
-        skinToastText.textContent = skin.shared ? skinNotices.toastShared(skin.name) : skinNotices.toastText(weapons[gunId].name, skin.name);
-        skinToast.hidden = false;
-        skinToastTimer = setTimeout(() => { skinToast.hidden = true; }, skinNotices.toastSeconds * 1000);
+        skinToast.show(skin.shared ? skinNotices.toastShared(skin.name) : skinNotices.toastText(weapons[gunId].name, skin.name), skinNotices.toastSeconds);
+      });
+      events.on('incentiveDiscovered', ({ id, name, found, total }) => {
+        const icon = el('span', 'incentive-toast-icon');
+        icon.innerHTML = incentiveIconSvg(id);
+        const label = el('span');
+        label.textContent = `${name} · ${found}/${total}`;
+        discoveryToast.show([icon, label], powerUps.meter.discoveryToastSeconds);
+      });
+      events.on('powerUpMeter', (meter) => {
+        incentives.setMeter(meter);
       });
       events.on('purchase', ({ label, kind, id, cost }) => {
         clearTimeout(purchaseTimer);
@@ -471,6 +519,10 @@ export function createHud({ locker = null, guide = null, challenges = null } = {
 
     setPowerUps(status) {
       incentives.update(status);
+    },
+
+    setIncentiveMeterEnabled(on) {
+      incentives.setEnabled(on);
     },
 
     // Build-A-Blaster's order ticket: null hides it (game/features/workshopRitual.js status).
@@ -687,6 +739,24 @@ export function createHud({ locker = null, guide = null, challenges = null } = {
       }
     },
 
+    // 0..1: how far a scoped gun's eyepiece fills the view (weapons/scope.js scopeOverlay); `look` = its scope.look colours.
+    // The crosshair fades out as the eyepiece comes in (the reticle replaces it).
+    setScope(opacity, look = null) {
+      const rounded = Math.round(opacity * 50) / 50;
+      if (look && look !== lastScopeLook) {
+        scopeView.style.setProperty('--scope-ring', look.ring);
+        scopeView.style.setProperty('--scope-glass', look.glass);
+        scopeView.style.setProperty('--scope-reticle', look.reticle);
+        scopeView.style.setProperty('--scope-stars', look.stars);
+        lastScopeLook = look;
+      }
+      if (rounded === lastScope) return;
+      scopeView.style.opacity = String(rounded);
+      scopeView.classList.toggle('active', rounded > 0);
+      crosshair.style.opacity = String(1 - rounded);
+      lastScope = rounded;
+    },
+
     // 0..1 opacity of the sprint speed lines.
     setSpeedLines(opacity) {
       const rounded = Math.round(opacity * 50) / 50;
@@ -886,9 +956,14 @@ export function createHud({ locker = null, guide = null, challenges = null } = {
 
     setArmour(count) {
       if (count === lastArmourCount) return;
+      const before = lastArmourCount;
       lastArmourCount = count;
       armour.setAttribute('aria-label', `Bubble Wrap: ${count} layers`);
-      armour.replaceChildren(...Array.from({ length: count }, () => el('span', 'armour-layer')));
+      // Kept layers, then (fewer than before) the ones just used up, bursting (retail.css armour-pop), or (more) the new ones growing in.
+      const layers = Array.from({ length: count }, (_, i) => el('span', i >= before ? 'armour-layer added' : 'armour-layer'));
+      const popped = Array.from({ length: Math.max(0, before - count) }, () => el('span', 'armour-layer popping'));
+      armour.replaceChildren(...layers, ...popped);
+      if (popped.length) setTimeout(() => popped.forEach((span) => span.remove()), 340);
     },
 
     // Vault prompt: shown while `show`; `button` = the jump button for the device ("Space", "A", "✕").
@@ -900,12 +975,22 @@ export function createHud({ locker = null, guide = null, challenges = null } = {
       if (show) vaultPrompt.innerHTML = `<kbd>${button}</kbd> Vault`;
     },
 
-    // The running Flash Sale ({ label, discount 0..1, remaining seconds }) or null. Only touches the DOM when the text changes.
-    setFlashSale(sale) {
-      const text = sale ? `Flash sale · ${sale.label} ${Math.round(sale.discount * 100)}% off · ${Math.ceil(sale.remaining)}s` : '';
-      if (text === lastSaleKey) return;
-      lastSaleKey = text;
-      saleTag.classList.toggle('show', !!sale);
+    // The running Flash Sale (or pending teaser) or null. Only touches the DOM when text or visual state changes.
+    setFlashSale(sale, pending = null) {
+      const shown = sale ?? pending;
+      const isDoorbuster = shown?.kind === 'doorbuster';
+      const isSoon = !sale && !!pending;
+      const text = sale
+        ? `${isDoorbuster ? 'Doorbuster' : 'Flash sale'} · ${sale.label} ${Math.round(sale.discount * 100)}% off · ${Math.ceil(sale.remaining)}s`
+        : pending
+          ? `${isDoorbuster ? 'Doorbuster soon' : 'Flash sale soon'} · ${pending.label} · ${Math.ceil(pending.remaining)}s`
+          : '';
+      const key = `${isDoorbuster ? 'D' : 'S'}${isSoon ? '!' : ''}:${text}`;
+      if (key === lastSaleKey) return;
+      lastSaleKey = key;
+      saleTag.classList.toggle('show', !!shown);
+      saleTag.classList.toggle('soon', isSoon);
+      saleTag.classList.toggle('doorbuster', !!shown && isDoorbuster);
       saleTag.textContent = text;
     },
 

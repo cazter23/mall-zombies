@@ -54,7 +54,7 @@ function shopper(t, health = 1000) {
   return z;
 }
 
-test('all eleven guns have a named mastery challenge; Phase 1 IDs survive the contrast pass', () => {
+test('every gun has a named mastery challenge; Phase 1 IDs survive the contrast pass', () => {
   assert.deepEqual(Object.keys(skins).sort(), Object.keys(weapons).sort());
   assert.equal(skins.stapleGun[0].id, 'night-shift');
   assert.equal(skins.rivetRifle[0].id, 'carbon-copy');
@@ -203,6 +203,7 @@ test('Play again clears counter state and matches a fresh game with the same per
   assert.deepEqual(t.g.challenges.snapshot().run, {
     'nailGun/measure-twice': { left: null, shots: 0, clean: true }, 'stapleGun/company-man': { spoiled: false }, 'rivetRifle/gold-standard': { streak: 0 },
     'foamDartBlaster/bullseye': { round: 0 }, 'coilNailer/double-shift': { bosses: 0 }, 'leafBlower/still-air': { round: 0 }, 'priceGun/final-markdown': { round: 0 },
+    'balloonLauncher/helium-high': { round: 0 },
   }, 'no magazine in progress, and every feat in progress starts again');
   assert.ok(t.g.resetSteps.includes('challenges'));
   assert.deepEqual(snapshot(t.g), snapshot(fresh.g));

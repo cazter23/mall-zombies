@@ -47,10 +47,15 @@
 //                                                        hitDirection = { x, z } normalized vector from player toward attack source or null.
 //                                                        damage is BEFORE clothes: createGame's listener applies stats.damageTakenMultiplier
 //   'playerFall'  { drop, damage }                       a landing from a height hurt (feel.fall); damage is already taken
+//   'gunBlast'    { weaponId, position, radius, hits, selfDamage, magazineLeft }   a rocket of a gun with `blast` burst (weapons/playerGun.js; the hits are already
+//                                                        done, +10s and kills paid as usual); createGame's listener takes selfDamage off your health
 //   'armourHit'   { absorbed, layers, popped }            Bubble Wrap absorbed damage from a zombie hit
 //   'kioskStock'  { siteId, stock, pick, pa }            Kevin's cart opened for the round (or after a move): where he is, the round's
 //                                                        three products and his Pick
 //   'kioskMoved'  { siteId, area, moved }                Kevin's site at a 'roundStart' (moved false: he stays where he is); area = the PA's name
+//   'kioskHawk'   { siteId, kind, line }                 Kevin shouted (game/features/kiosk.js; config/kiosk.js hawk): kind 'lines' (you're
+//                                                        near his open cart), 'duck' (a zombie sent him under it) or 'back' (he's up again);
+//                                                        his cart shows `line` in a speech bubble (presentation only)
 //   'regenStart'  {}                                     health began climbing back (once per recovery: player/health.js)
 //   'secondChance' { status }                            Second Chance changed (game/secondChance.js): 'held' = bought at Customer Service,
 //                                                        'used' = it just covered a lethal hit (the player is already back at full health,
@@ -63,12 +68,17 @@
 //                                                        round after a win mid-wave, the already announced one after a win in the break)
 //   'runEnd'      { summary }                            final run totals, emitted once per recorded run: on death, on Clock out,
 //                                                        or when a won run is left from a menu (createGame's leaveRun)
+//   'powerUpMeter' { progress, round, unlocked, available, capped, nearFull, dropped, maxPerRound, silent? }
+//                                                        Employee of the Hour meter state changed (game/powerUps.js)
 //   'powerUpDrop' { id, position, seconds }               earned incentive appeared on clear floor
-//   'powerUpCollect' { id, name, pa, sound }              walk-through collection (instant effect or zone start)
-//   'powerUpStart' { id, position, remaining, radius, ... } zone or temporary employee benefit began
+//   'powerUpCollect' { id, name, pa, sound }              walk-through collection (instant effect or benefit start)
+//   'incentiveDiscovered' { id, name, icon, tier, found, total }   first career pickup of an incentive type (game/guide.js)
+//   'powerUpStart' { id, position, remaining, radius, ... } floor spill or temporary employee benefit began
 //   'powerUpEnd'  { id, reason }                         benefit ended (including mopped by the Janitor or roundDiscard)
 //   'incentiveComplete' { id, text }                     marked-target bonus earned (PA/HUD feedback)
 //   'incentiveBurst' { position, radius, color }          deferred liquidation burst (visual/sound feedback)
+//   'clearanceDetonated' { position, area, radius, kills, bossesHit, positions, flatBonus }  (area: the map area cleared, or null and radius)
+//                                                        Store-Wide Clearance cleared its area's floor and damaged bosses
 //   'powerUpExpire' { id, pointsInstead }                uncollected incentive timed out (a boss voucher left on the floor pays pointsInstead)
 //   'roundStart'  { round }                              the round number flipped (game/rounds.js)
 //   'clockIn'     { round, skipped }                     the player ended the break before `round` early (game/clockIn.js);
@@ -110,8 +120,10 @@
 //   'wardrobeChange' { slot, worn, removed }              apparel equipped, item ids (removed is null for an empty slot)
 //   'outfitPulse' { id, slot }                            a worn item just did its job (game/outfitRail.js): its tag on the outfit rail swings
 //   'wardrobeBuy' { id, pa: { kicker, text } }            an item was bought from a showpiece (game/features/wardrobeFixtures.js): the mall PA reads `pa`
-//   'flashSaleStart' { id, label, categories, discount, seconds, pa: { kicker, text } }   a Flash Sale began (game/flashSales.js)
-//   'flashSaleEnd'   { id, label, reason 'expired' | 'reset', pa }                         it ended (no banner on 'reset')
+//   'flashSaleSoon'  { kind, id, label, categories, target, seconds, pa: { kicker, text } }  a Flash Sale or Doorbuster teaser began (game/flashSales.js)
+//   'flashSaleStart' { kind, id, label, categories, target, discount, seconds, pa }            a Flash Sale or Doorbuster began
+//   'flashSaleEnd'   { kind, id, label, reason 'expired' | 'sold' | 'reset' | 'cancelled', pa } it ended ('sold': a Doorbuster's item was bought,
+//                                                        its rush is on the way; no banner on 'reset' or 'cancelled')
 //   'ritualStart' { gunId, gunName, loaner, restuff, pa }  Build-A-Blaster took a gun (game/features/workshopRitual.js)
 //   'ritualStage' { stage, pa }                           the gun reached the next stage of the conveyor
 //   'chuteDrop'   {}                                      a zombie fell out of the Returns Chute
@@ -139,6 +151,8 @@
 //   'equipmentBurst'  { id, position, radius, hit }      a thrown Soda Bomb burst, or a Glitter Bomb opened (damage 0: hit = the
 //                                                        zombies it confused); hit = [{ target, damage, killed }]. Equipment
 //                                                        damage never emits 'hit' (no +10): its kills pay through 'kill', source 'equipment'
+//   'airHornBlast'    { position, radius, pushed }       the Stadium Air Horn sounded where you stand (game/equipment.js; it isn't
+//                                                        thrown); pushed = how many zombies it staggered. Presentation (the blast ring)
 //   'sentryDeployed'  { position }                       a thrown SPIN-O-MATIC Sentry landed and stood up (game/equipment.js); its kills
 //                                                        carry weaponId 'sentry'
 //   'sentryExpired'   { position }                       its lifetime ran out and it fell apart (death and Play again just clear it)

@@ -30,7 +30,7 @@ function fixture(t) {
 }
 
 const scoops = (g, x, z) => {
-  const zombie = g.zombies.spawn('mascot', new THREE.Vector3(x, 0, z), { variant: 'scoops' });
+  const zombie = g.zombies.spawn('mascot', new THREE.Vector3(x, 0, z), { variant: 'scoops', gold: false });
   zombie.setState('chasing');
   return zombie;
 };

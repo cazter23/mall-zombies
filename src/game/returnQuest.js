@@ -68,7 +68,7 @@ export function createReturnQuest({ events, state, player, zombies, gun, wallet,
       const kind = kindOf(zombie);
       alsoReturn(nearby(zombie, label.radius, (z) => kindOf(z) === kind).slice(0, label.count));
     } else if (fitted === 'refund') {
-      wallet.earn(label.points);
+      wallet.award(label.points);
       const weapon = gun.def.id === cfg.weaponId ? gun.weapon : null;
       if (weapon && random() < label.ammoChance) weapon.reserve = Math.min(weapon.reserveCap, weapon.reserve + 1);
     }

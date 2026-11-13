@@ -132,7 +132,7 @@ export const audio = {
       { type: 'tone', wave: 'triangle', freq: 440, freqEnd: 440, gain: 0.3, attack: 0.005, decay: 0.13 },
       { type: 'tone', wave: 'triangle', freq: 660, freqEnd: 660, gain: 0.3, attack: 0.005, decay: 0.2, delay: 0.12 },
     ] },
-    incentiveBlueLight: { volume: 0.5, layers: [
+    incentiveSpill: { volume: 0.5, layers: [
       { type: 'tone', wave: 'sine', freq: 660, freqEnd: 880, gain: 0.4, attack: 0.008, decay: 0.18 },
       { type: 'tone', wave: 'sine', freq: 880, freqEnd: 1320, gain: 0.3, attack: 0.008, decay: 0.3, delay: 0.14 },
     ] },
@@ -140,6 +140,28 @@ export const audio = {
       { type: 'tone', wave: 'triangle', freq: 620, freqEnd: 380, gain: 0.4, attack: 0.01, decay: 0.23 },
       { type: 'tone', wave: 'triangle', freq: 620, freqEnd: 380, gain: 0.35, attack: 0.01, decay: 0.23, delay: 0.25 },
       { type: 'tone', wave: 'sine', freq: 100, freqEnd: 45, gain: 0.4, attack: 0.005, decay: 0.2 },
+    ] },
+    incentiveClearance: { volume: 0.72, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 650, q: 0.7, gain: 0.65, attack: 0.004, decay: 0.45 },
+      { type: 'tone', wave: 'sine', freq: 140, freqEnd: 34, gain: 0.6, attack: 0.004, decay: 0.5 },
+      { type: 'tone', wave: 'triangle', freq: 523.25, freqEnd: 523.25, gain: 0.35, attack: 0.01, decay: 0.22, delay: 0.08 },
+      { type: 'tone', wave: 'triangle', freq: 783.99, freqEnd: 1046.5, gain: 0.35, attack: 0.01, decay: 0.35, delay: 0.16 },
+    ] },
+    incentiveCommission: { volume: 0.6, layers: [
+      { type: 'tone', wave: 'triangle', freq: 587.33, freqEnd: 587.33, gain: 0.32, attack: 0.005, decay: 0.14 },
+      { type: 'tone', wave: 'triangle', freq: 880, freqEnd: 880, gain: 0.34, attack: 0.005, decay: 0.16, delay: 0.09 },
+      { type: 'tone', wave: 'sine', freq: 1174.66, freqEnd: 1174.66, gain: 0.36, attack: 0.005, decay: 0.32, delay: 0.18 },
+      { type: 'tone', wave: 'sine', freq: 1760, freqEnd: 1760, gain: 0.22, attack: 0.005, decay: 0.36, delay: 0.22 },
+    ] },
+    incentiveBlackFriday: { volume: 0.65, layers: [
+      { type: 'tone', wave: 'sawtooth', freq: 220, freqEnd: 110, gain: 0.28, attack: 0.006, decay: 0.38 },
+      { type: 'tone', wave: 'sawtooth', freq: 329.63, freqEnd: 329.63, gain: 0.24, attack: 0.006, decay: 0.35, delay: 0.04 },
+      { type: 'tone', wave: 'square', freq: 659.25, freqEnd: 880, gain: 0.22, attack: 0.006, decay: 0.35, delay: 0.1 },
+    ] },
+    // Soft retail desk ding when Employee of the Hour approaches its next drop.
+    incentiveMeterReady: { volume: 0.22, layers: [
+      { type: 'tone', wave: 'sine', freq: 1174.66, gain: 0.45, attack: 0.004, decay: 0.22 },
+      { type: 'tone', wave: 'sine', freq: 1760, gain: 0.28, attack: 0.004, decay: 0.28, delay: 0.06 },
     ] },
     // The Return to Sender quest: a NO REFUNDS floor sign shot over (game/features/refundSign.js).
     refundSignDown: { volume: 0.5, layers: [
@@ -309,6 +331,23 @@ export const audio = {
       { type: 'tone', wave: 'sawtooth', freq: 415, freqEnd: 392, gain: .5, attack: .012, decay: .34 },
       { type: 'tone', wave: 'sawtooth', freq: 508, freqEnd: 480, gain: .35, attack: .016, decay: .33 },
     ] },
+    // Kiosk Kevin shouting (fx/kioskSpectacle.js, 'kioskHawk'): a nasal "hey-HEY!" (two buzzy rising syllables through a
+    // vowel-ish band), a squeaky yelp as he ducks, and the SPIN-O-MATIC coming apart (a sad descending whirr and a rattle).
+    kevinShout: { volume: .42, layers: [
+      { type: 'tone', wave: 'sawtooth', freq: 210, freqEnd: 260, gain: .35, attack: .01, decay: .09 },
+      { type: 'noise', filter: 'bandpass', freq: 1300, q: 3, gain: .25, attack: .01, decay: .08 },
+      { type: 'tone', wave: 'sawtooth', freq: 270, freqEnd: 330, gain: .45, attack: .01, decay: .16, delay: .12 },
+      { type: 'noise', filter: 'bandpass', freq: 1500, q: 3, gain: .3, attack: .01, decay: .14, delay: .12 },
+    ] },
+    kevinYelp: { volume: .4, layers: [
+      { type: 'tone', wave: 'square', freq: 520, freqEnd: 880, gain: .3, attack: .005, decay: .14 },
+      { type: 'noise', filter: 'bandpass', freq: 2200, q: 2.5, gain: .2, attack: .005, decay: .12 },
+    ] },
+    sentryBreak: { volume: .6, layers: [
+      { type: 'tone', wave: 'square', freq: 640, freqEnd: 140, gain: .35, attack: .005, decay: .55 },
+      { type: 'noise', filter: 'bandpass', freq: 1800, q: .9, gain: .5, attack: .002, decay: .18 },
+      { type: 'noise', filter: 'lowpass', freq: 700, q: .7, gain: .4, attack: .002, decay: .12, delay: .2 },
+    ] },
     bubbleWrapPop: { volume: .65, layers: [
       { type: 'noise', filter: 'bandpass', freq: 2400, q: 1.1, gain: .9, attack: .001, decay: .035 },
       { type: 'tone', wave: 'sine', freq: 260, freqEnd: 95, gain: .4, attack: .001, decay: .065 },
@@ -375,6 +414,79 @@ export const audio = {
     tennisReloadReady: { volume: 0.7, layers: [
       { type: 'noise', filter: 'bandpass', freq: 3000, q: 1.3, gain: 0.7, attack: 0.001, decay: 0.045 },
       { type: 'tone', wave: 'sine', freq: 190, freqEnd: 70, gain: 0.5, attack: 0.001, decay: 0.1 },
+    ] },
+    // The Stargazer 3000: a hard crack with a glassy twinkle from the telescope, then (delayed) the bolt worked: up, back, forward, down.
+    stargazerShot: { volume: 0.9, layers: [
+      { type: 'noise', filter: 'lowpass', freq: 2400, q: 0.7, gain: 1, attack: 0.001, decay: 0.1 },
+      { type: 'tone', wave: 'sine', freq: 150, freqEnd: 45, gain: 1, attack: 0.001, decay: 0.24 },
+      { type: 'noise', filter: 'bandpass', freq: 4200, q: 1, gain: 0.45, attack: 0.001, decay: 0.03 },
+      { type: 'tone', wave: 'triangle', freq: 2637, freqEnd: 2637, gain: 0.12, attack: 0.002, decay: 0.35, delay: 0.04 },
+      { type: 'tone', wave: 'triangle', freq: 3520, freqEnd: 3520, gain: 0.08, attack: 0.002, decay: 0.3, delay: 0.09 },
+      { type: 'noise', filter: 'bandpass', freq: 1900, q: 1.6, gain: 0.45, attack: 0.001, decay: 0.04, delay: 0.32 },
+      { type: 'noise', filter: 'bandpass', freq: 1300, q: 1.4, gain: 0.5, attack: 0.001, decay: 0.05, delay: 0.47 },
+      { type: 'noise', filter: 'bandpass', freq: 2200, q: 1.6, gain: 0.5, attack: 0.001, decay: 0.04, delay: 0.66 },
+      { type: 'tone', wave: 'square', freq: 420, freqEnd: 260, gain: 0.12, attack: 0.001, decay: 0.05, delay: 0.8 },
+    ] },
+    stargazerReloadOut: { volume: 0.55, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 1600, q: 1.5, gain: 0.6, attack: 0.001, decay: 0.05 },
+      { type: 'noise', filter: 'bandpass', freq: 1100, q: 1.4, gain: 0.5, attack: 0.001, decay: 0.06, delay: 0.1 },
+    ] },
+    stargazerReloadIn: { volume: 0.5, layers: [ // bearings rattling down into the magazine
+      { type: 'tone', wave: 'triangle', freq: 2900, freqEnd: 2600, gain: 0.2, attack: 0.001, decay: 0.04 },
+      { type: 'tone', wave: 'triangle', freq: 3100, freqEnd: 2800, gain: 0.2, attack: 0.001, decay: 0.04, delay: 0.05 },
+      { type: 'tone', wave: 'triangle', freq: 2700, freqEnd: 2500, gain: 0.2, attack: 0.001, decay: 0.04, delay: 0.1 },
+      { type: 'noise', filter: 'lowpass', freq: 900, q: 0.8, gain: 0.4, attack: 0.001, decay: 0.06, delay: 0.12 },
+    ] },
+    stargazerReloadReady: { volume: 0.6, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 1300, q: 1.4, gain: 0.6, attack: 0.001, decay: 0.05 },
+      { type: 'noise', filter: 'bandpass', freq: 2300, q: 1.6, gain: 0.6, attack: 0.001, decay: 0.04, delay: 0.12 },
+    ] },
+    // The Bottle Rocket Bazooka: a cardboard-tube whoomp and a rising whistle as it leaves; the burst is a bang with firework crackle after it.
+    bottleRocketLaunch: { volume: 0.85, layers: [
+      { type: 'noise', filter: 'lowpass', freq: 900, q: 0.7, gain: 0.9, attack: 0.001, decay: 0.14 },
+      { type: 'tone', wave: 'sine', freq: 120, freqEnd: 50, gain: 0.8, attack: 0.001, decay: 0.18 },
+      { type: 'tone', wave: 'sine', freq: 900, freqEnd: 2600, gain: 0.22, attack: 0.02, decay: 0.5, delay: 0.03 },
+      { type: 'noise', filter: 'bandpass', freq: 3000, q: 0.8, gain: 0.25, attack: 0.02, decay: 0.4, delay: 0.03 },
+    ] },
+    bottleRocketBurst: { volume: 1, layers: [
+      { type: 'noise', filter: 'lowpass', freq: 1800, q: 0.6, gain: 1, attack: 0.001, decay: 0.3 },
+      { type: 'tone', wave: 'sine', freq: 90, freqEnd: 30, gain: 1, attack: 0.001, decay: 0.45 },
+      { type: 'noise', filter: 'bandpass', freq: 4200, q: 1.5, gain: 0.35, attack: 0.001, decay: 0.03, delay: 0.12 },
+      { type: 'noise', filter: 'bandpass', freq: 3600, q: 1.5, gain: 0.3, attack: 0.001, decay: 0.03, delay: 0.19 },
+      { type: 'noise', filter: 'bandpass', freq: 4600, q: 1.5, gain: 0.3, attack: 0.001, decay: 0.03, delay: 0.26 },
+      { type: 'noise', filter: 'bandpass', freq: 3900, q: 1.5, gain: 0.25, attack: 0.001, decay: 0.03, delay: 0.34 },
+    ] },
+    bottleRocketReloadOut: { volume: 0.5, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 900, q: 1.2, gain: 0.6, attack: 0.001, decay: 0.08 },
+    ] },
+    bottleRocketReloadIn: { volume: 0.6, layers: [ // a rocket sliding into a cardboard tube
+      { type: 'noise', filter: 'bandpass', freq: 700, q: 1, gain: 0.6, attack: 0.02, decay: 0.16 },
+      { type: 'tone', wave: 'sine', freq: 180, freqEnd: 110, gain: 0.5, attack: 0.001, decay: 0.08, delay: 0.14 },
+    ] },
+    bottleRocketReloadReady: { volume: 0.55, layers: [
+      { type: 'noise', filter: 'lowpass', freq: 1200, q: 0.8, gain: 0.5, attack: 0.001, decay: 0.05 },
+      { type: 'tone', wave: 'triangle', freq: 660, freqEnd: 660, gain: 0.15, attack: 0.001, decay: 0.1, delay: 0.04 },
+    ] },
+    // The Balloon Launcher: a hiss of helium and a rubbery squeak as a balloon lets go; the pop is a sharp crack with a little confetti rustle.
+    balloonLaunch: { volume: 0.6, layers: [
+      { type: 'noise', filter: 'highpass', freq: 3000, q: 0.7, gain: 0.5, attack: 0.005, decay: 0.12 },
+      { type: 'tone', wave: 'triangle', freq: 520, freqEnd: 980, gain: 0.3, attack: 0.005, decay: 0.09 },
+      { type: 'tone', wave: 'sine', freq: 300, freqEnd: 220, gain: 0.25, attack: 0.002, decay: 0.06 },
+    ] },
+    balloonPop: { volume: 0.8, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 2400, q: 0.6, gain: 1, attack: 0.001, decay: 0.035 },
+      { type: 'tone', wave: 'sine', freq: 240, freqEnd: 90, gain: 0.5, attack: 0.001, decay: 0.06 },
+      { type: 'noise', filter: 'highpass', freq: 5000, q: 0.7, gain: 0.2, attack: 0.01, decay: 0.2, delay: 0.03 },
+    ] },
+    balloonReloadOut: { volume: 0.5, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 1400, q: 1.3, gain: 0.5, attack: 0.001, decay: 0.06 },
+    ] },
+    balloonReloadIn: { volume: 0.55, layers: [ // a cartridge twisted in, then the hiss of the tank filling
+      { type: 'noise', filter: 'bandpass', freq: 1800, q: 1.4, gain: 0.5, attack: 0.001, decay: 0.05 },
+      { type: 'noise', filter: 'highpass', freq: 3500, q: 0.7, gain: 0.35, attack: 0.02, decay: 0.25, delay: 0.05 },
+    ] },
+    balloonReloadReady: { volume: 0.5, layers: [
+      { type: 'tone', wave: 'triangle', freq: 880, freqEnd: 1320, gain: 0.2, attack: 0.002, decay: 0.12 },
     ] },
     // One pulse of the Leaf Blower's stream (every 0.15 s): wind and a motor, long enough to run into the next one so it reads as one roar.
     leafBlowerPuff: { volume: 0.5, layers: [

@@ -20,6 +20,7 @@
 //   g.debug        the developer shortcuts (game/debugCommands.js): run(id), resolve(key, shift), status()
 //   g.equipment    Kiosk Kevin's equipment: the Lethal and Tactical pockets and the throw (game/equipment.js);
 //                  g.throwables = the thrown things in the air (weapons/ballistics.js, bouncing off zombies)
+//   g.rockets      the Bottle Rocket Bazooka's rockets in the air (weapons/ballistics.js, zombies 'bounce'; each bursts on its first contact)
 //   g.<system>     map, colliders, arena, shootables, stats, player, wallet, runStats, effects, aimAssist,
 //                  gun, interactions, melee, health, zombies, mascotCostumes, rounds, death
 // =============================================================================
@@ -27,7 +28,7 @@
 import { feel } from '../config/feel.js';
 import { Vector3 } from 'three';
 import { powerUps as incentiveConfig } from '../config/powerUps.js';
-import { economy } from '../config/economy.js';
+import { economy, maxAliveForRound } from '../config/economy.js';
 import { upgrades } from '../config/upgrades.js';
 import { bossTiming } from '../config/bosses.js';
 import { createBossDirector } from './bossDirector.js';
@@ -57,7 +58,7 @@ import { createMascotCostumes } from './mascotCostumes.js';
 import { createSurfaceSlows } from './surfaceSlows.js';
 import { createEvents } from './events.js';
 import { createPricing } from './pricing.js';
-import { createFlashSales, saleEligibility } from './flashSales.js';
+import { createFlashSales, saleEligibility, doorbusterCandidates, nearOpenSpawnPoints, reachableInTime } from './flashSales.js';
 import { createAnnouncer } from './announcer.js';
 import { createDebugCommands } from './debugCommands.js';
 import { createWarranty } from './warranty.js';
@@ -138,7 +139,10 @@ export function createGame({
   // Every price the player pays goes through here (base price from config/economy.js + any discount).
   const pricing = createPricing();
   // Points. Every gain/spend shows a "+60" / "-500" pop-up by the counter.
-  const wallet = createWallet({ onChange: (amount, points, style) => style ? hud.pointsPopup(amount, style) : hud.pointsPopup(amount) });
+  const wallet = createWallet({
+    onChange: (amount, points, style) => style ? hud.pointsPopup(amount, style) : hud.pointsPopup(amount),
+    getMultiplier: () => stats.pointsMultiplier,
+  });
   const runStats = createRunStats();
   events.on('purchase', ({ kind, id, cost }) => pricing.spendVoucher(kind, id, cost));
   events.on('playerDeath', () => {
@@ -150,6 +154,7 @@ export function createGame({
   const effects = createEffects(scene, { surfaces: [map.group, ...(arena ? [arena.group] : [])] });
   const aimAssist = createAimAssist({ player, input, shootables, colliders });
   const balls = createBalls({ colliders, shootables }); // the Tennis Ball Launcher's balls in the air (weapons/ballistics.js); the gun throws them, main.js draws them
+  const rockets = createBalls({ colliders, shootables, zombies: 'bounce' }); // the Bottle Rocket Bazooka's rockets: the burst does the damage (weapons/blast.js)
   const gun = createPlayerGun({
     def: weapons.stapleGun,
     stats,
@@ -167,6 +172,8 @@ export function createGame({
     onHit: announceHit,
     onReload: (reload) => events.emit('reload', reload),
     aimAssist,
+    rockets,
+    onBlast: (blast) => events.emit('gunBlast', blast),
   });
   // Buyables (hold F / X): the map's doors and wall buys.
   const interactions = createInteractions({
@@ -456,12 +463,12 @@ export function createGame({
   // Once you're dead nothing more is paid or counted (a burning zombie dying later doesn't change
   // the results screen).
   events.on('hit', (hit) => {
-    if (!runFrozen() && !hit.killed) wallet.earn(pointsForHit(hit));
+    if (!runFrozen() && !hit.killed) wallet.award(pointsForHit(hit));
   });
-  events.on('kill', ({ zombie, headshot, melee }) => {
-    if (!runFrozen()) wallet.earn(pointsForHit({
+  events.on('kill', ({ zombie, headshot, melee, source }) => {
+    if (source === 'clearance') return;
+    if (!runFrozen()) wallet.award(pointsForHit({
       target: zombie, killed: true, headshot, melee,
-      killMultiplier: powerUps?.killMultiplier(zombie.position) ?? 1,
       killPayMultiplier: stats.killPayMultiplier,
     }), wardrobe.wearing('accessory') === 'goldCard' ? 'goldCard' : undefined);
   });
@@ -477,7 +484,7 @@ export function createGame({
   events.on('mascotHeadPop', ({ zombie, headshot, source, again }) => {
     const earned = source === 'melee' || (source === 'gun' && headshot);
     if (runFrozen() || again || zombie.noRewards || !earned) return;
-    wallet.earn(economy.payouts.helmetPopBonus);
+    wallet.award(economy.payouts.helmetPopBonus);
     hud.showAnnouncement({ ...zombie.type.mascot.helmetPopLine, priority: 0 });
   });
   // A hard landing (feel.fall): the same hurt as a zombie's swing, without a zombie.
@@ -487,6 +494,14 @@ export function createGame({
     health.takeDamage(damage, { type: 'fall', fall: true });
     if (!health.isReviveProtected) player.addViewKick(-feel.fall.viewJoltDegrees * DEG_TO_RAD); // (not when this fall just spent it)
   };
+  // Your own rocket's burst (the Bottle Rocket Bazooka; weapons/blast.js worked out selfDamage: capped below a one-shot, 0 behind a wall or in the
+  // Hi-Vis Vest). Like a fall it goes straight to health, past armour; the death receipt names it (config/deathReports.js ownBlast).
+  events.on('gunBlast', ({ selfDamage, weaponId }) => {
+    if (runFrozen() || !(selfDamage > 0) || health.isReviveProtected) return;
+    health.takeDamage(selfDamage, { type: 'ownBlast', weaponId });
+    const jolt = weapons[weaponId]?.blast?.self?.joltDegrees ?? 0;
+    if (jolt && !health.isReviveProtected) player.addViewKick(-jolt * DEG_TO_RAD);
+  });
   events.on('mascotReclaim', ({ zombie }) => {
     hud.showAnnouncement({ ...zombie.type.mascot.reclaim.line, priority: 1 });
     sound.play('paChime');
@@ -535,7 +550,8 @@ export function createGame({
   events.on('ritualCollect', ({ certificate }) => hud.showCertificate(certificate)); // (after its PA line)
 
   powerUps = createPowerUps({
-    events, player, gun, zombies, colliders, state, stats, pricing, wallet,
+    events, player, gun, zombies, colliders, state, stats, pricing, wallet, interactions,
+    areaAt: (point) => map.areaAt?.(point) ?? null, // (Store-Wide Clearance clears the area it lies in)
     view: createPowerUpView(scene, colliders),
   });
   configureBossVouchers({ pricing, wallet, map, gun, state });
@@ -575,6 +591,12 @@ export function createGame({
     effects.splat(position, new Vector3(0, 1, 0), visual.splatColors, visual.splatCount);
     sound.play('incentiveSecurity');
   });
+  events.on('clearanceDetonated', ({ positions }) => {
+    const visual = incentiveConfig.types.storeWideClearance;
+    for (const pos of positions) {
+      effects.splat(pos, new Vector3(0, 1, 0), visual.splatColors, visual.splatCount);
+    }
+  });
 
   // Everything else in the map you interact with (wall buys, the ammo cache, later the claw machine,
   // hazards...): map.features, built by kind (game/features/). Built AFTER the core wiring above, so
@@ -599,13 +621,24 @@ export function createGame({
   // The outfit rail's brain: which worn item's tag pulses when (game/outfitRail.js; the HUD draws it).
   const outfitRail = createOutfitRail({ events, wardrobe, stats, player, gun, state });
 
-  // FLASH SALES: the mall PA discounts one group of prices for a while (game/flashSales.js). A group is only picked
-  // when it would be of use right now (saleEligibility, in the same file).
+  // FLASH SALES & DOORBUSTERS: the mall PA discounts one group (or one specific item on Doorbuster with a shopper rush).
   const flashSales = createFlashSales({
     events,
     pricing,
     eligible: saleEligibility({ map, gun, warranty, wardrobe, kiosk: features.instanceOf('kiosk') }),
+    doorbusters: () => doorbusterCandidates({
+      map, gun, wardrobe, kiosk: features.instanceOf('kiosk'), equipment, health,
+    }),
+    // Only an item you can get to in time: its route cost to you (the zombies' nav field, which leads to the player)
+    // within reachShareOfWindow of the Doorbuster's window at your sprint speed.
+    reachable: (target) => reachableInTime(target, (p) => zombies.nav.distanceToTarget(p.x, p.z, p.y),
+      stats.sprintSpeed * economy.flashSales.doorbuster.durationSeconds * economy.flashSales.doorbuster.reachShareOfWindow),
+    getRound: () => rounds.round,
+    canSpawnRush: () => zombies.aliveCount < maxAliveForRound(Math.max(1, rounds.round)),
+    nearSpawnPoints: (target) => nearOpenSpawnPoints(map, target.position, economy.flashSales.doorbuster.rush.nearestMarkers),
+    onRushSpawn: (points) => zombies.spawn('shopper', null, { spawnPoints: points }),
   });
+  events.on('roundDiscard', () => flashSales.clearRush());
   // Developer shortcuts (config/debug.js lists the keys; main.js turns key presses into debug.run(id)).
   const debugCommands = createDebugCommands({
     map, zombies, rounds, wallet, gun, health, player, arena, flashSales, bosses, wardrobe, features, equipment, challenges, closing,
@@ -640,6 +673,7 @@ export function createGame({
     ['guide', () => guide.reset()], // (only what the round being replayed was counted: the record itself is permanent)
     ['balls', () => balls.clear()], // (before the gun: a ball in the air reports to it)
     ['equipment', () => equipment.reset()], // empty pockets, nothing thrown left in the air or on the floor
+    ['rockets', () => rockets.clear()], // (before the gun, like the balls: a rocket in the air is gone, silently, no burst)
     ['gun', () => gun.reset()], // just the staple gun again, no upgrades
     ['interactions', () => interactions.reset()],
     ['viewmodel', () => viewmodel.reset()],
@@ -692,9 +726,11 @@ export function createGame({
   // resetRun first). Every reset step above is either here or in transientSteps; tests/saveGame.test.js fails otherwise,
   // so a new system with run state decides whether a save keeps it.
   const saveSteps = [
-    // The stats as they are (clothes, box cutter tiers and health included): nothing is re-applied on top.
-    ['stats', () => ({ ...stats }), (data) => {
+    // The stats as they are (clothes, box cutter tiers and health included), stripped of any active
+    // temporary incentive modifiers so a round-start snapshot never leaks timed bonuses into a loaded run.
+    ['stats', () => powerUps.stripEffectModifiers({ ...stats }), (data) => {
       Object.assign(stats, data);
+      stats.instantKill = false;
       if (stats.meleeTier > 0) viewmodel.setMeleeColors?.(upgrades.melee[stats.meleeTier - 1].colors);
     }],
     ['wardrobe', () => wardrobe.serialize(), (data) => wardrobe.restore(data)],
@@ -751,7 +787,7 @@ export function createGame({
   ];
   // Reset steps a save does not keep: nothing in them outlasts a round's start that matters (zombies, effects, timers).
   const transientSteps = [
-    'zombies', 'mascotCostumes', 'surfaces', 'health', 'balls', 'interactions', 'viewmodel', 'effects', 'contactShadows',
+    'zombies', 'mascotCostumes', 'surfaces', 'health', 'balls', 'rockets', 'interactions', 'viewmodel', 'effects', 'contactShadows',
     'ambience', 'melee', 'aimAssist', 'clockIn', 'hud', 'saveGame',
     'guide', // (its replay count travels in the guide's own record, not the run save)
   ];
@@ -771,6 +807,7 @@ export function createGame({
     if (death.summary) {
       death.timer += dt;
       balls.clear(); // (a ball in the air when you died is gone: nothing more is paid or counted)
+      rockets.clear(); // (so is a rocket: it never bursts)
       equipment.clearThrown(); // (so is a Soda Bomb on its fuse)
       zombies.update(dt);
       health.update(dt);
@@ -823,6 +860,7 @@ export function createGame({
     warranty.update(dt); // (a replaced gun's warranty goes on file; a dry Platinum gun makes its claim)
     zombies.update(dt);
     balls.update(dt); // after the zombies moved: a ball hits them where they are now
+    rockets.update(dt); // (and a rocket bursts against them where they are now)
     throwables.update(dt); // (same for a thrown Soda Bomb)
     equipment.updateThrown(dt); // fuses run out and burst where the bottle is now
     mascotCostumes.update(dt);
@@ -865,6 +903,7 @@ export function createGame({
     secondChance,
     outfitRail,
     flashSales,
+    warranty, // (read by the Flash Sale markers: game/flashSales.js collectSaleSpots needs it for Extended Warranty sales)
     powerUps,
     closing,
     bosses,
@@ -888,6 +927,7 @@ export function createGame({
     aimAssist,
     gun,
     balls,
+    rockets,
     throwables,
     equipment,
     interactions,

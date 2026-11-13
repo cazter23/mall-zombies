@@ -8,7 +8,8 @@
 //                Gameplay (weapon.js, aim.js, playerGun.js) reads only that resolved copy.
 //   3. PLAYER    the player's stats object (stats.damageMultiplier, stats.reloadSpeed...), applied
 //                live where the number is used, because perks can change mid-run.
-//   4. PER HIT   headshot x distance falloff x pierce falloff: hitDamage(), below.
+//   4. PER HIT   headshot x distance falloff x pierce falloff: hitDamage(), below. A BLAST (a gun with `blast`, the Bottle Rocket Bazooka):
+//                damage x the blast's falloff over the distance from its centre (weapons/blast.js blastFalloff), no headshots, no range falloff.
 //
 // A mod is plain data:
 //   { id: 'longBarrel', modifiers: [
@@ -22,6 +23,8 @@
 // Counts stay whole after mods (magazine x1.15 = 13.8 -> 14): see WHOLE_STATS; a burst gun's magazine
 // rounds to whole bursts.
 // =============================================================================
+
+import { blastFalloff } from './blast.js';
 
 /**
  * Damage multiplier for a hit at `distance` meters. `falloff` = { start, end, minMultiplier }:
@@ -44,9 +47,16 @@ export function isReturnable(target) {
   return !(target?.type?.boss || target?.type?.mascot);
 }
 
+/** Applies Black Friday one-hit eliminations (non-boss zombies) and boss damage multiplier when active. */
+export function applyInstantKillDamage(damage, target, stats) {
+  if (!stats?.instantKill || !target?.type) return damage;
+  if (target.type.boss) return damage * (stats.bossDamageMultiplier ?? 1);
+  return Math.max(damage, INSTANT_KILL_DAMAGE);
+}
+
 /**
  * Damage of ONE hit (one bullet, dart, nail or pellet on one zombie).
- *   hit:         { part: 'head' | 'body', distance }   (distance from the eye, meters)
+ *   hit:         { part: 'head' | 'body', distance }   (distance from the eye, meters); a blast's hit: { part: 'body', blastDistance } (from its centre)
  *   index:       0 for the first zombie this ray hit, 1 for the one behind it (pierce), ...
  *   stats:       the player's stats object (stats.damageMultiplier)
  *   chargeScale: optional charge damage multiplier (1 by default)
@@ -54,14 +64,21 @@ export function isReturnable(target) {
  *                Mascot takes def.instantKill.bigFraction of its max health instead, times the gun's tier damage and the player's damage stat.
  */
 export function hitDamage(def, hit, index, stats, chargeScale = 1, target = null) {
-  if (def.instantKill && target) {
-    if (isReturnable(target)) return INSTANT_KILL_DAMAGE;
+  const effectiveTarget = target ?? hit?.target ?? null;
+  if (def.instantKill && effectiveTarget) {
+    if (isReturnable(effectiveTarget)) return INSTANT_KILL_DAMAGE;
     const tier = def.base ? def.damage / def.base.damage : 1; // (an Extended Warranty's damage helps against bosses too)
-    return target.maxHealth * (target.type?.returnToSenderFraction ?? def.instantKill.bigFraction) * tier * stats.damageMultiplier;
+    const base = effectiveTarget.maxHealth * (effectiveTarget.type?.returnToSenderFraction ?? def.instantKill.bigFraction) * tier * stats.damageMultiplier;
+    return applyInstantKillDamage(base, effectiveTarget, stats);
+  }
+  // (A blast goes through the same Black Friday step as a bullet: an incentive jackpot one-shots a shopper caught in the burst.)
+  if (def.blast && hit.blastDistance !== undefined) {
+    return applyInstantKillDamage(def.damage * chargeScale * blastFalloff(hit.blastDistance, def.blast) * stats.damageMultiplier, effectiveTarget, stats);
   }
   const head = hit.part === 'head' ? def.headshotMultiplier * (stats.headshotDamageMultiplier ?? 1) : 1;
   const pierce = def.pierce ? def.pierce.damageFalloff[Math.min(index, def.pierce.damageFalloff.length - 1)] : 1;
-  return def.damage * chargeScale * head * damageFalloff(hit.distance, def.falloff) * pierce * stats.damageMultiplier;
+  const base = def.damage * chargeScale * head * damageFalloff(hit.distance, def.falloff) * pierce * stats.damageMultiplier;
+  return applyInstantKillDamage(base, effectiveTarget, stats);
 }
 
 /** One trigger cycle (a burst counts as one cycle). */
@@ -77,7 +94,10 @@ export function cycleSeconds(def) {
  */
 export function gunPower(def, stats) {
   const perCycle = def.damage * (def.pellets?.count ?? 1) * (def.burst?.count ?? 1);
-  return (perCycle / cycleSeconds(def)) * stats.damageMultiplier;
+  // (A one-round magazine, the Bottle Rocket Bazooka, reloads between every two shots: that reload is part of its cycle, or a
+  // stuffing would get three times a second of its real fire.)
+  const seconds = def.magazineSize === 1 && def.reloadTime ? Math.max(cycleSeconds(def), def.reloadTime) : cycleSeconds(def);
+  return (perCycle / seconds) * stats.damageMultiplier;
 }
 
 const OP_ORDER = { set: 0, add: 1, mul: 2 };

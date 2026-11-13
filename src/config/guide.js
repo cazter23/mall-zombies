@@ -176,9 +176,28 @@ export const guideEntries = [
 export const guideSections = [
   { id: 'customers', name: 'Customers', blurb: 'Persons on the premises after closing.' },
   { id: 'management', name: 'Management', blurb: 'Colleagues. Approach with a prepared statement.' },
+  // (no guideEntries here: derived directly from config/powerUps.js types)
+  { id: 'incentives', name: 'Incentives', blurb: 'Perks, vouchers and jackpots dropped onto the floor.' },
   // (no guideEntries here: its pages are the items of config/lostFound.js and the summary they unlock)
   { id: 'lostFound', name: 'Lost & Found', blurb: 'Property handed in. Owners have not come forward.' },
 ];
+
+export const incentiveEntries = Object.entries(powerUps.types).map(([id, def], index) => ({
+  id,
+  incentiveId: id,
+  section: 'incentives',
+  number: index + 1,
+  name: def.name,
+  tier: def.tier,
+  tierLabel: def.tier === 'jackpot' ? 'Jackpot drop' : 'Common incentive',
+  color: def.color,
+  icon: def.icon ?? 'ticket',
+  summary: def.summary ?? def.hint ?? '',
+  paText: def.pa?.text ?? '',
+  paKicker: def.pa?.kicker ?? 'Employee incentive',
+}));
+const incentiveById = new Map(incentiveEntries.map((entry) => [entry.id, entry]));
+export const incentiveEntry = (id) => incentiveById.get(id) ?? null;
 
 const byId = new Map(guideEntries.map((entry) => [entry.id, entry]));
 export const guideEntry = (id) => byId.get(id) ?? null;
@@ -224,7 +243,22 @@ export const guide = {
   sheets: {
     customers: { heading: 'Customer incident report', form: 'SG / LOSS PREVENTION · FORM 109-C' },
     management: { heading: 'Personnel file', form: 'SG / HUMAN RESOURCES · FORM 22-P', status: ['Employment status', 'Ongoing, regrettably'] },
+    incentives: { heading: 'Associate benefit memo', form: 'SG / PAYROLL & PERKS · FORM 44-B' },
     lostFound: { heading: 'Lost property log', form: 'SG / CUSTOMER SERVICE · FORM 7-L' },
+  },
+  incentives: {
+    unknownName: '???',
+    itemOf: (number, total) => `Employee incentive · ${number} of ${total}`,
+    unknownTitle: 'Program not yet claimed',
+    unknownBody: 'Pick up this incentive during a shift to file its benefit terms and PA notice.',
+    blankFields: ['Program', 'Tier', 'Terms'],
+    tierLabel: 'Classification',
+    firstRoundLabel: 'Earliest round',
+    effectHeading: 'What it does',
+    paHeading: 'PA announcement',
+    exhibit: (number) => `PERK ${String(number).padStart(2, '0')}`,
+    stamps: ['Unclaimed', 'Issued'],
+    sectionCount: (done, total) => `${done}/${total} incentives found`,
   },
   // The Lost & Found pages. No hints, on purpose: an item not yet found shows only its number.
   lost: {

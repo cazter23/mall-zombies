@@ -57,9 +57,12 @@ export const wardrobeItems = {
   },
   hiVisVest: {
     slot: 'torso', name: 'Hi-Vis Vest', shortName: 'Hi-Vis Vest',
-    factors: { reloadSpeed: 1.25, damageTakenMultiplier: 1.25 }, ticket: 'Nobody questions a vest. Everybody can see one.',
+    // ownBlastDamage 0.01: safety gear, your own rocket's burst can't hurt you (weapons/blast.js drops a self-hit under blast.self.ignoreBelow; a factor of
+    // 0 can't be taken off again, since the wardrobe divides a factor out when the item comes off).
+    factors: { reloadSpeed: 1.25, damageTakenMultiplier: 1.25, ownBlastDamage: 0.01 }, ticket: 'Nobody questions a vest. Everybody can see one.',
     color: 0xd7ff2f, icon: 'vest', pulse: 'playerHit',
-    lines: [{ effect: 'reloadSpeed', text: 'Reloads {size} faster' }, { effect: 'damageTakenMultiplier', text: 'Zombie hits hurt {size} more' }],
+    lines: [{ effect: 'reloadSpeed', text: 'Reloads {size} faster' }, { effect: 'damageTakenMultiplier', text: 'Zombie hits hurt {size} more' },
+      { effect: 'ownBlastDamage', text: "Your own blasts can't hurt you" }],
     zone: 'serviceCorridor', at: [-22.84, -8.46], facing: 'x+',
     pa: { kicker: 'Attention shoppers', text: 'Someone just bought the Hi-Vis Vest. Management can see you now.' },
     motif: 'motifHiVisVest',
@@ -129,7 +132,7 @@ export const statBetter = {
   slideSpeed: 'higher', slideCooldown: 'lower', reloadSpeed: 'higher', switchSpeed: 'higher', adsTimeMultiplier: 'lower',
   aimAssistMultiplier: 'higher', headshotDamageMultiplier: 'higher', adsMoveSpeed: 'higher', damageTakenMultiplier: 'lower',
   knockbackMultiplier: 'lower', strafeSpeed: 'higher', backpedalSpeed: 'higher', reserveMultiplier: 'higher',
-  meleeDamageMultiplier: 'higher', killPayMultiplier: 'higher',
+  meleeDamageMultiplier: 'higher', killPayMultiplier: 'higher', ownBlastDamage: 'lower',
 };
 
 export const fittingRooms = {

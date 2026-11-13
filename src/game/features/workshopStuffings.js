@@ -197,11 +197,16 @@ export function createBuildEffects({ events, gun, player, zombies, colliders, ef
       return hit ? { target: hit.target } : null;
     } },
     // The last round fires it whether or not it hits anything: at a miss, it goes off where the round landed.
+    // A blast gun's round is its BURST, not its launch (the rocket is still in the air at the shot): it waits for 'gunBlast'.
     lastRound: { shot(shot) {
-      if (shot.magazineLeft !== 0) return null;
+      if (shot.magazineLeft !== 0 || shot.blast) return null;
       const hit = firstZombieHit(shot);
       // (Stepped off the surface it hit, so the wall itself doesn't block the splash.)
       return hit ? { target: hit.target } : { point: shot.end.clone().addScaledVector(shot.endNormal, MISS_OFFSET) };
+    }, blast({ magazineLeft, hits, position }) {
+      if (magazineLeft !== 0) return null;
+      const hit = hits.find((h) => h.target.type);
+      return hit ? { target: hit.target } : { point: position.clone() }; // (where it burst: bursts are already off the surface)
     } },
     // A blast around you, wherever you are.
     // (Only with a zombie close: it's the panic button, so a reload in a quiet moment saves its cooldown.)
@@ -251,6 +256,7 @@ export function createBuildEffects({ events, gun, player, zombies, colliders, ef
   }
   events.on('shot', (shot) => offer('shot', shot, shot.weaponId));
   events.on('reload', (reload) => offer('reload', reload, reload.weaponId));
+  events.on('gunBlast', (blast) => offer('blast', blast, blast.weaponId));
   // A named gun's record: its own kills and its stuffing's, for the receipt. Nothing counts once you're dead.
   function confirmKill({ zombie, source }) {
     const weaponId = source === 'gun' ? gun.def.id : source === 'build' ? firing ?? zombie.stuffedBy : null;

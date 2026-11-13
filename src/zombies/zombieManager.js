@@ -420,12 +420,6 @@ export function createZombieManager({
       return zombies.reduce((n, z) => n + (z.isAlive ? 1 : 0), 0);
     },
 
-    securitySweep(origin, tuning) {
-      let count = 0;
-      for (const z of zombies) if (z.staggerAway(origin, tuning)) count += 1;
-      return count;
-    },
-
     staggerNearby(player, tuning) {
       const origin = player.position;
       for (const zombie of zombies) {

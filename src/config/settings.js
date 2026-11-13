@@ -265,6 +265,11 @@ export const settingDefs = [
     apply: (v, ctx) => ctx.hud?.setChallengeTrackerEnabled?.(v),
   },
   {
+    id: 'incentiveMeter', tab: 'Comfort', label: 'Employee of the hour meter', type: 'toggle', default: true,
+    hint: 'Shows the drop progress bar under the round counter once incentives unlock.',
+    apply: (v, ctx) => ctx.hud?.setIncentiveMeterEnabled?.(v),
+  },
+  {
     id: 'dimPhoneFlash', tab: 'Comfort', label: 'Dim instead of phone flashes', type: 'toggle', default: false,
     apply: v => { bossComfort.dimPhoneFlash = v; },
   },

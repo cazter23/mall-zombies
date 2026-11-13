@@ -1,4 +1,4 @@
-// Weapon skins phase 7: the eleven slot 3 (feat) challenges. Each happens inside one run, counted from events only; its progress is the
+// Weapon skins phase 7: every gun's slot 3 (feat) challenge. Each happens inside one run, counted from events only; its progress is the
 // best attempt (never a sum), and the tracker hears how the attempt in progress stands ('challengeLive').
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -132,6 +132,24 @@ const CASES = {
   returnToSender: {
     earn: t => kill(t, 'returnToSender', { zombie: zombie({ type: { id: 'lastCustomer', boss: {} } }) }),
     near: t => kill(t, 'returnToSender', { zombie: boss(['returnToSender']) }),
+  },
+  stargazer: {
+    earn: t => { round(t, 4); for (let i = 0; i < 15; i++) shot(t, 'stargazer', { hits: [hitOn(zombie())] }); round(t, 5); },
+    near: t => {
+      round(t, 4); for (let i = 0; i < 14; i++) shot(t, 'stargazer', { hits: [hitOn(zombie())] }); round(t, 5); // too few shots
+      for (let i = 0; i < 20; i++) shot(t, 'stargazer', { hits: i === 3 ? [] : [hitOn(zombie())] }); round(t, 6); // one miss
+    },
+  },
+  bottleRocket: {
+    earn: t => { round(t, 3); times(need('bottleRocket'), () => kill(t, 'bottleRocket')); },
+    near: t => { round(t, 3); times(need('bottleRocket') - 1, () => kill(t, 'bottleRocket')); round(t, 4); times(need('bottleRocket') - 1, () => kill(t, 'bottleRocket')); },
+  },
+  balloonLauncher: {
+    earn: t => { round(t, featOf('balloonLauncher').challenge.minRound); kill(t, 'balloonLauncher', { zombie: boss(['balloonLauncher']) }); },
+    near: t => {
+      round(t, featOf('balloonLauncher').challenge.minRound - 1); kill(t, 'balloonLauncher', { zombie: boss(['balloonLauncher']) }); // too early
+      round(t, featOf('balloonLauncher').challenge.minRound); kill(t, 'balloonLauncher', { zombie: boss(['balloonLauncher', 'stargazer']) }); // the sniper helped
+    },
   },
 };
 

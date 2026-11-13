@@ -12,7 +12,7 @@ import { economy, zombieHealthForRound, zombieHealthFor, zombieCountForRound } f
 import { withTier } from '../src/weapons/upgrades.js';
 import { bossTypes, bossVouchers } from '../src/config/bosses.js';
 import {
-  cycleSeconds, magazineSeconds, reloadSeconds, expectedShotDamage, burstDps, sustainedDps, shotsToKill, killsPerSecond,
+  cycleSeconds, magazineSeconds, reloadSeconds, expectedShotDamage, burstDps, sustainedDps, shotsToKill, killsPerSecond, hitChance,
 } from './balance.js';
 
 const guns = Object.values(weapons);
@@ -114,6 +114,47 @@ if (instantGuns.length) {
       'wave 25': waveSize, 'beams for a boss': r1(1 / d.instantKill.bigFraction),
     };
   })));
+}
+
+// A scoped gun (the Stargazer 3000): its damage RISES with range (falloff minMultiplier above 1). Judged at 30 m with headshots, where it is meant to
+// be the best, against the best wall gun aimed at the head too. "1 head kills to": the last round one aimed headshot at that range still kills a Shopper.
+const scopedGuns = guns.filter((d) => d.scope);
+if (scopedGuns.length) {
+  const head = (d) => ({ ...playStyle(d), aimAt: 'head' });
+  const lastOneShotRound = (d, m) => { let round = 0; while (round < 60 && shotsToKill(d, zombieHealthForRound(round + 1), m, head(d)) === 1) round += 1; return round; };
+  const oneShotKills = (d, hp, m) => d.magazineSize / (magazineSeconds(d) + reloadSeconds(d)) / shotsToKill(d, hp, m, head(d)); // (no overkill credit)
+  console.log('\nSCOPED GUNS (damage rises with range; headshots through the scope; kills/s at 30 m, one target, against the best wall gun, both aimed at the head)');
+  console.table(scopedGuns.flatMap((d) => [5, 15, 30].map((m) => ({
+    gun: d.name, range: `${m} m`, 'body hit': r0(expectedShotDamage(d, m, playStyle(d))), 'head hit': r0(expectedShotDamage(d, m, head(d))),
+    '1 head kills to round': lastOneShotRound(d, m), 'hip lands': `${Math.round(100 * hitChance(d, m))}%`,
+    pierces: d.pierce?.maxTargets ?? 1,
+  }))));
+  console.table(scopedGuns.flatMap((d) => [10, 15, 18, 20, 25].map((round) => {
+    const hp = zombieHealthForRound(round);
+    const mine = oneShotKills(d, hp, 30);
+    const best = Math.max(...guns.filter((g) => !g.clawOnly).map((g) => killsPerSecond(g, hp, 30, head(g))));
+    return { gun: d.name, round, 'zombie hp': r0(hp), 'kills/s at 30 m': mine.toFixed(2), 'best wall gun': best.toFixed(2), 'x the best': (mine / best).toFixed(2) };
+  })));
+}
+
+// A blast gun (the Bottle Rocket Bazooka): its rocket bursts and hurts every zombie round the point (weapons/blast.js). The overview above counts ONE zombie at
+// the centre; here, what a burst does by distance from it, the round a zombie there still dies in one, and a clump of six 1.5 m out against the wall.
+const blastGuns = guns.filter((d) => d.blast);
+if (blastGuns.length) {
+  const noStats = { damageMultiplier: 1 };
+  const lastRound = (damage) => { let round = 0; while (round < 60 && zombieHealthForRound(round + 1) <= damage) round += 1; return round; };
+  console.log('\nBLAST GUNS (damage by distance from the burst; your own blast: share of your max health)');
+  console.table(blastGuns.flatMap((d) => [...new Set([0, 1, 1.5, 2.5].filter((m) => m < d.blast.radius).concat(d.blast.radius))].map((m) => {
+    const damage = hitDamage(d, { part: 'body', blastDistance: m }, 0, noStats);
+    const self = d.blast.self ? Math.min(d.blast.self.share * (1 + (d.blast.edgeFraction - 1) * m / d.blast.radius), d.blast.self.maxShare) : 0;
+    return { gun: d.name, 'from the burst': `${m} m`, damage: r0(damage), 'kills to round': lastRound(damage), 'to you': `${Math.round(100 * self)}%` };
+  })));
+  console.table(blastGuns.filter((d) => d.blast.radius >= 2).map((d) => { // (a clump 1.5 m round the burst: only a real blast reaches it, not a balloon's pop)
+    const cycle = magazineSeconds(d) + reloadSeconds(d);
+    const clump = (6 * hitDamage(d, { part: 'body', blastDistance: 1.5 }, 0, noStats)) / cycle;
+    const best = guns.filter((g) => !g.clawOnly).map((g) => [g.name, sustainedDps(g, 15, playStyle(g)) * Math.min(6, g.pierce?.maxTargets ?? 1)]).sort((a, b) => b[1] - a[1])[0];
+    return { gun: d.name, 'clump of 6 at 1.5 m, dps': r0(clump), 'best wall gun at 15 m (x its pierce)': `${best[0]} ${r0(best[1])}`, 'x the best': (clump / best[1]).toFixed(2) };
+  }));
 }
 
 console.log('\nSUSTAINED DPS BY RANGE (magazine + reload; ADS except pellet guns, which are hip)');
