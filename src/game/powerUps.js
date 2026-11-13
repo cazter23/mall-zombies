@@ -138,9 +138,10 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
     if (jackpots.length && random() < config.jackpot.chance) {
       return weightedPick(jackpots);
     }
+    // A drop is promised, so with no common useful right now any common will do (an active one restarts). Never fall back
+    // to the whole catalogue: that would let a jackpot past its firstRound and the no-two-in-a-row rule.
     const commons = commonIds().filter(useful);
-    const pool = commons.length ? commons : allIds().filter(useful);
-    return weightedPick(pool);
+    return weightedPick(commons.length ? commons : commonIds());
   }
 
   const benefits = createIncentiveEffects({ events, player, gun, zombies, stats, pricing, wallet, state, config, clearLine, findPosition });

@@ -194,6 +194,29 @@ test('jackpot tier respects firstRound, rarity, and never drops two jackpots in 
   assert.ok(rate >= 0.08 && rate <= 0.14, `expected ~1/9 (~11.1%) jackpot rate, got ${(rate * 100).toFixed(1)}%`);
 });
 
+test('an Employee of the Month drop with no useful common still never falls back to a jackpot before firstRound or after one', () => {
+  // random() === 0 always: any jackpot left in the pool would be picked first.
+  const t = fixture({ random: () => 0 });
+  t.events.emit('roundStart', { round: powerUps.firstRound });
+  // Full ammo (no Stockroom Delivery), full health (no Paid Break), nobody to mark (no Mystery Shopper): run every other common.
+  for (const id of ['shiftBonus', 'lossPrevention', 'inventoryLiquidation', 'employeeDiscount', 'spillCleanup']) {
+    assert.ok(t.manager.debugDrop(id, t.player.position));
+    t.manager.update(1 / 60);
+    assert.ok(t.manager.effects.some((e) => e.id === id), `${id} running`);
+  }
+  const eotm = () => {
+    t.events.emit('kill', { zombie: { type: { id: 'sirWaffles', guaranteedDrop: true }, position: new THREE.Vector3(2, 0, 0) }, source: 'gun' });
+    t.manager.update(1 / 60);
+    const id = t.manager.pickup?.id;
+    t.manager.update(powerUps.lifetime);
+    return id;
+  };
+  assert.equal(powerUps.types[eotm()].tier, 'common', 'round 2: no jackpot even with every common busy');
+  t.events.emit('roundStart', { round: powerUps.jackpot.firstRound });
+  assert.equal(powerUps.types[eotm()].tier, 'jackpot', 'round 4: a jackpot can come (random 0 < chance)');
+  assert.equal(powerUps.types[eotm()].tier, 'common', 'and the next one cannot be a jackpot');
+});
+
 test('drop placement stays on the correct floor and refuses unsupported or blocked locations', () => {
   const t = fixture({ placementRadii: [0] });
   assert.equal(t.manager.debugDrop('shiftBonus', new THREE.Vector3(0, 6, 0)), false);
