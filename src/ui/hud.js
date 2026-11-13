@@ -107,7 +107,10 @@ export function createHud({ locker = null, guide = null, challenges = null, onIn
   const crosshairLines = el('div', 'ch-lines');
   for (const side of ['top', 'bottom', 'left', 'right']) crosshairLines.append(el('span', `ch-line ch-${side}`));
   const crosshairDot = el('div', 'ch-dot');
-  crosshair.append(crosshairLines, crosshairDot);
+  // A charge ring round the crosshair (the Barcode Scanner's scan): fills clockwise as the scan completes, then is gone (setCharge).
+  const crosshairCharge = el('div', 'ch-charge');
+  crosshair.append(crosshairLines, crosshairDot, crosshairCharge);
+  let lastCharge = -1;
   hud.append(crosshair);
   let lastGap = -1;
   let lastAim = -1;
@@ -737,6 +740,16 @@ export function createHud({ locker = null, guide = null, challenges = null, onIn
         crosshairDot.style.opacity = String(aim);
         lastAim = aim;
       }
+    },
+
+    // 0..1: how far a charging gun's scan has filled (the Barcode Scanner); 0 hides the ring.
+    setCharge(progress) {
+      const rounded = Math.round(progress * 40) / 40;
+      if (rounded === lastCharge) return;
+      crosshairCharge.style.setProperty('--charge', String(rounded));
+      crosshairCharge.classList.toggle('active', rounded > 0);
+      crosshairCharge.classList.toggle('full', rounded >= 1);
+      lastCharge = rounded;
     },
 
     // 0..1: how far a scoped gun's eyepiece fills the view (weapons/scope.js scopeOverlay); `look` = its scope.look colours.

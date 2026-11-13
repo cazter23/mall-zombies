@@ -135,7 +135,8 @@ test('real gun events carry weapon identity and drive one pulse per actual shot;
   for (const def of Object.values(weapons)) {
     t.g.gun.give(def); t.tick(45);
     const before = f.calls.filter(([kind]) => kind === 'dual-rumble').length;
-    t.press('Mouse0'); t.tick(20);
+    // (A charge gun, the Barcode Scanner, fires when its scan completes: hold for the scan, then let go.)
+    t.press('Mouse0', def.charge ? Math.ceil(def.charge.seconds * 60) + 1 : 1); t.tick(20);
     const pulses = f.calls.filter(([kind]) => kind === 'dual-rumble');
     assert.equal(pulses.length - before, def.fireMode === 'burst' ? 3 : 1, def.id);
     assert.equal(pulses.at(-1)[1].duration, defaults.shots[def.id].duration);

@@ -93,7 +93,7 @@ test('base guns meet the round-8 body-shot targets of the stronger-weapon pass',
   const hp = zombieHealthForRound(8);
   for (const [d, expected] of [
     [priceGun, 12], [nailGun, 5], [foamDartBlaster, 8], [confettiCannon, 2],
-    [weapons.rivetRifle, 8], [weapons.coilNailer, 8], [weapons.barcodeScanner, 3],
+    [weapons.rivetRifle, 8], [weapons.coilNailer, 8], [weapons.barcodeScanner, 2], // (Barcode rework: 420 a beam, 2 a round-8 Shopper)
   ]) assert.equal(shotsToKill(d, hp, 5, style(d)), expected, d.name);
 });
 
@@ -155,6 +155,44 @@ test('Tennis Ball Launcher: the corridor gun. One hit a ball in the open (weak: 
   assert.ok(p.restitution > 0.7 && p.restitution < 1, 'a bounce keeps most of the speed, never all of it');
   assert.ok(launcher.damage * p.maxBounces < expectedShotDamage(confettiCannon, 2), 'the best a ball can do is below a point-blank cannon blast');
   assert.ok(launcher.magazineSize >= 4 && launcher.magazineSize <= 10);
+});
+
+test('Tennis Ball Launcher keeps up with the rounds: 2 to 5 hits a Shopper from round 1 to 30 (it was ~23 by round 15), and late in the open it passes the plain Price Gun', () => {
+  const launcher = weapons.tennisBallLauncher;
+  assert.ok(launcher.roundScaling, 'its hits scale with the round the zombie spawned in');
+  const hitsAt = (round) => shotsToKill(launcher, zombieHealthForRound(round), 5, { ...style(launcher), round });
+  for (const round of [1, 5, 10, 15, 20, 25, 30]) {
+    const hits = hitsAt(round);
+    assert.ok(hits >= 2 && hits <= 5, `round ${round}: ${hits} hits a Shopper`);
+  }
+  assert.ok(hitsAt(30) - hitsAt(1) <= 2, 'the hits a kill takes creep up slowly, never run away');
+  // Decent in the open: under the Price Gun early, past the (unupgraded) Price Gun by round 20; a corridor ball (3 hits) does far more.
+  const openDps = (round) => sustainedDps(launcher, 5, { ...style(launcher), round });
+  assert.ok(openDps(1) < dps(priceGun, 5), 'round 1: one hit a ball is under the Price Gun');
+  assert.ok(openDps(20) > dps(priceGun, 5), `round 20: ${Math.round(openDps(20))} vs the Price Gun's ${Math.round(dps(priceGun, 5))}`);
+});
+
+test('Barcode Scanner (scan and ring up): beats the Price Gun played normally, sits with the Rivet Rifle, out-damages it on its own marked targets, and is the wall\'s best against one tough zombie and a line', () => {
+  const sc = weapons.barcodeScanner, rivet = weapons.rivetRifle;
+  assert.equal(sc.fireMode, 'charge');
+  assert.ok(sc.charge.minDamageMultiplier === undefined, 'no weak tap: every shot is a full one');
+  assert.ok(dps(sc, 5) > 1.1 * dps(priceGun, 5), `played like any gun it beats the 500-point Price Gun (${Math.round(dps(sc, 5))} vs ${Math.round(dps(priceGun, 5))})`);
+  // Raw, on unmarked targets: within reach of the Rivet Rifle...
+  assert.ok(dps(sc, 5) > 0.75 * dps(rivet, 5) && dps(sc, 5) < 1.1 * dps(rivet, 5), `raw ${Math.round(dps(sc, 5))} vs the Rivet's ${Math.round(dps(rivet, 5))}`);
+  // ...and ahead of it once its own follow-up beams land on what it has rung up (every beam after the first in a magazine).
+  const { damageTaken } = sc.rungUp;
+  const marked = dps(sc, 5) * (1 + (damageTaken - 1) * (sc.magazineSize - 1) / sc.magazineSize);
+  assert.ok(marked > dps(rivet, 5), `on its marked target ${Math.round(marked)} vs the Rivet's ${Math.round(dps(rivet, 5))}`);
+  // One tough zombie: the biggest single headshot of any wall gun (and the mark makes it bigger).
+  const head = (d) => expectedShotDamage(d, 5, { ...style(d), aimAt: 'head' });
+  for (const d of others(sc)) assert.ok(head(sc) > head(d), `headshot ${Math.round(head(sc))} vs ${d.name} ${Math.round(head(d))}`);
+  // A line of four: more damage a second down the line than any wall gun.
+  const lineDps = (d) => dps(d, 10) * (d.pierce ? d.pierce.damageFalloff.slice(0, 4).reduce((s, f) => s + f, 0) : 1);
+  for (const d of others(sc)) assert.ok(lineDps(sc) > lineDps(d), `a line: ${Math.round(lineDps(sc))} vs ${d.name} ${Math.round(lineDps(d))}`);
+  // The mark: a few seconds, a solid but not silly damage boost, and a bonus near a headshot's.
+  assert.ok(sc.rungUp.seconds >= 3 && sc.rungUp.seconds <= 6);
+  assert.ok(damageTaken > 1.15 && damageTaken <= 1.5);
+  assert.ok(sc.rungUp.killBonus > 0 && sc.rungUp.killBonus <= economy.payouts.headshotKillBonus);
 });
 
 test('Return to Sender, the wonder weapon: a blast that returns every zombie in a wide, short cone at any round, starved by a two-shot tube, a slow reload and a half-rate refill', () => {
@@ -231,11 +269,12 @@ test('Bottle Rocket Bazooka: the only gun that hurts everything around a point; 
   const NO_STATS = { damageMultiplier: 1 };
   const at = (m) => hitDamage(rk, { part: 'body', blastDistance: m }, 0, NO_STATS);
   const cycle = magazineSeconds(rk) + reloadSeconds(rk);
-  // A clump of six Shoppers 1.5 m round the burst, 15 m away: more damage a second than any wall gun can do there, even counting its pierce,
-  // and over twice what any of them does to one zombie.
+  // A clump of six Shoppers 1.5 m round the burst, 15 m away: more damage a second than any wall gun can do there, even counting its pierce
+  // (at what the pierce really deals to each zombie down the line, d.pierce.damageFalloff), and over twice what any of them does to one zombie.
   const clump = (6 * at(1.5)) / cycle;
   for (const d of all) {
-    assert.ok(clump > dps(d, 15) * Math.min(6, d.pierce?.maxTargets ?? 1), `clump ${Math.round(clump)} vs ${d.name} with its pierce`);
+    const line = d.pierce ? d.pierce.damageFalloff.slice(0, Math.min(6, d.pierce.maxTargets)).reduce((sum, f) => sum + f, 0) : 1;
+    assert.ok(clump > dps(d, 15) * line, `clump ${Math.round(clump)} vs ${d.name} with its pierce (${Math.round(dps(d, 15) * line)})`);
     assert.ok(clump > 2 * dps(d, 15), `clump vs ${d.name} on one zombie`);
   }
   // What one rocket does: its centre kills a round-10 Shopper, 1.5 m out a round-7 one, and the edge still stings.

@@ -571,9 +571,11 @@ test('real game: Black Friday one-shots non-bosses across gun/cone/projectile/me
   t.press('Mouse0');
   t.tick(30);
   assert.equal(ballVictim.isAlive, false, 'projectile one-shots non-boss under Black Friday');
+  for (let i = 0; i < 600 && g.balls.list.length; i++) t.tick(); // (let the ball finish bouncing: it must not hit the boss below)
 
   // Boss NEVER dies in one hit and takes bossDamageMultiplier x weapon damage instead.
-  g.gun.give(weapons.stapleGun);
+  // (give() doesn't switch to a gun already carried: it used to fire the tennis ball here, which a weak flat ball hid. Switch to slot 1.)
+  t.press('Digit1');
   t.tick(45);
   g.rounds.jumpTo(6);
   g.debug.run('summonBoss');
@@ -583,10 +585,12 @@ test('real game: Black Friday one-shots non-bosses across gun/cone/projectile/me
   boss.position.copy(at).add(new THREE.Vector3(0, 0, -2));
   boss.updateHitboxes();
   t.standAt(at.x, at.z, 0, 0);
+  assert.equal(g.gun.def.id, 'stapleGun', `the staple gun is in hand for the boss check (not ${g.gun.def.id})`);
   t.press('Mouse0');
   t.tick(fireCooldown);
   assert.equal(boss.isAlive, true, 'boss is never one-shot by Black Friday');
-  assert.ok(boss.health < 10000 && boss.health >= 10000 - weapons.stapleGun.damage * weapons.stapleGun.headshotMultiplier * powerUps.types.blackFriday.bossDamageMultiplier - 1);
+  assert.ok(boss.health < 10000 && boss.health >= 10000 - weapons.stapleGun.damage * weapons.stapleGun.headshotMultiplier * powerUps.types.blackFriday.bossDamageMultiplier - 1,
+    `boss health ${boss.health} after one staple under Black Friday`);
   assert.equal(weapons.stapleGun.damage, baseWeaponDamage, 'weapon config is never mutated');
 
   // Expiry restores normal damage & non-instant behavior.

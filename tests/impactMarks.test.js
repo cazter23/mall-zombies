@@ -148,8 +148,8 @@ test('real guns leave world signatures without paying points/hits; Cannon is cap
     // Keep pellet spread repeatable without seeding map creation.
     const random = ctx.mock.method(Math, 'random', seededRandom(421));
     try {
-      t.press('Mouse0');
-      if (def.fireMode === 'charge') t.tick();
+      // (A charge gun, the Barcode Scanner, fires when its scan completes: hold for the scan, then let go.)
+      t.press('Mouse0', def.charge ? Math.ceil(def.charge.seconds * 60) + 1 : 1);
     } finally { random.mock.restore(); }
     assert.equal(g.runStats.shotsFired, 1, def.id); assert.equal(g.runStats.shotsHit, 0);
     assert.equal(g.wallet.points, points); assert.equal(g.gun.weapon.magazine, ammo - 1);

@@ -92,7 +92,7 @@ export const economy = {
     // The three late guns (priced from `npm run balance`): ammo about half the gun, like the others.
     rivetRifle: { weapon: 1500, ammo: 750 }, // stronger automatic rifle; smaller magazine and quicker handling than Coil (Grand Atrium)
     coilNailer: { weapon: 2500, ammo: 650 }, // late Cinema purchase: large drum, slow reload and 2-target pierce
-    barcodeScanner: { weapon: 1750, ammo: 900 }, // weak sustained dps (180) but pierces 4 in a line, ~3x (Byte Me Electronics)
+    barcodeScanner: { weapon: 1750, ammo: 900 }, // a full 420 beam every scan, pierces 4, rings up what it hits (HOFFMAN'S; 13 November 2026 rework)
   },
 
   // GRAB-A-GUN, the claw machine (config/clawMachine.js): one grab. 1,500 = what a site's first grab wins in wall value (it was 1,000 and

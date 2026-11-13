@@ -7,7 +7,7 @@
 
 import { weapons } from '../src/config/weapons.js';
 import { workshopRitual, workshopStuffings, workshopHearts } from '../src/config/workshop.js';
-import { hitDamage, resolveGun, gunPower } from '../src/weapons/gunStats.js';
+import { hitDamage, resolveGun, gunPower, roundDamageScale } from '../src/weapons/gunStats.js';
 import { economy, zombieHealthForRound, zombieHealthFor, zombieCountForRound } from '../src/config/economy.js';
 import { withTier } from '../src/weapons/upgrades.js';
 import { bossTypes, bossVouchers } from '../src/config/bosses.js';
@@ -87,6 +87,7 @@ if (throwers.length) {
   console.table(throwers.map((d) => ({
     gun: d.name,
     'damage per hit': d.damage,
+    ...(d.roundScaling ? Object.fromEntries([5, 10, 15, 20, 25, 30].map((round) => [`hit r${round}`, r0(d.damage * roundDamageScale(d, round))])) : {}),
     'most a ball can do': d.damage * d.projectile.maxBounces,
     'max bounces': d.projectile.maxBounces,
     'finds zombies within m': d.projectile.seekRange,
@@ -166,7 +167,7 @@ const rounds = [1, 2, 3, 5, 8, 10, 15];
 console.table(rounds.map((round) => {
   const hp = zombieHealthForRound(round);
   return Object.fromEntries([['round', round], ['hp', r0(hp)], ...guns.map((d) => {
-    const shots = shotsToKill(d, hp, 5, playStyle(d));
+    const shots = shotsToKill(d, hp, 5, { ...playStyle(d), round }); // (round: a gun that keeps up with the rounds, def.roundScaling)
     return [d.name, d.burst ? `${shots} (${Math.ceil(shots / d.burst.count)})` : shots];
   })]);
 }));
