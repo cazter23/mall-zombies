@@ -57,7 +57,7 @@ import { createMascotCostumes } from './mascotCostumes.js';
 import { createSurfaceSlows } from './surfaceSlows.js';
 import { createEvents } from './events.js';
 import { createPricing } from './pricing.js';
-import { createFlashSales, saleEligibility, doorbusterCandidates, nearOpenSpawnPoints } from './flashSales.js';
+import { createFlashSales, saleEligibility, doorbusterCandidates, nearOpenSpawnPoints, reachableInTime } from './flashSales.js';
 import { createAnnouncer } from './announcer.js';
 import { createDebugCommands } from './debugCommands.js';
 import { createWarranty } from './warranty.js';
@@ -607,6 +607,10 @@ export function createGame({
     doorbusters: () => doorbusterCandidates({
       map, gun, wardrobe, kiosk: features.instanceOf('kiosk'), equipment, health,
     }),
+    // Only an item you can get to in time: its route cost to you (the zombies' nav field, which leads to the player)
+    // within reachShareOfWindow of the Doorbuster's window at your sprint speed.
+    reachable: (target) => reachableInTime(target, (p) => zombies.nav.distanceToTarget(p.x, p.z, p.y),
+      stats.sprintSpeed * economy.flashSales.doorbuster.durationSeconds * economy.flashSales.doorbuster.reachShareOfWindow),
     getRound: () => rounds.round,
     canSpawnRush: () => zombies.aliveCount < maxAliveForRound(Math.max(1, rounds.round)),
     nearSpawnPoints: (target) => nearOpenSpawnPoints(map, target.position, economy.flashSales.doorbuster.rush.nearestMarkers),

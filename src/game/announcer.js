@@ -86,7 +86,7 @@ export function createAnnouncer({ events, hud, sound, state }) {
         ['clockIn', () => economy.rounds.clockIn.pa],
         ['flashSaleSoon', ({ pa }) => pa],
         ['flashSaleStart', ({ pa }) => pa],
-        ['flashSaleEnd', ({ reason, pa }) => (reason === 'expired' ? pa : null)], // a new run or cancelled teaser ends silently
+        ['flashSaleEnd', ({ reason, pa }) => (reason === 'expired' || reason === 'sold' ? pa : null)], // a new run or cancelled teaser ends silently
       ]);
     },
 

@@ -1,5 +1,9 @@
 # Sunset Galleria: build history ("Current state")
 
+## 12 November 2026 - Doorbusters: the rush comes when you BUY it, and only items you can reach in time
+
+Two design changes after the review (game/flashSales.js, config/economy.js flashSales.doorbuster). **The rush is the price of the bargain:** going live no longer spawns anyone; buying the Doorbuster's item (the 'purchase' event; a door matched by its destination, `areaId`) sells it out: the sale ends with reason `'sold'` (PA `doorbuster.sold`, "Sold! ... The other shoppers saw that."), its price goes back to normal, and the rush starts and outlives the sale until every shopper has spawned (a discarded round, Play again or a load drop it). A Doorbuster you let pass costs nothing, and a break-time Doorbuster only fills the shopping window if you take it. **Only items in reach:** `reachableInTime(target, routeCost, maxRoute)`: one of the item's buy spots must be within `reachShareOfWindow` (0.5) of the window at your sprint speed (stats.sprintSpeed; 80 m of route at the defaults), by the zombies' nav field to you (route metres plus a little extra near walls, so it errs near). No item in reach = a normal sale instead. Applied when picking; a teased Doorbuster is not re-checked at go-live (you may have walked away on purpose).
+
 ## 12 November 2026 - Flash Sales: 10 s PA warning, minimap & world SALE tags, and Doorbusters
 
 - **PA teaser (`flashSaleSoon`):** `economy.flashSales.teaserSeconds` (10 s; `firstDelaySeconds` adjusted to 110 s so the first live sale stays near 120 s). Announces the coming category or Doorbuster on the PA in deadpan mall voice and shows a countdown on the HUD `.sale-tag.soon` without discounting prices early. At go-live, `createFlashSales` re-checks eligibility, picks an eligible fallback if needed or cancels quietly, and `serialize()`/`restore()` preserve pending teasers (`save.version` bumped to `9`).

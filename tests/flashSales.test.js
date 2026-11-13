@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import { createFlashSales, doorbusterCandidates, nearOpenSpawnPoints, collectSaleSpots } from '../src/game/flashSales.js';
+import { createFlashSales, doorbusterCandidates, nearOpenSpawnPoints, collectSaleSpots, reachableInTime } from '../src/game/flashSales.js';
 import { attachmentFits } from '../src/weapons/upgrades.js';
 import { createEvents } from '../src/game/events.js';
 import { createPricing } from '../src/game/pricing.js';
@@ -409,16 +409,20 @@ test('doorbuster: respects fromRound and relative weight using injected random',
   assert.equal(dbLog[1][1].reason, 'expired');
 });
 
-test('doorbuster rush: scaled count capped by maxCount, waits on alive cap, and never extends past expiry', () => {
+test('doorbuster rush: nothing at go-live; buying the item sells it out and brings the capped, round-scaled rush', () => {
   let alive = 0;
   const maxAlive = 4;
-  let round = 15; // base 3 + floor((15-3)*0.5)=6 -> capped at maxCount=6
+  const round = 15; // base 3 + floor((15-3)*0.5)=9 -> capped at maxCount=6
   const spawns = [];
+  const events = createEvents();
+  const pricing = createPricing();
+  const log = [];
+  events.on('flashSaleEnd', (e) => log.push(e));
   const sales = createFlashSales({
-    events: createEvents(),
-    pricing: createPricing(),
+    events,
+    pricing,
     random: dice(0.8, 0.5),
-    config: dbCfg({ teaserSeconds: 0 }),
+    config: dbCfg({ teaserSeconds: 0, sold: { kicker: 'Sold', text: 'Sold! {Item}, {pct}% off.' } }),
     eligible: () => false,
     doorbusters: () => [sampleDbTarget],
     getRound: () => round,
@@ -427,21 +431,90 @@ test('doorbuster rush: scaled count capped by maxCount, waits on alive cap, and 
     onRushSpawn: (pts) => { alive += 1; spawns.push(pts); return { id: spawns.length }; },
   });
   assert.equal(sales.startNow('doorbuster'), true);
-  assert.equal(spawns.length, 1, 'first rush zombie spawns at go-live');
-
-  // Spawn up to maxAlive = 4, then hold off while at cap.
-  for (let i = 0; i < 12; i++) sales.update(0.5);
-  assert.equal(spawns.length, 4, 'paused cleanly at alive cap (4/6 spawned)');
-
-  // Free 1 slot -> 5th spawns; cap reached again -> expires cleanly without stalling after 20 s.
-  alive = 3;
-  sales.update(0.5);
-  assert.equal(spawns.length, 5);
-  sales.update(20);
-  assert.equal(sales.active, null);
-  alive = 0;
   sales.update(5);
-  assert.equal(spawns.length, 5, 'pending unspawned rush stops cleanly once Doorbuster ends');
+  assert.equal(spawns.length, 0, 'a Doorbuster you have not bought brings no one');
+
+  // Buying something else (another gun, the same gun's ammo) is not buying the Doorbuster.
+  events.emit('purchase', { kind: 'weapon', id: 'nailGun' });
+  events.emit('purchase', { kind: 'ammo', id: 'rivetRifle' });
+  assert.equal(spawns.length, 0);
+  assert.ok(sales.active);
+
+  // Buying it: sold out (price back, PA "Sold!"), the first shopper at once.
+  events.emit('purchase', { kind: 'weapon', id: 'rivetRifle' });
+  assert.equal(sales.active, null, 'sold out');
+  assert.equal(pricing.discountOf('weapon', 'rivetRifle'), 0, 'the price is back to normal');
+  assert.equal(log.at(-1).reason, 'sold');
+  assert.match(log.at(-1).pa.text, /Sold! The Rivet Rifle, 70% off/);
+  assert.equal(spawns.length, 1);
+
+  // The rush outlives the sale: up to the alive cap, then it waits; as slots free it carries on, to exactly maxCount.
+  for (let i = 0; i < 12; i++) sales.update(0.5);
+  assert.equal(spawns.length, 4, 'held at the alive cap (4/6)');
+  alive = 0;
+  for (let i = 0; i < 12; i++) sales.update(0.5);
+  assert.equal(spawns.length, 6, 'the whole capped rush, after the sale ended');
+  for (let i = 0; i < 12; i++) sales.update(0.5);
+  assert.equal(spawns.length, 6, 'and no more');
+
+  // A second purchase of the item (no sale running) brings nothing.
+  events.emit('purchase', { kind: 'weapon', id: 'rivetRifle' });
+  sales.update(5);
+  assert.equal(spawns.length, 6);
+});
+
+test('doorbuster: a door is bought by its destination; a Doorbuster that expires unbought never brings a rush', () => {
+  const doorTarget = { ...sampleDbTarget, category: 'door', id: 'atrium', itemLabel: 'Grand Atrium shutter', itemPhrase: 'the Grand Atrium shutter' };
+  const spawns = [];
+  const events = createEvents();
+  const make = () => createFlashSales({
+    events, pricing: createPricing(), random: dice(0.8, 0.5), config: dbCfg({ teaserSeconds: 0 }), eligible: () => false,
+    doorbusters: () => [doorTarget], getRound: () => 5, nearSpawnPoints: () => [], onRushSpawn: () => { spawns.push(1); return {}; },
+  });
+  const sales = make();
+  assert.equal(sales.startNow('doorbuster'), true);
+  events.emit('purchase', { kind: 'door', id: 'atriumMegaMart', areaId: 'atrium' }); // any entrance to the Atrium
+  assert.equal(sales.active, null);
+  assert.equal(spawns.length, 1);
+
+  const events2 = createEvents();
+  const spawns2 = [];
+  const unbought = createFlashSales({
+    events: events2, pricing: createPricing(), random: dice(0.8, 0.5), config: dbCfg({ teaserSeconds: 0 }), eligible: () => false,
+    doorbusters: () => [doorTarget], getRound: () => 5, nearSpawnPoints: () => [], onRushSpawn: () => { spawns2.push(1); return {}; },
+  });
+  assert.equal(unbought.startNow('doorbuster'), true);
+  unbought.update(25);
+  assert.equal(unbought.active, null, 'expired');
+  events2.emit('purchase', { kind: 'door', id: 'atrium', areaId: 'atrium' }); // bought at full price afterwards
+  unbought.update(5);
+  assert.equal(spawns2.length, 0, 'let it pass: no shoppers');
+});
+
+test('doorbuster: only an item you can get to in time is offered (reachableInTime)', () => {
+  const far = { ...sampleDbTarget, id: 'rivetRifle' };
+  const near = { ...sampleDbTarget, id: 'nailGun', itemLabel: 'Nail Gun', position: { x: 0, y: 1.5, z: 0 }, positions: [{ position: { x: 0, y: 1.5, z: 0 } }] };
+  const route = (p) => Math.hypot(p.x, p.z); // the player stands at the origin
+  assert.equal(reachableInTime(near, route, 10), true);
+  assert.equal(reachableInTime(far, route, 10), false, 'about 23 m away');
+  assert.equal(reachableInTime({ ...far, positions: [...far.positions, { position: { x: 3, y: 0, z: 4 } }] }, route, 10), true,
+    'any one of its buy spots in reach will do');
+  assert.equal(reachableInTime(far, () => Infinity, 1e9), false, 'no route at all');
+
+  const reachable = (t) => reachableInTime(t, route, 10);
+  const onlyFar = createFlashSales({
+    events: createEvents(), pricing: createPricing(), random: dice(0.8, 0), config: dbCfg(), eligible: () => true,
+    doorbusters: () => [far], reachable, getRound: () => 5,
+  });
+  assert.equal(onlyFar.startNow('doorbuster'), false, 'nothing in reach: no Doorbuster');
+  onlyFar.update(10); // the scheduled pick (roll 0.8 would have been a Doorbuster)
+  assert.equal(onlyFar.pending?.kind ?? onlyFar.active?.kind, 'category', 'a normal sale instead');
+  const both = createFlashSales({
+    events: createEvents(), pricing: createPricing(), random: dice(0.99, 0.99), config: dbCfg(), eligible: () => false,
+    doorbusters: () => [far, near], reachable, getRound: () => 5,
+  });
+  assert.equal(both.startNow('doorbuster'), true);
+  assert.equal(both.active.target.id, 'nailGun', 'the one in reach');
 });
 
 test('the real game: Doorbuster picks only eligible items, discounts one spot, spawns open-zone rush, and completes round', () => {
@@ -483,6 +556,11 @@ test('the real game: Doorbuster picks only eligible items, discounts one spot, s
     const db = g.flashSales.active;
     assert.equal(db.kind, 'doorbuster');
     assert.equal(g.rounds.remainingToSpawn, remainingBefore, 'Doorbuster rush is extra zombies, never shrinks round remainingToSpawn');
+    t.tick(60);
+    assert.equal(rushSpawns.length, 0, 'no rush while the item is only on sale');
+    // Bought (the purchase the interaction would announce; a door by its destination): sold out, the rush comes.
+    g.events.emit('purchase', { kind: db.target.category, id: db.target.id, areaId: db.target.id });
+    assert.equal(g.flashSales.active, null, 'sold out');
 
     // Tick 4 seconds so the rush finishes queuing within maxAliveForRound(4).
     t.tick(60 * 4);
@@ -518,6 +596,8 @@ test('the real game: Doorbuster picks only eligible items, discounts one spot, s
     g.flashSales.reset();
     assert.equal(g.rounds.inBreak, true);
     assert.equal(g.flashSales.startNow('doorbuster'), true);
+    const breakTarget = g.flashSales.active.target;
+    g.events.emit('purchase', { kind: breakTarget.category, id: breakTarget.id, areaId: breakTarget.id });
     t.tick(60 * 3);
     assert.equal(g.rounds.inBreak, true, 'still the break');
     assert.ok(g.zombies.aliveCount > 0, 'the rush came during the break');
@@ -679,4 +759,49 @@ test('rush markers stay near the item even when only a few markers are open (non
   // Nothing within reach at all: the single nearest marker, never an empty list (the rush must have somewhere to come from).
   assert.equal(nearOpenSpawnPoints(g.map, shutter, 5, 0.1).length, 1);
   g.map.dispose();
+});
+
+test('the real game: buying a Doorbuster at the wall charges the Doorbuster price, sells it out, and brings the rush', () => {
+  const t = headlessGame();
+  const { g } = t;
+  g.health.invulnerable = true;
+  t.tick(1);
+  g.rounds.jumpTo(4);
+  t.tick(30);
+  g.debug.run('clearZombies');
+  // (Debug start, so the item is whichever the dice give: try until it is the Price Gun on the start room's wall.)
+  let tries = 0;
+  while (tries++ < 200 && !(g.flashSales.startNow('doorbuster') && g.flashSales.active.target.id === 'priceGun')) g.flashSales.reset();
+  assert.equal(g.flashSales.active?.target.id, 'priceGun', 'the Price Gun is a Doorbuster');
+  const price = g.pricing.priceOf('weapon', 'priceGun');
+  assert.ok(price < economy.wallBuys.priceGun.weapon);
+  const ends = [];
+  g.events.on('flashSaleEnd', (e) => ends.push(e.reason));
+  const rush = [];
+  const realSpawn = g.zombies.spawn;
+  g.zombies.spawn = function (typeId, at, opts = {}) {
+    const zombie = realSpawn.call(this, typeId, at, opts);
+    if (opts.spawnPoints && zombie) rush.push(zombie);
+    return zombie;
+  };
+  try {
+    t.tick(60);
+    assert.equal(rush.length, 0, 'on sale, not bought: no one comes');
+    g.wallet.earn(5000);
+    t.standAt(3.5, 10, -90);
+    t.tick(2);
+    assert.equal(g.interactions.prompt.cost, price);
+    const before = g.wallet.points;
+    t.press('KeyF', 30);
+    assert.equal(before - g.wallet.points, price, 'paid the Doorbuster price');
+    assert.ok(g.gun.owns('priceGun'));
+    assert.deepEqual(ends, ['sold']);
+    assert.equal(g.flashSales.active, null);
+    t.tick(60 * 3);
+    assert.ok(rush.length > 0, 'the rush came');
+    for (const z of rush) assert.ok(g.zombies.zombies.includes(z));
+  } finally {
+    g.zombies.spawn = realSpawn;
+    g.map.dispose();
+  }
 });

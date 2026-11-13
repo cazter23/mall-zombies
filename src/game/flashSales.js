@@ -1,15 +1,16 @@
 // =============================================================================
 // FLASH SALES & DOORBUSTERS (config/economy.js):
 //   - Category Flash Sales discount one group of prices ("25-50% off"), teased `teaserSeconds` ahead on the PA.
-//   - Doorbusters discount ONE specific unowned / reachable item steeply ("65-75% off") for a short burst and trigger
-//     a small rush of extra zombies from nearby open-zone spawn markers through the zombie manager.
+//   - Doorbusters discount ONE specific unowned item you can get to in time steeply ("65-75% off") for a short burst.
+//     BUYING it sells it out (the sale ends, 'sold') and brings a small rush of extra zombies from open-zone spawn
+//     markers near it, through the zombie manager. A Doorbuster you let pass costs you nothing.
 // Timing is PLAY time (only ticked while running, not paused or dead). Prices go through pricing (`setDiscount` /
 // `setItemDiscount`), so HUD tickets, prompts, coupons, and purchases all agree and restore cleanly on end/reset.
 //
 // EVENTS (game/events.js):
 //   'flashSaleSoon'  { kind, id, label, categories, target, seconds, pa }
 //   'flashSaleStart' { kind, id, label, categories, target, discount, seconds, pa }
-//   'flashSaleEnd'   { kind, id, label, reason: 'expired' | 'reset' | 'cancelled', pa }
+//   'flashSaleEnd'   { kind, id, label, reason: 'expired' | 'sold' | 'reset' | 'cancelled', pa }
 // =============================================================================
 
 import { economy } from '../config/economy.js';
@@ -297,6 +298,26 @@ export function collectSaleSpots({ map, features, gun, warranty, wardrobe, equip
   return spots;
 }
 
+/**
+ * Can you get to a Doorbuster item in time? True when any of its buy spots is within `maxRoute` of you by route.
+ * `routeCost(position)` = the zombie nav field's route cost from that spot to the player (createGame: zombies.nav
+ * distanceToTarget, metres plus a little extra near walls, so this errs on the near side; Infinity = no way there).
+ */
+export function reachableInTime(target, routeCost, maxRoute) {
+  const spots = target.positions?.length ? target.positions.map((p) => p.position) : [target.position];
+  return spots.some((p) => p && routeCost(p) <= maxRoute);
+}
+
+// What a sale keeps of a Doorbuster target (plain data, so it saves): no live map objects.
+const plainTarget = (t) => ({
+  category: t.category, id: t.id, itemLabel: t.itemLabel, itemPhrase: t.itemPhrase, zone: t.zone, area: t.area,
+  zoneLabel: t.zoneLabel, position: t.position ? { x: t.position.x, y: t.position.y, z: t.position.z } : null,
+});
+
+// Is this 'purchase' ({ kind, id, areaId }) the Doorbuster's item? A door is bought by its destination (areaId).
+const boughtTarget = (target, purchase) => purchase.kind === target.category
+  && (purchase.id === target.id || (target.category === 'door' && purchase.areaId === target.id));
+
 export function createFlashSales({
   events,
   pricing,
@@ -304,6 +325,7 @@ export function createFlashSales({
   config = economy.flashSales,
   eligible = () => true,
   doorbusters = () => [],
+  reachable = () => true, // (target) => can the player get there in time (createGame: reachableInTime)
   getRound = () => 1,
   onRushSpawn = null,
   canSpawnRush = () => true,
@@ -312,7 +334,16 @@ export function createFlashSales({
   let active = null;
   let pending = null;
   let untilNext = config.firstDelaySeconds;
-  let rush = null; // { remaining, timer, points, target }
+  // The shoppers who saw you buy the Doorbuster: { remaining, timer, points, target }. It outlives the sale (buying the
+  // item ends it) and goes on until every one has spawned; a discarded round, Play again or a load drops it.
+  let rush = null;
+
+  // Buying the Doorbuster's item sells it out: the rush starts and the sale ends ('sold'), its price back to normal.
+  events.on('purchase', (purchase) => {
+    if (active?.kind !== 'doorbuster' || !boughtTarget(active.target, purchase)) return;
+    startRush(active.target);
+    end('sold');
+  });
   const between = (min, max) => min + (max - min) * random();
 
   function pickDiscount(range = config.discounts) {
@@ -328,7 +359,7 @@ export function createFlashSales({
   }
 
   function pickDoorbusterTarget() {
-    const pool = doorbusters();
+    const pool = doorbusters().filter(reachable);
     if (!pool.length) return null;
     return pool[Math.min(pool.length - 1, Math.floor(random() * pool.length))];
   }
@@ -356,7 +387,7 @@ export function createFlashSales({
     }
 
     const groups = eligibleGroups();
-    const dbTargets = doorbusterAllowed(ignoreRound) ? doorbusters() : [];
+    const dbTargets = doorbusterAllowed(ignoreRound) ? doorbusters().filter(reachable) : [];
     const dbWeight = dbTargets.length ? config.doorbuster.weight : 0;
     const total = groups.reduce((sum, g) => sum + g.weight, 0) + dbWeight;
     if (!total) return null;
@@ -405,10 +436,7 @@ export function createFlashSales({
         id: 'doorbuster',
         label: `${target.itemLabel} (${target.zoneLabel})`,
         categories: [target.category],
-        target: {
-          category: target.category, id: target.id, itemLabel: target.itemLabel,
-          itemPhrase: target.itemPhrase, zone: target.zone, area: target.area, zoneLabel: target.zoneLabel,
-        },
+        target: plainTarget(target),
         remaining: lead,
         duration: lead,
       };
@@ -467,10 +495,7 @@ export function createFlashSales({
       const discount = pickDiscount(db.discounts);
       const { target } = offer;
       const previous = pricing.itemDiscountOf ? pricing.itemDiscountOf(target.category, target.id) : 0;
-      const serializedTarget = {
-        category: target.category, id: target.id, itemLabel: target.itemLabel,
-        itemPhrase: target.itemPhrase, zone: target.zone, area: target.area, zoneLabel: target.zoneLabel,
-      };
+      const serializedTarget = plainTarget(target);
       active = {
         kind: 'doorbuster',
         id: 'doorbuster',
@@ -487,8 +512,7 @@ export function createFlashSales({
         kind: 'doorbuster', id: active.id, label: active.label, categories: active.categories,
         target: active.target, discount, seconds: db.durationSeconds, pa: sayDoorbuster(db.start, serializedTarget, discount),
       });
-      startRush(target);
-      return true;
+      return true; // (no rush yet: the shoppers come when you buy it, see the 'purchase' listener above)
     }
 
     const { group } = offer;
@@ -538,11 +562,10 @@ export function createFlashSales({
     } else {
       sale.categories.forEach((c, i) => pricing.setDiscount(c, sale.previous[i]));
     }
-    active = null;
-    rush = null;
+    active = null; // (a rush already under way carries on: it belongs to the shoppers, not the sale)
     untilNext = between(config.gapSeconds.min, config.gapSeconds.max);
     const pa = sale.kind === 'doorbuster'
-      ? sayDoorbuster(config.doorbuster.end, sale.target, sale.discount)
+      ? sayDoorbuster(reason === 'sold' ? config.doorbuster.sold : config.doorbuster.end, sale.target, sale.discount)
       : sayCategory(sale.group.end, sale.discount);
     events.emit('flashSaleEnd', { kind: sale.kind, id: sale.id, label: sale.label, reason, pa });
   }
@@ -562,8 +585,8 @@ export function createFlashSales({
 
     update(dt) {
       if (!config.enabled) return;
+      stepRush(dt);
       if (active) {
-        stepRush(dt);
         active.remaining -= dt;
         if (active.remaining <= 0) end('expired');
         return;

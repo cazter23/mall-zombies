@@ -238,6 +238,7 @@ test('minimapState and directory draw markers during a teaser, live sale, and Do
   // Doorbuster marks only that one open/reachable target with `doorbuster: true`, and removes it once bought.
   g.wallet.earn(10_000);
   g.gun.give((await import('../src/config/weapons.js')).weapons.stapleGun);
+  t.tick(30); // (a Doorbuster only goes to an item in reach, by the zombies' route field to you, which a tick draws)
   assert.equal(g.flashSales.startNow('doorbuster'), true);
   const dbState = minimapState(plan, g);
   assert.ok(dbState.sales.length >= 1);

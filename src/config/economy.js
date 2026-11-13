@@ -181,8 +181,15 @@ export const economy = {
         kicker: 'Doorbuster over',
         text: 'The Doorbuster on {item} has ended. Thank you for trampling responsibly.',
       },
-      // Extra shoppers spawned near the Doorbuster item (open zones only). Extra (not taken from rounds.remainingToSpawn)
-      // so regular wave sizes never shrink and Doorbusters during a round break still work cleanly.
+      sold: { // you bought it: the sale ends and the rush comes
+        kicker: 'Sold',
+        text: 'Sold! {Item}, {pct}% off. The other shoppers saw that.',
+      },
+      // Only an item you can get to in time: by route (zombie nav) within this share of the window at your sprint speed
+      // (stats.sprintSpeed; 0.5 of 20 s at 8 m/s = 80 m of route).
+      reachShareOfWindow: 0.5,
+      // The shoppers who saw you buy it: extra zombies near the item (open zones only), coming when you BUY the Doorbuster
+      // (a sale you let pass costs nothing). Extra (not taken from rounds.remainingToSpawn), so wave sizes never shrink.
       rush: {
         baseCount: 3,
         perRound: 0.5, // +1 extra shopper per 2 rounds past fromRound

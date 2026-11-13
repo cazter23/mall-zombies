@@ -543,7 +543,7 @@ src/
     tickets.js          GRAB-A-GUN's prize tickets (g.tickets): their own currency, never the wallet, pricing or income. add(amount, reason)
                         (nothing once dead; 'ticketsWon'), spend, won (the receipt), and the Prize Counter's tokens (slowClaw, freeGrab,
                         keychain: hold / has / use). A resetStep ('tickets'), so Play again starts at 0.
-    flashSales.js       Flash Sales & Doorbusters: a PA teaser (`flashSaleSoon`, 10 s lead time, re-checks eligibility at go-live), category sales (`25-50% off`), and rare Doorbusters (one unowned/reachable item 65-75% off for 20 s plus a capped open-zone shopper rush via zombieManager). Also exports `saleEligibility`, `doorbusterCandidates`, `nearOpenSpawnPoints`, `collectSaleSpots`.
+    flashSales.js       Flash Sales & Doorbusters: a PA teaser (`flashSaleSoon`, 10 s lead time, re-checks eligibility at go-live), category sales (`25-50% off`), and rare Doorbusters (one unowned item you can reach in time, `reachableInTime`, 65-75% off for 20 s; BUYING it sells it out (`flashSaleEnd` reason 'sold') and brings a capped open-zone shopper rush via zombieManager). Also exports `saleEligibility`, `doorbusterCandidates`, `nearOpenSpawnPoints`, `collectSaleSpots`.
     runIntro.js         The PA's opening announcement on a run's first round (listens to 'roundStart').
     shutterSounds.js    Purchase sounds that follow the real shutter motion; pausing stops them, death and reset cancel them.
     features/           MAP FEATURES by kind (built features: features.instanceOf(kind) / instancesOf(kind)). index.js = the registry (kind -> build(feature, ctx) returning optional
