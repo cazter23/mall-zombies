@@ -1,5 +1,15 @@
 # Sunset Galleria: build history ("Current state")
 
+## 13 November 2026 - Rivet Rifle and Heavy Coil Nailer separation (`claude/hydrogen-rivet-coil`)
+
+Separated the Rivet Rifle and Heavy Coil Nailer (both were `damage: 95`, `fireInterval: 0.1` in `src/config/weapons.js`; numbers and adjacent comments only):
+- **Heavy Coil Nailer (`coilNailer`):** `damage` `95 -> 120`, `fireInterval` `0.1 -> 0.125` (`8.0` shots/s, `7.9` s drum). `npm run balance` at 5 m: burst DPS `950 -> 960`, sustained DPS `647 -> 700` (2-15 m; `575 -> 622` at 20 m, `424 -> 459` at 30 m), round-8 Shopper body shots `8 -> 6`.
+- **Rivet Rifle (`rivetRifle`):** `damage` `95 -> 80`, `fireInterval` `0.1 -> 0.085` (`11.8` shots/s, `2.5` s mag). `npm run balance` at 5 m: burst DPS `950 -> 941`, sustained DPS `582 -> 538` (2-10 m; `542 -> 501` at 15 m, `469 -> 433` at 20 m, `349 -> 323` at 30 m), round-8 Shopper body shots `8 -> 9`.
+- **Tests (`npm test -- tests/balance.test.js` + 23 matching test files, unedited):** 429/434 subtests passed; 5 failed (`balance.test.js:97` old 8-shot round-8 target, `coilAndScanner.test.js:24` old 10/s check, `rivetRifle.test.js:23` old 10/s check, `rivetRifle.test.js:40` sustained DPS `538` falling under `0.95x` Foam Dart Blaster `570` because the faster mag empties in `2.5` s against an unchanged `2.0` s reload, and `weaponProgression.test.js:29` 9 round-8 Shoppers now fit in one 64-nail drum at 6 shots/kill). Details: `docs/weapon-balance-pass.md`.
+- **Review fix:** the Rivet Rifle's magazine `30 -> 36` (reserve stays 144: four magazines) and headshot multiplier `1.75 -> 2` (a headshot 160, about the old 166, still above a Foam dart's 157.5), so the faster gun is still an upgrade over the
+  Foam Dart Blaster: sustained `538 -> 579` at 5 m (Foam `570`), `539` at 15 m. The four other failures were the old numbers in the tests
+  (fire rates 12/s and 8/s, round-8 body shots Rivet 9 / Coil 6, a Coil drum now needs 11 round-8 Shoppers to run dry): updated.
+
 ## 13 November 2026 - Tennis Ball Launcher keeps up; Barcode Scanner: scan and ring up (claude/gun-rework)
 
 - Tennis Ball Launcher: 60 a hit x (round Shopper health / 150)^0.85 by the round the zombie spawned in (roundScaling; zombie.round), so a
