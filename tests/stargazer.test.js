@@ -1,6 +1,6 @@
 // The Stargazer 3000 (config/weapons.js stargazer: claw-only, the sniper), in the real headless game through real input. The scope itself has its own
 // test (scope.test.js); this checks the gun: no wall sells it, a bearing hits harder the further it flies and goes through a line, and the scope in play
-// (the eyepiece fills the view, the view sways and gets back exactly where it was, each shot knocks the eye off the eyepiece).
+// (the eyepiece fills the view, the view sways and gets back exactly where it was, firing keeps you in the scope), and the reload as the model shows it.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
@@ -11,6 +11,7 @@ import { clawMachine } from '../src/config/clawMachine.js';
 import { buildWallBuy } from '../src/game/features/wallBuy.js';
 import { scopeOverlay } from '../src/weapons/scope.js';
 import { zombieTypes } from '../src/config/zombies.js';
+import { buildWeaponModel } from '../src/weapons/models/index.js';
 
 const sg = weapons.stargazer;
 
@@ -102,17 +103,22 @@ test('the scope in play: aimed in, the eyepiece fills the view; the view sways w
   assert.ok(Math.abs(g.player.yaw - yaw0) < 1e-9 && Math.abs(g.player.pitch - pitch0) < 1e-9, 'no drift left behind');
 });
 
-test('the bolt: a shot through the scope knocks the eye off the eyepiece, and holding aim brings it back before the next shot is ready', () => {
+test('firing while aimed keeps you in the scope: every tick of the shot and the bolt after it stays fully aimed, and a second shot does too', () => {
   const { t, g, fire } = setup();
   t.input.pressed.add('Mouse2');
   t.input.held.add('Mouse2');
   t.tick(Math.ceil(sg.ads.seconds / dt) + 2);
-  fire();
-  assert.ok(g.gun.aim.amount <= sg.scope.boltDropTo + 0.05, `off the eyepiece (${g.gun.aim.amount.toFixed(2)})`);
-  assert.ok(scopeOverlay(sg.scope, g.gun.aim.amount) === 0, 'the eyepiece is gone while the bolt is worked');
+  for (let shot = 0; shot < 2; shot++) {
+    const before = g.gun.weapon.magazine;
+    fire();
+    assert.equal(g.gun.weapon.magazine, before - 1, `shot ${shot + 1} went off`);
+    for (let i = 0; i < Math.ceil(sg.fireInterval / dt); i++) {
+      assert.equal(g.gun.aim.amount, 1, `still aimed ${i} ticks after shot ${shot + 1}`);
+      assert.equal(scopeOverlay(sg.scope, g.gun.aim.amount), 1, 'the eyepiece never leaves the view');
+      t.tick();
+    }
+  }
   assert.ok(t.sounds.includes('stargazerShot'));
-  t.tick(Math.ceil(sg.fireInterval / dt));
-  assert.equal(g.gun.aim.amount, 1, 'back in the scope by the time the bolt is closed');
   t.input.held.delete('Mouse2');
 });
 
@@ -126,4 +132,37 @@ test('reload: a five-round magazine from a reserve, no shell-by-shell', () => {
   assert.equal(g.gun.weapon.magazine, sg.magazineSize);
   assert.equal(g.gun.weapon.reserve, sg.startingReserve - sg.magazineSize);
   assert.equal(sg.shellReload, undefined);
+});
+
+test('the reload as the model shows it: the trigger hand works the bolt, the strip goes into the port, and everything is home at the end', () => {
+  const model = buildWeaponModel(sg);
+  const part = (name) => model.root.getObjectByName(name);
+  const bolt = part('stargazerBolt'), handle = part('stargazerBoltHandle'), boltArm = part('stargazerBoltArm');
+  const strip = part('stargazerStrip'), stripBearings = part('stripBearings'), port = part('stargazerPortBearings');
+  const restZ = bolt.position.z;
+  const at = (p, weight = 1) => model.animate({ sinceFire: 9, reloadProgress: p, reloadWeight: weight, loaded: false });
+  const r = sg.viewmodel.reload;
+  const home = () => {
+    assert.ok(Math.abs(bolt.position.z - restZ) < 1e-9 && Math.abs(handle.rotation.z) < 1e-9, 'bolt closed');
+    assert.ok(boltArm.position.distanceTo(new THREE.Vector3(...r.boltHandPivot)) < 1e-9 && Math.abs(boltArm.rotation.z) < 1e-9, 'trigger hand on the grip');
+    assert.equal(strip.visible, false);
+  };
+  at(0); home();
+  at(0.45); // the bolt is open while the strip is fetched; the trigger hand is back on the grip
+  assert.ok(bolt.position.z > restZ + 0.9 * sg.viewmodel.fire.boltTravel && handle.rotation.z > 0.9 * sg.viewmodel.fire.boltLiftDegrees * Math.PI / 180, 'bolt lifted and back');
+  assert.ok(boltArm.position.distanceTo(new THREE.Vector3(...r.boltHandPivot)) < 1e-9, 'trigger hand back on the grip while the strip comes');
+  assert.ok(strip.visible && stripBearings.visible, 'the strip of bearings in the support hand');
+  assert.equal(port.visible, false, 'the port is empty before the strip goes in');
+  at(0.2); // working the bolt: the trigger hand is up at the knob
+  assert.ok(boltArm.position.distanceTo(new THREE.Vector3(...r.boltHandPivot)) > 0.08, 'the trigger hand left the grip for the bolt');
+  at(0.68); // pressed in: the bearings are in the port, the clip about to go
+  assert.equal(stripBearings.visible, false, 'the bearings left the clip');
+  assert.equal(port.visible, true, 'and show in the port');
+  at(0.9); home();
+  at(1); home();
+  at(0.45, 0); home(); // a reload eased fully out leaves nothing open
+  // The sounds and bumps in order, each before the end.
+  const sounds = r.events.filter((e) => e.sound);
+  assert.deepEqual(sounds.map((e) => e.sound), ['stargazerReloadOut', 'stargazerReloadIn', 'stargazerReloadReady']);
+  for (const e of r.events) assert.ok(e.at > 0 && e.at < 0.95);
 });

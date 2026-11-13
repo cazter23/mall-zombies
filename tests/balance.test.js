@@ -211,7 +211,7 @@ test('Stargazer 3000, the sniper: the further away, the harder it hits; the hard
   assert.ok(hitChance(sg, 30, { ads: true }) > 0.99, 'through the scope it is dead on');
   // A line of zombies, a real scope, and held back by a slow bolt, a small magazine and a long reload.
   assert.ok(sg.pierce.maxTargets >= 3 && sg.pierce.maxTargets <= 5);
-  assert.ok(sg.scope.sway.degrees > 0 && sg.scope.boltDropTo < sg.scope.overlayFrom, 'it sways, and each shot takes the eye off the eyepiece');
+  assert.ok(sg.scope.sway.degrees > 0 && sg.scope.boltDropTo === undefined, 'it sways, and a shot never takes the eye off the eyepiece');
   assert.ok(sg.ads.fovMultiplier <= 0.35, 'a real zoom');
   assert.ok(sg.fireInterval >= 1 && sg.reloadTime >= 3 && sg.magazineSize <= 6);
 });
