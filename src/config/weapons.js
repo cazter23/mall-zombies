@@ -880,9 +880,10 @@ export const weapons = {
     // this, seekRange m = after a zombie it is thrown on at the nearest OTHER zombie this close and in view (0 = it only reflects), startOffset / startDrop =
     // where it leaves, in front of and below the eye. zeroDistance m = the throw is angled so the ball crosses the crosshair this far out (it leaves
     // below the eye and gravity pulls it down: unzeroed, the old 21 m/s ball was ~0.8 m under the crosshair at 10 m). look: the colours (fx/ballView.js).
-    // (Faster and flatter since the rework: 28 m/s and 4 m/s^2, so it lands near where you aim from a few metres to ~20 m.)
+    // (Faster and flatter since the rework: 28 m/s and 4 m/s^2, so it lands near where you aim from a few metres to ~20 m. lifeSeconds 3.2 -> 1.8 to
+    // match: at the new speed a ball lived long enough to fly back off a wall 20 m away and roll into the zombie it had already hit.)
     projectile: {
-      speed: 28, gravity: 4, restitution: 0.84, maxBounces: 5, lifeSeconds: 3.2, radius: 0.07, minSpeed: 2.2, rehitSeconds: 0.35, seekRange: 4.5,
+      speed: 28, gravity: 4, restitution: 0.84, maxBounces: 5, lifeSeconds: 1.8, radius: 0.07, minSpeed: 2.2, rehitSeconds: 0.35, seekRange: 4.5,
       startOffset: 0.55, startDrop: -0.08, zeroDistance: 10, bounceSound: 'tennisBounce',
       look: { color: 0xcfe23a, seamColor: 0xf6f6e6 },
     },
