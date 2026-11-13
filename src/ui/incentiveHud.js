@@ -119,7 +119,7 @@ export function createIncentiveHud({ onNearFull = null } = {}) {
       const def = powerUps.types[effect.id];
       const count = effect.charges != null ? ` · ${effect.charges} LEFT`
         : effect.healing != null ? ` · ${Math.ceil(effect.healing)} HP LEFT` : '';
-      return `${def.name} · ${Math.ceil(effect.remaining)}s${count} · ${def.hint}`;
+      return `${def.name} · ${Math.ceil(effect.remaining)}s${effect.held ? ` · ${powerUps.meter.heldLabel}` : ''}${count} · ${def.hint}`;
     }).join('\n');
 
     element.hidden = !showMeter && !pickup && !effects.length;
@@ -154,7 +154,7 @@ export function createIncentiveHud({ onNearFull = null } = {}) {
       return {
         id: effect.id,
         jackpot: def.tier === 'jackpot',
-        title: `${def.name} · ${Math.ceil(effect.remaining)}s${count}`,
+        title: `${def.name} · ${Math.ceil(effect.remaining)}s${effect.held ? ` · ${powerUps.meter.heldLabel}` : ''}${count}`,
         hint: def.hint,
         teach: teaching.has(effect.id),
       };

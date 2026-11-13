@@ -539,6 +539,7 @@ export function createGame({
 
   powerUps = createPowerUps({
     events, player, gun, zombies, colliders, state, stats, pricing, wallet, interactions,
+    areaAt: (point) => map.areaAt?.(point) ?? null, // (Store-Wide Clearance clears the area it lies in)
     view: createPowerUpView(scene, colliders),
   });
   configureBossVouchers({ pricing, wallet, map, gun, state });

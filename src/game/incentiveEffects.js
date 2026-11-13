@@ -3,8 +3,18 @@
 import * as THREE from 'three';
 import { INSTANT_KILL_DAMAGE } from '../weapons/gunStats.js';
 import { PRICE_CATEGORIES } from './pricing.js';
+import { zombieCountForRound } from '../config/economy.js';
 
-export function createIncentiveEffects({ events, player, gun, zombies, stats, pricing, wallet, state, config, clearLine, findPosition }) {
+/** Store-Wide Clearance's one flat credit in `round`: bonus.perRoundZombie x that round's wave size, rounded to bonus.roundTo. */
+export function clearanceBonus(round, def) {
+  const { perRoundZombie, roundTo } = def.bonus;
+  return Math.round(perRoundZombie * zombieCountForRound(Math.max(1, round)) / roundTo) * roundTo;
+}
+
+// `areaAt(point)`: the map's area id for a point (map.areaAt), or null without one (Clearance then uses its radius).
+// `getRound()`: the round now (Clearance's bonus grows with it).
+export function createIncentiveEffects({ events, player, gun, zombies, stats, pricing, wallet, state, config, clearLine, findPosition,
+  areaAt = null, getRound = () => 1 }) {
   const effects = new Map();
   let bursts = [];
   const direct = source => source === 'gun' || source === 'melee';
@@ -74,14 +84,19 @@ export function createIncentiveEffects({ events, player, gun, zombies, stats, pr
     for (const z of targets) if (z.isAlive && near(origin, z.position, def.radius ?? Infinity)) z.staggerAway(origin, def.stagger);
   }
 
-  // Kills non-boss zombies on the pickup's floor within radius using source `'clearance'` (no per-kill payout),
-  // deals capped non-lethal damage to bosses in range, and pays the single flat clearance bonus once.
+  // Kills non-boss zombies in the pickup's area, on its floor (no area: within radius), using source `'clearance'` (no
+  // per-kill payout), deals capped non-lethal damage to bosses there, and pays the single flat clearance bonus once.
   function detonateClearance(origin) {
     const def = config.types.storeWideClearance;
+    const area = areaAt?.(origin) ?? null;
+    const inScope = area
+      ? (p) => Math.abs(p.y - origin.y) <= config.floorTolerance && areaAt(p) === area
+      : (p) => onFloorInRadius(origin, p, def.radius);
+    const bonus = clearanceBonus(getRound(), def);
     const killedPositions = [];
     let bossesHit = 0;
     for (const z of [...living()]) {
-      if (!onFloorInRadius(origin, z.position, def.radius)) continue;
+      if (!inScope(z.position)) continue;
       if (z.type?.boss) {
         const crashScale = z.state === 'crashed' ? (z.type.charge?.crashDamageTakenMultiplier ?? 1) : 1;
         const scale = (z.damageTakenMultiplier ?? 1) * (z.vulnerableTimer > 0 ? (z.vulnerableMultiplier ?? 1) : 1) * crashScale;
@@ -98,14 +113,15 @@ export function createIncentiveEffects({ events, player, gun, zombies, stats, pr
         if (result?.killed) killedPositions.push(pos);
       }
     }
-    wallet?.award(def.flatBonus);
+    wallet?.award(bonus);
     events.emit('clearanceDetonated', {
       position: origin.clone(),
-      radius: def.radius,
+      area,
+      radius: area ? null : def.radius,
       kills: killedPositions.length,
       bossesHit,
       positions: killedPositions,
-      flatBonus: def.flatBonus,
+      flatBonus: bonus,
     });
   }
 
@@ -170,8 +186,15 @@ export function createIncentiveEffects({ events, player, gun, zombies, stats, pr
       for (const effect of effects.values()) if (effect.bossReward) end(effect.id, 'roundDiscard');
     },
     update(dt) {
+      let quiet = null; // (worked out once, only if a holdWhileQuiet benefit is running)
       for (const effect of [...effects.values()]) {
         const def = config.types[effect.id];
+        // A jackpot's clock waits while no zombie is up to fight (between waves, the round break, all spawns still rising).
+        if (def.holdWhileQuiet) {
+          quiet ??= living().length === 0;
+          effect.held = quiet;
+          if (quiet) continue;
+        }
         const step = Math.min(dt, effect.remaining);
         effect.remaining -= dt;
         effect.elapsed += step;

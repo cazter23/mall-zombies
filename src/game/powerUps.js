@@ -4,7 +4,8 @@ import { bossVouchers } from '../config/bosses.js';
 import { createFloorPickups } from './floorPickups.js';
 import { createIncentiveEffects } from './incentiveEffects.js';
 
-export function createPowerUps({ events, player, gun, zombies, colliders, state, stats, pricing, wallet, interactions = null, config = defaults, random = Math.random, view = null }) {
+// `areaAt(point)`: the map's area at a point (map.areaAt), for Store-Wide Clearance; null without one (it then uses its radius).
+export function createPowerUps({ events, player, gun, zombies, colliders, state, stats, pricing, wallet, interactions = null, config = defaults, random = Math.random, view = null, areaAt = null }) {
   let round = 0;
   let earned = 0;
   let threshold;
@@ -144,7 +145,7 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
     return weightedPick(commons.length ? commons : commonIds());
   }
 
-  const benefits = createIncentiveEffects({ events, player, gun, zombies, stats, pricing, wallet, state, config, clearLine, findPosition });
+  const benefits = createIncentiveEffects({ events, player, gun, zombies, stats, pricing, wallet, state, config, clearLine, findPosition, areaAt, getRound: () => round });
 
   function collect() {
     const item = pickup;

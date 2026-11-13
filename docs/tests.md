@@ -188,8 +188,9 @@ skill credit, single drops, caps/repeats, jackpot tier rules (firstRound, rarity
 per-type need weighting (low health -> Paid Break, low combined two-slot ammo -> Stockroom Delivery, points near unbought prices -> Employee Discount,
 global weight cap, unchanged jackpot rate, preserved bag & no-repeat rules under need),
 expiry, safe floor/ramp placement, swept slide collection, wall/storey rejection, reserve delivery without bypassing reloads/upgrades,
-Loss Prevention shove through all zombie attack/charge states, real-game Store-Wide Clearance (same-floor clear, zero per-kill pay,
-flat bonus once, non-lethal boss hit, Comfort flash), Commission Day (`wallet.award` multiplier, raw `earn` unscaled, timely expiry),
+Loss Prevention shove through all zombie attack/charge states, real-game Store-Wide Clearance (the whole Hallway cleared past the old radius while the Food Court 8 m away, the start room and
+the Promenade overhead survive; zero per-kill pay; the round's flat bonus once; non-lethal boss hit; Comfort flash), the bonus table by round
+and the radius fallback without map areas, jackpot clocks holding while no zombie is up (a rising one does not count; HUD ON HOLD; commons never hold), Commission Day (`wallet.award` multiplier, raw `earn` unscaled, timely expiry),
 Commission Day also doubles the helmet pop; Black Friday (one-hit kills across hitscan/cone/projectile/melee without editing config, boss damage multiplier, and the gunStats maths alone: exactly bossDamageMultiplier on bosses, nothing without the flag), the Clearance light stutter (tests/horror.test.js: its area only, under 3 flashes a second, skipped with Comfort dimming),
 per-type distinct 3D low-poly silhouettes (`userData.shared` merged geometries/materials built once and reused without per-pickup disposal or leaks across resets, few meshes per pickup, standout jackpot scale/hover/halo/beacon), `'powerUpMeter'` event bus tracking across round unlock/near-full/cap/restore/reset, Comfort `incentiveMeter` toggle, `'incentiveDiscovered'` NEW INCENTIVE HUD toast, and Employee of the Hour HUD states.
 `fullRun.test.js` also earns and collects a drop with production tuning, then checks Play again cleanup.

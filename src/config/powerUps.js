@@ -23,6 +23,7 @@ export const powerUps = {
     sound: 'incentiveMeterReady',
     readyLabel: 'ALMOST DUE',
     cappedLabel: 'ROUND CAP · CAPPED',
+    heldLabel: 'ON HOLD', // an active benefit row whose clock is waiting for shoppers (holdWhileQuiet)
     newDiscoveryLabel: 'NEW INCENTIVE',
     discoveryToastSeconds: 4.5,
   },
@@ -120,26 +121,32 @@ export const powerUps = {
     },
     storeWideClearance: {
       tier: 'jackpot', name: 'STORE-WIDE CLEARANCE', color: 0xffe45e, weight: 1,
-      radius: 28, flatBonus: 400, bossDamageFraction: 0.45,
+      // Clears the AREA the pickup lies in (map.areaAt: the Food Court, the Hallway...), on its floor only. `radius` is the
+      // fallback for a map without areas. One flat credit, no per-kill pay: bonus.perRoundZombie x the round's wave size
+      // (economy zombieCountForRound), rounded to bonus.roundTo, so it stays about a fifth of a round's income all game
+      // (420 at round 4, 870 at round 10, 1,620 at round 20).
+      radius: 28, bonus: { perRoundZombie: 30, roundTo: 10 }, bossDamageFraction: 0.45,
       splatColors: [0xffe45e, 0xff9f43, 0xffffff], splatCount: 22,
-      hint: 'FLAT CLEARANCE CREDIT · CLEARS SHOPPERS NEARBY',
-      summary: 'Jackpot: clears nearby non-boss shoppers for a flat 400 credits and heavily wounds bosses.',
+      hint: 'CLEARS THIS AREA · FLAT CLEARANCE CREDIT',
+      summary: 'Jackpot: clears every non-boss shopper in this area of the floor for one flat credit that grows each round, and heavily wounds bosses.',
       icon: 'clearance', sound: 'incentiveClearance',
       pa: { kicker: 'Jackpot · Clearance', text: 'Attention shoppers, everything on this floor must go. Management extends a flat clearance credit.' },
     },
     commissionDay: {
       tier: 'jackpot', name: 'COMMISSION DAY', color: 0xffd147, weight: 1,
-      seconds: 20, pointsMultiplier: 2,
+      // holdWhileQuiet: the timer only runs while a zombie is up to fight (game/incentiveEffects.js), so a jackpot grabbed
+      // at the end of a wave keeps its seconds for the next one.
+      seconds: 20, pointsMultiplier: 2, holdWhileQuiet: true,
       hint: 'DOUBLE POINTS ON ALL PAYOUTS',
-      summary: 'Jackpot: doubles all eligible point payouts for 20 s.',
+      summary: 'Jackpot: doubles all eligible point payouts for 20 s of fighting (the clock waits while no shopper is up).',
       icon: 'commission', sound: 'incentiveCommission',
       pa: { kicker: 'Jackpot · Commission Day', text: 'Commission Day is now open. All eligible associates are earning double on every transaction.' },
     },
     blackFriday: {
       tier: 'jackpot', name: 'BLACK FRIDAY', color: 0xff5252, weight: 1,
-      seconds: 10, bossDamageMultiplier: 3,
+      seconds: 10, bossDamageMultiplier: 3, holdWhileQuiet: true,
       hint: 'ONE-HIT ELIMINATIONS · HEAVY BOSS DAMAGE',
-      summary: 'Jackpot: one-hit kills non-boss shoppers and deals 3× damage to bosses for 10 s.',
+      summary: 'Jackpot: one-hit kills non-boss shoppers and deals 3× damage to bosses for 10 s of fighting (the clock waits while no shopper is up).',
       icon: 'blackFriday', sound: 'incentiveBlackFriday',
       pa: { kicker: 'Jackpot · Black Friday', text: 'Doors are open. All stock moves on first contact; heavy markdowns apply to management.' },
     },

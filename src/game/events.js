@@ -72,8 +72,8 @@
 //   'powerUpEnd'  { id, reason }                         benefit ended (including mopped by the Janitor or roundDiscard)
 //   'incentiveComplete' { id, text }                     marked-target bonus earned (PA/HUD feedback)
 //   'incentiveBurst' { position, radius, color }          deferred liquidation burst (visual/sound feedback)
-//   'clearanceDetonated' { position, radius, kills, bossesHit, positions, flatBonus }
-//                                                        Store-Wide Clearance cleared nearby floor zombies and damaged bosses
+//   'clearanceDetonated' { position, area, radius, kills, bossesHit, positions, flatBonus }  (area: the map area cleared, or null and radius)
+//                                                        Store-Wide Clearance cleared its area's floor and damaged bosses
 //   'powerUpExpire' { id, pointsInstead }                uncollected incentive timed out (a boss voucher left on the floor pays pointsInstead)
 //   'roundStart'  { round }                              the round number flipped (game/rounds.js)
 //   'clockIn'     { round, skipped }                     the player ended the break before `round` early (game/clockIn.js);

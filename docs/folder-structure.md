@@ -538,8 +538,11 @@ src/
                         Loss Prevention melee, Commission Day pointsMultiplier, Black Friday instantKill/bossDamageMultiplier),
                         deferred non-recursive liquidation damage, one-purchase coupons, target marks, green healing zones
                         (Paid Break), slow patches (Spill Cleanup), direct-kill extensions, melee charges + sprint shoves,
-                        detonateClearance() (non-boss floor clear with source 'clearance', capped non-lethal boss hit, flat
-                        bonus, 'clearanceDetonated'), and stripModifiers(). Owned/reset/disposed by powerUps.js.
+                        detonateClearance() (every non-boss zombie in the pickup's map area on its floor, via map.areaAt passed
+                        from createGame, else within its radius; source 'clearance', capped non-lethal boss hit, one flat bonus
+                        from clearanceBonus(round): perRoundZombie x the round's wave size; 'clearanceDetonated'), holdWhileQuiet
+                        (Commission Day and Black Friday clocks wait while no zombie is up: effect.held, HUD "ON HOLD"),
+                        and stripModifiers(). Owned/reset/disposed by powerUps.js.
     wallet.js           createWallet({ getMultiplier }): points (start 500), earn/award/spend/canAfford, totalEarned, totalSpent, onChange cb (HUD
                         pop-ups). `award()` applies `getMultiplier()` (e.g. Commission Day). pointsForHit(): COD payouts (+10 hit; kill value +40 head / +70 melee; zombies only)
     interactions.js     createInteractions(): every buyable and hold prompt (doors, wall buys, desks, Kevin, the claw, hazards...). add({ label, verb, cost, position,

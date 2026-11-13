@@ -19,6 +19,7 @@ import { createHud } from '../src/ui/hud.js';
 import { settingDefs } from '../src/config/settings.js';
 import { menuDom } from './helpers/menuDom.js';
 import { hitDamage, INSTANT_KILL_DAMAGE } from '../src/weapons/gunStats.js';
+import { clearanceBonus, createIncentiveEffects } from '../src/game/incentiveEffects.js';
 
 function fixture(overrides = {}) {
   const events = createEvents();
@@ -344,7 +345,12 @@ test('real game: Commission Day doubles payouts via wallet multiplier, stops on 
   g.wallet.earn(100);
   assert.equal(g.wallet.points - before, 100);
 
-  // Expiry restores exact 1x payouts on time.
+  // Nobody up to fight: the clock holds (holdWhileQuiet). Once a shopper is up, expiry restores exact 1x payouts on time.
+  const held = effect.remaining;
+  g.powerUps.update(5);
+  assert.equal(effect.remaining, held, 'no zombie alive: the clock waits');
+  const target = g.zombies.spawn('shopper', at.clone().add(new THREE.Vector3(3, 0, 0)));
+  target.setState('chasing');
   g.powerUps.update(powerUps.types.commissionDay.seconds);
   assert.equal(g.stats.pointsMultiplier, 1);
   assert.equal(g.powerUps.effects.length, 0);
@@ -368,28 +374,40 @@ test('real game: Commission Day doubles payouts via wallet multiplier, stops on 
   assert.equal(g.stats.pointsMultiplier, 1);
 });
 
-test('real game: Store-Wide Clearance clears nearby same-floor non-bosses with zero per-kill pay, pays flat bonus once, spares bosses, and flashes comfortably', () => {
+test('real game: Store-Wide Clearance clears its whole area on its floor with zero per-kill pay, pays the round\'s flat bonus once, spares bosses, and flashes comfortably', () => {
   const t = headlessGame();
   const { g } = t;
   t.tick();
   g.rounds.update = () => {};
   g.zombies.clear();
-  const at = g.player.position.clone();
+  g.debug.run('doors'); // every area open
+  // In the Main Hallway (x -20..20, z -2..6), near its west end.
+  const at = new THREE.Vector3(-12, 0, 2);
+  g.player.teleport({ position: at.clone(), yaw: 0 });
+  t.tick();
   const def = powerUps.types.storeWideClearance;
+  const spawn = (type, x, y, z, opts) => { const z0 = g.zombies.spawn(type, new THREE.Vector3(x, y, z), opts); z0.setState('chasing'); return z0; };
 
   g.rounds.jumpTo(6);
+  assert.equal(g.powerUps.round, 6);
   g.debug.run('summonBoss');
   const boss = g.bosses.active;
   boss.setState('chasing');
-  boss.position.copy(at).add(new THREE.Vector3(0, 0, -3));
+  boss.position.set(-12, 0, -0.5);
   boss.health = 5; // near death: clearance must never kill a boss
 
-  // Same-floor targets inside radius (normal shopper, Mascot, and noRewards zombie), plus far, upstairs, and low-HP boss.
-  const s1 = g.zombies.spawn('shopper', at.clone().add(new THREE.Vector3(2, 0, 0))); s1.setState('chasing');
-  const mascot = g.zombies.spawn('mascot', at.clone().add(new THREE.Vector3(-2, 0, 0)), { variant: 'sirWaffles', gold: false }); mascot.setState('chasing');
-  const noPay = g.zombies.spawn('mallWalker', at.clone().add(new THREE.Vector3(0, 0, 3))); noPay.setState('chasing'); noPay.noRewards = true;
-  const far = g.zombies.spawn('shopper', at.clone().add(new THREE.Vector3(def.radius + 3, 0, 0))); far.setState('chasing');
-  const upstairs = g.zombies.spawn('shopper', at.clone().add(new THREE.Vector3(1, 6, 0))); upstairs.setState('chasing');
+  // In the Hallway: a shopper, a Mascot, a noRewards zombie, and one at the far end beyond the old 28 m radius.
+  const s1 = spawn('shopper', -10, 0, 2);
+  const mascot = spawn('mascot', -14, 0, 3, { variant: 'sirWaffles', gold: false });
+  const noPay = spawn('mallWalker', -12, 0, 4); noPay.noRewards = true;
+  const farEnd = spawn('shopper', 17, 0, 2);
+  assert.ok(farEnd.position.distanceTo(at) > def.radius);
+  // Not the Hallway: the Food Court 8 m away, the start room, and the Promenade right overhead.
+  const foodCourt = spawn('shopper', -12, 0, -6);
+  const startRoom = spawn('shopper', 0, 0, 10);
+  const upstairs = spawn('shopper', -12, 6.3, 2);
+  assert.deepEqual([at, foodCourt.position, startRoom.position, upstairs.position].map((p) => g.map.areaAt(p)),
+    ['hallway', 'foodCourt', 'startRoom', 'upstairs'], 'the scenario stands where it means to');
 
   g.wardrobe.buy('goldCard'); // even with Gold Card, clearance kills pay 0 per-kill points
   const detonated = [];
@@ -405,15 +423,20 @@ test('real game: Store-Wide Clearance clears nearby same-floor non-bosses with z
   assert.equal(s1.isAlive, false);
   assert.equal(mascot.isAlive, false);
   assert.equal(noPay.isAlive, false);
-  assert.equal(far.isAlive, true, 'out-of-radius zombie survives');
-  assert.equal(upstairs.isAlive, true, 'other-floor zombie survives');
+  assert.equal(farEnd.isAlive, false, 'the whole Hallway is cleared, past the old radius');
+  assert.equal(foodCourt.isAlive, true, 'another area survives, however close');
+  assert.equal(startRoom.isAlive, true, 'the start room survives');
+  assert.equal(upstairs.isAlive, true, 'the floor above survives');
   assert.equal(boss.isAlive, true, 'low-HP boss is never killed by clearance');
   assert.ok(boss.health >= 1, 'boss remains alive above 0 health');
-  assert.equal(g.wallet.points - pointsBefore, def.flatBonus, 'pays flat bonus once with zero per-kill points');
-  assert.equal(g.runStats.kills, killsBefore + 2, 'pays zero points for kills while still recording non-noRewards kills');
+  const bonus = clearanceBonus(6, def);
+  assert.equal(bonus, 570, 'round 6: 30 x 19 shoppers');
+  assert.equal(g.wallet.points - pointsBefore, bonus, 'pays the flat bonus once with zero per-kill points');
+  assert.equal(g.runStats.kills, killsBefore + 3, 'pays zero points for kills while still recording non-noRewards kills');
   assert.ok(killSources.every(s => s === 'clearance'));
   assert.equal(detonated.length, 1);
-  assert.equal(detonated[0].flatBonus, def.flatBonus);
+  assert.equal(detonated[0].flatBonus, bonus);
+  assert.equal(detonated[0].area, 'hallway');
   assert.ok(t.sounds.includes(def.sound));
   assert.ok(t.hud.calls.some(([name, data]) => name === 'showAnnouncement' && data.text === def.pa.text && data.priority === 1));
 
@@ -431,14 +454,78 @@ test('real game: Store-Wide Clearance clears nearby same-floor non-bosses with z
   const prevDim = bossComfort.dimPhoneFlash;
   try {
     bossComfort.dimPhoneFlash = false;
-    g.events.emit('clearanceDetonated', { position: at, radius: def.radius, kills: 0, bossesHit: 0, positions: [], flatBonus: def.flatBonus });
+    g.events.emit('clearanceDetonated', { position: at, radius: def.radius, kills: 0, bossesHit: 0, positions: [], flatBonus: 0 });
     assert.equal(flashView.element.style.background, powerUps.visual.clearanceFlash.color);
     bossComfort.dimPhoneFlash = true;
-    g.events.emit('clearanceDetonated', { position: at, radius: def.radius, kills: 0, bossesHit: 0, positions: [], flatBonus: def.flatBonus });
+    g.events.emit('clearanceDetonated', { position: at, radius: def.radius, kills: 0, bossesHit: 0, positions: [], flatBonus: 0 });
     assert.equal(flashView.element.style.background, '#000');
   } finally {
     bossComfort.dimPhoneFlash = prevDim;
   }
+});
+
+test('Clearance bonus grows with the wave size, and without map areas Clearance falls back to its radius on its floor', () => {
+  const def = powerUps.types.storeWideClearance;
+  assert.deepEqual([4, 10, 20].map((r) => clearanceBonus(r, def)), [420, 870, 1620]);
+  assert.equal(clearanceBonus(0, def), clearanceBonus(1, def), 'never below a round-1 wave');
+  const shopper = (x, y = 0) => ({
+    isAlive: true, state: 'chasing', removed: false, type: { id: 'shopper' }, position: new THREE.Vector3(x, y, 0),
+    takeHit() { this.isAlive = false; return { killed: true }; },
+  });
+  const run = (areaAt) => {
+    const zs = [shopper(-20), shopper(20), shopper(-30), shopper(-5, 6.3)];
+    const paid = [];
+    const effects = createIncentiveEffects({
+      events: createEvents(), player: { position: new THREE.Vector3() }, gun: { slots: [] }, zombies: { zombies: zs },
+      stats: createPlayerStats(), wallet: { award: (n) => paid.push(n) }, state: { over: false }, config: powerUps,
+      clearLine: () => true, findPosition: (p) => p, areaAt, getRound: () => 10,
+    });
+    effects.detonateClearance(new THREE.Vector3(0, 0, 0));
+    return { alive: zs.map((z) => z.isAlive), paid };
+  };
+  // No areas: the 28 m radius on the floor.
+  assert.deepEqual(run(null), { alive: [false, false, true, true], paid: [870] });
+  // Areas (west / east of x = 0, the origin counting as east): the whole east area on its floor, whatever the distance.
+  assert.deepEqual(run((p) => (p.x < 0 ? 'west' : 'east')).alive, [true, false, true, true]);
+});
+
+test('real game: jackpot clocks hold while no zombie is up to fight, show ON HOLD, and run again once one is', () => {
+  const t = headlessGame();
+  const { g } = t;
+  t.tick();
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  g.powerUps.debugDrop('blackFriday');
+  t.tick();
+  const effect = g.powerUps.effects.find((e) => e.id === 'blackFriday');
+  const start = effect.remaining;
+  g.powerUps.update(30);
+  assert.equal(effect.remaining, start, 'nobody alive: the clock waits');
+  assert.equal(effect.held, true);
+  menuDom();
+  const hud = createIncentiveHud();
+  hud.update({ effects: g.powerUps.effects });
+  assert.ok(hud.element.textContent.includes('BLACK FRIDAY · ' + Math.ceil(start) + 's · ' + powerUps.meter.heldLabel));
+  const rising = g.zombies.spawn('shopper', g.player.position.clone().add(new THREE.Vector3(3, 0, 0)));
+  assert.equal(rising.state, 'spawning');
+  g.powerUps.update(1);
+  assert.equal(effect.remaining, start, 'a zombie still rising out of its spawn does not count');
+  rising.setState('chasing');
+  g.powerUps.update(1);
+  assert.ok(Math.abs(effect.remaining - (start - 1)) < 1e-9, 'one up: the clock runs');
+  assert.equal(effect.held, false);
+  hud.update({ effects: g.powerUps.effects });
+  assert.ok(!hud.element.textContent.includes(powerUps.meter.heldLabel));
+  // Common benefits never hold: Shift Bonus runs down with nobody about.
+  g.zombies.clear();
+  g.powerUps.debugDrop('shiftBonus');
+  t.tick();
+  const shift = g.powerUps.effects.find((e) => e.id === 'shiftBonus');
+  const shiftStart = shift.remaining;
+  g.powerUps.update(1);
+  assert.ok(shift.remaining < shiftStart);
+  g.powerUps.update(30);
+  assert.ok(Math.abs(effect.remaining - (start - 1)) < 1e-9, 'and Black Friday held again meanwhile');
 });
 
 test('real game: Black Friday one-shots non-bosses across gun/cone/projectile/melee without editing config, multiplies boss damage cleanly, and resets', () => {
