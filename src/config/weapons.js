@@ -738,7 +738,8 @@ export const weapons = {
       tag: { width: 0.26, height: 0.16, depth: 0.02, hole: 0.025, above: 0.32, spin: 2.2, bob: 0.04, color: 0xe8202c, holeColor: 0xfff4e8 },
     },
     // The scan line on the target while charging (fx/scanLine.js): a red laser from the gun to what you aim at, and a bar sweeping it.
-    scanLine: { color: 0xff2a38, laserWidth: 0.006, barWidth: 0.7, barHeight: 0.02, sweep: 0.9, sweepHz: 3, opacity: 0.9, maxRange: 60 },
+    // (barLift: m the bar sits in front of what it scans, toward you.)
+    scanLine: { color: 0xff2a38, laserWidth: 0.012, barWidth: 0.85, barHeight: 0.045, barLift: 0.3, sweep: 0.9, sweepHz: 3, opacity: 1, maxRange: 60 },
     magazineSize: 8, startingReserve: 40,
     fireInterval: 0.2, fireBuffer: 0.12, reloadTime: 1.8, range: 100,
     falloff: { start: 12, end: 30, minMultiplier: 0.6 }, // a store-aisle gun, not a sniper: the Stargazer keeps the long hits
@@ -768,6 +769,7 @@ export const weapons = {
     },
     sounds: { fire: 'scannerShot', beep: 'scannerBeep', dryFire: 'dryClick' }, // (beep: the checkout BEEP on top of the shot)
     tracerColor: 0xff2a38,
+    beam: { width: 0.06, seconds: 0.2, flicker: 30 }, // the beam it fires: 5x a staple streak's width, held 0.2 s (fx/effects.js tracer)
     viewmodel: {
       model: 'barcodeScanner', hipOffset: { x: 0.175, y: -0.145, z: -0.42 },
       aimYawDegrees: 9, hipPitchDegrees: 2, hipRollDegrees: 4,

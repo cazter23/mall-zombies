@@ -359,7 +359,7 @@ export function createPlayerGun({
     for (const [rayIndex, ray] of rays.entries()) {
       const colors = d.pellets?.tracerColors;
       const color = colors ? colors[rayIndex % colors.length] : d.tracerColor;
-      effects.tracer(muzzlePosition, ray.end, color);
+      effects.tracer(muzzlePosition, ray.end, color, d.beam); // (d.beam: a gun's own fatter, longer streak: the Barcode Scanner's beam)
       ray.hits.forEach((hit, i) => {
         // Hits are worked out before any damage, so a target can be dead by the time its hit applies
         // (killed by an earlier pellet, or by something reacting to another kill this shot): skip it.

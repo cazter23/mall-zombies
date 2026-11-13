@@ -56,6 +56,7 @@ export function createScanLine(scene, def) {
       const sweep = onZombie ? Math.sin(time * cfg.sweepHz * Math.PI * 2) * cfg.sweep * height * 0.5 : 0;
       bar.position.copy(shot.point);
       if (onZombie) bar.position.y = shot.target.position.y + height * 0.5 + sweep;
+      bar.position.addScaledVector(look, -cfg.barLift); // (just in front of the body, or half of it hides inside the zombie)
       bar.quaternion.setFromRotationMatrix(lookAt.lookAt(eye, bar.position, up));
       bar.scale.set(onZombie ? cfg.barWidth : cfg.barWidth * 0.2, cfg.barHeight, cfg.barHeight);
     },
