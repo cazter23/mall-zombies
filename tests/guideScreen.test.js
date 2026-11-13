@@ -123,13 +123,13 @@ for (const back of ['button', 'Escape', 'PadB']) test(`the guide returns to the 
 });
 
 test('keyboard and controller walk the index, turning the page as they go', () => {
-  const t = fixture((save) => save.see('mallWalker'));
+  const t = fixture((save) => save.see('shoplifter'));
   assert.equal(document.activeElement, t.row('shopper'));
   t.key('ArrowDown');
-  assert.equal(document.activeElement, t.row('mallWalker'));
-  assert.ok(t.page().includes(guideEntry('mallWalker').memo));
+  assert.equal(document.activeElement, t.row('shoplifter'));
+  assert.ok(t.page().includes(guideEntry('shoplifter').memo));
   t.pad('PadDown');
-  assert.equal(document.activeElement, t.row('cartPusher'));
+  assert.equal(document.activeElement, t.row('mallWalker'));
   assert.ok(t.page().includes(cfg.unknownTitle));
   t.pad('PadUp'); t.pad('PadUp'); t.pad('PadUp');
   assert.equal(document.activeElement, t.guide.element.querySelector('.guide-back'), 'it wraps to Back');
@@ -219,12 +219,12 @@ test('kills are tallied in fives in the margin, and past the cap the number is w
 });
 
 test('a page turn is announced once per different page (the paper sound), never for the page already open', () => {
-  const t = fixture((save) => save.see('mallWalker'));
+  const t = fixture((save) => save.see('shoplifter'));
   assert.equal(t.turns, 1, 'opening the binder');
   t.row('shopper').click();
   assert.equal(t.turns, 1);
-  t.row('mallWalker').click();
-  t.row('mallWalker').click();
+  t.row('shoplifter').click();
+  t.row('shoplifter').click();
   assert.equal(t.turns, 2);
   assert.equal(t.sheet().classList.contains('turning'), true);
   t.pad('PadDown'); t.pad('PadDown'); // (focus was on the Shopper: the first step lands on the page already open)

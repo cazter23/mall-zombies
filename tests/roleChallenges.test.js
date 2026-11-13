@@ -106,8 +106,8 @@ const CASES = {
     near: t => { kill(t, 'bottleRocket', { distance: 11.9 }); kill(t, 'stargazer', { distance: 30 }); },
   },
   balloonLauncher: {
-    earn: t => kill(t, 'balloonLauncher', { zombie: shopper({ type: { id: 'mallWalker' } }) }),
-    near: t => { kill(t, 'balloonLauncher', { zombie: shopper({ type: { id: 'shopper' } }) }); kill(t, 'bottleRocket', { zombie: shopper({ type: { id: 'mallWalker' } }) }); },
+    earn: t => kill(t, 'balloonLauncher', { zombie: shopper({ type: { id: 'shoplifter' } }) }),
+    near: t => { kill(t, 'balloonLauncher', { zombie: shopper({ type: { id: 'mallWalker' } }) }); kill(t, 'bottleRocket', { zombie: shopper({ type: { id: 'shoplifter' } }) }); },
   },
 };
 

@@ -173,6 +173,56 @@ const mallWalker = {
   },
 };
 
+// Round 4+: the SHOPLIFTER (13 November 2026: it took the Mall Walker's place in the waves; the Mall Walker is only a boss's backup now).
+// A shopper in a dark hoodie and a beanie with a shopping bag, at a jog: slower than your backpedal, so you can back off and shoot. Its
+// hit is lighter, but a hit STEALS your points (theft below; game/shoplifting.js): then it runs off through the mall, away from you,
+// with a gold loot marker over it (fx/lootView.js). Kill it before it gets away and the points come back (and its kill pays as usual);
+// if it's still alive after fleeSeconds it's gone, and so are they. Anything not listed here is the same as the Shopper.
+const shoplifter = {
+  ...shopper,
+  id: 'shoplifter',
+  speed: 3.6, // m/s: a jog, under your backpedal (5 x 0.78 = 3.9): it doesn't outrun you, it waits for you to get careless
+  speedVariation: 0.08,
+  gaits: null, // always jogs (no walk / jog / run mix)
+  gaitsByRound: null,
+  acceleration: 10, // m/s^2 (also how quickly it gets up to its getaway speed)
+  attack: { ...shopper.attack, damage: 25 }, // a shove and a grab, not a slam: the theft is the real cost
+  // The theft. On a landed hit: it takes `fraction` of your points, at least `min`, at most `max`, rounded down to `roundTo` (never more
+  // than you have; nothing at 0). Then it flees at fleeSpeed (faster than your walk, slower than your sprint) for fleeSeconds, and gets
+  // away. One theft each: a shoplifter with your points never swings again.
+  theft: { fraction: 0.1, min: 50, max: 400, roundTo: 10, fleeSpeed: 5.2, fleeSeconds: 8 },
+  // Looks: a dark hoodie and jeans or joggers, a beanie (zombies/zombieModel.js beanieColors), always a shopping bag in hand.
+  shirtColors: [0x2b2b33, 0x3a3f4a, 0x4a3a52, 0x2f4538, 0x1f2a44],
+  pantsColors: [0x3b5b8c, 0x2b2b33, 0x474a52],
+  beanieColors: [0x1d1d22, 0x8a1e2b, 0x2e4a7a, 0x3d3d3d],
+  bagChance: 1,
+  // Shown (with a PA chime) the first time one spawns in a run.
+  introBanner: { kicker: 'Loss Prevention', text: 'Shoplifters have been reported on the sales floor. Guard your points.' },
+  // The PA when one steals, is stopped, or gets away (game/announcer.js; {points} = how many). Deadpan store policy (docs/voice.md).
+  // sounds: the theft's cash-register grab and the recovery's chime (config/audio.js).
+  pa: {
+    kicker: 'Loss Prevention',
+    theft: [
+      'A customer has left the register with {points} of your points. Please recover them.',
+      'Unpaid merchandise is leaving the floor: {points} points. Associates, please intervene.',
+      'A shoplifter has {points} of your points. Store policy is to get them back.',
+    ],
+    recovered: [
+      'Merchandise recovered. {points} points have been returned to your account.',
+      '{points} points recovered. Loss Prevention thanks you for your vigilance.',
+      'The {points} points have been returned. No charges will be filed.',
+    ],
+    escaped: [
+      'The customer has left the building with {points} points. Shrinkage has been recorded.',
+      '{points} points have been written off as shrinkage.',
+      'Loss Prevention was unable to stop the customer. {points} points are gone.',
+    ],
+  },
+  theftSounds: { theft: 'shopliftGrab', recovered: 'shopliftRecovered' },
+  // The loot marker over one that has your points (fx/lootView.js): a big spinning gold coin, m and colours; unlit so it reads anywhere.
+  lootMarker: { radius: 0.16, thickness: 0.035, above: 0.35, spin: 4, bob: 0.05, color: 0xffc93d, rimColor: 0xb8860b },
+};
+
 // Round 6+: a shopper welded to a wobbly shopping cart. Walks like a Shopper (and swings like one up close),
 // but with a clear, wide lane to you at mid range it TELEGRAPHS (stops, rattles the cart, squeals the wheels,
 // head down), then CHARGES in a straight line. The direction locks at the end of the telegraph, so a sidestep
@@ -708,7 +758,7 @@ function gild(type) {
 export const mascotGoldTypes = Object.fromEntries(Object.entries(mascotTypes).map(([id, type]) => [id, gild(type)]));
 
 // zombieTypes.mascot is Sir Waffles (the round-10 costume): what an unpicked Mascot wears, and the type's intro banner.
-export const zombieTypes = { shopper, mallWalker, cartPusher, mannequin, mascot: mascotTypes.sirWaffles };
+export const zombieTypes = { shopper, shoplifter, mallWalker, cartPusher, mannequin, mascot: mascotTypes.sirWaffles };
 
 // How a crowd moves together: spacing, queueing, spreading out, surrounding the player.
 export const zombieCrowd = {

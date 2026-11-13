@@ -607,6 +607,17 @@ export const audio = {
         { type: 'noise', filter: 'lowpass', freq: 500, q: 0.7, gain: 0.3, attack: 0.025, decay: 0.12 },
       ],
     },
+    // The Shoplifter (game/shoplifting.js): a cash drawer's "ka-ching" as it grabs your points...
+    shopliftGrab: { volume: 0.75, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 1800, q: 2, gain: 0.35, attack: 0.001, decay: 0.05 },
+      { type: 'tone', wave: 'triangle', freq: 2637, freqEnd: 2637, gain: 0.3, attack: 0.002, decay: 0.35, delay: 0.06 },
+      { type: 'tone', wave: 'sine', freq: 3520, freqEnd: 3520, gain: 0.2, attack: 0.002, decay: 0.45, delay: 0.09 },
+    ] },
+    // ...and a bright two-note chime when they come back (it was stopped).
+    shopliftRecovered: { volume: 0.6, layers: [
+      { type: 'tone', wave: 'sine', freq: 1046, freqEnd: 1046, gain: 0.4, attack: 0.005, decay: 0.2 },
+      { type: 'tone', wave: 'sine', freq: 1568, freqEnd: 1568, gain: 0.4, attack: 0.005, decay: 0.35, delay: 0.12 },
+    ] },
     // ...and three quick pants when it's winded after a swing.
     walkerPant: {
       volume: 0.6,

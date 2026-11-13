@@ -78,6 +78,7 @@ import { createWallet, pointsForHit } from './wallet.js';
 import { createRounds } from './rounds.js';
 import { createClockIn } from './clockIn.js';
 import { createStragglers } from './stragglers.js';
+import { createShoplifting } from './shoplifting.js';
 import { createInteractions } from './interactions.js';
 import { createTickets } from './tickets.js';
 import { buildFeatures, featuresOf } from './features/index.js';
@@ -458,6 +459,8 @@ export function createGame({
   const clockIn = createClockIn({ input, rounds, events });
   // End-of-round straggler helper (announces 'stragglers' / 'stragglersCleared' after delay with <= threshold left).
   const stragglers = createStragglers({ rounds, zombies, events, state });
+  // The Shoplifter: a hit steals points and it runs; kill it before it gets away to get them back (game/shoplifting.js, on the bus).
+  const shoplifting = createShoplifting({ events, wallet, effects, runFrozen });
   let powerUps = null;
 
   // --- Who reacts to what (the event bus; game/events.js lists the events) ---
@@ -941,6 +944,7 @@ export function createGame({
     rounds,
     clockIn,
     stragglers,
+    shoplifting,
     get vaultPromptVisible() {
       return vaultPromptVisible;
     },

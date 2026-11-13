@@ -80,6 +80,11 @@ export function createAnnouncer({ events, hud, sound, state, random = paRandom }
           return intro ? { ...intro, priority: 2 } : null;
         }],
         ['mascotVariantIntro', ({ variant }) => ({ ...mascotTypes[variant].introBanner, priority: 2 })],
+        // The Shoplifter (game/shoplifting.js): a theft (with the till's grab), its recovery (a chime) and a getaway.
+        ...['theft', 'recovered', 'escaped'].map((kind) => [`shoplifter${kind[0].toUpperCase()}${kind.slice(1)}`, ({ zombie, points }) => {
+          const pa = zombie.type.pa;
+          return { kicker: pa.kicker, text: pickPaLine(pa[kind], random).replace('{points}', points.toLocaleString('en-US')), priority: 1 };
+        }, ({ zombie }) => zombie.type.theftSounds?.[kind] ?? 'paChime']),
         ...PLAIN_PA_EVENTS.map((name) => [name, paLine(1)]),
         ...CLOSING_PA_EVENTS.map((name) => [name, directedOnly]),
         // A return label issued by a ticked duty is announced like the duty itself: Directed only (Classic finds the

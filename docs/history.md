@@ -1,5 +1,17 @@
 # Sunset Galleria: build history ("Current state")
 
+## 13 November 2026 - The Shoplifter replaces the Mall Walker in the waves (`claude/shoplifter`)
+
+Playtest: Mall Walkers (5.4 m/s, faster than your walk; up to 30% of spawns from round 9 with no cap; a slimmer hitbox) made rounds about
+running away, not shooting. They leave the waves (economy.zombieMix.mallWalker is summon-only: Skylar's fans, Kettle's lockdown backup
+and the Last Customer's backup still bring them) and the SHOPLIFTER takes round 4: a jogging shopper (3.6 m/s, under your backpedal) in a
+hoodie and beanie with a bag, 0.8x health, a 25 hit. A hit steals 10% of your points (50 to 400) and it runs off (navigation.directionAway: the
+player field walked uphill) at 5.2 m/s with a gold coin over it; kill it within 8 s and every point comes back (plus its 70), else they are
+gone. 12% / 18% / 20% of spawns from rounds 4 / 6 / 9, at most 3 alive. PA pools for the theft, the recovery and the getaway, a till's
+"ka-ching" and a recovery chime. New: game/shoplifting.js, fx/lootView.js, wallet.lose/recover, a Shoplifter guide page and death report;
+the Polka Dot skin (Balloon Launcher) now asks for 100 Shoplifters instead of 150 Mall Walkers. Also: zombie.walkToward no longer assumes
+a Mascot (it read the Mascot's acceleration).
+
 ## 13 November 2026 - Return to Sender becomes a blast (`claude/claw-guns`)
 
 The wonder weapon felt underpowered for its rarity: it instant-killed, but one zombie per pull. Asked for something like a COD "Thunder Gun"

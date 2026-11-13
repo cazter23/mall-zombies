@@ -218,7 +218,7 @@ Cannon projection budget, unchanged wall-shot payouts/accuracy/ammo and Play-aga
 and preserves a real checkout vault and the original Price Gun purchase,
 `megaMartDetails.test.js` protects aisle/crossing/entrance/spawn/vault clearance against the actual decorative triangles,
 validates geometry and trolley placement, and vaults all four checkouts plus buys the Foam Dart Blaster at its original price,
-`zombies.test.js` zombie types/mix/rounds, `maps.test.js` wall pieces, single/multi-zone shared doors, nav rebuilds,
+`zombies.test.js` zombie types/mix/rounds (Shoplifters from round 4; a Mall Walker is never rolled in a wave, only a boss's backup), `maps.test.js` wall pieces, single/multi-zone shared doors, nav rebuilds,
 `mall.test.js` the REAL mall built in Node with a stub canvas: every material gets its colour (no Three.js "value of undefined" warning), dispose leaves no colliders + frees everything, door ladder, spawn points on clear floor, zones
 sealed until any connecting door is bought (all 120 orders after the start shutter), shortcut-only entrances,
 short nav paths and standing-player crossings in both directions, clear approaches, vaultable counters, the sealed escalator (a real PlayerController sprint-jumping
@@ -399,6 +399,9 @@ the model and debris and disposes their shared geometry and materials.
 
 - `autoGraphics.test.js`: the first-launch preset pick: tiers by frame rate, measured once after a warm-up, hidden windows and hitches ignored, never on a later launch.
 - `benchmark.test.js`: the benchmark report maths, a whole route driven frame by frame (warm-up skipped, every shot visited, renderer put back), cancel, Shift+B; and no shot's camera path passes through a collider (the Food Court dolly once ran through two shops' walls).
+- `shoplifter.test.js`: the Shoplifter (round 4+, in the Mall Walker's old place): the theft amount (10%, 50 to 400, rounded down to 10, never more
+  than you have), a hit steals once and it runs off and gets away after its time with the points (no kill, no pay; the round can end), a kill
+  before then gives every point back and pays its 70, with nothing to steal it stays and fights, nothing moves once the run is over, at most 3 alive.
 - `cartPusher.test.js`: the Cart Pusher from round 6 (mix, health, value, its intro), the telegraph then a straight charge, standing still gets you run over.
 - `coilAndScanner.test.js`: the Heavy Coil Nailer (rate, drum, reload, piercing two, model animation) and the Barcode Scanner.
 - `decor.test.js`: every decoration model builds valid floor-standing geometry within budget; scatter is deterministic per seed and keeps off colliders and keep-clear areas.

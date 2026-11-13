@@ -51,6 +51,23 @@ export function createWallet({ onChange = null, getMultiplier = null } = {}) {
       if (onChange) onChange(back, this.points);
     },
 
+    // A Shoplifter's theft (game/shoplifting.js): points taken, never more than you have. Neither spending nor income: totalSpent and
+    // totalEarned don't move. Returns what was actually taken.
+    lose(amount) {
+      const taken = Math.max(0, Math.min(Math.floor(amount), this.points));
+      if (!taken) return 0;
+      this.points -= taken;
+      if (onChange) onChange(-taken, this.points);
+      return taken;
+    },
+
+    // Stolen points recovered (the Shoplifter killed before it got away): back as they were, not income.
+    recover(amount) {
+      if (!(amount > 0)) return;
+      this.points += amount;
+      if (onChange) onChange(amount, this.points);
+    },
+
     // Save & Quit (game/saveGame.js): the wallet as plain data, and back.
     serialize() {
       return { points: this.points, totalEarned: this.totalEarned, totalSpent: this.totalSpent };

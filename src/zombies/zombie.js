@@ -773,7 +773,7 @@ export class Zombie {
     let ax = dirX * speed - this.velocity.x;
     let az = dirZ * speed - this.velocity.z;
     const aLen = Math.hypot(ax, az);
-    const maxChange = this.type.mascot.exposedAcceleration * dt;
+    const maxChange = (this.type.mascot?.exposedAcceleration ?? this.type.acceleration ?? 12) * dt; // (a bare Mascot, or a fleeing Shoplifter)
     if (aLen > maxChange) {
       ax *= maxChange / aLen;
       az *= maxChange / aLen;
