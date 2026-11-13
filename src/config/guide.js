@@ -121,7 +121,7 @@ export const guideEntries = [
   }),
   mascotPage('twisty', {
     memo: "The Food Court pretzel stand's ambassador, still shedding rock salt from the warmer. Housekeeping filed a complaint six months ago.",
-    twist: `Drops a patch of coarse salt crystals for ${salt.lifeSeconds} seconds when his helmet pops. Walking across it crunches loudly, doesn't hurt or slow me, and marks where he lost his crust.`,
+    twist: `Drops a patch of coarse salt crystals for ${salt.lifeSeconds} seconds when his helmet pops. Won't hurt or slow me. Anything walking through it crunches, him included, so a crunch I didn't make means he's close.`,
     tip: 'When you hear salt crunch underfoot and cannot see him, check behind you: his helmet is already off and he is sprinting.',
   }),
   {

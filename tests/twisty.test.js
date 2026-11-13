@@ -54,6 +54,13 @@ const popHelmet = (zombie) => {
   });
 };
 
+function walkZombie(tick, zombie, { fromX, fromZ, speed = 3.6, seconds }) {
+  for (let i = 1; i <= ticks(seconds); i++) {
+    tick();
+    zombie.position.set(fromX + speed * i * dt, 0, fromZ);
+  }
+}
+
 test('appears from round 22 and never in rounds 10-21; round 22 debuts Twisty with PA notice', (t) => {
   assert.equal(mascotVariants.twisty.unlockRound, 22);
   assert.equal(mascotDebutIn(22), 'twisty');
@@ -292,4 +299,122 @@ test('dispose frees saltTrail resources, unsubscribes costume bus listeners, and
     model.dispose();
     assert.equal(freedMaterials, seen.size, 'every helmet material disposed');
   }
+});
+
+test('bare-headed Twisty crunches positionally while walking through salt, not with helmet on, outside, still, or past maxDistance', (t) => {
+  const played = [];
+  const sound = { play: (name, opts) => played.push({ name, volume: opts?.volume }), unlock: () => {} };
+  const { g, tick, standAt, trail } = fixture(t, { sound });
+  const crunches = () => played.filter((s) => s.name === 'saltCrunch');
+
+  // Drop one active salt patch centered at (0, 0, 9), then remove the dropper.
+  const dropper = spawnTwisty(g, 0, 9);
+  popHelmet(dropper);
+  dropper.takeHit({ damage: 1e9, part: 'body', source: 'hazard' });
+  assert.equal(trail.active.length, 1);
+
+  // Suited Twisty walking straight across the salt does not crunch while helmet is on.
+  const twister = spawnTwisty(g, -0.9, 9);
+  assert.equal(twister.mascotHeadOff, false);
+  played.length = 0;
+  walkZombie(tick, twister, { fromX: -0.9, fromZ: 9, speed: 3.6, seconds: 0.5 });
+  assert.equal(crunches().length, 0, 'helmet on: silent');
+
+  // Pop his helmet while pinned in place on the patch: standing still never crunches.
+  twister.applySlow(99, 0);
+  twister.position.set(0, 0, 9);
+  twister.velocity.set(0, 0, 0);
+  popHelmet(twister);
+  assert.equal(twister.mascotHeadOff, true);
+  played.length = 0;
+  tick(ticks(1));
+  assert.equal(crunches().length, 0, 'standing still in salt: silent');
+
+  // Unfreeze and verify real AI rush after shake also crunches on salt.
+  twister.slowTimer = 0;
+  twister.slowFraction = 1;
+  played.length = 0;
+  tick(ticks(0.6));
+  assert.ok(crunches().length >= 1, 'real AI rush across salt crunches');
+  twister.applySlow(99, 0);
+  twister.velocity.set(0, 0, 0);
+
+  // Bare-headed Twisty walking outside salt does not crunch.
+  twister.position.set(2.5, 0, 9);
+  tick(1);
+  played.length = 0;
+  walkZombie(tick, twister, { fromX: 2.5, fromZ: 9, speed: 3.6, seconds: 0.5 });
+  assert.equal(crunches().length, 0, 'walking outside salt: silent');
+
+  // Walking 1.8 m across (0, 0, 9) at 3.6 m/s (0.5 s) throttles to 3 crunches (entry + 2 x 0.72 m).
+  standAt(0, 12);
+  twister.position.set(-0.9, 0, 9);
+  tick(1);
+  played.length = 0;
+  walkZombie(tick, twister, { fromX: -0.9, fromZ: 9, speed: 3.6, seconds: 0.5 });
+  const near = crunches();
+  assert.equal(near.length, 3, `expected 3 step-throttled crunches over 1.8 m, got ${near.length}`);
+  assert.ok(Math.abs(near[0].volume - (1 - Math.hypot(-0.78, 3) / 18)) < 0.03, `near volume ${near[0].volume}`);
+
+  // Refresh patch and test positional distance falloff (quieter at 6 m than 3 m, silent past maxDistance 18 m).
+  trail.dropAt(0, 0, 9);
+  standAt(0, 15); // 6 m from z = 9 -> volume = 1 - 6/18 = 2/3
+  twister.position.set(-0.5, 0, 9);
+  tick(1);
+  played.length = 0;
+  walkZombie(tick, twister, { fromX: -0.5, fromZ: 9, speed: 3.6, seconds: 0.3 });
+  const mid = crunches();
+  assert.ok(mid.length >= 1, 'audible at 6 m');
+  assert.ok(mid[0].volume < near[0].volume && mid[0].volume > 0.6 && mid[0].volume < 0.72, `mid volume ${mid[0].volume}`);
+
+  standAt(0, 27.5); // 18.5 m > maxDistance (18 m)
+  twister.position.set(-0.5, 0, 9);
+  tick(1);
+  played.length = 0;
+  walkZombie(tick, twister, { fromX: -0.5, fromZ: 9, speed: 3.6, seconds: 0.3 });
+  assert.equal(crunches().length, 0, 'silent beyond maxDistance');
+});
+
+test('a second bare-headed Twisty crunches independently from the first', (t) => {
+  const played = [];
+  const sound = { play: (name, opts) => played.push({ name, volume: opts?.volume }), unlock: () => {} };
+  const { g, tick, standAt } = fixture(t, { sound });
+  const crunches = () => played.filter((s) => s.name === 'saltCrunch');
+
+  // Stand at (-2, 0, 12): patch A at (-2, 0, 9) is 3 m away (vol ~0.833), patch B at (3, 0, 9) is ~5.83 m away (vol ~0.676).
+  standAt(-2, 12);
+  const a = spawnTwisty(g, -2, 9);
+  const b = spawnTwisty(g, 3, 9);
+  popHelmet(a);
+  popHelmet(b);
+  a.applySlow(99, 0);
+  b.applySlow(99, 0);
+  a.velocity.set(0, 0, 0);
+  b.velocity.set(0, 0, 0);
+
+  // Twisty A stands still in patch A while Twisty B walks across patch B -> only Twisty B's distant volume plays.
+  b.position.set(2.4, 0, 9);
+  tick(1);
+  played.length = 0;
+  walkZombie(tick, b, { fromX: 2.4, fromZ: 9, speed: 3.6, seconds: 0.35 });
+  const onlyB = crunches();
+  assert.ok(onlyB.length >= 2, 'Twisty B crunches while A stands still');
+  assert.ok(onlyB.every((s) => s.volume < 0.72), 'no crunches came from close Twisty A');
+
+  // Step both outside patches first so each enters cleanly from outside, then walk both concurrently.
+  a.position.set(-3.1, 0, 9);
+  b.position.set(1.9, 0, 9);
+  tick(1);
+  played.length = 0;
+  for (let i = 1; i <= ticks(0.55); i++) {
+    tick();
+    a.position.set(-3.1 + 3.6 * i * dt, 0, 9);
+    b.position.set(1.9 + 3.6 * i * dt, 0, 9);
+  }
+  const both = crunches();
+  const fromA = both.filter((s) => s.volume > 0.78);
+  const fromB = both.filter((s) => s.volume <= 0.75);
+  assert.equal(both.length, 6);
+  assert.equal(fromA.length, 3, `Twisty A crunched 3 times (${fromA.length})`);
+  assert.equal(fromB.length, 3, `Twisty B crunched 3 times independently (${fromB.length})`);
 });

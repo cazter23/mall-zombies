@@ -1,5 +1,11 @@
 # Sunset Galleria: build history ("Current state")
 
+## 13 November 2026 - Twisty crunches where he walks (`claude/hydrogen-twisty-crunch`)
+
+Extended Twisty the Pretzel's salt patches so bare-headed Twistys also crunch positionally where they walk through active salt:
+- **Positional Zombie Crunch (`src/config/zombies.js`, `src/game/saltTrail.js`, `src/game/mascotCostumes.js`):** added `zombieStepMeters` (`0.72`), `zombieEntryStepMeters` (`0.08`), and `maxDistance` (`18`) to `mascotVariants.twisty.saltPatch`, passed `zombies` into `createSaltTrail`, extracted a shared per-walker `stepThroughSalt` helper, and tracked each bare-headed walking Twisty independently in a `zombieWalkers` `Map` (`clear()` resets it). Walking across any active salt patch plays `saltCrunch` attenuated by `1 - distToPlayer / config.maxDistance` (matching `Zombie.playSound` / `distanceTo` in `src/zombies/zombie.js`), keeping player crunch unchanged.
+- **Guide, Tests & Docs (`src/config/guide.js`, `tests/twisty.test.js`, `docs/folder-structure.md`, `docs/tests.md`):** updated Twisty's guide `twist` note to mention both bare-headed Twisty and player crunches across active salt, and added tests covering bare-headed walking crunches, positional distance falloff/cutoff, silence when suited / outside / standing still, and independent tracking for a second Twisty.
+
 ## 13 November 2026 - Twisty the Pretzel Mascot (`claude/hydrogen-mascot-pretzel`)
 
 Added the fifth Mascot costume, **Twisty the Pretzel** (`foodCourt` pretzel stand mascot), unlocking from **round 22** (rounds 10-21 unchanged):
