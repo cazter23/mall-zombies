@@ -209,7 +209,7 @@ per-type distinct 3D low-poly silhouettes (`userData.shared` merged geometries/m
 Inventory Liquidation, Employee Discount, Mystery Shopper, Spill Cleanup (and it drawing nearby shoppers through the puddle once each), Loss Prevention (three melee charges + sprint shove pulses), reward rotation,
 death/reset cleanup, concurrent HUD counters with jackpot styling, floor rings and target markers.
 
-Gameplay regression tests live in `tests/` (`gameplay.test.js` movement/melee/vault, `aim.test.js` spread
+Gameplay regression tests live in `tests/` (`gameplay.test.js` movement/melee/vault (including the vault going where you look: angled runs and deep counters vault, strafing along or skimming past do not), `aim.test.js` spread
 (including the Laser Pointer's hip benefit / ADS penalty through repeated shots and recovery),
 `impactMarks.test.js` all six cosmetic signatures, visible-surface/edge checks, floor/ceiling/instanced normals,
 misses/targets/pierce/shutters, shared cap/reuse/disposal, map unloading, startup preparation, debug sprites,

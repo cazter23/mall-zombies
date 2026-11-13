@@ -76,6 +76,36 @@ test('normal jumps remain available away from a marked obstacle; slides never au
   assert.equal(sliding.player.airborneWithMomentum, true);
 });
 
+test('a vault goes where you look: angled runs vault, strafing along a counter or skimming past it does not, deep or not', () => {
+  // (Playtest, 13 November 2026: it vaulted sideways while not facing the counter; earlier it refused angled runs.)
+  // theta: your path's angle off straight at the counter. look: where you look, off your path. Gap ~0.6 m, on open floor.
+  const attempt = ({ theta, look = 0, depth = 0.6, speed = feel.movement.sprintSpeed }) => {
+    const f = fixture();
+    f.obstacle.min.set(-6, 0, -1 - depth);
+    f.obstacle.max.set(6, 1.0, -1);
+    const a = theta * Math.PI / 180, l = (theta + look) * Math.PI / 180;
+    const path = [Math.sin(a), -Math.cos(a)]; // toward the near face (z = -1)
+    const back = (0.6 + feel.player.radius) / Math.cos(a);
+    f.player.teleport({ position: new THREE.Vector3(-path[0] * back, 0, -1 - path[1] * back), yaw: Math.atan2(-Math.sin(l), Math.cos(l)) });
+    f.player.grounded = true;
+    f.player.velocity.set(path[0] * speed, 0, path[1] * speed);
+    return f.player.vault.tryStart();
+  };
+  for (const theta of [0, 30, 45, 60]) {
+    assert.equal(attempt({ theta }), true, `running at ${theta} degrees, looking where you go`);
+    assert.equal(attempt({ theta, depth: 0.9 }), true, `a 0.9 m deep counter at ${theta} degrees (its thickness, not the diagonal)`);
+    assert.equal(attempt({ theta, speed: feel.movement.walkSpeed }), true, `walking at ${theta} degrees`);
+  }
+  assert.equal(attempt({ theta: 30, look: 30 }), true, 'looking a little off your path still vaults');
+  for (const theta of [0, 30, 45]) {
+    assert.equal(attempt({ theta, look: 90 }), false, `strafing into it at ${theta} degrees (looking along it): no sideways vault`);
+    assert.equal(attempt({ theta, look: -90 }), false, `strafing the other way at ${theta} degrees`);
+  }
+  for (const theta of [70, 85]) {
+    assert.equal(attempt({ theta }), false, `skimming past it at ${theta} degrees: the turned search paths no longer rescue it`);
+  }
+});
+
 test('vault rejects overheads, blocked landings, unsupported landings, and unmarked barriers', () => {
   const overhead = fixture();
   overhead.colliders.push(box(-2, 2, -3, 2, 2.3, 1));

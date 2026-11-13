@@ -115,12 +115,12 @@ export const feel = {
   vault: {
     minHeight: 0.25,
     maxHeight: 1.1,
-    maxDepth: 1.4, // crossed along the approach direction; long sides of benches aren't vaults
+    maxDepth: 1.4, // the obstacle's thickness straight through the face you enter (a bench's LENGTH isn't a vault)
     approachFraction: 0.9, // the jump prompt judges the landing from this share of `reach` out (where you will be when the magnet brings you in)
     reach: 1.7, // jump this close to the obstacle (gap from your body to it) and you vault it
     minSpeed: 1.5, // m/s; a slow walk is enough
-    maxApproachDegrees: 75, // how far off straight-on your path can cross it (steeper runs along a long side)
-    maxLookDegrees: 100, // where you look barely matters: only don't be looking backwards
+    maxApproachDegrees: 65, // how far off straight-on your path can cross it (steeper is running along it; every obstacle alike)
+    maxLookDegrees: 55, // the vault goes where you LOOK: at most this far between your view and the vault's direction (vault.js facing)
     magnetRange: 3.0, // a vaultable obstacle this close on your path: a jump press waits to vault it...
     magnetSeconds: 0.4, // ...for up to this long (then it's a normal jump)
     airGraceSeconds: 0.2, // a jump that started this recently can still turn into a vault
@@ -146,6 +146,7 @@ export const feel = {
     ledge: {
       maxHeight: 1.6, // the rails are 1.5 m (taller than a jump peaks), so this is what stops you climbing anything taller
       maxApproachDegrees: 70, // run at a rail up to this far off straight-on and you still climb straight over it
+      maxLookDegrees: 70, // ...and look this close to straight over it (strafing along a balcony looking along it never tips you over)
       pushSpeed: 3, // m/s: standing against a rail and pushing into it climbs it at this pace
       // You drop straight out from the rail with no steering, and the vault picks HOW FAR out (so a lamp post or an escalator's side
       // under the usual spot moves the landing instead of refusing the climb).
