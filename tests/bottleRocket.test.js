@@ -1,7 +1,7 @@
 // The Bottle Rocket Bazooka (config/weapons.js bottleRocket: claw-only, the rocket launcher), in the real headless game through real input. The blast itself
 // has its own test (blast.test.js); this checks the gun: no wall sells it, one pull is one rocket and one shot, the rocket bursts on what it touches and
 // hurts every zombie around it (+10 each), your own burst hurts you (capped, never a one-shot from full; nothing in the blast-proof item; the death
-// receipt names it), and a rocket in the air when you die, or at Play again, is gone without a burst.
+// receipt names it), a rocket in the air when you die, or at Play again, is gone without a burst, and the reload as the model shows it.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
@@ -11,6 +11,7 @@ import { economy } from '../src/config/economy.js';
 import { clawMachine } from '../src/config/clawMachine.js';
 import { buildWallBuy } from '../src/game/features/wallBuy.js';
 import { getDeathReport, deathReports } from '../src/config/deathReports.js';
+import { buildWeaponModel } from '../src/weapons/models/index.js';
 
 const rk = weapons.bottleRocket;
 const FLIGHT_TICKS = Math.ceil(rk.flight.lifeSeconds / dt) + 5;
@@ -179,4 +180,31 @@ test('Build-A-Blaster: a Last Round build goes off where the rocket BURST (not a
   assert.equal(blasts.length, 1);
   assert.equal(fired.length, 1, 'once, at the burst');
   assert.ok(fired[0].hit.length === 1 && fired[0].hit[0] === target, `on the zombie the rocket caught (${fired[0].hit.length} hit, burst hits ${blasts[0].hits.length}, ${fired[0].hit.map((z) => z === target)})`);
+});
+
+test('the reload as the model shows it: the cap opens, the burnt-out casing comes out, a fresh rocket slides in, the cap shuts', () => {
+  const br = weapons.bottleRocket, r = br.viewmodel.reload;
+  const model = buildWeaponModel(br);
+  const part = (name) => model.root.getObjectByName(name);
+  const cap = part('breechCap'), casing = part('spentCasing'), held = part('heldRocket'), tail = part('spentTail'), nose = part('loadedRocket');
+  const at = (p, weight = 1, loaded = false) => model.animate({ sinceFire: 9, reloadProgress: p, reloadWeight: weight, loaded, time: 0 });
+  const open = () => Math.abs(cap.rotation.y) > 0.9 * r.capOpenDegrees * Math.PI / 180;
+  at(0);
+  assert.ok(!open() && tail.visible && !nose.visible && !casing.visible && !held.visible, 'spent and shut at the start');
+  at(0.3);
+  assert.ok(open(), 'the cap is open');
+  assert.ok(casing.visible && !tail.visible, 'the burnt-out casing is in the hand, out of the breech');
+  at(0.46);
+  assert.ok(!casing.visible && !held.visible, 'tossed, nothing in the hand yet');
+  at(0.6);
+  assert.ok(held.visible && !nose.visible, 'a fresh rocket in the hand, the mouth still empty');
+  at(0.75);
+  assert.ok(!held.visible && nose.visible && open(), 'slid in: its nose shows in the mouth; the cap still open');
+  at(1);
+  assert.ok(Math.abs(cap.rotation.y) < 1e-9 && !casing.visible && !held.visible && nose.visible && !tail.visible, 'shut, loaded, hands empty');
+  at(0.3, 0, true);
+  assert.ok(Math.abs(cap.rotation.y) < 1e-9 && !casing.visible && !held.visible && nose.visible && !tail.visible, 'a reload eased fully out leaves it as it was');
+  const sounds = r.events.filter((e) => e.sound);
+  assert.deepEqual(sounds.map((e) => e.sound), ['bottleRocketReloadOut', 'bottleRocketReloadIn', 'bottleRocketReloadReady']);
+  for (const e of r.events) assert.ok(e.at > 0 && e.at < 0.95);
 });

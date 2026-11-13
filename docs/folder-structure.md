@@ -337,9 +337,11 @@ src/
                         slides after each shot (from sinceFire; the next bearings show in the port while it is back). Reload, all from viewmodel.reload keys: the
                         trigger hand (its parts gathered under one pivot group here) lifts and pulls the bolt (boltHandKeys, boltKeys), the support hand presses a
                         strip of bearings sideways into the port and flicks the clip away, the trigger hand closes the bolt.
-                        bottleRocket.js = the claw-only rocket launcher: a fireworks-stand cardboard tube (red, white bands, yellow stars, a dark flared back end, a flip-up
-                        sight, a coiled fuse with a glowing tip); the loaded rocket's nose shows in the mouth only while loaded (animate's state.loaded, from viewmodel.js);
-                        the support hand brings a fresh rocket from below to reload.
+                        bottleRocket.js = the claw-only rocket launcher: a fireworks-stand cardboard tube (red, white bands, a crimped mouth, a yellow label wrap with
+                        stars, a ring front sight and a peep, a fat fuse coil and wick with a flickering tip, a shoulder pad, a dark flared back end closed by a breech
+                        cap hinged on the left); the loaded rocket's nose shows in the mouth only while loaded (animate's state.loaded, from viewmodel.js). Reload
+                        (viewmodel.reload keys): the tube turns side-on, the cap swings open (capKeys), the burnt-out casing is pulled and tossed, a fresh rocket
+                        slides in through the breech, the cap shuts and the tube gets a pat.
                         balloonLauncher.js = the claw-only homing launcher: a teal party blaster with pink stripes and polka dots, a domed silver helium tank on top
                         with a valve wheel, a hose to the nozzle and a white-faced gauge, a ribbed nozzle with curly ribbons; a teardrop balloon inflates on the
                         nozzle after each shot (sinceFire, state.loaded) and the gauge needle dips. A helium cartridge screws into the tank's back end: the reload

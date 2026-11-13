@@ -1159,29 +1159,60 @@ export const weapons = {
       aimYawDegrees: 6, hipPitchDegrees: 1.5, hipRollDegrees: 2.5,
       bodyColor: 0xd8323a, accentColor: 0xf4f1e8, metalColor: 0xc4c9d2, // fireworks-stand red and white
       darkColor: 0x1e1a24, gripColor: 0x2c2a33, sightColor: 0xffd23f, rocketColor: 0x2f6bff, noseColor: 0xffd23f, wickColor: 0xc89a5a,
-      fire: { triggerDegrees: 24, pressSeconds: 0.03, releaseSeconds: 0.14 },
-      // Reload: the tube tips up, the support hand brings a fresh rocket from below and slides it into the front of the tube, then pats it home.
+      fire: { triggerDegrees: 24, pressSeconds: 0.03, releaseSeconds: 0.14, fuseFlicker: 0.25 }, // fuseFlicker: how much the lit fuse tip pulses (share of its size)
+      // Reload, through the breech at the back (models/bottleRocket.js). Poses: pos in metres (right, up, back), rot in degrees (muzzle up, turn
+      // left, roll left). The tube swings its back end round in front of you; the support hand flips the breech cap open (Out), pulls the
+      // burnt-out casing and tosses it, brings a fresh rocket from below and slides it in nose first (In: its nose shows in the mouth), swings
+      // the cap shut (Ready) and pats the tube.
       reload: {
         gunKeys: [
           { t: 0, pos: [0, 0, 0], rot: [0, 0, 0] },
-          { t: 0.18, pos: [0.01, 0.02, 0.04], rot: [16, 6, 10] },
-          { t: 0.8, pos: [0.01, 0.02, 0.04], rot: [16, 6, 10] },
+          { t: 0.12, pos: [-0.06, 0.05, -0.24], rot: [-6, -65, -4] }, // turned side-on: the back end in front of you
+          { t: 0.36, pos: [-0.06, 0.054, -0.23], rot: [-5, -64, -3] }, // tugged as the casing comes out
+          { t: 0.52, pos: [-0.055, 0.044, -0.23], rot: [-4, -60, -3] }, // waits while a rocket is fetched
+          { t: 0.66, pos: [-0.06, 0.05, -0.24], rot: [-6, -65, -4] },
+          { t: 0.73, pos: [-0.052, 0.046, -0.25], rot: [-7, -66, -4] }, // shoved as the rocket goes in
+          { t: 0.84, pos: [-0.05, 0.046, -0.22], rot: [-5, -58, -4] },
+          { t: 0.885, pos: [-0.05, 0.03, -0.22], rot: [-7, -58, -4] }, // patted
+          { t: 0.95, pos: [-0.02, -0.04, -0.1], rot: [4, -22, -2] }, // swings home low, under your view
           { t: 1, pos: [0, 0, 0], rot: [0, 0, 0] },
         ],
+        // The support hand (offsets from where it holds the fore grip); rocketInHand: where the rocket (or the spent casing) sits in it (the hand
+        // group's coordinates).
+        rocketInHand: [-0.018, -0.052, -0.265],
         handKeys: [
           { t: 0, pos: [0, 0, 0] },
-          { t: 0.22, pos: [-0.04, -0.18, 0.06], rot: [-20, 0, 0] }, // down to the box of rockets
-          { t: 0.38, pos: [-0.04, -0.18, 0.06], rot: [-20, 0, 0] },
-          { t: 0.55, pos: [0, 0.05, -0.22], rot: [8, 0, 0] }, // up in front of the tube's mouth
-          { t: 0.7, pos: [0, 0.04, -0.1], rot: [8, 0, 0] }, // slides it in
-          { t: 0.9, pos: [0, 0, 0] },
+          { t: 0.11, pos: [0.108, 0.102, 0.565] }, // on the cap's pull tab
+          { t: 0.18, pos: [0.018, 0.132, 0.645] }, // flips it open
+          { t: 0.28, pos: [0.018, 0.052, 0.485] }, // grabs the burnt-out casing
+          { t: 0.36, pos: [0.018, 0.052, 0.665] }, // pulls it out
+          { t: 0.43, pos: [-0.15, -0.05, 0.55], rot: [0, 0, 60] }, // tosses it
+          { t: 0.5, pos: [-0.08, -0.2, 0.3], rot: [-20, 0, 0] }, // down to the box of rockets
+          { t: 0.56, pos: [-0.08, -0.2, 0.3], rot: [-20, 0, 0] },
+          { t: 0.65, pos: [0.018, 0.052, 0.665] }, // the rocket behind the breech, nose in
+          { t: 0.72, pos: [0.018, 0.052, 0.515] }, // slides it in
+          { t: 0.78, pos: [-0.072, 0.102, 0.685] }, // to the open cap's tab
+          { t: 0.83, pos: [0.108, 0.102, 0.565] }, // swings it shut
+          { t: 0.86, pos: [0.028, 0.13, 0.3] }, // over the tube
+          { t: 0.885, pos: [0.028, 0.112, 0.3] }, // pats it
+          { t: 0.95, pos: [0.0, -0.02, 0.1] }, // and back to the fore grip
+          { t: 1, pos: [0, 0, 0] },
         ],
-        rocketVisible: [[0.38, 0.7]], // the rocket in the hand
-        tubeEmpty: [0.08, 0.7], // the loaded rocket's nose is gone from the tube's mouth from the shot's reload until the new one is in
+        capOpenDegrees: 110,
+        capKeys: [ // pos[0]: 0 shut .. 1 open
+          { t: 0, pos: [0, 0, 0] }, { t: 0.11, pos: [0, 0, 0] }, { t: 0.18, pos: [1, 0, 0] },
+          { t: 0.78, pos: [1, 0, 0] }, { t: 0.83, pos: [0, 0, 0] }, { t: 1, pos: [0, 0, 0] },
+        ],
+        spentPulledAt: 0.28, // the burnt-out casing leaves the breech (into the hand) here
+        spentVisible: [[0.28, 0.42]], // the casing in the hand, until it is tossed
+        rocketVisible: [[0.53, 0.72]], // the fresh rocket in the hand, from the box until it is in
+        rocketInAt: 0.72, // a reload starts with the tube empty (one rocket, fired); the new rocket's nose shows in the mouth from here
         events: [
-          { at: 0.2, sound: 'bottleRocketReloadOut' },
-          { at: 0.68, sound: 'bottleRocketReloadIn', jolt: { back: 0.012, pitchDegrees: -2 } },
-          { at: 0.86, sound: 'bottleRocketReloadReady', jolt: { up: 0.006, pitchDegrees: 2 } },
+          { at: 0.18, sound: 'bottleRocketReloadOut', jolt: { back: 0.006, rollDegrees: -1.5 } }, // the cap pops open
+          { at: 0.36, jolt: { back: 0.008, pitchDegrees: 1.5 } }, // the casing comes out
+          { at: 0.72, sound: 'bottleRocketReloadIn', jolt: { back: -0.012, pitchDegrees: -2 } },
+          { at: 0.83, sound: 'bottleRocketReloadReady', jolt: { back: 0.008, rollDegrees: 2 } }, // the cap shut
+          { at: 0.885, jolt: { up: -0.01, pitchDegrees: -2.5 } }, // the pat
         ],
       },
     },
