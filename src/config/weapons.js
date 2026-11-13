@@ -1005,8 +1005,10 @@ export const weapons = {
         adsMultiplier: 0.4, frequency: 5, damping: 0.5 },
     },
     impact: { flinch: 1.6, knockback: 1.6, hitstopSeconds: 0.02, deathImpulse: 2.2 },
-    spread: { // clumsy from the hip (a telescope is not a pistol); dead on through the scope
-      base: 4.5, moving: 3, maxMovingFactor: 1.6, airborne: 6,
+    // Sniper hip fire (playtest, 13 November 2026: at 4.5 deg the hip shot hit 100% at 3 m and 79% at 5 m, a piercing shotgun).
+    // At 12 deg a standing hip shot is a gamble even close in: ~77% at 2 m, ~50% at 3 m, ~25% at 5 m (npm run balance); moving is worse.
+    spread: { // a telescope is not a pistol: scope it (dead on through the eyepiece)
+      base: 12, moving: 5, maxMovingFactor: 1.6, airborne: 6,
       perShot: 2, maxBloom: 3, bloomRecoveryDelay: 0.3, bloomRecovery: 4,
       smoothing: 10, adsMultiplier: 0.01,
     },

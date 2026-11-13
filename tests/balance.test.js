@@ -208,6 +208,9 @@ test('Stargazer 3000, the sniper: the further away, the harder it hits; the hard
   // Clumsy up close: below the Price Gun at 2 and 5 m, and from the hip it misses most shots at 10 m.
   for (const m of [2, 5]) assert.ok(dps(sg, m) < dps(priceGun, m), `${Math.round(dps(sg, m))} vs the Price Gun's ${Math.round(dps(priceGun, m))} at ${m} m`);
   assert.ok(hitChance(sg, 10) < 0.5, 'hip fire at 10 m lands under half the time');
+  // Sniper hip fire, not a piercing shotgun (playtest, 13 November 2026): a gamble even close in.
+  assert.ok(hitChance(sg, 3) <= 0.6, `hip fire at 3 m: ${Math.round(hitChance(sg, 3) * 100)}% (a coin flip, not a sure thing)`);
+  assert.ok(hitChance(sg, 5) <= 0.35, `hip fire at 5 m: ${Math.round(hitChance(sg, 5) * 100)}%`);
   assert.ok(hitChance(sg, 30, { ads: true }) > 0.99, 'through the scope it is dead on');
   // A line of zombies, a real scope, and held back by a slow bolt, a small magazine and a long reload.
   assert.ok(sg.pierce.maxTargets >= 3 && sg.pierce.maxTargets <= 5);
