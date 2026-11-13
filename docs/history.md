@@ -1,5 +1,18 @@
 # Sunset Galleria: build history ("Current state")
 
+## 12 November 2026 - PA pools for the most-heard single lines (claude/hydrogen-pa-pools)
+
+Audited single-line announcements in `game/announcer.js` and its configs on `claude/hydrogen-pa-pools` and converted the three highest-frequency single-line PA moments into deadpan mall-PA pools with injectable `random`:
+- **Config pools (`src/config/economy.js`):**
+  - `rounds.lastShoppers.pa.lines` (`waveEnding`, end of every round): 15 lines (the original plus 14 new lines, each `<= 44` chars), preserving `kicker` and `priority: 1`.
+  - `rounds.clockIn.pa.lines` (`clockIn`, break skip from round 2+): 8 lines (original plus 7 new lines).
+  - `flashSales.teaser.lines` (`flashSaleSoon` category sale teaser): 8 lines (original plus 7 new lines), each preserving `{lead}` and `{label}`.
+- **Random picking (`src/game/announcer.js`, `src/game/flashSales.js`, `src/game/createGame.js`):**
+  - Exported `pickPaLine(lines, random = Math.random)` and added `random = Math.random` to `createAnnouncer({ events, hud, sound, state, random = Math.random })`; `waveEnding` and `clockIn` now pick from `pa.lines`.
+  - `createGame.js` passes a `crypto.getRandomValues` `paRandom` to `createAnnouncer` so cosmetic PA phrasing never consumes `Math.random` combat/bot draws (keeping seeded `economySim` runs intact).
+  - `sayTeaser` in `src/game/flashSales.js` picks from `teaser.lines` via `pickPaLine(t.lines, random)` (with `t.text` fallback for minimal test configs). Save format (`version: 10`) is unchanged.
+- **Tests & Docs:** extended `tests/announcer.test.js` (pool invariants, `pickPaLine` / `createAnnouncer` injectable `random`, and Save & Quit `load()` compatibility with pooled PA lines), updated `tests/rounds.test.js` (`waveEnding` and `clockIn` `.pa.lines` checks) and `tests/flashSales.test.js` (`dice(...)` roll adjustment for teaser draws + injectable `random` teaser-pool test), and updated `docs/folder-structure.md` and `docs/tests.md`.
+
 ## 12 November 2026 - Integration: incentives, Flash Sales, Kiosk Kevin phase 8 and the claw guns on one branch
 
 `claude/integration` (from main a013f9a) merges, in order: `claude/incentive-meter` (the reviewed tip of `claude/incentives`: it
