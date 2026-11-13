@@ -50,9 +50,9 @@
 //   'gunBlast'    { weaponId, position, radius, hits, selfDamage, magazineLeft }   a rocket of a gun with `blast` burst (weapons/playerGun.js; the hits are already
 //                                                        done, +10s and kills paid as usual); createGame's listener takes selfDamage off your health
 //   'armourHit'   { absorbed, layers, popped }            Bubble Wrap absorbed damage from a zombie hit
-//   'kioskStock'  { siteId, stock, pick, pa }            Kevin's cart opened for the round (or after a move): where he is, the round's
-//                                                        three products and his Pick
-//   'kioskMoved'  { siteId, area, moved }                Kevin's site at a 'roundStart' (moved false: he stays where he is); area = the PA's name
+//   'kioskStock'  { siteId, stock, pick, pa }            Kevin's cart opened for the run or moved to a new site: where he is, the
+//                                                        block's three products and his Pick (PA stays silent when he stays put)
+//   'kioskMoved'  { siteId, area, moved }                Kevin's site on a move-round 'roundStart' (moved false: he stays where he is); area = the PA's name
 //   'kioskHawk'   { siteId, kind, line }                 Kevin shouted (game/features/kiosk.js; config/kiosk.js hawk): kind 'lines' (you're
 //                                                        near his open cart), 'duck' (a zombie sent him under it) or 'back' (he's up again);
 //                                                        his cart shows `line` in a speech bubble (presentation only)

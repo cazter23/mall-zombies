@@ -1,5 +1,12 @@
 # Sunset Galleria: build history ("Current state")
 
+## 13 November 2026 - Kiosk Kevin rests between moves and restocks every 3 rounds (`claude/hydrogen-kevin-calmer`)
+
+Calmed Kiosk Kevin down so he rotates stock, Pick, and sites on a 3-round cadence instead of every round:
+- **3-Round Stock & Pick Blocks (`src/config/kiosk.js`):** added `kiosk.stockEveryRounds = 3` and `kiosk.moveEveryRounds = 3`. Updated `stockFor(round)` and `pickFor(round)` to advance one step per 3-round block from `openingRound` (rounds `2-4` first stock + Soda Bomb Pick, `5-7` second stock + Sparkler Cake Pick, `8-10` Sentry + Bubble Wrap Pick, etc.), keeping `Pick` constant throughout each block.
+- **3-Round Moves & Move-Only PA (`src/game/features/kiosk.js`, `src/game/events.js`):** Kevin only rolls a move at `'roundStart'` on move rounds (`openingRound + 3, + 6...`, i.e. rounds `5, 8, 11...`), preserving open-zone, stay-put, and mid-purchase defer rules. Removed `lastRound` so `kioskStock` PA fires once on initial/post-load opening (`opened` + `stock`) and on moves (`moved` + `stock` rotating by move index in one banner), staying silent on rounds where he does not move; `kioskHawk` shouts at the cart are unchanged.
+- **Tests & Docs (`tests/kiosk.test.js`, `tests/saveGame.test.js`, `docs/folder-structure.md`, `docs/tests.md`):** updated round-by-round expectations to 3-round blocks (`5`, `8`, `11`), added pinned literal block coverage (`stockEveryRounds`, `moveEveryRounds`, rounds `1-16`, PA silence on `3, 4, 6, 7`, mid-block Flash Sales eligibility), and verified mid-block Save & Quit preserves Kevin's site and stock across reloads.
+
 ## 13 November 2026 - Twisty crunches where he walks (`claude/hydrogen-twisty-crunch`)
 
 Extended Twisty the Pretzel's salt patches so bare-headed Twistys also crunch positionally where they walk through active salt:

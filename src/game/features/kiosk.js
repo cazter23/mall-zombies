@@ -1,17 +1,17 @@
 // =============================================================================
 // KIOSK KEVIN'S CART (map feature kind 'kiosk'; numbers in config/kiosk.js; the plan: docs/kiosk-kevin-plan.md).
-// Kevin sells three products a round (g.pricing 'kiosk') from the opening round, while his site's zone is open: a Lethal slot
-// (Soda Bomb / Sparkler Cake / Sentry), Bubble Wrap, and a Tactical slot (Air Horn / Glitter Bomb); each slot rotates round by
-// round (config/kiosk.js slots, stockFor). Kevin's Pick (one extra charge or layer) is the product on sale that has waited
-// longest for it, never the Sentry (pickFor).
+// Kevin sells three products a block (g.pricing 'kiosk') from the opening round, while his site's zone is open: a Lethal slot
+// (Soda Bomb / Sparkler Cake / Sentry), Bubble Wrap, and a Tactical slot (Air Horn / Glitter Bomb); each slot advances once per
+// `stockEveryRounds` block (config/kiosk.js slots, stockFor). Kevin's Pick (one extra charge or layer) is the product on sale that
+// has waited longest for it across blocks, never the Sentry, and stays the same for the whole block (pickFor).
 //
 // WHERE KEVIN IS: every site's cart is in the map all the time (maps/mall/kioskCart.js) and only one is live; the others
-// show "BACK IN 5 MIN". Every run starts at the first site. At each 'roundStart' after the opening round he moves to a random
-// OTHER site whose zone is open, or stays where he is if there is none. He never moves mid-purchase: a site picked while a buy
-// on his cart is being held waits (`pending`) until the hold ends. He never moves into a locked zone.
-// He DUCKS while any live zombie is within duckRadius of his stand point: nothing on the cart can be bought until it's clear.
-// The PA speaks once a round, when he first sells in it (or after a move): where he is if he's new there, the round's three
-// products and his Pick.
+// show "BACK IN 5 MIN". Every run starts at the first site. Every `moveEveryRounds` rounds after the opening round (`openingRound + 3,
+// + 6...`) at 'roundStart' he moves to a random OTHER site whose zone is open, or stays where he is if there is none. He never moves
+// mid-purchase: a site picked while a buy on his cart is being held waits (`pending`) until the hold ends. He never moves into a
+// locked zone. He DUCKS while any live zombie is within duckRadius of his stand point: nothing on the cart can be bought until it's clear.
+// The PA speaks once when he first opens (`opened` + `stock`) and again when he moves to another site (`moved` + `stock`); rounds
+// where he stays put keep the PA silent.
 //
 // He SHOUTS (phase 8, presentation only): within kiosk.hawk.radius of his open cart he hawks a line now and then, ducking he
 // yelps, and coming back up he says so ('kioskHawk'; the cart shows it in a speech bubble). Each list of lines takes turns
@@ -33,8 +33,7 @@ export function buildKiosk(feature, { map, rounds, zombies, pricing, interaction
   const sites = feature.sites;
   let site = sites[0];
   let pending = null; // a site picked at 'roundStart' during a purchase: he goes there once it's let go
-  let lastRound = 0; // the round and site of the last PA line (one a round, again after a move)
-  let lastSite = null;
+  let lastSite = null; // the site of the last PA line (null before his first open; PA fires on open or move)
   // His shouting (kiosk.hawk): a clock, when each kind of line may come again, and whose turn it is (populated by setUp).
   const shout = {};
 
@@ -43,7 +42,7 @@ export function buildKiosk(feature, { map, rounds, zombies, pricing, interaction
   const open = () => rounds.round >= kiosk.openingRound && zoneOpen(site);
   const hiding = () => open() && zombies.zombies.some((zombie) => zombie.isAlive
     && zombie.position.distanceToSquared(cart().stand) <= kiosk.duckRadius ** 2);
-  const stock = () => stockFor(rounds.round); // (this round's three: the two-product slots alternate)
+  const stock = () => stockFor(rounds.round); // (this block's three: advances every stockEveryRounds rounds)
   const pick = () => pickFor(rounds.round);
   // A buy on his cart is being held right now (the hold has started and not finished).
   const midPurchase = () => {
@@ -51,7 +50,7 @@ export function buildKiosk(feature, { map, rounds, zombies, pricing, interaction
     return prompt?.kind === 'kiosk' && prompt.progress > 0;
   };
 
-  // One buy spot per slot; what it sells is read live (a slot's product changes with the round).
+  // One buy spot per slot; what it sells is read live (a slot's product changes each stockEveryRounds block).
   kiosk.slots.forEach((choices, index) => {
     const idNow = () => stock()[index];
     const productNow = () => productOf(idNow());
@@ -173,9 +172,12 @@ export function buildKiosk(feature, { map, rounds, zombies, pricing, interaction
     events.emit('kioskMoved', { siteId: site.id, area: site.where, moved });
   }
 
-  // He moves with the round (from the round after he opens). The pick is made now even if the move has to wait.
+  const moveEvery = () => Math.max(1, kiosk.moveEveryRounds);
+  const isMoveRound = (round) => round > kiosk.openingRound && (round - kiosk.openingRound) % moveEvery() === 0;
+
+  // He moves every moveEveryRounds rounds after the opening round. The pick is made now even if the move has to wait.
   events.on('roundStart', () => {
-    if (state.over || rounds.round <= kiosk.openingRound) return;
+    if (state.over || !isMoveRound(rounds.round)) return;
     const target = pickSite() ?? site;
     if (target !== site && midPurchase()) pending = target;
     else moveTo(target);
@@ -185,7 +187,6 @@ export function buildKiosk(feature, { map, rounds, zombies, pricing, interaction
   function setUp() {
     site = sites[0];
     pending = null;
-    lastRound = 0;
     lastSite = null;
     Object.assign(shout, { clock: 0, hawkAt: 0, duckAt: 0, wasHiding: false, turns: { lines: 0, duck: 0, back: 0 }, pitchCredit: 0, pitchOrder: 0, pitches: {}, products: 0 });
     sites.forEach((s, i) => s.cart.show(i === 0 ? 'closed' : 'away', stockFor(kiosk.openingRound)));
@@ -215,10 +216,11 @@ export function buildKiosk(feature, { map, rounds, zombies, pricing, interaction
       const products = stock();
       cart().show(!selling ? 'closed' : hiding() ? 'hiding' : selected, products);
       hawk(dt);
-      if (!selling || state.over || (lastRound === rounds.round && lastSite === site)) return;
-      const moved = kiosk.pa.moved[Math.max(0, rounds.round - kiosk.openingRound - 1) % kiosk.pa.moved.length];
-      const text = lastSite === null ? pickPaLine(kiosk.pa.opened, lineRandom) : lastSite !== site ? moved : '';
-      lastRound = rounds.round;
+      if (!selling || state.over || lastSite === site) return;
+      const moveIndex = Math.max(0, Math.floor(Math.max(0, rounds.round - kiosk.openingRound) / moveEvery()) - 1);
+      const text = lastSite === null
+        ? pickPaLine(kiosk.pa.opened, lineRandom)
+        : kiosk.pa.moved[moveIndex % kiosk.pa.moved.length];
       lastSite = site;
       const names = products.map(nameOf);
       const list = `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
@@ -229,7 +231,7 @@ export function buildKiosk(feature, { map, rounds, zombies, pricing, interaction
         pick: selected,
         pa: {
           kicker: kiosk.pa.kicker,
-          text: `${text ? `${fill(text, { where: site.where })} ` : ''}${fill(stockLine, { stock: list, pick: nameOf(selected) })}`,
+          text: `${fill(text, { where: site.where })} ${fill(stockLine, { stock: list, pick: nameOf(selected) })}`,
           priority: 1,
         },
       });
