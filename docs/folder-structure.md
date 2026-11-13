@@ -37,8 +37,9 @@ src/
                         stop fade. Bell anchors to feel.death.resultsDelay; played once through sound's music/master buses
     careerStats.js      Career schema versions, recent-run limit and accuracy record threshold.
     closingTime.js      Four closing duties and their keys, fountain, night-safe and last-orders targets, PA copy (the once-per-run briefing and its delay; `keep` marks the lines the PA queue never drops), the win receipt's words, the OVERTIME tag, Statistics labels, key marker and prop tuning, escape van prompt data, and parking validation machine geometry, prompts and PA. Also the run modes (order, default, chooser words), Classic's prompt words, each duty's place and the fountain prompt's count.
-    powerUps.js         Employee-incentive drop tuning, skill credit, round caps, pickup/zone durations, ammo top-up,
-                        sweep strength, colors and PA lines. First round 2, 12-16 credit per drop, maximum 3 per round
+    powerUps.js         Employee-incentive drop tuning: 10 types (7 common, 3 jackpot), common vs jackpot tier weights
+                        (jackpot.firstRound 4, chance 0.125), skill credit, round caps, durations/charges, ammo top-up,
+                        clearance flash/flicker, colors, icons and PA lines. First round 2, 12-16 credit per drop, max 3 per round
     effectWords.js      THE WORDS-ONLY RULE: players never see an upgrade's effect as a number. The fixed size bands (a little / noticeably / much), sizeWord / fillSize
                         for the `{size}` / `{Size}` tokens in a config line, describeEffects and hasStatNumber (the detector the tests use).
     wardrobe.js         Apparel items, four slots, stat multipliers, joke line, signature colour, icon id and `lines` (the words for each upside / downside) per item,
@@ -187,7 +188,7 @@ src/
                         controller.trackFall then applies feel.fall damage.
     stats.js            createPlayerStats(): the single stats object (health, speeds, jump, sprint, crouch/slide/prone,
                         regenDelay/regenRate, adsMoveSpeed, damageMultiplier, meleeDamageMultiplier,
-                        reloadSpeed); resetPlayerStats(stats) puts every stat back to base (same object) on a new run and DELETES
+                        reloadSpeed, pointsMultiplier, instantKill, bossDamageMultiplier); resetPlayerStats(stats) puts every stat back to base (same object) on a new run and DELETES
                         anything not declared in createPlayerStats() (so a new stat must be declared there with its default)
     health.js           createPlayerHealth(): takeDamage, regen after a delay, `overlay` strength for the red
                         hurt edges (grows with damage, pulses when low, flashes on hit), calls onDeath once and onRegenStart
@@ -252,8 +253,8 @@ src/
                         fit the Nail Gun). EFFECTS turns each effect into this gun's stat changes (shell-by-shell reload
                         phases, pellet cones, hip spread that leaves aimed accuracy alone). Apply: gun.setMods(id, ...)
     returnToSender.js  Shared accepted-return lethal hit and existing cardboard/stamp feedback for the beam and hand; normal kill events carry weaponId returnToSender.
-    gunStats.js         THE gun maths: damageFalloff(distance, falloff), hitDamage(def, hit, index, stats, chargeScale, target) (damage x head x falloff x
-                        pierce x player multiplier; the only place it's computed; with a `target`, a gun with `instantKill` (Return to Sender) deals INSTANT_KILL_DAMAGE to any returnable zombie and `bigFraction` of a boss's or Mascot's max health instead, x its tier damage: isReturnable(target)), resolveGun(base, mods) (upgrades as data:
+    gunStats.js         THE gun maths: damageFalloff(distance, falloff), applyInstantKillDamage(target, def, baseDamage, stats), hitDamage(def, hit, index, stats, chargeScale, target) (damage x head x falloff x
+                        pierce x player multiplier; the only place it's computed; with a `target`, a gun with `instantKill` (Return to Sender) or `stats.instantKill` (Black Friday) deals INSTANT_KILL_DAMAGE to non-boss/returnable zombies and scales bosses with `bigFraction` or `stats.bossDamageMultiplier`), resolveGun(base, mods) (upgrades as data:
                         { id, modifiers: [{ stat: 'falloff.start', op: 'set'|'add'|'mul', value }] }; set, then adds, then muls;
                         a bad stat path throws; counts (magazine, reserve, pellets...) are rounded whole after mods, a burst
                         gun's magazine to whole bursts; returns a copy with .base/.mods (ids)/.modList (the mods themselves)). Layers: base config -> mods -> player stats -> per hit
@@ -463,6 +464,7 @@ src/
                         are in its header: shot, hit (player attack hit; +10 if not lethal), kill (any zombie death, with
                         headshot / melee / source: 'gun' | 'melee' | 'hazard' (with fountainKill / fryerKill / sprinklerKill / paLureKill)...; ALL kill payouts + kill stats),
                         playerHit, playerDeath, runEnd ({ summary }, one immutable final snapshot), roundStart, typeIntro,
+                        powerUpDrop/powerUpCollect/powerUpStart/powerUpEnd/powerUpExpire/incentiveComplete/incentiveBurst/clearanceDetonated,
                         the Mascot's (mascotHeadPop, mascotVariantIntro, mascotReclaim, mascotPopBlast, mascotGold),
                         purchase ({ label, cost, kind, id }, read before use()), runReset. 'shot' = one per staple / sticker / nail / dart / whole blast
     createGame.js       createGame({ scene, camera, input, hud, sound, viewmodel, mapId, buildTestRange, debugTick,
@@ -513,12 +515,12 @@ src/
                         manager reads it on every spawn through its getHealthMultiplier option) and, on 'overtimeStart' only, killPay multiplied into stats.killPayMultiplier (never on a load).
     floorPickups.js     Shared clear-floor placement and swept collection for incentives and closing keys; direction for HUD markers.
     powerUps.js         createPowerUps(): listens to kill/round/death events; earned dynamic pickups on clear floor,
-                        swept walk-through collection, 15s expiry, no repeats, per-round caps. Blue Light multiplies only
-                        base kill credit, within its 4m radius, same floor and line of sight. reset/dispose; debugDrop(id, at)
-                        marks the run assisted. Boss rewards wait for the pickup slot, survive natural wave progression
+                        swept walk-through collection, 15s expiry, common/jackpot rotation (jackpots from firstRound 4 at jackpot.chance,
+                        no consecutive jackpots), per-round caps, Save & Quit serialize/restore, stripEffectModifiers(), reset/dispose;
+                        debugDrop(id, at) marks the run assisted. Boss rewards wait for the pickup slot, survive natural wave progression
                         and clear on death, Play again or debug skips. createGame builds/ticks/resets it as g.powerUps.
-                        A kill whose type has guaranteedDrop (Employee of the Month) queues a reward the same way, any
-                        useful type by weight, outside the meter and its rotation.
+                        A kill whose type has guaranteedDrop (Employee of the Month) queues a reward through chooseRewardType()
+                        respecting weights, utility and no-consecutive-jackpot outside the meter.
     wardrobe.js         g.wardrobe: per-run ownership, equipped slots and reversible player stat factors. buy(id), wear(id) (anything owned),
                         ownedIn(slot), grantAll() (debug), and the ticket words: statLines(id) / ticketDetail(id) from the item's own `lines` (no numbers);
                         wornLines(id) = the same words for a WORN item, for the pause screen's rail.
@@ -526,11 +528,14 @@ src/
                         config/wardrobe.js `pulse`; `triggers` lists the ten: regenStart, playerHit, hitCushioned, payingKill, meleeHit, headshot,
                         sprintStart, slideStart, aimStart, ammoRefill), counts pulses (pulseCount / pulses), announces 'outfitPulse', and gives
                         snapshot() (four slots with the worn item, its colour/icon and its lines). Nothing pulses once you are dead.
-    incentiveEffects.js Temporary employee benefits: concurrent timers, reversible stat modifiers, finite healing,
+    incentiveEffects.js Temporary employee benefits & Clearance: concurrent timers, reversible stat modifiers (Shift Bonus,
+                        Loss Prevention melee, Commission Day pointsMultiplier, Black Friday instantKill/bossDamageMultiplier),
                         deferred non-recursive liquidation damage, one-purchase coupons, target marks, slow patches,
-                        overtime extensions, melee charges and sprint pulses. Owned/reset/disposed by powerUps.js.
-    wallet.js           createWallet(): points (start 500), earn/spend/canAfford, totalEarned, totalSpent, onChange cb (HUD
-                        pop-ups). pointsForHit(): COD payouts (+10 hit; kill value +40 head / +70 melee; zombies only)
+                        direct-kill extensions, melee charges + sprint shoves, detonateClearance() (non-boss floor clear with
+                        source 'clearance', capped non-lethal boss hit, flat bonus, 'clearanceDetonated'), and stripModifiers().
+                        Owned/reset/disposed by powerUps.js.
+    wallet.js           createWallet({ getMultiplier }): points (start 500), earn/award/spend/canAfford, totalEarned, totalSpent, onChange cb (HUD
+                        pop-ups). `award()` applies `getMultiplier()` (e.g. Commission Day). pointsForHit(): COD payouts (+10 hit; kill value +40 head / +70 melee; zombies only)
     interactions.js     createInteractions(): every buyable and hold prompt (doors, wall buys, desks, Kevin, the claw, hazards...). add({ label, verb, cost, position,
                         available(), use() }). Each tick: nearest available item within feel.interact.range and
                         roughly faced, in 3D range of the EYE and in plain sight (a ray vs the colliders; an item's `seeThrough` boxes, e.g. a door's own
@@ -616,7 +621,7 @@ src/
                         points with a "100 tickets" label, quiet (not a 'purchase'), refused like too few points when you're short.
                         voucherChoices(gun). 'prizeRedeemed'.
       horror.js         Feature kind 'horror': the mall decays as the rounds climb (config/look.js horror). Visual only, never gameplay.
-                        Darker every round, flickering neon dies, every tube browns out, lamps die, the view drifts to the lateHours grade, power cuts.
+                        Darker every round, flickering neon dies, every tube browns out, lamps die, the view drifts to the lateHours grade, power cuts, and a short stutter on 'clearanceDetonated'.
       hazards.js        Shared environmental hazard lifecycle (docs/archive/hazards-plan.md): createHazard (the switch, ready -> active -> cooldown, 'hazard' pricing prompt,
                         player-inside slow (through ctx.surfaces) and hurt after a stand-clear grace, reset), dealHazardDamage (source 'hazard', boss/Mascot maxHealthCap).
       hazardSwitches.js buildHazardSwitch(style, ...): the switch you throw, one model per hazard ('breaker' fountain, 'valve' fryer, 'firePull' sprinklers,
@@ -849,8 +854,10 @@ src/
     detailCulling.js    Graphics > Small detail (look.runtime.detailDistance): small printed meshes (signs, posters, labels under
                         look.detailDistance.maxSize) hidden beyond 22 m (Low) or 14 m (Potato). Collected once after batching; only hides
                         what it collected and only re-shows what it hid. main.js updates it beside room culling.
-    powerUpView.js      Reusable delivery carton, blue beacon and security badge (no lights/colliders), a fx/beacon.js light column over the pickup; bob/spin/blink,
-                        floor-projected Blue Light ring clipped at walls/voids, hide on reset/death, owned-resource disposal
+    powerUpView.js      Reusable per-incentive pickup meshes (carton, Shift Bonus timepiece/chevrons, Loss Prevention shield+baton,
+                        Clearance finned bomb, Commission Day medallion, Black Friday cleaver tag, etc.) with fx/beacon.js
+                        light column + jackpot double halo rings; no lights/colliders; bob/spin/blink, spill ring & target
+                        rings, hide on reset/death, owned-resource disposal
     contactShadows.js   One instanced draw for soft zombie grounding; interpolates feet and finds supporting collider tops.
                         No collision, hitbox or navigation changes; clear on restart, dispose owned GPU resources on unload.
     impactMarks.js      Persistent world aftermath: visible-mesh ray + flat-face corner checks, ring of 200 marks shared
@@ -950,7 +957,7 @@ src/
     scatter.js          Places decor-kit clutter on a floor area, deterministic per seed, merged into one mesh per material.
     staticBatch.js      Merges still, opaque map meshes into a few big ones (fewer draw calls); userData.dynamic opts a mesh out.
   ui/
-    incentiveHud.js     Small employee punch card (drop progress), uncollected incentive countdown and Blue Light timer
+    incentiveHud.js     Small employee punch card (drop progress), uncollected incentive countdown with SVG icon + jackpot badge, and active effect timers/charges
     modal.js            Shared Settings/Controls dialog behavior: inert background, focus trap, Escape, restores focus on close
     settingsMenu.js     createSettingsMenu(settings): builds the options screen from the settings list (tabs, rows per type:
                         checkbox / range + readout / select). Opened by the pause screen's Settings button (controller: Y);
@@ -1099,7 +1106,7 @@ Boss spectacle: bossSpectacle in config/bosses.js owns death confetti and employ
 
 Boss scheduling: bossDirector exports bossIntroRounds/isEncoreRound, skips optional mascotVariants.unlockRound values in both debut/encore choices, and remembers actual encounters until reset. Cadence is bossTiming.encores.
 
-Influencer: bosses/influencer.js owns filming movement, follower thresholds, fan requests/departure and phone windup. bosses/filmingSpots.js selects reachable shootable cell centres; navigation.pathTo uses an independent breadth-first route without replacing the shared horde flow field. ui/bossFlash.js presents the event, obeys the Comfort setting, and cancels on death/reset. Fans use zombieManager spawn metadata and delayed no-kill dismissal.
+Influencer: bosses/influencer.js owns filming movement, follower thresholds, fan requests/departure and phone windup. bosses/filmingSpots.js selects reachable shootable cell centres; navigation.pathTo uses an independent breadth-first route without replacing the shared horde flow field. ui/bossFlash.js presents phone and Clearance flashes, obeys the Comfort setting, and cancels on death/reset. Fans use zombieManager spawn metadata and delayed no-kill dismissal.
 
 Guard: zombies/bosses/guard.js owns alarm, physical shutter closure, radio headshots, reinforcement retries and taser slowdown. maps/areaBarriers.js supplies areaAt and barriersAround through loadMap. Shutters expose kind; ownership is never reset by lockdown. rounds.spawnBackup consumes the existing toSpawn budget and respects maxAlive; optional spawn options restrict Last Customer backup to safe parking markers through zombieManager.spawn (no fallback outside the supplied list).
 

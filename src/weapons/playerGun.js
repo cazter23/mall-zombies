@@ -137,7 +137,7 @@ export function createPlayerGun({
       const hit = { target, part: 'body', point: point.clone(), normal: direction.clone().negate(), distance };
       hits.push(hit);
       const attacking = target.isAttacking === true; // (before the gust: the shove is what stops it)
-      const { killed } = target.takeHit({ damage: hitDamage(d, hit, 0, stats), part: 'body', point: hit.point, direction, impact: d.impact, weaponId: d.id, distance });
+      const { killed } = target.takeHit({ damage: hitDamage(d, hit, 0, stats, 1, target), part: 'body', point: hit.point, direction, impact: d.impact, weaponId: d.id, distance });
       // interrupted: the gust shoved a zombie out of an attack (shot.hits; weapon skin challenges count it, nothing pays by it).
       const blown = killed ? null : blowAway(target, origin, cone, distance);
       hit.interrupted = attacking && blown?.pushed === true;
@@ -191,7 +191,7 @@ export function createPlayerGun({
       direction: throwDirection,
       projectile,
       impact: d.impact,
-      damageOf: ({ part, distance }) => hitDamage(d, { part, distance }, 0, stats),
+      damageOf: ({ part, distance, target }) => hitDamage(d, { part, distance }, 0, stats, 1, target),
       onHit({ target, part, point, normal, killed, direction: hitDirection }) {
         const headshot = part === 'head';
         if (!counted) { counted = true; onProjectileHit?.(); }

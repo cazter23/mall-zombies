@@ -20,7 +20,9 @@
 //               userData.animated so static batching keeps it, and its glow follows the mean level of the area's lamps)
 // =============================================================================
 
+import { bossComfort } from '../../config/bosses.js';
 import { look } from '../../config/look.js';
+import { powerUps } from '../../config/powerUps.js';
 import { gradeZoneAt } from '../../fx/zoneGrading.js';
 import { seededRandom } from '../../world/textures.js';
 import { buildRetailUnease } from './retailUnease.js';
@@ -66,6 +68,8 @@ export function buildHorror(feature, { map, events, rounds, player }) {
   let round = 0;
   let pendingCut = null; // seconds until this round's power cut
   let cut = null; // { area, timeLeft, stutter }
+  let clearanceFlicker = null; // { area, timeLeft, hold, on }
+  const flickerRand = seededRandom((feature.seed ?? 1) + 4099);
   let enabled = look.runtime.horror !== false;
 
   const shuffle = (list) => {
@@ -102,6 +106,16 @@ export function buildHorror(feature, { map, events, rounds, player }) {
     state.cut = null;
   }
 
+  function endClearanceFlicker() {
+    if (!clearanceFlicker) return;
+    const { area } = clearanceFlicker;
+    clearanceFlicker = null;
+    if (!cut || cut.area !== area) {
+      for (const n of area.neons) n.setPower(1);
+      for (const l of lamps) if (l.area === area && !l.dead && l.dying <= 0) setLamp(l, 1);
+    }
+  }
+
   // Everything that follows from the round number (called on each new round and when the setting flips).
   function apply() {
     if (!enabled) {
@@ -130,6 +144,7 @@ export function buildHorror(feature, { map, events, rounds, player }) {
 
   function restore() {
     endCut();
+    endClearanceFlicker();
     pendingCut = null;
     state.exposure = 1;
     state.decay = 0;
@@ -169,6 +184,13 @@ export function buildHorror(feature, { map, events, rounds, player }) {
     round = n;
     apply();
     pendingCut = null;
+  });
+
+  events.on('clearanceDetonated', ({ position }) => {
+    if (!enabled || bossComfort.dimPhoneFlash) return;
+    const area = areaAt(position) ?? areaAt(player.position);
+    if (!area || (cut && cut.area === area)) return;
+    clearanceFlicker = { area, timeLeft: powerUps.visual.clearanceFlicker.seconds, hold: 0, on: false };
   });
 
   function newRun() {
@@ -230,6 +252,18 @@ export function buildHorror(feature, { map, events, rounds, player }) {
           state.cut.level = cut.level;
           for (const n of cut.area.neons) n.setPower(on ? 1 : 0);
           for (const l of lamps) if (l.area === cut.area && !l.dead && l.dying <= 0) setLamp(l, on ? 1 : 0);
+        }
+      }
+      if (clearanceFlicker) {
+        clearanceFlicker.timeLeft -= dt;
+        if (clearanceFlicker.timeLeft <= 0 || (cut && cut.area === clearanceFlicker.area)) {
+          endClearanceFlicker();
+        } else if ((clearanceFlicker.hold -= dt) <= 0) {
+          clearanceFlicker.hold = between(flickerRand, HOLD);
+          clearanceFlicker.on = !clearanceFlicker.on;
+          const level = clearanceFlicker.on ? 1 : 0.12;
+          for (const n of clearanceFlicker.area.neons) n.setPower(clearanceFlicker.on ? 1 : 0.15);
+          for (const l of lamps) if (l.area === clearanceFlicker.area && !l.dead && l.dying <= 0) setLamp(l, level);
         }
       }
     },

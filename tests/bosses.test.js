@@ -148,7 +148,7 @@ test('bosses resist control, keep full damage, and are excluded from both incent
   assert.equal(boss.velocity.x, 0);
   assert.equal(boss.hitstopTimer, 0);
   for (const x of [-2, 2]) g.zombies.spawn('shopper', new THREE.Vector3(x, 0, 9)).setState('chasing');
-  for (const id of ['mysteryShopper', 'productRecall']) {
+  for (const id of ['mysteryShopper']) {
     assert.ok(g.powerUps.debugDrop(id));
     g.powerUps.update(dt);
     const mark = g.powerUps.effects.find(effect => effect.id === id);
@@ -161,12 +161,12 @@ test('a guaranteed drop waits for an existing pickup and a debug skip clears the
   g.rounds.jumpTo(6);
   g.rounds.update = () => {};
   tick();
-  assert.ok(g.powerUps.debugDrop('securitySweep', new THREE.Vector3(0, 0, 8.5)));
+  assert.ok(g.powerUps.debugDrop('shiftBonus', new THREE.Vector3(0, 0, 8.5)));
   assert.match(g.debug.run('summonBoss'), /Summoned/);
   const boss = g.bosses.active;
   kill(boss);
   tick();
-  assert.equal(g.powerUps.pickup.id, 'securitySweep');
+  assert.equal(g.powerUps.pickup.id, 'shiftBonus');
   g.player.teleport({ position: g.powerUps.pickup.position, yaw: 0 });
   tick(2);
   assert.equal(g.powerUps.pickup?.id, boss.type.reward);

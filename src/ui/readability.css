@@ -73,7 +73,7 @@
 .incentive-zone { color: #17505b; }
 .incentive-effect { padding-top: .55em; margin-top: .55em; border-top: 1px solid var(--print-rule); }
 .incentive-effect strong, .incentive-effect span { display: block; line-height: 1.4; }
-.incentive-effect strong { font-size: var(--ui-action); letter-spacing: 0; }
+.incentive-effect strong { font-size: var(--ui-action); letter-spacing: 0; display: flex; align-items: center; gap: 4px; }
 .incentive-effect span { font-size: var(--ui-body); margin-top: .2em; letter-spacing: 0; }
 .ritual-hud { font-size: var(--ui-small); line-height: 1.4; }
 .ritual-heading { font-size: var(--ui-caption); letter-spacing: .04em; }

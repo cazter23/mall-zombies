@@ -64,11 +64,13 @@
 //   'runEnd'      { summary }                            final run totals, emitted once per recorded run: on death, on Clock out,
 //                                                        or when a won run is left from a menu (createGame's leaveRun)
 //   'powerUpDrop' { id, position, seconds }               earned incentive appeared on clear floor
-//   'powerUpCollect' { id, name, pa, sound }              walk-through collection (instant effect or zone start)
-//   'powerUpStart' { id, position, remaining, radius, ... } zone or temporary employee benefit began
+//   'powerUpCollect' { id, name, pa, sound }              walk-through collection (instant effect or benefit start)
+//   'powerUpStart' { id, position, remaining, radius, ... } floor spill or temporary employee benefit began
 //   'powerUpEnd'  { id, reason }                         benefit ended (including mopped by the Janitor or roundDiscard)
 //   'incentiveComplete' { id, text }                     marked-target bonus earned (PA/HUD feedback)
 //   'incentiveBurst' { position, radius, color }          deferred liquidation burst (visual/sound feedback)
+//   'clearanceDetonated' { position, radius, kills, bossesHit, positions, flatBonus }
+//                                                        Store-Wide Clearance cleared nearby floor zombies and damaged bosses
 //   'powerUpExpire' { id, pointsInstead }                uncollected incentive timed out (a boss voucher left on the floor pays pointsInstead)
 //   'roundStart'  { round }                              the round number flipped (game/rounds.js)
 //   'clockIn'     { round, skipped }                     the player ended the break before `round` early (game/clockIn.js);

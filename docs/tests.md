@@ -183,14 +183,16 @@ priced deposits with both discounts, four-hold completion, PA, and reset.
 Phase 6 checks actual workshop collections before and after the Signature pickup, orders already running at pickup, Restuffs,
 ritual pricing, both PA announcements, one tick per run, and Play again.
 
-`tests/powerUps.test.js` checks earned incentive thresholds, skill credit, single drops, caps/repeats, expiry, safe floor/ramp
-placement, swept slide collection, wall/storey rejection, Blue Light payouts/timers, reserve delivery without bypassing
-reloads/upgrades, Security Sweep through all zombie attack/charge states, visuals/disposal and HUD. fullRun.test.js also
-earns and collects a drop with production tuning, then checks Play again cleanup.
-`tests/incentiveEffects.test.js` covers all ten additional incentives through the real game: reload/swap timing,
-bounded healing, deferred secondary kills, coupon composition/consumption, marked-target payouts, slow chase/charge,
-capped overtime, three melee charges, sprint pulses, recall interrupts, reward rotation, death/reset cleanup,
-concurrent HUD counters, floor zones and target markers.
+`tests/powerUps.test.js` checks the trimmed 10-type catalog (7 common, 3 jackpot; zero removed IDs), earned incentive thresholds,
+skill credit, single drops, caps/repeats, jackpot tier rules (firstRound, rarity, no two jackpots in a row including Employee of the Month),
+expiry, safe floor/ramp placement, swept slide collection, wall/storey rejection, reserve delivery without bypassing reloads/upgrades,
+Loss Prevention shove through all zombie attack/charge states, real-game Store-Wide Clearance (same-floor clear, zero per-kill pay,
+flat bonus once, non-lethal boss hit, Comfort flash), Commission Day (`wallet.award` multiplier, raw `earn` unscaled, timely expiry),
+Black Friday (one-hit kills across hitscan/cone/projectile/melee without editing config, boss damage multiplier), visuals/disposal and HUD.
+`fullRun.test.js` also earns and collects a drop with production tuning, then checks Play again cleanup.
+`tests/incentiveEffects.test.js` covers Shift Bonus (reload/swap/move + direct-kill extension cap), Inventory Liquidation,
+Employee Discount, Mystery Shopper, Spill Cleanup, Loss Prevention (three melee charges + sprint shove pulses), reward rotation,
+death/reset cleanup, concurrent HUD counters with jackpot styling, floor rings and target markers.
 
 Gameplay regression tests live in `tests/` (`gameplay.test.js` movement/melee/vault, `aim.test.js` spread
 (including the Laser Pointer's hip benefit / ADS penalty through repeated shots and recovery),

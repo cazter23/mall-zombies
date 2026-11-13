@@ -37,13 +37,17 @@ function scenario() {
 
 const entryPriceId = g => g.map.areaUnlocks ? 'hallway' : 'startShutter';
 
-test('Express Checkout speeds real reloads and swaps, does not stack, and restores stats on expiry', () => {
+test('Shift Bonus speeds reloads, swaps and movement, extends only on direct kills capped at maxSeconds, and restores stats on expiry', () => {
   const t = scenario(), { g } = t;
+  const def = powerUps.types.shiftBonus;
   const base = { ...g.stats };
-  t.collect('expressCheckout');
-  assert.equal(g.stats.reloadSpeed, base.reloadSpeed * powerUps.types.expressCheckout.reloadMultiplier);
-  t.collect('expressCheckout');
-  assert.equal(g.stats.reloadSpeed, base.reloadSpeed * powerUps.types.expressCheckout.reloadMultiplier);
+  t.collect('shiftBonus');
+  assert.equal(g.stats.reloadSpeed, base.reloadSpeed * def.reloadMultiplier);
+  assert.equal(g.stats.switchSpeed, base.switchSpeed * def.switchMultiplier);
+  assert.equal(g.stats.walkSpeed, base.walkSpeed * def.speedMultiplier);
+  assert.equal(g.stats.sprintSpeed, base.sprintSpeed * def.speedMultiplier);
+  t.collect('shiftBonus');
+  assert.equal(g.stats.reloadSpeed, base.reloadSpeed * def.reloadMultiplier);
   g.gun.weapon.magazine = 0;
   g.gun.weapon.startReload();
   assert.ok(g.gun.weapon.reloadTimer < g.gun.def.reloadTime);
@@ -52,37 +56,19 @@ test('Express Checkout speeds real reloads and swaps, does not stack, and restor
   assert.ok(g.gun.isSwitching);
   t.tick(18);
   assert.equal(g.gun.isSwitching, false);
-  g.powerUps.update(20);
+  const effect = t.active('shiftBonus');
+  const remaining = effect.remaining;
+  t.kill(t.spawn(), 'hazard');
+  assert.equal(effect.remaining, remaining);
+  t.kill(t.spawn(), 'gun');
+  assert.equal(effect.remaining, remaining + def.killExtension);
+  for (let i = 0; i < 25; i++) t.kill(t.spawn());
+  assert.ok(effect.remaining + effect.elapsed <= def.maxSeconds);
+  g.powerUps.update(30);
   assert.equal(g.stats.reloadSpeed, base.reloadSpeed);
   assert.equal(g.stats.switchSpeed, base.switchSpeed);
-});
-
-test('Paid Break heals only in its circle and floor, respects walls/max health, and exhausts a finite budget', () => {
-  const t = scenario(), { g } = t;
-  g.stats.health = 10;
-  t.collect('paidBreak');
-  const effect = t.active('paidBreak');
-  const initial = g.stats.health;
-  g.player.position.x = 4;
-  g.powerUps.update(1);
-  assert.equal(g.stats.health, initial);
-  g.player.position.set(0, 6, 12);
-  g.powerUps.update(1);
-  assert.equal(g.stats.health, initial);
-  g.player.position.set(0.6, 0, 12);
-  const wall = new THREE.Box3(new THREE.Vector3(0.2, 0, 11), new THREE.Vector3(0.3, 3, 13));
-  g.colliders.push(wall);
-  g.powerUps.update(1);
-  assert.equal(g.stats.health, initial);
-  g.colliders.pop();
-  g.player.position.set(0, 0, 12);
-  g.powerUps.update(5);
-  assert.equal(g.stats.health, 70);
-  assert.equal(t.active('paidBreak'), undefined);
-  assert.equal(effect.healing, 0);
-  g.stats.health = g.stats.maxHealth - 1;
-  t.collect('paidBreak'); g.powerUps.update(1);
-  assert.equal(g.stats.health, g.stats.maxHealth);
+  assert.equal(g.stats.walkSpeed, base.walkSpeed);
+  assert.equal(g.stats.sprintSpeed, base.sprintSpeed);
 });
 
 test('Inventory Liquidation spends three direct kills, uses real kill payouts, and cannot chain itself', () => {
@@ -179,22 +165,7 @@ test('Spill Cleanup is placed behind the player, slows only zombies in the patch
   assert.equal(t.active('spillCleanup'), undefined);
 });
 
-test('Overtime Approved speeds movement, extends only on direct kills, and never exceeds its total lifetime', () => {
-  const t = scenario(), { g } = t;
-  const base = g.stats.walkSpeed;
-  t.collect('overtimeApproved');
-  assert.equal(g.stats.walkSpeed, base * powerUps.types.overtimeApproved.speedMultiplier);
-  const effect = t.active('overtimeApproved');
-  const remaining = effect.remaining;
-  t.kill(t.spawn(), 'hazard');
-  assert.equal(effect.remaining, remaining);
-  for (let i = 0; i < 25; i++) t.kill(t.spawn());
-  assert.ok(effect.remaining + effect.elapsed <= powerUps.types.overtimeApproved.maxSeconds);
-  g.powerUps.update(25);
-  assert.equal(g.stats.walkSpeed, base);
-});
-
-test('Loss Prevention boosts three real melee hits, ignores misses and dummies, and staggers the nearby group', () => {
+test('Loss Prevention boosts three real melee hits, staggers nearby group, and pushes visible same-floor zombies while sprinting', () => {
   const t = scenario(), { g } = t;
   const base = g.stats.meleeDamageMultiplier;
   t.collect('lossPrevention');
@@ -215,6 +186,23 @@ test('Loss Prevention boosts three real melee hits, ignores misses and dummies, 
   }
   assert.equal(t.active('lossPrevention'), undefined);
   assert.equal(before - target.health, 3 * meleeWeapons.boxCutter.damage * powerUps.types.lossPrevention.damageMultiplier);
+  assert.equal(g.stats.meleeDamageMultiplier, base);
+
+  // Sprint shove: pushes nearby visible same-floor zombies without hurting them.
+  g.zombies.clear();
+  g.player.teleport({ position: new THREE.Vector3(0, 0, 12), yaw: 0 });
+  const z = t.spawn(0, 10.8), far = t.spawn(4, 12), upper = t.spawn(0, 12);
+  upper.position.y = 6;
+  t.collect('lossPrevention');
+  assert.equal(z.staggerTimer, 0);
+  g.player.isSprinting = true;
+  g.powerUps.update(1 / 60);
+  assert.ok(z.staggerTimer > 0);
+  assert.equal(far.staggerTimer, 0);
+  assert.equal(upper.staggerTimer, 0);
+  assert.equal(z.health, 150);
+  g.powerUps.update(30);
+  assert.equal(t.active('lossPrevention'), undefined);
   assert.equal(g.stats.meleeDamageMultiplier, base);
 });
 
@@ -245,37 +233,7 @@ test('Spill slow reduces real chase and charge travel, then returns to normal wi
   }
 });
 
-test('Staff Entrance pushes only nearby visible same-floor zombies while sprinting', () => {
-  const t = scenario(), { g } = t;
-  const z = t.spawn(0, 10.5), far = t.spawn(4, 12), upper = t.spawn(0, 12);
-  upper.position.y = 6;
-  t.collect('staffEntrance');
-  assert.equal(z.staggerTimer, 0);
-  g.player.isSprinting = true;
-  g.powerUps.update(1 / 60);
-  assert.ok(z.staggerTimer > 0);
-  assert.equal(far.staggerTimer, 0);
-  assert.equal(upper.staggerTimer, 0);
-  assert.equal(z.health, 150);
-  g.powerUps.update(7);
-  assert.equal(t.active('staffEntrance'), undefined);
-});
-
-test('Product Recall marks a bounded group and each marked death interrupts the surviving marks', () => {
-  const t = scenario(), { g } = t;
-  const targets = Array.from({ length: 5 }, (_, i) => t.spawn(i * 0.5, 10));
-  t.collect('productRecall');
-  assert.equal(t.active('productRecall').targets.length, 4);
-  t.kill(targets[4]);
-  assert.equal(targets[1].staggerTimer, 0);
-  t.kill(targets[0]);
-  assert.ok(targets[1].staggerTimer > 0);
-  assert.equal(targets[1].health, 150);
-  for (const z of targets.slice(1, 4)) t.kill(z);
-  assert.equal(t.active('productRecall'), undefined);
-});
-
-test('Rotation visits every eligible benefit before repeating and skips full-health healing/full ammo', () => {
+test('Rotation visits every eligible common benefit before repeating and skips full ammo / jackpots before round 4', () => {
   const t = scenario(), { g } = t;
   const def = powerUps;
   const previousMax = def.maxPerRound;
@@ -285,7 +243,7 @@ test('Rotation visits every eligible benefit before repeating and skips full-hea
     t.spawn(); t.spawn(1, 10);
     const ids = [];
     g.player.position.set(0, 0, 15); g.player.prevPosition.copy(g.player.position);
-    for (let i = 0; i < 11; i++) {
+    for (let i = 0; i < 6; i++) {
       g.events.emit('kill', { zombie: { type: { id: 'shopper' }, position: new THREE.Vector3(0, 0, 10) }, source: 'gun' });
       g.powerUps.update(0.01);
       // The first threshold was sampled before this test changes config.
@@ -294,25 +252,27 @@ test('Rotation visits every eligible benefit before repeating and skips full-hea
       ids.push(g.powerUps.pickup.id);
       g.powerUps.update(16);
     }
-    assert.equal(new Set(ids).size, ids.length, ids.join(', '));
-    assert.ok(!ids.includes('paidBreak'));
+    assert.equal(new Set(ids).size, 6, ids.join(', '));
     assert.ok(!ids.includes('stockroomDelivery'));
+    assert.ok(ids.every((id) => powerUps.types[id].tier === 'common'), 'no jackpots in round 2');
   } finally { def.maxPerRound = previousMax; Object.assign(def.threshold, previousThreshold); }
 });
 
 test('All benefits clear on death/reset, restore stats, clear coupons and discard pending secondary damage', () => {
   const t = scenario(), { g } = t;
   t.spawn(); t.spawn(1, 10);
-  g.stats.health = 50;
-  for (const id of Object.keys(powerUps.types).slice(3)) t.collect(id);
-  assert.equal(g.powerUps.effects.length, 10);
+  const timedIds = Object.keys(powerUps.types).filter(id => powerUps.types[id].seconds);
+  for (const id of timedIds) t.collect(id);
+  assert.equal(g.powerUps.effects.length, timedIds.length);
   t.kill(t.spawn());
   const survivor = t.spawn(1, 10);
   g.health.takeDamage(10000);
   assert.equal(g.powerUps.effects.length, 0);
-  assert.equal(g.powerUps.active, null);
   assert.equal(g.stats.reloadSpeed, createPlayerStats().reloadSpeed);
   assert.equal(g.stats.meleeDamageMultiplier, createPlayerStats().meleeDamageMultiplier);
+  assert.equal(g.stats.pointsMultiplier, 1);
+  assert.equal(g.stats.instantKill, false);
+  assert.equal(g.stats.bossDamageMultiplier, 1);
   const hp = survivor.health;
   g.powerUps.update(1);
   assert.equal(survivor.health, hp);
@@ -322,36 +282,36 @@ test('All benefits clear on death/reset, restore stats, clear coupons and discar
   assert.equal(g.pricing.priceOf('door', entryPriceId(g)), g.pricing.basePriceOf('door', entryPriceId(g)));
 });
 
-test('HUD shows concurrent benefit timers/charges and updates when one effect replaces another', () => {
+test('HUD shows concurrent benefit timers/charges, jackpot styling and updates when one effect replaces another', () => {
   menuDom();
   const hud = createIncentiveHud();
-  const status = { available: true, progress: 0, effects: [{ id: 'lossPrevention', remaining: 8, charges: 3 }, { id: 'paidBreak', remaining: 12, healing: 45 }] };
+  const status = { available: true, progress: 0, effects: [{ id: 'lossPrevention', remaining: 8, charges: 3 }, { id: 'commissionDay', remaining: 12 }] };
   hud.update(status);
   assert.match(hud.element.textContent, /LOSS PREVENTION · 8s · 3 LEFT/);
-  assert.match(hud.element.textContent, /PAID BREAK · 12s · 45 HP LEFT/);
+  assert.match(hud.element.textContent, /COMMISSION DAY · 12s/);
+  assert.equal(hud.element.querySelectorAll('.jackpot').length, 1);
   status.effects[0].charges = 2; hud.update(status);
   assert.match(hud.element.textContent, /2 LEFT/);
-  status.effects = [{ id: 'staffEntrance', remaining: 8 }]; hud.update(status);
-  assert.match(hud.element.textContent, /STAFF ENTRANCE/);
+  status.effects = [{ id: 'shiftBonus', remaining: 8 }]; hud.update(status);
+  assert.match(hud.element.textContent, /SHIFT BONUS/);
   assert.doesNotMatch(hud.element.textContent, /LOSS PREVENTION/);
 });
 
-test('Healing/spill floor rings and target markers render, track, hide, and dispose cleanly', () => {
+test('Spill floor rings and target markers render, track, hide, and dispose cleanly', () => {
   const floor = new THREE.Box3(new THREE.Vector3(-20, -1, -20), new THREE.Vector3(20, 0, 20));
   const scene = new THREE.Scene();
   const view = createPowerUpView(scene, [floor]);
   const target = { isAlive: true, position: new THREE.Vector3(1, 0, 1), type: { height: 2 } };
-  const effects = [{ id: 'paidBreak', position: new THREE.Vector3(), remaining: 10 }, { id: 'spillCleanup', position: new THREE.Vector3(5, 0, 0), remaining: 10 }, { id: 'mysteryShopper', targets: [target], remaining: 10 }];
-  view.update(null, null, 1 / 60, effects);
-  assert.ok(view.root.getObjectByName('paidBreakZone').visible);
+  const effects = [{ id: 'spillCleanup', position: new THREE.Vector3(5, 0, 0), remaining: 10 }, { id: 'mysteryShopper', targets: [target], remaining: 10 }];
+  view.update(null, 1 / 60, effects);
   assert.ok(view.root.getObjectByName('spillCleanupZone').visible);
   const marker = view.root.getObjectByName('mysteryShopperMarker0');
   assert.ok(marker.visible);
   assert.ok(marker.position.y > target.type.height);
-  target.position.x = 2; view.update(null, null, 1 / 60, effects);
+  target.position.x = 2; view.update(null, 1 / 60, effects);
   assert.equal(marker.position.x, 2);
-  view.update(null, null);
+  view.update(null, 1 / 60, []);
   assert.equal(marker.visible, false);
-  assert.equal(view.root.getObjectByName('paidBreakZone').visible, false);
+  assert.equal(view.root.getObjectByName('spillCleanupZone').visible, false);
   view.dispose(); assert.equal(scene.children.length, 0);
 });

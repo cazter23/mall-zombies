@@ -6,7 +6,7 @@
 
 import { economy } from '../config/economy.js';
 
-export function createWallet({ onChange = null } = {}) {
+export function createWallet({ onChange = null, getMultiplier = null } = {}) {
   return {
     points: economy.startingPoints,
     totalEarned: 0, // for the results screen
@@ -21,6 +21,14 @@ export function createWallet({ onChange = null } = {}) {
       this.points += amount;
       this.totalEarned += amount;
       if (onChange) onChange(amount, this.points, style);
+    },
+
+    // Run-facing payouts (combat hits/kills, incentive bonuses, quest payouts) route here so active
+    // multipliers like Commission Day apply once without altering direct wallet adjustments or tests.
+    award(amount, style) {
+      if (amount <= 0) return;
+      const mult = getMultiplier ? getMultiplier() : 1;
+      this.earn(Math.round(amount * mult), style);
     },
 
     // Returns true and deducts if affordable; false (and nothing changes) if not.
@@ -65,11 +73,11 @@ export function createWallet({ onChange = null } = {}) {
  * COD-style points for one hit on a zombie: +10 for a hit that doesn't kill; a kill pays the
  * zombie's kill value plus a headshot or melee bonus. Returns 0 for non-zombies (practice dummies).
  */
-export function pointsForHit({ target, killed, headshot, melee, killMultiplier = 1, killPayMultiplier = 1 }) {
+export function pointsForHit({ target, killed, headshot, melee, killPayMultiplier = 1 }) {
   if (!target.type || target.noRewards) return 0; // only reward-eligible zombies pay, including hit bonuses
   const p = economy.payouts;
   if (!killed) return p.nonLethalHit;
-  let points = (economy.killValues[target.type.id] ?? 0) * killMultiplier;
+  let points = economy.killValues[target.type.id] ?? 0;
   // Apparel boosts base kill credit, with combat bonuses added afterward.
   if (killPayMultiplier !== 1) points = Math.round(points * killPayMultiplier / p.nonLethalHit) * p.nonLethalHit;
   if (melee) points += p.meleeKillBonus;

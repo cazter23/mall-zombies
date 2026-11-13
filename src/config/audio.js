@@ -132,7 +132,7 @@ export const audio = {
       { type: 'tone', wave: 'triangle', freq: 440, freqEnd: 440, gain: 0.3, attack: 0.005, decay: 0.13 },
       { type: 'tone', wave: 'triangle', freq: 660, freqEnd: 660, gain: 0.3, attack: 0.005, decay: 0.2, delay: 0.12 },
     ] },
-    incentiveBlueLight: { volume: 0.5, layers: [
+    incentiveSpill: { volume: 0.5, layers: [
       { type: 'tone', wave: 'sine', freq: 660, freqEnd: 880, gain: 0.4, attack: 0.008, decay: 0.18 },
       { type: 'tone', wave: 'sine', freq: 880, freqEnd: 1320, gain: 0.3, attack: 0.008, decay: 0.3, delay: 0.14 },
     ] },
@@ -140,6 +140,23 @@ export const audio = {
       { type: 'tone', wave: 'triangle', freq: 620, freqEnd: 380, gain: 0.4, attack: 0.01, decay: 0.23 },
       { type: 'tone', wave: 'triangle', freq: 620, freqEnd: 380, gain: 0.35, attack: 0.01, decay: 0.23, delay: 0.25 },
       { type: 'tone', wave: 'sine', freq: 100, freqEnd: 45, gain: 0.4, attack: 0.005, decay: 0.2 },
+    ] },
+    incentiveClearance: { volume: 0.72, layers: [
+      { type: 'noise', filter: 'bandpass', freq: 650, q: 0.7, gain: 0.65, attack: 0.004, decay: 0.45 },
+      { type: 'tone', wave: 'sine', freq: 140, freqEnd: 34, gain: 0.6, attack: 0.004, decay: 0.5 },
+      { type: 'tone', wave: 'triangle', freq: 523.25, freqEnd: 523.25, gain: 0.35, attack: 0.01, decay: 0.22, delay: 0.08 },
+      { type: 'tone', wave: 'triangle', freq: 783.99, freqEnd: 1046.5, gain: 0.35, attack: 0.01, decay: 0.35, delay: 0.16 },
+    ] },
+    incentiveCommission: { volume: 0.6, layers: [
+      { type: 'tone', wave: 'triangle', freq: 587.33, freqEnd: 587.33, gain: 0.32, attack: 0.005, decay: 0.14 },
+      { type: 'tone', wave: 'triangle', freq: 880, freqEnd: 880, gain: 0.34, attack: 0.005, decay: 0.16, delay: 0.09 },
+      { type: 'tone', wave: 'sine', freq: 1174.66, freqEnd: 1174.66, gain: 0.36, attack: 0.005, decay: 0.32, delay: 0.18 },
+      { type: 'tone', wave: 'sine', freq: 1760, freqEnd: 1760, gain: 0.22, attack: 0.005, decay: 0.36, delay: 0.22 },
+    ] },
+    incentiveBlackFriday: { volume: 0.65, layers: [
+      { type: 'tone', wave: 'sawtooth', freq: 220, freqEnd: 110, gain: 0.28, attack: 0.006, decay: 0.38 },
+      { type: 'tone', wave: 'sawtooth', freq: 329.63, freqEnd: 329.63, gain: 0.24, attack: 0.006, decay: 0.35, delay: 0.04 },
+      { type: 'tone', wave: 'square', freq: 659.25, freqEnd: 880, gain: 0.22, attack: 0.006, decay: 0.35, delay: 0.1 },
     ] },
     // The Return to Sender quest: a NO REFUNDS floor sign shot over (game/features/refundSign.js).
     refundSignDown: { volume: 0.5, layers: [

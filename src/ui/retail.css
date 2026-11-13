@@ -522,8 +522,11 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .incentive-progress::-webkit-progress-bar { background: repeating-linear-gradient(90deg, #ded3c1 0 8%, var(--paper) 8% 10%); }
 .incentive-progress::-webkit-progress-value { background: var(--raspberry); }
 .incentive-progress::-moz-progress-bar { background: var(--raspberry); }
-.incentive-drop { color: #843241; }
+.incentive-drop { color: #843241; display: flex; align-items: center; gap: 5px; }
+.incentive-drop.jackpot { color: #9c5600; }
 .incentive-zone { color: #175869; }
+.incentive-icon { width: 14px; height: 14px; flex: 0 0 auto; vertical-align: -2px; margin-right: 4px; }
+.incentive-effect.jackpot strong { color: #9c5600; }
 
 /* Compact purchase line. Only shortage/upgrade terms earn a second line. */
 .interact {
