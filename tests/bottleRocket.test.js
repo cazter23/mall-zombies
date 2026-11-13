@@ -60,10 +60,13 @@ test('one pull = one rocket and one shot (counted at the launch); it flies, and 
 
 test('THE ROLE: a rocket into a clump hurts every zombie round the burst (+10 each, the nearest most), one hit for accuracy, and you are far enough away to be fine', () => {
   const { t, g, blasts, spawn, freeze, fire } = setup();
-  const clump = [spawn(-5), spawn(-4.4, 0.9), spawn(-4.4, -0.9), spawn(-3.2, 0)];
-  const far = spawn(2);
+  // (In the open stretch of the Hallway, x -3..4: further west a bench and the escalator's side stand among the clump and
+  // shield some of it from a low burst, which is right, but not this test.)
+  const clump = [spawn(1), spawn(1.6, 0.9), spawn(1.6, -0.9), spawn(2.8, 0)];
+  const far = spawn(8);
   freeze([...clump, far]);
-  g.player.pitch = Math.atan2(1 - 1.6, 12); // (the first one's chest)
+  g.player.pitch = Math.atan2(1.2 - 1.6, 18); // (the first one's chest, allowing for the rocket's drop)
+  g.gun.aim.applySpread = () => {}; // (dead on: this is about the burst, not the hip spread, which can send it over their heads)
   const hits = [];
   g.events.on('hit', (h) => hits.push(h));
   const health = g.stats.health;
@@ -137,4 +140,43 @@ test('reload: one rocket in the tube from a reserve of twelve', () => {
   t.tick(Math.ceil(rk.reloadTime / dt) + 5);
   assert.equal(g.gun.weapon.magazine, 1);
   assert.equal(g.gun.weapon.reserve, rk.startingReserve - 1);
+});
+
+test('pressed against a wall, the rocket and the balloon burst on YOUR side of it (never launched through it), and the rocket hurts you', () => {
+  // The Hallway's west wall is at x -20.3..-20 with the Service Corridor behind it; the player stands against it, facing it.
+  for (const id of ['bottleRocket', 'balloonLauncher']) {
+    const { t, g, blasts, spawn, freeze, fire } = setup(-19.62, Math.PI / 2);
+    if (id !== 'bottleRocket') g.gun.give(weapons[id]);
+    t.tick(60);
+    const behind = spawn(-23);
+    freeze([behind]);
+    const before = g.stats.health;
+    fire();
+    t.tick(FLIGHT_TICKS);
+    assert.equal(blasts.length, 1, `${id}: it burst`);
+    assert.ok(blasts[0].position.x > -20, `${id}: at x ${blasts[0].position.x.toFixed(2)}, this side of the wall`);
+    assert.equal(blasts[0].hits.length, 0, `${id}: nobody behind the wall is caught`);
+    if (id === 'bottleRocket') assert.ok(blasts[0].selfDamage > 0 && g.stats.health < before, `a rocket into a wall at your face hurts you (${blasts[0].selfDamage}, ${before} -> ${g.stats.health})`);
+  }
+});
+
+test('Build-A-Blaster: a Last Round build goes off where the rocket BURST (not at a point in front of the tube), and a stuffing scales from the real cycle, reload included', async () => {
+  const { gunPower, cycleSeconds } = await import('../src/weapons/gunStats.js');
+  const plain = { damageMultiplier: 1 };
+  assert.ok(Math.abs(gunPower(rk, plain) - rk.damage / Math.max(cycleSeconds(rk), rk.reloadTime)) < 1e-9, 'one round a magazine: the reload is in the cycle');
+  assert.equal(gunPower(weapons.priceGun, plain), weapons.priceGun.damage / cycleSeconds(weapons.priceGun), 'other guns as before');
+  const { t, g, blasts, spawn, freeze, fire } = setup();
+  g.gun.setMods('bottleRocket', [{ id: 'build', build: { stuffing: 'fryerOil', heart: 'lastRound', quality: 'regular', kills: 0 } }]);
+  const fired = [];
+  g.events.on('buildFired', (e) => fired.push(e));
+  const target = spawn(1);
+  freeze([target]);
+  g.player.pitch = Math.atan2(1.2 - 1.6, 18);
+  g.gun.aim.applySpread = () => {};
+  fire();
+  assert.deepEqual(fired, [], 'nothing at the launch');
+  t.tick(FLIGHT_TICKS);
+  assert.equal(blasts.length, 1);
+  assert.equal(fired.length, 1, 'once, at the burst');
+  assert.ok(fired[0].hit.length === 1 && fired[0].hit[0] === target, `on the zombie the rocket caught (${fired[0].hit.length} hit, burst hits ${blasts[0].hits.length}, ${fired[0].hit.map((z) => z === target)})`);
 });

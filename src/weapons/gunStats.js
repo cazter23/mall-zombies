@@ -81,7 +81,10 @@ export function cycleSeconds(def) {
  */
 export function gunPower(def, stats) {
   const perCycle = def.damage * (def.pellets?.count ?? 1) * (def.burst?.count ?? 1);
-  return (perCycle / cycleSeconds(def)) * stats.damageMultiplier;
+  // (A one-round magazine, the Bottle Rocket Bazooka, reloads between every two shots: that reload is part of its cycle, or a
+  // stuffing would get three times a second of its real fire.)
+  const seconds = def.magazineSize === 1 && def.reloadTime ? Math.max(cycleSeconds(def), def.reloadTime) : cycleSeconds(def);
+  return (perCycle / seconds) * stats.damageMultiplier;
 }
 
 const OP_ORDER = { set: 0, add: 1, mul: 2 };

@@ -233,22 +233,36 @@ export function createPlayerGun({
     const start = origin.clone().addScaledVector(flight, r.startOffset);
     start.y += r.startDrop;
     const ahead = start.clone().addScaledVector(flight, 6);
+    // (blast: true tells Build-A-Blaster's shot Hearts to wait for the burst, 'gunBlast', which carries magazineLeft and the hits)
     const shot = { origin: start.clone(), end: ahead, endNormal: flight.clone().negate(), point: ahead.clone(), normal: flight.clone().negate(),
-      distance: 6, target: null, part: null, hits: [], worldHit: null, projectile: true, weaponId: d.id, magazineLeft: weapon.magazine };
+      distance: 6, target: null, part: null, hits: [], worldHit: null, projectile: true, blast: true, weaponId: d.id, magazineLeft: weapon.magazine };
     const fired = origin.clone();
+    const magazineLeft = weapon.magazine;
+    // The launch point is in front of the eye, further than you are wide: up against a wall (or a zombie) it would already be on
+    // the far side. Anything between the eye and the launch point (plus the rocket's radius) bursts it right there instead.
+    const toStart = start.clone().sub(origin);
+    const reach = toStart.length();
+    toStart.divideScalar(reach);
+    const blocker = castShot(origin, toStart, reach + r.radius, colliders, shootables);
+    if (blocker.distance < reach + r.radius) {
+      const centre = origin.clone().addScaledVector(toStart, Math.max(0, blocker.distance - r.radius));
+      if (onShot) onShot(shot);
+      explode(d, centre, fired, magazineLeft);
+      return shot;
+    }
     rockets.launch({
       weaponId: d.id,
       position: start,
       direction: flight,
       projectile: { ...r, restitution: 0, maxBounces: 1, minSpeed: 0, rehitSeconds: 0, seekRange: 0 }, // (one contact of any kind and it is over)
-      onEnd: ({ ball }) => explode(d, ball.position.clone(), fired), // (fx/rocketView.js draws it in the air, with its spark trail)
+      onEnd: ({ ball }) => explode(d, ball.position.clone(), fired, magazineLeft), // (fx/rocketView.js draws it in the air, with its spark trail)
     });
     if (onShot) onShot(shot);
     return shot;
   }
 
   // A rocket burst at `centre`: every zombie caught takes the blast damage (gunStats.hitDamage with blastDistance), then what it does to you.
-  function explode(d, centre, firedFrom) {
+  function explode(d, centre, firedFrom, magazineLeft) {
     const found = findInBlast(centre, d.blast, colliders, shootables); // (snapshot first: a kill listener can change the list)
     const hits = [];
     let anyKilled = false;
@@ -276,7 +290,7 @@ export function createPlayerGun({
     const eye = new THREE.Vector3();
     player.getAim(eye, new THREE.Vector3());
     const selfDamage = selfBlastDamage({ eye, feetY: player.position.y }, centre, d.blast, colliders, stats.maxHealth, stats.ownBlastDamage ?? 1);
-    onBlast?.({ weaponId: d.id, position: centre.clone(), radius: d.blast.radius, hits, selfDamage });
+    onBlast?.({ weaponId: d.id, position: centre.clone(), radius: d.blast.radius, hits, selfDamage, magazineLeft });
   }
 
   function fire(slot) {
