@@ -89,7 +89,7 @@ src/
     audio.js            Master volume, pitch variation, compressor, and sound recipes (layers of filtered noise
                         bursts and tones): staple / price / nail / foam / confetti gun shots and reloads, dry click, purchase, denied,
                         Mall Walker walkerSqueak / walkerHuff / walkerPant, saltCrunch (Twisty), paChime (announcements)
-    zombies.js          zombieTypes (per-type speed, size, hitboxes, attack, timings, colors, splatter): `shopper`, and
+    zombies.js          zombieTypes (per-type speed, size, hitboxes, attack, timings, colors, splatter): `shopper`, `shoplifter` (round 4+: jogs, a hit steals points then it flees; theft, pa, beanieColors, lootMarker), and
                         `mallWalker` = { ...shopper, overrides } (speed 5.4 no gaits, modelScale + slimmer hitbox, winded,
                         powerWalk walkAnimation + windedAnimation, tracksuit `outfit`, introBanner, sounds). zombieCrowd
                         (spacing, lanes, queueing, surround rings + sector/still-wrap/circling, contact gap,
@@ -407,7 +407,7 @@ src/
     bosses/janitor.js   Places, ages and disposes Wet Floor patches on clear floor. Slows the player on contact and
                         calls into the incentive system to mop Spill Cleanup.
     bosses/janitorModel.js Adds Murray's uniform, bucket, wet floor sign and animated mop to the standard skeleton.
-    navigation.js       createNavigation(colliders, agent, { floors, links }): flow field on a 0.5m grid built from colliders, one LAYER per floor
+    navigation.js       createNavigation(colliders, agent, { floors, links }) (directionAway(from, out): the player field walked UPHILL, the way to run from you: the Shoplifter's getaway): flow field on a 0.5m grid built from colliders, one LAYER per floor
                         (floors = their walking heights, default [0]: walkable where a box top sits at that height, blocked by anything solid
                         between ankle and head above it) joined by LINKS (a ramp/stairs: { lower: {x,z,floor}, upper: {x,z,floor}, halfWidth }):
                         in the field a link is one extra edge between its end cells; a mover ON a ramp (within zombieNav.rampTolerance of its
@@ -592,7 +592,7 @@ src/
                         from clearanceBonus(round): perRoundZombie x the round's wave size; 'clearanceDetonated'), holdWhileQuiet
                         (Commission Day and Black Friday clocks wait while no zombie is up: effect.held, HUD "ON HOLD"),
                         and stripModifiers(). Owned/reset/disposed by powerUps.js.
-    wallet.js           createWallet({ getMultiplier }): points (start 500), earn/award/spend/canAfford, totalEarned, totalSpent, onChange cb (HUD
+    wallet.js           createWallet({ getMultiplier }): points (start 500), earn/award/spend/canAfford, lose/recover (a Shoplifter's theft and its return: neither spending nor income), totalEarned, totalSpent, onChange cb (HUD
                         pop-ups). `award()` applies `getMultiplier()` (e.g. Commission Day). pointsForHit(): COD payouts (+10 hit; kill value +40 head / +70 melee; zombies only)
     interactions.js     createInteractions(): every buyable and hold prompt (doors, wall buys, desks, Kevin, the claw, hazards...). add({ label, verb, cost, position,
                         available(), use() }). Each tick: nearest available item within feel.interact.range and
@@ -720,6 +720,11 @@ src/
                         (config/weapons.js) that didn't kill RINGS UP the target (zombie.applyRungUp: x damageTaken from everything for `seconds`) and
                         announces 'rungUp'; a 'kill' of a zombie still marked pays rungUp.killBonus (not once the run is over, not a no-rewards fan),
                         announces 'rungUpKill' and clears the mark. No per-run state (the marks live on the zombies). g.rungUp
+    shoplifting.js      createShoplifting({ events, wallet, effects, runFrozen }) + theftAmount(points, theft): the Shoplifter, on the bus. A
+                        'playerHit' by a zombie with `theft` and no loot yet takes theftAmount of your points (wallet.lose: not spending, not
+                        income), announces 'shoplifterTheft' and takes over its movement (zombie.control): it flees AWAY from you (nav.directionAway)
+                        at theft.fleeSpeed and after theft.fleeSeconds is removed without a kill ('shoplifterEscaped', a dust puff). A 'kill' of
+                        one holding loot gives the points back (wallet.recover, 'shoplifterRecovered'). No per-run state (it lives on the zombies). g.shoplifting
   maps/
     index.js            Map registry + loadMap(id, scene, colliders) + THE MAP INTERFACE (id, group, zones, doors,
                         spawnPoints, features (wall buys, ammo cache... by kind), playerSpawn, update, reset, dispose).
@@ -927,6 +932,8 @@ src/
                         zombie that isRungUp (game/rungUp.js), shrinking away over the mark's last half second. barcodeScanner.rungUp.tag
     scanLine.js         Browser side only: the Barcode Scanner's scan while the trigger is held: a thin red laser from the muzzle to what you aim
                         at (castShot) and a red bar sweeping up and down across it, brightening with the charge. barcodeScanner.scanLine
+    lootView.js         Browser side only: a pool of big spinning gold coins over every live zombie holding your points (a Shoplifter on its
+                        getaway, zombie.loot), so the thief stands out in a crowd. config/zombies.js shoplifter.lootMarker
     throwableView.js    Browser side only: draws `equipment.live` (Kiosk Kevin's thrown things; the models are world/kioskProducts.js'), one pool per
                         look.model: the cola bottle (tumbling in the air, lying and rattling on the floor, swelling as the fuse runs out), the Sparkler
                         Cake (spinning, then upright and jittering while it sprays), the Glitter Bomb card (flipping) and the Sentry (tumbling, then

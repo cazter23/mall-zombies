@@ -18,6 +18,9 @@
 //   'rungUp'      { zombie, seconds }                    a Barcode Scanner beam RANG UP a zombie it didn't kill (game/rungUp.js): more damage from
 //                                                        everything for `seconds`, and a kill bonus
 //   'rungUpKill'  { zombie, points }                     a zombie died while rung up: `points` paid on top of its kill (not once the run is over)
+//   'shoplifterTheft' { zombie, points }                 a Shoplifter's hit stole `points` and it is running (game/shoplifting.js)
+//   'shoplifterRecovered' { zombie, points }             it was killed before it got away: the points came back
+//   'shoplifterEscaped' { zombie, points, position }     it got away with them: removed without a kill (no pay, no kill stats)
 //   'meleeUpgrade' { tier, id }                          a box cutter tier was bought at Customer Service (game/meleeUpgrades.js; 1 sharpened, 2 pro)
 //   'reload'      { weaponId }                           a reload began on the gun in hand
 //   'hit'         { target, killed, headshot, melee, weaponId }  a PLAYER attack hit a shootable (one per target per shot

@@ -20,6 +20,10 @@ export const deathReports = {
       cause: 'Unauthorized impact with moving shopping cart',
       tip: 'Associate Tip: It steers while the cart rattles; sidestep once it launches, then hit it hard while it sits stunned.',
     },
+    shoplifter: {
+      cause: 'Blunt force trauma sustained during an unauthorized point withdrawal',
+      tip: 'Associate Tip: Shoplifters jog, they do not run, until they have your points. Drop them first, or chase them down.',
+    },
     mallWalker: {
       cause: 'Aggressive pacing incident involving unsanctioned power-walking patron',
       tip: 'Associate Tip: Power walkers outpace a backpedal; sprint clear, then fire while they stand panting after a swing.',

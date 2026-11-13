@@ -220,7 +220,7 @@ export const skins = {
     id: 'polka-dot', name: 'Polka Dot', slot: 2,
     palette: { body: 0xffd23f, dark: 0x3a2a10, metal: 0xf4ecd8, grip: 0x2a2014, accent: 0xff3b3b, sight: 0xff5ec8, ammo: 0xff3b3b },
     pattern: { kind: 'dots', ink: 0xff3b3b, spacing: 0.02, radius: 0.005 }, // party-bag polka dots
-    challenge: { kind: 'typeKills', count: 150, types: ['mallWalker'], needs: ['claw'], text: 'Clear {count} Mall Walkers with the {gun}.' },
+    challenge: { kind: 'typeKills', count: 100, types: ['shoplifter'], needs: ['claw'], text: 'Clear {count} Shoplifters with the {gun}.' }, // (was Mall Walkers: they left the waves)
   }, {
     id: 'helium-high', name: 'Helium High', slot: 3,
     palette: { body: 0xb8f0ff, dark: 0x1c2c44, metal: 0xeef6fa, grip: 0x18202c, accent: 0xa070ff, sight: 0xffd23f, ammo: 0xa070ff },

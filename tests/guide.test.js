@@ -47,7 +47,7 @@ test('every zombie type, Mascot costume and boss has exactly one page, and a zom
   for (const [variant, type] of Object.entries(mascotTypes)) assert.equal(guideEntryId(type), variant, 'a Mascot is filed by its costume');
   for (const type of Object.values(mascotGoldTypes)) assert.equal(guideEntryId(type), 'employeeOfTheMonth', 'gold has one page, whatever the costume');
   for (const [id, type] of Object.entries(bossTypes)) assert.equal(guideEntryId(type), id);
-  assert.equal(ids.length, 4 + Object.keys(mascotTypes).length + 1 + Object.keys(bossTypes).length, 'and nothing else is in the book');
+  assert.equal(ids.length, 5 + Object.keys(mascotTypes).length + 1 + Object.keys(bossTypes).length, 'and nothing else is in the book');
   assert.equal(guideEntryId({ id: 'santa' }), null);
   assert.equal(guideEntryId(null), null);
   for (const entry of guideEntries) {
@@ -70,10 +70,13 @@ test('every page has a memo, notes and a tip with no hole in the text, and thres
 test('the facts a page quotes are the config\'s own', () => {
   const mix = economy.zombieMix;
   assert.equal(guideEntry('shopper').health, 1);
-  for (const id of ['mallWalker', 'cartPusher', 'mannequin']) {
+  for (const id of ['shoplifter', 'cartPusher', 'mannequin']) {
     assert.equal(guideEntry(id).health, mix[id].healthMultiplier);
     assert.equal(guideEntry(id).firstSeen, 'Round ' + mix[id].fromRound);
   }
+  // The Mall Walker left the waves (it only comes as a boss's backup): its page says so.
+  assert.equal(guideEntry('mallWalker').health, mix.mallWalker.healthMultiplier);
+  assert.equal(guideEntry('mallWalker').firstSeen, 'Boss backup');
   assert.equal(guideEntry('scoops').health, mix.mascot.healthMultiplier);
   assert.ok(guideEntry('employeeOfTheMonth').health > mix.mascot.healthMultiplier);
   for (const [id, type] of Object.entries(bossTypes)) {

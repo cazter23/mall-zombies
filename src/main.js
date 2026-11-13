@@ -53,6 +53,7 @@ import { createBenchmark } from './fx/benchmark.js';
 import { createBallView } from './fx/ballView.js';
 import { createRungUpView } from './fx/rungUpView.js';
 import { createScanLine } from './fx/scanLine.js';
+import { createLootView } from './fx/lootView.js';
 import { createRocketView } from './fx/rocketView.js';
 import { createThrowableView } from './fx/throwableView.js';
 import { createKioskSpectacle } from './fx/kioskSpectacle.js';
@@ -318,6 +319,7 @@ effects.prepare(renderer, camera); // shared impact graphics warmed before the f
 const ballView = createBallView(scene, g.balls); // the Tennis Ball Launcher's balls in the air
 const rungUpView = createRungUpView(scene, g.zombies); // the Barcode Scanner's price tags over RUNG UP zombies (game/rungUp.js)
 const scanLine = createScanLine(scene, weapons.barcodeScanner); // its red scan line while the trigger is held
+const lootView = createLootView(scene, g.zombies); // the gold coin over a Shoplifter running off with your points (game/shoplifting.js)
 const rocketView = createRocketView(scene, g.rockets, g.effects); // the Bottle Rocket Bazooka's rockets in the air, with their spark trails
 const throwableView = createThrowableView(scene, g.equipment); // Kiosk Kevin's thrown equipment (a Soda Bomb on its fuse)
 // Kiosk Kevin's show: Kevin's animation and shouts, the cola geyser, the glitter, the air-horn rings, bubble-wrap pops, the Sentry's flash and break-up.
@@ -587,6 +589,7 @@ function render(alpha, frameTime) {
   rungUpView.update(visualTime);
   const scanning = !game.over && gun.def?.scanLine ? gun.weapon.chargeProgress : 0; // (the Barcode Scanner's scan, 0..1)
   scanLine.update({ progress: scanning, player, colliders: g.colliders, shootables: g.shootables, viewmodel, time: performance.now() / 1000 });
+  lootView.update(visualTime);
   rocketView.update(alpha, visualTime); // the Bottle Rocket Bazooka
   throwableView.update(alpha, visualTime);
   kioskSpectacle.update(visualTime, performance.now() / 1000);

@@ -359,6 +359,11 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
   }
   addParts(neck, faceProfile.parts);
   if (outfit) block(mat(pick(outfit.headbandColors)), h + 0.03, 0.06, h + 0.03, 0, h * 0.86, 0, neck); // headband
+  if (type.beanieColors) { // (the Shoplifter) a knit beanie: a cap over the top of the head and a folded cuff round it
+    const knit = mat(pick(type.beanieColors));
+    block(knit, h + 0.035, 0.11, h + 0.035, 0, h + 0.06, 0.005, neck, craniumBox);
+    block(knit, h + 0.05, 0.05, h + 0.05, 0, h * 0.86, 0.005, neck);
+  }
   if (look) {
     const accessory = shoppers.accessories[look.accessory];
     addParts(upper, accessory.torso ?? [], width);

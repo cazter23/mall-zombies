@@ -27,7 +27,7 @@ export function zombieMixFor(round) {
   const mix = {};
   let left = 1;
   for (const [typeId, entry] of Object.entries(economy.zombieMix)) {
-    if (round < entry.fromRound) continue;
+    if (!entry.shareByRound || round < entry.fromRound) continue; // (a summon-only type, the Mall Walker, is never in a wave)
     let share = 0;
     for (const row of entry.shareByRound) if (round >= row.fromRound) share = row.share;
     mix[typeId] = share;

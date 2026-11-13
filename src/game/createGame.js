@@ -79,6 +79,7 @@ import { createRounds } from './rounds.js';
 import { createClockIn } from './clockIn.js';
 import { createStragglers } from './stragglers.js';
 import { createRungUp } from './rungUp.js';
+import { createShoplifting } from './shoplifting.js';
 import { createInteractions } from './interactions.js';
 import { createTickets } from './tickets.js';
 import { buildFeatures, featuresOf } from './features/index.js';
@@ -461,6 +462,8 @@ export function createGame({
   const stragglers = createStragglers({ rounds, zombies, events, state });
   // The Barcode Scanner's mark: a beam RINGS UP what it hits (more damage from everything, a kill bonus): game/rungUp.js, on the bus.
   const rungUp = createRungUp({ events, wallet, runFrozen });
+  // The Shoplifter: a hit steals points and it runs; kill it before it gets away to get them back (game/shoplifting.js, on the bus).
+  const shoplifting = createShoplifting({ events, wallet, effects, runFrozen });
   let powerUps = null;
 
   // --- Who reacts to what (the event bus; game/events.js lists the events) ---
@@ -945,6 +948,7 @@ export function createGame({
     clockIn,
     stragglers,
     rungUp,
+    shoplifting,
     get vaultPromptVisible() {
       return vaultPromptVisible;
     },
