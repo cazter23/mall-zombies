@@ -7,94 +7,94 @@
 
 export const deathReports = {
   fall: {
-    cause: 'Traumatic deceleration from Level 2 railing',
-    tip: 'Associate Tip: Use stairs and escalators between concourses; perimeter railings are not slides.',
+    cause: 'Traumatic deceleration from upper-level railing',
+    tip: 'Associate Tip: Use stairs and escalators between floors instead of vaulting over upper railings.',
   },
 
   zombies: {
     shopper: {
       cause: 'Fatal blunt force trauma from dissatisfied customer',
-      tip: 'Associate Tip: Maintain active floor spacing and backpedal while delivering price markdowns.',
+      tip: 'Associate Tip: Do not rely on backpedaling once shoppers start sprinting; break away at a run, aim for heads, and funnel packs through doorways.',
     },
     cartPusher: {
       cause: 'Unauthorized impact with moving shopping cart',
-      tip: 'Associate Tip: A rattling cart is taking aim; sidestep as it charges, because it cannot turn.',
+      tip: 'Associate Tip: It still steers while the cart rattles; wait for the charge to launch before sidestepping, and let solid cover stun it for bonus damage.',
     },
     mallWalker: {
       cause: 'Aggressive pacing incident involving unsanctioned power-walking patron',
-      tip: 'Associate Tip: Power walkers tire rapidly after swings; exploit their winded recovery window.',
+      tip: 'Associate Tip: Mall walkers outpace normal backing up; sprint out of arm reach to bait a swing, then fire while they bend over panting.',
     },
     mannequin: {
       cause: 'Unsupervised display movement during visual inspection lapse',
-      tip: 'Associate Tip: Maintain constant visual contact; display mannequins freeze while observed.',
+      tip: 'Associate Tip: Keep mannequins in clear sight while dropping them first; looking away or ducking behind pillars releases them immediately.',
     },
     mascot: {
       cause: 'Hostile interaction with costumed entertainment personnel',
-      tip: 'Associate Tip: Mascot foam dampens body damage; concentrate continuous fire on the helmet.',
+      tip: 'Associate Tip: Soften mascots from range before the helmet pops at half health; once unmasked, they shake briefly and rush faster than a walk.',
     },
   },
 
   mascots: {
     sirWaffles: {
       cause: 'Severe blunt trauma from uncertified oversized breakfast knight',
-      tip: 'Associate Tip: Target the syrup-soaked helmet to crack armor before engaging the torso.',
+      tip: 'Associate Tip: Wear down Sir Waffles from range; once the helmet pops at half health he rushes hard, and helmet hits earn a pop bonus.',
     },
     captainCoupon: {
       cause: 'Promotional bludgeoning by discount mascot',
-      tip: 'Associate Tip: The coupon mascot pauses to re-affix detached headwear; press the attack while he retrieves it.',
+      tip: 'Associate Tip: Finish him while he walks back to retrieve his dropped helmet; letting him put it back on restores most of his health.',
     },
     poppyCorn: {
-      cause: 'Concussive thermal kernel eruption within concession zone',
-      tip: 'Associate Tip: Back out of blast radius when popcorn mascot begins violent thermal popping.',
+      cause: 'Post-kernel melee assault by pressurized concession mascot',
+      tip: 'Associate Tip: Expect a harmless instant shove and butter splatter when her helmet pops at half health, then sprint clear of her rush.',
     },
     scoops: {
-      cause: 'Severe hypothermic slip and blunt force trauma from dairy mascot',
-      tip: 'Associate Tip: Avoid melted dairy trails to maintain traction and prevent speed reduction.',
+      cause: 'Chilled blunt force trauma compounded by melted dairy slowdowns',
+      tip: 'Associate Tip: Keep moving forward instead of backing along his path; Scoops drips slowing puddles steadily and twice as often unmasked.',
     },
   },
 
   bosses: {
     janitor: {
-      cause: 'Slip and fall on unauthorized wet floor surface',
-      tip: 'Associate Tip: Step around yellow caution cones to avoid janitorial slow zones.',
+      cause: 'Heavy janitorial mop impact following wet-floor entanglement',
+      tip: 'Associate Tip: Fight in wide loops rather than backing straight up; Murray leaves slowing blue puddles behind him that cannot form on stairs.',
     },
     guard: {
       cause: 'Excessive corporate security intervention and unauthorized detention',
-      tip: 'Associate Tip: Land consecutive headshots to disable emergency lockdown radios and reopen exits.',
+      tip: 'Associate Tip: Sidestep his taser charge into cover, move into an open area when the alarm sounds, and land gun headshots to break his radio.',
     },
     manager: {
       cause: 'Mandatory all-hands performance intervention resulting in terminal downsizing',
-      tip: 'Associate Tip: Concentrate fire during staff meetings to cancel presentations before employee buffs apply.',
+      tip: 'Associate Tip: Save magazines for staff meetings; shoppers freeze and Fairweather takes extra damage, letting you cancel his mall-wide buff.',
     },
     influencer: {
       cause: 'Fatal flash overexposure and mobbing by unvetted brand followers',
-      tip: 'Associate Tip: Look away during flash photography windup to prevent blinding and stay clear of stream fans.',
+      tip: 'Associate Tip: Look away during her flash windup to avoid blinding, headshot Skylar to drop follower count, and defeat her to disperse fans.',
     },
     lastCustomer: {
       cause: 'Terminal customer service escalation after advertised closing hours',
-      tip: 'Associate Tip: Sidestep the charge and let the vans stop her; attack while she recovers from the crash.',
+      tip: 'Associate Tip: Crash her charge into the vans to reach Speechless, then finish her with Return to Sender or a hand stamp before she heals.',
     },
   },
 
   // Your own hazard switch (config/hazards.js ids of hazards that hurt the player). Any other gets hazardDefault.
   hazards: {
     fountain: {
-      cause: 'Unscheduled immersion in electrified decorative water feature',
-      tip: 'Associate Tip: Throw the fountain breaker, then stand clear of the water until the current is off.',
+      cause: 'Contact with electrified decorative fountain runoff',
+      tip: 'Associate Tip: Pull the breaker and immediately step off the flooded stone apron; electrified water damages and slows staff until the cycle ends.',
     },
     fryer: {
       cause: 'Hot oil exposure during unauthorized fryer venting',
-      tip: 'Associate Tip: Vented fryer oil does not check badges; vacate the spill zone before opening the valve.',
+      tip: 'Associate Tip: Deep-fryer oil slows and scalds anyone inside the kitchen spill zone; clear the line immediately after turning the valve.',
     },
   },
   // Your own rocket (the Bottle Rocket Bazooka: killedBy { type: 'ownBlast' }).
   ownBlast: {
     cause: 'Self-administered fireworks display, indoors, at close range',
-    tip: 'Associate Tip: Bottle rockets are for the far end of the Hallway. Fireproof attire is available in store.',
+    tip: 'Associate Tip: Give Bottle Rocket bursts plenty of room or solid cover, or wear the Hi-Vis Vest hanging in the Service Corridor.',
   },
   hazardDefault: {
     cause: 'Self-inflicted facilities incident',
-    tip: 'Associate Tip: Mall hazards cannot tell staff from shoppers; stand clear before you pull the switch.',
+    tip: 'Associate Tip: Mall hazards cannot tell staff from shoppers; pull the control and clear the marked zone immediately.',
   },
 
   default: {
