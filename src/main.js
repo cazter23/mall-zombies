@@ -9,6 +9,7 @@ import './ui/retail.css';
 import './ui/readability.css';
 import './ui/minimap.css';
 import './ui/radio.css';
+import './ui/receiptArt.css';
 import { createNoticesMenu } from './ui/noticesMenu.js';
 import * as THREE from 'three';
 import { feel } from './config/feel.js';
@@ -53,6 +54,8 @@ import { createBallView } from './fx/ballView.js';
 import { createRocketView } from './fx/rocketView.js';
 import { createThrowableView } from './fx/throwableView.js';
 import { createKioskSpectacle } from './fx/kioskSpectacle.js';
+import { createVanLights } from './fx/vanLights.js';
+import { closingTime } from './config/closingTime.js';
 import { createLightPool, collectPointLights } from './fx/lightPool.js';
 import { batchStatic } from './world/staticBatch.js';
 import { sheenEnvironment, applyMetalSheen } from './fx/metalSheen.js';
@@ -300,6 +303,7 @@ const rocketView = createRocketView(scene, g.rockets, g.effects); // the Bottle 
 const throwableView = createThrowableView(scene, g.equipment); // Kiosk Kevin's thrown equipment (a Soda Bomb on its fuse)
 // Kiosk Kevin's show: Kevin's animation and shouts, the cola geyser, the glitter, the air-horn rings, bubble-wrap pops, the Sentry's flash and break-up.
 const kioskSpectacle = createKioskSpectacle({ scene, events: g.events, camera, kiosk: g.features.instanceOf('kiosk'), equipment: g.equipment, effects, sound });
+const vanLights = createVanLights({ scene, sound }); // Skylar's van: hazards once the run can be won, the drive-off to the receipt
 
 // --- Menus and the run's flow ------------------------------------------------------
 // title (live flyover) -> playing <-> paused -> dead -> results receipt -> playing again / title.
@@ -316,7 +320,8 @@ function showWin(summary, clockedOut = false) {
 g.events.on('runWon', ({ summary }) => {
   haptics.stop();
   game.padPlaying = false;
-  showWin(summary);
+  hud.setDimmed(true);
+  vanLights.start(() => showWin(summary)); // the van starts, its lights come on, the screen fades to the receipt (the run is frozen)
   if (document.pointerLockElement) document.exitPointerLock();
 });
 
@@ -494,6 +499,7 @@ function applyLookInput(frameTime) {
 
 // FPS counter: average over a quarter of a second so the number is readable.
 const fpsMeter = { frames: 0, time: 0 };
+let lastCallOn = false; // Last Call (config/closingMusic.js) is playing: the Last Customer is here and the run is on
 
 function render(alpha, frameTime) {
   if (debugPanel) debugPanel.update(frameTime);
@@ -503,6 +509,17 @@ function render(alpha, frameTime) {
     hud.setFps(Math.round(fpsMeter.frames / fpsMeter.time));
     fpsMeter.frames = 0;
     fpsMeter.time = 0;
+  }
+
+  // (Before the title's early return, so both go quiet and dark when a run is left for the title.)
+  vanLights.update(frameTime, { ready: g.closing.readyToLeave && !game.won && !game.over, won: game.won && !game.over, listener: camera.position });
+  // Last Call: from the Last Customer's arrival until she is gone (returned: a resolving chord) or the run ends or resets.
+  // It fades out under a menu, as the radio does, and starts again from the top on Resume.
+  const finale = game.running && !game.over && g.bosses.active?.type.id === closingTime.finale.bossId;
+  if (finale !== lastCallOn) {
+    lastCallOn = finale;
+    if (finale) sound.playScore();
+    else sound.stopScore({ resolve: g.closing.lastCustomerDefeated });
   }
 
   if (benchmark.active) {
@@ -693,6 +710,7 @@ if (debug.exposeToWindow) {
     menus: { play, pauseRun, freshRun, goToTitle }, // the menu flow, for testing
     benchmark: runBenchmark, // await __mall.benchmark() -> the report (title or pause screen)
     settings, lightPool, loop, idleSaver, // (settings.set(id, value) as the menu would; the light pool)
+    vanLights, // (Skylar's van: update / start, fx/vanLights.js)
   };
   // Advance the real game loop by `ticks` fixed steps and draw one frame. For automated
   // testing when the browser isn't animating (e.g. a hidden tab). Pair with game.forceRun.

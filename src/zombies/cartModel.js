@@ -15,9 +15,10 @@ const unitBox = new THREE.BoxGeometry(1, 1, 1);
 
 export function buildCart(cfg, mat, random = Math.random) {
   const pieces = new Map(); // material -> [geometry]
-  const add = (material, w, h, d, x, y, z) => {
+  const add = (material, w, h, d, x, y, z, rotation = null) => {
     const g = unitBox.clone();
     g.scale(w, h, d);
+    if (rotation) g.applyMatrix4(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(...rotation)));
     g.translate(x, y, z);
     if (!pieces.has(material)) pieces.set(material, []);
     pieces.get(material).push(g);
@@ -75,6 +76,9 @@ export function buildCart(cfg, mat, random = Math.random) {
     const bz = midZ + (random() - 0.5) * (cfg.depth - 0.25);
     add(mat(color), bw, bh, 0.12 + random() * 0.1, bx, bottom + bar / 2 + bh / 2, bz);
   }
+
+  // A fixed heap (cfg.heap: Lorraine's returns, config/lastCustomerLook.js): { color, size, at, rotation? } each.
+  for (const item of cfg.heap ?? []) add(mat(item.color), ...item.size, ...item.at, item.rotation);
 
   const group = new THREE.Group();
   group.name = 'cart';
