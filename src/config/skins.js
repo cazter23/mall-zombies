@@ -1,6 +1,6 @@
 // Each skin belongs to one gun. Slot 1 = Mastery recolours, slot 2 = Role (a recolour plus one printed pattern), slot 3 = Feat (a recolour plus
 // one shared glow or motion treatment, skinTreatments below): the base coat under every build and warranty. Slots 4 and 5 are the Closing Time
-// REWARDS (closingRewards below): one look that fits every gun, earned once and unlocked on all eleven.
+// REWARDS (closingRewards below): one look that fits every gun, earned once and unlocked on every gun.
 // A challenge is data: `kind` picks its counter in game/challenges.js (one entry each there), `count` is what unlocks
 // the skin, the other fields are that kind's numbers, and `text` is the locker's sentence ({gun} = the gun's name,
 // {anyField} = that field). `needs` names a system the challenge depends on that could be cut (swap the challenge if it is).
@@ -230,8 +230,8 @@ export const skins = {
   }],
 };
 
-// --- The Closing Time rewards (plan: "The Closing Time rewards"). ONE look that fits every gun, so a win unlocks it on all eleven at once
-// (game/challenges.js: kind 'closingWin', announced once, not eleven times). Palettes use the shared roles only: a gun's own extra roles
+// --- The Closing Time rewards (plan: "The Closing Time rewards"). ONE look that fits every gun, so a win unlocks it on every gun at once
+// (game/challenges.js: kind 'closingWin', announced once, not once a gun). Palettes use the shared roles only: a gun's own extra roles
 // (emitter, screen, ammo, glass) keep that gun's colours. They add no stat, price or sound, like every skin.
 //   Employee of the Month  polished brass, a dark grip and a name badge on the left face (weapons/models/skinBadge.js). Any win.
 //   After Hours            near-black with sunset-coloured trims that glow and slowly change (a 'drift' treatment). A win on Classic,
@@ -276,7 +276,7 @@ export const skinNotices = {
   toastSeconds: 6,
   toastTitle: 'Skin unlocked',
   toastText: (gunName, skinName) => `${skinName} · ${gunName}`,
-  toastShared: skinName => `${skinName} · every gun`, // a Closing Time reward (one notice for all eleven)
+  toastShared: skinName => `${skinName} · every gun`, // a Closing Time reward (one notice for every gun)
   sharedPa: skinName => ({
     kicker: 'Closing time commendation',
     text: `Attention associates. Thank you for closing. ${skinName} is now yours, for every piece of equipment in the building.`,

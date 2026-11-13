@@ -1,4 +1,4 @@
-// Weapon skins phase 6: the eleven slot 2 (role) challenges. Each counts what its gun is for, from events only,
+// Weapon skins phase 6: every gun's slot 2 (role) challenge. Each counts what its gun is for, from events only,
 // through the same advance path as mastery (so the Save & Quit replay rule and the assisted/over/noRewards rules hold).
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -95,7 +95,7 @@ const CASES = {
   },
   returnToSender: {
     earn: t => kill(t, 'returnToSender', { zombie: shopper({ type: { id: 'janitor', boss: {} } }) }),
-    near: t => kill(t, 'returnToSender', { zombie: shopper({ type: { id: 'mascot', mascot: {} } }) }),
+    near: t => kill(t, 'returnToSender', { zombie: shopper({ type: { id: 'mascot', mascot: {} } }) }),
   },
   stargazer: {
     earn: t => kill(t, 'stargazer', { headshot: true, distance: 25 }),

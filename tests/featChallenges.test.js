@@ -1,4 +1,4 @@
-// Weapon skins phase 7: the eleven slot 3 (feat) challenges. Each happens inside one run, counted from events only; its progress is the
+// Weapon skins phase 7: every gun's slot 3 (feat) challenge. Each happens inside one run, counted from events only; its progress is the
 // best attempt (never a sum), and the tracker hears how the attempt in progress stands ('challengeLive').
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -131,7 +131,7 @@ const CASES = {
   },
   returnToSender: {
     earn: t => kill(t, 'returnToSender', { zombie: zombie({ type: { id: 'lastCustomer', boss: {} } }) }),
-    near: t => kill(t, 'returnToSender', { zombie: boss(['returnToSender']) }),
+    near: t => kill(t, 'returnToSender', { zombie: boss(['returnToSender']) }),
   },
   stargazer: {
     earn: t => { round(t, 4); for (let i = 0; i < 15; i++) shot(t, 'stargazer', { hits: [hitOn(zombie())] }); round(t, 5); },

@@ -1,5 +1,15 @@
 # Sunset Galleria: build history ("Current state")
 
+## 12 November 2026 - Claw guns review: rockets through walls, Last Round on the Bazooka, the Stargazer's barrels, save 9
+
+A review of the three claw-only guns before merging (unverified work, checked against the game's rules, `npm run balance` and `npm run sim:claw`).
+- **Rockets and balloons went through walls.** They leave 0.6-0.7 m in front of the eye; pressed against a wall that is already past it (the player is 0.35 wide, walls 0.3), so a rocket fired at the Hallway's west wall burst in the Service Corridor, killing and paying into locked areas and dodging its own self-damage. weapons/playerGun.js now casts from the eye to the launch point: a wall or zombie in between bursts it right there (and a rocket into a wall at your face hurts you). The Tennis Ball Launcher (main's code, 0.55 m) has the same latent gap; not changed here.
+- **Build-A-Blaster on a blast gun.** The Bazooka's magazine is one round, so the Last Round heart fired on EVERY launch, at a made-up point 6 m in front of the tube (through walls), and the stuffing scaled from 900 a second though the gun's real cycle includes its 2.4 s reload. A blast gun's Last Round now waits for the burst ('gunBlast' carries magazineLeft) and goes off on the zombie it caught or where it burst; gunStats.gunPower counts the reload of a one-round magazine (the Bazooka's proc base 900 -> 375, its single-target fire rate). The Headshot heart still never fires on a blast gun (a blast has no headshots).
+- **The Stargazer's barrels were backwards.** Its falloff RISES, so scaling start and end like a fading gun's made the Extended Nozzle ("carries further") a nerf and the Sawn-Off's downside a big buff. weapons/upgrades.js scales a rising falloff by 1 / the factor.
+- **Save version 9**: stats gained ownBlastDamage, and a version-8 save restored with the Hi-Vis Vest on left it at 1 (and taking the vest off then made it 100).
+- Tests: tests/featChallenges and roleChallenges had been rewritten LF -> CRLF (whole-file churn, one stray CR each): back to LF, so the real change is the new cases. weaponProgression's headshot bound skipped every claw gun: now only blast guns and the Stargazer. The clump test in bottleRocket.test.js failed about one run in five on the branch (the hip spread sent the rocket over the clump, and a bench shielded one zombie from a low burst): moved to an open stretch and fired dead on. "Eleven guns" wording fixed.
+Not changed (noted): the Speed Loader's "smaller magazine" on a one-round gun rounds back to 1; a few view-only numbers in playerGun's burst splat.
+
 ## 12 November 2026 - More claw-only guns, 3: the Balloon Launcher (homing balloons)
 
 From the user's wish list. **The Balloon Launcher**: a party-store helium blaster. Its job: it hits what you DON'T aim at. A balloon drifts out at 9 m/s, rising a

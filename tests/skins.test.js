@@ -262,7 +262,7 @@ function expectedRecolour(id, original, palette) {
 
 for (const canvas of [false, true]) {
   const mode = canvas ? 'canvas' : 'headless';
-  test('all eleven default models and displays match the Phase 1 fixture (' + mode + ')', () => {
+  test('every default model and display match the Phase 1 fixture (' + mode + ')', () => {
     const actual = capture({ canvas });
     for (const id of Object.keys(weapons)) {
       assert.deepEqual(actual[id], materialFixture[mode][id], id);
