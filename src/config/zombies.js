@@ -272,7 +272,7 @@ const mannequin = {
 // Round 10+: the MASCOT. One zombie slot (economy.zombieMix.mascot: share, maxAlive, intro) wearing one of several
 // costumes (mascotVariants below). Every costume shares this foam body, its rig and the three beats: an armoured
 // approach -> the helmet pops off at half health -> it shakes, then rushes. A costume brings its own looks and lines,
-// and changes ONE beat (its tuning block: reclaim, popBlast, melt). Shared numbers live here; a costume's own in its entry.
+// and changes ONE beat (its tuning block: reclaim, popBlast, melt, saltPatch). Shared numbers live here; a costume's own in its entry.
 export const mascotFoamColors = [0xfff1cd, 0xfff9eb, 0xe6d9b9];
 const mascotHipY = 0.72;
 const mascotTorso = { size: [0.72, 0.68, 0.52], at: [0, 0.34, 0] };
@@ -560,6 +560,101 @@ export const mascotVariants = {
       floorTolerance: 0.12, // (a puddle needs flat floor under it: none on a ramp or an escalator)
       lift: 0.022, opacity: 0.78, segments: 20,
       colors: [0xffb3cf, 0xaef0d4], // strawberry and mint, in turn
+    },
+  },
+  twisty: {
+    name: 'Twisty the Pretzel',
+    unlockRound: 22,
+    homeZones: ['foodCourt'],
+    introBanner: { kicker: 'Food Court notice', text: 'Twisty the Pretzel is out of the warmer. Watch your step around loose salt.' },
+    helmetPopLine: { kicker: 'Sweep needed', text: 'Twisty has shed his crust. Housekeeping advises listening where you walk.' },
+    colors: { suit: 0x6b2f45, trim: 0xfff2dc, boot: 0x422010, apron: 0xfff8ee, stripe: 0xe3a832, bow: 0xd99a24,
+      crust: 0xc27b3a, salt: 0xfff8eb },
+    uniform: [ // a pretzel-stand baker: cream apron, mustard waistband and neck bow
+      { color: 'apron', size: [0.5, 0.5, 0.03], at: [0, -0.08, -0.272] },
+      { color: 'stripe', size: [0.5, 0.06, 0.02], at: [0, 0.13, -0.29] },
+      { color: 'bow', size: [0.1, 0.085, 0.035], at: [-0.06, 0.28, -0.272], tilt: 0.35 },
+      { color: 'bow', size: [0.1, 0.085, 0.035], at: [0.06, 0.28, -0.272], tilt: -0.35 },
+    ],
+    head: {
+      kind: 'pretzel',
+      helmet: { size: [0.94, 0.88, 0.58], at: [0, 1.02, 0] },
+      color: 0xc27b3a, // golden-baked pretzel dough (turns gold for Employee of the Month)
+      // Outer heart-shaped dough loop + crossed arms in head metres, built from one shared low-poly TubeGeometry each.
+      ring: {
+        radius: 0.105,
+        tubularSegments: 28,
+        radialSegments: 7,
+        scaleZ: 1.35,
+        points: [
+          [0, -0.28, 0], [0.24, -0.21, 0], [0.35, 0.04, 0], [0.24, 0.32, 0],
+          [0, 0.20, 0], [-0.24, 0.32, 0], [-0.35, 0.04, 0], [-0.24, -0.21, 0],
+        ],
+      },
+      arms: {
+        radius: 0.082,
+        tubularSegments: 10,
+        radialSegments: 7,
+        scaleZ: 1.25,
+        pairs: [
+          [[-0.21, 0.27, 0.015], [0, 0.0, -0.045], [0.20, -0.23, 0.01]],
+          [[0.21, 0.27, 0.015], [0, 0.0, -0.045], [-0.20, -0.23, 0.01]],
+        ],
+      },
+      // Plump center twist cushion where the two cross-arms meet: holds the cartoon eyes and grin cleanly off the holes.
+      knot: { radius: 0.20, widthSegments: 8, heightSegments: 6, scale: [1.05, 0.96, 0.85], at: [0, -0.02, -0.03] },
+      // Coarse salt crystal flecks proud on the front (and two on the back) of the dough ring.
+      salt: {
+        color: 'salt',
+        proud: 0.004,
+        pieces: [
+          { size: [0.055, 0.045, 0.045], at: [-0.24, 0.32], side: -1, tilt: 0.35 },
+          { size: [0.05, 0.05, 0.045], at: [0.24, 0.32], side: -1, tilt: -0.4 },
+          { size: [0.055, 0.045, 0.045], at: [-0.35, 0.04], side: -1, tilt: 0.2 },
+          { size: [0.05, 0.045, 0.045], at: [0.35, 0.04], side: -1, tilt: -0.25 },
+          { size: [0.045, 0.055, 0.045], at: [-0.24, -0.21], side: -1, tilt: 0.5 },
+          { size: [0.055, 0.045, 0.045], at: [0.24, -0.21], side: -1, tilt: -0.3 },
+          { size: [0.05, 0.045, 0.045], at: [0, 0.20], side: -1, tilt: 0.15 },
+          { size: [0.045, 0.05, 0.045], at: [0, -0.28], side: -1, tilt: -0.2 },
+          { size: [0.055, 0.045, 0.045], at: [-0.24, 0.32], side: 1, tilt: -0.3 },
+          { size: [0.05, 0.05, 0.045], at: [0.24, -0.21], side: 1, tilt: 0.4 },
+        ],
+      },
+      // Face projected onto the front of the knot cushion ([x, y] in head metres, `proud` off its surface).
+      face: [
+        { color: 'eyes', size: [0.11, 0.13, 0.026], at: [0.085, 0.05], proud: 0.012 },
+        { color: 'eyes', size: [0.11, 0.13, 0.026], at: [-0.085, 0.05], proud: 0.012 },
+        { color: 'dark', size: [0.048, 0.068, 0.02], at: [0.075, 0.035], proud: 0.028 },
+        { color: 'dark', size: [0.048, 0.068, 0.02], at: [-0.075, 0.035], proud: 0.028 },
+        { color: 'dark', size: [0.12, 0.04, 0.026], at: [0, -0.075], proud: 0.012 },
+        { color: 'dark', size: [0.04, 0.05, 0.026], at: [0.068, -0.052], proud: 0.012 },
+        { color: 'dark', size: [0.04, 0.05, 0.026], at: [-0.068, -0.052], proud: 0.012 },
+      ],
+    },
+    saltPatch: {
+      radius: 1.05, // metres: stepping within this radius while walking crunches underfoot (sound cue only: no damage, no slow)
+      lifeSeconds: 10, // seconds each patch lingers after Twisty's helmet pops
+      fadeSeconds: 2, // final fade window before vanishing
+      maxPatches: 8, // ONE pool for every Twisty in the mall: oldest gives way
+      floorTolerance: 0.12, // metres: needs flat floor under it (none on a ramp or escalator)
+      lift: 0.012, // metres above flat floor
+      opacity: 0.92,
+      dustOpacity: 0.22,
+      dustColor: 0xf7f1e3,
+      dustSegments: 14,
+      crystalCount: 16,
+      crystalSpread: 0.88,
+      crystalSizeMin: 0.045,
+      crystalSizeMax: 0.085,
+      crystalHeightMin: 0.018,
+      crystalHeightMax: 0.036,
+      crystalColors: [0xfffcf5, 0xf3ead8, 0xe8dec8],
+      sound: 'saltCrunch',
+      volume: 0.9,
+      stepMeters: 0.72, // horizontal distance walked inside a patch per crunch sound
+      entryStepMeters: 0.08, // first crunch fires promptly on walking into a patch (standing still stays silent)
+      minSpeed: 0.4, // m/s: stationary jitter stays silent; crouch-walk and sprinting crunch
+      maxStepSpeed: 20, // m/s: ignores single-frame teleports so warping onto a patch without walking stays silent
     },
   },
 };

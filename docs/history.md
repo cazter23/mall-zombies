@@ -1,5 +1,12 @@
 # Sunset Galleria: build history ("Current state")
 
+## 13 November 2026 - Twisty the Pretzel Mascot (`claude/hydrogen-mascot-pretzel`)
+
+Added the fifth Mascot costume, **Twisty the Pretzel** (`foodCourt` pretzel stand mascot), unlocking from **round 22** (rounds 10-21 unchanged):
+- **Costume & Head (`src/config/zombies.js`, `src/zombies/mascotHeads.js`):** added `mascotVariants.twisty` (`name: 'Twisty the Pretzel'`, `unlockRound: 22`, `homeZones: ['foodCourt']`, deadpan PA `introBanner` & `helmetPopLine`, plum/cream/mustard baker's uniform, low-poly baked pretzel head parameters, and `saltPatch` tuning block) plus `HEADS.pretzel` (shared low-poly `TubeGeometry` outer loop and crossed twist arms, central knot face cushion, and proud coarse salt crystal blocks, gilded cleanly by `mascotGoldTypes.twisty`).
+- **Underfoot Salt Crunch Beat (`src/config/audio.js`, `src/game/saltTrail.js`, `src/game/mascotCostumes.js`, `src/game/createGame.js`):** when Twisty's helmet pops (`mascotHeadPop`), `createSaltTrail` drops a pooled short-lived patch of salt crystals on flat floor (10 s life, 2 s fade, max 8 pooled). Walking across an active patch while grounded triggers the new multi-layer `saltCrunch` audio cue strictly as an audio clue with **no damage and no slow**; standing still, teleporting onto a patch, walking outside, or jumping remains silent. Patches clear on round end, `roundDiscard`, player death, Play again (`resetRun`), and Save & Quit (`transientSteps`), and `dispose()` frees every material, shared geometry, listener, and scene group.
+- **Guide, Death Report & Tests (`src/config/guide.js`, `src/config/deathReports.js`, `tests/twisty.test.js`, `tests/receiptReview.test.js`, `docs/folder-structure.md`, `docs/tests.md`):** added the Survival Guide `mascotPage('twisty')`, words-only Form 109-C entry `deathReports.mascots.twisty`, `tests/twisty.test.js`, and `'twisty'` coverage in `tests/receiptReview.test.js`.
+
 ## 13 November 2026 - Review of PA pools round two and the Survival Guide audit
 
 Merged through `claude/hydrogen-review-2`. The encore detection (met before this fight), the boss intro moving into the announcer table

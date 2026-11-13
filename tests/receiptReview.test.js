@@ -146,7 +146,7 @@ test('getDeathReport resolves causes and survival tips for various lethal source
   assert.equal(mannequin.cause, deathReports.zombies.mannequin.cause);
 
   // Mascot variants
-  for (const variant of ['sirWaffles', 'captainCoupon', 'poppyCorn', 'scoops']) {
+  for (const variant of ['sirWaffles', 'captainCoupon', 'poppyCorn', 'scoops', 'twisty']) {
     const mascot = getDeathReport({ type: 'zombie', id: 'mascot', variant });
     assert.equal(mascot.cause, deathReports.mascots[variant].cause);
     assert.equal(mascot.tip, deathReports.mascots[variant].tip);

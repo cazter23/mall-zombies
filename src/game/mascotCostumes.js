@@ -7,20 +7,24 @@
 //                          'mascotPopBlast' { zombie, position, butter, butterSeconds, flung }.
 //   Scoops (melt)          a trail of melt puddles that slow the player (game/meltTrail.js, `melt` here), cleared when
 //                          the round ends, when the player dies and on Play again.
+//   Twisty (saltPatch)     a short-lived patch of salt crystals dropped where the helmet pops (game/saltTrail.js,
+//                          `salt` here), crunching underfoot as a sound cue only (no damage, no slow).
 // Listens on the event bus only.
 // =============================================================================
 
 import * as THREE from 'three';
 import { castShot } from '../weapons/hitscan.js';
 import { createMeltTrail } from './meltTrail.js';
+import { createSaltTrail } from './saltTrail.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
 
-export function createMascotCostumes({ events, scene, zombies, player, colliders, effects, surfaces, state }) {
+export function createMascotCostumes({ events, scene, zombies, player, colliders, effects, surfaces, state, sound }) {
   const head = new THREE.Vector3();
   const target = new THREE.Vector3();
   const direction = new THREE.Vector3();
   const melt = createMeltTrail({ scene, zombies, player, colliders, surfaces });
+  const salt = createSaltTrail({ scene, player, colliders, sound });
 
   // Nothing solid between the popping head and a body (the blast doesn't go through walls).
   function clearLine(from, to) {
@@ -64,27 +68,37 @@ export function createMascotCostumes({ events, scene, zombies, player, colliders
     events.emit('mascotPopBlast', { zombie, position: head.clone(), butter, butterSeconds: blast.butterSeconds, flung });
   }
 
+  const clearTrails = () => {
+    melt.clear();
+    salt.clear();
+  };
+
   const off = [
     events.on('mascotHeadPop', ({ zombie }) => {
       if (zombie.type.mascot?.popBlast) popBlast(zombie);
+      if (zombie.type.mascot?.saltPatch) salt.dropAt(zombie.position.x, zombie.position.y, zombie.position.z);
     }),
-    // The round is over (the number flips as the last zombie dies), a debug skip, or you died: the floor is mopped.
-    events.on('roundStart', () => melt.clear()),
-    events.on('roundDiscard', () => melt.clear()),
-    events.on('playerDeath', () => melt.clear()),
+    // The round is over (the number flips as the last zombie dies), a debug skip, or you died: the floor is swept.
+    events.on('roundStart', clearTrails),
+    events.on('roundDiscard', clearTrails),
+    events.on('playerDeath', clearTrails),
   ];
 
   return {
     melt,
+    salt,
     update(dt) {
       melt.update(dt);
+      salt.update(dt);
     },
     reset() {
       melt.reset();
+      salt.reset();
     },
     dispose() {
       for (const unsubscribe of off) unsubscribe();
       melt.dispose();
+      salt.dispose();
     },
   };
 }

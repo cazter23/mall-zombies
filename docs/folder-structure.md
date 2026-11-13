@@ -88,7 +88,7 @@ src/
                         sawnOff.falloffIfNone). Effect list in its header. Prices: economy.upgrades. `claimPa.lines` holds the 8-line Customer Service warranty-claim PA pool (`{gun}`).
     audio.js            Master volume, pitch variation, compressor, and sound recipes (layers of filtered noise
                         bursts and tones): staple / price / nail / foam / confetti gun shots and reloads, dry click, purchase, denied,
-                        Mall Walker walkerSqueak / walkerHuff / walkerPant, paChime (announcements)
+                        Mall Walker walkerSqueak / walkerHuff / walkerPant, saltCrunch (Twisty), paChime (announcements)
     zombies.js          zombieTypes (per-type speed, size, hitboxes, attack, timings, colors, splatter): `shopper`, and
                         `mallWalker` = { ...shopper, overrides } (speed 5.4 no gaits, modelScale + slimmer hitbox, winded,
                         powerWalk walkAnimation + windedAnimation, tracksuit `outfit`, introBanner, sounds). zombieCrowd
@@ -97,7 +97,7 @@ src/
                         zombieSpawn (local route-cost neighbourhood, nearest/random mix, body clearance + marker cooldown),
                         zombieNav (grid, soft wall clearance + wall penalty), zombieFailsafe (stuck-zombie rescue).
                         The Mascot is a shared base type plus `mascotVariants` (the costumes: name, unlockRound, homeZones,
-                        introBanner, helmetPopLine, colors, uniform, head, + one tuning block: reclaim / popBlast / melt),
+                        introBanner, helmetPopLine, colors, uniform, head, + one tuning block: reclaim / popBlast / melt / saltPatch),
                         `mascotPicking` (home weight) and `mascotGold` (Employee of the Month). Each costume resolves ONCE into
                         `mascotTypes[id]` (id 'mascot', variant, name) and `mascotGoldTypes[id]`; zombieTypes.mascot = Sir Waffles
     controls.js         bindings (action -> keyboard/mouse + Pad* codes; interact = F / X; switchWeapon = wheel / Y,
@@ -382,7 +382,7 @@ src/
                         mascotHeads.js. Places fixed-tick hitboxes from the posed pieces (any mesh, nested). Owns the detached
                         helmet, stuffing burst and their cleanup; a helmet can come off more than once, and beginReclaim /
                         finishReclaim / dropReclaim carry it from the floor back onto the shoulders (Captain Coupon)
-    mascotHeads.js      HEADS[kind] fills a costume's helmet group (waffle, priceTag, popcornBucket, iceCreamCone; face pieces
+    mascotHeads.js      HEADS[kind] fills a costume's helmet group (waffle, priceTag, popcornBucket, iceCreamCone, pretzel; face pieces
                         follow a curved surface) + buildMascotBadge; shared geometry and canvas prints made once (sharedOnce)
     mascotVariants.js   pickMascotVariant(round, zone, random): weight 1 per unlocked costume, x homeWeight in a home zone,
                         no dice with one costume; mascotDebutIn(round). Both take an optional costume table (tests)
@@ -540,10 +540,12 @@ src/
     surfaceSlows.js     createSurfaceSlows(stats): the ONLY writer of stats.surfaceSpeed. Each slow floor reports its own factor
                         (set / clear by source id); the stat is the lowest, so two never stack. g.surfaces; reset on Play again
     mascotCostumes.js   createMascotCostumes(): the costume twists past the zombie itself, on the bus. Poppy Corn's pop blast
-                        (staggers zombies, shoves + butters the player, 'mascotPopBlast'); owns meltTrail (cleared at round
+                        (staggers zombies, shoves + butters the player, 'mascotPopBlast'); owns meltTrail and saltTrail (cleared at round
                         end, death, Play again). g.mascotCostumes
     meltTrail.js        Scoops' puddles: one fixed pool for every Scoops (oldest gives way, own material to fade), drops every
                         dropEvery where he walks; a grounded player in one reports 'melt' to surfaceSlows
+    saltTrail.js        Twisty's salt patches: one fixed pool for every Twisty (oldest gives way, per-patch fading materials),
+                        drops on helmet pop; a grounded moving player inside plays 'saltCrunch' underfoot (sound cue only, no damage or slow)
     closingTime.js      g.closing owns persistent boss key drops, collection, checklist progress (fountain kills, night-safe purchases and workshop collections) and Play again reset.
                         A key never ticks a line: lines 1 to 3 tick on their duty, line 4 on the win (completeLeaving, called by onRunWon). readyToValidate = four keys and
                         lines 1 to 3; readyToLeave also needs validated and lastCustomerDefeated. closingValidated books the next closingRound through bosses.book; bossDefeated clears the van gate. These fields serialize/restore silently and reset clears them. A paid validation purchase emits closingValidated with the current round and PA. serialize/restore keeps validated silently; reset clears it. missingKeys / missingDuties say what is left. Emits the once-per-run 'closingBriefing'.
