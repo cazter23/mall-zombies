@@ -82,7 +82,7 @@ export const roles = {
   marker:        { family: 'Permanent Marker', weight: 400 },
   note:          { family: 'Caveat', weight: 700 },
   scrawl:        { family: 'Rock Salt', weight: 400 },
-  kevin:         { family: 'Rock Salt', weight: 400 },
+  kevin:         { family: 'Righteous', weight: 400, tracking: 0.04, shadow: { color: '#d23f8e', dx: 0.04, dy: 0.05 } },
   typewriter:    { family: 'Special Elite', weight: 400 },
   // --- electronic ---
   led:           { family: 'VT323', weight: 400 },

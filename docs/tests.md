@@ -1,5 +1,7 @@
 # Sunset Galleria: what each test file covers
 
+`tests/stragglers.test.js` covers the end-of-round straggler helper: fires `'stragglers'` after `feel.stragglers.delaySeconds` when `remainingToSpawn === 0` and `aliveCount <= threshold`, never fires while spawns remain, clears on round end / rising count / boss-only / disabled Comfort setting, skips highlighting bosses while counting them toward aliveCount, marks `firstTime` only once per run, resets cleanly on `resetRun`, and checks `zombieRim` straggler rim toggles + shared through-wall overlay cleanup.
+
 `tests/challenges.test.js` covers all eleven Mastery challenges, per-gun and burn attribution, single unlock/PA/toast feedback, the 150/400 thresholds, eligibility before/after assistance and death, fans, reset and new-game persistence, one write for 50 non-unlocking kills, monotonic save merging, corrupt/missing/newer/throwing storage, debug add/complete/clear (including retry), and toast cleanup. It also covers the review fixes: a round replayed after Save & Quit is paid once (unit and real game, including a second save part-way and an unlock earned before the save), and Quit to title, Restart run and a closing page write new progress exactly once.
 
 `tests/skinPatterns.test.js` covers every slot 2 pattern skin with a stub canvas: its palette roles land exactly as the same skin without a print would, only body-coloured meshes are printed (one material swapped, the same meshes: no draw call added; labels keep their own textures), the canvas starts as the body colour, top and right faces sample the upper region (a top face never leaning left), left faces the lower one, other faces the blank strip, every gun prints its top and its left side, after the print the keep-out round the sticker mount is painted back to the body colour and covers the build patch's and the warranty seal's corners, the held gun and its display share one texture, and default, wall-display and mastery builds carry no print.
@@ -21,6 +23,14 @@
 
 `tests/influencerModel.test.js` shoots the visible face during idle, movement and flash poses, checks that the compact
 filming rig stays beside the head, verifies ponytail/phone animation, and checks costume buffer/material disposal.
+
+`tests/lastCustomerModel.test.js`: Lorraine's trolley is on the root, the Cart Pusher's size, its nose where her charge reach says, the heap above the basket, no cart hitbox and no random shopper look; a shot at her drawn face is a headshot while pushing, telegraphing, charging and crashed (her leans stay small); Speechless opens her mouth and takes her hands off the handle, and she goes back; every costume and trolley buffer is disposed.
+
+`tests/vanLights.test.js`: the van stays dark until the run can be won, then only the amber hazards blink at their rate, the relay clicks near you and not out of earshot; Start the van plays the starter, then the engine at the catch, lights the headlights, beams, pool and tail lights, and calls the receipt once, after the fade; it idles lit through overtime and goes dark for a new run; its sounds exist and its lenses stand 2 cm clear of the van's own lamps.
+
+`tests/closingMusic.test.js`: Last Call is off the radio but found by the worker, a full song (drums, a melody from the first bar, notes in range) under 90 s; it renders deterministically as a seamless loop (no chime, exactly its form long, sound at both ends, the radio's peak); on fake Web Audio it is rendered once a session, loops at the music volume (and follows it), ducks the radio and gives it back, ends under its resolving chord on its own bus or with a plain fade, and does nothing while the audio is locked.
+
+`tests/receiptArt.test.js`: the SHIFT COMPLETE receipt shows the picture, the return slip and the overtime coupon (no coupon once clocked out; none of it on a death receipt) and the won backdrop; the coupon states overtime's real terms; the picture is printed in one ink.
 
 `tests/bossPolish.test.js` walks Manager/Guard from every open zone and into the workshop without rescue; checks unique stings, death feedback, direct order-form voucher consumption, fans excluded from ritual credit, actual Employee Discount expiry, death/reset voucher cleanup and debug ids. Isolated headless Chrome captured all four models with zero browser exceptions; no real browser tabs were opened.
 

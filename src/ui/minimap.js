@@ -420,6 +420,36 @@ function drawFloor(ctx, floor, plan, state, view) {
     ctx.strokeStyle = C.youRing;
     ctx.stroke();
   }
+
+  // 9. End-of-round straggler pings (only when the straggler helper is active on the event bus).
+  if (view.stragglers?.length) {
+    const S = config.straggler;
+    const r = full ? S.full : S.corner;
+    const phase = ((view.time ?? 0) % S.pulseSeconds) / S.pulseSeconds;
+    const inset = S.cornerEdgeInset;
+    for (const ping of view.stragglers) {
+      if (ping.floor !== floor.index) continue;
+      let [sx, sy] = project(ping.x, ping.z);
+      if (!full && view.width && view.height) {
+        sx = Math.max(inset, Math.min(view.width - inset, sx));
+        sy = Math.max(inset, Math.min(view.height - inset, sy));
+      }
+      ctx.beginPath();
+      ctx.arc(sx, sy, r * (1 + phase * (S.pulseGrow - 1)), 0, Math.PI * 2);
+      ctx.strokeStyle = C.straggler;
+      ctx.globalAlpha = 1 - phase;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.beginPath();
+      ctx.arc(sx, sy, r, 0, Math.PI * 2);
+      ctx.fillStyle = C.straggler;
+      ctx.fill();
+      ctx.lineWidth = 1.6;
+      ctx.strokeStyle = C.stragglerEdge;
+      ctx.stroke();
+    }
+  }
 }
 
 export function createMinimap({ onCornerChange = null } = {}) {
@@ -485,7 +515,7 @@ export function createMinimap({ onCornerChange = null } = {}) {
     index.replaceChildren(...sections, live);
   }
 
-  function drawCorner(plan, state) {
+  function drawCorner(plan, state, stragglers) {
     const { ctx, width, height } = fit(cornerCanvas);
     const floor = plan.floors[state.you.floor];
     const scale = width / config.corner.metresAcross;
@@ -498,12 +528,12 @@ export function createMinimap({ onCornerChange = null } = {}) {
     };
     ctx.fillStyle = C.case;
     ctx.fillRect(0, 0, width, height);
-    drawFloor(ctx, floor, plan, state, { project, scale, full: false, turned: true, time });
+    drawFloor(ctx, floor, plan, state, { project, scale, full: false, turned: true, time, width, height, stragglers });
     cornerFloor.textContent = floor.label;
     cornerArea.textContent = state.you.area ?? '';
   }
 
-  function drawFull(plan, state) {
+  function drawFull(plan, state, stragglers) {
     const floors = plan.floors;
     const F = config.full;
     const here = state.you.floor;
@@ -539,7 +569,7 @@ export function createMinimap({ onCornerChange = null } = {}) {
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
       ctx.fillText(text, ox + 11, F.padding + (F.tabHeight - 6) / 2 + 1);
-      drawFloor(ctx, floor, plan, state, { project, scale: s, full: true, time });
+      drawFloor(ctx, floor, plan, state, { project, scale: s, full: true, time, stragglers });
       // Price tags hang over everything on the floor.
       const doorSales = (state.sales ?? []).filter((s) => s.category === 'door');
       for (const shutter of state.shutters) {
@@ -563,7 +593,7 @@ export function createMinimap({ onCornerChange = null } = {}) {
      * Each frame. `held` = the minimap button is down; `active` = a run is being played (not paused, dead or in a menu);
      * `dt` = real seconds since the last frame. A tap toggles the corner map, a hold shows the directory while held.
      */
-    update({ plan, state, held, active, dt, guidance = false }) {
+    update({ plan, state, held, active, dt, guidance = false, stragglers = [] }) {
       if (!plan || !active) {
         corner.hidden = full.hidden = true;
         setCornerClass(false);
@@ -578,7 +608,7 @@ export function createMinimap({ onCornerChange = null } = {}) {
         corner.hidden = !cornerOn;
         full.hidden = true;
         setCornerClass(cornerOn);
-        if (cornerOn) drawCorner(plan, state);
+        if (cornerOn) drawCorner(plan, state, stragglers);
         return;
       }
       if (held) heldFor += dt;
@@ -596,8 +626,8 @@ export function createMinimap({ onCornerChange = null } = {}) {
       setCornerClass(!corner.hidden);
       if (showFull) {
         buildIndex(plan, state, guidance);
-        drawFull(plan, state);
-      } else if (cornerOn) drawCorner(plan, state);
+        drawFull(plan, state, stragglers);
+      } else if (cornerOn) drawCorner(plan, state, stragglers);
     },
   };
 }

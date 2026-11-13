@@ -1,6 +1,6 @@
 # Closing Time: plan for a run goal, an ending and a final boss
 
-Status (11 November 2026): PHASES 1-11 are in main; only phase 12 (spectacle) remains. Since the plan, Return to Sender comes free from a hidden quest and the duties award return labels (docs/history.md, "The Return"), so decisions 6 and 8 are superseded. Phase 11's measurement report predated that and was removed; `npm run sim:closing` measures today's game.
+Status (12 November 2026): ALL TWELVE PHASES ARE BUILT. Phase 12 (spectacle: her model and trolley, the van's lights and engine, Last Call, the receipt's art) is described in docs/history.md. Since the plan, Return to Sender comes free from a hidden quest and the duties award return labels (docs/history.md, "The Return"), so decisions 6 and 8 are superseded. Phase 11's measurement report predated that and was removed; `npm run sim:closing` measures today's game.
 Every number is a starting point for `src/config/closingTime.js` and `config/economy.js`, to be tuned in phase 11. Build one phase at a
 time, each in its own worktree.
 
@@ -238,7 +238,7 @@ Each phase leaves the game working and is worth having without the later ones. A
 | 9 | The return and the Returns Desk | Speechless, the two ways to return her, the per-boss Return to Sender fraction, the desk selling the gun and its ammo, and the two ammo machines refusing it | zombies/bosses/lastCustomer.js, **weapons/gunStats.js**, features/returnsDesk.js, features/ammoCache.js, features/prizeCounter.js, **economy.js**, **mall.js** | **Yes, the one** |
 | 10 | Harder overtime (BUILT) | The extra health per overtime round and the kill pay | game/closingTime.js, zombies/zombieManager.js (read the multiplier), config only otherwise | No |
 | 11 | Measure and tune | A bot that does the quest: minutes to the win, points in hand at the win, what share of income the quest took, how often the finale kills, and what overtime does to the surplus. Prices, her health and the overtime numbers set from that | tools/ (the review's bot is throwaway and gitignored: copy what is needed), config only | No |
-| 12 | Spectacle | Her model and trolley, the van's lights and engine, music for the last round, the receipt's art | models, audio, ui | No |
+| 12 | Spectacle (BUILT) | Her model and trolley, the van's lights and engine, music for the last round, the receipt's art | models, audio, ui | No |
 
 Notes for whoever builds a phase:
 

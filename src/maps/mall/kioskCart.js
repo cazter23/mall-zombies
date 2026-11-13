@@ -36,6 +36,73 @@ const FRAMES = {
 
 const nameOf = (id) => productOf(id)?.name ?? kiosk.bubbleWrap.name;
 
+const glow = (color) => new THREE.MeshBasicMaterial({ color });
+
+/**
+ * The cart's looks, all static decoration (nothing collides), in the cart's frame (u across, v out to the front):
+ * a harlequin front panel over a dark plinth, a gold shelf lip for the products, a striped canopy on four posts with a scalloped
+ * valance, a pegboard behind Kevin, a bulb-lit KIOSK KEVIN marquee on the roof, and a hanging board behind the notice strip.
+ * `box(u0, y0, v0, u1, y1, v1, material, options)` and `signAt(text, u, y, v, w, h, background, color)` are the cart's own helpers.
+ */
+function dressCart({ kit, box, signAt, half, front, back, height, signWidth }) {
+  const own = { collide: false };
+  const purple = kit.mat(0x45246e), plum = kit.mat(0x2d1750), gold = kit.mat(0xf1cc70);
+  const teal = kit.mat(0x34a9a1), pink = kit.mat(0xd23f8e);
+
+  // Front: a plinth, a harlequin panel (teal and pink diamonds in squares), and a gold rail under the product labels.
+  box(-half, 0, front + .005, half, .12, front + .03, plum, own);
+  const cols = 8, cw = (half * 2 - .2) / cols, rows = [.14, .327, .513];
+  for (let i = 0; i < cols; i++) {
+    rows.forEach((y, j) => box(-half + .1 + i * cw, y, front + .005, -half + .1 + (i + 1) * cw - .012, y + .18, front + .02, (i + j) % 2 ? pink : teal, own));
+  }
+  box(-half + .04, .7, front + .005, half - .04, .735, front + .03, gold, own);
+
+  // Product shelf: a gold lip past the counter edge where the three products sit.
+  box(-.95, height + .02, front + .015, .95, height + .06, front + .2, gold, own);
+
+  // Canopy: four posts, a purple roof with gold stripes, a striped valance with a scalloped edge.
+  const roofY = 2.4, pw = .07;
+  for (const u of [-half + .06, half - .06 - pw]) {
+    box(u, height, front + .02, u + pw, roofY, front + .02 + pw, gold, own);
+    box(u, height, back, u + pw, roofY, back + pw, gold, own);
+  }
+  box(-half - .1, roofY, back, half + .1, roofY + .07, front + .2, purple, own);
+  for (let u = -half - .1 + .12, k = 0; u < half + .1 - .24; u += .48, k++) box(u, roofY + .07, back, u + .24, roofY + .09, front + .2, gold, own);
+  const stripes = 10, sw = (half * 2 + .2) / stripes;
+  for (let i = 0; i < stripes; i++) {
+    const u0 = -half - .1 + i * sw;
+    box(u0, 2.12, front + .2, u0 + sw, roofY, front + .22, i % 2 ? gold : purple, own);
+    if (i % 2 === 0) box(u0 + .02, 2.05, front + .2, u0 + sw - .02, 2.12, front + .22, purple, own); // scallop
+  }
+  // The roof's underside lights the counter: a warm strip with a few bulbs along it.
+  box(-half + .2, roofY - .02, front - .1, half - .2, roofY, front + .1, glow(0xffe9b0), own);
+
+  // The notice strip (the dynamic plane at height + .09) gets a dark hanging board behind it.
+  box(-signWidth / 2 - .06, height + .01, front + .01, signWidth / 2 + .06, height + .17, front + .035, kit.mat(0x1d1626), own);
+
+  // Pegboard behind Kevin, with hung stock.
+  box(-half + .2, height + .02, back + .01, half - .2, 2.1, back + .05, kit.mat(0x3a2160), own);
+  const hung = [0xd23f8e, 0xffe14d, 0xfff3d6, 0xff7a3d, 0x8b5cf6];
+  for (let i = 0; i < 9; i++) {
+    const u = -half + .3 + i * ((half * 2 - .6) / 8), y = 1.35 + (i % 3) * .22;
+    box(u, y, back + .05, u + .16, y + .14, back + .07, kit.mat(hung[i % hung.length]), own);
+  }
+
+  // The marquee on the roof: a purple board with a gold frame, bulbs round the edge, KIOSK KEVIN in the middle.
+  const my = roofY + .09, mh = .62, mv = front - .3;
+  box(-1.02, my, mv - .02, 1.02, my + mh, mv + .03, gold, own);
+  box(-.98, my + .04, mv + .03, .98, my + mh - .04, mv + .05, plum, own);
+  const bulbA = glow(0xffe14d), bulbB = glow(0xff6fb5);
+  for (let u = -.94, k = 0; u <= .94; u += .17, k++) {
+    box(u, my + mh - .035, mv + .05, u + .05, my + mh - .005, mv + .07, k % 2 ? bulbA : bulbB, own);
+    box(u, my + .005, mv + .05, u + .05, my + .035, mv + .07, k % 2 ? bulbB : bulbA, own);
+  }
+  signAt('KIOSK KEVIN', 0, my + mh / 2 + .0, mv + .06, 1.82, .42, '#1d1626', '#ffe14d');
+  // Feet for the marquee so it doesn't float: two small gold blocks onto the roof.
+  box(-.8, roofY + .07, mv - .02, -.7, my, mv + .03, purple, own);
+  box(.7, roofY + .07, mv - .02, .8, my, mv + .03, purple, own);
+}
+
 export function buildKioskCart(kit, site) {
   const frame = FRAMES[site.faces];
   if (!frame) throw new Error(`kiosk site "${site.id}": faces must be one of ${Object.keys(FRAMES).join(', ')}`);
@@ -56,12 +123,10 @@ export function buildKioskCart(kit, site) {
   box(-half, 0, back, half, height, front, kit.mat(0x45246e), { vaultable: true, name: 'kevin_cart' });
   box(-half + .02, height - .04, back + .02, half - .02, height + .02, front + .015,
     kit.mat(0xf1cc70), { collide: false, name: 'kevin_countertop' });
-
-  const sign = (text, u, y, w, h, color = '#fff3d6') => {
-    const [x, z] = at(u, front + .025);
-    return kit.sign(text, { x, y: fy + y, z, width: w, height: h, facing: frame.sign, background: '#1d1626', color, font: 'kevin' });
-  };
-  sign('KIOSK KEVIN', 0, .36, signWidth, .24, '#ffe14d');
+  dressCart({ kit, box, signAt: (text, u, y, v, w, h, background, color) => {
+    const [x, z] = at(u, v);
+    return kit.sign(text, { x, y: fy + y, z, width: w, height: h, facing: frame.sign, background, color, font: 'kevin' });
+  }, half, front, back, height, signWidth });
   const slots = kiosk.slots.map((_, index) => ({ position: point((index - 1) * slotSpacing, height + .1, front + .09) }));
 
   const rig = new THREE.Group();
@@ -86,7 +151,7 @@ export function buildKioskCart(kit, site) {
     texture.colorSpace = THREE.SRGBColorSpace;
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: texture }));
     mesh.name = name;
-    mesh.position.copy(point(0, y, front + .025));
+    mesh.position.copy(point(0, y, front + (name === "kevin_notice" ? .05 : .025)));
     mesh.rotation.y = frame.yaw;
     rig.add(mesh);
     return { canvas, ctx, texture };

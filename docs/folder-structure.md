@@ -696,6 +696,11 @@ src/
                         (Inspect: I / D-pad down; read with actionDown only, so a tap still inspects the gun) calls rounds.endBreak(leadSeconds)
                         and emits 'clockIn' { round, skipped }. Once per break; ignored behind a menu; prompt = { action, progress } for the
                         HUD (hud.setClockIn, under the round box). createGame's 'clockIn' listener reads the PA line. Reset step 'clockIn'
+    stragglers.js       createStragglers({ rounds, zombies, events, state }): end-of-round straggler helper. When rounds.state is 'active',
+                        remainingToSpawn === 0, 0 < aliveCount <= feel.stragglers.threshold and feel.stragglers.delaySeconds pass without a kill
+                        (with the Comfort setting on), emits 'stragglers' { round, zombies, firstTime } for non-boss survivors (bosses count
+                        toward aliveCount but are never highlighted). Clears via 'stragglersCleared' on round end, spawns pending, count > threshold,
+                        boss-only, death, setting off, or reset. Reset step 'stragglers' (transientSteps)
   maps/
     index.js            Map registry + loadMap(id, scene, colliders) + THE MAP INTERFACE (id, group, zones, doors,
                         spawnPoints, features (wall buys, ammo cache... by kind), playerSpawn, update, reset, dispose).
@@ -713,6 +718,7 @@ src/
                         (startRoom, hallway, foodCourt, megaMart, doorway, foodCourtDoorway, megaMartDoorway, escalator,
                         elevator, serviceCorridor, foodCourtMegaMartDoorway, serviceCorridorFoodCourtDoorway). The hallway ceiling is a kit.slab with a hole where the escalator passes through
     mall/storeFacades.js The outside of each Food Court store dressed as what it sells (pier decor, sign frame, roof props, a window ledge of goods), picked by the store's `theme`
+    mall/serviceDetails.js buildServiceDetails: the Service Corridor east wall fittings (conduits, fire cabinet, time clock, corkboard, first-aid box, hazard-striped jambs, floor line, mop bucket); decoration only
                         in stores.js. Decoration only, 2 cm proud of the facade. A new store theme = a function here (+ its interior in stores.js THEMES).
     mall/stallThemes.js Per-stall decoration for props.foodStall's `theme` option, so a Food Court stall looks like what it is named (decoration only, no collision;
                         `barn` BURGER BARN: siding, trim, hay-loft roof, checker band; `wok` WOK THIS WAY: pagoda eave, lanterns, lattice; `cornDog` CORN DOG CORRAL: giant corn dog, bunting, cow print). A new theme = a function here + `theme:` in mall.js.
@@ -817,7 +823,8 @@ src/
                         rooms and the floor-to-floor nav link. Lower shutter (economy.doors.cinema, 1250) opens cinema + serviceCorridor; the original
                         cinema shutter now opens cinema + upstairs. No real lights, guns or spawn markers added.
     mall/kioskCart.js   buildKioskCart(kit, site) -> { position, stand, normal, slots, show(state, stock), say(line), animate(dt, time, viewer) }: one
-                        of Kevin's carts (a 1.05 m vaultable counter), built in its own frame and turned by `faces` (+z, -z, +x, -x); three buy spots,
+                        of Kevin's carts (a 1.05 m vaultable counter), built in its own frame and turned by `faces` (+z, -z, +x, -x), dressed by
+                        dressCart (static, no collision: harlequin front, gold shelf lip, striped canopy, KIOSK KEVIN marquee, pegboard); three buy spots,
                         a notice strip (closed / away, the lid's notice in turn / hiding / Kevin's Pick), the product labels (redrawn when the stock
                         changes) and, in a dynamic rig: the round's three products on the counter (world/kioskProducts.js), a slatted lid that covers
                         it while he's away (its notice on top) and flips open behind him, Kevin (mall/kioskKevin.js) and his speech bubble. show() only
@@ -1175,6 +1182,15 @@ src/
 Skylar's appearance: config/influencerLook.js owns her outfit, palette, ponytail, accessories, phone rig and pose tuning.
 zombies/bosses/influencerModel.js dresses and poses the shared zombie skeleton, with zombieModel owning batching and disposal.
 The influencer behavior exposes its existing phone wind-up to the visual pose through phoneFlashWindup.
+
+### Closing Time spectacle (phase 12: presentation only, no gameplay numbers)
+
+- src/config/lastCustomerLook.js: Lorraine Pruitt's look: twinset, pearls, skirt, lilac perm, cat-eye glasses (rims around the eyes), the agape mouth, her trolley (the Cart Pusher's frame and size, her colours) and its heap of returns, the upright pushing pose and the Speechless pose. Every lean is small because her hitboxes stay the standing ones.
+- src/zombies/bosses/lastCustomerModel.js: `dressLastCustomer` puts the costume on the shared skeleton (zombieModel batches and disposes it; the mouth keeps a colour of its own so it stays a mesh to show); `poseLastCustomer` eases Speechless in and out after the trolley pose. Her trolley is `type.cart` (config/bosses.js), built by zombies/cartModel.js, which now also takes a fixed `heap` of boxes (with rotation). A boss with a cart keeps its own look (no random shopper look) and no cart hitbox is added.
+- src/fx/vanLights.js: `createVanLights({ scene, sound })`, browser side. Dark, then the hazards blink with a relay click once `g.closing.readyToLeave`; `start(onReceipt)` on 'runWon' cranks the starter, catches the engine, lights the headlights (the cracked one flickers), beams, the pool on the asphalt and the tail lights, fades the screen to black and calls onReceipt (main.js shows the receipt); through overtime it idles lit. No real light (no shader rebuild): unlit lenses and additive glows. Numbers: config/closingTime.js vanShow; sounds vanHazardTick, vanStarter, vanEngine in config/audio.js.
+- src/config/closingMusic.js: "Last Call", the Closing Time round's song (data for audio/mallMusic.js, `chime: false`, `loop: true`: renderTrack folds its tail onto its start), its volume, fades, the radio duck and the resolving chord. audio/sound.js `playScore` / `stopScore({ resolve })` play it straight to the listener (rendered once, in the worker) and duck the radio while it plays; main.js plays it while the Last Customer is the active boss and the run is running, and ends it with the chord once she is returned.
+- src/ui/receiptArt.js: the SHIFT COMPLETE receipt's extras, filled into the results screen by ui/screens.js: the printed picture (the van leaving the lot into a striped, dithered sunset, one ink), the Last Customer's return slip, and the overtime coupon (its terms from config/closingTime.js overtime) while the choice is open. Words: closingTime.receipt.art.
+- src/ui/receiptArt.css: their look, the win's sunset backdrop (`.results-screen.won`) and the teal double-ringed stamp.
 
 Boss spectacle: bossSpectacle in config/bosses.js owns death confetti and employee poses; audio.js owns unique synthesized stings. zombieManager emits the same single kill event after the cartoon boss death burst. zombieModel applies bone poses and disposes costume geometry. debugCommands/debugPanel expose the next selected boss. tools/gunReport.mjs includes a boss encounter table and the Last Customer Platinum Rivet Rifle sustained-body-fire estimates at the configured rounds, using resolveGun/withTier for the real upgrades.
 

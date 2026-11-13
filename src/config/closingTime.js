@@ -21,6 +21,26 @@ export const closingTime = {
     blockedPrefix: 'Still needed: ',
     promptHeight: 1.2, clearance: 0.12,
   },
+  // The van's lights and engine (fx/vanLights.js, browser only; nothing here changes the game). Dark until the Last Customer
+  // is returned; then the hazards blink (a beacon across the lot). Start the van: the starter cranks, the engine catches, the
+  // headlights come on (the cracked right one flickers) and the screen fades to the receipt. Through overtime it idles, lit.
+  // Positions are on the 'abandoned' van (config/parkingLot.js), which faces +Z: x across it, z from its front or back face.
+  vanShow: {
+    hazardHz: 1.4, // blinks a second
+    tick: { sound: 'vanHazardTick', hearMeters: 14 }, // the relay's click, fading out with distance from the camera
+    starter: 'vanStarter', engine: 'vanEngine',
+    catchSeconds: 0.75, // the starter cranks this long, then the engine catches and the lights come on full
+    fadeFrom: 1.5, receiptSeconds: 2.3, // the screen fades to black from here, and the receipt shows at the end
+    proud: 0.09, // lenses this far in front of the van's own lamp faces (its cracked lamp cover is 7 cm proud)
+    // x: a fraction of the van's width either side of its centre line (its own lamps sit at 0.34).
+    headlights: { x: 0.34, y: 0.9, size: [0.29, 0.19], color: 0xfff2cc },
+    tailLights: { x: 0.34, y: 0.9, size: [0.29, 0.19], color: 0xff3b4e },
+    hazards: { x: 0.47, y: 0.66, size: [0.2, 0.12], color: 0xffa62b },
+    flicker: { side: 1, rate: 17, depth: 0.55 }, // the cracked headlight (on the van's +x side)
+    beam: { length: 6, radius: 1.0, opacity: 0.05, tilt: 0.08 },
+    pool: { length: 5.5, width: 2.8, y: 0.035, opacity: 0.11 }, // the light thrown on the asphalt ahead
+    fade: { color: '#000', zIndex: 25, outSeconds: 0.6 }, // over the screens (no z-index), under the settings menu (30)
+  },
   finale: { bossId: 'lastCustomer', roundOffset: 1, banner: 'CLOSING TIME', missing: 'The Last Customer' },
   validation: {
     name: 'Parking Validation', verb: 'validate parking', missing: 'Parking validation',
@@ -107,6 +127,20 @@ export const closingTime = {
     thanks: 'Thank you for closing Sunset Galleria.',
     clockedOut: 'CLOCKED OUT',
     overtimeRounds: 'Overtime rounds survived',
+    // The win receipt's art (ui/receiptArt.js): a printed picture of the van leaving into the sunset, the return slip for
+    // the Last Customer, and (while the choice is open) a coupon that states overtime's terms from `overtime` below.
+    art: {
+      caption: 'Last vehicle leaving the lot',
+      returnHead: '*** RETURN PROCESSED ***',
+      returnItem: '1 x CUSTOMER, LAST', returnValue: 'RETURNED',
+      returnNote: 'Receipt: extremely long. Refund: declined.',
+      couponHead: 'OVERTIME COUPON',
+      couponLines: ({ killPay, healthPerRound }) => [
+        `Kills pay ${Math.round(killPay * 100)}%`,
+        `Zombies +${Math.round((healthPerRound - 1) * 100)}% health every round`,
+      ],
+      couponFine: 'Valid until death. No cash value. No refunds.',
+    },
   },
   overtimeTag: 'OVERTIME', // beside the round counter while overtime is played (ui/hud.js)
   // OVERTIME's two changes (game/closingTime.js; docs/closing-time-plan.md "Overtime"). Nothing changes before the win.

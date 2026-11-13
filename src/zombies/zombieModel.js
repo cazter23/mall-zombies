@@ -24,6 +24,7 @@ import { createMascotModel } from './mascotModel.js';
 import { dressJanitor } from './bosses/janitorModel.js';
 import { dressEmployee } from './bosses/employeeModel.js';
 import { dressInfluencer, poseInfluencer } from './bosses/influencerModel.js';
+import { dressLastCustomer, poseLastCustomer } from './bosses/lastCustomerModel.js';
 import { bossSpectacle } from '../config/bosses.js';
 import { cartLean } from './cartPose.js';
 import { statusGlow } from './statusTint.js';
@@ -201,7 +202,7 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
 
   // Outfit: a matching tracksuit (one color for top and bottom) or a random shirt + pants.
   const outfit = type.outfit ?? null;
-  const look = (type.id === 'shopper' || type.cart) && !outfit ? appearance ?? chooseShopperAppearance(random) : null;
+  const look = (type.id === 'shopper' || (type.cart && !type.boss)) && !outfit ? appearance ?? chooseShopperAppearance(random) : null;
   const topStyle = look ? shoppers.tops[look.top] : null;
   const width = look?.build.width ?? 1;
   const skin = mat(pick(type.skinColors));
@@ -373,6 +374,7 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
   if (type.id === 'janitor') dressJanitor(type, { upper, neck, arms, mat, block });
   if (type.costume) dressEmployee(type, { upper, neck, arms, mat, block, ownedGeometry });
   const influencerRig = type.appearance ? dressInfluencer(type, { upper, neck, arms, legs, mat, block, ownedGeometry }) : null;
+  const lastCustomerRig = type.id === 'lastCustomer' ? dressLastCustomer({ upper, neck, arms, mat, block, ownedGeometry }) : null;
 
   // Batch meshes of the same material on each rigid bone across all zombie types.
   // Bones remain separate so clothes, bags and hair inherit the original walk/attack/death animation.
@@ -547,6 +549,8 @@ export function createZombieModel(type, { random = Math.random, appearance } = {
         } else if (type.id === 'manager' && zombie.controlled) {
           arms[0].shoulder.rotation.x = pose.pointingArm;
           arms[0].elbow.rotation.x = pose.pointingElbow;
+        } else if (lastCustomerRig) {
+          poseLastCustomer(zombie, lastCustomerRig, { upper, neck, arms }, frameTime);
         } else if (type.id === 'guard' && zombie.state === 'chargeTelegraph') {
           arms[1].shoulder.rotation.x = pose.radioArm;
           arms[1].elbow.rotation.x = pose.radioElbow;

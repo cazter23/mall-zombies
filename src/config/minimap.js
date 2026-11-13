@@ -41,6 +41,7 @@ export const minimap = {
     pictoBack: '#2a1c2e', pictoInk: '#fff0cb', number: '#c9a45c',
     tab: '#3b2a40', tabLit: '#246d76', tabInk: '#b6a3bb', tabInkLit: '#fff0cb',
     you: '#e63946', youRing: '#ffffff', cone: 'rgba(230, 57, 70, 0.22)',
+    straggler: '#ff9f1c', stragglerRing: '#fff0cb', stragglerEdge: '#2a1c2e',
   },
   sales: {
     pulseSeconds: 1.4,
@@ -121,4 +122,6 @@ export const minimap = {
   },
   pictoSize: { corner: 14, full: 17 }, // px, the dark rounded square each pictogram sits in
   you: { corner: 6, full: 6, pulseSeconds: 1.6, pulseGrow: 2.6, coneMetres: 7, coneDegrees: 70 },
+  // Last-zombie straggler pings (ui/minimap.js draws the same dot + pulsing ring style as `you`).
+  straggler: { corner: 5, full: 5.5, pulseSeconds: 1.4, pulseGrow: 2.8, cornerEdgeInset: 10 },
 };
