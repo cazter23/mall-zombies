@@ -93,7 +93,7 @@ test('base guns meet the round-8 body-shot targets of the stronger-weapon pass',
   const hp = zombieHealthForRound(8);
   for (const [d, expected] of [
     [priceGun, 12], [nailGun, 5], [foamDartBlaster, 8], [confettiCannon, 2],
-    [weapons.rivetRifle, 8], [weapons.coilNailer, 8], [weapons.barcodeScanner, 2], // (Barcode rework: 420 a beam, 2 a round-8 Shopper)
+    [weapons.rivetRifle, 9], [weapons.coilNailer, 6], // (Rivet/Coil split: Rivet lighter and faster, Coil heavier and slower) [weapons.barcodeScanner, 2], // (Barcode rework: 420 a beam, 2 a round-8 Shopper)
   ]) assert.equal(shotsToKill(d, hp, 5, style(d)), expected, d.name);
 });
 

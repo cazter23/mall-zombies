@@ -20,7 +20,7 @@ test('Rivet Rifle auto fire delivers its configured cadence, empties one magazin
   const w = new Weapon(rifle, createPlayerStats());
   let shots = 0;
   for (let tick = 0; tick < 60; tick++) if (w.update(dt, { triggerPressed: tick === 0, triggerHeld: true }) === 'fire') shots++;
-  assert.equal(shots, 10, '10/s including the first instant shot');
+  assert.equal(shots, 12, '~11.8/s (fireInterval 0.085), including the first instant shot');
   for (let tick = 0; tick < 200 && w.magazine; tick++) if (w.update(dt, { triggerHeld: true }) === 'fire') shots++;
   assert.equal(shots, rifle.magazineSize);
   assert.equal(w.magazine, 0);

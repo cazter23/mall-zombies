@@ -587,8 +587,8 @@ export const weapons = {
   // Stronger per-hit damage than Price, with a full 30-round magazine; no penetration.
   rivetRifle: {
     id: 'rivetRifle', name: 'Rivet Rifle', fireMode: 'auto',
-    damage: 80, headshotMultiplier: 1.75, // lighter per-hit than Coil (~941 burst dps)
-    magazineSize: 30, startingReserve: 144,
+    damage: 80, headshotMultiplier: 2, // lighter per-hit than Coil (~941 burst dps); x2 keeps a headshot (160) about where it was (95 x 1.75) and above a Foam dart's
+    magazineSize: 36, startingReserve: 144, // (36: at 0.085 s a shot a 30 ran dry in 2.5 s and sat under the Foam Dart Blaster sustained; 144 = four magazines)
     fireInterval: 0.085, fireBuffer: 0.1, reloadTime: 2, range: 100, // ~11.8 shots/s
     falloff: { start: 12, end: 28, minMultiplier: 0.6 },
     recoil: {
