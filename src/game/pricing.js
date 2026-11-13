@@ -53,6 +53,7 @@ export const PRICE_CATEGORIES = Object.keys(BASE);
 
 export function createPricing() {
   const discounts = new Map(); // category -> fraction off (0..1)
+  const itemDiscounts = new Map(); // category -> Map(id -> fraction off (0..1))
   let voucher = null;
   let voucherOptions = {};
   let coupon = null; // One employee coupon, applied after category sales.
@@ -100,7 +101,7 @@ export function createPricing() {
     basePriceOf, // crossed-out shelf price; uses the same source and validation as the charged price
     priceOf(category, id) {
       const base = basePriceOf(category, id);
-      const off = discounts.get(category) ?? 0;
+      const off = Math.max(discounts.get(category) ?? 0, id != null ? (itemDiscounts.get(category)?.get(id) ?? 0) : 0);
       const step = economy.discountRoundTo;
       const salePrice = off > 0 ? Math.round((base * (1 - off)) / step) * step : base;
       const couponPrice = coupon ? salePrice - Math.min(coupon.maxSaving, Math.floor(salePrice * coupon.fraction / step) * step) : salePrice;
@@ -118,18 +119,53 @@ export function createPricing() {
       else discounts.set(category, fraction);
     },
 
-    discountOf(category) {
+    setItemDiscount(category, id, fraction) {
       check(category);
-      return discounts.get(category) ?? 0;
+      if (typeof id !== 'string' || !id) throw new Error(`pricing: item id must be a non-empty string, got ${id}`);
+      if (!(fraction >= 0 && fraction <= 1)) throw new Error(`pricing: discount must be 0..1, got ${fraction}`);
+      if (fraction === 0) {
+        const byId = itemDiscounts.get(category);
+        if (byId) {
+          byId.delete(id);
+          if (byId.size === 0) itemDiscounts.delete(category);
+        }
+        return;
+      }
+      basePriceOf(category, id);
+      let byId = itemDiscounts.get(category);
+      if (!byId) itemDiscounts.set(category, byId = new Map());
+      byId.set(id, fraction);
+    },
+
+    itemDiscountOf(category, id) {
+      check(category);
+      return id != null ? (itemDiscounts.get(category)?.get(id) ?? 0) : 0;
+    },
+
+    discountOf(category, id = null) {
+      check(category);
+      const categoryOff = discounts.get(category) ?? 0;
+      const itemOff = id != null ? (itemDiscounts.get(category)?.get(id) ?? 0) : 0;
+      return Math.max(categoryOff, itemOff);
     },
 
     // Save & Quit (game/saveGame.js): the discounts in force (a Flash Sale's included), the boss voucher and the coupon.
     serialize() {
-      return { discounts: [...discounts], voucher, coupon };
+      return {
+        discounts: [...discounts],
+        itemDiscounts: [...itemDiscounts].map(([category, byId]) => [category, [...byId]]),
+        voucher,
+        coupon,
+      };
     },
     restore(data) {
       discounts.clear();
       for (const [category, fraction] of data.discounts) discounts.set(category, fraction);
+      itemDiscounts.clear();
+      for (const [category, entries] of data.itemDiscounts ?? []) {
+        if (!entries?.length) continue;
+        itemDiscounts.set(category, new Map(entries));
+      }
       voucher = data.voucher;
       coupon = data.coupon;
     },
@@ -137,6 +173,7 @@ export function createPricing() {
     reset() {
       voucher = null;
       discounts.clear();
+      itemDiscounts.clear();
       coupon = null;
     },
   };

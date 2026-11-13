@@ -61,7 +61,7 @@ test('state: you, the bought areas, shut shutters priced only where one side is 
   const start = state.shutters.find((s) => s.id === 'startShutter');
   assert.equal(start.price, g.pricing.priceOf('door', 'hallway'));
   assert.equal(state.shutters.find((s) => s.id === 'megaMart').price, null, 'neither side bought: no price');
-  assert.deepEqual(Object.keys(state).sort(), ['kevin', 'keys', 'open', 'shutters', 'you'], 'nothing about zombies or bosses');
+  assert.deepEqual(Object.keys(state).sort(), ['kevin', 'keys', 'open', 'sales', 'shutters', 'you'], 'nothing about zombies or bosses');
 
   g.map.areaUnlocks.unlock('hallway');
   const after = minimapState(plan, g);
@@ -209,4 +209,40 @@ test('nothing shows in a menu or after death, and a press carried out of a menu 
   play(view, state, { held: false });
   assert.equal(view.cornerOn, true, 'and letting go of it is not a tap');
   assert.ok(!corner.hidden);
+});
+
+test('minimapState and directory draw markers during a teaser, live sale, and Doorbuster across open/adjacent items only', async () => {
+  const { view, texts } = await board();
+  g.resetRun();
+  g.player.position.set(0, 0, 12);
+  g.player.yaw = 0;
+
+  assert.equal(minimapState(plan, g).sales.length, 0, 'no sale markers when idle');
+
+  // Teaser for doors marks reachable adjacent shutter(s) as `soon: true`.
+  const groups = g.flashSales ? (await import('../src/config/economy.js')).economy.flashSales.groups : [];
+  const origGroups = groups.slice();
+  const { economy } = await import('../src/config/economy.js');
+  economy.flashSales.groups = origGroups.filter((grp) => grp.id === 'doors');
+  try {
+    assert.equal(g.flashSales.teaseNow('category'), true);
+    const soonState = minimapState(plan, g);
+    assert.ok(soonState.sales.some((s) => s.category === 'door' && s.soon && s.floor === 0 && !s.doorbuster));
+    play(view, soonState, { held: true, frames: 30 });
+    assert.ok(texts.includes('%'), 'corner/full directory draws sale badge during teaser');
+  } finally {
+    economy.flashSales.groups = origGroups;
+    g.resetRun();
+  }
+
+  // Doorbuster marks only that one open/reachable target with `doorbuster: true`, and removes it once bought.
+  g.wallet.earn(10_000);
+  g.gun.give((await import('../src/config/weapons.js')).weapons.stapleGun);
+  assert.equal(g.flashSales.startNow('doorbuster'), true);
+  const dbState = minimapState(plan, g);
+  assert.ok(dbState.sales.length >= 1);
+  assert.ok(dbState.sales.every((s) => s.doorbuster && !s.soon));
+  play(view, dbState, { held: true, frames: 30 });
+  assert.ok(texts.includes('!'), 'directory draws Doorbuster badge');
+  g.resetRun();
 });

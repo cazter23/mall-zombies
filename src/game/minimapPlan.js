@@ -11,6 +11,7 @@
 import { minimap as config } from '../config/minimap.js';
 import { weapons } from '../config/weapons.js';
 import { zoneForRoom } from '../maps/areaBarriers.js';
+import { collectSaleSpots } from './flashSales.js';
 
 const rect = ({ minX, maxX, minZ, maxZ }) => ({ minX, maxX, minZ, maxZ });
 const area = (r) => (r.maxX - r.minX) * (r.maxZ - r.minZ);
@@ -120,6 +121,27 @@ export function minimapState(plan, g, { guidance = false } = {}) {
   }
   const kiosk = g.features?.instanceOf('kiosk');
   const cart = kiosk?.status.open ? kiosk.site.cart.position : null;
+  const activeSale = g.flashSales?.active ?? (g.flashSales?.pending ? { ...g.flashSales.pending, soon: true } : null);
+  const sales = activeSale
+    ? collectSaleSpots({
+      map,
+      features: g.features,
+      gun: g.gun,
+      warranty: g.warranty,
+      wardrobe: g.wardrobe,
+      equipment: g.equipment,
+      health: g.health,
+    }, activeSale).map((spot) => ({
+      x: spot.x,
+      z: spot.z,
+      floor: plan.floorAt(spot.y + 0.1),
+      category: spot.category,
+      id: spot.id,
+      zone: spot.zone,
+      doorbuster: spot.doorbuster,
+      soon: spot.soon,
+    }))
+    : [];
   return {
     you: {
       x: player.position.x, z: player.position.z, yaw: player.yaw, floor: plan.floorAt(player.position.y + 0.1),
@@ -127,6 +149,7 @@ export function minimapState(plan, g, { guidance = false } = {}) {
     },
     open,
     shutters,
+    sales,
     kevin: cart && { x: cart.x, z: cart.z, floor: plan.floorAt(cart.y), area: plan.zoneLabel(kiosk.site.zone) },
     keys: guidance ? (g.closing?.pickups ?? []).map(({ position }) => ({ x: position.x, z: position.z, floor: plan.floorAt(position.y) })) : [],
   };

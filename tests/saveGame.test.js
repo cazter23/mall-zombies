@@ -416,3 +416,50 @@ test('Speechless is transient: loading the round-start save restores a fresh ful
   assert.equal(restored.state, 'spawning');
   assert.notEqual(g.interactions.prompt?.id, 'handReturn');
 });
+
+test('a pending Flash Sale teaser and an active Doorbuster save cleanly at roundStart and resume or reset', (t) => {
+  // 1. Pending teaser saved & restored cleanly without prematurely applying discounts.
+  const storage = memoryStorage();
+  const run1 = game(t, storage);
+  const g1 = run1.g;
+  run1.tick();
+  assert.equal(g1.flashSales.teaseNow('category'), true);
+  const teased = g1.flashSales.pending;
+  assert.ok(teased);
+  g1.rounds.jumpTo(4);
+  run1.tick();
+  const snap1 = g1.saveGame.serializeNow();
+  assert.equal(g1.saveGame.saveAndQuit(), true);
+
+  const loaded1 = game(t, storage);
+  assert.equal(loaded1.g.saveGame.load(), true);
+  assert.deepEqual(loaded1.g.flashSales.pending?.id, teased.id);
+  assert.equal(loaded1.g.flashSales.active, null);
+  assert.deepEqual(loaded1.g.saveGame.serializeNow(), snap1);
+  // Ticking remaining teaser seconds brings the sale live.
+  loaded1.tick(Math.ceil((loaded1.g.flashSales.pending.remaining + 0.5) * 60));
+  assert.ok(loaded1.g.flashSales.active, 'restored teaser goes live on schedule');
+
+  // 2. Active Doorbuster item discount saves and restores, then expires cleanly.
+  const storage2 = memoryStorage();
+  const run2 = game(t, storage2);
+  const g2 = run2.g;
+  run2.tick();
+  g2.map.areaUnlocks.unlock('hallway');
+  g2.rounds.jumpTo(4);
+  assert.equal(g2.flashSales.startNow('doorbuster'), true);
+  const dbTarget = g2.flashSales.active.target;
+  const dbPrice = g2.pricing.priceOf(dbTarget.category, dbTarget.id);
+  assert.ok(dbPrice < g2.pricing.basePriceOf(dbTarget.category, dbTarget.id));
+  g2.rounds.jumpTo(5);
+  run2.tick();
+  assert.equal(g2.saveGame.saveAndQuit(), true);
+
+  const loaded2 = game(t, storage2);
+  assert.equal(loaded2.g.saveGame.load(), true);
+  assert.equal(loaded2.g.flashSales.active?.kind, 'doorbuster');
+  assert.equal(loaded2.g.pricing.priceOf(dbTarget.category, dbTarget.id), dbPrice);
+  loaded2.tick(Math.ceil((loaded2.g.flashSales.active.remaining + 1) * 60));
+  assert.equal(loaded2.g.flashSales.active, null);
+  assert.equal(loaded2.g.pricing.priceOf(dbTarget.category, dbTarget.id), loaded2.g.pricing.basePriceOf(dbTarget.category, dbTarget.id));
+});

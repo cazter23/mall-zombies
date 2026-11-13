@@ -229,6 +229,14 @@ export function createDebugCommands({ map, zombies, rounds, wallet, gun, health,
       const site = kevin.moveNow(siteId);
       return site ? `Kevin moved to ${site.where}` : 'Not moved: mid-purchase, or no other open area';
     },
+    doorbuster() {
+      if (flashSales.active) return 'A Flash Sale is already running';
+      return flashSales.startNow('doorbuster') ? `Doorbuster: ${flashSales.active.label}` : 'Nothing eligible for a Doorbuster right now';
+    },
+    flashSaleSoon(mode = 'category') {
+      if (flashSales.active || flashSales.pending) return 'A Flash Sale or teaser is already active';
+      return flashSales.teaseNow(mode) ? `Teaser: ${flashSales.pending.label}` : 'Nothing worth teasing right now';
+    },
   };
 
   return {
@@ -260,7 +268,9 @@ export function createDebugCommands({ map, zombies, rounds, wallet, gun, health,
         god: health.invulnerable,
         panelOpen: state.panelOpen,
         last: state.last,
-        sale: flashSales.active ? `${flashSales.active.label} -${Math.round(flashSales.active.discount * 100)}%` : '',
+        sale: flashSales.active
+          ? `${flashSales.active.label} -${Math.round(flashSales.active.discount * 100)}%`
+          : flashSales.pending ? `Soon: ${flashSales.pending.label} (${Math.ceil(flashSales.pending.remaining)}s)` : '',
       };
     },
     ids: Object.keys(run), // (the keyed commands: one per entry in config/debug.js)

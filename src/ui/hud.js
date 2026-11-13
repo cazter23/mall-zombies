@@ -900,12 +900,22 @@ export function createHud({ locker = null, guide = null, challenges = null } = {
       if (show) vaultPrompt.innerHTML = `<kbd>${button}</kbd> Vault`;
     },
 
-    // The running Flash Sale ({ label, discount 0..1, remaining seconds }) or null. Only touches the DOM when the text changes.
-    setFlashSale(sale) {
-      const text = sale ? `Flash sale · ${sale.label} ${Math.round(sale.discount * 100)}% off · ${Math.ceil(sale.remaining)}s` : '';
-      if (text === lastSaleKey) return;
-      lastSaleKey = text;
-      saleTag.classList.toggle('show', !!sale);
+    // The running Flash Sale (or pending teaser) or null. Only touches the DOM when text or visual state changes.
+    setFlashSale(sale, pending = null) {
+      const shown = sale ?? pending;
+      const isDoorbuster = shown?.kind === 'doorbuster';
+      const isSoon = !sale && !!pending;
+      const text = sale
+        ? `${isDoorbuster ? 'Doorbuster' : 'Flash sale'} · ${sale.label} ${Math.round(sale.discount * 100)}% off · ${Math.ceil(sale.remaining)}s`
+        : pending
+          ? `${isDoorbuster ? 'Doorbuster soon' : 'Flash sale soon'} · ${pending.label} · ${Math.ceil(pending.remaining)}s`
+          : '';
+      const key = `${isDoorbuster ? 'D' : 'S'}${isSoon ? '!' : ''}:${text}`;
+      if (key === lastSaleKey) return;
+      lastSaleKey = key;
+      saleTag.classList.toggle('show', !!shown);
+      saleTag.classList.toggle('soon', isSoon);
+      saleTag.classList.toggle('doorbuster', !!shown && isDoorbuster);
       saleTag.textContent = text;
     },
 

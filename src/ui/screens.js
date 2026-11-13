@@ -349,7 +349,7 @@ export function createScreens({ locker = null, guide = null, challenges = null }
         <div><b>Earn</b><p>+${pay.nonLethalHit} for every hit, +${kill} for a kill. Headshot kills +${pay.headshotKillBonus} more, box cutter kills +${pay.meleeKillBonus}.</p></div>
         <div><b>Spend</b><p>Hold <kbd>F</kbd> / <kbd>X</kbd> to buy: shutters open new parts of the mall, guns hang on the walls, the RESTOCK-O-MATIC refills ammo.</p></div>
         <div><b>Upgrade</b><p>Buy more damage with an Extended Warranty at Customer Service. Fit attachments at the Food Court stores.</p><p>At Build-A-Blaster on the Promenade, choose a Stuffing and a Heart. Hand over your gun, then fight in the room to fill its tank.</p></div>
-        <div><b>Listen</b><p>The PA announces Flash Sales: one kind of item gets 25-50% cheaper for a short time.</p></div>
+        <div><b>Listen</b><p>The PA warns before Flash Sales begin: discounts appear on the directory and over each deal. Watch for rare Doorbusters — one steep bargain that draws a rush of shoppers.</p></div>
         <div><b>Move</b><p>Sprint and tap <kbd>C</kbd> to slide. Jump with <kbd>Space</kbd> to vault counters. Slash with the box cutter (<kbd>V</kbd>).</p><p><kbd>Ctrl</kbd> / <kbd>LB</kbd> goes prone; <kbd>Space</kbd> / <kbd>A</kbd> stands up. Keep moving to avoid being surrounded.</p></div>
       </div>
       <div class="menu-list menu-row">

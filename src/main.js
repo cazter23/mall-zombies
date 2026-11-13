@@ -43,6 +43,7 @@ import { upgrades } from './config/upgrades.js';
 import { gunStyle } from './config/gunStyle.js';
 import { buildOf, qualityById, workshopStuffings } from './config/workshop.js';
 import { PRICE_CATEGORIES } from './game/pricing.js';
+import { createSaleTagView } from './fx/saleTagView.js';
 import { createDebugPanel } from './ui/debugPanel.js';
 import { createTitleCamera } from './ui/titleCamera.js';
 import { createRunStart } from './ui/runStart.js';
@@ -163,6 +164,7 @@ const damageIndicators = createDamageIndicatorQueue({
   getPlayerPosition: () => player.position,
 });
 const haptics = createHaptics({ gamepad, input, state: game, health, events: g.events });
+const saleTags = createSaleTagView(scene, g);
 
 // Which button set prompts show: the device used last ('keyboard', or the controller's type: 'xbox', 'playstation'...).
 function promptDevice() {
@@ -569,13 +571,14 @@ function render(alpha, frameTime) {
     });
   }
   const prompt = game.over || game.menu ? null : interactions.prompt; // (no shelf ticket behind an open menu)
-  // A Flash Sale shows as a SALE mark on the price of whatever it discounted.
+  // A Flash Sale (or Doorbuster) shows as a SALE mark on the price of whatever it discounted.
   hud.setInteract(prompt && {
     ...prompt,
-    sale: !prompt.owned && PRICE_CATEGORIES.includes(prompt.kind) && pricing.discountOf(prompt.kind) > 0,
+    sale: !prompt.owned && PRICE_CATEGORIES.includes(prompt.kind) && pricing.discountOf(prompt.kind, prompt.pricingId ?? prompt.id) > 0,
     originalCost: PRICE_CATEGORIES.includes(prompt.kind) ? pricing.basePriceOf(prompt.kind, prompt.pricingId ?? prompt.id) : prompt.cost,
   }, buttonLabel('interact'));
-  hud.setFlashSale(game.over ? null : flashSales.active);
+  hud.setFlashSale(game.over ? null : flashSales.active, game.over ? null : flashSales.pending);
+  saleTags.update(game.running ? frameTime : 0);
   hud.setPowerUps(game.over ? null : g.powerUps);
   hud.setRitual(game.over ? null : ritual?.status ?? null);
   const menuLabels = { confirm: buttonLabel('menuConfirm'), back: buttonLabel('menuBack'), move: buttonLabel('menuMove'), switch: buttonLabel('menuSwitch') };
