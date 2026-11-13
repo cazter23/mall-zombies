@@ -125,7 +125,8 @@ export function buildKioskCart(kit, site) {
   box(-half, 0, back, half, height, front, kit.mat(0x45246e), { collide: false, name: 'kevin_cart' });
   {
     const [ax, az] = at(-half, back), [bx, bz] = at(half, front);
-    kit.addCollider(Math.min(ax, bx), fy, Math.min(az, bz), Math.max(ax, bx), fy + kiosk.cart.roofY + kiosk.cart.roofThickness, Math.max(az, bz));
+    kit.addCollider(Math.min(ax, bx), fy, Math.min(az, bz), Math.max(ax, bx), fy + kiosk.cart.roofY + kiosk.cart.roofThickness, Math.max(az, bz))
+      .kioskCart = site.id; // (tagged: tests/showpieces.test.js knowingly lets a cart hide a display, see there)
   }
   box(-half + .02, height - .04, back + .02, half - .02, height + .02, front + .015,
     kit.mat(0xf1cc70), { collide: false, name: 'kevin_countertop' });
