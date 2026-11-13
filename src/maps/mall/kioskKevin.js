@@ -66,16 +66,17 @@ export function buildKevin(mat) {
   block(turn, shirt, -0.19, 0.93, -0.1, 0.19, 1.43, 0.11, 'kevin_shirt');
   block(turn, shirt, -0.15, 0.96, 0.11, 0.15, 1.18, 0.15, 'kevin_paunch');
   block(turn, mat(V.collar), -0.1, 1.41, -0.06, 0.1, 1.47, 0.09, 'kevin_collar');
-  // The lanyard: a red strap from each side of his collar down to his badge.
+  // The lanyard: a red strap from each side of his collar meeting at his badge (a V), the badge high on his chest so it
+  // shows over whatever is on the counter in front of him.
   const strap = mat(V.lanyard);
   for (const side of [-1, 1]) {
-    const piece = block(turn, strap, -0.012, -0.13, -0.004, 0.012, 0.13, 0.004);
-    piece.position.set(side * 0.045, 1.3, 0.158);
-    piece.rotation.z = side * 0.32;
+    const piece = block(turn, strap, -0.011, -0.075, -0.004, 0.011, 0.075, 0.004);
+    piece.position.set(side * 0.042, 1.345, 0.118);
+    piece.rotation.z = -side * 0.42; // (top end out towards his collar, bottom end in to the badge)
   }
-  const badge = new THREE.Mesh(new THREE.BoxGeometry(0.085, 0.105, 0.008),
+  const badge = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.11, 0.008),
     [mat(V.badge), mat(V.badge), mat(V.badge), mat(V.badge), new THREE.MeshStandardMaterial({ map: badgeTexture(), roughness: 0.6 }), mat(V.badge)]);
-  badge.position.set(0, 1.12, 0.163);
+  badge.position.set(0, 1.225, 0.124);
   badge.name = 'kevin_badge';
   turn.add(badge);
 
@@ -89,8 +90,10 @@ export function buildKevin(mat) {
   block(neck, skin, -0.125, 0.11, -0.02, 0.105 + 0.02, 0.17, 0.02); // (ears: one bar through the head)
   block(neck, hair, -0.11, 0.24, -0.11, 0.11, 0.31, 0.08);
   block(neck, hair, -0.11, 0.12, -0.11, 0.11, 0.25, -0.07);
+  block(neck, hair, -0.111, 0.17, -0.07, 0.111, 0.25, 0.03); // (sideburns, so the hair reads as hair and not a cap)
   const quiff = block(neck, hair, -0.07, 0.27, -0.02, 0.09, 0.34, 0.13);
   quiff.rotation.x = -0.25;
+  block(neck, skin, -0.019, 0.115, 0.1, 0.019, 0.165, 0.135, 'kevin_nose');
   const eyes = new THREE.Group();
   block(eyes, dark, -0.06, 0.165, 0.1, -0.035, 0.195, 0.106);
   block(eyes, dark, 0.035, 0.165, 0.1, 0.06, 0.195, 0.106);
@@ -100,8 +103,9 @@ export function buildKevin(mat) {
   const mouth = block(neck, mat(V.mouth), -0.045, 0.075, 0.1, 0.045, 0.1, 0.106, 'kevin_mouth');
   mouth.userData.keep = true; // (it opens and shuts)
   const headset = mat(V.headset);
-  block(neck, headset, -0.12, 0.24, -0.03, 0.12, 0.26, 0.01); // (the band over his hair)
-  block(neck, headset, -0.135, 0.1, -0.035, -0.11, 0.18, 0.035); // (the earpiece)
+  block(neck, headset, -0.118, 0.31, -0.035, 0.118, 0.325, -0.005); // (the band over the top of his hair)
+  for (const x of [-0.125, 0.112]) block(neck, headset, x, 0.15, -0.035, x + 0.013, 0.325, -0.005); // (down each side)
+  block(neck, headset, -0.137, 0.1, -0.04, -0.112, 0.18, 0.03); // (the earpiece)
   const boom = block(neck, headset, -0.006, -0.006, 0, 0.006, 0.006, 0.13);
   boom.position.set(-0.115, 0.11, 0.035);
   boom.rotation.y = 0.55;
@@ -194,8 +198,11 @@ export function buildSpeechBubble() {
   canvas.height = 200;
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
-  const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false, opacity: 0 });
+  // Not tone-mapped or fogged (the paper stays white, not grey), and drawn after the cart's light column (fx/beacon.js,
+  // renderOrder 2), which rises right through it and would otherwise wash out the middle of the line.
+  const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false, opacity: 0, toneMapped: false, fog: false });
   const sprite = new THREE.Sprite(material);
+  sprite.renderOrder = 3;
   sprite.name = 'kevin_bubble';
   sprite.raycast = () => {}; // (never in the way of a shot or a bullet mark: a sprite can't be raycast without a camera)
   sprite.visible = false;

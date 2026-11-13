@@ -97,9 +97,9 @@ export const kiosk = {
     ringSeconds: 0.4,
     // The Soda Bomb: a cola geyser for `seconds` and a ring of foam skidding out across the floor.
     cola: {
-      seconds: 0.45, perSecond: 170, speed: [6, 10], spread: 0.22, gravity: 12, size: 0.05, life: [0.7, 1.1],
+      seconds: 0.45, perSecond: 170, speed: [6, 10], spread: 0.22, gravity: 12, drag: 0.3, size: 0.05, life: [0.7, 1.1],
       colors: [0x5a2a12, 0x7a3b1c, 0xf6efe0, 0xc98a4b],
-      foam: { count: 50, speed: [3, 5.5], color: 0xf6efe0, size: 0.06 },
+      foam: { count: 50, speed: [3, 5.5], color: 0xf6efe0, size: 0.06, life: [0.5, 0.8], gravity: 6, drag: 2.2 },
       ring: 0xc98a4b,
     },
     // The Glitter Bomb: a cloud that hangs, twinkles and drifts down, and a pinch more on every zombie it confused.
@@ -110,9 +110,9 @@ export const kiosk = {
     // The Air Horn: rings of sound rolling out from where you stand, on the floor and at chest height.
     horn: { rings: 3, gap: 0.08, color: 0xfff3d4, chestHeight: 1.1 },
     // Bubble Wrap: a layer popping just in front of you (white bits) when it's used up.
-    wrap: { count: 16, speed: [1.2, 2.6], size: 0.011, life: [0.18, 0.35], distance: 0.55, colors: [0xdcefff, 0xffffff, 0xbfe3ff] },
+    wrap: { count: 16, speed: [1.2, 2.6], size: 0.011, life: [0.18, 0.35], gravity: 3, distance: 0.55, colors: [0xdcefff, 0xffffff, 0xbfe3ff] },
     // The Sentry: a muzzle flash per shot; when its time is up it comes apart in pieces.
-    sentry: { debris: 28, speed: [2, 4.5], size: 0.07, life: [0.9, 1.4], gravity: 9, colors: [0x45246e, 0xd8d2c4, 0x3a3f4a, 0xffe14d], flash: 0xfff1b8 },
+    sentry: { debris: 28, speed: [2, 4.5], size: 0.07, life: [0.9, 1.4], gravity: 9, drag: 0.4, sputterSeconds: 3, colors: [0x45246e, 0xd8d2c4, 0x3a3f4a, 0xffe14d], flash: 0xfff1b8 },
     // Comic words over the action (role toyBrand); `seconds` on screen, `size` m wide.
     words: { seconds: 0.9, size: 1.1, sodaBomb: 'FSSSHH!', airHorn: 'HOOONK!', glitterBomb: 'CONGRATS!', bubbleWrap: 'POP!', sentry: 'BZZT!' },
   },

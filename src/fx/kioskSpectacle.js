@@ -122,7 +122,7 @@ export function createKioskSpectacle({ scene, events, camera, kiosk = null, equi
         const angle = (i / foam.count) * Math.PI * 2 + Math.random() * 0.2;
         const speed = between(foam.speed);
         spawn(position, scratch.set(Math.cos(angle) * speed, 0.8 + Math.random(), Math.sin(angle) * speed), foam.color,
-          { size: foam.size, life: [0.5, 0.8], gravity: 6, drag: 2.2, floor: position.y - 0.1 });
+          { size: foam.size, life: foam.life, gravity: foam.gravity, drag: foam.drag, floor: position.y - 0.1 });
       }
       ring(position, radius, S.cola.ring);
       word(S.words.sodaBomb, position.clone().setY(position.y + 1.6));
@@ -164,7 +164,7 @@ export function createKioskSpectacle({ scene, events, camera, kiosk = null, equi
     at.y -= 0.18;
     for (let i = 0; i < w.count; i++) {
       const spot = at.clone().add(randomDir().multiplyScalar(0.12 + Math.random() * 0.12));
-      spawn(spot, randomDir().multiplyScalar(between(w.speed)), pickOf(w.colors), { size: w.size, life: w.life, gravity: 3 });
+      spawn(spot, randomDir().multiplyScalar(between(w.speed)), pickOf(w.colors), { size: w.size, life: w.life, gravity: w.gravity });
     }
     word(S.words.bubbleWrap, camera.position.clone().addScaledVector(ahead, 1.6).setY(camera.position.y + 0.25), S.words.size * 0.55);
   });
@@ -175,7 +175,7 @@ export function createKioskSpectacle({ scene, events, camera, kiosk = null, equi
     for (let i = 0; i < s.debris; i++) {
       const v = randomDir().multiplyScalar(between(s.speed));
       v.y = Math.abs(v.y) + 1.5;
-      spawn(at, v, pickOf(s.colors), { size: s.size, life: s.life, gravity: s.gravity, drag: 0.4, floor: position.y + 0.03 });
+      spawn(at, v, pickOf(s.colors), { size: s.size, life: s.life, gravity: s.gravity, drag: s.drag, floor: position.y + 0.03 });
     }
     effects?.flash(at, s.flash, { size: 0.6, seconds: 0.18 });
     word(S.words.sentry, position.clone().setY(position.y + 1.5), S.words.size * 0.8);
@@ -225,7 +225,7 @@ export function createKioskSpectacle({ scene, events, camera, kiosk = null, equi
         const count = Math.round(c.perSecond * dt * (0.6 + Math.random() * 0.8));
         for (let n = 0; n < count; n++) {
           const v = randomDir().multiplyScalar(c.spread).add(UP).normalize().multiplyScalar(between(c.speed) * (0.5 + geyser.left / c.seconds));
-          spawn(geyser.position, v, pickOf(c.colors), { size: c.size, life: c.life, gravity: c.gravity, drag: 0.3, floor: geyser.position.y - 0.1 });
+          spawn(geyser.position, v, pickOf(c.colors), { size: c.size, life: c.life, gravity: c.gravity, drag: c.drag, floor: geyser.position.y - 0.1 });
         }
         if (geyser.left <= 0) geysers.splice(i, 1);
       }

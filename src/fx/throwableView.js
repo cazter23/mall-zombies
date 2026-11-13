@@ -15,9 +15,10 @@
 
 import * as THREE from 'three';
 import { buildProductModel } from '../world/kioskProducts.js';
+import { kiosk } from '../config/kiosk.js';
 
 const MODEL_IDS = { bottle: 'sodaBomb', cake: 'sparklerCake', card: 'glitterBomb', sentry: 'sentry' };
-const SPUTTER_SECONDS = 3; // the Sentry's last seconds: its batteries going
+const SPUTTER_SECONDS = kiosk.spectacle.sentry.sputterSeconds; // the Sentry's last seconds: its batteries going
 
 export function createThrowableView(scene, equipment) {
   const materials = new Map();

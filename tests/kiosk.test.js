@@ -472,3 +472,45 @@ test('Kevin shouts: a hawk as you walk up to his open cart and again only after 
   standAtCart(t, g, kevin.site);
   assert.deepEqual(said.at(-1), ['hallway', 'lines', kiosk.hawk.lines[0]]);
 });
+
+test('Kevin\'s products are baked: one mesh per material kind, each piece where it was, turning parts kept apart', async () => {
+  const { bakeParts } = await import('../src/world/bakeParts.js');
+  const { buildProductDisplay, buildProductModel } = await import('../src/world/kioskProducts.js');
+  const mats = new Map();
+  const mat = (color, options = {}) => {
+    const key = `${color}|${JSON.stringify(options)}`;
+    if (!mats.has(key)) mats.set(key, new THREE.MeshStandardMaterial({ color, flatShading: true, ...options }));
+    return mats.get(key);
+  };
+  // bakeParts by itself: two boxes of one kind in two colours become one mesh with the same bounds; a kept pivot stays.
+  const root = new THREE.Group();
+  const a = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), mat(0xff0000));
+  a.position.set(2, 0, 0);
+  const b = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), mat(0x00ff00));
+  b.position.set(-2, 1, 0);
+  b.rotation.z = 0.5;
+  const pivot = new THREE.Group();
+  pivot.userData.keep = true;
+  pivot.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), mat(0xff0000)));
+  root.add(a, b, pivot);
+  const before = new THREE.Box3().setFromObject(root);
+  bakeParts(root);
+  const meshes = root.children.filter((o) => o.isMesh);
+  assert.equal(meshes.length, 1, 'the two loose boxes are one mesh');
+  assert.ok(meshes[0].material.vertexColors, 'their colours moved into the vertices');
+  assert.ok(root.children.includes(pivot) && pivot.children.length === 1, 'the kept pivot is left alone');
+  const after = new THREE.Box3().setFromObject(root);
+  assert.ok(before.min.distanceTo(after.min) < 1e-6 && before.max.distanceTo(after.max) < 1e-6, 'every piece stays where it was');
+  // Every product, on the counter and in the air: a few draws each, something to see, and the Sentry's head and spinner apart.
+  for (const id of [...kiosk.slots.flat(), ...Object.keys(kiosk.products)]) {
+    for (const model of [buildProductDisplay(id, mat), buildProductModel(id, mat)]) {
+      let draws = 0;
+      model.traverse((o) => { if (o.isMesh) draws++; });
+      assert.ok(draws >= 1 && draws <= 8, `${id}: ${draws} draws`);
+      assert.ok(!new THREE.Box3().setFromObject(model).isEmpty(), `${id} has a shape`);
+    }
+  }
+  const sentry = buildProductModel('sentry', mat);
+  assert.ok(sentry.userData.head?.userData.keep && sentry.userData.spinner?.userData.keep, 'the Sentry\'s head and spinner can turn');
+  assert.ok(buildProductDisplay('sentry', mat).userData.spinner, 'the demo unit on the counter spins');
+});
