@@ -1,5 +1,14 @@
 # Sunset Galleria: build history ("Current state")
 
+## 12 November 2026 - Jackpots: clocks that wait for a fight, and a Clearance that clears its area
+
+Three changes proposed after the incentives review, on `claude/incentive-meter` (game/incentiveEffects.js, config/powerUps.js):
+- **Jackpot clocks hold while nobody is up (`holdWhileQuiet`):** Commission Day and Black Friday only count down while a zombie is up to fight (one still rising out of its spawn does not count). Grabbed at the end of a wave, they keep their seconds for the next one instead of running out in the break. `effect.held` is shown as `ON HOLD` on the HUD row. Commons never hold.
+- **Store-Wide Clearance clears its area:** every non-boss zombie in the map area the pickup lies in (`map.areaAt`, passed in from createGame), on its floor. The old 28 m circle reached through walls into the next room and stopped short in the 40 m Hallway; the radius is now only the fallback for a map without areas. `clearanceDetonated` gained `area`.
+- **Its bonus grows with the round:** still one flat credit with no per-kill pay, now `bonus.perRoundZombie` (30) x the round's wave size, rounded to 10 (`clearanceBonus(round)`): 420 at round 4, 870 at round 10, 1,620 at round 20, about a fifth of a round's income all game where a fixed 400 faded to nothing.
+- **Checks:** tests in tests/powerUps.test.js (the Hallway cleared past the old radius while the Food Court 8 m away, the start room and the Promenade overhead survive; the bonus table; the radius fallback; the hold, a rising zombie, ON HOLD, commons never holding). Browser: the same Hallway clear paid 870 at round 10; Commission Day sat at 20 s `ON HOLD`, then ran once a shopper was up. Full suite 1,645 passing.
+- **Economy (`--quick`):** the bot does not go after pickups, so its runs barely see a jackpot: the income table is unchanged from the run before these changes and the mortal rounds moved within noise (10.3 -> 9.8 good, 7.5 -> 7.5 average). Judge these three by playing.
+
 ## 12 November 2026 - Incentives review: the trim, jackpots, weights, looks and meter checked and fixed
 
 A second model reviewed the four stacked incentive branches (`claude/incentives` -> `incentive-weights` -> `incentive-looks` -> `incentive-meter`, all in `.claude/worktrees/incentives`) against the trim/jackpot spec. The uncommitted meter work went in as one snapshot commit first, then small fixes on top:
