@@ -184,7 +184,7 @@ test('the zombies that show a shopping bag are the ones that can drop one', () =
   let bags = 0, plain = 0;
   for (let i = 0; i < 80; i++) {
     const zombie = g.zombies.spawn('shopper', new THREE.Vector3(0, 0, 12));
-    const shown = zombie.model.root.userData.appearance?.accessory === 'shoppingBag';
+    const shown = zombie.model.root.userData.appearance?.held === 'shoppingBag';
     assert.equal(zombie.model.hasBag, shown);
     if (zombie.model.hasBag) bags++; else plain++;
     g.zombies.clear();

@@ -1,5 +1,27 @@
 # Sunset Galleria: build history ("Current state")
 
+## 13 November 2026 - Shoppers become 1986 mall-goers, and a crowd of them costs less to draw (`claude/shoppers`)
+
+- **Eight archetypes** (config/shoppers.js), each with a few variations, every colour from a curated 1986 palette (`colors`): the
+  weekend shopper (tee/polo/raglan/rugby, jeans or shorts, bags), the velour tracksuit (colour-blocked shoulders or panels, matching
+  trousers; not the Mall Walker's striped one: no headband or wristbands), the mall-rat teen (colour-block windbreaker, neon tee or jean
+  jacket, acid-wash jeans or a ra-ra skirt with leg warmers, big hair, side pony, mullet, flat-top, a slushie, a Walkman with orange foam
+  headphones), the office worker on lunch (shirt and tie, loose tie, short sleeves with a pocket protector, a power suit with shoulder
+  pads; big glasses, a briefcase), the parent with a front carrier (a sleeping baby in a bonnet), the retiree (cardigan or sweater vest,
+  a perm or a flat cap, glasses, a purse), the food-court crew in their stall's colours (Corn Dog Corral, Burger Barn, Pretzel Palace,
+  Wok This Way: paper hat or visor, apron, name badge, a spatula) and the rocker (denim or studded vest over a tee with a back patch,
+  long hair or a mullet, a chain wallet). Widths 0.92 / 1 / 1.08; heights never change (the head hitbox is fixed). Nothing the Shoplifter
+  (dark hoodie, beanie) or the Mall Walker wears. The Cart Pusher wears them too.
+- **One material per Shopper.** It used to be a material per colour per zombie (~8 each) and a mesh per material per bone: 433 draw calls
+  for 24 Shoppers. Now every piece is a paint (zombies/shopperBake.js) and each bone is baked into ONE mesh with vertex colours, drawn
+  with the Shopper's own vertex-coloured material (so hit flashes, Build-A-Blaster glows, the edge shading and the straggler highlight still
+  work per zombie): 8 draw calls a Shopper, 192 for 24. Baked geometry is shared between Shoppers whose bone looks the same, ref-counted
+  and freed with the last one (normals and colours in bytes).
+- **Deterministic looks.** A look is a pure function of zombie.lookSeed (one Math.random draw per spawn in zombieManager). While a seeded
+  Shopper builds, its own random stands in for Math.random, because Three.js draws on it for every object id and a look's piece count
+  varies: building one never moves the game's random numbers, so changing a look no longer shifts seeded tests.
+- New: zombies/shopperModel.js, zombies/shopperBake.js. Changed: config/shoppers.js (rewritten), zombies/shopperAppearance.js,
+  zombieModel.js (Shopper path), zombie.js and zombieManager.js (lookSeed). limitedEditions.test.js reads `appearance.held`.
 ## 13 November 2026 - Rivet Rifle and Heavy Coil Nailer separation (`claude/hydrogen-rivet-coil`)
 
 Separated the Rivet Rifle and Heavy Coil Nailer (both were `damage: 95`, `fireInterval: 0.1` in `src/config/weapons.js`; numbers and adjacent comments only):
