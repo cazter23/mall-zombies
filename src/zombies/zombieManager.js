@@ -561,9 +561,9 @@ export function createZombieManager({
       resolveZombieOverlaps();
       keepPlayerOutOfZombies();
       rescueStuckZombies(dt);
-      // The last shoppers of a round (economy.rounds.lastShoppers) speed up to their type's fastest gait, so the
-      // player doesn't have to hunt slow walkers down. (Not bosses; types without gaits keep their one speed.)
-      if (getRounds?.()?.lastShoppers) {
+      // With economy.rounds.lastShoppers.speedUp (off by default), the last shoppers of a round speed up to their type's
+      // fastest gait. (Not bosses; types without gaits keep their one speed.)
+      if (economy.rounds.lastShoppers.speedUp && getRounds?.()?.lastShoppers) {
         for (const z of zombies) {
           if (!z.isAlive || z.type.boss || !z.type.gaits) continue;
           const fastSpeed = z.type.gaits.run ?? z.type.gaits.jog ?? z.speed;

@@ -76,7 +76,7 @@ test('waveEnding fires once per round when no spawns remain and aliveCount is 2 
   // One zombie dies: alive drops to 2 (<= 2): waveEnding MUST fire
   aliveCount = 2;
   rounds.update(0.1);
-  assert.equal(rounds.lastShoppers, true, 'two alive, none to come: the last shoppers (the manager speeds them up)');
+  assert.equal(rounds.lastShoppers, true, 'two alive, none to come: the last shoppers (the PA says so; no speed-up by default)');
   assert.equal(waveEndingEvents.length, 1);
   assert.deepEqual(waveEndingEvents[0], { round: 1, remaining: 2 });
 
@@ -160,24 +160,32 @@ test('wave copy complies with the words-only rule', () => {
   assert.equal(hasStatNumber('ATTENTION SHOPPERS: Final clearance — registers closing shortly!'), false);
 });
 
-test('Last Shopper pacing acceleration: zombieManager speeds up remaining zombies', () => {
-  const t = headlessGame();
-  t.tick(1);
-  t.g.rounds.update = () => {};
-  t.g.zombies.clear();
+test('the last shoppers keep their own pace by default; the speed-up only happens with lastShoppers.speedUp on', (t) => {
+  const game = headlessGame();
+  game.tick(1);
+  game.g.rounds.update = () => {};
+  game.g.zombies.clear();
+  const cfg = economy.rounds.lastShoppers;
+  t.after(() => { cfg.speedUp = false; });
 
   // Spawn a slow walking shopper (base walk speed = 2.0 m/s)
-  const z1 = t.g.zombies.spawn('shopper');
+  const z1 = game.g.zombies.spawn('shopper');
   z1.speed = 2.0;
+  Object.defineProperty(game.g.rounds, 'lastShoppers', { value: true, configurable: true });
 
-  // Not the last shoppers (rounds.lastShoppers: more to spawn, or too many alive): speed is not forced
-  Object.defineProperty(t.g.rounds, 'lastShoppers', { value: false, configurable: true });
-  t.g.zombies.update(1 / 60);
+  // Off (the default, 13 November 2026: the sudden sprint caused cheap deaths): the last shoppers are not hurried.
+  assert.equal(cfg.speedUp, false);
+  game.g.zombies.update(1 / 60);
   assert.equal(z1.speed, 2.0);
 
-  // The last shoppers: speed is forced to the type's fastest gait
-  Object.defineProperty(t.g.rounds, 'lastShoppers', { value: true, configurable: true });
-  t.g.zombies.update(1 / 60);
+  // On: not the last shoppers yet (more to spawn, or too many alive): speed is not forced...
+  cfg.speedUp = true;
+  Object.defineProperty(game.g.rounds, 'lastShoppers', { value: false, configurable: true });
+  game.g.zombies.update(1 / 60);
+  assert.equal(z1.speed, 2.0);
+  // ...the last shoppers: speed is forced to the type's fastest gait.
+  Object.defineProperty(game.g.rounds, 'lastShoppers', { value: true, configurable: true });
+  game.g.zombies.update(1 / 60);
   const fastSpeed = z1.type.gaits.run ?? z1.type.gaits.jog ?? 2.0;
   assert.ok(fastSpeed > 2.0, 'shopper has faster gait');
   assert.equal(z1.speed, fastSpeed);

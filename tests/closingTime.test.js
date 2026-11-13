@@ -279,6 +279,36 @@ function readyToLeave(g) {
   assert.ok(g.closing.readyToLeave);
 }
 
+test("the HUD's next step walks the whole quest: waiting, a key on the floor, each duty with its count, validation, the Last Customer, the van", (t) => {
+  const game = fixture(t), { g } = game;
+  const o = closingTime.objective;
+  assert.equal(g.closing.nextStep, o.waiting, 'nothing to act on yet: who carries the keys');
+
+  // A key on the floor comes first; picked up, its duty (with its count) is the step.
+  game.standAt(0, 12);
+  assert.match(g.debug.run('closing', 'drop', 'janitor', new Vector3(2.5, 0, 12)), /Dropped/);
+  assert.equal(g.closing.pickups.length, 1);
+  assert.equal(g.closing.nextStep, o.collect(closingTime.lines.janitor.key));
+  const [{ position }] = g.closing.pickups;
+  game.standAt(position.x, position.z);
+  game.tick();
+  assert.ok(g.closing.hasKey('janitor'), 'walked onto the key');
+  assert.equal(g.closing.nextStep, `${o.duty.janitor} 0/${closingTime.lines.janitor.needed}`);
+  g.events.emit('fountainKill', {});
+  assert.equal(g.closing.nextStep, `${o.duty.janitor} 1/${closingTime.lines.janitor.needed}`);
+  finishDuties(g, ['janitor']);
+  assert.equal(g.closing.nextStep, o.keys, 'a duty done, keys still out there');
+
+  grantKeys(g, bossIds.filter((id) => id !== 'janitor'));
+  assert.equal(g.closing.nextStep, `${o.duty.guard} 0/${closingTime.lines.guard.needed}`, 'the next open duty, in checklist order');
+  finishDuties(g);
+  assert.equal(g.closing.nextStep, o.validate);
+  validate(g);
+  assert.equal(g.closing.nextStep, o.lastCustomer);
+  defeatCustomer(g);
+  assert.equal(g.closing.nextStep, o.leave);
+});
+
 test('the van explains missing keys and duties, then a hold wins once and Clock out freezes the run', (t) => {
   const game = fixture(t);
   const { g, tick, press, hud } = game;

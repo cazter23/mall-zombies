@@ -553,7 +553,7 @@ src/
                         drops on helmet pop; a grounded moving player plays 'saltCrunch' underfoot AND any bare-headed walking Twisty plays positional 'saltCrunch' (`1 - dist / maxDistance`, throttled per zombie by `zombieStepMeters`); sound cue only, no damage or slow
     closingTime.js      g.closing owns persistent boss key drops, collection, checklist progress (fountain kills, night-safe purchases and workshop collections) and Play again reset.
                         A key never ticks a line: lines 1 to 3 tick on their duty, line 4 on the win (completeLeaving, called by onRunWon). readyToValidate = four keys and
-                        lines 1 to 3; readyToLeave also needs validated and lastCustomerDefeated. closingValidated books the next closingRound through bosses.book; bossDefeated clears the van gate. These fields serialize/restore silently and reset clears them. A paid validation purchase emits closingValidated with the current round and PA. serialize/restore keeps validated silently; reset clears it. missingKeys / missingDuties say what is left. Emits the once-per-run 'closingBriefing'.
+                        lines 1 to 3; readyToLeave also needs validated and lastCustomerDefeated. closingValidated books the next closingRound through bosses.book; bossDefeated clears the van gate. These fields serialize/restore silently and reset clears them. A paid validation purchase emits closingValidated with the current round and PA. serialize/restore keeps validated silently; reset clears it. missingKeys / missingDuties say what is left. nextStep: the one thing to do next as HUD text (config objective; a key on the floor, an open duty with its count, validation, the Last Customer, the van; else who carries the keys), shown under the round box in Directed once the shutter hint is gone (main.js). Emits the once-per-run 'closingBriefing'.
                         Overtime: `healthMultiplier` (config overtime.healthPerRound ^ the overtime rounds begun, from createGame's getOvertimeRound = rounds.round - overtimeFrom + 1; the zombie
                         manager reads it on every spawn through its getHealthMultiplier option) and, on 'overtimeStart' only, killPay multiplied into stats.killPayMultiplier (never on a load).
     floorPickups.js     Shared clear-floor placement and swept collection for incentives and closing keys; direction for HUD markers.
@@ -576,7 +576,7 @@ src/
     incentiveEffects.js Temporary employee benefits & Clearance: concurrent timers, reversible stat modifiers (Shift Bonus,
                         Loss Prevention melee, Commission Day pointsMultiplier, Black Friday instantKill/bossDamageMultiplier),
                         deferred non-recursive liquidation damage, one-purchase coupons, target marks, green healing zones
-                        (Paid Break), slow patches (Spill Cleanup), direct-kill extensions, melee charges + sprint shoves,
+                        (Paid Break), slow patches (Spill Cleanup, which also draws nearby shoppers through it: zombie.detour), direct-kill extensions, melee charges + sprint shoves,
                         detonateClearance() (every non-boss zombie in the pickup's map area on its floor, via map.areaAt passed
                         from createGame, else within its radius; source 'clearance', capped non-lethal boss hit, one flat bonus
                         from clearanceBonus(round): perRoundZombie x the round's wave size; 'clearanceDetonated'), holdWhileQuiet
@@ -828,7 +828,7 @@ src/
                         rooms and the floor-to-floor nav link. Lower shutter (economy.doors.cinema, 1250) opens cinema + serviceCorridor; the original
                         cinema shutter now opens cinema + upstairs. No real lights, guns or spawn markers added.
     mall/kioskCart.js   buildKioskCart(kit, site) -> { position, stand, normal, slots, show(state, stock), say(line), animate(dt, time, viewer) }: one
-                        of Kevin's carts (a 1.05 m vaultable counter), built in its own frame and turned by `faces` (+z, -z, +x, -x), dressed by
+                        of Kevin's carts (a 1.05 m counter under a canopy; ONE invisible collider, solid to the roof, not vaultable), built in its own frame and turned by `faces` (+z, -z, +x, -x), dressed by
                         dressCart (static, no collision: harlequin front, gold shelf lip, striped canopy, KIOSK KEVIN marquee, pegboard); three buy spots,
                         a notice strip (closed / away, the lid's notice in turn / hiding / Kevin's Pick), the product labels (redrawn when the stock
                         changes) and, in a dynamic rig: the round's three products on the counter (world/kioskProducts.js), a slatted lid that covers

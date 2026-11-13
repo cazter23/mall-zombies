@@ -162,6 +162,7 @@ Promenade shutter from inside and receives natural upstairs spawns.
 debug-run exclusion, reset, corrupt saves and unavailable browser storage.
 `tests/music.test.js` covers Galleria FM: note and chord parsing; six songs that each parse into a full form with drums, an early melody, notes in range and a length of 1.5 to 2.8 minutes; deterministic renders that are stereo, never clip, leave headroom, open with the station chime and have no silent stretch; tape wear by round (none with the horror layer off); and the radio player on fake Web Audio (only the playing song and the next rendered, a crossfade near the end with the next from its top, each song announced once and a resume not, the place kept across pauses, music volume alone, every song once before a repeat and never one twice running, a new run moving on, the tape's pitch sag and the timeline running at the sagged speed). It also covers the End of Shift death sting: receipt-timed bell, music volume, cancellation of future
 notes, replacement-voice cleanup, and real-game death/reset wiring.
+`tests/closingTime.test.js` also walks `g.closing.nextStep` (the Directed hint under the round box) through the whole quest: waiting, a key on the floor, each duty with its count in checklist order, validation, the Last Customer and the van.
 Phase 9 in `tests/closingTime.test.js` checks the all-source damage floor, Speechless freeze and timeout recovery, both real returns through the normal kill path (including weaponId), the per-type beam fraction, a long-range beam, and the hand hold winning over the nearby van and held reload. The desk tests cover each duty, full price and Discount Code, two-slot replacement, half-rate ammo without duties, full refusal, reset and separate prompts for all Customer Service windows, safe and Prize Counter.
 `tests/saveGame.test.js` checks the purchased gun and ammunition through the existing loadout step, and a Speechless encounter rolling back to a fresh booked boss.
 Phase 8 in `tests/closingTime.test.js` checks the booked-only boss, next-round scheduling including the round-20 encore slot, CLOSING TIME banner,
@@ -205,7 +206,7 @@ Commission Day also doubles the helmet pop; Black Friday (one-hit kills across h
 per-type distinct 3D low-poly silhouettes (`userData.shared` merged geometries/materials built once and reused without per-pickup disposal or leaks across resets, few meshes per pickup, standout jackpot scale/hover/halo/beacon), `'powerUpMeter'` event bus tracking across round unlock/near-full/cap/restore/reset, Comfort `incentiveMeter` toggle, `'incentiveDiscovered'` NEW INCENTIVE HUD toast, and Employee of the Hour HUD states.
 `fullRun.test.js` also earns and collects a drop with production tuning, then checks Play again cleanup.
 `tests/incentiveEffects.test.js` covers Shift Bonus (reload/swap/move + direct-kill extension cap), Paid Break (its circle and floor only, blocked by walls, capped at max health, a finite budget; green ring + HUD),
-Inventory Liquidation, Employee Discount, Mystery Shopper, Spill Cleanup, Loss Prevention (three melee charges + sprint shove pulses), reward rotation,
+Inventory Liquidation, Employee Discount, Mystery Shopper, Spill Cleanup (and it drawing nearby shoppers through the puddle once each), Loss Prevention (three melee charges + sprint shove pulses), reward rotation,
 death/reset cleanup, concurrent HUD counters with jackpot styling, floor rings and target markers.
 
 Gameplay regression tests live in `tests/` (`gameplay.test.js` movement/melee/vault, `aim.test.js` spread
@@ -251,7 +252,7 @@ owned, a free grab, a keychain in the run summary); the voucher keeps the counte
 for the Courtesy Loaner); tickets never touch points, pricing or income, are lost on death and gone on Play again; the booth has one
 tall collider, a clear reachable spot at every prize, no spawn within 5 m and unchanged zombie routes. clawMachine.test.js checks
 every grab outcome's tickets; receiptReview.test.js the receipt's ticket and keychain lines.
-`economySim.test.js` the economy sim (npm run sim:economy; tools/economyBot.js, economyPlans.js, economyModel.js): the bot plays two rounds headless, buys its
+`economySim.test.js` the economy sim (npm run sim:economy; tools/economyBot.js, economyPlans.js, economyModel.js): the bot plays three rounds headless, buys its
 list in order at the shelf price, and its books balance (every point earned has a round and a source, every point spent a logged purchase);
 a proposal changes config numbers in memory only and puts them back, and a typo in a proposal's path is an error; every proposal and every
 buy order points at config that exists (a renamed door, gun or tier fails here, not in a 40-minute run); the maths side reads config (wave
@@ -453,7 +454,7 @@ the model and debris and disposes their shared geometry and materials.
   cakes, in their pocket), Pick bonuses, hiding, pricing and vouchers (phase 7: Kevin's Flash Sale group waits until his cart is open,
   not before round 2 or behind the locked start shutter, works mid-block without a move/PA, and ends back at the shelf prices; the Discount Code halves the Sentry once and is
   spent by that purchase, which is one Sentry (never the Pick); the Master Key and Signed Approval never apply). Air Horn input, cover, charge interruption, Mascot weight,
-  boss immunity and zero payout. Kevin's five sites (phase 4): each has one collider (a vaultable counter or >= 2.1 m),
+  boss immunity and zero payout. Kevin's five sites (phase 4): each has one collider (solid to the canopy roof, not vaultable),
   a clear stand point zombies reach, no zombie spawn within `spawnClearance`, a real prompt there, and ducking measured
   from that cart; the carts leave every spawn's route to the hub alone (no more than 3 m longer); he opens first in
   the Hallway at round 2, stays put silently on rounds 3-4, and moves every 3 rounds (`5, 8...`) with the PA naming the place; 40 move rounds with

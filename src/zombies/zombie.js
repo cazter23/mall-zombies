@@ -83,6 +83,7 @@ export class Zombie {
     this.slipImmune = 0; // seconds before it can slip again, so a puddle can't pin it down
     this.buffs = new Map(); // independent timers; strongest multiplier wins, never compounds
     this.hold = null; // { source, seconds, point }, independent of Mannequin observation
+    this.detour = null; // { x, y, z } a point to walk through on the way to the player (Spill Cleanup: game/incentiveEffects.js)
     this.control = null; // behavior-owned function(dt, ctx): true when it handled movement
     this.damageTakenMultiplier = 1;
     this.burn = null; // Fryer Oil: { perTick, tickSeconds, nextTick, left, weaponId }, or null
@@ -392,6 +393,7 @@ export class Zombie {
     if (!this.isAlive) {
       this.buffs = new Map(); // independent timers; strongest multiplier wins, never compounds
     this.hold = null; // { source, seconds, point }, independent of Mannequin observation
+    this.detour = null; // { x, y, z } a point to walk through on the way to the player (Spill Cleanup: game/incentiveEffects.js)
     this.control = null; // behavior-owned function(dt, ctx): true when it handled movement
     this.damageTakenMultiplier = 1;
     this.burn = null;
@@ -851,6 +853,17 @@ export class Zombie {
         hasPath = true;
       }
       arrive = clamp01((distToPlayer - contact) / type.attack.closeInBrakeDistance);
+    } else if (this.detour && sameFloor && distToPlayer > contact) {
+      // A detour (a Spill Cleanup puddle): straight for it first, even before a surround slot (only attacking comes first).
+      const tx = this.detour.x - this.position.x;
+      const tz = this.detour.z - this.position.z;
+      const toDetour = Math.hypot(tx, tz);
+      if (toDetour > 1e-4) {
+        desired.x = tx / toDetour;
+        desired.z = tz / toDetour;
+        hasPath = true;
+      }
+      arrive = 1;
     } else if (this.slot) {
       const sx = this.slot.x - this.position.x;
       const sz = this.slot.z - this.position.z;

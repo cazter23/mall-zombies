@@ -305,6 +305,9 @@ test('every Kevin site: one collider (a vaultable counter or too tall to stand o
     assert.equal(solids.length, 1, `${site.id}: one collider`);
     const height = solids[0].max.y - solids[0].min.y;
     assert.ok((height <= 1.1 && solids[0].vaultable) || height >= 2.1, `${site.id}: ${height.toFixed(2)} m is a counter or too tall`);
+    // The canopy, posts and pegboard are solid too: the one collider reaches the roof's top and can't be vaulted.
+    assert.ok(Math.abs(solids[0].max.y - site.floorY - (kiosk.cart.roofY + kiosk.cart.roofThickness)) < 1e-6, `${site.id}: solid to the roof`);
+    assert.ok(!solids[0].vaultable, `${site.id}: no headroom to stand on the counter, so not vaultable`);
     const spot = buyerSpot(site);
     assert.equal(overlapsSolid(spot, .35, 1.8, g.colliders, .3), false, `${site.id}: clear stand point`);
     assert.ok(Number.isFinite(nav.distanceToTarget(spot.x, spot.z, spot.y)), `${site.id}: zombies reach the front`);

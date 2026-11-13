@@ -165,6 +165,46 @@ test('Spill Cleanup is placed behind the player, slows only zombies in the patch
   assert.equal(t.active('spillCleanup'), undefined);
 });
 
+test('Spill Cleanup draws nearby shoppers through the puddle on the way to you, once each, and lets go when it ends', () => {
+  const t = scenario(), { g } = t;
+  const def = powerUps.types.spillCleanup;
+  g.health.invulnerable = true;
+  g.player.yaw = 0; // (the spill lands behind: z ~13.4 in the start room)
+  const drawn = t.spawn(3, 15.5); // the spill is nearer to it than you are: it detours
+  const ahead = t.spawn(-3, 11); // you are nearer than the spill: it just comes for you
+  t.collect('spillCleanup');
+  const patch = t.active('spillCleanup');
+  g.powerUps.update(1 / 60);
+  assert.equal(drawn.detour, patch.position);
+  assert.equal(ahead.detour, null);
+
+  // It walks into the middle of the puddle (it is slowed there), then is done with it and chases as usual.
+  let closest = Infinity;
+  for (let i = 0; i < 240 && drawn.detour; i++) {
+    t.tick();
+    closest = Math.min(closest, Math.hypot(drawn.position.x - patch.position.x, drawn.position.z - patch.position.z));
+  }
+  assert.ok(closest <= def.crossRadius + 0.2, `it reached the puddle's middle (closest ${closest.toFixed(2)} m)`);
+  assert.equal(drawn.detour, null, 'crossed: no longer drawn');
+  t.tick(30);
+  assert.equal(drawn.detour, null, 'once each: it is not drawn back');
+
+  // A shopper that can't get there (held in place here) gives up after giveUpSeconds instead of pushing forever.
+  const stuck = t.spawn(2.5, 15.5);
+  g.powerUps.update(1 / 60);
+  assert.equal(stuck.detour, patch.position);
+  for (let s = 0; s < def.giveUpSeconds + 0.5; s += 0.25) { stuck.position.set(2.5, 0, 15.5); g.powerUps.update(0.25); }
+  assert.equal(stuck.detour, null, 'gave up');
+
+  // A new shopper behind the spill is drawn; when the spill ends, every detour is let go.
+  const late = t.spawn(-2.5, 15.5);
+  g.powerUps.update(1 / 60);
+  assert.equal(late.detour, patch.position);
+  g.powerUps.update(def.seconds);
+  assert.equal(t.active('spillCleanup'), undefined);
+  assert.equal(late.detour, null);
+});
+
 test('Loss Prevention boosts three real melee hits, staggers nearby group, and pushes visible same-floor zombies while sprinting', () => {
   const t = scenario(), { g } = t;
   const base = g.stats.meleeDamageMultiplier;

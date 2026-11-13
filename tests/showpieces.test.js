@@ -117,7 +117,10 @@ test('each showpiece is readable from the Food Court entrance: a clear line from
       const target = new THREE.Vector3(...tops[id]);
       ray.set(eye, target.clone().sub(eye).normalize());
       const reach = eye.distanceTo(target) - 0.05;
-      const blocker = g.colliders.find((b) => ray.intersectBox(b, hit) && hit.distanceTo(eye) < reach);
+      // Kevin's carts are left out: since they became solid to their canopy roof (13 November 2026), the Food Court cart
+      // hides the Wheelie Sneakers display from the middle of the doorway, as its pegboard and canopy already did on
+      // screen. The user chose to accept that rather than move the cart; any OTHER solid in the way still fails.
+      const blocker = g.colliders.find((b) => !b.kioskCart && ray.intersectBox(b, hit) && hit.distanceTo(eye) < reach);
       assert.ok(!blocker, `${id} from x ${x}: blocked by a solid at ${blocker?.min.toArray().map((n) => n.toFixed(1))}`);
     }
   }

@@ -327,9 +327,12 @@ export const economy = {
     },
     spawnRetrySeconds: 0.5, // no usable spawn point (none open/reachable)? try again this soon
     // The last shoppers: once a round has nothing left to spawn and this many or fewer zombies are alive, the PA says so
-    // ('waveEnding') and the stragglers (not bosses) speed up to their fastest gait, so the end of a round isn't a hunt.
+    // ('waveEnding'). With speedUp, the stragglers (not bosses) also speed up to their fastest gait so the end of a round
+    // isn't a hunt; it is OFF (13 November 2026: a sudden sprint from the last zombies caused cheap deaths). The straggler
+    // helper (feel.stragglers: the last zombies glow through walls) does the finding instead.
     lastShoppers: {
       count: 2,
+      speedUp: false,
       pa: {
         kicker: 'Attention shoppers',
         priority: 1,

@@ -11,9 +11,10 @@ import { upgrades } from '../src/config/upgrades.js';
 
 const sum = (list, fn) => list.reduce((total, x) => total + fn(x), 0);
 
-test('the bot plays two rounds, buys its list at the shelf price, and its books balance', () => {
+test('the bot plays three rounds, buys its list at the shelf price, and its books balance', () => {
   const plan = [{ type: 'gun', id: 'priceGun' }, { type: 'door', area: 'hallway' }];
-  const run = runBot({ seed: 1, skill: 'good', plan, maxRound: 2, immortal: true });
+  // (three rounds: the shutter is bought in the first break that can afford it, and round 1 alone pays a little under 500)
+  const run = runBot({ seed: 1, skill: 'good', plan, maxRound: 3, immortal: true });
   assert.equal(run.outcome, 'maxRound');
   // bought in order, each at its price (no Flash Sale this early), in the break it could first afford it
   assert.deepEqual(run.steps.map((s) => s.cost), [economy.wallBuys.priceGun.weapon, economy.doors.hallway]);
