@@ -1,5 +1,50 @@
 # Sunset Galleria: build history ("Current state")
 
+## 14 November 2026 - Full-repo bug hunt (`claude/bughunt`)
+
+Seven readers went through the game by area (game core, features, guns and player, zombies, UI, map, leaks); every candidate was
+proved in the real headless game (or the browser) before it was fixed. One commit and one test per bug: tests/bugHunt.test.js.
+The branch was brought up to main (the audio overhaul) first; no audio file, `sounds:` block or sound.play line was touched.
+
+**Fixed (what the player saw):**
+- **The horde froze** when you hopped into a pocket with no zombie-walkable floor within 1.5 m (behind the Food Court bench by the
+  RESTOCK-O-MATIC, the south-west nook behind a table, the parking kerb island): no route field, every zombie stood still, no spawn
+  marker had a route, the round stopped spawning. navigation.js now falls back to the nearest cells within
+  zombieNav.playerFallbackRadius (4 m), walls or not, also when the field stays inside a sealed pocket (pocketCells). The cinema
+  service stairs' nav link was 0.9 m narrower than the stairs (the same freeze in a 10 cm band along each wall): full width now.
+- **Map perches and a dead end** (found by a flood fill of everything reachable, replayed with real keys): the sealed escalator's
+  side walls step up like stairs from the planter (free entry to the unbought Promenade, and a perch); a hop from a display prop
+  cleared a Food Court store counter into the clerk's strip, which has no way out; the TV wall (1.95 m), the arcade cabinets (1.9 m)
+  and the Mega Mart gondolas (2.0 m) could be stood on. All get unseen, shot-through toppers (config/environment.js perchCap;
+  attachmentDisplay's capTo for the counters). A sprint-jump up an escalator sank you 0.77 m under the treads (world/collision.js:
+  a ramp now also catches a rising body once the slope reaches its feet).
+- **Saves:** Employee Discount became permanent after Save & Quit (the coupon was saved, the timed effect that owns it was not: the
+  coupon is no longer saved or restored; restore ignores the old field, so the save version is unchanged); Save & quit right after
+  Stay for overtime wrote the pre-win snapshot; Continue replayed "Second Chance redeemed"; a claw machine saved during its last grab
+  came back open with "0 left" and charged for a seventh grab.
+- **Pay and credit:** Store-Wide Clearance killed a RUNG UP boss unpaid (its wound maths left out the Barcode Scanner's multiplier);
+  Build-A-Blaster credited a balloon / rocket / ball kill to the gun in hand; the Full Refund label clamped a reserve above its cap
+  down; the order form ordered a Stuffing that had left the bins; the Leaf Blower carried a phantom reserve round (gunStats rounded
+  0 up to 1), so a Platinum one never claimed.
+- **Guns:** a tennis ball thrown against a wall started on its far side (the rocket's guard, for balls); a holstered gun was frozen
+  in time (fire delay and fuel tank only ticked in hand).
+- **Zombies:** crowd spacing, queueing and the overlap rule ignored height (the Promenade shoved the Hallway under it); the failsafe
+  never rescued a zombie wedged on the floor above you within 5 m on the map; a boss's backup announced 'typeIntro' without the zombie.
+- **Menus:** winning with the mouse put the pause card over the van's drive-off (main.js's lock handler now skips a pending win;
+  shown in the browser); a menu opened mid-jump left you hanging in the air.
+- **Waste:** hud.setVoucher ran every tick; a Sentry with zombies in range but none in sight re-cast its sight lines every tick
+  (ticks about 70% slower with 20 hidden zombies).
+
+**Proved but left for a decision** (the report to the user has the list): a boss voucher or a claw grab under way when the round
+flips is lost by a save; Hearts that can never fire on some guns (Headshot on the Tennis Ball Launcher, Leaf Blower and Return to
+Sender; Reload on the Leaf Blower) and a ball's Last Round going off 6 m ahead through walls; Second Chance wiping Bubble Wrap; the
+free Return to Sender reissue as a cheap full reload; Flash Sales on nothing buyable; a fleeing Shoplifter ignoring staggers; the
+parking kerb island (zombies now come within 2.4 m but cannot step onto a 0.15 m kerb); the "save discarded" notice nobody can see.
+**Measured, not changed** (render side, wants a browser profile): the viewmodel scene keeps all 15 guns attached (3,875 matrices a
+frame), effects.impact raycasts the whole map per wall hit (about 6 ms), nothing freezes the static map's matrices.
+No leak was found: scene objects, colliders and bus listeners return to baseline after Play again, and zombie, claw, Kevin and gun
+cycles leave no geometry, material or texture behind.
+
 ## 14 November 2026 - `npm run audition`: the gun sound audition without the dev server (`claude/audio-overhaul`)
 
 The dev server took too long to start just to listen. tools/openAudition.mjs bundles tools/audition.html (the sound engine, the gun
