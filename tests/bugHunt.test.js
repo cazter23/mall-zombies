@@ -541,3 +541,30 @@ test('jumping into the Build-A-Blaster order form does not leave you hanging in 
   assert.ok(g.player.position.distanceTo(at) < 0.01, 'and on the ground the form still holds you still');
 });
 
+test('sprinting up an escalator and jumping does not sink you under the treads', (context) => {
+  const t = openMall(context);
+  const { g } = t;
+  const ramp = g.colliders.ramps.find((r) => rampHeightAt(r, -9, 2) !== null);
+  assert.ok(ramp, 'the scenario: the hallway escalator');
+  for (const jumpAt of [-6, -7, -8]) {
+    g.player.teleport({ position: new THREE.Vector3(-3, 0, 2), yaw: Math.PI / 2 }); // (facing -X: up the escalator)
+    t.tick(5);
+    let jumped = false;
+    let sunk = 0;
+    t.input.held.add('KeyW');
+    t.input.held.add('ShiftLeft');
+    for (let i = 0; i < 150; i++) {
+      if (!jumped && g.player.position.x <= jumpAt) {
+        jumped = true;
+        t.input.pressed.add('Space');
+      }
+      t.tick(1);
+      const surface = rampHeightAt(ramp, g.player.position.x, g.player.position.z);
+      if (surface !== null) sunk = Math.max(sunk, surface - g.player.position.y);
+    }
+    t.input.held.delete('KeyW');
+    t.input.held.delete('ShiftLeft');
+    assert.ok(jumped, 'the scenario: jumped on the way up');
+    assert.ok(sunk < 0.3, `jump at x ${jumpAt}: feet got ${sunk.toFixed(2)} m under the treads`);
+  }
+});

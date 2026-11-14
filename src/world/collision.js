@@ -193,10 +193,13 @@ export function moveAndCollide(pos, vel, dt, radius, height, colliders, stepTole
   }
 
   // Ramps: stand on the surface under the body's center.
-  if (vel.y <= 0 && colliders.ramps) {
+  // (Rising too, once the slope has come up to the feet: a sprint-jump UP an escalator climbs slower than the treads do, and
+  // by the top of the jump the feet were more than rampStep under them, where the ramp no longer caught: you sank into it.)
+  if (colliders.ramps) {
     for (const ramp of colliders.ramps) {
       const h = rampHeightAt(ramp, pos.x, pos.z);
-      if (h !== null && prevY >= h - ramps.rampStep && pos.y <= h + ramps.rampSnap) landingY = Math.max(landingY, h);
+      if (h === null || prevY < h - ramps.rampStep) continue;
+      if (vel.y <= 0 ? pos.y <= h + ramps.rampSnap : pos.y < h) landingY = Math.max(landingY, h);
     }
   }
 
