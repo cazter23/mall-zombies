@@ -394,6 +394,29 @@ test('a boss\'s backup counts as that type\'s first sighting: the intro carries 
   assert.equal(g.guide.pages().find((page) => page.entry.id === 'mallWalker').seen, true, 'its Survival Guide page is marked seen');
 });
 
+// Tops a chain of jumps reached (each replayed with real key presses during the hunt), where no zombie could hit you: feet on top.
+const PERCHES = [
+  ['the start room\'s TV wall (from the crates)', [0.5, 1.95, 15.65]],
+  ['the hallway arcade cabinets (from the prop beside them)', [-17.0, 1.9, -1.5]],
+  ['a Mega Mart gondola (a sprint-jump off the checkout)', [27.5, 2.0, -12]],
+  ['the sealed escalator\'s first side wall (from the planter)', [-4.7, 1.62, 1.15]],
+  ['the escalator side wall two steps up (the hub perch)', [-6.9, 2.77, 1.15]],
+  ['Good Sports\' counter (over it: the clerk\'s strip has no way out)', [-13, 1.25, -19.3]],
+  ['Play Time Toys\' counter', [-13.5, 1.25, -3.6]],
+];
+test('nobody can stand on the known perches: there is no room for a body on top of them', (context) => {
+  const t = openMall(context);
+  const { g } = t;
+  for (const [name, at] of PERCHES) {
+    const feet = new THREE.Vector3(...at);
+    const under = g.colliders.some((box) => Math.abs(box.max.y - at[1]) < 0.011 && at[0] > box.min.x && at[0] < box.max.x && at[2] > box.min.z && at[2] < box.max.z);
+    assert.ok(under, `the scenario: ${name} still has its top at ${at}`);
+    assert.ok(overlapsSolid(feet, feel.player.radius, feel.player.height, g.colliders, feel.movement.stepTolerance), `${name}: a body fits on top`);
+    const crouched = overlapsSolid(feet, feel.player.radius, feel.movement.proneHeight ?? 0.5, g.colliders, feel.movement.stepTolerance);
+    assert.ok(crouched, `${name}: not lying down either`);
+  }
+});
+
 test('GRAB-A-GUN: a save taken during a site\'s last grab comes back sold out, not open with "0 left"', (context) => {
   const storage = memoryStorage();
   const setup = () => {
@@ -517,3 +540,4 @@ test('jumping into the Build-A-Blaster order form does not leave you hanging in 
   t.input.held.delete('KeyW');
   assert.ok(g.player.position.distanceTo(at) < 0.01, 'and on the ground the form still holds you still');
 });
+

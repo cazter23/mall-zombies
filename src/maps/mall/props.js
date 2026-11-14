@@ -30,7 +30,7 @@
 
 import * as THREE from 'three';
 import { COLORS } from './palette.js';
-import { atmosphere } from '../../config/environment.js';
+import { atmosphere, perchCap } from '../../config/environment.js';
 import { concourse } from '../../config/concourse.js';
 import { seededRandom } from '../../world/textures.js';
 import { stallThemes } from './stallThemes.js';
@@ -195,6 +195,7 @@ export function createMallProps(kit) {
    */
   function gondola(x0, z0, x1, z1, { height = 2.0, seed = 1, looted = 0.12, stock = true } = {}) {
     addCollider(x0, 0, z0, x1, height, z1);
+    addCollider(x0, height, z0, x1, height + perchCap, z1).ignoreShots = true; // the topper: nothing to stand on (2.0 m is one sprint-jump from a checkout counter)
     const alongX = x1 - x0 >= z1 - z0;
     // Work in (u = along the gondola, w = across it) and map back to (x, z).
     const [u0, u1, w0, w1] = alongX ? [x0, x1, z0, z1] : [z0, z1, x0, x1];
@@ -478,12 +479,19 @@ export function createMallProps(kit) {
     const barrier = sealed ? addCollider(x0, 0, minZ, x1, 1.25, maxZ) : null; // (an unsealed escalator works from the start)
     [x0, x1] = span(length - .45, length);
     const upperBarrier = sealed ? addCollider(x0, upperY, minZ, x1, upperY + 1.5, maxZ) : null;
-    const barriers = [barrier, upperBarrier].filter(Boolean);
+    // The foot barrier's topper (unseen, shot-through): a planter beside the escalator is a step up onto a 1.25 m barrier. It goes with the barrier.
+    const barrierCap = barrier ? addCollider(barrier.min.x, 1.25, minZ, barrier.max.x, 1.25 + perchCap, maxZ) : null;
+    if (barrierCap) barrierCap.ignoreShots = true;
+    const barriers = [barrier, barrierCap, upperBarrier].filter(Boolean);
     // Side walls: the bottom landing, the slope in segments, the top landing.
     const sides = (ua, ub, bottom, top) => {
       [x0, x1] = span(ua, ub);
       addCollider(x0, bottom, minZ, x1, top, minZ + sideWidth);
       addCollider(x0, bottom, maxZ - sideWidth, x1, top, maxZ);
+      // Their toppers (unseen, shot-through): from outside the walls step up like stairs (1.62 m, then 0.58 m each), a way up a
+      // sealed escalator and a perch no zombie reaches.
+      addCollider(x0, top, minZ, x1, top + perchCap, minZ + sideWidth).ignoreShots = true;
+      addCollider(x0, top, maxZ - sideWidth, x1, top + perchCap, maxZ).ignoreShots = true;
     };
     sides(0, landing, 0, plate + wallAbove);
     const segments = (u0, u1, n, raised) => {
@@ -886,7 +894,7 @@ export function createMallProps(kit) {
    * items: [{ id, name }] (config/upgrades.js attachments). Returns [{ id, position, normal }], one buy spot each,
    * spread along the wall in item order, left to right as a customer sees them.
    */
-  function attachmentDisplay({ along, center, wallAt, facing, style = 'case', items, title, titleColor = '#ffd23f', gap = 0.25, width = 2.4, height = 1.25 }) {
+  function attachmentDisplay({ along, center, wallAt, facing, style = 'case', items, title, titleColor = '#ffd23f', gap = 0.25, width = 2.4, height = 1.25, capTo = null }) {
     const place = wallPlacer(along);
     const d = (offset) => wallAt + facing * offset;
     const rightward = along === 'x' ? facing : -facing;
@@ -907,6 +915,12 @@ export function createMallProps(kit) {
       addCollider(...(along === 'x'
         ? [u0, 0, Math.min(d(gap), d(gap + depth)), u1, height, Math.max(d(gap), d(gap + depth))]
         : [Math.min(d(gap), d(gap + depth)), 0, u0, Math.max(d(gap), d(gap + depth)), height, u1]));
+      // capTo (a height): an unseen, shot-through block from the glass up to there, where nobody may get over the case.
+      if (capTo !== null) {
+        addCollider(...(along === 'x'
+          ? [u0, height, Math.min(d(gap), d(gap + depth)), u1, capTo, Math.max(d(gap), d(gap + depth))]
+          : [Math.min(d(gap), d(gap + depth)), height, u0, Math.max(d(gap), d(gap + depth)), capTo, u1])).ignoreShots = true;
+      }
       if (title) sign(title, { ...signAt(center, 0.35, gap + depth + 0.01), width: width - 0.3, height: 0.28, background: '#1d1626', color: titleColor });
       front = gap + depth + 0.1;
       partY = height - 0.03;

@@ -76,6 +76,11 @@ export const atmosphere = {
   },
 };
 
+// TOPPERS: unseen, shot-through colliders the map puts on top of anything a chain of jumps could land on but zombies cannot
+// reach (escalator side walls, shelving, set pieces: the standable rule in CLAUDE.md). This tall above the top: more than a
+// jump peaks (1.0 m) plus the landing tolerance, so nothing lands on the topper either.
+export const perchCap = 1.2;
+
 export const startRoomLighting = [
   { name: 'checkout_warm', color: 0xffbe73, intensity: 15, distance: 10, x: -2.9, y: 2.5, z: 7.2 },
   { name: 'shutter_cool', color: 0x99ccff, intensity: 12, distance: 9, x: 1, y: 2.7, z: 1.8 },
