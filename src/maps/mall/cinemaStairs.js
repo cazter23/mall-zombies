@@ -61,7 +61,7 @@ export function buildCinemaStairs({ kit, layout: c, cinema, floorY: Y, zones, pr
   }
   const x = (S.minX + S.maxX) / 2;
   const link = { id: 'cinemaStairs', lower: { x, z: lower, floor: 0 }, upper: { x, z: upper, floor: 1 },
-    halfWidth: (S.maxX - S.minX) / 2 - .45, profile: points };
+    halfWidth: (S.maxX - S.minX) / 2, profile: points }; // (the whole width: hugging a side wall you are still on the stairs for the horde)
   const e = c.serviceDoor;
   const door = kit.shutterDoor({ id: 'cinemaStairs', label: 'Cinema Service Stairs', price,
     opensZones: ['cinema', 'serviceCorridor'], zones,

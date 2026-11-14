@@ -328,3 +328,20 @@ for (const [name, at, zombieAt] of POCKETS) {
   });
 }
 
+test('stairs and escalators: wherever a body can stand on a ramp, the horde knows you are on it', (context) => {
+  const t = openMall(context);
+  const { g } = t;
+  const nav = g.zombies.nav;
+  const R = feel.player.radius, H = feel.player.height;
+  for (const ramp of g.colliders.ramps) {
+    const misses = [];
+    for (let x = ramp.minX + 0.02; x <= ramp.maxX - 0.02; x += 0.1) for (let z = ramp.minZ + 0.02; z <= ramp.maxZ - 0.02; z += 0.1) {
+      const y = rampHeightAt(ramp, x, z);
+      if (y === null || y < 0.7 || y > 5.6) continue; // (mid-flight: the ends are next to a floor)
+      if (overlapsSolid(new THREE.Vector3(x, y, z), R, H, g.colliders, feel.movement.stepTolerance)) continue; // (no room for a body)
+      if (!nav.rampAt(x, y, z)) misses.push([x.toFixed(2), y.toFixed(2), z.toFixed(2)].join(' '));
+    }
+    assert.deepEqual(misses.slice(0, 3), [], `${ramp.id}: ${misses.length} standable spots are not on its nav link (zombies lose you there)`);
+  }
+});
+
