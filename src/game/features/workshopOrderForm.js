@@ -88,6 +88,11 @@ export function createOrderForm({ input, state, wallet, events, sound, price, op
       }
       if (step.x) column = step.x > 0 ? 1 : 0;
       if (step.y) move(column, step.y); // (+1 = down the list)
+      // The bins re-roll every round, form open or not: a pick that left them moves to one that is in (none: no order).
+      if (!options().stuffings.some((s) => s.id === stuffing && s.available)) {
+        stuffing = null;
+        move(0, 0);
+      }
       if (step.confirm && stuffing && heart) confirm();
     },
 

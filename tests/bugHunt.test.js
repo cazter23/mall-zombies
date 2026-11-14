@@ -56,3 +56,26 @@ test('Full Refund never takes ammo away: a reserve above the cap (the Fanny Pack
   assert.ok(weapon.reserve >= before, `the label's "round back" left ${weapon.reserve} of ${before} rounds`);
 });
 
+test('Build-A-Blaster: a Stuffing that left today\'s bins while the order form was open cannot be ordered', (context) => {
+  const t = quietGame(context);
+  const { g } = t;
+  g.wallet.earn(20000);
+  for (const id of Object.keys(g.map.zones)) if (!g.map.zones[id].open) g.map.areaUnlocks.unlock(id, { instant: true });
+  t.tick(5);
+  const ritual = g.features.instanceOf('workshop').ritual;
+  ritual.orderForm.open();
+  const picked = ritual.form.stuffings.find((s) => s.selected).id;
+  // The world doesn't stop for the form: rounds start, and every round start re-rolls the bins.
+  for (let i = 0; i < 400 && ritual.today.includes(picked); i++) g.events.emit('roundStart', { round: g.rounds.round });
+  assert.ok(!ritual.today.includes(picked), 'the scenario: the filled-in Stuffing is no longer in the bins');
+  const points = g.wallet.points;
+  t.press('Enter', 1);
+  if (ritual.phase === 'idle') {
+    assert.equal(g.wallet.points, points, 'nothing ordered, nothing paid');
+  } else {
+    assert.ok(ritual.today.includes(ritual.pick.stuffing), `ordered ${ritual.pick.stuffing}, which is not in today's bins (${ritual.today})`);
+  }
+  const selected = ritual.form?.stuffings.find((s) => s.selected);
+  if (selected) assert.ok(selected.available, 'the form never shows a pick it marks unavailable');
+});
+
