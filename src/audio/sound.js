@@ -191,7 +191,6 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
   const voicesByKey = new Map(); // sound name -> its live voices, oldest first
   const liveVoices = []; // every live voice, oldest first
   const resolved = new Map(); // name + variant -> resolved recipe
-  const panSide = new Map(); // name -> the side its last play went to (alternatePan)
   const flavourCount = new Map(); // name -> plays with a stuffing so far (flavourEvery)
   const clickBuffers = new Map();
   const shaperMakeup = (amount) => driveMakeup(amount);
@@ -347,7 +346,7 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
    * One play of a recipe: its parts, drive, volume, pan, and its send into the room.
    * Returns { stop() } (or null when audio can't play).
    */
-  function playRecipe(key, recipe, { volume = 1, pan = 0, panned = false, at = null, pitch: pitchScale = 1, step = 0, destination = master, send = true } = {}) {
+  function playRecipe(key, recipe, { volume = 1, pan = 0, panned = false, side = null, at = null, pitch: pitchScale = 1, step = 0, destination = master, send = true } = {}) {
     const start = Math.max(at ?? ctx.currentTime, ctx.currentTime);
     const cap = recipe.maxVoices ?? audio.voices.perSound;
     let list = voicesByKey.get(key);
@@ -357,8 +356,8 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
 
     const variation = recipe.pitchVariation ?? audio.pitchVariation;
     const pitch = (1 + (Math.random() * 2 - 1) * variation) * pitchScale * (1 + recipe.pitchStep) ** step;
-    // (alternatePan: every other play of this sound goes to the other side: BOGO's two hands)
-    if (recipe.alternatePan) { const side = (panSide.get(key) ?? 1) * -1; panSide.set(key, side); pan += side * recipe.alternatePan; }
+    // (sidePan: a play from the left or right gun of a pair sits that far over: BOGO's two guns)
+    if (recipe.sidePan && side) pan += (side === 'left' ? -1 : 1) * recipe.sidePan;
     const nodes = [];
     const voice = { key, nodes, sources: [], out: null, stolen: false, remaining: 0, ended: null };
     const out = ctx.createGain(); nodes.push(out);
@@ -703,14 +702,15 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
     /**
      * Play a sound by name (see config/audio.js).
      * @param volume  scales it (0..1+)
-     * @param pan     -1..1 (BOGO's two hands)
+     * @param pan     -1..1
+     * @param side    'left' | 'right': which gun of a pair fired (the recipe's sidePan places it)
      * @param pitch   a pitch multiplier on top of the recipe
      * @param step    how far along a chain this play is (the Tennis Ball's bounces): pitch x (1 + recipe.pitchStep) ^ step
      * @param variant { tier, renewals, stuffing, lowAmmo } (config/gunSounds.js soundUpgrades), for a gun's shot
      * @param at      context time to start (offline renders); default now
      * @returns { stop() } so a sound can be cut short (the scanner's whine on a released scan), or null
      */
-    play(name, { volume = 1, pan = 0, pitch = 1, step = 0, variant = null, at = null } = {}) {
+    play(name, { volume = 1, pan = 0, side = null, pitch = 1, step = 0, variant = null, at = null } = {}) {
       // (flavourEvery: an automatic gun's build flavour rides on every Nth shot, not all of them: clearer, and cheaper)
       if (variant?.stuffing && recipes[name]) {
         const every = normalizeRecipe(recipes[name]).flavourEvery;
@@ -722,7 +722,7 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
       }
       const recipe = recipeFor(name, variant);
       if (!recipe || !canPlay()) return null;
-      return playRecipe(name, recipe, { volume, pan, pitch, step, at });
+      return playRecipe(name, recipe, { volume, pan, side, pitch, step, at });
     },
     setRoom,
     setReverbEnabled,

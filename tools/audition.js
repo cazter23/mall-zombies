@@ -75,11 +75,11 @@ function simulateReload(def) {
   }
   return out;
 }
-function playShot(def, { delay = 0, magazine = def.magazineSize, step } = {}) {
+function playShot(def, { delay = 0, magazine = def.magazineSize, side = null } = {}) {
   const low = !def.fuel && def.magazineSize > 5 && magazine <= 3;
   if (mode === 'new') {
     const v = variant();
-    engine().play(def.sounds.fire, { at: ctx.currentTime + 0.03 + delay, variant: { ...v, lowAmmo: v.lowAmmo || low } });
+    engine().play(def.sounds.fire, { at: ctx.currentTime + 0.03 + delay, variant: { ...v, lowAmmo: v.lowAmmo || low }, side });
   } else play(def.sounds.fire, { delay });
   if (def.sounds.beep) play(def.sounds.beep, { delay });
   impactsAfter(def, delay);
@@ -91,8 +91,10 @@ function impactsAfter(def, delay) {
 }
 function rapid(def) {
   if (!ctx) start();
+  let shot = 0;
   for (const e of simulateFire(def, 2)) {
-    if (e.kind === 'fire') playShot(def, { delay: e.t, magazine: e.magazine });
+    // (an akimbo gun: both triggers held, so the guns take turns)
+    if (e.kind === 'fire') playShot(def, { delay: e.t, magazine: e.magazine, side: def.akimbo ? (shot++ % 2 ? 'right' : 'left') : null });
     else if (e.kind === 'empty') play(def.sounds.dryFire, { delay: e.t });
     else if (e.kind === 'charge' && def.charge?.sound) play(def.charge.sound, { delay: e.t });
   }
@@ -363,10 +365,10 @@ async function calibrate(names = Object.keys(gunSoundsTable)) {
  * reload steps) the loudness of what the old game played, kept within -42..-26 dBFS. Run twice: the compressor bends it.
  */
 export const LEVEL_TARGETS = {
-  stapleShot: -24, sentryShot: -22, priceShot: -23, foamShot: -22.5, bogoShot: -24, leafBlowerPuff: -21.5, nailShot: -19.5,
-  rivetShot: -19, balloonLaunch: -20, tennisLaunch: -18.5, scannerShot: -17, coilShot: -16.5, confettiShot: -15.5,
-  stargazerShot: -14.5, bottleRocketLaunch: -15.5, returnBeam: -12.5,
-  bottleRocketBurst: -12, partyTrapBlast: -15, balloonPop: -24, tennisBounce: -30, returnStamp: -26, clearanceStamp: -33,
+  stapleShot: -24, sentryShot: -22, priceShot: -23, foamShot: -22.5, bogoShot: -23, leafBlowerPuff: -21.5, nailShot: -19.5,
+  rivetShot: -17.5, balloonLaunch: -20, tennisLaunch: -18.5, scannerShot: -17, coilShot: -16.5, confettiShot: -13.5,
+  stargazerShot: -13.5, bottleRocketLaunch: -15.5, returnBeam: -12.5,
+  bottleRocketBurst: -12, partyTrapBlast: -15, balloonPop: -22, tennisBounce: -30, returnStamp: -26, clearanceStamp: -33,
   meleeSwing: -29, scannerCharge: -20, scannerBeep: -28,
   hitBody: -31, hitHead: -28, killConfirm: -25.5,
 };

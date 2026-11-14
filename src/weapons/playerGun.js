@@ -164,7 +164,7 @@ export function createPlayerGun({
       // The shot's sound carries its upgrades (tier, renewals, stuffing) and, on the last few rounds, a lighter mechanism + a tick.
       const weapon = slots[current]?.weapon;
       const lowAmmo = !!weapon && !d.fuel && d.magazineSize > soundUpgrades.lowAmmoMinMagazine && weapon.magazine <= feel.effects.lowAmmoThreshold;
-      sound.play(d.sounds.fire, { variant: { ...soundVariantOf(d.modList), lowAmmo } });
+      sound.play(d.sounds.fire, { variant: { ...soundVariantOf(d.modList), lowAmmo }, side: shotSide }); // (side: which gun of a pair)
       if (d.sounds.beep) sound.play(d.sounds.beep); // (the Barcode Scanner's checkout BEEP, on top of the shot)
     }
     return ads;

@@ -221,6 +221,13 @@ test('the engine: voices are capped and the oldest stolen, a stop() cuts a sound
     for (const n of fresh) if (n.kind === 'source' || n.kind === 'oscillator') n.onended();
     assert.ok(fresh.every((n) => n.disconnected), 'a finished shot disconnects everything it made');
 
+    // BOGO: a shot sits on the side of the gun that fired it (not alternating), and a gun without sides stays centred.
+    const pans = (opts) => { const n0 = f.nodes.length; sound.play('bogoShot', opts); return f.nodes.slice(n0).filter((n) => n.kind === 'pan').map((n) => n.pan.value); };
+    assert.deepEqual(pans({ side: 'left' }), [-audio.sounds.bogoShot.sidePan]);
+    assert.deepEqual(pans({ side: 'left' }), [-audio.sounds.bogoShot.sidePan], 'the left gun twice stays left');
+    assert.deepEqual(pans({ side: 'right' }), [audio.sounds.bogoShot.sidePan]);
+    assert.deepEqual(pans({}), []);
+
     // Old-format recipes still play (the simple `layers` form).
     const n0 = f.sources.length;
     sound.play('paChime');

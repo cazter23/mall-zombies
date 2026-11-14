@@ -961,7 +961,7 @@ src/
     sound.js            createSound({ context, recipes, reverb }): Web Audio synth for config/audio.js recipes. play(name, { volume, pan,
                         pitch, step, variant, at }) -> { stop() } | null: one VOICE per play (layers -> parts -> drive -> volume -> pan ->
                         master + its `send` into the shared room reverb); voices capped per sound (maxVoices) and in total, the oldest
-                        stolen with a short fade; variants (tier, renewals, stuffing, lowAmmo) resolved once and cached; alternatePan,
+                        stolen with a short fade; variants (tier, renewals, stuffing, lowAmmo) resolved once and cached; sidePan (play { side }),
                         pitchStep, flavourEvery. The room: two ConvolverNodes (impulses from roomImpulse.js, cached per room) crossfaded
                         by setRoom(gradeZoneId) (main.js, every frame), setReverbEnabled (Settings > Audio > Room echo), room, voiceCount.
                         Master -> compressor -> limiter -> soft clip (WaveShaper) -> speakers; without WaveShaper/Convolver (old browsers,
