@@ -9,6 +9,8 @@ import { returnToSender } from '../src/weapons/returnToSender.js';
 import { resolveGun } from '../src/weapons/gunStats.js';
 import { withTier } from '../src/weapons/upgrades.js';
 import { buildOf } from '../src/config/workshop.js';
+import { feel } from '../src/config/feel.js';
+import { rampHeightAt, overlapsSolid } from '../src/world/collision.js';
 import { headlessGame } from './helpers/headlessGame.js';
 
 // A real game with the rounds held still (no zombies of its own) and the hallway bought.
@@ -283,3 +285,46 @@ test('a holstered gun is not frozen in time: its fire delay runs out and the Lea
   t.tick(600);
   assert.equal(blower.magazine, g.gun.defOf('leafBlower').magazineSize, 'ten seconds in the holster: a full tank (config fuel.regenPerSecond)');
 });
+
+// A real game with every area open, god mode and no wave of its own (for the horde's routes).
+function openMall(context) {
+  const t = headlessGame();
+  context.after(() => { t.g.resetRun(); t.g.map.dispose(); });
+  const { g } = t;
+  g.health.invulnerable = true;
+  g.map.areaUnlocks.openAll();
+  t.tick(130);
+  g.rounds.jumpTo(3);
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  return t;
+}
+
+// Pockets a player can hop into (over a bench, a table, a kerb) where no walkable cell is within zombieNav.playerSearchRadius.
+const POCKETS = [
+  ['the Food Court bench pocket by the RESTOCK-O-MATIC', [6.8, 0, -2.75], [6.8, 0, -8]],
+  ['the Food Court south-west nook behind the table', [-9.6, 0, -13.95], [-6, 0, -9]],
+  ['the parking kerb island beside the first van', [39.44, 0.15, -12.2], [36, 0, -12.2]],
+];
+for (const [name, at, zombieAt] of POCKETS) {
+  test(`the horde never freezes: standing in ${name}, zombies still have a route, still spawn and still come`, (context) => {
+    const t = openMall(context);
+    const { g } = t;
+    g.player.teleport({ position: new THREE.Vector3(...at), yaw: 0 });
+    t.tick(40);
+    const nav = g.zombies.nav;
+    const routed = g.map.spawnPoints.filter((s) => Number.isFinite(nav.distanceToTarget(s.position.x, s.position.z, s.position.y))).length;
+    assert.ok(routed > 0, 'some spawn marker has a route towards the player (none: the wave stops spawning)');
+    assert.ok(g.zombies.spawn('shopper'), 'the round can still spawn');
+    g.zombies.clear();
+    const zombie = g.zombies.spawn('shopper', new THREE.Vector3(...zombieAt));
+    t.tick(70); // (risen)
+    const from = zombie.position.clone();
+    const gap = Math.hypot(from.x - at[0], from.z - at[2]);
+    t.tick(60 * 6);
+    const now = Math.hypot(zombie.position.x - at[0], zombie.position.z - at[2]);
+    assert.ok(zombie.position.distanceTo(from) > 0.5 || now < 1.6, `a zombie ${gap.toFixed(1)} m away stood still for six seconds`);
+    assert.ok(now < gap || now < 1.6, 'and it came closer');
+  });
+}
+

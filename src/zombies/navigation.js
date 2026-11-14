@@ -281,7 +281,7 @@ export function createNavigation(colliders, agent, { floors = [0], links = [] } 
     return top;
   }
 
-  function computeField(target) {
+  function computeField(target, pocket = false) {
     dist.fill(Infinity);
     heapSize = 0;
     const ty = target.y ?? 0;
@@ -301,22 +301,30 @@ export function createNavigation(colliders, agent, { floors = [0], links = [] } 
     } else {
       const layer = layerOf(ty);
       const base = layer * cells;
-      const reach = zombieNav.playerSearchRadius;
       const yLow = ty + zombieNav.floorTolerance;
       const yHigh = ty + agent.height;
       const pc = colOf(target.x);
       const pr = rowOf(target.z);
-      const span = Math.ceil(reach / cs);
-      for (let r = pr - span; r <= pr + span; r++) {
-        for (let c = pc - span; c <= pc + span; c++) {
-          if (!inside(c, r) || !walkable[base + r * cols + c]) continue;
-          const d = Math.hypot(centerX(c) - target.x, centerZ(r) - target.z);
-          if (d > reach) continue;
-          if (wallBetween(target.x, target.z, centerX(c), centerZ(r), yLow, yHigh)) continue;
-          const i = base + r * cols + c;
-          dist[i] = d / cs; // distances are stored in cells
-          heapPush(i);
-          seeded = true;
+      // Second pass, only when the first found nothing: the player is in a pocket zombies can't walk into (hopped over a
+      // bench, a table, a kerb). Without a seed there is no field at all: every zombie in the mall stands still and no spawn
+      // marker has a route, so the wave stops. Then the nearest cells within playerFallbackRadius count, wall between or not:
+      // the horde comes as close as it can and the round goes on. (`pocket`: straight to that pass, see the end.)
+      const passes = pocket ? [[zombieNav.playerFallbackRadius, false]]
+        : [[zombieNav.playerSearchRadius, true], [zombieNav.playerFallbackRadius, false]];
+      for (const [reach, clearOnly] of passes) {
+        if (seeded) break;
+        const span = Math.ceil(reach / cs);
+        for (let r = pr - span; r <= pr + span; r++) {
+          for (let c = pc - span; c <= pc + span; c++) {
+            if (!inside(c, r) || !walkable[base + r * cols + c]) continue;
+            const d = Math.hypot(centerX(c) - target.x, centerZ(r) - target.z);
+            if (d > reach) continue;
+            if (clearOnly && wallBetween(target.x, target.z, centerX(c), centerZ(r), yLow, yHigh)) continue;
+            const i = base + r * cols + c;
+            dist[i] = d / cs; // distances are stored in cells
+            heapPush(i);
+            seeded = true;
+          }
         }
       }
     }
@@ -324,6 +332,7 @@ export function createNavigation(colliders, agent, { floors = [0], links = [] } 
     if (!seeded) return;
 
     const wallPenalty = zombieNav.wallPenalty;
+    let reached = 0; // cells the field got to
     spreadFrom.fill(Infinity);
     while (heapSize > 0) {
       const i = heapPop();
@@ -332,6 +341,7 @@ export function createNavigation(colliders, agent, { floors = [0], links = [] } 
       // once. Spreading from one again at the SAME distance can't shorten anything (its neighbours already have that
       // offer), so only the first visit at each distance does the work. Same field, fewer visits.
       if (spreadFrom[i] === d) continue;
+      if (spreadFrom[i] === Infinity) reached += 1;
       spreadFrom[i] = d;
       const base = Math.floor(i / cells) * cells;
       const local = i - base;
@@ -365,6 +375,9 @@ export function createNavigation(colliders, agent, { floors = [0], links = [] } 
         }
       }
     }
+    // The field stayed inside a few cells: the player's pocket has floor of its own, sealed off from the mall (behind a
+    // bench between two machines). That is no field for the horde either: do it again from the cells around the pocket.
+    if (!pocket && !onRamp && reached < zombieNav.pocketCells) computeField(target, true);
   }
 
   // --- Queries -------------------------------------------------------------------
