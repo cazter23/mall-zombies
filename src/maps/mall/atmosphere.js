@@ -139,6 +139,10 @@ export function buildMallAtmosphere(kit, layout, { service, ceilingHole, ceiling
   // A second face for the return trip; both pivot around the same centre.
   const reverse = sign('←  Food Court  /  Mega Mart', { x: 0.5, y: 4.5, z: 1.98,
     width: 3.2, height: 0.42, facing: -1, font: 'wayfinding' });
+  // The sign sways (pose() below), so its two faces hang in a group flagged userData.dynamic: everything else under the
+  // map has its matrix frozen after batching (world/staticBatch.js freezeStatic) and would stop moving.
+  const swaying = new THREE.Group(); swaying.name = 'hallway_hanging_sign'; swaying.userData.dynamic = true;
+  group.add(swaying); swaying.add(hanging, reverse);
   for (const x of [-0.7, 1.7]) box('sign_suspension', x, 5.35, 2, 0.025, 1.3, 0.025, metal);
 
   // Interrupted lunch. Trays, cups and cartons stay on existing table tops.

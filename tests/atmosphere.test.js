@@ -46,7 +46,10 @@ test('atmosphere adds no collision and keeps actual triangles out of shortcuts, 
     }
   });
   assert.ok(draws < 30, 'static boxes batch by material');
-  const sign = dressing.group.children.find(o => o.name === 'galleria_notice' && o.position.y === 4.5);
+  // (The swaying sign's two faces hang in a userData.dynamic group: everything else under the map is frozen after batching.)
+  const swaying = dressing.group.children.find(o => o.name === 'hallway_hanging_sign');
+  assert.ok(swaying.userData.dynamic && swaying.children.length === 2);
+  const sign = swaying.children.find(o => o.name === 'galleria_notice' && o.position.y === 4.5);
   const dust = dressing.group.children.find(o => o.name === 'mall_dust_motes');
   assert.ok(dust?.isPoints);
   const initialDustY = dust.geometry.attributes.position.getY(0);

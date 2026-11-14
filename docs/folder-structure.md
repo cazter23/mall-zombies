@@ -1150,6 +1150,10 @@ src/
                         art, the floor medallion, the accessible-bay symbol.
     scatter.js          Places decor-kit clutter on a floor area, deterministic per seed, merged into one mesh per material.
     staticBatch.js      Merges still, opaque map meshes into a few big ones (fewer draw calls); userData.dynamic opts a mesh out.
+                        freezeStatic(root) (main.js, after batching): everything not under a userData.dynamic parent or a shutter
+                        stops rebuilding its matrix every frame (matrixAutoUpdate off), so a thing moved at runtime MUST be under
+                        a flagged parent or it stands still in the browser; movedWhileFrozen(root) lists offenders
+                        (__mall.movedWhileFrozen() in a browser check; ?nofreeze turns freezing off to compare).
   ui/
     glyphs.js           Which buttons prompts name: promptDevice(input, gamepad) ('keyboard' | 'xbox' | 'playstation'), buttonLabel,
                         hintHtml(id) (a menu's hint line from config/controls.js menuHints), glyphHtml(action) (a keycap in running

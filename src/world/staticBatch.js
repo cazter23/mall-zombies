@@ -138,3 +138,53 @@ export function batchStatic(root, { cellSize = 12, upperY = 6, shade = null } = 
   }
   return { merged, batches };
 }
+
+// -----------------------------------------------------------------------------
+// FREEZING: what never moves stops rebuilding its matrix every frame.
+// three recomposes every object's local matrix (position, rotation, scale -> matrix) on every frame it draws, moved or
+// not: about 2,800 objects under the map after batching, of which about 1,650 never move. freezeStatic() switches that
+// off (matrixAutoUpdate = false) for everything that is NOT under a userData.dynamic parent or a shutter, after bringing
+// every world matrix up to date once. Call it after batchStatic (main.js); the map's own tests see the map unfrozen.
+//
+// THE RULE THIS LEANS ON (the same one the batcher leans on): anything moved, turned or resized at runtime is under a
+// parent flagged userData.dynamic. A frozen object whose position is changed later simply stays where it was, with no
+// error. movedWhileFrozen(root) lists such objects (tests/staticBatch.test.js plays a run and expects none; in the browser:
+// __mall.movedWhileFrozen()). Objects added under the map later are not frozen (a new object updates itself as usual).
+//
+//   freezeStatic(root)      -> { frozen: n objects frozen, live: n objects left updating themselves }
+//   movedWhileFrozen(root)  -> [objects frozen by freezeStatic whose position / rotation / scale no longer match their matrix]
+// -----------------------------------------------------------------------------
+
+const frozenObjects = new WeakSet();
+const composed = new THREE.Matrix4();
+
+export function freezeStatic(root) {
+  root.updateMatrixWorld(true);
+  let frozen = 0;
+  let live = 0;
+  (function visit(object, moving) {
+    moving ||= !!object.userData.dynamic || object.userData.kind === 'shutter';
+    if (moving) live++;
+    else if (object.matrixAutoUpdate) {
+      object.matrixAutoUpdate = false;
+      frozenObjects.add(object);
+      frozen++;
+    }
+    for (const child of object.children) visit(child, moving);
+  })(root, false);
+  return { frozen, live };
+}
+
+export function movedWhileFrozen(root) {
+  const moved = [];
+  root.traverse((object) => {
+    if (!frozenObjects.has(object) || object.matrixAutoUpdate) return;
+    composed.compose(object.position, object.quaternion, object.scale);
+    const a = composed.elements;
+    const b = object.matrix.elements;
+    for (let i = 0; i < 16; i++) {
+      if (Math.abs(a[i] - b[i]) > 1e-6) { moved.push(object); break; }
+    }
+  });
+  return moved;
+}

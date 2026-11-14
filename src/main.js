@@ -61,7 +61,7 @@ import { createKioskSpectacle } from './fx/kioskSpectacle.js';
 import { createVanLights } from './fx/vanLights.js';
 import { closingTime } from './config/closingTime.js';
 import { createLightPool, collectPointLights } from './fx/lightPool.js';
-import { batchStatic } from './world/staticBatch.js';
+import { batchStatic, freezeStatic, movedWhileFrozen } from './world/staticBatch.js';
 import { sheenEnvironment, applyMetalSheen } from './fx/metalSheen.js';
 import { createAutoGraphics } from './game/autoGraphics.js';
 import { wireRunIntro } from './game/runIntro.js';
@@ -315,6 +315,9 @@ const cullingOn = !new URLSearchParams(location.search).has('noculling');
 if (cullingOn) roomCulling.tag(map.group);
 if (!new URLSearchParams(location.search).has('nobatch')) batchStatic(map.group, { shade: look.bakedShade, cellSize: look.batchCellSize }); // (?nobatch: off, to compare)
 effects.refreshSurfaces(); // (impact marks list the map's meshes: the merged ones now, fx/impactMarks.js)
+// What never moves stops rebuilding its matrix every frame (world/staticBatch.js freezeStatic): everything under the map
+// that is not under a userData.dynamic parent or a shutter. ?nofreeze: off, to compare.
+if (!new URLSearchParams(location.search).has('nofreeze')) freezeStatic(map.group);
 // Small detail distance (Graphics > Small detail, fx/detailCulling.js): collected after batching, from what is still its own mesh.
 const detailCulling = createDetailCulling(map.group);
 // Metal sheen (fx/metalSheen.js): a tiny baked gradient for metal materials only, after batching so the merged ones get it.
@@ -757,6 +760,8 @@ if (debug.exposeToWindow) {
     settings, lightPool, loop, idleSaver, // (settings.set(id, value) as the menu would; the light pool)
     vanLights, // (Skylar's van: update / start, fx/vanLights.js)
     doorOpenView, // (a bought door's dust and light spill: .active = glow slots lit, fx/doorOpenView.js)
+    // Map objects that were moved although their matrix is frozen (they need a userData.dynamic parent): expect [].
+    movedWhileFrozen: () => movedWhileFrozen(map.group),
   };
   // Advance the real game loop by `ticks` fixed steps and draw one frame. For automated
   // testing when the browser isn't animating (e.g. a hidden tab). Pair with game.forceRun.
