@@ -450,3 +450,20 @@ test('GRAB-A-GUN: a save taken during a site\'s last grab comes back sold out, n
   assert.equal(b.claw.stock, clawMachine.stock);
 });
 
+test('the HUD is told about the boss voucher when it changes, not sixty times a second', (context) => {
+  const t = quietGame(context);
+  const { g } = t;
+  const calls = () => t.hud.calls.filter(([name]) => name === 'setVoucher');
+  let before = calls().length;
+  t.tick(120);
+  assert.equal(calls().length - before, 0, 'two quiet seconds: nothing to say');
+  g.pricing.setVoucher(bossVouchers.discountCode);
+  before = calls().length;
+  t.tick(120);
+  assert.equal(calls().length - before, 1, 'a voucher picked up: told once');
+  assert.equal(calls().at(-1)[1]?.name, bossVouchers.discountCode.name);
+  g.resetRun();
+  t.tick(2);
+  assert.equal(calls().at(-1)[1], null, 'Play again: the tag is cleared');
+});
+

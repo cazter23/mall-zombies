@@ -812,6 +812,7 @@ export function createGame({
   announcer.welcomeBack(); // the PA welcomes you back after a load
 
   let vaultPromptVisible = false;
+  let shownVoucher; // the boss voucher the HUD was last told about (undefined: not told yet)
 
   // One fixed tick. (main.js polls the controller and runs its menus just before this.)
   function update(dt) {
@@ -842,7 +843,10 @@ export function createGame({
     if (debugTick) debugTick();
 
     pricing.update();
-    hud.setVoucher?.(pricing.voucher);
+    if (pricing.voucher !== shownVoucher) { // (told when it changes, not every tick: the HUD writes the tag each time)
+      shownVoucher = pricing.voucher;
+      hud.setVoucher?.(shownVoucher);
+    }
     // An in-game menu (state.menu, set by a feature): the player stands still and can't shoot or buy, but zombies, rounds and
     // everything else carry on. The feature reads the menu's input in features.update. (The gun is skipped, not just blocked,
     // so it doesn't eat the mouse wheel the menu scrolls with.)
