@@ -26,7 +26,7 @@ export const ui = {
     stargazer: 'The sniper · Hits harder the further away it lands · Huge headshots through a real scope · Pierces a line',
     bottleRocket: 'Blast at range · The rocket bursts on whatever it hits, hurting every zombie around it · Too close and it hurts you too',
     balloonLauncher: 'Hits what you do not aim at · Slow balloons home in on the nearest zombie and pop · Fire while you back away',
-    bogo: 'Akimbo · Buy one, get one: a gun in each hand, the fastest fire there is · Shreds up close, sprays at range · Right mouse tightens the spray',
+    bogo: 'Akimbo · Buy one, get one: a gun in each hand, the fastest fire there is · Shreds up close, sprays at range · Left and right mouse each fire a gun: hold both',
     leafBlower: 'Crowd control · Blows zombies back and knocks them down · Runs on a tank that refills',
   },
 };
