@@ -8,6 +8,7 @@ import { weapons } from '../src/config/weapons.js';
 import { returnToSender } from '../src/weapons/returnToSender.js';
 import { resolveGun } from '../src/weapons/gunStats.js';
 import { withTier } from '../src/weapons/upgrades.js';
+import { buildOf } from '../src/config/workshop.js';
 import { headlessGame } from './helpers/headlessGame.js';
 
 // A real game with the rounds held still (no zombies of its own) and the hallway bought.
@@ -27,6 +28,16 @@ function quietGame(context) {
     return zombie;
   };
   return { ...t, spawn };
+}
+
+// A stand-in for localStorage (Save & Quit's slot).
+function memoryStorage() {
+  const items = new Map();
+  return {
+    getItem: (key) => (items.has(key) ? items.get(key) : null),
+    setItem: (key, value) => { items.set(key, String(value)); },
+    removeItem: (key) => { items.delete(key); },
+  };
 }
 
 // With Math.random pinned for the length of `run` (the map is built first: Three.js makes ids with it).
@@ -95,3 +106,21 @@ test('a gun with no reserve in config has none in the hand: the Leaf Blower carr
   t.tick(2);
   assert.deepEqual(claims, ['leafBlower'], 'the dry Platinum Leaf Blower made its claim');
 });
+
+test('Employee Discount does not outlive Save & Quit: after Continue the prices are full again', (context) => {
+  const t = headlessGame({ saveStorage: memoryStorage() });
+  context.after(() => t.g.map.dispose());
+  const { g } = t;
+  t.tick(2);
+  const full = g.pricing.priceOf('door', 'megaMart');
+  g.powerUps.debugDrop('employeeDiscount');
+  t.tick(2);
+  assert.ok(g.pricing.priceOf('door', 'megaMart') < full, 'the scenario: the discount is on');
+  g.rounds.skipRound(); // (the round flips while it runs: the snapshot is taken on this tick)
+  t.tick(1);
+  assert.equal(g.saveGame.saveAndQuit(), true);
+  assert.equal(g.saveGame.load(), true);
+  assert.deepEqual(g.powerUps.effects.map((effect) => effect.id), [], 'no incentive is running after a load');
+  assert.equal(g.pricing.priceOf('door', 'megaMart'), full, 'so nothing is discounted either');
+});
+

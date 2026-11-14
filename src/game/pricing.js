@@ -152,13 +152,12 @@ export function createPricing() {
       return Math.max(categoryOff, itemOff);
     },
 
-    // Save & Quit (game/saveGame.js): the discounts in force (a Flash Sale's included), the boss voucher and the coupon.
+    // Save & Quit (game/saveGame.js): the discounts in force (a Flash Sale's included), and the boss voucher (not the coupon: see restore).
     serialize() {
       return {
         discounts: [...discounts],
         itemDiscounts: [...itemDiscounts].map(([category, byId]) => [category, [...byId]]),
         voucher,
-        coupon,
       };
     },
     restore(data) {
@@ -170,7 +169,9 @@ export function createPricing() {
         itemDiscounts.set(category, new Map(entries));
       }
       voucher = data.voucher;
-      coupon = data.coupon;
+      // The coupon belongs to a running Employee Discount, and running incentives are not kept over a save
+      // (game/powerUps.js): restoring it alone would leave nothing to ever take it off again.
+      coupon = null;
     },
 
     reset() {
