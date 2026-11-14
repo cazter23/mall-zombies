@@ -180,7 +180,7 @@ export function createEquipment({
           fireSound: item.product.sounds.fire, look: item.product.look });
         item.fireTimer += turret.fireSeconds;
       } else {
-        item.fireTimer = 0; // (nothing in sight: it looks again next tick)
+        item.fireTimer = turret.fireSeconds; // (nothing in sight: it looks again as often as it fires, not every tick: a look is a ray per zombie in range)
       }
       item.hunting = !target;
     }

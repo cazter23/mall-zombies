@@ -467,3 +467,31 @@ test('the HUD is told about the boss voucher when it changes, not sixty times a 
   assert.equal(calls().at(-1)[1], null, 'Play again: the tag is cleared');
 });
 
+test('a Sentry with zombies in range but none in sight waits a beat before looking again (not every tick)', (context) => {
+  const t = headlessGame();
+  context.after(() => { t.g.resetRun(); t.g.map.dispose(); });
+  const { g } = t;
+  t.tick(1);
+  t.standAt(0, 15, 0);
+  g.rounds.jumpTo(1);
+  g.rounds.update = () => {};
+  g.zombies.clear();
+  g.health.invulnerable = true;
+  // In the start room, its shutter shut; the zombie stands in the hallway behind it.
+  const zombie = g.zombies.spawn('shopper', new THREE.Vector3(0, 0, 3));
+  zombie.position.set(0, 0, 3);
+  zombie.state = 'chasing';
+  zombie.speed = 1e-6;
+  zombie.updateHitboxes();
+  g.equipment.detonate('sentry', new THREE.Vector3(0, 0.16, 13));
+  const item = g.equipment.sentry;
+  assert.ok(item?.deployed, 'the scenario: a Sentry is out');
+  t.tick(Math.ceil(kiosk.products.sentry.turret.warmupSeconds * 60) + 30); // (stood up, and looking)
+  assert.equal(zombie.health, zombie.maxHealth, 'the scenario: it cannot see the zombie');
+  const waits = [];
+  for (let i = 0; i < 30; i++) { t.tick(1); waits.push(item.fireTimer); }
+  const looks = waits.filter((timer, i) => i > 0 && timer > waits[i - 1]).length; // (the timer is wound back up each time it looks)
+  assert.ok(waits.some((timer) => timer > 1e-9), 'it waits between looks (every look is a line-of-sight ray per zombie in range)');
+  assert.ok(looks >= 1 && looks <= Math.ceil(0.5 / kiosk.products.sentry.turret.fireSeconds) + 1, `it looked ${looks} times in half a second`);
+});
+
