@@ -147,3 +147,29 @@ test('Store-Wide Clearance never kills a boss, not even one the Barcode Scanner 
   assert.equal(boss.isAlive, true, 'heavily wounded, never killed (a clearance kill pays nothing)');
 });
 
+test('Stay for overtime, then Save & quit before the game has run a tick: the save still holds the win', (context) => {
+  const storage = memoryStorage();
+  const t = headlessGame({ saveStorage: storage });
+  context.after(() => t.g.map.dispose());
+  const { g } = t;
+  t.tick();
+  g.map.areaUnlocks.unlock('hallway', { instant: true });
+  g.rounds.jumpTo(21);
+  t.tick(3); // (a snapshot of the round before the win exists)
+  for (const boss of ['janitor', 'guard', 'manager', 'influencer']) g.debug.run('closing', 'grant', boss);
+  for (const line of ['janitor', 'guard', 'manager']) while (!g.closing.isDone(line)) g.events.emit(
+    line === 'janitor' ? 'fountainKill' : line === 'manager' ? 'ritualCollect' : 'purchase', { kind: 'closing', id: 'nightSafe' });
+  g.events.emit('purchase', { kind: 'closing', id: 'validation' });
+  g.events.emit('bossDefeated', { zombie: { type: { id: 'lastCustomer' }, position: g.player.position } });
+  g.events.emit('escapeVanStart');
+  assert.equal(g.state.winPending, true, 'the scenario: the win receipt is up');
+  assert.equal(g.stayForOvertime(), true);
+  // No tick: main.js shows the pause screen (with Save & quit) right after Stay for overtime.
+  assert.equal(g.saveGame.saveAndQuit(), true);
+  const loaded = headlessGame({ saveStorage: storage });
+  context.after(() => loaded.g.map.dispose());
+  assert.equal(loaded.g.saveGame.load(), true);
+  assert.equal(loaded.g.state.won, true, 'the shift was completed');
+  assert.notEqual(loaded.g.overtimeFrom, null, 'and this is overtime');
+});
+

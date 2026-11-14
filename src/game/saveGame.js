@@ -85,6 +85,9 @@ export function createSaveGame({ steps, events, stats, state, rounds, resetRun, 
 
     saveAndQuit() {
       if (!this.canSave().ok) return false;
+      // A snapshot that is due (a round or overtime began and no tick has run since: the pause screen comes up right after
+      // Stay for overtime) is taken now, or the save would be the round before it.
+      if (snapshot) this.update();
       try {
         target.setItem(config.storageKey, JSON.stringify({
           version: config.version, round: snapshot.round, savedAt: new Date().toISOString(), data: snapshot.data,
