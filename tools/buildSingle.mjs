@@ -40,7 +40,8 @@ const pick = (re, what) => {
 const mainJsPath = pick(/^index-.*\.js$/, 'main script');
 const cssPath = pick(/^(index|style)-.*\.css$/, 'stylesheet'); // (Vite names it style-… when CSS isn't split)
 const workerPath = pick(/^musicWorker-.*\.js$/, 'music worker');
-const stray = files.filter((f) => ![mainJsPath, cssPath, workerPath].some((p) => p.endsWith(f)));
+const iconPath = pick(/^icon-64-.*\.png$/, 'tab icon'); // (index.html's <link rel="icon">: Vite leaves it a file, so it's inlined below)
+const stray = files.filter((f) => ![mainJsPath, cssPath, workerPath, iconPath].some((p) => p.endsWith(f)));
 if (stray.length) throw new Error(`single build: unexpected extra files would be left out: ${stray.join(', ')}`);
 
 let js = readFileSync(mainJsPath, 'utf8');
@@ -64,6 +65,7 @@ let html = readFileSync(join(OUT, 'index.html'), 'utf8');
 html = html
   .replace(/<script[^>]*type="module"[^>]*src="[^"]*"[^>]*><\/script>\s*/i, '')
   .replace(/<link[^>]*rel="stylesheet"[^>]*href="\.\/assets\/[^"]*"[^>]*>\s*/i, '')
+  .replace(/(<link[^>]*rel="icon"[^>]*href=")\.\/assets\/[^"]*"/i, (_, start) => `${start}data:image/png;base64,${readFileSync(iconPath).toString('base64')}"`)
   .replace('</head>', () => `    <style>${safe(css)}</style>\n  </head>`)
   .replace('</body>', () => `    <script type="module">${safe(js)}</script>\n  </body>`);
 

@@ -6,7 +6,7 @@ Each module has one entry under its folder (grep for the file name). Notes that 
 tests/docs.test.js checks that every file in src/ has an entry here.
 
 ```
-index.html              Entry page: just src/boot.js (the web fonts are bundled locally, src/fonts/, not linked)
+index.html              Entry page: just src/boot.js and the tab icon (src/icons/icon-64.png) (the web fonts are bundled locally, src/fonts/, not linked)
 package.json            scripts: test, test:quick, dev, build, build:single, play, preview, balance, melee (see CLAUDE.md Commands)
 src/
   main.js               Entry, BROWSER SIDE ONLY: renderer, scene, camera, Input + gamepad, HUD, sound, viewmodel, player body,
@@ -1035,7 +1035,7 @@ src/
                         no test command starts node's default of one process per CPU thread, ~9 GB when every file builds the mall;
                         a run of more than 8 files takes a lock file in the system temp folder, shared by every worktree and tool, and
                         waits while another big run holds it; a dead or 30-min-old lock is taken over; tests/testRunner.test.js);
-                        buildSingle.mjs = `npm run build:single` (a normal Vite build into dist-single/, then the JS, CSS and
+                        buildSingle.mjs = `npm run build:single` (a normal Vite build into dist-single/, then the JS, CSS, the tab icon (a data: URL) and
                         the music worker (as a Blob worker) pasted into ONE html file; the Google Fonts link loads non-blocking so a blocked
                         network just falls back to system fonts; tests/singleFile.test.js builds it and checks it is self-contained); balance.js = gun balance maths shared with the tests (seeded Monte Carlo of each
                         gun's real spread + pellets vs a Shopper's hitboxes at a range: expectedShotDamage, sustainedDps, burstDps,
