@@ -314,6 +314,7 @@ const roomCulling = createRoomCulling({
 const cullingOn = !new URLSearchParams(location.search).has('noculling');
 if (cullingOn) roomCulling.tag(map.group);
 if (!new URLSearchParams(location.search).has('nobatch')) batchStatic(map.group, { shade: look.bakedShade, cellSize: look.batchCellSize }); // (?nobatch: off, to compare)
+effects.refreshSurfaces(); // (impact marks list the map's meshes: the merged ones now, fx/impactMarks.js)
 // Small detail distance (Graphics > Small detail, fx/detailCulling.js): collected after batching, from what is still its own mesh.
 const detailCulling = createDetailCulling(map.group);
 // Metal sheen (fx/metalSheen.js): a tiny baked gradient for metal materials only, after batching so the merged ones get it.

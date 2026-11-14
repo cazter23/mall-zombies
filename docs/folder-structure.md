@@ -1037,8 +1037,17 @@ src/
     contactShadows.js   One instanced draw for soft zombie grounding; interpolates feet and finds supporting collider tops.
                         No collision, hitbox or navigation changes; clear on restart, dispose owned GPU resources on unload.
     impactMarks.js      Persistent world aftermath: visible-mesh ray + flat-face corner checks, ring of 200 marks shared
-                        across instanced signature pools. Skips shutters/unsupported edges; follows rigid surface transforms,
-                        removes marks when surfaces unload, clears on restart. prepare(renderer,camera) warms shared graphics.
+                        across instanced signature pools. Skips shutters/unsupported edges. A shot does not walk the map: the
+                        surfaces are LISTED ONCE (still meshes with a world box, ray-tested only when the ray crosses it;
+                        meshes under a userData.dynamic parent tested every shot) and relisted after refresh() (a barrier
+                        opening, static batching, a new run; anything else that adds or removes map meshes must call it).
+                        Marks on a moving surface follow it every frame and go when it hides; marks on still ones are only
+                        re-checked by refresh(). prepare(renderer,camera) warms shared graphics and the triangle grids.
+    triangleGrid.js     The nearest ray hit on a big mesh without testing every triangle (a static batch has up to 60,000):
+                        buildTriangleGrid(geometry) files the triangles once into a box grid in the mesh's own space,
+                        gridRaycast(grid, mesh, raycaster) walks the cells along the ray and returns the hit three's
+                        Raycaster.intersectObject(mesh)[0] would. canGrid(mesh, minTriangles): plain single-material meshes
+                        only. Used by impactMarks.js for still meshes of impacts.grid.minTriangles or more.
     impactModels.js     Small shared staple/nail/dart/confetti/BOGO-tag meshes with vertex colours; three procedural price-sticker textures
     effects.js          Tracers (pooled) + particle bursts (one InstancedMesh): splat(), puff(), clear() (new run). A splat palette flagged
                         `foam` (or the Mascot's) keeps its colours in Red splatter mode (Sunny is stuffing, not blood).

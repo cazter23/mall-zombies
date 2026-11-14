@@ -234,6 +234,7 @@ Gameplay regression tests live in `tests/` (`gameplay.test.js` movement/melee/va
 (including the Laser Pointer's hip benefit / ADS penalty through repeated shots and recovery),
 `impactMarks.test.js` all six cosmetic signatures, visible-surface/edge checks, floor/ceiling/instanced normals,
 misses/targets/pierce/shutters, shared cap/reuse/disposal, map unloading, startup preparation, debug sprites,
+the surface list (the map is walked for the first shot only and again after refresh(); marks on a still surface cost nothing per frame while marks on a userData.dynamic one follow it and go when it hides; a decoration in the ray's way still rejects or takes the mark; hiding is seen at the shot; on the real mall a shot ray-tests far fewer meshes than there are and a barrier opening relists), the triangle grid returning exactly three's hit (distance, point, face) on the batched mall's big meshes and on a turned, stretched mesh in each side mode,
 Cannon projection budget, unchanged wall-shot payouts/accuracy/ammo and Play-again cleanup,
 `startRoom.test.js` clearance-store dressing adds no collision, leaves central/spawn/vault spaces visually clear,
 and preserves a real checkout vault and the original Price Gun purchase,

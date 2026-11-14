@@ -7,6 +7,9 @@ export const impacts = {
   projectionSlack: 0.5, // visible surface may sit inside a simplified prop collider
   edgeProbe: 0.04,
   normalMatch: 0.98,
+  // Big still meshes (static batches: up to 60,000 triangles) get a triangle grid so a mark's rays test a handful of
+  // triangles, not all of them (fx/triangleGrid.js). Smaller meshes are tested whole, which is cheap.
+  grid: { minTriangles: 256, cellSize: 1, maxCells: 48 }, // (cellSize metres; at most maxCells cells along an axis)
   signatures: {
     rivetRifle: { kind: 'rivet', radius: 0.027, variants: 2 },
     coilNailer: { kind: 'coilNail', radius: 0.028, variants: 2 },
