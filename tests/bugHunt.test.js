@@ -495,3 +495,25 @@ test('a Sentry with zombies in range but none in sight waits a beat before looki
   assert.ok(looks >= 1 && looks <= Math.ceil(0.5 / kiosk.products.sentry.turret.fireSeconds) + 1, `it looked ${looks} times in half a second`);
 });
 
+test('jumping into the Build-A-Blaster order form does not leave you hanging in the air', (context) => {
+  const t = quietGame(context);
+  const { g } = t;
+  g.wallet.earn(20000);
+  for (const id of Object.keys(g.map.zones)) if (!g.map.zones[id].open) g.map.areaUnlocks.unlock(id, { instant: true });
+  t.tick(5);
+  const ritual = g.features.instanceOf('workshop').ritual;
+  t.standAt(0, 12, 0);
+  const floor = g.player.position.y;
+  t.press('Space', 1);
+  t.tick(13);
+  assert.ok(g.player.position.y > floor + 0.3, 'the scenario: in the air');
+  ritual.orderForm.open();
+  t.tick(180);
+  assert.equal(g.state.menu, 'orderForm', 'the form is still open');
+  assert.ok(Math.abs(g.player.position.y - floor) < 0.01 && g.player.grounded, `three seconds later you are at y ${g.player.position.y.toFixed(2)} (the floor is ${floor.toFixed(2)})`);
+  const at = g.player.position.clone();
+  t.input.held.add('KeyW');
+  t.tick(30);
+  t.input.held.delete('KeyW');
+  assert.ok(g.player.position.distanceTo(at) < 0.01, 'and on the ground the form still holds you still');
+});

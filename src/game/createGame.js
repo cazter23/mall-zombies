@@ -851,7 +851,7 @@ export function createGame({
     // everything else carry on. The feature reads the menu's input in features.update. (The gun is skipped, not just blocked,
     // so it doesn't eat the mouse wheel the menu scrolls with.)
     const inMenu = !!state.menu;
-    if (inMenu) {
+    if (inMenu && player.grounded) { // (in the air the fall still finishes: a menu opened mid-jump must not leave you hanging there)
       player.velocity.x = player.velocity.z = 0;
       player.freeze();
     } else {
