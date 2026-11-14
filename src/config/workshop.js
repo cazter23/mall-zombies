@@ -6,7 +6,7 @@ export const workshopBuilds = {
     instructions: 'Aim down sights and shoot the floor to plant a charge.',
     aimAmount: 0.8, placementRange: 6, armSeconds: 0.5, lifetimeSeconds: 35,
     maxActive: 2, triggerRadius: 0.7, blastRadius: 2.3, damage: 650, maxTargets: 5,
-    footTolerance: 0.5, blastHeight: 0.16, soundRange: 12,
+    footTolerance: 0.5, blastHeight: 0.16, soundRange: 12, sound: 'partyTrapBlast',
     // The charge on the floor: a flat puck, dim until it is armed.
     marker: { topRadius: 0.15, bottomRadius: 0.19, height: 0.065, segments: 8, lift: 0.05, glowIdle: 0.2, glowArmed: 0.85 },
     blastPop: { count: 24, speed: 3.4 }, // the charge itself going off (a kill adds `pop`)

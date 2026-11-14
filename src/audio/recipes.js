@@ -5,7 +5,8 @@
 // low-ammo lightening (config/gunSounds.js soundUpgrades / lowAmmo). The recipe format is described at the top of
 // config/audio.js.
 //
-//   normalizeRecipe(def)              -> { volume, maxVoices, send, drive, vary, pitchVariation, parts: [{ name, gain, drive, layers }] }
+//   normalizeRecipe(def)              -> { volume, maxVoices, send, drive, vary, pitchVariation, flavourGain, flavourEvery, alternatePan, pitchStep,
+//                                          parts: [{ name, gain, drive, layers }] }
 //   validateRecipe(def)               -> [] or a list of problems (strings)
 //   resolveVariant(recipe, variant, upgrades) -> a normalized recipe with the variant applied
 //   variantKey(variant)               -> a short string ('' for none), for caching
@@ -53,6 +54,9 @@ export function normalizeRecipe(def) {
     vary: def.vary ?? null,
     pitchVariation: def.pitchVariation ?? null,
     flavourGain: def.flavourGain ?? 1,
+    flavourEvery: def.flavourEvery ?? 1,
+    alternatePan: def.alternatePan ?? 0,
+    pitchStep: def.pitchStep ?? 0,
     upgrades: def.upgrades ?? null,
     parts,
   };
@@ -71,7 +75,8 @@ export function validateRecipe(def, name = 'sound') {
   if (!def.layers && !def.parts) bad('has neither layers nor parts');
   if (def.volume !== undefined && !(finite(def.volume) && def.volume >= 0)) bad('volume must be a number >= 0');
   if (def.maxVoices !== undefined && !(Number.isInteger(def.maxVoices) && def.maxVoices >= 1)) bad('maxVoices must be an integer >= 1');
-  for (const key of ['send', 'drive']) if (def[key] !== undefined && !(finite(def[key]) && def[key] >= 0)) bad(`${key} must be a number >= 0`);
+  if (def.flavourEvery !== undefined && !(Number.isInteger(def.flavourEvery) && def.flavourEvery >= 1)) bad('flavourEvery must be an integer >= 1');
+  for (const key of ['send', 'drive', 'alternatePan', 'pitchStep', 'flavourGain']) if (def[key] !== undefined && !(finite(def[key]) && def[key] >= 0)) bad(`${key} must be a number >= 0`);
   checkVary(def.vary, bad, 'vary');
   const recipe = normalizeRecipe(def);
   let layerCount = 0;

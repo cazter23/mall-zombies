@@ -1,14 +1,39 @@
 // =============================================================================
 // AUDIO CONFIG
-// Volumes and sound recipes. Every sound is synthesized in code from a few
-// layers (no audio files), the same way textures are drawn on a canvas. A layer is
-// either a burst of filtered noise (snaps, clacks, hiss) or a tone (thumps, clicks)
-// with a quick attack and an exponential fade:
+// Volumes, the master chain, the rooms, and sound recipes. Every sound is synthesized in code (no audio files), the
+// same way textures are drawn on a canvas. Guns, the box cutter, the Kiosk Sentry and the hit sounds live in
+// config/gunSounds.js (merged in below); everything else is here. audio/recipes.js reads and checks recipes;
+// audio/sound.js plays them. tools/audition.html (npm run dev) plays and measures them.
 //
-//   noise: { type: 'noise', filter: 'bandpass' | 'lowpass' | 'highpass', freq, q, gain, attack, decay, delay }
-//   tone:  { type: 'tone', wave: 'sine' | 'square' | 'triangle' | 'sawtooth', freq, freqEnd, gain, attack, decay, delay }
+// A RECIPE:
+//   { volume, layers: [...] }                       the simple form: one list of layers
+//   { volume, parts: { crack: [...], body: [...], mech: [...], ... } }
+//                                                   named groups of layers (a part can also be { gain, drive, layers }),
+//                                                   so upgrades can scale or add a part by name (gunSounds.js soundUpgrades)
+//   optional:  maxVoices    copies of this sound at once (default voices.perSound); the oldest is stolen. Automatic guns: 3-4
+//              send         0..1 into the room reverb (0 = dry: hit sounds, UI)
+//              drive        saturation of the whole sound, 0 clean .. 1 crushed (the "crunch" that makes small shots loud)
+//              vary         { pitch, gain, decay, freq, delay }: fractions each LAYER is randomly moved by on every play,
+//                           on top of the global pitchVariation (a layer's own `vary` replaces it)
+//              pitchVariation  replaces the global wobble for this sound (0: a beep that must stay on its note)
+//              flavourGain  how loud a Build-A-Blaster stuffing's flavour is on this gun (lower on automatic guns)
+//              alternatePan every other play goes this far left/right (BOGO's two hands)
+//              pitchStep    pitch rise per `step` a play is given (the Tennis Ball's bounces up a chain)
+//              upgrades     this recipe's own entries replacing soundUpgrades' (same shape)
 //
-// freq/freqEnd in Hz (a tone sweeps from freq to freqEnd), times in seconds, gain 0..1.
+// A LAYER (times in seconds, freq/freqEnd in Hz, gain 0..1+; every layer has gain, attack, decay, delay, and may have
+// `drive` and `vary` of its own):
+//   noise: { type: 'noise', filter: 'bandpass' | 'lowpass' | 'highpass', freq, freqEnd?, q }   filtered noise; freqEnd
+//          sweeps the filter (a hiss closing, a whoosh opening)
+//   tone:  { type: 'tone', wave: 'sine' | 'square' | 'triangle' | 'sawtooth', freq, freqEnd? }  a tone, swept to freqEnd
+//   click: { type: 'click', shape: 'noise' | 'impulse', ms, filter?, freq?, q? }   a few ms transient: noise = a crack,
+//          impulse = a tick or a ratchet tooth (through a narrow bandpass, a little ping). No envelope: its length is ms.
+//   metal: { type: 'metal', freq, ratios: [1, 2.76, ...], partialDecay?, detune?, gains?, wave?, freqEnd? }
+//          inharmonic partials (a spring, a struck rivet, a bell); each higher partial dies faster (x partialDecay)
+//   fm:    { type: 'fm', freq, ratio, index, indexEnd?, wave?, modWave?, freqEnd? }   a modulator at freq x ratio
+//          wobbling the tone by `index`: a falling index = a twang or a boing; a high one = a rattle or a buzz
+// Each layer rises to gain over `attack`, then fades exponentially over `decay`, starting `delay` after the play.
+//
 // Weapons refer to sounds by name (config/weapons.js -> sounds, reload events); so do zombie types
 // (config/zombies.js -> sounds) and the PA chime.
 // =============================================================================
@@ -29,7 +54,7 @@ export const audio = {
   voices: { perSound: 6, total: 40, stealFadeSeconds: 0.012 },
   // The shared room reverb (audio/sound.js, impulses from audio/roomImpulse.js). Room presets; `roomOf` maps a grade zone
   // (map.gradeZones; null = the hallway) to one. seconds = time to -60 dB, brightness = [startHz, endHz] of the darkening tail.
-  reverb: { defaultRoom: 'hall', crossfadeSeconds: 0.6 },
+  reverb: { enabled: true, defaultRoom: 'hall', crossfadeSeconds: 0.6 }, // (enabled: Settings > Audio > Room echo)
   rooms: {
     hall: { seconds: 1.4, preDelay: 0.012, brightness: [6000, 1500], lowCut: 180, early: { count: 6, spread: 0.04, gain: 0.5 }, wet: 0.22 },
     court: { seconds: 1.8, preDelay: 0.018, brightness: [6500, 1600], lowCut: 160, early: { count: 6, spread: 0.06, gain: 0.45 }, wet: 0.25 },
@@ -77,75 +102,6 @@ export const audio = {
     distantTrafficPass: { volume: .14, layers: [
       { type: 'noise', filter: 'lowpass', freq: 500, gain: .3, attack: 1.5, decay: 3.5 },
       { type: 'tone', wave: 'sine', freq: 96, freqEnd: 66, gain: .12, attack: 1, decay: 3, delay: .4 },
-    ] },
-    rivetShot: { volume: 0.72, layers: [
-      { type: 'tone', wave: 'sine', freq: 150, freqEnd: 58, gain: 0.85, attack: 0.001, decay: 0.105 },
-      { type: 'noise', filter: 'bandpass', freq: 1800, q: 0.9, gain: 0.7, attack: 0.001, decay: 0.035 },
-      { type: 'noise', filter: 'lowpass', freq: 800, q: 0.7, gain: 0.55, attack: 0.002, decay: 0.07 },
-      { type: 'tone', wave: 'triangle', freq: 740, freqEnd: 430, gain: 0.18, attack: 0.001, decay: 0.045, delay: 0.025 },
-    ] },
-    rivetReloadOut: { volume: 0.5, layers: [
-      { type: 'noise', filter: 'bandpass', freq: 1500, q: 1.2, gain: 0.65, attack: 0.001, decay: 0.065 },
-      { type: 'tone', wave: 'triangle', freq: 280, freqEnd: 160, gain: 0.3, attack: 0.001, decay: 0.07 },
-    ] },
-    rivetReloadIn: { volume: 0.65, layers: [
-      { type: 'noise', filter: 'lowpass', freq: 1000, q: 0.8, gain: 0.8, attack: 0.001, decay: 0.095 },
-      { type: 'tone', wave: 'sine', freq: 180, freqEnd: 70, gain: 0.6, attack: 0.001, decay: 0.09 },
-    ] },
-    rivetReloadReady: { volume: 0.5, layers: [
-      { type: 'noise', filter: 'bandpass', freq: 2300, q: 1, gain: 0.55, attack: 0.001, decay: 0.05 },
-      { type: 'tone', wave: 'triangle', freq: 520, freqEnd: 250, gain: 0.25, attack: 0.001, decay: 0.06, delay: 0.025 },
-    ] },
-    // Heavy Coil Nailer: rapid industrial piston thump + wire-collated steel clack + pneumatic hiss.
-    coilShot: { volume: 0.78, layers: [
-      { type: 'tone', wave: 'sine', freq: 135, freqEnd: 52, gain: 0.88, attack: 0.001, decay: 0.085 },
-      { type: 'tone', wave: 'triangle', freq: 245, freqEnd: 95, gain: 0.65, attack: 0.001, decay: 0.07 },
-      { type: 'noise', filter: 'bandpass', freq: 1650, q: 0.85, gain: 0.72, attack: 0.0008, decay: 0.032 },
-      { type: 'noise', filter: 'lowpass', freq: 720, q: 0.7, gain: 0.55, attack: 0.001, decay: 0.06 },
-      { type: 'tone', wave: 'triangle', freq: 860, freqEnd: 580, gain: 0.16, attack: 0.001, decay: 0.03, delay: 0.012 },
-    ] },
-    coilReloadOut: { volume: 0.58, layers: [
-      { type: 'noise', filter: 'bandpass', freq: 1450, q: 1.3, gain: 0.65, attack: 0.001, decay: 0.075 },
-      { type: 'tone', wave: 'triangle', freq: 310, freqEnd: 130, gain: 0.4, attack: 0.001, decay: 0.085 },
-    ] },
-    coilReloadIn: { volume: 0.72, layers: [
-      { type: 'noise', filter: 'lowpass', freq: 950, q: 0.8, gain: 0.85, attack: 0.001, decay: 0.11 },
-      { type: 'tone', wave: 'sine', freq: 165, freqEnd: 58, gain: 0.68, attack: 0.001, decay: 0.1 },
-      { type: 'noise', filter: 'bandpass', freq: 2600, q: 1.5, gain: 0.38, attack: 0.001, decay: 0.035, delay: 0.02 },
-    ] },
-    coilReloadReady: { volume: 0.62, layers: [
-      { type: 'noise', filter: 'bandpass', freq: 2950, q: 1.3, gain: 0.65, attack: 0.001, decay: 0.04 },
-      { type: 'tone', wave: 'sine', freq: 240, freqEnd: 95, gain: 0.35, attack: 0.001, decay: 0.055, delay: 0.018 },
-    ] },
-    // Barcode Scanner: rising capacitor whine, retail checkout laser beep + high-voltage crackle discharge.
-    // The scan: a whine rising over the whole charge (weapons.barcodeScanner.charge.seconds, 0.45 s), so you hear it fill.
-    scannerCharge: { volume: 0.5, layers: [
-      { type: 'tone', wave: 'sine', freq: 420, freqEnd: 1900, gain: 0.42, attack: 0.3, decay: 0.16 },
-      { type: 'tone', wave: 'triangle', freq: 840, freqEnd: 2900, gain: 0.2, attack: 0.32, decay: 0.14 },
-    ] },
-    // The checkout BEEP the beam fires with: one loud, clean till beep, played on top of scannerShot.
-    scannerBeep: { volume: 0.7, layers: [
-      { type: 'tone', wave: 'square', freq: 1960, freqEnd: 1960, gain: 0.32, attack: 0.002, decay: 0.13 },
-      { type: 'tone', wave: 'sine', freq: 3920, freqEnd: 3920, gain: 0.12, attack: 0.002, decay: 0.1 },
-    ] },
-    scannerShot: { volume: 0.86, layers: [
-      { type: 'tone', wave: 'square', freq: 2150, freqEnd: 2150, gain: 0.34, attack: 0.0005, decay: 0.042 },
-      { type: 'tone', wave: 'sine', freq: 185, freqEnd: 46, gain: 0.92, attack: 0.001, decay: 0.14 },
-      { type: 'tone', wave: 'sawtooth', freq: 980, freqEnd: 220, gain: 0.48, attack: 0.001, decay: 0.09 },
-      { type: 'noise', filter: 'bandpass', freq: 2800, q: 1.1, gain: 0.68, attack: 0.0006, decay: 0.04 },
-      { type: 'noise', filter: 'highpass', freq: 3800, q: 0.8, gain: 0.25, attack: 0.002, decay: 0.075, delay: 0.015 },
-    ] },
-    scannerReloadOut: { volume: 0.52, layers: [
-      { type: 'noise', filter: 'bandpass', freq: 2200, q: 1.5, gain: 0.52, attack: 0.001, decay: 0.045 },
-      { type: 'tone', wave: 'sine', freq: 780, freqEnd: 320, gain: 0.32, attack: 0.001, decay: 0.06 },
-    ] },
-    scannerReloadIn: { volume: 0.62, layers: [
-      { type: 'noise', filter: 'lowpass', freq: 1150, q: 0.85, gain: 0.68, attack: 0.001, decay: 0.065 },
-      { type: 'tone', wave: 'triangle', freq: 440, freqEnd: 880, gain: 0.3, attack: 0.002, decay: 0.07, delay: 0.015 },
-    ] },
-    scannerReloadReady: { volume: 0.58, layers: [
-      { type: 'tone', wave: 'sine', freq: 1320, freqEnd: 1760, gain: 0.36, attack: 0.001, decay: 0.055 },
-      { type: 'tone', wave: 'triangle', freq: 2150, freqEnd: 2150, gain: 0.24, attack: 0.001, decay: 0.045, delay: 0.045 },
     ] },
     // Three distinct employee incentives, all routed through the existing master-volume bus.
     // Closing Time, in both run modes (game/createGame.js): a checklist key picked up (a bright jingle of keys), and a
@@ -322,29 +278,7 @@ export const audio = {
       { type: 'tone', wave: 'sine', freq: 90, freqEnd: 40, gain: 0.5, attack: 0.001, decay: 0.15, delay: 0.6 },
       { type: 'noise', filter: 'lowpass', freq: 1000, gain: 0.3, attack: 0.001, decay: 0.06, delay: 0.6 },
     ] },
-    // Chunky compressed-air darts: mid-bass body + sub-bass tube thump stays punchy on headphones and speakers.
-    foamShot: { volume: 0.56, layers: [
-      { type: 'tone', wave: 'sine', freq: 115, freqEnd: 54, gain: 0.55, attack: 0.001, decay: 0.065 },
-      { type: 'noise', filter: 'bandpass', freq: 1000, q: 0.8, gain: 0.72, attack: 0.001, decay: 0.035 },
-      { type: 'tone', wave: 'triangle', freq: 235, freqEnd: 130, gain: 0.6, attack: 0.001, decay: 0.05 },
-      { type: 'tone', wave: 'sine', freq: 140, freqEnd: 90, gain: 0.48, attack: 0.002, decay: 0.06 },
-      { type: 'noise', filter: 'bandpass', freq: 2700, q: 1, gain: 0.22, attack: 0.0008, decay: 0.011 },
-      { type: 'tone', wave: 'triangle', freq: 620, freqEnd: 390, gain: 0.11, attack: 0.001, decay: 0.018, delay: 0.02 },
-    ] },
-    foamReloadOut: { volume: 0.45, layers: [
-      { type: 'noise', filter: 'bandpass', freq: 2100, q: 1.4, gain: 0.5, attack: 0.001, decay: 0.04 },
-      { type: 'tone', wave: 'triangle', freq: 650, freqEnd: 260, gain: 0.3, attack: 0.001, decay: 0.05 },
-    ] },
-    foamReloadIn: { volume: 0.6, layers: [
-      { type: 'noise', filter: 'lowpass', freq: 1200, q: 0.8, gain: 0.7, attack: 0.001, decay: 0.07 },
-      { type: 'noise', filter: 'bandpass', freq: 2800, q: 1.5, gain: 0.4, attack: 0.001, decay: 0.025, delay: 0.015 },
-    ] },
-    foamReloadReady: { volume: 0.5, layers: [
-      { type: 'noise', filter: 'bandpass', freq: 3400, q: 1.5, gain: 0.6, attack: 0.001, decay: 0.035 },
-      { type: 'tone', wave: 'triangle', freq: 400, freqEnd: 170, gain: 0.25, attack: 0.001, decay: 0.04, delay: 0.02 },
-    ] },
 
-    // Deep chest-thumping pressure boom + opening crack, then a crisp paper flutter.
     // Build-A-Blaster. The jingle is a music-box tune, repeated over the fighting while a ritual runs.
     ritualJingle: { volume: .34, layers: [
       ...[[784, 0], [988, .22], [1175, .44], [1568, .66], [1319, 1.1], [1175, 1.32], [988, 1.54], [1175, 1.76], [784, 2.2], [880, 2.42], [988, 2.64], [1175, 2.86], [1568, 3.3], [1760, 3.52], [1568, 3.74], [1175, 3.96]]
@@ -465,259 +399,6 @@ export const audio = {
       { type: 'noise', filter: 'bandpass', freq: 3300, q: .8, gain: .9, attack: .001, decay: .045 },
       { type: 'noise', filter: 'lowpass', freq: 920, q: .7, gain: .48, attack: .002, decay: .075 },
     ] },
-    clearanceStamp: { volume: .55, layers: [
-      { type: 'noise', filter: 'bandpass', freq: 1800, q: 1.7, gain: .7, attack: .002, decay: .048 },
-      { type: 'tone', wave: 'triangle', freq: 680, freqEnd: 390, gain: .25, attack: .002, decay: .13 },
-    ] },
-    confettiShot: { volume: 0.98, layers: [
-      { type: 'tone', wave: 'sine', freq: 110, freqEnd: 38, gain: 1.15, attack: 0.001, decay: 0.25 },
-      { type: 'tone', wave: 'sine', freq: 175, freqEnd: 55, gain: 1.15, attack: 0.002, decay: 0.22 },
-      { type: 'noise', filter: 'lowpass', freq: 1200, q: 0.75, gain: 1.05, attack: 0.001, decay: 0.11 },
-      { type: 'noise', filter: 'bandpass', freq: 2800, q: 0.8, gain: 0.56, attack: 0.0008, decay: 0.032 },
-      { type: 'tone', wave: 'triangle', freq: 320, freqEnd: 115, gain: 0.38, attack: 0.002, decay: 0.085 },
-      { type: 'noise', filter: 'bandpass', freq: 1800, q: 0.8, gain: 0.2, attack: 0.008, decay: 0.16, delay: 0.055 },
-      { type: 'noise', filter: 'highpass', freq: 3500, q: 0.7, gain: 0.15, attack: 0.012, decay: 0.18, delay: 0.065 },
-    ] },
-    // RETURN TO SENDER: the blast (a pneumatic-tube WHOOMP: a deep thump, a rush of air and a tube's rising whistle), the rubber stamp that boxes a
-    // zombie, and the reload (a parcel canister swapped).
-    returnBeam: { volume: 0.95, layers: [
-      { type: 'tone', wave: 'sine', freq: 95, freqEnd: 34, gain: 1.2, attack: 0.001, decay: 0.32 },
-      { type: 'noise', filter: 'lowpass', freq: 700, q: 0.7, gain: 1.0, attack: 0.002, decay: 0.38 },
-      { type: 'noise', filter: 'bandpass', freq: 1900, q: 0.6, gain: 0.55, attack: 0.03, decay: 0.45, delay: 0.02 },
-      { type: 'tone', wave: 'sawtooth', freq: 300, freqEnd: 1500, gain: 0.16, attack: 0.01, decay: 0.3, delay: 0.03 },
-      { type: 'tone', wave: 'triangle', freq: 1760, freqEnd: 1760, gain: 0.12, attack: 0.001, decay: 0.08, delay: 0.28 },
-    ] },
-    returnStamp: { volume: 0.7, layers: [
-      { type: 'noise', filter: 'lowpass', freq: 700, q: 0.8, gain: 0.9, attack: 0.001, decay: 0.07 },
-      { type: 'tone', wave: 'sine', freq: 190, freqEnd: 90, gain: 0.8, attack: 0.001, decay: 0.1 },
-      { type: 'tone', wave: 'sine', freq: 1320, freqEnd: 1320, gain: 0.2, attack: 0.001, decay: 0.2, delay: 0.06 },
-    ] },
-    returnReloadOut: { volume: 0.5, layers: [
-      { type: 'noise', filter: 'bandpass', freq: 1500, q: 1.4, gain: 0.6, attack: 0.001, decay: 0.06 },
-      { type: 'tone', wave: 'square', freq: 360, freqEnd: 180, gain: 0.18, attack: 0.001, decay: 0.07 },
-    ] },
-    returnReloadIn: { volume: 0.6, layers: [
-      { type: 'noise', filter: 'lowpass', freq: 1100, q: 0.8, gain: 0.7, attack: 0.001, decay: 0.07 },
-      { type: 'tone', wave: 'sine', freq: 300, freqEnd: 140, gain: 0.55, attack: 0.001, decay: 0.09 },
-    ] },
-    returnReloadReady: { volume: 0.6, layers: [
-      { type: 'tone', wave: 'sine', freq: 880, freqEnd: 880, gain: 0.3, attack: 0.002, decay: 0.12 },
-      { type: 'tone', wave: 'sine', freq: 1320, freqEnd: 1320, gain: 0.3, attack: 0.002, decay: 0.16, delay: 0.09 },
-    ] },
-    // The Tennis Ball Launcher: a hollow air-cannon thump, a ball's dull pok on every bounce, and the reload (a ball dropped in the port).
-    tennisLaunch: { volume: 0.8, layers: [
-      { type: 'tone', wave: 'sine', freq: 170, freqEnd: 52, gain: 1, attack: 0.001, decay: 0.16 },
-      { type: 'noise', filter: 'lowpass', freq: 1500, q: 0.7, gain: 0.7, attack: 0.001, decay: 0.09 },
-      { type: 'noise', filter: 'bandpass', freq: 2600, q: 0.8, gain: 0.3, attack: 0.001, decay: 0.03 },
-    ] },
-    tennisBounce: { volume: 0.5, layers: [
-      { type: 'tone', wave: 'sine', freq: 560, freqEnd: 250, gain: 0.7, attack: 0.001, decay: 0.07 },
-      { type: 'noise', filter: 'bandpass', freq: 1500, q: 1.2, gain: 0.35, attack: 0.001, decay: 0.03 },
-    ] },
-    tennisReloadOut: { volume: 0.5, layers: [
-      { type: 'noise', filter: 'bandpass', freq: 1700, q: 1.4, gain: 0.6, attack: 0.001, decay: 0.06 },
-      { type: 'tone', wave: 'triangle', freq: 280, freqEnd: 150, gain: 0.35, attack: 0.001, decay: 0.08 },
-    ] },
-    tennisReloadIn: { volume: 0.5, layers: [
-      { type: 'tone', wave: 'sine', freq: 420, freqEnd: 200, gain: 0.55, attack: 0.001, decay: 0.07 },
-      { type: 'noise', filter: 'lowpass', freq: 900, q: 0.8, gain: 0.4, attack: 0.001, decay: 0.06 },
-    ] },
-    tennisReloadReady: { volume: 0.7, layers: [
-      { type: 'noise', filter: 'bandpass', freq: 3000, q: 1.3, gain: 0.7, attack: 0.001, decay: 0.045 },
-      { type: 'tone', wave: 'sine', freq: 190, freqEnd: 70, gain: 0.5, attack: 0.001, decay: 0.1 },
-    ] },
-    // The Stargazer 3000: a hard crack with a glassy twinkle from the telescope, then (delayed) the bolt worked: up, back, forward, down.
-    stargazerShot: { volume: 0.9, layers: [
-      { type: 'noise', filter: 'lowpass', freq: 2400, q: 0.7, gain: 1, attack: 0.001, decay: 0.1 },
-      { type: 'tone', wave: 'sine', freq: 150, freqEnd: 45, gain: 1, attack: 0.001, decay: 0.24 },
-      { type: 'noise', filter: 'bandpass', freq: 4200, q: 1, gain: 0.45, attack: 0.001, decay: 0.03 },
-      { type: 'tone', wave: 'triangle', freq: 2637, freqEnd: 2637, gain: 0.12, attack: 0.002, decay: 0.35, delay: 0.04 },
-      { type: 'tone', wave: 'triangle', freq: 3520, freqEnd: 3520, gain: 0.08, attack: 0.002, decay: 0.3, delay: 0.09 },
-      { type: 'noise', filter: 'bandpass', freq: 1900, q: 1.6, gain: 0.45, attack: 0.001, decay: 0.04, delay: 0.32 },
-      { type: 'noise', filter: 'bandpass', freq: 1300, q: 1.4, gain: 0.5, attack: 0.001, decay: 0.05, delay: 0.47 },
-      { type: 'noise', filter: 'bandpass', freq: 2200, q: 1.6, gain: 0.5, attack: 0.001, decay: 0.04, delay: 0.66 },
-      { type: 'tone', wave: 'square', freq: 420, freqEnd: 260, gain: 0.12, attack: 0.001, decay: 0.05, delay: 0.8 },
-    ] },
-    stargazerReloadOut: { volume: 0.55, layers: [
-      { type: 'noise', filter: 'bandpass', freq: 1600, q: 1.5, gain: 0.6, attack: 0.001, decay: 0.05 },
-      { type: 'noise', filter: 'bandpass', freq: 1100, q: 1.4, gain: 0.5, attack: 0.001, decay: 0.06, delay: 0.1 },
-    ] },
-    stargazerReloadIn: { volume: 0.5, layers: [ // bearings rattling down into the magazine
-      { type: 'tone', wave: 'triangle', freq: 2900, freqEnd: 2600, gain: 0.2, attack: 0.001, decay: 0.04 },
-      { type: 'tone', wave: 'triangle', freq: 3100, freqEnd: 2800, gain: 0.2, attack: 0.001, decay: 0.04, delay: 0.05 },
-      { type: 'tone', wave: 'triangle', freq: 2700, freqEnd: 2500, gain: 0.2, attack: 0.001, decay: 0.04, delay: 0.1 },
-      { type: 'noise', filter: 'lowpass', freq: 900, q: 0.8, gain: 0.4, attack: 0.001, decay: 0.06, delay: 0.12 },
-    ] },
-    stargazerReloadReady: { volume: 0.6, layers: [
-      { type: 'noise', filter: 'bandpass', freq: 1300, q: 1.4, gain: 0.6, attack: 0.001, decay: 0.05 },
-      { type: 'noise', filter: 'bandpass', freq: 2300, q: 1.6, gain: 0.6, attack: 0.001, decay: 0.04, delay: 0.12 },
-    ] },
-    // The Bottle Rocket Bazooka: a cardboard-tube whoomp and a rising whistle as it leaves; the burst is a bang with firework crackle after it.
-    bottleRocketLaunch: { volume: 0.85, layers: [
-      { type: 'noise', filter: 'lowpass', freq: 900, q: 0.7, gain: 0.9, attack: 0.001, decay: 0.14 },
-      { type: 'tone', wave: 'sine', freq: 120, freqEnd: 50, gain: 0.8, attack: 0.001, decay: 0.18 },
-      { type: 'tone', wave: 'sine', freq: 900, freqEnd: 2600, gain: 0.22, attack: 0.02, decay: 0.5, delay: 0.03 },
-      { type: 'noise', filter: 'bandpass', freq: 3000, q: 0.8, gain: 0.25, attack: 0.02, decay: 0.4, delay: 0.03 },
-    ] },
-    bottleRocketBurst: { volume: 1, layers: [
-      { type: 'noise', filter: 'lowpass', freq: 1800, q: 0.6, gain: 1, attack: 0.001, decay: 0.3 },
-      { type: 'tone', wave: 'sine', freq: 90, freqEnd: 30, gain: 1, attack: 0.001, decay: 0.45 },
-      { type: 'noise', filter: 'bandpass', freq: 4200, q: 1.5, gain: 0.35, attack: 0.001, decay: 0.03, delay: 0.12 },
-      { type: 'noise', filter: 'bandpass', freq: 3600, q: 1.5, gain: 0.3, attack: 0.001, decay: 0.03, delay: 0.19 },
-      { type: 'noise', filter: 'bandpass', freq: 4600, q: 1.5, gain: 0.3, attack: 0.001, decay: 0.03, delay: 0.26 },
-      { type: 'noise', filter: 'bandpass', freq: 3900, q: 1.5, gain: 0.25, attack: 0.001, decay: 0.03, delay: 0.34 },
-    ] },
-    bottleRocketReloadOut: { volume: 0.5, layers: [
-      { type: 'noise', filter: 'bandpass', freq: 900, q: 1.2, gain: 0.6, attack: 0.001, decay: 0.08 },
-    ] },
-    bottleRocketReloadIn: { volume: 0.6, layers: [ // a rocket sliding into a cardboard tube
-      { type: 'noise', filter: 'bandpass', freq: 700, q: 1, gain: 0.6, attack: 0.02, decay: 0.16 },
-      { type: 'tone', wave: 'sine', freq: 180, freqEnd: 110, gain: 0.5, attack: 0.001, decay: 0.08, delay: 0.14 },
-    ] },
-    bottleRocketReloadReady: { volume: 0.55, layers: [
-      { type: 'noise', filter: 'lowpass', freq: 1200, q: 0.8, gain: 0.5, attack: 0.001, decay: 0.05 },
-      { type: 'tone', wave: 'triangle', freq: 660, freqEnd: 660, gain: 0.15, attack: 0.001, decay: 0.1, delay: 0.04 },
-    ] },
-    // The Balloon Launcher: a hiss of helium and a rubbery squeak as a balloon lets go; the pop is a sharp crack with a little confetti rustle.
-    balloonLaunch: { volume: 0.6, layers: [
-      { type: 'noise', filter: 'highpass', freq: 3000, q: 0.7, gain: 0.5, attack: 0.005, decay: 0.12 },
-      { type: 'tone', wave: 'triangle', freq: 520, freqEnd: 980, gain: 0.3, attack: 0.005, decay: 0.09 },
-      { type: 'tone', wave: 'sine', freq: 300, freqEnd: 220, gain: 0.25, attack: 0.002, decay: 0.06 },
-    ] },
-    balloonPop: { volume: 0.8, layers: [
-      { type: 'noise', filter: 'bandpass', freq: 2400, q: 0.6, gain: 1, attack: 0.001, decay: 0.035 },
-      { type: 'tone', wave: 'sine', freq: 240, freqEnd: 90, gain: 0.5, attack: 0.001, decay: 0.06 },
-      { type: 'noise', filter: 'highpass', freq: 5000, q: 0.7, gain: 0.2, attack: 0.01, decay: 0.2, delay: 0.03 },
-    ] },
-    balloonReloadOut: { volume: 0.5, layers: [
-      { type: 'noise', filter: 'bandpass', freq: 1400, q: 1.3, gain: 0.5, attack: 0.001, decay: 0.06 },
-    ] },
-    balloonReloadIn: { volume: 0.55, layers: [ // a cartridge twisted in, then the hiss of the tank filling
-      { type: 'noise', filter: 'bandpass', freq: 1800, q: 1.4, gain: 0.5, attack: 0.001, decay: 0.05 },
-      { type: 'noise', filter: 'highpass', freq: 3500, q: 0.7, gain: 0.35, attack: 0.02, decay: 0.25, delay: 0.05 },
-    ] },
-    balloonReloadReady: { volume: 0.5, layers: [
-      { type: 'tone', wave: 'triangle', freq: 880, freqEnd: 1320, gain: 0.2, attack: 0.002, decay: 0.12 },
-    ] },
-    // BOGO: two label taggers firing in turn, 18 a second: a short snappy clack with a paper flick, light enough to run together.
-    bogoShot: { volume: 0.5, layers: [
-      { type: 'tone', wave: 'sine', freq: 240, freqEnd: 120, gain: 0.55, attack: 0.0008, decay: 0.03 },
-      { type: 'noise', filter: 'bandpass', freq: 2300, q: 0.9, gain: 0.6, attack: 0.0005, decay: 0.018 },
-      { type: 'noise', filter: 'lowpass', freq: 1100, q: 0.7, gain: 0.35, attack: 0.001, decay: 0.022 },
-      { type: 'tone', wave: 'triangle', freq: 900, freqEnd: 520, gain: 0.1, attack: 0.001, decay: 0.012, delay: 0.006 },
-    ] },
-    bogoReloadOut: { volume: 0.5, layers: [ // both magazines let go
-      { type: 'noise', filter: 'bandpass', freq: 1600, q: 1.2, gain: 0.55, attack: 0.001, decay: 0.05 },
-      { type: 'noise', filter: 'bandpass', freq: 1400, q: 1.2, gain: 0.45, attack: 0.001, decay: 0.05, delay: 0.035 },
-    ] },
-    bogoReloadIn: { volume: 0.6, layers: [ // two fresh ones slapped home, a beat apart
-      { type: 'noise', filter: 'lowpass', freq: 1100, q: 0.8, gain: 0.7, attack: 0.001, decay: 0.07 },
-      { type: 'tone', wave: 'sine', freq: 190, freqEnd: 80, gain: 0.5, attack: 0.001, decay: 0.07 },
-      { type: 'noise', filter: 'lowpass', freq: 1000, q: 0.8, gain: 0.6, attack: 0.001, decay: 0.07, delay: 0.06 },
-    ] },
-    bogoReloadReady: { volume: 0.5, layers: [ // both guns cocked
-      { type: 'noise', filter: 'bandpass', freq: 2500, q: 1, gain: 0.5, attack: 0.001, decay: 0.04 },
-      { type: 'tone', wave: 'triangle', freq: 640, freqEnd: 300, gain: 0.22, attack: 0.001, decay: 0.05, delay: 0.02 },
-    ] },
-    // One pulse of the Leaf Blower's stream (every 0.15 s): wind and a motor, long enough to run into the next one so it reads as one roar.
-    leafBlowerPuff: { volume: 0.5, layers: [
-      { type: 'noise', filter: 'bandpass', freq: 900, q: 0.5, gain: 0.7, attack: 0.025, decay: 0.2 },
-      { type: 'noise', filter: 'lowpass', freq: 380, q: 0.7, gain: 0.8, attack: 0.02, decay: 0.2 },
-      { type: 'tone', wave: 'sawtooth', freq: 96, freqEnd: 88, gain: 0.16, attack: 0.02, decay: 0.19 },
-    ] },
-    confettiReloadOut: { volume: 0.6, layers: [
-      { type: 'noise', filter: 'bandpass', freq: 1900, q: 1.5, gain: 0.7, attack: 0.001, decay: 0.06 },
-      { type: 'tone', wave: 'triangle', freq: 300, freqEnd: 140, gain: 0.4, attack: 0.001, decay: 0.08 },
-    ] },
-    // One shell; the reload timeline plays it twice, at each insertion.
-    confettiReloadIn: { volume: 0.55, layers: [
-      { type: 'noise', filter: 'bandpass', freq: 2500, q: 1.8, gain: 0.6, attack: 0.002, decay: 0.055 },
-      { type: 'tone', wave: 'sine', freq: 350, freqEnd: 170, gain: 0.3, attack: 0.001, decay: 0.06 },
-    ] },
-    confettiReloadReady: { volume: 0.8, layers: [
-      { type: 'noise', filter: 'bandpass', freq: 3200, q: 1.3, gain: 0.8, attack: 0.001, decay: 0.045 },
-      { type: 'tone', wave: 'sine', freq: 200, freqEnd: 65, gain: 0.5, attack: 0.001, decay: 0.1 },
-    ] },
-
-    // Metal snap + heavy sub-bass tool-body clunk, with a tiny spring ring after the strike.
-    stapleShot: {
-      volume: 0.92,
-      layers: [
-        { type: 'tone', wave: 'sine', freq: 135, freqEnd: 56, gain: 0.75, attack: 0.001, decay: 0.095 },
-        { type: 'noise', filter: 'bandpass', freq: 2500, q: 0.8, gain: 0.72, attack: 0.0008, decay: 0.025 },
-        { type: 'tone', wave: 'sine', freq: 230, freqEnd: 105, gain: 1.25, attack: 0.001, decay: 0.12 },
-        { type: 'noise', filter: 'lowpass', freq: 1100, q: 0.7, gain: 0.64, attack: 0.001, decay: 0.07 },
-        { type: 'tone', wave: 'triangle', freq: 320, freqEnd: 175, gain: 0.44, attack: 0.001, decay: 0.055 },
-        { type: 'tone', wave: 'triangle', freq: 1800, freqEnd: 1500, gain: 0.08, attack: 0.001, decay: 0.038, delay: 0.013 },
-      ],
-    },
-
-    // Fast label punch: tight low-end body beneath the click, short enough to stay crisp at 12 shots/second.
-    priceShot: {
-      volume: 0.58,
-      layers: [
-        { type: 'tone', wave: 'sine', freq: 130, freqEnd: 62, gain: 0.5, attack: 0.0008, decay: 0.048 },
-        { type: 'noise', filter: 'bandpass', freq: 1700, q: 0.9, gain: 0.64, attack: 0.0008, decay: 0.022 },
-        { type: 'tone', wave: 'sine', freq: 200, freqEnd: 115, gain: 0.68, attack: 0.001, decay: 0.055 },
-        { type: 'noise', filter: 'lowpass', freq: 900, q: 0.7, gain: 0.5, attack: 0.001, decay: 0.036 },
-        { type: 'tone', wave: 'triangle', freq: 580, freqEnd: 320, gain: 0.14, attack: 0.001, decay: 0.016, delay: 0.012 },
-        { type: 'noise', filter: 'highpass', freq: 4500, q: 0.7, gain: 0.08, attack: 0.0005, decay: 0.008, delay: 0.004 },
-      ],
-    },
-
-    // Heavy pneumatic driver: deep sub-bass piston slam, broad crack, and a short steel ring/air release.
-    nailShot: {
-      volume: 0.94,
-      layers: [
-        { type: 'tone', wave: 'sine', freq: 115, freqEnd: 46, gain: 0.95, attack: 0.001, decay: 0.15 },
-        { type: 'tone', wave: 'sine', freq: 210, freqEnd: 80, gain: 1.08, attack: 0.001, decay: 0.14 },
-        { type: 'noise', filter: 'bandpass', freq: 1500, q: 0.8, gain: 0.92, attack: 0.0008, decay: 0.045 },
-        { type: 'noise', filter: 'lowpass', freq: 650, q: 0.7, gain: 0.66, attack: 0.001, decay: 0.095 },
-        { type: 'tone', wave: 'triangle', freq: 740, freqEnd: 680, gain: 0.2, attack: 0.001, decay: 0.065, delay: 0.01 },
-        { type: 'noise', filter: 'bandpass', freq: 3100, q: 0.9, gain: 0.18, attack: 0.006, decay: 0.08, delay: 0.035 },
-      ],
-    },
-
-    // Meaty body impact: wet low-mid thud + slap when a shot connects with a zombie.
-    hitBody: {
-      volume: 0.52,
-      layers: [
-        { type: 'tone', wave: 'sine', freq: 155, freqEnd: 62, gain: 0.65, attack: 0.001, decay: 0.065 },
-        { type: 'noise', filter: 'lowpass', freq: 780, q: 0.9, gain: 0.55, attack: 0.001, decay: 0.045 },
-        { type: 'noise', filter: 'bandpass', freq: 1650, q: 1.2, gain: 0.35, attack: 0.0008, decay: 0.025 },
-      ],
-    },
-
-    // Crunchy headshot impact: wet skull-crack + bright arcade confirmation ping.
-    hitHead: {
-      volume: 0.7,
-      layers: [
-        { type: 'tone', wave: 'sine', freq: 175, freqEnd: 68, gain: 0.7, attack: 0.001, decay: 0.07 },
-        { type: 'noise', filter: 'bandpass', freq: 2850, q: 1.4, gain: 0.68, attack: 0.0006, decay: 0.032 },
-        { type: 'noise', filter: 'lowpass', freq: 950, q: 0.85, gain: 0.55, attack: 0.001, decay: 0.05 },
-        { type: 'tone', wave: 'triangle', freq: 1380, freqEnd: 1960, gain: 0.24, attack: 0.001, decay: 0.065, delay: 0.008 },
-      ],
-    },
-
-    // Lethal blow confirmation: deep splatter pop + punchy low drop when a target goes down.
-    killConfirm: {
-      volume: 0.68,
-      layers: [
-        { type: 'tone', wave: 'sine', freq: 190, freqEnd: 48, gain: 0.78, attack: 0.001, decay: 0.11 },
-        { type: 'noise', filter: 'bandpass', freq: 2150, q: 1.1, gain: 0.52, attack: 0.001, decay: 0.048, delay: 0.006 },
-        { type: 'tone', wave: 'triangle', freq: 920, freqEnd: 560, gain: 0.2, attack: 0.001, decay: 0.075, delay: 0.012 },
-      ],
-    },
-
-    // Box cutter slash: metallic blade snick + sharp air whoosh.
-    meleeSwing: {
-      volume: 0.55,
-      layers: [
-        { type: 'noise', filter: 'bandpass', freq: 3800, q: 2.2, gain: 0.38, attack: 0.001, decay: 0.03 },
-        { type: 'noise', filter: 'bandpass', freq: 1250, q: 1.1, gain: 0.52, attack: 0.018, decay: 0.095, delay: 0.02 },
-        { type: 'tone', wave: 'triangle', freq: 520, freqEnd: 210, gain: 0.22, attack: 0.01, decay: 0.08, delay: 0.025 },
-      ],
-    },
 
     // Mall Walker: a sneaker squeak on the shiny mall floor (quiet; volume also drops with distance)...
     walkerSqueak: {
@@ -1002,83 +683,6 @@ export const audio = {
       layers: [
         { type: 'tone', wave: 'square', freq: 150, freqEnd: 140, gain: 0.35, attack: 0.004, decay: 0.22 },
         { type: 'tone', wave: 'square', freq: 151, freqEnd: 141, gain: 0.25, attack: 0.004, decay: 0.22, delay: 0.005 },
-      ],
-    },
-
-    // Price Gun reload: empty roll popped off...
-    priceReloadOut: {
-      volume: 0.5,
-      layers: [
-        { type: 'noise', filter: 'bandpass', freq: 1800, q: 1.5, gain: 0.5, attack: 0.002, decay: 0.05 },
-        { type: 'tone', wave: 'triangle', freq: 600, freqEnd: 300, gain: 0.25, attack: 0.001, decay: 0.05 },
-      ],
-    },
-    // ...fresh roll pressed on...
-    priceReloadIn: {
-      volume: 0.6,
-      layers: [
-        { type: 'noise', filter: 'lowpass', freq: 1200, q: 0.8, gain: 0.6, attack: 0.001, decay: 0.05 },
-        { type: 'noise', filter: 'bandpass', freq: 2600, q: 1.5, gain: 0.35, attack: 0.0005, decay: 0.02, delay: 0.012 },
-      ],
-    },
-    // ...and the feed snapped shut.
-    priceReloadReady: {
-      volume: 0.6,
-      layers: [
-        { type: 'noise', filter: 'bandpass', freq: 3200, q: 1.4, gain: 0.55, attack: 0.0005, decay: 0.025 },
-        { type: 'tone', wave: 'sine', freq: 300, freqEnd: 150, gain: 0.25, attack: 0.001, decay: 0.04, delay: 0.03 },
-      ],
-    },
-
-    // Nail Gun reload: magazine latch flipped open...
-    nailReloadOut: {
-      volume: 0.55,
-      layers: [
-        { type: 'noise', filter: 'bandpass', freq: 2200, q: 1.6, gain: 0.55, attack: 0.001, decay: 0.04 },
-        { type: 'tone', wave: 'triangle', freq: 500, freqEnd: 260, gain: 0.25, attack: 0.001, decay: 0.05 },
-      ],
-    },
-    // ...fresh nail strip slid in (a metal scrape)...
-    nailReloadIn: {
-      volume: 0.65,
-      layers: [
-        { type: 'noise', filter: 'bandpass', freq: 3400, q: 3, gain: 0.45, attack: 0.02, decay: 0.08 },
-        { type: 'noise', filter: 'lowpass', freq: 1000, q: 0.8, gain: 0.5, attack: 0.001, decay: 0.05, delay: 0.09 },
-      ],
-    },
-    // ...and the spring follower snapping shut.
-    nailReloadReady: {
-      volume: 0.65,
-      layers: [
-        { type: 'noise', filter: 'bandpass', freq: 3600, q: 1.4, gain: 0.6, attack: 0.0005, decay: 0.025 },
-        { type: 'tone', wave: 'sine', freq: 260, freqEnd: 120, gain: 0.3, attack: 0.001, decay: 0.05, delay: 0.02 },
-      ],
-    },
-
-    // Staple Gun reload: pusher rod pulled back (metal slide)...
-    stapleReloadOut: {
-      volume: 0.55,
-      layers: [
-        { type: 'noise', filter: 'bandpass', freq: 2600, q: 2, gain: 0.5, attack: 0.004, decay: 0.07 },
-        { type: 'noise', filter: 'highpass', freq: 3500, q: 0.7, gain: 0.35, attack: 0.0005, decay: 0.02, delay: 0.06 },
-      ],
-    },
-    // ...a fresh strip slapped into the channel...
-    stapleReloadIn: {
-      volume: 0.7,
-      layers: [
-        { type: 'noise', filter: 'lowpass', freq: 1400, q: 0.8, gain: 0.7, attack: 0.001, decay: 0.06 },
-        { type: 'tone', wave: 'triangle', freq: 320, freqEnd: 160, gain: 0.35, attack: 0.001, decay: 0.05 },
-        { type: 'noise', filter: 'bandpass', freq: 3000, q: 1.5, gain: 0.35, attack: 0.0005, decay: 0.025, delay: 0.01 },
-      ],
-    },
-    // ...and the rod snapping shut: ready to fire.
-    stapleReloadReady: {
-      volume: 0.65,
-      layers: [
-        { type: 'noise', filter: 'bandpass', freq: 3800, q: 1.4, gain: 0.6, attack: 0.0005, decay: 0.025 },
-        { type: 'noise', filter: 'bandpass', freq: 2400, q: 1.4, gain: 0.55, attack: 0.0005, decay: 0.035, delay: 0.05 },
-        { type: 'tone', wave: 'sine', freq: 240, freqEnd: 120, gain: 0.3, attack: 0.001, decay: 0.04, delay: 0.05 },
       ],
     },
 

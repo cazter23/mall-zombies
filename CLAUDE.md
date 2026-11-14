@@ -80,6 +80,7 @@ tests/docs.test.js fails if a new src/ file or test file isn't described in the 
 | touch behaviour and want to know which test guards it | docs/tests.md |
 | add or restyle a sign, poster, neon or label (fonts, roles) | docs/typefaces.md (the type system) and docs/typefaces-ledger.md (every sign) |
 | change a gun | docs/weapon-balance-pass.md and `npm run balance` |
+| change a gun's or a hit's sound | docs/gun-sounds.md (config/gunSounds.js; listen and measure: `npm run dev`, /tools/audition.html) |
 | change a price, a payout or how strong an upgrade is | docs/economy-report.md and `npm run sim:economy` |
 | write or change any line of game text | docs/voice.md |
 | touch a menu, a prompt or anything a controller does (one menu model: core/menuNav.js) | docs/controller-audit.md |

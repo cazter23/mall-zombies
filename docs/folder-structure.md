@@ -97,9 +97,16 @@ src/
                         job, color, holdsUntilRound; Renewals past Platinum) and store `attachments` (one per slot: barrel extendedNozzle|sawnOff, sight
                         laserPointer|zoomLens, grip gripTape|wristband, magazine jumboPack|speedLoader; effects + blurb;
                         sawnOff.falloffIfNone). Effect list in its header. Prices: economy.upgrades. `claimPa.lines` holds the 8-line Customer Service warranty-claim PA pool (`{gun}`).
-    audio.js            Master volume, pitch variation, compressor, and sound recipes (layers of filtered noise
-                        bursts and tones): staple / price / nail / foam / confetti gun shots and reloads, dry click, purchase, denied,
-                        Mall Walker walkerSqueak / walkerHuff / walkerPant, saltCrunch (Twisty), paChime (announcements)
+    audio.js            Master volume, pitch variation, the master chain (compressor, `limiter`, `softClip`), `voices` (per-sound and
+                        total caps, steal fade), `reverb` + `rooms` (room presets: hall, court, atrium, cinema, corridor, store, warehouse,
+                        smallRoom, parking) + `roomOf` (grade zone id -> room), and every non-gun sound recipe (purchase, denied, zombies,
+                        PA chime, shutters, ambience one-shots...). THE RECIPE FORMAT is described at its top (layers or named parts;
+                        noise / tone / click / metal / fm layers; vary, drive, send, maxVoices...). Merges config/gunSounds.js over its sounds.
+    gunSounds.js        Every gun's sounds (fire as crack / body / mech parts, its own dry fire, each reload step, impacts), the box cutter's
+                        swing, the Kiosk Sentry's sentryShot, partyTrapBlast, clearanceStamp and the hit feedback (hitBody tick, hitHead
+                        ding, killConfirm cha-ching), each with a design note; `soundUpgrades` = what a tier / renewal / Build-A-Blaster
+                        stuffing / low ammo does to a shot (scale or add parts), lowAmmoMinMagazine. Volumes were levelled with
+                        tools/audition.html (docs/gun-sounds.md).
     zombies.js          zombieTypes (per-type speed, size, hitboxes, attack, timings, colors, splatter): `shopper`, `shoplifter` (round 4+: jogs, a hit steals points then it flees; theft, pa, beanieColors, lootMarker), and
                         `mallWalker` = { ...shopper, overrides } (speed 5.4 no gaits, modelScale + slimmer hitbox, winded,
                         powerWalk walkAnimation + windedAnimation, tracksuit `outfit`, introBanner, sounds). zombieCrowd
@@ -951,7 +958,14 @@ src/
     testRange/          Debug add-on (not a map): testRange.js buildTestRange(scene, colliders) with own lights,
                         dummy.js practice mannequins (shootables)
   audio/
-    sound.js            createSound(): Web Audio synth for config/audio.js recipes. play(name, { volume }),
+    sound.js            createSound({ context, recipes, reverb }): Web Audio synth for config/audio.js recipes. play(name, { volume, pan,
+                        pitch, step, variant, at }) -> { stop() } | null: one VOICE per play (layers -> parts -> drive -> volume -> pan ->
+                        master + its `send` into the shared room reverb); voices capped per sound (maxVoices) and in total, the oldest
+                        stolen with a short fade; variants (tier, renewals, stuffing, lowAmmo) resolved once and cached; alternatePan,
+                        pitchStep, flavourEvery. The room: two ConvolverNodes (impulses from roomImpulse.js, cached per room) crossfaded
+                        by setRoom(gradeZoneId) (main.js, every frame), setReverbEnabled (Settings > Audio > Room echo), room, voiceCount.
+                        Master -> compressor -> limiter -> soft clip (WaveShaper) -> speakers; without WaveShaper/Convolver (old browsers,
+                        the tests' fakes) it simply skips them.
                         unlock() (also on the first pointerdown/keydown; browsers block audio before that),
                         setMasterVolume(v) (used by Settings > Audio), setAmbience(mix) (up to three continuous spatial voices,
                         short crossfades), playAmbient(name, {volume, pan}); faded sources stop and disconnect
@@ -961,6 +975,13 @@ src/
     game/meleeUpgrades.js  The box cutter tiers sold at Customer Service's second window (config/upgrades.js melee: Sharpened Blade x3 damage, Box Cutter Pro x5 + a wider cone + two targets): offer() = the next tier or null, accept() writes stats.meleeTier / meleeUpgradeDamage / meleeHalfAngleDegrees / meleeMaxTargets and announces 'meleeUpgrade' (the viewmodel recolours the cutter). Nothing run-scoped lives here: Play again's stats reset puts it back. Prices: economy.upgrades.melee through g.pricing 'melee'. createGame exposes g.meleeUpgrades.
     game/warranty.js    The Extended Warranty rules that are not a stat change: what the Customer Service desk offers (next tier, a Renewal past Platinum, or a warranty on file moved onto this gun for a fee), the warranty a replaced gun leaves on file, and the Platinum claim (a dry gun gets its ammo back once per round, picking its `'warrantyClaim'` PA line from `upgrades.claimPa.lines` via `pickPaLine` with `lineRandom = paRandom`). Numbers: config/upgrades.js.
                         occasional one-shots only in audible unlocked areas. Timers freeze on pause and restart on reset.
+    recipes.js          Pure (no Web Audio): normalizeRecipe (layers or parts -> one shape, defaults filled, cached), validateRecipe
+                        (problems as words: tests/gunSounds.test.js), resolveVariant(recipe, { tier, renewals, stuffing, lowAmmo },
+                        soundUpgrades) (scale / add parts; never edits the config), variantKey, driveCurve + driveMakeup (tanh
+                        saturation, level-matched), softClipCurve (the last stage: never past its ceiling).
+    roomImpulse.js      Pure: roomImpulse(room, sampleRate) -> stereo impulse response from a room preset: decaying noise after a
+                        pre-delay, sparse early reflections, a low-pass closing over the tail (brightness), an optional feedback-comb
+                        `ring` (the corridor's metallic flutter), a low cut, unit energy per channel. seededRandom.
     ambientPulse.js     Sparse mechanical ticks mixed into a looping ambience buffer (reuses the noise grain: no gameplay random draws).
     mallMusic.js        The song engine, pure and deterministic: noteNumber, parseChord (chord symbols, slash chords), songEvents
                         (a song's form -> notes and drum hits), renderTrack (synths: piano, electric piano, marimba, bell, wind for
@@ -1039,7 +1060,7 @@ src/
                         the music worker (as a Blob worker) pasted into ONE html file; the Google Fonts link loads non-blocking so a blocked
                         network just falls back to system fonts; tests/singleFile.test.js builds it and checks it is self-contained); balance.js = gun balance maths shared with the tests (seeded Monte Carlo of each
                         gun's real spread + pellets vs a Shopper's hitboxes at a range: expectedShotDamage, sustainedDps, burstDps,
-                        shotsToKill); gunReport.mjs = `npm run balance`; meleeReport.mjs = `npm run melee` (swings to kill by round, plain box cutter vs the Customer Service tiers); kioskBalance.js = Kiosk Kevin's balance maths from the game's own config and functions (equipment power, Soda Bomb share and kill radius by round and zombie type, the Sparkler Cake's burn, the Sentry against the Price Gun, Bubble Wrap hits to death, damage per point against wall ammo, prices as a share of a round's measured income: ROUND_INCOME, copied from docs/economy-report.md); kioskReport.mjs = `npm run kiosk` prints it (tests/kioskBalance.test.js holds phase 7's bar on the same maths); gunSheet.html/.js = a contact sheet of one gun in eight upgrade states (`npm run dev`, /tools/gunSheet.html?gun=nailGun&view=left); babReport.mjs = `npm run balance:bab` (headless horde bot: plain gun vs warranty tiers vs builds); clawOdds.js = GRAB-A-GUN's odds
+                        shotsToKill); gunReport.mjs = `npm run balance`; meleeReport.mjs = `npm run melee` (swings to kill by round, plain box cutter vs the Customer Service tiers); kioskBalance.js = Kiosk Kevin's balance maths from the game's own config and functions (equipment power, Soda Bomb share and kill radius by round and zombie type, the Sparkler Cake's burn, the Sentry against the Price Gun, Bubble Wrap hits to death, damage per point against wall ammo, prices as a share of a round's measured income: ROUND_INCOME, copied from docs/economy-report.md); kioskReport.mjs = `npm run kiosk` prints it (tests/kioskBalance.test.js holds phase 7's bar on the same maths); gunSheet.html/.js = a contact sheet of one gun in eight upgrade states (`npm run dev`, /tools/gunSheet.html?gun=nailGun&view=left); audition.html/.js = the GUN SOUND AUDITION (`npm run dev`, /tools/audition.html): every gun's fire, rapid fire at its real rate (the game's Weapon class times it), dry fire, each reload step and the whole reload, impacts, every tier and build, low ammo, the hit feedback, any room, Old/New against auditionLegacy.js (the pre-overhaul recipes, kept until the new ones are signed off), and Measure (offline renders: peak, loudest 50 ms, length, centroid, the most alike pairs, a stress render; `level()` proposes volumes: docs/gun-sounds.md); babReport.mjs = `npm run balance:bab` (headless horde bot: plain gun vs warranty tiers vs builds); clawOdds.js = GRAB-A-GUN's odds
                         simulation (seeded; the game's own roll; perfect / 3-in-4 / random / timed presses; sites, plush closes, wall value,
                         points per specific gun vs its cheapest wall route); clawSim.mjs = `npm run sim:claw [price]` prints it (the plan's odds tables);
                         economySim.mjs = `npm run sim:economy` (docs/economy-report.md is written from its tables): plays the real game headless, many seeds in parallel

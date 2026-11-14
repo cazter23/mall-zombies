@@ -91,7 +91,7 @@ export const weapons = {
     },
 
     // Sound names (config/audio.js). Reload sounds are events in viewmodel.reload below.
-    sounds: { fire: 'stapleShot', dryFire: 'dryClick' },
+    sounds: { fire: 'stapleShot', dryFire: 'stapleDry' },
 
     // Hip-fire spread: shots land at a random spot inside a cone around the crosshair.
     // All values are the cone's half-angle in degrees. The crosshair gap shows the real cone.
@@ -247,7 +247,7 @@ export const weapons = {
       worldLightRange: 8,
     },
 
-    sounds: { fire: 'priceShot', dryFire: 'dryClick' },
+    sounds: { fire: 'priceShot', dryFire: 'priceDry' },
 
     tracerColor: 0xfff3c4, // a little price sticker streak
     viewmodel: {
@@ -374,7 +374,7 @@ export const weapons = {
       worldLightRange: 8,
     },
 
-    sounds: { fire: 'nailShot', dryFire: 'dryClick' },
+    sounds: { fire: 'nailShot', dryFire: 'nailDry' },
 
     tracerColor: 0xb8bec6, // steel nail streak
     viewmodel: {
@@ -454,7 +454,7 @@ export const weapons = {
       lightColor: 0xffddad, handLightIntensity: 0.3, handLightRange: 0.8,
       worldLightIntensity: 4, worldLightRange: 7,
     },
-    sounds: { fire: 'foamShot', dryFire: 'dryClick' },
+    sounds: { fire: 'foamShot', dryFire: 'foamDry' },
     tracerColor: 0xff8a28,
     viewmodel: {
       model: 'foamDartBlaster', hipOffset: { x: 0.18, y: -0.16, z: -0.45 },
@@ -532,7 +532,7 @@ export const weapons = {
       lightColor: 0xffb4da, handLightIntensity: 0.8, handLightRange: 1,
       worldLightIntensity: 14, worldLightRange: 10,
     },
-    sounds: { fire: 'confettiShot', dryFire: 'dryClick' },
+    sounds: { fire: 'confettiShot', dryFire: 'confettiDry' },
     tracerColor: 0xff6abc,
     viewmodel: {
       model: 'confettiCannon', hipOffset: { x: 0.18, y: -0.155, z: -0.44 },
@@ -611,7 +611,7 @@ export const weapons = {
       lightColor: 0xffd5a0, handLightIntensity: 0.25, handLightRange: 0.8,
       worldLightIntensity: 3, worldLightRange: 6,
     },
-    sounds: { fire: 'rivetShot', dryFire: 'dryClick' }, tracerColor: 0xffd5a0,
+    sounds: { fire: 'rivetShot', dryFire: 'rivetDry' }, tracerColor: 0xffd5a0,
     viewmodel: {
       model: 'rivetRifle', hipOffset: { x: 0.18, y: -0.145, z: -0.43 },
       aimYawDegrees: 8, hipPitchDegrees: 2, hipRollDegrees: 3,
@@ -680,7 +680,7 @@ export const weapons = {
       lightColor: 0xffd28a, handLightIntensity: 0.45, handLightRange: 0.9,
       worldLightIntensity: 7, worldLightRange: 8,
     },
-    sounds: { fire: 'coilShot', dryFire: 'dryClick' },
+    sounds: { fire: 'coilShot', dryFire: 'coilDry' },
     tracerColor: 0xd8a24a,
     viewmodel: {
       model: 'coilNailer', hipOffset: { x: 0.185, y: -0.155, z: -0.43 },
@@ -767,7 +767,7 @@ export const weapons = {
       lightColor: 0xff4d5a, handLightIntensity: 0.75, handLightRange: 1.0,
       worldLightIntensity: 12, worldLightRange: 10,
     },
-    sounds: { fire: 'scannerShot', beep: 'scannerBeep', dryFire: 'dryClick' }, // (beep: the checkout BEEP on top of the shot)
+    sounds: { fire: 'scannerShot', beep: 'scannerBeep', dryFire: 'scannerDry' }, // (beep: the checkout BEEP on top of the shot)
     tracerColor: 0xff2a38,
     beam: { width: 0.06, seconds: 0.2, flicker: 30 }, // the beam it fires: 5x a staple streak's width, held 0.2 s (fx/effects.js tracer)
     viewmodel: {
@@ -844,7 +844,7 @@ export const weapons = {
       lightColor: 0xcfeedd, handLightIntensity: 0.15, handLightRange: 0.6,
       worldLightIntensity: 2, worldLightRange: 4,
     },
-    sounds: { fire: 'leafBlowerPuff', dryFire: 'dryClick' },
+    sounds: { fire: 'leafBlowerPuff', dryFire: 'leafBlowerDry' },
     tracerColor: 0xbfe8c8,
     viewmodel: {
       model: 'leafBlower', hipOffset: { x: 0.17, y: -0.165, z: -0.43 },
@@ -906,7 +906,7 @@ export const weapons = {
       lightColor: 0xf4f7b8, handLightIntensity: 0.4, handLightRange: 0.8,
       worldLightIntensity: 6, worldLightRange: 6,
     },
-    sounds: { fire: 'tennisLaunch', dryFire: 'dryClick' },
+    sounds: { fire: 'tennisLaunch', dryFire: 'tennisDry' },
     tracerColor: 0xe9f27a,
     viewmodel: {
       model: 'tennisBallLauncher', hipOffset: { x: 0.17, y: -0.16, z: -0.44 },
@@ -989,7 +989,7 @@ export const weapons = {
       lightColor: 0xffb3dc, handLightIntensity: 0.6, handLightRange: 1,
       worldLightIntensity: 10, worldLightRange: 9,
     },
-    sounds: { fire: 'returnBeam', dryFire: 'dryClick' },
+    sounds: { fire: 'returnBeam', dryFire: 'returnDry' },
     tracerColor: 0xff59a9,
     viewmodel: {
       model: 'returnToSender', hipOffset: { x: 0.17, y: -0.16, z: -0.43 },
@@ -1097,7 +1097,7 @@ export const weapons = {
       lightColor: 0xfff0c0, handLightIntensity: 0.5, handLightRange: 1,
       worldLightIntensity: 6, worldLightRange: 8,
     },
-    sounds: { fire: 'stargazerShot', dryFire: 'dryClick' }, // (the shot's last layer is the bolt being worked)
+    sounds: { fire: 'stargazerShot', dryFire: 'stargazerDry' }, // (the shot's last layer is the bolt being worked)
     tracerColor: 0xfff0b0,
     viewmodel: {
       model: 'stargazer', hipOffset: { x: 0.17, y: -0.15, z: -0.42 },
@@ -1222,7 +1222,7 @@ export const weapons = {
       lightColor: 0xffc06a, handLightIntensity: 0.7, handLightRange: 1.2,
       worldLightIntensity: 8, worldLightRange: 8,
     },
-    sounds: { fire: 'bottleRocketLaunch', dryFire: 'dryClick', burst: 'bottleRocketBurst' },
+    sounds: { fire: 'bottleRocketLaunch', dryFire: 'bottleRocketDry', burst: 'bottleRocketBurst' },
     tracerColor: 0xffd23f,
     viewmodel: {
       model: 'bottleRocket', hipOffset: { x: 0.16, y: -0.16, z: -0.4 },
@@ -1332,7 +1332,7 @@ export const weapons = {
       lightColor: 0xffe6f4, handLightIntensity: 0.15, handLightRange: 0.6,
       worldLightIntensity: 1, worldLightRange: 3,
     },
-    sounds: { fire: 'balloonLaunch', dryFire: 'dryClick', burst: 'balloonPop' },
+    sounds: { fire: 'balloonLaunch', dryFire: 'balloonDry', burst: 'balloonPop' },
     tracerColor: 0xff5ec8,
     viewmodel: {
       model: 'balloonLauncher', hipOffset: { x: 0.17, y: -0.15, z: -0.42 },
@@ -1442,7 +1442,7 @@ export const weapons = {
       lightColor: 0xffb0c0, handLightIntensity: 0.2, handLightRange: 0.7,
       worldLightIntensity: 2.2, worldLightRange: 5,
     },
-    sounds: { fire: 'bogoShot', dryFire: 'dryClick' }, tracerColor: 0xff8fa8,
+    sounds: { fire: 'bogoShot', dryFire: 'bogoDry' }, tracerColor: 0xff8fa8,
     viewmodel: {
       model: 'bogo', hipOffset: { x: 0, y: -0.15, z: -0.42 }, // (the pair is centred: each gun sits gunSpacing to its side)
       aimYawDegrees: 0, hipPitchDegrees: 1.5, hipRollDegrees: 0,
@@ -1481,6 +1481,7 @@ export const melee = {
   boxCutter: {
     id: 'boxCutter',
     name: 'Box Cutter',
+    sounds: { swing: 'meleeSwing' }, // (a hit plays the guns' hitBody / killConfirm)
     damage: 150, // one-hits a round-1 zombie, 2 hits rounds 2-3, then falls off (like COD)
     range: 1.8, // meters from the eye to the target's nearest point
     hitHalfAngleDegrees: 40, // how far off-center a target can be (wider than the crosshair: forgiving)

@@ -226,6 +226,11 @@ export const settingDefs = [
     apply: (v, ctx) => { audio.musicVolume = v; ctx.sound.setMusicVolume?.(v); },
   },
   {
+    id: 'roomEcho', tab: 'Audio', label: 'Room echo', type: 'toggle', default: audio.reverb.enabled,
+    hint: 'Shots ring around the big halls and stay tight in the corridors. Turn it off to save a little effort on a slow computer.',
+    apply: (v, ctx) => { audio.reverb.enabled = v; ctx.sound.setReverbEnabled?.(v); },
+  },
+  {
     id: 'idleMute', tab: 'Audio', label: 'Mute when asleep', type: 'toggle', default: idle.muteWhenAsleep,
     hint: 'When Save power when idle has put the game to sleep, the sound stops too, and carries on when you come back.',
     apply: (v) => { idle.muteWhenAsleep = v; },

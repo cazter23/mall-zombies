@@ -355,7 +355,7 @@ export const kiosk = {
         speed: 11, gravity: 12, restitution: 0.15, maxBounces: 6, radius: 0.16, minSpeed: 1.2,
         lifeSeconds: 6, rehitSeconds: 0.25, seekRange: 0,
       },
-      sounds: { throw: 'meleeSwing', bounce: 'tennisBounce', deploy: 'dryClick', fire: 'stapleShot' },
+      sounds: { throw: 'meleeSwing', bounce: 'tennisBounce', deploy: 'dryClick', fire: 'sentryShot' },
       look: {
         model: 'sentry', stand: 0xd8d2c4, base: 0x45246e, gun: 0x3a3f4a, sign: 0xffe14d, tape: 0xb8b2a6, // the stand (world/kioskProducts.js)
         tracer: 0xe8eef5, // a silver staple streak

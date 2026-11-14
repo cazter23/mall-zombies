@@ -191,17 +191,20 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
   const voicesByKey = new Map(); // sound name -> its live voices, oldest first
   const liveVoices = []; // every live voice, oldest first
   const resolved = new Map(); // name + variant -> resolved recipe
+  const panSide = new Map(); // name -> the side its last play went to (alternatePan)
+  const flavourCount = new Map(); // name -> plays with a stuffing so far (flavourEvery)
   const clickBuffers = new Map();
   const shaperMakeup = (amount) => driveMakeup(amount);
 
-  // A few ms of shaped noise (a crack) or a near-impulse (a tick), reused by every click layer.
+  // A few ms of shaped noise (a crack) or a near-impulse (a tick), reused by every click layer: four of each, one picked
+  // per play, so a held trigger never repeats the same crack.
   function clickBuffer(shape, ms) {
-    const key = `${shape}:${ms}`;
+    const key = `${shape}:${ms}:${Math.floor(Math.random() * 4)}`;
     if (clickBuffers.has(key)) return clickBuffers.get(key);
     const length = Math.max(2, Math.round(ctx.sampleRate * ms / 1000));
     const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
     const data = buffer.getChannelData(0);
-    if (shape === 'impulse') { data[0] = 1; data[1] = -0.55; data[2] = 0.2; }
+    if (shape === 'impulse') { data[0] = 1; data[1] = -0.4 - Math.random() * 0.3; data[2] = Math.random() * 0.3; }
     else {
       const rise = Math.max(1, Math.round(length * 0.06));
       for (let i = 0; i < length; i++) {
@@ -344,7 +347,7 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
    * One play of a recipe: its parts, drive, volume, pan, and its send into the room.
    * Returns { stop() } (or null when audio can't play).
    */
-  function playRecipe(key, recipe, { volume = 1, pan = 0, panned = false, at = null, pitch: pitchScale = 1, destination = master, send = true } = {}) {
+  function playRecipe(key, recipe, { volume = 1, pan = 0, panned = false, at = null, pitch: pitchScale = 1, step = 0, destination = master, send = true } = {}) {
     const start = Math.max(at ?? ctx.currentTime, ctx.currentTime);
     const cap = recipe.maxVoices ?? audio.voices.perSound;
     let list = voicesByKey.get(key);
@@ -353,7 +356,9 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
     while (liveVoices.length >= audio.voices.total) steal(liveVoices[0], start);
 
     const variation = recipe.pitchVariation ?? audio.pitchVariation;
-    const pitch = (1 + (Math.random() * 2 - 1) * variation) * pitchScale;
+    const pitch = (1 + (Math.random() * 2 - 1) * variation) * pitchScale * (1 + recipe.pitchStep) ** step;
+    // (alternatePan: every other play of this sound goes to the other side: BOGO's two hands)
+    if (recipe.alternatePan) { const side = (panSide.get(key) ?? 1) * -1; panSide.set(key, side); pan += side * recipe.alternatePan; }
     const nodes = [];
     const voice = { key, nodes, sources: [], out: null, stolen: false, remaining: 0, ended: null };
     const out = ctx.createGain(); nodes.push(out);
@@ -416,7 +421,7 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
 
   // ---- The room: one shared reverb, two convolvers crossfaded on a room change ----------------------------------
 
-  const reverb = { input: null, slots: [], active: -1, room: null, wanted: audio.reverb.defaultRoom, enabled: true, switchedAt: -Infinity };
+  const reverb = { input: null, slots: [], active: -1, room: null, wanted: audio.reverb.defaultRoom, enabled: audio.reverb.enabled !== false, switchedAt: -Infinity };
   const impulses = new Map();
   function impulseFor(roomId) {
     if (impulses.has(roomId)) return impulses.get(roomId);
@@ -466,8 +471,9 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
     reverb.switchedAt = now;
   }
   /** The room the player is in (a grade-zone id: map.gradeZones, or null for the hallway). Cheap to call every frame. */
-  function setRoom(zoneId) {
+  function setRoom(zoneId, { now = false } = {}) {
     reverb.wanted = audio.roomOf[zoneId] ?? audio.reverb.defaultRoom;
+    if (now) { if (ctx && reverb.input) switchRoom(true); return; } // (the audition page: switch at once)
     // (A switch waits for the previous crossfade to finish, so a quick back-and-forth never swaps a buffer that is still audible.)
     if (ctx && reverb.input && reverb.wanted !== reverb.room && ctx.currentTime - reverb.switchedAt > audio.reverb.crossfadeSeconds * 2) switchRoom();
   }
@@ -698,15 +704,25 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
      * Play a sound by name (see config/audio.js).
      * @param volume  scales it (0..1+)
      * @param pan     -1..1 (BOGO's two hands)
-     * @param pitch   a pitch multiplier on top of the recipe (the Tennis Ball's rising bounces)
+     * @param pitch   a pitch multiplier on top of the recipe
+     * @param step    how far along a chain this play is (the Tennis Ball's bounces): pitch x (1 + recipe.pitchStep) ^ step
      * @param variant { tier, renewals, stuffing, lowAmmo } (config/gunSounds.js soundUpgrades), for a gun's shot
      * @param at      context time to start (offline renders); default now
      * @returns { stop() } so a sound can be cut short (the scanner's whine on a released scan), or null
      */
-    play(name, { volume = 1, pan = 0, pitch = 1, variant = null, at = null } = {}) {
+    play(name, { volume = 1, pan = 0, pitch = 1, step = 0, variant = null, at = null } = {}) {
+      // (flavourEvery: an automatic gun's build flavour rides on every Nth shot, not all of them: clearer, and cheaper)
+      if (variant?.stuffing && recipes[name]) {
+        const every = normalizeRecipe(recipes[name]).flavourEvery;
+        if (every > 1) {
+          const n = (flavourCount.get(name) ?? 0) + 1;
+          flavourCount.set(name, n);
+          if (n % every) variant = { ...variant, stuffing: null };
+        }
+      }
       const recipe = recipeFor(name, variant);
       if (!recipe || !canPlay()) return null;
-      return playRecipe(name, recipe, { volume, pan, pitch, at });
+      return playRecipe(name, recipe, { volume, pan, pitch, step, at });
     },
     setRoom,
     setReverbEnabled,
