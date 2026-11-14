@@ -1,5 +1,59 @@
 # Sunset Galleria: build history ("Current state")
 
+## 14 November 2026 - Drawing-side waste removed: the gun in hand, bullet marks, still matrices, shadows, the corner map (`claude/render-waste`)
+
+The bug hunt (`claude/bughunt`) measured constant per-frame and per-shot work that did nothing, and left it alone because each
+fix touches drawing code. This is that work, one commit per item, each with a test that fails on the old code. Timings are
+headless in Node on the 16 GB PC unless they say browser; counts are exact. Started from main (the bug hunt was not merged yet).
+
+| What | Before | After |
+|---|---|---|
+| Objects under the gun's scene (staple gun in hand) | 3,875 (4,103 after one skinned gun) | 262 (and 262) |
+| The gun scene's matrix pass, and one muzzle lookup | 0.36 ms and 0.40 ms per frame | 0.02 ms and 0.02 ms |
+| One bullet mark (batched mall, 157 sample shots) | 5.60 ms | 0.50 ms (0.33 ms in the browser) |
+| Marks re-checked per frame at the 200 cap | all 200 (0.049 ms) | only those on moving surfaces (0.016 ms) |
+| Map objects rebuilding their matrix per frame | 2,579 (0.27 ms) | 1,162 (0.16 ms) |
+| Contact shadows, 24 walking zombies, 594 colliders | 0.065 ms per frame | 0.007 ms |
+| Corner map, per second at 60 fps | 60 layout measurements, 60 redraws, 120 text writes | 0, 30, 0 |
+
+- **The gun in hand** (weapons/viewmodel.js). All 15 gun models, and every skinned twin built later, stayed attached to the
+  gun's scene, hidden. three still walks hidden objects. Now only the gun in hand is attached; `setActive` swaps them, and
+  the sleeve styler is handed the waiting models directly. tests/skinEquipment.test.js had counted two staple housings in the
+  scene (the pile-up itself); it now checks one at a time and that the twin is built once.
+- **Bullet marks** (fx/impactMarks.js, new fx/triangleGrid.js). Each wall hit refreshed every matrix under the map, walked the
+  map for visible meshes and ray-tested all of them. The surfaces are now listed once (still meshes with a world box; meshes
+  under a `userData.dynamic` parent are tested every shot) and relisted after `refresh()`: a barrier opening, static batching,
+  a new run. **The mesh list alone was not the cost**: it only took a shot from 5.6 to 4.6 ms. The time went on testing every
+  triangle of the merged meshes the ray crosses (about 52,000 per shot, plus the hit mesh four more times for the corners), so
+  big still meshes get a triangle grid, built at start-up in the browser (68 ms, 4 MB). It returns exactly three's hit: the
+  same 106 of 157 sample shots are accepted, and the test compares it with three on 2,000+ rays. The whole ray is still
+  tested, so a decoration in front of the wall rejects or takes the mark as before. One behaviour changed: a mark on a still
+  surface is no longer re-checked every frame, so a mark on a poster that Graphics > Small detail hides at a distance now
+  stays (it used to be deleted for good).
+- **Still matrices** (world/staticBatch.js `freezeStatic`, called by main.js after batching; `?nofreeze` to compare).
+  Everything under the map that is not under a `userData.dynamic` parent or a shutter stops rebuilding its matrix. Checked
+  first what moves without the flag, with a scripted run (every door, 24 rounds, bosses, Mascots, the claw machine moving,
+  every interaction, every gun, Play again): one thing, the hallway's swaying hanging sign, which now hangs in a flagged
+  group. A frozen thing that is moved later just stands still, with no error, so `movedWhileFrozen(root)` lists such
+  objects: tests/staticBatch.test.js plays a run and expects none, and `__mall.movedWhileFrozen()` does it in a browser
+  check. The other 1,162 objects are inside dynamic groups (Kevin's five carts, the claw cabinets, showpieces) and still
+  update; most of them do not move either, but that needs a look at each group.
+- **Contact shadows** (fx/contactShadows.js). Each zombie read all ~600 colliders every frame. It now remembers the ones
+  within 0.75 m of where it last looked and reads the list again after walking that far or when a door changes it.
+- **Corner map** (ui/minimap.js; off by default). It measured its box every frame (a forced page layout), redrew every frame
+  and rewrote its two strips. It now measures when it appears or the window resizes, redraws
+  `config/minimap.js corner.redrawsPerSecond` (30) times a second, and writes a strip only when its words change.
+  **To judge by eye:** the map now turns at 30 steps a second, not 60. Set the number to 60 to put it back.
+
+Browser check (built, `vite preview`, `window.__mall`): all 15 guns come up with 246-442 objects in the gun scene and the
+muzzle in front of the eye; a skinned staple gun and the cardigan sleeves show on it; marks land on the wall (0.33 ms each);
+all 14 shutters roll; the sign sways; Kevin opens at the Atrium with his goods out; GRAB-A-GUN moves; the corner map draws;
+`__mall.movedWhileFrozen()` stayed empty throughout. Frame times were not compared: the pane was hidden, where they mean nothing.
+
+Not done: skinned twins are still kept for the whole session once built (off the scene, so they cost memory, not time).
+Shared files touched: CLAUDE.md (one line on the freeze in the dynamic-flag gotcha), src/main.js, src/game/createGame.js,
+docs/tests.md, docs/folder-structure.md.
+
 ## 14 November 2026 - Punch picked by ear: Confetti C, Rivet C, Stargazer A (`claude/audio-overhaul`)
 
 From the three takes on the audition page (A tighter, B in between, C bigger, all at the same loudness), the user picked C for the
