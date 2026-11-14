@@ -1,5 +1,11 @@
 # Sunset Galleria: build history ("Current state")
 
+## 14 November 2026 - `npm run audition`: the gun sound audition without the dev server (`claude/audio-overhaul`)
+
+The dev server took too long to start just to listen. tools/openAudition.mjs bundles tools/audition.html (the sound engine, the gun
+configs and the page: not the 3D mall) into one 200 KB file, dist-audition/gun-sound-audition.html, and opens it in Firefox. Like
+`npm run play`, it rebuilds only when the code changed (tools/play.mjs now exports openInBrowser). It is never part of the game's builds.
+
 ## 14 November 2026 - Gun sounds, round three: punch for desktop speakers (`claude/audio-overhaul`)
 
 The Confetti Cannon, Rivet Rifle and Stargazer still felt light. Punch is three things, and now the big guns have all three:
