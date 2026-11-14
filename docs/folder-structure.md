@@ -331,7 +331,7 @@ src/
     skinPalette.js      resolveGunColors(def, skinId) maps shared roles to every gun's model colour keys, with weapon config and gunPalettes.js defaults as fallback.
     viewmodel.js        Shared first-person rig in its own scene + own fixed-FOV camera (drawn after the world
                         with depth cleared). createViewmodel(allWeaponDefs, meleeDef, { skinFor }) builds every gun's base coats up
-                        front (only the shown one visible; one shared hand light + world light that each gun's
+                        front (only the one in hand is attached to the scene, setActive swaps them: a hidden model would still be walked every frame; one shared hand light + world light that each gun's
                         flash recolors, so lights never come and go), attaches each muzzle flash,
                         and adds up layers on a `holder` each frame: hip->ADS rest pose, reload pose
                         (gunKeys; eases out if cancelled), recoil springs (kickPos/kickRot: fire(aimAmount, resolvedDef), dryFire(resolvedDef),

@@ -9,8 +9,9 @@
 //
 // This file is the part every gun shares; the gun + hands model and its own
 // animation (trigger, hands while reloading) come from weapons/models/. Every
-// gun's model is built up front and only the one in your hands is shown. Layers,
-// all added together on the "holder" each frame:
+// gun's model is built up front, but only the one in your hands is IN the scene
+// (the rest wait detached: a hidden model would still be walked every frame).
+// Layers, all added together on the "holder" each frame:
 //   rest pose    hip offset sliding to the ADS offset
 //   reload pose  keyframes from weapons.<id>.viewmodel.reload.gunKeys (eases out if cancelled)
 //   recoil       springs kicked on every shot (and by reload jolts): snap back, settle forward
@@ -160,12 +161,12 @@ export function createViewmodel(weaponDefs, meleeDef, { skinFor = () => undefine
   const worldLight = new THREE.PointLight(0xffffff, 0, 1, 2);
 
   // One model + flash per gun in its default look, built now; a skinned one is added by variantFor() when first held.
+  // Only the gun in hand hangs on the holder (setActive swaps them): 15 hidden models were 3,800 objects whose matrices
+  // the renderer and getMuzzleWorldPosition still walked every frame.
   const guns = new Map();
   const variantKey = (gunId, skinId) => skinId ? `${gunId}:${skinId}` : gunId;
   function addGun(def, skinId) {
     const model = buildWeaponModel(def, skinId);
-    model.root.visible = false;
-    holder.add(model.root);
     const flash = createMuzzleFlash(def.muzzleFlash, { handLight, worldLight });
     model.muzzle.add(flash.object);
     const upgrades = model.createUpgradeVisuals?.() ?? createUpgradeVisuals(model); // attachment parts + tier sticker, all hidden for now (a pair of guns fits its own)
@@ -175,12 +176,14 @@ export function createViewmodel(weaponDefs, meleeDef, { skinFor = () => undefine
   }
   for (const def of weaponDefs) addGun(def);
   let active = guns.get(weaponDefs[0].id);
-  active.model.root.visible = true;
+  holder.add(active.model.root);
   active.flash.object.add(handLight);
 
   const { arm: meleeArm, setFoam } = buildMeleeArm(meleeDef.colors);
   rig.add(meleeArm);
+  // The sleeve styler scans the rig (the gun in hand, the box cutter arm); every model waiting off the rig is handed to it too.
   const setSleeves = createSleeveStyler(rig);
+  for (const entry of guns.values()) if (entry !== active) setSleeves.add(entry.model.root);
   let wearingFoam = false;
 
   const vm = feel.viewmodel;
@@ -211,7 +214,7 @@ export function createViewmodel(weaponDefs, meleeDef, { skinFor = () => undefine
   const randomSide = () => (Math.random() < 0.5 ? -1 : 1) * (0.5 + Math.random() * 0.5);
 
   // The model for this gun in the skin it wears: the default one, or its skinned twin (built once, on first use, and
-  // given the sleeves being worn: the styler only knew the models that existed when it scanned the rig).
+  // given the sleeves being worn: the styler only knew the models that existed when it was made).
   function variantFor(def) {
     const skinId = skinFor(def.id);
     if (!skinId || !gunSkin(def.id, skinId)) return guns.get(def.id);
@@ -225,12 +228,12 @@ export function createViewmodel(weaponDefs, meleeDef, { skinFor = () => undefine
     const next = variantFor(def);
     if (!next || (next === active && active.def === def)) return;
     if (next !== active) {
-      active.model.root.visible = false;
+      holder.remove(active.model.root); // (off the scene, not just hidden: nothing walks a gun that isn't in hand)
       active.flash.reset();
       handLight.intensity = 0;
       worldLight.intensity = 0;
       active = next;
-      active.model.root.visible = true;
+      holder.add(active.model.root);
       active.flash.object.add(handLight); // the hand light follows the gun in hand
       sinceFire = Infinity;
       reloadWeight = 0;

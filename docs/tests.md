@@ -362,7 +362,7 @@ clerk strip, windows are glass, you can walk in), a LAYOUT.stores entry moves a 
 sign in those rooms for another face within 4 mm that faces the same way, overlaps and looks different (hidden faces pressed against a
 solid are fine); run it after adding anything to a store (hang things on a wall 2cm+ proud, not on its plane),
 `viewmodel.test.js` real player-gun/model recoil with attachments, including firing and dry-clicking immediately after fitting/removing one
-before rendering, `weaponModels.test.js` also checks upgrade parts (every gun has every
+before rendering, and that only the gun in hand is in the viewmodel scene (every other model and skinned twin waits detached: the scene's object count follows the gun held and returns to its start value), `weaponModels.test.js` also checks upgrade parts (every gun has every
 mount, parts show only when fitted, the Extended Nozzle moves the muzzle + flash and back, tier sticker hidden at Standard, no part
 floats), `features.test.js` map features (the mall's list, unknown kind = error, saves keyed by feature name so a reordered map with a new feature still restores, an old place-keyed save still loads, a saving feature without its own name = error, a new kind's update/reset hooks run, inert wall buy for a
 gun that doesn't exist, inherited names aren't kinds, features get the game's systems and tick only while playing (not paused /
