@@ -20,12 +20,16 @@
 //              sidePan      how far left/right a play with `side: 'left' | 'right'` goes (BOGO's two guns)
 //              pitchStep    pitch rise per `step` a play is given (the Tennis Ball's bounces up a chain)
 //              upgrades     this recipe's own entries replacing soundUpgrades' (same shape)
+//              duck         { db, seconds }: everything else (the `world` bus: other sounds, ambience, music, the room)
+//                           dips by db at once and comes back over `seconds` (a big shot's contrast; never on automatic guns)
+//              duckExempt   true: skips any dip (the hit sounds, so they cut through)
 //
 // A LAYER (times in seconds, freq/freqEnd in Hz, gain 0..1+; every layer has gain, attack, decay, delay, and may have
 // `drive` and `vary` of its own):
 //   noise: { type: 'noise', filter: 'bandpass' | 'lowpass' | 'highpass', freq, freqEnd?, q }   filtered noise; freqEnd
 //          sweeps the filter (a hiss closing, a whoosh opening)
-//   tone:  { type: 'tone', wave: 'sine' | 'square' | 'triangle' | 'sawtooth', freq, freqEnd? }  a tone, swept to freqEnd
+//   tone:  { type: 'tone', wave: 'sine' | 'square' | 'triangle' | 'sawtooth', freq, freqEnd?, freqTime? }  a tone, swept to
+//          freqEnd; with freqTime it gets there in that many seconds and then holds (a kick: a fast drop, then the thud)
 //   click: { type: 'click', shape: 'noise' | 'impulse', ms, filter?, freq?, q? }   a few ms transient: noise = a crack,
 //          impulse = a tick or a ratchet tooth (through a narrow bandpass, a little ping). No envelope: its length is ms.
 //   metal: { type: 'metal', freq, ratios: [1, 2.76, ...], partialDecay?, detune?, gains?, wave?, freqEnd? }
