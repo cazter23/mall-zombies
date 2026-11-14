@@ -372,3 +372,21 @@ test('the failsafe rescues a wedged zombie that is right above you on another fl
   assert.ok(zombie.position.distanceTo(from) > 0.5, 'still wedged upstairs after 45 seconds: a round would wait on it forever');
 });
 
+test('a boss\'s backup counts as that type\'s first sighting: the intro carries the zombie and the guide page is marked seen', (context) => {
+  const t = headlessGame();
+  context.after(() => { t.g.resetRun(); t.g.map.dispose(); });
+  const { g } = t;
+  g.health.invulnerable = true;
+  g.map.areaUnlocks.openAll();
+  t.tick(5);
+  g.rounds.jumpTo(9);
+  t.tick(2);
+  const intros = [];
+  g.events.on('typeIntro', (intro) => intros.push([intro.typeId, intro.zombie?.type.id ?? null]));
+  const seenBefore = g.guide.pages().find((page) => page.entry.id === 'mallWalker').seen;
+  const zombie = g.rounds.spawnBackup('mallWalker');
+  assert.ok(zombie, 'the scenario: a Mall Walker was sent as backup');
+  assert.equal(seenBefore, false, 'the scenario: never seen before');
+  assert.deepEqual(intros, [['mallWalker', 'mallWalker']], 'the intro names the zombie that arrived');
+  assert.equal(g.guide.pages().find((page) => page.entry.id === 'mallWalker').seen, true, 'its Survival Guide page is marked seen');
+});
