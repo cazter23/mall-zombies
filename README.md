@@ -120,3 +120,7 @@ why things were built).
 Sunset Galleria was designed and directed by one person and written almost entirely by AI coding agents (mostly
 [Claude Code](https://claude.com/claude-code)), working in parallel on separate git worktrees. [`CLAUDE.md`](CLAUDE.md)
 is the rulebook those agents follow, and the large test suite is what keeps their work honest.
+
+## License
+
+[MIT](LICENSE). The bundled fonts in `src/fonts/` keep their own open licenses (SIL Open Font License or Apache 2.0; each is listed in [docs/typefaces-ledger.md](docs/typefaces-ledger.md)).
