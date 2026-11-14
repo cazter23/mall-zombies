@@ -79,3 +79,19 @@ test('Build-A-Blaster: a Stuffing that left today\'s bins while the order form w
   if (selected) assert.ok(selected.available, 'the form never shows a pick it marks unavailable');
 });
 
+test('a gun with no reserve in config has none in the hand: the Leaf Blower carries 0 spare, so a Platinum one can run dry and claim', (context) => {
+  assert.equal(weapons.leafBlower.startingReserve, 0, 'the scenario: a tank gun, nothing spare');
+  assert.equal(resolveGun(weapons.leafBlower, []).startingReserve, 0, 'resolving a gun must not invent a round');
+  const t = quietGame(context);
+  const { g } = t;
+  g.gun.give(weapons.leafBlower);
+  t.tick(60);
+  assert.equal(g.gun.weapon.reserve, 0, 'no phantom round in the reserve');
+  // Platinum's promise (config/upgrades.js claim): a gun that runs completely dry is refilled, once a round.
+  g.gun.setMods('leafBlower', withTier(weapons.leafBlower, g.gun.modsFor('leafBlower'), 'platinum'));
+  const claims = [];
+  g.events.on('warrantyClaim', (claim) => claims.push(claim.weaponId));
+  g.gun.weapon.magazine = 0;
+  t.tick(2);
+  assert.deepEqual(claims, ['leafBlower'], 'the dry Platinum Leaf Blower made its claim');
+});

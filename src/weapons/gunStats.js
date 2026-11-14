@@ -121,7 +121,8 @@ function roundCounts(gun) {
   for (const path of WHOLE_STATS) {
     const parent = path.length > 1 ? gun[path[0]] : gun;
     const key = path[path.length - 1];
-    if (parent && typeof parent[key] === 'number') parent[key] = Math.max(1, Math.round(parent[key]));
+    // (At least 1, except a count that is 0 in config: the Leaf Blower's tank has no reserve, and resolving must not invent a round.)
+    if (parent && typeof parent[key] === 'number') parent[key] = Math.max(parent[key] === 0 ? 0 : 1, Math.round(parent[key]));
   }
   if (gun.fireMode === 'burst') {
     const n = gun.burst.count;
