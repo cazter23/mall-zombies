@@ -193,7 +193,7 @@ src/
                         independent). kick(peak) (impulse sized so it peaks at `peak`), displace(), update(dt)
     keyframes.js        samplePose(keys, t, outPos, outRot): eased pose keyframes ({ t, pos: [m], rot: [deg] })
     input.js            Input class: held keys/buttons, one-shot presses (mouse wheel = 'WheelUp'/'WheelDown'), actions (actionDown/consumeAction/
-                        actionPressed), moveAxis() (WASD + left stick), padMove/padLook, `device`
+                        actionPressed; actionDownOn/actionPressedOn(action, pad) ask one device only), moveAxis() (WASD + left stick), padMove/padLook, `device`
                         ('keyboard' | 'gamepad', last used), mouse delta, pointer lock. A middle mousedown is always preventDefault'ed (the Tactical
                         throw must never start the browser's autoscroll, even before the lock)
     gamepad.js          createGamepad(input): polls the first controller each tick (standard layout), writes
@@ -382,10 +382,10 @@ src/
                         (viewmodel.reload keys) unscrews it and tosses it, screws in a new one (twistKeys), taps the gauge (needleKeys), and the balloon blows back up.
                         bogo.js = BOGO, the claw-only AKIMBO SMGs: two clearance-red label-tagger SMGs, one in each hand (no support hand), each with a label
                         roll, a stubby barrel, a stick magazine and a swinging yellow price tag. The model is the PAIR; the left gun is the right one mirrored
-                        (a group scaled -1 in x). The optional pair hooks (models/index.js): onFire(flash) alternates the gun that fires (model.muzzle is a
-                        getter; the flash moves onto it), createUpgradeVisuals() fits attachments and trims on both guns, skinTargets prints a skin pattern
-                        on each (the badge on the right one), animate reads state.aimAmount (right mouse pulls the guns in). Each gun kicks on its own; the
-                        reload rolls both out, drops both magazines and slides fresh ones up (viewmodel.reload). The box cutter hides the left gun.
+                        (a group scaled -1 in x). The optional pair hooks (models/index.js): onFire(flash, side) makes that gun ('left' / 'right'; none: they
+                        alternate) the one that fires (model.muzzle is a getter; the flash moves onto it), createUpgradeVisuals() fits attachments and trims on both guns, skinTargets prints a skin pattern
+                        on each (the badge on the right one), Each gun kicks on its own; the reload goes one gun at a time (viewmodel.reload.turns):
+                        the left gun tips in, drops its magazine and slaps in a fresh one while the right waits lowered, then the right, then both flick up. The box cutter hides the left gun.
                         leafBlower.js = orange motor housing, red fuel tank with a level window, ribbed flared nozzle (the claw-only Leaf Blower).
                         Each model also returns `mounts` (barrel / top / side / grip / magazine / sticker: where upgrade parts go).
                         upgradeParts.js = what upgrades LOOK like: buildAttachmentPart(id, mount) (mounting brackets/adapters on universal

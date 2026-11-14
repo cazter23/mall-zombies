@@ -38,6 +38,16 @@ Coil Nailer -16.3, Bottle Rocket -15.7 (its burst -12.5), Stargazer -14.4, Confe
 - BOGO at 18/s with Platinum +5, glitter and hit sounds peaks at -1.1 dBFS, has no gaps, and renders 6.4x faster than real time
   offline.
 - Tests: tests/gunSounds.test.js.
+## 14 November 2026 - BOGO: a trigger per gun, no zoom, a one-at-a-time reload (`claude/bogo-triggers`)
+
+From playtesting: right mouse aimed the BOGO, and its ADS zoom (fovMultiplier 0.93) took ~8 degrees off a 120 FOV for a gun that never lines up
+with the eye; and the reload (both guns roll out and drop their magazines at once) read poorly. Now `akimbo: true` (config/weapons.js) gives it a
+trigger per hand and no ADS (weapons/playerGun.js akimboTriggers): left mouse fires the left gun, right mouse the right; on a controller LT is the
+left gun and RT the right (core/input.js actionDownOn/actionPressedOn ask one device, since 'fire' and 'aim' swap sides between them). Each gun
+fires every 2 x fireInterval: one trigger is ~9 shots a second, both together take turns at the old ~18. Damage and spread are unchanged (the
+hip spray; the balance test now rates it at the hip). The reload (models/bogo.js, viewmodel.reload.turns) goes one gun at a time: the left gun
+tips in, muzzle up and rolled out, drops its magazine and slaps in a fresh one while the right waits lowered, then the right, then both flick up;
+the reload sound events play once per magazine (the same sound names, so the audio overhaul's recipes still apply).
 
 ## 13 November 2026 - The game gets an icon (`claude/icon`)
 

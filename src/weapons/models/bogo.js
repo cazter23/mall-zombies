@@ -5,9 +5,11 @@
 // its outer side that swings as you move. The LEFT gun is the right one mirrored (a group scaled -1 in x: Three.js flips the faces for it).
 //
 // The model is the PAIR (root), so viewmodel.js moves both together (sway, bob, sprint, switching). On top of that, per gun:
-//   onFire(flash)  the shots alternate: the next gun becomes the muzzle (model.muzzle) and the muzzle flash moves onto it; that gun kicks
-//   animate        each gun's own kick and trigger; the pair spreads wider at the hip and closes in with right mouse (state.aimAmount);
-//                  the reload rolls both guns outward, drops both magazines and slides fresh ones up (config: weapons.bogo.viewmodel)
+//   onFire(flash, side)  that gun ('left' / 'right': each hand has its own trigger, weapons/playerGun.js) becomes the muzzle (model.muzzle)
+//                  and the muzzle flash moves onto it; that gun kicks. With no side given the shots alternate.
+//   animate        each gun's own kick and trigger; the reload goes one gun at a time: the left gun tips in toward the middle, its
+//                  magazine drops, a fresh one is slapped in, then the right gun does the same while the left waits, and both flick
+//                  back up (config: weapons.bogo.viewmodel.reload)
 //   createUpgradeVisuals()  attachments, tier trim and stickers on BOTH guns (models/upgradeParts.js once per gun)
 //   skinTargets    the skin pattern and badge print on each gun (models/index.js)
 //   leftHandVisible  the box cutter swing hides the left gun (that hand is busy)
@@ -165,9 +167,9 @@ export function buildBogoModel(def, skinId) {
     mounts: sides[0].mounts,
     skinTargets: sides.map(s => ({ root: s.gun, mounts: s.mounts })),
 
-    /** The next gun fires: it becomes the muzzle and takes the flash (Object3D.add moves it off the other gun). */
-    onFire(flashObject) {
-      current = 1 - current;
+    /** A gun fires ('left' / 'right'; none: the next one): it becomes the muzzle and takes the flash (Object3D.add moves it off the other gun). */
+    onFire(flashObject, side = null) {
+      current = side === 'right' ? 0 : side === 'left' ? 1 : 1 - current;
       sides[current].since = 0;
       if (flashObject) sides[current].muzzle.add(flashObject);
     },
@@ -187,37 +189,57 @@ export function buildBogoModel(def, skinId) {
       lastTime = time;
       const f = vm.fire;
       const r = vm.reload;
-      const spacing = vm.gunSpacing + (vm.adsGunSpacing - vm.gunSpacing) * aimAmount;
+      const spacing = vm.gunSpacing + ((vm.adsGunSpacing ?? vm.gunSpacing) - vm.gunSpacing) * aimAmount;
       const reloading = reloadWeight > 0.5;
-      const rollOut = Math.sin(Math.PI * Math.min(1, reloadProgress)) * reloadWeight * r.rollDegrees * DEG_TO_RAD;
+      const p = Math.min(1, Math.max(0, reloadProgress ?? 0));
+      const ramp = (u, a, b) => smooth(Math.min(1, Math.max(0, (u - a) / (b - a))));
 
-      // The magazines: fall away, gone, slide up, home.
-      let magOffset = 0;
-      let magVisible = true;
-      if (reloading) {
+      // One gun's turn of the reload, u 0..1 through it: how far it is tipped in (0..1), its magazine, and the slap.
+      const turnOf = (u) => {
+        if (u <= 0 || u >= 1) return { tip: 0, magOffset: 0, magVisible: true, slap: 0 };
+        const tip = ramp(u, 0, r.tipIn) * (1 - ramp(u, r.tipOut, 1));
         const [d0, d1] = r.magazineDrop;
         const [i0, i1] = r.magazineIn;
-        const p = reloadProgress;
-        if (p > d0 && p < d1) { const t = (p - d0) / (d1 - d0); magOffset = -t * t * r.dropMeters; }
-        else if (p >= d1 && p <= i0) magVisible = false;
-        else if (p > i0 && p < i1) magOffset = -(1 - smooth((p - i0) / (i1 - i0))) * r.dropMeters * 0.35;
-      }
+        let magOffset = 0;
+        let magVisible = true;
+        if (u > d0 && u < d1) { const t = (u - d0) / (d1 - d0); magOffset = -t * t * r.dropMeters; }
+        else if (u >= d1 && u <= i0) magVisible = false;
+        else if (u > i0 && u < i1) magOffset = -(1 - smooth((u - i0) / (i1 - i0))) * r.insertMeters;
+        // The slap: the moment the magazine seats, the gun jumps up a little and settles.
+        const sinceSeat = u - i1;
+        const slap = sinceSeat >= 0 && sinceSeat < r.slapLength ? Math.sin(Math.PI * sinceSeat / r.slapLength) : 0;
+        return { tip, magOffset, magVisible, slap };
+      };
+      const flick = Math.sin(Math.PI * ramp(p, r.flick[0], r.flick[1])) * reloadWeight; // both guns, at the end
 
       sides.forEach((s, i) => {
+        // sides[0] is the right gun, sides[1] the left; r.turns[0] is the left gun's turn, r.turns[1] the right's.
+        const [t0, t1] = r.turns[i === 1 ? 0 : 1];
+        const [o0, o1] = r.turns[i === 1 ? 1 : 0]; // the other gun's turn: this one waits, lowered
+        const turn = reloading ? turnOf((p - t0) / (t1 - t0)) : turnOf(0);
+        const wait = reloading ? ramp(p, o0, o0 + r.tipIn * (o1 - o0)) * (1 - ramp(p, o1 - r.tipIn * (o1 - o0), o1)) : 0;
+        const w = reloadWeight;
+        const tipPitch = (turn.tip * r.tipPitchDegrees - wait * r.waitDipDegrees + flick * r.flickDegrees - turn.slap * r.slapDegrees) * w;
+        const tipRoll = -turn.tip * r.rollDegrees * w; // (rolled outward: the magazine well swings in toward the middle of the view)
+        const tipYaw = turn.tip * r.tipYawDegrees * w;
         s.since += dt;
         // Its own kick: snaps back and up over pressSeconds, settles over kickSeconds.
         const k = s.since < f.pressSeconds ? s.since / f.pressSeconds : Math.max(0, 1 - (s.since - f.pressSeconds) / f.kickSeconds);
         const e = k * k;
         s.pivot.position.set(spacing, 0, 0);
-        s.kick.position.set(0, e * f.kickBack * 0.25, e * f.kickBack);
-        s.kick.rotation.set(e * f.kickPitchDegrees * DEG_TO_RAD, 0, -rollOut);
+        s.kick.position.set(
+          -turn.tip * r.tipInMeters * w,
+          e * f.kickBack * 0.25 + (turn.tip * r.tipUpMeters - wait * r.waitDropMeters + turn.slap * r.slapMeters) * w,
+          e * f.kickBack + turn.tip * r.tipBackMeters * w,
+        );
+        s.kick.rotation.set((e * f.kickPitchDegrees + tipPitch) * DEG_TO_RAD, tipYaw * DEG_TO_RAD, tipRoll * DEG_TO_RAD);
         const pull = s.since < f.pressSeconds ? s.since / f.pressSeconds
           : Math.max(0, 1 - (s.since - f.pressSeconds) / f.releaseSeconds);
         s.trigger.rotation.x = pull * f.triggerDegrees * DEG_TO_RAD;
         s.roll.rotation.x = -e * 0.5; // the label roll indexes with each shot
         s.tag.rotation.x = Math.sin(time * 2.3 + i) * 0.12 + e * 0.5; // swings, and jumps when its gun fires
-        s.magazine.position.y = magazineRest + magOffset;
-        s.magazine.visible = magVisible;
+        s.magazine.position.y = magazineRest + turn.magOffset;
+        s.magazine.visible = turn.magVisible;
       });
     },
 

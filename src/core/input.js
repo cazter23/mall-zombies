@@ -140,6 +140,17 @@ export class Input {
     return false;
   }
 
+  // The same two questions for ONE device: `pad` true = the controller's codes (Pad*), false = keyboard and mouse.
+  // (The BOGO's two triggers: left mouse fires the left gun, but on a controller the left gun is LT, bound to 'aim'.)
+  actionDownOn(action, pad) {
+    for (const code of bindings[action]) if (code.startsWith('Pad') === pad && this.held.has(code)) return true;
+    return false;
+  }
+  actionPressedOn(action, pad) {
+    for (const code of bindings[action]) if (code.startsWith('Pad') === pad && this.pressed.has(code)) return true;
+    return false;
+  }
+
   // Movement intent, combining WASD and the left stick: x = right, y = forward.
   // Length is at most 1 (a half-pushed stick gives about half).
   moveAxis() {

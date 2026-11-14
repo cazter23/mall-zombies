@@ -251,7 +251,7 @@ export function createViewmodel(weaponDefs, meleeDef, { skinFor = () => undefine
     },
 
     // A shot just fired. `aimAmount` 0..1 (ADS kicks the model much less).
-    fire(aimAmount = 0, def = active.def) {
+    fire(aimAmount = 0, def = active.def, side = null) {
       // A purchase and shot can happen in one fixed tick, before update() sees the new definition.
       setActive(def);
       const rk = active.def.recoil.model;
@@ -262,7 +262,7 @@ export function createViewmodel(weaponDefs, meleeDef, { skinFor = () => undefine
         rk.yawDegrees * DEG_TO_RAD * m * randomSide(),
         rk.rollDegrees * DEG_TO_RAD * m * randomSide(),
       );
-      active.model.onFire?.(active.flash.object); // (a pair of guns: the next one fires, and the flash moves onto it)
+      active.model.onFire?.(active.flash.object, side); // (a pair of guns: that one, 'left' / 'right', fires, and the flash moves onto it)
       active.flash.trigger(aimAmount, workshopStuffings[buildOf(def.modList ?? [])?.stuffing]?.color ?? null); // (a built gun's flash is its stuffing's colour)
       sinceFire = 0;
       // A shot ends any reload pose at once (a shell-by-shell gun fired mid-reload: barrels snap shut

@@ -65,13 +65,52 @@ export function createPlayerGun({
   let reloadRequested = false; // set by requestReload() (e.g. a controller X tap next to a buyable)
   let inspectTimer = 0;
   const INSPECT_DURATION = 1.8;
+  let shotSide = null; // while a shot is being fired: 'left' / 'right' for an akimbo gun (which gun of the pair fires), else null
 
   // A slot = one carried gun: its config entry (`base`), its upgrades (`mods`), the resolved gun those
   // make (`def`, what gameplay reads), its ammo/cooldown state and its own aim (ADS/spread) settings.
   const makeSlot = (base, mods = []) => {
     const d = resolveGun(base, mods);
-    return { base, mods, def: d, weapon: new Weapon(d, stats), aim: createAim({ def: d, input, player }) };
+    const slot = { base, mods, def: d, weapon: new Weapon(d, stats), aim: createAim({ def: d, input, player }) };
+    if (d.akimbo) slot.akimbo = { cooldown: [0, 0], request: [0, 0], last: 1 }; // [left gun, right gun]; `last` = the gun that fired last
+    return slot;
   };
+
+  // An akimbo gun (def.akimbo, the BOGO): one gun to the game (one magazine, one reload), but TWO triggers, one per hand, and no ADS.
+  // Left mouse fires the left gun and right mouse the right one; on a controller LT is the left gun and RT the right (so the
+  // 'fire' and 'aim' actions swap sides between the devices). Each gun fires at most every 2 x fireInterval, so one trigger
+  // gives half the pair's rate and both together alternate at the full fireInterval. Returns this tick's trigger for the
+  // Weapon (only when a gun is ready, so a held trigger can't fire its gun faster) and the side that would fire.
+  function akimboTriggers(slot, dt) {
+    const a = slot.akimbo;
+    // (An input without per-device questions, e.g. a test's stand-in: 'fire' is the left gun and 'aim' the right.)
+    const downOn = (action, pad) => (input.actionDownOn ? input.actionDownOn(action, pad) : !pad && input.actionDown(action));
+    const pressedOn = (action, pad) => (input.actionPressedOn ? input.actionPressedOn(action, pad) : !pad && input.actionPressed(action));
+    const held = [downOn('fire', false) || downOn('aim', true), downOn('aim', false) || downOn('fire', true)];
+    const pressed = [pressedOn('fire', false) || pressedOn('aim', true), pressedOn('aim', false) || pressedOn('fire', true)];
+    input.consumeAction('fire');
+    input.consumeAction('aim');
+    for (const i of [0, 1]) {
+      a.cooldown[i] = a.cooldown[i] > 0 ? a.cooldown[i] - dt : 0;
+      a.request[i] = pressed[i] ? slot.def.fireBuffer : Math.max(0, a.request[i] - dt);
+    }
+    const wants = (i) => held[i] || a.request[i] > 0;
+    // The gun that didn't fire last goes first, so with both triggers held they take turns.
+    const order = [1 - a.last, a.last];
+    const side = order.find((i) => wants(i) && a.cooldown[i] <= 0) ?? null;
+    return {
+      side,
+      anyHeld: held[0] || held[1],
+      trigger: side !== null && a.request[side] > 0,
+      triggerHeld: side !== null,
+    };
+  }
+  function akimboFired(slot, side) {
+    const a = slot.akimbo;
+    a.cooldown[side] += 2 * slot.def.fireInterval; // (carries the leftover, like Weapon's cooldown)
+    a.request[side] = 0;
+    a.last = side;
+  }
   let slots = [makeSlot(startDef)];
   let current = 0; // index of the gun in hand
   let chargeVoice = null; // the charge sound playing (the Barcode Scanner's whine), so a cancelled scan can stop it
@@ -120,7 +159,7 @@ export function createPlayerGun({
       side() * r.rollDegrees * DEG_TO_RAD * cameraScale,
       side() * (r.yawDegrees ?? 0) * DEG_TO_RAD * cameraScale * (0.5 + Math.random() * 0.5),
     );
-    viewmodel.fire(ads, d); // gun kick + muzzle flash using this shot's resolved stats (visual only)
+    viewmodel.fire(ads, d, shotSide); // gun kick + muzzle flash using this shot's resolved stats (visual only); shotSide: which of a pair
     if (sound) {
       // The shot's sound carries its upgrades (tier, renewals, stuffing) and, on the last few rounds, a lighter mechanism + a tick.
       const weapon = slots[current]?.weapon;
@@ -652,7 +691,8 @@ export function createPlayerGun({
 
       const slot = slots[current];
       const busy = blocked || switching !== null;
-      slot.aim.update(dt, !busy); // melee/vaulting also lower ADS; no snap during a committed action
+      const pair = slot.akimbo ? akimboTriggers(slot, dt) : null; // (read before aim.update: right mouse is a trigger here, not ADS)
+      slot.aim.update(dt, !busy && !pair); // melee/vaulting also lower ADS; no snap during a committed action
       // A scoped gun's view drifts in a slow figure eight while aimed (weapons/scope.js); crouched or prone it is steadier.
       // Only the change is added, so the view gets back exactly what the sway took when the scope comes down.
       const sway = scopeSway.update(dt, slot.def.scope, slot.aim.amount, player.stance === 'crouch' || player.stance === 'prone');
@@ -665,8 +705,8 @@ export function createPlayerGun({
         if (busy) aimAssist.reset();
         else aimAssist.update(dt, slot.aim);
       }
-      const trigger = input.consumeAction('fire');
-      const triggerHeld = input.actionDown('fire');
+      const trigger = pair ? pair.trigger : input.consumeAction('fire');
+      const triggerHeld = pair ? pair.triggerHeld : input.actionDown('fire');
       const reload = input.consumeAction('reload') || reloadRequested;
       reloadRequested = false;
       const inspect = input.consumeAction('inspect');
@@ -675,7 +715,7 @@ export function createPlayerGun({
       }
       // Shooting while sprinting: drop to a walk and bring the gun up out of the running pose before
       // the shot goes off (the click is buffered, so it fires as soon as the gun is up).
-      const wantsToFire = trigger || slot.weapon.isBursting || slot.weapon.isCharging
+      const wantsToFire = trigger || slot.weapon.isBursting || slot.weapon.isCharging || pair?.anyHeld
         || (triggerHeld && (slot.def.fireMode === 'auto' || slot.def.fireMode === 'charge'));
       if (wantsToFire || slot.aim.amount > 0.1 || player.isSprinting || reload || busy) {
         inspectTimer = 0;
@@ -706,7 +746,10 @@ export function createPlayerGun({
       if (result === 'fire') chargeVoice = null;
       if (result === 'fire') {
         player.blockSprint(feel.sprint.fireBlocksSprintSeconds);
+        if (pair) akimboFired(slot, pair.side);
+        shotSide = pair ? (pair.side === 0 ? 'left' : 'right') : null;
         this.lastShot = fire(slot);
+        shotSide = null;
       } else if (result === 'empty') {
         // Dry click on an empty mag (the weapon starts reloading by itself).
         viewmodel.dryFire(slot.def);

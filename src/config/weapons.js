@@ -1417,6 +1417,9 @@ export const weapons = {
   // width (falloff), with a wide spray that blooms the longer you hold the trigger. Weak down a hallway (tests/balance.test.js).
   bogo: {
     id: 'bogo', name: 'BOGO', fireMode: 'auto', clawOnly: true,
+    // Akimbo: a trigger per hand and no ADS (weapons/playerGun.js). Left mouse / LT fires the left gun, right mouse / RT the right one.
+    // Each gun fires every 2 x fireInterval, so ONE trigger is half the rate below; hold both and they take turns at the full rate.
+    akimbo: true,
     damage: 60, headshotMultiplier: 1.4, // round 1 (150 HP): 3 body / 2 head; ~18 shots a second (~680 sustained up close, with Coil; under 300 at 15 m)
     magazineSize: 60, startingReserve: 300, // two 30-round magazines, one per gun (3.3 s of fire)
     fireInterval: 0.055, fireBuffer: 0.1, reloadTime: 2, range: 60,
@@ -1431,10 +1434,11 @@ export const weapons = {
     spread: {
       base: 2.4, moving: 2.2, maxMovingFactor: 1.5, airborne: 3.5,
       perShot: 0.35, maxBloom: 3.5, bloomRecoveryDelay: 0.12, bloomRecovery: 7,
-      smoothing: 12, adsMultiplier: 0.55, // (right mouse: a tighter spray, never a pinpoint)
+      smoothing: 12, adsMultiplier: 0.55,
     },
-    ads: { seconds: 0.16, fovMultiplier: 0.93, moveSpeedMultiplier: 0.95,
-      offset: { x: 0, y: -0.13, z: -0.39 } }, // (the pair pulled in and up a little: nothing lines up with the eye)
+    // (Never used: an akimbo gun doesn't aim, right mouse is the right gun's trigger. Kept so the gun has the fields every gun has.)
+    ads: { seconds: 0.16, fovMultiplier: 1, moveSpeedMultiplier: 1,
+      offset: { x: 0, y: -0.15, z: -0.42 } },
     muzzleFlash: {
       seconds: 0.03, size: 0.1, coreSize: 0.045, outerOpacity: 0.75, sizeJitter: 0.25,
       forwardOffset: 0.04, outerColor: 0xff8fa8, coreColor: 0xfff3e8,
@@ -1446,30 +1450,39 @@ export const weapons = {
     viewmodel: {
       model: 'bogo', hipOffset: { x: 0, y: -0.15, z: -0.42 }, // (the pair is centred: each gun sits gunSpacing to its side)
       aimYawDegrees: 0, hipPitchDegrees: 1.5, hipRollDegrees: 0,
-      gunSpacing: 0.19, adsGunSpacing: 0.15, // metres from the middle to each gun, at the hip / with right mouse held
+      gunSpacing: 0.19, // metres from the middle to each gun
       gunYawDegrees: 5, gunRollDegrees: 6, // each gun turned in toward the crosshair, and canted in a little
       bodyColor: 0xe8344e, accentColor: 0xffd23f, darkColor: 0x23202a, metalColor: 0xbfc4cc,
       gripColor: 0x2a2630, sightColor: 0x7dffb0, labelColor: 0xfff6e0, // clearance red, a yellow tag, white labels
       // Each gun's own kick when it fires (on top of the pair's recoil.model): it snaps back and up, then settles.
       fire: { triggerDegrees: 26, pressSeconds: 0.018, releaseSeconds: 0.05, kickBack: 0.022, kickPitchDegrees: 9, kickSeconds: 0.09 },
-      // The reload: both guns tip down and out, the magazines drop, fresh ones snap in, both guns flick back up.
+      // The reload, one gun at a time (models/bogo.js): the LEFT gun's turn, then the RIGHT's. In its turn a gun tips in toward the middle,
+      // muzzle up and rolled out, its magazine drops, a fresh one slides up and is slapped home (the gun jumps), and it tips back;
+      // meanwhile the other gun waits, lowered. At the end both guns flick up together.
       reload: {
-        gunKeys: [
+        gunKeys: [ // (the pair as a whole only dips a little: the guns do the moving)
           { t: 0, pos: [0, 0, 0], rot: [0, 0, 0] },
-          { t: 0.14, pos: [0, -0.02, 0.03], rot: [-14, 0, 0] },
-          { t: 0.6, pos: [0, -0.025, 0.03], rot: [-16, 0, 0] },
-          { t: 0.74, pos: [0, 0.01, 0.01], rot: [8, 0, 0] },
-          { t: 0.9, pos: [0, 0, 0], rot: [0, 0, 0] },
+          { t: 0.1, pos: [0, -0.012, 0.012], rot: [-4, 0, 0] },
+          { t: 0.86, pos: [0, -0.012, 0.012], rot: [-4, 0, 0] },
+          { t: 0.96, pos: [0, 0, 0], rot: [0, 0, 0] },
           { t: 1, pos: [0, 0, 0], rot: [0, 0, 0] },
         ],
-        rollDegrees: 28, // each gun rolls outward to dump its magazine (eases in and out with the reload)
-        magazineDrop: [0.18, 0.34], // the old magazines fall away over this part of the reload...
-        magazineIn: [0.5, 0.66], // ...and the fresh ones slide up into the grips over this part
-        dropMeters: 0.22,
-        events: [
-          { at: 0.18, sound: 'bogoReloadOut' },
-          { at: 0.66, sound: 'bogoReloadIn', jolt: { up: -0.006, pitchDegrees: -2 } },
-          { at: 0.8, sound: 'bogoReloadReady', jolt: { back: 0.004, pitchDegrees: 2.5 } },
+        turns: [[0.03, 0.5], [0.43, 0.9]], // the part of the reload each gun's turn takes: [left gun], [right gun]
+        // Within a turn (0..1 through it):
+        tipIn: 0.2, tipOut: 0.82, // tips in over 0..tipIn, holds, tips back over tipOut..1
+        tipPitchDegrees: 24, rollDegrees: 38, tipYawDegrees: 14, // muzzle up, rolled outward (the magazine well toward the middle), turned in
+        tipInMeters: 0.07, tipUpMeters: 0.035, tipBackMeters: 0.04, // ...and drawn in toward the middle, up and back toward you
+        magazineDrop: [0.18, 0.36], dropMeters: 0.24, // the old magazine falls away...
+        magazineIn: [0.5, 0.66], insertMeters: 0.09, // ...a fresh one slides up into the grip
+        slapLength: 0.14, slapDegrees: 7, slapMeters: 0.012, // the slap as it seats: a quick jump down at the muzzle, and back
+        waitDipDegrees: 10, waitDropMeters: 0.035, // the gun that waits its turn drops out of the way
+        flick: [0.88, 1], flickDegrees: 9, // both guns flick up at the end, ready
+        events: [ // (left: out at 0.03 + 0.47 x 0.18, in at 0.03 + 0.47 x 0.66; right: the same in its turn)
+          { at: 0.12, sound: 'bogoReloadOut' },
+          { at: 0.34, sound: 'bogoReloadIn', jolt: { up: -0.004, pitchDegrees: -1.5, rollDegrees: 1.5 } },
+          { at: 0.52, sound: 'bogoReloadOut' },
+          { at: 0.74, sound: 'bogoReloadIn', jolt: { up: -0.004, pitchDegrees: -1.5, rollDegrees: -1.5 } },
+          { at: 0.92, sound: 'bogoReloadReady', jolt: { back: 0.004, pitchDegrees: 2.5 } },
         ],
       },
     },
