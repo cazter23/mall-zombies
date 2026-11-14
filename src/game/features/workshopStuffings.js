@@ -258,15 +258,16 @@ export function createBuildEffects({ events, gun, player, zombies, colliders, ef
   events.on('reload', (reload) => offer('reload', reload, reload.weaponId));
   events.on('gunBlast', (blast) => offer('blast', blast, blast.weaponId));
   // A named gun's record: its own kills and its stuffing's, for the receipt. Nothing counts once you're dead.
-  function confirmKill({ zombie, source }) {
-    const weaponId = source === 'gun' ? gun.def.id : source === 'build' ? firing ?? zombie.stuffedBy : null;
+  // (The gun that made the kill, kill.weaponId: a ball, rocket or balloon can land after you have switched guns.)
+  function confirmKill({ zombie, source, weaponId: killer }) {
+    const weaponId = source === 'gun' ? killer ?? gun.def.id : source === 'build' ? firing ?? zombie.stuffedBy : null;
     const build = !state.over && weaponId ? buildOf(gun.modsFor(weaponId)) : null;
     if (build) build.confirmed = (build.confirmed ?? 0) + 1;
   }
   events.on('kill', (kill) => {
     if (kill.zombie.noRewards) return;
     confirmKill(kill);
-    if (kill.source === 'gun') offer('kill', kill, gun.def.id);
+    if (kill.source === 'gun') offer('kill', kill, kill.weaponId ?? gun.def.id);
   });
 
   return {

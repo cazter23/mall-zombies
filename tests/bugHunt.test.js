@@ -221,3 +221,33 @@ test('a tennis ball thrown with your face against a wall stays on your side of i
   assert.equal(g.wallet.points, points, 'and nothing was paid for it');
 });
 
+test('Build-A-Blaster counts a kill for the gun that made it, not the gun in your hand when the balloon lands', (context) => {
+  const t = quietGame(context);
+  const { g } = t;
+  g.debug.run('doors');
+  t.tick(5);
+  g.gun.give(weapons.balloonLauncher);
+  t.tick(60);
+  const build = (name) => [{ id: 'build', build: { name, stuffing: 'smoothie', heart: 'everyTenth', quality: 'understuffed' } }];
+  g.gun.setMods('stapleGun', build('Stapley'));
+  g.gun.setMods('balloonLauncher', build('Loony'));
+  let kills = 0;
+  g.events.on('kill', (kill) => { if (kill.weaponId === 'balloonLauncher' && g.gun.def.id === 'stapleGun') kills += 1; });
+  for (let i = 0; i < 3; i++) {
+    t.standAt(0, 15, 0);
+    if (g.gun.def.id !== 'balloonLauncher') { t.press('Digit2'); t.tick(40); }
+    const zombie = t.spawn('shopper', 0, 8);
+    zombie.health = 1;
+    zombie.updateHitboxes();
+    t.press('Mouse0');
+    t.tick(2);
+    t.press('Digit1'); // (the staple gun is in hand when the balloon gets there)
+    t.tick(240);
+    g.zombies.clear();
+    g.gun.weaponFor('balloonLauncher').refill();
+  }
+  assert.ok(kills > 0, 'the scenario: balloons killed after the switch');
+  assert.equal(buildOf(g.gun.modsFor('balloonLauncher')).confirmed, kills, 'the launcher\'s build has its kills');
+  assert.equal(buildOf(g.gun.modsFor('stapleGun')).confirmed ?? 0, 0, 'the staple gun\'s build has none of them');
+});
+
