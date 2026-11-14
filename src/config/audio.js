@@ -13,6 +13,8 @@
 // (config/zombies.js -> sounds) and the PA chime.
 // =============================================================================
 
+import { gunSounds } from './gunSounds.js';
+
 export const audio = {
   masterVolume: 0.55,
   ambienceVolume: 0.65,
@@ -20,6 +22,30 @@ export const audio = {
   pitchVariation: 0.05, // each play is randomly up to this fraction higher/lower, so repeats don't sound robotic
   // Fast peak control leaves the body of each shot intact while catching the initial transient at full volume.
   compressor: { thresholdDb: -10, ratio: 8, attack: 0, release: 0.08, kneeDb: 6 },
+  // After the compressor: a fast limiter, then a soft clip (unity below `knee`, never past `ceiling`) so peaks stay under 0 dBFS.
+  limiter: { thresholdDb: -3, ratio: 20, attack: 0.001, release: 0.1, kneeDb: 0 },
+  softClip: { knee: 0.7, ceiling: 0.98 },
+  // Voice limits: at most `perSound` copies of one sound (a recipe's maxVoices overrides it) and `total` overall; the oldest is stolen.
+  voices: { perSound: 6, total: 40, stealFadeSeconds: 0.012 },
+  // The shared room reverb (audio/sound.js, impulses from audio/roomImpulse.js). Room presets; `roomOf` maps a grade zone
+  // (map.gradeZones; null = the hallway) to one. seconds = time to -60 dB, brightness = [startHz, endHz] of the darkening tail.
+  reverb: { defaultRoom: 'hall', crossfadeSeconds: 0.6 },
+  rooms: {
+    hall: { seconds: 1.4, preDelay: 0.012, brightness: [6000, 1500], lowCut: 180, early: { count: 6, spread: 0.04, gain: 0.5 }, wet: 0.22 },
+    court: { seconds: 1.8, preDelay: 0.018, brightness: [6500, 1600], lowCut: 160, early: { count: 6, spread: 0.06, gain: 0.45 }, wet: 0.25 },
+    atrium: { seconds: 2.6, preDelay: 0.03, brightness: [8000, 2000], lowCut: 150, early: { count: 8, spread: 0.08, gain: 0.4 }, wet: 0.32 },
+    cinema: { seconds: 2.2, preDelay: 0.025, brightness: [3500, 700], lowCut: 120, early: { count: 5, spread: 0.06, gain: 0.35 }, wet: 0.28 },
+    corridor: { seconds: 0.55, preDelay: 0.004, brightness: [7000, 3000], lowCut: 250, early: { count: 10, spread: 0.015, gain: 0.6 }, ring: { freq: 1100, feedback: 0.45 }, wet: 0.26 },
+    store: { seconds: 0.8, preDelay: 0.01, brightness: [3000, 900], lowCut: 200, early: { count: 4, spread: 0.03, gain: 0.3 }, wet: 0.14 },
+    warehouse: { seconds: 1.6, preDelay: 0.02, brightness: [6000, 1800], lowCut: 160, early: { count: 7, spread: 0.05, gain: 0.45 }, wet: 0.22 },
+    smallRoom: { seconds: 0.5, preDelay: 0.006, brightness: [5000, 2000], lowCut: 220, early: { count: 6, spread: 0.02, gain: 0.5 }, wet: 0.14 },
+    parking: { seconds: 0.35, preDelay: 0.06, brightness: [5000, 3000], lowCut: 300, early: { count: 2, spread: 0.12, gain: 0.8 }, wet: 0.07 },
+  },
+  roomOf: {
+    front: 'hall', level2: 'hall', startRoom: 'smallRoom', foodCourt: 'court', megaMart: 'warehouse', martBack: 'corridor',
+    serviceCorridor: 'corridor', cinemaService: 'corridor', cinemaLobby: 'cinema', cinemaScreen: 'cinema', departmentStore: 'store',
+    atrium: 'atrium', parkingLot: 'parking',
+  },
 
   sounds: {
     // Sparse back-room sounds, spatially mixed and occluded by their closed storefronts.
@@ -1073,5 +1099,6 @@ export const audio = {
       { type: 'noise', filter: 'lowpass', freq: 240, q: 0.9, gain: 0.6, attack: 0.05, decay: 1.9 },
       { type: 'noise', filter: 'bandpass', freq: 900, q: 1.5, gain: 0.45, attack: 0.002, decay: 0.09, delay: 0.62 },
     ] },
+    ...gunSounds, // (the overhaul's new gun recipes replace the old ones of the same name)
   },
 };
