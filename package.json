@@ -12,6 +12,7 @@
     "build:single": "node tools/buildSingle.mjs",
     "preview": "vite preview",
     "play": "node tools/play.mjs",
+    "audition": "node tools/openAudition.mjs",
     "balance": "node tools/gunReport.mjs",
     "melee": "node tools/meleeReport.mjs",
     "kiosk": "node tools/kioskReport.mjs",

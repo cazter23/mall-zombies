@@ -24,6 +24,7 @@ npm run build         # production build into dist/; run after every change to c
 npm run preview       # serve the built dist/
 npm run build:single  # dist-single/sunset-galleria.html: the WHOLE game in one file (no server, no Node, no internet)
 npm run play          # JUST PLAYING: rebuilds that file only if the code changed, opens it in Firefox (play.cmd = the same by double-click)
+npm run audition      # the gun sound audition (tools/audition.html) as one file in Firefox, no dev server: listen, compare, Measure
 npm run balance       # gun balance report (tools/gunReport.mjs): dps by range, pulls to kill by round, cannon blast table
 npm run melee         # box cutter report (tools/meleeReport.mjs): swings to kill by round, plain vs the Customer Service tiers
 npm run kiosk         # Kiosk Kevin report (tools/kioskReport.mjs): equipment damage by round and type, Bubble Wrap hits to death, the Sentry vs the Price Gun, prices in rounds of income

@@ -1,7 +1,7 @@
 # Gun sounds
 
 Every gun's sound is synthesized: there are no audio files. The recipes are in `src/config/gunSounds.js`, the format is at the
-top of `src/config/audio.js`, and the engine is `src/audio/sound.js`. To listen, run `npm run dev` and open
+top of `src/config/audio.js`, and the engine is `src/audio/sound.js`. To listen, run `npm run audition` (it opens the page as one file in Firefox, no dev server), or `npm run dev` and open
 http://localhost:5173/tools/audition.html.
 
 ## How a shot is built

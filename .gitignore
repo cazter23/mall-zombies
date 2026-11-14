@@ -4,6 +4,7 @@ dist/
 .DS_Store
 references/
 dist-single/
+dist-audition/
 .claude/
 scratch/
 notes/
