@@ -1,5 +1,20 @@
 # Sunset Galleria: build history ("Current state")
 
+## 14 November 2026 - Gun sounds, round two: less echo, more punch, a BOGO per gun (`claude/audio-overhaul`)
+
+The first listen found the echo overdone and several guns too light. The fixes:
+- **Rooms:** every room is shorter and drier (hall wet 0.22 -> 0.10, Atrium 2.6 -> 2.0 s), and every gun's send into it was cut
+  to about a third. Shot tails went from 0.8-1.0 s to 0.3-0.5 s.
+- **Punch:** the master compressor's attack went from 0 to 6 ms, so a shot's first milliseconds pass before it acts (the limiter
+  and soft clip still hold the peak under 0 dBFS). The Confetti Cannon, Rivet Rifle and Stargazer got a wide crack and a hard
+  driven kick that drops fast, plus a sub; the rivet keeps its TANG.
+- **Balloon Launcher:** a wobbly rubber squeak and the neck's "brrrp". The pop is sharper.
+- **BOGO:** it broke when the BOGO got a trigger per gun (`claude/bogo`): the sound alternated left/right on every shot, even
+  with one trigger held. It now sits on the side of the gun that fired (`sidePan`, playerGun passes `side`). The shot is a short
+  driven SMG "pap" instead of a 25 ms tick.
+
+Measured: no two guns above 0.83 alike, and the stress test peaks at -1.0 dBFS (docs/gun-sounds.md).
+
 ## 14 November 2026 - Audio overhaul: every gun gets its own synthesized voice, and the mall gets rooms (`claude/audio-overhaul`)
 
 Every gun used 2-9 plain layers (a noise burst or a tone sweep), a ±5% pitch wobble, and one shared dry click. Nothing had a

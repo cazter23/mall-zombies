@@ -17,7 +17,7 @@
 //                           on top of the global pitchVariation (a layer's own `vary` replaces it)
 //              pitchVariation  replaces the global wobble for this sound (0: a beep that must stay on its note)
 //              flavourGain  how loud a Build-A-Blaster stuffing's flavour is on this gun (lower on automatic guns)
-//              alternatePan every other play goes this far left/right (BOGO's two hands)
+//              sidePan      how far left/right a play with `side: 'left' | 'right'` goes (BOGO's two guns)
 //              pitchStep    pitch rise per `step` a play is given (the Tennis Ball's bounces up a chain)
 //              upgrades     this recipe's own entries replacing soundUpgrades' (same shape)
 //
@@ -46,7 +46,8 @@ export const audio = {
   musicVolume: 0.45,
   pitchVariation: 0.05, // each play is randomly up to this fraction higher/lower, so repeats don't sound robotic
   // Fast peak control leaves the body of each shot intact while catching the initial transient at full volume.
-  compressor: { thresholdDb: -10, ratio: 8, attack: 0, release: 0.08, kneeDb: 6 },
+  // (attack 6 ms: the first milliseconds of a shot, its punch, get through; the limiter and soft clip catch the peak)
+  compressor: { thresholdDb: -12, ratio: 4, attack: 0.006, release: 0.12, kneeDb: 6 },
   // After the compressor: a fast limiter, then a soft clip (unity below `knee`, never past `ceiling`) so peaks stay under 0 dBFS.
   limiter: { thresholdDb: -3, ratio: 20, attack: 0.001, release: 0.1, kneeDb: 0 },
   softClip: { knee: 0.7, ceiling: 0.98 },
@@ -56,15 +57,15 @@ export const audio = {
   // (map.gradeZones; null = the hallway) to one. seconds = time to -60 dB, brightness = [startHz, endHz] of the darkening tail.
   reverb: { enabled: true, defaultRoom: 'hall', crossfadeSeconds: 0.6 }, // (enabled: Settings > Audio > Room echo)
   rooms: {
-    hall: { seconds: 1.4, preDelay: 0.012, brightness: [6000, 1500], lowCut: 180, early: { count: 6, spread: 0.04, gain: 0.5 }, wet: 0.22 },
-    court: { seconds: 1.8, preDelay: 0.018, brightness: [6500, 1600], lowCut: 160, early: { count: 6, spread: 0.06, gain: 0.45 }, wet: 0.25 },
-    atrium: { seconds: 2.6, preDelay: 0.03, brightness: [8000, 2000], lowCut: 150, early: { count: 8, spread: 0.08, gain: 0.4 }, wet: 0.32 },
-    cinema: { seconds: 2.2, preDelay: 0.025, brightness: [3500, 700], lowCut: 120, early: { count: 5, spread: 0.06, gain: 0.35 }, wet: 0.28 },
-    corridor: { seconds: 0.55, preDelay: 0.004, brightness: [7000, 3000], lowCut: 250, early: { count: 10, spread: 0.015, gain: 0.6 }, ring: { freq: 1100, feedback: 0.45 }, wet: 0.26 },
-    store: { seconds: 0.8, preDelay: 0.01, brightness: [3000, 900], lowCut: 200, early: { count: 4, spread: 0.03, gain: 0.3 }, wet: 0.14 },
-    warehouse: { seconds: 1.6, preDelay: 0.02, brightness: [6000, 1800], lowCut: 160, early: { count: 7, spread: 0.05, gain: 0.45 }, wet: 0.22 },
-    smallRoom: { seconds: 0.5, preDelay: 0.006, brightness: [5000, 2000], lowCut: 220, early: { count: 6, spread: 0.02, gain: 0.5 }, wet: 0.14 },
-    parking: { seconds: 0.35, preDelay: 0.06, brightness: [5000, 3000], lowCut: 300, early: { count: 2, spread: 0.12, gain: 0.8 }, wet: 0.07 },
+    hall: { seconds: 1.0, preDelay: 0.012, brightness: [6000, 1500], lowCut: 180, early: { count: 6, spread: 0.04, gain: 0.5 }, wet: 0.1 },
+    court: { seconds: 1.3, preDelay: 0.018, brightness: [6500, 1600], lowCut: 160, early: { count: 6, spread: 0.06, gain: 0.45 }, wet: 0.12 },
+    atrium: { seconds: 2.0, preDelay: 0.03, brightness: [8000, 2000], lowCut: 150, early: { count: 8, spread: 0.08, gain: 0.4 }, wet: 0.16 },
+    cinema: { seconds: 1.6, preDelay: 0.025, brightness: [3500, 700], lowCut: 120, early: { count: 5, spread: 0.06, gain: 0.35 }, wet: 0.14 },
+    corridor: { seconds: 0.45, preDelay: 0.004, brightness: [7000, 3000], lowCut: 250, early: { count: 10, spread: 0.015, gain: 0.6 }, ring: { freq: 1100, feedback: 0.45 }, wet: 0.12 },
+    store: { seconds: 0.6, preDelay: 0.01, brightness: [3000, 900], lowCut: 200, early: { count: 4, spread: 0.03, gain: 0.3 }, wet: 0.07 },
+    warehouse: { seconds: 1.2, preDelay: 0.02, brightness: [6000, 1800], lowCut: 160, early: { count: 7, spread: 0.05, gain: 0.45 }, wet: 0.1 },
+    smallRoom: { seconds: 0.4, preDelay: 0.006, brightness: [5000, 2000], lowCut: 220, early: { count: 6, spread: 0.02, gain: 0.5 }, wet: 0.06 },
+    parking: { seconds: 0.3, preDelay: 0.06, brightness: [5000, 3000], lowCut: 300, early: { count: 2, spread: 0.12, gain: 0.8 }, wet: 0.04 },
   },
   roomOf: {
     front: 'hall', level2: 'hall', startRoom: 'smallRoom', foodCourt: 'court', megaMart: 'warehouse', martBack: 'corridor',
