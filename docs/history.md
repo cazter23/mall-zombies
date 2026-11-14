@@ -1,5 +1,12 @@
 # Sunset Galleria: build history ("Current state")
 
+## 14 November 2026 - Punch picked by ear: Confetti C, Rivet C, Stargazer A (`claude/audio-overhaul`)
+
+From the three takes on the audition page (A tighter, B in between, C bigger, all at the same loudness), the user picked C for the
+Confetti Cannon (a heavier driven kick, two slaps, an 8 dB dip) and the Rivet Rifle (a driven kick that still ends by 0.08 s, two
+slaps), and A for the Stargazer (one slap, a 5 dB dip). They are now config/gunSounds.js's recipes; the other takes and
+tools/auditionPunch.js are gone. Measured: the loudness order held, no two guns above 0.72 alike, and the stress test peaks at -1.0 dBFS.
+
 ## 14 November 2026 - `npm run audition`: the gun sound audition without the dev server (`claude/audio-overhaul`)
 
 The dev server took too long to start just to listen. tools/openAudition.mjs bundles tools/audition.html (the sound engine, the gun
