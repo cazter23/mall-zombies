@@ -1,5 +1,11 @@
 # Sunset Galleria: build history ("Current state")
 
+## 13 November 2026 - The game gets an icon (`claude/icon`)
+
+The title screen's logo as an "SG" monogram (Righteous, white with the pink offset shadow and glow, on the dark plum): src/icons/.
+icon-64.png is the browser tab icon (index.html's `<link rel="icon">`; tools/buildSingle.mjs inlines it as a data: URL, so the single
+file carries it); sunset-galleria.ico (256/64/48/32/16) is for a Windows shortcut to play.cmd.
+
 ## 13 November 2026 - Controller audit: one menu model, pad glyphs everywhere, new rumbles (`claude/controller`)
 
 core/gamepad.js had not changed since October; everything added since was audited for a pad (the table: docs/controller-audit.md).
