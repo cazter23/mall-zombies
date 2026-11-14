@@ -173,3 +173,24 @@ test('Stay for overtime, then Save & quit before the game has run a tick: the sa
   assert.notEqual(loaded.g.overtimeFrom, null, 'and this is overtime');
 });
 
+test('Continue with a Second Chance already spent does not announce "Second Chance redeemed" again', (context) => {
+  const t = headlessGame({ saveStorage: memoryStorage() });
+  context.after(() => t.g.map.dispose());
+  const { g } = t;
+  t.tick(2);
+  g.secondChance.buy();
+  g.health.takeDamage(1e6, { type: 'zombie', id: 'shopper' });
+  assert.equal(g.secondChance.status, 'used', 'the scenario: revived once');
+  t.tick(60 * 5);
+  g.rounds.skipRound();
+  t.tick(2);
+  g.stats.health = g.stats.maxHealth;
+  assert.equal(g.saveGame.saveAndQuit(), true);
+  const before = t.hud.calls.length;
+  assert.equal(g.saveGame.load(), true);
+  assert.equal(g.secondChance.status, 'used', 'still spent');
+  const lines = t.hud.calls.slice(before).filter(([name]) => name === 'showAnnouncement').map(([, line]) => line.text);
+  assert.ok(!lines.some((text) => /Second Chance/.test(text)), `the PA said: ${lines.join(' | ')}`);
+  assert.deepEqual(t.hud.calls.slice(before).filter(([name]) => name === 'setSecondChance').map(([, on]) => on).slice(-1), [false], 'the HUD tag is off');
+});
+
