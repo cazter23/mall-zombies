@@ -247,3 +247,72 @@ test('minimapState and directory draw markers during a teaser, live sale, and Do
   assert.ok(texts.includes('!'), 'directory draws Doorbuster badge');
   g.resetRun();
 });
+
+// The corner map is on screen for a whole run: it must not make the browser lay the page out (getBoundingClientRect) or
+// repaint its canvas on every frame the game draws.
+test('the corner map measures its box when it appears or the window resizes, and redraws at its own rate, not every frame', async () => {
+  const dom = menuDom();
+  dom.document.documentElement = dom.document.createElement('html');
+  let measures = 0, draws = 0;
+  Object.getPrototypeOf(dom.document.body).getBoundingClientRect = () => { measures++; return { width: 300, height: 300 }; };
+  const make = dom.document.createElement;
+  dom.document.createElement = (tag) => {
+    const node = make(tag);
+    if (tag === 'canvas') {
+      const ctx = new Proxy({}, {
+        get: (target, key) => {
+          if (key === 'clearRect') return () => { draws++; }; // (once per drawing: fit() wipes the canvas first)
+          if (key === 'measureText') return (text) => ({ width: String(text).length * 6 });
+          return key in target ? target[key] : (target[key] = () => ctx);
+        },
+        set: (target, key, value) => { target[key] = value; return true; },
+      });
+      node.getContext = () => ctx;
+    }
+    return node;
+  };
+  const { createMinimap } = await import('../src/ui/minimap.js');
+  const view = createMinimap();
+  const host = dom.document.createElement('div'); host.append(view.element);
+  const [corner] = view.element.children;
+  g.player.position.set(0, 0, 12);
+  const state = minimapState(plan, g);
+  view.setCornerOn(true);
+
+  play(view, state, { held: false });
+  assert.ok(!corner.hidden);
+  assert.deepEqual([measures, draws], [1, 1], 'shown: measured and drawn at once');
+  play(view, state, { held: false, frames: 120 }); // two seconds at 60 frames a second
+  assert.equal(measures, 1, 'not measured again while it stays up');
+  const expected = 2 * config.corner.redrawsPerSecond;
+  assert.ok(config.corner.redrawsPerSecond < 60 && Math.abs(draws - 1 - expected) <= 2, `${draws - 1} redraws in two seconds (${expected} expected, 120 frames)`);
+
+  // A faster screen draws more frames, not more maps.
+  draws = 0;
+  for (let i = 0; i < 288; i++) view.update({ plan, state, held: false, active: true, dt: 1 / 144 });
+  assert.ok(Math.abs(draws - expected) <= 2, `${draws} redraws in two seconds at 144 frames a second`);
+
+  // The window resized: measured again, drawn at once.
+  measures = 0; draws = 0;
+  dom.window.dispatchEvent(new Event('resize'));
+  play(view, state, { held: false });
+  assert.deepEqual([measures, draws], [1, 1]);
+
+  // Hidden (a menu) and shown again: the HUD's scale may have changed in that menu, so it is measured and drawn at once.
+  play(view, state, { held: false, active: false, frames: 3 });
+  assert.ok(corner.hidden);
+  measures = 0; draws = 0;
+  play(view, state, { held: false });
+  assert.ok(!corner.hidden);
+  assert.deepEqual([measures, draws], [1, 1]);
+
+  // The strip's words are only written when they change.
+  const [, area] = corner.children;
+  let writes = 0, text = area.textContent;
+  Object.defineProperty(area, 'textContent', { configurable: true, get: () => text, set: (value) => { writes++; text = value; } });
+  play(view, state, { held: false, frames: 30 });
+  assert.equal(writes, 0, 'the same area: nothing written');
+  play(view, { ...state, you: { ...state.you, area: 'Somewhere Else' } }, { held: false, frames: 30 });
+  assert.equal(writes, 1);
+  assert.equal(text, 'Somewhere Else');
+});

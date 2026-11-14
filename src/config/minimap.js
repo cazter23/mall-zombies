@@ -15,6 +15,7 @@ export const minimap = {
   corner: {
     size: 208, // HUD px, square (times --ui-space: it scales with the HUD and the UI scale setting)
     metresAcross: 44, // how much of the mall fits across it
+    redrawsPerSecond: 30, // the corner map is redrawn this often, not on every frame the game draws (60 = every frame at 60 fps)
   },
   full: {
     heightShare: 0.86, // at most this share of the screen's height (the width is the CSS's 92vw)
