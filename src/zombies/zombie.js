@@ -40,6 +40,8 @@ import { updateConfusion } from './confusion.js';
 const SLIP_ANGLE = workshopStuffings.popcornButter.puddle.slipAngle; // how far back a slipping zombie lies (radians)
 const ease = (t) => t * t * (3 - 2 * t);
 const clamp01 = (v) => Math.max(0, Math.min(1, v));
+// One body wholly above or below the other (the Promenade over the Hallway): not in each other's way, whatever the map says.
+const onAnotherFloor = (a, b) => b.position.y >= a.position.y + a.type.height || b.position.y + b.type.height <= a.position.y;
 const desired = { x: 0, z: 0 };
 const reachRay = new THREE.Ray();
 const reachHit = new THREE.Vector3();
@@ -915,6 +917,7 @@ export class Zombie {
     const sepR = crowd.separationRadius;
     for (const other of zombies) {
       if (other === this || !other.isAlive) continue;
+      if (onAnotherFloor(this, other)) continue;
       const ox = this.position.x - other.position.x;
       const oz = this.position.z - other.position.z;
       const d = Math.hypot(ox, oz);
@@ -943,7 +946,7 @@ export class Zombie {
       let blocker = null;
       let blockerD = Infinity;
       for (const other of zombies) {
-        if (other === this || !other.isAlive) continue;
+        if (other === this || !other.isAlive || onAnotherFloor(this, other)) continue;
         const ox = other.position.x - this.position.x;
         const oz = other.position.z - this.position.z;
         const d = Math.hypot(ox, oz);

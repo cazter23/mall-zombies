@@ -345,3 +345,30 @@ test('stairs and escalators: wherever a body can stand on a ramp, the horde know
   }
 });
 
+test('zombies on different floors leave each other alone: one upstairs does not shove one right below it', (context) => {
+  const t = openMall(context);
+  const { g } = t;
+  g.player.teleport({ position: new THREE.Vector3(15, 0, 0), yaw: 0 });
+  t.tick(2);
+  const below = g.zombies.spawn('shopper', new THREE.Vector3(-4, 0, 0));
+  const above = g.zombies.spawn('shopper', new THREE.Vector3(-3.7, 6.3, 0));
+  below.speed = 0;
+  above.speed = 0;
+  t.tick(90);
+  assert.ok(Math.abs(above.position.y - below.position.y) > 5, 'the scenario: a floor apart');
+  assert.ok(Math.abs(below.position.x + 4) < 0.01 && Math.abs(above.position.x + 3.7) < 0.01,
+    `they pushed each other: below x ${below.position.x.toFixed(2)} (was -4), above x ${above.position.x.toFixed(2)} (was -3.7)`);
+});
+
+test('the failsafe rescues a wedged zombie that is right above you on another floor (near on the map is not near)', (context) => {
+  const t = openMall(context);
+  const { g } = t;
+  g.player.teleport({ position: new THREE.Vector3(0, 0, 0), yaw: 0 });
+  t.tick(2);
+  const zombie = g.zombies.spawn('shopper', new THREE.Vector3(-3, 6.3, 0));
+  zombie.speed = 0; // (wedged: it cannot move)
+  const from = zombie.position.clone();
+  t.tick(60 * 45);
+  assert.ok(zombie.position.distanceTo(from) > 0.5, 'still wedged upstairs after 45 seconds: a round would wait on it forever');
+});
+
