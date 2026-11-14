@@ -57,6 +57,8 @@ export function normalizeRecipe(def) {
     flavourEvery: def.flavourEvery ?? 1,
     sidePan: def.sidePan ?? 0,
     pitchStep: def.pitchStep ?? 0,
+    duck: def.duck ?? null,
+    duckExempt: !!def.duckExempt,
     upgrades: def.upgrades ?? null,
     parts,
   };
@@ -78,6 +80,8 @@ export function validateRecipe(def, name = 'sound') {
   if (def.flavourEvery !== undefined && !(Number.isInteger(def.flavourEvery) && def.flavourEvery >= 1)) bad('flavourEvery must be an integer >= 1');
   for (const key of ['send', 'drive', 'sidePan', 'pitchStep', 'flavourGain']) if (def[key] !== undefined && !(finite(def[key]) && def[key] >= 0)) bad(`${key} must be a number >= 0`);
   checkVary(def.vary, bad, 'vary');
+  if (def.duck !== undefined && !(def.duck && finite(def.duck.db) && def.duck.db > 0 && def.duck.db <= 20 && finite(def.duck.seconds) && def.duck.seconds > 0))
+    bad('duck must be { db: 0..20, seconds > 0 }');
   const recipe = normalizeRecipe(def);
   let layerCount = 0;
   for (const part of recipe.parts) {
@@ -114,6 +118,7 @@ function checkLayer(layer, bad) {
   }
   if (!hz(layer.freq)) bad('freq must be in Hz (0..24000)');
   if (layer.freqEnd !== undefined && !hz(layer.freqEnd)) bad('freqEnd must be in Hz');
+  if (layer.freqTime !== undefined && !(finite(layer.freqTime) && layer.freqTime > 0)) bad('freqTime must be a number > 0');
   if (layer.type === 'noise') {
     if (!FILTERS.includes(layer.filter)) bad(`unknown filter ${layer.filter}`);
   } else if (layer.type === 'tone') {

@@ -15,6 +15,10 @@ import { workshopStuffings, workshopBuilds } from '../src/config/workshop.js';
 import { Weapon } from '../src/weapons/weapon.js';
 import { legacySounds } from './auditionLegacy.js';
 import { gunSounds as gunSoundsTable } from '../src/config/gunSounds.js';
+import { punchVersions, punchSets } from './auditionPunch.js';
+// The new engine's table: the game's sounds plus the punch versions only this page has.
+const newTable = { ...audio.sounds, ...punchVersions };
+const punchBase = Object.fromEntries(Object.values(punchSets).flatMap(([a, b, c]) => [[a, b], [c, b]]));
 
 const TICK = 1 / 60;
 const $ = (id) => document.getElementById(id);
@@ -27,7 +31,7 @@ let ctx = null, engines = null, mode = 'new';
 function start() {
   if (ctx) { ctx.resume(); return; }
   ctx = new AudioContext();
-  engines = { new: createSound({ context: ctx }), old: createSound({ context: ctx, recipes: oldTable, reverb: false }) };
+  engines = { new: createSound({ context: ctx, recipes: newTable }), old: createSound({ context: ctx, recipes: oldTable, reverb: false }) };
   engines.new.unlock(); engines.old.unlock();
   setVolume(); setRoom();
   $('unlock').textContent = 'Audio on';
@@ -135,6 +139,13 @@ for (const def of Object.values(weapons)) {
   if (def.id === 'confettiCannon') extras.push(['Party Trap', () => play(workshopBuilds.partyTrap.sound)]);
   if (def.id === 'priceGun') extras.push(['Clearance Rack', () => play('clearanceStamp')]);
   if (extras.length) { const r3 = row(c, 'Impacts and extras'); for (const [l, fn] of extras) button(r3, l, fn); }
+  if (punchSets[def.id]) {
+    const rp = row(c, 'Punch: B is what the game plays (each at the same loudness)');
+    punchSets[def.id].forEach((name, i) => {
+      button(rp, ['Punch A (tighter)', 'Punch B (in game)', 'Punch C (bigger)'][i], () => play(name, { upgrade: true }));
+      button(rp, `${'ABC'[i]} rapid`, () => { if (!ctx) start(); for (const e of simulateFire(def, 2)) if (e.kind === 'fire') play(name, { delay: e.t, upgrade: true }); });
+    });
+  }
   const r4 = row(c, 'Every tier (ignores the Tier menu)');
   for (const [label, tier, renewals] of [['Std', 'standard', 0], ['Deluxe', 'deluxe', 0], ['Premium', 'premium', 0], ['Platinum', 'platinum', 0], ['+5', 'platinum', 5]])
     button(r4, label, () => { if (!ctx) start(); (mode === 'new' ? engine().play(def.sounds.fire, { variant: { tier, renewals } }) : play(def.sounds.fire)); });
@@ -190,7 +201,7 @@ const db = (x) => (x > 0 ? 20 * Math.log10(x) : -Infinity);
 /** Render one sound offline through a fresh engine (new or old), in a room (null = the hallway). */
 async function render(name, { old = false, room = null, seconds = 2.5, at = 0.02, schedule = null } = {}) {
   const off = new OfflineAudioContext(2, Math.ceil(seconds * RATE), RATE);
-  const e = createSound({ context: off, recipes: old ? oldTable : audio.sounds, reverb: !old });
+  const e = createSound({ context: off, recipes: old ? oldTable : newTable, reverb: !old });
   e.unlock();
   e.setMasterVolume(audio.masterVolume);
   e.setRoom(room);
@@ -376,12 +387,12 @@ async function level(names = Object.keys(gunSoundsTable)) {
   const out = {};
   for (const name of names) {
     const n = analyse((await render(name, { room: 'parkingLot' })).buffer);
-    let target = LEVEL_TARGETS[name];
+    let target = LEVEL_TARGETS[punchBase[name] ?? name];
     if (target === undefined) {
       if (/Dry$/.test(name)) target = -37;
       else target = Math.max(-42, Math.min(-26, analyse((await render(oldName(name), { old: true })).buffer).rms));
     }
-    const volume = gunSoundsTable[name].volume * 10 ** ((target - n.rms) / 20);
+    const volume = newTable[name].volume * 10 ** ((target - n.rms) / 20);
     out[name] = Math.round(volume * 100) / 100;
   }
   return out;

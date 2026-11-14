@@ -27,6 +27,11 @@ const air = (filter, freq, gain, decay, o = {}) => ({ type: 'noise', filter, fre
 const metal = (freq, ratios, gain, decay, o = {}) => ({ type: 'metal', freq, ratios, gain, attack: 0.0005, decay, partialDecay: 0.75, ...o });
 const fm = (freq, ratio, index, gain, decay, o = {}) => ({ type: 'fm', freq, ratio, index, gain, attack: 0.001, decay, ...o });
 const at = (delay, layer) => ({ ...layer, delay });
+// PUNCH (round three): a kick = a sine that DROPS fast (in `drop` s) from `from` to `to` and then holds there, the thud you feel;
+// a slap = a short band of noise in the low mids (200-700 Hz), the "smack" between the crack and the kick. Tuned for desktop
+// speakers: the kick holds at 58-95 Hz, and its part's drive adds the overtones (x2, x3) small speakers can actually play.
+const kick = (from, to, gain, decay, drop, o = {}) => ({ type: 'tone', wave: 'sine', freq: from, freqEnd: to, freqTime: drop, gain, attack: 0.001, decay, ...o });
+const slap = (freq, gain, decay, o = {}) => ({ type: 'noise', filter: 'bandpass', freq, q: 1.2, gain, attack: 0.001, decay, ...o });
 
 // Inharmonic partial sets (ratios to the fundamental).
 const BAR = [1, 2.76, 5.4];          // a struck steel bar / rivet: a hard TANG
@@ -115,10 +120,11 @@ export const gunSounds = {
   } },
 
   // ===== CONFETTI CANNON (shotgun, semi ~1.8/s): a party popper the size of a shotgun: a boom, then paper everywhere. ==
-  confettiShot: { volume: 2.5, maxVoices: 2, send: 0.15, drive: 0.55, vary: VARY, parts: { // PUNCH first: a wide 6 ms crack, a hard driven
-    // kick in the chest (120 Hz falling fast), a sub under it and a short blast of air; the paper comes after, smaller
+  confettiShot: { volume: 1.61, maxVoices: 2, send: 0.15, drive: 0.4, duck: { db: 6, seconds: 0.2 }, vary: VARY, parts: { // PUNCH B: a wide crack,
+    // a kick that drops from 200 to 68 Hz in 20 ms, a low-mid slap, a blast of air and a low roll after it; everything else dips 6 dB
     crack: [crack(1800, 1.3, { ms: 6, q: 0.35 }), tick(3000, 0.4, { q: 0.8 }), air('bandpass', 3000, 0.6, 0.015, { q: 0.7 })],
-    body: [thump(120, 45, 1.2, 0.11, { drive: 0.6 }), thump(65, 35, 0.8, 0.16), air('lowpass', 2200, 1.1, 0.06, { freqEnd: 500 })],
+    body: { drive: 0.7, layers: [kick(200, 68, 1.4, 0.16, 0.02), slap(280, 1.1, 0.022), slap(600, 0.6, 0.012),
+      air('lowpass', 2200, 1, 0.06, { freqEnd: 500 }), thump(55, 45, 0.45, 0.3, { attack: 0.01 })] },
     mech: [
       ...[0.06, 0.085, 0.105, 0.13, 0.16, 0.19, 0.23].map((d, i) => at(d, air('highpass', 4500 - i * 250, 0.1, 0.025, { attack: 0.002, vary: { gain: 0.4, delay: 0.25, freq: 0.15 } }))),
       at(0.05, thump(1320, 1760, 0.05, 0.09, { wave: 'triangle', attack: 0.01 })), // the party-horn squeak
@@ -139,7 +145,7 @@ export const gunSounds = {
     body: [thump(200, 65, 0.5, 0.1)],
   } },
   // The Party Trap limited edition going off (game/features/workshop.js): the cannon's boom without its paper, more streamers.
-  partyTrapBlast: { volume: 1.14, maxVoices: 3, send: 0.16, drive: 0.4, vary: VARY, parts: {
+  partyTrapBlast: { volume: 1.14, duck: { db: 5, seconds: 0.2 }, maxVoices: 3, send: 0.16, drive: 0.4, vary: VARY, parts: {
     crack: [crack(2200, 1, { ms: 5, q: 0.5 })],
     body: [thump(85, 34, 1, 0.3), air('lowpass', 900, 0.9, 0.18, { freqEnd: 250 })],
     mech: [
@@ -149,10 +155,10 @@ export const gunSounds = {
   } },
 
   // ===== RIVET RIFLE (light auto rifle, ~11.8/s): BRIGHT and RINGING: a sharp crack and a rivet's high steel TANG. =====
-  rivetShot: { volume: 3.36, flavourEvery: 3, maxVoices: 4, send: 0.08, drive: 0.3, flavourGain: 0.5, vary: VARY, parts: { // a rivet gun with
-    // weight: a hard crack, a driven 160 Hz hammer blow, then the bright rivet TANG (the ring is what keeps it apart from the Coil Nailer)
+  rivetShot: { volume: 3.16, flavourEvery: 3, maxVoices: 4, send: 0.08, drive: 0.25, flavourGain: 0.5, vary: VARY, parts: { // PUNCH B: at 12 a
+    // second the low end must stay short: a kick from 240 to 95 Hz in 10 ms, a tight slap, then the bright rivet TANG (no duck: it would pump)
     crack: [crack(4200, 1, { ms: 2.5, q: 0.7 }), tick(2500, 0.3, { q: 1 })],
-    body: [thump(160, 65, 0.85, 0.06, { drive: 0.4 }), air('bandpass', 2200, 0.7, 0.035, { q: 0.7 })],
+    body: { drive: 0.6, layers: [kick(240, 95, 1.1, 0.065, 0.01), slap(380, 1, 0.014), air('bandpass', 2200, 0.5, 0.03, { q: 0.7 })] },
     mech: [metal(2100, BAR, 0.6, 0.12, { detune: 8 }), at(0.004, metal(3100, [1, 1.5, 2.2], 0.15, 0.06))],
   } },
   rivetDry: { volume: 2.59, maxVoices: 2, vary: VARY, parts: { mech: [tick(4000, 0.5, { q: 3 }), metal(2350, BAR, 0.15, 0.05)] } },
@@ -260,7 +266,7 @@ export const gunSounds = {
 
   // ===== RETURN TO SENDER (the wonder weapon, an instant-kill cone): THE LOUDEST. A pneumatic mail tube's WHOOMP, a rush of
   // air and a rising whistle, the rubber stamp's KA-CHUNK, and a rainbow of bells as the parcels go. ====================
-  returnBeam: { volume: 1.15, maxVoices: 2, send: 0.17, drive: 0.25, vary: VARY, parts: {
+  returnBeam: { volume: 1.15, duck: { db: 8, seconds: 0.3 }, maxVoices: 2, send: 0.17, drive: 0.25, vary: VARY, parts: {
     crack: [crack(1800, 1, { ms: 5, q: 0.5 })],
     body: [thump(80, 30, 1.1, 0.38, { drive: 0.2 }), air('lowpass', 650, 0.9, 0.35, { freqEnd: 200, attack: 0.002 })],
     mech: [at(0.03, thump(400, 1600, 0.14, 0.3, { attack: 0.02 })), at(0.26, tick(1200, 0.8, { filter: 'lowpass', q: 0.7 })),
@@ -289,10 +295,11 @@ export const gunSounds = {
 
   // ===== STARGAZER 3000 (GRAB-A-GUN scoped sniper, semi 0.8/s, pierces 4): a big crack, a deep boom and a long tail, a
   // star's glint from the telescope, then (delayed, as the bolt is worked) a telescope's ratchet and the bolt: up, back, forward, down.
-  stargazerShot: { volume: 1.44, maxVoices: 2, send: 0.18, drive: 0.45, vary: VARY, parts: { // a sniper's SLAM: a big 5 ms crack, a hard
-    // driven kick that drops fast, a long sub under it and a blast of air; then the glint, and the bolt worked as before
+  stargazerShot: { volume: 1.02, maxVoices: 2, send: 0.18, drive: 0.35, duck: { db: 7, seconds: 0.28 }, vary: VARY, parts: { // PUNCH B: a sniper's
+    // SLAM: a big crack, a kick from 220 to 58 Hz in 22 ms, two slaps, a blast of air and a long low roll; everything else dips 7 dB
     crack: [crack(3000, 1.3, { ms: 5, q: 0.4 }), tick(4500, 0.3, { q: 1 }), air('bandpass', 4200, 0.5, 0.025, { q: 1 })],
-    body: [thump(110, 40, 1.2, 0.16, { drive: 0.5 }), thump(60, 32, 0.8, 0.3), air('lowpass', 2500, 1, 0.09, { freqEnd: 400 })],
+    body: { drive: 0.7, layers: [kick(220, 58, 1.4, 0.24, 0.022), slap(260, 1.1, 0.024), slap(700, 0.5, 0.012),
+      air('lowpass', 2500, 1, 0.09, { freqEnd: 400 }), at(0.02, thump(52, 42, 0.6, 0.55, { attack: 0.02 }))] },
     mech: [at(0.32, crack(1900, 0.45, { q: 3, ms: 3 })), at(0.32, metal(1300, [1, 1.8], 0.1, 0.03)), at(0.47, crack(1300, 0.5, { q: 3, ms: 4 })),
       ...[0.52, 0.55, 0.58].map((d) => at(d, tick(3000, 0.25))), at(0.66, crack(2200, 0.5, { q: 3 })),
       at(0.8, { type: 'tone', wave: 'square', freq: 420, freqEnd: 260, gain: 0.06, attack: 0.001, decay: 0.04 })],
@@ -318,7 +325,7 @@ export const gunSounds = {
     mech: [air('highpass', 4000, 0.18, 0.1, { attack: 0.002 }), at(0.02, air('bandpass', 900, 0.3, 0.45, { freqEnd: 3500, q: 0.7, attack: 0.05 })),
       at(0.04, thump(1000, 2800, 0.12, 0.5, { attack: 0.03 }))],
   } },
-  bottleRocketBurst: { volume: 1.24, maxVoices: 3, send: 0.19, drive: 0.4, vary: VARY, parts: {
+  bottleRocketBurst: { volume: 1.24, duck: { db: 7, seconds: 0.3 }, maxVoices: 3, send: 0.19, drive: 0.4, vary: VARY, parts: {
     crack: [crack(1500, 1, { ms: 6, q: 0.4 })],
     body: [thump(75, 28, 1.1, 0.45), air('lowpass', 1600, 1, 0.3, { freqEnd: 250 })],
     mech: [[0.1, 4200], [0.16, 3600], [0.21, 5200], [0.27, 3900], [0.33, 6000], [0.38, 4600], [0.45, 3400], [0.52, 5600], [0.6, 4100], [0.7, 4800]]
@@ -409,18 +416,18 @@ export const gunSounds = {
 
   // ===== HIT FEEDBACK: short, campy, dry (no room), high enough (2-5 kHz) to cut through a firefight. ====================
   // A shot lands: a quick dry thwack-tick.
-  hitBody: { volume: 1.78, maxVoices: 3, pitchVariation: 0.08, vary: VARY, parts: {
+  hitBody: { volume: 1.78, duckExempt: true, maxVoices: 3, pitchVariation: 0.08, vary: VARY, parts: {
     crack: [crack(1800, 0.7, { q: 1.2 })],
     body: [thump(200, 90, 0.35, 0.04), air('lowpass', 900, 0.25, 0.03)],
   } },
   // A headshot: a little desk-bell DING on top of the thwack.
-  hitHead: { volume: 2.26, maxVoices: 3, pitchVariation: 0.02, parts: {
+  hitHead: { volume: 2.26, duckExempt: true, maxVoices: 3, pitchVariation: 0.02, parts: {
     crack: [crack(3000, 0.5, { ms: 1.5, q: 1 })],
     body: [thump(220, 100, 0.25, 0.04)],
     mech: [metal(2093, BELL, 0.3, 0.22, { partialDecay: 0.6 })],
   } },
   // A kill: the cash register's CHA-CHING (the drawer's ratchet, then the bell).
-  killConfirm: { volume: 0.94, maxVoices: 3, pitchVariation: 0.02, parts: {
+  killConfirm: { volume: 0.94, duckExempt: true, maxVoices: 3, pitchVariation: 0.02, parts: {
     crack: [air('bandpass', 3500, 0.4, 0.03, { q: 1.5, attack: 0.002 }), at(0.012, tick(3000, 0.3)), at(0.024, tick(3300, 0.3))],
     mech: [at(0.045, metal(2637, [1, 2.0, 2.76, 3.5], 0.35, 0.3, { partialDecay: 0.65 })), at(0.05, metal(3520, [1, 2], 0.15, 0.25))],
   } },
@@ -473,3 +480,6 @@ export const soundUpgrades = {
   // Guns whose magazine is this small or smaller never get the low-ammo sound (the Bottle Rocket's 1, the Return to Sender's 2).
   lowAmmoMinMagazine: 5,
 };
+
+// The builders and partial sets above, for tools/auditionPunch.js (the audition's other punch versions).
+export const soundKit = { crack, tick, thump, air, metal, fm, at, kick, slap, BAR, SPRING, BELL, PLATE, VARY };

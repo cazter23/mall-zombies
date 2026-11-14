@@ -53,6 +53,8 @@ test('every recipe parses with the format (config/audio.js header), the new gun 
   assert.ok(validateRecipe({ volume: 1, parts: { body: [{ type: 'tone', wave: 'sine', freq: 100, gain: 1, decay: 0 }] } }).length > 0);
   assert.ok(validateRecipe({ volume: 1, layers: [{ type: 'metal', freq: 100, gain: 1, decay: 0.1 }] }).length > 0);
   assert.ok(validateRecipe({ volume: 1, layers: [{ type: 'buzz', freq: 100, gain: 1, decay: 0.1 }] }).length > 0);
+  assert.ok(validateRecipe({ volume: 1, layers: [{ type: 'tone', wave: 'sine', freq: 200, freqEnd: 60, freqTime: 0, gain: 1, decay: 0.1 }] }).length > 0);
+  assert.ok(validateRecipe({ volume: 1, duck: { db: 40, seconds: 0.2 }, layers: [{ type: 'tone', wave: 'sine', freq: 100, gain: 1, decay: 0.1 }] }).length > 0);
 });
 
 test('each gun has its own fire and dry-fire sounds, built from parts upgrades can work on', () => {
@@ -141,8 +143,8 @@ test('drive and the final soft clip stay bounded', () => {
 // A fake Web Audio context that records nodes and connections.
 function fakeAudio() {
   const nodes = [], sources = [];
-  const param = () => ({ value: 0, setValueAtTime(v) { this.value = v; }, linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {},
-    cancelScheduledValues() {}, setTargetAtTime(v) { this.value = v; } });
+  const param = () => ({ value: 0, targets: [], setValueAtTime(v) { this.value = v; }, linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {},
+    cancelScheduledValues() {}, setTargetAtTime(v, at) { this.value = v; this.targets.push([v, at]); } });
   let ctx;
   const make = (kind) => {
     const n = { kind, out: [], gain: param(), frequency: param(), pan: param(), Q: param(), threshold: param(), ratio: param(),
@@ -227,6 +229,22 @@ test('the engine: voices are capped and the oldest stolen, a stop() cuts a sound
     assert.deepEqual(pans({ side: 'left' }), [-audio.sounds.bogoShot.sidePan], 'the left gun twice stays left');
     assert.deepEqual(pans({ side: 'right' }), [audio.sounds.bogoShot.sidePan]);
     assert.deepEqual(pans({}), []);
+
+    // Ducking: a big shot dips the world bus (everything else) and comes back; it and the hit sounds skip the dip.
+    const compressor = f.nodes.find((n) => n.kind === 'compressor');
+    const master = f.nodes.find((n) => n.kind === 'gain' && n.out.includes(compressor));
+    const world = f.nodes.find((n) => n.kind === 'gain' && n.out.includes(master));
+    assert.ok(master && world, 'master and the world bus');
+    const outOf = (name) => { const n0 = f.nodes.length; sound.play(name); return f.nodes[n0]; }; // (a voice's first node is its output)
+    world.gain.targets.length = 0;
+    const big = outOf('confettiShot');
+    const { db } = audio.sounds.confettiShot.duck;
+    assert.ok(Math.abs(world.gain.targets[0][0] - 10 ** (-db / 20)) < 1e-9 && world.gain.targets.at(-1)[0] === 1, 'dips, then recovers');
+    assert.ok(big.out.includes(master) && !big.out.includes(world), 'the ducking shot itself skips the dip');
+    assert.ok(outOf('hitBody').out.includes(master), 'hit sounds are exempt');
+    assert.ok(outOf('stapleShot').out.includes(world), 'an ordinary shot is in the world bus');
+    for (const name of ['confettiShot', 'stargazerShot', 'returnBeam', 'bottleRocketBurst']) assert.ok(audio.sounds[name].duck, `${name} ducks`);
+    for (const w of guns) if (w.fireMode === 'auto' || w.burst) assert.ok(!audio.sounds[w.sounds.fire].duck, `${w.id} (automatic) never ducks: it would pump`);
 
     // Old-format recipes still play (the simple `layers` form).
     const n0 = f.sources.length;

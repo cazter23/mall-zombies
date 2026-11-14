@@ -1,5 +1,18 @@
 # Sunset Galleria: build history ("Current state")
 
+## 14 November 2026 - Gun sounds, round three: punch for desktop speakers (`claude/audio-overhaul`)
+
+The Confetti Cannon, Rivet Rifle and Stargazer still felt light. Punch is three things, and now the big guns have all three:
+- **A kick.** A tone that drops fast and then holds at 55-95 Hz (the new `freqTime`). Its part is driven, so the overtones
+  carry the bass on speakers too small to play it (the user listens on desktop-style speakers).
+- **A slap.** A short low-mid noise burst.
+- **Contrast.** The new `duck`: everything else (a new `world` bus) dips 5-8 dB for 0.2-0.3 s. The shot itself and the hit
+  sounds skip it. Only the rare big guns duck (Confetti, Stargazer, Return to Sender, the Bottle Rocket burst, the Party Trap);
+  automatic guns never do (it would pump).
+
+Version B plays in the game. tools/audition.html has A (tighter) and C (bigger) of each, at the same loudness, to pick by ear.
+Measured: the order of loudness held, no two guns above 0.70 alike, and the stress test peaks at -1.0 dBFS.
+
 ## 14 November 2026 - Gun sounds, round two: less echo, more punch, a BOGO per gun (`claude/audio-overhaul`)
 
 The first listen found the echo overdone and several guns too light. The fixes:

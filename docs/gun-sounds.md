@@ -25,14 +25,14 @@ Other things that apply to every gun:
 | Price Gun | A pricing labeler: a plastic tick, a light body, a **three-click ratchet**, and a sticker peeling off. |
 | Nail Gun | A framing nailer, "pfft-CHUNK": a hard crack, a driven thump, a steel driver-blade clank, and a **pneumatic hiss** closing down. |
 | Foam Dart Blaster | "Fwump", once per dart, so a burst is three: a soft trigger tick, a low-passed puff, and the plunger's FM "boing". |
-| Confetti Cannon | PUNCH first: a wide 6 ms crack, a hard driven kick (120 Hz falling fast), a sub under it and a short blast of air; then the **paper flutter** and a tiny party-horn squeak, smaller. |
-| Rivet Rifle | A rivet gun with weight: a hard crack, a driven 160 Hz hammer blow, then the bright rivet **TANG** (about 2.1 kHz) that keeps it apart from the Coil Nailer. |
+| Confetti Cannon | PUNCH: a wide 6 ms crack, a **kick** that drops from 200 to 68 Hz in 20 ms and holds, a low-mid **slap**, a blast of air and a low roll; everything else **dips 6 dB** for 0.2 s. Then the paper flutter and a tiny party-horn squeak. |
+| Rivet Rifle | A rivet gun with weight: a hard crack, a short kick (240 to 95 Hz in 10 ms: at 12 shots a second the low end has to end quickly) and a tight slap, then the bright rivet **TANG** that keeps it apart from the Coil Nailer. No dip (it would pump). |
 | Heavy Coil Nailer | **Low and chuggy**: a dull driven thump at 85 Hz, the nail drum rattling round (FM), and an exhaust hiss after each shot. It measures 0.00 alike to the Rivet Rifle. |
 | Barcode Scanner | The scan whine rises over the whole charge to exactly the beep's note, so the beep is the scan completing. Then an electric snap, a sub drop, a falling zap and a crackle. Let go early and the whine stops. Dry fire is the till's error buzz. |
 | Leaf Blower | A two-stroke "brap" (FM sawtooth) and wind on every pulse. Held down, the pulses run into one engine. |
 | Tennis Ball Launcher | A ball machine's "thoonk" (an air pop and a felt "pock"). Every bounce is a hollow rubber "pok", **7% higher each bounce** along the chain. |
 | Return to Sender | The loudest: a pneumatic tube WHOOMP with a rising whistle, a rubber-stamp KA-CHUNK at 0.26 s, and a rainbow of four FM bells. Its reload ends on a post-office chime. |
-| Stargazer 3000 | A sniper's SLAM: a big 5 ms crack, a hard driven kick that drops fast, a long sub and a blast of air, then a star's glint; then (delayed, as before) the bolt: up, a telescope ratchet, back, forward, down. |
+| Stargazer 3000 | A sniper's SLAM: a big crack, a kick from 220 to 58 Hz in 22 ms, two slaps, a blast of air and a long low roll; everything else **dips 7 dB** for 0.28 s. Then a star's glint and (delayed, as before) the bolt. |
 | Bottle Rocket Bazooka | Launch: a fuse hiss, a cardboard-tube whoomp, and a rising fwoosh and whistle. Burst: the biggest bang, with ten firework crackles scattered over 0.6 s. |
 | Balloon Launcher | A balloon let go: the rubber's wobbly "eek" (a squeak with a 25 Hz vibrato), the neck flapping "brrrp" as the air rushes out, and a hiss. The pop is a very sharp, very short BANG, the rubber snapping back, a flap and a confetti rustle. |
 | BOGO | Two cheap SMGs: a short "pap" (a 3 ms crack, a driven body that ends before the next shot) and a paper flick, **on the side of the gun that fired** (`sidePan` 0.3: left mouse / LT = the left gun). Quiet per shot: both guns together fire about 18 a second. |
@@ -75,10 +75,20 @@ Kept low on purpose (the first round of listening found it overdone): the tail i
 
 Each gun's `send` into the room is 0.03-0.2 (the big, rare guns the most). Settings > Audio > Room echo turns it off entirely.
 
-**Punch.** The master compressor has a 6 ms attack (it was 0 ms), so the first milliseconds of every shot get through
+**Punch** (round three, tuned for desktop speakers). Three things make a shot hit, and the big guns have all three:
+- a **kick**: a sine that drops fast (in 10-25 ms) and then holds at 55-95 Hz (`freqTime`). The body part's drive adds its
+  overtones at 2x and 3x, which small speakers can play when they can't play the kick itself.
+- a **slap**: 12-25 ms of noise in the low mids (250-700 Hz), the "smack" between the crack and the kick.
+- **contrast**: the Confetti Cannon, Stargazer, Return to Sender, Bottle Rocket burst and Party Trap duck everything else
+  (`duck`) for 0.2-0.3 s. The shot itself and the hit sounds skip the dip.
+
+Version B of each is what the game plays. The audition page also has A (tighter, drier) and C (bigger, heavier) for the
+Confetti Cannon, Rivet Rifle and Stargazer (tools/auditionPunch.js), levelled to the same loudness, so only the punch differs.
+
+The master compressor has a 6 ms attack (it was 0 ms), so the first milliseconds of every shot get through
 before it acts. The limiter (1 ms) and the soft clip catch the peak, so nothing passes 0 dBFS.
 
-## Measured (14 November 2026, second round, tools/audition.html Measure)
+## Measured (14 November 2026, third round, tools/audition.html Measure)
 Every sound was rendered offline at 48 kHz through the real engine, at master volume 0.55.
 - **Dry** = in the parking lot (nearly no room). **Hall** = in the main hallway.
 - **RMS** = the loudest 50 ms, in dBFS. **Peak** is in dBFS.
@@ -88,32 +98,35 @@ Every sound was rendered offline at 48 kHz through the real engine, at master vo
 
 | Sound | peak | RMS dry | RMS hall | length | centroid | old RMS |
 |---|---|---|---|---|---|---|
-| Staple Gun | -9.2 | -24.1 | -24.1 | 0.34 | 2768 | -19.4 |
-| Price Gun | -10.1 | -23.3 | -23.9 | 0.34 | 6327 | -29.8 |
-| Nail Gun | -11.1 | -18.7 | -19.2 | 0.43 | 9802 | -17.8 |
-| Foam Dart Blaster | -11.2 | -22.5 | -22.6 | 0.40 | 522 | -27.9 |
-| Confetti Cannon | -5.5 | -14.2 | -13.3 | 0.50 | 4529 | -14.9 |
-| Rivet Rifle | -10.7 | -18.2 (volume set for -17.5) | -18.8 | 0.45 | 242 | -25.2 |
-| Heavy Coil Nailer | -11.2 | -16.9 | -17.1 | 0.44 | 3121 | -24.9 |
-| Barcode Scanner | -7.9 | -17.3 | -18.1 | 0.45 | 3465 | -21.5 |
-| Leaf Blower | -7.8 | -21.3 | -21.2 | 0.24 | 2044 | -29.8 |
-| Tennis Ball Launcher | -8.8 | -17.3 | -18.6 | 0.47 | 123 | -20.8 |
-| Return to Sender | -7.1 | -12.8 | -11.8 | 0.67 | 356 | -13.9 |
-| Stargazer 3000 | -10.1 | -13.6 | -13.9 | 1.01 | 85 | -17.4 |
-| Bottle Rocket Bazooka | -6.5 | -16.5 | -16.2 | 0.56 | 1464 | -19.5 |
-| Balloon Launcher | -8.7 | -19.7 | -20.5 | 0.43 | 1274 | -29.3 |
-| BOGO (per shot) | -12.6 | -21.9 (volume set for -23) | -22.2 | 0.33 | 212 | -38.9 |
-| Kiosk Sentry (x0.55, as in the game) | -13.5 | -26.2 | -26.4 | 0.38 | 709 | -23.8 |
-| Box Cutter swing | -14.9 | -29.4 | -30.6 | 0.17 | 1934 | -31.2 |
-| Bottle Rocket burst | -10.2 | -12.6 | -12.2 | 0.80 | 76 | -13.5 |
-| Balloon pop | -8.8 | -21.4 | -22.8 | 0.39 | 13381 | -27.3 |
-| Tennis bounce | -18.3 | -31.7 | -30.6 | 0.40 | 603 | -32.9 |
-| Party Trap blast | -11.0 | -15.0 | -14.9 | 0.63 | 617 | -14.6 |
-| hitBody | -17.7 | -30.8 | -31.0 | 0.05 | 151 | -33.5 |
-| hitHead | -12.4 | -27.9 | -27.9 | 0.09 | 2615 | -29.1 |
-| killConfirm | -10.8 | -25.6 | -25.6 | 0.16 | 4292 | -26.1 |
-| reference: walkerSqueak (x0.5) | -28.1 | -40.7 | -40.7 | 0.07 | 1972 | -40.7 |
-| reference: mannequinStep (x0.5) | -32.8 | -48.7 | -48.7 | 0.06 | 717 | -48.7 |
+| Staple Gun | -10.8 | -24.4 | -23.3 | 0.32 | 3198 | -19.6 |
+| Price Gun | -11.0 | -23.8 | -23.4 | 0.33 | 7815 | -29.9 |
+| Nail Gun | -11.7 | -19.4 | -19.0 | 0.43 | 9542 | -17.8 |
+| Foam Dart Blaster | -11.3 | -22.9 | -23.5 | 0.40 | 629 | -28.2 |
+| Confetti Cannon | -8.4 | -13.9 | -12.6 | 0.47 | 399 | -14.7 |
+| Rivet Rifle | -10.1 | -18.0 | -18.0 | 0.47 | 218 | -25.2 |
+| Heavy Coil Nailer | -10.8 | -17.0 | -17.2 | 0.45 | 2700 | -25.0 |
+| Barcode Scanner | -7.9 | -18.2 | -17.1 | 0.41 | 4498 | -21.5 |
+| Leaf Blower | -9.6 | -21.2 | -21.3 | 0.24 | 1883 | -29.4 |
+| Tennis Ball Launcher | -8.9 | -18.2 | -18.2 | 0.48 | 146 | -20.9 |
+| Return to Sender | -7.2 | -12.2 | -11.8 | 0.67 | 327 | -13.9 |
+| Stargazer 3000 | -12.3 | -13.7 | -13.6 | 1.01 | 64 | -17.5 |
+| Bottle Rocket Bazooka | -6.9 | -16.4 | -16.7 | 0.56 | 1378 | -19.4 |
+| Balloon Launcher | -9.5 | -19.9 | -20.2 | 0.41 | 1351 | -29.1 |
+| BOGO (per shot) | -14.0 | -23.6 | -23.8 | 0.33 | 249 | -38.7 |
+| Kiosk Sentry (x0.55, as in the game) | -12.9 | -27.3 | -27.2 | 0.38 | 689 | -23.9 |
+| Box Cutter swing | -16.3 | -29.6 | -30.2 | 0.18 | 1956 | -31.2 |
+| Bottle Rocket burst | -9.8 | -12.1 | -12.0 | 0.78 | 76 | -13.5 |
+| Balloon pop | -9.3 | -22.5 | -21.3 | 0.39 | 13221 | -27.2 |
+| Tennis bounce | -16.7 | -29.6 | -30.8 | 0.40 | 620 | -32.9 |
+| Party Trap blast | -10.7 | -15.6 | -15.6 | 0.58 | 810 | -14.6 |
+| hitBody | -17.1 | -29.8 | -29.5 | 0.06 | 168 | -33.3 |
+| hitHead | -11.1 | -27.9 | -27.9 | 0.09 | 2561 | -29.3 |
+| killConfirm | -11.1 | -25.6 | -25.6 | 0.16 | 4309 | -26.0 |
+| reference: walkerSqueak (x0.5) | -27.9 | -40.7 | -40.7 | 0.08 | 2003 | -40.7 |
+| reference: mannequinStep (x0.5) | -33.4 | -48.6 | -48.6 | 0.06 | 659 | -48.6 |
+
+The Confetti Cannon's centroid fell from 4529 Hz (round two) to 399 Hz: its energy moved from the crack and paper into the
+kick and slap, at the same loudness.
 
 Tails are about half as long as in the first round (0.3-0.5 s for most shots, against 0.8-1.0 s).
 
@@ -122,13 +135,12 @@ Leaf Blower < Balloon < Nail Gun < Tennis < Rivet Rifle < Barcode Scanner < Coil
 Confetti Cannon < Return to Sender.
 
 **How alike the guns are** (spectral shape and envelope correlation, minus the gap in brightness; 1 = identical):
-- No pair scores above 0.83. The closest is Rivet Rifle / BOGO at 0.83: the rivet's ring tells them apart.
+- No pair scores above 0.70. The closest is Leaf Blower / Bottle Rocket launch at 0.70: both are a whoosh over a low rumble.
 - Rivet Rifle / Heavy Coil Nailer scores 0.00.
-- In this round the heavier rivet body briefly buried its ring (Rivet / Tennis 0.92) until the TANG was turned back up.
 
 **Stress test:** BOGO at 18.3 shots/s for 3 s, at Platinum +5 with glitter, a hit on every shot and a kill every 5th, in the
 Atrium.
-- The peak was -1.0 dBFS after the limiter and soft clip, and the loudest 50 ms was -9.8 dBFS.
+- The peak was -1.0 dBFS after the limiter and soft clip, and the loudest 50 ms was -10.5 dBFS.
 - No NaN and no silent gaps.
 - It rendered at 2.9x real time offline, in a hidden pane (an earlier run read 6.4x: the timing is noisy).
 

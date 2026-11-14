@@ -49,6 +49,7 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
   context = null, recipes = audio.sounds, reverb: reverbAllowed = true } = {}) {
   let ctx = null;
   let master = null;
+  let world = null; // (the ducked bus: see unlock)
   let noiseBuffer = null;
   const isOffline = () => typeof OfflineAudioContext !== 'undefined' && ctx instanceof OfflineAudioContext;
   const canPlay = () => !!ctx && (ctx.state === 'running' || isOffline());
@@ -132,6 +133,10 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
       master = ctx.createGain();
       master.gain.value = audio.masterVolume;
       master.connect(compressor);
+      // Everything plays through `world`, which a big shot dips for a moment (a recipe's `duck`); the ducking shot itself
+      // and the hit sounds (`duckExempt`) go straight to master, so they stand out against the dip.
+      world = ctx.createGain();
+      world.connect(master);
       compressor.connect(limiter);
       if (ctx.createWaveShaper) {
         const clip = ctx.createWaveShaper();
@@ -152,7 +157,7 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
     param.exponentialRampToValueAtTime(0.0001, start + attack + decay);
   }
 
-  function playLayer(layer, start, volume, pitch, destination = master) {
+  function playLayer(layer, start, volume, pitch, destination = world) {
     const gain = ctx.createGain();
     envelope(gain.gain, start, Math.max(0.0001, layer.gain * volume), layer.attack, layer.decay);
     gain.connect(destination);
@@ -265,9 +270,11 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
     }
 
     envelope(gain.gain, s, peak, attack, decay);
+    // (freqTime: the sweep reaches its end in that long, then holds there: a kick's fast drop then its low thud)
+    const sweepEnd = s + (layer.freqTime ?? attack + decay);
     const sweepTo = (param, from, to) => {
       param.setValueAtTime(from, s);
-      if (to) param.exponentialRampToValueAtTime(to, s + attack + decay);
+      if (to) param.exponentialRampToValueAtTime(to, sweepEnd);
     };
 
     if (layer.type === 'noise') {
@@ -346,7 +353,7 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
    * One play of a recipe: its parts, drive, volume, pan, and its send into the room.
    * Returns { stop() } (or null when audio can't play).
    */
-  function playRecipe(key, recipe, { volume = 1, pan = 0, panned = false, side = null, at = null, pitch: pitchScale = 1, step = 0, destination = master, send = true } = {}) {
+  function playRecipe(key, recipe, { volume = 1, pan = 0, panned = false, side = null, at = null, pitch: pitchScale = 1, step = 0, destination = world, send = true } = {}) {
     const start = Math.max(at ?? ctx.currentTime, ctx.currentTime);
     const cap = recipe.maxVoices ?? audio.voices.perSound;
     let list = voicesByKey.get(key);
@@ -373,7 +380,9 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
       panner.pan.value = Math.max(-1, Math.min(1, pan));
       out.connect(panner); tail = panner;
     }
-    tail.connect(destination);
+    const exempt = recipe.duck || recipe.duckExempt;
+    tail.connect(exempt && destination === world ? master : destination);
+    if (recipe.duck && world) duck(recipe.duck, start);
     const room = send && recipe.send > 0 ? ensureReverb() : null;
     if (room) {
       const sendGain = ctx.createGain(); nodes.push(sendGain);
@@ -402,6 +411,14 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
     list.push(voice);
     liveVoices.push(voice);
     return { stop: () => { if (!voice.stolen && voice.remaining > 0) steal(voice); } };
+  }
+
+  /** A big shot's dip of everything else: down by `db` in a few ms, back over `seconds`. A newer duck replaces an older one. */
+  function duck({ db, seconds }, start) {
+    const g = world.gain;
+    g.cancelScheduledValues(start);
+    g.setTargetAtTime(10 ** (-db / 20), start, 0.003);
+    g.setTargetAtTime(1, start + 0.02, seconds / 3);
   }
 
   /** The recipe a sound name plays with a variant (upgrade tier, stuffing, low ammo), cached. */
@@ -441,7 +458,7 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
         const out = ctx.createGain();
         out.gain.value = 0;
         conv.connect(out);
-        out.connect(master);
+        out.connect(world);
         reverb.slots.push({ conv, out, room: null, fed: false });
       }
       switchRoom(true);
@@ -531,7 +548,7 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
         const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = isMusic ? def.lowpassHz : (def.filterHz ?? def.frequency * 2.5);
         const gain = ctx.createGain(); gain.gain.value = 0;
         const pan = ctx.createStereoPanner();
-        source.connect(filter); filter.connect(gain); gain.connect(pan); pan.connect(master);
+        source.connect(filter); filter.connect(gain); gain.connect(pan); pan.connect(world);
         const nodes = [source, filter, gain, pan];
         let rate = 1;
         if (isMusic) {
@@ -575,7 +592,7 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
     if (!ctx || ctx.state !== 'running') return;
     const gain = ctx.createGain();
     gain.gain.value = deathMusic.volume * audio.musicVolume;
-    gain.connect(master);
+    gain.connect(world);
     const voice = { gain, sources: [], remaining: deathMusic.layers.length };
     deathVoice = voice;
     const now = ctx.currentTime;
@@ -603,7 +620,7 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
     const gain = ctx.createGain();
     gain.gain.value = 0;
     gain.gain.setTargetAtTime(closingMusic.volume * audio.musicVolume, now, closingMusic.fadeInSeconds / 3);
-    gain.connect(master);
+    gain.connect(world);
     const source = ctx.createBufferSource();
     source.buffer = score.buffer;
     source.loop = true;
@@ -643,7 +660,7 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
     if (resolve && ctx.state === 'running') {
       const chord = ctx.createGain();
       chord.gain.value = closingMusic.volume * audio.musicVolume;
-      chord.connect(master);
+      chord.connect(world);
       let remaining = closingMusic.resolve.length;
       for (const layer of closingMusic.resolve) {
         const source = playLayer(layer, now + (layer.delay ?? 0), 1, 1, chord);
