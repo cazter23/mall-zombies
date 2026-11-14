@@ -91,7 +91,7 @@ export const weapons = {
     },
 
     // Sound names (config/audio.js). Reload sounds are events in viewmodel.reload below.
-    sounds: { fire: 'stapleShot', dryFire: 'dryClick' },
+    sounds: { fire: 'stapleShot', dryFire: 'stapleDry' },
 
     // Hip-fire spread: shots land at a random spot inside a cone around the crosshair.
     // All values are the cone's half-angle in degrees. The crosshair gap shows the real cone.
@@ -247,7 +247,7 @@ export const weapons = {
       worldLightRange: 8,
     },
 
-    sounds: { fire: 'priceShot', dryFire: 'dryClick' },
+    sounds: { fire: 'priceShot', dryFire: 'priceDry' },
 
     tracerColor: 0xfff3c4, // a little price sticker streak
     viewmodel: {
@@ -374,7 +374,7 @@ export const weapons = {
       worldLightRange: 8,
     },
 
-    sounds: { fire: 'nailShot', dryFire: 'dryClick' },
+    sounds: { fire: 'nailShot', dryFire: 'nailDry' },
 
     tracerColor: 0xb8bec6, // steel nail streak
     viewmodel: {
@@ -454,7 +454,7 @@ export const weapons = {
       lightColor: 0xffddad, handLightIntensity: 0.3, handLightRange: 0.8,
       worldLightIntensity: 4, worldLightRange: 7,
     },
-    sounds: { fire: 'foamShot', dryFire: 'dryClick' },
+    sounds: { fire: 'foamShot', dryFire: 'foamDry' },
     tracerColor: 0xff8a28,
     viewmodel: {
       model: 'foamDartBlaster', hipOffset: { x: 0.18, y: -0.16, z: -0.45 },
@@ -532,7 +532,7 @@ export const weapons = {
       lightColor: 0xffb4da, handLightIntensity: 0.8, handLightRange: 1,
       worldLightIntensity: 14, worldLightRange: 10,
     },
-    sounds: { fire: 'confettiShot', dryFire: 'dryClick' },
+    sounds: { fire: 'confettiShot', dryFire: 'confettiDry' },
     tracerColor: 0xff6abc,
     viewmodel: {
       model: 'confettiCannon', hipOffset: { x: 0.18, y: -0.155, z: -0.44 },
@@ -611,7 +611,7 @@ export const weapons = {
       lightColor: 0xffd5a0, handLightIntensity: 0.25, handLightRange: 0.8,
       worldLightIntensity: 3, worldLightRange: 6,
     },
-    sounds: { fire: 'rivetShot', dryFire: 'dryClick' }, tracerColor: 0xffd5a0,
+    sounds: { fire: 'rivetShot', dryFire: 'rivetDry' }, tracerColor: 0xffd5a0,
     viewmodel: {
       model: 'rivetRifle', hipOffset: { x: 0.18, y: -0.145, z: -0.43 },
       aimYawDegrees: 8, hipPitchDegrees: 2, hipRollDegrees: 3,
@@ -680,7 +680,7 @@ export const weapons = {
       lightColor: 0xffd28a, handLightIntensity: 0.45, handLightRange: 0.9,
       worldLightIntensity: 7, worldLightRange: 8,
     },
-    sounds: { fire: 'coilShot', dryFire: 'dryClick' },
+    sounds: { fire: 'coilShot', dryFire: 'coilDry' },
     tracerColor: 0xd8a24a,
     viewmodel: {
       model: 'coilNailer', hipOffset: { x: 0.185, y: -0.155, z: -0.43 },
@@ -767,7 +767,7 @@ export const weapons = {
       lightColor: 0xff4d5a, handLightIntensity: 0.75, handLightRange: 1.0,
       worldLightIntensity: 12, worldLightRange: 10,
     },
-    sounds: { fire: 'scannerShot', beep: 'scannerBeep', dryFire: 'dryClick' }, // (beep: the checkout BEEP on top of the shot)
+    sounds: { fire: 'scannerShot', beep: 'scannerBeep', dryFire: 'scannerDry' }, // (beep: the checkout BEEP on top of the shot)
     tracerColor: 0xff2a38,
     beam: { width: 0.06, seconds: 0.2, flicker: 30 }, // the beam it fires: 5x a staple streak's width, held 0.2 s (fx/effects.js tracer)
     viewmodel: {
@@ -844,7 +844,7 @@ export const weapons = {
       lightColor: 0xcfeedd, handLightIntensity: 0.15, handLightRange: 0.6,
       worldLightIntensity: 2, worldLightRange: 4,
     },
-    sounds: { fire: 'leafBlowerPuff', dryFire: 'dryClick' },
+    sounds: { fire: 'leafBlowerPuff', dryFire: 'leafBlowerDry' },
     tracerColor: 0xbfe8c8,
     viewmodel: {
       model: 'leafBlower', hipOffset: { x: 0.17, y: -0.165, z: -0.43 },
@@ -906,7 +906,7 @@ export const weapons = {
       lightColor: 0xf4f7b8, handLightIntensity: 0.4, handLightRange: 0.8,
       worldLightIntensity: 6, worldLightRange: 6,
     },
-    sounds: { fire: 'tennisLaunch', dryFire: 'dryClick' },
+    sounds: { fire: 'tennisLaunch', dryFire: 'tennisDry' },
     tracerColor: 0xe9f27a,
     viewmodel: {
       model: 'tennisBallLauncher', hipOffset: { x: 0.17, y: -0.16, z: -0.44 },
@@ -989,7 +989,7 @@ export const weapons = {
       lightColor: 0xffb3dc, handLightIntensity: 0.6, handLightRange: 1,
       worldLightIntensity: 10, worldLightRange: 9,
     },
-    sounds: { fire: 'returnBeam', dryFire: 'dryClick' },
+    sounds: { fire: 'returnBeam', dryFire: 'returnDry' },
     tracerColor: 0xff59a9,
     viewmodel: {
       model: 'returnToSender', hipOffset: { x: 0.17, y: -0.16, z: -0.43 },
@@ -1097,7 +1097,7 @@ export const weapons = {
       lightColor: 0xfff0c0, handLightIntensity: 0.5, handLightRange: 1,
       worldLightIntensity: 6, worldLightRange: 8,
     },
-    sounds: { fire: 'stargazerShot', dryFire: 'dryClick' }, // (the shot's last layer is the bolt being worked)
+    sounds: { fire: 'stargazerShot', dryFire: 'stargazerDry' }, // (the shot's last layer is the bolt being worked)
     tracerColor: 0xfff0b0,
     viewmodel: {
       model: 'stargazer', hipOffset: { x: 0.17, y: -0.15, z: -0.42 },
@@ -1222,7 +1222,7 @@ export const weapons = {
       lightColor: 0xffc06a, handLightIntensity: 0.7, handLightRange: 1.2,
       worldLightIntensity: 8, worldLightRange: 8,
     },
-    sounds: { fire: 'bottleRocketLaunch', dryFire: 'dryClick', burst: 'bottleRocketBurst' },
+    sounds: { fire: 'bottleRocketLaunch', dryFire: 'bottleRocketDry', burst: 'bottleRocketBurst' },
     tracerColor: 0xffd23f,
     viewmodel: {
       model: 'bottleRocket', hipOffset: { x: 0.16, y: -0.16, z: -0.4 },
@@ -1332,7 +1332,7 @@ export const weapons = {
       lightColor: 0xffe6f4, handLightIntensity: 0.15, handLightRange: 0.6,
       worldLightIntensity: 1, worldLightRange: 3,
     },
-    sounds: { fire: 'balloonLaunch', dryFire: 'dryClick', burst: 'balloonPop' },
+    sounds: { fire: 'balloonLaunch', dryFire: 'balloonDry', burst: 'balloonPop' },
     tracerColor: 0xff5ec8,
     viewmodel: {
       model: 'balloonLauncher', hipOffset: { x: 0.17, y: -0.15, z: -0.42 },
@@ -1417,6 +1417,9 @@ export const weapons = {
   // width (falloff), with a wide spray that blooms the longer you hold the trigger. Weak down a hallway (tests/balance.test.js).
   bogo: {
     id: 'bogo', name: 'BOGO', fireMode: 'auto', clawOnly: true,
+    // Akimbo: a trigger per hand and no ADS (weapons/playerGun.js). Left mouse / LT fires the left gun, right mouse / RT the right one.
+    // Each gun fires every 2 x fireInterval, so ONE trigger is half the rate below; hold both and they take turns at the full rate.
+    akimbo: true,
     damage: 60, headshotMultiplier: 1.4, // round 1 (150 HP): 3 body / 2 head; ~18 shots a second (~680 sustained up close, with Coil; under 300 at 15 m)
     magazineSize: 60, startingReserve: 300, // two 30-round magazines, one per gun (3.3 s of fire)
     fireInterval: 0.055, fireBuffer: 0.1, reloadTime: 2, range: 60,
@@ -1431,10 +1434,11 @@ export const weapons = {
     spread: {
       base: 2.4, moving: 2.2, maxMovingFactor: 1.5, airborne: 3.5,
       perShot: 0.35, maxBloom: 3.5, bloomRecoveryDelay: 0.12, bloomRecovery: 7,
-      smoothing: 12, adsMultiplier: 0.55, // (right mouse: a tighter spray, never a pinpoint)
+      smoothing: 12, adsMultiplier: 0.55,
     },
-    ads: { seconds: 0.16, fovMultiplier: 0.93, moveSpeedMultiplier: 0.95,
-      offset: { x: 0, y: -0.13, z: -0.39 } }, // (the pair pulled in and up a little: nothing lines up with the eye)
+    // (Never used: an akimbo gun doesn't aim, right mouse is the right gun's trigger. Kept so the gun has the fields every gun has.)
+    ads: { seconds: 0.16, fovMultiplier: 1, moveSpeedMultiplier: 1,
+      offset: { x: 0, y: -0.15, z: -0.42 } },
     muzzleFlash: {
       seconds: 0.03, size: 0.1, coreSize: 0.045, outerOpacity: 0.75, sizeJitter: 0.25,
       forwardOffset: 0.04, outerColor: 0xff8fa8, coreColor: 0xfff3e8,
@@ -1442,34 +1446,43 @@ export const weapons = {
       lightColor: 0xffb0c0, handLightIntensity: 0.2, handLightRange: 0.7,
       worldLightIntensity: 2.2, worldLightRange: 5,
     },
-    sounds: { fire: 'bogoShot', dryFire: 'dryClick' }, tracerColor: 0xff8fa8,
+    sounds: { fire: 'bogoShot', dryFire: 'bogoDry' }, tracerColor: 0xff8fa8,
     viewmodel: {
       model: 'bogo', hipOffset: { x: 0, y: -0.15, z: -0.42 }, // (the pair is centred: each gun sits gunSpacing to its side)
       aimYawDegrees: 0, hipPitchDegrees: 1.5, hipRollDegrees: 0,
-      gunSpacing: 0.19, adsGunSpacing: 0.15, // metres from the middle to each gun, at the hip / with right mouse held
+      gunSpacing: 0.19, // metres from the middle to each gun
       gunYawDegrees: 5, gunRollDegrees: 6, // each gun turned in toward the crosshair, and canted in a little
       bodyColor: 0xe8344e, accentColor: 0xffd23f, darkColor: 0x23202a, metalColor: 0xbfc4cc,
       gripColor: 0x2a2630, sightColor: 0x7dffb0, labelColor: 0xfff6e0, // clearance red, a yellow tag, white labels
       // Each gun's own kick when it fires (on top of the pair's recoil.model): it snaps back and up, then settles.
       fire: { triggerDegrees: 26, pressSeconds: 0.018, releaseSeconds: 0.05, kickBack: 0.022, kickPitchDegrees: 9, kickSeconds: 0.09 },
-      // The reload: both guns tip down and out, the magazines drop, fresh ones snap in, both guns flick back up.
+      // The reload, one gun at a time (models/bogo.js): the LEFT gun's turn, then the RIGHT's. In its turn a gun tips in toward the middle,
+      // muzzle up and rolled out, its magazine drops, a fresh one slides up and is slapped home (the gun jumps), and it tips back;
+      // meanwhile the other gun waits, lowered. At the end both guns flick up together.
       reload: {
-        gunKeys: [
+        gunKeys: [ // (the pair as a whole only dips a little: the guns do the moving)
           { t: 0, pos: [0, 0, 0], rot: [0, 0, 0] },
-          { t: 0.14, pos: [0, -0.02, 0.03], rot: [-14, 0, 0] },
-          { t: 0.6, pos: [0, -0.025, 0.03], rot: [-16, 0, 0] },
-          { t: 0.74, pos: [0, 0.01, 0.01], rot: [8, 0, 0] },
-          { t: 0.9, pos: [0, 0, 0], rot: [0, 0, 0] },
+          { t: 0.1, pos: [0, -0.012, 0.012], rot: [-4, 0, 0] },
+          { t: 0.86, pos: [0, -0.012, 0.012], rot: [-4, 0, 0] },
+          { t: 0.96, pos: [0, 0, 0], rot: [0, 0, 0] },
           { t: 1, pos: [0, 0, 0], rot: [0, 0, 0] },
         ],
-        rollDegrees: 28, // each gun rolls outward to dump its magazine (eases in and out with the reload)
-        magazineDrop: [0.18, 0.34], // the old magazines fall away over this part of the reload...
-        magazineIn: [0.5, 0.66], // ...and the fresh ones slide up into the grips over this part
-        dropMeters: 0.22,
-        events: [
-          { at: 0.18, sound: 'bogoReloadOut' },
-          { at: 0.66, sound: 'bogoReloadIn', jolt: { up: -0.006, pitchDegrees: -2 } },
-          { at: 0.8, sound: 'bogoReloadReady', jolt: { back: 0.004, pitchDegrees: 2.5 } },
+        turns: [[0.03, 0.5], [0.43, 0.9]], // the part of the reload each gun's turn takes: [left gun], [right gun]
+        // Within a turn (0..1 through it):
+        tipIn: 0.2, tipOut: 0.82, // tips in over 0..tipIn, holds, tips back over tipOut..1
+        tipPitchDegrees: 24, rollDegrees: 38, tipYawDegrees: 14, // muzzle up, rolled outward (the magazine well toward the middle), turned in
+        tipInMeters: 0.07, tipUpMeters: 0.035, tipBackMeters: 0.04, // ...and drawn in toward the middle, up and back toward you
+        magazineDrop: [0.18, 0.36], dropMeters: 0.24, // the old magazine falls away...
+        magazineIn: [0.5, 0.66], insertMeters: 0.09, // ...a fresh one slides up into the grip
+        slapLength: 0.14, slapDegrees: 7, slapMeters: 0.012, // the slap as it seats: a quick jump down at the muzzle, and back
+        waitDipDegrees: 10, waitDropMeters: 0.035, // the gun that waits its turn drops out of the way
+        flick: [0.88, 1], flickDegrees: 9, // both guns flick up at the end, ready
+        events: [ // (left: out at 0.03 + 0.47 x 0.18, in at 0.03 + 0.47 x 0.66; right: the same in its turn)
+          { at: 0.12, sound: 'bogoReloadOut' },
+          { at: 0.34, sound: 'bogoReloadIn', jolt: { up: -0.004, pitchDegrees: -1.5, rollDegrees: 1.5 } },
+          { at: 0.52, sound: 'bogoReloadOut' },
+          { at: 0.74, sound: 'bogoReloadIn', jolt: { up: -0.004, pitchDegrees: -1.5, rollDegrees: -1.5 } },
+          { at: 0.92, sound: 'bogoReloadReady', jolt: { back: 0.004, pitchDegrees: 2.5 } },
         ],
       },
     },
@@ -1481,6 +1494,7 @@ export const melee = {
   boxCutter: {
     id: 'boxCutter',
     name: 'Box Cutter',
+    sounds: { swing: 'meleeSwing' }, // (a hit plays the guns' hitBody / killConfirm)
     damage: 150, // one-hits a round-1 zombie, 2 hits rounds 2-3, then falls off (like COD)
     range: 1.8, // meters from the eye to the target's nearest point
     hitHalfAngleDegrees: 40, // how far off-center a target can be (wider than the crosshair: forgiving)

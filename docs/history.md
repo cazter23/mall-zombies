@@ -1,5 +1,88 @@
 # Sunset Galleria: build history ("Current state")
 
+## 14 November 2026 - `npm run audition`: the gun sound audition without the dev server (`claude/audio-overhaul`)
+
+The dev server took too long to start just to listen. tools/openAudition.mjs bundles tools/audition.html (the sound engine, the gun
+configs and the page: not the 3D mall) into one 200 KB file, dist-audition/gun-sound-audition.html, and opens it in Firefox. Like
+`npm run play`, it rebuilds only when the code changed (tools/play.mjs now exports openInBrowser). It is never part of the game's builds.
+
+## 14 November 2026 - Gun sounds, round three: punch for desktop speakers (`claude/audio-overhaul`)
+
+The Confetti Cannon, Rivet Rifle and Stargazer still felt light. Punch is three things, and now the big guns have all three:
+- **A kick.** A tone that drops fast and then holds at 55-95 Hz (the new `freqTime`). Its part is driven, so the overtones
+  carry the bass on speakers too small to play it (the user listens on desktop-style speakers).
+- **A slap.** A short low-mid noise burst.
+- **Contrast.** The new `duck`: everything else (a new `world` bus) dips 5-8 dB for 0.2-0.3 s. The shot itself and the hit
+  sounds skip it. Only the rare big guns duck (Confetti, Stargazer, Return to Sender, the Bottle Rocket burst, the Party Trap);
+  automatic guns never do (it would pump).
+
+Version B plays in the game. tools/audition.html has A (tighter) and C (bigger) of each, at the same loudness, to pick by ear.
+Measured: the order of loudness held, no two guns above 0.70 alike, and the stress test peaks at -1.0 dBFS.
+
+## 14 November 2026 - Gun sounds, round two: less echo, more punch, a BOGO per gun (`claude/audio-overhaul`)
+
+The first listen found the echo overdone and several guns too light. The fixes:
+- **Rooms:** every room is shorter and drier (hall wet 0.22 -> 0.10, Atrium 2.6 -> 2.0 s), and every gun's send into it was cut
+  to about a third. Shot tails went from 0.8-1.0 s to 0.3-0.5 s.
+- **Punch:** the master compressor's attack went from 0 to 6 ms, so a shot's first milliseconds pass before it acts (the limiter
+  and soft clip still hold the peak under 0 dBFS). The Confetti Cannon, Rivet Rifle and Stargazer got a wide crack and a hard
+  driven kick that drops fast, plus a sub; the rivet keeps its TANG.
+- **Balloon Launcher:** a wobbly rubber squeak and the neck's "brrrp". The pop is sharper.
+- **BOGO:** it broke when the BOGO got a trigger per gun (`claude/bogo`): the sound alternated left/right on every shot, even
+  with one trigger held. It now sits on the side of the gun that fired (`sidePan`, playerGun passes `side`). The shot is a short
+  driven SMG "pap" instead of a 25 ms tick.
+
+Measured: no two guns above 0.83 alike, and the stress test peaks at -1.0 dBFS (docs/gun-sounds.md).
+
+## 14 November 2026 - Audio overhaul: every gun gets its own synthesized voice, and the mall gets rooms (`claude/audio-overhaul`)
+
+Every gun used 2-9 plain layers (a noise burst or a tone sweep), a ±5% pitch wobble, and one shared dry click. Nothing had a
+room, crunch or a voice limit, and an upgraded gun sounded like a stock one. It is all still generated in code, and no gameplay
+number changed.
+- **Engine** (audio/sound.js, the pure audio/recipes.js and audio/roomImpulse.js):
+  - Each play is one voice, capped per sound and in total; the oldest is stolen with a 12 ms fade.
+  - New layer types: `click` (a few ms of crack or an impulse tick, four random variants), `metal` (inharmonic partials for
+    springs, rivets and bells) and `fm` (boings, rattles, buzzes). Noise layers can sweep their filter.
+  - Each layer can be nudged a little on every play (`vary`). Drive (tanh saturation) works per sound, per part or per layer.
+  - Recipes can have named parts (crack / body / mech).
+  - A shared room reverb: two convolvers with generated impulses, crossfaded as you move between areas (config/audio.js
+    `rooms` / `roomOf`, from the grade zones).
+  - A limiter and a soft clip after the compressor, so nothing passes 0 dBFS.
+  - `play()` returns `{ stop() }`, so the scanner's whine stops on a released scan.
+  - Every old recipe still plays unchanged.
+- **Guns** (config/gunSounds.js; design notes and the measured table: docs/gun-sounds.md):
+  - Each gun has a fire sound with its own identity, its own dry fire, reworked reload steps in the same materials, and its
+    impacts.
+  - The Tennis Ball's bounces climb in pitch along a chain. BOGO's shots alternate hands.
+  - The Kiosk Sentry has its own `sentryShot`, and the Party Trap its own blast.
+  - The hit feedback is now a tick, a desk-bell ding, and a cash-register cha-ching.
+- **Upgrades** come from data (`soundUpgrades`, picked by weapons/upgrades.js soundVariantOf):
+  - Tiers make the body fuller and deeper; Premium and Platinum add a sheen, and Platinum a sub thump.
+  - Renewals add a touch more.
+  - Each Build-A-Blaster stuffing adds its flavour (on every few shots of an automatic gun).
+  - The last 3 rounds play a lighter mechanism and a tick.
+- **Settings > Audio > Room echo** turns the reverb off for slow PCs.
+- **Dev-only audition page:** tools/audition.html under `npm run dev`. It plays every gun's sounds at their real timing in any
+  room, compares them with the old ones (tools/auditionLegacy.js, kept until the new sounds are signed off), and measures them.
+
+Measured (offline, dry RMS = the loudest 50 ms in dBFS): BOGO per shot -26.2, Sentry -25.1, Staple Gun -24.7, Price Gun -23.4,
+Foam Dart -23.1, Leaf Blower -21.7, Balloon -20.0, Nail Gun -19.5, Rivet Rifle -19.1, Tennis -18.7, Barcode Scanner -16.5,
+Coil Nailer -16.3, Bottle Rocket -15.7 (its burst -12.5), Stargazer -14.4, Confetti Cannon -14.3, Return to Sender -12.2.
+- No two guns score above 0.71 alike; Rivet Rifle vs Coil Nailer scores 0.00.
+- BOGO at 18/s with Platinum +5, glitter and hit sounds peaks at -1.1 dBFS, has no gaps, and renders 6.4x faster than real time
+  offline.
+- Tests: tests/gunSounds.test.js.
+## 14 November 2026 - BOGO: a trigger per gun, no zoom, a one-at-a-time reload (`claude/bogo-triggers`)
+
+From playtesting: right mouse aimed the BOGO, and its ADS zoom (fovMultiplier 0.93) took ~8 degrees off a 120 FOV for a gun that never lines up
+with the eye; and the reload (both guns roll out and drop their magazines at once) read poorly. Now `akimbo: true` (config/weapons.js) gives it a
+trigger per hand and no ADS (weapons/playerGun.js akimboTriggers): left mouse fires the left gun, right mouse the right; on a controller LT is the
+left gun and RT the right (core/input.js actionDownOn/actionPressedOn ask one device, since 'fire' and 'aim' swap sides between them). Each gun
+fires every 2 x fireInterval: one trigger is ~9 shots a second, both together take turns at the old ~18. Damage and spread are unchanged (the
+hip spray; the balance test now rates it at the hip). The reload (models/bogo.js, viewmodel.reload.turns) goes one gun at a time: the left gun
+tips in, muzzle up and rolled out, drops its magazine and slaps in a fresh one while the right waits lowered, then the right, then both flick up;
+the reload sound events play once per magazine (the same sound names, so the audio overhaul's recipes still apply).
+
 ## 13 November 2026 - The game gets an icon (`claude/icon`)
 
 The title screen's logo as an "SG" monogram (Righteous, white with the pink offset shadow and glow, on the dark plum): src/icons/.

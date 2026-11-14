@@ -40,7 +40,8 @@ function firefox() {
   return folders.map((folder) => join(folder, 'Mozilla Firefox', 'firefox.exe')).find((path) => existsSync(path));
 }
 
-function open(file) {
+// (also tools/openAudition.mjs)
+export function openInBrowser(file) {
   const defaultBrowser = { win32: 'explorer.exe', darwin: 'open' }[process.platform] ?? 'xdg-open';
   const browser = process.platform === 'win32' ? firefox() : null;
   const [command, target] = browser ? [browser, pathToFileURL(file).href] : [defaultBrowser, file];
@@ -60,7 +61,7 @@ function play() {
     console.error('\nThe build failed, so this opens the LAST WORKING version, without your newest changes.');
     process.exitCode = 1; // (play.cmd stays open so this can be read)
   }
-  open(GAME);
+  openInBrowser(GAME);
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) play();

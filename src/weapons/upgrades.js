@@ -64,6 +64,11 @@ export function renewalsOf(mods = []) {
   return mods.find((m) => m.id === 'renewal')?.count ?? 0;
 }
 
+/** What a gun's mods do to its shot's SOUND (config/gunSounds.js soundUpgrades): its tier, renewals and build's stuffing. */
+export function soundVariantOf(mods = []) {
+  return { tier: tierOf(mods), renewals: renewalsOf(mods), stuffing: mods.find((m) => m.id === 'build')?.build?.stuffing ?? null };
+}
+
 export function attachmentsOf(mods = []) {
   const fitted = {};
   for (const m of mods) if (m.attachment) fitted[attachmentById(m.attachment).slot] = m.attachment;

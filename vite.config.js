@@ -8,7 +8,7 @@ const forwardSlashes = (path) => path.replaceAll('\\', '/');
 
 // Folders the game never loads from. Absolute, from THIS checkout, on purpose: a `**/.claude/**` glob would also match every file of a
 // checkout that itself sits in .claude/worktrees/ and silently turn off its hot reload.
-const notSource = ['.claude', 'dist', 'dist-single', 'references', 'scratch'].map((folder) => forwardSlashes(resolve(root, folder)));
+const notSource = ['.claude', 'dist', 'dist-single', 'dist-audition', 'references', 'scratch'].map((folder) => forwardSlashes(resolve(root, folder)));
 
 export const isNotSource = (path) => {
   const file = forwardSlashes(path);

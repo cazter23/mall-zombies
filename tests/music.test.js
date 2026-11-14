@@ -108,7 +108,7 @@ test('End of Shift schedules once at death, anchors the bell to the receipt, res
     const bellIndex = deathMusic.layers.findIndex((layer) => layer.anchor === 'receipt');
     assert.equal(voices[bellIndex].started[0], 11.6);
     assert.ok(voices.some((source) => source.started[0] > 14), 'ending chords are scheduled in the future');
-    const bus = f.nodes.filter((node) => node.kind === 'gain')[1];
+    const bus = f.nodes.filter((node) => node.kind === 'gain')[2]; // (after the master and the world bus: audio/sound.js unlock)
     sound.setMusicVolume(0);
     assert.equal(bus.gain.value, 0);
     sound.setMusicVolume(0.5);
@@ -123,7 +123,7 @@ test('End of Shift schedules once at death, anchors the bell to the receipt, res
     assert.equal(replacementBus.disconnected, undefined, 'old callbacks cannot disconnect the replacement');
     sound.stopDeathMusic();
     for (const source of f.sources.slice(voices.length)) source.onended();
-    assert.ok(f.nodes.filter((node) => node.kind === 'gain').every((node, i) => i === 0 || node.disconnected));
+    assert.ok(f.nodes.filter((node) => node.kind === 'gain').every((node, i) => i <= 1 || node.disconnected)); // (master and the world bus stay)
   } finally { window.AudioContext = previous; audio.musicVolume = volume; }
 });
 

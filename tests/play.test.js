@@ -22,6 +22,15 @@ test('the launcher watches everything that goes into the single file', () => {
   assert.ok(files.every((file) => existsSync(file)), 'and every one exists, or the launcher would crash reading its date');
 });
 
+test('npm run audition opens the gun sound audition as one file, and the dev server ignores its output', () => {
+  const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
+  assert.equal(pkg.scripts.audition, 'node tools/openAudition.mjs');
+  const script = readFileSync('tools/openAudition.mjs', 'utf8');
+  for (const file of [...script.matchAll(/'(tools\/[\w.]+)'/g)].map((m) => m[1])) assert.ok(existsSync(file), `${file} (it watches it for changes)`);
+  assert.equal(isNotSource(join(root, 'dist-audition/gun-sound-audition.html')), true);
+  assert.match(readFileSync('.gitignore', 'utf8'), /^dist-audition\/$/m);
+});
+
 test('play.cmd runs the launcher from its own folder', () => {
   const script = readFileSync('play.cmd', 'utf8');
   assert.match(script, /cd \/d "%~dp0"/);
