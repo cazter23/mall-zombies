@@ -194,3 +194,30 @@ test('Continue with a Second Chance already spent does not announce "Second Chan
   assert.deepEqual(t.hud.calls.slice(before).filter(([name]) => name === 'setSecondChance').map(([, on]) => on).slice(-1), [false], 'the HUD tag is off');
 });
 
+test('a tennis ball thrown with your face against a wall stays on your side of it', (context) => {
+  const t = quietGame(context);
+  const { g } = t;
+  g.gun.give(weapons.tennisBallLauncher);
+  t.tick(60);
+  // Walk into the start room's west wall (HOFFMAN'S, locked, is behind it).
+  t.standAt(-3, 14, 90);
+  t.input.held.add('KeyW');
+  t.tick(90);
+  t.input.held.delete('KeyW');
+  t.tick(10);
+  const wallSide = g.player.position.x;
+  const zombie = t.spawn('shopper', wallSide - 2.2, g.player.position.z);
+  zombie.updateHitboxes();
+  const points = g.wallet.points;
+  t.press('Mouse0');
+  let furthest = Infinity;
+  for (let i = 0; i < 120; i++) {
+    for (const ball of g.balls.list) furthest = Math.min(furthest, ball.position.x);
+    t.tick();
+  }
+  assert.ok(Number.isFinite(furthest), 'the scenario: a ball was thrown');
+  assert.ok(furthest > wallSide - 0.6, `the ball got to x ${furthest.toFixed(2)}, through the wall (you stood at ${wallSide.toFixed(2)})`);
+  assert.equal(zombie.health, zombie.maxHealth, 'the zombie in the locked store was not hit');
+  assert.equal(g.wallet.points, points, 'and nothing was paid for it');
+});
+

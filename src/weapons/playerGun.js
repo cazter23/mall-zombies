@@ -244,6 +244,14 @@ export function createPlayerGun({
     kick(d, aim);
     const start = origin.clone().addScaledVector(throwDirection, projectile.startOffset);
     start.y += projectile.startDrop;
+    // The launch point is in front of the eye, further than you are wide: with your face against a wall it would already be on the
+    // far side (and the ball would fly on through the next room). A wall between the eye and the launch point pulls it back to
+    // this side, where the ball bounces off it. (Walls only: a zombie that close is simply hit.)
+    const toStart = start.clone().sub(origin);
+    const reach = toStart.length();
+    toStart.divideScalar(reach);
+    const wall = castShot(origin, toStart, reach + projectile.radius, colliders, []);
+    if (wall.distance < reach + projectile.radius) start.copy(origin).addScaledVector(toStart, Math.max(0, wall.distance - projectile.radius * 2));
     // Zeroed: angle the throw so the ball crosses the crosshair line `zeroDistance` out (it leaves below the eye and falls), lifted by the drop
     // gravity gives it over that flight, as the ball does when it seeks its next zombie (weapons/ballistics.js).
     if (projectile.zeroDistance) {
