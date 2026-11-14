@@ -10,6 +10,9 @@ import { resolveGun } from '../src/weapons/gunStats.js';
 import { withTier } from '../src/weapons/upgrades.js';
 import { buildOf } from '../src/config/workshop.js';
 import { feel } from '../src/config/feel.js';
+import { clawMachine } from '../src/config/clawMachine.js';
+import { bossVouchers } from '../src/config/bosses.js';
+import { kiosk } from '../src/config/kiosk.js';
 import { rampHeightAt, overlapsSolid } from '../src/world/collision.js';
 import { headlessGame } from './helpers/headlessGame.js';
 
@@ -390,3 +393,60 @@ test('a boss\'s backup counts as that type\'s first sighting: the intro carries 
   assert.deepEqual(intros, [['mallWalker', 'mallWalker']], 'the intro names the zombie that arrived');
   assert.equal(g.guide.pages().find((page) => page.entry.id === 'mallWalker').seen, true, 'its Survival Guide page is marked seen');
 });
+
+test('GRAB-A-GUN: a save taken during a site\'s last grab comes back sold out, not open with "0 left"', (context) => {
+  const storage = memoryStorage();
+  const setup = () => {
+    const t = headlessGame({ saveStorage: storage });
+    context.after(() => t.g.map.dispose());
+    t.tick();
+    t.g.rounds.update = () => {};
+    t.g.zombies.clear();
+    return { ...t, claw: t.g.features.instanceOf('clawMachine') };
+  };
+  const stand = ({ g, claw, tick }) => {
+    const { position, normal } = claw.site.cabinet;
+    const floorY = clawMachine.sites.find((site) => site.id === claw.site.id).floorY;
+    g.player.teleport({ position: new THREE.Vector3(position.x + normal.x * 1.3, floorY, position.z + normal.z * 1.3), yaw: Math.atan2(normal.x, normal.z) });
+    g.player.pitch = 0;
+    tick();
+  };
+  const a = setup();
+  a.g.wallet.earn(50_000);
+  a.g.map.areaUnlocks.unlock('hallway');
+  a.tick(60);
+  const real = Math.random;
+  context.after(() => { Math.random = real; });
+  Math.random = () => 0.99; // (after the map is built: no plush)
+  for (let i = 0; i < clawMachine.stock - 1; i++) {
+    stand(a);
+    a.press('KeyF', 20); // pay
+    a.tick(5);
+    a.press('KeyF', 1); // drop
+    a.tick(Math.ceil(clawMachine.liftSeconds * 60) + 5);
+    a.press('KeyF', 20); // take
+    a.tick(40);
+  }
+  stand(a);
+  a.press('KeyF', 20); // the site's last grab
+  assert.equal(a.claw.stock, 0, 'the scenario: the last grab is paid and under way');
+  a.g.rounds.skipRound(); // (the round's last zombie dies during the grab: the snapshot is taken now)
+  a.tick(1);
+  Math.random = real;
+  a.g.state.assisted = false;
+  assert.equal(a.g.saveGame.saveAndQuit(), true);
+
+  const b = setup();
+  assert.equal(b.g.saveGame.load(), true);
+  b.tick(2);
+  const points = b.g.wallet.points;
+  stand(b);
+  b.press('KeyF', 20);
+  assert.equal(b.g.wallet.points, points, 'a sold-out machine takes no money');
+  assert.ok(b.claw.stock >= 0, `stock went to ${b.claw.stock}`);
+  assert.equal(b.claw.phase, 'closed', 'out of service until the next round');
+  b.g.events.emit('roundStart', { round: b.g.rounds.round + 1 });
+  assert.equal(b.claw.phase, 'idle', 'and restocked with the round, as a sold-out machine is');
+  assert.equal(b.claw.stock, clawMachine.stock);
+});
+

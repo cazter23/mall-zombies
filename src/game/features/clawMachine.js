@@ -565,6 +565,12 @@ export function buildClawMachine(feature, { scene, map, events, pricing, interac
       }
       grabsHere = data.grabsHere;
       stock = data.stock;
+      // A save taken while the site's last grab was under way holds a sold-out machine (the grab itself is not kept): out of
+      // service until the next round, as it would have been once that grab was over. (Never open with nothing left.)
+      if (stock <= 0) {
+        phase = 'closed';
+        closedReason = 'soldOut';
+      }
       refreshScreen();
     },
 
