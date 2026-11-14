@@ -9,6 +9,7 @@ import { atmosphere } from '../src/config/environment.js';
 import { createMapKit } from '../src/world/mapKit.js';
 import { buildMallAtmosphere } from '../src/maps/mall/atmosphere.js';
 import { LAYOUT } from '../src/maps/mall/mall.js';
+import { rampHeightAt, markCollidersChanged } from '../src/world/collision.js';
 
 const bounds = (a, b) => new THREE.Box3(new THREE.Vector3(...a), new THREE.Vector3(...b));
 
@@ -219,4 +220,62 @@ test('Web Audio ambience reuses voices, fades and disconnects them even if pause
       assert.ok(nodes.filter(n => n.pan).at(-1).disconnected, `${name} releases its spatial panner`);
     }
   } finally { window.AudioContext = previous; }
+});
+
+// A zombie's shadow does not read the whole collider list every frame: it keeps the few colliders around where it last
+// looked. The shadow must still be exactly the one a full scan gives, wherever it walks and whenever a door changes the list.
+test('contact shadows: the same shadow as a full scan along a walk through the real mall, for a fraction of the collider reads', () => {
+  const t = headlessGame(), { g } = t;
+  t.tick(); g.debug.run('doors'); t.tick(400);
+  const colliders = g.colliders;
+  const kept = createContactShadows(new THREE.Scene(), colliders), full = createContactShadows(new THREE.Scene(), colliders);
+  const a = new THREE.Matrix4(), b = new THREE.Matrix4();
+  const walker = { state: 'chasing', position: new THREE.Vector3(), prevPosition: new THREE.Vector3() };
+  // Start room -> hallway -> the foot of the escalator, up its surface, then along level 2: 6 cm steps (a zombie's frame).
+  const ramp = g.map.escalator.ramp;
+  const rampX = (ramp.minX + ramp.maxX) / 2, rampZ = (ramp.minZ + ramp.maxZ) / 2;
+  const along = (s) => (ramp.axis === 'x' ? [ramp.minX + (ramp.maxX - ramp.minX) * s, rampZ] : [rampX, ramp.minZ + (ramp.maxZ - ramp.minZ) * s]);
+  const legs = [
+    (s) => [0, 0, 12 - 10 * s], (s) => [-14 * s, 0, 2], // the start room, the hallway
+    (s) => { const [x, z] = along(s); return [x, rampHeightAt(ramp, x, z) ?? 0, z]; }, // riding the escalator
+    (s) => [-8 + 16 * s, 6.3, 1], () => [8, 6.3, 1], // level 2, then standing still
+  ];
+  let frames = 0, shown = 0;
+  const heights = new Set();
+  for (const [leg, at] of legs.entries()) {
+    for (let i = 0; i <= 250; i++) {
+      walker.prevPosition.copy(walker.position);
+      walker.position.set(...at(i / 250));
+      kept.update([walker]);
+      full.update([{ ...walker }]); // (a zombie never seen before has no colliders remembered: a full scan)
+      assert.equal(kept.mesh.count, full.mesh.count, `leg ${leg} step ${i}: shown or not`);
+      frames++;
+      if (!kept.mesh.count) continue;
+      shown++;
+      kept.mesh.getMatrixAt(0, b); full.mesh.getMatrixAt(0, a);
+      assert.deepEqual(b.elements, a.elements, `leg ${leg} step ${i}: the same shadow as a full scan`);
+      heights.add(Math.round(b.elements[13]));
+    }
+  }
+  assert.ok(shown > frames * 0.5 && heights.size >= 4, `${shown} of ${frames} frames drew a shadow, on ${heights.size} heights`);
+
+  // How often a collider is looked at (through each box's `max`): far less than every collider every frame.
+  let reads = 0;
+  for (const box of colliders) { const max = box.max; Object.defineProperty(box, 'max', { configurable: true, get() { reads++; return max; } }); }
+  const again = createContactShadows(new THREE.Scene(), colliders);
+  const stroll = { state: 'chasing', position: new THREE.Vector3(0, 0, 12), prevPosition: new THREE.Vector3(0, 0, 12) };
+  for (let i = 0; i < 200; i++) { stroll.prevPosition.copy(stroll.position); stroll.position.z -= 0.05; again.update([stroll]); }
+  assert.ok(reads < colliders.length * 200 * 0.25, `${reads} collider looks in 200 frames (a full scan each frame: at least ${colliders.length * 200})`);
+
+  // A collider list that changes is noticed at once (a door: markCollidersChanged), even under a zombie standing still.
+  again.update([stroll]); again.mesh.getMatrixAt(0, b);
+  const floorY = b.elements[13];
+  const crate = bounds([stroll.position.x - 1, 0, stroll.position.z - 1], [stroll.position.x + 1, 0.05, stroll.position.z + 1]);
+  colliders.push(crate); markCollidersChanged(colliders);
+  again.update([stroll]); again.mesh.getMatrixAt(0, b);
+  assert.ok(Math.abs(b.elements[13] - floorY - 0.05) < 1e-6, 'the shadow steps up onto a box that appeared under it');
+  crate.max.y = 0.07; // (a box changing HEIGHT in place, as a rolling shutter does, needs no notice)
+  again.update([stroll]); again.mesh.getMatrixAt(0, b);
+  assert.ok(Math.abs(b.elements[13] - floorY - 0.07) < 1e-6);
+  kept.dispose(); full.dispose(); again.dispose();
 });
