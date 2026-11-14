@@ -124,3 +124,26 @@ test('Employee Discount does not outlive Save & Quit: after Continue the prices 
   assert.equal(g.pricing.priceOf('door', 'megaMart'), full, 'so nothing is discounted either');
 });
 
+test('Store-Wide Clearance never kills a boss, not even one the Barcode Scanner has RUNG UP', (context) => {
+  const t = headlessGame();
+  context.after(() => { t.g.resetRun(); t.g.map.dispose(); });
+  const { g } = t;
+  g.health.invulnerable = true;
+  t.tick(2);
+  g.map.areaUnlocks.unlock('hallway', { instant: true });
+  g.rounds.jumpTo(9);
+  t.tick(5);
+  const clearOthers = (keep) => { for (const z of g.zombies.zombies) if (z.isAlive && z !== keep) z.takeHit({ damage: z.health + 1, part: 'body', source: 'hazard' }); };
+  clearOthers(null);
+  const boss = g.bosses.summon('guard');
+  for (let i = 0; i < 600 && boss.state === 'spawning'; i++) { t.tick(1); clearOthers(boss); }
+  boss.health = boss.maxHealth * 0.3;
+  const mark = weapons.barcodeScanner.rungUp;
+  boss.applyRungUp(mark.seconds, mark.damageTaken);
+  g.player.teleport({ position: boss.position.clone().setY(0), yaw: 0 });
+  g.powerUps.debugDrop('storeWideClearance', boss.position);
+  t.tick(2);
+  assert.ok(boss.health < boss.maxHealth * 0.3, 'the scenario: the Clearance reached the boss');
+  assert.equal(boss.isAlive, true, 'heavily wounded, never killed (a clearance kill pays nothing)');
+});
+
