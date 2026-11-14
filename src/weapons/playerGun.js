@@ -31,6 +31,8 @@ import { findInCone, blowAway, createBlastPay } from './coneBlast.js';
 import { createScopeSway } from './scope.js';
 import { findInBlast, selfBlastDamage } from './blast.js';
 import { impacts } from '../config/impacts.js';
+import { soundVariantOf } from './upgrades.js';
+import { soundUpgrades } from '../config/gunSounds.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 const MAX_SLOTS = 2;
@@ -72,6 +74,7 @@ export function createPlayerGun({
   };
   let slots = [makeSlot(startDef)];
   let current = 0; // index of the gun in hand
+  let chargeVoice = null; // the charge sound playing (the Barcode Scanner's whine), so a cancelled scan can stop it
 
   // A gun handed over at Build-A-Blaster: out of the loadout until collect() brings it back. Keeps its own ammo.
   let away = null;
@@ -118,8 +121,13 @@ export function createPlayerGun({
       side() * (r.yawDegrees ?? 0) * DEG_TO_RAD * cameraScale * (0.5 + Math.random() * 0.5),
     );
     viewmodel.fire(ads, d); // gun kick + muzzle flash using this shot's resolved stats (visual only)
-    if (sound) sound.play(d.sounds.fire);
-    if (sound && d.sounds.beep) sound.play(d.sounds.beep); // (the Barcode Scanner's checkout BEEP, on top of the shot)
+    if (sound) {
+      // The shot's sound carries its upgrades (tier, renewals, stuffing) and, on the last few rounds, a lighter mechanism + a tick.
+      const weapon = slots[current]?.weapon;
+      const lowAmmo = !!weapon && !d.fuel && d.magazineSize > soundUpgrades.lowAmmoMinMagazine && weapon.magazine <= feel.effects.lowAmmoThreshold;
+      sound.play(d.sounds.fire, { variant: { ...soundVariantOf(d.modList), lowAmmo } });
+      if (d.sounds.beep) sound.play(d.sounds.beep); // (the Barcode Scanner's checkout BEEP, on top of the shot)
+    }
     return ads;
   }
 
@@ -228,8 +236,8 @@ export function createPlayerGun({
           if (killed) sound.play('killConfirm');
         }
       },
-      onBounce({ point, normal, target }) {
-        if (sound) sound.play(projectile.bounceSound);
+      onBounce({ point, normal, target, ball }) {
+        if (sound) sound.play(projectile.bounceSound, { step: Math.max(0, (ball?.bounces ?? 1) - 1) }); // (climbs in pitch along the chain)
         if (!target) effects.puff(point, normal);
       },
     });
@@ -690,8 +698,12 @@ export function createPlayerGun({
       });
       if (!wasReloading && slot.weapon.isReloading) onReload?.({ weaponId: slot.def.id });
       if (slot.weapon.justStartedCharging && sound && slot.def.charge?.sound) {
-        sound.play(slot.def.charge.sound);
+        chargeVoice?.stop?.();
+        chargeVoice = sound.play(slot.def.charge.sound);
       }
+      // A scan let go of before it completed (or a gun switch/reload) cuts its whine off.
+      if (chargeVoice && !slot.weapon.isCharging && result !== 'fire') { chargeVoice.stop?.(); chargeVoice = null; }
+      if (result === 'fire') chargeVoice = null;
       if (result === 'fire') {
         player.blockSprint(feel.sprint.fireBlocksSprintSeconds);
         this.lastShot = fire(slot);

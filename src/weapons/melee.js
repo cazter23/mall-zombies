@@ -88,7 +88,7 @@ export function createMelee({ def, stats, player, input, getWeapon, shootables, 
     player.meleeTurnLimit = def.commitTurnDegrees * DEG_TO_RAD;
     player.jumpBuffer = 0;
     getWeapon().cancelReload(); // the classic COD tradeoff: knifing interrupts a reload
-    if (sound) sound.play('meleeSwing');
+    if (sound) sound.play(def.sounds.swing);
 
     // Lunge at a target that's just out of reach (not while sliding, prone or airborne).
     if (player.stance === 'slide' || player.stance === 'prone' || !player.grounded) return;

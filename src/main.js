@@ -67,7 +67,7 @@ import { createAutoGraphics } from './game/autoGraphics.js';
 import { wireRunIntro } from './game/runIntro.js';
 import { atmosphere } from './config/environment.js';
 import { createPostProcessing } from './fx/postProcessing.js';
-import { createZoneGrading } from './fx/zoneGrading.js';
+import { createZoneGrading, gradeZoneAt } from './fx/zoneGrading.js';
 import { setRimDaylight, setStragglerPulse, syncStragglerHighlights } from './zombies/zombieRim.js';
 import { createDetailCulling } from './fx/detailCulling.js';
 import { createRoomCulling } from './fx/roomCulling.js';
@@ -238,6 +238,8 @@ const gradeAt = (frameTime) => {
   scene.fog.density = grade.fog;
   scene.fog.color.setRGB(grade.fogColor[0], grade.fogColor[1], grade.fogColor[2], THREE.SRGBColorSpace);
   setRimDaylight(grade.exposure); // (zombie edges: dark in bright areas, a light rim in dim ones: zombies/zombieRim.js)
+  // The room reverb follows the same areas (config/audio.js roomOf): the Atrium rings, the corridors are tight, the lot is dry.
+  sound.setRoom(gradeZoneAt(map.gradeZones, camera.position));
   return grade;
 };
 const firstLaunch = !hasSavedSettings(); // (read before anything is saved)

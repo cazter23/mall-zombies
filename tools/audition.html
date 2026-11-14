@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gun Sound Audition</title>
+<!-- DEV ONLY (npm run dev, then /tools/audition.html): every gun's sounds through the real engine, old vs new, per room,
+     plus an offline Measure table. Never part of a build (vite builds index.html only). -->
+<style>
+  :root { --bg: #17131c; --card: #231d2b; --ink: #f4ecdf; --dim: #b4a8bd; --accent: #ff8f5a; --line: #3a3045; --on: #ffcf5a; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 system-ui, sans-serif; }
+  header { position: sticky; top: 0; z-index: 2; background: #1d1724; border-bottom: 1px solid var(--line); padding: 10px 16px;
+    display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+  h1 { font-size: 17px; margin: 0 12px 0 0; color: var(--accent); }
+  label { color: var(--dim); display: inline-flex; gap: 6px; align-items: center; }
+  select, input[type=range] { background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; }
+  button { background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 5px 9px; cursor: pointer; font: inherit; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); color: #1a1010; border-color: var(--accent); font-weight: 600; }
+  .seg button.on { background: var(--on); color: #1a1010; border-color: var(--on); }
+  main { padding: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+  .card h2 { margin: 0 0 2px; font-size: 15px; }
+  .card .what { color: var(--dim); font-size: 12px; margin-bottom: 8px; }
+  .row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .row .label { color: var(--dim); font-size: 12px; width: 100%; }
+  #report-wrap { padding: 0 16px 24px; }
+  #report { white-space: pre; overflow-x: auto; background: #0f0c12; border: 1px solid var(--line); border-radius: 8px; padding: 12px; font: 12px/1.35 ui-monospace, monospace; }
+  #status { color: var(--dim); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Gun Sound Audition</h1>
+  <button id="unlock" class="primary">Start audio</button>
+  <span class="seg" id="engine"><button data-v="new" class="on">New</button><button data-v="old">Old</button></span>
+  <label>Room <select id="room"></select></label>
+  <label>Tier <select id="tier"><option value="standard">Standard</option><option value="deluxe">Deluxe</option>
+    <option value="premium">Premium</option><option value="platinum">Platinum</option><option value="platinum5">Platinum + 5 renewals</option></select></label>
+  <label>Build <select id="stuffing"><option value="">none</option></select></label>
+  <label><input type="checkbox" id="lowAmmo"> Low ammo</label>
+  <label>Volume <input type="range" id="volume" min="0" max="1" step="0.05" value="0.55"></label>
+  <button id="measure">Measure</button>
+  <span id="status"></span>
+</header>
+<main id="cards"></main>
+<div id="report-wrap"><pre id="report">Measure renders every sound offline through the real engine and prints the table here.</pre></div>
+<script type="module" src="./audition.js"></script>
+</body>
+</html>

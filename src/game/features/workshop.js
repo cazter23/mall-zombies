@@ -61,7 +61,7 @@ export function buildWorkshop(bench, { map, gun, pricing, interactions, events, 
       if (!zombies.zombies.some(z => nearby(z, position, trap.triggerRadius) && clearPath(z, position))) continue;
       removeTrap(i);
       effects.confetti(position, up, { ...trap.pop, ...trap.blastPop });
-      if (player.position.distanceTo(position) <= trap.soundRange) sound?.play('confettiShot');
+      if (player.position.distanceTo(position) <= trap.soundRange) sound?.play(trap.sound);
       const targets = zombies.zombies.filter(z => nearby(z, position, trap.blastRadius) && clearPath(z, position));
       targets.sort((a, b) => a.position.distanceToSquared(position) - b.position.distanceToSquared(position));
       for (const target of targets.slice(0, trap.maxTargets)) {
