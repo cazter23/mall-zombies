@@ -698,6 +698,11 @@ export function createPlayerGun({
       }
 
       const slot = slots[current];
+      // The gun on your hip is not frozen in time: its fire delay runs out and a tank refills by itself (weapons/fuel.js).
+      // Hands off it: nothing fires, and a reload neither starts nor carries on.
+      for (const other of slots) {
+        if (other !== slot) other.weapon.update(dt, { triggerPressed: false, reloadPressed: false, blocked: true, reloadPaused: true });
+      }
       const busy = blocked || switching !== null;
       const pair = slot.akimbo ? akimboTriggers(slot, dt) : null; // (read before aim.update: right mouse is a trigger here, not ADS)
       slot.aim.update(dt, !busy && !pair); // melee/vaulting also lower ADS; no snap during a committed action

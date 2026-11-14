@@ -251,3 +251,35 @@ test('Build-A-Blaster counts a kill for the gun that made it, not the gun in you
   assert.equal(buildOf(g.gun.modsFor('stapleGun')).confirmed ?? 0, 0, 'the staple gun\'s build has none of them');
 });
 
+test('a holstered gun is not frozen in time: its fire delay runs out and the Leaf Blower\'s tank refills', (context) => {
+  const t = quietGame(context);
+  const { g } = t;
+  t.standAt(0, 12, 0);
+  g.gun.give(weapons.stargazer);
+  t.tick(60);
+  let shots = 0;
+  g.events.on('shot', () => { shots += 1; });
+  t.press('Mouse0');
+  assert.equal(shots, 1, 'the scenario: one Stargazer round fired');
+  t.press('Digit1');
+  t.tick(600); // ten seconds with the staple gun out
+  t.press('Digit2');
+  for (let i = 0; i < 120 && (g.gun.isSwitching || g.gun.def.id !== 'stargazer'); i++) t.tick();
+  t.press('Mouse0');
+  t.tick(12);
+  assert.equal(shots, 2, 'ten seconds later the first click fires');
+
+  g.gun.reset();
+  t.tick();
+  g.gun.give(weapons.leafBlower);
+  t.tick(60);
+  t.input.held.add('Mouse0');
+  t.input.pressed.add('Mouse0');
+  t.tick(60 * 8);
+  t.input.held.delete('Mouse0');
+  const blower = g.gun.weaponFor('leafBlower');
+  assert.ok(blower.magazine < weapons.leafBlower.fuel.restartAt, 'the scenario: the tank ran dry');
+  t.press('Digit1');
+  t.tick(600);
+  assert.equal(blower.magazine, g.gun.defOf('leafBlower').magazineSize, 'ten seconds in the holster: a full tank (config fuel.regenPerSecond)');
+});
