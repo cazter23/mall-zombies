@@ -282,6 +282,12 @@ export function collectSaleSpots({ map, features, gun, warranty, wardrobe, equip
       if (zones[f.zone]?.open && !wardrobe.owns(f.item)) push(f.position, f.normal, 'wardrobe', f.item, f.zone);
     }
   }
+  // The arenas' WEAR-O-MATIC (its feature is in map.features only while its arena is on): worth a sale while anything is unbought.
+  if (cats.has('wearOMatic') && wardrobe && Object.keys(wardrobeItems).some((id) => !wardrobe.owns(id))) {
+    for (const f of featuresOf(map, 'wardrobeMachine')) {
+      if (zones[f.zone]?.open) push(f.position, f.normal, 'wearOMatic', 'wearOMatic', f.zone);
+    }
+  }
   if (cats.has('claw')) {
     const claw = features?.instanceOf?.('clawMachine');
     if (claw?.status?.open && claw.site && zones[claw.site.zone]?.open) {

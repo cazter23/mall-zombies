@@ -298,9 +298,10 @@ only its zones are open and the area system is sealed (every door stays shut, no
 - Last Showing (zone cinema): start (-29, 6.3, -4.5) facing -Z. Customer Service at the Box Office (the ticket booth, no new
   collider): windows at (-25.4 / -24.15 / -22.9, 7.4, -9.0) = Second Chance / Extended Warranty / Sharpening; CUSTOMER SERVICE
   board hung from the ceiling x -26..-22.3, y 10.42..10.88, z -9.3..-9.26, window labels on the glass at y 8.48. Nail Gun wall buy
-  (-20.32, 8.05, -6.3) facing -X, over the east wall's waiting seats. The cinema's own claw site, RESTOCK and Coil Nailer serve it.
+  (-20.32, 8.05, -6.3) facing -X, over the east wall's waiting seats. WEAR-O-MATIC on the north wall between the CLOSING TIME and
+  NIGHT SHIFT 2 posters, body x -30.65..-29.35, z 4.5..5.3, facing -Z (2.25 m, one collider). The cinema's own claw site, RESTOCK and Coil Nailer serve it.
 - Lot Full (zone parkingLot): start (45, 0, 0) facing +Z. Extra spawn spawn_arena_parkingLot_mallExit (35.4, 0, 2.5) in the
   entrance vestibule. Against the north fence (z 6): Customer Service booth x 38.8..42.4, z 4.08..5.98 (3 m, one collider; windows
   at x 39.35 / 40.6 / 41.85, z 3.98), Foam Dart Blaster on a plywood board x 44.5..45.9, y 0.9..2.1 (gun at (45.2, 1.5, 5.92)),
-  RESTOCK-O-MATIC x 53.65..55.35, z 5.13..5.98. Rivet Rifle on a board on the east fence, z -0.2..1.2 (gun at (62.22, 1.5, 0.5),
+  RESTOCK-O-MATIC x 53.65..55.35, z 5.13..5.98, WEAR-O-MATIC x 57.75..59.05, z 5.18..5.98. Rivet Rifle on a board on the east fence, z -0.2..1.2 (gun at (62.22, 1.5, 0.5),
   facing -X). The lot's claw site and Kiosk Kevin's parking site serve it from the start; the van and validation stay dark.
