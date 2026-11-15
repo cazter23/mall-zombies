@@ -1057,7 +1057,7 @@ export function buildMall(scene, colliders) {
   features.push({ kind: 'horror', name: 'horror_director', zone: 'startRoom', position: playerSpawn.position.clone(), normal: new THREE.Vector3(0, 0, -1), seed: 1986 });
 
   // ARENA SURVIVAL (maps/mall/arenas.js, config/arenas.js): each arena's own fixtures, spawns and start, hidden in a normal run.
-  const arenas = buildArenas({ group, colliders, zones, areaUnlocks, spawnPoints, features, build: {} });
+  const arenas = buildArenas({ group, colliders, zones, areaUnlocks, spawnPoints, features });
 
   return {
     id: 'mall',

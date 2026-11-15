@@ -41,8 +41,6 @@ export const arenas = {
         { id: 'shutter', at: [0, 0, 6.9] },
         { id: 'sideDoor', at: [-4.3, 0, 12.55] },
       ],
-      // West of the shutter on the south wall (the room's inside face is z 6.3): body x -4.45..-2.75.
-      restock: { x: -3.6, wallZ: 6.3, facing: 1, floorY: 0 },
     },
     {
       id: 'cinema',
@@ -58,11 +56,12 @@ export const arenas = {
         front: -9.4, // the booth's front face (z), facing +Z
         center: -24.15, windowOffset: 1.25, // Sharpening east of the middle, Second Chance west
         promptOut: 0.4, promptHeight: 1.1,
-        board: { y: 3.62, height: 0.46, width: 3.7, proud: 0.05 }, // the CUSTOMER SERVICE board above the Box Office header
+        // The CUSTOMER SERVICE board, hung on two wires from the ceiling (ceiling: the lobby's height) above the office clock.
+        board: { y: 4.35, height: 0.46, width: 3.7, proud: 0.1 }, ceiling: 4.8,
         labels: { y: 2.18, height: 0.2, proud: 0.02 }, // window labels on the glass
       },
-      // The Nail Gun over the east wall's waiting seats (their backs stop at 1.1 m).
-      wallBuys: [{ id: 'nailGun', weapon: 'nailGun', at: [-20.32, 8.05, -7.0], normal: [-1, 0, 0] }],
+      // The Nail Gun over the east wall's waiting seats (their backs stop at 1.1 m), north of the premiere programme (z -9.2..-7.4).
+      wallBuys: [{ id: 'nailGun', weapon: 'nailGun', at: [-20.32, 8.05, -6.3], normal: [-1, 0, 0] }],
     },
     {
       id: 'parkingLot',
@@ -73,15 +72,6 @@ export const arenas = {
       playerSpawn: { at: [45, 0, 0], yaw: Math.PI },
       // Out of the mall's own doors: inside the entrance vestibule (x 34.45..36.25, z 0.3..4.7).
       spawns: [{ id: 'mallExit', at: [35.4, 0, 2.5] }],
-      // Against the north fence (its inside face is z 6), 2 cm off it.
-      desk: { along: 'x', center: 40.6, wallAt: 5.98, facing: -1, floorY: 0 },
-      restock: { x: 54.5, wallZ: 5.98, facing: -1, floorY: 0 },
-      wallBuys: [
-        { id: 'foamDartBlaster', weapon: 'foamDartBlaster', at: [45.2, 1.5, 5.92], normal: [0, 0, -1],
-          board: { half: [0.7, 0.6], depth: 0.04, gap: 0.02 } },
-        { id: 'rivetRifle', weapon: 'rivetRifle', at: [62.24, 1.5, 0.5], normal: [-1, 0, 0],
-          board: { half: [0.7, 0.6], depth: 0.04, gap: 0.02 } },
-      ],
     },
   ],
 };

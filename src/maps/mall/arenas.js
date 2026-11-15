@@ -19,8 +19,90 @@ import * as THREE from 'three';
 import { createMapKit } from '../../world/mapKit.js';
 import { markCollidersChanged } from '../../world/collision.js';
 import { arenas as config } from '../../config/arenas.js';
+import { upgrades } from '../../config/upgrades.js';
+import { createMallProps } from './props.js';
+import { buildRestockMachine } from './restockMachine.js';
 
-export function buildArenas({ group, colliders, zones, areaUnlocks, spawnPoints, features, build = {} }) {
+const v3 = (a) => new THREE.Vector3(...a);
+
+// --- The fixtures, by kind (each returns map features; the arena's id and zone are added by buildArenas) -------------------
+
+/** An arena-only RESTOCK-O-MATIC (mall/restockMachine.js) on a wall along X. */
+function restock(kit, arena) {
+  const r = arena.restock;
+  const machine = buildRestockMachine({ kit, center: r.x, wallAt: r.wallZ, facing: r.facing, floorY: r.floorY });
+  return [{ kind: 'ammoCache', name: `ammocache_arena_${arena.id}`, position: machine.position, normal: machine.normal, screen: machine.screen }];
+}
+
+/** An arena-only Customer Service booth (mall/props.js serviceDesk: one solid collider, three windows). */
+function desk(kit, arena) {
+  const { floorY, ...spot } = arena.desk;
+  if (floorY) throw new Error(`arena "${arena.id}": the Customer Service booth is built on the ground floor only`);
+  const booth = createMallProps(kit).serviceDesk({ ...spot, tierColors: upgrades.tiers.map((t) => t.color) });
+  return [{ kind: 'upgradeDesk', name: `upgradedesk_arena_${arena.id}`, ...booth }];
+}
+
+/**
+ * Customer Service at an existing counter facing +Z (Last Showing: the Box Office): the desk's three buy spots along its front,
+ * a CUSTOMER SERVICE board hung from the ceiling above the counter's own header, and a label over each window. No collider.
+ */
+function boxOffice(kit, arena) {
+  const b = arena.boxOffice;
+  const Y = b.floorY;
+  const at = (x) => new THREE.Vector3(x, Y + b.promptHeight, b.front + b.promptOut);
+  const board = b.board;
+  const boardZ = b.front + board.proud; // its back face
+  const boardMat = kit.mat(0x1f1a24);
+  kit.box(b.center - board.width / 2, Y + board.y - board.height / 2, boardZ, b.center + board.width / 2, Y + board.y + board.height / 2, boardZ + 0.04,
+    boardMat, { collide: false, name: 'arena_boxoffice_board' });
+  for (const dx of [-board.width / 2 + 0.3, board.width / 2 - 0.3]) {
+    kit.box(b.center + dx - 0.006, Y + board.y + board.height / 2, boardZ + 0.014, b.center + dx + 0.006, Y + b.ceiling, boardZ + 0.026,
+      kit.mat(0x5d636b), { collide: false, name: 'arena_boxoffice_wire' });
+  }
+  kit.sign('CUSTOMER SERVICE', { x: b.center, y: Y + board.y, z: boardZ + 0.06, width: board.width - 0.1, height: board.height - 0.08,
+    facing: 1, background: '#1f1a24', color: '#7fe3e8', font: 'marquee' }).name = 'arena_boxoffice_sign';
+  const L = b.labels;
+  const label = (text, x, width, color, font) => {
+    kit.sign(text, { x, y: Y + L.y, z: b.front + L.proud, width, height: L.height, facing: 1, background: '#1d1626', color, font }).name = 'arena_boxoffice_label';
+  };
+  label('SHARPENING', b.center + b.windowOffset, 0.9, '#ffd23f', 'industrial');
+  label('WARRANTIES', b.center, 0.9, '#7fe3e8', 'cinemaBody');
+  label('SECOND CHANCE', b.center - b.windowOffset, 0.95, '#a4f3c4', 'dinerScript');
+  return [{
+    kind: 'upgradeDesk', name: `upgradedesk_arena_${arena.id}`, position: at(b.center), normal: new THREE.Vector3(0, 0, 1),
+    meleePosition: at(b.center + b.windowOffset), secondChancePosition: at(b.center - b.windowOffset),
+  }];
+}
+
+/** Arena-only wall guns; on a fence, each gets a plywood board to hang on (the gun's outline sits 2 cm proud of it). */
+function wallBuys(kit, arena) {
+  return arena.wallBuys.map((w) => {
+    const position = v3(w.at);
+    const normal = v3(w.normal);
+    if (w.board) {
+      const { half: [along, up], depth, gap } = w.board;
+      const front = position.clone().addScaledVector(normal, -gap); // the board's front face
+      const back = front.clone().addScaledVector(normal, -depth);
+      const alongX = normal.z !== 0;
+      const [x0, x1] = alongX ? [position.x - along, position.x + along] : [Math.min(front.x, back.x), Math.max(front.x, back.x)];
+      const [z0, z1] = alongX ? [Math.min(front.z, back.z), Math.max(front.z, back.z)] : [position.z - along, position.z + along];
+      kit.box(x0, position.y - up, z0, x1, position.y + up, z1, kit.mat(0xc8a46e), { collide: false, name: 'arena_wallbuy_board' });
+    }
+    return { kind: 'wallBuy', name: `wallbuy_arena_${arena.id}_${w.id}`, weapon: w.weapon, position, normal };
+  });
+}
+
+/** What an arena adds, from its config entry (each part only when the entry has it). */
+function buildFixtures(kit, arena) {
+  return [
+    ...(arena.restock ? restock(kit, arena) : []),
+    ...(arena.desk ? desk(kit, arena) : []),
+    ...(arena.boxOffice ? boxOffice(kit, arena) : []),
+    ...(arena.wallBuys?.length ? wallBuys(kit, arena) : []),
+  ];
+}
+
+export function buildArenas({ group, colliders, zones, areaUnlocks, spawnPoints, features, build = buildFixtures }) {
   const root = new THREE.Group();
   root.name = 'arenas';
   root.userData.dynamic = true; // (shown and hidden at runtime: never batched or frozen)
@@ -48,8 +130,8 @@ export function buildArenas({ group, colliders, zones, areaUnlocks, spawnPoints,
       colliders: own,
       kit,
     };
-    // The fixtures (maps/mall/mall.js passes the builders that need the mall's own pieces: restock, desk...).
-    const built = build[arena.id]?.({ kit, arena, group: arenaGroup }) ?? [];
+    // The fixtures: an arena-only RESTOCK-O-MATIC, Customer Service, wall guns (each only where config/arenas.js has one).
+    const built = build(kit, arena);
     for (const feature of built) entry.features.push({ ...feature, arena: arena.id, zone: feature.zone ?? arena.zones[0] });
     list[arena.id] = entry;
   }

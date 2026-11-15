@@ -5,8 +5,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { headlessGame } from './helpers/headlessGame.js';
 import { arenas, ARENA_IDS } from '../src/config/arenas.js';
-import { colliderSignature } from '../src/world/collision.js';
 import { featuresOf } from '../src/game/features/index.js';
+import * as THREE from 'three';
+import { createNavigation } from '../src/zombies/navigation.js';
+import { zombieTypes } from '../src/config/zombies.js';
+import { overlapsSolid } from '../src/world/collision.js';
+import { weapons } from '../src/config/weapons.js';
+import { clawMachine as clawCfg } from '../src/config/clawMachine.js';
 
 function memoryStorage() {
   const items = new Map();
@@ -27,8 +32,7 @@ function game(t, options = {}) {
 const openZones = (g) => Object.keys(g.map.zones).filter((id) => g.map.zones[id].open).sort();
 // Everything a whole-mall run's map is made of that an arena could change.
 const mallShape = (g) => ({
-  colliders: colliderSignature(g.colliders),
-  count: g.colliders.length,
+  colliders: g.colliders.map((b) => [...b.min.toArray(), ...b.max.toArray()].map((n) => n.toFixed(3)).join(',')).join('|'),
   spawns: g.map.spawnPoints.map((s) => s.name),
   features: g.map.features.map((f) => f.name),
   zones: openZones(g),
@@ -185,4 +189,186 @@ test('Lot Full: the escape van and its validation machine offer nothing', (t) =>
   assert.equal(g.interactions.prompt, null, 'no "Start the van" prompt');
   standAt(53.0, -11.05, -90); // (west of it, at the ticket machine)
   assert.equal(g.interactions.prompt, null, 'no Parking Validation prompt');
+});
+
+// --- The arenas' fixtures ------------------------------------------------------------------------------------------------
+
+const floorOf = (p) => (p.y > 4 ? 6.3 : 0);
+// Stand in front of a buy spot (on its floor, `out` metres along its normal), facing it.
+function standBefore(run, { position, normal }, out = 0.9) {
+  run.g.player.teleport({
+    position: new THREE.Vector3(position.x + normal.x * out, floorOf(position), position.z + normal.z * out),
+    yaw: Math.atan2(normal.x, normal.z),
+  });
+  run.g.player.pitch = 0;
+  run.tick(2);
+}
+// The buy spots an arena fixture offers: { position, normal, kind (the prompt kind expected there) }.
+function spotsOf(feature) {
+  if (feature.kind === 'upgradeDesk') {
+    return [[feature.position, 'tier'], [feature.meleePosition, 'melee'], [feature.secondChancePosition, 'secondChance']]
+      .map(([position, kind]) => ({ position, normal: feature.normal, kind }));
+  }
+  if (feature.kind === 'ammoCache') return [{ position: feature.position, normal: feature.normal, kind: 'ammoCache' }];
+  return [{ position: feature.position, normal: feature.normal, kind: 'weapon' }];
+}
+const meshBoxes = (root, skip) => {
+  const out = [];
+  root.updateMatrixWorld(true);
+  root.traverse((o) => {
+    if (!o.isMesh || skip(o)) return;
+    const box = new THREE.Box3().setFromObject(o);
+    const size = box.getSize(new THREE.Vector3());
+    if (Math.max(size.x, size.y, size.z) > 40) return; // (the sky dome and the ground plane hold everything)
+    if (size.y < 0.03 && [0, 6.3].some((y) => Math.abs(box.min.y - y) < 0.06)) return; // (paint and wear lying flat on a floor)
+    out.push({ name: o.name || o.parent?.name || '?', box });
+  });
+  return out;
+};
+const underArenas = (o) => { for (let p = o; p; p = p.parent) if (p.name === 'arenas') return true; return false; };
+
+for (const arena of arenas.list) {
+  test(`${arena.name}: every arena fixture stands clear of the map: no solid, spawn marker or decoration inside it`, (t) => {
+    const { g } = game(t);
+    const own = g.map.arenas[arena.id];
+    // Its colliders (1 cm in) against every map collider and every spawn marker's body.
+    const shrink = (b) => b.clone().expandByScalar(-0.01);
+    for (const box of own.colliders) {
+      const tall = box.max.y - box.min.y;
+      assert.ok(tall >= 2.1 || tall <= 0.35 || (box.vaultable && tall <= 1.1), `${arena.id}: a ${tall.toFixed(2)} m solid is standable`);
+      for (const other of g.colliders) assert.ok(!shrink(box).intersectsBox(other), `${arena.id}: a fixture collider overlaps a map solid`);
+      for (const p of [...g.map.spawnPoints, ...own.spawnPoints]) {
+        const body = new THREE.Box3().setFromCenterAndSize(p.position.clone().setY(p.position.y + 1), new THREE.Vector3(1.4, 2, 1.4));
+        assert.ok(!shrink(box).intersectsBox(body), `${arena.id}: a fixture is within 0.7 m of ${p.name}`);
+      }
+    }
+    // Its meshes (1 cm in) against every other mesh of the map (walls and floors it touches stay outside the shrunk box).
+    const mine = meshBoxes(own.group, () => false);
+    const others = meshBoxes(g.map.group, underArenas);
+    for (const m of mine) {
+      const inner = m.box.clone().expandByScalar(-0.01);
+      if (inner.isEmpty()) continue;
+      const hit = others.find((o) => inner.intersectsBox(o.box));
+      assert.equal(hit?.name, undefined, `${arena.id}: ${m.name} runs into ${hit?.name}`);
+    }
+  });
+
+  test(`${arena.name}: every fixture's buy spot is reachable from the start and takes focus there; its zombie routes stay short`, (t) => {
+    const run = game(t);
+    const { g } = run;
+    g.setArena(arena.id);
+    run.tick(1);
+    g.zombies.clear();
+    g.wallet.earn(50000);
+    const own = g.map.arenas[arena.id];
+    const start = own.playerSpawn.position;
+    const nav = createNavigation(g.colliders, zombieTypes.shopper, g.map.navigation);
+    nav.update(1 / 60, start);
+    for (const feature of own.features) {
+      for (const spot of spotsOf(feature)) {
+        const stand = new THREE.Vector3(spot.position.x + spot.normal.x * 0.9, floorOf(spot.position), spot.position.z + spot.normal.z * 0.9);
+        assert.equal(overlapsSolid(stand, 0.35, 1.8, g.colliders, 0.3), false, `${feature.name}: a clear place to stand`);
+        assert.ok(Number.isFinite(nav.distanceToTarget(stand.x, stand.z, stand.y)), `${feature.name}: reachable from the start`);
+        g.gun.weapon.magazine = 0; // (a refill machine only offers a refill to a gun that needs one)
+        standBefore(run, spot);
+        g.zombies.clear();
+        const prompt = g.interactions.prompt;
+        const kinds = spot.kind === 'weapon' ? ['weapon', 'ammo'] : [spot.kind];
+        assert.ok(kinds.includes(prompt?.kind), `${feature.name}: ${spot.kind} takes focus (got ${prompt?.kind})`);
+      }
+    }
+    // Zombie routes inside the arena with its fixtures in, against without them: never cut off, at most 3 m longer.
+    const without = Object.assign(g.colliders.filter((b) => !own.colliders.includes(b)), { ramps: g.colliders.ramps });
+    const routes = (colliders) => {
+      const n = createNavigation(colliders, zombieTypes.shopper, g.map.navigation);
+      n.update(1 / 60, start);
+      return g.map.spawnPoints.filter((p) => arena.zones.includes(p.zone)).map((p) => n.distanceToTarget(p.position.x, p.position.z, p.position.y));
+    };
+    const before = routes(without), after = routes(g.colliders);
+    after.forEach((d, i) => {
+      assert.ok(Number.isFinite(d), `route ${i} reaches the start`);
+      assert.ok(d - before[i] <= 3, `route ${i}: ${before[i].toFixed(1)} -> ${d.toFixed(1)} m`);
+    });
+  });
+
+  test(`${arena.name}: the fixtures work (a warranty, the refill, a wall gun) and sell nothing in a whole-mall run`, (t) => {
+    const run = game(t);
+    const { g } = run;
+    g.setArena(arena.id);
+    run.tick(1);
+    g.wallet.earn(50000);
+    const own = g.map.arenas[arena.id];
+    for (const feature of own.features) {
+      g.zombies.clear();
+      if (feature.kind === 'wallBuy') {
+        standBefore(run, feature);
+        run.press('KeyF', 20);
+        assert.ok(g.gun.owns(feature.weapon), `${feature.name} sold the ${weapons[feature.weapon].name}`);
+      } else if (feature.kind === 'ammoCache') {
+        g.gun.weapon.magazine = 0;
+        standBefore(run, feature);
+        const before = g.wallet.points;
+        run.press('KeyF', 20);
+        assert.ok(g.gun.weapon.isFull, `${feature.name} refilled the gun in hand`);
+        assert.equal(before - g.wallet.points, g.pricing.priceOf('ammoCache'));
+      } else if (feature.kind === 'upgradeDesk') {
+        const modsBefore = g.gun.modsFor(g.gun.def.id).length;
+        standBefore(run, feature);
+        run.press('KeyF', 20);
+        assert.ok(g.gun.modsFor(g.gun.def.id).length > modsBefore, `${feature.name} sold an Extended Warranty`);
+      }
+    }
+    // The whole mall, everything open: the same spots sell nothing.
+    g.setArena(null);
+    run.tick(1);
+    g.map.areaUnlocks.openAll();
+    run.tick(120);
+    for (const feature of own.features) {
+      for (const spot of spotsOf(feature)) {
+        standBefore(run, spot);
+        const prompt = g.interactions.prompt;
+        if (feature.kind === 'wallBuy') assert.notEqual(prompt?.id, feature.weapon, `${feature.name}: not for sale in a whole-mall run`);
+        else assert.notEqual(prompt?.kind, spot.kind, `${feature.name}: no ${spot.kind} prompt in a whole-mall run`);
+      }
+    }
+  });
+}
+
+for (const id of ['cinema', 'parkingLot']) {
+  test(`${arenas.list.find((a) => a.id === id).name}: GRAB-A-GUN starts at the arena's own site and a grab works`, (t) => {
+    const run = game(t);
+    const { g } = run;
+    g.setArena(id);
+    run.tick(1);
+    g.zombies.clear();
+    g.wallet.earn(50000);
+    const claw = g.features.instanceOf('clawMachine');
+    assert.equal(claw.site.zone, id, 'live in the arena');
+    assert.ok(claw.site.cabinet.rig.live, 'uncovered');
+    assert.equal(claw.status.open, true);
+    const { position, normal } = claw.site.cabinet;
+    const floorY = clawCfg.sites.find((s) => s.id === claw.site.id).floorY;
+    g.player.teleport({ position: new THREE.Vector3(position.x + normal.x * 1.3, floorY, position.z + normal.z * 1.3), yaw: Math.atan2(normal.x, normal.z) });
+    g.player.pitch = 0;
+    run.tick(2);
+    assert.equal(g.interactions.prompt?.kind, 'claw');
+    const before = g.wallet.points;
+    run.press('KeyF', 20);
+    assert.equal(before - g.wallet.points, g.pricing.priceOf('claw', 'grab'));
+    assert.equal(claw.phase, 'sweeping');
+    // A whole-mall run starts back at the first site.
+    g.setArena(null);
+    assert.equal(claw.site.id, clawCfg.sites[0].id);
+  });
+}
+
+test('Lot Full: Kiosk Kevin opens at his parking site', (t) => {
+  const run = game(t);
+  const { g } = run;
+  g.setArena('parkingLot');
+  run.tick(1);
+  const kiosk = g.features.instanceOf('kiosk');
+  assert.equal(kiosk.site.zone, 'parkingLot');
+  g.setArena(null);
+  assert.equal(kiosk.site.id, kiosk.sites[0].id, 'a whole-mall run starts him at the first site again');
 });
