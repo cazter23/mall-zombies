@@ -45,6 +45,22 @@ numbers and how to tune it are in docs/spatial-audio.md.
 - Tests: tests/spatialAudio.test.js. Shared files changed: config/audio.js (new zombie recipes; mannequinStep, cartSqueak and
   cartRattle gained layers), config/zombies.js, config/bosses.js (the guard's telegraph is a cue), config/settings.js,
   game/createGame.js, game/shoplifting.js, zombies/zombie.js, zombies/zombieManager.js, main.js, CLAUDE.md (docs index).
+## 15 November 2026 - Vaults no longer go sideways (`claude/vault-sideways`)
+
+Playtest: vaults sometimes went SIDEWAYS; the magnet had to stay forgiving. A headless sweep (the real controller on the real
+HOFFMAN'S counters, start counter, a checkout, a bench and the Atrium and Promenade rails, a stick at every angle) found four
+causes; the tables and the code lines are in docs/vault-notes.md.
+- **Rails** were climbed straight over from up to 70 degrees off, so running along a balcony drifting toward the rail, a jump
+  turned you 70 degrees and dropped you off it, landing up to 2.3 m along. Now `ledge.maxApproachDegrees` 50 and
+  `ledge.maxLookDegrees` 45 (the climb is still straight over: those angles are how far it can turn you).
+- **Counters** never checked that you were looking at the counter: looking along one while drifting into it with W+D vaulted
+  it. New `feel.vault.maxFaceDegrees` 65 (your view vs straight over the face you enter, per obstacle).
+- **The angled search** rescued a vault refused for where you look (a 12 to 24 degree turn) and could vault a different counter
+  (HOFFMAN'S counters are 1 m apart). Turned paths now only dodge a blocked landing of the obstacle straight ahead; a held jump
+  press (the magnet) only vaults the obstacle it was pressed at (`ahead()` remembers it, `tryStart({ magnet: true })`).
+- Kept forgiving: head-on to 35 degrees (counters to 60), early or late presses, off centre, key diagonals at a counter you look at.
+  tests/vaultSideways.test.js checks both sides; tests/fallAndLedge.test.js's rail-angle test asked for the 60 degree climb (the
+  sideways case) and now asks for 35 degrees and a plain jump at 60.
 ## 15 November 2026 - Arena survival: Extra Modes (`claude/arena-modes`, not merged: the user plays it first)
 
 Survive as many rounds as you can locked in ONE part of the mall (the plan, with every decision: docs/arena-modes-plan.md).

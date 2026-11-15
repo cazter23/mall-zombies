@@ -121,6 +121,9 @@ export const feel = {
     minSpeed: 1.5, // m/s; a slow walk is enough
     maxApproachDegrees: 65, // how far off straight-on your path can cross it (steeper is running along it; every obstacle alike)
     maxLookDegrees: 55, // the vault goes where you LOOK: at most this far between your view and the vault's direction (vault.js facing)
+    // ...and only over a counter you are looking at: at most this far between your view and straight over it. Without it your
+    // view could be 120 degrees off (looking along a counter while drifting into it with W+D vaulted it). docs/vault-notes.md
+    maxFaceDegrees: 65,
     magnetRange: 3.0, // a vaultable obstacle this close on your path: a jump press waits to vault it...
     magnetSeconds: 0.4, // ...for up to this long (then it's a normal jump)
     airGraceSeconds: 0.2, // a jump that started this recently can still turn into a vault
@@ -145,8 +148,11 @@ export const feel = {
     // Only offered when there is open floor to land on, so you can't climb into a fountain, a kiosk or the escalator well.
     ledge: {
       maxHeight: 1.6, // the rails are 1.5 m (taller than a jump peaks), so this is what stops you climbing anything taller
-      maxApproachDegrees: 70, // run at a rail up to this far off straight-on and you still climb straight over it
-      maxLookDegrees: 70, // ...and look this close to straight over it (strafing along a balcony looking along it never tips you over)
+      // A rail is climbed STRAIGHT over, so these two angles are how far a climb can turn you from where you run and from where
+      // you look. They were 70 and 70: running along a balcony, drifting toward the rail, a jump turned you 70 degrees and
+      // dropped you off it (docs/vault-notes.md). A W+D diagonal at a rail you look straight at is 45 degrees: still a climb.
+      maxApproachDegrees: 50, // run at a rail up to this far off straight-on and you still climb straight over it
+      maxLookDegrees: 45, // ...and look this close to straight over it (looking along the balcony never tips you over)
       pushSpeed: 3, // m/s: standing against a rail and pushing into it climbs it at this pace
       // You drop straight out from the rail with no steering, and the vault picks HOW FAR out (so a lamp post or an escalator's side
       // under the usual spot moves the landing instead of refusing the climb).
