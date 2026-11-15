@@ -63,8 +63,13 @@ const fitsCarriedGun = (gun, id) => [gun?.def, gun?.inactiveSlot?.def].some((def
 /**
  * Is a normal Flash Sale group worth discounting right now?
  */
-export function saleEligibility({ map, gun, warranty, wardrobe, kiosk }) {
-  return (group) => {
+export function saleEligibility({ map, gun, warranty, wardrobe, kiosk, features = null }) {
+  // ...and it must mark something you can walk up to and buy right now: the very spots the sale's tags will mark
+  // (collectSaleSpots). A sale on nothing is 45 seconds of PA for no one. GRAB-A-GUN is the stated exception
+  // (config/economy.js); Kevin's cart has its own rule below.
+  return (group) => worthIt(group) && (group.id === 'claw' || group.id === 'kiosk'
+    || collectSaleSpots({ map, features, gun, warranty, wardrobe }, { categories: group.categories }).length > 0);
+  function worthIt(group) {
     if (group.id === 'doors') return map.areaUnlocks
       ? Object.keys(economy.doors).some((id) => !map.zones[id].open)
       : map.doors.some((d) => !d.isOpen);
@@ -77,7 +82,7 @@ export function saleEligibility({ map, gun, warranty, wardrobe, kiosk }) {
       return status?.open && !status.hiding;
     }
     return true;
-  };
+  }
 }
 
 function isKioskProductFull(id, kiosk, equipment, health) {

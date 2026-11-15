@@ -31,6 +31,9 @@ export function createShoplifting({ events, wallet, effects = null, runFrozen = 
     const theft = zombie.type.theft;
     zombie.fleeTimer = theft.fleeSeconds;
     zombie.control = (dt, ctx) => {
+      // Shoved, slipped or knocked down: it is stopped like any other zombie (zombie.js does the stagger), and the getaway
+      // clock waits. The tools that stop everyone stop the one you most need to stop.
+      if (zombie.staggerTimer > 0) return false;
       if (zombie.state !== 'chasing') zombie.setState('chasing'); // (out of the swing it stole in: it runs, it doesn't finish the swing)
       // Away from you along the route (round corners); with nowhere further to go (cornered), straight away from you if it can.
       if (!ctx.nav.directionAway?.(zombie.position, away)) {

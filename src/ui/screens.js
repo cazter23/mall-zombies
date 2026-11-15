@@ -163,7 +163,7 @@ export function evaluatePerformance(r = {}) {
   };
 }
 
-export function createScreens({ locker = null, guide = null, challenges = null } = {}) {
+export function createScreens({ locker = null, guide = null, challenges = null, now = () => performance.now() } = {}) {
   const books = { locker, guide, challenges }; // screens that own their DOM, preview and pad navigation (ui/locker.js, ui/guide.js, ui/challengeBoard.js)
   const handlers = {};
   const emit = (action, pad = false) => handlers[action]?.({ pad });
@@ -180,6 +180,7 @@ export function createScreens({ locker = null, guide = null, challenges = null }
       <div class="kicker">Welcome to your forever mall</div>
       <h1 class="title-logo">Sunset<br />Galleria</h1>
       <p class="tagline">The mall is closed. The shoppers didn't get the memo.</p>
+      <p class="tagline title-note" hidden></p>
       <div class="directory-heading">Galleria directory <span>You are here ↓</span></div>
       <div class="menu-list directory-list">
         <button class="menu-btn primary save-continue" data-action="continue" type="button">Continue</button>
@@ -270,6 +271,7 @@ export function createScreens({ locker = null, guide = null, challenges = null }
   const continueButton = title.querySelector('[data-action="continue"]');
   continueButton.hidden = true; // (until setContinue finds a save)
   const playButton = title.querySelector('[data-action="play"]');
+  const titleNote = title.querySelector('.title-note');
 
   // --- Results (the receipt) ---------------------------------------------------------
   const deathThanks = 'Thank you for shopping with us<br />All sales final · No refunds · No respawns';
@@ -414,8 +416,11 @@ export function createScreens({ locker = null, guide = null, challenges = null }
 
   // Buttons: click (or A) runs the action. A "confirm" button needs a second press within a few seconds.
   const armed = new Map(); // button -> timeout id
-  function press(button, pad) {
+  let receiptGuardUntil = 0; // (config/settings.js menuFeel.receiptGuardSeconds)
+  // `keyed`: a key pressed the focused button (the browser's click with no mouse behind it).
+  function press(button, pad, keyed = false) {
     if (button.disabled || button.hidden) return;
+    if (current === 'results' && (pad || keyed) && now() < receiptGuardUntil) return; // (a stray press from the fight)
     const confirmText = button.dataset.confirm;
     if (confirmText && !armed.has(button)) {
       const label = button.textContent;
@@ -449,7 +454,7 @@ export function createScreens({ locker = null, guide = null, challenges = null }
   for (const node of Object.values(screens)) {
     node.querySelectorAll('[data-action]').forEach((button) => button.addEventListener('click', (event) => {
       event.stopPropagation();
-      press(button, false);
+      press(button, false, event.detail === 0);
     }));
   }
 
@@ -609,6 +614,7 @@ export function createScreens({ locker = null, guide = null, challenges = null }
       if (name === 'results') {
         fillResults(data);
         results.scrollTop = 0;
+        receiptGuardUntil = now() + menuFeel.receiptGuardSeconds * 1000;
         buttonsOf(name)[0]?.focus?.({ preventScroll: true });
       }
       if (name === 'help') helpReturn = data?.from ?? 'title';
@@ -638,6 +644,12 @@ export function createScreens({ locker = null, guide = null, challenges = null }
 
     // Save & Quit's slot on the title (game/saveGame.js peek()): { round } shows "Continue · Round N" and makes Play ask
     // twice (it discards the save); null hides it.
+    /** A line under the title's menu (the save slot's notice: game/saveGame.js takeNotice); null hides it. */
+    setTitleNote(text) {
+      titleNote.hidden = !text;
+      titleNote.textContent = text ?? '';
+    },
+
     setContinue(saved) {
       continueButton.hidden = !saved;
       continueButton.textContent = saved ? `Continue · Round ${saved.round}` : 'Continue';

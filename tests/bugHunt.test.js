@@ -13,6 +13,10 @@ import { feel } from '../src/config/feel.js';
 import { clawMachine } from '../src/config/clawMachine.js';
 import { bossVouchers } from '../src/config/bosses.js';
 import { kiosk } from '../src/config/kiosk.js';
+import { economy } from '../src/config/economy.js';
+import { save as saveConfig } from '../src/config/save.js';
+import { createCareerStats } from '../src/game/careerStats.js';
+import { saleEligibility, collectSaleSpots } from '../src/game/flashSales.js';
 import { rampHeightAt, overlapsSolid } from '../src/world/collision.js';
 import { headlessGame } from './helpers/headlessGame.js';
 
@@ -307,7 +311,6 @@ function openMall(context) {
 const POCKETS = [
   ['the Food Court bench pocket by the RESTOCK-O-MATIC', [6.8, 0, -2.75], [6.8, 0, -8]],
   ['the Food Court south-west nook behind the table', [-9.6, 0, -13.95], [-6, 0, -9]],
-  ['the parking kerb island beside the first van', [39.44, 0.15, -12.2], [36, 0, -12.2]],
 ];
 for (const [name, at, zombieAt] of POCKETS) {
   test(`the horde never freezes: standing in ${name}, zombies still have a route, still spawn and still come`, (context) => {
@@ -403,6 +406,7 @@ const PERCHES = [
   ['the escalator side wall two steps up (the hub perch)', [-6.9, 2.77, 1.15]],
   ['Good Sports\' counter (over it: the clerk\'s strip has no way out)', [-13, 1.25, -19.3]],
   ['Play Time Toys\' counter', [-13.5, 1.25, -3.6]],
+  ['the parking kerb island (zombies cannot step onto a kerb, so nothing reached you on it)', [38.0, 0.15, -9.0]],
 ];
 test('nobody can stand on the known perches: there is no room for a body on top of them', (context) => {
   const t = openMall(context);
@@ -415,6 +419,10 @@ test('nobody can stand on the known perches: there is no room for a body on top 
     const crouched = overlapsSolid(feet, feel.player.radius, feel.movement.proneHeight ?? 0.5, g.colliders, feel.movement.stepTolerance);
     assert.ok(crouched, `${name}: not lying down either`);
   }
+  // The slot between the parking kerb island and the first van (0.75 m: a body fit, the horde's routes did not).
+  const slot = new THREE.Vector3(39.65, 0, -12.2);
+  assert.ok(!g.zombies.nav.isWalkableAt(slot.x, slot.z, 0), 'the scenario: zombies cannot route into the slot');
+  assert.ok(overlapsSolid(slot, feel.player.radius, feel.movement.proneHeight ?? 0.5, g.colliders, feel.movement.stepTolerance), 'so the player cannot stand in it either');
 });
 
 test('GRAB-A-GUN: a save taken during a site\'s last grab comes back sold out, not open with "0 left"', (context) => {
@@ -451,7 +459,9 @@ test('GRAB-A-GUN: a save taken during a site\'s last grab comes back sold out, n
     a.tick(40);
   }
   stand(a);
+  const beforeGrab = a.g.wallet.points;
   a.press('KeyF', 20); // the site's last grab
+  assert.ok(a.g.wallet.points < beforeGrab, 'the scenario: the last grab is paid');
   assert.equal(a.claw.stock, 0, 'the scenario: the last grab is paid and under way');
   a.g.rounds.skipRound(); // (the round's last zombie dies during the grab: the snapshot is taken now)
   a.tick(1);
@@ -462,6 +472,12 @@ test('GRAB-A-GUN: a save taken during a site\'s last grab comes back sold out, n
   const b = setup();
   assert.equal(b.g.saveGame.load(), true);
   b.tick(2);
+  // The grab under way is not kept by a save, so it is not charged either: the points are back and so is that grab.
+  assert.equal(b.g.wallet.points, beforeGrab, 'the grab the save dropped was refunded');
+  assert.equal(b.claw.stock, 1, 'and it is still there to be had');
+  assert.equal(b.claw.phase, 'idle');
+  // A save that does hold a sold-out machine (an older one): never open with nothing left.
+  b.claw.restore({ siteId: b.claw.site.id, grabsHere: clawMachine.stock, stock: 0 });
   const points = b.g.wallet.points;
   stand(b);
   b.press('KeyF', 20);
@@ -567,4 +583,192 @@ test('sprinting up an escalator and jumping does not sink you under the treads',
     assert.ok(jumped, 'the scenario: jumped on the way up');
     assert.ok(sunk < 0.3, `jump at x ${jumpAt}: feet got ${sunk.toFixed(2)} m under the treads`);
   }
+});
+
+// ---- Decisions taken after the hunt (docs/history.md, 14 November 2026) ----
+
+test('a boss\'s voucher survives Save & Quit when the boss was the round\'s last kill', (context) => {
+  const t = headlessGame({ saveStorage: memoryStorage() });
+  context.after(() => { t.g.resetRun(); t.g.map.dispose(); });
+  const { g } = t;
+  g.health.invulnerable = true;
+  t.tick(2);
+  g.map.areaUnlocks.unlock('hallway', { instant: true });
+  g.rounds.jumpTo(9);
+  t.tick(5);
+  const clearOthers = (keep) => { for (const z of g.zombies.zombies) if (z.isAlive && z !== keep) z.takeHit({ damage: z.health + 1, part: 'body', source: 'hazard' }); };
+  clearOthers(null);
+  const boss = g.bosses.summon('guard');
+  for (let i = 0; i < 600 && boss.state === 'spawning'; i++) { t.tick(1); clearOthers(boss); }
+  const reward = boss.type.reward;
+  assert.ok(bossVouchers[reward], 'the scenario: this boss leaves a voucher');
+  g.player.teleport({ position: new THREE.Vector3(0, 0, 12), yaw: 0 }); // (away from where it falls)
+  boss.takeHit({ damage: boss.health + 1, part: 'body', source: 'gun' });
+  g.saveGame.markRoundStart(); // (it was the last of the wave: the round flips on the same tick, and the snapshot is taken with it)
+  t.tick(1);
+  // You pick it up AFTER the snapshot: the save knows nothing of the voucher in your pocket.
+  for (let i = 0; i < 600 && !g.pricing.voucher; i++) {
+    if (g.powerUps.pickup) g.player.teleport({ position: g.powerUps.pickup.position.clone().setY(0), yaw: 0 });
+    t.tick(1);
+  }
+  assert.equal(g.pricing.voucher?.name, bossVouchers[reward].name, 'the scenario: the voucher was collected');
+  assert.equal(g.saveGame.saveAndQuit(), true);
+  assert.equal(g.saveGame.load(), true);
+  g.player.teleport({ position: new THREE.Vector3(0, 0, 12), yaw: 0 });
+  t.tick(5);
+  assert.ok(g.pricing.voucher || g.powerUps.pickup?.id === reward, 'after Continue the reward is in your pocket or back on the floor');
+  for (let i = 0; i < 600 && !g.pricing.voucher; i++) {
+    if (g.powerUps.pickup) g.player.teleport({ position: g.powerUps.pickup.position.clone().setY(0), yaw: 0 });
+    t.tick(1);
+  }
+  assert.equal(g.pricing.voucher?.name, bossVouchers[reward].name, 'and it can be collected again');
+});
+
+test('Second Chance keeps your Bubble Wrap: a revive after a lethal fall leaves the layers on', (context) => {
+  const t = quietGame(context);
+  const { g } = t;
+  g.health.addArmour(3);
+  const layers = [...g.health.armour];
+  g.secondChance.buy();
+  g.health.takeDamage(9999, { type: 'fall', fall: true }); // (a fall goes past armour: the layers were never touched)
+  assert.equal(g.state.over, false, 'the scenario: revived');
+  assert.equal(g.secondChance.status, 'used');
+  assert.deepEqual([...g.health.armour], layers, 'the Bubble Wrap is still on');
+  assert.equal(g.stats.health, g.stats.maxHealth, 'at full health');
+});
+
+test('a reissued Return to Sender comes back with the ammo the last one had, not a free full load', (context) => {
+  const t = quietGame(context);
+  const { g } = t;
+  g.returnQuest.debug('called');
+  assert.equal(g.returnQuest.collect(), true, 'the scenario: the first one is issued');
+  t.tick(40);
+  const first = g.gun.weaponFor('returnToSender');
+  assert.ok(first.magazine > 0 && first.reserve > 1, 'the first issue is fully loaded');
+  first.magazine = 1;
+  first.reserve = 2;
+  t.tick(2);
+  g.gun.give(weapons.nailGun); // (a 500-point wall gun bought over it)
+  t.tick(40);
+  assert.equal(g.gun.owns('returnToSender'), false, 'the scenario: it was replaced');
+  assert.equal(g.returnQuest.collect(), true, 'the desk reissues it');
+  t.tick(2);
+  const again = g.gun.weaponFor('returnToSender');
+  assert.deepEqual([again.magazine, again.reserve], [1, 2], 'with what it had: ammo is the desk\'s to sell');
+  // ...and over a save.
+  const kept = g.returnQuest.serialize();
+  g.gun.give(weapons.nailGun);
+  t.tick(40);
+  g.returnQuest.restore(kept);
+  assert.equal(g.returnQuest.collect(), true);
+  t.tick(2);
+  assert.deepEqual([g.gun.weaponFor('returnToSender').magazine, g.gun.weaponFor('returnToSender').reserve], [1, 2], 'a load remembers it too');
+});
+
+test('a Flash Sale is skipped when it would mark nothing you can buy right now', (context) => {
+  const t = quietGame(context); // (start room + hallway, the staple gun)
+  const { g } = t;
+  const groups = Object.fromEntries(economy.flashSales.groups.map((group) => [group.id, group]));
+  const eligible = () => saleEligibility({ map: g.map, gun: g.gun, warranty: g.warranty, wardrobe: g.wardrobe, kiosk: g.features.instanceOf('kiosk'), features: g.features });
+  const marks = (group) => collectSaleSpots({ map: g.map, features: g.features, gun: g.gun, warranty: g.warranty, wardrobe: g.wardrobe }, { categories: group.categories }).length;
+  for (const id of ['ammo', 'attachments', 'hazards', 'tiers', 'weapons', 'apparel', 'doors']) {
+    if (!groups[id]) continue;
+    assert.equal(eligible()(groups[id]), marks(groups[id]) > 0, `${id}: on sale only if it marks a buy spot (it marks ${marks(groups[id])})`);
+  }
+  assert.equal(marks(groups.ammo), 0, 'the scenario: with only the staple gun there is no ammo to buy');
+  g.gun.give(weapons.nailGun); // (its wall buy is in the hallway: ammo for it is on sale there)
+  t.tick(40);
+  assert.equal(eligible()(groups.ammo), true, 'with a wall gun in hand an ammo sale is of use');
+});
+
+test('a fleeing Shoplifter can be knocked down like anyone else: it stops, and its getaway clock waits', (context) => {
+  const t = openMall(context);
+  const { g } = t;
+  g.rounds.jumpTo(5);
+  g.zombies.clear();
+  g.player.teleport({ position: new THREE.Vector3(0, 0, 2), yaw: 0 });
+  t.tick(2);
+  g.wallet.earn(2000);
+  const thief = g.zombies.spawn('shoplifter', new THREE.Vector3(1.2, 0, 2));
+  t.tick(70);
+  g.events.emit('playerHit', { damage: 0, zombie: thief });
+  t.tick(20);
+  assert.ok(thief.loot > 0 && thief.control, 'the scenario: it stole and is running');
+  const clock = thief.fleeTimer;
+  const from = thief.position.clone();
+  assert.equal(thief.applySlip(2, 6), true, 'the scenario: it slipped');
+  t.tick(60);
+  assert.ok(thief.position.distanceTo(from) < 1.5, `flat on its back it still ran ${thief.position.distanceTo(from).toFixed(2)} m in a second`);
+  assert.equal(thief.fleeTimer, clock, 'the getaway clock waits while it is down');
+  t.tick(120);
+  assert.ok(thief.removed || thief.fleeTimer < clock, 'back on its feet, it runs again');
+});
+
+test('Save & Quit and storage: a newer build\'s save is left alone, and the "discarded" notice is offered once', (context) => {
+  const storage = memoryStorage();
+  const t = headlessGame({ saveStorage: storage });
+  context.after(() => t.g.map.dispose());
+  const { g } = t;
+  const newer = JSON.stringify({ version: saveConfig.version + 1, round: 7, savedAt: 'x', data: {} });
+  storage.setItem(saveConfig.storageKey, newer);
+  assert.equal(g.saveGame.peek(), null, 'no Continue for a save this build cannot read');
+  assert.equal(storage.getItem(saveConfig.storageKey), newer, 'but it is not deleted: the newer build can still continue it');
+  assert.equal(g.saveGame.load(), false);
+  g.saveGame.discard(); // (Play from the title: there was no "your save is discarded" warning, so it must not be)
+  assert.equal(storage.getItem(saveConfig.storageKey), newer, 'still there after a failed load and a fresh Play');
+  assert.equal(g.saveGame.takeNotice(), saveConfig.newerNotice, 'the title is given a line to say so');
+  assert.equal(g.saveGame.takeNotice(), null, 'once');
+
+  storage.setItem(saveConfig.storageKey, JSON.stringify({ version: saveConfig.version - 1, round: 3, data: {} }));
+  assert.equal(g.saveGame.peek(), null);
+  assert.equal(storage.getItem(saveConfig.storageKey), null, 'an older save is dropped, as before');
+  assert.equal(g.saveGame.takeNotice(), saveConfig.droppedNotice);
+  assert.equal(g.saveGame.takeNotice(), null, 'not again on every return to the title');
+});
+
+test('Save & Quit and storage: a browser that blocks storage greys the button out instead of pretending to save', (context) => {
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, get() { throw new Error('SecurityError: storage is blocked'); } });
+  context.after(() => { delete globalThis.localStorage; });
+  const t = headlessGame(); // (no storage handed in: the game looks for the browser's)
+  context.after(() => t.g.map.dispose());
+  const { g } = t;
+  t.tick(2);
+  g.rounds.skipRound();
+  t.tick(2);
+  assert.deepEqual(g.saveGame.canSave(), { ok: false, reason: saveConfig.reasons.blocked });
+  assert.equal(g.saveGame.saveAndQuit(), false, 'nothing is "saved" into memory to be lost with the tab');
+});
+
+test('Save & Quit and storage: a full store says so on the button, and the next round may try again', (context) => {
+  const storage = memoryStorage();
+  let full = true;
+  const setItem = storage.setItem;
+  storage.setItem = (key, value) => { if (full && key === saveConfig.storageKey) throw new Error('QuotaExceededError'); setItem(key, value); };
+  const t = headlessGame({ saveStorage: storage });
+  context.after(() => t.g.map.dispose());
+  const { g } = t;
+  t.tick(2);
+  g.rounds.skipRound();
+  t.tick(2);
+  assert.equal(g.saveGame.canSave().ok, true, 'the scenario: nothing wrong until the write');
+  assert.equal(g.saveGame.saveAndQuit(), false, 'the write failed: the run goes on');
+  assert.deepEqual(g.saveGame.canSave(), { ok: false, reason: saveConfig.reasons.full }, 'and the button says why');
+  full = false;
+  g.rounds.skipRound();
+  t.tick(2);
+  assert.equal(g.saveGame.canSave().ok, true, 'a new round: worth another try');
+  assert.equal(g.saveGame.saveAndQuit(), true);
+});
+
+test('career stats: two tabs do not wipe each other\'s runs (the ledger is re-read before a run is added)', () => {
+  const storage = memoryStorage();
+  const run = (round) => ({ round, timeAlive: round * 60, kills: round * 10, headshotKills: round, pointsEarned: round * 1000, shotsFired: 100, shotsHit: 50, accuracy: 0.5, won: false });
+  const tabA = createCareerStats({ storage });
+  const tabB = createCareerStats({ storage }); // (both opened before either finished a run)
+  tabA.recordRun(run(12));
+  const result = tabB.recordRun(run(2));
+  assert.equal(result.snapshot.totals.runs, 2, 'tab B added its run to tab A\'s');
+  assert.equal(result.snapshot.bests.round, 12, 'and kept tab A\'s record');
+  assert.deepEqual(result.newRecords, [], 'a round 2 run is no new record after a round 12');
+  assert.equal(createCareerStats({ storage }).snapshot().totals.runs, 2, 'that is what is stored');
 });

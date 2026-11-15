@@ -19,6 +19,7 @@ export function createReturnQuest({ events, state, player, zombies, gun, wallet,
   let ticket = false; // step 3 begun: a number was taken
   let served = 0; // kills near the desk since
   let issued = false; // step 4 done at least once
+  let lastAmmo = null; // { magazine, reserve } of the gun while carried: a reissue comes back with that, never fuller
   const labels = new Set(); // label ids held
   let fitted = null; // the label on the gun, or null
   let applying = false; // a label is returning more zombies: their 'kill' events must not start it again
@@ -134,6 +135,12 @@ export function createReturnQuest({ events, state, player, zombies, gun, wallet,
       const first = !issued;
       issued = true;
       gun.give(def);
+      // A reissue comes back with what the last one had: ammo is the desk's to sell, not a free full load for swapping it out.
+      const reissued = !first && lastAmmo ? gun.weaponFor?.(def.id) : null;
+      if (reissued) {
+        reissued.magazine = Math.min(reissued.magazine, lastAmmo.magazine);
+        reissued.reserve = Math.min(reissued.reserve, lastAmmo.reserve);
+      }
       if (first) done('collect', cfg.pa.collect);
       return true;
     },
@@ -147,6 +154,8 @@ export function createReturnQuest({ events, state, player, zombies, gun, wallet,
 
     // Step 2: a charging zombie crashed near the desk (the Cart Pusher, or Officer Kettle).
     update() {
+      const carried = gun.weaponFor?.(def.id); // (while you carry it: what a reissue will come back with)
+      if (carried) lastAmmo = { magazine: carried.magazine, reserve: carried.reserve };
       if (state.over || stage() !== 'damaged') return;
       if (zombies.zombies.some((z) => z.isAlive && z.state === 'crashed' && nearDesk(z.position, cfg.crash.radius))) {
         parcel = true;
@@ -155,7 +164,7 @@ export function createReturnQuest({ events, state, player, zombies, gun, wallet,
     },
 
     serialize() {
-      return { signs: [...signs], parcel, ticket, served, issued, labels: [...labels], fitted };
+      return { signs: [...signs], parcel, ticket, served, issued, labels: [...labels], fitted, lastAmmo };
     },
     restore(data) {
       this.reset();
@@ -163,12 +172,14 @@ export function createReturnQuest({ events, state, player, zombies, gun, wallet,
       parcel = !!data.parcel; ticket = !!data.ticket; served = data.served ?? 0; issued = !!data.issued;
       for (const id of data.labels ?? []) if (returnLabel(id)) labels.add(id);
       fitted = labels.has(data.fitted) ? data.fitted : null;
+      lastAmmo = data.lastAmmo ? { ...data.lastAmmo } : null; // (none in an older save: a reissue is full, as it was)
     },
     /** A blast is over: the next return starts a new one (the gun's 'shot' event calls this; a test returning zombies by hand calls it between blasts). */
     blastDone,
     reset() {
       signs.clear();
       parcel = ticket = issued = false;
+      lastAmmo = null;
       extraReturnsUsed = ammoRollUsed = false;
       served = 0;
       labels.clear();

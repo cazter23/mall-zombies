@@ -295,10 +295,14 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
 
     // Save & Quit (game/saveGame.js): the drop meter and its rotation. Anything on the floor or running at the round's start is
     // not kept (a save restarts the round's break with no power-up out).
+    // The exception is `owed`: a boss's reward (or an Employee of the Month's drop) on the floor or still waiting for clear
+    // floor. The boss is often the wave's last kill, so the round flips, and the save is taken, before you can pick it up;
+    // the boss stays defeated, so the save must not lose what it paid. On a load it falls again where it was.
     serialize() {
+      const owed = [...(pickup?.bossReward ? [pickup] : []), ...bossRewards].map(({ id, position }) => ({ id, position: position.toArray() }));
       return {
         round, earned, threshold, dropped, lastType, lastWasJackpot,
-        rotation: [...rotation], jackpotRotation: [...jackpotRotation],
+        rotation: [...rotation], jackpotRotation: [...jackpotRotation], owed,
       };
     },
     restore(data) {
@@ -306,6 +310,8 @@ export function createPowerUps({ events, player, gun, zombies, colliders, state,
       lastWasJackpot = Boolean(data.lastWasJackpot);
       rotation = [...(data.rotation ?? [])];
       jackpotRotation = [...(data.jackpotRotation ?? [])];
+      bossRewards.length = 0;
+      for (const { id, position } of data.owed ?? []) bossRewards.push({ id, position: player.position.clone().fromArray(position) }); // (none in an older save)
       emitMeter({ silent: true });
     },
 

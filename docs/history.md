@@ -1,5 +1,35 @@
 # Sunset Galleria: build history ("Current state")
 
+## 14 November 2026 - The bug hunt's open decisions, decided (`claude/bughunt`)
+
+The user's answers to the hunt's "proved but left for a decision" list (the entry below), each with a test in tests/bugHunt.test.js
+unless noted. No save-version bump: every new saved field is optional on restore, so an older save still loads.
+- **A boss's voucher survives Save & Quit.** powerUps saves `owed`: a boss reward (or an Employee of the Month's drop) on the floor or
+  still queued at the round's start; on a load it falls again where it was. The boss is often the wave's last kill, so the snapshot
+  was taken before the voucher could be picked up.
+- **A claw grab the save dropped is refunded.** clawMachine.serialize holds the machine as it was before a grab under way (stock and
+  grab count back) plus `refund`; restore hands the points back. A free-grab token spent on it is still lost.
+- **Build-A-Blaster Hearts that can never fire: left as they are** (the user: not a big deal). Headshot on the Tennis Ball Launcher,
+  Leaf Blower and Return to Sender, Reload on the Leaf Blower, and a ball's Last Round going off 6 m ahead.
+- **Second Chance keeps Bubble Wrap** (health.revive puts the layers back after its reset).
+- **A reissued Return to Sender has the ammo the last one had** (returnQuest remembers magazine and reserve while you carry it, saved
+  as `lastAmmo`): buying a 500-point wall gun over it is no longer a free full reload.
+- **A Flash Sale on nothing is skipped.** saleEligibility also asks collectSaleSpots for at least one buy spot (GRAB-A-GUN stays the
+  stated exception; Kevin's cart keeps its own rule). tests/flashSales.test.js's tag re-read test now uses a wall gun sale that gains
+  a second spot, since a sale that marks nothing can no longer start.
+- **A fleeing Shoplifter can be knocked down**: its getaway control steps aside while it is staggered (zombie.js does the stagger)
+  and the getaway clock waits.
+- **Customer Parking:** the planted kerb island gets a topper, and so does the 0.75 m slot between it and the first van (a body
+  fitted, the nav grid's cells did not: zombies stopped 2.6 m short at either end).
+- **Save slot and storage:** the "save discarded" notice is a line on the title screen (screens.setTitleNote, saveGame.takeNotice;
+  it was a HUD line wiped by setDimmed in the same call); a NEWER build's save is left in its slot (config/save.js newerNotice) and
+  Play does not delete it; storage the browser blocks greys Save & quit out (reasons.blocked) instead of saving into memory; a
+  refused write greys it out with reasons.full until the next round's snapshot (main.js redraws the pause card); careerStats re-reads
+  the stored ledger before adding a run, so two tabs add up. Not changed: settings are still last-writer-wins across tabs.
+- **Controller and receipt:** a controller run pauses on the window's blur (main.js; shown in the browser, before and after); the
+  receipt ignores keys and controller buttons for menuFeel.receiptGuardSeconds (0.8 s) after it appears, a mouse click always counts
+  (tests/controllerMenus.test.js, with an injectable clock: createScreens({ now })).
+
 ## 14 November 2026 - Drawing-side waste removed: the gun in hand, bullet marks, still matrices, shadows, the corner map (`claude/render-waste`)
 
 The bug hunt (`claude/bughunt`) measured constant per-frame and per-shot work that did nothing, and left it alone because each

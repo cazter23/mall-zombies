@@ -10,6 +10,7 @@ import { bindings, buttonLabels, menuHints, menuNav as navCfg, controlsHelp } fr
 menuDom(); // (config/settings reads the display density once when imported; the screens build DOM)
 const { promptDevice, buttonLabel, hintParts, hintHtml, glyphHtml, setPromptDevice } = await import('../src/ui/glyphs.js');
 const { createScreens } = await import('../src/ui/screens.js');
+const { menuFeel } = await import('../src/config/settings.js');
 
 const DT = 1 / 60;
 const ticks = (seconds) => Math.round(seconds / DT);
@@ -151,7 +152,8 @@ test('switching device rewrites every hint line and How to play keycap once, and
 
 test('with only a pad: the cursor shows at once, Y / X open Settings / Controls, the receipt scrolls, its row is walked', () => {
   const { document } = menuDom();
-  const screens = createScreens();
+  let clock = 0; // ms (the receipt ignores keys and buttons for a moment after it appears)
+  const screens = createScreens({ now: () => clock });
   const fired = [];
   for (const action of ['settings', 'controls', 'playAgain', 'notices', 'mainMenu', 'resume', 'continue']) screens.on(action, ({ pad }) => fired.push([action, pad]));
   const button = (action) => document.querySelector(`[data-action="${action}"]`);
@@ -173,6 +175,17 @@ test('with only a pad: the cursor shows at once, Y / X open Settings / Controls,
 
   screens.show('results', { round: 3, timeAlive: 90, kills: 10, headshotKills: 2, meleeKills: 1, accuracy: 0.5, pointsEarned: 900 });
   const receipt = document.body.children.find((node) => node.classList.contains('results-screen'));
+  // It came up by itself with Play again focused: a press still coming from the fight does nothing...
+  screens.padNav(padInput('PadA'));
+  const keyed = new Event('click');
+  keyed.detail = 0; // (a key on the focused button: the browser's click with no mouse behind it)
+  button('playAgain').dispatchEvent(keyed);
+  assert.deepEqual(fired.splice(0), [], 'A or a key right as the receipt appears: nothing (no accidental Play again)');
+  button('notices').click(); // ...a mouse click is deliberate and always counts
+  assert.deepEqual(fired.splice(0), [['notices', false]]);
+  clock += menuFeel.receiptGuardSeconds * 1000 + 1;
+  button('mainMenu').dispatchEvent(keyed);
+  assert.deepEqual(fired.splice(0), [['mainMenu', false]], 'a moment later keys work');
   receipt.scrollTop = 0;
   for (let i = 0; i < 10; i++) screens.padNav(padInput({ look: { x: 0, y: -1 } }));
   assert.ok(receipt.scrollTop > 100, `the right stick scrolls the receipt (${receipt.scrollTop}px)`);

@@ -21,7 +21,11 @@ export const save = {
     dead: 'No longer employed',
     hurt: 'Full health needed',
     shiftComplete: 'Shift complete',
+    blocked: 'This browser blocks saving', // (storage is switched off for the page: a save would be lost with the tab)
+    full: 'Save failed: storage is full', // (the write was refused; the next round may try again)
   },
   loadedPa: { kicker: 'Attention shoppers', text: 'Welcome back. Your shift resumes at round {round}.' },
   droppedNotice: 'Your saved shift was from an older version of the mall and has been discarded.',
+  // A save written by a NEWER build than this one is left in its slot (that build can still continue it); the title says so.
+  newerNotice: 'Your saved shift is from a newer version of the mall. It has been kept for that version.',
 };

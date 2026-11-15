@@ -552,6 +552,9 @@ export function buildClawMachine(feature, { scene, map, events, pricing, interac
     // Save & Quit (game/saveGame.js): where the machine stands and how much stock it has left. (A closed machine reopens at
     // 'roundStart', before the save is taken, so a save never holds a closed one; a grab under way is not kept.)
     serialize() {
+      // A grab under way is not kept, so the save holds the machine as it was before it: that grab back in stock, and what it
+      // charged to be handed back on a load (`refund`; the wallet's own save already has it spent).
+      if (grab) return { siteId: site.id, grabsHere: grabsHere - 1, stock: stock + 1, refund: grab.paid };
       return { siteId: site.id, grabsHere, stock };
     },
     restore(data) {
@@ -565,6 +568,7 @@ export function buildClawMachine(feature, { scene, map, events, pricing, interac
       }
       grabsHere = data.grabsHere;
       stock = data.stock;
+      if (data.refund > 0) wallet.refund(data.refund); // (the grab the save dropped: see serialize)
       // A save taken while the site's last grab was under way holds a sold-out machine (the grab itself is not kept): out of
       // service until the next round, as it would have been once that grab was over. (Never open with nothing left.)
       if (stock <= 0) {
