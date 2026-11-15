@@ -136,7 +136,11 @@ cleanup and keyboard suppression. Settings -> Controller -> Controller vibration
 `tests/prone.test.js` covers toggle controls, crawl speed from stats, smooth eye/collision lowering, low roofs,
 safe stand/crouch recovery, slide/jump/melee/vault constraints, gun use, zombie damage, body clearance, controller sprint latch and run reset.
 `tests/shopperAppearance.test.js` covers the Shopper looks: the same seed is the same Shopper, every archetype turns up at its weight and
-wears every top/bottom/shoe/pattern/build/hair/hat/glasses/held item/extra on its lists over 6000 seeds; every colour is a named palette colour
+wears every top/bottom/shoe/pattern/build/hair/hat/glasses/held item/extra on its lists over 6000 seeds; outfits match the person
+(config onlyFor): every archetype has men and women and leaves each a choice in every list, every skirt is women-only, and over 25000
+rolled Shoppers (spawn seeds and other seeded randoms) every piece fits the Shopper's presentation, no masculine-looking one (short hair,
+bald, a tie, a broad build, a flat cap) wears a skirt, every skirt still turns up, and each archetype's mix of men and women is near its
+weights; every colour is a named palette colour
 and every part well formed; no other kind's signature (hoodie, beanie, headband, wristbands) and nothing towering over the head hitbox;
 every piece builds valid geometry and animates, a Shopper is ONE vertex-coloured material and 8 meshes, the head anchor and bone names
 never move; the Cart Pusher keeps its cart's own materials; hit flash and edge shading per zombie; shared baked geometry is shared by

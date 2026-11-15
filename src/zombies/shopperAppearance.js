@@ -3,7 +3,8 @@
 //
 //   lookRandom(seed)                  a small seeded random of its own (never Math.random), so a look never shifts the
 //                                     game's random numbers and the same seed always gives the same Shopper
-//   chooseShopperAppearance(random)   -> the look: { archetype, top, bottom, shoes, pattern, build, hair, hairColor,
+//   chooseShopperAppearance(random)   -> the look: { archetype, presentation ('masculine' | 'feminine': config
+//                                     onlyFor keeps every piece agreeing with it), top, bottom, shoes, pattern, build, hair, hairColor,
 //                                     headwear, eyewear, held, extra, wear, face, palette: { id, top, accent, inner,
 //                                     pants, shoes } (hex), colors: { held, extra, headwear, eyewear } (hex) }
 //   appearanceForSeed(seed)           the same, from a seed (zombieManager hands every spawn its own: zombie.lookSeed)
@@ -36,11 +37,23 @@ const hex = (name) => {
   return colors[name];
 };
 
-/** One look per spawn. Every pick comes from the archetype's own lists, so outfits stay coordinated. */
+/** Can a Shopper of this presentation wear this piece? (No: another presentation has it in config onlyFor.) */
+export function fitsPresentation(presentation, list, id) {
+  return Object.entries(shoppers.onlyFor).every(([other, only]) => other === presentation || !only[list]?.includes(id));
+}
+
+/** One look per spawn. Every pick comes from the archetype's own lists, so outfits stay coordinated, and only from the
+ *  pieces that fit the Shopper's presentation (config/shoppers.js onlyFor), so hair, build and clothes agree. */
 export function chooseShopperAppearance(random = Math.random) {
   const archetype = weighted(shoppers.archetypes, random);
+  const presentation = weighted(archetype.presentations, random).id;
+  const fitting = (list) => {
+    const options = archetype[list].filter((entry) => fitsPresentation(presentation, list, entry.id ?? entry));
+    if (!options.length) throw new Error(`config/shoppers.js: ${archetype.id} has no ${list} for a ${presentation} Shopper`);
+    return options;
+  };
   const scheme = pick(archetype.palettes, random);
-  const bottom = pick(archetype.bottoms, random);
+  const bottom = pick(fitting('bottoms'), random);
   const pantsColor = shoppers.bottoms[bottom].pantsColor; // (acid wash and ripped jeans are always denim)
   const palette = {
     id: scheme.id, top: hex(scheme.top), accent: hex(scheme.accent), inner: hex(scheme.inner),
@@ -48,17 +61,18 @@ export function chooseShopperAppearance(random = Math.random) {
   };
   const look = {
     archetype: archetype.id,
-    top: pick(archetype.tops, random),
+    presentation,
+    top: pick(fitting('tops'), random),
     bottom,
-    shoes: pick(archetype.shoes, random),
+    shoes: pick(fitting('shoes'), random),
     pattern: pick(archetype.patterns, random),
-    build: pick(archetype.builds, random),
-    hair: weighted(archetype.hair, random).id,
+    build: pick(fitting('builds'), random),
+    hair: weighted(fitting('hair'), random).id,
     hairColor: hex(pick(archetype.hairColors, random)),
-    headwear: weighted(archetype.headwear, random).id,
-    eyewear: weighted(archetype.eyewear, random).id,
-    held: weighted(archetype.held, random).id,
-    extra: weighted(archetype.extras, random).id,
+    headwear: weighted(fitting('headwear'), random).id,
+    eyewear: weighted(fitting('eyewear'), random).id,
+    held: weighted(fitting('held'), random).id,
+    extra: weighted(fitting('extras'), random).id,
     wear: weighted(shoppers.wearWeights, random).id,
     face: pick(shoppers.faceProfiles, random).id,
     palette,
