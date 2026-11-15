@@ -148,7 +148,7 @@ function playBot({ seed = 1, skill = 'average', plan = [], maxRound = 30, immort
   const events = [];
   let bossesDefeated = 0;
   g.events.on('bossDefeated', () => { bossesDefeated++; });
-  for (const name of ['bossSpawn', 'bossDefeated', 'powerUpCollect', 'flashSaleStart', 'ritualStart', 'ritualCollect', 'limitedEditionFitted', 'warrantyClaim', 'clawPrize', 'clawClosed'])
+  for (const name of ['bossSpawn', 'bossDefeated', 'powerUpCollect', 'flashSaleStart', 'ritualStart', 'ritualCollect', 'bagTaken', 'warrantyClaim', 'clawPrize', 'clawClosed'])
     g.events.on(name, (e) => events.push({ t: Math.round(g.runStats.timeAlive), round: g.rounds.round, name, id: e?.zombie?.type?.id ?? e?.gunId ?? e?.id ?? e?.reason ?? '' }));
   if (immortal) {
     const real = g.health.takeDamage.bind(g.health);

@@ -561,8 +561,8 @@ export const shoppers = {
     shades: [...both(p('item', [0.12, 0.065, 0.035], [0.075, 0.2, -0.165])), p('item', [0.04, 0.018, 0.035], [0, 0.2, -0.165])],
   },
 
-  // In the right hand (forearm bone; the hand is at z -0.305). Only `shoppingBag` can drop a Limited Edition
-  // (game/features/limitedEditions.js reads model.hasBag).
+  // In the right hand (forearm bone; the hand is at z -0.305). Only `shoppingBag` can drop a bag with one of
+  // Kevin's items in it (game/bagDrops.js reads model.hasBag).
   held: {
     none: [],
     shoppingBag: [p('item', [0.2, 0.26, 0.11], [0, -0.22, -0.32]), p('accent', [0.21, 0.05, 0.115], [0, -0.13, -0.32]),

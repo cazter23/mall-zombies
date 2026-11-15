@@ -60,7 +60,7 @@ Start Room is owned initially; Play again restores that state. Debug O opens all
   returns bin (x -5.3..-4.7 under the hoppers), plush pile and portraits (NE). Solid: lockers, bales, cart (2.2 m) and the bin (0.7 m, vaultable).
   Hold F at the bench for the order form; the bins, Heart wall and lever are scenery now (the bins still light up for today's stock, the lever drops when an order is done). Lanes round it are >= 3 m. Naming Booth on the east wall (z 20..23.2), lever
   further south on the same wall (z 16.8), Returns Chute hatch in the north wall (x -7; its three spawn spots are not in map.spawnPoints, the ritual steers to them). The Limited Editions
-  shelf behind the display window is empty: they drop from zombies now. Debug Y teleports to the bench. Pretzel Palace remains closed but has a scenic warmer/counter/menu/grille. Shoe-store
+  shelf behind the display window is empty: the Limited Editions were retired (15 November 2026). Debug Y teleports to the bench. Pretzel Palace remains closed but has a scenic warmer/counter/menu/grille. Shoe-store
   tickets/fitting shoes and two-sided hanging directional signs complete the pass. No new weapons or spawn markers.
   The elevator stays sealed. Data is exposed through LAYOUT.level2; see mall/levelTwo.js, promenadeShop.js and promenadeDetails.js.
 - HOFFMAN'S · Est. Forever (zone 'departmentStore', maps/mall/departmentStore.js): the department store north of the hallway's

@@ -92,8 +92,8 @@ test('Nail Gun: no falloff, piercing, and a long-range advantage over the early 
 test('base guns meet the round-8 body-shot targets of the stronger-weapon pass', () => {
   const hp = zombieHealthForRound(8);
   for (const [d, expected] of [
-    [priceGun, 12], [nailGun, 5], [foamDartBlaster, 8], [confettiCannon, 2],
-    [weapons.rivetRifle, 9], [weapons.coilNailer, 6], // (Rivet/Coil split: Rivet lighter and faster, Coil heavier and slower) [weapons.barcodeScanner, 2], // (Barcode rework: 420 a beam, 2 a round-8 Shopper)
+    [priceGun, 12], [nailGun, 5], [foamDartBlaster, 7], [confettiCannon, 2], // (Foam 8 -> 7, Rivet 9 -> 8: the human pass, docs/balance-review.md)
+    [weapons.rivetRifle, 8], [weapons.coilNailer, 6], // (Rivet/Coil split: Rivet lighter and faster, Coil heavier and slower) [weapons.barcodeScanner, 2], // (Barcode rework: 420 a beam, 2 a round-8 Shopper)
   ]) assert.equal(shotsToKill(d, hp, 5, style(d)), expected, d.name);
 });
 
@@ -242,9 +242,10 @@ test('Stargazer 3000, the sniper: the further away, the harder it hits; the hard
   assert.equal(shotsToKill(sg, zombieHealthForRound(23), 30, head(sg)), 2, 'not forever: two by round 23');
   assert.equal(shotsToKill(sg, zombieHealthForRound(10), 5, head(sg)), 1);
   assert.equal(shotsToKill(sg, zombieHealthForRound(13), 5, head(sg)), 2, 'close up the same headshot runs out by round 13');
-  // Its window: at 30 m with headshots, from round 16 to 20 it kills faster than any wall gun (no pierce counted).
+  // Its window: at 30 m with headshots, from round 17 to 20 it kills faster than any wall gun (no pierce counted). (From 16 before the Foam Dart
+  // Blaster's 90 -> 100 human pass: docs/balance-review.md.)
   const oneShotKillsPerSecond = sg.magazineSize / (magazineSeconds(sg) + reloadSeconds(sg));
-  for (const round of [16, 18, 20]) {
+  for (const round of [17, 18, 20]) {
     const hp = zombieHealthForRound(round);
     for (const d of all) assert.ok(oneShotKillsPerSecond > killsPerSecond(d, hp, 30, head(d)), `round ${round} at 30 m vs ${d.name}`);
   }

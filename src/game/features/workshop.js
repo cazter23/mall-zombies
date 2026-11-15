@@ -1,88 +1,22 @@
-import * as THREE from 'three';
-import { workshopBuilds } from '../../config/workshop.js';
-import { castShot } from '../../weapons/hitscan.js';
-import { createClearanceRack } from './clearanceRack.js';
 import { createWorkshopRitual } from './workshopRitual.js';
 import { createBuildEffects } from './workshopStuffings.js';
 import { createWorkshopSpectacle } from './workshopSpectacle.js';
-import { createLimitedEditionDrops } from './limitedEditions.js';
 
+// Build-A-Blaster (map feature kind 'workshop'): the ritual at the bench, the builds' stuffings in a fight, and the room's spectacle.
+// (The Party Trap and Clearance Rack Limited Editions were removed on 15 November 2026: shopping bags carry Kevin's stock now, game/bagDrops.js.)
 export function buildWorkshop(bench, { map, gun, pricing, interactions, events, player, scene, zombies, rounds, colliders, effects, sound, stats, state, input, wallet, skins }) {
   const ritual = createWorkshopRitual({ bench, map, gun, pricing, interactions, events, player, zombies, rounds, scene, state, input, wallet, sound, skins });
   const buildEffects = createBuildEffects({ events, gun, player, zombies, colliders, effects, stats, state, sound, scene });
   const spectacle = createWorkshopSpectacle({ bench, ritual, events, zombies, player, sound });
-  const drops = createLimitedEditionDrops({ events, gun, player, scene, rounds, state, sound });
-  const trap = workshopBuilds.partyTrap;
-  const clearance = createClearanceRack({ gun, zombies, effects, sound });
-  events.on('shot', ({ clearanceHit, weaponId }) => { if (clearanceHit) clearance.hit(clearanceHit, weaponId); });
-  const traps = [];
-  const up = new THREE.Vector3(0, 1, 0);
-  const from = new THREE.Vector3(), direction = new THREE.Vector3();
-
-  function removeTrap(index) {
-    const [{ mesh }] = traps.splice(index, 1);
-    mesh.removeFromParent();
-    mesh.geometry.dispose();
-    mesh.material.dispose();
-  }
-
-  events.on('shot', ({ workshopPlacement: position, weaponId }) => {
-    if (!position) return;
-    if (traps.length >= trap.maxActive) removeTrap(0);
-    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(trap.marker.topRadius, trap.marker.bottomRadius, trap.marker.height, trap.marker.segments),
-      new THREE.MeshStandardMaterial({ color: trap.color, emissive: trap.color, emissiveIntensity: trap.marker.glowIdle }));
-    mesh.name = 'partyTrap';
-    mesh.position.copy(position).addScaledVector(up, trap.marker.lift);
-    scene.add(mesh);
-    traps.push({ position: position.clone(), mesh, age: 0, weaponId });
-  });
-
-  function nearby(zombie, position, radius) {
-    if (!zombie.isAlive || zombie.state === 'spawning') return false;
-    const { x, y, z } = zombie.position;
-    return Math.abs(y - position.y) <= trap.footTolerance && Math.hypot(x - position.x, z - position.z) <= radius;
-  }
-
-  function clearPath(zombie, position) {
-    from.copy(position).addScaledVector(up, trap.blastHeight);
-    direction.subVectors(zombie.position, position);
-    const distance = direction.length();
-    return distance === 0 || !castShot(from, direction.normalize(), distance, colliders, []).worldHit;
-  }
-
-  function updateTraps(dt) {
-    for (let i = traps.length - 1; i >= 0; i--) {
-      const charge = traps[i];
-      charge.age += dt;
-      if (charge.age >= trap.lifetimeSeconds) { removeTrap(i); continue; }
-      if (charge.age < trap.armSeconds) continue;
-      charge.mesh.material.emissiveIntensity = trap.marker.glowArmed;
-      const { position } = charge;
-      if (!zombies.zombies.some(z => nearby(z, position, trap.triggerRadius) && clearPath(z, position))) continue;
-      removeTrap(i);
-      effects.confetti(position, up, { ...trap.pop, ...trap.blastPop });
-      if (player.position.distanceTo(position) <= trap.soundRange) sound?.play(trap.sound);
-      const targets = zombies.zombies.filter(z => nearby(z, position, trap.blastRadius) && clearPath(z, position));
-      targets.sort((a, b) => a.position.distanceToSquared(position) - b.position.distanceToSquared(position));
-      for (const target of targets.slice(0, trap.maxTargets)) {
-        const { killed } = target.takeHit({ damage: trap.damage, part: 'body', source: 'partyTrap', weaponId: charge.weaponId });
-        if (killed) zombies.playPartyTrapDeath(target, position);
-      }
-    }
-  }
 
   return {
     ritual,
-    drops,
     update(dt) {
-      clearance.update();
-      updateTraps(dt);
       ritual.update(dt);
       buildEffects.update(dt);
       spectacle.update(dt);
-      drops.update(dt);
     },
-    // Save & Quit (game/saveGame.js): only the order and the run's names (traps, puddles and bags on the floor are not kept).
+    // Save & Quit (game/saveGame.js): only the order and the run's names (puddles on the floor are not kept).
     serialize() {
       return { ritual: ritual.serialize() };
     },
@@ -90,12 +24,9 @@ export function buildWorkshop(bench, { map, gun, pricing, interactions, events, 
       ritual.restore(data.ritual);
     },
     reset() {
-      while (traps.length) removeTrap(traps.length - 1);
-      clearance.reset();
       ritual.reset();
       buildEffects.reset();
       spectacle.reset();
-      drops.reset();
     },
   };
 }

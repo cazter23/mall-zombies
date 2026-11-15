@@ -102,7 +102,7 @@ export const economy = {
     // The three late guns (priced from `npm run balance`): ammo about half the gun, like the others.
     rivetRifle: { weapon: 1500, ammo: 750 }, // stronger automatic rifle; smaller magazine and quicker handling than Coil (Grand Atrium)
     coilNailer: { weapon: 2500, ammo: 650 }, // late Cinema purchase: large drum, slow reload and 2-target pierce
-    barcodeScanner: { weapon: 1750, ammo: 900 }, // a full 420 beam every scan, pierces 4, rings up what it hits (HOFFMAN'S; 13 November 2026 rework)
+    barcodeScanner: { weapon: 1750, ammo: 600 }, // a full 420 beam every scan, pierces 4, rings up what it hits (HOFFMAN'S; 13 November 2026 rework). Ammo was 900: the dearest refill for the fewest shots (docs/balance-review.md, G5)
   },
 
   // GRAB-A-GUN, the claw machine (config/clawMachine.js): one grab. 1,500 = what a site's first grab wins in wall value (it was 1,000 and
@@ -115,9 +115,8 @@ export const economy = {
   // Gun upgrades (what they do: config/upgrades.js). Tiers are bought one at a time for the gun in your hand;
   // each tier costs about one round's earnings at the round it's meant for (round 12 pays ~3,400).
   upgrades: {
-    // PLACEHOLDER PRICES: ritual and restuff are not decided yet (the economy simulation sets them). Limited Editions keep their old prices here for
-    // that decision, but nothing charges them now: since phase 6 they drop free (game/features/limitedEditions.js).
-    workshop: { partyTrap: 1500, clearanceRack: 1000, ritual: 1500, restuff: 750 },
+    // PLACEHOLDER PRICES: ritual and restuff are not decided yet (the economy simulation sets them).
+    workshop: { ritual: 1500, restuff: 750 },
     tiers: { deluxe: 1000, premium: 3000, platinum: 6000 },
     renewals: [4000, 5000, 6500, 8000, 10000], // Warranty Renewals past Platinum (config/upgrades.js renewals), each dearer than the last // (the support upgrade: a build, 1500, hits harder than any single tier)
     melee: { sharpened: 1500, pro: 4000 }, // Box cutter tiers at the Customer Service desk's second window (config/upgrades.js melee)
@@ -131,7 +130,7 @@ export const economy = {
 
   wardrobe: {
     paperHat: 750, aviators: 1250, glasses: 1500,
-    cardigan: 2500, sandwichBoard: 1500, hiVisVest: 1250,
+    cardigan: 1500, sandwichBoard: 1500, hiVisVest: 1250, // (cardigan was 2,500: the same four Shopper hits as the Sandwich Board for 1,000 more; docs/balance-review.md, P4)
     lightUpSneakers: 1250, orthopedicWalkers: 1000, wheelieSneakers: 1000,
     fannyPack: 1500, foamFinger: 750, goldCard: 2000,
   },

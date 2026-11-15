@@ -223,7 +223,6 @@ function buildGun(colors) {
     side: { position: [0.034, -0.012, -0.1] },
     grip: { position: [0, -0.09, 0.02], rotation: [0.3, 0, 0], size: { w: 0.042, h: 0.12, d: 0.05 } },
     magazine: { position: [0, -0.035, -0.11], gunId: 'priceGun' },
-    workshop: { id: 'clearanceRack' },
     sticker: { position: [-0.027, 0.008, -0.1] },
   };
   return { gun, muzzle, lever, roll, roller, emergingLabel, mounts };

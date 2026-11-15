@@ -15,6 +15,74 @@ Now both have a **WEAR-O-MATIC**, a hot-pink clothes vending machine (Everything
   on the minimap (the map's places are drawn once, from the whole mall).
 - Tests: tests/wearOMatic.test.js; tests/arenaModes.test.js's clearance, reachability and whole-mall checks now include it.
 
+## 15 November 2026 - Shopping bags carry Kevin's stock; the Limited Editions are gone (`claude/balance-review`)
+
+The Party Trap (Confetti Cannon) and the Clearance Rack (Price Gun) were relics of Build-A-Blaster's Pack-a-Punch days: a second special mod,
+for two guns only. Build-A-Blaster already gives every gun its special effect, so both were removed.
+- **Removed:**
+  - their config (config/workshop.js `workshopBuilds`, `workshopModOf`, `limitedEditionDrops`) and their prices in economy.js;
+  - their code: game/features/limitedEditions.js, clearanceRack.js and clearanceSticker.js, zombies/partyTrapDeath.js, the trap placement and
+    tag hit in weapons/playerGun.js, and the gun-model parts (weapons/models/workshopBuilds.js);
+  - their sounds (`partyTrapBlast`, `clearanceStamp`, `partySnap`) and their tests.
+  - The Build-A-Blaster room, the ritual and the builds are untouched.
+- **Shopping bags** (game/bagDrops.js, wired in createGame as g.bagDrops; numbers in config/kiosk.js `bagDrops`):
+  - A bag-carrying zombie still sometimes drops its bag: from round 3, 15% a kill, one bag at a time, 30 s on the floor.
+  - Inside is one thing from Kiosk Kevin's cart: one charge of a Soda Bomb, Sparkler Cake, Air Horn or Glitter Bomb, or one Bubble Wrap layer.
+    The Sentry is never in a bag.
+  - Only something you have room for: an empty pocket, or the same product below a full pocket; Bubble Wrap below the most layers. It never
+    replaces what you carry, and if nothing fits, no bag drops.
+  - Walk over the bag to take it.
+  - The HUD marker and the PA lines are the same as before ('bagDrop' / 'bagTaken' replace 'limitedEditionDrop' / 'limitedEditionFitted').
+- tests/bagDrops.test.js covers it.
+
+## 15 November 2026 - Human balance pass, group 2: the guns nobody wanted (`claude/balance-review`)
+
+docs/balance-review.md's group 2, with two of its numbers changed to respect earlier rules.
+- **Stargazer 3000** (config/weapons.js):
+  - Scope sway 0.22 → 0.12°.
+  - The 2x long-range bonus is reached at 20 m instead of 30 m (a body hit at 15 m: 392 → 469).
+  - **Hip spread NOT changed** (12°). The review suggested 5, but the 13 November playtest rule (tests/balance.test.js: hip fire "a gamble even
+    close in", at most 35% at 5 m) allows only about 10.5, which would change almost nothing.
+- **Bottle Rocket:** your own blast takes 30% of your health at its centre (was 45%), never more than 50% (was 75%). The review suggested 25%,
+  but 30% is the lowest that still "bites" from 1.5 m (tests/bottleRocket.test.js: over 20%).
+- **Balloon Launcher:** its pop keeps up with the rounds, `roundScaling: { exponent: 0.4 }`: 200 at round 1, about 450 at round 15, 600 at
+  round 25. weapons/gunStats.js now applies `roundScaling` to a blast's damage too (it only did for bullets and balls).
+- **BOGO:** resting hip spread 2.4 → 1.8°. The review also suggested aimed spread 0.55 → 0.4, but that broke "a spray, not a rifle, at 20 m"
+  (tests/balance.test.js). The aimed spread is unchanged.
+- **Leaf Blower in GRAB-A-GUN** (config/clawMachine.js): weight 7 → 4. It is in about 9% of grabs instead of 15%.
+- **Clearance Rack** (game/features/clearanceRack.js): a body shot that KILLS a tagged zombie pops every tag, as a headshot on one does. Before,
+  only a headshot popped them.
+- **Party Trap** (game/features/workshop.js, config/workshop.js `partyTrap.roundScaling`): its 650 blast grows like Kiosk equipment once 650
+  stops killing a Shopper, x(the target's round health / 600) ^ 0.37, never below 650. About 830 at round 15, 950 at round 20.
+- **Left alone, as the review said:** the Heavy Coil Nailer and the Confetti Cannon.
+- **Tests:**
+  - New tests in tests/workshop.test.js for the Clearance Rack kill-pop and the Party Trap scaling.
+  - tests/upgrades.test.js now checks the barrels on the Stargazer inside its new 8-20 m ramp.
+- **Still the same after this pass:** the Stargazer's 30 m window over the wall guns (from round 17). The falloff change doesn't touch 30 m, so
+  group 1's note that this pass would win round 16 back was wrong.
+
+## 15 November 2026 - Human balance pass, group 1 (`claude/balance-review`)
+
+docs/balance-review.md judged the balance for a human player instead of a perfect-aim bot. These are its group 1 changes, numbers only:
+- **Ammo and the wall guns** (config/weapons.js, economy.js):
+  - Price Gun: magazine 24 → 30, reserve 144 → 180.
+  - Nail Gun: magazine 10 → 12, reserve 60 → 90.
+  - Foam Dart Blaster: damage 90 → 100, reserve 144 → 180.
+  - Rivet Rifle: damage 80 → 90, reserve 144 → 216.
+  - Barcode Scanner: magazine 8 → 10, ammo 900 → 600.
+  - A human lands about 55-60% of shots and was running dry 1-3 times a round from round 15.
+- **Warranty tiers** (config/upgrades.js): a tier replaces the one before, so Premium used to shrink Deluxe's magazine and give its reload back.
+  - Premium: magazine 1.1 → 1.3, and it now reloads 15% faster (it had no reload bonus).
+  - Platinum: magazine 1.15 → 1.35, reload 0.9 → 0.8.
+  - tests/warranty.test.js now checks that a later tier never takes handling away.
+- **Wardrobe traps** (config/wardrobe.js, economy.js):
+  - Hi-Vis Vest: zombie hits x1.25 → x1.2. A Shopper hits for 48, so three hits still down you.
+  - Wheelie Sneakers: backpedal x0.85 → x0.95, back above a jogging zombie.
+  - Cardigan: 2,500 → 1,500, the Sandwich Board's price for the same four hits.
+  - Gold Card: kill pay x1.1 → x1.25 (a Shopper kill +20).
+  - 3D Glasses: headshots x1.25 → x1.5.
+- **Side effect:** the Stargazer 3000's "faster than any wall gun at 30 m with headshots" window now starts at round 17 instead of 16. The new Foam
+  Dart Blaster wins round 16 (tests/balance.test.js). The Stargazer's own fix is in the review's group 2.
 ## 15 November 2026 - 3D zombie sound (`claude/spatial-audio`)
 
 Hear WHERE every zombie is: behind you, to the side, upstairs, through a wall. Still no audio files. The whole picture, the

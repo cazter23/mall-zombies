@@ -325,19 +325,6 @@ test('upgrades stay on the gun while it is away, and it comes back loaded with i
   g.map.dispose();
 });
 
-test('a Limited Edition and a ritual sit on one gun without getting in each other\'s way', () => {
-  const t = fixture({ guns: [weapons.priceGun] }), { g } = t;
-  g.gun.setMods('priceGun', [{ id: 'workshop', workshop: 'clearanceRack' }]);
-  t.atBench();
-  t.ritual.choose('smoothie', 'lastRound');
-  t.atBench();
-  assert.equal(g.interactions.prompt?.id, 'orderForm', 'same gun, at the bench');
-  t.press('KeyF', 20); t.press('KeyF'); t.tick();
-  t.finish(); t.collect(); t.tick(30);
-  assert.deepEqual(g.gun.modsFor('priceGun').map(m => m.id), ['workshop', 'build']);
-  g.map.dispose();
-});
-
 test('Play again mid-ritual: nothing survives, and the game equals a fresh one', () => {
   for (const finish of [false, true]) {
     const t = fixture({ guns: [] }), { g, ritual } = t;

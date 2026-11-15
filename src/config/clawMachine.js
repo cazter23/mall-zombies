@@ -26,7 +26,7 @@ export const clawMachine = {
     balloonLauncher: { weight: 6, capsule: 'purple', value: 1500 }, // CLAW-ONLY: homing balloons
     bogo: { weight: 6, capsule: 'purple', value: 1500 }, // CLAW-ONLY: the akimbo SMGs (Buy One Get One)
     bottleRocket: { weight: 2, capsule: 'gold', value: 2500 }, // CLAW-ONLY: the rocket launcher (gold: rarer than the purples, still above the wonder weapon)
-    leafBlower: { weight: 7, capsule: 'purple', value: 1500 }, // CLAW-ONLY (config/weapons.js clawOnly): it is on no wall, this is the only way to it. `value`: a nominal worth for tools/clawOdds.js only (a wall gun's is its wall price); the game never reads it
+    leafBlower: { weight: 4, capsule: 'purple', value: 1500 }, // (weight was 7: a prize that kills nothing came up as often as a real gun; docs/balance-review.md, G10) CLAW-ONLY (config/weapons.js clawOnly): it is on no wall, this is the only way to it. `value`: a nominal worth for tools/clawOdds.js only (a wall gun's is its wall price); the game never reads it
     coilNailer: { weight: 3, capsule: 'gold' },
   },
   capsules: {

@@ -21,7 +21,13 @@ function fixture() {
 
 test('each tier has its own job: Deluxe is handling, Premium is damage, Platinum is the most damage and a claim', () => {
   const [, deluxe, premium, platinum] = upgrades.tiers;
-  assert.ok(deluxe.effects.magazine > premium.effects.magazine && deluxe.effects.reload < 1 && !premium.effects.reload, 'Deluxe: magazine and reload');
+  assert.ok(deluxe.effects.magazine > 1 && deluxe.effects.reload < 1, 'Deluxe: magazine and reload');
+  // A tier REPLACES the one before (withTier), so a later tier never takes handling away (docs/balance-review.md, P1: Premium used to shrink
+  // Deluxe's magazine and give back its reload).
+  for (const [lower, higher] of [[deluxe, premium], [premium, platinum]]) {
+    assert.ok(higher.effects.magazine >= lower.effects.magazine, `${higher.id}: a magazine at least ${lower.id}'s`);
+    assert.ok((higher.effects.reload ?? 1) <= (lower.effects.reload ?? 1), `${higher.id}: reloads at least as fast as ${lower.id}`);
+  }
   assert.ok(deluxe.effects.damage < 1.2 && premium.effects.damage >= 1.4 && platinum.effects.damage > premium.effects.damage, 'damage rises Deluxe < Premium < Platinum');
   assert.equal(platinum.claim, true);
   assert.ok(!deluxe.claim && !premium.claim);

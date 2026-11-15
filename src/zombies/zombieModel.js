@@ -446,7 +446,7 @@ function buildZombieModel(type, { random = Math.random, appearance } = {}) {
 
   return {
     root,
-    hasBag: carriesBag, // (Build-A-Blaster: only these can drop a Limited Edition)
+    hasBag: carriesBag, // (only these can drop a bag of Kevin's stock: game/bagDrops.js)
 
     // Call every rendered frame. `zombie` supplies state; `alpha` interpolates between ticks.
     update(frameTime, zombie, alpha) {

@@ -7,7 +7,7 @@
 //   const dress = createShopperDresser(look, { skin, eyes, shape, geometries, block })
 //   dress.leg(hip, side) / dress.torso(upper) / dress.upperArm(shoulder, side) / dress.forearm(elbow, side) / dress.head(neck)
 //   dress.parts(bone, parts)     any other part list (the face profile)
-//   dress.hasBag                 a shopping bag in hand (only these can drop a Limited Edition: limitedEditions.js)
+//   dress.hasBag                 a shopping bag in hand (only these can drop a bag of Kevin's stock: game/bagDrops.js)
 //   dress.summary                what it's wearing (model.root.userData.appearance; tests and the debug panel read it)
 //
 // The skeleton, hitboxes, animation and the head's position never change with the look.

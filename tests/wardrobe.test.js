@@ -342,9 +342,9 @@ test('clothing stacks with live incentives, caps health and sprint, and scales z
   assert.deepEqual(player.velocity.toArray(), [3, 0, -2]);
   wardrobe.wear('hiVisVest');
   g.events.emit('playerHit', { damage: 40 });
-  near(stats.health, base.health - 10 - 32 - 50, 'Hi-Vis Vest: a Shopper hit is 50');
+  near(stats.health, base.health - 10 - 32 - 48, 'Hi-Vis Vest: a Shopper hit is 48 (three still down you)');
   player.onFall({ drop: 6, damage: 5 });
-  near(stats.health, base.health - 10 - 32 - 50 - 5, 'nor does a vest worsen one');
+  near(stats.health, base.health - 10 - 32 - 48 - 5, 'nor does a vest worsen one');
 });
 
 test('ticket lines are words only: each factor has a direction and one line, sizes come from the fixed bands, and no player-facing text carries a number', (t) => {
@@ -488,7 +488,7 @@ test('Aviators speed both aim transitions and 3D Glasses only boost head hits', 
   const before = hitDamage(def, head, 0, g.stats);
   const bodyBefore = hitDamage(def, body, 0, g.stats);
   g.wardrobe.buy('glasses');
-  near(hitDamage(def, head, 0, g.stats), before * 1.25, 'head bonus');
+  near(hitDamage(def, head, 0, g.stats), before * 1.5, 'head bonus');
   assert.equal(hitDamage(def, body, 0, g.stats), bodyBefore);
 });
 
@@ -530,11 +530,11 @@ test('Gold Card boosts rounded base credit for any kill source, with Commission 
   };
   assert.equal(makeKill('hazard'), 60);
   g.wardrobe.buy('goldCard');
-  assert.equal(makeKill('hazard'), 70);
-  assert.equal(makeKill('gun', 'head'), 110);
+  assert.equal(makeKill('hazard'), 80); // 60 x 1.25 = 75, paid in tens
+  assert.equal(makeKill('gun', 'head'), 120);
   collect(game, 'commissionDay');
-  // Base 60 * 1.2 (goldCard -> 70) + 70 (meleeKillBonus) = 140, doubled to 280 once via Commission Day.
-  assert.equal(makeKill('melee'), 280);
+  // Base 60 * 1.25 (goldCard -> 80) + 70 (meleeKillBonus) = 150, doubled to 300 once via Commission Day.
+  assert.equal(makeKill('melee'), 300);
   g.health.takeDamage(10000);
   assert.equal(makeKill('gun'), 0);
 });

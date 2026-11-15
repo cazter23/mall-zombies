@@ -11,7 +11,6 @@
 // THE EVENTS (payloads):
 //   'shot'        shot (including weaponId)              a gun fired (hitscan result): one per shot = one per staple /
 //                                                        sticker / nail / Foam dart (3 per burst) / whole shotgun blast
-//                workshopPlacement / clearanceHit carry the corresponding build's resolved shot data
 //                magazineLeft = rounds left after it; a cone gun's (Leaf Blower) hits each carry interrupted = the gust shoved
 //                that zombie out of an attack (zombie.isAttacking: a windup, a swing or a cart charge)
 //   'warrantyClaim' { weaponId, round, pa }              a Platinum gun ran completely dry and its ammo was replaced for free (game/warranty.js)
@@ -148,8 +147,9 @@
 //   'ritualWaiting' { gunId, pa }                         done, but taking it would replace a gun: it waits at the Naming Booth
 //   'ritualCollect' { gunId, build, certificate, pa }     the player took the finished gun (certificate = the Birth Certificate's fields)
 //   'buildFired'  { stuffing, heart, weaponId, hit: [zombie] }  a finished build's Heart fired its stuffing (game/features/workshopStuffings.js)
-//   'limitedEditionDrop'   { id, position, pa }           a bag-carrying zombie dropped a Limited Edition (game/features/limitedEditions.js)
-//   'limitedEditionFitted' { id, weapon, pa }             the player walked over it
+//   'bagDrop'      { id, position, pa }    a bag-carrying zombie dropped a bag with one of Kevin's items in it (game/bagDrops.js; id: a
+//                                          product id or 'bubbleWrap')
+//   'bagTaken'     { id, pa }              the player walked over it and took the item
 //   'clawGrab'    { siteId, capsules: [{ gunId, capsule } | null] }   GRAB-A-GUN was paid: the capsules in its lanes (game/features/clawMachine.js)
 //   'clawDrop'    { lane, gunId, plush, reason 'press' | 'time' }  the claw dropped; gunId = the prize (null: the plush or an empty lane)
 //   'clawPrize'   { gunId, refurbished, outcome }        the player took the prize from the chute: outcome 'new' | 'refill' | 'refurbish'

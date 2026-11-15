@@ -28,14 +28,17 @@ export const upgrades = {
   // Each tier lets a gun kill in the same number of shots as a plain gun does at round 8, up to
   // `holdsUntilRound` (tests/upgrades.test.js checks that against economy's zombie health).
   // Each tier has a JOB: Deluxe is handling (a bigger magazine and a quicker reload), Premium is damage, Platinum is more damage plus a claim.
+  // A later tier keeps at least the handling of the one before (tests/warranty.test.js), and adds a little more of it.
   // `claim`: once per round, a gun that runs completely dry gets its ammo replaced for free (game/warranty.js).
   tiers: [
     { id: 'standard', name: 'Standard', color: 0x6b7280, effects: {}, lines: [], holdsUntilRound: 8 }, // every gun starts here
     { id: 'deluxe', name: 'Deluxe', job: 'Handling', color: 0xb9bec6, effects: { damage: 1.1, magazine: 1.25, reload: 0.85 }, holdsUntilRound: 9,
       lines: [{ effect: 'magazine', text: '{Size} bigger magazine' }, { effect: 'reload', text: 'Reloads {size} faster' }, { effect: 'damage', text: '{Size} more damage' }] },
-    { id: 'premium', name: 'Premium', job: 'Damage', color: 0xdf9f1f, effects: { damage: 1.45, magazine: 1.1 }, holdsUntilRound: 12,
-      lines: [{ effect: 'damage', text: '{Size} more damage' }, { effect: 'magazine', text: '{Size} bigger magazine' }] },
-    { id: 'platinum', name: 'Platinum', job: 'Damage and claims', color: 0xf2eefc, effects: { damage: 1.9, magazine: 1.15, reload: 0.9 }, holdsUntilRound: 16, claim: true, // (damage was 1.65: 14% over Premium for 6,000; docs/economy-report.md, C)
+    // A tier REPLACES the one before (weapons/upgrades.js withTier), so each keeps at least the previous tier's handling: Premium used to
+    // shrink Deluxe's magazine (1.25 -> 1.1) and take its faster reload away (docs/balance-review.md, P1).
+    { id: 'premium', name: 'Premium', job: 'Damage', color: 0xdf9f1f, effects: { damage: 1.45, magazine: 1.3, reload: 0.85 }, holdsUntilRound: 12,
+      lines: [{ effect: 'damage', text: '{Size} more damage' }, { effect: 'magazine', text: '{Size} bigger magazine' }, { effect: 'reload', text: 'Reloads {size} faster' }] },
+    { id: 'platinum', name: 'Platinum', job: 'Damage and claims', color: 0xf2eefc, effects: { damage: 1.9, magazine: 1.35, reload: 0.8 }, holdsUntilRound: 16, claim: true, // (damage was 1.65: 14% over Premium for 6,000; docs/economy-report.md, C. Magazine 1.15 -> 1.35, reload 0.9 -> 0.8: P1)
       lines: [{ effect: 'damage', text: '{Size} more damage' }, { effect: 'magazine', text: '{Size} bigger magazine' }, { effect: 'reload', text: 'Reloads {size} faster' }, { text: 'Run dry? Ammo replaced free, once a round' }] },
   ],
 

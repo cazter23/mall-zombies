@@ -29,7 +29,8 @@ export const wardrobeItems = {
   },
   glasses: {
     slot: 'head', name: '3D Glasses', shortName: '3D Glasses',
-    factors: { headshotDamageMultiplier: 1.25, adsMoveSpeed: 0.85 }, ticket: 'The floor is closer than it appears.',
+    factors: { headshotDamageMultiplier: 1.5, adsMoveSpeed: 0.85 }, // (headshots x1.25: +8% damage at human headshot rates; docs/balance-review.md, P6)
+    ticket: 'The floor is closer than it appears.',
     color: 0x29c4f0, icon: 'glasses3d', pulse: 'headshot',
     lines: [{ effect: 'headshotDamageMultiplier', text: '{Size} more headshot damage' }, { effect: 'adsMoveSpeed', text: 'Moves {size} slower while aiming' }],
     zone: 'cinema', at: [-40.41, -3.48], facing: 'x+',
@@ -59,7 +60,8 @@ export const wardrobeItems = {
     slot: 'torso', name: 'Hi-Vis Vest', shortName: 'Hi-Vis Vest',
     // ownBlastDamage 0.01: safety gear, your own rocket's burst can't hurt you (weapons/blast.js drops a self-hit under blast.self.ignoreBelow; a factor of
     // 0 can't be taken off again, since the wardrobe divides a factor out when the item comes off).
-    factors: { reloadSpeed: 1.25, damageTakenMultiplier: 1.25, ownBlastDamage: 0.01 }, ticket: 'Nobody questions a vest. Everybody can see one.',
+    factors: { reloadSpeed: 1.25, damageTakenMultiplier: 1.2, ownBlastDamage: 0.01 }, // (hits x1.25 made a Shopper 50: down in two; 48 keeps it three. P2)
+    ticket: 'Nobody questions a vest. Everybody can see one.',
     color: 0xd7ff2f, icon: 'vest', pulse: 'playerHit',
     lines: [{ effect: 'reloadSpeed', text: 'Reloads {size} faster' }, { effect: 'damageTakenMultiplier', text: 'Zombie hits hurt {size} more' },
       { effect: 'ownBlastDamage', text: "Your own blasts can't hurt you" }],
@@ -88,7 +90,7 @@ export const wardrobeItems = {
   },
   wheelieSneakers: {
     slot: 'feet', name: 'Wheelie Sneakers', shortName: 'Wheelies',
-    factors: { slideSpeed: 1.15, slideCooldown: 0.7, backpedalSpeed: 0.85 },
+    factors: { slideSpeed: 1.15, slideCooldown: 0.7, backpedalSpeed: 0.95 }, // (0.85 backed up at 3.3 m/s, under a jogging zombie's 3.4. P3)
     ticket: 'Stopping sold separately.',
     color: 0xff8a1f, icon: 'wheelie', pulse: 'slideStart',
     lines: [{ effect: 'slideSpeed', text: 'Slides {size} faster' }, { effect: 'slideCooldown', text: 'Slides again {size} sooner' }, { effect: 'backpedalSpeed', text: 'Backs up {size} slower' }],
@@ -116,7 +118,8 @@ export const wardrobeItems = {
   },
   goldCard: {
     slot: 'accessory', name: 'Galleria Gold Card', shortName: 'Gold Card',
-    factors: { killPayMultiplier: 1.1, regenDelay: 1.2 }, ticket: 'Earn points. Lose sleep.',
+    factors: { killPayMultiplier: 1.25, regenDelay: 1.2 }, // (x1.1 rounded a Shopper kill to +10: 9 rounds to pay back. P5)
+    ticket: 'Earn points. Lose sleep.',
     color: 0xffc61a, icon: 'card', pulse: 'payingKill',
     lines: [{ effect: 'killPayMultiplier', text: '{Size} more points per kill' }, { effect: 'regenDelay', text: 'Healing starts {size} later' }],
     zone: 'hallway', at: [4.06, 5.04], facing: 'x-',

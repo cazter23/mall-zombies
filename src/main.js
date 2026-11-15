@@ -170,7 +170,7 @@ const { state: game, death, map, player, gun, melee, zombies, rounds, health, wa
 const body = createPlayerBody(scene, effects); // legs + torso you see when looking down
 connectWardrobeAppearance(g.events, { body, viewmodel });
 const workshop = g.features.instanceOf('workshop'); // Build-A-Blaster (the HUD reads its status)
-const { ritual, drops: limitedEditions } = workshop ?? {};
+const { ritual } = workshop ?? {};
 const fittingRooms = [...g.features.instancesOf('fittingRoom'), ...g.features.instancesOf('wardrobeMachine')]; // (the HUD draws the open picker; the WEAR-O-MATIC is one in shop mode)
 const clawMachine = g.features.instanceOf('clawMachine'); // GRAB-A-GUN (the HUD reads its status)
 const resetRun = g.resetRun;
@@ -700,7 +700,7 @@ function render(alpha, frameTime) {
   const menuLabels = { confirm: buttonLabel('menuConfirm'), back: buttonLabel('menuBack'), move: buttonLabel('menuMove'), switch: buttonLabel('menuSwitch') };
   hud.setOrderForm(game.over ? null : ritual?.form ?? null, menuLabels);
   hud.setFittingRoom(game.over ? null : fittingRooms.find((room) => room.view)?.view ?? null, menuLabels);
-  hud.setLimitedEdition(game.over ? null : limitedEditions?.status ?? null);
+  hud.setBagDrop(game.over ? null : g.bagDrops.status);
   const objectiveArea = ui.startObjective.until;
   // The line under the round box: the shutter until the Hallway is owned, then (Directed only) Closing Time's next step.
   const shutterShut = g.map.zones[objectiveArea]?.open === false;

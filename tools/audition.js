@@ -11,7 +11,7 @@
 import { createSound } from '../src/audio/sound.js';
 import { audio } from '../src/config/audio.js';
 import { weapons, melee } from '../src/config/weapons.js';
-import { workshopStuffings, workshopBuilds } from '../src/config/workshop.js';
+import { workshopStuffings } from '../src/config/workshop.js';
 import { Weapon } from '../src/weapons/weapon.js';
 import { legacySounds } from './auditionLegacy.js';
 import { gunSounds as gunSoundsTable } from '../src/config/gunSounds.js';
@@ -23,7 +23,7 @@ const TICK = 1 / 60;
 const $ = (id) => document.getElementById(id);
 const oldTable = { ...audio.sounds, ...legacySounds };
 // Names the old recipes never had: what the old game played instead.
-const OLD_ALIAS = { sentryShot: 'stapleShot', partyTrapBlast: 'confettiShot' };
+const OLD_ALIAS = { sentryShot: 'stapleShot' };
 const oldName = (name) => (legacySounds[name] ? name : OLD_ALIAS[name] ?? (/Dry$/.test(name) ? 'dryClick' : name));
 
 let ctx = null, engines = null, mode = 'new';
@@ -135,8 +135,6 @@ for (const def of Object.values(weapons)) {
   if (def.sounds.beep) extras.push(['Beep', () => play(def.sounds.beep)]);
   if (def.charge?.sound) extras.push(['Scan, let go early', () => { const v = play(def.charge.sound); setTimeout(() => v?.stop(), 200); }]);
   if (def.id === 'returnToSender') extras.push(['Stamp', () => play('returnStamp')]);
-  if (def.id === 'confettiCannon') extras.push(['Party Trap', () => play(workshopBuilds.partyTrap.sound)]);
-  if (def.id === 'priceGun') extras.push(['Clearance Rack', () => play('clearanceStamp')]);
   if (extras.length) { const r3 = row(c, 'Impacts and extras'); for (const [l, fn] of extras) button(r3, l, fn); }
   const r4 = row(c, 'Every tier (ignores the Tier menu)');
   for (const [label, tier, renewals] of [['Std', 'standard', 0], ['Deluxe', 'deluxe', 0], ['Premium', 'premium', 0], ['Platinum', 'platinum', 0], ['+5', 'platinum', 5]])
@@ -294,7 +292,7 @@ async function measure() {
     { label: 'Kiosk Sentry (x0.55)', name: 'sentryShot', volume: 0.55, gun: true },
     { label: 'Box Cutter swing', name: 'meleeSwing' },
     { label: 'Bottle Rocket burst', name: 'bottleRocketBurst' }, { label: 'Balloon pop', name: 'balloonPop' },
-    { label: 'Tennis bounce', name: 'tennisBounce' }, { label: 'Party Trap blast', name: 'partyTrapBlast' },
+    { label: 'Tennis bounce', name: 'tennisBounce' },
     { label: 'hitBody', name: 'hitBody' }, { label: 'hitHead', name: 'hitHead' }, { label: 'killConfirm', name: 'killConfirm' },
     { label: 'ref: walkerSqueak (x0.5)', name: 'walkerSqueak', volume: 0.5 }, { label: 'ref: mannequinStep (x0.5)', name: 'mannequinStep', volume: 0.5 },
   ];
@@ -376,7 +374,7 @@ export const LEVEL_TARGETS = {
   stapleShot: -24, sentryShot: -22, priceShot: -23, foamShot: -22.5, bogoShot: -23, leafBlowerPuff: -21.5, nailShot: -19.5,
   rivetShot: -17.5, balloonLaunch: -20, tennisLaunch: -18.5, scannerShot: -17, coilShot: -16.5, confettiShot: -13.5,
   stargazerShot: -13.5, bottleRocketLaunch: -15.5, returnBeam: -12.5,
-  bottleRocketBurst: -12, partyTrapBlast: -15, balloonPop: -22, tennisBounce: -30, returnStamp: -26, clearanceStamp: -33,
+  bottleRocketBurst: -12, balloonPop: -22, tennisBounce: -30, returnStamp: -26,
   meleeSwing: -29, scannerCharge: -20, scannerBeep: -28,
   hitBody: -31, hitHead: -28, killConfirm: -25.5,
 };

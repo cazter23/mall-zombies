@@ -145,7 +145,7 @@ adjoining areas are owned. No cascading unlocks. Nine area purchases total 9500;
 - **Level 2 / Sunset Promenade** x -20..20, z -4.5..6 (+ shoe annex), floor y 6.3, zone 'upstairs'.
 - **HOFFMAN'S department store** x -20..-5.3, z 6.3..26, 5 m (counters vaultable; everything else >= 2.1 m).
 - **Sunset Cinema** upstairs x -42..-20.3: 1250 area unlock off the Promenade's west wall or Service Corridor's north end; the other connection opens free when its neighbouring area is owned.
-- **Build-A-Blaster:** storefront + back hall off the Promenade (numbers: config/workshop.js, config/promenade.js workshop; docs/map.md). Hold F at the bench: an order form (pre-filled; F orders), fight in the room to fill the tank and finish it sooner, and the gun comes back to you named: game/features/workshop*.js. Party Trap and Clearance Rack drop from zombies with shopping bags (limitedEditions.js).
+- **Build-A-Blaster:** storefront + back hall off the Promenade (numbers: config/workshop.js, config/promenade.js workshop; docs/map.md). Hold F at the bench: an order form (pre-filled; F orders), fight in the room to fill the tank and finish it sooner, and the gun comes back to you named: game/features/workshop*.js. Zombies with shopping bags sometimes drop one of Kevin's items (game/bagDrops.js).
 - **Wall buys:** Price Gun (start room), Nail Gun (hallway), Foam Dart Blaster (Mega Mart), Confetti Cannon (Service Corridor), Rivet Rifle (Atrium),
   Heavy Coil Nailer (Cinema projection passage, 2500), Barcode Scanner (HOFFMAN'S). Door count: 15.
 - **Customer Parking** x 34.3..62.3, z -24..6, y 0: 1250 through Mega Mart's former east emergency exit (z 1..4).

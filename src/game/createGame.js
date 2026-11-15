@@ -56,6 +56,7 @@ import { createMelee } from '../weapons/melee.js';
 import { createAimAssist } from '../weapons/aimAssist.js';
 import { createBalls } from '../weapons/ballistics.js';
 import { createEquipment } from './equipment.js';
+import { createBagDrops } from './bagDrops.js';
 import { createZombieManager } from '../zombies/zombieManager.js';
 import { createMascotCostumes } from './mascotCostumes.js';
 import { createSurfaceSlows } from './surfaceSlows.js';
@@ -397,6 +398,8 @@ export function createGame({
   const equipment = createEquipment({
     input, player, gun, melee, health, state, shootables, colliders, effects, sound, events, throwables, getRound,
   });
+  // Shopping bags: a bag-carrying zombie sometimes drops one with something from Kevin's cart in it (game/bagDrops.js).
+  const bagDrops = createBagDrops({ events, equipment, health, player, scene, getRound, state, sound });
 
   // Where each zombie sound comes from: placed at the zombie, muffled by walls and floors, the horde as a crowd bed (game/soundStage.js).
   const soundStage = createSoundStage({ map, player, sound, zombies: () => zombies.zombies });
@@ -697,6 +700,7 @@ export function createGame({
     ['guide', () => guide.reset()], // (only what the round being replayed was counted: the record itself is permanent)
     ['balls', () => balls.clear()], // (before the gun: a ball in the air reports to it)
     ['equipment', () => equipment.reset()], // empty pockets, nothing thrown left in the air or on the floor
+    ['bagDrops', () => bagDrops.reset()], // no bag left on the floor
     ['rockets', () => rockets.clear()], // (before the gun, like the balls: a rocket in the air is gone, silently, no burst)
     ['gun', () => gun.reset()], // just the staple gun again, no upgrades
     ['interactions', () => interactions.reset()],
@@ -832,7 +836,7 @@ export function createGame({
   ];
   // Reset steps a save does not keep: nothing in them outlasts a round's start that matters (zombies, effects, timers).
   const transientSteps = [
-    'zombies', 'mascotCostumes', 'surfaces', 'health', 'balls', 'rockets', 'interactions', 'viewmodel', 'effects', 'contactShadows',
+    'zombies', 'mascotCostumes', 'surfaces', 'health', 'balls', 'rockets', 'bagDrops', 'interactions', 'viewmodel', 'effects', 'contactShadows',
     'ambience', 'soundStage', 'melee', 'aimAssist', 'clockIn', 'stragglers', 'hud', 'saveGame',
     'doorOpenings', // (a load counts every owned area as already welcomed: game/doorOpenings.js, on 'runLoaded')
     'guide', // (its replay count travels in the guide's own record, not the run save)
@@ -932,6 +936,7 @@ export function createGame({
     doorOpenings.update(dt); // (after the map: a barrier that rolled fully up this tick clunks home now)
     shutterSounds.update(dt);
     features.update(dt);
+    bagDrops.update(dt); // (a bag on the floor: walked over, it goes in your pocket)
     outfitRail.update(dt);
     challenges.update(dt);
     flashSales.update(dt);
@@ -987,6 +992,7 @@ export function createGame({
     rockets,
     throwables,
     equipment,
+    bagDrops, // (shopping bags with Kevin's stock: game/bagDrops.js)
     interactions,
     doorOpenings, // (a bought door's moment: game/doorOpenings.js)
     melee,
