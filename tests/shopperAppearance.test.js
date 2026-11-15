@@ -5,7 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { shoppers, colors } from '../src/config/shoppers.js';
-import { chooseShopperAppearance, appearanceForSeed, lookRandom } from '../src/zombies/shopperAppearance.js';
+import { chooseShopperAppearance, appearanceForSeed, lookRandom, fitsPresentation } from '../src/zombies/shopperAppearance.js';
 import { bakedGeometryStats } from '../src/zombies/shopperBake.js';
 import { seededRandom } from '../src/world/textures.js';
 import { createZombieModel, buildClerkFigure, ANATOMY_GEOMETRIES } from '../src/zombies/zombieModel.js';
@@ -59,6 +59,58 @@ test('the same seed is the same Shopper, and over enough spawns every archetype 
     for (const [list, key] of SLOTS) assert.equal(s[key].size, archetype[list].length, `${archetype.id} wears every ${key}`);
     for (const [list, key] of WEIGHTED) {
       for (const { id } of archetype[list]) assert.ok(s[key].has(id), `${archetype.id} never rolled ${key} ${id}`);
+    }
+  }
+});
+
+test('outfits match the person: a masculine-looking Shopper never wears a skirt, and every skirt still turns up', () => {
+  const LISTS = { tops: 'top', bottoms: 'bottom', shoes: 'shoes', builds: 'build', hair: 'hair', headwear: 'headwear', held: 'held', extras: 'extra' };
+  const presentations = Object.keys(shoppers.onlyFor);
+  // The data: every archetype has both men and women, and leaves each of them a choice in every list.
+  for (const archetype of shoppers.archetypes) {
+    assert.deepEqual(archetype.presentations.map((w) => w.id).sort(), [...presentations].sort(), `${archetype.id} has men and women`);
+    for (const presentation of presentations) {
+      for (const list of Object.keys(LISTS)) {
+        const options = archetype[list].filter((entry) => fitsPresentation(presentation, list, entry.id ?? entry));
+        assert.ok(options.length, `${archetype.id}: no ${list} for a ${presentation} Shopper`);
+      }
+    }
+  }
+  // Every skirt is feminine-only (a new skirt that isn't listed in onlyFor fails here).
+  const skirts = Object.entries(shoppers.bottoms).filter(([, b]) => b.skirt).map(([id]) => id);
+  assert.ok(skirts.length >= 3);
+  for (const id of skirts) assert.ok(shoppers.onlyFor.feminine.bottoms.includes(id), `${id} is worn by women only`);
+
+  // The rolls: thousands of Shoppers, every archetype, many seeds (both the spawn seeds and other seeded randoms).
+  const masculineCue = (look) => Object.entries(shoppers.onlyFor.masculine).some(([list, ids]) => ids.includes(look[LISTS[list]]));
+  const skirtsSeen = new Map(skirts.map((id) => [id, 0]));
+  const mix = new Map(shoppers.archetypes.map((a) => [a.id, { masculine: 0, feminine: 0 }]));
+  const looks = [];
+  for (let seed = 1; seed <= 20000; seed++) looks.push(appearanceForSeed(seed));
+  for (let seed = 1; seed <= 200; seed++) {
+    const random = seededRandom(seed * 7919);
+    for (let i = 0; i < 25; i++) looks.push(chooseShopperAppearance(random));
+  }
+  for (const look of looks) {
+    const where = `${look.archetype} (${look.presentation}): ${look.hair} hair, ${look.build}, ${look.top}, ${look.bottom}`;
+    mix.get(look.archetype)[look.presentation]++;
+    for (const [list, key] of Object.entries(LISTS)) {
+      assert.ok(fitsPresentation(look.presentation, list, look[key]), `${where}: ${key} ${look[key]} doesn't fit`);
+    }
+    if (shoppers.bottoms[look.bottom].skirt) {
+      assert.ok(!masculineCue(look) && look.presentation === 'feminine', `a masculine-looking Shopper in a skirt: ${where}`);
+      skirtsSeen.set(look.bottom, skirtsSeen.get(look.bottom) + 1);
+    }
+  }
+  for (const [id, count] of skirtsSeen) assert.ok(count > 0, `nobody ever wears the ${id}`);
+  // Both men and women turn up in every archetype, roughly at its mix.
+  for (const archetype of shoppers.archetypes) {
+    const counts = mix.get(archetype.id);
+    const total = counts.masculine + counts.feminine;
+    const weightSum = archetype.presentations.reduce((sum, w) => sum + w.weight, 0);
+    for (const { id, weight } of archetype.presentations) {
+      const expected = (total * weight) / weightSum;
+      assert.ok(Math.abs(counts[id] - expected) < expected * 0.2, `${archetype.id}: ${counts[id]} ${id} of ${total}, expected ~${Math.round(expected)}`);
     }
   }
 });

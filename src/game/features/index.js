@@ -67,12 +67,15 @@ export const FEATURE_KINDS = Object.keys(builders);
  */
 export function buildFeatures(map, ctx, kinds = builders) {
   const list = [];
-  for (const feature of map.features ?? []) {
+  // ARENA SURVIVAL: an arena's own features (map.arenaFeatures, each with `arena`) are built here once, like the rest, with
+  // arenaContext: their prompts only while that arena is on, their scene objects in its (hidden otherwise) group.
+  const all = [...new Set([...(map.features ?? []), ...(map.arenaFeatures ?? [])])];
+  for (const feature of all) {
     const build = Object.hasOwn(kinds, feature.kind) ? kinds[feature.kind] : null; // (not inherited names like 'toString')
     if (!build) {
       throw new Error(`map "${map.id}": feature "${feature.name ?? '?'}" has unknown kind "${feature.kind}" (${Object.keys(kinds).join(', ')})`);
     }
-    list.push({ feature, instance: build(feature, ctx) ?? {} });
+    list.push({ feature, instance: build(feature, feature.arena ? arenaContext(map, feature, ctx) : ctx) ?? {} });
   }
   // A feature that saves run state is saved under its NAME, so its name must be there and be its own.
   const savingNames = new Set();
@@ -117,6 +120,25 @@ export function buildFeatures(map, ctx, kinds = builders) {
       });
     },
   };
+}
+
+/**
+ * What an arena-only feature is built with: the same context, but every item it adds to `interactions` is available only while
+ * its arena is on (map.arena), and what it adds to `scene` goes into the arena's own group (shown only while it is on). The items
+ * are wrapped, so such a feature must not `interactions.remove()` its own items (none of the kinds an arena uses does).
+ */
+export function arenaContext(map, feature, ctx) {
+  const arena = map.arenas?.[feature.arena];
+  if (!arena) throw new Error(`map "${map.id}": feature "${feature.name ?? '?'}" is for unknown arena "${feature.arena}"`);
+  const live = () => map.arena === feature.arena;
+  const gate = (item) => new Proxy(item, {
+    get(target, prop, receiver) {
+      if (prop === 'available') return () => live() && target.available();
+      return Reflect.get(target, prop, receiver);
+    },
+  });
+  const interactions = Object.create(ctx.interactions, { add: { value: (item) => ctx.interactions.add(gate(item)) } });
+  return { ...ctx, interactions, scene: arena.group };
 }
 
 /** A map's features of one kind (handy for tests and debug tools). */

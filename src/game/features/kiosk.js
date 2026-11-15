@@ -183,13 +183,14 @@ export function buildKiosk(feature, { map, rounds, zombies, pricing, interaction
     else moveTo(target);
   });
 
-  // Every cart shut, Kevin at the first site (a new run, or the start of a load).
+  // Every cart shut, Kevin at the first site whose zone is open, else the first site (a new run, or the start of a load). In a
+  // whole-mall run none is open yet, so that is the first; an arena run (Lot Full) starts him at the arena's own site.
   function setUp() {
-    site = sites[0];
+    site = sites.find((s) => zoneOpen(s)) ?? sites[0];
     pending = null;
     lastSite = null;
     Object.assign(shout, { clock: 0, hawkAt: 0, duckAt: 0, wasHiding: false, turns: { lines: 0, duck: 0, back: 0 }, pitchCredit: 0, pitchOrder: 0, pitches: {}, products: 0 });
-    sites.forEach((s, i) => s.cart.show(i === 0 ? 'closed' : 'away', stockFor(kiosk.openingRound)));
+    sites.forEach((s) => s.cart.show(s === site ? 'closed' : 'away', stockFor(kiosk.openingRound)));
   }
   setUp();
 

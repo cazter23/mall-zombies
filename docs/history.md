@@ -45,6 +45,40 @@ numbers and how to tune it are in docs/spatial-audio.md.
 - Tests: tests/spatialAudio.test.js. Shared files changed: config/audio.js (new zombie recipes; mannequinStep, cartSqueak and
   cartRattle gained layers), config/zombies.js, config/bosses.js (the guard's telegraph is a cue), config/settings.js,
   game/createGame.js, game/shoplifting.js, zombies/zombie.js, zombies/zombieManager.js, main.js, CLAUDE.md (docs index).
+## 15 November 2026 - Arena survival: Extra Modes (`claude/arena-modes`, not merged: the user plays it first)
+
+Survive as many rounds as you can locked in ONE part of the mall (the plan, with every decision: docs/arena-modes-plan.md).
+Play now lists Directed, Classic and **Extra Modes**; Extra Modes opens three arenas, each with its line and best round:
+**Everything Must Go** (the Start Room), **Last Showing** (the Sunset Cinema) and **Lot Full** (Customer Parking).
+- How: `g.setArena(id)` / `state.arena`. The map's `setArena` (maps/mall/arenas.js) opens exactly the arena's zones, seals the area
+  system (world/areaUnlocks.js `sealed`: no door prompts, no door Flash Sales, door vouchers pay their points) and shows that arena's
+  own fixtures, spawns and features; set back to null the map is exactly the whole mall's (tested collider by collider). Arena-only
+  features are built once with the rest and gated (game/features/index.js arenaContext). No Closing Time in an arena (no keys, no
+  briefing, no checklist, no van). GRAB-A-GUN and Kiosk Kevin start a run at their first OPEN site, so an arena gets its own.
+- Fixtures: Last Showing's Customer Service is the Box Office (its three windows on the ticket booth, a CUSTOMER SERVICE board hung
+  above it: no new collider) plus a Nail Gun; Lot Full gets a Customer Service booth, a RESTOCK-O-MATIC and two wall guns on fence
+  boards (Foam Dart Blaster, Rivet Rifle) and a spawn in the vestibule; Everything Must Go is the hard mode (Price Gun, an arena
+  RESTOCK-O-MATIC, two more spawns: no claw machine or warranties). Coordinates: docs/map.md "Arena survival".
+- Saves and records: an 'arena' save step (restored first; Continue says the arena); the receipt names it; careerStats keeps each
+  arena's best round (`arenas`) and leaves the whole mall's bests alone. The Statistics screen has an "Arena survival" section.
+- Shared files changed: createGame.js, mall.js (one call), areaUnlocks.js, features/index.js, clawMachine.js, kiosk.js, closingTime.js,
+  escapeVan.js, bossVouchers.js, saveGame.js (peek), careerStats.js, screens.js, runStart.js, runIntro.js, main.js, settings.js
+  ('arenaChoice'), retail.css, tests/menus.test.js (the chooser now lists Extra Modes). No economy, weapon or save-version change.
+- Checked in the browser (a build on a spare port): each arena played several rounds with no zombie outside it, the box office and
+  the lot's fence row look right, the receipt and best round are filed. Controller menus are covered by tests only (a fake pad in the
+  hidden pane did not reach the menus).
+## 15 November 2026 - Shopper outfits match the person (`claude/shopper-outfits`)
+
+The user's report: male-looking Shoppers sometimes spawned in skirts. Cause: shopperAppearance.js rolled hair, build, top, bottom and
+shoes independently, so the office archetype's pencil skirt (half its bottoms) went with bald heads and ties, and the Mall Rat's ra-ra
+skirt with flat-tops and mullets; the women's power suit (blouse bow) and the purse went on men the same way. Now every Shopper is rolled
+a presentation first (per archetype `presentations` weights in config/shoppers.js; office 1.5 : 1 and rocker 2 : 1 men to women, parent
+1 : 1.2, the rest even) and wears only the pieces that fit it: `onlyFor` lists what is men-only (short or bald hair, flat-top, spiky,
+mullet, the three tie shirts, the broad build, the flat cap) and women-only (bob, ponytails, perm, big hair, the power suit, the three
+skirts, the purse); everything else is anyone's. Same seed, same Shopper, as before (the looks per seed changed once). The plain `skirt`
+had been unreachable since the errand/summer archetypes went: it is now on the Weekend Shopper's list. Skirt share among all spawns of an
+archetype: office 50% -> ~20%, Mall Rat 33% -> ~16% (now half and a third of the women), Weekend ~12%. There is no facial hair in the
+Shopper data; a beard or moustache would go in onlyFor.masculine.
 
 ## 15 November 2026 - Gun weight, and rumble on hits (`claude/bughunt`)
 

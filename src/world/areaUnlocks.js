@@ -10,8 +10,11 @@ export function createAreaUnlocks({ zones, doors, connections }) {
     door.connectsZones = endpoints;
   }
 
+  // SEALED (arena survival, maps/mall/arenas.js): no door has a destination and nothing unlocks, for the whole run.
+  let sealed = false;
+
   function destination(door) {
-    if (door.isOpen) return null;
+    if (sealed || door.isOpen) return null;
     const [a, b] = door.connectsZones;
     if (zones[a].open === zones[b].open) return null;
     return zones[a].open ? b : a;
@@ -21,6 +24,7 @@ export function createAreaUnlocks({ zones, doors, connections }) {
   // barrier this opens is a free connection and gets the light show (world/shutter.js).
   function unlock(id, { instant = false, bought = null } = {}) {
     if (!Object.hasOwn(zones, id)) throw new Error(`Unknown area: ${id}`);
+    if (sealed) return [];
     zones[id].open = true;
     const opened = [];
     for (const door of doors) {
@@ -35,6 +39,8 @@ export function createAreaUnlocks({ zones, doors, connections }) {
   const controller = {
     destination,
     unlock,
+    get sealed() { return sealed; },
+    set sealed(value) { sealed = Boolean(value); },
     openAll() {
       for (const id of Object.keys(zones)) unlock(id);
     },

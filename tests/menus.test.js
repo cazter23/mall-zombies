@@ -158,8 +158,8 @@ test('Play opens the mode chooser: Directed is listed and focused first, then th
   assert.equal(screens.current, 'runMode');
   assert.equal(screens.showsFlyover, true);
   const listed = button('directed').parentElement.querySelectorAll('[data-action]').map((node) => node.dataset.action);
-  assert.deepEqual(listed, [...closingTime.modes.list.map(({ id }) => id), 'modeBack']);
-  assert.deepEqual(listed, ['directed', 'classic', 'modeBack'], 'Directed is listed first');
+  assert.deepEqual(listed, [...closingTime.modes.list.map(({ id }) => id), 'extraModes', 'modeBack']);
+  assert.deepEqual(listed, ['directed', 'classic', 'extraModes', 'modeBack'], 'Directed is listed first, Extra Modes after Classic');
   assert.equal(closingTime.modes.default, 'directed');
   assert.equal(document.activeElement, button('directed'), 'and focused first');
   assert.ok(button('directed').classList.contains('primary') && !button('classic').classList.contains('primary'));
@@ -180,7 +180,7 @@ test('Play opens the mode chooser: Directed is listed and focused first, then th
   pad('PadStart');
   assert.equal(document.activeElement, button('directed'));
   pad('PadA');
-  assert.deepEqual(choices, [{ mode: 'directed', pad: true }]);
+  assert.deepEqual(choices, [{ mode: 'directed', arena: null, pad: true }]);
 
   // The mode chosen last time is the one focused (and drawn as the primary button). An unknown id is ignored.
   screens.setRunMode('classic');
@@ -190,12 +190,12 @@ test('Play opens the mode chooser: Directed is listed and focused first, then th
   assert.equal(document.activeElement, button('classic'));
   assert.ok(button('classic').classList.contains('primary') && !button('directed').classList.contains('primary'));
   pad('PadA');
-  assert.deepEqual(choices.at(-1), { mode: 'classic', pad: true });
+  assert.deepEqual(choices.at(-1), { mode: 'classic', arena: null, pad: true });
 
   screens.show('title');
   button('play').click();
   button('directed').click();
-  assert.deepEqual(choices.at(-1), { mode: 'directed', pad: false });
+  assert.deepEqual(choices.at(-1), { mode: 'directed', arena: null, pad: false });
 });
 
 // A browser's localStorage for game/settings.js, and a settings context whose every part accepts anything.

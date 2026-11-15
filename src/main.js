@@ -59,6 +59,7 @@ import { createThrowableView } from './fx/throwableView.js';
 import { createKioskSpectacle } from './fx/kioskSpectacle.js';
 import { createVanLights } from './fx/vanLights.js';
 import { closingTime } from './config/closingTime.js';
+import { arenas as arenaConfig, arenaById } from './config/arenas.js';
 import { createLightPool, collectPointLights } from './fx/lightPool.js';
 import { batchStatic, freezeStatic, movedWhileFrozen } from './world/staticBatch.js';
 import { sheenEnvironment, applyMetalSheen } from './fx/metalSheen.js';
@@ -378,6 +379,7 @@ function runSoFar() {
     round: rounds.round, points: wallet.points, time: g.runStats.timeAlive, kills: g.runStats.kills,
     outfit: g.outfitRail.snapshot(), closing: game.showClosingGuidance ? g.closing.checklist : null,
     canSave: g.saveGame.canSave(), // Save & quit: greyed with the reason when it can't save now
+    arena: arenaById(game.arena)?.name ?? null, // (arena survival: the pause card names it)
   };
 }
 function pauseRun() {
@@ -392,7 +394,7 @@ function freshRun(how) {
   g.leaveRun(); // (a won run left by Restart run is recorded first)
   screens.setCareerResult(null);
   resetRun();
-  screens.show('pause', { fresh: true, closing: game.showClosingGuidance ? [] : null });
+  screens.show('pause', { fresh: true, closing: game.showClosingGuidance ? [] : null, arena: arenaById(game.arena)?.name ?? null });
   hud.setDimmed(true);
   play(how);
 }
@@ -402,7 +404,9 @@ function goToTitle({ saved = false } = {}) {
   // A won run left by Quit to title is recorded first. Not after Save & quit: that run goes on after Continue and is
   // recorded once, when it really ends (a save that is never continued is never recorded, like any run left unwon).
   if (!saved) g.leaveRun();
+  game.arena = null; // (the title shows the whole mall: an arena is applied again when one is chosen, or by Continue)
   resetRun();
+  screens.setArenaBests(careerStats.snapshot().arenas); // (Extra Modes shows the best round filed in each arena)
   screens.setCareerResult(null);
   screens.setContinue(g.saveGame.peek()); // "Continue · Round N" while a save exists
   // The save slot's notice (an older save discarded, a newer one left alone) goes on the title itself: a HUD announcement
@@ -437,7 +441,7 @@ function newShift(how) {
 // The title's mode chooser (ui/runStart.js): stores the mode and plays. The title already reset the run, so nothing is
 // reset again, and the chooser stays up until play really starts.
 // Starting a new shift there discards a save left in the slot (newShift).
-const runStart = createRunStart({ game, screens, settings, play: newShift });
+const runStart = createRunStart({ game, screens, settings, play: newShift, setArena: g.setArena });
 screens.on('continue', continueRun);
 screens.on('saveQuit', saveAndQuit);
 screens.on('resume', play);
@@ -463,7 +467,7 @@ screens.on('guide', () => screens.show('guide'));
 screens.on('challenges', () => screens.show('challenges'));
 connectChallengeTracker({ events: g.events, tracker: hud.challengeTracker, pins: challengePins, save: skinSave, challenges: g.challenges, sound, guideSave });
 window.addEventListener('pagehide', () => { g.challenges.flush(); g.guide.flush(); }); // closing the tab mid-run keeps the skin progress it earned
-wireRunIntro({ events: g.events, hud, sound }); // the PA's opening line as round 1 begins
+wireRunIntro({ events: g.events, hud, sound, arenaLine: () => arenaById(game.arena)?.pa ?? null }); // (an arena opens with its own line) // the PA's opening line as round 1 begins
 screens.on('controls', () => controlsMenu.open());
 screens.on('notices', () => noticesMenu.open());
 
@@ -671,6 +675,7 @@ function render(alpha, frameTime) {
   // The line under the round box: the shutter until the Hallway is owned, then (Directed only) Closing Time's next step.
   const shutterShut = g.map.zones[objectiveArea]?.open === false;
   hud.setObjective(game.over ? null
+    : game.arena ? `${arenaById(game.arena).name} · ${arenaConfig.sealed}` // (arena survival: the exits stay shut all run)
     : shutterShut ? ui.startObjective.text.replace('{price}', g.pricing.priceOf('door', objectiveArea).toLocaleString('en-US'))
       : game.showClosingGuidance ? g.closing.nextStep : null);
   hud.setClosing(

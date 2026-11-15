@@ -713,6 +713,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .stats-run td { padding: 8px; border-bottom: 1px solid var(--print-rule); }
 .stats-run b { color: var(--raspberry); }
 .stats-won { margin-left: 6px; padding: 1px 5px; border: 1px solid currentColor; border-radius: 3px; color: var(--raspberry); font-size: 9px; font-weight: 700; letter-spacing: .08em; white-space: nowrap; }
+.stats-arena { margin-left: 6px; padding: 1px 5px; border: 1px solid currentColor; border-radius: 3px; color: var(--mint); font-size: 9px; font-weight: 700; letter-spacing: .06em; white-space: nowrap; } /* an arena run in the recent list (config/arenas.js) */
+.title-panel .arena-best { display: inline-block; margin-top: 3px; color: var(--mint); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; } /* Extra Modes: the best round under each arena */
 
 /* Facilities console and illustrated handbook keep familiar, operable controls. */
 .settings { background: #23192db0; }

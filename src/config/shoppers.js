@@ -53,11 +53,34 @@ export const colors = {
 
 export const shoppers = {
   // ---------------------------------------------------------------------------------------------------------------
-  // ARCHETYPES. weight = how common. Every list is picked from evenly unless it is a weights table.
+  // WHO WEARS WHAT. Every Shopper is first rolled a presentation (its archetype's `presentations` weights), and then
+  // only wears pieces that agree with it: a piece listed below is worn ONLY by that presentation, anything not listed by
+  // anyone. So a skirt only ever goes on a feminine-presenting Shopper, and never with a tie, a flat-top or a bald head.
+  // The keys are the archetype list names. Every archetype must leave each presentation at least one choice per list
+  // (tests/shopperAppearance.test.js checks, and that every piece still turns up). A new piece that reads as one
+  // presentation (a beard, a dress) goes in here.
+  onlyFor: {
+    masculine: {
+      hair: ['bald', 'receding', 'crop', 'sidePart', 'slickBack', 'flatTop', 'spiky', 'mullet'],
+      tops: ['shirtTie', 'looseTie', 'shortSleeveTie'],
+      builds: ['broad'],
+      headwear: ['flatCap'],
+    },
+    feminine: {
+      hair: ['bob', 'ponytail', 'sidePony', 'perm', 'bigHair'],
+      tops: ['powerSuit'], // (the 1986 women's suit: shoulder pads, a bow at the blouse collar)
+      bottoms: ['skirt', 'pencilSkirt', 'miniSkirt'],
+      held: ['purse'],
+    },
+  },
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // ARCHETYPES. weight = how common; presentations = its mix of men and women (see onlyFor). Every list is picked from
+  // evenly unless it is a weights table, among the pieces that fit the Shopper's presentation.
   archetypes: [
     {
-      id: 'weekend', name: 'Weekend Shopper', weight: 3,
-      tops: ['tee', 'polo', 'raglan', 'rugby'], bottoms: ['jeans', 'chinos', 'shorts'], shoes: ['sneaker', 'boatShoe'],
+      id: 'weekend', name: 'Weekend Shopper', weight: 3, presentations: weights({ masculine: 1, feminine: 1 }),
+      tops: ['tee', 'polo', 'raglan', 'rugby'], bottoms: ['jeans', 'chinos', 'shorts', 'skirt'], shoes: ['sneaker', 'boatShoe'],
       patterns: ['plain', 'stripes', 'logo'], builds: ['slight', 'regular', 'broad'],
       hair: weights({ crop: 3, sidePart: 2, bob: 2, ponytail: 1.5, curls: 1.5, feathered: 1.5, receding: 1, bald: 0.6 }),
       hairColors: ['hairBlack', 'hairDarkBrown', 'hairChestnut', 'hairDirtyBlonde', 'hairBlonde', 'hairAuburn'],
@@ -78,7 +101,7 @@ export const shoppers = {
     {
       // The Sunday velour suit: colour-blocked shoulders and cuffs, a zip, matching trousers. (Not the Mall Walker's
       // striped one: no side stripes, no headband, no wristbands.)
-      id: 'velour', name: 'Velour Tracksuit', weight: 1.4,
+      id: 'velour', name: 'Velour Tracksuit', weight: 1.4, presentations: weights({ masculine: 1, feminine: 1 }),
       tops: ['velourYoke', 'velourPanel'], bottoms: ['trackPants'], shoes: ['sneaker', 'hiTop'],
       patterns: ['plain'], builds: ['slight', 'regular', 'broad'],
       hair: weights({ perm: 3, feathered: 2, crop: 2, ponytail: 1.5, receding: 1 }),
@@ -97,7 +120,7 @@ export const shoppers = {
       ],
     },
     {
-      id: 'teen', name: 'Mall Rat', weight: 2,
+      id: 'teen', name: 'Mall Rat', weight: 2, presentations: weights({ masculine: 1, feminine: 1 }),
       tops: ['windbreaker', 'neonTee', 'jeanJacket'], bottoms: ['acidJeans', 'jeans', 'miniSkirt'], shoes: ['hiTop', 'sneaker'],
       patterns: ['plain'], builds: ['slight', 'regular'],
       hair: weights({ bigHair: 2.5, spiky: 1.5, sidePony: 2, mullet: 1.5, flatTop: 1, feathered: 1 }),
@@ -116,7 +139,7 @@ export const shoppers = {
       ],
     },
     {
-      id: 'office', name: 'Lunch Break', weight: 1.4,
+      id: 'office', name: 'Lunch Break', weight: 1.4, presentations: weights({ masculine: 1.5, feminine: 1 }),
       tops: ['shirtTie', 'looseTie', 'shortSleeveTie', 'powerSuit'], bottoms: ['slacks', 'pencilSkirt'], shoes: ['dress'],
       patterns: ['plain'], builds: ['slight', 'regular', 'broad'],
       hair: weights({ sidePart: 3, receding: 2, bald: 1, bob: 1.5, feathered: 1.5, slickBack: 1.5 }),
@@ -136,7 +159,7 @@ export const shoppers = {
     },
     {
       // A sleeping baby rides along in the carrier (it's fine: it slept through all of it).
-      id: 'parent', name: 'Parent with Carrier', weight: 1.2,
+      id: 'parent', name: 'Parent with Carrier', weight: 1.2, presentations: weights({ masculine: 1, feminine: 1.2 }),
       tops: ['sweater', 'polo', 'tee'], bottoms: ['momJeans', 'chinos'], shoes: ['sneaker', 'boatShoe'],
       patterns: ['plain', 'stripes'], builds: ['slight', 'regular', 'broad'],
       hair: weights({ perm: 2, sidePony: 1.5, crop: 2, bob: 1.5, feathered: 1.5, sidePart: 1 }),
@@ -154,7 +177,7 @@ export const shoppers = {
       ],
     },
     {
-      id: 'retiree', name: 'Retiree', weight: 1.2,
+      id: 'retiree', name: 'Retiree', weight: 1.2, presentations: weights({ masculine: 1, feminine: 1 }),
       tops: ['cardigan', 'sweaterVest'], bottoms: ['slacks'], shoes: ['orthopedic', 'dress'],
       patterns: ['plain'], builds: ['slight', 'regular'],
       hair: weights({ bald: 2, receding: 2, perm: 2.5, bob: 1.5, slickBack: 1 }),
@@ -174,7 +197,7 @@ export const shoppers = {
     },
     {
       // Still in uniform from one of the food court's stalls: paper hat or visor, apron, name badge.
-      id: 'foodCourt', name: 'Food Court Crew', weight: 1,
+      id: 'foodCourt', name: 'Food Court Crew', weight: 1, presentations: weights({ masculine: 1, feminine: 1 }),
       tops: ['uniformPolo', 'uniformStripes'], bottoms: ['slacks'], shoes: ['dress', 'sneaker'],
       patterns: ['plain'], builds: ['slight', 'regular', 'broad'],
       hair: weights({ crop: 2, ponytail: 2, bob: 1.5, sidePart: 1.5, mullet: 1 }),
@@ -191,7 +214,7 @@ export const shoppers = {
       ],
     },
     {
-      id: 'rocker', name: 'Rocker', weight: 1,
+      id: 'rocker', name: 'Rocker', weight: 1, presentations: weights({ masculine: 2, feminine: 1 }),
       tops: ['denimVest', 'studdedVest'], bottoms: ['blackJeans', 'rippedJeans'], shoes: ['hiTop', 'boot'],
       patterns: ['plain'], builds: ['slight', 'regular', 'broad'],
       hair: weights({ longStraight: 3, mullet: 2.5, spiky: 1, bigHair: 1 }),
