@@ -42,7 +42,7 @@ Round 1's PA opener is the arena's own line (config/arenas.js `pa`) instead of a
   the shutter) and `spawn_arena_startRoom_sideDoor` (-4.3, 0, 12.55). Four markers round a 10 m room: with the 4 m spawn distance
   rule there is always one far enough from you.
 - Fixtures: the Price Gun wall buy (existing) and, arena only, a RESTOCK-O-MATIC on the south wall west of the shutter: body
-  x -4.45..-2.75, z 6.3..7.15 (centre x -3.6), facing +Z.
+  x -4.45..-2.75, z 6.36..7.21 (centre x -3.6, clear of the wainscot rail), facing +Z.
 - **No claw machine, no Customer Service.** The room is 10 x 10 m with a checkout counter, a shelf and crates already in it. The
   desk is 3.6 m wide, 1.9 m deep and 3.9 m tall with its sign: it would take a whole wall and the walls are where the zombies come
   from (vents north, shutter south, side door west, the Price Gun east). The claw machine fits (1.3 x 1.0 m) but a gun lottery from
@@ -59,9 +59,10 @@ Round 1's PA opener is the arena's own line (config/arenas.js `pa`) instead of a
 - Arena only: **Customer Service at the Box Office.** The lobby walls are full (posters, sealed screens, waiting seats, the
   concessions), so instead of a new booth the ticket booth (x -26.3..-22, z -10.35..-9.4) takes the desk's three windows:
   Extended Warranty in the middle (-24.15, 7.4, -9.0), Sharpening east (-22.9), Second Chance west (-25.4). Signs only (a
-  CUSTOMER SERVICE board above the Box Office header, window labels on the glass): no new collider, so zombie routes in the
-  cinema are the same even in the arena.
-- Arena only: a **Nail Gun** wall buy (1000) on the lobby's east wall above the waiting seats, (-20.32, 8.05, -7.0) facing -X.
+  CUSTOMER SERVICE board hung on two wires from the ceiling at y 6.3 + 4.12..4.58, z -9.3, above the office clock, and window
+  labels on the glass at y 6.3 + 2.18): no new collider, so zombie routes in the cinema are the same even in the arena.
+- Arena only: a **Nail Gun** wall buy (1000) on the lobby's east wall above the waiting seats, (-20.32, 8.05, -6.3) facing -X
+  (north of the premiere programme poster, z -9.2..-7.4).
   The cinema's only gun was the 2500 Coil Nailer; the Nail Gun is the normal game's first real upgrade.
 
 ### Lot Full (zone `parkingLot`, x 34.3..62.3, z -24..6, ground y 0)

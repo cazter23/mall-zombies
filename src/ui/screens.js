@@ -427,6 +427,10 @@ export function createScreens({ locker = null, guide = null, challenges = null, 
           <div class="stats-grid stats-bests"></div>
         </section>
         <section>
+          <h2>${arenas.statsTitle}</h2>
+          <div class="stats-grid stats-arenas"></div>
+        </section>
+        <section>
           <h2>Recent shifts</h2>
           <div class="ledger-scroll"><table class="shift-ledger"><thead><tr><th scope="col">Filed</th><th scope="col">Round</th><th scope="col">Shift length</th><th scope="col">Cleared</th><th scope="col">Accuracy</th></tr></thead><tbody class="stats-recent"></tbody></table></div>
         </section>
@@ -443,6 +447,7 @@ export function createScreens({ locker = null, guide = null, challenges = null, 
   const statsTotals = stats.querySelector('.stats-totals');
   const statsBests = stats.querySelector('.stats-bests');
   const statsRecent = stats.querySelector('.stats-recent');
+  const statsArenas = stats.querySelector('.stats-arenas');
 
   const screens = { title, runMode, arenaMode, pause, results, help, stats, ...(locker ? { locker: locker.element } : {}), ...(guide ? { guide: guide.element } : {}),
     ...(challenges ? { challenges: challenges.element } : {}) };
@@ -609,11 +614,18 @@ export function createScreens({ locker = null, guide = null, challenges = null, 
       ['Best accuracy', bests.accuracy === null ? '—' : percent(bests.accuracy)],
       [closingTime.stats.fastestWin, bests.fastestWin == null ? closingTime.stats.noWin : clock(bests.fastestWin)],
     ]);
+    // Arena survival: each arena's best round (an arena run's round is never in the whole mall's bests above), and an arena run's
+    // name beside its round in the recent list.
+    statsArenas.innerHTML = statCards(arenas.list.map(({ id, name }) => {
+      const best = data.arenas?.[id]?.best ?? 0;
+      return [name, best > 0 ? arenas.menu.best(best) : arenas.menu.noBest];
+    }));
+    const arenaMark = (run) => (arenaById(run.arena) ? ` <span class="stats-arena">${arenaById(run.arena).name}</span>` : '');
     statsRecent.innerHTML = recent.map((run) => {
       const date = run.endedAt ? new Date(run.endedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Unknown';
       // A won shift carries a mark beside its round (and the row a class, for the style).
       const won = run.won ? ` <span class="stats-won" title="${closingTime.stats.wonTitle}">${closingTime.stats.wonMark}</span>` : '';
-      return `<tr class="stats-run${run.won ? ' won' : ''}"><td>${date}</td><td><b>${run.round}</b>${won}</td><td>${clock(run.timeAlive)}</td><td>${run.kills}</td><td>${percent(run.accuracy)}</td></tr>`;
+      return `<tr class="stats-run${run.won ? ' won' : ''}"><td>${date}</td><td><b>${run.round}</b>${won}${arenaMark(run)}</td><td>${clock(run.timeAlive)}</td><td>${run.kills}</td><td>${percent(run.accuracy)}</td></tr>`;
     }).join('');
   }
 
@@ -693,10 +705,12 @@ export function createScreens({ locker = null, guide = null, challenges = null, 
       return preferredArena;
     },
 
-    // The best round filed in each arena ({ [id]: round }, game/careerStats.js snapshot().arenas): shown under each arena's line.
+    // The best round filed in each arena (game/careerStats.js snapshot().arenas: { [id]: { best } }, or { [id]: round }): shown
+    // under each arena's line.
     setArenaBests(bests = {}) {
       for (const node of arenaMode.querySelectorAll('[data-arena-best]')) {
-        const round = bests[node.dataset.arenaBest];
+        const entry = bests[node.dataset.arenaBest];
+        const round = typeof entry === 'number' ? entry : entry?.best;
         node.textContent = round > 0 ? arenaCfg.best(round) : arenaCfg.noBest;
       }
     },

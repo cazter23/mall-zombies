@@ -372,3 +372,49 @@ test('Lot Full: Kiosk Kevin opens at his parking site', (t) => {
   g.setArena(null);
   assert.equal(kiosk.site.id, kiosk.sites[0].id, 'a whole-mall run starts him at the first site again');
 });
+
+// --- Best rounds (game/careerStats.js) -------------------------------------------------------------------------------------
+
+test('an arena death files its best round under its arena, counts in the totals, and leaves the whole mall\'s bests alone', async (t) => {
+  const { createCareerStats } = await import('../src/game/careerStats.js');
+  const storage = memoryStorage();
+  const career = createCareerStats({ storage });
+  const run = game(t);
+  const { g } = run;
+  g.events.on('runEnd', ({ summary }) => { run.result = career.recordRun(summary); });
+  g.setArena('cinema');
+  run.tick(1);
+  g.rounds.jumpTo(9);
+  run.tick(1);
+  g.health.takeDamage(10000, { type: 'fall', fall: true });
+  assert.equal(run.result.saved, true);
+  assert.deepEqual(run.result.newRecords, [arenas.newRecord('Last Showing')]);
+  let record = career.snapshot();
+  assert.deepEqual(record.arenas.cinema, { best: 9, runs: 1 });
+  assert.equal(record.bests.round, 0, 'the whole mall\'s Highest round is untouched');
+  assert.equal(record.totals.runs, 1, 'a shift worked');
+  assert.equal(record.recentRuns[0].arena, 'cinema');
+  // A worse arena run: counted, no record.
+  g.setArena(null);
+  g.setArena('cinema');
+  run.tick(1);
+  g.rounds.jumpTo(4);
+  run.tick(1);
+  g.health.takeDamage(10000, { type: 'fall', fall: true });
+  assert.deepEqual(run.result.newRecords, []);
+  // A whole-mall run: its own bests, the arenas untouched.
+  g.state.arena = null;
+  g.resetRun();
+  run.tick(1);
+  g.rounds.jumpTo(3);
+  run.tick(1);
+  g.health.takeDamage(10000, { type: 'fall', fall: true });
+  record = career.snapshot();
+  assert.deepEqual(record.arenas.cinema, { best: 9, runs: 2 });
+  assert.deepEqual(record.arenas.parkingLot, { best: 0, runs: 0 });
+  assert.equal(record.bests.round, 3);
+  assert.equal(record.totals.runs, 3);
+  assert.equal(record.recentRuns[0].arena, null);
+  // Read back by a new session.
+  assert.deepEqual(createCareerStats({ storage }).snapshot().arenas.cinema, { best: 9, runs: 2 });
+});

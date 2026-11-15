@@ -563,6 +563,9 @@ src/
                         the Mascot's (mascotHeadPop, mascotVariantIntro, mascotReclaim, mascotPopBlast, mascotGold),
                         purchase ({ label, cost, kind, id }, read before use()), runReset. 'shot' = one per staple / sticker / nail / dart / whole blast
     createGame.js       createGame({ scene, camera, input, hud, sound, viewmodel, mapId, buildTestRange, debugTick,
+                        ARENA SURVIVAL: state.arena (null or an arena id; state.closingQuest is false in one) and g.setArena(id) (resets the run if it
+                        changed); the 'arena' reset step (after 'map') calls map.setArena, the 'player' step uses the arena's spawn, the 'arena' save
+                        step restores first (a load starts from a whole-mall reset); the run summary carries `arena`.
                         onPlayerDeath }): builds and wires EVERY gameplay system (map, stats, player, wallet, run stats,
                         effects, aim assist, gun, buyables, melee, health, zombies, rounds), owns update(dt) (the fixed tick,
                         in the order below), resetRun() (Play again: walks ONE ordered `resetSteps` list; a new system with
@@ -589,6 +592,8 @@ src/
                         Mastery counts kill.weaponId, ignores assisted/dead/fan kills, emits challengeProgress and skinUnlocked.
                         update/reset/snapshot cover per-run counters; finish handlers can finalize later round/run feats before saving.
     careerStats.js      createCareerStats({ storage }): versioned persistent employee record with lifetime totals,
+                        Arena survival: an arena run counts in the totals and recent list (`arena` on each run) but not the whole mall's bests;
+                        `arenas` keeps each arena's { best, runs } (a new best is a "Best round · <arena>" record).
                         personal bests and the last 12 completed shifts. Assisted/debug runs are rejected; storage
                         failures fall back to memory. A save from a newer version is never written over (blank ledger for the session). main.js supplies localStorage and records the runEnd event
     settings.js         createSettings(ctx): current value of every setting (and of remembered choices with no tab, like the run mode: "Reset everything" keeps those), saved in localStorage ('mallZombies.settings',
@@ -654,6 +659,7 @@ src/
                         keychain: hold / has / use). A resetStep ('tickets'), so Play again starts at 0.
     flashSales.js       Flash Sales & Doorbusters: a PA teaser (`flashSaleSoon`, 10 s lead time, category line picked from `teaser.lines` via `pickPaLine` with its own cosmetic `lineRandom` (default announcer.js `paRandom`: never a draw from the sales' `random`), re-checks eligibility at go-live), category sales (`25-50% off`), and rare Doorbusters (one unowned item you can reach in time, `reachableInTime`, 65-75% off for 20 s; BUYING it sells it out (`flashSaleEnd` reason 'sold') and brings a capped open-zone shopper rush via zombieManager). Also exports `saleEligibility`, `doorbusterCandidates`, `nearOpenSpawnPoints`, `collectSaleSpots`.
     runIntro.js         The PA's opening announcement on a run's first round (listens to 'roundStart').
+                        arenaLine(): an arena run's own opener (config/arenas.js pa) instead of a random line.
     shutterSounds.js    A bought door's sounds by its opening profile (config/shutters.js opening.profiles): unlock + motor on 'barrierOpening',
                         a roll tick every rollInterval while it really rises, the heavy end clunk on 'barrierOpened'; a free connection only
                         clunks, at lightVolume. Follows the real barrier: pausing stops them, death and reset cancel them, a load plays none.
@@ -703,6 +709,7 @@ src/
       fittingRoomPicker.js The fitting-room picker: slots side by side, menu actions pick a slot and an owned item, confirm wears it (wardrobe.wear).
                         Sets state.menu while open; closes on back, a 'playerHit', being moved away, death, reset. DOM-free; `view` is what the UI draws.
       clawMachine.js    Feature kind 'clawMachine', GRAB-A-GUN: idle -> sweeping -> lifting -> ready. Hold to pay ('claw' 'grab'), PRESS to
+                        A run starts at the first site whose zone is open at reset time (whole mall: none yet, so the first; an arena: its own).
                         drop (an `instant` interaction: a fresh press, never a held button, never a reload on controller X), the capsule under
                         the claw at the press is the prize; it drops by itself after 6 s and the prize leaves the chute after 15 s, so a grab
                         can't hang. Pure helpers: rollCapsules (by weight, no repeats; each gun's attachment is rolled with it), sweepPosition /
@@ -717,6 +724,7 @@ src/
                         the chute flap, an attract screen, sounds that fade with distance (jingle, a tick into each lane, motor, grab,
                         fanfare, Sunny's slide whistle) and a hum: an emitter it adds to map.ambience that follows the live machine.
       kiosk.js          Kiosk Kevin's cart: three priced buy spots on the LIVE cart (getter positions; each slot's product read live from
+                        A run starts him at the first site whose zone is open at reset time (whole mall: the first; Lot Full: the parking site).
                         stockFor(round): advances once per `stockEveryRounds` block), round gating, Kevin's Pick (pickFor), hiding and PA (block's stock).
                         Five sites (config/kiosk.js sites), one live; every run starts at the first. Every `moveEveryRounds` rounds after the opening
                         round (`openingRound + 3, + 6...`) at 'roundStart' he moves to a random other site whose zone is open (none: he stays), never mid-purchase (`pending` waits for
@@ -781,6 +789,7 @@ src/
                         one holding loot gives the points back (wallet.recover, 'shoplifterRecovered'). No per-run state (it lives on the zombies). g.shoplifting
   maps/
     index.js            Map registry + loadMap(id, scene, colliders) + THE MAP INTERFACE (id, group, zones, doors,
+                        (+ the mall's arena survival: arenas, arenaFeatures, setArena(id), arena: maps/mall/arenas.js)
                         spawnPoints, features (wall buys, ammo cache... by kind), playerSpawn, update, reset, dispose).
                         New map = new folder + 1 line
     mall/mall.js        buildMall(scene, colliders): the mall's LAYOUT only (rooms, doors, props, lights, markers), built
@@ -1125,6 +1134,7 @@ src/
                         (start a branch corridor through a side opening). left/right = as walked (right = (-dz, dx)).
                         THROWS if the corridor crosses itself or two runs are so close a wall lands in another's walkway
     areaUnlocks.js      createAreaUnlocks({ zones, doors, connections }): destination(door) identifies the one locked
+                        `sealed` (arena survival, set by maps/mall/arenas.js): no door has a destination and unlock()/openAll() open nothing.
                         endpoint. unlock(areaId, { instant, bought }) owns only that area and opens all connections whose endpoints are
                         owned, returning their barrier ids for the open sequence (bought = the door paid at; every other barrier gets the
                         light version; instant = a load: snapped open). openAll/reset support debug and Play again.
@@ -1228,8 +1238,13 @@ src/
                         lines) and 'receipt' (the death receipt's DIED WEARING row).
     outfitIcons.js      The rail's SVG pictures: one icon per item (`icon` ids in config/wardrobe.js) and one dashed silhouette per slot.
     screens.js          The menus around a run (title, run mode, statistics, weapon locker, pause, results) as plain DOM over the canvas. The run mode chooser lists config/closingTime.js modes
+                        Extra Modes (after Classic) opens 'arenaMode': one button per arena (config/arenas.js) with its line and best round (setArenaBests),
+                        Back by button, B or Esc to the chooser on Extra Modes; setArenaChoice focuses the last arena. The receipt's first line, the
+                        pause kicker, the Statistics screen ("Arena survival" bests, the arena beside a recent run) and Continue name an arena run.
                         (Directed first), focuses the remembered mode (setRunMode) and stays up after a mode is confirmed until play starts (startRequested).
     runStart.js         createRunStart({ game, screens, settings, play }): a mode confirmed on the chooser is stored (game.closingMode, the 'closingMode' setting) and play() is
+                        An arena button stores the 'arenaChoice' setting and calls setArena(id) (main.js: g.setArena); a mode sets 'arenaChoice' to 'none'
+                        and setArena(null).
                         asked once. No reset (the title already reset the run) and no pause screen; acceptsLock() tells main.js whether an arriving pointer lock may start play.
     titleCamera.js      The title flyover: plays map.titleShots forever behind the main menu.
 ```
