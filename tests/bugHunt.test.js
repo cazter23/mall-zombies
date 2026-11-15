@@ -675,3 +675,25 @@ test('a Flash Sale is skipped when it would mark nothing you can buy right now',
   assert.equal(eligible()(groups.ammo), true, 'with a wall gun in hand an ammo sale is of use');
 });
 
+test('a fleeing Shoplifter can be knocked down like anyone else: it stops, and its getaway clock waits', (context) => {
+  const t = openMall(context);
+  const { g } = t;
+  g.rounds.jumpTo(5);
+  g.zombies.clear();
+  g.player.teleport({ position: new THREE.Vector3(0, 0, 2), yaw: 0 });
+  t.tick(2);
+  g.wallet.earn(2000);
+  const thief = g.zombies.spawn('shoplifter', new THREE.Vector3(1.2, 0, 2));
+  t.tick(70);
+  g.events.emit('playerHit', { damage: 0, zombie: thief });
+  t.tick(20);
+  assert.ok(thief.loot > 0 && thief.control, 'the scenario: it stole and is running');
+  const clock = thief.fleeTimer;
+  const from = thief.position.clone();
+  assert.equal(thief.applySlip(2, 6), true, 'the scenario: it slipped');
+  t.tick(60);
+  assert.ok(thief.position.distanceTo(from) < 1.5, `flat on its back it still ran ${thief.position.distanceTo(from).toFixed(2)} m in a second`);
+  assert.equal(thief.fleeTimer, clock, 'the getaway clock waits while it is down');
+  t.tick(120);
+  assert.ok(thief.removed || thief.fleeTimer < clock, 'back on its feet, it runs again');
+});
