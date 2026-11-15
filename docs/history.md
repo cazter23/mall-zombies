@@ -1,5 +1,28 @@
 # Sunset Galleria: build history ("Current state")
 
+## 15 November 2026 - Human balance pass, group 1 (`claude/balance-review`)
+
+docs/balance-review.md judged the balance for a human player instead of a perfect-aim bot. These are its group 1 changes, numbers only:
+- **Ammo and the wall guns** (config/weapons.js, economy.js):
+  - Price Gun: magazine 24 → 30, reserve 144 → 180.
+  - Nail Gun: magazine 10 → 12, reserve 60 → 90.
+  - Foam Dart Blaster: damage 90 → 100, reserve 144 → 180.
+  - Rivet Rifle: damage 80 → 90, reserve 144 → 216.
+  - Barcode Scanner: magazine 8 → 10, ammo 900 → 600.
+  - A human lands about 55-60% of shots and was running dry 1-3 times a round from round 15.
+- **Warranty tiers** (config/upgrades.js): a tier replaces the one before, so Premium used to shrink Deluxe's magazine and give its reload back.
+  - Premium: magazine 1.1 → 1.3, and it now reloads 15% faster (it had no reload bonus).
+  - Platinum: magazine 1.15 → 1.35, reload 0.9 → 0.8.
+  - tests/warranty.test.js now checks that a later tier never takes handling away.
+- **Wardrobe traps** (config/wardrobe.js, economy.js):
+  - Hi-Vis Vest: zombie hits x1.25 → x1.2. A Shopper hits for 48, so three hits still down you.
+  - Wheelie Sneakers: backpedal x0.85 → x0.95, back above a jogging zombie.
+  - Cardigan: 2,500 → 1,500, the Sandwich Board's price for the same four hits.
+  - Gold Card: kill pay x1.1 → x1.25 (a Shopper kill +20).
+  - 3D Glasses: headshots x1.25 → x1.5.
+- **Side effect:** the Stargazer 3000's "faster than any wall gun at 30 m with headshots" window now starts at round 17 instead of 16. The new Foam
+  Dart Blaster wins round 16 (tests/balance.test.js). The Stargazer's own fix is in the review's group 2.
+
 ## 15 November 2026 - 3D zombie sound (`claude/spatial-audio`)
 
 Hear WHERE every zombie is: behind you, to the side, upstairs, through a wall. Still no audio files. The whole picture, the

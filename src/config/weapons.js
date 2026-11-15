@@ -180,8 +180,8 @@ export const weapons = {
     fireMode: 'auto',
     damage: 58, // round-1 Shopper (150 HP): 3 body shots or 2 headshots (was 70: within 11% of the Rivet Rifle for a sixth of its route; docs/economy-report.md, A)
     headshotMultiplier: 1.5,
-    magazineSize: 24,
-    startingReserve: 144, // six magazines; also the reserve cap for ammo buys
+    magazineSize: 30, // (was 24: a human misses, so it emptied about 17 times a round at round 15; docs/balance-review.md, G1)
+    startingReserve: 180, // six magazines; also the reserve cap for ammo buys (was 144)
     fireInterval: 0.083, // ~12 shots per second while held
     fireBuffer: 0.1,
     reloadTime: 1.3,
@@ -309,8 +309,8 @@ export const weapons = {
     // Each nail goes through up to maxTargets zombies in a line (walls still stop it), doing a bit less
     // damage to each one it has already passed through.
     pierce: { maxTargets: 3, damageFalloff: [1, 0.8, 0.6] },
-    magazineSize: 10,
-    startingReserve: 60,
+    magazineSize: 12, // (was 10, reserve 60: ran dry 1-3 times a round for a human; docs/balance-review.md, G4)
+    startingReserve: 90,
     fireInterval: 0.25, // ~4 shots per second at most
     fireBuffer: 0.1,
     reloadTime: 1.8,
@@ -430,8 +430,8 @@ export const weapons = {
     id: 'foamDartBlaster', name: 'Foam Dart Blaster', fireMode: 'burst',
     weight: 'light', // how it handles: gunWeights below
     burst: { count: 3, interval: 0.07 },
-    damage: 90, headshotMultiplier: 1.75, // 270 body damage per full burst
-    magazineSize: 30, startingReserve: 144, // ten full bursts; reserve unchanged
+    damage: 100, headshotMultiplier: 1.75, // 300 body damage per full burst (was 90: kept level with the Rivet Rifle's human pass; docs/balance-review.md, G3)
+    magazineSize: 30, startingReserve: 180, // ten full bursts; six magazines in reserve (was 144)
     fireInterval: 0.16, // pause after the LAST dart; three darts every 0.3 s
     fireBuffer: 0.12, reloadTime: 1.9, range: 100,
     falloff: { start: 15, end: 30, minMultiplier: 0.75 }, // foam darts drift: full to 15 m, 75% at 30 m
@@ -594,8 +594,8 @@ export const weapons = {
   rivetRifle: {
     id: 'rivetRifle', name: 'Rivet Rifle', fireMode: 'auto',
     weight: 'heavy', // how it handles: gunWeights below
-    damage: 80, headshotMultiplier: 2, // lighter per-hit than Coil (~941 burst dps); x2 keeps a headshot (160) about where it was (95 x 1.75) and above a Foam dart's
-    magazineSize: 36, startingReserve: 144, // (36: at 0.085 s a shot a 30 ran dry in 2.5 s and sat under the Foam Dart Blaster sustained; 144 = four magazines)
+    damage: 90, headshotMultiplier: 2, // lighter per-hit than Coil; x2 makes a headshot 180, above a Foam dart's 175 (was 80: good until round 9 for an average human; docs/balance-review.md, G2)
+    magazineSize: 36, startingReserve: 216, // (36: at 0.085 s a shot a 30 ran dry in 2.5 s and sat under the Foam Dart Blaster sustained; 216 = six magazines, was 144)
     fireInterval: 0.085, fireBuffer: 0.1, reloadTime: 2, range: 100, // ~11.8 shots/s
     falloff: { start: 12, end: 28, minMultiplier: 0.6 },
     recoil: {
@@ -749,7 +749,7 @@ export const weapons = {
     // The scan line on the target while charging (fx/scanLine.js): a red laser from the gun to what you aim at, and a bar sweeping it.
     // (barLift: m the bar sits in front of what it scans, toward you.)
     scanLine: { color: 0xff2a38, laserWidth: 0.012, barWidth: 0.85, barHeight: 0.045, barLift: 0.3, sweep: 0.9, sweepHz: 3, opacity: 1, maxRange: 60 },
-    magazineSize: 8, startingReserve: 40,
+    magazineSize: 10, startingReserve: 40, // (magazine was 8: the fewest shots of any wall gun; docs/balance-review.md, G5)
     fireInterval: 0.2, fireBuffer: 0.12, reloadTime: 1.8, range: 100,
     falloff: { start: 12, end: 30, minMultiplier: 0.6 }, // a store-aisle gun, not a sniper: the Stargazer keeps the long hits
     recoil: {

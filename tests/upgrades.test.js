@@ -51,7 +51,7 @@ test('every tier works on every gun: whole magazines (whole bursts), the cannon 
     }
   }
   assert.equal(at(stapleGun, 'deluxe').magazineSize, Math.round(stapleGun.magazineSize * fx('deluxe').magazine));
-  assert.equal(at(foamDartBlaster, 'platinum').magazineSize, 36); // 30 x 1.2, in whole bursts of 3
+  assert.equal(at(foamDartBlaster, 'platinum').magazineSize, 42); // 30 x 1.35 = 40.5, in whole bursts of 3
   const cannon = at(confettiCannon, 'platinum');
   assert.ok(Math.abs(cannon.shellReload.shellSeconds - confettiCannon.shellReload.shellSeconds * fx('platinum').reload) < 1e-9);
   assert.ok(Math.abs(at(nailGun, 'deluxe').reloadTime - nailGun.reloadTime * fx('deluxe').reload) < 1e-9);

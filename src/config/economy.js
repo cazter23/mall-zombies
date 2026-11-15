@@ -102,7 +102,7 @@ export const economy = {
     // The three late guns (priced from `npm run balance`): ammo about half the gun, like the others.
     rivetRifle: { weapon: 1500, ammo: 750 }, // stronger automatic rifle; smaller magazine and quicker handling than Coil (Grand Atrium)
     coilNailer: { weapon: 2500, ammo: 650 }, // late Cinema purchase: large drum, slow reload and 2-target pierce
-    barcodeScanner: { weapon: 1750, ammo: 900 }, // a full 420 beam every scan, pierces 4, rings up what it hits (HOFFMAN'S; 13 November 2026 rework)
+    barcodeScanner: { weapon: 1750, ammo: 600 }, // a full 420 beam every scan, pierces 4, rings up what it hits (HOFFMAN'S; 13 November 2026 rework). Ammo was 900: the dearest refill for the fewest shots (docs/balance-review.md, G5)
   },
 
   // GRAB-A-GUN, the claw machine (config/clawMachine.js): one grab. 1,500 = what a site's first grab wins in wall value (it was 1,000 and
@@ -131,7 +131,7 @@ export const economy = {
 
   wardrobe: {
     paperHat: 750, aviators: 1250, glasses: 1500,
-    cardigan: 2500, sandwichBoard: 1500, hiVisVest: 1250,
+    cardigan: 1500, sandwichBoard: 1500, hiVisVest: 1250, // (cardigan was 2,500: the same four Shopper hits as the Sandwich Board for 1,000 more; docs/balance-review.md, P4)
     lightUpSneakers: 1250, orthopedicWalkers: 1000, wheelieSneakers: 1000,
     fannyPack: 1500, foamFinger: 750, goldCard: 2000,
   },

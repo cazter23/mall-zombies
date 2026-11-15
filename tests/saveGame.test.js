@@ -663,7 +663,7 @@ test('a warranty on file and a used Platinum claim survive Save & Quit', (t) => 
   dry.reserve = 0;
   run.tick();
   assert.equal(preClaims, 1);
-  assert.equal(dry.magazine, 14);
+  assert.equal(dry.magazine, 16); // 12 x Platinum 1.35
   assert.equal(dry.reserve, 60);
   assert.equal(g.saveGame.saveAndQuit(), true);
 
@@ -688,7 +688,7 @@ test('a warranty on file and a used Platinum claim survive Save & Quit', (t) => 
   loaded.g.rounds.jumpTo(4);
   loaded.tick(2);
   assert.equal(postClaims, 1);
-  assert.equal(lDry.magazine, 14);
+  assert.equal(lDry.magazine, 16); // 12 x Platinum 1.35
   assert.equal(lDry.reserve, 60);
 });
 

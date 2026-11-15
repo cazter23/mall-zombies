@@ -193,7 +193,7 @@ test('foam stays on the melee arm, and the Gold Card marks only paid kills', (t)
   assert.equal(popups().length, count);
   const shopper = g.zombies.spawn('shopper', new THREE.Vector3(1, 0, 8));
   shopper.takeHit({ damage: shopper.health + 1, source: 'gun', part: 'body' });
-  assert.deepEqual(popups().at(-1), ['pointsPopup', 70, 'goldCard']);
+  assert.deepEqual(popups().at(-1), ['pointsPopup', 80, 'goldCard']); // 60 x 1.25, paid in tens
 });
 
 test('the Paper Hat HUD timer follows the current regen delay', (t) => {

@@ -71,7 +71,7 @@ test('burst: reload waits until the last dart, and a direct reload request also 
     }
     assert.deepEqual(events, ['fire', 'fire']); assert.equal(w.isReloading, true);
     for (let i = 0; i < 120; i++) tick(w);
-    assert.equal(w.magazine, 30); assert.equal(w.reserve, 141);
+    assert.equal(w.magazine, 30); assert.equal(w.reserve, 177); // 180 reserve, less the 3 darts fired
   }
 });
 
@@ -244,7 +244,7 @@ test('pellet ADS cone tightens continuously; pellets and pierce can be combined'
 
 test('burst darts and cannon blasts meet their early, middle and later round damage targets', () => {
   const table=[
-    [1,2,1,1,1,2], [8,8,5,1,1,9], [15,13,8,2,2,14],
+    [1,2,1,1,1,2], [8,7,4,1,1,9], [15,12,7,2,2,14], // (Foam darts 90 -> 100: docs/balance-review.md)
   ];
   for(const [round,bodyDarts,headDarts,bodyBlasts,headBlasts,farBlasts] of table){
     const hp=zombieHealthForRound(round), foam=weapons.foamDartBlaster, confetti=weapons.confettiCannon;
