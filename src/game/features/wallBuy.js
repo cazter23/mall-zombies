@@ -18,15 +18,15 @@ export function buildWallBuy(wb, { scene, map, gun, pricing, interactions }) {
   const def = weapons[wb.weapon];
   if (!def || !economy.wallBuys[wb.weapon]) return null; // reserved spot for a future gun
   if (def.clawOnly) return null; // GRAB-A-GUN's guns are never on a wall, whatever a map or an economy entry says
-  scene.add(
-    createWallBuyDisplay({
-      position: wb.position,
-      normal: wb.normal,
-      name: def.name,
-      gunModel: buildWeaponDisplay(def),
-      cfg: feel.world.wallBuyDisplay,
-    }),
-  );
+  const display = createWallBuyDisplay({
+    position: wb.position,
+    normal: wb.normal,
+    name: def.name,
+    gunModel: buildWeaponDisplay(def),
+    cfg: feel.world.wallBuyDisplay,
+  });
+  display.userData.roomProp = true; // (it never leaves its room: room culling may skip it with the room, fx/roomCulling.js tagProps)
+  scene.add(display);
   const owned = () => gun.owns(def.id);
   interactions.add({
     get label() {

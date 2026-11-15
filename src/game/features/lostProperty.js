@@ -55,6 +55,7 @@ export function buildLostProperty(feature, { scene, map, interactions, player, s
   group.position.copy(feature.position);
   group.rotation.y = item.facing ?? 0;
   group.userData.dynamic = true; // (its look changes when it is logged: keep it out of the static batch)
+  group.userData.roomProp = true; // (it never leaves its room: room culling may skip it with the room, fx/roomCulling.js tagProps)
   scene.add(group);
 
   const prompt = new THREE.Vector3(feature.position.x, feature.position.y + pickup.promptHeight, feature.position.z);

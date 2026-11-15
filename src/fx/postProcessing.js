@@ -273,6 +273,10 @@ export function createPostProcessing({ renderer, scene, camera, viewmodel }) {
     get quality() {
       return quality;
     },
+    /** Is the frame drawn through the composer's buffers (true) or straight to the screen (false: Off, no VHS filter)? */
+    get usesComposer() {
+      return !(quality === 'off' && vhsStrength() === 0);
+    },
     gradePass,
     vhsPass,
     /** grade: { exposure, tint, saturation, contrast } (fx/zoneGrading.js), or null for none. */

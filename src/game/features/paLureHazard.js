@@ -61,6 +61,7 @@ export function buildPaLureHazard(feature, ctx) {
   mouth.visible = false;
   hornBody.add(mouth);
   hornRig.add(hornBody);
+  hornRig.userData.roomProp = true; // (it never leaves its room: room culling may skip it with the room, fx/roomCulling.js tagProps)
   scene.add(hornRig);
 
   // Everything the broadcast shows on the floor, hidden unless it is on air.

@@ -147,6 +147,17 @@ export const settingDefs = [
     apply: (v) => { look.runtime.detailDistance = v; },
   },
   {
+    // Small objects (signs, neon letters, racks, carts, props) not drawn beyond a distance (fx/roomCulling.js, config/look.js
+    // propDistance): the mall's long views are mostly these, one draw call each. Read every frame.
+    id: 'propDistance', tab: 'Graphics', label: 'Far objects', type: 'select', default: 'all', cost: 'medium',
+    options: [
+      { value: 'all', label: 'Everywhere' },
+      { value: 'near', label: 'Near (30 m)' },
+      { value: 'close', label: 'Close (20 m)' },
+    ],
+    apply: (v) => { look.runtime.propDistance = v; },
+  },
+  {
     // Zone lighting: each area's colour grade (dark, sickly back of house; fx/zoneGrading.js). One cheap full-screen pass.
     id: 'zoneGrading', tab: 'Graphics', label: 'Zone lighting', type: 'toggle', default: true, cost: 'low',
     apply: (v) => { look.runtime.zoneGrading = v; },
@@ -377,10 +388,10 @@ export const autoGraphics = {
 export const settingPresets = {
   Graphics: [
     // Potato / Low are for weak computers (a school laptop): lower resolution, no post-processing, no dust / flickering lights.
-    { label: 'Potato', values: { renderScale: Math.max(0.5, nativeRatio * 0.5), visualEffects: 'off', ambientEffects: false, lampCount: 4, neonGlow: false, clutter: 'none', detailDistance: 'close', zoneGrading: false, soundVoices: 'fewer' } },
-    { label: 'Low', values: { renderScale: Math.max(0.5, nativeRatio * 0.65), visualEffects: 'off', ambientEffects: false, lampCount: 6, neonGlow: false, clutter: 'some', detailDistance: 'near', zoneGrading: true, soundVoices: 'full' } },
-    { label: 'Medium', values: { renderScale: Math.max(0.5, nativeRatio * 0.8), visualEffects: 'low', ambientEffects: true, lampCount: 8, neonGlow: true, clutter: 'some', detailDistance: 'all', zoneGrading: true, soundVoices: 'full' } },
-    { label: 'High', values: { renderScale: nativeRatio, visualEffects: 'high', ambientEffects: true, lampCount: 'all', neonGlow: true, clutter: 'full', detailDistance: 'all', zoneGrading: true, soundVoices: 'full' } }, // native, capped at 2x for performance
+    { label: 'Potato', values: { renderScale: Math.max(0.5, nativeRatio * 0.5), visualEffects: 'off', ambientEffects: false, lampCount: 4, neonGlow: false, clutter: 'none', detailDistance: 'close', propDistance: 'close', zoneGrading: false, soundVoices: 'fewer' } },
+    { label: 'Low', values: { renderScale: Math.max(0.5, nativeRatio * 0.65), visualEffects: 'off', ambientEffects: false, lampCount: 6, neonGlow: false, clutter: 'some', detailDistance: 'near', propDistance: 'near', zoneGrading: true, soundVoices: 'full' } },
+    { label: 'Medium', values: { renderScale: Math.max(0.5, nativeRatio * 0.8), visualEffects: 'low', ambientEffects: true, lampCount: 8, neonGlow: true, clutter: 'some', detailDistance: 'all', propDistance: 'all', zoneGrading: true, soundVoices: 'full' } },
+    { label: 'High', values: { renderScale: nativeRatio, visualEffects: 'high', ambientEffects: true, lampCount: 'all', neonGlow: true, clutter: 'full', detailDistance: 'all', propDistance: 'all', zoneGrading: true, soundVoices: 'full' } }, // native, capped at 2x for performance
   ],
   Comfort: [
     { label: 'Calm', values: { headBob: 0, speedLines: false, horrorLighting: false, dimPhoneFlash: true } }, // for motion sickness (and no flicker)

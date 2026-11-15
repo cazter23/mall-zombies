@@ -140,7 +140,8 @@ export function buildParkingLot(kit, { zones, mallWallX, wallThickness }) {
 
   return { door, lamps, validation, sky, // (sky: the sunset dome; the dusk recolours it, maps/mall/mall.js setDusk)
     spawns: P.spawns.map(s => ({ name: `spawn_parkingLot_${s.id}`, zone: 'parkingLot', position: new THREE.Vector3(s.x, 0, s.z) })),
-    room: { id: 'parkingLot', ...R, minY: -.3, maxY: 12 },
+    // (outdoors: what stands outside every room can be seen from here, over the fence: fx/roomCulling.js tagOutside)
+    room: { id: 'parkingLot', ...R, minY: -.3, maxY: 12, outdoors: true },
     portal: { a: 'megaMart', b: 'parkingLot', door: door.id, minX: mallWallX, maxX: R.minX + .14,
       minY: 0, maxY: G.height, minZ: G.from, maxZ: G.to },
   };

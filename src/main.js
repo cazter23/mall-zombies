@@ -71,6 +71,8 @@ import { createZoneGrading, gradeZoneAt } from './fx/zoneGrading.js';
 import { setRimDaylight, setStragglerPulse, syncStragglerHighlights } from './zombies/zombieRim.js';
 import { createDetailCulling } from './fx/detailCulling.js';
 import { createRoomCulling } from './fx/roomCulling.js';
+import { createShaderWarmup } from './fx/shaderWarmup.js';
+import { buildWarmupZombies } from './zombies/warmupModels.js';
 import { look } from './config/look.js';
 import { powerUps } from './config/powerUps.js';
 import { createCareerStats } from './game/careerStats.js';
@@ -308,16 +310,31 @@ async function runBenchmark() {
 // Room culling (fx/roomCulling.js): rooms the camera can't see aren't drawn. Tagged before batching, so batches keep rooms
 // apart; updated before every draw. ?noculling: off, to compare.
 const doorById = new Map(map.doors.map((d) => [d.id, d]));
+// A room seen through a doorway only draws what the doorway shows (?nowindowcull: the whole room, to compare).
+const farLimit = { metres: Infinity, maxRadius: 0, hysteresis: 0 }; // (one object, refilled each frame: nothing new per frame)
 const roomCulling = createRoomCulling({
   areas: map.cullAreas, portals: map.cullPortals, camera, isOpen: (id) => doorById.get(id)?.isOpen ?? true,
+  windowCulling: !new URLSearchParams(location.search).has('nowindowcull'),
+  // Graphics > Far objects (Potato, Low): small things in a room are not drawn beyond a distance (config/look.js propDistance).
+  farProps: () => {
+    farLimit.metres = look.propDistance.metres[look.runtime.propDistance] ?? Infinity;
+    farLimit.maxRadius = look.propDistance.maxRadius;
+    farLimit.hysteresis = look.propDistance.hysteresis;
+    return farLimit;
+  },
 });
 const cullingOn = !new URLSearchParams(location.search).has('noculling');
-if (cullingOn) roomCulling.tag(map.group);
+if (cullingOn) {
+  roomCulling.tag(map.group);
+  roomCulling.tagProps(scene); // (features' still props: wall-buy guns, Lost and Found, hazard switches, NO REFUNDS signs)
+  roomCulling.tagOutside(g.arena?.group); // (the debug test range is only drawn when you are in it, not from inside the mall)
+}
 if (!new URLSearchParams(location.search).has('nobatch')) batchStatic(map.group, { shade: look.bakedShade, cellSize: look.batchCellSize }); // (?nobatch: off, to compare)
 effects.refreshSurfaces(); // (impact marks list the map's meshes: the merged ones now, fx/impactMarks.js)
 // What never moves stops rebuilding its matrix every frame (world/staticBatch.js freezeStatic): everything under the map
 // that is not under a userData.dynamic parent or a shutter. ?nofreeze: off, to compare.
 if (!new URLSearchParams(location.search).has('nofreeze')) freezeStatic(map.group);
+if (cullingOn) roomCulling.collect(scene); // (after batching: each room's meshes, for the doorway test)
 // Small detail distance (Graphics > Small detail, fx/detailCulling.js): collected after batching, from what is still its own mesh.
 const detailCulling = createDetailCulling(map.group);
 // Metal sheen (fx/metalSheen.js): a tiny baked gradient for metal materials only, after batching so the merged ones get it.
@@ -335,6 +352,19 @@ const doorOpenView = createDoorOpenView({ scene, events: g.events, effects, play
 // Kiosk Kevin's show: Kevin's animation and shouts, the cola geyser, the glitter, the air-horn rings, bubble-wrap pops, the Sentry's flash and break-up.
 const kioskSpectacle = createKioskSpectacle({ scene, events: g.events, camera, kiosk: g.features.instanceOf('kiosk'), equipment: g.equipment, effects, sound });
 const vanLights = createVanLights({ scene, sound }); // Skylar's van: hazards once the run can be won, the drive-off to the receipt
+// Shader warm-up (fx/shaderWarmup.js): every shader is compiled in the background behind the title and kept for the session, and
+// every object is drawn once into one pixel (a few per frame) so nothing compiles or uploads a texture mid-fight. It starts
+// again when a Graphics setting changes the shaders (the Visual effects path, the number of lamps). ?nowarmup: off, to compare.
+const shaderWarmup = new URLSearchParams(location.search).has('nowarmup') ? null : createShaderWarmup({
+  renderer,
+  views: [{ scene, camera }, { scene: viewmodel.scene, camera: viewmodel.camera }],
+  target: () => (postProcessing.usesComposer ? postProcessing.composer.renderTarget1 : null),
+  signature: () => `${postProcessing.usesComposer}|${lightPool.size}`,
+  extras: buildWarmupZombies, // (one zombie of every type: their materials only exist once they spawn)
+  // Not while the first launch is measuring the title's frame rate to pick a preset (the warm-up's work would count against
+  // this computer). Only on the title: a player who presses Play before the measurement is over still gets the warm-up.
+  holdOff: () => !autoGraphics.done && screens.showsFlyover,
+});
 
 // --- Menus and the run's flow ------------------------------------------------------
 // title (live flyover) -> playing <-> paused -> dead -> results receipt -> playing again / title.
@@ -711,6 +741,7 @@ function render(alpha, frameTime) {
   // Render world + viewmodel through HDR post-processing (UnrealBloom + lens vignette/aberration + ACES tone mapping).
   roomCulling.update(cullingOn);
   detailCulling.update(camera); // (Graphics > Small detail: fx/detailCulling.js)
+  shaderWarmup?.update(); // (before the draw: it draws into one pixel of the same target)
   postProcessing.render({ showViewmodel: !death.summary && scoped < 1, speedAmount, grade: gradeAt(frameTime) });
 }
 
@@ -729,6 +760,7 @@ function renderTitle(frameTime) {
   effects.update(frameTime);
   roomCulling.update(cullingOn);
   detailCulling.update(camera); // (Graphics > Small detail: fx/detailCulling.js)
+  shaderWarmup?.update();
   postProcessing.render({ showViewmodel: false, speedAmount: 0, grade: gradeAt(frameTime) });
 }
 
@@ -773,6 +805,7 @@ if (debug.exposeToWindow) {
     benchmark: runBenchmark, // await __mall.benchmark() -> the report (title or pause screen)
     settings, lightPool, loop, idleSaver, // (settings.set(id, value) as the menu would; the light pool)
     vanLights, // (Skylar's van: update / start, fx/vanLights.js)
+    shaderWarmup, // (.state 'compiling' | 'drawing' | 'done', .left, .kept: fx/shaderWarmup.js)
     doorOpenView, // (a bought door's dust and light spill: .active = glow slots lit, fx/doorOpenView.js)
     // Map objects that were moved although their matrix is frozen (they need a userData.dynamic parent): expect [].
     movedWhileFrozen: () => movedWhileFrozen(map.group),

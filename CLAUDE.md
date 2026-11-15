@@ -28,6 +28,7 @@ npm run audition      # the gun sound audition (tools/audition.html) as one file
 npm run balance       # gun balance report (tools/gunReport.mjs): dps by range, pulls to kill by round, cannon blast table
 npm run melee         # box cutter report (tools/meleeReport.mjs): swings to kill by round, plain vs the Customer Service tiers
 npm run kiosk         # Kiosk Kevin report (tools/kioskReport.mjs): equipment damage by round and type, Bubble Wrap hits to death, the Sentry vs the Price Gun, prices in rounds of income
+npm run perf          # performance report (tools/perfReport.mjs): tick time at a late round, four spots; --profile = which functions; --root <folder> = another checkout
 npm run sim:economy   # economy report (tools/economySim.mjs, ~90 min from an empty cache; --quick for a short look): a headless bot's income by round, what it can afford when, proposals before/after
 npm run sim:claw      # GRAB-A-GUN odds tables (tools/clawSim.mjs)
 npm run sim:challenges  # weapon-skin challenge report (tools/challengeReport.mjs): how many runs each challenge takes
@@ -166,6 +167,9 @@ adjoining areas are owned. No cascading unlocks. Nine area purchases total 9500;
   area + a benchmark shot + ambience emitters (all in mall.js), a shutter finish (config/shutters.js), the price (economy.doors), the door counts and the
   "120 orders" exclusions in tests/mall.test.js, and a coplanar region. Use docs/archive/history-2026-10.md (HOFFMAN'S entry) as the worked example.
   Arena survival (config/arenas.js) seals an arena's zones: a new door into an arena area stays shut there; a fixture only for an arena goes in its entry.
+- **Speed-ups must give the same result** (config/performance.js, docs/history.md 15 November 2026). Collision reads a grid of nearby boxes
+  (world/colliderGrid.js): add / remove boxes and call `markCollidersChanged`, never move a box in place. A still prop a feature adds to the
+  scene gets `userData.roomProp = true` so room culling can skip it. tests/drawBudget.test.js fails when a benchmark shot draws too much.
 - **Several tools edit this repo at once.** Each tool works in its OWN worktree + branch (`.claude/worktrees/<tool>`, reused, not one per task) and only
   MERGES into main. Never switch branches in the main folder (another tool's commit lands on your branch and is lost), and before any commit in main check
   `git branch --show-current` says main. Commit only your own changes, never run a bare `git stash`, never overwrite another tool's uncommitted files.
