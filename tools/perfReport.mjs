@@ -8,6 +8,7 @@
 //   npm run perf -- --profile    also the functions the time went on (runs itself under node --cpu-prof)
 //   npm run perf -- --seconds 30 --round 28
 //   npm run perf -- --no-grid    collision the old way (every box read for every body), to compare
+//   npm run perf -- --root ../../..   time ANOTHER checkout's game with this script (main, to compare a branch with it)
 //
 // It measures THIS PC, so compare numbers only with a run on the same machine. A 60 Hz tick has 16.7 ms; the logic should
 // use a small fraction of it so a weak laptop (4-6 times slower) still keeps up.
@@ -25,7 +26,9 @@ const option = (name, fallback) => {
   const i = args.indexOf(`--${name}`);
   return i === -1 ? fallback : Number(args[i + 1]);
 };
-const root = fileURLToPath(new URL('..', import.meta.url));
+// The checkout whose game is timed: this one, or --root <folder> (the path of another worktree or the main folder).
+const rootArg = args.indexOf('--root');
+const root = rootArg === -1 ? fileURLToPath(new URL('..', import.meta.url)) : join(process.cwd(), args[rootArg + 1], '/');
 
 // ---- --profile: run this file again under the V8 profiler, then summarise what it wrote ---------------------------
 if (flag('profile') && !process.env.PERF_CHILD) {
@@ -156,7 +159,7 @@ for (const spot of spots) {
   rows.push(measure(t, spot, Math.round(seconds * 60)));
 }
 
-console.log(`\nGame logic per tick, round ${round}, ${seconds} s per spot (ms; a 60 Hz tick has 16.7 ms)`);
+console.log(`\nGame logic per tick, round ${round}, ${seconds} s per spot (ms; a 60 Hz tick has 16.7 ms)${rootArg === -1 ? '' : `, the game in ${root}`}`);
 console.log(`${'spot'.padEnd(30)} ${'avg'.padStart(8)} ${'p95'.padStart(8)} ${'p99'.padStart(8)} ${'worst'.padStart(8)}   zombies`);
 for (const r of rows) console.log(`${r.spot.padEnd(30)} ${ms(r.tick.avg)} ${ms(r.tick.p95)} ${ms(r.tick.p99)} ${ms(r.tick.worst)}   ${r.peakAlive}`);
 console.log('\nPer-frame CPU besides drawing (zombie poses, contact shadows, effects)');

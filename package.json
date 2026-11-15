@@ -14,6 +14,7 @@
     "play": "node tools/play.mjs",
     "audition": "node tools/openAudition.mjs",
     "balance": "node tools/gunReport.mjs",
+    "perf": "node tools/perfReport.mjs",
     "melee": "node tools/meleeReport.mjs",
     "kiosk": "node tools/kioskReport.mjs",
     "sim:claw": "node tools/clawSim.mjs",

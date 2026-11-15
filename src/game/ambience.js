@@ -12,13 +12,31 @@ export function createAmbience({ map, player, sound, colliders, random = seededR
   const nextEvent = event => event.minSeconds + random() * (event.maxSeconds - event.minSeconds);
   const events = (map.ambientEvents ?? []).map(event => ({ event, remaining: nextEvent(event) }));
   function silence() { sound.setAmbience?.([]); }
+  // The boxes that could stand between the listener and anything it can hear: solid to sound, not around the listener, and
+  // no further away than the longest range (a box beyond a speaker's distance cannot be in front of it). Listed once a
+  // tick, so each speaker's wall test reads these few, not every box in the mall for every speaker (5% of a late tick).
+  // The answer is the one the full list gave: every box left out failed the test anyway.
+  const reach = Math.max(cfg.rattleRange, ...(map.ambience ?? []).map(e => e.range), ...(map.ambientEvents ?? []).map(e => e.range));
+  const near = [];
+  function listNear() {
+    near.length = 0;
+    const r2 = reach * reach;
+    for (const b of colliders) {
+      if (b.ignoreShots || b.containsPoint(origin)) continue;
+      const dx = Math.max(b.min.x - origin.x, 0, origin.x - b.max.x), dy = Math.max(b.min.y - origin.y, 0, origin.y - b.max.y);
+      const dz = Math.max(b.min.z - origin.z, 0, origin.z - b.max.z);
+      if (dx * dx + dy * dy + dz * dz < r2) near.push(b);
+    }
+  }
   function spatialMix(position, range) {
     target.copy(position);
     const distance = origin.distanceTo(target);
     if (distance >= range) return null;
     ray.origin.copy(origin); ray.direction.subVectors(target, origin).normalize();
-    const blocked = colliders.some(b => !b.ignoreShots && !b.containsPoint(origin)
-      && ray.intersectBox(b, hit) && hit.distanceTo(origin) < distance - cfg.occlusionMargin);
+    let blocked = false;
+    for (let i = 0; i < near.length && !blocked; i++) {
+      blocked = !!ray.intersectBox(near[i], hit) && hit.distanceTo(origin) < distance - cfg.occlusionMargin;
+    }
     const gain = (1 - distance / range) ** 2 * (blocked ? cfg.occludedGain : 1);
     const dx = target.x - origin.x, dz = target.z - origin.z;
     const pan = (dx * Math.cos(player.yaw) - dz * Math.sin(player.yaw)) / Math.max(1, Math.hypot(dx, dz));
@@ -29,6 +47,7 @@ export function createAmbience({ map, player, sound, colliders, random = seededR
       if (!active) { silence(); return; }
       elapsed += dt;
       origin.copy(player.position); origin.y += player.height * cfg.listenerHeightFraction;
+      listNear();
       const voices = [];
       for (const emitter of map.ambience ?? []) {
         if (!map.zones[emitter.zone]?.open) continue;
