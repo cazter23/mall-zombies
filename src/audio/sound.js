@@ -12,12 +12,23 @@
 // soft clip -> speakers. Voices are capped per sound and in total: the oldest is
 // stolen (a short fade), so rapid fire never piles up tails.
 //
+// POSITIONAL voices (a zombie's sounds; play(name, { spatial })): the voice goes volume -> lowpass (walls, the floor
+// underfoot) -> level (distance x occlusion) -> PannerNode (HRTF on headphones, equal-power on speakers) -> the world bus,
+// and its room send leaves after the lowpass for the reverb of the room the SOUND is in (the room you are in, or one of a
+// few extra convolvers). updateSpatial() re-places every live positional voice once a frame (they follow a moving zombie).
+// Only config/spatialAudio.js `voices` are positional at once: a play scoring lower than every live one is dropped, a
+// higher one steals the lowest. setCrowd() drives one looped murmur for the rest of the horde (audio/crowdBed.js).
+// docs/spatial-audio.md has the whole picture.
+//
 // Browsers only allow audio after the player clicks or presses a key, so the
 // audio context is created/resumed on the first such input. Sounds played before
 // that are silently skipped.
 // =============================================================================
 
 import { audio } from '../config/audio.js';
+import { spatialAudio } from '../config/spatialAudio.js';
+import { voiceScore, lowestVoice } from './spatial.js';
+import { crowdBedPcm } from './crowdBed.js';
 import { soundUpgrades } from '../config/gunSounds.js';
 import { normalizeRecipe, resolveVariant, variantKey, driveCurve, driveMakeup, softClipCurve } from './recipes.js';
 import { roomImpulse } from './roomImpulse.js';
@@ -145,6 +156,8 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
         clip.connect(ctx.destination);
       } else limiter.connect(ctx.destination);
       noiseBuffer = makeNoiseBuffer();
+      // The crowd bed's loop takes a moment to synthesise: done now offline, a little after the first click live (the title).
+      if (isOffline()) buildCrowdBuffer(); else setTimeout(buildCrowdBuffer, 1500).unref?.(); // (unref: never holds Node open in tests)
     }
     if (ctx.state === 'suspended' && !isOffline()) ctx.resume();
   }
@@ -336,6 +349,120 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
     const list = voicesByKey.get(voice.key);
     if (list) { const i = list.indexOf(voice); if (i !== -1) list.splice(i, 1); }
     const j = liveVoices.indexOf(voice); if (j !== -1) liveVoices.splice(j, 1);
+    if (voice.positional) { const k = positional.indexOf(voice.positional); if (k !== -1) positional.splice(k, 1); }
+  }
+
+  // ---- Positional voices (config/spatialAudio.js) ---------------------------------------------------------------
+  const positional = []; // { voice, panner, filter, level, sendGain, send, spatial, score } for every live positional voice
+  const placed = { x: 0, y: 0, z: -1, gain: 1, cutoffHz: 20000, sendScale: 1, room: null };
+  function readSpatial() {
+    const q = spatialAudio.quality === 'fewer' ? 'fewer' : 'full';
+    return { hrtf: spatialAudio.mode === 'headphones' && q === 'full', maxVoices: spatialAudio.voices[q], remoteRooms: spatialAudio.remoteRooms[q] };
+  }
+  let spatialState = { ...readSpatial(), dropped: 0 };
+  const panningModel = () => (spatialState.hrtf ? 'HRTF' : 'equalpower');
+  function makePanner() {
+    const p = ctx.createPanner();
+    p.panningModel = panningModel();
+    p.distanceModel = 'linear'; p.rolloffFactor = 0; p.refDistance = 1; p.maxDistance = 10000; // (distance is ours: placed.gain)
+    return p;
+  }
+  function setParam(param, value, now, smooth) {
+    if (smooth > 0 && param.setTargetAtTime) param.setTargetAtTime(value, now, smooth);
+    else param.value = value;
+  }
+  function placePanner(panner, x, y, z, now, smooth) {
+    if (panner.positionX) {
+      setParam(panner.positionX, x, now, smooth); setParam(panner.positionY, y, now, smooth); setParam(panner.positionZ, z, now, smooth);
+    } else panner.setPosition?.(x, y, z);
+    panner.at = { x, y, z }; // (what it was last told: the tests and the audition read it)
+  }
+  /** Speakers only: equal-power panning can't tell front from back, so a sound behind is darker and a little quieter. */
+  function behindShade(p) {
+    if (spatialState.hrtf || !(p.z > 0)) return { cutoff: p.cutoffHz, gain: p.gain };
+    const behind = p.z / Math.max(1e-6, Math.hypot(p.x, p.z));
+    const { cutoffHz, gain } = spatialAudio.speakersBehind;
+    return { cutoff: Math.min(p.cutoffHz, 20000 * (cutoffHz / 20000) ** behind), gain: p.gain * (1 - (1 - gain) * behind) };
+  }
+  /** Places a positional entry from a fresh placement (on its first play: at once; then gliding). */
+  function applyPlacement(entry, p, now, first) {
+    const shade = behindShade(p);
+    const glide = first ? 0 : spatialAudio.levelSmoothSeconds;
+    placePanner(entry.panner, p.x, p.y, p.z, now, first ? 0 : spatialAudio.positionSmoothSeconds);
+    setParam(entry.filter.frequency, Math.max(40, Math.min(20000, shade.cutoff)), now, glide);
+    setParam(entry.level.gain, shade.gain, now, glide);
+    if (entry.sendGain) setParam(entry.sendGain.gain, entry.send * p.sendScale, now, glide);
+    entry.score = voiceScore(entry.spatial.priority, p.gain);
+  }
+
+  // ---- Extra rooms: a few more convolvers, so a sound rings like the room it is IN (not just the one you're in) -----
+  const remote = []; // { input, conv, out, room, fed, busyUntil }
+  function roomBus(roomId) {
+    const own = ensureReverb();
+    if (!own || !roomId || roomId === reverb.room || !audio.rooms[roomId]) return own;
+    const now = ctx.currentTime;
+    let slot = remote.find((s) => s.room === roomId);
+    if (!slot) {
+      if (remote.length < spatialState.remoteRooms) {
+        slot = { input: ctx.createGain(), conv: ctx.createConvolver(), out: ctx.createGain(), room: null, fed: false, busyUntil: -Infinity };
+        slot.conv.normalize = false;
+        slot.conv.connect(slot.out); slot.out.connect(world);
+        remote.push(slot);
+      } else {
+        // Only a slot whose last tail has died away changes room (a buffer swapped while ringing would click).
+        for (const s of remote) if (now > s.busyUntil && (!slot || s.busyUntil < slot.busyUntil)) slot = s;
+        if (!slot || remote.indexOf(slot) >= spatialState.remoteRooms) return own; // (all busy: the room you're in will do)
+      }
+      if (slot.room !== roomId) { slot.conv.buffer = impulseFor(roomId); slot.room = roomId; slot.out.gain.value = audio.rooms[roomId].wet; }
+    }
+    if (!slot.fed) { slot.input.connect(slot.conv); slot.fed = true; }
+    slot.busyUntil = now + audio.rooms[roomId].seconds + 2;
+    return slot.input;
+  }
+  function idleRemoteRooms(now, all = false) {
+    for (const s of remote) if (s.fed && (all || now > s.busyUntil + 1)) { s.input.disconnect(s.conv); s.fed = false; }
+  }
+
+  // ---- The crowd bed: the horde's murmur, one looped voice (setCrowd) -------------------------------------------------
+  const crowd = { buffer: null, voice: null, offAt: null };
+  function buildCrowdBuffer() {
+    if (crowd.buffer || !ctx) return;
+    const cfg = spatialAudio.crowd;
+    const pcm = crowdBedPcm(ctx.sampleRate, cfg);
+    crowd.buffer = ctx.createBuffer(1, pcm.length, ctx.sampleRate);
+    crowd.buffer.getChannelData(0).set(pcm);
+  }
+  function setCrowd({ gain = 0, x = 0, y = 0, z = -1, cutoffHz = 20000 } = {}) {
+    if (!canPlay() || !crowd.buffer) return;
+    const cfg = spatialAudio.crowd, now = ctx.currentTime, smooth = cfg.smoothSeconds / 3;
+    if (!(gain > 0.0005)) {
+      if (!crowd.voice) return;
+      setParam(crowd.voice.gain.gain, 0, now, smooth);
+      if (crowd.offAt === null) crowd.offAt = now + cfg.smoothSeconds * 3;
+      else if (now >= crowd.offAt) { // (quiet long enough: stop it, so an empty mall costs nothing)
+        const v = crowd.voice; crowd.voice = null; crowd.offAt = null;
+        v.source.stop(); v.source.onended = () => { for (const n of v.nodes) n.disconnect(); };
+      }
+      return;
+    }
+    crowd.offAt = null;
+    if (!crowd.voice) {
+      const source = ctx.createBufferSource(); source.buffer = crowd.buffer; source.loop = true;
+      const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = cutoffHz;
+      const g = ctx.createGain(); g.gain.value = 0;
+      const panner = makePanner();
+      source.connect(filter); filter.connect(g); g.connect(panner); panner.connect(world);
+      const nodes = [source, filter, g, panner];
+      const room = ensureReverb();
+      if (room) { const send = ctx.createGain(); send.gain.value = cfg.send; g.connect(send); send.connect(room); nodes.push(send); }
+      source.start(now, Math.random() * crowd.buffer.duration);
+      crowd.voice = { source, filter, gain: g, panner, nodes };
+      placePanner(panner, x, y, z, now, 0);
+    }
+    const v = crowd.voice;
+    setParam(v.gain.gain, gain * cfg.volume, now, smooth);
+    setParam(v.filter.frequency, Math.max(80, Math.min(20000, cutoffHz)), now, smooth);
+    placePanner(v.panner, x, y, z, now, smooth);
   }
 
   // Stealing: a quick fade, then every source stops (ones not started yet never play).
@@ -353,9 +480,22 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
    * One play of a recipe: its parts, drive, volume, pan, and its send into the room.
    * Returns { stop() } (or null when audio can't play).
    */
-  function playRecipe(key, recipe, { volume = 1, pan = 0, panned = false, side = null, at = null, pitch: pitchScale = 1, step = 0, destination = world, send = true } = {}) {
+  function playRecipe(key, recipe, { volume = 1, pan = 0, panned = false, side = null, at = null, pitch: pitchScale = 1, step = 0, destination = world, send = true, spatial = null } = {}) {
     const start = Math.max(at ?? ctx.currentTime, ctx.currentTime);
-    const cap = recipe.maxVoices ?? audio.voices.perSound;
+    // A positional play: where is it, and does it earn a voice? (dropped before it takes anything from anyone)
+    let place = null;
+    if (spatial && ctx.createPanner) {
+      place = spatial.place(placed);
+      if (!place || !(place.gain > 0)) return null;
+      place = { ...place };
+      if (positional.length >= spatialState.maxVoices) {
+        const low = lowestVoice(positional);
+        if (!low || low.score >= voiceScore(spatial.priority, place.gain)) { spatialState.dropped++; return null; }
+        steal(low.voice, start);
+      }
+    }
+    // (a positional sound is capped by the positional voices above, which keep the most important, not the newest)
+    const cap = Math.max(recipe.maxVoices ?? audio.voices.perSound, place ? spatialState.maxVoices : 0);
     let list = voicesByKey.get(key);
     if (!list) voicesByKey.set(key, (list = []));
     while (list.length >= cap) steal(list[0], start);
@@ -375,20 +515,37 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
     const input = shaper ?? out;
     if (shaper) shaper.connect(out);
     let tail = out;
-    if ((pan || panned) && ctx.createStereoPanner) {
+    let sendFrom = out;
+    let entry = null;
+    if (place) {
+      // volume -> lowpass (walls, the floor) -> level (distance x occlusion) -> panner; the room send leaves after the lowpass.
+      const filter = ctx.createBiquadFilter(); nodes.push(filter);
+      filter.type = 'lowpass';
+      const level = ctx.createGain(); nodes.push(level);
+      const panner = makePanner(); nodes.push(panner);
+      out.connect(filter); filter.connect(level); level.connect(panner);
+      tail = panner; sendFrom = filter;
+      entry = { voice, panner, filter, level, sendGain: null, send: recipe.send ?? 0, spatial, score: 0 };
+      voice.positional = entry;
+    } else if ((pan || panned) && ctx.createStereoPanner) {
       const panner = ctx.createStereoPanner(); nodes.push(panner);
       panner.pan.value = Math.max(-1, Math.min(1, pan));
-      out.connect(panner); tail = panner;
+      out.connect(panner); tail = panner; sendFrom = panner;
     }
     const exempt = recipe.duck || recipe.duckExempt;
     tail.connect(exempt && destination === world ? master : destination);
     if (recipe.duck && world) duck(recipe.duck, start);
-    const room = send && recipe.send > 0 ? ensureReverb() : null;
+    // (a positional sound with no send of its own gets the default: a zombie is somewhere, so it rings like that place)
+    const sendLevel = place && !(recipe.send > 0) ? spatialAudio.defaultSend : recipe.send;
+    if (entry) entry.send = sendLevel;
+    const room = send && sendLevel > 0 ? (place ? roomBus(place.room) : ensureReverb()) : null;
     if (room) {
       const sendGain = ctx.createGain(); nodes.push(sendGain);
-      sendGain.gain.value = recipe.send;
-      tail.connect(sendGain); sendGain.connect(room);
+      sendGain.gain.value = sendLevel;
+      sendFrom.connect(sendGain); sendGain.connect(room);
+      if (entry) entry.sendGain = sendGain;
     }
+    if (entry) applyPlacement(entry, place, start, true);
 
     for (const part of recipe.parts) {
       let dest = input;
@@ -410,6 +567,7 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
     if (voice.remaining === 0) { for (const node of nodes) node.disconnect(); return null; }
     list.push(voice);
     liveVoices.push(voice);
+    if (entry) positional.push(entry);
     return { stop: () => { if (!voice.stolen && voice.remaining > 0) steal(voice); } };
   }
 
@@ -498,6 +656,7 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
     reverb.enabled = !!on;
     if (!reverb.input) return;
     const now = ctx.currentTime;
+    if (!on) idleRemoteRooms(now, true);
     for (const slot of reverb.slots) {
       slot.out.gain.cancelScheduledValues(now);
       slot.out.gain.setTargetAtTime(on && slot === reverb.slots[reverb.active] ? audio.rooms[reverb.room].wet : 0, now, 0.05);
@@ -725,9 +884,12 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
      * @param step    how far along a chain this play is (the Tennis Ball's bounces): pitch x (1 + recipe.pitchStep) ^ step
      * @param variant { tier, renewals, stuffing, lowAmmo } (config/gunSounds.js soundUpgrades), for a gun's shot
      * @param at      context time to start (offline renders); default now
+     * @param spatial { place(out) -> { x, y, z, gain, cutoffHz, sendScale, room } | null, priority }: a positional play (a
+     *                zombie's sound, game/soundStage.js). x/y/z are in the listener's space (audio/spatial.js toListener);
+     *                place is asked again every frame (updateSpatial). null = not positional (the player's own sounds).
      * @returns { stop() } so a sound can be cut short (the scanner's whine on a released scan), or null
      */
-    play(name, { volume = 1, pan = 0, side = null, pitch = 1, step = 0, variant = null, at = null } = {}) {
+    play(name, { volume = 1, pan = 0, side = null, pitch = 1, step = 0, variant = null, at = null, spatial = null } = {}) {
       // (flavourEvery: an automatic gun's build flavour rides on every Nth shot, not all of them: clearer, and cheaper)
       if (variant?.stuffing && recipes[name]) {
         const every = normalizeRecipe(recipes[name]).flavourEvery;
@@ -739,8 +901,34 @@ export function createSound({ renderMusic = renderMusicInWorker, random = Math.r
       }
       const recipe = recipeFor(name, variant);
       if (!recipe || !canPlay()) return null;
-      return playRecipe(name, recipe, { volume, pan, side, pitch, step, at });
+      return playRecipe(name, recipe, { volume, pan, side, pitch, step, at, spatial });
     },
+    /** Once a frame (main.js render): every live positional voice is re-placed (it follows its zombie), idle rooms unfed. */
+    updateSpatial() {
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      for (const entry of positional) {
+        const p = entry.spatial.place(placed);
+        if (p) applyPlacement(entry, p, now, false); // (null: the zombie is gone; the tail stays where it was)
+      }
+      idleRemoteRooms(now);
+    },
+    setCrowd,
+    /** Settings (3D sound, Zombie sound voices): re-reads config/spatialAudio.js mode and quality. Live panners switch too. */
+    setSpatial() {
+      spatialState = { ...readSpatial(), dropped: spatialState.dropped };
+      const model = panningModel();
+      for (const entry of positional) entry.panner.panningModel = model;
+      if (crowd.voice) crowd.voice.panner.panningModel = model;
+      while (positional.length > spatialState.maxVoices) steal(lowestVoice(positional).voice);
+    },
+    /** How the positional side stands: { voices, max, hrtf, dropped, rooms (extra rooms fed), crowd (its gain or 0) }. */
+    get spatialStats() {
+      return { voices: positional.length, max: spatialState.maxVoices, hrtf: spatialState.hrtf, dropped: spatialState.dropped,
+        rooms: remote.filter((s) => s.fed).map((s) => s.room), crowd: crowd.voice ? crowd.voice.gain.gain.value : 0 };
+    },
+    /** The live positional voices' panners (where each was last placed: { x, y, z }), for the tests and the audition. */
+    get positionalVoices() { return positional.map((e) => ({ key: e.voice.key, at: e.panner.at, model: e.panner.panningModel, score: e.score })); },
     setRoom,
     setReverbEnabled,
     /** The room preset the reverb is in now (config/audio.js rooms), or the one it will start in. */

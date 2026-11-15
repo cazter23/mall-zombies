@@ -554,6 +554,8 @@ function render(alpha, frameTime) {
     fpsMeter.time = 0;
   }
 
+  // Zombie sounds follow their zombies, and turn as you turn (audio/sound.js, placed by game/soundStage.js).
+  sound.updateSpatial();
   // (Before the title's early return, so both go quiet and dark when a run is left for the title.)
   vanLights.update(frameTime, { ready: g.closing.readyToLeave && !game.won && !game.over, won: game.won && !game.over, listener: camera.position });
   // Last Call: from the Last Customer's arrival until she is gone (returned: a resolving chord) or the run ends or resets.

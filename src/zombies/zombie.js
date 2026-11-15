@@ -28,7 +28,7 @@
 
 import * as THREE from 'three';
 import { feel } from '../config/feel.js';
-import { zombieConfusion, zombieCrowd } from '../config/zombies.js';
+import { zombieConfusion, zombieCrowd, zombieSoundCues } from '../config/zombies.js';
 import { workshopStuffings } from '../config/workshop.js';
 import { moveAndCollide } from '../world/collision.js';
 import { createZombieModel } from './zombieModel.js';
@@ -46,6 +46,14 @@ const desired = { x: 0, z: 0 };
 const reachRay = new THREE.Ray();
 const reachHit = new THREE.Vector3();
 const laneRay = new THREE.Ray();
+// The periodic sounds (shuffle, groan, approach: config/zombies.js `sounds`) are timed by each zombie's own little random
+// stream, never Math.random: a sound must not change what a seeded test (or a gait roll) gets next.
+const PERIODIC_SOUNDS = ['shuffle', 'groan', 'approach'];
+let soundSerial = 0;
+function soundRandom(seed) {
+  let s = (seed * 2654435761) >>> 0 || 1;
+  return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; };
+}
 
 export class Zombie {
   // `speed`: this zombie's gait speed in m/s (defaults to the type's base walk).
@@ -586,6 +594,7 @@ export class Zombie {
       if (ctx.canAttack && this.attackCooldown <= 0 && this.inReach(ctx.player, attack.startRange) &&
           !this.wallBetween(ctx.player, ctx.colliders)) {
         this.setState('windup');
+        this.playSound(this.type.sounds?.windup ?? zombieSoundCues.windup, ctx); // (the arms go up: heard from behind too)
       } else if (charge && ctx.canAttack && this.chargeCooldown <= 0) {
         // Cart Pusher: every so often, look for a clear, wide lane to the player at mid range.
         this.chargeCheckTimer -= dt;
@@ -841,13 +850,36 @@ export class Zombie {
         this.playSound(sounds.huff, ctx);
       }
     }
+    this.periodicSounds(dt, ctx);
   }
 
-  // Play a sound ({ name, maxDistance }) through ctx.onSound, louder the closer the player is.
+  // Shuffle, groan and approach ({ name, interval, jitter?, chance?, maxDistance, profile }): each on its own timer, a little
+  // irregular (jitter: +/- that fraction of the interval) and starting at a random point, so a crowd never groans in step.
+  // A Mascot's approach honk only while its helmet is on. Timed by the zombie's own random stream (see soundRandom).
+  periodicSounds(dt, ctx) {
+    const sounds = this.type.sounds;
+    if (!sounds || !ctx.onSound) return;
+    for (const key of PERIODIC_SOUNDS) {
+      const def = sounds[key];
+      if (!def) continue;
+      this.soundRng ??= soundRandom(++soundSerial);
+      this.soundTimers ??= {};
+      if (this.soundTimers[key] === undefined) this.soundTimers[key] = this.soundRng() * def.interval;
+      this.soundTimers[key] -= dt;
+      if (this.soundTimers[key] > 0) continue;
+      const jitter = def.jitter ?? 0;
+      this.soundTimers[key] += def.interval * (1 + (this.soundRng() * 2 - 1) * jitter);
+      if (key === 'approach' && this.mascotHeadOff) continue;
+      if (this.soundRng() < (def.chance ?? 1)) this.playSound(def, ctx);
+    }
+  }
+
+  // Play a sound ({ name, maxDistance, profile }) through ctx.onSound: (name, volume by distance, this zombie, the entry).
+  // The zombie goes along so the sound can come FROM it (game/soundStage.js places it and follows it while it plays).
   playSound(sound, ctx) {
     if (!sound || !ctx.onSound) return;
     const volume = 1 - this.distanceTo(ctx.player) / sound.maxDistance;
-    if (volume > 0) ctx.onSound(sound.name, volume);
+    if (volume > 0) ctx.onSound(sound.name, volume, this, sound);
   }
 
   // Move toward the player. `speedScale` slows the walking part (e.g. mid-attack); `facePlayer`

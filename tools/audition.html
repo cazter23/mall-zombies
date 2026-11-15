@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Gun Sound Audition</title>
+<title>Sound Audition</title>
 <!-- DEV ONLY (npm run dev, then /tools/audition.html): every gun's sounds through the real engine, old vs new, per room,
-     plus an offline Measure table. Never part of a build (vite builds index.html only). -->
+     plus an offline Measure table, and (top card) the 3D zombie sound mini map. Never part of a build (vite builds index.html only). -->
 <style>
   :root { --bg: #17131c; --card: #231d2b; --ink: #f4ecdf; --dim: #b4a8bd; --accent: #ff8f5a; --line: #3a3045; --on: #ffcf5a; }
   * { box-sizing: border-box; }
@@ -28,11 +28,19 @@
   #report-wrap { padding: 0 16px 24px; }
   #report { white-space: pre; overflow-x: auto; background: #0f0c12; border: 1px solid var(--line); border-radius: 8px; padding: 12px; font: 12px/1.35 ui-monospace, monospace; }
   #status { color: var(--dim); }
+  /* The 3D zombie sound card (tools/auditionSpatial.js). */
+  .card.wide { grid-column: 1 / -1; }
+  .card .headphones { color: var(--on); font-size: 13px; }
+  .spatial { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+  .spatial canvas { width: 360px; max-width: 100%; aspect-ratio: 1; border: 1px solid var(--line); border-radius: 8px; touch-action: none; cursor: grab; }
+  .sp-controls { flex: 1 1 320px; display: flex; flex-direction: column; gap: 6px; }
+  .sp-controls button.on { background: var(--on); color: #1a1010; border-color: var(--on); }
+  #sp-readout, #sp-cost { white-space: pre-wrap; background: #0f0c12; border: 1px solid var(--line); border-radius: 8px; padding: 8px; font: 12px/1.4 ui-monospace, monospace; margin: 4px 0 0; min-height: 3em; }
 </style>
 </head>
 <body>
 <header>
-  <h1>Gun Sound Audition</h1>
+  <h1>Sound Audition</h1>
   <button id="unlock" class="primary">Start audio</button>
   <span class="seg" id="engine"><button data-v="new" class="on">New</button><button data-v="old">Old</button></span>
   <label>Room <select id="room"></select></label>

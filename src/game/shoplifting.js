@@ -42,6 +42,13 @@ export function createShoplifting({ events, wallet, effects = null, runFrozen = 
         away.normalize();
       }
       zombie.walkToward(away.x, away.z, theft.fleeSpeed * (zombie.slowFraction ?? 1), dt, ctx);
+      // The anti-theft gate's alarm goes with it, so you can hear which way your points went (config/zombies.js sounds.flee).
+      // Not once you're dead: nothing is said over the receipt.
+      const alarm = zombie.type.sounds?.flee;
+      if (alarm && ctx.canAttack) {
+        zombie.fleeSoundTimer = (zombie.fleeSoundTimer ?? 0) - dt;
+        if (zombie.fleeSoundTimer <= 0) { zombie.fleeSoundTimer += alarm.interval; zombie.playSound(alarm, ctx); }
+      }
       zombie.fleeTimer -= dt;
       if (zombie.fleeTimer <= 0 && !zombie.removed) escape(zombie);
       return true;

@@ -99,6 +99,15 @@ const shopper = {
   // Cartoon splatter (Halo CE style): bright green and purple.
   splatColors: [0x6bdc3c, 0xc4f542, 0x9b4dff],
   deathSplatCount: 30, // extra burst when a zombie dies
+
+  // Sounds (config/audio.js), placed at the zombie (game/soundStage.js). Each entry: name, maxDistance (m: silent past it),
+  // profile (config/spatialAudio.js profiles: how it falls off and how much it matters when voices run out), and for the
+  // periodic ones (shuffle, groan, approach: zombies/zombie.js periodicSounds) interval (s), jitter (+/- fraction), chance.
+  // A shopper shuffles (the floor underfoot changes it: shopperShuffle@carpet...) and groans now and then.
+  sounds: {
+    shuffle: { name: 'shopperShuffle', interval: 0.62, jitter: 0.25, chance: 0.55, maxDistance: 14, profile: 'step' },
+    groan: { name: 'shopperGroan', interval: 6, jitter: 0.5, chance: 0.6, maxDistance: 28, profile: 'voice' },
+  },
 };
 
 // Round 4+: a power-walking retiree in a matching tracksuit. Fast (outpaces your walk and backpedal,
@@ -167,9 +176,9 @@ const mallWalker = {
   // Sounds (config/audio.js) so you hear one coming: squeaky sneakers and huffing while it chases,
   // panting when winded. Louder the closer it is; silent past maxDistance meters.
   sounds: {
-    step: { name: 'walkerSqueak', interval: 0.5, chance: 0.45, maxDistance: 14 },
-    huff: { name: 'walkerHuff', interval: 1.3, maxDistance: 12 },
-    winded: { name: 'walkerPant', maxDistance: 14 },
+    step: { name: 'walkerSqueak', interval: 0.5, chance: 0.45, maxDistance: 14, profile: 'step' },
+    huff: { name: 'walkerHuff', interval: 1.3, maxDistance: 12, profile: 'voice' },
+    winded: { name: 'walkerPant', maxDistance: 14, profile: 'voice' },
   },
 };
 
@@ -219,6 +228,13 @@ const shoplifter = {
     ],
   },
   theftSounds: { theft: 'shopliftGrab', recovered: 'shopliftRecovered' },
+  // Running at you: the loot in its bag jingles with every stride, and it snickers. Running OFF with your points: the store's
+  // anti-theft gate alarm goes with it (game/shoplifting.js), so you can hear which way your points went.
+  sounds: {
+    shuffle: { name: 'shoplifterJingle', interval: 0.4, jitter: 0.15, chance: 1, maxDistance: 22, profile: 'alert' },
+    groan: { name: 'shoplifterSnicker', interval: 4.5, jitter: 0.5, chance: 0.7, maxDistance: 20, profile: 'voice' },
+    flee: { name: 'shoplifterAlarm', interval: 0.75, maxDistance: 45, profile: 'cue' },
+  },
   // The loot marker over one that has your points (fx/lootView.js): a big spinning gold coin, m and colours; unlit so it reads anywhere.
   lootMarker: { radius: 0.16, thickness: 0.035, above: 0.35, spin: 4, bob: 0.05, color: 0xffc93d, rimColor: 0xb8860b },
 };
@@ -301,9 +317,10 @@ const cartPusher = {
 
   // Squealing wheels while it rolls; a rattle + squeal on the telegraph (the warning); a crash on a miss.
   sounds: {
-    step: { name: 'cartSqueak', interval: 0.7, chance: 0.5, maxDistance: 14 },
-    telegraph: { name: 'cartRattle', maxDistance: 24 },
-    crash: { name: 'cartCrash', maxDistance: 24 },
+    step: { name: 'cartSqueak', interval: 0.7, chance: 0.5, maxDistance: 14, profile: 'step' },
+    groan: shopper.sounds.groan,
+    telegraph: { name: 'cartRattle', maxDistance: 30, profile: 'cue' }, // (rattle, squeal, and a reversing forklift's beeps)
+    crash: { name: 'cartCrash', maxDistance: 24, profile: 'body' },
   },
 };
 
@@ -315,8 +332,10 @@ const mannequin = {
     windupShrinkPerRound: 0, recoverSeconds: 1, missRecoverSeconds: 1 },
   plastic: { color: 0xe9dfc8, jointColor: 0x6b6464, tagColor: 0xc45177, roughness: .32 },
   splatColors: [0xe9dfc8, 0xcfc3aa],
-  sounds: { step: { name: 'mannequinStep', interval: .4, chance: 1, maxDistance: 16 },
-    release: { name: 'mannequinClick', maxDistance: 20 } },
+  // A plastic tap and a joint's creak with every step: only while it moves (frozen, it is silent). The click when it is
+  // released (you looked away) is an alert: it is coming.
+  sounds: { step: { name: 'mannequinStep', interval: .4, chance: 1, maxDistance: 16, profile: 'step' },
+    release: { name: 'mannequinClick', maxDistance: 20, profile: 'alert' } },
   introBanner: { kicker: 'Display advisory', text: 'Mannequins move when you look away. Keep them in sight.' },
 };
 // Round 10+: the MASCOT. One zombie slot (economy.zombieMix.mascot: share, maxAlive, intro) wearing one of several
@@ -342,9 +361,10 @@ const mascotBase = {
   splatColors: mascotFoamColors,
   deathSplatCount: 42,
   sounds: {
-    step: { name: 'mascotThump', interval: 0.58, chance: 1, maxDistance: 18 },
-    headPop: { name: 'mascotHeadPop', maxDistance: 26 },
-    howl: { name: 'mascotHowl', maxDistance: 26 },
+    step: { name: 'mascotThump', interval: 0.58, chance: 1, maxDistance: 22, profile: 'heavy' },
+    approach: { name: 'mascotHonk', interval: 3.2, jitter: 0.3, chance: 1, maxDistance: 30, profile: 'alert' }, // (helmet on only)
+    headPop: { name: 'mascotHeadPop', maxDistance: 26, profile: 'body' },
+    howl: { name: 'mascotHowl', maxDistance: 30, profile: 'cue' }, // (it is about to rush)
   },
   mascot: {
     healthFraction: 0.5,
@@ -761,6 +781,13 @@ export const mascotGoldTypes = Object.fromEntries(Object.entries(mascotTypes).ma
 export const zombieTypes = { shopper, shoplifter, mallWalker, cartPusher, mannequin, mascot: mascotTypes.sirWaffles };
 
 // How a crowd moves together: spacing, queueing, spreading out, surrounding the player.
+// The cues every zombie shares (a type's own sounds.windup replaces it): the arms going up for a swing within reach, and a
+// boss walking in (game/createGame.js on 'bossSpawn': a store's door chime, from where the boss is). config/audio.js recipes.
+export const zombieSoundCues = {
+  windup: { name: 'zombieLunge', maxDistance: 5, profile: 'cue' },
+  bossEntrance: { name: 'bossEntrance', maxDistance: 90, profile: 'boss' },
+};
+
 export const zombieCrowd = {
   // Sounds from several zombies at once: the same sound never plays twice within this many seconds.
   soundMinGapSeconds: 0.15,
