@@ -1,5 +1,20 @@
 # Sunset Galleria: build history ("Current state")
 
+## 15 November 2026 - Gun weight, and rumble on hits (`claude/bughunt`)
+
+From a gunplay check (what the game already does for hit feedback, reactions, handling, reloads, penetration, weak spots): hit
+markers, hit sounds, flinch and knockback, penetration and headshots were all there; gun handling and controller feedback on hits
+were the cheapest gaps. The user asked for both, gun weight with the recommended numbers.
+- **Gun weight** (config/weapons.js `weight` per gun, `gunWeights`; weapons/playerGun.js). Switching TO a gun: light 0.25 s to come
+  up, medium 0.32 (what every gun had), heavy 0.40, very heavy 0.45 (the drop of the old gun is still feel.weaponSwitch 0.18). Firing
+  from a full sprint: 0.05 / 0.08 / 0.11 / 0.14 s before the first shot. Light: Staple Gun, Price Gun, Foam Dart Blaster, Barcode
+  Scanner, BOGO. Heavy: Rivet Rifle, Heavy Coil Nailer. Very heavy: Stargazer 3000, Bottle Rocket Bazooka. The rest medium. The two
+  numbers left feel.js. Walking speed while just holding a gun was left alone (aiming already slows heavy guns: `ads`).
+- **Rumble on hits** (config/haptics.js hit / headshot / kill, core/haptics.js): from the 'hit' event, so only your gun and box
+  cutter (hazards, equipment and burns don't announce hits). They follow the Controller vibration setting. A hit is announced just
+  before its own shot, so the new `accent` pulses BLEND (stronger motor, longer time) with whatever plays instead of replacing it,
+  both ways; a pellet or pierce hit that adds nothing plays nothing. Not felt on a real controller here: tune by hand.
+
 ## 14 November 2026 - A full magazine fills when an upgrade makes it bigger (`claude/bughunt`)
 
 The user's request: buying a Deluxe warranty on a full Rivet Rifle left it at 36/45 until a reload. Now any upgrade that makes the

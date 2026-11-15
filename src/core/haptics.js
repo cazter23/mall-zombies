@@ -1,6 +1,6 @@
 // Browser peripheral: listens to gameplay events, never changes gameplay.
 // Unsupported/blocked actuators are silent no-ops. No delayed rumble queue.
-// Shots, getting hurt, pickups, blasts, bosses, jackpots, Doorbusters and bought doors come from the event bus (config/haptics.js);
+// Shots, hits and kills, getting hurt, pickups, blasts, bosses, jackpots, Doorbusters and bought doors come from the event bus (config/haptics.js);
 // `charge` (optional, () => 0..1) is read each tick: a charge gun winding up hums, growing as it fills.
 import { haptics as defaults } from '../config/haptics.js';
 
@@ -10,6 +10,7 @@ export function createHaptics({ gamepad, input, state, health, events, config = 
   let padKey = null;
   let priority = 0;
   let until = 0;
+  let playing = { strong: 0, weak: 0, accent: false }; // what the motors are doing until `until` (before strength)
   let focused = page?.hasFocus?.() ?? true;
   let nextCharge = 0; // when the charge hum may pulse again
 
@@ -25,6 +26,7 @@ export function createHaptics({ gamepad, input, state, health, events, config = 
     }
     priority = 0;
     until = 0;
+    playing = { strong: 0, weak: 0, accent: false };
     padKey = null;
   }
 
@@ -35,7 +37,11 @@ export function createHaptics({ gamepad, input, state, health, events, config = 
 
   function pulse(effect) {
     if (!eligible()) { stop(); return; }
-    if (!effect || (now() < until && effect.priority < priority)) return;
+    if (!effect) return;
+    const busy = now() < until;
+    // An accent (a hit, a kill) blends with what is playing, both ways (config/haptics.js hit); anything else replaces it.
+    const blend = busy && (effect.accent || playing.accent);
+    if (busy && !blend && effect.priority < priority) return;
     const pad = gamepad.pad;
     const candidates = [pad.vibrationActuator, ...(pad.hapticActuators ?? [])].filter(Boolean);
     const supportsDual = (a) => typeof a.playEffect === 'function' && (!a.effects || Array.from(a.effects).includes('dual-rumble'));
@@ -45,18 +51,29 @@ export function createHaptics({ gamepad, input, state, health, events, config = 
     if (padKey !== null && key !== padKey) stop();
     actuator = next;
     padKey = key;
-    priority = effect.priority;
-    until = now() + effect.duration;
+    const duration = blend ? Math.max(effect.duration, until - now()) : effect.duration;
+    const strong = blend ? Math.max(effect.strongMagnitude, playing.strong) : effect.strongMagnitude;
+    const weak = blend ? Math.max(effect.weakMagnitude, playing.weak) : effect.weakMagnitude;
+    if (blend && strong === playing.strong && weak === playing.weak && effect.duration <= until - now()) return; // (adds nothing: a second pellet)
+    priority = blend ? Math.max(priority, effect.priority) : effect.priority;
+    until = now() + duration;
+    playing = { strong, weak, accent: blend || !!effect.accent };
     const strength = Math.max(0, Math.min(1, config.strength));
-    const strongMagnitude = Math.max(0, Math.min(1, effect.strongMagnitude * strength));
-    const weakMagnitude = Math.max(0, Math.min(1, effect.weakMagnitude * strength));
+    const strongMagnitude = Math.max(0, Math.min(1, strong * strength));
+    const weakMagnitude = Math.max(0, Math.min(1, weak * strength));
     safely(() => supportsDual(next)
-      ? next.playEffect('dual-rumble', { startDelay: 0, duration: effect.duration, strongMagnitude, weakMagnitude })
-      : next.pulse(Math.max(strongMagnitude, weakMagnitude), effect.duration));
+      ? next.playEffect('dual-rumble', { startDelay: 0, duration, strongMagnitude, weakMagnitude })
+      : next.pulse(Math.max(strongMagnitude, weakMagnitude), duration));
   }
 
   const off = [
     events.on('shot', ({ weaponId }) => pulse(config.shots[weaponId])),
+    // Your gun or box cutter landed a hit (not hazards, equipment or burns: they don't announce 'hit').
+    events.on('hit', ({ killed, headshot }) => {
+      if (killed) pulse(config.kill);
+      if (headshot) pulse(config.headshot);
+      if (!killed && !headshot) pulse(config.hit);
+    }),
     events.on('playerHit', ({ damage }) => {
       if (damage > 0 && !health.invulnerable && !health.isDead) pulse(config.damage);
     }),

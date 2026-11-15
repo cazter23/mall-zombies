@@ -32,7 +32,8 @@ src/
     idle.js             Idle saver numbers: delays (short / normal / long: dim and sleep seconds), dimFps, muteWhenAsleep, pollSeconds
     haptics.js          Controller vibration intensity and per-gun/damage/pickup durations, motor strengths and priorities; moments
                         (blast, airHorn, bossSpawn, bossDefeated, jackpot, doorbuster) and the charge hum (a pulse every everyMs,
-                        growing with the Barcode Scanner's scan)
+                        growing with the Barcode Scanner's scan); hit / headshot / kill (`accent`: they blend with what is playing instead of
+                        replacing it, core/haptics.js)
     haptics.js          Controller vibration intensity and per-gun/damage/pickup durations, motor strengths and priorities; doorUnlock / doorClunk
                         (a bought door's latch and its end clunk near you)
     shutters.js         Shutter construction (slats, track, housing, finishes keyed by door id, each with an opening `profile`) and `opening`:
@@ -79,7 +80,7 @@ src/
                         healthMultiplier 0.65, introSpawnIndex) + zombieHealthFor(typeId, round), zombieTypeForRound(round).
                         Mascot enters at round 10 with 5x Shopper health and a two-alive cap (every costume shares that slot).
                         PA line pools for `rounds.lastShoppers.pa.lines` (15), `rounds.clockIn.pa.lines` (8), and `flashSales.teaser.lines` (8).
-    weapons.js          stapleGun (start pistol, semi), priceGun (wall buy, full auto), nailGun (wall buy, semi,
+    weapons.js          (every gun has a `weight`; `gunWeights`: each class's raise and sprint-out seconds, read by playerGun.js) stapleGun (start pistol, semi), priceGun (wall buy, full auto), nailGun (wall buy, semi,
                         piercing: `pierce: { maxTargets, damageFalloff }`), foamDartBlaster (Mega Mart, burst),
                         confettiCannon (Service Corridor, 12 pellets, pellets pierce 2 zombies, six-shell tube, shell-by-shell
                         `shellReload`), rivetRifle (Grand Atrium wall buy 1500), coilNailer (Cinema projection-passage wall buy 2500), barcodeScanner (HOFFMAN'S wall buy 1750; `fireMode: 'charge'`).

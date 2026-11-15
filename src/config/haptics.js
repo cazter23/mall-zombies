@@ -19,6 +19,13 @@ export const haptics = {
     confettiCannon: { duration: 170, strongMagnitude: 0.85, weakMagnitude: 0.55, priority: 1 },
   },
   damage: { duration: 180, strongMagnitude: 0.8, weakMagnitude: 0.7, priority: 3 },
+  // Your shot or swing landed ('hit'): a light tick, a sharper one on a headshot, a thump on a kill (a headshot kill gets
+  // both). `accent`: it BLENDS with what is already playing (the stronger motor and the longer time of the two) instead of
+  // replacing it, and so does whatever comes next while it plays: a hit is announced just before its own shot, and a shotgun's
+  // pellets or a nail through three zombies are several hits at once, so each shot is felt once, never cut short.
+  hit: { duration: 35, strongMagnitude: 0.1, weakMagnitude: 0.5, priority: 1, accent: true },
+  headshot: { duration: 55, strongMagnitude: 0.25, weakMagnitude: 0.8, priority: 1, accent: true },
+  kill: { duration: 110, strongMagnitude: 0.55, weakMagnitude: 0.6, priority: 2, accent: true },
   pickup: { duration: 140, strongMagnitude: 0.25, weakMagnitude: 0.5, priority: 2 },
   // Moments (core/haptics.js listens on the event bus). Priority 2: above a shot, below getting hurt.
   blast: { duration: 220, strongMagnitude: 0.9, weakMagnitude: 0.55, priority: 2 }, // a rocket or balloon bursting ('gunBlast'), a Soda Bomb ('equipmentBurst')
