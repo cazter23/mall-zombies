@@ -125,7 +125,9 @@ export function createPlayerHealth({ stats, onDeath, onRegenStart = null }) {
     },
 
     revive(seconds) {
+      const worn = armour.slice(); // (Bubble Wrap stays on: a lethal fall or blast went past it, and the revive is not a new run)
       this.reset();
+      armour.push(...worn);
       reviveProtection = seconds;
     },
 

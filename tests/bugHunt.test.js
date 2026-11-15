@@ -616,3 +616,16 @@ test('a boss\'s voucher survives Save & Quit when the boss was the round\'s last
   assert.equal(g.pricing.voucher?.name, bossVouchers[reward].name, 'and it can be collected again');
 });
 
+test('Second Chance keeps your Bubble Wrap: a revive after a lethal fall leaves the layers on', (context) => {
+  const t = quietGame(context);
+  const { g } = t;
+  g.health.addArmour(3);
+  const layers = [...g.health.armour];
+  g.secondChance.buy();
+  g.health.takeDamage(9999, { type: 'fall', fall: true }); // (a fall goes past armour: the layers were never touched)
+  assert.equal(g.state.over, false, 'the scenario: revived');
+  assert.equal(g.secondChance.status, 'used');
+  assert.deepEqual([...g.health.armour], layers, 'the Bubble Wrap is still on');
+  assert.equal(g.stats.health, g.stats.maxHealth, 'at full health');
+});
+
