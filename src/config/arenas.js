@@ -41,6 +41,8 @@ export const arenas = {
         { id: 'shutter', at: [0, 0, 6.9] },
         { id: 'sideDoor', at: [-4.3, 0, 12.55] },
       ],
+      // West of the shutter on the south wall (the room's inside face is z 6.3; clear of its wainscot rail, 3.5 cm proud): body x -4.45..-2.75.
+      restock: { x: -3.6, wallZ: 6.36, facing: 1, floorY: 0 },
     },
     {
       id: 'cinema',
