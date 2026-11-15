@@ -9,6 +9,7 @@
 //   restock      an arena-only RESTOCK-O-MATIC on a wall that runs along X: { x (its centre), wallZ, facing (+1/-1 along Z), floorY }
 //   desk         an arena-only Customer Service booth (maps/mall/props.js serviceDesk): { along, center, wallAt, facing, floorY }
 //   boxOffice    Customer Service at an existing counter (no new booth): the three windows' buy spots and its signs
+//   wardrobeMachine  an arena-only WEAR-O-MATIC (every Wardrobe item, plus a fee) on a wall that runs along X: { x, wallZ, facing, floorY }
 //   wallBuys     arena-only wall guns: [{ id, weapon, at: [x, y, z], normal: [x, 0, z], board? }]
 //                board: a plywood backing (on a fence): { half: [along, up], depth } around `at`, standing off the fence
 // =============================================================================
@@ -64,6 +65,9 @@ export const arenas = {
       },
       // The Nail Gun over the east wall's waiting seats (their backs stop at 1.1 m), north of the premiere programme (z -9.2..-7.4).
       wallBuys: [{ id: 'nailGun', weapon: 'nailGun', at: [-20.32, 8.05, -6.3], normal: [-1, 0, 0] }],
+      // The WEAR-O-MATIC on the north wall between two posters (cases x -32.8..-31.2 and -28.8..-27.2), across from the box office,
+      // 4 m west of the RESTOCK-O-MATIC; set off the wall like it (wallInset .2): body x -30.65..-29.35, z 4.5..5.3.
+      wardrobeMachine: { x: -30, wallZ: 5.3, facing: -1, floorY: 6.3 },
     },
     {
       id: 'parkingLot',
@@ -77,6 +81,8 @@ export const arenas = {
       // Against the north fence (its inside face is z 6), 2 cm off it.
       desk: { along: 'x', center: 40.6, wallAt: 5.98, facing: -1, floorY: 0 },
       restock: { x: 54.5, wallZ: 5.98, facing: -1, floorY: 0 },
+      // East of the RESTOCK-O-MATIC on the same fence, clear of the north fence spawn (x 48) and the lamp post (59.5, 1.5): body x 57.75..59.05.
+      wardrobeMachine: { x: 58.4, wallZ: 5.98, facing: -1, floorY: 0 },
       wallBuys: [
         { id: 'foamDartBlaster', weapon: 'foamDartBlaster', at: [45.2, 1.5, 5.92], normal: [0, 0, -1],
           board: { half: [0.7, 0.6], depth: 0.04, gap: 0.02 } },

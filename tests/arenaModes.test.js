@@ -210,6 +210,7 @@ function spotsOf(feature) {
       .map(([position, kind]) => ({ position, normal: feature.normal, kind }));
   }
   if (feature.kind === 'ammoCache') return [{ position: feature.position, normal: feature.normal, kind: 'ammoCache' }];
+  if (feature.kind === 'wardrobeMachine') return [{ position: feature.position, normal: feature.normal, kind: 'wardrobeMachine' }];
   return [{ position: feature.position, normal: feature.normal, kind: 'weapon' }];
 }
 const meshBoxes = (root, skip) => {

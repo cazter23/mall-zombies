@@ -163,6 +163,17 @@ export const showpieces = {
 // The fitting-room picker (game/features/fittingRoomPicker.js): it closes by itself once you are this far from the mirror (metres).
 export const fittingRoomPicker = { closeDistance: 3 };
 
+// The WEAR-O-MATIC (arena survival only; where: config/arenas.js wardrobeMachine; the fee: economy.js wearOMatic): every item in
+// one vending machine, for the arenas that have no racks or fitting rooms. It opens the fitting-room picker in shop mode: buy anything,
+// or change into anything you own, free (game/features/wardrobeFixtures.js buildWardrobeMachine).
+export const wardrobeMachine = {
+  name: 'WEAR-O-MATIC',
+  prompt: { title: 'Buy or change clothes', detail: 'Every item in the mall · Convenience fee applies', verb: 'browse', priceLabel: 'Browse' },
+  kicker: 'WEAR-O-MATIC · Convenience fee applies',
+  // The strip under its lit name (the model: maps/mall/wardrobeMachine.js).
+  tagline: 'CLOTHES  ·  NOW  ·  NO MIRROR',
+};
+
 // The outfit rail (HUD, pause screen, death receipt; game/outfitRail.js decides when a tag pulses, ui/outfitRail.js draws it).
 export const outfitRail = {
   pulseSeconds: 0.9, // a tag swings and flashes this long after its item does its job

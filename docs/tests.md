@@ -357,6 +357,11 @@ SOLD OUT card and banner, Play again unsold, and the motif only within range whi
 The other nine fixtures add continuous 2 m approaches, clear bases and spawn/door lanes, entrance-facing signs, independent Customer Service
 and fitting-room prompts, coplanar checks on rotated fixtures, and the same idle, register, PA, sold-out, reset and motif checks. Both Shoe-Per Sale
 fixtures and its mirror retain their own prompt, and the upstairs motifs stay on their floor.
+`tests/wearOMatic.test.js` covers the arenas' WEAR-O-MATIC (the fitting-room picker in shop mode): each item costs its rack price plus the
+convenience fee (more than the rack, never more than a quarter more) and an Apparel sale takes its share off; it is in Last Showing and Lot Full
+only, never Everything Must Go or a whole-mall run; with real key presses it lists every item with its price, buys one (paid at the machine's
+price, owned, worn, a 'purchase' of kind 'wearOMatic'), a second one replaces it, changing back is free, short of points nothing happens and the
+form says no; an Apparel sale marks the machine while anything is left to buy. (tests/arenaModes.test.js also checks it stands clear and is reachable.)
 `tests/wardrobeAppearance.test.js` checks sleeve changes across all guns, ADS, finished workshop combinations and limited editions, plus a real fitting-room
 swap, shoe footfalls and slide sparks, the look-down pack and board, the melee foam finger, paid Gold Card popups and the regen tick.
 It also checks geometry against the reticle ray and confirms HUD styles, reticle and reserve rendering during equip and Play Again.

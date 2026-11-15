@@ -64,6 +64,9 @@ Round 1's PA opener is the arena's own line (config/arenas.js `pa`) instead of a
 - Arena only: a **Nail Gun** wall buy (1000) on the lobby's east wall above the waiting seats, (-20.32, 8.05, -6.3) facing -X
   (north of the premiere programme poster, z -9.2..-7.4).
   The cinema's only gun was the 2500 Coil Nailer; the Nail Gun is the normal game's first real upgrade.
+- Arena only (added 15 November 2026): the **WEAR-O-MATIC**, every Wardrobe item in one vending machine plus a 20% convenience fee
+  (economy.js wearOMatic), and a free change into anything you own (the fitting-room picker in shop mode). On the lobby's north wall
+  between two posters, x -30, 4 m west of the RESTOCK-O-MATIC: the cinema has one rack (the 3D Glasses) and no fitting room.
 
 ### Lot Full (zone `parkingLot`, x 34.3..62.3, z -24..6, ground y 0)
 - Player spawn: (45, 0, 0) facing +Z (the row of stalls along the north fence).
@@ -77,6 +80,7 @@ Round 1's PA opener is the arena's own line (config/arenas.js `pa`) instead of a
   - **RESTOCK-O-MATIC** against the north fence: x 53.65..55.35, z 5.13..5.98, facing -Z.
   - **Foam Dart Blaster** (1200) on a plywood board zip-tied to the north fence at x 45.2 (board x 44.5..45.9, y 0.9..2.1).
   - **Rivet Rifle** (1500) on a board on the east fence at z 0.5 (board z -0.2..1.2), facing -X.
+  - **WEAR-O-MATIC** (added 15 November 2026, as in Last Showing) against the north fence: x 57.75..59.05, z 5.18..5.98, facing -Z.
   Everything clear of the north fence spawn (x 48), the vestibule and the lamp post.
 
 ## How a mode flows through the game

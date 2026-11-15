@@ -568,7 +568,7 @@ src/
       sentry.js         sentryTarget({ muzzle, turret, shootables, colliders }): the nearest zombie (alive, typed, not noRewards, not rising)
                         within range with a clear line from the muzzle to its body; fireSentry(...): the hitscan (castShot) from the muzzle
                         against zombies only, a body hit for turret.damage x power, source 'equipment', weaponId 'sentry'; a tracer and splat.
-    pricing.js          createPricing(): priceOf('door'|'weapon'|'ammo'|'ammoCache'|'tier'|'attachment'|'closing', id) = economy.js base price with any
+    pricing.js          createPricing(): priceOf('door'|'weapon'|'ammo'|'ammoCache'|'tier'|'attachment'|'wardrobe'|'wearOMatic'|'closing', id) = economy.js base price with any
                         category or per-item discount applied (`setDiscount(category, 0..1)` and `setItemDiscount(category, id, 0..1)`), rounded to nearest
                         economy.discountRoundTo (10), stacked identically before employee coupons and boss vouchers; `discountOf(category, id)` / `itemDiscountOf(category, id)`; `reset()` on a new
                         run). Unknown category/id throws. PRICE_CATEGORIES
@@ -720,7 +720,10 @@ src/
       wardrobeFixtures.js Wardrobe racks (buy: the generated ticket) and fitting rooms (free: the hold opens that room's picker; its instance has `view`).
                           A rack with a `showpiece` also syncs the sold-out state to its fixture each tick, hums its motif (config/audio.js) while you are within
                           config/wardrobe.js showpieces.motifRange, and on a buy strikes the pose and emits 'wardrobeBuy' (the PA line).
+                          buildWardrobeMachine: the arenas' WEAR-O-MATIC (feature kind 'wardrobeMachine'): a free prompt that opens a picker in shop mode.
       fittingRoomPicker.js The fitting-room picker: slots side by side, menu actions pick a slot and an owned item, confirm wears it (wardrobe.wear).
+                        `shop` ({ pricing, wallet, category, kicker }: the WEAR-O-MATIC) lists every item: an unowned one shows its price and confirm
+                        buys it (wallet.spend, wardrobe.buy, a 'purchase' of that category); short of points it plays 'denied' and `view.denied` shows.
                         Sets state.menu while open; closes on back, a 'playerHit', being moved away, death, reset. DOM-free; `view` is what the UI draws.
       clawMachine.js    Feature kind 'clawMachine', GRAB-A-GUN: idle -> sweeping -> lifting -> ready. Hold to pay ('claw' 'grab'), PRESS to
                         A run starts at the first site whose zone is open at reset time (whole mall: none yet, so the first; an arena: its own).
@@ -941,6 +944,9 @@ src/
                         shoulders and elbows kept as pivots. 'open': bobs, turns to the viewer, waves and talks while a bubble is up; 'hiding': a
                         spring drops him into the cart, arms over his head, peeking now and then; 'gone': hidden. buildSpeechBubble(): a sprite
                         (never raycast) with the line wrapped to two balanced lines at one size ('toyBody'), popping in and fading.
+    mall/wardrobeMachine.js buildWardrobeMachine({ kit, center, wallAt, facing, floorY = 0 }) -> { position, normal }: the WEAR-O-MATIC (arena survival
+                        only, built by mall/arenas.js from config/arenas.js wardrobeMachine), on a wall along X: a hot-pink body (one collider), lit name and
+                        tagline, a lit window with one shelf per Wardrobe slot holding its items in their colours, keypad, card reader, side signs.
     mall/restockMachine.js buildRestockMachine({ kit, center, wallAt, facing, floorY = 0 }) -> { position, normal, screen }: the RESTOCK-O-MATIC
                         (north/south walls): body + hazard kick plate + glowing header and tagline, a lit window of ammo boxes, keypad,
                         card reader, live canvas screen (screen.show({ title, line, note, tone })), side signs, the AMMO blade sign, the
@@ -1281,7 +1287,7 @@ src/
                         everything in em), left of centre; keys drawn as keycaps (keycaps()), one line on what the order does (orderSummary()), stuffings
                         you can't pick folded into a short "Not in stock" list.
     fittingRoomPicker.js Draws the fitting-room picker from its view (hud.setFittingRoom): four slot columns on the order form's paper and keycaps, the
-                        highlighted item's stat lines in green and red. Only draws.
+                        highlighted item's stat lines in green and red. Only draws. Shop mode (the WEAR-O-MATIC): its kicker, unowned items' prices, a Buy button.
     ritualHud.js        The order ticket on the HUD: the gun's stage, one progress bar, the gauge and time (reads the ritual's status).
     announcements.js    Bounded PA queue: type introductions priority 2, incentives 1, routine messages 0; a message flagged `keep` is never trimmed and is re-queued if cut off;
                         one flagged `ifQuiet` (an area welcome) is dropped when anything is showing or queued: push() returns false, and

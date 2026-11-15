@@ -135,6 +135,10 @@ export const economy = {
     fannyPack: 1500, foamFinger: 750, goldCard: 2000,
   },
 
+  // The WEAR-O-MATIC (arena survival only: config/arenas.js wardrobeMachine): any Wardrobe item at its price above times this,
+  // a convenience fee, rounded to discountRoundTo. Read through g.pricing.priceOf('wearOMatic', id).
+  wearOMatic: { markup: 1.2 },
+
   // Ammo cache (the vending machine in the Food Court): refills the gun in your hand, any gun, one flat price.
   ammoCache: { price: 400 },
   // Second Chance (Customer Service's third window; game/secondChance.js): one automatic self-revive per run. What the revive
@@ -281,7 +285,7 @@ export const economy = {
         end: { kicker: 'Sale over', text: 'The attachment sale has ended. Please remove your shopping from the zombies.' },
       },
       {
-        id: 'apparel', label: 'Apparel', categories: ['wardrobe'], weight: 1,
+        id: 'apparel', label: 'Apparel', categories: ['wardrobe', 'wearOMatic'], weight: 1, // (the racks, and the arenas' WEAR-O-MATIC)
         start: { kicker: 'Flash sale', text: 'Apparel is {pct}% off! Try before you die.' },
         end: { kicker: 'Sale over', text: 'The apparel sale has ended. Fitting rooms are still free.' },
       },

@@ -22,6 +22,7 @@ import { arenas as config } from '../../config/arenas.js';
 import { upgrades } from '../../config/upgrades.js';
 import { createMallProps } from './props.js';
 import { buildRestockMachine } from './restockMachine.js';
+import { buildWardrobeMachine } from './wardrobeMachine.js';
 
 const v3 = (a) => new THREE.Vector3(...a);
 
@@ -32,6 +33,13 @@ function restock(kit, arena) {
   const r = arena.restock;
   const machine = buildRestockMachine({ kit, center: r.x, wallAt: r.wallZ, facing: r.facing, floorY: r.floorY });
   return [{ kind: 'ammoCache', name: `ammocache_arena_${arena.id}`, position: machine.position, normal: machine.normal, screen: machine.screen }];
+}
+
+/** An arena-only WEAR-O-MATIC (mall/wardrobeMachine.js: every Wardrobe item, plus a convenience fee) on a wall along X. */
+function wardrobeMachine(kit, arena) {
+  const w = arena.wardrobeMachine;
+  const machine = buildWardrobeMachine({ kit, center: w.x, wallAt: w.wallZ, facing: w.facing, floorY: w.floorY });
+  return [{ kind: 'wardrobeMachine', name: `wardrobemachine_arena_${arena.id}`, position: machine.position, normal: machine.normal }];
 }
 
 /** An arena-only Customer Service booth (mall/props.js serviceDesk: one solid collider, three windows). */
@@ -99,6 +107,7 @@ function buildFixtures(kit, arena) {
     ...(arena.desk ? desk(kit, arena) : []),
     ...(arena.boxOffice ? boxOffice(kit, arena) : []),
     ...(arena.wallBuys?.length ? wallBuys(kit, arena) : []),
+    ...(arena.wardrobeMachine ? wardrobeMachine(kit, arena) : []),
   ];
 }
 
@@ -130,7 +139,7 @@ export function buildArenas({ group, colliders, zones, areaUnlocks, spawnPoints,
       colliders: own,
       kit,
     };
-    // The fixtures: an arena-only RESTOCK-O-MATIC, Customer Service, wall guns (each only where config/arenas.js has one).
+    // The fixtures: an arena-only RESTOCK-O-MATIC, Customer Service, wall guns, a WEAR-O-MATIC (each only where config/arenas.js has one).
     const built = build(kit, arena);
     for (const feature of built) entry.features.push({ ...feature, arena: arena.id, zone: feature.zone ?? arena.zones[0] });
     list[arena.id] = entry;
