@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { Weapon } from '../src/weapons/weapon.js';
 import { createPlayerGun } from '../src/weapons/playerGun.js';
+import { withTier } from '../src/weapons/upgrades.js';
 import { damageFalloff as pelletDamageFalloff } from '../src/weapons/gunStats.js';
 import { pelletSpreadDegrees } from '../src/weapons/aim.js';
 import { weapons } from '../src/config/weapons.js';
@@ -476,6 +477,29 @@ test('upgrades: magazine / spread mods reach the ammo and aim state; ammo carrie
   assert.equal(w.magazine, weapons.priceGun.magazineSize + 16, 'reloads to the bigger magazine');
   f.gun.setMods('priceGun', [{ id: 'smallMag', modifiers: [{ stat: 'magazineSize', op: 'set', value: 10 }] }]);
   assert.equal(w.magazine, 10, 'clipped to the new maximum');
+});
+
+test('an upgrade that makes the magazine bigger fills a FULL magazine to the new size, free; a part-empty one is left as it was', () => {
+  const f = fixture(weapons.rivetRifle);
+  const w = f.gun.weapon, before = weapons.rivetRifle.magazineSize;
+  assert.equal(w.magazine, before, 'the scenario: a full magazine');
+  const reserve = w.reserve;
+  f.gun.setMods('rivetRifle', withTier(weapons.rivetRifle, [], 'deluxe'));
+  assert.ok(w.def.magazineSize > before, `the scenario: Deluxe makes it bigger (${before} -> ${w.def.magazineSize})`);
+  assert.equal(w.magazine, w.def.magazineSize, 'full before, full after: no reload needed to use the bigger magazine');
+  assert.equal(w.reserve, reserve, 'the extra rounds are free: the reserve is untouched');
+  const g = fixture(weapons.rivetRifle), v = g.gun.weapon;
+  v.magazine = 20;
+  const spare = v.reserve;
+  g.gun.setMods('rivetRifle', withTier(weapons.rivetRifle, [], 'deluxe'));
+  assert.deepEqual([v.magazine, v.reserve], [20, spare], 'not full: kept as it was (reload to fill the bigger magazine)');
+  // Rounds a smaller magazine sent back to the reserve are taken back first, so a free refit to a smaller and back to a
+  // bigger magazine never makes ammo.
+  const h = fixture(weapons.rivetRifle), u = h.gun.weapon;
+  h.gun.setMods('rivetRifle', [{ id: 'small', modifiers: [{ stat: 'magazineSize', op: 'add', value: -10 }] }]);
+  const held = u.magazine + u.reserve;
+  h.gun.setMods('rivetRifle', []);
+  assert.deepEqual([u.magazine, u.magazine + u.reserve], [before, held], 'back to its own size: the 10 came back out of the reserve');
 });
 
 test('upgrades stay through an ammo buy, and go with the gun (replaced) or the run (reset)', () => {
