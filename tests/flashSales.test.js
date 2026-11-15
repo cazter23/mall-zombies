@@ -727,14 +727,16 @@ test('the tag view re-reads while a sale is on, so a spot that becomes usable wi
   const view = createSaleTagView(scene, g);
   t.tick(1);
   const groups = economy.flashSales.groups;
-  economy.flashSales.groups = groups.filter((grp) => grp.id === 'tiers');
+  // (A wall gun sale: it marks the start room's Price Gun now. A sale that would mark nothing is never announced:
+  // tests/bugHunt.test.js. The hallway's Nail Gun becomes usable later, without an event.)
+  economy.flashSales.groups = groups.filter((grp) => grp.id === 'weapons');
   try {
-    assert.equal(g.flashSales.teaseNow('category'), true, 'a warranty teaser while the desk is still behind a shutter');
+    assert.equal(g.flashSales.teaseNow('category'), true, 'a wall gun teaser while the hallway is still behind its shutter');
     view.update(0.1);
-    assert.equal(view.counts().soon, 0, 'the Customer Service desk is not usable yet');
+    assert.equal(view.counts().soon, 1, 'only the start room\'s wall gun is usable yet');
     g.map.areaUnlocks.unlock('hallway'); // (no 'purchase' event on this path)
     view.update(economy.flashSales.worldTag.syncIntervalSeconds + 0.01);
-    assert.equal(view.counts().soon, 1, 'the desk gets its SALE SOON tag on the next timed re-read');
+    assert.equal(view.counts().soon, 2, 'the hallway\'s wall gun gets its SALE SOON tag on the next timed re-read');
   } finally {
     economy.flashSales.groups = groups;
     view.dispose();

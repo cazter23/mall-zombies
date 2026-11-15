@@ -637,7 +637,7 @@ export function createGame({
   const flashSales = createFlashSales({
     events,
     pricing,
-    eligible: saleEligibility({ map, gun, warranty, wardrobe, kiosk: features.instanceOf('kiosk') }),
+    eligible: saleEligibility({ map, gun, warranty, wardrobe, kiosk: features.instanceOf('kiosk'), features }),
     doorbusters: () => doorbusterCandidates({
       map, gun, wardrobe, kiosk: features.instanceOf('kiosk'), equipment, health,
     }),

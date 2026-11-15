@@ -13,6 +13,8 @@ import { feel } from '../src/config/feel.js';
 import { clawMachine } from '../src/config/clawMachine.js';
 import { bossVouchers } from '../src/config/bosses.js';
 import { kiosk } from '../src/config/kiosk.js';
+import { economy } from '../src/config/economy.js';
+import { saleEligibility, collectSaleSpots } from '../src/game/flashSales.js';
 import { rampHeightAt, overlapsSolid } from '../src/world/collision.js';
 import { headlessGame } from './helpers/headlessGame.js';
 
@@ -656,3 +658,20 @@ test('a reissued Return to Sender comes back with the ammo the last one had, not
   t.tick(2);
   assert.deepEqual([g.gun.weaponFor('returnToSender').magazine, g.gun.weaponFor('returnToSender').reserve], [1, 2], 'a load remembers it too');
 });
+
+test('a Flash Sale is skipped when it would mark nothing you can buy right now', (context) => {
+  const t = quietGame(context); // (start room + hallway, the staple gun)
+  const { g } = t;
+  const groups = Object.fromEntries(economy.flashSales.groups.map((group) => [group.id, group]));
+  const eligible = () => saleEligibility({ map: g.map, gun: g.gun, warranty: g.warranty, wardrobe: g.wardrobe, kiosk: g.features.instanceOf('kiosk'), features: g.features });
+  const marks = (group) => collectSaleSpots({ map: g.map, features: g.features, gun: g.gun, warranty: g.warranty, wardrobe: g.wardrobe }, { categories: group.categories }).length;
+  for (const id of ['ammo', 'attachments', 'hazards', 'tiers', 'weapons', 'apparel', 'doors']) {
+    if (!groups[id]) continue;
+    assert.equal(eligible()(groups[id]), marks(groups[id]) > 0, `${id}: on sale only if it marks a buy spot (it marks ${marks(groups[id])})`);
+  }
+  assert.equal(marks(groups.ammo), 0, 'the scenario: with only the staple gun there is no ammo to buy');
+  g.gun.give(weapons.nailGun); // (its wall buy is in the hallway: ammo for it is on sale there)
+  t.tick(40);
+  assert.equal(eligible()(groups.ammo), true, 'with a wall gun in hand an ammo sale is of use');
+});
+
