@@ -158,7 +158,7 @@ test('one run only: everything saves and loads mid-quest, resets for a new shift
   t.events.emit('closingLine', { line: 'janitor' });
   quest.cycleLabel();
   const saved = JSON.parse(JSON.stringify(quest.serialize()));
-  assert.deepEqual(saved, { signs: cfg.signs.map(({ id }) => id), parcel: true, ticket: true, served: 5, issued: false, labels: ['chain'], fitted: 'chain' });
+  assert.deepEqual(saved, { signs: cfg.signs.map(({ id }) => id), parcel: true, ticket: true, served: 5, issued: false, labels: ['chain'], fitted: 'chain', lastAmmo: null });
 
   const again = alone();
   again.quest.restore(saved);
@@ -169,7 +169,7 @@ test('one run only: everything saves and loads mid-quest, resets for a new shift
   assert.deepEqual(again.steps, [], 'a load announces nothing');
 
   quest.reset();
-  assert.deepEqual(quest.serialize(), { signs: [], parcel: false, ticket: false, served: 0, issued: false, labels: [], fitted: null });
+  assert.deepEqual(quest.serialize(), { signs: [], parcel: false, ticket: false, served: 0, issued: false, labels: [], fitted: null, lastAmmo: null });
   assert.equal(quest.stage, 'policy');
 
   t.state.over = true;

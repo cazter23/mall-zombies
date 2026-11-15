@@ -629,3 +629,30 @@ test('Second Chance keeps your Bubble Wrap: a revive after a lethal fall leaves 
   assert.equal(g.stats.health, g.stats.maxHealth, 'at full health');
 });
 
+test('a reissued Return to Sender comes back with the ammo the last one had, not a free full load', (context) => {
+  const t = quietGame(context);
+  const { g } = t;
+  g.returnQuest.debug('called');
+  assert.equal(g.returnQuest.collect(), true, 'the scenario: the first one is issued');
+  t.tick(40);
+  const first = g.gun.weaponFor('returnToSender');
+  assert.ok(first.magazine > 0 && first.reserve > 1, 'the first issue is fully loaded');
+  first.magazine = 1;
+  first.reserve = 2;
+  t.tick(2);
+  g.gun.give(weapons.nailGun); // (a 500-point wall gun bought over it)
+  t.tick(40);
+  assert.equal(g.gun.owns('returnToSender'), false, 'the scenario: it was replaced');
+  assert.equal(g.returnQuest.collect(), true, 'the desk reissues it');
+  t.tick(2);
+  const again = g.gun.weaponFor('returnToSender');
+  assert.deepEqual([again.magazine, again.reserve], [1, 2], 'with what it had: ammo is the desk\'s to sell');
+  // ...and over a save.
+  const kept = g.returnQuest.serialize();
+  g.gun.give(weapons.nailGun);
+  t.tick(40);
+  g.returnQuest.restore(kept);
+  assert.equal(g.returnQuest.collect(), true);
+  t.tick(2);
+  assert.deepEqual([g.gun.weaponFor('returnToSender').magazine, g.gun.weaponFor('returnToSender').reserve], [1, 2], 'a load remembers it too');
+});
