@@ -99,6 +99,17 @@ export function createCareerStats({ storage, key = CAREER_STATS_KEY, now = () =>
     data = blank();
   }
 
+  // Another tab may have recorded runs since this one read the ledger: start from what is stored NOW, so the last writer
+  // never wipes the other tab's runs and records. (Nothing stored, or unreadable: this tab's ledger stands.)
+  function reread() {
+    try {
+      const raw = JSON.parse(targetStorage?.getItem(key) ?? 'null');
+      if (raw === null) return;
+      newerSave = Number.isFinite(raw?.version) && raw.version > CAREER_STATS_VERSION;
+      if (!newerSave) data = normalize(raw);
+    } catch { /* (keep what this tab has) */ }
+  }
+
   function save() {
     if (newerSave) return false;
     try {
@@ -120,6 +131,7 @@ export function createCareerStats({ storage, key = CAREER_STATS_KEY, now = () =>
 
     recordRun(summary) {
       if (summary?.assisted) return { saved: false, reason: 'assisted', newRecords: [], snapshot: this.snapshot() };
+      reread();
       const run = cleanRun(summary);
       const newRecords = [];
       const records = [

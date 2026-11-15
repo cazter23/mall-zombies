@@ -760,3 +760,15 @@ test('Save & Quit and storage: a full store says so on the button, and the next 
   assert.equal(g.saveGame.saveAndQuit(), true);
 });
 
+test('career stats: two tabs do not wipe each other\'s runs (the ledger is re-read before a run is added)', () => {
+  const storage = memoryStorage();
+  const run = (round) => ({ round, timeAlive: round * 60, kills: round * 10, headshotKills: round, pointsEarned: round * 1000, shotsFired: 100, shotsHit: 50, accuracy: 0.5, won: false });
+  const tabA = createCareerStats({ storage });
+  const tabB = createCareerStats({ storage }); // (both opened before either finished a run)
+  tabA.recordRun(run(12));
+  const result = tabB.recordRun(run(2));
+  assert.equal(result.snapshot.totals.runs, 2, 'tab B added its run to tab A\'s');
+  assert.equal(result.snapshot.bests.round, 12, 'and kept tab A\'s record');
+  assert.deepEqual(result.newRecords, [], 'a round 2 run is no new record after a round 12');
+  assert.equal(createCareerStats({ storage }).snapshot().totals.runs, 2, 'that is what is stored');
+});
