@@ -4,7 +4,10 @@
 //              (main.js renders it with ui/titleCamera.js while this screen is up)
 //   'runMode' Directed / Classic choice over the title flyover (config/closingTime.js modes). The remembered mode is focused
 //              (setRunMode). A mode button emits 'startRun' and the chooser STAYS UP until play really starts: `startRequested`
-//              is true from that press until the next show() (ui/runStart.js)
+//              is true from that press until the next show() (ui/runStart.js). Its third choice, Extra Modes, opens:
+//   'arenaMode' the arenas (config/arenas.js): one button each with its line and best round (setArenaBests); an arena button
+//              emits 'startRun' with { arena } like a mode button. Back (button, B, Esc) returns to 'runMode' on Extra Modes.
+//              The last arena chosen (setArenaChoice) makes Extra Modes the focused choice, and that arena inside it.
 //   'pause'    PAUSED + this run so far (round, points, time, kills): Resume / Restart run / Settings /
 //              Controls / Quit to title. Restart and Quit ask twice ("click again to confirm"): they end the run.
 //              show('pause', { fresh: true }) = "Back to work" (after Play again, if the mouse lock was refused)
@@ -18,7 +21,7 @@
 // One at a time: show(name, data) (null hides them all), `current`.
 // Buttons emit ACTIONS: on(action, fn) with fn({ pad }) where pad = true when a controller pressed it (main.js
 // then plays with the controller instead of asking for the mouse lock).
-//   'startRun' also carries { mode }. 'play' opens the chooser here.
+//   'startRun' also carries { mode, arena } (one of them null). 'play' opens the chooser here.
 //   actions: 'startRun' 'continue' 'resume' 'restart' 'saveQuit' 'quit' 'settings' 'controls' 'stats' 'clearStats' 'statsBack'
 //            'playAgain' 'mainMenu' ('help' / 'back' are handled here)
 // padNav(input): the shared controller model (core/menuNav.js + ui/menuFocus.js): D-pad / left stick moves to the nearest
@@ -34,6 +37,7 @@ import { gunSkin, locker as lockerCfg } from '../config/skins.js';
 import { challengeBoard as boardCfg } from '../config/challengeBoard.js';
 import { guide as guideCfg } from '../config/guide.js';
 import { closingTime } from '../config/closingTime.js';
+import { arenas, arenaById } from '../config/arenas.js';
 import { receiptArtHtml, returnSlipHtml, overtimeCouponHtml } from './receiptArt.js';
 import { createOutfitRail } from './outfitRail.js';
 import { outfitRail as outfitCfg } from '../config/wardrobe.js';
@@ -68,6 +72,7 @@ export function receiptLinesFor(r) {
     ['Bosses defeated', r.bossesDefeated ?? 0],
     ['Accuracy', `${Math.round(r.accuracy * 100)}%`],
   ];
+  if (arenaById(r.arena)) lines.unshift([arenas.receiptLabel, arenaById(r.arena).name]); // (arena survival: first, it names the arena)
   if (r.closingDone != null) lines.push([closingTime.title, closingTime.receiptProgress(r.closingDone, Object.keys(closingTime.lines).length)]);
   if (r.won && !r.shiftComplete) {
     lines.push([closingTime.receipt.clockedOut, `Round ${r.winRound} · ${clock(r.winTime)}`]);
@@ -199,7 +204,9 @@ export function createScreens({ locker = null, guide = null, challenges = null, 
   `);
   const modeCfg = closingTime.modes;
   const modeIds = modeCfg.list.map(({ id }) => id);
+  const arenaCfg = arenas.menu;
   let preferredMode = modeCfg.default; // focused on the chooser and drawn as its primary button (setRunMode: the remembered choice)
+  let preferredArena = null; // the arena chosen last (setArenaChoice): Extra Modes is focused instead, and this arena inside it
   let startRequested = false; // a mode was confirmed and play has not started yet (the mouse lock can be refused)
   const runMode = el('div', 'screen title-screen hidden', `
     <div class="title-fade"></div>
@@ -210,25 +217,54 @@ export function createScreens({ locker = null, guide = null, challenges = null, 
       <div class="menu-list">${modeCfg.list.map(({ id, label, description }) => `
         <button class="menu-btn" data-action="${id}" aria-describedby="${id}-description" type="button">${label}</button>
         <p id="${id}-description">${description}</p>`).join('')}
+        <button class="menu-btn" data-action="extraModes" aria-describedby="extraModes-description" type="button">${arenaCfg.label}</button>
+        <p id="extraModes-description">${arenaCfg.description}</p>
         <button class="menu-btn" data-action="modeBack" type="button">${modeCfg.back}</button>
       </div>
       ${hintLine('runMode')}
     </div>
   `);
+  // EXTRA MODES (config/arenas.js): arena survival, one button per arena with its line and the best round filed in it.
+  const arenaMode = el('div', 'screen title-screen hidden', `
+    <div class="title-fade"></div>
+    <div class="title-shade"></div>
+    <div class="title-panel">
+      <div class="kicker">${arenaCfg.kicker}</div>
+      <h1>${arenaCfg.title}</h1>
+      <div class="menu-list">${arenas.list.map(({ id, name, description }) => `
+        <button class="menu-btn" data-action="arena" data-arena="${id}" aria-describedby="arena-${id}-description" type="button">${name}</button>
+        <p id="arena-${id}-description">${description}<br /><small class="arena-best" data-arena-best="${id}">${arenaCfg.noBest}</small></p>`).join('')}
+        <button class="menu-btn" data-action="arenaBack" type="button">${arenaCfg.back}</button>
+      </div>
+      ${hintLine('runMode')}
+    </div>
+  `);
+  const arenaButtons = [...arenaMode.querySelectorAll('[data-action="arena"]')];
   function markPreferredMode() {
-    for (const id of modeIds) runMode.querySelector(`[data-action="${id}"]`).classList.toggle('primary', id === preferredMode);
+    for (const id of modeIds) runMode.querySelector(`[data-action="${id}"]`).classList.toggle('primary', !preferredArena && id === preferredMode);
+    runMode.querySelector('[data-action="extraModes"]').classList.toggle('primary', !!preferredArena);
+    for (const button of arenaButtons) button.classList.toggle('primary', button.dataset.arena === preferredArena);
   }
   markPreferredMode();
-  const fades = [title, runMode].map((screen) => screen.querySelector('.title-fade'));
+  const fades = [title, runMode, arenaMode].map((screen) => screen.querySelector('.title-fade'));
   function backFromMode() {
     api.show('title');
     buttonsOf('title')[0].focus({ preventScroll: true });
   }
+  // Back from the arena list: the run-mode screen, its cursor on Extra Modes.
+  function backFromArena() {
+    api.show('runMode');
+    const buttons = buttonsOf('runMode');
+    const index = buttons.findIndex((b) => b.dataset.action === 'extraModes');
+    cursor.set(index, { show: cursor.shown });
+    buttons[index].focus({ preventScroll: true });
+  }
 
   document.addEventListener('keydown', (event) => {
-    if (current !== 'runMode' || event.code !== 'Escape') return;
+    if ((current !== 'runMode' && current !== 'arenaMode') || event.code !== 'Escape') return;
     event.preventDefault();
-    backFromMode();
+    if (current === 'arenaMode') backFromArena();
+    else backFromMode();
   });
 
   // --- Pause -----------------------------------------------------------------------
@@ -408,7 +444,7 @@ export function createScreens({ locker = null, guide = null, challenges = null, 
   const statsBests = stats.querySelector('.stats-bests');
   const statsRecent = stats.querySelector('.stats-recent');
 
-  const screens = { title, runMode, pause, results, help, stats, ...(locker ? { locker: locker.element } : {}), ...(guide ? { guide: guide.element } : {}),
+  const screens = { title, runMode, arenaMode, pause, results, help, stats, ...(locker ? { locker: locker.element } : {}), ...(guide ? { guide: guide.element } : {}),
     ...(challenges ? { challenges: challenges.element } : {}) };
   for (const node of Object.values(screens)) document.body.append(node);
   let current = null;
@@ -443,9 +479,15 @@ export function createScreens({ locker = null, guide = null, challenges = null, 
     const action = button.dataset.action;
     if (action === 'play') return api.show('runMode');
     if (action === 'modeBack') return backFromMode();
+    if (action === 'extraModes') return api.show('arenaMode');
+    if (action === 'arenaBack') return backFromArena();
     if (modeIds.includes(action)) {
       startRequested = true; // (stays true while the chooser waits for play to start; any show() clears it)
-      return handlers.startRun?.({ mode: action, pad });
+      return handlers.startRun?.({ mode: action, arena: null, pad });
+    }
+    if (action === 'arena') {
+      startRequested = true; // (as above: the arena list stays up until play starts)
+      return handlers.startRun?.({ mode: null, arena: button.dataset.arena, pad });
     }
     if (action === 'help') return api.show('help', { from: current });
     if (action === 'back') return api.show(helpReturn);
@@ -465,7 +507,7 @@ export function createScreens({ locker = null, guide = null, challenges = null, 
   const percent = (value) => `${Math.round((value ?? 0) * 100)}%`;
   const statCards = (items) => items.map(([label, value]) => `<div><span>${label}</span><b>${value}</b></div>`).join('');
 
-  function fillPause({ fresh = false, round = 0, points = 0, time = 0, kills = 0, outfit = [], canSave = null, closing = [] } = {}) {
+  function fillPause({ fresh = false, round = 0, points = 0, time = 0, kills = 0, outfit = [], canSave = null, closing = [], arena = null } = {}) {
     pauseClosing.hidden = closing === null;
     closingList.innerHTML = closing === null ? '' : Object.values(closingTime.lines).map(({ duty, key }, index) => {
       const { done, count, needed } = closing[index] ?? {};
@@ -479,7 +521,7 @@ export function createScreens({ locker = null, guide = null, challenges = null, 
     saveQuitButton.disabled = !canSave?.ok;
     saveQuitButton.textContent = canSave?.ok ? 'Save & quit' : `Save & quit · ${canSave?.reason ?? ''}`;
     pauseRail.set(outfit);
-    pauseKicker.textContent = fresh ? 'Fresh shift' : 'Paused';
+    pauseKicker.textContent = (fresh ? 'Fresh shift' : 'Paused') + (arena ? ` · ${arena}` : ''); // (an arena run names its arena)
     pauseTitle.textContent = fresh ? 'Back to work' : 'On break';
     resumeButton.textContent = fresh ? 'Start shift' : 'Resume';
     pauseStats.innerHTML = fresh ? '' : [
@@ -584,7 +626,7 @@ export function createScreens({ locker = null, guide = null, challenges = null, 
 
     // Should the title flyover be drawn behind? (the title itself, or How to play opened from it)
     get showsFlyover() {
-      return current === 'title' || current === 'runMode' || current === 'stats' || current === 'locker' || current === 'guide' || current === 'challenges'
+      return current === 'title' || current === 'runMode' || current === 'arenaMode' || current === 'stats' || current === 'locker' || current === 'guide' || current === 'challenges'
         || (current === 'help' && helpReturn === 'title');
     },
 
@@ -605,10 +647,13 @@ export function createScreens({ locker = null, guide = null, challenges = null, 
       current = name ?? null;
       startRequested = false;
       cursor.set(0, { show: false });
-      if (name === 'runMode') {
-        const focus = Math.max(0, modeIds.indexOf(preferredMode));
+      if (name === 'runMode' || name === 'arenaMode') {
+        const buttons = buttonsOf(name);
+        const focus = Math.max(0, name === 'arenaMode'
+          ? buttons.findIndex((b) => b.dataset.arena === preferredArena)
+          : buttons.findIndex((b) => (preferredArena ? b.dataset.action === 'extraModes' : b.dataset.action === preferredMode)));
         cursor.set(focus, { show: false });
-        buttonsOf(name)[focus].focus({ preventScroll: true });
+        buttons[focus].focus({ preventScroll: true });
       }
       if (name === 'pause') fillPause(data);
       if (name === 'results') {
@@ -638,6 +683,24 @@ export function createScreens({ locker = null, guide = null, challenges = null, 
       markPreferredMode();
     },
 
+    // The arena chosen last (an id from config/arenas.js), or null when the last run was Directed / Classic: the chooser then
+    // focuses Extra Modes, and the arena list this arena. Unknown ids count as none.
+    setArenaChoice(id) {
+      preferredArena = arenaById(id) ? id : null;
+      markPreferredMode();
+    },
+    get arenaChoice() {
+      return preferredArena;
+    },
+
+    // The best round filed in each arena ({ [id]: round }, game/careerStats.js snapshot().arenas): shown under each arena's line.
+    setArenaBests(bests = {}) {
+      for (const node of arenaMode.querySelectorAll('[data-arena-best]')) {
+        const round = bests[node.dataset.arenaBest];
+        node.textContent = round > 0 ? arenaCfg.best(round) : arenaCfg.noBest;
+      }
+    },
+
     setFade(opacity) {
       for (const fade of fades) fade.style.opacity = String(opacity);
     },
@@ -652,7 +715,8 @@ export function createScreens({ locker = null, guide = null, challenges = null, 
 
     setContinue(saved) {
       continueButton.hidden = !saved;
-      continueButton.textContent = saved ? `Continue · Round ${saved.round}` : 'Continue';
+      const arenaName = arenaById(saved?.arena)?.name; // (a saved arena run says which arena)
+      continueButton.textContent = saved ? `Continue · Round ${saved.round}${arenaName ? ` · ${arenaName}` : ''}` : 'Continue';
       playButton.classList.toggle('primary', !saved);
       if (saved) playButton.dataset.confirm = 'New shift? Your save is discarded';
       else delete playButton.dataset.confirm;
@@ -674,6 +738,7 @@ export function createScreens({ locker = null, guide = null, challenges = null, 
       const shortcuts = current === 'title' || current === 'pause';
       if (nav.back) {
         if (current === 'runMode') return backFromMode();
+        if (current === 'arenaMode') return backFromArena();
         if (current === 'help') return api.show(helpReturn);
         if (current === 'stats') return emit('statsBack', true);
         if (current === 'pause') return emit('resume', true);

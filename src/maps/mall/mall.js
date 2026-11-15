@@ -86,6 +86,7 @@ import { parkingLot } from '../../config/parkingLot.js';
 import { buildParkingLot } from './parkingLot.js';
 import { buildMallExterior } from './mallExterior.js';
 import { buildParkingDetails } from './parkingDetails.js';
+import { buildArenas } from './arenas.js';
 import { parkingDetails } from '../../config/parkingDetails.js';
 
 const wardrobeShowpieces = { ...foodCourtShowpieces, ...groundFloorShowpieces, ...upperFloorShowpieces };
@@ -1055,6 +1056,9 @@ export function buildMall(scene, colliders) {
   }
   features.push({ kind: 'horror', name: 'horror_director', zone: 'startRoom', position: playerSpawn.position.clone(), normal: new THREE.Vector3(0, 0, -1), seed: 1986 });
 
+  // ARENA SURVIVAL (maps/mall/arenas.js, config/arenas.js): each arena's own fixtures, spawns and start, hidden in a normal run.
+  const arenas = buildArenas({ group, colliders, zones, areaUnlocks, spawnPoints, features, build: {} });
+
   return {
     id: 'mall',
     group,
@@ -1064,6 +1068,12 @@ export function buildMall(scene, colliders) {
     spawnPoints,
     features,
     playerSpawn,
+    // Arena survival: arenas = { [id]: { zones, playerSpawn, spawnPoints, features, group, colliders } }; arenaFeatures = every
+    // arena's features (built once with the rest, each gated to its arena); setArena(id | null) right after reset(); arena = the one on.
+    arenas: arenas.list,
+    arenaFeatures: arenas.features,
+    setArena: arenas.set,
+    get arena() { return arenas.current; },
     horror,
     // Room culling (fx/roomCulling.js): the rooms, and the openings you can see one room from another through (a door id =
     // its shutter blocks the view while closed). A mesh wholly inside a room is skipped when the camera can't see that room.
@@ -1183,6 +1193,7 @@ export function buildMall(scene, colliders) {
     },
     // Unload: colliders out of the shared list, GPU memory freed, group out of the scene.
     dispose() {
+      arenas.dispose();
       kit.dispose();
       group.removeFromParent();
     },

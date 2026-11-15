@@ -27,7 +27,8 @@ export function vanNeedsClassic(closing) {
 
 export function buildEscapeVan(feature, { map, closing, interactions, pricing, events, state }) {
   const { name, verb, blockedPrefix, priceLabel } = closingTime.van;
-  const available = () => map.zones[feature.zone].open && !state.over && !state.won;
+  // (Not in an arena run: Lot Full has no Closing Time, so no van to start and nothing to validate.)
+  const available = () => map.zones[feature.zone].open && !state.over && !state.won && state.closingQuest !== false;
   const machine = closingTime.validation;
   interactions.add({
     id: 'validation',

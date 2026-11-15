@@ -44,6 +44,9 @@ src/
     deathMusic.js       End of Shift: original seven-second death composition (piano/pad/bell/noise layers), gain and
                         stop fade. Bell anchors to feel.death.resultsDelay; played once through sound's music/master buses
     careerStats.js      Career schema versions, recent-run limit and accuracy record threshold.
+    arenas.js           ARENA SURVIVAL (Extra Modes; docs/arena-modes-plan.md): the three arenas in menu order: name, menu line, round 1 PA,
+                        zones, player spawn, extra spawn markers and arena-only fixtures (RESTOCK-O-MATIC, Customer Service desk or the
+                        Box Office windows, wall guns on fence boards), plus the menu, HUD, receipt and record words. arenaById, ARENA_IDS.
     closingTime.js      Four closing duties and their keys, fountain, night-safe and last-orders targets, PA copy (the once-per-run briefing and its delay; `keep` marks the lines the PA queue never drops), the win receipt's words, the OVERTIME tag, Statistics labels, key marker and prop tuning, escape van prompt data, and parking validation machine geometry, prompts and PA. Also the run modes (order, default, chooser words), Classic's prompt words, each duty's place and the fountain prompt's count.
     powerUps.js         Employee-incentive drop tuning: 11 types (8 common, 3 jackpot), common vs jackpot tier weights
                         (jackpot.firstRound 4, chance 0.125), needWeight factor cap + per-type need curves (Paid Break,
@@ -842,6 +845,11 @@ src/
                         independently sized by config/promenade.js (merged into LAYOUT.level2); floor sections use existing downstairs
                         ceiling support where available and add structural slabs elsewhere. Main perimeter, roofs, reserved closed
                         connections, railings, furniture, shop frontages and upstairs spawns; mall.js hangs the existing lamps.
+    mall/arenas.js      buildArenas({ group, colliders, zones, areaUnlocks, spawnPoints, features, build }): each arena's own hidden group
+                        (userData.dynamic) and collider list, its spawn markers and features (tagged `arena`); set(id) after map.reset()
+                        shows one arena (colliders into the shared list, spawns into spawnPoints, features into map.features), opens
+                        exactly its zones and seals world/areaUnlocks.js; set(null) puts the whole mall back. The map exposes it as
+                        map.arenas, map.arenaFeatures, map.setArena(id), map.arena. mall.js passes the fixture builders.
     mall/parkingLot.js  Customer Parking through Mega Mart's former emergency exit. The ticket machine mounts on the mauve van's west side,
                         returns its anchor to mall.js's existing escapeVan feature, and adds no collider (config/closingTime.js). config/parkingLot.js holds its footprint,
                         entrance, vehicle row, fences, lamps, spawns, sky, ambience and benchmark shot. Builder returns its shutter,
