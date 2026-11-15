@@ -31,14 +31,16 @@
 // the camera's own included. Infinity metres (Medium, High) = never.
 //   culling.tagProps(scene)      scene-level props flagged userData.roomProp (wall-buy guns, Lost and Found, hazard switches:
 //                                game/features) go on their room's layer too
-//   culling.tagOutside(root)     meshes drawn only when the camera is in NO room (the debug test range, 100 m south behind
-//                                the lot's wall: it was drawn from inside the mall, 107 calls from the Atrium's ring)
+//   culling.tagOutside(root)     meshes outside every room (the debug test range, 100 m south): drawn only when the camera
+//                                is in no room, or can see a room marked `outdoors` (the parking lot: a strip of the range
+//                                shows over its fence, measured, so there it is still drawn). From indoors it was 107 draw
+//                                calls for nothing (the Atrium's ring).
 // =============================================================================
 
 import * as THREE from 'three';
 
 export const CULLED_LAYER = 29; // a room's object that its doorway doesn't show: on no camera, still found by ray tests
-export const OUTSIDE_LAYER = 30; // drawn only when the camera is in no room (culling.tagOutside)
+export const OUTSIDE_LAYER = 30; // drawn only when the camera is in no room or sees the open air (culling.tagOutside)
 const MAX_ROOMS = 28; // (layers 1..28; 29-31 are CULLED_LAYER, OUTSIDE_LAYER and the shader warm-up's, fx/shaderWarmup.js)
 const DYNAMIC_MARGIN = 0.75; // metres added round a moving object's sphere (its matrix is last frame's)
 
@@ -146,6 +148,7 @@ export function createRoomCulling({ areas = [], portals = [], camera, isOpen = (
   // Each room's meshes for the doorway test (collect): [{ object, mask, moving, x, y, z, r, geometry, culled }].
   const rooms = new Map(areas.map((a) => [a.id, { entries: [], culled: 0 }]));
   const windows = new Map();
+  const outdoors = new Set(areas.filter((a) => a.outdoors).map((a) => a.id));
   let windowCulled = 0;
 
   function restore(room) {
@@ -217,7 +220,7 @@ export function createRoomCulling({ areas = [], portals = [], camera, isOpen = (
       }
       return tagged;
     },
-    /** These meshes are drawn only when the camera is in no room (the debug test range). Lights are left alone. */
+    /** These meshes are drawn only when the camera is in no room or sees an `outdoors` room (the debug test range). Lights are left alone. */
     tagOutside(root) {
       let tagged = 0;
       root?.traverse((o) => {
@@ -279,6 +282,7 @@ export function createRoomCulling({ areas = [], portals = [], camera, isOpen = (
       let mask = 1;
       for (const id of visible) {
         mask |= 1 << layerOf.get(id);
+        if (outdoors.has(id)) mask |= 1 << OUTSIDE_LAYER; // (the open air: what stands outside the rooms can be seen)
         const room = rooms.get(id), seen = windows.get(id);
         const w = windowCulling && seen && !isFull(seen) ? seen : null;
         if (!w && far.metres === Infinity) restore(room);

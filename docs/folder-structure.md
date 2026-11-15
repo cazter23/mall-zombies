@@ -138,6 +138,9 @@ src/
                         game reads every frame (feel, controls, audio). New setting = one entry here (new tab = add to settingsTabs)
     gunPalettes.js      Shared role bindings for each model colour key and the defaults moved out of model files.
     debug.js            THE DEBUG KEYS as a table (`commands`: id, key, shift, group, label; keys must not clash with gameplay
+    performance.js      The knobs of the speed-ups and the budgets tests hold the game to (`perf`): collisionGrid (cell size, reach,
+                        when a list is sorted), warmup (milliseconds per frame, first batch), drawBudget (the most things a benchmark
+                        shot may draw: tests/drawBudget.test.js). Nothing here changes what the game does.
                         bindings: tests check) + enabled (master switch), showMarkers, testArena, addPointsAmount, jumpRounds, panel,
                         dummies, exposeToWindow, keyLabel(). They work in a normal game (no debug mode): Z spawn the selected
                         zombie / Shift+Z next type / X clear / K kill all (pays), N next round / Shift+N +5 rounds / L Flash Sale,
@@ -524,6 +527,8 @@ src/
                         zombie back instead. Options canAttack(), onPlayerHit(damage), onKill(zombie)
     statusTint.js       What a Build-A-Blaster effect on a zombie looks like: the glow (flames, ice, goo, butter, rainbow) the model gets, read by zombieModel.js each frame. Looks in config/workshop.js stuffingLook.
     zombieRim.js        The soft edge glow round each zombie (config/look.js zombieRim; colour by kind, bosses their own): a few lines added to
+    warmupModels.js     buildWarmupZombies(): one model of every zombie type, Mascot costume (plain and gold) and boss, hidden, for the
+                        shader warm-up (fx/shaderWarmup.js) to draw once; never in the game (no manager, no shootables). warmupTypes().
                         the standard shader once per material, no draw calls, unaffected by hit flashes.
     confusion.js        Glitter's AI: a confused zombie forgets the player and fights the nearest other zombie with its normal attack.
     tankDeath.js        A kill in the room flying into the Stuffing Tank (visual; the kill is already paid).
@@ -1082,11 +1087,25 @@ src/
                         (metalness >= minMetalness, no envMap of their own), after static batching. Without it steel, chrome and brass render nearly black.
     postProcessing.js   The render pipeline: the world pass, then the depth-cleared first-person viewmodel pass, plus post effects.
     roomCulling.js      Skips drawing rooms the camera can't see (the map's cullAreas / cullPortals).
+                        Since 15 November 2026 also: a room seen through a doorway draws only the objects inside the screen rectangle it is
+                        seen through (collect(root) after batching lists each room's meshes; skipped ones go to CULLED_LAYER, not off every
+                        layer, so ray tests still find them; materials with a depth offset or no depth test, and instanced meshes, keep the
+                        old rule); tagProps(scene) puts scene-level props flagged userData.roomProp (wall-buy guns, Lost and Found, hazard
+                        switches, NO REFUNDS signs) on their room's layer; tagOutside(root) = the debug test range, drawn only from no
+                        room or where a room marked `outdoors` (the lot) is visible; farProps() = Graphics > Far objects (Potato, Low).
+    shaderWarmup.js     Nothing compiles or uploads mid-fight: keeps every shader three makes for the session (keepPrograms: one extra use
+                        counted, so the last zombie of a kind dying does not destroy it), compiles every material in the background behind
+                        the title (compileAsync), then draws every object once into one pixel, a few per frame (drawOnce), plus one zombie
+                        of every type (zombies/warmupModels.js). Starts again when a Graphics setting changes the shaders. main.js: ?nowarmup.
     zoneGrading.js      Per-area colour grade (exposure, tint, saturation, contrast; config/look.js grading), eased as the camera moves.
                         The horror layer's mood darkens it (exposure), multiplies the lateHours grade on by its decay, and turns a cut area red.
   vite.config.js        Dev server only: compiles the game at server start (warmup) and skips .claude, dist, dist-single, references and scratch. Paths are absolute from this checkout, so a worktree keeps its own hot reload.
   play.cmd              Double-click version of `npm run play`. tools/play.mjs rebuilds the single file if the source is newer, keeps the last good build if that fails, and opens it in Firefox (the Windows default for .html may be another browser).
   (tools/)              Dev scripts (not bundled): runTests.mjs = `npm test` (node --test with a cap on how many test files run at once: 4, or
+                        perfReport.mjs = `npm run perf`: the real game headless at a late round (full crowd, Mascots, a boss, a Flash
+                        Sale, hazards, a Sentry, Soda Bombs, a held trigger) at four spots: tick time avg / p95 / p99 / worst and the
+                        per-frame CPU besides drawing; --profile adds the functions the time went on (node --cpu-prof); --no-grid =
+                        collision the old way; --root <folder> times another checkout (main) with the same script.
                         MALL_TEST_JOBS; `npm test -- tests/x.test.js` runs only those files; testQuick.mjs runs its selection through it too, so
                         no test command starts node's default of one process per CPU thread, ~9 GB when every file builds the mall;
                         a run of more than 8 files takes a lock file in the system temp folder, shared by every worktree and tool, and
@@ -1151,6 +1170,12 @@ src/
     wallBuy.js          createWallBuyDisplay(): chalk outline (textures.makeChalkTexture) + the gun on two pegs, side on; the gun is merged
                         into one mesh per material (mergeByMaterial: 28-55 meshes -> 9-17, wall buys aren't in the map group the batcher sees)
     collision.js        RAMPS (addRamp / removeRamp / rampHeightAt, `colliders.ramps`): a walkable slope that is only a SURFACE the feet follow
+    colliderGrid.js     The collider list sorted into a grid on the ground plane: cellFor(colliders, x, z, radius) = the boxes a body there
+                        can touch, IN LIST ORDER (so collision.js gives the same result as reading all ~670, box for box); covers,
+                        indexAfter; checkColliderGrid(colliders) once a tick (game/createGame.js) notices a box moved in place without
+                        markCollidersChanged. `colliders.noGrid = true` = the plain loop (the tests' reference). config/performance.js.
+                        collision.js reads one cell in pushOutHorizontal (carrying on in the next cell's list when a push moves the body
+                        out of it), moveAndCollide, overlapsSolid and hasHeadroom.
                         (never a wall or ceiling; add boxes beside/under it): up within rampStep 0.5 m, down within rampSnap 0.4 m, not while
                         jumping. kit.ramp(spec) registers one and dispose removes it. moveAndCollide(): horizontal push-out (also removes the velocity going into the wall, so
                         a pinned mover reads speed 0 and slides along walls) then vertical landing/ceiling vs. Box3 list;

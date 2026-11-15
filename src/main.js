@@ -361,7 +361,9 @@ const shaderWarmup = new URLSearchParams(location.search).has('nowarmup') ? null
   target: () => (postProcessing.usesComposer ? postProcessing.composer.renderTarget1 : null),
   signature: () => `${postProcessing.usesComposer}|${lightPool.size}`,
   extras: buildWarmupZombies, // (one zombie of every type: their materials only exist once they spawn)
-  holdOff: () => !autoGraphics.done, // (the first launch is measuring the frame rate to pick a preset: not now)
+  // Not while the first launch is measuring the title's frame rate to pick a preset (the warm-up's work would count against
+  // this computer). Only on the title: a player who presses Play before the measurement is over still gets the warm-up.
+  holdOff: () => !autoGraphics.done && screens.showsFlyover,
 });
 
 // --- Menus and the run's flow ------------------------------------------------------

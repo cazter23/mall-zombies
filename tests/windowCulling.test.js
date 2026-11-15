@@ -188,7 +188,8 @@ test('the real mall: props get their room, the test range is outside every room,
     far.metres = Infinity;
     culling.update();
     assert.ok(culling.visible, `${shot.name}: the camera is in a room`);
-    assert.equal(camera.layers.test(rangeMesh.layers), false, `${shot.name}: the test range is not drawn from inside the mall`);
+    // (A strip of the range shows over the lot's fence, so wherever the lot can be seen the range is still drawn.)
+    assert.equal(camera.layers.test(rangeMesh.layers), culling.visible.has('parkingLot'), `${shot.name}: the test range is drawn only where the open air is seen`);
     skippedThroughDoors += culling.windowCulled;
     const throughDoors = culling.windowCulled;
     far.metres = look.propDistance.metres.close; // Potato
@@ -196,6 +197,7 @@ test('the real mall: props get their room, the test range is outside every room,
     assert.ok(culling.windowCulled >= throughDoors, `${shot.name}: Far objects only ever skips more`);
     skippedFar += culling.windowCulled - throughDoors;
   }
+  assert.equal(g.map.cullAreas.find((a) => a.id === 'parkingLot').outdoors, true, 'the lot is the open air');
   assert.ok(skippedThroughDoors > 1000, `the doorway test skips objects across the route (${skippedThroughDoors})`);
   assert.ok(skippedFar > 300, `Far objects (Potato) skips more (${skippedFar})`);
   // Outside every room (the test range, a doorway): everything is drawn and every mesh is back on its own layer.

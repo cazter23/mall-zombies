@@ -1,5 +1,131 @@
 # Sunset Galleria: build history ("Current state")
 
+## 15 November 2026 - Performance pass: shader stutter, draw calls, the game tick (`claude/performance`, not merged: the user says when)
+
+Measured first, fixed the biggest costs, measured again. Nothing here changes gameplay, and High draws the same picture
+(proved by pixels, below). The one look change is a new Graphics setting used by Potato and Low only. Machine: this 16 GB PC,
+Intel UHD 770 (integrated), a 1280 x 720 Browser pane, every door open. CPU timings are headless in Node; a pane's frame
+rates are indicative only, draw calls and CPU times are not.
+
+**What was slow, and what it is now**
+
+| What | Before | After |
+|---|---|---|
+| First shot of a run (High) | 1,126 ms freeze | 12 ms |
+| First zombie to walk into view (High) | 1,495 ms | 187 ms (a normal High frame here is 70-120 ms) |
+| First zombie after a cleared wave, every round (High) | 850 ms | 78 ms |
+| First Cart Pusher (High) | 1,560 ms | 98 ms |
+| Textures uploaded before play | 325 of 819 (the rest as you first looked at them) | all, behind the title |
+| Benchmark, High: draw calls, route average / worst shot | 420 / 1,195 (Atrium ring) | 284 / 670 (Hallway) |
+| Benchmark, Potato: draw calls, route average / worst shot | 359 / 974 (Atrium ring) | 188 / 344 (Hallway) |
+| Benchmark, High: CPU per draw, average / p95 / worst | 13.8 / 22.2 / 2,686 ms | 4.0 / 6.3 / 8.1 ms |
+| Benchmark, Potato: CPU per draw, average / p95 / worst | 3.5 / 6.0 / 184.6 ms | 2.7 / 3.6 / 7.8 ms |
+| Benchmark, worst frame, High / Potato | 250 ms (the cap) / 250 ms | 83 ms / 17 ms |
+| Game tick, round 28, Atrium: average / p99 | 1.07 / 3.67 ms | 0.50 / 1.90 ms |
+| One route field for the zombies (5 a second) | 2.45 ms | 1.10 ms |
+
+Draw calls per benchmark shot (Shift+B, the average over each shot):
+
+| Shot | High before | High after | Potato before | Potato after |
+|---|---|---|---|---|
+| parking lot | 338 | 315 | 256 | 210 |
+| hallway | 1,033 | 670 | 766 | 344 |
+| food court | 671 | 538 | 545 | 286 |
+| mega mart | 558 | 315 | 468 | 213 |
+| service corridor | 250 | 115 | 224 | 85 |
+| start room | 210 | 146 | 165 | 104 |
+| atrium court | 341 | 327 | 264 | 220 |
+| atrium ring | 1,195 | 598 | 974 | 335 |
+| level 2 | 858 | 503 | 719 | 310 |
+| department store | 232 | 206 | 186 | 154 |
+| cinema lobby | 210 | 161 | 159 | 109 |
+| cinema screen | 78 | 67 | 49 | 37 |
+| cinema stairs | 211 | 135 | 168 | 94 |
+| workshop hall | 182 | 167 | 152 | 134 |
+
+Game tick at round 28 (`npm run perf`: 24-27 zombies, two Mascots, a boss, a Flash Sale, every hazard, a Sentry, Soda Bombs, a
+held trigger; main and this branch run back to back, milliseconds, average / p95 / p99):
+
+| Spot | main | this branch |
+|---|---|---|
+| Main Hallway | 1.27 / 2.55 / 3.89 | 0.69 / 1.79 / 3.00 |
+| Grand Atrium | 1.07 / 2.13 / 3.67 | 0.50 / 1.47 / 1.90 |
+| Food Court | 1.08 / 2.38 / 3.58 | 0.49 / 1.51 / 1.93 |
+| Customer Parking | 0.84 / 1.80 / 3.12 | 0.40 / 1.42 / 1.76 |
+
+(The first measurement of the day read 1.8-2.5 ms: another agent's tests were running. Compare only back-to-back runs.)
+
+**The fixes**
+
+- **Shader stutter** (fx/shaderWarmup.js, zombies/warmupModels.js). The first time anything is drawn the browser builds its
+  shader and uploads its textures on the spot. Three causes, three parts. (1) A zombie's materials are disposed with it, and
+  three destroys a shader when its last material goes, so the shader was rebuilt for the first zombie of every round and for
+  every rare type: every shader three makes is now kept for the session (one extra use counted on it). (2) Everything in the
+  scenes, hidden or not, plus one zombie of every type, Mascot costume and boss, is compiled in the background behind the title
+  (three's compileAsync: the title keeps drawing). (3) Compiling alone left 541 ms of the first shot, so every object is then
+  drawn once into one pixel, a few per frame within 6 ms, which uploads its textures and makes the driver finish the shader.
+  It is done about 12 s after the page loads here, starts again when a Graphics setting changes the shaders (the Visual
+  effects path, the lamp count), and waits while the first launch measures the frame rate. A shader costs about 1.3 s on High
+  (37 lamps in each) and about 0.1 s on Medium. `?nowarmup` turns it off to compare.
+- **Draw calls** (fx/roomCulling.js). In the worst views about 1,000-1,150 calls, 819 of them further than 25 m away, and
+  763 materials with 338 textures in one view (posters and signs: one call each). Three things with no visual change:
+  a room seen through a doorway is no longer drawn whole, only the objects inside the screen rectangle it is seen through
+  (the portal walk already knew the rectangle); still props that features add to the scene (wall-buy guns, Lost and Found,
+  hazard switches, NO REFUNDS signs: `userData.roomProp`) go on their room's layer (260-470 calls were always drawn); and the
+  debug test range is skipped from indoors (107 calls from the Atrium's ring).
+- **Far objects** (Graphics, new; config/look.js propDistance). Potato: Close (20 m). Low: Near (30 m). Medium and High:
+  Everywhere, so they are unchanged. Small things in a room (a bounding sphere under 2 m: signs, neon letters, racks, Kevin's
+  cart, props; never a wall, a floor or a merged batch) are not drawn beyond the distance, and come back 1.5 m nearer than
+  they went. **This is the one look change**, and only on those two presets.
+- **Collision** (world/colliderGrid.js). Every body tested all ~670 boxes several times a tick: 31% of a late tick. The list
+  is sorted into a grid (2 m cells; each lists, in the list's own order, every box within 1 m), and collision.js reads one
+  cell. Same result, box for box, because the boxes left out are too far to matter and the rest keep their order; a push
+  that moves a body out of a cell carries on in the next cell's list from the same place in the full list.
+- **Route field** (zombies/navigation.js). The player field is redrawn 5 times a second. The heap became buckets one cell wide
+  (a step costs at least one cell, so a bucket never shortens itself and each cell spreads once), and each cell's open
+  neighbours are worked out when the grid is built. Same field.
+- **Ambience** (game/ambience.js). Each speaker ray-tested every box, 60 times a second (5% of a tick). The boxes within
+  hearing range of the listener are listed once a tick; each speaker reads those.
+
+**How "the same" was checked**
+
+- Culling, by pixels, in the browser on High: this branch's culling against main's rule (rooms drawn whole, props and the
+  test range always drawn) in one page, frame against frame: identical at all 205 camera poses (the 14 benchmark shots and the
+  6 title shots at their start, middle and end, and 145 random poses on walkable floor at standing, crouching and jump
+  height), with 59,989 objects skipped across them. Two things turned up on the way and are handled: a floor decal with a
+  depth offset bleeds a few pixels through the foot of the wall in front of it (so materials with a depth offset or no depth
+  test keep the old rule), and **the debug test range shows as a thin strip over the parking lot's fence** (so it is still
+  drawn wherever the lot is visible).
+- Collision: 12,000+ moves on the real mall identical with and without the grid (tests/colliderGrid.test.js).
+- Route field: against main's navigation.js, 300 player positions, every cell of every floor: 21.9 million comparisons, 0
+  differences (and tests/navigationField.test.js keeps the heap as the reference).
+- Ambience: main's mixer and this one along a walk through the mall, 6,600 ticks: the same voices and one-shots.
+- Screenshots (before from main's build, after from this branch, High; and Potato after): `perf-screenshots/` in the worktree
+  (not committed).
+
+**Measured and left alone**
+
+- **High on a weak GPU**: 22 fps here before and 19 after (the same within a pane's noise), against 60 on Potato. 37 real
+  lamps light every pixel; that is High's look. The first-launch auto-pick already steers weak computers lower.
+- **Texture memory**: about 620 MB in 863 textures (227 over 1 MB; the three largest are 31, 22 and 22 MB). Halving them on
+  Potato and Low would need the canvas textures built smaller: its own piece of work.
+- **Zombies are 8 draw calls each** (6 upper-body parts and 2 legs): 24 zombies = about 190 calls. One call each would need
+  a skinned or instanced model.
+- **Posters and signs are one call each** (unique textures): an atlas would merge them, with a risk to the look.
+- **Throttling far zombies' thinking**: it would change what zombies do.
+- Ray tests (shots, line of sight) still read every box: a few percent of the tick in the last profile.
+- Guns not in hand are not in the gun's scene, so the first switch to a new gun can still build its shader once.
+- Memory does not grow: 95.2 MB after one minute of headless play, 95.8 MB after twelve.
+- Worth knowing: the test range's two lights are in the scene, so they light the mall too. Turning `debug.testArena` off
+  before shipping will change the mall's lighting.
+
+**New**: `npm run perf` (tools/perfReport.mjs; `--profile`, `--no-grid`, `--root <folder>`), config/performance.js (the knobs
+and the draw budget), tests colliderGrid, navigationField, shaderWarmup, windowCulling, drawBudget (a view that draws too much
+fails), URL flags `?nowarmup` and `?nowindowcull`.
+Shared files: CLAUDE.md, package.json, src/main.js, config/settings.js, config/look.js, game/createGame.js, game/ambience.js,
+world/collision.js, zombies/navigation.js, fx/roomCulling.js, fx/postProcessing.js, maps/mall/parkingLot.js, and one line each
+in game/features wallBuy.js, lostProperty.js, refundSign.js, hazards.js, paLureHazard.js; docs history, folder-structure, tests.
+
 ## 15 November 2026 - Arena survival: Extra Modes (`claude/arena-modes`, not merged: the user plays it first)
 
 Survive as many rounds as you can locked in ONE part of the mall (the plan, with every decision: docs/arena-modes-plan.md).
