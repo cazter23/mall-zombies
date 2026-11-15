@@ -451,7 +451,9 @@ test('GRAB-A-GUN: a save taken during a site\'s last grab comes back sold out, n
     a.tick(40);
   }
   stand(a);
+  const beforeGrab = a.g.wallet.points;
   a.press('KeyF', 20); // the site's last grab
+  assert.ok(a.g.wallet.points < beforeGrab, 'the scenario: the last grab is paid');
   assert.equal(a.claw.stock, 0, 'the scenario: the last grab is paid and under way');
   a.g.rounds.skipRound(); // (the round's last zombie dies during the grab: the snapshot is taken now)
   a.tick(1);
@@ -462,6 +464,12 @@ test('GRAB-A-GUN: a save taken during a site\'s last grab comes back sold out, n
   const b = setup();
   assert.equal(b.g.saveGame.load(), true);
   b.tick(2);
+  // The grab under way is not kept by a save, so it is not charged either: the points are back and so is that grab.
+  assert.equal(b.g.wallet.points, beforeGrab, 'the grab the save dropped was refunded');
+  assert.equal(b.claw.stock, 1, 'and it is still there to be had');
+  assert.equal(b.claw.phase, 'idle');
+  // A save that does hold a sold-out machine (an older one): never open with nothing left.
+  b.claw.restore({ siteId: b.claw.site.id, grabsHere: clawMachine.stock, stock: 0 });
   const points = b.g.wallet.points;
   stand(b);
   b.press('KeyF', 20);
