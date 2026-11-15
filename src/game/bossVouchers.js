@@ -6,7 +6,8 @@ export function configureBossVouchers({ pricing, wallet, map, gun, state }) {
   pricing.configureVouchers({
     onPoints: amount => { if (!state.over) wallet.earn(amount); },
     eligible(voucher) {
-      if (voucher.category === 'door') return Object.keys(map.zones).some(id => !map.zones[id].open);
+      // (Sealed exits, arena survival: a door voucher has nothing to open, so it pays its points instead.)
+      if (voucher.category === 'door') return !map.areaUnlocks?.sealed && Object.keys(map.zones).some(id => !map.zones[id].open);
       if (voucher.category === 'tier') {
         // (a gun handed over at Build-A-Blaster comes back: the voucher still has a use)
         return gun.slots.some(id => voucher.ids.includes(nextTier(gun.modsFor(id))))

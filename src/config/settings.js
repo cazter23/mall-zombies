@@ -36,6 +36,7 @@ import { look } from './look.js';
 import { bossComfort } from './bosses.js';
 import { idle } from './idle.js';
 import { closingTime } from './closingTime.js';
+import { arenas } from './arenas.js';
 
 export const settingsTabs = ['Graphics', 'Mouse', 'Controller', 'Audio', 'Comfort'];
 // receiptGuardSeconds: the receipt comes up by itself with its first button focused; for this long a key or controller press
@@ -324,6 +325,13 @@ settingDefs.push({
   id: 'closingMode', tab: null, label: 'Run mode', type: 'select', default: closingTime.modes.default,
   options: closingTime.modes.list.map(({ id, label }) => ({ value: id, label })),
   apply: () => {}, // (the game takes the mode when a run starts, not when the value changes)
+});
+settingDefs.push({
+  // The arena last confirmed on Extra Modes (ui/runStart.js), or 'none' after a Directed / Classic run: the chooser focuses
+  // Extra Modes and that arena next time.
+  id: 'arenaChoice', tab: null, label: 'Arena', type: 'select', default: 'none',
+  options: [{ value: 'none', label: 'None' }, ...arenas.list.map(({ id, name }) => ({ value: id, label: name }))],
+  apply: () => {},
 });
 settingDefs.push({
   // The corner minimap, shown or hidden with a tap of the minimap button (ui/minimap.js). Hidden until asked for.

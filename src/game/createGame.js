@@ -127,6 +127,8 @@ export function createGame({
   // Live combat bodies also block a vault's path and landing, even without a world collider.
   const shootables = [...(arena ? arena.shootables : [])];
   const stats = createPlayerStats();
+  // Where a run starts: the map's spawn, or the arena's (state.arena, below; read at reset time).
+  const playerSpawn = () => map.arenas?.[state.arena]?.playerSpawn ?? map.playerSpawn;
   // Player slows (a boss's: the Janitor's wet floor, the Guard's taser; Scoops' melt): each reports its factor here, the
   // lowest becomes stats.surfaceSpeed.
   const surfaces = createSurfaceSlows(stats);
@@ -238,7 +240,10 @@ export function createGame({
   // (Start pauses). A controller doesn't need the mouse locked.
   const state = {
     closingMode: 'directed', // Title confirmation selects the mode; fresh-run resets keep it.
-    get showClosingGuidance() { return this.closingMode === 'directed'; },
+    // ARENA SURVIVAL (config/arenas.js): null = the whole mall, or the arena id the run is locked in (g.setArena). Fresh-run resets keep it.
+    arena: null,
+    get closingQuest() { return !this.arena; }, // Closing Time exists (an arena has none: no keys, checklist or van)
+    get showClosingGuidance() { return this.closingMode === 'directed' && this.closingQuest; },
     forceRun: false, // debug: run without pointer lock (used by automated tests)
     over: false, // death or Clock out
     won: false,
@@ -294,6 +299,7 @@ export function createGame({
       ticketsWon: tickets.won, // (GRAB-A-GUN's prize tickets: not points, not income)
       closingDone: closing.done,
       closingMode: state.closingMode, // 'directed' | 'classic': the Closing Time rewards read it (game/challenges.js closingWin)
+      arena: state.arena, // the arena the run was locked in, or null (the receipt and career record read it)
       won: state.won,
       winTime: state.won ? winSummary?.timeAlive ?? runStats.timeAlive : null,
       winRound: state.won ? winSummary?.round ?? rounds.round : null,
@@ -701,8 +707,9 @@ export function createGame({
     ['rounds', () => rounds.reset()],
     ['clockIn', () => clockIn.reset()],
     ['stragglers', () => stragglers.reset()],
-    ['player', () => player.teleport(map.playerSpawn)],
+    ['player', () => player.teleport(playerSpawn())],
     ['map', () => map.reset()], // doors closed, zones locked
+    ['arena', () => map.setArena?.(state.arena)], // (after the map) an arena's zones, fixtures and spawns, every exit sealed; or none
     ['doorOpenings', () => doorOpenings.reset()], // no barrier mid-show, no area welcomed yet
     ['features', () => features.reset()],
     ['outfitRail', () => outfitRail.reset()],
@@ -736,10 +743,26 @@ export function createGame({
     events.emit('runReset');
   }
 
+  // ARENA SURVIVAL: lock the next run in one arena (an id from map.arenas), or null for the whole mall. A change resets the run
+  // (the title has already reset it once: picking the same mode again resets nothing more). Returns true if it changed.
+  function setArena(id = null) {
+    if (id !== null && !map.arenas?.[id]) throw new Error(`Unknown arena "${id}"`);
+    if (state.arena === id) return false;
+    state.arena = id;
+    resetRun();
+    return true;
+  }
+
   // SAVE & QUIT (game/saveGame.js): what a save keeps, as [name, serialize, restore], in RESTORE order (a load runs
   // resetRun first). Every reset step above is either here or in transientSteps; tests/saveGame.test.js fails otherwise,
   // so a new system with run state decides whether a save keeps it.
   const saveSteps = [
+    // The arena the run is locked in (null: the whole mall). FIRST: a different arena resets the run into it before anything else
+    // is restored. (A load starts from a whole-mall reset, so a save written before arenas existed is a whole-mall run.)
+    ['arena', () => state.arena, (id) => {
+      if (id !== null && !map.arenas?.[id]) throw new Error(`Saved arena "${id}" is not on this map`);
+      setArena(id);
+    }],
     // The stats as they are (clothes, box cutter tiers and health included), stripped of any active
     // temporary incentive modifiers so a round-start snapshot never leaks timed bonuses into a loaded run.
     ['stats', () => powerUps.stripEffectModifiers({ ...stats }), (data) => {
@@ -807,7 +830,9 @@ export function createGame({
     'doorOpenings', // (a load counts every owned area as already welcomed: game/doorOpenings.js, on 'runLoaded')
     'guide', // (its replay count travels in the guide's own record, not the run save)
   ];
-  const saveGame = createSaveGame({ steps: saveSteps, events, stats, state, rounds, resetRun, storage: saveStorage });
+  // (A load resets to the whole mall first; the 'arena' step then moves the run into its saved arena.)
+  const saveGame = createSaveGame({ steps: saveSteps, events, stats, state, rounds, storage: saveStorage,
+    resetRun: () => { state.arena = null; resetRun(); } });
   events.on('roundStart', () => saveGame.markRoundStart()); // (the snapshot waits for the end of the tick: see update)
   // Stay for overtime in a break restarts the break without a 'roundStart': snapshot again, so a save there keeps the win.
   events.on('overtimeStart', () => saveGame.markRoundStart());
@@ -969,6 +994,7 @@ export function createGame({
     },
     update,
     resetRun,
+    setArena, // ARENA SURVIVAL: setArena(id | null) locks the next run in one arena (state.arena); a change resets the run
     resetSteps: resetSteps.map(([name]) => name), // (read-only list, for tests / debugging)
     saveGame, // Save & Quit's one slot (game/saveGame.js)
     saveSteps: saveSteps.map(([name]) => name), // (read-only lists, for tests: every reset step is saved or transient)

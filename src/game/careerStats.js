@@ -4,7 +4,10 @@
 // can be tested in Node. The browser wires it to localStorage in main.js.
 // =============================================================================
 
+// ARENA SURVIVAL (config/arenas.js): an arena run counts in the totals and the recent list (marked with its arena), but not
+// in the whole mall's bests; each arena keeps its own best round and run count under `arenas` ({ [id]: { best, runs } }).
 import { CAREER_STATS_VERSION, PREVIOUS_CAREER_STATS_VERSION, RECENT_RUN_LIMIT, ACCURACY_RECORD_MIN_SHOTS } from '../config/careerStats.js';
+import { arenas, arenaById } from '../config/arenas.js';
 
 export const CAREER_STATS_KEY = 'sunsetGalleria.careerStats';
 export { CAREER_STATS_VERSION, RECENT_RUN_LIMIT, ACCURACY_RECORD_MIN_SHOTS };
@@ -32,6 +35,7 @@ function blank() {
       fastestWin: null,
     },
     recentRuns: [],
+    arenas: Object.fromEntries(arenas.list.map(({ id }) => [id, { best: 0, runs: 0 }])),
   };
 }
 
@@ -47,6 +51,7 @@ function cleanRun(run = {}) {
   cleaned.accuracy = cleaned.shotsFired > 0 ? cleaned.shotsHit / cleaned.shotsFired : 0;
   cleaned.won = run.won === true;
   cleaned.winTime = cleaned.won && Number.isFinite(run.winTime) && run.winTime >= 0 ? run.winTime : null;
+  cleaned.arena = arenaById(run.arena) ? run.arena : null; // (an arena run's id; anything else is a whole-mall run)
   return cleaned;
 }
 
@@ -72,6 +77,10 @@ function normalize(raw) {
   data.bests.accuracy = Number.isFinite(raw.bests?.accuracy)
     ? Math.max(0, Math.min(1, raw.bests.accuracy))
     : null;
+  for (const id of Object.keys(data.arenas)) {
+    const saved = raw.arenas?.[id];
+    data.arenas[id] = { best: whole(saved?.best), runs: whole(saved?.runs) };
+  }
   data.recentRuns = Array.isArray(raw.recentRuns)
     ? raw.recentRuns.slice(0, RECENT_RUN_LIMIT).map((run) => ({
       ...cleanRun(raw.version === PREVIOUS_CAREER_STATS_VERSION ? { ...run, won: false } : run),
@@ -110,6 +119,14 @@ export function createCareerStats({ storage, key = CAREER_STATS_KEY, now = () =>
     } catch { /* (keep what this tab has) */ }
   }
 
+  // Every recorded run: a shift worked, its numbers into the totals, and the top of the recent list.
+  function addToTotals(run) {
+    data.totals.runs += 1;
+    for (const field of TOTAL_FIELDS.filter((field) => field !== 'runs' && field !== 'wins')) data.totals[field] += run[field];
+    data.recentRuns.unshift({ ...run, endedAt: now().toISOString() });
+    data.recentRuns.length = Math.min(data.recentRuns.length, RECENT_RUN_LIMIT);
+  }
+
   function save() {
     if (newerSave) return false;
     try {
@@ -134,6 +151,18 @@ export function createCareerStats({ storage, key = CAREER_STATS_KEY, now = () =>
       reread();
       const run = cleanRun(summary);
       const newRecords = [];
+      // An arena run: the totals and the recent list, and its arena's own best round; none of the whole mall's bests.
+      if (run.arena) {
+        const record = data.arenas[run.arena];
+        record.runs += 1;
+        if (run.round > record.best) {
+          record.best = run.round;
+          newRecords.push(arenas.newRecord(arenaById(run.arena).name));
+        }
+        addToTotals(run);
+        save();
+        return { saved: true, newRecords, snapshot: this.snapshot() };
+      }
       const records = [
         ['round', 'Highest round'],
         ['timeAlive', 'Longest shift'],
@@ -153,7 +182,6 @@ export function createCareerStats({ storage, key = CAREER_STATS_KEY, now = () =>
         newRecords.push('Best accuracy');
       }
 
-      data.totals.runs += 1;
       if (run.won) {
         data.totals.wins += 1;
         if (run.winTime !== null && (data.bests.fastestWin === null || run.winTime < data.bests.fastestWin)) {
@@ -161,9 +189,7 @@ export function createCareerStats({ storage, key = CAREER_STATS_KEY, now = () =>
           newRecords.push('Fastest win');
         }
       }
-      for (const field of TOTAL_FIELDS.filter((field) => field !== 'runs' && field !== 'wins')) data.totals[field] += run[field];
-      data.recentRuns.unshift({ ...run, endedAt: now().toISOString() });
-      data.recentRuns.length = Math.min(data.recentRuns.length, RECENT_RUN_LIMIT);
+      addToTotals(run);
       save();
       return { saved: true, newRecords, snapshot: this.snapshot() };
     },
