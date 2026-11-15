@@ -309,7 +309,6 @@ function openMall(context) {
 const POCKETS = [
   ['the Food Court bench pocket by the RESTOCK-O-MATIC', [6.8, 0, -2.75], [6.8, 0, -8]],
   ['the Food Court south-west nook behind the table', [-9.6, 0, -13.95], [-6, 0, -9]],
-  ['the parking kerb island beside the first van', [39.44, 0.15, -12.2], [36, 0, -12.2]],
 ];
 for (const [name, at, zombieAt] of POCKETS) {
   test(`the horde never freezes: standing in ${name}, zombies still have a route, still spawn and still come`, (context) => {
@@ -405,6 +404,7 @@ const PERCHES = [
   ['the escalator side wall two steps up (the hub perch)', [-6.9, 2.77, 1.15]],
   ['Good Sports\' counter (over it: the clerk\'s strip has no way out)', [-13, 1.25, -19.3]],
   ['Play Time Toys\' counter', [-13.5, 1.25, -3.6]],
+  ['the parking kerb island (zombies cannot step onto a kerb, so nothing reached you on it)', [38.0, 0.15, -9.0]],
 ];
 test('nobody can stand on the known perches: there is no room for a body on top of them', (context) => {
   const t = openMall(context);
@@ -417,6 +417,10 @@ test('nobody can stand on the known perches: there is no room for a body on top 
     const crouched = overlapsSolid(feet, feel.player.radius, feel.movement.proneHeight ?? 0.5, g.colliders, feel.movement.stepTolerance);
     assert.ok(crouched, `${name}: not lying down either`);
   }
+  // The slot between the parking kerb island and the first van (0.75 m: a body fit, the horde's routes did not).
+  const slot = new THREE.Vector3(39.65, 0, -12.2);
+  assert.ok(!g.zombies.nav.isWalkableAt(slot.x, slot.z, 0), 'the scenario: zombies cannot route into the slot');
+  assert.ok(overlapsSolid(slot, feel.player.radius, feel.movement.proneHeight ?? 0.5, g.colliders, feel.movement.stepTolerance), 'so the player cannot stand in it either');
 });
 
 test('GRAB-A-GUN: a save taken during a site\'s last grab comes back sold out, not open with "0 left"', (context) => {

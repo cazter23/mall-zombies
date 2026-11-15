@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { parkingDetails as D } from '../../config/parkingDetails.js';
 import { parkingLot as P } from '../../config/parkingLot.js';
-import { atmosphere } from '../../config/environment.js';
+import { atmosphere, perchCap } from '../../config/environment.js';
 import { seededRandom } from '../../world/textures.js';
 import { createParkingDetailKit } from './parkingDetailKit.js';
 import { paintAccessible, paintCampaign } from '../../world/paintedInteriors.js';
@@ -369,6 +369,11 @@ export function buildParkingDetails({ kit, looks }) {
     const I = Rz.island;
     kit.box(I.minX, 0, I.minZ, I.maxX, I.kerb, I.maxZ, mat(0xb8a4a2), { name: 'parking_detail_island_kerb', collide: false });
     kit.addCollider(I.minX, 0, I.minZ, I.maxX, I.kerb, I.maxZ);
+    // The topper (unseen, shot-through): a planted bed, not a place to stand. Zombies cannot step onto a kerb, so on it nothing could reach you.
+    kit.addCollider(I.minX, I.kerb, I.minZ, I.maxX, I.kerb + perchCap, I.maxZ).ignoreShots = true;
+    // ...and the 0.75 m slot between the bed and the first van: a body fits in it, the horde's routes do not (a safe strip).
+    const van = P.vehicles[0];
+    kit.addCollider(I.maxX, 0, I.minZ, van.x - van.width / 2, I.kerb + perchCap, I.maxZ).ignoreShots = true;
     kit.box(I.minX + .12, I.kerb, I.minZ + .12, I.maxX - .12, I.kerb + .02, I.maxZ - .12, mat(0x5f7a48), { name: 'parking_detail_island_grass', collide: false });
     const [tx, tz] = I.tree;
     kit.box(tx - .09, I.kerb, tz - .09, tx + .09, I.kerb + 2.2, tz + .09, mat(0x6e4a26), { name: 'parking_detail_island_tree', collide: true });
