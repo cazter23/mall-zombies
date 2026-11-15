@@ -44,8 +44,10 @@ const LANE_FRACTIONS = [1, 0.5];
  *                   (any add/remove marked with world/collision.js markCollidersChanged). The grid
  *                   covers every collider's footprint, so a bigger map needs no settings here.
  * @param agent      { radius, height } of the zombies using this grid
+ * @param options    floors, links (the map's navigation), and queue: 'buckets' (default) | 'heap' (the reference, tests only)
  */
-export function createNavigation(colliders, agent, { floors = [0], links = [] } = {}) {
+export function createNavigation(colliders, agent, { floors = [0], links = [], queue = 'buckets' } = {}) {
+  const useHeap = queue === 'heap'; // (the old queue, for the test that compares the two)
   const cs = zombieNav.cellSize;
   const layers = floors.length;
   let cells = 0; // cells per layer (cols * rows)
@@ -60,6 +62,10 @@ export function createNavigation(colliders, agent, { floors = [0], links = [] } 
   let spreadFrom = new Float32Array(0); // computeField's own notes: the distance each cell last spread to its neighbours at
   let linkEdges = new Map(); // global cell index -> [{ to, cost (cells), link }]
   let hasLink = new Uint8Array(0); // 1 = this cell has an entry in linkEdges (a typed flag is cheaper to ask than the Map)
+  // Which of a cell's 8 neighbours the field may step to (bit n = NEIGHBOR n: on the grid, walkable, and not cutting a
+  // corner diagonally past a blocked cell). Worked out once per grid, so the field's inner loop asks one number per cell.
+  let openTo = new Uint8Array(0);
+  const neighborOffset = new Int32Array(NEIGHBOR_COUNT); // neighbour n's index, from a cell's own (same layer)
   let linkList = []; // links with their end cells resolved (see build)
   let builtForSignature = null; // colliderSignature() the grid was built for
   let refreshTimer = 0;
@@ -134,6 +140,7 @@ export function createNavigation(colliders, agent, { floors = [0], links = [] } 
     dist = new Float32Array(layers * cells);
     spreadFrom = new Float32Array(layers * cells);
     hasLink = new Uint8Array(layers * cells);
+    openTo = new Uint8Array(layers * cells);
     hasField = false;
     fieldX = fieldY = fieldZ = NaN; // (a new grid: the next field is drawn wherever the player stands)
 
@@ -184,6 +191,29 @@ export function createNavigation(colliders, agent, { floors = [0], links = [] } 
       }
       return resolved;
     });
+
+    // (After the links: their end cells were just forced walkable.)
+    for (let n = 0; n < NEIGHBOR_COUNT; n++) neighborOffset[n] = NEIGHBOR_DR[n] * cols + NEIGHBOR_DC[n];
+    for (let layer = 0; layer < layers; layer++) {
+      const base = layer * cells;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          let bits = 0;
+          for (let n = 0; n < NEIGHBOR_COUNT; n++) {
+            const dc = NEIGHBOR_DC[n];
+            const dr = NEIGHBOR_DR[n];
+            const nc = c + dc;
+            const nr = r + dr;
+            if (nc < 0 || nr < 0 || nc >= cols || nr >= rows) continue;
+            if (!walkable[base + nr * cols + nc]) continue;
+            // No cutting corners diagonally past a blocked cell.
+            if (dc !== 0 && dr !== 0 && (!walkable[base + r * cols + nc] || !walkable[base + nr * cols + c])) continue;
+            bits |= 1 << n;
+          }
+          openTo[base + r * cols + c] = bits;
+        }
+      }
+    }
   }
 
   // Calls fn(index) for every cell whose CENTER lies inside the rectangle.
@@ -238,8 +268,42 @@ export function createNavigation(colliders, agent, { floors = [0], links = [] } 
 
   // --- Flow field (Dijkstra from the player) -----------------------------------
 
-  // Small binary min-heap of cell indices, keyed by dist[]. One reused block of numbers (it grows when a bigger map
-  // needs it and is never thrown away), and swaps through a plain temporary: no garbage per field.
+  // The queue of cells waiting to spread, sorted by distance into BUCKETS one cell-length wide (bucket b holds distances
+  // b..b+1). A step to a neighbour costs at least one cell, so nothing in a bucket can shorten anything else in it: the
+  // buckets are emptied in order and each cell spreads once, at its final distance, with no heap to keep sorted (the heap
+  // this replaced took about twice as long for the same field; tests/navigationField.test.js compares the two, cell for
+  // cell). A cell is queued again each time a shorter way to it turns up; the entries it leaves behind are skipped.
+  // (A link shorter than one cell could land in the bucket being emptied: that bucket is simply emptied until it stays
+  // empty, and a cell spreads again if its distance changed, so the field is right for any cost.)
+  // Reused blocks of numbers that only ever grow: no garbage per field.
+  let bucketHead = new Int32Array(256); // bucket -> its newest entry (-1 = empty)
+  let entryCell = new Int32Array(4096);
+  let entryNext = new Int32Array(4096);
+  let entryCount = 0;
+  let topBucket = -1; // the highest bucket used so far
+  function queueCell(i) {
+    const b = Math.floor(dist[i]);
+    if (b >= bucketHead.length) {
+      const bigger = new Int32Array(Math.max(bucketHead.length * 2, b + 1)).fill(-1);
+      bigger.set(bucketHead);
+      bucketHead = bigger;
+    }
+    if (entryCount === entryCell.length) {
+      const cellsBigger = new Int32Array(entryCell.length * 2);
+      const nextBigger = new Int32Array(entryCell.length * 2);
+      cellsBigger.set(entryCell);
+      nextBigger.set(entryNext);
+      entryCell = cellsBigger;
+      entryNext = nextBigger;
+    }
+    entryCell[entryCount] = i;
+    entryNext[entryCount] = bucketHead[b];
+    bucketHead[b] = entryCount++;
+    if (b > topBucket) topBucket = b;
+  }
+
+  // The same queue as a binary min-heap keyed by dist[]: the way the field was drawn before the buckets. Kept as the
+  // REFERENCE the test compares against (createNavigation(..., { queue: 'heap' })); the game never uses it.
   let heap = new Int32Array(1024);
   let heapSize = 0;
   function heapPush(i) {
@@ -284,6 +348,10 @@ export function createNavigation(colliders, agent, { floors = [0], links = [] } 
   function computeField(target, pocket = false) {
     dist.fill(Infinity);
     heapSize = 0;
+    bucketHead.fill(-1);
+    entryCount = 0;
+    topBucket = -1;
+    const push = useHeap ? heapPush : queueCell;
     const ty = target.y ?? 0;
 
     // Seed: walkable cells near the player (the player might stand on a bench zombies can't),
@@ -295,7 +363,7 @@ export function createNavigation(colliders, agent, { floors = [0], links = [] } 
     if (onRamp) {
       for (const [cell, end] of [[onRamp.lowerCell, onRamp.lower], [onRamp.upperCell, onRamp.upper]]) {
         dist[cell] = Math.hypot(end.x - target.x, end.z - target.z) / cs;
-        heapPush(cell);
+        push(cell);
         seeded = true;
       }
     } else {
@@ -322,7 +390,7 @@ export function createNavigation(colliders, agent, { floors = [0], links = [] } 
             if (clearOnly && wallBetween(target.x, target.z, centerX(c), centerZ(r), yLow, yHigh)) continue;
             const i = base + r * cols + c;
             dist[i] = d / cs; // distances are stored in cells
-            heapPush(i);
+            push(i);
             seeded = true;
           }
         }
@@ -334,8 +402,21 @@ export function createNavigation(colliders, agent, { floors = [0], links = [] } 
     const wallPenalty = zombieNav.wallPenalty;
     let reached = 0; // cells the field got to
     spreadFrom.fill(Infinity);
-    while (heapSize > 0) {
-      const i = heapPop();
+    let bucket = 0;
+    for (;;) {
+      // The next cell to spread: the nearest in the heap, or the next entry of the lowest bucket that has any.
+      let i;
+      if (useHeap) {
+        if (heapSize === 0) break;
+        i = heapPop();
+      } else {
+        while (bucket <= topBucket && bucketHead[bucket] === -1) bucket++;
+        if (bucket > topBucket) break;
+        const entry = bucketHead[bucket];
+        bucketHead[bucket] = entryNext[entry];
+        i = entryCell[entry];
+        if (Math.floor(dist[i]) !== bucket) continue; // (a shorter way was found since: it is queued in a lower bucket)
+      }
       const d = dist[i];
       // A cell is queued again every time a shorter way to it turns up, so most cells come out of the heap more than
       // once. Spreading from one again at the SAME distance can't shorten anything (its neighbours already have that
@@ -343,24 +424,14 @@ export function createNavigation(colliders, agent, { floors = [0], links = [] } 
       if (spreadFrom[i] === d) continue;
       if (spreadFrom[i] === Infinity) reached += 1;
       spreadFrom[i] = d;
-      const base = Math.floor(i / cells) * cells;
-      const local = i - base;
-      const c = local % cols;
-      const r = (local - c) / cols;
+      const open = openTo[i]; // (which neighbours can be stepped to: worked out when the grid was built)
       for (let n = 0; n < NEIGHBOR_COUNT; n++) {
-        const dc = NEIGHBOR_DC[n];
-        const dr = NEIGHBOR_DR[n];
-        const nc = c + dc;
-        const nr = r + dr;
-        if (nc < 0 || nr < 0 || nc >= cols || nr >= rows) continue;
-        const ni = base + nr * cols + nc;
-        if (!walkable[ni]) continue;
-        // No cutting corners diagonally past a blocked cell.
-        if (dc !== 0 && dr !== 0 && (!walkable[base + r * cols + nc] || !walkable[base + nr * cols + c])) continue;
+        if (!(open & (1 << n))) continue;
+        const ni = i + neighborOffset[n];
         const nd = d + NEIGHBOR_COST[n] * (1 + wallPenalty * nearWall[ni]);
         if (nd < dist[ni]) {
           dist[ni] = nd;
-          heapPush(ni);
+          push(ni);
         }
       }
       if (hasLink[i]) { // a ramp to another floor
@@ -370,7 +441,7 @@ export function createNavigation(colliders, agent, { floors = [0], links = [] } 
           const nd = d + edge.cost;
           if (nd < dist[edge.to]) {
             dist[edge.to] = nd;
-            heapPush(edge.to);
+            push(edge.to);
           }
         }
       }

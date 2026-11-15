@@ -26,6 +26,7 @@
 // =============================================================================
 
 import { feel } from '../config/feel.js';
+import { checkColliderGrid } from '../world/colliderGrid.js';
 import { Vector3 } from 'three';
 import { powerUps as incentiveConfig } from '../config/powerUps.js';
 import { economy, maxAliveForRound } from '../config/economy.js';
@@ -843,6 +844,7 @@ export function createGame({
 
   // One fixed tick. (main.js polls the controller and runs its menus just before this.)
   function update(dt) {
+    checkColliderGrid(colliders); // (a box moved in place without a mark: the collision grid is built again, world/colliderGrid.js)
     ambience.update(dt, state.running && !state.over);
     // Dead: the world keeps going (zombies wander to the body), the player doesn't.
     // Checked before the pause check, because the mouse is released on death.

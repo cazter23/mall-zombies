@@ -4,7 +4,12 @@
 // The world is a list of axis-aligned boxes (THREE.Box3).
 // No physics engine: we move, then push the player out of anything they overlap.
 // Pushing out along the contact normal is what makes you slide along walls.
+//
+// SPEED: each function here reads only the boxes near the body (world/colliderGrid.js: the list sorted into a grid, each
+// cell's boxes in the list's own order), never all ~670. The result is the same as reading them all, box for box.
 // =============================================================================
+
+import { cellFor, covers, indexAfter } from './colliderGrid.js';
 
 // The shared collider list can change while the game runs (a door's shutter adds or removes its box).
 // Whatever changes it calls markCollidersChanged(); anything that caches work built from the list
@@ -83,8 +88,12 @@ function pushOutHorizontal(pos, vel, radius, height, colliders, stepTolerance) {
   // A few passes handle corners where two boxes push at once.
   for (let pass = 0; pass < 3; pass++) {
     let moved = false;
+    // The boxes near the body, in list order (null: no grid for this list, read it all).
+    let cell = cellFor(colliders, pos.x, pos.z, radius);
+    let boxes = cell ? cell.boxes : colliders;
 
-    for (const box of colliders) {
+    for (let i = 0; i < boxes.length; i++) {
+      const box = boxes[i];
       // Only boxes that overlap the body vertically can block sideways movement.
       // Boxes whose top is at (or barely above) our feet are floors, not walls.
       if (box.max.y <= pos.y + stepTolerance || box.min.y >= pos.y + height) continue;
@@ -125,6 +134,19 @@ function pushOutHorizontal(pos, vel, radius, height, colliders, stepTolerance) {
         }
       }
       moved = true;
+      // The push moved the body. If it left what this cell's list covers, carry on in the list of where it is now,
+      // from the box that comes after this one in the full list (so the order of pushes is the full list's).
+      if (cell && !covers(cell, pos.x, pos.z, radius)) {
+        const at = cell.order[i];
+        cell = cellFor(colliders, pos.x, pos.z, radius);
+        if (cell) {
+          boxes = cell.boxes;
+          i = indexAfter(cell.order, at) - 1;
+        } else {
+          boxes = colliders;
+          i = at;
+        }
+      }
     }
 
     if (!moved) break;
@@ -138,7 +160,7 @@ function pushOutHorizontal(pos, vel, radius, height, colliders, stepTolerance) {
  */
 export function overlapsSolid(pos, radius, height, colliders, stepTolerance, margin = 0.02) {
   const r = radius - margin;
-  for (const box of colliders) {
+  for (const box of cellFor(colliders, pos.x, pos.z, Math.abs(r))?.boxes ?? colliders) {
     if (box.max.y <= pos.y + stepTolerance || box.min.y >= pos.y + height) continue;
     if (distSqToBoxXZ(pos.x, pos.z, box) < r * r) return true;
   }
@@ -152,7 +174,7 @@ export function overlapsSolid(pos, radius, height, colliders, stepTolerance, mar
  */
 export function hasHeadroom(pos, radius, crouchHeight, standHeight, colliders, margin) {
   const r = radius - margin;
-  for (const box of colliders) {
+  for (const box of cellFor(colliders, pos.x, pos.z, Math.abs(r))?.boxes ?? colliders) {
     if (box.max.y <= pos.y + crouchHeight || box.min.y >= pos.y + standHeight) continue;
     if (distSqToBoxXZ(pos.x, pos.z, box) < r * r) return false;
   }
@@ -179,7 +201,7 @@ export function moveAndCollide(pos, vel, dt, radius, height, colliders, stepTole
   let landingY = -Infinity;
   let ceilingY = Infinity;
 
-  for (const box of colliders) {
+  for (const box of cellFor(colliders, pos.x, pos.z, radius)?.boxes ?? colliders) {
     if (distSqToBoxXZ(pos.x, pos.z, box) >= footRadiusSq) continue;
 
     // Falling (or standing): were our feet above this box's top last tick?
