@@ -180,6 +180,7 @@ export function createScreens({ locker = null, guide = null, challenges = null }
       <div class="kicker">Welcome to your forever mall</div>
       <h1 class="title-logo">Sunset<br />Galleria</h1>
       <p class="tagline">The mall is closed. The shoppers didn't get the memo.</p>
+      <p class="tagline title-note" hidden></p>
       <div class="directory-heading">Galleria directory <span>You are here ↓</span></div>
       <div class="menu-list directory-list">
         <button class="menu-btn primary save-continue" data-action="continue" type="button">Continue</button>
@@ -192,7 +193,6 @@ export function createScreens({ locker = null, guide = null, challenges = null }
         <button class="menu-btn" data-action="settings" type="button">Settings</button>
         <button class="menu-btn" data-action="controls" type="button">Controls</button>
       </div>
-      <p class="tagline title-note" hidden></p>
       ${hintLine('title')}
     </div>
     <div class="title-footer"><b>OPEN UNTIL FURTHER NOTICE</b><span>Notice will not be provided. · Now hiring · Must provide own staples</span></div>
