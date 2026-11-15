@@ -21,4 +21,12 @@ export const perf = {
     budgetMs: 6, // milliseconds of it per frame (a frame at 60 fps has 16.7)
     firstBatch: 24, // objects in the first draw; the batch then grows or shrinks to fit the budget
   },
+
+  // tests/drawBudget.test.js: the most things any benchmark shot may ask the graphics card to draw (counted headless: the
+  // map and its props, no gun, zombies or post-processing), every door open. Set a little over what the mall draws today.
+  drawBudget: {
+    perShot: 900, // (15 November 2026: the worst is one end of the Food Court dolly, 829; the hallway 668, Level 2 678)
+    average: 400, // over the 14 shots (356 today; 590 before a room seen through a doorway stopped being drawn whole)
+    potatoPerShot: 540, // with Far objects and Small detail at Close (the worst today: 483)
+  },
 };
