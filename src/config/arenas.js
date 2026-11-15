@@ -72,6 +72,15 @@ export const arenas = {
       playerSpawn: { at: [45, 0, 0], yaw: Math.PI },
       // Out of the mall's own doors: inside the entrance vestibule (x 34.45..36.25, z 0.3..4.7).
       spawns: [{ id: 'mallExit', at: [35.4, 0, 2.5] }],
+      // Against the north fence (its inside face is z 6), 2 cm off it.
+      desk: { along: 'x', center: 40.6, wallAt: 5.98, facing: -1, floorY: 0 },
+      restock: { x: 54.5, wallZ: 5.98, facing: -1, floorY: 0 },
+      wallBuys: [
+        { id: 'foamDartBlaster', weapon: 'foamDartBlaster', at: [45.2, 1.5, 5.92], normal: [0, 0, -1],
+          board: { half: [0.7, 0.6], depth: 0.04, gap: 0.02 } },
+        { id: 'rivetRifle', weapon: 'rivetRifle', at: [62.22, 1.5, 0.5], normal: [-1, 0, 0],
+          board: { half: [0.7, 0.6], depth: 0.04, gap: 0.02 } },
+      ],
     },
   ],
 };
