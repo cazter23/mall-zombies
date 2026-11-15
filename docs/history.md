@@ -1,5 +1,28 @@
 # Sunset Galleria: build history ("Current state")
 
+## 15 November 2026 - Arena survival: Extra Modes (`claude/arena-modes`, not merged: the user plays it first)
+
+Survive as many rounds as you can locked in ONE part of the mall (the plan, with every decision: docs/arena-modes-plan.md).
+Play now lists Directed, Classic and **Extra Modes**; Extra Modes opens three arenas, each with its line and best round:
+**Everything Must Go** (the Start Room), **Last Showing** (the Sunset Cinema) and **Lot Full** (Customer Parking).
+- How: `g.setArena(id)` / `state.arena`. The map's `setArena` (maps/mall/arenas.js) opens exactly the arena's zones, seals the area
+  system (world/areaUnlocks.js `sealed`: no door prompts, no door Flash Sales, door vouchers pay their points) and shows that arena's
+  own fixtures, spawns and features; set back to null the map is exactly the whole mall's (tested collider by collider). Arena-only
+  features are built once with the rest and gated (game/features/index.js arenaContext). No Closing Time in an arena (no keys, no
+  briefing, no checklist, no van). GRAB-A-GUN and Kiosk Kevin start a run at their first OPEN site, so an arena gets its own.
+- Fixtures: Last Showing's Customer Service is the Box Office (its three windows on the ticket booth, a CUSTOMER SERVICE board hung
+  above it: no new collider) plus a Nail Gun; Lot Full gets a Customer Service booth, a RESTOCK-O-MATIC and two wall guns on fence
+  boards (Foam Dart Blaster, Rivet Rifle) and a spawn in the vestibule; Everything Must Go is the hard mode (Price Gun, an arena
+  RESTOCK-O-MATIC, two more spawns: no claw machine or warranties). Coordinates: docs/map.md "Arena survival".
+- Saves and records: an 'arena' save step (restored first; Continue says the arena); the receipt names it; careerStats keeps each
+  arena's best round (`arenas`) and leaves the whole mall's bests alone. The Statistics screen has an "Arena survival" section.
+- Shared files changed: createGame.js, mall.js (one call), areaUnlocks.js, features/index.js, clawMachine.js, kiosk.js, closingTime.js,
+  escapeVan.js, bossVouchers.js, saveGame.js (peek), careerStats.js, screens.js, runStart.js, runIntro.js, main.js, settings.js
+  ('arenaChoice'), retail.css, tests/menus.test.js (the chooser now lists Extra Modes). No economy, weapon or save-version change.
+- Checked in the browser (a build on a spare port): each arena played several rounds with no zombie outside it, the box office and
+  the lot's fence row look right, the receipt and best round are filed. Controller menus are covered by tests only (a fake pad in the
+  hidden pane did not reach the menus).
+
 ## 15 November 2026 - Gun weight, and rumble on hits (`claude/bughunt`)
 
 From a gunplay check (what the game already does for hit feedback, reactions, handling, reloads, penetration, weak spots): hit

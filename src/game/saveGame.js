@@ -15,7 +15,7 @@
 //   saves.update()           (end of each tick) takes the pending snapshot
 //   saves.canSave()          { ok, reason }: a round has started, you are alive, at full health
 //   saves.saveAndQuit()      writes the slot, announces 'runSaved' { round }; the caller ends the run (main.js: to the title)
-//   saves.peek()             { round, savedAt } or null; an older version's save is dropped (saves.dropped turns true once)
+//   saves.peek()             { round, savedAt, arena } or null (arena: the saved 'arena' step, if any); an older version's save is dropped (saves.dropped turns true once)
 //   saves.load()             true if a run was loaded: the slot is deleted FIRST, then reset + restore; 'runLoaded' { round }
 //   saves.discard()          delete the slot (Play from the title with a save present)
 //   saves.reset()            Play again: no snapshot yet
@@ -128,7 +128,7 @@ export function createSaveGame({ steps, events, stats, state, rounds, resetRun, 
         drop();
         return null;
       }
-      return { round: saved.round, savedAt: saved.savedAt };
+      return { round: saved.round, savedAt: saved.savedAt, arena: saved.data.arena ?? null }; // (arena: an arena run's id, for the title)
     },
 
     load() {

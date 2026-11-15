@@ -76,7 +76,7 @@ tests/docs.test.js fails if a new src/ file or test file isn't described in the 
 | change or add a module | its entry in docs/folder-structure.md (search for the file name) |
 | work in an area or add a door/spawn/buy spot | its entry in docs/map.md |
 | want the background of a past decision, a measured number, or how an area was built | docs/history.md (newest first; older: docs/archive/) |
-| plan the next big system | the open plans: docs/closing-time-plan.md (all phases built), docs/kiosk-kevin-plan.md (all built: only its "Later" list); finished plans (claw machine, wardrobe, weapon skins, hazards, bosses...) are in docs/archive/ |
+| plan the next big system | the open plans: docs/closing-time-plan.md (all phases built), docs/kiosk-kevin-plan.md (all built: only its "Later" list), docs/arena-modes-plan.md (Extra Modes: arena survival, built); finished plans (claw machine, wardrobe, weapon skins, hazards, bosses...) are in docs/archive/ |
 | want to know how COD zombies does something | docs/research/ (BO1, BO3, BO4 and Cold War script analyses, and a balance comparison) |
 | touch behaviour and want to know which test guards it | docs/tests.md |
 | add or restyle a sign, poster, neon or label (fonts, roles) | docs/typefaces.md (the type system) and docs/typefaces-ledger.md (every sign) |
@@ -164,6 +164,7 @@ adjoining areas are owned. No cascading unlocks. Nine area purchases total 9500;
 - **Adding an area or door** touches the same lists everywhere: LAYOUT + zones + doors + spawns + lamps + `cullAreas`/`cullPortals` + `gradeZones` + a horror
   area + a benchmark shot + ambience emitters (all in mall.js), a shutter finish (config/shutters.js), the price (economy.doors), the door counts and the
   "120 orders" exclusions in tests/mall.test.js, and a coplanar region. Use docs/archive/history-2026-10.md (HOFFMAN'S entry) as the worked example.
+  Arena survival (config/arenas.js) seals an arena's zones: a new door into an arena area stays shut there; a fixture only for an arena goes in its entry.
 - **Several tools edit this repo at once.** Each tool works in its OWN worktree + branch (`.claude/worktrees/<tool>`, reused, not one per task) and only
   MERGES into main. Never switch branches in the main folder (another tool's commit lands on your branch and is lost), and before any commit in main check
   `git branch --show-current` says main. Commit only your own changes, never run a bare `git stash`, never overwrite another tool's uncommitted files.

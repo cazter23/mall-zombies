@@ -477,12 +477,15 @@ export function buildClawMachine(feature, { scene, map, events, pricing, interac
     flapTimer = Infinity;
     lastLane = null;
     attract = 0;
+    // A run starts at the first site whose zone is open, else the first site (which waits for its zone). In a whole-mall run
+    // no site is open yet, so that is always the first; an arena run starts at the arena's own site.
+    const start = sites.find((s) => zoneOpen(s)) ?? sites[0];
     for (const s of sites) {
       s.cabinet.rig.reset();
-      s.cabinet.rig.setLive(s === sites[0]);
-      if (s !== sites[0]) s.cabinet.screen.show({ title: cfg.name, lines: ['', cfg.screen.away, ''], highlight: 1, note: '' });
+      s.cabinet.rig.setLive(s === start);
+      if (s !== start) s.cabinet.screen.show({ title: cfg.name, lines: ['', cfg.screen.away, ''], highlight: 1, note: '' });
     }
-    site = sites[0];
+    site = start;
     phase = 'idle';
     grab = null;
     grabsHere = 0;

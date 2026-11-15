@@ -19,10 +19,11 @@ test('the mall lists its wall buys, the ammo cache, the upgrade desk and the att
   assert.equal(featuresOf(g.map, 'upgradeDesk').length, 1);
   assert.deepEqual(featuresOf(g.map, 'wallBuy').map((w) => w.weapon), ['priceGun', 'nailGun', 'foamDartBlaster', 'confettiCannon', 'rivetRifle', 'coilNailer', 'barcodeScanner']);
   assert.equal(featuresOf(g.map, 'ammoCache').length, 3);
-  for (const f of g.map.features) {
+  for (const f of [...g.map.features, ...g.map.arenaFeatures]) {
     assert.ok(f.kind && f.name && f.zone in g.map.zones && f.position?.isVector3 && f.normal?.isVector3, f.name);
   }
-  assert.equal(g.features.list.length, g.map.features.length, 'every feature was built');
+  // (arena survival's own features are built too, once, gated to their arena: tests/arenaModes.test.js)
+  assert.equal(g.features.list.length, g.map.features.length + g.map.arenaFeatures.length, 'every feature was built');
 });
 
 test('an unknown kind is an error naming the feature; a map without features is fine', () => {

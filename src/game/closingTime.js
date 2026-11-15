@@ -31,8 +31,9 @@ export function createClosingTime({ events, player, colliders, state, view, roun
     events.emit('closingKeyDrop', { bossId, position: position.clone(), pa: config.pa.drop(config.lines[bossId].key) });
   }
 
+  // (An arena run has no Closing Time: state.closingQuest is false there, so no key ever drops.)
   function available(bossId) {
-    return Object.hasOwn(config.lines, bossId) && !held.has(bossId) && !drops.has(bossId);
+    return state.closingQuest !== false && Object.hasOwn(config.lines, bossId) && !held.has(bossId) && !drops.has(bossId);
   }
 
   function drop(bossId, at) {
@@ -80,7 +81,7 @@ export function createClosingTime({ events, player, colliders, state, view, roun
 
   // The PA introduces the checklist once per run, shortly after the run's opening line (round 1's announcement).
   events.on('roundStart', ({ round }) => {
-    if (round === 1 && !briefed && briefingIn === null) briefingIn = config.briefing.delaySeconds;
+    if (round === 1 && !briefed && briefingIn === null && state.closingQuest !== false) briefingIn = config.briefing.delaySeconds;
   });
 
   events.on('fountainKill', () => advance('janitor'));
