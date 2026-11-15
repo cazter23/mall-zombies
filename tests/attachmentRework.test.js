@@ -60,6 +60,9 @@ test('real counter purchases unlock for the run; swaps and replacement weapons r
 test('shrinking and expanding magazines conserve ammunition, including full reserves, and preserve fire cooldown', () => {
   const base = weapons.priceGun, stats = { reloadSpeed: 1 }, w = new Weapon(base, stats);
   w.cooldown = .25;
+  // (The first time a full magazine grows it is filled free, tests/newGuns.test.js; from then on swapping between the
+  // two, which costs nothing once owned, neither makes nor loses a round.)
+  for (const id of ['speedLoader', 'jumboPack']) w.setDef(resolveGun(base, withAttachment(base, [], id)));
   const total = w.magazine + w.reserve;
   for (let i = 0; i < 10; i++) for (const id of ['speedLoader', 'jumboPack']) {
     w.setDef(resolveGun(base, withAttachment(base, [], id)));

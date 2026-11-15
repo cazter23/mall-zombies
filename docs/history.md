@@ -1,5 +1,14 @@
 # Sunset Galleria: build history ("Current state")
 
+## 14 November 2026 - A full magazine fills when an upgrade makes it bigger (`claude/bughunt`)
+
+The user's request: buying a Deluxe warranty on a full Rivet Rifle left it at 36/45 until a reload. Now any upgrade that makes the
+magazine bigger (warranty tiers and renewals, attachments, the claw's attachment prizes, a limited edition's build) fills a FULL
+magazine to the new size, free: the reserve is untouched (the user chose free over "out of the reserve"). A part-empty magazine is left
+as it was. weapon.js setDef does it; it also remembers `unloaded`, the rounds a smaller magazine sent back to the reserve, and takes
+those back first, because refitting between two owned attachments is free and a full Speed Loader <-> Jumbo Pack swap would otherwise
+have made 14 rounds every time. (`unloaded` is not saved: after a Continue one such swap can still gain them once.)
+
 ## 14 November 2026 - The bug hunt's open decisions, decided (`claude/bughunt`)
 
 The user's answers to the hunt's "proved but left for a decision" list (the entry below), each with a test in tests/bugHunt.test.js

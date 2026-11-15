@@ -20,6 +20,7 @@ export class Weapon {
     this.stats = stats; // player stats (damageMultiplier, reloadSpeed)
     this.magazine = def.magazineSize;
     this.reserve = this.reserveCap;
+    this.unloaded = 0; // rounds a smaller magazine sent back to the reserve (setDef): a bigger one takes them back first
 
     this.cooldown = 0; // seconds until the next shot is allowed
     this.fireRequest = 0; // > 0 while a click is waiting to be fired (click buffer)
@@ -43,13 +44,24 @@ export class Weapon {
 
   // The gun's stats changed (an upgrade was applied: gunStats.js resolveGun). Ammo carries over,
   // excess magazine rounds return to reserve; anything mid-way (burst, reload) is dropped.
+  // A magazine that was FULL and grew is filled to the new size, free: you shouldn't have to reload a full gun to use
+  // what you just bought. Only rounds an earlier, smaller magazine sent to the reserve are taken back from it (so swapping
+  // between two owned attachments, which is free, never makes ammo).
   setDef(def) {
     this.cancelFire();
     this.cancelReload();
+    const wasFull = this.magazine >= this.def.magazineSize;
     this.def = def;
+    if (wasFull && def.magazineSize > this.magazine) {
+      const back = Math.min(def.magazineSize - this.magazine, this.unloaded, this.reserve);
+      this.reserve -= back;
+      this.unloaded -= back;
+      this.magazine = def.magazineSize;
+    }
     const excess = Math.max(0, this.magazine - def.magazineSize);
     this.magazine -= excess;
     this.reserve += excess; // Unloaded rounds remain yours, even if the reserve was already full.
+    this.unloaded += excess;
   }
 
   // Lowering the gun abandons both remaining darts and buffered input.
