@@ -84,6 +84,7 @@ export function createAnnouncer({ events, hud, sound, state, random = paRandom }
         ['mascotVariantIntro', ({ variant }) => ({ ...mascotTypes[variant].introBanner, priority: 2 })],
         // The Shoplifter (game/shoplifting.js): a theft (with the till's grab), its recovery (a chime) and a getaway.
         ...['theft', 'recovered', 'escaped'].map((kind) => [`shoplifter${kind[0].toUpperCase()}${kind.slice(1)}`, ({ zombie, points }) => {
+          if (state.over || state.winPending) return null; // (the run is over: one that gets away now says nothing over the receipt)
           const pa = zombie.type.pa;
           return { kicker: pa.kicker, text: pickPaLine(pa[kind], random).replace('{points}', points.toLocaleString('en-US')), priority: 1 };
         }, ({ zombie }) => zombie.type.theftSounds?.[kind] ?? 'paChime']),
