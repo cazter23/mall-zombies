@@ -1,5 +1,18 @@
 # Sunset Galleria: build history ("Current state")
 
+## 15 November 2026 - Shopper outfits match the person (`claude/shopper-outfits`)
+
+The user's report: male-looking Shoppers sometimes spawned in skirts. Cause: shopperAppearance.js rolled hair, build, top, bottom and
+shoes independently, so the office archetype's pencil skirt (half its bottoms) went with bald heads and ties, and the Mall Rat's ra-ra
+skirt with flat-tops and mullets; the women's power suit (blouse bow) and the purse went on men the same way. Now every Shopper is rolled
+a presentation first (per archetype `presentations` weights in config/shoppers.js; office 1.5 : 1 and rocker 2 : 1 men to women, parent
+1 : 1.2, the rest even) and wears only the pieces that fit it: `onlyFor` lists what is men-only (short or bald hair, flat-top, spiky,
+mullet, the three tie shirts, the broad build, the flat cap) and women-only (bob, ponytails, perm, big hair, the power suit, the three
+skirts, the purse); everything else is anyone's. Same seed, same Shopper, as before (the looks per seed changed once). The plain `skirt`
+had been unreachable since the errand/summer archetypes went: it is now on the Weekend Shopper's list. Skirt share among all spawns of an
+archetype: office 50% -> ~20%, Mall Rat 33% -> ~16% (now half and a third of the women), Weekend ~12%. There is no facial hair in the
+Shopper data; a beard or moustache would go in onlyFor.masculine.
+
 ## 15 November 2026 - Gun weight, and rumble on hits (`claude/bughunt`)
 
 From a gunplay check (what the game already does for hit feedback, reactions, handling, reloads, penetration, weak spots): hit

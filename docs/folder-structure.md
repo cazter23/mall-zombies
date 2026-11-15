@@ -59,7 +59,9 @@ src/
     shoppers.js         Cosmetic-only Shopper looks: `colors` (the curated 1986 mall palette: every colour a Shopper wears is named
                         here), eight ARCHETYPES (weekend shopper, velour tracksuit, mall-rat teen, office worker on lunch, parent
                         with a baby carrier, retiree, food-court crew in their stall's colours, rocker), each with its tops,
-                        bottoms, shoes, hair, hats, glasses, held item, extras and coordinated palettes; then the parts library
+                        bottoms, shoes, hair, hats, glasses, held item, extras, coordinated palettes and its mix of men and
+                        women (`presentations`); `onlyFor` (the pieces only men or only women wear: skirts, ties, short hair...,
+                        so an outfit matches the person); then the parts library
                         (tops, bottoms, shoes, hair, headwear, eyewear, held, extras, faces) as data. No other kind's signature
                         (no hoodie, beanie, headband, wristbands). Combat never reads this file.
     impacts.js          Cosmetic impact cap (200), Cannon budget (2 clusters), projection/edge tolerances and gun signatures
@@ -471,7 +473,9 @@ src/
                         hitboxes, and accelerates into a rush. Captain Coupon (type.mascot.reclaim): updateReclaim walks back
                         to mascotHelmet.rest, lifts it on (mascotLift), restores health once; gives up when it is gone, guarded
                         or too slow (mascotWantsHelmet = still going back for it)
-    shopperAppearance.js Which Shopper a spawn is: chooseShopperAppearance(random) picks an archetype and everything from its own lists;
+    shopperAppearance.js Which Shopper a spawn is: chooseShopperAppearance(random) picks an archetype, then a presentation (masculine |
+                        feminine, the archetype's `presentations`), then everything from its own lists that fits it
+                        (fitsPresentation: config/shoppers.js onlyFor, so no skirt on a man, no tie or bald head with a skirt);
                         lookRandom(seed) / appearanceForSeed(seed) make it a pure function of zombie.lookSeed (one Math.random draw
                         per spawn in zombieManager, whatever the look)
     shopperModel.js     createShopperDresser(look, ...): dresses the shared skeleton (legs, torso, sleeves, held item, hair, hat,

@@ -73,7 +73,7 @@ export function createShopperDresser(look, { skin, eyes, shape: S, geometries, b
   return {
     hasBag: look.held === 'shoppingBag',
     summary: {
-      archetype: look.archetype, palette: look.palette.id, top: look.top, bottom: look.bottom, shoes: look.shoes,
+      archetype: look.archetype, presentation: look.presentation, palette: look.palette.id, top: look.top, bottom: look.bottom, shoes: look.shoes,
       build: look.build, hair: look.hair, headwear: look.headwear, eyewear: look.eyewear, held: look.held,
       extra: look.extra, wear: look.wear, face: look.face,
     },
