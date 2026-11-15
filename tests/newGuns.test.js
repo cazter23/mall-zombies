@@ -6,7 +6,7 @@ import { createPlayerGun } from '../src/weapons/playerGun.js';
 import { withTier } from '../src/weapons/upgrades.js';
 import { damageFalloff as pelletDamageFalloff } from '../src/weapons/gunStats.js';
 import { pelletSpreadDegrees } from '../src/weapons/aim.js';
-import { weapons } from '../src/config/weapons.js';
+import { weapons, gunWeights } from '../src/config/weapons.js';
 import { audio } from '../src/config/audio.js';
 import { feel } from '../src/config/feel.js';
 import { economy, zombieHealthForRound } from '../src/config/economy.js';
@@ -517,4 +517,34 @@ test('upgrades stay through an ammo buy, and go with the gun (replaced) or the r
   f.gun.reset();
   assert.deepEqual(f.gun.modsFor('stapleGun'), [], 'new run: no upgrades');
   assert.equal(f.gun.def.damage, weapons.stapleGun.damage);
+});
+
+test('gun weight: a light gun comes up and fires out of a sprint sooner than a heavy one (config/weapons.js gunWeights)', () => {
+  assert.equal(weapons.stapleGun.weight, 'light'); assert.equal(weapons.rivetRifle.weight, 'heavy'); assert.equal(weapons.stargazer.weight, 'veryHeavy');
+  for (const [id, def] of Object.entries(weapons)) assert.ok(gunWeights[def.weight], `${id} has a known weight`);
+  const order = ['light', 'medium', 'heavy', 'veryHeavy'].map((w) => gunWeights[w]);
+  for (let i = 1; i < order.length; i++) {
+    assert.ok(order[i].raiseSeconds > order[i - 1].raiseSeconds && order[i].sprintOutSeconds > order[i - 1].sprintOutSeconds, 'heavier is slower, both ways');
+  }
+  // Switching TO each gun: ticks until it is up.
+  const f = fixture(weapons.stapleGun);
+  const ticksToRaise = () => { let n = 0; while (f.gun.isSwitching && n < 200) { f.gun.update(dt); n++; } return n; };
+  f.gun.give(weapons.rivetRifle);
+  assert.ok(f.gun.isSwitching, 'the scenario: the bought gun comes up');
+  const heavy = ticksToRaise();
+  f.input.pressed.add('weapon1'); f.gun.update(dt);
+  const light = ticksToRaise() + 1;
+  const ws = feel.weaponSwitch;
+  assert.ok(Math.abs(heavy - (ws.lowerSeconds + gunWeights.heavy.raiseSeconds) * 60) <= 2, `the Rivet Rifle took ${heavy} ticks`);
+  assert.ok(Math.abs(light - (ws.lowerSeconds + gunWeights.light.raiseSeconds) * 60) <= 2, `the Staple Gun took ${light} ticks`);
+  assert.ok(light < heavy);
+  // Firing from a full sprint: the first shot waits the gun's sprint-out time.
+  const delay = (def) => {
+    const s = fixture(def);
+    s.player.isSprinting = true; s.player.sprintAmount = 1;
+    s.input.held.add('fire'); s.input.pressed.add('fire');
+    let n = 0; while (s.gun.weapon.magazine === def.magazineSize && n < 60) { s.gun.update(dt); n++; }
+    return n;
+  };
+  assert.ok(delay(weapons.stapleGun) < delay(weapons.rivetRifle), 'a pistol fires out of a sprint before a rifle');
 });

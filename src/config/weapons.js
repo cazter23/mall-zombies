@@ -17,6 +17,7 @@
 //   instantKill: { bigFraction, box }  kills any zombie outright; bosses and Mascots take bigFraction of their max health instead (weapons/gunStats.js hitDamage)
 //   refillFraction: 0.5  a refill (RESTOCK-O-MATIC, Refurbished) fills only this share of the reserve (weapon.js)
 //   projectile: { speed, gravity, restitution, maxBounces, ... }  a lobbed, bouncing ball instead of a ray (weapons/ballistics.js; each zombie it touches is a hit)
+// Every gun has a `weight` ('light' | 'medium' | 'heavy' | 'veryHeavy'): how fast it comes up and fires out of a sprint (gunWeights below).
 // Upgrades (Build-A-Blaster...) never edit these entries: they are applied on top as data
 // (gunStats.js resolveGun). Check the effect of any change with `npm run balance`.
 // =============================================================================
@@ -27,6 +28,7 @@ export const weapons = {
   // punch down a long hallway), so buying anything is an upgrade.
   stapleGun: {
     id: 'stapleGun',
+    weight: 'light', // how it handles: gunWeights below
     name: 'Staple Gun',
     fireMode: 'semi', // 'semi' = one shot per click, 'auto' = keeps firing while held
     damage: 30, // round-1 Shopper (150 HP): 5 body shots or 3 headshots
@@ -173,6 +175,7 @@ export const weapons = {
   // so the Nail Gun / Foam Dart Blaster own the long sightlines. (tests/balance.test.js checks this.)
   priceGun: {
     id: 'priceGun',
+    weight: 'light', // how it handles: gunWeights below
     name: 'Price Gun',
     fireMode: 'auto',
     damage: 58, // round-1 Shopper (150 HP): 3 body shots or 2 headshots (was 70: within 11% of the Rivet Rifle for a sixth of its route; docs/economy-report.md, A)
@@ -298,6 +301,7 @@ export const weapons = {
   // ROLE: precise long-range penetration. No falloff, so each nail keeps its damage at 30 m.
   nailGun: {
     id: 'nailGun',
+    weight: 'medium', // how it handles: gunWeights below
     name: 'Nail Gun',
     fireMode: 'semi',
     damage: 135, // round-1 zombie (150 HP): 2 body / 1 head; round 8 (675): 5 body / 3 head
@@ -424,6 +428,7 @@ export const weapons = {
   // Premium automatics sustain more damage, while the Nail Gun rewards lined-up targets.
   foamDartBlaster: {
     id: 'foamDartBlaster', name: 'Foam Dart Blaster', fireMode: 'burst',
+    weight: 'light', // how it handles: gunWeights below
     burst: { count: 3, interval: 0.07 },
     damage: 90, headshotMultiplier: 1.75, // 270 body damage per full burst
     magazineSize: 30, startingReserve: 144, // ten full bursts; reserve unchanged
@@ -493,6 +498,7 @@ export const weapons = {
   // Service Corridor shotgun: one shell, twelve pellets; rewards close-range positioning.
   confettiCannon: {
     id: 'confettiCannon', name: 'Confetti Cannon', fireMode: 'semi',
+    weight: 'medium', // how it handles: gunWeights below
     // ROLE: the room-clearer. A close body blast can kill a round-8 Shopper; spread still limits reach.
     // Full pellet damage through 4m, then a gradual fade; the cone still limits single-target range.
     // Aiming down sights extends useful damage to ~5m. (tests/balance.test.js checks this;
@@ -587,6 +593,7 @@ export const weapons = {
   // Stronger per-hit damage than Price, with a full 30-round magazine; no penetration.
   rivetRifle: {
     id: 'rivetRifle', name: 'Rivet Rifle', fireMode: 'auto',
+    weight: 'heavy', // how it handles: gunWeights below
     damage: 80, headshotMultiplier: 2, // lighter per-hit than Coil (~941 burst dps); x2 keeps a headshot (160) about where it was (95 x 1.75) and above a Foam dart's
     magazineSize: 36, startingReserve: 144, // (36: at 0.085 s a shot a 30 ran dry in 2.5 s and sat under the Foam Dart Blaster sustained; 144 = four magazines)
     fireInterval: 0.085, fireBuffer: 0.1, reloadTime: 2, range: 100, // ~11.8 shots/s
@@ -651,6 +658,7 @@ export const weapons = {
   // chew through corridor hordes for nearly 8 seconds straight, paid for with heavy ADS handling and a long 3.1s drum swap.
   coilNailer: {
     id: 'coilNailer', name: 'Heavy Coil Nailer', fireMode: 'auto',
+    weight: 'heavy', // how it handles: gunWeights below
     damage: 120, headshotMultiplier: 1.5, // slower, harder-hitting than Rivet (960 burst dps)
     pierce: { maxTargets: 2, damageFalloff: [1, 0.5] },
     magazineSize: 64, startingReserve: 256,
@@ -728,6 +736,7 @@ export const weapons = {
   // the 500-point Price Gun.)
   barcodeScanner: {
     id: 'barcodeScanner', name: 'Barcode Scanner', fireMode: 'charge',
+    weight: 'light', // how it handles: gunWeights below
     charge: { seconds: 0.45, sound: 'scannerCharge' }, // the scan; it fires itself when complete (weapons/weapon.js)
     damage: 420, headshotMultiplier: 2,
     pierce: { maxTargets: 4, damageFalloff: [1, 0.85, 0.7, 0.55] },
@@ -810,6 +819,7 @@ export const weapons = {
   // `magazineSize` = the tank (the HUD, refills and Build-A-Blaster read it as the magazine); `startingReserve` is 0 (nothing to reload from).
   leafBlower: {
     id: 'leafBlower', name: 'Leaf Blower', fireMode: 'auto', clawOnly: true,
+    weight: 'medium', // how it handles: gunWeights below
     damage: 2, headshotMultiplier: 1.2, // a pulse tickles: a Shopper takes ~20 s of it, and a Mascot much longer
     falloff: { start: 3, end: 7, minMultiplier: 0.5 }, // (the damage; the push has its own fade, cone.farFraction)
     magazineSize: 40, startingReserve: 0, // 40 pulses of fuel: about 6 s of blowing
@@ -870,6 +880,7 @@ export const weapons = {
   // The damage is per HIT, with a falloff over the distance the BALL has flown (bounces included), so a long chain fades out.
   tennisBallLauncher: {
     id: 'tennisBallLauncher', name: 'Tennis Ball Launcher', fireMode: 'semi', clawOnly: true,
+    weight: 'medium', // how it handles: gunWeights below
     damage: 60, headshotMultiplier: 1.5, // round 1: 60 a hit (3 hits a 150 Shopper); round 15 ~340, round 25 ~630 (roundScaling)
     roundScaling: { exponent: 0.85 }, // x (Shopper health that round / 150) ^ 0.85
     falloff: { start: 14, end: 36, minMultiplier: 0.5 }, // by metres the ball has FLOWN
@@ -950,6 +961,7 @@ export const weapons = {
   // is the other cone gun: a steady shove that never kills.
   returnToSender: {
     id: 'returnToSender', name: 'Return to Sender', fireMode: 'semi', clawOnly: true,
+    weight: 'medium', // how it handles: gunWeights below
     // (damage: a nominal 'what a hit is worth' for Build-A-Blaster's stuffings (weapons/gunStats.js gunPower) and the tiers; the instant kill ignores it on a zombie.)
     damage: 150, headshotMultiplier: 1.5,
     instantKill: {
@@ -1061,6 +1073,7 @@ export const weapons = {
   // view sways in a slow figure eight (less crouched or prone), and you stay in the scope while the bolt is worked between shots.
   stargazer: {
     id: 'stargazer', name: 'Stargazer 3000', fireMode: 'semi', clawOnly: true,
+    weight: 'veryHeavy', // how it handles: gunWeights below
     damage: 300, headshotMultiplier: 3, // the headshot gun: the biggest multiplier there is
     // RISING falloff: full (1x) up to `start`, then up in a straight line to minMultiplier (2x) at `end` and beyond.
     falloff: { start: 8, end: 30, minMultiplier: 2 },
@@ -1184,6 +1197,7 @@ export const weapons = {
   // kill you from full health; behind a wall it can't reach you. The Hi-Vis Vest (config/wardrobe.js, stats.ownBlastDamage 0.01) cancels it.
   bottleRocket: {
     id: 'bottleRocket', name: 'Bottle Rocket Bazooka', fireMode: 'semi', clawOnly: true,
+    weight: 'veryHeavy', // how it handles: gunWeights below
     damage: 900, headshotMultiplier: 1, // (at the blast's centre; a blast has no headshots)
     blast: {
       radius: 3.5, edgeFraction: 0.25, // m; the damage at the very edge is edgeFraction of the centre's
@@ -1296,6 +1310,7 @@ export const weapons = {
   // It uses the same flying-and-bursting path as the Bottle Rocket Bazooka (playerGun.js fires anything with `blast` + `flight` on g.rockets).
   balloonLauncher: {
     id: 'balloonLauncher', name: 'Balloon Launcher', fireMode: 'semi', clawOnly: true,
+    weight: 'medium', // how it handles: gunWeights below
     damage: 200, headshotMultiplier: 1, // (at the pop's centre; a pop has no headshots)
     blast: {
       radius: 1.3, edgeFraction: 0.5, // a small pop: the zombie it touched, and maybe one beside it
@@ -1417,6 +1432,7 @@ export const weapons = {
   // width (falloff), with a wide spray that blooms the longer you hold the trigger. Weak down a hallway (tests/balance.test.js).
   bogo: {
     id: 'bogo', name: 'BOGO', fireMode: 'auto', clawOnly: true,
+    weight: 'light', // how it handles: gunWeights below
     // Akimbo: a trigger per hand and no ADS (weapons/playerGun.js). Left mouse / LT fires the left gun, right mouse / RT the right one.
     // Each gun fires every 2 x fireInterval, so ONE trigger is half the rate below; hold both and they take turns at the full rate.
     akimbo: true,
@@ -1490,6 +1506,18 @@ export const weapons = {
 };
 
 // The melee weapon: a box cutter from the employee's pocket (COD knife equivalent).
+// GUN WEIGHT (weapons/playerGun.js): a light gun comes up fast when you switch to it and fires the moment you stop sprinting; a
+// heavy one takes a beat longer. (Aiming in and moving while aiming are per gun already: each gun's `ads`.)
+//   raiseSeconds      switching TO this gun: how long it takes to come up, ready to fire (the old gun's drop is feel.weaponSwitch)
+//   sprintOutSeconds  firing from a full sprint: the delay before the first shot (scaled by how fast you were going)
+// 'medium' is what every gun had before (15 November 2026). The wardrobe's switch speed still divides the raise.
+export const gunWeights = {
+  light: { raiseSeconds: 0.25, sprintOutSeconds: 0.05 },
+  medium: { raiseSeconds: 0.32, sprintOutSeconds: 0.08 },
+  heavy: { raiseSeconds: 0.4, sprintOutSeconds: 0.11 },
+  veryHeavy: { raiseSeconds: 0.45, sprintOutSeconds: 0.14 },
+};
+
 export const melee = {
   boxCutter: {
     id: 'boxCutter',

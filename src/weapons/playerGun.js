@@ -22,6 +22,7 @@
 import { returnToSender } from './returnToSender.js';
 import * as THREE from 'three';
 import { feel } from '../config/feel.js';
+import { gunWeights } from '../config/weapons.js';
 import { Weapon } from './weapon.js';
 import { workshopBuilds, workshopModOf, buildOf } from '../config/workshop.js';
 import { castShot } from './hitscan.js';
@@ -123,6 +124,8 @@ export function createPlayerGun({
   let switching = null;
 
   const ws = feel.weaponSwitch;
+  // How a gun handles (config/weapons.js gunWeights): its raise time and sprint-out time.
+  const weightOf = (def) => gunWeights[def.weight] ?? gunWeights.medium;
 
   function startSwitch(toIndex, fromSlot = slots[current]) {
     if (toIndex === current && fromSlot === slots[current]) return;
@@ -538,7 +541,7 @@ export function createPlayerGun({
     get switchLower() {
       if (!switching) return 0;
       if (switching.timer < ws.lowerSeconds) return switching.timer / ws.lowerSeconds;
-      return 1 - Math.min(1, (switching.timer - ws.lowerSeconds) / ws.raiseSeconds);
+      return 1 - Math.min(1, (switching.timer - ws.lowerSeconds) / weightOf(slots[current].def).raiseSeconds);
     },
     get isSwitching() {
       return switching !== null;
@@ -694,7 +697,7 @@ export function createPlayerGun({
       }
       if (switching) {
         switching.timer += dt * (stats.switchSpeed ?? 1);
-        if (switching.timer >= ws.lowerSeconds + ws.raiseSeconds) switching = null;
+        if (switching.timer >= ws.lowerSeconds + weightOf(slots[current].def).raiseSeconds) switching = null;
       }
 
       const slot = slots[current];
@@ -737,7 +740,7 @@ export function createPlayerGun({
       }
       if (wantsToFire && !busy) {
         if (player.isSprinting || player.sprintAmount > 0.3) {
-          slot.weapon.cooldown = Math.max(slot.weapon.cooldown, feel.sprint.sprintOutSeconds * player.sprintAmount);
+          slot.weapon.cooldown = Math.max(slot.weapon.cooldown, weightOf(slot.def).sprintOutSeconds * player.sprintAmount);
         }
         player.blockSprint(feel.sprint.fireBlocksSprintSeconds);
       }

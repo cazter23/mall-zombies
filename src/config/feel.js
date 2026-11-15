@@ -75,7 +75,7 @@ export const feel = {
     minForwardInput: 0.5, // ...at least this much (matters for a controller stick; keys are 1)
     // Shooting while sprinting drops you to a walk: the gun comes up out of the running pose first
     // (sprint-out), then the shot goes off. Sprint resumes shortly after you stop shooting.
-    sprintOutSeconds: 0.08, // delay before the first shot when you fire from a full sprint
+    // (the delay before that first shot from a full sprint is the gun's weight: config/weapons.js gunWeights sprintOutSeconds)
     fireBlocksSprintSeconds: 0.3, // no sprinting until this long after the last trigger pull / shot
   },
 
@@ -214,7 +214,7 @@ export const feel = {
   // No shooting or aiming until it's up. Switching cancels a reload.
   weaponSwitch: {
     lowerSeconds: 0.18, // old gun drops away...
-    raiseSeconds: 0.32, // ...new one comes up (ready to fire at the end)
+    // ...then the new one comes up: how long that takes is the gun's weight (config/weapons.js gunWeights)
     dropMeters: 0.22, // how far it drops out of view
     tiltDegrees: 35, // muzzle tips down as it drops
   },
