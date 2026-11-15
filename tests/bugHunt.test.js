@@ -576,3 +576,43 @@ test('sprinting up an escalator and jumping does not sink you under the treads',
     assert.ok(sunk < 0.3, `jump at x ${jumpAt}: feet got ${sunk.toFixed(2)} m under the treads`);
   }
 });
+
+// ---- Decisions taken after the hunt (docs/history.md, 14 November 2026) ----
+
+test('a boss\'s voucher survives Save & Quit when the boss was the round\'s last kill', (context) => {
+  const t = headlessGame({ saveStorage: memoryStorage() });
+  context.after(() => { t.g.resetRun(); t.g.map.dispose(); });
+  const { g } = t;
+  g.health.invulnerable = true;
+  t.tick(2);
+  g.map.areaUnlocks.unlock('hallway', { instant: true });
+  g.rounds.jumpTo(9);
+  t.tick(5);
+  const clearOthers = (keep) => { for (const z of g.zombies.zombies) if (z.isAlive && z !== keep) z.takeHit({ damage: z.health + 1, part: 'body', source: 'hazard' }); };
+  clearOthers(null);
+  const boss = g.bosses.summon('guard');
+  for (let i = 0; i < 600 && boss.state === 'spawning'; i++) { t.tick(1); clearOthers(boss); }
+  const reward = boss.type.reward;
+  assert.ok(bossVouchers[reward], 'the scenario: this boss leaves a voucher');
+  g.player.teleport({ position: new THREE.Vector3(0, 0, 12), yaw: 0 }); // (away from where it falls)
+  boss.takeHit({ damage: boss.health + 1, part: 'body', source: 'gun' });
+  g.saveGame.markRoundStart(); // (it was the last of the wave: the round flips on the same tick, and the snapshot is taken with it)
+  t.tick(1);
+  // You pick it up AFTER the snapshot: the save knows nothing of the voucher in your pocket.
+  for (let i = 0; i < 600 && !g.pricing.voucher; i++) {
+    if (g.powerUps.pickup) g.player.teleport({ position: g.powerUps.pickup.position.clone().setY(0), yaw: 0 });
+    t.tick(1);
+  }
+  assert.equal(g.pricing.voucher?.name, bossVouchers[reward].name, 'the scenario: the voucher was collected');
+  assert.equal(g.saveGame.saveAndQuit(), true);
+  assert.equal(g.saveGame.load(), true);
+  g.player.teleport({ position: new THREE.Vector3(0, 0, 12), yaw: 0 });
+  t.tick(5);
+  assert.ok(g.pricing.voucher || g.powerUps.pickup?.id === reward, 'after Continue the reward is in your pocket or back on the floor');
+  for (let i = 0; i < 600 && !g.pricing.voucher; i++) {
+    if (g.powerUps.pickup) g.player.teleport({ position: g.powerUps.pickup.position.clone().setY(0), yaw: 0 });
+    t.tick(1);
+  }
+  assert.equal(g.pricing.voucher?.name, bossVouchers[reward].name, 'and it can be collected again');
+});
+
