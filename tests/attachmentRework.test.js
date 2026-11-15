@@ -14,6 +14,9 @@ test('attachment Flash Sales stop being offered once every run unlock is owned',
   economy.flashSales.groups = groups.filter(g => g.id === 'attachments');
   const { g } = headlessGame();
   try {
+    assert.equal(g.flashSales.startNow(), false, 'the stores are still shut: a sale on nothing you can buy is skipped (tests/bugHunt.test.js)');
+    g.map.areaUnlocks.unlock('hallway', { instant: true });
+    g.map.areaUnlocks.unlock('foodCourt', { instant: true }); // (the four attachment stores)
     assert.equal(g.flashSales.startNow(), true);
     g.flashSales.reset();
     for (const spot of g.map.features.filter(f => f.kind === 'attachmentCounter')) {

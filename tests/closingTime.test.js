@@ -905,7 +905,8 @@ test('win receipt offers both choices, then restores the death receipt for an ov
   press('KeyF', holdTicks);
 
   const { document } = menuDom();
-  const screens = createScreens();
+  let clock = 0; // ms (the receipt ignores keys and controller buttons for a moment after it appears: config/settings.js menuFeel)
+  const screens = createScreens({ now: () => clock });
   const button = (action) => document.querySelector(`[data-action="${action}"]`);
   const heading = document.querySelector('.receipt-shift-heading');
   const incident = document.querySelector('.receipt-incident');
@@ -919,7 +920,8 @@ test('win receipt offers both choices, then restores the death receipt for an ov
   assert.equal(incident.hidden, true);
   assert.equal(button('playAgain').hidden, true);
   assert.equal(document.activeElement, button('clockOut'));
-  button('clockOut').click();
+  button('clockOut').click(); // (a mouse click counts at once)
+  clock += 5000;
   screens.padNav(padInput('PadDown', 'PadA'));
   assert.deepEqual(picks, ['clockOut', true]);
 
