@@ -47,15 +47,18 @@ export function createClearanceRack({ gun, zombies, effects, sound }) {
   }
 
   return {
-    hit({ hit, headshot, weapon, baseDamage }, weaponId) {
+    // A body shot tags; a headshot on a tagged zombie, or any shot that KILLS one, pops every tag (docs/balance-review.md, G11: an average
+    // player rarely lands a headshot with an automatic, so a headshot-only pop hardly ever paid).
+    hit({ hit, headshot, killed, weapon, baseDamage }, weaponId) {
       const zombie = hit.target;
       if (!zombies.zombies.includes(zombie)) return;
       if (owner !== weapon) { reset(); owner = weapon; }
-      if (!headshot) {
+      const pops = tags.has(zombie) && (headshot || killed);
+      if (!headshot && !pops) {
         if (zombie.isAlive) mark(zombie);
         return;
       }
-      if (!tags.has(zombie)) return;
+      if (!pops) return;
       // Snapshot first: a kill listener can also change the set of live zombies.
       const marked = [...tags.keys()];
       for (const target of marked) untag(target);

@@ -6,6 +6,9 @@ export const workshopBuilds = {
     instructions: 'Aim down sights and shoot the floor to plant a charge.',
     aimAmount: 0.8, placementRange: 6, armSeconds: 0.5, lifetimeSeconds: 35,
     maxActive: 2, triggerRadius: 0.7, blastRadius: 2.3, damage: 650, maxTargets: 5,
+    // From the round where 650 stops killing a Shopper, the blast grows like Kiosk Kevin's equipment: x(that round's Shopper health / fromHealth) ^ exponent,
+    // never below 1 (the round the TARGET spawned in). About 830 at round 15, 950 at round 20 (a flat 650 was 28% of a round-20 Shopper; docs/balance-review.md, G12).
+    roundScaling: { fromHealth: 600, exponent: 0.37 },
     footTolerance: 0.5, blastHeight: 0.16, soundRange: 12, sound: 'partyTrapBlast',
     // The charge on the floor: a flat puck, dim until it is armed.
     marker: { topRadius: 0.15, bottomRadius: 0.19, height: 0.065, segments: 8, lift: 0.05, glowIdle: 0.2, glowArmed: 0.85 },
@@ -15,7 +18,7 @@ export const workshopBuilds = {
   },
   clearanceRack: {
     weapon: 'priceGun', name: 'Clearance Rack', color: 0xff6b36,
-    instructions: 'Tag up to three zombies with body shots. Headshot a tagged zombie to pop all tags.',
+    instructions: 'Tag up to three zombies with body shots. Kill or headshot a tagged one to pop them all.',
     maxTags: 3, damageMultiplier: 3,
     pop: { count: 16, speed: 3.1, size: .059, colors: [0xff5933, 0xffd657, 0xfff2ca] },
   },

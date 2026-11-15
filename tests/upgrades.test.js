@@ -177,7 +177,7 @@ test('the real game: upgrades stay through an ammo buy, go with a replaced gun, 
 test('a barrel on a RISING falloff (the Stargazer) works the way its line says: the Extended Nozzle brings the long-range bonus in closer, the Sawn-Off pushes it out', () => {
   const { stargazer } = weapons;
   const plain = at(stargazer, 'standard'), nozzle = at(stargazer, 'standard', 'extendedNozzle'), sawn = at(stargazer, 'standard', 'sawnOff');
-  for (const metres of [15, 20, 25]) {
+  for (const metres of [10, 14, 18]) { // (inside its rising ramp, 8 to 20 m)
     const base = damageFalloff(metres, plain.falloff);
     assert.ok(damageFalloff(metres, nozzle.falloff) > base, `Extended Nozzle at ${metres} m: more, not less`);
     assert.ok(damageFalloff(metres, sawn.falloff) < base, `Sawn-Off at ${metres} m: its falloff side is the downside`);

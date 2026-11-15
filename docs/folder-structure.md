@@ -716,7 +716,7 @@ src/
       workshopStuffings.js What a finished build does (and its looks: flashes, flames, ice, drips, hearts): one function per Stuffing, one per Heart. Hearts read 'shot' and hand off to the stuffing; nothing here emits 'shot', so a stuffing's kills can't fire a Heart.
       workshopSpectacle.js Ritual mode: tank fill, party colours on the hall's two lamps, bulb string, belt, arm, flap, lever, jingle. Show only; reset() puts every part back.
       workshopOrderForm.js The bench's order form: every Stuffing and Heart on one sheet, pre-filled, driven by menu actions. Sets state.menu while open (the player stands still, the world doesn't).
-      clearanceRack.js  Clearance Rack tags on up to three zombies; a headshot on a tagged zombie pops them all.
+      clearanceRack.js  Clearance Rack tags on up to three zombies; a headshot on a tagged zombie, or a shot that kills one, pops them all.
       clearanceSticker.js The canvas sticker drawn on tagged zombies.
       wardrobeFixtures.js Wardrobe racks (buy: the generated ticket) and fitting rooms (free: the hold opens that room's picker; its instance has `view`).
                           A rack with a `showpiece` also syncs the sold-out state to its fixture each tick, hums its motif (config/audio.js) while you are within

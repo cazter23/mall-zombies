@@ -40,7 +40,7 @@ export function damageFalloff(distance, falloff) {
 }
 
 /**
- * A gun with `roundScaling` ({ exponent }: the Tennis Ball Launcher) hits harder against zombies of later rounds: its damage is multiplied by
+ * A gun with `roundScaling` ({ exponent }: the Tennis Ball Launcher; the Balloon Launcher's pop) hits harder against zombies of later rounds: its damage is multiplied by
  * (the round's Shopper health / round 1's) ^ exponent, the round being the one the TARGET spawned in (zombie.round). An exponent under 1 keeps
  * it a little behind the health curve, so the hits a kill takes creep up slowly instead of running away. No round known (a practice dummy): x1.
  */
@@ -82,9 +82,11 @@ export function hitDamage(def, hit, index, stats, chargeScale = 1, target = null
     const base = effectiveTarget.maxHealth * (effectiveTarget.type?.returnToSenderFraction ?? def.instantKill.bigFraction) * tier * stats.damageMultiplier;
     return applyInstantKillDamage(base, effectiveTarget, stats);
   }
-  // (A blast goes through the same Black Friday step as a bullet: an incentive jackpot one-shots a shopper caught in the burst.)
+  // (A blast goes through the same Black Friday step as a bullet: an incentive jackpot one-shots a shopper caught in the burst. A blast gun with
+  // `roundScaling`, the Balloon Launcher, keeps up with the rounds the same way a bullet gun does.)
   if (def.blast && hit.blastDistance !== undefined) {
-    return applyInstantKillDamage(def.damage * chargeScale * blastFalloff(hit.blastDistance, def.blast) * stats.damageMultiplier, effectiveTarget, stats);
+    const rounds = roundDamageScale(def, effectiveTarget?.round);
+    return applyInstantKillDamage(def.damage * chargeScale * blastFalloff(hit.blastDistance, def.blast) * rounds * stats.damageMultiplier, effectiveTarget, stats);
   }
   const head = hit.part === 'head' ? def.headshotMultiplier * (stats.headshotDamageMultiplier ?? 1) : 1;
   const pierce = def.pierce ? def.pierce.damageFalloff[Math.min(index, def.pierce.damageFalloff.length - 1)] : 1;

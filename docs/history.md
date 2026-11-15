@@ -1,5 +1,31 @@
 # Sunset Galleria: build history ("Current state")
 
+## 15 November 2026 - Human balance pass, group 2: the guns nobody wanted (`claude/balance-review`)
+
+docs/balance-review.md's group 2, with two of its numbers changed to respect earlier rules.
+- **Stargazer 3000** (config/weapons.js):
+  - Scope sway 0.22 → 0.12°.
+  - The 2x long-range bonus is reached at 20 m instead of 30 m (a body hit at 15 m: 392 → 469).
+  - **Hip spread NOT changed** (12°). The review suggested 5, but the 13 November playtest rule (tests/balance.test.js: hip fire "a gamble even
+    close in", at most 35% at 5 m) allows only about 10.5, which would change almost nothing.
+- **Bottle Rocket:** your own blast takes 30% of your health at its centre (was 45%), never more than 50% (was 75%). The review suggested 25%,
+  but 30% is the lowest that still "bites" from 1.5 m (tests/bottleRocket.test.js: over 20%).
+- **Balloon Launcher:** its pop keeps up with the rounds, `roundScaling: { exponent: 0.4 }`: 200 at round 1, about 450 at round 15, 600 at
+  round 25. weapons/gunStats.js now applies `roundScaling` to a blast's damage too (it only did for bullets and balls).
+- **BOGO:** resting hip spread 2.4 → 1.8°. The review also suggested aimed spread 0.55 → 0.4, but that broke "a spray, not a rifle, at 20 m"
+  (tests/balance.test.js). The aimed spread is unchanged.
+- **Leaf Blower in GRAB-A-GUN** (config/clawMachine.js): weight 7 → 4. It is in about 9% of grabs instead of 15%.
+- **Clearance Rack** (game/features/clearanceRack.js): a body shot that KILLS a tagged zombie pops every tag, as a headshot on one does. Before,
+  only a headshot popped them.
+- **Party Trap** (game/features/workshop.js, config/workshop.js `partyTrap.roundScaling`): its 650 blast grows like Kiosk equipment once 650
+  stops killing a Shopper, x(the target's round health / 600) ^ 0.37, never below 650. About 830 at round 15, 950 at round 20.
+- **Left alone, as the review said:** the Heavy Coil Nailer and the Confetti Cannon.
+- **Tests:**
+  - New tests in tests/workshop.test.js for the Clearance Rack kill-pop and the Party Trap scaling.
+  - tests/upgrades.test.js now checks the barrels on the Stargazer inside its new 8-20 m ramp.
+- **Still the same after this pass:** the Stargazer's 30 m window over the wall guns (from round 17). The falloff change doesn't touch 30 m, so
+  group 1's note that this pass would win round 16 back was wrong.
+
 ## 15 November 2026 - Human balance pass, group 1 (`claude/balance-review`)
 
 docs/balance-review.md judged the balance for a human player instead of a perfect-aim bot. These are its group 1 changes, numbers only:

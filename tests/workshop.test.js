@@ -5,6 +5,7 @@ import { headlessGame } from './helpers/headlessGame.js';
 import { workshopBuilds, workshopModOf } from '../src/config/workshop.js';
 import { weapons } from '../src/config/weapons.js';
 import { withTier, withAttachment } from '../src/weapons/upgrades.js';
+import { zombieHealthForRound } from '../src/config/economy.js';
 
 function fixture(weapon) {
   const scene = new THREE.Scene();
@@ -73,6 +74,54 @@ test('Clearance Rack tags different zombies, caps at three, and pays secondary k
   assert.equal(g.gun.weapon.clearanceTagCount, 1);
   g.resetRun();
   assert.equal(tagged(group[3]), false, 'Play Again removes the remaining sticker');
+  g.map.dispose();
+});
+
+test('Clearance Rack: a body shot that KILLS a tagged zombie pops the other tags too (no headshot needed)', () => {
+  const t = fixture(weapons.priceGun), { g } = t;
+  g.gun.setMods('priceGun', [{ id: 'workshop', workshop: 'clearanceRack' }]);
+  const group = [-1.5, 0, 1.5].map(x => {
+    const zombie = g.zombies.spawn('shopper', new THREE.Vector3(x, 0, 10));
+    zombie.setState('chasing'); zombie.speed = 0; zombie.health = 1000;
+    return zombie;
+  });
+  const shoot = (z, part) => {
+    t.standAt(z.position.x, 12.5);
+    const point = z.hitboxes.find(h => h.part === part).box.getCenter(new THREE.Vector3());
+    g.player.pitch = Math.atan2(point.y - g.player.eyeHeight, 12.5 - point.z);
+    t.input.held.add('Mouse2'); t.tick(25);
+    t.press('Mouse0'); t.tick(10);
+  };
+  for (const z of group) shoot(z, 'body');
+  assert.equal(g.gun.weapon.clearanceTagCount, 3);
+  const before = group[2].health;
+  group[0].health = 1; // the next body shot kills it
+  shoot(group[0], 'body');
+  assert.equal(group[0].isAlive, false);
+  assert.equal(g.gun.weapon.clearanceTagCount, 0, 'the kill spent every tag');
+  assert.equal(group[2].health, before - g.gun.def.damage * workshopBuilds.clearanceRack.damageMultiplier, 'and the others took the pop');
+  g.map.dispose();
+});
+
+test('Party Trap keeps up with the rounds: never under its flat damage, more once that stops killing a Shopper', () => {
+  const { g } = fixture(weapons.confettiCannon);
+  const trap = workshopBuilds.partyTrap;
+  const workshop = g.features.list.find(f => f.feature.kind === 'workshop').instance;
+  const hitAt = (round) => {
+    const point = new THREE.Vector3(0, 0, 10);
+    g.events.emit('shot', { workshopPlacement: point.clone() });
+    const z = g.zombies.spawn('shopper', point.clone());
+    z.setState('chasing'); z.speed = 0; z.round = round; z.health = z.maxHealth = 1e6;
+    workshop.update(trap.armSeconds);
+    const dealt = 1e6 - z.health;
+    g.zombies.clear();
+    return dealt;
+  };
+  assert.equal(hitAt(1), trap.damage);
+  assert.equal(hitAt(7), trap.damage, 'round 7: still the flat damage (it kills a 600 Shopper)');
+  const r15 = hitAt(15), r20 = hitAt(20);
+  assert.ok(r15 > 1.2 * trap.damage && r20 > r15, `round 15 ${Math.round(r15)}, round 20 ${Math.round(r20)}`);
+  assert.ok(r20 < zombieHealthForRound(20), 'still not a one-shot late');
   g.map.dispose();
 });
 

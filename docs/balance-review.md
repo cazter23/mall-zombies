@@ -4,7 +4,10 @@ Status: 15 November 2026, written on branch `claude/balance-review` from main at
 Every "suggested change" below is a proposal to pick from.
 
 **Applied since (same day, same branch): group 1.** That is the ammo changes G1-G5, the warranty fix P1, and the wardrobe fixes P2-P6 (Cardigan
-by price, Gold Card at x1.25, 3D Glasses at x1.5). docs/history.md has the list. Everything else here is still a proposal.
+by price, Gold Card at x1.25, 3D Glasses at x1.5). docs/history.md has the list.
+
+**Then group 2, G6-G12, with three numbers changed:** the Stargazer's hip spread stays 12 (a playtest rule), the Bottle Rocket's self share is
+30% not 25%, and the BOGO's aimed spread stays 0.55. docs/history.md says why. Everything else here is still a proposal.
 
 Weapons come first, then perks (the wardrobe) and the other upgrades, then the economy, the extra modes and Closing Time. The last two sections
 list where the existing tools assume bot-like play, and how future tools should model a human so this doesn't happen again.

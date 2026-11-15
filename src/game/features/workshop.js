@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { workshopBuilds } from '../../config/workshop.js';
+import { zombieHealthForRound } from '../../config/economy.js';
 import { castShot } from '../../weapons/hitscan.js';
 import { createClearanceRack } from './clearanceRack.js';
 import { createWorkshopRitual } from './workshopRitual.js';
@@ -16,6 +17,12 @@ export function buildWorkshop(bench, { map, gun, pricing, interactions, events, 
   const clearance = createClearanceRack({ gun, zombies, effects, sound });
   events.on('shot', ({ clearanceHit, weaponId }) => { if (clearanceHit) clearance.hit(clearanceHit, weaponId); });
   const traps = [];
+  // The blast keeps up with the rounds from where its flat damage stops killing (config/workshop.js partyTrap.roundScaling): the round the target spawned in.
+  const trapDamage = (target) => {
+    const { fromHealth, exponent } = trap.roundScaling;
+    const health = target.round > 1 ? zombieHealthForRound(target.round) : 0;
+    return trap.damage * Math.max(1, Math.pow(health / fromHealth, exponent));
+  };
   const up = new THREE.Vector3(0, 1, 0);
   const from = new THREE.Vector3(), direction = new THREE.Vector3();
 
@@ -65,7 +72,7 @@ export function buildWorkshop(bench, { map, gun, pricing, interactions, events, 
       const targets = zombies.zombies.filter(z => nearby(z, position, trap.blastRadius) && clearPath(z, position));
       targets.sort((a, b) => a.position.distanceToSquared(position) - b.position.distanceToSquared(position));
       for (const target of targets.slice(0, trap.maxTargets)) {
-        const { killed } = target.takeHit({ damage: trap.damage, part: 'body', source: 'partyTrap', weaponId: charge.weaponId });
+        const { killed } = target.takeHit({ damage: trapDamage(target), part: 'body', source: 'partyTrap', weaponId: charge.weaponId });
         if (killed) zombies.playPartyTrapDeath(target, position);
       }
     }

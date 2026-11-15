@@ -1075,8 +1075,9 @@ export const weapons = {
     id: 'stargazer', name: 'Stargazer 3000', fireMode: 'semi', clawOnly: true,
     weight: 'veryHeavy', // how it handles: gunWeights below
     damage: 300, headshotMultiplier: 3, // the headshot gun: the biggest multiplier there is
-    // RISING falloff: full (1x) up to `start`, then up in a straight line to minMultiplier (2x) at `end` and beyond.
-    falloff: { start: 8, end: 30, minMultiplier: 2 },
+    // RISING falloff: full (1x) up to `start`, then up in a straight line to minMultiplier (2x) at `end` and beyond. (end was 30 m, a range the mall
+    // rarely offers; 20 m is where its long sightlines are: docs/balance-review.md, G6)
+    falloff: { start: 8, end: 20, minMultiplier: 2 },
     pierce: { maxTargets: 4, damageFalloff: [1, 0.85, 0.7, 0.55] }, // a bearing goes through a queue of shoppers
     magazineSize: 5, startingReserve: 30,
     fireInterval: 1.2, fireBuffer: 0.15, reloadTime: 3.0, range: 120,
@@ -1100,7 +1101,7 @@ export const weapons = {
     // prone. It moves the crosshair for real (shots go where you look): steady it by correcting, or get low.
     scope: {
       overlayFrom: 0.75,
-      sway: { degrees: 0.22, periodSeconds: 3.4, pitchShare: 0.55, crouchMultiplier: 0.35 },
+      sway: { degrees: 0.12, periodSeconds: 3.4, pitchShare: 0.55, crouchMultiplier: 0.35 },
       look: { ring: '#0b1230', glass: 'rgba(40, 70, 140, 0.10)', reticle: '#ffd76a', stars: '#fff6c8' }, // the eyepiece overlay (ui/hud.js setScope)
     },
     muzzleFlash: {
@@ -1201,9 +1202,10 @@ export const weapons = {
     damage: 900, headshotMultiplier: 1, // (at the blast's centre; a blast has no headshots)
     blast: {
       radius: 3.5, edgeFraction: 0.25, // m; the damage at the very edge is edgeFraction of the centre's
-      // your own blast: up to 45% of your max health at its centre, never more than 75%; the view jolts down. ignoreBelow (health points): less than this
-      // is no hit at all (the Hi-Vis Vest's 0.01 leaves at most 0.45: harmless, no hurt flash, no regen reset).
-      self: { share: 0.45, maxShare: 0.75, joltDegrees: 3, ignoreBelow: 1 },
+      // your own blast: up to 30% of your max health at its centre, never more than 50%; the view jolts down. ignoreBelow (health points): less than this
+      // is no hit at all (the Hi-Vis Vest's 0.01 leaves at most 0.3: harmless, no hurt flash, no regen reset). (Was 45% / 75%: humans fire at crowds
+      // that are on top of them; 30% still bites from 1.5 m, tests/bottleRocket.test.js. docs/balance-review.md, G7)
+      self: { share: 0.3, maxShare: 0.5, joltDegrees: 3, ignoreBelow: 1 },
       look: { colors: [0xff3b3b, 0xffd23f, 0x3ad1ff, 0xff5ec8, 0xffffff], count: 46, speed: 6, size: 0.07 }, // the firework burst (effects.confetti)
       flash: { color: 0xffe08a, size: 2.2, seconds: 0.18 },
     },
@@ -1312,6 +1314,10 @@ export const weapons = {
     id: 'balloonLauncher', name: 'Balloon Launcher', fireMode: 'semi', clawOnly: true,
     weight: 'medium', // how it handles: gunWeights below
     damage: 200, headshotMultiplier: 1, // (at the pop's centre; a pop has no headshots)
+    // It keeps up a little with the rounds, like the Tennis Ball Launcher (0.85): x(that round's Shopper health / 150) ^ 0.4, the round the TARGET
+    // spawned in (weapons/gunStats.js roundDamageScale): about 450 at round 15, 600 at round 25. A flat 200 was a quarter of a round-10 zombie
+    // (docs/balance-review.md, G8).
+    roundScaling: { exponent: 0.4 },
     blast: {
       radius: 1.3, edgeFraction: 0.5, // a small pop: the zombie it touched, and maybe one beside it
       // (no `self`: a balloon pop never hurts you)
@@ -1448,7 +1454,7 @@ export const weapons = {
     },
     impact: { flinch: 0.75, knockback: 0.55, hitstopSeconds: 0, deathImpulse: 1.15 },
     spread: {
-      base: 2.4, moving: 2.2, maxMovingFactor: 1.5, airborne: 3.5,
+      base: 1.8, moving: 2.2, maxMovingFactor: 1.5, airborne: 3.5, // (base was 2.4: the widest automatic, 42% hits for an average player; docs/balance-review.md, G9)
       perShot: 0.35, maxBloom: 3.5, bloomRecoveryDelay: 0.12, bloomRecovery: 7,
       smoothing: 12, adsMultiplier: 0.55,
     },
