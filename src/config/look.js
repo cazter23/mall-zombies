@@ -21,6 +21,7 @@ export const look = {
     neonGlow: true, // neon halos + painted light pools (Graphics > Neon glow)
     clutter: 'full', // decoration density: 'none' | 'some' | 'full' (Graphics > Clutter)
     detailDistance: 'all', // small signs and posters drawn: 'all' | 'near' | 'close' (Graphics > Small detail; detailDistance)
+    propDistance: 'all', // small objects drawn: 'all' | 'near' | 'close' (Graphics > Far objects; propDistance)
     zoneGrading: true, // per-area colour grading (Graphics > Zone lighting)
     vhs: 'off', // the VHS tape look: 'off' | 'subtle' | 'full' (Graphics > VHS filter; a style choice, off by default)
     horror: true, // the horror layer: lights dying, power cuts (Comfort > Horror lighting)
@@ -49,6 +50,12 @@ export const look = {
   // SMALL DETAIL DISTANCE (fx/detailCulling.js, Graphics > Small detail): small printed things (signs, posters, labels up to
   // maxSize metres across) are hidden beyond these distances on weaker settings. 'all' = never hidden.
   detailDistance: { maxSize: 2.2, everyFrames: 6, metres: { all: Infinity, near: 22, close: 14 } },
+
+  // FAR OBJECTS (fx/roomCulling.js, Graphics > Far objects): on the weakest settings, anything in a room whose bounding
+  // sphere is under maxRadius metres (a sign, a neon letter, a clothes rack, Kevin's cart, a lost shoe: never a wall, a floor
+  // or a merged batch) is not drawn beyond these distances. 'all' = never (Medium and High). It comes back `hysteresis`
+  // metres nearer than it went, so it does not blink at the edge. Each is a draw call, and across the hallway a few pixels.
+  propDistance: { maxRadius: 2, hysteresis: 1.5, metres: { all: Infinity, near: 30, close: 20 } },
 
   // BEACONS (fx/beacon.js): the light column over a power-up, a Closing Time key and Kevin's open cart (metres, seconds).
   // ringLift sits above the painted floor pools (0.012) and the medallions (0.016): never sharing a plane.

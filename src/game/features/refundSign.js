@@ -40,6 +40,7 @@ export function buildRefundSign(feature, { scene, shootables, sound, returnQuest
     leaf.add(panel, face);
     hinge.add(leaf);
   }
+  group.userData.roomProp = true; // (it never leaves its room: room culling may skip it with the room, fx/roomCulling.js tagProps)
   scene.add(group);
 
   const target = {

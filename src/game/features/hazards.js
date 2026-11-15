@@ -56,6 +56,7 @@ export function createHazard({
     postBottomY: cfg.postBottomY,
     offset: cfg.switchOffset ?? 0,
   });
+  rig.userData.roomProp = true; // (it never leaves its room: room culling may skip it with the room, fx/roomCulling.js tagProps)
   scene.add(rig);
 
   let phase = 'ready'; // 'ready' | 'active' | 'cooldown'

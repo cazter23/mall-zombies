@@ -310,16 +310,31 @@ async function runBenchmark() {
 // Room culling (fx/roomCulling.js): rooms the camera can't see aren't drawn. Tagged before batching, so batches keep rooms
 // apart; updated before every draw. ?noculling: off, to compare.
 const doorById = new Map(map.doors.map((d) => [d.id, d]));
+// A room seen through a doorway only draws what the doorway shows (?nowindowcull: the whole room, to compare).
+const farLimit = { metres: Infinity, maxRadius: 0, hysteresis: 0 }; // (one object, refilled each frame: nothing new per frame)
 const roomCulling = createRoomCulling({
   areas: map.cullAreas, portals: map.cullPortals, camera, isOpen: (id) => doorById.get(id)?.isOpen ?? true,
+  windowCulling: !new URLSearchParams(location.search).has('nowindowcull'),
+  // Graphics > Far objects (Potato, Low): small things in a room are not drawn beyond a distance (config/look.js propDistance).
+  farProps: () => {
+    farLimit.metres = look.propDistance.metres[look.runtime.propDistance] ?? Infinity;
+    farLimit.maxRadius = look.propDistance.maxRadius;
+    farLimit.hysteresis = look.propDistance.hysteresis;
+    return farLimit;
+  },
 });
 const cullingOn = !new URLSearchParams(location.search).has('noculling');
-if (cullingOn) roomCulling.tag(map.group);
+if (cullingOn) {
+  roomCulling.tag(map.group);
+  roomCulling.tagProps(scene); // (features' still props: wall-buy guns, Lost and Found, hazard switches, NO REFUNDS signs)
+  roomCulling.tagOutside(g.arena?.group); // (the debug test range is only drawn when you are in it, not from inside the mall)
+}
 if (!new URLSearchParams(location.search).has('nobatch')) batchStatic(map.group, { shade: look.bakedShade, cellSize: look.batchCellSize }); // (?nobatch: off, to compare)
 effects.refreshSurfaces(); // (impact marks list the map's meshes: the merged ones now, fx/impactMarks.js)
 // What never moves stops rebuilding its matrix every frame (world/staticBatch.js freezeStatic): everything under the map
 // that is not under a userData.dynamic parent or a shutter. ?nofreeze: off, to compare.
 if (!new URLSearchParams(location.search).has('nofreeze')) freezeStatic(map.group);
+if (cullingOn) roomCulling.collect(scene); // (after batching: each room's meshes, for the doorway test)
 // Small detail distance (Graphics > Small detail, fx/detailCulling.js): collected after batching, from what is still its own mesh.
 const detailCulling = createDetailCulling(map.group);
 // Metal sheen (fx/metalSheen.js): a tiny baked gradient for metal materials only, after batching so the merged ones get it.
