@@ -163,7 +163,7 @@ export function evaluatePerformance(r = {}) {
   };
 }
 
-export function createScreens({ locker = null, guide = null, challenges = null } = {}) {
+export function createScreens({ locker = null, guide = null, challenges = null, now = () => performance.now() } = {}) {
   const books = { locker, guide, challenges }; // screens that own their DOM, preview and pad navigation (ui/locker.js, ui/guide.js, ui/challengeBoard.js)
   const handlers = {};
   const emit = (action, pad = false) => handlers[action]?.({ pad });
@@ -416,8 +416,11 @@ export function createScreens({ locker = null, guide = null, challenges = null }
 
   // Buttons: click (or A) runs the action. A "confirm" button needs a second press within a few seconds.
   const armed = new Map(); // button -> timeout id
-  function press(button, pad) {
+  let receiptGuardUntil = 0; // (config/settings.js menuFeel.receiptGuardSeconds)
+  // `keyed`: a key pressed the focused button (the browser's click with no mouse behind it).
+  function press(button, pad, keyed = false) {
     if (button.disabled || button.hidden) return;
+    if (current === 'results' && (pad || keyed) && now() < receiptGuardUntil) return; // (a stray press from the fight)
     const confirmText = button.dataset.confirm;
     if (confirmText && !armed.has(button)) {
       const label = button.textContent;
@@ -451,7 +454,7 @@ export function createScreens({ locker = null, guide = null, challenges = null }
   for (const node of Object.values(screens)) {
     node.querySelectorAll('[data-action]').forEach((button) => button.addEventListener('click', (event) => {
       event.stopPropagation();
-      press(button, false);
+      press(button, false, event.detail === 0);
     }));
   }
 
@@ -611,6 +614,7 @@ export function createScreens({ locker = null, guide = null, challenges = null }
       if (name === 'results') {
         fillResults(data);
         results.scrollTop = 0;
+        receiptGuardUntil = now() + menuFeel.receiptGuardSeconds * 1000;
         buttonsOf(name)[0]?.focus?.({ preventScroll: true });
       }
       if (name === 'help') helpReturn = data?.from ?? 'title';

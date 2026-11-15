@@ -38,7 +38,9 @@ import { idle } from './idle.js';
 import { closingTime } from './closingTime.js';
 
 export const settingsTabs = ['Graphics', 'Mouse', 'Controller', 'Audio', 'Comfort'];
-export const menuFeel = { confirmSeconds: 3 };
+// receiptGuardSeconds: the receipt comes up by itself with its first button focused; for this long a key or controller press
+// does nothing (a jump still being tapped must not Play again, or Clock out for good). A mouse click always counts.
+export const menuFeel = { confirmSeconds: 3, receiptGuardSeconds: 0.8 };
 
 // The config values as shipped. "Multiplier" settings scale these, so reset always returns to them.
 const base = {
