@@ -409,6 +409,10 @@ src/
                         terrycloth wristband with woven tag) and createUpgradeVisuals(model): every part + a branded Extended Warranty service
                         seal built up front (hidden), show({ tier, attachments }) per frame; the Extended Nozzle moves the muzzle (and flash) to its tip.
                         warrantyTrim.js = the Extended Warranty on the gun: barrel collar (rings that get chunkier by tier, studs for Renewals) and a swinging grip tag; buildVisual.js also puffs the body (pillows). Sizes: config/gunStyle.js.
+                        buildVisual.js places the patch at the model's `build` mount (five guns have one: Foam Dart Blaster, Confetti Cannon, Tennis Ball
+                        Launcher, Leaf Blower, Return to Sender, where the sticker spot is hidden or under your face in first person), else the sticker mount.
+                        The seam (seamStitches) is laid on the gun's top: from the `top` mount, rays dropped every stitch find the surface (moving in toward
+                        the middle, never onto the sight line) and the seam follows it while it stays near the mount's height: up to 20 stitches.
                         RIMS (config/gunStyle.js rim): a thin dark edge round the build patch (extra instances of the stitch mesh), the warranty tag (merged
                         into its print bar) and each collar (one merged 'warrantyRim' mesh per tier), so they read on any skin's body, light or dark.
                         New gun = new file + 1 line (+ its mounts)

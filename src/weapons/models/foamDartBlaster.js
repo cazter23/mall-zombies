@@ -175,6 +175,7 @@ function buildGun(vm) {
     grip: { position: [0, -0.095, 0.025], rotation: [0.3, 0, 0], size: { w: 0.042, h: 0.12, d: 0.05 } },
     magazine: { position: [0, -0.0625, -0.11], gunId: 'foamDartBlaster' },
     sticker: { position: [-0.0425, 0, -0.16] }, // between the drum and the barrel
+    build: { position: [-0.041, 0, 0.01] }, // the Build-A-Blaster patch: the housing's left side behind the drum (in front of it, the drum hides it in your hands)
   };
   return { gun, muzzle, trigger, drum, mounts };
 }

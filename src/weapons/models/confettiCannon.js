@@ -97,6 +97,7 @@ function buildGun(vm) {
     grip: { position: [0, -0.095, 0.028], rotation: [0.3, 0, 0], size: { w: 0.043, h: 0.12, d: 0.052 } },
     magazine: { position: [0.054, -0.008, 0], rotation: [0, 0, Math.PI / 2], gunId: 'confettiCannon' }, // a side shell holder
     sticker: { position: [-0.0335, -0.006, 0.09] }, // on the stock
+    build: { position: [-0.084, 0, -0.14] }, // the Build-A-Blaster patch: the left tube's side, well forward (on the stock it sat under your face)
   };
   return { gun, muzzle, trigger, barrels, cylinder, mounts };
 }

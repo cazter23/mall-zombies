@@ -84,6 +84,7 @@ function buildGun(vm) {
     grip: { position: [0, -0.095, 0.028], rotation: [0.3, 0, 0], size: { w: 0.043, h: 0.12, d: 0.052 } },
     magazine: { position: [0.054, -0.004, 0.05], rotation: [0, 0, Math.PI / 2], gunId: 'leafBlower' }, // a spare can on the right of the housing
     sticker: { position: [-0.053, -0.004, 0.035] }, // the left side of the housing
+    build: { position: [-0.03, -0.004, -0.125] }, // the Build-A-Blaster patch: the blower tube's left side (at the housing it sat under your face)
   };
   return { gun, muzzle, trigger, mounts };
 }

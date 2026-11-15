@@ -1,7 +1,9 @@
 // A finished Build-A-Blaster gun's look, added to any gun model: a seam of thread along the top and a patch with stitches on the side, in the stuffing's colour. An
 // Overstuffed gun also bulges: lumps of stuffing push out round the patch, and a few tufts leak from them. Reversible: show(null) hides it
 // all, and the model itself is never changed.
-// Placed from the gun's sticker mount, which sits on its left face on every gun. (Not from the model's bounds: model.root holds the hands and arms too.)
+// Placed from the gun's `build` mount, or its sticker mount when it has none: on its left face, where you see it in your hands. (Not from the
+// model's bounds: model.root holds the hands and arms too.) The seam runs along the gun's top from its `top` mount, following the
+// surface it finds (seamStitches).
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { workshopStuffings, qualityById } from '../../config/workshop.js';
@@ -10,7 +12,8 @@ import { gunStyle } from '../../config/gunStyle.js';
 const PATCH = { height: .03, length: .05, thickness: .002 };
 const STITCH = { count: 5, spacing: .0115, length: .012, width: .0016, offsetY: .02, proud: .0018 };
 const RIM_BARS = 4; // the patch's dark edge: four bars, drawn as extra instances of the stitch mesh (config/gunStyle.js rim)
-const SEAM = { count: 6, spacing: .017, length: .017, width: gunStyle.glow.width, lift: .0035 }; // thread down the top of the gun, the face you look at
+const SEAM = { count: 6, spacing: .017, length: .017, width: gunStyle.glow.width, lift: .0035, // thread down the top of the gun, the face you look at
+  max: 20, min: 3, step: .012, reach: .035, inward: .004, centre: .006, skip: 2, edge: .005 }; // (seamStitches: how it finds the gun's top)
 const LUMPS = [[.02, .012, -.024, .017], [.024, -.012, -.006, .021], [.02, .014, .014, .016], [.018, -.014, .028, .015]]; // out, up, along, radius
 const TUFTS = 3, TUFT_SIZE = .005, TUFT_FALL = .05, TUFT_DRIFT = .012, TUFT_SPEED = .5;
 
@@ -32,8 +35,83 @@ const HEART_SHAPES = {
 };
 const heartGeometries = Object.fromEntries(Object.entries(HEART_SHAPES).map(([name, parts]) => [name, mergeGeometries(parts)]));
 
+// Not the gun: the hands and arms (models/arms.js), and anything hidden (attachments not fitted).
+const NOT_GUN = /arm|palm|finger|thumb|cuff|wrist|sleeve|watch|hand/i;
+const gunMeshes = (gun) => {
+  const out = [];
+  gun.traverse((o) => {
+    if (!o.isMesh) return;
+    for (let p = o; p && p !== gun.parent; p = p.parent) if (!p.visible || NOT_GUN.test(p.name)) return;
+    out.push(o);
+  });
+  return out;
+};
+
+/**
+ * Where the seam's stitches go, in the gun's own frame. It starts at the `top` mount and walks along the gun both ways,
+ * one SEAM.spacing at a time. At each step rays are dropped from above at the start's x and a little further in toward the middle (never
+ * onto the middle itself: the sight line), and the surface nearest the last stitch's height wins (within SEAM.step of it, and SEAM.reach of
+ * the start), so the seam follows the top as it rises and falls and never wanders down the side. It ends where the top drops away or something stands up (a barrel, a
+ * hopper). Fewer than SEAM.min stitches found (or no surface at all): SEAM.count stitches straight along the line at the mount, as before.
+ */
+function seamStitches(gun, start) {
+  const [sx, sy, sz] = start.position;
+  const straight = () => Array.from({ length: SEAM.count }, (_, i) => new THREE.Vector3(sx, sy + SEAM.lift, sz + (i - (SEAM.count - 1) / 2) * SEAM.spacing));
+  const meshes = gunMeshes(gun);
+  if (!meshes.length) return straight();
+  gun.updateWorldMatrix(true, true);
+  const toLocal = gun.matrixWorld.clone().invert();
+  const bounds = new THREE.Box3();
+  for (const mesh of meshes) bounds.expandByObject(mesh);
+  bounds.applyMatrix4(toLocal);
+  const down = new THREE.Vector3(0, -1, 0).transformDirection(gun.matrixWorld);
+  const ray = new THREE.Raycaster();
+  const sides = meshes.map((m) => m.material.side);
+  meshes.forEach((m) => { m.material.side = THREE.DoubleSide; }); // (a ray must stop at the first surface, whichever way it faces)
+  const xs = [sx];
+  for (let x = sx - Math.sign(sx) * SEAM.inward; Math.abs(x) >= SEAM.centre; x -= Math.sign(sx) * SEAM.inward) xs.push(x);
+  // The surface under this step nearest in height to `near` (the outermost on a tie), within `reach` of it and of the start's height.
+  const heightAt = (x, z) => {
+    ray.set(gun.localToWorld(new THREE.Vector3(x, bounds.max.y + .05, z)), down);
+    const hit = ray.intersectObjects(meshes, false)[0];
+    return hit ? hit.point.clone().applyMatrix4(toLocal).y : null;
+  };
+  const surfaceAt = (z, near, reach) => {
+    let best = null;
+    for (const x of xs) {
+      const y = heightAt(x, z);
+      if (y === null) continue;
+      const off = Math.abs(y - near);
+      if (off > reach || Math.abs(y - sy) > SEAM.reach) continue;
+      // A stitch needs the same surface a little in front and behind it: never on an edge (a barrel's lip, the end of a part).
+      if ([-1, 1].some((side) => { const h = heightAt(x, z + side * SEAM.edge); return h === null || Math.abs(h - y) > SEAM.step / 2; })) continue;
+      if (!best || off < best.off) best = { off, at: new THREE.Vector3(x, y + SEAM.lift, z) };
+    }
+    return best?.at ?? null;
+  };
+  const run = [];
+  for (const dir of [-1, 1]) { // from the start forward (-z), then back (+z)
+    let last = sy;
+    let found = false;
+    for (let i = dir < 0 ? 0 : 1; run.length < SEAM.max; i++) {
+      const z = sz + dir * i * SEAM.spacing;
+      if (z < bounds.min.z || z > bounds.max.z) break;
+      const at = surfaceAt(z, last, found ? SEAM.step : SEAM.reach);
+      if (!at) {
+        if (found || i > SEAM.skip) break; // (the first step or two may land on an edge: look a little further before giving up)
+        continue;
+      }
+      found = true;
+      last = at.y - SEAM.lift;
+      run.push(at);
+    }
+  }
+  meshes.forEach((m, i) => { m.material.side = sides[i]; });
+  return run.length >= SEAM.min ? run.sort((a, b) => a.z - b.z) : straight();
+}
+
 export function createBuildVisual(gun, mounts = {}) {
-  const anchor = mounts.sticker;
+  const anchor = mounts.build ?? mounts.sticker;
   if (!anchor) return { show() {}, animate() {} };
   const [ax, ay, az] = anchor.position;
   const outward = Math.sign(ax) || -1; // away from the middle of the gun
@@ -102,14 +180,13 @@ export function createBuildVisual(gun, mounts = {}) {
   // The seam along the top, in the stuffing's colour.
   const seamMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff }); // unlit: the seam GLOWS (config/gunStyle.js glow)
   if (mounts.top) {
-    const [tx, ty, tz] = mounts.top.position;
-    const threads = new THREE.InstancedMesh(new THREE.BoxGeometry(SEAM.length, SEAM.width, SEAM.width), seamMaterial, 2 * SEAM.count);
+    const stitchesAt = seamStitches(gun, mounts.top);
+    const threads = new THREE.InstancedMesh(new THREE.BoxGeometry(SEAM.length, SEAM.width, SEAM.width), seamMaterial, 2 * stitchesAt.length);
     threads.name = 'buildThread';
-    threads.position.set(tx - ax, ty - ay + SEAM.lift, tz - az);
     let thread = 0;
-    for (let i = 0; i < SEAM.count; i++) {
+    for (const at of stitchesAt) {
       for (const lean of [-.7, .7]) {
-        form.position.set(0, 0, (i - (SEAM.count - 1) / 2) * SEAM.spacing);
+        form.position.set(at.x - ax, at.y - ay, at.z - az); // (relative to the patch, which root sits at)
         form.rotation.set(0, lean, 0);
         form.updateMatrix();
         threads.setMatrixAt(thread++, form.matrix);
