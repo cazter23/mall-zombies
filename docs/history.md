@@ -1,5 +1,25 @@
 # Sunset Galleria: build history ("Current state")
 
+## 15 November 2026 - Shopping bags carry Kevin's stock; the Limited Editions are gone (`claude/balance-review`)
+
+The Party Trap (Confetti Cannon) and the Clearance Rack (Price Gun) were relics of Build-A-Blaster's Pack-a-Punch days: a second special mod,
+for two guns only. Build-A-Blaster already gives every gun its special effect, so both were removed.
+- **Removed:**
+  - their config (config/workshop.js `workshopBuilds`, `workshopModOf`, `limitedEditionDrops`) and their prices in economy.js;
+  - their code: game/features/limitedEditions.js, clearanceRack.js and clearanceSticker.js, zombies/partyTrapDeath.js, the trap placement and
+    tag hit in weapons/playerGun.js, and the gun-model parts (weapons/models/workshopBuilds.js);
+  - their sounds (`partyTrapBlast`, `clearanceStamp`, `partySnap`) and their tests.
+  - The Build-A-Blaster room, the ritual and the builds are untouched.
+- **Shopping bags** (game/bagDrops.js, wired in createGame as g.bagDrops; numbers in config/kiosk.js `bagDrops`):
+  - A bag-carrying zombie still sometimes drops its bag: from round 3, 15% a kill, one bag at a time, 30 s on the floor.
+  - Inside is one thing from Kiosk Kevin's cart: one charge of a Soda Bomb, Sparkler Cake, Air Horn or Glitter Bomb, or one Bubble Wrap layer.
+    The Sentry is never in a bag.
+  - Only something you have room for: an empty pocket, or the same product below a full pocket; Bubble Wrap below the most layers. It never
+    replaces what you carry, and if nothing fits, no bag drops.
+  - Walk over the bag to take it.
+  - The HUD marker and the PA lines are the same as before ('bagDrop' / 'bagTaken' replace 'limitedEditionDrop' / 'limitedEditionFitted').
+- tests/bagDrops.test.js covers it.
+
 ## 15 November 2026 - Human balance pass, group 2: the guns nobody wanted (`claude/balance-review`)
 
 docs/balance-review.md's group 2, with two of its numbers changed to respect earlier rules.

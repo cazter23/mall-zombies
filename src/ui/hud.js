@@ -545,8 +545,8 @@ export function createHud({ locker = null, guide = null, challenges = null, onIn
       hud.classList.toggle('fitting-open', !!view);
     },
 
-    // A dropped Limited Edition's direction: null hides it (game/features/limitedEditions.js status).
-    setLimitedEdition(status) {
+    // A dropped shopping bag's direction: null hides it (game/bagDrops.js status).
+    setBagDrop(status) {
       bagMarker.update(status);
     },
 

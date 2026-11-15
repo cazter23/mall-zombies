@@ -8,7 +8,6 @@
 // =============================================================================
 
 import * as THREE from 'three';
-import { createPartyTrapDeaths } from './partyTrapDeath.js';
 import { createTankDeaths } from './tankDeath.js';
 import { feel } from '../config/feel.js';
 import { mascotGold, mascotGoldTypes, mascotTypes, zombieTypes, zombieCrowd, zombieFailsafe, zombieSpawn } from '../config/zombies.js';
@@ -135,13 +134,9 @@ export function createZombieManager({
     return type.speed;
   }
 
-  const partyDeaths = createPartyTrapDeaths({ scene, effects, playPop: (position) => {
-    const volume = Math.max(0, 1 - position.distanceTo(player.position) / 14);
-    if (volume > 0) playZombieSound('partySnap', volume, { position: position.clone() }, { profile: 'body', maxDistance: 14 });
-  } });
   const tankDeaths = createTankDeaths();
   function onZombieDeath(zombie) {
-    if (zombie.returned || zombie.killedBy === 'partyTrap') {
+    if (zombie.returned) {
       if (onKill) onKill(zombie);
       return;
     }
@@ -446,7 +441,6 @@ export function createZombieManager({
 
     // A corpse flies into `mouth` (Build-A-Blaster's Stuffing Tank) instead of lying where it fell.
     playTankDeath(zombie, mouth) {
-      if (partyDeaths.has(zombie) || zombie.killedBy === 'partyTrap') return;
       tankDeaths.start(zombie, mouth);
     },
 
@@ -525,7 +519,6 @@ export function createZombieManager({
     // Mid-update (the boss's own blow killed you) the array is being walked: splicing it would skip the next zombie's tick and
     // dispose the boss's model under its own update. So there the boss only leaves the shootables and is swept at the end.
     clearBosses() {
-      partyDeaths.clear(zombie => zombie.type.boss); // ribbons can outlive the corpse
       for (let i = zombies.length - 1; i >= 0; i--) {
         if (!zombies[i].type.boss) continue;
         tankDeaths.remove(zombies[i]);
@@ -537,10 +530,8 @@ export function createZombieManager({
     },
 
     // Remove every zombie immediately (debug).
-    playPartyTrapDeath: partyDeaths.start,
 
     clear() {
-      partyDeaths.clear();
       tankDeaths.clear();
       for (let i = zombies.length - 1; i >= 0; i--) removeActor(i);
       lastSpawnAt.clear();
@@ -564,7 +555,6 @@ export function createZombieManager({
         }
         if (!z.removed) z.update(dt, ctx);
       }
-      partyDeaths.update(dt);
       tankDeaths.update(dt);
       updateHelmets(dt);
       resolveZombieOverlaps();
@@ -594,8 +584,7 @@ export function createZombieManager({
 
     // Every rendered frame: animate and interpolate the models.
     render(frameTime, alpha) {
-      for (const z of zombies) if (!partyDeaths.has(z) && !tankDeaths.has(z)) z.model.update(frameTime, z, alpha);
-      partyDeaths.render(alpha);
+      for (const z of zombies) if (!tankDeaths.has(z)) z.model.update(frameTime, z, alpha);
       tankDeaths.render(alpha);
     },
   };

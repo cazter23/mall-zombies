@@ -414,7 +414,7 @@ export function buildWorkshopRoom({ kit, props, floorY, layout }) {
   sign('CUSTOM WORK ORDERS · WHILE YOU WAIT', boardX, 2.78, boardZ - .055, 3.9, .42);
   sign('WORK ORDER 018', boardX - 1.01, 1.57, boardZ - .183, .72, .19, '#f5ebd6', '#593c50');
 
-  // The Limited Editions shelf is empty: they turn up in shoppers' bags now (game/features/limitedEditions.js).
+  // The Limited Editions shelf is empty: the Limited Editions were retired (15 November 2026).
   sign('LIMITED EDITIONS · ASK A SHOPPER', center, 1.3, front + .68, 1.5, .2, '#c64140', '#fff0cb', 1);
 
   const lamp = shop.lamp;

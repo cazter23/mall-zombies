@@ -10,7 +10,7 @@ import { gunSounds, soundUpgrades } from '../src/config/gunSounds.js';
 import { weapons, melee } from '../src/config/weapons.js';
 import { kiosk } from '../src/config/kiosk.js';
 import { upgrades } from '../src/config/upgrades.js';
-import { workshopStuffings, workshopBuilds } from '../src/config/workshop.js';
+import { workshopStuffings } from '../src/config/workshop.js';
 import { normalizeRecipe, validateRecipe, resolveVariant, variantKey, driveCurve, softClipCurve } from '../src/audio/recipes.js';
 import { roomImpulse } from '../src/audio/roomImpulse.js';
 import { soundVariantOf } from '../src/weapons/upgrades.js';
@@ -35,7 +35,6 @@ function namedSounds() {
   };
   walk(kiosk, 'kiosk');
   for (const [id, s] of Object.entries(workshopStuffings)) if (s.sound) names.push([`stuffing ${id}`, s.sound]);
-  if (workshopBuilds.partyTrap.sound) names.push(['partyTrap.sound', workshopBuilds.partyTrap.sound]);
   return names;
 }
 

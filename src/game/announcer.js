@@ -26,8 +26,8 @@ const paAlways = (priority) => ({ pa }) => ({ ...pa, priority });
 // The systems whose PA lines need nothing but showing: Build-A-Blaster (game/features/workshopRitual.js), GRAB-A-GUN
 // (game/features/clawMachine.js), limited editions, the wardrobe, skins, Kiosk Kevin, the Survival Guide, Lost and
 // Found and THE RETURN's own step lines (in-world: both run modes).
-const PLAIN_PA_EVENTS = ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualWaiting', 'ritualCollect', 'limitedEditionDrop',
-  'limitedEditionFitted', 'wardrobeBuy', 'clawClosed', 'clawMoved', 'skinUnlocked', 'kioskStock', 'guideEntry', 'lostFound', 'returnQuest'];
+const PLAIN_PA_EVENTS = ['ritualStart', 'ritualQuality', 'ritualReady', 'ritualWaiting', 'ritualCollect', 'bagDrop',
+  'bagTaken', 'wardrobeBuy', 'clawClosed', 'clawMoved', 'skinUnlocked', 'kioskStock', 'guideEntry', 'lostFound', 'returnQuest'];
 
 // Closing Time's lines: Directed mode only (Classic has no PA text; its own sounds play in both modes, see createGame).
 const CLOSING_PA_EVENTS = ['closingBriefing', 'closingKeyDrop', 'closingKey', 'closingLine', 'closingValidated'];

@@ -24,7 +24,7 @@ import * as THREE from 'three';
 import { feel } from '../config/feel.js';
 import { gunWeights } from '../config/weapons.js';
 import { Weapon } from './weapon.js';
-import { workshopBuilds, workshopModOf, buildOf } from '../config/workshop.js';
+import { buildOf } from '../config/workshop.js';
 import { castShot } from './hitscan.js';
 import { createAim, applyConeSpread, pelletSpreadDegrees } from './aim.js';
 import { hitDamage, resolveGun, isReturnable } from './gunStats.js';
@@ -381,17 +381,10 @@ export function createPlayerGun({
     const chargeScale = 1;
     const pierce = d.pierce ?? null;
     const maxTargets = pierce ? pierce.maxTargets : 1;
-    const trap = workshopBuilds.partyTrap;
-    const workshop = workshopModOf(slot.mods);
-    const placementRay = workshop === 'partyTrap' && aim.amount >= trap.aimAmount
-      ? castShot(origin, direction, trap.placementRange, colliders, shootables) : null;
-    const placement = placementRay?.worldHit && placementRay.hits.length === 0 && placementRay.endNormal.y === 1
-      ? placementRay.end : null;
-    // A placement spends the normal shell and uses its recoil, with no extra pellet attack.
-    const rays = placement ? [placementRay] : [];
+    const rays = [];
     const pelletCone = pelletSpreadDegrees(d, aim.amount);
     // Resolve all rays before damage: a killed front zombie still stops this blast's other pellets.
-    for (let i = 0; !placement && i < (d.pellets?.count ?? 1); i++) {
+    for (let i = 0; i < (d.pellets?.count ?? 1); i++) {
       const rayDirection = direction.clone();
       aim.applySpread(rayDirection);
       applyConeSpread(rayDirection, pelletCone);
@@ -405,7 +398,6 @@ export function createPlayerGun({
       ? { ...rays[0], ...(firstHit ?? {}), hits, pellets: rays }
       : rays[0];
     if (d.charge) shot.chargeRatio = chargeRatio;
-    if (placement) shot.workshopPlacement = placement;
 
     // Feedback, all this tick. Camera recoil (moves the crosshair, springs back) uses the aim
     // from before the kick, so this shot lands exactly where you were looking.
@@ -480,10 +472,6 @@ export function createPlayerGun({
     }
     shot.weaponId = d.id; // capture the firing gun, even if a kill listener switches the loadout
     shot.magazineLeft = weapon.magazine; // (Build-A-Blaster's Last Round heart)
-    if (workshop === 'clearanceRack') {
-      const resolvedHit = targets.values().next().value;
-      if (resolvedHit) shot.clearanceHit = { ...resolvedHit, weapon, baseDamage: d.damage };
-    }
     if (onShot) onShot(shot);
     return shot;
   }

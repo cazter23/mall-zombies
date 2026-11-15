@@ -20,7 +20,6 @@
 // =============================================================================
 
 import * as THREE from 'three';
-import { createWorkshopVisual } from './workshopBuilds.js';
 import { createBuildVisual } from './buildVisual.js';
 import { createWarrantyTrim } from './warrantyTrim.js';
 import { gunStyle } from '../../config/gunStyle.js';
@@ -463,7 +462,6 @@ export function createUpgradeVisuals(model, gun = model.root) {
     sticker = { holder: place(s, mounts.sticker), face };
   }
 
-  const workshopVisual = createWorkshopVisual(model, gun);
   const buildVisual = createBuildVisual(gun, mounts);
   const warrantyTrim = createWarrantyTrim(gun, mounts);
   const loanerTag = createLoanerTag(gun, mounts);
@@ -476,15 +474,13 @@ export function createUpgradeVisuals(model, gun = model.root) {
 
   return {
     parts,
-    show({ tier = 'standard', renewals = 0, attachments = {}, workshop, workshopCount = 0, build = null, loaner = false, time = 0 } = {}) {
-      workshopVisual?.setCount(workshopCount);
+    show({ tier = 'standard', renewals = 0, attachments = {}, build = null, loaner = false, time = 0 } = {}) {
       buildVisual.animate(time);
       warrantyTrim.animate(time);
       loanerTag.animate(time);
-      const key = `${tier}|${renewals}|${Object.values(attachments).join(',')}|${workshop ?? ''}|${build?.stuffing ?? ''}|${build?.quality ?? ''}|${loaner}`;
+      const key = `${tier}|${renewals}|${Object.values(attachments).join(',')}|${build?.stuffing ?? ''}|${build?.quality ?? ''}|${loaner}`;
       if (key === shownKey) return;
       shownKey = key;
-      workshopVisual?.show(workshop === workshopVisual.id);
       buildVisual.show(build);
       warrantyTrim.show(tier, renewals);
       loanerTag.show(loaner);

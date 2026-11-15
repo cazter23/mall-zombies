@@ -240,6 +240,33 @@ export const kiosk = {
   // Equipment power (decision 4): 1.0 at round 10 (806 health), about 0.54 at round 1 and 1.7 at round 30.
   power: { baseHealth: 800, exponent: 0.37 },
 
+  // SHOPPING BAGS (game/bagDrops.js): a zombie carrying a shopping bag sometimes drops it, with one thing from Kevin's cart inside: a charge
+  // of a product (it goes in its pocket) or a Bubble Wrap layer. Walk over the bag to take it. Only something you have ROOM for is ever
+  // in a bag (an empty pocket, or the same product below a full pocket; Bubble Wrap below the most layers), so it never replaces what you
+  // carry, and a bag you can't use yet waits on the floor until it runs out. One bag at a time. The Sentry is never in a bag (Kevin's
+  // big-ticket item). (Replaced the Party Trap and Clearance Rack Limited Editions, 15 November 2026.)
+  bagDrops: {
+    fromRound: 3,
+    dropChance: 0.15, // per kill of a zombie carrying a shopping bag
+    lifetimeSeconds: 30, // how long a bag waits on the floor
+    pickupRadius: 1.1, pickupHeight: 1.2,
+    spinSpeed: 1.8, glow: 0.5,
+    marker: { floorGap: 2, up: 'upstairs', down: 'downstairs' }, // the HUD says which floor once the bag is this many metres above or below you
+    // What a bag can hold (product ids, and 'bubbleWrap'): how likely, and the bag's colour.
+    contents: {
+      sodaBomb: { weight: 3, color: 0xd62839 },
+      sparklerCake: { weight: 3, color: 0xffb627 },
+      airHorn: { weight: 2, color: 0x3a86ff },
+      glitterBomb: { weight: 2, color: 0xff5ec8 },
+      bubbleWrap: { weight: 3, color: 0xdcefff },
+    },
+    pa: {
+      drop: { kicker: 'Lost property', text: 'A customer has dropped a bag with a {name} in it. Finders keepers.' },
+      taken: { kicker: 'Lost property', text: '{name} added to your pocket. Kevin would like you to know he saw that.' },
+      wrapped: { kicker: 'Lost property', text: 'Bubble Wrap applied. Kevin would like you to know he saw that.' },
+    },
+  },
+
   // The throw (a tap; no cooking). The gun is blocked for `blockSeconds` (a reload in progress is cancelled).
   throw: {
     blockSeconds: 0.4,

@@ -41,7 +41,6 @@ Other things that apply to every gun:
 | BOGO | Two cheap SMGs: a short "pap" (a 3 ms crack, a driven body that ends before the next shot) and a paper flick, **on the side of the gun that fired** (`sidePan` 0.3: left mouse / LT = the left gun). Quiet per shot: both guns together fire about 18 a second. |
 | Box Cutter | The slider ratcheting out, a whoosh, and a thin steel snick (`melee.boxCutter.sounds.swing`). |
 | Kiosk Sentry | `sentryShot`: a smaller staple clack and a servo whirr between shots. |
-| Party Trap / Clearance Rack | The trap has its own blast (the cannon's boom, more streamers). The Clearance Rack's tags pop in the Price Gun's ratchet. |
 | Hit feedback | All three are dry (no room) and sit in the 2-5 kHz gap above the gun bodies: `hitBody` is a quick thwack-tick, `hitHead` a desk-bell DING, `killConfirm` a cash register's CHA-CHING (the drawer's ratchet, then the bell). |
 
 ## Upgrades (`soundUpgrades`)
@@ -82,7 +81,7 @@ Each gun's `send` into the room is 0.03-0.2 (the big, rare guns the most). Setti
 - a **kick**: a sine that drops fast (in 10-25 ms) and then holds at 55-95 Hz (`freqTime`). The body part's drive adds its
   overtones at 2x and 3x, which small speakers can play when they can't play the kick itself.
 - a **slap**: 12-25 ms of noise in the low mids (250-700 Hz), the "smack" between the crack and the kick.
-- **contrast**: the Confetti Cannon, Stargazer, Return to Sender, Bottle Rocket burst and Party Trap duck everything else
+- **contrast**: the Confetti Cannon, Stargazer, Return to Sender and Bottle Rocket burst duck everything else
   (`duck`) for 0.2-0.3 s. The shot itself and the hit sounds skip the dip.
 
 Each of the three was picked by ear from three takes at the same loudness: A (tighter, drier), B (in between) and C (bigger,
@@ -122,7 +121,6 @@ Every sound was rendered offline at 48 kHz through the real engine, at master vo
 | Bottle Rocket burst | -9.8 | -12.1 | -12.0 | 0.78 | 76 | -13.5 |
 | Balloon pop | -9.3 | -22.5 | -21.3 | 0.39 | 13221 | -27.2 |
 | Tennis bounce | -16.7 | -29.6 | -30.8 | 0.40 | 620 | -32.9 |
-| Party Trap blast | -10.7 | -15.6 | -15.6 | 0.58 | 810 | -14.6 |
 | hitBody | -17.1 | -29.8 | -29.5 | 0.06 | 168 | -33.3 |
 | hitHead | -11.1 | -27.9 | -27.9 | 0.09 | 2561 | -29.3 |
 | killConfirm | -11.1 | -25.6 | -25.6 | 0.16 | 4309 | -26.0 |

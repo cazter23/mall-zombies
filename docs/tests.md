@@ -55,9 +55,6 @@ guaranteed incentive, receipt counter, control resistance and exclusion from inc
 Spill Cleanup removal, Antifreeze, and death, Play again and debug skip cleanup. It walks Murray from every open
 zone and up to Build-A-Blaster from directly below the player, without a rescue teleport.
 
-`tests/workshop.test.js` covers workshop purchases, ammo conservation during slides, trap arming, target shielding and run reset.
-
-`tests/workshop.test.js` covers Promenade purchase gating and pricing, retaining upgrades, reserve-fed slides, and real trap shots, arming, damage and reset; the Party Trap's blast never under its flat damage and growing once that stops killing a Shopper (yet never a late one-shot); and a Clearance Rack pop from a body shot that kills a tagged zombie, not only from a headshot.
 
 `tests/workshopRoom.test.js` covers the Build-A-Blaster room: plot limits, lanes of at least 3 m round the island, a player lap both ways, every floor point
 reachable by zombies, a zombie following round each side, the hall as its own culling room and its grade.
@@ -101,7 +98,7 @@ stopping stuffings, quality scaling, picking at the bins and the Heart wall, tod
 
 `tests/workshopSpectacle.test.js` covers ritual mode: moving parts out of batching, no added lights, tank fill and colour, kills flying into the tank and paying once, returns tumbling out of the chute, the lever, the arm, the jingle, the belt, PA narration priority, stuffing-coloured tracers, and Play again putting every part back. `tests/weaponModels.test.js` checks the stitched look on every gun: anchored to the gun, gun-sized, cheap, reversible.
 
-`tests/limitedEditions.test.js` covers the drops: nothing on sale any more, bag zombies only, from the right round, one at a time, only what you can use, fitting free and keeping the gun's other upgrades, waiting for a swapped-away gun, not reachable through a floor, running out, and Play again.
+`tests/bagDrops.test.js` covers shopping bags (game/bagDrops.js): one of Kevin's items in a bag, a charge in its pocket or a Bubble Wrap layer when you walk over it, with a PA line each way; only what you have room for (never replacing what you carry, never past a full pocket, never the Sentry, no bag at all when nothing fits); bag zombies only, from the right round, on a won roll, one at a time; a bag you can no longer use waiting until it runs out; and Play again.
 
 `tests/zombieConfusion.test.js` covers Glitter's AI: fighting the nearest zombie, ignoring the player, kills paying once, walls and floors, standing dazzled alone, immunity afterwards, who can't be confused, Glitter on a real headshot, a round still ending, and its balance.
 
@@ -417,7 +414,7 @@ the model and debris and disposes their shared geometry and materials.
 - `workshopRitual.test.js`, `mascot.test.js` also guard where the two meet: nothing fills the gauge after death, a rescued zombie rises normally, and the Mascot falls out of the Returns Chute with its hitboxes.
 - `workshopNames.test.js`: every Stuffing and Heart pair has its own model name; a named gun's record counts its own and its stuffing's kills, survives a re-stuff, and stops at death.
 - `workshopBuilds.test.js`: Overstuffed is stronger than Extra Stuffed and recharges its Heart twice as fast. `workshopRitual.test.js`: the certificate's Courtesy Loaner line, returned or lost.
-- `limitedEditions.test.js`: the HUD marker's bearing, distance, floor and time. `weaponModels.test.js`: only the Loaner wears the security tag.
+- `weaponModels.test.js`: only the Loaner wears the security tag.
 - `mascot.test.js`: the warning before the rush, which also cancels a swing; the helmet-pop bonus (gun or melee headshot only, once, never after death); helmets outlive the body, face the player, stop short of walls, go with the round, and are capped.
 - `mascotVariants.test.js` (Mascot costumes): every costume resolves to a whole Mascot with its own banner, pop line and head, sharing the base numbers; Sir Waffles is the type itself and the zombieMix slot is untouched. Costumes appear only from their unlock round, lean to home zones (a made-up table, then the real manager in Mega Mart; the Returns Chute has no bias), and one costume draws no dice. With a stand-in manager, the same dice give the same waves with or without costumes, debut rounds aside (+1 Mascot at most). Each debut round opens with its costume and announces it once; the debug key spawns each costume in turn.
 - `captainCoupon.test.js`: he walks back, lifts his helmet on and is suited again at 3/4 health with the PA line; only once (the second pop rushes, pays no bonus); he gives up when guarded, too slow, or when the round sweeps the helmet up; a dead Coupon stops (mid-lift the helmet goes with the body); the leftover-helmet cap never evicts the helmet he still wants.

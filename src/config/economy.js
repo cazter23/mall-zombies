@@ -115,9 +115,8 @@ export const economy = {
   // Gun upgrades (what they do: config/upgrades.js). Tiers are bought one at a time for the gun in your hand;
   // each tier costs about one round's earnings at the round it's meant for (round 12 pays ~3,400).
   upgrades: {
-    // PLACEHOLDER PRICES: ritual and restuff are not decided yet (the economy simulation sets them). Limited Editions keep their old prices here for
-    // that decision, but nothing charges them now: since phase 6 they drop free (game/features/limitedEditions.js).
-    workshop: { partyTrap: 1500, clearanceRack: 1000, ritual: 1500, restuff: 750 },
+    // PLACEHOLDER PRICES: ritual and restuff are not decided yet (the economy simulation sets them).
+    workshop: { ritual: 1500, restuff: 750 },
     tiers: { deluxe: 1000, premium: 3000, platinum: 6000 },
     renewals: [4000, 5000, 6500, 8000, 10000], // Warranty Renewals past Platinum (config/upgrades.js renewals), each dearer than the last // (the support upgrade: a build, 1500, hits harder than any single tier)
     melee: { sharpened: 1500, pro: 4000 }, // Box cutter tiers at the Customer Service desk's second window (config/upgrades.js melee)

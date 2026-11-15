@@ -144,16 +144,6 @@ export const gunSounds = {
     mech: [crack(3200, 0.7, { q: 1.3 }), at(0.004, metal(900, PLATE, 0.08, 0.06))],
     body: [thump(200, 65, 0.5, 0.1)],
   } },
-  // The Party Trap limited edition going off (game/features/workshop.js): the cannon's boom without its paper, more streamers.
-  partyTrapBlast: { volume: 1.14, duck: { db: 5, seconds: 0.2 }, maxVoices: 3, send: 0.16, drive: 0.4, vary: VARY, parts: {
-    crack: [crack(2200, 1, { ms: 5, q: 0.5 })],
-    body: [thump(85, 34, 1, 0.3), air('lowpass', 900, 0.9, 0.18, { freqEnd: 250 })],
-    mech: [
-      ...[0.04, 0.07, 0.1, 0.14, 0.19, 0.25, 0.32].map((d, i) => at(d, air('highpass', 5000 - i * 300, 0.16, 0.03, { attack: 0.002, vary: { gain: 0.4, delay: 0.25 } }))),
-      at(0.05, thump(1046, 1568, 0.1, 0.18, { wave: 'triangle', attack: 0.015 })),
-    ],
-  } },
-
   // ===== RIVET RIFLE (light auto rifle, ~11.8/s): BRIGHT and RINGING: a sharp crack and a rivet's high steel TANG. =====
   rivetShot: { volume: 2.59, flavourEvery: 3, maxVoices: 4, send: 0.08, drive: 0.25, flavourGain: 0.5, vary: VARY, parts: { // PUNCH (the "C" take,
     // picked by ear): at 12 a second the low end still ends quickly: a driven kick from 220 to 85 Hz in 12 ms, two slaps, then the bright
@@ -407,12 +397,6 @@ export const gunSounds = {
     crack: [crack(4000, 0.7, { ms: 1.5, q: 0.9 })],
     body: [thump(360, 200, 0.4, 0.035)],
     mech: [at(0.005, metal(2100, SPRING, 0.1, 0.05)), at(0.03, thump(600, 900, 0.05, 0.06, { wave: 'triangle', attack: 0.01 }))],
-  } },
-
-  // The Clearance Rack limited edition (Price Gun): the price tags popping, in the Price Gun's own plastic and ratchet.
-  clearanceStamp: { volume: 0.53, maxVoices: 4, send: 0.05, vary: VARY, parts: {
-    crack: [crack(1800, 0.6, { q: 1.7 })],
-    mech: [at(0.006, tick(2400, 0.35, { q: 6 })), at(0.014, tick(2700, 0.35, { q: 6 })), at(0.03, thump(680, 390, 0.25, 0.1, { wave: 'triangle' }))],
   } },
 
   // ===== HIT FEEDBACK: short, campy, dry (no room), high enough (2-5 kHz) to cut through a firefight. ====================

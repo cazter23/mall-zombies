@@ -174,12 +174,13 @@ src/
                         stockFor(round) (advances one step per `stockEveryRounds` block from `openingRound`), pickFor(round) (Kevin's Pick: the product on sale that has waited longest across blocks, never noPick, unchanged within a block).
                         bubbleWrap: its ticket and the armour (layerStrength 30 a layer, maxLayers 3: player/stats.js starts the two stats from them).
                         Prices: economy.kiosk (phase 7 set them from `npm run kiosk`).
+                        bagDrops: what a shopping bag can hold (game/bagDrops.js): one charge of a product or a Bubble Wrap layer by weight (never the Sentry), its round, chance, lifetime and PA lines.
     clawMachine.js      GRAB-A-GUN, the claw machine: the prize weights and capsule colours, the sweep (2.4 s, 0.2 s quicker a grab, 1.4 s
                         floor), auto-drop, lift and take times, stock (6 a site) and plush odds, the cabinet's size, its six sites and the
                         PA lines. Price: economy.claw (through g.pricing 'claw').
     hazards.js          Environmental hazards (docs/archive/hazards-plan.md): the switches' shared status read-out and each switch model's sizes and colours, status labels, and tuning for the Grand Atrium
                         Electrified Fountain, Food Court Fryer Blast, Main Hallway Fire Sprinklers, and Service Corridor PA System Lure (zone, damage, the stand-clear grace, every visual number). Prices: economy.hazards (through g.pricing 'hazard').
-    workshop.js         Build-A-Blaster: Limited Edition numbers (workshopBuilds), the ritual (workshopRitual: time, qualities, stages, loaner, PA), Stuffings and Hearts, buildOf reads a gun's finished build.
+    workshop.js         Build-A-Blaster: the ritual (workshopRitual: time, qualities, stages, loaner, PA), Stuffings and Hearts, buildOf reads a gun's finished build.
     decor.js            Decoration kit + clutter scatter numbers (world/decor.js, world/scatter.js). Cosmetic only.
     concourse.js        The real-mall pass as data (maps/mall/concourse.js): Level 2 shopfronts, hallway display windows, soffits and
                         cornice, floor bands / medallions / worn lanes, painted light under panels and neon, fixtures, little stories,
@@ -431,7 +432,6 @@ src/
       shortBarrel.js    Reversible front-segment geometry variants, preserving moving-parent transforms and owning both variants.
       loanerTag.js      The Courtesy Loaner's security tag and swinging card (reversible, like the other upgrade visuals).
       buildVisual.js    A finished gun's look: seam, patch and stitches in the stuffing's colour, lumps and leaking tufts when Overstuffed. Instanced, placed from the sticker and top mounts.
-      workshopBuilds.js The reversible model changes for each workshop build.
     muzzleFlash.js      createMuzzleFlash(cfg): 2 sprites (normal-blended orange burst + additive core, random
                         twist/size), hand light + world light (always in the scene at 0 so no shader recompile).
                         Always depth-tested (the hands and gun hide whatever part of the burst is behind them),
@@ -491,7 +491,7 @@ src/
                         lookRandom(seed) / appearanceForSeed(seed) make it a pure function of zombie.lookSeed (one Math.random draw
                         per spawn in zombieManager, whatever the look)
     shopperModel.js     createShopperDresser(look, ...): dresses the shared skeleton (legs, torso, sleeves, held item, hair, hat,
-                        glasses, extras) from config/shoppers.js parts, all in PAINTS; hasBag (Limited Editions) and the summary
+                        glasses, extras) from config/shoppers.js parts, all in PAINTS; hasBag (a bag of Kevin's stock: game/bagDrops.js) and the summary
                         on root.userData.appearance
     shopperBake.js      How a crowd stays cheap: paint(hex) markers; bakeShopper merges each bone's painted pieces into one mesh with
                         vertex colours (normals and colours in bytes) drawn with the Shopper's ONE vertex-coloured material
@@ -538,9 +538,11 @@ src/
                         the standard shader once per material, no draw calls, unaffected by hit flashes.
     confusion.js        Glitter's AI: a confused zombie forgets the player and fights the nearest other zombie with its normal attack.
     tankDeath.js        A kill in the room flying into the Stuffing Tank (visual; the kill is already paid).
-    partyTrapDeath.js   The pose, ribbon and confetti after a trap kill. The kill is paid on impact; this is visual only.
     cartPose.js         The Cart Pusher's pose drives its hitboxes (hunched, telegraph, charge, slumped).
   game/
+    bagDrops.js         createBagDrops(): shopping bags (DOM-free, g.bagDrops). A bag-carrying zombie sometimes drops one with one of Kevin's items in it
+                        (config/kiosk.js bagDrops: a product charge or a Bubble Wrap layer, by weight, never the Sentry), only something you have ROOM for;
+                        walk over it to take it. One bag at a time; it waits until it runs out. Emits bagDrop / bagTaken (PA lines); status feeds the HUD marker.
     equipment.js        createEquipment(): Kiosk Kevin's equipment, a player system like melee (DOM-free, g.equipment). Two pockets (lethal: G / RB,
                         tactical: middle click / D-pad right), each ONE product with charges; give(id, count) (same kind adds, another replaces), fill()
                         (the 'pockets' debug command). A tap throws along the view with a lob on `throwables` (weapons/ballistics.js, zombies 'bounce');
@@ -704,20 +706,17 @@ src/
                         Counters display resolved comparisons and preserve ammunition. Fully owned attachments are ineligible for Flash Sales.
       retailUnease.js   Called by the existing horror feature: unseen mannequin turn, shared empty-concourse TV feed,
                         distant upstairs silhouette. Quiet intervals, comfort gates, reset and static-batching-safe hooks.
-      workshop.js       The workshop feature: builds the ritual, its effects and the Limited Edition drops, runs Party Trap charges.
+      workshop.js       The workshop feature: builds the ritual, its effects and the room's spectacle.
       returnsDesk.js    Returns Desk: the Return to Sender quest's counter (game/returnQuest.js issues the gun free, through the normal two-slot gun.give path), the ammo counter for the gun in hand (economy returnsAmmo through g.pricing 'closing'), and a second prompt, the label slot, that fits return labels free; the parcel on the tray and the label printer are its props.
       nightSafe.js      Customer Service deposit prompt. Gates payments on Kettle’s Safe Key and completion, and charges the live closing price. Without the key: "Requires <key>" in Directed, "Needs <key>" in Classic.
       escapeVan.js      Customer Parking van and ticket-machine holds, both in escapeVan. The machine requires four keys and the first three duties,
                         pays through g.pricing closing/validation, then shows a local confirmation and refuses another payment. The van needs validation and the Last Customer defeated too.
                         Directed lists missing keys, duties whose key is held, then validation (vanNeeds); Classic names one missing thing by key or place
                         (vanNeedsClassic), then validation. Classic has local confirmation without quest PA. Emits escapeVanStart after the van hold.
-      limitedEditions.js The bag a shopping-bag zombie sometimes drops: walk over it and Party Trap or Clearance Rack fits a gun you carry, free.
       workshopRitual.js The Build-A-Blaster ritual: idle, running, ready. Bench opens the order form, gun on the conveyor, gauge (kills also shorten the clock), maximum time, the gun coming back by itself, chute steering. Built by workshop.js.
       workshopStuffings.js What a finished build does (and its looks: flashes, flames, ice, drips, hearts): one function per Stuffing, one per Heart. Hearts read 'shot' and hand off to the stuffing; nothing here emits 'shot', so a stuffing's kills can't fire a Heart.
       workshopSpectacle.js Ritual mode: tank fill, party colours on the hall's two lamps, bulb string, belt, arm, flap, lever, jingle. Show only; reset() puts every part back.
       workshopOrderForm.js The bench's order form: every Stuffing and Heart on one sheet, pre-filled, driven by menu actions. Sets state.menu while open (the player stands still, the world doesn't).
-      clearanceRack.js  Clearance Rack tags on up to three zombies; a headshot on a tagged zombie, or a shot that kills one, pops them all.
-      clearanceSticker.js The canvas sticker drawn on tagged zombies.
       wardrobeFixtures.js Wardrobe racks (buy: the generated ticket) and fitting rooms (free: the hold opens that room's picker; its instance has `view`).
                           A rack with a `showpiece` also syncs the sold-out state to its fixture each tick, hums its motif (config/audio.js) while you are within
                           config/wardrobe.js showpieces.motifRange, and on a buy strikes the pose and emits 'wardrobeBuy' (the PA line).
@@ -1276,7 +1275,7 @@ src/
     damageDirection.js  Computes relative damage angle (0° = front, 90° = right, 180° = behind, 270° = left) and queues damage indicators for the HUD.
     retail.css          Retail presentation layer loaded after style.css: mall directory, distinct combat signs,
                         shelf tickets, personnel paperwork, facilities settings and handbook. Responsive + reduced motion.
-    bagMarker.js        The HUD arrow to a Limited Edition or closing key: name, distance, floor and time left when applicable.
+    bagMarker.js        The HUD arrow to a shopping bag (game/bagDrops.js) or closing key: name, distance, floor and time left when applicable.
     birthCertificate.js The Birth Certificate notice at collection. Clears itself; nothing pauses.
     orderForm.js        Draws the order form from its view. Only draws: choices come in on the fixed tick. Sized from the screen height (retail.css --order-base,
                         everything in em), left of centre; keys drawn as keycaps (keycaps()), one line on what the order does (orderSummary()), stuffings

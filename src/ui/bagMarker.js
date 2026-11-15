@@ -1,4 +1,4 @@
-// Direction, name and distance for a floor pickup, with time remaining for Limited Editions.
+// Direction, name and distance for a floor pickup, with time remaining for a shopping bag (game/bagDrops.js).
 export function createBagMarker() {
   const element = document.createElement('div');
   element.className = 'bag-marker';

@@ -7,7 +7,10 @@ Every "suggested change" below is a proposal to pick from.
 by price, Gold Card at x1.25, 3D Glasses at x1.5). docs/history.md has the list.
 
 **Then group 2, G6-G12, with three numbers changed:** the Stargazer's hip spread stays 12 (a playtest rule), the Bottle Rocket's self share is
-30% not 25%, and the BOGO's aimed spread stays 0.55. docs/history.md says why. Everything else here is still a proposal.
+30% not 25%, and the BOGO's aimed spread stays 0.55. docs/history.md says why.
+
+**Then the Limited Editions were removed** (Party Trap and Clearance Rack, so G11 and G12 no longer apply). Shopping bags now carry one of Kiosk
+Kevin's items (game/bagDrops.js). Everything else here is still a proposal.
 
 Weapons come first, then perks (the wardrobe) and the other upgrades, then the economy, the extra modes and Closing Time. The last two sections
 list where the existing tools assume bot-like play, and how future tools should model a human so this doesn't happen again.

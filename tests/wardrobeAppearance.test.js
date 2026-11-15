@@ -5,7 +5,7 @@ import { headlessGame, dt } from './helpers/headlessGame.js';
 import { feel } from '../src/config/feel.js';
 import { wardrobeLook } from '../src/config/wardrobe.js';
 import { weapons, melee } from '../src/config/weapons.js';
-import { workshopBuilds, workshopStuffings, workshopHearts } from '../src/config/workshop.js';
+import { workshopStuffings, workshopHearts } from '../src/config/workshop.js';
 import { createPlayerBody } from '../src/player/body.js';
 import { connectWardrobeAppearance } from '../src/player/wardrobeAppearance.js';
 import { createViewmodel } from '../src/weapons/viewmodel.js';
@@ -62,8 +62,7 @@ test('knit and reflective sleeves survive every gun, its Build-A-Blaster variant
   }
   g.wardrobe.buy('hiVisVest');
   for (const base of Object.values(weapons)) {
-    const specials = Object.entries(workshopBuilds).filter(([, build]) => build.weapon === base.id);
-    for (const def of [base, ...specials.map(([id]) => resolveGun(base, [{ id: 'workshop', workshop: id }]))]) {
+    for (const def of [base]) {
       for (const aim of [0, 1]) {
         draw(def, aim);
         const tape = parts('tape');

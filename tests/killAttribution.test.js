@@ -234,43 +234,6 @@ for (const built of [true, false]) {
   });
 }
 
-test('Party Trap credits the gun that planted the charge before switching', context => {
-  const t = scenario(context, weapons.confettiCannon), { g } = t;
-  g.gun.setMods('confettiCannon', [{ id: 'workshop', workshop: 'partyTrap' }]);
-  t.standAt(0, 12, 0, -.8);
-  t.input.held.add('Mouse2');
-  t.tick(35);
-  t.press('Mouse0');
-  t.input.held.delete('Mouse2');
-  const placement = g.gun.lastShot.workshopPlacement;
-  assert.ok(placement);
-  const zombie = shopper(t, placement.x, placement.z);
-  t.press('Digit1');
-  assert.equal(g.gun.def.id, 'stapleGun');
-  assert.ok(zombie.isAlive);
-  t.tick(45);
-  t.expectKill(zombie, 'partyTrap', 'confettiCannon');
-});
-
-test('Clearance Rack credits the gun that detonated the tags', context => {
-  const t = scenario(context, weapons.priceGun), { g } = t;
-  g.gun.setMods('priceGun', [{ id: 'workshop', workshop: 'clearanceRack' }]);
-  const trigger = shopper(t, 0, 9, 1000);
-  const victim = shopper(t, 1.5, 9, 1000);
-  shoot(t, trigger);
-  t.tick(25);
-  shoot(t, victim);
-  t.tick(25);
-  assert.equal(g.gun.weapon.clearanceTagCount, 2);
-  trigger.health = victim.health = 1;
-  g.events.on('kill', ({ zombie }) => {
-    if (zombie === trigger) g.gun.give(weapons.nailGun);
-  });
-  shoot(t, trigger, 'head');
-  assert.equal(g.gun.def.id, 'nailGun');
-  t.expectKill(victim, 'clearanceRack', 'priceGun');
-});
-
 for (const bounced of [false, true]) {
   test(`a tennis ball credits its launcher ${bounced ? 'after bouncing' : 'on first contact'} after switching`, context => {
     const t = scenario(context, weapons.tennisBallLauncher), { g } = t;

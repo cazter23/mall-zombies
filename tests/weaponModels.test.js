@@ -213,42 +213,6 @@ test('a finished build stitches any gun, in its stuffing\'s colour; only Overstu
   }
 });
 
-test('workshop builds change the housing and silhouette reversibly, with Party Trap sleeves on the hinge', () => {
-  for (const [id, build, housingName] of [
-    ['priceGun', 'clearanceRack', 'priceHousing'], ['confettiCannon', 'partyTrap', 'confettiReceiverTrim'],
-  ]) {
-    const model = buildWeaponModel(weapons[id]);
-    const housing = model.root.getObjectByName(housingName), original = housing.material;
-    const visuals = createUpgradeVisuals(model);
-    const chassis = model.root.getObjectByName(build + '_chassis');
-    assert.ok(chassis.children.length >= 5);
-    assert.equal(chassis.visible, false);
-    visuals.show({ workshop: build });
-    assert.equal(chassis.visible, true);
-    assert.notEqual(housing.material.color.getHex(), original.color.getHex());
-    if (build === 'clearanceRack') {
-      const lights = chassis.children.filter(child => child.name === 'clearanceTagLight');
-      assert.equal(lights.length, 3);
-      visuals.show({ workshop: build, workshopCount: 2 });
-      assert.deepEqual(lights.map(light => light.material.emissiveIntensity > 1), [true, true, false]);
-    }
-    const sleeves = model.root.getObjectByName('partyTrap_hinge_trim');
-    if (sleeves) {
-      assert.equal(sleeves.parent.name, 'confettiBarrels');
-      assert.equal(sleeves.visible, true);
-      const receiver = model.root.getObjectByName('confettiReceiver');
-      for (let frame = 0; frame <= 20; frame++) {
-        model.animate({ sinceFire: Infinity, reloadProgress: frame / 20, reloadWeight: 1 });
-        model.root.updateMatrixWorld(true);
-        assert.equal(overlaps(bounds(sleeves), bounds(receiver)), false, 'sleeves clear the receiver during reload');
-      }
-    }
-    visuals.show();
-    assert.equal(chassis.visible, false);
-    assert.equal(housing.material, original);
-  }
-});
-
 test('the Courtesy Loaner wears a security tag, and only the Loaner', () => {
   const model = buildWeaponModel(weapons.stapleGun);
   const visuals = createUpgradeVisuals(model);

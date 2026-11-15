@@ -1,44 +1,6 @@
 import { fillSize } from './effectWords.js';
-// Limited Editions: one per carried gun, separate from tiers, attachments and finished builds. They can't be bought: bag-carrying zombies drop them.
-export const workshopBuilds = {
-  partyTrap: {
-    weapon: 'confettiCannon', name: 'Party Trap', color: 0xff59a9,
-    instructions: 'Aim down sights and shoot the floor to plant a charge.',
-    aimAmount: 0.8, placementRange: 6, armSeconds: 0.5, lifetimeSeconds: 35,
-    maxActive: 2, triggerRadius: 0.7, blastRadius: 2.3, damage: 650, maxTargets: 5,
-    // From the round where 650 stops killing a Shopper, the blast grows like Kiosk Kevin's equipment: x(that round's Shopper health / fromHealth) ^ exponent,
-    // never below 1 (the round the TARGET spawned in). About 830 at round 15, 950 at round 20 (a flat 650 was 28% of a round-20 Shopper; docs/balance-review.md, G12).
-    roundScaling: { fromHealth: 600, exponent: 0.37 },
-    footTolerance: 0.5, blastHeight: 0.16, soundRange: 12, sound: 'partyTrapBlast',
-    // The charge on the floor: a flat puck, dim until it is armed.
-    marker: { topRadius: 0.15, bottomRadius: 0.19, height: 0.065, segments: 8, lift: 0.05, glowIdle: 0.2, glowArmed: 0.85 },
-    blastPop: { count: 24, speed: 3.4 }, // the charge itself going off (a kill adds `pop`)
-    pop: { delaySeconds: .36, ribbonSeconds: .52, pullMeters: .46, liftMeters: .27, count: 54, speed: 5.6, size: .083,
-      colors: [0xff4e92, 0xffcf51, 0x54e4cd, 0x8b79fd, 0xfff3d4] },
-  },
-  clearanceRack: {
-    weapon: 'priceGun', name: 'Clearance Rack', color: 0xff6b36,
-    instructions: 'Tag up to three zombies with body shots. Kill or headshot a tagged one to pop them all.',
-    maxTags: 3, damageMultiplier: 3,
-    pop: { count: 16, speed: 3.1, size: .059, colors: [0xff5933, 0xffd657, 0xfff2ca] },
-  },
-};
-
-export const workshopModOf = (mods) => mods?.find(m => m.id === 'workshop')?.workshop;
-
-// game/features/limitedEditions.js
-export const limitedEditionDrops = {
-  fromRound: 3,
-  marker: { floorGap: 2, up: 'upstairs', down: 'downstairs' }, // the HUD says which floor once the bag is this many metres above or below you
-  dropChance: .15, // per kill of a zombie carrying a shopping bag
-  lifetimeSeconds: 30, // how long a bag waits on the floor
-  pickupRadius: 1.1, pickupHeight: 1.2,
-  spinSpeed: 1.8, glow: .5,
-  pa: {
-    drop: { kicker: 'Limited Edition', text: 'A customer has dropped a {name}. Finders keepers.' },
-    fitted: { kicker: 'Limited Edition', text: '{name} fitted to your {gun}. {instructions}' },
-  },
-};
+// (The Limited Editions, Party Trap and Clearance Rack, were removed on 15 November 2026: a shopping bag carries an item from Kevin's cart
+// now, config/kiosk.js bagDrops and game/bagDrops.js.)
 
 // THE RITUAL (game/features/workshopRitual.js): hand a gun over, fight for it, collect it at the Naming Booth.
 export const workshopRitual = {
