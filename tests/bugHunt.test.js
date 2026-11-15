@@ -694,6 +694,7 @@ test('a fleeing Shoplifter can be knocked down like anyone else: it stops, and i
   g.events.emit('playerHit', { damage: 0, zombie: thief });
   t.tick(20);
   assert.ok(thief.loot > 0 && thief.control, 'the scenario: it stole and is running');
+  g.health.invulnerable = false;
   const clock = thief.fleeTimer;
   const from = thief.position.clone();
   assert.equal(thief.applySlip(2, 6), true, 'the scenario: it slipped');
@@ -771,4 +772,29 @@ test('career stats: two tabs do not wipe each other\'s runs (the ledger is re-re
   assert.equal(result.snapshot.bests.round, 12, 'and kept tab A\'s record');
   assert.deepEqual(result.newRecords, [], 'a round 2 run is no new record after a round 12');
   assert.equal(createCareerStats({ storage }).snapshot().totals.runs, 2, 'that is what is stored');
+});
+
+test('a Shoplifter that gets away after you died says nothing over the receipt: no PA line, no chime', (context) => {
+  const t = openMall(context);
+  const { g } = t;
+  g.rounds.jumpTo(5);
+  g.zombies.clear();
+  g.player.teleport({ position: new THREE.Vector3(0, 0, 2), yaw: 0 });
+  t.tick(2);
+  g.wallet.earn(2000);
+  const thief = g.zombies.spawn('shoplifter', new THREE.Vector3(1.2, 0, 2));
+  t.tick(70);
+  g.events.emit('playerHit', { damage: 0, zombie: thief });
+  t.tick(20);
+  assert.ok(thief.loot > 0 && thief.control, 'the scenario: it stole and is running');
+  g.health.invulnerable = false;
+  g.health.takeDamage(1e6, { type: 'zombie', id: 'shopper' });
+  assert.equal(g.state.over, true, 'the scenario: you died while it was still running');
+  let escaped = 0;
+  g.events.on('shoplifterEscaped', () => { escaped += 1; });
+  const lines = () => t.hud.calls.filter(([name]) => name === 'showAnnouncement').length;
+  const before = [lines(), t.sounds.length];
+  t.tick(Math.ceil(thief.fleeTimer * 60) + 10);
+  assert.equal(escaped, 1, 'the scenario: it got away after the death (the event still fires)');
+  assert.deepEqual([lines(), t.sounds.length], before, 'the PA read "a shoplifter left with your points" over the receipt');
 });
