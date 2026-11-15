@@ -14,4 +14,11 @@ export const perf = {
     buildAfterQueries: 8, // a list is only sorted once it has been asked this often (a throwaway list never is)
     maxCells: 200000, // a list spread wider than this many cells is read whole (a stray box a kilometre away)
   },
+
+  // fx/shaderWarmup.js: after the shaders are compiled in the background, every object is drawn once into one pixel so its
+  // textures are uploaded before you first look at it. That work is spread over frames:
+  warmup: {
+    budgetMs: 6, // milliseconds of it per frame (a frame at 60 fps has 16.7)
+    firstBatch: 24, // objects in the first draw; the batch then grows or shrinks to fit the budget
+  },
 };

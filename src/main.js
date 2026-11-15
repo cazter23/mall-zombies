@@ -71,6 +71,8 @@ import { createZoneGrading, gradeZoneAt } from './fx/zoneGrading.js';
 import { setRimDaylight, setStragglerPulse, syncStragglerHighlights } from './zombies/zombieRim.js';
 import { createDetailCulling } from './fx/detailCulling.js';
 import { createRoomCulling } from './fx/roomCulling.js';
+import { createShaderWarmup } from './fx/shaderWarmup.js';
+import { buildWarmupZombies } from './zombies/warmupModels.js';
 import { look } from './config/look.js';
 import { powerUps } from './config/powerUps.js';
 import { createCareerStats } from './game/careerStats.js';
@@ -335,6 +337,17 @@ const doorOpenView = createDoorOpenView({ scene, events: g.events, effects, play
 // Kiosk Kevin's show: Kevin's animation and shouts, the cola geyser, the glitter, the air-horn rings, bubble-wrap pops, the Sentry's flash and break-up.
 const kioskSpectacle = createKioskSpectacle({ scene, events: g.events, camera, kiosk: g.features.instanceOf('kiosk'), equipment: g.equipment, effects, sound });
 const vanLights = createVanLights({ scene, sound }); // Skylar's van: hazards once the run can be won, the drive-off to the receipt
+// Shader warm-up (fx/shaderWarmup.js): every shader is compiled in the background behind the title and kept for the session, and
+// every object is drawn once into one pixel (a few per frame) so nothing compiles or uploads a texture mid-fight. It starts
+// again when a Graphics setting changes the shaders (the Visual effects path, the number of lamps). ?nowarmup: off, to compare.
+const shaderWarmup = new URLSearchParams(location.search).has('nowarmup') ? null : createShaderWarmup({
+  renderer,
+  views: [{ scene, camera }, { scene: viewmodel.scene, camera: viewmodel.camera }],
+  target: () => (postProcessing.usesComposer ? postProcessing.composer.renderTarget1 : null),
+  signature: () => `${postProcessing.usesComposer}|${lightPool.size}`,
+  extras: buildWarmupZombies, // (one zombie of every type: their materials only exist once they spawn)
+  holdOff: () => !autoGraphics.done, // (the first launch is measuring the frame rate to pick a preset: not now)
+});
 
 // --- Menus and the run's flow ------------------------------------------------------
 // title (live flyover) -> playing <-> paused -> dead -> results receipt -> playing again / title.
@@ -709,6 +722,7 @@ function render(alpha, frameTime) {
   // Render world + viewmodel through HDR post-processing (UnrealBloom + lens vignette/aberration + ACES tone mapping).
   roomCulling.update(cullingOn);
   detailCulling.update(camera); // (Graphics > Small detail: fx/detailCulling.js)
+  shaderWarmup?.update(); // (before the draw: it draws into one pixel of the same target)
   postProcessing.render({ showViewmodel: !death.summary && scoped < 1, speedAmount, grade: gradeAt(frameTime) });
 }
 
@@ -727,6 +741,7 @@ function renderTitle(frameTime) {
   effects.update(frameTime);
   roomCulling.update(cullingOn);
   detailCulling.update(camera); // (Graphics > Small detail: fx/detailCulling.js)
+  shaderWarmup?.update();
   postProcessing.render({ showViewmodel: false, speedAmount: 0, grade: gradeAt(frameTime) });
 }
 
@@ -771,6 +786,7 @@ if (debug.exposeToWindow) {
     benchmark: runBenchmark, // await __mall.benchmark() -> the report (title or pause screen)
     settings, lightPool, loop, idleSaver, // (settings.set(id, value) as the menu would; the light pool)
     vanLights, // (Skylar's van: update / start, fx/vanLights.js)
+    shaderWarmup, // (.state 'compiling' | 'drawing' | 'done', .left, .kept: fx/shaderWarmup.js)
     doorOpenView, // (a bought door's dust and light spill: .active = glow slots lit, fx/doorOpenView.js)
     // Map objects that were moved although their matrix is frozen (they need a userData.dynamic parent): expect [].
     movedWhileFrozen: () => movedWhileFrozen(map.group),
