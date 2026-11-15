@@ -33,14 +33,18 @@ function memoryStorage() {
 
 export function createSaveGame({ steps, events, stats, state, rounds, resetRun, storage, config = cfg }) {
   let target = storage;
+  let persistent = true; // false: the browser refuses storage, so a "save" would only live until the tab closes
   try {
     target ??= globalThis.localStorage ?? memoryStorage();
   } catch {
     target = memoryStorage(); // (blocked storage must never stop the game)
+    persistent = false;
   }
   let pending = false;
   let snapshot = null; // { round, data } at the start of the current round
   let dropped = false;
+  let failed = false; // the last write was refused (storage full): the button says so until the next round's snapshot
+  let notice = null; // one line for the title screen: a save was dropped, or a newer build's save was left alone
 
   const read = () => {
     try {
@@ -53,6 +57,9 @@ export function createSaveGame({ steps, events, stats, state, rounds, resetRun, 
     try { target.removeItem(config.storageKey); } catch { /* (nothing to do) */ }
   };
   const valid = (saved) => saved && saved.version === config.version && Number.isInteger(saved.round) && saved.data;
+  // A save from a NEWER build: this one can't read it, and must not delete it either (as the career record, guide and skins do).
+  const newer = (saved) => Number.isInteger(saved?.version) && saved.version > config.version;
+  const drop = () => { dropped = true; notice = config.droppedNotice; };
 
   const serializeAll = () => JSON.parse(JSON.stringify(Object.fromEntries(steps.map(([name, serialize]) => [name, serialize()]))));
 
@@ -60,6 +67,12 @@ export function createSaveGame({ steps, events, stats, state, rounds, resetRun, 
     get snapshot() { return snapshot; },
     /** True once an older version's save was found and dropped (main.js shows a notice). */
     get dropped() { return dropped; },
+    /** The title's line about the slot (config droppedNotice / newerNotice), handed out once; null when there is none. */
+    takeNotice() {
+      const text = notice;
+      notice = null;
+      return text;
+    },
     stepNames: steps.map(([name]) => name),
 
     /** What a snapshot taken right now would hold (tests: a load must give back exactly what was saved). */
@@ -72,6 +85,7 @@ export function createSaveGame({ steps, events, stats, state, rounds, resetRun, 
     update() {
       if (!pending || state.over) return;
       pending = false;
+      failed = false; // (a new round: worth another try)
       snapshot = { round: rounds.round, data: serializeAll() };
     },
 
@@ -80,6 +94,8 @@ export function createSaveGame({ steps, events, stats, state, rounds, resetRun, 
       if (state.winPending) return { ok: false, reason: config.reasons.shiftComplete }; // (the win receipt is up: Clock out or overtime first)
       if (!snapshot) return { ok: false, reason: config.reasons.noRound };
       if (stats.health < stats.maxHealth) return { ok: false, reason: config.reasons.hurt };
+      if (!persistent) return { ok: false, reason: config.reasons.blocked };
+      if (failed) return { ok: false, reason: config.reasons.full };
       return { ok: true, reason: null };
     },
 
@@ -93,6 +109,7 @@ export function createSaveGame({ steps, events, stats, state, rounds, resetRun, 
           version: config.version, round: snapshot.round, savedAt: new Date().toISOString(), data: snapshot.data,
         }));
       } catch {
+        failed = true; // (canSave now gives the reason: main.js redraws the pause card)
         return false; // (storage full or blocked: the run goes on)
       }
       events.emit('runSaved', { round: snapshot.round });
@@ -102,9 +119,13 @@ export function createSaveGame({ steps, events, stats, state, rounds, resetRun, 
     peek() {
       const saved = read();
       if (!saved) return null;
+      if (newer(saved)) {
+        notice = config.newerNotice;
+        return null;
+      }
       if (!valid(saved)) {
         remove();
-        dropped = true;
+        drop();
         return null;
       }
       return { round: saved.round, savedAt: saved.savedAt };
@@ -112,9 +133,13 @@ export function createSaveGame({ steps, events, stats, state, rounds, resetRun, 
 
     load() {
       const saved = read();
+      if (newer(saved)) {
+        notice = config.newerNotice;
+        return false;
+      }
       remove(); // (first: a load that fails part-way can't be loaded again)
       if (!valid(saved)) {
-        if (saved) dropped = true;
+        if (saved) drop();
         return false;
       }
       resetRun();
@@ -123,7 +148,7 @@ export function createSaveGame({ steps, events, stats, state, rounds, resetRun, 
       } catch (error) {
         console.warn('Save & Quit: the save could not be loaded', error);
         resetRun();
-        dropped = true;
+        drop();
         return false;
       }
       snapshot = { round: saved.round, data: saved.data }; // (save again straight away = the same save)
@@ -133,12 +158,13 @@ export function createSaveGame({ steps, events, stats, state, rounds, resetRun, 
     },
 
     discard() {
-      remove();
+      if (!newer(read())) remove(); // (a newer build's save was never offered as Continue: Play does not delete it)
     },
 
     reset() {
       pending = false;
       snapshot = null;
+      failed = false;
     },
   };
 }

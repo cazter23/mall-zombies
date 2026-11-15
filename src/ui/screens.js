@@ -192,6 +192,7 @@ export function createScreens({ locker = null, guide = null, challenges = null }
         <button class="menu-btn" data-action="settings" type="button">Settings</button>
         <button class="menu-btn" data-action="controls" type="button">Controls</button>
       </div>
+      <p class="tagline title-note" hidden></p>
       ${hintLine('title')}
     </div>
     <div class="title-footer"><b>OPEN UNTIL FURTHER NOTICE</b><span>Notice will not be provided. · Now hiring · Must provide own staples</span></div>
@@ -270,6 +271,7 @@ export function createScreens({ locker = null, guide = null, challenges = null }
   const continueButton = title.querySelector('[data-action="continue"]');
   continueButton.hidden = true; // (until setContinue finds a save)
   const playButton = title.querySelector('[data-action="play"]');
+  const titleNote = title.querySelector('.title-note');
 
   // --- Results (the receipt) ---------------------------------------------------------
   const deathThanks = 'Thank you for shopping with us<br />All sales final · No refunds · No respawns';
@@ -638,6 +640,12 @@ export function createScreens({ locker = null, guide = null, challenges = null }
 
     // Save & Quit's slot on the title (game/saveGame.js peek()): { round } shows "Continue · Round N" and makes Play ask
     // twice (it discards the save); null hides it.
+    /** A line under the title's menu (the save slot's notice: game/saveGame.js takeNotice); null hides it. */
+    setTitleNote(text) {
+      titleNote.hidden = !text;
+      titleNote.textContent = text ?? '';
+    },
+
     setContinue(saved) {
       continueButton.hidden = !saved;
       continueButton.textContent = saved ? `Continue · Round ${saved.round}` : 'Continue';

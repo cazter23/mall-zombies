@@ -13,7 +13,6 @@ import './ui/receiptArt.css';
 import { createNoticesMenu } from './ui/noticesMenu.js';
 import * as THREE from 'three';
 import { feel } from './config/feel.js';
-import { save as saveConfig } from './config/save.js';
 import { debug } from './config/debug.js';
 import { ui } from './config/ui.js';
 import { startLoop } from './core/loop.js';
@@ -406,7 +405,9 @@ function goToTitle({ saved = false } = {}) {
   resetRun();
   screens.setCareerResult(null);
   screens.setContinue(g.saveGame.peek()); // "Continue · Round N" while a save exists
-  if (g.saveGame.dropped) hud.showAnnouncement({ kicker: 'Save & quit', text: saveConfig.droppedNotice });
+  // The save slot's notice (an older save discarded, a newer one left alone) goes on the title itself: a HUD announcement
+  // here was wiped by setDimmed below before anyone could read it. It stays until the next visit to the title.
+  screens.setTitleNote(g.saveGame.takeNotice());
   titleCamera.restart();
   screens.show('title');
   hud.setDimmed(true);
@@ -414,6 +415,7 @@ function goToTitle({ saved = false } = {}) {
 // SAVE & QUIT (game/saveGame.js): the run ends at the title with its round-start snapshot in the one slot.
 function saveAndQuit() {
   if (g.saveGame.saveAndQuit()) goToTitle({ saved: true });
+  else screens.show('pause', runSoFar()); // (the write was refused: the button now says why)
 }
 // Continue: the save is used up, and the run resumes at the start of its round's break.
 function continueRun(how) {

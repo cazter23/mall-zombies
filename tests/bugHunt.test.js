@@ -14,6 +14,8 @@ import { clawMachine } from '../src/config/clawMachine.js';
 import { bossVouchers } from '../src/config/bosses.js';
 import { kiosk } from '../src/config/kiosk.js';
 import { economy } from '../src/config/economy.js';
+import { save as saveConfig } from '../src/config/save.js';
+import { createCareerStats } from '../src/game/careerStats.js';
 import { saleEligibility, collectSaleSpots } from '../src/game/flashSales.js';
 import { rampHeightAt, overlapsSolid } from '../src/world/collision.js';
 import { headlessGame } from './helpers/headlessGame.js';
@@ -701,3 +703,60 @@ test('a fleeing Shoplifter can be knocked down like anyone else: it stops, and i
   t.tick(120);
   assert.ok(thief.removed || thief.fleeTimer < clock, 'back on its feet, it runs again');
 });
+
+test('Save & Quit and storage: a newer build\'s save is left alone, and the "discarded" notice is offered once', (context) => {
+  const storage = memoryStorage();
+  const t = headlessGame({ saveStorage: storage });
+  context.after(() => t.g.map.dispose());
+  const { g } = t;
+  const newer = JSON.stringify({ version: saveConfig.version + 1, round: 7, savedAt: 'x', data: {} });
+  storage.setItem(saveConfig.storageKey, newer);
+  assert.equal(g.saveGame.peek(), null, 'no Continue for a save this build cannot read');
+  assert.equal(storage.getItem(saveConfig.storageKey), newer, 'but it is not deleted: the newer build can still continue it');
+  assert.equal(g.saveGame.load(), false);
+  g.saveGame.discard(); // (Play from the title: there was no "your save is discarded" warning, so it must not be)
+  assert.equal(storage.getItem(saveConfig.storageKey), newer, 'still there after a failed load and a fresh Play');
+  assert.equal(g.saveGame.takeNotice(), saveConfig.newerNotice, 'the title is given a line to say so');
+  assert.equal(g.saveGame.takeNotice(), null, 'once');
+
+  storage.setItem(saveConfig.storageKey, JSON.stringify({ version: saveConfig.version - 1, round: 3, data: {} }));
+  assert.equal(g.saveGame.peek(), null);
+  assert.equal(storage.getItem(saveConfig.storageKey), null, 'an older save is dropped, as before');
+  assert.equal(g.saveGame.takeNotice(), saveConfig.droppedNotice);
+  assert.equal(g.saveGame.takeNotice(), null, 'not again on every return to the title');
+});
+
+test('Save & Quit and storage: a browser that blocks storage greys the button out instead of pretending to save', (context) => {
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, get() { throw new Error('SecurityError: storage is blocked'); } });
+  context.after(() => { delete globalThis.localStorage; });
+  const t = headlessGame(); // (no storage handed in: the game looks for the browser's)
+  context.after(() => t.g.map.dispose());
+  const { g } = t;
+  t.tick(2);
+  g.rounds.skipRound();
+  t.tick(2);
+  assert.deepEqual(g.saveGame.canSave(), { ok: false, reason: saveConfig.reasons.blocked });
+  assert.equal(g.saveGame.saveAndQuit(), false, 'nothing is "saved" into memory to be lost with the tab');
+});
+
+test('Save & Quit and storage: a full store says so on the button, and the next round may try again', (context) => {
+  const storage = memoryStorage();
+  let full = true;
+  const setItem = storage.setItem;
+  storage.setItem = (key, value) => { if (full && key === saveConfig.storageKey) throw new Error('QuotaExceededError'); setItem(key, value); };
+  const t = headlessGame({ saveStorage: storage });
+  context.after(() => t.g.map.dispose());
+  const { g } = t;
+  t.tick(2);
+  g.rounds.skipRound();
+  t.tick(2);
+  assert.equal(g.saveGame.canSave().ok, true, 'the scenario: nothing wrong until the write');
+  assert.equal(g.saveGame.saveAndQuit(), false, 'the write failed: the run goes on');
+  assert.deepEqual(g.saveGame.canSave(), { ok: false, reason: saveConfig.reasons.full }, 'and the button says why');
+  full = false;
+  g.rounds.skipRound();
+  t.tick(2);
+  assert.equal(g.saveGame.canSave().ok, true, 'a new round: worth another try');
+  assert.equal(g.saveGame.saveAndQuit(), true);
+});
+
