@@ -479,6 +479,11 @@ input.onLockChange((locked) => {
     pauseRun(); // Esc (or the browser) released the mouse mid-run (not the win: 'runWon' lets go of it for the van's drive-off)
   }
 });
+// A controller run holds no pointer lock to lose: when the window loses focus (alt-tab, a click on another window) it
+// pauses, as a mouse run does by losing its lock. Otherwise the zombies carry on with nobody at the controls.
+window.addEventListener('blur', () => {
+  if (game.padPlaying && !game.over && !game.winPending && !screens.current) pauseRun();
+});
 goToTitle(); // the game opens on the main menu
 
 // Controller: the open menu gets the buttons; in play, Start pauses. Unplugging the controller mid-run pauses
