@@ -229,3 +229,44 @@ test('a charge gun winding up hums, growing as it fills, every everyMs; a shot p
   assert.equal(calls.at(-1).duration, defaults.shots.barcodeScanner.duration, 'and the hum does not cut the shot short');
   haptics.dispose();
 });
+
+test('a hit ticks, a headshot ticks harder, a kill thumps; each BLENDS with the shot instead of cutting it short; pellets add nothing', () => {
+  const t = fixture();
+  const last = () => t.calls.at(-1)[1];
+  const nail = defaults.shots.nailGun, { hit, headshot, kill } = defaults;
+  assert.ok(hit.weakMagnitude < headshot.weakMagnitude && headshot.duration < kill.duration && kill.strongMagnitude > headshot.strongMagnitude,
+    'a hit < a headshot < a kill');
+  // A body hit, then (the same moment) its own shot: the stronger motor and the longer time of the two.
+  t.events.emit('hit', { killed: false, headshot: false, weaponId: 'nailGun' });
+  assert.deepEqual(last(), { startDelay: 0, duration: hit.duration, strongMagnitude: hit.strongMagnitude, weakMagnitude: hit.weakMagnitude });
+  t.events.emit('shot', { weaponId: 'nailGun' });
+  assert.deepEqual(last(), { startDelay: 0, duration: nail.duration,
+    strongMagnitude: Math.max(nail.strongMagnitude, hit.strongMagnitude), weakMagnitude: Math.max(nail.weakMagnitude, hit.weakMagnitude) });
+  // A shotgun's other pellets landing in the same moment: nothing new to play.
+  const count = t.calls.length;
+  for (let i = 0; i < 6; i++) t.events.emit('hit', { killed: false, headshot: false, weaponId: 'nailGun' });
+  assert.equal(t.calls.length, count);
+  t.advance(500);
+  // A headshot kill: the kill's thump with the headshot's sharp edge, and the shot after it does not cut it short.
+  t.events.emit('hit', { killed: true, headshot: true, weaponId: 'stapleGun' });
+  assert.deepEqual(last(), { startDelay: 0, duration: kill.duration,
+    strongMagnitude: kill.strongMagnitude, weakMagnitude: Math.max(kill.weakMagnitude, headshot.weakMagnitude) });
+  t.events.emit('shot', { weaponId: 'stapleGun' });
+  assert.ok(last().duration >= kill.duration - 1 && last().strongMagnitude === kill.strongMagnitude, 'the kill still plays out');
+  t.advance(500);
+  // Getting hurt is never softened by a hit landing at the same time.
+  t.events.emit('playerHit', { damage: 40 });
+  t.events.emit('hit', { killed: false, headshot: false, weaponId: 'stapleGun' });
+  assert.equal(last().strongMagnitude, defaults.damage.strongMagnitude);
+  t.advance(500);
+  // Long after, a shot plays on its own as before.
+  t.events.emit('shot', { weaponId: 'priceGun' });
+  assert.deepEqual(last(), { startDelay: 0, duration: defaults.shots.priceGun.duration,
+    strongMagnitude: defaults.shots.priceGun.strongMagnitude, weakMagnitude: defaults.shots.priceGun.weakMagnitude });
+  // Off: the vibration setting covers hits too.
+  t.haptics.setStrength(0);
+  const quiet = t.calls.filter(([type]) => type === 'dual-rumble').length;
+  t.events.emit('hit', { killed: true, headshot: false, weaponId: 'stapleGun' });
+  assert.equal(t.calls.filter(([type]) => type === 'dual-rumble').length, quiet);
+  t.haptics.dispose();
+});
