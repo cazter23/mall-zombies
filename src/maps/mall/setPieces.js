@@ -12,7 +12,7 @@
 // =============================================================================
 
 import * as THREE from 'three';
-import { atmosphere } from '../../config/environment.js';
+import { atmosphere, perchCap } from '../../config/environment.js';
 import { seededRandom } from '../../world/textures.js';
 import { drawType } from '../../world/typeKit.js';
 
@@ -108,6 +108,7 @@ export function buildSetPieces({ kit, layout, floorY }) {
     };
     const [c0, c1] = span(0, A.depth);
     addCollider(A.x0, 0, c0, A.x1, A.height, c1).name = 'setpiece_arcade';
+    addCollider(A.x0, A.height, c0, A.x1, A.height + perchCap, c1).ignoreShots = true; // the topper: nothing to stand on (a hop from the prop beside it)
     const games = [
       { name: 'PAC-SHOPPER', body: 0x2b2f8f, art: '#ffd23f' },
       { name: 'GALAXY RAIDERS', body: 0x1f1f24, art: '#22e8ff' },
@@ -161,6 +162,7 @@ export function buildSetPieces({ kit, layout, floorY }) {
     const front = T.wallZ - T.depth;
     const standTop = 0.45;
     addCollider(T.x0, 0, front, T.x1, 1.95, T.wallZ).name = 'setpiece_tv_wall';
+    addCollider(T.x0, 1.95, front, T.x1, 1.95 + perchCap, T.wallZ).ignoreShots = true; // the topper: nothing to stand on (a hop from the crates)
     box(T.x0, 0, front, T.x1, standTop, T.wallZ - 0.01, mat(0x3b2a20), { collide: false, name: 'tv_stand' });
     const staticTexture = makeStaticTexture();
     const ads = [makeAdTexture(0), makeAdTexture(1)];

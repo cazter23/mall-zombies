@@ -46,6 +46,13 @@ export function createSecondChance({ health, zombies, player, events }) {
       return { status };
     },
     restore(data) {
+      // A revive spent before the save is not redeemed again: 'used' comes back without its announcement (the PA line),
+      // and the tag is switched off through 'available'.
+      if (data.status === 'used') {
+        set('available');
+        status = 'used';
+        return;
+      }
       set(data.status);
     },
 

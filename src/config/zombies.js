@@ -846,6 +846,8 @@ export const zombieNav = {
   extraClearance: 0.3, // routes prefer to stay this much further from walls (soft: still passable)...
   wallPenalty: 0.6, // ...because walking those cells costs this much extra
   playerSearchRadius: 1.5, // if the player stands somewhere zombies can't (a bench), path to cells this close
+  playerFallbackRadius: 4, // ...and if none of those is in the clear (a pocket behind a bench or a table), to the nearest cells this close, walls or not
+  pocketCells: 40, // routes that reach fewer cells than this (10 m2) are a sealed pocket around the player, not the mall: same fallback
   floorTolerance: 0.05, // a box whose top is within this of y=0 counts as floor
   // Several floors (navigation.js `floors` + `links`): a mover within rampTolerance of a ramp's surface is ON the ramp;
   // linkPenalty makes a ramp cost this much extra of its length (1 = twice as far), so routes avoid needless stairs.

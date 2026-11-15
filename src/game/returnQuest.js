@@ -83,7 +83,8 @@ export function createReturnQuest({ events, state, player, zombies, gun, wallet,
       const weapon = gun.def.id === cfg.weaponId ? gun.weapon : null;
       if (weapon && !ammoRollUsed) {
         ammoRollUsed = true; // (one chance of a round back per blast)
-        if (random() < label.ammoChance) weapon.reserve = Math.min(weapon.reserveCap, weapon.reserve + 1);
+        // (Up to the cap, and never DOWN to it: a reserve above the cap is legal, e.g. after the Fanny Pack comes off.)
+        if (random() < label.ammoChance) weapon.reserve = Math.max(weapon.reserve, Math.min(weapon.reserveCap, weapon.reserve + 1));
       }
     }
   }

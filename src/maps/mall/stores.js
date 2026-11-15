@@ -199,6 +199,7 @@ export function buildStores({ kit, props, court, thickness: T, stores }) {
     const displayed = props.attachmentDisplay({
       along: 'x', center: cx, wallAt: zBack, facing: facingOut, style: 'case', items,
       title: store.title, titleColor: store.titleColor, gap: COUNTER_GAP, width,
+      capTo: CEIL_Y, // (nobody hops over the counter from a display prop: the clerk's strip has no way out, and no zombie can follow)
     });
     for (const s of displayed) spots.push({ ...s, slot: store.slot, zone: 'foodCourt' });
     props.clerk({ along: 'x', center: cx, wallAt: zBack, facing: facingOut, depth: 0.5, apron: store.apron });

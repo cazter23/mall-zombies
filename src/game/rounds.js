@@ -117,7 +117,9 @@ export function createRounds({ zombies, onRoundStart = null, onTypeIntro = null,
       if (!zombie) return null;
       toSpawn -= 1;
       spawnedThisRound += 1;
-      if (!seenTypes.has(typeId)) { seenTypes.add(typeId); onTypeIntro?.(typeId); }
+      // (As a wave spawn does: the type that actually arrived, and the zombie itself for the guide's first sighting.)
+      const arrived = zombie.type?.id ?? typeId;
+      if (!seenTypes.has(arrived)) { seenTypes.add(arrived); onTypeIntro?.(arrived, zombie); }
       return zombie;
     },
 

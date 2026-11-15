@@ -127,7 +127,9 @@ export function createIncentiveEffects({ events, player, gun, zombies, stats, pr
       if (!inScope(z.position)) continue;
       if (z.type?.boss) {
         const crashScale = z.state === 'crashed' ? (z.type.charge?.crashDamageTakenMultiplier ?? 1) : 1;
-        const scale = (z.damageTakenMultiplier ?? 1) * (z.vulnerableTimer > 0 ? (z.vulnerableMultiplier ?? 1) : 1) * crashScale;
+        // (Every multiplier zombie.takeHit applies, RUNG UP included, or the "wound" overshoots and kills the boss unpaid.)
+        const scale = (z.damageTakenMultiplier ?? 1) * (z.vulnerableTimer > 0 ? (z.vulnerableMultiplier ?? 1) : 1)
+          * (z.rungUpTimer > 0 ? (z.rungUpMultiplier ?? 1) : 1) * crashScale;
         const floor = Math.max(1, (z.type.damageFloor ?? 0) + 1);
         const maxAllowed = Math.max(0, (z.health - floor) / Math.max(1, scale));
         const deal = Math.min(maxAllowed, (z.maxHealth * def.bossDamageFraction) / Math.max(1, scale));

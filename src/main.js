@@ -473,8 +473,8 @@ input.onLockChange((locked) => {
     }
     game.padPlaying = false; // the mouse took over
     if (!game.over) enterPlaying();
-  } else if (!game.over && !game.padPlaying && !screens.current) {
-    pauseRun(); // Esc (or the browser) released the mouse mid-run
+  } else if (!game.over && !game.winPending && !game.padPlaying && !screens.current) {
+    pauseRun(); // Esc (or the browser) released the mouse mid-run (not the win: 'runWon' lets go of it for the van's drive-off)
   }
 });
 goToTitle(); // the game opens on the main menu

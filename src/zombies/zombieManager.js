@@ -249,6 +249,8 @@ export function createZombieManager({
         for (let j = i + 1; j < zombies.length; j++) {
           const b = zombies[j];
           if (!b.isAlive || b.state === 'spawning') continue;
+          // (One above or below the other, on another floor: they are not in each other's way.)
+          if (b.position.y >= a.position.y + a.type.height || b.position.y + b.type.height <= a.position.y) continue;
           let dx = b.position.x - a.position.x;
           let dz = b.position.z - a.position.z;
           let d = Math.hypot(dx, dz);
@@ -291,7 +293,8 @@ export function createZombieManager({
       z.stuckTimer += dt;
       if (z.stuckTimer < fs.checkSeconds) continue;
       const moved = Math.hypot(z.position.x - z.stuckFrom.x, z.position.z - z.stuckFrom.z);
-      const far = z.distanceTo(player) > fs.ignoreWithinMeters;
+      // (Near on the map but a floor above or below is not near: nobody is crowding or attacking from there.)
+      const far = z.distanceTo(player) > fs.ignoreWithinMeters || Math.abs(z.position.y - player.position.y) > z.type.height;
       const unreachable = nav.distanceToTarget(z.position.x, z.position.z, z.position.y) === Infinity;
       if (far && (moved < fs.minMoveMeters || unreachable)) rescue(z);
       z.stuckTimer = 0;
