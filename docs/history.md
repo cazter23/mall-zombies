@@ -1,5 +1,20 @@
 # Sunset Galleria: build history ("Current state")
 
+## 15 November 2026 - The WEAR-O-MATIC (`claude/wear-o-matic`)
+
+Arena survival had almost no Wardrobe: Last Showing has one rack (the 3D Glasses), Lot Full none, and neither has a fitting room.
+Now both have a **WEAR-O-MATIC**, a hot-pink clothes vending machine (Everything Must Go stays without one: it is the hard mode).
+- **Every item, you choose** (not a random roll: every item has a downside). It opens the fitting-room picker in SHOP MODE
+  (game/features/fittingRoomPicker.js `shop`): every slot lists every item; one you don't own shows its price and the button buys it
+  and puts it on; one you own changes for free, so it is the arena's fitting room too. Short of points: 'denied', nothing happens.
+- **A small convenience fee:** the rack price x 1.2 (economy.js wearOMatic; pricing category 'wearOMatic', so 750 -> 900,
+  2000 -> 2400). The Apparel Flash Sale covers it and marks it (game/flashSales.js) while anything is left to buy; vouchers apply.
+- **Where:** Last Showing, the lobby's north wall between two posters (x -30, near the RESTOCK-O-MATIC, across from the box
+  office); Lot Full, the north fence east of the RESTOCK-O-MATIC (x 58.4). config/arenas.js wardrobeMachine; the model is
+  maps/mall/wardrobeMachine.js (one shelf per slot, each item in its own colour). Like the other arena-only fixtures it is not
+  on the minimap (the map's places are drawn once, from the whole mall).
+- Tests: tests/wearOMatic.test.js; tests/arenaModes.test.js's clearance, reachability and whole-mall checks now include it.
+
 ## 15 November 2026 - 3D zombie sound (`claude/spatial-audio`)
 
 Hear WHERE every zombie is: behind you, to the side, upstairs, through a wall. Still no audio files. The whole picture, the

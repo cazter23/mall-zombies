@@ -171,7 +171,7 @@ const body = createPlayerBody(scene, effects); // legs + torso you see when look
 connectWardrobeAppearance(g.events, { body, viewmodel });
 const workshop = g.features.instanceOf('workshop'); // Build-A-Blaster (the HUD reads its status)
 const { ritual, drops: limitedEditions } = workshop ?? {};
-const fittingRooms = g.features.instancesOf('fittingRoom'); // (the HUD draws the open picker)
+const fittingRooms = [...g.features.instancesOf('fittingRoom'), ...g.features.instancesOf('wardrobeMachine')]; // (the HUD draws the open picker; the WEAR-O-MATIC is one in shop mode)
 const clawMachine = g.features.instanceOf('clawMachine'); // GRAB-A-GUN (the HUD reads its status)
 const resetRun = g.resetRun;
 hud.connectEvents(g.events);

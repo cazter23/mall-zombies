@@ -1,7 +1,8 @@
 // The fitting-room picker, drawn from the game's view of it (game/features/fittingRoomPicker.js). Only draws: the choices are made on the
 // fixed tick from actions, so the mouse stays locked and the game keeps running behind it. It borrows the order form's paper, rows and
 // keycaps (ui/orderForm.js, retail.css .order-*): four slot columns, the one you are in highlighted, and under them what the highlighted
-// item would change, upsides in green and downsides in red.
+// item would change, upsides in green and downsides in red. In shop mode (the arenas' WEAR-O-MATIC) every item is listed: one you
+// don't own shows its price, and the button buys it.
 import { keycaps } from './orderForm.js';
 
 const hex = (color) => `#${color.toString(16).padStart(6, '0')}`;
@@ -11,7 +12,7 @@ export function createFittingRoomView() {
   element.className = 'order-form fitting-form';
   element.hidden = true;
   element.innerHTML = `
-    <div class="order-head"><span class="order-kicker">Fitting room · Free</span><span class="order-title"></span></div>
+    <div class="order-head"><span class="order-kicker"></span><span class="order-title"></span></div>
     <div class="order-scroll">
       <div class="order-columns"></div>
       <div class="order-summary"><span class="order-summary-label"></span><span class="fitting-joke"></span><div class="fitting-lines"></div></div>
@@ -27,6 +28,7 @@ export function createFittingRoomView() {
       </div>
     </div>`;
   const $ = (selector) => element.querySelector(selector);
+  const kicker = $('.order-kicker');
   const title = $('.order-title');
   const columns = $('.order-columns');
   const summaryLabel = $('.order-summary-label');
@@ -58,7 +60,7 @@ export function createFittingRoomView() {
       const name = document.createElement('b');
       name.textContent = item.name;
       const state = document.createElement('span');
-      state.textContent = item.worn ? 'Wearing' : '';
+      state.textContent = item.worn ? 'Wearing' : item.price != null ? item.price.toLocaleString('en-US') : '';
       li.append(name, state);
       list.append(li);
     }
@@ -84,6 +86,7 @@ export function createFittingRoomView() {
       const key = JSON.stringify([view, labels]);
       if (key === lastKey) return;
       lastKey = key;
+      kicker.textContent = view.kicker ?? 'Fitting room · Free';
       title.textContent = view.title;
       columns.replaceChildren(...view.slots.map(column));
       summaryLabel.textContent = view.wearing ? 'You are wearing this' : view.replaces;
@@ -98,8 +101,9 @@ export function createFittingRoomView() {
       hint('move', labels.move, 'Item');
       hint('back', labels.back, 'Done');
       buttonKeys.replaceChildren(...keycaps(labels.confirm));
-      buttonText.textContent = view.wearing ? 'Wearing' : 'Wear';
-      element.classList.toggle('cant', view.wearing);
+      const buying = view.shop && !view.owned;
+      buttonText.textContent = view.wearing ? 'Wearing' : buying ? `Buy · ${view.price.toLocaleString('en-US')}` : 'Wear'; // (short of points: greyed)
+      element.classList.toggle('cant', view.wearing || (buying && !view.canAfford));
     },
   };
 }

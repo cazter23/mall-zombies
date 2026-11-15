@@ -20,7 +20,7 @@ import { buildUpgradeDesk } from './upgradeDesk.js';
 import { buildAttachmentCounter } from './attachmentCounter.js';
 import { buildWorkshop } from './workshop.js';
 import { buildHorror } from './horror.js';
-import { buildWardrobeRack, buildFittingRoom } from './wardrobeFixtures.js';
+import { buildWardrobeRack, buildFittingRoom, buildWardrobeMachine } from './wardrobeFixtures.js';
 import { buildClawMachine } from './clawMachine.js';
 import { buildPrizeCounter } from './prizeCounter.js';
 import { buildKiosk } from './kiosk.js';
@@ -42,6 +42,7 @@ const builders = {
   workshop: buildWorkshop,
   wardrobeRack: buildWardrobeRack,
   fittingRoom: buildFittingRoom,
+  wardrobeMachine: buildWardrobeMachine, // WEAR-O-MATIC (arena survival only): every Wardrobe item, plus a convenience fee, and a free change
   horror: buildHorror, // the horror layer: lights die and the power cuts out as the rounds climb (visual only)
   clawMachine: buildClawMachine, // GRAB-A-GUN: pay, time the drop, take the gun from the chute
   prizeCounter: buildPrizeCounter, // REDEMPTION: GRAB-A-GUN's prize tickets for small things
