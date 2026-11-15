@@ -143,6 +143,7 @@ function buildGun(vm) {
     grip: { position: [0, -0.095, 0.028], rotation: [0.3, 0, 0], size: { w: 0.043, h: 0.12, d: 0.052 } },
     magazine: { position: [0.054, -0.012, 0.06], rotation: [0, 0, Math.PI / 2], gunId: 'returnToSender' }, // a spare canister on the right of the body
     sticker: { position: [-0.053, -0.004, 0.025] }, // the left side
+    build: { position: [-0.051, -0.004, -0.035] }, // the Build-A-Blaster patch: the front of the body's left side (further back it sat under your face)
   };
   return { gun, muzzle, trigger, lid, stamp, seated, spent, fresh, mounts };
 }

@@ -11,7 +11,8 @@
 //                     state = { sinceFire, reloadProgress, reloadWeight, chargeProgress, time, loaded } (time: a running clock, for a skin's treatment;
 //                     loaded: the magazine holds a round, false once the last is fired)
 //   leftHandVisible   setter: hide the support hand (the box cutter arm replaces it)
-//   mounts            where upgrade parts go: barrel / top / side / grip / magazine / sticker (upgradeParts.js)
+//   mounts            where upgrade parts go: barrel / top / side / grip / magazine / sticker (upgradeParts.js); optional build: the Build-A-Blaster
+//                     patch's own spot when the sticker's can't be seen in your hands (models/buildVisual.js)
 // Optional, for a model of more than one gun (the akimbo BOGO, models/bogo.js):
 //   onFire(flash)            a shot: the model picks the gun it comes from (muzzle may be a getter) and moves the flash there
 //   createUpgradeVisuals()   its own attachment parts (instead of one upgradeParts.js set on root)

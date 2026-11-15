@@ -328,12 +328,12 @@ export const skinContrast = { minimum: 2 };
 // right, a lower one for faces pointing left (the side you see in your hands), each `metres` of gun across, centred on the gun's body; its
 // top `blankFraction` stays body colour for every other face. faceDot = how squarely a face must point that way; leftLimit = a top face may
 // lean left no more than this. keepOut: on the left face, a box this many metres either side of each named mount is painted plain, so the
-// build patch and the warranty seal (both at the sticker mount) always sit on plain paint. A face already carrying a texture (the brand
+// warranty seal (the sticker mount) and the build patch (the build mount, else the sticker) always sit on plain paint. A face already carrying a texture (the brand
 // label) is never printed. A skin's `pattern`: { kind, ink, ...that kind's numbers in metres }. Kinds: lines, grid, dots, stripes, checker,
 // gingham, confetti, tread, argyle, text (fonts from config/fonts.js).
 export const skinPatterns = {
   size: 512, metres: 0.8, blankFraction: 0.06, faceDot: 0.6, leftLimit: -0.2, anisotropy: 4,
-  keepOut: { mounts: ['sticker'], halfLength: 0.036, halfHeight: 0.026 },
+  keepOut: { mounts: ['sticker', 'build'], halfLength: 0.036, halfHeight: 0.026 },
 };
 
 // The Employee of the Month name badge (weapons/models/skinBadge.js): one small plate, one draw call, laid flat on the gun's left face beside
@@ -344,6 +344,7 @@ export const skinBadges = {
   size: [0.003, 0.02, 0.036], // metres: how far it stands off the face, its height, its length along the gun
   tries: [[0.056, 0], [-0.056, 0], [0.112, 0], [-0.112, 0], [0, 0.042], [0, -0.042], [0.056, 0.042], [-0.056, 0.042], [0.056, -0.042], [-0.056, -0.042]],
   tolerance: 0.012, rayStart: 0.3,
+  buildKeepOut: [0.075, 0.045], // metres along the gun / up: never this close to a gun's own build mount (the Overstuffed pillow covers it)
   canvas: { width: 72, height: 40, stripe: 0.36, lines: 2 }, // the printed plate (a name tag: a coloured top band and two ruled lines)
 };
 

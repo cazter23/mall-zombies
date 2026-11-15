@@ -4,7 +4,7 @@
 //   applySkinBadge(root, def, skinId, mounts) -> the badge mesh, or null (no badge on this skin, or no spot for it on this gun)
 //
 // One small plate, ONE mesh and one material: a single draw call. It lies flat on the gun's left face (the side you see in your hands) beside
-// the sticker mount, where the build patch and the warranty seal sit, never on top of them. Guns differ too much to hand-place eleven badges, so
+// the sticker mount, where the warranty seal sits (and the build patch, unless the gun gives it a `build` mount of its own), never on top of them. Guns differ too much to hand-place eleven badges, so
 // the spot is FOUND: from each candidate position round the mount (config tries, back first) a ray is cast from the left; the plate goes where
 // the first surface it meets lies at the face's own depth (the mount's x, within tolerance). A hand, an arm or a magazine standing out further
 // left is hit first and rejects that candidate, so the badge is never glued to a hand. The print (a coloured band and two ruled lines) is made
@@ -40,6 +40,12 @@ function printedPlate(skin) {
 
 const visibleChain = object => { for (let node = object; node; node = node.parent) if (!node.visible) return false; return true; };
 
+// The build mount, when a gun has its own (models/buildVisual.js): the patch's pillow covers about this much round it (the biggest, Overstuffed).
+const onBuildSpot = (at, mounts) => {
+  const spot = mounts?.build?.position;
+  return !!spot && Math.abs(at.z - spot[2]) < cfg.buildKeepOut[0] && Math.abs(at.y - spot[1]) < cfg.buildKeepOut[1];
+};
+
 export function applySkinBadge(root, def, skinId, mounts) {
   const skin = gunSkin(def.id, skinId);
   const anchor = mounts?.sticker?.position;
@@ -55,6 +61,7 @@ export function applySkinBadge(root, def, skinId, mounts) {
     const hit = raycaster.intersectObjects(meshes, false)[0];
     if (!hit) continue;
     const at = root.worldToLocal(hit.point.clone());
+    if (onBuildSpot(at, mounts)) continue; // (a gun whose build patch has its own spot: never under the pillow)
     if (Math.abs(at.x - anchor[0]) > cfg.tolerance) continue;
     const [thick, height, length] = cfg.size;
     const texture = printedPlate(skin);

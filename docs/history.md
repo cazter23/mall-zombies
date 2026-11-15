@@ -1,5 +1,22 @@
 # Sunset Galleria: build history ("Current state")
 
+## 15 November 2026 - Build-A-Blaster guns you can see (`claude/bab-visible`)
+
+A check of every gun in first person found the finished-build look easy to miss or wrong on several guns. Now:
+- **A build spot you can see** (models/buildVisual.js, a `build` mount per model): the patch and pillows used to share the warranty seal's
+  sticker spot. On the Foam Dart Blaster the drum hid it completely; on the Confetti Cannon, Tennis Ball Launcher, Leaf Blower and Return to
+  Sender it sat at the back, right under your face, so an Overstuffed pillow filled the screen. Those five now have their own spot, further
+  forward (the Tennis Ball Launcher's ahead of the laser pointer). The other ten keep the sticker spot, which already showed well.
+- **A seam along the gun**, found on the body, not placed blind: rays dropped from above find the top surface and the seam follows it
+  (up to 20 stitches, about 32 cm; it was 6, 8.5 cm). The old seam floated beside the body on the Staple Gun, Price Gun and Stargazer (its line
+  ran past a narrow body) and up to 3 cm above the Nail Gun.
+- **The Heart badge follows the Heart:** a re-stuff with the same stuffing and quality but a new Heart kept the old badge (the redraw key
+  left the Heart out).
+- The skin pattern keeps the new build spot plain too (config/skins.js keepOut), and the Employee of the Month name badge stays off it.
+- Checked in first person on all 15 guns, Regular and Overstuffed, and with Platinum + 3 Renewals and every attachment fitted (laser,
+  scope, nozzle, magazine, grip): everything stays readable. Known: on the ten guns that keep the sticker spot, a build covers the warranty
+  seal sticker (the barrel collar still shows the tier), and the laser pointer shares the left side with the pillow on several guns.
+
 ## 15 November 2026 - The WEAR-O-MATIC (`claude/wear-o-matic`)
 
 Arena survival had almost no Wardrobe: Last Showing has one rack (the 3D Glasses), Lot Full none, and neither has a fitting room.

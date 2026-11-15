@@ -186,11 +186,12 @@ test('a finished build stitches any gun, in its stuffing\'s colour; only Overstu
     assert.ok(look, def.id);
     assert.equal(look.visible, false, 'a plain gun shows nothing');
     // On the gun, at the gun's scale: model.root holds the hands and arms too, so this must not come from its bounds.
-    assert.ok(look.position.distanceTo(new THREE.Vector3().fromArray(model.mounts.sticker.position)) < 1e-6, 'anchored to the gun');
+    const spot = (model.mounts.build ?? model.mounts.sticker).position; // (its own build spot, else beside the warranty seal)
+    assert.ok(look.position.distanceTo(new THREE.Vector3().fromArray(spot)) < 1e-6, 'anchored to the gun');
     look.visible = true;
     const size = new THREE.Box3().setFromObject(look).getSize(new THREE.Vector3());
     look.visible = false;
-    assert.ok(Math.max(size.x, size.y, size.z) < .4, `no bigger than the gun: ${size.toArray()}`); // (the longest gun is about .5 m)
+    assert.ok(Math.max(size.x, size.y, size.z) < .55, `no bigger than the gun: ${size.toArray()}`); // (the longest gun, the Stargazer, is about .6 m)
     let draws = 0;
     look.traverse(o => { if (o.isMesh) draws++; });
     assert.ok(draws < 16, `a built gun is carried everywhere, so it stays cheap: ${draws} draws`);
@@ -210,6 +211,44 @@ test('a finished build stitches any gun, in its stuffing\'s colour; only Overstu
     assert.notDeepEqual(tuft.position.toArray(), a.toArray(), 'it leaks');
     visuals.show();
     assert.equal(look.visible, false);
+  }
+});
+
+// The build has to be SEEN in your hands (15 November 2026): a long seam lying on the gun's top, and a Heart badge that follows the Heart.
+test('a build\'s seam runs along the top of every gun, lying on it (never floating or sunk), and the Heart badge follows a new Heart', () => {
+  const NOT_GUN = /arm|palm|finger|thumb|cuff|wrist|sleeve|watch|hand/i;
+  for (const def of Object.values(weapons)) {
+    const model = buildWeaponModel(def);
+    const visuals = createUpgradeVisuals(model);
+    visuals.show({ build: { stuffing: 'smoothie', heart: 'headshot', quality: 'regular' } });
+    model.root.updateMatrixWorld(true);
+    const look = model.root.getObjectByName('buildVisual');
+    const thread = look.getObjectByName('buildThread');
+    const stitches = thread.count / 2;
+    // The body, both faces (a ray from a stitch straight down must meet the surface it lies on).
+    const body = [];
+    model.root.traverse((o) => {
+      if (!o.isMesh) return;
+      for (let p = o; p; p = p.parent) if (!p.visible || p.name === 'buildVisual' || NOT_GUN.test(p.name)) return;
+      body.push(o);
+    });
+    const sides = body.map((m) => m.material.side);
+    body.forEach((m) => { m.material.side = THREE.DoubleSide; });
+    const m = new THREE.Matrix4(), at = new THREE.Vector3(), zs = [];
+    for (let i = 0; i < thread.count; i += 2) {
+      thread.getMatrixAt(i, m);
+      at.setFromMatrixPosition(m).applyMatrix4(thread.matrixWorld);
+      zs.push(at.z);
+      const below = new THREE.Raycaster(at, new THREE.Vector3(0, -1, 0), 0, .1).intersectObjects(body, false)[0];
+      assert.ok(below && below.distance < .006, `${def.id}: stitch ${i / 2} lies on the gun (${below ? (below.distance * 1000).toFixed(1) + ' mm above it' : 'nothing under it'})`);
+    }
+    body.forEach((mesh, i) => { mesh.material.side = sides[i]; });
+    assert.ok(stitches >= 4 && Math.max(...zs) - Math.min(...zs) >= .05, `${def.id}: a seam you notice (${stitches} stitches)`); // (the Return to Sender's glass chamber leaves it the least top)
+    // A re-stuff can keep the stuffing and quality and change only the Heart: the badge must change with it.
+    const shape = () => look.getObjectByName('buildBadgeShape').geometry;
+    const before = shape();
+    visuals.show({ build: { stuffing: 'smoothie', heart: 'reload', quality: 'regular' } });
+    assert.notEqual(shape(), before, `${def.id}: the badge shows the new Heart`);
   }
 });
 

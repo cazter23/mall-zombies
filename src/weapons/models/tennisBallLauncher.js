@@ -93,6 +93,7 @@ function buildGun(vm) {
     grip: { position: [0, -0.095, 0.028], rotation: [0.3, 0, 0], size: { w: 0.043, h: 0.12, d: 0.052 } },
     magazine: { position: [0.054, -0.01, 0.04], rotation: [0, 0, Math.PI / 2], gunId: 'tennisBallLauncher' }, // a spare ball tube on the right of the receiver
     sticker: { position: [-0.053, -0.008, 0.03] }, // the left side of the receiver
+    build: { position: [-0.039, -0.008, -0.17] }, // the Build-A-Blaster patch: the barrel's left side, ahead of the laser pointer (at the receiver it sat under your face)
   };
   return { gun, muzzle, trigger, mounts, ball };
 }

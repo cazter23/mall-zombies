@@ -478,7 +478,7 @@ export function createUpgradeVisuals(model, gun = model.root) {
       buildVisual.animate(time);
       warrantyTrim.animate(time);
       loanerTag.animate(time);
-      const key = `${tier}|${renewals}|${Object.values(attachments).join(',')}|${build?.stuffing ?? ''}|${build?.quality ?? ''}|${loaner}`;
+      const key = `${tier}|${renewals}|${Object.values(attachments).join(',')}|${build?.stuffing ?? ''}|${build?.quality ?? ''}|${build?.heart ?? ''}|${loaner}`;
       if (key === shownKey) return;
       shownKey = key;
       buildVisual.show(build);
