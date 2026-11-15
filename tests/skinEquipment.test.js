@@ -211,11 +211,15 @@ test('only default gun models exist at start; a skin is built once on first use 
     t.viewmodel.scene.traverseVisible(node => { if (node.isMesh && node.userData.sleevePart) worn.set(node.userData.sleevePart, node.material); });
     return worn;
   };
-  assert.equal(count('stapleHousing'), 1, 'no skinned twin before the gun is held');
+  // (Only the gun in hand is in the viewmodel scene, so there is one housing at a time: weapons/viewmodel.js.)
+  const housing = () => { let found = null; t.viewmodel.scene.traverse(node => { if (node.isMesh && node.name === 'stapleHousing') found ??= node; }); return found; };
+  assert.equal(count('stapleHousing'), 1);
+  assert.equal(housing().material.color.getHex(), weapons.stapleGun.viewmodel.bodyColor, 'no skinned twin before the gun is held');
   t.viewmodel.setSleeves('cardigan'); // put on before the skinned model exists
   t.tick(); g.rounds.update = () => {}; g.zombies.clear();
   assert.equal(t.held('stapleHousing'), skins.stapleGun[0].palette.body);
-  assert.equal(count('stapleHousing'), 2);
+  assert.equal(count('stapleHousing'), 1, 'the skinned twin took the place of the default model in the scene');
+  const twin = housing();
   const onSkin = sleeves();
   assert.ok(onSkin.size > 0, 'the staple gun model has sleeve parts');
 
@@ -234,4 +238,9 @@ test('only default gun models exist at start; a skin is built once on first use 
   t.held('unused');
   const bare = sleeves();
   for (const [part, material] of onDefault) if (bare.has(part)) assert.notEqual(bare.get(part), material, part + ' goes back to bare');
+
+  assert.equal(count('stapleHousing'), 0, 'the staple gun left the scene with the Price Gun in hand');
+  t.press('Digit1'); t.tick(60); // (slot 1: back to the staple gun)
+  t.held('unused');
+  assert.equal(housing(), twin, 'the twin is built once: holding the gun again shows the same model');
 });

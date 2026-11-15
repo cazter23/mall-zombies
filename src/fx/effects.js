@@ -188,6 +188,8 @@ export function createEffects(scene, { surfaces = [] } = {}) {
     prepare(renderer, camera) { marks.prepare(renderer, camera); },
     // Persistent, gun-specific world aftermath. Pure decoration: no colliders or damage.
     impact(gunId, origin, worldHit) { return marks.add(gunId, origin, worldHit); },
+    // The map's meshes changed (a barrier opened, static batching ran): impact marks list their surfaces again (fx/impactMarks.js).
+    refreshSurfaces() { marks.refresh(); },
     // Staple streak from `from` (gun muzzle) to `to` (where the shot landed).
     // `options` (all optional): width (metres), seconds (how long it stays) and flicker (flashes per second), for a fatter, longer arc than a bullet's streak.
     tracer(from, to, hexColor, { width = fx.tracerWidth, seconds = fx.tracerSeconds, flicker = 0 } = {}) {

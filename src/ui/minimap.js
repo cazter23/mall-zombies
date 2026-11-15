@@ -2,8 +2,8 @@
 // MINIMAP: the mall directory board (config/minimap.js; the floor plan and live state: game/minimapPlan.js).
 // TAP the minimap button: a small map in the corner, turning with you, shows or hides (remembered as a setting).
 // HOLD it: the whole directory, both floors side by side (yours larger, under a lit LEVEL tab), north-up, with a numbered
-// store index, while held. Both are canvas drawings made each frame from the plan and the state; nothing here reads the
-// game directly. The look is the mall's own directory sign: plum case, brass, teal header, each area in its shutter colour.
+// store index, while held. Both are canvas drawings made from the plan and the state (the directory on each frame it is
+// held, the corner map config.corner.redrawsPerSecond times a second); nothing here reads the game directly. The look is the mall's own directory sign: plum case, brass, teal header, each area in its shutter colour.
 // =============================================================================
 
 import { minimap as config } from '../config/minimap.js';
@@ -49,8 +49,10 @@ function pattern(ctx, kind) {
 }
 
 // Fit a canvas's backing store to its CSS size (sharp on high-DPI screens). Returns its CSS size.
-function fit(canvas) {
-  const box = canvas.getBoundingClientRect();
+// `box` (optional): the CSS size measured earlier. Measuring (getBoundingClientRect) makes the browser lay the page out
+// on the spot, and the HUD has just changed, so the corner map, drawn all run long, measures only when its size can
+// have changed (createMinimap's cornerBox).
+function fit(canvas, box = canvas.getBoundingClientRect()) {
   const ratio = window.devicePixelRatio || 1;
   const w = Math.max(1, Math.round(box.width * ratio)), h = Math.max(1, Math.round(box.height * ratio));
   if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
@@ -482,6 +484,25 @@ export function createMinimap({ onCornerChange = null } = {}) {
   let heldFor = 0, wasHeld = false, swallow = false;
   let time = 0;
   let indexFor = null;
+  // The corner map is on screen for a whole run, so it is kept cheap: its box is measured when it appears and after the
+  // window is resized (the HUD's scale only changes in a menu, where the map is hidden), not every frame, and it is
+  // redrawn config.corner.redrawsPerSecond times a second, not on every frame the game draws.
+  let cornerBox = null; // { width, height } in CSS px, or null: measure at the next draw
+  let cornerWait = 0; // seconds until the next redraw (0 or less: draw now)
+  globalThis.window?.addEventListener?.('resize', () => { cornerBox = null; cornerWait = 0; });
+  function hideCorner() {
+    corner.hidden = true;
+    cornerBox = null; // (shown again: measured again, and drawn at once)
+    cornerWait = 0;
+  }
+  function showCorner(plan, state, stragglers, dt) {
+    corner.hidden = false;
+    cornerWait -= dt;
+    if (cornerWait > 1e-4) return;
+    const every = 1 / config.corner.redrawsPerSecond;
+    cornerWait = cornerWait < -every ? every : cornerWait + every; // (keep the rhythm; after a long frame just start over)
+    drawCorner(plan, state, stragglers);
+  }
 
   // The store index: the numbered places by group, Kevin's cart this round, keys, and the two marks to know.
   function buildIndex(plan, state, guidance) {
@@ -516,7 +537,13 @@ export function createMinimap({ onCornerChange = null } = {}) {
   }
 
   function drawCorner(plan, state, stragglers) {
-    const { ctx, width, height } = fit(cornerCanvas);
+    let box = cornerBox;
+    if (!box) {
+      const measured = cornerCanvas.getBoundingClientRect();
+      box = { width: measured.width, height: measured.height };
+      if (box.width > 0 && box.height > 0) cornerBox = box; // (not laid out yet: measure again next time)
+    }
+    const { ctx, width, height } = fit(cornerCanvas, box);
     const floor = plan.floors[state.you.floor];
     const scale = width / config.corner.metresAcross;
     const cos = Math.cos(state.you.yaw), sin = Math.sin(state.you.yaw);
@@ -529,8 +556,10 @@ export function createMinimap({ onCornerChange = null } = {}) {
     ctx.fillStyle = C.case;
     ctx.fillRect(0, 0, width, height);
     drawFloor(ctx, floor, plan, state, { project, scale, full: false, turned: true, time, width, height, stragglers });
-    cornerFloor.textContent = floor.label;
-    cornerArea.textContent = state.you.area ?? '';
+    // (written only when they change: setting the same text again still makes the browser lay the strip out)
+    const area = state.you.area ?? '';
+    if (cornerFloor.textContent !== floor.label) cornerFloor.textContent = floor.label;
+    if (cornerArea.textContent !== area) cornerArea.textContent = area;
   }
 
   function drawFull(plan, state, stragglers) {
@@ -595,7 +624,8 @@ export function createMinimap({ onCornerChange = null } = {}) {
      */
     update({ plan, state, held, active, dt, guidance = false, stragglers = [] }) {
       if (!plan || !active) {
-        corner.hidden = full.hidden = true;
+        hideCorner();
+        full.hidden = true;
         setCornerClass(false);
         heldFor = 0;
         wasHeld = false;
@@ -605,10 +635,10 @@ export function createMinimap({ onCornerChange = null } = {}) {
       time += dt;
       if (swallow) {
         swallow = held;
-        corner.hidden = !cornerOn;
         full.hidden = true;
         setCornerClass(cornerOn);
-        if (cornerOn) drawCorner(plan, state, stragglers);
+        if (cornerOn) showCorner(plan, state, stragglers, dt);
+        else hideCorner();
         return;
       }
       if (held) heldFor += dt;
@@ -622,12 +652,13 @@ export function createMinimap({ onCornerChange = null } = {}) {
       wasHeld = held;
       const showFull = held && heldFor >= config.holdSeconds;
       full.hidden = !showFull;
-      corner.hidden = !cornerOn || showFull;
-      setCornerClass(!corner.hidden);
+      setCornerClass(cornerOn && !showFull);
       if (showFull) {
+        hideCorner();
         buildIndex(plan, state, guidance);
         drawFull(plan, state, stragglers);
-      } else if (cornerOn) drawCorner(plan, state, stragglers);
+      } else if (cornerOn) showCorner(plan, state, stragglers, dt);
+      else hideCorner();
     },
   };
 }

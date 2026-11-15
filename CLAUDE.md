@@ -156,6 +156,7 @@ adjoining areas are owned. No cascading unlocks. Nine area purchases total 9500;
 - **Decoration** is static and has no collision (`collide:false`); the static batcher merges it. Hang things >= 2 cm proud of a wall, never on its plane:
   two faces within 4 mm facing the same way z-fight (flicker). `tests/coplanar.test.js` checks every room; `departmentStore.test.js` checks that no
   other wall ends flush on the store's wall faces. Mark anything shown/hidden/moved at runtime `userData.dynamic`, on a parent group: tests/staticBatch.test.js takes every directly flagged mesh for an escalator part.
+  In the browser every other map object's matrix is frozen after batching (world/staticBatch.js `freezeStatic`): an unflagged thing that moves stands still there, with no error (`__mall.movedWhileFrozen()` lists them).
 - **Anything standable must be**: a step (<= 0.35 m), a vaultable counter (<= 1.1 m, short side), or >= 2.1 m tall (a jump from a 0.95 m counter peaks ~2.0 m).
   The one way up or down besides stairs and escalators: balcony rails (`ledge`) can be climbed over to drop to the floor below (fall damage applies).
 - **Tests: never seed `Math.random` before building the map.** Three.js makes object ids with it, so the scenario then depends on the map's mesh

@@ -156,6 +156,8 @@ export function createGame({
   // A player attack (gun or box cutter) hit something: announce it.
   const announceHit = (hit) => events.emit('hit', hit);
   const effects = createEffects(scene, { surfaces: [map.group, ...(arena ? [arena.group] : [])] });
+  // Impact marks keep a list of the map's surfaces (fx/impactMarks.js): a barrier rolling up or open is when the map changes.
+  for (const name of ['barrierOpening', 'barrierOpened']) events.on(name, () => effects.refreshSurfaces());
   const aimAssist = createAimAssist({ player, input, shootables, colliders });
   const balls = createBalls({ colliders, shootables }); // the Tennis Ball Launcher's balls in the air (weapons/ballistics.js); the gun throws them, main.js draws them
   const rockets = createBalls({ colliders, shootables, zombies: 'bounce' }); // the Bottle Rocket Bazooka's rockets: the burst does the damage (weapons/blast.js)

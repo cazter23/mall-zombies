@@ -56,6 +56,7 @@ export const atmosphere = {
   },
   contact: { maxZombies: 64, opacity: 0.28, radius: 0.48, depthRatio: 0.825, lift: 0.007, fadeHeight: 1.3,
     floorTolerance: 0.08,
+    searchMargin: 0.75, // metres: a zombie re-reads the collider list only after walking this far from where it last did
     fixtureOpacity: 0.22, fixturePadding: 0.16 },
   ambience: {
     maxVoices: 3, occludedGain: 0.2, fadeSeconds: 0.16,

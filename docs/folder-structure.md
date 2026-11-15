@@ -331,7 +331,7 @@ src/
     skinPalette.js      resolveGunColors(def, skinId) maps shared roles to every gun's model colour keys, with weapon config and gunPalettes.js defaults as fallback.
     viewmodel.js        Shared first-person rig in its own scene + own fixed-FOV camera (drawn after the world
                         with depth cleared). createViewmodel(allWeaponDefs, meleeDef, { skinFor }) builds every gun's base coats up
-                        front (only the shown one visible; one shared hand light + world light that each gun's
+                        front (only the one in hand is attached to the scene, setActive swaps them: a hidden model would still be walked every frame; one shared hand light + world light that each gun's
                         flash recolors, so lights never come and go), attaches each muzzle flash,
                         and adds up layers on a `holder` each frame: hip->ADS rest pose, reload pose
                         (gunKeys; eases out if cancelled), recoil springs (kickPos/kickRot: fire(aimAmount, resolvedDef), dryFire(resolvedDef),
@@ -1034,11 +1034,22 @@ src/
                         cleaver tag, and distinct boss vouchers). Standout jackpot hover/spin/tilt/scale/halo and scaled
                         fx/beacon.js columns; readable emissive hardware in dark rooms; 2-4 meshes per pickup; zero lights/colliders;
                         floor zone rings (Paid Break, Spill Cleanup) & target markers, clean per-view disposal.
-    contactShadows.js   One instanced draw for soft zombie grounding; interpolates feet and finds supporting collider tops.
+    contactShadows.js   One instanced draw for soft zombie grounding; interpolates feet and finds supporting collider tops
+                        (each zombie remembers the colliders within atmosphere.contact.searchMargin of where it last looked, and
+                        reads the whole list again only after walking that far or when colliderSignature changes).
                         No collision, hitbox or navigation changes; clear on restart, dispose owned GPU resources on unload.
     impactMarks.js      Persistent world aftermath: visible-mesh ray + flat-face corner checks, ring of 200 marks shared
-                        across instanced signature pools. Skips shutters/unsupported edges; follows rigid surface transforms,
-                        removes marks when surfaces unload, clears on restart. prepare(renderer,camera) warms shared graphics.
+                        across instanced signature pools. Skips shutters/unsupported edges. A shot does not walk the map: the
+                        surfaces are LISTED ONCE (still meshes with a world box, ray-tested only when the ray crosses it;
+                        meshes under a userData.dynamic parent tested every shot) and relisted after refresh() (a barrier
+                        opening, static batching, a new run; anything else that adds or removes map meshes must call it).
+                        Marks on a moving surface follow it every frame and go when it hides; marks on still ones are only
+                        re-checked by refresh(). prepare(renderer,camera) warms shared graphics and the triangle grids.
+    triangleGrid.js     The nearest ray hit on a big mesh without testing every triangle (a static batch has up to 60,000):
+                        buildTriangleGrid(geometry) files the triangles once into a box grid in the mesh's own space,
+                        gridRaycast(grid, mesh, raycaster) walks the cells along the ray and returns the hit three's
+                        Raycaster.intersectObject(mesh)[0] would. canGrid(mesh, minTriangles): plain single-material meshes
+                        only. Used by impactMarks.js for still meshes of impacts.grid.minTriangles or more.
     impactModels.js     Small shared staple/nail/dart/confetti/BOGO-tag meshes with vertex colours; three procedural price-sticker textures
     effects.js          Tracers (pooled) + particle bursts (one InstancedMesh): splat(), puff(), clear() (new run). A splat palette flagged
                         `foam` (or the Mascot's) keeps its colours in Red splatter mode (Sunny is stuffing, not blood).
@@ -1141,6 +1152,10 @@ src/
                         art, the floor medallion, the accessible-bay symbol.
     scatter.js          Places decor-kit clutter on a floor area, deterministic per seed, merged into one mesh per material.
     staticBatch.js      Merges still, opaque map meshes into a few big ones (fewer draw calls); userData.dynamic opts a mesh out.
+                        freezeStatic(root) (main.js, after batching): everything not under a userData.dynamic parent or a shutter
+                        stops rebuilding its matrix every frame (matrixAutoUpdate off), so a thing moved at runtime MUST be under
+                        a flagged parent or it stands still in the browser; movedWhileFrozen(root) lists offenders
+                        (__mall.movedWhileFrozen() in a browser check; ?nofreeze turns freezing off to compare).
   ui/
     glyphs.js           Which buttons prompts name: promptDevice(input, gamepad) ('keyboard' | 'xbox' | 'playstation'), buttonLabel,
                         hintHtml(id) (a menu's hint line from config/controls.js menuHints), glyphHtml(action) (a keycap in running
@@ -1375,7 +1390,7 @@ The quest policy reserves parking validation funds before optional Returns Desk 
 
 - src/config/minimap.js: the hold time, the corner map's size and how many metres it spans, the directory's layout (height share, the other floor's size, tab height), the flicker time, the palette (the in-world directory sign's plum, brass and teal), each area's floor colour and ink, wall widths, fonts, the places by feature kind (pictogram, optional back colour, legend and index words; `label: 'weapon'` names a wall buy's gun), the store index's groups, the board's words, and the you-are-here marker. Hidden by default; never zombies, bosses, lost property or quest steps.
 - src/game/minimapPlan.js: DOM-free. `buildMinimapPlan(map, colliders)` turns the map's `minimap` (floors listing culling rooms, shape overrides, upper-floor voids) plus `cullAreas`, `cullPortals` (shutters drawn as their doorway), `colliders.ramps` (escalators and stairs, on every floor they touch) and `map.features` into floors, shutters, doorways (`openings`: wall gaps from the portals, with the thin axis), places (each numbered for the store index; one kind with one name in one area shares a number) and `index` (the numbered groups), with `floorAt(y)` and `zoneLabel(zone)`. `minimapState(plan, g, { guidance })`: you (position, yaw, floor, the area's name), the bought zones, the shut shutters with the price to open them (only where one side is bought), active/pending Flash Sale & Doorbuster markers (`sales`), Kevin's cart while it is open, and dropped keys when the run gives guidance.
-- src/ui/minimap.js: `createMinimap({ onCornerChange })` (main.js mounts it in the HUD as `hud.minimap`). `update({ plan, state, held, active, dt, guidance })` each frame: a tap of the `minimap` action (Tab / PadBack) toggles the corner map (turned so you face up; the 'minimap' remembered setting), a hold past `holdSeconds` shows the whole directory (both floors side by side, yours larger under a lit LEVEL tab, north-up, area names, price tags, numbered pictograms, and the store index under it with Kevin's cart this round) while held. Drawn as a floor plan: area colours, thick walls broken at doorways, barrier tape over shut shutters, escalator chevrons pointing up, a pulsing you-are-here dot with a view cone. `pictogramNames` lists the drawn pictograms (tests check every place has one). A press that began in a menu does nothing. Adds `minimap-on` to the HUD root while the corner map is up.
+- src/ui/minimap.js: `createMinimap({ onCornerChange })` (main.js mounts it in the HUD as `hud.minimap`). `update({ plan, state, held, active, dt, guidance })` each frame: a tap of the `minimap` action (Tab / PadBack) toggles the corner map (turned so you face up; the 'minimap' remembered setting), a hold past `holdSeconds` shows the whole directory (both floors side by side, yours larger under a lit LEVEL tab, north-up, area names, price tags, numbered pictograms, and the store index under it with Kevin's cart this round) while held. Drawn as a floor plan: area colours, thick walls broken at doorways, barrier tape over shut shutters, escalator chevrons pointing up, a pulsing you-are-here dot with a view cone. `pictogramNames` lists the drawn pictograms (tests check every place has one). A press that began in a menu does nothing. The corner map stays cheap: it measures its box (getBoundingClientRect) only when it appears or the window resizes, is redrawn `config.corner.redrawsPerSecond` times a second and not on every frame, and writes its area strip only when the words change. Adds `minimap-on` to the HUD root while the corner map is up.
 - src/ui/minimap.css: the brass frames with screw heads and a glass glare, the corner's area strip and floor tab, the directory's teal serif header and the index strip, the backlight flicker and the corner's slide-in (none with reduced motion); moves `.hud-right-stack` (PA, sales, notices) down under the corner map.
 
 ### Galleria FM (the mall radio)
